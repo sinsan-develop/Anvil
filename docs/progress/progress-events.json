@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1280,
+  "last_sequence": 1345,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -75779,7 +75779,681 @@
     {"sequence":1322,"event_id":"evt_c30r3_task4_top_level_worker_lease_reconciled","event_type":"PROJECTION_RECONCILED","actor":"main-agent-eoul","actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":null,"work_package_id":"C-30R3","step_id":"TASK4_REREVIEW_REWORK","subject_ref":"C-30R3/TASK4","occurred_at":"2026-09-22T13:16:00+09:00","details":{"expired_worker_lease_id":"worker-lease-c30r3-task4-qa-20260920-001","prior_projection":"ACTIVE","corrected_projection":null,"active_agent":null,"write_lease":null,"worker_lease":null,"rollback":"APPEND_ONLY_INVALIDATION_EVENT_ONLY","formal_acceptance":false,"next_safe_action":"C30R3_QUALITY_REREVIEW"}},
     {"sequence":1323,"event_id":"evt_c30r3_task4_main_accepted","event_type":"MAIN_PACKAGE_ACCEPTED","actor":"main-agent-eoul","actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":null,"work_package_id":"C-30R3","step_id":"TASK4_ACCEPTANCE","subject_ref":"C-30R3/TASK4","occurred_at":"2026-09-22T13:20:00+09:00","details":{"decision":"ACCEPTED_FORMAL_FIXTURE_SCOPE","spec_review":"PASS_C0_I0_M0","quality_review":"PASS_C0_I0_M0","browser_normal_empty":"PASS","browser_offline":"PASS_TRANSPORT_FAILURE_EVIDENCE","browser_permission":"PASS_HTTP_403_DOM_PERMISSION","browser_error":"PASS_CDP_FAULT_INJECTION_HTTP_400_DOM_ERROR","actual_server_generated_400":"NOT_EXECUTED","cleanup":"PASS_RESIDUE_0","active_leases":0,"production_auth":"NOT_EXECUTED","provider":"NOT_EXECUTED","pg18":"NOT_EXECUTED","c30_overall_acceptance":false,"c30_gate_blocker":"CANONICAL_PROGRESS_CHECKER_SYNTAX_ERROR","next_safe_action":"REPAIR_CANONICAL_PROGRESS_CHECKER"}},
     {"sequence":1324,"event_id":"evt_c30r4_checker_repair_work_instruction_issued","event_type":"WORK_INSTRUCTION_ISSUED","actor":"main-agent-eoul","actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":null,"work_package_id":"C-30R4","step_id":"CHECKER_REPAIR_START","subject_ref":"C-30R4","occurred_at":"2026-09-22T13:25:00+09:00","details":{"work_instruction":"docs/work_orders/C-30R4_PROGRESS_CHECKER_REPAIR_WORK_INSTRUCTION.md","invocation":"docs/work_orders/C-30R4_PROGRESS_CHECKER_REPAIR_INVOCATION.md","baseline_git_commit":"cc98f99","exact_write_paths":["scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"failure_fingerprint":"CHECK_PROJECT_PROGRESS_MULTIHUNK_CORRUPTION_ABB73610","tdd":"REQUIRED_RED_BEFORE_RESTORE","status":"ISSUED"}},
-    {"sequence":1325,"event_id":"evt_c30r4_checker_repair_leases_issued","event_type":"LEASES_ISSUED","actor":"main-agent-eoul","actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":null,"work_package_id":"C-30R4","step_id":"CHECKER_REPAIR_START","subject_ref":"C-30R4","occurred_at":"2026-09-22T13:25:01+09:00","details":{"actor_id":"developer-primary-c30r2","worker_lease_id":"worker-lease-c30r4-checker-20260922-001","write_lease_id":"write-lease-c30r4-checker-20260922-001","lease_epoch":1,"write_epoch":1,"execution_fencing_token":"c30r4-checker-execution-fence-epoch-1-cc98f99","write_fencing_token":"c30r4-checker-write-fence-epoch-1-cc98f99","expires_at":"2026-09-22T17:25:00+09:00","path_scope":["scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"status":"ACTIVE"}}
+    {"sequence":1325,"event_id":"evt_c30r4_checker_repair_leases_issued","event_type":"LEASES_ISSUED","actor":"main-agent-eoul","actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":null,"work_package_id":"C-30R4","step_id":"CHECKER_REPAIR_START","subject_ref":"C-30R4","occurred_at":"2026-09-22T13:25:01+09:00","details":{"actor_id":"developer-primary-c30r2","worker_lease_id":"worker-lease-c30r4-checker-20260922-001","write_lease_id":"write-lease-c30r4-checker-20260922-001","lease_epoch":1,"write_epoch":1,"execution_fencing_token":"c30r4-checker-execution-fence-epoch-1-cc98f99","write_fencing_token":"c30r4-checker-write-fence-epoch-1-cc98f99","expires_at":"2026-09-22T17:25:00+09:00","path_scope":["scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"status":"ACTIVE"}},
+{
+  "sequence": 1326,
+  "event_id": "evt_c30r4_canonical_1326_work_instruction_revised",
+  "event_type": "WORK_INSTRUCTION_REVISED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T15:00:00+09:00",
+  "previous_event_sha256": "A283F0BBDA0CF82D43948F418D3CF846865D6E0753AEBD5802F1F64363A5FA75",
+  "details": {
+    "parent_work_instruction": {
+      "path": "docs/work_orders/C-30R4_PROGRESS_CHECKER_REPAIR_WORK_INSTRUCTION.md",
+      "sha256": "9528ED396A5B211D9700CBAD929A1F757C975399D448F589DAB5F6A2E4241A15",
+      "issued_event_id": "evt_c30r4_checker_repair_work_instruction_issued"
+    },
+    "derived_work_instruction": {
+      "path": "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION.md",
+      "sha256": "71AD438A5F5C614E5089B35B0CD49E806B5855DCB2844244C12BDF78992996CF"
+    },
+    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK",
+    "semantic_diff": "NONE",
+    "scope_expansion": false,
+    "historical_raw_event_prefix": {
+      "bytes": 3985246,
+      "sha256": "09A6B52717CEF4E4E49B2AA1830B670226FEB272237668CC3EC39E2D07219431"
+    }
+  }
+},
+{
+  "sequence": 1327,
+  "event_id": "evt_c30r4_canonical_1327_repository_reconciled",
+  "event_type": "REPOSITORY_RECONCILED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T15:00:00+09:00",
+  "previous_event_sha256": "A9FBE94A239B1829A79745FFB858E2994E848C4F1A503F3020C83C4EF8256AEC",
+  "details": {
+    "branch": "codex/c09-execution-backends-r1",
+    "local_head": "ed3cae92597d681c76417e26576bed91a0525bad",
+    "upstream": "development/codex/c09-execution-backends-r1",
+    "remote_head": "98e218264bf54db04a1bd35a67273b713805a649",
+    "projection_mode": "C30_CANONICAL_RECONCILIATION_EXACT10",
+    "validated_base_commit": "ed3cae92597d681c76417e26576bed91a0525bad",
+    "head_relation": "UNCOMMITTED_EXACT10_CANONICAL_SUCCESSOR",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-event-contract.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c30-final-canonical-reconciliation.json",
+      "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION.md",
+      "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "push_status": "NOT_EXECUTED",
+    "remote_evidence": "LOCAL_TRACKING_REF_ONLY_LIVE_REMOTE_NOT_EXECUTED",
+    "worktree_status": "C30R4_CANONICAL_SUCCESSOR_PENDING_MAIN_MATERIALIZATION",
+    "observed_at": "2026-09-22T15:00:00+09:00",
+    "reason": "C30_CURRENT_CANONICAL_BINDING_WITHOUT_HISTORY_REWRITE",
+    "previous_header": {
+      "last_sequence": 1280,
+      "last_event_id": "evt_c30r4_checker_repair_leases_issued"
+    },
+    "historical_profile_sha256": "BB00B428F5CF443793816B552910CCAF3029BF81BE1CC4C50A8EC19FCBFB0A21",
+    "c30_overall_status": "PENDING_FINAL_GATE",
+    "retroactive_push_claim": false
+  }
+},
+{
+  "sequence": 1328,
+  "event_id": "evt_c30r4_canonical_1328_write_fencing_token_expired",
+  "event_type": "FENCING_TOKEN_EXPIRED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:25:00+09:00",
+  "previous_event_sha256": "FC9E79956D789FA566423FBA5B32168E2236A227A4BCB394D05C70F5F3094FF9",
+  "details": {
+    "lease_id": "write-lease-c30r4-checker-20260922-001",
+    "fencing_token": "c30r4-checker-write-fence-epoch-1-cc98f99",
+    "reason": "LEASE_EXPIRED"
+  }
+},
+{
+  "sequence": 1329,
+  "event_id": "evt_c30r4_canonical_1329_worker_fencing_token_expired",
+  "event_type": "FENCING_TOKEN_EXPIRED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:25:00+09:00",
+  "previous_event_sha256": "780D7487DFF5F51B1F9B416239255D21B047E3C235963CCDD70ABDD24DF4F19C",
+  "details": {
+    "lease_id": "worker-lease-c30r4-checker-20260922-001",
+    "fencing_token": "c30r4-checker-execution-fence-epoch-1-cc98f99",
+    "reason": "LEASE_EXPIRED"
+  }
+},
+{
+  "sequence": 1330,
+  "event_id": "evt_c30r4_canonical_1330_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:25:01+09:00",
+  "previous_event_sha256": "D310C8D93BD49E46CBC573BB58BC02BBB91CF2B3A26FA478652CE17B6F077351",
+  "details": {
+    "lease_id": "write-lease-c30r4-checker-20260922-001",
+    "reason": "LEASE_EXPIRED_AND_REPLACED",
+    "prior_lease_sha256": "078149A506A19B3BF6BB707DBBC6079601CC382D1B47BB4E9E1D14D773CC7FC5"
+  }
+},
+{
+  "sequence": 1331,
+  "event_id": "evt_c30r4_canonical_1331_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:25:01+09:00",
+  "previous_event_sha256": "BFEB6EDE24DF7A177E8814FDFA11BDC42FDC7188C3ED8600225059E4A904CC1E",
+  "details": {
+    "lease_id": "worker-lease-c30r4-checker-20260922-001",
+    "reason": "LEASE_EXPIRED_AND_REPLACED",
+    "prior_lease_sha256": "C3987BFAD9E51E102E233DFA5BE598F73F413014E21223276AC15D33AEFB6D87"
+  }
+},
+{
+  "sequence": 1332,
+  "event_id": "evt_c30r4_canonical_1332_work_instruction_revised",
+  "event_type": "WORK_INSTRUCTION_REVISED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:28:30+09:00",
+  "previous_event_sha256": "75B4A4E1FFB2DD62C2C4F12B5DC0C9CCDC027A2921104FF853B206197A61B9A2",
+  "details": {
+    "parent_work_instruction": {
+      "path": "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION.md",
+      "sha256": "71AD438A5F5C614E5089B35B0CD49E806B5855DCB2844244C12BDF78992996CF",
+      "issued_event_id": "evt_c30r4_canonical_1326_work_instruction_revised"
+    },
+    "derived_work_instruction": {
+      "path": "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION_R2.md",
+      "sha256": "C8CBA2726670CC49F87342F05E0E078EFE0072009EC6A25496624E13D7FDBA53"
+    },
+    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "semantic_diff": "NONE",
+    "scope_expansion": false,
+    "invocation": {
+      "path": "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION_R2.md",
+      "sha256": "8203B2F634C6114B6EB5CCD7C40A3832B11051B6112A118F31A6125448E0AEE6"
+    }
+  }
+},
+{
+  "sequence": 1333,
+  "event_id": "evt_c30r4_canonical_1333_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:28:31+09:00",
+  "previous_event_sha256": "F9308D140D3FA5815804B4D8BE7A59E597A92ECCC55D142622CB1F75EA17DD16",
+  "details": {
+    "lease_id": "worker-lease-c30r4-checker-20260922-002",
+    "fencing_token": "c30r4-checker-execution-fence-epoch-2-ed3cae9",
+    "subject_ref": "C-30R4",
+    "actor_id": "developer-primary-c30r2",
+    "lease_epoch": 2,
+    "expires_at": "2026-09-22T21:25:00+09:00",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  }
+},
+{
+  "sequence": 1334,
+  "event_id": "evt_c30r4_canonical_1334_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "run_id": null,
+  "work_package_id": "C-30R4",
+  "step_id": "CANONICAL_RECONCILIATION_R2",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T17:28:32+09:00",
+  "previous_event_sha256": "F196BD22CD4E72F0DFD4D01843B9D90A0FD9648F00BF43F4ECDB02E49C295D5A",
+  "details": {
+    "lease_id": "write-lease-c30r4-checker-20260922-002",
+    "fencing_token": "c30r4-checker-write-fence-epoch-2-ed3cae9",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "worker_lease_id": "worker-lease-c30r4-checker-20260922-002",
+    "write_epoch": 2,
+    "expires_at": "2026-09-22T21:25:00+09:00"
+  }
+},
+{
+  "sequence": 1335,
+  "event_id": "evt_c30r4_canonical_1335_human_override_takeover_recorded",
+  "event_type": "HUMAN_OVERRIDE_TAKEOVER_RECORDED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "E118EB6CEEF235E0242034DEC696AEF7DB90705155794B1F1395C67E8F9BC09F",
+  "details": {
+    "approval_id": "HUMAN_OVERRIDE_TAKEOVER-C30R4-USER-20260922",
+    "approved_by": "user-sinsan",
+    "approval_text_sha256": "935088D3CD683FE8A10965538301343FA251C9AD61AAFAC7679F534A5831DE78",
+    "approved_scope": "C30R4 canonical checker/test exact2 Main takeover after repeated patch corruption",
+    "source": "CURRENT_THREAD_DIRECT_USER_INSTRUCTION",
+    "source_text": "Main takeover 승인",
+    "observed_before": "C30R4_MAIN_TAKEOVER_MUTATION"
+  }
+},
+{
+  "sequence": 1336,
+  "event_id": "evt_c30r4_canonical_1336_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "37A7253922F0C23668384C77C0A62F0A59BDA77C03FC29525ABA670BB7339CDD",
+  "details": {
+    "lease_id": "write-lease-c30r4-checker-20260922-002",
+    "reason": "THIRD_UNRELATED_LARGE_FILE_PATCH_CORRUPTION_MAIN_TAKEOVER",
+    "prior_lease_sha256": "36B77B49DF4E1C1890C6B5D17C0B5BA475BB039BF8F4AA0EDCC35D81C61CABDB"
+  }
+},
+{
+  "sequence": 1337,
+  "event_id": "evt_c30r4_canonical_1337_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "BA3999F4BF6BAB237306843183FBF3080314B874E3989A24AFB0CF380A54CD38",
+  "details": {
+    "lease_id": "worker-lease-c30r4-checker-20260922-002",
+    "reason": "THIRD_UNRELATED_LARGE_FILE_PATCH_CORRUPTION_MAIN_TAKEOVER",
+    "prior_lease_sha256": "0715B78D7C9D6421B2ADB71EA6E8BB79B56DDCBC543C9F603922C1E5A6666AD1"
+  }
+},
+{
+  "sequence": 1338,
+  "event_id": "evt_c30r4_canonical_1338_lease_takeover",
+  "event_type": "LEASE_TAKEOVER",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "43D4719C770002589867830B1793A6D6FEED2DBD9038768FA70AB6795434B485",
+  "details": {
+    "prior_lease_id": "worker-lease-c30r4-checker-20260922-002",
+    "new_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+    "takeover_reason": "THIRD_UNRELATED_LARGE_FILE_PATCH_CORRUPTION",
+    "human_override_approval_id": "HUMAN_OVERRIDE_TAKEOVER-C30R4-USER-20260922",
+    "takeover_packet_id": "TAKEOVER_PACKET_C30R4_20260922_001",
+    "failure_lineage": "C30R4_LARGE_FILE_PATCH_CORRUPTION",
+    "repeated_tool_corruption_count": 3,
+    "formal_product_failure_count": 0,
+    "recovery_base_blob": "98e218264bf54db04a1bd35a67273b713805a649",
+    "recovery_authority_blob": "a1cc61578fbda75ae4f063138daa3269bd052a8f",
+    "rollback_contract": {
+      "preserve_prefix_through_sequence": 1334,
+      "restore_paths_from_base": [
+        "docs/04_test_reports/C-30R4_DEVELOPER_TEST_REPORT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-event-contract.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c30-final-canonical-reconciliation.json",
+        "docs/test_reports/C-30R4_QUALITY_REVIEW.md",
+        "docs/test_reports/C-30R4_SPEC_REVIEW.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION_R2.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION_R2.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py"
+      ],
+      "remove_only_untracked_exact_paths": [
+        "docs/04_test_reports/C-30R4_DEVELOPER_TEST_REPORT.md",
+        "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c30-final-canonical-reconciliation.json",
+        "docs/test_reports/C-30R4_QUALITY_REVIEW.md",
+        "docs/test_reports/C-30R4_SPEC_REVIEW.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION_R2.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION.md",
+        "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION_R2.md"
+      ],
+      "never_reset_clean_or_touch_outside_exact16": true
+    }
+  }
+},
+{
+  "sequence": 1339,
+  "event_id": "evt_c30r4_canonical_1339_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "3571744CE2AF90A5B156D7ABC4E2D501120C581BCB8F35C2F7829360F3AB0213",
+  "details": {
+    "lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+    "fencing_token": "c30r4-main-execution-fence-epoch-3-ed3cae9",
+    "subject_ref": "C-30R4",
+    "expires_at": "2026-09-23T00:30:00+09:00",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "lease_epoch": 3
+  }
+},
+{
+  "sequence": 1340,
+  "event_id": "evt_c30r4_canonical_1340_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "8F31C3FD20FC14404F7073B8F328CE36229B278F80168C60018A2371F42305E6",
+  "details": {
+    "lease_id": "write-lease-c30r4-main-takeover-20260922-001",
+    "worker_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+    "fencing_token": "c30r4-main-write-fence-epoch-3-ed3cae9",
+    "subject_ref": "C-30R4",
+    "expires_at": "2026-09-23T00:30:00+09:00",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "write_epoch": 3
+  }
+},
+{
+  "sequence": 1341,
+  "event_id": "evt_c30r4_canonical_1341_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T20:30:00+09:00",
+  "previous_event_sha256": "2BC81358D8F4EAEDD3AA78A2C295ECC24ACE6838E0C91EF47BB21F889D017E1C",
+  "details": {
+    "result_status": "COMPLETED",
+    "package_status": "TEST_REVIEW",
+    "accepted": false,
+    "evidence": {
+      "path": "docs/04_test_reports/C-30R4_DEVELOPER_TEST_REPORT.md",
+      "sha256": "23C4F2016FE622D4B554B45A5D9A5481ECAE7729AD9B0ABB2731883A5816853B",
+      "actor_id": "main-agent-eoul-takeover",
+      "binding": {
+        "base_head": "ed3cae92597d681c76417e26576bed91a0525bad",
+        "checker_sha256": "1F265AA661D85E7651DB745B12F31F69050A960809319699ED71BF212BA1B300",
+        "event_sequence": 1340,
+        "execution_fencing_token": "c30r4-main-execution-fence-epoch-3-ed3cae9",
+        "tests_sha256": "8812AE5CF28BE0BE008FB02BFEF0C50B647FE32560FE5521AC1413C9FD074ADD",
+        "worker_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+        "write_fencing_token": "c30r4-main-write-fence-epoch-3-ed3cae9",
+        "write_lease_id": "write-lease-c30r4-main-takeover-20260922-001"
+      },
+      "commands": [
+        "uv run --offline --frozen python -m pytest tests/tooling/test_project_progress.py -p no:cacheprovider -k 'C30R4CheckerSourceTests or C30CanonicalReconciliationTests or C21ProviderWslVerifyScopeCorrectionTests or C21WslRollbackScopeCompatR1Tests or C21WslCleanupGuardSourceR1Tests or C21WslCleanupRuntimeResultTests or C21WslAcceptanceStrictSuccessorTests or C21WorkbenchUiReworkLocalStartTests or C21WorkbenchUiReworkLocalResultTests or C21WorkbenchUiHistoricalFixtureReconciliationTests or C21WorkbenchUiWslGitOnlyCandidateStartTests or C21WorkbenchUiWslGitOnlyCandidateBoundTests or C21WorkbenchUiWslRuntimeResultTests or C21A13HistoricalModuleIsolationTests or C21A13HistoricalModuleIsolationCasPublicationTests or C21WorkbenchUiWslAuthBrowserProbeTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR3ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR4ResultTests or C21WorkbenchUiWslImmutableRuntimeControlV2PublicationTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR5ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR6ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR7ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR8ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR9ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests or C21WorkbenchUiWslAuthBrowserRuntimeRetryR11ResultTests or C21FinalAcceptanceProjectionReconciliationTests or C21PostmergeDevelopmentAuthorityReconciliationTests' -q => 125 passed, 554 deselected in 177.89s",
+        "uv run --offline --frozen python -m pytest tests/tooling/test_project_progress.py -p no:cacheprovider -k 'ProjectProgressContractTests or C10FinalAcceptanceControlTests' -q => 199 passed, 480 deselected in 1338.11s",
+        "uv run --offline --frozen python -m pytest tests/tooling/test_project_progress.py -p no:cacheprovider -k 'C01MainlineAcceptanceTests or C01L3ReworkControlTests or C01L3FinalAcceptanceProjectionTests or C01PostmergeDevelopmentAuthorityReconciliationTests or C02StartProjectionTests or C02FinalAcceptanceProjectionTests or C02PostmergeDevelopmentAuthorityReconciliationTests or C03StartProjectionTests or C03ControlR2Tests or C03FinalAcceptanceProjectionTests or C04StartProjectionTests or C04FinalAcceptanceProjectionTests or C04DetachedSmokePortabilityReconciliationTests or C05StartProjectionTests or C05ScopeRevisionProjectionTests or C05FinalAcceptanceProjectionTests or C06StartProjectionTests or C06ScopeRevisionProjectionTests or C06FinalAcceptanceProjectionTests or C07StartProjectionTests or C07FinalAcceptanceProjectionTests or C08StartProjectionTests or C08FinalAcceptanceProjectionTests or C09StartProjectionTests or C09R3ControlTests or C09R4ControlTests or C09MainTakeoverControlTests or C09FinalAcceptanceControlTests or C10StartControlTests or C10ReworkStartControlTests or C10R2StartControlTests or C10Failure3ConflictHoldControlTests or C10MainTakeoverStartControlTests or C10PostcommitReconciliationControlTests or C11StartControlTests or C11FinalAcceptanceTests' -q => 159 passed, 520 deselected in 424.70s",
+        "PowerShell: $c30r4Shard4 = 'C12StartControlTests or C12ReworkLeaseControlTests or C12FinalAcceptanceTests or C13StartControlTests or C13FinalAcceptanceControlTests or C14StartControlTests or C14LeaseTimeCorrectionControlTests or C14FinalAcceptanceControlTests or C15StartControlTests or C15FinalAcceptanceDir2ControlTests or CGateDecisionControlTests or D01StartControlTests or D01FinalAcceptanceControlTests or D02StartControlTests or D02FinalAcceptanceControlTests or D03StartControlTests or D03FinalAcceptanceControlTests or D04StartControlTests or D04FinalAcceptanceControlTests or D05StartControlTests or D05ScopeRevisionControlTests or D05FinalAcceptanceControlTests or D06StartControlTests or D06FinalAcceptanceControlTests or D07StartControlTests or D07FinalAcceptanceControlTests or D08StartControlTests or D08FinalAcceptanceControlTests or D09StartControlTests or D09FinalAcceptanceControlTests or D10StartControlTests or D10FinalAcceptanceControlTests or DHookGateControlTests or D11StartControlTests or D11FinalAcceptanceControlTests or D12StartControlTests or D12LeaseTimeCorrectionControlTests or D12FinalAcceptanceControlTests or D13StartControlTests or D13FinalAcceptanceControlTests or DGateControlTests or DGateRegressionReconciliationControlTests or DGatePostcommitControlTests or E01StartControlTests or E01FinalAcceptanceControlTests or E02StartControlTests or E02FinalAcceptanceControlTests or E04StartControlTests or E03StartControlTests or E03R2CorrectiveControlTests or E03FinalAcceptanceControlTests or E04FinalAcceptanceControlTests or E05StartControlTests or E05FinalAcceptanceControlTests or E06StartControlTests or E06FinalAcceptanceControlTests or E07StartControlTests or E07LeaseTimeCorrectionControlTests or E07FinalAcceptanceControlTests or E08StartControlTests or E08FinalAcceptanceControlTests or E09StartControlTests or E09FinalAcceptanceControlTests or E10StartControlTests or E10FinalAcceptanceControlTests or E11StartControlTests'",
+        "uv run --offline --frozen python -m pytest tests/tooling/test_project_progress.py -p no:cacheprovider -k $c30r4Shard4 -q => 196 passed, 483 deselected in 327.66s",
+        "uv run --offline --frozen python -m pytest tests/tooling/test_project_progress.py -p no:cacheprovider -k 'c30 or C21ProviderWslVerifyScopeCorrectionTests or C21FinalAcceptanceProjectionReconciliationTests or C21PostmergeDevelopmentAuthorityReconciliationTests or C09MainTakeoverControlTests or C09FinalAcceptanceControlTests or C10PostcommitReconciliationControlTests' -q => 36 passed, 643 deselected in 127.16s",
+        "uv run --offline --frozen python -m pytest tests/tooling/test_project_progress.py -p no:cacheprovider -k 'C30CanonicalReconciliationTests' -q => 10 passed, 669 deselected in 78.24s",
+        "uv run --offline --frozen python -B -m py_compile scripts/check_project_progress.py tests/tooling/test_project_progress.py => exit 0",
+        "uv run --offline --frozen python -B scripts/check_project_progress.py . => PASS sequence=1340 reporting=AUTO_CONTINUE, exit 0",
+        "git diff --check: exit 0"
+      ],
+      "critical": 0,
+      "important": 0,
+      "minor": 0,
+      "package_id": "C-30R4",
+      "role": "developer",
+      "schema_version": "c30r4_completion_evidence/v1",
+      "verdict": "COMPLETED",
+      "verification": {
+        "c30_adversarial_passed": 10,
+        "compile_exit": 0,
+        "diff_check_exit": 0,
+        "focused_deselected": 643,
+        "focused_passed": 36,
+        "fresh_tooling_passed": 679,
+        "fresh_tooling_shards": [
+          125,
+          199,
+          159,
+          196
+        ],
+        "live_checker_exit": 0,
+        "live_checker_sequence": 1340
+      }
+    }
+  }
+},
+{
+  "sequence": 1342,
+  "event_id": "evt_c30r4_canonical_1342_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "78476451A9D6BD41C76E6EABDD9BF67D5CCEAEF3E16081CD06C51A911E164510",
+  "details": {
+    "verdict": "ACCEPT",
+    "criteria": "C30R4_CANONICAL_GATE",
+    "evidence_ref": "docs/test_reports/C-30R4_SPEC_REVIEW.md",
+    "quality": {
+      "path": "docs/test_reports/C-30R4_QUALITY_REVIEW.md",
+      "sha256": "37FBE09F50DCD43031CD95A1252D3585E59D4E92950A7C6AA5C75D8B17B4DDBD",
+      "actor_id": "c30_quality_review",
+      "binding": {
+        "base_head": "ed3cae92597d681c76417e26576bed91a0525bad",
+        "checker_sha256": "1F265AA661D85E7651DB745B12F31F69050A960809319699ED71BF212BA1B300",
+        "event_sequence": 1340,
+        "execution_fencing_token": "c30r4-main-execution-fence-epoch-3-ed3cae9",
+        "tests_sha256": "8812AE5CF28BE0BE008FB02BFEF0C50B647FE32560FE5521AC1413C9FD074ADD",
+        "worker_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+        "write_fencing_token": "c30r4-main-write-fence-epoch-3-ed3cae9",
+        "write_lease_id": "write-lease-c30r4-main-takeover-20260922-001"
+      },
+      "commands": [
+        ".\\.venv\\Scripts\\python.exe -B -m pytest -p no:cacheprovider --collect-only -q tests/tooling/test_project_progress.py => 679 tests collected, exit 0",
+        ".\\.venv\\Scripts\\python.exe -B -m pytest -p no:cacheprovider -q tests/tooling/test_project_progress.py::C30CanonicalReconciliationTests::test_git_escape_staging_and_foreign_head_fail_closed => 1 passed in 0.11s, exit 0",
+        ".\\.venv\\Scripts\\python.exe -B scripts/check_project_progress.py . => PASS sequence=1340 reporting=AUTO_CONTINUE, exit 0",
+        "git diff --check => exit 0",
+        "PowerShell: git -c core.excludesFile= status --porcelain=v1 --untracked-files=all; compare paths with manifest.exact_allowed_paths => actual 16, expected 16, equal true",
+        "PowerShell: Get-FileHash -Algorithm SHA256 for every manifest.raw_checksums path and detached progress/HANDOFF digest target => raw mismatch 0, digest bytes/SHA256 match",
+        "PowerShell: apply the four recorded -k selectors to the 679 collected node IDs => 125/199/159/196, union 679, overlap 0, missing 0",
+        "PowerShell: Test-Path -LiteralPath .pytest_cache; Test-Path -LiteralPath .tmp_subagent_review => False; False before and after review"
+      ],
+      "critical": 0,
+      "important": 0,
+      "minor": 0,
+      "package_id": "C-30R4",
+      "role": "quality",
+      "schema_version": "c30r4_completion_evidence/v1",
+      "verdict": "ACCEPT",
+      "verification": {
+        "c30_adversarial_passed": 10,
+        "compile_exit": 0,
+        "diff_check_exit": 0,
+        "focused_deselected": 643,
+        "focused_passed": 36,
+        "fresh_tooling_passed": 679,
+        "fresh_tooling_shards": [
+          125,
+          199,
+          159,
+          196
+        ],
+        "live_checker_exit": 0,
+        "live_checker_sequence": 1340
+      }
+    },
+    "spec": {
+      "path": "docs/test_reports/C-30R4_SPEC_REVIEW.md",
+      "sha256": "D38C2413FF2F63BD5626C48726EB1A079E6035F2B87299BECDDC050BB3CE4091",
+      "actor_id": "c30_spec_review",
+      "binding": {
+        "base_head": "ed3cae92597d681c76417e26576bed91a0525bad",
+        "checker_sha256": "1F265AA661D85E7651DB745B12F31F69050A960809319699ED71BF212BA1B300",
+        "event_sequence": 1340,
+        "execution_fencing_token": "c30r4-main-execution-fence-epoch-3-ed3cae9",
+        "tests_sha256": "8812AE5CF28BE0BE008FB02BFEF0C50B647FE32560FE5521AC1413C9FD074ADD",
+        "worker_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+        "write_fencing_token": "c30r4-main-write-fence-epoch-3-ed3cae9",
+        "write_lease_id": "write-lease-c30r4-main-takeover-20260922-001"
+      },
+      "commands": [
+        "git status --short --branch => exact16 dirty/untracked scope observed; no staged paths",
+        "Get-FileHash -Algorithm SHA256 scripts/check_project_progress.py,tests/tooling/test_project_progress.py,docs/04_test_reports/C-30R4_DEVELOPER_TEST_REPORT.md => checker 1F265AA6..., tests 8812AE5C..., Developer report 23C4F201...",
+        "git diff --check => exit 0",
+        "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m py_compile scripts/check_project_progress.py tests/tooling/test_project_progress.py => exit 0",
+        "C:\\Users\\cyhuh\\anaconda3\\python.exe -B scripts/check_project_progress.py => PASS sequence=1340 reporting=AUTO_CONTINUE, exit 0",
+        "PowerShell manifest raw_checksums SHA-256 comparison => 15/15 matched; exact_allowed_paths=16; event/progress sequence=1340"
+      ],
+      "critical": 0,
+      "important": 0,
+      "minor": 0,
+      "package_id": "C-30R4",
+      "role": "spec",
+      "schema_version": "c30r4_completion_evidence/v1",
+      "verdict": "ACCEPT",
+      "verification": {
+        "c30_adversarial_passed": 10,
+        "compile_exit": 0,
+        "diff_check_exit": 0,
+        "focused_deselected": 643,
+        "focused_passed": 36,
+        "fresh_tooling_passed": 679,
+        "fresh_tooling_shards": [
+          125,
+          199,
+          159,
+          196
+        ],
+        "live_checker_exit": 0,
+        "live_checker_sequence": 1340
+      }
+    },
+    "developer_transcript_is_independent_evidence": false
+  }
+},
+{
+  "sequence": 1343,
+  "event_id": "evt_c30r4_canonical_1343_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "FA59036EC0256FB2B1692AEE8AC8A3EBDCBB2A5D03AC51DD24D744018504A7AB",
+  "details": {
+    "lease_id": "write-lease-c30r4-main-takeover-20260922-001",
+    "reason": "C30R4_INDEPENDENT_ACCEPTANCE",
+    "prior_lease_sha256": "92107B5FF14BB5071ABF7BF02F3FDACAD6FDD9FFBB8325C7B27DF6D4C0FB7B81"
+  }
+},
+{
+  "sequence": 1344,
+  "event_id": "evt_c30r4_canonical_1344_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "06FD2791B831BBA1717CCB4B55384A7A0B0DEC443A5E4336DB917D5F73E45E47",
+  "details": {
+    "lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+    "reason": "C30R4_INDEPENDENT_ACCEPTANCE",
+    "prior_lease_sha256": "62F9273D5E22C39423A61F4372AA1D34D32DD6B2BB21FD341FD2BAB76CB9817D"
+  }
+},
+{
+  "sequence": 1345,
+  "event_id": "evt_c30r4_canonical_1345_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R4",
+  "run_id": null,
+  "step_id": "CANONICAL_RECONCILIATION",
+  "subject_ref": "C-30R4",
+  "occurred_at": "2026-09-22T19:25:00+09:00",
+  "previous_event_sha256": "82CCD7A979246C3DE98F1F4377121CE233CEDC2E5B49A41E6A2AD136599D464D",
+  "details": {
+    "decision": "ACCEPTED",
+    "test_report_ref": "docs/04_test_reports/C-30R4_DEVELOPER_TEST_REPORT.md",
+    "test_report_sha256": "23C4F2016FE622D4B554B45A5D9A5481ECAE7729AD9B0ABB2731883A5816853B",
+    "manifest_ref": "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json",
+    "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+    "next_work_package": "C-30",
+    "c30_overall_status": "PENDING_FINAL_GATE",
+    "overall_c30_accepted": false
+  }
+}
   ],
-  "last_event_id": "evt_c30r4_checker_repair_leases_issued"
+  "last_event_id": "evt_c30r4_canonical_1345_main_package_accepted"
 }

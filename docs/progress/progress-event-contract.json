@@ -46,51 +46,1500 @@
     "REPOSITORY_RECONCILED",
     "DEPLOYMENT_STARTED",
     "DEPLOYMENT_COMPLETED",
-    "MONITORING_BOUNDARY_RECORDED"
+    "MONITORING_BOUNDARY_RECORDED",
+    "WORK_INSTRUCTION_REVISED",
+    "HUMAN_OVERRIDE_TAKEOVER_RECORDED"
   ],
   "payload_contracts": {
-    "MIGRATED_LEGACY_SNAPSHOT": {"required_details": ["completed_packages"], "effect": "initialize_projection"},
-    "PACKAGE_STARTED": {"required_details": ["work_instruction_id", "package_status"], "effect": "package_status_active"},
-    "PACKAGE_COMPLETED": {"required_details": ["result_status", "package_status", "accepted"], "effect": "package_result_recorded"},
-    "INDEPENDENT_TEST_JUDGMENT_RECORDED": {"required_details": ["verdict", "criteria", "evidence_ref", "quality"], "effect": "independent_test_judgment_recorded"},
-    "MAIN_PACKAGE_ACCEPTED": {"required_details": ["decision", "test_report_ref", "test_report_sha256", "manifest_ref", "manifest_sha256", "next_work_package"], "effect": "package_accepted_and_next_ready"},
-    "MAIN_GATE_ACCEPTED": {"required_details": ["verdict_source", "verdict_sha256", "verdict", "spec", "quality", "exact44_slots", "defined", "direct", "deferred", "undefined", "deferred_ids", "undefined_ids", "valid_failure_count", "historical_failure_count", "b01_b12_status", "next_work_package", "next_package_status", "condition", "does_not_unblock", "actual_api_status", "actual_database_status", "actual_ui_status", "actual_browser_status", "actual_wsl_status", "actual_provider_status", "actual_deployment_status", "public_exposure", "c01_started"], "effect": "phase_gate_accepted_and_next_ready"},
-    "PACKAGE_FAILED": {"required_details": ["result_status", "failure_report_ref"], "effect": "package_rework_or_takeover"},
-    "PACKAGE_INTERRUPTED": {"required_details": ["reason", "checkpoint_ref"], "effect": "package_interrupted"},
-    "PACKAGE_WAITING_APPROVAL": {"required_details": ["approval_ref", "change_classification"], "effect": "package_waiting_approval"},
-    "PACKAGE_RESUMED": {"required_details": ["resume_event_ref"], "effect": "package_active"},
-    "HANDOFF_RECORDED": {"required_details": ["handoff_ref", "handoff_sha256"], "effect": "handoff_projection_updated"},
-    "FAILURE_REPORT_ACCEPTED": {"required_details": ["entry_id", "evidence_ref", "valid_failure_count"], "effect": "failure_projection_incremented"},
-    "FAILURE_REPORT_REJECTED": {"required_details": ["entry_id", "reason"], "effect": "failure_projection_unchanged"},
-    "WORKER_LEASE_ISSUED": {"required_details": ["lease_id", "fencing_token", "subject_ref"], "effect": "worker_lease_active"},
-    "WORKER_LEASE_REVOKED": {"required_details": ["lease_id", "reason"], "effect": "worker_lease_null"},
-    "WRITE_LEASE_ISSUED": {"required_details": ["lease_id", "fencing_token", "path_scope"], "effect": "write_lease_active"},
-    "WRITE_LEASE_REVOKED": {"required_details": ["lease_id", "reason"], "effect": "write_lease_null"},
-    "FENCING_TOKEN_EXPIRED": {"required_details": ["lease_id", "fencing_token"], "effect": "token_rejected"},
-    "LEASE_TAKEOVER": {"required_details": ["prior_lease_id", "new_lease_id", "takeover_reason"], "effect": "lease_owner_changed"},
-    "PHASE_GATE_DECIDED": {"required_details": ["gate", "verdict", "evidence_ref"], "effect": "phase_gate_projection_updated"},
-    "DIR_REACHED": {"required_details": ["checkpoint", "subject_hash", "canonical_trigger"], "effect": "dir_hold"},
-    "DIR_REPORTED": {"required_details": ["checkpoint", "subject_hash", "report_ref"], "effect": "dir_waiting_owner_direction"},
-    "DIR_OWNER_DIRECTION_RECORDED": {"required_details": ["checkpoint", "subject_hash", "direction"], "effect": "dir_clearance_eligible"},
-    "DIRX_TRIGGERED": {"required_details": ["verification_id", "target_hash", "severity"], "effect": "dir_x_hold"},
-    "DIR_DECISION_REQUESTED": {"required_details": ["decision_request_ref", "reason"], "effect": "dir_decision_pending"},
-    "BUDGET_RESERVED": {"required_details": ["reservation_id", "amount", "unit"], "effect": "budget_reserved"},
-    "BUDGET_CONSUMED": {"required_details": ["reservation_id", "amount", "unit"], "effect": "budget_consumed"},
-    "BUDGET_RECONCILED": {"required_details": ["reservation_id", "final_amount", "unit"], "effect": "budget_reconciled"},
-    "PRODUCT_VALIDATION_RECORDED": {"required_details": ["validation_ref", "result", "evidence_ref"], "effect": "product_validation_projection_updated"},
-    "DEFECT_RECORDED": {"required_details": ["defect_ref", "severity", "blocking"], "effect": "defect_projection_updated"},
-    "RELEASE_DECISION_RECORDED": {"required_details": ["release_decision_ref", "decision", "human_actor"], "effect": "release_projection_updated"},
-    "APPLY_APPROVAL_RECORDED": {"required_details": ["approval_ref", "target_hash", "human_actor"], "effect": "apply_approval_bound"},
-    "DEPLOY_APPROVAL_RECORDED": {"required_details": ["approval_ref", "target_hash", "human_actor"], "effect": "deploy_approval_bound"},
-    "EVIDENCE_MANIFEST_CREATED": {"required_details": ["manifest_ref", "manifest_sha256", "target_hash"], "effect": "latest_evidence_manifest_updated"},
-    "EVIDENCE_MANIFEST_INVALIDATED": {"required_details": ["manifest_ref", "reason"], "effect": "evidence_invalidated"},
-    "RELEASE_MANIFEST_CREATED": {"required_details": ["manifest_ref", "manifest_sha256", "target_hash"], "effect": "release_manifest_updated"},
-    "RELEASE_MANIFEST_INVALIDATED": {"required_details": ["manifest_ref", "reason"], "effect": "release_manifest_invalidated"},
-    "GIT_COMMIT": {"required_details": ["branch", "commit", "evidence_ref"], "effect": "repository_local_head_updated"},
-    "GIT_PUSH": {"required_details": ["remote", "branch", "local_commit", "remote_commit", "evidence_ref"], "effect": "repository_remote_head_updated"},
-    "REPOSITORY_RECONCILED": {"required_details": ["branch", "local_head", "remote_head", "upstream", "observed_at", "reason"], "effect": "repository_projection_reconciled_without_retroactive_push_claim"},
-    "DEPLOYMENT_STARTED": {"required_details": ["environment", "release_manifest_ref", "commit"], "effect": "deployment_active"},
-    "DEPLOYMENT_COMPLETED": {"required_details": ["environment", "release_manifest_ref", "commit", "evidence_ref"], "effect": "deployment_complete"},
-    "MONITORING_BOUNDARY_RECORDED": {"required_details": ["environment", "window", "evidence_ref"], "effect": "monitoring_boundary_complete"}
+    "MIGRATED_LEGACY_SNAPSHOT": {
+      "required_details": [
+        "completed_packages"
+      ],
+      "effect": "initialize_projection"
+    },
+    "PACKAGE_STARTED": {
+      "required_details": [
+        "work_instruction_id",
+        "package_status"
+      ],
+      "effect": "package_status_active"
+    },
+    "PACKAGE_COMPLETED": {
+      "required_details": [
+        "result_status",
+        "package_status",
+        "accepted"
+      ],
+      "effect": "package_result_recorded"
+    },
+    "INDEPENDENT_TEST_JUDGMENT_RECORDED": {
+      "required_details": [
+        "verdict",
+        "criteria",
+        "evidence_ref",
+        "quality"
+      ],
+      "effect": "independent_test_judgment_recorded"
+    },
+    "MAIN_PACKAGE_ACCEPTED": {
+      "required_details": [
+        "decision",
+        "test_report_ref",
+        "test_report_sha256",
+        "manifest_ref",
+        "manifest_sha256",
+        "next_work_package"
+      ],
+      "effect": "package_accepted_and_next_ready"
+    },
+    "MAIN_GATE_ACCEPTED": {
+      "required_details": [
+        "verdict_source",
+        "verdict_sha256",
+        "verdict",
+        "spec",
+        "quality",
+        "exact44_slots",
+        "defined",
+        "direct",
+        "deferred",
+        "undefined",
+        "deferred_ids",
+        "undefined_ids",
+        "valid_failure_count",
+        "historical_failure_count",
+        "b01_b12_status",
+        "next_work_package",
+        "next_package_status",
+        "condition",
+        "does_not_unblock",
+        "actual_api_status",
+        "actual_database_status",
+        "actual_ui_status",
+        "actual_browser_status",
+        "actual_wsl_status",
+        "actual_provider_status",
+        "actual_deployment_status",
+        "public_exposure",
+        "c01_started"
+      ],
+      "effect": "phase_gate_accepted_and_next_ready"
+    },
+    "PACKAGE_FAILED": {
+      "required_details": [
+        "result_status",
+        "failure_report_ref"
+      ],
+      "effect": "package_rework_or_takeover"
+    },
+    "PACKAGE_INTERRUPTED": {
+      "required_details": [
+        "reason",
+        "checkpoint_ref"
+      ],
+      "effect": "package_interrupted"
+    },
+    "PACKAGE_WAITING_APPROVAL": {
+      "required_details": [
+        "approval_ref",
+        "change_classification"
+      ],
+      "effect": "package_waiting_approval"
+    },
+    "PACKAGE_RESUMED": {
+      "required_details": [
+        "resume_event_ref"
+      ],
+      "effect": "package_active"
+    },
+    "HANDOFF_RECORDED": {
+      "required_details": [
+        "handoff_ref",
+        "handoff_sha256"
+      ],
+      "effect": "handoff_projection_updated"
+    },
+    "FAILURE_REPORT_ACCEPTED": {
+      "required_details": [
+        "entry_id",
+        "evidence_ref",
+        "valid_failure_count"
+      ],
+      "effect": "failure_projection_incremented"
+    },
+    "FAILURE_REPORT_REJECTED": {
+      "required_details": [
+        "entry_id",
+        "reason"
+      ],
+      "effect": "failure_projection_unchanged"
+    },
+    "WORKER_LEASE_ISSUED": {
+      "required_details": [
+        "lease_id",
+        "fencing_token",
+        "subject_ref"
+      ],
+      "effect": "worker_lease_active"
+    },
+    "WORKER_LEASE_REVOKED": {
+      "required_details": [
+        "lease_id",
+        "reason"
+      ],
+      "effect": "worker_lease_null"
+    },
+    "WRITE_LEASE_ISSUED": {
+      "required_details": [
+        "lease_id",
+        "fencing_token",
+        "path_scope"
+      ],
+      "effect": "write_lease_active"
+    },
+    "WRITE_LEASE_REVOKED": {
+      "required_details": [
+        "lease_id",
+        "reason"
+      ],
+      "effect": "write_lease_null"
+    },
+    "FENCING_TOKEN_EXPIRED": {
+      "required_details": [
+        "lease_id",
+        "fencing_token"
+      ],
+      "effect": "token_rejected"
+    },
+    "LEASE_TAKEOVER": {
+      "required_details": [
+        "prior_lease_id",
+        "new_lease_id",
+        "takeover_reason"
+      ],
+      "effect": "lease_owner_changed"
+    },
+    "PHASE_GATE_DECIDED": {
+      "required_details": [
+        "gate",
+        "verdict",
+        "evidence_ref"
+      ],
+      "effect": "phase_gate_projection_updated"
+    },
+    "DIR_REACHED": {
+      "required_details": [
+        "checkpoint",
+        "subject_hash",
+        "canonical_trigger"
+      ],
+      "effect": "dir_hold"
+    },
+    "DIR_REPORTED": {
+      "required_details": [
+        "checkpoint",
+        "subject_hash",
+        "report_ref"
+      ],
+      "effect": "dir_waiting_owner_direction"
+    },
+    "DIR_OWNER_DIRECTION_RECORDED": {
+      "required_details": [
+        "checkpoint",
+        "subject_hash",
+        "direction"
+      ],
+      "effect": "dir_clearance_eligible"
+    },
+    "DIRX_TRIGGERED": {
+      "required_details": [
+        "verification_id",
+        "target_hash",
+        "severity"
+      ],
+      "effect": "dir_x_hold"
+    },
+    "DIR_DECISION_REQUESTED": {
+      "required_details": [
+        "decision_request_ref",
+        "reason"
+      ],
+      "effect": "dir_decision_pending"
+    },
+    "BUDGET_RESERVED": {
+      "required_details": [
+        "reservation_id",
+        "amount",
+        "unit"
+      ],
+      "effect": "budget_reserved"
+    },
+    "BUDGET_CONSUMED": {
+      "required_details": [
+        "reservation_id",
+        "amount",
+        "unit"
+      ],
+      "effect": "budget_consumed"
+    },
+    "BUDGET_RECONCILED": {
+      "required_details": [
+        "reservation_id",
+        "final_amount",
+        "unit"
+      ],
+      "effect": "budget_reconciled"
+    },
+    "PRODUCT_VALIDATION_RECORDED": {
+      "required_details": [
+        "validation_ref",
+        "result",
+        "evidence_ref"
+      ],
+      "effect": "product_validation_projection_updated"
+    },
+    "DEFECT_RECORDED": {
+      "required_details": [
+        "defect_ref",
+        "severity",
+        "blocking"
+      ],
+      "effect": "defect_projection_updated"
+    },
+    "RELEASE_DECISION_RECORDED": {
+      "required_details": [
+        "release_decision_ref",
+        "decision",
+        "human_actor"
+      ],
+      "effect": "release_projection_updated"
+    },
+    "APPLY_APPROVAL_RECORDED": {
+      "required_details": [
+        "approval_ref",
+        "target_hash",
+        "human_actor"
+      ],
+      "effect": "apply_approval_bound"
+    },
+    "DEPLOY_APPROVAL_RECORDED": {
+      "required_details": [
+        "approval_ref",
+        "target_hash",
+        "human_actor"
+      ],
+      "effect": "deploy_approval_bound"
+    },
+    "EVIDENCE_MANIFEST_CREATED": {
+      "required_details": [
+        "manifest_ref",
+        "manifest_sha256",
+        "target_hash"
+      ],
+      "effect": "latest_evidence_manifest_updated"
+    },
+    "EVIDENCE_MANIFEST_INVALIDATED": {
+      "required_details": [
+        "manifest_ref",
+        "reason"
+      ],
+      "effect": "evidence_invalidated"
+    },
+    "RELEASE_MANIFEST_CREATED": {
+      "required_details": [
+        "manifest_ref",
+        "manifest_sha256",
+        "target_hash"
+      ],
+      "effect": "release_manifest_updated"
+    },
+    "RELEASE_MANIFEST_INVALIDATED": {
+      "required_details": [
+        "manifest_ref",
+        "reason"
+      ],
+      "effect": "release_manifest_invalidated"
+    },
+    "GIT_COMMIT": {
+      "required_details": [
+        "branch",
+        "commit",
+        "evidence_ref"
+      ],
+      "effect": "repository_local_head_updated"
+    },
+    "GIT_PUSH": {
+      "required_details": [
+        "remote",
+        "branch",
+        "local_commit",
+        "remote_commit",
+        "evidence_ref"
+      ],
+      "effect": "repository_remote_head_updated"
+    },
+    "REPOSITORY_RECONCILED": {
+      "required_details": [
+        "branch",
+        "local_head",
+        "remote_head",
+        "upstream",
+        "observed_at",
+        "reason"
+      ],
+      "effect": "repository_projection_reconciled_without_retroactive_push_claim"
+    },
+    "DEPLOYMENT_STARTED": {
+      "required_details": [
+        "environment",
+        "release_manifest_ref",
+        "commit"
+      ],
+      "effect": "deployment_active"
+    },
+    "DEPLOYMENT_COMPLETED": {
+      "required_details": [
+        "environment",
+        "release_manifest_ref",
+        "commit",
+        "evidence_ref"
+      ],
+      "effect": "deployment_complete"
+    },
+    "MONITORING_BOUNDARY_RECORDED": {
+      "required_details": [
+        "environment",
+        "window",
+        "evidence_ref"
+      ],
+      "effect": "monitoring_boundary_complete"
+    },
+    "WORK_INSTRUCTION_REVISED": {
+      "required_details": [
+        "parent_work_instruction",
+        "derived_work_instruction",
+        "classification",
+        "semantic_diff",
+        "scope_expansion"
+      ],
+      "effect": "nonsemantic_work_instruction_revision_recorded"
+    },
+    "HUMAN_OVERRIDE_TAKEOVER_RECORDED": {
+      "required_details": [
+        "approval_id",
+        "approved_by",
+        "approval_text_sha256",
+        "approved_scope",
+        "source"
+      ],
+      "effect": "human_override_takeover_authorized"
+    }
+  },
+  "historical_event_profiles": {
+    "C30_SEQ1218_1325": {
+      "source_commit": "ed3cae92597d681c76417e26576bed91a0525bad",
+      "first_sequence": 1218,
+      "last_sequence": 1325,
+      "raw_prefix_bytes": 3985246,
+      "raw_prefix_sha256": "09A6B52717CEF4E4E49B2AA1830B670226FEB272237668CC3EC39E2D07219431",
+      "event_array_sha256": "00F988CE7B5ACFA45FAAD68B41F50668A3B81618CF94F9A626F205CE52147F08",
+      "events": [
+        {
+          "sequence": 1218,
+          "event_id": "evt_c24_independent_test_judgment",
+          "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-24/FINAL_ACCEPTANCE",
+          "details_sha256": "5DA55E9FCF4844544B72AC26FD3CBBBA36ADF2C5CD5E14E81926E884F932F55B",
+          "event_sha256": "B6014ACCD3F16591FE108959DDF02D71EABF1916653F0338BB5807703C5FA7FB"
+        },
+        {
+          "sequence": 1219,
+          "event_id": "evt_c24_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-24/FINAL_ACCEPTANCE",
+          "details_sha256": "81B3EE1B7F074FF93DB892FDAD066623F7EF6D5323F0C48096BDDAA00BAC8915",
+          "event_sha256": "838FF8E65B1BC225515D880232612DB1C4EA6DFF0BAB7F6D8FD735D24C77E0D6"
+        },
+        {
+          "sequence": 1220,
+          "event_id": "evt_c24_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-24/FINAL_ACCEPTANCE",
+          "details_sha256": "67049BCF8EEC75082C228A091C0BDA51FD6564A1CE6F2F8A7396EA4B32447318",
+          "event_sha256": "0F995502CE308EB3D54762E7689F83AEB24E5A24442BDA65DA417CFB9AC6E36D"
+        },
+        {
+          "sequence": 1221,
+          "event_id": "evt_c24_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-24/FINAL_ACCEPTANCE",
+          "details_sha256": "C90BF3E349F6110CC53E36F2A5EB6C98982EAF5A310E2EE7DB8F618A384D3CD7",
+          "event_sha256": "CCF89A96B12D708E0A52E7E667160173D37EE9A0BB78E3282DD2B680491BA3AF"
+        },
+        {
+          "sequence": 1222,
+          "event_id": "evt_c25_work_instruction_issued",
+          "event_type": "WORK_INSTRUCTION_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25/START",
+          "details_sha256": "6194FBF58D56C0814D84F4E841B99CF2A7F0B2A03CF83F040E4412C7EF4E4AD8",
+          "event_sha256": "F980AC1A126BF49A3FE963CF9F84DA1A89EA7FE907CED62027CEB414CB84BB06"
+        },
+        {
+          "sequence": 1223,
+          "event_id": "evt_c25_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25/START",
+          "details_sha256": "0FDE9C76DFD219CA9AE31D40686AE9C6ABA17E2480EC2F7F406DD4526B99E64F",
+          "event_sha256": "19D9D153AC4213D3B9144CEC87A7C65FA2AC333A7115EF9120EEF83E10900755"
+        },
+        {
+          "sequence": 1224,
+          "event_id": "evt_c25_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25/START",
+          "details_sha256": "C4212EF8714CA8240B8F6D6D5D22DC5EE9504057270DCF9BBD40487855FAD4FD",
+          "event_sha256": "D44B1A9D388AE7DB95BCAABBA53C88B5456128F0AAB860835E6DF1A72FEAAB99"
+        },
+        {
+          "sequence": 1225,
+          "event_id": "evt_c25_worker_lease_reissued_epoch2",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25/START",
+          "details_sha256": "7DB505A30712EB7D42CBEB1B385EC09AC7A208293FB4C594210E25AE3CD902CF",
+          "event_sha256": "52AD1AFB3764DFE2CC75EEFB34A1BE53ED50BEA15A1687DEE9FF5453F62FD0D6"
+        },
+        {
+          "sequence": 1226,
+          "event_id": "evt_c25_write_lease_reissued_epoch2",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25/START",
+          "details_sha256": "7054A3B86DA8348BAE2957FC00113CD57622111EA629EBE408B61FD127157358",
+          "event_sha256": "8609BA2A0A7D403500CB85C219EF9BAAECD91EC6D475B330492B27B92C3F3B6E"
+        },
+        {
+          "sequence": 1227,
+          "event_id": "evt_c25_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-25",
+          "details_sha256": "5FFCF79B9A973DD975DA7E8F7DA26488E64B88EA257983298C2D1991A124FD92",
+          "event_sha256": "E26AA85ADE9C1329B604BEE95AE305D3F70B268EF6EF9299684B5E7669BD5CBF"
+        },
+        {
+          "sequence": 1228,
+          "event_id": "evt_c25_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25",
+          "details_sha256": "30D4EC617313958A244B8F2D4F2C6EBD557F01EC3924B19059748448375703DD",
+          "event_sha256": "1EDD62683BE3F3F1F0DD221FCE3C0BBCE4023A75D13F7DB3C461BCA89EE1305B"
+        },
+        {
+          "sequence": 1229,
+          "event_id": "evt_c25_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25",
+          "details_sha256": "B0A9A180B0A3B756C938131CE8E394D615DF400EABF9F6CDEBFDCBE41F07FDCB",
+          "event_sha256": "E390642FC7636C5FF31377CF85F6AEC2D644F2C9D97546E03BB6BC51E194D818"
+        },
+        {
+          "sequence": 1230,
+          "event_id": "evt_c25_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-25",
+          "details_sha256": "012429960186385B8BA40911E7E0CD8D4B10CD2E4ED4A92092D0B49E3FA69575",
+          "event_sha256": "1BDD7022CDA45888F98F72919966645B6268404F1BD51DD49ADA8378F3AA54C5"
+        },
+        {
+          "sequence": 1231,
+          "event_id": "evt_c26_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-26/START",
+          "details_sha256": "48ED2DA61203D1E7BC6118A5047FAEE28EAB70282D1114F19A96445909F0A6E9",
+          "event_sha256": "20FD67D168920E81B96EB44CDBF4B9808FCD9BC9A511EEE9B00D20F474D5B3CF"
+        },
+        {
+          "sequence": 1232,
+          "event_id": "evt_c26_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-26/START",
+          "details_sha256": "D7791D334DE0EDA5AD8BE58DB372665FB6582B143220BDB20D318EFC884292B0",
+          "event_sha256": "74397AB942EA340BDE9BDDFC16B3410A6EA11263E66F9A419BC26430AA6F141B"
+        },
+        {
+          "sequence": 1233,
+          "event_id": "evt_c26_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-26",
+          "details_sha256": "F4A344EA0906187C6D9F719727674EBC29AEC193EAB52672BC7A347E5AEC362A",
+          "event_sha256": "F56DA978992B6C1AAE133828184262A278F50F023163E28125EE4CC726EE68BD"
+        },
+        {
+          "sequence": 1234,
+          "event_id": "evt_c26_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-26",
+          "details_sha256": "A37B579A0BFEA070564110FA5A2513F316BB59815B4492FD745B35B29E999570",
+          "event_sha256": "ADD485EF50CCA5CA8D79582524FEB3C34B5F2F22092482354CFCD613D7151FD2"
+        },
+        {
+          "sequence": 1235,
+          "event_id": "evt_c26_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-26",
+          "details_sha256": "B466DDCDAE7F0894BA3F327FAC49EACCDB273FD8C2A1BBB118DF607173794F0B",
+          "event_sha256": "FA30E1D74CF861025BE7D8B16E35406E56C5EE94B45EF451A9FFC305CD710EDD"
+        },
+        {
+          "sequence": 1236,
+          "event_id": "evt_c26_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-26",
+          "details_sha256": "7E437BDDB3867B4F73CDEA74CC11278113E394C87853AC2D27DDC3D374CE33CA",
+          "event_sha256": "C32E837D177A0809B0E01AF9056FA2A72F77161F548284F429AC29475D7607EA"
+        },
+        {
+          "sequence": 1237,
+          "event_id": "evt_c26_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-26",
+          "details_sha256": "584617F0676BA8923ECB54F60904575CD80B5BBB14D14CDFB22E84B69D579A0C",
+          "event_sha256": "64B865CEAFACB0D432FC3D10C90790EAF20055F13C1F6A1F7B4EB97296E103FC"
+        },
+        {
+          "sequence": 1238,
+          "event_id": "evt_c27_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-27/START",
+          "details_sha256": "1CBD0D8F7D41239F12810709E8C45383DDBBF2F2EDE531D72A8DB8DCDCEEA199",
+          "event_sha256": "8A0A40A47F2ABDD9CFBA6DC5FA44E4F05AF22CFD6737C41986E6E14DF9926C94"
+        },
+        {
+          "sequence": 1239,
+          "event_id": "evt_c27_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-27/START",
+          "details_sha256": "D4155896EFD5CB150C02580184E1FA40830881D459215727F2F9A1CF77498145",
+          "event_sha256": "E678B722A365E89BCECB26FCF76B33C73CBDB07E3C05CD9071F1683C7407245D"
+        },
+        {
+          "sequence": 1240,
+          "event_id": "evt_c27_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-27",
+          "details_sha256": "E148F1BA0CC005C0F2C9697D3C8B3C9A866926887FC6BF892F46F743D580042C",
+          "event_sha256": "6C8158158CFEE832AF6391F070B7C4A229F1E2BE367B2CAFE74F9DD857CDC346"
+        },
+        {
+          "sequence": 1241,
+          "event_id": "evt_c27_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-27",
+          "details_sha256": "275F8302D1E67A8ADEC27BCF50B0E9305179337D58BAD7AD2BFFB471A06E2324",
+          "event_sha256": "5F94D4D74DAEDD988258F515783081D88F3447B71E9A9D3BE3BBAFC8374717EC"
+        },
+        {
+          "sequence": 1242,
+          "event_id": "evt_c27_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-27",
+          "details_sha256": "A95CAA3B7F0D8A13C3585DA107E0A9FAB0D3F6DE24DE4BAD4FAD94550B5A574B",
+          "event_sha256": "D0D8A7490A25B9D2F69649EFDA96296A551D04A0B3F91010BC0B9100E5AF9827"
+        },
+        {
+          "sequence": 1243,
+          "event_id": "evt_c27_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-27",
+          "details_sha256": "9789B67CA9A233BC702293A6B628ABBFFD0DD56DD49292391D7D4EC231674356",
+          "event_sha256": "68246461DAEA0CA57E7B9C3B1F03EB3F057700D8BDE1F8F63BEFFF2F67CC66E5"
+        },
+        {
+          "sequence": 1244,
+          "event_id": "evt_c27_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-27",
+          "details_sha256": "552B212DF9F7E365743F94AB0232A1A0ED3F0C9E7AB232C80CF368806C7D7FCC",
+          "event_sha256": "928437201E3B1F986879BE56E409C267A54E8E874CC8BDB140265FB69423B086"
+        },
+        {
+          "sequence": 1245,
+          "event_id": "evt_c28_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28/START",
+          "details_sha256": "ECF9859265B6565C792CE5B09D9E2A32CA9DED193C5C908BAC17EAA3CDA2DBED",
+          "event_sha256": "94622DEFDB168EDC03697687231B593D1F0B93AEB39C7328D1E908AD66E4ADC1"
+        },
+        {
+          "sequence": 1246,
+          "event_id": "evt_c28_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28/START",
+          "details_sha256": "84899F05BDA90C1A9C10265BDBF62D8328FB5EBE6793C5D0216D56E28B9368D9",
+          "event_sha256": "5898560FD12E587EAFEF065A793817CFDD5FAC20F86A29E1DCFA4C831AFDCD05"
+        },
+        {
+          "sequence": 1247,
+          "event_id": "evt_c28_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28",
+          "details_sha256": "AEE957EA783F811F21475D59C0C64B5A89A36978193A9E7954D83C8DE13F3496",
+          "event_sha256": "99FF0EF54AED9E0A447C39DC6C257D69BC9AC4927D81D6C9D83EC7A70F4BC015"
+        },
+        {
+          "sequence": 1248,
+          "event_id": "evt_c28_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-28",
+          "details_sha256": "F4036E8EBCD9D65C0E9C42519F215414C7D88CA207A5BC20D3E7C24143FC9C94",
+          "event_sha256": "CD794863FAC03B68580B579DC2350A3630F7EBEA2E7EBD0F497FFFBE339C8992"
+        },
+        {
+          "sequence": 1249,
+          "event_id": "evt_c28_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28",
+          "details_sha256": "D303649D319E42C8D63FEBB119E4783E7A5B4E592B7A186B7D4055752FB9F573",
+          "event_sha256": "3D53A36DBFEB7FBEC6FB11E3A9711C134940CBF6BEF6DD556FB1E804808D8FE7"
+        },
+        {
+          "sequence": 1250,
+          "event_id": "evt_c28_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28",
+          "details_sha256": "841493F1E7AE1560C7019123AC3EA047F9698128D90CA0383F0E713ED5030B81",
+          "event_sha256": "74DAD2B38D2A271975255A49E3E8E4D674774702067049BC6CAB974A78754983"
+        },
+        {
+          "sequence": 1251,
+          "event_id": "evt_c28_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28",
+          "details_sha256": "049C6AFDCFA1BD7F97AF80B57061A2055EA0C48C4CE1818D7BC2910F2025F13C",
+          "event_sha256": "F8ABE7F29E41BAD4E5658A9021CFBC6E1BCC4C2E5732EFC24FF3D2DBCB8A224E"
+        },
+        {
+          "sequence": 1252,
+          "event_id": "evt_c28_user_confirmation_recorded",
+          "event_type": "USER_CONFIRMATION_RECORDED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-28/MOCKUP",
+          "details_sha256": "FF2FD842263ECC851DD04A6175735F87DD218D9D7F1C040737C2EBC7CE611D1E",
+          "event_sha256": "B8E3009F20FD6AB91C458C0C644E119AC98000C1385D8C18205B86B3D211CC4A"
+        },
+        {
+          "sequence": 1253,
+          "event_id": "evt_c29_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-29/START",
+          "details_sha256": "E4FBD39E0224051E98E7ED7F072E06CCF9C312107638E4C6E9D1361C68E6EA3C",
+          "event_sha256": "E3DED8331FB551DF2B14A00A42F895CFE46D940814A075F395EC79A636C60FB6"
+        },
+        {
+          "sequence": 1254,
+          "event_id": "evt_c29_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-29/START",
+          "details_sha256": "5520DDD5C6CD6B67C64C94C2E201420320E4A0DE2C172046B1A86D1251FDF51B",
+          "event_sha256": "DCF2166CA202B511EA8BF8911713A1EC90BFFDA3673AE7E0E693FB7BEB995E6F"
+        },
+        {
+          "sequence": 1255,
+          "event_id": "evt_c29_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-29",
+          "details_sha256": "6736383F38296DB829D488C55B81E37B4525308540F929FC6619C9891DCDD927",
+          "event_sha256": "392F469C4AE19D9178B753C5380E1C6E31CC44B5878E635D1F6E44116D5DC72D"
+        },
+        {
+          "sequence": 1256,
+          "event_id": "evt_c29_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-29",
+          "details_sha256": "BD3EB005025771D17C36BC4B4903BF959058AC80129E9EBE96F7D4AF5E7E25D9",
+          "event_sha256": "B3AEACC92D2631E577F8E38A93CD4287EB5AA4AB451F00BE198C74B266B3DB18"
+        },
+        {
+          "sequence": 1257,
+          "event_id": "evt_c29_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-29",
+          "details_sha256": "B6EF0DE9F02B3DFCB34A995BE93CECA4CC5991D1DBA86EDB6AE940A544575A8C",
+          "event_sha256": "6D141FD7E723F3ED5B741061EC0EA6E9441B8A36CC2115274DEA9F3D57210F22"
+        },
+        {
+          "sequence": 1258,
+          "event_id": "evt_c29_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-29",
+          "details_sha256": "0386C67B6B9725A9E6E31FB44CEEF8974D5614B603B7D80A3618261D7D75407D",
+          "event_sha256": "CEAE8FD04DC213CAE9AA7ECC585578EC23985DA27C32E46515D3621EDB26B4F1"
+        },
+        {
+          "sequence": 1259,
+          "event_id": "evt_c29_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-29",
+          "details_sha256": "81EC3FD0617F180423780E18A05A71644C72B1C905D1EFC7FADE0725EE1B5F0A",
+          "event_sha256": "661E6DCC62BDF2B1A97FC7CB5B63DB4D79B46CF71EFFA323F1BF917A8D96A78F"
+        },
+        {
+          "sequence": 1260,
+          "event_id": "evt_c30_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30/START",
+          "details_sha256": "9028686356F62C79CCABCCF1C8B065627277C0F95104E26FAC81A491DB6FFDC7",
+          "event_sha256": "FD88A2795DCF7D7F5C1B38AB6540441393E3C8E19A1FD07E7008060644E5C946"
+        },
+        {
+          "sequence": 1261,
+          "event_id": "evt_c30_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30/START",
+          "details_sha256": "BD92E1DFC0D8DEFA971454610E7C8FFEE5AA67462C62FE87FD5974ADEFD3FC18",
+          "event_sha256": "7089AB85037E262EDD0DF81C1D9568C4FCDC86888D9A7C01EF2096C90D1B15F8"
+        },
+        {
+          "sequence": 1262,
+          "event_id": "evt_c30_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "EE4E7A4E886FE44565B24174C33F615C10F289CC76501E78563FADDF2D3BD765",
+          "event_sha256": "8187D9EE497F628A49CC885B4CD6834B76E49A00BF02BB2CA965E930D1A9C89A"
+        },
+        {
+          "sequence": 1263,
+          "event_id": "evt_c30_local_evidence_manifest_created",
+          "event_type": "EVIDENCE_MANIFEST_CREATED",
+          "actor": "developer-primary-c30-r1",
+          "actor_id": "developer-primary-c30-r1",
+          "subject_ref": "C-30",
+          "details_sha256": "2B1DE51687E30DEF35A9D61E51A3D4DA2EBD8829FB50D10BC50A9D231466B22C",
+          "event_sha256": "A48BD186CC77CCE005EE0FFAF5D601917E125146B8C1292C6D0F332A799E8F8A"
+        },
+        {
+          "sequence": 1264,
+          "event_id": "evt_c30_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-30",
+          "details_sha256": "D6F0C6CE3DB53C189718F305E10C44A58DF690CFDA0A3BD9497D8AB9558A5A6A",
+          "event_sha256": "5D4EC44DF42EBEBA57BA8C32506EC614237A40630B29AB9EFD35E11F9FE35472"
+        },
+        {
+          "sequence": 1265,
+          "event_id": "evt_c30_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "BF5AD64EC4B9A43B3135D5FAEB89CF552CB04A7C4037E3B382EC6D0B0807F39F",
+          "event_sha256": "D5DCE6A412658E890A47D514B01F6507D385544239F9C6625858F8CAFA4789F3"
+        },
+        {
+          "sequence": 1266,
+          "event_id": "evt_c30_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "E555F8D74ACA7B972658653375C931AE21A124E71DD20B4A2CECD22E34484187",
+          "event_sha256": "B4CF09F24891A9CCC1618D117A64F8AB0C1DB70C27CC87ED9C62F583869836BA"
+        },
+        {
+          "sequence": 1267,
+          "event_id": "evt_c30_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "29A7C3CF8E396EC0295AAB4B88CD4B6C841F51330BB5C31846A3928FDFB1EBCD",
+          "event_sha256": "8F3039F0914D4D648BCDFA1EC88AC39D08BD7DDE535FB5AB5B36562D067BE03C"
+        },
+        {
+          "sequence": 1268,
+          "event_id": "evt_c30_report_hash_correction",
+          "event_type": "EVIDENCE_CORRECTION",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "70E4A860DA67EB165EA4369E052B3D8A00458DA0ED1CE12C2A863ACD0090702F",
+          "event_sha256": "B6FA6357624BE695CA0CAB851B34BE77E033119C4C8C57304BEBB6DDD4541C2B"
+        },
+        {
+          "sequence": 1269,
+          "event_id": "evt_c30_formal_precheck_wsl_access_denied",
+          "event_type": "FORMAL_PRECHECK_ATTEMPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "001D1A98341A0ADBD6B6E5242EF1FC7931E36E2912BD06596F6E1564F71C587A",
+          "event_sha256": "791E74C12E8C4DD91845A4F19999B8E2C7BDA8A2FA0C5FFC89BE9A9FE9F42E35"
+        },
+        {
+          "sequence": 1270,
+          "event_id": "evt_c30_formal_precheck_ubuntu_hung",
+          "event_type": "FORMAL_PRECHECK_ATTEMPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "F08B8EDF6C97F92FB47EB4A1475E5D90D5B9973950AD8D2D5A76EF7A2D205CA2",
+          "event_sha256": "2EA196B6E5292E6E52F610B1E051AAEE0F6D6348E8E2B764E5B2C35E20CC0D9B"
+        },
+        {
+          "sequence": 1271,
+          "event_id": "evt_c30_formal_precheck_ubuntu_hung_retry",
+          "event_type": "FORMAL_PRECHECK_ATTEMPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "62B2DD1164946AB18549911CA74D5EC675A352FFF0A260E20A2FF82B298DAD08",
+          "event_sha256": "81EA72D56F111E0DA6CD917F71F81844E273F3B8684DDE0B5AE916B09C78E4AE"
+        },
+        {
+          "sequence": 1272,
+          "event_id": "evt_c30_formal_smoke_agent_console_404",
+          "event_type": "FORMAL_E2E_FINDING",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "76E25906351DCC28DBAEE1D83C148E56F54CAAD4F5F1A566D46AE217798DF785",
+          "event_sha256": "20F7A6DC003624A2E7DF8310CB35753CD70E772C998512C94C9E456364723FEA"
+        },
+        {
+          "sequence": 1273,
+          "event_id": "evt_c30r1_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1/START",
+          "details_sha256": "72FE5EB5E9A6E62572E57C5BB373701B321A8BA47F6B10A0D05803C2E9C00C57",
+          "event_sha256": "13AF13DDB13BE0ED808C7BA3BA82E6B284C88D3A35C289548401DA0A2106E676"
+        },
+        {
+          "sequence": 1274,
+          "event_id": "evt_c30r1_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1/START",
+          "details_sha256": "CF1A04378D005B03A688D656DAF116155993924B0B26FE09F28BF59152ED003C",
+          "event_sha256": "14D7A4C96CB16679C3E7253D566E61487182F113D8E1A6B822A44E26FC488977"
+        },
+        {
+          "sequence": 1275,
+          "event_id": "evt_c30r1_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1",
+          "details_sha256": "426C0AFEA904D25BDB9AFC2BED658A72EA42B36395B2425178BD3123741224BF",
+          "event_sha256": "E90E1795FC77C709AA776CC3713725096354E90CBDDE9C191EA8713E811169A7"
+        },
+        {
+          "sequence": 1276,
+          "event_id": "evt_c30r1_scope_hash_reconciled",
+          "event_type": "CONTROL_RECONCILIATION",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1",
+          "details_sha256": "3EE489AD519EFE4954A9C07B7ED109B34237D0D5C1B91A89E284C51294531303",
+          "event_sha256": "D0AEA52F114CEE88461ACBEFD8D723A1171EC7A68AAE13A1048BCC31B1E238FC"
+        },
+        {
+          "sequence": 1277,
+          "event_id": "evt_c30r1_independent_judgment",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "e_gate_tester",
+          "actor_id": "e_gate_tester",
+          "subject_ref": "C-30R1",
+          "details_sha256": "220A8B42FBA233914B590D281BA781A7D211392DE09C2DA304D122E7FCB432EA",
+          "event_sha256": "2F6C486644A97DBE80BA238175F7FE662576FFE0EB1903012129B4629DF99BDE"
+        },
+        {
+          "sequence": 1278,
+          "event_id": "evt_c30r1_write_lease_revoked",
+          "event_type": "WRITE_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1",
+          "details_sha256": "EC69AD4168FF8576351EA9BEA4DD1BAE73151D10349DF3D0BFAAE24FD1D24307",
+          "event_sha256": "8D45ADE409E96F256554377EABDE4D52AC2AA84E7CA5928D1C4642705A679287"
+        },
+        {
+          "sequence": 1279,
+          "event_id": "evt_c30r1_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1",
+          "details_sha256": "3A2C2677456508FE4C39E45045257E87024A81E2104049F5D165359276ED8461",
+          "event_sha256": "5D8F15D94BBFF74A1B93A6C001D4FBDE683BC94A73EBCA5B63A6E74433912FE7"
+        },
+        {
+          "sequence": 1280,
+          "event_id": "evt_c30r1_main_package_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R1",
+          "details_sha256": "6F713BB8B43E62C9A0662C214B60079002D81EB869F4205D9F3A2A785399A7DA",
+          "event_sha256": "4F5AD2CF972316014C1AA53B797A49C54FF5BF1C0916F5B6CCACD0AEF177B791"
+        },
+        {
+          "sequence": 1281,
+          "event_id": "evt_c30_formal_route_smoke_pass",
+          "event_type": "FORMAL_E2E_ROUTE_SMOKE",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "34434044D3C79DB704FC443ED87823325C8C9AADFA0DDDE1A7F73DCC94C7D488",
+          "event_sha256": "B0E837852BD13E72797F6E024BE2B1D47EC284B546D202C88F824073E5826246"
+        },
+        {
+          "sequence": 1282,
+          "event_id": "evt_c30_formal_entity_scope_blocked",
+          "event_type": "FORMAL_E2E_SCOPE_BLOCKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "94BEEED15EC558C674D75A11D93A51EC61F985F9588B3A1CBCF99C287FCF6F7F",
+          "event_sha256": "115AE22D9A71F5A9E4EA6FED71C9C3348B235CF1253FC25DCA337FC326330D55"
+        },
+        {
+          "sequence": 1283,
+          "event_id": "evt_c30_formal_scope_interpretation_corrected",
+          "event_type": "EVIDENCE_CORRECTION",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "6A69B1C3C4E93CAC6DB37AA15DABABEFC92800551B8D1353E8CBAE7C207C9DF6",
+          "event_sha256": "367F0EE0D2FA4BF643B10CCD8D639C7AF90FF825246B696573F0F76BAE24946F"
+        },
+        {
+          "sequence": 1284,
+          "event_id": "evt_c30_formal_pg15_head_mismatch",
+          "event_type": "FORMAL_DB_READINESS_FINDING",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "EE2E61401838A7AB684C0924B62AB635D9DD84F76C9C5491F8CE4060C2DDC02A",
+          "event_sha256": "CB04AEABC545000CB45633C9EE7266634DDB0F546E6D6804E24B590D4C41791A"
+        },
+        {
+          "sequence": 1285,
+          "event_id": "evt_c30_formal_pg15_canonical_0013_pass",
+          "event_type": "FORMAL_DB_CANONICAL_TARGET_PASS",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30",
+          "details_sha256": "8FC6922BCDA466D42E64104FF76D25C5BBAED264E6A33EE28C9CF90F527BDD9D",
+          "event_sha256": "F7BCFA04EE3BE32FF0199DC0AF6DDA94C66A045A120103D65B808BD634FD17ED"
+        },
+        {
+          "sequence": 1286,
+          "event_id": "evt_c30_durable_owner_investigation",
+          "event_type": "FORMAL_OWNER_INTEGRATION_INVESTIGATION",
+          "actor": "developer-primary-c30-r1-rework",
+          "actor_id": "developer-primary-c30-r1-rework",
+          "subject_ref": "C-30",
+          "details_sha256": "67F3E18620955736268BC5D673D8CF44C058BD83FBABFF98C5722A63DA71FCA3",
+          "event_sha256": "4897DABC6A4F80C22F82EF3298FE1D64F167BD05EA6039BE83B77B434F77C41E"
+        },
+        {
+          "sequence": 1287,
+          "event_id": "evt_c30r2_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK1",
+          "details_sha256": "A8509430617D13E5D5A91B78A6BB98F970CECEA41C8DB37E9588CE58AEF4D1CA",
+          "event_sha256": "CA1A24DE5D884F59C6B67AFF35F8AE05A749F58270A0AB1282EFD292D747C42B"
+        },
+        {
+          "sequence": 1288,
+          "event_id": "evt_c30r2_write_lease_issued",
+          "event_type": "WRITE_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK1",
+          "details_sha256": "1C78EF56AF58C70CD5DF88F3D90AA8AC7C7D6EFC5354F8A0064E926F7DB2435C",
+          "event_sha256": "1E99FCD7CD74A33669E203D5A5C96EA38756C7FDFCEBBF3D038F4172C9393829"
+        },
+        {
+          "sequence": 1289,
+          "event_id": "evt_c30r2_package_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2",
+          "details_sha256": "C56AFE5BA70695EE192148C8D8EECF212EA3EBD7A8DC7AE5A168B9F614E7A22D",
+          "event_sha256": "6AD3FD276C25A0357109D1789DD0F9DBE16E85E988068B9D702F43FDFF86B54B"
+        },
+        {
+          "sequence": 1290,
+          "event_id": "evt_c30r2_task1_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R2/TASK1",
+          "details_sha256": "B8DDA517100F5FCF891BA98DF68E5EDC7E55704D0EA36CE67219B9F35C157E97",
+          "event_sha256": "BD445478DCE1C37A12FD24A6C2978DDFB48ADEBAE9BDA9934A56F2FFD53DC1D6"
+        },
+        {
+          "sequence": 1291,
+          "event_id": "evt_c30r2_task1_leases_revoked",
+          "event_type": "LEASES_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK1",
+          "details_sha256": "DF7E5EC82999F2254728E1BF841E9E66DD889AB7C4C9CFC014DE220508601518",
+          "event_sha256": "91A962EE62D2F98D8E102C901EE20D9798DD7A878CDF5C0C68BE3243082A4BE1"
+        },
+        {
+          "sequence": 1292,
+          "event_id": "evt_c30r2_task2_leases_issued",
+          "event_type": "LEASES_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK2",
+          "details_sha256": "CB7A27F6DAE53581030210053EDCB2906BDF934AD38E57FAB9C4D2AC90A03250",
+          "event_sha256": "8573F29E4B6AD670A30F3C81BE019DEAE48C42AF0040E75F45815FE68B7E6491"
+        },
+        {
+          "sequence": 1293,
+          "event_id": "evt_c30r2_task2_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK2",
+          "details_sha256": "89B69559E4FD61D00710A0AB29115DBC3C538D4EF8EA3FE8FA4F4B2C946846E2",
+          "event_sha256": "56DAEAB2951A500B0255ECB7420CBDE8D91FF62FADAEB5C8328AF35D8E845B77"
+        },
+        {
+          "sequence": 1294,
+          "event_id": "evt_c30r2_task2_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R2/TASK2",
+          "details_sha256": "665CB505094E6AE6B54024B149CBF1B329B4125104C2A46FEAF8644952BFDED0",
+          "event_sha256": "0E30A81B9CC0FADE0D575FA74D0CA38D31CDE4C0036F45CB0CB78BE43DF0ACAA"
+        },
+        {
+          "sequence": 1295,
+          "event_id": "evt_c30r2_task2_independent_review",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK2",
+          "details_sha256": "EB59793E3ACA43DED7C59D4C55DF1330ED15D5E75E8167093FD4A7F89604F42A",
+          "event_sha256": "0BD00B9CBF7EE1272AD05391221AF2600566FEED0C025B8BBCED2FAE1CA678FA"
+        },
+        {
+          "sequence": 1296,
+          "event_id": "evt_c30r2_task3_started",
+          "event_type": "LEASES_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK3",
+          "details_sha256": "8695B279611C747F209D0644E239C8C6157B1D6366759C8219AEDFB412DEAF89",
+          "event_sha256": "222C805F4BFC5328C34232F7033A9EE6226915890D2539C50E0B2878E678918E"
+        },
+        {
+          "sequence": 1297,
+          "event_id": "evt_c30r2_task3_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R2/TASK3",
+          "details_sha256": "38A3AD182BEAED25C7C20AF83E410B8F4045BDDE5BEDFC3C91B3950DAA0F84EA",
+          "event_sha256": "C0A63C0398DD83F9F54C57EAA73472C47F1BE63F5030334B382FFF6263BB1E52"
+        },
+        {
+          "sequence": 1298,
+          "event_id": "evt_c30r2_task3_reviewed",
+          "event_type": "LEASES_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK3",
+          "details_sha256": "92D217A9273BFD3C19299021C43BFC5F8B319F31EF47F9B8CBBB8587A9650A07",
+          "event_sha256": "A503F07987E94797D96D8D8D1930F8523093F823CB5B98EFAFF08A9B0887DC62"
+        },
+        {
+          "sequence": 1299,
+          "event_id": "evt_c30r2_task4_started",
+          "event_type": "LEASES_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK4",
+          "details_sha256": "A37E910F0F3C23DCC65390CC9763C90146E0A61A393D598F3231316A5CC958BE",
+          "event_sha256": "6DF38F957531D45B6F7FD872F1EFD52435D0B4D9D7B9A827F0890309E01FB40F"
+        },
+        {
+          "sequence": 1300,
+          "event_id": "evt_c30r2_task4_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R2/TASK4",
+          "details_sha256": "3D01CF5CD29AF8C9E08B1A7D1DFA0962576281958CCF65F661DDE17C1307D279",
+          "event_sha256": "1E71D13BAD572373753C4989EE2785C50800006241D5A0D15044C31DE3FD231C"
+        },
+        {
+          "sequence": 1301,
+          "event_id": "evt_c30r2_task4_reviewed",
+          "event_type": "LEASES_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R2/TASK4",
+          "details_sha256": "CE0293BF0C470E1C705F7650FDB90E4B90932B0DE5FC27145AB317EBBD49CB25",
+          "event_sha256": "E4D06CD0A222A1405A8D691A484399F9FA0884F83CFDDF93C5DDF5D4036E76E6"
+        },
+        {
+          "sequence": 1302,
+          "event_id": "evt_c30r3_task1_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK1",
+          "details_sha256": "FD3E3C97DFEAC2411E89626A0D9D20652FD7B79F417B052C3EF2F7DC157A6D76",
+          "event_sha256": "1C14F48F19F22E51A3F658B6F339A604A23581CAABAA4DE405391B2D580301E1"
+        },
+        {
+          "sequence": 1303,
+          "event_id": "evt_c30r3_task1_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R3/TASK1",
+          "details_sha256": "D5954B9AE3B6EDD658F9EA3F45A64DF736DF57A5246211F4A798F6740EF3AA33",
+          "event_sha256": "6449A9959B8C13E401C3996B86597C93A7BF537D8AFEE0BB6985EADBEAFBCCD5"
+        },
+        {
+          "sequence": 1304,
+          "event_id": "evt_c30r3_task2_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK2",
+          "details_sha256": "027154F44F242B18C1EDC8707D20AF8AE794CF245D6009C17739B401E845DACE",
+          "event_sha256": "F38F14568D4C1718F554F4C9D69B5DB0EA9261615F1A9706D9C4C1C75866337B"
+        },
+        {
+          "sequence": 1305,
+          "event_id": "evt_c30r3_task2_projection_reconciled",
+          "event_type": "PROJECTION_RECONCILED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK2",
+          "details_sha256": "6414C557122BE70F271D085995EE4492EE5535651A8ED4FAAC0F686057CCE751",
+          "event_sha256": "F8B9022E9F105375037B3A0B06758F16C8EE0FD276E0B4C8328AE059D5420591"
+        },
+        {
+          "sequence": 1306,
+          "event_id": "evt_c30r3_task2_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R3/TASK2",
+          "details_sha256": "29B859A81D4952C71512673D84647C9B342C94EAF579057C285F274337E4BBEB",
+          "event_sha256": "FC9555091DCB0665B6AF306FC9B0B18C37DC30DD78FD4BE4E9C4955AEFD646C7"
+        },
+        {
+          "sequence": 1307,
+          "event_id": "evt_c30r3_task3_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK3",
+          "details_sha256": "33768DDA77420B92652DD5CBAA912E2A04DAD1FD50D4034A20FDA36C2BE0B949",
+          "event_sha256": "26319BFCD297C07C8AB603B1FD538EDD2604F2E3897346D95304273E7922BFC4"
+        },
+        {
+          "sequence": 1308,
+          "event_id": "evt_c30r3_task3_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R3/TASK3",
+          "details_sha256": "DE5FCAFC6BBDBED509EDB64D81C95B7E5773E402358FEBAC228D2FF7DCE26ABD",
+          "event_sha256": "892B12DE2717D68EBD78F677F55018D1433BE0BDDC07C6681A9C9B06E5CC3378"
+        },
+        {
+          "sequence": 1309,
+          "event_id": "evt_c30r3_task4_started",
+          "event_type": "PACKAGE_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "583E4606256E9193CB96B5DC78768B27E7DF7B485033B5A180A2B66BBB19F524",
+          "event_sha256": "0AAFAE81F7E33C8997165BCAF4365374DB5D152596EE696C09E8D1A07CDEFAAA"
+        },
+        {
+          "sequence": 1310,
+          "event_id": "evt_c30r3_task4_incomplete",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "41637B035A8D8B676A4009E2E5B52C026D2633CFADBA4D291E56B20C5653BC26",
+          "event_sha256": "AF902B0E9605D76989A1080FE5EFEA804F5BE321790B8B6386E19A04A4A8CBA5"
+        },
+        {
+          "sequence": 1311,
+          "event_id": "evt_c30r3_browser_403_root_cause",
+          "event_type": "DIAGNOSIS_RECORDED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "9E1C3B73B8182BA944865D39B0A74B73F63A24E4B39FAEF5D47EAE75E71C4446",
+          "event_sha256": "08AAD832C22D360DB370764231C46AC8AAA1264A1309D7675FD1A1B3F9D3AFB9"
+        },
+        {
+          "sequence": 1312,
+          "event_id": "evt_c30r3_task4_qa_wiring_started",
+          "event_type": "REWORK_STARTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "ABFA7C4ACDEECA29D02221EC90B0A5C743FE62122B0463F41CA588BB6CDDF5B2",
+          "event_sha256": "5D8BD2646DB0ECA9348423BAA3E2DDF4DA05A89F1BFC17DE2F0276B9A3630820"
+        },
+        {
+          "sequence": 1313,
+          "event_id": "evt_c30r3_revoke_browser_offline_diagnosed",
+          "event_type": "DIAGNOSIS_RECORDED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "0018CAB9DBCFED59D93191FC852D754FA2D38CA12C01A75CD9F8100C2CB0FE1C",
+          "event_sha256": "217643A2E3972EAC60B30BEE8C4772A3E935924D0CCBD821F7578D680F952921"
+        },
+        {
+          "sequence": 1314,
+          "event_id": "evt_c30r3_response_capture_startup_failed",
+          "event_type": "DIAGNOSIS_ATTEMPT_COMPLETED",
+          "actor": "developer-primary-c30r3",
+          "actor_id": "developer-primary-c30r3",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "397A64F5A96AEA055AA2A1443E77B620EA916C56634681EFCC9DF9290C009F4F",
+          "event_sha256": "AE0C075FF386B8A4D56AC2707AFB1A20C6D0C53C94AD4EE944A4E7243E77BD49"
+        },
+        {
+          "sequence": 1315,
+          "event_id": "evt_c30r3_task4_browser_formal_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r3",
+          "actor_id": "developer-primary-c30r3",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "6B64187C0C6352AE931856C2AC9A415B29BE6CA9793B70FBD46C46C3D3FE68BC",
+          "event_sha256": "72FE83844B5167A61117200276E8A01F3F1971D4F979B9668DA47CF2CF9EEFB1"
+        },
+        {
+          "sequence": 1316,
+          "event_id": "evt_c30r3_task4_independent_review_rework",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "10CC8F5FA38E541B2ADD4D0165DE7EDB5AA72B4EBA13ED0122CC3B25B00E1FF1",
+          "event_sha256": "9358885E252A411FC32AD4EF9BD1C74E5D3425BCD28A141DD3CD59EDA6A4F903"
+        },
+        {
+          "sequence": 1317,
+          "event_id": "evt_c30r3_task4_error_evidence_worker_lease_issued",
+          "event_type": "WORKER_LEASE_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "FD976379E37D55879530442FBEA83BC3CE54D9E840723A0668B483F43A2EA257",
+          "event_sha256": "90212C7D862D0ADB754FF1BD82C3F6C69B52022DF526B1537E8EC5D250FD426F"
+        },
+        {
+          "sequence": 1318,
+          "event_id": "evt_c30r3_task4_lease_projection_reconciled",
+          "event_type": "LEASES_RECONCILED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "5158DC39E647643DE8DC09D9958BBD8799B3E9AE259389957D63BC1A579B8AC9",
+          "event_sha256": "12DD17BD79C6D70901E8CE9FDAF45BA055B43BE70A793E1CE77D45E2908FD170"
+        },
+        {
+          "sequence": 1319,
+          "event_id": "evt_c30r3_task4_browser_error_evidence_completed",
+          "event_type": "DEVELOPER_COMPLETED",
+          "actor": "developer-primary-c30r2",
+          "actor_id": "developer-primary-c30r2",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "D47BEA9671295413B2DC08EDDDBF04EF52EB7CECF05815CB2F2FA0ECBC41DB32",
+          "event_sha256": "DEE7E68FE852D91DE37220BEE211F6DC9A322F2B4795B3AFB80401A0EA3A7BAD"
+        },
+        {
+          "sequence": 1320,
+          "event_id": "evt_c30r3_task4_error_evidence_worker_lease_revoked",
+          "event_type": "WORKER_LEASE_REVOKED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "D30219C51D07EDBB7C2F5D989983D5EA86252122D731FD19C2CC9844221933C7",
+          "event_sha256": "8501DD8FD9E89F5C6328AF9A42C0D8BF9B8EEB510FB135359CAA8F2A48EB65D7"
+        },
+        {
+          "sequence": 1321,
+          "event_id": "evt_c30r3_task4_quality_rereview_rework",
+          "event_type": "INDEPENDENT_JUDGMENT",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "78A7824FA37AF8061D8CD5180400A89D88EF502468243B0683D5119EAF2D7562",
+          "event_sha256": "61A6FBA5E2B4C18E63D1E74BB3B7579BCC124B2D5D0147829B9C686B06CE2EE3"
+        },
+        {
+          "sequence": 1322,
+          "event_id": "evt_c30r3_task4_top_level_worker_lease_reconciled",
+          "event_type": "PROJECTION_RECONCILED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "45D2BA334F7AA609FDD062921A0635980F20AD29F0CA6A8C700E9AF3A3968E1D",
+          "event_sha256": "41001C3DF8316C13434DD5A0F1800FAE7953353AC61E9D7A2562A1B0B67C6859"
+        },
+        {
+          "sequence": 1323,
+          "event_id": "evt_c30r3_task4_main_accepted",
+          "event_type": "MAIN_PACKAGE_ACCEPTED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R3/TASK4",
+          "details_sha256": "50E08CDB247DF90B0F662B6BDD9480E5E2DEE1AA6F1E4BF14229B151E601AD6F",
+          "event_sha256": "6FB523457AA59B0195F8A3DC34B9D0C94667375F9FDEDA6622EF68729186ED53"
+        },
+        {
+          "sequence": 1324,
+          "event_id": "evt_c30r4_checker_repair_work_instruction_issued",
+          "event_type": "WORK_INSTRUCTION_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R4",
+          "details_sha256": "EEF228AC158B1AFC133B6C34572160EF6F123C98DB792946EA2619B94684AF6A",
+          "event_sha256": "5880BDDA4BE08C2CB1071208EB834651431A2F22CBA3CF490C9E7923A569C52B"
+        },
+        {
+          "sequence": 1325,
+          "event_id": "evt_c30r4_checker_repair_leases_issued",
+          "event_type": "LEASES_ISSUED",
+          "actor": "main-agent-eoul",
+          "actor_id": "main-agent-eoul",
+          "subject_ref": "C-30R4",
+          "details_sha256": "C27250FA017808B97D28104B156888C4F3F06AC319951580E9E27A7A0B3725E4",
+          "event_sha256": "A283F0BBDA0CF82D43948F418D3CF846865D6E0753AEBD5802F1F64363A5FA75"
+        }
+      ]
+    },
+    "C30_SEQ1326_1334": {
+      "raw_prefix_bytes": 3994695,
+      "raw_prefix_sha256": "BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B",
+      "event_sha256": [
+        "A9FBE94A239B1829A79745FFB858E2994E848C4F1A503F3020C83C4EF8256AEC",
+        "FC9E79956D789FA566423FBA5B32168E2236A227A4BCB394D05C70F5F3094FF9",
+        "780D7487DFF5F51B1F9B416239255D21B047E3C235963CCDD70ABDD24DF4F19C",
+        "D310C8D93BD49E46CBC573BB58BC02BBB91CF2B3A26FA478652CE17B6F077351",
+        "BFEB6EDE24DF7A177E8814FDFA11BDC42FDC7188C3ED8600225059E4A904CC1E",
+        "75B4A4E1FFB2DD62C2C4F12B5DC0C9CCDC027A2921104FF853B206197A61B9A2",
+        "F9308D140D3FA5815804B4D8BE7A59E597A92ECCC55D142622CB1F75EA17DD16",
+        "F196BD22CD4E72F0DFD4D01843B9D90A0FD9648F00BF43F4ECDB02E49C295D5A",
+        "E118EB6CEEF235E0242034DEC696AEF7DB90705155794B1F1395C67E8F9BC09F"
+      ]
+    }
   }
 }

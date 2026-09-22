@@ -1,3 +1,13 @@
+# C-30R4 canonical reconciliation / 2026-09-22
+
+- 판정: `C30R4_ACCEPTED_C30_GATE_PENDING`; 세 번째 unrelated large-file patch corruption 복구와 신산님의 직접 `Main takeover 승인`을 canonical human-override로 결박했다.
+- 현재 정본: branch `codex/c09-execution-backends-r1`, base HEAD `ed3cae92597d681c76417e26576bed91a0525bad`, acceptance projection event seq1345.
+- 완료한 수정: historical/current fixture 격리, seq1~1334 raw freeze, seq1335 human override, Developer lease 회수, TakeoverPacket, Main epoch3 lease, completion replay actor/hash 결박, exact16 rollback, C30R3 fixture-only/미검증 경계, phase/package/next/successor/action projection 정합화.
+- fresh gate: tooling shard `125+199+159+196=679/679`, focused `36/36`, C30 adversarial `10/10`, compile/live checker/diff-check PASS. 모든 pytest는 `-p no:cacheprovider`; `.pytest_cache`와 `.tmp_subagent_review` residue 0.
+- 독립 리뷰: spec `ACCEPT C0/I0/M0`, quality `ACCEPT C0/I0/M0`; 역할별 actor와 seq1340 epoch3 lease/token에 결박했다.
+- 완료 전 필수: seq1345 exact16 acceptance commit/checkpoint push와 remote SHA 확인. C30 전체 gate는 별도이며 아직 `PENDING_FINAL_GATE`다.
+- 미검증 유지: production auth, 실제 Provider, PostgreSQL18, actual server-generated 400, Oracle, live remote.
+
 # 2026-09-18 문서 successor 전환 — v2.8/v1.7 핵심 개념 정합화
 
 - 담당: Main 어울. 신산님의 직접 지시에 따라 제품 코드·DB·WSL·Provider·Kakao·Oracle 배포를 중지하고 설계서/작업계획서만 append-only로 보완했다.

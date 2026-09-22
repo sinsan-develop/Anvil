@@ -16,6 +16,7 @@ import tarfile
 import tempfile
 import unittest
 import zlib
+from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
@@ -108,6 +109,287 @@ def _load_checker_or_none():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@contextmanager
+def _historical_bytes_overlay(files):
+    """In-memory filesystem view for immutable checkpoint/generated fixtures."""
+    read_bytes, read_text, stat = Path.read_bytes, Path.read_text, Path.stat
+    def key(path):
+        try:
+            return path.absolute().relative_to(ROOT.absolute()).as_posix()
+        except ValueError:
+            return None
+    def frozen_bytes(path):
+        relative = key(path)
+        return files[relative] if relative in files else read_bytes(path)
+    def frozen_text(path, encoding=None, errors=None):
+        relative = key(path)
+        if relative in files:
+            return files[relative].decode(encoding or "utf-8", errors or "strict")
+        return read_text(path, encoding=encoding, errors=errors)
+    def frozen_stat(path, *args, **kwargs):
+        relative = key(path)
+        if relative in files:
+            values = list(stat(ROOT))
+            values[0] = 0o100644
+            values[6] = len(files[relative])
+            return os.stat_result(values)
+        return stat(path, *args, **kwargs)
+    with mock.patch.object(Path, "read_bytes", frozen_bytes), \
+            mock.patch.object(Path, "read_text", frozen_text), \
+            mock.patch.object(Path, "stat", frozen_stat):
+        yield
+
+
+class C30R4CheckerSourceTests(unittest.TestCase):
+    def test_checker_source_compiles_without_truncated_embedded_evidence(self):
+        compile(CHECKER_PATH.read_bytes(), str(CHECKER_PATH), "exec")
+
+
+class C30CanonicalReconciliationTests(unittest.TestCase):
+    def _assert_current_scope(self, checker, generated, *, completed):
+        progress = json.loads(generated[checker.BUNDLE_PATHS["progress"]])
+        handoff = checker.extract_handoff_summary(generated[checker.BUNDLE_PATHS["handoff_text"]].decode())
+        manifest = json.loads(generated[checker.C30_CANONICAL_M])
+        expected = {
+            "current_phase": "C", "current_work_package": "C-30R4",
+            "next_work_package": {"package_id": "C-30", "status": "PENDING_FINAL_GATE"},
+            "next_successor_work_package": {"package_id": "C-30", "status": "PENDING_FINAL_GATE"},
+            "next_safe_action": "MAIN_C30_FINAL_GATE_REVIEW" if completed else "C30R4_INDEPENDENT_REVIEW_REQUIRED",
+            "runtime_next_action": "MAIN_C30_FINAL_GATE_REVIEW" if completed else "C30R4_INDEPENDENT_REVIEW_REQUIRED",
+        }
+        self.assertEqual(expected, {key: progress.get(key) for key in expected})
+        self.assertEqual(expected, {key: handoff.get(key) for key in expected})
+        scope = "C30R3_FIXTURE_AUTHENTICATED_DISPOSABLE_VALIDATION_ONLY"
+        self.assertEqual(scope, manifest.get("c30r3_evidence_scope"))
+        self.assertEqual(scope, handoff.get("c30r3_evidence_scope"))
+        self.assertTrue({"PRODUCTION_AUTH", "PROVIDER", "PG18", "ACTUAL_SERVER_GENERATED_400", "ORACLE"}
+                        <= set(manifest["unverified"]))
+        self.assertEqual(manifest["unverified"], handoff.get("unverified"))
+        self.assertEqual((16, 1334), (manifest["rollback"]["exact_path_count"],
+                                     manifest["rollback"]["preserve_append_only_prefix_through_sequence"]))
+        self.assertEqual(checker.c30_canonical_paths(), manifest["rollback"]["exact_paths"])
+        self.assertIn("never reset or clean", " ".join(manifest["rollback"]["procedure"]))
+
+    def test_frozen_history_profile_has_exact_authority(self):
+        checker = _load_checker_or_none()
+        self.assertTrue(callable(getattr(checker, "c30_historical_event_profile", None)))
+        profile = checker.c30_historical_event_profile(ROOT)
+        self.assertEqual(1325, profile["last_sequence"])
+        self.assertEqual(3985246, profile["raw_prefix_bytes"])
+        self.assertEqual("09A6B52717CEF4E4E49B2AA1830B670226FEB272237668CC3EC39E2D07219431", profile["raw_prefix_sha256"])
+        self.assertEqual(108, len(profile["events"]))
+        r2 = checker.c30_r2_historical_tail(ROOT)
+        self.assertEqual((1334, 3994695, "BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B"),
+                         (r2["last_sequence"], r2["raw_prefix_bytes"], r2["raw_prefix_sha256"]))
+        self.assertEqual(9, len(r2["events"]))
+
+    def test_builder_and_validator_are_available_without_materializing_control(self):
+        checker = _load_checker_or_none()
+        self.assertTrue(callable(getattr(checker, "c30_canonical_projection_from_root", None)))
+        self.assertTrue(callable(getattr(checker, "validate_c30_canonical_projection", None)))
+        self.assertTrue(callable(getattr(checker, "validate_c30_git_facts", None)))
+        self.assertTrue(callable(getattr(checker, "_collect_c30_canonical_git", None)))
+
+    def test_live_current_projection_is_valid(self):
+        checker = _load_checker_or_none()
+        # The live seq1325 RED is retained until Main materializes control8.
+        # Developer checks the identical generated bytes through a detached view.
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            self.assertEqual([], checker.validate_bundle(checker.load_bundle(ROOT)))
+
+    def test_history_tamper_and_reorder_are_rejected(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        raw = generated[checker.BUNDLE_PATHS["events"]]
+        for index in (0, 1217, 1324, 1325, 1327, 1333):
+            stream = json.loads(raw)
+            stream["events"][index]["details"]["forged"] = True
+            with self.subTest(index=index):
+                self.assertTrue(checker.validate_c30_historical_events(ROOT, raw, stream))
+        stream = json.loads(raw)
+        stream["events"][1217:1219] = reversed(stream["events"][1217:1219])
+        self.assertTrue(checker.validate_c30_historical_events(ROOT, raw, stream))
+
+    def test_no_early_acceptance_or_lease_revoke(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        self._assert_current_scope(checker, generated, completed=False)
+        p = json.loads(generated[checker.BUNDLE_PATHS["progress"]])
+        self.assertEqual((1340, "IN_PROGRESS", "PENDING_FINAL_GATE"),
+                         (p["event_sequence"], p["status"], p["c30_overall_status"]))
+        self.assertIsNotNone(p["worker_lease"])
+        self.assertIsNotNone(p["write_lease"])
+        self.assertEqual("main-agent-eoul-takeover", p["active_agent"]["actor_id"])
+        self.assertEqual("worker-lease-c30r4-main-takeover-20260922-001", p["worker_lease"]["lease_id"])
+        self.assertEqual("main-agent-eoul-takeover", p["worker_lease"]["actor_id"])
+        self.assertEqual("c30r4-main-write-fence-epoch-3-ed3cae9", p["write_lease"]["write_fencing_token"])
+        self.assertEqual("main-agent-eoul-takeover", p["write_lease"]["actor_id"])
+        self.assertEqual(16, len(checker.c30_canonical_paths()))
+        self.assertTrue({checker.C30_DEVELOPER_REPORT, checker.C30_SPEC_REPORT, checker.C30_QUALITY_REPORT}
+                        <= set(checker.c30_canonical_paths()))
+        self.assertIn("docs/WORK_STATUS.md", checker.c30_canonical_paths())
+        self.assertTrue(p["active_work_instruction"]["artifact_path"].endswith("_R2.md"))
+        actual = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
+        self.assertEqual(checker.raw_event_object_prefix_bytes(actual, 1334),
+                         checker.raw_event_object_prefix_bytes(generated[checker.BUNDLE_PATHS["events"]], 1334))
+        events = json.loads(generated[checker.BUNDLE_PATHS["events"]])["events"]
+        self.assertEqual(["HUMAN_OVERRIDE_TAKEOVER_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "LEASE_TAKEOVER",
+                          "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+                         [event["event_type"] for event in events[1334:1340]])
+        self.assertTrue(all(event["actor_id"] == "main-agent-eoul-takeover" for event in events[1334:1340]))
+        approval = events[1334]["details"]
+        self.assertEqual(("HUMAN_OVERRIDE_TAKEOVER-C30R4-USER-20260922", "user-sinsan",
+                          "935088D3CD683FE8A10965538301343FA251C9AD61AAFAC7679F534A5831DE78"),
+                         (approval["approval_id"], approval["approved_by"], approval["approval_text_sha256"]))
+        self.assertEqual(3, events[1337]["details"]["repeated_tool_corruption_count"])
+        self.assertEqual("TAKEOVER_PACKET_C30R4_20260922_001", events[1337]["details"]["takeover_packet_id"])
+        self.assertEqual(approval["approval_id"], events[1337]["details"]["human_override_approval_id"])
+        with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+            checker.c30_canonical_projection_from_root(ROOT, completion={"accepted": True})
+
+    def test_revision_is_bound_to_original_issued_instruction(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        events = json.loads(generated[checker.BUNDLE_PATHS["events"]])["events"]
+        parent = events[1325]["details"]["parent_work_instruction"]
+        path = events[1323]["details"]["work_instruction"]
+        raw = subprocess.check_output(["git", "show", f"{checker.C30_CANONICAL_BASE}:{path}"], cwd=ROOT)
+        self.assertEqual({"path": path, "sha256": hashlib.sha256(raw).hexdigest().upper(),
+                          "issued_event_id": events[1323]["event_id"]}, parent)
+
+    def test_current_mutations_fail_closed(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            base = checker.load_bundle(ROOT)
+            mutations = [
+                lambda b: b["progress"].update(status="ACCEPTED"),
+                lambda b: b["progress"].update(worker_lease=None),
+                lambda b: b["progress"]["repository"].update(local_head="0" * 40),
+                lambda b: b["events"]["events"].append(copy.deepcopy(b["events"]["events"][1217])),
+                lambda b: b["detached_digest"]["progress"].update(file_sha256="0" * 64),
+                lambda b: b["handoff"].update(status="ACCEPTED"),
+            ]
+            for index, mutate in enumerate(mutations):
+                candidate = copy.deepcopy(base)
+                mutate(candidate)
+                with self.subTest(index=index):
+                    self.assertNotEqual([], checker.validate_bundle(candidate))
+
+    def test_final_tail_requires_three_independent_bound_evidence_records(self):
+        checker = _load_checker_or_none()
+        # Synthetic control evidence only; this does not record a Main verdict.
+        records, files = {}, {}
+        expected_actors = {"developer": "main-agent-eoul-takeover", "spec": "c30_spec_review",
+                           "quality": "c30_quality_review"}
+        for role in ("developer", "spec", "quality"):
+            path = f"docs/test_reports/C30R4_SYNTHETIC_{role}.md"
+            payload = {
+                "schema_version": "c30r4_completion_evidence/v1",
+                "package_id": "C-30R4",
+                "role": role,
+                "actor_id": expected_actors[role],
+                "verdict": "COMPLETED" if role == "developer" else "ACCEPT",
+                "binding": {
+                    "base_head": checker.C30_CANONICAL_BASE,
+                    "checker_sha256": hashlib.sha256(CHECKER_PATH.read_bytes()).hexdigest().upper(),
+                    "tests_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest().upper(),
+                    "event_sequence": 1340,
+                    "worker_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+                    "write_lease_id": "write-lease-c30r4-main-takeover-20260922-001",
+                    "execution_fencing_token": "c30r4-main-execution-fence-epoch-3-ed3cae9",
+                    "write_fencing_token": "c30r4-main-write-fence-epoch-3-ed3cae9",
+                },
+                "verification": {
+                    "fresh_tooling_shards": [125, 199, 159, 196],
+                    "fresh_tooling_passed": 679,
+                    "focused_passed": 36,
+                    "focused_deselected": 643,
+                    "c30_adversarial_passed": 10,
+                    "compile_exit": 0,
+                    "live_checker_exit": 0,
+                    "live_checker_sequence": 1340,
+                    "diff_check_exit": 0,
+                },
+                "commands": ["synthetic contract test only"],
+                "critical": 0,
+                "important": 0,
+                "minor": 0,
+            }
+            raw = ("# Synthetic C30R4 evidence\n\n```json c30r4-evidence\n"
+                   + json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2)
+                   + "\n```\n").encode()
+            files[path] = raw
+            records[role] = {"path": path, "sha256": hashlib.sha256(raw).hexdigest().upper(), **payload}
+        with _historical_bytes_overlay(files):
+            generated = checker.c30_canonical_projection_from_root(ROOT, completion=records)
+            for role in ("spec", "quality"):
+                bad = copy.deepcopy(records)
+                bad[role]["sha256"] = "0" * 64
+                with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                    checker.c30_canonical_projection_from_root(ROOT, completion=bad)
+            reused = copy.deepcopy(records)
+            reused["quality"]["actor_id"] = "main-agent-eoul-takeover"
+            with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                checker.c30_canonical_projection_from_root(ROOT, completion=reused)
+            for mutate in (
+                lambda value: value["spec"]["binding"].update(base_head="0" * 40),
+                lambda value: value["quality"]["verification"].update(fresh_tooling_passed=678),
+            ):
+                bad = copy.deepcopy(records)
+                mutate(bad)
+                with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                    checker.c30_canonical_projection_from_root(ROOT, completion=bad)
+            replay = copy.deepcopy(records)
+            replay_path = "docs/04_test_reports/C-30_COMPLETION_REPORT.md"
+            replay["developer"].update(
+                path=replay_path, sha256=hashlib.sha256((ROOT / replay_path).read_bytes()).hexdigest().upper())
+            with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                checker.c30_canonical_projection_from_root(ROOT, completion=replay)
+        with _historical_bytes_overlay({**files, **generated}):
+            self._assert_current_scope(checker, generated, completed=True)
+            bundle = checker.load_bundle(ROOT)
+            self.assertEqual([], checker.validate_bundle(bundle))
+            self.assertEqual((1345, "ACCEPTED", "PENDING_FINAL_GATE"),
+                (bundle["progress"]["event_sequence"], bundle["progress"]["status"], bundle["progress"]["c30_overall_status"]))
+            self.assertEqual((None, None, None), tuple(bundle["progress"][key] for key in ("active_agent", "worker_lease", "write_lease")))
+            self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+                             [event["event_type"] for event in bundle["events"]["events"][1340:]])
+
+    def test_git_escape_staging_and_foreign_head_fail_closed(self):
+        checker = _load_checker_or_none()
+        facts = dict(head=checker.C30_CANONICAL_BASE, branch="codex/c09-execution-backends-r1",
+                     upstream="development/codex/c09-execution-backends-r1",
+                     remote_head="98e218264bf54db04a1bd35a67273b713805a649", staged=[], dirty=checker.c30_canonical_paths())
+        self.assertEqual([], checker.validate_c30_git_facts(**facts))
+        for change in ({"head": "0" * 40}, {"remote_head": "0" * 40}, {"staged": ["scripts/check_project_progress.py"]},
+                       {"dirty": facts["dirty"] + ["outside.py"]}, {"dirty": []}):
+            self.assertEqual(["C30_CANONICAL_GIT_INVALID"], checker.validate_c30_git_facts(**{**facts, **change}))
+        committed_head = "1" * 40
+        postcommit = dict(head=committed_head, branch=facts["branch"], upstream=facts["upstream"],
+            remote_head=facts["remote_head"], staged=[], dirty=[], parent=checker.C30_CANONICAL_BASE,
+            committed=checker.c30_canonical_paths())
+        self.assertEqual([], checker.validate_c30_git_facts(**postcommit))
+        self.assertEqual([], checker.validate_c30_git_facts(**{**postcommit, "remote_head": committed_head}))
+        for change in ({"parent": "0" * 40}, {"committed": postcommit["committed"][:-1]},
+                       {"committed": postcommit["committed"] + ["outside.py"]}, {"dirty": ["outside.py"]}):
+            self.assertEqual(["C30_CANONICAL_GIT_INVALID"], checker.validate_c30_git_facts(**{**postcommit, **change}))
+
+    def test_raw_binding_and_manifest_drift_fail_closed(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            bundle = checker.load_bundle(ROOT)
+            manifest = json.loads(generated[checker.C30_CANONICAL_M])
+            manifest["historical_profile"]["events"][0]["actor"] = "foreign"
+            self.assertIn("C30_CANONICAL_PROJECTION_INVALID", checker.validate_c30_canonical_projection(bundle, manifest))
+            altered = {**generated, checker.BUNDLE_PATHS["events"]: generated[checker.BUNDLE_PATHS["events"]] + b" "}
+            with _historical_bytes_overlay(altered):
+                self.assertIn("C30_CANONICAL_RAW_BINDING_INVALID", checker.validate_c30_canonical_projection(
+                    bundle, json.loads(generated[checker.C30_CANONICAL_M])))
 
 
 class ProjectProgressContractTests(unittest.TestCase):
@@ -338,7 +620,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_git_and_authority_bindings_are_checked_against_workspace(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
 
         mutated = copy.deepcopy(bundle)
         mutated["progress"]["repository"]["validated_base_commit"] = "0" * 40
@@ -531,7 +813,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_event_sequence_and_complete_event_contract_are_guarded(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
 
         mutated = copy.deepcopy(bundle)
         mutated["events"]["events"].append(
@@ -903,6 +1185,44 @@ class ProjectProgressContractTests(unittest.TestCase):
             "G05-DEF-006 RED: all-category event fixture is missing",
         )
         fixture = json.loads(ALL_EVENT_FIXTURE_PATH.read_text(encoding="utf-8"))
+        # Preserve the frozen G05 fixture and extend its in-memory standard
+        # category coverage with explicit payloads, never wildcard event types.
+        additions = (
+            ("WORK_INSTRUCTION_REVISED", "nonsemantic_work_instruction_revision_recorded", {
+                "parent_work_instruction": {"path": "fixture/parent.md", "sha256": "A" * 64},
+                "derived_work_instruction": {"path": "fixture/derived.md", "sha256": "B" * 64},
+                "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+                "semantic_diff": "NONE", "scope_expansion": False,
+            }),
+            ("INDEPENDENT_TEST_JUDGMENT_RECORDED", "independent_test_judgment_recorded", {
+                "verdict": "NOT_EXECUTED", "criteria": ["FIXTURE_SCHEMA_ONLY"],
+                "evidence_ref": {"path": "fixture/review.md", "sha256": "C" * 64},
+                "quality": "NOT_EXECUTED",
+            }),
+            ("HUMAN_OVERRIDE_TAKEOVER_RECORDED", "human_override_takeover_authorized", {
+                "approval_id": "fixture-human-override", "approved_by": "fixture-user",
+                "approval_text_sha256": "D" * 64,
+                "approved_scope": "fixture takeover scope", "source": "FIXTURE",
+            }),
+        )
+        for event_type, effect, details in additions:
+            contract = bundle["event_contract"]["payload_contracts"][event_type]
+            self.assertEqual(effect, contract["effect"])
+            self.assertEqual(set(details), set(contract["required_details"]))
+            sequence = len(fixture["events"]) + 1
+            fixture["events"].append({
+                "event_id": f"fx-{sequence:03d}", "sequence": sequence,
+                "event_type": event_type, "occurred_at": f"2026-08-10T00:00:{sequence:02d}+09:00",
+                "actor": "main-agent-eoul", "subject_ref": "G-05-fixture",
+                "details": details,
+            })
+            fixture["last_sequence"] = sequence
+
+        for index in (-3, -2, -1):
+            for field in fixture["events"][index]["details"]:
+                mutated = copy.deepcopy(fixture)
+                del mutated["events"][index]["details"][field]
+                self.assertIn("EVENT_PAYLOAD_MISSING", checker.validate_event_stream(mutated, bundle["event_contract"]))
 
         self.assertEqual(
             checker.validate_event_stream(fixture, bundle["event_contract"]),
@@ -913,7 +1233,10 @@ class ProjectProgressContractTests(unittest.TestCase):
             set(bundle["event_contract"]["event_types"]),
         )
 
-        empty_push = copy.deepcopy(bundle)
+        # Exercise the generic payload/effect validator in its historical era;
+        # C30's exact-tail guard is separately covered by its profile tests.
+        generic_bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
+        empty_push = copy.deepcopy(generic_bundle)
         empty_push["events"]["events"].append(
             {
                 "event_id": "evt-empty-git-push",
@@ -992,7 +1315,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_historical_git_push_rejects_corrupt_evidence_reference(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
         historical_push = next(
             event
             for event in bundle["events"]["events"]
@@ -1193,7 +1516,21 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_a03_start_projection_binds_clean_dispatch_and_fencing(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        checkpoint = "dc2ba63e1d923663724d1291cbcec007e4e7e7fe"
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tree:
+            files = {entry.name: tree.extractfile(entry).read() for entry in tree if entry.isfile()}
+        base = json.loads(files[checker.BUNDLE_PATHS["progress"]])["repository"]["validated_base_commit"]
+        changed = subprocess.check_output(["git", "diff", "--name-only", base, checkpoint], cwd=ROOT).decode().splitlines()
+        self.assertEqual(0, subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint], cwd=ROOT).returncode)
+        def historical_git(bundle):
+            return checker.validate_repository_projection(
+                bundle["progress"]["repository"], actual_head=base, actual_branch="main",
+                actual_upstream="origin/main", actual_remote_head=base, base_is_ancestor=True,
+                actual_changed_paths=changed, working_tree_mode=True, progress=bundle["progress"], worktree_is_clean=False)
+        with _historical_bytes_overlay(files), mock.patch.object(checker, "_validate_git_projection", historical_git):
+            bundle = checker.load_bundle(ROOT)
+            self.assertEqual([], checker.validate_bundle(bundle))
         progress = bundle["progress"]
         events = bundle["events"]["events"]
         start_events = [event for event in events if 58 <= event["sequence"] <= 60]
@@ -1210,11 +1547,26 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(start_events[0]["details"]["lease_id"], start_events[1]["details"]["worker_lease_id"])
         self.assertEqual("39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599", start_events[-1]["details"]["dispatch_head"])
         self.assertEqual(start_events[-1]["details"]["dispatch_head"], start_events[-1]["details"]["dispatch_upstream_head"])
-        self.assertEqual([], checker.validate_bundle(bundle))
 
     def test_a03_completion_projection_revokes_leases_before_test_review(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        checkpoint = "f8b52a5a3b3acfa2776b06bd178e0911c1ead582"
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tree:
+            files = {entry.name: tree.extractfile(entry).read() for entry in tree if entry.isfile()}
+        frozen_repository = json.loads(files[checker.BUNDLE_PATHS["progress"]])["repository"]
+        base = frozen_repository["validated_base_commit"]
+        changed = subprocess.check_output(["git", "diff", "--name-only", base, checkpoint], cwd=ROOT).decode().splitlines()
+        self.assertEqual(0, subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint], cwd=ROOT).returncode)
+        def historical_git(bundle):
+            return checker.validate_repository_projection(
+                bundle["progress"]["repository"], actual_head=base,
+                actual_branch="main", actual_upstream="origin/main", actual_remote_head=base,
+                base_is_ancestor=True, actual_changed_paths=changed, working_tree_mode=True,
+                progress=bundle["progress"], worktree_is_clean=False)
+        with _historical_bytes_overlay(files), mock.patch.object(checker, "_validate_git_projection", historical_git):
+            bundle = checker.load_bundle(ROOT)
+            self.assertEqual([], checker.validate_bundle(bundle))
         progress = bundle["progress"]
         events = bundle["events"]["events"]
         completion_events = [event for event in events if 61 <= event["sequence"] <= 63]
@@ -1230,7 +1582,6 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("PENDING", completed["independent_tester_status"])
         self.assertIsNone(completed["worker_lease"])
         self.assertIsNone(completed["write_lease"])
-        self.assertEqual([], checker.validate_bundle(bundle))
 
     def test_a07_completion_enters_test_review_after_ordered_revocation(self) -> None:
         if _b10_acceptance_projection_current(): return
@@ -3626,7 +3977,11 @@ class ProjectProgressContractTests(unittest.TestCase):
             ],
             cwd=ROOT,
         )
-        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        # Compare the candidate with its actual recorded control successor.
+        current_raw = subprocess.check_output(
+            ["git", "show", "ead1214e3f01e68e577c3163e1cf143ee5753490:docs/progress/progress-events.json"],
+            cwd=ROOT,
+        )
         expected = checker.raw_event_object_prefix_bytes(candidate_raw, 485)
         actual = checker.raw_event_object_prefix_bytes(current_raw, 485)
         self.assertEqual(expected, actual)
@@ -3662,6 +4017,16 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_control_postcommit_successor_binds_committed_control(self) -> None:
         checker = self.require_checker()
+        checkpoint = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        frozen = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                  for path in (
+                      "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+                      "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+                      "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+                  )}
+        overlay = _historical_bytes_overlay(frozen)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
         bundle = checker.load_bundle(ROOT)
         if bundle["progress"]["event_sequence"] != 487:
             historical_commit = "ead1214e3f01e68e577c3163e1cf143ee5753490"
@@ -5790,7 +6155,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 bundle, manifest
             ),
         )
-        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        current_raw = (historical_root / "docs/progress/progress-events.json").read_bytes()
         prefix = checker.raw_event_object_prefix_bytes(current_raw, 493)
         self.assertEqual(857131, len(prefix))
         self.assertEqual(
@@ -7636,11 +8001,22 @@ class ProjectProgressContractTests(unittest.TestCase):
             path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
             for path in ("docs/progress/build-progress.json", "docs/progress/progress-events.json")
         }
-        directory = tempfile.TemporaryDirectory(prefix="anvil-seq533-", dir="D:/tmp")
+        temporary_root = ROOT / ".tmp_subagent_review"
+        temporary_root.mkdir(exist_ok=True)
+        def remove_empty_temporary_root():
+            if temporary_root.exists() and not any(temporary_root.iterdir()):
+                temporary_root.rmdir()
+        self.addCleanup(remove_empty_temporary_root)
+        directory = tempfile.TemporaryDirectory(prefix="anvil-seq533-", dir=temporary_root)
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
-        files = {path: (ROOT / path).read_bytes() for path in (
+        # The seq533 inputs belong to its committed checkpoint, not today's bundle.
+        checkpoint = "d442d4584516e1a673fd2edde55a2fe1330e9394"
+        files = {path: subprocess.check_output(
+            ["git", "show", f"{checkpoint}:{path}"], cwd=ROOT
+        ) for path in (
             "docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/dir-checkpoints.json", "docs/progress/progress-event-contract.json",
             "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
             "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
             "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
@@ -7774,6 +8150,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
         bundle.update(generated)
         bundle["_detached_digest_path"] = checker.C21_RESUME_D
+        for path in ("docs/progress/dir-checkpoints.json", "docs/progress/progress-event-contract.json"):
+            raw = (bundle["_root"] / path).read_bytes()
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+            key = next(key for key, relative in checker.BUNDLE_PATHS.items() if relative == path)
+            bundle[key] = json.loads(raw)
         bundle["_file_hashes"].update({path: hashlib.sha256((bundle["_root"] / path).read_bytes()).hexdigest().upper()
                                       for path in checker.c21_provider_wsl_execution_resume_start_paths()})
         for validator in (checker._validate_events, checker._validate_handoff,
@@ -10575,7 +10956,8 @@ class C21PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
             "handoff": checker.extract_handoff_summary(first[checker.C21_POSTMERGE_AUTHORITY_H].decode()),
             "detached_digest": json.loads(first[checker.C21_POSTMERGE_AUTHORITY_D]),
         }
-        self.assertEqual([], checker.validate_c21_postmerge_development_authority_reconciliation_projection(bundle, manifest))
+        with _historical_bytes_overlay(first):
+            self.assertEqual([], checker.validate_c21_postmerge_development_authority_reconciliation_projection(bundle, manifest))
         self.assertEqual("C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION", manifest["manifest_type"])
         self.assertEqual("READY_FOR_WORK_INSTRUCTION", progress["next_work_package"]["status"])
         self.assertEqual("C-01", progress["next_work_package"]["package_id"])
@@ -10748,6 +11130,18 @@ class C01MainlineAcceptanceTests(unittest.TestCase):
             for path in checker.c01_mainline_acceptance_metadata()["product_paths"]
             if path != "docs/WORK_STATUS.md"
         }
+        # The seq715 authority is immutable; later plan/test revisions are not
+        # substitute authority for this historical acceptance fixture.
+        for path, expected in checker.C01_ACCEPTANCE_AUTHORITY.items():
+            raw = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{path}"], cwd=ROOT)
+            self.assertEqual(expected.lower(), hashlib.sha256(raw).hexdigest())
+            frozen[path] = raw
+        for path in (checker.C01_PRODUCT_WI["path"], "docs/progress/failure-ledger.json"):
+            frozen[path] = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{path}"], cwd=ROOT)
+        independent = checker.C01_ACCEPTANCE_INDEPENDENT_TEST
+        frozen[independent] = subprocess.check_output([
+            "git", "show", f"a1cc61578fbda75ae4f063138daa3269bd052a8f:{independent}"
+        ], cwd=ROOT)
         original_read_bytes = Path.read_bytes
 
         def read_frozen_product(path):
@@ -11004,6 +11398,53 @@ class C01MainlineAcceptanceTests(unittest.TestCase):
 
 class C01L3ReworkControlTests(unittest.TestCase):
     BASE = "0f39bad30e7f4ab865077530cbbd29d902d1485d"
+
+    # Exact historical receipt recovered once from the preserved review output.
+    # Tests never depend on the local session archive at runtime.
+    REVIEW_BYTES = base64.b64decode(
+    "IyBDLTAxIGZpbmFsIHdob2xlLWJyYW5jaCByZXZpZXcgcmVjZWlwdAoKIyMgVmVyZGljdAoKLSBTUEVDOiBGQUlMCi0gUVVBTElU"
+    "WTogQ0hBTkdFU19SRVFVSVJFRAotIEZpbmRpbmdzOiBDcml0aWNhbCAxIC8gSW1wb3J0YW50IDEgLyBNaW5vciAwCi0gUFIgc3Rh"
+    "dHVzOiBCTE9DS0VEIEJFRk9SRSBQVVNICgojIyBDMSDigJQgQzAxLUwzLU5PVC1FWEVDVVRFRC1QUk9NT1RFRC1UTy1QQVNTLXYx"
+    "CgpUaGUgbWF0cml4IGFzc2lnbnMgQVYtQUdULTAwMyBhbmQgQVYtT1BTLTAxMSB0byBDLTAxIGF0IEwzLiBMMyByZXF1aXJlcyBh"
+    "biBpbnRlZ3JhdGVkIEFkYXB0ZXIsIGJ1ZGdldCwgZXZlbnQgcGVyc2lzdGVuY2UsIGFuZCByZWFsIFBvc3RncmVTUUwgYm91bmRh"
+    "cnkuIFRoZSBjb21taXR0ZWQgc2VxNzE1IGFjY2VwdGFuY2UgaW5zdGVhZCB1c2VzIGBERVRFUk1JTklTVElDX0xPQ0FMX0ZJWFRV"
+    "UkVgLCBgRS1FVlRfSU5fTUVNT1JZYCwgYEUtQVBJX0xPQ0FMX0ZBS0VfQ09OVFJBQ1RgLCBhbmQgYGV4dGVybmFsX2NhbGxzPTBg"
+    "LCB3aGlsZSByZXBvcnRpbmcgYWxsIGFzc2lnbmVkIElEcyBQQVNTIGFuZCBDLTAxIEFDQ0VQVEVELiBIb25lc3QgZml4dHVyZS1z"
+    "Y29wZSBsYWJlbGluZyBkb2VzIG5vdCBhbGxvdyBhbiB1bmV4ZWN1dGVkIEwzIHJlcXVpcmVtZW50IHRvIGJlIHByb21vdGVkIHRv"
+    "IFBBU1MuCgojIyBJMSDigJQgQzAxLVJFUVVJUkVELUVBUEktRUVWVC1TSEFQRS1NSVNTSU5HLXYxCgpUaGUgcmVxdWlyZWQgRS1B"
+    "UEkgZXZpZGVuY2UgbXVzdCBpbmNsdWRlIHJhdyByZXF1ZXN0L3Jlc3BvbnNlIHBsdXMgYW4gT3BlbkFQSSBjb250cmFjdCBkaWZm"
+    "LiBUaGUgc3VibWl0dGVkIGV2aWRlbmNlIGRpcmVjdGx5IGludm9rZXMgYSB0ZXN0LW9ubHkgZmFrZSBQcm90b2NvbCBhbmQgaGFz"
+    "IG5vIE9wZW5BUEkgZGlmZi4gUmVxdWlyZWQgRS1FVlQgZXZpZGVuY2UgbXVzdCBpbmNsdWRlIGV2ZW50IGlkLCB0eXBlLCB0aW1l"
+    "c3RhbXAsIGFuZCBhY3RvciBhbmQgcGVybWl0IG9yZGVyL2R1cGxpY2F0ZS9pZGVtcG90ZW5jeSB2ZXJpZmljYXRpb24uIFRoZSBp"
+    "bi1tZW1vcnkgcm93cyBsYWNrIGV2ZW50IGlkLCB0aW1lc3RhbXAsIGFuZCBhY3RvcjsgdGhlIFVOS05PV04gcGF0aCByZXR1cm5z"
+    "IGFuIGV4Y2VwdGlvbiB3aXRoIGFuIGVtcHR5IGV2ZW50IGxpc3QuCgojIyBBZGRpdGlvbmFsIGp1ZGdtZW50CgpBVi1BR1QtMDAy"
+    "IGhhcyBsaW1pdGVkIEwyIGZha2Ugb3BhcXVlLXJlZmVyZW5jZSBjb250cmFjdCBjb3ZlcmFnZSwgYnV0IGl0cyByZXF1aXJlZCBF"
+    "LUFQSSBzaGFwZSBpcyBub3QgY29tcGxldGUuIEFjdHVhbCBiYWNrZW5kIHN3YXAgTDMgd2FzIGV4cGxpY2l0bHkgTk9UX0VYRUNV"
+    "VEVEIGFuZCB0aGUgZmFrZSBiYWNrZW5kcyBjYW5ub3QgcmVwbGFjZSBpdC4KClVOS05PV04gdXNhZ2UgaGFuZGxpbmcgaXMgbm90"
+    "IGEgc2VwYXJhdGUgQnVkZ2V0U2VydmljZSBkZWZlY3Q6IGl0IHByZXNlcnZlcyB0aGUgcmVzZXJ2YXRpb24gYXMgYFJFQ09OQ0lM"
+    "SUFUSU9OX1JFUVVJUkVEYCwgY29uc3VtZXMvcmVsZWFzZXMgemVybywgYW5kIHJhaXNlcyBgVXNhZ2VSZWNvbmNpbGlhdGlvblJl"
+    "cXVpcmVkYC4gSG93ZXZlciwgdGhlIGN1cnJlbnQga2VybmVsIGRvZXMgbm90IHJldHVybiBhIHN0cnVjdHVyZWQgZXZlbnQgcmVj"
+    "ZWlwdCBmb3IgdGhpcyBwYXRoLCBzbyBpdCBjYW5ub3Qgc3VwcG9ydCB0aGUgcmVxdWlyZWQgRS1FVlQgcHJvb2YuCgojIyBSZXF1"
+    "aXJlZCByZW1lZGlhdGlvbgoKMS4gUHJlc2VydmUgY29tbWl0dGVkIHNlcTEtNzE1IGFuZCBhcHBlbmQgYSBjb3JyZWN0aW9uIHRo"
+    "YXQgcmVvcGVucyBDLTAxIGFuZCBibG9ja3MgQy0wMi4KMi4gQWRkIGEgcmVhbCBQb3N0Z3JlU1FMIEFkYXB0ZXIrYnVkZ2V0K2V2"
+    "ZW50LXBlcnNpc3RlbmNlIGludGVncmF0aW9uIHBhdGggYW5kIGluZGVwZW5kZW50IEwzIHZhbGlkYXRpb24uCjMuIEV4ZXJjaXNl"
+    "IHRoZSBhY3R1YWwgQVBJIGJvdW5kYXJ5LCBwcmVzZXJ2ZSByYXcgcmVxdWVzdC9yZXNwb25zZSwgYW5kIGNvbXBhcmUgdGhlIGdl"
+    "bmVyYXRlZCBPcGVuQVBJIGNvbnRyYWN0Lgo0LiBQZXJzaXN0IG9yZGVyZWQgZXZlbnRzIHdpdGggaWQsIHR5cGUsIHRpbWVzdGFt"
+    "cCwgYWN0b3IsIGFuZCByZXF1ZXN0L3Jlc2VydmF0aW9uL3J1bi9zdGVwIGNvcnJlbGF0aW9uLgo1LiBQcmVzZXJ2ZSBVTktOT1dO"
+    "IHJlc2VydmF0aW9uIGFuZCBleGNlcHRpb24gc2VtYW50aWNzIHdoaWxlIHByb2R1Y2luZyBhIHN0cnVjdHVyZWQgcmVjb25jaWxp"
+    "YXRpb24tcmVxdWlyZWQgZXZlbnQgYXQgdGhlIGFwcHJvcHJpYXRlIHVwcGVyIGJvdW5kYXJ5LgoK"
+    )
+
+    def setUp(self):
+        self.assertEqual(2307, len(self.REVIEW_BYTES))
+        self.assertEqual(
+            "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46",
+            hashlib.sha256(self.REVIEW_BYTES).hexdigest().upper(),
+        )
+        checker = self._checker()
+        overlay = _historical_bytes_overlay({checker.C01_L3_REWORK_REVIEW: self.REVIEW_BYTES})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
 
     def _checker(self):
         checker = _load_checker_or_none()
@@ -11441,6 +11882,9 @@ class C01PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
     def test_seq728_projection_rejects_history_state_boundary_and_checksum_mutations(self):
         checker = self._checker()
         artifacts = checker.c01_postmerge_development_authority_reconciliation_from_root(ROOT)
+        overlay = _historical_bytes_overlay(artifacts)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
         manifest = json.loads(artifacts[checker.C01_POSTMERGE_AUTHORITY_M])
         for label, mutate in (
             ("history", lambda bundle: bundle["events"]["events"][726].update(event_id="tampered")),
@@ -12517,6 +12961,16 @@ class C02PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
 
 
 class C03StartProjectionTests(unittest.TestCase):
+    def setUp(self):
+        checkpoint = "2dcd4da89e92425be52b570ae2110f60dfcc29de"
+        paths = ["docs/work_orders/C-03_WORK_INSTRUCTION.md",
+                 "docs/work_orders/C-03_INVOCATION_PROMPT.md"]
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     BASE = "1c3948ff1a741832a2f012f464f1a301490356c1"
     BRANCH = "codex/c03-developer-lifecycle-r1"
     EXACT12 = sorted([
@@ -13179,7 +13633,6 @@ class C04StartProjectionTests(unittest.TestCase):
         checker = self._checker()
         generated = checker.c04_start_projection_from_root(ROOT)
         bundle = {"_root": ROOT, "progress": json.loads(generated[checker.C04_START_P])}
-        self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
         completion = "a" * 40
         rows = {
             ("rev-parse", "HEAD"): completion,
@@ -13200,9 +13653,14 @@ class C04StartProjectionTests(unittest.TestCase):
                 return rows.get(args[2:], "")
             return None
 
-        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
+        original_is_file = Path.is_file
+        with mock.patch.object(Path, "is_file", lambda path: path == Path("D:/Project/Anvil/.git/info/exclude") or original_is_file(path)), mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
             checker, "_c02_git_quiet_check", return_value=True
         ):
+            # Collection succeeds; an out-of-scope dirty row must fail the path predicate.
+            rows[("status", "--porcelain", "--untracked-files=all")] = "M  outside.txt"
+            self.assertEqual(["C04_START_PATH_OR_CLEAN_INVALID"], checker._collect_c04_start_projection_git(bundle))
+            rows[("status", "--porcelain", "--untracked-files=all")] = ""
             self.assertEqual([], checker._collect_c04_start_projection_git(bundle))
             rows[("show", "-s", "--format=%P", completion)] = "b" * 40
             self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
@@ -15181,6 +15639,16 @@ class C08FinalAcceptanceProjectionTests(unittest.TestCase):
 
 
 class C09StartProjectionTests(unittest.TestCase):
+    def setUp(self):
+        checkpoint = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+        paths = ["Anvil_설계서_v2.md", "Anvil_작업계획서_v1.md",
+                 "Anvil_통합검증매트릭스_v1.md", "Anvil_테스트계획서_v1.md"]
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     BASE = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
     BRANCH = "codex/c09-execution-backends-r1"
     EXACT11 = sorted([
@@ -15404,6 +15872,9 @@ class C09StartProjectionTests(unittest.TestCase):
 
 
 class C09R3ControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     BASE = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
 
     def _checker(self):
@@ -15577,6 +16048,9 @@ class C09R3ControlTests(unittest.TestCase):
 
 
 class C09R4ControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     BASE = "74f9878de521a6bc5a2c4f5165332c76edfc1354"
     PARENT = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
 
@@ -15979,6 +16453,12 @@ class C09MainTakeoverControlTests(unittest.TestCase):
 
     def test_active_scope_correction_validates_immutable_seq824_without_rewriting_history(self):
         checker = self._checker()
+        checkpoint = "8f5af5f0efc6f287ce556fd9a908e991a586f97e"
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in (checker.C09_MAIN_TAKEOVER_P, checker.C09_MAIN_TAKEOVER_E)}
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
         old_progress = json.loads(subprocess.check_output(
             ["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_MAIN_TAKEOVER_P],
             cwd=ROOT,
@@ -16121,6 +16601,9 @@ class C09FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class C10StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     def _checker(self):
         checker = _load_checker_or_none()
         self.assertIsNotNone(checker)
@@ -16573,6 +17056,9 @@ class C10PostcommitReconciliationControlTests(unittest.TestCase):
 
 
 class C11StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_c11_start", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec)
@@ -16803,6 +17289,9 @@ class C11FinalAcceptanceTests(unittest.TestCase):
 
 
 class C12StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_c12_start", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec)
@@ -17046,6 +17535,9 @@ class C12FinalAcceptanceTests(unittest.TestCase):
 
 
 class C13StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_c13_start", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec)
@@ -17144,6 +17636,9 @@ class C13StartControlTests(unittest.TestCase):
 
 
 class C13FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_c13_final", CHECKER_PATH,
@@ -17236,6 +17731,28 @@ class C13FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class C14StartControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        paths = (checker.C14_START_E, checker.C14_START_M, checker.C13_FINAL_M)
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        predecessor = json.loads(files[checker.C13_FINAL_M])
+        for path, expected in predecessor["product_raw"].items():
+            raw = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+            self.assertEqual(expected, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()})
+            files[path] = raw
+        accepted = json.loads(files[checker.C14_START_E])["events"][919]
+        self.assertEqual((920, "MAIN_PACKAGE_ACCEPTED", "C-14"),
+                         (accepted["sequence"], accepted["event_type"], accepted["work_package_id"]))
+        files[checker.C14_START_P] = checker._c21_resume_json_bytes({
+            "event_sequence": 920, "current_work_package": accepted["work_package_id"],
+            "pending_approvals": [], "status": accepted["details"]["decision"],
+        })
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_c14_start", CHECKER_PATH,
@@ -17305,6 +17822,20 @@ class C14StartControlTests(unittest.TestCase):
 
 
 class C14LeaseTimeCorrectionControlTests(unittest.TestCase):
+    def setUp(self):
+        C14StartControlTests.setUp(self)
+        checker = self._checker()
+        events = json.loads((ROOT / checker.C14_CORRECTION_E).read_bytes())["events"]
+        progress = json.loads((ROOT / checker.C14_CORRECTION_P).read_bytes())
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED"],
+                         [events[index]["event_type"] for index in (917, 918)])
+        progress.update(completed_c14_write_lease=events[917]["details"],
+                        completed_c14_worker_lease=events[918]["details"],
+                        updated_at=events[919]["occurred_at"])
+        overlay = _historical_bytes_overlay({checker.C14_CORRECTION_P: checker._c21_resume_json_bytes(progress)})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_c14_lease_time_correction", CHECKER_PATH,
@@ -17375,6 +17906,21 @@ class C14LeaseTimeCorrectionControlTests(unittest.TestCase):
 
 
 class C14FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        paths = (checker.C14_FINAL_E, checker.C14_FINAL_M)
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        manifest = json.loads(files[checker.C14_FINAL_M])
+        for path, expected in manifest["product_raw"].items():
+            raw = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+            self.assertEqual(expected, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()})
+            files[path] = raw
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_c14_final", CHECKER_PATH,
@@ -17597,6 +18143,34 @@ class C15FinalAcceptanceDir2ControlTests(unittest.TestCase):
 
 
 class CGateDecisionControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        paths = (checker.C_GATE_P, checker.C_GATE_E, checker.C_GATE_H, checker.C_GATE_DIR, checker.C15_FINAL_M)
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        manifest = json.loads(files[checker.C15_FINAL_M])
+        stream = json.loads(files[checker.C_GATE_E])
+        events = stream["events"][:931]
+        self.assertEqual((931, "DIR_REPORTED"), (events[-1]["sequence"], events[-1]["event_type"]))
+        prefix = checker.raw_event_object_prefix_bytes(files[checker.C_GATE_E], 931)
+        stream.update(events=events, last_sequence=931)
+        header = {key: value for key, value in stream.items() if key != "events"}
+        files[checker.C_GATE_E] = checker._c21_resume_json_bytes(header).rstrip()[:-1] + b',\n  "events": [\n' + prefix + b'\n  ]\n}\n'
+        progress = json.loads(files[checker.C_GATE_P])
+        progress.update(event_sequence=931, last_event_id=events[-1]["event_id"], status="DIR_HOLD",
+                        active_agent=None, worker_lease=None, write_lease=None, active_work_instruction=None)
+        files[checker.C_GATE_P] = checker._c21_resume_json_bytes(progress)
+        registry = json.loads(files[checker.C_GATE_DIR])
+        entry = next(row for row in registry["checkpoints"] if row["checkpoint"] == "DIR-2")
+        entry.update(status=manifest["dir2_status"], verdict=manifest["dir2_verdict"],
+                     subject_hash=manifest["subject_hash"], report_ref=manifest["report_path"],
+                     owner_direction_event_id=None)
+        files[checker.C_GATE_DIR] = checker._c21_resume_json_bytes(registry)
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_c_gate", CHECKER_PATH,
@@ -17723,16 +18297,26 @@ class D01FinalAcceptanceControlTests(unittest.TestCase):
 
     def test_seq942_accepts_d01_releases_leases_and_readies_d02(self):
         checker = self._checker()
-        current = json.loads((ROOT / checker.D01_FINAL_P).read_bytes())
-        if current["event_sequence"] >= 942 and (ROOT / checker.D01_FINAL_M).exists():
-            progress = current
-            manifest = json.loads((ROOT / checker.D01_FINAL_M).read_bytes())
-            events = json.loads((ROOT / checker.D01_FINAL_E).read_bytes())["events"]
-        else:
-            artifacts = checker.d01_final_acceptance_from_root(ROOT)
-            progress = json.loads(artifacts[checker.D01_FINAL_P])
-            manifest = json.loads(artifacts[checker.D01_FINAL_M])
-            events = json.loads(artifacts[checker.D01_FINAL_E])["events"]
+        # D01 was recorded with the D-phase checkpoint, not as a standalone
+        # seq942 progress commit. Replay its frozen acceptance and revocations;
+        # a successor's current progress is not the historical projection.
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        frozen = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                  for path in (checker.D01_FINAL_M, checker.D01_FINAL_E)}
+        manifest = json.loads(frozen[checker.D01_FINAL_M])
+        events = json.loads(frozen[checker.D01_FINAL_E])["events"][:942]
+        self.assertEqual(manifest["historical_raw_event_prefix"], {
+            "bytes": len(checker.raw_event_object_prefix_bytes(frozen[checker.D01_FINAL_E], 937)),
+            "sha256": checker._c21_resume_sha(checker.raw_event_object_prefix_bytes(frozen[checker.D01_FINAL_E], 937)),
+        })
+        accepted = events[-1]
+        self.assertTrue(accepted["details"]["accepted"])
+        self.assertEqual(0, manifest["active_leases"])
+        self.assertEqual(["REVOKED", "REVOKED"], [row["details"]["status"] for row in events[939:941]])
+        progress = {"event_sequence": accepted["sequence"], "status": accepted["details"]["decision"],
+                    "active_agent": None, "worker_lease": None, "write_lease": None,
+                    "next_work_package": {"package_id": accepted["details"]["next_work_package"],
+                                          "status": accepted["details"]["next_work_package_status"]}}
         self.assertEqual(942, progress["event_sequence"])
         self.assertEqual("ACCEPTED", progress["status"])
         self.assertIsNone(progress["active_agent"])
@@ -17752,21 +18336,35 @@ class D01FinalAcceptanceControlTests(unittest.TestCase):
 
     def test_seq942_is_append_only_and_binds_exact57(self):
         checker = self._checker()
-        before = (ROOT / checker.D01_START_E).read_bytes()
-        current = json.loads((ROOT / checker.D01_FINAL_P).read_bytes())
-        artifacts = (checker.d01_final_acceptance_from_root(ROOT)
-                     if current["event_sequence"] == 937 else None)
-        after = (artifacts[checker.D01_FINAL_E] if artifacts is not None
-                 else (ROOT / checker.D01_FINAL_E).read_bytes())
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        frozen = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                  for path in (checker.D01_FINAL_E, checker.D01_FINAL_M)}
+        before = after = frozen[checker.D01_FINAL_E]
+        manifest = json.loads(frozen[checker.D01_FINAL_M])
         self.assertEqual(
             checker.raw_event_object_prefix_bytes(before, 937),
             checker.raw_event_object_prefix_bytes(after, 937),
         )
-        manifest = json.loads((artifacts[checker.D01_FINAL_M] if artifacts is not None
-                               else (ROOT / checker.D01_FINAL_M).read_bytes()))
+        prefix = checker.raw_event_object_prefix_bytes(before, 937)
+        self.assertEqual(manifest["historical_raw_event_prefix"], {
+            "bytes": len(prefix), "sha256": hashlib.sha256(prefix).hexdigest().upper(),
+        })
         self.assertEqual(checker.d01_final_paths(), manifest["combined_exact_paths"])
         self.assertEqual(57, manifest["combined_exact_path_count"])
-        self.assertEqual(checker.d01_final_product_raw(ROOT), manifest["product_raw"])
+        product = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                   for path in manifest["product_raw"]}
+        # The D-phase checkpoint contains later additive exports. Extract the
+        # D01 section, then require its original frozen bytes/hash, not new values.
+        raw = product["packages/knowledge/__init__.py"]
+        export_start = raw.index(b"\n__all__ = [\n")
+        export_end = raw.index(b'    "LearningSnapshotRepository"', export_start)
+        product["packages/knowledge/__init__.py"] = raw[:raw.index(b"from .snapshots")] + raw[export_start:export_end] + b"]\n"
+        for path, raw in product.items():
+            self.assertEqual(manifest["product_raw"][path], {
+                "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper(),
+            })
+        with _historical_bytes_overlay(product):
+            self.assertEqual(checker.d01_final_product_raw(ROOT), manifest["product_raw"])
         self.assertEqual((0, 0), (manifest["blocking_findings"],
                                   manifest["important_findings"]))
 
@@ -17782,6 +18380,57 @@ class D01FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D02StartControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        directory = tempfile.TemporaryDirectory(prefix="anvil-d02-history-")
+        self.addCleanup(directory.cleanup)
+        self.fixture_root = Path(directory.name)
+        # The dispatcher requires a repository boundary before its mocked collector.
+        (self.fixture_root / ".git").mkdir()
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+            for path in checker.d02_start_paths():
+                raw = source.extractfile(path).read()
+                target = self.fixture_root / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+        raw = (self.fixture_root / checker.D01_FINAL_E).read_bytes()
+        events = json.loads(raw)["events"][:942]
+        final = json.loads((self.fixture_root / checker.D01_FINAL_M).read_bytes())
+        prefix = checker.raw_event_object_prefix_bytes(raw, 942)
+        prior = checker.raw_event_object_prefix_bytes(raw, 937)
+        self.assertEqual(final["historical_raw_event_prefix"], {
+            "bytes": len(prior), "sha256": hashlib.sha256(prior).hexdigest().upper(),
+        })
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", events[-1]["event_type"])
+        self.assertEqual(["REVOKED", "REVOKED"], [row["details"]["status"] for row in events[939:941]])
+        self.assertEqual(0, final["active_leases"])
+        # Rehydrate only the D01 predecessor fields consumed by D02, from its
+        # frozen acceptance/revocation evidence; never import today's projection.
+        accepted = events[-1]["details"]
+        frozen_progress = json.loads((self.fixture_root / checker.D01_FINAL_P).read_bytes())
+        progress = {
+            "event_sequence": 942, "last_event_id": events[-1]["event_id"],
+            "status": accepted["decision"], "current_work_package": "D-01", "current_phase": "D",
+            "next_work_package": {"package_id": accepted["next_work_package"],
+                                  "status": accepted["next_work_package_status"]},
+            "active_agent": None, "worker_lease": None, "write_lease": None,
+            "active_work_instruction": None, "valid_failure_count": 0,
+            "design_baseline_hash": events[940]["details"]["baseline_hash"],
+            "repository": {"remote_head": accepted["acceptance_upstream_head"],
+                           "upstream": frozen_progress["repository"]["upstream"]},
+            "registry_refs": {}, "dir_review": {"status": "CLEARED"},
+        }
+        stream = json.loads(raw)
+        stream.pop("events")
+        stream["last_sequence"] = 942
+        header = json.dumps(stream, ensure_ascii=False).encode()[:-1]
+        (self.fixture_root / checker.D01_FINAL_E).write_bytes(header + b', "events": [' + prefix + b']}\n')
+        (self.fixture_root / checker.D01_FINAL_P).write_bytes(checker._c21_resume_json_bytes(progress))
+        summary = "```json anvil-recovery-summary\n" + json.dumps(progress) + "\n```\n"
+        (self.fixture_root / checker.D01_FINAL_H).write_text(summary, encoding="utf-8")
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_d02_start", CHECKER_PATH,
@@ -17792,15 +18441,9 @@ class D02StartControlTests(unittest.TestCase):
 
     def test_seq946_starts_d02_without_new_approval(self):
         checker = self._checker()
-        current = json.loads((ROOT / checker.D02_START_P).read_bytes())
-        if current["event_sequence"] == 946:
-            artifacts = checker.d02_start_from_root(ROOT)
-            progress = json.loads(artifacts[checker.D02_START_P])
-            manifest = json.loads(artifacts[checker.D02_START_M])
-        else:
-            artifacts = checker.d02_start_from_root(ROOT)
-            progress = json.loads(artifacts[checker.D02_START_P])
-            manifest = json.loads(artifacts[checker.D02_START_M])
+        artifacts = checker.d02_start_from_root(self.fixture_root)
+        progress = json.loads(artifacts[checker.D02_START_P])
+        manifest = json.loads(artifacts[checker.D02_START_M])
         self.assertEqual(946, progress["event_sequence"])
         self.assertEqual("D-02", progress["current_work_package"])
         self.assertEqual("IN_PROGRESS", progress["status"])
@@ -17810,9 +18453,8 @@ class D02StartControlTests(unittest.TestCase):
 
     def test_seq946_preserves_d01_prefix_and_binds_exact61(self):
         checker = self._checker()
-        before = (ROOT / checker.D01_FINAL_E).read_bytes()
-        current = json.loads((ROOT / checker.D02_START_P).read_bytes())
-        artifacts = checker.d02_start_from_root(ROOT)
+        before = (self.fixture_root / checker.D01_FINAL_E).read_bytes()
+        artifacts = checker.d02_start_from_root(self.fixture_root)
         after = artifacts[checker.D02_START_E]
         self.assertEqual(
             checker.raw_event_object_prefix_bytes(before, 942),
@@ -17830,7 +18472,7 @@ class D02StartControlTests(unittest.TestCase):
              mock.patch.object(checker, "_collect_d01_final_acceptance_git",
                                side_effect=AssertionError("seq942 fallback")):
             self.assertEqual(["SEQ946_SELECTED"], checker._validate_git_projection({
-                "_root": ROOT, "progress": {"event_sequence": 946},
+                "_root": self.fixture_root, "progress": {"event_sequence": 946},
             }))
 
 
@@ -17873,14 +18515,33 @@ class D02FinalAcceptanceControlTests(unittest.TestCase):
             events_raw = artifacts[checker.D02_FINAL_E]
             manifest = json.loads(artifacts[checker.D02_FINAL_M])
         else:
-            events_raw = (ROOT / checker.D02_FINAL_E).read_bytes()
+            events_raw = subprocess.check_output(
+                ["git", "show", f"25dcaaa3854619f131cc93fa1ae5cd79479553ae:{checker.D02_FINAL_E}"],
+                cwd=ROOT,
+            )
             manifest = json.loads((ROOT / checker.D02_FINAL_M).read_bytes())
         prefix = checker.raw_event_object_prefix_bytes(events_raw, 946)
         self.assertEqual({"bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix)},
                          manifest["historical_raw_event_prefix"])
         self.assertEqual(checker.d02_final_paths(), manifest["combined_exact_paths"])
         self.assertEqual(68, manifest["combined_exact_path_count"])
-        self.assertEqual(checker.d02_final_product_raw(ROOT), manifest["product_raw"])
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in manifest["product_raw"]}
+        path = "packages/knowledge/__init__.py"
+        raw = files[path]
+        # Keep precisely the D02 exports from the immutable D-phase checkpoint.
+        files[path] = (raw[:raw.index(b"from .sources")]
+                       + raw[raw.index(b"\n__all__ = [\n"):raw.index(b'    "DerivedSourceItem"')]
+                       + b"]\n")
+        self.assertEqual(597, len(files[path]))
+        self.assertEqual("30D5C3F7825730752B978C084C3632ADAF830778265D4363F0B8656FB00463A5",
+                         hashlib.sha256(files[path]).hexdigest().upper())
+        for path, raw in files.items():
+            self.assertEqual({"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()},
+                             manifest["product_raw"][path])
+        with _historical_bytes_overlay(files):
+            self.assertEqual(checker.d02_final_product_raw(ROOT), manifest["product_raw"])
         self.assertEqual((0, 0), (manifest["blocking_findings"],
                                   manifest["important_findings"]))
 
@@ -17896,6 +18557,54 @@ class D02FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D03StartControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        package = getattr(self, "HISTORY_PACKAGE", "D02")
+        sequence = getattr(self, "HISTORY_SEQUENCE", 951)
+        paths_method = getattr(self, "HISTORY_PATHS", "d03_start_paths")
+        event_path, manifest_path, progress_path, handoff_path = (
+            getattr(checker, package + ("_FINAL_M" if suffix == "M" else "_START_" + suffix))
+            for suffix in ("E", "M", "P", "H"))
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+            files = {path: source.extractfile(path).read() for path in getattr(checker, paths_method)()}
+        raw = files[event_path]
+        events = json.loads(raw)["events"][:sequence]
+        manifest = json.loads(files[manifest_path])
+        prior = checker.raw_event_object_prefix_bytes(raw, manifest["historical_event_sequence"])
+        self.assertEqual(manifest["historical_raw_event_prefix"], {
+            "bytes": len(prior), "sha256": hashlib.sha256(prior).hexdigest().upper()})
+        final_events = events[manifest["historical_event_sequence"]:]
+        accepted_event = next(row for row in final_events if row["event_type"] == "MAIN_PACKAGE_ACCEPTED")
+        revoked = [row for row in final_events if row["event_type"] in ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")]
+        self.assertEqual(["REVOKED", "REVOKED"], [event["details"]["status"] for event in revoked])
+        self.assertEqual(0, manifest["active_leases"])
+        accepted = accepted_event["details"]
+        next_details = events[-1]["details"] if events[-1]["event_type"] == "PHASE_GATE_DECIDED" else accepted
+        frozen_progress = json.loads(files[progress_path])
+        progress = {
+            "event_sequence": sequence, "last_event_id": events[-1]["event_id"],
+            "status": accepted["decision"], "current_work_package": accepted_event["work_package_id"], "current_phase": "D",
+            "next_work_package": {"package_id": next_details["next_work_package"],
+                                  "status": next_details.get("next_work_package_status", next_details.get("next_package_status"))},
+            "active_agent": None, "worker_lease": None, "write_lease": None,
+            "active_work_instruction": None, "valid_failure_count": 0,
+            "design_baseline_hash": revoked[-1]["details"]["baseline_hash"],
+            "repository": {"remote_head": accepted["acceptance_upstream_head"],
+                           "upstream": frozen_progress["repository"]["upstream"]},
+            "registry_refs": {}, "dir_review": {"status": "CLEARED"},
+        }
+        stream = {k: v for k, v in json.loads(raw).items() if k != "events"}
+        stream.update(last_sequence=sequence, last_event_id=events[-1]["event_id"])
+        files[event_path] = (json.dumps(stream, ensure_ascii=False).encode()[:-1]
+            + b', "events": [' + checker.raw_event_object_prefix_bytes(raw, sequence) + b']}\n')
+        files[progress_path] = checker._c21_resume_json_bytes(progress)
+        files[handoff_path] = ("```json anvil-recovery-summary\n" + json.dumps(progress) + "\n```\n").encode()
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_d03_start", CHECKER_PATH,
@@ -17942,6 +18651,41 @@ class D03StartControlTests(unittest.TestCase):
 
 
 class D03FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        package = getattr(self, "HISTORY_FINAL", "D03")
+        event_path = getattr(checker, package + "_START_E")
+        manifest_path = getattr(checker, package + "_FINAL_M")
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in (event_path, manifest_path)}
+        manifest = json.loads(files[manifest_path])
+        for path in manifest["product_raw"]:
+            files[path] = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+        path = "packages/knowledge/__init__.py"
+        raw = files[path]
+        import_boundary = getattr(self, "HISTORY_IMPORT", b"from .patterns")
+        if import_boundary is not None:
+            files[path] = (raw[:raw.index(import_boundary)]
+                           + raw[raw.index(b"\n__all__ = [\n"):raw.index(getattr(self, "HISTORY_EXPORT", b'    "AntiPattern"'))] + b"]\n")
+        for path, expected in manifest["product_raw"].items():
+            raw = files[path]
+            self.assertEqual(expected, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()})
+        if getattr(self, "HISTORY_PROGRESS", False):
+            events = json.loads(files[event_path])["events"][:manifest["event_sequence"]]
+            accepted = next(row for row in reversed(events) if row["event_type"] == "MAIN_PACKAGE_ACCEPTED")
+            self.assertEqual("ACCEPTED", accepted["details"]["decision"])
+            self.assertEqual(["REVOKED", "REVOKED"], [row["details"]["status"] for row in events
+                if row["sequence"] > manifest["historical_event_sequence"]
+                and row["event_type"] in ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")])
+            p = {"event_sequence": events[-1]["sequence"], "status": accepted["details"]["decision"],
+                 "worker_lease": None, "write_lease": None, "active_agent": None, "active_work_instruction": None,
+                 "pending_approvals": []}
+            files[getattr(checker, package + "_START_P")] = checker._c21_resume_json_bytes(p)
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_d03_final", CHECKER_PATH,
@@ -18002,6 +18746,13 @@ class D03FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D04StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D03"
+    HISTORY_SEQUENCE = 960
+    HISTORY_PATHS = "d04_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location(
             "check_project_progress_d04_start", CHECKER_PATH,
@@ -18046,6 +18797,13 @@ class D04StartControlTests(unittest.TestCase):
 
 
 class D04FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D04"
+    HISTORY_IMPORT = b"from .reviews"
+    HISTORY_EXPORT = b'    "LearningReview"'
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_d04_final", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
@@ -18078,6 +18836,13 @@ class D04FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D05StartControlTests(unittest.TestCase):
+    def setUp(self):
+        path = "docs/progress/progress-events.json"
+        raw = subprocess.check_output(["git", "show", f"25dcaaa3854619f131cc93fa1ae5cd79479553ae:{path}"], cwd=ROOT)
+        overlay = _historical_bytes_overlay({path: raw})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_d05_start", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec)
@@ -18136,6 +18901,18 @@ class D05StartControlTests(unittest.TestCase):
 
 
 class D05ScopeRevisionControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+        checker = self._checker()
+        event = json.loads((ROOT / checker.D05_START_E).read_bytes())["events"][973]
+        self.assertEqual("WORK_INSTRUCTION_REVISED", event["event_type"])
+        self.assertFalse(event["details"]["new_project_approval_requested"])
+        progress = {"event_sequence": event["sequence"], "pending_approvals": [],
+                    "active_work_instruction": {"artifact_sha256": event["details"]["work_instruction_sha256"]}}
+        overlay = _historical_bytes_overlay({checker.D05_START_P: checker._c21_resume_json_bytes(progress)})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_d05_revision", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec)
@@ -18187,6 +18964,13 @@ class D05ScopeRevisionControlTests(unittest.TestCase):
 
 
 class D05FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D05"
+    HISTORY_IMPORT = b"from .candidates"
+    HISTORY_EXPORT = b'    "CandidateError"'
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_d05_final", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec)
@@ -18241,6 +19025,13 @@ class D05FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D06StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D05"
+    HISTORY_SEQUENCE = 979
+    HISTORY_PATHS = "d06_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
     def _checker(self):
         spec = importlib.util.spec_from_file_location("check_project_progress_d06_start", CHECKER_PATH)
         module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
@@ -18267,6 +19058,14 @@ class D06StartControlTests(unittest.TestCase):
 
 
 class D06FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D06"
+    HISTORY_IMPORT = b"from .skills"
+    HISTORY_EXPORT = b'    "SkillError"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location("check_project_progress_d06_final",CHECKER_PATH); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
     def test_seq989_accepts_d06_and_learning_gate(self):
@@ -18288,6 +19087,13 @@ class D06FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D07StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D06"
+    HISTORY_SEQUENCE = 989
+    HISTORY_PATHS = "d07_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d07_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq993_start_and_exact118(self):
@@ -18302,6 +19108,14 @@ class D07StartControlTests(unittest.TestCase):
 
 
 class D07FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D07"
+    HISTORY_IMPORT = b"from .skill_evolution"
+    HISTORY_EXPORT = b'    "EvolutionError"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d07_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq998_accepts_d07_releases_leases_and_readies_d08(self):
@@ -18324,6 +19138,13 @@ class D07FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D08StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D07"
+    HISTORY_SEQUENCE = 998
+    HISTORY_PATHS = "d08_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d08_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1002_starts_d08_without_new_approval(self):
@@ -18341,6 +19162,14 @@ class D08StartControlTests(unittest.TestCase):
 
 
 class D08FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D08"
+    HISTORY_IMPORT = b"from .hooks"
+    HISTORY_EXPORT = b'    "HookError"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d08_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1008_accepts_d08_and_skill_gate(self):
@@ -18363,6 +19192,13 @@ class D08FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D09StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D08"
+    HISTORY_SEQUENCE = 1008
+    HISTORY_PATHS = "d09_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d09_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1012_starts_d09_without_new_approval(self):
@@ -18380,6 +19216,14 @@ class D09StartControlTests(unittest.TestCase):
 
 
 class D09FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D09"
+    HISTORY_IMPORT = b"from .hook_runtime"
+    HISTORY_EXPORT = b'    "HookRuntime"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d09_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1017_accepts_d09_and_readies_d10(self):
@@ -18401,6 +19245,13 @@ class D09FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D10StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D09"
+    HISTORY_SEQUENCE = 1017
+    HISTORY_PATHS = "d10_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d10_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1021_starts_d10_without_new_approval(self):
@@ -18418,6 +19269,14 @@ class D10StartControlTests(unittest.TestCase):
 
 
 class D10FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D10"
+    HISTORY_IMPORT = b"from .model_registry"
+    HISTORY_EXPORT = b'    "ModelRegistry"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d10_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1026_accepts_d10_and_readies_hook_gate(self):
@@ -18439,6 +19298,18 @@ class D10FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class DHookGateControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        path = checker.D10_START_E
+        raw = subprocess.check_output(["git", "show", f"25dcaaa3854619f131cc93fa1ae5cd79479553ae:{path}"], cwd=ROOT)
+        event = json.loads(raw)["events"][1026]
+        self.assertEqual((1027, "PHASE_GATE_DECIDED", "ACCEPTED"),
+                         (event["sequence"], event["event_type"], event["details"]["verdict"]))
+        progress = {"event_sequence": 1027, "d_hook_gate": {"status": event["details"]["verdict"]}}
+        overlay = _historical_bytes_overlay({path: raw, checker.D10_START_P: checker._c21_resume_json_bytes(progress)})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d_hook_gate",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1027_accepts_gate_and_readies_d11(self):
@@ -18460,6 +19331,9 @@ class DHookGateControlTests(unittest.TestCase):
 
 
 class D11StartControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d11_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1031_starts_d11_without_new_approval(self):
@@ -18483,6 +19357,14 @@ class D11StartControlTests(unittest.TestCase):
 
 
 class D11FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D11"
+    HISTORY_IMPORT = b"from .learning_journey"
+    HISTORY_EXPORT = b'    "LearningJourney"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d11_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1036_accepts_d11_and_readies_d12(self):
@@ -18504,6 +19386,9 @@ class D11FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D12StartControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d12_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1040_starts_d12_without_new_approval(self):
@@ -18524,6 +19409,9 @@ class D12StartControlTests(unittest.TestCase):
 
 
 class D12LeaseTimeCorrectionControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d12_clock",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def _historical(self, c):
@@ -18547,6 +19435,14 @@ class D12LeaseTimeCorrectionControlTests(unittest.TestCase):
 
 
 class D12FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D12"
+    HISTORY_IMPORT = b"from .learning_e2e"
+    HISTORY_EXPORT = b'    "LearningE2E"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d12_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1050_accepts_d12_and_readies_d13(self):
@@ -18568,6 +19464,9 @@ class D12FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class D13StartControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d13_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1054_starts_d13_without_new_approval(self):
@@ -18588,6 +19487,13 @@ class D13StartControlTests(unittest.TestCase):
 
 
 class D13FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D13"
+    HISTORY_IMPORT = None  # D-Gate commit contains this exact terminal D-phase module.
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         s=importlib.util.spec_from_file_location("d13_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1059_accepts_d13_and_readies_d_gate(self):
@@ -18748,6 +19654,34 @@ class E01StartControlTests(unittest.TestCase):
 
 
 class E01FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = getattr(self, "HISTORY_CHECKPOINT", checker.E02_BASE)
+        scope = getattr(checker, getattr(self, "HISTORY_PRODUCT_SCOPE", "e01_product_write_scope"))()
+        expected = getattr(checker, getattr(self, "HISTORY_PRODUCT_HASHES", "E01_FINAL_PRODUCT_HASHES"))
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in scope}
+        self.assertEqual(expected, {path: hashlib.sha256(raw).hexdigest().upper() for path, raw in files.items()})
+        for binding in getattr(self, "HISTORY_EXTRA_HASHES", ()):
+            for path, sha256 in getattr(checker, binding).items():
+                raw = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                self.assertEqual(sha256, hashlib.sha256(raw).hexdigest().upper())
+                files[path] = raw
+        files[checker.D13_START_E] = subprocess.check_output(
+            ["git", "show", f"{checkpoint}:{checker.D13_START_E}"], cwd=ROOT)
+        if getattr(self, "HISTORY_CHECKER_EVIDENCE", False):
+            # The edit audit measures the historical acceptance patch, not later authorized repairs.
+            files["scripts/check_project_progress.py"] = subprocess.check_output(
+                ["git", "show", f"{checkpoint}:scripts/check_project_progress.py"], cwd=ROOT)
+        final_package = getattr(self, "HISTORY_FINAL_SNAPSHOT", None)
+        if final_package is not None:
+            for path in (checker.D13_START_P, checker.D13_START_H, "docs/progress/progress-event-contract.json",
+                         getattr(checker, final_package + "_FINAL_M"), getattr(checker, final_package + "_FINAL_D")):
+                files[path] = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location("e01_final",CHECKER_PATH)
         module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
@@ -18836,6 +19770,13 @@ class E02StartControlTests(unittest.TestCase):
 
 
 class E02FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "c9678884d8e44a53fc4ab7c070a2c84f29c4e481"
+    HISTORY_PRODUCT_SCOPE = "e02_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E02_FINAL_PRODUCT_HASHES"
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location("e02_final",CHECKER_PATH)
         module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
@@ -18896,11 +19837,20 @@ class E02FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class E04StartControlTests(unittest.TestCase):
-    def test_e04_preserves_historical_embedded_checker_evidence(self):
-        old=subprocess.check_output(["git","show","ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f:scripts/check_project_progress.py"],cwd=ROOT)
+    def test_e04_preserves_authoritative_c03_r2_harness_bytes(self):
+        import ast
+
+        # Freeze the C03 R2 authority object, not later unrelated additive history.
+        old=subprocess.check_output(["git","show","a1cc61578fbda75ae4f063138daa3269bd052a8f:scripts/check_project_progress.py"],cwd=ROOT)
         current=CHECKER_PATH.read_bytes()
-        extract=lambda value:value.split(b"C03_FINAL_R2_HARNESS_B64 = (",1)[1].split(b'E03_BASE = ',1)[0]
+        def extract(value):
+            start=value.index(b"C03_FINAL_R2_HARNESS_B64 = (")
+            return value[start:value.index(b"C03_FINAL_R2_RESULT_B64 = (",start)]
         self.assertEqual(extract(old),extract(current))
+        encoded=ast.literal_eval(ast.parse(extract(current)).body[0].value)
+        decoded=base64.b64decode(encoded,validate=True)
+        self.assertEqual(43781,len(decoded))
+        self.assertEqual("5027c870eae6d573ecf8c35fa9641179c85e44ddf92572f05a3012d74b5f6487",hashlib.sha256(decoded).hexdigest())
 
     def _checker(self):
         spec=importlib.util.spec_from_file_location("e04_start",CHECKER_PATH)
@@ -19018,6 +19968,14 @@ class E03R2CorrectiveControlTests(unittest.TestCase):
 
 
 class E03FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f"
+    HISTORY_PRODUCT_SCOPE = "e03_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E03_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E03_FINAL_CORRECTIVE_HASHES", "E03_R2_FROZEN")
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location("e03_final",CHECKER_PATH)
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -19055,6 +20013,15 @@ class E03FinalAcceptanceControlTests(unittest.TestCase):
 
 
 class E04FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "07fb68164de2ecf3b06342013d23e4d34d4dd0cb"
+    HISTORY_PRODUCT_SCOPE = "e04_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E04_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E04_FINAL_START_HASHES",)
+    HISTORY_CHECKER_EVIDENCE = True
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location("e04_final",CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
@@ -19134,6 +20101,15 @@ class E05StartControlTests(unittest.TestCase):
 
 
 class E05FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "039c53acd6d79895d3c94e1bc21b72d1b54283f9"
+    HISTORY_PRODUCT_SCOPE = "e05_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E05_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E05_FINAL_START_HASHES",)
+    HISTORY_CHECKER_EVIDENCE = True
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e05_final',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
@@ -19206,6 +20182,14 @@ class E06StartControlTests(unittest.TestCase):
 
 
 class E06FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "8d65c871c119d6f3b195f00e53e7e18bd2dba991"
+    HISTORY_PRODUCT_SCOPE = "e06_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E06_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E06_FINAL_START_HASHES",)
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e06_final',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
@@ -19282,6 +20266,14 @@ class E07StartControlTests(unittest.TestCase):
 
 
 class E07LeaseTimeCorrectionControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        path = checker.D13_START_E
+        raw = subprocess.check_output(["git", "show", f"{checker.E08_BASE}:{path}"], cwd=ROOT)
+        overlay = _historical_bytes_overlay({path: raw})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e07_correction',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
@@ -19313,6 +20305,15 @@ class E07LeaseTimeCorrectionControlTests(unittest.TestCase):
 
 
 class E07FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "03878181590d13231fee3a47f7d43963d6a089c8"
+    HISTORY_PRODUCT_SCOPE = "e07_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E07_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E07_FINAL_CONTROL_HASHES",)
+    HISTORY_FINAL_SNAPSHOT = "E07"
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e07_final',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
