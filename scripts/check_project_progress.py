@@ -57923,6 +57923,21 @@ def validate_bundle(bundle):
 
 
 
+_validate_git_projection_before_c30r5_final = _validate_git_projection
+def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "C30R5_FINAL_ACCEPTANCE_EXACT15":
+        from c30r5_final_overlay import gitv
+        return gitv(bundle["_root"])
+    return _validate_git_projection_before_c30r5_final(bundle)
+
+_validate_bundle_before_c30r5_final = validate_bundle
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") != "C30R5_FINAL_ACCEPTANCE_EXACT15":
+        return _validate_bundle_before_c30r5_final(bundle)
+    from c30r5_final_overlay import validate
+    return validate(bundle["_root"], bundle)
+
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1349,
+  "last_sequence": 1356,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -76597,7 +76597,180 @@
       "external_execution_authorized": false
     }
   }
+},
+{
+  "sequence": 1350,
+  "event_id": "evt_c30r5_final_1350_work_instruction_revised",
+  "event_type": "WORK_INSTRUCTION_REVISED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R5",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30R5",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "13D5E0DB2E49590E96D5AD169E5983820281D5A3AD9780D74628453E5602FE58",
+  "details": {
+    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "scope_expansion": false,
+    "parent_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
+    "parent_sha256": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9",
+    "revised_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md",
+    "revised_sha256": "B14F3A0A253F5BE74194F2B4BC38483E855B62B0C7070D6614F061D19234B000",
+    "invocation_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md",
+    "invocation_sha256": "AAF9EAB6A74ECE89EEA12813E627C5E203E85C4131D6FFED2CF1A8156C7C9BAB",
+    "correction": "MATRIX_COUNT_18_TO_14_ONLY"
+  }
+},
+{
+  "sequence": 1351,
+  "event_id": "evt_c30r5_final_1351_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R5",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30R5",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "8F28CC3BC2FA23DE333961007A4F2E6031B9AFBE0FE0B9DFC340829C3D325B81",
+  "details": {
+    "result_status": "COMPLETED",
+    "product_path": "tests/integration/test_c30_contract_matrix.py",
+    "product_sha256": "02C99791E43DBFFEEECA823A6725EBE32C17BFDDCA8B347FF510F4A094855E3E",
+    "developer_report": "docs/04_test_reports/C-30R5_DEVELOPER_TEST_REPORT.md",
+    "developer_report_sha256": "4BBCBA391C067C93171E5D637A19821D79DD8B9DF84A98247B02B0958DA7717A",
+    "verification": {
+      "focused": 2,
+      "matrix": 14,
+      "python_related": 159,
+      "web": 88,
+      "diff_check": "PASS"
+    }
+  }
+},
+{
+  "sequence": 1352,
+  "event_id": "evt_c30r5_final_1352_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R5",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30R5",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "EA4DA3907F6C52976413EA839711AFF783899064948383721A967F1A9FAD689F",
+  "details": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "spec_report": "docs/04_test_reports/C-30R5_SPEC_REVIEW.md",
+    "spec_report_sha256": "2BBF1F4417D717175D163A3165368FADB790E5A7D3D09D16F3396906983ACF2B",
+    "quality_report": "docs/04_test_reports/C-30R5_QUALITY_REVIEW.md",
+    "quality_report_sha256": "4F9907D9362FF418E6B87391F150381487DABD724AD4279E1A7721A3950085BE"
+  }
+},
+{
+  "sequence": 1353,
+  "event_id": "evt_c30r5_final_1353_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R5",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30R5",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "606367B7B4FFE2EC59875557ED2C5F7ABAEE2F4C330218E99A2B69F1BEDC109F",
+  "details": {
+    "lease_id": "write-lease-c30-final-gate-matrix-r1-20260923-001",
+    "reason": "C30R5_INDEPENDENT_ACCEPTANCE"
+  }
+},
+{
+  "sequence": 1354,
+  "event_id": "evt_c30r5_final_1354_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R5",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30R5",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "FC275B579BB55F21F363B08AC671D93B93ADE6545CD849E2D4135C4105348130",
+  "details": {
+    "lease_id": "worker-lease-c30-final-gate-matrix-r1-20260923-001",
+    "reason": "C30R5_INDEPENDENT_ACCEPTANCE"
+  }
+},
+{
+  "sequence": 1355,
+  "event_id": "evt_c30r5_final_1355_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30R5",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30R5",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "68F49642E6CEF3E900CE4EEDD0B8629C2B0100BAE1EA66BE09A11E70A3576E5D",
+  "details": {
+    "decision": "ACCEPTED",
+    "package_id": "C-30R5",
+    "product_sha256": "02C99791E43DBFFEEECA823A6725EBE32C17BFDDCA8B347FF510F4A094855E3E",
+    "unverified": [
+      "PROVIDER",
+      "PRODUCTION_AUTH",
+      "PG18",
+      "ACTUAL_SERVER_GENERATED_400",
+      "ORACLE"
+    ]
+  }
+},
+{
+  "sequence": 1356,
+  "event_id": "evt_c30r5_final_1356_phase_gate_decided",
+  "event_type": "PHASE_GATE_DECIDED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "72B6C0592B12E11C3EB20D106E00AB0E5B268514F499E1B69CCDADF23EED9D2B",
+  "details": {
+    "decision": "ACCEPTED",
+    "gate": "C30_FINAL_GATE",
+    "overall_c30_accepted": true,
+    "scope": "CONTRACT_MATRIX_AND_RECORDED_EVIDENCE_ONLY",
+    "unverified": [
+      "PROVIDER",
+      "PRODUCTION_AUTH",
+      "PG18",
+      "ACTUAL_SERVER_GENERATED_400",
+      "ORACLE"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_c30r5_1349_package_started"
+  "last_event_id": "evt_c30r5_final_1356_phase_gate_decided"
 }

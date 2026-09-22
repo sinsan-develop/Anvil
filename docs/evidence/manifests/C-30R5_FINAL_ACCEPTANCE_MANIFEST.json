@@ -1,0 +1,142 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C30R5_FINAL_ACCEPTANCE",
+  "artifact_id": "C30R5-FINAL-20260923",
+  "package_id": "C-30R5",
+  "event_sequence": 1356,
+  "historical_event_sequence": 1349,
+  "appended_event_count": 7,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "projection_mode": "C30R5_FINAL_ACCEPTANCE_EXACT15",
+  "validated_base_commit": "760e47ce250e8181fe1b8ee821123d49140c3e11",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/C-30R5_DEVELOPER_TEST_REPORT.md",
+    "docs/04_test_reports/C-30R5_QUALITY_REVIEW.md",
+    "docs/04_test_reports/C-30R5_SPEC_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c30r5-final.json",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md",
+    "scripts/c30r5_final_overlay.py",
+    "scripts/check_project_progress.py",
+    "tests/integration/test_c30_contract_matrix.py",
+    "tests/tooling/test_c30r5_final_overlay.py"
+  ],
+  "control_paths": [
+    "docs/04_test_reports/C-30R5_DEVELOPER_TEST_REPORT.md",
+    "docs/04_test_reports/C-30R5_QUALITY_REVIEW.md",
+    "docs/04_test_reports/C-30R5_SPEC_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c30r5-final.json",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md",
+    "scripts/c30r5_final_overlay.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_c30r5_final_overlay.py"
+  ],
+  "product_write_scope": [
+    "tests/integration/test_c30_contract_matrix.py"
+  ],
+  "authority": {
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md": "B14F3A0A253F5BE74194F2B4BC38483E855B62B0C7070D6614F061D19234B000",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md": "AAF9EAB6A74ECE89EEA12813E627C5E203E85C4131D6FFED2CF1A8156C7C9BAB"
+  },
+  "verification": {
+    "focused": 2,
+    "matrix": 14,
+    "python_related": 159,
+    "web": 88,
+    "spec": "ACCEPT_C0_I0_M0",
+    "quality": "ACCEPT_C0_I0_M0"
+  },
+  "unverified": [
+    "PROVIDER",
+    "PRODUCTION_AUTH",
+    "PG18",
+    "ACTUAL_SERVER_GENERATED_400",
+    "ORACLE"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-30R5_DEVELOPER_TEST_REPORT.md",
+      "bytes": 1467,
+      "sha256": "4BBCBA391C067C93171E5D637A19821D79DD8B9DF84A98247B02B0958DA7717A"
+    },
+    {
+      "path": "docs/04_test_reports/C-30R5_QUALITY_REVIEW.md",
+      "bytes": 644,
+      "sha256": "4F9907D9362FF418E6B87391F150381487DABD724AD4279E1A7721A3950085BE"
+    },
+    {
+      "path": "docs/04_test_reports/C-30R5_SPEC_REVIEW.md",
+      "bytes": 608,
+      "sha256": "2BBF1F4417D717175D163A3165368FADB790E5A7D3D09D16F3396906983ACF2B"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 431193,
+      "sha256": "BD194D6624DBFF0B71397660FEB540FA0EAA8EB550090E6D36EEE66FC2023E00"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 839,
+      "sha256": "298F481A4DDBCBFA04CDE7DC07FC6448D85097BADB2E5F61DE0CB64CC41EC643"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1108011,
+      "sha256": "F12F72807242A25AA8D2D94B0B17CFF914601025F3137C1C7B7A724950CB82C7"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4030661,
+      "sha256": "0C77E5DE674E08FBBC618F891E1F7793BE72D6E67A0894D3E50D11B8DCD7637E"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c30r5-final.json",
+      "bytes": 664,
+      "sha256": "4CE9BECB100A0BE88EC288A330414DA6F3C4790128660DB68E9F669970FAF82C"
+    },
+    {
+      "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md",
+      "bytes": 377,
+      "sha256": "AAF9EAB6A74ECE89EEA12813E627C5E203E85C4131D6FFED2CF1A8156C7C9BAB"
+    },
+    {
+      "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md",
+      "bytes": 2655,
+      "sha256": "B14F3A0A253F5BE74194F2B4BC38483E855B62B0C7070D6614F061D19234B000"
+    },
+    {
+      "path": "scripts/c30r5_final_overlay.py",
+      "bytes": 12478,
+      "sha256": "4452AC15A62059C5B2E04B6FB911FDF04326BF212B533D98DEFB45E863DE979C"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4718795,
+      "sha256": "C0DC0F47AE6B911D25D5A90D1723736BA31D4E889AA1E7BB162B83AF807FECD9"
+    },
+    {
+      "path": "tests/integration/test_c30_contract_matrix.py",
+      "bytes": 8155,
+      "sha256": "02C99791E43DBFFEEECA823A6725EBE32C17BFDDCA8B347FF510F4A094855E3E"
+    },
+    {
+      "path": "tests/tooling/test_c30r5_final_overlay.py",
+      "bytes": 602,
+      "sha256": "06DF254409BAADE199A8882A31061F4B3E52A447CD53A9F17533F095DC6D6D51"
+    }
+  ],
+  "self_reference": false
+}

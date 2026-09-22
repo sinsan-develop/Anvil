@@ -1,3 +1,10 @@
+# C-30R5 final acceptance / 2026-09-23
+
+- 판정: `ACCEPTED`; C30 contract matrix와 기록된 evidence 범위의 final gate를 통과했다.
+- R2는 matrix 수량 오기 `18→14`만 비의미 정정했고, spec/quality C0/I0/M0이다.
+- 미검증 경계: Provider, production auth, PG18, actual server-generated 400, Oracle.
+- 다음 조치: exact15 checkpoint commit/push 후 remote SHA와 clean worktree를 재확인한다.
+
 # C-30R5 matrix correction start / 2026-09-23
 
 - 판정: `IN_PROGRESS`; historical checkpoint/current successor 테스트 드리프트 exact1 보완.
