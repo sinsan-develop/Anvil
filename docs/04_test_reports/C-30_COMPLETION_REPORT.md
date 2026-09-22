@@ -670,5 +670,7 @@ CSP `connect-src 'self'`를 확인했다. favicon404와 의도한 API400 resourc
 
 최종 cleanup은 container/network/volume/image/tmp checkout, Chrome/profile/tunnel residue0이며
 기존 `anvil-web` tuple/health 불변이다. Provider/production/PG18는 NOT_EXECUTED.
-rollback은 `9c6d33a`, `5ae9666`, `84b9543` 이후 C30R3 문서/projection 기록 commit만 역적용하고
-제품 `64b76de` 및 historical event/사용자 자료는 건드리지 않는다.
+rollback은 append-only event를 삭제·revert하지 않고 새 무효화/정정 event를 추가한다.
+비-event 문서 projection은 `docs/04_test_reports/C-30_COMPLETION_REPORT.md`, `docs/WORK_STATUS.md`,
+`docs/progress/BUILD_HANDOFF.md`, `docs/progress/build-progress.json`의 C30R3 seq1315 이후 projection만
+후속 정정하며, 제품 `64b76de`, seq1314 이전 event, historical event와 사용자 자료는 건드리지 않는다.
