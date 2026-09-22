@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1313,
-  "updated_at": "2026-09-20T06:00:00+09:00",
-  "last_event_id": "evt_c30r3_revoke_browser_offline_diagnosed",
+  "event_sequence": 1314,
+  "updated_at": "2026-09-22T11:51:59+09:00",
+  "last_event_id": "evt_c30r3_response_capture_startup_failed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -59,7 +59,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
   "current_work_package": "C-30R3",
-  "status": "C30R3_TASK4_INCOMPLETE_REVOKE_BROWSER_OFFLINE",
+  "status": "C30R3_TASK4_INCOMPLETE_API_READINESS_FAILED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -2560,8 +2560,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "020D6CDDC8EF892FCE9C478C0FEDF1C8095B3EDAA7E6253D6066CD072A722FB9",
-  "runtime_next_action": "C30R3_CAPTURE_REVOKE_BROWSER_RESPONSE_ONCE",
+  "snapshot_hash": "0B72D7370E89D2C61735C0F3A8B34BE52982D27DD7D7F165541D8B6667D90B82",
+  "runtime_next_action": "C30R3_PRESERVE_WEB_STARTUP_ERROR_BEFORE_CLEANUP",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",

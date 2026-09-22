@@ -2196,3 +2196,14 @@
 - C-03 `ACCEPTED`; C-04 `IN_PROGRESS`; C-05 `NOT_READY`; DIR-2 `NOT_REACHED`.
 - current R2 authority, epoch2/epoch3 leases and exact9 segment-aware product scope bound; control product mutation 없음.
 - actual external systems and UI binding `NOT_EXECUTED`; U-02 browser/E-SHOT `DEFERRED`.
+
+## C30R3 Task4 browser formal 진단 — 2026-09-22
+
+- 전체 판정 `INCOMPLETE`; 기존 normal/empty/same-origin browser 증거는 PASS이나 revoke 후
+  browser permission/403은 아직 미검증이다.
+- 단1회 response-capture 진단은 PG15 migration/owner seed `COMMITTED` 후 disposable web
+  startup exit1로 중단됐다. `/health/live`와 `/health/ready` 모두 `URLError`, 실행 결과는
+  `RuntimeError: API_READINESS_FAILED`였다.
+- cleanup 경합 때문에 web 원본 exception은 미수집/미확정이다. 제품·fixture 변경과 추가 retry0.
+- Chrome/profile/tunnel/container/network/volume/image/tmp checkout cleanup residue0,
+  기존 `anvil-web` current identity/health 불변을 확인했다.

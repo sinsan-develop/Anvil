@@ -2494,3 +2494,32 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   Provider/production/PG18/일반 production auth 미검증. 외부 자원은 모두 정리됐고 push0.
 - 문서 마감 fresh 재검증: web 전체88P/0S exit0(2604.3864ms), Python 관련159P/0S
   exit0(12.14s), syntax/builtin compile/diff-check0. 제품64b76de 이후 문서2경로만 append.
+
+### WORK_STATUS — b84a610 read-only 진단 보강
+
+- INCOMPLETE 유지. 추가 browser/컨테이너/DB 생성·제품/테스트 수정·progress event0.
+- frontend는 HTTP403→permission, HTTP503 또는 fetch failure→offline. BFF는 upstream403을
+  유지하나 다른 upstream/parse/timeout/connection 오류를503으로 변환한다. API도 일반 exception503.
+  따라서 현재 `offline`만으로 API503/권한/transport 중 원인 확정은 불가능하다.
+- 마지막 로그는 정상4menu→revoke COMMITTED→web restart 반환→permission 대기 실패→cleanup.
+  post-restart health/HTTP status/body/cookie 재전송/owner 재조회는 미수집이다.
+  이전 HTTP restart/revoke403 증거는 보존하되 이번 browser PASS로 전용하지 않는다.
+- 기존 restart 직후 readiness retry 필요 관찰상 readiness race는 후보일 뿐 확정 아님.
+  BFF/API 오류·transport·namespace 상태 미배제. finally는 실패 후 수행돼 residue0이나,
+  오류 당시 health를 소급 증명하지 않으며 teardown 원인이라는 증거도 없다.
+- 최소 후속은 별도 Main 실행 지시 아래 동일 source/fixture 단1회에서 readiness와
+  첫 browser 메뉴 HTTP status/안전한 body 또는 loadingFailed를 시간순 수집하는 것.
+  세션은 값 없이 존재/hash만 기록. 현재 재실행0, 추가 코드/fixture0, completion event0.
+
+### WORK_STATUS — 2026-09-22 단일 response-capture 진단
+
+- `INCOMPLETE` 유지. 동일 fixture 단1회 진단은 PG15 migration/owner seed `COMMITTED` 후
+  disposable web startup exit1로 중단됐다.
+- 첫 `/health/live`, `/health/ready`는 모두 `URLError`; 실행 exit1
+  `RuntimeError: API_READINESS_FAILED`. browser login/revoke/restart/response capture 미도달.
+- cleanup과 로그 조회 경합으로 web 원본 exception은 미수집/미확정이다. 추가 retry0,
+  제품·fixture·계약 변경0.
+- 생성 image/network/PG/web/BFF/Chrome PID52484/profile/tunnel/tmp checkout 모두 정리해 residue0.
+  기존 `anvil-web` current identity/StartedAt/running/healthy tuple과 사용자 dirty 문서 SHA 불변.
+- 다음 행동은 추가 실행 전에 startup 로그를 cleanup 전 보존하는 최소 evidence 경로를 확정하는 것.
+  C30R3 formal acceptance=false, revoked browser403 미검증을 유지한다.

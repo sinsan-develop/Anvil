@@ -515,3 +515,68 @@ rollback은 Main 검토 후64b76de의 exact2 구현만 revert하며 과거 evide
 위 동일 Python 관련 명령 exit0 **159P/0S,12.14s**, warning1.
 두 Node `--check`/Python builtin compile/diff-check 모두 exit0.
 문서 변경은 report/HANDOFF append-only 2경로이며 제품64b76de는 불변이다.
+
+### b84a610 후속 read-only 원인 분석 — 실행·재생성 없이
+
+판정 **INCOMPLETE 유지**. 보존 로그와 현재 코드만 읽었으며 browser/컨테이너/DB 재생성,
+제품·fixture·테스트 수정, 추가 pytest 및 progress completion event 생성은 하지 않았다.
+
+확인 사실:
+
+- `apps/web/src/app/c29-console-runtime.js`의 `select()`는 error.status403을 `permission`,
+  503을 `offline`, 그 외 오류를 `error`로 표시한다. 화면 `offline`은 이 클라이언트 분류의
+  증거이지 실제 API가503을 반환했다는 단독 증거는 아니다.
+- `apps/web/src/api/c29-agent-console-client.js`는 실제 fetch 실패도 status503으로 변환한다.
+  BFF `apps/web/server.mjs:161~188`은 연결/timeout/JSON 검증 오류 및 upstream 비403 오류를
+  safe503으로 바꾸고, 정상 JSON upstream403은403으로 유지한다.
+- API runtime route는 authority ValueError/TypeError/KeyError를403으로, 그 밖의 exception을
+  503으로 변환한다(`apps/api/anvil_api/routes/agent_console.py:229~233`). 따라서 browser만의
+  offline 관찰로 API 권한 판정, BFF upstream 실패, fetch transport 실패를 구분할 수 없다.
+- 실제 마지막 실행의 확인 순서는 네 메뉴200/HttpOnly cookie→PG stats heads1/receipts4/revoked0
+  →revoke COMMITTED→`docker restart` web 명령 반환→browser permission 대기 실패→finally cleanup이다.
+  web restart 명령 반환은 API readiness 또는 BFF 연결 복구의 확인을 대신하지 않는다.
+- 기존 fixture는 환경의 같은 QA session 값을 사용하고 요청마다 persisted mapping/snapshot을
+  읽는다. 앞선 실제 HTTP 검증에서는 restart/reload/revoke403이 확인됐으나, 그 과거 증거를
+  이번 browser의 cookie 재전송·session reload·revoked row 재조회 PASS로 승격하지 않는다.
+- finally는 browser 실패 이후 실행되어 residue0/기존 anvil-web 불변을 확인했다.
+  cleanup 완료 사실은 오류 순간의 web/BFF/API health나 생존을 증명하지 않는다.
+
+미확정:
+
+- revoke 후 정확한 browser response status/body, Network.loadingFailed 이유, cookie 존재/전송
+  여부(값 제외), web/BFF/API의 같은 시점 health 및 restart 후 owner 재조회 결과는 미수집이다.
+- 앞선 실행에 restart 직후 readiness retry가 필요했던 사실을 고려하면 startup/readiness race가
+  후보이나 확정 원인이 아니다. BFF network namespace/connection 상태와 API exception도 미배제다.
+- 이번 대기 오류가 최초 일시 실패 후 재요청 없이 화면 상태만 기다렸기 때문인지, 지속 장애인지
+  확정할 보존된 post-restart response timeline은 없다. teardown이 원인이었다는 증거도 없다.
+
+최소 후속 실행 제안(현재 **미실행**, Main의 별도 실행 지시 전 재생성 금지): 동일 승인 source와
+fixture로 단1회 revoke/restart 경계에서 API/BFF readiness·생존을 먼저 시간순으로 확인하고,
+기존 브라우저 세션의 단일 메뉴 요청에 대한 HTTP status/안전한 오류 body 또는 loadingFailed를
+수집한다. cookie는 존재/HttpOnly/동일성 hash만 기록하고 값·credentials는 기록하지 않는다.
+그 결과로 authority403, upstream503, transport 실패 중 한 경계를 식별한 뒤에만 수정 판단한다.
+새 기능/fixture/자동 retry 정책을 추가하지 않으며 모든 disposable 자원 finally cleanup을 유지한다.
+
+### 2026-09-22 단일 response-capture 진단 실행
+
+판정은 **INCOMPLETE**다. 동일 source/fixture에서 승인된 단1회 진단을 실행했으나 목표였던
+revoke 이후 browser status/body 수집 전에 disposable web 초기 기동이 실패했다.
+
+- 기준 HEAD `9b03c1afce31c4dbdebeff8c893a2030b89745bc`, 제품·fixture 변경0.
+- 실행 전 exact prefix container/network/volume/image/tmp residue0. 기존 `anvil-web`은 현재
+  ID/image/StartedAt/running/healthy tuple을 보호 기준으로 고정했다.
+- disposable PG15 migration과 owner seed는 `COMMITTED`까지 성공했다.
+- disposable web `5f1114524ec7`은 startup exit1. 최초 readiness 결과는
+  `[{"path":"/health/live","error":"URLError"},{"path":"/health/ready","error":"URLError"}]`였고,
+  inline 진단은 `RuntimeError: API_READINESS_FAILED`로 exit1 종료했다.
+- cleanup과 로그 조회가 경합해 후속 read-only `docker logs`는 `no such object`로 실패했다.
+  따라서 web startup의 원본 exception은 미확정이며 임의 원인을 지정하지 않는다.
+- browser login, revoke, restart, response status/body/loadingFailed 수집에는 도달하지 못했다.
+  같은 실행의 추가 retry·재생성은0이다.
+- finally cleanup은 PASS: 생성 image/network/PG/web/BFF 및 Chrome PID52484, 임시
+  profile/tunnel/tmp checkout을 제거했고 exact residue0을 확인했다. 기존 `anvil-web` 보호 tuple과
+  health, 실행 전 사용자 dirty report/HANDOFF SHA는 전후 불변이었다.
+
+이번 실행은 기존 normal/empty/same-origin browser PASS나 revoke COMMITTED 증거를 취소하지 않지만,
+revoked browser permission/403을 추가로 증명하지도 않는다. 다음 진단은 startup 실패 원문을 cleanup
+전에 수집할 별도 증거 경로가 먼저 필요하며, 현재 formal acceptance=false를 유지한다.
