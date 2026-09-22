@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c30r4-canonical-1345",
-  "event_sequence": 1345,
-  "updated_at": "2026-09-22T17:28:32+09:00",
-  "last_event_id": "evt_c30r4_canonical_1345_main_package_accepted",
+  "snapshot_id": "snapshot-c30r5-start-seq1349",
+  "event_sequence": 1349,
+  "updated_at": "2026-09-23T01:15:00+09:00",
+  "last_event_id": "evt_c30r5_1349_package_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,8 +91,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "C",
-  "current_work_package": "C-30R4",
-  "status": "ACCEPTED",
+  "current_work_package": "C-30R5",
+  "status": "IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -184,8 +184,32 @@
     "C-30",
     "C-30R4"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "developer-primary-c30-final-gate-matrix-r1",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-30R5",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c30-final-gate-matrix-execution-fence-epoch-1-ec9ee09"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c30-final-gate-matrix-r1-20260923-001",
+    "actor_id": "developer-primary-c30-final-gate-matrix-r1",
+    "subject_ref": "C-30R5",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T01:15:00+09:00",
+    "expires_at": "2026-09-23T13:15:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "c30-final-gate-matrix-write-fence-epoch-1-ec9ee09",
+    "execution_fencing_token": "c30-final-gate-matrix-execution-fence-epoch-1-ec9ee09",
+    "baseline_git_commit": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "dispatch_head": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "path_scope": [
+      "tests/integration/test_c30_contract_matrix.py"
+    ],
+    "worker_lease_id": "worker-lease-c30-final-gate-matrix-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "c30-final-gate-matrix-write-fence-epoch-1-ec9ee09"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -217,7 +241,22 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-c30-final-gate-matrix-r1-20260923-001",
+    "actor_id": "developer-primary-c30-final-gate-matrix-r1",
+    "subject_ref": "C-30R5",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T01:15:00+09:00",
+    "expires_at": "2026-09-23T13:15:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "c30-final-gate-matrix-execution-fence-epoch-1-ec9ee09",
+    "execution_fencing_token": "c30-final-gate-matrix-execution-fence-epoch-1-ec9ee09",
+    "baseline_git_commit": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "dispatch_head": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "path_scope": [
+      "tests/integration/test_c30_contract_matrix.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -427,17 +466,17 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/work_orders/E-11_WORK_INSTRUCTION.md",
-      "sha256": "615025F0CC168FCE1B4377A3D1B110B05915D2BE766954554F28318DC3203018"
+      "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
+      "sha256": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9"
     },
     {
-      "path": "docs/work_orders/E-11_INVOCATION_PROMPT.md",
-      "sha256": "0BF3C7F268B84E2A5A62DC0BBC3EE8276A9EF6F5D77B48E2423E78289533CDE5"
+      "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md",
+      "sha256": "697D43EBD921797EEDDF835F89866FD56DBA20B5C39B295C777C9D93818F87B4"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json",
-    "binding": "CANONICAL_VALIDATOR"
+    "path": "docs/evidence/manifests/C-30R5_START_MANIFEST.json",
+    "artifact_id": "C30R5-START-20260923"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -449,7 +488,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MAIN_C30_FINAL_GATE_REVIEW",
+  "next_safe_action": "C30R5_MATRIX_CORRECTION_TDD",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -560,33 +599,33 @@
   },
   "repository": {
     "branch": "codex/c09-execution-backends-r1",
-    "local_head": "ed3cae92597d681c76417e26576bed91a0525bad",
+    "local_head": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
     "upstream": "development/codex/c09-execution-backends-r1",
-    "remote_head": "98e218264bf54db04a1bd35a67273b713805a649",
-    "projection_mode": "C30_CANONICAL_RECONCILIATION_EXACT10",
-    "validated_base_commit": "ed3cae92597d681c76417e26576bed91a0525bad",
-    "head_relation": "UNCOMMITTED_EXACT16_CANONICAL_SUCCESSOR_MAIN_TAKEOVER",
+    "remote_head": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "projection_mode": "C30R5_MATRIX_CORRECTION_START_EXACT10_PRODUCT_EXACT1",
+    "validated_base_commit": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "head_relation": "PRECOMMIT_EXACT10_OR_SOLE_DIRECT_CHILD_WITH_PRODUCT_EXACT1",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-30R4_DEVELOPER_TEST_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json",
+      "docs/evidence/manifests/C-30R5_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
-      "docs/progress/progress-event-contract.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c30-final-canonical-reconciliation.json",
-      "docs/test_reports/C-30R4_QUALITY_REVIEW.md",
-      "docs/test_reports/C-30R4_SPEC_REVIEW.md",
-      "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION.md",
-      "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION_R2.md",
-      "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION.md",
-      "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION_R2.md",
+      "docs/progress/progress-handoff-detached-digest-c30r5-start.json",
+      "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md",
+      "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
+      "tests/integration/test_c30_contract_matrix.py",
       "tests/tooling/test_project_progress.py"
     ],
     "push_status": "NOT_EXECUTED",
     "remote_evidence": "LOCAL_TRACKING_REF_ONLY_LIVE_REMOTE_NOT_EXECUTED",
-    "worktree_status": "C30R4_CANONICAL_SUCCESSOR_PENDING_MAIN_MATERIALIZATION"
+    "worktree_status": "UNSTAGED_C30R5_CONTROL_EXACT10_PRODUCT_OPTIONAL_EXACT1",
+    "control_head": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+    "product_write_scope": [
+      "tests/integration/test_c30_contract_matrix.py"
+    ],
+    "commit_status": "NOT_EXECUTED"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -810,18 +849,19 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "work_package_id": "C-30R4",
-    "artifact_path": "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_WORK_INSTRUCTION_R2.md",
-    "artifact_sha256": "C8CBA2726670CC49F87342F05E0E078EFE0072009EC6A25496624E13D7FDBA53",
-    "invocation_path": "docs/work_orders/C-30R4_CANONICAL_RECONCILIATION_INVOCATION_R2.md",
-    "invocation_sha256": "8203B2F634C6114B6EB5CCD7C40A3832B11051B6112A118F31A6125448E0AEE6",
-    "status": "ACCEPTED",
-    "result_status": "COMPLETED",
-    "accepted": true,
+    "work_package_id": "C-30R5",
+    "artifact_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9",
+    "invocation_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md",
+    "invocation_sha256": "697D43EBD921797EEDDF835F89866FD56DBA20B5C39B295C777C9D93818F87B4",
+    "status": "IN_PROGRESS",
+    "result_status": null,
+    "accepted": false,
     "product_write_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_project_progress.py"
-    ]
+      "tests/integration/test_c30_contract_matrix.py"
+    ],
+    "worker_lease_id": "worker-lease-c30-final-gate-matrix-r1-20260923-001",
+    "write_lease_id": "write-lease-c30-final-gate-matrix-r1-20260923-001"
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1007,9 +1047,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-30R4",
-    "path": "docs/progress/progress-handoff-detached-digest-c30-final-canonical-reconciliation.json",
-    "manifest_path": "docs/evidence/manifests/C-30_FINAL_CANONICAL_RECONCILIATION_MANIFEST.json"
+    "package_id": "C-30R5",
+    "path": "docs/progress/progress-handoff-detached-digest-c30r5-start.json",
+    "manifest_path": "docs/evidence/manifests/C-30R5_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1030,7 +1070,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2C5D012271071B5D57034E8654D470DB626088825089BDFD4BC424DD0F71376B"
+      "sha256": "2BEF9C4ED477464F32D2BB4D139D6CB57D6C3767CA75C233E6F9BF1C907D3B7D"
     }
   },
   "next_work_package": {
@@ -1427,8 +1467,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5BE98A4E555365BBC027CEFAB7D5E7AAAA965E3EB3E696C2198D284ECF4F54C8",
-  "runtime_next_action": "MAIN_C30_FINAL_GATE_REVIEW",
+  "snapshot_hash": "2A82AE6A557E8A4D8D3085BAAE23C340BBD20E9DCC82B33A8DE5809AF926A287",
+  "runtime_next_action": "C30R5_MATRIX_CORRECTION_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3040,7 +3080,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-18T01:08:09+09:00",
+  "recorded_at": "2026-09-23T01:15:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

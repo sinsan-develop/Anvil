@@ -1,3 +1,8 @@
+# C-30R5 matrix correction start / 2026-09-23
+
+- 판정: `IN_PROGRESS`; historical checkpoint/current successor 테스트 드리프트 exact1 보완.
+- canonical dual lease와 exact1 scope를 seq1346~1349에 발급했다. C30 전체 gate는 계속 `PENDING_FINAL_GATE`.
+
 # C-30R4 canonical reconciliation / 2026-09-22
 
 - 판정: `C30R4_ACCEPTED_C30_GATE_PENDING`; 세 번째 unrelated large-file patch corruption 복구와 신산님의 직접 `Main takeover 승인`을 canonical human-override로 결박했다.

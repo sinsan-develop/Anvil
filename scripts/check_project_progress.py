@@ -57747,5 +57747,182 @@ def validate_event_stream(stream, contract, progress=None):
         return ["C30_EVENT_CONTRACT_INVALID"]
 
 
+C30R5_BASE = "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e"
+C30R5_MODE = "C30R5_MATRIX_CORRECTION_START_EXACT10_PRODUCT_EXACT1"
+C30R5_WI = "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md"
+C30R5_PROMPT = "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md"
+C30R5_D = "docs/progress/progress-handoff-detached-digest-c30r5-start.json"
+C30R5_M = "docs/evidence/manifests/C-30R5_START_MANIFEST.json"
+C30R5_PRODUCT = "tests/integration/test_c30_contract_matrix.py"
+C30R5_WORKER = "worker-lease-c30-final-gate-matrix-r1-20260923-001"
+C30R5_WRITE = "write-lease-c30-final-gate-matrix-r1-20260923-001"
+C30R5_EXECUTION = "c30-final-gate-matrix-execution-fence-epoch-1-ec9ee09"
+C30R5_WRITE_TOKEN = "c30-final-gate-matrix-write-fence-epoch-1-ec9ee09"
+C30R5_AT = "2026-09-23T01:15:00+09:00"
+C30R5_WI_HASH = "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9"
+C30R5_PROMPT_HASH = "697D43EBD921797EEDDF835F89866FD56DBA20B5C39B295C777C9D93818F87B4"
+
+
+def c30r5_control_paths():
+    return sorted([BUNDLE_PATHS["progress"], BUNDLE_PATHS["events"], BUNDLE_PATHS["handoff_text"],
+                   C30R5_D, C30R5_M, C30R5_WI, C30R5_PROMPT, "docs/WORK_STATUS.md",
+                   "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def c30r5_paths():
+    return sorted(c30r5_control_paths() + [C30R5_PRODUCT])
+
+
+def c30r5_start_from_root(root):
+    root = Path(root)
+    committed = lambda rel: subprocess.check_output(["git", "show", f"{C30R5_BASE}:{rel}"], cwd=root)
+    if _sha256(root / C30R5_WI) != C30R5_WI_HASH or _sha256(root / C30R5_PROMPT) != C30R5_PROMPT_HASH:
+        raise ValueError("C30R5_AUTHORITY_INVALID")
+    progress = json.loads(committed(BUNDLE_PATHS["progress"]))
+    stream_raw = committed(BUNDLE_PATHS["events"])
+    stream = json.loads(stream_raw)
+    if (progress.get("event_sequence") != 1345 or stream.get("last_sequence") != 1345
+            or progress.get("c30_overall_status") != "PENDING_FINAL_GATE"
+            or any(progress.get(k) is not None for k in ("active_agent", "worker_lease", "write_lease"))):
+        raise ValueError("C30R5_HISTORY_INVALID")
+    actor = "developer-primary-c30-final-gate-matrix-r1"
+    expires = "2026-09-23T13:15:00+09:00"
+    product = [C30R5_PRODUCT]
+    worker = {"lease_id": C30R5_WORKER, "actor_id": actor, "subject_ref": "C-30R5",
+        "status": "ACTIVE", "issued_at": C30R5_AT, "expires_at": expires, "lease_epoch": 1,
+        "fencing_token": C30R5_EXECUTION, "execution_fencing_token": C30R5_EXECUTION,
+        "baseline_git_commit": C30R5_BASE, "dispatch_head": C30R5_BASE, "path_scope": product}
+    write = {**worker, "lease_id": C30R5_WRITE, "worker_lease_id": C30R5_WORKER,
+        "write_epoch": 1, "fencing_token": C30R5_WRITE_TOKEN, "write_fencing_token": C30R5_WRITE_TOKEN}
+    additions=[]
+    previous=_c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def add(kind, details):
+        nonlocal previous
+        seq=1346+len(additions)
+        row={"sequence":seq,"event_id":f"evt_c30r5_{seq}_{kind.lower()}","event_type":kind,
+             "actor":C30_MAIN_ACTOR,"actor_id":C30_MAIN_ACTOR,"actor_type":"AGENT","project_id":"anvil",
+             "work_package_id":"C-30R5","run_id":None,"step_id":"MATRIX_CORRECTION","subject_ref":"C-30R5",
+             "occurred_at":C30R5_AT,"previous_event_sha256":previous,"details":details}
+        additions.append(row); previous=_c21_resume_sha(canonical_json_bytes(row))
+    authority={"classification":"NON_SEMANTIC_TEST_PROVENANCE_CORRECTION","scope_expansion":False,
+               "product_write_scope":product,"external_execution_authorized":False}
+    add("WORK_INSTRUCTION_ISSUED", {"work_instruction_id":"WI-C-30R5-R1-20260923-001",
+        "work_instruction_path":C30R5_WI,"work_instruction_sha256":C30R5_WI_HASH,
+        "invocation_path":C30R5_PROMPT,"invocation_sha256":C30R5_PROMPT_HASH,"authority":authority})
+    add("WORKER_LEASE_ISSUED", worker)
+    add("WRITE_LEASE_ISSUED", write)
+    add("PACKAGE_STARTED", {"package_status":"IN_PROGRESS","work_package_id":"C-30R5","status":"IN_PROGRESS",
+        "active_agent":actor,"worker_lease_id":C30R5_WORKER,"write_lease_id":C30R5_WRITE,
+        "projection_mode":C30R5_MODE,"validated_base_commit":C30R5_BASE,"exact_allowed_paths":c30r5_paths(),
+        "product_write_scope":product,"authority":authority})
+    prefix=raw_event_object_prefix_bytes(stream_raw,1345)
+    offset=stream_raw.index(prefix); header,tail=stream_raw[:offset],stream_raw[offset+len(prefix):]
+    header=header.replace(b'"last_sequence": 1345',b'"last_sequence": 1349',1)
+    old_id=stream["last_event_id"].encode(); new_id=additions[-1]["event_id"].encode()
+    if old_id in header: header=header.replace(old_id,new_id,1)
+    else: tail=tail.replace(old_id,new_id,1)
+    events_raw=header+prefix+b"".join(b",\n"+_c21_resume_json_bytes(row).rstrip() for row in additions)+tail
+    repository=copy.deepcopy(progress["repository"])
+    repository.update({"local_head":C30R5_BASE,"remote_head":C30R5_BASE,"control_head":C30R5_BASE,
+        "projection_mode":C30R5_MODE,"validated_base_commit":C30R5_BASE,
+        "head_relation":"PRECOMMIT_EXACT10_OR_SOLE_DIRECT_CHILD_WITH_PRODUCT_EXACT1",
+        "exact_allowed_paths":c30r5_paths(),"product_write_scope":product,
+        "worktree_status":"UNSTAGED_C30R5_CONTROL_EXACT10_PRODUCT_OPTIONAL_EXACT1",
+        "commit_status":"NOT_EXECUTED","push_status":"NOT_EXECUTED"})
+    progress.update({"snapshot_id":"snapshot-c30r5-start-seq1349","event_sequence":1349,
+        "last_event_id":additions[-1]["event_id"],"updated_at":C30R5_AT,"recorded_at":C30R5_AT,
+        "status":"IN_PROGRESS","current_work_package":"C-30R5",
+        "active_agent":{"actor_id":actor,"role":"PRIMARY_DEVELOPER","work_package_id":"C-30R5",
+                        "status":"ACTIVE","execution_fencing_token":C30R5_EXECUTION},
+        "worker_lease":worker,"write_lease":write,
+        "active_work_instruction":{"work_package_id":"C-30R5","artifact_path":C30R5_WI,
+          "artifact_sha256":C30R5_WI_HASH,"invocation_path":C30R5_PROMPT,"invocation_sha256":C30R5_PROMPT_HASH,
+          "status":"IN_PROGRESS","result_status":None,"accepted":False,"product_write_scope":product,
+          "worker_lease_id":C30R5_WORKER,"write_lease_id":C30R5_WRITE},
+        "repository":repository,"next_work_package":{"package_id":"C-30","status":"PENDING_FINAL_GATE"},
+        "next_successor_work_package":{"package_id":"C-30","status":"PENDING_FINAL_GATE"},
+        "next_safe_action":"C30R5_MATRIX_CORRECTION_TDD","runtime_next_action":"C30R5_MATRIX_CORRECTION_TDD",
+        "pending_approvals":[],"current_progress_evidence_ref":{"package_id":"C-30R5","path":C30R5_D,"manifest_path":C30R5_M},
+        "latest_evidence_manifest_ref":{"path":C30R5_M,"artifact_id":"C30R5-START-20260923"}})
+    progress["registry_refs"]["progress_events"]={"path":BUNDLE_PATHS["events"],"sha256":_c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"]=[{"path":C30R5_WI,"sha256":C30R5_WI_HASH},{"path":C30R5_PROMPT,"sha256":C30R5_PROMPT_HASH}]
+    progress["snapshot_hash"]=compute_snapshot_hash(progress)
+    progress_raw=_c21_resume_json_bytes(progress)
+    summary={k:copy.deepcopy(progress[k]) for k in ("event_sequence","last_event_id","status","current_phase","current_work_package",
+        "active_agent","worker_lease","write_lease","next_work_package","next_successor_work_package","next_safe_action","runtime_next_action")}
+    summary.update({"c30_overall_status":"PENDING_FINAL_GATE","repository_head":C30R5_BASE,
+        "repository_upstream":repository.get("upstream"),"unverified":["PROVIDER","PRODUCTION_AUTH","PG18","ACTUAL_SERVER_GENERATED_400","ORACLE"]})
+    handoff_raw=("# C30R5 matrix correction start\n\n```json anvil-recovery-summary\n"+_c21_resume_json_bytes(summary).decode()+"```\n").encode()
+    digest={"schema_version":"1.0.0","algorithm":"SHA-256","event_sequence":1349,"self_reference":False,
+        "progress":{"path":BUNDLE_PATHS["progress"],"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),
+                    "canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff":{"path":BUNDLE_PATHS["handoff_text"],"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),
+                   "machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(summary))}}
+    work_status=("# C-30R5 matrix correction start / 2026-09-23\n\n- 판정: `IN_PROGRESS`; historical checkpoint/current successor 테스트 드리프트 exact1 보완.\n- canonical dual lease와 exact1 scope를 seq1346~1349에 발급했다. C30 전체 gate는 계속 `PENDING_FINAL_GATE`.\n\n"+committed("docs/WORK_STATUS.md").decode()).encode()
+    generated={BUNDLE_PATHS["progress"]:progress_raw,BUNDLE_PATHS["events"]:events_raw,
+        BUNDLE_PATHS["handoff_text"]:handoff_raw,C30R5_D:_c21_resume_json_bytes(digest),"docs/WORK_STATUS.md":work_status}
+    controls={p:(generated[p] if p in generated else (root/p).read_bytes()) for p in c30r5_control_paths() if p!=C30R5_M}
+    manifest={"schema_version":"1.0.0","manifest_type":"C30R5_START","artifact_id":"C30R5-START-20260923",
+        "package_id":"C-30R5","event_sequence":1349,"historical_event_sequence":1345,"appended_event_count":4,
+        "historical_raw_event_prefix":{"bytes":len(prefix),"sha256":_c21_resume_sha(prefix)},"accepted":False,
+        "status":"IN_PROGRESS","projection_mode":C30R5_MODE,"validated_base_commit":C30R5_BASE,
+        "exact_allowed_paths":c30r5_paths(),"control_paths":c30r5_control_paths(),"product_write_scope":product,
+        "authority":{C30R5_WI:C30R5_WI_HASH,C30R5_PROMPT:C30R5_PROMPT_HASH},"self_reference":False,
+        "raw_checksums":[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(controls.items())]}
+    generated[C30R5_M]=_c21_resume_json_bytes(manifest)
+    return generated
+
+
+def validate_c30r5_start(bundle, manifest):
+    try:
+        expected=c30r5_start_from_root(bundle["_root"])
+        actual={BUNDLE_PATHS["progress"]:bundle["progress"],BUNDLE_PATHS["events"]:bundle["events"],
+                BUNDLE_PATHS["handoff_text"]:bundle["handoff"],C30R5_D:bundle["detached_digest"],C30R5_M:manifest}
+        for path,obj in actual.items():
+            wanted=extract_handoff_summary(expected[path].decode()) if path==BUNDLE_PATHS["handoff_text"] else json.loads(expected[path])
+            if obj!=wanted:return ["C30R5_START_PROJECTION_INVALID"]
+        if any((bundle["_root"]/p).read_bytes()!=raw for p,raw in expected.items()):return ["C30R5_START_RAW_INVALID"]
+        return []
+    except Exception:return ["C30R5_START_INPUT_INVALID"]
+
+
+def validate_c30r5_git_facts(*,head,branch,upstream,remote_head,staged,dirty,parent=None,committed=None):
+    control=set(c30r5_control_paths()); product={C30R5_PRODUCT}; paths=set(dirty)
+    common=branch==C09_START_BRANCH and upstream=="development/codex/c09-execution-backends-r1" and not staged
+    pre=head==C30R5_BASE and remote_head==C30R5_BASE and control<=paths<=control|product
+    post=head!=C30R5_BASE and parent==C30R5_BASE and set(committed or [])==control and paths<=product
+    return [] if common and (pre or post) else ["C30R5_START_GIT_INVALID"]
+
+
+def _collect_c30r5_git(bundle):
+    try:
+        root=bundle["_root"]
+        names=lambda *a:_c02_strict_name_only_paths(_c02_git_raw_stdout(root,*a)) or []
+        staged=names("-c","core.excludesFile=","diff","--cached","--name-only")
+        dirty=sorted(set(staged+names("diff","--name-only")+names("ls-files","--others","--exclude-per-directory=.gitignore")))
+        head=_git_value(root,"rev-parse","HEAD"); parent=None; committed=None
+        if head!=C30R5_BASE: parent=_git_value(root,"rev-parse","HEAD^"); committed=names("diff","--name-only",f"{C30R5_BASE}..HEAD")
+        return validate_c30r5_git_facts(head=head,branch=_git_value(root,"branch","--show-current"),
+            upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"),
+            remote_head=_git_value(root,"rev-parse","@{u}"),staged=staged,dirty=dirty,parent=parent,committed=committed)
+    except Exception:return ["C30R5_START_GIT_COLLECTION_FAILED"]
+
+
+_validate_git_projection_before_c30r5 = _validate_git_projection
+def _validate_git_projection(bundle):
+    if bundle.get("progress",{}).get("repository",{}).get("projection_mode")==C30R5_MODE:return _collect_c30r5_git(bundle)
+    return _validate_git_projection_before_c30r5(bundle)
+
+_validate_bundle_before_c30r5 = validate_bundle
+def validate_bundle(bundle):
+    if bundle.get("progress",{}).get("repository",{}).get("projection_mode")!=C30R5_MODE:return _validate_bundle_before_c30r5(bundle)
+    errors=[]
+    try: manifest=_load_json(bundle["_root"]/C30R5_M)
+    except Exception:return ["C30R5_START_MANIFEST_MISSING"]
+    errors.extend(validate_c30r5_start(bundle,manifest)); errors.extend(_collect_c30r5_git(bundle)); return sorted(set(errors))
+
+
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
