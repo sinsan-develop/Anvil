@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1315,
-  "updated_at": "2026-09-22T12:35:00+09:00",
-  "last_event_id": "evt_c30r3_task4_browser_formal_completed",
+  "event_sequence": 1317,
+  "updated_at": "2026-09-22T12:42:00+09:00",
+  "last_event_id": "evt_c30r3_task4_error_evidence_worker_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -18,8 +18,8 @@
     "formal_failure_count": 0
   },
   "c30r3_task4_formal": {
-    "status": "COMPLETED_FORMAL_FIXTURE_SCOPE",
-    "accepted": true,
+    "status": "REWORK_REQUIRED_BROWSER_ERROR_STATE",
+    "accepted": false,
     "source_commit": "9b03c1afce31c4dbdebeff8c893a2030b89745bc",
     "base_image_digest": "sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7",
     "final_image_digest": "sha256:95294efe116e12c5e95bf0b43da1cc0f9fc82b7fc24b7cdb252f9626bdbee5c1",
@@ -35,7 +35,10 @@
     "production_auth": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "pg18": "NOT_EXECUTED",
-    "next_safe_action": "C30_INDEPENDENT_REVIEW_AND_FRESH_GATE"
+    "independent_review": "REWORK_C0_I2_M1",
+    "acceptance_correction_event": "evt_c30r3_task4_independent_review_rework",
+    "active_worker_lease_id": "worker-lease-c30r3-task4-error-20260922-001",
+    "next_safe_action": "CAPTURE_FORMAL_BROWSER_ERROR_STATE"
   },
   "c30_formal_smoke": {
     "status": "ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED",
@@ -79,7 +82,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
   "current_work_package": "C-30",
-  "status": "C30R3_TASK4_COMPLETED_PENDING_C30_INDEPENDENT_REVIEW",
+  "status": "C30R3_TASK4_REWORK_BROWSER_ERROR_STATE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -2580,8 +2583,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "CA171B1543B4E3C7F372661BD279B068017DFEBA44ED21677D22AA216039747D",
-  "runtime_next_action": "C30_INDEPENDENT_REVIEW_AND_FRESH_GATE",
+  "snapshot_hash": "2F523E6E789B37F789B7391F23597FEF9FF31D24C738F864E5CA6DBCB107EBB9",
+  "runtime_next_action": "CAPTURE_FORMAL_BROWSER_ERROR_STATE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
