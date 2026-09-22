@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1317,
-  "updated_at": "2026-09-22T12:42:00+09:00",
-  "last_event_id": "evt_c30r3_task4_error_evidence_worker_lease_issued",
+  "event_sequence": 1318,
+  "updated_at": "2026-09-22T12:45:00+09:00",
+  "last_event_id": "evt_c30r3_task4_lease_projection_reconciled",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -173,24 +173,8 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","execution_fencing_token":"c30r3-task4-qa-execution-fence-epoch-2-0d30192"},
-  "write_lease": {
-    "actor_id": "developer-primary-c30r2",
-    "subject_ref": "C-30R3",
-    "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "0d30192",
-    "issued_at": "2026-09-20T00:05:00+09:00",
-    "expires_at": "2026-09-20T12:05:00+09:00",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c30r3-task4-qa-execution-fence-epoch-2-0d30192",
-    "write_fencing_token": "c30r3-task4-qa-write-fence-epoch-2-0d30192",
-    "path_scope": ["apps/web/server.mjs", "apps/web/tests/c30r3-qa-login.test.mjs", "tests/integration/test_c30r3_formal_entity.py", "docs/04_test_reports/C-30_COMPLETION_REPORT.md", "docs/progress/BUILD_HANDOFF.md"],
-    "lease_id": "write-lease-c30r3-task4-qa-20260920-001",
-    "worker_lease_id": "worker-lease-c30r3-task4-qa-20260920-001",
-    "lease_epoch": 1,
-    "write_epoch": 1,
-    "dispatch_head": "0d30192"
-  },
+  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","worker_lease_id":"worker-lease-c30r3-task4-error-20260922-001","execution_fencing_token":"c30r3-task4-error-execution-fence-epoch-1-9c6d33a","expires_at":"2026-09-22T14:42:00+09:00"},
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -2583,7 +2567,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "2F523E6E789B37F789B7391F23597FEF9FF31D24C738F864E5CA6DBCB107EBB9",
+  "snapshot_hash": "0AF255A5E136FEB429757B2F4030C9DB02CB91953CB4A6D11E89B59B31D8AC81",
   "runtime_next_action": "CAPTURE_FORMAL_BROWSER_ERROR_STATE",
   "seq527_clean_review": {
     "event_sequence": 527,
