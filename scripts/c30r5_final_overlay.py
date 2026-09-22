@@ -1,9 +1,10 @@
 from __future__ import annotations
-import hashlib,json,subprocess
+import hashlib,json,subprocess,sys
 from copy import deepcopy
 from pathlib import Path
 
 MODE="C30R5_FINAL_ACCEPTANCE_EXACT15"; BASE="760e47ce250e8181fe1b8ee821123d49140c3e11"
+ACCEPTED="f3eeb4c88cceb10c919242e4b0db1843aac8c699"
 BRANCH="codex/c09-execution-backends-r1"; UPSTREAM="development/codex/c09-execution-backends-r1"; AT="2026-09-23T03:30:00+09:00"
 WI1="docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md"; WI2="docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md"; INV2="docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md"
 WI1H="4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9"; WI2H="B14F3A0A253F5BE74194F2B4BC38483E855B62B0C7070D6614F061D19234B000"; INV2H="AAF9EAB6A74ECE89EEA12813E627C5E203E85C4131D6FFED2CF1A8156C7C9BAB"
@@ -15,6 +16,7 @@ UNVERIFIED=["PROVIDER","PRODUCTION_AUTH","PG18","ACTUAL_SERVER_GENERATED_400","O
 
 def controls(): return sorted(["docs/WORK_STATUS.md",DEV,SPEC,QUALITY,MANIFEST,"docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json",DIGEST,WI2,INV2,"scripts/check_project_progress.py","scripts/c30r5_final_overlay.py","tests/tooling/test_c30r5_final_overlay.py"])
 def paths(): return sorted(controls()+[PRODUCT])
+def recon_paths(): return sorted(["docs/WORK_STATUS.md",MANIFEST,"docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json",DIGEST,"scripts/c30r5_final_overlay.py",PRODUCT])
 def canon(v): return json.dumps(v,ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False).encode()
 def pretty(v): return (json.dumps(v,ensure_ascii=False,indent=2,allow_nan=False)+"\n").encode()
 def sha(raw): return hashlib.sha256(raw).hexdigest().upper()
@@ -65,18 +67,21 @@ def gitv(root):
     try:
         g=lambda *a: subprocess.check_output(["git",*a],cwd=root,text=True).strip(); head=g("rev-parse","HEAD"); remote=g("rev-parse","@{u}"); branch=g("branch","--show-current"); up=g("rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
         staged=set(filter(None,g("-c","core.excludesFile=","diff","--cached","--name-only").splitlines())); lines=subprocess.check_output(["git","-c","core.excludesFile=","status","--porcelain=v1","--untracked-files=all"],cwd=root,text=True).splitlines(); dirty={x[3:].replace("\\","/") for x in lines}
-        pre=head==BASE and remote==BASE and dirty==set(paths()); post=head!=BASE and g("rev-parse","HEAD^")==BASE and remote in {BASE,head} and not dirty
+        pre=head==BASE and remote==BASE and dirty==set(paths()); post=head==ACCEPTED and g("rev-parse","HEAD^")==BASE and remote in {BASE,head} and not dirty
         if post: post=set(filter(None,g("diff","--name-only",f"{BASE}..HEAD").splitlines()))==set(paths())
-        return [] if branch==BRANCH and up==UPSTREAM and not staged and (pre or post) else ["C30R5_FINAL_GIT_INVALID"]
+        recon_pre=head==ACCEPTED and remote==ACCEPTED and dirty==set(recon_paths())
+        recon_post=head not in {BASE,ACCEPTED} and g("rev-parse","HEAD^")==ACCEPTED and remote in {ACCEPTED,head} and not dirty
+        if recon_post: recon_post=set(filter(None,g("diff","--name-only",f"{ACCEPTED}..HEAD").splitlines()))==set(recon_paths())
+        return [] if branch==BRANCH and up==UPSTREAM and not staged and (pre or post or recon_pre or recon_post) else ["C30R5_FINAL_GIT_INVALID"]
     except Exception:return ["C30R5_FINAL_GIT_COLLECTION_FAILED"]
 
 def validate(root,b):
     e=[]
     try:
         p=b["progress"]; event_value=b["events"]; events=event_value["events"] if isinstance(event_value,dict) else event_value; man=json.loads((root/MANIFEST).read_text(encoding="utf-8")); d=json.loads((root/DIGEST).read_text(encoding="utf-8"))
-        types=[x.get("event_type") for x in events[-7:]]
+        reconciled=events[-1].get("event_type")=="REPOSITORY_RECONCILED"; final_events=events[-8:-1] if reconciled else events[-7:]; types=[x.get("event_type") for x in final_events]
         if types!=["WORK_INSTRUCTION_REVISED","PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED","PHASE_GATE_DECIDED"]:e.append("C30R5_FINAL_EVENT_TAIL_INVALID")
-        r=events[-7].get("details",{}); state=(p.get("event_sequence")==1356 and p.get("status")=="ACCEPTED" and p.get("c30_overall_status")=="ACCEPTED" and p.get("worker_lease") is None and p.get("write_lease") is None and p.get("active_work_instruction") is None and "C-30R5" in p.get("completed_packages",[]) and man.get("accepted") is True and man.get("exact_allowed_paths")==paths() and man.get("unverified")==UNVERIFIED)
+        r=final_events[0].get("details",{}); state=(p.get("event_sequence") in {1356,1357} and p.get("status")=="ACCEPTED" and p.get("c30_overall_status")=="ACCEPTED" and p.get("worker_lease") is None and p.get("write_lease") is None and p.get("active_work_instruction") is None and "C-30R5" in p.get("completed_packages",[]) and man.get("accepted") is True and man.get("exact_allowed_paths")==paths() and man.get("unverified")==UNVERIFIED)
         if (r.get("parent_sha256"),r.get("revised_sha256"),r.get("invocation_sha256"))!=(WI1H,WI2H,INV2H):e.append("C30R5_FINAL_REVISION_BINDING_INVALID")
         if not state:e.append("C30R5_FINAL_STATE_INVALID")
         for row in man.get("raw_checksums",[]):
@@ -89,4 +94,29 @@ def validate(root,b):
     except Exception:e.append("C30R5_FINAL_INPUT_INVALID")
     return sorted(set(e))
 
-if __name__=="__main__": materialize(Path(__file__).resolve().parents[1])
+def reconcile(root):
+    ep=root/"docs/progress/progress-events.json"; pp=root/"docs/progress/build-progress.json"; hp=root/"docs/progress/BUILD_HANDOFF.md"
+    base_raw=subprocess.check_output(["git","show",f"{ACCEPTED}:docs/progress/progress-events.json"],cwd=root); ledger=json.loads(base_raw); events=ledger["events"]
+    p=json.loads(subprocess.check_output(["git","show",f"{ACCEPTED}:docs/progress/build-progress.json"],cwd=root))
+    if p.get("event_sequence")!=1356 or events[-1].get("sequence")!=1356: raise RuntimeError("RECON_BASE")
+    append(events,"REPOSITORY_RECONCILED",{"accepted_checkpoint":ACCEPTED,"branch":BRANCH,"upstream":UPSTREAM,"push":"PASS","remote_sha":"MATCH","worktree":"CLEAN"},"C-30")
+    p.update({"event_sequence":1357,"last_event_id":events[-1]["event_id"],"updated_at":"2026-09-23T03:50:00+09:00","recorded_at":"2026-09-23T03:50:00+09:00","next_safe_action":"C30_WORK_PLAN_COMPLETE","runtime_next_action":"C30_WORK_PLAN_COMPLETE"})
+    p["repository"].update({"local_head":ACCEPTED,"remote_head":ACCEPTED,"control_head":ACCEPTED,"head_relation":"POSTCOMMIT_RECONCILIATION_CHILD","worktree_status":"CLEAN","commit_status":"PASS","push_status":"PASS","remote_evidence":"LIVE_REMOTE_SHA_MATCH"})
+    m=dict(p); m.pop("snapshot_hash",None); p["snapshot_hash"]=sha(canon(m)); praw=pretty(p)
+    event_raw=pretty(events[-1]).rstrip(b"\n"); old_id=json.loads(base_raw)["last_event_id"].encode(); marker=b'\n  ],\n  "last_event_id": "'+old_id+b'"'; assert base_raw.count(marker)==1
+    eraw=base_raw.replace(marker,b",\n"+event_raw+marker.replace(old_id,events[-1]["event_id"].encode())).replace(b'"last_sequence": 1356',b'"last_sequence": 1357',1)
+    summary={k:p.get(k) for k in ("event_sequence","last_event_id","status","current_phase","current_work_package","active_agent","worker_lease","write_lease","next_work_package","next_successor_work_package","next_safe_action","runtime_next_action")}; summary.update({"c30_overall_status":"ACCEPTED","repository_head":ACCEPTED,"repository_upstream":UPSTREAM,"unverified":UNVERIFIED})
+    hraw=("# C30R5 final acceptance — remote checkpoint reconciled\n\n```json anvil-recovery-summary\n"+pretty(summary).decode()+"```\n").encode()
+    d={"schema_version":"1.0.0","algorithm":"SHA-256","event_sequence":1357,"self_reference":False,"progress":{"path":"docs/progress/build-progress.json","bytes":len(praw),"file_sha256":sha(praw),"canonical_json_sha256":sha(canon(p))},"handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(hraw),"file_sha256":sha(hraw),"machine_summary_canonical_sha256":sha(canon(summary))}}
+    ws=("# C-30R5 remote checkpoint reconciliation / 2026-09-23\n\n- 판정: `PASS`; accepted checkpoint `f3eeb4c88cceb10c919242e4b0db1843aac8c699`와 원격 branch SHA가 일치한다.\n- worktree는 checkpoint 직후 clean이며 C30 작업계획은 완료 상태다.\n\n").encode()+subprocess.check_output(["git","show",f"{ACCEPTED}:docs/WORK_STATUS.md"],cwd=root)
+    pp.write_bytes(praw); ep.write_bytes(eraw); hp.write_bytes(hraw); (root/DIGEST).write_bytes(pretty(d)); (root/"docs/WORK_STATUS.md").write_bytes(ws)
+    man=json.loads(subprocess.check_output(["git","show",f"{ACCEPTED}:{MANIFEST}"],cwd=root)); man.update({"event_sequence":1357,"appended_event_count":8,"repository_reconciliation":{"accepted_checkpoint":ACCEPTED,"push":"PASS","remote_sha":"MATCH","worktree":"CLEAN"}})
+    rows=[]
+    for rel in paths():
+        if rel!=MANIFEST:
+            raw=(root/rel).read_bytes(); rows.append({"path":rel,"bytes":len(raw),"sha256":sha(raw)})
+    man["raw_checksums"]=rows; (root/MANIFEST).write_bytes(pretty(man))
+
+if __name__=="__main__":
+    root=Path(__file__).resolve().parents[1]
+    reconcile(root) if "--reconcile" in sys.argv else materialize(root)

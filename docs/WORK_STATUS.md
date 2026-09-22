@@ -1,3 +1,8 @@
+# C-30R5 remote checkpoint reconciliation / 2026-09-23
+
+- 판정: `PASS`; accepted checkpoint `f3eeb4c88cceb10c919242e4b0db1843aac8c699`와 원격 branch SHA가 일치한다.
+- worktree는 checkpoint 직후 clean이며 C30 작업계획은 완료 상태다.
+
 # C-30R5 final acceptance / 2026-09-23
 
 - 판정: `ACCEPTED`; C30 contract matrix와 기록된 evidence 범위의 final gate를 통과했다.

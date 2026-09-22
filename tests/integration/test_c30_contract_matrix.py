@@ -116,7 +116,7 @@ def test_progress_snapshot_and_handoff_reference_local_not_formal_evidence():
     current=handoff_summary(handoff_raw)
     for field in projection_fields:
         assert current[field]==progress[field], field
-    assert current['event_sequence']==1356
+    assert current['event_sequence']==1357
     assert current['current_work_package']=='C-30' and current['status']=='ACCEPTED'
     assert current['next_work_package']=={'package_id':'C-30', 'status':'ACCEPTED'}
     assert current['next_successor_work_package'] is None

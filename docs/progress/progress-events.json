@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1356,
+  "last_sequence": 1357,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -76770,7 +76770,30 @@
       "ORACLE"
     ]
   }
+},
+{
+  "sequence": 1357,
+  "event_id": "evt_c30r5_final_1357_repository_reconciled",
+  "event_type": "REPOSITORY_RECONCILED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30",
+  "occurred_at": "2026-09-23T03:30:00+09:00",
+  "previous_event_sha256": "FA77B36B25702EB715CAFAB4161405648379B1D372C57EBC0C43DEC135B00A77",
+  "details": {
+    "accepted_checkpoint": "f3eeb4c88cceb10c919242e4b0db1843aac8c699",
+    "branch": "codex/c09-execution-backends-r1",
+    "upstream": "development/codex/c09-execution-backends-r1",
+    "push": "PASS",
+    "remote_sha": "MATCH",
+    "worktree": "CLEAN"
+  }
 }
   ],
-  "last_event_id": "evt_c30r5_final_1356_phase_gate_decided"
+  "last_event_id": "evt_c30r5_final_1357_repository_reconciled"
 }

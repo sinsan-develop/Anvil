@@ -3,9 +3,9 @@
   "manifest_type": "C30R5_FINAL_ACCEPTANCE",
   "artifact_id": "C30R5-FINAL-20260923",
   "package_id": "C-30R5",
-  "event_sequence": 1356,
+  "event_sequence": 1357,
   "historical_event_sequence": 1349,
-  "appended_event_count": 7,
+  "appended_event_count": 8,
   "accepted": true,
   "status": "ACCEPTED",
   "projection_mode": "C30R5_FINAL_ACCEPTANCE_EXACT15",
@@ -84,28 +84,28 @@
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 431193,
-      "sha256": "BD194D6624DBFF0B71397660FEB540FA0EAA8EB550090E6D36EEE66FC2023E00"
+      "bytes": 431451,
+      "sha256": "02FB8A3D308BCB405A4259B6F24A6210C20832C764BD750DDD7D3C8C1C2AFA44"
     },
     {
       "path": "docs/progress/BUILD_HANDOFF.md",
-      "bytes": 839,
-      "sha256": "298F481A4DDBCBFA04CDE7DC07FC6448D85097BADB2E5F61DE0CB64CC41EC643"
+      "bytes": 855,
+      "sha256": "58897A1D9A9B3842F16DAD5570221275FEA2C4E087019D9BB222DC27BAD4AB3C"
     },
     {
       "path": "docs/progress/build-progress.json",
-      "bytes": 1108011,
-      "sha256": "F12F72807242A25AA8D2D94B0B17CFF914601025F3137C1C7B7A724950CB82C7"
+      "bytes": 1107952,
+      "sha256": "18E8403CD0A1510C46F0A78BB86BB3A998412587E7DE55D90D81A82A3A8D22FC"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4030661,
-      "sha256": "0C77E5DE674E08FBBC618F891E1F7793BE72D6E67A0894D3E50D11B8DCD7637E"
+      "bytes": 4031440,
+      "sha256": "604141D90528E36AF594A3273C65DEAE0491109514004D6E5E77376713BC5AEF"
     },
     {
       "path": "docs/progress/progress-handoff-detached-digest-c30r5-final.json",
       "bytes": 664,
-      "sha256": "4CE9BECB100A0BE88EC288A330414DA6F3C4790128660DB68E9F669970FAF82C"
+      "sha256": "20E386B2E50F5FB304DA5A5F6C96A53EE867A7DBE0AE1626455AC2DE995F73A4"
     },
     {
       "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md",
@@ -119,8 +119,8 @@
     },
     {
       "path": "scripts/c30r5_final_overlay.py",
-      "bytes": 12478,
-      "sha256": "4452AC15A62059C5B2E04B6FB911FDF04326BF212B533D98DEFB45E863DE979C"
+      "bytes": 16959,
+      "sha256": "5176BBBA29717B199BAC7B39E8227ACC0C1E6574EC24ADC8E9E7C085AF3444B7"
     },
     {
       "path": "scripts/check_project_progress.py",
@@ -130,7 +130,7 @@
     {
       "path": "tests/integration/test_c30_contract_matrix.py",
       "bytes": 8155,
-      "sha256": "02C99791E43DBFFEEECA823A6725EBE32C17BFDDCA8B347FF510F4A094855E3E"
+      "sha256": "B4E380A79CE1499AD33C54687A72E0E30A1917EEF38F387D9EFC457C56D132FE"
     },
     {
       "path": "tests/tooling/test_c30r5_final_overlay.py",
@@ -138,5 +138,11 @@
       "sha256": "06DF254409BAADE199A8882A31061F4B3E52A447CD53A9F17533F095DC6D6D51"
     }
   ],
-  "self_reference": false
+  "self_reference": false,
+  "repository_reconciliation": {
+    "accepted_checkpoint": "f3eeb4c88cceb10c919242e4b0db1843aac8c699",
+    "push": "PASS",
+    "remote_sha": "MATCH",
+    "worktree": "CLEAN"
+  }
 }

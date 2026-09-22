@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30r5-start-seq1349",
-  "event_sequence": 1356,
-  "updated_at": "2026-09-23T03:30:00+09:00",
-  "last_event_id": "evt_c30r5_final_1356_phase_gate_decided",
+  "event_sequence": 1357,
+  "updated_at": "2026-09-23T03:50:00+09:00",
+  "last_event_id": "evt_c30r5_final_1357_repository_reconciled",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -462,7 +462,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C30_FINAL_CHECKPOINT_COMMIT_PUSH",
+  "next_safe_action": "C30_WORK_PLAN_COMPLETE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -573,12 +573,12 @@
   },
   "repository": {
     "branch": "codex/c09-execution-backends-r1",
-    "local_head": "760e47ce250e8181fe1b8ee821123d49140c3e11",
+    "local_head": "f3eeb4c88cceb10c919242e4b0db1843aac8c699",
     "upstream": "development/codex/c09-execution-backends-r1",
-    "remote_head": "760e47ce250e8181fe1b8ee821123d49140c3e11",
+    "remote_head": "f3eeb4c88cceb10c919242e4b0db1843aac8c699",
     "projection_mode": "C30R5_FINAL_ACCEPTANCE_EXACT15",
     "validated_base_commit": "760e47ce250e8181fe1b8ee821123d49140c3e11",
-    "head_relation": "PRECOMMIT_OR_SOLE_DIRECT_CHILD",
+    "head_relation": "POSTCOMMIT_RECONCILIATION_CHILD",
     "exact_allowed_paths": [
       "docs/04_test_reports/C-30R5_DEVELOPER_TEST_REPORT.md",
       "docs/04_test_reports/C-30R5_QUALITY_REVIEW.md",
@@ -596,14 +596,14 @@
       "tests/integration/test_c30_contract_matrix.py",
       "tests/tooling/test_c30r5_final_overlay.py"
     ],
-    "push_status": "NOT_EXECUTED",
-    "remote_evidence": "LIVE_REMOTE_BASE_VERIFIED",
-    "worktree_status": "UNSTAGED_C30R5_FINAL_EXACT15",
-    "control_head": "760e47ce250e8181fe1b8ee821123d49140c3e11",
+    "push_status": "PASS",
+    "remote_evidence": "LIVE_REMOTE_SHA_MATCH",
+    "worktree_status": "CLEAN",
+    "control_head": "f3eeb4c88cceb10c919242e4b0db1843aac8c699",
     "product_write_scope": [
       "tests/integration/test_c30_contract_matrix.py"
     ],
-    "commit_status": "NOT_EXECUTED"
+    "commit_status": "PASS"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1364,8 +1364,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "AC331AEA6B63DFA2392D7B066511303905E6D5B9D096EB8DB7A54B59DE88F1A1",
-  "runtime_next_action": "C30_FINAL_CHECKPOINT_COMMIT_PUSH",
+  "snapshot_hash": "41684AD99E3711A3C523DAAB2F904EFDF01A7EDD9C7DDF64267535EF6ADE8FDB",
+  "runtime_next_action": "C30_WORK_PLAN_COMPLETE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2977,7 +2977,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-23T03:30:00+09:00",
+  "recorded_at": "2026-09-23T03:50:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
