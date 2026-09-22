@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1323,
-  "updated_at": "2026-09-22T13:20:00+09:00",
-  "last_event_id": "evt_c30r3_task4_main_accepted",
+  "event_sequence": 1325,
+  "updated_at": "2026-09-22T13:25:01+09:00",
+  "last_event_id": "evt_c30r4_checker_repair_leases_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -83,8 +83,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
-  "current_work_package": "C-30",
-  "status": "C30R3_ACCEPTED_C30_CHECKER_GATE_BLOCKED",
+  "current_work_package": "C-30R4",
+  "status": "C30R4_CHECKER_REPAIR_IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -175,7 +175,7 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": null,
+  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R4","status":"ACTIVE","worker_lease_id":"worker-lease-c30r4-checker-20260922-001","execution_fencing_token":"c30r4-checker-execution-fence-epoch-1-cc98f99","expires_at":"2026-09-22T17:25:00+09:00"},
   "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -208,7 +208,8 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {"actor_id":"developer-primary-c30r2","subject_ref":"C-30R4","baseline_git_commit":"cc98f99","issued_at":"2026-09-22T13:25:01+09:00","expires_at":"2026-09-22T17:25:00+09:00","status":"ACTIVE","execution_fencing_token":"c30r4-checker-execution-fence-epoch-1-cc98f99","path_scope":["scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"lease_id":"worker-lease-c30r4-checker-20260922-001","lease_epoch":1,"dispatch_head":"cc98f99"},
+  "write_lease": {"actor_id":"developer-primary-c30r2","subject_ref":"C-30R4","baseline_git_commit":"cc98f99","issued_at":"2026-09-22T13:25:01+09:00","expires_at":"2026-09-22T17:25:00+09:00","status":"ACTIVE","execution_fencing_token":"c30r4-checker-execution-fence-epoch-1-cc98f99","write_fencing_token":"c30r4-checker-write-fence-epoch-1-cc98f99","path_scope":["scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"lease_id":"write-lease-c30r4-checker-20260922-001","worker_lease_id":"worker-lease-c30r4-checker-20260922-001","lease_epoch":1,"write_epoch":1,"dispatch_head":"cc98f99"},
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -2555,8 +2556,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "67A35F14C2892014EC9CB7B15326CDEBDB8CB76C78629FDF905760854D2C3240",
-  "runtime_next_action": "REPAIR_CANONICAL_PROGRESS_CHECKER",
+  "snapshot_hash": "88EAAAF5FA3DB006E6589B9042E2133F86D6BB85EA13B59558212902BA4927F7",
+  "runtime_next_action": "C30R4_TDD_RED_THEN_RESTORE_CHECKER",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
