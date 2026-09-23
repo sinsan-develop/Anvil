@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f06-final-seq1393",
-  "event_sequence": 1393,
-  "updated_at": "2026-09-23T23:45:00+09:00",
-  "last_event_id": "evt_f06_1393_main_package_accepted",
+  "snapshot_id": "snapshot-f07-start-seq1396",
+  "event_sequence": 1396,
+  "updated_at": "2026-09-24T00:45:00+09:00",
+  "last_event_id": "evt_f07_1396_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,8 +91,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-06",
-  "status": "ACCEPTED",
+  "current_work_package": "F-07",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -189,8 +189,30 @@
     "F-05",
     "F-06"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f07-r1",
+  "write_lease": {
+    "lease_id": "write-lease-f07-r1-20260924-001",
+    "actor_id": "developer-primary-f07-r1",
+    "subject_ref": "F-07",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T00:45:00+09:00",
+    "expires_at": "2026-09-24T12:45:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f07-r1-write-fence-epoch-1-06a2b67ba7b11799",
+    "execution_fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "baseline_git_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "dispatch_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "path_scope": [
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
+    ],
+    "worker_lease_id": "worker-lease-f07-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f07-r1-write-fence-epoch-1-06a2b67ba7b11799"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -222,7 +244,26 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f07-r1-20260924-001",
+    "actor_id": "developer-primary-f07-r1",
+    "subject_ref": "F-07",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T00:45:00+09:00",
+    "expires_at": "2026-09-24T12:45:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "execution_fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "baseline_git_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "dispatch_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "path_scope": [
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -444,7 +485,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F06_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F07_EXACT5",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -554,41 +595,35 @@
     }
   },
   "repository": {
-    "branch": "codex/f06-openrouter-adapter",
-    "local_head": "19aee3360d90d3a046183ae66e6dd02150d9d747",
-    "upstream": "development/codex/f06-openrouter-adapter",
-    "remote_head": "19aee3360d90d3a046183ae66e6dd02150d9d747",
-    "projection_mode": "F06_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "19aee3360d90d3a046183ae66e6dd02150d9d747",
+    "branch": "codex/f07-upstage-adapter",
+    "local_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "upstream": "development/codex/f07-upstage-adapter",
+    "remote_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "projection_mode": "F07_START_EXACT11_PRODUCT_EXACT5",
+    "validated_base_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-06_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-06_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f06.json",
-      "docs/work_orders/F-06_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-06_WORK_INSTRUCTION.md",
-      "packages/providers/openrouter_adapter.py",
-      "packages/providers/openrouter_errors.py",
-      "packages/providers/openrouter_models.py",
+      "docs/progress/progress-handoff-detached-digest-f07.json",
+      "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-07_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "scripts/f06_progress_overlay.py",
-      "tests/providers/test_openrouter_adapter_f06.py",
-      "tests/tooling/test_f06_progress_overlay.py"
+      "scripts/f07_progress_overlay.py",
+      "tests/tooling/test_f07_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
-      "packages/providers/openrouter_adapter.py",
-      "packages/providers/openrouter_errors.py",
-      "packages/providers/openrouter_models.py",
-      "tests/providers/test_openrouter_adapter_f06.py"
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
     ],
-    "worktree_status": "F06_ACCEPTED",
-    "commit_status": "FINAL_PENDING_OR_COMPLETE",
+    "worktree_status": "F07_ACTIVE",
+    "commit_status": "PENDING",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -699,8 +734,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F06_ACCEPTED",
-      "F06_APPROVED_SCOPE"
+      "F07_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -750,7 +784,18 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-F-07-20260924-001",
+    "path": "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+    "sha256": "B681077B227190C0C6FD9071588A44144F16F1156EFC4D81C3BF84A09540B1CA",
+    "invocation_path": "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+    "invocation_sha256": "D81D2D12FB1E36FF1EB66A19016EE7DC1F6FDE91C368997F8694E34ABC96F660",
+    "assigned_verification_ids": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019(UPSTAGE)"
+    ]
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -880,9 +925,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-06",
-    "path": "docs/progress/progress-handoff-detached-digest-f06.json",
-    "manifest_path": "docs/evidence/manifests/F-06_PROGRESS_MANIFEST.json"
+    "package_id": "F-07",
+    "path": "docs/progress/progress-handoff-detached-digest-f07.json",
+    "manifest_path": "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -903,16 +948,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "4F0763E663D191E8457942C9F5EAC382E77B2197F2C1270D7FEA3CEE9481A66B"
+      "sha256": "CCE4C384246C2B4EF3DE59CCF7150E7A18B5CD28623DFED50A780D1F217F1EE3"
     }
   },
   "next_work_package": {
-    "package_id": "F-07",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-08",
+    "status": "BLOCKED_PENDING_F07_ACCEPTANCE"
   },
   "next_successor_work_package": {
-    "package_id": "F-07",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-08",
+    "status": "BLOCKED_PENDING_F07_ACCEPTANCE"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1300,8 +1345,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "EF2A6BCC9E368C91C342286700AE3EBD4886B8FEDD51FFB9C92F07EADE8F2093",
-  "runtime_next_action": "MERGE_F06_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "C61118B1EFD418E546DA9D607DECDD2EDA978CEB966C8D2B50B6ADCEF3C8467D",
+  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F07_EXACT5",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2913,7 +2958,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-23T23:45:00+09:00",
+  "recorded_at": "2026-09-24T00:45:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

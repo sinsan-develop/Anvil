@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-07",
+  "event_sequence": 1396,
+  "accepted": false,
+  "projection_mode": "F07_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f07.json",
+    "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f07_progress_overlay.py",
+    "tests/tooling/test_f07_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+    "packages/providers/upstage_adapter.py",
+    "packages/providers/upstage_errors.py",
+    "packages/providers/upstage_models.py",
+    "tests/providers/test_upstage_adapter_f07.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 435156,
+      "sha256": "7B7AA16FD701A0625BD61F2E4F06144EF9E2587EC4826D670FAB69DDBCF45143"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4071238,
+      "sha256": "CCE4C384246C2B4EF3DE59CCF7150E7A18B5CD28623DFED50A780D1F217F1EE3"
+    },
+    {
+      "path": "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+      "bytes": 394,
+      "sha256": "D81D2D12FB1E36FF1EB66A19016EE7DC1F6FDE91C368997F8694E34ABC96F660"
+    },
+    {
+      "path": "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+      "bytes": 3335,
+      "sha256": "B681077B227190C0C6FD9071588A44144F16F1156EFC4D81C3BF84A09540B1CA"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4722895,
+      "sha256": "DED853DF45E98760E6D6DE6431A5C868C2C179FBFCA8C1A4EE3233ED331C8A30"
+    },
+    {
+      "path": "scripts/f07_progress_overlay.py",
+      "bytes": 23044,
+      "sha256": "6E34E66CAB3A56A206B91EEB4A7AD5B2964F8DBEFED687577699831D97550A7C"
+    },
+    {
+      "path": "tests/tooling/test_f07_progress_overlay.py",
+      "bytes": 4334,
+      "sha256": "712AA35ADF2A36B0B56D6EFEA450BE45465C8FBD8E844598398291D767CA818F"
+    }
+  ],
+  "runtime_boundary": {
+    "live_upstage": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}

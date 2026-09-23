@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1393,
+  "last_sequence": 1396,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -77850,7 +77850,85 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1394,
+  "event_id": "evt_f07_1394_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-07",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-07/START",
+  "occurred_at": "2026-09-24T00:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "9BBE97634FE625F9C8BC4820C66F337BD332833C066209604BEF7BB501F952B7",
+  "details": {
+    "package_id": "F-07",
+    "branch": "codex/f07-upstage-adapter",
+    "base_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "work_instruction": "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
+    ]
+  }
+},
+{
+  "sequence": 1395,
+  "event_id": "evt_f07_1395_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-07",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-07/START",
+  "occurred_at": "2026-09-24T00:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "565B05CE2126672633895B61F12F9B97A64204348D1A3610863D3C4720458319",
+  "details": {
+    "lease_id": "worker-lease-f07-r1-20260924-001",
+    "execution_fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "actor_id": "developer-primary-f07-r1"
+  }
+},
+{
+  "sequence": 1396,
+  "event_id": "evt_f07_1396_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-07",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-07/START",
+  "occurred_at": "2026-09-24T00:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "159EC440D60241A89B69D0018EA4B9DDCD695E28AA73B575017FA5D9CE8E3587",
+  "details": {
+    "lease_id": "write-lease-f07-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f07-r1-20260924-001",
+    "write_fencing_token": "f07-r1-write-fence-epoch-1-06a2b67ba7b11799",
+    "path_scope": [
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f06_1393_main_package_accepted"
+  "last_event_id": "evt_f07_1396_write_lease_issued"
 }
