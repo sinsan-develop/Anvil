@@ -20,6 +20,8 @@ git diff --check refs/remotes/origin/main...HEAD
 
 이 Gate는 canonical progress checker와 변경 diff의 whitespace 오류를 검사한다. 기존 로컬·WSL·브라우저·Provider 검증 결과를 GitHub Actions에서 다시 실행하지 않으며, 요청 tag 생성자가 해당 Stage의 계획상 필수 검증을 이미 완료했다는 선언을 전제로 한다. 따라서 요청 tag는 필수 검증이 끝난 exact commit에만 생성한다.
 
+Actions checkout은 기본적으로 `origin`만 만들기 때문에 Gate는 checker 실행 전에 exact 작업 branch를 유지하고, 로컬 runner 안에서만 canonical `development` URL·`development/main`·작업 branch 추적 ref를 구성한다. 이는 원격 fetch/push나 인증 변경이 아니라 checker가 로컬 Git 문맥을 검증할 수 있게 하는 일회 실행 준비다.
+
 ## 3. 저장소 최초 설치
 
 1. GitHub 저장소의 `Settings → Actions → General → Workflow permissions`에서 `Read and write permissions`와 `Allow GitHub Actions to create and approve pull requests`를 켠다.
@@ -58,7 +60,7 @@ Anvil의 개발용 원격은 SSH alias를 사용하는 `development`다.
 git@github-sinsan-develop:sinsan-develop/Anvil.git
 ```
 
-GitHub Actions 내부에서는 checkout이 만든 `origin`을 사용한다. 개발자가 `gh auth`, PAT 또는 웹 계정 전환을 수행할 필요는 없다.
+GitHub Actions의 원격 통신은 checkout이 만든 `origin`을 사용한다. canonical checker용 `development` 참조는 runner 로컬에서만 구성한다. 개발자가 `gh auth`, PAT 또는 웹 계정 전환을 수행할 필요는 없다.
 
 Broker는 다음 순서로 fail-closed 검증한다.
 
@@ -67,7 +69,7 @@ Broker는 다음 순서로 fail-closed 검증한다.
 3. 요청 tag가 현재 원격 `main`의 trusted Broker commit을 가리키는지 확인
 4. 요청 SHA가 원격 작업 branch의 현재 HEAD와 같은지 확인
 5. 작업 SHA가 현재 `main`을 포함하는지 확인
-6. `main`의 저장소별 Gate를 작업 SHA에 대해 실행
+6. exact 작업 branch 이름으로 요청 SHA를 checkout하고 `main`의 저장소별 Gate를 실행
 7. Gate 이후 `main`과 작업 branch가 변하지 않았는지 재검증
 8. PR 생성 또는 기존 열린 PR 재사용
 9. squash 병합 및 원격 작업 branch 삭제
