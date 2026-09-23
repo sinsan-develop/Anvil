@@ -1,11 +1,13 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-08",
-  "event_sequence": 1404,
-  "accepted": false,
-  "projection_mode": "F08_START_EXACT11_PRODUCT_EXACT5",
+  "event_sequence": 1409,
+  "accepted": true,
+  "projection_mode": "F08_FINAL_ACCEPTANCE_EXACT17",
   "validated_base_commit": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
   "exact_allowed_paths": [
+    "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-08_INDEPENDENT_REVIEW.md",
     "docs/WORK_STATUS.md",
     "docs/evidence/manifests/F-08_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -14,8 +16,12 @@
     "docs/progress/progress-handoff-detached-digest-f08.json",
     "docs/work_orders/F-08_INVOCATION_PROMPT.md",
     "docs/work_orders/F-08_WORK_INSTRUCTION.md",
+    "packages/providers/gemini_adapter.py",
+    "packages/providers/gemini_errors.py",
+    "packages/providers/gemini_models.py",
     "scripts/check_project_progress.py",
     "scripts/f08_progress_overlay.py",
+    "tests/providers/test_gemini_adapter_f08.py",
     "tests/tooling/test_f08_progress_overlay.py"
   ],
   "product_write_scope": [
@@ -27,14 +33,24 @@
   ],
   "raw_checksums": [
     {
+      "path": "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "bytes": 12673,
+      "sha256": "F2FABA5E40C0C5462B65E3608D0BDF873D2B25D5C0ED70E8846D3D92DA61A2E5"
+    },
+    {
+      "path": "docs/04_test_reports/F-08_INDEPENDENT_REVIEW.md",
+      "bytes": 3417,
+      "sha256": "9A5CC88AD1186CFB83E040D28D54F83AC6F6118A322D97411F1DB32A4171541F"
+    },
+    {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 435539,
-      "sha256": "B9558688CF20A822FEB151AF812E9009B62B028DD2AA81A80A8F2E43B3C2ADAD"
+      "bytes": 435695,
+      "sha256": "B6E5BAD4577BFA55B5EC4AF40C23242E82DCD87DEE89105292459DBBE4291807"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4077911,
-      "sha256": "B5E646D163EA6E5727EB4E9EEDDE5A0DDF6AE3B07619F81240CD208AC004AAE5"
+      "bytes": 4081784,
+      "sha256": "F422BE6D0840D9E44D4C9090D1C9D948C1BB513C7A48D2D186309073604F4062"
     },
     {
       "path": "docs/work_orders/F-08_INVOCATION_PROMPT.md",
@@ -47,14 +63,34 @@
       "sha256": "751FFDBF493C58A7F6D47A1B8E7A680E180E7A27D6E01D291EB8095055030DC2"
     },
     {
+      "path": "packages/providers/gemini_adapter.py",
+      "bytes": 15043,
+      "sha256": "7042D430A3E4EAF48C8CA66E2F1708E64D6D40C72209F62A757ADD10CEE06AA2"
+    },
+    {
+      "path": "packages/providers/gemini_errors.py",
+      "bytes": 3566,
+      "sha256": "50ED6ACBB51F557FF7C5E42A908760AF8F4D9C4E30FC2F89142C7E613C9999CE"
+    },
+    {
+      "path": "packages/providers/gemini_models.py",
+      "bytes": 3591,
+      "sha256": "A2AED6B749A2F798F85EB97AA12E8CA1A40EED9EB77EFFD3649218F66FFB0C65"
+    },
+    {
       "path": "scripts/check_project_progress.py",
       "bytes": 4723703,
       "sha256": "2AB4A51C857D2260D5D7D49B891424478699DE98FC0E8772E9AC17A9468253FC"
     },
     {
       "path": "scripts/f08_progress_overlay.py",
-      "bytes": 23312,
-      "sha256": "26738BCED280970FD549B338F8FA9D0D89D26743767C31543AD144F09517C133"
+      "bytes": 23775,
+      "sha256": "0A2AB48A46ACC1C93EAD987B0C7C49542CD40E2D82E2750DF840C6211156295C"
+    },
+    {
+      "path": "tests/providers/test_gemini_adapter_f08.py",
+      "bytes": 14965,
+      "sha256": "39D271FB8BBCA830AE3C57A883049900CB6A6D1B2A05EAA24F8DC625F366F2D7"
     },
     {
       "path": "tests/tooling/test_f08_progress_overlay.py",
@@ -71,6 +107,11 @@
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED"
   },
-  "independent_review": null,
+  "independent_review": {
+    "verdict": "PASS_WITH_MINOR_LIMITATION",
+    "critical": 0,
+    "important": 0,
+    "minor": 1
+  },
   "self_reference": false
 }

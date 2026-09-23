@@ -14,7 +14,7 @@ BRANCH = "codex/f08-gemini-adapter"
 START_MODE = "F08_START_EXACT11_PRODUCT_EXACT5"
 FINAL_MODE = "F08_FINAL_ACCEPTANCE_EXACT17"
 AT = "2026-09-24T01:15:00+09:00"
-FINAL_AT = "2026-09-24T01:30:00+09:00"
+FINAL_AT = "2026-09-24T01:43:31+09:00"
 EXPIRES = "2026-09-24T13:15:00+09:00"
 ACTOR = "developer-primary-f08-r1"
 WORKER = "worker-lease-f08-r1-20260924-001"
@@ -201,8 +201,8 @@ def _write_projection(root, progress, ledger, *, heading, status_lines, accepted
             "credentials": "NOT_EXECUTED", "database": "NOT_EXECUTED",
             "browser": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED",
         },
-        "independent_review": ({"verdict": "ACCEPT", "critical": 0,
-                                "important": 0, "minor": 0} if accepted else None),
+        "independent_review": ({"verdict": "PASS_WITH_MINOR_LIMITATION", "critical": 0,
+                                "important": 0, "minor": 1} if accepted else None),
         "self_reference": False,
     }
     (root / MANIFEST).write_bytes(_pretty(manifest))
@@ -281,10 +281,10 @@ def finalize(root):
         raise RuntimeError("F08_START_PROGRESS_INVALID")
     old_worker, old_write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
     _append(events, "PACKAGE_COMPLETED", {"package_id": "F-08", "product_paths": product_paths(),
-             "focused": "PENDING_FINAL_VERIFICATION", "related_provider_regression": "PENDING_FINAL_VERIFICATION",
-             "compile": "PENDING_FINAL_VERIFICATION"}, step="FINAL")
-    _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {"verdict": "ACCEPT",
-             "critical": 0, "important": 0, "minor": 0, "report": REVIEW}, step="FINAL")
+             "focused": "49_PASSED", "related_provider_regression": "557_PASSED_4_SKIPPED_PG18_DSN",
+             "compile": "AST_4_OK"}, step="FINAL")
+    _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {"verdict": "PASS_WITH_MINOR_LIMITATION",
+             "critical": 0, "important": 0, "minor": 1, "report": REVIEW}, step="FINAL")
     _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE, "reason": "F08_ACCEPTED"}, step="FINAL")
     _append(events, "WORKER_LEASE_REVOKED", {"lease_id": WORKER, "reason": "F08_ACCEPTED"}, step="FINAL")
     last = _append(events, "MAIN_PACKAGE_ACCEPTED", {"decision": "ACCEPTED",
@@ -306,10 +306,11 @@ def finalize(root):
         "active_work_instruction": None, "repository": _repository(FINAL_MODE),
         "f08_acceptance": {
             "status": "ACCEPTED",
-            "independent_review": "PENDING_FINAL_REVIEW",
-            "focused": "PENDING_FINAL_VERIFICATION",
-            "related_regression": "PENDING_FINAL_VERIFICATION",
-            "resolved_findings": [],
+            "independent_review": "PASS_WITH_MINOR_LIMITATION_C0_I0_M1",
+            "focused": "49_PASSED",
+            "related_regression": "557_PASSED_4_SKIPPED_PG18_DSN",
+            "resolved_findings": ["JOINED_OUTPUT_CREDENTIAL", "HOST_EXCEPTION_REDACTION",
+                                  "EMPTY_FINAL_FRAME", "PROTOJSON_OMITTED_PARTS"],
             "unverified": ["LIVE_GEMINI", "CREDENTIALS", "NETWORK", "DATABASE",
                            "BROWSER", "WSL", "DEPLOYMENT"],
         },
@@ -321,8 +322,10 @@ def finalize(root):
                                "stop_before_dialogue_report": False},
     })
     _write_projection(root, progress, ledger, heading="F-08 GEMINI adapter 완료",
-        status_lines=["판정: `ACCEPTED`; 제품 exact5와 독립 검토 결과를 최종 기록한다.",
-                      "focused/관련 회귀/AST의 실제 결과를 최종 기록한다.",
+        status_lines=["판정: `ACCEPTED`; 독립 검토 Critical 0/Important 0/Minor 1, 제품 exact5를 인수한다.",
+                      "focused 49 PASS, 관련 회귀 557 PASS/4 SKIP(PG18 DSN), AST 4 OK.",
+                      "독립 검토 재작업 2회, 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f08-control-20260924a` 정리 확인.",
+                      "Minor: 기존 Gateway 문자열 계약상 선행·후행 공백 출력은 `OUTPUT_TEXT_NON_CANONICAL`로 거부된다.",
                       "실제 GEMINI·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.",
                       "다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다."],
         accepted=True)

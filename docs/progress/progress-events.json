@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1404,
+  "last_sequence": 1409,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78130,7 +78130,130 @@
       "tests/providers/test_gemini_adapter_f08.py"
     ]
   }
+},
+{
+  "sequence": 1405,
+  "event_id": "evt_f08_1405_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-08/FINAL",
+  "occurred_at": "2026-09-24T01:43:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EF006F42DF52E7B00FA5CFC27FA5A8C98689A0331E63ACA5702FF981D0C527DE",
+  "details": {
+    "package_id": "F-08",
+    "product_paths": [
+      "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "packages/providers/gemini_adapter.py",
+      "packages/providers/gemini_errors.py",
+      "packages/providers/gemini_models.py",
+      "tests/providers/test_gemini_adapter_f08.py"
+    ],
+    "focused": "49_PASSED",
+    "related_provider_regression": "557_PASSED_4_SKIPPED_PG18_DSN",
+    "compile": "AST_4_OK"
+  }
+},
+{
+  "sequence": 1406,
+  "event_id": "evt_f08_1406_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-08/FINAL",
+  "occurred_at": "2026-09-24T01:43:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "547110BC5646066734F1C9531407EE1F03919E703EA455738E741BCFE17DFBE7",
+  "details": {
+    "verdict": "PASS_WITH_MINOR_LIMITATION",
+    "critical": 0,
+    "important": 0,
+    "minor": 1,
+    "report": "docs/04_test_reports/F-08_INDEPENDENT_REVIEW.md"
+  }
+},
+{
+  "sequence": 1407,
+  "event_id": "evt_f08_1407_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-08/FINAL",
+  "occurred_at": "2026-09-24T01:43:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "C741875171817F57BFECCAABFEFD8C477ABE63534D19BE82DFE68AAF7F1E7757",
+  "details": {
+    "lease_id": "write-lease-f08-r1-20260924-001",
+    "reason": "F08_ACCEPTED"
+  }
+},
+{
+  "sequence": 1408,
+  "event_id": "evt_f08_1408_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-08/FINAL",
+  "occurred_at": "2026-09-24T01:43:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A1DD36724049F252B15CA6C7EAEA211E8F6D25E721CD997055937E117B882F37",
+  "details": {
+    "lease_id": "worker-lease-f08-r1-20260924-001",
+    "reason": "F08_ACCEPTED"
+  }
+},
+{
+  "sequence": 1409,
+  "event_id": "evt_f08_1409_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-08/FINAL",
+  "occurred_at": "2026-09-24T01:43:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "FA0EC6148975B847D4C32DB14F7F6E40E0A2FD95A4C14E1AEAF29570C8930BF9",
+  "details": {
+    "decision": "ACCEPTED",
+    "package_id": "F-08",
+    "next_work_package": "F-09",
+    "blocking_findings": 0,
+    "unverified": [
+      "LIVE_GEMINI",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f08_1404_write_lease_issued"
+  "last_event_id": "evt_f08_1409_main_package_accepted"
 }
