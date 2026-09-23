@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-09",
+  "event_sequence": 1417,
+  "accepted": true,
+  "projection_mode": "F09_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-09_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-09_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f09.json",
+    "docs/work_orders/F-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-09_WORK_INSTRUCTION.md",
+    "packages/providers/anthropic_adapter.py",
+    "packages/providers/anthropic_errors.py",
+    "packages/providers/anthropic_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f09_progress_overlay.py",
+    "tests/providers/test_anthropic_adapter_f09.py",
+    "tests/tooling/test_f09_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+    "packages/providers/anthropic_adapter.py",
+    "packages/providers/anthropic_errors.py",
+    "packages/providers/anthropic_models.py",
+    "tests/providers/test_anthropic_adapter_f09.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+      "bytes": 7205,
+      "sha256": "34EA938784F4093E2436A961585EBBD0F2D0710953C06C39869145FECF8F6EA2"
+    },
+    {
+      "path": "docs/04_test_reports/F-09_INDEPENDENT_REVIEW.md",
+      "bytes": 3796,
+      "sha256": "B0AAED8BF4EBD8BD50916E1A342F5FCDECC3637392501811AB51672027F51F6E"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 436326,
+      "sha256": "FEF0CBD3412528B4864C3F3491F96426FD0584B78E8D7F248FC6A4CED8363F30"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4088463,
+      "sha256": "3447457E964283F1DB4F4A417BCCD9F4AE6FFD78ACFCAA657A024B6485F96CDA"
+    },
+    {
+      "path": "docs/work_orders/F-09_INVOCATION_PROMPT.md",
+      "bytes": 346,
+      "sha256": "4757459CD31644AAD3CC7543D02C0828A57895E505670DDADF6DA810735C2C2A"
+    },
+    {
+      "path": "docs/work_orders/F-09_WORK_INSTRUCTION.md",
+      "bytes": 3673,
+      "sha256": "7E1EAE1729F2F8774A68DAFB02FB4FA863265E13E42A9D38CC0AE24F5EEE1C46"
+    },
+    {
+      "path": "packages/providers/anthropic_adapter.py",
+      "bytes": 18317,
+      "sha256": "90803772FFB5F64BE0ACAFBC51D655C96BA557647C19A68AF43977916E523725"
+    },
+    {
+      "path": "packages/providers/anthropic_errors.py",
+      "bytes": 3915,
+      "sha256": "E7FC08567435D32ADC2422F73D5CC4BEFA5BA521EE4D795E13C32B6E0EB82F77"
+    },
+    {
+      "path": "packages/providers/anthropic_models.py",
+      "bytes": 3340,
+      "sha256": "025308632C838AA97EADD6FFE58637B8F3DF7FCA09B87D37E3F974C9115B1ADA"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4724511,
+      "sha256": "C122CE79A5DE582E28C484EF380F3C4D826694150485DFF687DF7F58B0C64CC0"
+    },
+    {
+      "path": "scripts/f09_progress_overlay.py",
+      "bytes": 23830,
+      "sha256": "4D095AC49DAB7D84082F1450AEEB062819232B282A24D23BFCC17167A17103B8"
+    },
+    {
+      "path": "tests/providers/test_anthropic_adapter_f09.py",
+      "bytes": 15223,
+      "sha256": "33D328621199292892CE3E56E520759E30500EAE6016F5961DEC5EBF07EAF27D"
+    },
+    {
+      "path": "tests/tooling/test_f09_progress_overlay.py",
+      "bytes": 4336,
+      "sha256": "6F80B2C6D90CFD5CDFE80DC5FF04869497E3A9BFA9B53F098BFC04314E742B39"
+    }
+  ],
+  "runtime_boundary": {
+    "live_anthropic": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 1
+  },
+  "self_reference": false
+}

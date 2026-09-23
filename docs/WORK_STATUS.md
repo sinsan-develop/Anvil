@@ -1,3 +1,12 @@
+# F-09 ANTHROPIC adapter 완료
+
+- 판정: `ACCEPTED`; 독립 검토 Critical 0/Important 0/Minor 1, 제품 exact5를 인수한다.
+- focused 37 PASS, 관련 회귀 594 PASS/4 SKIP(PG18 DSN), AST 4 OK.
+- 독립 검토 재작업 2회, 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f09-control-20260924a` 정리 확인.
+- Minor: 기존 Gateway 문자열 계약상 선행·후행 공백 출력은 `OUTPUT_TEXT_NON_CANONICAL`로 거부된다.
+- 실제 ANTHROPIC·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
+
 # F-08 GEMINI adapter 완료
 
 - 판정: `ACCEPTED`; 독립 검토 Critical 0/Important 0/Minor 1, 제품 exact5를 인수한다.
