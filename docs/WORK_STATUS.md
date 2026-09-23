@@ -1,3 +1,9 @@
+# C-30 merged-main canonical checker reconciliation / 2026-09-23
+
+- 판정: `IN_PROGRESS`; Stage A merge-policy main `66eef70f87cac1d0b87df5b7e7c37715b3bf2632`에서 Stage B exact9 reconciliation을 시작했다.
+- TDD RED `4 failed, 6 passed`; GREEN `10 passed`; canonical checker seq1359와 worktree diff-check PASS. checker는 work branch pre/post와 2-parent merged main을 구조·exact path·ancestry·tree equality로 검증한다.
+- 제품/DB/WSL/browser/Provider/Oracle 변경·재실행은 0이다. 다음은 seq1359 checker/diff/focused gate 후 commit·push·request tag다.
+
 # C-30 PR Broker integration gate correction / 2026-09-23
 
 - 판정: `RECONCILED_PENDING_COMMIT_PUSH`; seq1358 append-only reconciliation으로 Broker merge와 exact13 correction을 결박했다.

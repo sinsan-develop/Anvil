@@ -43,3 +43,41 @@ def test_c30r5_final_selects_gate_events_before_two_reconciliations():
     assert selector is not None,"final gate event selector is missing"
     events=[{"sequence":seq} for seq in range(1349,1359)]
     assert [row["sequence"] for row in selector(events,1358)]==list(range(1350,1357))
+
+def test_c30_merged_main_reconciliation_accepts_exact_work_branch_precommit():
+    validator=getattr(O,"validate_merged_main_reconciliation_facts",None)
+    assert validator is not None,"merged-main reconciliation validator is missing"
+    assert validator(
+        head="base",branch=O.MERGED_BRANCH,upstream=f"development/{O.MERGED_BRANCH}",remote="base",
+        staged=set(),dirty=set(O.MERGED_RECONCILIATION_PATHS),validated_base="base",
+        head_parents=[],head_changed_paths=set(),
+    )==[]
+
+def test_c30_merged_main_reconciliation_accepts_exact_work_branch_postcommit():
+    validator=getattr(O,"validate_merged_main_reconciliation_facts",None)
+    assert validator is not None,"merged-main reconciliation validator is missing"
+    assert validator(
+        head="feature",branch=O.MERGED_BRANCH,upstream=f"development/{O.MERGED_BRANCH}",remote="feature",
+        staged=set(),dirty=set(),validated_base="base",
+        head_parents=["base"],head_changed_paths=set(O.MERGED_RECONCILIATION_PATHS),
+    )==[]
+
+def test_c30_merged_main_reconciliation_accepts_structural_merge_commit():
+    validator=getattr(O,"validate_merged_main_reconciliation_facts",None)
+    assert validator is not None,"merged-main reconciliation validator is missing"
+    assert validator(
+        head="merge",branch="main",upstream="development/main",remote="merge",
+        staged=set(),dirty=set(),validated_base="base",
+        head_parents=["base","feature"],head_changed_paths=set(),
+        base_is_ancestor_of_feature=True,feature_paths=set(O.MERGED_RECONCILIATION_PATHS),
+        merge_tree_matches_feature=True,
+    )==[]
+
+def test_c30_merged_main_reconciliation_rejects_squash_shape():
+    validator=getattr(O,"validate_merged_main_reconciliation_facts",None)
+    assert validator is not None,"merged-main reconciliation validator is missing"
+    assert validator(
+        head="squash",branch="main",upstream="development/main",remote="squash",
+        staged=set(),dirty=set(),validated_base="base",
+        head_parents=["base"],head_changed_paths=set(O.MERGED_RECONCILIATION_PATHS),
+    )==["C30R5_FINAL_GIT_INVALID"]

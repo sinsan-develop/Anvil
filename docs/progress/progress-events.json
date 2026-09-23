@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1358,
+  "last_sequence": 1359,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -76847,7 +76847,52 @@
     "scope": "CONTROL_AND_NON_SEMANTIC_WHITESPACE_ONLY",
     "product_behavior_changed": false
   }
+},
+{
+  "sequence": 1359,
+  "event_id": "evt_c30r5_final_1359_repository_reconciled",
+  "event_type": "REPOSITORY_RECONCILED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30",
+  "occurred_at": "2026-09-23T17:50:50+09:00",
+  "previous_event_sha256": "8212F69A715A38E24E8F32979CD0DB5379DF7657C74D7CC5E3338F432B65E27D",
+  "details": {
+    "accepted_checkpoint": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
+    "broker_policy_main": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
+    "routine_merge_method": "MERGE_COMMIT",
+    "required_main_shape": {
+      "parent_count": 2,
+      "first_parent": "PR_PRE_MERGE_MAIN",
+      "second_parent": "VERIFIED_EXACT_FEATURE_HEAD"
+    },
+    "exact_paths": [
+      "docs/04_test_reports/C-30_MERGED_MAIN_RECONCILIATION.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c30r5-merged-main-reconciliation.json",
+      "scripts/c30r5_final_overlay.py",
+      "tests/tooling/test_c30r5_final_overlay.py"
+    ],
+    "verification": {
+      "tdd_red": "4 failed, 6 passed",
+      "tdd_green": "10 passed",
+      "canonical_checker": "PASS_SEQUENCE_1359",
+      "worktree_diff_check": "PASS",
+      "range_diff_check": "PENDING_COMMIT"
+    },
+    "scope": "MERGED_MAIN_GIT_PROJECTION_AND_APPEND_ONLY_EVIDENCE_ONLY",
+    "product_behavior_changed": false
+  }
 }
   ],
-  "last_event_id": "evt_c30r5_final_1358_repository_reconciled"
+  "last_event_id": "evt_c30r5_final_1359_repository_reconciled"
 }
