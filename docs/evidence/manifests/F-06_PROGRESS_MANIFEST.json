@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-06",
+  "event_sequence": 1388,
+  "accepted": false,
+  "projection_mode": "F06_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "19aee3360d90d3a046183ae66e6dd02150d9d747",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-06_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f06.json",
+    "docs/work_orders/F-06_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-06_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f06_progress_overlay.py",
+    "tests/tooling/test_f06_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+    "packages/providers/openrouter_adapter.py",
+    "packages/providers/openrouter_errors.py",
+    "packages/providers/openrouter_models.py",
+    "tests/providers/test_openrouter_adapter_f06.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 434433,
+      "sha256": "0994231964AFD72A4DAECBCE1E69737CADC6BA1A1676D584547BF70D93CD5197"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4064606,
+      "sha256": "D0EBED3F216CD59AF18C963AA5C46AA2433FF91915EF5FC7E2D92C4ED0845634"
+    },
+    {
+      "path": "docs/work_orders/F-06_INVOCATION_PROMPT.md",
+      "bytes": 394,
+      "sha256": "EAFB2E318EF1725FFD56B45CC1848801FC4B1D0CDFC6BD01C6FE8A134D35FD11"
+    },
+    {
+      "path": "docs/work_orders/F-06_WORK_INSTRUCTION.md",
+      "bytes": 3306,
+      "sha256": "7B31A60A9BAD67DC85AB026E0B9CF559513180CF74117D3277640F91D5EA1C98"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4722087,
+      "sha256": "AE0983CB7AC86E0E49DAD497644694FA5B3528FEF14C5586AACE2187FF9F8684"
+    },
+    {
+      "path": "scripts/f06_progress_overlay.py",
+      "bytes": 22517,
+      "sha256": "FB968244720BF2DC302B3951EEA027BF8A03AB9B303BA936557F98D6FFD5F074"
+    },
+    {
+      "path": "tests/tooling/test_f06_progress_overlay.py",
+      "bytes": 4337,
+      "sha256": "4DA15A12ADE6ED963A35CA73B4E259125ACF6A3DE1F66581A74F6C950484CDE8"
+    }
+  ],
+  "runtime_boundary": {
+    "live_openrouter": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}

@@ -1,3 +1,9 @@
+# F-06 OPENROUTER adapter 시작
+
+- 판정: `ACTIVE`; 승인된 F-06 host-only exact5 구현을 시작한다.
+- branch/base: `codex/f06-openrouter-adapter` / `19aee3360d90d3a046183ae66e6dd02150d9d747`.
+- 실제 OPENROUTER·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+
 # F-05 MISTRAL adapter 완료
 
 - 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.

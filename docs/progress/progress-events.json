@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1385,
+  "last_sequence": 1388,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -77649,7 +77649,85 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1386,
+  "event_id": "evt_f06_1386_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-06/START",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "20E4F907C64737BB5B3711A2B80A1CFEDD45791C41B2511F62E72D9307C548EB",
+  "details": {
+    "package_id": "F-06",
+    "branch": "codex/f06-openrouter-adapter",
+    "base_commit": "19aee3360d90d3a046183ae66e6dd02150d9d747",
+    "work_instruction": "docs/work_orders/F-06_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+      "packages/providers/openrouter_adapter.py",
+      "packages/providers/openrouter_errors.py",
+      "packages/providers/openrouter_models.py",
+      "tests/providers/test_openrouter_adapter_f06.py"
+    ]
+  }
+},
+{
+  "sequence": 1387,
+  "event_id": "evt_f06_1387_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-06/START",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "DEB9AF1D75F6B704872EB504E3E135B1E48098024CFD3F8735EB8E649B4BF901",
+  "details": {
+    "lease_id": "worker-lease-f06-r1-20260923-001",
+    "execution_fencing_token": "f06-r1-execution-fence-epoch-1-19aee3360d90d3a0",
+    "actor_id": "developer-primary-f06-r1"
+  }
+},
+{
+  "sequence": 1388,
+  "event_id": "evt_f06_1388_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-06/START",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "238D8F6C3B691D5A91AA5CB18957D430FC0699AD98C23BF0017B2326E9A93395",
+  "details": {
+    "lease_id": "write-lease-f06-r1-20260923-001",
+    "worker_lease_id": "worker-lease-f06-r1-20260923-001",
+    "write_fencing_token": "f06-r1-write-fence-epoch-1-46183ae66e6dd021",
+    "path_scope": [
+      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+      "packages/providers/openrouter_adapter.py",
+      "packages/providers/openrouter_errors.py",
+      "packages/providers/openrouter_models.py",
+      "tests/providers/test_openrouter_adapter_f06.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f05_1385_main_package_accepted"
+  "last_event_id": "evt_f06_1388_write_lease_issued"
 }
