@@ -30,6 +30,8 @@ from .common import SessionPrincipal
 from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
 from .provider_status import ProviderStatusPort
+from .provider_settings import ProviderSettingsPort
+from packages.provider_settings.service import ProviderSettingsService
 from .run_creation import RunCreationPort
 from .task_bootstrap import TaskBootstrapPort
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
@@ -300,6 +302,7 @@ def create_runtime_app(
     console_mapping_resolver=None,
     console_materializer=None,
     console_clock=None,
+    provider_settings_owner: ProviderSettingsService | None = None,
     **app_kwargs: Any,
 ):
     """Construct the application with durable Telegram state.
@@ -367,14 +370,24 @@ def create_runtime_app(
     run_key = "POST /api/tasks/{taskId}/runs"
     task_create_key = "POST /api/projects/{projectId}/tasks"
     task_read_key = "GET /api/tasks/{taskId}"
-    provider_status_port = ProviderStatusPort(source)
-    provider_query_ports = provider_status_port.query_ports()
+    if provider_settings_owner is None:
+        provider_query_ports = ProviderStatusPort(source).query_ports()
+        provider_command_ports = {}
+    else:
+        try:
+            provider_port = ProviderSettingsPort(provider_settings_owner)
+        except ValueError as error:
+            raise RuntimeConfigurationError("trusted F-12 owner is required") from error
+        provider_query_ports = provider_port.query_ports()
+        provider_command_ports = provider_port.command_ports()
     if run_key in base_ports.commands:
         raise RuntimeConfigurationError("runtime Run creation port cannot replace an injected port")
     if task_create_key in base_ports.commands or task_read_key in base_ports.queries:
         raise RuntimeConfigurationError("runtime Task bootstrap ports cannot replace injected ports")
     if set(provider_query_ports) & set(base_ports.queries):
         raise RuntimeConfigurationError("runtime Provider status ports cannot replace injected ports")
+    if set(provider_command_ports) & set(base_ports.commands):
+        raise RuntimeConfigurationError("runtime Provider settings commands cannot replace injected ports")
     from packages.persistence.task_bootstrap_repository import SqlAlchemyTaskBootstrapRepository
 
     task_repository = SqlAlchemyTaskBootstrapRepository(session_factory)
@@ -382,6 +395,7 @@ def create_runtime_app(
         commands={
             **base_ports.commands,
             **step_commands,
+            **provider_command_ports,
             run_key: RunCreationPort(SqlAlchemyRunCreationRepository(session_factory)),
             task_create_key: TaskBootstrapPort(task_repository),
         },
@@ -509,6 +523,7 @@ def create_runtime_app(
     # Metadata is deliberately credential-free and useful to health/readiness
     # consumers without turning provider secrets into API data.
     app.state.provider_catalog = runtime_catalog(source)
+    app.state.provider_settings_bound = provider_settings_owner is not None
     app.state.primary_provider = PRIMARY_PROVIDER
     app.state.database_engine = engine
     app.state.migration_head = "0013_task_bootstrap_authority"
