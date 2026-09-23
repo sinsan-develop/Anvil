@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1436,
+  "last_sequence": 1441,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78943,7 +78943,155 @@
       "tests/provider_settings/test_f12_settings.py"
     ]
   }
+},
+{
+  "sequence": 1437,
+  "event_id": "evt_f12_1437_work_instruction_revised",
+  "event_type": "WORK_INSTRUCTION_REVISED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "REVISION",
+  "subject_ref": "F-12/REVISION",
+  "occurred_at": "2026-09-24T04:55:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A3E0B8A843F4975379DC64DAFB119CEDBCE12700C30E75E603118387408EB734",
+  "details": {
+    "work_instruction": "docs/work_orders/F-12_WORK_INSTRUCTION.md",
+    "old_product_scope": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ],
+    "new_product_scope": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_catalog/service.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_catalog/test_f12_profile_selection.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ],
+    "reason": "F01_CURRENT_PROFILE_OWNER_CAS_REQUIRED_FOR_F12"
+  }
+},
+{
+  "sequence": 1438,
+  "event_id": "evt_f12_1438_main_reconfirmed_non_semantic",
+  "event_type": "MAIN_RECONFIRMED_NON_SEMANTIC",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "REVISION",
+  "subject_ref": "F-12/REVISION",
+  "occurred_at": "2026-09-24T04:55:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "2300E28BAC599851DAA025A799E9496673B8FDB028C4B204E280FDBC37BB83A7",
+  "details": {
+    "parent_approval": "F12_APPROVED_PLAN",
+    "work_instruction_sha256": "8AB0DB1BD336A313B19DD266991BBBC1A6F4819AA5238A358319F0B90F6046B3",
+    "reason": "INTERNAL_OWNER_CONTRACT_NO_FEATURE_OR_RISK_EXPANSION"
+  }
+},
+{
+  "sequence": 1439,
+  "event_id": "evt_f12_1439_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "REVISION",
+  "subject_ref": "F-12/REVISION",
+  "occurred_at": "2026-09-24T04:55:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "D3739E1BF6A47FB04E140A75801F4919F040E086B83AF56D7484463CAED94221",
+  "details": {
+    "lease_id": "write-lease-f12-r1-20260924-001",
+    "reason": "F12_R2_SCOPE_REVISION"
+  }
+},
+{
+  "sequence": 1440,
+  "event_id": "evt_f12_1440_worker_lease_scope_revised",
+  "event_type": "WORKER_LEASE_SCOPE_REVISED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "REVISION",
+  "subject_ref": "F-12/REVISION",
+  "occurred_at": "2026-09-24T04:55:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "DAEC8CFF8956596D227D8A49C201725D63AD3B048F5C2A9AD5CCCBE756024E53",
+  "details": {
+    "lease_id": "worker-lease-f12-r1-20260924-001",
+    "execution_fencing_token": "f12-r1-execution-fence-epoch-1-798ed952ad6900c8",
+    "path_scope": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_catalog/service.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_catalog/test_f12_profile_selection.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ]
+  }
+},
+{
+  "sequence": 1441,
+  "event_id": "evt_f12_1441_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "REVISION",
+  "subject_ref": "F-12/REVISION",
+  "occurred_at": "2026-09-24T04:55:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "C042DB6A8B42F16913163B22CEE4FE6A64797AC3B8DDD4515C1D81E87F097708",
+  "details": {
+    "lease_id": "write-lease-f12-r2-20260924-001",
+    "worker_lease_id": "worker-lease-f12-r1-20260924-001",
+    "write_fencing_token": "f12-r2-write-fence-epoch-2-798ed952ad6900c8",
+    "path_scope": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_catalog/service.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_catalog/test_f12_profile_selection.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f12_1436_write_lease_issued"
+  "last_event_id": "evt_f12_1441_write_lease_issued"
 }

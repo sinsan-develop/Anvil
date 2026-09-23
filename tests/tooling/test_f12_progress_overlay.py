@@ -16,10 +16,12 @@ def test_f12_scopes_are_exact_and_disjoint():
     assert OVERLAY.BRANCH == "codex/f12-provider-settings"
     assert len(OVERLAY.control_paths()) == len(set(OVERLAY.control_paths())) == 11
     assert len(OVERLAY.product_paths()) == len(set(OVERLAY.product_paths())) == 8
+    assert len(OVERLAY.product_paths_r2()) == len(set(OVERLAY.product_paths_r2())) == 10
+    assert set(OVERLAY.product_paths()).issubset(OVERLAY.product_paths_r2())
     assert set(OVERLAY.control_paths()).isdisjoint(OVERLAY.product_paths())
     assert set(OVERLAY.final_paths()) == set(OVERLAY.control_paths()) | {
         OVERLAY.REVIEW,
-    } | set(OVERLAY.product_paths())
+    } | set(OVERLAY.product_paths_r2())
 
 
 def test_f12_materialize_issues_lease_and_blocks_successor(tmp_path, monkeypatch):
@@ -84,6 +86,39 @@ def test_f12_start_rejects_out_of_scope_path():
         parents=[],
         changed=set(),
     ) == ["F12_START_GIT_INVALID"]
+
+
+def test_f12_revision_replaces_write_lease_with_exact10(tmp_path, monkeypatch):
+    for relative in ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+                     OVERLAY.WI, OVERLAY.PROMPT):
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / relative).read_bytes())
+    captured = {}
+    def capture(_root, progress, ledger, **_kwargs):
+        captured["progress"] = progress
+        captured["ledger"] = ledger
+    monkeypatch.setattr(OVERLAY, "_write_projection", capture)
+    OVERLAY.revise(tmp_path)
+    progress = captured["progress"]
+    assert progress["event_sequence"] == 1441
+    assert progress["repository"]["projection_mode"] == OVERLAY.REVISION_MODE
+    assert progress["write_lease"]["lease_id"] == OVERLAY.WRITE_R2
+    assert progress["write_lease"]["write_epoch"] == 2
+    assert progress["write_lease"]["path_scope"] == OVERLAY.product_paths_r2()
+    assert progress["revoked_f12_r1_write_lease"]["status"] == "REVOKED"
+    assert [event["event_type"] for event in captured["ledger"]["events"][-5:]] == [
+        "WORK_INSTRUCTION_REVISED", "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "WRITE_LEASE_REVOKED", "WORKER_LEASE_SCOPE_REVISED", "WRITE_LEASE_ISSUED"]
+
+
+def test_f12_revision_start_accepts_multi_commit_history():
+    assert OVERLAY.validate_start_git_facts(
+        head="revision", branch=OVERLAY.BRANCH,
+        upstream=f"development/{OVERLAY.BRANCH}", remote_head="revision",
+        staged=set(), dirty=set(OVERLAY.product_paths()), parents=["start"],
+        changed=set(OVERLAY.control_paths()), base_is_ancestor=True,
+        revision=True) == []
 
 
 def test_f12_final_accepts_feature_postcommit():

@@ -5,7 +5,8 @@ from f12_progress_overlay import collect_git, validate
 
 _previous_git = base._validate_git_projection
 _previous_bundle = base.validate_bundle
-_modes = {"F12_START_EXACT11_PRODUCT_EXACT8", "F12_FINAL_ACCEPTANCE_EXACT20"}
+_modes = {"F12_START_EXACT11_PRODUCT_EXACT8", "F12_ACTIVE_R2_EXACT11_PRODUCT_EXACT10",
+          "F12_FINAL_ACCEPTANCE_EXACT22"}
 
 
 def _git(bundle):

@@ -12,15 +12,19 @@ from pathlib import Path
 BASE = "798ed952ad6900c87db2c0b2e1d6f71c2755f69c"
 BRANCH = "codex/f12-provider-settings"
 START_MODE = "F12_START_EXACT11_PRODUCT_EXACT8"
-FINAL_MODE = "F12_FINAL_ACCEPTANCE_EXACT20"
+REVISION_MODE = "F12_ACTIVE_R2_EXACT11_PRODUCT_EXACT10"
+FINAL_MODE = "F12_FINAL_ACCEPTANCE_EXACT22"
 AT = "2026-09-24T04:04:00+09:00"
+REVISION_AT = "2026-09-24T04:55:00+09:00"
 FINAL_AT = None  # Set only after independent acceptance and actual final verification.
 EXPIRES = "2026-09-24T16:04:00+09:00"
 ACTOR = "developer-primary-f12-r1"
 WORKER = "worker-lease-f12-r1-20260924-001"
 WRITE = "write-lease-f12-r1-20260924-001"
+WRITE_R2 = "write-lease-f12-r2-20260924-001"
 EXECUTION_TOKEN = "f12-r1-execution-fence-epoch-1-798ed952ad6900c8"
 WRITE_TOKEN = "f12-r1-write-fence-epoch-1-db2c0b2e1d6f71c2"
+WRITE_TOKEN_R2 = "f12-r2-write-fence-epoch-2-798ed952ad6900c8"
 WI = "docs/work_orders/F-12_WORK_INSTRUCTION.md"
 PROMPT = "docs/work_orders/F-12_INVOCATION_PROMPT.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f12.json"
@@ -41,6 +45,13 @@ def product_paths():
     ])
 
 
+def product_paths_r2():
+    return sorted(product_paths() + [
+        "packages/provider_catalog/service.py",
+        "tests/provider_catalog/test_f12_profile_selection.py",
+    ])
+
+
 def control_paths():
     return sorted([
         WI, PROMPT, "docs/WORK_STATUS.md", MANIFEST,
@@ -52,7 +63,7 @@ def control_paths():
 
 
 def final_paths():
-    return sorted(control_paths() + [REVIEW] + product_paths())
+    return sorted(control_paths() + [REVIEW] + product_paths_r2())
 
 
 def _canonical(value):
@@ -86,7 +97,7 @@ def _append(events, event_type, details, *, step="START"):
         "run_id": None,
         "step_id": step,
         "subject_ref": f"F-12/{step}",
-        "occurred_at": FINAL_AT if step == "FINAL" else AT,
+        "occurred_at": FINAL_AT if step == "FINAL" else REVISION_AT if step == "REVISION" else AT,
         "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
         "previous_event_sha256": _event_sha(events[-1]),
         "details": details,
@@ -117,6 +128,7 @@ def _lease(kind):
 
 
 def _repository(mode):
+    revised = mode in {REVISION_MODE, FINAL_MODE}
     return {
         "branch": BRANCH,
         "local_head": BASE,
@@ -125,10 +137,10 @@ def _repository(mode):
         "projection_mode": mode,
         "validated_base_commit": BASE,
         "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
-        "exact_allowed_paths": control_paths() if mode == START_MODE else final_paths(),
-        "product_write_scope": product_paths(),
-        "worktree_status": "F12_ACTIVE" if mode == START_MODE else "F12_ACCEPTED",
-        "commit_status": "PENDING" if mode == START_MODE else "FINAL_PENDING_OR_COMPLETE",
+        "exact_allowed_paths": final_paths() if mode == FINAL_MODE else control_paths(),
+        "product_write_scope": product_paths_r2() if revised else product_paths(),
+        "worktree_status": "F12_ACCEPTED" if mode == FINAL_MODE else "F12_ACTIVE",
+        "commit_status": "FINAL_PENDING_OR_COMPLETE" if mode == FINAL_MODE else "PENDING",
         "push_status": "BRANCH_PUBLISHED",
     }
 
@@ -187,7 +199,7 @@ def _write_projection(root, progress, ledger, *, heading, status_lines, accepted
                       "scripts/check_f12_progress.py", "scripts/f12_progress_overlay.py",
                       "tests/tooling/test_f12_progress_overlay.py"]
     if accepted:
-        checksum_paths += product_paths() + [REVIEW]
+        checksum_paths += product_paths_r2() + [REVIEW]
     rows = []
     for relative in sorted(set(checksum_paths)):
         raw = (root / relative).read_bytes()
@@ -198,7 +210,7 @@ def _write_projection(root, progress, ledger, *, heading, status_lines, accepted
         "projection_mode": progress["repository"]["projection_mode"],
         "validated_base_commit": BASE,
         "exact_allowed_paths": control_paths() if not accepted else final_paths(),
-        "product_write_scope": product_paths(), "raw_checksums": rows,
+        "product_write_scope": progress["repository"]["product_write_scope"], "raw_checksums": rows,
         "runtime_boundary": {
             "live_providers": "NOT_EXECUTED", "network": "NOT_EXECUTED",
             "credentials": "NOT_EXECUTED", "database": "NOT_EXECUTED",
@@ -262,18 +274,73 @@ def materialize(root):
         accepted=False)
 
 
+def revise(root):
+    root = Path(root)
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
+    events = ledger["events"]
+    if (progress.get("event_sequence") != 1436 or events[-1].get("sequence") != 1436
+            or progress.get("repository", {}).get("projection_mode") != START_MODE):
+        raise RuntimeError("F12_R2_START_STATE_INVALID")
+    old_write = deepcopy(progress["write_lease"])
+    _append(events, "WORK_INSTRUCTION_REVISED", {"work_instruction": WI,
+        "old_product_scope": product_paths(), "new_product_scope": product_paths_r2(),
+        "reason": "F01_CURRENT_PROFILE_OWNER_CAS_REQUIRED_FOR_F12"}, step="REVISION")
+    _append(events, "MAIN_RECONFIRMED_NON_SEMANTIC", {"parent_approval": "F12_APPROVED_PLAN",
+        "work_instruction_sha256": _sha((root / WI).read_bytes()),
+        "reason": "INTERNAL_OWNER_CONTRACT_NO_FEATURE_OR_RISK_EXPANSION"}, step="REVISION")
+    _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE,
+        "reason": "F12_R2_SCOPE_REVISION"}, step="REVISION")
+    _append(events, "WORKER_LEASE_SCOPE_REVISED", {"lease_id": WORKER,
+        "execution_fencing_token": EXECUTION_TOKEN,
+        "path_scope": product_paths_r2()}, step="REVISION")
+    last = _append(events, "WRITE_LEASE_ISSUED", {"lease_id": WRITE_R2,
+        "worker_lease_id": WORKER, "write_fencing_token": WRITE_TOKEN_R2,
+        "path_scope": product_paths_r2()}, step="REVISION")
+    ledger.update({"last_sequence": last["sequence"], "last_event_id": last["event_id"]})
+    old_write.update({"status": "REVOKED", "revoked_at": REVISION_AT})
+    worker = deepcopy(progress["worker_lease"])
+    worker["path_scope"] = product_paths_r2()
+    write = deepcopy(progress["write_lease"])
+    write.update({"lease_id": WRITE_R2, "write_epoch": 2,
+                  "write_fencing_token": WRITE_TOKEN_R2,
+                  "fencing_token": WRITE_TOKEN_R2, "path_scope": product_paths_r2(),
+                  "issued_at": REVISION_AT})
+    progress.update({"snapshot_id": "snapshot-f12-r2-seq1441", "event_sequence": 1441,
+        "last_event_id": last["event_id"], "updated_at": REVISION_AT,
+        "recorded_at": REVISION_AT, "worker_lease": worker, "write_lease": write,
+        "revoked_f12_r1_write_lease": old_write,
+        "active_work_instruction": {"artifact_id": "WI-F-12-20260924-002", "path": WI,
+            "sha256": _sha((root / WI).read_bytes()), "invocation_path": PROMPT,
+            "invocation_sha256": _sha((root / PROMPT).read_bytes()),
+            "parent_artifact_id": "WI-F-12-20260924-001",
+            "binding": "MAIN_RECONFIRMED_NON_SEMANTIC",
+            "assigned_verification_ids": ["AV-UI-003", "AV-OPS-010", "AV-FLOW-019"]},
+        "repository": _repository(REVISION_MODE),
+        "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F12_R2_EXACT10",
+        "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F12_R2_EXACT10"})
+    _write_projection(root, progress, ledger, heading="F-12 Provider Settings R2 owner 계약 보완",
+        status_lines=["판정: `ACTIVE_R2`; F-12 기존 profile 교체의 F-01 owner current-profile/CAS 공백을 내부 보완한다.",
+                      "R1 exact8 관련 회귀 Main 재검증 966 PASS, exit 0; 독립 검토 Important 4건 중 3건과 조회 replay 보완. 기존 profile revise 501은 미완료다.",
+                      "R1 write lease를 회수하고 동일 worker의 scope를 exact10으로 개정, epoch2 write lease를 발행했다.",
+                      "기능 범위·요구사항·중요 위험 확대 없음; profile 확대의 human approval은 계속 필수다.",
+                      "실제 Provider·DB·브라우저·WSL·배포 미검증; F-14 영속성·다중 인스턴스 검증 필요.",
+                      "다음 조치: G-05 확인 후 F-01 owner CAS와 F-12 소비 경로를 TDD 재작업한다."],
+        accepted=False)
+
+
 def finalize(root):
     if FINAL_AT is None:
         raise RuntimeError("F12_FINAL_EVIDENCE_NOT_RECORDED")
     root = Path(root)
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 1441 and progress.get("repository", {}).get("projection_mode") == FINAL_MODE:
+    if progress.get("event_sequence") == 1446 and progress.get("repository", {}).get("projection_mode") == FINAL_MODE:
         current_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
         head_progress = json.loads(subprocess.check_output(
             ["git", "show", f"{current_head}:docs/progress/build-progress.json"], cwd=root
         ))
-        start_ref = current_head if head_progress.get("event_sequence") == 1436 else subprocess.check_output(
+        start_ref = current_head if head_progress.get("event_sequence") == 1441 else subprocess.check_output(
             ["git", "rev-parse", "HEAD^"], cwd=root, text=True
         ).strip()
         progress = json.loads(subprocess.check_output(
@@ -283,8 +350,8 @@ def finalize(root):
             ["git", "show", f"{start_ref}:docs/progress/progress-events.json"], cwd=root
         ))
     events = ledger["events"]
-    if progress.get("event_sequence") != 1436 or events[-1].get("sequence") != 1436:
-        raise RuntimeError("F12_START_PROGRESS_INVALID")
+    if progress.get("event_sequence") != 1441 or events[-1].get("sequence") != 1441:
+        raise RuntimeError("F12_R2_PROGRESS_INVALID")
     old_worker, old_write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
     _append(events, "PACKAGE_COMPLETED", {"package_id": "F-12", "product_paths": product_paths(),
              "focused": "69_PASSED", "related_provider_regression": "699_PASSED_4_SKIPPED_PG18_DSN",
@@ -303,7 +370,7 @@ def finalize(root):
     if "F-12" not in completed:
         completed.append("F-12")
     progress.update({
-        "snapshot_id": "snapshot-f12-final-seq1441", "event_sequence": 1441,
+        "snapshot_id": "snapshot-f12-final-seq1446", "event_sequence": 1446,
         "last_event_id": last["event_id"], "updated_at": FINAL_AT, "recorded_at": FINAL_AT,
         "current_work_package": "F-12", "status": "ACCEPTED", "completed_packages": completed,
         "active_agent": None, "worker_lease": None, "write_lease": None,
@@ -338,11 +405,14 @@ def finalize(root):
         accepted=True)
 
 
-def validate_start_git_facts(*, head, branch, upstream, remote_head, staged, dirty, parents, changed):
+def validate_start_git_facts(*, head, branch, upstream, remote_head, staged, dirty, parents, changed,
+                             base_is_ancestor=True, revision=False):
     common = branch == BRANCH and upstream == f"development/{BRANCH}" and not staged
     pre = head == BASE and remote_head == BASE and set(dirty) == set(control_paths())
-    post = (head != BASE and parents == [BASE] and remote_head in {BASE, head}
-            and set(changed) == set(control_paths()) and set(dirty) <= set(product_paths()))
+    scope = product_paths_r2() if revision else product_paths()
+    post = (head != BASE and base_is_ancestor and parents and
+            (remote_head in {BASE, head} or remote_head in parents)
+            and set(changed) == set(control_paths()) and set(dirty) <= set(scope))
     return [] if common and (pre or post) else ["F12_START_GIT_INVALID"]
 
 
@@ -393,8 +463,9 @@ def collect_git(root):
     mode = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))["repository"]["projection_mode"]
     args = dict(head=head, branch=branch, upstream=upstream, remote_head=remote_head,
                 staged=staged, dirty=dirty, parents=parents, changed=changed)
-    if mode == START_MODE:
-        return validate_start_git_facts(**args)
+    if mode in {START_MODE, REVISION_MODE}:
+        return validate_start_git_facts(**args, base_is_ancestor=base_is_ancestor,
+                                        revision=mode == REVISION_MODE)
     return validate_final_git_facts(**args, base_is_ancestor=base_is_ancestor,
         feature_paths=feature_paths, merge_tree_matches_feature=tree_match,
         remote_is_ancestor=remote_is_ancestor)
@@ -408,7 +479,7 @@ def validate(root, bundle):
     mode = progress.get("repository", {}).get("projection_mode")
     accepted = mode == FINAL_MODE
     errors = []
-    expected_sequence = 1441 if accepted else 1436
+    expected_sequence = 1446 if accepted else 1441 if mode == REVISION_MODE else 1436
     expected_status = "ACCEPTED" if accepted else "ACTIVE"
     if progress.get("event_sequence") != expected_sequence or events[-1].get("sequence") != expected_sequence:
         errors.append("F12_EVENT_SEQUENCE_INVALID")
@@ -421,7 +492,7 @@ def validate(root, bundle):
             errors.append("F12_FINAL_STATE_INVALID")
     else:
         if any((progress.get("active_agent") != ACTOR, progress.get("worker_lease", {}).get("lease_id") != WORKER,
-                progress.get("write_lease", {}).get("lease_id") != WRITE)):
+                progress.get("write_lease", {}).get("lease_id") != (WRITE_R2 if mode == REVISION_MODE else WRITE))):
             errors.append("F12_START_STATE_INVALID")
     for previous, current in zip(events[-(5 if accepted else 3):], events[-(5 if accepted else 3)+1:]):
         if current.get("previous_event_sha256") != _event_sha(previous):
@@ -447,4 +518,4 @@ def validate(root, bundle):
 
 if __name__ == "__main__":
     project = Path(__file__).resolve().parents[1]
-    finalize(project) if "--finalize" in sys.argv else materialize(project)
+    finalize(project) if "--finalize" in sys.argv else revise(project) if "--revise" in sys.argv else materialize(project)

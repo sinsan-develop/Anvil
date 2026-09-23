@@ -1,10 +1,11 @@
-# F-12 Provider Settings 통합 시작
+# F-12 Provider Settings R2 owner 계약 보완
 
-- 판정: `ACTIVE`; 승인된 F-12 Provider Settings·Egress·Secret·Execution Mode·routing API/BFF exact8 구현을 시작한다.
-- branch/base: `codex/f12-provider-settings` / `798ed952ad6900c87db2c0b2e1d6f71c2755f69c`.
-- 제어 테스트: 7 PASS; 격리 temp `.f12-control-20260924a/b` 정리 확인. 기본 pytest temp 접근 거부 1회는 `--basetemp`로 해결했다.
-- 검사 스크립트 편집 중 대형 파일 손상 1회는 기준 blob과 hash 동일하게 복원하고 F-12 전용 얇은 wrapper로 분리했다. 제품 변경·데이터 손실 없음.
-- 실제 Provider network·Secret material·DB·browser·WSL·deploy는 실행하지 않는다. 실제 U-11 화면은 별도 Package다.
+- 판정: `ACTIVE_R2`; F-12 기존 profile 교체의 F-01 owner current-profile/CAS 공백을 내부 보완한다.
+- R1 exact8 관련 회귀 Main 재검증 966 PASS, exit 0; 독립 검토 Important 4건 중 3건과 조회 replay 보완. 기존 profile revise 501은 미완료다.
+- R1 write lease를 회수하고 동일 worker의 scope를 exact10으로 개정, epoch2 write lease를 발행했다.
+- 기능 범위·요구사항·중요 위험 확대 없음; profile 확대의 human approval은 계속 필수다.
+- 실제 Provider·DB·브라우저·WSL·배포 미검증; F-14 영속성·다중 인스턴스 검증 필요.
+- 다음 조치: G-05 확인 후 F-01 owner CAS와 F-12 소비 경로를 TDD 재작업한다.
 
 # F-11 OLLAMA adapter 완료
 
