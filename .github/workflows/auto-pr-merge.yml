@@ -136,12 +136,14 @@ jobs:
       - name: Run repository gate from trusted Broker revision
         env:
           BROKER_SHA: ${{ steps.request.outputs.broker_sha }}
+          HEAD_BRANCH: ${{ steps.request.outputs.head_branch }}
           HEAD_SHA: ${{ steps.request.outputs.head_sha }}
         shell: bash
         run: |
           set -euo pipefail
           git show "$BROKER_SHA:.github/pr-broker-gate.sh" > "$RUNNER_TEMP/pr-broker-gate.sh"
-          git checkout --detach "$HEAD_SHA"
+          git checkout -B "$HEAD_BRANCH" "$HEAD_SHA"
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           bash "$RUNNER_TEMP/pr-broker-gate.sh"
 
       - name: Revalidate base and branch immediately before PR
