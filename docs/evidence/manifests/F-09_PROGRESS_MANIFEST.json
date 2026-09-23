@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-09",
+  "event_sequence": 1412,
+  "accepted": false,
+  "projection_mode": "F09_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-09_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f09.json",
+    "docs/work_orders/F-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-09_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f09_progress_overlay.py",
+    "tests/tooling/test_f09_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+    "packages/providers/anthropic_adapter.py",
+    "packages/providers/anthropic_errors.py",
+    "packages/providers/anthropic_models.py",
+    "tests/providers/test_anthropic_adapter_f09.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 436173,
+      "sha256": "42CE07F9DE323086E79DCB5340089691059E88DA96BA05EC9F8DE2665F1AC3CC"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4084595,
+      "sha256": "1579CE6E96A07E2D43A9127AB2524E62C82CFE9FBED8794FD621E57BDF6A5A0C"
+    },
+    {
+      "path": "docs/work_orders/F-09_INVOCATION_PROMPT.md",
+      "bytes": 346,
+      "sha256": "4757459CD31644AAD3CC7543D02C0828A57895E505670DDADF6DA810735C2C2A"
+    },
+    {
+      "path": "docs/work_orders/F-09_WORK_INSTRUCTION.md",
+      "bytes": 3673,
+      "sha256": "7E1EAE1729F2F8774A68DAFB02FB4FA863265E13E42A9D38CC0AE24F5EEE1C46"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4724511,
+      "sha256": "C122CE79A5DE582E28C484EF380F3C4D826694150485DFF687DF7F58B0C64CC0"
+    },
+    {
+      "path": "scripts/f09_progress_overlay.py",
+      "bytes": 23308,
+      "sha256": "11DDF5C229B89F8B509873A869530FCC09D375BAECEA84D2C1ED21EAD1202C81"
+    },
+    {
+      "path": "tests/tooling/test_f09_progress_overlay.py",
+      "bytes": 4336,
+      "sha256": "6F80B2C6D90CFD5CDFE80DC5FF04869497E3A9BFA9B53F098BFC04314E742B39"
+    }
+  ],
+  "runtime_boundary": {
+    "live_anthropic": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}

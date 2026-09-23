@@ -1,0 +1,1 @@
+`docs/work_orders/F-09_WORK_INSTRUCTION.md`를 기준으로 F-09 ANTHROPIC host-only adapter 제품 exact5를 구현하고 검증하라. 시작 시 승인 문서 hash·lease 두 token·branch/HEAD/status를 확인하고, TDD RED→GREEN과 정확한 완료보고를 제출하라. 제품 exact5 외 수정 및 Git/control 작업은 하지 말라.
