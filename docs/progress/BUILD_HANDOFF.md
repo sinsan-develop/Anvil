@@ -1,9 +1,9 @@
-# F-12 Provider Settings 계약 완료
+# F-12 Provider Settings 계약 완료·Broker gate 정합
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1446,
-  "last_event_id": "evt_f12_1446_main_package_accepted",
+  "event_sequence": 1447,
+  "last_event_id": "evt_f12_1447_broker_gate_checker_wired",
   "status": "ACCEPTED",
   "current_phase": "F",
   "current_work_package": "F-12",
@@ -14,7 +14,7 @@
     "package_id": "F-13",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
-  "next_safe_action": "MERGE_F12_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
-  "runtime_next_action": "MERGE_F12_PR_THEN_DELETE_BRANCH_AND_WORKTREE"
+  "next_safe_action": "VERIFY_TRUSTED_BROKER_GATE_THEN_REQUEST_F12_PR",
+  "runtime_next_action": "VERIFY_TRUSTED_BROKER_GATE_THEN_REQUEST_F12_PR"
 }
 ```

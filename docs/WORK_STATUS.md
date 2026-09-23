@@ -1,12 +1,11 @@
-# F-12 Provider Settings 계약 완료
+# F-12 Provider Settings 계약 완료·Broker gate 정합
 
-- 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact10을 인수한다.
-- Main Windows 관련 회귀 975 PASS, exit 0; WSL-server 격리 checkout 동일 commit 관련 회귀 975 PASS, exit 0.
-- WSL 검증 임시 checkout·venv·pytest 경로 제거 및 F-12 잔여 컨테이너 0 확인. control 테스트 9 PASS, G-05 최종 재검증 예정.
-- 독립 검토 R1 Important 4건과 R2 위조 decision Important 1건 보완; 정식 `FAILURE_REPORT` 0회.
-- 전체 pytest collection 16 ERROR는 clean main에서도 재현되어 전체 suite PASS 아님.
-- 실제 Provider·human approval·Secret material·network·DB·browser·deploy는 `NOT_EXECUTED`; F-01 선택 영속성·다중 인스턴스는 F-14 잔여 acceptance.
-- 실제 U-11 화면 E-SHOT/E-DEC는 F-12 범위 밖이며 `NOT_EXECUTED`. 다음 조치: PR 병합 후 branch/worktree 삭제.
+- 판정: `ACCEPTED`; F-12 제품 exact10, 독립 검토 Critical 0/Important 0/Minor 0.
+- Windows 관련 회귀 975 PASS, WSL-server 격리 checkout 동일 commit 975 PASS; WSL 임시 checkout·venv·pytest 제거와 잔여 컨테이너 0 확인.
+- 전체 pytest collection 16 ERROR는 clean main에서도 동일 재현; 전체 suite PASS 아님.
+- PR Broker trusted gate는 기존 checker에 F-12 mode dispatch가 없어 요청 전 재현 시 실패했다. checker 원본 대비 F-12 dispatch 20행만 추가하고 제품 변경 없음.
+- 수정 checker의 정확한 Broker gate는 commit 후 실행해 확인한다. 검증 전 요청 tag를 만들지 않는다.
+- 실제 Provider·human approval·Secret material·network·DB·browser·deploy는 `NOT_EXECUTED`; F-14 profile 영속성·다중 인스턴스, U-11 실제 화면은 별도 acceptance.
 
 # F-11 OLLAMA adapter 완료
 

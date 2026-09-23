@@ -15,11 +15,12 @@ def test_f12_scopes_are_exact_and_disjoint():
     assert OVERLAY.BASE == "798ed952ad6900c87db2c0b2e1d6f71c2755f69c"
     assert OVERLAY.BRANCH == "codex/f12-provider-settings"
     assert len(OVERLAY.control_paths()) == len(set(OVERLAY.control_paths())) == 11
+    assert len(OVERLAY.final_control_paths()) == 12
     assert len(OVERLAY.product_paths()) == len(set(OVERLAY.product_paths())) == 8
     assert len(OVERLAY.product_paths_r2()) == len(set(OVERLAY.product_paths_r2())) == 10
     assert set(OVERLAY.product_paths()).issubset(OVERLAY.product_paths_r2())
     assert set(OVERLAY.control_paths()).isdisjoint(OVERLAY.product_paths())
-    assert set(OVERLAY.final_paths()) == set(OVERLAY.control_paths()) | {
+    assert set(OVERLAY.final_paths()) == set(OVERLAY.final_control_paths()) | {
         OVERLAY.REVIEW,
     } | set(OVERLAY.product_paths_r2())
 

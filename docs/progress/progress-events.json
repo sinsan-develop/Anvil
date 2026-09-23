@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1446,
+  "last_sequence": 1447,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -79220,7 +79220,30 @@
       "PROFILE_RESTART_MULTI_INSTANCE"
     ]
   }
+},
+{
+  "sequence": 1447,
+  "event_id": "evt_f12_1447_broker_gate_checker_wired",
+  "event_type": "BROKER_GATE_CHECKER_WIRED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "BROKER",
+  "subject_ref": "F-12/BROKER",
+  "occurred_at": "2026-09-24T05:23:34+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "D5A1D942E422E11034068E2D6FF379F6996A7B5237D1E75224676ACF8DDD182E",
+  "details": {
+    "request_tag_submitted": false,
+    "trusted_gate_command": "python -B scripts/check_project_progress.py .",
+    "pre_repair_result": "REJECTED_F12_PROJECTION_MODE_UNKNOWN",
+    "checker_change": "F12_DISPATCH_ONLY_20_ADDED_LINES",
+    "post_commit_verification": "PENDING"
+  }
 }
   ],
-  "last_event_id": "evt_f12_1446_main_package_accepted"
+  "last_event_id": "evt_f12_1447_broker_gate_checker_wired"
 }

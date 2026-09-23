@@ -13,10 +13,11 @@ BASE = "798ed952ad6900c87db2c0b2e1d6f71c2755f69c"
 BRANCH = "codex/f12-provider-settings"
 START_MODE = "F12_START_EXACT11_PRODUCT_EXACT8"
 REVISION_MODE = "F12_ACTIVE_R2_EXACT11_PRODUCT_EXACT10"
-FINAL_MODE = "F12_FINAL_ACCEPTANCE_EXACT22"
+FINAL_MODE = "F12_FINAL_ACCEPTANCE_EXACT23"
 AT = "2026-09-24T04:04:00+09:00"
 REVISION_AT = "2026-09-24T04:55:00+09:00"
 FINAL_AT = "2026-09-24T05:19:22+09:00"  # Independent review and WSL contract evidence verified.
+BROKER_AT = "2026-09-24T05:23:34+09:00"
 EXPIRES = "2026-09-24T16:04:00+09:00"
 ACTOR = "developer-primary-f12-r1"
 WORKER = "worker-lease-f12-r1-20260924-001"
@@ -62,8 +63,12 @@ def control_paths():
     ])
 
 
+def final_control_paths():
+    return sorted(control_paths() + ["scripts/check_project_progress.py"])
+
+
 def final_paths():
-    return sorted(control_paths() + [REVIEW] + product_paths_r2())
+    return sorted(final_control_paths() + [REVIEW] + product_paths_r2())
 
 
 def _canonical(value):
@@ -97,7 +102,8 @@ def _append(events, event_type, details, *, step="START"):
         "run_id": None,
         "step_id": step,
         "subject_ref": f"F-12/{step}",
-        "occurred_at": FINAL_AT if step == "FINAL" else REVISION_AT if step == "REVISION" else AT,
+        "occurred_at": (BROKER_AT if step == "BROKER" else FINAL_AT if step == "FINAL"
+                        else REVISION_AT if step == "REVISION" else AT),
         "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
         "previous_event_sha256": _event_sha(events[-1]),
         "details": details,
@@ -199,7 +205,7 @@ def _write_projection(root, progress, ledger, *, heading, status_lines, accepted
                       "scripts/check_f12_progress.py", "scripts/f12_progress_overlay.py",
                       "tests/tooling/test_f12_progress_overlay.py"]
     if accepted:
-        checksum_paths += product_paths_r2() + [REVIEW]
+        checksum_paths += product_paths_r2() + [REVIEW, "scripts/check_project_progress.py"]
     rows = []
     for relative in sorted(set(checksum_paths)):
         raw = (root / relative).read_bytes()
@@ -409,6 +415,38 @@ def finalize(root):
         accepted=True)
 
 
+def reconcile_broker(root):
+    root = Path(root)
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
+    events = ledger["events"]
+    if (progress.get("event_sequence") != 1446 or events[-1].get("sequence") != 1446
+            or progress.get("repository", {}).get("projection_mode") != "F12_FINAL_ACCEPTANCE_EXACT22"):
+        raise RuntimeError("F12_BROKER_RECONCILE_BASE_INVALID")
+    last = _append(events, "BROKER_GATE_CHECKER_WIRED", {
+        "request_tag_submitted": False,
+        "trusted_gate_command": "python -B scripts/check_project_progress.py .",
+        "pre_repair_result": "REJECTED_F12_PROJECTION_MODE_UNKNOWN",
+        "checker_change": "F12_DISPATCH_ONLY_20_ADDED_LINES",
+        "post_commit_verification": "PENDING",
+    }, step="BROKER")
+    ledger.update({"last_sequence": last["sequence"], "last_event_id": last["event_id"]})
+    progress.update({"snapshot_id": "snapshot-f12-broker-seq1447", "event_sequence": 1447,
+        "last_event_id": last["event_id"], "updated_at": BROKER_AT, "recorded_at": BROKER_AT,
+        "repository": _repository(FINAL_MODE),
+        "next_safe_action": "VERIFY_TRUSTED_BROKER_GATE_THEN_REQUEST_F12_PR",
+        "runtime_next_action": "VERIFY_TRUSTED_BROKER_GATE_THEN_REQUEST_F12_PR"})
+    progress["f12_acceptance"]["broker_gate"] = "CHECKER_WIRED_PENDING_POSTCOMMIT_VERIFICATION"
+    _write_projection(root, progress, ledger, heading="F-12 Provider Settings 계약 완료·Broker gate 정합",
+        status_lines=["판정: `ACCEPTED`; F-12 제품 exact10, 독립 검토 Critical 0/Important 0/Minor 0.",
+                      "Windows 관련 회귀 975 PASS, WSL-server 격리 checkout 동일 commit 975 PASS; WSL 임시 checkout·venv·pytest 제거와 잔여 컨테이너 0 확인.",
+                      "전체 pytest collection 16 ERROR는 clean main에서도 동일 재현; 전체 suite PASS 아님.",
+                      "PR Broker trusted gate는 기존 checker에 F-12 mode dispatch가 없어 요청 전 재현 시 실패했다. checker 원본 대비 F-12 dispatch 20행만 추가하고 제품 변경 없음.",
+                      "수정 checker의 정확한 Broker gate는 commit 후 실행해 확인한다. 검증 전 요청 tag를 만들지 않는다.",
+                      "실제 Provider·human approval·Secret material·network·DB·browser·deploy는 `NOT_EXECUTED`; F-14 profile 영속성·다중 인스턴스, U-11 실제 화면은 별도 acceptance."],
+        accepted=True)
+
+
 def validate_start_git_facts(*, head, branch, upstream, remote_head, staged, dirty, parents, changed,
                              base_is_ancestor=True, revision=False):
     common = branch == BRANCH and upstream == f"development/{BRANCH}" and not staged
@@ -483,7 +521,7 @@ def validate(root, bundle):
     mode = progress.get("repository", {}).get("projection_mode")
     accepted = mode == FINAL_MODE
     errors = []
-    expected_sequence = 1446 if accepted else 1441 if mode == REVISION_MODE else 1436
+    expected_sequence = 1447 if accepted else 1441 if mode == REVISION_MODE else 1436
     expected_status = "ACCEPTED" if accepted else "ACTIVE"
     if progress.get("event_sequence") != expected_sequence or events[-1].get("sequence") != expected_sequence:
         errors.append("F12_EVENT_SEQUENCE_INVALID")
@@ -522,4 +560,6 @@ def validate(root, bundle):
 
 if __name__ == "__main__":
     project = Path(__file__).resolve().parents[1]
-    finalize(project) if "--finalize" in sys.argv else revise(project) if "--revise" in sys.argv else materialize(project)
+    (reconcile_broker(project) if "--broker-reconcile" in sys.argv else
+     finalize(project) if "--finalize" in sys.argv else
+     revise(project) if "--revise" in sys.argv else materialize(project))
