@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1425,
+  "last_sequence": 1428,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78655,7 +78655,87 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1426,
+  "event_id": "evt_f11_1426_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-11",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-11/START",
+  "occurred_at": "2026-09-24T03:22:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "DA7BA8A07E1504BB07C41F28A421988A572EA6604EA3B6595F6F29B723A7D897",
+  "details": {
+    "package_id": "F-11",
+    "branch": "codex/f11-ollama-adapter",
+    "base_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "work_instruction": "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
+    ]
+  }
+},
+{
+  "sequence": 1427,
+  "event_id": "evt_f11_1427_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-11",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-11/START",
+  "occurred_at": "2026-09-24T03:22:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6A41C223CDD8BAE73DE71BBD2E51A255DA70ACF8844DC503913C26315CD0B477",
+  "details": {
+    "lease_id": "worker-lease-f11-r1-20260924-001",
+    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "actor_id": "developer-primary-f11-r1"
+  }
+},
+{
+  "sequence": 1428,
+  "event_id": "evt_f11_1428_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-11",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-11/START",
+  "occurred_at": "2026-09-24T03:22:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "8C44189F285323E9A1C3F95BB2267677E2C06EFFA8E2BE116255B5F8DAF2F7EC",
+  "details": {
+    "lease_id": "write-lease-f11-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f11-r1-20260924-001",
+    "write_fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849",
+    "path_scope": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f10_1425_main_package_accepted"
+  "last_event_id": "evt_f11_1428_write_lease_issued"
 }

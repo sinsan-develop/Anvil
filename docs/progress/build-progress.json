@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f10-final-seq1425",
-  "event_sequence": 1425,
-  "updated_at": "2026-09-24T02:44:00+09:00",
-  "last_event_id": "evt_f10_1425_main_package_accepted",
+  "snapshot_id": "snapshot-f11-start-seq1428",
+  "event_sequence": 1428,
+  "updated_at": "2026-09-24T03:22:00+09:00",
+  "last_event_id": "evt_f11_1428_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,8 +91,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-10",
-  "status": "ACCEPTED",
+  "current_work_package": "F-11",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -193,8 +193,31 @@
     "F-09",
     "F-10"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f11-r1",
+  "write_lease": {
+    "lease_id": "write-lease-f11-r1-20260924-001",
+    "actor_id": "developer-primary-f11-r1",
+    "subject_ref": "F-11",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T03:22:00+09:00",
+    "expires_at": "2026-09-24T15:22:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849",
+    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "baseline_git_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "dispatch_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "path_scope": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
+    ],
+    "worker_lease_id": "worker-lease-f11-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -226,7 +249,27 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f11-r1-20260924-001",
+    "actor_id": "developer-primary-f11-r1",
+    "subject_ref": "F-11",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T03:22:00+09:00",
+    "expires_at": "2026-09-24T15:22:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "baseline_git_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "dispatch_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "path_scope": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -448,7 +491,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F10_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F11_EXACT6",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -558,41 +601,36 @@
     }
   },
   "repository": {
-    "branch": "codex/f10-openai-adapter",
-    "local_head": "acbef2720228cc8d509afa3f36aca7e75731d38e",
-    "upstream": "development/codex/f10-openai-adapter",
-    "remote_head": "acbef2720228cc8d509afa3f36aca7e75731d38e",
-    "projection_mode": "F10_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "branch": "codex/f11-ollama-adapter",
+    "local_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "upstream": "development/codex/f11-ollama-adapter",
+    "remote_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "projection_mode": "F11_START_EXACT11_PRODUCT_EXACT6",
+    "validated_base_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-10_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-10_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-11_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f10.json",
-      "docs/work_orders/F-10_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-10_WORK_INSTRUCTION.md",
-      "packages/providers/openai_adapter.py",
-      "packages/providers/openai_errors.py",
-      "packages/providers/openai_models.py",
+      "docs/progress/progress-handoff-detached-digest-f11.json",
+      "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-11_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "scripts/f10_progress_overlay.py",
-      "tests/providers/test_openai_adapter_f10.py",
-      "tests/tooling/test_f10_progress_overlay.py"
+      "scripts/f11_progress_overlay.py",
+      "tests/tooling/test_f11_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
-      "packages/providers/openai_adapter.py",
-      "packages/providers/openai_errors.py",
-      "packages/providers/openai_models.py",
-      "tests/providers/test_openai_adapter_f10.py"
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
     ],
-    "worktree_status": "F10_ACCEPTED",
-    "commit_status": "FINAL_PENDING_OR_COMPLETE",
+    "worktree_status": "F11_ACTIVE",
+    "commit_status": "PENDING",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -703,8 +741,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F10_ACCEPTED",
-      "F10_APPROVED_SCOPE"
+      "F11_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -754,7 +791,19 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-F-11-20260924-001",
+    "path": "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+    "sha256": "634D34A1E500EDA5215A6496523355AC6064AA775B1C473A1424B32C7AE1CABB",
+    "invocation_path": "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+    "invocation_sha256": "EC8CD962385AB90E0AEA2A8A54808095673CE614A126D6A02BBF9485510A976D",
+    "assigned_verification_ids": [
+      "AV-SAFE-030",
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019(OLLAMA)"
+    ]
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -884,9 +933,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-10",
-    "path": "docs/progress/progress-handoff-detached-digest-f10.json",
-    "manifest_path": "docs/evidence/manifests/F-10_PROGRESS_MANIFEST.json"
+    "package_id": "F-11",
+    "path": "docs/progress/progress-handoff-detached-digest-f11.json",
+    "manifest_path": "docs/evidence/manifests/F-11_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -907,16 +956,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "04C085931FD8B8357BBBD4E57AE16038F1293D8EDAB30822BFC4B84314DC23B8"
+      "sha256": "AA7DA931E8042A7EA0330B112D45E5FA879129ED2C5F592729574BD973306726"
     }
   },
   "next_work_package": {
-    "package_id": "F-11",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-12",
+    "status": "BLOCKED_PENDING_F11_ACCEPTANCE"
   },
   "next_successor_work_package": {
-    "package_id": "F-11",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-12",
+    "status": "BLOCKED_PENDING_F11_ACCEPTANCE"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1304,8 +1353,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "2B3F5D46560D241D18DD349E58A9BE4B6D03E4AF6F426D42D3781CEF0A8362D5",
-  "runtime_next_action": "MERGE_F10_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "6A442B2565325A2046FDC1B70DC9550F8EAF17735C4162113D61B1F6D3DB5D0F",
+  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F11_EXACT6",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2917,7 +2966,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T02:44:00+09:00",
+  "recorded_at": "2026-09-24T03:22:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

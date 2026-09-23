@@ -1,3 +1,10 @@
+# F-11 OLLAMA adapter 시작
+
+- 판정: `ACTIVE`; 승인된 F-11 host-only exact6 구현을 시작한다.
+- branch/base: `codex/f11-ollama-adapter` / `4e5b20cfbe2342818396953c36a7c8490e8fa8aa`.
+- 제어 테스트 임시 경로: `D:\Project\Anvil\.codex-sandbox\.f11-control-20260924a`; F-11 overlay 테스트 동안만 사용하고 실행 직후 경로 확인 후 삭제한다.
+- 실제 OLLAMA·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+
 # F-10 OPENAI adapter 완료
 
 - 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact5를 인수한다.

@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-11",
+  "event_sequence": 1428,
+  "accepted": false,
+  "projection_mode": "F11_START_EXACT11_PRODUCT_EXACT6",
+  "validated_base_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-11_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f11.json",
+    "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f11_progress_overlay.py",
+    "tests/tooling/test_f11_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+    "packages/providers/ollama_adapter.py",
+    "packages/providers/ollama_endpoint.py",
+    "packages/providers/ollama_errors.py",
+    "packages/providers/ollama_models.py",
+    "tests/providers/test_ollama_adapter_f11.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 437579,
+      "sha256": "C099AC432C16F4563C1871A05C4EED368F0701986992D0144971320F3CDA270E"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4097978,
+      "sha256": "AA7DA931E8042A7EA0330B112D45E5FA879129ED2C5F592729574BD973306726"
+    },
+    {
+      "path": "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+      "bytes": 420,
+      "sha256": "EC8CD962385AB90E0AEA2A8A54808095673CE614A126D6A02BBF9485510A976D"
+    },
+    {
+      "path": "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+      "bytes": 3787,
+      "sha256": "634D34A1E500EDA5215A6496523355AC6064AA775B1C473A1424B32C7AE1CABB"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4726125,
+      "sha256": "AE846BC814223B351BD1761EDEF7B24E301B72FA2B184DBA392393DCB88A2951"
+    },
+    {
+      "path": "scripts/f11_progress_overlay.py",
+      "bytes": 23968,
+      "sha256": "4AFF152AAF4502D3CB85D668103F57D1945FAEB68C13429CADA4A8750C1393FC"
+    },
+    {
+      "path": "tests/tooling/test_f11_progress_overlay.py",
+      "bytes": 4333,
+      "sha256": "551A238109D5B48C3F8204D33B2D34AB6A3EEB84583340686B782A22B980D353"
+    }
+  ],
+  "runtime_boundary": {
+    "live_ollama": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}

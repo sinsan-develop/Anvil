@@ -1,0 +1,1 @@
+`docs/work_orders/F-11_WORK_INSTRUCTION.md`를 기준으로 F-11 OLLAMA local adapter·endpoint SSRF 방어 제품 exact6를 구현하고 검증하라. 시작 시 승인 문서 hash·worker/write 두 fencing token·branch/HEAD/status를 확인한다. TDD RED→GREEN과 정확한 완료보고를 제출한다. 제품 exact6 외 수정, 실제 네트워크/WSL/DB 호출, Git/control/progress 작업은 하지 않는다.
