@@ -278,4 +278,3 @@ def test_mapping_resolver_mutation_cannot_change_authenticated_principal(monkeyp
         c.cookies.set("anvil_session",f["token"])
         assert c.get("/api/agent-console/team").status_code == 200
         assert f["principal"].actor_id == f["binding"].actor_id
-

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1357,
+  "last_sequence": 1358,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -76793,7 +76793,61 @@
     "remote_sha": "MATCH",
     "worktree": "CLEAN"
   }
+},
+{
+  "sequence": 1358,
+  "event_id": "evt_c30r5_final_1358_repository_reconciled",
+  "event_type": "REPOSITORY_RECONCILED",
+  "actor": "main-agent-eoul-takeover",
+  "actor_id": "main-agent-eoul-takeover",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "C-30",
+  "run_id": null,
+  "step_id": "FINAL_ACCEPTANCE",
+  "subject_ref": "C-30",
+  "occurred_at": "2026-09-23T17:25:23+09:00",
+  "previous_event_sha256": "7C632DD64D7B8988A008400DE34BBFF1F8CACBEA41039695BF1AFA37A40F9651",
+  "details": {
+    "accepted_checkpoint": "6e4839c7de828f2bd10c79ebff6ed9a8a0c04650",
+    "broker_main": "4d94db7e3e947611a87848aaa17d5b1a8837b74a",
+    "broker_merge": "982e74530eb4106d9860238035c635387df0c226",
+    "merge_paths": [
+      ".github/pr-broker-gate.sh",
+      ".github/workflows/auto-pr-merge.yml",
+      "docs/PR_BROKER_INSTALLATION.md"
+    ],
+    "correction_paths": [
+      "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+      "docs/04_test_reports/C-30_PR_BROKER_RECONCILIATION.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c30r5-pr-broker-reconciliation.json",
+      "docs/work_orders/C-30R2_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+      "scripts/c30r5_final_overlay.py",
+      "tests/integration/test_c30r2_runtime_owner.py",
+      "tests/tooling/test_c30r5_final_overlay.py"
+    ],
+    "root_causes": [
+      "C30R5_FINAL_GIT_PROJECTION_STALE_AFTER_BROKER_MERGE",
+      "HISTORICAL_EOF_BLANK_LINES_4"
+    ],
+    "verification": {
+      "tdd_red": "2 failed, 2 passed; then 1 failed, 5 passed",
+      "tdd_green": "6 passed",
+      "runtime_owner": "27 passed",
+      "canonical_checker": "PASS_SEQUENCE_1358",
+      "worktree_diff_check": "PASS",
+      "range_diff_check": "PENDING_POSTCOMMIT"
+    },
+    "scope": "CONTROL_AND_NON_SEMANTIC_WHITESPACE_ONLY",
+    "product_behavior_changed": false
+  }
 }
   ],
-  "last_event_id": "evt_c30r5_final_1357_repository_reconciled"
+  "last_event_id": "evt_c30r5_final_1358_repository_reconciled"
 }

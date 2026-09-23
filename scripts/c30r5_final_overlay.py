@@ -13,6 +13,28 @@ WORKER="worker-lease-c30-final-gate-matrix-r1-20260923-001"; WRITE="write-lease-
 DIGEST="docs/progress/progress-handoff-detached-digest-c30r5-final.json"; MANIFEST="docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json"
 DEV="docs/04_test_reports/C-30R5_DEVELOPER_TEST_REPORT.md"; SPEC="docs/04_test_reports/C-30R5_SPEC_REVIEW.md"; QUALITY="docs/04_test_reports/C-30R5_QUALITY_REVIEW.md"
 UNVERIFIED=["PROVIDER","PRODUCTION_AUTH","PG18","ACTUAL_SERVER_GENERATED_400","ORACLE"]
+RECONCILED="6e4839c7de828f2bd10c79ebff6ed9a8a0c04650"
+BROKER_MAIN="4d94db7e3e947611a87848aaa17d5b1a8837b74a"
+BROKER_MERGE="982e74530eb4106d9860238035c635387df0c226"
+BROKER_AT="2026-09-23T17:25:23+09:00"
+BROKER_DIGEST="docs/progress/progress-handoff-detached-digest-c30r5-pr-broker-reconciliation.json"
+BROKER_REPORT="docs/04_test_reports/C-30_PR_BROKER_RECONCILIATION.md"
+BROKER_PATHS=[".github/pr-broker-gate.sh",".github/workflows/auto-pr-merge.yml","docs/PR_BROKER_INSTALLATION.md"]
+BROKER_GATE_CORRECTION_PATHS=[
+    "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+    BROKER_REPORT,
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    BROKER_DIGEST,
+    "docs/work_orders/C-30R2_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+    "scripts/c30r5_final_overlay.py",
+    "tests/integration/test_c30r2_runtime_owner.py",
+    "tests/tooling/test_c30r5_final_overlay.py",
+]
 
 def controls(): return sorted(["docs/WORK_STATUS.md",DEV,SPEC,QUALITY,MANIFEST,"docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json",DIGEST,WI2,INV2,"scripts/check_project_progress.py","scripts/c30r5_final_overlay.py","tests/tooling/test_c30r5_final_overlay.py"])
 def paths(): return sorted(controls()+[PRODUCT])
@@ -22,9 +44,9 @@ def pretty(v): return (json.dumps(v,ensure_ascii=False,indent=2,allow_nan=False)
 def sha(raw): return hashlib.sha256(raw).hexdigest().upper()
 def fsha(root,rel): return sha((root/rel).read_bytes())
 def esha(e): return sha(canon(e))
-def append(events,kind,details,subject="C-30R5"):
+def append(events,kind,details,subject="C-30R5",at=AT):
     seq=events[-1]["sequence"]+1
-    events.append({"sequence":seq,"event_id":f"evt_c30r5_final_{seq}_{kind.lower()}","event_type":kind,"actor":"main-agent-eoul-takeover","actor_id":"main-agent-eoul-takeover","actor_type":"AGENT","project_id":"anvil","work_package_id":subject,"run_id":None,"step_id":"FINAL_ACCEPTANCE","subject_ref":subject,"occurred_at":AT,"previous_event_sha256":esha(events[-1]),"details":details})
+    events.append({"sequence":seq,"event_id":f"evt_c30r5_final_{seq}_{kind.lower()}","event_type":kind,"actor":"main-agent-eoul-takeover","actor_id":"main-agent-eoul-takeover","actor_type":"AGENT","project_id":"anvil","work_package_id":subject,"run_id":None,"step_id":"FINAL_ACCEPTANCE","subject_ref":subject,"occurred_at":at,"previous_event_sha256":esha(events[-1]),"details":details})
 
 def materialize(root):
     ep=root/"docs/progress/progress-events.json"; pp=root/"docs/progress/build-progress.json"
@@ -63,6 +85,16 @@ def materialize(root):
     manifest={"schema_version":"1.0.0","manifest_type":"C30R5_FINAL_ACCEPTANCE","artifact_id":"C30R5-FINAL-20260923","package_id":"C-30R5","event_sequence":1356,"historical_event_sequence":1349,"appended_event_count":7,"accepted":True,"status":"ACCEPTED","projection_mode":MODE,"validated_base_commit":BASE,"exact_allowed_paths":paths(),"control_paths":controls(),"product_write_scope":[PRODUCT],"authority":{WI1:WI1H,WI2:WI2H,INV2:INV2H},"verification":{"focused":2,"matrix":14,"python_related":159,"web":88,"spec":"ACCEPT_C0_I0_M0","quality":"ACCEPT_C0_I0_M0"},"unverified":UNVERIFIED,"raw_checksums":checks,"self_reference":False}
     (root/MANIFEST).write_bytes(pretty(manifest))
 
+def validate_broker_integration_facts(*,head,branch,upstream,remote,staged,dirty,
+        head_parents,merge_paths,correction_paths,merge_parent_parents=None):
+    common=(branch==BRANCH and upstream==UPSTREAM and remote in {RECONCILED,head}
+        and not staged and set(merge_paths)==set(BROKER_PATHS))
+    merge_state=(head_parents==[RECONCILED,BROKER_MAIN] and correction_paths is None
+        and (not dirty or set(dirty)==set(BROKER_GATE_CORRECTION_PATHS)))
+    correction_state=(len(head_parents)==1 and merge_parent_parents==[RECONCILED,BROKER_MAIN]
+        and not dirty and set(correction_paths or ())==set(BROKER_GATE_CORRECTION_PATHS))
+    return [] if common and (merge_state or correction_state) else ["C30R5_FINAL_GIT_INVALID"]
+
 def gitv(root):
     try:
         g=lambda *a: subprocess.check_output(["git",*a],cwd=root,text=True).strip(); head=g("rev-parse","HEAD"); remote=g("rev-parse","@{u}"); branch=g("branch","--show-current"); up=g("rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
@@ -72,16 +104,34 @@ def gitv(root):
         recon_pre=head==ACCEPTED and remote==ACCEPTED and dirty==set(recon_paths())
         recon_post=head not in {BASE,ACCEPTED} and g("rev-parse","HEAD^")==ACCEPTED and remote in {ACCEPTED,head} and not dirty
         if recon_post: recon_post=set(filter(None,g("diff","--name-only",f"{ACCEPTED}..HEAD").splitlines()))==set(recon_paths())
-        return [] if branch==BRANCH and up==UPSTREAM and not staged and (pre or post or recon_pre or recon_post) else ["C30R5_FINAL_GIT_INVALID"]
+        if branch==BRANCH and up==UPSTREAM and not staged and (pre or post or recon_pre or recon_post): return []
+        parents=g("show","-s","--format=%P","HEAD").split()
+        if parents==[RECONCILED,BROKER_MAIN]:
+            return validate_broker_integration_facts(head=head,branch=branch,upstream=up,remote=remote,
+                staged=staged,dirty=dirty,head_parents=parents,
+                merge_paths=set(filter(None,g("diff","--name-only",f"{RECONCILED}..HEAD").splitlines())),correction_paths=None)
+        if len(parents)==1:
+            merge_parent=parents[0]; merge_parents=g("show","-s","--format=%P",merge_parent).split()
+            return validate_broker_integration_facts(head=head,branch=branch,upstream=up,remote=remote,
+                staged=staged,dirty=dirty,head_parents=parents,merge_parent_parents=merge_parents,
+                merge_paths=set(filter(None,g("diff","--name-only",f"{RECONCILED}..{merge_parent}").splitlines())),
+                correction_paths=set(filter(None,g("diff","--name-only",f"{merge_parent}..HEAD").splitlines())))
+        return ["C30R5_FINAL_GIT_INVALID"]
     except Exception:return ["C30R5_FINAL_GIT_COLLECTION_FAILED"]
+
+def select_final_gate_events(events,event_sequence):
+    offset=event_sequence-1356
+    if offset not in {0,1,2}: return []
+    end=len(events)-offset if offset else len(events)
+    return events[end-7:end]
 
 def validate(root,b):
     e=[]
     try:
-        p=b["progress"]; event_value=b["events"]; events=event_value["events"] if isinstance(event_value,dict) else event_value; man=json.loads((root/MANIFEST).read_text(encoding="utf-8")); d=json.loads((root/DIGEST).read_text(encoding="utf-8"))
-        reconciled=events[-1].get("event_type")=="REPOSITORY_RECONCILED"; final_events=events[-8:-1] if reconciled else events[-7:]; types=[x.get("event_type") for x in final_events]
+        p=b["progress"]; event_value=b["events"]; events=event_value["events"] if isinstance(event_value,dict) else event_value; man=json.loads((root/MANIFEST).read_text(encoding="utf-8")); digest_path=BROKER_DIGEST if p.get("event_sequence")==1358 else DIGEST; d=json.loads((root/digest_path).read_text(encoding="utf-8"))
+        final_events=select_final_gate_events(events,p.get("event_sequence")); types=[x.get("event_type") for x in final_events]
         if types!=["WORK_INSTRUCTION_REVISED","PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED","PHASE_GATE_DECIDED"]:e.append("C30R5_FINAL_EVENT_TAIL_INVALID")
-        r=final_events[0].get("details",{}); state=(p.get("event_sequence") in {1356,1357} and p.get("status")=="ACCEPTED" and p.get("c30_overall_status")=="ACCEPTED" and p.get("worker_lease") is None and p.get("write_lease") is None and p.get("active_work_instruction") is None and "C-30R5" in p.get("completed_packages",[]) and man.get("accepted") is True and man.get("exact_allowed_paths")==paths() and man.get("unverified")==UNVERIFIED)
+        r=final_events[0].get("details",{}); expected_paths=BROKER_GATE_CORRECTION_PATHS if p.get("event_sequence")==1358 else paths(); state=(p.get("event_sequence") in {1356,1357,1358} and p.get("status")=="ACCEPTED" and p.get("c30_overall_status")=="ACCEPTED" and p.get("worker_lease") is None and p.get("write_lease") is None and p.get("active_work_instruction") is None and "C-30R5" in p.get("completed_packages",[]) and man.get("accepted") is True and man.get("exact_allowed_paths")==expected_paths and man.get("unverified")==UNVERIFIED)
         if (r.get("parent_sha256"),r.get("revised_sha256"),r.get("invocation_sha256"))!=(WI1H,WI2H,INV2H):e.append("C30R5_FINAL_REVISION_BINDING_INVALID")
         if not state:e.append("C30R5_FINAL_STATE_INVALID")
         for row in man.get("raw_checksums",[]):
@@ -117,6 +167,63 @@ def reconcile(root):
             raw=(root/rel).read_bytes(); rows.append({"path":rel,"bytes":len(raw),"sha256":sha(raw)})
     man["raw_checksums"]=rows; (root/MANIFEST).write_bytes(pretty(man))
 
+def broker_reconcile(root):
+    ep=root/"docs/progress/progress-events.json"; pp=root/"docs/progress/build-progress.json"; hp=root/"docs/progress/BUILD_HANDOFF.md"
+    base_raw=subprocess.check_output(["git","show",f"{RECONCILED}:docs/progress/progress-events.json"],cwd=root)
+    ledger=json.loads(base_raw); events=ledger["events"]
+    p=json.loads(subprocess.check_output(["git","show",f"{RECONCILED}:docs/progress/build-progress.json"],cwd=root))
+    if p.get("event_sequence")!=1357 or events[-1].get("sequence")!=1357: raise RuntimeError("BROKER_RECON_BASE")
+    append(events,"REPOSITORY_RECONCILED",{
+        "accepted_checkpoint":RECONCILED,"broker_main":BROKER_MAIN,"broker_merge":BROKER_MERGE,
+        "merge_paths":BROKER_PATHS,"correction_paths":BROKER_GATE_CORRECTION_PATHS,
+        "root_causes":["C30R5_FINAL_GIT_PROJECTION_STALE_AFTER_BROKER_MERGE","HISTORICAL_EOF_BLANK_LINES_4"],
+        "verification":{"tdd_red":"2 failed, 2 passed; then 1 failed, 5 passed","tdd_green":"6 passed","runtime_owner":"27 passed","canonical_checker":"PASS_SEQUENCE_1358","worktree_diff_check":"PASS","range_diff_check":"PENDING_POSTCOMMIT"},
+        "scope":"CONTROL_AND_NON_SEMANTIC_WHITESPACE_ONLY","product_behavior_changed":False,
+    },"C-30",BROKER_AT)
+    p.update({"event_sequence":1358,"last_event_id":events[-1]["event_id"],"updated_at":BROKER_AT,"recorded_at":BROKER_AT,
+        "next_safe_action":"C30_PR_BROKER_REQUEST","runtime_next_action":"C30_PR_BROKER_REQUEST"})
+    p["repository"].update({"local_head":BROKER_MERGE,"remote_head":RECONCILED,"control_head":BROKER_MAIN,
+        "validated_base_commit":BROKER_MAIN,"head_relation":"PR_BROKER_GATE_CORRECTION_CHILD",
+        "exact_allowed_paths":BROKER_GATE_CORRECTION_PATHS,"product_write_scope":[],
+        "worktree_status":"UNSTAGED_C30_PR_BROKER_RECONCILIATION_EXACT13",
+        "commit_status":"NOT_EXECUTED","push_status":"NOT_EXECUTED","remote_evidence":"LIVE_REMOTE_RECONCILED_HEAD_VERIFIED"})
+    p["current_progress_evidence_ref"]={"package_id":"C-30","path":BROKER_DIGEST,"manifest_path":MANIFEST}
+    p["latest_evidence_refs"]=[{"path":BROKER_REPORT,"sha256":"MATERIALIZED_AFTER_REPORT"}]
+    m=dict(p); m.pop("snapshot_hash",None); p["snapshot_hash"]=sha(canon(m)); praw=pretty(p)
+    event_raw=pretty(events[-1]).rstrip(b"\n"); old_id=ledger["last_event_id"].encode(); marker=b'\n  ],\n  "last_event_id": "'+old_id+b'"'; assert base_raw.count(marker)==1
+    eraw=base_raw.replace(marker,b",\n"+event_raw+marker.replace(old_id,events[-1]["event_id"].encode())).replace(b'"last_sequence": 1357',b'"last_sequence": 1358',1)
+    summary={k:p.get(k) for k in ("event_sequence","last_event_id","status","current_phase","current_work_package","active_agent","worker_lease","write_lease","next_work_package","next_successor_work_package","next_safe_action","runtime_next_action")}
+    summary.update({"c30_overall_status":"ACCEPTED","repository_validated_base":BROKER_MERGE,"repository_upstream":UPSTREAM,"unverified":UNVERIFIED})
+    hraw=("# C30 PR Broker integration gate reconciliation\n\n```json anvil-recovery-summary\n"+pretty(summary).decode()+"```\n").encode()
+    report=("# C-30 PR Broker integration gate reconciliation\n\n"
+        "- 판정: `RECONCILED_PENDING_COMMIT_PUSH`; trusted Broker main을 기존 C09 branch에 정상 merge했다.\n"
+        "- merge parent: `6e4839c7de828f2bd10c79ebff6ed9a8a0c04650` + `4d94db7e3e947611a87848aaa17d5b1a8837b74a`; merge commit `982e74530eb4106d9860238035c635387df0c226`.\n"
+        "- root cause: final Git projection이 2-parent Broker merge를 모델링하지 않았고 historical EOF blank line 4건이 range diff-check를 차단했다.\n"
+        "- 조치: exact merge/correction shape validator를 TDD로 추가하고 EOF blank 4건만 비의미 정정했다. 제품 동작 변경은 0이다.\n"
+        "- 검증: TDD RED `2 failed, 2 passed`, event selector RED `1 failed, 5 passed`; GREEN `6 passed`; runtime owner `27 passed`; canonical checker seq1358와 worktree diff-check PASS. range diff-check는 commit 후 실행한다.\n"
+        "- 미검증 유지: Provider, production auth, PG18, actual server-generated 400, Oracle.\n"
+        "- rollback: 본 exact13 correction commit만 revert하고 merge parent와 기존 seq1~1357 history는 보존한다.\n").encode()
+    ws=("# C-30 PR Broker integration gate correction / 2026-09-23\n\n"
+        "- 판정: `RECONCILED_PENDING_COMMIT_PUSH`; seq1358 append-only reconciliation으로 Broker merge와 exact13 correction을 결박했다.\n"
+        "- 기존 seq1~1357과 C-30 제품 동작은 변경하지 않았다. EOF blank 4건과 checker projection/test/control evidence만 수정했다.\n"
+        "- TDD RED `2 failed, 2 passed`, selector RED `1 failed, 5 passed`; GREEN `6 passed`; runtime owner `27 passed`; canonical checker seq1358와 worktree diff-check PASS. 다음은 commit 후 range diff-check·SSH push·request tag다.\n"
+        "- 미검증: Provider, production auth, PG18, actual server-generated 400, Oracle.\n\n").encode()+subprocess.check_output(["git","show",f"{RECONCILED}:docs/WORK_STATUS.md"],cwd=root)
+    pp.write_bytes(praw); ep.write_bytes(eraw); hp.write_bytes(hraw); (root/BROKER_REPORT).write_bytes(report); (root/"docs/WORK_STATUS.md").write_bytes(ws)
+    digest={"schema_version":"1.0.0","algorithm":"SHA-256","event_sequence":1358,"self_reference":False,
+        "progress":{"path":"docs/progress/build-progress.json","bytes":len(praw),"file_sha256":sha(praw),"canonical_json_sha256":sha(canon(p))},
+        "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(hraw),"file_sha256":sha(hraw),"machine_summary_canonical_sha256":sha(canon(summary))}}
+    (root/BROKER_DIGEST).write_bytes(pretty(digest))
+    man=json.loads(subprocess.check_output(["git","show",f"{RECONCILED}:{MANIFEST}"],cwd=root))
+    man.update({"event_sequence":1358,"appended_event_count":9,"exact_allowed_paths":BROKER_GATE_CORRECTION_PATHS,
+        "control_paths":BROKER_GATE_CORRECTION_PATHS,"product_write_scope":[],
+        "repository_reconciliation":{"accepted_checkpoint":RECONCILED,"broker_main":BROKER_MAIN,"broker_merge":BROKER_MERGE,
+            "status":"RECONCILED_PENDING_COMMIT_PUSH","product_behavior_changed":False}})
+    rows=[]
+    for rel in BROKER_GATE_CORRECTION_PATHS:
+        if rel!=MANIFEST:
+            raw=(root/rel).read_bytes(); rows.append({"path":rel,"bytes":len(raw),"sha256":sha(raw)})
+    man["raw_checksums"]=rows; (root/MANIFEST).write_bytes(pretty(man))
+
 if __name__=="__main__":
     root=Path(__file__).resolve().parents[1]
-    reconcile(root) if "--reconcile" in sys.argv else materialize(root)
+    broker_reconcile(root) if "--broker-reconcile" in sys.argv else (reconcile(root) if "--reconcile" in sys.argv else materialize(root))

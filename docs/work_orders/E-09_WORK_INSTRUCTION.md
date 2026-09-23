@@ -73,4 +73,3 @@
 - 실제/fixture/mock/static 경계와 미검증 범위
 - 기존 기능 유지, 잔여 위험, rollback
 - stage/commit/push는 Main만 수행
-

@@ -1,3 +1,10 @@
+# C-30 PR Broker integration gate correction / 2026-09-23
+
+- 판정: `RECONCILED_PENDING_COMMIT_PUSH`; seq1358 append-only reconciliation으로 Broker merge와 exact13 correction을 결박했다.
+- 기존 seq1~1357과 C-30 제품 동작은 변경하지 않았다. EOF blank 4건과 checker projection/test/control evidence만 수정했다.
+- TDD RED `2 failed, 2 passed`, selector RED `1 failed, 5 passed`; GREEN `6 passed`; runtime owner `27 passed`; canonical checker seq1358와 worktree diff-check PASS. 다음은 commit 후 range diff-check·SSH push·request tag다.
+- 미검증: Provider, production auth, PG18, actual server-generated 400, Oracle.
+
 # C-30R5 remote checkpoint reconciliation / 2026-09-23
 
 - 판정: `PASS`; accepted checkpoint `f3eeb4c88cceb10c919242e4b0db1843aac8c699`와 원격 branch SHA가 일치한다.

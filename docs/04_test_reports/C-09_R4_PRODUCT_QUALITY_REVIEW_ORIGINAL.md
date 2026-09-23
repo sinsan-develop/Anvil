@@ -209,4 +209,3 @@ Actual Docker daemon, actual helper/container 실행, WSL, DB, API, UI/browser, 
 11 Important finding이 남아 있으므로 quality PASS와 C-09 acceptance는 거부한다. spec C2/I8/M1 결과는 별도 원문에 보존하고 동일 snapshot failure3을 한 번만 집계한다. Main은 Developer를 중지하고 epoch3 write→worker 회수 후 TakeoverPacket과 successor control로 순차 인수해야 한다. 기능/요구/중요위험을 새로 확대하는 권한은 부여되지 않는다. C10/일반 exec.run/raw shell/patch/write/risk/egress/Secret 구현은 이 review의 허용 범위가 아니다.
 
 제품 rollback 작업은 수행하지 않았다. dirty 제품을 reset/clean/stash/checkout/delete하지 않고 raw bytes와 index를 보존한다. 이 원문 기록의 변경은 지정된 새 보고서 한 파일뿐이며 stage/commit/push는 하지 않는다.
-

@@ -12,4 +12,3 @@ contract_fixture GREEN과 미구현 product_contract RED를 분리 보고하며 
 Git mutation, DB/WSL/Docker/Provider/network/UI/deploy 실행과 scope 밖 문서 변경을 하지 않는다.
 정확한 pytest 명령/exit/result, 구문·diff 결과, exact3 SHA256, 미검증, rollback을
 COMPLETED(Task1 한정) 또는 유효한 FAILURE_REPORT로 반환한다. 별도 report/progress 파일은 쓰지 않는다.
-
