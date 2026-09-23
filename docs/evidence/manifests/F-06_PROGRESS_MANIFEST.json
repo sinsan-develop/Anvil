@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-06",
+  "event_sequence": 1393,
+  "accepted": true,
+  "projection_mode": "F06_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "19aee3360d90d3a046183ae66e6dd02150d9d747",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-06_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-06_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f06.json",
+    "docs/work_orders/F-06_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-06_WORK_INSTRUCTION.md",
+    "packages/providers/openrouter_adapter.py",
+    "packages/providers/openrouter_errors.py",
+    "packages/providers/openrouter_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f06_progress_overlay.py",
+    "tests/providers/test_openrouter_adapter_f06.py",
+    "tests/tooling/test_f06_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+    "packages/providers/openrouter_adapter.py",
+    "packages/providers/openrouter_errors.py",
+    "packages/providers/openrouter_models.py",
+    "tests/providers/test_openrouter_adapter_f06.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+      "bytes": 8725,
+      "sha256": "44EDC0C8DCF5F113907E0401C6BECEB15FDFB76F5C8B7EE95E7BF7BE7B9D02D1"
+    },
+    {
+      "path": "docs/04_test_reports/F-06_INDEPENDENT_REVIEW.md",
+      "bytes": 2472,
+      "sha256": "54DFEFBE2784488364FD00C3A8E62B3FF103DDCAB76B109C271ED1349E0FB866"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 434684,
+      "sha256": "19C5A581C01AD9456C16E9DA9F1379F3C7CA861C53105D7E46F8787A5779DF23"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4068445,
+      "sha256": "4F0763E663D191E8457942C9F5EAC382E77B2197F2C1270D7FEA3CEE9481A66B"
+    },
+    {
+      "path": "docs/work_orders/F-06_INVOCATION_PROMPT.md",
+      "bytes": 394,
+      "sha256": "EAFB2E318EF1725FFD56B45CC1848801FC4B1D0CDFC6BD01C6FE8A134D35FD11"
+    },
+    {
+      "path": "docs/work_orders/F-06_WORK_INSTRUCTION.md",
+      "bytes": 3306,
+      "sha256": "7B31A60A9BAD67DC85AB026E0B9CF559513180CF74117D3277640F91D5EA1C98"
+    },
+    {
+      "path": "packages/providers/openrouter_adapter.py",
+      "bytes": 21458,
+      "sha256": "C3CB8A1FBA6249786E2F14AFAFE7B269C86062BF9B718F5FEECCB9D1723E8D0B"
+    },
+    {
+      "path": "packages/providers/openrouter_errors.py",
+      "bytes": 3347,
+      "sha256": "5CE599E69133D75712CD8FA0F41655B3D63D5C609DA30AC2BFB85D0B842472CB"
+    },
+    {
+      "path": "packages/providers/openrouter_models.py",
+      "bytes": 3045,
+      "sha256": "784F656154037D0E1366458C138DE4223B3BE83B06B49BC3139A8EB76AE277B6"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4722087,
+      "sha256": "AE0983CB7AC86E0E49DAD497644694FA5B3528FEF14C5586AACE2187FF9F8684"
+    },
+    {
+      "path": "scripts/f06_progress_overlay.py",
+      "bytes": 23397,
+      "sha256": "E4BBB03F98CBA3ED4C5FCC1527B7509B1D94FE2E088F6126325BE9905984E17C"
+    },
+    {
+      "path": "tests/providers/test_openrouter_adapter_f06.py",
+      "bytes": 15551,
+      "sha256": "4CD289D3945970A15562A50A1950F399EE9E890148DF4A35C865737E59DFE137"
+    },
+    {
+      "path": "tests/tooling/test_f06_progress_overlay.py",
+      "bytes": 4337,
+      "sha256": "4DA15A12ADE6ED963A35CA73B4E259125ACF6A3DE1F66581A74F6C950484CDE8"
+    }
+  ],
+  "runtime_boundary": {
+    "live_openrouter": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "self_reference": false
+}

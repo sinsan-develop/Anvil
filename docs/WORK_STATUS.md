@@ -1,3 +1,11 @@
+# F-06 OPENROUTER adapter 완료
+
+- 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다(Critical/Important 0).
+- Main 재검증: 관련 회귀 `477 passed, 4 skipped`(격리 PG18 DSN 없음), AST 4파일 통과.
+- 검토 재작업: 인증형 `/api/v1/auth/key`, 선택적 quota 필드, routing 충돌, 비모델 404, 중첩 credential 차단을 해결했다.
+- 실제 OPENROUTER·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
+
 # F-05 MISTRAL adapter 완료
 
 - 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.

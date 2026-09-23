@@ -1,0 +1,1 @@
+`docs/work_orders/F-06_WORK_INSTRUCTION.md`를 먼저 읽고 발급된 worker/write lease와 exact5 scope를 확인한 뒤 TDD로 F-06을 구현·검증하라. 결과는 `docs/04_test_reports/F-06_COMPLETION_REPORT.md`에 판정·근거·조치와 명령/exit/evidence/미검증/rollback을 기록하고 Main Agent에게 보고하라. 다른 파일과 Git/외부 환경은 변경하지 말라.
