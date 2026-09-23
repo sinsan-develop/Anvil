@@ -57940,7 +57940,7 @@ def validate_bundle(bundle):
 
 _validate_git_projection_before_f03 = _validate_git_projection
 def _validate_git_projection(bundle):
-    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") in {"F03_START_EXACT9_PRODUCT_EXACT5", "F03_FINAL_ACCEPTANCE_EXACT15"}:
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") in {"F03_START_EXACT9_PRODUCT_EXACT5", "F03_FINAL_ACCEPTANCE_EXACT15", "F03_MERGED_MAIN_RECONCILIATION_EXACT10"}:
         from f03_progress_overlay import collect_git
         return collect_git(bundle["_root"])
     return _validate_git_projection_before_f03(bundle)
@@ -57948,7 +57948,7 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_f03 = validate_bundle
 def validate_bundle(bundle):
-    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {"F03_START_EXACT9_PRODUCT_EXACT5", "F03_FINAL_ACCEPTANCE_EXACT15"}:
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {"F03_START_EXACT9_PRODUCT_EXACT5", "F03_FINAL_ACCEPTANCE_EXACT15", "F03_MERGED_MAIN_RECONCILIATION_EXACT10"}:
         return _validate_bundle_before_f03(bundle)
     from f03_progress_overlay import validate
     return validate(bundle["_root"], bundle)

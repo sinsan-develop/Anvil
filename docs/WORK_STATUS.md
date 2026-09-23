@@ -1,3 +1,8 @@
+# F-03 merged-main reconciliation / 2026-09-23
+
+- 판정: `IN_PROGRESS`; PR #18 merged main `950bc8375fb19a76788f24e492112d68043ed596`의 structural checker를 추가한다.
+- 제품 동작 변경 0, F-03 acceptance와 F-04 READY 상태 유지.
+
 # F-03 CEREBRAS adapter accepted / 2026-09-23
 
 - 판정: `ACCEPTED`; 독립 Reviewer `C0/I0/M0`.

@@ -85,3 +85,29 @@ def test_f03_final_accepts_exact_postcommit_state():
         parent=OVERLAY.START_COMMIT,
         committed=set(OVERLAY.final_paths()),
     ) == []
+
+
+def test_f03_merged_reconciliation_accepts_work_branch_precommit():
+    assert OVERLAY.validate_merged_git_facts(
+        head=OVERLAY.MERGED_BASE,
+        branch=OVERLAY.MERGED_BRANCH,
+        upstream=f"development/{OVERLAY.MERGED_BRANCH}",
+        remote_head=OVERLAY.MERGED_BASE,
+        staged=set(), dirty=set(OVERLAY.merged_paths()), parents=[], changed=set(),
+    ) == []
+
+
+def test_f03_merged_reconciliation_accepts_structural_main_merge():
+    assert OVERLAY.validate_merged_git_facts(
+        head="merge", branch="main", upstream="development/main", remote_head="merge",
+        staged=set(), dirty=set(), parents=[OVERLAY.MERGED_BASE, "feature"], changed=set(),
+        base_is_ancestor_of_feature=True, feature_paths=set(OVERLAY.merged_paths()),
+        merge_tree_matches_feature=True,
+    ) == []
+
+
+def test_f03_merged_reconciliation_rejects_squash_main():
+    assert OVERLAY.validate_merged_git_facts(
+        head="squash", branch="main", upstream="development/main", remote_head="squash",
+        staged=set(), dirty=set(), parents=[OVERLAY.MERGED_BASE], changed=set(OVERLAY.merged_paths()),
+    ) == ["F03_MERGED_GIT_INVALID"]

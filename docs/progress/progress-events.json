@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1368,
+  "last_sequence": 1369,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -77208,7 +77208,46 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1369,
+  "event_id": "evt_f03_1369_repository_reconciled",
+  "event_type": "REPOSITORY_RECONCILED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-03",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-03/START",
+  "occurred_at": "2026-09-23T18:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "2CEA0BCB1DDFC57A26F729CE6272052C2C1D9A4993903A548E4E60BE12699FFA",
+  "details": {
+    "accepted_checkpoint": "950bc8375fb19a76788f24e492112d68043ed596",
+    "routine_merge_method": "MERGE_COMMIT",
+    "required_main_shape": {
+      "parent_count": 2,
+      "first_parent": "PR_PRE_MERGE_MAIN",
+      "second_parent": "VERIFIED_EXACT_FEATURE_HEAD"
+    },
+    "exact_paths": [
+      "docs/04_test_reports/F-03_MERGED_MAIN_RECONCILIATION.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/F-03_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-f03-start.json",
+      "scripts/check_project_progress.py",
+      "scripts/f03_progress_overlay.py",
+      "tests/tooling/test_f03_progress_overlay.py"
+    ],
+    "scope": "MERGED_MAIN_GIT_PROJECTION_AND_APPEND_ONLY_EVIDENCE_ONLY",
+    "product_behavior_changed": false
+  }
 }
   ],
-  "last_event_id": "evt_f03_1368_main_package_accepted"
+  "last_event_id": "evt_f03_1369_repository_reconciled"
 }
