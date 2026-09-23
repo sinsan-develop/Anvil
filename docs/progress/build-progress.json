@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f04-final-seq1377",
-  "event_sequence": 1377,
-  "updated_at": "2026-09-23T20:00:00+09:00",
-  "last_event_id": "evt_f04_1377_main_package_accepted",
+  "snapshot_id": "snapshot-f05-final-seq1385",
+  "event_sequence": 1385,
+  "updated_at": "2026-09-23T23:05:00+09:00",
+  "last_event_id": "evt_f05_1385_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,7 +91,7 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-04",
+  "current_work_package": "F-05",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -185,7 +185,8 @@
     "C-30R4",
     "C-30R5",
     "F-03",
-    "F-04"
+    "F-04",
+    "F-05"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -442,7 +443,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F04_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "MERGE_F05_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -552,40 +553,40 @@
     }
   },
   "repository": {
-    "branch": "codex/f04-groq-adapter",
-    "local_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "upstream": "development/codex/f04-groq-adapter",
-    "remote_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "projection_mode": "F04_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "branch": "codex/f05-mistral-adapter",
+    "local_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "upstream": "development/codex/f05-mistral-adapter",
+    "remote_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "projection_mode": "F05_FINAL_ACCEPTANCE_EXACT17",
+    "validated_base_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-04_INDEPENDENT_REVIEW.md",
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-05_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-05_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f04.json",
-      "docs/work_orders/F-04_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-04_WORK_INSTRUCTION.md",
-      "packages/providers/groq_adapter.py",
-      "packages/providers/groq_errors.py",
-      "packages/providers/groq_models.py",
+      "docs/progress/progress-handoff-detached-digest-f05.json",
+      "docs/work_orders/F-05_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
       "scripts/check_project_progress.py",
-      "scripts/f04_progress_overlay.py",
-      "tests/providers/test_groq_adapter_f04.py",
-      "tests/tooling/test_f04_progress_overlay.py"
+      "scripts/f05_progress_overlay.py",
+      "tests/providers/test_mistral_adapter_f05.py",
+      "tests/tooling/test_f05_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
-      "packages/providers/groq_adapter.py",
-      "packages/providers/groq_errors.py",
-      "packages/providers/groq_models.py",
-      "tests/providers/test_groq_adapter_f04.py"
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
+      "tests/providers/test_mistral_adapter_f05.py"
     ],
-    "worktree_status": "F04_ACCEPTED",
+    "worktree_status": "F05_ACCEPTED",
     "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
@@ -683,22 +684,22 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-04-20260923-001",
-    "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
-    "sha256": "E104284C8B4739CC5DAAA1F510F8B170D16AD76F22BE3891F248EC9EFB722B99",
-    "invocation_path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
-    "invocation_sha256": "205F405934CD862A4A8AEF8D478C0762ACCDAEC0C12CCFE3949EBC6032BEF913",
+    "artifact_id": "WI-F-05-20260923-001",
+    "path": "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+    "sha256": "09E1A9799FCB7AD6DA7B57B1F8C850EA457B031C2070DCE6546CF3E68C639266",
+    "invocation_path": "docs/work_orders/F-05_INVOCATION_PROMPT.md",
+    "invocation_sha256": "D997C82FF5968BF86C708FB3EC1DF161A2B37EEA69CEC665FE6F1A690734CEFC",
     "assigned_verification_ids": [
       "AV-OPS-010",
       "AV-OPS-011",
-      "AV-FLOW-019(GROQ)"
+      "AV-FLOW-019(MISTRAL)"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F04_ACCEPTED",
-      "F05_APPROVED_SCOPE"
+      "F05_ACCEPTED",
+      "F06_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -878,9 +879,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-04",
-    "path": "docs/progress/progress-handoff-detached-digest-f04.json",
-    "manifest_path": "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json"
+    "package_id": "F-05",
+    "path": "docs/progress/progress-handoff-detached-digest-f05.json",
+    "manifest_path": "docs/evidence/manifests/F-05_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -901,15 +902,15 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7163F4EF6991D5A84687F40C7AD0EBC4D833A00DCCC145DAE27DFBA0A0BD54C8"
+      "sha256": "B835C0CF295797A501806336976AE83800C2D8DE501D9CF67127AA0A0B0A4ED5"
     }
   },
   "next_work_package": {
-    "package_id": "F-05",
+    "package_id": "F-06",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
-    "package_id": "F-05",
+    "package_id": "F-06",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
@@ -1298,8 +1299,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "988510B4922492DACD2E7FE6BDE42A2203D83DD6FCCD6860F4CBB8D13BC75428",
-  "runtime_next_action": "MERGE_F04_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "E4B082BAE548791571B34F98023B5405FCFAA1D0813D88A92A60A3255D880FE9",
+  "runtime_next_action": "MERGE_F05_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2911,7 +2912,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-23T20:00:00+09:00",
+  "recorded_at": "2026-09-23T23:05:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -21751,6 +21752,72 @@
     ],
     "unverified": [
       "LIVE_GROQ",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  },
+  "completed_f05_worker_lease": {
+    "lease_id": "worker-lease-f05-r1-20260923-001",
+    "actor_id": "developer-primary-f05-r1",
+    "subject_ref": "F-05",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T23:05:00+09:00",
+    "expires_at": "2026-09-24T11:05:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
+    "execution_fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
+    "baseline_git_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "dispatch_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "path_scope": [
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
+      "tests/providers/test_mistral_adapter_f05.py"
+    ],
+    "revoked_at": "2026-09-23T23:05:00+09:00"
+  },
+  "completed_f05_write_lease": {
+    "lease_id": "write-lease-f05-r1-20260923-001",
+    "actor_id": "developer-primary-f05-r1",
+    "subject_ref": "F-05",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T23:05:00+09:00",
+    "expires_at": "2026-09-24T11:05:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f05-r1-write-fence-epoch-1-19982b85e78b48f7",
+    "execution_fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
+    "baseline_git_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "dispatch_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "path_scope": [
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
+      "tests/providers/test_mistral_adapter_f05.py"
+    ],
+    "worker_lease_id": "worker-lease-f05-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f05-r1-write-fence-epoch-1-19982b85e78b48f7",
+    "revoked_at": "2026-09-23T23:05:00+09:00"
+  },
+  "f05_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M1_DOCUMENTED",
+    "focused": "58_PASSED",
+    "related_regression": "812_PASSED_4_SKIPPED",
+    "resolved_findings": [
+      "STREAM_ABORT_EMPTY_OUTPUT_CONTRACT",
+      "FAILED_REQUEST_ID_INPUT_CONFLICT",
+      "GENERATE_POST_SEND_ABORT_STATUS",
+      "REQUEST_ID_PREFLIGHT_LENGTH"
+    ],
+    "unverified": [
+      "LIVE_MISTRAL",
       "CREDENTIALS",
       "NETWORK",
       "DATABASE",

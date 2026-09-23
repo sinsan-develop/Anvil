@@ -1,3 +1,9 @@
+# F-05 MISTRAL adapter 완료
+
+- 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.
+- 실제 MISTRAL·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
+
 # F-04 GROQ adapter 완료
 
 - 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.
