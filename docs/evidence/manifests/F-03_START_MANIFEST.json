@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "F03_FINAL_ACCEPTANCE",
+  "artifact_id": "F03-FINAL-20260923",
+  "package_id": "F-03",
+  "event_sequence": 1368,
+  "historical_event_sequence": 1363,
+  "appended_event_count": 5,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "projection_mode": "F03_FINAL_ACCEPTANCE_EXACT15",
+  "validated_base_commit": "9ec430908a3473815d5839f028d290414494f37b",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-03_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f03-start.json",
+    "packages/providers/cerebras_adapter.py",
+    "packages/providers/cerebras_errors.py",
+    "packages/providers/cerebras_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f03_progress_overlay.py",
+    "tests/providers/test_cerebras_adapter_f03.py",
+    "tests/tooling/test_f03_progress_overlay.py"
+  ],
+  "control_paths": [
+    "docs/04_test_reports/F-03_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f03-start.json",
+    "scripts/check_project_progress.py",
+    "scripts/f03_progress_overlay.py",
+    "tests/tooling/test_f03_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+    "packages/providers/cerebras_adapter.py",
+    "packages/providers/cerebras_errors.py",
+    "packages/providers/cerebras_models.py",
+    "tests/providers/test_cerebras_adapter_f03.py"
+  ],
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "verification": {
+    "main_focused": "45 passed",
+    "main_related": "709 passed, 4 skipped",
+    "independent_related": "738 passed, 4 skipped",
+    "compile": "COMPILE3_PASS"
+  },
+  "unverified": [
+    "LIVE_CEREBRAS",
+    "SECRET_BROKER",
+    "NETWORK",
+    "DATABASE",
+    "BROWSER",
+    "WSL",
+    "DEPLOYMENT"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "bytes": 7667,
+      "sha256": "B0BB6FDE3A40B9D2B9394EB7DB6C5AD5FE70A6312942877057FADE8E483F26D5"
+    },
+    {
+      "path": "docs/04_test_reports/F-03_INDEPENDENT_REVIEW.md",
+      "bytes": 641,
+      "sha256": "05089EC9CFD61A3E113F48C4E2280FADE18CAEFC9435F8069A17B8BE494BB393"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 433352,
+      "sha256": "D20478F484CC5B4F92DB2FC8EA11E438E481322CC68752D83B0B72CF516407F4"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 838,
+      "sha256": "DD4083B9C385E7E768065B2594BB0C976F54239C093DE348A33E91AC029DC305"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1110558,
+      "sha256": "CA247B803BC7B9B23D3EEE8E2EC9BCF187E6C62A9D80A068CA5D6BEA310C037B"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4047129,
+      "sha256": "63CCD64ADA836B5751C9E1C9B86E4EE2AF39317E968FA437537ED90680984A45"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f03-start.json",
+      "bytes": 664,
+      "sha256": "920B78D213DC04C0DA08F916A1B3556C977E861662EEEDA8EFA6B92D504B8342"
+    },
+    {
+      "path": "packages/providers/cerebras_adapter.py",
+      "bytes": 15133,
+      "sha256": "DC2607AA90BAFC9921E889EF6A3941B855940A169A59D7DC60BFAFBE3D22A026"
+    },
+    {
+      "path": "packages/providers/cerebras_errors.py",
+      "bytes": 3532,
+      "sha256": "8065C9DDE021433792786B13B0AAC815C008FDB722E8BBB97868C87655DEE593"
+    },
+    {
+      "path": "packages/providers/cerebras_models.py",
+      "bytes": 3587,
+      "sha256": "167B9CB5E4AD6325AE9DE72B30CEFE03A28EB698B997D6B97196231C0F5230D3"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4719575,
+      "sha256": "4D70D98DFB3E5F35AC21B963E25AFD29EE3B65597A8741B5BC08B498D9E3FE64"
+    },
+    {
+      "path": "scripts/f03_progress_overlay.py",
+      "bytes": 34022,
+      "sha256": "39A7B7CAAEE13891993AB257A399025027D87985DD1B931BC150BD38934E4711"
+    },
+    {
+      "path": "tests/providers/test_cerebras_adapter_f03.py",
+      "bytes": 12940,
+      "sha256": "1C15C2D65DB585FB40A52821DDEA4C2E7E1E4D15442BB30C77AD6E6F50033B3D"
+    },
+    {
+      "path": "tests/tooling/test_f03_progress_overlay.py",
+      "bytes": 2767,
+      "sha256": "87E666179C1C602E4B6F91A91D3C47F88D3D17973D4F4A02162123654B4A80C0"
+    }
+  ],
+  "self_reference": false
+}

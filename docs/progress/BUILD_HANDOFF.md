@@ -1,31 +1,28 @@
-# C30 merged-main canonical checker reconciliation
+# F-03 CEREBRAS adapter final acceptance
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1359,
-  "last_event_id": "evt_c30r5_final_1359_repository_reconciled",
+  "event_sequence": 1368,
+  "last_event_id": "evt_f03_1368_main_package_accepted",
   "status": "ACCEPTED",
-  "current_phase": "C",
-  "current_work_package": "C-30",
+  "current_phase": "F",
+  "current_work_package": "F-03",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "next_work_package": {
-    "package_id": "C-30",
-    "status": "ACCEPTED"
+    "package_id": "F-04",
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
-  "next_successor_work_package": null,
-  "next_safe_action": "C30_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
-  "runtime_next_action": "C30_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
-  "c30_overall_status": "ACCEPTED",
-  "repository_validated_base": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
-  "repository_branch": "codex/c30-merged-main-reconciliation",
-  "unverified": [
-    "PROVIDER",
-    "PRODUCTION_AUTH",
-    "PG18",
-    "ACTUAL_SERVER_GENERATED_400",
-    "ORACLE"
-  ]
+  "next_successor_work_package": {
+    "package_id": "F-04",
+    "status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "next_safe_action": "F04_WORK_INSTRUCTION_AND_START",
+  "runtime_next_action": "F04_WORK_INSTRUCTION_AND_START",
+  "f03_status": "ACCEPTED",
+  "independent_review": "ACCEPT_C0_I0_M0",
+  "repository_validated_base": "9ec430908a3473815d5839f028d290414494f37b",
+  "repository_branch": "codex/f03-cerebras-adapter"
 }
 ```
