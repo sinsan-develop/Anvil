@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D-GATE-REGRESSION-RECONCILIATION-DIGEST-20260917",
+  "package_id": "D-GATE",
+  "event_sequence": 1061,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-17T01:00:00+09:00",
+  "scope": "seq1061 append-only historical verification reconciliation; seq1-1060 preserved; exact200",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1085503,
+    "file_sha256": "2CEB75ADC73904ACF7898368F15FCD89919EE47E5CB27DE3966D54C077044BA1",
+    "canonical_json_sha256": "3694FD29073AAEA81D7778D849DF06E09678653EE406F4651C6C7957FD96F39E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 215458,
+    "file_sha256": "BF1B101AA36961ACAE33640BFDF7266658EDD60F9AE1C26273D6BEA1AF4EA0C5",
+    "machine_summary_canonical_sha256": "505CA702F6353293779711B9B38A00611C559F167DCC4A92EE2440CE50B1E3A3"
+  }
+}

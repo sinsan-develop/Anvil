@@ -1,0 +1,337 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-15_START",
+  "artifact_id": "C15-START-20260916",
+  "package_id": "C-15",
+  "created_at": "2026-09-16T05:15:00+09:00",
+  "event_sequence": 924,
+  "historical_event_sequence": 920,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 2687054,
+    "sha256": "612F3381DEA83075C4D1080F09A29AA653C64238BBD28341584F6137CD0EC70C"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+  "projection_mode": "C15_START_CUMULATIVE_EXACT33",
+  "record_binding": "PRECOMMIT_C14_FINAL_EXACT31_PLUS_C15_START_EXACT2",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-14_START_MANIFEST.json",
+    "docs/evidence/manifests/C-15_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c14-start.json",
+    "docs/progress/progress-handoff-detached-digest-c15-start.json",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "scripts/check_project_progress.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_gates_c14.py"
+  ],
+  "exact_path_count": 33,
+  "exact_path_list_sha256": "4C1489A78D48ED8EEB93AEE491BD8599CBAC0EFAAF0C8FAD465BB63F6A567B09",
+  "worker_lease": {
+    "actor_id": "developer-primary-c15-r1",
+    "subject_ref": "C-15",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T05:15:00+09:00",
+    "expires_at": "2026-09-16T17:15:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c15-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "packages/e2e/__init__.py",
+      "packages/e2e/harness.py",
+      "tests/e2e/test_synthetic_e2e.py"
+    ],
+    "lease_id": "worker-lease-c15-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "c15-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-c15-r1",
+    "subject_ref": "C-15",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T05:15:00+09:00",
+    "expires_at": "2026-09-16T17:15:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c15-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "packages/e2e/__init__.py",
+      "packages/e2e/harness.py",
+      "tests/e2e/test_synthetic_e2e.py"
+    ],
+    "lease_id": "write-lease-c15-r1-20260916-001",
+    "worker_lease_id": "worker-lease-c15-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "c15-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "c15-r1-write-fence-epoch-1-234458b5283abafa"
+  },
+  "product_write_scope": [
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+    "packages/e2e/__init__.py",
+    "packages/e2e/harness.py",
+    "tests/e2e/test_synthetic_e2e.py"
+  ],
+  "work_instruction_path": "docs/work_orders/C-15_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "598D9056681B28A736E9BC9548E343CFE9EB84DF1234299802529DE57F75AFC4",
+  "invocation_path": "docs/work_orders/C-15_INVOCATION_PROMPT.md",
+  "invocation_sha256": "71342EC42F9700304DA6DB6EFE169CE497241FDCA183FB231783F13CD728D89F",
+  "authority": {
+    "revision_class": "APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "work_instruction_id": "WI-C-15-R1-20260916-001",
+    "work_instruction_sha256": "598D9056681B28A736E9BC9548E343CFE9EB84DF1234299802529DE57F75AFC4",
+    "invocation_sha256": "71342EC42F9700304DA6DB6EFE169CE497241FDCA183FB231783F13CD728D89F",
+    "baseline_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "source": "USER_DIRECT_WORKPLAN_CONTINUATION",
+    "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+    "approved_control_paths": [
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "docs/evidence/manifests/C-15_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "scripts/check_project_progress.py",
+      "tests/leases/test_worker_write_fencing.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py",
+      "tests/tooling/test_project_progress.py",
+      "tests/verification/test_gates_c14.py"
+    ],
+    "c15_product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "push_authorized": false,
+    "new_project_approval_requested": false,
+    "pmo_report_is_approval": false
+  },
+  "external_validation": {
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "secret_manager": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
+    "fixture_mode": "SYNTHETIC_ONLY"
+  },
+  "c14_status": "ACCEPTED",
+  "dir2_status": "NOT_REACHED",
+  "pending_approvals": [],
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    {
+      "path": "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "bytes": 22494,
+      "sha256": "703A905896643C4F1C0A9FCAB19977754A60C40BEEA23A075206CAB4F8C73874"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 10737,
+      "sha256": "A0AD46DB98A5899E2E870DE89EF820F805E97677F662D62701929BA2A0374F7C"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "bytes": 8885,
+      "sha256": "0FF49124A8B44FC427919C503751C070B2B6283A04D74ADEC2E97EFC17A011DD"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 11280,
+      "sha256": "94A8DD89BB7C0D89DDACA9E41AE4F38E5EDF15B1B5890F98510AF3EA013CBE22"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "bytes": 10662,
+      "sha256": "78D1607FFE803FCDE482BFB2635808EBC68C652039D7FA0305994C783C191F3F"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "bytes": 12576,
+      "sha256": "01A012E1FA8644B98D64CA0BFF3EE6B4E06DB9A11140186BFF2D370543AF9CF1"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 199859,
+      "sha256": "5DB7864B52DF0BDD627C220F155D5F4F1CC4420838CDE1CE6B5CAB6D59E345FC"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1004853,
+      "sha256": "0966A9863F9D9F9C0A622199CF382B8961F2A42274D6CE90CB55E508926BCC47"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2697861,
+      "sha256": "64BCB8BD1959884D6DBFF7BC58907217B90F1E717CD54AAABED2CD93FF26B773"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "bytes": 894,
+      "sha256": "8F22521F72B6597C367B5578DDE2002BB01EA01BA4A918F1B421160FFAF024F0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "bytes": 861,
+      "sha256": "6FE5934F1406569B15033BC0E382B5AF64428889D30BBDE79F14F1F118809504"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "bytes": 880,
+      "sha256": "201FDB73C834546C3608F388376ECA290B9E154E66161D08D0999CCB1558808C"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "bytes": 888,
+      "sha256": "8CD70A638F58C1EAD12565D88070F4720E0E4B923076A3E80B869B6758BE1D6D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "bytes": 865,
+      "sha256": "9CEAA11AEBB0B17F74F829E55921E105BBEA267A47CEAAFE7E791125C8ECD8B0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "bytes": 866,
+      "sha256": "674BCF15E38C385D8E818AC631069D0F389100A5214A22C986CBDDD879681551"
+    },
+    {
+      "path": "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "bytes": 555,
+      "sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379"
+    },
+    {
+      "path": "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "bytes": 1749,
+      "sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC"
+    },
+    {
+      "path": "packages/leases/service.py",
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    {
+      "path": "packages/orchestration/developer_lifecycle.py",
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    {
+      "path": "packages/orchestration/takeover.py",
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    {
+      "path": "packages/tool_gateway/registry.py",
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    {
+      "path": "packages/verification/__init__.py",
+      "bytes": 963,
+      "sha256": "BCC2B4D3870A5D024F937876931CF4016E44CC08D71F1C41B572F6CE7522E489"
+    },
+    {
+      "path": "packages/verification/gates.py",
+      "bytes": 49991,
+      "sha256": "D09D9AD564820DAE4DF88DED9FCFD7DCA9D3B6C9D3AD719E9FCE97D40A980D8E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3823428,
+      "sha256": "708E5220BD3FAC58552D63505320B92322C8CE6DFAD586DB9F7536A242FDE061"
+    },
+    {
+      "path": "tests/leases/test_worker_write_fencing.py",
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    {
+      "path": "tests/orchestration/test_failure_ledger_c12.py",
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    {
+      "path": "tests/orchestration/test_takeover_c13.py",
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    {
+      "path": "tests/tool_gateway/test_tool_registry.py",
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1059623,
+      "sha256": "CCF754D4FF41F35E433F76057B37DBF10AF6B8354A209DC5E10D066ED3AB1BC1"
+    },
+    {
+      "path": "tests/verification/test_gates_c14.py",
+      "bytes": 36442,
+      "sha256": "ACCD15AF02CA9FD6B5E4A3870A591922E8D5BA0B5023AE57BE7966FBE5FBA971"
+    }
+  ]
+}

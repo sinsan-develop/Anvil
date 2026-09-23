@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E09_FINAL_ACCEPTANCE",
+  "artifact_id": "E09-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T23:37:38+09:00",
+  "package_id": "E-09",
+  "event_sequence": 1156,
+  "historical_event_sequence": 1151,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3758883,
+    "sha256": "DFBB1E680624455894AAB57038F8F8617EB5C24579413743861ADAFB94EE21DF"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-09_COMPLETION_REPORT.md": {
+      "bytes": 25593,
+      "sha256": "C31C05E1EE39E627CD2A9FED502E0A81F96CB819B5687B317C97C044DE26CD09"
+    },
+    "packages/verification/__init__.py": {
+      "bytes": 1257,
+      "sha256": "C6E1F423E0A61C5A5819B400E4766485324797D6BD08D1779B1B94947BE52ABF"
+    },
+    "packages/verification/gates.py": {
+      "bytes": 50015,
+      "sha256": "718FF29EC9CB142E1F2FBF8DC984A06158B7E5788D0717CAA31427D102D26B49"
+    },
+    "packages/verification/release_gates.py": {
+      "bytes": 38590,
+      "sha256": "37FD271494916A36A60202D9A164686F282F34333CD64557D11489353EB18AC1"
+    },
+    "tests/verification/test_gates_e09.py": {
+      "bytes": 47380,
+      "sha256": "9DC814A8619D264EBDB312778A1C4EC029A7BFA8D69FCED73F2BF3A68BE2B340"
+    }
+  },
+  "evidence_target_hash": "84E92EFD87360B6C50ADA0C116D016F6C8967E4B721ED7EDDE3B605613275966",
+  "independent_reviews": {
+    "spec": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1151,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "focused": {
+        "passed": 228,
+        "skipped": 0
+      },
+      "adjacent": {
+        "passed": 1022,
+        "skipped": 8,
+        "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"
+      },
+      "unverified": [
+        "actual DB/browser/production build/Provider",
+        "durable authentication/evidence registry",
+        "multi-process persistence",
+        "actual Apply/Deploy",
+        "U Phase menu UI"
+      ],
+      "probes": {
+        "prior_findings_closed": 3,
+        "nested_nonreal": "BLOCKED",
+        "fixer_context_independence": "PASS",
+        "build_raw_binding": "PASS"
+      }
+    },
+    "quality": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1151,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "focused": {
+        "passed": 228,
+        "skipped": 0
+      },
+      "adjacent": {
+        "passed": 1022,
+        "skipped": 8,
+        "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"
+      },
+      "unverified": [
+        "actual DB/browser/production build/Provider",
+        "durable authentication/evidence registry",
+        "multi-process persistence",
+        "actual Apply/Deploy",
+        "U Phase menu UI"
+      ],
+      "probes": {
+        "prior_findings_closed": 4,
+        "public_handle_callback_count": 0,
+        "actor_generation_replay": "BLOCKED",
+        "concurrent_admission": "PASS"
+      }
+    }
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "production_build": "NOT_EXECUTED",
+    "actual_db": "NOT_EXECUTED",
+    "durable_authority": "NOT_INTEGRATED",
+    "durable_evidence_registry": "NOT_INTEGRATED",
+    "multiprocess_persistence": "NOT_INTEGRATED",
+    "apply_deploy": "ADMISSION_ONLY_NOT_EXECUTED"
+  },
+  "formal_failure_count": 0,
+  "review_rework_rounds": 2,
+  "resolved_review_findings": [
+    {
+      "finding_id": "E09-NESTED-NONREAL-PROMOTION",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "G4-G6 nested evidence requires explicit real available matching environment metadata"
+    },
+    {
+      "finding_id": "E09-FIXER-CONTEXT-INDEPENDENCE",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "defect retest actor and context are independent from every recorded fixer"
+    },
+    {
+      "finding_id": "E09-BUILD-RAW-BINDING",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "artifact and dependency hashes bind to matching raw checksum paths"
+    },
+    {
+      "finding_id": "E09-HOSTILE-BUNDLE-CALLBACK",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "all public handles validate exact registered identity before attribute access"
+    },
+    {
+      "finding_id": "E09-ACTOR-REVOCATION-REPLAY",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "revoked actor identities cannot be re-registered or restore stale approvals"
+    },
+    {
+      "finding_id": "E09-ACTOR-GENERATION-ROLLBACK",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "superseded actor generations cannot roll active authority back"
+    }
+  ],
+  "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "work_instruction_sha256": "2DCA27CDB9DF351F62AA77FE0424711DB7E31AF2CD287C4239A8834B3B77B85D",
+  "invocation_sha256": "F236AC1CF5D1B8D727B5DFCF3E3F5F0A02F5DAE12F7BC0FCF3EDF102ED893E7B",
+  "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "active_leases": 0,
+  "e09_status": "ACCEPTED",
+  "e10_status": "READY_FOR_WORK_INSTRUCTION",
+  "product_exact_paths": [
+    "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "packages/verification/release_gates.py",
+    "tests/verification/test_gates_e09.py"
+  ],
+  "frozen_product_sha256": {
+    "docs/04_test_reports/E-09_COMPLETION_REPORT.md": "C31C05E1EE39E627CD2A9FED502E0A81F96CB819B5687B317C97C044DE26CD09",
+    "packages/verification/__init__.py": "C6E1F423E0A61C5A5819B400E4766485324797D6BD08D1779B1B94947BE52ABF",
+    "packages/verification/gates.py": "718FF29EC9CB142E1F2FBF8DC984A06158B7E5788D0717CAA31427D102D26B49",
+    "packages/verification/release_gates.py": "37FD271494916A36A60202D9A164686F282F34333CD64557D11489353EB18AC1",
+    "tests/verification/test_gates_e09.py": "9DC814A8619D264EBDB312778A1C4EC029A7BFA8D69FCED73F2BF3A68BE2B340"
+  },
+  "frozen_control_sha256": {
+    "docs/work_orders/E-09_WORK_INSTRUCTION.md": "2DCA27CDB9DF351F62AA77FE0424711DB7E31AF2CD287C4239A8834B3B77B85D",
+    "docs/work_orders/E-09_INVOCATION_PROMPT.md": "F236AC1CF5D1B8D727B5DFCF3E3F5F0A02F5DAE12F7BC0FCF3EDF102ED893E7B",
+    "docs/progress/progress-handoff-detached-digest-e09-start.json": "0ED62E01BCA0CA60D14810AE10ACD5B3BB525284C6CC3CF686E6759F17AA20D8",
+    "docs/evidence/manifests/E-09_START_MANIFEST.json": "76DF7904377591155850BD7F0BBA0065DE9401D75BFADF5B18DCBD27648C4D02"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-09_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e09-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e09-start.json",
+    "docs/work_orders/E-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "packages/verification/release_gates.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_gates_e09.py"
+  ],
+  "combined_exact_path_count": 16,
+  "projection_mode": "E09_FINAL_ACCEPTANCE_EXACT16",
+  "validated_base_commit": "593311d87de760bdc6bb5485b89a17014e81976a",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
+      "bytes": 25593,
+      "sha256": "C31C05E1EE39E627CD2A9FED502E0A81F96CB819B5687B317C97C044DE26CD09"
+    },
+    {
+      "path": "docs/evidence/manifests/E-09_START_MANIFEST.json",
+      "bytes": 4675,
+      "sha256": "76DF7904377591155850BD7F0BBA0065DE9401D75BFADF5B18DCBD27648C4D02"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 216637,
+      "sha256": "98C3752F225CA006F4C8550EF8C034A68342A5F93E9476CE4AEA9E081D1A71B7"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1161674,
+      "sha256": "5D6D38B9BD3CDA0FD3EB3ECA4FC573E2241FB7EFD13AF3B808E6875E26199AEC"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3777731,
+      "sha256": "2B1C09D3070FD587F814129F3E223BF80842A5069024606312A595B471084B64"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e09-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "7A1DD9BEC7E9AF758A037BB556DC48A0AA580A513439CC9EB2C1D48C22823EDD"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e09-start.json",
+      "bytes": 835,
+      "sha256": "0ED62E01BCA0CA60D14810AE10ACD5B3BB525284C6CC3CF686E6759F17AA20D8"
+    },
+    {
+      "path": "docs/work_orders/E-09_INVOCATION_PROMPT.md",
+      "bytes": 473,
+      "sha256": "F236AC1CF5D1B8D727B5DFCF3E3F5F0A02F5DAE12F7BC0FCF3EDF102ED893E7B"
+    },
+    {
+      "path": "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+      "bytes": 5196,
+      "sha256": "2DCA27CDB9DF351F62AA77FE0424711DB7E31AF2CD287C4239A8834B3B77B85D"
+    },
+    {
+      "path": "packages/verification/__init__.py",
+      "bytes": 1257,
+      "sha256": "C6E1F423E0A61C5A5819B400E4766485324797D6BD08D1779B1B94947BE52ABF"
+    },
+    {
+      "path": "packages/verification/gates.py",
+      "bytes": 50015,
+      "sha256": "718FF29EC9CB142E1F2FBF8DC984A06158B7E5788D0717CAA31427D102D26B49"
+    },
+    {
+      "path": "packages/verification/release_gates.py",
+      "bytes": 38590,
+      "sha256": "37FD271494916A36A60202D9A164686F282F34333CD64557D11489353EB18AC1"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4605087,
+      "sha256": "6C4D8A25CC8EE27FCCE9D5C4F810C03B3D02A89BFCD1A6CABABBE6191E63BEF6"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1213020,
+      "sha256": "C92DECBBE307C38532FD8E78DC31C96A6A790DC390292F252927C26D3A206E5D"
+    },
+    {
+      "path": "tests/verification/test_gates_e09.py",
+      "bytes": 47380,
+      "sha256": "9DC814A8619D264EBDB312778A1C4EC029A7BFA8D69FCED73F2BF3A68BE2B340"
+    }
+  ]
+}

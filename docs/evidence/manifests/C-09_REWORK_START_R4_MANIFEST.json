@@ -1,0 +1,521 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-09_REWORK_START_R4",
+  "artifact_id": "C09-REWORK-START-R4",
+  "package_id": "C-09",
+  "created_at": "2026-09-14T05:00:00+09:00",
+  "event_sequence": 814,
+  "historical_event_sequence": 806,
+  "appended_event_count": 8,
+  "historical_raw_event_prefix": {
+    "bytes": 2410633,
+    "sha256": "8745062E0F6572E4908CEB995779E4551164F951AFBDEDC90C2F5E778BEF40B3"
+  },
+  "projection_mode": "C09_R4_REWORK_START_EXACT11",
+  "validated_base_commit": "74f9878de521a6bc5a2c4f5165332c76edfc1354",
+  "authority": {
+    "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK_R4",
+    "authority_basis": [
+      "APPROVED_WORK_PLAN_C09",
+      "C08_ACCEPTED",
+      "A13_PREEXISTING_READ_ONLY_SCAN",
+      "DESIGN_14_1_27_2_27_3_41"
+    ],
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_sha256": "7BFDD939DADE6D2605D6185ED1ACE03C6D5C6FED8E3123BA6792120C5268B2B3",
+    "invocation_sha256": "6E934F12E5B3D4D5C6536C4CAB2030953415726CE212F87A4535120A3D605616",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "supersedes": {
+      "path": "docs/work_orders/C-09_WORK_INSTRUCTION_R3.md",
+      "sha256": "41D937BDD61E50997F49345A12A966EBDEE03BCBB7A9008E2AB38319A249D98B"
+    },
+    "carry_forward_regression": [
+      "AV-SAFE-028"
+    ],
+    "predecessor": {
+      "commit": "74f9878de521a6bc5a2c4f5165332c76edfc1354",
+      "manifest_path": "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json",
+      "manifest_sha256": "DED042641E515893ABF75013E1ED2E188B428DEAD90291FDB35095346468C56D",
+      "wi_sha256": "41D937BDD61E50997F49345A12A966EBDEE03BCBB7A9008E2AB38319A249D98B",
+      "prompt_sha256": "8B3E5FE9FA0AD63D96D2E5F00B640A82AEEC773D53DEE8E5FDB8DAB1887EDDFC",
+      "events_sha256": "06D3660E3890D56E3AE5BD4179CF2D23C98D2717858A4DE676DB3992D85E1312",
+      "events_canonical_sha256": "3D29A691FB0759B87C015C5DDD759451BC5AC4E2544786A6C9966319DFB819D1"
+    },
+    "acceptance": [
+      {
+        "requirement_id": "AV-SAFE-010",
+        "level": "L3",
+        "method": "AN",
+        "evidence": [
+          "E-GIT",
+          "E-DIFF"
+        ]
+      },
+      {
+        "requirement_id": "AV-SAFE-011",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-GIT"
+        ]
+      },
+      {
+        "requirement_id": "AV-STAT-021",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-GIT",
+          "E-EVT"
+        ]
+      }
+    ],
+    "corrective_findings": [
+      "C09-R4-DOCKER-READ-AUTHORITY-ENVELOPE",
+      "C09-R4-ATOMIC-IDEMPOTENCY-SINGLE-IO",
+      "C09-R4-FULL-OWNER-IDENTITY",
+      "C09-R4-DOCKER-PER-HANDLE-CANCEL",
+      "C09-R4-CANONICAL-TERMINAL-RECEIPT-AUDIT",
+      "C09-R4-EARLY-CUMULATIVE-BOUNDS",
+      "C09-R4-TRUSTED-MANIFEST-EVIDENCE",
+      "C09-R4-NONMAPPING-INPUT-AUDIT",
+      "C09-R4-PER-SESSION-PERMISSION-RESERVATION",
+      "C09-R4-WORKSPACE-STATE-FENCE",
+      "C09-R4-OUTPUT-SCHEMA-VALIDATION",
+      "C09-R4-DOCKER-DIGEST-ORPHAN-EVIDENCE",
+      "C09-R4-PHYSICAL-HOSTILE-COVERAGE"
+    ],
+    "next_valid_failure_action": "MAIN_TAKEOVER_AT_3",
+    "takeover_failure_threshold": 3,
+    "same_developer_r5_allowed": false,
+    "review_reports": [
+      {
+        "review": "spec-r3",
+        "bytes": 7654,
+        "sha256": "9F580EACDFEFDFD41A68AD5D06AB1E5E230DA10BCB24046FF1A7D3416CB45B63",
+        "critical": 1,
+        "important": 7,
+        "minor": 1
+      },
+      {
+        "review": "quality-r3-round2",
+        "bytes": 23493,
+        "sha256": "7735526AF31614D04A2382395A8653183FEA9BBFC7CE834CB667081A27169A88",
+        "critical": 3,
+        "important": 6,
+        "minor": 0
+      }
+    ]
+  },
+  "review": {
+    "verdict": "REWORK_REQUIRED",
+    "accepted": false,
+    "quality": "REWORK_REQUIRED",
+    "critical_findings": {
+      "spec": 1,
+      "quality": 3
+    },
+    "important_findings": {
+      "spec": 7,
+      "quality": 6
+    },
+    "review_reports": [
+      {
+        "review": "spec-r3",
+        "bytes": 7654,
+        "sha256": "9F580EACDFEFDFD41A68AD5D06AB1E5E230DA10BCB24046FF1A7D3416CB45B63",
+        "critical": 1,
+        "important": 7,
+        "minor": 1
+      },
+      {
+        "review": "quality-r3-round2",
+        "bytes": 23493,
+        "sha256": "7735526AF31614D04A2382395A8653183FEA9BBFC7CE834CB667081A27169A88",
+        "critical": 3,
+        "important": 6,
+        "minor": 0
+      }
+    ],
+    "corrective_findings": [
+      "C09-R4-DOCKER-READ-AUTHORITY-ENVELOPE",
+      "C09-R4-ATOMIC-IDEMPOTENCY-SINGLE-IO",
+      "C09-R4-FULL-OWNER-IDENTITY",
+      "C09-R4-DOCKER-PER-HANDLE-CANCEL",
+      "C09-R4-CANONICAL-TERMINAL-RECEIPT-AUDIT",
+      "C09-R4-EARLY-CUMULATIVE-BOUNDS",
+      "C09-R4-TRUSTED-MANIFEST-EVIDENCE",
+      "C09-R4-NONMAPPING-INPUT-AUDIT",
+      "C09-R4-PER-SESSION-PERMISSION-RESERVATION",
+      "C09-R4-WORKSPACE-STATE-FENCE",
+      "C09-R4-OUTPUT-SCHEMA-VALIDATION",
+      "C09-R4-DOCKER-DIGEST-ORPHAN-EVIDENCE",
+      "C09-R4-PHYSICAL-HOSTILE-COVERAGE"
+    ],
+    "unique_cluster_count": 13,
+    "reviewed_head": "74f9878de521a6bc5a2c4f5165332c76edfc1354",
+    "reviewed_state": "R3_PRODUCT_REVISED_EXACT18_UNSTAGED_DIRTY",
+    "reviewed_product_paths": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "reviewed_product_path_list_sha256": "AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F",
+    "frozen_product_raw": {
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md": {
+        "bytes": 7588,
+        "sha256": "D912BCED7B579D91C515DB3AB86D97FA9C730156510A738C10D0D91856023CCC"
+      },
+      "packages/execution_backends/__init__.py": {
+        "bytes": 904,
+        "sha256": "F4EE069805B56021C6D971F455A028B6BC18764D7A06A33DD7B19859EFD4E598"
+      },
+      "packages/execution_backends/docker.py": {
+        "bytes": 13965,
+        "sha256": "D638EDD235FBB4989BCB0FF173595BD36F34F90663CF369827EF09126796FC65"
+      },
+      "packages/execution_backends/git_worktree.py": {
+        "bytes": 15776,
+        "sha256": "223C79D45A92F32FAE8E10CA598C948DB54BB6244A5A582BE5BDF7C4009EF537"
+      },
+      "packages/execution_backends/models.py": {
+        "bytes": 23113,
+        "sha256": "B9DED0409C940C784A784FA3C76F445F86A11FA78F672B128583C1112581C171"
+      },
+      "packages/execution_backends/registry.py": {
+        "bytes": 2450,
+        "sha256": "86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"
+      },
+      "packages/paths/identity.py": {
+        "bytes": 7911,
+        "sha256": "BC8EADBB6FDF3B660ECA585732F92020B8707C1B900F3CCDA84CBD8CD88911E4"
+      },
+      "packages/tool_gateway/__init__.py": {
+        "bytes": 527,
+        "sha256": "805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"
+      },
+      "packages/tool_gateway/gateway.py": {
+        "bytes": 10578,
+        "sha256": "C7B31572E21AD3372C8716FDC076EDAA5612E9B5AAC5E0A17798C02FFCC529FD"
+      },
+      "packages/tool_gateway/models.py": {
+        "bytes": 3653,
+        "sha256": "7A8F6F1E7EFB061ECF30EAEAADF13359CA9CC19818882EFF5A66A10571808B9B"
+      },
+      "packages/tool_gateway/registry.py": {
+        "bytes": 5309,
+        "sha256": "66568E928DB8B0F5F384927C68483B25DA67484980AA9054AD7D43FEE3A21B54"
+      },
+      "tests/execution_backends/test_docker.py": {
+        "bytes": 8880,
+        "sha256": "E5DEECA66C1D77EFB030882E49758D38F1CD19C4DE4D507AE00504C52553B8B8"
+      },
+      "tests/execution_backends/test_git_worktree.py": {
+        "bytes": 11349,
+        "sha256": "0A14203632F08F573421CD5BE534726AB6D8E80C7F2BB09DF076C29D0A5B0644"
+      },
+      "tests/execution_backends/test_registry.py": {
+        "bytes": 1934,
+        "sha256": "F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"
+      },
+      "tests/integration/test_c09_repository_workspace.py": {
+        "bytes": 4619,
+        "sha256": "AF7A260B1BCFAC8872DD16301871167770B8401C3A5D197BABB1FDD8FFCE99A4"
+      },
+      "tests/paths/test_conflict_scope_identity.py": {
+        "bytes": 4438,
+        "sha256": "16EF6665531EE558B1DA68644539F9060B8A21AA24119BFE15F6E8B0C6261C5F"
+      },
+      "tests/tool_gateway/test_gateway.py": {
+        "bytes": 8150,
+        "sha256": "CCBEAB75AF5A6CAB72FF43DA0B2813023C481FA44C1609E876D108FF21C83335"
+      },
+      "tests/tool_gateway/test_tool_registry.py": {
+        "bytes": 1396,
+        "sha256": "F60A3AA1B204D015C5622046F7EDDFEF8A4A3A5AA19D5EDC0BE7C8A53597F0F3"
+      }
+    },
+    "valid_failure_count": 2,
+    "same_failure_count": 2,
+    "rework_attempt": 2,
+    "next_valid_failure_action": "MAIN_TAKEOVER_AT_3"
+  },
+  "review_digest": "FAF326F8DBB4A38655CE6A4A310ACFDF81084CFA4961CCBA13A366247D7D07E1",
+  "accepted": false,
+  "c09_status": "REWORK_IN_PROGRESS",
+  "c10_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c09-execution-backends-r4-20260914-003",
+    "fencing_token": "c09-execution-backends-r4-execution-fence-epoch-3-a84e19276fc34db5",
+    "execution_fencing_token": "c09-execution-backends-r4-execution-fence-epoch-3-a84e19276fc34db5",
+    "lease_epoch": 3,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-09",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "74f9878de521a6bc5a2c4f5165332c76edfc1354",
+    "dispatch_head": "74f9878de521a6bc5a2c4f5165332c76edfc1354",
+    "issued_at": "2026-09-14T05:00:00+09:00",
+    "expires_at": "2026-09-14T17:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c09-execution-backends-r4-20260914-003",
+    "worker_lease_id": "worker-lease-c09-execution-backends-r4-20260914-003",
+    "fencing_token": "c09-execution-backends-r4-write-fence-epoch-3-3c91b6e5087a4fd2",
+    "write_fencing_token": "c09-execution-backends-r4-write-fence-epoch-3-3c91b6e5087a4fd2",
+    "execution_fencing_token": "c09-execution-backends-r4-execution-fence-epoch-3-a84e19276fc34db5",
+    "write_epoch": 3,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-09",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T05:00:00+09:00",
+    "expires_at": "2026-09-14T17:00:00+09:00",
+    "path_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "status": "ACTIVE"
+  },
+  "product_exact_paths": [
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    "packages/execution_backends/__init__.py",
+    "packages/execution_backends/docker.py",
+    "packages/execution_backends/git_worktree.py",
+    "packages/execution_backends/models.py",
+    "packages/execution_backends/registry.py",
+    "packages/paths/identity.py",
+    "packages/tool_gateway/__init__.py",
+    "packages/tool_gateway/gateway.py",
+    "packages/tool_gateway/models.py",
+    "packages/tool_gateway/registry.py",
+    "tests/execution_backends/test_docker.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/execution_backends/test_registry.py",
+    "tests/integration/test_c09_repository_workspace.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/tool_gateway/test_gateway.py",
+    "tests/tool_gateway/test_tool_registry.py"
+  ],
+  "product_exact_path_list_sha256": "AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F",
+  "exact_paths": [
+    "docs/04_test_reports/C-09_REWORK_START_R4_REPORT.md",
+    "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c09-rework-start-r4.json",
+    "docs/validation/C-09_REWORK_START_R4_VALIDATION.md",
+    "docs/work_orders/C-09_INVOCATION_PROMPT_R4.md",
+    "docs/work_orders/C-09_WORK_INSTRUCTION_R4.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 11,
+  "exact_path_list_sha256": "EA7B2E08C7F6ED270EF6E0E47F49AB2277317DC5C915E1673420282D6B1BB10B",
+  "target_hash": "C1075568C3A3B7FE4B8313E765CD6A8CEEFE51C21DD9213096EC6C9B3C0721D0",
+  "self_reference": false,
+  "frozen_product_raw": {
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md": {
+      "bytes": 7588,
+      "sha256": "D912BCED7B579D91C515DB3AB86D97FA9C730156510A738C10D0D91856023CCC"
+    },
+    "packages/execution_backends/__init__.py": {
+      "bytes": 904,
+      "sha256": "F4EE069805B56021C6D971F455A028B6BC18764D7A06A33DD7B19859EFD4E598"
+    },
+    "packages/execution_backends/docker.py": {
+      "bytes": 13965,
+      "sha256": "D638EDD235FBB4989BCB0FF173595BD36F34F90663CF369827EF09126796FC65"
+    },
+    "packages/execution_backends/git_worktree.py": {
+      "bytes": 15776,
+      "sha256": "223C79D45A92F32FAE8E10CA598C948DB54BB6244A5A582BE5BDF7C4009EF537"
+    },
+    "packages/execution_backends/models.py": {
+      "bytes": 23113,
+      "sha256": "B9DED0409C940C784A784FA3C76F445F86A11FA78F672B128583C1112581C171"
+    },
+    "packages/execution_backends/registry.py": {
+      "bytes": 2450,
+      "sha256": "86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"
+    },
+    "packages/paths/identity.py": {
+      "bytes": 7911,
+      "sha256": "BC8EADBB6FDF3B660ECA585732F92020B8707C1B900F3CCDA84CBD8CD88911E4"
+    },
+    "packages/tool_gateway/__init__.py": {
+      "bytes": 527,
+      "sha256": "805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"
+    },
+    "packages/tool_gateway/gateway.py": {
+      "bytes": 10578,
+      "sha256": "C7B31572E21AD3372C8716FDC076EDAA5612E9B5AAC5E0A17798C02FFCC529FD"
+    },
+    "packages/tool_gateway/models.py": {
+      "bytes": 3653,
+      "sha256": "7A8F6F1E7EFB061ECF30EAEAADF13359CA9CC19818882EFF5A66A10571808B9B"
+    },
+    "packages/tool_gateway/registry.py": {
+      "bytes": 5309,
+      "sha256": "66568E928DB8B0F5F384927C68483B25DA67484980AA9054AD7D43FEE3A21B54"
+    },
+    "tests/execution_backends/test_docker.py": {
+      "bytes": 8880,
+      "sha256": "E5DEECA66C1D77EFB030882E49758D38F1CD19C4DE4D507AE00504C52553B8B8"
+    },
+    "tests/execution_backends/test_git_worktree.py": {
+      "bytes": 11349,
+      "sha256": "0A14203632F08F573421CD5BE534726AB6D8E80C7F2BB09DF076C29D0A5B0644"
+    },
+    "tests/execution_backends/test_registry.py": {
+      "bytes": 1934,
+      "sha256": "F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"
+    },
+    "tests/integration/test_c09_repository_workspace.py": {
+      "bytes": 4619,
+      "sha256": "AF7A260B1BCFAC8872DD16301871167770B8401C3A5D197BABB1FDD8FFCE99A4"
+    },
+    "tests/paths/test_conflict_scope_identity.py": {
+      "bytes": 4438,
+      "sha256": "16EF6665531EE558B1DA68644539F9060B8A21AA24119BFE15F6E8B0C6261C5F"
+    },
+    "tests/tool_gateway/test_gateway.py": {
+      "bytes": 8150,
+      "sha256": "CCBEAB75AF5A6CAB72FF43DA0B2813023C481FA44C1609E876D108FF21C83335"
+    },
+    "tests/tool_gateway/test_tool_registry.py": {
+      "bytes": 1396,
+      "sha256": "F60A3AA1B204D015C5622046F7EDDFEF8A4A3A5AA19D5EDC0BE7C8A53597F0F3"
+    }
+  },
+  "external_validation": {
+    "product_code": "PENDING_C09_R2_IMPLEMENTATION",
+    "fixture_validation": "NOT_EXECUTED",
+    "git_fixture": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "actual_repository_success_claim": "FORBIDDEN",
+    "persistent_transaction": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-09_REWORK_START_R4_REPORT.md",
+      "bytes": 596,
+      "sha256": "46A13DED8B367623F4F3140A2826509776A3DEF233B28A6566647CBFD86B965D"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 196708,
+      "sha256": "E111F33B8E4CBE6CDEDCDCF21C811ACCEF10E7FEEDB88965DB83DA71567CA15B"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 924170,
+      "sha256": "79181855781880044040D624BFB1A52D6834E5A89C9D077D3EB80FD14D133635"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2436377,
+      "sha256": "E60F0C3AA671A5C98AE449C3FDDD33B23C9512B65CDEEC1E409DD2275A66014D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c09-rework-start-r4.json",
+      "bytes": 954,
+      "sha256": "61B7E4347FD8879ABD4CACC3BEBB3C5E76F45D8C7FE92E1CAC776D7D17D5FA2E"
+    },
+    {
+      "path": "docs/validation/C-09_REWORK_START_R4_VALIDATION.md",
+      "bytes": 657,
+      "sha256": "6FD53E99D109D4E19CE4B484DD62414FED0687037F28146F2A27D990755383B5"
+    },
+    {
+      "path": "docs/work_orders/C-09_INVOCATION_PROMPT_R4.md",
+      "bytes": 1533,
+      "sha256": "6E934F12E5B3D4D5C6536C4CAB2030953415726CE212F87A4535120A3D605616"
+    },
+    {
+      "path": "docs/work_orders/C-09_WORK_INSTRUCTION_R4.md",
+      "bytes": 11930,
+      "sha256": "7BFDD939DADE6D2605D6185ED1ACE03C6D5C6FED8E3123BA6792120C5268B2B3"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3363269,
+      "sha256": "B58655423FB0D9A7CFDCAC1A5D8AC58B6D4D2B4768B546C18561FEE8478918AA"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 953611,
+      "sha256": "044499F6D9C8AA08C83B89D54F53515CA7CF128D7B338E53672C93C51B9F2482"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_id": "DIR3-HOLD-20260918",
+  "package_id": "DIR-3",
+  "status": "CLEARED",
+  "verdict": "ALIGNED",
+  "report_ref": "docs/test_reports/DIR-3_REPORT.md",
+  "report_sha256": "71DD24EE80E59B66412E0A245ED5B8C53E686FF221C0A6C14D3F29A58C31CCD6",
+  "subject_hash": "4E8D0E5A744033D0F25696299C2E100B3A2272A556CB2F9CD2AF04B96FEC89FE",
+  "evidence_hash": "48BECA34597BCB03C7EA14999A041D14CC1704944767B6695723E271913B6B5F",
+  "external_validation": "NOT_EXECUTED",
+  "lease_released": true,
+  "next_action": "WAIT_FOR_OWNER_DIRECTION",
+  "manifest_type": "DIR-3_HOLD",
+  "event_sequence": 1176,
+  "exact_allowed_paths": [
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-dir3-hold.json",
+    "docs/test_reports/DIR-3_REPORT.md"
+  ],
+  "exact_path_count": 6,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 213920,
+      "sha256": "1D3688327EA8F963664832759764AF6627E321759894C4D74088D1F2AA32DAC2"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1168101,
+      "sha256": "CC0372C008CBBD15CB11A03848474F46EC038E8EC63190AA5BAC27E3EC2DC065"
+    },
+    {
+      "path": "docs/progress/dir-checkpoints.json",
+      "bytes": 2817,
+      "sha256": "F5E5639C50A407C70B5427791B7B3F89486C0A0C0A2DF82FA2C85E9F91637B4B"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3841299,
+      "sha256": "2BEF71859EB90D85051C6F551D2CA84B48BAD9165CD11E408B1D496660419A24"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-dir3-hold.json",
+      "bytes": 860,
+      "sha256": "A9B994BD7EF5F4A62B1574382B1677F4E47FA0C3790CE0EFEB91BEE10A9A80E1"
+    },
+    {
+      "path": "docs/test_reports/DIR-3_REPORT.md",
+      "bytes": 1433,
+      "sha256": "71DD24EE80E59B66412E0A245ED5B8C53E686FF221C0A6C14D3F29A58C31CCD6"
+    }
+  ],
+  "owner_direction_event_id": "evt_dir3_owner_direction_continue",
+  "direction": "CONTINUE"
+}

@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-13_FINAL_ACCEPTANCE",
+  "artifact_id": "C13-FINAL-ACCEPTANCE-20260916",
+  "created_at": "2026-09-16T08:45:00+09:00",
+  "package_id": "C-13",
+  "event_sequence": 906,
+  "historical_event_sequence": 901,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 2632456,
+    "sha256": "8166129D895C5293C18C6AE7EC2F160CB1805103559D8BA12E2EED996BA72708"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "c13_status": "ACCEPTED",
+  "c14_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "active_leases": 0,
+  "product_exact_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py"
+  ],
+  "product_exact_path_count": 10,
+  "product_exact_path_list_sha256": "51E373EAA99E69C4D7C482A0670A773694EBD0E639FD7EA2E5E2BE4D1915AEF0",
+  "product_raw": {
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md": {
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    "packages/leases/service.py": {
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    "packages/orchestration/__init__.py": {
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    "packages/orchestration/developer_lifecycle.py": {
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    "packages/orchestration/takeover.py": {
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    "packages/tool_gateway/registry.py": {
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    "tests/leases/test_worker_write_fencing.py": {
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    "tests/orchestration/test_failure_ledger_c12.py": {
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    "tests/orchestration/test_takeover_c13.py": {
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    "tests/tool_gateway/test_tool_registry.py": {
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    }
+  },
+  "control_exact_paths": [
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "control_exact_path_count": 11,
+  "combined_exact_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "scripts/check_project_progress.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 21,
+  "projection_mode": "C13_FINAL_ACCEPTANCE_EXACT21",
+  "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+  "record_binding": "PRECOMMIT_EXACT21_OR_CLEAN_SOLE_DIRECT_CHILD_C13_ACCEPTANCE",
+  "test_evidence": {
+    "passed": {
+      "c13": 47,
+      "c12": 18,
+      "c13_c12": 65,
+      "orchestration": 561,
+      "leases_tool_gateway": 29,
+      "c13_start_control": 4
+    },
+    "failed": 0,
+    "skipped": {
+      "postgresql18_dsn_not_configured": 1
+    },
+    "commands": {
+      "c13_c12": "python -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py tests/orchestration/test_failure_ledger_c12.py",
+      "orchestration": "python -m pytest -q -p no:cacheprovider tests/orchestration",
+      "leases_tool_gateway": "python -m pytest -q -p no:cacheprovider tests/leases tests/tool_gateway",
+      "start_control": "python -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k C13StartControlTests"
+    },
+    "compileall": {
+      "status": "PASS",
+      "exit_code": 0,
+      "isolated_cache_files": 356,
+      "residue": false
+    },
+    "diff_check": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "full_repository_collection": {
+      "status": "BLOCKED_PREEXISTING_ENVIRONMENT",
+      "reasons": [
+        "PYAML_NOT_INSTALLED",
+        "DUPLICATE_TEST_MODULE_BASENAMES",
+        "FIXTURE_REPOSITORIES_COLLECTED_AS_ROOT_TESTS"
+      ]
+    }
+  },
+  "independent_reviews": {
+    "verdict": "ACCEPT",
+    "blocking_findings": 0,
+    "important_findings": 0,
+    "review_rework_rounds": 3,
+    "resolved_findings": [
+      "SELF_ATTESTED_STALE_EVIDENCE",
+      "MUTABLE_OR_MALFORMED_REFERENCE_BUNDLE",
+      "PARTIAL_STOP_LEASE_TOOL_STATE",
+      "UNSAFE_RESURRECTED_REPLAY",
+      "UNSEALED_TRUSTED_REGISTRY",
+      "WORKER_ONLY_REPLAY",
+      "CROSS_SERVICE_REGRANT_WINDOW",
+      "NON_TUPLE_FAILURE_REPORTS",
+      "DIRECT_SELF_SIGNED_SNAPSHOT_ADMISSION",
+      "POSTCONDITION_LATE_TOOL_GRANT_WINDOW"
+    ]
+  },
+  "blocking_findings": 0,
+  "important_findings": 0,
+  "external_validation": {
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "secret_manager": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "multiprocess_persistence_transaction": "NOT_EXECUTED"
+  },
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "bytes": 8885,
+      "sha256": "0FF49124A8B44FC427919C503751C070B2B6283A04D74ADEC2E97EFC17A011DD"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 198599,
+      "sha256": "DC1A5FFFC2C67820D1FAA8AB90D53CE4E87CA777FCB4ED59A30F731A982B20E4"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 992247,
+      "sha256": "D93F5834972A765C9CF6E878C07A458E3CAA6BA996087F64DDC50A79E34B5FB9"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2648864,
+      "sha256": "81E9D8C1D5E5A7BE2022024B67F8EEFB6A4DA0F9D88E65E95F500BE0AD466104"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "bytes": 894,
+      "sha256": "8F22521F72B6597C367B5578DDE2002BB01EA01BA4A918F1B421160FFAF024F0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "bytes": 861,
+      "sha256": "6FE5934F1406569B15033BC0E382B5AF64428889D30BBDE79F14F1F118809504"
+    },
+    {
+      "path": "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "bytes": 555,
+      "sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379"
+    },
+    {
+      "path": "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "bytes": 1749,
+      "sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3744339,
+      "sha256": "A21F3FF8CEEF1D4DD41B676A2B1D6C0EF874A279E15F01402B955A2ED7B3EC27"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1045813,
+      "sha256": "4C270E91B4E7FC3FC704566555F7917D3F4963D1A1B01FE660036D3D7A73E66F"
+    },
+    {
+      "path": "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    {
+      "path": "packages/leases/service.py",
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    {
+      "path": "packages/orchestration/developer_lifecycle.py",
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    {
+      "path": "packages/orchestration/takeover.py",
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    {
+      "path": "packages/tool_gateway/registry.py",
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    {
+      "path": "tests/leases/test_worker_write_fencing.py",
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    {
+      "path": "tests/orchestration/test_failure_ledger_c12.py",
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    {
+      "path": "tests/orchestration/test_takeover_c13.py",
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    {
+      "path": "tests/tool_gateway/test_tool_registry.py",
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    }
+  ]
+}

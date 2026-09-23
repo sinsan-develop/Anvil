@@ -268,3 +268,178 @@ class TelegramAdapter:
             return TelegramResult(False, "지원하지 않는 명령입니다.", TelegramOutcome.UNSUPPORTED, audit)
         audit = self._audit(update, TelegramOutcome.ACCEPTED, now)
         return TelegramResult(True, f"명령을 접수했습니다: {command}", TelegramOutcome.ACCEPTED, audit)
+
+
+# C26 is additive: the legacy signed adapter and persistence contract above are
+# unchanged. This path only consumes sanitized host observations and C25 refs.
+from threading import RLock as _GatewayLock
+from packages.provider_catalog.models import Snapshot as _GatewaySnapshot
+from .provider_catalog import _c24_hash as _gateway_hash, _c24_read as _gateway_read
+from .sns_gateway import (SNSGateway, SNSMessageEnvelope, _id as _gateway_id,
+    _integer as _gateway_integer, _value as _gateway_value, _ref as _gateway_ref,
+    plain as _gateway_plain, utc as _gateway_utc)
+from .orchestration import RoleTeamOrchestrator as _GatewayTeam
+
+
+class TelegramGatewayAdapter:
+    """Host-only Telegram -> C25 adapter; no token, signature or sender.
+
+    Bindings are authenticated host observations, NOT payload authentication.
+    C25 verifies current registered identity/role at admission and every replay.
+    Pause/resume remain requests for Web Console, never queue/Runner mutations.
+    """
+    _UPDATE_FIELDS=frozenset({'update_id','chat_hash','user_hash','device_id','session_id','command',
+        'nonce','idempotency_key','correlation_id','payload_ref','retention_seconds','issued_at','expires_at'})
+    _LOW={'status':('STATUS',None),'request-status':('STATUS',None),
+        'pause':('QUESTION','PAUSE'),'resume':('QUESTION','RESUME')}
+
+    def __init__(self,gateway,*,team):
+        if type(gateway) is not SNSGateway or type(team) is not _GatewayTeam:raise ValueError('CANONICAL_GATEWAY_REQUIRED')
+        self._gateway=gateway;self._team=team;self._lock=_GatewayLock();self._bindings={};self._identities={};self._revoked=set()
+        self._state=dict(updates={},audit=[],last_at=None)
+
+    @staticmethod
+    def _copy(value):
+        return _GatewaySnapshot(value.kind,value.record_id,value.content_hash,value.payload_json)
+
+    def capture_binding(self,binding_id,*,identity,chat_hash,user_hash,device_id,auth_observation_hash,now,expires_at):
+        _gateway_id(binding_id);_gateway_id(device_id)
+        for value in (chat_hash,user_hash,auth_observation_hash):_gateway_hash(value)
+        now=_gateway_utc(now);expires_at=_gateway_utc(expires_at)
+        try:
+            data=_gateway_read(identity)
+            required={'identity_id','external_actor_hash','internal_user','task_id','role','session_id','parent_task_id',
+                'parent_run_id','baseline_hash','target_hash','tenant_id','project_id','assignment_hash','authn_hash','authz_hash',
+                'commands','privacy','retention_seconds','issued_at','expires_at'}
+            if identity.kind!='SNS_IDENTITY' or type(data) is not dict or set(data)!=required:raise ValueError()
+            _gateway_plain(data)
+            for key in ('internal_user','session_id','task_id','role','tenant_id','project_id'):_gateway_id(data[key])
+            if data['external_actor_hash']!=user_hash:raise ValueError()
+            start=_gateway_utc(datetime.fromisoformat(data['issued_at']))
+            end=_gateway_utc(datetime.fromisoformat(data['expires_at']))
+            if not start<=now<expires_at<=end:raise ValueError()
+        except (ValueError,TypeError,KeyError):raise ValueError('BINDING_IDENTITY_INVALID') from None
+        row=dict(chat_hash=chat_hash,user_hash=user_hash,device_id=device_id,session_id=data['session_id'],
+            identity_hash=identity.content_hash,auth_observation_hash=auth_observation_hash,
+            issued_at=now.isoformat(),expires_at=expires_at.isoformat(),
+            authority='HOST_OBSERVATION_PENDING_GATEWAY_CHECK',transport='TELEGRAM',io_count=0)
+        receipt=_gateway_value('TELEGRAM_BINDING',binding_id,row)
+        with self._lock:
+            if binding_id in self._revoked:raise ValueError('BINDING_REVOKED')
+            prior=self._bindings.get(binding_id)
+            if prior is not None and prior!=(receipt.content_hash,receipt.payload_json):raise ValueError('BINDING_REBIND')
+            if prior is None and len(self._bindings)>=128:raise ValueError('BINDING_BOUND_EXCEEDED')
+            self._bindings[binding_id]=(receipt.content_hash,receipt.payload_json)
+            self._identities[binding_id]=self._copy(identity)
+            return receipt
+
+    def revoke_binding(self,binding_id):
+        _gateway_id(binding_id)
+        with self._lock:
+            if binding_id not in self._bindings:raise ValueError('BINDING_INVALID')
+            self._revoked.add(binding_id)
+
+    def _binding(self,binding,now):
+        try:
+            row=_gateway_read(binding)
+            if binding.kind!='TELEGRAM_BINDING' or self._bindings.get(binding.record_id)!=(binding.content_hash,binding.payload_json):
+                raise ValueError()
+        except (ValueError,TypeError):raise ValueError('BINDING_INVALID') from None
+        if binding.record_id in self._revoked:raise ValueError('BINDING_REVOKED')
+        if not row['issued_at']<=now.isoformat()<row['expires_at']:raise ValueError('BINDING_EXPIRED')
+        return row,self._copy(self._identities[binding.record_id])
+
+    def _update(self,update,mapping,now):
+        if type(update) is not dict or any(type(k) is not str for k in update) or set(update)!=self._UPDATE_FIELDS:
+            raise ValueError('TELEGRAM_UPDATE_INVALID')
+        start=_gateway_utc(update['issued_at']);end=_gateway_utc(update['expires_at'])
+        row=_gateway_plain(dict(update,issued_at=start.isoformat(),expires_at=end.isoformat()))
+        _gateway_integer(row['update_id'],0,2**53-1)
+        for key in ('chat_hash','user_hash'):_gateway_hash(row[key])
+        for key in ('device_id','session_id','nonce','idempotency_key','correlation_id'):_gateway_id(row[key])
+        for key in ('chat_hash','user_hash','device_id','session_id'):
+            if row[key]!=mapping[key]:raise ValueError('TELEGRAM_IDENTITY_MISMATCH')
+        if type(row['command']) is not str or re.fullmatch(r'/?[a-z][a-z-]{0,63}',row['command']) is None:
+            raise ValueError('COMMAND_INVALID')
+        row['command']=row['command'].removeprefix('/')
+        if row['command'] not in self._LOW:raise ValueError('CONSOLE_STEP_UP_REQUIRED')
+        if not start<=now<end or end>datetime.fromisoformat(mapping['expires_at']):raise ValueError('UPDATE_WINDOW_INVALID')
+        row['payload_ref']=_gateway_ref(row['payload_ref'])
+        _gateway_integer(row['retention_seconds'],1,86400)
+        return row
+
+    def _observation(self,identity,fence,now):
+        who=_gateway_read(identity)
+        self._team.mailbox(who['task_id'],actor_id=who['internal_user'],execution_fence=fence,now=now)
+        projection=self._team.project();view=projection.to_dict();task=view['tasks'].get(who['task_id'])
+        if (view['session']['session_id']!=who['session_id'] or view['session']['baseline_hash']!=who['baseline_hash']
+            or view['target_hash']!=who['target_hash'] or task is None or task['assignment_hash']!=who['assignment_hash']):
+            raise ValueError('STATUS_TRACE_MISMATCH')
+        return dict(team_status=view['status'],task_status=task['status'],target_hash=view['target_hash'],
+            baseline_hash=view['session']['baseline_hash'],projection_hash=projection.content_hash,observed_at=now.isoformat())
+
+    def process(self,update,*,binding,execution_fence,now):
+        now=_gateway_utc(now);_gateway_id(execution_fence)
+        with self._lock:
+            if self._state['last_at'] and now.isoformat()<self._state['last_at']:raise ValueError('PAST_EVENT')
+            mapping,identity=self._binding(binding,now);row=self._update(update,mapping,now)
+            observation=self._observation(identity,execution_fence,now)
+            key=str(row['update_id'])
+            fingerprint=_gateway_value('TELEGRAM_NORMALIZED',key,dict(update=row,binding_hash=binding.content_hash)).content_hash
+            prior=self._state['updates'].get(key)
+            if prior is not None:
+                if prior['fingerprint']!=fingerprint:raise ValueError('UPDATE_REBIND')
+                upstream=_GatewaySnapshot(*prior['gateway'])
+                self._gateway.receipt(upstream,identity=identity,execution_fence=execution_fence,now=now)
+                return _GatewaySnapshot(*prior['receipt'])
+            if len(self._state['audit'])>=512:raise ValueError('AUDIT_BOUND_EXCEEDED')
+            who=_gateway_read(identity);gateway_command,intent=self._LOW[row['command']]
+            envelope=SNSMessageEnvelope(message_id='tg-'+key,channel='SNS',session_id=who['session_id'],task_id=who['task_id'],
+                parent_task_id=who['parent_task_id'],external_actor_hash=who['external_actor_hash'],internal_user=who['internal_user'],
+                tenant_id=who['tenant_id'],project_id=who['project_id'],role=who['role'],target_hash=who['target_hash'],
+                baseline_hash=who['baseline_hash'],command=gateway_command,payload_ref=row['payload_ref'],
+                correlation_id='tg-'+fingerprint.removeprefix('sha256:'),idempotency_key=row['idempotency_key'],
+                replay_nonce=row['nonce'],attempt=1,privacy='PRIVATE',retention_seconds=row['retention_seconds'],
+                issued_at=datetime.fromisoformat(row['issued_at']),expires_at=datetime.fromisoformat(row['expires_at']))
+            # C25 may durably record an admission before local projection fails.
+            # Never undo that owner's audit: exact retries recover the same ref.
+            upstream=self._gateway.receive(envelope,identity=identity,execution_fence=execution_fence,now=now)
+            receipt=_gateway_value('TELEGRAM_RECEIPT','tg-'+key,dict(status='REQUESTED_NOT_APPLIED' if intent else 'STATUS_REQUESTED',
+                delivery='NOT_EXECUTED',requested_control=intent,gateway_command=gateway_command,
+                session_id=who['session_id'],device_id=row['device_id'],binding_hash=binding.content_hash,
+                observed_status=observation,
+                update_hash=fingerprint,gateway_receipt_hash=upstream.content_hash,correlation_id=row['correlation_id'],
+                console_link='/sessions/'+who['session_id'],runner_dispatch=0,io_count=0,automatic_acceptance=False,
+                expires_at=row['expires_at'],unverified=['Telegram/auth/network NOT_EXECUTED']))
+            # Recheck registered role, binding, receipt and expiry after all DTO
+            # preparation, then publish one callback-free local state pointer.
+            self._gateway.receipt(upstream,identity=identity,execution_fence=execution_fence,now=now)
+            self._binding(binding,now)
+            if self._observation(identity,execution_fence,now)!=observation:raise ValueError('STATUS_OBSERVATION_DRIFT')
+            events=self._state['audit']+[dict(sequence=len(self._state['audit'])+1,receipt_hash=receipt.content_hash,
+                status=receipt.to_dict()['status'],occurred_at=now.isoformat(),delivery='NOT_EXECUTED',io_count=0)]
+            records=dict(self._state['updates']);records[key]=dict(fingerprint=fingerprint,
+                gateway=(upstream.kind,upstream.record_id,upstream.content_hash,upstream.payload_json),
+                receipt=(receipt.kind,receipt.record_id,receipt.content_hash,receipt.payload_json))
+            self._state=dict(updates=records,audit=events,last_at=now.isoformat())
+            return receipt
+
+    def receipt(self,handle,*,binding,execution_fence,now):
+        now=_gateway_utc(now);_gateway_id(execution_fence)
+        with self._lock:
+            _,identity=self._binding(binding,now)
+            try:
+                row=_gateway_read(handle)
+                if handle.kind!='TELEGRAM_RECEIPT':raise ValueError()
+                found=next((r for r in self._state['updates'].values() if r['receipt']==
+                    (handle.kind,handle.record_id,handle.content_hash,handle.payload_json)),None)
+                if found is None or row['binding_hash']!=binding.content_hash:raise ValueError()
+            except (ValueError,TypeError):raise ValueError('RECEIPT_INVALID') from None
+            self._gateway.receipt(_GatewaySnapshot(*found['gateway']),identity=identity,execution_fence=execution_fence,now=now)
+            return self._copy(handle)
+
+    def audit(self,*,offset=0,limit=50):
+        _gateway_integer(offset,0,512);_gateway_integer(limit,1,50)
+        with self._lock:
+            return _gateway_value('TELEGRAM_AUDIT','audit',dict(events=self._state['audit'][offset:offset+limit],
+                total=len(self._state['audit']),next_offset=offset+limit if offset+limit<len(self._state['audit']) else None,io_count=0))

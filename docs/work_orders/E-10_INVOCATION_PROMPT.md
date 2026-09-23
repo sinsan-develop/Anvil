@@ -1,0 +1,1 @@
+`WI-E-10-R1-20260917-001`과 유효한 worker/write fencing token을 확인하고 제품 exact5 안에서 TDD로 Git branch·commit·merge·PR host adapter/audit 계약을 구현하라. 사용자 dirty/untracked/index를 보존하고 force/destructive/history rewrite와 전달 hash 불일치를 fail-closed로 차단하라. 실제 push·PR·merge network는 실행하지 말고 완료 시 구조화 결과와 정확한 검증 증거를 반환하라.

@@ -1,0 +1,1 @@
+F-01을 승인된 WorkInstruction 범위 exact5로 구현하세요. 먼저 WorkInstruction과 설계서/작업계획서의 F-01 조건을 읽고, canonical 9개 Provider Catalog·DataEgressProfile·SecretRef/Broker의 fail-closed host-only 계약을 TDD로 구현하세요. 실제 Provider·DB·네트워크·UI·배포는 실행하지 마세요. 완료 시 정확한 명령/결과, 미검증 범위, 파일 SHA256, rollback을 포함한 COMPLETED 또는 유효한 FAILURE_REPORT를 보고하고 commit/push/control 파일 수정은 하지 마세요.

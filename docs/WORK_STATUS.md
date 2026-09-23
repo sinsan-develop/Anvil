@@ -1,3 +1,57 @@
+# C-30 PR Broker integration gate correction / 2026-09-23
+
+- 판정: `RECONCILED_PENDING_COMMIT_PUSH`; seq1358 append-only reconciliation으로 Broker merge와 exact13 correction을 결박했다.
+- 기존 seq1~1357과 C-30 제품 동작은 변경하지 않았다. EOF blank 4건과 checker projection/test/control evidence만 수정했다.
+- TDD RED `2 failed, 2 passed`, selector RED `1 failed, 5 passed`; GREEN `6 passed`; runtime owner `27 passed`; canonical checker seq1358와 worktree diff-check PASS. 다음은 commit 후 range diff-check·SSH push·request tag다.
+- 미검증: Provider, production auth, PG18, actual server-generated 400, Oracle.
+
+# C-30R5 remote checkpoint reconciliation / 2026-09-23
+
+- 판정: `PASS`; accepted checkpoint `f3eeb4c88cceb10c919242e4b0db1843aac8c699`와 원격 branch SHA가 일치한다.
+- worktree는 checkpoint 직후 clean이며 C30 작업계획은 완료 상태다.
+
+# C-30R5 final acceptance / 2026-09-23
+
+- 판정: `ACCEPTED`; C30 contract matrix와 기록된 evidence 범위의 final gate를 통과했다.
+- R2는 matrix 수량 오기 `18→14`만 비의미 정정했고, spec/quality C0/I0/M0이다.
+- 미검증 경계: Provider, production auth, PG18, actual server-generated 400, Oracle.
+- 다음 조치: exact15 checkpoint commit/push 후 remote SHA와 clean worktree를 재확인한다.
+
+# C-30R5 matrix correction start / 2026-09-23
+
+- 판정: `IN_PROGRESS`; historical checkpoint/current successor 테스트 드리프트 exact1 보완.
+- canonical dual lease와 exact1 scope를 seq1346~1349에 발급했다. C30 전체 gate는 계속 `PENDING_FINAL_GATE`.
+
+# C-30R4 canonical reconciliation / 2026-09-22
+
+- 판정: `C30R4_ACCEPTED_C30_GATE_PENDING`; 세 번째 unrelated large-file patch corruption 복구와 신산님의 직접 `Main takeover 승인`을 canonical human-override로 결박했다.
+- 현재 정본: branch `codex/c09-execution-backends-r1`, base HEAD `ed3cae92597d681c76417e26576bed91a0525bad`, acceptance projection event seq1345.
+- 완료한 수정: historical/current fixture 격리, seq1~1334 raw freeze, seq1335 human override, Developer lease 회수, TakeoverPacket, Main epoch3 lease, completion replay actor/hash 결박, exact16 rollback, C30R3 fixture-only/미검증 경계, phase/package/next/successor/action projection 정합화.
+- fresh gate: tooling shard `125+199+159+196=679/679`, focused `36/36`, C30 adversarial `10/10`, compile/live checker/diff-check PASS. 모든 pytest는 `-p no:cacheprovider`; `.pytest_cache`와 `.tmp_subagent_review` residue 0.
+- 독립 리뷰: spec `ACCEPT C0/I0/M0`, quality `ACCEPT C0/I0/M0`; 역할별 actor와 seq1340 epoch3 lease/token에 결박했다.
+- 완료 전 필수: seq1345 exact16 acceptance commit/checkpoint push와 remote SHA 확인. C30 전체 gate는 별도이며 아직 `PENDING_FINAL_GATE`다.
+- 미검증 유지: production auth, 실제 Provider, PostgreSQL18, actual server-generated 400, Oracle, live remote.
+
+# 2026-09-18 문서 successor 전환 — v2.8/v1.7 핵심 개념 정합화
+
+- 담당: Main 어울. 신산님의 직접 지시에 따라 제품 코드·DB·WSL·Provider·Kakao·Oracle 배포를 중지하고 설계서/작업계획서만 append-only로 보완했다.
+- 기준선: branch `codex/c09-execution-backends-r1`, HEAD `98e218264bf54db04a1bd35a67273b713805a649`; 기존 dirty/untracked는 보호 목록으로 유지한다.
+- 변경 문서: `Anvil_설계서_v2.md` v2.8 successor, `Anvil_작업계획서_v1.md` v1.7 successor. 기존 C-16~C-21·F-01/F-02 Event/Gate/Acceptance는 재작성하지 않는다.
+- 신규 문서 계약: 다섯 일급 역할, Main/Code 단일 writer 경계, Agent Team과 MoA/Provider routing 분리, transport-neutral SNS Gateway·Telegram 보존·Kakao OPEN_DECISION·Daon User, 화면 mockup 선행, C-22~C-30 successor와 Oracle 별도 운영계획.
+- 상태: `DOCUMENT_SUCCESSOR_REVIEW_PENDING`; matrix/test-plan/progress/HANDOFF/approval binding은 제품 구현 전에 별도 정합화해야 한다.
+- 미실행: 제품 테스트·DB/WSL·Provider·SNS 외부 호출·브라우저/운영·Oracle 설치/배포·commit/push/merge.
+- 다음: 문서 lint/link/ID/diff 검증과 독립 read-only review(C/I finding 0)를 완료한 뒤 PMO용 완료보고를 남긴다.
+
+# C-22 시작 — 다섯 역할 계약·Agent Team domain
+
+- 상태: `ACTIVE_C22_IMPLEMENTATION`; 신산님의 `진행하자` 지시에 따라 문서 successor의 첫 구현 패키지를 시작한다.
+- WorkInstruction: `docs/work_orders/C-22_WORK_INSTRUCTION.md`, SHA-256 `67C864C512AFC7023E08626DC4C8BB7FE39D84A3CFB44303B69D404B5D196E5B`
+- Invocation: `docs/work_orders/C-22_INVOCATION_PROMPT.md`, SHA-256 `C12B945CBBC661F983C724407AAE11899F1558B9F53C6EDAEC0C272CD72ECF6E`
+- 허용 writer 경로: `packages/agent_team/role_contracts.py`, `packages/agent_team/role_results.py`, public export, C-22 tests/report only.
+- 금지: DB/WSL/Provider/UI/Telegram/Kakao/Oracle, historical progress rewrite, unrelated dirty/untracked, commit/push/merge.
+- 해결: Main takeover control reconciliation seq1196~1200을 append-only로 기록했다. F-02 `PACKAGE_COMPLETED`→독립 ACCEPT→write/worker lease revoke→`MAIN_PACKAGE_ACCEPTED`를 결박했고, `build-progress`는 seq1200/ACCEPTED/active null/next C-22 READY로 정합화했다.
+- 잔여: checker는 Git projection 5건(`GIT_BRANCH_MISMATCH`, `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`, `GIT_DESCENDANT_WORKTREE_DIRTY`, `GIT_UPSTREAM_MISMATCH`)만 fail-closed한다. 이 Git projection 정합화 전에는 C-22 제품 writer를 발급하지 않는다.
+
 # C-21 Workbench UI WSL authenticated browser probe R1 — seq609~614
 
 - Reviewer 최종 재검토 `COMMIT_READY / C0 / I0 / M1`: WorkInstruction 첫 범위 bullet에 R1의 `screenshot root를 환경변수에서 읽는다` 문구가 남아 확정된 R2 memory-only 계약과 불일치했다. path 없는 Buffer 메모리 전용 및 screenshot-root nonempty env fail-closed로 비의미 문서 정정했으며 기능·범위·seq614/exact13/hash 경계는 확대하지 않는다. 기존 full tooling `606 passed in 1320.29s`는 코드 불변으로 유지하고 focused 문서/checker 검증으로 M1을 해소한다.
@@ -2176,3 +2230,50 @@
 - C-03 `ACCEPTED`; C-04 `IN_PROGRESS`; C-05 `NOT_READY`; DIR-2 `NOT_REACHED`.
 - current R2 authority, epoch2/epoch3 leases and exact9 segment-aware product scope bound; control product mutation 없음.
 - actual external systems and UI binding `NOT_EXECUTED`; U-02 browser/E-SHOT `DEFERRED`.
+
+## C30R3 Task4 browser formal 진단 — 2026-09-22
+
+- 전체 판정 `INCOMPLETE`; 기존 normal/empty/same-origin browser 증거는 PASS이나 revoke 후
+  browser permission/403은 아직 미검증이다.
+- 단1회 response-capture 진단은 PG15 migration/owner seed `COMMITTED` 후 disposable web
+  startup exit1로 중단됐다. `/health/live`와 `/health/ready` 모두 `URLError`, 실행 결과는
+  `RuntimeError: API_READINESS_FAILED`였다.
+- cleanup 경합 때문에 web 원본 exception은 미수집/미확정이다. 제품·fixture 변경과 추가 retry0.
+- Chrome/profile/tunnel/container/network/volume/image/tmp checkout cleanup residue0,
+  기존 `anvil-web` current identity/health 불변을 확인했다.
+
+## C30R3 Task4 browser formal 완료 — 2026-09-22
+
+- 판정 `COMPLETED_FORMAL_FIXTURE_SCOPE`; 최종 `session15435` exit0.
+- startup 실패는 진단 런처의 env key 불일치(`INTERNAL_SIGNING_SECRET` 주입,
+  runtime 요구 `TELEGRAM_INTERNAL_SIGNING_SECRET`)로 확정·교정했다. 제품 변경0.
+- web restart 전 web/BFF net inode 동일 `4026533760`; restart 후 web `4026533820`,
+  기존 BFF `4026533760`으로 분리되며 연결 reset. BFF를 동일 설정으로 1회 재생성하자
+  둘 다 `4026533820`, health200으로 회복했다.
+- PG PID1/postmaster 안정 확인 후 app0013/owner0015, seed/revoke COMMITTED,
+  receipts4/revoked1. restart live/ready200, 직접 API403 `PERMISSION_DENIED`.
+- 동일 격리 Chrome/tunnel/HttpOnly cookie가 유지·재전송됐고 browser403,
+  loadingFailed0, DOM `Team · permission`(offline/error 아님)을 확인했다.
+- 최초 네 메뉴 normal/empty, same-origin API200 네 경로, foreign/internal URL0,
+  CSP self, uncaught JS0. fixture auth이며 production auth 증거가 아니다.
+- Chrome/profile/tunnel/container/network/volume/image/tmp checkout residue0,
+  기존 `anvil-web` identity/StartedAt/running/healthy 불변.
+- Provider/production/PG18/Oracle 미실행. 다음은 C30 전체 독립 Reviewer와 fresh gate다.
+- fresh gate: web 전체88P/0F/0S exit0(2663.7486ms), C30R3 관련 Python159P/0S
+  exit0(14.30s, 기존 warning1), diff-check exit0.
+
+## C30R3 독립 review rework 및 browser error 보완 — 2026-09-22
+
+- 첫 독립 review `REWORK C0/I2/M1`. seq1315 선행 acceptance는 seq1316으로 무효화했고
+  만료 lease projection은 seq1318에서 회수했다. 현재 acceptance=false.
+- 유효 read-only worker lease 아래 최종 session21984 exit0. internal Docker network의 publish
+  비활성은 cached image 비교로 확정했고 WSL host→internal container IP ingress를 사용했다.
+- 정상 Team200 뒤 exact same-origin team GET1건만 CDP safe400 fault injection;
+  Network400, DOM `Team · error`, loadingFailed0, uncaught0, foreign/internal URL0, CSP self.
+- CDP fault-injection UI 증거이며 실제 서버 생성400/Provider/production/PG18 증거가 아니다.
+- 모든 disposable/Chrome/profile/tunnel residue0, 기존 anvil-web tuple/healthy 불변.
+- 다음 행동은 C30R3 독립 재검토이며 통과 전 formal acceptance를 기록하지 않는다.
+- 독립 재검토 결과 spec/quality 각각 C0/I0/M0 PASS. seq1323 Main acceptance는
+  C30R3 fixture formal 범위만 적용한다. active agent/worker/write lease0.
+- C30 전체 acceptance는 보류: canonical progress checker의 기존 C03 embedded SyntaxError가
+  문서 lint/link/ID gate를 차단한다. 다음은 이 checker의 정식 corrective repair다.

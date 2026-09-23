@@ -1,0 +1,3 @@
+# C-09 R2 Invocation
+
+WI-C-09-EXECUTION-BACKENDS-R2와 exact18 ACTIVE worker/write lease만 수행한다. 시작 branch/HEAD/status 및 execution/write fencing token과 만료를 검증한 뒤 WI의 TDD·completion contract·지정 회귀를 실행한다. 두 concrete backend의 lifecycle, bounded read admission, source 관리정보 보존, stable identity, cancel 24h 보존과 별도 disposal authorization, 동일 C-13 registry/session_id 및 revoke 이후 IO0을 구현한다. 실제 local Git은 owned temp fixture에만 허용하고 Docker는 injected fake runner만 사용한다. WI의 외부 IO/Secret/범위 금지와 evidence 등급을 지킨다. 결과·정확한 명령/exit code·diff·오류·미검증·rollback을 지정 completion report에 기록한다. scope 필요는 SCOPE_EXPANSION_REQUIRED, dirty overlap은 BASELINE_CONFLICT/USER_DECISION_REQUIRED, 도구/환경 부족은 BLOCKED로 Main에게 반환한다. commit/push/PR/merge는 수행하지 않는다.

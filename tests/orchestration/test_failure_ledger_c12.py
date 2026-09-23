@@ -1,5 +1,18 @@
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+from itertools import permutations
+from threading import Event
+from types import SimpleNamespace
+
+import pytest
+
 from packages.execution import ResultStatus
-from packages.orchestration import FailureLedger, FailureLedgerReasonCode
+from packages.orchestration import (
+    FailureLedger, FailureLedgerReasonCode, LifecycleStatus,
+    MainAgentTakeoverService, TakeoverArtifactReference,
+    TakeoverEvidenceAuthority, TakeoverEvidenceRegistry,
+    TakeoverReferenceBundle, canonical_hash,
+)
 
 
 HASH = "sha256:" + "a" * 64
@@ -55,6 +68,25 @@ def test_only_valid_same_key_counts_one_two_three_and_candidate_signal():
     assert ledger.get(f"lineage-A|{FINGERPRINT}").takeover_required is True
 
 
+@pytest.mark.parametrize("order", [(1, 2, 3, 4), (2, 3, 1, 4)])
+def test_failure_count_stops_at_three_after_takeover_candidate_is_emitted(order):
+    ledger = FailureLedger()
+    for number in order[:3]:
+        assert ledger.record(report(f"r-{number}")).accepted
+
+    before_entries = ledger.entries
+    before_projection = ledger.projection()
+    rejected = ledger.record(report(f"r-{order[3]}"))
+
+    assert not rejected.accepted
+    assert rejected.reason_codes == (
+        FailureLedgerReasonCode.TAKEOVER_ALREADY_REQUIRED.value,
+    )
+    assert ledger.entries == before_entries
+    assert ledger.projection() == before_projection
+    assert ledger.valid_failure_count == 3
+
+
 def test_replay_is_idempotent_and_conflicting_replay_is_rejected():
     ledger = FailureLedger()
     first = ledger.record(report("r-1"))
@@ -102,6 +134,24 @@ def test_attempt_identity_cannot_be_rotated_one_component_at_a_time():
         assert len(ledger.entries) == 1
 
 
+def test_attempt_number_cannot_be_replayed_by_rotating_delegation_and_attempt_ids():
+    ledger = FailureLedger()
+    first = ledger.record(report(
+        "rotation-1", delegation_id="delegation-a",
+        attempt_id="attempt-a", attempt_number=7,
+    ))
+    rejected = ledger.record(report(
+        "rotation-2", delegation_id="delegation-b",
+        attempt_id="attempt-b", attempt_number=7,
+    ))
+
+    assert first.accepted and first.valid_failure_count == 1
+    assert not rejected.accepted
+    assert rejected.reason_codes == (FailureLedgerReasonCode.CONFLICTING_REPLAY.value,)
+    assert ledger.valid_failure_count == 1
+    assert len(ledger.entries) == 1
+
+
 def test_lineage_and_fingerprint_are_separate_counters():
     ledger = FailureLedger()
     ledger.record(report("r-1", lineage="lineage-A"))
@@ -110,6 +160,288 @@ def test_lineage_and_fingerprint_are_separate_counters():
     assert ledger.get(f"lineage-A|{FINGERPRINT}").valid_failure_count == 1
     assert ledger.get(f"lineage-B|{FINGERPRINT}").valid_failure_count == 1
     assert ledger.get(f"lineage-A|{OTHER_FINGERPRINT}").valid_failure_count == 1
+
+
+def test_projection_is_canonical_across_report_order():
+    reports = (
+        report("r-1", lineage="lineage-B"),
+        report("r-2", lineage="lineage-A"),
+    )
+    forward = FailureLedger()
+    reverse = FailureLedger()
+    for item in reports:
+        assert forward.record(item).accepted
+    for item in reversed(reports):
+        assert reverse.record(item).accepted
+
+    assert forward.projection() == reverse.projection()
+
+
+def test_same_key_projection_and_replayed_receipts_are_canonical_across_report_order():
+    reports = (
+        report("r-1", attempt_id="attempt-1", attempt_number=1),
+        report("r-2", attempt_id="attempt-2", attempt_number=2),
+    )
+    forward = FailureLedger()
+    reverse = FailureLedger()
+    for item in reports:
+        assert forward.record(item).accepted
+    for item in reversed(reports):
+        assert reverse.record(item).accepted
+
+    assert forward.projection() == reverse.projection()
+    assert {
+        item["result_id"]: forward.record(item).valid_failure_count
+        for item in reports
+    } == {
+        item["result_id"]: reverse.record(item).valid_failure_count
+        for item in reports
+    }
+
+
+def test_prepared_receipt_cannot_mutate_the_unpublished_next_state():
+    ledger = FailureLedger()
+    prepared = ledger.prepare(report("r-1"))
+
+    capability = prepared._prepared
+    if hasattr(capability, "next_state"):
+        capability.next_state.counts.clear()
+
+    assert ledger.commit_prepared(prepared)
+    projection = ledger.projection()
+    assert len(projection) == 1
+    assert projection[0].valid_failure_count == 1
+    assert projection[0].latest_result_id == "r-1"
+
+
+def test_third_arrival_receipt_is_takeover_for_canonical_attempt_permutations():
+    projections = []
+    replay_counts = []
+    for order in ((1, 2, 3), (2, 3, 1)):
+        ledger = FailureLedger()
+        receipts = [ledger.record(report(f"r-{number}")) for number in order]
+
+        assert [item.valid_failure_count for item in receipts] == [1, 2, 3]
+        assert [item.takeover_required for item in receipts] == [False, False, True]
+        projections.append(ledger.projection())
+        replay_counts.append({
+            number: ledger.record(report(f"r-{number}")).valid_failure_count
+            for number in (1, 2, 3)
+        })
+
+    assert projections[0] == projections[1]
+    assert projections[0][0].latest_result_id == "r-3"
+    assert replay_counts == [{1: 1, 2: 2, 3: 3}, {1: 1, 2: 2, 3: 3}]
+
+
+def test_concurrent_callers_have_one_third_commit_takeover_receipt():
+    ledger = FailureLedger()
+    second_done = Event()
+    third_done = Event()
+
+    def record_after(wait_for, number, release):
+        if wait_for is not None:
+            assert wait_for.wait(timeout=2)
+        receipt = ledger.record(report(f"r-{number}"))
+        if release is not None:
+            release.set()
+        return receipt
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = (
+            pool.submit(record_after, None, 2, second_done),
+            pool.submit(record_after, second_done, 3, third_done),
+            pool.submit(record_after, third_done, 1, None),
+        )
+        receipts = [future.result() for future in futures]
+
+    assert [item.valid_failure_count for item in receipts] == [1, 2, 3]
+    assert sum(item.takeover_required for item in receipts) == 1
+    assert ledger.projection()[0].valid_failure_count == 3
+    assert ledger.projection()[0].takeover_required
+
+
+def test_canonical_takeover_candidate_receipt_is_available_only_at_count_three():
+    ledger = FailureLedger()
+    key = f"lineage-A|{FINGERPRINT}"
+    assert ledger.takeover_candidate_receipt(key) is None
+    assert ledger.record(report("r-2")).accepted
+    assert ledger.takeover_candidate_receipt(key) is None
+    assert ledger.record(report("r-3")).accepted
+    assert ledger.takeover_candidate_receipt(key) is None
+    assert ledger.record(report("r-1")).takeover_required
+
+    candidate = ledger.takeover_candidate_receipt(key)
+
+    assert candidate is not None
+    assert candidate.accepted and not candidate.duplicate
+    assert candidate.valid_failure_count == 3
+    assert candidate.takeover_required
+    assert candidate.failure_key == key
+    assert candidate.entry.result_id == "r-3"
+    assert candidate.entry.valid_failure_count == 3
+    assert candidate.entry.takeover_required
+
+
+def test_canonical_candidate_receipt_is_accepted_by_existing_c13_for_all_permutations():
+    def artifact_reference(artifact_id, kind, checksum):
+        payload = {
+            "artifact_id": artifact_id, "kind": kind, "checksum": checksum,
+            "session_id": "run-1", "delegation_id": "del-1",
+            "step_lineage_id": "lineage-A",
+        }
+        return TakeoverArtifactReference(
+            artifact_id, kind, checksum, "run-1", "del-1", "lineage-A",
+            canonical_hash(payload),
+        )
+
+    class Lifecycle:
+        def __init__(self):
+            self.status = LifecycleStatus.RUNNING
+
+        def current(self, session_id):
+            checkpoint = SimpleNamespace(
+                checkpoint_id="checkpoint-1", checkpoint_hash=HASH,
+                session_id=session_id, delegation_id="del-1", packet_hash=HASH,
+                verify=lambda: True,
+            )
+            return SimpleNamespace(
+                session_id=session_id, delegation_id="del-1", packet_hash=HASH,
+                checkpoint=checkpoint, status=self.status,
+            )
+
+        def stop(self, session_id):
+            self.status = LifecycleStatus.STOP_REQUESTED
+            return self.current(session_id)
+
+        def wait(self, session_id):
+            self.status = LifecycleStatus.STOPPED
+            return self.current(session_id)
+
+        def takeover_snapshot(self, session_id):
+            return self.status
+
+        def restore_takeover(self, snapshot):
+            self.status = snapshot
+
+    class Leases:
+        def __init__(self):
+            self._worker = SimpleNamespace(execution_fencing_token="exec")
+            self._active = (SimpleNamespace(
+                execution_fencing_token="exec",
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+            ),)
+
+        def active_writes(self, session_id):
+            return self._active
+
+        def active_worker(self, session_id):
+            return self._worker
+
+        def revoke_run(self, session_id, *, execution_token):
+            self._active = ()
+            self._worker = None
+            return None
+
+        def takeover_snapshot(self, session_id, *, execution_token):
+            return self._worker, self._active
+
+        def restore_takeover(self, snapshot):
+            self._worker, self._active = snapshot
+
+    class Tools:
+        def __init__(self):
+            self._active = {"run-1": frozenset({"shell"})}
+
+        def revoke(self, session_id):
+            self._active.pop(session_id, None)
+
+        def active(self, session_id):
+            return self._active.get(session_id, frozenset())
+
+        def takeover_snapshot(self, session_id):
+            return dict(self._active)
+
+        def restore_takeover(self, snapshot):
+            self._active = snapshot
+
+    key = f"lineage-A|{FINGERPRINT}"
+    for order in permutations((1, 2, 3)):
+        ledger = FailureLedger()
+        for number in order:
+            assert ledger.record(report(f"r-{number}")).accepted
+        receipt = ledger.takeover_candidate_receipt(key)
+        references = tuple(
+            artifact_reference(entry.result_id, "FAILURE_REPORT", entry.result_hash)
+            for entry in ledger.entries
+        )
+        work_instruction = artifact_reference("wi-1", "WORK_INSTRUCTION", HASH)
+        diff = artifact_reference("diff-1", "DIFF", HASH)
+        test_output = artifact_reference("test-1", "TEST_OUTPUT", HASH)
+        checkpoint = artifact_reference("checkpoint-1", "CHECKPOINT", HASH)
+        bundle_payload = {
+            "work_instruction": work_instruction.to_dict(),
+            "diff": diff.to_dict(), "test_output": test_output.to_dict(),
+            "checkpoint": checkpoint.to_dict(),
+            "failure_reports": [reference.to_dict() for reference in references],
+        }
+        reference_bundle = TakeoverReferenceBundle(
+            work_instruction, diff, test_output, checkpoint, references,
+            canonical_hash(bundle_payload),
+        )
+        evidence_authority = TakeoverEvidenceAuthority()
+        evidence_registry = TakeoverEvidenceRegistry(evidence_authority)
+        evidence_registry.publish(
+            work_instruction=work_instruction, diff=diff,
+            test_output=test_output, checkpoint=checkpoint,
+            authority=evidence_authority, sequence=1,
+        )
+        evidence_registry.seal(authority=evidence_authority)
+        lifecycle, leases, tools = Lifecycle(), Leases(), Tools()
+        service = MainAgentTakeoverService(
+            ledger, lifecycle, leases, tools,
+            evidence_registry=evidence_registry,
+        )
+
+        takeover = service.takeover(
+            receipt, session_id="run-1", expected_lineage="lineage-A",
+            expected_fingerprint=FINGERPRINT, execution_fencing_token="exec",
+            reference_bundle=reference_bundle,
+            expected_work_instruction_id="wi-1",
+            expected_work_instruction_checksum=HASH,
+        )
+
+        assert takeover.accepted
+        assert takeover.packet.report_ids == ("r-1", "r-2", "r-3")
+        assert lifecycle.status is LifecycleStatus.STOPPED
+        assert leases.active_writes("run-1") == ()
+        assert tools.active("run-1") == frozenset()
+        assert len(service.packets) == len(service.audits) == 1
+
+
+def test_storage_failure_before_publish_leaves_every_canonical_collection_unchanged():
+    class FailingResults(dict):
+        def copy(self):
+            return type(self)(self)
+
+        def __setitem__(self, key, value):
+            raise RuntimeError("injected result storage failure")
+
+    ledger = FailureLedger()
+    assert ledger.record(report("r-1")).accepted
+    ledger._results = FailingResults(ledger._results)
+    before = (
+        ledger.entries, ledger.projection(), ledger.valid_failure_count,
+        ledger.takeover_candidates,
+    )
+
+    with pytest.raises(RuntimeError, match="injected result storage failure"):
+        ledger.record(report("r-2"))
+
+    assert (
+        ledger.entries, ledger.projection(), ledger.valid_failure_count,
+        ledger.takeover_candidates,
+    ) == before
 
 
 def test_invalid_and_environment_quota_permission_reports_do_not_count():

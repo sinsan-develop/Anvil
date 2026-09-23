@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-10_REWORK_START",
+  "artifact_id": "C10-REWORK-START-R1-20260914",
+  "created_at": "2026-09-14T06:04:00+09:00",
+  "package_id": "C-10",
+  "event_sequence": 838,
+  "historical_event_sequence": 832,
+  "appended_event_count": 6,
+  "historical_raw_event_prefix": {
+    "bytes": 2489147,
+    "sha256": "5644C8AE3A9508F61BF13E5888F094C877AD6C204C8F6B107460BA5FE7EE1AA0"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": false,
+  "status": "REWORK_IN_PROGRESS",
+  "c09_status": "ACCEPTED",
+  "c10_status": "REWORK_IN_PROGRESS",
+  "c11_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "superseded_lease_status": "INVALID_FUTURE_ISSUANCE_REVOKED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-action-policy-r1-20260914-002",
+    "fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+    "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+    "lease_epoch": 2,
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+    "dispatch_head": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+    "issued_at": "2026-09-14T06:04:00+09:00",
+    "expires_at": "2026-09-14T18:04:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ],
+    "subject_ref": "C-10/REWORK-R1"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-action-policy-r1-20260914-002",
+    "worker_lease_id": "worker-lease-c10-action-policy-r1-20260914-002",
+    "fencing_token": "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29",
+    "write_fencing_token": "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29",
+    "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+    "write_epoch": 2,
+    "actor_id": "developer-primary",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T06:04:00+09:00",
+    "expires_at": "2026-09-14T18:04:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "independent_reviews": {
+    "verdict": "REWORK",
+    "blocking_findings": 7,
+    "spec_review": {
+      "critical": 2,
+      "important": 4,
+      "minor": 0
+    },
+    "quality_review": {
+      "critical": 3,
+      "important": 4,
+      "minor": 0
+    },
+    "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+    "finding_ids": [
+      "DESTRUCTIVE_COMMAND_BYPASS",
+      "CONNECT_TIME_EGRESS_UNBOUND",
+      "PROTECTED_PATH_PRECEDENCE",
+      "SECRET_CONTEXT_UNBOUND",
+      "WINDOWS_DEVICE_ALIAS",
+      "NESTED_AUTHORITY_SHAPE_FAILOPEN",
+      "HOSTILE_OR_MUTABLE_INGRESS"
+    ]
+  },
+  "product_exact_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/**",
+    "packages/tool_gateway/**",
+    "tests/action_policy/**",
+    "tests/tool_gateway/**"
+  ],
+  "projection_mode": "C10_REWORK_START_EXACT7",
+  "validated_base_commit": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+  "branch": "codex/c09-execution-backends-r1",
+  "exact_paths": [
+    "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-rework-start.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 7,
+  "exact_path_list_sha256": "5EBB3A2498E8C05319D8531A1A96A7B6F7765293E48D9DBB20FC7E8C5C342AD5",
+  "record_binding": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_REWORK",
+  "self_reference": false,
+  "external_validation": {
+    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+    "secret_manager": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
+    "secret_value": "NOT_ACCESSED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 192045,
+      "sha256": "3E3C488B4FFF156D842D65C931BD956FC607EB95F0AFB51FF6709FC39943152E"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 961128,
+      "sha256": "A4B01F5E029072A06FED3155CE7D795857BE36D7BF44F6713973FB6A82408981"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2499753,
+      "sha256": "014B4E2FB60495CB5206E10E7E58AA52CE3BEB8E5E2FACAF790952F45AFDFE3B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c10-rework-start.json",
+      "bytes": 851,
+      "sha256": "7CA1F0B86CBB119E6AE474E9E2135ADEED3634D4E7024078D094056E830E26C3"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3485384,
+      "sha256": "23225AC35C4DCDF3B98F103E913F88F37F5A16C7B4077DD545E5BD1E08653860"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 984422,
+      "sha256": "CB6563AA7F095638A8F4466BAA18C6188E30E2CD4B682B3932FF30E118905C76"
+    }
+  ]
+}

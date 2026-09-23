@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D06-FINAL-D-LEARNING-GATE-DIGEST-20260916",
+  "package_id": "D-06",
+  "event_sequence": 989,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T12:01:00+09:00",
+  "scope": "seq984-989 append-only D-06 acceptance and D-Learning Gate; seq1-983 preserved; exact114",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1050115,
+    "file_sha256": "14B46B73CB19F207BFA5C0AE3ED8629E6484F97ED527E363FB89F7EFF1881A82",
+    "canonical_json_sha256": "1FD2C3941A9CEF08DA7450095CB6E07D3AEEA0C6BF888E1E26FC59177913CDB4"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 208640,
+    "file_sha256": "0F0F7968EA7D4DA3622BB067C922B1CDF10D9976D54CBA94EE4ED1DAF729B7DF",
+    "machine_summary_canonical_sha256": "BD17063C1D29E23B8C0E844672599011EC18F6BE2C48E3DB31132594EFBB0169"
+  }
+}

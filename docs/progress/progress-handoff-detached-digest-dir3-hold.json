@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "DIR3-HOLD-DIGEST-20260918",
+  "package_id": "DIR-3",
+  "event_sequence": 1195,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-18T03:30:00+09:00",
+  "scope": "append-only seq1177-1178; E Gate accepted; F-01 ready",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1170059,
+    "file_sha256": "9A43B22A048BA2D6EA71C81348E426C5F5736DAC44F349400157C6F72AFF2A99",
+    "canonical_json_sha256": "65F330D6C0581044DE8192710D5A84BB6EBA9BD4B25341EC62A85DC06FE98A47"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 216971,
+    "file_sha256": "0E39D718A84C9C3051B405AA22DBAEFFE82473A9F16CFC09A2EC4E07A7E0EF85",
+    "machine_summary_canonical_sha256": "81E66947CE6140CC33E8D3D5FFC1F7011B054EEDB8149D5D686C7D232F2368F9"
+  }
+}

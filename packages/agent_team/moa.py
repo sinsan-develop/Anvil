@@ -159,3 +159,108 @@ def validate_benchmark(record:BenchmarkRecord,catalog:ProviderModelCatalog,*,max
         if (current-measured).total_seconds()>max_age_seconds: raise ValueError("benchmark is stale")
 
 __all__=["BenchmarkRecord","CapabilityProfile","CapabilityRouter","FallbackPolicy","ProviderModelCatalog","ProviderModelEntry","ProviderModelRef","RoutingProvenance","validate_benchmark"]
+
+
+# v2.8 separates deliberation from the legacy capability scoring API above.
+from .provider_catalog import _C24Records,_c24_text,_c24_hash,_utc,_snapshot,_digest,_clean,_json
+
+
+class MoADeliberation(_C24Records):
+    """C23 completed observations -> bounded Main synthesis, never approval.
+
+    No model calls, prompt execution, billing or runtime retry. C23 owns timeout,
+    failure/cost state and C22 current authority; this layer only consumes it.
+    """
+    def __init__(self,team,*,quorum,deadline):
+        from .orchestration import RoleTeamOrchestrator
+        if type(team) is not RoleTeamOrchestrator:raise ValueError('CANONICAL_TEAM_REQUIRED')
+        if type(quorum) is not int or not 1<=quorum<=16:raise ValueError('QUORUM_INVALID')
+        super().__init__();self._team=team;self._quorum=quorum;self._deadline=_utc(deadline)
+        view=team.project().to_dict()
+        if not view['plan_hash']:raise ValueError('TEAM_PLAN_REQUIRED')
+        self._identity=(view['session'],view['target_hash'],view['plan_hash'])
+        self._proposals={};self._critiques={};self._syntheses={}
+
+    def _view(self,now):
+        if _utc(now)>=self._deadline:raise ValueError('DELIBERATION_EXPIRED')
+        view=self._team.project().to_dict()
+        if (view['session'],view['target_hash'],view['plan_hash'])!=self._identity:raise ValueError('TEAM_TRACE_DRIFT')
+        if view['status'] in ('CANCELLED','REVIEW_REQUIRED'):raise ValueError('TEAM_PARTIAL_FAILURE')
+        return view
+
+    def _participant(self,task_id,actor_id,execution_fence,now):
+        for v in (task_id,actor_id,execution_fence):_c24_text(v,128)
+        view=self._view(now)
+        self._team.mailbox(task_id,actor_id=actor_id,execution_fence=execution_fence,now=now)
+        row=view['tasks'].get(task_id)
+        if row is None or row['status']!='COMPLETED' or not row['result_hash']:raise ValueError('COMPLETED_ROLE_RESULT_REQUIRED')
+        return dict(task_id=task_id,actor_id=actor_id,execution_fence=execution_fence,assignment_hash=row['assignment_hash'],
+            result_hash=row['result_hash'],parent_task_id=row['parent_task_id'],binding_hash=row['binding_hash'])
+
+    @staticmethod
+    def _metadata(summary,evidence_refs):
+        _c24_text(summary)
+        refs=_clean(evidence_refs)
+        if type(refs) is not list or not 1<=len(refs)<=16:raise ValueError('EVIDENCE_REQUIRED')
+        for ref in refs:_c24_hash(ref)
+        if len(set(refs))!=len(refs):raise ValueError('EVIDENCE_CONFLICT')
+        return sorted(refs)
+
+    def propose(self,*,proposal_id,task_id,actor_id,execution_fence,summary,evidence_refs,now):
+        _c24_text(proposal_id,128);refs=self._metadata(summary,evidence_refs)
+        with self._lock:
+            authority=self._participant(task_id,actor_id,execution_fence,now)
+            row=dict(**authority,summary=summary,evidence_refs=refs,session_id=self._identity[0]['session_id'],
+                baseline_hash=self._identity[0]['baseline_hash'],target_hash=self._identity[1],plan_hash=self._identity[2])
+            receipt=self._save('MOA_PROPOSAL',proposal_id,row)
+            self._proposals[proposal_id]=receipt.payload_json
+            return receipt
+
+    def critique(self,*,critique_id,proposal,task_id,actor_id,execution_fence,verdict,summary,evidence_refs,now):
+        _c24_text(critique_id,128);refs=self._metadata(summary,evidence_refs);_c24_text(verdict,32)
+        if verdict not in ('SUPPORT','OBJECT'):raise ValueError('VERDICT_INVALID')
+        with self._lock:
+            source=self._record(proposal,'MOA_PROPOSAL')
+            authority=self._participant(task_id,actor_id,execution_fence,now)
+            self._participant(source['task_id'],source['actor_id'],source['execution_fence'],now)
+            if source['actor_id']==actor_id:raise ValueError('INDEPENDENT_CRITIQUE_REQUIRED')
+            row=dict(**authority,proposal_id=proposal.record_id,proposal_hash=proposal.content_hash,verdict=verdict,
+                summary=summary,evidence_refs=refs)
+            for key,payload in self._critiques.items():
+                prior=_json.loads(payload)
+                if key!=critique_id and prior['proposal_id']==proposal.record_id and prior['actor_id']==actor_id:raise ValueError('DUPLICATE_VOTER')
+            receipt=self._save('MOA_CRITIQUE',critique_id,row);self._critiques[critique_id]=receipt.payload_json
+            return receipt
+
+    def synthesize(self,*,request_id,actor_id,now):
+        _c24_text(request_id,128);_c24_text(actor_id,128)
+        with self._lock:
+            view=self._view(now)
+            if actor_id!=view['session']['leader_id']:raise ValueError('MAIN_AUTHORITY_REQUIRED')
+            proposals={k:_json.loads(v) for k,v in sorted(self._proposals.items())}
+            critiques={k:_json.loads(v) for k,v in sorted(self._critiques.items())}
+            for row in [*proposals.values(),*critiques.values()]:
+                current=self._participant(row['task_id'],row['actor_id'],row['execution_fence'],now)
+                if any(current[k]!=row[k] for k in current):raise ValueError('PROVENANCE_CONFLICT')
+            winners=[]
+            for key in proposals:
+                votes=[v for v in critiques.values() if v['proposal_id']==key]
+                if any(v['verdict']=='OBJECT' for v in votes):raise ValueError('CONFLICT_UNRESOLVED')
+                if len({v['actor_id'] for v in votes})>=self._quorum:winners.append(key)
+            if not winners:raise ValueError('QUORUM_NOT_REACHED')
+            if len(winners)!=1:raise ValueError('CONFLICT_UNRESOLVED')
+            row=dict(status='SYNTHESIZED_FOR_MAIN',selected_proposal_id=winners[0],quorum=self._quorum,
+                session_id=view['session']['session_id'],baseline_hash=view['session']['baseline_hash'],target_hash=view['target_hash'],
+                team_projection_hash=self._team.project().content_hash,proposals=proposals,critiques=critiques,
+                final_owner=actor_id,spent=view['spent'],unverified=['Provider/runtime NOT_EXECUTED'],
+                io_count=0,automatic_acceptance=False,provider_selection=None)
+            return self._save('MOA_SYNTHESIS',request_id,row)
+
+    def project(self):
+        with self._lock:
+            return _snapshot('MOA_PROGRESS','progress',dict(proposals=[dict(id=k,**_json.loads(v)) for k,v in sorted(self._proposals.items())],
+                critiques=[dict(id=k,**_json.loads(v)) for k,v in sorted(self._critiques.items())],
+                quorum=self._quorum,final_owner=self._identity[0]['leader_id'],automatic_acceptance=False,io_count=0))
+
+
+__all__ += ['MoADeliberation']

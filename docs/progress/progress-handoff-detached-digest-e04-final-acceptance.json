@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "E04-FINAL-DIGEST-20260917",
+  "package_id": "E-04",
+  "event_sequence": 1100,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-17T13:15:00+09:00",
+  "scope": "append-only seq1096-1100; exact23 frozen product/control",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1131152,
+    "file_sha256": "FA0F4848DA8E890F6D217D9DB32F407FD40F9F3144ACB5CF2AE45A5A741657FA",
+    "canonical_json_sha256": "874565B99AB471F6256DD90E877C888F27BDAF5EA3774CE628837E1AC7444E6E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 213296,
+    "file_sha256": "F93C18EE1DC2C4C365F7735B56B2A1A2ED2D8A52F9D3A9B4284C6460F30C39CC",
+    "machine_summary_canonical_sha256": "9B49C268BA15A91CA148ACF3C7E7DA3BCEDE538DBC0AD934F4D83D7D7123B0C3"
+  }
+}

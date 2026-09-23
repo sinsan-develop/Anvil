@@ -1,0 +1,2991 @@
+{
+  "id": "bug_hunt",
+  "version": 1,
+  "kind": "bug_hunt",
+  "max_concurrency": 4,
+  "budget_limit": 128,
+  "min_speedup_permille": 1500,
+  "max_cost_ratio_permille": 1000,
+  "tasks": [
+    {
+      "id": "task-00",
+      "dependencies": [],
+      "paths": [
+        "src/task-00.py"
+      ],
+      "subject": "task-00",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-00-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-00-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-00-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-01",
+      "dependencies": [],
+      "paths": [
+        "src/task-01.py"
+      ],
+      "subject": "task-01",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-01-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-01-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-01-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-02",
+      "dependencies": [],
+      "paths": [
+        "src/task-02.py"
+      ],
+      "subject": "task-02",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-02-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-02-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-02-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-03",
+      "dependencies": [],
+      "paths": [
+        "src/task-03.py"
+      ],
+      "subject": "task-03",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-03-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-03-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-03-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-04",
+      "dependencies": [],
+      "paths": [
+        "src/task-04.py"
+      ],
+      "subject": "task-04",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-04-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-04-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-04-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-05",
+      "dependencies": [],
+      "paths": [
+        "src/task-05.py"
+      ],
+      "subject": "task-05",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-05-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-05-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-05-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-06",
+      "dependencies": [],
+      "paths": [
+        "src/task-06.py"
+      ],
+      "subject": "task-06",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-06-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-06-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-06-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-07",
+      "dependencies": [],
+      "paths": [
+        "src/task-07.py"
+      ],
+      "subject": "task-07",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-07-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-07-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-07-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-08",
+      "dependencies": [],
+      "paths": [
+        "src/task-08.py"
+      ],
+      "subject": "task-08",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-08-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-08-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-08-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-09",
+      "dependencies": [],
+      "paths": [
+        "src/task-09.py"
+      ],
+      "subject": "task-09",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-09-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-09-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-09-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-10",
+      "dependencies": [],
+      "paths": [
+        "src/task-10.py"
+      ],
+      "subject": "task-10",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-10-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-10-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-10-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-11",
+      "dependencies": [],
+      "paths": [
+        "src/task-11.py"
+      ],
+      "subject": "task-11",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-11-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-11-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-11-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-12",
+      "dependencies": [],
+      "paths": [
+        "src/task-12.py"
+      ],
+      "subject": "task-12",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-12-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-12-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-12-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-13",
+      "dependencies": [],
+      "paths": [
+        "src/task-13.py"
+      ],
+      "subject": "task-13",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-13-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-13-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-13-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-14",
+      "dependencies": [],
+      "paths": [
+        "src/task-14.py"
+      ],
+      "subject": "task-14",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-14-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-14-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-14-row-31",
+          "input": "SAFE"
+        }
+      ]
+    },
+    {
+      "id": "task-15",
+      "dependencies": [],
+      "paths": [
+        "src/task-15.py"
+      ],
+      "subject": "task-15",
+      "operation": "analyze",
+      "independent": true,
+      "write_lease": false,
+      "mandatory": true,
+      "wall_units": 3,
+      "forecast_cost": 2,
+      "actual_cost": 1,
+      "outcome": "SUCCEEDED",
+      "rows": [
+        {
+          "id": "task-15-row-00",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-01",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-02",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-03",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-04",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-05",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-06",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-07",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-08",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-09",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-10",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-11",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-12",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-13",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-14",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-15",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-16",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-17",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-18",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-19",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-20",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-21",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-22",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-23",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-24",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-25",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-26",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-27",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-28",
+          "input": "BUG:unchecked-boundary"
+        },
+        {
+          "id": "task-15-row-29",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-30",
+          "input": "SAFE"
+        },
+        {
+          "id": "task-15-row-31",
+          "input": "SAFE"
+        }
+      ]
+    }
+  ],
+  "golden_outputs": {
+    "task-00-row-00": "DEFECT",
+    "task-00-row-01": "CLEAN",
+    "task-00-row-02": "CLEAN",
+    "task-00-row-03": "CLEAN",
+    "task-00-row-04": "DEFECT",
+    "task-00-row-05": "CLEAN",
+    "task-00-row-06": "CLEAN",
+    "task-00-row-07": "CLEAN",
+    "task-00-row-08": "DEFECT",
+    "task-00-row-09": "CLEAN",
+    "task-00-row-10": "CLEAN",
+    "task-00-row-11": "CLEAN",
+    "task-00-row-12": "DEFECT",
+    "task-00-row-13": "CLEAN",
+    "task-00-row-14": "CLEAN",
+    "task-00-row-15": "CLEAN",
+    "task-00-row-16": "DEFECT",
+    "task-00-row-17": "CLEAN",
+    "task-00-row-18": "CLEAN",
+    "task-00-row-19": "CLEAN",
+    "task-00-row-20": "DEFECT",
+    "task-00-row-21": "CLEAN",
+    "task-00-row-22": "CLEAN",
+    "task-00-row-23": "CLEAN",
+    "task-00-row-24": "DEFECT",
+    "task-00-row-25": "CLEAN",
+    "task-00-row-26": "CLEAN",
+    "task-00-row-27": "CLEAN",
+    "task-00-row-28": "DEFECT",
+    "task-00-row-29": "CLEAN",
+    "task-00-row-30": "CLEAN",
+    "task-00-row-31": "CLEAN",
+    "task-01-row-00": "DEFECT",
+    "task-01-row-01": "CLEAN",
+    "task-01-row-02": "CLEAN",
+    "task-01-row-03": "CLEAN",
+    "task-01-row-04": "DEFECT",
+    "task-01-row-05": "CLEAN",
+    "task-01-row-06": "CLEAN",
+    "task-01-row-07": "CLEAN",
+    "task-01-row-08": "DEFECT",
+    "task-01-row-09": "CLEAN",
+    "task-01-row-10": "CLEAN",
+    "task-01-row-11": "CLEAN",
+    "task-01-row-12": "DEFECT",
+    "task-01-row-13": "CLEAN",
+    "task-01-row-14": "CLEAN",
+    "task-01-row-15": "CLEAN",
+    "task-01-row-16": "DEFECT",
+    "task-01-row-17": "CLEAN",
+    "task-01-row-18": "CLEAN",
+    "task-01-row-19": "CLEAN",
+    "task-01-row-20": "DEFECT",
+    "task-01-row-21": "CLEAN",
+    "task-01-row-22": "CLEAN",
+    "task-01-row-23": "CLEAN",
+    "task-01-row-24": "DEFECT",
+    "task-01-row-25": "CLEAN",
+    "task-01-row-26": "CLEAN",
+    "task-01-row-27": "CLEAN",
+    "task-01-row-28": "DEFECT",
+    "task-01-row-29": "CLEAN",
+    "task-01-row-30": "CLEAN",
+    "task-01-row-31": "CLEAN",
+    "task-02-row-00": "DEFECT",
+    "task-02-row-01": "CLEAN",
+    "task-02-row-02": "CLEAN",
+    "task-02-row-03": "CLEAN",
+    "task-02-row-04": "DEFECT",
+    "task-02-row-05": "CLEAN",
+    "task-02-row-06": "CLEAN",
+    "task-02-row-07": "CLEAN",
+    "task-02-row-08": "DEFECT",
+    "task-02-row-09": "CLEAN",
+    "task-02-row-10": "CLEAN",
+    "task-02-row-11": "CLEAN",
+    "task-02-row-12": "DEFECT",
+    "task-02-row-13": "CLEAN",
+    "task-02-row-14": "CLEAN",
+    "task-02-row-15": "CLEAN",
+    "task-02-row-16": "DEFECT",
+    "task-02-row-17": "CLEAN",
+    "task-02-row-18": "CLEAN",
+    "task-02-row-19": "CLEAN",
+    "task-02-row-20": "DEFECT",
+    "task-02-row-21": "CLEAN",
+    "task-02-row-22": "CLEAN",
+    "task-02-row-23": "CLEAN",
+    "task-02-row-24": "DEFECT",
+    "task-02-row-25": "CLEAN",
+    "task-02-row-26": "CLEAN",
+    "task-02-row-27": "CLEAN",
+    "task-02-row-28": "DEFECT",
+    "task-02-row-29": "CLEAN",
+    "task-02-row-30": "CLEAN",
+    "task-02-row-31": "CLEAN",
+    "task-03-row-00": "DEFECT",
+    "task-03-row-01": "CLEAN",
+    "task-03-row-02": "CLEAN",
+    "task-03-row-03": "CLEAN",
+    "task-03-row-04": "DEFECT",
+    "task-03-row-05": "CLEAN",
+    "task-03-row-06": "CLEAN",
+    "task-03-row-07": "CLEAN",
+    "task-03-row-08": "DEFECT",
+    "task-03-row-09": "CLEAN",
+    "task-03-row-10": "CLEAN",
+    "task-03-row-11": "CLEAN",
+    "task-03-row-12": "DEFECT",
+    "task-03-row-13": "CLEAN",
+    "task-03-row-14": "CLEAN",
+    "task-03-row-15": "CLEAN",
+    "task-03-row-16": "DEFECT",
+    "task-03-row-17": "CLEAN",
+    "task-03-row-18": "CLEAN",
+    "task-03-row-19": "CLEAN",
+    "task-03-row-20": "DEFECT",
+    "task-03-row-21": "CLEAN",
+    "task-03-row-22": "CLEAN",
+    "task-03-row-23": "CLEAN",
+    "task-03-row-24": "DEFECT",
+    "task-03-row-25": "CLEAN",
+    "task-03-row-26": "CLEAN",
+    "task-03-row-27": "CLEAN",
+    "task-03-row-28": "DEFECT",
+    "task-03-row-29": "CLEAN",
+    "task-03-row-30": "CLEAN",
+    "task-03-row-31": "CLEAN",
+    "task-04-row-00": "DEFECT",
+    "task-04-row-01": "CLEAN",
+    "task-04-row-02": "CLEAN",
+    "task-04-row-03": "CLEAN",
+    "task-04-row-04": "DEFECT",
+    "task-04-row-05": "CLEAN",
+    "task-04-row-06": "CLEAN",
+    "task-04-row-07": "CLEAN",
+    "task-04-row-08": "DEFECT",
+    "task-04-row-09": "CLEAN",
+    "task-04-row-10": "CLEAN",
+    "task-04-row-11": "CLEAN",
+    "task-04-row-12": "DEFECT",
+    "task-04-row-13": "CLEAN",
+    "task-04-row-14": "CLEAN",
+    "task-04-row-15": "CLEAN",
+    "task-04-row-16": "DEFECT",
+    "task-04-row-17": "CLEAN",
+    "task-04-row-18": "CLEAN",
+    "task-04-row-19": "CLEAN",
+    "task-04-row-20": "DEFECT",
+    "task-04-row-21": "CLEAN",
+    "task-04-row-22": "CLEAN",
+    "task-04-row-23": "CLEAN",
+    "task-04-row-24": "DEFECT",
+    "task-04-row-25": "CLEAN",
+    "task-04-row-26": "CLEAN",
+    "task-04-row-27": "CLEAN",
+    "task-04-row-28": "DEFECT",
+    "task-04-row-29": "CLEAN",
+    "task-04-row-30": "CLEAN",
+    "task-04-row-31": "CLEAN",
+    "task-05-row-00": "DEFECT",
+    "task-05-row-01": "CLEAN",
+    "task-05-row-02": "CLEAN",
+    "task-05-row-03": "CLEAN",
+    "task-05-row-04": "DEFECT",
+    "task-05-row-05": "CLEAN",
+    "task-05-row-06": "CLEAN",
+    "task-05-row-07": "CLEAN",
+    "task-05-row-08": "DEFECT",
+    "task-05-row-09": "CLEAN",
+    "task-05-row-10": "CLEAN",
+    "task-05-row-11": "CLEAN",
+    "task-05-row-12": "DEFECT",
+    "task-05-row-13": "CLEAN",
+    "task-05-row-14": "CLEAN",
+    "task-05-row-15": "CLEAN",
+    "task-05-row-16": "DEFECT",
+    "task-05-row-17": "CLEAN",
+    "task-05-row-18": "CLEAN",
+    "task-05-row-19": "CLEAN",
+    "task-05-row-20": "DEFECT",
+    "task-05-row-21": "CLEAN",
+    "task-05-row-22": "CLEAN",
+    "task-05-row-23": "CLEAN",
+    "task-05-row-24": "DEFECT",
+    "task-05-row-25": "CLEAN",
+    "task-05-row-26": "CLEAN",
+    "task-05-row-27": "CLEAN",
+    "task-05-row-28": "DEFECT",
+    "task-05-row-29": "CLEAN",
+    "task-05-row-30": "CLEAN",
+    "task-05-row-31": "CLEAN",
+    "task-06-row-00": "DEFECT",
+    "task-06-row-01": "CLEAN",
+    "task-06-row-02": "CLEAN",
+    "task-06-row-03": "CLEAN",
+    "task-06-row-04": "DEFECT",
+    "task-06-row-05": "CLEAN",
+    "task-06-row-06": "CLEAN",
+    "task-06-row-07": "CLEAN",
+    "task-06-row-08": "DEFECT",
+    "task-06-row-09": "CLEAN",
+    "task-06-row-10": "CLEAN",
+    "task-06-row-11": "CLEAN",
+    "task-06-row-12": "DEFECT",
+    "task-06-row-13": "CLEAN",
+    "task-06-row-14": "CLEAN",
+    "task-06-row-15": "CLEAN",
+    "task-06-row-16": "DEFECT",
+    "task-06-row-17": "CLEAN",
+    "task-06-row-18": "CLEAN",
+    "task-06-row-19": "CLEAN",
+    "task-06-row-20": "DEFECT",
+    "task-06-row-21": "CLEAN",
+    "task-06-row-22": "CLEAN",
+    "task-06-row-23": "CLEAN",
+    "task-06-row-24": "DEFECT",
+    "task-06-row-25": "CLEAN",
+    "task-06-row-26": "CLEAN",
+    "task-06-row-27": "CLEAN",
+    "task-06-row-28": "DEFECT",
+    "task-06-row-29": "CLEAN",
+    "task-06-row-30": "CLEAN",
+    "task-06-row-31": "CLEAN",
+    "task-07-row-00": "DEFECT",
+    "task-07-row-01": "CLEAN",
+    "task-07-row-02": "CLEAN",
+    "task-07-row-03": "CLEAN",
+    "task-07-row-04": "DEFECT",
+    "task-07-row-05": "CLEAN",
+    "task-07-row-06": "CLEAN",
+    "task-07-row-07": "CLEAN",
+    "task-07-row-08": "DEFECT",
+    "task-07-row-09": "CLEAN",
+    "task-07-row-10": "CLEAN",
+    "task-07-row-11": "CLEAN",
+    "task-07-row-12": "DEFECT",
+    "task-07-row-13": "CLEAN",
+    "task-07-row-14": "CLEAN",
+    "task-07-row-15": "CLEAN",
+    "task-07-row-16": "DEFECT",
+    "task-07-row-17": "CLEAN",
+    "task-07-row-18": "CLEAN",
+    "task-07-row-19": "CLEAN",
+    "task-07-row-20": "DEFECT",
+    "task-07-row-21": "CLEAN",
+    "task-07-row-22": "CLEAN",
+    "task-07-row-23": "CLEAN",
+    "task-07-row-24": "DEFECT",
+    "task-07-row-25": "CLEAN",
+    "task-07-row-26": "CLEAN",
+    "task-07-row-27": "CLEAN",
+    "task-07-row-28": "DEFECT",
+    "task-07-row-29": "CLEAN",
+    "task-07-row-30": "CLEAN",
+    "task-07-row-31": "CLEAN",
+    "task-08-row-00": "DEFECT",
+    "task-08-row-01": "CLEAN",
+    "task-08-row-02": "CLEAN",
+    "task-08-row-03": "CLEAN",
+    "task-08-row-04": "DEFECT",
+    "task-08-row-05": "CLEAN",
+    "task-08-row-06": "CLEAN",
+    "task-08-row-07": "CLEAN",
+    "task-08-row-08": "DEFECT",
+    "task-08-row-09": "CLEAN",
+    "task-08-row-10": "CLEAN",
+    "task-08-row-11": "CLEAN",
+    "task-08-row-12": "DEFECT",
+    "task-08-row-13": "CLEAN",
+    "task-08-row-14": "CLEAN",
+    "task-08-row-15": "CLEAN",
+    "task-08-row-16": "DEFECT",
+    "task-08-row-17": "CLEAN",
+    "task-08-row-18": "CLEAN",
+    "task-08-row-19": "CLEAN",
+    "task-08-row-20": "DEFECT",
+    "task-08-row-21": "CLEAN",
+    "task-08-row-22": "CLEAN",
+    "task-08-row-23": "CLEAN",
+    "task-08-row-24": "DEFECT",
+    "task-08-row-25": "CLEAN",
+    "task-08-row-26": "CLEAN",
+    "task-08-row-27": "CLEAN",
+    "task-08-row-28": "DEFECT",
+    "task-08-row-29": "CLEAN",
+    "task-08-row-30": "CLEAN",
+    "task-08-row-31": "CLEAN",
+    "task-09-row-00": "DEFECT",
+    "task-09-row-01": "CLEAN",
+    "task-09-row-02": "CLEAN",
+    "task-09-row-03": "CLEAN",
+    "task-09-row-04": "DEFECT",
+    "task-09-row-05": "CLEAN",
+    "task-09-row-06": "CLEAN",
+    "task-09-row-07": "CLEAN",
+    "task-09-row-08": "DEFECT",
+    "task-09-row-09": "CLEAN",
+    "task-09-row-10": "CLEAN",
+    "task-09-row-11": "CLEAN",
+    "task-09-row-12": "DEFECT",
+    "task-09-row-13": "CLEAN",
+    "task-09-row-14": "CLEAN",
+    "task-09-row-15": "CLEAN",
+    "task-09-row-16": "DEFECT",
+    "task-09-row-17": "CLEAN",
+    "task-09-row-18": "CLEAN",
+    "task-09-row-19": "CLEAN",
+    "task-09-row-20": "DEFECT",
+    "task-09-row-21": "CLEAN",
+    "task-09-row-22": "CLEAN",
+    "task-09-row-23": "CLEAN",
+    "task-09-row-24": "DEFECT",
+    "task-09-row-25": "CLEAN",
+    "task-09-row-26": "CLEAN",
+    "task-09-row-27": "CLEAN",
+    "task-09-row-28": "DEFECT",
+    "task-09-row-29": "CLEAN",
+    "task-09-row-30": "CLEAN",
+    "task-09-row-31": "CLEAN",
+    "task-10-row-00": "DEFECT",
+    "task-10-row-01": "CLEAN",
+    "task-10-row-02": "CLEAN",
+    "task-10-row-03": "CLEAN",
+    "task-10-row-04": "DEFECT",
+    "task-10-row-05": "CLEAN",
+    "task-10-row-06": "CLEAN",
+    "task-10-row-07": "CLEAN",
+    "task-10-row-08": "DEFECT",
+    "task-10-row-09": "CLEAN",
+    "task-10-row-10": "CLEAN",
+    "task-10-row-11": "CLEAN",
+    "task-10-row-12": "DEFECT",
+    "task-10-row-13": "CLEAN",
+    "task-10-row-14": "CLEAN",
+    "task-10-row-15": "CLEAN",
+    "task-10-row-16": "DEFECT",
+    "task-10-row-17": "CLEAN",
+    "task-10-row-18": "CLEAN",
+    "task-10-row-19": "CLEAN",
+    "task-10-row-20": "DEFECT",
+    "task-10-row-21": "CLEAN",
+    "task-10-row-22": "CLEAN",
+    "task-10-row-23": "CLEAN",
+    "task-10-row-24": "DEFECT",
+    "task-10-row-25": "CLEAN",
+    "task-10-row-26": "CLEAN",
+    "task-10-row-27": "CLEAN",
+    "task-10-row-28": "DEFECT",
+    "task-10-row-29": "CLEAN",
+    "task-10-row-30": "CLEAN",
+    "task-10-row-31": "CLEAN",
+    "task-11-row-00": "DEFECT",
+    "task-11-row-01": "CLEAN",
+    "task-11-row-02": "CLEAN",
+    "task-11-row-03": "CLEAN",
+    "task-11-row-04": "DEFECT",
+    "task-11-row-05": "CLEAN",
+    "task-11-row-06": "CLEAN",
+    "task-11-row-07": "CLEAN",
+    "task-11-row-08": "DEFECT",
+    "task-11-row-09": "CLEAN",
+    "task-11-row-10": "CLEAN",
+    "task-11-row-11": "CLEAN",
+    "task-11-row-12": "DEFECT",
+    "task-11-row-13": "CLEAN",
+    "task-11-row-14": "CLEAN",
+    "task-11-row-15": "CLEAN",
+    "task-11-row-16": "DEFECT",
+    "task-11-row-17": "CLEAN",
+    "task-11-row-18": "CLEAN",
+    "task-11-row-19": "CLEAN",
+    "task-11-row-20": "DEFECT",
+    "task-11-row-21": "CLEAN",
+    "task-11-row-22": "CLEAN",
+    "task-11-row-23": "CLEAN",
+    "task-11-row-24": "DEFECT",
+    "task-11-row-25": "CLEAN",
+    "task-11-row-26": "CLEAN",
+    "task-11-row-27": "CLEAN",
+    "task-11-row-28": "DEFECT",
+    "task-11-row-29": "CLEAN",
+    "task-11-row-30": "CLEAN",
+    "task-11-row-31": "CLEAN",
+    "task-12-row-00": "DEFECT",
+    "task-12-row-01": "CLEAN",
+    "task-12-row-02": "CLEAN",
+    "task-12-row-03": "CLEAN",
+    "task-12-row-04": "DEFECT",
+    "task-12-row-05": "CLEAN",
+    "task-12-row-06": "CLEAN",
+    "task-12-row-07": "CLEAN",
+    "task-12-row-08": "DEFECT",
+    "task-12-row-09": "CLEAN",
+    "task-12-row-10": "CLEAN",
+    "task-12-row-11": "CLEAN",
+    "task-12-row-12": "DEFECT",
+    "task-12-row-13": "CLEAN",
+    "task-12-row-14": "CLEAN",
+    "task-12-row-15": "CLEAN",
+    "task-12-row-16": "DEFECT",
+    "task-12-row-17": "CLEAN",
+    "task-12-row-18": "CLEAN",
+    "task-12-row-19": "CLEAN",
+    "task-12-row-20": "DEFECT",
+    "task-12-row-21": "CLEAN",
+    "task-12-row-22": "CLEAN",
+    "task-12-row-23": "CLEAN",
+    "task-12-row-24": "DEFECT",
+    "task-12-row-25": "CLEAN",
+    "task-12-row-26": "CLEAN",
+    "task-12-row-27": "CLEAN",
+    "task-12-row-28": "DEFECT",
+    "task-12-row-29": "CLEAN",
+    "task-12-row-30": "CLEAN",
+    "task-12-row-31": "CLEAN",
+    "task-13-row-00": "DEFECT",
+    "task-13-row-01": "CLEAN",
+    "task-13-row-02": "CLEAN",
+    "task-13-row-03": "CLEAN",
+    "task-13-row-04": "DEFECT",
+    "task-13-row-05": "CLEAN",
+    "task-13-row-06": "CLEAN",
+    "task-13-row-07": "CLEAN",
+    "task-13-row-08": "DEFECT",
+    "task-13-row-09": "CLEAN",
+    "task-13-row-10": "CLEAN",
+    "task-13-row-11": "CLEAN",
+    "task-13-row-12": "DEFECT",
+    "task-13-row-13": "CLEAN",
+    "task-13-row-14": "CLEAN",
+    "task-13-row-15": "CLEAN",
+    "task-13-row-16": "DEFECT",
+    "task-13-row-17": "CLEAN",
+    "task-13-row-18": "CLEAN",
+    "task-13-row-19": "CLEAN",
+    "task-13-row-20": "DEFECT",
+    "task-13-row-21": "CLEAN",
+    "task-13-row-22": "CLEAN",
+    "task-13-row-23": "CLEAN",
+    "task-13-row-24": "DEFECT",
+    "task-13-row-25": "CLEAN",
+    "task-13-row-26": "CLEAN",
+    "task-13-row-27": "CLEAN",
+    "task-13-row-28": "DEFECT",
+    "task-13-row-29": "CLEAN",
+    "task-13-row-30": "CLEAN",
+    "task-13-row-31": "CLEAN",
+    "task-14-row-00": "DEFECT",
+    "task-14-row-01": "CLEAN",
+    "task-14-row-02": "CLEAN",
+    "task-14-row-03": "CLEAN",
+    "task-14-row-04": "DEFECT",
+    "task-14-row-05": "CLEAN",
+    "task-14-row-06": "CLEAN",
+    "task-14-row-07": "CLEAN",
+    "task-14-row-08": "DEFECT",
+    "task-14-row-09": "CLEAN",
+    "task-14-row-10": "CLEAN",
+    "task-14-row-11": "CLEAN",
+    "task-14-row-12": "DEFECT",
+    "task-14-row-13": "CLEAN",
+    "task-14-row-14": "CLEAN",
+    "task-14-row-15": "CLEAN",
+    "task-14-row-16": "DEFECT",
+    "task-14-row-17": "CLEAN",
+    "task-14-row-18": "CLEAN",
+    "task-14-row-19": "CLEAN",
+    "task-14-row-20": "DEFECT",
+    "task-14-row-21": "CLEAN",
+    "task-14-row-22": "CLEAN",
+    "task-14-row-23": "CLEAN",
+    "task-14-row-24": "DEFECT",
+    "task-14-row-25": "CLEAN",
+    "task-14-row-26": "CLEAN",
+    "task-14-row-27": "CLEAN",
+    "task-14-row-28": "DEFECT",
+    "task-14-row-29": "CLEAN",
+    "task-14-row-30": "CLEAN",
+    "task-14-row-31": "CLEAN",
+    "task-15-row-00": "DEFECT",
+    "task-15-row-01": "CLEAN",
+    "task-15-row-02": "CLEAN",
+    "task-15-row-03": "CLEAN",
+    "task-15-row-04": "DEFECT",
+    "task-15-row-05": "CLEAN",
+    "task-15-row-06": "CLEAN",
+    "task-15-row-07": "CLEAN",
+    "task-15-row-08": "DEFECT",
+    "task-15-row-09": "CLEAN",
+    "task-15-row-10": "CLEAN",
+    "task-15-row-11": "CLEAN",
+    "task-15-row-12": "DEFECT",
+    "task-15-row-13": "CLEAN",
+    "task-15-row-14": "CLEAN",
+    "task-15-row-15": "CLEAN",
+    "task-15-row-16": "DEFECT",
+    "task-15-row-17": "CLEAN",
+    "task-15-row-18": "CLEAN",
+    "task-15-row-19": "CLEAN",
+    "task-15-row-20": "DEFECT",
+    "task-15-row-21": "CLEAN",
+    "task-15-row-22": "CLEAN",
+    "task-15-row-23": "CLEAN",
+    "task-15-row-24": "DEFECT",
+    "task-15-row-25": "CLEAN",
+    "task-15-row-26": "CLEAN",
+    "task-15-row-27": "CLEAN",
+    "task-15-row-28": "DEFECT",
+    "task-15-row-29": "CLEAN",
+    "task-15-row-30": "CLEAN",
+    "task-15-row-31": "CLEAN"
+  },
+  "expected_findings": [
+    "task-00-row-00",
+    "task-00-row-04",
+    "task-00-row-08",
+    "task-00-row-12",
+    "task-00-row-16",
+    "task-00-row-20",
+    "task-00-row-24",
+    "task-00-row-28",
+    "task-01-row-00",
+    "task-01-row-04",
+    "task-01-row-08",
+    "task-01-row-12",
+    "task-01-row-16",
+    "task-01-row-20",
+    "task-01-row-24",
+    "task-01-row-28",
+    "task-02-row-00",
+    "task-02-row-04",
+    "task-02-row-08",
+    "task-02-row-12",
+    "task-02-row-16",
+    "task-02-row-20",
+    "task-02-row-24",
+    "task-02-row-28",
+    "task-03-row-00",
+    "task-03-row-04",
+    "task-03-row-08",
+    "task-03-row-12",
+    "task-03-row-16",
+    "task-03-row-20",
+    "task-03-row-24",
+    "task-03-row-28",
+    "task-04-row-00",
+    "task-04-row-04",
+    "task-04-row-08",
+    "task-04-row-12",
+    "task-04-row-16",
+    "task-04-row-20",
+    "task-04-row-24",
+    "task-04-row-28",
+    "task-05-row-00",
+    "task-05-row-04",
+    "task-05-row-08",
+    "task-05-row-12",
+    "task-05-row-16",
+    "task-05-row-20",
+    "task-05-row-24",
+    "task-05-row-28",
+    "task-06-row-00",
+    "task-06-row-04",
+    "task-06-row-08",
+    "task-06-row-12",
+    "task-06-row-16",
+    "task-06-row-20",
+    "task-06-row-24",
+    "task-06-row-28",
+    "task-07-row-00",
+    "task-07-row-04",
+    "task-07-row-08",
+    "task-07-row-12",
+    "task-07-row-16",
+    "task-07-row-20",
+    "task-07-row-24",
+    "task-07-row-28",
+    "task-08-row-00",
+    "task-08-row-04",
+    "task-08-row-08",
+    "task-08-row-12",
+    "task-08-row-16",
+    "task-08-row-20",
+    "task-08-row-24",
+    "task-08-row-28",
+    "task-09-row-00",
+    "task-09-row-04",
+    "task-09-row-08",
+    "task-09-row-12",
+    "task-09-row-16",
+    "task-09-row-20",
+    "task-09-row-24",
+    "task-09-row-28",
+    "task-10-row-00",
+    "task-10-row-04",
+    "task-10-row-08",
+    "task-10-row-12",
+    "task-10-row-16",
+    "task-10-row-20",
+    "task-10-row-24",
+    "task-10-row-28",
+    "task-11-row-00",
+    "task-11-row-04",
+    "task-11-row-08",
+    "task-11-row-12",
+    "task-11-row-16",
+    "task-11-row-20",
+    "task-11-row-24",
+    "task-11-row-28",
+    "task-12-row-00",
+    "task-12-row-04",
+    "task-12-row-08",
+    "task-12-row-12",
+    "task-12-row-16",
+    "task-12-row-20",
+    "task-12-row-24",
+    "task-12-row-28",
+    "task-13-row-00",
+    "task-13-row-04",
+    "task-13-row-08",
+    "task-13-row-12",
+    "task-13-row-16",
+    "task-13-row-20",
+    "task-13-row-24",
+    "task-13-row-28",
+    "task-14-row-00",
+    "task-14-row-04",
+    "task-14-row-08",
+    "task-14-row-12",
+    "task-14-row-16",
+    "task-14-row-20",
+    "task-14-row-24",
+    "task-14-row-28",
+    "task-15-row-00",
+    "task-15-row-04",
+    "task-15-row-08",
+    "task-15-row-12",
+    "task-15-row-16",
+    "task-15-row-20",
+    "task-15-row-24",
+    "task-15-row-28"
+  ]
+}

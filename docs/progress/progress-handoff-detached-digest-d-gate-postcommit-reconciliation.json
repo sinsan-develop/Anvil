@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D-GATE-POSTCOMMIT-DIGEST-20260917",
+  "package_id": "D-GATE",
+  "event_sequence": 1062,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-17T08:15:00+09:00",
+  "scope": "seq1062 append-only; seq1-1061 raw prefix preserved; exact7",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1100546,
+    "file_sha256": "2D36A0878A3A669CFA929F7716CE6A85D2D98EB1D192D1933E06F5D2E50BFFBB",
+    "canonical_json_sha256": "B3463D85F10E94C24383473EFF29DCB3736D6442BDC92ED6FDFD76465BD9285A"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 219024,
+    "file_sha256": "0EAE925A08EDE800F76BF988A7E832C9193AA6A2176264354C2111D5130F70C7",
+    "machine_summary_canonical_sha256": "D5B4B78DF6477A8E362C5BEEAD5CDD7241A44E92CB6F697240A488F7055FC292"
+  }
+}

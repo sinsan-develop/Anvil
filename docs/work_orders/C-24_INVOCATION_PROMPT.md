@@ -1,0 +1,3 @@
+# C-24 Invocation Prompt
+
+Implement `WI-C-24-R1` in the canonical Anvil worktree. Follow `docs/work_orders/C-24_WORK_INSTRUCTION.md` exactly. Start with RED tests, then additive GREEN for MoA proposal/critique/synthesis/quorum/conflict and separate capability routing/fallback/provenance contracts. Reuse C-22/C-23 authority and F-01/F-02 read-only inputs. Keep quota unknown as `Quota not reported`, fail closed on drift or unapproved degradation, stay within the exact allowed paths, run focused/regression/compile/diff/checker verification, write the completion report, and return `COMPLETED`, `FAILURE_REPORT`, or `INCOMPLETE`. No external IO or commit/push/merge/deploy.

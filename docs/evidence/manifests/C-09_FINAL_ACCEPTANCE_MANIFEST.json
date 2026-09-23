@@ -1,0 +1,263 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-09_FINAL_ACCEPTANCE",
+  "artifact_id": "C09-FINAL-ACCEPTANCE-20260914",
+  "created_at": "2026-09-14T07:00:00+09:00",
+  "package_id": "C-09",
+  "event_sequence": 829,
+  "historical_event_sequence": 824,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 2460061,
+    "sha256": "E389B34A1DAF64204D88BA022BDB9C684FD8F150656B79C836B5448D7E992889"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "c09_status": "ACCEPTED",
+  "c10_status": "READY_NOT_STARTED_PER_USER_DIRECTION",
+  "dir2_status": "NOT_REACHED",
+  "active_leases": 0,
+  "product_raw": {
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md": {
+      "bytes": 15775,
+      "sha256": "B2AEE68F8C4E71FF5BF670E4462818C694BCBB130187D5A8800C381C8BB0EC67"
+    },
+    "packages/domain/identifiers.py": {
+      "bytes": 1456,
+      "sha256": "27BFF67BBF798F9734D70B2F788309A4C54F4765715D667EED32F7A6623AD24D"
+    },
+    "packages/execution_backends/__init__.py": {
+      "bytes": 1028,
+      "sha256": "148B8951DE82CAB554F488E3FA449DAAC05B8845AE3D41E302650CC203A12CEC"
+    },
+    "packages/execution_backends/docker.py": {
+      "bytes": 33175,
+      "sha256": "80DB2C1165A1D0E93F07D6EB915577ED8CDF882A3A2B7321F2696E47287AED8E"
+    },
+    "packages/execution_backends/git_worktree.py": {
+      "bytes": 26193,
+      "sha256": "FEE1DD29D290BCAB425C107070EFA2B6680A50283E02A50983D6045971CDF1EC"
+    },
+    "packages/execution_backends/models.py": {
+      "bytes": 38910,
+      "sha256": "139903437F1D478952427D6A06D9BCBE8D8F1FC08DBF5BF865143F5CEE97C15F"
+    },
+    "packages/execution_backends/registry.py": {
+      "bytes": 2450,
+      "sha256": "86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"
+    },
+    "packages/execution_backends/safeio.py": {
+      "bytes": 8638,
+      "sha256": "89A59BB1F33CDA702F01984573A2DDEDDE5AB93EE9E5B3935F2DAA6A33EC5753"
+    },
+    "packages/paths/identity.py": {
+      "bytes": 9479,
+      "sha256": "22FB5943A6084FDE78D314B5D0316A80AEB1FF070B5AD8A07D25F8672725B3D7"
+    },
+    "packages/tool_gateway/__init__.py": {
+      "bytes": 527,
+      "sha256": "805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"
+    },
+    "packages/tool_gateway/gateway.py": {
+      "bytes": 19756,
+      "sha256": "B81D484DB0858D1D5CF202846C762384F49485A10F236DDC3251563C4F945391"
+    },
+    "packages/tool_gateway/models.py": {
+      "bytes": 5279,
+      "sha256": "556C1C4EB8EF8B1192E8449B65457A9FBF36E600024ADA8D2B880AFAC62ED94E"
+    },
+    "packages/tool_gateway/registry.py": {
+      "bytes": 6304,
+      "sha256": "1E9732839B6FF6A08F5AD494B248BCEC0B9CC9705EB6A8118596307B3892E2CA"
+    },
+    "tests/execution_backends/test_docker.py": {
+      "bytes": 38218,
+      "sha256": "7898D8D160474CD01421EED03F403B85F3573D4B063AC68A51522A2BD847B320"
+    },
+    "tests/execution_backends/test_git_worktree.py": {
+      "bytes": 41443,
+      "sha256": "ADA99567BBCD874401817DFE697CF2DB17E4B7D0ECA38E3F15D5C02024D9283E"
+    },
+    "tests/execution_backends/test_registry.py": {
+      "bytes": 1934,
+      "sha256": "F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"
+    },
+    "tests/integration/test_c09_repository_workspace.py": {
+      "bytes": 7697,
+      "sha256": "517ACE499B362455927EE26A9F8B05AE29579C7269D4B80FE1D5E2B28FA29D9E"
+    },
+    "tests/paths/test_conflict_scope_identity.py": {
+      "bytes": 5531,
+      "sha256": "B9779342CE0B2F1266F138C1A226F7236EF0A420C85ACE8309CDEF3C208A1A61"
+    },
+    "tests/tool_gateway/test_gateway.py": {
+      "bytes": 22787,
+      "sha256": "03524084F5C5E9E7C58B08BCA1D8FD7BDAF413AC0514B553CD0C23C271F35F40"
+    },
+    "tests/tool_gateway/test_tool_registry.py": {
+      "bytes": 1396,
+      "sha256": "F60A3AA1B204D015C5622046F7EDDFEF8A4A3A5AA19D5EDC0BE7C8A53597F0F3"
+    }
+  },
+  "test_evidence": {
+    "passed": {
+      "authoritative": 106,
+      "c08_a13": 85,
+      "c13": 5,
+      "c02": 126,
+      "control": 9
+    },
+    "failed": 0,
+    "commands": {
+      "authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py",
+      "c08_a13": "python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py",
+      "c13": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py",
+      "c02": "python -B -m pytest -q -p no:cacheprovider tests/domain/test_identifiers.py tests/orchestration/test_delegation_packet.py",
+      "control": "python -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k C09MainTakeoverControlTests"
+    },
+    "compileall": {
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "status": "PASS"
+    }
+  },
+  "independent_reviews": {
+    "blocking_findings": 0,
+    "spec": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 1,
+      "minor_resolution": "COMPLETION_REPORT_COMMANDS_ADDED"
+    },
+    "quality": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 1,
+      "residual": "PENDING_PERMISSION_RESERVATION_MAY_ACCUMULATE_BEFORE_AUTHORIZE"
+    }
+  },
+  "external_validation": {
+    "actual_docker": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "ssh_network": "NOT_ACCESSED",
+    "deployment": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED"
+  },
+  "record_binding": "UNSTAGED_EXACT27_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "sequence": 829,
+  "projection_mode": "C09_FINAL_ACCEPTANCE_CANDIDATE_EXACT27",
+  "validated_base_commit": "10bbb879fb15ce4fa7b1a750f872c33af3cddf46",
+  "branch": "codex/c09-execution-backends-r1",
+  "control_exact_paths": [
+    "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "control_exact_path_count": 7,
+  "control_exact_path_list_sha256": "7C0479E852E5D208EE57495940DB045511FC223265317E5178F2339A2D612D3F",
+  "product_exact_paths": [
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    "packages/domain/identifiers.py",
+    "packages/execution_backends/__init__.py",
+    "packages/execution_backends/docker.py",
+    "packages/execution_backends/git_worktree.py",
+    "packages/execution_backends/models.py",
+    "packages/execution_backends/registry.py",
+    "packages/execution_backends/safeio.py",
+    "packages/paths/identity.py",
+    "packages/tool_gateway/__init__.py",
+    "packages/tool_gateway/gateway.py",
+    "packages/tool_gateway/models.py",
+    "packages/tool_gateway/registry.py",
+    "tests/execution_backends/test_docker.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/execution_backends/test_registry.py",
+    "tests/integration/test_c09_repository_workspace.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/tool_gateway/test_gateway.py",
+    "tests/tool_gateway/test_tool_registry.py"
+  ],
+  "product_exact_path_count": 20,
+  "product_exact_path_list_sha256": "E5591545A1685D8653BC67A49885C1E1DBD486FFB19BE90301008608199A0CD8",
+  "combined_exact_paths": [
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
+    "packages/domain/identifiers.py",
+    "packages/execution_backends/__init__.py",
+    "packages/execution_backends/docker.py",
+    "packages/execution_backends/git_worktree.py",
+    "packages/execution_backends/models.py",
+    "packages/execution_backends/registry.py",
+    "packages/execution_backends/safeio.py",
+    "packages/paths/identity.py",
+    "packages/tool_gateway/__init__.py",
+    "packages/tool_gateway/gateway.py",
+    "packages/tool_gateway/models.py",
+    "packages/tool_gateway/registry.py",
+    "scripts/check_project_progress.py",
+    "tests/execution_backends/test_docker.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/execution_backends/test_registry.py",
+    "tests/integration/test_c09_repository_workspace.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/tool_gateway/test_gateway.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 27,
+  "combined_exact_path_list_sha256": "F6600E4AC6F58D0D4E86CF78647B62D7F4073ADB3EC124E4B9778478C0AF8D94",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 192808,
+      "sha256": "1F4BD22AB966A71BBA7342360412F94B2FE631EBD74A06E869694BA8A0A54635"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 956067,
+      "sha256": "2F17F34E27BEB983263B2AB2C60E72703BC4F083A3DF7B4773D1161DF1AB1B59"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2481561,
+      "sha256": "7A33EA2FA82FB71F1A23DBE93856357DAAC3F82CC5870AC112ED4881078275E4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
+      "bytes": 893,
+      "sha256": "E2CA582F8D815F798E79E201CFF353157DDA9DA17427CF39FF4D87C5B07365EA"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3440398,
+      "sha256": "282B967E96ECCFFE6186D5A7B52FCD6C45A341AF17818EA1726464C80F0E6C12"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 977537,
+      "sha256": "7EE763F8E2CFC6DEC2C0609B286CD70966C787230206ACC08F68F54513473A43"
+    }
+  ]
+}

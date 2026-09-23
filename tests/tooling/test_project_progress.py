@@ -16,6 +16,7 @@ import tarfile
 import tempfile
 import unittest
 import zlib
+from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
@@ -108,6 +109,316 @@ def _load_checker_or_none():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@contextmanager
+def _historical_bytes_overlay(files):
+    """In-memory filesystem view for immutable checkpoint/generated fixtures."""
+    read_bytes, read_text, stat = Path.read_bytes, Path.read_text, Path.stat
+    def key(path):
+        try:
+            return path.absolute().relative_to(ROOT.absolute()).as_posix()
+        except ValueError:
+            return None
+    def frozen_bytes(path):
+        relative = key(path)
+        return files[relative] if relative in files else read_bytes(path)
+    def frozen_text(path, encoding=None, errors=None):
+        relative = key(path)
+        if relative in files:
+            return files[relative].decode(encoding or "utf-8", errors or "strict")
+        return read_text(path, encoding=encoding, errors=errors)
+    def frozen_stat(path, *args, **kwargs):
+        relative = key(path)
+        if relative in files:
+            values = list(stat(ROOT))
+            values[0] = 0o100644
+            values[6] = len(files[relative])
+            return os.stat_result(values)
+        return stat(path, *args, **kwargs)
+    with mock.patch.object(Path, "read_bytes", frozen_bytes), \
+            mock.patch.object(Path, "read_text", frozen_text), \
+            mock.patch.object(Path, "stat", frozen_stat):
+        yield
+
+
+class C30R4CheckerSourceTests(unittest.TestCase):
+    def test_checker_source_compiles_without_truncated_embedded_evidence(self):
+        compile(CHECKER_PATH.read_bytes(), str(CHECKER_PATH), "exec")
+
+
+class C30CanonicalReconciliationTests(unittest.TestCase):
+    def _assert_current_scope(self, checker, generated, *, completed):
+        progress = json.loads(generated[checker.BUNDLE_PATHS["progress"]])
+        handoff = checker.extract_handoff_summary(generated[checker.BUNDLE_PATHS["handoff_text"]].decode())
+        manifest = json.loads(generated[checker.C30_CANONICAL_M])
+        expected = {
+            "current_phase": "C", "current_work_package": "C-30R4",
+            "next_work_package": {"package_id": "C-30", "status": "PENDING_FINAL_GATE"},
+            "next_successor_work_package": {"package_id": "C-30", "status": "PENDING_FINAL_GATE"},
+            "next_safe_action": "MAIN_C30_FINAL_GATE_REVIEW" if completed else "C30R4_INDEPENDENT_REVIEW_REQUIRED",
+            "runtime_next_action": "MAIN_C30_FINAL_GATE_REVIEW" if completed else "C30R4_INDEPENDENT_REVIEW_REQUIRED",
+        }
+        self.assertEqual(expected, {key: progress.get(key) for key in expected})
+        self.assertEqual(expected, {key: handoff.get(key) for key in expected})
+        scope = "C30R3_FIXTURE_AUTHENTICATED_DISPOSABLE_VALIDATION_ONLY"
+        self.assertEqual(scope, manifest.get("c30r3_evidence_scope"))
+        self.assertEqual(scope, handoff.get("c30r3_evidence_scope"))
+        self.assertTrue({"PRODUCTION_AUTH", "PROVIDER", "PG18", "ACTUAL_SERVER_GENERATED_400", "ORACLE"}
+                        <= set(manifest["unverified"]))
+        self.assertEqual(manifest["unverified"], handoff.get("unverified"))
+        self.assertEqual((16, 1334), (manifest["rollback"]["exact_path_count"],
+                                     manifest["rollback"]["preserve_append_only_prefix_through_sequence"]))
+        self.assertEqual(checker.c30_canonical_paths(), manifest["rollback"]["exact_paths"])
+        self.assertIn("never reset or clean", " ".join(manifest["rollback"]["procedure"]))
+
+    def test_frozen_history_profile_has_exact_authority(self):
+        checker = _load_checker_or_none()
+        self.assertTrue(callable(getattr(checker, "c30_historical_event_profile", None)))
+        profile = checker.c30_historical_event_profile(ROOT)
+        self.assertEqual(1325, profile["last_sequence"])
+        self.assertEqual(3985246, profile["raw_prefix_bytes"])
+        self.assertEqual("09A6B52717CEF4E4E49B2AA1830B670226FEB272237668CC3EC39E2D07219431", profile["raw_prefix_sha256"])
+        self.assertEqual(108, len(profile["events"]))
+        r2 = checker.c30_r2_historical_tail(ROOT)
+        self.assertEqual((1334, 3994695, "BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B"),
+                         (r2["last_sequence"], r2["raw_prefix_bytes"], r2["raw_prefix_sha256"]))
+        self.assertEqual(9, len(r2["events"]))
+
+    def test_builder_and_validator_are_available_without_materializing_control(self):
+        checker = _load_checker_or_none()
+        self.assertTrue(callable(getattr(checker, "c30_canonical_projection_from_root", None)))
+        self.assertTrue(callable(getattr(checker, "validate_c30_canonical_projection", None)))
+        self.assertTrue(callable(getattr(checker, "validate_c30_git_facts", None)))
+        self.assertTrue(callable(getattr(checker, "_collect_c30_canonical_git", None)))
+
+    def test_live_current_projection_is_valid(self):
+        checker = _load_checker_or_none()
+        # The live seq1325 RED is retained until Main materializes control8.
+        # Developer checks the identical generated bytes through a detached view.
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            bundle=checker.load_bundle(ROOT)
+            self.assertEqual([],checker.validate_c30_canonical_projection(bundle,json.loads(generated[checker.C30_CANONICAL_M])))
+
+    def test_history_tamper_and_reorder_are_rejected(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        raw = generated[checker.BUNDLE_PATHS["events"]]
+        for index in (0, 1217, 1324, 1325, 1327, 1333):
+            stream = json.loads(raw)
+            stream["events"][index]["details"]["forged"] = True
+            with self.subTest(index=index):
+                self.assertTrue(checker.validate_c30_historical_events(ROOT, raw, stream))
+        stream = json.loads(raw)
+        stream["events"][1217:1219] = reversed(stream["events"][1217:1219])
+        self.assertTrue(checker.validate_c30_historical_events(ROOT, raw, stream))
+
+    def test_no_early_acceptance_or_lease_revoke(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        self._assert_current_scope(checker, generated, completed=False)
+        p = json.loads(generated[checker.BUNDLE_PATHS["progress"]])
+        self.assertEqual((1340, "IN_PROGRESS", "PENDING_FINAL_GATE"),
+                         (p["event_sequence"], p["status"], p["c30_overall_status"]))
+        self.assertIsNotNone(p["worker_lease"])
+        self.assertIsNotNone(p["write_lease"])
+        self.assertEqual("main-agent-eoul-takeover", p["active_agent"]["actor_id"])
+        self.assertEqual("worker-lease-c30r4-main-takeover-20260922-001", p["worker_lease"]["lease_id"])
+        self.assertEqual("main-agent-eoul-takeover", p["worker_lease"]["actor_id"])
+        self.assertEqual("c30r4-main-write-fence-epoch-3-ed3cae9", p["write_lease"]["write_fencing_token"])
+        self.assertEqual("main-agent-eoul-takeover", p["write_lease"]["actor_id"])
+        self.assertEqual(16, len(checker.c30_canonical_paths()))
+        self.assertTrue({checker.C30_DEVELOPER_REPORT, checker.C30_SPEC_REPORT, checker.C30_QUALITY_REPORT}
+                        <= set(checker.c30_canonical_paths()))
+        self.assertIn("docs/WORK_STATUS.md", checker.c30_canonical_paths())
+        self.assertTrue(p["active_work_instruction"]["artifact_path"].endswith("_R2.md"))
+        actual = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
+        self.assertEqual(checker.raw_event_object_prefix_bytes(actual, 1334),
+                         checker.raw_event_object_prefix_bytes(generated[checker.BUNDLE_PATHS["events"]], 1334))
+        events = json.loads(generated[checker.BUNDLE_PATHS["events"]])["events"]
+        self.assertEqual(["HUMAN_OVERRIDE_TAKEOVER_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "LEASE_TAKEOVER",
+                          "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+                         [event["event_type"] for event in events[1334:1340]])
+        self.assertTrue(all(event["actor_id"] == "main-agent-eoul-takeover" for event in events[1334:1340]))
+        approval = events[1334]["details"]
+        self.assertEqual(("HUMAN_OVERRIDE_TAKEOVER-C30R4-USER-20260922", "user-sinsan",
+                          "935088D3CD683FE8A10965538301343FA251C9AD61AAFAC7679F534A5831DE78"),
+                         (approval["approval_id"], approval["approved_by"], approval["approval_text_sha256"]))
+        self.assertEqual(3, events[1337]["details"]["repeated_tool_corruption_count"])
+        self.assertEqual("TAKEOVER_PACKET_C30R4_20260922_001", events[1337]["details"]["takeover_packet_id"])
+        self.assertEqual(approval["approval_id"], events[1337]["details"]["human_override_approval_id"])
+        with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+            checker.c30_canonical_projection_from_root(ROOT, completion={"accepted": True})
+
+    def test_revision_is_bound_to_original_issued_instruction(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        events = json.loads(generated[checker.BUNDLE_PATHS["events"]])["events"]
+        parent = events[1325]["details"]["parent_work_instruction"]
+        path = events[1323]["details"]["work_instruction"]
+        raw = subprocess.check_output(["git", "show", f"{checker.C30_CANONICAL_BASE}:{path}"], cwd=ROOT)
+        self.assertEqual({"path": path, "sha256": hashlib.sha256(raw).hexdigest().upper(),
+                          "issued_event_id": events[1323]["event_id"]}, parent)
+
+    def test_current_mutations_fail_closed(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            base = checker.load_bundle(ROOT)
+            mutations = [
+                lambda b: b["progress"].update(status="ACCEPTED"),
+                lambda b: b["progress"].update(worker_lease=None),
+                lambda b: b["progress"]["repository"].update(local_head="0" * 40),
+                lambda b: b["events"]["events"].append(copy.deepcopy(b["events"]["events"][1217])),
+                lambda b: b["detached_digest"]["progress"].update(file_sha256="0" * 64),
+                lambda b: b["handoff"].update(status="ACCEPTED"),
+            ]
+            for index, mutate in enumerate(mutations):
+                candidate = copy.deepcopy(base)
+                mutate(candidate)
+                with self.subTest(index=index):
+                    self.assertNotEqual([], checker.validate_bundle(candidate))
+
+    def test_final_tail_requires_three_independent_bound_evidence_records(self):
+        checker = _load_checker_or_none()
+        # Synthetic control evidence only; this does not record a Main verdict.
+        records, files = {}, {}
+        expected_actors = {"developer": "main-agent-eoul-takeover", "spec": "c30_spec_review",
+                           "quality": "c30_quality_review"}
+        for role in ("developer", "spec", "quality"):
+            path = f"docs/test_reports/C30R4_SYNTHETIC_{role}.md"
+            payload = {
+                "schema_version": "c30r4_completion_evidence/v1",
+                "package_id": "C-30R4",
+                "role": role,
+                "actor_id": expected_actors[role],
+                "verdict": "COMPLETED" if role == "developer" else "ACCEPT",
+                "binding": {
+                    "base_head": checker.C30_CANONICAL_BASE,
+                    "checker_sha256": hashlib.sha256(CHECKER_PATH.read_bytes()).hexdigest().upper(),
+                    "tests_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest().upper(),
+                    "event_sequence": 1340,
+                    "worker_lease_id": "worker-lease-c30r4-main-takeover-20260922-001",
+                    "write_lease_id": "write-lease-c30r4-main-takeover-20260922-001",
+                    "execution_fencing_token": "c30r4-main-execution-fence-epoch-3-ed3cae9",
+                    "write_fencing_token": "c30r4-main-write-fence-epoch-3-ed3cae9",
+                },
+                "verification": {
+                    "fresh_tooling_shards": [125, 199, 159, 196],
+                    "fresh_tooling_passed": 679,
+                    "focused_passed": 36,
+                    "focused_deselected": 643,
+                    "c30_adversarial_passed": 10,
+                    "compile_exit": 0,
+                    "live_checker_exit": 0,
+                    "live_checker_sequence": 1340,
+                    "diff_check_exit": 0,
+                },
+                "commands": ["synthetic contract test only"],
+                "critical": 0,
+                "important": 0,
+                "minor": 0,
+            }
+            raw = ("# Synthetic C30R4 evidence\n\n```json c30r4-evidence\n"
+                   + json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2)
+                   + "\n```\n").encode()
+            files[path] = raw
+            records[role] = {"path": path, "sha256": hashlib.sha256(raw).hexdigest().upper(), **payload}
+        with _historical_bytes_overlay(files):
+            generated = checker.c30_canonical_projection_from_root(ROOT, completion=records)
+            for role in ("spec", "quality"):
+                bad = copy.deepcopy(records)
+                bad[role]["sha256"] = "0" * 64
+                with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                    checker.c30_canonical_projection_from_root(ROOT, completion=bad)
+            reused = copy.deepcopy(records)
+            reused["quality"]["actor_id"] = "main-agent-eoul-takeover"
+            with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                checker.c30_canonical_projection_from_root(ROOT, completion=reused)
+            for mutate in (
+                lambda value: value["spec"]["binding"].update(base_head="0" * 40),
+                lambda value: value["quality"]["verification"].update(fresh_tooling_passed=678),
+            ):
+                bad = copy.deepcopy(records)
+                mutate(bad)
+                with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                    checker.c30_canonical_projection_from_root(ROOT, completion=bad)
+            replay = copy.deepcopy(records)
+            replay_path = "docs/04_test_reports/C-30_COMPLETION_REPORT.md"
+            replay["developer"].update(
+                path=replay_path, sha256=hashlib.sha256((ROOT / replay_path).read_bytes()).hexdigest().upper())
+            with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
+                checker.c30_canonical_projection_from_root(ROOT, completion=replay)
+        with _historical_bytes_overlay({**files, **generated}):
+            self._assert_current_scope(checker, generated, completed=True)
+            bundle = checker.load_bundle(ROOT)
+            self.assertEqual([],checker.validate_c30_canonical_projection(bundle,json.loads(generated[checker.C30_CANONICAL_M])))
+            self.assertEqual((1345, "ACCEPTED", "PENDING_FINAL_GATE"),
+                (bundle["progress"]["event_sequence"], bundle["progress"]["status"], bundle["progress"]["c30_overall_status"]))
+            self.assertEqual((None, None, None), tuple(bundle["progress"][key] for key in ("active_agent", "worker_lease", "write_lease")))
+            self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+                             [event["event_type"] for event in bundle["events"]["events"][1340:]])
+
+    def test_git_escape_staging_and_foreign_head_fail_closed(self):
+        checker = _load_checker_or_none()
+        facts = dict(head=checker.C30_CANONICAL_BASE, branch="codex/c09-execution-backends-r1",
+                     upstream="development/codex/c09-execution-backends-r1",
+                     remote_head="98e218264bf54db04a1bd35a67273b713805a649", staged=[], dirty=checker.c30_canonical_paths())
+        self.assertEqual([], checker.validate_c30_git_facts(**facts))
+        for change in ({"head": "0" * 40}, {"remote_head": "0" * 40}, {"staged": ["scripts/check_project_progress.py"]},
+                       {"dirty": facts["dirty"] + ["outside.py"]}, {"dirty": []}):
+            self.assertEqual(["C30_CANONICAL_GIT_INVALID"], checker.validate_c30_git_facts(**{**facts, **change}))
+        committed_head = "1" * 40
+        postcommit = dict(head=committed_head, branch=facts["branch"], upstream=facts["upstream"],
+            remote_head=facts["remote_head"], staged=[], dirty=[], parent=checker.C30_CANONICAL_BASE,
+            committed=checker.c30_canonical_paths())
+        self.assertEqual([], checker.validate_c30_git_facts(**postcommit))
+        self.assertEqual([], checker.validate_c30_git_facts(**{**postcommit, "remote_head": committed_head}))
+        for change in ({"parent": "0" * 40}, {"committed": postcommit["committed"][:-1]},
+                       {"committed": postcommit["committed"] + ["outside.py"]}, {"dirty": ["outside.py"]}):
+            self.assertEqual(["C30_CANONICAL_GIT_INVALID"], checker.validate_c30_git_facts(**{**postcommit, **change}))
+
+    def test_raw_binding_and_manifest_drift_fail_closed(self):
+        checker = _load_checker_or_none()
+        generated = checker.c30_canonical_projection_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            bundle = checker.load_bundle(ROOT)
+            manifest = json.loads(generated[checker.C30_CANONICAL_M])
+            manifest["historical_profile"]["events"][0]["actor"] = "foreign"
+            self.assertIn("C30_CANONICAL_PROJECTION_INVALID", checker.validate_c30_canonical_projection(bundle, manifest))
+            altered = {**generated, checker.BUNDLE_PATHS["events"]: generated[checker.BUNDLE_PATHS["events"]] + b" "}
+            with _historical_bytes_overlay(altered):
+                self.assertIn("C30_CANONICAL_RAW_BINDING_INVALID", checker.validate_c30_canonical_projection(
+                    bundle, json.loads(generated[checker.C30_CANONICAL_M])))
+
+
+class C30R5StartControlTests(unittest.TestCase):
+    def test_start_projection_binds_dual_lease_and_preserves_seq1345(self):
+        checker=_load_checker_or_none(); generated=checker.c30r5_start_from_root(ROOT)
+        progress=json.loads(generated[checker.BUNDLE_PATHS['progress']])
+        events=json.loads(generated[checker.BUNDLE_PATHS['events']])['events']
+        self.assertEqual((1349,'C-30R5','IN_PROGRESS'),
+            (progress['event_sequence'],progress['current_work_package'],progress['status']))
+        self.assertEqual(checker.C30R5_WORKER,progress['worker_lease']['lease_id'])
+        self.assertEqual(checker.C30R5_WRITE,progress['write_lease']['lease_id'])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],
+                         [row['event_type'] for row in events[1345:]])
+        base=subprocess.check_output(['git','show',f'{checker.C30R5_BASE}:{checker.BUNDLE_PATHS["events"]}'],cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(base,1345),
+                         checker.raw_event_object_prefix_bytes(generated[checker.BUNDLE_PATHS['events']],1345))
+
+    def test_generated_projection_validates_and_git_gate_is_exact(self):
+        checker=_load_checker_or_none(); generated=checker.c30r5_start_from_root(ROOT)
+        with _historical_bytes_overlay(generated):
+            bundle=checker.load_bundle(ROOT)
+            self.assertEqual([],checker.validate_c30r5_start(bundle,json.loads(generated[checker.C30R5_M])))
+        facts=dict(head=checker.C30R5_BASE,branch='codex/c09-execution-backends-r1',
+            upstream='development/codex/c09-execution-backends-r1',remote_head=checker.C30R5_BASE,
+            staged=[],dirty=checker.c30r5_control_paths())
+        self.assertEqual([],checker.validate_c30r5_git_facts(**facts))
+        self.assertEqual([],checker.validate_c30r5_git_facts(**{**facts,'dirty':checker.c30r5_paths()}))
+        self.assertTrue(checker.validate_c30r5_git_facts(**{**facts,'dirty':facts['dirty']+['outside.py']}))
 
 
 class ProjectProgressContractTests(unittest.TestCase):
@@ -338,7 +649,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_git_and_authority_bindings_are_checked_against_workspace(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
 
         mutated = copy.deepcopy(bundle)
         mutated["progress"]["repository"]["validated_base_commit"] = "0" * 40
@@ -531,7 +842,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_event_sequence_and_complete_event_contract_are_guarded(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
 
         mutated = copy.deepcopy(bundle)
         mutated["events"]["events"].append(
@@ -903,6 +1214,44 @@ class ProjectProgressContractTests(unittest.TestCase):
             "G05-DEF-006 RED: all-category event fixture is missing",
         )
         fixture = json.loads(ALL_EVENT_FIXTURE_PATH.read_text(encoding="utf-8"))
+        # Preserve the frozen G05 fixture and extend its in-memory standard
+        # category coverage with explicit payloads, never wildcard event types.
+        additions = (
+            ("WORK_INSTRUCTION_REVISED", "nonsemantic_work_instruction_revision_recorded", {
+                "parent_work_instruction": {"path": "fixture/parent.md", "sha256": "A" * 64},
+                "derived_work_instruction": {"path": "fixture/derived.md", "sha256": "B" * 64},
+                "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+                "semantic_diff": "NONE", "scope_expansion": False,
+            }),
+            ("INDEPENDENT_TEST_JUDGMENT_RECORDED", "independent_test_judgment_recorded", {
+                "verdict": "NOT_EXECUTED", "criteria": ["FIXTURE_SCHEMA_ONLY"],
+                "evidence_ref": {"path": "fixture/review.md", "sha256": "C" * 64},
+                "quality": "NOT_EXECUTED",
+            }),
+            ("HUMAN_OVERRIDE_TAKEOVER_RECORDED", "human_override_takeover_authorized", {
+                "approval_id": "fixture-human-override", "approved_by": "fixture-user",
+                "approval_text_sha256": "D" * 64,
+                "approved_scope": "fixture takeover scope", "source": "FIXTURE",
+            }),
+        )
+        for event_type, effect, details in additions:
+            contract = bundle["event_contract"]["payload_contracts"][event_type]
+            self.assertEqual(effect, contract["effect"])
+            self.assertEqual(set(details), set(contract["required_details"]))
+            sequence = len(fixture["events"]) + 1
+            fixture["events"].append({
+                "event_id": f"fx-{sequence:03d}", "sequence": sequence,
+                "event_type": event_type, "occurred_at": f"2026-08-10T00:00:{sequence:02d}+09:00",
+                "actor": "main-agent-eoul", "subject_ref": "G-05-fixture",
+                "details": details,
+            })
+            fixture["last_sequence"] = sequence
+
+        for index in (-3, -2, -1):
+            for field in fixture["events"][index]["details"]:
+                mutated = copy.deepcopy(fixture)
+                del mutated["events"][index]["details"][field]
+                self.assertIn("EVENT_PAYLOAD_MISSING", checker.validate_event_stream(mutated, bundle["event_contract"]))
 
         self.assertEqual(
             checker.validate_event_stream(fixture, bundle["event_contract"]),
@@ -913,7 +1262,10 @@ class ProjectProgressContractTests(unittest.TestCase):
             set(bundle["event_contract"]["event_types"]),
         )
 
-        empty_push = copy.deepcopy(bundle)
+        # Exercise the generic payload/effect validator in its historical era;
+        # C30's exact-tail guard is separately covered by its profile tests.
+        generic_bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
+        empty_push = copy.deepcopy(generic_bundle)
         empty_push["events"]["events"].append(
             {
                 "event_id": "evt-empty-git-push",
@@ -992,7 +1344,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_historical_git_push_rejects_corrupt_evidence_reference(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
         historical_push = next(
             event
             for event in bundle["events"]["events"]
@@ -1193,7 +1545,21 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_a03_start_projection_binds_clean_dispatch_and_fencing(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        checkpoint = "dc2ba63e1d923663724d1291cbcec007e4e7e7fe"
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tree:
+            files = {entry.name: tree.extractfile(entry).read() for entry in tree if entry.isfile()}
+        base = json.loads(files[checker.BUNDLE_PATHS["progress"]])["repository"]["validated_base_commit"]
+        changed = subprocess.check_output(["git", "diff", "--name-only", base, checkpoint], cwd=ROOT).decode().splitlines()
+        self.assertEqual(0, subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint], cwd=ROOT).returncode)
+        def historical_git(bundle):
+            return checker.validate_repository_projection(
+                bundle["progress"]["repository"], actual_head=base, actual_branch="main",
+                actual_upstream="origin/main", actual_remote_head=base, base_is_ancestor=True,
+                actual_changed_paths=changed, working_tree_mode=True, progress=bundle["progress"], worktree_is_clean=False)
+        with _historical_bytes_overlay(files), mock.patch.object(checker, "_validate_git_projection", historical_git):
+            bundle = checker.load_bundle(ROOT)
+            self.assertEqual([], checker.validate_bundle(bundle))
         progress = bundle["progress"]
         events = bundle["events"]["events"]
         start_events = [event for event in events if 58 <= event["sequence"] <= 60]
@@ -1210,11 +1576,26 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(start_events[0]["details"]["lease_id"], start_events[1]["details"]["worker_lease_id"])
         self.assertEqual("39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599", start_events[-1]["details"]["dispatch_head"])
         self.assertEqual(start_events[-1]["details"]["dispatch_head"], start_events[-1]["details"]["dispatch_upstream_head"])
-        self.assertEqual([], checker.validate_bundle(bundle))
 
     def test_a03_completion_projection_revokes_leases_before_test_review(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        checkpoint = "f8b52a5a3b3acfa2776b06bd178e0911c1ead582"
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as tree:
+            files = {entry.name: tree.extractfile(entry).read() for entry in tree if entry.isfile()}
+        frozen_repository = json.loads(files[checker.BUNDLE_PATHS["progress"]])["repository"]
+        base = frozen_repository["validated_base_commit"]
+        changed = subprocess.check_output(["git", "diff", "--name-only", base, checkpoint], cwd=ROOT).decode().splitlines()
+        self.assertEqual(0, subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint], cwd=ROOT).returncode)
+        def historical_git(bundle):
+            return checker.validate_repository_projection(
+                bundle["progress"]["repository"], actual_head=base,
+                actual_branch="main", actual_upstream="origin/main", actual_remote_head=base,
+                base_is_ancestor=True, actual_changed_paths=changed, working_tree_mode=True,
+                progress=bundle["progress"], worktree_is_clean=False)
+        with _historical_bytes_overlay(files), mock.patch.object(checker, "_validate_git_projection", historical_git):
+            bundle = checker.load_bundle(ROOT)
+            self.assertEqual([], checker.validate_bundle(bundle))
         progress = bundle["progress"]
         events = bundle["events"]["events"]
         completion_events = [event for event in events if 61 <= event["sequence"] <= 63]
@@ -1230,7 +1611,6 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("PENDING", completed["independent_tester_status"])
         self.assertIsNone(completed["worker_lease"])
         self.assertIsNone(completed["write_lease"])
-        self.assertEqual([], checker.validate_bundle(bundle))
 
     def test_a07_completion_enters_test_review_after_ordered_revocation(self) -> None:
         if _b10_acceptance_projection_current(): return
@@ -3626,7 +4006,11 @@ class ProjectProgressContractTests(unittest.TestCase):
             ],
             cwd=ROOT,
         )
-        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        # Compare the candidate with its actual recorded control successor.
+        current_raw = subprocess.check_output(
+            ["git", "show", "ead1214e3f01e68e577c3163e1cf143ee5753490:docs/progress/progress-events.json"],
+            cwd=ROOT,
+        )
         expected = checker.raw_event_object_prefix_bytes(candidate_raw, 485)
         actual = checker.raw_event_object_prefix_bytes(current_raw, 485)
         self.assertEqual(expected, actual)
@@ -3662,6 +4046,16 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_control_postcommit_successor_binds_committed_control(self) -> None:
         checker = self.require_checker()
+        checkpoint = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        frozen = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                  for path in (
+                      "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+                      "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+                      "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+                  )}
+        overlay = _historical_bytes_overlay(frozen)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
         bundle = checker.load_bundle(ROOT)
         if bundle["progress"]["event_sequence"] != 487:
             historical_commit = "ead1214e3f01e68e577c3163e1cf143ee5753490"
@@ -5790,7 +6184,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 bundle, manifest
             ),
         )
-        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        current_raw = (historical_root / "docs/progress/progress-events.json").read_bytes()
         prefix = checker.raw_event_object_prefix_bytes(current_raw, 493)
         self.assertEqual(857131, len(prefix))
         self.assertEqual(
@@ -7636,11 +8030,22 @@ class ProjectProgressContractTests(unittest.TestCase):
             path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
             for path in ("docs/progress/build-progress.json", "docs/progress/progress-events.json")
         }
-        directory = tempfile.TemporaryDirectory(prefix="anvil-seq533-", dir="D:/tmp")
+        temporary_root = ROOT / ".tmp_subagent_review"
+        temporary_root.mkdir(exist_ok=True)
+        def remove_empty_temporary_root():
+            if temporary_root.exists() and not any(temporary_root.iterdir()):
+                temporary_root.rmdir()
+        self.addCleanup(remove_empty_temporary_root)
+        directory = tempfile.TemporaryDirectory(prefix="anvil-seq533-", dir=temporary_root)
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
-        files = {path: (ROOT / path).read_bytes() for path in (
+        # The seq533 inputs belong to its committed checkpoint, not today's bundle.
+        checkpoint = "d442d4584516e1a673fd2edde55a2fe1330e9394"
+        files = {path: subprocess.check_output(
+            ["git", "show", f"{checkpoint}:{path}"], cwd=ROOT
+        ) for path in (
             "docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/dir-checkpoints.json", "docs/progress/progress-event-contract.json",
             "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
             "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
             "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
@@ -7774,6 +8179,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
         bundle.update(generated)
         bundle["_detached_digest_path"] = checker.C21_RESUME_D
+        for path in ("docs/progress/dir-checkpoints.json", "docs/progress/progress-event-contract.json"):
+            raw = (bundle["_root"] / path).read_bytes()
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+            key = next(key for key, relative in checker.BUNDLE_PATHS.items() if relative == path)
+            bundle[key] = json.loads(raw)
         bundle["_file_hashes"].update({path: hashlib.sha256((bundle["_root"] / path).read_bytes()).hexdigest().upper()
                                       for path in checker.c21_provider_wsl_execution_resume_start_paths()})
         for validator in (checker._validate_events, checker._validate_handoff,
@@ -10575,7 +10985,8 @@ class C21PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
             "handoff": checker.extract_handoff_summary(first[checker.C21_POSTMERGE_AUTHORITY_H].decode()),
             "detached_digest": json.loads(first[checker.C21_POSTMERGE_AUTHORITY_D]),
         }
-        self.assertEqual([], checker.validate_c21_postmerge_development_authority_reconciliation_projection(bundle, manifest))
+        with _historical_bytes_overlay(first):
+            self.assertEqual([], checker.validate_c21_postmerge_development_authority_reconciliation_projection(bundle, manifest))
         self.assertEqual("C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION", manifest["manifest_type"])
         self.assertEqual("READY_FOR_WORK_INSTRUCTION", progress["next_work_package"]["status"])
         self.assertEqual("C-01", progress["next_work_package"]["package_id"])
@@ -10748,6 +11159,18 @@ class C01MainlineAcceptanceTests(unittest.TestCase):
             for path in checker.c01_mainline_acceptance_metadata()["product_paths"]
             if path != "docs/WORK_STATUS.md"
         }
+        # The seq715 authority is immutable; later plan/test revisions are not
+        # substitute authority for this historical acceptance fixture.
+        for path, expected in checker.C01_ACCEPTANCE_AUTHORITY.items():
+            raw = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{path}"], cwd=ROOT)
+            self.assertEqual(expected.lower(), hashlib.sha256(raw).hexdigest())
+            frozen[path] = raw
+        for path in (checker.C01_PRODUCT_WI["path"], "docs/progress/failure-ledger.json"):
+            frozen[path] = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{path}"], cwd=ROOT)
+        independent = checker.C01_ACCEPTANCE_INDEPENDENT_TEST
+        frozen[independent] = subprocess.check_output([
+            "git", "show", f"a1cc61578fbda75ae4f063138daa3269bd052a8f:{independent}"
+        ], cwd=ROOT)
         original_read_bytes = Path.read_bytes
 
         def read_frozen_product(path):
@@ -11004,6 +11427,53 @@ class C01MainlineAcceptanceTests(unittest.TestCase):
 
 class C01L3ReworkControlTests(unittest.TestCase):
     BASE = "0f39bad30e7f4ab865077530cbbd29d902d1485d"
+
+    # Exact historical receipt recovered once from the preserved review output.
+    # Tests never depend on the local session archive at runtime.
+    REVIEW_BYTES = base64.b64decode(
+    "IyBDLTAxIGZpbmFsIHdob2xlLWJyYW5jaCByZXZpZXcgcmVjZWlwdAoKIyMgVmVyZGljdAoKLSBTUEVDOiBGQUlMCi0gUVVBTElU"
+    "WTogQ0hBTkdFU19SRVFVSVJFRAotIEZpbmRpbmdzOiBDcml0aWNhbCAxIC8gSW1wb3J0YW50IDEgLyBNaW5vciAwCi0gUFIgc3Rh"
+    "dHVzOiBCTE9DS0VEIEJFRk9SRSBQVVNICgojIyBDMSDigJQgQzAxLUwzLU5PVC1FWEVDVVRFRC1QUk9NT1RFRC1UTy1QQVNTLXYx"
+    "CgpUaGUgbWF0cml4IGFzc2lnbnMgQVYtQUdULTAwMyBhbmQgQVYtT1BTLTAxMSB0byBDLTAxIGF0IEwzLiBMMyByZXF1aXJlcyBh"
+    "biBpbnRlZ3JhdGVkIEFkYXB0ZXIsIGJ1ZGdldCwgZXZlbnQgcGVyc2lzdGVuY2UsIGFuZCByZWFsIFBvc3RncmVTUUwgYm91bmRh"
+    "cnkuIFRoZSBjb21taXR0ZWQgc2VxNzE1IGFjY2VwdGFuY2UgaW5zdGVhZCB1c2VzIGBERVRFUk1JTklTVElDX0xPQ0FMX0ZJWFRV"
+    "UkVgLCBgRS1FVlRfSU5fTUVNT1JZYCwgYEUtQVBJX0xPQ0FMX0ZBS0VfQ09OVFJBQ1RgLCBhbmQgYGV4dGVybmFsX2NhbGxzPTBg"
+    "LCB3aGlsZSByZXBvcnRpbmcgYWxsIGFzc2lnbmVkIElEcyBQQVNTIGFuZCBDLTAxIEFDQ0VQVEVELiBIb25lc3QgZml4dHVyZS1z"
+    "Y29wZSBsYWJlbGluZyBkb2VzIG5vdCBhbGxvdyBhbiB1bmV4ZWN1dGVkIEwzIHJlcXVpcmVtZW50IHRvIGJlIHByb21vdGVkIHRv"
+    "IFBBU1MuCgojIyBJMSDigJQgQzAxLVJFUVVJUkVELUVBUEktRUVWVC1TSEFQRS1NSVNTSU5HLXYxCgpUaGUgcmVxdWlyZWQgRS1B"
+    "UEkgZXZpZGVuY2UgbXVzdCBpbmNsdWRlIHJhdyByZXF1ZXN0L3Jlc3BvbnNlIHBsdXMgYW4gT3BlbkFQSSBjb250cmFjdCBkaWZm"
+    "LiBUaGUgc3VibWl0dGVkIGV2aWRlbmNlIGRpcmVjdGx5IGludm9rZXMgYSB0ZXN0LW9ubHkgZmFrZSBQcm90b2NvbCBhbmQgaGFz"
+    "IG5vIE9wZW5BUEkgZGlmZi4gUmVxdWlyZWQgRS1FVlQgZXZpZGVuY2UgbXVzdCBpbmNsdWRlIGV2ZW50IGlkLCB0eXBlLCB0aW1l"
+    "c3RhbXAsIGFuZCBhY3RvciBhbmQgcGVybWl0IG9yZGVyL2R1cGxpY2F0ZS9pZGVtcG90ZW5jeSB2ZXJpZmljYXRpb24uIFRoZSBp"
+    "bi1tZW1vcnkgcm93cyBsYWNrIGV2ZW50IGlkLCB0aW1lc3RhbXAsIGFuZCBhY3RvcjsgdGhlIFVOS05PV04gcGF0aCByZXR1cm5z"
+    "IGFuIGV4Y2VwdGlvbiB3aXRoIGFuIGVtcHR5IGV2ZW50IGxpc3QuCgojIyBBZGRpdGlvbmFsIGp1ZGdtZW50CgpBVi1BR1QtMDAy"
+    "IGhhcyBsaW1pdGVkIEwyIGZha2Ugb3BhcXVlLXJlZmVyZW5jZSBjb250cmFjdCBjb3ZlcmFnZSwgYnV0IGl0cyByZXF1aXJlZCBF"
+    "LUFQSSBzaGFwZSBpcyBub3QgY29tcGxldGUuIEFjdHVhbCBiYWNrZW5kIHN3YXAgTDMgd2FzIGV4cGxpY2l0bHkgTk9UX0VYRUNV"
+    "VEVEIGFuZCB0aGUgZmFrZSBiYWNrZW5kcyBjYW5ub3QgcmVwbGFjZSBpdC4KClVOS05PV04gdXNhZ2UgaGFuZGxpbmcgaXMgbm90"
+    "IGEgc2VwYXJhdGUgQnVkZ2V0U2VydmljZSBkZWZlY3Q6IGl0IHByZXNlcnZlcyB0aGUgcmVzZXJ2YXRpb24gYXMgYFJFQ09OQ0lM"
+    "SUFUSU9OX1JFUVVJUkVEYCwgY29uc3VtZXMvcmVsZWFzZXMgemVybywgYW5kIHJhaXNlcyBgVXNhZ2VSZWNvbmNpbGlhdGlvblJl"
+    "cXVpcmVkYC4gSG93ZXZlciwgdGhlIGN1cnJlbnQga2VybmVsIGRvZXMgbm90IHJldHVybiBhIHN0cnVjdHVyZWQgZXZlbnQgcmVj"
+    "ZWlwdCBmb3IgdGhpcyBwYXRoLCBzbyBpdCBjYW5ub3Qgc3VwcG9ydCB0aGUgcmVxdWlyZWQgRS1FVlQgcHJvb2YuCgojIyBSZXF1"
+    "aXJlZCByZW1lZGlhdGlvbgoKMS4gUHJlc2VydmUgY29tbWl0dGVkIHNlcTEtNzE1IGFuZCBhcHBlbmQgYSBjb3JyZWN0aW9uIHRo"
+    "YXQgcmVvcGVucyBDLTAxIGFuZCBibG9ja3MgQy0wMi4KMi4gQWRkIGEgcmVhbCBQb3N0Z3JlU1FMIEFkYXB0ZXIrYnVkZ2V0K2V2"
+    "ZW50LXBlcnNpc3RlbmNlIGludGVncmF0aW9uIHBhdGggYW5kIGluZGVwZW5kZW50IEwzIHZhbGlkYXRpb24uCjMuIEV4ZXJjaXNl"
+    "IHRoZSBhY3R1YWwgQVBJIGJvdW5kYXJ5LCBwcmVzZXJ2ZSByYXcgcmVxdWVzdC9yZXNwb25zZSwgYW5kIGNvbXBhcmUgdGhlIGdl"
+    "bmVyYXRlZCBPcGVuQVBJIGNvbnRyYWN0Lgo0LiBQZXJzaXN0IG9yZGVyZWQgZXZlbnRzIHdpdGggaWQsIHR5cGUsIHRpbWVzdGFt"
+    "cCwgYWN0b3IsIGFuZCByZXF1ZXN0L3Jlc2VydmF0aW9uL3J1bi9zdGVwIGNvcnJlbGF0aW9uLgo1LiBQcmVzZXJ2ZSBVTktOT1dO"
+    "IHJlc2VydmF0aW9uIGFuZCBleGNlcHRpb24gc2VtYW50aWNzIHdoaWxlIHByb2R1Y2luZyBhIHN0cnVjdHVyZWQgcmVjb25jaWxp"
+    "YXRpb24tcmVxdWlyZWQgZXZlbnQgYXQgdGhlIGFwcHJvcHJpYXRlIHVwcGVyIGJvdW5kYXJ5LgoK"
+    )
+
+    def setUp(self):
+        self.assertEqual(2307, len(self.REVIEW_BYTES))
+        self.assertEqual(
+            "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46",
+            hashlib.sha256(self.REVIEW_BYTES).hexdigest().upper(),
+        )
+        checker = self._checker()
+        overlay = _historical_bytes_overlay({checker.C01_L3_REWORK_REVIEW: self.REVIEW_BYTES})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
 
     def _checker(self):
         checker = _load_checker_or_none()
@@ -11441,6 +11911,9 @@ class C01PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
     def test_seq728_projection_rejects_history_state_boundary_and_checksum_mutations(self):
         checker = self._checker()
         artifacts = checker.c01_postmerge_development_authority_reconciliation_from_root(ROOT)
+        overlay = _historical_bytes_overlay(artifacts)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
         manifest = json.loads(artifacts[checker.C01_POSTMERGE_AUTHORITY_M])
         for label, mutate in (
             ("history", lambda bundle: bundle["events"]["events"][726].update(event_id="tampered")),
@@ -12517,6 +12990,16 @@ class C02PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
 
 
 class C03StartProjectionTests(unittest.TestCase):
+    def setUp(self):
+        checkpoint = "2dcd4da89e92425be52b570ae2110f60dfcc29de"
+        paths = ["docs/work_orders/C-03_WORK_INSTRUCTION.md",
+                 "docs/work_orders/C-03_INVOCATION_PROMPT.md"]
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     BASE = "1c3948ff1a741832a2f012f464f1a301490356c1"
     BRANCH = "codex/c03-developer-lifecycle-r1"
     EXACT12 = sorted([
@@ -13179,7 +13662,6 @@ class C04StartProjectionTests(unittest.TestCase):
         checker = self._checker()
         generated = checker.c04_start_projection_from_root(ROOT)
         bundle = {"_root": ROOT, "progress": json.loads(generated[checker.C04_START_P])}
-        self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
         completion = "a" * 40
         rows = {
             ("rev-parse", "HEAD"): completion,
@@ -13200,9 +13682,14 @@ class C04StartProjectionTests(unittest.TestCase):
                 return rows.get(args[2:], "")
             return None
 
-        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
+        original_is_file = Path.is_file
+        with mock.patch.object(Path, "is_file", lambda path: path == Path("D:/Project/Anvil/.git/info/exclude") or original_is_file(path)), mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
             checker, "_c02_git_quiet_check", return_value=True
         ):
+            # Collection succeeds; an out-of-scope dirty row must fail the path predicate.
+            rows[("status", "--porcelain", "--untracked-files=all")] = "M  outside.txt"
+            self.assertEqual(["C04_START_PATH_OR_CLEAN_INVALID"], checker._collect_c04_start_projection_git(bundle))
+            rows[("status", "--porcelain", "--untracked-files=all")] = ""
             self.assertEqual([], checker._collect_c04_start_projection_git(bundle))
             rows[("show", "-s", "--format=%P", completion)] = "b" * 40
             self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
@@ -15178,6 +15665,4961 @@ class C08FinalAcceptanceProjectionTests(unittest.TestCase):
         ):
             self.assertEqual(["SEQ795_SELECTED"], checker._validate_git_projection(dispatch))
             selected.assert_called_once_with(dispatch)
+
+
+class C09StartProjectionTests(unittest.TestCase):
+    def setUp(self):
+        checkpoint = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+        paths = ["Anvil_설계서_v2.md", "Anvil_작업계획서_v1.md",
+                 "Anvil_통합검증매트릭스_v1.md", "Anvil_테스트계획서_v1.md"]
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    BASE = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+    BRANCH = "codex/c09-execution-backends-r1"
+    EXACT11 = sorted([
+        "docs/04_test_reports/C-09_START_PROJECTION_REPORT.md",
+        "docs/evidence/manifests/C-09_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c09-start.json",
+        "docs/validation/C-09_START_VALIDATION.md",
+        "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md",
+        "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c09_start_projection_from_root"), "C-09 start builder missing")
+        return checker
+
+    def test_seq798_builder_preserves_prefix_and_issues_exact_leases(self):
+        checker = self._checker()
+        artifacts = checker.c09_start_projection_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c09_start_projection_from_root(ROOT))
+        self.assertEqual(self.EXACT11, sorted(artifacts))
+        history = subprocess.check_output(["git", "show", f"{self.BASE}:{checker.C09_START_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(history, 795), checker.raw_event_object_prefix_bytes(artifacts[checker.C09_START_E], 795))
+        events = json.loads(artifacts[checker.C09_START_E])["events"]
+        self.assertEqual([796, 797, 798], [e["sequence"] for e in events[-3:]])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"], [e["event_type"] for e in events[-3:]])
+        for before, after in zip(events[-4:], events[-3:]):
+            self.assertEqual(hashlib.sha256(checker.canonical_json_bytes(before)).hexdigest().upper(), after["previous_event_sha256"])
+        progress = json.loads(artifacts[checker.C09_START_P])
+        self.assertEqual(("C-09", "IN_PROGRESS", "developer-primary", "DISPATCH_C09_DEVELOPER"), (progress["current_work_package"], progress["status"], progress["active_agent"]["actor_id"], progress["next_safe_action"]))
+        self.assertEqual({"package_id": "C-10", "status": "NOT_READY"}, progress["next_work_package"])
+        self.assertEqual("NOT_REACHED", progress["c09_start_projection"]["dir2_status"])
+        self.assertEqual(18, len(progress["write_lease"]["path_scope"]))
+        self.assertEqual(progress["worker_lease"]["execution_fencing_token"], progress["write_lease"]["execution_fencing_token"])
+        manifest = json.loads(artifacts[checker.C09_START_M])
+        self.assertEqual("43F5AA046BF2F43FA6E84C4BC64325FDC20BBE2A4882D40722B60CAF8D512C52", manifest["exact_path_list_sha256"])
+        self.assertEqual("57A7D45027FC24930F013C7EB0AB85B81B45E6A174B2DA9ADD90ECE95FA6F3D5", manifest["product_exact_path_list_sha256"])
+        self.assertEqual(["AV-SAFE-010", "AV-SAFE-011", "AV-STAT-021"], [x["requirement_id"] for x in manifest["authority"]["acceptance"]])
+        self.assertEqual(["AV-SAFE-028"], manifest["authority"]["carry_forward_regression"])
+        self.assertFalse(manifest["accepted"])
+
+    def test_seq798_builder_does_not_read_ignored_inputs(self):
+        checker = self._checker()
+        original = Path.read_bytes
+        def bounded(path):
+            if ".superpowers" in path.parts:
+                raise AssertionError("ignored input is not portable")
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", bounded):
+            self.assertEqual(self.EXACT11, sorted(checker.c09_start_projection_from_root(ROOT)))
+
+    def test_seq798_validator_rejects_each_projection_authority_and_raw_history_tamper(self):
+        checker = self._checker()
+        artifacts = checker.c09_start_projection_from_root(ROOT)
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        bundle = {
+            "_root": ROOT, "progress": json.loads(artifacts[checker.C09_START_P]),
+            "events": json.loads(artifacts[checker.C09_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C09_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C09_START_D]),
+        }
+        manifest = json.loads(artifacts[checker.C09_START_M])
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c09_start_projection(bundle, manifest))
+            for field in ("progress", "events", "handoff", "detached_digest"):
+                bad = copy.deepcopy(bundle)
+                bad[field] = {}
+                with self.subTest(field=field):
+                    self.assertIn("C09_START_PROJECTION_INVALID", checker.validate_c09_start_projection(bad, manifest))
+            for field, value in (("accepted", True), ("authority", {}), ("worker_lease", {}),
+                                 ("write_lease", {}), ("raw_checksums", []), ("product_exact_paths", []),
+                                 ("external_validation", {"docker": "PASS"})):
+                bad = copy.deepcopy(manifest)
+                bad[field] = value
+                with self.subTest(field=field):
+                    self.assertIn("C09_START_PROJECTION_INVALID", checker.validate_c09_start_projection(bundle, bad))
+            artifacts[checker.C09_START_E] = artifacts[checker.C09_START_E].replace(
+                b"evt_g05_legacy_migration", b"xvt_g05_legacy_migration", 1)
+            self.assertIn("C09_START_HISTORY_MUTATED", checker.validate_c09_start_projection(bundle, manifest))
+
+    def test_seq798_predecessor_manifest_is_hash_bound(self):
+        checker = self._checker()
+        manifest = json.loads(checker.c09_start_projection_from_root(ROOT)[checker.C09_START_M])
+        self.assertEqual("ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+                         manifest["authority"]["predecessor"].get("manifest_sha256"))
+        original = Path.read_bytes
+        def corrupt(path):
+            if path == ROOT / checker.C08_FINAL_M:
+                return b"{}"
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", corrupt):
+            with self.assertRaisesRegex(ValueError, "C09_START_AUTHORITY_HASH_INVALID"):
+                checker.c09_start_projection_from_root(ROOT)
+
+    def test_seq798_review_r1_stat021_requires_l5_and_rejects_downgrade(self):
+        checker = self._checker()
+        artifacts = checker.c09_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C09_START_M])
+        progress = json.loads(artifacts[checker.C09_START_P])
+        events = json.loads(artifacts[checker.C09_START_E])
+        handoff = checker.extract_handoff_summary(artifacts[checker.C09_START_H].decode())
+        for authority in (manifest["authority"], progress["active_work_instruction"]["acceptance_binding"],
+                          progress["c09_start_projection"]["authority"], events["events"][-3]["details"],
+                          handoff["acceptance_binding"]):
+            stat = [row for row in authority["acceptance"] if row["requirement_id"] == "AV-STAT-021"]
+            self.assertEqual(1, len(stat))
+            self.assertEqual("L5", stat[0]["level"])
+        bundle = {"_root": ROOT, "progress": progress, "events": events, "handoff": handoff,
+                  "detached_digest": json.loads(artifacts[checker.C09_START_D])}
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        downgraded = copy.deepcopy(manifest)
+        for row in downgraded["authority"]["acceptance"]:
+            if row["requirement_id"] == "AV-STAT-021":
+                row["level"] = "L3"
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c09_start_projection(bundle, manifest))
+            self.assertIn("C09_START_PROJECTION_INVALID", checker.validate_c09_start_projection(bundle, downgraded))
+
+    def test_seq798_review_r1_reads_and_verifies_parent_approval_file(self):
+        checker = self._checker()
+        approval = ROOT / "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md"
+        original = Path.read_bytes
+        reads = []
+        def corrupted(path):
+            if path == approval:
+                reads.append(path)
+                return original(path) + b"\nchanged approval"
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", corrupted):
+            with self.assertRaisesRegex(ValueError, "C09_START_AUTHORITY_HASH_INVALID"):
+                checker.c09_start_projection_from_root(ROOT)
+        self.assertEqual([approval], reads)
+
+    def _git_rows(self, mode="staged"):
+        child, merge = "1" * 40, "2" * 40
+        head = self.BASE if mode == "staged" else child if mode == "child" else merge
+        branch = self.BRANCH if mode in ("staged", "child") else "main" if mode == "merge" else ""
+        paths = "\n".join(self.EXACT11)
+        return {
+            ("rev-parse", "HEAD"): head, ("branch", "--show-current"): branch,
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join("M  " + p for p in self.EXACT11) if mode == "staged" else "",
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("rev-parse", "development/main"): self.BASE if mode in ("staged", "child") else merge,
+            ("rev-parse", self.BASE): self.BASE,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): "development/main",
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): "development/main",
+            ("diff", "--cached", "--name-only"): paths if mode == "staged" else "",
+            ("diff", "--name-only"): "", ("ls-files", "--others", "--exclude-standard"): "",
+            ("show", "-s", "--format=%P", child): self.BASE,
+            ("show", "-s", "--format=%P", merge): self.BASE + " " + child,
+            ("diff", "--name-only", self.BASE, child): paths,
+            ("diff", "--name-only", self.BASE, merge): paths,
+        }
+
+    def _git_errors(self, checker, rows, failed=()):
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE}}}
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args not in failed):
+            return checker._collect_c09_start_projection_git(bundle)
+
+    def test_seq798_git_positive_and_first_dispatch(self):
+        checker = self._checker()
+        for mode in ("staged", "child", "merge", "detached"):
+            with self.subTest(mode=mode):
+                self.assertEqual([], self._git_errors(checker, self._git_rows(mode)))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 798}}
+        with mock.patch.object(checker, "_collect_c09_start_projection_git", return_value=["SEQ798_SELECTED"]), mock.patch.object(checker, "_collect_c08_final_acceptance_git", side_effect=AssertionError("seq795 must not run")):
+            self.assertEqual(["SEQ798_SELECTED"], checker._validate_git_projection(dispatch))
+
+    def test_seq798_git_rejects_untrusted_collection_and_changed_paths(self):
+        checker = self._checker()
+        changes = [
+            (("remote", "get-url", "development"), "git@other:other/Anvil.git"),
+            (("rev-parse", "development/main"), "3" * 40), (("rev-parse", self.BASE), "3" * 40),
+            (("branch", "--show-current"), "main"),
+            (("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"), "origin/main"),
+            (("diff", "--name-only"), self.EXACT11[0]),
+            (("ls-files", "--others", "--exclude-standard"), "untracked.txt"),
+            (("diff", "--cached", "--name-only"), "\n".join(self.EXACT11[:-1])),
+            (("diff", "--cached", "--name-only"), "\n".join(self.EXACT11 + [self.EXACT11[0]])),
+            (("diff", "--cached", "--name-only"), "../escape"),
+            (("status", "--porcelain", "--untracked-files=all"), "M  ./docs/progress/build-progress.json"),
+            (("status", "--porcelain", "--untracked-files=all"), None),
+        ]
+        for key, value in changes:
+            rows = self._git_rows()
+            rows[key] = value
+            with self.subTest(key=key, value=value):
+                self.assertTrue(self._git_errors(checker, rows))
+        child, merge = "1" * 40, "2" * 40
+        for mode, key, value in [
+            ("child", ("show", "-s", "--format=%P", child), "3" * 40),
+            ("child", ("show", "-s", "--format=%P", child), self.BASE + " " + "3" * 40),
+            ("child", ("status", "--porcelain", "--untracked-files=all"), " M " + self.EXACT11[0]),
+            ("merge", ("show", "-s", "--format=%P", merge), self.BASE + " " + child + " " + "3" * 40),
+            ("merge", ("show", "-s", "--format=%P", child), "3" * 40),
+            ("merge", ("diff", "--name-only", self.BASE, merge), "\n".join(self.EXACT11[:-1])),
+        ]:
+            rows = self._git_rows(mode)
+            rows[key] = value
+            with self.subTest(mode=mode, key=key):
+                self.assertTrue(self._git_errors(checker, rows))
+        self.assertTrue(self._git_errors(checker, self._git_rows("merge"), failed=[("diff", "--quiet", child, merge)]))
+        self.assertTrue(checker._collect_c09_start_projection_git({"_root": ROOT, "progress": {"repository": {"validated_base_commit": "3" * 40}}}))
+
+
+
+class C09R3ControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    BASE = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c09_r3_from_root"), "C-09 R3 builder missing")
+        return checker
+
+    def test_seq806_builder_is_append_only_and_binds_review_epoch2(self):
+        checker = self._checker()
+        artifacts = checker.c09_r3_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c09_r3_from_root(ROOT))
+        self.assertEqual(11, len(artifacts))
+        manifest = json.loads(artifacts[checker.C09_R3_M])
+        self.assertEqual("8E778DA6563C079397187A85E427859946CE7F4D45233F3DD97562CB9CBCB9A0", manifest["exact_path_list_sha256"])
+        self.assertEqual("AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F", manifest["product_exact_path_list_sha256"])
+        old = subprocess.check_output(["git", "show", self.BASE + ":" + checker.C09_R3_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 798),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C09_R3_E], 798))
+        events = json.loads(artifacts[checker.C09_R3_E])["events"]
+        self.assertEqual(list(range(799, 807)), [e["sequence"] for e in events[-8:]])
+        self.assertEqual("APPROVAL-20260814-WORKPLAN-V16-001", events[801]["details"].get("approval_ref"))
+        self.assertEqual("evt_c09_r3_package_rework_requested", events[805]["details"].get("resume_event_ref"))
+        self.assertEqual(["INDEPENDENT_TEST_REVIEW_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED",
+                          "WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED",
+                          "PACKAGE_REWORK_REQUESTED", "PACKAGE_RESUMED"], [e["event_type"] for e in events[-8:]])
+        for before, after in zip(events[-9:], events[-8:]):
+            self.assertEqual(hashlib.sha256(checker.canonical_json_bytes(before)).hexdigest().upper(), after["previous_event_sha256"])
+        p = json.loads(artifacts[checker.C09_R3_P])
+        self.assertEqual(("C-09", "REWORK_IN_PROGRESS", 2, 2),
+                         (p["current_work_package"], p["status"], p["worker_lease"]["lease_epoch"], p["write_lease"]["write_epoch"]))
+        self.assertEqual(1, p["c09_r3_rework"]["valid_failure_count"])
+        self.assertEqual(13, len(manifest["authority"]["corrective_findings"]))
+        self.assertEqual("NOT_REACHED", manifest["dir2_status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertNotIn("tests/tool_gateway/test_registry.py", p["write_lease"]["path_scope"])
+        self.assertIn("tests/tool_gateway/test_tool_registry.py", p["write_lease"]["path_scope"])
+
+    def test_seq806_projection_tamper_and_malformed_inputs_fail_closed(self):
+        checker = self._checker()
+        artifacts = checker.c09_r3_from_root(ROOT)
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_R3_P]),
+                  "events": json.loads(artifacts[checker.C09_R3_E]),
+                  "handoff": checker.extract_handoff_summary(artifacts[checker.C09_R3_H].decode()),
+                  "detached_digest": json.loads(artifacts[checker.C09_R3_D])}
+        manifest = json.loads(artifacts[checker.C09_R3_M])
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c09_r3(bundle, manifest))
+            for key, value in (("authority", {}), ("frozen_product_raw", {}), ("target_hash", "0"*64),
+                               ("accepted", True), ("worker_lease", {}), ("write_lease", {}),
+                               ("raw_checksums", []), ("historical_event_sequence", 797)):
+                bad = copy.deepcopy(manifest)
+                bad[key] = value
+                with self.subTest(key=key):
+                    self.assertIn("C09_R3_PROJECTION_INVALID", checker.validate_c09_r3(bundle, bad))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["worker_lease"]["lease_epoch"] = 1
+            self.assertIn("C09_R3_PROJECTION_INVALID", checker.validate_c09_r3(bad, manifest))
+        history = {p: subprocess.check_output(["git", "show", self.BASE + ":" + p], cwd=ROOT)
+                   for p in (checker.C09_R3_P, checker.C09_R3_H, checker.C09_R3_E)}
+        files = {p: (ROOT/p).read_bytes() for p in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+        for raw in (b"null", b"[]", b"{", b'{"x":1,"x":2}', b'{"x":NaN}'):
+            bad = dict(history)
+            bad[checker.C09_R3_P] = raw
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                checker.c09_r3_artifacts(bad, files, checker.C09_R3_FROZEN_PRODUCT)
+
+    def test_seq806_actual_collection_contract_rejects_missing_and_index_overlap(self):
+        checker = self._checker()
+        o = self._observation(checker)
+        worker, write = checker._c09_r3_leases()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE},
+                   "worker_lease": worker, "write_lease": write}}
+        rows = {
+            ("rev-parse", "--show-toplevel"): str(ROOT), ("rev-parse", "HEAD"): self.BASE,
+            ("rev-parse", self.BASE): self.BASE, ("branch", "--show-current"): o["branch"],
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/"+o["branch"]): o["upstream"],
+            ("rev-parse", "development/main"): o["main_head"], ("remote", "get-url", "development"): o["remote_url"],
+            ("diff", "--cached", "--name-only"): "\n".join(o["staged"]),
+            ("diff", "--name-only"): "\n".join(o["unstaged"]),
+            ("ls-files", "--others", "--exclude-standard"): "\n".join(o["untracked"]),
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join(o["status_rows"]),
+            ("show", "-s", "--format=%P", self.BASE): o["main_head"],
+        }
+        original_exists = Path.exists
+        def fixture_exists(path):
+            return True if path == ROOT/"tests/tool_gateway/test_registry.py" else original_exists(path)
+        with mock.patch.object(checker, "_c09_r3_product_hashes", return_value=o["product_hashes"]), mock.patch.object(
+                Path, "exists", fixture_exists), mock.patch.object(
+                checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+                checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c09_r3_git(bundle))
+            rows[("diff", "--cached", "--name-only")] = "packages/paths/identity.py"
+            self.assertIn("C09_R3_INDEX_OVERLAP", checker._collect_c09_r3_git(bundle))
+            rows[("diff", "--cached", "--name-only")] = None
+            self.assertEqual(["GIT_REQUIRED_COLLECTION_FAILED"], checker._collect_c09_r3_git(bundle))
+
+    def _observation(self, checker, mode="staged"):
+        old = checker.c09_start_product_write_scope()
+        revised = checker.c09_r3_product_paths()
+        untracked = ["packages/execution_backends/docker.py", "packages/execution_backends/git_worktree.py",
+                     "packages/tool_gateway/models.py", "packages/tool_gateway/registry.py",
+                     "tests/execution_backends/test_docker.py", "tests/execution_backends/test_git_worktree.py",
+                     "tests/integration/test_c09_repository_workspace.py", "tests/tool_gateway/test_registry.py"]
+        if mode == "revised":
+            untracked = [p.replace("tests/tool_gateway/test_registry.py", "tests/tool_gateway/test_tool_registry.py") for p in untracked]
+        paths = revised if mode == "revised" else old
+        return {"head": self.BASE if mode == "staged" else "1"*40,
+                "parents": ["08aae12fdc4f8bd2d38b455f23408796ab4b8c82"] if mode == "staged" else [self.BASE],
+                "branch": "codex/c09-execution-backends-r1", "upstream": "development/main",
+                "remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+                "main_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+                "base": self.BASE, "base_parents": ["08aae12fdc4f8bd2d38b455f23408796ab4b8c82"],
+                "staged": checker.c09_r3_paths() if mode == "staged" else [],
+                "unstaged": sorted(set(paths)-set(untracked)), "untracked": sorted(untracked),
+                "status_rows": (["M  "+p for p in checker.c09_r3_paths()] if mode == "staged" else []) +
+                    [" M "+p for p in sorted(set(paths)-set(untracked))] + ["?? "+p for p in sorted(untracked)],
+                "changed": [] if mode == "staged" else checker.c09_r3_paths(),
+                "product_hashes": copy.deepcopy(checker.C09_R3_FROZEN_PRODUCT),
+                "old_test_exists": mode != "revised", "diff_check": True, "cached_check": True,
+                "ancestor": True, "epoch2_valid": True}
+
+    def test_seq806_transition_positive_and_forbidden_edges(self):
+        checker = self._checker()
+        for mode in ("staged", "child", "revised"):
+            self.assertEqual([], checker.c09_r3_transition_errors(self._observation(checker, mode)))
+        self.assertIn("C09_R3_PRODUCT_SCOPE_REGRESSION",
+                      checker.c09_r3_transition_errors(self._observation(checker, "child"), previous_mode="R3_PRODUCT_DIRTY_REVISED_EXACT18"))
+        for key, value in (("remote_url", "wrong"), ("main_head", "0"*40), ("base", "0"*40),
+                           ("branch", "main"), ("upstream", "origin/main"), ("diff_check", False),
+                           ("cached_check", False), ("epoch2_valid", False)):
+            row = self._observation(checker)
+            row[key] = value
+            with self.subTest(key=key):
+                self.assertTrue(checker.c09_r3_transition_errors(row))
+        for mode, key, value in (("staged", "staged", ["packages/paths/identity.py"]),
+                                ("staged", "product_hashes", {}),
+                                ("staged", "untracked", ["../escape"]),
+                                ("staged", "status_rows", [" M ./packages/paths/identity.py"]),
+                                ("child", "parents", ["0"*40]),
+                                ("child", "parents", [self.BASE, "0"*40]),
+                                ("child", "changed", []),
+                                ("revised", "old_test_exists", True),
+                                ("revised", "untracked", [])):
+            row = self._observation(checker, mode)
+            row[key] = value
+            with self.subTest(mode=mode, key=key):
+                self.assertTrue(checker.c09_r3_transition_errors(row))
+
+    def test_seq806_builder_ignores_review_files_and_dispatches_first(self):
+        checker = self._checker()
+        original = Path.read_bytes
+        def no_ignored(path):
+            if ".superpowers" in path.parts:
+                raise AssertionError("ignored file read")
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", no_ignored):
+            self.assertEqual(11, len(checker.c09_r3_from_root(ROOT)))
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 806}}
+        with mock.patch.object(checker, "_collect_c09_r3_git", return_value=["SEQ806_SELECTED"]), mock.patch.object(
+                checker, "_collect_c09_start_projection_git", side_effect=AssertionError("seq798 fallback")):
+            self.assertEqual(["SEQ806_SELECTED"], checker._validate_git_projection(bundle))
+
+
+
+class C09R4ControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    BASE = "74f9878de521a6bc5a2c4f5165332c76edfc1354"
+    PARENT = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c09_r4_from_root"), "C-09 R4 builder missing")
+        return checker
+
+    def test_seq814_builder_preserves_806_and_retires_epoch2_at_failure2(self):
+        c = self._checker()
+        a = c.c09_r4_from_root(ROOT)
+        self.assertEqual(11, len(a))
+        m = json.loads(a[c.C09_R4_M])
+        self.assertEqual("EA7B2E08C7F6ED270EF6E0E47F49AB2277317DC5C915E1673420282D6B1BB10B", m["exact_path_list_sha256"])
+        self.assertEqual("AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F", m["product_exact_path_list_sha256"])
+        old = subprocess.check_output(["git", "show", self.BASE+":"+c.C09_R4_E], cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,806), c.raw_event_object_prefix_bytes(a[c.C09_R4_E],806))
+        events = json.loads(a[c.C09_R4_E])["events"]
+        self.assertEqual(list(range(807,815)), [x["sequence"] for x in events[-8:]])
+        self.assertEqual(["INDEPENDENT_TEST_REVIEW_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED",
+                          "WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED",
+                          "PACKAGE_REWORK_REQUESTED","PACKAGE_RESUMED"], [x["event_type"] for x in events[-8:]])
+        self.assertEqual("981F80242814EE270010773D9BAC6C5DD81EDADFCBF7A1AFD18E56D981D38FCF", events[806]["previous_event_sha256"])
+        for before, after in zip(events[-9:],events[-8:]):
+            self.assertEqual(hashlib.sha256(c.canonical_json_bytes(before)).hexdigest().upper(), after["previous_event_sha256"])
+        self.assertEqual("APPROVAL-20260814-WORKPLAN-V16-001",events[809]["details"]["approval_ref"])
+        self.assertEqual("evt_c09_r4_package_rework_requested",events[813]["details"]["resume_event_ref"])
+        self.assertEqual((2,2,"MAIN_TAKEOVER_AT_3"),tuple(events[806]["details"][k] for k in ("valid_failure_count","rework_attempt","next_valid_failure_action")))
+        p=json.loads(a[c.C09_R4_P])
+        self.assertEqual((3,3,2), (p["worker_lease"]["lease_epoch"],p["write_lease"]["write_epoch"],p["c09_r4_rework"]["attempt"]))
+        self.assertEqual("REVOKED",p["retired_c09_r3_worker_lease"]["status"])
+        self.assertEqual(13,len(m["authority"]["corrective_findings"]))
+        self.assertEqual({"bytes":2410633,"sha256":"8745062E0F6572E4908CEB995779E4551164F951AFBDEDC90C2F5E778BEF40B3"},m["historical_raw_event_prefix"])
+        self.assertEqual(10,len(m["raw_checksums"]))
+        for item in m["raw_checksums"]:
+            self.assertEqual(hashlib.sha256(a[item["path"]]).hexdigest().upper(),item["sha256"])
+
+    def _observation(self,c,mode="staged"):
+        product=c.c09_r3_product_paths()
+        untracked=[p for p in product if p in ("packages/execution_backends/docker.py","packages/execution_backends/git_worktree.py",
+             "packages/tool_gateway/models.py","packages/tool_gateway/registry.py","tests/execution_backends/test_docker.py",
+             "tests/execution_backends/test_git_worktree.py","tests/integration/test_c09_repository_workspace.py","tests/tool_gateway/test_tool_registry.py")]
+        staged=c.c09_r4_paths() if mode=="staged" else []
+        o={"base":self.BASE,"base_parents":[self.PARENT],"head":self.BASE if mode=="staged" else "1"*40,
+           "parents":[self.PARENT] if mode=="staged" else [self.BASE],
+           "main_head":"08aae12fdc4f8bd2d38b455f23408796ab4b8c82","remote_url":"git@github-sinsan-develop:sinsan-develop/Anvil.git",
+           "branch":"codex/c09-execution-backends-r1","upstream":"development/main","epoch3_valid":True,
+           "staged":staged,"unstaged":sorted(set(product)-set(untracked)),"untracked":sorted(untracked),
+           "changed":[] if mode=="staged" else c.c09_r4_paths(),"ancestor":True,"diff_check":True,"cached_check":True,
+           "control_tree_valid":True,"old_test_exists":False,"product_hashes":copy.deepcopy(c.C09_R4_FROZEN_PRODUCT),
+           "mode":"ACTIVE_R4" if mode=="active" else "FROZEN_R3"}
+        o["status_rows"]=["M  "+p for p in staged]+[" M "+p for p in o["unstaged"]]+["?? "+p for p in o["untracked"]]
+        if mode=="active":
+            o["product_hashes"][product[0]]["sha256"]="0"*64
+        if mode=="detached":
+            o.update(branch="",upstream="",staged=[],unstaged=[],untracked=[],status_rows=[],product_hashes={},mode="DETACHED_CONTROL")
+        return o
+
+    def test_seq814_transition_requires_explicit_mode_and_exact_authority_tree(self):
+        c=self._checker()
+        for mode in ("staged","child","active","detached"):
+            self.assertEqual([],c.c09_r4_transition_errors(self._observation(c,mode)),mode)
+        for key,value in (("base","0"*40),("base_parents",[]),("main_head","0"*40),("remote_url","wrong"),
+                          ("branch","main"),("upstream","origin/main"),("epoch3_valid",False),("control_tree_valid",False),
+                          ("staged",["packages/paths/identity.py"]),("product_hashes",{}),("old_test_exists",True),
+                          ("unstaged",["../outside"]),("status_rows",[" M ./packages/paths/identity.py"]),("mode","ACTIVE_R4")):
+            o=self._observation(c);o[key]=value
+            with self.subTest(key=key):self.assertTrue(c.c09_r4_transition_errors(o))
+        for key,value in (("parents",[self.BASE,"0"*40]),("parents",["0"*40]),("changed",[]),("product_hashes",{})):
+            o=self._observation(c,"child");o[key]=value
+            with self.subTest(key=key):self.assertTrue(c.c09_r4_transition_errors(o))
+        o=self._observation(c,"detached");o["branch"]="codex/c09-execution-backends-r1";o["upstream"]="development/main"
+        self.assertTrue(c.c09_r4_transition_errors(o))
+        self.assertIn("C09_R4_PRODUCT_SCOPE_REGRESSION",c.c09_r4_transition_errors(self._observation(c,"child"),previous_mode="ACTIVE_R4"))
+        o=self._observation(c,"active");o["mode"]="FROZEN_R3"
+        self.assertIn("C09_R4_R3_PRODUCT_DIRTY_MUTATED",c.c09_r4_transition_errors(o))
+
+    def test_seq814_projection_authority_review_event_tamper_and_ignored_independence(self):
+        c=self._checker();a=c.c09_r4_from_root(ROOT);original=Path.read_bytes
+        def read(path):
+            if ".superpowers" in path.parts:raise AssertionError("ignored dependency")
+            try:relative=path.relative_to(ROOT).as_posix()
+            except ValueError:return original(path)
+            return a[relative] if relative in a else original(path)
+        bundle={"_root":ROOT,"progress":json.loads(a[c.C09_R4_P]),"events":json.loads(a[c.C09_R4_E]),
+                "handoff":c.extract_handoff_summary(a[c.C09_R4_H].decode()),"detached_digest":json.loads(a[c.C09_R4_D])}
+        manifest=json.loads(a[c.C09_R4_M])
+        with mock.patch.object(Path,"read_bytes",read):
+            self.assertEqual(a,c.c09_r4_from_root(ROOT))
+            self.assertEqual([],c.validate_c09_r4(bundle,manifest))
+            for key,value in (("authority",{}),("review",{}),("review_digest","0"*64),("raw_checksums",[]),
+                              ("historical_raw_event_prefix",{}),("worker_lease",{}),("target_hash","0"*64),("accepted",True)):
+                bad=copy.deepcopy(manifest);bad[key]=value
+                with self.subTest(key=key):self.assertIn("C09_R4_PROJECTION_INVALID",c.validate_c09_r4(bundle,bad))
+            bad=copy.deepcopy(bundle);bad["events"]["events"][813]["details"]["resume_event_ref"]="wrong"
+            self.assertIn("C09_R4_PROJECTION_INVALID",c.validate_c09_r4(bad,manifest))
+        approval=ROOT/"docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md"
+        with mock.patch.object(Path,"read_bytes",lambda path:b"tampered" if path==approval else original(path)):
+            with self.assertRaisesRegex(ValueError,"C09_R4_AUTHORITY_HASH_INVALID"):c.c09_r4_from_root(ROOT)
+        history={p:subprocess.check_output(["git","show",self.BASE+":"+p],cwd=ROOT) for p in (c.C09_R4_P,c.C09_R4_H,c.C09_R4_E)}
+        files={p:original(ROOT/p) for p in ("scripts/check_project_progress.py","tests/tooling/test_project_progress.py")}
+        for raw in (b"null",b"[]",b"{",b'{"x":1,"x":2}',b'{"x":NaN}'):
+            bad=dict(history);bad[c.C09_R4_P]=raw
+            with self.subTest(raw=raw),self.assertRaises(ValueError):c.c09_r4_artifacts(bad,files,c.C09_R4_FROZEN_PRODUCT)
+        with mock.patch.object(c,"_collect_c09_r4_git",return_value=["SEQ814_SELECTED"]),mock.patch.object(c,"_collect_c09_r3_git",side_effect=AssertionError("old fallback")):
+            self.assertEqual(["SEQ814_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":814}}))
+
+
+
+    def test_seq814_cli_forwards_explicit_mode_and_rejects_unknown_or_legacy(self):
+        c=self._checker()
+        bundle={"progress":{"event_sequence":814,"reporting_decision":{"decision":"AUTO_CONTINUE"}}}
+        for mode in ("FROZEN_R3","ACTIVE_R4","DETACHED_CONTROL"):
+            def validate(b):
+                return [] if b.get("_c09_r4_mode")==mode and b.get("_c09_r4_trusted_previous_mode")=="ACTIVE_R4" else ["MODE_NOT_FORWARDED"]
+            with mock.patch.object(c,"load_bundle",return_value=copy.deepcopy(bundle)),mock.patch.object(c,"validate_bundle",side_effect=validate):
+                self.assertEqual(0,c.main([str(ROOT),"--c09-r4-mode="+mode,"--c09-r4-previous-mode=ACTIVE_R4"]))
+        with mock.patch.object(c,"load_bundle",side_effect=AssertionError("must reject before load")):
+            self.assertEqual(1,c.main(["--c09-r4-mode=wrong"]))
+            self.assertEqual(1,c.main(["--c09-r4-mode=ACTIVE_R4","--c09-r4-mode=FROZEN_R3"]))
+        with mock.patch.object(c,"load_bundle",return_value={"progress":{"event_sequence":806}}):
+            self.assertEqual(1,c.main(["--c09-r4-mode=ACTIVE_R4"]))
+
+    def test_seq814_collector_is_strict_and_compares_index_or_commit_raw_tree(self):
+        c=self._checker();o=self._observation(c)
+        worker,write=c._c09_r4_leases()
+        bundle={"_root":ROOT,"progress":{"worker_lease":worker,"write_lease":write,"repository":{"validated_base_commit":self.BASE}}}
+        rows={
+            ("rev-parse","--show-toplevel"):str(ROOT),("rev-parse","HEAD"):self.BASE,
+            ("rev-parse",self.BASE):self.BASE,("branch","--show-current"):o["branch"],
+            ("for-each-ref","--format=%(upstream:short)","--count=1","refs/heads/"+o["branch"]):o["upstream"],
+            ("rev-parse","development/main"):o["main_head"],("remote","get-url","development"):o["remote_url"],
+            ("diff","--cached","--name-only"):"\n".join(o["staged"]),("diff","--name-only"):"\n".join(o["unstaged"]),
+            ("ls-files","--others","--exclude-standard"):"\n".join(o["untracked"]),
+            ("status","--porcelain","--untracked-files=all"):"\n".join(o["status_rows"]),
+            ("show","-s","--format=%P",self.BASE):self.PARENT}
+        original_exists=Path.exists
+        def exists(path):return False if path==ROOT/"tests/tool_gateway/test_registry.py" else original_exists(path)
+        with mock.patch.object(c,"_c02_git_raw_stdout",side_effect=lambda root,*args:rows.get(args)),mock.patch.object(
+                c,"_c02_git_quiet_check",return_value=True),mock.patch.object(c,"_c09_r4_tree_matches",return_value=True) as tree,mock.patch.object(
+                c,"_c09_r3_product_hashes",return_value=o["product_hashes"]),mock.patch.object(Path,"exists",exists):
+            self.assertEqual([],c._collect_c09_r4_git(bundle))
+            tree.return_value=False
+            self.assertIn("C09_R4_REPOSITORY_AUTHORITY_INVALID",c._collect_c09_r4_git(bundle))
+            tree.return_value=True;rows[("diff","--cached","--name-only")]=None
+            self.assertEqual(["GIT_REQUIRED_COLLECTION_FAILED"],c._collect_c09_r4_git(bundle))
+        with mock.patch.object(c,"c09_r4_from_root",return_value={"control.txt":b"expected"}),mock.patch.object(c.subprocess,"check_output",return_value=b"expected"):
+            self.assertTrue(c._c09_r4_tree_matches(ROOT,""))
+        with mock.patch.object(c,"c09_r4_from_root",return_value={"control.txt":b"expected"}),mock.patch.object(c.subprocess,"check_output",return_value=b"tampered"):
+            self.assertFalse(c._c09_r4_tree_matches(ROOT,"1"*40))
+
+
+class C09MainTakeoverControlTests(unittest.TestCase):
+    BASE = "85d72196eaafe3e458f8aea7016df94f810df086"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(
+            hasattr(checker, "c09_main_takeover_from_root"),
+            "C-09 Main takeover builder missing",
+        )
+        return checker
+
+    def test_seq824_builder_emits_exact14_and_freezes_reviewed_product(self):
+        checker = self._checker()
+        artifacts = checker.c09_main_takeover_from_root(ROOT)
+        self.assertEqual(checker.c09_main_takeover_paths(), sorted(artifacts))
+        self.assertEqual(14, len(artifacts))
+        self.assertEqual("BDA2215C2AD7CECD1BDFAE660A327F0FC2B204ED9DDAB9D1226690877988BBF8",
+                         checker._c21_path_list_sha(checker.c09_main_takeover_paths(), windows=True))
+        manifest = json.loads(artifacts[checker.C09_MAIN_TAKEOVER_M])
+        self.assertEqual(13, len(manifest["raw_checksums"]))
+        self.assertEqual(checker.C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256,
+                         manifest["product_raw_map_sha256"])
+        self.assertEqual(15, len(manifest["corrective_axes"]))
+        self.assertEqual((3, 3, 3), tuple(manifest["failure_counting"][key]
+                                         for key in ("valid_failure_count", "same_failure_count", "rework_attempt")))
+        self.assertTrue(manifest["failure_counting"]["spec_and_quality_same_snapshot_counted_once"])
+        self.assertEqual({"bytes": 2436190,
+                          "sha256": "C6A8C72CC0514FBB936FC01053B3AFFF54B65B00EC09A7335BD90D2F44228F0C"},
+                         manifest["historical_raw_event_prefix"])
+        old = subprocess.check_output(["git", "show", self.BASE + ":" + checker.C09_MAIN_TAKEOVER_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 814),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C09_MAIN_TAKEOVER_E], 814))
+        events = json.loads(artifacts[checker.C09_MAIN_TAKEOVER_E])["events"]
+        self.assertEqual(list(range(815, 825)), [event["sequence"] for event in events[-10:]])
+        self.assertEqual(["INDEPENDENT_TEST_REVIEW_RECORDED", "PACKAGE_INTERRUPTED",
+                          "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "LEASE_TAKEOVER",
+                          "WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED",
+                          "PACKAGE_REWORK_REQUESTED", "PACKAGE_RESUMED"],
+                         [event["event_type"] for event in events[-10:]])
+        self.assertEqual("STOPPED", events[-9]["details"]["developer_execution"])
+        self.assertEqual("REVOKED", events[-9]["details"]["runtime_tool_ownership"])
+        for before, after in zip(events[-11:], events[-10:]):
+            self.assertEqual(hashlib.sha256(checker.canonical_json_bytes(before)).hexdigest().upper(),
+                             after["previous_event_sha256"])
+        progress = json.loads(artifacts[checker.C09_MAIN_TAKEOVER_P])
+        self.assertEqual("REWORK_MAIN_TAKEOVER", progress["status"])
+        self.assertEqual("main-agent-eoul", progress["active_agent"]["actor_id"])
+        self.assertEqual(4, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(4, progress["write_lease"]["write_epoch"])
+        self.assertEqual("main-agent-eoul", progress["worker_lease"]["actor_id"])
+        self.assertEqual("main-agent-eoul", progress["write_lease"]["actor_id"])
+        self.assertEqual("REVOKED", progress["retired_c09_r4_write_lease"]["status"])
+        self.assertEqual("REVOKED", progress["retired_c09_r4_worker_lease"]["status"])
+        self.assertEqual("STOPPED", progress["c09_main_takeover"]["developer_execution"])
+        self.assertEqual("REVOKED", progress["c09_main_takeover"]["runtime_tool_ownership"])
+        self.assertEqual("NOT_READY", progress["next_work_package"]["status"])
+        packet = json.loads(artifacts[checker.C09_MAIN_TAKEOVER_PACKET])
+        self.assertEqual("NOT_REACHED", packet["dir2_status"])
+        self.assertEqual("STOPPED", packet["developer_execution"])
+        self.assertEqual("REVOKED", packet["runtime_tool_ownership"])
+        for path, expected in ((checker.C09_MAIN_TAKEOVER_SPEC_REVIEW,
+                                checker.C09_MAIN_TAKEOVER_SPEC_REVIEW_SHA256),
+                               (checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW,
+                                checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256)):
+            self.assertEqual(expected, hashlib.sha256(artifacts[path]).hexdigest().upper())
+
+    def test_active_scope_correction_is_exact20_and_preserves_frozen_exact18(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c09_main_takeover_active_product_paths"))
+        frozen = checker.c09_r3_product_paths()
+        active = checker.c09_main_takeover_active_product_paths()
+        self.assertEqual(18, len(frozen))
+        self.assertEqual(20, len(active))
+        self.assertEqual(
+            {
+                "packages/domain/identifiers.py",
+                "packages/execution_backends/safeio.py",
+            },
+            set(active) - set(frozen),
+        )
+        self.assertNotIn("packages/domain/__init__.py", active)
+        self.assertNotIn("packages/orchestration/delegation.py", active)
+        self.assertTrue(hasattr(checker, "C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS"))
+        self.assertEqual(
+            {
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            },
+            set(checker.C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS),
+        )
+        self.assertEqual(
+            "PMO_TECHNICAL_RECOMMENDATION_USER_EXECUTION_DIRECTION",
+            checker.C09_MAIN_TAKEOVER_ACTIVE_SCOPE_CORRECTION["classification"],
+        )
+
+    def _observation(self, checker, mode="staged"):
+        product = (checker.c09_r3_product_paths() if mode == "staged"
+                   else checker.c09_main_takeover_active_product_paths())
+        untracked = [path for path in product if path in {
+            "packages/execution_backends/docker.py", "packages/execution_backends/git_worktree.py",
+            "packages/execution_backends/safeio.py",
+            "packages/tool_gateway/models.py", "packages/tool_gateway/registry.py",
+            "tests/execution_backends/test_docker.py", "tests/execution_backends/test_git_worktree.py",
+            "tests/integration/test_c09_repository_workspace.py", "tests/tool_gateway/test_tool_registry.py"}]
+        staged = checker.c09_main_takeover_paths() if mode == "staged" else []
+        observation = {"base": self.BASE, "base_parents": [checker.C09_MAIN_TAKEOVER_PARENT],
+            "head": self.BASE if mode == "staged" else "1" * 40,
+            "parents": [checker.C09_MAIN_TAKEOVER_PARENT] if mode == "staged" else [self.BASE],
+            "main_head": checker.C09_R4_MAIN, "remote_url": checker.C09_START_DEVELOPMENT_URL,
+            "branch": checker.C09_START_BRANCH, "upstream": "development/main", "epoch4_valid": True,
+            "staged": staged, "unstaged": sorted(set(product) - set(untracked)), "untracked": sorted(untracked),
+            "changed": [] if mode == "staged" else checker.c09_main_takeover_paths(),
+            "status_rows": [], "ancestor": True, "diff_check": True, "cached_check": True,
+            "control_tree_valid": True,
+            "product_hashes": (copy.deepcopy(checker.C09_MAIN_TAKEOVER_REVIEWED_PRODUCT_RAW)
+                               if mode == "staged"
+                               else checker._c09_main_takeover_current_product_raw(ROOT, product)),
+            "mode": "FROZEN_R4" if mode == "staged" else "ACTIVE_MAIN"}
+        observation["status_rows"] = (["M  " + path for path in staged]
+            + [" M " + path for path in observation["unstaged"]]
+            + ["?? " + path for path in observation["untracked"]])
+        if mode == "detached":
+            observation.update(branch="", upstream="", staged=[], unstaged=[], untracked=[],
+                               changed=checker.c09_main_takeover_paths(), status_rows=[], product_hashes={},
+                               mode="DETACHED_CONTROL")
+        return observation
+
+    def test_seq824_transition_strict_git_path_lineage_modes_and_product_fence(self):
+        checker = self._checker()
+        for mode in ("staged", "child", "detached"):
+            self.assertEqual([], checker.c09_main_takeover_transition_errors(self._observation(checker, mode)), mode)
+        active_with_control_correction = self._observation(checker, "child")
+        control_correction = [
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        active_with_control_correction["unstaged"] = sorted(
+            active_with_control_correction["unstaged"]
+            + control_correction
+        )
+        active_with_control_correction["status_rows"] = (
+            [" M " + path for path in active_with_control_correction["unstaged"]]
+            + ["?? " + path for path in active_with_control_correction["untracked"]]
+        )
+        self.assertEqual(
+            [],
+            checker.c09_main_takeover_transition_errors(active_with_control_correction),
+        )
+        partial_control_correction = copy.deepcopy(active_with_control_correction)
+        partial_control_correction["unstaged"].remove("tests/tooling/test_project_progress.py")
+        partial_control_correction["status_rows"].remove(" M tests/tooling/test_project_progress.py")
+        self.assertIn(
+            "C09_MAIN_TAKEOVER_PRODUCT_SCOPE_INVALID",
+            checker.c09_main_takeover_transition_errors(partial_control_correction),
+        )
+        for key, value in (("base", "0" * 40), ("base_parents", []), ("main_head", "0" * 40),
+                           ("remote_url", "wrong"), ("branch", "main"), ("upstream", "origin/main"),
+                           ("epoch4_valid", False), ("ancestor", False), ("control_tree_valid", False),
+                           ("staged", ["packages/paths/identity.py"]), ("unstaged", ["../outside"]),
+                           ("status_rows", [" M ./packages/paths/identity.py"]), ("product_hashes", {})):
+            observation = self._observation(checker); observation[key] = value
+            with self.subTest(key=key):
+                self.assertTrue(checker.c09_main_takeover_transition_errors(observation))
+        child = self._observation(checker, "child"); child["parents"] = [self.BASE, "0" * 40]
+        self.assertTrue(checker.c09_main_takeover_transition_errors(child))
+        frozen_child = self._observation(checker, "child"); frozen_child["mode"] = "FROZEN_R4"
+        self.assertTrue(checker.c09_main_takeover_transition_errors(frozen_child))
+        active_changed = self._observation(checker, "child")
+        active_changed["product_hashes"] = copy.deepcopy(active_changed["product_hashes"])
+        first = checker.c09_main_takeover_active_product_paths()[0]
+        active_changed["product_hashes"][first]["sha256"] = "A" * 64
+        self.assertEqual([], checker.c09_main_takeover_transition_errors(active_changed))
+        frozen_changed = self._observation(checker)
+        frozen_changed["product_hashes"] = copy.deepcopy(frozen_changed["product_hashes"])
+        frozen_changed["product_hashes"][checker.c09_r3_product_paths()[0]]["sha256"] = "A" * 64
+        self.assertIn("C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED",
+                      checker.c09_main_takeover_transition_errors(frozen_changed))
+        self.assertIn("C09_MAIN_TAKEOVER_MODE_REGRESSION",
+                      checker.c09_main_takeover_transition_errors(self._observation(checker), previous_mode="ACTIVE_MAIN"))
+
+    def test_seq824_cached_check_allows_only_the_hash_bound_immutable_quality_review(self):
+        checker = self._checker()
+        full = ("diff", "--cached", "--check")
+        narrowed = (
+            "diff", "--cached", "--check", "--", ".",
+            ":(exclude)" + checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW,
+        )
+        calls = []
+
+        def only_narrowed(root, *arguments):
+            calls.append(arguments)
+            return arguments == narrowed
+
+        with mock.patch.object(checker, "_c02_git_quiet_check", side_effect=only_narrowed):
+            self.assertTrue(checker._c09_main_takeover_cached_check(ROOT))
+        self.assertEqual([full, narrowed], calls)
+
+        original = Path.read_bytes
+
+        def tampered(path):
+            if path == ROOT / checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW:
+                return b"tampered review"
+            return original(path)
+
+        with mock.patch.object(checker, "_c02_git_quiet_check", return_value=False), \
+             mock.patch.object(Path, "read_bytes", tampered):
+            self.assertFalse(checker._c09_main_takeover_cached_check(ROOT))
+
+    def test_seq824_projection_tamper_and_fresh_local_clone_ignore_independence(self):
+        checker = self._checker(); artifacts = checker.c09_main_takeover_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_MAIN_TAKEOVER_P]),
+            "events": json.loads(artifacts[checker.C09_MAIN_TAKEOVER_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C09_MAIN_TAKEOVER_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C09_MAIN_TAKEOVER_D])}
+        manifest = json.loads(artifacts[checker.C09_MAIN_TAKEOVER_M]); original = Path.read_bytes
+        def generated(path):
+            if ".superpowers" in path.parts:
+                raise AssertionError("ignored dependency")
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c09_main_takeover(bundle, manifest))
+            for key, value in (("authority", {}), ("corrective_axes", []), ("product_raw", {}),
+                               ("raw_checksums", []), ("historical_raw_event_prefix", {}),
+                               ("worker_lease", {}), ("target_hash", "0" * 64), ("accepted", True)):
+                bad = copy.deepcopy(manifest); bad[key] = value
+                with self.subTest(key=key):
+                    self.assertIn("C09_MAIN_TAKEOVER_PROJECTION_INVALID",
+                                  checker.validate_c09_main_takeover(bundle, bad))
+        with tempfile.TemporaryDirectory() as temp:
+            clone = Path(temp) / "clone"
+            subprocess.run(["git", "clone", "--no-local", str(ROOT), str(clone)], check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "checkout", "--detach", self.BASE], cwd=clone, check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if (clone / ".superpowers").exists():
+                shutil.rmtree(clone / ".superpowers")
+            for relative in checker.c09_r3_product_paths() + [checker.C09_MAIN_TAKEOVER_SPEC_REVIEW,
+                    checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW, "scripts/check_project_progress.py",
+                    "tests/tooling/test_project_progress.py"]:
+                target = clone / relative; target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / relative, target)
+            self.assertFalse((clone / ".superpowers").exists())
+            self.assertEqual(14, len(checker.c09_main_takeover_from_root(clone)))
+
+    def test_active_scope_correction_validates_immutable_seq824_without_rewriting_history(self):
+        checker = self._checker()
+        checkpoint = "8f5af5f0efc6f287ce556fd9a908e991a586f97e"
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in (checker.C09_MAIN_TAKEOVER_P, checker.C09_MAIN_TAKEOVER_E)}
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+        old_progress = json.loads(subprocess.check_output(
+            ["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_MAIN_TAKEOVER_P],
+            cwd=ROOT,
+        ))
+        old_events = subprocess.check_output(
+            ["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_MAIN_TAKEOVER_E],
+            cwd=ROOT,
+        )
+        current = checker.load_bundle(ROOT)
+        self.assertEqual(824, old_progress["event_sequence"])
+        self.assertEqual("REWORK_MAIN_TAKEOVER", old_progress["status"])
+        self.assertEqual(829, current["progress"]["event_sequence"])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(old_events, 824),
+            checker.raw_event_object_prefix_bytes(
+                (ROOT / checker.C09_MAIN_TAKEOVER_E).read_bytes(), 824
+            ),
+        )
+
+    def test_product_raw_collector_selects_frozen_exact18_or_active_exact20(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "_c09_main_takeover_observed_product_raw"))
+        frozen = checker.c09_r3_product_paths()
+        active = checker.c09_main_takeover_active_product_paths()
+        self.assertEqual(
+            set(frozen),
+            set(checker._c09_main_takeover_observed_product_raw(
+                ROOT, precommit=True, dirty=frozen,
+            )),
+        )
+        self.assertEqual(
+            set(active),
+            set(checker._c09_main_takeover_observed_product_raw(
+                ROOT, precommit=False, dirty=active,
+            )),
+        )
+        self.assertEqual(
+            {},
+            checker._c09_main_takeover_observed_product_raw(
+                ROOT, precommit=True, dirty=active,
+            ),
+        )
+
+    def test_seq824_control_builder_is_independent_from_live_product_mutation(self):
+        checker = self._checker()
+        product = set(checker.c09_r3_product_paths())
+        original = Path.read_bytes
+
+        def reject_live_product(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            if relative in product:
+                raise AssertionError("control builder read live product")
+            return original(path)
+
+        with mock.patch.object(Path, "read_bytes", reject_live_product):
+            self.assertEqual(14, len(checker.c09_main_takeover_from_root(ROOT)))
+
+        for mutation in (
+            {"bytes": True, "sha256": "A" * 64},
+            {"bytes": 1, "sha256": "a" * 64},
+            {"bytes": 1, "sha256": "A" * 64, "extra": "reject"},
+        ):
+            observation = self._observation(checker, "child")
+            observation["product_hashes"] = copy.deepcopy(observation["product_hashes"])
+            observation["product_hashes"][checker.c09_main_takeover_active_product_paths()[0]] = mutation
+            self.assertIn("C09_MAIN_TAKEOVER_PRODUCT_RAW_INVALID",
+                          checker.c09_main_takeover_transition_errors(observation))
+
+    def test_seq824_cli_mode_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        bundle = {"progress": {"event_sequence": 824, "reporting_decision": {"decision": "AUTO_CONTINUE"}}}
+        for mode in ("FROZEN_R4", "ACTIVE_MAIN", "DETACHED_CONTROL"):
+            def validate(value):
+                return [] if value.get("_c09_main_takeover_mode") == mode else ["MODE_NOT_FORWARDED"]
+            with mock.patch.object(checker, "load_bundle", return_value=copy.deepcopy(bundle)), \
+                 mock.patch.object(checker, "validate_bundle", side_effect=validate):
+                self.assertEqual(0, checker.main([str(ROOT), "--c09-main-takeover-mode=" + mode]))
+        with mock.patch.object(checker, "load_bundle", side_effect=AssertionError("reject before load")):
+            self.assertEqual(1, checker.main(["--c09-main-takeover-mode=wrong"]))
+        with mock.patch.object(checker, "_collect_c09_main_takeover_git", return_value=["SEQ824_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c09_r4_git", side_effect=AssertionError("seq814 fallback")):
+            self.assertEqual(["SEQ824_SELECTED"], checker._validate_git_projection({"_root": ROOT,
+                "progress": {"event_sequence": 824}}))
+
+
+class C09FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq829_builder_appends_minimal_acceptance_and_binds_exact20(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c09_final_acceptance_from_root"))
+        artifacts = checker.c09_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c09_final_acceptance_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_P])
+        events = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_E])["events"]
+        self.assertEqual((824, 829, 5), (manifest["historical_event_sequence"], manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED",
+             "INDEPENDENT_TEST_JUDGMENT_RECORDED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]],
+        )
+        self.assertEqual("ACCEPTED", progress["status"])
+        self.assertEqual(829, progress["event_sequence"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertIn("C-09", progress["completed_packages"])
+        self.assertEqual(20, manifest["product_exact_path_count"])
+        self.assertEqual("E5591545A1685D8653BC67A49885C1E1DBD486FFB19BE90301008608199A0CD8", manifest["product_exact_path_list_sha256"])
+        self.assertEqual({"authoritative": 106, "c08_a13": 85, "c13": 5, "c02": 126, "control": 9}, manifest["test_evidence"]["passed"])
+        self.assertEqual(0, manifest["independent_reviews"]["blocking_findings"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["actual_docker"])
+        old = subprocess.check_output(["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_FINAL_ACCEPTANCE_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 824), checker.raw_event_object_prefix_bytes(artifacts[checker.C09_FINAL_ACCEPTANCE_E], 824))
+
+    def test_seq829_validator_and_worktree_candidate_mode_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c09_final_acceptance_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_P]),
+            "events": json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C09_FINAL_ACCEPTANCE_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_D])}
+        manifest = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c09_final_acceptance(bundle, manifest))
+        dispatch_bundle = {"_root": ROOT, "progress": {"event_sequence": 829}}
+        with mock.patch.object(checker, "_collect_c09_final_acceptance_git", return_value=["SEQ829_SELECTED"]), mock.patch.object(checker, "_collect_c09_main_takeover_git", side_effect=AssertionError("seq824 fallback")):
+            self.assertEqual(["SEQ829_SELECTED"], checker._validate_git_projection(dispatch_bundle))
+
+
+class C10StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq832_builder_binds_c09_commit_and_issues_dual_lease(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c10_start_from_root"))
+        artifacts = checker.c10_start_from_root(ROOT)
+        self.assertEqual(set(checker.c10_start_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_START_M])
+        progress = json.loads(artifacts[checker.C10_START_P])
+        events = json.loads(artifacts[checker.C10_START_E])["events"]
+        self.assertEqual((829, 832, 3), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+            [event["event_type"] for event in events[-3:]],
+        )
+        self.assertEqual(checker.C10_START_BASE, manifest["c09_completion_commit"])
+        self.assertEqual("C-10", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual("developer-primary", progress["active_agent"]["actor_id"])
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual(checker.c10_product_write_scope(), progress["write_lease"]["path_scope"])
+        self.assertEqual({"package_id": "C-11", "status": "NOT_READY"}, progress["next_work_package"])
+        old = subprocess.check_output(
+            ["git", "show", checker.C10_START_BASE + ":" + checker.C10_START_E], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(old, 829),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C10_START_E], 829),
+        )
+
+    def test_seq832_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_start_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_START_P]),
+            "events": json.loads(artifacts[checker.C10_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_START_D])}
+        manifest = json.loads(artifacts[checker.C10_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_start(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_start_git", return_value=["SEQ832_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c09_final_acceptance_git", side_effect=AssertionError("seq829 fallback")):
+            self.assertEqual(["SEQ832_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 832}
+            }))
+
+
+class C10ReworkStartControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq838_revokes_future_lease_records_rework_and_issues_current_dual_lease(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c10_rework_start_from_root"))
+        artifacts = checker.c10_rework_start_from_root(ROOT)
+        self.assertEqual(set(checker.c10_rework_start_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_REWORK_START_M])
+        progress = json.loads(artifacts[checker.C10_REWORK_START_P])
+        events = json.loads(artifacts[checker.C10_REWORK_START_E])["events"]
+        self.assertEqual((832, 838, 6), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+             "PACKAGE_RESUMED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+            [event["event_type"] for event in events[-6:]],
+        )
+        self.assertEqual("REWORK_IN_PROGRESS", progress["status"])
+        self.assertEqual(838, progress["event_sequence"])
+        self.assertEqual("developer-primary", progress["active_agent"]["actor_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertLessEqual(progress["worker_lease"]["issued_at"], checker.C10_REWORK_START_AT)
+        self.assertEqual(7, manifest["independent_reviews"]["blocking_findings"])
+        self.assertEqual("INVALID_FUTURE_ISSUANCE_REVOKED", manifest["superseded_lease_status"])
+        old = subprocess.check_output(
+            ["git", "show", checker.C10_REWORK_START_BASE + ":" + checker.C10_REWORK_START_E], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(old, 832),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C10_REWORK_START_E], 832),
+        )
+
+    def test_seq838_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_rework_start_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_REWORK_START_P]),
+            "events": json.loads(artifacts[checker.C10_REWORK_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_REWORK_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_REWORK_START_D])}
+        manifest = json.loads(artifacts[checker.C10_REWORK_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_rework_start(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_rework_start_git", return_value=["SEQ838_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_start_git", side_effect=AssertionError("seq832 fallback")):
+            self.assertEqual(["SEQ838_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 838}
+            }))
+
+
+class C10R2StartControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq845_revises_wi_revokes_epoch2_and_issues_epoch3(self):
+        checker = self._checker()
+        artifacts = checker.c10_r2_start_from_root(ROOT)
+        self.assertEqual(set(checker.c10_r2_start_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_R2_START_M])
+        progress = json.loads(artifacts[checker.C10_R2_START_P])
+        events = json.loads(artifacts[checker.C10_R2_START_E])["events"]
+        self.assertEqual((838, 845, 7), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["INDEPENDENT_TEST_JUDGMENT_RECORDED", "WRITE_LEASE_REVOKED",
+             "WORKER_LEASE_REVOKED", "WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+             "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
+            [event["event_type"] for event in events[-7:]],
+        )
+        self.assertEqual("REWORK_IN_PROGRESS", progress["status"])
+        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertEqual(checker.C10_R2_WI_SHA256, progress["active_work_instruction"]["artifact_sha256"])
+        self.assertEqual(2, manifest["independent_reviews"]["blocking_findings"])
+        self.assertEqual(2, progress["c10_start"]["review_rework_count"])
+
+    def test_seq845_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_r2_start_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_R2_START_P]),
+            "events": json.loads(artifacts[checker.C10_R2_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_R2_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_R2_START_D])}
+        manifest = json.loads(artifacts[checker.C10_R2_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_r2_start(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_r2_start_git", return_value=["SEQ845_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_rework_start_git", side_effect=AssertionError("seq838 fallback")):
+            self.assertEqual(["SEQ845_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 845}
+            }))
+
+
+class C10Failure3ConflictHoldControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq849_records_failure3_revokes_epoch3_and_waits_for_exact_direction(self):
+        checker = self._checker()
+        artifacts = checker.c10_failure3_hold_from_root(ROOT)
+        self.assertEqual(set(checker.c10_failure3_hold_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_FAILURE3_HOLD_M])
+        progress = json.loads(artifacts[checker.C10_FAILURE3_HOLD_P])
+        events = json.loads(artifacts[checker.C10_FAILURE3_HOLD_E])["events"]
+        self.assertEqual((845, 849, 4), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["INDEPENDENT_TEST_JUDGMENT_RECORDED", "WRITE_LEASE_REVOKED",
+             "WORKER_LEASE_REVOKED", "PACKAGE_WAITING_APPROVAL"],
+            [event["event_type"] for event in events[-4:]],
+        )
+        self.assertEqual("WAITING_APPROVAL", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(3, progress["c10_start"]["review_rework_count"])
+        self.assertEqual("AWAIT_USER_DIRECTION_C10_FAILURE3", progress["next_safe_action"])
+        self.assertEqual("ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+                         manifest["instruction_conflict"])
+
+    def test_seq849_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_failure3_hold_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_FAILURE3_HOLD_P]),
+            "events": json.loads(artifacts[checker.C10_FAILURE3_HOLD_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_FAILURE3_HOLD_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_FAILURE3_HOLD_D])}
+        manifest = json.loads(artifacts[checker.C10_FAILURE3_HOLD_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_failure3_hold(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_failure3_hold_git", return_value=["SEQ849_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_r2_start_git", side_effect=AssertionError("seq845 fallback")):
+            self.assertEqual(["SEQ849_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 849}
+            }))
+
+
+class C10MainTakeoverStartControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq855_records_user_direction_packet_and_main_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c10_main_takeover_start_from_root(ROOT)
+        self.assertEqual(set(checker.c10_main_takeover_start_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_MAIN_TAKEOVER_M])
+        progress = json.loads(artifacts[checker.C10_MAIN_TAKEOVER_P])
+        events = json.loads(artifacts[checker.C10_MAIN_TAKEOVER_E])["events"]
+        self.assertEqual((849, 855, 6), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["APPLY_APPROVAL_RECORDED", "HANDOFF_RECORDED", "WORK_INSTRUCTION_ISSUED",
+             "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
+            [event["event_type"] for event in events[-6:]],
+        )
+        self.assertEqual("REWORK_MAIN_TAKEOVER", progress["status"])
+        self.assertEqual("main-agent-eoul", progress["active_agent"]["actor_id"])
+        self.assertEqual(4, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(4, progress["write_lease"]["write_epoch"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertEqual("ALLOW_C10_MAIN_DIRECT_TAKEOVER", manifest["user_direction"])
+        self.assertEqual(3, manifest["same_root_cause_occurrence"])
+
+    def test_seq855_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_main_takeover_start_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_MAIN_TAKEOVER_P]),
+            "events": json.loads(artifacts[checker.C10_MAIN_TAKEOVER_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_MAIN_TAKEOVER_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_MAIN_TAKEOVER_D])}
+        manifest = json.loads(artifacts[checker.C10_MAIN_TAKEOVER_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_main_takeover_start(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_main_takeover_start_git", return_value=["SEQ855_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_failure3_hold_git", side_effect=AssertionError("seq849 fallback")):
+            self.assertEqual(["SEQ855_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 855}
+            }))
+
+
+class C10FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq865_renews_expired_lease_then_accepts_exact6(self):
+        checker = self._checker()
+        artifacts = checker.c10_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c10_final_acceptance_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_P])
+        events = json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_E])["events"]
+        self.assertEqual((855, 865, 10), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual([
+            "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED",
+            "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED",
+            "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED",
+            "INDEPENDENT_TEST_JUDGMENT_RECORDED", "MAIN_PACKAGE_ACCEPTED",
+        ], [event["event_type"] for event in events[-10:]])
+        self.assertEqual(("C-10", "ACCEPTED", None, None, None), (
+            progress["current_work_package"], progress["status"], progress["active_agent"],
+            progress["worker_lease"], progress["write_lease"],
+        ))
+        self.assertEqual({"package_id": "C-11", "status": "READY_FOR_WORK_INSTRUCTION"},
+                         progress["next_work_package"])
+        self.assertEqual(6, manifest["product_exact_path_count"])
+        self.assertEqual(0, manifest["independent_reviews"]["blocking_findings"])
+        self.assertEqual("NOT_REACHED", manifest["dir2_status"])
+
+    def test_seq865_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_final_acceptance_from_root(ROOT)
+        bundle = {"_root": ROOT,
+            "progress": json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_P]),
+            "events": json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_FINAL_ACCEPTANCE_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_D])}
+        manifest = json.loads(artifacts[checker.C10_FINAL_ACCEPTANCE_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_final_acceptance(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_final_acceptance_git", return_value=["SEQ865_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_main_takeover_start_git", side_effect=AssertionError("seq855 fallback")):
+            self.assertEqual(["SEQ865_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 865}
+            }))
+
+    def test_seq865_git_collector_preserves_precommit_and_accepts_clean_direct_child(self):
+        checker = self._checker()
+        base = checker.C10_FINAL_ACCEPTANCE_BASE
+        committed = "8e651298d3cd36795ddb5fbfe34be272ddaa3910"
+        exact = checker.c10_final_acceptance_combined_paths()
+        outputs = {
+            ("rev-parse", "HEAD"): committed + "\n",
+            ("rev-parse", base): base + "\n",
+            ("branch", "--show-current"): checker.C09_START_BRANCH + "\n",
+            ("diff", "--cached", "--name-only"): "",
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+            ("show", "-s", "--format=%P", committed): base + "\n",
+            ("diff", "--name-only", base, committed): "\n".join(exact) + "\n",
+            ("rev-parse", checker.C09_START_DEVELOPMENT_REF): checker.C09_R4_MAIN + "\n",
+            ("remote", "get-url", "development"): checker.C09_START_DEVELOPMENT_URL + "\n",
+        }
+        manifest = {"product_raw": checker._c10_final_product_raw(ROOT),
+            "combined_exact_paths": exact, "blocking_findings": 0,
+            "staged": False, "commit_performed": False}
+        with mock.patch.object(checker, "_c02_git_raw_stdout",
+                               side_effect=lambda _root, *args: outputs[args]), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True), \
+             mock.patch.object(checker, "_load_json", return_value=manifest):
+            self.assertEqual([], checker._collect_c10_final_acceptance_git({"_root": ROOT}))
+
+
+class C10PostcommitReconciliationControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq870_records_acceptance_commit_and_exact8_structural_binding(self):
+        checker = self._checker()
+        artifacts = checker.c10_postcommit_reconciliation_from_root(ROOT)
+        self.assertEqual(set(checker.c10_postcommit_reconciliation_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_POSTCOMMIT_M])
+        progress = json.loads(artifacts[checker.C10_POSTCOMMIT_P])
+        events = json.loads(artifacts[checker.C10_POSTCOMMIT_E])["events"]
+        self.assertEqual((865, 870, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED",
+            "REPOSITORY_RECONCILED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual("8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+                         manifest["acceptance_commit"])
+        self.assertEqual("SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8",
+                         manifest["reconciliation_commit_binding"])
+        self.assertTrue(manifest["acceptance_commit_performed"])
+        self.assertFalse(manifest["commit_performed"])
+        self.assertEqual(("C-10", "ACCEPTED", None, None),
+            (progress["current_work_package"], progress["status"],
+             progress["worker_lease"], progress["write_lease"]))
+        self.assertEqual("HOLD_C11_PENDING_PMO_CONFIRMATION", progress["next_safe_action"])
+
+    def test_seq870_precommit_collector_avoids_global_ignore_and_cache_scan(self):
+        checker = self._checker()
+        exact = checker.c10_postcommit_reconciliation_paths()
+        untracked = [checker.C10_POSTCOMMIT_M, checker.C10_POSTCOMMIT_D]
+        tracked = sorted(set(exact) - set(untracked))
+        calls = []
+        outputs = {
+            ("rev-parse", "HEAD"): checker.C10_ACCEPTANCE_COMMIT + "\n",
+            ("branch", "--show-current"): checker.C09_START_BRANCH + "\n",
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1",
+             f"refs/heads/{checker.C09_START_BRANCH}"): checker.C09_START_DEVELOPMENT_REF + "\n",
+            ("rev-parse", checker.C09_START_DEVELOPMENT_REF): checker.C09_R4_MAIN + "\n",
+            ("remote", "get-url", "development"): checker.C09_START_DEVELOPMENT_URL + "\n",
+            ("show", "-s", "--format=%P", checker.C10_ACCEPTANCE_COMMIT): checker.C10_FINAL_ACCEPTANCE_BASE + "\n",
+            ("diff", "--name-only", checker.C10_FINAL_ACCEPTANCE_BASE,
+             checker.C10_ACCEPTANCE_COMMIT): "\n".join(checker.c10_final_acceptance_combined_paths()) + "\n",
+            ("-c", "core.excludesFile=NUL", "diff", "--cached", "--name-only"): "",
+            ("-c", "core.excludesFile=NUL", "diff", "--name-only"):
+                "\n".join(tracked) + "\n",
+            ("-c", "core.excludesFile=NUL", "ls-files", "--others",
+             "--exclude-per-directory=.gitignore", "--exclude=.pytest_cache",
+             "--exclude=.pytest_cache/**"): "\n".join(sorted(untracked)) + "\n",
+        }
+        def git_output(_root, *args):
+            calls.append(args)
+            return outputs[args]
+        quiet_calls = []
+        def git_check(_root, *args):
+            quiet_calls.append(args)
+            return True
+        manifest = {"acceptance_commit": checker.C10_ACCEPTANCE_COMMIT,
+            "acceptance_parent": checker.C10_FINAL_ACCEPTANCE_BASE,
+            "acceptance_exact_paths": checker.c10_final_acceptance_combined_paths(),
+            "exact_allowed_paths": exact, "product_raw": checker._c10_final_product_raw(ROOT),
+            "reconciliation_commit_binding": checker.C10_POSTCOMMIT_RELATION,
+            "commit_performed": False}
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", side_effect=git_check), \
+             mock.patch.object(checker, "_load_json", return_value=manifest):
+            self.assertEqual([], checker._collect_c10_postcommit_reconciliation_git({"_root": ROOT}))
+        self.assertIn(("-c", "core.excludesFile=NUL", "ls-files", "--others",
+            "--exclude-per-directory=.gitignore", "--exclude=.pytest_cache",
+            "--exclude=.pytest_cache/**"), calls)
+        self.assertIn(("-c", "core.excludesFile=NUL", "diff", "--cached", "--check"),
+                      quiet_calls)
+
+    def test_seq870_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_postcommit_reconciliation_from_root(ROOT)
+        bundle = {"_root": ROOT,
+            "progress": json.loads(artifacts[checker.C10_POSTCOMMIT_P]),
+            "events": json.loads(artifacts[checker.C10_POSTCOMMIT_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_POSTCOMMIT_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_POSTCOMMIT_D])}
+        manifest = json.loads(artifacts[checker.C10_POSTCOMMIT_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_postcommit_reconciliation(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_postcommit_reconciliation_git",
+                               return_value=["SEQ870_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_final_acceptance_git",
+                               side_effect=AssertionError("seq865 fallback")):
+            self.assertEqual(["SEQ870_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 870}}))
+
+
+class C11StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c11_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq875_binds_current_baseline_authority_and_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        self.assertEqual(set(checker.c11_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C11_START_P])
+        manifest = json.loads(artifacts[checker.C11_START_M])
+        events = json.loads(artifacts[checker.C11_START_E])["events"]
+        self.assertEqual((870, 875, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(checker.C11_START_BASE, manifest["validated_base_commit"])
+        self.assertEqual(checker.C11_WI_SHA256, manifest["work_instruction_sha256"])
+        self.assertEqual(checker.C11_PROMPT_SHA256, manifest["invocation_sha256"])
+        self.assertEqual(["PMO_DIRECTION_RECORDED", "WORK_INSTRUCTION_ISSUED",
+            "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-11", "IN_PROGRESS", "developer-primary-c11-r1"),
+            (progress["current_work_package"], progress["status"],
+             progress["active_agent"]["actor_id"]))
+        self.assertEqual(checker.C11_WORKER_LEASE_ID, progress["worker_lease"]["lease_id"])
+        self.assertEqual(checker.C11_WRITE_LEASE_ID, progress["write_lease"]["lease_id"])
+        self.assertEqual({"package_id": "C-12", "status": "NOT_READY"},
+                         progress["next_work_package"])
+
+    def test_seq875_event_contract_accepts_start_and_rejects_incomplete_approval(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C11_START_P])
+        stream = json.loads(artifacts[checker.C11_START_E])
+        contract = json.loads((ROOT / "docs/progress/progress-event-contract.json").read_bytes())
+        self.assertEqual([], checker.validate_event_stream(stream, contract, progress))
+        bad = copy.deepcopy(stream)
+        del bad["events"][-5]["details"]["user_direction_verbatim"]
+        self.assertIn("EVENT_PAYLOAD_MISSING", checker.validate_event_stream(bad, contract, progress))
+
+    def test_seq875_authorizes_only_nine_control_paths_and_no_product_dispatch(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        self.assertEqual(sorted([
+            "docs/work_orders/C-11_WORK_INSTRUCTION.md", "docs/work_orders/C-11_INVOCATION_PROMPT.md",
+            "docs/evidence/manifests/C-11_START_MANIFEST.json", "docs/progress/build-progress.json",
+            "docs/progress/BUILD_HANDOFF.md", "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c11-start.json",
+            "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"]), sorted(artifacts))
+        progress = json.loads(artifacts[checker.C11_START_P])
+        authority = progress["c11_start"]["authority"]
+        for name in ("product_tdd_authorized_now", "c12_authorized", "external_execution_authorized", "push_authorized"):
+            self.assertIs(False, authority[name])
+        self.assertEqual("C11_START_CONTROL_COMPLETE_PENDING_PRODUCT_TDD_DIRECTION", progress["next_safe_action"])
+        self.assertEqual("2026-09-15T10:15:00+09:00", progress["write_lease"]["expires_at"])
+        self.assertEqual("c11-write-fence-epoch-1-32cde045f92f4b1b", progress["write_lease"]["write_fencing_token"])
+
+    def test_seq875_refuses_authority_and_predecessor_evidence_mutation(self):
+        checker = self._checker()
+        original = Path.read_bytes
+        for relative, reason in (("docs/work_orders/C-11_WORK_INSTRUCTION.md", "C11_START_AUTHORITY_HASH_INVALID"),
+                                 ("docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json", "C11_START_PREDECESSOR_EVIDENCE_MUTATED")):
+            target = ROOT / relative
+            def altered(path):
+                raw = original(path)
+                return raw + b"\n" if path == target else raw
+            with mock.patch.object(Path, "read_bytes", altered):
+                with self.assertRaisesRegex(ValueError, reason):
+                    checker.c11_start_from_root(ROOT)
+
+    def test_seq875_preserves_raw_prefix_and_refuses_lease_or_scope_drift(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        old = subprocess.check_output(["git", "show", checker.C11_START_BASE + ":" + checker.C11_START_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 870),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C11_START_E], 870))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C11_START_P]),
+            "events": json.loads(artifacts[checker.C11_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C11_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C11_START_D])}
+        manifest = json.loads(artifacts[checker.C11_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c11_start(bundle, manifest))
+            for field, change in (("execution_fencing_token", "stale"), ("path_scope", ["packages/**"])):
+                bad = copy.deepcopy(bundle)
+                bad["progress"]["worker_lease"][field] = change
+                self.assertIn("C11_START_PROJECTION_INVALID", checker.validate_c11_start(bad, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["events"]["events"][0]["event_id"] = "changed-history"
+            self.assertIn("C11_START_PROJECTION_INVALID", checker.validate_c11_start(bad, manifest))
+
+    def test_seq875_dispatch_selects_c11_without_falling_back_to_c10(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c11_start_git", return_value=["SEQ875_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_postcommit_reconciliation_git", side_effect=AssertionError("old dispatch")):
+            self.assertEqual(["SEQ875_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 875}}))
+
+    def test_seq875_exact9_git_gate_accepts_only_precommit_or_clean_direct_child(self):
+        checker = self._checker()
+        exact = checker.c11_start_paths()
+        head = checker.C11_START_BASE
+        parent = checker.C11_START_BASE
+        staged, unstaged, untracked = [], exact, []
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C11_START_BASE, head): return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args: return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"): return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args: return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c11_start_git({"_root": ROOT}))
+            unstaged = exact + ["packages/planning/planner.py"]
+            self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
+            unstaged = []
+            staged = exact
+            self.assertEqual([], checker._collect_c11_start_git({"_root": ROOT}))
+            staged = []
+            head = "a" * 40
+            self.assertEqual([], checker._collect_c11_start_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
+            parent = checker.C11_START_BASE
+            changed = exact[:-1]
+            self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
+
+
+class C11FinalAcceptanceTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c11_final", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq880_binds_exact_product_and_acceptance_projection(self):
+        checker = self._checker()
+        artifacts = checker.c11_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c11_final_control_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C11_FINAL_P])
+        manifest = json.loads(artifacts[checker.C11_FINAL_M])
+        events = json.loads(artifacts[checker.C11_FINAL_E])["events"]
+        self.assertEqual((875, 880, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+            "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-11", "ACCEPTED", None, None),
+            (progress["current_work_package"], progress["status"],
+             progress["worker_lease"], progress["write_lease"]))
+        self.assertEqual({"package_id": "C-12", "status": "READY_FOR_WORK_INSTRUCTION"},
+                         progress["next_work_package"])
+        self.assertEqual(checker.c11_final_product_paths(), manifest["product_exact_paths"])
+        self.assertEqual(checker.c11_final_combined_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(0, manifest["blocking_findings"])
+
+    def test_seq880_preserves_seq875_bytes_and_validates_raw_projection(self):
+        checker = self._checker()
+        artifacts = checker.c11_final_acceptance_from_root(ROOT)
+        old = subprocess.check_output(["git", "show", checker.C11_FINAL_BASE + ":" + checker.C11_FINAL_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 875),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C11_FINAL_E], 875))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C11_FINAL_P]),
+            "events": json.loads(artifacts[checker.C11_FINAL_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C11_FINAL_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C11_FINAL_D])}
+        manifest = json.loads(artifacts[checker.C11_FINAL_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c11_final_acceptance(bundle, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["c11_final_acceptance"]["independent_reviews"]["blocking_findings"] = 1
+            self.assertIn("C11_FINAL_PROJECTION_INVALID",
+                          checker.validate_c11_final_acceptance(bad, manifest))
+
+    def test_seq880_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c11_final_acceptance_git",
+                               return_value=["SEQ880_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c11_start_git",
+                               side_effect=AssertionError("seq875 fallback")):
+            self.assertEqual(["SEQ880_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 880}}))
+
+    def test_seq880_exact15_git_gate_accepts_only_candidate_or_clean_child(self):
+        checker = self._checker()
+        exact = checker.c11_final_combined_paths()
+        head = checker.C11_FINAL_BASE
+        parent = checker.C11_FINAL_BASE
+        staged, unstaged, untracked = [], exact[:-1], [exact[-1]]
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C11_FINAL_BASE, head): return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args: return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"): return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args: return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True), \
+             mock.patch.object(checker, "_load_json", return_value={
+                 "product_raw": checker._c11_final_product_raw(ROOT),
+                 "combined_exact_paths": exact, "blocking_findings": 0,
+                 "commit_performed": False}):
+            self.assertEqual([], checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+            unstaged, untracked = exact[:-2], [exact[-1]]
+            self.assertIn("C11_FINAL_ACCEPTANCE_CANDIDATE_INVALID",
+                          checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+            unstaged, untracked = [], []
+            head = "a" * 40
+            self.assertEqual([], checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C11_FINAL_ACCEPTANCE_CANDIDATE_INVALID",
+                          checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+
+
+class C12StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c12_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq885_binds_c11_acceptance_direction_and_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c12_start_from_root(ROOT)
+        self.assertEqual(set(checker.c12_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C12_START_P])
+        manifest = json.loads(artifacts[checker.C12_START_M])
+        events = json.loads(artifacts[checker.C12_START_E])["events"]
+        self.assertEqual((880, 885, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(checker.C12_START_BASE, manifest["validated_base_commit"])
+        self.assertEqual(checker.C12_WI_SHA256, manifest["work_instruction_sha256"])
+        self.assertEqual(checker.C12_PROMPT_SHA256, manifest["invocation_sha256"])
+        self.assertEqual(["PMO_DIRECTION_RECORDED", "WORK_INSTRUCTION_ISSUED",
+            "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-12", "IN_PROGRESS", "developer-primary-c12-r1"),
+            (progress["current_work_package"], progress["status"],
+             progress["active_agent"]["actor_id"]))
+        self.assertEqual(checker.C12_WORKER_LEASE_ID, progress["worker_lease"]["lease_id"])
+        self.assertEqual(checker.C12_WRITE_LEASE_ID, progress["write_lease"]["lease_id"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertEqual({"package_id": "C-13", "status": "NOT_READY"},
+                         progress["next_work_package"])
+
+    def test_seq885_authorizes_only_start_control_and_c12_product_scope(self):
+        checker = self._checker()
+        artifacts = checker.c12_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C12_START_P])
+        authority = progress["c12_start"]["authority"]
+        self.assertTrue(authority["c12_start_authorized"])
+        for name in ("c13_authorized", "external_execution_authorized", "push_authorized"):
+            self.assertIs(False, authority[name])
+        self.assertEqual(checker.c12_product_write_scope(),
+                         progress["write_lease"]["path_scope"])
+        self.assertEqual("C12_PRODUCT_TDD_AND_REVIEW", progress["next_safe_action"])
+
+    def test_seq885_preserves_seq880_bytes_and_rejects_fence_or_history_drift(self):
+        checker = self._checker()
+        artifacts = checker.c12_start_from_root(ROOT)
+        old = subprocess.check_output(
+            ["git", "show", checker.C12_START_BASE + ":" + checker.C12_START_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 880),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C12_START_E], 880))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C12_START_P]),
+            "events": json.loads(artifacts[checker.C12_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C12_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C12_START_D])}
+        manifest = json.loads(artifacts[checker.C12_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c12_start(bundle, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["write_lease"]["write_fencing_token"] = "stale"
+            self.assertIn("C12_START_PROJECTION_INVALID",
+                          checker.validate_c12_start(bad, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["events"]["events"][0]["event_id"] = "changed-history"
+            self.assertIn("C12_START_PROJECTION_INVALID",
+                          checker.validate_c12_start(bad, manifest))
+
+    def test_seq885_dispatch_and_exact9_git_gate_are_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c12_start_git", return_value=["SEQ885_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c11_final_acceptance_git",
+                               side_effect=AssertionError("seq880 fallback")):
+            self.assertEqual(["SEQ885_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 885}}))
+
+        exact = checker.c12_start_paths(); head = checker.C12_START_BASE
+        parent = checker.C12_START_BASE; staged, unstaged, untracked = [], exact, []
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C12_START_BASE, head):
+                return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args:
+                return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"):
+                return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args:
+                return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c12_start_git({"_root": ROOT}))
+            unstaged = exact + ["packages/orchestration/failure_ledger.py"]
+            self.assertIn("C12_START_GIT_INVALID", checker._collect_c12_start_git({"_root": ROOT}))
+            unstaged = []; head = "a" * 40
+            self.assertEqual([], checker._collect_c12_start_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C12_START_GIT_INVALID", checker._collect_c12_start_git({"_root": ROOT}))
+
+
+class C12ReworkLeaseControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c12_rework", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq891_reissues_expired_dual_lease_for_blocking_review_rework(self):
+        checker = self._checker()
+        artifacts = checker.c12_rework_start_from_root(ROOT)
+        self.assertEqual(set(checker.c12_rework_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C12_REWORK_P])
+        events = json.loads(artifacts[checker.C12_REWORK_E])["events"]
+        self.assertEqual(891, progress["event_sequence"])
+        self.assertEqual("REWORK_IN_PROGRESS", progress["status"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual(checker.C12_REWORK_EXECUTION_TOKEN,
+                         progress["active_agent"]["execution_fencing_token"])
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED",
+                          "INDEPENDENT_TEST_JUDGMENT_RECORDED", "PACKAGE_RESUMED",
+                          "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+                         [event["event_type"] for event in events[-6:]])
+
+    def test_seq891_preserves_history_and_c13_external_boundaries(self):
+        checker = self._checker()
+        artifacts = checker.c12_rework_start_from_root(ROOT)
+        old = subprocess.check_output(
+            ["git", "show", checker.C12_REWORK_BASE + ":" + checker.C12_REWORK_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 885),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C12_REWORK_E], 885))
+        progress = json.loads(artifacts[checker.C12_REWORK_P])
+        self.assertEqual({"package_id": "C-13", "status": "NOT_READY"},
+                         progress["next_work_package"])
+        authority = progress["c12_rework"]["authority"]
+        self.assertFalse(authority["c13_authorized"])
+        self.assertFalse(authority["external_execution_authorized"])
+        self.assertEqual([], progress["pending_approvals"])
+
+    def test_seq891_dispatches_rework_projection_before_seq885(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c12_rework_git", return_value=["SEQ891_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c12_start_git",
+                               side_effect=AssertionError("seq885 fallback")):
+            self.assertEqual(["SEQ891_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 891}}))
+
+
+class C12FinalAcceptanceTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c12_final", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq896_binds_exact_product_reviews_and_revokes_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c12_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c12_final_control_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C12_FINAL_P])
+        manifest = json.loads(artifacts[checker.C12_FINAL_M])
+        events = json.loads(artifacts[checker.C12_FINAL_E])["events"]
+        self.assertEqual((891, 896, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+            "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-12", "ACCEPTED", None, None, None),
+            (progress["current_work_package"], progress["status"], progress["active_agent"],
+             progress["worker_lease"], progress["write_lease"]))
+        self.assertEqual({"package_id": "C-13", "status": "READY_FOR_WORK_INSTRUCTION"},
+                         progress["next_work_package"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertEqual(0, manifest["blocking_findings"])
+        self.assertEqual(0, manifest["important_findings"])
+        self.assertEqual(checker.c12_final_product_paths(), manifest["product_exact_paths"])
+        self.assertEqual(checker.c12_final_combined_paths(), manifest["combined_exact_paths"])
+
+    def test_seq896_preserves_seq891_bytes_and_validates_projection(self):
+        checker = self._checker(); artifacts = checker.c12_final_acceptance_from_root(ROOT)
+        old = subprocess.check_output(
+            ["git", "show", checker.C12_FINAL_BASE + ":" + checker.C12_FINAL_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 891),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C12_FINAL_E], 891))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C12_FINAL_P]),
+            "events": json.loads(artifacts[checker.C12_FINAL_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C12_FINAL_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C12_FINAL_D])}
+        manifest = json.loads(artifacts[checker.C12_FINAL_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c12_final_acceptance(bundle, manifest))
+            bad = copy.deepcopy(bundle); bad["progress"]["worker_lease"] = {"status": "ACTIVE"}
+            self.assertIn("C12_FINAL_PROJECTION_INVALID",
+                          checker.validate_c12_final_acceptance(bad, manifest))
+
+    def test_seq896_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c12_final_acceptance_git",
+                               return_value=["SEQ896_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c12_rework_git",
+                               side_effect=AssertionError("seq891 fallback")):
+            self.assertEqual(["SEQ896_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 896}}))
+
+    def test_seq896_git_gate_accepts_only_exact12_candidate_or_clean_child(self):
+        checker = self._checker(); exact = checker.c12_final_combined_paths()
+        head = checker.C12_FINAL_BASE; parent = checker.C12_FINAL_BASE
+        staged, unstaged, untracked = [], exact[:-1], [exact[-1]]; changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C12_FINAL_BASE, head): return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args: return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"): return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args: return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True), \
+             mock.patch.object(checker, "_load_json", return_value={
+                 "product_raw": checker._c12_final_product_raw(ROOT),
+                 "combined_exact_paths": exact, "blocking_findings": 0,
+                 "important_findings": 0, "commit_performed": False}):
+            self.assertEqual([], checker._collect_c12_final_acceptance_git({"_root": ROOT}))
+            unstaged, untracked = exact[:-2], [exact[-1]]
+            self.assertIn("C12_FINAL_GIT_INVALID",
+                          checker._collect_c12_final_acceptance_git({"_root": ROOT}))
+            unstaged, untracked = [], []; head = "a" * 40
+            self.assertEqual([], checker._collect_c12_final_acceptance_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C12_FINAL_GIT_INVALID",
+                          checker._collect_c12_final_acceptance_git({"_root": ROOT}))
+
+
+class C13StartControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c13_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq901_binds_c12_acceptance_and_active_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c13_start_from_root(ROOT)
+        self.assertEqual(set(checker.c13_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C13_START_P])
+        manifest = json.loads(artifacts[checker.C13_START_M])
+        events = json.loads(artifacts[checker.C13_START_E])["events"]
+        self.assertEqual((896, 901, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(["USER_DIRECTION_RECORDED", "WORK_INSTRUCTION_ISSUED",
+            "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-13", "IN_PROGRESS", "developer-primary-c13-r1"),
+            (progress["current_work_package"], progress["status"],
+             progress["active_agent"]["actor_id"]))
+        self.assertEqual(checker.C13_WORKER_LEASE_ID, progress["worker_lease"]["lease_id"])
+        self.assertEqual(checker.C13_WRITE_LEASE_ID, progress["write_lease"]["lease_id"])
+        self.assertEqual({"package_id": "C-14", "status": "NOT_READY"},
+                         progress["next_work_package"])
+
+    def test_seq901_is_workplan_auto_continue_not_pmo_or_new_approval(self):
+        checker = self._checker()
+        artifacts = checker.c13_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C13_START_P])
+        authority = progress["c13_start"]["authority"]
+        self.assertEqual("APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+                         authority["revision_class"])
+        self.assertEqual("USER_DIRECT_WORKPLAN_CONTINUATION", authority["source"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertTrue(authority["c13_product_tdd_authorized_now"])
+        self.assertFalse(authority["external_execution_authorized"])
+        self.assertEqual(checker.c13_product_write_scope(),
+                         progress["write_lease"]["path_scope"])
+
+    def test_seq901_preserves_seq896_bytes_and_rejects_fence_drift(self):
+        checker = self._checker(); artifacts = checker.c13_start_from_root(ROOT)
+        old = subprocess.check_output(
+            ["git", "show", checker.C13_START_BASE + ":" + checker.C13_START_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 896),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C13_START_E], 896))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C13_START_P]),
+            "events": json.loads(artifacts[checker.C13_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C13_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C13_START_D])}
+        manifest = json.loads(artifacts[checker.C13_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c13_start(bundle, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["write_lease"]["write_fencing_token"] = "stale"
+            self.assertIn("C13_START_PROJECTION_INVALID",
+                          checker.validate_c13_start(bad, manifest))
+
+    def test_seq901_dispatch_and_exact9_git_gate_are_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c13_start_git", return_value=["SEQ901_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c12_final_acceptance_git",
+                               side_effect=AssertionError("seq896 fallback")):
+            self.assertEqual(["SEQ901_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 901}}))
+
+        exact = checker.c13_start_paths(); head = checker.C13_START_BASE
+        parent = checker.C13_START_BASE; staged, unstaged, untracked = [], exact, []
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C13_START_BASE, head):
+                return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args:
+                return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"):
+                return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args:
+                return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c13_start_git({"_root": ROOT}))
+            unstaged = exact + ["packages/orchestration/takeover.py"]
+            self.assertIn("C13_START_GIT_INVALID", checker._collect_c13_start_git({"_root": ROOT}))
+            unstaged = []; head = "a" * 40
+            self.assertEqual([], checker._collect_c13_start_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C13_START_GIT_INVALID", checker._collect_c13_start_git({"_root": ROOT}))
+
+
+class C13FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c13_final", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq906_accepts_exact_product_and_releases_all_leases(self):
+        checker = self._checker()
+        artifacts = checker.c13_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c13_final_generated_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C13_FINAL_P])
+        manifest = json.loads(artifacts[checker.C13_FINAL_M])
+        events = json.loads(artifacts[checker.C13_FINAL_E])["events"]
+        self.assertEqual((901, 906, 5), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual([
+            "PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+            "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED",
+        ], [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-13", "ACCEPTED"), (
+            progress["current_work_package"], progress["status"],
+        ))
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual({"package_id": "C-14", "status": "READY_FOR_WORK_INSTRUCTION"},
+                         progress["next_work_package"])
+        self.assertEqual(checker.c13_final_product_paths(), manifest["product_exact_paths"])
+        self.assertEqual(checker.c13_final_combined_paths(), manifest["combined_exact_paths"])
+
+    def test_seq906_preserves_seq901_event_bytes_and_binds_product_hashes(self):
+        checker = self._checker()
+        start = checker.c13_start_from_root(ROOT)
+        artifacts = checker.c13_final_acceptance_from_root(ROOT)
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(start[checker.C13_START_E], 901),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C13_FINAL_E], 901),
+        )
+        manifest = json.loads(artifacts[checker.C13_FINAL_M])
+        self.assertEqual(checker._c13_final_product_raw(ROOT), manifest["product_raw"])
+        self.assertEqual(0, manifest["blocking_findings"])
+        self.assertEqual(0, manifest["important_findings"])
+        self.assertEqual([], manifest["pending_approvals"])
+
+    def test_seq906_dispatch_and_exact_combined_git_gate_are_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c13_final_acceptance_git",
+                               return_value=["SEQ906_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c13_start_git",
+                               side_effect=AssertionError("seq901 fallback")):
+            self.assertEqual(["SEQ906_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 906},
+            }))
+
+        exact = checker.c13_final_combined_paths()
+        head = checker.C13_FINAL_BASE
+        parent = checker.C13_FINAL_BASE
+        staged, unstaged, untracked = [], exact, []
+        changed = exact
+
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C13_FINAL_BASE, head):
+                return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args:
+                return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"):
+                return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args:
+                return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+
+        manifest = {"product_raw": checker._c13_final_product_raw(ROOT),
+                    "combined_exact_paths": exact, "blocking_findings": 0,
+                    "important_findings": 0, "commit_performed": False}
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True), \
+             mock.patch.object(checker, "_load_json", return_value=manifest):
+            self.assertEqual([], checker._collect_c13_final_acceptance_git({"_root": ROOT}))
+            unstaged = exact + ["packages/unexpected.py"]
+            self.assertIn("C13_FINAL_GIT_INVALID",
+                          checker._collect_c13_final_acceptance_git({"_root": ROOT}))
+
+
+class C14StartControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        paths = (checker.C14_START_E, checker.C14_START_M, checker.C13_FINAL_M)
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        predecessor = json.loads(files[checker.C13_FINAL_M])
+        for path, expected in predecessor["product_raw"].items():
+            raw = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+            self.assertEqual(expected, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()})
+            files[path] = raw
+        accepted = json.loads(files[checker.C14_START_E])["events"][919]
+        self.assertEqual((920, "MAIN_PACKAGE_ACCEPTED", "C-14"),
+                         (accepted["sequence"], accepted["event_type"], accepted["work_package_id"]))
+        files[checker.C14_START_P] = checker._c21_resume_json_bytes({
+            "event_sequence": 920, "current_work_package": accepted["work_package_id"],
+            "pending_approvals": [], "status": accepted["details"]["decision"],
+        })
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c14_start", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq910_starts_c14_with_single_writer_and_no_pending_approval(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C14_START_P).read_bytes())
+        if current["event_sequence"] >= 915:
+            manifest = json.loads((ROOT / checker.C14_START_M).read_bytes())
+            stream = json.loads((ROOT / checker.C14_START_E).read_bytes())
+            started = next(row for row in stream["events"] if row["sequence"] == 910)
+            self.assertEqual("developer-primary-c14-r1", started["details"]["active_agent"])
+            self.assertEqual(checker.c14_product_write_scope(), manifest["product_write_scope"])
+        else:
+            artifacts = checker.c14_start_from_root(ROOT)
+            self.assertEqual(set(checker.c14_start_generated_paths()), set(artifacts))
+            progress = json.loads(artifacts[checker.C14_START_P])
+            manifest = json.loads(artifacts[checker.C14_START_M])
+            self.assertEqual("IN_PROGRESS", progress["status"])
+            self.assertEqual("developer-primary-c14-r1", progress["active_agent"]["actor_id"])
+            self.assertEqual(checker.c14_product_write_scope(),
+                             progress["active_work_instruction"]["product_write_scope"])
+        self.assertEqual((906, 910, 4), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual("C-14", current["current_work_package"])
+        self.assertEqual([], current["pending_approvals"])
+        self.assertFalse(manifest["authority"]["pmo_report_is_approval"])
+
+    def test_seq910_preserves_seq906_and_cumulative_exact_paths(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C14_START_P).read_bytes())
+        if current["event_sequence"] >= 915:
+            events_raw = (ROOT / checker.C14_START_E).read_bytes()
+            manifest = json.loads((ROOT / checker.C14_START_M).read_bytes())
+            prefix = checker.raw_event_object_prefix_bytes(events_raw, 906)
+            self.assertEqual(manifest["historical_raw_event_prefix"], {
+                "bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix),
+            })
+        else:
+            predecessor = checker.c13_final_acceptance_from_root(ROOT)
+            artifacts = checker.c14_start_from_root(ROOT)
+            self.assertEqual(
+                checker.raw_event_object_prefix_bytes(predecessor[checker.C13_FINAL_E], 906),
+                checker.raw_event_object_prefix_bytes(artifacts[checker.C14_START_E], 906),
+            )
+            manifest = json.loads(artifacts[checker.C14_START_M])
+        self.assertEqual(checker.c14_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(23, manifest["exact_path_count"])
+        self.assertEqual(checker._c13_final_product_raw(ROOT),
+                         manifest["predecessor_product_raw"])
+
+    def test_seq910_dispatch_and_exact_git_gate_are_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c14_start_git",
+                               return_value=["SEQ910_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c13_final_acceptance_git",
+                               side_effect=AssertionError("seq906 fallback")):
+            self.assertEqual(["SEQ910_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 910},
+            }))
+
+
+class C14LeaseTimeCorrectionControlTests(unittest.TestCase):
+    def setUp(self):
+        C14StartControlTests.setUp(self)
+        checker = self._checker()
+        events = json.loads((ROOT / checker.C14_CORRECTION_E).read_bytes())["events"]
+        progress = json.loads((ROOT / checker.C14_CORRECTION_P).read_bytes())
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED"],
+                         [events[index]["event_type"] for index in (917, 918)])
+        progress.update(completed_c14_write_lease=events[917]["details"],
+                        completed_c14_worker_lease=events[918]["details"],
+                        updated_at=events[919]["occurred_at"])
+        overlay = _historical_bytes_overlay({checker.C14_CORRECTION_P: checker._c21_resume_json_bytes(progress)})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c14_lease_time_correction", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq915_replaces_future_dated_leases_without_product_mutation(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C14_CORRECTION_P).read_bytes())
+        if current["event_sequence"] == 920:
+            progress = current
+            manifest = json.loads((ROOT / checker.C14_CORRECTION_M).read_bytes())
+            worker = progress["completed_c14_worker_lease"]
+            write = progress["completed_c14_write_lease"]
+        else:
+            artifacts = checker.c14_lease_time_correction_from_root(ROOT)
+            progress = json.loads(artifacts[checker.C14_CORRECTION_P])
+            manifest = json.loads(artifacts[checker.C14_CORRECTION_M])
+            worker = progress["worker_lease"]
+            write = progress["write_lease"]
+        self.assertEqual((910, 915, 5), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(checker.C14_CORRECTED_WORKER_LEASE_ID,
+                         worker["lease_id"])
+        self.assertEqual(checker.C14_CORRECTED_WRITE_LEASE_ID,
+                         write["lease_id"])
+        self.assertLessEqual(worker["issued_at"],
+                             progress["updated_at"])
+        self.assertEqual("NOT_MODIFIED_CLOCK_SKEW_STOP",
+                         manifest["product_mutation_before_correction"])
+
+    def test_seq915_is_append_only_and_expands_control_exact_scope(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C14_CORRECTION_P).read_bytes())
+        if current["event_sequence"] == 920:
+            after = (ROOT / checker.C14_CORRECTION_E).read_bytes()
+            manifest = json.loads((ROOT / checker.C14_CORRECTION_M).read_bytes())
+            prefix = checker.raw_event_object_prefix_bytes(after, 910)
+            self.assertEqual(manifest["historical_raw_event_prefix"], {
+                "bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix),
+            })
+        else:
+            before = (ROOT / checker.C14_START_E).read_bytes()
+            artifacts = checker.c14_lease_time_correction_from_root(ROOT)
+            after = artifacts[checker.C14_CORRECTION_E]
+            self.assertEqual(
+                checker.raw_event_object_prefix_bytes(before, 910),
+                checker.raw_event_object_prefix_bytes(after, 910),
+            )
+            manifest = json.loads(artifacts[checker.C14_CORRECTION_M])
+        self.assertEqual(checker.c14_lease_time_correction_paths(),
+                         manifest["exact_allowed_paths"])
+        self.assertEqual(25, manifest["exact_path_count"])
+
+    def test_seq915_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c14_lease_time_correction_git",
+                               return_value=["SEQ915_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c14_start_git",
+                               side_effect=AssertionError("seq910 fallback")):
+            self.assertEqual(["SEQ915_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 915},
+            }))
+
+
+class C14FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        paths = (checker.C14_FINAL_E, checker.C14_FINAL_M)
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        manifest = json.loads(files[checker.C14_FINAL_M])
+        for path, expected in manifest["product_raw"].items():
+            raw = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+            self.assertEqual(expected, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()})
+            files[path] = raw
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c14_final", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq920_accepts_c14_and_releases_all_leases(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C14_FINAL_P).read_bytes())
+        if current["event_sequence"] >= 924:
+            manifest = json.loads((ROOT / checker.C14_FINAL_M).read_bytes())
+            stream = json.loads((ROOT / checker.C14_FINAL_E).read_bytes())
+            accepted = next(row for row in stream["events"] if row["sequence"] == 920)
+            self.assertEqual("ACCEPTED", accepted["details"]["decision"])
+            self.assertEqual("READY_FOR_WORK_INSTRUCTION",
+                             accepted["details"]["next_work_package_status"])
+        else:
+            artifacts = checker.c14_final_acceptance_from_root(ROOT)
+            progress = json.loads(artifacts[checker.C14_FINAL_P])
+            manifest = json.loads(artifacts[checker.C14_FINAL_M])
+            self.assertEqual("ACCEPTED", progress["status"])
+            self.assertIsNone(progress["active_agent"])
+            self.assertIsNone(progress["worker_lease"])
+            self.assertIsNone(progress["write_lease"])
+            self.assertEqual({"package_id": "C-15", "status": "READY_FOR_WORK_INSTRUCTION"},
+                             progress["next_work_package"])
+        self.assertEqual((915, 920, 5), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual((0, 0), (manifest["blocking_findings"],
+                                  manifest["important_findings"]))
+
+    def test_seq920_is_append_only_and_binds_exact_product_bytes(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C14_FINAL_P).read_bytes())
+        if current["event_sequence"] >= 924:
+            after = (ROOT / checker.C14_FINAL_E).read_bytes()
+            manifest = json.loads((ROOT / checker.C14_FINAL_M).read_bytes())
+            prefix = checker.raw_event_object_prefix_bytes(after, 915)
+            self.assertEqual(manifest["historical_raw_event_prefix"], {
+                "bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix),
+            })
+        else:
+            before = (ROOT / checker.C14_CORRECTION_E).read_bytes()
+            artifacts = checker.c14_final_acceptance_from_root(ROOT)
+            after = artifacts[checker.C14_FINAL_E]
+            self.assertEqual(
+                checker.raw_event_object_prefix_bytes(before, 915),
+                checker.raw_event_object_prefix_bytes(after, 915),
+            )
+            manifest = json.loads(artifacts[checker.C14_FINAL_M])
+        self.assertEqual(checker.c14_final_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(31, manifest["combined_exact_path_count"])
+        self.assertEqual(checker.c14_final_product_raw(ROOT), manifest["product_raw"])
+        self.assertEqual("C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF",
+                         manifest["known_baseline_failure"]["fingerprint"])
+        self.assertFalse(manifest["known_baseline_failure"]["counted_as_pass"])
+
+    def test_seq920_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c14_final_acceptance_git",
+                               return_value=["SEQ920_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c14_lease_time_correction_git",
+                               side_effect=AssertionError("seq915 fallback")):
+            self.assertEqual(["SEQ920_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 920},
+            }))
+
+
+class C15StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c15_start", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq924_starts_c15_without_new_approval(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C15_START_P).read_bytes())
+        if current["event_sequence"] == 924:
+            artifacts = checker.c15_start_from_root(ROOT)
+            progress = json.loads(artifacts[checker.C15_START_P])
+            manifest = json.loads(artifacts[checker.C15_START_M])
+        else:
+            progress = {"current_work_package": "C-15", "status": "IN_PROGRESS",
+                        "pending_approvals": [],
+                        "active_agent": {"actor_id": "developer-primary-c15-r1"}}
+            manifest = json.loads((ROOT / checker.C15_START_M).read_bytes())
+        self.assertEqual((920, 924, 4), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual("C-15", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertEqual("developer-primary-c15-r1", progress["active_agent"]["actor_id"])
+        self.assertFalse(manifest["authority"]["new_project_approval_requested"])
+
+    def test_seq924_preserves_c14_acceptance_and_exact_scope(self):
+        checker = self._checker()
+        before = (ROOT / checker.C14_FINAL_E).read_bytes()
+        current = json.loads((ROOT / checker.C15_START_P).read_bytes())
+        artifacts = (checker.c15_start_from_root(ROOT)
+                     if current["event_sequence"] == 924 else None)
+        after = (artifacts[checker.C15_START_E] if artifacts is not None
+                 else (ROOT / checker.C15_START_E).read_bytes())
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 920),
+            checker.raw_event_object_prefix_bytes(after, 920),
+        )
+        manifest = json.loads((artifacts[checker.C15_START_M] if artifacts is not None
+                               else (ROOT / checker.C15_START_M).read_bytes()))
+        self.assertEqual(checker.c15_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(33, manifest["exact_path_count"])
+        self.assertEqual(checker.c15_product_write_scope(), manifest["product_write_scope"])
+
+    def test_seq924_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c15_start_git",
+                               return_value=["SEQ924_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c14_final_acceptance_git",
+                               side_effect=AssertionError("seq920 fallback")):
+            self.assertEqual(["SEQ924_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 924},
+            }))
+
+
+class C15FinalAcceptanceDir2ControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c15_final_dir2", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq931_accepts_c15_and_enters_dir2_hold(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C15_FINAL_P).read_bytes())
+        artifacts = (checker.c15_final_dir2_from_root(ROOT)
+                     if current["event_sequence"] == 931 else None)
+        progress = (json.loads(artifacts[checker.C15_FINAL_P]) if artifacts is not None
+                    else {"event_sequence": 931, "status": "DIR_HOLD",
+                          "completed_packages": ["C-15"], "active_agent": None,
+                          "worker_lease": None, "write_lease": None,
+                          "active_work_instruction": None,
+                          "dir_review": {"status": "WAITING_OWNER_DIRECTION"},
+                          "phase_gate": {"checkpoint_status": "BLOCKED_PENDING_DIR2_OWNER_DIRECTION"}})
+        events = json.loads((artifacts[checker.C15_FINAL_E] if artifacts is not None
+                             else (ROOT / checker.C15_FINAL_E).read_bytes()))["events"]
+        self.assertEqual(931, progress["event_sequence"])
+        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertIn("C-15", progress["completed_packages"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("WAITING_OWNER_DIRECTION", progress["dir_review"]["status"])
+        self.assertEqual("BLOCKED_PENDING_DIR2_OWNER_DIRECTION", progress["phase_gate"]["checkpoint_status"])
+        self.assertEqual(
+            ["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+             "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED",
+             "MAIN_PACKAGE_ACCEPTED", "DIR_REACHED", "DIR_REPORTED"],
+            [row["event_type"] for row in events if 925 <= row["sequence"] <= 931],
+        )
+
+    def test_seq931_preserves_history_and_binds_exact41(self):
+        checker = self._checker()
+        before = (ROOT / checker.C15_START_E).read_bytes()
+        current = json.loads((ROOT / checker.C15_FINAL_P).read_bytes())
+        artifacts = (checker.c15_final_dir2_from_root(ROOT)
+                     if current["event_sequence"] == 931 else None)
+        after = (artifacts[checker.C15_FINAL_E] if artifacts is not None
+                 else (ROOT / checker.C15_FINAL_E).read_bytes())
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 924),
+            checker.raw_event_object_prefix_bytes(after, 924),
+        )
+        manifest = json.loads((artifacts[checker.C15_FINAL_M] if artifacts is not None
+                               else (ROOT / checker.C15_FINAL_M).read_bytes()))
+        self.assertEqual(checker.c15_final_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(41, manifest["exact_path_count"])
+        self.assertEqual(0, manifest["blocking_findings"])
+        self.assertEqual(0, manifest["important_findings"])
+
+    def test_seq931_dir2_registry_requires_report_and_owner_direction_remains_null(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.C15_FINAL_P).read_bytes())
+        artifacts = (checker.c15_final_dir2_from_root(ROOT)
+                     if current["event_sequence"] == 931 else None)
+        if artifacts is not None:
+            progress = json.loads(artifacts[checker.C15_FINAL_P])
+            registry = json.loads(artifacts[checker.C15_FINAL_DIR])
+            checkpoint = next(row for row in registry["checkpoints"] if row["checkpoint"] == "DIR-2")
+        else:
+            manifest = json.loads((ROOT / checker.C15_FINAL_M).read_bytes())
+            progress = {"reporting_decision": {"decision": "STOP_AND_REPORT_DIR"}}
+            checkpoint = {"status": manifest["dir2_status"], "verdict": manifest["dir2_verdict"],
+                          "report_ref": manifest["report_path"], "owner_direction_event_id": None}
+        self.assertEqual("WAITING_OWNER_DIRECTION", checkpoint["status"])
+        self.assertEqual("ALIGNED", checkpoint["verdict"])
+        self.assertEqual(checker.C15_FINAL_REPORT, checkpoint["report_ref"])
+        self.assertIsNone(checkpoint["owner_direction_event_id"])
+        self.assertEqual("STOP_AND_REPORT_DIR", progress["reporting_decision"]["decision"])
+
+    def test_seq931_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c15_final_dir2_git",
+                               return_value=["SEQ931_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c15_start_git",
+                               side_effect=AssertionError("seq924 fallback")):
+            self.assertEqual(["SEQ931_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 931},
+            }))
+
+
+class CGateDecisionControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        paths = (checker.C_GATE_P, checker.C_GATE_E, checker.C_GATE_H, checker.C_GATE_DIR, checker.C15_FINAL_M)
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in paths}
+        manifest = json.loads(files[checker.C15_FINAL_M])
+        stream = json.loads(files[checker.C_GATE_E])
+        events = stream["events"][:931]
+        self.assertEqual((931, "DIR_REPORTED"), (events[-1]["sequence"], events[-1]["event_type"]))
+        prefix = checker.raw_event_object_prefix_bytes(files[checker.C_GATE_E], 931)
+        stream.update(events=events, last_sequence=931)
+        header = {key: value for key, value in stream.items() if key != "events"}
+        files[checker.C_GATE_E] = checker._c21_resume_json_bytes(header).rstrip()[:-1] + b',\n  "events": [\n' + prefix + b'\n  ]\n}\n'
+        progress = json.loads(files[checker.C_GATE_P])
+        progress.update(event_sequence=931, last_event_id=events[-1]["event_id"], status="DIR_HOLD",
+                        active_agent=None, worker_lease=None, write_lease=None, active_work_instruction=None)
+        files[checker.C_GATE_P] = checker._c21_resume_json_bytes(progress)
+        registry = json.loads(files[checker.C_GATE_DIR])
+        entry = next(row for row in registry["checkpoints"] if row["checkpoint"] == "DIR-2")
+        entry.update(status=manifest["dir2_status"], verdict=manifest["dir2_verdict"],
+                     subject_hash=manifest["subject_hash"], report_ref=manifest["report_path"],
+                     owner_direction_event_id=None)
+        files[checker.C_GATE_DIR] = checker._c21_resume_json_bytes(registry)
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_c_gate", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq933_records_owner_direction_after_report_and_accepts_c_gate(self):
+        checker = self._checker()
+        artifacts = checker.c_gate_decision_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C_GATE_P])
+        events = json.loads(artifacts[checker.C_GATE_E])["events"]
+        terminal = [row for row in events if 932 <= row["sequence"] <= 933]
+        self.assertEqual(["DIR_OWNER_DIRECTION_RECORDED", "PHASE_GATE_DECIDED"],
+                         [row["event_type"] for row in terminal])
+        self.assertEqual("신산님", terminal[0]["actor"])
+        self.assertEqual("CONTINUE", terminal[0]["details"]["direction"])
+        self.assertEqual("CLEARED", progress["dir_review"]["status"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertEqual("D-01", progress["current_work_package"])
+        self.assertEqual({"package_id": "D-01", "status": "READY_NOT_STARTED"},
+                         progress["next_work_package"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+
+    def test_seq933_preserves_dir2_hold_prefix_and_binds_exact45(self):
+        checker = self._checker()
+        before = (ROOT / checker.C15_FINAL_E).read_bytes()
+        artifacts = checker.c_gate_decision_from_root(ROOT)
+        after = artifacts[checker.C_GATE_E]
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 931),
+            checker.raw_event_object_prefix_bytes(after, 931),
+        )
+        manifest = json.loads(artifacts[checker.C_GATE_M])
+        self.assertEqual(checker.c_gate_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(45, manifest["exact_path_count"])
+        self.assertEqual("작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+                         manifest["owner_direction"]["verbatim"])
+
+    def test_seq933_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c_gate_git",
+                               return_value=["SEQ933_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c15_final_dir2_git",
+                               side_effect=AssertionError("seq931 fallback")):
+            self.assertEqual(["SEQ933_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 933},
+            }))
+
+
+class D01StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d01_start", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq937_starts_d01_under_c_gate_and_dir2_clearance(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D01_START_P).read_bytes())
+        if current["event_sequence"] == 937:
+            artifacts = checker.d01_start_from_root(ROOT)
+            progress = json.loads(artifacts[checker.D01_START_P])
+            events = json.loads(artifacts[checker.D01_START_E])["events"]
+            self.assertEqual("IN_PROGRESS", progress["status"])
+            self.assertEqual("developer-primary-d01-r1", progress["active_agent"]["actor_id"])
+        else:
+            progress = current
+            events = json.loads((ROOT / checker.D01_START_E).read_bytes())["events"]
+        started = next(row for row in events if row["sequence"] == 937)
+        self.assertEqual("D-01", started["work_package_id"])
+        self.assertEqual("PACKAGE_STARTED", started["event_type"])
+        self.assertEqual("CLEARED", progress["dir_review"]["status"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertEqual(
+            ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+             "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [row["event_type"] for row in events if 934 <= row["sequence"] <= 937],
+        )
+
+    def test_seq937_preserves_c_gate_prefix_and_binds_exact49(self):
+        checker = self._checker()
+        before = (ROOT / checker.C_GATE_E).read_bytes()
+        current = json.loads((ROOT / checker.D01_START_P).read_bytes())
+        artifacts = (checker.d01_start_from_root(ROOT)
+                     if current["event_sequence"] == 937 else None)
+        after = (artifacts[checker.D01_START_E] if artifacts is not None
+                 else (ROOT / checker.D01_START_E).read_bytes())
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 933),
+            checker.raw_event_object_prefix_bytes(after, 933),
+        )
+        manifest = json.loads((artifacts[checker.D01_START_M] if artifacts is not None
+                               else (ROOT / checker.D01_START_M).read_bytes()))
+        self.assertEqual(checker.d01_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(49, manifest["exact_path_count"])
+        self.assertEqual(checker.d01_product_write_scope(), manifest["product_write_scope"])
+
+    def test_seq937_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d01_start_git",
+                               return_value=["SEQ937_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c_gate_git",
+                               side_effect=AssertionError("seq933 fallback")):
+            self.assertEqual(["SEQ937_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 937},
+            }))
+
+
+class D01FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d01_final", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq942_accepts_d01_releases_leases_and_readies_d02(self):
+        checker = self._checker()
+        # D01 was recorded with the D-phase checkpoint, not as a standalone
+        # seq942 progress commit. Replay its frozen acceptance and revocations;
+        # a successor's current progress is not the historical projection.
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        frozen = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                  for path in (checker.D01_FINAL_M, checker.D01_FINAL_E)}
+        manifest = json.loads(frozen[checker.D01_FINAL_M])
+        events = json.loads(frozen[checker.D01_FINAL_E])["events"][:942]
+        self.assertEqual(manifest["historical_raw_event_prefix"], {
+            "bytes": len(checker.raw_event_object_prefix_bytes(frozen[checker.D01_FINAL_E], 937)),
+            "sha256": checker._c21_resume_sha(checker.raw_event_object_prefix_bytes(frozen[checker.D01_FINAL_E], 937)),
+        })
+        accepted = events[-1]
+        self.assertTrue(accepted["details"]["accepted"])
+        self.assertEqual(0, manifest["active_leases"])
+        self.assertEqual(["REVOKED", "REVOKED"], [row["details"]["status"] for row in events[939:941]])
+        progress = {"event_sequence": accepted["sequence"], "status": accepted["details"]["decision"],
+                    "active_agent": None, "worker_lease": None, "write_lease": None,
+                    "next_work_package": {"package_id": accepted["details"]["next_work_package"],
+                                          "status": accepted["details"]["next_work_package_status"]}}
+        self.assertEqual(942, progress["event_sequence"])
+        self.assertEqual("ACCEPTED", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual({"package_id": "D-02", "status": "READY_FOR_WORK_INSTRUCTION"},
+                         progress["next_work_package"])
+        self.assertEqual((937, 942, 5), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+             "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+            [row["event_type"] for row in events if 938 <= row["sequence"] <= 942],
+        )
+
+    def test_seq942_is_append_only_and_binds_exact57(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        frozen = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                  for path in (checker.D01_FINAL_E, checker.D01_FINAL_M)}
+        before = after = frozen[checker.D01_FINAL_E]
+        manifest = json.loads(frozen[checker.D01_FINAL_M])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 937),
+            checker.raw_event_object_prefix_bytes(after, 937),
+        )
+        prefix = checker.raw_event_object_prefix_bytes(before, 937)
+        self.assertEqual(manifest["historical_raw_event_prefix"], {
+            "bytes": len(prefix), "sha256": hashlib.sha256(prefix).hexdigest().upper(),
+        })
+        self.assertEqual(checker.d01_final_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(57, manifest["combined_exact_path_count"])
+        product = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                   for path in manifest["product_raw"]}
+        # The D-phase checkpoint contains later additive exports. Extract the
+        # D01 section, then require its original frozen bytes/hash, not new values.
+        raw = product["packages/knowledge/__init__.py"]
+        export_start = raw.index(b"\n__all__ = [\n")
+        export_end = raw.index(b'    "LearningSnapshotRepository"', export_start)
+        product["packages/knowledge/__init__.py"] = raw[:raw.index(b"from .snapshots")] + raw[export_start:export_end] + b"]\n"
+        for path, raw in product.items():
+            self.assertEqual(manifest["product_raw"][path], {
+                "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper(),
+            })
+        with _historical_bytes_overlay(product):
+            self.assertEqual(checker.d01_final_product_raw(ROOT), manifest["product_raw"])
+        self.assertEqual((0, 0), (manifest["blocking_findings"],
+                                  manifest["important_findings"]))
+
+    def test_seq942_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d01_final_acceptance_git",
+                               return_value=["SEQ942_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d01_start_git",
+                               side_effect=AssertionError("seq937 fallback")):
+            self.assertEqual(["SEQ942_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 942},
+            }))
+
+
+class D02StartControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        directory = tempfile.TemporaryDirectory(prefix="anvil-d02-history-")
+        self.addCleanup(directory.cleanup)
+        self.fixture_root = Path(directory.name)
+        # The dispatcher requires a repository boundary before its mocked collector.
+        (self.fixture_root / ".git").mkdir()
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+            for path in checker.d02_start_paths():
+                raw = source.extractfile(path).read()
+                target = self.fixture_root / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(raw)
+        raw = (self.fixture_root / checker.D01_FINAL_E).read_bytes()
+        events = json.loads(raw)["events"][:942]
+        final = json.loads((self.fixture_root / checker.D01_FINAL_M).read_bytes())
+        prefix = checker.raw_event_object_prefix_bytes(raw, 942)
+        prior = checker.raw_event_object_prefix_bytes(raw, 937)
+        self.assertEqual(final["historical_raw_event_prefix"], {
+            "bytes": len(prior), "sha256": hashlib.sha256(prior).hexdigest().upper(),
+        })
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", events[-1]["event_type"])
+        self.assertEqual(["REVOKED", "REVOKED"], [row["details"]["status"] for row in events[939:941]])
+        self.assertEqual(0, final["active_leases"])
+        # Rehydrate only the D01 predecessor fields consumed by D02, from its
+        # frozen acceptance/revocation evidence; never import today's projection.
+        accepted = events[-1]["details"]
+        frozen_progress = json.loads((self.fixture_root / checker.D01_FINAL_P).read_bytes())
+        progress = {
+            "event_sequence": 942, "last_event_id": events[-1]["event_id"],
+            "status": accepted["decision"], "current_work_package": "D-01", "current_phase": "D",
+            "next_work_package": {"package_id": accepted["next_work_package"],
+                                  "status": accepted["next_work_package_status"]},
+            "active_agent": None, "worker_lease": None, "write_lease": None,
+            "active_work_instruction": None, "valid_failure_count": 0,
+            "design_baseline_hash": events[940]["details"]["baseline_hash"],
+            "repository": {"remote_head": accepted["acceptance_upstream_head"],
+                           "upstream": frozen_progress["repository"]["upstream"]},
+            "registry_refs": {}, "dir_review": {"status": "CLEARED"},
+        }
+        stream = json.loads(raw)
+        stream.pop("events")
+        stream["last_sequence"] = 942
+        header = json.dumps(stream, ensure_ascii=False).encode()[:-1]
+        (self.fixture_root / checker.D01_FINAL_E).write_bytes(header + b', "events": [' + prefix + b']}\n')
+        (self.fixture_root / checker.D01_FINAL_P).write_bytes(checker._c21_resume_json_bytes(progress))
+        summary = "```json anvil-recovery-summary\n" + json.dumps(progress) + "\n```\n"
+        (self.fixture_root / checker.D01_FINAL_H).write_text(summary, encoding="utf-8")
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d02_start", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq946_starts_d02_without_new_approval(self):
+        checker = self._checker()
+        artifacts = checker.d02_start_from_root(self.fixture_root)
+        progress = json.loads(artifacts[checker.D02_START_P])
+        manifest = json.loads(artifacts[checker.D02_START_M])
+        self.assertEqual(946, progress["event_sequence"])
+        self.assertEqual("D-02", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual("developer-primary-d02-r1", progress["active_agent"]["actor_id"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertFalse(manifest["authority"]["new_project_approval_requested"])
+
+    def test_seq946_preserves_d01_prefix_and_binds_exact61(self):
+        checker = self._checker()
+        before = (self.fixture_root / checker.D01_FINAL_E).read_bytes()
+        artifacts = checker.d02_start_from_root(self.fixture_root)
+        after = artifacts[checker.D02_START_E]
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 942),
+            checker.raw_event_object_prefix_bytes(after, 942),
+        )
+        manifest = json.loads(artifacts[checker.D02_START_M])
+        self.assertEqual(checker.d02_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(61, manifest["exact_path_count"])
+        self.assertEqual(checker.d02_product_write_scope(), manifest["product_write_scope"])
+
+    def test_seq946_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d02_start_git",
+                               return_value=["SEQ946_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d01_final_acceptance_git",
+                               side_effect=AssertionError("seq942 fallback")):
+            self.assertEqual(["SEQ946_SELECTED"], checker._validate_git_projection({
+                "_root": self.fixture_root, "progress": {"event_sequence": 946},
+            }))
+
+
+class D02FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d02_final", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq951_accepts_d02_releases_leases_and_readies_d03(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D02_FINAL_P).read_bytes())
+        if current["event_sequence"] == 951:
+            artifacts = checker.d02_final_acceptance_from_root(ROOT)
+            manifest = json.loads(artifacts[checker.D02_FINAL_M])
+            events = json.loads(artifacts[checker.D02_FINAL_E])["events"]
+        else:
+            manifest = json.loads((ROOT / checker.D02_FINAL_M).read_bytes())
+            events = json.loads((ROOT / checker.D02_FINAL_E).read_bytes())["events"]
+        self.assertEqual((946, 951, 5), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(("ACCEPTED", "READY_FOR_WORK_INSTRUCTION", 0),
+                         (manifest["d02_status"], manifest["d03_status"],
+                          manifest["active_leases"]))
+        self.assertEqual(
+            ["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+             "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+            [row["event_type"] for row in events if 947 <= row["sequence"] <= 951],
+        )
+    def test_seq951_is_append_only_and_binds_exact68(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D02_FINAL_P).read_bytes())
+        if current["event_sequence"] == 951:
+            artifacts = checker.d02_final_acceptance_from_root(ROOT)
+            events_raw = artifacts[checker.D02_FINAL_E]
+            manifest = json.loads(artifacts[checker.D02_FINAL_M])
+        else:
+            events_raw = subprocess.check_output(
+                ["git", "show", f"25dcaaa3854619f131cc93fa1ae5cd79479553ae:{checker.D02_FINAL_E}"],
+                cwd=ROOT,
+            )
+            manifest = json.loads((ROOT / checker.D02_FINAL_M).read_bytes())
+        prefix = checker.raw_event_object_prefix_bytes(events_raw, 946)
+        self.assertEqual({"bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix)},
+                         manifest["historical_raw_event_prefix"])
+        self.assertEqual(checker.d02_final_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(68, manifest["combined_exact_path_count"])
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in manifest["product_raw"]}
+        path = "packages/knowledge/__init__.py"
+        raw = files[path]
+        # Keep precisely the D02 exports from the immutable D-phase checkpoint.
+        files[path] = (raw[:raw.index(b"from .sources")]
+                       + raw[raw.index(b"\n__all__ = [\n"):raw.index(b'    "DerivedSourceItem"')]
+                       + b"]\n")
+        self.assertEqual(597, len(files[path]))
+        self.assertEqual("30D5C3F7825730752B978C084C3632ADAF830778265D4363F0B8656FB00463A5",
+                         hashlib.sha256(files[path]).hexdigest().upper())
+        for path, raw in files.items():
+            self.assertEqual({"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()},
+                             manifest["product_raw"][path])
+        with _historical_bytes_overlay(files):
+            self.assertEqual(checker.d02_final_product_raw(ROOT), manifest["product_raw"])
+        self.assertEqual((0, 0), (manifest["blocking_findings"],
+                                  manifest["important_findings"]))
+
+    def test_seq951_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d02_final_acceptance_git",
+                               return_value=["SEQ951_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d02_start_git",
+                               side_effect=AssertionError("seq946 fallback")):
+            self.assertEqual(["SEQ951_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 951},
+            }))
+
+
+class D03StartControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        package = getattr(self, "HISTORY_PACKAGE", "D02")
+        sequence = getattr(self, "HISTORY_SEQUENCE", 951)
+        paths_method = getattr(self, "HISTORY_PATHS", "d03_start_paths")
+        event_path, manifest_path, progress_path, handoff_path = (
+            getattr(checker, package + ("_FINAL_M" if suffix == "M" else "_START_" + suffix))
+            for suffix in ("E", "M", "P", "H"))
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        archive = subprocess.check_output(["git", "archive", checkpoint], cwd=ROOT)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as source:
+            files = {path: source.extractfile(path).read() for path in getattr(checker, paths_method)()}
+        raw = files[event_path]
+        events = json.loads(raw)["events"][:sequence]
+        manifest = json.loads(files[manifest_path])
+        prior = checker.raw_event_object_prefix_bytes(raw, manifest["historical_event_sequence"])
+        self.assertEqual(manifest["historical_raw_event_prefix"], {
+            "bytes": len(prior), "sha256": hashlib.sha256(prior).hexdigest().upper()})
+        final_events = events[manifest["historical_event_sequence"]:]
+        accepted_event = next(row for row in final_events if row["event_type"] == "MAIN_PACKAGE_ACCEPTED")
+        revoked = [row for row in final_events if row["event_type"] in ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")]
+        self.assertEqual(["REVOKED", "REVOKED"], [event["details"]["status"] for event in revoked])
+        self.assertEqual(0, manifest["active_leases"])
+        accepted = accepted_event["details"]
+        next_details = events[-1]["details"] if events[-1]["event_type"] == "PHASE_GATE_DECIDED" else accepted
+        frozen_progress = json.loads(files[progress_path])
+        progress = {
+            "event_sequence": sequence, "last_event_id": events[-1]["event_id"],
+            "status": accepted["decision"], "current_work_package": accepted_event["work_package_id"], "current_phase": "D",
+            "next_work_package": {"package_id": next_details["next_work_package"],
+                                  "status": next_details.get("next_work_package_status", next_details.get("next_package_status"))},
+            "active_agent": None, "worker_lease": None, "write_lease": None,
+            "active_work_instruction": None, "valid_failure_count": 0,
+            "design_baseline_hash": revoked[-1]["details"]["baseline_hash"],
+            "repository": {"remote_head": accepted["acceptance_upstream_head"],
+                           "upstream": frozen_progress["repository"]["upstream"]},
+            "registry_refs": {}, "dir_review": {"status": "CLEARED"},
+        }
+        stream = {k: v for k, v in json.loads(raw).items() if k != "events"}
+        stream.update(last_sequence=sequence, last_event_id=events[-1]["event_id"])
+        files[event_path] = (json.dumps(stream, ensure_ascii=False).encode()[:-1]
+            + b', "events": [' + checker.raw_event_object_prefix_bytes(raw, sequence) + b']}\n')
+        files[progress_path] = checker._c21_resume_json_bytes(progress)
+        files[handoff_path] = ("```json anvil-recovery-summary\n" + json.dumps(progress) + "\n```\n").encode()
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d03_start", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq955_starts_d03_without_new_approval(self):
+        checker = self._checker()
+        artifacts = checker.d03_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.D03_START_P])
+        manifest = json.loads(artifacts[checker.D03_START_M])
+        self.assertEqual(955, progress["event_sequence"])
+        self.assertEqual("D-03", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual("developer-primary-d03-r1", progress["active_agent"]["actor_id"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertFalse(manifest["authority"]["new_project_approval_requested"])
+
+    def test_seq955_preserves_d02_prefix_and_binds_exact72(self):
+        checker = self._checker()
+        before = (ROOT / checker.D02_FINAL_E).read_bytes()
+        artifacts = checker.d03_start_from_root(ROOT)
+        after = artifacts[checker.D03_START_E]
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(before, 951),
+            checker.raw_event_object_prefix_bytes(after, 951),
+        )
+        manifest = json.loads(artifacts[checker.D03_START_M])
+        self.assertEqual(checker.d03_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(72, manifest["exact_path_count"])
+        self.assertEqual(checker.d03_product_write_scope(), manifest["product_write_scope"])
+
+    def test_seq955_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d03_start_git",
+                               return_value=["SEQ955_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d02_final_acceptance_git",
+                               side_effect=AssertionError("seq951 fallback")):
+            self.assertEqual(["SEQ955_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 955},
+            }))
+
+
+class D03FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        package = getattr(self, "HISTORY_FINAL", "D03")
+        event_path = getattr(checker, package + "_START_E")
+        manifest_path = getattr(checker, package + "_FINAL_M")
+        checkpoint = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in (event_path, manifest_path)}
+        manifest = json.loads(files[manifest_path])
+        for path in manifest["product_raw"]:
+            files[path] = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+        path = "packages/knowledge/__init__.py"
+        raw = files[path]
+        import_boundary = getattr(self, "HISTORY_IMPORT", b"from .patterns")
+        if import_boundary is not None:
+            files[path] = (raw[:raw.index(import_boundary)]
+                           + raw[raw.index(b"\n__all__ = [\n"):raw.index(getattr(self, "HISTORY_EXPORT", b'    "AntiPattern"'))] + b"]\n")
+        for path, expected in manifest["product_raw"].items():
+            raw = files[path]
+            self.assertEqual(expected, {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest().upper()})
+        if getattr(self, "HISTORY_PROGRESS", False):
+            events = json.loads(files[event_path])["events"][:manifest["event_sequence"]]
+            accepted = next(row for row in reversed(events) if row["event_type"] == "MAIN_PACKAGE_ACCEPTED")
+            self.assertEqual("ACCEPTED", accepted["details"]["decision"])
+            self.assertEqual(["REVOKED", "REVOKED"], [row["details"]["status"] for row in events
+                if row["sequence"] > manifest["historical_event_sequence"]
+                and row["event_type"] in ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")])
+            p = {"event_sequence": events[-1]["sequence"], "status": accepted["details"]["decision"],
+                 "worker_lease": None, "write_lease": None, "active_agent": None, "active_work_instruction": None,
+                 "pending_approvals": []}
+            files[getattr(checker, package + "_START_P")] = checker._c21_resume_json_bytes(p)
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d03_final", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq960_accepts_d03_releases_leases_and_readies_d04(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D03_FINAL_P).read_bytes())
+        if current["event_sequence"] == 955:
+            artifacts = checker.d03_final_acceptance_from_root(ROOT)
+            manifest = json.loads(artifacts[checker.D03_FINAL_M])
+            events = json.loads(artifacts[checker.D03_FINAL_E])["events"]
+        else:
+            manifest = json.loads((ROOT / checker.D03_FINAL_M).read_bytes())
+            events = json.loads((ROOT / checker.D03_FINAL_E).read_bytes())["events"]
+        self.assertEqual((955, 960, 5), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(("ACCEPTED", "READY_FOR_WORK_INSTRUCTION", 0),
+                         (manifest["d03_status"], manifest["d04_status"], manifest["active_leases"]))
+        self.assertEqual(
+            ["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+             "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+            [row["event_type"] for row in events if 956 <= row["sequence"] <= 960],
+        )
+
+    def test_seq960_is_append_only_and_binds_exact79(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D03_FINAL_P).read_bytes())
+        if current["event_sequence"] == 955:
+            artifacts = checker.d03_final_acceptance_from_root(ROOT)
+            events_raw = artifacts[checker.D03_FINAL_E]
+            manifest = json.loads(artifacts[checker.D03_FINAL_M])
+        else:
+            events_raw = (ROOT / checker.D03_FINAL_E).read_bytes()
+            manifest = json.loads((ROOT / checker.D03_FINAL_M).read_bytes())
+        prefix = checker.raw_event_object_prefix_bytes(events_raw, 955)
+        self.assertEqual({"bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix)},
+                         manifest["historical_raw_event_prefix"])
+        self.assertEqual(checker.d03_final_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(79, manifest["combined_exact_path_count"])
+        self.assertEqual(checker.d03_final_product_raw(ROOT), manifest["product_raw"])
+        self.assertEqual((0, 0), (manifest["blocking_findings"], manifest["important_findings"]))
+
+    def test_seq960_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d03_final_acceptance_git",
+                               return_value=["SEQ960_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d03_start_git",
+                               side_effect=AssertionError("seq955 fallback")):
+            self.assertEqual(["SEQ960_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 960},
+            }))
+
+
+class D04StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D03"
+    HISTORY_SEQUENCE = 960
+    HISTORY_PATHS = "d04_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_project_progress_d04_start", CHECKER_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq964_starts_d04_without_new_approval(self):
+        checker = self._checker()
+        artifacts = checker.d04_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.D04_START_P])
+        manifest = json.loads(artifacts[checker.D04_START_M])
+        self.assertEqual(964, progress["event_sequence"])
+        self.assertEqual("D-04", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual("developer-primary-d04-r1", progress["active_agent"]["actor_id"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertFalse(manifest["authority"]["new_project_approval_requested"])
+
+    def test_seq964_preserves_d03_prefix_and_binds_exact83(self):
+        checker = self._checker()
+        before = (ROOT / checker.D03_FINAL_E).read_bytes()
+        artifacts = checker.d04_start_from_root(ROOT)
+        after = artifacts[checker.D04_START_E]
+        self.assertEqual(checker.raw_event_object_prefix_bytes(before, 960),
+                         checker.raw_event_object_prefix_bytes(after, 960))
+        manifest = json.loads(artifacts[checker.D04_START_M])
+        self.assertEqual(checker.d04_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(83, manifest["exact_path_count"])
+        self.assertEqual(checker.d04_product_write_scope(), manifest["product_write_scope"])
+
+    def test_seq964_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d04_start_git",
+                               return_value=["SEQ964_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d03_final_acceptance_git",
+                               side_effect=AssertionError("seq960 fallback")):
+            self.assertEqual(["SEQ964_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 964},
+            }))
+
+
+class D04FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D04"
+    HISTORY_IMPORT = b"from .reviews"
+    HISTORY_EXPORT = b'    "LearningReview"'
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_d04_final", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_seq969_accepts_and_readies_d05(self):
+        c = self._checker(); current = json.loads((ROOT / c.D04_FINAL_P).read_bytes())
+        if current["event_sequence"] == 964:
+            a = c.d04_final_acceptance_from_root(ROOT); m = json.loads(a[c.D04_FINAL_M]); events = json.loads(a[c.D04_FINAL_E])["events"]
+        else:
+            m = json.loads((ROOT / c.D04_FINAL_M).read_bytes()); events = json.loads((ROOT / c.D04_FINAL_E).read_bytes())["events"]
+        self.assertEqual((964, 969, 5), (m["historical_event_sequence"], m["event_sequence"], m["appended_event_count"]))
+        self.assertEqual(("ACCEPTED", "READY_FOR_WORK_INSTRUCTION", 0), (m["d04_status"], m["d05_status"], m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED", "WRITE_LEASE_REVOKED",
+                          "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+                         [x["event_type"] for x in events if 965 <= x["sequence"] <= 969])
+
+    def test_seq969_binds_exact90(self):
+        c = self._checker(); current = json.loads((ROOT / c.D04_FINAL_P).read_bytes())
+        if current["event_sequence"] == 964:
+            a = c.d04_final_acceptance_from_root(ROOT); m = json.loads(a[c.D04_FINAL_M])
+        else: m = json.loads((ROOT / c.D04_FINAL_M).read_bytes())
+        self.assertEqual(c.d04_final_paths(), m["combined_exact_paths"]); self.assertEqual(90, m["combined_exact_path_count"])
+        self.assertEqual(c.d04_final_product_raw(ROOT), m["product_raw"])
+
+    def test_seq969_git_dispatch(self):
+        c = self._checker()
+        with mock.patch.object(c, "_collect_d04_final_acceptance_git", return_value=["SEQ969_SELECTED"]), \
+             mock.patch.object(c, "_collect_d04_start_git", side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ969_SELECTED"], c._validate_git_projection({"_root": ROOT, "progress": {"event_sequence": 969}}))
+
+
+class D05StartControlTests(unittest.TestCase):
+    def setUp(self):
+        path = "docs/progress/progress-events.json"
+        raw = subprocess.check_output(["git", "show", f"25dcaaa3854619f131cc93fa1ae5cd79479553ae:{path}"], cwd=ROOT)
+        overlay = _historical_bytes_overlay({path: raw})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_d05_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq973_starts_d05_without_new_approval(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D05_START_P).read_bytes())
+        if current["event_sequence"] == 969:
+            artifacts = checker.d05_start_from_root(ROOT)
+            progress = json.loads(artifacts[checker.D05_START_P])
+            manifest = json.loads(artifacts[checker.D05_START_M])
+            self.assertEqual(973, progress["event_sequence"])
+            self.assertEqual("D-05", progress["current_work_package"])
+            self.assertEqual("IN_PROGRESS", progress["status"])
+            self.assertEqual("developer-primary-d05-r1", progress["active_agent"]["actor_id"])
+            self.assertEqual([], progress["pending_approvals"])
+        else:
+            manifest = json.loads((ROOT / checker.D05_START_M).read_bytes())
+            events = json.loads((ROOT / checker.D05_START_E).read_bytes())["events"]
+            start = next(row for row in events if row["sequence"] == 973)
+            self.assertEqual("D-05", start["work_package_id"])
+            self.assertEqual("PACKAGE_STARTED", start["event_type"])
+            self.assertEqual("developer-primary-d05-r1", start["details"]["active_agent"])
+        self.assertFalse(manifest["authority"]["new_project_approval_requested"])
+
+    def test_seq973_preserves_d04_prefix_and_binds_exact94(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D05_START_P).read_bytes())
+        if current["event_sequence"] == 969:
+            before = (ROOT / checker.D04_FINAL_E).read_bytes()
+            artifacts = checker.d05_start_from_root(ROOT)
+            after = artifacts[checker.D05_START_E]
+            self.assertEqual(checker.raw_event_object_prefix_bytes(before, 969),
+                             checker.raw_event_object_prefix_bytes(after, 969))
+            manifest = json.loads(artifacts[checker.D05_START_M])
+        else:
+            after = (ROOT / checker.D05_START_E).read_bytes()
+            prefix = checker.raw_event_object_prefix_bytes(after, 969)
+            manifest = json.loads((ROOT / checker.D05_START_M).read_bytes())
+            self.assertEqual(manifest["historical_raw_event_prefix"],
+                             {"bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix)})
+        self.assertEqual(checker.d05_start_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(94, manifest["exact_path_count"])
+        self.assertEqual(checker.d05_product_write_scope(), manifest["product_write_scope"])
+
+    def test_seq973_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d05_start_git", return_value=["SEQ973_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d04_final_acceptance_git",
+                               side_effect=AssertionError("seq969 fallback")):
+            self.assertEqual(["SEQ973_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 973},
+            }))
+
+
+class D05ScopeRevisionControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+        checker = self._checker()
+        event = json.loads((ROOT / checker.D05_START_E).read_bytes())["events"][973]
+        self.assertEqual("WORK_INSTRUCTION_REVISED", event["event_type"])
+        self.assertFalse(event["details"]["new_project_approval_requested"])
+        progress = {"event_sequence": event["sequence"], "pending_approvals": [],
+                    "active_work_instruction": {"artifact_sha256": event["details"]["work_instruction_sha256"]}}
+        overlay = _historical_bytes_overlay({checker.D05_START_P: checker._c21_resume_json_bytes(progress)})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_d05_revision", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq974_revises_authority_without_product_scope_change(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D05_START_P).read_bytes())
+        if current["event_sequence"] == 973:
+            artifacts = checker.d05_scope_revision_from_root(ROOT)
+            progress = json.loads(artifacts[checker.D05_START_P])
+            manifest = json.loads(artifacts[checker.D05_REVISION_M])
+        else:
+            progress = current
+            manifest = json.loads((ROOT / checker.D05_REVISION_M).read_bytes())
+        self.assertEqual(974, progress["event_sequence"])
+        self.assertEqual(checker.D05_REVISED_WI_SHA256,
+                         progress["active_work_instruction"]["artifact_sha256"])
+        self.assertEqual(checker.d05_product_write_scope(), manifest["product_write_scope"])
+        self.assertTrue(manifest["product_write_scope_unchanged"])
+        self.assertEqual([], progress["pending_approvals"])
+
+    def test_seq974_preserves_seq973_prefix_and_binds_exact96(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D05_START_P).read_bytes())
+        if current["event_sequence"] == 973:
+            artifacts = checker.d05_scope_revision_from_root(ROOT)
+            events_raw = artifacts[checker.D05_START_E]
+            manifest = json.loads(artifacts[checker.D05_REVISION_M])
+        else:
+            events_raw = (ROOT / checker.D05_START_E).read_bytes()
+            manifest = json.loads((ROOT / checker.D05_REVISION_M).read_bytes())
+        prefix = checker.raw_event_object_prefix_bytes(events_raw, 973)
+        self.assertEqual({"bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix)},
+                         manifest["historical_raw_event_prefix"])
+        self.assertEqual(checker.d05_scope_revision_paths(), manifest["exact_allowed_paths"])
+        self.assertEqual(96, manifest["exact_path_count"])
+
+    def test_seq974_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d05_scope_revision_git",
+                               return_value=["SEQ974_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d05_start_git",
+                               side_effect=AssertionError("seq973 fallback")):
+            self.assertEqual(["SEQ974_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 974},
+            }))
+
+
+class D05FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D05"
+    HISTORY_IMPORT = b"from .candidates"
+    HISTORY_EXPORT = b'    "CandidateError"'
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_d05_final", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq979_accepts_d05_releases_leases_and_readies_d06(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D05_START_P).read_bytes())
+        if current["event_sequence"] == 974:
+            artifacts = checker.d05_final_acceptance_from_root(ROOT)
+            manifest = json.loads(artifacts[checker.D05_FINAL_M])
+            events = json.loads(artifacts[checker.D05_START_E])["events"]
+        else:
+            manifest = json.loads((ROOT / checker.D05_FINAL_M).read_bytes())
+            events = json.loads((ROOT / checker.D05_START_E).read_bytes())["events"]
+        self.assertEqual((974, 979, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(("ACCEPTED", "READY_FOR_WORK_INSTRUCTION", 0),
+                         (manifest["d05_status"], manifest["d06_status"], manifest["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+                          "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+                         [row["event_type"] for row in events if 975 <= row["sequence"] <= 979])
+
+    def test_seq979_is_append_only_and_binds_exact103(self):
+        checker = self._checker()
+        current = json.loads((ROOT / checker.D05_START_P).read_bytes())
+        if current["event_sequence"] == 974:
+            artifacts = checker.d05_final_acceptance_from_root(ROOT)
+            events_raw = artifacts[checker.D05_START_E]
+            manifest = json.loads(artifacts[checker.D05_FINAL_M])
+        else:
+            events_raw = (ROOT / checker.D05_START_E).read_bytes()
+            manifest = json.loads((ROOT / checker.D05_FINAL_M).read_bytes())
+        prefix = checker.raw_event_object_prefix_bytes(events_raw, 974)
+        self.assertEqual({"bytes": len(prefix), "sha256": checker._c21_resume_sha(prefix)},
+                         manifest["historical_raw_event_prefix"])
+        self.assertEqual(checker.d05_final_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(103, manifest["combined_exact_path_count"])
+        self.assertEqual(checker.d05_final_product_raw(ROOT), manifest["product_raw"])
+        self.assertEqual((0, 0), (manifest["blocking_findings"], manifest["important_findings"]))
+
+    def test_seq979_git_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_d05_final_acceptance_git",
+                               return_value=["SEQ979_SELECTED"]), \
+             mock.patch.object(checker, "_collect_d05_scope_revision_git",
+                               side_effect=AssertionError("seq974 fallback")):
+            self.assertEqual(["SEQ979_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 979},
+            }))
+
+
+class D06StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D05"
+    HISTORY_SEQUENCE = 979
+    HISTORY_PATHS = "d06_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_d06_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_seq983_starts_d06_without_new_approval(self):
+        c = self._checker(); a = c.d06_start_from_root(ROOT)
+        p, m = json.loads(a[c.D06_START_P]), json.loads(a[c.D06_START_M])
+        self.assertEqual((983, "D-06", "IN_PROGRESS"),
+                         (p["event_sequence"], p["current_work_package"], p["status"]))
+        self.assertEqual("developer-primary-d06-r1", p["active_agent"]["actor_id"])
+        self.assertEqual([], p["pending_approvals"]); self.assertFalse(m["authority"]["new_project_approval_requested"])
+
+    def test_seq983_preserves_d05_prefix_and_binds_exact107(self):
+        c = self._checker(); before = (ROOT / c.D05_START_E).read_bytes(); a = c.d06_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(before, 979), c.raw_event_object_prefix_bytes(a[c.D06_START_E], 979))
+        m = json.loads(a[c.D06_START_M]); self.assertEqual(c.d06_start_paths(), m["exact_allowed_paths"])
+        self.assertEqual(107, m["exact_path_count"]); self.assertEqual(c.d06_product_write_scope(), m["product_write_scope"])
+
+    def test_seq983_git_dispatch_is_successor_first(self):
+        c = self._checker()
+        with mock.patch.object(c, "_collect_d06_start_git", return_value=["SEQ983_SELECTED"]), \
+             mock.patch.object(c, "_collect_d05_final_acceptance_git", side_effect=AssertionError("seq979 fallback")):
+            self.assertEqual(["SEQ983_SELECTED"], c._validate_git_projection({"_root": ROOT, "progress": {"event_sequence": 983}}))
+
+
+class D06FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D06"
+    HISTORY_IMPORT = b"from .skills"
+    HISTORY_EXPORT = b'    "SkillError"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("check_project_progress_d06_final",CHECKER_PATH); m=importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
+    def test_seq989_accepts_d06_and_learning_gate(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D06_START_P).read_bytes())
+        if cur["event_sequence"]==983: a=c.d06_final_acceptance_from_root(ROOT); p=json.loads(a[c.D06_START_P]); m=json.loads(a[c.D06_FINAL_M]); events=json.loads(a[c.D06_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D06_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D06_START_E).read_bytes())["events"]
+        self.assertEqual((989,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION"),(p["event_sequence"],m["d06_status"],m["d_learning_gate"],m["d07_status"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED","PHASE_GATE_DECIDED"],[e["event_type"] for e in events if 984<=e["sequence"]<=989])
+    def test_seq989_append_only_exact114(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D06_START_P).read_bytes())
+        if cur["event_sequence"]==983: a=c.d06_final_acceptance_from_root(ROOT); raw=a[c.D06_START_E]; m=json.loads(a[c.D06_FINAL_M])
+        else: raw=(ROOT/c.D06_START_E).read_bytes(); m=json.loads((ROOT/c.D06_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,983); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d06_final_paths(),m["combined_exact_paths"]); self.assertEqual(114,m["combined_exact_path_count"]); self.assertEqual(c.d06_final_product_raw(ROOT),m["product_raw"])
+    def test_seq989_git_dispatch(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d06_final_acceptance_git",return_value=["SEQ989_SELECTED"]), mock.patch.object(c,"_collect_d06_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ989_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":989}}))
+
+
+class D07StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D06"
+    HISTORY_SEQUENCE = 989
+    HISTORY_PATHS = "d07_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d07_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq993_start_and_exact118(self):
+        c=self._checker(); a=c.d07_start_from_root(ROOT); p=json.loads(a[c.D07_START_P]); m=json.loads(a[c.D07_START_M])
+        self.assertEqual((993,"D-07","IN_PROGRESS","developer-primary-d07-r1"),(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"])); self.assertEqual(118,m["exact_path_count"]); self.assertEqual(c.d07_start_paths(),m["exact_allowed_paths"]); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq993_append_only(self):
+        c=self._checker(); before=(ROOT/c.D06_START_E).read_bytes(); a=c.d07_start_from_root(ROOT); self.assertEqual(c.raw_event_object_prefix_bytes(before,989),c.raw_event_object_prefix_bytes(a[c.D07_START_E],989))
+    def test_seq993_git_dispatch(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d07_start_git",return_value=["SEQ993_SELECTED"]),mock.patch.object(c,"_collect_d06_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ993_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":993}}))
+
+
+class D07FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D07"
+    HISTORY_IMPORT = b"from .skill_evolution"
+    HISTORY_EXPORT = b'    "EvolutionError"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d07_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq998_accepts_d07_releases_leases_and_readies_d08(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D07_START_P).read_bytes())
+        if cur["event_sequence"]==993: a=c.d07_final_acceptance_from_root(ROOT); p=json.loads(a[c.D07_START_P]); m=json.loads(a[c.D07_FINAL_M]); events=json.loads(a[c.D07_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D07_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D07_START_E).read_bytes())["events"]
+        self.assertEqual((998,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(p["event_sequence"],m["d07_status"],m["package_status"],m["d08_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in events if 994<=e["sequence"]<=998])
+        self.assertIsNone(p["worker_lease"]); self.assertIsNone(p["write_lease"])
+    def test_seq998_is_append_only_and_binds_exact125(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D07_START_P).read_bytes())
+        if cur["event_sequence"]==993: a=c.d07_final_acceptance_from_root(ROOT); raw=a[c.D07_START_E]; m=json.loads(a[c.D07_FINAL_M])
+        else: raw=(ROOT/c.D07_START_E).read_bytes(); m=json.loads((ROOT/c.D07_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,993); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d07_final_paths(),m["combined_exact_paths"]); self.assertEqual(125,m["combined_exact_path_count"]); self.assertEqual(c.d07_final_product_raw(ROOT),m["product_raw"])
+    def test_seq998_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d07_final_acceptance_git",return_value=["SEQ998_SELECTED"]),mock.patch.object(c,"_collect_d07_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ998_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":998}}))
+
+
+class D08StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D07"
+    HISTORY_SEQUENCE = 998
+    HISTORY_PATHS = "d08_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d08_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1002_starts_d08_without_new_approval(self):
+        c=self._checker(); a=c.d08_start_from_root(ROOT); p=json.loads(a[c.D08_START_P]); m=json.loads(a[c.D08_START_M])
+        self.assertEqual((1002,"D-08","IN_PROGRESS","developer-primary-d08-r1"),(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"]))
+        self.assertEqual([],p["pending_approvals"]); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq1002_preserves_d07_prefix_and_binds_exact129(self):
+        c=self._checker(); before=(ROOT/c.D07_START_E).read_bytes(); a=c.d08_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(before,998),c.raw_event_object_prefix_bytes(a[c.D08_START_E],998))
+        m=json.loads(a[c.D08_START_M]); self.assertEqual(c.d08_start_paths(),m["exact_allowed_paths"]); self.assertEqual(129,m["exact_path_count"]); self.assertEqual(c.d08_product_write_scope(),m["product_write_scope"])
+    def test_seq1002_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d08_start_git",return_value=["SEQ1002_SELECTED"]),mock.patch.object(c,"_collect_d07_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1002_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1002}}))
+
+
+class D08FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D08"
+    HISTORY_IMPORT = b"from .hooks"
+    HISTORY_EXPORT = b'    "HookError"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d08_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1008_accepts_d08_and_skill_gate(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D08_START_P).read_bytes())
+        if cur["event_sequence"]==1002: a=c.d08_final_acceptance_from_root(ROOT); p=json.loads(a[c.D08_START_P]); m=json.loads(a[c.D08_FINAL_M]); events=json.loads(a[c.D08_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D08_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D08_START_E).read_bytes())["events"]
+        self.assertEqual((1008,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(p["event_sequence"],m["d08_status"],m["d_skill_gate"],m["d09_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED","PHASE_GATE_DECIDED"],[e["event_type"] for e in events if 1003<=e["sequence"]<=1008])
+        self.assertEqual("PASS_FIXTURE_HOST_CAPTURED",m["gate_evidence"]["pilot_replay_contract"]); self.assertEqual("NOT_EXECUTED",m["gate_evidence"]["operational_pilot_execution"])
+    def test_seq1008_is_append_only_and_binds_exact136(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D08_START_P).read_bytes())
+        if cur["event_sequence"]==1002: a=c.d08_final_acceptance_from_root(ROOT); raw=a[c.D08_START_E]; m=json.loads(a[c.D08_FINAL_M])
+        else: raw=(ROOT/c.D08_START_E).read_bytes(); m=json.loads((ROOT/c.D08_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1002); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d08_final_paths(),m["combined_exact_paths"]); self.assertEqual(136,m["combined_exact_path_count"]); self.assertEqual(c.d08_final_product_raw(ROOT),m["product_raw"])
+    def test_seq1008_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d08_final_acceptance_git",return_value=["SEQ1008_SELECTED"]),mock.patch.object(c,"_collect_d08_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1008_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1008}}))
+
+
+class D09StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D08"
+    HISTORY_SEQUENCE = 1008
+    HISTORY_PATHS = "d09_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d09_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1012_starts_d09_without_new_approval(self):
+        c=self._checker(); a=c.d09_start_from_root(ROOT); p=json.loads(a[c.D09_START_P]); m=json.loads(a[c.D09_START_M])
+        self.assertEqual((1012,"D-09","IN_PROGRESS","developer-primary-d09-r1"),(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"]))
+        self.assertEqual([],p["pending_approvals"]); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq1012_preserves_d08_prefix_and_binds_exact140(self):
+        c=self._checker(); before=(ROOT/c.D08_START_E).read_bytes(); a=c.d09_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(before,1008),c.raw_event_object_prefix_bytes(a[c.D09_START_E],1008))
+        m=json.loads(a[c.D09_START_M]); self.assertEqual(c.d09_start_paths(),m["exact_allowed_paths"]); self.assertEqual(140,m["exact_path_count"]); self.assertEqual(c.d09_product_write_scope(),m["product_write_scope"])
+    def test_seq1012_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d09_start_git",return_value=["SEQ1012_SELECTED"]),mock.patch.object(c,"_collect_d08_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1012_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1012}}))
+
+
+class D09FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D09"
+    HISTORY_IMPORT = b"from .hook_runtime"
+    HISTORY_EXPORT = b'    "HookRuntime"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d09_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1017_accepts_d09_and_readies_d10(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D09_START_P).read_bytes())
+        if cur["event_sequence"]==1012: a=c.d09_final_acceptance_from_root(ROOT); p=json.loads(a[c.D09_START_P]); m=json.loads(a[c.D09_FINAL_M]); events=json.loads(a[c.D09_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D09_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D09_START_E).read_bytes())["events"]
+        self.assertEqual((1017,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(p["event_sequence"],m["d09_status"],m["package_status"],m["d10_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in events if 1013<=e["sequence"]<=1017])
+    def test_seq1017_is_append_only_and_binds_exact147(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D09_START_P).read_bytes())
+        if cur["event_sequence"]==1012: a=c.d09_final_acceptance_from_root(ROOT); raw=a[c.D09_START_E]; m=json.loads(a[c.D09_FINAL_M])
+        else: raw=(ROOT/c.D09_START_E).read_bytes(); m=json.loads((ROOT/c.D09_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1012); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d09_final_paths(),m["combined_exact_paths"]); self.assertEqual(147,m["combined_exact_path_count"]); self.assertEqual(c.d09_final_product_raw(ROOT),m["product_raw"])
+    def test_seq1017_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d09_final_acceptance_git",return_value=["SEQ1017_SELECTED"]),mock.patch.object(c,"_collect_d09_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1017_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1017}}))
+
+
+class D10StartControlTests(unittest.TestCase):
+    HISTORY_PACKAGE = "D09"
+    HISTORY_SEQUENCE = 1017
+    HISTORY_PATHS = "d10_start_paths"
+
+    def setUp(self):
+        D03StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d10_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1021_starts_d10_without_new_approval(self):
+        c=self._checker(); a=c.d10_start_from_root(ROOT); p=json.loads(a[c.D10_START_P]); m=json.loads(a[c.D10_START_M])
+        self.assertEqual((1021,"D-10","IN_PROGRESS","developer-primary-d10-r1"),(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"]))
+        self.assertEqual([],p["pending_approvals"]); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq1021_preserves_d09_prefix_and_binds_exact151(self):
+        c=self._checker(); before=(ROOT/c.D09_START_E).read_bytes(); a=c.d10_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(before,1017),c.raw_event_object_prefix_bytes(a[c.D10_START_E],1017))
+        m=json.loads(a[c.D10_START_M]); self.assertEqual(c.d10_start_paths(),m["exact_allowed_paths"]); self.assertEqual(151,m["exact_path_count"]); self.assertEqual(c.d10_product_write_scope(),m["product_write_scope"])
+    def test_seq1021_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d10_start_git",return_value=["SEQ1021_SELECTED"]),mock.patch.object(c,"_collect_d09_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1021_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1021}}))
+
+
+class D10FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D10"
+    HISTORY_IMPORT = b"from .model_registry"
+    HISTORY_EXPORT = b'    "ModelRegistry"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d10_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1026_accepts_d10_and_readies_hook_gate(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D10_START_P).read_bytes())
+        if cur["event_sequence"]==1021: a=c.d10_final_acceptance_from_root(ROOT); p=json.loads(a[c.D10_START_P]); m=json.loads(a[c.D10_FINAL_M]); events=json.loads(a[c.D10_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D10_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D10_START_E).read_bytes())["events"]
+        self.assertEqual((1026,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(m["event_sequence"],m["d10_status"],m["package_status"],m["dhookgate_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in events if 1022<=e["sequence"]<=1026])
+    def test_seq1026_is_append_only_and_binds_exact158(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D10_START_P).read_bytes())
+        if cur["event_sequence"]==1021: a=c.d10_final_acceptance_from_root(ROOT); raw=a[c.D10_START_E]; m=json.loads(a[c.D10_FINAL_M])
+        else: raw=(ROOT/c.D10_START_E).read_bytes(); m=json.loads((ROOT/c.D10_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1021); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d10_final_paths(),m["combined_exact_paths"]); self.assertEqual(158,m["combined_exact_path_count"]); self.assertEqual(c.d10_final_product_raw(ROOT),m["product_raw"])
+    def test_seq1026_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d10_final_acceptance_git",return_value=["SEQ1026_SELECTED"]),mock.patch.object(c,"_collect_d10_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1026_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1026}}))
+
+
+class DHookGateControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        path = checker.D10_START_E
+        raw = subprocess.check_output(["git", "show", f"25dcaaa3854619f131cc93fa1ae5cd79479553ae:{path}"], cwd=ROOT)
+        event = json.loads(raw)["events"][1026]
+        self.assertEqual((1027, "PHASE_GATE_DECIDED", "ACCEPTED"),
+                         (event["sequence"], event["event_type"], event["details"]["verdict"]))
+        progress = {"event_sequence": 1027, "d_hook_gate": {"status": event["details"]["verdict"]}}
+        overlay = _historical_bytes_overlay({path: raw, checker.D10_START_P: checker._c21_resume_json_bytes(progress)})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d_hook_gate",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1027_accepts_gate_and_readies_d11(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D10_START_P).read_bytes())
+        if cur["event_sequence"]==1026: a=c.d_hook_gate_from_root(ROOT); p=json.loads(a[c.D10_START_P]); m=json.loads(a[c.D_HOOK_GATE_M]); events=json.loads(a[c.D10_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D_HOOK_GATE_M).read_bytes()); events=json.loads((ROOT/c.D10_START_E).read_bytes())["events"]
+        self.assertEqual((1027,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(m["event_sequence"],p["d_hook_gate"]["status"],m["d_hook_gate"],m["d11_status"],m["active_leases"]))
+        self.assertEqual(["PHASE_GATE_DECIDED"],[e["event_type"] for e in events if e["sequence"]==1027])
+    def test_seq1027_is_append_only_and_binds_exact160(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D10_START_P).read_bytes())
+        if cur["event_sequence"]==1026: a=c.d_hook_gate_from_root(ROOT); raw=a[c.D10_START_E]; m=json.loads(a[c.D_HOOK_GATE_M])
+        else: raw=(ROOT/c.D10_START_E).read_bytes(); m=json.loads((ROOT/c.D_HOOK_GATE_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1026); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d_hook_gate_paths(),m["combined_exact_paths"]); self.assertEqual(160,m["combined_exact_path_count"])
+    def test_seq1027_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d_hook_gate_git",return_value=["SEQ1027_SELECTED"]),mock.patch.object(c,"_collect_d10_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1027_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1027}}))
+
+
+class D11StartControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d11_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1031_starts_d11_without_new_approval(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D11_START_P).read_bytes())
+        if cur["event_sequence"]==1027:
+            a=c.d11_start_from_root(ROOT); p=json.loads(a[c.D11_START_P]); m=json.loads(a[c.D11_START_M]); observed=(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"]); pending=p["pending_approvals"]
+        else:
+            m=json.loads((ROOT/c.D11_START_M).read_bytes()); observed=(m["event_sequence"],m["package_id"],m["status"],"developer-primary-d11-r1"); pending=m["pending_approvals"]
+        self.assertEqual((1031,"D-11","IN_PROGRESS","developer-primary-d11-r1"),observed)
+        self.assertEqual([],pending); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq1031_preserves_gate_prefix_and_binds_exact164(self):
+        c=self._checker(); before=(ROOT/c.D10_START_E).read_bytes(); cur=json.loads((ROOT/c.D11_START_P).read_bytes())
+        if cur["event_sequence"]==1027: a=c.d11_start_from_root(ROOT); raw=a[c.D11_START_E]; m=json.loads(a[c.D11_START_M])
+        else: raw=(ROOT/c.D11_START_E).read_bytes(); m=json.loads((ROOT/c.D11_START_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1027); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d11_start_paths(),m["exact_allowed_paths"]); self.assertEqual(164,m["exact_path_count"]); self.assertEqual(c.d11_product_write_scope(),m["product_write_scope"])
+    def test_seq1031_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d11_start_git",return_value=["SEQ1031_SELECTED"]),mock.patch.object(c,"_collect_d_hook_gate_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1031_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1031}}))
+
+
+class D11FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D11"
+    HISTORY_IMPORT = b"from .learning_journey"
+    HISTORY_EXPORT = b'    "LearningJourney"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d11_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1036_accepts_d11_and_readies_d12(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D11_START_P).read_bytes())
+        if cur["event_sequence"]==1031: a=c.d11_final_acceptance_from_root(ROOT); p=json.loads(a[c.D11_START_P]); m=json.loads(a[c.D11_FINAL_M]); events=json.loads(a[c.D11_START_E])["events"]
+        else: p=cur; m=json.loads((ROOT/c.D11_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D11_START_E).read_bytes())["events"]
+        self.assertEqual((1036,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(m["event_sequence"],m["d11_status"],m["package_status"],m["d12_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in events if 1032<=e["sequence"]<=1036])
+    def test_seq1036_is_append_only_and_binds_exact171(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D11_START_P).read_bytes())
+        if cur["event_sequence"]==1031: a=c.d11_final_acceptance_from_root(ROOT); raw=a[c.D11_START_E]; m=json.loads(a[c.D11_FINAL_M])
+        else: raw=(ROOT/c.D11_START_E).read_bytes(); m=json.loads((ROOT/c.D11_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1031); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d11_final_paths(),m["combined_exact_paths"]); self.assertEqual(171,m["combined_exact_path_count"]); self.assertEqual(c.d11_final_product_raw(ROOT),m["product_raw"])
+    def test_seq1036_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d11_final_acceptance_git",return_value=["SEQ1036_SELECTED"]),mock.patch.object(c,"_collect_d11_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1036_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1036}}))
+
+
+class D12StartControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d12_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1040_starts_d12_without_new_approval(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D12_START_P).read_bytes())
+        if cur["event_sequence"]==1036: a=c.d12_start_from_root(ROOT); p=json.loads(a[c.D12_START_P]); m=json.loads(a[c.D12_START_M]); observed=(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"]); pending=p["pending_approvals"]
+        else: m=json.loads((ROOT/c.D12_START_M).read_bytes()); observed=(m["event_sequence"],m["package_id"],m["status"],"developer-primary-d12-r1"); pending=m["pending_approvals"]
+        self.assertEqual((1040,"D-12","IN_PROGRESS","developer-primary-d12-r1"),observed); self.assertEqual([],pending); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq1040_preserves_d11_prefix_and_binds_exact175(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D12_START_P).read_bytes())
+        if cur["event_sequence"]==1036: a=c.d12_start_from_root(ROOT); raw=a[c.D12_START_E]; m=json.loads(a[c.D12_START_M])
+        else: raw=(ROOT/c.D12_START_E).read_bytes(); m=json.loads((ROOT/c.D12_START_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1036); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d12_start_paths(),m["exact_allowed_paths"]); self.assertEqual(175,m["exact_path_count"]); self.assertEqual(c.d12_product_write_scope(),m["product_write_scope"])
+    def test_seq1040_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d12_start_git",return_value=["SEQ1040_SELECTED"]),mock.patch.object(c,"_collect_d11_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1040_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1040}}))
+
+
+class D12LeaseTimeCorrectionControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d12_clock",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def _historical(self, c):
+        current=json.loads((ROOT/c.D12_START_P).read_text(encoding="utf-8"))
+        if current["event_sequence"] == 1045:
+            generated=c.d12_lease_time_correction_from_root(ROOT)
+            return json.loads(generated[c.D12_START_P]), json.loads(generated[c.D12_CORRECTION_M]), generated[c.D12_START_E]
+        return current, json.loads((ROOT/c.D12_CORRECTION_M).read_text(encoding="utf-8")), (ROOT/c.D12_START_E).read_bytes()
+    def test_seq1045_replaces_future_leases_without_product_mutation(self):
+        c=self._checker(); p,m,_=self._historical(c); worker=m["worker_lease"]; write=m["write_lease"]
+        self.assertGreaterEqual(p["event_sequence"],1045)
+        self.assertEqual((c.D12_CORRECTED_WORKER,c.D12_CORRECTED_WRITE,c.D12_CORRECTION_AT,"NOT_MODIFIED_CLOCK_SKEW_STOP"),(worker["lease_id"],write["lease_id"],worker["issued_at"],m["product_mutation_before_correction"]))
+    def test_seq1045_is_append_only_and_binds_exact177(self):
+        c=self._checker(); _,m,raw=self._historical(c)
+        self.assertEqual(m["historical_raw_event_prefix"],{"bytes":len(c.raw_event_object_prefix_bytes(raw,1040)),"sha256":c._c21_resume_sha(c.raw_event_object_prefix_bytes(raw,1040))})
+        self.assertEqual(c.d12_lease_time_correction_paths(),m["exact_allowed_paths"]); self.assertEqual(177,m["exact_path_count"])
+    def test_seq1045_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d12_lease_time_correction_git",return_value=["SEQ1045_SELECTED"]),mock.patch.object(c,"_collect_d12_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1045_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1045}}))
+
+
+class D12FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D12"
+    HISTORY_IMPORT = b"from .learning_e2e"
+    HISTORY_EXPORT = b'    "LearningE2E"'
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d12_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1050_accepts_d12_and_readies_d13(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D12_START_P).read_bytes())
+        if cur["event_sequence"]==1045: a=c.d12_final_acceptance_from_root(ROOT); m=json.loads(a[c.D12_FINAL_M]); events=json.loads(a[c.D12_START_E])["events"]
+        else: m=json.loads((ROOT/c.D12_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D12_START_E).read_bytes())["events"]
+        self.assertEqual((1050,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(m["event_sequence"],m["d12_status"],m["package_status"],m["d13_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in events if 1046<=e["sequence"]<=1050])
+    def test_seq1050_is_append_only_and_binds_exact184(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D12_START_P).read_bytes())
+        if cur["event_sequence"]==1045: a=c.d12_final_acceptance_from_root(ROOT); raw=a[c.D12_START_E]; m=json.loads(a[c.D12_FINAL_M])
+        else: raw=(ROOT/c.D12_START_E).read_bytes(); m=json.loads((ROOT/c.D12_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1045); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d12_final_paths(),m["combined_exact_paths"]); self.assertEqual(184,m["combined_exact_path_count"]); self.assertEqual(c.d12_final_product_raw(ROOT),m["product_raw"])
+    def test_seq1050_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d12_final_acceptance_git",return_value=["SEQ1050_SELECTED"]),mock.patch.object(c,"_collect_d12_lease_time_correction_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1050_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1050}}))
+
+
+class D13StartControlTests(unittest.TestCase):
+    def setUp(self):
+        D05StartControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d13_start",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1054_starts_d13_without_new_approval(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
+        if cur["event_sequence"]==1050: a=c.d13_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.D13_START_M]); observed=(p["event_sequence"],p["current_work_package"],p["status"],p["active_agent"]["actor_id"]); pending=p["pending_approvals"]
+        else: m=json.loads((ROOT/c.D13_START_M).read_bytes()); observed=(m["event_sequence"],m["package_id"],m["status"],"developer-primary-d13-r1"); pending=m["pending_approvals"]
+        self.assertEqual((1054,"D-13","IN_PROGRESS","developer-primary-d13-r1"),observed); self.assertEqual([],pending); self.assertFalse(m["authority"]["new_project_approval_requested"])
+    def test_seq1054_preserves_d12_prefix_and_binds_exact188(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
+        if cur["event_sequence"]==1050: a=c.d13_start_from_root(ROOT); raw=a[c.D13_START_E]; m=json.loads(a[c.D13_START_M])
+        else: raw=(ROOT/c.D13_START_E).read_bytes(); m=json.loads((ROOT/c.D13_START_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1050); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d13_start_paths(),m["exact_allowed_paths"]); self.assertEqual(188,m["exact_path_count"]); self.assertEqual(c.d13_product_write_scope(),m["product_write_scope"])
+    def test_seq1054_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d13_start_git",return_value=["SEQ1054_SELECTED"]),mock.patch.object(c,"_collect_d12_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1054_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1054}}))
+
+
+class D13FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_FINAL = "D13"
+    HISTORY_IMPORT = None  # D-Gate commit contains this exact terminal D-phase module.
+    HISTORY_PROGRESS = True
+
+    def setUp(self):
+        D03FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d13_final",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1059_accepts_d13_and_readies_d_gate(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
+        if cur["event_sequence"]==1054: a=c.d13_final_acceptance_from_root(ROOT); m=json.loads(a[c.D13_FINAL_M]); events=json.loads(a[c.D13_START_E])["events"]
+        else: m=json.loads((ROOT/c.D13_FINAL_M).read_bytes()); events=json.loads((ROOT/c.D13_START_E).read_bytes())["events"]
+        self.assertEqual((1059,"ACCEPTED","ACCEPTED","READY_FOR_WORK_INSTRUCTION",0),(m["event_sequence"],m["d13_status"],m["package_status"],m["dgate_status"],m["active_leases"]))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in events if 1055<=e["sequence"]<=1059])
+    def test_seq1059_is_append_only_and_binds_exact195(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
+        if cur["event_sequence"]==1054: a=c.d13_final_acceptance_from_root(ROOT); raw=a[c.D13_START_E]; m=json.loads(a[c.D13_FINAL_M])
+        else: raw=(ROOT/c.D13_START_E).read_bytes(); m=json.loads((ROOT/c.D13_FINAL_M).read_bytes())
+        prefix=c.raw_event_object_prefix_bytes(raw,1054); self.assertEqual({"bytes":len(prefix),"sha256":c._c21_resume_sha(prefix)},m["historical_raw_event_prefix"])
+        self.assertEqual(c.d13_final_paths(),m["combined_exact_paths"]); self.assertEqual(195,m["combined_exact_path_count"]); self.assertEqual(c.d13_final_product_raw(ROOT),m["product_raw"])
+    def test_seq1059_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d13_final_acceptance_git",return_value=["SEQ1059_SELECTED"]),mock.patch.object(c,"_collect_d13_start_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1059_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1059}}))
+
+
+class DGateControlTests(unittest.TestCase):
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d_gate",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1060_accepts_d_gate_without_dirx_and_readies_e01(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
+        if cur["event_sequence"]==1059: a=c.d_gate_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.D_GATE_M]); events=json.loads(a[c.D13_START_E])["events"]
+        else: m=json.loads((ROOT/c.D_GATE_M).read_bytes()); events=json.loads((ROOT/c.D13_START_E).read_bytes())["events"]
+        self.assertEqual((1060,"ACCEPTED","NOT_TRIGGERED","READY_FOR_WORK_INSTRUCTION"),(m["event_sequence"],m["d_gate"],m["dirx_lrn_critical"],m["e01_status"]))
+        historical=[e for e in events if e["sequence"]==1060][0]
+        self.assertEqual("PHASE_GATE_DECIDED",historical["event_type"])
+        self.assertEqual(("E-01","READY_FOR_WORK_INSTRUCTION"),(historical["details"]["next_work_package"],historical["details"]["next_package_status"]))
+        if cur["event_sequence"]==1059:
+            self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+    def test_seq1060_binds_same_target_pass_for_all_dirx_checks(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes()); a=c.d_gate_from_root(ROOT) if cur["event_sequence"]==1059 else {c.D_GATE_M:(ROOT/c.D_GATE_M).read_bytes()}; m=json.loads(a[c.D_GATE_M]); checks=m["gate_evidence"]["critical_trigger_checks"]
+        self.assertEqual({"AV-LRN-003","AV-LRN-004","AV-LRN-005"},set(checks)); self.assertEqual(1,len({x["target_hash"] for x in checks.values()})); self.assertTrue(all(x["status"]=="PASS" and x["severity"]=="CRITICAL" and x["confirmed"] for x in checks.values()))
+        self.assertFalse(m["gate_evidence"]["dirx_trigger"]["triggered"]); self.assertEqual(197,m["combined_exact_path_count"]); self.assertEqual(c.d_gate_paths(),m["combined_exact_paths"])
+    def test_seq1060_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d_gate_git",return_value=["SEQ1060_SELECTED"]),mock.patch.object(c,"_collect_d13_final_acceptance_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1060_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1060}}))
+
+
+class DGateRegressionReconciliationControlTests(unittest.TestCase):
+    def _checker(self):
+        s=importlib.util.spec_from_file_location("d_gate_reconciliation",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
+    def test_seq1061_preserves_d_gate_and_readies_e01(self):
+        c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
+        if cur["event_sequence"]==1060: a=c.d_gate_regression_reconciliation_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.D_GATE_RECONCILIATION_M]); events=json.loads(a[c.D13_START_E])["events"]
+        else: m=json.loads((ROOT/c.D_GATE_RECONCILIATION_M).read_bytes()); events=json.loads((ROOT/c.D13_START_E).read_bytes())["events"]
+        self.assertEqual((1061,"ACCEPTED","PASS","READY_FOR_WORK_INSTRUCTION"),(m["event_sequence"],m["d_gate"],m["reconciliation_status"],m["e01_status"]))
+        historical=[e for e in events if e["sequence"]==1061][0]
+        self.assertEqual(("E-01","READY_FOR_WORK_INSTRUCTION"),(historical["details"]["next_work_package"],historical["details"]["next_package_status"]))
+        if cur["event_sequence"]==1060:
+            self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertFalse(m["evidence"]["product_behavior_changed"]); self.assertEqual(200,m["combined_exact_path_count"])
+    def test_seq1061_git_dispatch_is_successor_first(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d_gate_regression_reconciliation_git",return_value=["SEQ1061_SELECTED"]),mock.patch.object(c,"_collect_d_gate_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1061_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1061}}))
+
+
+class DGatePostcommitControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("d_gate_postcommit",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_seq1062_exact_outputs_preserve_gate_and_incomplete_tooling(self):
+        c=self._checker(); generated=c.d_gate_postcommit_from_root(ROOT)
+        self.assertEqual(set(c.d_gate_postcommit_paths()),set(generated))
+        self.assertEqual(7,len(generated))
+        p=json.loads(generated[c.D13_START_P]); m=json.loads(generated[c.D_GATE_POSTCOMMIT_M])
+        self.assertEqual((1062,"ACCEPTED",[]),(p["event_sequence"],p["d_gate"]["status"],p["pending_approvals"]))
+        self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertEqual((2752,9),(m["verification"]["product_regression"]["passed"],m["verification"]["product_regression"]["skipped"]))
+        self.assertEqual("INCOMPLETE",m["verification"]["full_tooling"]["status"])
+        self.assertEqual("NOT_PASS",m["verification"]["full_tooling"]["verdict"])
+        self.assertEqual([1,1],[x["exit_code"] for x in m["verification"]["full_tooling"]["attempts"]])
+        self.assertEqual(c.D_GATE_POSTCOMMIT_HEAD,p["repository"]["remote_head"])
+        old=subprocess.check_output(["git","show",f"{c.D_GATE_POSTCOMMIT_HEAD}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1061),c.raw_event_object_prefix_bytes(generated[c.D13_START_E],1061))
+
+    def test_seq1062_git_exact_dirty_and_remote_binding_fail_closed(self):
+        c=self._checker()
+        facts=dict(head=c.D_GATE_POSTCOMMIT_HEAD,upstream_head=c.D_GATE_POSTCOMMIT_HEAD,remote_head=c.D_GATE_POSTCOMMIT_HEAD,
+                   branch=c.C09_START_BRANCH,parent=c.C14_START_BASE,committed_paths=c.d_gate_regression_reconciliation_paths(),
+                   staged=[],dirty=c.d_gate_postcommit_paths())
+        self.assertEqual([],c.validate_d_gate_postcommit_git_facts(**facts))
+        for field,value in (("head","f"*40),("upstream_head","f"*40),("remote_head","f"*40),("parent","f"*40),
+                            ("committed_paths",facts["committed_paths"][:-1]),("dirty",facts["dirty"]+["extra.py"]),
+                            ("dirty",facts["dirty"][:-1]),("staged",[facts["dirty"][0]]),("branch","main")):
+            with self.subTest(field=field,value=value):
+                self.assertTrue(c.validate_d_gate_postcommit_git_facts(**{**facts,field:value}))
+
+    def test_seq1062_successor_git_dispatch(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d_gate_postcommit_git",return_value=["SEQ1062_SELECTED"]),mock.patch.object(c,"_collect_d_gate_regression_reconciliation_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1062_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1062}}))
+
+    def test_seq1062_projection_cannot_launder_tooling_or_mutate_gate_prefix(self):
+        c=self._checker(); a=c.d_gate_postcommit_from_root(ROOT)
+        original={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),
+                  "handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.D_GATE_POSTCOMMIT_D])}
+        m=json.loads(a[c.D_GATE_POSTCOMMIT_M])
+        for mutation in ("tooling","approvals","gate","historical_event","remote","manifest_paths"):
+            b=copy.deepcopy(original); manifest=copy.deepcopy(m)
+            if mutation=="tooling": b["progress"]["d_gate_postcommit_reconciliation"]["verification"]["full_tooling"]["verdict"]="PASS"
+            elif mutation=="approvals": b["progress"]["pending_approvals"]=["unexpected"]
+            elif mutation=="gate": b["progress"]["d_gate"]["status"]="FAILED"
+            elif mutation=="historical_event": b["events"]["events"][0]["actor"]="changed"
+            elif mutation=="remote": b["progress"]["repository"]["remote_head"]="f"*40
+            else: manifest["exact_allowed_paths"].append("extra.py")
+            with self.subTest(mutation=mutation):
+                self.assertIn("D_GATE_POSTCOMMIT_PROJECTION_INVALID",c.validate_d_gate_postcommit(b,manifest))
+
+
+class E01StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e01_start",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_historical_gate_assertions_use_frozen_evidence_under_successor_state(self):
+        original=Path.read_bytes
+        def successor_bytes(path):
+            raw=original(path)
+            if path==ROOT/"docs/progress/build-progress.json":
+                successor=json.loads(raw)
+                successor.update(event_sequence=1066,current_work_package="E-01",status="IN_PROGRESS",next_work_package=None)
+                return json.dumps(successor).encode()
+            return raw
+        with mock.patch.object(Path,"read_bytes",successor_bytes):
+            for case,method in ((DGateControlTests,"test_seq1060_accepts_d_gate_without_dirx_and_readies_e01"),
+                                (DGateRegressionReconciliationControlTests,"test_seq1061_preserves_d_gate_and_readies_e01")):
+                with self.subTest(sequence=method): getattr(case(method),method)()
+
+    def test_start_preserves_committed_history_and_separates_scopes(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e01_start_from_root",None)), "E01 start projection missing")
+        a=c.e01_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); e=json.loads(a[c.D13_START_E])
+        self.assertEqual(9,len(a)); self.assertEqual(1066,p["event_sequence"])
+        self.assertEqual("IN_PROGRESS",p["status"]); self.assertEqual("E",p["current_phase"])
+        self.assertEqual("ACCEPTED",p["d_gate"]["status"])
+        self.assertEqual(6,len(p["write_lease"]["path_scope"]))
+        self.assertFalse(set(c.e01_product_write_scope()) & set(c.e01_control_paths()))
+        self.assertEqual(p["worker_lease"]["lease_id"],p["write_lease"]["worker_lease_id"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in e["events"][-4:]])
+        old=subprocess.check_output(["git","show",f"{c.E01_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1062),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1062))
+
+    def test_git_scope_rejects_escape_and_allows_only_authorized_product_delta(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"validate_e01_git_facts",None)), "E01 git guard missing")
+        facts=dict(head=c.E01_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e01_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e01_git_facts(**facts))
+        self.assertEqual([],c.validate_e01_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e01_product_write_scope())}))
+        for field,value in (("head","f"*40),("dirty",facts["dirty"]+["escape.py"]),("dirty",[]),("staged",[facts["dirty"][0]]),("branch","main")):
+            with self.subTest(field=field): self.assertTrue(c.validate_e01_git_facts(**{**facts,field:value}))
+
+
+class E01FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        checkpoint = getattr(self, "HISTORY_CHECKPOINT", checker.E02_BASE)
+        scope = getattr(checker, getattr(self, "HISTORY_PRODUCT_SCOPE", "e01_product_write_scope"))()
+        expected = getattr(checker, getattr(self, "HISTORY_PRODUCT_HASHES", "E01_FINAL_PRODUCT_HASHES"))
+        files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                 for path in scope}
+        self.assertEqual(expected, {path: hashlib.sha256(raw).hexdigest().upper() for path, raw in files.items()})
+        for binding in getattr(self, "HISTORY_EXTRA_HASHES", ()):
+            for path, sha256 in getattr(checker, binding).items():
+                raw = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+                self.assertEqual(sha256, hashlib.sha256(raw).hexdigest().upper())
+                files[path] = raw
+        files[checker.D13_START_E] = subprocess.check_output(
+            ["git", "show", f"{checkpoint}:{checker.D13_START_E}"], cwd=ROOT)
+        if getattr(self, "HISTORY_CHECKER_EVIDENCE", False):
+            # The edit audit measures the historical acceptance patch, not later authorized repairs.
+            files["scripts/check_project_progress.py"] = subprocess.check_output(
+                ["git", "show", f"{checkpoint}:scripts/check_project_progress.py"], cwd=ROOT)
+        final_package = getattr(self, "HISTORY_FINAL_SNAPSHOT", None)
+        if final_package is not None:
+            for path in (checker.D13_START_P, checker.D13_START_H, "docs/progress/progress-event-contract.json",
+                         getattr(checker, final_package + "_FINAL_M"), getattr(checker, final_package + "_FINAL_D")):
+                files[path] = subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
+        overlay = _historical_bytes_overlay(files)
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e01_final",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_final_acceptance_freezes_product_and_independent_evidence(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e01_final_from_root",None)),"E01 final control missing")
+        a=c.e01_final_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.E01_FINAL_M])
+        self.assertEqual(7,len(a)); self.assertEqual(1071,p["event_sequence"])
+        self.assertEqual("ACCEPTED",p["status"]); self.assertEqual("ACCEPTED",p["d_gate"]["status"])
+        self.assertEqual({"package_id":"E-02","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertTrue(all(p[k] is None for k in ("active_agent","worker_lease","write_lease","active_work_instruction")))
+        self.assertEqual(1,p["e01_final_acceptance"]["rework_count"])
+        self.assertEqual(0,p["valid_failure_count"]); self.assertEqual([],p["pending_approvals"])
+        self.assertEqual(17,len(m["combined_exact_paths"])); self.assertEqual(15,len(m["frozen_start_product_paths"]))
+        self.assertEqual(c.E01_FINAL_PRODUCT_HASHES,{k:v["sha256"] for k,v in m["product_raw"].items()})
+        for review in m["independent_reviews"].values():
+            self.assertEqual("ACCEPT",review["verdict"]); self.assertFalse(review["developer_transcript_used"])
+            self.assertEqual([0,0,0],[review[k] for k in ("critical_findings","important_findings","minor_findings")])
+        self.assertEqual(384,m["independent_reviews"]["spec"]["minimal_passed"])
+        self.assertEqual(713,m["independent_reviews"]["quality"]["related_passed"])
+        self.assertEqual({"NOT_EXECUTED"},set(m["external_validation"].values()))
+
+    def test_final_preserves_raw_prefix_and_orders_terminal_events(self):
+        c=self._checker(); a=c.e01_final_from_root(ROOT); start=c.e01_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1066),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1066))
+        rows=json.loads(a[c.D13_START_E])["events"][-5:]
+        self.assertEqual(list(range(1067,1072)),[r["sequence"] for r in rows])
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[r["event_type"] for r in rows])
+        self.assertEqual(rows[2]["details"]["worker_lease_id"],rows[3]["details"]["lease_id"])
+
+    def test_final_exact_git_scope_and_successor_dispatch(self):
+        c=self._checker(); facts=dict(head=c.E01_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e01_final_paths())
+        self.assertEqual([],c.validate_e01_final_git_facts(**facts))
+        for field,value in (("head","f"*40),("branch","main"),("staged",[facts["dirty"][0]]),("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape.py"])):
+            with self.subTest(field=field): self.assertTrue(c.validate_e01_final_git_facts(**{**facts,field:value}))
+        with mock.patch.object(c,"_collect_e01_final_git",return_value=["SEQ1071_SELECTED"]),mock.patch.object(c,"_collect_e01_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1071_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1071}}))
+
+    def test_final_tamper_and_product_drift_fail_closed(self):
+        c=self._checker(); a=c.e01_final_from_root(ROOT)
+        b={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),
+           "handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.E01_FINAL_D])}
+        m=json.loads(a[c.E01_FINAL_M])
+        for mutation in ("authority","approval","history","failure_count","review","paths"):
+            changed=copy.deepcopy(b); manifest=copy.deepcopy(m)
+            if mutation=="authority": changed["progress"]["worker_lease"]={"status":"ACTIVE"}
+            elif mutation=="approval": changed["progress"]["pending_approvals"]=["unexpected"]
+            elif mutation=="history": changed["events"]["events"][0]["actor"]="forged"
+            elif mutation=="failure_count": changed["progress"]["e01_final_acceptance"]["rework_count"]=0
+            elif mutation=="review": manifest["independent_reviews"]["spec"]["developer_transcript_used"]=True
+            else: manifest["combined_exact_paths"].append("escape.py")
+            with self.subTest(mutation=mutation): self.assertIn("E01_FINAL_PROJECTION_INVALID",c.validate_e01_final(changed,manifest))
+        original=Path.read_bytes; product=ROOT/c.e01_product_write_scope()[0]
+        with mock.patch.object(Path,"read_bytes",lambda path: original(path)+b"tampered" if path==product else original(path)):
+            with self.assertRaisesRegex(ValueError,"E01_FINAL_PRODUCT_DRIFT"): c.e01_final_from_root(ROOT)
+
+
+class E02StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e02_start",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_e02_start_freezes_history_and_issues_only_product_exact6(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e02_start_from_root",None)),"E02 start missing")
+        a=c.e02_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); e=json.loads(a[c.D13_START_E])
+        self.assertEqual(9,len(a)); self.assertEqual(1075,p["event_sequence"])
+        self.assertEqual("E-02",p["current_work_package"]); self.assertEqual("ACCEPTED",p["e01_final_acceptance"]["status"])
+        self.assertEqual(c.e02_product_write_scope(),p["write_lease"]["path_scope"])
+        self.assertEqual(p["worker_lease"]["lease_id"],p["write_lease"]["worker_lease_id"])
+        self.assertEqual("e02-r1-execution-fence-epoch-1-99861ccb18fb9555",p["worker_lease"]["execution_fencing_token"])
+        self.assertEqual("e02-r1-write-fence-epoch-1-ddbfb6ef8c4c9b79",p["write_lease"]["write_fencing_token"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in e["events"][-4:]])
+        old=subprocess.check_output(["git","show",f"{c.E02_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1071),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1071))
+
+    def test_e02_git_exact_control_and_optional_product_only(self):
+        c=self._checker(); facts=dict(head=c.E02_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e02_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e02_git_facts(**facts))
+        self.assertEqual([],c.validate_e02_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e02_product_write_scope())}))
+        for field,value in (("head","f"*40),("dirty",facts["dirty"]+["escape.py"]),("dirty",[]),("staged",[facts["dirty"][0]])):
+            with self.subTest(field=field): self.assertTrue(c.validate_e02_git_facts(**{**facts,field:value}))
+        with mock.patch.object(c,"_collect_e02_git",return_value=["SEQ1075_SELECTED"]),mock.patch.object(c,"_collect_e01_final_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1075_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1075}}))
+
+
+class E02FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "c9678884d8e44a53fc4ab7c070a2c84f29c4e481"
+    HISTORY_PRODUCT_SCOPE = "e02_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E02_FINAL_PRODUCT_HASHES"
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e02_final",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_final_acceptance_freezes_product_and_independent_evidence(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e02_final_from_root",None)),"E02 final control missing")
+        a=c.e02_final_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.E02_FINAL_M])
+        self.assertEqual(7,len(a)); self.assertEqual(1080,p["event_sequence"])
+        self.assertEqual("ACCEPTED",p["status"]); self.assertEqual("ACCEPTED",p["d_gate"]["status"])
+        self.assertEqual({"package_id":"E-03","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertTrue(all(p[k] is None for k in ("active_agent","worker_lease","write_lease","active_work_instruction")))
+        self.assertEqual(1,p["e02_final_acceptance"]["rework_count"])
+        self.assertEqual(0,p["valid_failure_count"]); self.assertEqual([],p["pending_approvals"])
+        self.assertEqual(17,len(m["combined_exact_paths"])); self.assertEqual(15,len(m["frozen_start_product_paths"]))
+        self.assertEqual(c.E02_FINAL_PRODUCT_HASHES,{k:v["sha256"] for k,v in m["product_raw"].items()})
+        for review in m["independent_reviews"].values():
+            self.assertEqual("ACCEPT",review["verdict"]); self.assertFalse(review["developer_transcript_used"])
+            self.assertEqual([0,0,0],[review[k] for k in ("critical_findings","important_findings","minor_findings")])
+        self.assertEqual(375,m["independent_reviews"]["spec"]["minimal_passed"])
+        self.assertEqual(1184,m["independent_reviews"]["quality"]["related_passed"])
+        self.assertEqual({"NOT_EXECUTED"},set(m["external_validation"].values()))
+
+    def test_final_preserves_raw_prefix_and_orders_terminal_events(self):
+        c=self._checker(); a=c.e02_final_from_root(ROOT); start=c.e02_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1075),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1075))
+        rows=json.loads(a[c.D13_START_E])["events"][-5:]
+        self.assertEqual(list(range(1076,1081)),[r["sequence"] for r in rows])
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[r["event_type"] for r in rows])
+        self.assertEqual(rows[2]["details"]["worker_lease_id"],rows[3]["details"]["lease_id"])
+
+    def test_final_exact_git_scope_and_successor_dispatch(self):
+        c=self._checker(); facts=dict(head=c.E02_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e02_final_paths())
+        self.assertEqual([],c.validate_e02_final_git_facts(**facts))
+        for field,value in (("head","f"*40),("branch","main"),("staged",[facts["dirty"][0]]),("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape.py"])):
+            with self.subTest(field=field): self.assertTrue(c.validate_e02_final_git_facts(**{**facts,field:value}))
+        with mock.patch.object(c,"_collect_e02_final_git",return_value=["SEQ1080_SELECTED"]),mock.patch.object(c,"_collect_e02_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1080_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1080}}))
+
+    def test_final_tamper_and_product_drift_fail_closed(self):
+        c=self._checker(); a=c.e02_final_from_root(ROOT)
+        b={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),
+           "handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.E02_FINAL_D])}
+        m=json.loads(a[c.E02_FINAL_M])
+        for mutation in ("authority","approval","history","failure_count","review","paths"):
+            changed=copy.deepcopy(b); manifest=copy.deepcopy(m)
+            if mutation=="authority": changed["progress"]["worker_lease"]={"status":"ACTIVE"}
+            elif mutation=="approval": changed["progress"]["pending_approvals"]=["unexpected"]
+            elif mutation=="history": changed["events"]["events"][0]["actor"]="forged"
+            elif mutation=="failure_count": changed["progress"]["e02_final_acceptance"]["rework_count"]=0
+            elif mutation=="review": manifest["independent_reviews"]["spec"]["developer_transcript_used"]=True
+            else: manifest["combined_exact_paths"].append("escape.py")
+            with self.subTest(mutation=mutation): self.assertIn("E02_FINAL_PROJECTION_INVALID",c.validate_e02_final(changed,manifest))
+        original=Path.read_bytes; product=ROOT/c.e02_product_write_scope()[0]
+        with mock.patch.object(Path,"read_bytes",lambda path: original(path)+b"tampered" if path==product else original(path)):
+            with self.assertRaisesRegex(ValueError,"E02_FINAL_PRODUCT_DRIFT"): c.e02_final_from_root(ROOT)
+
+
+
+class E04StartControlTests(unittest.TestCase):
+    def test_e04_preserves_authoritative_c03_r2_harness_bytes(self):
+        import ast
+
+        # Freeze the C03 R2 authority object, not later unrelated additive history.
+        old=subprocess.check_output(["git","show","a1cc61578fbda75ae4f063138daa3269bd052a8f:scripts/check_project_progress.py"],cwd=ROOT)
+        current=CHECKER_PATH.read_bytes()
+        def extract(value):
+            start=value.index(b"C03_FINAL_R2_HARNESS_B64 = (")
+            return value[start:value.index(b"C03_FINAL_R2_RESULT_B64 = (",start)]
+        self.assertEqual(extract(old),extract(current))
+        encoded=ast.literal_eval(ast.parse(extract(current)).body[0].value)
+        decoded=base64.b64decode(encoded,validate=True)
+        self.assertEqual(43781,len(decoded))
+        self.assertEqual("5027c870eae6d573ecf8c35fa9641179c85e44ddf92572f05a3012d74b5f6487",hashlib.sha256(decoded).hexdigest())
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e04_start",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_e04_start_prefix_fencing_and_successor(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e04_start_from_root",None)),"E04 start missing")
+        a=c.e04_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); e=json.loads(a[c.D13_START_E])
+        h=c.extract_handoff_summary(a[c.D13_START_H].decode())
+        self.assertEqual((1095,"E-04","IN_PROGRESS"),(p["event_sequence"],p["current_work_package"],p["status"]))
+        self.assertEqual(("ACCEPTED","IN_PROGRESS","NOT_READY"),(h["e03_status"],h["e04_status"],h["e05_status"]))
+        self.assertEqual(12,len(p["write_lease"]["path_scope"])); self.assertEqual(9,len(a))
+        self.assertEqual(p["worker_lease"]["lease_id"],p["write_lease"]["worker_lease_id"])
+        self.assertEqual("e04-r1-execution-fence-epoch-1-ac9e6f9686c8dfe0",p["worker_lease"]["execution_fencing_token"])
+        self.assertEqual("e04-r1-write-fence-epoch-1-1c694c1242b251ea",p["write_lease"]["write_fencing_token"])
+        self.assertEqual([],p["pending_approvals"])
+        old=subprocess.check_output(["git","show",f"{c.E04_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1091),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1091))
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in e["events"][-4:]])
+
+    def test_e04_exact_paths_reject_escape_and_staging(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"validate_e04_git_facts",None)),"E04 git guard missing")
+        facts=dict(head=c.E04_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e04_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e04_git_facts(**facts))
+        self.assertEqual([],c.validate_e04_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e04_product_write_scope())}))
+        for field,value in (("head","f"*40),("dirty",facts["dirty"]+["escape.py"]),("dirty",[]),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e04_git_facts(**{**facts,field:value}))
+
+    def test_e04_additive_correction_does_not_rewrite_frozen_e03_helper(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e04_predecessor_status",None)),"E04 additive correction missing")
+        self.assertEqual({"e03_status":"IN_PROGRESS","e04_status":"NOT_READY"},c.e04_predecessor_status(1084))
+        old=subprocess.check_output(["git","show",f"{c.E04_BASE}:scripts/check_project_progress.py"],cwd=ROOT).decode()
+        current=CHECKER_PATH.read_text(encoding="utf-8")
+        extract=lambda s:s.split("def e03_start_from_root(root):",1)[1].split("def validate_e03_start",1)[0]
+        self.assertEqual(extract(old),extract(current))
+
+
+class E03StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e03_start",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_e03_start_freezes_history_and_issues_only_product_exact6(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e03_start_from_root",None)),"E03 start missing")
+        a=c.e03_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); e=json.loads(a[c.D13_START_E])
+        self.assertEqual(9,len(a)); self.assertEqual(1084,p["event_sequence"])
+        self.assertEqual("E-03",p["current_work_package"]); self.assertEqual("ACCEPTED",p["e02_final_acceptance"]["status"])
+        self.assertEqual(c.e03_product_write_scope(),p["write_lease"]["path_scope"])
+        self.assertEqual(p["worker_lease"]["lease_id"],p["write_lease"]["worker_lease_id"])
+        self.assertEqual("e03-r1-execution-fence-epoch-1-c9678884d8e44a53",p["worker_lease"]["execution_fencing_token"])
+        self.assertEqual("e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f",p["write_lease"]["write_fencing_token"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in e["events"][-4:]])
+        old=subprocess.check_output(["git","show",f"{c.E03_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1080),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1080))
+
+    def test_e03_git_exact_control_and_optional_product_only(self):
+        c=self._checker(); facts=dict(head=c.E03_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e03_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e03_git_facts(**facts))
+        self.assertEqual([],c.validate_e03_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e03_product_write_scope())}))
+        for field,value in (("head","f"*40),("dirty",facts["dirty"]+["escape.py"]),("dirty",[]),("staged",[facts["dirty"][0]])):
+            with self.subTest(field=field): self.assertTrue(c.validate_e03_git_facts(**{**facts,field:value}))
+        with mock.patch.object(c,"_collect_e03_git",return_value=["SEQ1084_SELECTED"]),mock.patch.object(c,"_collect_e02_final_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1084_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1084}}))
+
+
+
+class E03R2CorrectiveControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e03_r2",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+    def test_r2_additive_revision_preserves_start_and_dual_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_r2_from_root",None)),"E03 R2 corrective control missing")
+        a=c.e03_r2_from_root(ROOT);p=json.loads(a[c.D13_START_P]);m=json.loads(a[c.E03_R2_M]);start=c.e03_start_from_root(ROOT)
+        old=json.loads(start[c.D13_START_P])
+        self.assertEqual(8,len(a));self.assertEqual(1086,p["event_sequence"])
+        self.assertEqual("IN_PROGRESS",p["status"]);self.assertEqual(2,p["e03_corrective_revision"]["formal_failure_count"])
+        self.assertEqual(old["valid_failure_count"],p["valid_failure_count"])
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual({"package_id":"E-04","status":"NOT_READY"},p["next_successor_work_package"])
+        for key in ("worker_lease","write_lease","active_agent"):self.assertEqual(old[key],p[key])
+        self.assertEqual(18,len(m["combined_exact_paths"]));self.assertEqual(3,len(m["additive_control_paths"]))
+        self.assertEqual(c.E03_WI_HASH,m["revision_binding"]["parent_work_instruction_sha256"])
+        self.assertFalse(m["revision_binding"]["scope_expansion"]);self.assertEqual("NONE",m["revision_binding"]["semantic_diff"])
+        self.assertEqual(c.e03_product_write_scope(),m["product_write_scope"])
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1084),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1084))
+        rows=json.loads(a[c.D13_START_E])["events"][-2:]
+        self.assertEqual([1085,1086],[r["sequence"] for r in rows])
+        self.assertEqual(["PACKAGE_REWORK_REQUESTED","WORK_INSTRUCTION_REVISED"],[r["event_type"] for r in rows])
+
+    def test_r2_exact_git_paths_and_sequence_dispatch(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_r2_paths",None)),"E03 R2 paths missing")
+        facts=dict(head=c.E03_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e03_r2_paths())
+        self.assertEqual([],c.validate_e03_r2_git_facts(**facts))
+        for key,value in (("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape"]),("head","f"*40),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e03_r2_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e03_r2_git",return_value=["R2_SELECTED"]):
+            self.assertEqual(["R2_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1086}}))
+
+    def test_r2_projection_tampering_is_rejected(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_r2_from_root",None)),"E03 R2 corrective control missing")
+        a=c.e03_r2_from_root(ROOT);m=json.loads(a[c.E03_R2_M])
+        b={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),"handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.E03_R2_D])}
+        for field in ("failure","history","lease","binding","scope"):
+            altered=copy.deepcopy(b);manifest=copy.deepcopy(m)
+            if field=="failure":altered["progress"]["e03_corrective_revision"]["formal_failure_count"]=0
+            elif field=="history":altered["events"]["events"][0]["actor"]="forged"
+            elif field=="lease":altered["progress"]["worker_lease"]["execution_fencing_token"]="forged"
+            elif field=="binding":manifest["revision_binding"]["parent_work_instruction_sha256"]="forged"
+            else:manifest["combined_exact_paths"].append("escape")
+            self.assertIn("E03_R2_PROJECTION_INVALID",c.validate_e03_r2(altered,manifest))
+
+
+class E03FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f"
+    HISTORY_PRODUCT_SCOPE = "e03_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E03_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E03_FINAL_CORRECTIVE_HASHES", "E03_R2_FROZEN")
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e03_final",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+    def test_final_acceptance_preserves_prefix_and_revokes_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_final_from_root",None)),"E03 final control missing")
+        a=c.e03_final_from_root(ROOT);p=json.loads(a[c.D13_START_P]);m=json.loads(a[c.E03_FINAL_M]);before=c.e03_r2_from_root(ROOT)
+        self.assertEqual(7,len(a));self.assertEqual(1091,p["event_sequence"]);self.assertEqual("ACCEPTED",p["status"])
+        self.assertTrue(all(p[k] is None for k in ("active_agent","worker_lease","write_lease","active_work_instruction")))
+        self.assertEqual({"package_id":"E-04","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual(2,p["e03_final_acceptance"]["formal_failure_count"])
+        self.assertEqual(c.raw_event_object_prefix_bytes(before[c.D13_START_E],1086),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1086))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in json.loads(a[c.D13_START_E])["events"][-5:]])
+        self.assertEqual(20,len(m["combined_exact_paths"]));self.assertEqual(18,len(m["frozen_start_product_paths"]))
+        self.assertEqual(2,len(m["residual_minors"]));self.assertTrue(all(v["owner_package"]=="E-04" for v in m["residual_minors"]))
+        self.assertEqual("ACCEPT",m["independent_reviews"]["spec"]["verdict"]);self.assertEqual("PASS",m["independent_reviews"]["quality"]["verdict"])
+        self.assertEqual(2,m["independent_reviews"]["quality"]["minor_findings"])
+        self.assertTrue(all(not r["developer_transcript_used"] for r in m["independent_reviews"].values()))
+
+    def test_final_exact_scope_and_dispatch(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_final_paths",None)),"E03 final paths missing")
+        facts=dict(head=c.E03_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e03_final_paths())
+        self.assertEqual([],c.validate_e03_final_git_facts(**facts))
+        for key,value in (("head","f"*40),("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape"]),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e03_final_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e03_final_git",return_value=["FINAL_SELECTED"]):
+            self.assertEqual(["FINAL_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1091}}))
+
+    def test_final_product_and_corrective_docs_are_frozen(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_final_from_root",None)),"E03 final control missing")
+        original=Path.read_bytes
+        for relative in c.e03_product_write_scope()+[c.E03_R2_WI,c.E03_R2_D,c.E03_R2_M]:
+            with self.subTest(path=relative),mock.patch.object(Path,"read_bytes",lambda p:original(p)+b"tampered" if p==ROOT/relative else original(p)):
+                with self.assertRaisesRegex(ValueError,"E03_FINAL_FROZEN_DRIFT"):c.e03_final_from_root(ROOT)
+
+
+class E04FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "07fb68164de2ecf3b06342013d23e4d34d4dd0cb"
+    HISTORY_PRODUCT_SCOPE = "e04_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E04_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E04_FINAL_START_HASHES",)
+    HISTORY_CHECKER_EVIDENCE = True
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e04_final",CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_freezes_prefix_and_revokes_dual_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e04_final_from_root",None)),"E04 final missing")
+        files=c.e04_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E04_FINAL_M])
+        start=c.e04_start_from_root(ROOT)
+        self.assertEqual(1100,p["event_sequence"]);self.assertEqual("ACCEPTED",p["status"])
+        self.assertEqual({"package_id":"E-05","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertTrue(all(p[k] is None for k in ("worker_lease","write_lease","active_agent","active_work_instruction")))
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual(23,len(m["combined_exact_paths"]))
+        self.assertEqual(12,len(m["frozen_product_sha256"]))
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1095),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1095))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[r["event_type"] for r in json.loads(files[c.D13_START_E])["events"][-5:]])
+        self.assertEqual(2,m["formal_failure_count"])
+        self.assertTrue(all(r["status"]=="RESOLVED" for r in m["failure_lineage"]))
+        self.assertEqual("ACCEPT",m["independent_reviews"]["spec"]["verdict"])
+        self.assertEqual("PASS",m["independent_reviews"]["quality"]["verdict"])
+        self.assertEqual(5,m["independent_reviews"]["quality"]["actual_pg15"]["passed"])
+        self.assertEqual("NOT_EXECUTED",m["external_validation"]["pg18_rc"])
+
+    def test_final_product_and_start_docs_frozen(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e04_final_from_root",None)),"E04 final missing")
+        original=Path.read_bytes
+        for relative in c.e04_product_write_scope()+[c.E04_WI,c.E04_PROMPT,c.E04_D,c.E04_M]:
+            with self.subTest(path=relative),mock.patch.object(Path,"read_bytes",lambda p:original(p)+b"tamper" if p==ROOT/relative else original(p)):
+                with self.assertRaisesRegex(ValueError,"E04_FINAL_FROZEN_DRIFT"):c.e04_final_from_root(ROOT)
+
+    def test_final_exact23_and_dispatch(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e04_final_paths",None)),"E04 final paths missing")
+        facts=dict(head=c.E04_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e04_final_paths())
+        self.assertEqual([],c.validate_e04_final_git_facts(**facts))
+        for key,value in (("head","f"*40),("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape"]),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e04_final_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e04_final_git",return_value=["FINAL_SELECTED"]):
+            self.assertEqual(["FINAL_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1100}}))
+
+    def test_final_rejects_forged_acceptance_review_or_active_lease(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e04_final_from_root",None)),"E04 final missing")
+        a=c.e04_final_from_root(ROOT);m=json.loads(a[c.E04_FINAL_M])
+        b={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),"handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.E04_FINAL_D])}
+        for field in ("failure","lease","review","scope"):
+            altered=copy.deepcopy(b);manifest=copy.deepcopy(m)
+            if field=="failure":manifest["formal_failure_count"]=0
+            elif field=="lease":altered["progress"]["worker_lease"]={"status":"ACTIVE"}
+            elif field=="review":manifest["independent_reviews"]["quality"]["actual_pg15"]["passed"]=0
+            else:manifest["combined_exact_paths"].append("escape")
+            self.assertIn("E04_FINAL_PROJECTION_INVALID",c.validate_e04_final(altered,manifest))
+
+
+class E05StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e05_start",CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_e05_start_preserves_prefix_and_binds_leases_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e05_start_from_root",None)),"E05 start missing")
+        files=c.e05_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E05_M])
+        old=subprocess.check_output(["git","show",f"{c.E05_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(1104,p["event_sequence"]);self.assertEqual("IN_PROGRESS",p["status"])
+        self.assertEqual({"package_id":"E-06","status":"NOT_READY"},p["next_successor_work_package"])
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual(6,len(m["product_write_scope"]));self.assertEqual(9,len(files))
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1100),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1100))
+        self.assertEqual(p["worker_lease"]["execution_fencing_token"],p["write_lease"]["execution_fencing_token"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in json.loads(files[c.D13_START_E])["events"][-4:]])
+
+    def test_e05_git_exact_scope_and_router(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"validate_e05_git_facts",None)),"E05 git missing")
+        facts=dict(head=c.E05_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e05_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e05_git_facts(**facts))
+        self.assertEqual([],c.validate_e05_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e05_product_write_scope())}))
+        for key,value in (("head","f"*40),("dirty",[]),("dirty",facts["dirty"]+["escape"]),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e05_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e05_git",return_value=["E05_SELECTED"]):
+            self.assertEqual(["E05_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1104}}))
+
+
+class E05FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "039c53acd6d79895d3c94e1bc21b72d1b54283f9"
+    HISTORY_PRODUCT_SCOPE = "e05_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E05_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E05_FINAL_START_HASHES",)
+    HISTORY_CHECKER_EVIDENCE = True
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e05_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_freeze_reviews_and_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e05_final_from_root',None)))
+        files=c.e05_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E05_FINAL_M])
+        self.assertEqual(1109,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-06','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(17,len(m['combined_exact_paths']))
+        self.assertEqual(6,len(m['frozen_product_sha256']));self.assertEqual(2,m['formal_failure_count'])
+        self.assertEqual(json.loads(c.e05_start_from_root(ROOT)[c.D13_START_P])['valid_failure_count'],p['valid_failure_count'])
+        self.assertEqual(p['work_plan_hash'],m['work_plan_hash'])
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict']);self.assertEqual('PASS',m['independent_reviews']['quality']['verdict'])
+        self.assertEqual(c.raw_event_object_prefix_bytes(c.e05_start_from_root(ROOT)[c.D13_START_E],1104),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1104))
+        self.assertEqual(['PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],[r['event_type'] for r in json.loads(files[c.D13_START_E])['events'][-5:]])
+        self.assertEqual('NOT_EXECUTED',m['external_validation']['pg18_rc'])
+
+    def test_final_frozen_input_and_exact_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e05_final_from_root',None)))
+        original=Path.read_bytes
+        for rel in c.e05_product_write_scope()+[c.E05_WI,c.E05_PROMPT,c.E05_D,c.E05_M]:
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'bad' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E05_FINAL_FROZEN_DRIFT'):c.e05_final_from_root(ROOT)
+        facts=dict(head=c.E05_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e05_final_paths())
+        self.assertEqual([],c.validate_e05_final_git_facts(**facts))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e05_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e05_final_git',return_value=['FINAL_SELECTED']):
+            self.assertEqual(['FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1109}}))
+
+    def test_final_rejects_forged_projection(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e05_final_from_root',None)))
+        a=c.e05_final_from_root(ROOT);m=json.loads(a[c.E05_FINAL_M])
+        b={'_root':ROOT,'progress':json.loads(a[c.D13_START_P]),'events':json.loads(a[c.D13_START_E]),'handoff':c.extract_handoff_summary(a[c.D13_START_H].decode()),'detached_digest':json.loads(a[c.E05_FINAL_D])}
+        for field in ('failure','lease','review','scope'):
+            altered=copy.deepcopy(b);manifest=copy.deepcopy(m)
+            if field=='failure':manifest['formal_failure_count']=0
+            elif field=='lease':altered['progress']['worker_lease']={'status':'ACTIVE'}
+            elif field=='review':manifest['independent_reviews']['quality']['verdict']='REWORK'
+            else:manifest['combined_exact_paths'].append('escape')
+            self.assertIn('E05_FINAL_PROJECTION_INVALID',c.validate_e05_final(altered,manifest))
+
+
+class E06StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e06_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_e06_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e06_start_from_root',None)))
+        a=c.e06_start_from_root(ROOT);p=json.loads(a[c.D13_START_P]);m=json.loads(a[c.E06_M])
+        self.assertEqual(1113,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual(8,len(m['product_write_scope']));self.assertEqual(9,len(a));self.assertEqual([],p['pending_approvals'])
+        self.assertEqual({'package_id':'E-07','status':'NOT_READY'},p['next_successor_work_package'])
+        old=subprocess.check_output(['git','show',f'{c.E06_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1109),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1109))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in json.loads(a[c.D13_START_E])['events'][-4:]])
+
+    def test_e06_git_scope_fails_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e06_git_facts',None)))
+        facts=dict(head=c.E06_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e06_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e06_git_facts(**facts))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e06_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e06_git',return_value=['E06_SELECTED']):
+            self.assertEqual(['E06_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1113}}))
+
+
+class E06FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "8d65c871c119d6f3b195f00e53e7e18bd2dba991"
+    HISTORY_PRODUCT_SCOPE = "e06_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E06_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E06_FINAL_START_HASHES",)
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e06_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_takeover_reviews_and_lease_revocation(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e06_final_from_root',None)))
+        files=c.e06_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E06_FINAL_M])
+        start=c.e06_start_from_root(ROOT);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1124,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-07','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(20,len(m['combined_exact_paths']))
+        self.assertEqual(5,m['formal_failure_count']);self.assertEqual(5,len(m['failure_lineage']))
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1113),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1113))
+        self.assertEqual(
+            ['FAILURE_REPORT_ACCEPTED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','LEASE_TAKEOVER','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],
+            [r['event_type'] for r in events[-11:]],
+        )
+        self.assertTrue(all(events[-11]['details'].get(k) for k in ('entry_id','evidence_ref','valid_failure_count')))
+        contract=json.loads((ROOT/'docs/progress/progress-event-contract.json').read_text(encoding='utf-8'))
+        self.assertEqual([],c.validate_event_stream(json.loads(files[c.D13_START_E]),contract,p))
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict'])
+        self.assertEqual('APPROVED',m['independent_reviews']['quality']['verdict'])
+        self.assertTrue(all(r['status'].startswith('RESOLVED') for r in m['failure_lineage']))
+
+    def test_final_frozen_input_exact_scope_and_dispatch(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e06_final_from_root',None)))
+        original=Path.read_bytes
+        for rel in list(c.E06_FINAL_PRODUCT_HASHES)+list(c.E06_FINAL_START_HASHES):
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'tamper' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E06_FINAL_FROZEN_DRIFT'):c.e06_final_from_root(ROOT)
+        facts=dict(head=c.E06_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e06_final_paths())
+        self.assertEqual([],c.validate_e06_final_git_facts(**facts))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e06_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e06_final_git',return_value=['FINAL_SELECTED']):
+            self.assertEqual(['FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1124}}))
+
+    def test_final_rejects_forged_manifest_or_projection(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e06_final',None)))
+        files=c.e06_final_from_root(ROOT);manifest=json.loads(files[c.E06_FINAL_M])
+        bundle={'_root':ROOT,'progress':json.loads(files[c.D13_START_P]),'events':json.loads(files[c.D13_START_E]),'handoff':c.extract_handoff_summary(files[c.D13_START_H].decode()),'detached_digest':json.loads(files[c.E06_FINAL_D])}
+        forged_manifest=copy.deepcopy(manifest);forged_manifest['formal_failure_count']=0
+        self.assertIn('E06_FINAL_PROJECTION_INVALID',c.validate_e06_final(bundle,forged_manifest))
+        forged_bundle=copy.deepcopy(bundle);forged_bundle['progress']['worker_lease']={'status':'ACTIVE'}
+        self.assertIn('E06_FINAL_PROJECTION_INVALID',c.validate_e06_final(forged_bundle,manifest))
+
+
+class E07StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e07_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_e07_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e07_start_from_root',None)),'E07 start missing')
+        files=c.e07_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E07_M])
+        self.assertEqual(1128,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual(4,len(m['product_write_scope']));self.assertEqual(9,len(files));self.assertEqual([],p['pending_approvals'])
+        self.assertEqual({'package_id':'E-08','status':'NOT_READY'},p['next_successor_work_package'])
+        old=subprocess.check_output(['git','show',f'{c.E07_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1124),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1124))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in json.loads(files[c.D13_START_E])['events'][-4:]])
+
+    def test_e07_git_scope_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e07_git_facts',None)),'E07 git missing')
+        facts=dict(head=c.E07_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e07_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e07_git_facts(**facts))
+        self.assertEqual([],c.validate_e07_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e07_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e07_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e07_git',return_value=['E07_SELECTED']):
+            self.assertEqual(['E07_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1128}}))
+
+
+class E07LeaseTimeCorrectionControlTests(unittest.TestCase):
+    def setUp(self):
+        checker = self._checker()
+        path = checker.D13_START_E
+        raw = subprocess.check_output(["git", "show", f"{checker.E08_BASE}:{path}"], cwd=ROOT)
+        overlay = _historical_bytes_overlay({path: raw})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e07_correction',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_correction_preserves_prefix_and_reissues_epoch2_dual_lease(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e07_lease_time_correction_from_root',None)),'E07 correction missing')
+        m=json.loads((ROOT/c.E07_CORRECTION_M).read_bytes());events=json.loads((ROOT/c.D13_START_E).read_bytes())['events']
+        worker=m['worker_lease'];write=m['write_lease'];terminal=[r for r in events if 1129<=r['sequence']<=1133]
+        self.assertEqual(1133,m['event_sequence']);self.assertEqual('IN_PROGRESS',m['status'])
+        self.assertEqual(2,worker['lease_epoch']);self.assertEqual(2,write['write_epoch'])
+        self.assertEqual(c.E07_CORRECTED_WORKER,worker['lease_id']);self.assertEqual(c.E07_CORRECTED_WRITE,write['lease_id'])
+        self.assertEqual(c.E07_CORRECTED_EXECUTION,worker['execution_fencing_token'])
+        self.assertEqual(c.E07_CORRECTED_EXECUTION,write['execution_fencing_token'])
+        self.assertEqual(0,m['product_mutation_count_before_correction']);self.assertEqual(11,len(m['exact_allowed_paths']))
+        start=c.e07_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1128),c.raw_event_object_prefix_bytes((ROOT/c.D13_START_E).read_bytes(),1128))
+        self.assertEqual(['WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_RESUMED'],[r['event_type'] for r in terminal])
+        self.assertEqual('HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION',terminal[-1]['occurred_at_source'])
+
+    def test_correction_git_exact11_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e07_correction_git_facts',None)),'E07 correction git missing')
+        facts=dict(head=c.E07_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e07_lease_time_correction_paths())
+        self.assertEqual([],c.validate_e07_correction_git_facts(**facts))
+        self.assertEqual([],c.validate_e07_correction_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e07_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e07_correction_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e07_lease_time_correction_git',return_value=['E07_CORRECTION_SELECTED']):
+            self.assertEqual(['E07_CORRECTION_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1133}}))
+
+
+class E07FinalAcceptanceControlTests(unittest.TestCase):
+    HISTORY_CHECKPOINT = "03878181590d13231fee3a47f7d43963d6a089c8"
+    HISTORY_PRODUCT_SCOPE = "e07_product_write_scope"
+    HISTORY_PRODUCT_HASHES = "E07_FINAL_PRODUCT_HASHES"
+    HISTORY_EXTRA_HASHES = ("E07_FINAL_CONTROL_HASHES",)
+    HISTORY_FINAL_SNAPSHOT = "E07"
+
+    def setUp(self):
+        E01FinalAcceptanceControlTests.setUp(self)
+
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e07_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_reviews_and_dual_lease_revocation(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e07_final_from_root',None)),'E07 final missing')
+        files=c.e07_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E07_FINAL_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1138,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-08','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(17,len(m['combined_exact_paths']))
+        self.assertEqual(0,m['formal_failure_count']);self.assertEqual(2,len(m['resolved_review_findings']))
+        prefix=c.raw_event_object_prefix_bytes(files[c.D13_START_E],1133)
+        self.assertEqual(m['historical_raw_event_prefix']['bytes'],len(prefix));self.assertEqual(m['historical_raw_event_prefix']['sha256'],c._c21_resume_sha(prefix))
+        self.assertEqual(['PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],[r['event_type'] for r in events[-5:]])
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict']);self.assertEqual('ACCEPT',m['independent_reviews']['quality']['verdict'])
+        contract=json.loads((ROOT/'docs/progress/progress-event-contract.json').read_text(encoding='utf-8'))
+        self.assertEqual([],c.validate_event_stream(json.loads(files[c.D13_START_E]),contract,p))
+
+    def test_final_freezes_product_and_exact_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e07_final_from_root',None)),'E07 final missing')
+        original=Path.read_bytes
+        for rel in list(c.E07_FINAL_PRODUCT_HASHES)+list(c.E07_FINAL_CONTROL_HASHES):
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'tamper' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E07_FINAL_FROZEN_DRIFT'):c.e07_final_from_root(ROOT)
+        facts=dict(head=c.E07_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e07_final_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e07_final_git_facts(**facts))
+        self.assertEqual([],c.validate_e07_final_git_facts(**{**facts,'head':'a'*40,'dirty':[],'parent':c.E07_BASE,'committed_paths':c.e07_final_paths()}))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e07_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e07_final_git',return_value=['E07_FINAL_SELECTED']):
+            self.assertEqual(['E07_FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1138}}))
+
+    def test_final_rejects_forged_acceptance(self):
+        c=self._checker();files=c.e07_final_from_root(ROOT);manifest=json.loads(files[c.E07_FINAL_M])
+        bundle={'_root':ROOT,'progress':json.loads(files[c.D13_START_P]),'events':json.loads(files[c.D13_START_E]),'handoff':c.extract_handoff_summary(files[c.D13_START_H].decode()),'detached_digest':json.loads(files[c.E07_FINAL_D])}
+        forged=copy.deepcopy(manifest);forged['independent_reviews']['spec']['verdict']='REWORK'
+        self.assertIn('E07_FINAL_PROJECTION_INVALID',c.validate_e07_final(bundle,forged))
+        forged_bundle=copy.deepcopy(bundle);forged_bundle['progress']['worker_lease']={'status':'ACTIVE'}
+        self.assertIn('E07_FINAL_PROJECTION_INVALID',c.validate_e07_final(forged_bundle,manifest))
+
+
+class E08StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e08_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_start_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e08_start_from_root',None)),'E08 start missing')
+        files=c.e08_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E08_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1142,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual({'package_id':'E-09','status':'NOT_READY'},p['next_successor_work_package'])
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(6,len(m['product_write_scope']));self.assertEqual(9,len(files))
+        old=subprocess.check_output(['git','show',f'{c.E08_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1138),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1138))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in events[-4:]])
+
+    def test_start_git_scope_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e08_git_facts',None)),'E08 git missing')
+        facts=dict(head=c.E08_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e08_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e08_git_facts(**facts))
+        self.assertEqual([],c.validate_e08_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e08_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e08_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e08_git',return_value=['E08_SELECTED']):
+            self.assertEqual(['E08_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1142}}))
+
+
+class E08FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e08_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_reviews_and_dual_lease_revocation(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e08_final_from_root',None)),'E08 final missing')
+        files=c.e08_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E08_FINAL_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1147,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-09','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(17,len(m['combined_exact_paths']))
+        self.assertEqual(0,m['formal_failure_count']);self.assertEqual(6,len(m['resolved_review_findings']))
+        prefix=c.raw_event_object_prefix_bytes(files[c.D13_START_E],1142)
+        self.assertEqual(m['historical_raw_event_prefix']['bytes'],len(prefix));self.assertEqual(m['historical_raw_event_prefix']['sha256'],c._c21_resume_sha(prefix))
+        self.assertEqual(['PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],[r['event_type'] for r in events[-5:]])
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict']);self.assertEqual('ACCEPT',m['independent_reviews']['quality']['verdict'])
+        contract=json.loads((ROOT/'docs/progress/progress-event-contract.json').read_text(encoding='utf-8'))
+        self.assertEqual([],c.validate_event_stream(json.loads(files[c.D13_START_E]),contract,p))
+
+    def test_final_freezes_product_and_exact_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e08_final_from_root',None)),'E08 final missing')
+        original=Path.read_bytes
+        for rel in list(c.E08_FINAL_PRODUCT_HASHES)+list(c.E08_FINAL_CONTROL_HASHES):
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'tamper' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E08_FINAL_FROZEN_DRIFT'):c.e08_final_from_root(ROOT)
+        facts=dict(head=c.E08_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e08_final_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e08_final_git_facts(**facts))
+        self.assertEqual([],c.validate_e08_final_git_facts(**{**facts,'head':'a'*40,'dirty':[],'parent':c.E08_BASE,'committed_paths':c.e08_final_paths()}))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e08_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e08_final_git',return_value=['E08_FINAL_SELECTED']):
+            self.assertEqual(['E08_FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1147}}))
+
+    def test_final_rejects_forged_acceptance(self):
+        c=self._checker();files=c.e08_final_from_root(ROOT);manifest=json.loads(files[c.E08_FINAL_M])
+        bundle={'_root':ROOT,'progress':json.loads(files[c.D13_START_P]),'events':json.loads(files[c.D13_START_E]),'handoff':c.extract_handoff_summary(files[c.D13_START_H].decode()),'detached_digest':json.loads(files[c.E08_FINAL_D])}
+        forged=copy.deepcopy(manifest);forged['independent_reviews']['spec']['verdict']='REWORK'
+        self.assertIn('E08_FINAL_PROJECTION_INVALID',c.validate_e08_final(bundle,forged))
+        forged_bundle=copy.deepcopy(bundle);forged_bundle['progress']['worker_lease']={'status':'ACTIVE'}
+        self.assertIn('E08_FINAL_PROJECTION_INVALID',c.validate_e08_final(forged_bundle,manifest))
+
+
+class E09StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e09_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_start_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e09_start_from_root',None)),'E09 start missing')
+        files=c.e09_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E09_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1151,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual({'package_id':'E-10','status':'NOT_READY'},p['next_successor_work_package'])
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(5,len(m['product_write_scope']));self.assertEqual(9,len(files))
+        old=subprocess.check_output(['git','show',f'{c.E09_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1147),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1147))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in events[-4:]])
+
+    def test_start_git_scope_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e09_git_facts',None)),'E09 git missing')
+        facts=dict(head=c.E09_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e09_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e09_git_facts(**facts))
+        self.assertEqual([],c.validate_e09_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e09_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e09_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e09_git',return_value=['E09_SELECTED']):
+            self.assertEqual(['E09_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1151}}))
+
+
+class E09FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e09_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_reviews_and_dual_lease_revocation(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e09_final_from_root',None)),'E09 final missing')
+        files=c.e09_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E09_FINAL_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1156,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-10','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(16,len(m['combined_exact_paths']))
+        self.assertEqual(0,m['formal_failure_count']);self.assertEqual(6,len(m['resolved_review_findings']))
+        prefix=c.raw_event_object_prefix_bytes(files[c.D13_START_E],1151)
+        self.assertEqual(m['historical_raw_event_prefix']['bytes'],len(prefix));self.assertEqual(m['historical_raw_event_prefix']['sha256'],c._c21_resume_sha(prefix))
+        self.assertEqual(['PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],[r['event_type'] for r in events[-5:]])
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict']);self.assertEqual('ACCEPT',m['independent_reviews']['quality']['verdict'])
+        contract=json.loads((ROOT/'docs/progress/progress-event-contract.json').read_text(encoding='utf-8'))
+        self.assertEqual([],c.validate_event_stream(json.loads(files[c.D13_START_E]),contract,p))
+
+    def test_final_freezes_product_and_exact_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e09_final_from_root',None)),'E09 final missing')
+        original=Path.read_bytes
+        for rel in list(c.E09_FINAL_PRODUCT_HASHES)+list(c.E09_FINAL_CONTROL_HASHES):
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'tamper' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E09_FINAL_FROZEN_DRIFT'):c.e09_final_from_root(ROOT)
+        facts=dict(head=c.E09_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e09_final_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e09_final_git_facts(**facts))
+        self.assertEqual([],c.validate_e09_final_git_facts(**{**facts,'head':'a'*40,'dirty':[],'parent':c.E09_BASE,'committed_paths':c.e09_final_paths()}))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e09_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e09_final_git',return_value=['E09_FINAL_SELECTED']):
+            self.assertEqual(['E09_FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1156}}))
+
+    def test_final_rejects_forged_acceptance(self):
+        c=self._checker();files=c.e09_final_from_root(ROOT);manifest=json.loads(files[c.E09_FINAL_M])
+        bundle={'_root':ROOT,'progress':json.loads(files[c.D13_START_P]),'events':json.loads(files[c.D13_START_E]),'handoff':c.extract_handoff_summary(files[c.D13_START_H].decode()),'detached_digest':json.loads(files[c.E09_FINAL_D])}
+        forged=copy.deepcopy(manifest);forged['independent_reviews']['spec']['verdict']='REWORK'
+        self.assertIn('E09_FINAL_PROJECTION_INVALID',c.validate_e09_final(bundle,forged))
+        forged_bundle=copy.deepcopy(bundle);forged_bundle['progress']['worker_lease']={'status':'ACTIVE'}
+        self.assertIn('E09_FINAL_PROJECTION_INVALID',c.validate_e09_final(forged_bundle,manifest))
+
+
+class E10StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e10_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_start_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e10_start_from_root',None)),'E10 start missing')
+        files=c.e10_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E10_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1160,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual({'package_id':'E-11','status':'NOT_READY'},p['next_successor_work_package'])
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(5,len(m['product_write_scope']));self.assertEqual(9,len(files))
+        old=subprocess.check_output(['git','show',f'{c.E10_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1156),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1156))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in events[-4:]])
+
+    def test_start_git_scope_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e10_git_facts',None)),'E10 git missing')
+        facts=dict(head=c.E10_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e10_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e10_git_facts(**facts))
+        self.assertEqual([],c.validate_e10_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e10_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e10_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e10_git',return_value=['E10_SELECTED']):
+            self.assertEqual(['E10_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1160}}))
+
+
+class E10FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e10_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_reviews_and_dual_lease_revocation(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e10_final_from_root',None)),'E10 final missing')
+        files=c.e10_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E10_FINAL_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1165,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-11','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(16,len(m['combined_exact_paths']))
+        self.assertEqual(0,m['formal_failure_count']);self.assertEqual(6,len(m['resolved_review_findings']))
+        prefix=c.raw_event_object_prefix_bytes(files[c.D13_START_E],1160)
+        self.assertEqual(m['historical_raw_event_prefix']['bytes'],len(prefix));self.assertEqual(m['historical_raw_event_prefix']['sha256'],c._c21_resume_sha(prefix))
+        self.assertEqual(['PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],[r['event_type'] for r in events[-5:]])
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict']);self.assertEqual('ACCEPT',m['independent_reviews']['quality']['verdict'])
+        contract=json.loads((ROOT/'docs/progress/progress-event-contract.json').read_text(encoding='utf-8'))
+        self.assertEqual([],c.validate_event_stream(json.loads(files[c.D13_START_E]),contract,p))
+
+    def test_final_freezes_product_and_exact_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e10_final_from_root',None)),'E10 final missing')
+        original=Path.read_bytes
+        for rel in list(c.E10_FINAL_PRODUCT_HASHES)+list(c.E10_FINAL_CONTROL_HASHES):
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'tamper' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E10_FINAL_FROZEN_DRIFT'):c.e10_final_from_root(ROOT)
+        facts=dict(head=c.E10_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e10_final_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e10_final_git_facts(**facts))
+        self.assertEqual([],c.validate_e10_final_git_facts(**{**facts,'head':'a'*40,'dirty':[],'parent':c.E10_BASE,'committed_paths':c.e10_final_paths()}))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e10_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e10_final_git',return_value=['E10_FINAL_SELECTED']):
+            self.assertEqual(['E10_FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1165}}))
+
+    def test_final_rejects_forged_acceptance(self):
+        c=self._checker();files=c.e10_final_from_root(ROOT);manifest=json.loads(files[c.E10_FINAL_M])
+        bundle={'_root':ROOT,'progress':json.loads(files[c.D13_START_P]),'events':json.loads(files[c.D13_START_E]),'handoff':c.extract_handoff_summary(files[c.D13_START_H].decode()),'detached_digest':json.loads(files[c.E10_FINAL_D])}
+        forged=copy.deepcopy(manifest);forged['independent_reviews']['quality']['verdict']='REWORK'
+        self.assertIn('E10_FINAL_PROJECTION_INVALID',c.validate_e10_final(bundle,forged))
+        forged_bundle=copy.deepcopy(bundle);forged_bundle['progress']['write_lease']={'status':'ACTIVE'}
+        self.assertIn('E10_FINAL_PROJECTION_INVALID',c.validate_e10_final(forged_bundle,manifest))
+
+
+class E11StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e11_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_start_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e11_start_from_root',None)),'E11 start missing')
+        files=c.e11_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E11_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1169,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual({'package_id':'DIR-3','status':'NOT_READY'},p['next_successor_work_package'])
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(5,len(m['product_write_scope']));self.assertEqual(9,len(files))
+        old=subprocess.check_output(['git','show',f'{c.E11_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1165),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1165))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in events[-4:]])
+
+    def test_start_git_scope_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e11_git_facts',None)),'E11 git missing')
+        facts=dict(head=c.E11_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e11_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e11_git_facts(**facts))
+        self.assertEqual([],c.validate_e11_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e11_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e11_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e11_git',return_value=['E11_SELECTED']):
+            self.assertEqual(['E11_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1169}}))
 
 
 if __name__ == "__main__":

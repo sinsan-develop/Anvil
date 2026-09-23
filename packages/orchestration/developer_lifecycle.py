@@ -493,6 +493,21 @@ class DeveloperSession:
 
 
 @dataclass(frozen=True, slots=True)
+class LifecycleTakeoverSnapshot:
+    """Exact session state required to compensate a failed C-13 takeover."""
+
+    session_id: str
+    session: DeveloperSession
+    commands: tuple[tuple[str, tuple[str, str, str, Mapping[str, Any]]], ...]
+    command_generations: tuple[tuple[str, int], ...]
+    command_resolutions: tuple[tuple[str, Mapping[str, Any]], ...]
+    next_command_generation: int
+    stopping: bool
+    stop_delivered: bool
+    runner_state: object
+
+
+@dataclass(frozen=True, slots=True)
 class LifecycleProjection:
     """Framework-neutral public projection for current/handoff views."""
 
@@ -723,6 +738,21 @@ class DeterministicFakeDeveloperRunner:
         if type(polls) is not int or polls < 0:
             raise InvalidLifecycleTransition("runner checkpoint poll state is invalid")
         self._sessions[session_id] = (packet, polls, False)
+
+    def takeover_snapshot(self, session_id: str) -> tuple[DelegationPacket, int, bool]:
+        """Return exact in-memory runner state for takeover compensation."""
+        return self._sessions[session_id]
+
+    def restore_takeover(
+        self, session_id: str, snapshot: tuple[DelegationPacket, int, bool],
+    ) -> None:
+        if (
+            type(snapshot) is not tuple or len(snapshot) != 3
+            or not isinstance(snapshot[0], DelegationPacket)
+            or type(snapshot[1]) is not int or type(snapshot[2]) is not bool
+        ):
+            raise InvalidLifecycleTransition("invalid runner takeover snapshot")
+        self._sessions[session_id] = snapshot
 
 
 class DeveloperLifecycleService:
@@ -1515,6 +1545,72 @@ class DeveloperLifecycleService:
                 f"restore {detail}; reconcile or manual outcome is required"
             )
         raise InvalidLifecycleTransition("developer session admission is already in flight")
+
+    def takeover_snapshot(self, session_id: str) -> LifecycleTakeoverSnapshot:
+        """Capture exact local lifecycle and runner state before C-13 stop."""
+        snapshotter = getattr(self._runner, "takeover_snapshot", None)
+        restorer = getattr(self._runner, "restore_takeover", None)
+        if not callable(snapshotter) or not callable(restorer):
+            raise InvalidLifecycleTransition(
+                "runner does not support atomic takeover compensation"
+            )
+        with self._lock:
+            session = self._require(session_id)
+            if session.status not in {LifecycleStatus.RUNNING, LifecycleStatus.PAUSED}:
+                raise InvalidLifecycleTransition(
+                    "takeover snapshot requires a RUNNING or PAUSED session"
+                )
+            runner_state = snapshotter(session_id)
+            command_keys = set(self._commands.get(session_id, {}))
+            return LifecycleTakeoverSnapshot(
+                session_id=session_id,
+                session=session,
+                commands=tuple(self._commands.get(session_id, {}).items()),
+                command_generations=tuple(
+                    self._command_generations.get(session_id, {}).items()
+                ),
+                command_resolutions=tuple(
+                    (key, value) for key, value in self._command_resolutions.items()
+                    if key in command_keys
+                ),
+                next_command_generation=self._next_command_generation,
+                stopping=session_id in self._stopping,
+                stop_delivered=session_id in self._stop_delivered,
+                runner_state=runner_state,
+            )
+
+    def restore_takeover(self, snapshot: LifecycleTakeoverSnapshot) -> None:
+        """Compensate a failed C-13 stop without reaching into this service."""
+        if type(snapshot) is not LifecycleTakeoverSnapshot:
+            raise InvalidLifecycleTransition("valid lifecycle takeover snapshot is required")
+        restorer = getattr(self._runner, "restore_takeover", None)
+        if not callable(restorer):
+            raise InvalidLifecycleTransition(
+                "runner does not support atomic takeover compensation"
+            )
+        restorer(snapshot.session_id, snapshot.runner_state)
+        with self._lock:
+            current_keys = set(self._commands.get(snapshot.session_id, {}))
+            snapshot_commands = dict(snapshot.commands)
+            for key in current_keys - set(snapshot_commands):
+                self._command_resolutions.pop(key, None)
+            for key, value in snapshot.command_resolutions:
+                self._command_resolutions[key] = value
+            self._sessions[snapshot.session_id] = snapshot.session
+            self._commands[snapshot.session_id] = snapshot_commands
+            self._command_generations[snapshot.session_id] = dict(
+                snapshot.command_generations
+            )
+            if self._next_command_generation <= snapshot.next_command_generation + 1:
+                self._next_command_generation = snapshot.next_command_generation
+            if snapshot.stopping:
+                self._stopping.add(snapshot.session_id)
+            else:
+                self._stopping.discard(snapshot.session_id)
+            if snapshot.stop_delivered:
+                self._stop_delivered.add(snapshot.session_id)
+            else:
+                self._stop_delivered.discard(snapshot.session_id)
 
     def current(self, session_id: str) -> LifecycleProjection:
         with self._lock:

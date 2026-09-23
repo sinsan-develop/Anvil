@@ -6710,3 +6710,41 @@ Event Store · Command Queue · Artifact Store
 - 브라우저는 내부 API·Docker·SSH 주소에 직접 연결하지 않으며, 모든 원격 활동은 progress/event/audit와 원격 command receipt에 남긴다.
 
 네이티브 iOS/Android 앱은 운영 사용량·접속 불편·push 요구가 확인된 뒤 별도 범위와 승인으로 추가한다. 현재 기준선에서는 `NOT_IN_CURRENT_SCOPE`다.
+
+## 51. v2.8 핵심 개념 정합화 successor (2026-09-18)
+
+이 절은 v2.7과 기존 설계·검증 이력을 보존하는 **append-only successor**다. C-16~C-21, F-01/F-02와 과거 Event·Gate·Acceptance는 재번호화·재개방하지 않는다. 이 successor는 신산님의 2026-09-18 직접 지시에 의해 문서 기준선으로 추가되며, 아래 계약과 후속 Work Package가 통합검증매트릭스·테스트계획서·progress/HANDOFF에 결박되기 전에는 제품 구현 기준선으로 사용하지 않는다.
+
+### 51.1 제품 정체성과 다섯 일급 역할
+
+Anvil은 단일 코드 생성기가 아니라 **계획·코드·검토·테스트·배포 준비를 오케스트레이션하는 개발 제품**이다. 각 역할은 입력, 출력, 허용·금지 행동, handoff, 오류 처리, 완료 증거, 승인 경계를 갖는 독립 계약이다.
+
+| 역할 | 입력/출력 | 허용 / 금지 | handoff·오류·완료 증거 | 승인 경계 |
+|---|---|---|---|---|
+| Planning Agent | 요구사항·현재 상태 → Design/WorkPlan/TaskGraph | 계획·의존성·위험 분석 / 제품 파일 write·merge·deploy 금지 | `PlanEnvelope`, trace, RED/GREEN 계획; 충돌은 `DecisionRequest` | 범위·요구사항·중요 위험 변경은 사람 |
+| Code Agent | 승인된 WorkInstruction·write lease → diff·commit 후보 | 지정 경로만 write·테스트 / 계획 밖 기능·직접 merge·배포 금지 | `ImplementationEnvelope`, diff/test/evidence; 실패는 fingerprint | write lease·egress·fencing은 시스템 |
+| Review Agent | diff·계약·증거 → findings·판정 | read-only 검토·재현 / 소스 수정·승인 대행 금지 | `ReviewEnvelope`와 C/I/M finding; C/I > 0이면 REWORK | 사람 승인 대체 불가 |
+| Test Agent | frozen artifact·환경·시나리오 → 결과·coverage·미검증 | 계층별 테스트·환경 관찰 / 테스트를 운영 성공으로 승격 금지 | `TestEnvelope`, 명령·exit·실제 scope; 환경 오류 분류 | 실제 사용자 인수·release는 사람 |
+| Deploy Agent | 승인 commit·ReleaseManifest → 사전검사·배포 준비·모니터링 기록 | manifest 검증·dry-run·health/rollback 준비·관찰 / Oracle 실행·운영 전환·secret 변경 금지 | `DeployReadinessEnvelope`, rollback/monitoring evidence; 실패는 차단 | Oracle 배포·운영 전환은 별도 후속 계획과 사람 |
+
+Main Agent는 위 역할의 관리·판단·조정·최종 종합 소유자다. Code Agent(Developer Subagent)만 제품 파일을 쓰며, 한 시점 한 write lease와 단일 writer를 강제한다. Deploy Agent는 준비·검증·모니터링만 수행하고 Oracle Cloud 실제 deploy는 개발 작업계획 밖의 별도 운영 계획으로 분리한다.
+
+### 51.2 Agent Team과 Agent MoA/Provider Routing의 분리
+
+**Agent Team**은 MoA가 아니라 협업 조직이다. TeamSession, TeamTask, dependency, TeamMessage/Mailbox, peer review, handoff, lease와 결과 provenance를 관리하며 Planning/Code/Review/Test/Deploy 역할의 실행 순서와 병렬성(독립 read-only는 병렬, 같은 경로 write는 순차)을 결정한다. 모든 결과는 `ResultEnvelope`(actor, role, task, parent, status, evidence refs, artifact hash, cost/latency, unverified, rollback)를 사용한다.
+
+**Agent MoA**는 여러 Agent 제안의 비판·비교·종합을 위한 판단 계층이고, **Provider/Model Capability Routing**은 각 실행에 사용할 provider/model을 선택하는 실행 계층이다. MoA participant(초안·비판·검증·종합), 병렬/순차 단계, 제안·반론·종합 provenance, quorum/conflict policy, timeout·cost budget, partial failure/재시도·중단, 최종 owner(Main Agent)를 별도로 기록한다. Routing에는 CapabilityProfile, ProviderModelCatalog, FallbackPolicy, RoutingProvenance를 사용하지만 routing 결과가 사용자 승인이나 Team consensus를 대신하지 않는다. quota·privacy·가격·capability drift는 fail-closed하고 `Quota not reported`처럼 관찰되지 않은 값을 추정하지 않는다.
+
+### 51.3 SNS Gateway와 Daon User 경계
+
+핵심은 transport-neutral `SNSMessageEnvelope`와 Gateway다. envelope에는 `message_id`, `channel`, `session_id`, `external_actor`, `internal_user`, `tenant/project`, `command`, `payload_ref`, `correlation_id`, `idempotency_key`, `authn/authz`, `replay_nonce`, `attempt`, `receipt_ref`, `privacy/retention`을 포함한다. Gateway는 identity mapping, 인증·권한, replay/idempotency, rate limit, retry/backoff, DLQ, receipt, append-only audit, 개인정보 최소화를 공통 처리한다.
+
+Telegram은 기존 보조 adapter 계약을 유지한다. Kakao는 adapter 계약과 미결정 사항(공식 API/채널 유형, webhook·서명·토큰 방식, 사용자 식별자 매핑, rate/quota, 메시지 정책, 운영 계정)을 명시만 하며 외부 API나 인증 방식을 추측해 구현하지 않는다. Daon User는 Web Console/승인 채널을 통해 사용자·역할·세션·명령·결과·receipt를 연결한다. 고위험(설계 확정, 권한·Secret, Provider 변경, Apply/Deploy/Delete)은 SNS에서 확정하지 않고 Web Console step-up 인증과 승인 원장에서 재확인한다.
+
+### 51.4 화면·메뉴 설계 선행
+
+구현 전에 mockup과 사용자 확인을 완료한다. 화면에는 (1) Team 구성·역할 배정, (2) owner/role Agent 대화·task 상태, (3) 요구사항→계획→구현→검토→테스트→배포준비 parent/child trace, (4) role/status/model/provider/artifact/evidence/deploy readiness, (5) MoA proposal·critique·synthesis·provenance, (6) SNS channel/session과 Daon User identity/권한/receipt, (7) permission denied·error·empty·offline 상태와 high-risk 재확인 흐름을 포함한다. 브라우저는 same-origin BFF만 사용하며 mockup 승인 전 제품 UI/API write를 금지한다.
+
+### 51.5 추적성·검증·운영 경계
+
+각 개념은 `DESIGN section → Work Package → API/data/evidence contract → matrix/test scenario → progress event` 양방향 링크를 가진다. 문서 개정 뒤 docs lint/link/ID 중복 검사와 `git diff --check`를 수행하고 독립 read-only Reviewer가 C/I finding 0을 확인한다. 로컬 unit/contract/integration 뒤 WSL formal DB/container/entity/E2E를 수행하되, Oracle 설치·배포·운영·release는 본 개발 계획에 포함하지 않는다. 이 successor의 미결정 외부 계약은 `OPEN_DECISION`으로 남기며 임의의 API·auth·quota를 발명하지 않는다.

@@ -1,0 +1,374 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E05_FINAL_ACCEPTANCE",
+  "artifact_id": "E05-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T14:35:00+09:00",
+  "package_id": "E-05",
+  "event_sequence": 1109,
+  "historical_event_sequence": 1104,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3620745,
+    "sha256": "07289BCC57E65533697FD59D5DF1916C6D3BFCEB8EDA1919D3F370DC69B71310"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md": {
+      "bytes": 25763,
+      "sha256": "11EDACFE8BDE5EEBC4C0A43396330C6AE0763B9132F3E8F23ECE0C729B06E3BF"
+    },
+    "packages/agent_team/__init__.py": {
+      "bytes": 4511,
+      "sha256": "F3F5550E0262915F295EB1E87EB4C1A7FD36CA896646135078616BA67033F3E4"
+    },
+    "packages/agent_team/concurrency.py": {
+      "bytes": 21521,
+      "sha256": "446942307111C4F2A304F95B2E38CDF403009EE18676C74F7BCAFBF12D8F3F1A"
+    },
+    "packages/queue/service.py": {
+      "bytes": 11725,
+      "sha256": "1E836CE142BDF0ABDB3455EACF60F7D1A4938CB5D0B937AB672866728CA0219B"
+    },
+    "tests/agent_team/test_concurrency_e05.py": {
+      "bytes": 24701,
+      "sha256": "864A36B192248ED65D2AD8F6A7D79ADCA77AE74AA1E1104A5F28262906ABE1DB"
+    },
+    "tests/queue/test_concurrency_claim_e05.py": {
+      "bytes": 4235,
+      "sha256": "4539E2A136D03CB0CB7339EBA7B683DD4B6DD7F1A5093286F1E0A07D4306BA97"
+    }
+  },
+  "evidence_target_hash": "A4BB837274666C66CCA2A68777BCAB0829909D536A848E8619A5F9EE50A80161",
+  "independent_reviews": {
+    "spec": {
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1104,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "exact_dirty_paths": 15,
+      "staged": 0,
+      "verdict": "ACCEPT",
+      "python_executable": "C:\\Users\\cyhuh\\anaconda3\\python.exe",
+      "commands": [
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "focused plus E05Start control",
+          "passed": 81,
+          "skipped": 0,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "related agent_team queue leases budget orchestration",
+          "passed": 1024,
+          "skipped": 6,
+          "exit_code": 0
+        }
+      ],
+      "independent_probes": {
+        "hostile_inline": 24,
+        "ordinary_E04_contention_retry": 3,
+        "control_history": 6,
+        "exit_code": 0
+      },
+      "prefix_sequence": 1100,
+      "unverified": [
+        "actual Provider",
+        "PostgreSQL batch adapter/real DB",
+        "HTTP/UI",
+        "external send",
+        "isolated PG18"
+      ]
+    },
+    "quality": {
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1104,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "exact_dirty_paths": 15,
+      "staged": 0,
+      "verdict": "PASS",
+      "python_executable": "NOT_REPORTED",
+      "commands": [
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "focused",
+          "passed": 79,
+          "skipped": 0,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "R2 reentry/lock inversion",
+          "passed": 7,
+          "skipped": 0,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "related agent_team orchestration queue leases budget",
+          "passed": 1024,
+          "skipped": 6,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "E04 queue regression",
+          "passed": 7,
+          "skipped": 5,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "control",
+          "passed": 8,
+          "skipped": 0,
+          "exit_code": 0
+        }
+      ],
+      "independent_adversarial_probe": {
+        "exit_code": 0,
+        "same_thread_reentry_publication": 0,
+        "inflight": 0,
+        "different_request_duplicates": 0,
+        "shared_queue_outer_CAS_publication": 0,
+        "retry_claims": 2,
+        "token_exception_publication": 0,
+        "queue_drift_publication": 0,
+        "ordinary_64_way_wins": [
+          1,
+          1,
+          0
+        ],
+        "ordinary_attempts": 2,
+        "ordinary_quarantine": 1
+      },
+      "unverified": [
+        "actual Provider",
+        "PostgreSQL batch adapter/real DB",
+        "HTTP/UI",
+        "external send",
+        "isolated PG18",
+        "host-injected unbounded callback timeout outside contract"
+      ]
+    }
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "real_db": "NOT_EXECUTED",
+    "http_wiring": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "external_send": "NOT_EXECUTED",
+    "pg18_rc": "NOT_EXECUTED",
+    "actual_worker": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "postgresql_batch_adapter": "NOT_INTEGRATED"
+  },
+  "formal_failure_count": 2,
+  "failure_lineage": [
+    {
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "fingerprints": [
+        "E05-DISPATCH-CANCEL-TOCTOU-001",
+        "E05-RESERVATION-REUSE-002",
+        "E05-BUDGET-OWNER-ATOMICITY-003",
+        "E05-QUEUE-CLAIM-POLICY-BYPASS-004"
+      ]
+    },
+    {
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "fingerprints": [
+        "E05-REENTRANT-DISPATCH-LOCK-INVERSION-005",
+        "E05-REGISTER-BUDGET-DRIFT-006"
+      ]
+    }
+  ],
+  "checker_edit_evidence": {
+    "method": "MAIN_AUTHORIZED_BULK_MECHANICAL_ADDITIVE_ONE_SHOT",
+    "base_sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39",
+    "pre_final_sha256": "4DF3480F8A38992FE5DF51A2CD937985124D92CDE210E9D7EDE28018D2572464",
+    "pre_final_bytes": 4424161,
+    "preserved_start_block_sha256": "E0C19EBF2C1C18D483A99C12DDF0550859DADC16C60E0BB29F46B3869AB16F11",
+    "preserved_start_block_bytes": 13434,
+    "current_sha256": "D0B4D456B7EC4EA5270219E41CC31FED905332C580F3D0995B443458264793FC",
+    "normalized_unified_patch_sha256": "6FE8287D41D8553F3DA41CAC2100A3BAE237606FAA40F4031992412C2AAA7668",
+    "patch_bytes": 34202,
+    "numstat": {
+      "added": 302,
+      "deleted": 0
+    },
+    "historical_replacement_count": 0,
+    "anchor_counts": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "work_instruction_sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E",
+  "invocation_sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659",
+  "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "active_leases": 0,
+  "e05_status": "ACCEPTED",
+  "e06_status": "READY_FOR_WORK_INSTRUCTION",
+  "product_exact_paths": [
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/concurrency.py",
+    "packages/queue/service.py",
+    "tests/agent_team/test_concurrency_e05.py",
+    "tests/queue/test_concurrency_claim_e05.py"
+  ],
+  "frozen_start_product_paths": [
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-05_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e05-start.json",
+    "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/concurrency.py",
+    "packages/queue/service.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_concurrency_e05.py",
+    "tests/queue/test_concurrency_claim_e05.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "frozen_product_sha256": {
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md": "11EDACFE8BDE5EEBC4C0A43396330C6AE0763B9132F3E8F23ECE0C729B06E3BF",
+    "packages/agent_team/__init__.py": "F3F5550E0262915F295EB1E87EB4C1A7FD36CA896646135078616BA67033F3E4",
+    "packages/agent_team/concurrency.py": "446942307111C4F2A304F95B2E38CDF403009EE18676C74F7BCAFBF12D8F3F1A",
+    "packages/queue/service.py": "1E836CE142BDF0ABDB3455EACF60F7D1A4938CB5D0B937AB672866728CA0219B",
+    "tests/agent_team/test_concurrency_e05.py": "864A36B192248ED65D2AD8F6A7D79ADCA77AE74AA1E1104A5F28262906ABE1DB",
+    "tests/queue/test_concurrency_claim_e05.py": "4539E2A136D03CB0CB7339EBA7B683DD4B6DD7F1A5093286F1E0A07D4306BA97"
+  },
+  "frozen_start_sha256": {
+    "docs/work_orders/E-05_WORK_INSTRUCTION.md": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E",
+    "docs/work_orders/E-05_INVOCATION_PROMPT.md": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659",
+    "docs/progress/progress-handoff-detached-digest-e05-start.json": "D97C33D9F916408D74DAE08D149A784717C8C4F0BFD53D87F86EE67B2116B503",
+    "docs/evidence/manifests/E-05_START_MANIFEST.json": "58C246DB0362FB9E79236D2BFEF70426103332BD96892CA7B02579CB2959DF4F"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-05_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e05-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e05-start.json",
+    "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/concurrency.py",
+    "packages/queue/service.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_concurrency_e05.py",
+    "tests/queue/test_concurrency_claim_e05.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 17,
+  "projection_mode": "E05_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+      "bytes": 25763,
+      "sha256": "11EDACFE8BDE5EEBC4C0A43396330C6AE0763B9132F3E8F23ECE0C729B06E3BF"
+    },
+    {
+      "path": "docs/evidence/manifests/E-05_START_MANIFEST.json",
+      "bytes": 4592,
+      "sha256": "58C246DB0362FB9E79236D2BFEF70426103332BD96892CA7B02579CB2959DF4F"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 214792,
+      "sha256": "37D0587CDC0937458C72EB59793C05FD9091A73EF5E96DB6D3155FB9781E70CC"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1139081,
+      "sha256": "360C6E0579305E4FF1570ED12AEF55821B1F30BFDAEF2D0BB572BDE0D43C8FE9"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3640226,
+      "sha256": "C9349C10A548785107ABC742C6B5184F14D0668C5290744AC4486A900251B8D5"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e05-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "48A40014FA4939E061D0ED1ED79DF7381B5FD9EBE5F1DAC94B37A3EC91752D80"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e05-start.json",
+      "bytes": 835,
+      "sha256": "D97C33D9F916408D74DAE08D149A784717C8C4F0BFD53D87F86EE67B2116B503"
+    },
+    {
+      "path": "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+      "bytes": 514,
+      "sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659"
+    },
+    {
+      "path": "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+      "bytes": 4056,
+      "sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E"
+    },
+    {
+      "path": "packages/agent_team/__init__.py",
+      "bytes": 4511,
+      "sha256": "F3F5550E0262915F295EB1E87EB4C1A7FD36CA896646135078616BA67033F3E4"
+    },
+    {
+      "path": "packages/agent_team/concurrency.py",
+      "bytes": 21521,
+      "sha256": "446942307111C4F2A304F95B2E38CDF403009EE18676C74F7BCAFBF12D8F3F1A"
+    },
+    {
+      "path": "packages/queue/service.py",
+      "bytes": 11725,
+      "sha256": "1E836CE142BDF0ABDB3455EACF60F7D1A4938CB5D0B937AB672866728CA0219B"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4442547,
+      "sha256": "D0B4D456B7EC4EA5270219E41CC31FED905332C580F3D0995B443458264793FC"
+    },
+    {
+      "path": "tests/agent_team/test_concurrency_e05.py",
+      "bytes": 24701,
+      "sha256": "864A36B192248ED65D2AD8F6A7D79ADCA77AE74AA1E1104A5F28262906ABE1DB"
+    },
+    {
+      "path": "tests/queue/test_concurrency_claim_e05.py",
+      "bytes": 4235,
+      "sha256": "4539E2A136D03CB0CB7339EBA7B683DD4B6DD7F1A5093286F1E0A07D4306BA97"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1185131,
+      "sha256": "D5D879CB413989921282EFB9AF1ECC3992ED74C6C5D19C11A60E792DDC4C0029"
+    }
+  ]
+}

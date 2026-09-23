@@ -1,0 +1,1 @@
+Implement only C-30R1: mount the existing agent-console sub-app in `apps/api/anvil_api/asgi.py`, preserve fail-closed 503 behavior, add the minimal C30 integration assertion, run focused tests/compile/diff-check, and update only the listed evidence/control files. Do not run WSL, Docker, DB, Provider, or production operations.

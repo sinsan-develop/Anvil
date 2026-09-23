@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D08-FINAL-D-SKILL-GATE-DIGEST-20260916",
+  "package_id": "D-08",
+  "event_sequence": 1008,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T19:22:00+09:00",
+  "scope": "seq1003-1008 append-only D-08 acceptance and D-Skill Gate; seq1-1002 preserved; exact136",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1060972,
+    "file_sha256": "82D32039D0B635A094857F0D84584F881688FE7C645A4F3DF87DED1037F1A9F7",
+    "canonical_json_sha256": "6322458ED518025FFA043C2FAB384BA3E79E09DE3D7A3BA9F6FC11AF5A2BCEFB"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 210930,
+    "file_sha256": "1AA3B2853C7053A6A935C1487694F150706A8E27F81C0A5B948D0DF167703AAF",
+    "machine_summary_canonical_sha256": "FE206FF9351BA857B18270222E7C98A5486C9B352C702BF2BB394654D8B9F1DD"
+  }
+}

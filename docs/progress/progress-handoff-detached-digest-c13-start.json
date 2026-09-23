@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C13-START-DIGEST-20260916",
+  "package_id": "C-13",
+  "event_sequence": 901,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T00:35:00+09:00",
+  "scope": "seq897-901 C-13 autonomous start control; seq1-896 immutable; exact9",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 985301,
+    "file_sha256": "8097365CEB2AC19EEC1515513A7D2EB8784B37D684CF505EB09005451A35D28E",
+    "canonical_json_sha256": "2424D89E5347563C6012BAF02E8E100B3D6858A8D46F43690AE7353D0839CA57"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 197236,
+    "file_sha256": "6091D82D8459C1F1EEB98AD023F1A01E14ACAAA5AF704FB44EC512C7FFEB3AF7",
+    "machine_summary_canonical_sha256": "22E88C140B2A13A4533A9EA5B3782CB4B3DB5CD33FBA7EFF1942A6A4DCE903D4"
+  }
+}

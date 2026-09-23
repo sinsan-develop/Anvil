@@ -26,6 +26,12 @@ class QueueJob:
     lease_epoch: int = 0
     execution_fencing_token: str | None = None
     lease_expires_at: datetime | None = None
+    graph_id: str | None = None
+    graph_hash: str | None = None
+    dependency_ids: tuple[str, ...] = ()
+    conflict_keys: tuple[str, ...] = ()
+    input_verified: bool = True
+    completed_token_hash: str | None = None
 
     def __post_init__(self) -> None:
         if not self.job_id or not self.run_id or not self.payload:
@@ -34,6 +40,11 @@ class QueueJob:
             raise ValueError("queue attempt and lease counters must be non-negative")
         if self.available_at.tzinfo is None:
             raise ValueError("available_at must be timezone-aware")
+        for values in (self.dependency_ids, self.conflict_keys):
+            if type(values) is not tuple or len(values) != len(set(values)) or any(type(v) is not str or not v for v in values):
+                raise ValueError("queue dependencies/conflicts must be immutable unique identities")
+        if type(self.input_verified) is not bool or self.job_id in self.dependency_ids:
+            raise ValueError("invalid queue dependency/input contract")
 
     def replace(self, **changes: object) -> "QueueJob":
         return replace(self, **changes)

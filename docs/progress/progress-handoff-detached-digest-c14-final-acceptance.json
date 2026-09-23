@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C14-FINAL-ACCEPTANCE-DIGEST-20260916",
+  "package_id": "C-14",
+  "event_sequence": 920,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T05:04:00+09:00",
+  "scope": "seq916-920 append-only C-14 acceptance; seq1-915 preserved; combined exact31",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 999375,
+    "file_sha256": "025F598CBB9AAFA6116505039934387A022F56413F430CB8D6098496D2B144C5",
+    "canonical_json_sha256": "CB1E07CB94D4F96D4DE8EA2BF9E2C5F91B4DA42739346EEBC1C4B158ED85708B"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 199320,
+    "file_sha256": "2CC524CCAE1D28DE03CB6578ED9EF3E038557D50A464AC33955066CBEA1FA678",
+    "machine_summary_canonical_sha256": "6E67B4627392F989B043CAFD8C97131EF35EEC445298D55CD47B1D0ACC29EA00"
+  }
+}

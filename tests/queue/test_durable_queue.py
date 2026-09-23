@@ -4,6 +4,21 @@ from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import unittest
+
+
+class E04LegacyQueueCompatibilityTests(unittest.TestCase):
+    def test_legacy_row_defaults_and_idempotent_success(self):
+        from datetime import datetime, timedelta, timezone
+        from packages.queue.models import QueueJob, QueueStatus
+        from packages.queue.service import DurableQueue, QueueTokenError
+        now=datetime(2026,9,17,tzinfo=timezone.utc)
+        q=DurableQueue();job=QueueJob('legacy-e04','run','legacy payload',now,2)
+        self.assertIsNone(job.graph_id);self.assertEqual((),job.dependency_ids)
+        q.enqueue(job);claim=q.claim('worker',now,visibility_timeout=timedelta(seconds=2))
+        first=q.complete(job.job_id,claim.execution_fencing_token,now)
+        self.assertEqual(first,q.complete(job.job_id,claim.execution_fencing_token,now))
+        self.assertEqual(QueueStatus.SUCCEEDED,first.status)
+        with self.assertRaises(QueueTokenError):q.complete(job.job_id,'foreign',now)
 import uuid
 
 from packages.queue.models import QueueJob, QueueStatus

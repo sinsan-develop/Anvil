@@ -1,0 +1,3 @@
+# C-25 Invocation Prompt
+
+Implement `WI-C-25-R1` in the canonical Anvil worktree. Follow `docs/work_orders/C-25_WORK_INSTRUCTION.md` exactly. Start with RED tests, then additive GREEN for transport-neutral SNS/Daon User envelopes, identity/session/command/result, replay/idempotency, rate/retry/DLQ/receipt/audit/privacy and high-risk fail-closed boundaries. Preserve C-22/C-23/C-24 provenance and keep Telegram/Kakao/external IO deferred. Stay within exact allowed paths, run focused/regression/compile/diff/checker verification, write the completion report, and return `COMPLETED`, `FAILURE_REPORT`, or `INCOMPLETE`.

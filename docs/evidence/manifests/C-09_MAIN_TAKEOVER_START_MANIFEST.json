@@ -1,0 +1,423 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-09_MAIN_TAKEOVER_START",
+  "artifact_id": "C09-MAIN-TAKEOVER-START",
+  "package_id": "C-09",
+  "created_at": "2026-09-14T06:00:00+09:00",
+  "event_sequence": 824,
+  "historical_event_sequence": 814,
+  "appended_event_count": 10,
+  "historical_raw_event_prefix": {
+    "bytes": 2436190,
+    "sha256": "C6A8C72CC0514FBB936FC01053B3AFFF54B65B00EC09A7335BD90D2F44228F0C"
+  },
+  "projection_mode": "C09_MAIN_TAKEOVER_EXACT14",
+  "validated_base_commit": "85d72196eaafe3e458f8aea7016df94f810df086",
+  "authority": {
+    "revision_class": "MAIN_TAKEOVER_AT_VALID_FAILURE_3_UNCHANGED_SCOPE",
+    "authority_basis": [
+      "APPROVED_WORK_PLAN_C09",
+      "C08_ACCEPTED",
+      "A13_PREEXISTING_READ_ONLY_SCAN",
+      "DESIGN_14_1_27_2_27_3_41"
+    ],
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_sha256": "FBCFAA024ADD77AE0FE85398C5EAF99A0111F260D7E917EFEDD3226E29124B3C",
+    "invocation_sha256": "EE90F26FEB583E49D01F943518AC02400CD0793F869EB838DCA8AEC18C191DC8",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "supersedes": {
+      "path": "docs/work_orders/C-09_WORK_INSTRUCTION.md",
+      "sha256": "A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8",
+      "reason": "LOWER_AUTHORITY_OBSERVE_ONLY_CONFLICTS_WITH_APPROVED_C09_BACKENDS"
+    },
+    "carry_forward_regression": [
+      "AV-SAFE-028"
+    ],
+    "predecessor": {
+      "commit": "85d72196eaafe3e458f8aea7016df94f810df086",
+      "sole_parent": "74f9878de521a6bc5a2c4f5165332c76edfc1354",
+      "manifest_path": "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json",
+      "manifest_sha256": "098DC75E0A748652E76DC43392B028E842AEB0A3995F3FFD5F99093899D86778",
+      "events_sha256": "E60F0C3AA671A5C98AE449C3FDDD33B23C9512B65CDEEC1E409DD2275A66014D"
+    },
+    "acceptance": [
+      {
+        "requirement_id": "AV-SAFE-010",
+        "level": "L3",
+        "method": "AN",
+        "evidence": [
+          "E-GIT",
+          "E-DIFF"
+        ]
+      },
+      {
+        "requirement_id": "AV-SAFE-011",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-GIT"
+        ]
+      },
+      {
+        "requirement_id": "AV-STAT-021",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-GIT",
+          "E-EVT"
+        ]
+      }
+    ],
+    "scope_change": "UNCHANGED",
+    "failure_counting": {
+      "valid_failure_count": 3,
+      "same_failure_count": 3,
+      "rework_attempt": 3,
+      "count_increment": 1,
+      "spec_and_quality_same_snapshot_counted_once": true,
+      "formal_developer_failure_report_count": 0,
+      "takeover_status": "MAIN_TAKEOVER_AT_3"
+    },
+    "review_reports": [
+      {
+        "path": "docs/04_test_reports/C-09_R4_PRODUCT_SPEC_REVIEW_ORIGINAL.md",
+        "bytes": 8961,
+        "sha256": "6D0F001AB4AB553FE4DD501C4A6090AB94B5235C14BC8C6570FC0D06FFC3EDD1",
+        "verdict": "REWORK_REQUIRED",
+        "critical": 2,
+        "important": 8,
+        "minor": 1
+      },
+      {
+        "path": "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+        "bytes": 18269,
+        "sha256": "E109EB0D58613E3ABF67D42801AA0C9573E6BBD8EAD70AF6899DCF5ADCEFB021",
+        "verdict": "REWORK_REQUIRED",
+        "critical": 0,
+        "important": 11,
+        "minor": 0
+      }
+    ],
+    "corrective_axes": [
+      "C09-MT-DOCKER-SCOPE-ENVELOPE",
+      "C09-MT-TRUSTED-MANIFEST-VERIFIER",
+      "C09-MT-FULL-OWNER-IDENTITY",
+      "C09-MT-NONMAPPING-INGRESS-AUDIT",
+      "C09-MT-PER-SESSION-PERMISSION-RESERVATION",
+      "C09-MT-WORKSPACE-RETAINED-FENCE",
+      "C09-MT-OUTPUT-SCHEMA-TERMINALIZATION",
+      "C09-MT-CANONICAL-RECEIPT-LINKAGE",
+      "C09-MT-EARLY-CUMULATIVE-BOUNDS",
+      "C09-MT-PUBLIC-ORPHAN-RECOVERY",
+      "C09-MT-CANCEL-BEFORE-IO-FENCE",
+      "C09-MT-REVOKE-BEFORE-IO-TERMINALIZATION",
+      "C09-MT-DOCKER-PER-HANDLE-CORRELATION",
+      "C09-MT-REQUEST-ID-UNIQUENESS",
+      "C09-MT-PHYSICAL-HOSTILE-EVIDENCE-HONESTY"
+    ]
+  },
+  "takeover_packet_sha256": "F405F1AB6BBC54CE7970DA9B33D01C0B36C3B5227F306074D9B9388F805B7F72",
+  "failure_counting": {
+    "valid_failure_count": 3,
+    "same_failure_count": 3,
+    "rework_attempt": 3,
+    "count_increment": 1,
+    "spec_and_quality_same_snapshot_counted_once": true,
+    "formal_developer_failure_report_count": 0,
+    "takeover_status": "MAIN_TAKEOVER_AT_3"
+  },
+  "corrective_axes": [
+    "C09-MT-DOCKER-SCOPE-ENVELOPE",
+    "C09-MT-TRUSTED-MANIFEST-VERIFIER",
+    "C09-MT-FULL-OWNER-IDENTITY",
+    "C09-MT-NONMAPPING-INGRESS-AUDIT",
+    "C09-MT-PER-SESSION-PERMISSION-RESERVATION",
+    "C09-MT-WORKSPACE-RETAINED-FENCE",
+    "C09-MT-OUTPUT-SCHEMA-TERMINALIZATION",
+    "C09-MT-CANONICAL-RECEIPT-LINKAGE",
+    "C09-MT-EARLY-CUMULATIVE-BOUNDS",
+    "C09-MT-PUBLIC-ORPHAN-RECOVERY",
+    "C09-MT-CANCEL-BEFORE-IO-FENCE",
+    "C09-MT-REVOKE-BEFORE-IO-TERMINALIZATION",
+    "C09-MT-DOCKER-PER-HANDLE-CORRELATION",
+    "C09-MT-REQUEST-ID-UNIQUENESS",
+    "C09-MT-PHYSICAL-HOSTILE-EVIDENCE-HONESTY"
+  ],
+  "accepted": false,
+  "c09_status": "REWORK_MAIN_TAKEOVER",
+  "c10_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c09-main-takeover-epoch-4-001",
+    "fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
+    "execution_fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
+    "lease_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "subject_ref": "C-09",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "85d72196eaafe3e458f8aea7016df94f810df086",
+    "dispatch_head": "85d72196eaafe3e458f8aea7016df94f810df086",
+    "issued_at": "2026-09-14T06:00:00+09:00",
+    "expires_at": "2026-09-14T18:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "assigned_agent": "main-agent-eoul"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c09-main-takeover-epoch-4-001",
+    "worker_lease_id": "worker-lease-c09-main-takeover-epoch-4-001",
+    "fencing_token": "c09-main-takeover-write-fence-epoch-4-e6b86e541d0887f01",
+    "write_fencing_token": "c09-main-takeover-write-fence-epoch-4-e6b86e541d0887f01",
+    "execution_fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
+    "write_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "subject_ref": "C-09",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T06:00:00+09:00",
+    "expires_at": "2026-09-14T18:00:00+09:00",
+    "path_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "status": "ACTIVE",
+    "assigned_agent": "main-agent-eoul"
+  },
+  "product_exact_paths": [
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    "packages/execution_backends/__init__.py",
+    "packages/execution_backends/docker.py",
+    "packages/execution_backends/git_worktree.py",
+    "packages/execution_backends/models.py",
+    "packages/execution_backends/registry.py",
+    "packages/paths/identity.py",
+    "packages/tool_gateway/__init__.py",
+    "packages/tool_gateway/gateway.py",
+    "packages/tool_gateway/models.py",
+    "packages/tool_gateway/registry.py",
+    "tests/execution_backends/test_docker.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/execution_backends/test_registry.py",
+    "tests/integration/test_c09_repository_workspace.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/tool_gateway/test_gateway.py",
+    "tests/tool_gateway/test_tool_registry.py"
+  ],
+  "product_exact_path_list_sha256": "AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F",
+  "product_raw_map_sha256": "6AE618D40896B16A0AD69BFBEDFBB900F9B2E22F9FEDD9DF8750F5C2C77B58AF",
+  "product_raw": {
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md": {
+      "bytes": 7222,
+      "sha256": "89D95D90CCEB839B5265166200DCFD36C8C7A865790F68A661D94755601034A7"
+    },
+    "packages/execution_backends/__init__.py": {
+      "bytes": 953,
+      "sha256": "AA4156344505C1EA5F8ADC8E6AA61CAEEF4C3CEA2A6502D234477967092D2E88"
+    },
+    "packages/execution_backends/docker.py": {
+      "bytes": 17020,
+      "sha256": "C71B0CCF57811C89C68D906C9AF659A13FB8025FDCDD38D9FC237004ED6B92E6"
+    },
+    "packages/execution_backends/git_worktree.py": {
+      "bytes": 19833,
+      "sha256": "03E9B9DF526E479D1F13FC991A138822B5FB6A7DDF3A5B54196FF9527DF34B4D"
+    },
+    "packages/execution_backends/models.py": {
+      "bytes": 28971,
+      "sha256": "15AD6463A1B5771F8650F723B1D21A4A3E580CD7C676BF6D177FBC474578C850"
+    },
+    "packages/execution_backends/registry.py": {
+      "bytes": 2450,
+      "sha256": "86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"
+    },
+    "packages/paths/identity.py": {
+      "bytes": 9568,
+      "sha256": "2EF117913B69DFF60D7EC6B755C96FBEA214BEA33A8F479DC54F46897991AA43"
+    },
+    "packages/tool_gateway/__init__.py": {
+      "bytes": 527,
+      "sha256": "805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"
+    },
+    "packages/tool_gateway/gateway.py": {
+      "bytes": 14088,
+      "sha256": "400DD866002C4DB65977018239D56D7B2477AC0E362E1D73C705401C1C832ACD"
+    },
+    "packages/tool_gateway/models.py": {
+      "bytes": 4791,
+      "sha256": "628E4C67E48828EB377BD62CF9A0DDD9B6A5FDD74AB750BF48AC79CB248E1032"
+    },
+    "packages/tool_gateway/registry.py": {
+      "bytes": 6216,
+      "sha256": "CACF59E82FFA228CF580313CEA139A47B378ABDA1DDEF8642CB46C89AECA5EE8"
+    },
+    "tests/execution_backends/test_docker.py": {
+      "bytes": 13316,
+      "sha256": "295AD4A61768646DC8718A1BA6FA704BA4A93E0D27E79FA665E4E8B36703A02F"
+    },
+    "tests/execution_backends/test_git_worktree.py": {
+      "bytes": 18576,
+      "sha256": "A76CBF7943F6B070B4F2D319DB09D47D4F1CF092D5029578748DC939488C50BB"
+    },
+    "tests/execution_backends/test_registry.py": {
+      "bytes": 1934,
+      "sha256": "F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"
+    },
+    "tests/integration/test_c09_repository_workspace.py": {
+      "bytes": 4814,
+      "sha256": "190FE7996F75505E7AD537F28D07027A1E6567B343305AFC0460B93DA02E0726"
+    },
+    "tests/paths/test_conflict_scope_identity.py": {
+      "bytes": 5458,
+      "sha256": "DA99CA6D64A800322A24551769F703A92A07F54ACD30D5CECAC9D5D33DDF6390"
+    },
+    "tests/tool_gateway/test_gateway.py": {
+      "bytes": 11543,
+      "sha256": "E47E261FBB0C2DE9FD4C85E7E958CB2C688C7C780AFDD01B2CB3C46AC1E37CEE"
+    },
+    "tests/tool_gateway/test_tool_registry.py": {
+      "bytes": 1396,
+      "sha256": "F60A3AA1B204D015C5622046F7EDDFEF8A4A3A5AA19D5EDC0BE7C8A53597F0F3"
+    }
+  },
+  "product_mutation_count": 0,
+  "exact_paths": [
+    "docs/04_test_reports/C-09_MAIN_TAKEOVER_START_REPORT.md",
+    "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+    "docs/04_test_reports/C-09_R4_PRODUCT_SPEC_REVIEW_ORIGINAL.md",
+    "docs/evidence/manifests/C-09_MAIN_TAKEOVER_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c09-main-takeover-start.json",
+    "docs/validation/C-09_MAIN_TAKEOVER_START_VALIDATION.md",
+    "docs/work_orders/C-09_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-09_MAIN_TAKEOVER_PACKET.json",
+    "docs/work_orders/C-09_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 14,
+  "exact_path_list_sha256": "BDA2215C2AD7CECD1BDFAE660A327F0FC2B204ED9DDAB9D1226690877988BBF8",
+  "target_hash": "A9EF1B92592EE2DB39D3FCA2FDF50601E987FCCF257F6D468418395429614BCE",
+  "self_reference": false,
+  "external_validation": {
+    "actual_docker": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "network": "NOT_ACCESSED",
+    "provider": "NOT_ACCESSED",
+    "telegram": "NOT_ACCESSED",
+    "db": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-09_MAIN_TAKEOVER_START_REPORT.md",
+      "bytes": 728,
+      "sha256": "728633000D5EA9F6A308651369D82FA04B7F6E4B13D010EBABF12273705F2D72"
+    },
+    {
+      "path": "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+      "bytes": 18269,
+      "sha256": "E109EB0D58613E3ABF67D42801AA0C9573E6BBD8EAD70AF6899DCF5ADCEFB021"
+    },
+    {
+      "path": "docs/04_test_reports/C-09_R4_PRODUCT_SPEC_REVIEW_ORIGINAL.md",
+      "bytes": 8961,
+      "sha256": "6D0F001AB4AB553FE4DD501C4A6090AB94B5235C14BC8C6570FC0D06FFC3EDD1"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 191413,
+      "sha256": "F6BD38AA0246E94ABF79C70E3F304E0BD42A50509869C6F4DBBA2C502D8F869D"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 942865,
+      "sha256": "C267C9E2A69AC82CB5F0E13A06A107AFAE42B4B009FC8AD038B04DC6F5A7CB20"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2460259,
+      "sha256": "6D4DCE31ACB150B1D8E0B1080B96033A62118B0F0910A75E01C940D3EBC98BBE"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c09-main-takeover-start.json",
+      "bytes": 955,
+      "sha256": "7AC3C12F47EFF3A2393CEBE44FC88CD47EFB7467914F23579925BB88C7193C35"
+    },
+    {
+      "path": "docs/validation/C-09_MAIN_TAKEOVER_START_VALIDATION.md",
+      "bytes": 677,
+      "sha256": "16C797DF9688244D3FEBB2C6A171E326C619B6F934885428A4754D4A8210ED1E"
+    },
+    {
+      "path": "docs/work_orders/C-09_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+      "bytes": 486,
+      "sha256": "EE90F26FEB583E49D01F943518AC02400CD0793F869EB838DCA8AEC18C191DC8"
+    },
+    {
+      "path": "docs/work_orders/C-09_MAIN_TAKEOVER_PACKET.json",
+      "bytes": 11986,
+      "sha256": "F405F1AB6BBC54CE7970DA9B33D01C0B36C3B5227F306074D9B9388F805B7F72"
+    },
+    {
+      "path": "docs/work_orders/C-09_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+      "bytes": 1693,
+      "sha256": "FBCFAA024ADD77AE0FE85398C5EAF99A0111F260D7E917EFEDD3226E29124B3C"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3407162,
+      "sha256": "6D28E5F0CAE4CB22B1E380C9F9DC645564090E7D437D0E8BBC7F22E5A1AE44E3"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 968950,
+      "sha256": "C96F8C7F2DE329F82CA414C07F3C46B861132EF458A3F70763BA38805B39F58C"
+    }
+  ]
+}

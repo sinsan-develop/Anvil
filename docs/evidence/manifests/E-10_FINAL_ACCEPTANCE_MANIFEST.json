@@ -1,0 +1,281 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E10_FINAL_ACCEPTANCE",
+  "artifact_id": "E10-FINAL-ACCEPTANCE-20260918",
+  "created_at": "2026-09-18T00:44:55+09:00",
+  "package_id": "E-10",
+  "event_sequence": 1165,
+  "historical_event_sequence": 1160,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3788759,
+    "sha256": "1748605B407E90D5AD87369F26A1F492E732229171C8465CAF8F7DABC93E1A49"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-10_COMPLETION_REPORT.md": {
+      "bytes": 15653,
+      "sha256": "25A2AC88A9F15A2954E6E794A783E640D65581FCDBA050486FA4C3AC1033D688"
+    },
+    "packages/git_adapter/__init__.py": {
+      "bytes": 167,
+      "sha256": "ACA315A3F72E1EB4DB6AA948CE083564B2BA89EA1A175AC163D74A535B7745A4"
+    },
+    "packages/git_adapter/models.py": {
+      "bytes": 7427,
+      "sha256": "5430AA20A5FDB6DF14600EBD986DAF7366C5E664B9CD837A7983E776D28EBA9B"
+    },
+    "packages/git_adapter/service.py": {
+      "bytes": 17576,
+      "sha256": "B9CC125F7538B2EDB6E1E747E835C9DF9612E309D22DD58E0BDABD31ABBBB6A8"
+    },
+    "tests/git_adapter/test_git_adapter_e10.py": {
+      "bytes": 27226,
+      "sha256": "FCD7CCB4B9E68AEB7BC272B5E28F1CA0A43115636A71FE1F514F13D6913B5421"
+    }
+  },
+  "evidence_target_hash": "408009AA84004DDB5F885F047D940E4565942E72EAA2987E440D556C0BC521B1",
+  "independent_reviews": {
+    "spec": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1160,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "unverified": [
+        "actual Git/remote/PR/filesystem mutation",
+        "OS physical identity capture",
+        "durable multi-process authority and crash recovery",
+        "DB/provider/network"
+      ],
+      "focused": {
+        "passed": 401,
+        "skipped": 0
+      },
+      "probes": {
+        "return_alias": "CLOSED",
+        "impossible_commit_identity": "CLOSED",
+        "authorization_credentials": "CLOSED"
+      }
+    },
+    "quality": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1160,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "unverified": [
+        "actual Git/remote/PR/filesystem mutation",
+        "OS physical identity capture",
+        "durable multi-process authority and crash recovery",
+        "DB/provider/network"
+      ],
+      "focused": {
+        "passed": 173,
+        "skipped": 0
+      },
+      "probes": {
+        "ref_alias": "CLOSED",
+        "audit_pagination": "CLOSED",
+        "credential_variants": 32,
+        "concurrent_dispatch": "PASS"
+      }
+    }
+  },
+  "external_validation": {
+    "git_mutation": "NOT_EXECUTED",
+    "remote": "NOT_EXECUTED",
+    "push": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED",
+    "merge": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "os_identity": "NOT_INTEGRATED",
+    "durable_authority": "NOT_INTEGRATED",
+    "multiprocess_persistence": "NOT_INTEGRATED",
+    "crash_recovery": "NOT_INTEGRATED",
+    "fake_driver_contract": "VERIFIED_EXTERNAL_SIDE_EFFECTS_0"
+  },
+  "formal_failure_count": 0,
+  "review_rework_rounds": 2,
+  "resolved_review_findings": [
+    {
+      "finding_id": "E10-REF-ALIAS",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "full refs/heads aliases are denied; canonical short refs only"
+    },
+    {
+      "finding_id": "E10-CREDENTIAL-NONDISCLOSURE",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "normalized authorization, token and private-key credential forms are fail-closed"
+    },
+    {
+      "finding_id": "E10-AUDIT-PAGINATION",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "bounded stable cursor pages preserve every append-only sequence"
+    },
+    {
+      "finding_id": "E10-RETURN-ALIAS",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "returned receipts are detached from canonical grant, receipt and audit records"
+    },
+    {
+      "finding_id": "E10-IMPOSSIBLE-COMMIT",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "nonempty commit and no-ff merge reject self-parent result identities"
+    },
+    {
+      "finding_id": "E10-AUTHORIZATION-SCHEME",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "all nonempty HTTP Authorization credential schemes are denied after normalization"
+    }
+  ],
+  "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "work_instruction_sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
+  "invocation_sha256": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D",
+  "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "active_leases": 0,
+  "e10_status": "ACCEPTED",
+  "e11_status": "READY_FOR_WORK_INSTRUCTION",
+  "product_exact_paths": [
+    "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+    "packages/git_adapter/__init__.py",
+    "packages/git_adapter/models.py",
+    "packages/git_adapter/service.py",
+    "tests/git_adapter/test_git_adapter_e10.py"
+  ],
+  "frozen_product_sha256": {
+    "docs/04_test_reports/E-10_COMPLETION_REPORT.md": "25A2AC88A9F15A2954E6E794A783E640D65581FCDBA050486FA4C3AC1033D688",
+    "packages/git_adapter/__init__.py": "ACA315A3F72E1EB4DB6AA948CE083564B2BA89EA1A175AC163D74A535B7745A4",
+    "packages/git_adapter/models.py": "5430AA20A5FDB6DF14600EBD986DAF7366C5E664B9CD837A7983E776D28EBA9B",
+    "packages/git_adapter/service.py": "B9CC125F7538B2EDB6E1E747E835C9DF9612E309D22DD58E0BDABD31ABBBB6A8",
+    "tests/git_adapter/test_git_adapter_e10.py": "FCD7CCB4B9E68AEB7BC272B5E28F1CA0A43115636A71FE1F514F13D6913B5421"
+  },
+  "frozen_control_sha256": {
+    "docs/work_orders/E-10_WORK_INSTRUCTION.md": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
+    "docs/work_orders/E-10_INVOCATION_PROMPT.md": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-10_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e10-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e10-start.json",
+    "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+    "packages/git_adapter/__init__.py",
+    "packages/git_adapter/models.py",
+    "packages/git_adapter/service.py",
+    "scripts/check_project_progress.py",
+    "tests/git_adapter/test_git_adapter_e10.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 16,
+  "projection_mode": "E10_FINAL_ACCEPTANCE_EXACT16",
+  "validated_base_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+      "bytes": 15653,
+      "sha256": "25A2AC88A9F15A2954E6E794A783E640D65581FCDBA050486FA4C3AC1033D688"
+    },
+    {
+      "path": "docs/evidence/manifests/E-10_START_MANIFEST.json",
+      "bytes": 4669,
+      "sha256": "228BAE3DE49C13565046E28C2DC54953BFA4858F5BB282F12E119F7EB4342887"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 216956,
+      "sha256": "517E6D3BB4472ABD6F685DAD8C07A3ECF82734ACF3964C3C8A08585A843E73AA"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1167710,
+      "sha256": "B104FBC8BF335E96E3EBB317D499DB56B243C13396A8735F7A6E626C2D127155"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3806757,
+      "sha256": "1135B843CF1EBC0359519C66ABA8835D942DC36ED90DF2DDFBD04C5DD5F24FCA"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e10-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "3150037109DFC9C282A24B230070F2C0FC5110C0BB4A8490A7240819D57A5EE2"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e10-start.json",
+      "bytes": 835,
+      "sha256": "4153706922669F9E9C4CF06B06DF223C4C538EA4F58C40A28D8B68B74A5888CC"
+    },
+    {
+      "path": "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+      "bytes": 451,
+      "sha256": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D"
+    },
+    {
+      "path": "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+      "bytes": 4731,
+      "sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322"
+    },
+    {
+      "path": "packages/git_adapter/__init__.py",
+      "bytes": 167,
+      "sha256": "ACA315A3F72E1EB4DB6AA948CE083564B2BA89EA1A175AC163D74A535B7745A4"
+    },
+    {
+      "path": "packages/git_adapter/models.py",
+      "bytes": 7427,
+      "sha256": "5430AA20A5FDB6DF14600EBD986DAF7366C5E664B9CD837A7983E776D28EBA9B"
+    },
+    {
+      "path": "packages/git_adapter/service.py",
+      "bytes": 17576,
+      "sha256": "B9CC125F7538B2EDB6E1E747E835C9DF9612E309D22DD58E0BDABD31ABBBB6A8"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4643811,
+      "sha256": "CBAC27B88D09F3A5D75AF1CCB330D39EB05C064005E60285E8A3E636D7CFDA76"
+    },
+    {
+      "path": "tests/git_adapter/test_git_adapter_e10.py",
+      "bytes": 27226,
+      "sha256": "FCD7CCB4B9E68AEB7BC272B5E28F1CA0A43115636A71FE1F514F13D6913B5421"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1219310,
+      "sha256": "C869C17F7DF08A5B90DE426168226EB7BFC6A0B5F6E22FD5BC18B27A9E212754"
+    }
+  ]
+}

@@ -7,10 +7,10 @@ lease/tool 회수나 상태 전이를 수행하지 않으며, 세 번째 유효 
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from threading import RLock
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from .failure_report import validate_failure_report
 from .result_envelope import ResultEnvelope, canonical_hash
@@ -20,6 +20,7 @@ class FailureLedgerReasonCode(StrEnum):
     INVALID_FAILURE_REPORT = "INVALID_FAILURE_REPORT"
     DUPLICATE_RESULT = "DUPLICATE_RESULT"
     CONFLICTING_REPLAY = "CONFLICTING_REPLAY"
+    TAKEOVER_ALREADY_REQUIRED = "TAKEOVER_ALREADY_REQUIRED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +36,8 @@ class FailureLedgerEntry:
     valid_failure_count: int
     takeover_required: bool
     reason_codes: tuple[str, ...] = ()
+    attempt_id: str = ""
+    attempt_number: int = 0
 
     @property
     def failure_key(self) -> str | None:
@@ -62,6 +65,23 @@ class FailureLedgerReceipt:
     failure_key: str | None = None
     reason_codes: tuple[str, ...] = ()
     entry: FailureLedgerEntry | None = None
+    _prepared: object | None = field(default=None, repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _FailureLedgerState:
+    counts: dict[str, FailureLedgerProjection]
+    results: dict[str, tuple[str, FailureLedgerEntry]]
+    attempt_ids: dict[str, FailureLedgerEntry]
+    attempt_numbers: dict[tuple[str, int], FailureLedgerEntry]
+    entries: tuple[FailureLedgerEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _PreparedFailureLedgerCommit:
+    base_state: _FailureLedgerState
+    next_state: _FailureLedgerState
+    entry: FailureLedgerEntry
 
 
 class FailureLedger:
@@ -69,48 +89,114 @@ class FailureLedger:
 
     def __init__(self) -> None:
         self._lock = RLock()
-        self._counts: dict[str, FailureLedgerProjection] = {}
-        self._results: dict[str, tuple[str, FailureLedgerEntry]] = {}
-        self._attempt_ids: dict[tuple[str, str], FailureLedgerEntry] = {}
-        self._attempt_numbers: dict[tuple[str, int], FailureLedgerEntry] = {}
-        self._entries: list[FailureLedgerEntry] = []
+        self._state = _FailureLedgerState({}, {}, {}, {}, ())
+        self._prepared_commits: dict[
+            object, tuple[FailureLedgerReceipt, _PreparedFailureLedgerCommit]
+        ] = {}
+
+    @property
+    def _results(self) -> dict[str, tuple[str, FailureLedgerEntry]]:
+        return self._state.results
+
+    @_results.setter
+    def _results(self, value: dict[str, tuple[str, FailureLedgerEntry]]) -> None:
+        self._state = replace(self._state, results=value)
 
     @property
     def entries(self) -> tuple[FailureLedgerEntry, ...]:
         with self._lock:
-            return tuple(self._entries)
+            return self._state.entries
 
     @property
     def valid_failure_count(self) -> int:
         with self._lock:
-            return sum(item.valid_failure_count for item in self._counts.values())
+            return sum(item.valid_failure_count for item in self._state.counts.values())
 
     @property
     def takeover_candidates(self) -> tuple[FailureLedgerProjection, ...]:
         with self._lock:
-            return tuple(item for item in self._counts.values() if item.takeover_required)
+            return tuple(
+                self._state.counts[key]
+                for key in sorted(self._state.counts)
+                if self._state.counts[key].takeover_required
+            )
 
     def projection(self) -> tuple[FailureLedgerProjection, ...]:
         with self._lock:
-            return tuple(self._counts.values())
+            return tuple(self._state.counts[key] for key in sorted(self._state.counts))
 
     def get(self, failure_key: str) -> FailureLedgerProjection | None:
         with self._lock:
-            return self._counts.get(failure_key)
+            return self._state.counts.get(failure_key)
+
+    def takeover_candidate_receipt(
+        self, failure_key: str,
+    ) -> FailureLedgerReceipt | None:
+        """Return the committed canonical count-3 receipt for C-13.
+
+        Online third-commit receipts identify the triggering arrival. C-13 must
+        instead consume this projection-aligned receipt so its immutable entry
+        names the canonical ``latest_result_id`` for the failure key.
+        """
+
+        if not isinstance(failure_key, str):
+            return None
+        with self._lock:
+            projection = self._state.counts.get(failure_key)
+            if (
+                projection is None
+                or projection.valid_failure_count != 3
+                or not projection.takeover_required
+            ):
+                return None
+            stored = self._state.results.get(projection.latest_result_id)
+            if stored is None:
+                return None
+            entry = stored[1]
+            if (
+                entry.failure_key != failure_key
+                or entry.valid_failure_count != 3
+                or not entry.takeover_required
+            ):
+                return None
+            return FailureLedgerReceipt(
+                True,
+                valid_failure_count=3,
+                takeover_required=True,
+                failure_key=failure_key,
+                entry=entry,
+            )
 
     def record(self, result: ResultEnvelope | Mapping[str, Any]) -> FailureLedgerReceipt:
-        """검증된 결과를 한 번만 집계한다.
+        """검증된 결과를 standalone 원장 transaction으로 한 번만 집계한다.
 
         동일 ``result_id``와 canonical hash는 duplicate receipt이며 원장을
         다시 증가시키지 않는다. 같은 id의 다른 payload는 fail-closed다.
+        반환 receipt는 이미 commit되었으므로 C-07의 cross-component transaction에
+        재사용할 수 없다. C-07은 ``prepare`` receipt를 소비해야 한다.
         """
+        with self._lock:
+            receipt = self.prepare(result)
+            if not receipt.accepted or receipt.duplicate:
+                return receipt
+            if not self.commit_prepared(receipt):  # pragma: no cover - protected by this lock
+                return FailureLedgerReceipt(
+                    False,
+                    reason_codes=(FailureLedgerReasonCode.CONFLICTING_REPLAY.value,),
+                    failure_key=receipt.failure_key,
+                )
+            return replace(receipt, _prepared=None)
+
+    def prepare(self, result: ResultEnvelope | Mapping[str, Any]) -> FailureLedgerReceipt:
+        """C-07 transaction용 다음 state를 내부에 준비하고 publish하지 않는다."""
+
         candidate, result_hash = self._normalize(result)
         if candidate is None:
-            # 입력 identity를 신뢰하지 않으므로 별도 원장 항목을 만들지 않는다.
             return FailureLedgerReceipt(False, reason_codes=(FailureLedgerReasonCode.INVALID_FAILURE_REPORT.value,))
 
         with self._lock:
-            previous = self._results.get(candidate.result_id)
+            state = self._state
+            previous = state.results.get(candidate.result_id)
             if previous is not None:
                 prior_hash, prior_entry = previous
                 if prior_hash == result_hash:
@@ -125,9 +211,11 @@ class FailureLedger:
                     failure_key=prior_entry.failure_key, entry=prior_entry,
                 )
 
-            prior_attempt = self._attempt_ids.get((candidate.delegation_id, candidate.attempt_id))
+            prior_attempt = state.attempt_ids.get(candidate.attempt_id)
             if prior_attempt is None:
-                prior_attempt = self._attempt_numbers.get((candidate.delegation_id, candidate.attempt_number))
+                prior_attempt = state.attempt_numbers.get(
+                    (candidate.step_lineage_id, candidate.attempt_number)
+                )
             if prior_attempt is not None:
                 return FailureLedgerReceipt(
                     False, reason_codes=(FailureLedgerReasonCode.CONFLICTING_REPLAY.value,),
@@ -139,28 +227,166 @@ class FailureLedger:
                 return FailureLedgerReceipt(False, reason_codes=validation.reason_codes)
 
             key = f"{candidate.step_lineage_id}|{candidate.failure_fingerprint}"
-            prior = self._counts.get(key)
-            count = 1 if prior is None else prior.valid_failure_count + 1
-            takeover = count >= 3
-            projection = FailureLedgerProjection(
-                failure_key=key, step_lineage_id=candidate.step_lineage_id,
-                failure_fingerprint=candidate.failure_fingerprint or "",
-                valid_failure_count=count, takeover_required=takeover,
-                latest_result_id=candidate.result_id,
-            )
-            entry = FailureLedgerEntry(
-                sequence=len(self._entries) + 1, result_id=candidate.result_id,
+            prior = state.counts.get(key)
+            if prior is not None and prior.takeover_required:
+                return FailureLedgerReceipt(
+                    False,
+                    valid_failure_count=prior.valid_failure_count,
+                    takeover_required=True,
+                    failure_key=key,
+                    reason_codes=(FailureLedgerReasonCode.TAKEOVER_ALREADY_REQUIRED.value,),
+                )
+            draft = FailureLedgerEntry(
+                sequence=0, result_id=candidate.result_id,
                 result_hash=result_hash, step_lineage_id=candidate.step_lineage_id,
                 failure_fingerprint=candidate.failure_fingerprint, accepted=True,
-                valid_failure_count=count, takeover_required=takeover,
+                valid_failure_count=0, takeover_required=False,
+                attempt_id=candidate.attempt_id, attempt_number=candidate.attempt_number,
             )
-            self._counts[key] = projection
-            self._entries.append(entry)
-            self._results[candidate.result_id] = (result_hash, entry)
-            self._attempt_ids[(candidate.delegation_id, candidate.attempt_id)] = entry
-            self._attempt_numbers[(candidate.delegation_id, candidate.attempt_number)] = entry
-            return FailureLedgerReceipt(True, valid_failure_count=count,
-                                        takeover_required=takeover, failure_key=key, entry=entry)
+            next_entries = self._canonical_entries((*state.entries, draft))
+
+            # Every potentially failing allocation/mutation happens on local copies.
+            next_counts = state.counts.copy()
+            next_counts.clear()
+            next_results = state.results.copy()
+            next_attempt_ids = state.attempt_ids.copy()
+            next_attempt_numbers = state.attempt_numbers.copy()
+            latest_by_key: dict[str, FailureLedgerEntry] = {}
+            for entry in next_entries:
+                entry_key = entry.failure_key
+                if entry_key is None:  # pragma: no cover - accepted entries always have a fingerprint
+                    raise ValueError("accepted failure entry must have a failure key")
+                latest_by_key[entry_key] = entry
+                next_results[entry.result_id] = (entry.result_hash, entry)
+                next_attempt_ids[entry.attempt_id] = entry
+                next_attempt_numbers[(entry.step_lineage_id, entry.attempt_number)] = entry
+            for entry_key, latest in latest_by_key.items():
+                next_counts[entry_key] = FailureLedgerProjection(
+                    failure_key=entry_key,
+                    step_lineage_id=latest.step_lineage_id,
+                    failure_fingerprint=latest.failure_fingerprint or "",
+                    valid_failure_count=latest.valid_failure_count,
+                    takeover_required=latest.takeover_required,
+                    latest_result_id=latest.result_id,
+                )
+
+            canonical_entry = next_results[candidate.result_id][1]
+            aggregate_count = next_counts[key].valid_failure_count
+            receipt_entry = replace(
+                canonical_entry,
+                valid_failure_count=aggregate_count,
+                takeover_required=aggregate_count == 3,
+            )
+            next_state = _FailureLedgerState(
+                next_counts, next_results, next_attempt_ids,
+                next_attempt_numbers, next_entries,
+            )
+            prepared = _PreparedFailureLedgerCommit(
+                state, next_state, receipt_entry,
+            )
+            token = object()
+            receipt = FailureLedgerReceipt(
+                True,
+                valid_failure_count=aggregate_count,
+                takeover_required=aggregate_count == 3,
+                failure_key=receipt_entry.failure_key,
+                entry=receipt_entry,
+                _prepared=token,
+            )
+            self._prepared_commits[token] = (receipt, prepared)
+            return receipt
+
+    def verify_prepared(self, receipt: FailureLedgerReceipt) -> bool:
+        with self._lock:
+            return self._verified_prepared(receipt) is not None
+
+    def commit_prepared(self, receipt: FailureLedgerReceipt) -> bool:
+        """Publish a prepared receipt as a standalone ledger transaction."""
+
+        return self._commit_prepared(receipt)
+
+    def _commit_prepared(
+        self, receipt: FailureLedgerReceipt, *,
+        publish: Callable[[], None] | None = None,
+        rollback: Callable[[], None] | None = None,
+    ) -> bool:
+        """Publish an enlisted C-07 state and ledger state under both locks.
+
+        ``publish`` must perform only the pre-built C-07 state-reference swap. If
+        it raises, the ledger state remains unchanged.
+        """
+
+        with self._lock:
+            prepared = self._verified_prepared(receipt)
+            if prepared is None:
+                return False
+            compensation_required = publish is not None and rollback is not None
+            try:
+                if publish is not None:
+                    publish()
+                self._state = prepared.next_state
+            except BaseException:
+                # The assignment above may have swapped the reference before a
+                # custom __setattr__ raises. Restore the exact registered base
+                # without re-entering that fallible override.
+                object.__setattr__(self, "_state", prepared.base_state)
+                if compensation_required:
+                    rollback()
+                raise
+            self._prepared_commits.clear()
+            return True
+
+    def _verified_prepared(
+        self, receipt: FailureLedgerReceipt,
+    ) -> _PreparedFailureLedgerCommit | None:
+        token = receipt._prepared
+        try:
+            registered = self._prepared_commits.get(token)
+        except TypeError:
+            return None
+        if registered is None or registered[0] is not receipt:
+            return None
+        prepared = registered[1]
+        entry = prepared.entry
+        if (
+            prepared.base_state is not self._state
+            or receipt.entry is not entry
+            or type(receipt.accepted) is not bool
+            or type(receipt.duplicate) is not bool
+            or not receipt.accepted
+            or receipt.duplicate
+            or receipt.reason_codes
+            or receipt.valid_failure_count != entry.valid_failure_count
+            or receipt.takeover_required != entry.takeover_required
+            or receipt.failure_key != entry.failure_key
+        ):
+            return None
+        return prepared
+
+    @staticmethod
+    def _canonical_entries(
+        entries: tuple[FailureLedgerEntry, ...],
+    ) -> tuple[FailureLedgerEntry, ...]:
+        ordered = sorted(
+            entries,
+            key=lambda item: (
+                item.failure_key or "", item.attempt_number,
+                item.attempt_id, item.result_id, item.result_hash,
+            ),
+        )
+        counts: dict[str, int] = {}
+        result: list[FailureLedgerEntry] = []
+        for sequence, entry in enumerate(ordered, 1):
+            key = entry.failure_key or ""
+            count = counts.get(key, 0) + 1
+            counts[key] = count
+            result.append(replace(
+                entry,
+                sequence=sequence,
+                valid_failure_count=count,
+                takeover_required=count == 3,
+            ))
+        return tuple(result)
 
     append = record
     accept = record

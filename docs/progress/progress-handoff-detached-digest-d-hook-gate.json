@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D-HOOK-GATE-DIGEST-20260916",
+  "package_id": "D-HOOK-GATE",
+  "event_sequence": 1027,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T21:12:00+09:00",
+  "scope": "seq1027 append-only D-Hook Gate; seq1-1026 preserved; exact160",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1069148,
+    "file_sha256": "187300704C24B29D4CC014638C31EF78204AFC2668C827D01B895C6E6D4D861D",
+    "canonical_json_sha256": "2B12039D236C77C65421C0B6C2026F57E66D43AD4AFD7B481CA10D209636BB65"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 211233,
+    "file_sha256": "2F57FD677F7C22E71736A770A956C4DCFDB274576CAE7C899B6A7844C1E7A91E",
+    "machine_summary_canonical_sha256": "739BFE4CE2812B257A3ACCE700995AA99A8E6C4D2CD4D13CEE090F411A01F641"
+  }
+}

@@ -1,0 +1,267 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E07_FINAL_ACCEPTANCE",
+  "artifact_id": "E07-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T21:07:30+09:00",
+  "package_id": "E-07",
+  "event_sequence": 1138,
+  "historical_event_sequence": 1133,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3701540,
+    "sha256": "29B5648E85A248D732A4573CA0837A498D4EAEF33535465A94E88A0C9304D543"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-07_COMPLETION_REPORT.md": {
+      "bytes": 14594,
+      "sha256": "BAA8952673A6ADFE4ACDF0A6CA32252B2522704DF7BF212107D5586B3AC9734F"
+    },
+    "packages/orchestration/__init__.py": {
+      "bytes": 5451,
+      "sha256": "8784175763D72F61EA8AD8507D02BF769845137A84017C200113A1E3CDFBA67D"
+    },
+    "packages/orchestration/exception_resolver.py": {
+      "bytes": 15495,
+      "sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD"
+    },
+    "tests/orchestration/test_exception_resolver_e07.py": {
+      "bytes": 19382,
+      "sha256": "73E8E2D771B7D173199DC6746325B85AB9C6E0AFC2B65FC5951A2416B5C1066B"
+    }
+  },
+  "evidence_target_hash": "B60A931860B642CA3C1DA911FE5DF168961614315F2B6621599DF2FDD5FF805A",
+  "independent_reviews": {
+    "spec": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1133,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
+      "unverified": [
+        "durable DB inbox",
+        "multiprocess atomicity",
+        "actual scheduler/worker dispatch",
+        "Provider/HTTP/API/UI",
+        "WSL/Docker/deployment",
+        "E08 quota accounting"
+      ],
+      "verdict": "ACCEPT",
+      "focused": {
+        "passed": 91,
+        "skipped": 0,
+        "seconds": 0.85
+      },
+      "probes": {
+        "late_hard_all_policies": "PASS",
+        "ordinary_past_guard": "PASS",
+        "max_events_512_fail_closed": "PASS_BLOCKED"
+      }
+    },
+    "quality": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1133,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
+      "unverified": [
+        "durable DB inbox",
+        "multiprocess atomicity",
+        "actual scheduler/worker dispatch",
+        "Provider/HTTP/API/UI",
+        "WSL/Docker/deployment",
+        "E08 quota accounting"
+      ],
+      "verdict": "ACCEPT",
+      "focused": {
+        "passed": 91,
+        "skipped": 0,
+        "seconds": 0.86
+      },
+      "probes": {
+        "mutable_tz_callback_count": 0,
+        "utc_detachment": "PASS",
+        "concurrent_sequences_1_32": "PASS",
+        "max_events_512_fail_closed": "PASS_BLOCKED"
+      }
+    }
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "actual_worker": "NOT_EXECUTED",
+    "durable_db_inbox": "NOT_INTEGRATED",
+    "multiprocess_atomicity": "NOT_INTEGRATED",
+    "scheduler_runtime_binding": "NOT_INTEGRATED",
+    "e08_quota_accounting": "NOT_IMPLEMENTED",
+    "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
+  },
+  "formal_failure_count": 0,
+  "resolved_review_findings": [
+    {
+      "finding_id": "E07-LATE-HARD-EVIDENCE-REJECTED",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "hard safety evidence appends by arrival and blocks while preserving occurred_at"
+    },
+    {
+      "finding_id": "E07-MUTABLE-TZINFO-ALIAS",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "custom tzinfo rejected callback-free and builtin UTC datetime detached"
+    }
+  ],
+  "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "work_instruction_sha256": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D",
+  "invocation_sha256": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61",
+  "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "active_leases": 0,
+  "e07_status": "ACCEPTED",
+  "e08_status": "READY_FOR_WORK_INSTRUCTION",
+  "product_exact_paths": [
+    "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/exception_resolver.py",
+    "tests/orchestration/test_exception_resolver_e07.py"
+  ],
+  "frozen_product_sha256": {
+    "docs/04_test_reports/E-07_COMPLETION_REPORT.md": "BAA8952673A6ADFE4ACDF0A6CA32252B2522704DF7BF212107D5586B3AC9734F",
+    "packages/orchestration/__init__.py": "8784175763D72F61EA8AD8507D02BF769845137A84017C200113A1E3CDFBA67D",
+    "packages/orchestration/exception_resolver.py": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
+    "tests/orchestration/test_exception_resolver_e07.py": "73E8E2D771B7D173199DC6746325B85AB9C6E0AFC2B65FC5951A2416B5C1066B"
+  },
+  "frozen_control_sha256": {
+    "docs/work_orders/E-07_WORK_INSTRUCTION.md": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D",
+    "docs/work_orders/E-07_INVOCATION_PROMPT.md": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61",
+    "docs/progress/progress-handoff-detached-digest-e07-start.json": "A95AA0F209BE9D8F326B2E23D62A36FA1574FCB9E9181A80A8D6A16345700B86",
+    "docs/evidence/manifests/E-07_START_MANIFEST.json": "996561443145C94A2F1121716CD20BAB7C5EA6971597688D6FCEFD1D16C8BE83",
+    "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json": "B46C09B4077D7007FA931DFDE53D766DD83CC49F85EB4890B6251C6CF9561186",
+    "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json": "BAB324F9019576DC526E5DC31242DC6DD86BEC18A3FCEC95A94FCDDB5C866381"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/E-07_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e07-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-e07-start.json",
+    "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/exception_resolver.py",
+    "scripts/check_project_progress.py",
+    "tests/orchestration/test_exception_resolver_e07.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 17,
+  "projection_mode": "E07_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "bytes": 14594,
+      "sha256": "BAA8952673A6ADFE4ACDF0A6CA32252B2522704DF7BF212107D5586B3AC9734F"
+    },
+    {
+      "path": "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "bytes": 7555,
+      "sha256": "BAB324F9019576DC526E5DC31242DC6DD86BEC18A3FCEC95A94FCDDB5C866381"
+    },
+    {
+      "path": "docs/evidence/manifests/E-07_START_MANIFEST.json",
+      "bytes": 4474,
+      "sha256": "996561443145C94A2F1121716CD20BAB7C5EA6971597688D6FCEFD1D16C8BE83"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 214490,
+      "sha256": "C898E0E0FE2EA708F9BEB19399FB8238FA6F6327E842C580A5675E348D7CBC08"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1147057,
+      "sha256": "DFAC998043F8E3B5866D5FFB40D01A64890C765AEB845B1AB723F8B429C9A0C2"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3718071,
+      "sha256": "7D4B72E7E505871D33FA54D906353AC8BE983BCE12170F8AE26F93DE7D3487C1"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e07-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "E7A8BC9080BB2F61ECF37B427555782CADC8574CC4843DB3362AD5A6BBEE9330"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
+      "bytes": 882,
+      "sha256": "B46C09B4077D7007FA931DFDE53D766DD83CC49F85EB4890B6251C6CF9561186"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e07-start.json",
+      "bytes": 835,
+      "sha256": "A95AA0F209BE9D8F326B2E23D62A36FA1574FCB9E9181A80A8D6A16345700B86"
+    },
+    {
+      "path": "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+      "bytes": 641,
+      "sha256": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61"
+    },
+    {
+      "path": "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+      "bytes": 4849,
+      "sha256": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 5451,
+      "sha256": "8784175763D72F61EA8AD8507D02BF769845137A84017C200113A1E3CDFBA67D"
+    },
+    {
+      "path": "packages/orchestration/exception_resolver.py",
+      "bytes": 15495,
+      "sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4528538,
+      "sha256": "3AE3C1437F761AEACDAE2E2C9BDEDA7E7DE091CA19BEEE5CC2CB09FC445D4E07"
+    },
+    {
+      "path": "tests/orchestration/test_exception_resolver_e07.py",
+      "bytes": 19382,
+      "sha256": "73E8E2D771B7D173199DC6746325B85AB9C6E0AFC2B65FC5951A2416B5C1066B"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1200444,
+      "sha256": "1AD7C9B7DF74CFF278F5C9FE65218E4C960766E992F2CCDD196A10AC9A77324B"
+    }
+  ]
+}

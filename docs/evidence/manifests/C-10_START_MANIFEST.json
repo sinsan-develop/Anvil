@@ -1,0 +1,219 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-10_START",
+  "artifact_id": "C10-START-20260914",
+  "created_at": "2026-09-14T08:00:00+09:00",
+  "package_id": "C-10",
+  "event_sequence": 832,
+  "historical_event_sequence": 829,
+  "appended_event_count": 3,
+  "historical_raw_event_prefix": {
+    "bytes": 2481365,
+    "sha256": "08C8DDBECD0EAB2F4F083E4C8115AB154834FDF4D1BCB49745E2F20897226185"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "c09_status": "ACCEPTED",
+  "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+  "c10_status": "IN_PROGRESS",
+  "c11_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-action-policy-20260914-001",
+    "fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+    "dispatch_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+    "issued_at": "2026-09-14T08:00:00+09:00",
+    "expires_at": "2026-09-14T20:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-action-policy-20260914-001",
+    "worker_lease_id": "worker-lease-c10-action-policy-20260914-001",
+    "fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+    "write_fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T08:00:00+09:00",
+    "expires_at": "2026-09-14T20:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "work_instruction_path": "docs/work_orders/C-10_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "62027847FE7D37A306D7DECE90727F81CFBBFCBD3172CC28EF473A1F8BA7532B",
+  "invocation_path": "docs/work_orders/C-10_INVOCATION_PROMPT.md",
+  "invocation_sha256": "F10BCAF5A706A9E6C196C335F7C5C054941FF90EEAC46CA6891DA2DC3AFB91C0",
+  "authority": {
+    "revision_class": "APPROVED_WORK_PLAN_PACKAGE_START",
+    "authority_basis": [
+      "APPROVED_WORK_PLAN_C10",
+      "C09_ACCEPTED",
+      "DESIGN_ACTION_SAFETY"
+    ],
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_sha256": "62027847FE7D37A306D7DECE90727F81CFBBFCBD3172CC28EF473A1F8BA7532B",
+    "invocation_sha256": "F10BCAF5A706A9E6C196C335F7C5C054941FF90EEAC46CA6891DA2DC3AFB91C0",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "predecessor": {
+      "package_id": "C-09",
+      "status": "ACCEPTED",
+      "sequence": 829,
+      "completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+      "manifest_path": "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+      "manifest_sha256": "44BA3CD8C27060B8A3088C02E9E07C42EF6040DAE795D762306C2A1310FB4658"
+    },
+    "acceptance": [
+      {
+        "requirement_id": "AV-SAFE-006",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-CMD",
+          "E-AUD"
+        ]
+      },
+      {
+        "requirement_id": "AV-SAFE-013",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-CMD",
+          "E-AUD"
+        ]
+      },
+      {
+        "requirement_id": "AV-SAFE-014",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-DIFF",
+          "E-AUD"
+        ]
+      },
+      {
+        "requirement_id": "AV-SAFE-016",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-AUD"
+        ]
+      },
+      {
+        "requirement_id": "AV-SAFE-018",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-DIFF",
+          "E-AUD"
+        ]
+      },
+      {
+        "requirement_id": "AV-STAT-020",
+        "level": "L3",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      }
+    ]
+  },
+  "external_validation": {
+    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+    "secret_manager": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
+    "secret_value": "NOT_ACCESSED"
+  },
+  "record_binding": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_START",
+  "self_reference": false,
+  "sequence": 832,
+  "projection_mode": "C10_START_EXACT7",
+  "validated_base_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+  "branch": "codex/c09-execution-backends-r1",
+  "exact_paths": [
+    "docs/evidence/manifests/C-10_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-start.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 7,
+  "exact_path_list_sha256": "105C693ABAFFFFAAE8FCFC0D7722144B8486A515F4C73354E9E6293790F7F6EA",
+  "product_write_scope": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/**",
+    "packages/tool_gateway/**",
+    "tests/action_policy/**",
+    "tests/tool_gateway/**"
+  ],
+  "product_write_scope_sha256": "776F5BA9C2F82CA0B34CA751816F0BCBF2AF2A027F4D303CEE80B0F5B016EDFC",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 191667,
+      "sha256": "5C3ED101AC47E173F430DF702F18480BB195D7425FC4946CF5FDFA0846A457DE"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 960632,
+      "sha256": "8191AA5A6B381C070953D6ACBFAC5345B643F2C54E78E180FC801943D9854565"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2489334,
+      "sha256": "D438719474B11B5D0A4CB0981890D45D07CFA5DEEDB792B49F0F716AD8B00B05"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c10-start.json",
+      "bytes": 854,
+      "sha256": "114BD64289C59328FE32454E86B010B8C229C9C946DF1757B77FE65B667C6DCB"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3464594,
+      "sha256": "A5E2C51F14C331D377478308020EB7292A57DCCDA21D444751EC365FBEB2DF80"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 980876,
+      "sha256": "106068339E665E92711E7E9BA4898DBE1661E1BEFCE540BE76D3DE7050C8F75C"
+    }
+  ]
+}

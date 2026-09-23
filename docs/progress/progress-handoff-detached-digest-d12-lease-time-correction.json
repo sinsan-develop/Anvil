@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D12-LEASE-TIME-CORRECTION-DIGEST-20260916",
+  "package_id": "D-12",
+  "event_sequence": 1045,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T22:20:00+09:00",
+  "scope": "seq1041-1045 append-only clock correction; seq1-1040 preserved; exact177",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1076969,
+    "file_sha256": "060B8C2BEDEE3B0A2D3F1B3DDAA853C91517938C770AB89C13C86209D8CC7050",
+    "canonical_json_sha256": "8CBA0D0C55003D6626F50154F4D5B77084FC69B408A81A5DCE7E1A5F51AC9131"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 214906,
+    "file_sha256": "16C5C72A5DB4004DCD01F88D881F76170D8D80EA39721DD95330948C6110BD8F",
+    "machine_summary_canonical_sha256": "002BB36E4E2DDE926FF572208D93316AB13F9151BA63140B55790D43F2ABFD86"
+  }
+}

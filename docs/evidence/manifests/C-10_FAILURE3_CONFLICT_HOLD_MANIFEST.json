@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-10_FAILURE3_CONFLICT_HOLD",
+  "artifact_id": "C10-FAILURE3-CONFLICT-HOLD-20260914",
+  "created_at": "2026-09-14T07:11:00+09:00",
+  "package_id": "C-10",
+  "event_sequence": 849,
+  "historical_event_sequence": 845,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 2509714,
+    "sha256": "B48D85C0A7549BA2F419618C25DAAF421FE13D928D0E70C2B84E2192FF608685"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": false,
+  "status": "WAITING_APPROVAL",
+  "c09_status": "ACCEPTED",
+  "c10_status": "WAITING_APPROVAL",
+  "c11_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "independent_reviews": {
+    "verdict": "REWORK",
+    "blocking_findings": 3,
+    "spec_review": {
+      "critical": 1,
+      "important": 2,
+      "minor": 0
+    },
+    "quality_review": {
+      "critical": 1,
+      "important": 1,
+      "minor": 0
+    },
+    "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+    "same_root_cause_occurrence": 3,
+    "finding_ids": [
+      "COMMAND_EFFECT_SCOPE_BYPASS",
+      "RAW_SECRET_KEY_SUFFIX_BYPASS",
+      "HOSTILE_MAPPING_OSERROR_AND_VERIFY_COMPATIBILITY"
+    ]
+  },
+  "review_rework_count": 3,
+  "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+  "product_exact_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py"
+  ],
+  "validated_base_commit": "10d40c0a97d24af63c0a8576d5ed39363628ceb1",
+  "branch": "codex/c09-execution-backends-r1",
+  "exact_paths": [
+    "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-failure3-hold.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 7,
+  "exact_path_list_sha256": "4BC3E2996EBDB9FA4D4B2B772386FFC724C1E67B8F2289FFD857FEFF36383088",
+  "record_binding": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_FAILURE3_HOLD",
+  "self_reference": false,
+  "external_validation": {
+    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+    "secret_manager": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
+    "secret_value": "NOT_ACCESSED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 190580,
+      "sha256": "1C2BA647C7407CCD1A693493B581715EE4C17F8017126A18DC415EDACF5C45FF"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 957014,
+      "sha256": "D39952EF32CA400BCB01463C0083E55C437BA18430EB819FE00B00123E7A7166"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2515337,
+      "sha256": "85BC19B6C99C3405C214785245C031E99643273666948C124CD2F11D2C95DED7"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c10-failure3-hold.json",
+      "bytes": 854,
+      "sha256": "741109A7F391590446FB226AD26384CC816DEBC33A40306FE4A6F56EBFB4E0A6"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3522796,
+      "sha256": "5805546D6E620DDF9F2292756EEC814C954B9D75EEC5534E11A96E3180A2E22D"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 990386,
+      "sha256": "9A3354C11B06F0346CAA70544ED7FD943955849F1EA66B0FDEBB9470157C9AD3"
+    }
+  ]
+}

@@ -681,3 +681,17 @@ CON 21항은 그 자체가 실행 테스트가 아니라 하위 도메인으로 
 - `[historical]` v1.2 SHA-256은 `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3`이며 G-02/G-07/Phase G accepted evidence와 함께 불변이다.
 - v1.3의 유일한 책임 의미 변경은 A-01 역색인의 `AV-FLOW-001` 제거다. A Gate·A-05·B-03 책임과 검증 ID·레벨·심각도·증거 계약은 변경하지 않는다.
 - v1.4는 작업계획 v1.6의 108개 Package와 U-01~U-11 overlay를 추가한다. 기존 255개 AV ID의 정의·레벨·심각도·완료 증거는 삭제하거나 낮추지 않는다.
+
+### v1.7 successor traceability overlay (문서 준비, 구현 전)
+
+`DESIGN-51.1..51.5`는 후속 패키지 `C-22..C-30`과 다음 검증군에 양방향으로 연결된다. 신규 AV ID의 정식 발행은 successor approval binding 이후이며, 현재는 계획 ID로만 예약한다.
+
+| 설계/패키지 | 예약 검증군 | 증거·progress 연결 |
+|---|---|---|
+| 51.1 / C-22 | ROLE-CONTRACT-RED/GREEN | RoleEnvelope·ResultEnvelope·review report |
+| 51.2 / C-23~C-24 | TEAM-MOA-RED/GREEN | Team/MoA provenance·routing evidence |
+| 51.3 / C-25~C-27 | SNS-DAON-RED/GREEN | envelope/receipt/audit 및 Telegram/Kakao contract |
+| 51.4 / C-28~C-29 | UI-TRACE-RED/GREEN | mockup confirmation·same-origin browser evidence |
+| 51.5 / C-30 | WSL-E2E-RED/GREEN | local→WSL formal DB/container/entity/E2E report |
+
+`docs/progress/AGENT_TEAMS_MOA_DESIGN_CHANGE_STATUS.md`, `docs/WORK_STATUS.md`, `docs/progress/BUILD_HANDOFF.md`가 각 패키지의 시작·완료·미검증·rollback 원장을 참조한다. 실제 AV ID와 build-progress event는 C-22 WorkInstruction 발행 시 successor binding과 함께 추가한다.

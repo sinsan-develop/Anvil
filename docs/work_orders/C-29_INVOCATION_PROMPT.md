@@ -1,0 +1,1 @@
+C-29 exact8만 수정하라. C-28 handoff를 same-origin BFF/API와 browser client/runtime에 연결하라. Team/MoA/SNS/Daon User/adapter projection, trace, permission/error/empty/offline/high-risk response를 구현하고 외부·DB·WSL·Provider·Telegram·Kakao·Oracle·deploy는 호출하지 말라. RED→GREEN, C28 regression, route/network assertions, compile/diff-check, C30 handoff, 미검증 범위·rollback·SHA를 보고하라.

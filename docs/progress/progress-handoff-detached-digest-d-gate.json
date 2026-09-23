@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D-GATE-DIGEST-20260917",
+  "package_id": "D-GATE",
+  "event_sequence": 1060,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-17T00:50:00+09:00",
+  "scope": "seq1060 append-only Phase D Gate; seq1-1059 preserved; exact197",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1085172,
+    "file_sha256": "83C30540819459D39A0CAB8D177CB4C0164FEC81EAC64D1FD0D72A2E50CD4ACB",
+    "canonical_json_sha256": "4376A558865C33EA038C31F1483DA4BB09D40EE83A5E8A6F0C681464101B064D"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 215477,
+    "file_sha256": "9A0FC078B317E7E9E3B8BF7FDE32DD7F41DFDDD694E9047BE202590EDBB66740",
+    "machine_summary_canonical_sha256": "8228F9134CD7348F5E202678F74DDF77D23D99AE5C2D227C1B7FF9082D43A244"
+  }
+}

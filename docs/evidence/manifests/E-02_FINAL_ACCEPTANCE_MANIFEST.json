@@ -1,0 +1,321 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E02_FINAL_ACCEPTANCE",
+  "artifact_id": "E02-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T10:13:00+09:00",
+  "package_id": "E-02",
+  "event_sequence": 1080,
+  "historical_event_sequence": 1075,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3520533,
+    "sha256": "419420E5C42AD8363DBDB21EA7370FEA5CD51C77C8B484EAF410F2F68F446E6D"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-02_COMPLETION_REPORT.md": {
+      "bytes": 13391,
+      "sha256": "C6DA6619F377A0288AAEB28D0750287F4FD5B3402B8DA15280CCE5C876A9BDAA"
+    },
+    "packages/agent_team/__init__.py": {
+      "bytes": 3936,
+      "sha256": "41DF5E4E82E46D986F007E248E070021E5C44516A88E2489F818A60050C4ED82"
+    },
+    "packages/agent_team/handoff.py": {
+      "bytes": 25482,
+      "sha256": "C25F39D029F4A51F2A215B02462D849511DB154937B1456C7E8D1FAEC0024873"
+    },
+    "packages/api/role_handoff.py": {
+      "bytes": 1531,
+      "sha256": "2933D7B141F9F37B6089B022F156CC756689249CAFA73B666266F3CD52A3546E"
+    },
+    "tests/agent_team/test_handoff_e02.py": {
+      "bytes": 21527,
+      "sha256": "F45F75C9A91CB8AFD612EC3B6DD2CB481FC7A33BDA393D78DAD0708578509DD4"
+    },
+    "tests/api/test_role_handoff_e02.py": {
+      "bytes": 2632,
+      "sha256": "D27AC2EA3045A259DD20265201938004E1C4AC1018BF3D5B852F319A1C4FD481"
+    }
+  },
+  "evidence_target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+  "independent_reviews": {
+    "spec": {
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "independent_context": true,
+      "focused_passed": 104,
+      "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+      "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+      "review_round": "E02_R1",
+      "reviewer": "independent-spec-reviewer",
+      "minimal_passed": 375,
+      "adversarial_cases": 9,
+      "adversarial_verdict": "PASS",
+      "commands": [
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+          "exit_code": 0,
+          "passed": 104,
+          "seconds": 3.62
+        },
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_result_envelope_c05.py tests/api/test_role_handoff_e02.py",
+          "exit_code": 0,
+          "passed": 375,
+          "seconds": 4.39
+        },
+        {
+          "command": "git diff --check",
+          "exit_code": 0
+        }
+      ],
+      "unverified": [
+        "actual HTTP/UI",
+        "worker",
+        "Provider",
+        "DB",
+        "external runtime"
+      ]
+    },
+    "quality": {
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "independent_context": true,
+      "focused_passed": 104,
+      "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+      "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+      "review_round": "E02_R1",
+      "reviewer": "independent-quality-reviewer",
+      "related_passed": 1184,
+      "adversarial_cases": 8,
+      "adversarial_verdict": "PASS",
+      "commands": [
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+          "exit_code": 0,
+          "passed": 104,
+          "seconds": 3.87
+        },
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/orchestration tests/artifacts tests/api",
+          "exit_code": 0,
+          "passed": 1184,
+          "seconds": 20.3
+        },
+        {
+          "command": "git diff --check",
+          "exit_code": 0
+        }
+      ],
+      "unverified": [
+        "actual HTTP wiring",
+        "OS artifact store",
+        "external IO",
+        "parallel execution"
+      ],
+      "warnings": [
+        "existing python_multipart deprecation (1)"
+      ]
+    }
+  },
+  "test_evidence": {
+    "focused_passed": 104,
+    "related_passed": 848,
+    "failed": 0,
+    "skipped": 0,
+    "evidence_class": "DEVELOPER_CONTRACT_TESTS_NOT_ACCEPTANCE",
+    "main_verification": {
+      "focused_passed": 104,
+      "related_passed": 848,
+      "related_seconds": 7.21,
+      "exit_code": 0,
+      "checker_sequence": 1075
+    }
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "os_worker": "NOT_EXECUTED",
+    "os_artifact_store": "NOT_EXECUTED",
+    "dag": "NOT_EXECUTED",
+    "parallel": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "formal_valid_failure_count": 1,
+  "rework_count": 1,
+  "failure_lineage": {
+    "rework_count": 1,
+    "formal_valid_failure_count": 1,
+    "primary_lineage": "E02-ARTIFACT-TOCTOU-001",
+    "included_findings": [
+      "E02-SOURCE-AUTHORITY-TOCTOU-002",
+      "E02-BOUNDED-CONTEXT",
+      "E02-PREDECESSOR-CAUSALITY"
+    ],
+    "resolution": "INDEPENDENT_ACCEPTED"
+  },
+  "e02_status": "ACCEPTED",
+  "e03_status": "READY_FOR_WORK_INSTRUCTION",
+  "active_leases": 0,
+  "product_exact_paths": [
+    "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/handoff.py",
+    "packages/api/role_handoff.py",
+    "tests/agent_team/test_handoff_e02.py",
+    "tests/api/test_role_handoff_e02.py"
+  ],
+  "frozen_start_product_paths": [
+    "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-02_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e02-start.json",
+    "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/handoff.py",
+    "packages/api/role_handoff.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_handoff_e02.py",
+    "tests/api/test_role_handoff_e02.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "frozen_start_evidence": {
+    "docs/evidence/manifests/E-02_START_MANIFEST.json": "38F3C21B76B32E1849407D083C88059FC19C4638B886BE09083320FC001AF926",
+    "docs/progress/progress-handoff-detached-digest-e02-start.json": "E3F7B7B28B258A3C4B846AC33AA6771A97B239C3E3E2170B1C7C7E7D058379DA"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-02_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e02-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e02-start.json",
+    "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/handoff.py",
+    "packages/api/role_handoff.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_handoff_e02.py",
+    "tests/api/test_role_handoff_e02.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 17,
+  "control_exact_paths": [
+    "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e02-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "projection_mode": "E02_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+      "bytes": 13391,
+      "sha256": "C6DA6619F377A0288AAEB28D0750287F4FD5B3402B8DA15280CCE5C876A9BDAA"
+    },
+    {
+      "path": "docs/evidence/manifests/E-02_START_MANIFEST.json",
+      "bytes": 4184,
+      "sha256": "38F3C21B76B32E1849407D083C88059FC19C4638B886BE09083320FC001AF926"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 209437,
+      "sha256": "AEC16DC88C99E2F3DBB5F17F0B31E86D7C813301DD8A917C05CEA09C35073F16"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1114379,
+      "sha256": "C80503522B5F9403EFAA3FC7969249172F12B7ABF805C29638DF4C2E528B1307"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3539425,
+      "sha256": "8C0CEA6F5C066C48CA48B7BE065F9048C140E6931EEC739AAEDDD256BF7E413B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e02-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "0682639E267A469640F4E3E8DE20036EAD68CEC46B9FA7E191AE7DA3B8121D22"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e02-start.json",
+      "bytes": 835,
+      "sha256": "E3F7B7B28B258A3C4B846AC33AA6771A97B239C3E3E2170B1C7C7E7D058379DA"
+    },
+    {
+      "path": "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+      "bytes": 537,
+      "sha256": "102190D70C51670858D78CFADDC950159D451D376C714DA59C81655E68A36F69"
+    },
+    {
+      "path": "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+      "bytes": 4477,
+      "sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6"
+    },
+    {
+      "path": "packages/agent_team/__init__.py",
+      "bytes": 3936,
+      "sha256": "41DF5E4E82E46D986F007E248E070021E5C44516A88E2489F818A60050C4ED82"
+    },
+    {
+      "path": "packages/agent_team/handoff.py",
+      "bytes": 25482,
+      "sha256": "C25F39D029F4A51F2A215B02462D849511DB154937B1456C7E8D1FAEC0024873"
+    },
+    {
+      "path": "packages/api/role_handoff.py",
+      "bytes": 1531,
+      "sha256": "2933D7B141F9F37B6089B022F156CC756689249CAFA73B666266F3CD52A3546E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4340516,
+      "sha256": "E5D0CC1EE1BB910072734AC58DC13E3D6AB7F58CBE720AB630F7149AC7819CB2"
+    },
+    {
+      "path": "tests/agent_team/test_handoff_e02.py",
+      "bytes": 21527,
+      "sha256": "F45F75C9A91CB8AFD612EC3B6DD2CB481FC7A33BDA393D78DAD0708578509DD4"
+    },
+    {
+      "path": "tests/api/test_role_handoff_e02.py",
+      "bytes": 2632,
+      "sha256": "D27AC2EA3045A259DD20265201938004E1C4AC1018BF3D5B852F319A1C4FD481"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1161516,
+      "sha256": "4A3A5A04677C5B9B3816B2EB1903E631D2B3F0A2129AD79CA1ABAEA8534A68AC"
+    }
+  ]
+}

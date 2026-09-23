@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C12-REWORK-R1-START-DIGEST-20260915",
+  "package_id": "C-12",
+  "event_sequence": 891,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-15T20:25:00+09:00",
+  "scope": "seq886-891 C-12 rework and epoch2 lease; exact7",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 974125,
+    "file_sha256": "5703EC7DC16D14C38FC75BAC21DC5E95CD0728C9D7FFE47F8F2562F9CB6ADD8F",
+    "canonical_json_sha256": "C51AB54611123255EC238F5D31FEEC0BC5022679C310DF98C96F5AE88C931586"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 195940,
+    "file_sha256": "9F0DC75E72A9EB32E20163656BA02746C57FFF498025B1219B650E400D9D3311",
+    "machine_summary_canonical_sha256": "E31CE7E47B54681B1056F6B7B8107DECE2CEE7EEE0BE081FED553E31A065B0DE"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E_GATE_DECISION",
+  "artifact_id": "E-GATE-DECISION-20260918",
+  "created_at": "2026-09-18T04:20:00+09:00",
+  "package_id": "E-GATE",
+  "event_sequence": 1178,
+  "gate_verdict": "PASS",
+  "status": "ACCEPTED",
+  "accepted": true,
+  "dir3_status": "CLEARED",
+  "report_path": "docs/test_reports/E-GATE_REPORT.md",
+  "report_sha256": "0C875E33BA16921BC4BB7064430A021D7391D39D038E03AC6D8B882465E51F89",
+  "blocking_findings": 0,
+  "next_work_package": "F-01",
+  "next_package_status": "READY_FOR_WORK_INSTRUCTION",
+  "external_validation": "NOT_EXECUTED",
+  "self_reference": false,
+  "exact_allowed_paths": [
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-dir3-hold.json",
+    "docs/test_reports/DIR-3_REPORT.md",
+    "docs/test_reports/E-GATE_REPORT.md"
+  ],
+  "exact_path_count": 7,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 216971,
+      "sha256": "0E39D718A84C9C3051B405AA22DBAEFFE82473A9F16CFC09A2EC4E07A7E0EF85"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1170059,
+      "sha256": "9A43B22A048BA2D6EA71C81348E426C5F5736DAC44F349400157C6F72AFF2A99"
+    },
+    {
+      "path": "docs/progress/dir-checkpoints.json",
+      "bytes": 2817,
+      "sha256": "F5E5639C50A407C70B5427791B7B3F89486C0A0C0A2DF82FA2C85E9F91637B4B"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3867897,
+      "sha256": "A3C95B69C74AF6EC49146747E0EB3A0FFD556EA73485E322C0C361AD5FE532E8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-dir3-hold.json",
+      "bytes": 849,
+      "sha256": "E864C59B24F2E15CE02EE55C954131D552090C9CD1176F5EEC5766E6E347F7CA"
+    },
+    {
+      "path": "docs/test_reports/DIR-3_REPORT.md",
+      "bytes": 1433,
+      "sha256": "71DD24EE80E59B66412E0A245ED5B8C53E686FF221C0A6C14D3F29A58C31CCD6"
+    },
+    {
+      "path": "docs/test_reports/E-GATE_REPORT.md",
+      "bytes": 760,
+      "sha256": "0C875E33BA16921BC4BB7064430A021D7391D39D038E03AC6D8B882465E51F89"
+    }
+  ]
+}

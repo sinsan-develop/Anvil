@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C09-MAIN-TAKEOVER-START-DIGEST",
+  "package_id": "C-09",
+  "event_sequence": 824,
+  "algorithm": "SHA-256",
+  "self_reference": false,
+  "created_at": "2026-09-14T06:00:00+09:00",
+  "target_hash": "A9EF1B92592EE2DB39D3FCA2FDF50601E987FCCF257F6D468418395429614BCE",
+  "events_sha256": "6D4DCE31ACB150B1D8E0B1080B96033A62118B0F0910A75E01C940D3EBC98BBE",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 942865,
+    "file_sha256": "C267C9E2A69AC82CB5F0E13A06A107AFAE42B4B009FC8AD038B04DC6F5A7CB20",
+    "canonical_json_sha256": "697787F68FC1E881B9A3FC5121F1F3A96610EDB924F71234F1F7D3C33F656DC0"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 191413,
+    "file_sha256": "F6BD38AA0246E94ABF79C70E3F304E0BD42A50509869C6F4DBBA2C502D8F869D",
+    "machine_summary_canonical_sha256": "742D021A3454C0B14C3988CA70E3304265E714D4378272CAE7D9F2C22904AE82"
+  }
+}

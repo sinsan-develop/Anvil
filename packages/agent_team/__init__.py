@@ -1,5 +1,12 @@
 """Durable collaboration primitives for Anvil Agent Teams."""
 
+from .role_contracts import (
+    AgentDefinition, BudgetLimits, RoleAssignment, RoleDecision,
+    RolePolicyService, TestWriteGrant, TestWriteLease, RoleContract, CodeWriteLease,
+)
+from .role_results import ReviewFinding, RoleEvidence, RoleResult, RoleResultReceipt, RoleResultService, RoleEnvelope
+from .handoff import ArtifactRef, SourceRef, RoleHandoff, RoleHandoffService, HandoffError
+
 from .models import (
     ConversationRole,
     ConversationTurn,
@@ -65,6 +72,11 @@ from .remote_control import (
 )
 
 __all__ = [
+    "ArtifactRef", "SourceRef", "RoleHandoff", "RoleHandoffService", "HandoffError",
+    "AgentDefinition", "BudgetLimits", "RoleAssignment", "RoleDecision",
+    "RolePolicyService", "TestWriteGrant", "TestWriteLease",
+    "RoleContract", "CodeWriteLease", "RoleEnvelope",
+    "ReviewFinding", "RoleEvidence", "RoleResult", "RoleResultReceipt", "RoleResultService",
     "ConversationRole",
     "ConversationTurn",
     "DecisionRequest",
@@ -125,3 +137,34 @@ __all__ = [
     "ConversationMessage", "OfflineQueue", "OperatorCommand", "ProgressEvent",
     "RemoteControlPlane", "RemoteSession",
 ]
+from .external_verifier import ExternalVerifierAdapter, ExternalVerificationError, ManualImportAuthorization
+from .orchestration import RoleTeamOrchestrator, TeamTaskBinding
+from .collaboration import TeamSnapshot
+
+__all__ += ["RoleTeamOrchestrator", "TeamTaskBinding", "TeamSnapshot"]
+from .moa import MoADeliberation
+from .provider_catalog import CapabilityCatalog, CapabilityAdmissionRouter
+from .provider_status import QuotaObservations
+__all__ += ["MoADeliberation", "CapabilityCatalog", "CapabilityAdmissionRouter", "QuotaObservations"]
+from .sns_gateway import SNSMessageEnvelope, SNSGateway
+from .daon_user_api import DaonUserAPI
+__all__ += ["SNSMessageEnvelope", "SNSGateway", "DaonUserAPI"]
+from .telegram_adapter import TelegramGatewayAdapter
+__all__ += ["TelegramGatewayAdapter"]
+from .kakao_adapter import KakaoContractAdapter
+__all__ += ["KakaoContractAdapter"]
+
+__all__ += ["ExternalVerifierAdapter", "ExternalVerificationError", "ManualImportAuthorization"]
+
+# Concurrency is imported lazily by callers to keep the E04 queue import graph acyclic.
+__all__ += ["AnalysisTask", "ConcurrencyScheduler", "ConcurrencyError"]
+__all__ += ["WorktreeWriteService"]
+
+def __getattr__(name):
+    if name == "WorktreeWriteService":
+        from .worktree_writes import WorktreeWriteService
+        return WorktreeWriteService
+    if name in {"AnalysisTask", "ConcurrencyScheduler", "ConcurrencyError"}:
+        from . import concurrency
+        return getattr(concurrency,name)
+    raise AttributeError(name)

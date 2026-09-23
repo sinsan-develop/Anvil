@@ -1,0 +1,1 @@
+C-28 exact7만 수정하라. 실제 API 연결 없이 Agent Console mockup과 interaction contract를 구현하라. Team/MoA/SNS/Daon User/adapter 메뉴, permission/error/empty/offline/high-risk reconfirm 상태와 same-origin handoff를 표현하라. C-22~C-27 fail-closed 계약을 바꾸지 말고 RED→GREEN UI contract tests, mockup evidence, JSON validation, compile/diff-check, rollback과 SHA를 보고하라.

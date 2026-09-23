@@ -1,0 +1,1 @@
+C-30 exact8만 수정하라. C22~C29의 local contract/integration과 C30 WSL formal preflight를 검증하라. WSL/DB mutation·deploy·Provider/Telegram/Kakao/Oracle 호출은 실행하지 말고, 실행 조건이 없으면 NOT_EXECUTED/NOT_INTEGRATED로 기록하라. trace/evidence/matrix sync, regression, compile/diff-check, rollback, manifest SHA를 보고하라.

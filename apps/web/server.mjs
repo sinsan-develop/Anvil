@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { checkedProjection } from './src/api/c29-agent-console-client.js';
 
 const execFileAsync=promisify(execFile);
 const webRoot=dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,10 @@ async function proxyApiRequest(request,response,requestUrl) {
   return true;
 }
 const staticFiles=new Map([
+  ['/src/api/c29-agent-console-client.js',['src/api/c29-agent-console-client.js','text/javascript; charset=utf-8']],
+  ['/src/app/c29-console-runtime.js',['src/app/c29-console-runtime.js','text/javascript; charset=utf-8']],
+  ['/src/styles/c29-console-runtime.css',['src/styles/c29-console-runtime.css','text/css; charset=utf-8']],
+  ['/src/styles/c28-console.css',['src/styles/c28-console.css','text/css; charset=utf-8']],
   ['/src/app/workbench.js',['src/app/workbench.js','text/javascript; charset=utf-8']],
   ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
   ['/src/features/workbench/workbench-state.js',['src/features/workbench/workbench-state.js','text/javascript; charset=utf-8']],
@@ -87,13 +92,102 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
-export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false}={}) {
+export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false,agentConsoleUpstream='',qaLoginUpstream=''}={}) {
+  let consoleUpstream=null;
+  if (agentConsoleUpstream) {
+    try {
+      const u=new URL(agentConsoleUpstream);
+      if (u.protocol!=='http:' || !['127.0.0.1','localhost'].includes(u.hostname) || !u.port || u.username || u.password || u.pathname!=='/' || u.search || u.hash) throw Error();
+      consoleUpstream=u.origin;
+    } catch { throw Error('UPSTREAM_INVALID'); }
+  }
   const runtimeMode=uiMode==='preview'?'preview':uiMode==='fixture'?'fixture':'production';
+  let qaUpstream=null;
+  if (qaLoginUpstream && runtimeMode==='fixture' && fixtureEnabled===true) {
+    try {
+      if (typeof qaLoginUpstream!=='string' || qaLoginUpstream.length>128) throw Error();
+      const u=new URL(qaLoginUpstream);
+      if (u.protocol!=='http:' || !['127.0.0.1','localhost'].includes(u.hostname) || !u.port || u.username || u.password || u.pathname!=='/' || u.search || u.hash) throw Error();
+      qaUpstream=u.origin;
+    } catch { throw Error('UPSTREAM_INVALID'); }
+  }
   const csrfToken=randomUUID();
   let allowedHost='';
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      // Dedicated host opt-in; never route QA login through production auth.
+      if (requestUrl.pathname==='/auth/c30r3-qa' || request.url.startsWith('/auth/c30r3-qa')) {
+        if (!qaUpstream) return safeFailure(response,404,'EMPTY','허용된 경로가 아닙니다.');
+        if (request.url!=='/auth/c30r3-qa') return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.');
+        if (!['GET','POST'].includes(request.method)) return safeFailure(response,405,'ERROR','허용된 메서드가 아닙니다.');
+        if (request.headers.host!==allowedHost || (request.headers.origin && request.headers.origin!==`http://${allowedHost}`) || (request.method==='POST' && request.headers.origin!==`http://${allowedHost}`)) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처를 확인하세요.');
+        let body='';
+        for await(const chunk of request) {body+=chunk;if (body.length>256) return safeFailure(response,403,'PERMISSION_DENIED','QA 요청이 거부됐습니다.');}
+        if ((request.method==='GET' && body) || (request.method==='POST' && (body!=='account=qa-reader' || request.headers['content-type']?.split(';')[0]!=='application/x-www-form-urlencoded'))) return safeFailure(response,403,'PERMISSION_DENIED','QA 요청이 거부됐습니다.');
+        try {
+          const result=await new Promise((ok,fail)=>{
+            const upstream=http.request(qaUpstream+'/auth/c30r3-qa',{method:request.method,headers:{host:allowedHost,origin:`http://${allowedHost}`,'content-type':'application/x-www-form-urlencoded'}},async incoming=>{
+              try {let size=0;const chunks=[];for await(const chunk of incoming){size+=chunk.length;if(size>32768){incoming.destroy();throw Error();}chunks.push(chunk);}ok({status:incoming.statusCode,headers:incoming.headers,body:Buffer.concat(chunks).toString('utf8')});}
+              catch {fail(Error('QA_RESPONSE_INVALID'));}
+            });
+            upstream.setTimeout(3000,()=>upstream.destroy(Error('TIMEOUT')));upstream.on('error',fail);upstream.end(body||undefined);
+          });
+          if (result.status===403) return safeFailure(response,403,'PERMISSION_DENIED','QA 요청이 거부됐습니다.');
+          if (request.method==='POST') {
+            const cookies=result.headers['set-cookie'];
+            if (result.status!==303 || result.headers.location!=='/agent-console' || !Array.isArray(cookies) || cookies.length!==1 || !/^anvil_session=[a-f0-9]{64}; HttpOnly; Max-Age=3600; Path=\/; SameSite=strict$/.test(cookies[0])) throw Error();
+            return send(response,303,'',{location:'/agent-console','set-cookie':cookies[0]});
+          }
+          if (result.status!==200 || !result.headers['content-type']?.startsWith('text/html') || /https?:\/\/|anvil_session=|<script\b/i.test(result.body)) throw Error();
+          return send(response,200,result.body,{'content-type':'text/html; charset=utf-8','referrer-policy':'same-origin'});
+        } catch {return safeFailure(response,503,'OFFLINE','QA 로그인 응답을 확인할 수 없습니다.');}
+      }
+      if (request.url.startsWith('/api/agent-console') && request.url!==requestUrl.pathname) return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.');
+      if (requestUrl.pathname.startsWith('/api/agent-console')) {
+        if (request.headers.host!==allowedHost || (request.headers.origin && request.headers.origin!==`http://${allowedHost}`)) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처를 확인하세요.');
+        if (requestUrl.search || request.url!==requestUrl.pathname) return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.');
+        const route=requestUrl.pathname.slice('/api/agent-console/'.length);
+        if (request.method==='GET' && route==='config') return send(response,200,{csrfToken});
+        if (!(request.method==='GET' && ['team','moa','sns','adapters'].includes(route)) && !(request.method==='POST' && route==='control')) return safeFailure(response,404,'EMPTY','허용된 경로가 아닙니다.');
+        let body;
+        if (request.method==='POST') {
+          if (request.headers.origin!==`http://${allowedHost}` || request.headers['x-csrf-token']!==csrfToken) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처 또는 CSRF 검증에 실패했습니다.');
+          try {
+            body=await jsonBody(request);
+            if (!body || Array.isArray(body) || Object.keys(body).sort().join(',')!=='action,request_id,target_hash' || !['pause','resume','deploy','delete','approve','merge','apply','provider','permission'].includes(body.action) || typeof body.request_id!=='string' || !/^[a-zA-Z0-9_-]{1,96}$/.test(body.request_id) || typeof body.target_hash!=='string' || !/^sha256:[a-f0-9]{64}$/.test(body.target_hash)) throw Error();
+          } catch { return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.'); }
+        }
+        if (!consoleUpstream) return safeFailure(response,503,'OFFLINE','Console service가 연결되지 않았습니다.');
+        try {
+          const result=await new Promise((ok,fail)=>{
+            const headers={'accept':'application/json','content-type':'application/json'};
+            if (request.headers.cookie) headers.cookie=request.headers.cookie;
+            if (request.headers.authorization) headers.authorization=request.headers.authorization;
+            const upstream=http.request(consoleUpstream+requestUrl.pathname,{method:request.method,headers},async incoming=>{
+              try {
+                let size=0;const chunks=[];
+                for await(const chunk of incoming){size+=chunk.length;if(size>262144){incoming.destroy();throw Error();}chunks.push(chunk);}
+                if (!(incoming.headers['content-type']||'').startsWith('application/json')) throw Error();
+                const value=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+                ok({status:incoming.statusCode,value});
+              } catch { fail(Error('UPSTREAM_FAILURE')); }
+            });
+            upstream.setTimeout(3000,()=>upstream.destroy(Error('TIMEOUT')));
+            upstream.on('error',fail);upstream.end(body?JSON.stringify(body):undefined);
+          });
+          if (result.status>=400) return safeFailure(response,result.status===403?403:503,result.status===403?'PERMISSION_DENIED':'OFFLINE','Console 요청이 거부되었거나 연결되지 않았습니다.');
+          if (result.status<200 || result.status>=300) throw Error();
+          if (request.method==='GET') result.value=checkedProjection(result.value,route);
+          else {
+            const v=result.value;
+            if (!v || v.schema!=='agent-console-control/v1' || v.state!=='REQUESTED_NOT_APPLIED' || v.allowed!==false || v.applied!==false || v.io_count!==0 || v.target_hash!==body.target_hash || v.request_id!==body.request_id) throw Error();
+            result.value={schema:v.schema,state:v.state,allowed:false,applied:false,io_count:0,target_hash:v.target_hash,request_id:v.request_id};
+          }
+          return send(response,result.status,result.value);
+        } catch { return safeFailure(response,503,'OFFLINE','Console service 응답을 확인할 수 없습니다.'); }
+      }
+      if (request.method==='GET' && requestUrl.pathname==='/agent-console') return send(response,200,'<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anvil Agent Console</title><link rel="stylesheet" href="/src/styles/c28-console.css"><link rel="stylesheet" href="/src/styles/c29-console-runtime.css"><body><div data-c29-console></div><script type="module" src="/src/app/c29-console-runtime.js"></script></body></html>',{'content-type':'text/html; charset=utf-8'});
       if (await proxyApiRequest(request,response,requestUrl)) return;
       if (request.method==='GET' && requestUrl.pathname==='/healthz') return send(response,200,{ok:true,service:'anvil-web',mode:runtimeMode});
       if (request.method==='GET' && requestUrl.pathname==='/api/design-flow/config') return send(response,200,{ok:true,csrfToken,runtimeBoundary:'LOCAL_VERIFICATION_ONLY'});

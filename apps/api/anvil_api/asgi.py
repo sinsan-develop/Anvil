@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from packages.api.runtime import create_runtime_app
 from packages.api.fastapi_app import mount_frontend
 from pathlib import Path
+from apps.api.anvil_api.routes.agent_console import create_agent_console_app
 
 def create_asgi_app(app: FastAPI) -> FastAPI:
     required_migration_head = "0013_task_bootstrap_authority"
@@ -36,7 +37,14 @@ def create_asgi_app(app: FastAPI) -> FastAPI:
             media_type="application/json",
         )
 
-    # Mount only after every explicit API route so StaticFiles cannot shadow health.
+    # Reuse the console's already-prefixed routes without a second mount prefix.
+    # The factory owns authenticated typed restore (or the explicit legacy seam).
+    # Missing host auth/export retains 503; configuration is not formal readiness.
+    app.router.routes.extend(create_agent_console_app(
+        runtime_owner=getattr(app.state, "agent_console_runtime", None),
+    ).router.routes)
+
+    # Mount only after every explicit API route so StaticFiles cannot shadow APIs.
     mount_frontend(
         app,
         str(Path(__file__).resolve().parents[3] / "apps" / "web"),

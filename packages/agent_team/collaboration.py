@@ -5,6 +5,34 @@ the append-only boundary that a later orchestration adapter can persist.
 """
 from __future__ import annotations
 
+import json
+from dataclasses import dataclass as _snapshot_dataclass
+
+
+@_snapshot_dataclass(frozen=True)
+class TeamSnapshot:
+    """Detached bounded JSON projection; never a runtime authorization."""
+    payload: str
+
+    def __post_init__(self):
+        if type(self.payload) is not str or len(self.payload.encode('utf-8')) > 1048576:
+            raise ValueError('PROJECTION_INVALID')
+
+    @property
+    def content_hash(self):
+        import hashlib
+        return 'sha256:' + hashlib.sha256(self.payload.encode('utf-8')).hexdigest()
+
+    def to_dict(self):
+        return json.loads(self.payload)
+
+
+def team_snapshot(value):
+    payload = json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    if len(payload.encode('utf-8')) > 1048576:
+        raise ValueError('PROJECTION_BOUND_EXCEEDED')
+    return TeamSnapshot(payload)
+
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum

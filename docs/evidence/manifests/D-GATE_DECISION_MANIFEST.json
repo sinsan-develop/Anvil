@@ -1,0 +1,1251 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "D_GATE_DECISION",
+  "artifact_id": "D-GATE-DECISION-20260917",
+  "created_at": "2026-09-17T00:50:00+09:00",
+  "package_id": "D-GATE",
+  "event_sequence": 1060,
+  "historical_event_sequence": 1059,
+  "appended_event_count": 1,
+  "historical_raw_event_prefix": {
+    "bytes": 3439722,
+    "sha256": "20E3B16A50463B02DC0015E8222D4BBE2D0C3CA1220428F7AF092739860F18BA"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "d13_status": "ACCEPTED",
+  "d_gate": "ACCEPTED",
+  "dirx_lrn_critical": "NOT_TRIGGERED",
+  "e01_status": "READY_FOR_WORK_INSTRUCTION",
+  "active_leases": 0,
+  "combined_exact_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-07_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-09_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-10_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-11_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-12_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+    "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-14_START_MANIFEST.json",
+    "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+    "docs/evidence/manifests/C-15_START_MANIFEST.json",
+    "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-01_START_MANIFEST.json",
+    "docs/evidence/manifests/D-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-02_START_MANIFEST.json",
+    "docs/evidence/manifests/D-03_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-03_START_MANIFEST.json",
+    "docs/evidence/manifests/D-04_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-04_START_MANIFEST.json",
+    "docs/evidence/manifests/D-05_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-05_SCOPE_REVISION_MANIFEST.json",
+    "docs/evidence/manifests/D-05_START_MANIFEST.json",
+    "docs/evidence/manifests/D-06_FINAL_D_LEARNING_GATE_MANIFEST.json",
+    "docs/evidence/manifests/D-06_START_MANIFEST.json",
+    "docs/evidence/manifests/D-07_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-07_START_MANIFEST.json",
+    "docs/evidence/manifests/D-08_FINAL_D_SKILL_GATE_MANIFEST.json",
+    "docs/evidence/manifests/D-08_START_MANIFEST.json",
+    "docs/evidence/manifests/D-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-09_START_MANIFEST.json",
+    "docs/evidence/manifests/D-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-10_START_MANIFEST.json",
+    "docs/evidence/manifests/D-11_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-11_START_MANIFEST.json",
+    "docs/evidence/manifests/D-12_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-12_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/D-12_START_MANIFEST.json",
+    "docs/evidence/manifests/D-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-13_START_MANIFEST.json",
+    "docs/evidence/manifests/D-GATE_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/D-HOOK-GATE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c-gate.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c14-start.json",
+    "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+    "docs/progress/progress-handoff-detached-digest-c15-start.json",
+    "docs/progress/progress-handoff-detached-digest-d-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d-hook-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d01-start.json",
+    "docs/progress/progress-handoff-detached-digest-d02-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d02-start.json",
+    "docs/progress/progress-handoff-detached-digest-d03-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d03-start.json",
+    "docs/progress/progress-handoff-detached-digest-d04-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d04-start.json",
+    "docs/progress/progress-handoff-detached-digest-d05-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d05-scope-revision.json",
+    "docs/progress/progress-handoff-detached-digest-d05-start.json",
+    "docs/progress/progress-handoff-detached-digest-d06-final-d-learning-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d06-start.json",
+    "docs/progress/progress-handoff-detached-digest-d07-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d07-start.json",
+    "docs/progress/progress-handoff-detached-digest-d08-final-d-skill-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d08-start.json",
+    "docs/progress/progress-handoff-detached-digest-d09-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d09-start.json",
+    "docs/progress/progress-handoff-detached-digest-d10-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d10-start.json",
+    "docs/progress/progress-handoff-detached-digest-d11-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d11-start.json",
+    "docs/progress/progress-handoff-detached-digest-d12-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d12-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-d12-start.json",
+    "docs/progress/progress-handoff-detached-digest-d13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d13-start.json",
+    "docs/test_reports/C-GATE_TEST_REPORT.md",
+    "docs/test_reports/DIR-2_REPORT.md",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-03_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-04_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-05_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-06_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-06_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-07_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-08_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-08_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-09_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-10_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-11_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-12_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-12_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-13_WORK_INSTRUCTION.md",
+    "packages/api/hook_runtime.py",
+    "packages/api/hooks.py",
+    "packages/api/knowledge_memory.py",
+    "packages/api/knowledge_patterns.py",
+    "packages/api/learning_candidates.py",
+    "packages/api/learning_e2e.py",
+    "packages/api/learning_journey.py",
+    "packages/api/learning_reviews.py",
+    "packages/api/learning_snapshots.py",
+    "packages/api/learning_sources.py",
+    "packages/api/model_registry.py",
+    "packages/api/skill_evolution.py",
+    "packages/api/skills.py",
+    "packages/e2e/__init__.py",
+    "packages/e2e/harness.py",
+    "packages/knowledge/__init__.py",
+    "packages/knowledge/candidates.py",
+    "packages/knowledge/hook_runtime.py",
+    "packages/knowledge/hooks.py",
+    "packages/knowledge/learning_e2e.py",
+    "packages/knowledge/learning_journey.py",
+    "packages/knowledge/memory.py",
+    "packages/knowledge/model_registry.py",
+    "packages/knowledge/patterns.py",
+    "packages/knowledge/reviews.py",
+    "packages/knowledge/skill_evolution.py",
+    "packages/knowledge/skills.py",
+    "packages/knowledge/snapshots.py",
+    "packages/knowledge/sources.py",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "scripts/check_project_progress.py",
+    "tests/api/test_hook_runtime_d10.py",
+    "tests/api/test_hooks_d09.py",
+    "tests/api/test_knowledge_memory_d01.py",
+    "tests/api/test_knowledge_patterns_d04.py",
+    "tests/api/test_learning_candidates_d06.py",
+    "tests/api/test_learning_e2e_d13.py",
+    "tests/api/test_learning_journey_d12.py",
+    "tests/api/test_learning_reviews_d05.py",
+    "tests/api/test_learning_snapshots_d02.py",
+    "tests/api/test_learning_sources_d03.py",
+    "tests/api/test_model_registry_d11.py",
+    "tests/api/test_skill_evolution_d08.py",
+    "tests/api/test_skills_d07.py",
+    "tests/e2e/test_synthetic_e2e.py",
+    "tests/knowledge/test_candidates_d06.py",
+    "tests/knowledge/test_hook_runtime_d10.py",
+    "tests/knowledge/test_hooks_d09.py",
+    "tests/knowledge/test_learning_e2e_d13.py",
+    "tests/knowledge/test_learning_journey_d12.py",
+    "tests/knowledge/test_memory_d01.py",
+    "tests/knowledge/test_model_registry_d11.py",
+    "tests/knowledge/test_patterns_d04.py",
+    "tests/knowledge/test_reviews_d05.py",
+    "tests/knowledge/test_skill_evolution_d08.py",
+    "tests/knowledge/test_skills_d07.py",
+    "tests/knowledge/test_snapshots_d02.py",
+    "tests/knowledge/test_sources_d03.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_gates_c14.py"
+  ],
+  "combined_exact_path_count": 197,
+  "combined_exact_path_list_sha256": "8DEBEB4FFE992183EA62978DDC248ACEECEBD09DDF6EE545A21359B3B816D513",
+  "projection_mode": "D_GATE_CUMULATIVE_EXACT197",
+  "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+  "record_binding": "PRECOMMIT_D13_FINAL_EXACT195_PLUS_D_GATE_CONTROL_EXACT2",
+  "evidence_target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75",
+  "gate_evidence": {
+    "packages_d01_d13": "PASS",
+    "source_provenance_and_version": "PASS",
+    "approval_before_activation": "PASS",
+    "next_task_snapshot_isolation": "PASS",
+    "unapproved_candidate_behavior_unchanged": "PASS",
+    "rollback_and_source_revoke": "PASS",
+    "positive_exemplar_requires_verified_diff": "PASS",
+    "d13_full_learning_e2e": "PASS_104_FOCUSED_1980_KNOWLEDGE_API",
+    "critical_trigger_checks": {
+      "AV-LRN-003": {
+        "severity": "CRITICAL",
+        "status": "PASS",
+        "confirmed": true,
+        "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+      },
+      "AV-LRN-004": {
+        "severity": "CRITICAL",
+        "status": "PASS",
+        "confirmed": true,
+        "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+      },
+      "AV-LRN-005": {
+        "severity": "CRITICAL",
+        "status": "PASS",
+        "confirmed": true,
+        "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+      }
+    },
+    "dirx_trigger": {
+      "trigger_id": "DIRX-LRN-CRITICAL",
+      "triggered": false,
+      "reason": "NO_CONFIRMED_CRITICAL_FAILURE_ON_COMMON_TARGET"
+    },
+    "actual_runtime_consumer_ui_db_http_provider_os_deployment": "NOT_EXECUTED"
+  },
+  "blocking_findings": 0,
+  "important_findings": 0,
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    {
+      "path": "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "bytes": 22494,
+      "sha256": "703A905896643C4F1C0A9FCAB19977754A60C40BEEA23A075206CAB4F8C73874"
+    },
+    {
+      "path": "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "bytes": 19335,
+      "sha256": "F7B23810AD4F611A459C4223EE151DE4282A190B298C59ADE57F99732902F534"
+    },
+    {
+      "path": "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "bytes": 22816,
+      "sha256": "96B035A722FFEE295156D9ED5660B34A5EBABB167F099AA470EC4AA485ECAD7D"
+    },
+    {
+      "path": "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+      "bytes": 12251,
+      "sha256": "91C300DFFBCACB0B76492AAA6CFCC77B103CA0DF90000E1BEBEE1C4AE79198CD"
+    },
+    {
+      "path": "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+      "bytes": 20485,
+      "sha256": "29149EDCA59B00D9DEE1CC40A0DE51F12C26BCE648B7C2FD132388F8547E5C41"
+    },
+    {
+      "path": "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+      "bytes": 12589,
+      "sha256": "5C0B4FE103646E345F4EEBB781205EBBA0A13CFC537EC6858B16A0AD0E166829"
+    },
+    {
+      "path": "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+      "bytes": 15133,
+      "sha256": "D3436511C4B9538C3CD7BF26C7C3F48E0C1F40B937D522CBB2DB3A2B159EA6F2"
+    },
+    {
+      "path": "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+      "bytes": 20258,
+      "sha256": "3A8C5C41C121CA41D5BA9BF4661751802DECBD65A2FA8A271CFC8C5A4BCB3154"
+    },
+    {
+      "path": "docs/04_test_reports/D-07_COMPLETION_REPORT.md",
+      "bytes": 13013,
+      "sha256": "CAB2BD7BF4585A1DCD75DBEE6C3E05C3319E2325F91B9EDB48A5ADF6F65D67A9"
+    },
+    {
+      "path": "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+      "bytes": 23546,
+      "sha256": "FBAF39C07817A7E2EE4E0CF8E945AD7F5D5313A6F0EB7CC3D3AAC54644C98826"
+    },
+    {
+      "path": "docs/04_test_reports/D-09_COMPLETION_REPORT.md",
+      "bytes": 16984,
+      "sha256": "8CA02A4ABAA9C9E6DC4886150C8CA19BD97ED55E5A9106E537073171556D66DD"
+    },
+    {
+      "path": "docs/04_test_reports/D-10_COMPLETION_REPORT.md",
+      "bytes": 18253,
+      "sha256": "9FA2B0A48820C051AFA39317E8EEFE74786A97A0D374FB6CE042E2BAF6CAFB24"
+    },
+    {
+      "path": "docs/04_test_reports/D-11_COMPLETION_REPORT.md",
+      "bytes": 18171,
+      "sha256": "8F7431B8B2C7FF21DA49F25C293834710B80E0CCF6A777D59EFBD10F98BFF953"
+    },
+    {
+      "path": "docs/04_test_reports/D-12_COMPLETION_REPORT.md",
+      "bytes": 20097,
+      "sha256": "00264B8A06F45FFC9162523B9AEF13073726066D75F35ECC0624DCDED49FAB30"
+    },
+    {
+      "path": "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "bytes": 29513,
+      "sha256": "F8227749D89075F9452B6BF81586F64C811EBD301DA5E789E3607DA5A93F516E"
+    },
+    {
+      "path": "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+      "bytes": 643,
+      "sha256": "79705ACE62E05A680B328B24CC11ED12A572B65F5667607B8E71DE77111F64C7"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 10737,
+      "sha256": "A0AD46DB98A5899E2E870DE89EF820F805E97677F662D62701929BA2A0374F7C"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "bytes": 8885,
+      "sha256": "0FF49124A8B44FC427919C503751C070B2B6283A04D74ADEC2E97EFC17A011DD"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 11280,
+      "sha256": "94A8DD89BB7C0D89DDACA9E41AE4F38E5EDF15B1B5890F98510AF3EA013CBE22"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "bytes": 10662,
+      "sha256": "78D1607FFE803FCDE482BFB2635808EBC68C652039D7FA0305994C783C191F3F"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "bytes": 12576,
+      "sha256": "01A012E1FA8644B98D64CA0BFF3EE6B4E06DB9A11140186BFF2D370543AF9CF1"
+    },
+    {
+      "path": "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+      "bytes": 13198,
+      "sha256": "36339882A36FF3FBE17B7DD71DF261B14C0B105CF8268DD9A46CCD94697B46D5"
+    },
+    {
+      "path": "docs/evidence/manifests/C-15_START_MANIFEST.json",
+      "bytes": 13958,
+      "sha256": "1AFBB1B24D47A33705AD13EC47CA24150BC1A6103D56B0492DDD70BC6ABA8007"
+    },
+    {
+      "path": "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+      "bytes": 12092,
+      "sha256": "E090E674429CB3A3D31F2E6FA541A1064FC77C02C71E10089483203A36C911EB"
+    },
+    {
+      "path": "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 17499,
+      "sha256": "EDD82C2D4677532DCE4C2E2163CE04CF7CD09A9D50D28C84E75391D284E2CA1D"
+    },
+    {
+      "path": "docs/evidence/manifests/D-01_START_MANIFEST.json",
+      "bytes": 18882,
+      "sha256": "9913A31CB6F27E653DF12F263271BE5A97C54393632BC728B8B5C7380080CC3A"
+    },
+    {
+      "path": "docs/evidence/manifests/D-02_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 19815,
+      "sha256": "CB9D762D98C9E5D9E1F45F806B497F7A04491FAFB9AE36120944149FE5AA4F2C"
+    },
+    {
+      "path": "docs/evidence/manifests/D-02_START_MANIFEST.json",
+      "bytes": 19333,
+      "sha256": "14B5E0A5C11921BAABA49547CE8F60F885BCD622F26798D8A832AF24FF4D1A31"
+    },
+    {
+      "path": "docs/evidence/manifests/D-03_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 22712,
+      "sha256": "11CCD935B2E8094F2E38B549CC70EB8747BBE692D93B32691F32EC65FC57997C"
+    },
+    {
+      "path": "docs/evidence/manifests/D-03_START_MANIFEST.json",
+      "bytes": 22543,
+      "sha256": "F755D83D63B389A280FB499AD86761F866F053AFA1D2702A5039F465EB95887D"
+    },
+    {
+      "path": "docs/evidence/manifests/D-04_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 25119,
+      "sha256": "FD944E5189D174C2B5D89FB467E651179AC184BC4085187F894EF60A9879F8D0"
+    },
+    {
+      "path": "docs/evidence/manifests/D-04_START_MANIFEST.json",
+      "bytes": 25743,
+      "sha256": "0BED6989F90C1B3EE024BBF3E92C37D12F8623B91375E850F253921204304CD2"
+    },
+    {
+      "path": "docs/evidence/manifests/D-05_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 28353,
+      "sha256": "8D625887F2DA65C2A60D1DABF77AB05675EF7A842BE198F7BA1A392B9F9D07B5"
+    },
+    {
+      "path": "docs/evidence/manifests/D-05_SCOPE_REVISION_MANIFEST.json",
+      "bytes": 24031,
+      "sha256": "A0DCBF965676D4F74E55A4904C4CC0A50B77A441CB6BB8B07729B28698F109C4"
+    },
+    {
+      "path": "docs/evidence/manifests/D-05_START_MANIFEST.json",
+      "bytes": 28950,
+      "sha256": "A2CA11CD4E0A0F44CE8DE5C9F8EEA19C7AF0F7CD48AB927C82C44960187ED4D7"
+    },
+    {
+      "path": "docs/evidence/manifests/D-06_FINAL_D_LEARNING_GATE_MANIFEST.json",
+      "bytes": 30963,
+      "sha256": "92A548535250DE7E44DB3046B205F8F190175A020E36CF42F6F55802C830A8E7"
+    },
+    {
+      "path": "docs/evidence/manifests/D-06_START_MANIFEST.json",
+      "bytes": 32846,
+      "sha256": "BBDD9E2AF6E67788A72D426C483DA728EFBF6C07FB0A7193D67AAA255ED0BC05"
+    },
+    {
+      "path": "docs/evidence/manifests/D-07_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 32931,
+      "sha256": "E6FD99DA39A362A1B0B2270BB970B9A14EF2624318F84E5C1C33CD0CF23C5A51"
+    },
+    {
+      "path": "docs/evidence/manifests/D-07_START_MANIFEST.json",
+      "bytes": 36069,
+      "sha256": "7C41C35CBBD02B9660F96FF78BD2001F7945583A1CCC69D9BD20EEF6AAA25B89"
+    },
+    {
+      "path": "docs/evidence/manifests/D-08_FINAL_D_SKILL_GATE_MANIFEST.json",
+      "bytes": 36377,
+      "sha256": "ED27CE573B2B420461788A748EFC6F23359CD582873CBB413228B2E58B79A291"
+    },
+    {
+      "path": "docs/evidence/manifests/D-08_START_MANIFEST.json",
+      "bytes": 39234,
+      "sha256": "F1DF94E4D97342B607314E6D49642D786066C4A8529A432E2B2C4F1F8ADCD758"
+    },
+    {
+      "path": "docs/evidence/manifests/D-09_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 38413,
+      "sha256": "9CECB9D4F1747698C18AEA46F4F5A08FF000E6BDA19DF41D7E2CC4DD8957AAA1"
+    },
+    {
+      "path": "docs/evidence/manifests/D-09_START_MANIFEST.json",
+      "bytes": 42443,
+      "sha256": "E339F5F9D9F5ED39E1CE5DAFE2DC446FDA58E6406E6E0A06B0D23CDA1C5D8C3B"
+    },
+    {
+      "path": "docs/evidence/manifests/D-10_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 40943,
+      "sha256": "58AA9E27D35EBCB0AB8110D1890FD612B1E36A146679FA0DCAAE6AD496D6F1ED"
+    },
+    {
+      "path": "docs/evidence/manifests/D-10_START_MANIFEST.json",
+      "bytes": 45587,
+      "sha256": "43C255CCBC9F9DE09D785B1E2C88F8CF96AED8AE7C492B3BDB34DF94E6CA24B6"
+    },
+    {
+      "path": "docs/evidence/manifests/D-11_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 44244,
+      "sha256": "4A3F75FF2C0C999410153065C671D033C5BE9873CD6BE1B22BD274540822B3B6"
+    },
+    {
+      "path": "docs/evidence/manifests/D-11_START_MANIFEST.json",
+      "bytes": 49439,
+      "sha256": "874014F1D6A64D046C8603321D568FC759F90F5FCA04C91E5B121BA228EB72E2"
+    },
+    {
+      "path": "docs/evidence/manifests/D-12_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 47456,
+      "sha256": "26059F8CB942597E4999B293A785095768576965FD6FBBA0BF8AA36D854B1DD5"
+    },
+    {
+      "path": "docs/evidence/manifests/D-12_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "bytes": 47028,
+      "sha256": "8CB67BD3762496A4D18D07613FFC4E06DEA034C3AA120605775729354A81E6F3"
+    },
+    {
+      "path": "docs/evidence/manifests/D-12_START_MANIFEST.json",
+      "bytes": 52669,
+      "sha256": "259B71D8C4917C3362EBC41054068C91BB6FE63072C5087676F7704E245708FE"
+    },
+    {
+      "path": "docs/evidence/manifests/D-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 50039,
+      "sha256": "434D55B43D05D84B8D3DE62AF0B6B12E08F0DE3033E6F0FCEC164CC80A6D47B3"
+    },
+    {
+      "path": "docs/evidence/manifests/D-13_START_MANIFEST.json",
+      "bytes": 56630,
+      "sha256": "7F1876F1DC4FE54AD2062E8F80651B90336DA68FB78DBE8F08179C95E61DD600"
+    },
+    {
+      "path": "docs/evidence/manifests/D-HOOK-GATE_MANIFEST.json",
+      "bytes": 39157,
+      "sha256": "43930885A5F5E8E00920B0112C07C1D19D604BE800131D389C7E905B1524695C"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 215477,
+      "sha256": "9A0FC078B317E7E9E3B8BF7FDE32DD7F41DFDDD694E9047BE202590EDBB66740"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1085172,
+      "sha256": "83C30540819459D39A0CAB8D177CB4C0164FEC81EAC64D1FD0D72A2E50CD4ACB"
+    },
+    {
+      "path": "docs/progress/dir-checkpoints.json",
+      "bytes": 2552,
+      "sha256": "A9157D741DD88DC1791C9D2E9A5156472CD5C18FD17820951E162DF74E68D72E"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3455052,
+      "sha256": "0CB03B895356F50DE6959D0C8EDABDDE1356809DCB9E8007C2FCA1D90CF6FF26"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c-gate.json",
+      "bytes": 1054,
+      "sha256": "C661EDC984180FDD6757AC8DE04AF4FEAEF9CA0F730408ECF0A2968ADDC5188A"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "bytes": 894,
+      "sha256": "8F22521F72B6597C367B5578DDE2002BB01EA01BA4A918F1B421160FFAF024F0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "bytes": 861,
+      "sha256": "6FE5934F1406569B15033BC0E382B5AF64428889D30BBDE79F14F1F118809504"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "bytes": 880,
+      "sha256": "201FDB73C834546C3608F388376ECA290B9E154E66161D08D0999CCB1558808C"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "bytes": 888,
+      "sha256": "8CD70A638F58C1EAD12565D88070F4720E0E4B923076A3E80B869B6758BE1D6D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "bytes": 865,
+      "sha256": "9CEAA11AEBB0B17F74F829E55921E105BBEA267A47CEAAFE7E791125C8ECD8B0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+      "bytes": 1063,
+      "sha256": "504E24678B4429AB31A610F2615198AC0930069E06A6F01778990480E797C1C4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "bytes": 866,
+      "sha256": "674BCF15E38C385D8E818AC631069D0F389100A5214A22C986CBDDD879681551"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d-gate.json",
+      "bytes": 857,
+      "sha256": "D067969C172F11AE8A67A1EF454C8D8695215206C969E54058FBBED5D19E1DB1"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d-hook-gate.json",
+      "bytes": 866,
+      "sha256": "70948396F06E27E53E6F35AA6167A6B34B84B58336E107929481E19E6D2B58A5"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+      "bytes": 881,
+      "sha256": "3AC131A9CFA756F9AADCB55820C7A9567BA816AEEDF52551F8568CB78BCEBEEF"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d01-start.json",
+      "bytes": 855,
+      "sha256": "EE5DC193322D0D358AA4A3150667908C485FADB7A8C4AB70B40A979690623456"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d02-final-acceptance.json",
+      "bytes": 881,
+      "sha256": "D73B7254BB50EC09C928462E5A06564F67D305521D44D61EC38ADCF8FD0CDD85"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d02-start.json",
+      "bytes": 865,
+      "sha256": "BA2FC7C6C1E7DB4C635350B3B99333D5C9C154F27042108089F1733F122A1C58"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d03-final-acceptance.json",
+      "bytes": 881,
+      "sha256": "A6623B01C2BC507EB7DFDFC042DAC9253767E1275E1FA2486976C4C4F1A50AF0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d03-start.json",
+      "bytes": 865,
+      "sha256": "A6F093050985D42C6BA4A5D009B6E8CA9FADEC65BF23B43C67B02241CA3781DF"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d04-final-acceptance.json",
+      "bytes": 881,
+      "sha256": "CCC9900E57A7E59D82FC17F895FE3DF314CDA7F7C240C55C3E78CF0EC1F8AD55"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d04-start.json",
+      "bytes": 865,
+      "sha256": "24C42B1CF54EA5F18FE21201F4A06157EADCE222B1F5D4CD2C10D7BB402A698B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d05-final-acceptance.json",
+      "bytes": 882,
+      "sha256": "84D30667D510384DF822DD084BE59676A93E0AA5A7457AD07685252429ED7022"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d05-scope-revision.json",
+      "bytes": 888,
+      "sha256": "981E95650F2D6709038D6553E02FFAE20DF709E692AFC483A0FBBCE0AF0AA898"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d05-start.json",
+      "bytes": 865,
+      "sha256": "A972EF188D8AC800DF10899F939B9F58F3665E1EDCBD13C8380C9E0919FDD809"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d06-final-d-learning-gate.json",
+      "bytes": 898,
+      "sha256": "385D3E52106740E2C2D3EC9E2D99DD81483A23D01E7EEA4E451B32306086592A"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d06-start.json",
+      "bytes": 866,
+      "sha256": "0AB2DAE2448F22B69788E290A6843563321567CBCA7154E1364DEF8BE166C789"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d07-final-acceptance.json",
+      "bytes": 848,
+      "sha256": "02C72F1BC64FF05D8DFEC6111AC0781964303B867EA8242C92C59775875A9F34"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d07-start.json",
+      "bytes": 837,
+      "sha256": "7A83F28B99A62C567204AE84138BD87E0826EA793F706121F58DBF6FA77E1CFF"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d08-final-d-skill-gate.json",
+      "bytes": 896,
+      "sha256": "27732F1251DC5193A624B8F310300662A3D7EE24863923B3B19AEE8FD984FF50"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d08-start.json",
+      "bytes": 839,
+      "sha256": "F7C49706D8807B3F40E2A0C3DE4FE5C477B23E6F01753156C18B142E9C4AD595"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d09-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "B39755198B706E191E595D9FE84FCA486C72068AD040A6625E2643C7EF38FC64"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d09-start.json",
+      "bytes": 840,
+      "sha256": "AEFB678619DF83E35A5C9C05426B4A3D72F839F82F6720D9E5AC659BD1D03C61"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d10-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "EE6939FD4C58F944E77BF9247AE81B11D22FDF12571D99F170A9236E1A42FDD0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d10-start.json",
+      "bytes": 840,
+      "sha256": "3ED6D61DE5F9F777D99505A0D2107A0F0BFC701A3130B242C79982AA26F5869E"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d11-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "B27B874F6A72D650C2F17BE0C0B20432F52751C0938DAA3E8C78DA20ED829D24"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d11-start.json",
+      "bytes": 840,
+      "sha256": "F06CE63ED4F3C625CFE6AEAAEA5BE8D884164883B7AECDFD4AEE4757B1A14633"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d12-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "55D4C9C304719E5959D347F41A2C558FFC4D25D6662B5E0EF9CFE8E7A27D9986"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d12-lease-time-correction.json",
+      "bytes": 883,
+      "sha256": "1AA660CA44FCEFE4EDAB48B6FA5D7676FFD48ACA75CC8DB2533DAABF7AA87BE7"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d12-start.json",
+      "bytes": 840,
+      "sha256": "475D4AAC49097747117D3F6795D45A29DAC2101B526CE47BAC1E5DC79B4C2F56"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d13-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "34F263971532B5EF6DA7536887701057CE968617B2FC708639771E66CCB7E96A"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d13-start.json",
+      "bytes": 840,
+      "sha256": "93A809BE5F06C2B9BCEDDB96E4182B501F9E1192C1601314C3E35591D2E6CB37"
+    },
+    {
+      "path": "docs/test_reports/C-GATE_TEST_REPORT.md",
+      "bytes": 978,
+      "sha256": "5FA2F2627D0689C9D70FCA8E0A80C0BCBCC98F25C14B9271B74138B6F23E8F80"
+    },
+    {
+      "path": "docs/test_reports/DIR-2_REPORT.md",
+      "bytes": 1643,
+      "sha256": "B4F11F77CDD83235E6C6F11F0D7DF7EA09F72A4431CA3DCFAF2F2A61F562C949"
+    },
+    {
+      "path": "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "bytes": 555,
+      "sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379"
+    },
+    {
+      "path": "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "bytes": 1749,
+      "sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC"
+    },
+    {
+      "path": "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+      "bytes": 340,
+      "sha256": "FB8DB49A70A6C7F6D30705E99013CB08A36DE930642B2929E3D3226D08EC6B49"
+    },
+    {
+      "path": "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+      "bytes": 4179,
+      "sha256": "91F655D13342B8C2BEF55DC346E24201A9FB7239707614F9900B24E016FE1AC6"
+    },
+    {
+      "path": "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+      "bytes": 321,
+      "sha256": "8DE0A961652CDB23C89569988E63BCB434003BF61EC25B60CD2BCB029CD0D4F3"
+    },
+    {
+      "path": "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+      "bytes": 4902,
+      "sha256": "2350678782E65B3AFC7EBF6DFBED54634C297CDE2D60BA29451BFF6A212A3775"
+    },
+    {
+      "path": "docs/work_orders/D-03_INVOCATION_PROMPT.md",
+      "bytes": 449,
+      "sha256": "B4E52274473A14901B9A6F9702A81DB78F9193FF40CF107470B8E9828248A89C"
+    },
+    {
+      "path": "docs/work_orders/D-03_WORK_INSTRUCTION.md",
+      "bytes": 5796,
+      "sha256": "32C4CD120D759913B6422FC4E70A4E05FCDC53AB9DBCAED489AA87ED5E4B92F9"
+    },
+    {
+      "path": "docs/work_orders/D-04_INVOCATION_PROMPT.md",
+      "bytes": 487,
+      "sha256": "F221CBA261A8984B23A11BBCF1218AB5D09A7F1752FE1D12379F1A02AC533078"
+    },
+    {
+      "path": "docs/work_orders/D-04_WORK_INSTRUCTION.md",
+      "bytes": 5273,
+      "sha256": "7883CB61254E817929DB8D9EDBFCDE0B9088308BCFDA4C01E7D2B35341124905"
+    },
+    {
+      "path": "docs/work_orders/D-05_INVOCATION_PROMPT.md",
+      "bytes": 514,
+      "sha256": "6D97114D28DEA77ABBCEE9B1A6B78314CE423D258B379A39C90C018520A9219E"
+    },
+    {
+      "path": "docs/work_orders/D-05_WORK_INSTRUCTION.md",
+      "bytes": 4937,
+      "sha256": "E531CB678FC3C365513327570EEE54FFBA53AF4CE12C806ADA9883D442E27DAE"
+    },
+    {
+      "path": "docs/work_orders/D-06_INVOCATION_PROMPT.md",
+      "bytes": 521,
+      "sha256": "06ED54057A3B41EFBA329F01C9508298E71506A927D5BDC130C8296BEC049BCC"
+    },
+    {
+      "path": "docs/work_orders/D-06_WORK_INSTRUCTION.md",
+      "bytes": 5667,
+      "sha256": "332A07C9DC5A3660A5CEF4736313D31F000BBBDEABC7E618E70AF9BC85CD2836"
+    },
+    {
+      "path": "docs/work_orders/D-07_INVOCATION_PROMPT.md",
+      "bytes": 435,
+      "sha256": "D809C5D8ABA3FDAA740C4EAAAD2C87A0418BB929B331F46213C77AF64D606A80"
+    },
+    {
+      "path": "docs/work_orders/D-07_WORK_INSTRUCTION.md",
+      "bytes": 3569,
+      "sha256": "3D58AC1539351CE31CD5D41216BC4E72E9B1F59825ACD775B8EA047A9FD2EF50"
+    },
+    {
+      "path": "docs/work_orders/D-08_INVOCATION_PROMPT.md",
+      "bytes": 586,
+      "sha256": "E0651F8F3DB59FC05CE89B1FED56972EB761A6B4CCAF2BB5638FC6B719331E15"
+    },
+    {
+      "path": "docs/work_orders/D-08_WORK_INSTRUCTION.md",
+      "bytes": 4854,
+      "sha256": "85ABF5F8ED84EE93F8414D3E551EB1629EE01672312D893BF4AA0688E3726633"
+    },
+    {
+      "path": "docs/work_orders/D-09_INVOCATION_PROMPT.md",
+      "bytes": 552,
+      "sha256": "2C1D6EDB4C30B28C5587DFA2E5618E11DE88F2B2B901BC0305F09141FF5A8EF5"
+    },
+    {
+      "path": "docs/work_orders/D-09_WORK_INSTRUCTION.md",
+      "bytes": 4483,
+      "sha256": "FD2BF06528D8C2F8FA6F2FF25A814B26C7B7F2C273D463E89B471078144635E7"
+    },
+    {
+      "path": "docs/work_orders/D-10_INVOCATION_PROMPT.md",
+      "bytes": 567,
+      "sha256": "46452317AFAE3EA0CFD6C9696C4053E7E068880F6A845CE7C9299D35BAEBA3AF"
+    },
+    {
+      "path": "docs/work_orders/D-10_WORK_INSTRUCTION.md",
+      "bytes": 5124,
+      "sha256": "B9F8F545F5D55FCF646AFD1BD564D9C16C5BA9834ABC520B6D6E59BF72214CD7"
+    },
+    {
+      "path": "docs/work_orders/D-11_INVOCATION_PROMPT.md",
+      "bytes": 559,
+      "sha256": "14872943A6918674EA2E495589E34DF365971975FD13A1F841E3635A189F3280"
+    },
+    {
+      "path": "docs/work_orders/D-11_WORK_INSTRUCTION.md",
+      "bytes": 5100,
+      "sha256": "784595E0D200541627E0918D1AA405F11EE80EB196C7C7123BF2346EB9382641"
+    },
+    {
+      "path": "docs/work_orders/D-12_INVOCATION_PROMPT.md",
+      "bytes": 595,
+      "sha256": "660EE18068A0F4B75331B6F1575CCCBF0D7C7DE4E670C1C817EDEB7372D1AADC"
+    },
+    {
+      "path": "docs/work_orders/D-12_WORK_INSTRUCTION.md",
+      "bytes": 4464,
+      "sha256": "23AF92F687E0C89833E8A3E9D228C6E3684B172FD88A1F434CEF8DE995744B56"
+    },
+    {
+      "path": "docs/work_orders/D-13_INVOCATION_PROMPT.md",
+      "bytes": 746,
+      "sha256": "2C92752D3D8719A7202A52DD027959D4B42654335302298643958684AFAE8FDD"
+    },
+    {
+      "path": "docs/work_orders/D-13_WORK_INSTRUCTION.md",
+      "bytes": 4875,
+      "sha256": "42FE577495653D3972965954DF6FFB2FE69EC4449AAFDBC7B9F20304012D2D33"
+    },
+    {
+      "path": "packages/api/hook_runtime.py",
+      "bytes": 2636,
+      "sha256": "6DCC95B62171B830BB17D596748F0DA1D7EB21106E7D1932726CB638DE628A34"
+    },
+    {
+      "path": "packages/api/hooks.py",
+      "bytes": 2055,
+      "sha256": "BB557E30C3B81E32984CEE08D06D49384C5027CCE7868CEA9F0696AC7FCC99F4"
+    },
+    {
+      "path": "packages/api/knowledge_memory.py",
+      "bytes": 5005,
+      "sha256": "64F07C7DC9FD19B4934C76E041D4FCE96DB01057A2C21D6A872E4866C28A1C84"
+    },
+    {
+      "path": "packages/api/knowledge_patterns.py",
+      "bytes": 2286,
+      "sha256": "773DCC4C6CACC46D692826026D44FD3A7E73BE77824F8DF2289A761D5AF3F8C3"
+    },
+    {
+      "path": "packages/api/learning_candidates.py",
+      "bytes": 2541,
+      "sha256": "8C1B90C1FCA7B961A273221BA1768F48AA1D1D26E3E8BFE12D0D676553B2C587"
+    },
+    {
+      "path": "packages/api/learning_e2e.py",
+      "bytes": 1203,
+      "sha256": "7B2C161D38E90A9510113BAAF213C00FEFCCCD4DE6848FEC7837432266F0F43E"
+    },
+    {
+      "path": "packages/api/learning_journey.py",
+      "bytes": 1499,
+      "sha256": "523AB02433887266A60B898789C042EE163CF4C5272686B6E115E4AC4D4BDBCF"
+    },
+    {
+      "path": "packages/api/learning_reviews.py",
+      "bytes": 1926,
+      "sha256": "F1A517A9BEB0A2AB90A93526E284DF601DB59B6B58C5A123ACCD70D673B35D09"
+    },
+    {
+      "path": "packages/api/learning_snapshots.py",
+      "bytes": 2501,
+      "sha256": "DAACA8097D6213A5F1E616EDEC7188D585DD54D3A0DFE93C80151264C9ACB6C5"
+    },
+    {
+      "path": "packages/api/learning_sources.py",
+      "bytes": 2526,
+      "sha256": "3057A5BDF53B755D934461BC22EA748822EDEEBF4BEB6602FC09AF4AD36DD844"
+    },
+    {
+      "path": "packages/api/model_registry.py",
+      "bytes": 2033,
+      "sha256": "AC93BB1FBADE13BE7821564334ACBEB0C734C057F97EA1EC82835CCD3F361159"
+    },
+    {
+      "path": "packages/api/skill_evolution.py",
+      "bytes": 2117,
+      "sha256": "E415861D0C54D19C339E187F9E87A314D00C77E0A46E7326A25E73AD70A1F302"
+    },
+    {
+      "path": "packages/api/skills.py",
+      "bytes": 2374,
+      "sha256": "677B448D6117E36E9ACA19E699A9AE883241074B6CF3536C51E484A81DCE9BD6"
+    },
+    {
+      "path": "packages/e2e/__init__.py",
+      "bytes": 506,
+      "sha256": "CB553895C98FEA359A41678C9E1CED71D10FDA12E0E3010769FFBEB75F96DA7E"
+    },
+    {
+      "path": "packages/e2e/harness.py",
+      "bytes": 31109,
+      "sha256": "E13BA9BD87AD828509D72CF70677DACE96ABE02E8D8EC50F17DFDA0F48676815"
+    },
+    {
+      "path": "packages/knowledge/__init__.py",
+      "bytes": 2494,
+      "sha256": "DA403780A8F7EA0B011A936F5EE461A30637170689F11990F4BF942D39E79E2A"
+    },
+    {
+      "path": "packages/knowledge/candidates.py",
+      "bytes": 40010,
+      "sha256": "03AFB243EA2F4B93959273DA6B4868CC09C6AB263D598B4630CEB8C0EB057DC6"
+    },
+    {
+      "path": "packages/knowledge/hook_runtime.py",
+      "bytes": 44032,
+      "sha256": "D99A26FAE223EF512746CD09315F1886AA642DC374CA7F0DEF93FC47E51018F9"
+    },
+    {
+      "path": "packages/knowledge/hooks.py",
+      "bytes": 30778,
+      "sha256": "B9CC99BC96DC32E3F6CBBBFD4A734F44D0B2B27B1219BFE985A49ABB04AD954B"
+    },
+    {
+      "path": "packages/knowledge/learning_e2e.py",
+      "bytes": 31473,
+      "sha256": "59967CDD6C132AC24D5F84556652900B5B56DBEB1EECD3FFA083BF57E5829698"
+    },
+    {
+      "path": "packages/knowledge/learning_journey.py",
+      "bytes": 43154,
+      "sha256": "13C78BC8CB0F00A798FB54C3EEB9158A708D2A20D8024119237676E704ADBB27"
+    },
+    {
+      "path": "packages/knowledge/memory.py",
+      "bytes": 20520,
+      "sha256": "D730F3FC46BA374895B87C03580C346772D095C039BD3690094891D53483D1F7"
+    },
+    {
+      "path": "packages/knowledge/model_registry.py",
+      "bytes": 32168,
+      "sha256": "D1F8CEF3EE77696DB7962650E3C1926A79444378192BD6FA7AFADD02B92A2AF6"
+    },
+    {
+      "path": "packages/knowledge/patterns.py",
+      "bytes": 18897,
+      "sha256": "9AB92DC1FF5D565B6A58C67C7734B639CF737213D26A5EDA59D87F46AB8D290D"
+    },
+    {
+      "path": "packages/knowledge/reviews.py",
+      "bytes": 24745,
+      "sha256": "67C0D58374300F25F14BAAC6257E71883C133AEDE80DEDC3A1442A33AA2EFE22"
+    },
+    {
+      "path": "packages/knowledge/skill_evolution.py",
+      "bytes": 37301,
+      "sha256": "D4CC114DB144B6BAAD22FB42D81CC5FCD09B6DF03ADE7DA20232B82D6622E13D"
+    },
+    {
+      "path": "packages/knowledge/skills.py",
+      "bytes": 25012,
+      "sha256": "B6605F08A5E2C3D0C1E5740EFCD366CB1A48C1B21A24B721BB80A33EE91BF275"
+    },
+    {
+      "path": "packages/knowledge/snapshots.py",
+      "bytes": 17318,
+      "sha256": "42B620BC1ADE951D9C9B22327A217BAA62C7C6806096D138DB02D0D86BDC848F"
+    },
+    {
+      "path": "packages/knowledge/sources.py",
+      "bytes": 24972,
+      "sha256": "124DE0727753C6E8785B5E0DDE58F657769FF2F50EC4F030DF0A6BEFBF191121"
+    },
+    {
+      "path": "packages/leases/service.py",
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    {
+      "path": "packages/orchestration/developer_lifecycle.py",
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    {
+      "path": "packages/orchestration/takeover.py",
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    {
+      "path": "packages/tool_gateway/registry.py",
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    {
+      "path": "packages/verification/__init__.py",
+      "bytes": 963,
+      "sha256": "BCC2B4D3870A5D024F937876931CF4016E44CC08D71F1C41B572F6CE7522E489"
+    },
+    {
+      "path": "packages/verification/gates.py",
+      "bytes": 49991,
+      "sha256": "D09D9AD564820DAE4DF88DED9FCFD7DCA9D3B6C9D3AD719E9FCE97D40A980D8E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4254800,
+      "sha256": "7D47CFD9C11B91515B05535EC5CDE4F3A49ED26AB82374559DF7EE93B2E35147"
+    },
+    {
+      "path": "tests/api/test_hook_runtime_d10.py",
+      "bytes": 1871,
+      "sha256": "8E7FB49C886A0574083F1F61DAF5AA80DF1C79935A7C655F4FB3AE036CFA9E25"
+    },
+    {
+      "path": "tests/api/test_hooks_d09.py",
+      "bytes": 3540,
+      "sha256": "20B60A831C760726CF0D0B0458EDD3A48F384337A01813756F71670E2219883C"
+    },
+    {
+      "path": "tests/api/test_knowledge_memory_d01.py",
+      "bytes": 7723,
+      "sha256": "5C3E2BA90A0E6EBF67E91652CBF381AFC400E9AF2B8571B2CDF39DB5A96E6639"
+    },
+    {
+      "path": "tests/api/test_knowledge_patterns_d04.py",
+      "bytes": 5099,
+      "sha256": "282429A1432E5E0285770544C997A0AA965D9216B6A4BA6E3EF0B8A0AF4329B5"
+    },
+    {
+      "path": "tests/api/test_learning_candidates_d06.py",
+      "bytes": 3857,
+      "sha256": "85BE4F3E8AECAF17183793A277CE14E8E920831260BCB8384FE56313D93BBD2D"
+    },
+    {
+      "path": "tests/api/test_learning_e2e_d13.py",
+      "bytes": 1999,
+      "sha256": "565F690C2A722256B5CA8A9CAA057C36E3BA410FA1A03B4F1EE786C74164B79F"
+    },
+    {
+      "path": "tests/api/test_learning_journey_d12.py",
+      "bytes": 3212,
+      "sha256": "D12AD74E6B7CCE2B0986B867014F9D90E8EC02701D0CC9DF81BB73C91CB563EE"
+    },
+    {
+      "path": "tests/api/test_learning_reviews_d05.py",
+      "bytes": 2787,
+      "sha256": "EE91A1CC1CFD3B962ECF397B7B2A0C79A1DDEAC62635F522DA550F631A979CAC"
+    },
+    {
+      "path": "tests/api/test_learning_snapshots_d02.py",
+      "bytes": 5161,
+      "sha256": "741CC51AC1B2CA389988B1A6F6183771F4F6A9019A2DF2EB62E81081A6198848"
+    },
+    {
+      "path": "tests/api/test_learning_sources_d03.py",
+      "bytes": 7060,
+      "sha256": "6ABEA025E4057A0616EE8BDE83A97871A8C80D0638A3A7C14FBA354B9531D0D6"
+    },
+    {
+      "path": "tests/api/test_model_registry_d11.py",
+      "bytes": 2328,
+      "sha256": "4720BF325506946AA454B5FAC79AE5B3E2D4B81E67E46094D3EF38099F9BAA73"
+    },
+    {
+      "path": "tests/api/test_skill_evolution_d08.py",
+      "bytes": 2215,
+      "sha256": "3C07BBB336F7AEA77363222B41919230E64A33A4B6D643DD25A2C659E93E06F4"
+    },
+    {
+      "path": "tests/api/test_skills_d07.py",
+      "bytes": 4156,
+      "sha256": "8D3F6285D5DA702DAA207068FDEF92569839ED04FE3A45DDDD731713583DA936"
+    },
+    {
+      "path": "tests/e2e/test_synthetic_e2e.py",
+      "bytes": 15505,
+      "sha256": "B4F3C85F4C64485B16EAA1574B8E9BA038C31A418D83812DD81740C5D501C212"
+    },
+    {
+      "path": "tests/knowledge/test_candidates_d06.py",
+      "bytes": 32235,
+      "sha256": "F663EA41D283527CDE804910BA48669590D11847A2D4AC4C0C800BBE3EDE0252"
+    },
+    {
+      "path": "tests/knowledge/test_hook_runtime_d10.py",
+      "bytes": 31098,
+      "sha256": "DE3C8B4F1A42B0469261F50CB7A06204755C27ED40085F57306EE7F95BB4B4C3"
+    },
+    {
+      "path": "tests/knowledge/test_hooks_d09.py",
+      "bytes": 25769,
+      "sha256": "AF1B5F7E4D79B1A575DCA4AF0EDF71F620AF37035A5DBC2C87558C228B2AEFD6"
+    },
+    {
+      "path": "tests/knowledge/test_learning_e2e_d13.py",
+      "bytes": 32790,
+      "sha256": "E88E3970DAE20A880A0E5159DE5BE33118CF8D93932A9A2DE632A667482CC368"
+    },
+    {
+      "path": "tests/knowledge/test_learning_journey_d12.py",
+      "bytes": 24590,
+      "sha256": "296AC731712804EFD1FF3B1BB6C1474D9EBE3E5D8C52F608DD65E4FFA4748365"
+    },
+    {
+      "path": "tests/knowledge/test_memory_d01.py",
+      "bytes": 19819,
+      "sha256": "9192BEA220BD5D2067074BF9644CA2149EA3AB880B9070C23C9142FB3307AE49"
+    },
+    {
+      "path": "tests/knowledge/test_model_registry_d11.py",
+      "bytes": 31195,
+      "sha256": "803F20AE1BF51A75457892B546566FD969DA93F3BD2F47E7C51F2995D3045E25"
+    },
+    {
+      "path": "tests/knowledge/test_patterns_d04.py",
+      "bytes": 17131,
+      "sha256": "42865BAD4BAF28FCFAE135BD52DC92D7596A9D29173A9D084BA971E38F7C847C"
+    },
+    {
+      "path": "tests/knowledge/test_reviews_d05.py",
+      "bytes": 20343,
+      "sha256": "D5B51F5E9165281CF82AAA0B3E3A99E780CC118F09F09D5EC1CD6663D5D5C1D9"
+    },
+    {
+      "path": "tests/knowledge/test_skill_evolution_d08.py",
+      "bytes": 31495,
+      "sha256": "80CBDEBC22B58408A9FD12E4F323559F8F02BB7FBD8CD656DD7787BB91F78055"
+    },
+    {
+      "path": "tests/knowledge/test_skills_d07.py",
+      "bytes": 23417,
+      "sha256": "8424A582DCD316E3FDD15B9484588BCFD11B69DBFFDEDE606A60461EA56923E6"
+    },
+    {
+      "path": "tests/knowledge/test_snapshots_d02.py",
+      "bytes": 14462,
+      "sha256": "4093CC2901A1DDC82305E6C429828A252B27B66D8248FA9F939CF181EA2F8315"
+    },
+    {
+      "path": "tests/knowledge/test_sources_d03.py",
+      "bytes": 27161,
+      "sha256": "BEFA5B8F3B653B610CBDF582A37B1338541E5F0C4CE461716D0388853B0C9C9D"
+    },
+    {
+      "path": "tests/leases/test_worker_write_fencing.py",
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    {
+      "path": "tests/orchestration/test_failure_ledger_c12.py",
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    {
+      "path": "tests/orchestration/test_takeover_c13.py",
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    {
+      "path": "tests/tool_gateway/test_tool_registry.py",
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1139590,
+      "sha256": "77585CA5261A98C1CBC26F0F5D8BDBE902E87B581B7666A5EE7BC2CB023E9D07"
+    },
+    {
+      "path": "tests/verification/test_gates_c14.py",
+      "bytes": 36442,
+      "sha256": "ACCD15AF02CA9FD6B5E4A3870A591922E8D5BA0B5023AE57BE7966FBE5FBA971"
+    }
+  ]
+}

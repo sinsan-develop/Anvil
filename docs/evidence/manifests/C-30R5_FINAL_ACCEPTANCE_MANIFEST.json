@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C30R5_FINAL_ACCEPTANCE",
+  "artifact_id": "C30R5-FINAL-20260923",
+  "package_id": "C-30R5",
+  "event_sequence": 1358,
+  "historical_event_sequence": 1349,
+  "appended_event_count": 9,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "projection_mode": "C30R5_FINAL_ACCEPTANCE_EXACT15",
+  "validated_base_commit": "760e47ce250e8181fe1b8ee821123d49140c3e11",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+    "docs/04_test_reports/C-30_PR_BROKER_RECONCILIATION.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c30r5-pr-broker-reconciliation.json",
+    "docs/work_orders/C-30R2_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+    "scripts/c30r5_final_overlay.py",
+    "tests/integration/test_c30r2_runtime_owner.py",
+    "tests/tooling/test_c30r5_final_overlay.py"
+  ],
+  "control_paths": [
+    "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+    "docs/04_test_reports/C-30_PR_BROKER_RECONCILIATION.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c30r5-pr-broker-reconciliation.json",
+    "docs/work_orders/C-30R2_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+    "scripts/c30r5_final_overlay.py",
+    "tests/integration/test_c30r2_runtime_owner.py",
+    "tests/tooling/test_c30r5_final_overlay.py"
+  ],
+  "product_write_scope": [],
+  "authority": {
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md": "B14F3A0A253F5BE74194F2B4BC38483E855B62B0C7070D6614F061D19234B000",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md": "AAF9EAB6A74ECE89EEA12813E627C5E203E85C4131D6FFED2CF1A8156C7C9BAB"
+  },
+  "verification": {
+    "focused": 2,
+    "matrix": 14,
+    "python_related": 159,
+    "web": 88,
+    "spec": "ACCEPT_C0_I0_M0",
+    "quality": "ACCEPT_C0_I0_M0"
+  },
+  "unverified": [
+    "PROVIDER",
+    "PRODUCTION_AUTH",
+    "PG18",
+    "ACTUAL_SERVER_GENERATED_400",
+    "ORACLE"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md",
+      "bytes": 18268,
+      "sha256": "FBB9CD91939316A05AEBBB79ECFA9F8641D6BCF6D65787D20E5F652C7C6EF661"
+    },
+    {
+      "path": "docs/04_test_reports/C-30_PR_BROKER_RECONCILIATION.md",
+      "bytes": 1056,
+      "sha256": "4D8BF297D431866026F197C292C428DB71C68C9E31AE95A2C8AB9E9352ED18A1"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 432107,
+      "sha256": "AAA7E49A20E23771459AB286C856DE0CBEDDAB3E4D338A25B9E18131A3250DF1"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 853,
+      "sha256": "1367F7CBD44E6A6A19375CA6A2ACFB083998B0DEB540F5623D8AEB2FB5410967"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1107182,
+      "sha256": "1471F121E23FC751D2EDB0089E29C40C83449D664570362E92D7DA7524E2017D"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4033559,
+      "sha256": "8B42FCDA44AE2580ECD42865FD17DD11C0E80D9A07121980A5F5F78799DE12B2"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c30r5-pr-broker-reconciliation.json",
+      "bytes": 664,
+      "sha256": "97E4E0503792B7C9EADDCD11151AD69DEEAFEDBF3BDB601A917D6276C6788350"
+    },
+    {
+      "path": "docs/work_orders/C-30R2_INVOCATION_PROMPT.md",
+      "bytes": 1044,
+      "sha256": "EBCAAB837B47240D90F3FF6AD587F6E355480AD21F395B23BC1049664419B68B"
+    },
+    {
+      "path": "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+      "bytes": 5195,
+      "sha256": "71DA40BB182A1FE023AE8D22543FCAB7CD7AFF9BE71477D29BF601B27290D3F0"
+    },
+    {
+      "path": "scripts/c30r5_final_overlay.py",
+      "bytes": 26675,
+      "sha256": "A997E224C43C64E92B43A33880B10F7FCE742B1F2D36AEAFC13C175A3FE2E4C3"
+    },
+    {
+      "path": "tests/integration/test_c30r2_runtime_owner.py",
+      "bytes": 14181,
+      "sha256": "DF4B02E2718D9E8E75ECB1665B275788D8FABD5CA00971689A72A377771CCEB4"
+    },
+    {
+      "path": "tests/tooling/test_c30r5_final_overlay.py",
+      "bytes": 2365,
+      "sha256": "AA74E301AFFCA2E75DC32B1CB6CD49C2597C983525E81D1A4B51B5A67DF3B5A1"
+    }
+  ],
+  "self_reference": false,
+  "repository_reconciliation": {
+    "accepted_checkpoint": "6e4839c7de828f2bd10c79ebff6ed9a8a0c04650",
+    "broker_main": "4d94db7e3e947611a87848aaa17d5b1a8837b74a",
+    "broker_merge": "982e74530eb4106d9860238035c635387df0c226",
+    "status": "RECONCILED_PENDING_COMMIT_PUSH",
+    "product_behavior_changed": false
+  }
+}

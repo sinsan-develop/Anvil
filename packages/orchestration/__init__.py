@@ -1,5 +1,7 @@
 """Minimal Main Agent kernel for one budgeted model/action/observation step."""
 
+from packages.planning.service import PlanningMainAuthorityService, MainAuthorityRecord, MainAuthoritySource, MainAuthorityStatus
+
 from .kernel import BudgetDenied, BudgetUsageEvent, MainAgentKernel, StepBudget, StepResult
 from .native_agent_adapter import NativeCodingAgentAdapter
 from .delegation import (
@@ -35,15 +37,20 @@ from .failure_ledger import (
     FailureLedgerReasonCode, FailureLedgerReceipt,
 )
 from .takeover import (
-    MainAgentTakeoverService, TakeoverAudit, TakeoverPacket, TakeoverReasonCode,
-    TakeoverReceipt, TakeoverService,
+    MainAgentTakeoverService, TakeoverArtifactReference, TakeoverAudit,
+    SealedTakeoverEvidence, TakeoverEvidenceAuthority,
+    TakeoverEvidenceExpectation, TakeoverEvidenceRegistry,
+    TakeoverPacket, TakeoverReasonCode, TakeoverReceipt,
+    TakeoverReferenceBundle, TakeoverService,
 )
 from packages.planning.planner import (
     ExecutionPlan, ExecutionStep, PlannerError, RequestAnalysis, ScheduleDecision,
+    MainResponsibility, MainAuthoritySnapshot, ScopeApprovalRequest, build_execution_plan,
     StepKind, analyze_request, generate_work_instruction, schedule_ready_steps,
 )
 
 __all__ = [
+    "PlanningMainAuthorityService", "MainAuthorityRecord", "MainAuthoritySource", "MainAuthorityStatus",
     "BudgetDenied", "BudgetUsageEvent", "MainAgentKernel", "StepBudget", "StepResult",
     "NativeCodingAgentAdapter",
     "DataEgressProfile", "DataEgressSnapshot", "PermissionSnapshot",
@@ -66,9 +73,25 @@ __all__ = [
     "RunProjection", "StepAttemptProjection", "StepProjection", "StepState",
     "FailureLedger", "FailureLedgerEntry", "FailureLedgerProjection",
     "FailureLedgerReasonCode", "FailureLedgerReceipt",
-    "MainAgentTakeoverService", "TakeoverAudit", "TakeoverPacket", "TakeoverReasonCode",
-    "TakeoverReceipt", "TakeoverService",
+    "MainAgentTakeoverService", "TakeoverArtifactReference", "TakeoverAudit",
+    "SealedTakeoverEvidence", "TakeoverEvidenceAuthority",
+    "TakeoverEvidenceExpectation", "TakeoverEvidenceRegistry",
+    "TakeoverPacket", "TakeoverReasonCode", "TakeoverReceipt",
+    "TakeoverReferenceBundle", "TakeoverService",
     "ExecutionPlan", "ExecutionStep", "PlannerError", "RequestAnalysis",
+    "MainResponsibility", "MainAuthoritySnapshot", "ScopeApprovalRequest", "build_execution_plan",
     "ScheduleDecision", "StepKind", "analyze_request", "generate_work_instruction",
     "schedule_ready_steps",
+    "ExceptionResolver", "FailurePolicy", "ExceptionResolutionError",
+    "ExceptionRecord", "ExceptionReceipt", "ExceptionEvent", "ExceptionProjection",
 ]
+
+
+def __getattr__(name):
+    # E04 DAG imports agent-team/orchestration owners during initialization.
+    # Resolve this additive facade lazily without changing existing schemas.
+    if name in {"ExceptionResolver", "FailurePolicy", "ExceptionResolutionError",
+                "ExceptionRecord", "ExceptionReceipt", "ExceptionEvent", "ExceptionProjection"}:
+        from . import exception_resolver
+        return getattr(exception_resolver, name)
+    raise AttributeError(name)

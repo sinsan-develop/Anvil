@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C30R5_START",
+  "artifact_id": "C30R5-START-20260923",
+  "package_id": "C-30R5",
+  "event_sequence": 1349,
+  "historical_event_sequence": 1345,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 4018671,
+    "sha256": "A2FC77CE462EEF941B5A2A0ABD350F1EBF5968E32E9AD68305541A93020BF727"
+  },
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "projection_mode": "C30R5_MATRIX_CORRECTION_START_EXACT10_PRODUCT_EXACT1",
+  "validated_base_commit": "ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c30r5-start.json",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/integration/test_c30_contract_matrix.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "control_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c30r5-start.json",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "product_write_scope": [
+    "tests/integration/test_c30_contract_matrix.py"
+  ],
+  "authority": {
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9",
+    "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md": "697D43EBD921797EEDDF835F89866FD56DBA20B5C39B295C777C9D93818F87B4"
+  },
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 430764,
+      "sha256": "8EFBA08B68195609ACA1F95039709AC47E9A96024202D698AC52581A5184038D"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 2694,
+      "sha256": "E540C033C03D57EA91FC01A5B4162AF101E42D61C53887A279D2C409D7B44B9D"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1110029,
+      "sha256": "C56E1228FF80726080BB0B6618775925699CD2C780AEBE8109F9F5272A875EE1"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4024586,
+      "sha256": "2BEF9C4ED477464F32D2BB4D139D6CB57D6C3767CA75C233E6F9BF1C907D3B7D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c30r5-start.json",
+      "bytes": 665,
+      "sha256": "32004B40DAA0D5D6F0712DEDB98D334E65D3442F34BF543C0BBF5C5B8ACB778A"
+    },
+    {
+      "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION.md",
+      "bytes": 372,
+      "sha256": "697D43EBD921797EEDDF835F89866FD56DBA20B5C39B295C777C9D93818F87B4"
+    },
+    {
+      "path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION.md",
+      "bytes": 2215,
+      "sha256": "4E215B4437E67B92F536A54D66B70893BEBAFA1F29FEA060794B6FB007D512A9"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4718074,
+      "sha256": "68D8C79292C7B62D297C8DF76C45FBDC409391B1094C7E4B139FF3285C793F07"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1282413,
+      "sha256": "21CD66ABDFD5423DC3AE594FD7BCF4533E5C9046A82373054146C42DFDCBC05D"
+    }
+  ]
+}

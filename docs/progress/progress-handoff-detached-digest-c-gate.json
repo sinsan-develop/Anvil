@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C-GATE-DIGEST-20260916",
+  "package_id": "C-GATE",
+  "event_sequence": 933,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T06:20:00+09:00",
+  "scope": "seq932-933 DIR-2 owner direction and C Gate decision; seq1-931 preserved; exact45",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1004794,
+    "file_sha256": "6A29CFB9CA73DA784A24C102F9707BD473212C78C18004D081560CA980BAB838",
+    "canonical_json_sha256": "B343BAE2ECB6AE0CC62EE94AE96F92416FECAFDF9EFD3E5CD72FEA3F1D8C59A3"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 198797,
+    "file_sha256": "0186C8BB5C4043AA0F87C4BAF9663A75A3BE2D29A599F63B60125AD3C3429579",
+    "machine_summary_canonical_sha256": "D3DEB8D13B8C28C68C1DCD055BFCDC69C936D4C79AB0E24300ACB3027102FB5A"
+  },
+  "dir_registry": {
+    "path": "docs/progress/dir-checkpoints.json",
+    "bytes": 2552,
+    "file_sha256": "A9157D741DD88DC1791C9D2E9A5156472CD5C18FD17820951E162DF74E68D72E"
+  }
+}

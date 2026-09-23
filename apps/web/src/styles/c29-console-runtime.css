@@ -1,0 +1,2 @@
+/* C28 accepted visual language is loaded first; only runtime overflow below. */
+[data-c29-console] main{min-width:0}[data-c29-console] .sidebar h2{margin:0 10px 12px}[data-c29-console] .sidebar>small{margin:0 10px 24px}[data-c29-console] pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;line-height:1.6}[data-c29-console] summary{cursor:pointer}[data-c29-console] td{max-width:320px;overflow:hidden;text-overflow:ellipsis}[data-c29-console] .trace{overflow-wrap:anywhere;white-space:normal}

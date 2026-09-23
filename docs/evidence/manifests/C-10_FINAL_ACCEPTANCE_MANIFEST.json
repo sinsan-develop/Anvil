@@ -1,0 +1,172 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-10_FINAL_ACCEPTANCE",
+  "artifact_id": "C10-FINAL-ACCEPTANCE-20260914",
+  "created_at": "2026-09-14T20:45:00+09:00",
+  "package_id": "C-10",
+  "event_sequence": 865,
+  "historical_event_sequence": 855,
+  "appended_event_count": 10,
+  "historical_raw_event_prefix": {
+    "bytes": 2522666,
+    "sha256": "37A4BECF2B2F2828E35DE7C67DB6F2C48E2B561F44DFDB537D78A3AE458F1968"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "c10_status": "ACCEPTED",
+  "c11_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "active_leases": 0,
+  "expired_epoch": 4,
+  "renewed_epoch": 5,
+  "product_exact_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py"
+  ],
+  "product_exact_path_count": 6,
+  "product_exact_path_list_sha256": "331352013FD98DDE31EB8DEC541008111E26C1B88D56CD412DEC9B2FA94E8042",
+  "product_raw": {
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md": {
+      "bytes": 12664,
+      "sha256": "8B388DDF5F90C4F2BD4359F5E2F3484D64B5A7EF7B2BEF8D66C023333D0153C9"
+    },
+    "packages/action_policy/__init__.py": {
+      "bytes": 395,
+      "sha256": "134DB462EC8FF31F5F2D56F244B63F17CC7C04171B5A508FF32EBF9E1CFCF11C"
+    },
+    "packages/action_policy/admission.py": {
+      "bytes": 31900,
+      "sha256": "8FC343BF2766D3CB3710C9D073E438A8E4327F19B2B5A64329D60B4B3980D676"
+    },
+    "packages/action_policy/policy.py": {
+      "bytes": 8182,
+      "sha256": "C7E1F361AFB4FFA54F985346D1E5C3CC37CEE4DDE5A51CD4FD14115BFCD0D018"
+    },
+    "tests/action_policy/test_c10_policy.py": {
+      "bytes": 29409,
+      "sha256": "17D05F41527F32B4A7B80DE5020C340FA096849B7369D093D5673F0F653EE719"
+    },
+    "tests/action_policy/test_policy.py": {
+      "bytes": 3883,
+      "sha256": "08F49C0A109457113B051F64058622D07BBD97182750CD080376E3C6DE555068"
+    }
+  },
+  "control_exact_paths": [
+    "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "control_exact_path_count": 7,
+  "combined_exact_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "scripts/check_project_progress.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 13,
+  "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+  "validated_base_commit": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+  "record_binding": "UNSTAGED_EXACT13_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+  "test_evidence": {
+    "passed": {
+      "focused": 271,
+      "combined": 300,
+      "c09_authoritative": 106
+    },
+    "failed": 0,
+    "commands": {
+      "focused": "python -B -m pytest -q -p no:cacheprovider tests/action_policy/test_c10_policy.py",
+      "combined": "python -B -m pytest -q -p no:cacheprovider tests/action_policy tests/tool_gateway",
+      "c09_authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py --disable-warnings -ra"
+    },
+    "compileall": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "status": "PASS",
+      "exit_code": 0
+    }
+  },
+  "independent_reviews": {
+    "blocking_findings": 0,
+    "spec": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "quality": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    }
+  },
+  "external_validation": {
+    "tool_gateway_dispatch": "NOT_EXECUTED",
+    "secret_broker": "NOT_ACCESSED",
+    "network_dns": "NOT_ACCESSED",
+    "filesystem_subprocess": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 192507,
+      "sha256": "2A5D6A2080B9E17A99880976BDFEBD43BCABE1F1014FACA84EA6EF3A316A0A7E"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 951963,
+      "sha256": "3D072B78350CCC65C6C0B1AE374B7C075F267BC3F5B216E13ECAFB0B859FEB42"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2544245,
+      "sha256": "B369ACF0F803FBA2CCD021990805AAA8D02A9953A57CEDB5A37E3E736181C1BD"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+      "bytes": 892,
+      "sha256": "7C994A3FC42EFB192B5ECD503F33B06C95709DE0F35DD7C455D6A2AE0F254AA1"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3570071,
+      "sha256": "2B22EB8827A5F9F31D62F02B838409A3AAB68FBAD0A97BE3C377B2C059B18527"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 996687,
+      "sha256": "D7A381CE4D943767B50A3A0D4D065DC923AFB45B7910037BA362C1EC22D7563D"
+    }
+  ]
+}

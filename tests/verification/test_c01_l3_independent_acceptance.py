@@ -172,6 +172,17 @@ POST /api/work-plans/{id}:approve
 POST /api/work-plans/{id}:reopen
 """.strip().splitlines())
 
+# C-01's immutable acceptance compares the schema that existed at the C-01
+# boundary.  Later accepted packages may add routes without changing that
+# historical contract; project those explicitly approved successor routes out
+# before checking the C-01 semantic delta.
+APPROVED_SUCCESSOR_OPENAPI_OPERATIONS = frozenset({
+    "GET /api/delegations/{id}",
+    "POST /api/delegations/{id}:cancel",
+    "POST /api/delegations/{id}:resume",
+    "POST /api/delegations/{id}:steer",
+})
+
 
 def _hash(char: str) -> str:
     return "sha256:" + char * 64
@@ -221,6 +232,19 @@ def _normalized_operations(schema: dict) -> frozenset[str]:
     )
 
 
+def _c01_historical_schema(current_schema: dict) -> dict:
+    projection = deepcopy(current_schema)
+    paths = projection.get("paths", {})
+    for operation in APPROVED_SUCCESSOR_OPENAPI_OPERATIONS:
+        method, path = operation.split(" ", 1)
+        path_item = paths.get(path)
+        assert isinstance(path_item, dict) and method.lower() in path_item, f"C01_L3_SUCCESSOR_ROUTE_MISSING: {operation}"
+        path_item.pop(method.lower())
+        if not path_item:
+            paths.pop(path)
+    return projection
+
+
 def _parent_openapi_hash(current_schema: dict) -> str:
     parent_projection = deepcopy(current_schema)
     removed = parent_projection.get("paths", {}).pop(EXECUTE_PATH, None)
@@ -236,8 +260,9 @@ def test_registry_and_openapi_have_only_the_approved_execute_semantic_diff() -> 
     assert len(matches) == 1, f"C01_L3_MISSING_EXECUTE_ROUTE: registry {EXECUTE_KEY}"
     assert matches[0].permission == "run:execute", "C01_L3_MISSING_PERMISSION: run:execute"
     schema = _app().openapi()
-    assert _normalized_operations(schema) == BASELINE_OPENAPI_OPERATIONS | {EXECUTE_KEY}, "C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF"
-    assert _parent_openapi_hash(schema) == PARENT_OPENAPI_SHA256, "C01_L3_PARENT_OPENAPI_SCHEMA_DRIFT"
+    historical_schema = _c01_historical_schema(schema)
+    assert _normalized_operations(historical_schema) == BASELINE_OPENAPI_OPERATIONS | {EXECUTE_KEY}, "C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF"
+    assert _parent_openapi_hash(historical_schema) == PARENT_OPENAPI_SHA256, "C01_L3_PARENT_OPENAPI_SCHEMA_DRIFT"
     operation = schema["paths"][EXECUTE_PATH]["post"]
     assert operation.get("x-anvil-permission") == "run:execute", "C01_L3_MISSING_PERMISSION: OpenAPI"
     request_schema = operation.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema")

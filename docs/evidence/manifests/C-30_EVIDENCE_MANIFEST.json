@@ -1,0 +1,280 @@
+{
+  "schema": "c30-local-evidence/v1",
+  "work_package": "C-30",
+  "base_head": "98e218264bf54db04a1bd35a67273b713805a649",
+  "checkout_state": "DIRTY_SUCCESSOR_WORK_IN_PROGRESS",
+  "start_sequence": 1262,
+  "historical_events": {
+    "bytes": 3937471,
+    "sha256": "482FF3FEF063093C57A5F96E1BECAF7393973398AE5E1704B6A79A55F9A3970E",
+    "last_sequence": 1262
+  },
+  "source_target_hash": "sha256:50cef7e094b4f362f044c4cc87d881e91795e23eb89521d98e6735888000d5ce",
+  "confirmation_event": "evt_c28_user_confirmation_recorded",
+  "automatic_acceptance": false,
+  "release_allowed": false,
+  "formal_failure_count": 0,
+  "independent_review": {
+    "status": "NOT_EXECUTED",
+    "critical": null,
+    "important": null
+  },
+  "matrix": {
+    "C-22": {
+      "design": "51.1",
+      "validation_group": "ROLE-CONTRACT-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/agent_team/test_role_contracts_c22.py",
+        "tests/agent_team/test_role_results_c22.py"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-23": {
+      "design": "51.2",
+      "validation_group": "TEAM-MOA-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/agent_team/test_orchestration_c23.py",
+        "tests/agent_team/test_collaboration_c23.py",
+        "tests/agent_team/test_handoff_c23.py",
+        "tests/agent_team/test_concurrency_c23.py"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-24": {
+      "design": "51.2",
+      "validation_group": "TEAM-MOA-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/agent_team/test_moa_c24.py",
+        "tests/agent_team/test_provider_catalog_c24.py",
+        "tests/agent_team/test_provider_status_c24.py",
+        "tests/agent_team/test_routing_c24.py"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-25": {
+      "design": "51.3",
+      "validation_group": "SNS-DAON-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/agent_team/test_gateway_contracts_c25.py",
+        "tests/agent_team/test_sns_gateway_c25.py",
+        "tests/agent_team/test_daon_user_api_c25.py",
+        "tests/agent_team/test_privacy_receipts_c25.py"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-26": {
+      "design": "51.3",
+      "validation_group": "SNS-DAON-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/agent_team/test_telegram_contracts_c26.py",
+        "tests/agent_team/test_telegram_adapter_c26.py",
+        "tests/agent_team/test_telegram_privacy_c26.py",
+        "tests/agent_team/test_telegram_replay_c26.py"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-27": {
+      "design": "51.3",
+      "validation_group": "SNS-DAON-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/agent_team/test_kakao_contracts_c27.py",
+        "tests/agent_team/test_kakao_adapter_c27.py",
+        "tests/agent_team/test_kakao_privacy_c27.py",
+        "tests/agent_team/test_kakao_replay_c27.py"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-28": {
+      "design": "51.4",
+      "validation_group": "UI-TRACE-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "apps/web/tests/c28-console.test.mjs"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-29": {
+      "design": "51.4",
+      "validation_group": "UI-TRACE-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "apps/api/tests/test_agent_console_routes.py",
+        "apps/web/tests/c29-console-runtime.test.mjs"
+      ],
+      "evidence_scope": "LOCAL_CONTRACT_ONLY"
+    },
+    "C-30": {
+      "design": "51.5",
+      "validation_group": "WSL-E2E-RED/GREEN",
+      "formal_av_ids": [],
+      "tests": [
+        "tests/integration/test_c30_console_e2e.py",
+        "tests/integration/test_c30_contract_matrix.py",
+        "tests/deploy/test_c30_wsl_formal_preflight.py"
+      ],
+      "evidence_scope": "LOCAL_INTEGRATION_AND_STATIC_PREFLIGHT_ONLY"
+    }
+  },
+  "source_sha256": {
+    "Anvil_설계서_v2.md": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
+    "Anvil_작업계획서_v1.md": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
+    "Anvil_통합검증매트릭스_v1.md": "999A906EF7D69835EE8C5EFAFD9DE72885BEF5AB3C7A2C1B47B58D7A9628A0BB",
+    "Anvil_테스트계획서_v1.md": "9A6AFC5FCDD89C351D2D6E98551472BA362212C8C863E2542BFA93B1723DA102",
+    "docs/work_orders/C-30_WORK_INSTRUCTION.md": "BF6FD2BE7455F9AE5FDA59F19FFDA73C6BEFCB4FD8D252BD60733F504E21D0ED",
+    "docs/work_orders/C-30_INVOCATION_PROMPT.md": "8A15E8870199F259478F1E73CF64BC59FC81D62469ABEA317DECEC0FC05B244C",
+    "packages/agent_team/role_contracts.py": "88692B409E2F3E2391816473D666AE1FA4BDF5F2D60656AA62156DE73C8A1D0B",
+    "packages/agent_team/role_results.py": "1EECE19FBCD114AB698B20E77B275CBFB73369E84143A0D8AA515879AA25FD9C",
+    "packages/agent_team/orchestration.py": "3596B9FA442FC6C21D6761C4E190E0D1F6AAD1270BD556C529AF783D3CACB3CB",
+    "packages/agent_team/collaboration.py": "9A80EBF95D297A5C9F6664A7F0F672EF5C64930B2780CC0613EDAAA7559F89C4",
+    "packages/agent_team/concurrency.py": "E2A0EA8932A8DF6E1A3B69CFCC5AA26B2721725E3A704481BBA06277402BD178",
+    "packages/agent_team/handoff.py": "8DCBC2006C5AB3F48B85860F10075229639860C00B8F91F5049A951BE0EC62B7",
+    "packages/agent_team/moa.py": "9B0C42291A08BA7ABAA3DD1E2370E6DA9240389D17CB2DE38511E9B622D449BB",
+    "packages/agent_team/provider_catalog.py": "4C2816436D2E36C801B80BB8BEA46A93DD016E590CAA262DAE881EA51A60A4EF",
+    "packages/agent_team/provider_status.py": "AF5E36066424DA6CD28C8B94B0E568C44DC0DE4F0273BFECAFFFAD1FC3FAA689",
+    "packages/agent_team/sns_gateway.py": "762A71F6F6BD76CFC181F24542A609D6AE95DB9C926AD256FF5563BC4CAA8573",
+    "packages/agent_team/daon_user_api.py": "DAC1A8E10FCA6D78AF90E1A262D675E9B94EFAD288CD5E95B76B1D0D55AD5856",
+    "packages/agent_team/telegram_adapter.py": "5062F6F1A96F93D24E4AF1156E0E0CDADCC0E017AC67DAE283371CC002D37A05",
+    "packages/agent_team/kakao_adapter.py": "8359291798DCDDB888FD5BDE90A48479233C206DCDBFB212FA1BA5D55F6BFFCF",
+    "apps/web/c28-agent-console-mockup.html": "12118D77CC0C66E22D15D90B5670CAFD5DA3A990A6DE7A6579E3FEAE81850706",
+    "apps/web/src/app/c28-console.js": "A64E11E2C4FE7265D6E413656F244CFD9267F9CBF485D04D8E4C205ED5380AED",
+    "apps/web/src/styles/c28-console.css": "7BC97363164528121AEE800AC9BAE0BF50791D1C8EF0136A826CBFCE93583A43",
+    "docs/evidence/ui/C-28_INTERACTION_CONTRACT.json": "2A1E5473B85B0D2AC4826B37C1CCF3B35082E56DF3F8C02C70950572E50FE9E8",
+    "apps/web/server.mjs": "B24993EACB3DF5017FD38003C2B3563B4A7A0F9B4DE41618CBEF1559B8750021",
+    "apps/web/src/api/c29-agent-console-client.js": "A016E8F2B6A10D81CE56BF81220E4CB5120900A493775D2E7D099BBE08F9DEFA",
+    "apps/web/src/app/c29-console-runtime.js": "CB7F42047CA75F74CB990D2AB1DB8FB0BD8D9C865C35CC89A0498415BEED5A01",
+    "apps/web/src/styles/c29-console-runtime.css": "028EED7A3B44405EED2397B7EBF4CB13A79DBD890405D21C9684FB8E5B8BB56A",
+    "apps/api/anvil_api/routes/agent_console.py": "88FB2D5460ABFCAB601906C2A465BEAE6925DC127B910E548FAB3EE76718D9A0",
+    "deploy/wsl/formal-single-runtime.sh": "638537B86FF484E2821171966ABD883F5B77095DC4E536BC033142B7FC0F1300",
+    "deploy/wsl/FormalSingleRuntimeManifest.json": "47BE3971414FEAF45C38E396AB035D44F5FBC409D62861CE8DC1EE983070C6B6"
+  },
+  "local_validation": {
+    "status": "COMPLETED_LOCAL_ONLY",
+    "report": "docs/04_test_reports/C-30_COMPLETION_REPORT.md",
+    "real_provider": false,
+    "full_regression": {
+      "command": "D:/tmp/anvil-main-integration/.venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team apps/api/tests/test_agent_console_routes.py tests/integration/test_c30_console_e2e.py tests/integration/test_c30_contract_matrix.py tests/deploy/test_c30_wsl_formal_preflight.py --basetemp=D:/Project/Anvil/.codex-sandbox/c30-pytest-20260919-1545 --tb=short",
+      "exit_code": 0,
+      "passed": 819,
+      "skipped": 0,
+      "elapsed_seconds": 669.24,
+      "collection_note": "Collected before the final two append-only control tests; their fresh result is recorded in the completion report."
+    },
+    "web_regression": {
+      "command": "$env:ANVIL_PYTHON='D:/tmp/anvil-main-integration/.venv/Scripts/python.exe'; node --test apps/web/tests/*.test.mjs",
+      "exit_code": 0,
+      "passed": 70,
+      "skipped": 0,
+      "elapsed_milliseconds": 2025.2269
+    }
+  },
+  "wsl_formal": {
+    "status": "NOT_EXECUTED",
+    "integration": "NOT_INTEGRATED",
+    "execution_authorized": false,
+    "approval_ref": null,
+    "database_writes": 0,
+    "container_mutations": 0,
+    "external_calls": 0,
+    "candidate_commit": null,
+    "candidate_image": null,
+    "pg15": "NOT_EXECUTED",
+    "pg18_rc": "NOT_EXECUTED",
+    "preflight_mode": "LOCAL_FILES_ONLY_NO_COMMAND_DISPATCH",
+    "historical_harness_reusable_without_revision": false,
+    "historical_candidate": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+    "missing": [
+      "EXECUTION_SAFETY_APPROVAL",
+      "CLEAN_CANDIDATE_COMMIT",
+      "C30_RELEASE_MANIFEST",
+      "LIVE_ENVIRONMENT_PREFLIGHT",
+      "FORMAL_DB_CONTAINER_ENTITY_E2E",
+      "INDEPENDENT_REVIEW"
+    ],
+    "planned_checks": [
+      {
+        "id": "git",
+        "command_or_owner": "git -C <approved-checkout> rev-parse HEAD; git -C <approved-checkout> status --porcelain",
+        "required_evidence": "Approved clean exact commit plus remote/ref ancestry",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "containers",
+        "command_or_owner": "docker ps --format '{{.ID}} {{.Names}} {{.Image}}'; docker inspect <approved-container>",
+        "required_evidence": "Bound image digest/revision, container/network/volume inventory; redact environment",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "database",
+        "command_or_owner": "Main-owned approved PostgreSQL harness, exact DSN secret reference only",
+        "required_evidence": "PG15 schema/migration head and transaction evidence; separate PG18 RC run",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "entity",
+        "command_or_owner": "Main-owned C30 entity integration suite after durable API owner wiring",
+        "required_evidence": "Exact session/task/actor/target plus committed entity/receipt and rollback evidence",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "http",
+        "command_or_owner": "curl --fail --silent <approved-same-origin-url>/api/agent-console/team",
+        "required_evidence": "Real authenticated API/BFF status, bounded response hash; no credential output",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "browser",
+        "command_or_owner": "Approved browser session: /agent-console menus and all states",
+        "required_evidence": "Network relative URLs, auth/CSRF and high-risk refusal, real target checksum",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "rollback",
+        "command_or_owner": "Main-approved exact ReleaseManifest prior commit/image restore",
+        "required_evidence": "Prior commit/image, preserved DB schema/data and post-rollback smoke",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      },
+      {
+        "id": "cleanup",
+        "command_or_owner": "Main-approved exact resource inventory cleanup",
+        "required_evidence": "Owned container/network/volume/tunnel residue0; unrelated resources unchanged",
+        "status": "NOT_EXECUTED",
+        "automatic_dispatch": false,
+        "requires_approval": true
+      }
+    ]
+  },
+  "external": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "kakao": "OPEN_DECISION",
+    "oracle": "OUT_OF_SCOPE",
+    "production": "OUT_OF_SCOPE",
+    "browser": "NOT_EXECUTED"
+  },
+  "checker": {
+    "status": "NOT_VERIFIED_SYNTAX_ERROR",
+    "path": "scripts/check_project_progress.py",
+    "line": 32957
+  },
+  "rollback": "Discard only C30 exact8 successor delta; preserve historical events/acceptance and unrelated dirty files. External state unchanged."
+}

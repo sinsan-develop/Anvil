@@ -1,0 +1,1 @@
+C-26 exact7만 수정하라. C-25 gateway facade를 사용해 Telegram 보조 adapter를 host-only로 구현하라. 상태 조회·저위험 pause/resume·deep-link·receipt와 replay/idempotency/rate/privacy 계약을 구현하고 승인·배포·삭제·권한·Provider 변경은 fail-closed 거부하라. 실제 Telegram/HTTP/auth/token/DB/WSL/UI/deploy는 호출하지 말라. RED→GREEN 및 focused/regression/compile/diff-check 결과와 미검증 범위·rollback·SHA를 completion report에 기록하라.
