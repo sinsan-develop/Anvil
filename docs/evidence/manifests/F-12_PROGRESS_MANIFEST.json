@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-12",
+  "event_sequence": 1447,
+  "accepted": true,
+  "projection_mode": "F12_FINAL_ACCEPTANCE_EXACT23",
+  "validated_base_commit": "798ed952ad6900c87db2c0b2e1d6f71c2755f69c",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-12_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-12_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f12.json",
+    "docs/work_orders/F-12_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-12_WORK_INSTRUCTION.md",
+    "packages/api/provider_settings.py",
+    "packages/api/runtime.py",
+    "packages/bff/provider_settings.py",
+    "packages/provider_catalog/service.py",
+    "packages/provider_settings/projection.py",
+    "packages/provider_settings/service.py",
+    "scripts/check_f12_progress.py",
+    "scripts/check_project_progress.py",
+    "scripts/f12_progress_overlay.py",
+    "tests/api/test_f12_provider_settings_api.py",
+    "tests/provider_catalog/test_f12_profile_selection.py",
+    "tests/provider_settings/test_f12_settings.py",
+    "tests/tooling/test_f12_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+    "packages/api/provider_settings.py",
+    "packages/api/runtime.py",
+    "packages/bff/provider_settings.py",
+    "packages/provider_catalog/service.py",
+    "packages/provider_settings/projection.py",
+    "packages/provider_settings/service.py",
+    "tests/api/test_f12_provider_settings_api.py",
+    "tests/provider_catalog/test_f12_profile_selection.py",
+    "tests/provider_settings/test_f12_settings.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "bytes": 16338,
+      "sha256": "9C9F0ECA555B1F638922AE7B87DE9968B25DCF730194ED65D758B368D38ACEB0"
+    },
+    {
+      "path": "docs/04_test_reports/F-12_INDEPENDENT_REVIEW.md",
+      "bytes": 4005,
+      "sha256": "23E813EE9D165C1937142BE9E6EA6E3C4A256F047CDEBCFFB5FB57F84D5B711C"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 438781,
+      "sha256": "6552EEB1BA04612F18695ED462165033F55780E043EE7D0C8B5C1E5D04FF56CD"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4115554,
+      "sha256": "7EE6A33BFBC6EE3F1B597C69AF4D26C7BA86F0CD685648D2AD14098B7F3F36B3"
+    },
+    {
+      "path": "docs/work_orders/F-12_INVOCATION_PROMPT.md",
+      "bytes": 704,
+      "sha256": "42A266A982D2B021796AB3F9B086C2356F94E31DF0C6A7B1D289F060C2B299E9"
+    },
+    {
+      "path": "docs/work_orders/F-12_WORK_INSTRUCTION.md",
+      "bytes": 8594,
+      "sha256": "8AB0DB1BD336A313B19DD266991BBBC1A6F4819AA5238A358319F0B90F6046B3"
+    },
+    {
+      "path": "packages/api/provider_settings.py",
+      "bytes": 6270,
+      "sha256": "4E5C2DDC382138E3AD27A7684B4A1FC7D094A05D6E2F09043FF1BACABCE79949"
+    },
+    {
+      "path": "packages/api/runtime.py",
+      "bytes": 27324,
+      "sha256": "C8D282204AF986B5186A8A1A1DE150ABE644C1EBFFD2CF534CB48D82F371560F"
+    },
+    {
+      "path": "packages/bff/provider_settings.py",
+      "bytes": 5163,
+      "sha256": "2D5BC4DB285044C87DAEA420378D95F1E6A93D07C1777C675DD368560171E80E"
+    },
+    {
+      "path": "packages/provider_catalog/service.py",
+      "bytes": 21063,
+      "sha256": "ED822FCFDCC3A906C9EB582890DFED661E9C69BE126187A24B6CA14122A13863"
+    },
+    {
+      "path": "packages/provider_settings/projection.py",
+      "bytes": 5723,
+      "sha256": "CEDFB9B7D0B90A4D104563080D1BD148C41B1282F1634089AE53F13F1BA74C05"
+    },
+    {
+      "path": "packages/provider_settings/service.py",
+      "bytes": 18528,
+      "sha256": "6AEE0278319820CC09D393F1EA7D7C8C49EC2BE68AC647A4F529A262C6EC01C2"
+    },
+    {
+      "path": "scripts/check_f12_progress.py",
+      "bytes": 908,
+      "sha256": "5C8FE851C921E64D524EC6E57B8CAD0C69B952C70A4AFCB4538FF05057A7BE5B"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4727031,
+      "sha256": "5E5A5362D51745D86E1C4E9D7E8677D71A31B650336EA40FD41B5774E6A1F2A1"
+    },
+    {
+      "path": "scripts/f12_progress_overlay.py",
+      "bytes": 32848,
+      "sha256": "F58861A84F4B0981CB526C3AEBA42CC18DDE10CE2500893F7C077F49E4AE7223"
+    },
+    {
+      "path": "tests/api/test_f12_provider_settings_api.py",
+      "bytes": 13673,
+      "sha256": "8C017E7D04FF30025EE89CF4F9EFD5D2644CE065374E74071E00C3DF64E2AF3E"
+    },
+    {
+      "path": "tests/provider_catalog/test_f12_profile_selection.py",
+      "bytes": 6589,
+      "sha256": "668D04153D1371B41F7A9D5AD4656BCB7B57AB8C035199E4602DE8A691ECADE2"
+    },
+    {
+      "path": "tests/provider_settings/test_f12_settings.py",
+      "bytes": 19406,
+      "sha256": "3E4DA8EFD4C8127A65B0C8FFED448B61DF1045D71BF43D080FB3BA812DD8BB77"
+    },
+    {
+      "path": "tests/tooling/test_f12_progress_overlay.py",
+      "bytes": 6433,
+      "sha256": "CEE1BE3E1E705592B16E1ACAB42B096CDAD0064FACBA808A2EC99A4E931824FA"
+    }
+  ],
+  "runtime_boundary": {
+    "live_providers": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "ISOLATED_CONTRACT_975_PASS_NO_NETWORK",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "self_reference": false
+}

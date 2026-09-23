@@ -1,3 +1,12 @@
+# F-12 Provider Settings 계약 완료·Broker gate 정합
+
+- 판정: `ACCEPTED`; F-12 제품 exact10, 독립 검토 Critical 0/Important 0/Minor 0.
+- Windows 관련 회귀 975 PASS, WSL-server 격리 checkout 동일 commit 975 PASS; WSL 임시 checkout·venv·pytest 제거와 잔여 컨테이너 0 확인.
+- 전체 pytest collection 16 ERROR는 clean main에서도 동일 재현; 전체 suite PASS 아님.
+- PR Broker trusted gate는 기존 checker에 F-12 mode dispatch가 없어 요청 전 재현 시 실패했다. checker 원본 대비 F-12 dispatch 20행만 추가하고 제품 변경 없음.
+- 수정 checker의 정확한 Broker gate는 commit 후 실행해 확인한다. 검증 전 요청 tag를 만들지 않는다.
+- 실제 Provider·human approval·Secret material·network·DB·browser·deploy는 `NOT_EXECUTED`; F-14 profile 영속성·다중 인스턴스, U-11 실제 화면은 별도 acceptance.
+
 # F-11 OLLAMA adapter 완료
 
 - 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact6을 인수한다.

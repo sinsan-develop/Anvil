@@ -21,6 +21,7 @@ class ProviderCatalog:
         self._policy=broker_policy_hash
         self._lock=RLock(); self._records={}; self._events=[]; self._requests={}
         self._secrets={}; self._pins={}; self._local=set(); self._expired=set(); self._endpoints={}
+        self._profile_selection=(0,None,None)
 
     def _publish(self,kind,key,data):
         result=snapshot(kind,key,data)
@@ -52,6 +53,9 @@ class ProviderCatalog:
             sort_order=i,provider_type='local' if p=='ollama' else 'cloud',enabled_by_product=True,
             ready=False,connection_status='NOT_EXECUTED',credential_status='NOT_OBSERVED') for i,p in enumerate(PROVIDER_IDS)]))
 
+    def owner_scope(self):
+        return snapshot('OWNER_SCOPE','provider-catalog',dict(project_id=self._project,environment_id=self._environment))
+
     def register_profile(self,profile_id,data,*,human_approval_id):
         """Host-only capture of already authenticated, exact-payload human approval."""
         ident(profile_id)
@@ -78,6 +82,50 @@ class ProviderCatalog:
             if old and old[0]!=digest(row): fail('PROFILE_IMMUTABLE')
             if not old: self._audit('PROFILE_REGISTERED',dict(profile_id=profile_id,profile_hash=digest(row),human_approval_id=human_approval_id))
             return self._publish('PROFILE',profile_id,row)
+
+    def _selection_snapshot(self):
+        version,profile_id,profile_hash=self._profile_selection
+        return snapshot('PROFILE_SELECTION','current',dict(version=version,profile_id=profile_id,profile_hash=profile_hash))
+
+    def profile_selection(self):
+        """Read current selection without issuing a decision or changing owner state."""
+        with self._lock:
+            return self._selection_snapshot()
+
+    def current_profile(self):
+        """Return one consistent selection and its owner-held immutable profile handle."""
+        with self._lock:
+            selection=self._selection_snapshot()
+            _,profile_id,profile_hash=self._profile_selection
+            if profile_id is None: return selection,None
+            stored_hash,payload=self._records[('PROFILE',profile_id)]
+            if stored_hash!=profile_hash: fail('PROFILE_SELECTION_INVALID')
+            return selection,Snapshot('PROFILE',profile_id,stored_hash,payload)
+
+    def validate_profile(self,profile):
+        """Check a supplied handle against this catalog's own profile record."""
+        with self._lock:
+            row=self._record(profile,'PROFILE')
+            if (row['project_id'],row['environment_id'])!=(self._project,self._environment): fail('HANDLE_INVALID')
+            return profile
+
+    def select_profile(self,profile,*,expected_version,expected_selection_hash,approved_profile_hash,human_approval_id):
+        """Host-only, exact approved profile selection with owner version/hash CAS."""
+        with self._lock:
+            row=self._record(profile,'PROFILE')
+            if (row['project_id'],row['environment_id'])!=(self._project,self._environment): fail('HANDLE_INVALID')
+            current=self._selection_snapshot()
+            if (type(expected_version) is not int or type(expected_selection_hash) is not str
+                    or expected_version!=self._profile_selection[0]
+                    or expected_selection_hash!=current.content_hash): fail('PROFILE_SELECTION_CONFLICT')
+            if (type(approved_profile_hash) is not str or type(human_approval_id) is not str
+                    or approved_profile_hash!=profile.content_hash
+                    or human_approval_id!=row['human_approval_id']): fail('PROFILE_APPROVAL_MISMATCH')
+            self._profile_selection=(expected_version+1,profile.record_id,profile.content_hash)
+            updated=self._selection_snapshot()
+            self._audit('PROFILE_SELECTED',dict(version=expected_version+1,profile_id=profile.record_id,
+                profile_hash=profile.content_hash,human_approval_id=human_approval_id))
+            return updated
 
     def pin_run(self,run_id,profile):
         ident(run_id)
@@ -139,6 +187,17 @@ class ProviderCatalog:
         self._audit(kind,dict(request_id=request_id,request_hash=fingerprint,reason=reason))
         self._requests[key]=(fingerprint,canonical(row))
         return snapshot('DECISION',request_id,row)
+
+    def validate_decision(self,handle,kind):
+        """Read-only validation of the exact decision payload held by this owner."""
+        if type(kind) is not str or kind not in ('EGRESS_DECISION','BROKER_DECISION'): fail('HANDLE_INVALID')
+        if type(handle) is not Snapshot or handle.kind!='DECISION' or type(handle.record_id) is not str: fail('HANDLE_INVALID')
+        with self._lock:
+            stored=self._requests.get((kind,handle.record_id))
+            if stored is None: fail('HANDLE_INVALID')
+            exact=snapshot('DECISION',handle.record_id,json.loads(stored[1]))
+            if (handle.content_hash!=exact.content_hash or handle.payload_json!=exact.payload_json): fail('HANDLE_INVALID')
+            return exact
 
     def evaluate_egress(self,*,request_id,snapshot,provider_id,purpose,paths,content_kind,observation,mask_evidence=None,payload_hash=None):
         ident(request_id); provider(provider_id); ident(purpose)
