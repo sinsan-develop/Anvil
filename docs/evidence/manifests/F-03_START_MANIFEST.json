@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "F03_START",
+  "artifact_id": "F03-START-20260923",
+  "package_id": "F-03",
+  "event_sequence": 1363,
+  "historical_event_sequence": 1359,
+  "appended_event_count": 4,
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "projection_mode": "F03_START_EXACT9_PRODUCT_EXACT5",
+  "validated_base_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f03-start.json",
+    "packages/providers/cerebras_adapter.py",
+    "packages/providers/cerebras_errors.py",
+    "packages/providers/cerebras_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f03_progress_overlay.py",
+    "tests/providers/test_cerebras_adapter_f03.py",
+    "tests/tooling/test_f03_progress_overlay.py"
+  ],
+  "control_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f03-start.json",
+    "scripts/check_project_progress.py",
+    "scripts/f03_progress_overlay.py",
+    "tests/tooling/test_f03_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+    "packages/providers/cerebras_adapter.py",
+    "packages/providers/cerebras_errors.py",
+    "packages/providers/cerebras_models.py",
+    "tests/providers/test_cerebras_adapter_f03.py"
+  ],
+  "authority": {
+    "docs/work_orders/F-03_WORK_INSTRUCTION.md": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A",
+    "docs/work_orders/F-03_INVOCATION_PROMPT.md": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7"
+  },
+  "external_execution_authorized": false,
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 433016,
+      "sha256": "10430360135C2D8975D187537A4A594E7975C987BB4493D6424C67D97EC7DE40"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 2788,
+      "sha256": "EC3AB44340C4068D73351C924728B6C95F1A459EA393E2F666638BF23CD2F693"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1110445,
+      "sha256": "2BAF5C1B9A2FE5166ED1E05538843A63ABBFD47ABC8A27BCFDE9DF44BEEDEE9C"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4042129,
+      "sha256": "9D294B65DD11798AAB6E144AEC1C5AA98CE94BC5C04D21EDDC6366DA68B44D18"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f03-start.json",
+      "bytes": 665,
+      "sha256": "23B276AD9CFB097D13026D68AC11D55296D1D1CB98C51E0C9387FD43E9D44C6C"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4719503,
+      "sha256": "4685EAA7F5C5DBEA8B649064C39AB2ED449998AD96B11B30E7C63AD51A4D6519"
+    },
+    {
+      "path": "scripts/f03_progress_overlay.py",
+      "bytes": 18064,
+      "sha256": "9814C704D2EA6071687FF71039DD237807C1D796D2E046B8E9882830BE4B6BA5"
+    },
+    {
+      "path": "tests/tooling/test_f03_progress_overlay.py",
+      "bytes": 1751,
+      "sha256": "CF6FF721D015DE7BDC840625C2A5503D6644634BF929E84F9B50B071666F2D3F"
+    }
+  ],
+  "self_reference": false
+}

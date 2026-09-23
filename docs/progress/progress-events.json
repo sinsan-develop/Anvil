@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1359,
+  "last_sequence": 1363,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -76892,7 +76892,180 @@
     "scope": "MERGED_MAIN_GIT_PROJECTION_AND_APPEND_ONLY_EVIDENCE_ONLY",
     "product_behavior_changed": false
   }
+},
+{
+  "sequence": 1360,
+  "event_id": "evt_f03_1360_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-03",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-03/START",
+  "occurred_at": "2026-09-23T18:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "FCAF941F43247C3C03BF786FF02BA725FF0ADCB7FAD309F3CA9B1DD7D917F18B",
+  "details": {
+    "work_instruction_id": "WI-F-03-R1-20260923-001",
+    "work_instruction_path": "docs/work_orders/F-03_WORK_INSTRUCTION.md",
+    "work_instruction_sha256": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A",
+    "invocation_path": "docs/work_orders/F-03_INVOCATION_PROMPT.md",
+    "invocation_sha256": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7",
+    "authority": {
+      "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "classification": "APPROVED_WORK_PLAN_PACKAGE",
+      "scope_expansion": false,
+      "external_execution_authorized": false,
+      "product_write_scope": [
+        "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+        "packages/providers/cerebras_adapter.py",
+        "packages/providers/cerebras_errors.py",
+        "packages/providers/cerebras_models.py",
+        "tests/providers/test_cerebras_adapter_f03.py"
+      ]
+    }
+  }
+},
+{
+  "sequence": 1361,
+  "event_id": "evt_f03_1361_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-03",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-03/START",
+  "occurred_at": "2026-09-23T18:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "72A3D684C632C991D44D7FE98F22B67A9E1C3E42115D6F1A2A882F02E352CE00",
+  "details": {
+    "lease_id": "worker-lease-f03-r1-20260923-001",
+    "actor_id": "developer-primary-f03-r1",
+    "subject_ref": "F-03",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T18:20:00+09:00",
+    "expires_at": "2026-09-24T06:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "path_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ]
+  }
+},
+{
+  "sequence": 1362,
+  "event_id": "evt_f03_1362_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-03",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-03/START",
+  "occurred_at": "2026-09-23T18:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "BE5C80BD6F935CDA641D658FCC1EF1F098C944C2EB71DBC92C27C4F6A9F467ED",
+  "details": {
+    "lease_id": "write-lease-f03-r1-20260923-001",
+    "actor_id": "developer-primary-f03-r1",
+    "subject_ref": "F-03",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T18:20:00+09:00",
+    "expires_at": "2026-09-24T06:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "path_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b"
+  }
+},
+{
+  "sequence": 1363,
+  "event_id": "evt_f03_1363_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-03",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-03/START",
+  "occurred_at": "2026-09-23T18:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "9568F851D3CDE516FB364E2FBB50C03D9FF752342B283ADE73F720DC2EAC5C05",
+  "details": {
+    "package_status": "IN_PROGRESS",
+    "work_package_id": "F-03",
+    "status": "IN_PROGRESS",
+    "active_agent": "developer-primary-f03-r1",
+    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
+    "write_lease_id": "write-lease-f03-r1-20260923-001",
+    "projection_mode": "F03_START_EXACT9_PRODUCT_EXACT5",
+    "validated_base_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "exact_allowed_paths": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/F-03_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-f03-start.json",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "scripts/check_project_progress.py",
+      "scripts/f03_progress_overlay.py",
+      "tests/providers/test_cerebras_adapter_f03.py",
+      "tests/tooling/test_f03_progress_overlay.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "authority": {
+      "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "classification": "APPROVED_WORK_PLAN_PACKAGE",
+      "scope_expansion": false,
+      "external_execution_authorized": false,
+      "product_write_scope": [
+        "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+        "packages/providers/cerebras_adapter.py",
+        "packages/providers/cerebras_errors.py",
+        "packages/providers/cerebras_models.py",
+        "tests/providers/test_cerebras_adapter_f03.py"
+      ]
+    }
+  }
 }
   ],
-  "last_event_id": "evt_c30r5_final_1359_repository_reconciled"
+  "last_event_id": "evt_f03_1363_package_started"
 }

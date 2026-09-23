@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c30r5-start-seq1349",
-  "event_sequence": 1359,
-  "updated_at": "2026-09-23T17:50:50+09:00",
-  "last_event_id": "evt_c30r5_final_1359_repository_reconciled",
+  "snapshot_id": "snapshot-f03-start-seq1363",
+  "event_sequence": 1363,
+  "updated_at": "2026-09-23T18:20:00+09:00",
+  "last_event_id": "evt_f03_1363_package_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -90,9 +90,9 @@
   "plan_version": "1.6",
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-  "current_phase": "C",
-  "current_work_package": "C-30",
-  "status": "ACCEPTED",
+  "current_phase": "F",
+  "current_work_package": "F-03",
+  "status": "IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -185,8 +185,36 @@
     "C-30R4",
     "C-30R5"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "developer-primary-f03-r1",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "F-03",
+    "status": "ACTIVE",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-f03-r1-20260923-001",
+    "actor_id": "developer-primary-f03-r1",
+    "subject_ref": "F-03",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T18:20:00+09:00",
+    "expires_at": "2026-09-24T06:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "path_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -218,7 +246,26 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f03-r1-20260923-001",
+    "actor_id": "developer-primary-f03-r1",
+    "subject_ref": "F-03",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T18:20:00+09:00",
+    "expires_at": "2026-09-24T06:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "path_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -428,13 +475,17 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-30_MERGED_MAIN_RECONCILIATION.md",
-      "sha256": "D4C4FF9DB0AB57B6C0C88C2669E01E183D737532F5D517E227B9924EF41AF9A4"
+      "path": "docs/work_orders/F-03_WORK_INSTRUCTION.md",
+      "sha256": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A"
+    },
+    {
+      "path": "docs/work_orders/F-03_INVOCATION_PROMPT.md",
+      "sha256": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C30R5-FINAL-20260923"
+    "path": "docs/evidence/manifests/F-03_START_MANIFEST.json",
+    "artifact_id": "F03-START-20260923"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -446,7 +497,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C30_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
+  "next_safe_action": "F03_CEREBRAS_ADAPTER_TDD",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -556,29 +607,40 @@
     }
   },
   "repository": {
-    "branch": "codex/c30-merged-main-reconciliation",
-    "local_head": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
-    "upstream": "development/codex/c30-merged-main-reconciliation",
-    "remote_head": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
-    "projection_mode": "C30R5_FINAL_ACCEPTANCE_EXACT15",
-    "validated_base_commit": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
-    "head_relation": "PRECOMMIT_OR_DIRECT_CHILD_OR_STRUCTURAL_MERGED_MAIN",
+    "branch": "codex/f03-cerebras-adapter",
+    "local_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "upstream": "development/codex/f03-cerebras-adapter",
+    "remote_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "projection_mode": "F03_START_EXACT9_PRODUCT_EXACT5",
+    "validated_base_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "head_relation": "PRECOMMIT_CONTROL_EXACT9_OR_DIRECT_CHILD_WITH_PRODUCT_EXACT5",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-30_MERGED_MAIN_RECONCILIATION.md",
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/F-03_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c30r5-merged-main-reconciliation.json",
-      "scripts/c30r5_final_overlay.py",
-      "tests/tooling/test_c30r5_final_overlay.py"
+      "docs/progress/progress-handoff-detached-digest-f03-start.json",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "scripts/check_project_progress.py",
+      "scripts/f03_progress_overlay.py",
+      "tests/providers/test_cerebras_adapter_f03.py",
+      "tests/tooling/test_f03_progress_overlay.py"
     ],
     "push_status": "NOT_EXECUTED",
     "remote_evidence": "LIVE_MAIN_BASE_VERIFIED",
-    "worktree_status": "UNSTAGED_C30_MERGED_MAIN_RECONCILIATION_EXACT9",
-    "control_head": "66eef70f87cac1d0b87df5b7e7c37715b3bf2632",
-    "product_write_scope": [],
+    "worktree_status": "UNSTAGED_F03_START_CONTROL_EXACT9",
+    "control_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "product_write_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
     "commit_status": "NOT_EXECUTED"
   },
   "a01_precondition": {
@@ -750,11 +812,11 @@
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
-    "stop_before_dialogue_report": false,
     "reason_codes": [
-      "E_GATE_ACCEPTED",
-      "F01_READY"
-    ]
+      "C30_ACCEPTED",
+      "F03_APPROVED_SCOPE"
+    ],
+    "stop_before_dialogue_report": false
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -802,7 +864,25 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "work_package_id": "F-03",
+    "artifact_path": "docs/work_orders/F-03_WORK_INSTRUCTION.md",
+    "artifact_sha256": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A",
+    "invocation_path": "docs/work_orders/F-03_INVOCATION_PROMPT.md",
+    "invocation_sha256": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7",
+    "status": "IN_PROGRESS",
+    "result_status": null,
+    "accepted": false,
+    "product_write_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
+    "write_lease_id": "write-lease-f03-r1-20260923-001"
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -923,9 +1003,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-30",
-    "path": "docs/progress/progress-handoff-detached-digest-c30r5-merged-main-reconciliation.json",
-    "manifest_path": "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "F-03",
+    "path": "docs/progress/progress-handoff-detached-digest-f03-start.json",
+    "manifest_path": "docs/evidence/manifests/F-03_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -946,14 +1026,17 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2BEF9C4ED477464F32D2BB4D139D6CB57D6C3767CA75C233E6F9BF1C907D3B7D"
+      "sha256": "9D294B65DD11798AAB6E144AEC1C5AA98CE94BC5C04D21EDDC6366DA68B44D18"
     }
   },
   "next_work_package": {
-    "package_id": "C-30",
-    "status": "ACCEPTED"
+    "package_id": "F-03",
+    "status": "IN_PROGRESS"
   },
-  "next_successor_work_package": null,
+  "next_successor_work_package": {
+    "package_id": "F-04",
+    "status": "NOT_READY"
+  },
   "historical_phase_b_gate": {
     "event_sequence": 375,
     "event_id": "evt_phase_b_gate_package_accepted",
@@ -1340,8 +1423,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "7FA7782C84990D284A6826CD4ACECCE9C76F4DD712405A1E16DC1183AD63D2E9",
-  "runtime_next_action": "C30_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
+  "snapshot_hash": "BDE68257B81404E5966B10219FAF8539C19490A91C6855EE089869D6E871DF36",
+  "runtime_next_action": "F03_CEREBRAS_ADAPTER_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2953,7 +3036,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-23T17:50:50+09:00",
+  "recorded_at": "2026-09-23T18:20:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

@@ -1,3 +1,9 @@
+# F-03 CEREBRAS adapter start / 2026-09-23
+
+- 판정: `IN_PROGRESS`; 승인된 작업계획 F-03 exact5 host-only TDD를 시작했다.
+- canonical worker/write lease와 fencing token을 seq1360~1363에 발급했다.
+- 실제 Provider/network/DB/UI/browser/deploy 호출은 승인하지 않았고 실행하지 않는다.
+
 # C-30 merged-main canonical checker reconciliation / 2026-09-23
 
 - 판정: `IN_PROGRESS`; Stage A merge-policy main `66eef70f87cac1d0b87df5b7e7c37715b3bf2632`에서 Stage B exact9 reconciliation을 시작했다.
