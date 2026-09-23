@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-04",
+  "event_sequence": 1377,
+  "accepted": true,
+  "projection_mode": "F04_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-04_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f04.json",
+    "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+    "packages/providers/groq_adapter.py",
+    "packages/providers/groq_errors.py",
+    "packages/providers/groq_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f04_progress_overlay.py",
+    "tests/providers/test_groq_adapter_f04.py",
+    "tests/tooling/test_f04_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+    "packages/providers/groq_adapter.py",
+    "packages/providers/groq_errors.py",
+    "packages/providers/groq_models.py",
+    "tests/providers/test_groq_adapter_f04.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "bytes": 6757,
+      "sha256": "7D7F37E7DD164B1BA90607EF76E69A225797E1FBE8088C26F490E756E97146B3"
+    },
+    {
+      "path": "docs/04_test_reports/F-04_INDEPENDENT_REVIEW.md",
+      "bytes": 1419,
+      "sha256": "29CF07E0F6D394AC7FF7A08D30976875DFB562DDE7385E203B0A79824C727054"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 433864,
+      "sha256": "B1E6CBC4741A35A44816B4CF7F5A3374FF42682CA040701D0B47FABE21A564BF"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4055169,
+      "sha256": "7163F4EF6991D5A84687F40C7AD0EBC4D833A00DCCC145DAE27DFBA0A0BD54C8"
+    },
+    {
+      "path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+      "bytes": 366,
+      "sha256": "3399986C0D01D941B36581D8DFA17E141BBE655A6F482007FC87626DE2F93AF6"
+    },
+    {
+      "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+      "bytes": 1239,
+      "sha256": "3B9AFD404483C437846EB341FE5174230A6423114E2638B5A01010878BC32183"
+    },
+    {
+      "path": "packages/providers/groq_adapter.py",
+      "bytes": 17402,
+      "sha256": "C0AF30D73FBD09BB05D9C72516B06805A08EE91CACC679D44BC77DA9A1DDBF23"
+    },
+    {
+      "path": "packages/providers/groq_errors.py",
+      "bytes": 3760,
+      "sha256": "CA722BF091BF937766BC783A813A1A7974966ADA38C1F9B6ABEE1430FCCC76C6"
+    },
+    {
+      "path": "packages/providers/groq_models.py",
+      "bytes": 3594,
+      "sha256": "E4C2FE00DFB8B67AEC574A44090D4084F6F486D98A43413E2DDD9CB61C64D111"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4720469,
+      "sha256": "FC45C2F37A2C3EB293AA94D2B868DD7008DF5B087F7FB8D02ACC5B81B46F9E83"
+    },
+    {
+      "path": "scripts/f04_progress_overlay.py",
+      "bytes": 22700,
+      "sha256": "59A89C059201848F5007FDA855CF7FB14F74F8F600AB6607666088B13F7922C7"
+    },
+    {
+      "path": "tests/providers/test_groq_adapter_f04.py",
+      "bytes": 13416,
+      "sha256": "1F030046E82206C31812F6D47B48E46BFA86E3C2051887CDC618BA1A5FDC5BE1"
+    },
+    {
+      "path": "tests/tooling/test_f04_progress_overlay.py",
+      "bytes": 2775,
+      "sha256": "C1F5B9628ABFAB34ADF474732C827CC0DD3E82DCBA3E1B10EEB6350E36B5A8A2"
+    }
+  ],
+  "runtime_boundary": {
+    "live_groq": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "self_reference": false
+}

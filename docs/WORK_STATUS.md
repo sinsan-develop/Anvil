@@ -1,3 +1,9 @@
+# F-04 GROQ adapter 완료
+
+- 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.
+- 실제 GROQ·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
+
 # F-03 merged-main reconciliation / 2026-09-23
 
 - 판정: `IN_PROGRESS`; PR #18 merged main `950bc8375fb19a76788f24e492112d68043ed596`의 structural checker를 추가한다.
