@@ -72,9 +72,11 @@ Broker는 다음 순서로 fail-closed 검증한다.
 6. exact 작업 branch 이름으로 요청 SHA를 checkout하고 `main`의 저장소별 Gate를 실행
 7. Gate 이후 `main`과 작업 branch가 변하지 않았는지 재검증
 8. PR 생성 또는 기존 열린 PR 재사용
-9. squash 병합 및 원격 작업 branch 삭제
-10. merge commit이 원격 `main`에 포함됐는지 확인
+9. merge commit 방식으로 병합하고 원격 작업 branch 삭제
+10. GitHub merge commit과 검증된 exact head가 원격 `main` 계보에 포함됐는지 확인
 11. 성공한 요청 tag 삭제
+
+Anvil의 routine request-tag PR은 `--merge`를 사용한다. GitHub merge commit의 두 번째 부모로 검증된 exact head ancestry를 보존해야 canonical merged-main 검증이 같은 commit을 추적할 수 있다. one-time bootstrap PR은 설치 자체의 기존 `--squash` 동작을 유지한다.
 
 ## 5. 실패 처리
 

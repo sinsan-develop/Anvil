@@ -194,7 +194,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ steps.pr.outputs.url }}
         shell: bash
-        run: gh pr merge "$PR_URL" --squash --delete-branch
+        run: gh pr merge "$PR_URL" --merge --delete-branch
 
       - name: Verify merged main
         env:
