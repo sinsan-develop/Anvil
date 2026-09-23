@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1388,
+  "last_sequence": 1393,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -77727,7 +77727,130 @@
       "tests/providers/test_openrouter_adapter_f06.py"
     ]
   }
+},
+{
+  "sequence": 1389,
+  "event_id": "evt_f06_1389_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-06/FINAL",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "101F3DE9FA82299F16981E6FD1EBFCEA0B19C9939F14E7B0791E379B06AFDF86",
+  "details": {
+    "package_id": "F-06",
+    "product_paths": [
+      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
+      "packages/providers/openrouter_adapter.py",
+      "packages/providers/openrouter_errors.py",
+      "packages/providers/openrouter_models.py",
+      "tests/providers/test_openrouter_adapter_f06.py"
+    ],
+    "focused": "PASS",
+    "related_provider_regression": "PASS",
+    "compile": "PASS"
+  }
+},
+{
+  "sequence": 1390,
+  "event_id": "evt_f06_1390_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-06/FINAL",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "363E889F2D175FA3B6351A8C07B6D40607247C996A570B1CB70486A5CB649264",
+  "details": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "report": "docs/04_test_reports/F-06_INDEPENDENT_REVIEW.md"
+  }
+},
+{
+  "sequence": 1391,
+  "event_id": "evt_f06_1391_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-06/FINAL",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "DA58D8D2634A51FF82163FDA73E8633AFBCC2B955412FC79C2D4889A6EBE1010",
+  "details": {
+    "lease_id": "write-lease-f06-r1-20260923-001",
+    "reason": "F06_ACCEPTED"
+  }
+},
+{
+  "sequence": 1392,
+  "event_id": "evt_f06_1392_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-06/FINAL",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "82F069A721E92CCEA4F742A2BC8B400B494BCCBE5A58396BEF4976CA71B9A1F8",
+  "details": {
+    "lease_id": "worker-lease-f06-r1-20260923-001",
+    "reason": "F06_ACCEPTED"
+  }
+},
+{
+  "sequence": 1393,
+  "event_id": "evt_f06_1393_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-06",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-06/FINAL",
+  "occurred_at": "2026-09-23T23:45:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "F9BA5670CF17AD825920E05D875F869087045FAEC585E26A6928EB56BAA5BF11",
+  "details": {
+    "decision": "ACCEPTED",
+    "package_id": "F-06",
+    "next_work_package": "F-07",
+    "blocking_findings": 0,
+    "unverified": [
+      "LIVE_OPENROUTER",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f06_1388_write_lease_issued"
+  "last_event_id": "evt_f06_1393_main_package_accepted"
 }

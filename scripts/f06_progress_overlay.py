@@ -261,7 +261,13 @@ def finalize(root):
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence") == 1393 and progress.get("repository", {}).get("projection_mode") == FINAL_MODE:
-        start_ref = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=root, text=True).strip()
+        current_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+        head_progress = json.loads(subprocess.check_output(
+            ["git", "show", f"{current_head}:docs/progress/build-progress.json"], cwd=root
+        ))
+        start_ref = current_head if head_progress.get("event_sequence") == 1388 else subprocess.check_output(
+            ["git", "rev-parse", "HEAD^"], cwd=root, text=True
+        ).strip()
         progress = json.loads(subprocess.check_output(
             ["git", "show", f"{start_ref}:docs/progress/build-progress.json"], cwd=root
         ))
@@ -297,10 +303,12 @@ def finalize(root):
         "active_work_instruction": None, "repository": _repository(FINAL_MODE),
         "f06_acceptance": {
             "status": "ACCEPTED",
-            "independent_review": "PENDING_FINAL_REVIEW",
-            "focused": "PENDING_FINAL_VERIFICATION",
-            "related_regression": "PENDING_FINAL_VERIFICATION",
-            "resolved_findings": [],
+            "independent_review": "ACCEPT_CRITICAL_0_IMPORTANT_0_MINOR_0",
+            "focused": "PASS_35",
+            "related_regression": "PASS_477_SKIP_4_PG18_DSN_NOT_CONFIGURED",
+            "resolved_findings": ["AUTH_KEY_OPTIONAL_QUOTA_FIELDS", "AUTH_KEY_PATH",
+                                  "ROUTING_METADATA_CONFLICT", "NONMODEL_404_SCOPE",
+                                  "NESTED_CREDENTIAL_MATERIAL"],
             "unverified": ["LIVE_OPENROUTER", "CREDENTIALS", "NETWORK", "DATABASE",
                            "BROWSER", "WSL", "DEPLOYMENT"],
         },
@@ -312,7 +320,9 @@ def finalize(root):
                                "stop_before_dialogue_report": False},
     })
     _write_projection(root, progress, ledger, heading="F-06 OPENROUTER adapter 완료",
-        status_lines=["판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.",
+        status_lines=["판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다(Critical/Important 0).",
+                      "Main 재검증: 관련 회귀 `477 passed, 4 skipped`(격리 PG18 DSN 없음), AST 4파일 통과.",
+                      "검토 재작업: 인증형 `/api/v1/auth/key`, 선택적 quota 필드, routing 충돌, 비모델 404, 중첩 credential 차단을 해결했다.",
                       "실제 OPENROUTER·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.",
                       "다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다."],
         accepted=True)
