@@ -1,3 +1,11 @@
+# F-14 PostgreSQL migration·backup/restore 착수
+
+- 판정: ACTIVE; F-13 PR #29 merged main 1584523, feature ancestry/tree, merged-main G-05/659 PASS 6 SKIP, branch/worktree 정리 확인.
+- 담당: Main 어울 통제, developer-primary-f14-r1 제품 exact12 write lease. 기준 문서 hash 일치, F-14 branch clean.
+- 기존 migration head 0015, artifact/checkpoint/recovery table 존재. 실제 backup restore·retention·operations PostgreSQL adapter는 미구현.
+- WSL-server 기존 local-postgres·타 프로젝트 컨테이너와 ysna 운영 DB 변경 금지. PG15/PG18 별도 격리 자원으로 검증 후 정리.
+- 다음: G-05 start gate 후 developer TDD 구현·독립 검토·Main WSL 격리 DB 훈련. 현재 정식 FAILURE_REPORT 0회.
+
 # F-13 Operations read model/API 로컬 계약 인수
 
 - 판정: `ACCEPTED_LOCAL_CONTRACT_SCOPE`; 제품 commit 772ab8d exact9, 독립 SPEC PASS / QUALITY APPROVED, 미해결 Critical 0/Important 0.

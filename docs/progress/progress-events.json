@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1455,
+  "last_sequence": 1459,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -79454,7 +79454,123 @@
       "PG18"
     ]
   }
+},
+{
+  "sequence": 1456,
+  "event_id": "evt_f14_1456_f13_merged_main_verified",
+  "event_type": "F13_MERGED_MAIN_VERIFIED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-14/START",
+  "occurred_at": "2026-09-24T08:39:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "BDA8E7F3B37B466718153349F5552FB449C140706E0D40BD48CA13A0E6ACD8DE",
+  "details": {
+    "merge_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "pull_request": "https://github.com/sinsan-develop/Anvil/pull/29",
+    "feature_commit": "8ec3cdaa96053dba3acbc53d94853870487ec0bd",
+    "feature_ancestor": true,
+    "merged_main_related": "659_PASS_6_SKIP",
+    "branch_worktree_cleaned": true
+  }
+},
+{
+  "sequence": 1457,
+  "event_id": "evt_f14_1457_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-14/START",
+  "occurred_at": "2026-09-24T08:39:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "9F1445E9E9231106706F8E1733C4E67F5FB55E00687557120B153A8CB51547DF",
+  "details": {
+    "package_id": "F-14",
+    "branch": "codex/f14-postgres-recovery",
+    "base_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "work_instruction": "docs/work_orders/F-14_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py"
+    ]
+  }
+},
+{
+  "sequence": 1458,
+  "event_id": "evt_f14_1458_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-14/START",
+  "occurred_at": "2026-09-24T08:39:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "8A9CDD486E694C2081038A6AB092FC459AECD33BC7DF021D9651EB2B9A18A08D",
+  "details": {
+    "lease_id": "worker-lease-f14-r1-20260924-001",
+    "execution_fencing_token": "f14-r1-execution-fence-epoch-1-1584523ccca71bae",
+    "actor_id": "developer-primary-f14-r1"
+  }
+},
+{
+  "sequence": 1459,
+  "event_id": "evt_f14_1459_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-14/START",
+  "occurred_at": "2026-09-24T08:39:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6E827076E75A7C47DF0098238591A72B94E8732EF852E1AEA8D312F24313C79F",
+  "details": {
+    "lease_id": "write-lease-f14-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f14-r1-20260924-001",
+    "write_fencing_token": "f14-r1-write-fence-epoch-1-4b3be01f592c7eb7",
+    "path_scope": [
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f13_1455_main_package_accepted"
+  "last_event_id": "evt_f14_1459_write_lease_issued"
 }

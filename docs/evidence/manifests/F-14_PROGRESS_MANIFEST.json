@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-14",
+  "event_sequence": 1459,
+  "accepted": false,
+  "projection_mode": "F14_START_EXACT11_PRODUCT_EXACT12",
+  "validated_base_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-14_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f14.json",
+    "docs/work_orders/F-14_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-14_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f14_progress_overlay.py",
+    "tests/tooling/test_f14_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+    "migrations/versions/0016_operations_recovery.py",
+    "packages/persistence/operations_repository.py",
+    "packages/recovery/__init__.py",
+    "packages/recovery/disaster.py",
+    "packages/recovery/retention.py",
+    "packages/recovery/runbook.py",
+    "tests/integration/test_f14_postgres_compat.py",
+    "tests/persistence/test_f14_operations_repository.py",
+    "tests/recovery/test_f14_disaster.py",
+    "tests/recovery/test_f14_retention.py",
+    "tests/recovery/test_f14_runbook.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 441155,
+      "sha256": "78410677C6694E7098D44F1DF467CD8CDF2B7BBE496A6D839EC8E25A7EC12A01"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4127031,
+      "sha256": "1EB4D22B7D5126E3367FBC6FDDE26DD49B172564B76C5011AEE5C469F30AAA66"
+    },
+    {
+      "path": "docs/work_orders/F-14_INVOCATION_PROMPT.md",
+      "bytes": 320,
+      "sha256": "191C70A362C45B2788B0CB47341E54289F210B5310F26418D3EEA19F1BBBC84E"
+    },
+    {
+      "path": "docs/work_orders/F-14_WORK_INSTRUCTION.md",
+      "bytes": 4901,
+      "sha256": "7259563EA1307354AF174EC94B1239AEDA1308A3D977E668A4861C5B21172445"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4728549,
+      "sha256": "5C85733FC7D7D37CCF1567FED145EA6269095C87189038ACD5BBE977D36A84F9"
+    },
+    {
+      "path": "scripts/f14_progress_overlay.py",
+      "bytes": 14897,
+      "sha256": "9A5A03954B97789D7D4910B18EF162CD4789B37D1BB5658E6E60789FD178C760"
+    },
+    {
+      "path": "tests/tooling/test_f14_progress_overlay.py",
+      "bytes": 1108,
+      "sha256": "788FB3DA0A1C935DBFCF68B01D3B8977687B59A4FF0BEB441C5DB062EE541C23"
+    }
+  ],
+  "self_reference": false,
+  "runtime_boundary": {
+    "database": "NOT_EXECUTED",
+    "pg18": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  }
+}
