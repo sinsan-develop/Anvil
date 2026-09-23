@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-10",
+  "event_sequence": 1425,
+  "accepted": true,
+  "projection_mode": "F10_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-10_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-10_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f10.json",
+    "docs/work_orders/F-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+    "packages/providers/openai_adapter.py",
+    "packages/providers/openai_errors.py",
+    "packages/providers/openai_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f10_progress_overlay.py",
+    "tests/providers/test_openai_adapter_f10.py",
+    "tests/tooling/test_f10_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+    "packages/providers/openai_adapter.py",
+    "packages/providers/openai_errors.py",
+    "packages/providers/openai_models.py",
+    "tests/providers/test_openai_adapter_f10.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "bytes": 6489,
+      "sha256": "86C509BF2F03D02080B10AB779C99610A2E435439ACAB063E5B93FAD2F2FBC64"
+    },
+    {
+      "path": "docs/04_test_reports/F-10_INDEPENDENT_REVIEW.md",
+      "bytes": 2417,
+      "sha256": "DC67D9BF93E6DDDBC55E24D2489F22EC95EE92171D73E651F7342564AC33E35D"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 437110,
+      "sha256": "715B3AC3A0621D60DE7F85CBFDA167C3B0F9822A335718C046CCA9B626663B58"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4095100,
+      "sha256": "04C085931FD8B8357BBBD4E57AE16038F1293D8EDAB30822BFC4B84314DC23B8"
+    },
+    {
+      "path": "docs/work_orders/F-10_INVOCATION_PROMPT.md",
+      "bytes": 343,
+      "sha256": "0F737009F338056CF6D14E10ACFBEEE88CE210BDC69EB06EE4C4295A5FB2227D"
+    },
+    {
+      "path": "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+      "bytes": 3559,
+      "sha256": "D57AAE8EA27107595F995303CF638FF04D9A76F4F22CA4E874F5D1C9EF93BF6D"
+    },
+    {
+      "path": "packages/providers/openai_adapter.py",
+      "bytes": 21407,
+      "sha256": "28DB01908A28E36AD60092629C79511729A606BF156D1A872262CE2A3E02C60E"
+    },
+    {
+      "path": "packages/providers/openai_errors.py",
+      "bytes": 3721,
+      "sha256": "41CBE981B1A15008D0D33066157265C66CAA8BA31447B89165A51123938D4390"
+    },
+    {
+      "path": "packages/providers/openai_models.py",
+      "bytes": 3524,
+      "sha256": "3136413EC78AE5F225BC5899C819AF66B4E1F9CFC23B1A37615EACDF55AA5B60"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4725317,
+      "sha256": "3004C1C7D21D082A0A6BCD8E13DCAC02C557DE3F8B8DAF65BE6A3ACA5DA0B1BF"
+    },
+    {
+      "path": "scripts/f10_progress_overlay.py",
+      "bytes": 23904,
+      "sha256": "C3A63DF0E0D7EF734A78ED80396D4A5D4DFB371EE4631A02CE463A7684690E52"
+    },
+    {
+      "path": "tests/providers/test_openai_adapter_f10.py",
+      "bytes": 15284,
+      "sha256": "94289FC48D4EBD0BA8D77B4EE9D6290AE73A309CD37084C5BE5855490D6F12E4"
+    },
+    {
+      "path": "tests/tooling/test_f10_progress_overlay.py",
+      "bytes": 4333,
+      "sha256": "CE044A6FCCB72F1848E91A9D9C758C5D865EA248E39594E83E851E6E46FDEA2F"
+    }
+  ],
+  "runtime_boundary": {
+    "live_openai": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "self_reference": false
+}

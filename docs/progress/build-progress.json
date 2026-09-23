@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f09-final-seq1417",
-  "event_sequence": 1417,
-  "updated_at": "2026-09-24T02:16:15+09:00",
-  "last_event_id": "evt_f09_1417_main_package_accepted",
+  "snapshot_id": "snapshot-f10-final-seq1425",
+  "event_sequence": 1425,
+  "updated_at": "2026-09-24T02:44:00+09:00",
+  "last_event_id": "evt_f10_1425_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,7 +91,7 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-09",
+  "current_work_package": "F-10",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -190,7 +190,8 @@
     "F-06",
     "F-07",
     "F-08",
-    "F-09"
+    "F-09",
+    "F-10"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -447,7 +448,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F09_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "MERGE_F10_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -557,40 +558,40 @@
     }
   },
   "repository": {
-    "branch": "codex/f09-anthropic-adapter",
-    "local_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "upstream": "development/codex/f09-anthropic-adapter",
-    "remote_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "projection_mode": "F09_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+    "branch": "codex/f10-openai-adapter",
+    "local_head": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "upstream": "development/codex/f10-openai-adapter",
+    "remote_head": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "projection_mode": "F10_FINAL_ACCEPTANCE_EXACT17",
+    "validated_base_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-09_INDEPENDENT_REVIEW.md",
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-10_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-09_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-10_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f09.json",
-      "docs/work_orders/F-09_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-09_WORK_INSTRUCTION.md",
-      "packages/providers/anthropic_adapter.py",
-      "packages/providers/anthropic_errors.py",
-      "packages/providers/anthropic_models.py",
+      "docs/progress/progress-handoff-detached-digest-f10.json",
+      "docs/work_orders/F-10_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
       "scripts/check_project_progress.py",
-      "scripts/f09_progress_overlay.py",
-      "tests/providers/test_anthropic_adapter_f09.py",
-      "tests/tooling/test_f09_progress_overlay.py"
+      "scripts/f10_progress_overlay.py",
+      "tests/providers/test_openai_adapter_f10.py",
+      "tests/tooling/test_f10_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
-      "packages/providers/anthropic_adapter.py",
-      "packages/providers/anthropic_errors.py",
-      "packages/providers/anthropic_models.py",
-      "tests/providers/test_anthropic_adapter_f09.py"
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
+      "tests/providers/test_openai_adapter_f10.py"
     ],
-    "worktree_status": "F09_ACCEPTED",
+    "worktree_status": "F10_ACCEPTED",
     "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
@@ -688,22 +689,22 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-09-20260924-001",
-    "path": "docs/work_orders/F-09_WORK_INSTRUCTION.md",
-    "sha256": "7E1EAE1729F2F8774A68DAFB02FB4FA863265E13E42A9D38CC0AE24F5EEE1C46",
-    "invocation_path": "docs/work_orders/F-09_INVOCATION_PROMPT.md",
-    "invocation_sha256": "4757459CD31644AAD3CC7543D02C0828A57895E505670DDADF6DA810735C2C2A",
+    "artifact_id": "WI-F-10-20260924-001",
+    "path": "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+    "sha256": "D57AAE8EA27107595F995303CF638FF04D9A76F4F22CA4E874F5D1C9EF93BF6D",
+    "invocation_path": "docs/work_orders/F-10_INVOCATION_PROMPT.md",
+    "invocation_sha256": "0F737009F338056CF6D14E10ACFBEEE88CE210BDC69EB06EE4C4295A5FB2227D",
     "assigned_verification_ids": [
       "AV-OPS-010",
       "AV-OPS-011",
-      "AV-FLOW-019(ANTHROPIC)"
+      "AV-FLOW-019(OPENAI)"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F09_ACCEPTED",
-      "F09_APPROVED_SCOPE"
+      "F10_ACCEPTED",
+      "F10_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -883,9 +884,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-09",
-    "path": "docs/progress/progress-handoff-detached-digest-f09.json",
-    "manifest_path": "docs/evidence/manifests/F-09_PROGRESS_MANIFEST.json"
+    "package_id": "F-10",
+    "path": "docs/progress/progress-handoff-detached-digest-f10.json",
+    "manifest_path": "docs/evidence/manifests/F-10_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -906,15 +907,15 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "3447457E964283F1DB4F4A417BCCD9F4AE6FFD78ACFCAA657A024B6485F96CDA"
+      "sha256": "04C085931FD8B8357BBBD4E57AE16038F1293D8EDAB30822BFC4B84314DC23B8"
     }
   },
   "next_work_package": {
-    "package_id": "F-10",
+    "package_id": "F-11",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
-    "package_id": "F-10",
+    "package_id": "F-11",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
@@ -1303,8 +1304,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "F93BD804554F3C010E9A10210691E930F25E914F3350DC74CEC9738A8310805F",
-  "runtime_next_action": "MERGE_F09_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "2B3F5D46560D241D18DD349E58A9BE4B6D03E4AF6F426D42D3781CEF0A8362D5",
+  "runtime_next_action": "MERGE_F10_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2916,7 +2917,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T02:16:15+09:00",
+  "recorded_at": "2026-09-24T02:44:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22085,6 +22086,70 @@
     ],
     "unverified": [
       "LIVE_ANTHROPIC",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  },
+  "completed_f10_worker_lease": {
+    "lease_id": "worker-lease-f10-r1-20260924-001",
+    "actor_id": "developer-primary-f10-r1",
+    "subject_ref": "F-10",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T02:25:00+09:00",
+    "expires_at": "2026-09-24T14:25:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f10-r1-execution-fence-epoch-1-acbef2720228cc8d",
+    "execution_fencing_token": "f10-r1-execution-fence-epoch-1-acbef2720228cc8d",
+    "baseline_git_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "dispatch_head": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "path_scope": [
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
+      "tests/providers/test_openai_adapter_f10.py"
+    ],
+    "revoked_at": "2026-09-24T02:44:00+09:00"
+  },
+  "completed_f10_write_lease": {
+    "lease_id": "write-lease-f10-r1-20260924-001",
+    "actor_id": "developer-primary-f10-r1",
+    "subject_ref": "F-10",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T02:25:00+09:00",
+    "expires_at": "2026-09-24T14:25:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f10-r1-write-fence-epoch-1-509afa3f36aca7e7",
+    "execution_fencing_token": "f10-r1-execution-fence-epoch-1-acbef2720228cc8d",
+    "baseline_git_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "dispatch_head": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "path_scope": [
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
+      "tests/providers/test_openai_adapter_f10.py"
+    ],
+    "worker_lease_id": "worker-lease-f10-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f10-r1-write-fence-epoch-1-509afa3f36aca7e7",
+    "revoked_at": "2026-09-24T02:44:00+09:00"
+  },
+  "f10_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M0",
+    "focused": "36_PASSED",
+    "related_regression": "630_PASSED_4_SKIPPED_PG18_DSN",
+    "resolved_findings": [
+      "QUOTA_CLASSIFICATION_PRECEDES_RETRY_AFTER",
+      "RESPONSES_SEMANTIC_EVENT_FAIL_CLOSED"
+    ],
+    "unverified": [
+      "LIVE_OPENAI",
       "CREDENTIALS",
       "NETWORK",
       "DATABASE",
