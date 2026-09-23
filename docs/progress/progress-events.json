@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1450,
+  "last_sequence": 1455,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -79329,7 +79329,132 @@
       "tests/observability/test_f13_operations.py"
     ]
   }
+},
+{
+  "sequence": 1451,
+  "event_id": "evt_f13_1451_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-13",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-13/FINAL",
+  "occurred_at": "2026-09-24T08:29:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "C2A84AD75F62E483309914DB1B0DF05178E82DE1815E1E93999260DC4A8B6A72",
+  "details": {
+    "package_id": "F-13",
+    "product_head": "772ab8deea508ff217dc89c6b45e453f157af018",
+    "product_paths": [
+      "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
+      "packages/api/operations.py",
+      "packages/api/registry.py",
+      "packages/api/runtime.py",
+      "packages/observability/models.py",
+      "packages/observability/projection.py",
+      "packages/observability/service.py",
+      "tests/api/test_f13_operations_api.py",
+      "tests/observability/test_f13_operations.py"
+    ],
+    "windows_related": "656_PASS_6_SKIP",
+    "wsl_isolated": "652_PASS_10_SKIP"
+  }
+},
+{
+  "sequence": 1452,
+  "event_id": "evt_f13_1452_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-13",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-13/FINAL",
+  "occurred_at": "2026-09-24T08:29:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "FCE760DD308FEF8135E83C0D1AD8E95E0279C4D5E3CD7254BAA79A9A8288EBD9",
+  "details": {
+    "verdict": "SPEC_PASS_QUALITY_APPROVED",
+    "critical": 0,
+    "important": 0,
+    "review": "docs/04_test_reports/F-13_INDEPENDENT_REVIEW.md"
+  }
+},
+{
+  "sequence": 1453,
+  "event_id": "evt_f13_1453_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-13",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-13/FINAL",
+  "occurred_at": "2026-09-24T08:29:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "F56094CEE649B8697CC8C4B74A468F6F4CD139BD6F4D2D402FBD05F86FDAAEB7",
+  "details": {
+    "lease_id": "write-lease-f13-r1-20260924-001",
+    "reason": "F13_CONTRACT_ACCEPTED"
+  }
+},
+{
+  "sequence": 1454,
+  "event_id": "evt_f13_1454_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-13",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-13/FINAL",
+  "occurred_at": "2026-09-24T08:29:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "CB5E05537F03E25A7D78DC7B801CCFAEE6059E427B02B837F5B3016DF2009440",
+  "details": {
+    "lease_id": "worker-lease-f13-r1-20260924-001",
+    "reason": "F13_CONTRACT_ACCEPTED"
+  }
+},
+{
+  "sequence": 1455,
+  "event_id": "evt_f13_1455_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-13",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-13/FINAL",
+  "occurred_at": "2026-09-24T08:29:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "1EE93BBEEF876622F7F8D9627B30682120A2054DF4F5774B1B6D6F52EC49C85D",
+  "details": {
+    "package_id": "F-13",
+    "decision": "ACCEPTED_LOCAL_CONTRACT_SCOPE",
+    "next_work_package": "F-14",
+    "unverified": [
+      "LIVE_ASGI_OWNER_BINDING",
+      "POSTGRES_DURABILITY",
+      "HOST_DETECTOR",
+      "BROWSER_UI",
+      "PROVIDER",
+      "DEPLOYMENT",
+      "PG18"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f13_1450_write_lease_issued"
+  "last_event_id": "evt_f13_1455_main_package_accepted"
 }
