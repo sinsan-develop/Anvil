@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f09-start-seq1412",
-  "event_sequence": 1412,
-  "updated_at": "2026-09-24T01:52:00+09:00",
-  "last_event_id": "evt_f09_1412_write_lease_issued",
+  "snapshot_id": "snapshot-f09-final-seq1417",
+  "event_sequence": 1417,
+  "updated_at": "2026-09-24T02:16:15+09:00",
+  "last_event_id": "evt_f09_1417_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -92,7 +92,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
   "current_work_package": "F-09",
-  "status": "ACTIVE",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -189,32 +189,11 @@
     "F-05",
     "F-06",
     "F-07",
-    "F-08"
+    "F-08",
+    "F-09"
   ],
-  "active_agent": "developer-primary-f09-r1",
-  "write_lease": {
-    "lease_id": "write-lease-f09-r1-20260924-001",
-    "actor_id": "developer-primary-f09-r1",
-    "subject_ref": "F-09",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T01:52:00+09:00",
-    "expires_at": "2026-09-24T13:52:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f09-r1-write-fence-epoch-1-18f22f138034c4a7",
-    "execution_fencing_token": "f09-r1-execution-fence-epoch-1-bad806b8ca0d4bbf",
-    "baseline_git_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "dispatch_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "path_scope": [
-      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
-      "packages/providers/anthropic_adapter.py",
-      "packages/providers/anthropic_errors.py",
-      "packages/providers/anthropic_models.py",
-      "tests/providers/test_anthropic_adapter_f09.py"
-    ],
-    "worker_lease_id": "worker-lease-f09-r1-20260924-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f09-r1-write-fence-epoch-1-18f22f138034c4a7"
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -246,26 +225,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f09-r1-20260924-001",
-    "actor_id": "developer-primary-f09-r1",
-    "subject_ref": "F-09",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T01:52:00+09:00",
-    "expires_at": "2026-09-24T13:52:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f09-r1-execution-fence-epoch-1-bad806b8ca0d4bbf",
-    "execution_fencing_token": "f09-r1-execution-fence-epoch-1-bad806b8ca0d4bbf",
-    "baseline_git_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "dispatch_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "path_scope": [
-      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
-      "packages/providers/anthropic_adapter.py",
-      "packages/providers/anthropic_errors.py",
-      "packages/providers/anthropic_models.py",
-      "tests/providers/test_anthropic_adapter_f09.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -487,7 +447,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F09_EXACT5",
+  "next_safe_action": "MERGE_F09_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -601,10 +561,12 @@
     "local_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
     "upstream": "development/codex/f09-anthropic-adapter",
     "remote_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
-    "projection_mode": "F09_START_EXACT11_PRODUCT_EXACT5",
+    "projection_mode": "F09_FINAL_ACCEPTANCE_EXACT17",
     "validated_base_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
+      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-09_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/manifests/F-09_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -613,8 +575,12 @@
       "docs/progress/progress-handoff-detached-digest-f09.json",
       "docs/work_orders/F-09_INVOCATION_PROMPT.md",
       "docs/work_orders/F-09_WORK_INSTRUCTION.md",
+      "packages/providers/anthropic_adapter.py",
+      "packages/providers/anthropic_errors.py",
+      "packages/providers/anthropic_models.py",
       "scripts/check_project_progress.py",
       "scripts/f09_progress_overlay.py",
+      "tests/providers/test_anthropic_adapter_f09.py",
       "tests/tooling/test_f09_progress_overlay.py"
     ],
     "product_write_scope": [
@@ -624,8 +590,8 @@
       "packages/providers/anthropic_models.py",
       "tests/providers/test_anthropic_adapter_f09.py"
     ],
-    "worktree_status": "F09_ACTIVE",
-    "commit_status": "PENDING",
+    "worktree_status": "F09_ACCEPTED",
+    "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -722,20 +688,21 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-08-20260924-001",
-    "path": "docs/work_orders/F-08_WORK_INSTRUCTION.md",
-    "sha256": "751FFDBF493C58A7F6D47A1B8E7A680E180E7A27D6E01D291EB8095055030DC2",
-    "invocation_path": "docs/work_orders/F-08_INVOCATION_PROMPT.md",
-    "invocation_sha256": "4D492B30611E2B7D8B0E11B81DFF0D362BE4CD0B756E95454892D78E5B315BD1",
+    "artifact_id": "WI-F-09-20260924-001",
+    "path": "docs/work_orders/F-09_WORK_INSTRUCTION.md",
+    "sha256": "7E1EAE1729F2F8774A68DAFB02FB4FA863265E13E42A9D38CC0AE24F5EEE1C46",
+    "invocation_path": "docs/work_orders/F-09_INVOCATION_PROMPT.md",
+    "invocation_sha256": "4757459CD31644AAD3CC7543D02C0828A57895E505670DDADF6DA810735C2C2A",
     "assigned_verification_ids": [
       "AV-OPS-010",
       "AV-OPS-011",
-      "AV-FLOW-019(GEMINI)"
+      "AV-FLOW-019(ANTHROPIC)"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
+      "F09_ACCEPTED",
       "F09_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
@@ -786,18 +753,7 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-F-09-20260924-001",
-    "path": "docs/work_orders/F-09_WORK_INSTRUCTION.md",
-    "sha256": "7E1EAE1729F2F8774A68DAFB02FB4FA863265E13E42A9D38CC0AE24F5EEE1C46",
-    "invocation_path": "docs/work_orders/F-09_INVOCATION_PROMPT.md",
-    "invocation_sha256": "4757459CD31644AAD3CC7543D02C0828A57895E505670DDADF6DA810735C2C2A",
-    "assigned_verification_ids": [
-      "AV-OPS-010",
-      "AV-OPS-011",
-      "AV-FLOW-019(ANTHROPIC)"
-    ]
-  },
+  "active_work_instruction": null,
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -950,16 +906,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1579CE6E96A07E2D43A9127AB2524E62C82CFE9FBED8794FD621E57BDF6A5A0C"
+      "sha256": "3447457E964283F1DB4F4A417BCCD9F4AE6FFD78ACFCAA657A024B6485F96CDA"
     }
   },
   "next_work_package": {
     "package_id": "F-10",
-    "status": "BLOCKED_PENDING_F09_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
     "package_id": "F-10",
-    "status": "BLOCKED_PENDING_F09_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1347,8 +1303,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "391216F6569C37F9DA4CFF9BF2646B7A89BC6B0B922138FF5CE6A57EAEE6A23D",
-  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F09_EXACT5",
+  "snapshot_hash": "F93BD804554F3C010E9A10210691E930F25E914F3350DC74CEC9738A8310805F",
+  "runtime_next_action": "MERGE_F09_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2960,7 +2916,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T01:52:00+09:00",
+  "recorded_at": "2026-09-24T02:16:15+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22062,6 +22018,73 @@
     ],
     "unverified": [
       "LIVE_GEMINI",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  },
+  "completed_f09_worker_lease": {
+    "lease_id": "worker-lease-f09-r1-20260924-001",
+    "actor_id": "developer-primary-f09-r1",
+    "subject_ref": "F-09",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T01:52:00+09:00",
+    "expires_at": "2026-09-24T13:52:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f09-r1-execution-fence-epoch-1-bad806b8ca0d4bbf",
+    "execution_fencing_token": "f09-r1-execution-fence-epoch-1-bad806b8ca0d4bbf",
+    "baseline_git_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+    "dispatch_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+    "path_scope": [
+      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+      "packages/providers/anthropic_adapter.py",
+      "packages/providers/anthropic_errors.py",
+      "packages/providers/anthropic_models.py",
+      "tests/providers/test_anthropic_adapter_f09.py"
+    ],
+    "revoked_at": "2026-09-24T02:16:15+09:00"
+  },
+  "completed_f09_write_lease": {
+    "lease_id": "write-lease-f09-r1-20260924-001",
+    "actor_id": "developer-primary-f09-r1",
+    "subject_ref": "F-09",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T01:52:00+09:00",
+    "expires_at": "2026-09-24T13:52:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f09-r1-write-fence-epoch-1-18f22f138034c4a7",
+    "execution_fencing_token": "f09-r1-execution-fence-epoch-1-bad806b8ca0d4bbf",
+    "baseline_git_commit": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+    "dispatch_head": "bad806b8ca0d4bbf18f22f138034c4a79257a045",
+    "path_scope": [
+      "docs/04_test_reports/F-09_COMPLETION_REPORT.md",
+      "packages/providers/anthropic_adapter.py",
+      "packages/providers/anthropic_errors.py",
+      "packages/providers/anthropic_models.py",
+      "tests/providers/test_anthropic_adapter_f09.py"
+    ],
+    "worker_lease_id": "worker-lease-f09-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f09-r1-write-fence-epoch-1-18f22f138034c4a7",
+    "revoked_at": "2026-09-24T02:16:15+09:00"
+  },
+  "f09_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M1",
+    "focused": "37_PASSED",
+    "related_regression": "594_PASSED_4_SKIPPED_PG18_DSN",
+    "resolved_findings": [
+      "FINAL_STREAM_USAGE",
+      "HEALTH_MODEL_BINDING",
+      "SPEND_LIMIT_CLASSIFICATION",
+      "CACHE_INPUT_TOTAL",
+      "AMBIGUOUS_429_RETRY"
+    ],
+    "unverified": [
+      "LIVE_ANTHROPIC",
       "CREDENTIALS",
       "NETWORK",
       "DATABASE",

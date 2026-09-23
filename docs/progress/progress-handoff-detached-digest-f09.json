@@ -1,16 +1,16 @@
 {
   "schema_version": "1.0.0",
   "algorithm": "SHA-256",
-  "event_sequence": 1412,
+  "event_sequence": 1417,
   "self_reference": false,
   "progress": {
     "path": "docs/progress/build-progress.json",
-    "bytes": 1122215,
-    "file_sha256": "D14BD25D6C9B52A6275AC62A694637A54C806D03EFEE44313E8558D8C30DA46A"
+    "bytes": 1122805,
+    "file_sha256": "2771BBC7F4B7F1337FEAEA04EAB53EBE999A2E4F1E1ECD6C2EB04DA4D59F02B5"
   },
   "handoff": {
     "path": "docs/progress/BUILD_HANDOFF.md",
-    "bytes": 2376,
-    "file_sha256": "6FA06A0C76ACD0765081DDDB4934B3D7FBA15BEB1E1A3407BAFDB48FDD3D7FEA"
+    "bytes": 549,
+    "file_sha256": "CBC8EE236388C7A1C4CF91609048FE66BADEB2B1FB96EFF3F357BDE1AE7C3D07"
   }
 }
