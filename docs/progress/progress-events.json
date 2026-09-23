@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1401,
+  "last_sequence": 1404,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78052,7 +78052,85 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1402,
+  "event_id": "evt_f08_1402_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-08/START",
+  "occurred_at": "2026-09-24T01:15:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "53D569DBF8C66E4D1A00B576C412475F4B8BC3B70D38C3EAC39F11C7B0000A6B",
+  "details": {
+    "package_id": "F-08",
+    "branch": "codex/f08-gemini-adapter",
+    "base_commit": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "work_instruction": "docs/work_orders/F-08_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "packages/providers/gemini_adapter.py",
+      "packages/providers/gemini_errors.py",
+      "packages/providers/gemini_models.py",
+      "tests/providers/test_gemini_adapter_f08.py"
+    ]
+  }
+},
+{
+  "sequence": 1403,
+  "event_id": "evt_f08_1403_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-08/START",
+  "occurred_at": "2026-09-24T01:15:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "177B986A86BCCFDC4E71DDD033A6929F67315C5287D62C69ADD2B9991EA8F98A",
+  "details": {
+    "lease_id": "worker-lease-f08-r1-20260924-001",
+    "execution_fencing_token": "f08-r1-execution-fence-epoch-1-150139c4bf73fcfa",
+    "actor_id": "developer-primary-f08-r1"
+  }
+},
+{
+  "sequence": 1404,
+  "event_id": "evt_f08_1404_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-08",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-08/START",
+  "occurred_at": "2026-09-24T01:15:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "CBB90FE87C70973D942344A71F2779A364ECFA545718C1934E59468BC33193A6",
+  "details": {
+    "lease_id": "write-lease-f08-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f08-r1-20260924-001",
+    "write_fencing_token": "f08-r1-write-fence-epoch-1-4e5464af995bc431",
+    "path_scope": [
+      "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "packages/providers/gemini_adapter.py",
+      "packages/providers/gemini_errors.py",
+      "packages/providers/gemini_models.py",
+      "tests/providers/test_gemini_adapter_f08.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f07_1401_main_package_accepted"
+  "last_event_id": "evt_f08_1404_write_lease_issued"
 }

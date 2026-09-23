@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f07-final-seq1401",
-  "event_sequence": 1401,
-  "updated_at": "2026-09-24T01:00:00+09:00",
-  "last_event_id": "evt_f07_1401_main_package_accepted",
+  "snapshot_id": "snapshot-f08-start-seq1404",
+  "event_sequence": 1404,
+  "updated_at": "2026-09-24T01:15:00+09:00",
+  "last_event_id": "evt_f08_1404_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,8 +91,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-07",
-  "status": "ACCEPTED",
+  "current_work_package": "F-08",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -190,8 +190,30 @@
     "F-06",
     "F-07"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f08-r1",
+  "write_lease": {
+    "lease_id": "write-lease-f08-r1-20260924-001",
+    "actor_id": "developer-primary-f08-r1",
+    "subject_ref": "F-08",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T01:15:00+09:00",
+    "expires_at": "2026-09-24T13:15:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f08-r1-write-fence-epoch-1-4e5464af995bc431",
+    "execution_fencing_token": "f08-r1-execution-fence-epoch-1-150139c4bf73fcfa",
+    "baseline_git_commit": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "dispatch_head": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "path_scope": [
+      "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "packages/providers/gemini_adapter.py",
+      "packages/providers/gemini_errors.py",
+      "packages/providers/gemini_models.py",
+      "tests/providers/test_gemini_adapter_f08.py"
+    ],
+    "worker_lease_id": "worker-lease-f08-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f08-r1-write-fence-epoch-1-4e5464af995bc431"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -223,7 +245,26 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f08-r1-20260924-001",
+    "actor_id": "developer-primary-f08-r1",
+    "subject_ref": "F-08",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T01:15:00+09:00",
+    "expires_at": "2026-09-24T13:15:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f08-r1-execution-fence-epoch-1-150139c4bf73fcfa",
+    "execution_fencing_token": "f08-r1-execution-fence-epoch-1-150139c4bf73fcfa",
+    "baseline_git_commit": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "dispatch_head": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "path_scope": [
+      "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "packages/providers/gemini_adapter.py",
+      "packages/providers/gemini_errors.py",
+      "packages/providers/gemini_models.py",
+      "tests/providers/test_gemini_adapter_f08.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -445,7 +486,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F07_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F08_EXACT5",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -555,41 +596,35 @@
     }
   },
   "repository": {
-    "branch": "codex/f07-upstage-adapter",
-    "local_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
-    "upstream": "development/codex/f07-upstage-adapter",
-    "remote_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
-    "projection_mode": "F07_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "branch": "codex/f08-gemini-adapter",
+    "local_head": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "upstream": "development/codex/f08-gemini-adapter",
+    "remote_head": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+    "projection_mode": "F08_START_EXACT11_PRODUCT_EXACT5",
+    "validated_base_commit": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-07_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-08_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f07.json",
-      "docs/work_orders/F-07_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-07_WORK_INSTRUCTION.md",
-      "packages/providers/upstage_adapter.py",
-      "packages/providers/upstage_errors.py",
-      "packages/providers/upstage_models.py",
+      "docs/progress/progress-handoff-detached-digest-f08.json",
+      "docs/work_orders/F-08_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-08_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "scripts/f07_progress_overlay.py",
-      "tests/providers/test_upstage_adapter_f07.py",
-      "tests/tooling/test_f07_progress_overlay.py"
+      "scripts/f08_progress_overlay.py",
+      "tests/tooling/test_f08_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
-      "packages/providers/upstage_adapter.py",
-      "packages/providers/upstage_errors.py",
-      "packages/providers/upstage_models.py",
-      "tests/providers/test_upstage_adapter_f07.py"
+      "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+      "packages/providers/gemini_adapter.py",
+      "packages/providers/gemini_errors.py",
+      "packages/providers/gemini_models.py",
+      "tests/providers/test_gemini_adapter_f08.py"
     ],
-    "worktree_status": "F07_ACCEPTED",
-    "commit_status": "FINAL_PENDING_OR_COMPLETE",
+    "worktree_status": "F08_ACTIVE",
+    "commit_status": "PENDING",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -700,8 +735,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F07_ACCEPTED",
-      "F07_APPROVED_SCOPE"
+      "F08_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -751,7 +785,18 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-F-08-20260924-001",
+    "path": "docs/work_orders/F-08_WORK_INSTRUCTION.md",
+    "sha256": "751FFDBF493C58A7F6D47A1B8E7A680E180E7A27D6E01D291EB8095055030DC2",
+    "invocation_path": "docs/work_orders/F-08_INVOCATION_PROMPT.md",
+    "invocation_sha256": "4D492B30611E2B7D8B0E11B81DFF0D362BE4CD0B756E95454892D78E5B315BD1",
+    "assigned_verification_ids": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019(GEMINI)"
+    ]
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -881,9 +926,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-07",
-    "path": "docs/progress/progress-handoff-detached-digest-f07.json",
-    "manifest_path": "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json"
+    "package_id": "F-08",
+    "path": "docs/progress/progress-handoff-detached-digest-f08.json",
+    "manifest_path": "docs/evidence/manifests/F-08_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -904,16 +949,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "C5298A63058F4CF6536E8C65C995701CD3AB3A1A1C54C05967E268C49A17385F"
+      "sha256": "B5E646D163EA6E5727EB4E9EEDDE5A0DDF6AE3B07619F81240CD208AC004AAE5"
     }
   },
   "next_work_package": {
-    "package_id": "F-08",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-09",
+    "status": "BLOCKED_PENDING_F08_ACCEPTANCE"
   },
   "next_successor_work_package": {
-    "package_id": "F-08",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-09",
+    "status": "BLOCKED_PENDING_F08_ACCEPTANCE"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1301,8 +1346,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "33775B8198E4EB5AFEA5B2472CC7D2F792A44135A24A86DE4B486A46F9CD7833",
-  "runtime_next_action": "MERGE_F07_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "8372C2D163FB6336041E549180485C0754A64770A3C94DC759E482D678BD785F",
+  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F08_EXACT5",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2914,7 +2959,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T01:00:00+09:00",
+  "recorded_at": "2026-09-24T01:15:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

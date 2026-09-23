@@ -1,3 +1,10 @@
+# F-08 GEMINI adapter 시작
+
+- 판정: `ACTIVE`; 승인된 F-08 host-only exact5 구현을 시작한다.
+- branch/base: `codex/f08-gemini-adapter` / `150139c4bf73fcfa4e5464af995bc431f3d2a056`.
+- 제어 테스트 임시 경로: `D:\Project\Anvil\.codex-sandbox\.f08-control-20260924a`; F-08 overlay 테스트 동안만 사용하고 실행 직후 경로 확인 후 삭제한다.
+- 실제 GEMINI·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+
 # F-07 UPSTAGE adapter 완료
 
 - 판정: `ACCEPTED`; 제품 exact5와 독립 재검토 C0/I0/M1. 429 오분류 Important는 해소했다.

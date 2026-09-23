@@ -58029,6 +58029,24 @@ def validate_bundle(bundle):
     from f07_progress_overlay import validate
     return validate(bundle["_root"], bundle)
 
+_validate_git_projection_before_f08 = _validate_git_projection
+def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") in {
+        "F08_START_EXACT11_PRODUCT_EXACT5", "F08_FINAL_ACCEPTANCE_EXACT17"
+    }:
+        from f08_progress_overlay import collect_git
+        return collect_git(bundle["_root"])
+    return _validate_git_projection_before_f08(bundle)
+
+_validate_bundle_before_f08 = validate_bundle
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
+        "F08_START_EXACT11_PRODUCT_EXACT5", "F08_FINAL_ACCEPTANCE_EXACT17"
+    }:
+        return _validate_bundle_before_f08(bundle)
+    from f08_progress_overlay import validate
+    return validate(bundle["_root"], bundle)
+
 
 
 if __name__ == "__main__":

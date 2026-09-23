@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-08",
+  "event_sequence": 1404,
+  "accepted": false,
+  "projection_mode": "F08_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "150139c4bf73fcfa4e5464af995bc431f3d2a056",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-08_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f08.json",
+    "docs/work_orders/F-08_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-08_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f08_progress_overlay.py",
+    "tests/tooling/test_f08_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-08_COMPLETION_REPORT.md",
+    "packages/providers/gemini_adapter.py",
+    "packages/providers/gemini_errors.py",
+    "packages/providers/gemini_models.py",
+    "tests/providers/test_gemini_adapter_f08.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 435539,
+      "sha256": "B9558688CF20A822FEB151AF812E9009B62B028DD2AA81A80A8F2E43B3C2ADAD"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4077911,
+      "sha256": "B5E646D163EA6E5727EB4E9EEDDE5A0DDF6AE3B07619F81240CD208AC004AAE5"
+    },
+    {
+      "path": "docs/work_orders/F-08_INVOCATION_PROMPT.md",
+      "bytes": 224,
+      "sha256": "4D492B30611E2B7D8B0E11B81DFF0D362BE4CD0B756E95454892D78E5B315BD1"
+    },
+    {
+      "path": "docs/work_orders/F-08_WORK_INSTRUCTION.md",
+      "bytes": 4161,
+      "sha256": "751FFDBF493C58A7F6D47A1B8E7A680E180E7A27D6E01D291EB8095055030DC2"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4723703,
+      "sha256": "2AB4A51C857D2260D5D7D49B891424478699DE98FC0E8772E9AC17A9468253FC"
+    },
+    {
+      "path": "scripts/f08_progress_overlay.py",
+      "bytes": 23312,
+      "sha256": "26738BCED280970FD549B338F8FA9D0D89D26743767C31543AD144F09517C133"
+    },
+    {
+      "path": "tests/tooling/test_f08_progress_overlay.py",
+      "bytes": 4333,
+      "sha256": "84AB16B087F1CEE8265D8908E0FFA2E95CA92D16D5328F032CB1A653389B0703"
+    }
+  ],
+  "runtime_boundary": {
+    "live_gemini": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}
