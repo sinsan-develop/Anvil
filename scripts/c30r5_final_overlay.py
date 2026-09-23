@@ -35,6 +35,21 @@ BROKER_GATE_CORRECTION_PATHS=[
     "tests/integration/test_c30r2_runtime_owner.py",
     "tests/tooling/test_c30r5_final_overlay.py",
 ]
+MERGED_BRANCH="codex/c30-merged-main-reconciliation"
+MERGED_AT="2026-09-23T17:50:50+09:00"
+MERGED_DIGEST="docs/progress/progress-handoff-detached-digest-c30r5-merged-main-reconciliation.json"
+MERGED_REPORT="docs/04_test_reports/C-30_MERGED_MAIN_RECONCILIATION.md"
+MERGED_RECONCILIATION_PATHS=[
+    MERGED_REPORT,
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-30R5_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    MERGED_DIGEST,
+    "scripts/c30r5_final_overlay.py",
+    "tests/tooling/test_c30r5_final_overlay.py",
+]
 
 def controls(): return sorted(["docs/WORK_STATUS.md",DEV,SPEC,QUALITY,MANIFEST,"docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json",DIGEST,WI2,INV2,"scripts/check_project_progress.py","scripts/c30r5_final_overlay.py","tests/tooling/test_c30r5_final_overlay.py"])
 def paths(): return sorted(controls()+[PRODUCT])
@@ -95,10 +110,39 @@ def validate_broker_integration_facts(*,head,branch,upstream,remote,staged,dirty
         and not dirty and set(correction_paths or ())==set(BROKER_GATE_CORRECTION_PATHS))
     return [] if common and (merge_state or correction_state) else ["C30R5_FINAL_GIT_INVALID"]
 
-def gitv(root):
+def validate_merged_main_reconciliation_facts(*,head,branch,upstream,remote,staged,dirty,
+        validated_base,head_parents,head_changed_paths,base_is_ancestor_of_feature=False,
+        feature_paths=None,merge_tree_matches_feature=False):
+    expected=set(MERGED_RECONCILIATION_PATHS)
+    work_upstreams={"development/main",f"development/{MERGED_BRANCH}"}
+    pre=(branch==MERGED_BRANCH and upstream in work_upstreams and head==validated_base
+        and remote==validated_base and not staged and set(dirty)==expected)
+    post=(branch==MERGED_BRANCH and upstream in work_upstreams and head!=validated_base
+        and remote in {validated_base,head} and not staged and not dirty
+        and head_parents==[validated_base] and set(head_changed_paths)==expected)
+    merged=(branch=="main" and upstream=="development/main" and remote==head
+        and not staged and not dirty and len(head_parents)==2 and head_parents[0]==validated_base
+        and base_is_ancestor_of_feature and set(feature_paths or ())==expected
+        and merge_tree_matches_feature)
+    return [] if pre or post or merged else ["C30R5_FINAL_GIT_INVALID"]
+
+def gitv(root,progress=None):
     try:
+        if progress is None: progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8"))
         g=lambda *a: subprocess.check_output(["git",*a],cwd=root,text=True).strip(); head=g("rev-parse","HEAD"); remote=g("rev-parse","@{u}"); branch=g("branch","--show-current"); up=g("rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
         staged=set(filter(None,g("-c","core.excludesFile=","diff","--cached","--name-only").splitlines())); lines=subprocess.check_output(["git","-c","core.excludesFile=","status","--porcelain=v1","--untracked-files=all"],cwd=root,text=True).splitlines(); dirty={x[3:].replace("\\","/") for x in lines}
+        if (progress or {}).get("event_sequence")==1359 and (progress or {}).get("repository",{}).get("exact_allowed_paths")==MERGED_RECONCILIATION_PATHS:
+            base=progress["repository"]["validated_base_commit"]; parents=g("show","-s","--format=%P","HEAD").split(); changed=set()
+            if head!=base: changed=set(filter(None,g("diff","--name-only",f"{base}..HEAD").splitlines()))
+            ancestor=False; feature_paths=None; tree_match=False
+            if branch=="main" and len(parents)==2:
+                feature=parents[1]
+                ancestor=subprocess.run(["git","merge-base","--is-ancestor",base,feature],cwd=root).returncode==0
+                feature_paths=set(filter(None,g("diff","--name-only",f"{base}..{feature}").splitlines()))
+                tree_match=subprocess.run(["git","diff","--quiet",feature,head],cwd=root).returncode==0
+            return validate_merged_main_reconciliation_facts(head=head,branch=branch,upstream=up,remote=remote,
+                staged=staged,dirty=dirty,validated_base=base,head_parents=parents,head_changed_paths=changed,
+                base_is_ancestor_of_feature=ancestor,feature_paths=feature_paths,merge_tree_matches_feature=tree_match)
         pre=head==BASE and remote==BASE and dirty==set(paths()); post=head==ACCEPTED and g("rev-parse","HEAD^")==BASE and remote in {BASE,head} and not dirty
         if post: post=set(filter(None,g("diff","--name-only",f"{BASE}..HEAD").splitlines()))==set(paths())
         recon_pre=head==ACCEPTED and remote==ACCEPTED and dirty==set(recon_paths())
@@ -121,17 +165,17 @@ def gitv(root):
 
 def select_final_gate_events(events,event_sequence):
     offset=event_sequence-1356
-    if offset not in {0,1,2}: return []
+    if offset not in {0,1,2,3}: return []
     end=len(events)-offset if offset else len(events)
     return events[end-7:end]
 
 def validate(root,b):
     e=[]
     try:
-        p=b["progress"]; event_value=b["events"]; events=event_value["events"] if isinstance(event_value,dict) else event_value; man=json.loads((root/MANIFEST).read_text(encoding="utf-8")); digest_path=BROKER_DIGEST if p.get("event_sequence")==1358 else DIGEST; d=json.loads((root/digest_path).read_text(encoding="utf-8"))
+        p=b["progress"]; event_value=b["events"]; events=event_value["events"] if isinstance(event_value,dict) else event_value; man=json.loads((root/MANIFEST).read_text(encoding="utf-8")); digest_path=MERGED_DIGEST if p.get("event_sequence")==1359 else (BROKER_DIGEST if p.get("event_sequence")==1358 else DIGEST); d=json.loads((root/digest_path).read_text(encoding="utf-8"))
         final_events=select_final_gate_events(events,p.get("event_sequence")); types=[x.get("event_type") for x in final_events]
         if types!=["WORK_INSTRUCTION_REVISED","PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED","PHASE_GATE_DECIDED"]:e.append("C30R5_FINAL_EVENT_TAIL_INVALID")
-        r=final_events[0].get("details",{}); expected_paths=BROKER_GATE_CORRECTION_PATHS if p.get("event_sequence")==1358 else paths(); state=(p.get("event_sequence") in {1356,1357,1358} and p.get("status")=="ACCEPTED" and p.get("c30_overall_status")=="ACCEPTED" and p.get("worker_lease") is None and p.get("write_lease") is None and p.get("active_work_instruction") is None and "C-30R5" in p.get("completed_packages",[]) and man.get("accepted") is True and man.get("exact_allowed_paths")==expected_paths and man.get("unverified")==UNVERIFIED)
+        r=final_events[0].get("details",{}); expected_paths=MERGED_RECONCILIATION_PATHS if p.get("event_sequence")==1359 else (BROKER_GATE_CORRECTION_PATHS if p.get("event_sequence")==1358 else paths()); state=(p.get("event_sequence") in {1356,1357,1358,1359} and p.get("status")=="ACCEPTED" and p.get("c30_overall_status")=="ACCEPTED" and p.get("worker_lease") is None and p.get("write_lease") is None and p.get("active_work_instruction") is None and "C-30R5" in p.get("completed_packages",[]) and man.get("accepted") is True and man.get("exact_allowed_paths")==expected_paths and man.get("unverified")==UNVERIFIED)
         if (r.get("parent_sha256"),r.get("revised_sha256"),r.get("invocation_sha256"))!=(WI1H,WI2H,INV2H):e.append("C30R5_FINAL_REVISION_BINDING_INVALID")
         if not state:e.append("C30R5_FINAL_STATE_INVALID")
         for row in man.get("raw_checksums",[]):
@@ -140,7 +184,7 @@ def validate(root,b):
         pr=(root/"docs/progress/build-progress.json").read_bytes(); hr=(root/"docs/progress/BUILD_HANDOFF.md").read_bytes()
         if (len(pr),sha(pr))!=(d["progress"]["bytes"],d["progress"]["file_sha256"]):e.append("C30R5_FINAL_PROGRESS_DIGEST_INVALID")
         if (len(hr),sha(hr))!=(d["handoff"]["bytes"],d["handoff"]["file_sha256"]):e.append("C30R5_FINAL_HANDOFF_DIGEST_INVALID")
-        e+=gitv(root)
+        e+=gitv(root,p)
     except Exception:e.append("C30R5_FINAL_INPUT_INVALID")
     return sorted(set(e))
 
@@ -224,6 +268,66 @@ def broker_reconcile(root):
             raw=(root/rel).read_bytes(); rows.append({"path":rel,"bytes":len(raw),"sha256":sha(raw)})
     man["raw_checksums"]=rows; (root/MANIFEST).write_bytes(pretty(man))
 
+def merged_main_reconcile(root):
+    base=subprocess.check_output(["git","rev-parse","development/main"],cwd=root,text=True).strip()
+    ep=root/"docs/progress/progress-events.json"; pp=root/"docs/progress/build-progress.json"; hp=root/"docs/progress/BUILD_HANDOFF.md"
+    base_raw=subprocess.check_output(["git","show",f"{base}:docs/progress/progress-events.json"],cwd=root)
+    ledger=json.loads(base_raw); events=ledger["events"]
+    p=json.loads(subprocess.check_output(["git","show",f"{base}:docs/progress/build-progress.json"],cwd=root))
+    if p.get("event_sequence")!=1358 or events[-1].get("sequence")!=1358: raise RuntimeError("MERGED_MAIN_RECON_BASE")
+    append(events,"REPOSITORY_RECONCILED",{
+        "accepted_checkpoint":base,"broker_policy_main":base,"routine_merge_method":"MERGE_COMMIT",
+        "required_main_shape":{"parent_count":2,"first_parent":"PR_PRE_MERGE_MAIN","second_parent":"VERIFIED_EXACT_FEATURE_HEAD"},
+        "exact_paths":MERGED_RECONCILIATION_PATHS,
+        "verification":{"tdd_red":"4 failed, 6 passed","tdd_green":"10 passed","canonical_checker":"PASS_SEQUENCE_1359","worktree_diff_check":"PASS","range_diff_check":"PENDING_COMMIT"},
+        "scope":"MERGED_MAIN_GIT_PROJECTION_AND_APPEND_ONLY_EVIDENCE_ONLY","product_behavior_changed":False,
+    },"C-30",MERGED_AT)
+    report=("# C-30 merged-main canonical checker reconciliation\n\n"
+        f"- 판정: `IN_PROGRESS`; routine Broker merge policy가 적용된 main 기준선은 `{base}`다.\n"
+        "- root cause: 기존 checker는 작업 branch만 허용했고 squash main은 exact feature ancestry를 보존하지 않았다.\n"
+        "- Stage A: routine PR을 merge commit 방식으로 교정했고 bootstrap PR #16은 기존 squash 정책을 유지했다.\n"
+        "- Stage B: work branch pre/post commit과 merged main의 구조를 분리 검증한다. merged main은 parent 2개, first-parent base, second-parent exact feature head, base→feature exact path, feature/main tree equality를 요구한다. SHA는 checker에 하드코딩하지 않는다.\n"
+        "- TDD: merged-main 계약 RED `4 failed, 6 passed`; GREEN `10 passed`. canonical checker seq1359와 worktree diff-check PASS. 제품 코드 변경은 0이다.\n"
+        "- 미검증 유지: Provider, production auth, PG18, actual server-generated 400, Oracle.\n"
+        "- rollback: 본 exact9 reconciliation commit만 revert하며 seq1~1358과 Stage A Broker 정책 commit은 보존한다.\n").encode()
+    append_report_hash=sha(report)
+    p.update({"event_sequence":1359,"last_event_id":events[-1]["event_id"],"updated_at":MERGED_AT,"recorded_at":MERGED_AT,
+        "next_safe_action":"C30_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH","runtime_next_action":"C30_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH"})
+    p["repository"].update({"branch":MERGED_BRANCH,"upstream":f"development/{MERGED_BRANCH}",
+        "local_head":base,"remote_head":base,"control_head":base,
+        "projection_mode":MODE,"validated_base_commit":base,
+        "head_relation":"PRECOMMIT_OR_DIRECT_CHILD_OR_STRUCTURAL_MERGED_MAIN",
+        "exact_allowed_paths":MERGED_RECONCILIATION_PATHS,"product_write_scope":[],
+        "worktree_status":"UNSTAGED_C30_MERGED_MAIN_RECONCILIATION_EXACT9",
+        "commit_status":"NOT_EXECUTED","push_status":"NOT_EXECUTED","remote_evidence":"LIVE_MAIN_BASE_VERIFIED"})
+    p["current_progress_evidence_ref"]={"package_id":"C-30","path":MERGED_DIGEST,"manifest_path":MANIFEST}
+    p["latest_evidence_refs"]=[{"path":MERGED_REPORT,"sha256":append_report_hash}]
+    m=dict(p); m.pop("snapshot_hash",None); p["snapshot_hash"]=sha(canon(m)); praw=pretty(p)
+    event_raw=pretty(events[-1]).rstrip(b"\n"); old_id=ledger["last_event_id"].encode(); marker=b'\n  ],\n  "last_event_id": "'+old_id+b'"'; assert base_raw.count(marker)==1
+    eraw=base_raw.replace(marker,b",\n"+event_raw+marker.replace(old_id,events[-1]["event_id"].encode())).replace(b'"last_sequence": 1358',b'"last_sequence": 1359',1)
+    summary={k:p.get(k) for k in ("event_sequence","last_event_id","status","current_phase","current_work_package","active_agent","worker_lease","write_lease","next_work_package","next_successor_work_package","next_safe_action","runtime_next_action")}
+    summary.update({"c30_overall_status":"ACCEPTED","repository_validated_base":base,"repository_branch":MERGED_BRANCH,"unverified":UNVERIFIED})
+    hraw=("# C30 merged-main canonical checker reconciliation\n\n```json anvil-recovery-summary\n"+pretty(summary).decode()+"```\n").encode()
+    ws=("# C-30 merged-main canonical checker reconciliation / 2026-09-23\n\n"
+        f"- 판정: `IN_PROGRESS`; Stage A merge-policy main `{base}`에서 Stage B exact9 reconciliation을 시작했다.\n"
+        "- TDD RED `4 failed, 6 passed`; GREEN `10 passed`; canonical checker seq1359와 worktree diff-check PASS. checker는 work branch pre/post와 2-parent merged main을 구조·exact path·ancestry·tree equality로 검증한다.\n"
+        "- 제품/DB/WSL/browser/Provider/Oracle 변경·재실행은 0이다. 다음은 seq1359 checker/diff/focused gate 후 commit·push·request tag다.\n\n").encode()+subprocess.check_output(["git","show",f"{base}:docs/WORK_STATUS.md"],cwd=root)
+    pp.write_bytes(praw); ep.write_bytes(eraw); hp.write_bytes(hraw); (root/MERGED_REPORT).write_bytes(report); (root/"docs/WORK_STATUS.md").write_bytes(ws)
+    digest={"schema_version":"1.0.0","algorithm":"SHA-256","event_sequence":1359,"self_reference":False,
+        "progress":{"path":"docs/progress/build-progress.json","bytes":len(praw),"file_sha256":sha(praw),"canonical_json_sha256":sha(canon(p))},
+        "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(hraw),"file_sha256":sha(hraw),"machine_summary_canonical_sha256":sha(canon(summary))}}
+    (root/MERGED_DIGEST).write_bytes(pretty(digest))
+    man=json.loads(subprocess.check_output(["git","show",f"{base}:{MANIFEST}"],cwd=root))
+    man.update({"event_sequence":1359,"appended_event_count":10,"exact_allowed_paths":MERGED_RECONCILIATION_PATHS,
+        "control_paths":MERGED_RECONCILIATION_PATHS,"product_write_scope":[],
+        "repository_reconciliation":{"accepted_checkpoint":base,"routine_merge_method":"MERGE_COMMIT",
+            "status":"IN_PROGRESS_PENDING_COMMIT_PUSH","product_behavior_changed":False}})
+    rows=[]
+    for rel in MERGED_RECONCILIATION_PATHS:
+        if rel!=MANIFEST:
+            raw=(root/rel).read_bytes(); rows.append({"path":rel,"bytes":len(raw),"sha256":sha(raw)})
+    man["raw_checksums"]=rows; (root/MANIFEST).write_bytes(pretty(man))
+
 if __name__=="__main__":
     root=Path(__file__).resolve().parents[1]
-    broker_reconcile(root) if "--broker-reconcile" in sys.argv else (reconcile(root) if "--reconcile" in sys.argv else materialize(root))
+    merged_main_reconcile(root) if "--merged-main-reconcile" in sys.argv else (broker_reconcile(root) if "--broker-reconcile" in sys.argv else (reconcile(root) if "--reconcile" in sys.argv else materialize(root)))
