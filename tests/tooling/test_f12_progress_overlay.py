@@ -93,7 +93,9 @@ def test_f12_revision_replaces_write_lease_with_exact10(tmp_path, monkeypatch):
                      OVERLAY.WI, OVERLAY.PROMPT):
         target = tmp_path / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((ROOT / relative).read_bytes())
+        target.write_bytes(subprocess.check_output(
+            ["git", "show", f"697ae08d2aa63952d8efef5c5761458110500745:{relative}"], cwd=ROOT
+        ) if relative.startswith("docs/progress/") else (ROOT / relative).read_bytes())
     captured = {}
     def capture(_root, progress, ledger, **_kwargs):
         captured["progress"] = progress

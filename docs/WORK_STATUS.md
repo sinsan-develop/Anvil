@@ -1,11 +1,12 @@
-# F-12 Provider Settings R2 owner 계약 보완
+# F-12 Provider Settings 계약 완료
 
-- 판정: `ACTIVE_R2`; F-12 기존 profile 교체의 F-01 owner current-profile/CAS 공백을 내부 보완한다.
-- R1 exact8 관련 회귀 Main 재검증 966 PASS, exit 0; 독립 검토 Important 4건 중 3건과 조회 replay 보완. 기존 profile revise 501은 미완료다.
-- R1 write lease를 회수하고 동일 worker의 scope를 exact10으로 개정, epoch2 write lease를 발행했다.
-- 기능 범위·요구사항·중요 위험 확대 없음; profile 확대의 human approval은 계속 필수다.
-- 실제 Provider·DB·브라우저·WSL·배포 미검증; F-14 영속성·다중 인스턴스 검증 필요.
-- 다음 조치: G-05 확인 후 F-01 owner CAS와 F-12 소비 경로를 TDD 재작업한다.
+- 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact10을 인수한다.
+- Main Windows 관련 회귀 975 PASS, exit 0; WSL-server 격리 checkout 동일 commit 관련 회귀 975 PASS, exit 0.
+- WSL 검증 임시 checkout·venv·pytest 경로 제거 및 F-12 잔여 컨테이너 0 확인. control 테스트 9 PASS, G-05 최종 재검증 예정.
+- 독립 검토 R1 Important 4건과 R2 위조 decision Important 1건 보완; 정식 `FAILURE_REPORT` 0회.
+- 전체 pytest collection 16 ERROR는 clean main에서도 재현되어 전체 suite PASS 아님.
+- 실제 Provider·human approval·Secret material·network·DB·browser·deploy는 `NOT_EXECUTED`; F-01 선택 영속성·다중 인스턴스는 F-14 잔여 acceptance.
+- 실제 U-11 화면 E-SHOT/E-DEC는 F-12 범위 밖이며 `NOT_EXECUTED`. 다음 조치: PR 병합 후 branch/worktree 삭제.
 
 # F-11 OLLAMA adapter 완료
 

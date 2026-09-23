@@ -16,7 +16,7 @@ REVISION_MODE = "F12_ACTIVE_R2_EXACT11_PRODUCT_EXACT10"
 FINAL_MODE = "F12_FINAL_ACCEPTANCE_EXACT22"
 AT = "2026-09-24T04:04:00+09:00"
 REVISION_AT = "2026-09-24T04:55:00+09:00"
-FINAL_AT = None  # Set only after independent acceptance and actual final verification.
+FINAL_AT = "2026-09-24T05:19:22+09:00"  # Independent review and WSL contract evidence verified.
 EXPIRES = "2026-09-24T16:04:00+09:00"
 ACTOR = "developer-primary-f12-r1"
 WORKER = "worker-lease-f12-r1-20260924-001"
@@ -214,7 +214,8 @@ def _write_projection(root, progress, ledger, *, heading, status_lines, accepted
         "runtime_boundary": {
             "live_providers": "NOT_EXECUTED", "network": "NOT_EXECUTED",
             "credentials": "NOT_EXECUTED", "database": "NOT_EXECUTED",
-            "browser": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED",
+            "browser": "NOT_EXECUTED", "wsl": "ISOLATED_CONTRACT_975_PASS_NO_NETWORK",
+            "deployment": "NOT_EXECUTED",
         },
         "independent_review": (None if not accepted else {"verdict": "ACCEPT", "critical": 0,
                                                       "important": 0, "minor": 0}),
@@ -353,16 +354,17 @@ def finalize(root):
     if progress.get("event_sequence") != 1441 or events[-1].get("sequence") != 1441:
         raise RuntimeError("F12_R2_PROGRESS_INVALID")
     old_worker, old_write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
-    _append(events, "PACKAGE_COMPLETED", {"package_id": "F-12", "product_paths": product_paths(),
-             "focused": "69_PASSED", "related_provider_regression": "699_PASSED_4_SKIPPED_PG18_DSN",
-             "compile": "AST_5_OK"}, step="FINAL")
+    _append(events, "PACKAGE_COMPLETED", {"package_id": "F-12", "product_paths": product_paths_r2(),
+             "windows_related_regression": "975_PASSED", "wsl_isolated_contract": "975_PASSED",
+             "compile": "AST_9_OK"}, step="FINAL")
     _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {"verdict": "ACCEPT",
              "critical": 0, "important": 0, "minor": 0, "report": REVIEW}, step="FINAL")
     _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE, "reason": "F12_ACCEPTED"}, step="FINAL")
     _append(events, "WORKER_LEASE_REVOKED", {"lease_id": WORKER, "reason": "F12_ACCEPTED"}, step="FINAL")
     last = _append(events, "MAIN_PACKAGE_ACCEPTED", {"decision": "ACCEPTED",
         "package_id": "F-12", "next_work_package": "F-13", "blocking_findings": 0,
-        "unverified": ["LIVE_OLLAMA", "CREDENTIALS", "NETWORK", "DATABASE", "BROWSER", "WSL", "DEPLOYMENT"]}, step="FINAL")
+        "unverified": ["LIVE_PROVIDERS", "REAL_HUMAN_APPROVAL", "SECRET_MATERIAL", "NETWORK",
+                       "DATABASE", "BROWSER", "DEPLOYMENT", "PROFILE_RESTART_MULTI_INSTANCE"]}, step="FINAL")
     ledger.update({"last_sequence": last["sequence"], "last_event_id": last["event_id"]})
     old_worker.update({"status": "REVOKED", "revoked_at": FINAL_AT})
     old_write.update({"status": "REVOKED", "revoked_at": FINAL_AT})
@@ -380,12 +382,14 @@ def finalize(root):
         "f12_acceptance": {
             "status": "ACCEPTED",
             "independent_review": "ACCEPT_C0_I0_M0",
-            "focused": "69_PASSED",
-            "related_regression": "699_PASSED_4_SKIPPED_PG18_DSN",
-            "resolved_findings": ["OLLAMA_USAGE_ONLY_FINAL_FRAME_SUPPORTED",
-                                  "EMPTY_TOOL_AND_IMAGE_FIELDS_FAIL_CLOSED"],
-            "unverified": ["LIVE_OLLAMA", "CREDENTIALS", "NETWORK", "DATABASE",
-                           "BROWSER", "WSL", "DEPLOYMENT"],
+            "windows_related_regression": "975_PASSED",
+            "wsl_isolated_contract": "975_PASSED",
+            "resolved_findings": ["F01_PROFILE_OWNER_CAS", "ROLE_EXACT_MODEL_HASH",
+                                  "FOREIGN_PROFILE_SCOPE", "BFF_ACTIVATION_HASH",
+                                  "READ_ONLY_DECISION_REPLAY", "EXACT_OWNER_DECISION_PAYLOAD"],
+            "unverified": ["LIVE_PROVIDERS", "REAL_HUMAN_APPROVAL", "SECRET_MATERIAL",
+                           "NETWORK", "DATABASE", "BROWSER", "DEPLOYMENT",
+                           "PROFILE_RESTART_MULTI_INSTANCE"],
         },
         "next_work_package": {"package_id": "F-13", "status": "READY_FOR_WORK_INSTRUCTION"},
         "next_successor_work_package": {"package_id": "F-13", "status": "READY_FOR_WORK_INSTRUCTION"},
@@ -394,14 +398,14 @@ def finalize(root):
         "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["F12_ACCEPTED", "F12_APPROVED_SCOPE"],
                                "stop_before_dialogue_report": False},
     })
-    _write_projection(root, progress, ledger, heading="F-12 OLLAMA adapter 완료",
-        status_lines=["판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact6을 인수한다.",
-                      "focused 69 PASS, 관련 회귀 699 PASS/4 SKIP(PG18 DSN), AST 5 OK.",
-                      "Main 재검증: 관련 회귀와 control 합산 706 PASS/4 SKIP, exit 0; 임시 `.f12-main-final-20260924b` 정리 확인.",
-                      "독립 검토 재작업 1회(Important 1건 해결), 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f12-control-20260924a` 정리 확인.",
-                      "잔여 제약: 실제 host socket의 peer·redirect·proxy·egress 계약은 F-13에서 검증한다.",
-                      "실제 Ollama·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.",
-                      "다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다."],
+    _write_projection(root, progress, ledger, heading="F-12 Provider Settings 계약 완료",
+        status_lines=["판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact10을 인수한다.",
+                      "Main Windows 관련 회귀 975 PASS, exit 0; WSL-server 격리 checkout 동일 commit 관련 회귀 975 PASS, exit 0.",
+                      "WSL 검증 임시 checkout·venv·pytest 경로 제거 및 F-12 잔여 컨테이너 0 확인. control 테스트 9 PASS, G-05 최종 재검증 예정.",
+                      "독립 검토 R1 Important 4건과 R2 위조 decision Important 1건 보완; 정식 `FAILURE_REPORT` 0회.",
+                      "전체 pytest collection 16 ERROR는 clean main에서도 재현되어 전체 suite PASS 아님.",
+                      "실제 Provider·human approval·Secret material·network·DB·browser·deploy는 `NOT_EXECUTED`; F-01 선택 영속성·다중 인스턴스는 F-14 잔여 acceptance.",
+                      "실제 U-11 화면 E-SHOT/E-DEC는 F-12 범위 밖이며 `NOT_EXECUTED`. 다음 조치: PR 병합 후 branch/worktree 삭제."],
         accepted=True)
 
 

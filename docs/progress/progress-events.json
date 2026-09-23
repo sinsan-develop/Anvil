@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1441,
+  "last_sequence": 1446,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -79091,7 +79091,136 @@
       "tests/provider_settings/test_f12_settings.py"
     ]
   }
+},
+{
+  "sequence": 1442,
+  "event_id": "evt_f12_1442_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-12/FINAL",
+  "occurred_at": "2026-09-24T05:19:22+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3082FCCD8818B652F4003BF688FF389783CF51E73FA2ED5ABA19DDEFF0610E03",
+  "details": {
+    "package_id": "F-12",
+    "product_paths": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_catalog/service.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_catalog/test_f12_profile_selection.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ],
+    "windows_related_regression": "975_PASSED",
+    "wsl_isolated_contract": "975_PASSED",
+    "compile": "AST_9_OK"
+  }
+},
+{
+  "sequence": 1443,
+  "event_id": "evt_f12_1443_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-12/FINAL",
+  "occurred_at": "2026-09-24T05:19:22+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6CE55156E7FE9B5829C505D92F213634113D90A737591FCA5E38B68C626F4A18",
+  "details": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "report": "docs/04_test_reports/F-12_INDEPENDENT_REVIEW.md"
+  }
+},
+{
+  "sequence": 1444,
+  "event_id": "evt_f12_1444_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-12/FINAL",
+  "occurred_at": "2026-09-24T05:19:22+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "2782E4203B904BD4644AB50CFBAFD0FADF8503C7293FD431FBB3C911959B9D50",
+  "details": {
+    "lease_id": "write-lease-f12-r1-20260924-001",
+    "reason": "F12_ACCEPTED"
+  }
+},
+{
+  "sequence": 1445,
+  "event_id": "evt_f12_1445_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-12/FINAL",
+  "occurred_at": "2026-09-24T05:19:22+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0203A9FB2B056DB324028479AB283269E4889F624CC9A533D607D581658AF410",
+  "details": {
+    "lease_id": "worker-lease-f12-r1-20260924-001",
+    "reason": "F12_ACCEPTED"
+  }
+},
+{
+  "sequence": 1446,
+  "event_id": "evt_f12_1446_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-12/FINAL",
+  "occurred_at": "2026-09-24T05:19:22+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "7DC2770B229C20F1E9E7D747774ECBF3BBF13F389C52B7B007E539DB38190242",
+  "details": {
+    "decision": "ACCEPTED",
+    "package_id": "F-12",
+    "next_work_package": "F-13",
+    "blocking_findings": 0,
+    "unverified": [
+      "LIVE_PROVIDERS",
+      "REAL_HUMAN_APPROVAL",
+      "SECRET_MATERIAL",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "DEPLOYMENT",
+      "PROFILE_RESTART_MULTI_INSTANCE"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f12_1441_write_lease_issued"
+  "last_event_id": "evt_f12_1446_main_package_accepted"
 }
