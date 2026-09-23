@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1417,
+  "last_sequence": 1420,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78454,7 +78454,85 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1418,
+  "event_id": "evt_f10_1418_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-10/START",
+  "occurred_at": "2026-09-24T02:25:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "12B24DDF08497D8299CF9870D2FA90006B0047AA160F58C8562A3D0F3EF19C26",
+  "details": {
+    "package_id": "F-10",
+    "branch": "codex/f10-openai-adapter",
+    "base_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+    "work_instruction": "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
+      "tests/providers/test_openai_adapter_f10.py"
+    ]
+  }
+},
+{
+  "sequence": 1419,
+  "event_id": "evt_f10_1419_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-10/START",
+  "occurred_at": "2026-09-24T02:25:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "B57650770D7611E411C7BA35CA49FD703CD77D64660667FC26D3A74752C480AB",
+  "details": {
+    "lease_id": "worker-lease-f10-r1-20260924-001",
+    "execution_fencing_token": "f10-r1-execution-fence-epoch-1-acbef2720228cc8d",
+    "actor_id": "developer-primary-f10-r1"
+  }
+},
+{
+  "sequence": 1420,
+  "event_id": "evt_f10_1420_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-10/START",
+  "occurred_at": "2026-09-24T02:25:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "598D64B07219061EC113E7938C20FD109BEF36A88AD1EB08A442514C22C0295E",
+  "details": {
+    "lease_id": "write-lease-f10-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f10-r1-20260924-001",
+    "write_fencing_token": "f10-r1-write-fence-epoch-1-509afa3f36aca7e7",
+    "path_scope": [
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
+      "tests/providers/test_openai_adapter_f10.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f09_1417_main_package_accepted"
+  "last_event_id": "evt_f10_1420_write_lease_issued"
 }

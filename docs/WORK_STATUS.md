@@ -1,3 +1,10 @@
+# F-10 OPENAI adapter 시작
+
+- 판정: `ACTIVE`; 승인된 F-10 host-only exact5 구현을 시작한다.
+- branch/base: `codex/f10-openai-adapter` / `acbef2720228cc8d509afa3f36aca7e75731d38e`.
+- 제어 테스트 임시 경로: `D:\Project\Anvil\.codex-sandbox\.f10-control-20260924a`; F-10 overlay 테스트 동안만 사용하고 실행 직후 경로 확인 후 삭제한다.
+- 실제 OPENAI·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+
 # F-09 ANTHROPIC adapter 완료
 
 - 판정: `ACCEPTED`; 독립 검토 Critical 0/Important 0/Minor 1, 제품 exact5를 인수한다.

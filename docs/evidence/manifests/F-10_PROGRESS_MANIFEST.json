@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-10",
+  "event_sequence": 1420,
+  "accepted": false,
+  "projection_mode": "F10_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "acbef2720228cc8d509afa3f36aca7e75731d38e",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-10_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f10.json",
+    "docs/work_orders/F-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f10_progress_overlay.py",
+    "tests/tooling/test_f10_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+    "packages/providers/openai_adapter.py",
+    "packages/providers/openai_errors.py",
+    "packages/providers/openai_models.py",
+    "tests/providers/test_openai_adapter_f10.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 436795,
+      "sha256": "EF2FC9807C9E27974EF6B57E1308B2E4DCED48AF8657D94423ECF2A710F76C8A"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4091247,
+      "sha256": "21DCE7D15003956C6A13EE2223751EE588ACE15BB79D6B156F34C7919F854D36"
+    },
+    {
+      "path": "docs/work_orders/F-10_INVOCATION_PROMPT.md",
+      "bytes": 343,
+      "sha256": "0F737009F338056CF6D14E10ACFBEEE88CE210BDC69EB06EE4C4295A5FB2227D"
+    },
+    {
+      "path": "docs/work_orders/F-10_WORK_INSTRUCTION.md",
+      "bytes": 3559,
+      "sha256": "D57AAE8EA27107595F995303CF638FF04D9A76F4F22CA4E874F5D1C9EF93BF6D"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4725317,
+      "sha256": "3004C1C7D21D082A0A6BCD8E13DCAC02C557DE3F8B8DAF65BE6A3ACA5DA0B1BF"
+    },
+    {
+      "path": "scripts/f10_progress_overlay.py",
+      "bytes": 23791,
+      "sha256": "650FD4CE58AF62C139735D2336E4CE5760B9881CF20BFFDED44A45E5AE657288"
+    },
+    {
+      "path": "tests/tooling/test_f10_progress_overlay.py",
+      "bytes": 4333,
+      "sha256": "CE044A6FCCB72F1848E91A9D9C758C5D865EA248E39594E83E851E6E46FDEA2F"
+    }
+  ],
+  "runtime_boundary": {
+    "live_openai": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}
