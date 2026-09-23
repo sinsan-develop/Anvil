@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-13",
+  "event_sequence": 1450,
+  "accepted": false,
+  "projection_mode": "F13_START_EXACT11_PRODUCT_EXACT9",
+  "validated_base_commit": "a612fdac2c7eabbb381e8da9d3111d797460f9bf",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-13_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f13.json",
+    "docs/work_orders/F-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-13_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f13_progress_overlay.py",
+    "tests/tooling/test_f13_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
+    "packages/api/operations.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/observability/models.py",
+    "packages/observability/projection.py",
+    "packages/observability/service.py",
+    "tests/api/test_f13_operations_api.py",
+    "tests/observability/test_f13_operations.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 439451,
+      "sha256": "F165068D9402C944AE8F7F31DED27CE8E7CE056145D4603B5D3B9777A0D9CAB2"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4118629,
+      "sha256": "8317EFE019AFCB34A37D41A2C678366F740AA4F0DD51739E343DCFD5638C3807"
+    },
+    {
+      "path": "docs/work_orders/F-13_INVOCATION_PROMPT.md",
+      "bytes": 491,
+      "sha256": "770F383C76B86B8A5E864153049DD00B0E56ABBEC65C379A1DE3ACF49F752BC3"
+    },
+    {
+      "path": "docs/work_orders/F-13_WORK_INSTRUCTION.md",
+      "bytes": 5704,
+      "sha256": "8742CE6940A462A4F37FC1157208F6E4299E5DCAE82F55BF2561BC9046C71FF6"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4727739,
+      "sha256": "FCC1338CDD9FDB5039D1A1F63E7ED44BA2B088DA9029F8F9972427B5E396D565"
+    },
+    {
+      "path": "scripts/f13_progress_overlay.py",
+      "bytes": 14779,
+      "sha256": "24A9750904ED6BF8C799598B0B2925C16BD999AA0B90FFED978D15E7837F68C4"
+    },
+    {
+      "path": "tests/tooling/test_f13_progress_overlay.py",
+      "bytes": 1062,
+      "sha256": "E7586F012A80185D62713584041297CFE7A510E9FDB1ECC6AEEF0C6578CECBA8"
+    }
+  ],
+  "self_reference": false,
+  "runtime_boundary": {
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  }
+}

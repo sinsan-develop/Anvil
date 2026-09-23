@@ -1,3 +1,11 @@
+# F-13 Operations read model/API 시작
+
+- 판정: ACTIVE; F-12 merged main a612fda에서 F-13 단일 branch를 시작했다.
+- 담당: Main 어울 통제, developer-primary-f13-r1 제품 exact9 write lease.
+- 기준선: Queue/Lease/Budget/API 관련 Windows 회귀 637 PASS, 6 SKIP. 최초 Python 경로 2회, D:/tmp 권한 1회 실패는 환경 오류이며 허용된 Temp 경로로 해결했다. 정식 제품 FAILURE_REPORT 0회.
+- 설계 §16.2의 alert/audit 조회 경로만 사용하고 미정 command 경로는 추가하지 않는다. 실제 UI/U-01·U-10, DB/F-14, release/F-20은 미검증.
+- 다음: G-05 start gate 후 developer TDD 구현·독립 검증.
+
 # F-12 Provider Settings 계약 완료·Broker gate 정합
 
 - 판정: `ACCEPTED`; F-12 제품 exact10, 독립 검토 Critical 0/Important 0/Minor 0.
