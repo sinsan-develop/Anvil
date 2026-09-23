@@ -1,11 +1,13 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-05",
-  "event_sequence": 1380,
-  "accepted": false,
-  "projection_mode": "F05_START_EXACT11_PRODUCT_EXACT5",
+  "event_sequence": 1385,
+  "accepted": true,
+  "projection_mode": "F05_FINAL_ACCEPTANCE_EXACT17",
   "validated_base_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
   "exact_allowed_paths": [
+    "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-05_INDEPENDENT_REVIEW.md",
     "docs/WORK_STATUS.md",
     "docs/evidence/manifests/F-05_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -14,8 +16,12 @@
     "docs/progress/progress-handoff-detached-digest-f05.json",
     "docs/work_orders/F-05_INVOCATION_PROMPT.md",
     "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+    "packages/providers/mistral_adapter.py",
+    "packages/providers/mistral_errors.py",
+    "packages/providers/mistral_models.py",
     "scripts/check_project_progress.py",
     "scripts/f05_progress_overlay.py",
+    "tests/providers/test_mistral_adapter_f05.py",
     "tests/tooling/test_f05_progress_overlay.py"
   ],
   "product_write_scope": [
@@ -27,14 +33,24 @@
   ],
   "raw_checksums": [
     {
+      "path": "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "bytes": 8262,
+      "sha256": "6CC61B362299BEA547AB313A0E65CDE223F8CEC337239E577F2699AA3BCDFF95"
+    },
+    {
+      "path": "docs/04_test_reports/F-05_INDEPENDENT_REVIEW.md",
+      "bytes": 1847,
+      "sha256": "9E55B29DBDCF7EDA2BBE815B96A371A4CB84A9845E7C1708C615AD91BE3AF574"
+    },
+    {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 434152,
-      "sha256": "289C8BDC8B10BA381997413190D04437712A39FD327064DDF7FE601CAA27F4C6"
+      "bytes": 434136,
+      "sha256": "60FA5C29B637A838127709EE393A393D4056E5478A1E93EB5100DA14FF1C5589"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4057962,
-      "sha256": "AE8C2DA2F1AC25CBD4A7D15445C9E37A1836011734EB179F15C3B653E6DF7559"
+      "bytes": 4061786,
+      "sha256": "B835C0CF295797A501806336976AE83800C2D8DE501D9CF67127AA0A0B0A4ED5"
     },
     {
       "path": "docs/work_orders/F-05_INVOCATION_PROMPT.md",
@@ -47,19 +63,39 @@
       "sha256": "09E1A9799FCB7AD6DA7B57B1F8C850EA457B031C2070DCE6546CF3E68C639266"
     },
     {
+      "path": "packages/providers/mistral_adapter.py",
+      "bytes": 18368,
+      "sha256": "A7C51A78B0BBC5558EA7B78F9CDFEE22BFF69FE49FD8482DC274B8178CCAA05C"
+    },
+    {
+      "path": "packages/providers/mistral_errors.py",
+      "bytes": 4411,
+      "sha256": "95AADB696F1325DCE494FE7BD967CAEC97037E985059203F4CD2E52EE75D2AD5"
+    },
+    {
+      "path": "packages/providers/mistral_models.py",
+      "bytes": 3597,
+      "sha256": "E21BBE11EBE2897B7640EB13C304B5FC9AB3BC33E000E3E95E949984D86C5E9C"
+    },
+    {
       "path": "scripts/check_project_progress.py",
       "bytes": 4721279,
       "sha256": "1DA83D2CAB324E81C8A572710E5658124FAC99A525FFCBDA797F279D8120AE81"
     },
     {
       "path": "scripts/f05_progress_overlay.py",
-      "bytes": 22473,
-      "sha256": "62CAFFCD44D713AF9534151EF40D8C44BACC83C20CAC50B30C7EB11C148EF8B4"
+      "bytes": 22678,
+      "sha256": "272FF8726FF40A5DCA7E68CFFD49E47127670D28FE62D72FF07F921703373EF3"
+    },
+    {
+      "path": "tests/providers/test_mistral_adapter_f05.py",
+      "bytes": 19427,
+      "sha256": "FB59D389B566BFAD4136574CFB102BC128E1D15F2648F61CAA135A4154FAFCCC"
     },
     {
       "path": "tests/tooling/test_f05_progress_overlay.py",
-      "bytes": 3287,
-      "sha256": "E81726D07560D53D831AE3283D58D806AB1232F8EE12C60922CBB7FBD5EAC385"
+      "bytes": 3468,
+      "sha256": "3798EDB2893D18190FF16A98BB57E6B1EB93E949E4AB52CF65BDA0F403CA3B56"
     }
   ],
   "runtime_boundary": {
@@ -71,6 +107,11 @@
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED"
   },
-  "independent_review": null,
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
   "self_reference": false
 }

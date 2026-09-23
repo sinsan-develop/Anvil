@@ -1,8 +1,8 @@
-# F-05 MISTRAL adapter 시작
+# F-05 MISTRAL adapter 완료
 
-- 판정: `ACTIVE`; 승인된 F-05 host-only exact5 구현을 시작한다.
-- branch/base: `codex/f05-mistral-adapter` / `10c11d673f2195df19982b85e78b48f7220af6e0`.
-- 실제 MISTRAL·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+- 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.
+- 실제 MISTRAL·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
 
 # F-04 GROQ adapter 완료
 

@@ -275,7 +275,7 @@ def finalize(root):
     _append(events, "PACKAGE_COMPLETED", {"package_id": "F-05", "product_paths": product_paths(),
              "focused": "PASS", "related_provider_regression": "PASS", "compile": "PASS"}, step="FINAL")
     _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {"verdict": "ACCEPT",
-             "critical": 0, "important": 0, "minor": 0, "report": REVIEW}, step="FINAL")
+             "critical": 0, "important": 0, "minor": 1, "report": REVIEW}, step="FINAL")
     _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE, "reason": "F05_ACCEPTED"}, step="FINAL")
     _append(events, "WORKER_LEASE_REVOKED", {"lease_id": WORKER, "reason": "F05_ACCEPTED"}, step="FINAL")
     last = _append(events, "MAIN_PACKAGE_ACCEPTED", {"decision": "ACCEPTED",
@@ -297,10 +297,15 @@ def finalize(root):
         "active_work_instruction": None, "repository": _repository(FINAL_MODE),
         "f05_acceptance": {
             "status": "ACCEPTED",
-            "independent_review": "ACCEPT_C0_I0_M0",
-            "focused": "PENDING_FINAL_VERIFICATION",
-            "related_regression": "PENDING_FINAL_VERIFICATION",
-            "resolved_findings": [],
+            "independent_review": "ACCEPT_C0_I0_M1_DOCUMENTED",
+            "focused": "58_PASSED",
+            "related_regression": "812_PASSED_4_SKIPPED",
+            "resolved_findings": [
+                "STREAM_ABORT_EMPTY_OUTPUT_CONTRACT",
+                "FAILED_REQUEST_ID_INPUT_CONFLICT",
+                "GENERATE_POST_SEND_ABORT_STATUS",
+                "REQUEST_ID_PREFLIGHT_LENGTH",
+            ],
             "unverified": ["LIVE_MISTRAL", "CREDENTIALS", "NETWORK", "DATABASE",
                            "BROWSER", "WSL", "DEPLOYMENT"],
         },
@@ -397,7 +402,7 @@ def validate(root, bundle):
     if accepted:
         if any((progress.get("active_agent") is not None, progress.get("worker_lease") is not None,
                 progress.get("write_lease") is not None, "F-05" not in progress.get("completed_packages", []),
-                progress.get("next_work_package", {}).get("package_id") != "F-05")):
+                progress.get("next_work_package", {}).get("package_id") != "F-06")):
             errors.append("F05_FINAL_STATE_INVALID")
     else:
         if any((progress.get("active_agent") != ACTOR, progress.get("worker_lease", {}).get("lease_id") != WORKER,

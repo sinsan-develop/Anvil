@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f05-start-seq1380",
-  "event_sequence": 1380,
+  "snapshot_id": "snapshot-f05-final-seq1385",
+  "event_sequence": 1385,
   "updated_at": "2026-09-23T23:05:00+09:00",
-  "last_event_id": "evt_f05_1380_write_lease_issued",
+  "last_event_id": "evt_f05_1385_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -92,7 +92,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
   "current_work_package": "F-05",
-  "status": "ACTIVE",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -185,32 +185,11 @@
     "C-30R4",
     "C-30R5",
     "F-03",
-    "F-04"
+    "F-04",
+    "F-05"
   ],
-  "active_agent": "developer-primary-f05-r1",
-  "write_lease": {
-    "lease_id": "write-lease-f05-r1-20260923-001",
-    "actor_id": "developer-primary-f05-r1",
-    "subject_ref": "F-05",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-23T23:05:00+09:00",
-    "expires_at": "2026-09-24T11:05:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f05-r1-write-fence-epoch-1-19982b85e78b48f7",
-    "execution_fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
-    "baseline_git_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
-    "dispatch_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
-    "path_scope": [
-      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
-      "packages/providers/mistral_adapter.py",
-      "packages/providers/mistral_errors.py",
-      "packages/providers/mistral_models.py",
-      "tests/providers/test_mistral_adapter_f05.py"
-    ],
-    "worker_lease_id": "worker-lease-f05-r1-20260923-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f05-r1-write-fence-epoch-1-19982b85e78b48f7"
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -242,26 +221,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f05-r1-20260923-001",
-    "actor_id": "developer-primary-f05-r1",
-    "subject_ref": "F-05",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-23T23:05:00+09:00",
-    "expires_at": "2026-09-24T11:05:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
-    "execution_fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
-    "baseline_git_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
-    "dispatch_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
-    "path_scope": [
-      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
-      "packages/providers/mistral_adapter.py",
-      "packages/providers/mistral_errors.py",
-      "packages/providers/mistral_models.py",
-      "tests/providers/test_mistral_adapter_f05.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -483,7 +443,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F05_EXACT5",
+  "next_safe_action": "MERGE_F05_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -597,10 +557,12 @@
     "local_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
     "upstream": "development/codex/f05-mistral-adapter",
     "remote_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
-    "projection_mode": "F05_START_EXACT11_PRODUCT_EXACT5",
+    "projection_mode": "F05_FINAL_ACCEPTANCE_EXACT17",
     "validated_base_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-05_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/manifests/F-05_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -609,8 +571,12 @@
       "docs/progress/progress-handoff-detached-digest-f05.json",
       "docs/work_orders/F-05_INVOCATION_PROMPT.md",
       "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
       "scripts/check_project_progress.py",
       "scripts/f05_progress_overlay.py",
+      "tests/providers/test_mistral_adapter_f05.py",
       "tests/tooling/test_f05_progress_overlay.py"
     ],
     "product_write_scope": [
@@ -620,8 +586,8 @@
       "packages/providers/mistral_models.py",
       "tests/providers/test_mistral_adapter_f05.py"
     ],
-    "worktree_status": "F05_ACTIVE",
-    "commit_status": "PENDING",
+    "worktree_status": "F05_ACCEPTED",
+    "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -718,21 +684,22 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-04-20260923-001",
-    "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
-    "sha256": "E104284C8B4739CC5DAAA1F510F8B170D16AD76F22BE3891F248EC9EFB722B99",
-    "invocation_path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
-    "invocation_sha256": "205F405934CD862A4A8AEF8D478C0762ACCDAEC0C12CCFE3949EBC6032BEF913",
+    "artifact_id": "WI-F-05-20260923-001",
+    "path": "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+    "sha256": "09E1A9799FCB7AD6DA7B57B1F8C850EA457B031C2070DCE6546CF3E68C639266",
+    "invocation_path": "docs/work_orders/F-05_INVOCATION_PROMPT.md",
+    "invocation_sha256": "D997C82FF5968BF86C708FB3EC1DF161A2B37EEA69CEC665FE6F1A690734CEFC",
     "assigned_verification_ids": [
       "AV-OPS-010",
       "AV-OPS-011",
-      "AV-FLOW-019(GROQ)"
+      "AV-FLOW-019(MISTRAL)"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F05_APPROVED_SCOPE"
+      "F05_ACCEPTED",
+      "F06_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -782,18 +749,7 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-F-05-20260923-001",
-    "path": "docs/work_orders/F-05_WORK_INSTRUCTION.md",
-    "sha256": "09E1A9799FCB7AD6DA7B57B1F8C850EA457B031C2070DCE6546CF3E68C639266",
-    "invocation_path": "docs/work_orders/F-05_INVOCATION_PROMPT.md",
-    "invocation_sha256": "D997C82FF5968BF86C708FB3EC1DF161A2B37EEA69CEC665FE6F1A690734CEFC",
-    "assigned_verification_ids": [
-      "AV-OPS-010",
-      "AV-OPS-011",
-      "AV-FLOW-019(MISTRAL)"
-    ]
-  },
+  "active_work_instruction": null,
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -946,16 +902,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "AE8C2DA2F1AC25CBD4A7D15445C9E37A1836011734EB179F15C3B653E6DF7559"
+      "sha256": "B835C0CF295797A501806336976AE83800C2D8DE501D9CF67127AA0A0B0A4ED5"
     }
   },
   "next_work_package": {
     "package_id": "F-06",
-    "status": "BLOCKED_PENDING_F05_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
     "package_id": "F-06",
-    "status": "BLOCKED_PENDING_F05_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1343,8 +1299,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "DB14231883A45CC9BEA1F3649D90EC92FEDC3C307D60CC8CA400A98EED2A070C",
-  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F05_EXACT5",
+  "snapshot_hash": "E4B082BAE548791571B34F98023B5405FCFAA1D0813D88A92A60A3255D880FE9",
+  "runtime_next_action": "MERGE_F05_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -21796,6 +21752,72 @@
     ],
     "unverified": [
       "LIVE_GROQ",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  },
+  "completed_f05_worker_lease": {
+    "lease_id": "worker-lease-f05-r1-20260923-001",
+    "actor_id": "developer-primary-f05-r1",
+    "subject_ref": "F-05",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T23:05:00+09:00",
+    "expires_at": "2026-09-24T11:05:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
+    "execution_fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
+    "baseline_git_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "dispatch_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "path_scope": [
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
+      "tests/providers/test_mistral_adapter_f05.py"
+    ],
+    "revoked_at": "2026-09-23T23:05:00+09:00"
+  },
+  "completed_f05_write_lease": {
+    "lease_id": "write-lease-f05-r1-20260923-001",
+    "actor_id": "developer-primary-f05-r1",
+    "subject_ref": "F-05",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T23:05:00+09:00",
+    "expires_at": "2026-09-24T11:05:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f05-r1-write-fence-epoch-1-19982b85e78b48f7",
+    "execution_fencing_token": "f05-r1-execution-fence-epoch-1-10c11d673f2195df",
+    "baseline_git_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "dispatch_head": "10c11d673f2195df19982b85e78b48f7220af6e0",
+    "path_scope": [
+      "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+      "packages/providers/mistral_adapter.py",
+      "packages/providers/mistral_errors.py",
+      "packages/providers/mistral_models.py",
+      "tests/providers/test_mistral_adapter_f05.py"
+    ],
+    "worker_lease_id": "worker-lease-f05-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f05-r1-write-fence-epoch-1-19982b85e78b48f7",
+    "revoked_at": "2026-09-23T23:05:00+09:00"
+  },
+  "f05_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M1_DOCUMENTED",
+    "focused": "58_PASSED",
+    "related_regression": "812_PASSED_4_SKIPPED",
+    "resolved_findings": [
+      "STREAM_ABORT_EMPTY_OUTPUT_CONTRACT",
+      "FAILED_REQUEST_ID_INPUT_CONFLICT",
+      "GENERATE_POST_SEND_ABORT_STATUS",
+      "REQUEST_ID_PREFLIGHT_LENGTH"
+    ],
+    "unverified": [
+      "LIVE_MISTRAL",
       "CREDENTIALS",
       "NETWORK",
       "DATABASE",

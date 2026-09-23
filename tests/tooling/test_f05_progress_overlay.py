@@ -26,7 +26,10 @@ def test_f05_event_number_and_successor_contract():
     assert '"snapshot_id": "snapshot-f05-start-seq1380"' in source
     assert '"snapshot_id": "snapshot-f05-final-seq1385"' in source
     assert '"next_work_package": {"package_id": "F-06"' in source
-    assert '"resolved_findings": []' in source
+    assert '"STREAM_ABORT_EMPTY_OUTPUT_CONTRACT"' in source
+    assert '"FAILED_REQUEST_ID_INPUT_CONFLICT"' in source
+    assert '"GENERATE_POST_SEND_ABORT_STATUS"' in source
+    assert '"REQUEST_ID_PREFLIGHT_LENGTH"' in source
 
 
 def test_f05_start_accepts_exact_precommit_state():
