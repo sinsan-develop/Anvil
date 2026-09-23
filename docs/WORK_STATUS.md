@@ -1,3 +1,13 @@
+# F-11 OLLAMA adapter 완료
+
+- 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact6을 인수한다.
+- focused 69 PASS, 관련 회귀 699 PASS/4 SKIP(PG18 DSN), AST 5 OK.
+- Main 재검증: 관련 회귀와 control 합산 706 PASS/4 SKIP, exit 0; 임시 `.f11-main-final-20260924b` 정리 확인.
+- 독립 검토 재작업 1회(Important 1건 해결), 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f11-control-20260924a` 정리 확인.
+- 잔여 제약: 실제 host socket의 peer·redirect·proxy·egress 계약은 F-12에서 검증한다.
+- 실제 Ollama·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
+
 # F-10 OPENAI adapter 완료
 
 - 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact5를 인수한다.

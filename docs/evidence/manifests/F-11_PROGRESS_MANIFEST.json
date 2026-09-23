@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-11",
+  "event_sequence": 1433,
+  "accepted": true,
+  "projection_mode": "F11_FINAL_ACCEPTANCE_EXACT18",
+  "validated_base_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-11_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-11_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f11.json",
+    "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+    "packages/providers/ollama_adapter.py",
+    "packages/providers/ollama_endpoint.py",
+    "packages/providers/ollama_errors.py",
+    "packages/providers/ollama_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f11_progress_overlay.py",
+    "tests/providers/test_ollama_adapter_f11.py",
+    "tests/tooling/test_f11_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+    "packages/providers/ollama_adapter.py",
+    "packages/providers/ollama_endpoint.py",
+    "packages/providers/ollama_errors.py",
+    "packages/providers/ollama_models.py",
+    "tests/providers/test_ollama_adapter_f11.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "bytes": 6455,
+      "sha256": "0CFEA48B13AC275A2BCF7B060F0A9C0FA641BCA017601403CFC20DC0DB65D62F"
+    },
+    {
+      "path": "docs/04_test_reports/F-11_INDEPENDENT_REVIEW.md",
+      "bytes": 3039,
+      "sha256": "2491F759BF37C07680AC4B89B8A33E5F07A511D9C9DCA39C06354BFC06A43404"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 437869,
+      "sha256": "C0186C2597E8919C70AE509D2314E5D39AC8325342B1A0163F764788B6B25400"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4101878,
+      "sha256": "8E9B79B50C9A91B25B3AEF12D2459A4BD3200CE2C494B5F77CF5DA7264BA3BBC"
+    },
+    {
+      "path": "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+      "bytes": 420,
+      "sha256": "EC8CD962385AB90E0AEA2A8A54808095673CE614A126D6A02BBF9485510A976D"
+    },
+    {
+      "path": "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+      "bytes": 3787,
+      "sha256": "634D34A1E500EDA5215A6496523355AC6064AA775B1C473A1424B32C7AE1CABB"
+    },
+    {
+      "path": "packages/providers/ollama_adapter.py",
+      "bytes": 15866,
+      "sha256": "AE6CF61C97B504A195C108C2F702D94DF642CB3D8325C46219883501585E0A0A"
+    },
+    {
+      "path": "packages/providers/ollama_endpoint.py",
+      "bytes": 4876,
+      "sha256": "09C973C474D2A080E6BC8E29155F4F3C3DF574D5172213855373007EABE99BF3"
+    },
+    {
+      "path": "packages/providers/ollama_errors.py",
+      "bytes": 1893,
+      "sha256": "5D3C89A37C1FBC00817600FCF352A5AF5E3D6B2959D6AF56F5F7BBF23D5A490C"
+    },
+    {
+      "path": "packages/providers/ollama_models.py",
+      "bytes": 2685,
+      "sha256": "2AD9B4351EC498F2902B7D8268027DED3B6157EC2BFF5B434912E794122D5BF9"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4726125,
+      "sha256": "AE846BC814223B351BD1761EDEF7B24E301B72FA2B184DBA392393DCB88A2951"
+    },
+    {
+      "path": "scripts/f11_progress_overlay.py",
+      "bytes": 23944,
+      "sha256": "6886DDA8AD165AAB175557B1E8E3ED28C19541F5E6F9E81B775795DA35C96DE4"
+    },
+    {
+      "path": "tests/providers/test_ollama_adapter_f11.py",
+      "bytes": 16054,
+      "sha256": "C9F27615564B2A34205ED84AD7219D0B636BC34A36612AB3D9CDA7EAD15784E5"
+    },
+    {
+      "path": "tests/tooling/test_f11_progress_overlay.py",
+      "bytes": 4333,
+      "sha256": "551A238109D5B48C3F8204D33B2D34AB6A3EEB84583340686B782A22B980D353"
+    }
+  ],
+  "runtime_boundary": {
+    "live_ollama": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "self_reference": false
+}
