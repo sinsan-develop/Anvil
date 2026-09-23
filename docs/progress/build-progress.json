@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f11-start-seq1428",
-  "event_sequence": 1428,
-  "updated_at": "2026-09-24T03:22:00+09:00",
-  "last_event_id": "evt_f11_1428_write_lease_issued",
+  "snapshot_id": "snapshot-f11-final-seq1433",
+  "event_sequence": 1433,
+  "updated_at": "2026-09-24T03:42:00+09:00",
+  "last_event_id": "evt_f11_1433_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -92,7 +92,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
   "current_work_package": "F-11",
-  "status": "ACTIVE",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -191,33 +191,11 @@
     "F-07",
     "F-08",
     "F-09",
-    "F-10"
+    "F-10",
+    "F-11"
   ],
-  "active_agent": "developer-primary-f11-r1",
-  "write_lease": {
-    "lease_id": "write-lease-f11-r1-20260924-001",
-    "actor_id": "developer-primary-f11-r1",
-    "subject_ref": "F-11",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T03:22:00+09:00",
-    "expires_at": "2026-09-24T15:22:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849",
-    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
-    "baseline_git_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
-    "dispatch_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
-    "path_scope": [
-      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
-      "packages/providers/ollama_adapter.py",
-      "packages/providers/ollama_endpoint.py",
-      "packages/providers/ollama_errors.py",
-      "packages/providers/ollama_models.py",
-      "tests/providers/test_ollama_adapter_f11.py"
-    ],
-    "worker_lease_id": "worker-lease-f11-r1-20260924-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849"
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -249,27 +227,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f11-r1-20260924-001",
-    "actor_id": "developer-primary-f11-r1",
-    "subject_ref": "F-11",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T03:22:00+09:00",
-    "expires_at": "2026-09-24T15:22:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
-    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
-    "baseline_git_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
-    "dispatch_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
-    "path_scope": [
-      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
-      "packages/providers/ollama_adapter.py",
-      "packages/providers/ollama_endpoint.py",
-      "packages/providers/ollama_errors.py",
-      "packages/providers/ollama_models.py",
-      "tests/providers/test_ollama_adapter_f11.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -491,7 +449,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F11_EXACT6",
+  "next_safe_action": "MERGE_F11_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -605,10 +563,12 @@
     "local_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
     "upstream": "development/codex/f11-ollama-adapter",
     "remote_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
-    "projection_mode": "F11_START_EXACT11_PRODUCT_EXACT6",
+    "projection_mode": "F11_FINAL_ACCEPTANCE_EXACT18",
     "validated_base_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-11_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/manifests/F-11_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -617,8 +577,13 @@
       "docs/progress/progress-handoff-detached-digest-f11.json",
       "docs/work_orders/F-11_INVOCATION_PROMPT.md",
       "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
       "scripts/check_project_progress.py",
       "scripts/f11_progress_overlay.py",
+      "tests/providers/test_ollama_adapter_f11.py",
       "tests/tooling/test_f11_progress_overlay.py"
     ],
     "product_write_scope": [
@@ -629,8 +594,8 @@
       "packages/providers/ollama_models.py",
       "tests/providers/test_ollama_adapter_f11.py"
     ],
-    "worktree_status": "F11_ACTIVE",
-    "commit_status": "PENDING",
+    "worktree_status": "F11_ACCEPTED",
+    "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -727,20 +692,22 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-10-20260924-001",
-    "path": "docs/work_orders/F-10_WORK_INSTRUCTION.md",
-    "sha256": "D57AAE8EA27107595F995303CF638FF04D9A76F4F22CA4E874F5D1C9EF93BF6D",
-    "invocation_path": "docs/work_orders/F-10_INVOCATION_PROMPT.md",
-    "invocation_sha256": "0F737009F338056CF6D14E10ACFBEEE88CE210BDC69EB06EE4C4295A5FB2227D",
+    "artifact_id": "WI-F-11-20260924-001",
+    "path": "docs/work_orders/F-11_WORK_INSTRUCTION.md",
+    "sha256": "634D34A1E500EDA5215A6496523355AC6064AA775B1C473A1424B32C7AE1CABB",
+    "invocation_path": "docs/work_orders/F-11_INVOCATION_PROMPT.md",
+    "invocation_sha256": "EC8CD962385AB90E0AEA2A8A54808095673CE614A126D6A02BBF9485510A976D",
     "assigned_verification_ids": [
+      "AV-SAFE-030",
       "AV-OPS-010",
       "AV-OPS-011",
-      "AV-FLOW-019(OPENAI)"
+      "AV-FLOW-019(OLLAMA)"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
+      "F11_ACCEPTED",
       "F11_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
@@ -791,19 +758,7 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-F-11-20260924-001",
-    "path": "docs/work_orders/F-11_WORK_INSTRUCTION.md",
-    "sha256": "634D34A1E500EDA5215A6496523355AC6064AA775B1C473A1424B32C7AE1CABB",
-    "invocation_path": "docs/work_orders/F-11_INVOCATION_PROMPT.md",
-    "invocation_sha256": "EC8CD962385AB90E0AEA2A8A54808095673CE614A126D6A02BBF9485510A976D",
-    "assigned_verification_ids": [
-      "AV-SAFE-030",
-      "AV-OPS-010",
-      "AV-OPS-011",
-      "AV-FLOW-019(OLLAMA)"
-    ]
-  },
+  "active_work_instruction": null,
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -956,16 +911,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "AA7DA931E8042A7EA0330B112D45E5FA879129ED2C5F592729574BD973306726"
+      "sha256": "8E9B79B50C9A91B25B3AEF12D2459A4BD3200CE2C494B5F77CF5DA7264BA3BBC"
     }
   },
   "next_work_package": {
     "package_id": "F-12",
-    "status": "BLOCKED_PENDING_F11_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
     "package_id": "F-12",
-    "status": "BLOCKED_PENDING_F11_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1353,8 +1308,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "6A442B2565325A2046FDC1B70DC9550F8EAF17735C4162113D61B1F6D3DB5D0F",
-  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F11_EXACT6",
+  "snapshot_hash": "458CF97DC81A9D19F0D9A78D144CCF2274CC5FB284518B7BFA341D08C5EA22A3",
+  "runtime_next_action": "MERGE_F11_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2966,7 +2921,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T03:22:00+09:00",
+  "recorded_at": "2026-09-24T03:42:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22199,6 +22154,72 @@
     ],
     "unverified": [
       "LIVE_OPENAI",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  },
+  "completed_f11_worker_lease": {
+    "lease_id": "worker-lease-f11-r1-20260924-001",
+    "actor_id": "developer-primary-f11-r1",
+    "subject_ref": "F-11",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T03:22:00+09:00",
+    "expires_at": "2026-09-24T15:22:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "baseline_git_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "dispatch_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "path_scope": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
+    ],
+    "revoked_at": "2026-09-24T03:42:00+09:00"
+  },
+  "completed_f11_write_lease": {
+    "lease_id": "write-lease-f11-r1-20260924-001",
+    "actor_id": "developer-primary-f11-r1",
+    "subject_ref": "F-11",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T03:22:00+09:00",
+    "expires_at": "2026-09-24T15:22:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849",
+    "execution_fencing_token": "f11-r1-execution-fence-epoch-1-4e5b20cfbe234281",
+    "baseline_git_commit": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "dispatch_head": "4e5b20cfbe2342818396953c36a7c8490e8fa8aa",
+    "path_scope": [
+      "docs/04_test_reports/F-11_COMPLETION_REPORT.md",
+      "packages/providers/ollama_adapter.py",
+      "packages/providers/ollama_endpoint.py",
+      "packages/providers/ollama_errors.py",
+      "packages/providers/ollama_models.py",
+      "tests/providers/test_ollama_adapter_f11.py"
+    ],
+    "worker_lease_id": "worker-lease-f11-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f11-r1-write-fence-epoch-1-8396953c36a7c849",
+    "revoked_at": "2026-09-24T03:42:00+09:00"
+  },
+  "f11_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M0",
+    "focused": "69_PASSED",
+    "related_regression": "699_PASSED_4_SKIPPED_PG18_DSN",
+    "resolved_findings": [
+      "OLLAMA_USAGE_ONLY_FINAL_FRAME_SUPPORTED",
+      "EMPTY_TOOL_AND_IMAGE_FIELDS_FAIL_CLOSED"
+    ],
+    "unverified": [
+      "LIVE_OLLAMA",
       "CREDENTIALS",
       "NETWORK",
       "DATABASE",

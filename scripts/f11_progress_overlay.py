@@ -14,7 +14,7 @@ BRANCH = "codex/f11-ollama-adapter"
 START_MODE = "F11_START_EXACT11_PRODUCT_EXACT6"
 FINAL_MODE = "F11_FINAL_ACCEPTANCE_EXACT18"
 AT = "2026-09-24T03:22:00+09:00"
-FINAL_AT = "2026-09-24T04:00:00+09:00"
+FINAL_AT = "2026-09-24T03:42:00+09:00"
 EXPIRES = "2026-09-24T15:22:00+09:00"
 ACTOR = "developer-primary-f11-r1"
 WORKER = "worker-lease-f11-r1-20260924-001"
@@ -282,8 +282,8 @@ def finalize(root):
         raise RuntimeError("F11_START_PROGRESS_INVALID")
     old_worker, old_write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
     _append(events, "PACKAGE_COMPLETED", {"package_id": "F-11", "product_paths": product_paths(),
-             "focused": "36_PASSED", "related_provider_regression": "630_PASSED_4_SKIPPED_PG18_DSN",
-             "compile": "AST_4_OK"}, step="FINAL")
+             "focused": "69_PASSED", "related_provider_regression": "699_PASSED_4_SKIPPED_PG18_DSN",
+             "compile": "AST_5_OK"}, step="FINAL")
     _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {"verdict": "ACCEPT",
              "critical": 0, "important": 0, "minor": 0, "report": REVIEW}, step="FINAL")
     _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE, "reason": "F11_ACCEPTED"}, step="FINAL")
@@ -308,10 +308,10 @@ def finalize(root):
         "f11_acceptance": {
             "status": "ACCEPTED",
             "independent_review": "ACCEPT_C0_I0_M0",
-            "focused": "36_PASSED",
-            "related_regression": "630_PASSED_4_SKIPPED_PG18_DSN",
-            "resolved_findings": ["QUOTA_CLASSIFICATION_PRECEDES_RETRY_AFTER",
-                                  "RESPONSES_SEMANTIC_EVENT_FAIL_CLOSED"],
+            "focused": "69_PASSED",
+            "related_regression": "699_PASSED_4_SKIPPED_PG18_DSN",
+            "resolved_findings": ["OLLAMA_USAGE_ONLY_FINAL_FRAME_SUPPORTED",
+                                  "EMPTY_TOOL_AND_IMAGE_FIELDS_FAIL_CLOSED"],
             "unverified": ["LIVE_OLLAMA", "CREDENTIALS", "NETWORK", "DATABASE",
                            "BROWSER", "WSL", "DEPLOYMENT"],
         },
@@ -323,12 +323,12 @@ def finalize(root):
                                "stop_before_dialogue_report": False},
     })
     _write_projection(root, progress, ledger, heading="F-11 OLLAMA adapter 완료",
-        status_lines=["판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact5를 인수한다.",
-                      "focused 36 PASS, 관련 회귀 630 PASS/4 SKIP(PG18 DSN), AST 4 OK.",
-                      "Main 재검증: 관련 회귀와 control 합산 637 PASS/4 SKIP, exit 0; 임시 `.f11-main-final-20260924a` 정리 확인.",
-                      "독립 검토 재작업 1회(Important 2건 해결), 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f11-control-20260924a` 정리 확인.",
-                      "잔여 제약: 기존 Gateway 문자열 계약상 선행·후행 공백 출력은 `OUTPUT_TEXT_NON_CANONICAL`로 거부된다.",
-                      "실제 OLLAMA·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.",
+        status_lines=["판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact6을 인수한다.",
+                      "focused 69 PASS, 관련 회귀 699 PASS/4 SKIP(PG18 DSN), AST 5 OK.",
+                      "Main 재검증: 관련 회귀와 control 합산 706 PASS/4 SKIP, exit 0; 임시 `.f11-main-final-20260924b` 정리 확인.",
+                      "독립 검토 재작업 1회(Important 1건 해결), 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f11-control-20260924a` 정리 확인.",
+                      "잔여 제약: 실제 host socket의 peer·redirect·proxy·egress 계약은 F-12에서 검증한다.",
+                      "실제 Ollama·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.",
                       "다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다."],
         accepted=True)
 
