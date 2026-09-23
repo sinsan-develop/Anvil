@@ -1,0 +1,1 @@
+`docs/work_orders/F-12_WORK_INSTRUCTION.md`와 활성 worker/write lease를 먼저 확인하라. 지정된 exact8 제품 경로만 단일 writer로 TDD 구현·기본 검증하고 결과 상태, 정확한 명령/exit, 미검증 범위를 `docs/04_test_reports/F-12_COMPLETION_REPORT.md`에 기록하라. Git commit/push와 control/progress 수정은 Main이 담당한다.

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1433,
+  "last_sequence": 1436,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78859,7 +78859,91 @@
       "DEPLOYMENT"
     ]
   }
+},
+{
+  "sequence": 1434,
+  "event_id": "evt_f12_1434_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-12/START",
+  "occurred_at": "2026-09-24T04:04:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "9DACFB8AE2E0018D7303821F6390EDB3D0FB9C6BEE8822D375E3A87B1F69D4B0",
+  "details": {
+    "package_id": "F-12",
+    "branch": "codex/f12-provider-settings",
+    "base_commit": "798ed952ad6900c87db2c0b2e1d6f71c2755f69c",
+    "work_instruction": "docs/work_orders/F-12_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ]
+  }
+},
+{
+  "sequence": 1435,
+  "event_id": "evt_f12_1435_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-12/START",
+  "occurred_at": "2026-09-24T04:04:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A8F8613BC2ACCDE96086C7EB3FF0AC753A7D8789225946EF13A0ED9B40F60C52",
+  "details": {
+    "lease_id": "worker-lease-f12-r1-20260924-001",
+    "execution_fencing_token": "f12-r1-execution-fence-epoch-1-798ed952ad6900c8",
+    "actor_id": "developer-primary-f12-r1"
+  }
+},
+{
+  "sequence": 1436,
+  "event_id": "evt_f12_1436_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-12",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-12/START",
+  "occurred_at": "2026-09-24T04:04:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3710FA0B46FC04F804CA2C14AFA678C9275293E36AEF77F0E7624F12963EE1BC",
+  "details": {
+    "lease_id": "write-lease-f12-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f12-r1-20260924-001",
+    "write_fencing_token": "f12-r1-write-fence-epoch-1-db2c0b2e1d6f71c2",
+    "path_scope": [
+      "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+      "packages/api/provider_settings.py",
+      "packages/api/runtime.py",
+      "packages/bff/provider_settings.py",
+      "packages/provider_settings/projection.py",
+      "packages/provider_settings/service.py",
+      "tests/api/test_f12_provider_settings_api.py",
+      "tests/provider_settings/test_f12_settings.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f11_1433_main_package_accepted"
+  "last_event_id": "evt_f12_1436_write_lease_issued"
 }

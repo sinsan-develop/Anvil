@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-12",
+  "event_sequence": 1436,
+  "accepted": false,
+  "projection_mode": "F12_START_EXACT11_PRODUCT_EXACT8",
+  "validated_base_commit": "798ed952ad6900c87db2c0b2e1d6f71c2755f69c",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-12_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f12.json",
+    "docs/work_orders/F-12_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-12_WORK_INSTRUCTION.md",
+    "scripts/check_f12_progress.py",
+    "scripts/f12_progress_overlay.py",
+    "tests/tooling/test_f12_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-12_COMPLETION_REPORT.md",
+    "packages/api/provider_settings.py",
+    "packages/api/runtime.py",
+    "packages/bff/provider_settings.py",
+    "packages/provider_settings/projection.py",
+    "packages/provider_settings/service.py",
+    "tests/api/test_f12_provider_settings_api.py",
+    "tests/provider_settings/test_f12_settings.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 438616,
+      "sha256": "C678938262E33CB484161B17DD1E23FF90C6A53B1FA4CD462108876A825D79D0"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4104935,
+      "sha256": "DD002BA7AD4890E3E1501632532C3108110EFDF206DED4FFFA69674B06A3CF2A"
+    },
+    {
+      "path": "docs/work_orders/F-12_INVOCATION_PROMPT.md",
+      "bytes": 372,
+      "sha256": "15DC79D548D9CAE0E93387F761B60E7D4EADC4C5BDB53F6478DE888B00B2F0AA"
+    },
+    {
+      "path": "docs/work_orders/F-12_WORK_INSTRUCTION.md",
+      "bytes": 6535,
+      "sha256": "9344D2E06C86E882FA151118DC6E79A7A3508DD14F76AFF487B8CA082C0B3A1E"
+    },
+    {
+      "path": "scripts/check_f12_progress.py",
+      "bytes": 857,
+      "sha256": "885A518D956CC0E5E80265437D888D4777A47D6FEC219F489D631644660FEE72"
+    },
+    {
+      "path": "scripts/f12_progress_overlay.py",
+      "bytes": 24440,
+      "sha256": "3AC02CAD321F1CD401615D4D9C1D363F2C10AB641A2C5D7A971AFE4B390F2E02"
+    },
+    {
+      "path": "tests/tooling/test_f12_progress_overlay.py",
+      "bytes": 4336,
+      "sha256": "7F0884190FF727CA142575BF12AFD29EC71D1DFAF3C6C897F8606137A70685E9"
+    }
+  ],
+  "runtime_boundary": {
+    "live_providers": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}

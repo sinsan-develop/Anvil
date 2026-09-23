@@ -1,3 +1,11 @@
+# F-12 Provider Settings 통합 시작
+
+- 판정: `ACTIVE`; 승인된 F-12 Provider Settings·Egress·Secret·Execution Mode·routing API/BFF exact8 구현을 시작한다.
+- branch/base: `codex/f12-provider-settings` / `798ed952ad6900c87db2c0b2e1d6f71c2755f69c`.
+- 제어 테스트: 7 PASS; 격리 temp `.f12-control-20260924a/b` 정리 확인. 기본 pytest temp 접근 거부 1회는 `--basetemp`로 해결했다.
+- 검사 스크립트 편집 중 대형 파일 손상 1회는 기준 blob과 hash 동일하게 복원하고 F-12 전용 얇은 wrapper로 분리했다. 제품 변경·데이터 손실 없음.
+- 실제 Provider network·Secret material·DB·browser·WSL·deploy는 실행하지 않는다. 실제 U-11 화면은 별도 Package다.
+
 # F-11 OLLAMA adapter 완료
 
 - 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact6을 인수한다.
