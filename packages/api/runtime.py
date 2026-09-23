@@ -31,6 +31,8 @@ from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
 from .provider_status import ProviderStatusPort
 from .provider_settings import ProviderSettingsPort
+from .operations import OperationsPort
+from packages.observability.service import OperationsService
 from packages.provider_settings.service import ProviderSettingsService
 from .run_creation import RunCreationPort
 from .task_bootstrap import TaskBootstrapPort
@@ -303,6 +305,7 @@ def create_runtime_app(
     console_materializer=None,
     console_clock=None,
     provider_settings_owner: ProviderSettingsService | None = None,
+    operations_owner: OperationsService | None = None,
     **app_kwargs: Any,
 ):
     """Construct the application with durable Telegram state.
@@ -388,6 +391,15 @@ def create_runtime_app(
         raise RuntimeConfigurationError("runtime Provider status ports cannot replace injected ports")
     if set(provider_command_ports) & set(base_ports.commands):
         raise RuntimeConfigurationError("runtime Provider settings commands cannot replace injected ports")
+    if operations_owner is not None:
+        try:
+            operations_query_ports = OperationsPort(operations_owner).query_ports()
+        except ValueError as error:
+            raise RuntimeConfigurationError("trusted F-13 owner is required") from error
+    else:
+        operations_query_ports = {}
+    if set(operations_query_ports) & set(base_ports.queries):
+        raise RuntimeConfigurationError("runtime Operations ports cannot replace injected ports")
     from packages.persistence.task_bootstrap_repository import SqlAlchemyTaskBootstrapRepository
 
     task_repository = SqlAlchemyTaskBootstrapRepository(session_factory)
@@ -403,6 +415,7 @@ def create_runtime_app(
             **base_ports.queries,
             task_read_key: TaskBootstrapPort(task_repository),
             **provider_query_ports,
+            **operations_query_ports,
         },
     )
     web_security = WebSecurityConfig(
@@ -524,6 +537,7 @@ def create_runtime_app(
     # consumers without turning provider secrets into API data.
     app.state.provider_catalog = runtime_catalog(source)
     app.state.provider_settings_bound = provider_settings_owner is not None
+    app.state.operations_bound = operations_owner is not None
     app.state.primary_provider = PRIMARY_PROVIDER
     app.state.database_engine = engine
     app.state.migration_head = "0013_task_bootstrap_authority"

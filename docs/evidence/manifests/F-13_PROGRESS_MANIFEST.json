@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-13",
+  "event_sequence": 1455,
+  "accepted": true,
+  "acceptance_scope": "LOCAL_READ_MODEL_API_CONTRACT",
+  "projection_mode": "F13_FINAL_ACCEPTANCE_EXACT21",
+  "validated_base_commit": "a612fdac2c7eabbb381e8da9d3111d797460f9bf",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-13_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-13_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f13.json",
+    "docs/work_orders/F-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-13_WORK_INSTRUCTION.md",
+    "packages/api/operations.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/observability/models.py",
+    "packages/observability/projection.py",
+    "packages/observability/service.py",
+    "scripts/check_project_progress.py",
+    "scripts/f13_progress_overlay.py",
+    "tests/api/test_f13_operations_api.py",
+    "tests/observability/test_f13_operations.py",
+    "tests/tooling/test_f13_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
+    "packages/api/operations.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/observability/models.py",
+    "packages/observability/projection.py",
+    "packages/observability/service.py",
+    "tests/api/test_f13_operations_api.py",
+    "tests/observability/test_f13_operations.py"
+  ],
+  "product_head": "772ab8deea508ff217dc89c6b45e453f157af018",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
+      "bytes": 10661,
+      "sha256": "44FF2A8959BF2C756D348370C39679E32AD99A4A2CA2413F8B47FE39D4F30765"
+    },
+    {
+      "path": "docs/04_test_reports/F-13_INDEPENDENT_REVIEW.md",
+      "bytes": 2691,
+      "sha256": "EBDF6A215A770248EB8A89CF6B7E151C25706BAA74FEBE5E80E94C6B9856A2C0"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 440399,
+      "sha256": "7796987C27984C2320B6E2E4D5979BDBB1E293330161A54E158FEB0A72DDA5C5"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4122694,
+      "sha256": "6E6E00F0CC3897C6F29FE60228FA5527A9466FA0F44BE379B950766F7089488F"
+    },
+    {
+      "path": "docs/work_orders/F-13_INVOCATION_PROMPT.md",
+      "bytes": 491,
+      "sha256": "770F383C76B86B8A5E864153049DD00B0E56ABBEC65C379A1DE3ACF49F752BC3"
+    },
+    {
+      "path": "docs/work_orders/F-13_WORK_INSTRUCTION.md",
+      "bytes": 5704,
+      "sha256": "8742CE6940A462A4F37FC1157208F6E4299E5DCAE82F55BF2561BC9046C71FF6"
+    },
+    {
+      "path": "packages/api/operations.py",
+      "bytes": 2137,
+      "sha256": "5681EA35A58E1DCF4700B9B79A9D03561A7CBEBB7D6EF1545A79284214A8CA7D"
+    },
+    {
+      "path": "packages/api/registry.py",
+      "bytes": 8965,
+      "sha256": "85CAE3AE5D53E2BAF21C388F8635A94940A86C28134B1543672A19AD148D633E"
+    },
+    {
+      "path": "packages/api/runtime.py",
+      "bytes": 28044,
+      "sha256": "DD6AFE429A11AE413524C55EBB7E176918B97993DBA03C477BA37C4294791550"
+    },
+    {
+      "path": "packages/observability/models.py",
+      "bytes": 2871,
+      "sha256": "A0795BD61EEC1ECA0753CC61DF58FF5C68C3F17C99B94D87A0FD0D270114D381"
+    },
+    {
+      "path": "packages/observability/projection.py",
+      "bytes": 8088,
+      "sha256": "13902A593E4110D278C09EBFAB3551FD4753E2F9EDA27BC99052862F95387BF6"
+    },
+    {
+      "path": "packages/observability/service.py",
+      "bytes": 11318,
+      "sha256": "24AD6AB66FB9CB4E056E23535BDE371BDD5C23C45D26073F9CF8A35BCA50E319"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4727839,
+      "sha256": "64165A54D8C3086E159F2EE274C208594697EC0E35A54FAA1514D3C2A3BF880A"
+    },
+    {
+      "path": "scripts/f13_progress_overlay.py",
+      "bytes": 26326,
+      "sha256": "248CFFF88E6CD8EB08C510AEC731D7743DAB4326C24E9E8E6E0A33097F2F2407"
+    },
+    {
+      "path": "tests/api/test_f13_operations_api.py",
+      "bytes": 9176,
+      "sha256": "957485B6A188E5B5CFA1444213AC1813EFE9AE9585941F43C932DD84D6464E01"
+    },
+    {
+      "path": "tests/observability/test_f13_operations.py",
+      "bytes": 12787,
+      "sha256": "D2D9FEE3E67AD37726D255C74D257E3C3A6AB008F373831E35F7FAF031FD58D5"
+    },
+    {
+      "path": "tests/tooling/test_f13_progress_overlay.py",
+      "bytes": 2106,
+      "sha256": "7DC83F306A05F7F9589377DBAE31763C26C174642CEBA7CBA2C31DD414B1EDDE"
+    }
+  ],
+  "self_reference": false,
+  "runtime_boundary": {
+    "wsl_isolated_contract": "652_PASS_10_SKIP",
+    "live_asgi_owner": "NOT_INTEGRATED_501",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "pg18": "NOT_EXECUTED"
+  }
+}

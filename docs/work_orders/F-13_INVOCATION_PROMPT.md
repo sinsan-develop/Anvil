@@ -1,0 +1,1 @@
+`docs/work_orders/F-13_WORK_INSTRUCTION.md`와 유효한 F-13 worker/write lease를 먼저 읽고, exact9 제품 경로만 TDD로 구현하라. 기존 owner의 확인된 관측값만 projection하고 미연결·stale은 UNKNOWN으로 보존하라. 매 행위 RED→GREEN, 관련 회귀 및 bare pytest 결과를 정확히 기록하라. 완료 시 `COMPLETED | FAILURE_REPORT | INCOMPLETE | BLOCKED | CANCELLED` 중 하나와 증거를 보고하고, commit·push·PR·merge는 하지 말라.
