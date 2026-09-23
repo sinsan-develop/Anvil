@@ -14,6 +14,7 @@ BRANCH = "codex/f07-upstage-adapter"
 START_MODE = "F07_START_EXACT11_PRODUCT_EXACT5"
 FINAL_MODE = "F07_FINAL_ACCEPTANCE_EXACT17"
 AT = "2026-09-24T00:45:00+09:00"
+FINAL_AT = "2026-09-24T01:00:00+09:00"
 EXPIRES = "2026-09-24T12:45:00+09:00"
 ACTOR = "developer-primary-f07-r1"
 WORKER = "worker-lease-f07-r1-20260924-001"
@@ -82,7 +83,7 @@ def _append(events, event_type, details, *, step="START"):
         "run_id": None,
         "step_id": step,
         "subject_ref": f"F-07/{step}",
-        "occurred_at": AT,
+        "occurred_at": FINAL_AT if step == "FINAL" else AT,
         "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
         "previous_event_sha256": _event_sha(events[-1]),
         "details": details,
@@ -201,7 +202,7 @@ def _write_projection(root, progress, ledger, *, heading, status_lines, accepted
             "browser": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED",
         },
         "independent_review": ({"verdict": "ACCEPT", "critical": 0,
-                                "important": 0, "minor": 0} if accepted else None),
+                                "important": 0, "minor": 1} if accepted else None),
         "self_reference": False,
     }
     (root / MANIFEST).write_bytes(_pretty(manifest))
@@ -280,23 +281,24 @@ def finalize(root):
         raise RuntimeError("F07_START_PROGRESS_INVALID")
     old_worker, old_write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
     _append(events, "PACKAGE_COMPLETED", {"package_id": "F-07", "product_paths": product_paths(),
-             "focused": "PASS", "related_provider_regression": "PASS", "compile": "PASS"}, step="FINAL")
+             "focused": "31_PASS", "related_provider_regression": "508_PASS_4_SKIP",
+             "compile": "PASS", "resolved_finding": "F07-429-AMBIGUOUS-RETRY"}, step="FINAL")
     _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {"verdict": "ACCEPT",
-             "critical": 0, "important": 0, "minor": 0, "report": REVIEW}, step="FINAL")
+             "critical": 0, "important": 0, "minor": 1, "report": REVIEW}, step="FINAL")
     _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE, "reason": "F07_ACCEPTED"}, step="FINAL")
     _append(events, "WORKER_LEASE_REVOKED", {"lease_id": WORKER, "reason": "F07_ACCEPTED"}, step="FINAL")
     last = _append(events, "MAIN_PACKAGE_ACCEPTED", {"decision": "ACCEPTED",
         "package_id": "F-07", "next_work_package": "F-08", "blocking_findings": 0,
         "unverified": ["LIVE_UPSTAGE", "CREDENTIALS", "NETWORK", "DATABASE", "BROWSER", "WSL", "DEPLOYMENT"]}, step="FINAL")
     ledger.update({"last_sequence": last["sequence"], "last_event_id": last["event_id"]})
-    old_worker.update({"status": "REVOKED", "revoked_at": AT})
-    old_write.update({"status": "REVOKED", "revoked_at": AT})
+    old_worker.update({"status": "REVOKED", "revoked_at": FINAL_AT})
+    old_write.update({"status": "REVOKED", "revoked_at": FINAL_AT})
     completed = list(progress.get("completed_packages", []))
     if "F-07" not in completed:
         completed.append("F-07")
     progress.update({
         "snapshot_id": "snapshot-f07-final-seq1401", "event_sequence": 1401,
-        "last_event_id": last["event_id"], "updated_at": AT, "recorded_at": AT,
+        "last_event_id": last["event_id"], "updated_at": FINAL_AT, "recorded_at": FINAL_AT,
         "current_work_package": "F-07", "status": "ACCEPTED", "completed_packages": completed,
         "active_agent": None, "worker_lease": None, "write_lease": None,
         "completed_f07_worker_lease": old_worker, "completed_f07_write_lease": old_write,
@@ -304,10 +306,10 @@ def finalize(root):
         "active_work_instruction": None, "repository": _repository(FINAL_MODE),
         "f07_acceptance": {
             "status": "ACCEPTED",
-            "independent_review": "PENDING_FINAL_REVIEW",
-            "focused": "PENDING_FINAL_VERIFICATION",
-            "related_regression": "PENDING_FINAL_VERIFICATION",
-            "resolved_findings": [],
+            "independent_review": "ACCEPT_C0_I0_M1",
+            "focused": "31_PASS",
+            "related_regression": "508_PASS_4_SKIP",
+            "resolved_findings": ["F07-429-AMBIGUOUS-RETRY"],
             "unverified": ["LIVE_UPSTAGE", "CREDENTIALS", "NETWORK", "DATABASE",
                            "BROWSER", "WSL", "DEPLOYMENT"],
         },
@@ -319,7 +321,8 @@ def finalize(root):
                                "stop_before_dialogue_report": False},
     })
     _write_projection(root, progress, ledger, heading="F-07 UPSTAGE adapter 완료",
-        status_lines=["판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다.",
+        status_lines=["판정: `ACCEPTED`; 제품 exact5와 독립 재검토 C0/I0/M1. 429 오분류 Important는 해소했다.",
+                      "focused 31 PASS, 관련 회귀 508 PASS/4 SKIP(PG18 DSN 없음), AST PASS.",
                       "실제 UPSTAGE·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.",
                       "다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다."],
         accepted=True)

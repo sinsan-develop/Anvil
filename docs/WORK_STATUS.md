@@ -1,9 +1,9 @@
-# F-07 UPSTAGE adapter 시작
+# F-07 UPSTAGE adapter 완료
 
-- 판정: `ACTIVE`; 승인된 F-07 host-only exact5 구현을 시작한다.
-- branch/base: `codex/f07-upstage-adapter` / `f38880326e614b3e06a2b67ba7b1179957bdf3f1`.
-- 제어 테스트 임시 경로: `D:\Project\Anvil\.codex-sandbox\.f07-control-20260924a`; F-07 overlay 테스트 동안만 사용하고 실행 직후 경로 확인 후 삭제한다.
-- 실제 UPSTAGE·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+- 판정: `ACCEPTED`; 제품 exact5와 독립 재검토 C0/I0/M1. 429 오분류 Important는 해소했다.
+- focused 31 PASS, 관련 회귀 508 PASS/4 SKIP(PG18 DSN 없음), AST PASS.
+- 실제 UPSTAGE·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
 
 # F-06 OPENROUTER adapter 완료
 
