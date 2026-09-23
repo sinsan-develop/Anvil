@@ -25,6 +25,10 @@ PROMPT = "docs/work_orders/F-03_INVOCATION_PROMPT.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f03-start.json"
 MANIFEST = "docs/evidence/manifests/F-03_START_MANIFEST.json"
 REVIEW = "docs/04_test_reports/F-03_INDEPENDENT_REVIEW.md"
+MERGED_BASE = "950bc8375fb19a76788f24e492112d68043ed596"
+MERGED_BRANCH = "codex/f03-merged-main-reconciliation"
+MERGED_MODE = "F03_MERGED_MAIN_RECONCILIATION_EXACT10"
+MERGED_REPORT = "docs/04_test_reports/F-03_MERGED_MAIN_RECONCILIATION.md"
 
 
 def product_paths():
@@ -61,6 +65,23 @@ def final_control_paths():
 
 def final_paths():
     return sorted(final_control_paths() + product_paths())
+
+
+def merged_paths():
+    return sorted(
+        [
+            "docs/04_test_reports/F-03_MERGED_MAIN_RECONCILIATION.md",
+            "docs/WORK_STATUS.md",
+            MANIFEST,
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            DIGEST,
+            "scripts/check_project_progress.py",
+            "scripts/f03_progress_overlay.py",
+            "tests/tooling/test_f03_progress_overlay.py",
+        ]
+    )
 
 
 def canonical(value):
@@ -155,6 +176,44 @@ def validate_final_git_facts(
     return [] if common and (precommit or postcommit) else ["F03_FINAL_GIT_INVALID"]
 
 
+def validate_merged_git_facts(
+    *, head, branch, upstream, remote_head, staged, dirty, parents, changed,
+    base_is_ancestor_of_feature=False, feature_paths=None, merge_tree_matches_feature=False
+):
+    expected = set(merged_paths())
+    precommit = (
+        branch == MERGED_BRANCH
+        and upstream == f"development/{MERGED_BRANCH}"
+        and head == MERGED_BASE
+        and remote_head == MERGED_BASE
+        and not staged
+        and set(dirty) == expected
+    )
+    postcommit = (
+        branch == MERGED_BRANCH
+        and upstream == f"development/{MERGED_BRANCH}"
+        and head != MERGED_BASE
+        and remote_head in {MERGED_BASE, head}
+        and not staged
+        and not dirty
+        and parents == [MERGED_BASE]
+        and set(changed) == expected
+    )
+    merged = (
+        branch == "main"
+        and upstream == "development/main"
+        and remote_head == head
+        and not staged
+        and not dirty
+        and len(parents) == 2
+        and parents[0] == MERGED_BASE
+        and base_is_ancestor_of_feature
+        and set(feature_paths or ()) == expected
+        and merge_tree_matches_feature
+    )
+    return [] if precommit or postcommit or merged else ["F03_MERGED_GIT_INVALID"]
+
+
 def collect_git(root):
     try:
         git = lambda *args: subprocess.check_output(
@@ -174,7 +233,27 @@ def collect_git(root):
         parent = None
         committed = None
         progress = json.loads((Path(root) / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        final = progress.get("repository", {}).get("projection_mode") == FINAL_MODE
+        mode = progress.get("repository", {}).get("projection_mode")
+        if mode == MERGED_MODE:
+            parents = git("show", "-s", "--format=%P", "HEAD").split()
+            changed = set()
+            if head != MERGED_BASE:
+                changed = set(filter(None, git("diff", "--name-only", f"{MERGED_BASE}..HEAD").splitlines()))
+            ancestor = False
+            feature_paths = None
+            tree_match = False
+            if branch == "main" and len(parents) == 2:
+                feature = parents[1]
+                ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", MERGED_BASE, feature], cwd=root).returncode == 0
+                feature_paths = set(filter(None, git("diff", "--name-only", f"{MERGED_BASE}..{feature}").splitlines()))
+                tree_match = subprocess.run(["git", "diff", "--quiet", feature, head], cwd=root).returncode == 0
+            return validate_merged_git_facts(
+                head=head, branch=branch, upstream=upstream, remote_head=remote_head,
+                staged=staged, dirty=dirty, parents=parents, changed=changed,
+                base_is_ancestor_of_feature=ancestor, feature_paths=feature_paths,
+                merge_tree_matches_feature=tree_match,
+            )
+        final = mode == FINAL_MODE
         anchor = START_COMMIT if final else BASE
         if head != anchor:
             parent = git("rev-parse", "HEAD^")
@@ -869,8 +948,187 @@ def validate_final(root, bundle):
     return sorted(set(errors))
 
 
+def reconcile_merged_main(root):
+    root = Path(root)
+    progress = json.loads(subprocess.check_output(["git", "show", f"{MERGED_BASE}:docs/progress/build-progress.json"], cwd=root))
+    event_raw = subprocess.check_output(["git", "show", f"{MERGED_BASE}:docs/progress/progress-events.json"], cwd=root)
+    ledger = json.loads(event_raw)
+    events = ledger["events"]
+    if progress.get("event_sequence") != 1368 or ledger.get("last_sequence") != 1368:
+        raise RuntimeError("F03_MERGED_BASE_INVALID")
+    report_raw = (
+        "# F-03 merged-main canonical reconciliation\n\n"
+        f"- 판정: `IN_PROGRESS`; PR #18 merge commit `{MERGED_BASE}`의 구조적 검증을 추가한다.\n"
+        "- 원인: F-03 final checker가 work branch post-commit만 허용해 정상 2-parent merged main을 거부했다.\n"
+        "- 검증: first parent=pre-merge main, second parent=exact feature head, base ancestry, exact9 reconciliation paths, feature/main tree equality. SHA는 최종 feature commit으로 하드코딩하지 않는다.\n"
+        "- 제품·Provider·DB·WSL·browser·deploy 변경 및 재실행은 없다.\n"
+    ).encode("utf-8")
+    (root / MERGED_REPORT).write_bytes(report_raw)
+    event = append_event(
+        events,
+        "REPOSITORY_RECONCILED",
+        {
+            "accepted_checkpoint": MERGED_BASE,
+            "routine_merge_method": "MERGE_COMMIT",
+            "required_main_shape": {
+                "parent_count": 2,
+                "first_parent": "PR_PRE_MERGE_MAIN",
+                "second_parent": "VERIFIED_EXACT_FEATURE_HEAD",
+            },
+            "exact_paths": merged_paths(),
+            "scope": "MERGED_MAIN_GIT_PROJECTION_AND_APPEND_ONLY_EVIDENCE_ONLY",
+            "product_behavior_changed": False,
+        },
+    )
+    old_id = ledger["last_event_id"].encode()
+    marker = b'\n  ],\n  "last_event_id": "' + old_id + b'"'
+    if event_raw.count(marker) != 1:
+        raise RuntimeError("F03_MERGED_EVENT_TAIL_INVALID")
+    new_event_raw = event_raw.replace(
+        marker,
+        b",\n" + pretty(event).rstrip() + marker.replace(old_id, event["event_id"].encode()),
+    ).replace(b'"last_sequence": 1368', b'"last_sequence": 1369', 1)
+    repository = deepcopy(progress["repository"])
+    repository.update(
+        {
+            "branch": MERGED_BRANCH,
+            "upstream": f"development/{MERGED_BRANCH}",
+            "local_head": MERGED_BASE,
+            "remote_head": MERGED_BASE,
+            "control_head": MERGED_BASE,
+            "projection_mode": MERGED_MODE,
+            "validated_base_commit": MERGED_BASE,
+            "head_relation": "PRECOMMIT_OR_DIRECT_CHILD_OR_STRUCTURAL_MERGED_MAIN",
+            "exact_allowed_paths": merged_paths(),
+            "product_write_scope": [],
+            "worktree_status": "UNSTAGED_F03_MERGED_MAIN_RECONCILIATION_EXACT9",
+            "commit_status": "NOT_EXECUTED",
+            "push_status": "NOT_EXECUTED",
+        }
+    )
+    progress.update(
+        {
+            "snapshot_id": "snapshot-f03-merged-main-seq1369",
+            "event_sequence": 1369,
+            "last_event_id": event["event_id"],
+            "updated_at": AT,
+            "recorded_at": AT,
+            "repository": repository,
+            "next_safe_action": "F03_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
+            "runtime_next_action": "F03_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
+            "current_progress_evidence_ref": {"package_id": "F-03", "path": DIGEST, "manifest_path": MANIFEST},
+            "latest_evidence_refs": [{"path": MERGED_REPORT, "sha256": sha(report_raw)}],
+        }
+    )
+    progress["registry_refs"]["progress_events"] = {"path": "docs/progress/progress-events.json", "sha256": sha(new_event_raw)}
+    snapshot = deepcopy(progress)
+    snapshot.pop("snapshot_hash", None)
+    progress["snapshot_hash"] = sha(canonical(snapshot))
+    progress_raw = pretty(progress)
+    summary = {
+        key: deepcopy(progress.get(key))
+        for key in (
+            "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+            "active_agent", "worker_lease", "write_lease", "next_work_package",
+            "next_successor_work_package", "next_safe_action", "runtime_next_action",
+        )
+    }
+    summary.update({"f03_status": "ACCEPTED", "repository_validated_base": MERGED_BASE, "repository_branch": MERGED_BRANCH})
+    handoff_raw = (
+        "# F-03 merged-main canonical reconciliation\n\n```json anvil-recovery-summary\n"
+        + pretty(summary).decode("utf-8") + "```\n"
+    ).encode("utf-8")
+    status_raw = (
+        "# F-03 merged-main reconciliation / 2026-09-23\n\n"
+        f"- 판정: `IN_PROGRESS`; PR #18 merged main `{MERGED_BASE}`의 structural checker를 추가한다.\n"
+        "- 제품 동작 변경 0, F-03 acceptance와 F-04 READY 상태 유지.\n\n"
+    ).encode("utf-8") + subprocess.check_output(["git", "show", f"{MERGED_BASE}:docs/WORK_STATUS.md"], cwd=root)
+    digest = {
+        "schema_version": "1.0.0", "algorithm": "SHA-256", "event_sequence": 1369, "self_reference": False,
+        "progress": {"path": "docs/progress/build-progress.json", "bytes": len(progress_raw), "file_sha256": sha(progress_raw), "canonical_json_sha256": sha(canonical(progress))},
+        "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": len(handoff_raw), "file_sha256": sha(handoff_raw), "machine_summary_canonical_sha256": sha(canonical(summary))},
+    }
+    generated = {
+        "docs/WORK_STATUS.md": status_raw,
+        "docs/progress/BUILD_HANDOFF.md": handoff_raw,
+        "docs/progress/build-progress.json": progress_raw,
+        "docs/progress/progress-events.json": new_event_raw,
+        DIGEST: pretty(digest),
+    }
+    for relative, raw in generated.items():
+        (root / relative).write_bytes(raw)
+    manifest = json.loads(subprocess.check_output(["git", "show", f"{MERGED_BASE}:{MANIFEST}"], cwd=root))
+    manifest.update(
+        {
+            "event_sequence": 1369,
+            "appended_event_count": 6,
+            "projection_mode": MERGED_MODE,
+            "validated_base_commit": MERGED_BASE,
+            "exact_allowed_paths": merged_paths(),
+            "control_paths": merged_paths(),
+            "product_write_scope": [],
+            "repository_reconciliation": {
+                "accepted_checkpoint": MERGED_BASE,
+                "routine_merge_method": "MERGE_COMMIT",
+                "status": "IN_PROGRESS_PENDING_COMMIT_PUSH",
+                "product_behavior_changed": False,
+            },
+        }
+    )
+    rows = []
+    for relative in merged_paths():
+        if relative == MANIFEST:
+            continue
+        raw = (root / relative).read_bytes()
+        rows.append({"path": relative, "bytes": len(raw), "sha256": sha(raw)})
+    manifest["raw_checksums"] = rows
+    (root / MANIFEST).write_bytes(pretty(manifest))
+
+
+def validate_merged(root, bundle):
+    root = Path(root)
+    errors = []
+    try:
+        progress = bundle["progress"]
+        event_value = bundle["events"]
+        events = event_value["events"] if isinstance(event_value, dict) else event_value
+        manifest = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
+        digest = json.loads((root / DIGEST).read_text(encoding="utf-8"))
+        if events[-1].get("event_type") != "REPOSITORY_RECONCILED" or events[-1].get("sequence") != 1369:
+            errors.append("F03_MERGED_EVENT_INVALID")
+        if events[-1].get("previous_event_sha256") != event_sha(events[-2]):
+            errors.append("F03_MERGED_EVENT_CHAIN_INVALID")
+        state_ok = (
+            progress.get("event_sequence") == 1369
+            and progress.get("status") == "ACCEPTED"
+            and progress.get("repository", {}).get("projection_mode") == MERGED_MODE
+            and progress.get("next_work_package", {}).get("package_id") == "F-04"
+            and manifest.get("accepted") is True
+            and manifest.get("exact_allowed_paths") == merged_paths()
+        )
+        if not state_ok:
+            errors.append("F03_MERGED_STATE_INVALID")
+        progress_raw = (root / "docs/progress/build-progress.json").read_bytes()
+        handoff_raw = (root / "docs/progress/BUILD_HANDOFF.md").read_bytes()
+        if (len(progress_raw), sha(progress_raw)) != (digest["progress"]["bytes"], digest["progress"]["file_sha256"]):
+            errors.append("F03_MERGED_PROGRESS_DIGEST_INVALID")
+        if (len(handoff_raw), sha(handoff_raw)) != (digest["handoff"]["bytes"], digest["handoff"]["file_sha256"]):
+            errors.append("F03_MERGED_HANDOFF_DIGEST_INVALID")
+        for row in manifest.get("raw_checksums", []):
+            raw = (root / row["path"]).read_bytes()
+            if (len(raw), sha(raw)) != (row["bytes"], row["sha256"]):
+                errors.append("F03_MERGED_RAW_CHECKSUM_INVALID")
+                break
+        errors.extend(collect_git(root))
+    except Exception:
+        errors.append("F03_MERGED_INPUT_INVALID")
+    return sorted(set(errors))
+
+
 def validate(root, bundle):
     mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode == MERGED_MODE:
+        return validate_merged(root, bundle)
     if mode == FINAL_MODE:
         return validate_final(root, bundle)
     return validate_start(root, bundle)
@@ -878,4 +1136,9 @@ def validate(root, bundle):
 
 if __name__ == "__main__":
     root = Path(__file__).resolve().parents[1]
-    finalize(root) if "--finalize" in sys.argv else materialize(root)
+    if "--merged-main-reconcile" in sys.argv:
+        reconcile_merged_main(root)
+    elif "--finalize" in sys.argv:
+        finalize(root)
+    else:
+        materialize(root)
