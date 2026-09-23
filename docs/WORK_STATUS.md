@@ -1,3 +1,10 @@
+# F-03 CEREBRAS adapter accepted / 2026-09-23
+
+- 판정: `ACCEPTED`; 독립 Reviewer `C0/I0/M0`.
+- Main focused 45 PASS, 관련 회귀 709 PASS/4 SKIP, 독립 넓은 회귀 738 PASS/4 SKIP, compile3 PASS.
+- 실제 Cerebras/credential/network/DB/UI/browser/WSL/deploy는 미검증이다.
+- 다음 승인 작업은 F-04 GROQ adapter다.
+
 # F-03 CEREBRAS adapter start / 2026-09-23
 
 - 판정: `IN_PROGRESS`; 승인된 작업계획 F-03 exact5 host-only TDD를 시작했다.

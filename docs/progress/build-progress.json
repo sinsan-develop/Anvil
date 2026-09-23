@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f03-start-seq1363",
-  "event_sequence": 1363,
+  "snapshot_id": "snapshot-f03-final-seq1368",
+  "event_sequence": 1368,
   "updated_at": "2026-09-23T18:20:00+09:00",
-  "last_event_id": "evt_f03_1363_package_started",
+  "last_event_id": "evt_f03_1368_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -92,7 +92,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
   "current_work_package": "F-03",
-  "status": "IN_PROGRESS",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -183,38 +183,11 @@
     "C-29",
     "C-30",
     "C-30R4",
-    "C-30R5"
+    "C-30R5",
+    "F-03"
   ],
-  "active_agent": {
-    "actor_id": "developer-primary-f03-r1",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "F-03",
-    "status": "ACTIVE",
-    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588"
-  },
-  "write_lease": {
-    "lease_id": "write-lease-f03-r1-20260923-001",
-    "actor_id": "developer-primary-f03-r1",
-    "subject_ref": "F-03",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-23T18:20:00+09:00",
-    "expires_at": "2026-09-24T06:20:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b",
-    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
-    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
-    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
-    "path_scope": [
-      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
-      "packages/providers/cerebras_adapter.py",
-      "packages/providers/cerebras_errors.py",
-      "packages/providers/cerebras_models.py",
-      "tests/providers/test_cerebras_adapter_f03.py"
-    ],
-    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b"
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -246,26 +219,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f03-r1-20260923-001",
-    "actor_id": "developer-primary-f03-r1",
-    "subject_ref": "F-03",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-23T18:20:00+09:00",
-    "expires_at": "2026-09-24T06:20:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
-    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
-    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
-    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
-    "path_scope": [
-      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
-      "packages/providers/cerebras_adapter.py",
-      "packages/providers/cerebras_errors.py",
-      "packages/providers/cerebras_models.py",
-      "tests/providers/test_cerebras_adapter_f03.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -443,13 +397,7 @@
   },
   "budget_reservations": [],
   "valid_failure_count": 0,
-  "active_failure_lineage": {
-    "step_lineage_id": "C-10",
-    "valid_failure_count": 0,
-    "review_rework_count": 3,
-    "takeover_status": "MAIN_TAKEOVER",
-    "fingerprint": "C10-COMMAND-POLICY-FAILCLOSED-GAP"
-  },
+  "active_failure_lineage": null,
   "historical_accepted_failure_count": 32,
   "historical_failure_counts_by_lineage": {
     "A-01": 1,
@@ -475,17 +423,38 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/work_orders/F-03_WORK_INSTRUCTION.md",
-      "sha256": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A"
+      "path": "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "bytes": 7667,
+      "sha256": "B0BB6FDE3A40B9D2B9394EB7DB6C5AD5FE70A6312942877057FADE8E483F26D5"
     },
     {
-      "path": "docs/work_orders/F-03_INVOCATION_PROMPT.md",
-      "sha256": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7"
+      "path": "packages/providers/cerebras_adapter.py",
+      "bytes": 15133,
+      "sha256": "DC2607AA90BAFC9921E889EF6A3941B855940A169A59D7DC60BFAFBE3D22A026"
+    },
+    {
+      "path": "packages/providers/cerebras_errors.py",
+      "bytes": 3532,
+      "sha256": "8065C9DDE021433792786B13B0AAC815C008FDB722E8BBB97868C87655DEE593"
+    },
+    {
+      "path": "packages/providers/cerebras_models.py",
+      "bytes": 3587,
+      "sha256": "167B9CB5E4AD6325AE9DE72B30CEFE03A28EB698B997D6B97196231C0F5230D3"
+    },
+    {
+      "path": "tests/providers/test_cerebras_adapter_f03.py",
+      "bytes": 12940,
+      "sha256": "1C15C2D65DB585FB40A52821DDEA4C2E7E1E4D15442BB30C77AD6E6F50033B3D"
+    },
+    {
+      "path": "docs/04_test_reports/F-03_INDEPENDENT_REVIEW.md",
+      "sha256": "05089EC9CFD61A3E113F48C4E2280FADE18CAEFC9435F8069A17B8BE494BB393"
     }
   ],
   "latest_evidence_manifest_ref": {
     "path": "docs/evidence/manifests/F-03_START_MANIFEST.json",
-    "artifact_id": "F03-START-20260923"
+    "artifact_id": "F03-FINAL-20260923"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -497,7 +466,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F03_CEREBRAS_ADAPTER_TDD",
+  "next_safe_action": "F04_WORK_INSTRUCTION_AND_START",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -608,14 +577,15 @@
   },
   "repository": {
     "branch": "codex/f03-cerebras-adapter",
-    "local_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "local_head": "9ec430908a3473815d5839f028d290414494f37b",
     "upstream": "development/codex/f03-cerebras-adapter",
-    "remote_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
-    "projection_mode": "F03_START_EXACT9_PRODUCT_EXACT5",
-    "validated_base_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
-    "head_relation": "PRECOMMIT_CONTROL_EXACT9_OR_DIRECT_CHILD_WITH_PRODUCT_EXACT5",
+    "remote_head": "9ec430908a3473815d5839f028d290414494f37b",
+    "projection_mode": "F03_FINAL_ACCEPTANCE_EXACT15",
+    "validated_base_commit": "9ec430908a3473815d5839f028d290414494f37b",
+    "head_relation": "PRECOMMIT_EXACT15_OR_SOLE_DIRECT_CHILD",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-03_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/manifests/F-03_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -632,8 +602,8 @@
     ],
     "push_status": "NOT_EXECUTED",
     "remote_evidence": "LIVE_MAIN_BASE_VERIFIED",
-    "worktree_status": "UNSTAGED_F03_START_CONTROL_EXACT9",
-    "control_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "worktree_status": "UNSTAGED_F03_FINAL_EXACT15",
+    "control_head": "9ec430908a3473815d5839f028d290414494f37b",
     "product_write_scope": [
       "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
       "packages/providers/cerebras_adapter.py",
@@ -813,8 +783,8 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C30_ACCEPTED",
-      "F03_APPROVED_SCOPE"
+      "F03_ACCEPTED",
+      "F04_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -864,25 +834,7 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": {
-    "work_package_id": "F-03",
-    "artifact_path": "docs/work_orders/F-03_WORK_INSTRUCTION.md",
-    "artifact_sha256": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A",
-    "invocation_path": "docs/work_orders/F-03_INVOCATION_PROMPT.md",
-    "invocation_sha256": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7",
-    "status": "IN_PROGRESS",
-    "result_status": null,
-    "accepted": false,
-    "product_write_scope": [
-      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
-      "packages/providers/cerebras_adapter.py",
-      "packages/providers/cerebras_errors.py",
-      "packages/providers/cerebras_models.py",
-      "tests/providers/test_cerebras_adapter_f03.py"
-    ],
-    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
-    "write_lease_id": "write-lease-f03-r1-20260923-001"
-  },
+  "active_work_instruction": null,
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -981,14 +933,23 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "last_completed_work_instruction": {
-    "work_package_id": "C-30R5",
-    "artifact_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_WORK_INSTRUCTION_R2.md",
-    "artifact_sha256": "B14F3A0A253F5BE74194F2B4BC38483E855B62B0C7070D6614F061D19234B000",
-    "invocation_path": "docs/work_orders/C-30R5_MATRIX_CORRECTION_INVOCATION_R2.md",
-    "invocation_sha256": "AAF9EAB6A74ECE89EEA12813E627C5E203E85C4131D6FFED2CF1A8156C7C9BAB",
+    "work_package_id": "F-03",
+    "artifact_path": "docs/work_orders/F-03_WORK_INSTRUCTION.md",
+    "artifact_sha256": "656DE3EF0FC3510C2796CCCE6AB1F04B5541476E796AD0FFE0E1851898819D2A",
+    "invocation_path": "docs/work_orders/F-03_INVOCATION_PROMPT.md",
+    "invocation_sha256": "9F178535BBBE15573B4029646EA847D3D6C8B52FC7AF3E9D1254E163224589B7",
     "status": "ACCEPTED",
     "result_status": "COMPLETED",
-    "accepted": true
+    "accepted": true,
+    "product_write_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
+    "write_lease_id": "write-lease-f03-r1-20260923-001"
   },
   "runtime_boundary_approval": {
     "approval_id": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
@@ -1026,16 +987,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "9D294B65DD11798AAB6E144AEC1C5AA98CE94BC5C04D21EDDC6366DA68B44D18"
+      "sha256": "63CCD64ADA836B5751C9E1C9B86E4EE2AF39317E968FA437537ED90680984A45"
     }
   },
   "next_work_package": {
-    "package_id": "F-03",
-    "status": "IN_PROGRESS"
+    "package_id": "F-04",
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
     "package_id": "F-04",
-    "status": "NOT_READY"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1423,8 +1384,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "BDE68257B81404E5966B10219FAF8539C19490A91C6855EE089869D6E871DF36",
-  "runtime_next_action": "F03_CEREBRAS_ADAPTER_TDD",
+  "snapshot_hash": "E789A51E31E6C4D56C928771A89DB2806FDEB414E61015B46AAED6407ECBEECF",
+  "runtime_next_action": "F04_WORK_INSTRUCTION_AND_START",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -21764,5 +21725,50 @@
       "ACTUAL_SERVER_GENERATED_400",
       "ORACLE"
     ]
+  },
+  "completed_f03_worker_lease": {
+    "lease_id": "worker-lease-f03-r1-20260923-001",
+    "actor_id": "developer-primary-f03-r1",
+    "subject_ref": "F-03",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T18:20:00+09:00",
+    "expires_at": "2026-09-24T06:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "path_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "revoked_at": "2026-09-23T18:20:00+09:00"
+  },
+  "completed_f03_write_lease": {
+    "lease_id": "write-lease-f03-r1-20260923-001",
+    "actor_id": "developer-primary-f03-r1",
+    "subject_ref": "F-03",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T18:20:00+09:00",
+    "expires_at": "2026-09-24T06:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b",
+    "execution_fencing_token": "f03-r1-execution-fence-epoch-1-1fadc0a7c7a69588",
+    "baseline_git_commit": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "dispatch_head": "1fadc0a7c7a69588a5cb5a6e36a95399b1a1791e",
+    "path_scope": [
+      "docs/04_test_reports/F-03_COMPLETION_REPORT.md",
+      "packages/providers/cerebras_adapter.py",
+      "packages/providers/cerebras_errors.py",
+      "packages/providers/cerebras_models.py",
+      "tests/providers/test_cerebras_adapter_f03.py"
+    ],
+    "worker_lease_id": "worker-lease-f03-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b",
+    "revoked_at": "2026-09-23T18:20:00+09:00"
   }
 }

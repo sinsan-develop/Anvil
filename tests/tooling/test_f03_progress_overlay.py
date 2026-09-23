@@ -53,3 +53,35 @@ def test_f03_start_rejects_out_of_scope_dirty_path():
         parent=None,
         committed=None,
     ) == ["F03_START_GIT_INVALID"]
+
+
+def test_f03_final_scopes_include_review_and_exact5_product():
+    assert len(OVERLAY.final_control_paths()) == 10
+    assert len(OVERLAY.final_paths()) == 15
+    assert set(OVERLAY.final_paths()) == set(OVERLAY.final_control_paths()) | set(OVERLAY.product_paths())
+
+
+def test_f03_final_accepts_exact_precommit_state():
+    assert OVERLAY.validate_final_git_facts(
+        head=OVERLAY.START_COMMIT,
+        branch=OVERLAY.BRANCH,
+        upstream=f"development/{OVERLAY.BRANCH}",
+        remote_head=OVERLAY.START_COMMIT,
+        staged=set(),
+        dirty=set(OVERLAY.final_paths()),
+        parent=None,
+        committed=None,
+    ) == []
+
+
+def test_f03_final_accepts_exact_postcommit_state():
+    assert OVERLAY.validate_final_git_facts(
+        head="final",
+        branch=OVERLAY.BRANCH,
+        upstream=f"development/{OVERLAY.BRANCH}",
+        remote_head="final",
+        staged=set(),
+        dirty=set(),
+        parent=OVERLAY.START_COMMIT,
+        committed=set(OVERLAY.final_paths()),
+    ) == []
