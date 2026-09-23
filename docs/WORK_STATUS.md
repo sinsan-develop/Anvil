@@ -1,3 +1,10 @@
+# F-07 UPSTAGE adapter 완료
+
+- 판정: `ACCEPTED`; 제품 exact5와 독립 재검토 C0/I0/M1. 429 오분류 Important는 해소했다.
+- focused 31 PASS, 관련 회귀 508 PASS/4 SKIP(PG18 DSN 없음), AST PASS.
+- 실제 UPSTAGE·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
+
 # F-06 OPENROUTER adapter 완료
 
 - 판정: `ACCEPTED`; 제품 exact5와 독립 검토가 통과했다(Critical/Important 0).

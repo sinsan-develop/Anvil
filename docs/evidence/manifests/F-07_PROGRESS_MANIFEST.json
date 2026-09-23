@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-07",
+  "event_sequence": 1401,
+  "accepted": true,
+  "projection_mode": "F07_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+    "docs/04_test_reports/F-07_INDEPENDENT_REVIEW.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f07.json",
+    "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+    "packages/providers/upstage_adapter.py",
+    "packages/providers/upstage_errors.py",
+    "packages/providers/upstage_models.py",
+    "scripts/check_project_progress.py",
+    "scripts/f07_progress_overlay.py",
+    "tests/providers/test_upstage_adapter_f07.py",
+    "tests/tooling/test_f07_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+    "packages/providers/upstage_adapter.py",
+    "packages/providers/upstage_errors.py",
+    "packages/providers/upstage_models.py",
+    "tests/providers/test_upstage_adapter_f07.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "bytes": 6796,
+      "sha256": "7919F20C55727EF9AB0FC8E2031D297949EAE4F97C7211E5B8C37E876BA7DDE2"
+    },
+    {
+      "path": "docs/04_test_reports/F-07_INDEPENDENT_REVIEW.md",
+      "bytes": 3067,
+      "sha256": "3F377F45B59D7B87EAB752396F906EDFCEC5B3214E684C0C2895CD78E6E0EAFE"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 435070,
+      "sha256": "23397F43874C3922B87425DBAE8F54753407CC9CA8FF3DE0DF894CDE15279BF6"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4075127,
+      "sha256": "C5298A63058F4CF6536E8C65C995701CD3AB3A1A1C54C05967E268C49A17385F"
+    },
+    {
+      "path": "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+      "bytes": 394,
+      "sha256": "D81D2D12FB1E36FF1EB66A19016EE7DC1F6FDE91C368997F8694E34ABC96F660"
+    },
+    {
+      "path": "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+      "bytes": 3335,
+      "sha256": "B681077B227190C0C6FD9071588A44144F16F1156EFC4D81C3BF84A09540B1CA"
+    },
+    {
+      "path": "packages/providers/upstage_adapter.py",
+      "bytes": 14527,
+      "sha256": "8E9C2DAA30F0966E34E8DC5919C18F19C7DCA4B3C8E4D47406A151893CB9D0C5"
+    },
+    {
+      "path": "packages/providers/upstage_errors.py",
+      "bytes": 3937,
+      "sha256": "6C400980CD302A5589A9E19FBB10986B29A13D1F25F5DE402EC92659DBC25A4A"
+    },
+    {
+      "path": "packages/providers/upstage_models.py",
+      "bytes": 2912,
+      "sha256": "B546E68EF36CCC875CDA26496FC428E8A28CEC55E978995B1FB3DA3F8FD9EE28"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4722895,
+      "sha256": "DED853DF45E98760E6D6DE6431A5C868C2C179FBFCA8C1A4EE3233ED331C8A30"
+    },
+    {
+      "path": "scripts/f07_progress_overlay.py",
+      "bytes": 23341,
+      "sha256": "0169E102BC7EFD550E82422AC860FF280F2975D57D73DF0FDB7B346F057F20DE"
+    },
+    {
+      "path": "tests/providers/test_upstage_adapter_f07.py",
+      "bytes": 9836,
+      "sha256": "B8B6CE34CAEC747DEC05F45C00158C70F3ED46B0BA5F73BDB1FA83D296CA49B2"
+    },
+    {
+      "path": "tests/tooling/test_f07_progress_overlay.py",
+      "bytes": 4334,
+      "sha256": "712AA35ADF2A36B0B56D6EFEA450BE45465C8FBD8E844598398291D767CA818F"
+    }
+  ],
+  "runtime_boundary": {
+    "live_upstage": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 1
+  },
+  "self_reference": false
+}

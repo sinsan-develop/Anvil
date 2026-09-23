@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f06-final-seq1393",
-  "event_sequence": 1393,
-  "updated_at": "2026-09-23T23:45:00+09:00",
-  "last_event_id": "evt_f06_1393_main_package_accepted",
+  "snapshot_id": "snapshot-f07-final-seq1401",
+  "event_sequence": 1401,
+  "updated_at": "2026-09-24T01:00:00+09:00",
+  "last_event_id": "evt_f07_1401_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,7 +91,7 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-06",
+  "current_work_package": "F-07",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -187,7 +187,8 @@
     "F-03",
     "F-04",
     "F-05",
-    "F-06"
+    "F-06",
+    "F-07"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -444,7 +445,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F06_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "MERGE_F07_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -554,40 +555,40 @@
     }
   },
   "repository": {
-    "branch": "codex/f06-openrouter-adapter",
-    "local_head": "19aee3360d90d3a046183ae66e6dd02150d9d747",
-    "upstream": "development/codex/f06-openrouter-adapter",
-    "remote_head": "19aee3360d90d3a046183ae66e6dd02150d9d747",
-    "projection_mode": "F06_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "19aee3360d90d3a046183ae66e6dd02150d9d747",
+    "branch": "codex/f07-upstage-adapter",
+    "local_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "upstream": "development/codex/f07-upstage-adapter",
+    "remote_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "projection_mode": "F07_FINAL_ACCEPTANCE_EXACT17",
+    "validated_base_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-06_INDEPENDENT_REVIEW.md",
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-07_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-06_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f06.json",
-      "docs/work_orders/F-06_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-06_WORK_INSTRUCTION.md",
-      "packages/providers/openrouter_adapter.py",
-      "packages/providers/openrouter_errors.py",
-      "packages/providers/openrouter_models.py",
+      "docs/progress/progress-handoff-detached-digest-f07.json",
+      "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
       "scripts/check_project_progress.py",
-      "scripts/f06_progress_overlay.py",
-      "tests/providers/test_openrouter_adapter_f06.py",
-      "tests/tooling/test_f06_progress_overlay.py"
+      "scripts/f07_progress_overlay.py",
+      "tests/providers/test_upstage_adapter_f07.py",
+      "tests/tooling/test_f07_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-06_COMPLETION_REPORT.md",
-      "packages/providers/openrouter_adapter.py",
-      "packages/providers/openrouter_errors.py",
-      "packages/providers/openrouter_models.py",
-      "tests/providers/test_openrouter_adapter_f06.py"
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
     ],
-    "worktree_status": "F06_ACCEPTED",
+    "worktree_status": "F07_ACCEPTED",
     "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
@@ -685,22 +686,22 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-06-20260923-001",
-    "path": "docs/work_orders/F-06_WORK_INSTRUCTION.md",
-    "sha256": "7B31A60A9BAD67DC85AB026E0B9CF559513180CF74117D3277640F91D5EA1C98",
-    "invocation_path": "docs/work_orders/F-06_INVOCATION_PROMPT.md",
-    "invocation_sha256": "EAFB2E318EF1725FFD56B45CC1848801FC4B1D0CDFC6BD01C6FE8A134D35FD11",
+    "artifact_id": "WI-F-07-20260924-001",
+    "path": "docs/work_orders/F-07_WORK_INSTRUCTION.md",
+    "sha256": "B681077B227190C0C6FD9071588A44144F16F1156EFC4D81C3BF84A09540B1CA",
+    "invocation_path": "docs/work_orders/F-07_INVOCATION_PROMPT.md",
+    "invocation_sha256": "D81D2D12FB1E36FF1EB66A19016EE7DC1F6FDE91C368997F8694E34ABC96F660",
     "assigned_verification_ids": [
       "AV-OPS-010",
       "AV-OPS-011",
-      "AV-FLOW-019(OPENROUTER)"
+      "AV-FLOW-019(UPSTAGE)"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F06_ACCEPTED",
-      "F06_APPROVED_SCOPE"
+      "F07_ACCEPTED",
+      "F07_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -880,9 +881,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-06",
-    "path": "docs/progress/progress-handoff-detached-digest-f06.json",
-    "manifest_path": "docs/evidence/manifests/F-06_PROGRESS_MANIFEST.json"
+    "package_id": "F-07",
+    "path": "docs/progress/progress-handoff-detached-digest-f07.json",
+    "manifest_path": "docs/evidence/manifests/F-07_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -903,15 +904,15 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "4F0763E663D191E8457942C9F5EAC382E77B2197F2C1270D7FEA3CEE9481A66B"
+      "sha256": "C5298A63058F4CF6536E8C65C995701CD3AB3A1A1C54C05967E268C49A17385F"
     }
   },
   "next_work_package": {
-    "package_id": "F-07",
+    "package_id": "F-08",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
-    "package_id": "F-07",
+    "package_id": "F-08",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
@@ -1300,8 +1301,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "EF2A6BCC9E368C91C342286700AE3EBD4886B8FEDD51FFB9C92F07EADE8F2093",
-  "runtime_next_action": "MERGE_F06_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "33775B8198E4EB5AFEA5B2472CC7D2F792A44135A24A86DE4B486A46F9CD7833",
+  "runtime_next_action": "MERGE_F07_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2913,7 +2914,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-23T23:45:00+09:00",
+  "recorded_at": "2026-09-24T01:00:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -21886,6 +21887,69 @@
     ],
     "unverified": [
       "LIVE_OPENROUTER",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  },
+  "completed_f07_worker_lease": {
+    "lease_id": "worker-lease-f07-r1-20260924-001",
+    "actor_id": "developer-primary-f07-r1",
+    "subject_ref": "F-07",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T00:45:00+09:00",
+    "expires_at": "2026-09-24T12:45:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "execution_fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "baseline_git_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "dispatch_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "path_scope": [
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
+    ],
+    "revoked_at": "2026-09-24T01:00:00+09:00"
+  },
+  "completed_f07_write_lease": {
+    "lease_id": "write-lease-f07-r1-20260924-001",
+    "actor_id": "developer-primary-f07-r1",
+    "subject_ref": "F-07",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T00:45:00+09:00",
+    "expires_at": "2026-09-24T12:45:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f07-r1-write-fence-epoch-1-06a2b67ba7b11799",
+    "execution_fencing_token": "f07-r1-execution-fence-epoch-1-f38880326e614b3e",
+    "baseline_git_commit": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "dispatch_head": "f38880326e614b3e06a2b67ba7b1179957bdf3f1",
+    "path_scope": [
+      "docs/04_test_reports/F-07_COMPLETION_REPORT.md",
+      "packages/providers/upstage_adapter.py",
+      "packages/providers/upstage_errors.py",
+      "packages/providers/upstage_models.py",
+      "tests/providers/test_upstage_adapter_f07.py"
+    ],
+    "worker_lease_id": "worker-lease-f07-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f07-r1-write-fence-epoch-1-06a2b67ba7b11799",
+    "revoked_at": "2026-09-24T01:00:00+09:00"
+  },
+  "f07_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M1",
+    "focused": "31_PASS",
+    "related_regression": "508_PASS_4_SKIP",
+    "resolved_findings": [
+      "F07-429-AMBIGUOUS-RETRY"
+    ],
+    "unverified": [
+      "LIVE_UPSTAGE",
       "CREDENTIALS",
       "NETWORK",
       "DATABASE",
