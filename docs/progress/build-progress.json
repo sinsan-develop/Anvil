@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f04-start-seq1372",
-  "event_sequence": 1372,
+  "snapshot_id": "snapshot-f04-final-seq1377",
+  "event_sequence": 1377,
   "updated_at": "2026-09-23T20:00:00+09:00",
-  "last_event_id": "evt_f04_1372_write_lease_issued",
+  "last_event_id": "evt_f04_1377_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -92,7 +92,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
   "current_work_package": "F-04",
-  "status": "ACTIVE",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -184,32 +184,11 @@
     "C-30",
     "C-30R4",
     "C-30R5",
-    "F-03"
+    "F-03",
+    "F-04"
   ],
-  "active_agent": "developer-primary-f04-r1",
-  "write_lease": {
-    "lease_id": "write-lease-f04-r1-20260923-001",
-    "actor_id": "developer-primary-f04-r1",
-    "subject_ref": "F-04",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-23T20:00:00+09:00",
-    "expires_at": "2026-09-24T08:00:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6",
-    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
-    "baseline_git_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "dispatch_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "path_scope": [
-      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
-      "packages/providers/groq_adapter.py",
-      "packages/providers/groq_errors.py",
-      "packages/providers/groq_models.py",
-      "tests/providers/test_groq_adapter_f04.py"
-    ],
-    "worker_lease_id": "worker-lease-f04-r1-20260923-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6"
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -241,26 +220,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f04-r1-20260923-001",
-    "actor_id": "developer-primary-f04-r1",
-    "subject_ref": "F-04",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-23T20:00:00+09:00",
-    "expires_at": "2026-09-24T08:00:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
-    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
-    "baseline_git_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "dispatch_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "path_scope": [
-      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
-      "packages/providers/groq_adapter.py",
-      "packages/providers/groq_errors.py",
-      "packages/providers/groq_models.py",
-      "tests/providers/test_groq_adapter_f04.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -482,7 +442,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F04_EXACT5",
+  "next_safe_action": "MERGE_F04_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -596,10 +556,12 @@
     "local_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
     "upstream": "development/codex/f04-groq-adapter",
     "remote_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
-    "projection_mode": "F04_START_EXACT11_PRODUCT_EXACT5",
+    "projection_mode": "F04_FINAL_ACCEPTANCE_EXACT17",
     "validated_base_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "docs/04_test_reports/F-04_INDEPENDENT_REVIEW.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -608,8 +570,12 @@
       "docs/progress/progress-handoff-detached-digest-f04.json",
       "docs/work_orders/F-04_INVOCATION_PROMPT.md",
       "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
       "scripts/check_project_progress.py",
       "scripts/f04_progress_overlay.py",
+      "tests/providers/test_groq_adapter_f04.py",
       "tests/tooling/test_f04_progress_overlay.py"
     ],
     "product_write_scope": [
@@ -619,8 +585,8 @@
       "packages/providers/groq_models.py",
       "tests/providers/test_groq_adapter_f04.py"
     ],
-    "worktree_status": "F04_ACTIVE",
-    "commit_status": "PENDING",
+    "worktree_status": "F04_ACCEPTED",
+    "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
@@ -717,83 +683,22 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "work_package_id": "E-10",
-    "artifact_path": "docs/work_orders/E-10_WORK_INSTRUCTION.md",
-    "artifact_sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
-    "invocation_path": "docs/work_orders/E-10_INVOCATION_PROMPT.md",
-    "invocation_sha256": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D",
-    "status": "ACCEPTED",
-    "result_status": "COMPLETED",
-    "accepted": true,
-    "product_write_scope": [
-      "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
-      "packages/git_adapter/__init__.py",
-      "packages/git_adapter/models.py",
-      "packages/git_adapter/service.py",
-      "tests/git_adapter/test_git_adapter_e10.py"
-    ],
-    "worker_lease_id": "worker-lease-e10-r1-20260917-001",
-    "write_lease_id": "write-lease-e10-r1-20260917-001",
-    "independent_review": {
-      "spec": {
-        "source": "INDEPENDENT_READ_ONLY_REVIEW",
-        "verdict": "ACCEPT",
-        "critical_findings": 0,
-        "important_findings": 0,
-        "minor_findings": 0,
-        "developer_transcript_used": false,
-        "checker_sequence": 1160,
-        "checker_result": "PASS",
-        "diff_check_exit": 0,
-        "unverified": [
-          "actual Git/remote/PR/filesystem mutation",
-          "OS physical identity capture",
-          "durable multi-process authority and crash recovery",
-          "DB/provider/network"
-        ],
-        "focused": {
-          "passed": 401,
-          "skipped": 0
-        },
-        "probes": {
-          "return_alias": "CLOSED",
-          "impossible_commit_identity": "CLOSED",
-          "authorization_credentials": "CLOSED"
-        }
-      },
-      "quality": {
-        "source": "INDEPENDENT_READ_ONLY_REVIEW",
-        "verdict": "ACCEPT",
-        "critical_findings": 0,
-        "important_findings": 0,
-        "minor_findings": 0,
-        "developer_transcript_used": false,
-        "checker_sequence": 1160,
-        "checker_result": "PASS",
-        "diff_check_exit": 0,
-        "unverified": [
-          "actual Git/remote/PR/filesystem mutation",
-          "OS physical identity capture",
-          "durable multi-process authority and crash recovery",
-          "DB/provider/network"
-        ],
-        "focused": {
-          "passed": 173,
-          "skipped": 0
-        },
-        "probes": {
-          "ref_alias": "CLOSED",
-          "audit_pagination": "CLOSED",
-          "credential_variants": 32,
-          "concurrent_dispatch": "PASS"
-        }
-      }
-    }
+    "artifact_id": "WI-F-04-20260923-001",
+    "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+    "sha256": "E104284C8B4739CC5DAAA1F510F8B170D16AD76F22BE3891F248EC9EFB722B99",
+    "invocation_path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+    "invocation_sha256": "205F405934CD862A4A8AEF8D478C0762ACCDAEC0C12CCFE3949EBC6032BEF913",
+    "assigned_verification_ids": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019(GROQ)"
+    ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F04_APPROVED_SCOPE"
+      "F04_ACCEPTED",
+      "F05_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -843,18 +748,7 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-F-04-20260923-001",
-    "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
-    "sha256": "E104284C8B4739CC5DAAA1F510F8B170D16AD76F22BE3891F248EC9EFB722B99",
-    "invocation_path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
-    "invocation_sha256": "205F405934CD862A4A8AEF8D478C0762ACCDAEC0C12CCFE3949EBC6032BEF913",
-    "assigned_verification_ids": [
-      "AV-OPS-010",
-      "AV-OPS-011",
-      "AV-FLOW-019(GROQ)"
-    ]
-  },
+  "active_work_instruction": null,
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -1007,16 +901,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CD8877DD411ED7005080C6EBB5A8D0308C3579726065BC81B75426A6477768E4"
+      "sha256": "7163F4EF6991D5A84687F40C7AD0EBC4D833A00DCCC145DAE27DFBA0A0BD54C8"
     }
   },
   "next_work_package": {
     "package_id": "F-05",
-    "status": "BLOCKED_PENDING_F04_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
     "package_id": "F-05",
-    "status": "BLOCKED_PENDING_F04_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1404,8 +1298,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "E31C87C574935A9956B3D9F71AC93C2EEEDFC57DFD5252AFB8044DE4B0050DA3",
-  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F04_EXACT5",
+  "snapshot_hash": "988510B4922492DACD2E7FE6BDE42A2203D83DD6FCCD6860F4CBB8D13BC75428",
+  "runtime_next_action": "MERGE_F04_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -21790,5 +21684,79 @@
     "write_epoch": 1,
     "write_fencing_token": "f03-r1-write-fence-epoch-1-5cb5a6e36a95399b",
     "revoked_at": "2026-09-23T18:20:00+09:00"
+  },
+  "completed_f04_worker_lease": {
+    "lease_id": "worker-lease-f04-r1-20260923-001",
+    "actor_id": "developer-primary-f04-r1",
+    "subject_ref": "F-04",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T20:00:00+09:00",
+    "expires_at": "2026-09-24T08:00:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "baseline_git_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "dispatch_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "path_scope": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ],
+    "revoked_at": "2026-09-23T20:00:00+09:00"
+  },
+  "completed_f04_write_lease": {
+    "lease_id": "write-lease-f04-r1-20260923-001",
+    "actor_id": "developer-primary-f04-r1",
+    "subject_ref": "F-04",
+    "status": "REVOKED",
+    "issued_at": "2026-09-23T20:00:00+09:00",
+    "expires_at": "2026-09-24T08:00:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6",
+    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "baseline_git_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "dispatch_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "path_scope": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ],
+    "worker_lease_id": "worker-lease-f04-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6",
+    "revoked_at": "2026-09-23T20:00:00+09:00"
+  },
+  "f04_acceptance": {
+    "status": "ACCEPTED",
+    "independent_review": "ACCEPT_C0_I0_M0",
+    "focused": "45 passed",
+    "related_regression": "754 passed, 4 skipped",
+    "resolved_findings": [
+      {
+        "finding_id": "F04-CANONICAL-PROVIDER-ID-v1",
+        "severity": "IMPORTANT",
+        "count": 1,
+        "status": "RESOLVED"
+      },
+      {
+        "finding_id": "F04-GROQ-WIRE-COMPAT-v1",
+        "severity": "IMPORTANT",
+        "count": 1,
+        "status": "RESOLVED"
+      }
+    ],
+    "unverified": [
+      "LIVE_GROQ",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
   }
 }

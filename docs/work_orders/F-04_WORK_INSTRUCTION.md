@@ -8,4 +8,3 @@
 - stream의 provider final usage는 단일 terminal frame에만 존재해야 하며 terminal 이후 frame을 거부한다.
 - Developer는 제품 exact5만 수정하며 control 문서, Git commit·push·merge는 Main Agent가 담당한다.
 - 완료 조건: 제품 focused test PASS, 관련 provider 회귀 PASS, compile PASS, 실제 미검증 범위와 rollback을 completion report에 기록.
-

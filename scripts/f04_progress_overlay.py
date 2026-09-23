@@ -260,6 +260,14 @@ def finalize(root):
     root = Path(root)
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 1377 and progress.get("repository", {}).get("projection_mode") == FINAL_MODE:
+        start_ref = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=root, text=True).strip()
+        progress = json.loads(subprocess.check_output(
+            ["git", "show", f"{start_ref}:docs/progress/build-progress.json"], cwd=root
+        ))
+        ledger = json.loads(subprocess.check_output(
+            ["git", "show", f"{start_ref}:docs/progress/progress-events.json"], cwd=root
+        ))
     events = ledger["events"]
     if progress.get("event_sequence") != 1372 or events[-1].get("sequence") != 1372:
         raise RuntimeError("F04_START_PROGRESS_INVALID")
@@ -287,6 +295,20 @@ def finalize(root):
         "completed_f04_worker_lease": old_worker, "completed_f04_write_lease": old_write,
         "last_accepted_work_instruction": deepcopy(progress.get("active_work_instruction")),
         "active_work_instruction": None, "repository": _repository(FINAL_MODE),
+        "f04_acceptance": {
+            "status": "ACCEPTED",
+            "independent_review": "ACCEPT_C0_I0_M0",
+            "focused": "45 passed",
+            "related_regression": "754 passed, 4 skipped",
+            "resolved_findings": [
+                {"finding_id": "F04-CANONICAL-PROVIDER-ID-v1", "severity": "IMPORTANT",
+                 "count": 1, "status": "RESOLVED"},
+                {"finding_id": "F04-GROQ-WIRE-COMPAT-v1", "severity": "IMPORTANT",
+                 "count": 1, "status": "RESOLVED"},
+            ],
+            "unverified": ["LIVE_GROQ", "CREDENTIALS", "NETWORK", "DATABASE",
+                           "BROWSER", "WSL", "DEPLOYMENT"],
+        },
         "next_work_package": {"package_id": "F-05", "status": "READY_FOR_WORK_INSTRUCTION"},
         "next_successor_work_package": {"package_id": "F-05", "status": "READY_FOR_WORK_INSTRUCTION"},
         "next_safe_action": "MERGE_F04_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
@@ -310,9 +332,11 @@ def validate_start_git_facts(*, head, branch, upstream, remote_head, staged, dir
 
 
 def validate_final_git_facts(*, head, branch, upstream, remote_head, staged, dirty, parents, changed,
-                             base_is_ancestor, feature_paths, merge_tree_matches_feature):
+                             base_is_ancestor, feature_paths, merge_tree_matches_feature,
+                             remote_is_ancestor=False):
     expected = set(final_paths())
-    feature = (branch == BRANCH and upstream == f"development/{BRANCH}" and remote_head in {BASE, head}
+    feature = (branch == BRANCH and upstream == f"development/{BRANCH}"
+               and (remote_head in {BASE, head} or remote_is_ancestor)
                and not staged and not dirty and base_is_ancestor and set(feature_paths) == expected)
     merged = (branch == "main" and upstream == "development/main" and remote_head == head
               and not staged and not dirty and len(parents) == 2 and parents[0] == BASE
@@ -341,6 +365,9 @@ def collect_git(root):
     parents = run("show", "-s", "--format=%P", head).split()
     changed = set(filter(None, run("diff", "--name-only", f"{BASE}..{head}").splitlines()))
     base_is_ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", BASE, head], cwd=root).returncode == 0
+    remote_is_ancestor = bool(remote_head) and subprocess.run(
+        ["git", "merge-base", "--is-ancestor", remote_head, head], cwd=root
+    ).returncode == 0
     feature_paths = changed
     tree_match = False
     if branch == "main" and len(parents) == 2:
@@ -354,7 +381,8 @@ def collect_git(root):
     if mode == START_MODE:
         return validate_start_git_facts(**args)
     return validate_final_git_facts(**args, base_is_ancestor=base_is_ancestor,
-        feature_paths=feature_paths, merge_tree_matches_feature=tree_match)
+        feature_paths=feature_paths, merge_tree_matches_feature=tree_match,
+        remote_is_ancestor=remote_is_ancestor)
 
 
 def validate(root, bundle):
