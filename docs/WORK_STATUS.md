@@ -1,9 +1,12 @@
-# F-10 OPENAI adapter 시작
+# F-10 OPENAI adapter 완료
 
-- 판정: `ACTIVE`; 승인된 F-10 host-only exact5 구현을 시작한다.
-- branch/base: `codex/f10-openai-adapter` / `acbef2720228cc8d509afa3f36aca7e75731d38e`.
-- 제어 테스트 임시 경로: `D:\Project\Anvil\.codex-sandbox\.f10-control-20260924a`; F-10 overlay 테스트 동안만 사용하고 실행 직후 경로 확인 후 삭제한다.
-- 실제 OPENAI·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+- 판정: `ACCEPTED`; 독립 재검토 Critical 0/Important 0/Minor 0, 제품 exact5를 인수한다.
+- focused 36 PASS, 관련 회귀 630 PASS/4 SKIP(PG18 DSN), AST 4 OK.
+- Main 재검증: 관련 회귀와 control 합산 637 PASS/4 SKIP, exit 0; 임시 `.f10-main-final-20260924a` 정리 확인.
+- 독립 검토 재작업 1회(Important 2건 해결), 정식 `FAILURE_REPORT` 0회; control 테스트 7 PASS, 임시 `.f10-control-20260924a` 정리 확인.
+- 잔여 제약: 기존 Gateway 문자열 계약상 선행·후행 공백 출력은 `OUTPUT_TEXT_NON_CANONICAL`로 거부된다.
+- 실제 OPENAI·network·credential·DB·browser·WSL·deploy는 `NOT_EXECUTED`.
+- 다음 조치: 동일 브랜치를 PR 병합한 뒤 branch/worktree를 삭제한다.
 
 # F-09 ANTHROPIC adapter 완료
 

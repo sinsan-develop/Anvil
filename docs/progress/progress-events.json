@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1420,
+  "last_sequence": 1425,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -78532,7 +78532,130 @@
       "tests/providers/test_openai_adapter_f10.py"
     ]
   }
+},
+{
+  "sequence": 1421,
+  "event_id": "evt_f10_1421_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-10/FINAL",
+  "occurred_at": "2026-09-24T02:44:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0F48E94F69E741F8B984247DB8308EE3BE51363B7274FDCDA7F9699E9D3AB41F",
+  "details": {
+    "package_id": "F-10",
+    "product_paths": [
+      "docs/04_test_reports/F-10_COMPLETION_REPORT.md",
+      "packages/providers/openai_adapter.py",
+      "packages/providers/openai_errors.py",
+      "packages/providers/openai_models.py",
+      "tests/providers/test_openai_adapter_f10.py"
+    ],
+    "focused": "36_PASSED",
+    "related_provider_regression": "630_PASSED_4_SKIPPED_PG18_DSN",
+    "compile": "AST_4_OK"
+  }
+},
+{
+  "sequence": 1422,
+  "event_id": "evt_f10_1422_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-10/FINAL",
+  "occurred_at": "2026-09-24T02:44:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E6ED27A41AC72858D0D0D117875CDFB98F301F5C73299E50580E3B9977D049CA",
+  "details": {
+    "verdict": "ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "report": "docs/04_test_reports/F-10_INDEPENDENT_REVIEW.md"
+  }
+},
+{
+  "sequence": 1423,
+  "event_id": "evt_f10_1423_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-10/FINAL",
+  "occurred_at": "2026-09-24T02:44:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EA5E6A2098DE96A79BC4702CD53BB7AEC29887F497B0C42ED719BF1F5ECB56B3",
+  "details": {
+    "lease_id": "write-lease-f10-r1-20260924-001",
+    "reason": "F10_ACCEPTED"
+  }
+},
+{
+  "sequence": 1424,
+  "event_id": "evt_f10_1424_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-10/FINAL",
+  "occurred_at": "2026-09-24T02:44:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "FDB05EE1901D8595AE96EFDF39850930B97D7ACCA244842C0A6D6774ADEC9598",
+  "details": {
+    "lease_id": "worker-lease-f10-r1-20260924-001",
+    "reason": "F10_ACCEPTED"
+  }
+},
+{
+  "sequence": 1425,
+  "event_id": "evt_f10_1425_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-10",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-10/FINAL",
+  "occurred_at": "2026-09-24T02:44:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "B68CD571196D52B23AE61F1EB65B30BF4A18F8829CF79B288CEA55F3C30E2F46",
+  "details": {
+    "decision": "ACCEPTED",
+    "package_id": "F-10",
+    "next_work_package": "F-11",
+    "blocking_findings": 0,
+    "unverified": [
+      "LIVE_OPENAI",
+      "CREDENTIALS",
+      "NETWORK",
+      "DATABASE",
+      "BROWSER",
+      "WSL",
+      "DEPLOYMENT"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f10_1420_write_lease_issued"
+  "last_event_id": "evt_f10_1425_main_package_accepted"
 }
