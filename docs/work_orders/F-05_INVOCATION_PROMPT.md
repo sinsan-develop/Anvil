@@ -1,0 +1,1 @@
+F-05 WorkInstruction을 읽고 제품 exact5 범위로 MISTRAL adapter host-only 계약을 TDD 구현하세요. 공식 Mistral Chat/stream API 형식을 대조하고 fake transport fixture만 사용하세요. 키 부재·무효로 인한 실제 연동 실패는 제품 결함으로 세지 말고 미검증으로 기록하세요. 완료 후 정확한 명령·종료 코드·결과, 변경 파일, 잔여 위험과 rollback을 보고하고 control 파일 수정·Git commit·push·merge는 하지 마세요.

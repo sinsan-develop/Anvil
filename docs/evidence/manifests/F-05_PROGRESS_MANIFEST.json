@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-05",
+  "event_sequence": 1380,
+  "accepted": false,
+  "projection_mode": "F05_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "10c11d673f2195df19982b85e78b48f7220af6e0",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-05_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f05.json",
+    "docs/work_orders/F-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f05_progress_overlay.py",
+    "tests/tooling/test_f05_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-05_COMPLETION_REPORT.md",
+    "packages/providers/mistral_adapter.py",
+    "packages/providers/mistral_errors.py",
+    "packages/providers/mistral_models.py",
+    "tests/providers/test_mistral_adapter_f05.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 434152,
+      "sha256": "289C8BDC8B10BA381997413190D04437712A39FD327064DDF7FE601CAA27F4C6"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4057962,
+      "sha256": "AE8C2DA2F1AC25CBD4A7D15445C9E37A1836011734EB179F15C3B653E6DF7559"
+    },
+    {
+      "path": "docs/work_orders/F-05_INVOCATION_PROMPT.md",
+      "bytes": 506,
+      "sha256": "D997C82FF5968BF86C708FB3EC1DF161A2B37EEA69CEC665FE6F1A690734CEFC"
+    },
+    {
+      "path": "docs/work_orders/F-05_WORK_INSTRUCTION.md",
+      "bytes": 1731,
+      "sha256": "09E1A9799FCB7AD6DA7B57B1F8C850EA457B031C2070DCE6546CF3E68C639266"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4721279,
+      "sha256": "1DA83D2CAB324E81C8A572710E5658124FAC99A525FFCBDA797F279D8120AE81"
+    },
+    {
+      "path": "scripts/f05_progress_overlay.py",
+      "bytes": 22473,
+      "sha256": "62CAFFCD44D713AF9534151EF40D8C44BACC83C20CAC50B30C7EB11C148EF8B4"
+    },
+    {
+      "path": "tests/tooling/test_f05_progress_overlay.py",
+      "bytes": 3287,
+      "sha256": "E81726D07560D53D831AE3283D58D806AB1232F8EE12C60922CBB7FBD5EAC385"
+    }
+  ],
+  "runtime_boundary": {
+    "live_mistral": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}
