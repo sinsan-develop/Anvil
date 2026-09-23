@@ -1,0 +1,2 @@
+F-04 WorkInstruction을 읽고 제품 exact5 범위로 GROQ adapter host-only 계약을 TDD 구현하세요. 실제 Provider/network/credential 호출은 하지 말고 fake transport fixture만 사용하세요. 완료 후 정확한 명령·종료 코드·결과와 미검증 범위를 보고하고 control 파일 수정·Git commit·push·merge는 하지 마세요.
+

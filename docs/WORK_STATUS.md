@@ -1,3 +1,9 @@
+# F-04 GROQ adapter 시작
+
+- 판정: `ACTIVE`; 승인된 F-04 host-only exact5 구현을 시작한다.
+- branch/base: `codex/f04-groq-adapter` / `b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918`.
+- 실제 GROQ·network·credential·DB·browser·WSL·deploy는 실행하지 않는다.
+
 # F-03 merged-main reconciliation / 2026-09-23
 
 - 판정: `IN_PROGRESS`; PR #18 merged main `950bc8375fb19a76788f24e492112d68043ed596`의 structural checker를 추가한다.

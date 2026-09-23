@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1369,
+  "last_sequence": 1372,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -77247,7 +77247,85 @@
     "scope": "MERGED_MAIN_GIT_PROJECTION_AND_APPEND_ONLY_EVIDENCE_ONLY",
     "product_behavior_changed": false
   }
+},
+{
+  "sequence": 1370,
+  "event_id": "evt_f04_1370_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-04",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-04/START",
+  "occurred_at": "2026-09-23T20:00:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "12213345745EF55041F326257C9D2C693E6E039D69CB4A379F340C022BF59E62",
+  "details": {
+    "package_id": "F-04",
+    "branch": "codex/f04-groq-adapter",
+    "base_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "work_instruction": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ]
+  }
+},
+{
+  "sequence": 1371,
+  "event_id": "evt_f04_1371_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-04",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-04/START",
+  "occurred_at": "2026-09-23T20:00:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "577C6F69DEB283149B379645A92AECAD794F395C2FB04322DBF3BEEE42144051",
+  "details": {
+    "lease_id": "worker-lease-f04-r1-20260923-001",
+    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "actor_id": "developer-primary-f04-r1"
+  }
+},
+{
+  "sequence": 1372,
+  "event_id": "evt_f04_1372_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-04",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-04/START",
+  "occurred_at": "2026-09-23T20:00:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "7EFDFF73F474E09F1EBB415E0E8641FAF23E62123BC59890277EE9F8F7A87DA4",
+  "details": {
+    "lease_id": "write-lease-f04-r1-20260923-001",
+    "worker_lease_id": "worker-lease-f04-r1-20260923-001",
+    "write_fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6",
+    "path_scope": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f03_1369_repository_reconciled"
+  "last_event_id": "evt_f04_1372_write_lease_issued"
 }

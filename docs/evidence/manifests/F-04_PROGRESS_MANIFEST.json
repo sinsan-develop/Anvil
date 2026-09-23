@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-04",
+  "event_sequence": 1372,
+  "accepted": false,
+  "projection_mode": "F04_START_EXACT11_PRODUCT_EXACT5",
+  "validated_base_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f04.json",
+    "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f04_progress_overlay.py",
+    "tests/tooling/test_f04_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+    "packages/providers/groq_adapter.py",
+    "packages/providers/groq_errors.py",
+    "packages/providers/groq_models.py",
+    "tests/providers/test_groq_adapter_f04.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 433877,
+      "sha256": "0B1D0D25431717EAFBF0CAE8A4DE91680CC07A2F5B90C5C8FA468E42D20C0CCC"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4051360,
+      "sha256": "CD8877DD411ED7005080C6EBB5A8D0308C3579726065BC81B75426A6477768E4"
+    },
+    {
+      "path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+      "bytes": 367,
+      "sha256": "205F405934CD862A4A8AEF8D478C0762ACCDAEC0C12CCFE3949EBC6032BEF913"
+    },
+    {
+      "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+      "bytes": 1240,
+      "sha256": "E104284C8B4739CC5DAAA1F510F8B170D16AD76F22BE3891F248EC9EFB722B99"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4720469,
+      "sha256": "FC45C2F37A2C3EB293AA94D2B868DD7008DF5B087F7FB8D02ACC5B81B46F9E83"
+    },
+    {
+      "path": "scripts/f04_progress_overlay.py",
+      "bytes": 21184,
+      "sha256": "AF436139061AB6F1B59E3E3737CFD9992B2FC92C7A54368D0E941D05F397014A"
+    },
+    {
+      "path": "tests/tooling/test_f04_progress_overlay.py",
+      "bytes": 2775,
+      "sha256": "C1F5B9628ABFAB34ADF474732C827CC0DD3E82DCBA3E1B10EEB6350E36B5A8A2"
+    }
+  ],
+  "runtime_boundary": {
+    "live_groq": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "credentials": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "independent_review": null,
+  "self_reference": false
+}

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f03-merged-main-seq1369",
-  "event_sequence": 1369,
-  "updated_at": "2026-09-23T18:20:00+09:00",
-  "last_event_id": "evt_f03_1369_repository_reconciled",
+  "snapshot_id": "snapshot-f04-start-seq1372",
+  "event_sequence": 1372,
+  "updated_at": "2026-09-23T20:00:00+09:00",
+  "last_event_id": "evt_f04_1372_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,8 +91,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-03",
-  "status": "ACCEPTED",
+  "current_work_package": "F-04",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -186,8 +186,30 @@
     "C-30R5",
     "F-03"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f04-r1",
+  "write_lease": {
+    "lease_id": "write-lease-f04-r1-20260923-001",
+    "actor_id": "developer-primary-f04-r1",
+    "subject_ref": "F-04",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T20:00:00+09:00",
+    "expires_at": "2026-09-24T08:00:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6",
+    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "baseline_git_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "dispatch_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "path_scope": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ],
+    "worker_lease_id": "worker-lease-f04-r1-20260923-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f04-r1-write-fence-epoch-1-70d0ab2b9cd175f6"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -219,7 +241,26 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f04-r1-20260923-001",
+    "actor_id": "developer-primary-f04-r1",
+    "subject_ref": "F-04",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-23T20:00:00+09:00",
+    "expires_at": "2026-09-24T08:00:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "execution_fencing_token": "f04-r1-execution-fence-epoch-1-b53a53f9611e8fae",
+    "baseline_git_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "dispatch_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "path_scope": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -441,7 +482,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F03_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
+  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F04_EXACT5",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -551,31 +592,36 @@
     }
   },
   "repository": {
-    "branch": "codex/f03-merged-main-reconciliation",
-    "local_head": "950bc8375fb19a76788f24e492112d68043ed596",
-    "upstream": "development/codex/f03-merged-main-reconciliation",
-    "remote_head": "950bc8375fb19a76788f24e492112d68043ed596",
-    "projection_mode": "F03_MERGED_MAIN_RECONCILIATION_EXACT10",
-    "validated_base_commit": "950bc8375fb19a76788f24e492112d68043ed596",
-    "head_relation": "PRECOMMIT_OR_DIRECT_CHILD_OR_STRUCTURAL_MERGED_MAIN",
+    "branch": "codex/f04-groq-adapter",
+    "local_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "upstream": "development/codex/f04-groq-adapter",
+    "remote_head": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "projection_mode": "F04_START_EXACT11_PRODUCT_EXACT5",
+    "validated_base_commit": "b53a53f9611e8fae70d0ab2b9cd175f6ab2e3918",
+    "head_relation": "BASE_OR_FEATURE_DESCENDANT_OR_STRUCTURAL_MERGED_MAIN",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-03_MERGED_MAIN_RECONCILIATION.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-03_START_MANIFEST.json",
+      "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f03-start.json",
+      "docs/progress/progress-handoff-detached-digest-f04.json",
+      "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-04_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "scripts/f03_progress_overlay.py",
-      "tests/tooling/test_f03_progress_overlay.py"
+      "scripts/f04_progress_overlay.py",
+      "tests/tooling/test_f04_progress_overlay.py"
     ],
-    "push_status": "NOT_EXECUTED",
-    "remote_evidence": "LIVE_MAIN_BASE_VERIFIED",
-    "worktree_status": "UNSTAGED_F03_MERGED_MAIN_RECONCILIATION_EXACT9",
-    "control_head": "950bc8375fb19a76788f24e492112d68043ed596",
-    "product_write_scope": [],
-    "commit_status": "NOT_EXECUTED"
+    "product_write_scope": [
+      "docs/04_test_reports/F-04_COMPLETION_REPORT.md",
+      "packages/providers/groq_adapter.py",
+      "packages/providers/groq_errors.py",
+      "packages/providers/groq_models.py",
+      "tests/providers/test_groq_adapter_f04.py"
+    ],
+    "worktree_status": "F04_ACTIVE",
+    "commit_status": "PENDING",
+    "push_status": "BRANCH_PUBLISHED"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -747,7 +793,6 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F03_ACCEPTED",
       "F04_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
@@ -798,7 +843,18 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-F-04-20260923-001",
+    "path": "docs/work_orders/F-04_WORK_INSTRUCTION.md",
+    "sha256": "E104284C8B4739CC5DAAA1F510F8B170D16AD76F22BE3891F248EC9EFB722B99",
+    "invocation_path": "docs/work_orders/F-04_INVOCATION_PROMPT.md",
+    "invocation_sha256": "205F405934CD862A4A8AEF8D478C0762ACCDAEC0C12CCFE3949EBC6032BEF913",
+    "assigned_verification_ids": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019(GROQ)"
+    ]
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -928,9 +984,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-03",
-    "path": "docs/progress/progress-handoff-detached-digest-f03-start.json",
-    "manifest_path": "docs/evidence/manifests/F-03_START_MANIFEST.json"
+    "package_id": "F-04",
+    "path": "docs/progress/progress-handoff-detached-digest-f04.json",
+    "manifest_path": "docs/evidence/manifests/F-04_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -951,16 +1007,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "29412179834DF105E056EE2683732A89306AEC901723E3F732367F20875D4B22"
+      "sha256": "CD8877DD411ED7005080C6EBB5A8D0308C3579726065BC81B75426A6477768E4"
     }
   },
   "next_work_package": {
-    "package_id": "F-04",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-05",
+    "status": "BLOCKED_PENDING_F04_ACCEPTANCE"
   },
   "next_successor_work_package": {
-    "package_id": "F-04",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "F-05",
+    "status": "BLOCKED_PENDING_F04_ACCEPTANCE"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1348,8 +1404,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "42EACBA3F52D7BA7D34B88404C6F6CAF38A6DD47E02D38D459E22659377F503F",
-  "runtime_next_action": "F03_MERGED_MAIN_RECONCILIATION_COMMIT_PUSH",
+  "snapshot_hash": "E31C87C574935A9956B3D9F71AC93C2EEEDFC57DFD5252AFB8044DE4B0050DA3",
+  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F04_EXACT5",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2961,7 +3017,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-23T18:20:00+09:00",
+  "recorded_at": "2026-09-23T20:00:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
