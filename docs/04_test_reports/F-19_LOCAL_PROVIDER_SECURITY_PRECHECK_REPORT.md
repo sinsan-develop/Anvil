@@ -22,7 +22,7 @@
 | WSL-server 격리 venv에 `httpx 0.28.1` 추가, 보안 수정 전 게시 commit `8066586` | 523 PASS·2 FAIL, exit 1. 실패는 기존 IPv4-mapped loopback/metadata 차단 테스트 |
 | WSL-server 같은 격리 환경, 보안 수정 후 게시 commit `609f071` | 525 PASS·1 upstream deprecation warning, exit 0 / 3.53초 |
 | Windows 잠긴 격리 환경 전체 pytest `--maxfail=1` | `tests/deploy/test_anvil_public_preview_contract.py`의 `yaml` 미설치로 collection ERROR 1건, exit 1. 전체 suite PASS 아님 |
-| `scripts/check_project_progress.py` on 후속 브랜치 | `F18_LOCAL_START_GIT_INVALID`, exit 1. F18 전용 branch/merge gate가 후속 maintenance 브랜치를 허용하지 않음 |
+| `scripts/check_project_progress.py` on 후속 브랜치 | 코드 checkpoint에서는 `F18_LOCAL_START_GIT_INVALID`, exit 1. 작업현황·신규 보고서 기록 후에는 F18 frozen manifest와 raw checksum이 달라 `F18_LOCAL_RAW_CHECKSUM_INVALID`도 함께 발생. F18 전용 branch/merge gate가 후속 maintenance 브랜치를 허용하지 않음 |
 
 WSL-server의 격리 checkout은 삭제 전 realpath가 exact 경로와 일치하고 symlink가 아니며 owner `daon:daon`, mode `0700`, HEAD `609f071`임을 확인했다. 유일한 untracked `.venv/`를 포함한 그 exact checkout만 제거했고 경로 잔류 0을 확인했다. 기존 DB·Docker·브라우저·서비스와 `ysna-server`는 변경하지 않았다. Windows 격리 `.f19-uv-venv`도 exact 경로 비-reparse 확인 후 제거했다.
 
