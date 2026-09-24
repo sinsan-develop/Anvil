@@ -2499,6 +2499,16 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - CDP fault-injection UI 증거이며 실제 서버 생성400/Provider/production/PG18 증거가 아니다.
 - 모든 disposable/Chrome/profile/tunnel residue0, 기존 anvil-web tuple/healthy 불변.
 - 다음 행동은 C30R3 독립 재검토이며 통과 전 formal acceptance를 기록하지 않는다.
+
+## F-17 WSL QA 생성 전 자원 계획 — 2026-09-24
+
+- 판정: F-17 제품 코드 `509fb22`(선행 `d39432b`) 기준 Windows 회귀 83 PASS/2 SKIP(exit 0); 실제 WSL PG15/PG18·HTTPS/browser·backup/restore는 `NOT_EXECUTED`. 담당 Main, 제품 오류 0, 환경 오류 1(Windows 기본 pytest temp ACL; 별도 basetemp로 재실행 PASS).
+- WSL 접근은 `ssh WSL-server`만 사용한다. 읽기 전용 확인에서 기존 `local-postgres`(PG15), 기존 `anvil` DB/`anvil_app` role, 기존 `anvil-web`은 존재한다. 아래 신규 F-17 대상은 생성 전 모두 부재, 포트 32769/8300/8301/8443은 비어 있다. 기존 자원·전역 HBA/bind/network/firewall에는 변경을 가하지 않는다.
+- exact Git checkout `/srv/anvil-wsl/f17-rc`(공개 tag/commit의 clean detached 상태), QA 임시 경로 `/srv/anvil-wsl/f17-rc-qa`. 생성 전 경로 부재 확인. QA 안에 합성 비밀·TLS cert/key·브라우저 프로필·venv·시험 산출물을 0700/0600으로 보관하고 완료 후 exact path 확인 후 제거한다. Git checkout은 공개 ref로 복구 가능하다.
+- PG15: 기존 `local-postgres` 서비스 내부에 **새로운** `anvil_f17_pg15_d39432b` DB 및 `anvil_f17_migrator_d39432b`, `anvil_f17_app_d39432b` role만 생성한다. 현재 부재 확인 완료. migrator가 해당 DB를 소유하고 migration을 실행하며 app은 비-superuser/non-createdb/non-createrole, 해당 DB DML만 수행한다. 테스트 후 해당 DB와 두 role을 정확히 확인해 제거한다. 기존 `anvil` DB/role은 건드리지 않는다.
+- PG18: 기존에 로컬 존재하는 `pgvector/pgvector:0.8.2-pg18` image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c`를 고정해 `anvil-f17-pg18-rc` Compose project로 postgres/web/api/worker, labeled network 두 개, named volume 0, PGDATA tmpfs, DB host 127.0.0.1:32769, Web host 127.0.0.1:8300만 생성한다. 완료 후 이 project/label/이미지·volume 수를 확인해 down하고 잔류 0을 확인한다.
+- PG15 API는 exact F17 image의 전용 `anvil-f17-pg15-api-d39432b` host-network container(127.0.0.1:8301), HTTPS QA proxy는 `anvil-f17-qa-tls-d39432b`(127.0.0.1:8443)로 제한한다. PG15와 PG18 시험은 순차로 수행한다. image tag는 `anvil-f17-runtime:d39432b`, `anvil-f17-web:d39432b`로 고정하고 exact image ID를 기록한 후 생성된 tag만 제거한다. `anvil-f14-pg18-d39432b` 별도 backup/rollback container가 필요하면 F17 Compose를 내린 뒤 F14 guard label/tmpfs/loopback 조건으로 일시 생성·제거한다.
+- 모든 테스트는 합성 actor/project/run, 임시 DB와 same-origin HTTPS만 사용한다. 실 Provider/계정/운영 서버/외부 배포는 제외한다. 자원 생성 전 exact 공개 commit과 image, role/port/path 부재를 재확인한다. 생성·시험·정리 결과와 미검증 범위는 `F-17_WSL_TEST_REPORT.md`에 누적 기록한다.
 - 독립 재검토 결과 spec/quality 각각 C0/I0/M0 PASS. seq1323 Main acceptance는
   C30R3 fixture formal 범위만 적용한다. active agent/worker/write lease0.
 - C30 전체 acceptance는 보류: canonical progress checker의 기존 C03 embedded SyntaxError가
