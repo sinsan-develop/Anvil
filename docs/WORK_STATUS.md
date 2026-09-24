@@ -1,3 +1,25 @@
+# F-15 Local 운영 셸·SSH tunnel 인수
+
+- 판정: `ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL`; 제품 HEAD 1d1fe19, Windows 관련 49 PASS, Web Node 3·기존 Node 3 PASS, lint/typecheck/build PASS. Main 통합 최초 Nginx tmpfs chown 실패 1회는 R2 USER 101:101 수정 후 실제 Web Up/HTTP 200으로 재검증했다. 정식 Developer FAILURE_REPORT 0회.
+- WSL-server 격리 PG15 QA DB/role migration 0016, Git exact SHA Compose Web/API/Worker Up, API ready 200, Worker ready, Playwright 1920/390 브라우저 same-origin Network 4건·내부 직접주소 0·secret 0·오류 0. WSL Compose의 host-gateway DB 직결은 SSH tunnel 보안 합격 증거로 사용하지 않는다.
+- 별도 Windows Local 실측은 WSL-server SSH loopback tunnel 127.0.0.1:15432를 통해 전용 DB/role migration 0016, Worker --check 및 장기 프로세스 ready, API 8301 ready, Vite Web 8300 same-origin /api ready 200을 확인했다. Windows API fixture 404; 개발 Vite의 일반 SPA fallback은 해당 경로 200이므로 운영 fixture 차단 증거는 WSL Nginx 404만 사용한다.
+- 초기 WSL QA DB/role/Compose/이미지/브라우저 산출물과 이후 Windows Web/API/Worker/SSH 프로세스·전용 DB/role/credential/log를 정확히 정리해 잔류 0. 기존 shared PostgreSQL 0.0.0.0:5432 바인딩은 선행 위험이며 F-15에서 변경하지 않았다. 인증 세션의 through-Nginx mutation, screenshot 픽셀 육안 검토, WSL Compose DB tunnel, shared PG 외부 방화벽은 미검증이다. F-16 staging, F-17 PG18 RC, F-18 ysna도 후속이다.
+- Main이 두 lease를 회수. 다음: F-15 PR 병합·merged-main smoke·branch/worktree 정리 후 F-16.
+
+# F-15 공통 운영 셸·Local stack 착수
+
+- 2026-09-24 Main 중간 판정: `ACTIVE`, 제품 HEAD `1d1fe19f7ba6d5492b3555ad5c4f809a6c60a7cd` push 완료. Main Windows 관련 pytest 47 PASS, Web Node 3 PASS·기존 Node 3 PASS, lint/typecheck/build PASS, G-05 PASS. 정식 Developer `FAILURE_REPORT` 0회. 제품 Web 첫 Docker 기동은 Nginx tmpfs chown 오류 1회였고 R2 `USER 101:101` 후 Web 재빌드·기동 PASS.
+- WSL-server SSH-only 격리 QA: 기존 `local-postgres` 안에 F-15 전용 최소권한 DB/role `anvil_f15_qa_40b640a7`을 생성하고 migration head `0016_operations_recovery` 확인. Git exact SHA Web/API/Worker Compose 기동, HTTP root 200·same-origin `/api/health/ready` 200·fixture 404, Worker DB head ready. 기존 `anvil` DB는 read-only head `0013_task_bootstrap_authority`만 확인하고 변경하지 않았다.
+- WSL 임시 headless Chromium 브라우저 1920×1080 및 390×844: root navigation 200, 메뉴 11개, Dashboard와 sidebar 펼침/접힘, 모바일 수평 overflow 0. Network 4건 중 외부 origin 0, 내부 API 직접주소 0, 응답/요청 secret 노출 0, page error 0, CSP `connect-src 'self'` 확인. bad Host through Nginx 403; 익명 bad Origin/CSRF mutation은 인증 401로 중단됨. 승인된 synthetic principal TestClient에서는 bad Host/Origin/CSRF 403·owner side effect 0 확인. 실제 인증 세션을 통한 Nginx mutation 보안은 미검증.
+- 선택적 스크린샷의 Windows 반출은 실행 플랫폼 안전 심사에서 차단되어 우회하지 않았고 픽셀 육안 검토는 미검증이다. 필수 F-15 E-NET/동작 증거와 분리한다. Windows Local Web/API/Worker 전체 프로세스 동시 기동 및 SSH tunnel 실측, 기존 PostgreSQL 5432 전역 바인딩의 외부 접근제어는 아직 검증하지 못했다. F-16 staging·PG18 RC·ysna·메뉴 기능은 범위 밖이다.
+- QA 종료 후 F-15 전용 Compose 컨테이너 3개·network·image 3개, 전용 DB/role, Git clone, credential, Playwright 설치/cache, screenshot/profile을 정확한 대상 검사 후 제거했고 F-15 이름 잔류 0을 확인했다. 기존 PostgreSQL 컨테이너와 타 프로젝트 자원은 유지했다. 다음: Windows 로컬 프로세스/SSH tunnel과 기존 DB 접근제어의 F-15 수용 경계를 확인한 뒤 Main 독립 판정·lease 회수·PR 통합. 신규 branch는 만들지 않는다.
+- 내부 통제 보완: F-15 exact19는 제품 write 허용 상한이며 19개 파일의 형식적 수정을 요구하지 않는다. G-05는 통제 exact11 변경을 필수로 하고 실제 제품 변경은 exact19 부분집합으로 검증한다. 기능·요구사항·중요 위험·lease 경로를 넓히지 않았고, 신규 checker 테스트 RED→GREEN 3 PASS. 기존 F-15 작업지시·승인 hash는 불변이다.
+- 판정: ACTIVE. F-14 PR #30 merged main 41e7e06, feature ancestry/tree와 merged-main G-05·74 PASS/17 SKIP, branch/worktree 정리 확인.
+- 담당: Main 어울 통제, developer-primary-f15-r1 제품 exact19 write lease. 기준 문서 hash 일치, F-15 branch clean에서 시작. 정식 FAILURE_REPORT 0회.
+- 설계 D4 React/TypeScript/Vite 운영 셸은 신규 구현; 기존 정적 Node shell과 fixture는 회귀 보존. Local Web/API/Worker와 WSL-server PG15 전용 DB/role, Docker/브라우저 실제 검증은 아직 NOT_EXECUTED.
+- 계획 QA 자원: WSL-server SSH-only, F-15 이름의 격리 PG15 DB/role·container·브라우저 profile을 필요 시 생성하고 F-15 검증 종료 후 정확한 대상만 삭제·잔류 0 확인. 기존 local-postgres/타 프로젝트·ysna 미변경.
+- 다음: G-05 start gate 후 developer TDD, Main 독립 검토, exact Git SHA WSL 격리 QA와 실제 브라우저 Network 검증. F-16 staging/PG18 RC/ysna는 별도.
+
 # F-14 PostgreSQL 15/18 격리 복구 인수
 
 - 판정: `ACCEPTED_ISOLATED_PG15_PG18_REHEARSAL`; 제품 checkpoint 82fb713 exact12, 독립 SPEC PASS / QUALITY APPROVED, Critical 0/Important 0.

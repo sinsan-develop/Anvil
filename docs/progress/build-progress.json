@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f14-final-seq1464",
-  "event_sequence": 1464,
-  "updated_at": "2026-09-24T09:53:00+09:00",
-  "last_event_id": "evt_f14_1464_main_package_accepted",
+  "snapshot_id": "snapshot-f15-final-seq1473",
+  "event_sequence": 1473,
+  "updated_at": "2026-09-24T11:31:00+09:00",
+  "last_event_id": "evt_f15_1473_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,7 +91,7 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-14",
+  "current_work_package": "F-15",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -195,7 +195,8 @@
     "F-11",
     "F-12",
     "F-13",
-    "F-14"
+    "F-14",
+    "F-15"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -452,7 +453,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F14_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "MERGE_F15_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -562,56 +563,69 @@
     }
   },
   "repository": {
-    "branch": "codex/f14-postgres-recovery",
-    "local_head": "1584523ccca71bae4b3be01f592c7eb79c11935f",
-    "upstream": "development/codex/f14-postgres-recovery",
-    "remote_head": "1584523ccca71bae4b3be01f592c7eb79c11935f",
-    "projection_mode": "F14_FINAL_ACCEPTANCE_EXACT23",
-    "validated_base_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "branch": "codex/f15-common-shell-local-stack",
+    "local_head": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+    "upstream": "development/codex/f15-common-shell-local-stack",
+    "remote_head": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+    "projection_mode": "F15_FINAL_ACCEPTANCE_EXACT29",
+    "validated_base_commit": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "apps/api/anvil_api/asgi.py",
+      "apps/web/console/index.html",
+      "apps/web/package.json",
+      "apps/web/src/console/App.tsx",
+      "apps/web/src/console/app-shell.css",
+      "apps/web/src/console/main.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "apps/web/tsconfig.json",
+      "apps/web/vite.config.ts",
+      "apps/worker/anvil_worker/main.py",
+      "deploy/local/Dockerfile.runtime",
+      "deploy/local/nginx.conf",
+      "docker-compose.local.yml",
+      "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-14_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-15_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f14.json",
-      "docs/work_orders/F-14_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-14_WORK_INSTRUCTION.md",
-      "migrations/versions/0016_operations_recovery.py",
-      "packages/persistence/operations_repository.py",
-      "packages/recovery/__init__.py",
-      "packages/recovery/disaster.py",
-      "packages/recovery/retention.py",
-      "packages/recovery/runbook.py",
+      "docs/progress/progress-handoff-detached-digest-f15.json",
+      "docs/work_orders/F-15_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-15_WORK_INSTRUCTION.md",
+      "package-lock.json",
+      "package.json",
       "scripts/check_project_progress.py",
-      "scripts/f14_progress_overlay.py",
-      "tests/integration/test_f14_postgres_compat.py",
-      "tests/persistence/test_f14_operations_repository.py",
-      "tests/recovery/test_f14_disaster.py",
-      "tests/recovery/test_f14_retention.py",
-      "tests/recovery/test_f14_runbook.py",
-      "tests/tooling/test_f14_progress_overlay.py"
+      "scripts/f15_progress_overlay.py",
+      "tests/api/test_f15_web_security.py",
+      "tests/integration/test_f15_local_stack.py",
+      "tests/tooling/test_f15_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
-      "migrations/versions/0016_operations_recovery.py",
-      "packages/persistence/operations_repository.py",
-      "packages/recovery/__init__.py",
-      "packages/recovery/disaster.py",
-      "packages/recovery/retention.py",
-      "packages/recovery/runbook.py",
-      "tests/integration/test_f14_postgres_compat.py",
-      "tests/persistence/test_f14_operations_repository.py",
-      "tests/recovery/test_f14_disaster.py",
-      "tests/recovery/test_f14_retention.py",
-      "tests/recovery/test_f14_runbook.py"
+      "apps/api/anvil_api/asgi.py",
+      "apps/web/console/index.html",
+      "apps/web/package.json",
+      "apps/web/src/console/App.tsx",
+      "apps/web/src/console/app-shell.css",
+      "apps/web/src/console/main.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "apps/web/tsconfig.json",
+      "apps/web/vite.config.ts",
+      "apps/worker/anvil_worker/main.py",
+      "deploy/local/Dockerfile.runtime",
+      "deploy/local/nginx.conf",
+      "docker-compose.local.yml",
+      "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
+      "package-lock.json",
+      "package.json",
+      "packages/api/fastapi_app.py",
+      "tests/api/test_f15_web_security.py",
+      "tests/integration/test_f15_local_stack.py"
     ],
-    "worktree_status": "F14_ACCEPTED_PENDING_MERGE",
+    "worktree_status": "F15_ACCEPTED_PENDING_MERGE",
     "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED",
-    "product_head": "82fb71310025c547bae7be05b7701f8aea0666e1"
+    "product_head": "1d1fe19f7ba6d5492b3555ad5c4f809a6c60a7cd"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -707,23 +721,23 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-14-20260924-001",
-    "path": "docs/work_orders/F-14_WORK_INSTRUCTION.md",
-    "sha256": "7259563EA1307354AF174EC94B1239AEDA1308A3D977E668A4861C5B21172445",
-    "invocation_path": "docs/work_orders/F-14_INVOCATION_PROMPT.md",
-    "invocation_sha256": "191C70A362C45B2788B0CB47341E54289F210B5310F26418D3EEA19F1BBBC84E",
+    "artifact_id": "WI-F-15-20260924-001",
+    "path": "docs/work_orders/F-15_WORK_INSTRUCTION.md",
+    "sha256": "F4D757797F35F336CA33817DBA4B6449835DC368839818D4D742CD7701E6181C",
+    "invocation_path": "docs/work_orders/F-15_INVOCATION_PROMPT.md",
+    "invocation_sha256": "826F93E05B5932767A43C1523972024C49614D17823BF8F802B46072F602475A",
     "assigned_verification_ids": [
-      "AV-OPS-007",
-      "AV-OPS-008",
-      "AV-OPS-009",
-      "AV-OPS-022"
+      "AV-OPS-014",
+      "AV-SAFE-029",
+      "AV-UI-010",
+      "AV-UI-012"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F14_ISOLATED_CONTRACT_ACCEPTED",
-      "F14_APPROVED_SCOPE"
+      "F15_LOCAL_CONTRACT_ACCEPTED",
+      "F15_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -903,9 +917,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-14",
-    "path": "docs/progress/progress-handoff-detached-digest-f14.json",
-    "manifest_path": "docs/evidence/manifests/F-14_PROGRESS_MANIFEST.json"
+    "package_id": "F-15",
+    "path": "docs/progress/progress-handoff-detached-digest-f15.json",
+    "manifest_path": "docs/evidence/manifests/F-15_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -926,16 +940,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "E45F6A7B7B228BDB8365AF3D2B587389F54F51DF84CF6CF7F6E76B27C9F8F823"
+      "sha256": "4EF798DBEA868C70E669052F3A5A810CDBAEEBA325FF653D4F67607230358727"
     }
   },
   "next_work_package": {
-    "package_id": "F-15",
-    "status": "READY_AFTER_F14_MERGE_CLEANUP"
+    "package_id": "F-16",
+    "status": "READY_AFTER_F15_MERGE_CLEANUP"
   },
   "next_successor_work_package": {
-    "package_id": "F-15",
-    "status": "READY_AFTER_F14_MERGE_CLEANUP"
+    "package_id": "F-16",
+    "status": "READY_AFTER_F15_MERGE_CLEANUP"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1323,8 +1337,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "B4FCF7DEEA79391335C8D940386D6AC1B530708310D825E299FF509CA9A0EDCC",
-  "runtime_next_action": "MERGE_F14_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "B6E5644AF30082898AC497B9C554B5D589ED74E83FED1122B944EF8D1DF66B86",
+  "runtime_next_action": "MERGE_F15_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2936,7 +2950,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T09:53:00+09:00",
+  "recorded_at": "2026-09-24T11:31:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22494,6 +22508,97 @@
       "WSL_STAGING_DEPLOYMENT",
       "PG18_FORMAL_RC",
       "YSNA_PRODUCTION"
+    ]
+  },
+  "completed_f15_worker_lease": {
+    "lease_id": "worker-lease-f15-r1-20260924-001",
+    "actor_id": "developer-primary-f15-r1",
+    "subject_ref": "F-15",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T10:18:00+09:00",
+    "expires_at": "2026-09-24T22:18:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f15-r1-execution-fence-epoch-1-41e7e06cb0f4e76a",
+    "execution_fencing_token": "f15-r1-execution-fence-epoch-1-41e7e06cb0f4e76a",
+    "baseline_git_commit": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+    "dispatch_head": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+    "path_scope": [
+      "apps/api/anvil_api/asgi.py",
+      "apps/web/console/index.html",
+      "apps/web/package.json",
+      "apps/web/src/console/App.tsx",
+      "apps/web/src/console/app-shell.css",
+      "apps/web/src/console/main.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "apps/web/tsconfig.json",
+      "apps/web/vite.config.ts",
+      "apps/worker/anvil_worker/main.py",
+      "deploy/local/Dockerfile.runtime",
+      "deploy/local/nginx.conf",
+      "docker-compose.local.yml",
+      "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
+      "package-lock.json",
+      "package.json",
+      "packages/api/fastapi_app.py",
+      "tests/api/test_f15_web_security.py",
+      "tests/integration/test_f15_local_stack.py"
+    ],
+    "revoked_at": "2026-09-24T11:31:00+09:00"
+  },
+  "completed_f15_write_lease": {
+    "lease_id": "write-lease-f15-r1-20260924-001",
+    "actor_id": "developer-primary-f15-r1",
+    "subject_ref": "F-15",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T10:18:00+09:00",
+    "expires_at": "2026-09-24T22:18:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f15-r1-write-fence-epoch-1-d8be31cab24120a4",
+    "execution_fencing_token": "f15-r1-execution-fence-epoch-1-41e7e06cb0f4e76a",
+    "baseline_git_commit": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+    "dispatch_head": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+    "path_scope": [
+      "apps/api/anvil_api/asgi.py",
+      "apps/web/console/index.html",
+      "apps/web/package.json",
+      "apps/web/src/console/App.tsx",
+      "apps/web/src/console/app-shell.css",
+      "apps/web/src/console/main.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "apps/web/tsconfig.json",
+      "apps/web/vite.config.ts",
+      "apps/worker/anvil_worker/main.py",
+      "deploy/local/Dockerfile.runtime",
+      "deploy/local/nginx.conf",
+      "docker-compose.local.yml",
+      "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
+      "package-lock.json",
+      "package.json",
+      "packages/api/fastapi_app.py",
+      "tests/api/test_f15_web_security.py",
+      "tests/integration/test_f15_local_stack.py"
+    ],
+    "worker_lease_id": "worker-lease-f15-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f15-r1-write-fence-epoch-1-d8be31cab24120a4",
+    "revoked_at": "2026-09-24T11:31:00+09:00"
+  },
+  "f15_acceptance": {
+    "status": "ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL",
+    "product_head": "1d1fe19f7ba6d5492b3555ad5c4f809a6c60a7cd",
+    "windows_related": "49_PASS",
+    "wsl_compose": "WEB_API_WORKER_HTTP_PASS",
+    "browser": "PLAYWRIGHT_NETWORK_PASS",
+    "windows_tunnel": "ALEMBIC_API_WORKER_VITE_PASS",
+    "temporary_resource_residue": 0,
+    "unverified": [
+      "WSL_COMPOSE_DB_TUNNEL",
+      "EXISTING_SHARED_PG_EXTERNAL_FIREWALL",
+      "AUTHENTICATED_THROUGH_NGINX_MUTATION",
+      "PIXEL_SCREENSHOT_REVIEW",
+      "F16_STAGING",
+      "F17_PG18_RC",
+      "F18_YSNA_PRODUCTION"
     ]
   }
 }
