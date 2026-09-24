@@ -1,3 +1,58 @@
-# G-03 reserves the local compose artifact without defining a runtime service.
-name: anvil
-services: {}
+name: anvil-f15-local
+
+services:
+  anvil-web:
+    build:
+      context: .
+      dockerfile: deploy/local/Dockerfile.runtime
+      target: web
+    ports:
+      - "127.0.0.1:8300:8080"
+    depends_on: [anvil-api]
+    networks: [anvil-local]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+
+  anvil-api:
+    build:
+      context: .
+      dockerfile: deploy/local/Dockerfile.runtime
+      target: runtime
+    command: ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "8301"]
+    environment:
+      ANVIL_DATABASE_URL: "${ANVIL_F15_QA_DATABASE_URL:?required}"
+      ANVIL_F15_OPERATIONAL_SHELL: "1"
+      ANVIL_CONSOLE_BASE_URL: "http://127.0.0.1:8300"
+      ANVIL_PUBLIC_HOST: "127.0.0.1"
+      TELEGRAM_WEBHOOK_SECRET: "${ANVIL_F15_TELEGRAM_WEBHOOK_SECRET:?required}"
+      TELEGRAM_INTERNAL_SIGNING_SECRET: "${ANVIL_F15_TELEGRAM_SIGNING_SECRET:?required}"
+      TELEGRAM_ALLOWED_IDENTITIES: "${ANVIL_F15_TELEGRAM_ALLOWED_IDENTITIES:?required}"
+    networks: [anvil-local]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+
+  anvil-worker:
+    build:
+      context: .
+      dockerfile: deploy/local/Dockerfile.runtime
+      target: runtime
+    command: ["/opt/venv/bin/python", "-m", "apps.worker.anvil_worker.main"]
+    environment:
+      ANVIL_DATABASE_URL: "${ANVIL_F15_QA_DATABASE_URL:?required}"
+    networks: [anvil-local]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+
+networks:
+  anvil-local:
+    internal: false

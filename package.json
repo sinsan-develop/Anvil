@@ -6,5 +6,12 @@
   "workspaces": [
     "apps/web",
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "web:dev": "npm run dev --workspace @anvil/web",
+    "web:build": "npm run build --workspace @anvil/web",
+    "web:typecheck": "npm run typecheck --workspace @anvil/web",
+    "web:lint": "npm run lint --workspace @anvil/web",
+    "web:test": "npm run test:console --workspace @anvil/web"
+  }
 }
