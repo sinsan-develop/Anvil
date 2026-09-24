@@ -7,6 +7,7 @@ import binascii
 import hashlib
 import json
 import re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Mapping
 
@@ -15,7 +16,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_public_key
 
-from packages.deployment.deploy_approval import DeployApprovalSubject
+from packages.deployment.deploy_approval import DeployApprovalSubject, subject_hash
 from packages.deployment.promotion_preflight import (
     APPROVED_DEVELOPMENT_REMOTE, PreflightDecision, VerifiedApprovalRelease,
     validate_existing_checkout,
@@ -23,10 +24,14 @@ from packages.deployment.promotion_preflight import (
 
 
 _DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
+_UTC_TIMESTAMP = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
 _ROLES = frozenset({"web", "api", "worker"})
 _CAPABILITIES = frozenset({"oidc", "object_storage", "network", "pg18"})
 _PAYLOAD_FIELDS = frozenset({
     "collector_id", "environment_id", "source_commit", "release_manifest_hash",
+    "approval_subject_hash",
+    "migration_plan_hash", "rollback_plan_hash",
+    "target_instance_id", "rehearsal_run_id", "issued_at", "expires_at",
     "image_digests", "capabilities",
 })
 _ENVELOPE_FIELDS = frozenset({
@@ -53,6 +58,23 @@ def _reject_constant(value: str) -> None:
 
 def _canonical(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
+
+
+def _fresh(payload: dict, now_utc: datetime) -> bool:
+    if not isinstance(now_utc, datetime) or now_utc.tzinfo is None or now_utc.utcoffset() != timedelta(0):
+        return False
+    issued_raw, expires_raw = payload["issued_at"], payload["expires_at"]
+    if (not isinstance(issued_raw, str) or not isinstance(expires_raw, str)
+            or not _UTC_TIMESTAMP.fullmatch(issued_raw)
+            or not _UTC_TIMESTAMP.fullmatch(expires_raw)):
+        return False
+    try:
+        issued = datetime.strptime(issued_raw, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        expires = datetime.strptime(expires_raw, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return False
+    return (issued < expires <= issued + timedelta(minutes=5)
+            and issued <= now_utc + timedelta(seconds=30) and now_utc < expires)
 
 
 def _verified_payload(
@@ -103,18 +125,26 @@ def validate_wsl_operational(
     trusted_public_key_pem: bytes,
     trusted_fingerprint: str,
     expected_collector_id: str,
-    approved_remote: str = APPROVED_DEVELOPMENT_REMOTE,
+    expected_target_instance_id: str,
+    expected_rehearsal_run_id: str,
+    now_utc: datetime,
 ) -> PreflightDecision:
     """Require a trusted, target-bound observation after the existing Git gate."""
     base = validate_existing_checkout(
         verified_release, wsl_evidence, approval_subject, observed_environment_id,
-        migration_plan_hash, rollback_plan_hash, checkout, approved_remote,
+        migration_plan_hash, rollback_plan_hash, checkout, APPROVED_DEVELOPMENT_REMOTE,
     )
     if not base.ready:
         return base
     blocked = PreflightDecision(False, "CAPABILITY_NOT_VERIFIED", None)
     payload = _verified_payload(capability_envelope, trusted_public_key_pem, trusted_fingerprint)
     if payload is None or not isinstance(expected_collector_id, str) or not expected_collector_id:
+        return blocked
+    if (not isinstance(expected_target_instance_id, str) or not expected_target_instance_id
+            or not isinstance(expected_rehearsal_run_id, str) or not expected_rehearsal_run_id
+            or payload["target_instance_id"] != expected_target_instance_id
+            or payload["rehearsal_run_id"] != expected_rehearsal_run_id
+            or not _fresh(payload, now_utc)):
         return blocked
     if not isinstance(verified_release, VerifiedApprovalRelease) or not isinstance(approval_subject, DeployApprovalSubject):
         return blocked
@@ -128,6 +158,12 @@ def validate_wsl_operational(
             or payload["source_commit"] != verified_release.release.source_commit
             or payload["release_manifest_hash"] != verified_release.envelope_hash
             or payload["release_manifest_hash"] != approval_subject.release_manifest_hash
+            or payload["approval_subject_hash"] != subject_hash(approval_subject)
+            or payload["approval_subject_hash"] != base.subject_hash
+            or payload["migration_plan_hash"] != migration_plan_hash
+            or payload["migration_plan_hash"] != approval_subject.migration_plan_hash
+            or payload["rollback_plan_hash"] != rollback_plan_hash
+            or payload["rollback_plan_hash"] != approval_subject.rollback_plan_hash
             or not isinstance(images, dict) or set(images) != _ROLES
             or not all(_digest(value) for value in images.values())
             or images != expected_images):
