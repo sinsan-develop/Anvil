@@ -20,5 +20,5 @@
 ```
 
 - Local/WSL evidence: Windows 79 PASS; WSL F-18/F-16 67 PASS.
-- WSL F-17 12 tests NOT_RUN (SQLAlchemy absent); Production NOT_EXECUTED.
+- Initial WSL F-17 12 tests NOT_RUN (SQLAlchemy absent); isolated R2 replay at published ad0ddb16: 79 PASS, temp checkout/venv residue zero. Production NOT_EXECUTED.
 - F-18 accepted=false; F-19 blocked. Branch retained, no further branch.

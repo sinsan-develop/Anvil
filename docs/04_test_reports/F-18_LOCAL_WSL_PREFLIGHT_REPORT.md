@@ -47,7 +47,15 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 
 ## 미검증·인수
 
-- WSL F-17 회귀 12개는 `sqlalchemy` 부재로 미실행. canonical G-05·progress/HANDOFF 상태 갱신은 Main 담당이며 이 보고서의 67 PASS만으로 전체 F-18 acceptance를 발행하지 않는다.
+- 첫 WSL F-17 회귀 12개는 `sqlalchemy` 부재로 미실행이었으나 아래 R2에서 같은 12개를 포함한 79건을 재실행해 PASS했다. 79 PASS도 전체 F-18 acceptance 근거는 아니다.
 - 이 순수 함수에는 Git checkout 상태·승인 remote·서버 patch를 직접 읽는 기능이 없다. 해당 F-16/서버 preflight 선행 검증을 생략할 수 없고 AV-OPS-021 전체 PASS 근거가 아니다.
 - `ysna-server` 접속/조회, `shared-db`, OIDC, object storage, network capability, `envil.sinsan.kr` 브라우저·Network, 실제 DeployApproval, Monitoring/Release는 모두 `NOT_EXECUTED`.
 - rollback: Main review 보완 commit, 보고서 commit `f214c6e`, Task 2 commit `88da55f`, Task 1 commit `3a97e06`을 역순 revert한다. Main control 파일·기존 F-16/F-17 파일은 건드리지 않는다.
+
+## Main의 WSL 격리 QA R2 — 2026-09-24
+
+- 신산님의 `진행하자` 뒤 동일 `codex/f18-local-wsl-preflight` 브랜치의 공개 commit `ad0ddb16ed9504563128934a647db3390515e5cc`를 `ssh WSL-server`에서 승인 Git alias로 새 exact `/srv/anvil-wsl/f18-local-qa-r2`에 clone하고 clean detached checkout을 확인했다. 기존 서비스/DB·전역 Python은 변경하지 않았다.
+- checkout 내부 `.f18-venv`는 `--system-site-packages`로 생성하고 `uv.lock`의 `SQLAlchemy==2.0.52`와 그 의존 `greenlet==3.5.6`만 가상환경에 설치했다. 전역 설치는 하지 않았다.
+- `PYTHONDONTWRITEBYTECODE=1 .f18-venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=.f18-wsl-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py tests/deploy/test_f17_validation.py`: exit 0, **79 PASS**, 2.59초. 첫 WSL 실행의 F-17 12 NOT_RUN은 이 동일 5-file 범위에서 해소됐다.
+- 정리 전 realpath exact 일치, 비 symlink, `daon:daon` mode `0700`, HEAD `ad0ddb16…`를 확인했다. Git dirty는 checkout 내부 `?? .f18-venv/`와 `?? .f18-wsl-pytest-temp/`뿐이었다. exact 임시 checkout과 두 산출물을 제거한 뒤 경로 잔류 0. 기존 `local-postgres` Up, `anvil-web` Up/healthy 불변이다. 삭제된 임시 패키지/시험 산출물은 복구 불필요하며 소스는 공개 commit으로 복구 가능하다.
+- 이 PASS는 Python 계약 회귀에 한정한다. Web 실제 digest 결박, Production Git checkout·`shared-db`, OIDC, object storage, network, `envil.sinsan.kr`, 실제 DeployApproval/Monitoring/Release는 계속 `NOT_EXECUTED` 또는 `NOT_VERIFIED`; F-18 `accepted=false`, F-19 차단을 유지한다.
