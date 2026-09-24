@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-local-r3-checkpoint-seq1510",
-  "event_sequence": 1510,
-  "updated_at": "2026-09-24T21:24:32+09:00",
-  "last_event_id": "evt_f18_local_1510_package_paused",
+  "snapshot_id": "snapshot-f18-f19-local-integration-seq1511",
+  "event_sequence": 1511,
+  "updated_at": "2026-09-25T02:00:37+09:00",
+  "last_event_id": "evt_f18_local_1511_handoff_recorded",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -455,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
+  "next_safe_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -565,13 +565,13 @@
     }
   },
   "repository": {
-    "branch": "codex/f18-local-wsl-preflight",
-    "local_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
-    "local_wsl_qa_head": "4a8f8a999d70184a28d455659125081317cf9aa8",
-    "upstream": "development/codex/f18-local-wsl-preflight",
-    "remote_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
-    "projection_mode": "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3",
-    "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "branch": "codex/f19-test-dependency",
+    "local_head": "e2f3d994b95c2e60f6a3e597101c30daa25089b4",
+    "local_wsl_qa_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02",
+    "upstream": "development/codex/f19-test-dependency",
+    "remote_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02",
+    "projection_mode": "F18_F19_LOCAL_INTEGRATION_CHECKPOINT",
+    "validated_base_commit": "e2f3d994b95c2e60f6a3e597101c30daa25089b4",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/WORK_STATUS.md",
@@ -580,24 +580,20 @@
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-f18-local.json",
-      "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
-      "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
+      "docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md",
       "scripts/check_project_progress.py",
       "scripts/f18_progress_overlay.py",
       "tests/tooling/test_f18_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
-      "packages/deployment/deploy_approval.py",
-      "packages/deployment/production_preflight_cli.py",
-      "packages/deployment/promotion_preflight.py",
-      "tests/deploy/test_f18_deploy_approval.py",
-      "tests/deploy/test_f18_production_preflight_cli.py",
-      "tests/deploy/test_f18_promotion_preflight.py"
+      "docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md",
+      "packages/provider_catalog/service.py",
+      "pyproject.toml",
+      "uv.lock"
     ],
-    "worktree_status": "F18_PAUSED_SCOPE_BOUNDARY",
-    "commit_status": "PUBLISHED_CHECKPOINT",
-    "push_status": "PUBLISHED_CHECKPOINT"
+    "worktree_status": "LOCAL_WSL_INTEGRATION",
+    "commit_status": "EVIDENCE_COMMIT_PENDING",
+    "push_status": "EVIDENCE_PUSH_PENDING"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -923,7 +919,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "9120F3ECFF876C022CE8E0409685429F06153EF0DD98EE6FE8BB6F068D8DC039"
+      "sha256": "B698A3A713BE535FE42CDAA159DD9F04C586D21AB169C5B53D855C9EBD9509D6"
     }
   },
   "next_work_package": {
@@ -1320,8 +1316,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "A434C0BB452429AA405A8E0BAB1536799D53E5FC7B039F27C07847CF1F67D2FB",
-  "runtime_next_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
+  "snapshot_hash": "629A2B4D052256D5F820BDAA5DBC64591591BF56E68CD9DA1AE5ECF648B237CF",
+  "runtime_next_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2933,7 +2929,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T21:24:32+09:00",
+  "recorded_at": "2026-09-25T02:00:37+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

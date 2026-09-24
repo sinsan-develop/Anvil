@@ -1,5 +1,13 @@
 # F-19 선행 로컬·WSL-server Provider/보안 회귀 점검 — 2026-09-24
 
+## 2026-09-25 로컬 통합 게이트 보완
+
+최종 코드 QA SHA는 `dcac6d6ff2a9dc750a5d5083963a60d1d2972b02`다. 최초 SHA `03ea4c3` 이후 canonical projection에서 porcelain 첫 행 leading status 공백을 잃는 결함이 발견되어 투영은 변경 전 fail-closed했다. 회귀 테스트 RED 후 raw parser로 보완하고 새 SHA로 재게시했다. 최종 Windows 542 PASS(exit0/17.89초), WSL-server Python 3.12 동일 SHA 542 PASS(exit0/5.15초). WSL R2 격리 checkout·venv·pytest temp 잔류0. 최초 541 PASS를 최종 수정 코드의 QA 증거로 대체하지 않는다.
+
+후속 단일 브랜치 `codex/f19-test-dependency`에서 F18 전용 G-05를 느슨하게 하지 않고 `F18_F19_LOCAL_INTEGRATION_CHECKPOINT` mode를 추가했다. 이 mode는 병합 기준 `main@e2f3d994b95c2e60f6a3e597101c30daa25089b4`, 정확한 변경 경로, 게시 QA SHA 이후 evidence-only, 병합 첫 부모·2-parent·tree 일치를 요구한다. 기존 F18 mode는 유지한다. 신규 계약 RED 2건 후 Windows 실제 임시 Git graph 포함 16 PASS, 전체 관련 대상 541 PASS(exit0/18.96초). 게시 code checkpoint `03ea4c3a531886da53c4be7405c049f78f7187fe`를 `development` SSH alias로 push하고 WSL-server가 Git으로 동일 SHA를 detached 수신했다. WSL Python 3.12 잠긴 격리 환경에서 게이트+Provider/보안 541 PASS(exit0/4.81초). 격리 checkout·venv·pytest temp는 검증 후 제거·잔류0. 기존 DB·Docker·서비스·브라우저·Production에는 접촉하지 않았다.
+
+이 범위는 로컬·WSL 코드 QA이며 F18 전체 인수, F19 정식 인수, 실제 Provider 호출·secret/egress/DB/browser, 운영 검증을 대체하지 않는다. 다음은 QA SHA를 seq1511 canonical evidence에 결박한 뒤 G-05, PR Broker 병합, merged-main smoke, 브랜치 정리다. rollback은 후속 branch에서 이 PR의 변경을 역변경하고 동일 로컬→WSL 검증을 거치는 것이다.
+
 ## 판정
 
 `PREPARED_UNMERGED`. 이 점검은 F-19 정식 Work Package 착수·인수나 F-18 전체 합격이 아니다. `F-18 accepted=false`, `F-19 BLOCKED_PENDING_F18_ACCEPTANCE`, Production `NOT_EXECUTED`를 유지한다. 작업 대상은 로컬 개발과 `ssh WSL-server` 테스트에 한정했다. 담당 Main 어울, 정식 Developer `FAILURE_REPORT` 0회.
