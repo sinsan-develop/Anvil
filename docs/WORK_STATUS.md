@@ -1,3 +1,10 @@
+# F-18 R3 runtime bundle·lease 게이트 보완 준비 / 2026-09-25
+
+- 판정: `R3_CONTROL_PREPARING`, 담당 Main 어울, R2 제품 Task 정식 Developer 실패보고 0회. R2 잠긴 WSL QA에서 PyYAML 개발 의존성 및 Web image의 `deploy/wsl/f16_staging.py` 누락을 각각 정확한 수집/런타임 오류로 확인했다. R2 worker/write lease는 새 전환 event 전까지 유효하지만 R3 제품 exact5 mutation은 아직 없다. 기존 유일 `codex/f18-wsl-ops` branch 유지, Production `NOT_EXECUTED`, F-18 accepted=false, F-19 차단.
+- 읽기 전용 통제 리뷰 Important 2건: R2 G-05가 seq1516~1520의 회수/재발급 event 의미를 검증하지 않고, ACTIVE lease의 만료·epoch·baseline도 거부하지 않았다. 실제 ledger는 R1 write→worker 회수 후 R2 발급 순서로 정상이고 당시 lease도 만료 전이었다. Main은 변조 event/만료 lease 거부 테스트 RED(2 FAIL)를 확인하고 R2 checker에 전체 전환 의미·시간/epoch/dispatch 결박, R3 checker에 후속 회수/발급 결박을 추가했다. 이전 성공 증거를 문제 없는 gate로 소급 승격하지 않는다.
+- 새 R3 WorkInstruction은 정확히 `pyproject.toml`, `uv.lock`, `deploy/wsl/Dockerfile.web`, `tests/deploy/test_f18_wsl_dependencies.py`, F-18 WSL 보고서의 exact5만 제품 writer에게 허용한다. PyYAML은 F17 테스트에서만 import하므로 dev group에 한정하고, Web image에는 F18 import의 실제 종속 파일만 넣는다. 제품 파일은 현재 Main이 수정하지 않았다.
+- 통제 QA 사전 자원 계획: `ssh WSL-server`의 새 exact `/srv/anvil-wsl/f18-ops-r3-control-qa` 부재·비-symlink 확인 후 `daon:daon`/700으로 생성한다. 승인 Git SSH 원격에 게시된 R3 통제 code SHA만 clean detached checkout하여 Python3.12 잠긴 dev 환경에서 신규 R2/R3와 기존 관련 overlay 테스트를 `.f18-r3-control-test-temp` 안에서 실행한다. 종료 전 realpath·비-symlink·owner/mode·HEAD·dirty 범위를 확인하고 새 QA checkout만 제거·잔류0을 증명한다. 기존 `/srv/anvil-wsl/repo`, `anvil-web`, `local-postgres`, Docker/DB/브라우저는 변경하지 않는다.
+
 # F-18 R2 잠긴 의존성 WSL 제품 QA 자원 계획 / 2026-09-25
 
 - QA 판정: `PARTIAL_R2_LOCKED_WSL_VERIFIED`, F-18 전체 accepted=false. 게시 제품 SHA `eed74079d813b13f35dacbb0fad8dcb483b9283a`를 새 clean detached `/srv/anvil-wsl/f18-ops-r2-product-qa`로 수신했다. Python 3.12 `uv sync --locked --group dev --no-install-project` exit0/38 resolved·34 installed, `cryptography==46.0.7`와 F-16/F-18 import exit0, `uv lock --check --offline` exit0. 시스템 `PYTHONPATH` 또는 별도 `pip install` 우회는 없었다. F-16/F-18 핵심 7-file **140 PASS**(exit0/4.18초). 8-file 152 수집 시 `tests/deploy/test_f17_validation.py`의 `import yaml`이 `ModuleNotFoundError: yaml`로 exit1; PyYAML은 잠긴 개발 의존성에 미선언이므로 전체 PASS가 아니다.
