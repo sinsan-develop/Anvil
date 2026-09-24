@@ -1,3 +1,10 @@
+# F-18 R3 제품 WSL 잠금·이미지 QA 자원 계획 / 2026-09-25
+
+- 판정: `R3_LOCAL_VERIFIED_WSL_PENDING`, 담당 Main 어울. Developer exact5 `971a021f5f7da8bfcd10a0c285caf8f6f2bea2a9` clean commit을 승인 SSH alias의 단일 `codex/f18-wsl-ops` branch에 게시했다. Main 독립 Windows 8-file 154 PASS(exit0/65.62초), `.f18-r3-main-temp` exact 비-reparse 정리·잔류0, G-05 seq1525 PASS. 정식 Developer 실패보고 0회. R3에선 dev-only PyYAML 잠금과 Web image F16 모듈 단일 COPY만 변경했다.
+- 사전 확인: `ssh WSL-server` 읽기 전용에서 신규 `/srv/anvil-wsl/f18-ops-r3-product-qa` 부재, 전용 `anvil-f18-runtime-qa:971a021f` image tag·`anvil-f18-runtime-check-971a021f` container 부재. 기존 `local-postgres` Up, `anvil-web` Up/healthy. 기존 `/srv/anvil-wsl/repo`, 서비스·DB·다른 image는 변경하지 않는다.
+- 새 exact 임시 checkout 한 개만 `daon:daon` mode700으로 생성하고 승인 remote의 위 공개 SHA를 clean detached 수신한다. 내부 `.venv`와 `.f18-r3-product-test-temp`에 Python3.12 `uv sync --locked --group dev --no-install-project`, `uv lock --check --offline`, F16/F17/F18 8-file 154 회귀를 시스템 PYTHONPATH·별도 pip 우회 없이 실행한다. 전용 Web image를 기존 base로 `--pull=false`·위 SHA label로 빌드하고, 포트/DB/Secret 없이 `--network none --read-only --cap-drop ALL --rm` 일회성 컨테이너로 실제 crypto·F16·F18 import를 확인한다.
+- 종료 시 checkout exact realpath·비 symlink·owner/mode·Git HEAD/dirty 및 image ID/tag·전용 container 이름을 확인하고 신규 checkout·image tag·잔여 전용 container만 제거해 잔류0을 확인한다. 공유 builder cache는 광범위하게 정리하지 않는다. 결과와 미검증 범위는 이 파일에 기록한다. 이 QA만으로 OIDC·object storage·network policy·PG18·rollback·브라우저·동일 3-image digest·Production은 PASS가 아니다. F-18 accepted=false, F-19 차단 유지.
+
 # F-18 R3 runtime bundle·lease 게이트 보완 준비 / 2026-09-25
 
 - R3 통제 code checkpoint `0f0ff0df5495edcec8a3e49cacea516e5d1de3c6`을 승인 Git SSH alias에 게시했다. WSL-server의 새 clean detached `/srv/anvil-wsl/f18-ops-r3-control-qa`·잠긴 Python3.12에서 R1/R2/R3·기존 관련 overlay **29 PASS**(exit0/0.73초); exact realpath·비-symlink·`daon:daon`/700·HEAD·untracked `.f18-r3-control-test-temp`만 확인 후 전용 checkout 삭제·잔류0. Windows 같은 29 PASS(exit0/13.70초), 전용 `.f18-r3-control-final-temp` exact 정리·잔류0. 첫 Windows 기본 pytest temp 시도는 OS `PermissionError` 5건(exit1), 범위 내 `--basetemp` 지정 재실행으로 해소했다. 통제 코드 QA 뒤에는 evidence만 수정하고 seq1525 R2 lease 회수/R3 exact5 lease 발급을 투영한다.
