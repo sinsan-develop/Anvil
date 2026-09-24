@@ -1,0 +1,83 @@
+name: anvil-f16-staging
+
+services:
+  postgres:
+    image: "${ANVIL_F16_PG15_IMAGE_REF:?verified PG15 image required}"
+    environment:
+      POSTGRES_DB: anvil
+      POSTGRES_USER: anvil_app
+      POSTGRES_PASSWORD: "${ANVIL_F16_PG_PASSWORD:?required}"
+    tmpfs: ["/var/lib/postgresql/data:rw,noexec,nosuid,size=256m"]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anvil_app -d anvil"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      com.anvil.cleanup-scope: F16_ISOLATED_STAGING
+
+  web:
+    image: "${ANVIL_F16_WEB_IMAGE_REF:?verified digest required}"
+    ports: ["127.0.0.1:${ANVIL_F16_HTTP_PORT:?required}:8080"]
+    depends_on: [api]
+    networks: [internal, ingress]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F16_ISOLATED_STAGING
+
+  api:
+    image: "${ANVIL_F16_API_IMAGE_REF:?verified digest required}"
+    command: ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "8301"]
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F16_PG_PASSWORD:?required}@postgres:5432/anvil"
+      ANVIL_F15_OPERATIONAL_SHELL: "1"
+      ANVIL_CONSOLE_BASE_URL: "http://127.0.0.1:${ANVIL_F16_HTTP_PORT:?required}"
+      ANVIL_PUBLIC_HOST: "127.0.0.1"
+      TELEGRAM_WEBHOOK_SECRET: "${ANVIL_F16_TELEGRAM_WEBHOOK_SECRET:?required}"
+      TELEGRAM_INTERNAL_SIGNING_SECRET: "${ANVIL_F16_TELEGRAM_SIGNING_SECRET:?required}"
+      TELEGRAM_ALLOWED_IDENTITIES: "${ANVIL_F16_TELEGRAM_ALLOWED_IDENTITIES:?required}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      internal:
+        aliases: [anvil-api]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F16_ISOLATED_STAGING
+
+  worker:
+    image: "${ANVIL_F16_WORKER_IMAGE_REF:?verified digest required}"
+    command: ["/opt/venv/bin/python", "-m", "apps.worker.anvil_worker.main"]
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F16_PG_PASSWORD:?required}@postgres:5432/anvil"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F16_ISOLATED_STAGING
+
+networks:
+  internal:
+    internal: true
+    labels:
+      com.anvil.cleanup-scope: F16_ISOLATED_STAGING
+  ingress:
+    internal: false
+    labels:
+      com.anvil.cleanup-scope: F16_ISOLATED_STAGING
