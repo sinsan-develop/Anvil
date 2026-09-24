@@ -105,3 +105,27 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 - `PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r3-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py`: exit 0, **78 PASS**, 1.92초. 이는 R2 Git guard를 포함한 F-18/F-16 네 파일 범위다. Main의 독립 Windows 다섯 파일 회귀는 **90 PASS**다. 이전 WSL R2 다섯 파일 79 PASS와 실행 범위가 다르므로 합산하지 않는다.
 - 첫 `rm -rf`는 임시 checkout 내부 산출물을 제거했으나 root 소유의 `/srv/anvil-wsl` 부모 경계 때문에 대상 root directory 제거에서 exit 1이었다. 제품 테스트 실패가 아닌 정리 명령 권한 오류 1건이다. Main이 대상의 exact realpath, 비-symlink, 빈 디렉터리, owner `daon:daon`을 확인한 뒤 `sudo rmdir`로 정확한 `/srv/anvil-wsl/f18-local-qa-r3`를 제거해 exit 0, `F18_R3_TEMP_RESIDUE=0`을 확인했다.
 - 기존 서비스·DB는 변경하지 않았다. Production은 `NOT_EXECUTED`; 실제 서명 manifest·Web digest·Production capability 미충족으로 F-18 `accepted=false`, F-19 차단을 유지한다. 이 보고서 갱신은 제품 코드·Main control 파일을 수정하지 않는다.
+
+## R3 Task 5 — 서명·approval·기존 checkout 읽기 전용 CLI
+
+### 판정·기준
+
+로컬 Task 5 CLI 구현과 관련 회귀는 PASS다. `python -m packages.deployment.production_preflight_cli`는 독립 expected observations, 서명 manifest와 신뢰 public key/fingerprint, WSL evidence, approval subject, 이미 존재하는 checkout을 입력받는다. 기존 F-16/F-18 검증을 통과한 경우에만 `F18_LOCAL_PREFLIGHT_PASS:<subject_hash>:PRODUCTION_CAPABILITY_NOT_VERIFIED`를 출력한다. 이 표시는 비공개 rehearsal 사전조건에 한정된다. 실제 Production capability·DeployApproval·Release 판정은 아니다.
+
+- 시작 branch `codex/f18-local-wsl-preflight`, HEAD `633c3a99d795a6851971018d2711a19860ff96a3`, `git status --short` 출력 없음. Canonical seq1507 `ACTIVE`, G-05 `PASS sequence=1507 reporting=AUTO_CONTINUE` exit 0.
+- R3 worker lease `worker-lease-f18-local-r3-20260924-001`, execution fence `f18-local-execution-fence-epoch-3-21617d772cd4ba8f`; write lease `write-lease-f18-local-r3-20260924-001`, write fence `f18-local-write-fence-epoch-3-21617d772cd4ba8f`. Exact3는 `packages/deployment/production_preflight_cli.py`, `tests/deploy/test_f18_production_preflight_cli.py`, 이 보고서다.
+- 설계·작업계획·검증매트릭스·테스트계획·운영규칙 SHA-256은 위 기준과 동일하다. R3 계획 `7FFDB76B2AB5F46A186E352F0E4A333084C286F968A9D01654178C204A5A46FA`, invocation `CE0033CE90BED6475335D65FB371E061FEC0E39C7A761C80F187C42806F47A41`.
+- CLI는 approved remote를 기존 F-16 SSH alias로 고정하고 override를 제공하지 않는다. JSON은 중복 키, 추가/누락 필드, 크기 초과, NaN 등 형식 오류를 거부한다. 실패는 원문·경로·secret을 출력하지 않는 안정 code만 반환한다. Git 원격 tag 확인은 기존 F-16 읽기 전용 `ls-remote`에 맡기며 fetch·checkout 생성·배포·DB·Secret·network capability probe를 추가하지 않았다.
+
+### RED→GREEN·회귀
+
+| 명령 | exit·실제 결과 |
+|---|---|
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/deploy/test_f18_production_preflight_cli.py` | exit 1, 새 CLI 모듈 없음 — 의도한 RED. |
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r3-pytest-temp tests/deploy/test_f18_production_preflight_cli.py` | 최종 exit 0, 19 PASS/25.65초. 합성 서명 manifest와 실제 로컬 bare Git checkout의 private rehearsal marker, 서명·approval·Web·commit/image·dirty·attached·remote·JSON·누락 파일 차단, `-m` 진입점의 redacted 실패 포함. |
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r3-pytest-temp tests/deploy/test_f18_production_preflight_cli.py tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py tests/deploy/test_f17_validation.py` | exit 0, 109 PASS/62.33초. F-16/F-17/F-18 관련 로컬 회귀. |
+| `git diff --check` | exit 0, whitespace 문제 없음. |
+
+양성 fixture는 서명 subject에 고정 승인 alias를 기록하고 테스트의 `ls-remote`만 로컬 bare Git remote로 전달한다. 실제 checkout은 clean detached Git이며 CLI는 읽기만 한다. `-m` subprocess는 누락 입력의 안전한 실패를 확인했다. 이는 로컬 fixture 증거이고 실제 운영 서명 manifest·Production remote checkout 증거가 아니다.
+
+전용 `.f18-r3-pytest-temp`는 절대경로가 worktree 안에 있음을 확인한 뒤 제거했다. 잔류 0. 제품 변경은 exact3에 한정하고 Main control 파일은 수정하지 않았다. WSL/ysna-server 접속, push/PR/merge, DB·Docker·브라우저·실 Provider/OIDC/object storage/network 검증은 미실행이다. F-18 `accepted=false`, F-19 차단 유지. 정식 실패보고 횟수 0. Rollback은 Task 5 exact3 commit 한 건을 revert한다.
