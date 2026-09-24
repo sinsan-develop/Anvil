@@ -48,7 +48,8 @@ def test_exact_preverified_images_and_no_embedded_credentials():
     for name in ("web", "api", "worker"):
         assert services[name]["image"] == "${ANVIL_F16_" + name.upper() + "_IMAGE_REF:?verified digest required}"
     assert services["postgres"]["image"] == "${ANVIL_F16_PG15_IMAGE_REF:?verified PG15 image required}"
-    assert "${ANVIL_F16_PG_PASSWORD:?required}" in content
+    assert "${ANVIL_F16_PG_ADMIN_PASSWORD:?required}" in content
+    assert "${ANVIL_F16_APP_PASSWORD:?required}" in content
     assert "host.docker.internal" not in content
     assert "local-postgres" not in content
     assert "envil.sinsan.kr" not in content
@@ -63,3 +64,26 @@ def test_all_services_have_cleanup_scope_and_security_baseline():
     for name in ("web", "api", "worker"):
         assert services[name]["read_only"] is True
         assert services[name]["cap_drop"] == ["ALL"]
+
+
+def test_postgres_bootstrap_admin_is_separate_from_non_superuser_runtime_login():
+    services = stack()["services"]
+    postgres = services["postgres"]
+    assert postgres["environment"] == {
+        "POSTGRES_DB": "anvil",
+        "POSTGRES_USER": "anvil_admin",
+        "POSTGRES_PASSWORD": "${ANVIL_F16_PG_ADMIN_PASSWORD:?required}",
+    }
+    assert postgres["healthcheck"]["test"] == [
+        "CMD-SHELL", "pg_isready -U anvil_admin -d anvil",
+    ]
+    assert "ANVIL_F16_APP_PASSWORD" not in str(postgres)
+
+    runtime_dsn = (
+        "postgresql+psycopg://anvil_app:${ANVIL_F16_APP_PASSWORD:?required}@postgres:5432/anvil"
+    )
+    for service_name in ("api", "worker"):
+        service = services[service_name]
+        assert service["environment"]["ANVIL_DATABASE_URL"] == runtime_dsn
+        assert "ANVIL_F16_PG_ADMIN_PASSWORD" not in str(service)
+        assert "ANVIL_F16_PG_PASSWORD" not in str(service)

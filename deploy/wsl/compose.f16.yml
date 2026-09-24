@@ -5,12 +5,12 @@ services:
     image: "${ANVIL_F16_PG15_IMAGE_REF:?verified PG15 image required}"
     environment:
       POSTGRES_DB: anvil
-      POSTGRES_USER: anvil_app
-      POSTGRES_PASSWORD: "${ANVIL_F16_PG_PASSWORD:?required}"
+      POSTGRES_USER: anvil_admin
+      POSTGRES_PASSWORD: "${ANVIL_F16_PG_ADMIN_PASSWORD:?required}"
     tmpfs: ["/var/lib/postgresql/data:rw,noexec,nosuid,size=256m"]
     networks: [internal]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U anvil_app -d anvil"]
+      test: ["CMD-SHELL", "pg_isready -U anvil_admin -d anvil"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -34,7 +34,7 @@ services:
     image: "${ANVIL_F16_API_IMAGE_REF:?verified digest required}"
     command: ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "8301"]
     environment:
-      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F16_PG_PASSWORD:?required}@postgres:5432/anvil"
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F16_APP_PASSWORD:?required}@postgres:5432/anvil"
       ANVIL_F15_OPERATIONAL_SHELL: "1"
       ANVIL_CONSOLE_BASE_URL: "http://127.0.0.1:${ANVIL_F16_HTTP_PORT:?required}"
       ANVIL_PUBLIC_HOST: "127.0.0.1"
@@ -59,7 +59,7 @@ services:
     image: "${ANVIL_F16_WORKER_IMAGE_REF:?verified digest required}"
     command: ["/opt/venv/bin/python", "-m", "apps.worker.anvil_worker.main"]
     environment:
-      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F16_PG_PASSWORD:?required}@postgres:5432/anvil"
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F16_APP_PASSWORD:?required}@postgres:5432/anvil"
     depends_on:
       postgres:
         condition: service_healthy
