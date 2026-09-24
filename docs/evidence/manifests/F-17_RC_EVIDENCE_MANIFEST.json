@@ -1,8 +1,85 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-17",
-  "status": "NOT_EXECUTED",
-  "environment_results": {},
-  "evidence": [],
-  "unverified": ["PG15_GENERAL_INTEGRATION", "PG18_ISOLATED_RC", "ACTUAL_E2E", "PRODUCT_VALIDATION"]
+  "status": "F17_SCOPED_PASS",
+  "git_commit": "7083e2aa90ced5bb109fd268cf22e34de34ff6d9",
+  "published_tag": "f17-rc-7083e2a",
+  "runtime_image_digest": "sha256:f6c481954d3ec9013b4974aa9514c8646b06616ffbc84cc4d645c7a5d4432a82",
+  "migration_head": "0016_operations_recovery",
+  "environment_results": {
+    "f17-pg15": {
+      "criterion_id": "AV-OPS-015",
+      "target_hash": "sha256:22536c6fdfa956f07ca05bc4823cc44e324108d671158277c422c09a1e8a2630",
+      "pg_image_digest": "sha256:75f6767185020459c7e2c3f88fb66f1bd2d9790c435bc91512497146c8bf8d7e",
+      "shared_service_dedicated_qa_db": true,
+      "migration_vector_query": "PASS",
+      "https_task_run_db": "PASS",
+      "restart_sse_db": "PASS",
+      "isolated_rollback_restore_rehearsal": "PASS",
+      "create_evidence_hash": "sha256:698a7a8081ea8c4ce14031b25495c1678282eed1e637fd1617bf0cab94b24d0a",
+      "restart_evidence_hash": "sha256:d3f7ba71560a5a5b3812a1f6b3668701a79b7d406c3647480008aed9b5b230dd"
+    },
+    "f17-pg18": {
+      "criterion_id": "AV-OPS-025",
+      "target_hash": "sha256:26da54f6f9a5c595bf463e16ed6137c889b4a250621844808296cb0c2fd316f2",
+      "pg_image_digest": "sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c",
+      "isolated_tmpfs_zero_named_volumes": true,
+      "migration_vector_query": "PASS",
+      "https_task_run_db": "PASS",
+      "restart_sse_db": "PASS",
+      "version_matched_dump_restore": "PASS",
+      "six_lineage_rollback_rehearsal": "PASS",
+      "create_evidence_hash": "sha256:1a5b75cb8083c38b5a1afb99ffcbd232fb67c02db960729d6e8d0e129b5c982f",
+      "restart_evidence_hash": "sha256:ba12252369016e4b0c976890e4f4ded2a1b16e1f7459272df399f55da1541d89",
+      "dump_sha256": "sha256:cb6bd8508f9577ff58f875e5fdc44c5c646648f36c2ac86a265f64d73f3f9c72"
+    }
+  },
+  "browser": {
+    "viewports": ["1920x1080", "390x1080"],
+    "same_origin_requests": 4,
+    "foreign_or_internal_direct_requests": 0,
+    "javascript_errors": 0,
+    "screen_1920_sha256": "cc22768bbd7bdcbb0b4faaaea5ecafa25422a4a0107614a6b07311df144c2485",
+    "screen_390_sha256": "4290a7c4710dcbade3d6b634b94757192245ac3557a809c2ac1e8839f578e262",
+    "full_operational_ui": "NOT_VERIFIED"
+  },
+  "product_validation": {
+    "acquisition": "MAIN_EVIDENCE_BASED_NOT_RUNTIME_API",
+    "AV-OPS-015": "SUITABLE_F17_SCOPE",
+    "AV-OPS-025": "SUITABLE_F17_SCOPE",
+    "single_http_db_harness_records": "NEEDS_IMPROVEMENT_PARTIAL",
+    "runtime_api_persistence": "NOT_IMPLEMENTED_501",
+    "release_decision": "NOT_MADE",
+    "records": [
+      {
+        "criterion_id": "AV-OPS-015",
+        "target_hash": "sha256:22536c6fdfa956f07ca05bc4823cc44e324108d671158277c422c09a1e8a2630",
+        "verdict": "SUITABLE",
+        "validated_by": "main-agent-eoul",
+        "environment_id": "f17-pg15",
+        "evidence_refs": ["sha256:698a7a8081ea8c4ce14031b25495c1678282eed1e637fd1617bf0cab94b24d0a", "sha256:d3f7ba71560a5a5b3812a1f6b3668701a79b7d406c3647480008aed9b5b230dd", "docs/04_test_reports/F-17_WSL_TEST_REPORT.md"],
+        "acquisition_mode": "real",
+        "delivered_hash": "sha256:f6c481954d3ec9013b4974aa9514c8646b06616ffbc84cc4d645c7a5d4432a82",
+        "procedure": "WSL shared-service dedicated PG15 DB HTTP+DB, restart/SSE, isolated PG15 rollback rehearsal",
+        "expected": "migration0016, health200, task/run/event DB match, rollback guard and restore pass",
+        "observed": "All scoped PG15 observations passed; existing Anvil DB/role preserved"
+      },
+      {
+        "criterion_id": "AV-OPS-025",
+        "target_hash": "sha256:26da54f6f9a5c595bf463e16ed6137c889b4a250621844808296cb0c2fd316f2",
+        "verdict": "SUITABLE",
+        "validated_by": "main-agent-eoul",
+        "environment_id": "f17-pg18",
+        "evidence_refs": ["sha256:1a5b75cb8083c38b5a1afb99ffcbd232fb67c02db960729d6e8d0e129b5c982f", "sha256:ba12252369016e4b0c976890e4f4ded2a1b16e1f7459272df399f55da1541d89", "sha256:cb6bd8508f9577ff58f875e5fdc44c5c646648f36c2ac86a265f64d73f3f9c72", "docs/04_test_reports/F-17_WSL_TEST_REPORT.md"],
+        "acquisition_mode": "real",
+        "delivered_hash": "sha256:f6c481954d3ec9013b4974aa9514c8646b06616ffbc84cc4d645c7a5d4432a82",
+        "procedure": "Isolated PG18 RC migration/vector/query, HTTP+DB, restart/SSE, version-matched restore and six-lineage rollback rehearsal",
+        "expected": "PG18 distinct from PG15; migration0016 and all RC recovery gates pass",
+        "observed": "All scoped PG18 RC observations passed; tmpfs resources removed"
+      }
+    ]
+  },
+  "cleanup": "PASS_ZERO_F17_TEMP_RESIDUE",
+  "evidence_report": "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
+  "unverified": ["WEB_ONLY_DIRECT_AUTH_PROXY", "FULL_UI_WORKFLOW", "REAL_PROVIDER", "PRODUCTION_DEPLOYMENT", "HUMAN_RELEASE_DECISION"]
 }

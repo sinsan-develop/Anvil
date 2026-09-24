@@ -30,18 +30,18 @@
   "raw_checksums": [
     {
       "path": "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
-      "bytes": 231,
-      "sha256": "52AF2E1A004D8308B21FB0E2CE926EBB877BB762159BC3C836806B567AB9C276"
+      "bytes": 7762,
+      "sha256": "3D9ECF466E9E28B332BD23BD187DCE3AF8B5A3D5813FDF7AD09A289106251CB4"
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 473295,
-      "sha256": "FCF27AFE7C486EA01F885AC9E159FC4654E2A24248D7955AABE3A8C8B0793876"
+      "bytes": 476614,
+      "sha256": "9FC7922CF6321610D005BC84BE0AFB2EC6F09EBAB2B4CBE2796E46D7CB7FEC22"
     },
     {
       "path": "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
-      "bytes": 233,
-      "sha256": "AC08327F57F72F61D0DFE0CF3C5D8A5B078F43622DACBA8DF3FA6F1AAC3D6341"
+      "bytes": 4812,
+      "sha256": "169BA9845611457784AF3B6CAA407427F13CA62AF5F3896A470A6E4E13B0BD8F"
     },
     {
       "path": "docs/progress/progress-events.json",
@@ -76,10 +76,10 @@
   ],
   "self_reference": false,
   "runtime_boundary": {
-    "shared_pg15": "NOT_EXECUTED",
-    "isolated_pg18": "NOT_EXECUTED",
-    "actual_e2e": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
+    "shared_pg15": "PASS_F17_SCOPE",
+    "isolated_pg18": "PASS_F17_SCOPE",
+    "actual_e2e": "PASS_SAME_GIT_IMAGE",
+    "browser": "PASS_DASHBOARD_NETWORK_SCOPE",
     "production": "NOT_EXECUTED"
   }
 }
