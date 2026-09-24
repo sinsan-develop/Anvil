@@ -2,7 +2,7 @@
 
 ## 판정
 
-F-18 Task 1·2의 로컬 순수 함수 구현과 기본 회귀는 PASS다. WSL 검증은 Main 담당으로 미실행이다. F-18 전체, AV-OPS-013/016/020/021, Production DeployApproval 및 Release는 미완료다.
+F-18 Task 1·2의 로컬 순수 함수 구현과 기본 회귀는 PASS다. Main이 공개 checkpoint의 WSL 격리 checkout에서 F-18/F-16 focused 67개를 PASS했다. WSL F-17 회귀 12개는 의존성 부재로 `NOT_RUN`이다. F-18 전체 acceptance는 `false`이며 AV-OPS-013/016/020/021, Production DeployApproval 및 Release는 미완료다. F-19는 차단 상태다.
 
 실제 F-17 증거 형태는 Git commit과 API/Worker 단일 `runtime_image_digest`만 결박한다. F-16 `VerifiedRelease`는 Web/API/Worker 각각의 digest를 갖는다. 따라서 commit과 API/Worker digest가 일치해도 Web 대응 증거가 없으면 `WEB_IMAGE_NOT_VERIFIED`와 `ready=False`를 반환한다. 세 이미지 digest를 모두 명시한 합성 증거에서만 `READY_FOR_PRIVATE_REHEARSAL`을 반환한다. 이 상태는 실제 Production 승격·배포 승인이 아니다.
 
@@ -34,11 +34,20 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 | `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f18_deploy_approval.py` (최종 보완 후) | exit 0, 24 PASS; bare F-16 결과 거부와 변조 서명 거부 포함. |
 | `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.f18-review-final-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py tests/deploy/test_f17_validation.py` | exit 0, 79 PASS. 전용 임시 경로 잔류 0. 최종 회귀 근거. |
 
-최초 F-16 포함 회귀를 기본 pytest 임시 경로로 실행했을 때 37 PASS/5 ERROR, exit 1이었다. 다섯 오류는 `C:\Users\cyhuh\AppData\Local\Temp\pytest-of-cyhuh` 접근 거부로 test setup에서 발생했다. 전용 `--basetemp` 재실행 77 PASS가 코드 회귀 판정 근거다. 정식 실패보고 횟수는 0이다.
+최초 F-16 포함 회귀를 기본 pytest 임시 경로로 실행했을 때 37 PASS/5 ERROR, exit 1이었다. 다섯 오류는 `C:\Users\cyhuh\AppData\Local\Temp\pytest-of-cyhuh` 접근 거부로 test setup에서 발생했다. 전용 `--basetemp` 최종 재실행 79 PASS가 Windows 코드 회귀 판정 근거다. 정식 실패보고 횟수는 0이다.
+
+## Main의 WSL 격리 QA 증거
+
+- 공개 checkpoint `de4caa5eede6b3700cb5c0607b895a442994cfc5`를 `ssh WSL-server`의 `/srv/anvil-wsl/f18-local-qa`에서 승인 remote `git@github-sinsan-develop:sinsan-develop/Anvil.git`로 가져와 정확한 SHA의 clean detached checkout으로 검증했다. 대상 realpath는 exact path와 일치하고 symlink가 아니었으며 owner `daon:daon`, mode `0700`이었다.
+- 첫 경로 생성은 permission denied였다. Main이 그 exact path에 `sudo install -d -o daon -g daon -m 0700`을 적용해 격리 경로를 준비했다. 초기 5-file pytest collection은 `tests/deploy/test_f17_validation.py`가 WSL에 없는 `sqlalchemy`를 import하여 exit 1이었다. 환경 오류는 경로 권한과 의존성 두 건이며 코드 PASS로 집계하지 않는다. F-17 12개 테스트는 WSL에서 `NOT_RUN`이다.
+- 실행 명령: `PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest -q -p no:cacheprovider --basetemp=.f18-wsl-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py`. 결과 exit 0, 67 PASS, 1.17초.
+- Main Windows 동일 5-file 범위는 exit 0, 79 PASS, 23.74초. Windows 증거는 WSL F-17 미실행을 대체하지 않는다.
+- 정리 전 Git status는 `?? .f18-wsl-pytest-temp/`만 보였다. 검증 후 Main이 realpath·비-symlink·대상 소유권을 확인하고 `sudo rm -rf -- /srv/anvil-wsl/f18-local-qa`로 정확한 격리 경로를 정리했다. 경로 잔류 0. 기존 `local-postgres Up 31h`, `anvil-web Up 31h (healthy)`는 변경되지 않았다.
+- WSL QA에서 DB, Docker, 브라우저, `ysna-server`는 접근·변경하지 않았다. 이 PASS는 순수 preflight와 해당 F-16 회귀에 한정한다.
 
 ## 미검증·인수
 
-- Main의 동일 published Git commit WSL 격리 checkout QA, cleanup, canonical G-05 상태 갱신은 미실행.
+- WSL F-17 회귀 12개는 `sqlalchemy` 부재로 미실행. canonical G-05·progress/HANDOFF 상태 갱신은 Main 담당이며 이 보고서의 67 PASS만으로 전체 F-18 acceptance를 발행하지 않는다.
 - 이 순수 함수에는 Git checkout 상태·승인 remote·서버 patch를 직접 읽는 기능이 없다. 해당 F-16/서버 preflight 선행 검증을 생략할 수 없고 AV-OPS-021 전체 PASS 근거가 아니다.
 - `ysna-server` 접속/조회, `shared-db`, OIDC, object storage, network capability, `envil.sinsan.kr` 브라우저·Network, 실제 DeployApproval, Monitoring/Release는 모두 `NOT_EXECUTED`.
 - rollback: Main review 보완 commit, 보고서 commit `f214c6e`, Task 2 commit `88da55f`, Task 1 commit `3a97e06`을 역순 revert한다. Main control 파일·기존 F-16/F-17 파일은 건드리지 않는다.
