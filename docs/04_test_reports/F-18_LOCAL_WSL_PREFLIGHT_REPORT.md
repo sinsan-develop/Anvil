@@ -98,3 +98,10 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 3. 별도 운영 담당 범위에서 `ysna-server`의 승인 Git remote/tag/clean checkout, 실제 Web/API/Worker digest, `shared-db` PG18 전용 DB·role, OIDC·object storage·network capability, `envil.sinsan.kr` browser Network, backup/drain/migration/smoke/rollback/monitoring 및 승인 대상의 environment+manifest+migration+rollback hash를 실측해야 한다. 신산님이 Main의 작업 대상을 로컬·WSL로 한정했으므로 Main은 이 항목에 접속하거나 PASS를 발행하지 않는다.
 
 결론: 로컬·WSL Git 경계와 Python 계약은 검증됐지만 AV-OPS-013/016/020/021의 Production 기준은 미충족이다. F-18 `accepted=false`, F-19 차단, 기존 작업 branch 보존을 유지한다.
+
+## Main의 R2 Task 4 WSL QA — 2026-09-24
+
+- 공개 제품 commit `1c2c5df72cb217c6507dcbd5021f397e108ccd78`을 WSL-server의 승인 Git alias에서 격리 경로 `/srv/anvil-wsl/f18-local-qa-r3`의 clean detached checkout으로 확인했다.
+- `PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r3-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py`: exit 0, **78 PASS**, 1.92초. 이는 R2 Git guard를 포함한 F-18/F-16 네 파일 범위다. Main의 독립 Windows 다섯 파일 회귀는 **90 PASS**다. 이전 WSL R2 다섯 파일 79 PASS와 실행 범위가 다르므로 합산하지 않는다.
+- 첫 `rm -rf`는 임시 checkout 내부 산출물을 제거했으나 root 소유의 `/srv/anvil-wsl` 부모 경계 때문에 대상 root directory 제거에서 exit 1이었다. 제품 테스트 실패가 아닌 정리 명령 권한 오류 1건이다. Main이 대상의 exact realpath, 비-symlink, 빈 디렉터리, owner `daon:daon`을 확인한 뒤 `sudo rmdir`로 정확한 `/srv/anvil-wsl/f18-local-qa-r3`를 제거해 exit 0, `F18_R3_TEMP_RESIDUE=0`을 확인했다.
+- 기존 서비스·DB는 변경하지 않았다. Production은 `NOT_EXECUTED`; 실제 서명 manifest·Web digest·Production capability 미충족으로 F-18 `accepted=false`, F-19 차단을 유지한다. 이 보고서 갱신은 제품 코드·Main control 파일을 수정하지 않는다.
