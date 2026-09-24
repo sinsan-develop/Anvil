@@ -1,4 +1,4 @@
-# F-18 local/WSL Task 5 signed CLI checkpoint; Production NOT_EXECUTED
+# F-18 local/WSL development integration checkpoint; Production NOT_EXECUTED
 
 ```json anvil-recovery-summary
 {
@@ -14,8 +14,8 @@
     "package_id": "F-19",
     "status": "BLOCKED_PENDING_F18_ACCEPTANCE"
   },
-  "next_safe_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
-  "runtime_next_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE"
+  "next_safe_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
+  "runtime_next_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY"
 }
 ```
 

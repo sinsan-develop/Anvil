@@ -455,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
+  "next_safe_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -567,6 +567,7 @@
   "repository": {
     "branch": "codex/f18-local-wsl-preflight",
     "local_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
+    "local_wsl_qa_head": "4a8f8a999d70184a28d455659125081317cf9aa8",
     "upstream": "development/codex/f18-local-wsl-preflight",
     "remote_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
     "projection_mode": "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3",
@@ -1319,8 +1320,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "6D4C45D07E7B05659DE700F12407C12F8EA37A6F4B4E6022002435C4D850A128",
-  "runtime_next_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
+  "snapshot_hash": "A434C0BB452429AA405A8E0BAB1536799D53E5FC7B039F27C07847CF1F67D2FB",
+  "runtime_next_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
