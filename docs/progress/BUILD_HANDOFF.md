@@ -1,9 +1,9 @@
-# F-18/F-19 local/WSL integration checkpoint; Production NOT_EXECUTED
+# Local/WSL operational-scope revision; Production NOT_EXECUTED
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1511,
-  "last_event_id": "evt_f18_local_1511_handoff_recorded",
+  "event_sequence": 1512,
+  "last_event_id": "evt_f18_local_1512_handoff_recorded",
   "status": "PAUSED",
   "current_phase": "F",
   "current_work_package": "F-18",
@@ -14,10 +14,10 @@
     "package_id": "F-19",
     "status": "BLOCKED_PENDING_F18_ACCEPTANCE"
   },
-  "next_safe_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW",
-  "runtime_next_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW"
+  "next_safe_action": "PREPARE_F18_WSL_OPS_WORK_INSTRUCTION",
+  "runtime_next_action": "PREPARE_F18_WSL_OPS_WORK_INSTRUCTION"
 }
 ```
 
-- F-18 accepted=false; Production NOT_EXECUTED; F-19 blocked.
-- Local integration only; branch cleanup follows merged-main validation.
+- F-18 remains partial; F-19 remains blocked pending revised F-18 WSL acceptance.
+- Production/ysna-server NOT_EXECUTED; ReleaseDecision DEFER.

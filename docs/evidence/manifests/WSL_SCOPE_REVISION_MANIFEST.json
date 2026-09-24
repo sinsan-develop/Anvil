@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1512,
+  "accepted": false,
+  "projection_mode": "F18_F20_LOCAL_WSL_SCOPE_REVISION",
+  "validated_base_commit": "c2c62cd011f47db8cbd524f97b3dae494a5672b5",
+  "exact_allowed_paths": [
+    "AGENTS.md",
+    "Anvil_설계서_v2.md",
+    "Anvil_작업계획서_v1.md",
+    "Anvil_테스트계획서_v1.md",
+    "Anvil_통합검증매트릭스_v1.md",
+    "docs/04_test_reports/WSL_OPERATIONAL_SCOPE_REVISION_REPORT.md",
+    "docs/DEVELOPMENT_ENVIRONMENT.md",
+    "docs/WORK_STATUS.md",
+    "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
+    "docs/evidence/manifests/WSL_SCOPE_REVISION_MANIFEST.json",
+    "docs/governance/ANVIL_OPERATING_RULES.md",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-wsl-scope.json",
+    "scripts/check_project_progress.py",
+    "scripts/wsl_scope_overlay.py",
+    "tests/tooling/test_wsl_scope_overlay.py"
+  ],
+  "product_write_scope": [],
+  "raw_checksums": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 9904,
+      "sha256": "C57A84A841E5D09767AE618BBE6283FE82E09F1532AFB22AD76E9BB3EA0A1757"
+    },
+    {
+      "path": "Anvil_설계서_v2.md",
+      "bytes": 323882,
+      "sha256": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712"
+    },
+    {
+      "path": "Anvil_작업계획서_v1.md",
+      "bytes": 87810,
+      "sha256": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB"
+    },
+    {
+      "path": "Anvil_테스트계획서_v1.md",
+      "bytes": 59343,
+      "sha256": "902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014"
+    },
+    {
+      "path": "Anvil_통합검증매트릭스_v1.md",
+      "bytes": 68830,
+      "sha256": "1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6"
+    },
+    {
+      "path": "docs/04_test_reports/WSL_OPERATIONAL_SCOPE_REVISION_REPORT.md",
+      "bytes": 3831,
+      "sha256": "2898B0CDBDC10A9024DA61B71BC8DA5D2DB872621CD983FBA92DFD62D6EEB42A"
+    },
+    {
+      "path": "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "bytes": 19568,
+      "sha256": "F84D0FBC06C3B5EC9EC9E3E757E24247DF121E6CC261E73E3135BBF9164AEFF2"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 514917,
+      "sha256": "61F733A23DF11A65DBA2E0EAFCA8AD84DBA43130538A75A3740839BD4254AD9D"
+    },
+    {
+      "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
+      "bytes": 2727,
+      "sha256": "8DB4FFE8D7C195F3F272BD07F668B8A91BDEDD272194351E0F8867A5E7148893"
+    },
+    {
+      "path": "docs/governance/ANVIL_OPERATING_RULES.md",
+      "bytes": 19563,
+      "sha256": "BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4173213,
+      "sha256": "12ADB040F3D9EEC49DD782BCC1E557B6C471E3536C5DD005C772C23083E0E8FF"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4732887,
+      "sha256": "4DFA5DBE9CC6CF5FA789CD545A449E32058CB54C728295C526FFCA4E8BEFED2F"
+    },
+    {
+      "path": "scripts/wsl_scope_overlay.py",
+      "bytes": 15629,
+      "sha256": "B790BD396AFD8773306C4CA7C0BCEA96517F2B40263CBDF903E3EA7D420D20C2"
+    },
+    {
+      "path": "tests/tooling/test_wsl_scope_overlay.py",
+      "bytes": 3476,
+      "sha256": "474455C4FC45C626B7C36B137BFC0610D54D3549CD891A4CEFC217BB7DC0A2E5"
+    }
+  ],
+  "self_reference": false,
+  "production": "NOT_EXECUTED"
+}
