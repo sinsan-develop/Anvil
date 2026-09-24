@@ -2,7 +2,7 @@
 
 from scripts.f16_progress_overlay import (
     BASE, BRANCH, control_paths, product_paths, validate_changed_scope,
-    validate_start_git_facts,
+    validate_start_git_facts, final_paths, validate_final_git_facts,
 )
 
 
@@ -35,3 +35,19 @@ def test_f16_clean_base_requires_only_declared_control_projection():
                  base_is_ancestor=True, remote_is_ancestor=True)
     assert validate_start_git_facts(**facts) == []
     assert validate_start_git_facts(**{**facts, "dirty": {"unknown.md"}})
+
+
+def test_f16_final_gate_requires_exact_clean_feature_or_matching_merge():
+    assert set(final_paths()) == set(control_paths()) | set(product_paths())
+    facts = dict(branch=BRANCH, upstream=f"development/{BRANCH}",
+                 head="feature-head", remote_head="feature-head", staged=set(),
+                 dirty=set(), changed=set(final_paths()), parents=["product-head"],
+                 base_is_ancestor=True, merge_tree_matches_feature=False)
+    assert validate_final_git_facts(**facts) == []
+    assert validate_final_git_facts(**{**facts, "dirty": {"scratch.txt"}})
+    assert validate_final_git_facts(**{**facts, "changed": set(control_paths())})
+    merged = {**facts, "branch": "main", "upstream": "development/main",
+              "head": "merge-head", "remote_head": "merge-head",
+              "parents": [BASE, "feature-head"], "merge_tree_matches_feature": True}
+    assert validate_final_git_facts(**merged) == []
+    assert validate_final_git_facts(**{**merged, "merge_tree_matches_feature": False})

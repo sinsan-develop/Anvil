@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f16-start-seq1477",
-  "event_sequence": 1477,
-  "updated_at": "2026-09-24T12:37:00+09:00",
-  "last_event_id": "evt_f16_1477_write_lease_issued",
+  "snapshot_id": "snapshot-f16-final-seq1482",
+  "event_sequence": 1482,
+  "updated_at": "2026-09-24T14:03:00+09:00",
+  "last_event_id": "evt_f16_1482_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -92,7 +92,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
   "current_work_package": "F-16",
-  "status": "ACTIVE",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -196,35 +196,11 @@
     "F-12",
     "F-13",
     "F-14",
-    "F-15"
+    "F-15",
+    "F-16"
   ],
-  "active_agent": "developer-primary-f16-r1",
-  "write_lease": {
-    "lease_id": "write-lease-f16-r1-20260924-001",
-    "actor_id": "developer-primary-f16-r1",
-    "subject_ref": "F-16",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T12:37:00+09:00",
-    "expires_at": "2026-09-25T00:37:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f16-r1-write-fence-epoch-1-5a61261912aab937",
-    "execution_fencing_token": "f16-r1-execution-fence-epoch-1-f2b124a4c8dfdcf1",
-    "baseline_git_commit": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
-    "dispatch_head": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
-    "path_scope": [
-      "deploy/wsl/compose.f16.yml",
-      "deploy/wsl/f16_staging.py",
-      "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
-      "packages/deployment/__init__.py",
-      "packages/deployment/release_manifest.py",
-      "tests/deploy/test_f16_release_manifest.py",
-      "tests/deploy/test_f16_staging_compose.py",
-      "tests/deploy/test_f16_staging_git.py"
-    ],
-    "worker_lease_id": "worker-lease-f16-r1-20260924-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f16-r1-write-fence-epoch-1-5a61261912aab937"
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -256,29 +232,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f16-r1-20260924-001",
-    "actor_id": "developer-primary-f16-r1",
-    "subject_ref": "F-16",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T12:37:00+09:00",
-    "expires_at": "2026-09-25T00:37:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f16-r1-execution-fence-epoch-1-f2b124a4c8dfdcf1",
-    "execution_fencing_token": "f16-r1-execution-fence-epoch-1-f2b124a4c8dfdcf1",
-    "baseline_git_commit": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
-    "dispatch_head": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
-    "path_scope": [
-      "deploy/wsl/compose.f16.yml",
-      "deploy/wsl/f16_staging.py",
-      "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
-      "packages/deployment/__init__.py",
-      "packages/deployment/release_manifest.py",
-      "tests/deploy/test_f16_release_manifest.py",
-      "tests/deploy/test_f16_staging_compose.py",
-      "tests/deploy/test_f16_staging_git.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -500,7 +454,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F16_EXACT8",
+  "next_safe_action": "MERGE_F16_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -614,10 +568,13 @@
     "local_head": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
     "upstream": "development/codex/f16-wsl-staging-release-manifest",
     "remote_head": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
-    "projection_mode": "F16_START_EXACT11_PRODUCT_EXACT8",
+    "projection_mode": "F16_FINAL_ACCEPTANCE_EXACT19",
     "validated_base_commit": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
+      "deploy/wsl/compose.f16.yml",
+      "deploy/wsl/f16_staging.py",
+      "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/manifests/F-16_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -626,8 +583,13 @@
       "docs/progress/progress-handoff-detached-digest-f16.json",
       "docs/work_orders/F-16_INVOCATION_PROMPT.md",
       "docs/work_orders/F-16_WORK_INSTRUCTION.md",
+      "packages/deployment/__init__.py",
+      "packages/deployment/release_manifest.py",
       "scripts/check_project_progress.py",
       "scripts/f16_progress_overlay.py",
+      "tests/deploy/test_f16_release_manifest.py",
+      "tests/deploy/test_f16_staging_compose.py",
+      "tests/deploy/test_f16_staging_git.py",
       "tests/tooling/test_f16_progress_overlay.py"
     ],
     "product_write_scope": [
@@ -640,9 +602,10 @@
       "tests/deploy/test_f16_staging_compose.py",
       "tests/deploy/test_f16_staging_git.py"
     ],
-    "worktree_status": "F16_ACTIVE",
-    "commit_status": "PENDING",
-    "push_status": "BRANCH_PUBLISHED"
+    "worktree_status": "F16_ACCEPTED_PENDING_MERGE",
+    "commit_status": "FINAL_PENDING_OR_COMPLETE",
+    "push_status": "BRANCH_PUBLISHED",
+    "product_head": "383bd8cb0c1eec48cde9267a0dd9fb1d060ea272"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -738,21 +701,21 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-15-20260924-001",
-    "path": "docs/work_orders/F-15_WORK_INSTRUCTION.md",
-    "sha256": "F4D757797F35F336CA33817DBA4B6449835DC368839818D4D742CD7701E6181C",
-    "invocation_path": "docs/work_orders/F-15_INVOCATION_PROMPT.md",
-    "invocation_sha256": "826F93E05B5932767A43C1523972024C49614D17823BF8F802B46072F602475A",
+    "artifact_id": "WI-F-16-20260924-001",
+    "path": "docs/work_orders/F-16_WORK_INSTRUCTION.md",
+    "sha256": "5D2736C65FF3EF286242C780EB7C9925C58231BA9BD426BA489C625DD4A8108A",
+    "invocation_path": "docs/work_orders/F-16_INVOCATION_PROMPT.md",
+    "invocation_sha256": "B1B829B97BC30E3B874E46F389963076D60BECA1439485B41DD9236482B935C3",
     "assigned_verification_ids": [
-      "AV-OPS-014",
-      "AV-SAFE-029",
-      "AV-UI-010",
-      "AV-UI-012"
+      "AV-OPS-013",
+      "AV-OPS-015",
+      "AV-OPS-021"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
+      "F16_ISOLATED_STAGING_ACCEPTED",
       "F16_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
@@ -803,18 +766,7 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-F-16-20260924-001",
-    "path": "docs/work_orders/F-16_WORK_INSTRUCTION.md",
-    "sha256": "5D2736C65FF3EF286242C780EB7C9925C58231BA9BD426BA489C625DD4A8108A",
-    "invocation_path": "docs/work_orders/F-16_INVOCATION_PROMPT.md",
-    "invocation_sha256": "B1B829B97BC30E3B874E46F389963076D60BECA1439485B41DD9236482B935C3",
-    "assigned_verification_ids": [
-      "AV-OPS-013",
-      "AV-OPS-015",
-      "AV-OPS-021"
-    ]
-  },
+  "active_work_instruction": null,
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -967,16 +919,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "72F011302E9F4570B1A2491DA4540A4AA9EA61F36FB147D5FFAE85B4EA0BC2A9"
+      "sha256": "8752E2E7A750C3A13BBA4649805A7A3D9DB46E29D4BA4AEFBCC81F681528C919"
     }
   },
   "next_work_package": {
     "package_id": "F-17",
-    "status": "BLOCKED_PENDING_F16_ACCEPTANCE"
+    "status": "READY_AFTER_F16_MERGE_CLEANUP"
   },
   "next_successor_work_package": {
     "package_id": "F-17",
-    "status": "BLOCKED_PENDING_F16_ACCEPTANCE"
+    "status": "READY_AFTER_F16_MERGE_CLEANUP"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1364,8 +1316,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "9011074C2D89ADF1459D965BC103C1F7493E746D6BEB58E128082BA27B541592",
-  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F16_EXACT8",
+  "snapshot_hash": "7058883077595C33363F7E1981B6901086CAE4FFB582A2F5302BD9FDC3EEA82B",
+  "runtime_next_action": "MERGE_F16_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2977,7 +2929,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T12:37:00+09:00",
+  "recorded_at": "2026-09-24T14:03:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22626,6 +22578,74 @@
       "F16_STAGING",
       "F17_PG18_RC",
       "F18_YSNA_PRODUCTION"
+    ]
+  },
+  "completed_f16_worker_lease": {
+    "lease_id": "worker-lease-f16-r1-20260924-001",
+    "actor_id": "developer-primary-f16-r1",
+    "subject_ref": "F-16",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T12:37:00+09:00",
+    "expires_at": "2026-09-25T00:37:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f16-r1-execution-fence-epoch-1-f2b124a4c8dfdcf1",
+    "execution_fencing_token": "f16-r1-execution-fence-epoch-1-f2b124a4c8dfdcf1",
+    "baseline_git_commit": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
+    "dispatch_head": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
+    "path_scope": [
+      "deploy/wsl/compose.f16.yml",
+      "deploy/wsl/f16_staging.py",
+      "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
+      "packages/deployment/__init__.py",
+      "packages/deployment/release_manifest.py",
+      "tests/deploy/test_f16_release_manifest.py",
+      "tests/deploy/test_f16_staging_compose.py",
+      "tests/deploy/test_f16_staging_git.py"
+    ],
+    "revoked_at": "2026-09-24T14:03:00+09:00"
+  },
+  "completed_f16_write_lease": {
+    "lease_id": "write-lease-f16-r1-20260924-001",
+    "actor_id": "developer-primary-f16-r1",
+    "subject_ref": "F-16",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T12:37:00+09:00",
+    "expires_at": "2026-09-25T00:37:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f16-r1-write-fence-epoch-1-5a61261912aab937",
+    "execution_fencing_token": "f16-r1-execution-fence-epoch-1-f2b124a4c8dfdcf1",
+    "baseline_git_commit": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
+    "dispatch_head": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
+    "path_scope": [
+      "deploy/wsl/compose.f16.yml",
+      "deploy/wsl/f16_staging.py",
+      "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
+      "packages/deployment/__init__.py",
+      "packages/deployment/release_manifest.py",
+      "tests/deploy/test_f16_release_manifest.py",
+      "tests/deploy/test_f16_staging_compose.py",
+      "tests/deploy/test_f16_staging_git.py"
+    ],
+    "worker_lease_id": "worker-lease-f16-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f16-r1-write-fence-epoch-1-5a61261912aab937",
+    "revoked_at": "2026-09-24T14:03:00+09:00"
+  },
+  "f16_acceptance": {
+    "status": "ACCEPTED_ISOLATED_WSL_STAGING",
+    "product_head": "383bd8cb0c1eec48cde9267a0dd9fb1d060ea272",
+    "focused_windows": "48_PASS_TWICE",
+    "focused_wsl": "48_PASS",
+    "browser": "PLAYWRIGHT_SAME_ORIGIN_PASS",
+    "db_role": "APP_NOSUPERUSER_DDL_DENIED",
+    "temporary_resource_residue": 0,
+    "unverified": [
+      "SHARED_LOCAL_POSTGRES_ACCESS_CONTROL",
+      "FULL_IMAGE_SBOM_PROVENANCE",
+      "AUTOMATED_PREFLIGHT_TO_COMPOSE_GATE",
+      "F17_PG18_RC_E2E_ROLLBACK",
+      "F18_YSNA_PRODUCTION",
+      "USER_ACCEPTANCE"
     ]
   }
 }

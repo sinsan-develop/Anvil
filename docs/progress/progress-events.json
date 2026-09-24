@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1477,
+  "last_sequence": 1482,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80057,7 +80057,125 @@
       "tests/deploy/test_f16_staging_git.py"
     ]
   }
+},
+{
+  "sequence": 1478,
+  "event_id": "evt_f16_1478_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-16",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-16/FINAL",
+  "occurred_at": "2026-09-24T14:03:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0A523DA451161611586DB4E2F1416839AC021E4DEDDEBAA4BC6422DCABD306C1",
+  "details": {
+    "package_id": "F-16",
+    "product_head": "383bd8cb0c1eec48cde9267a0dd9fb1d060ea272",
+    "focused_windows": "48_PASS_TWICE",
+    "focused_wsl": "48_PASS",
+    "exact_tag": "f16-staging-383bd8cb",
+    "signed_manifest_sha256": "1812db3c90ec98e46ae782179750854f3ef6fd92ca0c0b7ca7dfb75a5e6d241b",
+    "db_role": "APP_NOSUPERUSER_DDL_DENIED",
+    "browser": "PLAYWRIGHT_SAME_ORIGIN_PASS",
+    "temporary_resource_residue": 0
+  }
+},
+{
+  "sequence": 1479,
+  "event_id": "evt_f16_1479_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-16",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-16/FINAL",
+  "occurred_at": "2026-09-24T14:03:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "476D722943F25282139F08C107633CFAB30496C4338DF6CC10DC669AD4767827",
+  "details": {
+    "verdict": "ISOLATED_WSL_STAGING_ACCEPTED",
+    "critical": 0,
+    "important": 0,
+    "scope": "F16_PG15_SIGNED_MANIFEST_BROWSER_RESTART_CLEANUP"
+  }
+},
+{
+  "sequence": 1480,
+  "event_id": "evt_f16_1480_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-16",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-16/FINAL",
+  "occurred_at": "2026-09-24T14:03:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "BF79A6E59A14B3961DD1438A443524A957931BC7E5472846A76B5854D23F1AE6",
+  "details": {
+    "lease_id": "write-lease-f16-r1-20260924-001",
+    "reason": "F16_ISOLATED_STAGING_ACCEPTED"
+  }
+},
+{
+  "sequence": 1481,
+  "event_id": "evt_f16_1481_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-16",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-16/FINAL",
+  "occurred_at": "2026-09-24T14:03:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6539C3DA212E8ADBA71D97BDD5951EC17E05C02F6E7CC7206E0A8FD303728194",
+  "details": {
+    "lease_id": "worker-lease-f16-r1-20260924-001",
+    "reason": "F16_ISOLATED_STAGING_ACCEPTED"
+  }
+},
+{
+  "sequence": 1482,
+  "event_id": "evt_f16_1482_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-16",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-16/FINAL",
+  "occurred_at": "2026-09-24T14:03:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "393EC1BA7DF12CD294E87D9F15AFB33151C38AC66EE3E726DA1323F6B15933D6",
+  "details": {
+    "package_id": "F-16",
+    "decision": "ACCEPTED_ISOLATED_WSL_STAGING",
+    "next_work_package": "F-17",
+    "unverified": [
+      "SHARED_LOCAL_POSTGRES_ACCESS_CONTROL",
+      "FULL_IMAGE_SBOM_PROVENANCE",
+      "AUTOMATED_PREFLIGHT_TO_COMPOSE_GATE",
+      "F17_PG18_RC_E2E_ROLLBACK",
+      "F18_YSNA_PRODUCTION",
+      "USER_ACCEPTANCE"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f16_1477_write_lease_issued"
+  "last_event_id": "evt_f16_1482_main_package_accepted"
 }
