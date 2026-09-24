@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-18",
-  "event_sequence": 1501,
+  "event_sequence": 1504,
   "accepted": false,
-  "projection_mode": "F18_LOCAL_WSL_R2_START_EXACT3",
+  "projection_mode": "F18_LOCAL_WSL_R2_CHECKPOINT_EXACT3",
   "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
   "exact_allowed_paths": [
     "docs/WORK_STATUS.md",
@@ -28,13 +28,13 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 489782,
-      "sha256": "7ADE02D1E89A53D0916D6A2310F7666A4BBED0ED9F4C7A96A06E7A7D83E2A7D8"
+      "bytes": 491231,
+      "sha256": "6AA15BFC5A114F4653EE3AC81E1EA2253532AE4C3ACF4932A0E2FC51BA392C63"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4163982,
-      "sha256": "CF7C58904661551D50BF547BFC08EBE42C523A29E9788CEA95BDE3E349301674"
+      "bytes": 4166217,
+      "sha256": "1D99B9BCD8788F724E1DCFEEEAB2849923585F811DC9815DF425E9A598E0717F"
     },
     {
       "path": "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
@@ -53,8 +53,8 @@
     },
     {
       "path": "scripts/f18_progress_overlay.py",
-      "bytes": 31797,
-      "sha256": "554A8DB430EE29DF0C31ED45E78DA2DB6B6F4EF0D0F422E594D44E2EED389617"
+      "bytes": 34726,
+      "sha256": "DDCDE02FEF58411AD40279435FE0DBE79A633CE319D66B4CC48065FB0F3DF756"
     },
     {
       "path": "tests/tooling/test_f18_progress_overlay.py",
