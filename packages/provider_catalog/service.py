@@ -144,7 +144,8 @@ class ProviderCatalog:
         if not self._hostname(host) or type(port) is not int or not 1<=port<=65535: fail('ENDPOINT_DENIED')
         try: address=ipaddress.ip_address(ip)
         except ValueError: fail('ADDRESS_DENIED')
-        if not address.is_private or address.is_loopback or address.is_link_local or address.is_unspecified or address.is_multicast: fail('ADDRESS_DENIED')
+        effective_address=getattr(address,'ipv4_mapped',None) or address
+        if not effective_address.is_private or effective_address.is_loopback or effective_address.is_link_local or effective_address.is_unspecified or effective_address.is_multicast: fail('ADDRESS_DENIED')
         with self._lock:
             self._local.add((host,port,str(address)))
             self._audit('LOCAL_ENDPOINT_APPROVED',dict(endpoint_hash=digest([self._environment,host,port,str(address)]),human_approval_id=human_approval_id))
