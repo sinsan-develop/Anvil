@@ -74,6 +74,12 @@ def _digest(value: bytes) -> str:
     return "sha256:" + sha256(value).hexdigest()
 
 
+def _database_url(admin_dsn: str, database_name: str) -> str:
+    from sqlalchemy.engine import make_url
+    return make_url(admin_dsn).set(drivername="postgresql", database=database_name).render_as_string(
+        hide_password=False)
+
+
 def _container_command(container: str, tool: str, *args: str, content: bytes | None = None) -> bytes:
     result = subprocess.run(["docker", "exec", "-i", "--user", "postgres", container, tool, *args],
                             input=content, capture_output=True, check=False, timeout=120)
@@ -243,6 +249,17 @@ def test_f14_cleanup_retains_primary_failure_when_drop_also_fails():
     assert admin.closed
 
 
+def test_f14_derived_database_dsn_remains_sqlalchemy_and_psycopg_url():
+    from sqlalchemy.engine import make_url
+    from psycopg.conninfo import conninfo_to_dict
+    derived = _database_url("postgresql://postgres:p%40ss@127.0.0.1:32768/postgres", "anvil_f14_qa_15_source")
+    parsed = make_url(derived)
+    assert parsed.drivername == "postgresql"
+    assert parsed.database == "anvil_f14_qa_15_source"
+    assert parsed.password == "p@ss"
+    assert conninfo_to_dict(derived)["dbname"] == "anvil_f14_qa_15_source"
+
+
 def test_pg15_and_pg18_require_separate_version_and_extension_evidence():
     assert check_migration_compatibility(150017, {"plpgsql", "vector"}, expected_major=15) == 15
     assert check_migration_compatibility(180004, {"plpgsql", "vector"}, expected_major=18) == 18
@@ -285,7 +302,6 @@ def test_f14_isolated_pg_dump_restore_six_lineages_and_migration_boundaries(majo
     container, admin_dsn = _isolated_target(major, os.environ)
     import psycopg
     from psycopg import sql
-    from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
     expected_sha = os.environ["ANVIL_F14_EXPECTED_GIT_SHA"]
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
@@ -299,7 +315,7 @@ def test_f14_isolated_pg_dump_restore_six_lineages_and_migration_boundaries(majo
         assert re.search(rf"\b{major}(?:\.|\s)", version_text), "F14_CLIENT_MAJOR_MISMATCH"
 
     def dsn_for(name):
-        return make_conninfo(**{**conninfo_to_dict(admin_dsn), "dbname": name})
+        return _database_url(admin_dsn, name)
 
     nonce = uuid.uuid4().hex[:12]
     names = [f"anvil_f14_qa_{major}_{nonce}_{suffix}" for suffix in ("fresh", "source", "target")]
