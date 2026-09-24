@@ -1,7 +1,7 @@
 # F-17 WSL PG15/PG18 범위 인수
 
 - 판정: `ACCEPTED_F17_PG15_PG18_SCOPED`; seq1491. 동일 Git 7083e2a·runtime image f6c481의 PG15/PG18 실측과 AV-OPS-015/025 ProductValidation SUITABLE. 브라우저 dashboard same-origin만 PASS, Web-only auth/전체 UI/운영 배포는 미검증.
-- Main이 worker/write lease를 모두 회수했다. 임시 자원 잔류 0. 다음은 F17 PR 병합·merged-main smoke·branch/worktree 정리이며 그 전 F18 branch 금지.
+- Main이 worker/write lease를 모두 회수했다. **WSL F17 runtime/QA 자원 잔류 0**. Windows 로컬 Web `node_modules`·dist와 F17 `.pyc`는 제거했으나 pytest basetemp exact 5개는 OS `Access denied`로 남아 있다(실행 오류 1, 제품 실패 0). ACL/소유권은 변경하지 않았고 전역 cleanup PASS로 승격하지 않는다. 다음은 F17 PR 병합·merged-main smoke·branch/worktree 정리이며 그 전 F18 branch 금지.
 
 # F-17 WSL 실제 기능·격리 PG18 RC 착수
 

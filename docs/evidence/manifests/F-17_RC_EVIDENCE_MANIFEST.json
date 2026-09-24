@@ -80,6 +80,7 @@
     ]
   },
   "cleanup": "PASS_ZERO_F17_TEMP_RESIDUE",
+  "windows_pytest_basetemp_cleanup": "FIVE_DIRECTORIES_ACCESS_DENIED_NOT_RUNTIME_RESOURCES",
   "evidence_report": "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
   "unverified": ["WEB_ONLY_DIRECT_AUTH_PROXY", "FULL_UI_WORKFLOW", "REAL_PROVIDER", "PRODUCTION_DEPLOYMENT", "HUMAN_RELEASE_DECISION"]
 }

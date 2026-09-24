@@ -35,3 +35,5 @@ Windows Main 독립 회귀는 `C:\Users\cyhuh\anaconda3\python.exe -m pytest -q 
 ## 정리·복구
 
 F17 PG15 DB·2 role 제거 후 기존 `anvil|anvil_app`을 확인했다. PG18 Compose container/network/named volume 잔류 0, 별도 PG15/18 rehearsal container·익명 volume 잔류 0, F17 image tag·TLS/browser container·`/srv/anvil-wsl/f17-rc(-qa)` 경로 잔류 0. 기존 `local-postgres`는 Up, `anvil-web`은 Up/healthy다. 합성 비밀·인증서·브라우저 산출물·tmpfs DB는 삭제돼 복구 불가하며, 소스는 공개 `f17-rc-7083e2a` tag에서 재checkout 가능하다. 운영 데이터/설정 rollback은 필요 없고 수행하지 않았다.
+
+Windows 로컬 Web 재검증의 `node_modules`·`apps/web/dist` 및 F17 이름의 `.pyc` 6개는 정확한 경로 확인 후 제거했다. 다만 Windows pytest basetemp 5개(`anvil-f17-pytest-20260924-main1/main2/pg18green`, `anvil-f17-final-green2/final-full`)는 exact path·reparse 확인 후 삭제를 시도했으나 OS `Access denied`로 디렉터리가 남았다. 합성 테스트 임시물이며 WSL/제품/운영 자원은 아니다. ACL 변경·강제 소유권 변경은 수행하지 않았고 이 범위는 cleanup PASS로 표시하지 않는다.
