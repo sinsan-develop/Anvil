@@ -60,6 +60,21 @@ def validate_start_git_facts(*, branch, upstream, head, remote_head, staged,
     return [] if common and (pre or post) else ["F17_START_GIT_INVALID"]
 
 
+def validate_final_git_facts(*, branch, upstream, remote_head, head, staged,
+                             dirty, changed, parents, base_is_ancestor,
+                             first_parent_contains_base,
+                             merge_tree_matches_feature):
+    clean = (not staged and not dirty and base_is_ancestor
+             and set(changed) == set(control_paths()) | set(product_paths()))
+    feature = (branch == BRANCH and upstream == f"development/{BRANCH}"
+               and remote_head == head and clean)
+    merged = (branch == "main" and upstream == "development/main"
+              and remote_head == head and len(parents) == 2
+              and first_parent_contains_base and merge_tree_matches_feature
+              and clean)
+    return [] if feature or merged else ["F17_FINAL_GIT_INVALID"]
+
+
 def _canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True,
                       separators=(",", ":"), allow_nan=False).encode("utf-8")
@@ -111,7 +126,10 @@ def collect_git(root):
 
     branch, head = run("branch", "--show-current"), run("rev-parse", "HEAD")
     upstream = run("rev-parse", "--abbrev-ref", "@{upstream}")
-    remote_head = run("rev-parse", f"development/{BRANCH}")
+    mode = json.loads((root / "docs/progress/build-progress.json").read_text(
+        encoding="utf-8"))["repository"]["projection_mode"]
+    remote_head = run("rev-parse", "development/main" if branch == "main"
+                      else f"development/{BRANCH}")
     staged = set(filter(None, run("diff", "--cached", "--name-only").splitlines()))
     changed = set(filter(None, run("diff", "--name-only", f"{BASE}..{head}").splitlines()))
     status = subprocess.check_output(["git", "-c", "core.excludesFile=", "status",
@@ -120,6 +138,24 @@ def collect_git(root):
     dirty = {line[3:].replace("\\", "/") for line in status.splitlines() if line}
     ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", BASE, head],
                               cwd=root).returncode == 0
+    if mode == FINAL_MODE:
+        parents = run("show", "-s", "--format=%P", head).split()
+        feature_paths = changed
+        first_parent_contains_base = False
+        tree_match = False
+        if branch == "main" and len(parents) == 2:
+            feature_paths = set(filter(None, run("diff", "--name-only",
+                                                 f"{BASE}..{parents[1]}").splitlines()))
+            first_parent_contains_base = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", BASE, parents[0]],
+                cwd=root).returncode == 0
+            tree_match = (run("rev-parse", f"{head}^{{tree}}")
+                          == run("rev-parse", f"{parents[1]}^{{tree}}"))
+        return validate_final_git_facts(branch=branch, upstream=upstream,
+            remote_head=remote_head, head=head, staged=staged, dirty=dirty,
+            changed=feature_paths, parents=parents, base_is_ancestor=ancestor,
+            first_parent_contains_base=first_parent_contains_base,
+            merge_tree_matches_feature=tree_match)
     remote_ancestor = subprocess.run(["git", "merge-base", "--is-ancestor",
                                      remote_head, head], cwd=root).returncode == 0
     return validate_start_git_facts(branch=branch, upstream=upstream, head=head,

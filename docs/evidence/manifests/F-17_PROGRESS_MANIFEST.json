@@ -37,8 +37,8 @@
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 477360,
-      "sha256": "9E99F442B755CEA6CE857FC4372CE958A7FB8D74792D98692AEE918F0F035B13"
+      "bytes": 478479,
+      "sha256": "7B7B5FDDF4F7FB05CD16B8AFD9C6A7753AF85CCE4ECA8D942828DD93CCEECC8F"
     },
     {
       "path": "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
@@ -67,13 +67,13 @@
     },
     {
       "path": "scripts/f17_progress_overlay.py",
-      "bytes": 28170,
-      "sha256": "3EC373CD4009940C1C46F86D1BF34AC1336DB9697D4B4192BA3F33B0462895B5"
+      "bytes": 30254,
+      "sha256": "E36462DF81B241676893FC11D99CD7B6FA7DA3AB74BC69350C52B42FA26B6F97"
     },
     {
       "path": "tests/tooling/test_f17_progress_overlay.py",
-      "bytes": 2955,
-      "sha256": "34C7EBA5A1E4ED5805EB39FEBE04F1E0ADA8C85FAEE2237F1DD696CBCA2A46F8"
+      "bytes": 4140,
+      "sha256": "E785E531995280ED2131DA6450D6DAED5E5A5B614C24737AB013D4A4C0F5BBE5"
     }
   ],
   "self_reference": false,

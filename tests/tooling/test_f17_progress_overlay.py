@@ -2,7 +2,8 @@
 
 from scripts.f17_progress_overlay import (
     BASE, BRANCH, FINAL_MODE, control_paths, product_paths,
-    validate_changed_scope, validate_final_contract, validate_start_git_facts,
+    validate_changed_scope, validate_final_contract, validate_final_git_facts,
+    validate_start_git_facts,
 )
 
 
@@ -52,3 +53,23 @@ def test_f17_final_contract_requires_acceptance_and_released_leases():
                                    ledger, manifest)
     assert validate_final_contract(progress, ledger,
                                    {**manifest, "runtime_boundary": {}})
+
+
+def test_f17_final_git_allows_exact_merged_main_and_rejects_wrong_tree():
+    paths = set(control_paths()) | set(product_paths())
+    facts = dict(branch=BRANCH, upstream=f"development/{BRANCH}",
+                 remote_head="feature-head", head="feature-head",
+                 staged=set(), dirty=set(), changed=paths,
+                 parents=["merged-main-parent"], base_is_ancestor=True,
+                 first_parent_contains_base=False,
+                 merge_tree_matches_feature=False)
+    assert validate_final_git_facts(**facts) == []
+    merged = {**facts, "branch": "main", "upstream": "development/main",
+              "head": "merged-main", "remote_head": "merged-main",
+              "parents": ["merged-main-parent", "feature-head"],
+              "first_parent_contains_base": True,
+              "merge_tree_matches_feature": True}
+    assert validate_final_git_facts(**merged) == []
+    assert validate_final_git_facts(**{**merged, "merge_tree_matches_feature": False})
+    assert validate_final_git_facts(**{**merged, "first_parent_contains_base": False})
+    assert validate_final_git_facts(**{**merged, "dirty": {"scratch.txt"}})
