@@ -1,3 +1,8 @@
+# F-18 R6 S3 호환 ArtifactStore 통제 QA 자원 계획 / 2026-09-25
+
+- 담당 Main 어울. 기존 단일 `codex/f18-wsl-ops` branch에서 승인된 F-18 내부 R6 객체 저장소 adapter exact6 작업을 준비한다. F-18 전체 `accepted=false`, F-19 차단, Production `NOT_EXECUTED`; 기존 filesystem 기본값과 공개 API는 유지한다. R5 독립 검토 Minor였던 QA/체크포인트 조상 관계 검사를 R6 worker 발급 게이트에 추가했다. R6 통제 테스트는 module 부재 RED 2 FAIL 후 Windows R1~R6 관련 범위 33 PASS(exit0/15.56초), 임시 `.f18-r6-control-qa-temp` exact·비-reparse 확인 후 제거·잔류0. 정식 Developer 실패보고 0회.
+- WSL-server 읽기 전용 사전 확인: 새 exact `/srv/anvil-wsl/f18-ops-r6-control-qa` 부재·비-symlink, 기존 `local-postgres` Up·`anvil-web` Up/healthy. 통제 code checkpoint를 승인 SSH alias로 push한 뒤 이 경로만 `daon:daon` mode700으로 만들고 정확한 게시 SHA를 clean detached checkout한다. checkout 내부 `.venv`와 `.f18-r6-control-test-temp`만 사용해 Python3.12 잠긴 dev 환경, offline lock check, R1~R6 통제 회귀를 실행한다. DB·Docker·브라우저·Secret·포트·기존 `/srv/anvil-wsl/repo`는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·dirty 범위를 확인하고 새 checkout만 제거·잔류0을 확인한다. 결과 검증 후에만 seq1529~1531 R6 exact6 lease를 투영한다.
+
 # F-18 R5 통제 테스트 fixture 재현성 보정·WSL 자원 계획 / 2026-09-25
 
 - 독립 R5 read-only 감사: 게시 `97f907e604d76d4589a45626e256a283f2260f0f` clean branch에서 R4/R5 테스트 **4 PASS**(exit0), G-05 seq1528 PASS(exit0)를 독립 실행했고 이전 fixture Important 해소, 잔여 Critical/Important 0. QA 최초 추가 commit `77c1532...`·R4 checkpoint `b399527...`의 실제 조상 관계, QA 후 evidence-only 6경로, 고정 과거 ledger prefix 및 F-18 accepted=false/Production NOT_EXECUTED 확인. Reviewer의 Minor 1건: R5 검사기가 실제 이력에선 맞는 `b399527`→R5 QA 조상 관계를 코드에서 직접 강제하지 않아, 다른 분기 이력의 R4 증거 복사를 형식상 거부하지 못한다. 다음 제품 writer 발급 통제 전환에서 조상 검사·회귀 테스트로 보완한다. 현재 실제 이력은 정상이며 F-18 전체 acceptance로 승격하지 않는다.
