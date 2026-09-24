@@ -58157,14 +58157,16 @@ def validate_bundle(bundle):
 
 _validate_git_projection_before_f15 = _validate_git_projection
 def _validate_git_projection(bundle):
-    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F15_START_EXACT11_PRODUCT_EXACT19":
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") in {
+        "F15_START_EXACT11_PRODUCT_EXACT19", "F15_FINAL_ACCEPTANCE_EXACT29"}:
         from f15_progress_overlay import collect_git
         return collect_git(bundle["_root"])
     return _validate_git_projection_before_f15(bundle)
 
 _validate_bundle_before_f15 = validate_bundle
 def validate_bundle(bundle):
-    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") != "F15_START_EXACT11_PRODUCT_EXACT19":
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
+        "F15_START_EXACT11_PRODUCT_EXACT19", "F15_FINAL_ACCEPTANCE_EXACT29"}:
         return _validate_bundle_before_f15(bundle)
     from f15_progress_overlay import validate
     return validate(bundle["_root"], bundle)

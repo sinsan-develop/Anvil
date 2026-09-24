@@ -11,6 +11,9 @@ import subprocess
 BASE = "41e7e06cb0f4e76a0d8be31cab24120a4b530420"
 BRANCH = "codex/f15-common-shell-local-stack"
 MODE = "F15_START_EXACT11_PRODUCT_EXACT19"
+FINAL_MODE = "F15_FINAL_ACCEPTANCE_EXACT29"
+PRODUCT_HEAD = "1d1fe19f7ba6d5492b3555ad5c4f809a6c60a7cd"
+FINAL_AT = "2026-09-24T11:31:00+09:00"
 AT = "2026-09-24T10:18:00+09:00"
 EXPIRES = "2026-09-24T22:18:00+09:00"
 ACTOR = "developer-primary-f15-r1"
@@ -49,6 +52,24 @@ def control_paths():
     ])
 
 
+def final_paths():
+    # fastapi_app was deliberately unchanged; the other eighteen product paths are exact.
+    return sorted(set(control_paths()) | (set(product_paths()) - {"packages/api/fastapi_app.py"}))
+
+
+def validate_final_git_facts(*, branch, upstream, remote_head, head, staged,
+                             dirty, changed, parents, base_is_ancestor,
+                             merge_tree_matches_feature):
+    clean = (not staged and not dirty and base_is_ancestor
+             and set(changed) == set(final_paths()))
+    feature = (branch == BRANCH and upstream == f"development/{BRANCH}"
+               and remote_head in {BASE, head, *parents} and clean)
+    merged = (branch == "main" and upstream == "development/main"
+              and remote_head == head and len(parents) == 2
+              and parents[0] == BASE and merge_tree_matches_feature and clean)
+    return [] if feature or merged else ["F15_FINAL_GIT_INVALID"]
+
+
 def validate_changed_scope(changed):
     """Control projection is exact; product paths are a bounded write allowance."""
     controls = set(control_paths())
@@ -69,14 +90,14 @@ def _sha(raw):
     return sha256(raw).hexdigest().upper()
 
 
-def _append(events, event_type, details):
+def _append(events, event_type, details, *, step="START", at=AT):
     sequence = events[-1]["sequence"] + 1
     event = {
         "sequence": sequence, "event_id": f"evt_f15_{sequence}_{event_type.lower()}",
         "event_type": event_type, "actor": "main-agent-eoul",
         "actor_id": "main-agent-eoul", "actor_type": "AGENT",
         "project_id": "anvil", "work_package_id": "F-15", "run_id": None,
-        "step_id": "START", "subject_ref": "F-15/START", "occurred_at": AT,
+        "step_id": step, "subject_ref": f"F-15/{step}", "occurred_at": at,
         "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
         "previous_event_sha256": _sha(_canonical(events[-1])), "details": details,
     }
@@ -108,7 +129,8 @@ def collect_git(root):
     branch = run("branch", "--show-current")
     head = run("rev-parse", "HEAD")
     upstream = run("rev-parse", "--abbrev-ref", "@{upstream}")
-    remote_head = run("rev-parse", f"development/{BRANCH}")
+    mode = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))["repository"]["projection_mode"]
+    remote_head = run("rev-parse", "development/main" if branch == "main" else f"development/{BRANCH}")
     staged = run("diff", "--cached", "--name-only")
     changed = set(filter(None, run("diff", "--name-only", f"{BASE}..{head}").splitlines()))
     status = subprocess.check_output(["git", "-c", "core.excludesFile=", "status",
@@ -116,6 +138,17 @@ def collect_git(root):
     dirty = {line[3:].replace("\\", "/") for line in status.splitlines() if line}
     ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", BASE, head],
                               cwd=root).returncode == 0
+    if mode == FINAL_MODE:
+        parents = run("show", "-s", "--format=%P", head).split()
+        feature_paths = changed
+        tree_match = False
+        if branch == "main" and len(parents) == 2:
+            feature_paths = set(filter(None, run("diff", "--name-only", f"{BASE}..{parents[1]}").splitlines()))
+            tree_match = run("rev-parse", f"{head}^{{tree}}") == run("rev-parse", f"{parents[1]}^{{tree}}")
+        return validate_final_git_facts(branch=branch, upstream=upstream,
+            remote_head=remote_head, head=head, staged=staged, dirty=dirty,
+            changed=feature_paths, parents=parents, base_is_ancestor=ancestor,
+            merge_tree_matches_feature=tree_match)
     remote_ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", remote_head, head],
                                      cwd=root).returncode == 0
     common = (branch == BRANCH and upstream == f"development/{BRANCH}"
@@ -131,19 +164,28 @@ def validate(root, bundle):
     root = Path(root)
     progress, ledger = bundle["progress"], bundle["events"]
     errors = []
-    if (progress.get("repository", {}).get("projection_mode") != MODE
-            or progress.get("event_sequence") != 1468
-            or ledger.get("last_sequence") != 1468
+    final = progress.get("repository", {}).get("projection_mode") == FINAL_MODE
+    sequence = 1473 if final else 1468
+    if (progress.get("repository", {}).get("projection_mode") not in {MODE, FINAL_MODE}
+            or progress.get("event_sequence") != sequence
+            or ledger.get("last_sequence") != sequence
             or progress.get("current_work_package") != "F-15"
-            or progress.get("status") != "ACTIVE"
-            or progress.get("active_agent") != ACTOR
-            or progress.get("worker_lease", {}).get("lease_id") != WORKER
-            or progress.get("write_lease", {}).get("lease_id") != WRITE
-            or progress.get("write_lease", {}).get("worker_lease_id") != WORKER
-            or progress.get("write_lease", {}).get("path_scope") != product_paths()):
+            or progress.get("status") != ("ACCEPTED" if final else "ACTIVE")):
         errors.append("F15_START_STATE_INVALID")
+    if final:
+        if (progress.get("active_agent") is not None or progress.get("worker_lease") is not None
+                or progress.get("write_lease") is not None
+                or "F-15" not in progress.get("completed_packages", [])
+                or progress.get("next_work_package", {}).get("package_id") != "F-16"):
+            errors.append("F15_FINAL_STATE_INVALID")
+    elif (progress.get("active_agent") != ACTOR
+          or progress.get("worker_lease", {}).get("lease_id") != WORKER
+          or progress.get("write_lease", {}).get("lease_id") != WRITE
+          or progress.get("write_lease", {}).get("worker_lease_id") != WORKER
+          or progress.get("write_lease", {}).get("path_scope") != product_paths()):
+        errors.append("F15_LEASE_INVALID")
     events = ledger["events"]
-    for before, after in zip(events[-5:], events[-4:]):
+    for before, after in zip(events[-(6 if final else 5):], events[-(5 if final else 4):]):
         if after.get("previous_event_sha256") != _sha(_canonical(before)):
             errors.append("F15_EVENT_CHAIN_INVALID")
     digest = json.loads((root / DIGEST).read_text(encoding="utf-8"))
@@ -153,8 +195,8 @@ def validate(root, bundle):
         if (digest[key]["bytes"], digest[key]["file_sha256"]) != (len(raw), _sha(raw)):
             errors.append("F15_DIGEST_INVALID")
     manifest = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
-    if (manifest.get("accepted") is not False
-            or manifest.get("exact_allowed_paths") != control_paths()
+    if (manifest.get("accepted") is not final
+            or manifest.get("exact_allowed_paths") != (final_paths() if final else control_paths())
             or manifest.get("product_write_scope") != product_paths()):
         errors.append("F15_MANIFEST_INVALID")
     for row in manifest.get("raw_checksums", []):
@@ -274,6 +316,138 @@ def materialize(root):
         "runtime_boundary": {"database": "NOT_EXECUTED", "browser": "NOT_EXECUTED",
                              "docker": "NOT_EXECUTED", "deployment": "NOT_EXECUTED"}}
     (root / MANIFEST).write_bytes(_pretty(manifest))
+
+
+def finalize(root):
+    """Revoke F-15 leases after bounded Local acceptance; staging remains F-16."""
+    root = Path(root)
+    progress_path = root / "docs/progress/build-progress.json"
+    event_path = root / "docs/progress/progress-events.json"
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    ledger = json.loads(event_path.read_text(encoding="utf-8"))
+    if (progress.get("event_sequence") != 1468 or ledger.get("last_sequence") != 1468
+            or progress.get("status") != "ACTIVE"
+            or progress.get("repository", {}).get("projection_mode") != MODE):
+        raise RuntimeError("F15_FINAL_BASE_INVALID")
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+    if subprocess.run(["git", "merge-base", "--is-ancestor", PRODUCT_HEAD, head],
+                      cwd=root).returncode != 0:
+        raise RuntimeError("F15_PRODUCT_HEAD_INVALID")
+    since_product = set(filter(None, subprocess.check_output(
+        ["git", "diff", "--name-only", f"{PRODUCT_HEAD}..{head}"],
+        cwd=root, text=True).splitlines()))
+    if not since_product <= set(control_paths()) | {"docs/04_test_reports/F-15_COMPLETION_REPORT.md"}:
+        raise RuntimeError("F15_POST_PRODUCT_SCOPE_INVALID")
+    if subprocess.check_output(["git", "-c", "core.excludesFile=", "status", "--porcelain=v1"],
+                               cwd=root).strip():
+        raise RuntimeError("F15_PRODUCT_DIRTY")
+    events = ledger["events"]
+    old_event_raw = event_path.read_bytes()
+    previous_status = (root / "docs/WORK_STATUS.md").read_bytes()
+    old_worker = deepcopy(progress["worker_lease"])
+    old_write = deepcopy(progress["write_lease"])
+    _append(events, "PACKAGE_COMPLETED", {"package_id": "F-15", "product_head": PRODUCT_HEAD,
+        "windows_related": "49_PASS", "wsl_compose": "WEB_API_WORKER_HTTP_PASS",
+        "browser": "PLAYWRIGHT_NETWORK_PASS", "windows_tunnel": "ALEMBIC_API_WORKER_VITE_PASS",
+        "temporary_resource_residue": 0}, step="FINAL", at=FINAL_AT)
+    _append(events, "INDEPENDENT_TEST_JUDGMENT_RECORDED", {
+        "verdict": "LOCAL_CONTRACT_ACCEPTED", "critical": 0, "important": 0,
+        "scope": "F15_LOCAL_STACK_BROWSER_AND_TUNNEL"}, step="FINAL", at=FINAL_AT)
+    _append(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE,
+        "reason": "F15_LOCAL_CONTRACT_ACCEPTED"}, step="FINAL", at=FINAL_AT)
+    _append(events, "WORKER_LEASE_REVOKED", {"lease_id": WORKER,
+        "reason": "F15_LOCAL_CONTRACT_ACCEPTED"}, step="FINAL", at=FINAL_AT)
+    unverified = ["WSL_COMPOSE_DB_TUNNEL", "EXISTING_SHARED_PG_EXTERNAL_FIREWALL",
+                  "AUTHENTICATED_THROUGH_NGINX_MUTATION", "PIXEL_SCREENSHOT_REVIEW",
+                  "F16_STAGING", "F17_PG18_RC", "F18_YSNA_PRODUCTION"]
+    last = _append(events, "MAIN_PACKAGE_ACCEPTED", {"package_id": "F-15",
+        "decision": "ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL",
+        "next_work_package": "F-16", "unverified": unverified},
+        step="FINAL", at=FINAL_AT)
+    ledger.update({"last_sequence": 1473, "last_event_id": last["event_id"]})
+    marker = b'\n  ],\n  "last_event_id": "' + progress["last_event_id"].encode() + b'"'
+    if old_event_raw.count(marker) != 1:
+        raise RuntimeError("F15_FINAL_EVENT_BYTES_INVALID")
+    event_raw = old_event_raw.replace(marker,
+        b",\n" + b",\n".join(_pretty(row).rstrip() for row in events[-5:])
+        + marker.replace(progress["last_event_id"].encode(), last["event_id"].encode()),
+    ).replace(b'"last_sequence": 1468', b'"last_sequence": 1473', 1)
+    old_worker.update({"status": "REVOKED", "revoked_at": FINAL_AT})
+    old_write.update({"status": "REVOKED", "revoked_at": FINAL_AT})
+    completed = list(progress.get("completed_packages", []))
+    if "F-15" not in completed:
+        completed.append("F-15")
+    repository = deepcopy(progress["repository"])
+    repository.update({"projection_mode": FINAL_MODE, "exact_allowed_paths": final_paths(),
+        "worktree_status": "F15_ACCEPTED_PENDING_MERGE",
+        "commit_status": "FINAL_PENDING_OR_COMPLETE", "product_head": PRODUCT_HEAD})
+    progress.update({
+        "snapshot_id": "snapshot-f15-final-seq1473", "event_sequence": 1473,
+        "last_event_id": last["event_id"], "updated_at": FINAL_AT, "recorded_at": FINAL_AT,
+        "status": "ACCEPTED", "completed_packages": completed, "active_agent": None,
+        "worker_lease": None, "write_lease": None,
+        "completed_f15_worker_lease": old_worker, "completed_f15_write_lease": old_write,
+        "last_accepted_work_instruction": deepcopy(progress.get("active_work_instruction")),
+        "active_work_instruction": None, "repository": repository,
+        "f15_acceptance": {"status": "ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL",
+            "product_head": PRODUCT_HEAD, "windows_related": "49_PASS",
+            "wsl_compose": "WEB_API_WORKER_HTTP_PASS",
+            "browser": "PLAYWRIGHT_NETWORK_PASS",
+            "windows_tunnel": "ALEMBIC_API_WORKER_VITE_PASS",
+            "temporary_resource_residue": 0, "unverified": unverified},
+        "next_work_package": {"package_id": "F-16", "status": "READY_AFTER_F15_MERGE_CLEANUP"},
+        "next_successor_work_package": {"package_id": "F-16", "status": "READY_AFTER_F15_MERGE_CLEANUP"},
+        "next_safe_action": "MERGE_F15_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+        "runtime_next_action": "MERGE_F15_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["F15_LOCAL_CONTRACT_ACCEPTED", "F15_APPROVED_SCOPE"],
+            "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {
+        "path": "docs/progress/progress-events.json", "sha256": _sha(event_raw)}
+    snapshot = deepcopy(progress)
+    snapshot.pop("snapshot_hash", None)
+    progress["snapshot_hash"] = _sha(_canonical(snapshot))
+    progress_raw = _pretty(progress)
+    handoff_raw = (b"# F-15 Local shell and SSH-tunneled stack accepted\n\n"
+                   b"```json anvil-recovery-summary\n" + _pretty({key: deepcopy(progress.get(key))
+                   for key in ("event_sequence", "last_event_id", "status", "current_phase",
+                               "current_work_package", "active_agent", "worker_lease", "write_lease",
+                               "next_work_package", "next_safe_action", "runtime_next_action")})
+                   + b"```\n")
+    status_raw = ("# F-15 Local 운영 셸·SSH tunnel 인수\n\n"
+        "- 판정: `ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL`; 제품 HEAD 1d1fe19, Windows 관련 49 PASS, Web Node 3·기존 Node 3 PASS, lint/typecheck/build PASS. Main 통합 최초 Nginx tmpfs chown 실패 1회는 R2 USER 101:101 수정 후 실제 Web Up/HTTP 200으로 재검증했다. 정식 Developer FAILURE_REPORT 0회.\n"
+        "- WSL-server 격리 PG15 QA DB/role migration 0016, Git exact SHA Compose Web/API/Worker Up, API ready 200, Worker ready, Playwright 1920/390 브라우저 same-origin Network 4건·내부 직접주소 0·secret 0·오류 0. WSL Compose의 host-gateway DB 직결은 SSH tunnel 보안 합격 증거로 사용하지 않는다.\n"
+        "- 별도 Windows Local 실측은 WSL-server SSH loopback tunnel 127.0.0.1:15432를 통해 전용 DB/role migration 0016, Worker --check 및 장기 프로세스 ready, API 8301 ready, Vite Web 8300 same-origin /api ready 200을 확인했다. Windows API fixture 404; 개발 Vite의 일반 SPA fallback은 해당 경로 200이므로 운영 fixture 차단 증거는 WSL Nginx 404만 사용한다.\n"
+        "- 초기 WSL QA DB/role/Compose/이미지/브라우저 산출물과 이후 Windows Web/API/Worker/SSH 프로세스·전용 DB/role/credential/log를 정확히 정리해 잔류 0. 기존 shared PostgreSQL 0.0.0.0:5432 바인딩은 선행 위험이며 F-15에서 변경하지 않았다. 인증 세션의 through-Nginx mutation, screenshot 픽셀 육안 검토, WSL Compose DB tunnel, shared PG 외부 방화벽은 미검증이다. F-16 staging, F-17 PG18 RC, F-18 ysna도 후속이다.\n"
+        "- Main이 두 lease를 회수. 다음: F-15 PR 병합·merged-main smoke·branch/worktree 정리 후 F-16.\n\n"
+    ).encode("utf-8") + previous_status
+    progress_path.write_bytes(progress_raw)
+    event_path.write_bytes(event_raw)
+    (root / "docs/progress/BUILD_HANDOFF.md").write_bytes(handoff_raw)
+    (root / "docs/WORK_STATUS.md").write_bytes(status_raw)
+    (root / DIGEST).write_bytes(_pretty({"schema_version": "1.0.0", "algorithm": "SHA-256",
+        "event_sequence": 1473, "self_reference": False,
+        "progress": {"path": "docs/progress/build-progress.json", "bytes": len(progress_raw),
+                     "file_sha256": _sha(progress_raw)},
+        "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": len(handoff_raw),
+                    "file_sha256": _sha(handoff_raw)}}))
+    checksum_paths = sorted(set(final_paths()) - {
+        "docs/progress/build-progress.json", "docs/progress/BUILD_HANDOFF.md", DIGEST, MANIFEST})
+    checksums = []
+    for relative in checksum_paths:
+        raw = (root / relative).read_bytes()
+        checksums.append({"path": relative, "bytes": len(raw), "sha256": _sha(raw)})
+    (root / MANIFEST).write_bytes(_pretty({"schema_version": "1.0.0", "package_id": "F-15",
+        "event_sequence": 1473, "accepted": True,
+        "acceptance_scope": "LOCAL_BROWSER_WINDOWS_SSH_TUNNEL",
+        "projection_mode": FINAL_MODE, "validated_base_commit": BASE,
+        "exact_allowed_paths": final_paths(), "product_write_scope": product_paths(),
+        "product_head": PRODUCT_HEAD, "raw_checksums": checksums, "self_reference": False,
+        "runtime_boundary": {"database": "ISOLATED_PG15_SYNTHETIC_ONLY",
+            "browser": "PLAYWRIGHT_NETWORK_PASS", "windows_local": "SSH_TUNNEL_PASS",
+            "docker": "COMPOSE_HTTP_PASS_DB_DIRECT_NOT_TUNNEL_PROOF",
+            "deployment": "NOT_EXECUTED", "production": "NOT_EXECUTED"}}))
 
 
 if __name__ == "__main__":
