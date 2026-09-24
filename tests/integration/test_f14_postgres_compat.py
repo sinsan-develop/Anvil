@@ -5,6 +5,7 @@ import os
 import re
 import json
 import subprocess
+import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
@@ -80,6 +81,28 @@ def _container_command(container: str, tool: str, *args: str, content: bytes | N
         # Never render stderr: libpq may echo a DSN or other environment details.
         raise AssertionError(f"F14_{tool.upper()}_FAILED")
     return result.stdout
+
+
+def _cleanup_created_databases(admin, created: list[str], primary_error: BaseException | None = None) -> None:
+    from psycopg import sql
+    failed = []
+    try:
+        for name in reversed(created):
+            try:
+                admin.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(name)))
+            except Exception:
+                failed.append(name)
+    finally:
+        try:
+            admin.close()
+        except Exception:
+            failed.append("<admin-close>")
+    if failed:
+        cleanup_error = AssertionError("F14_CLEANUP_FAILED:" + ",".join(failed))
+        if primary_error is not None:
+            group = ExceptionGroup if isinstance(primary_error, Exception) else BaseExceptionGroup
+            raise group("F14_PRIMARY_AND_CLEANUP_FAILED", [primary_error, cleanup_error])
+        raise cleanup_error
 
 
 def _alembic_revision(dsn: str, command: str, revision: str, monkeypatch) -> None:
@@ -184,6 +207,40 @@ def test_f14_container_inspection_binds_port_and_ephemeral_storage(monkeypatch):
         stub(bad)
         with pytest.raises(AssertionError, match="F14_CONTAINER_ISOLATION_INVALID"):
             _inspect_isolated_container("anvil-f14-pg15-1b8211f", 32768)
+
+
+def test_f14_cleanup_attempts_every_created_db_and_closes_after_first_failure():
+    class Admin:
+        closed = False
+        attempted = []
+        def execute(self, query):
+            self.attempted.append(query.as_string())
+            if '"anvil_f14_qa_15_first"' in self.attempted[-1]:
+                raise RuntimeError("synthetic drop failure")
+        def close(self):
+            self.closed = True
+    admin = Admin()
+    with pytest.raises(AssertionError, match="F14_CLEANUP_FAILED:anvil_f14_qa_15_first"):
+        _cleanup_created_databases(admin, ["anvil_f14_qa_15_third", "anvil_f14_qa_15_second",
+                                           "anvil_f14_qa_15_first"])
+    assert len(admin.attempted) == 3
+    assert admin.closed
+
+
+def test_f14_cleanup_retains_primary_failure_when_drop_also_fails():
+    class Admin:
+        closed = False
+        def execute(self, _query):
+            raise RuntimeError("synthetic cleanup failure")
+        def close(self):
+            self.closed = True
+    admin = Admin()
+    primary = ValueError("synthetic restore failure")
+    with pytest.raises(ExceptionGroup, match="F14_PRIMARY_AND_CLEANUP_FAILED") as error:
+        _cleanup_created_databases(admin, ["anvil_f14_qa_15_source"], primary)
+    assert error.value.exceptions[0] is primary
+    assert "anvil_f14_qa_15_source" in str(error.value.exceptions[1])
+    assert admin.closed
 
 
 def test_pg15_and_pg18_require_separate_version_and_extension_evidence():
@@ -349,7 +406,5 @@ def test_f14_isolated_pg_dump_restore_six_lineages_and_migration_boundaries(majo
         with pytest.raises(RecoveryMismatch, match="RESTORE_LINEAGE_MISMATCH"):
             verify_restore(manifest, dict(source_obs.lineage_hashes), altered)
     finally:
-        # Only the three UUID-named databases created above are eligible for cleanup.
-        for name in reversed(created):
-            admin.execute(sql.SQL("DROP DATABASE IF EXISTS {} WITH (FORCE)").format(sql.Identifier(name)))
-        admin.close()
+        # Preserve both the original failure and any cleanup failure for Main remediation.
+        _cleanup_created_databases(admin, created, sys.exception())
