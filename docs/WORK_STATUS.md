@@ -1,3 +1,9 @@
+# F-18 R2 잠긴 의존성 재현 지시 준비 / 2026-09-25
+
+- 판정: `R2_CONTROL_PREPARING`, 담당 Main 어울, R1 정식 Developer 실패보고 0회. R1 `5fd4c10` 로컬 149 PASS/WSL provisional 149 PASS이나 잠긴 WSL venv는 `cryptography` 미선언으로 수집 실패했다. R1 lease는 새 전환 event 전까지 유효하고 R2 제품 경로 mutation은 없다. 기존 단일 `codex/f18-wsl-ops` branch를 유지한다.
+- R2 새 WorkInstruction/Invocation과 통제 overlay는 R1 lease 회수→R2 exact5 lease 발급을 단일 seq1520 전환으로 결박한다. 제품 exact5는 `pyproject.toml`, `uv.lock`, `deploy/wsl/requirements-runtime.txt`, `tests/deploy/test_f18_wsl_dependencies.py`, 기존 F-18 WSL 보고서다. 이 단계는 기능 범위·요구사항·중요 위험 변경이 아니라 승인된 F-18의 재현 가능 의존성 보완이다. Production `NOT_EXECUTED`, F-18 `accepted=false`, F-19 차단.
+- 통제 QA 사전 자원 계획: `ssh WSL-server` 새 exact `/srv/anvil-wsl/f18-ops-r2-control-qa`가 없는지 확인한 후 `daon:daon` mode700으로 생성한다. 승인 Git SSH remote의 공개 R2 통제 code checkpoint만 clean detached checkout하여 Python 3.12 잠긴 dev 환경의 신규·기존 overlay 테스트를 `--basetemp=.f18-r2-control-test-temp`로 실행한다. 기존 `/srv/anvil-wsl/repo`, `anvil-web`, `local-postgres`, 다른 Docker/DB/브라우저 자원은 변경하지 않는다. 종료 전 exact realpath·비-symlink·owner/mode·HEAD·dirty 범위를 확인한 뒤 이 새 경로만 삭제·잔류0을 검증한다. 실제 R2 제품 QA용 자원은 별도 사전 기록 후 생성한다.
+
 # F-18 R1 WSL 격리 재현 자원 계획 / 2026-09-25
 
 - 판정: R1 순수 preflight 코드의 독립 로컬 149 PASS(exit0/66.60초), 제품 commit `5fd4c1013fb4015929700874c61c09cea22519d2` push와 G-05 seq1515 PASS. 독립 리뷰 Important 2·Minor 1은 같은 exact3에서 서명된 계획/승인 대상 hash, target/run ID, UTC 유효기간(최대 5분), 고정 승인 remote 결박으로 보완했다. 실제 capability나 F-18 전체 인수는 아니다.
