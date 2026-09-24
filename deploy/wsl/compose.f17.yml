@@ -10,7 +10,7 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     ports: ["127.0.0.1:${ANVIL_F17_PG18_PORT:?reserved loopback port required}:5432"]
     tmpfs: ["/var/lib/postgresql:rw,noexec,nosuid,size=512m"]
-    networks: [internal]
+    networks: [internal, ingress]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U anvil_admin -d anvil_f17_qa"]
       interval: 2s

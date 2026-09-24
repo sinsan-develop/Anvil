@@ -78,6 +78,7 @@ def test_pg18_compose_isolated_non_superuser_and_no_public_db():
     assert "ANVIL_F17_PG_ADMIN_PASSWORD" in pg["environment"]["POSTGRES_PASSWORD"]
     assert all(p.startswith("127.0.0.1:") for p in pg["ports"])
     assert len(pg["ports"]) == 1
+    assert "ingress" in pg["networks"]  # Docker internal-only networks suppress host port publishing.
     assert "/var/lib/postgresql" in pg["tmpfs"][0]
     assert not pg.get("volumes")
     assert compose["networks"]["internal"]["internal"] is True
