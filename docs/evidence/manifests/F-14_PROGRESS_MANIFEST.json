@@ -35,8 +35,8 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 441155,
-      "sha256": "78410677C6694E7098D44F1DF467CD8CDF2B7BBE496A6D839EC8E25A7EC12A01"
+      "bytes": 441639,
+      "sha256": "39404FCE1051281B05597B085906859E65AD8A802D5EADD6CC4267EF1EA9E5A7"
     },
     {
       "path": "docs/progress/progress-events.json",
@@ -60,13 +60,13 @@
     },
     {
       "path": "scripts/f14_progress_overlay.py",
-      "bytes": 14897,
-      "sha256": "9A5A03954B97789D7D4910B18EF162CD4789B37D1BB5658E6E60789FD178C760"
+      "bytes": 15330,
+      "sha256": "67BAEB8D75B6FA7E84E6AF539C3DB24244D0FE0392A03B82BE88F54292EE4A7A"
     },
     {
       "path": "tests/tooling/test_f14_progress_overlay.py",
-      "bytes": 1108,
-      "sha256": "788FB3DA0A1C935DBFCF68B01D3B8977687B59A4FF0BEB441C5DB062EE541C23"
+      "bytes": 1874,
+      "sha256": "B8E821C5BB92D379318BC59A8A526B5D083016DDB35EB6C94DA9C0821393ED1C"
     }
   ],
   "self_reference": false,

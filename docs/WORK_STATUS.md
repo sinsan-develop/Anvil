@@ -1,5 +1,6 @@
 # F-14 PostgreSQL migration·backup/restore 착수
 
+- 중간 판정: 제품 checkpoint 71a466a 반영 뒤 G-05가 `F14_START_GIT_INVALID` 1회 발생. 검사기가 승인된 exact12 제품 파일의 committed 변경을 누락한 통제 결함으로 확인했고 TDD RED 1 FAIL/1 PASS → 수정 후 2 PASS. F-14 제품 실패 횟수에는 산입하지 않는다. 제품 R2 독립 검토는 정상 `task-1` 식별자 오탐 Important 1을 재현하여 동일 write lease 내 재작업 중이며, PG15/PG18 실검증은 아직 미실행.
 - 판정: ACTIVE; F-13 PR #29 merged main 1584523, feature ancestry/tree, merged-main G-05/659 PASS 6 SKIP, branch/worktree 정리 확인.
 - 담당: Main 어울 통제, developer-primary-f14-r1 제품 exact12 write lease. 기준 문서 hash 일치, F-14 branch clean.
 - 기존 migration head 0015, artifact/checkpoint/recovery table 존재. 실제 backup restore·retention·operations PostgreSQL adapter는 미구현.

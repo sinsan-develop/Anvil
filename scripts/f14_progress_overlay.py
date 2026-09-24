@@ -49,11 +49,16 @@ def control_paths():
 
 
 def validate_start_git_facts(*, head, branch, upstream, remote_head, staged,
-                             dirty, changed, base_is_ancestor=True):
+                             dirty, changed, base_is_ancestor=True,
+                             remote_is_ancestor=False):
     common = branch == BRANCH and upstream == f"development/{BRANCH}" and not staged
     pre = head == BASE and remote_head == BASE and not changed and set(dirty) == set(control_paths())
-    post = (head != BASE and base_is_ancestor and remote_head in {BASE, head}
-            and set(changed) == set(control_paths()) and set(dirty) <= set(product_paths()))
+    expected_changes = {frozenset(control_paths()),
+                        frozenset(control_paths()) | frozenset(product_paths())}
+    post = (head != BASE and base_is_ancestor
+            and (remote_head in {BASE, head} or remote_is_ancestor)
+            and frozenset(changed) in expected_changes
+            and set(dirty) <= set(product_paths()))
     return [] if common and (pre or post) else ["F14_START_GIT_INVALID"]
 
 
@@ -225,9 +230,11 @@ def collect_git(root):
     dirty = {line[3:].replace("\\", "/") for line in status.splitlines() if line}
     changed = set(filter(None, run("diff", "--name-only", f"{BASE}..{head}").splitlines()))
     ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", BASE, head], cwd=root).returncode == 0
+    remote_ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", remote_head, head],
+                                     cwd=root).returncode == 0
     return validate_start_git_facts(head=head, branch=branch, upstream=upstream,
         remote_head=remote_head, staged=staged, dirty=dirty, changed=changed,
-        base_is_ancestor=ancestor)
+        base_is_ancestor=ancestor, remote_is_ancestor=remote_ancestor)
 
 
 def validate(root, bundle):
