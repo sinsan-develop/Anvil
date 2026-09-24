@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-f19-local-integration-seq1511",
-  "event_sequence": 1511,
-  "updated_at": "2026-09-25T02:00:37+09:00",
-  "last_event_id": "evt_f18_local_1511_handoff_recorded",
+  "snapshot_id": "snapshot-wsl-scope-revision-seq1512",
+  "event_sequence": 1512,
+  "updated_at": "2026-09-25T02:36:21+09:00",
+  "last_event_id": "evt_f18_local_1512_handoff_recorded",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -87,9 +87,9 @@
       "docs/progress/progress-events.json"
     ]
   },
-  "plan_version": "1.6",
-  "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
-  "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
+  "plan_version": "1.7",
+  "work_plan_hash": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
+  "design_baseline_hash": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
   "current_phase": "F",
   "current_work_package": "F-18",
   "status": "PAUSED",
@@ -455,12 +455,12 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW",
+  "next_safe_action": "PREPARE_F18_WSL_OPS_WORK_INSTRUCTION",
   "root_human_approval_binding": {
-    "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
-    "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
-    "path": "docs/approvals/APPROVAL-20260810-INTEGRATED-BASELINE-001.md",
-    "sha256": "94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7"
+    "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
+    "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
+    "sha256": "8DB4FFE8D7C195F3F272BD07F668B8A91BDEDD272194351E0F8867A5E7148893",
+    "approval_subject_hash": "5224C01841AF429E5AEAD0B10978889570548F3DFC438E7379B90A3F96E804CF"
   },
   "derived_baseline_binding": {
     "baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
@@ -565,33 +565,36 @@
     }
   },
   "repository": {
-    "branch": "codex/f19-test-dependency",
-    "local_head": "e2f3d994b95c2e60f6a3e597101c30daa25089b4",
-    "local_wsl_qa_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02",
-    "upstream": "development/codex/f19-test-dependency",
-    "remote_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02",
-    "projection_mode": "F18_F19_LOCAL_INTEGRATION_CHECKPOINT",
-    "validated_base_commit": "e2f3d994b95c2e60f6a3e597101c30daa25089b4",
+    "branch": "codex/wsl-operational-scope-plan",
+    "local_head": "c2c62cd011f47db8cbd524f97b3dae494a5672b5",
+    "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
+    "upstream": "development/codex/wsl-operational-scope-plan",
+    "remote_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
+    "projection_mode": "F18_F20_LOCAL_WSL_SCOPE_REVISION",
+    "validated_base_commit": "c2c62cd011f47db8cbd524f97b3dae494a5672b5",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
+      "AGENTS.md",
+      "Anvil_설계서_v2.md",
+      "Anvil_작업계획서_v1.md",
+      "Anvil_테스트계획서_v1.md",
+      "Anvil_통합검증매트릭스_v1.md",
+      "docs/04_test_reports/WSL_OPERATIONAL_SCOPE_REVISION_REPORT.md",
+      "docs/DEVELOPMENT_ENVIRONMENT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-18_LOCAL_START_MANIFEST.json",
+      "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
+      "docs/evidence/manifests/WSL_SCOPE_REVISION_MANIFEST.json",
+      "docs/governance/ANVIL_OPERATING_RULES.md",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f18-local.json",
-      "docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md",
+      "docs/progress/progress-handoff-detached-digest-wsl-scope.json",
       "scripts/check_project_progress.py",
-      "scripts/f18_progress_overlay.py",
-      "tests/tooling/test_f18_progress_overlay.py"
+      "scripts/wsl_scope_overlay.py",
+      "tests/tooling/test_wsl_scope_overlay.py"
     ],
-    "product_write_scope": [
-      "docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md",
-      "packages/provider_catalog/service.py",
-      "pyproject.toml",
-      "uv.lock"
-    ],
-    "worktree_status": "LOCAL_WSL_INTEGRATION",
+    "product_write_scope": [],
+    "worktree_status": "WSL_SCOPE_REVISION_CHECKPOINT",
     "commit_status": "EVIDENCE_COMMIT_PENDING",
     "push_status": "EVIDENCE_PUSH_PENDING"
   },
@@ -919,7 +922,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "B698A3A713BE535FE42CDAA159DD9F04C586D21AB169C5B53D855C9EBD9509D6"
+      "sha256": "12ADB040F3D9EEC49DD782BCC1E557B6C471E3536C5DD005C772C23083E0E8FF"
     }
   },
   "next_work_package": {
@@ -1316,8 +1319,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "629A2B4D052256D5F820BDAA5DBC64591591BF56E68CD9DA1AE5ECF648B237CF",
-  "runtime_next_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW",
+  "snapshot_hash": "3251E9E5D0A131A727D76A7644AB82EB62EED6752A035BCF95E2CD9C5779CB23",
+  "runtime_next_action": "PREPARE_F18_WSL_OPS_WORK_INSTRUCTION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2929,7 +2932,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-25T02:00:37+09:00",
+  "recorded_at": "2026-09-25T02:36:21+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22714,5 +22717,23 @@
       "HUMAN_RELEASE_DECISION"
     ]
   },
-  "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED"
+  "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED",
+  "previous_root_human_approval_binding": {
+    "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
+    "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
+    "path": "docs/approvals/APPROVAL-20260810-INTEGRATED-BASELINE-001.md",
+    "sha256": "94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7"
+  },
+  "scope_revision_binding": {
+    "artifact_sha256": {
+      "Anvil_설계서_v2.md": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
+      "Anvil_작업계획서_v1.md": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
+      "Anvil_통합검증매트릭스_v1.md": "1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6",
+      "Anvil_테스트계획서_v1.md": "902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014"
+    },
+    "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
+    "production": "NOT_EXECUTED",
+    "release_decision": "DEFER",
+    "source_code_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf"
+  }
 }

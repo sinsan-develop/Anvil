@@ -1,5 +1,7 @@
 # Anvil Agent 운영 규칙
 
+> 2026-09-25 신산님 직접 범위 변경: 현재 작업계획서의 필수 실행·인수는 로컬 개발과 `ssh WSL-server`의 Test/Staging·격리 운영 유사 검증까지만이다. 이 문서에 남은 `ysna-server`/Oracle Production 배포·실측·공개 도메인·`RELEASED` 절차는 장래 별도 계획의 운영 규칙이며 현재 Package/Gate 완료조건에 포함하지 않는다. WSL PASS를 Production PASS로 표기하지 않는다.
+
 이 파일은 Anvil 저장소에서 활동하는 모든 Main Agent와 Subagent가 가장 먼저 읽어야 하는 프로젝트 운영 진입점이다.
 
 ## 1. 권위 문서와 우선순위

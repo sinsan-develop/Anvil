@@ -1,12 +1,12 @@
-# Anvil 테스트 계획서 v1.5
+# Anvil 테스트 계획서 v1.6
 
-> 문서 상태: 작업계획 v1.6 공통 API 우선·메뉴 순차 실행 successor / B-05 착수 전 독립 Tester 재검토 대기
+> 문서 상태: 작업계획 v1.7의 2026-09-25 Local·WSL-server 운영 유사 검증 revision / Production 검증 제외
 > 작성일: 2026-08-14
 > 작성 역할: Tester (독립 검증)
 > 최종 승인자: 신산님
-> 설계 기준선: `Anvil_설계서_v2.md` v2.6 / SHA-256 `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-> 계획 기준선: `Anvil_작업계획서_v1.md` v1.6 / SHA-256 `E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D` / 108개 Package
-> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.4 / SHA-256 `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5` (검증 항목 255건 / 고유 실행 234건 / U overlay 11건)
+> 설계 기준선: `Anvil_설계서_v2.md` v2.8 (현재 hash는 범위 승인 기록에 결박)
+> 계획 기준선: `Anvil_작업계획서_v1.md` v1.7 (현재 hash는 범위 승인 기록에 결박) / 108개 Package
+> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.5 (현재 hash는 범위 승인 기록에 결박; 검증 항목 255건 / 고유 실행 234건 / U overlay 11건)
 > A-01 파생 기준선: `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` / 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
@@ -17,10 +17,10 @@
 
 | 문서 | 정의하는 것 |
 |---|---|
-| `Anvil_설계서_v2.md` v2.6 | 제품이 무엇이어야 하는가 (검증 요구의 원천) |
-| `Anvil_작업계획서_v1.md` v1.6 | 무엇을 어떤 순서로 만드는가 (108개 Package·공통 모듈/API 우선·11개 메뉴 직렬) |
-| `Anvil_통합검증매트릭스_v1.md` v1.4 | **무엇을** 검증하는가 (AV-* ID 255건 + U overlay 11건) |
-| **`Anvil_테스트계획서_v1.md` v1.5** | **어떻게·언제·누가·무슨 증거로** 검증하는가 |
+| `Anvil_설계서_v2.md` v2.8 | 제품이 무엇이어야 하는가 (검증 요구의 원천) |
+| `Anvil_작업계획서_v1.md` v1.7 | 무엇을 어떤 순서로 만드는가 (108개 Package·공통 모듈/API 우선·11개 메뉴 직렬) |
+| `Anvil_통합검증매트릭스_v1.md` v1.5 | **무엇을** 검증하는가 (AV-* ID 255건 + U overlay 11건) |
+| **`Anvil_테스트계획서_v1.md` v1.6** | **어떻게·언제·누가·무슨 증거로** 검증하는가 |
 
 설계서와 충돌하면 설계서가 우선한다. 이 계획의 변경에는 신산님 승인과 revision 갱신이 필요하다.
 
@@ -35,7 +35,7 @@
 | Anvil 제품 코드 | `apps/web`, `apps/api`, `packages/*`, `domain/*` 전체 |
 | Anvil 도메인 계약 | Task/Run/Step/Delegation/Approval enum·전이·Event·hash 계약 |
 | Anvil 운영 산출물 | `docs/progress/build-progress.json`, `BUILD_HANDOFF.md`, work_order/completion/test report |
-| 실행 환경 | Local → WSL-server → ysna-server 3단계 |
+| 실행 환경 | Local → WSL-server Test/Staging → WSL-server 격리 운영 유사 target 3단계; ysna-server Production 제외 |
 | Agent 동작 | Main Agent·Developer/Reviewer/Tester Subagent의 권한·실패·인수·학습 동작 |
 
 ### 2.2 비대상
@@ -135,7 +135,7 @@ Reviewer/Tester Subagent 자동화는 E-01에서 구현된다. **Phase G~D 구�
 | `ENV-LOCAL-PROD` | production-like Docker + reverse proxy | F-15 | fixture repo + 합성 운영 데이터 |
 | `ENV-WSL-STAGING` | WSL-server 운영 유사 검증 | F-16~F-17 | pgvector PostgreSQL 15, 전용 role/schema + 익명화 데이터 |
 | `ENV-WSL-PG18-RC` | PostgreSQL 18 호환성 Release Candidate 검증 | F-17, F-20 | **공유 DB와 분리된** PG18 fixture/복제 데이터 |
-| `ENV-PRODUCTION` | ysna-server 운영 | F-18~F-20 | 공유 PostgreSQL 18의 전용 role/schema + 운영 데이터 |
+| `ENV-WSL-OPS` | WSL-server 격리 운영 유사 검증(Production 아님) | F-18~F-20 | 기존 개발 DB와 분리된 PostgreSQL 18 전용 role/schema + 합성·익명화 데이터 |
 
 ### 5.2 포트·경계 (설계서 25.2)
 
@@ -152,7 +152,7 @@ Reviewer/Tester Subagent 자동화는 E-01에서 구현된다. **Phase G~D 구�
 
 - Tester는 Developer의 worktree를 재사용하지 않는다. **별도 clone 또는 별도 worktree**에서 검증한다.
 - L6 장애 주입은 **전용 환경**에서만 실행한다. 다른 세션이 진행 중인 DB에 fault injection을 하지 않는다.
-- `ENV-PRODUCTION` 검증은 WSL 합격 Git revision과 동일한 artifact digest에 대해서만 수행한다(AV-OPS-016, 020).
+- `ENV-WSL-OPS` 검증은 `ENV-WSL-STAGING` 합격 Git revision과 동일한 artifact digest에 대해서만 수행한다(AV-OPS-016, 020). `ENV-PRODUCTION` 실측은 현재 계획 밖이며 PASS로 집계하지 않는다.
 - 배포는 Git 이력만 사용하며 서버의 dirty worktree·직접 patch는 즉시 차단한다(AV-OPS-021).
 
 ---
@@ -266,7 +266,7 @@ golden_case:
 | Apply/Deploy CSRF, metadata IP·redirect·DNS rebinding SSRF, 미승인 egress | §49.17-9~12 위반 — 보안 경계 붕괴 |
 | 폐기 secret으로 resume하거나 secret이 5개 경계에 노출 | §49.17-11, 19 위반 — 자격증명 확산 |
 | `EvidenceManifest`의 target/digest/migration 증거 불일치 | §49.17-3, 15 위반 — 검증하지 않은 산출물 전달 |
-| WSL 합격 commit과 ysna-server 배포 commit 불일치 또는 서버 dirty patch | §49.17-16~17 위반 — Git-only 승격 파괴 |
+| WSL Test/Staging 합격 commit과 격리 운영 유사 target 배포 commit 불일치 또는 서버 dirty patch | §49.17-16~17 위반 — Git-only 승격 파괴 |
 
 ---
 
@@ -490,7 +490,7 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 |---|---|
 | 검증 ID | 매트릭스 F Gate 신규 필수 ID 전량 |
 | 주 레벨 | L4, L6, L7 |
-| 환경 | ENV-LOCAL-PROD → ENV-WSL-STAGING/ENV-WSL-PG18-RC → ENV-PRODUCTION |
+| 환경 | ENV-LOCAL-PROD → ENV-WSL-STAGING/ENV-WSL-PG18-RC → ENV-WSL-OPS |
 
 **환경 승격 규칙**: 각 환경에서 **동일한 E2E 스위트**를 실행한다. 환경별로 다른 시나리오를 쓰면 승격 비교가 불가능하다. 환경 간 차이는 결과에서 드러나야지 시나리오에서 감춰지면 안 된다.
 
@@ -509,12 +509,12 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 - provider endpoint는 metadata IP, redirect, DNS rebinding을 모두 차단하고 미승인 code/data egress도 차단한다(AV-SAFE-030, 032).
 - 폐기 secret으로 resume할 수 없고 감사 Event를 남긴다(AV-SAFE-031).
 - `EvidenceManifest`의 Git commit, image digest, migration set hash가 실제 전달 대상과 다르면 적용·배포·릴리스를 차단한다(AV-GATE-025).
-- WSL-server 합격 Git commit만 ysna-server에 Git으로 승격하며 서버 dirty worktree·직접 patch를 금지한다(AV-OPS-020~021).
-- pgvector PostgreSQL 15 개발/일반 검증과 공유 PostgreSQL 18 배포 검증을 분리하고, PG18 RC는 격리 인스턴스에서 수행한다(AV-OPS-025).
+- WSL-server Test/Staging 합격 Git commit만 WSL 격리 운영 유사 target에 Git으로 승격하며 서버 dirty worktree·직접 patch를 금지한다(AV-OPS-020~021). ysna-server 승격은 현재 계획 밖이다.
+- pgvector PostgreSQL 15 개발/일반 검증과 격리 PostgreSQL 18 운영 유사 검증을 분리하고, PG18 RC는 별도 격리 인스턴스에서 수행한다(AV-OPS-025).
 - 데이터 손실 가능 migration rollback은 자동 수행하지 않고 사람 결정으로 전환한다(AV-OPS-022).
-- `envil.sinsan.kr`에서 내부 주소·secret 노출 0건, `MonitoringPolicy`의 health/error/budget/failure 관찰 정상, Owner 기능 확인 후에만 `RELEASED`가 된다(AV-OPS-023~024).
+- WSL 격리 운영 유사 target에서 내부 주소·secret 노출 0건과 `MonitoringPolicy`의 health/error/budget/failure 관찰을 확인한다. `envil.sinsan.kr` 실측과 `RELEASED` 전이는 현재 계획 밖이며 WSL PASS로 대체하지 않는다(AV-OPS-023~024).
 
-F-01~F-19는 provider·관측·보안·환경 승격 capability를 준비한다. **F-20 최종 release 검증은 U-11 acceptance 뒤에만 실행**하며, U-01~U-11 전 메뉴의 동일 ReleaseManifest·same-origin·smoke·rollback evidence를 포함해야 한다.
+F-01~F-19는 provider·관측·보안·환경 승격 capability를 준비한다. **F-20 최종 WSL 운영 유사 검증은 U-11 acceptance 뒤에만 실행**하며, U-01~U-11 전 메뉴의 동일 ReleaseManifest·same-origin·smoke·rollback evidence를 포함해야 한다. F-20 완료도 Production Release가 아니다.
 
 ### 10.8 Phase U — 메뉴별 순차 수직 검증
 
@@ -617,7 +617,7 @@ C-15가 첫 완전 수직 흐름이다. **제품이 처음으로 실재하는 �
 
 #### DIR-3 — E Gate 직전
 
-F는 운영·배포다. Local→WSL-server→ysna-server 승격 산출물·migration·운영 자원이 생긴 뒤의 방향 변경은 비용이 급증한다. **싸게 되돌릴 수 있는 마지막 지점이다.**
+F는 현재 범위에서 Local→WSL-server Test/Staging→WSL-server 격리 운영 유사 검증이다. 동일 commit·digest·migration·격리 자원에 결박한 뒤의 방향 변경은 비용이 급증한다. **Production 실측과 구분해 싸게 되돌릴 수 있는 마지막 지점이다.**
 
 동시에 이 시점에 47.18의 E2E 20개와 48.9 헌법 검증조건이 전부 실행 가능해진다. 즉 **47.19 최종 불변식 9개를 처음으로 전량 판정할 수 있는 최초 시점**이기도 하다.
 

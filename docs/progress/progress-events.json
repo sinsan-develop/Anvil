@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1511,
+  "last_sequence": 1512,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80847,7 +80847,36 @@
     "qa_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02",
     "source_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02"
   }
+},
+{
+  "sequence": 1512,
+  "event_id": "evt_f18_local_1512_handoff_recorded",
+  "event_type": "HANDOFF_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPERATIONAL_SCOPE_REVISION",
+  "subject_ref": "F-18/WSL_OPERATIONAL_SCOPE_REVISION",
+  "occurred_at": "2026-09-25T02:36:21+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "C978EB9AD0BD0BB48BBA98D1EE34A87F8453DDD85E36293E32C63EB204D7C327",
+  "details": {
+    "classification": "HUMAN_APPROVED_FUNCTION_SCOPE_AND_IMPORTANT_RISK_CHANGE",
+    "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
+    "qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
+    "production": "NOT_EXECUTED",
+    "release_decision": "DEFER",
+    "artifact_sha256": {
+      "Anvil_설계서_v2.md": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
+      "Anvil_작업계획서_v1.md": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
+      "Anvil_통합검증매트릭스_v1.md": "1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6",
+      "Anvil_테스트계획서_v1.md": "902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014"
+    }
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1511_handoff_recorded"
+  "last_event_id": "evt_f18_local_1512_handoff_recorded"
 }

@@ -1,11 +1,11 @@
-# Anvil 통합 검증 매트릭스 v1.4
+# Anvil 통합 검증 매트릭스 v1.5
 
-> 문서 상태: 작업계획 v1.6 공통 API 우선·메뉴 순차 실행 successor / B-05 착수 전 독립 Tester 재검토 대기
+> 문서 상태: 작업계획 v1.7의 2026-09-25 Local·WSL-server 운영 유사 검증 revision / Production 검증 제외
 > 작성일: 2026-08-14
 > 작성 역할: Tester (독립 검증)
-> 설계 기준선: `Anvil_설계서_v2.md` v2.6 / SHA-256 `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-> 계획 기준선: `Anvil_작업계획서_v1.md` v1.6 / SHA-256 `E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D` / 108개 Work Package
-> 짝 문서: `Anvil_테스트계획서_v1.md` v1.5
+> 설계 기준선: `Anvil_설계서_v2.md` v2.8 (현재 hash는 범위 승인 기록에 결박)
+> 계획 기준선: `Anvil_작업계획서_v1.md` v1.7 (현재 hash는 범위 승인 기록에 결박) / 108개 Work Package
+> 짝 문서: `Anvil_테스트계획서_v1.md` v1.6
 > 책임 정합화 승인: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
@@ -16,7 +16,7 @@
 
 - 계획서 13.3과 설계서 34.6은 "중대 미진 시 해당 차수를 다시 검증한다"고 규정하지만, **재검증 대상 집합이 어디에도 열거되어 있지 않다.**
 - 같은 요구가 서로 다른 문장으로 4번까지 반복된다. 예: "SKIPPED/BLOCKED를 PASS로 처리 금지"는 설계서 P11, 22.4, 34.6, 47.18-14, 계획서 A Gate·C-14에 각각 존재한다. 어느 것이 정본인지 정의되지 않았다.
-- §49.17의 20개 핵심 완성 시나리오, 승인 binding, EvidenceManifest, fencing, 원자 budget, Web/egress/secret 보안과 Git 전용 WSL-server→ysna-server 승격을 구현 Package와 Gate에 명시적으로 귀속해야 한다.
+- §49.17의 20개 핵심 완성 시나리오, 승인 binding, EvidenceManifest, fencing, 원자 budget, Web/egress/secret 보안과 Git 전용 WSL-server Test/Staging→격리 운영 유사 target 승격을 현재 구현 Package와 Gate에 귀속한다. ysna-server Production 승격은 별도 후속 계획에 남긴다.
 
 이 문서는 흩어진 검증 요구를 **단일 ID 체계**로 통합하고, 각 항목에 **책임 Package / 검증 레벨 / 필수 증거 / 심각도 / 판정 기준**을 부여해 Phase Gate 판정과 재검증 범위 산정을 집행 가능하게 만든다.
 
@@ -377,17 +377,17 @@ AV-<도메인>-<3자리>
 | AV-OPS-010 | Provider/Model capability registry가 역할 라우팅을 결정한다 | F-02, 42장 | F-02 | L3 | AI | E-AUD | MAJOR |
 | AV-OPS-011 | Claude/Codex/Local adapter를 바꿔도 TaskGraph·permission·evidence·resume 계약이 유지된다 | 47.18-19 | C-01, F-02 | L3 | AI | E-API, E-EVT | MAJOR |
 | AV-OPS-012 | 무승인 provider fallback이 발생하지 않는다 | E-08 | E-08 | L5 | AN | E-AUD | CRITICAL |
-| AV-OPS-013 | Local development·WSL-server Test/Staging·ysna-server Production의 checkout·domain·DB·credential 경계가 구분된다 | 49.11, 계획서 F Gate | F-16, F-18 | L7 | MI | E-DEC | CRITICAL |
+| AV-OPS-013 | Local development·WSL-server Test/Staging·WSL-server 격리 운영 유사 target의 checkout·접근 경로·DB·credential 경계가 구분되고 Production은 미검증으로 표시된다 | 49.11, 계획서 F Gate | F-16, F-18 | L7 | MI | E-DEC | CRITICAL |
 | AV-OPS-014 | Local production-like 환경에서 브라우저 Network 내부주소 직접 호출 0건 | F-15 | F-15 | L4 | AN | E-NET | CRITICAL |
 | AV-OPS-015 | WSL-server 전환 후 migration·health가 통과하고 핵심 E2E·rollback이 검증된다 | F-16, F-17 | F-17 | L6 | FI | E-CMD, E-SHOT | CRITICAL |
-| AV-OPS-016 | ysna-server에는 **WSL-server 합격 commit·digest만 Git으로 승격**된다 | 49.12, F-18 | F-18 | L7 | MI | E-DEC, E-GIT, E-MAN | CRITICAL |
-| AV-OPS-017 | Local → WSL-server → ysna-server 각 단계에서 같은 API·화면 흐름과 same-origin Network가 검증된다 | 47.18-20, 49.11~49.13 | F-19, F-20 | L4 | AE | E-NET, E-SHOT | CRITICAL |
+| AV-OPS-016 | WSL-server Test/Staging에서 합격한 **동일 commit·digest만 승인 Git으로 격리 운영 유사 target에 승격**된다 | 49.12, F-18 | F-18 | L7 | MI | E-DEC, E-GIT, E-MAN | CRITICAL |
+| AV-OPS-017 | Local → WSL-server Test/Staging → WSL-server 격리 운영 유사 target에서 같은 API·화면 흐름과 same-origin Network가 검증된다 | 47.18-20, 49.11~49.13 | F-19, F-20 | L4 | AE | E-NET, E-SHOT | CRITICAL |
 | AV-OPS-018 | 운영 smoke·관측성·backup/restore·rollback 최종 시나리오가 통과한다 | F-20 | F-20 | L6 | FI | E-SHOT, E-CMD, E-MAN | CRITICAL |
 | AV-OPS-019 | Provider 요청 취소 뒤 upstream 요청이 계속되면 abort receipt·request ID·최종 usage를 기록하고 비용을 0으로 처리하지 않는다 | 49.6, 49.17-8 | E-08 | L6 | FI | E-API, E-EVT, E-AUD | CRITICAL |
-| AV-OPS-020 | WSL-server에서 검증한 commit·digest와 다른 revision의 ysna-server 배포가 `DEPLOY_ARTIFACT_MISMATCH`로 차단된다 | 49.12, 49.17-16 | F-18 | L5 | AN | E-GIT, E-MAN, E-AUD | CRITICAL |
+| AV-OPS-020 | WSL-server Test/Staging에서 검증한 commit·digest와 다른 revision의 격리 운영 유사 target 배포가 `DEPLOY_ARTIFACT_MISMATCH`로 차단된다 | 49.12, 49.17-16 | F-18 | L5 | AN | E-GIT, E-MAN, E-AUD | CRITICAL |
 | AV-OPS-021 | dirty server worktree·server-local patch·`scp` source 복사 배포를 거부하고 승인 remote의 정확한 commit/tag만 checkout한다 | 49.12, 49.17-17 | F-16, F-18 | L5 | AN | E-GIT, E-CMD, E-AUD | CRITICAL |
 | AV-OPS-022 | 데이터 손실 가능 migration rollback은 신산님 결정 없이 실행되지 않고 `DEPLOYMENT_ROLLBACK_DECISION_REQUIRED`로 정지한다 | 49.12, 49.17-18 | F-14, F-20 | L5+L6 | AN+FI | E-EVT, E-DEC | CRITICAL |
-| AV-OPS-023 | `envil.sinsan.kr` 실제 브라우저 Network에 내부 API·DB·OLLAMA 주소와 secret 노출이 0건이다 | 49.11, 49.13, 49.17-19 | F-20 | L4+L5 | AE+AN | E-NET, E-SHOT | CRITICAL |
+| AV-OPS-023 | WSL-server 격리 운영 유사 target의 실제 브라우저 Network에 내부 API·DB·OLLAMA 주소와 secret 노출이 0건이다. 공개 운영 도메인 결과로 승격하지 않는다 | 49.11, 49.13, 49.17-19 | F-20 | L4+L5 | AE+AN | E-NET, E-SHOT | CRITICAL |
 | AV-OPS-024 | smoke PASS 후에도 MonitoringPolicy 관찰 종료와 신산님 확인 전 `RELEASED` 전이가 차단된다 | 49.13, 49.17-20 | F-20 | L6+L7 | FI+MI | E-EVT, E-DEC, E-MAN | CRITICAL |
 | AV-OPS-025 | WSL-server PostgreSQL 15 PASS를 운영 호환성으로 재사용하지 않고 별도 격리 PostgreSQL 18 Release Candidate에서 migration·extension·query·backup/restore·rollback rehearsal을 수행한다 | 49.11 | F-17, F-20 | L3+L6 | AI+FI | E-CMD, E-TEST, E-MAN | CRITICAL |
 
@@ -418,7 +418,7 @@ AV-<도메인>-<3자리>
 | AV-FLOW-017 | **context 절약** — 병렬 raw transcript 무제한 합류 없음, artifact reference로 복구 가능 | 47.18-17 | E-02 | L3 | E-ART | MAJOR |
 | AV-FLOW-018 | **개인 학습** — 사용자 교정이 candidate로만 생성, 승인 전 행동 불변 | 47.18-18 | D-13 | L5 | E-AUD | CRITICAL |
 | AV-FLOW-019 | **provider 교체** — adapter 교체 후 TaskGraph·permission·evidence·resume 계약 유지 | 47.18-19 | F-02 | L3 | E-API | MAJOR |
-| AV-FLOW-020 | **운영 배포** — Local→WSL-server→ysna-server 각 단계 동일 API·화면·same-origin 검증 | 47.18-20, 49.11~49.13 | F-19, F-20 | L4 | E-NET, E-SHOT, E-MAN | CRITICAL |
+| AV-FLOW-020 | **운영 유사 배포** — Local→WSL-server Test/Staging→WSL-server 격리 운영 유사 target 각 단계 동일 API·화면·same-origin 검증; Production은 NOT_EXECUTED | 47.18-20, 49.11~49.13 | F-19, F-20 | L4 | E-NET, E-SHOT, E-MAN | CRITICAL |
 | AV-FLOW-021 | **1차 수직 흐름** — 요청→요구사항 제안→Impact→계획→승인→실행→검증→적용/폐기 전체 재현 | 33장, C-15 | C-15 | L4+L7 | E-SHOT, E-API, E-DIFF | CRITICAL |
 | AV-FLOW-022 | **전체 학습 E2E** — 후보 생성→승인→다음 Task 적용→rollback과 무변경 review 재현 | D-13 | D-13 | L4 | E-AUD | CRITICAL |
 | AV-FLOW-023 | **제한 병렬 E2E** — 대규모 fixture migration·bug hunt에서 충돌 없는 병렬·독립 실패 격리·비용/속도/품질 비교 | E-11 | E-11 | L4+L7 | E-TEST, E-DEC | MAJOR |
@@ -629,7 +629,7 @@ U Package의 자동 테스트 PASS는 메뉴 인수가 아니다. 각 메뉴는 
 3. DIR-1=A-15, DIR-2=C-15, DIR-X=조건부 추가, DIR-3=E-11 위치가 Gate와 테스트계획에서 일치한다.
 4. §49.17의 20개 시나리오가 `AV-STAT-041~043`, `AV-SAFE-028~032`, `AV-AGT-038`, `AV-LRN-027~028`, `AV-GATE-025`, `AV-OPS-019~024`, `AV-FLOW-024~025`에 1:1 연결된다.
 5. `AV-SAFE-033` approval binding, `AV-GATE-026` 문서 정규화, `AV-OPS-025` PostgreSQL 18 RC 검증이 별도 책임 Package와 증거를 가진다.
-6. WSL-server→ysna-server는 Git commit/tag와 EvidenceManifest로만 승격되고 서버 직접 patch·source 복사는 적대적 테스트로 차단된다.
+6. 현재 계획의 WSL-server Test/Staging→격리 운영 유사 target은 Git commit/tag와 EvidenceManifest로만 승격되고 서버 직접 patch·source 복사는 적대적 테스트로 차단된다. ysna-server 승격은 이번 검증에 포함하지 않는다.
 
 ### 9.3 기존 미진의 처리
 

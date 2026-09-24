@@ -1,6 +1,8 @@
-# Anvil 프로젝트 운영규칙 v1.6
+# Anvil 프로젝트 운영규칙 v1.7
 
-> 상태: v1.6 — A-01 책임 정합화 승인과 활성 authority successor 반영
+> 2026-09-25 현재 계획 범위: 신산님 직접 지시로 F-18~F-20 필수 검증을 Local·WSL-server Test/Staging·WSL-server 격리 운영 유사 환경에 한정한다. 아래 Production/`ysna-server`/`envil.sinsan.kr` 배포·인수·`RELEASED` 규칙은 향후 운영 계획에 보존하되 현재 Package/Gate 통과를 막는 필수 증거로 요구하지 않는다. WSL 검증을 Production 증거로 전용하지 않는다.
+
+> 상태: v1.7 — 2026-09-25 Local·WSL-server 실행 범위 revision; 아래 §2의 v1.6 SHA 표는 이전 기준선 기록이며 현재 hash는 범위 승인 기록에 결박
 > 적용 범위: Anvil 설계·개발·검증·학습·배포 전 과정  
 > 설계 책임자: Main Agent 어울  
 > 작업 담당자: Primary Developer Subagent `developer-primary`
