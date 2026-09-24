@@ -1,3 +1,10 @@
+# F-18 WSL 운영 유사 target 착수 준비 / 2026-09-25
+
+- 판정: `WORK_INSTRUCTION_PREPARED`, 담당 Main 어울, 정식 실패보고 0회. 병합된 `main@69247977e4e51781401e45348fd3a290d8393c36`의 clean 격리 checkout에서 단일 `codex/f18-wsl-ops` branch를 생성했다. canonical seq1512의 `PREPARE_F18_WSL_OPS_WORK_INSTRUCTION`에 따라 `docs/work_orders/F-18_WSL_OPS_WORK_INSTRUCTION.md`와 짧은 invocation을 작성했다. 현재 worker/write lease는 None이므로 제품 파일 mutation·WSL 자원 생성은 아직 없다.
+- WSL-server 읽기 전용 inventory: 기존 `/srv/anvil-wsl/repo@a681e0c0a97bdb67956a0a50aa208bd38982a545` clean, `anvil-web` healthy, `local-postgres` Up. 새 `/srv/anvil-wsl/f18-ops-rehearsal`은 없고 후보 loopback 8310/8311/32770/8444 점유 출력은 없었다. 기존 root-owned repo의 Git safe.directory 오류는 명령별 read-only 예외로 확인했고 전역 설정 변경은 0. 기존 서비스/DB/타 프로젝트 자원 접근·변경 0. MinIO image는 로컬에 있으나 OIDC image는 확인 범위에서 없으며 재사용은 계획이 아닌 실제 runtime 테스트 때 별도 판단한다.
+- F-17 PASS는 과거 Git/image에 한정한다. 이번 F-18은 새 정확한 Web/API/Worker digest, signed manifest, Test/Staging 재검증과 WSL 분리 target의 인증·object storage·network·PG18/rollback 실측이 필요하다. 현재 F-18 `PARTIAL`, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production `NOT_EXECUTED`, ReleaseDecision `DEFER`를 유지한다.
+- 다음: WorkInstruction hash·정본 SHA 점검 → canonical worker/write lease의 exact Task 경로와 G-05 transition 준비 → 로컬 TDD/commit/push → WSL-server exact Git 수신·격리 실측·정리. 계획 자원은 새 `/srv/anvil-wsl/f18-ops-rehearsal` checkout과 `anvil-f18-wsl-ops` Compose project/PG18 전용 DB·role이며 실행 직전 부재·포트·label 확인 후 생성, 검증/실패 직후 exact 대상을 제거해 잔류0을 기록한다.
+
 # 신산님 지시 Local·WSL 운영 유사 검증 범위 revision / 2026-09-25
 
 - 최종 코드 QA SHA `378b337ad2ddc6069d2eb5549edbc224a9319aaf`: seq1512 projection 첫 시도가 Windows Git 한글 경로 이스케이프 때문에 `WSL_SCOPE_GIT_INVALID`로 안전 중단(exit1). 실제 Git 재현 테스트 RED 후 UTF-8·`core.quotePath=false` 수정. 로컬 통제 20 PASS(exit0/14.68초), 게시한 같은 SHA를 WSL-server Python 3.12 새 격리 checkout `/srv/anvil-wsl/wsl-scope-revision-qa-r2`에서 20 PASS(exit0/0.68초). exact realpath·비-symlink·HEAD 검사 후 R2 제거·잔류0. 코드 QA 이후 증거 파일만 변경하며 F18 실제 운영 유사 환경 검증은 아직 미실행이다.
