@@ -1,5 +1,7 @@
 # F-14 PostgreSQL migration·backup/restore 착수
 
+- WSL 격리 검증 사전 범위: Git-only 임시 checkout `/tmp/anvil-f14-1b8211f` (제품 commit `1b8211f`), 신규 컨테이너 `anvil-f14-pg15-1b8211f` 및 `anvil-f14-pg18-1b8211f`만 생성한다. 기존 `local-postgres`, `anvil-web`, 타 프로젝트 컨테이너·DB·볼륨·네트워크에는 접근·변경하지 않는다. 이미 로컬에 있는 이미지 `pgvector/pgvector:0.8.2-pg15` (sha256:75f6767185020459c7e2c3f88fb66f1bd2d9790c435bc91512497146c8bf8d7e), `pgvector/pgvector:0.8.2-pg18` (sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c)을 사용한다. 전용 임시 DB 저장소는 Docker tmpfs, host port는 loopback 동적 할당, 별도 named volume/network 생성 없음. 검증 후 정확히 두 컨테이너를 정지·제거하고 해당 임시 checkout·테스트 산출물을 제거한 뒤 이름·경로·볼륨 잔류 0을 확인한다.
+- 제품 R2: `1b8211f` 원격 checkpoint, 독립 SPEC/QUALITY 계약 범위 PASS(Critical/Important 0), F-13 queue `task-1` 실제 detector 경로 통과. Main Windows 66 PASS/15 SKIP, G-05 PASS. 실제 PostgreSQL·backup/restore는 아래 격리 실행 전까지 미검증.
 - 중간 판정: 제품 checkpoint 71a466a 반영 뒤 G-05가 `F14_START_GIT_INVALID` 1회 발생. 검사기가 승인된 exact12 제품 파일의 committed 변경을 누락한 통제 결함으로 확인했고 TDD RED 1 FAIL/1 PASS → 수정 후 2 PASS. F-14 제품 실패 횟수에는 산입하지 않는다. 제품 R2 독립 검토는 정상 `task-1` 식별자 오탐 Important 1을 재현하여 동일 write lease 내 재작업 중이며, PG15/PG18 실검증은 아직 미실행.
 - 판정: ACTIVE; F-13 PR #29 merged main 1584523, feature ancestry/tree, merged-main G-05/659 PASS 6 SKIP, branch/worktree 정리 확인.
 - 담당: Main 어울 통제, developer-primary-f14-r1 제품 exact12 write lease. 기준 문서 hash 일치, F-14 branch clean.
