@@ -2525,6 +2525,13 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 중간 진단 오류·조치: (1) internal-only PG18 DB port 미게시 → postgres를 격리 ingress에도 연결, 실제 127.0.0.1:32769 확인. (2) QA Caddy `*:8443` → 즉시 종료·loopback bind. (3) Web-only `/auth/session` 405 → F17 전용 HTTPS QA gateway에서 `/auth/*`만 API 내부 IP로 전달, Secure cookie 검증 PASS; Web-only 직결 인증은 미검증/F18 proxy 재확인 항목. (4) PG15 image 자동 anonymous volume → 해당 container+정확한 volume 즉시 제거하고 PGDATA tmpfs `Mounts=[]`로 재실행. (5) 초기 Git/image 불일치 및 레거시 빌드 ID 변동 → 최종 동일 checkout/image를 **유지**하며 양 환경 재검증. 동일 정식 Developer 실패 3회가 아니며 Main 인수 횟수 0.
 - 정리: 전용 PG15 DB·2 role, PG18 Compose/container/network/tmpfs, PG15/18 rehearsal container·anonymous volume, TLS·브라우저 프로필·합성 비밀·인증서·QA screenshot, F17 image tags, `/srv/anvil-wsl/f17-rc`와 `-qa` exact paths 잔류0. 기존 `anvil|anvil_app` 확인, `local-postgres` Up·`anvil-web` Up/healthy. 임시 합성 DB·비밀은 삭제돼 복구 불가; source는 공개 tag로 복구 가능.
 - 변경 파일: `deploy/wsl/compose.f17.yml`, `deploy/wsl/f17_validation.py`, `tests/deploy/test_f17_validation.py`, `tests/integration/test_f17_runtime_e2e.py`, `docs/04_test_reports/F-17_COMPLETION_REPORT.md`, 본 WORK_STATUS, `docs/04_test_reports/F-17_WSL_TEST_REPORT.md`, `docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json` 및 raw checksum manifest. 미검증: ProductValidation API 501, Web-only auth route, 전체 UI 업무 흐름, 실제 Provider/production/user ReleaseDecision. 다음 행동: report/manifest hash·G-05·독립 review 후 PR Broker→main merge→merged-main smoke→branch/worktree 삭제; 그 전 F-18 branch 생성 금지.
+
+## F-17 병합 후 G-05 보정 — 2026-09-24
+
+- 판정: PR #33은 `main`의 `b0a4de6`에 병합됐으나 merged-main G-05는 `F17_START_GIT_INVALID`로 실패했다. 제품/WSL 검증 실패가 아니라 F-17 final overlay가 작업 브랜치만 검사한 control checker 결함이다. F-18 브랜치는 생성하지 않았다.
+- 담당 Main, 동일 F-17 작업 브랜치 `codex/f17-wsl-pg18-rc`를 병합된 `main`으로 fast-forward한 뒤 checker-only TDD 보정 중. RED: final merged-main validator import 실패 1회. GREEN: `tests/tooling/test_f17_progress_overlay.py` 4 PASS(exit 0). 제품 파일·런타임·승인 범위 변경 0.
+- 보정 내용: final 상태에서 동일 exact18-path clean feature 또는 두 부모/feature 동일 tree/원격 main 일치/기준 BASE의 첫 부모 계보가 검증된 merged-main을 허용한다. start 상태 검사는 종전 branch 조건을 유지한다.
+- 다음 조치: raw checksum 갱신 → 동일 F-17 브랜치 push 및 G-05 → PR Broker 보정 병합 → merged-main G-05/smoke → F-17 branch/worktree 정리. 미검증: 보정 병합 전 merged-main gate.
 - 독립 재검토 결과 spec/quality 각각 C0/I0/M0 PASS. seq1323 Main acceptance는
   C30R3 fixture formal 범위만 적용한다. active agent/worker/write lease0.
 - C30 전체 acceptance는 보류: canonical progress checker의 기존 C03 embedded SyntaxError가
