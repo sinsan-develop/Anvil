@@ -58209,7 +58209,9 @@ def _validate_git_projection(bundle):
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_R2_START_EXACT3",
-            "F18_LOCAL_WSL_R2_CHECKPOINT_EXACT3"}:
+            "F18_LOCAL_WSL_R2_CHECKPOINT_EXACT3",
+            "F18_LOCAL_WSL_R3_START_EXACT3",
+            "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3"}:
         from f18_progress_overlay import collect_git
         return collect_git(bundle["_root"])
     return _validate_git_projection_before_f18_local(bundle)
@@ -58220,7 +58222,9 @@ def validate_bundle(bundle):
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_R2_START_EXACT3",
-            "F18_LOCAL_WSL_R2_CHECKPOINT_EXACT3"}:
+            "F18_LOCAL_WSL_R2_CHECKPOINT_EXACT3",
+            "F18_LOCAL_WSL_R3_START_EXACT3",
+            "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3"}:
         return _validate_bundle_before_f18_local(bundle)
     from f18_progress_overlay import validate
     return validate(bundle["_root"], bundle)

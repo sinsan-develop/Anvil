@@ -75,7 +75,19 @@
 - [ ] focused GREEN, F-16/F-17 회귀 및 diff-check를 실행한다. 정확한 명령/exit/미검증을 보고서에 기록하고 exact3 제품 파일만 commit한다.
 - [ ] Main은 published exact Git commit의 WSL 격리 QA와 자원 정리, 독립 review, G-05 checkpoint를 수행한다. Web image·실 서명 manifest·Production 환경 증거가 없는 한 F-18 `accepted=false`, F-19 차단을 유지한다.
 
+### Task 5: 서명·approval·Git guard를 묶는 로컬/WSL 전용 읽기 CLI — 2026-09-24 Main 후속 지시
+
+**범위 판정:** 이 계획의 Architecture가 허용한 별도 읽기 전용 preflight entry point다. 정본 F18 Production adapter로 가기 위한 실행 경계이지만 이 CLI 자체는 Production capability·배포 승인·배포 실행을 판정하지 않는다. 기존 `deploy/ysna` legacy 스크립트 수정·실행, `ysna-server` 접속, fetch/checkout 생성, DB/서비스/Secret mutation은 금지한다.
+
+**Files:** Create `packages/deployment/production_preflight_cli.py` and `tests/deploy/test_f18_production_preflight_cli.py`; update `docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md` for worker results. Main만 control status/progress/HANDOFF를 갱신한다.
+
+**Interface:** `python -m packages.deployment.production_preflight_cli`에서 `--checkout`, `--manifest`, `--trusted-public-key`, `--trusted-fingerprint`, `--expected-observations`, `--wsl-evidence`, `--approval-subject`, `--observed-environment-id`, `--migration-plan-hash`, `--rollback-plan-hash`를 받는다. 기존 `ReleaseExpectations`, `verify_approval_release`, `DeployApprovalSubject`, `validate_existing_checkout`을 재사용한다. 승인 remote는 F16 고정 SSH alias만 허용하며 CLI override를 만들지 않는다. 입력 JSON은 duplicate key·불필요한 key·크기 초과·형식 오류를 차단한다. 출력은 `F18_LOCAL_PREFLIGHT_PASS:<subject_hash>:PRODUCTION_CAPABILITY_NOT_VERIFIED` 또는 redacted 안정 code `F18_LOCAL_PREFLIGHT_FAILED:<reason>`로 제한한다. PASS는 오직 private rehearsal 사전조건이며 Production `READY/RELEASED`가 아니다.
+
+- [ ] RED: 합성 서명 manifest와 실제 local bare Git의 clean detached checkout에서만 exit0과 non-Production PASS marker. 서명 변경, 다른 승인 subject, Web digest 누락, 다른 commit/image, dirty/attached checkout, 잘못된 remote, duplicate/extra JSON key, 누락 파일은 exit nonzero이며 로그에 secret·경로 원문을 출력하지 않는다.
+- [ ] GREEN: 기존 F16/F18 library를 호출하는 얇은 CLI만 구현한다. 원격 조회는 기존 F16 `verify_exact_checkout`의 읽기 전용 `ls-remote`뿐이며 fetch/checkout/deploy/migration/DB/network capability probe는 추가하지 않는다. 실제 target runtime이 주입하는 independent expected observations가 없으면 Production 증거로 사용하지 않는다.
+- [ ] focused 및 F16/F17/F18 회귀·diff-check를 실행해 명령/exit·미검증/rollback을 보고서에 기록하고 exact3만 commit한다. Main은 공개 exact commit의 WSL 격리 QA·정리·독립 review·G-05를 수행한다. F18 `accepted=false`, F19 차단을 유지한다.
+
 ## Self-review
 
-- F-18 전체 요구 중 이 계획이 수행하는 것은 approval subject·artifact mismatch·기존 checkout Git guard의 로컬·WSL 사전검증뿐이다. Production checkout/DB/OIDC/object storage/network/도메인 실측은 의도적으로 미포함이며 F-18 최종 완료의 필수 미충족 조건이다.
+- F-18 전체 요구 중 이 계획이 수행하는 것은 approval subject·artifact mismatch·기존 checkout Git guard·별도 CLI의 로컬·WSL 사전검증뿐이다. Production checkout/DB/OIDC/object storage/network/도메인 실측은 의도적으로 미포함이며 F-18 최종 완료의 필수 미충족 조건이다.
 - 각 제품 task는 자기 테스트로 검토할 수 있고, Task 3은 evidence·cleanup·상태 경계만 검토한다. Task 4는 새로운 내부 read-only preflight 진입점만 추가하며 공개 HTTP API나 DB schema를 변경하지 않는다.

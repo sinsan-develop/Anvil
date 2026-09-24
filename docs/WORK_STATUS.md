@@ -1,3 +1,8 @@
+# F-18 Task 5 read-only signed CLI 지시 개정 / 2026-09-24
+
+- 판정: F18 `PARTIAL_LOCAL_WSL_VERIFIED`, `accepted=false`, F19 차단; R2 seq1504 lease 회수 상태에서 동일 branch의 Task 5를 승인된 F18 local/WSL 범위로 분리한다. 새 CLI는 signed manifest·독립 expected observations·approval subject·WSL artifact·기존 checkout Git guard를 묶되 Production capability/실배포는 판정하지 않는다. 로컬 `deploy/ysna` legacy 경로는 수정하지 않는다.
+- Main control 변경: F18 계획/호출 지시, R3 overlay/G-05 dispatcher/테스트, 이 WORK_STATUS. 새 exact3 제품 범위는 `production_preflight_cli.py`, 해당 테스트, F18 보고서. 정식 제품 실패 0회. Overlay 테스트는 의도한 RED(import 없음) 뒤 8 PASS, diff-check exit0. 다음: control 게시→R3 canonical lease·G-05→Developer TDD→Main Windows/WSL 독립 QA·임시 자원 정리→독립 review→lease 회수/checkpoint. Production 증거 없으면 F18 merge/acceptance·F19 착수 금지.
+
 # F-18 Task 4 Git guard 지시 개정 / 2026-09-24
 
 - 후속 Main 읽기 전용 adapter gap 감사: 정본 F18(`Anvil_작업계획서_v1.md` F-18, 설계서 49.11~49.12, AV-OPS-016/020/021)은 `envil.sinsan.kr`의 Web/API/Worker 동일 서명 ReleaseManifest·WSL 합격 digest·DeployApprovalSubject·PG18/secret/network 경계를 요구한다. 현재 로컬 `deploy/ysna/deploy.sh`/`manifest-guard.sh`/`compose.production.yml`은 C21 `anvil-web` 단일 런타임, 레거시 `deploy/ysna/ReleaseManifest.json`, `anvil.sinsan.kr`/origin main 도달성 검증 경로이며 F16 서명 manifest나 F18 `validate_existing_checkout` 호출은 없다. 따라서 로컬 preflight 90 PASS·WSL 78 PASS를 실제 Production adapter 또는 AV-OPS-016/020/021 PASS로 승격하지 않는다. 차기 안전 구현은 기존 서버 실행 없이 로컬 새 adapter의 서명/approval/evidence/target capability 계약을 정본과 맞춰 분리하고 테스트하는 것이다. 기존 legacy 배포 경로를 이 근거만으로 직접 교체하거나 ysna-server에 접속하지 않는다.
