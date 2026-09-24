@@ -129,3 +129,10 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 양성 fixture는 서명 subject에 고정 승인 alias를 기록하고 테스트의 `ls-remote`만 로컬 bare Git remote로 전달한다. 실제 checkout은 clean detached Git이며 CLI는 읽기만 한다. `-m` subprocess는 누락 입력의 안전한 실패를 확인했다. 이는 로컬 fixture 증거이고 실제 운영 서명 manifest·Production remote checkout 증거가 아니다.
 
 전용 `.f18-r3-pytest-temp`는 절대경로가 worktree 안에 있음을 확인한 뒤 제거했다. 잔류 0. 제품 변경은 exact3에 한정하고 Main control 파일은 수정하지 않았다. WSL/ysna-server 접속, push/PR/merge, DB·Docker·브라우저·실 Provider/OIDC/object storage/network 검증은 미실행이다. F-18 `accepted=false`, F-19 차단 유지. 정식 실패보고 횟수 0. Rollback은 Task 5 exact3 commit 한 건을 revert한다.
+
+## Main의 R3 Task 5 독립 Windows·WSL QA — 2026-09-24
+
+- Main의 독립 Windows F-16/F-17/F-18 여섯 파일 회귀는 exit 0, **109 PASS/64.56초**였다. `diff-check` exit 0. 전용 `.f18-r3-main-review-temp`의 exact local 경로를 정리해 잔류 0을 확인했다.
+- WSL-server의 새 격리 경로 `/srv/anvil-wsl/f18-local-qa-r4`에서 승인 Git alias로 공개 제품 commit `96b6f17bfe7aa716bd1bb283af5ee3f3d8eae922`의 clean detached checkout을 확인했다. 실행 명령은 `PYTHONDONTWRITEBYTECODE=1 python3 -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r4-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f18_production_preflight_cli.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py`이며 exit 0, **97 PASS/3.21초**였다. 이는 WSL의 다섯 파일 범위로, Windows 여섯 파일 PASS와 합산하지 않는다.
+- 정리 전 대상 realpath의 exact 일치, 비-symlink, owner `daon:daon`, mode `0700`, HEAD 및 Git status의 `?? .f18-r4-pytest-temp/` 한 건만 확인했다. `sudo rm -rf -- /srv/anvil-wsl/f18-local-qa-r4`는 exit 0, 경로 잔류 0이었다. 기존 서비스·DB·Docker 및 Production은 접근·변경하지 않았다.
+- 테스트의 서명 manifest는 합성 fixture이며 승인 SSH alias의 `ls-remote`를 임시 로컬 bare Git remote로 매핑했다. 이 PASS는 실제 Production 서명·SSH 정책·운영 checkout·Web artifact의 동일성을 증명하지 않는다. F-18 `accepted=false`, F-19 차단과 Production `NOT_EXECUTED`를 유지한다.
