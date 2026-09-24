@@ -21,6 +21,25 @@ def test_f18_start_accepts_only_bounded_published_branch():
     assert validate_start_git_facts(**{**facts, "base_is_ancestor": False})
 
 
+def test_f18_local_checkpoint_accepts_only_exact_merged_main_tree():
+    paths = set(control_paths()) | set(r3_product_paths()) | set(r2_product_paths()) | set(product_paths())
+    facts = dict(branch="main", upstream="development/main", head="merged-head",
+                 remote_head="merged-head", staged=set(), dirty=set(), changed=paths,
+                 base_is_ancestor=True, allow_merged_main=True,
+                 allowed_product_paths=sorted(set(product_paths()) | set(r3_product_paths())),
+                 parents=("main-parent", "feature-parent"),
+                 first_parent_contains_base=True, merge_tree_matches_feature=True,
+                 feature_contains_checkpoint=True)
+    assert validate_start_git_facts(**facts) == []
+    assert validate_start_git_facts(**{**facts, "merge_tree_matches_feature": False})
+    assert validate_start_git_facts(**{**facts, "parents": ("main-parent",)})
+    assert validate_start_git_facts(**{**facts, "first_parent_contains_base": False})
+    assert validate_start_git_facts(**{**facts, "feature_contains_checkpoint": False})
+    assert validate_start_git_facts(**{**facts, "allow_merged_main": False})
+    assert validate_start_git_facts(**{**facts, "dirty": {"docs/WORK_STATUS.md"}})
+    assert validate_start_git_facts(**{**facts, "changed": paths | {"unrelated.txt"}})
+
+
 def test_f18_start_state_explicitly_blocks_production_and_f19():
     progress = {"repository": {"projection_mode": MODE},
                 "event_sequence": 1495, "current_work_package": "F-18",
