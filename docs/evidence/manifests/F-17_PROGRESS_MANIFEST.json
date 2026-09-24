@@ -1,9 +1,10 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-17",
-  "event_sequence": 1486,
-  "accepted": false,
-  "projection_mode": "F17_START_EXACT13_PRODUCT_EXACT5",
+  "event_sequence": 1491,
+  "accepted": true,
+  "acceptance_scope": "PG15_PG18_SCOPED",
+  "projection_mode": "F17_FINAL_ACCEPTANCE_EXACT13_PRODUCT_EXACT5",
   "validated_base_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
   "exact_allowed_paths": [
     "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
@@ -27,6 +28,7 @@
     "tests/deploy/test_f17_validation.py",
     "tests/integration/test_f17_runtime_e2e.py"
   ],
+  "product_head": "7083e2aa90ced5bb109fd268cf22e34de34ff6d9",
   "raw_checksums": [
     {
       "path": "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
@@ -35,8 +37,8 @@
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 476614,
-      "sha256": "9FC7922CF6321610D005BC84BE0AFB2EC6F09EBAB2B4CBE2796E46D7CB7FEC22"
+      "bytes": 477083,
+      "sha256": "FB2C32DB76B1A51C44FE2A5C7D22E653BDACC02046DDB1AC89C834DFB7865A51"
     },
     {
       "path": "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
@@ -45,8 +47,8 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4151625,
-      "sha256": "005AF871384504CBF73F5FBB93094A3D589BEE4D32AC975BCD873D2442E9A946"
+      "bytes": 4155701,
+      "sha256": "0F902416CF43162AAD7EE2415248A20126AF547A495D8DF683600F08B9A968D0"
     },
     {
       "path": "docs/work_orders/F-17_INVOCATION_PROMPT.md",
@@ -60,18 +62,18 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 4730945,
-      "sha256": "2BCEC4571962D70978ECB36894602D57F27ADEA6C3D4410D333143DECCDD117F"
+      "bytes": 4731065,
+      "sha256": "423CE8546D42B2727A3290F63347F81CFB40B4B6E981C2220668AF06AD462DE3"
     },
     {
       "path": "scripts/f17_progress_overlay.py",
-      "bytes": 15811,
-      "sha256": "D485D0DE594BF569751FCD42FEE99A46C5AF1568733C0842E0DD4010326BEBD1"
+      "bytes": 28170,
+      "sha256": "3EC373CD4009940C1C46F86D1BF34AC1336DB9697D4B4192BA3F33B0462895B5"
     },
     {
       "path": "tests/tooling/test_f17_progress_overlay.py",
-      "bytes": 1466,
-      "sha256": "E0C97FD8459FF9090A738DC38363DFDE83E50399D22F4CCF8511A11F8E558467"
+      "bytes": 2955,
+      "sha256": "34C7EBA5A1E4ED5805EB39FEBE04F1E0ADA8C85FAEE2237F1DD696CBCA2A46F8"
     }
   ],
   "self_reference": false,

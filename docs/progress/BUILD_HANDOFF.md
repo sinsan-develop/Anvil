@@ -1,61 +1,24 @@
-# F-17 WSL PG15 integration and isolated PG18 RC start
+# F-17 WSL PG15/PG18 scoped acceptance
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1486,
-  "last_event_id": "evt_f17_1486_write_lease_issued",
-  "status": "ACTIVE",
+  "event_sequence": 1491,
+  "last_event_id": "evt_f17_1491_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "F",
   "current_work_package": "F-17",
-  "active_agent": "developer-primary-f17-r1",
-  "worker_lease": {
-    "lease_id": "worker-lease-f17-r1-20260924-001",
-    "actor_id": "developer-primary-f17-r1",
-    "subject_ref": "F-17",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T14:23:00+09:00",
-    "expires_at": "2026-09-25T02:23:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f17-r1-execution-fence-epoch-1-3460d9768b039568",
-    "execution_fencing_token": "f17-r1-execution-fence-epoch-1-3460d9768b039568",
-    "baseline_git_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
-    "dispatch_head": "3460d9768b039568022fd43e24577cc0e2402dea",
-    "path_scope": [
-      "deploy/wsl/compose.f17.yml",
-      "deploy/wsl/f17_validation.py",
-      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
-      "tests/deploy/test_f17_validation.py",
-      "tests/integration/test_f17_runtime_e2e.py"
-    ]
-  },
-  "write_lease": {
-    "lease_id": "write-lease-f17-r1-20260924-001",
-    "actor_id": "developer-primary-f17-r1",
-    "subject_ref": "F-17",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-24T14:23:00+09:00",
-    "expires_at": "2026-09-25T02:23:00+09:00",
-    "lease_epoch": 1,
-    "fencing_token": "f17-r1-write-fence-epoch-1-022fd43e24577cc0",
-    "execution_fencing_token": "f17-r1-execution-fence-epoch-1-3460d9768b039568",
-    "baseline_git_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
-    "dispatch_head": "3460d9768b039568022fd43e24577cc0e2402dea",
-    "path_scope": [
-      "deploy/wsl/compose.f17.yml",
-      "deploy/wsl/f17_validation.py",
-      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
-      "tests/deploy/test_f17_validation.py",
-      "tests/integration/test_f17_runtime_e2e.py"
-    ],
-    "worker_lease_id": "worker-lease-f17-r1-20260924-001",
-    "write_epoch": 1,
-    "write_fencing_token": "f17-r1-write-fence-epoch-1-022fd43e24577cc0"
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "next_work_package": {
     "package_id": "F-18",
-    "status": "BLOCKED_PENDING_F17_ACCEPTANCE"
+    "status": "READY_AFTER_F17_MERGE_CLEANUP"
   },
-  "next_safe_action": "DEVELOPER_PRIMARY_IMPLEMENT_F17_EXACT5",
-  "runtime_next_action": "DEVELOPER_PRIMARY_IMPLEMENT_F17_EXACT5"
+  "next_safe_action": "MERGE_F17_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "runtime_next_action": "MERGE_F17_PR_THEN_DELETE_BRANCH_AND_WORKTREE"
 }
 ```
+
+- 판정: F-17 범위 ACCEPTED. AV-OPS-015/025의 최종 Main ProductValidation SUITABLE은 실제 WSL PG15/PG18 동일 Git/image, 핵심 E2E·restart·backup/restore·rollback, 브라우저 Network 및 잔류 0에 한정한다.
+- Web-only /auth/session 경로와 전체 UI·ProductValidation API·Provider·ysna/운영·사용자 ReleaseDecision은 미검증. F18 proxy/auth 라우팅 재확인 필수.
+- 두 lease를 회수했다. 다음: F17 PR 병합→merged-main smoke→branch/worktree 정리 후 F18.
