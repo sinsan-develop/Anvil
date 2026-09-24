@@ -1,3 +1,11 @@
+# F-15 Local 운영 셸·SSH tunnel 인수
+
+- 판정: `ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL`; 제품 HEAD 1d1fe19, Windows 관련 49 PASS, Web Node 3·기존 Node 3 PASS, lint/typecheck/build PASS. Main 통합 최초 Nginx tmpfs chown 실패 1회는 R2 USER 101:101 수정 후 실제 Web Up/HTTP 200으로 재검증했다. 정식 Developer FAILURE_REPORT 0회.
+- WSL-server 격리 PG15 QA DB/role migration 0016, Git exact SHA Compose Web/API/Worker Up, API ready 200, Worker ready, Playwright 1920/390 브라우저 same-origin Network 4건·내부 직접주소 0·secret 0·오류 0. WSL Compose의 host-gateway DB 직결은 SSH tunnel 보안 합격 증거로 사용하지 않는다.
+- 별도 Windows Local 실측은 WSL-server SSH loopback tunnel 127.0.0.1:15432를 통해 전용 DB/role migration 0016, Worker --check 및 장기 프로세스 ready, API 8301 ready, Vite Web 8300 same-origin /api ready 200을 확인했다. Windows API fixture 404; 개발 Vite의 일반 SPA fallback은 해당 경로 200이므로 운영 fixture 차단 증거는 WSL Nginx 404만 사용한다.
+- 초기 WSL QA DB/role/Compose/이미지/브라우저 산출물과 이후 Windows Web/API/Worker/SSH 프로세스·전용 DB/role/credential/log를 정확히 정리해 잔류 0. 기존 shared PostgreSQL 0.0.0.0:5432 바인딩은 선행 위험이며 F-15에서 변경하지 않았다. 인증 세션의 through-Nginx mutation, screenshot 픽셀 육안 검토, WSL Compose DB tunnel, shared PG 외부 방화벽은 미검증이다. F-16 staging, F-17 PG18 RC, F-18 ysna도 후속이다.
+- Main이 두 lease를 회수. 다음: F-15 PR 병합·merged-main smoke·branch/worktree 정리 후 F-16.
+
 # F-15 공통 운영 셸·Local stack 착수
 
 - 2026-09-24 Main 중간 판정: `ACTIVE`, 제품 HEAD `1d1fe19f7ba6d5492b3555ad5c4f809a6c60a7cd` push 완료. Main Windows 관련 pytest 47 PASS, Web Node 3 PASS·기존 Node 3 PASS, lint/typecheck/build PASS, G-05 PASS. 정식 Developer `FAILURE_REPORT` 0회. 제품 Web 첫 Docker 기동은 Nginx tmpfs chown 오류 1회였고 R2 `USER 101:101` 후 Web 재빌드·기동 PASS.

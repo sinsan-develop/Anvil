@@ -1,11 +1,26 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-15",
-  "event_sequence": 1468,
-  "accepted": false,
-  "projection_mode": "F15_START_EXACT11_PRODUCT_EXACT19",
+  "event_sequence": 1473,
+  "accepted": true,
+  "acceptance_scope": "LOCAL_BROWSER_WINDOWS_SSH_TUNNEL",
+  "projection_mode": "F15_FINAL_ACCEPTANCE_EXACT29",
   "validated_base_commit": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
   "exact_allowed_paths": [
+    "apps/api/anvil_api/asgi.py",
+    "apps/web/console/index.html",
+    "apps/web/package.json",
+    "apps/web/src/console/App.tsx",
+    "apps/web/src/console/app-shell.css",
+    "apps/web/src/console/main.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "apps/web/tsconfig.json",
+    "apps/web/vite.config.ts",
+    "apps/worker/anvil_worker/main.py",
+    "deploy/local/Dockerfile.runtime",
+    "deploy/local/nginx.conf",
+    "docker-compose.local.yml",
+    "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
     "docs/WORK_STATUS.md",
     "docs/evidence/manifests/F-15_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -14,8 +29,12 @@
     "docs/progress/progress-handoff-detached-digest-f15.json",
     "docs/work_orders/F-15_INVOCATION_PROMPT.md",
     "docs/work_orders/F-15_WORK_INSTRUCTION.md",
+    "package-lock.json",
+    "package.json",
     "scripts/check_project_progress.py",
     "scripts/f15_progress_overlay.py",
+    "tests/api/test_f15_web_security.py",
+    "tests/integration/test_f15_local_stack.py",
     "tests/tooling/test_f15_progress_overlay.py"
   ],
   "product_write_scope": [
@@ -39,16 +58,87 @@
     "tests/api/test_f15_web_security.py",
     "tests/integration/test_f15_local_stack.py"
   ],
+  "product_head": "1d1fe19f7ba6d5492b3555ad5c4f809a6c60a7cd",
   "raw_checksums": [
     {
+      "path": "apps/api/anvil_api/asgi.py",
+      "bytes": 3721,
+      "sha256": "9CB6C323EFCC6A2686594DD24AF1855929B071FE46C5EEE561A2AC3537D81424"
+    },
+    {
+      "path": "apps/web/console/index.html",
+      "bytes": 274,
+      "sha256": "4E937AD1EB492D63891106C198CC90FD269829B6EA3C3AC7D061373DB3ED58A9"
+    },
+    {
+      "path": "apps/web/package.json",
+      "bytes": 638,
+      "sha256": "34FC6A4F138581D688B32F83BD95EBFB3181617AD7C4AD407E60E98BB05F622B"
+    },
+    {
+      "path": "apps/web/src/console/App.tsx",
+      "bytes": 4909,
+      "sha256": "9E7372E699C6BE4EA853DCD32F339A7E52AB88DCA6A6385755CEC4F131F963E3"
+    },
+    {
+      "path": "apps/web/src/console/app-shell.css",
+      "bytes": 2806,
+      "sha256": "974287182DE84B2F5D351AF0D231795A2A127ED6CA6A4ED2154839FA626CAD42"
+    },
+    {
+      "path": "apps/web/src/console/main.tsx",
+      "bytes": 230,
+      "sha256": "0FCEECDDEDEB6E0421FD9EB6A3907F101B7830F3EC93A05545FB8306BCF39C4D"
+    },
+    {
+      "path": "apps/web/tests/f15-console.test.mjs",
+      "bytes": 1601,
+      "sha256": "1D929C6225B2A0AE585B77D3A7308F5D79C3861F62C16C27FA160B5B7C3AA3DB"
+    },
+    {
+      "path": "apps/web/tsconfig.json",
+      "bytes": 379,
+      "sha256": "1B0125669E70D9BCCB6CFD4EC2645BBCCDA73985237EC895EDECD218B60D4E5D"
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "bytes": 298,
+      "sha256": "833B43D7DA4451F2DED093B2A73EF88A96E234499CE6AC56029B4BE312014068"
+    },
+    {
+      "path": "apps/worker/anvil_worker/main.py",
+      "bytes": 2419,
+      "sha256": "1ED926B3BDA03DC2388C5E3635F5350E6BDEFFB1355C0BC861EC64F818CCFB5A"
+    },
+    {
+      "path": "deploy/local/Dockerfile.runtime",
+      "bytes": 1156,
+      "sha256": "361B5DA14009E1BFFEAABB44ABAC40C8F5DB2E3F7A9565AF4DC004414299D0A4"
+    },
+    {
+      "path": "deploy/local/nginx.conf",
+      "bytes": 1262,
+      "sha256": "B7E564376C8FF09DB56EB5E5BD3B58C540710D3849CF7C64A21D400CE5A20451"
+    },
+    {
+      "path": "docker-compose.local.yml",
+      "bytes": 1840,
+      "sha256": "E3A58726021C35BBC62573CB65B0964359313FF53964572EFC35CF48A680DA2B"
+    },
+    {
+      "path": "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
+      "bytes": 11781,
+      "sha256": "B458B5199C8C86769F67210F8150A1A5C6A04137A66F5164890780E304C8B95B"
+    },
+    {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 447963,
-      "sha256": "94C19D5270617D66820AE22DD8C12235A891ECBA9A61FEA69C51F3EA6F91AF13"
+      "bytes": 449639,
+      "sha256": "00EE3EDE1259668C5452512F7D7548FE64B384A8E20292DC8E6F81C62F9CB0AC"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4136025,
-      "sha256": "72F2FA415A4F43DF56D89A6A986E1FD7D870403AF00AA5F289055C6E0A3BEE1C"
+      "bytes": 4139882,
+      "sha256": "4EF798DBEA868C70E669052F3A5A810CDBAEEBA325FF653D4F67607230358727"
     },
     {
       "path": "docs/work_orders/F-15_INVOCATION_PROMPT.md",
@@ -61,26 +151,48 @@
       "sha256": "F4D757797F35F336CA33817DBA4B6449835DC368839818D4D742CD7701E6181C"
     },
     {
+      "path": "package-lock.json",
+      "bytes": 60201,
+      "sha256": "B1CBA45D362401032EF3BA362073B7C80A8CC42CDEF6EE6583884B66E619D8A3"
+    },
+    {
+      "path": "package.json",
+      "bytes": 494,
+      "sha256": "0FB0E889002F593A66B1A89A080DBB295AE6E079480EC3EE77C046CEE06978BA"
+    },
+    {
       "path": "scripts/check_project_progress.py",
-      "bytes": 4729349,
-      "sha256": "505FEC9416869871BA20C0661B59EED744DA29C8DE04F53E55EF581A7B949F58"
+      "bytes": 4729439,
+      "sha256": "C7323E333BE7093DD87157966B03BDA84E79A7F6B0F2BDFAE92878A09D7025AE"
     },
     {
       "path": "scripts/f15_progress_overlay.py",
-      "bytes": 15497,
-      "sha256": "0EDAC45EC822BB75F8B8C102202FFA56049A6D6A5D393E926829C939F7E37FD0"
+      "bytes": 28129,
+      "sha256": "5E4F71CDC648F012856E6F07CCAA97DC919BCCD0438495ADF4B9DC3DBF891C31"
+    },
+    {
+      "path": "tests/api/test_f15_web_security.py",
+      "bytes": 2839,
+      "sha256": "16294C3910969FCE51116F989A3FC14E0C59D2518DDC78EEB2BDD020EECC66C7"
+    },
+    {
+      "path": "tests/integration/test_f15_local_stack.py",
+      "bytes": 6163,
+      "sha256": "8341C2DC41E65F617DB6C13A9B07439F8D2107A11D2ED4B8B7AA8C10201C3D59"
     },
     {
       "path": "tests/tooling/test_f15_progress_overlay.py",
-      "bytes": 1360,
-      "sha256": "A21F3061CC160BB467C3909F81A639F4137F4DC1109337E30B665C1F8CD4226F"
+      "bytes": 2364,
+      "sha256": "855CA9CE9BB0CD57E6DF30C938729E175153D3F09E2D0B85459F32E67183E749"
     }
   ],
   "self_reference": false,
   "runtime_boundary": {
-    "database": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
-    "docker": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED"
+    "database": "ISOLATED_PG15_SYNTHETIC_ONLY",
+    "browser": "PLAYWRIGHT_NETWORK_PASS",
+    "windows_local": "SSH_TUNNEL_PASS",
+    "docker": "COMPOSE_HTTP_PASS_DB_DIRECT_NOT_TUNNEL_PROOF",
+    "deployment": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED"
   }
 }
