@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f13-final-seq1455",
-  "event_sequence": 1455,
-  "updated_at": "2026-09-24T08:29:00+09:00",
-  "last_event_id": "evt_f13_1455_main_package_accepted",
+  "snapshot_id": "snapshot-f14-final-seq1464",
+  "event_sequence": 1464,
+  "updated_at": "2026-09-24T09:53:00+09:00",
+  "last_event_id": "evt_f14_1464_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,7 +91,7 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-13",
+  "current_work_package": "F-14",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -194,7 +194,8 @@
     "F-10",
     "F-11",
     "F-12",
-    "F-13"
+    "F-13",
+    "F-14"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -451,7 +452,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F13_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "MERGE_F14_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -561,51 +562,56 @@
     }
   },
   "repository": {
-    "branch": "codex/f13-operations-read-model",
-    "local_head": "a612fdac2c7eabbb381e8da9d3111d797460f9bf",
-    "upstream": "development/codex/f13-operations-read-model",
-    "remote_head": "a612fdac2c7eabbb381e8da9d3111d797460f9bf",
-    "projection_mode": "F13_FINAL_ACCEPTANCE_EXACT21",
-    "validated_base_commit": "a612fdac2c7eabbb381e8da9d3111d797460f9bf",
+    "branch": "codex/f14-postgres-recovery",
+    "local_head": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "upstream": "development/codex/f14-postgres-recovery",
+    "remote_head": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "projection_mode": "F14_FINAL_ACCEPTANCE_EXACT23",
+    "validated_base_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
-      "docs/04_test_reports/F-13_INDEPENDENT_REVIEW.md",
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-13_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/F-14_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f13.json",
-      "docs/work_orders/F-13_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-13_WORK_INSTRUCTION.md",
-      "packages/api/operations.py",
-      "packages/api/registry.py",
-      "packages/api/runtime.py",
-      "packages/observability/models.py",
-      "packages/observability/projection.py",
-      "packages/observability/service.py",
+      "docs/progress/progress-handoff-detached-digest-f14.json",
+      "docs/work_orders/F-14_INVOCATION_PROMPT.md",
+      "docs/work_orders/F-14_WORK_INSTRUCTION.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
       "scripts/check_project_progress.py",
-      "scripts/f13_progress_overlay.py",
-      "tests/api/test_f13_operations_api.py",
-      "tests/observability/test_f13_operations.py",
-      "tests/tooling/test_f13_progress_overlay.py"
+      "scripts/f14_progress_overlay.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py",
+      "tests/tooling/test_f14_progress_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-13_COMPLETION_REPORT.md",
-      "packages/api/operations.py",
-      "packages/api/registry.py",
-      "packages/api/runtime.py",
-      "packages/observability/models.py",
-      "packages/observability/projection.py",
-      "packages/observability/service.py",
-      "tests/api/test_f13_operations_api.py",
-      "tests/observability/test_f13_operations.py"
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py"
     ],
-    "worktree_status": "F13_ACCEPTED_PENDING_MERGE",
+    "worktree_status": "F14_ACCEPTED_PENDING_MERGE",
     "commit_status": "FINAL_PENDING_OR_COMPLETE",
     "push_status": "BRANCH_PUBLISHED",
-    "product_head": "772ab8deea508ff217dc89c6b45e453f157af018"
+    "product_head": "82fb71310025c547bae7be05b7701f8aea0666e1"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -701,25 +707,23 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-13-20260924-001",
-    "path": "docs/work_orders/F-13_WORK_INSTRUCTION.md",
-    "sha256": "8742CE6940A462A4F37FC1157208F6E4299E5DCAE82F55BF2561BC9046C71FF6",
-    "invocation_path": "docs/work_orders/F-13_INVOCATION_PROMPT.md",
-    "invocation_sha256": "770F383C76B86B8A5E864153049DD00B0E56ABBEC65C379A1DE3ACF49F752BC3",
+    "artifact_id": "WI-F-14-20260924-001",
+    "path": "docs/work_orders/F-14_WORK_INSTRUCTION.md",
+    "sha256": "7259563EA1307354AF174EC94B1239AEDA1308A3D977E668A4861C5B21172445",
+    "invocation_path": "docs/work_orders/F-14_INVOCATION_PROMPT.md",
+    "invocation_sha256": "191C70A362C45B2788B0CB47341E54289F210B5310F26418D3EEA19F1BBBC84E",
     "assigned_verification_ids": [
-      "AV-OPS-001",
-      "AV-OPS-002",
-      "AV-OPS-003",
-      "AV-OPS-004",
-      "AV-OPS-005",
-      "AV-OPS-006"
+      "AV-OPS-007",
+      "AV-OPS-008",
+      "AV-OPS-009",
+      "AV-OPS-022"
     ]
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "F13_LOCAL_CONTRACT_ACCEPTED",
-      "F13_APPROVED_SCOPE"
+      "F14_ISOLATED_CONTRACT_ACCEPTED",
+      "F14_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -899,9 +903,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-13",
-    "path": "docs/progress/progress-handoff-detached-digest-f13.json",
-    "manifest_path": "docs/evidence/manifests/F-13_PROGRESS_MANIFEST.json"
+    "package_id": "F-14",
+    "path": "docs/progress/progress-handoff-detached-digest-f14.json",
+    "manifest_path": "docs/evidence/manifests/F-14_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -922,16 +926,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "6E6E00F0CC3897C6F29FE60228FA5527A9466FA0F44BE379B950766F7089488F"
+      "sha256": "E45F6A7B7B228BDB8365AF3D2B587389F54F51DF84CF6CF7F6E76B27C9F8F823"
     }
   },
   "next_work_package": {
-    "package_id": "F-14",
-    "status": "READY_AFTER_F13_MERGE_CLEANUP"
+    "package_id": "F-15",
+    "status": "READY_AFTER_F14_MERGE_CLEANUP"
   },
   "next_successor_work_package": {
-    "package_id": "F-14",
-    "status": "READY_AFTER_F13_MERGE_CLEANUP"
+    "package_id": "F-15",
+    "status": "READY_AFTER_F14_MERGE_CLEANUP"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1319,8 +1323,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "92EDEAD33AB490339A5ECF8DD0175724B32B488F973D6C708C4F74AE55E9F0B3",
-  "runtime_next_action": "MERGE_F13_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "B4FCF7DEEA79391335C8D940386D6AC1B530708310D825E299FF509CA9A0EDCC",
+  "runtime_next_action": "MERGE_F14_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2932,7 +2936,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T08:29:00+09:00",
+  "recorded_at": "2026-09-24T09:53:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22413,6 +22417,83 @@
       "PROVIDER",
       "DEPLOYMENT",
       "PG18"
+    ]
+  },
+  "completed_f14_worker_lease": {
+    "lease_id": "worker-lease-f14-r1-20260924-001",
+    "actor_id": "developer-primary-f14-r1",
+    "subject_ref": "F-14",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T08:39:00+09:00",
+    "expires_at": "2026-09-24T20:39:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f14-r1-execution-fence-epoch-1-1584523ccca71bae",
+    "execution_fencing_token": "f14-r1-execution-fence-epoch-1-1584523ccca71bae",
+    "baseline_git_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "dispatch_head": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "path_scope": [
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py"
+    ],
+    "revoked_at": "2026-09-24T09:53:00+09:00"
+  },
+  "completed_f14_write_lease": {
+    "lease_id": "write-lease-f14-r1-20260924-001",
+    "actor_id": "developer-primary-f14-r1",
+    "subject_ref": "F-14",
+    "status": "REVOKED",
+    "issued_at": "2026-09-24T08:39:00+09:00",
+    "expires_at": "2026-09-24T20:39:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f14-r1-write-fence-epoch-1-4b3be01f592c7eb7",
+    "execution_fencing_token": "f14-r1-execution-fence-epoch-1-1584523ccca71bae",
+    "baseline_git_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "dispatch_head": "1584523ccca71bae4b3be01f592c7eb79c11935f",
+    "path_scope": [
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py"
+    ],
+    "worker_lease_id": "worker-lease-f14-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f14-r1-write-fence-epoch-1-4b3be01f592c7eb7",
+    "revoked_at": "2026-09-24T09:53:00+09:00"
+  },
+  "f14_acceptance": {
+    "status": "ACCEPTED_ISOLATED_PG15_PG18_REHEARSAL",
+    "independent_review": "SPEC_PASS_QUALITY_APPROVED_C0_I0",
+    "product_head": "82fb71310025c547bae7be05b7701f8aea0666e1",
+    "windows_related": "71_PASS_17_SKIP",
+    "wsl_pg15_related": "75_PASS_13_SKIP",
+    "wsl_pg18_related": "75_PASS_13_SKIP",
+    "six_lineage_restore": "PG15_AND_PG18_PASS",
+    "temporary_resource_residue": 0,
+    "unverified": [
+      "DEFAULT_HOST_BINDING",
+      "BROWSER_UI",
+      "PROVIDER",
+      "WSL_STAGING_DEPLOYMENT",
+      "PG18_FORMAL_RC",
+      "YSNA_PRODUCTION"
     ]
   }
 }
