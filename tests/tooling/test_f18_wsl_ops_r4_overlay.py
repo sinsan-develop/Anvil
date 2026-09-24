@@ -4,14 +4,19 @@ from copy import deepcopy
 import importlib
 import json
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def _predecessor():
-    progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    fixed = "d27c5264a56c80ccf4f96571fcca15ec50ca93e7"
+    def original(path):
+        raw = subprocess.check_output(["git", "show", f"{fixed}:{path}"], cwd=ROOT)
+        return json.loads(raw)
+    progress = original("docs/progress/build-progress.json")
+    events = original("docs/progress/progress-events.json")["events"]
     return progress, events
 
 
