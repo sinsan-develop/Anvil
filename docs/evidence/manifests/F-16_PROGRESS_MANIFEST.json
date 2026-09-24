@@ -1,0 +1,128 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-16",
+  "event_sequence": 1482,
+  "accepted": true,
+  "acceptance_scope": "ISOLATED_WSL_STAGING",
+  "projection_mode": "F16_FINAL_ACCEPTANCE_EXACT19",
+  "validated_base_commit": "f2b124a4c8dfdcf15a61261912aab93728fc757c",
+  "exact_allowed_paths": [
+    "deploy/wsl/compose.f16.yml",
+    "deploy/wsl/f16_staging.py",
+    "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-16_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f16.json",
+    "docs/work_orders/F-16_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-16_WORK_INSTRUCTION.md",
+    "packages/deployment/__init__.py",
+    "packages/deployment/release_manifest.py",
+    "scripts/check_project_progress.py",
+    "scripts/f16_progress_overlay.py",
+    "tests/deploy/test_f16_release_manifest.py",
+    "tests/deploy/test_f16_staging_compose.py",
+    "tests/deploy/test_f16_staging_git.py",
+    "tests/tooling/test_f16_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "deploy/wsl/compose.f16.yml",
+    "deploy/wsl/f16_staging.py",
+    "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
+    "packages/deployment/__init__.py",
+    "packages/deployment/release_manifest.py",
+    "tests/deploy/test_f16_release_manifest.py",
+    "tests/deploy/test_f16_staging_compose.py",
+    "tests/deploy/test_f16_staging_git.py"
+  ],
+  "product_head": "383bd8cb0c1eec48cde9267a0dd9fb1d060ea272",
+  "raw_checksums": [
+    {
+      "path": "deploy/wsl/compose.f16.yml",
+      "bytes": 2844,
+      "sha256": "B7E2E07390B57E34267857150FD6AD2F4E437A85C4E44FFD916E37EF9F12078F"
+    },
+    {
+      "path": "deploy/wsl/f16_staging.py",
+      "bytes": 9037,
+      "sha256": "1AD2026E5A723F18D090F33324DA68FD8E98959832A9E1EACCCBFD1FB4656D49"
+    },
+    {
+      "path": "docs/04_test_reports/F-16_COMPLETION_REPORT.md",
+      "bytes": 10166,
+      "sha256": "574841DE09A407B50A6A3F16FECB16E808D57CD616BD2998A26F268F29F992B6"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 466020,
+      "sha256": "66B2E7D071AC149543AC0E9EF2796E62A2B93CC6531CC297C3898FC1C322FF8C"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4147924,
+      "sha256": "8752E2E7A750C3A13BBA4649805A7A3D9DB46E29D4BA4AEFBCC81F681528C919"
+    },
+    {
+      "path": "docs/work_orders/F-16_INVOCATION_PROMPT.md",
+      "bytes": 457,
+      "sha256": "B1B829B97BC30E3B874E46F389963076D60BECA1439485B41DD9236482B935C3"
+    },
+    {
+      "path": "docs/work_orders/F-16_WORK_INSTRUCTION.md",
+      "bytes": 5274,
+      "sha256": "5D2736C65FF3EF286242C780EB7C9925C58231BA9BD426BA489C625DD4A8108A"
+    },
+    {
+      "path": "packages/deployment/__init__.py",
+      "bytes": 83,
+      "sha256": "9ED7B3F07F14CD1D0F33C316F925312A1DC9B77AE9B52CB1DB0F3FF86B766C33"
+    },
+    {
+      "path": "packages/deployment/release_manifest.py",
+      "bytes": 7141,
+      "sha256": "D809CE19BD6E642697F227B77C3AE2350D6A2840BB8AF5CAE252B46856951E96"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4730237,
+      "sha256": "2AA57EBBDB481128BF0D84A80003C3C440D74238F7EE8C1EE9F6DAE962A44AC4"
+    },
+    {
+      "path": "scripts/f16_progress_overlay.py",
+      "bytes": 28824,
+      "sha256": "6A21D43D0043527E01A13AB289B887066931ED0B0851A3AD95F8B7C184D67C2C"
+    },
+    {
+      "path": "tests/deploy/test_f16_release_manifest.py",
+      "bytes": 12073,
+      "sha256": "A135B0424DBCDB33A6C3AFA424BA65A5AD25ABEB61FB776C4872F685ECDEAF90"
+    },
+    {
+      "path": "tests/deploy/test_f16_staging_compose.py",
+      "bytes": 3662,
+      "sha256": "FE7B9216C86B81C830FF093AFB9D57EF878A77C8B33EADC34E38164CDCE6589C"
+    },
+    {
+      "path": "tests/deploy/test_f16_staging_git.py",
+      "bytes": 5565,
+      "sha256": "F0AA403DB4487C01FB6A27837D94DFD6EAFA4561873FF4100EDC583044581B54"
+    },
+    {
+      "path": "tests/tooling/test_f16_progress_overlay.py",
+      "bytes": 2920,
+      "sha256": "27F0BA60C9A92A3B275E87A74C0884991B9A80800F3CBE4E3DC184B7E097DED9"
+    }
+  ],
+  "self_reference": false,
+  "runtime_boundary": {
+    "database": "ISOLATED_PG15_APP_NOSUPERUSER_PASS",
+    "signature": "SYNTHETIC_ED25519_PASS_NOT_PRODUCTION_TRUST",
+    "browser": "PLAYWRIGHT_SAME_ORIGIN_PASS",
+    "docker": "COMPOSE_RESTART_PASS_CLEANED",
+    "deployment": "WSL_ISOLATED_ONLY",
+    "pg18_rc": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED"
+  }
+}

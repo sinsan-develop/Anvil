@@ -1,0 +1,1 @@
+F-16 단일 제품 writer로 `docs/work_orders/F-16_WORK_INSTRUCTION.md`의 exact scope만 TDD로 구현하라. 기준 SHA·유효 worker/write fencing token·branch/upstream·G-05를 확인하고, 기존 C21/C01 배포 파일·WSL 정식 자원은 건드리지 않는다. 제품 파일만 commit 전 Main에 COMPLETED 또는 정식 FAILURE_REPORT로 보고한다. 실제 WSL staging 배포·서명키 생성·공유 DB 변경·PR/병합은 Main 소유다.
