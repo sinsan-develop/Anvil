@@ -49,6 +49,12 @@ def control_paths():
     ])
 
 
+def validate_changed_scope(changed):
+    """Control projection is exact; product paths are a bounded write allowance."""
+    controls = set(control_paths())
+    return controls <= changed <= controls | set(product_paths())
+
+
 def _canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True,
                       separators=(",", ":"), allow_nan=False).encode("utf-8")
@@ -116,8 +122,7 @@ def collect_git(root):
               and not staged and ancestor and remote_ancestor)
     pre = (head == BASE and remote_head == BASE and not changed
            and dirty == set(control_paths()))
-    post = (head != BASE and changed in (set(control_paths()),
-            set(control_paths()) | set(product_paths()))
+    post = (head != BASE and validate_changed_scope(changed)
             and dirty <= set(product_paths()))
     return [] if common and (pre or post) else ["F15_START_GIT_INVALID"]
 

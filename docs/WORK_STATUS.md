@@ -1,5 +1,6 @@
 # F-15 공통 운영 셸·Local stack 착수
 
+- 내부 통제 보완: F-15 exact19는 제품 write 허용 상한이며 19개 파일의 형식적 수정을 요구하지 않는다. G-05는 통제 exact11 변경을 필수로 하고 실제 제품 변경은 exact19 부분집합으로 검증한다. 기능·요구사항·중요 위험·lease 경로를 넓히지 않았고, 신규 checker 테스트 RED→GREEN 3 PASS. 기존 F-15 작업지시·승인 hash는 불변이다.
 - 판정: ACTIVE. F-14 PR #30 merged main 41e7e06, feature ancestry/tree와 merged-main G-05·74 PASS/17 SKIP, branch/worktree 정리 확인.
 - 담당: Main 어울 통제, developer-primary-f15-r1 제품 exact19 write lease. 기준 문서 hash 일치, F-15 branch clean에서 시작. 정식 FAILURE_REPORT 0회.
 - 설계 D4 React/TypeScript/Vite 운영 셸은 신규 구현; 기존 정적 Node shell과 fixture는 회귀 보존. Local Web/API/Worker와 WSL-server PG15 전용 DB/role, Docker/브라우저 실제 검증은 아직 NOT_EXECUTED.
