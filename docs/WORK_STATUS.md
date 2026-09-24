@@ -1,5 +1,7 @@
 # F-17 WSL 실제 기능·격리 PG18 RC 착수
 
+- 2026-09-24 F-17 생성 전 읽기 전용 WSL inventory: 기존 `local-postgres`는 image ID `sha256:75f6767185020459c7e2c3f88fb66f1bd2d9790c435bc91512497146c8bf8d7e`의 PG15이며 5432가 IPv4 `0.0.0.0`/IPv6 `::`에 bind된다. 기존 `anvil` DB 소유자는 `anvil_app`, role은 LOGIN=true/SUPERUSER=false/CREATEDB=false/CREATEROLE=false/REPLICATION=false/BYPASSRLS=false다. HBA는 loopback trust 및 일반 host scram-sha-256으로 확인했다. 기존 DB/role에는 mutation 0; F-17은 고유 임시 DB/role로 분리한다. 격리 PG18 후보 image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c`가 이미 존재한다. F-17 새 checkout/container/DB/role 생성은 아직 0.
+- F-16 PR Broker 요청 태그 첫 게시에서 태그가 신뢰 main 대신 작업 HEAD를 가리킨 실수 1회를 Main이 발견했다. Broker가 fail-closed로 병합하지 않았고 그 정확한 요청 태그만 삭제·main 대상 재생성한 뒤 PR #32로 정상 병합했다. 브랜치/제품/기존 데이터 영향 0. 원인: 태그 이름의 HEAD SHA와 태그 대상 main SHA를 혼동. 후속 요청은 태그 대상 `development/main`을 push 전에 직접 검증한다.
 - 판정: `ACTIVE`. F-16 PR #32 merged main 3460d97, feature ancestry/tree·merged-main G-05 PASS, F-16 remote/local branch 및 worktree 삭제 확인. F-17 branch는 clean main에서 생성. 담당 Main 어울 통제, developer-primary-f17-r1 exact5 write lease, 정식 FAILURE_REPORT 0회.
 - F-17은 기존 local-postgres PG15의 전용 임시 Anvil DB/비-superuser role 일반 경로와 별도 PG18 격리 instance를 구분한다. 전역 bind/pg_hba/network나 기존 DB·role은 변경하지 않고 WSL host loopback/SSH tunnel만 쓴다. WSL 실제 자원은 생성 전 exact inventory·cleanup 방법을 기록한다.
 - F-14 과거 PG15/18 백업·복원 실측 및 F-16 staging/browser PASS를 F-17 새 exact Git/image E2E로 재사용하지 않는다. 현재 ProductValidation 공개 API는 501 미결선이므로 실제 API·DB 관측에 결박된 criterion별 검증 기록을 F-17 범위로 두며 API/DB 지속화 PASS는 주장하지 않는다.
