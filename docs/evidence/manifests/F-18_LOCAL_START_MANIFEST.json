@@ -30,8 +30,8 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 498633,
-      "sha256": "13159BAAD824458D56A501AB1DCBE000D7D27A36824E9E3790531076BF22E6F8"
+      "bytes": 499354,
+      "sha256": "568188A9B97BFC866779AE24C772645F61E4C1DA6E9ED5451FE06F42B8A59C82"
     },
     {
       "path": "docs/progress/progress-events.json",
