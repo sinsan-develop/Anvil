@@ -11,7 +11,9 @@ import subprocess
 BASE = "b6b3ff047b311cedabecdd745e8ef0cccac2f92e"
 BRANCH = "codex/f18-local-wsl-preflight"
 MODE = "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5"
+FINAL_MODE = "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5"
 AT = "2026-09-24T19:20:00+09:00"
+FINAL_AT = "2026-09-24T19:48:00+09:00"
 EXPIRES = "2026-09-25T07:20:00+09:00"
 ACTOR = "developer-primary-f18-local-r1"
 WORKER = "worker-lease-f18-local-r1-20260924-001"
@@ -70,6 +72,20 @@ def validate_start_state(progress):
     return [] if good else ["F18_LOCAL_START_STATE_INVALID"]
 
 
+def validate_final_state(progress):
+    good = (progress.get("repository", {}).get("projection_mode") == FINAL_MODE
+            and progress.get("event_sequence") == 1498
+            and progress.get("current_work_package") == "F-18"
+            and progress.get("status") == "PAUSED"
+            and progress.get("f18_overall_status") == "PARTIAL_LOCAL_WSL_VERIFIED"
+            and progress.get("active_agent") is None
+            and progress.get("worker_lease") is None
+            and progress.get("write_lease") is None
+            and progress.get("next_work_package") == {
+                "package_id": "F-19", "status": "BLOCKED_PENDING_F18_ACCEPTANCE"})
+    return [] if good else ["F18_LOCAL_CHECKPOINT_STATE_INVALID"]
+
+
 def _canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True,
                       separators=(",", ":"), allow_nan=False).encode("utf-8")
@@ -84,14 +100,14 @@ def _sha(raw):
     return sha256(raw).hexdigest().upper()
 
 
-def _event(events, kind, details):
+def _event(events, kind, details, *, at=AT, step="LOCAL_WSL_START"):
     seq = events[-1]["sequence"] + 1
     row = {"sequence": seq, "event_id": f"evt_f18_local_{seq}_{kind.lower()}",
            "event_type": kind, "actor": "main-agent-eoul",
            "actor_id": "main-agent-eoul", "actor_type": "AGENT",
            "project_id": "anvil", "work_package_id": "F-18", "run_id": None,
-           "step_id": "LOCAL_WSL_START", "subject_ref": "F-18/LOCAL_WSL_START",
-           "occurred_at": AT,
+           "step_id": step, "subject_ref": f"F-18/{step}",
+           "occurred_at": at,
            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
            "previous_event_sha256": _sha(_canonical(events[-1])), "details": details}
     events.append(row)
@@ -139,8 +155,10 @@ def collect_git(root):
 def validate(root, bundle):
     root = Path(root)
     progress, ledger = bundle["progress"], bundle["events"]
-    errors = validate_start_state(progress)
-    if ledger.get("last_sequence") != 1495 or ledger["events"][-1]["event_id"] != progress.get("last_event_id"):
+    final = progress.get("repository", {}).get("projection_mode") == FINAL_MODE
+    errors = validate_final_state(progress) if final else validate_start_state(progress)
+    expected_sequence = 1498 if final else 1495
+    if ledger.get("last_sequence") != expected_sequence or ledger["events"][-1]["event_id"] != progress.get("last_event_id"):
         errors.append("F18_LOCAL_EVENT_INVALID")
     for before, after in zip(ledger["events"][-4:], ledger["events"][-3:]):
         if after.get("previous_event_sha256") != _sha(_canonical(before)):
@@ -153,6 +171,8 @@ def validate(root, bundle):
             errors.append("F18_LOCAL_DIGEST_INVALID")
     manifest = json.loads((root / MANIFEST).read_text(encoding="utf-8"))
     if (manifest.get("accepted") is not False
+            or manifest.get("event_sequence") != expected_sequence
+            or manifest.get("projection_mode") != (FINAL_MODE if final else MODE)
             or manifest.get("exact_allowed_paths") != control_paths()
             or manifest.get("product_write_scope") != product_paths()
             or manifest.get("production") != "NOT_EXECUTED"):
@@ -164,6 +184,93 @@ def validate(root, bundle):
             break
     errors.extend(collect_git(root))
     return sorted(set(errors))
+
+
+def finalize(root):
+    """Record a published local/WSL checkpoint; never accept F-18 Production."""
+    root = Path(root)
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
+    if validate_start_state(progress) or ledger.get("last_sequence") != 1495:
+        raise RuntimeError("F18_LOCAL_START_STATE_REQUIRED")
+    if (root / MANIFEST).is_file() is False:
+        raise RuntimeError("F18_LOCAL_START_MANIFEST_REQUIRED")
+    if collect_git(root):
+        raise RuntimeError("F18_LOCAL_PUBLISHED_CLEAN_GIT_REQUIRED")
+    source_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root,
+                                          text=True).strip()
+    events = ledger["events"]
+    _event(events, "WRITE_LEASE_REVOKED", {"lease_id": WRITE,
+        "reason": "LOCAL_WSL_SLICE_RECORDED"}, at=FINAL_AT,
+        step="LOCAL_WSL_CHECKPOINT")
+    _event(events, "WORKER_LEASE_REVOKED", {"lease_id": WORKER,
+        "reason": "LOCAL_WSL_SLICE_RECORDED"}, at=FINAL_AT,
+        step="LOCAL_WSL_CHECKPOINT")
+    last = _event(events, "PACKAGE_PAUSED", {
+        "accepted": False, "production": "NOT_EXECUTED",
+        "f19": "BLOCKED_PENDING_F18_ACCEPTANCE", "published_source_head": source_head,
+        "reason": "USER_SCOPE_LOCAL_AND_WSL_ONLY"}, at=FINAL_AT,
+        step="LOCAL_WSL_CHECKPOINT")
+    original = (root / "docs/progress/progress-events.json").read_bytes()
+    old_id = progress["last_event_id"].encode()
+    marker = b'\n  ],\n  "last_event_id": "' + old_id + b'"'
+    if original.count(marker) != 1:
+        raise RuntimeError("F18_LOCAL_EVENT_BYTES_INVALID")
+    event_raw = original.replace(marker,
+        b",\n" + b",\n".join(_pretty(row).rstrip() for row in events[-3:])
+        + marker.replace(old_id, last["event_id"].encode())
+    ).replace(b'"last_sequence": 1495', b'"last_sequence": 1498', 1)
+    progress.update({"snapshot_id": "snapshot-f18-local-checkpoint-seq1498",
+        "event_sequence": 1498, "last_event_id": last["event_id"],
+        "updated_at": FINAL_AT, "recorded_at": FINAL_AT,
+        "status": "PAUSED", "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED",
+        "active_agent": None, "worker_lease": None, "write_lease": None,
+        "next_safe_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
+        "runtime_next_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
+        "reporting_decision": {"decision": "SCOPE_BOUNDARY_REPORT",
+            "reason_codes": ["F18_PRODUCTION_TARGET_EXCLUDED_BY_USER"],
+            "stop_before_dialogue_report": True}})
+    progress["active_work_instruction"]["result_status"] = "PARTIAL_LOCAL_WSL_VERIFIED"
+    progress["repository"].update({"projection_mode": FINAL_MODE,
+        "local_head": source_head, "remote_head": source_head,
+        "worktree_status": "F18_PAUSED_SCOPE_BOUNDARY",
+        "commit_status": "PUBLISHED_CHECKPOINT", "push_status": "PUBLISHED_CHECKPOINT"})
+    progress["registry_refs"]["progress_events"] = {
+        "path": "docs/progress/progress-events.json", "sha256": _sha(event_raw)}
+    snapshot = deepcopy(progress)
+    snapshot.pop("snapshot_hash", None)
+    progress["snapshot_hash"] = _sha(_canonical(snapshot))
+    progress_raw = _pretty(progress)
+    handoff_raw = (b"# F-18 Local/WSL checkpoint; Production NOT_EXECUTED\n\n"
+                   b"```json anvil-recovery-summary\n" + _pretty({key: deepcopy(progress.get(key))
+                   for key in ("event_sequence", "last_event_id", "status", "current_phase",
+                               "current_work_package", "active_agent", "worker_lease",
+                               "write_lease", "next_work_package", "next_safe_action",
+                               "runtime_next_action")}) + b"```\n\n"
+                   b"- Local/WSL evidence: Windows 79 PASS; WSL F-18/F-16 67 PASS.\n"
+                   b"- WSL F-17 12 tests NOT_RUN (SQLAlchemy absent); Production NOT_EXECUTED.\n"
+                   b"- F-18 accepted=false; F-19 blocked. Branch retained, no further branch.\n")
+    (root / "docs/progress/build-progress.json").write_bytes(progress_raw)
+    (root / "docs/progress/progress-events.json").write_bytes(event_raw)
+    (root / "docs/progress/BUILD_HANDOFF.md").write_bytes(handoff_raw)
+    (root / DIGEST).write_bytes(_pretty({"schema_version": "1.0.0",
+        "algorithm": "SHA-256", "event_sequence": 1498, "self_reference": False,
+        "progress": {"path": "docs/progress/build-progress.json",
+                     "bytes": len(progress_raw), "file_sha256": _sha(progress_raw)},
+        "handoff": {"path": "docs/progress/BUILD_HANDOFF.md",
+                    "bytes": len(handoff_raw), "file_sha256": _sha(handoff_raw)}}))
+    checksums = []
+    for relative in sorted(set(control_paths()) - {
+            "docs/progress/build-progress.json", "docs/progress/BUILD_HANDOFF.md",
+            DIGEST, MANIFEST}):
+        raw = (root / relative).read_bytes()
+        checksums.append({"path": relative, "bytes": len(raw), "sha256": _sha(raw)})
+    (root / MANIFEST).write_bytes(_pretty({"schema_version": "1.0.0",
+        "package_id": "F-18", "event_sequence": 1498, "accepted": False,
+        "projection_mode": FINAL_MODE, "validated_base_commit": BASE,
+        "exact_allowed_paths": control_paths(),
+        "product_write_scope": product_paths(), "raw_checksums": checksums,
+        "self_reference": False, "production": "NOT_EXECUTED"}))
 
 
 def materialize(root):

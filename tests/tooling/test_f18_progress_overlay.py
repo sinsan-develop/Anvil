@@ -2,7 +2,7 @@
 
 from scripts.f18_progress_overlay import (
     BASE, BRANCH, MODE, control_paths, product_paths,
-    validate_start_git_facts, validate_start_state,
+    validate_start_git_facts, validate_start_state, validate_final_state,
 )
 
 
@@ -40,3 +40,17 @@ def test_f18_start_state_explicitly_blocks_production_and_f19():
 def test_f18_product_paths_are_local_preflight_only():
     assert len(product_paths()) == 5
     assert all(not path.startswith("deploy/ysna/") for path in product_paths())
+
+
+def test_f18_checkpoint_revokes_writer_without_accepting_production():
+    progress = {"repository": {"projection_mode": "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5"},
+                "event_sequence": 1498, "current_work_package": "F-18",
+                "status": "PAUSED", "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED",
+                "active_agent": None, "worker_lease": None, "write_lease": None,
+                "next_work_package": {"package_id": "F-19",
+                                      "status": "BLOCKED_PENDING_F18_ACCEPTANCE"}}
+    assert validate_final_state(progress) == []
+    assert validate_final_state({**progress, "status": "ACCEPTED"})
+    assert validate_final_state({**progress, "write_lease": {"status": "ACTIVE"}})
+    assert validate_final_state({**progress, "next_work_package":
+                                 {"package_id": "F-19", "status": "READY"}})
