@@ -55,18 +55,18 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 4728549,
-      "sha256": "5C85733FC7D7D37CCF1567FED145EA6269095C87189038ACD5BBE977D36A84F9"
+      "bytes": 4728639,
+      "sha256": "AC0C7A97F22247E835E38219CCE22058D63DA7E169DA6CFA673D91E97BB285CC"
     },
     {
       "path": "scripts/f14_progress_overlay.py",
-      "bytes": 15330,
-      "sha256": "67BAEB8D75B6FA7E84E6AF539C3DB24244D0FE0392A03B82BE88F54292EE4A7A"
+      "bytes": 27362,
+      "sha256": "6AA2D2EDDCA33C494526E93BF88B2659896F803FC29AC04819E4DB96C935F03E"
     },
     {
       "path": "tests/tooling/test_f14_progress_overlay.py",
-      "bytes": 1874,
-      "sha256": "B8E821C5BB92D379318BC59A8A526B5D083016DDB35EB6C94DA9C0821393ED1C"
+      "bytes": 3130,
+      "sha256": "866E7ECAB2D90A9DB715E5F5D47F2A4586132C0241F56BE011A13471397E966C"
     }
   ],
   "self_reference": false,
