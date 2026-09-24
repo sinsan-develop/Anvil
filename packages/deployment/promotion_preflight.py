@@ -3,12 +3,25 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Mapping
 
 from packages.deployment.deploy_approval import DeployApprovalSubject, approval_matches, subject_hash
 from packages.deployment.release_manifest import ReleaseExpectations, VerifiedRelease, verify_release_manifest
+
+
+_F16_PATH = Path(__file__).resolve().parents[2] / "deploy" / "wsl" / "f16_staging.py"
+_F16_SPEC = importlib.util.spec_from_file_location("f18_f16_staging", _F16_PATH)
+if _F16_SPEC is None or _F16_SPEC.loader is None:
+    raise ImportError("F16_STAGING_UNAVAILABLE")
+_F16 = importlib.util.module_from_spec(_F16_SPEC)
+_F16_SPEC.loader.exec_module(_F16)
+APPROVED_DEVELOPMENT_REMOTE = _F16.APPROVED_DEVELOPMENT_REMOTE
+GitPreflightError = _F16.GitPreflightError
+verify_exact_checkout = _F16.verify_exact_checkout
 
 
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
@@ -26,6 +39,7 @@ class PreflightDecision:
 class VerifiedApprovalRelease:
     release: VerifiedRelease
     envelope_hash: str
+    source_git_remote: str
 
 
 def verify_approval_release(
@@ -37,7 +51,9 @@ def verify_approval_release(
         raw_manifest, trusted_public_key_pem=trusted_public_key_pem,
         trusted_fingerprint=trusted_fingerprint, expected=expected,
     )
-    return VerifiedApprovalRelease(release, "sha256:" + hashlib.sha256(raw_manifest).hexdigest())
+    return VerifiedApprovalRelease(
+        release, "sha256:" + hashlib.sha256(raw_manifest).hexdigest(), expected.source_git_remote
+    )
 
 
 def _digest(value: object) -> bool:
@@ -92,3 +108,33 @@ def validate_promotion(
     if any(evidence_images[role] != release_images[role] for role in ("web", "api", "worker")):
         return blocked("DEPLOY_ARTIFACT_MISMATCH")
     return PreflightDecision(True, "READY_FOR_PRIVATE_REHEARSAL", bound_hash)
+
+
+def validate_existing_checkout(
+    verified_release: VerifiedApprovalRelease,
+    wsl_evidence: Mapping[str, object],
+    approval_subject: DeployApprovalSubject,
+    observed_environment_id: str,
+    migration_plan_hash: str,
+    rollback_plan_hash: str,
+    checkout: Path,
+    approved_remote: str = APPROVED_DEVELOPMENT_REMOTE,
+) -> PreflightDecision:
+    """Read-only Git gate after all existing artifact and approval checks pass."""
+    decision = validate_promotion(
+        verified_release, wsl_evidence, approval_subject,
+        observed_environment_id, migration_plan_hash, rollback_plan_hash,
+    )
+    if not decision.ready:
+        return decision
+    if verified_release.source_git_remote != approved_remote:
+        return PreflightDecision(False, "GIT_CHECKOUT_NOT_VERIFIED", None)
+    try:
+        verify_exact_checkout(
+            checkout, approved_remote=approved_remote,
+            source_commit=verified_release.release.source_commit,
+            release_tag=verified_release.release.release_tag,
+        )
+    except (GitPreflightError, OSError, ValueError, TypeError):
+        return PreflightDecision(False, "GIT_CHECKOUT_NOT_VERIFIED", None)
+    return decision

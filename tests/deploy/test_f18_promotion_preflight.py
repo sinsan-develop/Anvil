@@ -2,11 +2,16 @@ from dataclasses import replace
 import hashlib
 import json
 from functools import lru_cache
+from pathlib import Path
+import subprocess
 
 import pytest
 
 from packages.deployment.deploy_approval import DeployApprovalSubject, subject_hash
-from packages.deployment.promotion_preflight import validate_promotion, verify_approval_release
+import packages.deployment.promotion_preflight as preflight
+from packages.deployment.promotion_preflight import (
+    validate_existing_checkout, validate_promotion, verify_approval_release,
+)
 from packages.deployment.release_manifest import ManifestVerificationError
 from tests.deploy.test_f16_release_manifest import expectations, signed_manifest, subject
 
@@ -18,14 +23,22 @@ MIGRATION = "sha256:" + "4" * 64
 ROLLBACK = "sha256:" + "5" * 64
 
 
-def verified_envelope():
+def verified_envelope(*, source_commit=COMMIT, source_git_remote=None, release_tag="f16-test-1"):
     release_subject = subject()
     release_subject["image_digests"] = {"web": WEB, "api": RUNTIME, "worker": RUNTIME}
+    release_subject["source_commit"] = source_commit
+    if source_git_remote is not None:
+        release_subject["source_git_remote"] = source_git_remote
+    release_subject["release_tag"] = release_tag
     envelope, public, fingerprint = signed_manifest(release_subject)
     raw = json.dumps(envelope, ensure_ascii=False).encode("utf-8")
     verified = verify_approval_release(
         raw, trusted_public_key_pem=public, trusted_fingerprint=fingerprint,
-        expected=replace(expectations(), image_digests=release_subject["image_digests"]),
+        expected=replace(
+            expectations(), image_digests=release_subject["image_digests"],
+            source_commit=source_commit, source_git_remote=release_subject["source_git_remote"],
+            release_tag=release_tag,
+        ),
     )
     return verified, raw
 
@@ -123,3 +136,112 @@ def test_missing_or_malformed_f17_evidence_is_rejected(change):
     evidence = inputs()[1] | change
     decision = check(evidence=evidence)
     assert (decision.ready, decision.reason_code) == (False, "EVIDENCE_TARGET_MISMATCH")
+
+
+def git(*args, cwd=None):
+    return subprocess.run(["git", *args], cwd=cwd, text=True, capture_output=True, check=True).stdout.strip()
+
+
+@pytest.fixture
+def checkout_fixture(tmp_path: Path, monkeypatch):
+    remote = tmp_path / "approved.git"
+    source = tmp_path / "source"
+    remote_alias = "git@fixture:approved.git"
+    git("init", "--bare", str(remote))
+    git("init", str(source))
+    git("config", "user.email", "f18-test@example.invalid", cwd=source)
+    git("config", "user.name", "F18 fixture", cwd=source)
+    (source / "tracked.txt").write_text("approved\n", encoding="utf-8")
+    git("add", "tracked.txt", cwd=source)
+    git("commit", "-m", "approved", cwd=source)
+    commit = git("rev-parse", "HEAD", cwd=source)
+    git("tag", "-a", "f16-test-1", "-m", "signed fixture", cwd=source)
+    git("remote", "add", "origin", str(remote), cwd=source)
+    git("push", "origin", "HEAD", "refs/tags/f16-test-1", cwd=source)
+    checkout = tmp_path / "checkout"
+    git("clone", str(remote), str(checkout))
+    git("checkout", "--detach", commit, cwd=checkout)
+    git("remote", "set-url", "origin", remote_alias, cwd=checkout)
+    actual_git = preflight._F16._git
+
+    def local_fixture_git(*args, **kwargs):
+        if args and args[0] == "ls-remote" and remote_alias in args:
+            args = tuple(str(remote) if value == remote_alias else value for value in args)
+        return actual_git(*args, **kwargs)
+
+    monkeypatch.setattr(preflight._F16, "_git", local_fixture_git)
+    release, raw = verified_envelope(source_commit=commit, source_git_remote=remote_alias)
+    evidence = {"git_commit": commit, "runtime_image_digest": RUNTIME,
+                "image_digests": {"web": WEB, "api": RUNTIME, "worker": RUNTIME}}
+    approval = DeployApprovalSubject("production", "sha256:" + hashlib.sha256(raw).hexdigest(), MIGRATION, ROLLBACK)
+    return remote_alias, source, checkout, release, evidence, approval
+
+
+def existing(checkout_fixture, **changes):
+    remote, _, checkout, release, evidence, approval = checkout_fixture
+    return validate_existing_checkout(
+        changes.get("release", release), changes.get("evidence", evidence),
+        changes.get("approval", approval), "production", MIGRATION, ROLLBACK,
+        changes.get("checkout", checkout), approved_remote=changes.get("approved_remote", remote),
+    )
+
+
+def test_existing_clean_detached_published_checkout_is_private_rehearsal_ready(checkout_fixture):
+    _, _, checkout, release, _, approval = checkout_fixture
+    before = git("status", "--porcelain", "--untracked-files=all", cwd=checkout)
+    decision = existing(checkout_fixture)
+    assert (decision.ready, decision.reason_code, decision.subject_hash) == (
+        True, "READY_FOR_PRIVATE_REHEARSAL", subject_hash(approval)
+    )
+    assert release.source_git_remote == checkout_fixture[0]
+    assert git("status", "--porcelain", "--untracked-files=all", cwd=checkout) == before == ""
+
+
+@pytest.mark.parametrize("mutation", ["remote", "tag", "commit", "attached", "tracked", "untracked", "copied"])
+def test_existing_checkout_rejects_wrong_git_state(checkout_fixture, mutation):
+    remote, source, checkout, release, evidence, approval = checkout_fixture
+    if mutation == "remote":
+        git("remote", "set-url", "origin", str(source), cwd=checkout)
+    elif mutation == "tag":
+        release, raw = verified_envelope(
+            source_commit=evidence["git_commit"], source_git_remote=remote, release_tag="other-tag"
+        )
+        approval = replace(approval, release_manifest_hash="sha256:" + hashlib.sha256(raw).hexdigest())
+    elif mutation == "commit":
+        git("config", "user.email", "f18-test@example.invalid", cwd=checkout)
+        git("config", "user.name", "F18 fixture", cwd=checkout)
+        (checkout / "tracked.txt").write_text("local commit\n", encoding="utf-8")
+        git("add", "tracked.txt", cwd=checkout)
+        git("commit", "-m", "local-only", cwd=checkout)
+    elif mutation == "attached":
+        git("switch", "-c", "local-branch", cwd=checkout)
+    elif mutation == "tracked":
+        (checkout / "tracked.txt").write_text("server patch\n", encoding="utf-8")
+    elif mutation == "untracked":
+        (checkout / "copied.txt").write_text("source copy\n", encoding="utf-8")
+    else:
+        copied = checkout.parent / "copied"
+        copied.mkdir()
+        (copied / "tracked.txt").write_text("approved\n", encoding="utf-8")
+        checkout = copied
+    decision = existing(checkout_fixture, release=release, evidence=evidence, approval=approval, checkout=checkout)
+    assert (decision.ready, decision.reason_code) == (False, "GIT_CHECKOUT_NOT_VERIFIED")
+
+
+def test_signed_remote_must_match_approved_remote_before_git_guard(checkout_fixture, monkeypatch):
+    monkeypatch.setattr(preflight, "verify_exact_checkout", lambda *a, **kw: pytest.fail("git guard called"))
+    decision = existing(checkout_fixture, approved_remote="other-remote")
+    assert (decision.ready, decision.reason_code) == (False, "GIT_CHECKOUT_NOT_VERIFIED")
+
+
+@pytest.mark.parametrize("reason", ["web", "approval"])
+def test_promotion_rejection_does_not_call_git_guard(checkout_fixture, monkeypatch, reason):
+    monkeypatch.setattr(preflight, "verify_exact_checkout", lambda *a, **kw: pytest.fail("git guard called"))
+    _, _, _, _, evidence, approval = checkout_fixture
+    if reason == "web":
+        decision = existing(checkout_fixture, evidence={k: v for k, v in evidence.items() if k != "image_digests"})
+        assert decision.reason_code == "WEB_IMAGE_NOT_VERIFIED"
+    else:
+        decision = existing(checkout_fixture, approval=replace(approval, migration_plan_hash="sha256:" + "9" * 64))
+        assert decision.reason_code == "DEPLOY_APPROVAL_SUBJECT_MISMATCH"
+    assert decision.ready is False

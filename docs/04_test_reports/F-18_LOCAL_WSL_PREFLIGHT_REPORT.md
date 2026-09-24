@@ -52,6 +52,30 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 - `ysna-server` 접속/조회, `shared-db`, OIDC, object storage, network capability, `envil.sinsan.kr` 브라우저·Network, 실제 DeployApproval, Monitoring/Release는 모두 `NOT_EXECUTED`.
 - rollback: Main review 보완 commit, 보고서 commit `f214c6e`, Task 2 commit `88da55f`, Task 1 commit `3a97e06`을 역순 revert한다. Main control 파일·기존 F-16/F-17 파일은 건드리지 않는다.
 
+## R2 Task 4 — 기존 checkout의 읽기 전용 Git guard
+
+### 판정·기준
+
+로컬 Task 4 구현과 테스트는 PASS다. `validate_existing_checkout`은 기존 `validate_promotion`이 `ready=True`일 때만 F-16 `verify_exact_checkout`을 호출한다. F-16 검증 당시의 `source_git_remote`를 `VerifiedApprovalRelease`에 결박하고, 호출자가 지정한 승인 remote와 다르면 Git guard 전 단계에서 차단한다. 이 결과는 기존 checkout을 읽는 private rehearsal 사전검증이며 실제 Production 승인·배포가 아니다.
+
+- 시작 HEAD `4ff5af03b26f8c17e1d3087b80ffc5ca02613400`, branch `codex/f18-local-wsl-preflight`, 시작 `git status --short` 출력 없음. Canonical seq1501 `ACTIVE`, G-05 checker exit 0 `PASS sequence=1501 reporting=AUTO_CONTINUE`.
+- R2 worker lease `worker-lease-f18-local-r2-20260924-001`, execution fence `f18-local-execution-fence-epoch-2-0889fe4137048494`; write lease `write-lease-f18-local-r2-20260924-001`, write fence `f18-local-write-fence-epoch-2-0889fe4137048494`. Exact3 scope는 이 보고서, `packages/deployment/promotion_preflight.py`, `tests/deploy/test_f18_promotion_preflight.py`다.
+- 기존 설계·작업계획·검증매트릭스·테스트계획·운영규칙 SHA-256은 위 기준과 동일하다. R2 계획 `D59287F8D13759D865D78977236785DC2194A278A09F3D0FFADD4396BC737631`, invocation `CA4584955BFD91469BE44B27D9335E0280FDCE4FB1AAA390BCA3F76BA7149E5A`.
+
+### RED→GREEN·회귀
+
+| 명령 | exit·실제 결과 |
+|---|---|
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/deploy/test_f18_promotion_preflight.py` | exit 1, 새 `validate_existing_checkout` import 누락 — 의도한 RED. |
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r2-pytest-temp tests/deploy/test_f18_promotion_preflight.py -k existing_clean_detached` | exit 0, 1 PASS/26 deselected. 실제 로컬 bare Git remote/tag의 clean detached checkout을 읽기 전용 검증. |
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r2-pytest-temp tests/deploy/test_f18_promotion_preflight.py` | exit 0, 27 PASS. remote·tag·commit 불일치, attached HEAD, tracked/untracked dirty, 복사된 비-Git source 차단; Web 증거·approval 부족 시 Git guard 호출 0. |
+| `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.f18-r2-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py tests/deploy/test_f17_validation.py` | exit 0, 90 PASS/35.73초. 기존 F-16/F-17 관련 로컬 회귀 포함. |
+| `git diff --check` | exit 0, whitespace 문제 없음. |
+
+합성 F-16 서명 subject는 `git@fixture:approved.git`를 쓰고, 테스트 과정의 `ls-remote`만 실제 임시 bare repository로 전달한다. 원격 tag object와 commit은 로컬 Git 명령으로 검증했다. fixture용 checkout 생성은 테스트 준비 단계에서만 수행했고 제품 함수는 fetch·checkout·파일 변경을 하지 않는다. 구현 중 Python의 다른 `deploy` namespace 충돌과 F-16의 `git@` remote 요구를 확인해 기존 F-16 파일을 바꾸지 않고 격리된 모듈 로드와 테스트 fixture 매핑으로 해결했다. 이들은 정식 실패보고에 해당하지 않으며 정식 실패 횟수 0이다.
+
+전용 `.f18-r2-pytest-temp`는 실행 후 절대경로가 worktree 안에 있음을 확인하고 제거했다. 잔류 0. 이 Task의 제품 변경은 exact3만이며 Main 소유 control 파일은 수정하지 않았다. WSL/ysna-server, DB, Docker, 브라우저, 실제 Provider·OIDC·object storage·network policy는 미실행이다. F-18 `accepted=false`, F-19 차단 경계는 유지한다. Rollback은 Task 4 exact3 commit 한 건을 revert한다.
+
 ## Main의 WSL 격리 QA R2 — 2026-09-24
 
 - 신산님의 `진행하자` 뒤 동일 `codex/f18-local-wsl-preflight` 브랜치의 공개 commit `ad0ddb16ed9504563128934a647db3390515e5cc`를 `ssh WSL-server`에서 승인 Git alias로 새 exact `/srv/anvil-wsl/f18-local-qa-r2`에 clone하고 clean detached checkout을 확인했다. 기존 서비스/DB·전역 Python은 변경하지 않았다.
