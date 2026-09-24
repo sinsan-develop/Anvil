@@ -58205,6 +58205,9 @@ def validate_bundle(bundle):
 
 _validate_git_projection_before_f18_local = _validate_git_projection
 def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_F20_LOCAL_WSL_SCOPE_REVISION":
+        from wsl_scope_overlay import collect_git
+        return collect_git(bundle["_root"])
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
@@ -58219,6 +58222,9 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_f18_local = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_F20_LOCAL_WSL_SCOPE_REVISION":
+        from wsl_scope_overlay import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",

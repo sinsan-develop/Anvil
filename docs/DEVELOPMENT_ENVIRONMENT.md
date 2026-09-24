@@ -14,6 +14,8 @@
 
 # Anvil 개발환경
 
+> 2026-09-25 현재 작업계획 범위: 로컬 Windows에서 개발하고 승인 Git remote에 push한 정확한 commit을 `ssh WSL-server`가 Git으로 수신해 Test/Staging 및 별도 격리 운영 유사 검증에 사용한다. `ysna-server`/공개 운영 도메인·운영 DB·Production 배포/실측은 현재 계획 밖이다. 이 문서 아래의 과거 운영·ysna 기록은 역사적 증거이며 현재 작업 지시로 재활성화하지 않는다.
+
 ## seq494 로컬 검증 마감 / 2026-09-05
 
 - 담당: Main 어울 관리, pg18_binding_resume 구현 후 seq494_local_finish가 단일 writer 인수. candidate a342d62391a44b349733d1468ac3b180761155ab, candidate56 / record12 / 누적58. Main의 최종 문서 검토·record commit·clean postcommit 검증은 아직 전이며 외부 실행은 하지 않는다.

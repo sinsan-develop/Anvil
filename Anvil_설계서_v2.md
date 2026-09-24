@@ -1,10 +1,12 @@
-# Anvil 인간 통제형 학습 바이브코딩 에이전트 설계서 v2.7
+# Anvil 인간 통제형 학습 바이브코딩 에이전트 설계서 v2.8
 
-> 문서 상태: **신산님 승인 기준선 successor 초안** — Agent Teams·Capability MoA·대화형 설계 반영, 연계 문서 동기화 대기
-> 기존 승인 기록: 2026-08-10 신산님 명시 승인 / v2.7 successor 승인: PENDING
+> 문서 상태: **2026-09-25 신산님 직접 지시의 Local·WSL-server 실행 범위 revision** — 기존 제품의 장래 Production 계약은 보존하되 현재 완료조건에서 제외
+> 기존 승인 기록: 2026-08-10 신산님 명시 승인 / 2026-09-25 Local·WSL-server 범위 변경: 신산님 직접 지시(범위 승인 기록 참조); 그 밖의 v2.7 successor 항목의 역사적 승인 상태는 변경하지 않음
 > 비의미 재확정: 승인 직후 독립 정합성 검토 P1 4건(승인 binding, ReleaseDecision 전이, `BLOCKED_DEPENDENCY` 출구, DIR-X trigger)을 기능 범위·요구사항·중요 위험 변경 없이 `MAIN_RECONFIRMED_NON_SEMANTIC`으로 반영  
 > 작성 기준일: 2026-08-10  
 > 목적: 신산님의 실제 바이브코딩 운영 방식과 Forge·LogicForge·OrcheFlow/FlowMind에서 검증된 개념을 제품 흐름의 근거로 삼고, Hermes Agent·Smolagents·LangGraph·Claude Code·ChatGPT Codex의 핵심 메커니즘으로 실행 엔진을 강화한 독립 바이브코딩 에이전트를 정의한다.
+
+> 2026-09-25 실행 범위 변경: 신산님의 직접 지시에 따라 현재 작업계획서 F-18~F-20의 필수 운영 검증 대상은 `WSL-server` 격리 운영 유사 환경이다. 아래의 `ysna-server`/`envil.sinsan.kr` Production 배포·실측·`RELEASED` 요구는 제품의 장래 운영 계약으로 보존하되 현재 계획의 Package/Gate 합격 선행조건에서 제외한다. WSL 결과를 Production PASS로 바꾸지 않으며 실제 Production Release는 별도 계획·승인·검증 없이는 실행하지 않는다.
 
 ---
 
@@ -6415,6 +6417,8 @@ Tester는 manifest와 실제 delivered target을 대조한다. 다른 commit·co
 | Test/Staging | `ssh WSL-server`, hostname `SINSAN` | 통합 테스트·스테이징 배포·운영 승격 전 실제 검증 | 개발·일반 통합은 `local-postgres` pgvector PostgreSQL 15 계열의 Anvil 전용 DB·role; Release Candidate DB 호환성은 별도 격리 PostgreSQL 18 검증 인스턴스 |
 | Production | `ssh ysna-server` | 최종 운영 | `shared-db`, pgvector PostgreSQL 18 계열의 Anvil 전용 DB·role |
 
+현재 작업계획서의 운영 유사 검증은 `WSL-server`의 Test/Staging과 분리된 격리 target·PG18 DB/role에서 수행한다. 이 target은 Production이 아니며 위 Production 행의 배포·실측을 대신하지 않는다. F-18~F-20의 현재 인수는 WSL 범위의 증거로 한정하고 Production 관련 AV/Release 판정은 `NOT_EXECUTED`로 보존한다.
+
 현재 WSL-server의 `local-postgres`가 `0.0.0.0:5432`에 bind된 사실은 편의가 아니라 보안 위험으로 취급한다. 방화벽·접근 IP 제한 또는 SSH tunnel, Anvil 전용 DB·계정, 최소 권한, credential rotation을 적용하기 전에는 개발 DB 연결을 승인하지 않는다. 브라우저 코드에는 DB 주소·계정이 절대 노출되지 않는다.
 
 WSL의 PostgreSQL 15 PASS만으로 PostgreSQL 18 운영 호환성을 주장하지 않는다. 운영 승격 전 WSL-server의 별도 격리 PostgreSQL 18 인스턴스에서 schema migration, extension, query, backup/restore, rollback rehearsal을 수행하고 `EvidenceManifest`에 image digest·server version·extension version을 고정한다. 이 검증 인스턴스는 기존 `local-postgres`를 덮어쓰거나 운영 데이터와 공유하지 않는다.
@@ -6451,6 +6455,8 @@ source_git_remote
 
 canonical 배포 흐름:
 
+아래 흐름은 장래 Production 배포 계약이다. 현재 작업계획서의 F-18~F-20은 WSL-server의 분리된 운영 유사 target에서 Git checkout→manifest/capability→격리 DB backup·migration→Web/API/Worker→smoke·browser Network·rollback→Monitoring까지 검증한 시점에 멈춘다. `ysna-server` fetch 이후 단계, Production DeployApproval, 공개 도메인, 신산님 운영 인수, `RELEASED`는 이번 계획의 완료조건이 아니다.
+
 ```text
 WSL 검증 PASS
 → ReleaseManifest 생성·검증
@@ -6480,6 +6486,8 @@ PENDING → APPROVED → DEPLOYING → SMOKE_TEST
 `MonitoringPolicy`는 위험도별 관찰 시간, API·Worker·DB·queue·Provider health, 오류율, backlog, 비용, critical alert 0건과 smoke revision을 정의한다. 단 한 번의 smoke PASS만으로 `RELEASED`가 되지 않는다. 관찰 구간 종료와 신산님 확인 전에는 최종 운영 완료로 표시하지 않는다.
 
 `envil.sinsan.kr` 최종 완료조건:
+
+이 목록은 장래 Production Release의 별도 완료조건이며 현재 WSL-server 작업계획서 F-20의 합격조건으로 집계하지 않는다. WSL 검증에서 아래 공통 보안·기능 항목을 확인하더라도 실제 운영 도메인·DB·credential·network·Monitoring PASS를 추론하지 않는다.
 
 - WSL-server에서 동일 Git commit 검증 완료
 - dirty worktree 0건

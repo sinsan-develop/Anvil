@@ -1,14 +1,14 @@
-# Anvil 전체 개발 작업계획서 v1.6
+# Anvil 전체 개발 작업계획서 v1.7
 
-> 문서 상태: 신산님 승인 successor 기준선 / Agent Teams·Capability MoA·대화형 설계·공통 모듈·API 우선·메뉴 순차 개발·9단계 생명주기 반영, 통합검증매트릭스·테스트계획서 successor 정합화 대기
+> 문서 상태: 2026-09-25 신산님 직접 지시의 Local·WSL-server 완료 범위 revision / 기존 완료 Package의 역사 기록 보존
 > 작성일: 2026-08-10  
 > 설계 책임자·Main Agent: 어울  
 > 최종 승인자: 신산님  
-> 설계 기준선: `Anvil_설계서_v2.md` v2.7
-> 설계 기준선 SHA-256: `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`
+> 설계 기준선: `Anvil_설계서_v2.md` v2.8 (현재 hash는 2026-09-25 범위 승인 기록에 결박)
+> 직전 설계 기준선 SHA-256: `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`
 > Subagent 운영 근거: `C:\Users\cyhuh\OneDrive\문서\AI 자료\MoaWorks_Subagent_단계적_적용_권고안.docx` / SHA-256 `0C033D15389AE00DAC27373D028DE7FF375EE2855925714804C55C741AC7B77D` / workspace 외부 read-only source  
-> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A`
-> 테스트 실행 기준선: `Anvil_테스트계획서_v1.md` v1.4 / SHA-256 `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8`
+> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.5 (현재 hash는 범위 승인 기록에 결박)
+> 테스트 실행 기준선: `Anvil_테스트계획서_v1.md` v1.6 (현재 hash는 범위 승인 기록에 결박)
 > A-01 파생 기준선: `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` / 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
@@ -30,7 +30,7 @@ G. 기준선·운영 준비
 → 5. 화면·메뉴별 기능 구현
 → 6. 전체 테스트·통합검증
 → 7. 매뉴얼 작성
-→ 8. F-20 Local→WSL-server Test/Staging→ysna-server Production 최종 Release
+→ 8. F-20 Local→WSL-server Test/Staging→WSL-server 격리 운영 유사 검증으로 개발·테스트 완료 판정(Production Release 제외)
 → 9. P. 안정성이 입증된 구성의 Plugin 포장
 ```
 
@@ -68,20 +68,20 @@ G. 기준선·운영 준비
 |---|---|---|
 | Web Console | React + TypeScript + Vite | `HUMAN_CONFIRMED` |
 | Control API/BFF | FastAPI + Pydantic | `HUMAN_CONFIRMED` |
-| DB/Queue | PostgreSQL durable queue + WSL-server 개발 PostgreSQL 15 계열 + 격리 PostgreSQL 18 RC 검증 + ysna-server PostgreSQL 18 계열 운영 | `HUMAN_CONFIRMED` |
+| DB/Queue | PostgreSQL durable queue + WSL-server 개발 PostgreSQL 15 계열 + 격리 PostgreSQL 18 RC·운영 유사 검증; ysna-server 운영 실측 제외 | `HUMAN_CONFIRMED` |
 | Worker | Python worker process | `HUMAN_CONFIRMED` |
 | Migration | Alembic | `HUMAN_CONFIRMED` |
 | Event stream | SSE + `Last-Event-ID` | `HUMAN_CONFIRMED` |
 | Artifact | local filesystem adapter → object storage adapter | `HUMAN_CONFIRMED` |
 | 실행 격리 | Git worktree + Docker | `HUMAN_CONFIRMED` |
-| 인증 | local owner session → ysna-server 운영 OIDC·step-up authentication | `HUMAN_CONFIRMED` |
+| 인증 | local owner session → WSL-server 격리 환경의 OIDC·step-up authentication 검증; 운영 issuer 실측 제외 | `HUMAN_CONFIRMED` |
 | Anvil 자체 테스트 | pytest + Playwright + JSON Schema + OpenAPI diff + 실제 PostgreSQL·fault injection | `HUMAN_CONFIRMED` |
 | 대상 저장소 검증 | Project Profile이 탐지한 저장소별 도구를 사용하고, 미설치·미가용은 `BLOCKED`로 판정 | `HUMAN_CONFIRMED` |
 | Vector/검색 backend 제품 선택 | 고정 fixture benchmark 후 선택하며 특정 제품을 사전 확정하지 않음 | `BENCHMARK_POLICY_CONFIRMED` |
 | LLM Provider | CEREBRAS, GROQ, MISTRAL, OPENROUTER, UPSTAGE, GEMINI, ANTHROPIC, OPENAI, OLLAMA | `HUMAN_CONFIRMED` |
 | Local development DB | WSL-server(hostname `SINSAN`) `local-postgres` pgvector PostgreSQL 15 계열의 Anvil 전용 DB·role; 방화벽/IP 제한 또는 SSH tunnel 선행 | `HUMAN_CONFIRMED` |
 | Release Candidate DB | WSL-server의 기존 `local-postgres`와 분리된 PostgreSQL 18 계열 격리 인스턴스 | `HUMAN_CONFIRMED` |
-| Production | `ysna-server`, `envil.sinsan.kr`, `shared-db` pgvector PostgreSQL 18 계열의 Anvil 전용 DB·role | `HUMAN_CONFIRMED` |
+| 현재 완료 대상 | Local 개발 + `WSL-server` Test/Staging·격리 운영 유사 검증; `ysna-server`, `envil.sinsan.kr`, `shared-db` Production 배포·검증·`RELEASED` 판정은 이번 작업계획 범위 밖 | `HUMAN_CONFIRMED_2026-09-25_SCOPE_REVISION` |
 
 기준값이 바뀌면 관련 Work Package와 dependency를 다시 계산하고 계획 revision을 올린다.
 
@@ -509,7 +509,7 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 
 ### 목표
 
-메뉴가 공통으로 소비할 Provider·환경·운영 backend/API와 Local development→WSL-server Test/Staging→ysna-server Production 배포 capability를 먼저 완성한다. 실제 화면 운영과 최종 Release는 U Phase와 F-20 뒤에 판정한다.
+메뉴가 공통으로 소비할 Provider·환경·운영 backend/API와 Local development→WSL-server Test/Staging→WSL-server 격리 운영 유사 검증 capability를 먼저 완성한다. `ysna-server` Production 배포·운영 실측은 이번 계획의 필수 검증과 완료조건에서 제외한다. 실제 화면 검증과 개발·테스트 완료는 U Phase와 F-20 뒤에 판정하되 `RELEASED`로 승격하지 않는다.
 
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
@@ -526,16 +526,16 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 | F-11 | OLLAMA local adapter와 endpoint SSRF 방어 구현 | local adapter, endpoint validator/probe | 환경 allowlist 외 metadata/link-local/loopback/private IP·redirect·DNS rebinding 차단, endpoint 비노출, 설치/model/offline/stream 상태 구분 | F-02 |
 | F-12 | 9개 Provider Settings·Egress·Secret·Execution Mode·routing API/BFF contract 통합검증 | provider settings API/BFF, projection contract, Network contract evidence | canonical 순서, 비활성 사유, drift·egress·Secret 상태·model refresh·역할 저장이 adapter와 일치하고 값/endpoint 비노출; 실제 Settings 화면은 U-11이 소유 | F-03~11 |
 | F-13 | Dashboard·Queue·Worker fencing·Audit·Alert·Cost reservation·Deployment Monitoring read model/API 구현 | operations/observability API, Dashboard·Operations projection | lease epoch/token, quarantine, budget reserved/consumed/reconcile, Provider/DB/queue health, alert dedupe·ack·Monitoring 상태 조회; 실제 화면은 U-01·U-10이 소유 | F-12 |
-| F-14 | PostgreSQL 15/18 migration·backup/restore·artifact retention·재해복구 구현 | migration compatibility, recovery manifest, screen-independent runbook API | WSL-server `local-postgres` PG15 개발 DB, 분리 PG18 RC, ysna-server `shared-db` PG18 운영의 schema/extension/backup/restore/rollback 계보를 EvidenceManifest로 복구 | F-13 |
+| F-14 | PostgreSQL 15/18 migration·backup/restore·artifact retention·재해복구 구현 | migration compatibility, recovery manifest, screen-independent runbook API | WSL-server `local-postgres` PG15 개발 DB와 분리된 PG18 RC·운영 유사 격리 DB의 schema/extension/backup/restore/rollback 계보를 EvidenceManifest로 복구; `shared-db` 운영 실측 제외 | F-13 |
 | F-15 | 공통 화면 shell·Local Web/API/Worker + WSL-server `local-postgres` 개발 DB의 production-like Docker·Web security·same-origin 검증 | common shell, compose/local deployment, security evidence | sidebar/header/route/권한/error boundary와 PG15 Anvil 전용 DB/role·최소권한·방화벽/IP 제한 또는 SSH tunnel을 사용하고 CSRF/CSP/proxy trust 및 브라우저 내부주소·secret 0건; 메뉴 전용 업무 기능 없음 | F-14 |
 | F-16 | Git 전용 WSL-server(hostname `SINSAN`) Test/Staging 배포와 ReleaseManifest 구현 | deploy/wsl, signed ReleaseManifest | 공개 staging 도메인 임의 생성 없이 승인 접근/tunnel 사용, 승인 remote commit/tag만 checkout, dirty/server-local patch 차단, manifest hash 검증 | F-15 |
 | F-17 | WSL-server 실제 기능과 PostgreSQL 18 Release Candidate 격리 검증 | WSL test report, PG18 RC EvidenceManifest | 일반 통합은 `local-postgres` PG15 전용 DB, 별도 격리 PG18에서 migration·extension·query·backup/restore·rollback rehearsal, 핵심 E2E·ProductValidation 통과 | F-16 |
-| F-18 | ysna-server Production target·OIDC·object storage·network policy·`envil.sinsan.kr` Git 배포 capability와 비공개 rehearsal 구현 | production deployment adapter, DeployApprovalSubject | WSL 합격 동일 commit/digest만 Git checkout하고 `shared-db` pgvector PG18 전용 DB/role, environment+manifest+migration+rollback hash, secret·권한·network 분리; U Gate 전 최종 공개 Release 금지 | F-17 |
-| F-19 | Local·WSL-server·ysna-server의 9개 Provider·egress·Web·secret 보안 회귀검증 | cross-environment provider/security EvidenceManifest | 환경별 지원/비지원·routing이 정직하고 `envil.sinsan.kr` Network·payload·DB·log·artifact에 secret·DB/OLLAMA 내부주소 0건 | F-18 |
+| F-18 | WSL-server 격리 운영 유사 target의 OIDC·object storage·network policy·Git 배포 capability와 비공개 rehearsal 구현 | WSL deployment adapter, DeployApprovalSubject | F-17 합격 동일 commit/digest만 승인 Git checkout하고 분리된 pgvector PG18 전용 DB/role, environment+manifest+migration+rollback hash, secret·권한·network 경계를 검증한다. `ysna-server`·`shared-db`·공개 도메인 실측과 Production DeployApproval·Release는 제외 | F-17 |
+| F-19 | Local·WSL-server Test/Staging·WSL-server 격리 운영 유사 환경의 9개 Provider·egress·Web·secret 보안 회귀검증 | 범위별 provider/security EvidenceManifest | 환경별 지원/비지원·routing이 정직하고 WSL 브라우저 Network·payload·격리 DB·log·artifact에 secret·DB/OLLAMA 내부주소 0건; 실제 운영 도메인·서버 검증은 제외 | F-18 |
 ### Phase F Capability Gate
 
 - F-01~F-19의 Provider·환경·운영 backend와 API/BFF가 독립 Tester `ACCEPTED`다.
-- Local·WSL-server·ysna-server의 checkout·DB·credential·network 경계와 rollback API가 검증됐다.
+- Local·WSL-server Test/Staging·WSL-server 격리 운영 유사 환경의 checkout·DB·credential·network 경계와 rollback API가 검증됐다. WSL 결과를 Production PASS로 표시하지 않는다.
 - Settings·Dashboard·Operations를 포함한 모든 메뉴가 사용할 read model과 API projection이 고정됐다.
 - 브라우저 코드에 내부 API 주소를 제공하지 않으며 실제 메뉴 제품 write는 아직 시작하지 않는다.
 - 이 Gate 뒤에만 U-01 Dashboard write lease를 발급한다.
@@ -567,7 +567,7 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 | U-06 | **Quality** Gate·테스트·EvidenceManifest·diff·적대적·회귀 검증 수직 구현 | quality gate API·UI, evidence viewer | PASS/FAIL/SKIPPED/BLOCKED/ERROR가 정직하고 동일 target/environment evidence만 합격 집계 | U-05 |
 | U-07 | **Knowledge** source·memory·pattern·provenance·revocation·snapshot 수직 구현 | knowledge API·UI, provenance graph | source→snapshot→candidate 계보와 revoke 영향이 보이고 미승인 학습이 현재 Run에 섞이지 않음 | U-06 |
 | U-08 | **Agents & Automation** Main/Developer/Reviewer/Tester·Skill·Hook·DAG·takeover 수직 구현 | agent/skill/hook API·UI, audit/takeover evidence | M1~M5 순서, 권한·fencing·3회 인수·shadow/pilot·rollback이 실제 상태와 일치 | U-07 |
-| U-09 | **Environments** Local·WSL·ysna·DB·secret·egress·deployment target 수직 구현 | environment/deploy-target API·UI | PG15·격리 PG18 RC·운영 PG18, Git SHA/tag, network·secret 경계를 화면에서 구분하고 직접 DB/CLI 없이 확인 | U-08 |
+| U-09 | **Environments** Local·WSL Test/Staging·WSL 격리 운영 유사 target·DB·secret·egress 수직 구현 | environment/deploy-target API·UI | PG15·격리 PG18 RC/운영 유사, Git SHA/tag, network·secret 경계를 화면에서 구분하고 미검증 Production을 PASS로 표시하지 않음 | U-08 |
 | U-10 | **Operations** queue·worker·alert·budget·audit·health·deployment monitoring 수직 구현 | operations API·UI, alert/monitoring evidence | stale worker, quarantine, reserve/consume/reconcile, alert dedupe·ack, rollback next action이 실제 운영 상태와 일치 | U-09 |
 | U-11 | **Settings** 9개 Provider·model·routing·credential 상태·execution mode·정책 수직 구현 | settings API/BFF·UI, provider Network evidence | canonical Provider 순서, unavailable 사유, privacy·가격·capability drift, secret version/status가 값·내부 endpoint 노출 없이 저장·복원 | U-10 |
 
@@ -581,24 +581,24 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 
 ---
 
-## 14. F-20 — 최종 운영 Release
+## 14. F-20 — WSL-server 최종 운영 유사 검증(Production Release 제외)
 
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
-| F-20 | 운영 smoke·Monitoring·ProductValidation·Defect·backup/restore·rollback 최종 검증 | release report, deployment monitoring, runbook | 동일 ReleaseManifest에서 11개 메뉴 smoke·중단/재개·복구·blocking defect 0건·관찰구간 critical alert 0건 후 신산님 확인으로만 `RELEASED` | F-19, U-11 |
+| F-20 | WSL-server 격리 운영 유사 smoke·Monitoring·ProductValidation·Defect·backup/restore·rollback 최종 검증 | WSL validation report, deployment monitoring, runbook | 동일 ReleaseManifest의 11개 메뉴 smoke·중단/재개·복구·blocking defect 0건·관찰구간 critical alert 0건을 WSL에서 검증해 개발·테스트 완료를 판정한다. 실제 Production 배포·사용자 운영 인수·`RELEASED`는 제외하고 ReleaseDecision은 `DEFER`로 유지 | F-19, U-11 |
 
 ### Phase F Gate
 
-- Local development, WSL-server Test/Staging, ysna-server Production의 checkout·DB·credential·network 경계가 구분된다.
+- Local development, WSL-server Test/Staging, WSL-server 격리 운영 유사 환경의 checkout·DB·credential·network 경계가 구분되며 Production은 미검증으로 남는다.
 - 사용자가 화면에서 health, queue, 비용, 경고, 재개, 배포·rollback을 수행한다.
 - 운영 브라우저 Network에서 내부 API 주소 직접 호출이 없다.
 - CEREBRAS·GROQ·MISTRAL·OPENROUTER·UPSTAGE·GEMINI·ANTHROPIC·OPENAI·OLLAMA가 선택 가능하고 환경별 unavailable 상태도 정확히 표시된다.
-- Local·WSL-server·ysna-server에서 동일한 핵심 E2E 스위트를 실행하고 동일 target의 EvidenceManifest로 비교한다.
+- Local·WSL-server Test/Staging·WSL-server 격리 운영 유사 환경에서 동일한 핵심 E2E 스위트를 실행하고 각 target의 EvidenceManifest로 비교한다.
 - secret과 OLLAMA 내부 endpoint는 DB·애플리케이션 로그·브라우저 Network 응답·LLM 요청 payload·artifact store 5개 경계 어디에도 노출되지 않는다. 한 건이라도 탐지하면 즉시 CRITICAL 중단한다.
 - backup/restore와 terminal Run 학습·감사 계보가 보존된다.
 - WSL-server의 PostgreSQL 15 일반 검증과 별도 격리 PostgreSQL 18 Release Candidate 검증을 구분하며 PG15 PASS를 운영 호환성 PASS로 승격하지 않는다.
 - 서버 배포는 Git 승인 commit/tag와 불변 ReleaseManifest만 사용하고 `scp`·서버 직접 patch·dirty worktree 배포를 금지한다.
-- `envil.sinsan.kr`는 smoke PASS만으로 완료되지 않으며 Monitoring 구간, ProductValidation, blocking defect 0건, 신산님 최종 확인 뒤에만 `RELEASED`다.
+- WSL-server smoke PASS만으로 Production 완료를 주장하지 않는다. 이번 계획의 F-20 완료는 WSL 검증 증거·ProductValidation·blocking defect 0건·Monitoring 구간의 결과에 한정하며 `envil.sinsan.kr`/`ysna-server`/`RELEASED`는 범위 밖이다.
 - M1~M5 절차와 운영 배포가 안정되기 전에는 Plugin 포장을 시작하지 않는다.
 
 ---
@@ -754,7 +754,7 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 | Queue·Worker/write fencing·경로 identity | B-09·B-12, C-07·C-09~10, E-04·E-06·E-11 | stale token commit 거부·alias 이중 lease 0건·quarantine evidence |
 | 제한 병렬과 원자 비용 통제 | B-10, C-01, E-04~E-11, F-03~13, U-08·U-10 | DAG·atomic reservation·abort/final usage·invoice reconcile benchmark |
 | Egress·Secret·Web 보안 | A-10·A-14, B-11~12, C-02·C-10, F-01~19, U-01~U-11 | CSRF/Origin·SSRF/DNS rebinding·Secret rotate/revoke·Network evidence |
-| 화면 기반 Git 운영·배포 | U-09~U-10, F-14~F-20 | Local→WSL-server→ysna-server·PG15/격리 PG18 RC·ReleaseManifest·Monitoring evidence |
+| 화면 기반 Git 운영·배포 | U-09~U-10, F-14~F-20 | Local→WSL-server Test/Staging→WSL-server 격리 운영 유사 검증·PG15/격리 PG18 RC·ReleaseManifest·Monitoring evidence; Production 배포 제외 |
 | 안정 구성 Plugin 포장 | P-01~P-04 | 별도 환경 install·upgrade·rollback evidence |
 
 ---
