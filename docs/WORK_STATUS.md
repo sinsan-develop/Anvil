@@ -1,5 +1,6 @@
 # F-18 Task 4 Git guard 지시 개정 / 2026-09-24
 
+- R2 독립 읽기 전용 코드 리뷰: base `4ff5af0`→제품 `1c2c5df`와 보고서 `7bdc7d8` 확인, Critical/Important/Minor 각 0건, R2 checkpoint 가능. 실제 SSH 정책과 Production/ysna·DB/OIDC/storage/network/배포는 리뷰·실측 범위 밖이므로 F18 전체 인수 증거로 쓰지 않는다. 최종 canonical seq1504 `PAUSED`, worker/write lease 회수, G-05 PASS, F19 차단을 유지한다.
 - Main WSL R3 실측: 공개 `1c2c5df` clean detached 격리 checkout에서 F18/F16 4-file 78 PASS(exit0, 1.92초). 기존 서비스·DB·Docker·운영 서버 변경 0. 정리 오류 1회: 첫 `rm -rf`는 내용물 제거 후 상위 `/srv/anvil-wsl` 쓰기 권한 때문에 빈 root 제거에서 exit1; exact realpath/비-symlink/daon:daon/빈 상태 확인 후 `sudo rmdir` exit0, 잔류 0. 정식 제품 실패 0회. Developer가 R2 보고서를 `7bdc7d8`로 보완했다. Production 증거 미확보이므로 F18 accepted=false/F19 차단.
 - 현재 R2 seq1501 `ACTIVE`, exact3 worker/write lease 유효. Developer commit `1c2c5df`는 공개 branch에 게시됐고 Windows Main 독립 90 PASS·diff-check exit0, 임시 pytest 경로 제거/잔류0이다. R2 lease는 Main의 WSL QA와 최종 checkpoint 검토 뒤 회수한다.
 - Main WSL 격리 QA 사전 자원 계획(생성 전 기록): 대상은 `ssh WSL-server`의 새 exact `/srv/anvil-wsl/f18-local-qa-r3` 하나이며, 공개 commit `1c2c5df72cb217c6507dcbd5021f397e108ccd78`만 clean detached checkout으로 검증한다. 내부 pytest `--basetemp=.f18-r3-pytest-temp`를 쓰고 기존 `/srv/anvil-wsl/repo`, 서비스·DB·Docker·브라우저·운영 서버에는 접촉하지 않는다. QA 뒤 realpath exact 일치·비 symlink·소유권을 확인해 이 디렉터리와 내부 임시물만 제거하고 잔류를 확인한다. 새 DB/role/container/venv는 생성하지 않는다.
