@@ -95,6 +95,24 @@ def test_signed_local_checkout_only_yields_non_production_marker(case, capsys):
     assert git("status", "--porcelain", "--untracked-files=all", cwd=checkout) == before == ""
 
 
+@pytest.mark.parametrize("field", ["web_image", "lockfile_hash"])
+def test_independent_expected_observation_mismatch_blocks_signed_manifest(case, capsys, field):
+    files, argv, checkout, _, _ = case
+    original_manifest = files["manifest"].read_bytes()
+    observed = json.loads(files["expected"].read_text(encoding="utf-8"))
+    if field == "web_image":
+        observed["image_digests"]["web"] = "sha256:" + "9" * 64
+    else:
+        observed["lockfile_hash"] = "sha256:" + "9" * 64
+    files["expected"].write_text(json.dumps(observed), encoding="utf-8")
+    assert main(argv) == 2
+    out = capsys.readouterr()
+    assert out.out == ""
+    assert out.err == "F18_LOCAL_PREFLIGHT_FAILED:INPUT_OR_MANIFEST_NOT_VERIFIED\n"
+    assert files["manifest"].read_bytes() == original_manifest
+    assert git("status", "--porcelain", "--untracked-files=all", cwd=checkout) == ""
+
+
 @pytest.mark.parametrize("change", [
     "signature", "approval", "web", "commit", "image", "dirty", "attached", "remote",
     "source-remote", "duplicate", "nested-duplicate", "extra", "extra-evidence",
