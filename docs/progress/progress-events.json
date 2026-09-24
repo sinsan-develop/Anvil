@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1507,
+  "last_sequence": 1510,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80760,7 +80760,70 @@
       "tests/deploy/test_f18_production_preflight_cli.py"
     ]
   }
+},
+{
+  "sequence": 1508,
+  "event_id": "evt_f18_local_1508_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_R3_CHECKPOINT",
+  "subject_ref": "F-18/LOCAL_WSL_R3_CHECKPOINT",
+  "occurred_at": "2026-09-24T21:24:32+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "261B6C5906A3E07DBA9E08D83B99209D029FB67F7BADCF093C34EFE5F4F20989",
+  "details": {
+    "lease_id": "write-lease-f18-local-r3-20260924-001",
+    "reason": "LOCAL_WSL_SIGNED_CLI_VERIFIED"
+  }
+},
+{
+  "sequence": 1509,
+  "event_id": "evt_f18_local_1509_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_R3_CHECKPOINT",
+  "subject_ref": "F-18/LOCAL_WSL_R3_CHECKPOINT",
+  "occurred_at": "2026-09-24T21:24:32+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "44BA68434BD46386A900B1FDFC010E48B3AB5F2A2ED53CE5990D768930E06FC5",
+  "details": {
+    "lease_id": "worker-lease-f18-local-r3-20260924-001",
+    "reason": "LOCAL_WSL_SIGNED_CLI_VERIFIED"
+  }
+},
+{
+  "sequence": 1510,
+  "event_id": "evt_f18_local_1510_package_paused",
+  "event_type": "PACKAGE_PAUSED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_R3_CHECKPOINT",
+  "subject_ref": "F-18/LOCAL_WSL_R3_CHECKPOINT",
+  "occurred_at": "2026-09-24T21:24:32+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "78780959D7AEBA77993C93DF791081DB2358F43A485EDA120603F667C2DB56D9",
+  "details": {
+    "accepted": false,
+    "production": "NOT_EXECUTED",
+    "f19": "BLOCKED_PENDING_F18_ACCEPTANCE",
+    "published_source_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
+    "reason": "USER_SCOPE_LOCAL_AND_WSL_ONLY"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1507_write_lease_issued"
+  "last_event_id": "evt_f18_local_1510_package_paused"
 }

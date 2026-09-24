@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-18",
-  "event_sequence": 1507,
+  "event_sequence": 1510,
   "accepted": false,
-  "projection_mode": "F18_LOCAL_WSL_R3_START_EXACT3",
+  "projection_mode": "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3",
   "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
   "exact_allowed_paths": [
     "docs/WORK_STATUS.md",
@@ -30,13 +30,13 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 493703,
-      "sha256": "F2B118347A852D547436A77D3A002CE7C086CCA398C43C860B5ECB8FCCF0FDAA"
+      "bytes": 496406,
+      "sha256": "E4929C6F23EAF4FD4FCED5CA7EC574D93E91A138AA4FBF2D63FC4FB29F2C16ED"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4168754,
-      "sha256": "B9052FCFF5E7B7656294C9F07BCD1616D861CACBC6EC8CE855C9A7CD9DCE168D"
+      "bytes": 4170991,
+      "sha256": "9120F3ECFF876C022CE8E0409685429F06153EF0DD98EE6FE8BB6F068D8DC039"
     },
     {
       "path": "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
