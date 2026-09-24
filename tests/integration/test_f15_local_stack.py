@@ -147,3 +147,14 @@ def test_local_compose_is_loopback_web_only_and_external_database():
     nginx = (root / "deploy/local/nginx.conf").read_text(encoding="utf-8")
     assert "proxy_pass http://anvil-api:8301" in nginx
     assert "location /api/" in nginx
+
+
+def test_nginx_web_stage_runs_as_unprivileged_image_owner_for_read_only_compose():
+    from pathlib import Path
+
+    dockerfile = (
+        Path(__file__).resolve().parents[2] / "deploy/local/Dockerfile.runtime"
+    ).read_text(encoding="utf-8")
+    web_stage = dockerfile.split("FROM nginx@", 1)[1].split("FROM python:", 1)[0]
+    assert "USER 101:101" in web_stage
+    assert web_stage.index("USER 101:101") > web_stage.index("COPY --from=web-build")
