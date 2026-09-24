@@ -2555,3 +2555,10 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - WSL-server QA: 공개 Git checkpoint `de4caa5eede6b3700cb5c0607b895a442994cfc5`를 승인 alias에서 exact `/srv/anvil-wsl/f18-local-qa` 격리 clone, clean detached checkout했다. 첫 5-file pytest collection은 WSL Python에 `sqlalchemy`가 없어 exit1; F-17 파일 12개는 WSL에서 `NOT_RUN`이다. F-18/F-16 4-file focused 재실행은 67 PASS(exit0, 1.17s). Windows 5-file 79 PASS와 구분한다.
 - WSL 임시 경로 첫 생성은 `/srv/anvil-wsl` root 소유로 허가 거부 1회였다. exact 신규 경로만 `sudo install -d -o daon -g daon -m 0700`으로 생성해 해결했다. 정리 전 realpath exact 일치·비 symlink·HEAD 확인, pytest 임시 파일만 untracked임을 확인했다. exact 임시 checkout 제거 후 경로 잔류0; 기존 `local-postgres` Up, `anvil-web` Up/healthy 불변. 환경 오류 2(경로 권한, SQLAlchemy 부재), 제품 정식 실패 0.
 - 담당 Developer 최종 보고 commit `eaef185a8d03d2cb75f5385a758cd92841a1b951`. Main은 F-18 전체 `accepted=false`, Production `NOT_EXECUTED`, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`로 기록하고 worker/write lease를 회수한다. 신산님 지시의 로컬·WSL 범위 밖 증거가 없으므로 이 브랜치는 복구 가능한 checkpoint로 보존하며 병합·삭제·신규 F-19 branch 생성은 하지 않는다.
+
+## F-18 WSL 누락 회귀 재검증 자원 계획 — 2026-09-24
+
+- 신산님의 `진행하자` 지시로 같은 `codex/f18-local-wsl-preflight` 브랜치의 남은 로컬·WSL 검증을 진행한다. Production 범위 제한과 F-18 `accepted=false`, F-19 차단은 유지한다. 제품 코드 mutation과 신규 브랜치·PR 병합은 하지 않는다.
+- 첫 WSL 5-file 수집 실패의 직접 원인은 WSL Python의 `sqlalchemy` 부재다. `uv.lock`은 SQLAlchemy `2.0.52`를 기록한다. 기존 WSL 전역 Python·DB·Docker·서비스에는 설치·변경하지 않는다.
+- 신규 exact 임시 경로 `/srv/anvil-wsl/f18-local-qa-r2`의 부재와 기존 `local-postgres` Up·`anvil-web` Up/healthy를 생성 전 확인했다. 승인 remote `git@github-sinsan-develop:sinsan-develop/Anvil.git`에서 현재 게시된 동일 branch의 exact commit만 detached checkout한다. checkout 내부 `.f18-venv`는 `--system-site-packages` 가상환경으로 만들고 `SQLAlchemy==2.0.52`만 설치한다. 의존 패키지는 pip가 해당 가상환경 안에만 둔다. 시험 산출물은 checkout 내부 `.f18-wsl-pytest-temp`로 제한한다.
+- 5-file 79건을 한 명령으로 실행해 exit·PASS/FAIL/SKIP을 기록한다. 추가 모듈 부재 또는 설치 불가 시 원인과 실행 범위를 기록하고 무한 재시도하지 않는다. 종료 시 realpath·비-symlink·Git HEAD·dirty 상태를 확인하고 exact 임시 경로만 제거해 잔류0 및 기존 서비스 상태 불변을 검증한다. source는 공개 Git ref로 복구 가능하다.
