@@ -2543,3 +2543,12 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
   C30R3 fixture formal 범위만 적용한다. active agent/worker/write lease0.
 - C30 전체 acceptance는 보류: canonical progress checker의 기존 C03 embedded SyntaxError가
   문서 lint/link/ID gate를 차단한다. 다음은 이 checker의 정식 corrective repair다.
+
+## F-18 WSL 격리 QA 자원 생성 전 계획 — 2026-09-24
+
+- 담당 Main. F-18은 로컬·`WSL-server` 사전검증만 수행한다. `ysna-server`, Production DB·OIDC·object storage·network policy·도메인은 접속·변경·검증하지 않으며 전체 F-18 acceptance는 보류한다.
+- WSL 접근은 `ssh WSL-server`만 사용한다. 기존 `/srv/anvil-wsl/repo`, `anvil-web`, `local-postgres`는 읽기·변경·재시작 대상이 아니다. 읽기 전용으로 신규 exact 경로 `/srv/anvil-wsl/f18-local-qa` 부재와 WSL Python 3.12.3, pytest 9.1.1, cryptography 41.0.7을 확인했다.
+- 생성 자원은 **한 개**의 임시 Git checkout `/srv/anvil-wsl/f18-local-qa`로 제한한다. `github-sinsan-develop` SSH alias의 승인 remote에서 공개된 F-18 branch의 정확한 commit을 fetch한 후 detached checkout으로 테스트한다. Python `-B`, pytest `-p no:cacheprovider`와 checkout 내부 전용 `--basetemp`를 사용하며 DB·Docker·브라우저·네트워크 listener·계정·Secret을 생성하지 않는다.
+- 종료 시 checkout의 HEAD·dirty 상태를 기록하고 exact 경로가 `/srv/anvil-wsl/f18-local-qa`인지 재확인한 뒤 그 임시 checkout과 내부 pytest 임시 파일만 제거한다. 제거 후 경로 부재와 기존 서비스 상태 불변을 확인한다. 시험 결과·오류 횟수·잔여물·미검증 범위는 `F-18_LOCAL_WSL_PREFLIGHT_REPORT.md`에 기록한다. 소스는 공개 Git commit으로 복구 가능하다.
+- 로컬 제품 writer는 시작 `8f78d31`에서 exact5 경로만 수정했고 Task1 `3a97e06`, Task2 `88da55f`, 보고서 `f214c6e`, 서명 결박 보완 `34e0f8f`를 남겼다. Main 독립 검토에서 F-16 `VerifiedRelease.subject_hash`가 서명 envelope 자체를 묶지 못하는 Important 1건을 발견해 동일 writer에게 보완시켰다. `verify_approval_release`의 기존 F-16 서명 검증+envelope 전체 SHA-256 결박과 새 유효 서명/변조 서명 거부 테스트로 해소했다. 정식 Developer FAILURE_REPORT 0, Main 보완 요청 1.
+- Main 독립 Windows 회귀: F-18/F-16/F-17 관련 79 PASS(exit 0, 23.74s), 전용 `.f18-main-pytest-temp` exact 경로 확인 후 제거·잔류0. 실제 F-17 evidence는 Web digest가 없어 `WEB_IMAGE_NOT_VERIFIED`; 합성 3-image shape만 비공개 rehearsal 준비. WSL 실측·Production·전체 F-18 acceptance는 여전히 미실행.
