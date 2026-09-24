@@ -123,6 +123,11 @@ def successor_evidence_paths():
     } | {"docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md"}
 
 
+def parse_git_porcelain_paths(status):
+    # The first XY column can be a space; stripping the whole output corrupts it.
+    return {row[3:].replace("\\", "/") for row in status.splitlines() if row}
+
+
 def validate_start_git_facts(*, branch, upstream, head, remote_head, staged,
                              dirty, changed, base_is_ancestor, allowed_product_paths=None,
                              allow_merged_main=False, parents=(),
@@ -605,8 +610,10 @@ def materialize_successor(root, qa_head):
             or set(filter(None, run("diff", "--name-only", f"{SUCCESSOR_BASE}..{head}").splitlines()))
                - (set(successor_control_paths()) | set(successor_product_paths()))):
         raise RuntimeError("F18_F19_SUCCESSOR_GIT_INVALID")
-    status = run("status", "--porcelain=v1", "--untracked-files=all")
-    dirty = {row[3:].replace("\\", "/") for row in status.splitlines() if row}
+    status = subprocess.check_output(
+        ["git", "-c", "core.excludesFile=", "status", "--porcelain=v1",
+         "--untracked-files=all"], cwd=root, text=True)
+    dirty = parse_git_porcelain_paths(status)
     if dirty - successor_evidence_paths() or not dirty:
         raise RuntimeError("F18_F19_SUCCESSOR_DIRTY_INVALID")
     events = ledger["events"]
@@ -657,7 +664,7 @@ def collect_git(root):
     status = subprocess.check_output(["git", "-c", "core.excludesFile=", "status",
                                       "--porcelain=v1", "--untracked-files=all"],
                                      cwd=root, text=True)
-    dirty = {row[3:].replace("\\", "/") for row in status.splitlines() if row}
+    dirty = parse_git_porcelain_paths(status)
     ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", base, head],
                               cwd=root).returncode == 0
     parents = tuple(run("rev-list", "--parents", "-n", "1", "HEAD").split()[1:])

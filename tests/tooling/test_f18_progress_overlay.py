@@ -268,6 +268,12 @@ def test_successor_integration_rejects_unbounded_git_facts():
     assert validate_start_git_facts(**{**facts, "dirty": {"pyproject.toml"}})
 
 
+def test_git_porcelain_parser_preserves_leading_status_column():
+    assert overlay.parse_git_porcelain_paths(
+        " M docs/WORK_STATUS.md\n?? docs/new.md\n") == {
+            "docs/WORK_STATUS.md", "docs/new.md"}
+
+
 def test_successor_integration_keeps_formal_acceptance_blocked():
     base = {"repository": {"projection_mode": overlay.SUCCESSOR_MODE,
                            "validated_base_commit": overlay.SUCCESSOR_BASE,
