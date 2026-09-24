@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-15",
+  "event_sequence": 1468,
+  "accepted": false,
+  "projection_mode": "F15_START_EXACT11_PRODUCT_EXACT19",
+  "validated_base_commit": "41e7e06cb0f4e76a0d8be31cab24120a4b530420",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-15_PROGRESS_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f15.json",
+    "docs/work_orders/F-15_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-15_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f15_progress_overlay.py",
+    "tests/tooling/test_f15_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "apps/api/anvil_api/asgi.py",
+    "apps/web/console/index.html",
+    "apps/web/package.json",
+    "apps/web/src/console/App.tsx",
+    "apps/web/src/console/app-shell.css",
+    "apps/web/src/console/main.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "apps/web/tsconfig.json",
+    "apps/web/vite.config.ts",
+    "apps/worker/anvil_worker/main.py",
+    "deploy/local/Dockerfile.runtime",
+    "deploy/local/nginx.conf",
+    "docker-compose.local.yml",
+    "docs/04_test_reports/F-15_COMPLETION_REPORT.md",
+    "package-lock.json",
+    "package.json",
+    "packages/api/fastapi_app.py",
+    "tests/api/test_f15_web_security.py",
+    "tests/integration/test_f15_local_stack.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 445200,
+      "sha256": "5A8479ED6650219D1349EB236C8CB399C015B60BF3DEFA790BFBF82E14E4F018"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4136025,
+      "sha256": "72F2FA415A4F43DF56D89A6A986E1FD7D870403AF00AA5F289055C6E0A3BEE1C"
+    },
+    {
+      "path": "docs/work_orders/F-15_INVOCATION_PROMPT.md",
+      "bytes": 561,
+      "sha256": "826F93E05B5932767A43C1523972024C49614D17823BF8F802B46072F602475A"
+    },
+    {
+      "path": "docs/work_orders/F-15_WORK_INSTRUCTION.md",
+      "bytes": 4910,
+      "sha256": "F4D757797F35F336CA33817DBA4B6449835DC368839818D4D742CD7701E6181C"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4729349,
+      "sha256": "505FEC9416869871BA20C0661B59EED744DA29C8DE04F53E55EF581A7B949F58"
+    },
+    {
+      "path": "scripts/f15_progress_overlay.py",
+      "bytes": 15331,
+      "sha256": "AB8ADD40276349732B8AE9BD54FB288007E9D9AA1DC80DE7EA04B72BEB70FC38"
+    },
+    {
+      "path": "tests/tooling/test_f15_progress_overlay.py",
+      "bytes": 863,
+      "sha256": "BA2FC682379D57AA073E138026EAA3D8C4226A00873B09CE4F11C3B50AF38DA0"
+    }
+  ],
+  "self_reference": false,
+  "runtime_boundary": {
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  }
+}

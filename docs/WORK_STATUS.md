@@ -1,3 +1,11 @@
+# F-15 공통 운영 셸·Local stack 착수
+
+- 판정: ACTIVE. F-14 PR #30 merged main 41e7e06, feature ancestry/tree와 merged-main G-05·74 PASS/17 SKIP, branch/worktree 정리 확인.
+- 담당: Main 어울 통제, developer-primary-f15-r1 제품 exact19 write lease. 기준 문서 hash 일치, F-15 branch clean에서 시작. 정식 FAILURE_REPORT 0회.
+- 설계 D4 React/TypeScript/Vite 운영 셸은 신규 구현; 기존 정적 Node shell과 fixture는 회귀 보존. Local Web/API/Worker와 WSL-server PG15 전용 DB/role, Docker/브라우저 실제 검증은 아직 NOT_EXECUTED.
+- 계획 QA 자원: WSL-server SSH-only, F-15 이름의 격리 PG15 DB/role·container·브라우저 profile을 필요 시 생성하고 F-15 검증 종료 후 정확한 대상만 삭제·잔류 0 확인. 기존 local-postgres/타 프로젝트·ysna 미변경.
+- 다음: G-05 start gate 후 developer TDD, Main 독립 검토, exact Git SHA WSL 격리 QA와 실제 브라우저 Network 검증. F-16 staging/PG18 RC/ysna는 별도.
+
 # F-14 PostgreSQL 15/18 격리 복구 인수
 
 - 판정: `ACCEPTED_ISOLATED_PG15_PG18_REHEARSAL`; 제품 checkpoint 82fb713 exact12, 독립 SPEC PASS / QUALITY APPROVED, Critical 0/Important 0.

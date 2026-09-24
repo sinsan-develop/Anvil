@@ -1,0 +1,1 @@
+F-15 WorkInstruction을 읽고 유효한 canonical worker/write lease와 두 fencing token을 확인한 뒤, 지정된 제품 경로만 단일 writer로 TDD 구현하십시오. 설계 D4의 React·TypeScript·Vite 운영 셸, Windows Local Web/API/Worker 개발 프로세스, WSL-server 전용 Docker/PG15 격리 QA, same-origin·Web 보안 증거를 분리하십시오. Main이 맡은 WSL/browser 실제 검증·PR 병합은 수행하지 마십시오. 결과를 COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED 중 하나로 정확히 보고하십시오.
