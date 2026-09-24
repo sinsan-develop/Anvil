@@ -93,7 +93,8 @@ def validate_state(progress, hashes, approval_sha):
 
 def _run(root, *args):
     return subprocess.check_output(
-        ["git", "-c", "core.excludesFile=", *args], cwd=root, text=True).strip()
+        ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+        cwd=root, text=True, encoding="utf-8").strip()
 
 
 def _is_ancestor(root, before, after):
@@ -112,8 +113,9 @@ def collect_git(root):
     changed = set(filter(None, _run(root, "diff", "--name-only", f"{BASE}..{head}").splitlines()))
     staged = set(filter(None, _run(root, "diff", "--cached", "--name-only").splitlines()))
     status = subprocess.check_output(
-        ["git", "-c", "core.excludesFile=", "status", "--porcelain=v1",
-         "--untracked-files=all"], cwd=root, text=True)
+        ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false",
+         "status", "--porcelain=v1", "--untracked-files=all"],
+        cwd=root, text=True, encoding="utf-8")
     dirty = parse_git_porcelain_paths(status)
     parents = tuple(_run(root, "rev-list", "--parents", "-n", "1", "HEAD").split()[1:])
     two_parent = len(parents) == 2
@@ -211,8 +213,9 @@ def materialize(root, qa_head):
                                           f"{BASE}..{head}").splitlines())) - set(control_paths())):
         raise RuntimeError("WSL_SCOPE_GIT_INVALID")
     status = subprocess.check_output(
-        ["git", "-c", "core.excludesFile=", "status", "--porcelain=v1",
-         "--untracked-files=all"], cwd=root, text=True)
+        ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false",
+         "status", "--porcelain=v1", "--untracked-files=all"],
+        cwd=root, text=True, encoding="utf-8")
     dirty = parse_git_porcelain_paths(status)
     if not dirty or dirty - evidence_paths():
         raise RuntimeError("WSL_SCOPE_EVIDENCE_DIRTY_INVALID")

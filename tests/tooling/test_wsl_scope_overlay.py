@@ -1,8 +1,16 @@
 """The WSL-only scope revision cannot be mistaken for Production acceptance."""
 
 from copy import deepcopy
+import subprocess
 
 from scripts import wsl_scope_overlay as overlay
+
+
+def test_git_path_output_preserves_korean_authority_filename(tmp_path):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "한글_계획서.md").write_text("scope", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "--", "한글_계획서.md"], check=True)
+    assert overlay._run(tmp_path, "diff", "--cached", "--name-only") == "한글_계획서.md"
 
 
 def _state():
