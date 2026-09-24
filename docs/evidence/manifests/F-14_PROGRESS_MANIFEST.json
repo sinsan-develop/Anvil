@@ -1,11 +1,13 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-14",
-  "event_sequence": 1459,
-  "accepted": false,
-  "projection_mode": "F14_START_EXACT11_PRODUCT_EXACT12",
+  "event_sequence": 1464,
+  "accepted": true,
+  "acceptance_scope": "ISOLATED_PG15_PG18_RECOVERY_REHEARSAL",
+  "projection_mode": "F14_FINAL_ACCEPTANCE_EXACT23",
   "validated_base_commit": "1584523ccca71bae4b3be01f592c7eb79c11935f",
   "exact_allowed_paths": [
+    "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
     "docs/WORK_STATUS.md",
     "docs/evidence/manifests/F-14_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -14,8 +16,19 @@
     "docs/progress/progress-handoff-detached-digest-f14.json",
     "docs/work_orders/F-14_INVOCATION_PROMPT.md",
     "docs/work_orders/F-14_WORK_INSTRUCTION.md",
+    "migrations/versions/0016_operations_recovery.py",
+    "packages/persistence/operations_repository.py",
+    "packages/recovery/__init__.py",
+    "packages/recovery/disaster.py",
+    "packages/recovery/retention.py",
+    "packages/recovery/runbook.py",
     "scripts/check_project_progress.py",
     "scripts/f14_progress_overlay.py",
+    "tests/integration/test_f14_postgres_compat.py",
+    "tests/persistence/test_f14_operations_repository.py",
+    "tests/recovery/test_f14_disaster.py",
+    "tests/recovery/test_f14_retention.py",
+    "tests/recovery/test_f14_runbook.py",
     "tests/tooling/test_f14_progress_overlay.py"
   ],
   "product_write_scope": [
@@ -32,16 +45,22 @@
     "tests/recovery/test_f14_retention.py",
     "tests/recovery/test_f14_runbook.py"
   ],
+  "product_head": "82fb71310025c547bae7be05b7701f8aea0666e1",
   "raw_checksums": [
     {
+      "path": "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "bytes": 18552,
+      "sha256": "F455161EC3088458B20B1EA51C4B21E9970EA5797FBE12B48C20C9B6034A4FD7"
+    },
+    {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 442807,
-      "sha256": "FEDB2E3A80BEAE68051474DACA3BBD5C6662DF9C7404EB45403F327CB46CBA9D"
+      "bytes": 444181,
+      "sha256": "EDB901AC730CDFD113AB0154D21CA98671423714CFEEC98D4BF3F860DF44C258"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4127031,
-      "sha256": "1EB4D22B7D5126E3367FBC6FDDE26DD49B172564B76C5011AEE5C469F30AAA66"
+      "bytes": 4131387,
+      "sha256": "E45F6A7B7B228BDB8365AF3D2B587389F54F51DF84CF6CF7F6E76B27C9F8F823"
     },
     {
       "path": "docs/work_orders/F-14_INVOCATION_PROMPT.md",
@@ -54,6 +73,36 @@
       "sha256": "7259563EA1307354AF174EC94B1239AEDA1308A3D977E668A4861C5B21172445"
     },
     {
+      "path": "migrations/versions/0016_operations_recovery.py",
+      "bytes": 2150,
+      "sha256": "FFC7DC4582E57EEF6974586F3DAE59DCD84C3EFF8CA9FFA75E23482C64655D84"
+    },
+    {
+      "path": "packages/persistence/operations_repository.py",
+      "bytes": 8126,
+      "sha256": "A5BC28A8C2054D63C2AB6872BA284B248DDDCC55F71AF1AD6481C1EB7C5312CC"
+    },
+    {
+      "path": "packages/recovery/__init__.py",
+      "bytes": 519,
+      "sha256": "8C429E528BD35032B3490936E74AEEB50871C793506A6DE46345342A8161B870"
+    },
+    {
+      "path": "packages/recovery/disaster.py",
+      "bytes": 9335,
+      "sha256": "EAFB808E6263BD6997C278D6CB2C34AE6CBA67B04DE983EDF695345CB7867666"
+    },
+    {
+      "path": "packages/recovery/retention.py",
+      "bytes": 3070,
+      "sha256": "53113D7A73BF19CD60423F9FCDAD28FB88535B9CCD1590A509E9A30BEFDD1310"
+    },
+    {
+      "path": "packages/recovery/runbook.py",
+      "bytes": 2631,
+      "sha256": "C89AEE370D6A69B1974E88FBE5A22418BF15CA29626D022CBDC5424AD9639C46"
+    },
+    {
       "path": "scripts/check_project_progress.py",
       "bytes": 4728639,
       "sha256": "AC0C7A97F22247E835E38219CCE22058D63DA7E169DA6CFA673D91E97BB285CC"
@@ -64,6 +113,31 @@
       "sha256": "6AA2D2EDDCA33C494526E93BF88B2659896F803FC29AC04819E4DB96C935F03E"
     },
     {
+      "path": "tests/integration/test_f14_postgres_compat.py",
+      "bytes": 23418,
+      "sha256": "3B5EE9D4BE49F41ACB170FCD748D8AF25390B22D26242111A71F5385316D27D6"
+    },
+    {
+      "path": "tests/persistence/test_f14_operations_repository.py",
+      "bytes": 6616,
+      "sha256": "08BA7C18F49098AEBACF08818B6AA4DB9783EB5E7F04C5A473DBA81CA7981EF4"
+    },
+    {
+      "path": "tests/recovery/test_f14_disaster.py",
+      "bytes": 5491,
+      "sha256": "45E924A49D4C51A7CFC102319DE59F96396A5946F49D44DB7FE83ABDC639AA6F"
+    },
+    {
+      "path": "tests/recovery/test_f14_retention.py",
+      "bytes": 2820,
+      "sha256": "0387B8AD26E42B9C5AE41F5D5B3A9AF35E68EAB52961923C08E92E6464AF8859"
+    },
+    {
+      "path": "tests/recovery/test_f14_runbook.py",
+      "bytes": 2885,
+      "sha256": "A8CC6A8333AB1710998200303386D99C5D3D1CCDD91CFA4C5AA5FD2951436EAE"
+    },
+    {
       "path": "tests/tooling/test_f14_progress_overlay.py",
       "bytes": 3130,
       "sha256": "866E7ECAB2D90A9DB715E5F5D47F2A4586132C0241F56BE011A13471397E966C"
@@ -71,9 +145,14 @@
   ],
   "self_reference": false,
   "runtime_boundary": {
-    "database": "NOT_EXECUTED",
-    "pg18": "NOT_EXECUTED",
+    "wsl_pg15_related": "75_PASS_13_SKIP",
+    "wsl_pg18_related": "75_PASS_13_SKIP",
+    "six_lineage_restore": "PG15_AND_PG18_PASS",
+    "database": "ISOLATED_SYNTHETIC_ONLY",
     "browser": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED"
+    "provider": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "pg18_formal_rc": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED"
   }
 }

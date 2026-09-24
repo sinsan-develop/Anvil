@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1459,
+  "last_sequence": 1464,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -79570,7 +79570,136 @@
       "tests/recovery/test_f14_runbook.py"
     ]
   }
+},
+{
+  "sequence": 1460,
+  "event_id": "evt_f14_1460_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-14/FINAL",
+  "occurred_at": "2026-09-24T09:53:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EE2D24FF1CBAC2050DC9B16951E4FF6E1D2A9659A162CD1D20E0460A67E9B1A2",
+  "details": {
+    "package_id": "F-14",
+    "product_head": "82fb71310025c547bae7be05b7701f8aea0666e1",
+    "product_paths": [
+      "docs/04_test_reports/F-14_COMPLETION_REPORT.md",
+      "migrations/versions/0016_operations_recovery.py",
+      "packages/persistence/operations_repository.py",
+      "packages/recovery/__init__.py",
+      "packages/recovery/disaster.py",
+      "packages/recovery/retention.py",
+      "packages/recovery/runbook.py",
+      "tests/integration/test_f14_postgres_compat.py",
+      "tests/persistence/test_f14_operations_repository.py",
+      "tests/recovery/test_f14_disaster.py",
+      "tests/recovery/test_f14_retention.py",
+      "tests/recovery/test_f14_runbook.py"
+    ],
+    "windows_related": "71_PASS_17_SKIP",
+    "wsl_pg15_related": "75_PASS_13_SKIP",
+    "wsl_pg18_related": "75_PASS_13_SKIP",
+    "six_lineage_restore": "PG15_AND_PG18_PASS"
+  }
+},
+{
+  "sequence": 1461,
+  "event_id": "evt_f14_1461_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-14/FINAL",
+  "occurred_at": "2026-09-24T09:53:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "F802C46F2276E708A98028095D2D733E85FF6ADAE6A883643A2D6736CC88BF1A",
+  "details": {
+    "verdict": "SPEC_PASS_QUALITY_APPROVED",
+    "critical": 0,
+    "important": 0,
+    "scope": "F14_EXACT12_ISOLATED_POSTGRES_REHEARSAL"
+  }
+},
+{
+  "sequence": 1462,
+  "event_id": "evt_f14_1462_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-14/FINAL",
+  "occurred_at": "2026-09-24T09:53:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A968EF38FF377F40A6C8F89A4BE8C6A5BF7F04E52DCAB66047F8906706465233",
+  "details": {
+    "lease_id": "write-lease-f14-r1-20260924-001",
+    "reason": "F14_ISOLATED_CONTRACT_ACCEPTED"
+  }
+},
+{
+  "sequence": 1463,
+  "event_id": "evt_f14_1463_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-14/FINAL",
+  "occurred_at": "2026-09-24T09:53:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "C674BE9CF13BF4D552DEF3DAB3344A4071979FE7A8118FC319F238380AEA53C0",
+  "details": {
+    "lease_id": "worker-lease-f14-r1-20260924-001",
+    "reason": "F14_ISOLATED_CONTRACT_ACCEPTED"
+  }
+},
+{
+  "sequence": 1464,
+  "event_id": "evt_f14_1464_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-14",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-14/FINAL",
+  "occurred_at": "2026-09-24T09:53:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3C47B96F02CF2CFF72C42E23DFA09EE663275E1439711E69BCF3850DD029800B",
+  "details": {
+    "package_id": "F-14",
+    "decision": "ACCEPTED_ISOLATED_PG15_PG18_REHEARSAL",
+    "next_work_package": "F-15",
+    "unverified": [
+      "DEFAULT_HOST_BINDING",
+      "BROWSER_UI",
+      "PROVIDER",
+      "WSL_STAGING_DEPLOYMENT",
+      "PG18_FORMAL_RC",
+      "YSNA_PRODUCTION"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f14_1459_write_lease_issued"
+  "last_event_id": "evt_f14_1464_main_package_accepted"
 }

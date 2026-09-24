@@ -1,3 +1,12 @@
+# F-14 PostgreSQL 15/18 격리 복구 인수
+
+- 판정: `ACCEPTED_ISOLATED_PG15_PG18_REHEARSAL`; 제품 checkpoint 82fb713 exact12, 독립 SPEC PASS / QUALITY APPROVED, Critical 0/Important 0.
+- Main Windows 관련 71 PASS/17 SKIP, G-05 PASS. WSL-server Git-only commit 3baf8e4에서 격리 PG15·PG18 각 관련 75 PASS/13 SKIP, 6종 lineage backup/restore 2 PASS, CAS 각 6 PASS, Alembic 0016/vector 확인. 유자료 downgrade는 두 버전 모두 `DEPLOYMENT_ROLLBACK_DECISION_REQUIRED`로 차단되고 0016·audit 2행 보존.
+- PG15·PG18 전용 tmpfs 컨테이너 2개, UUID 임시 DB, Git checkout, dump, pytest 산출물 정리 잔여 0. 기존 local-postgres·타 프로젝트·ysna 미변경.
+- 첫 opt-in 테스트는 test DSN URL 오류로 migration 전 실패했고 UUID DB 잔류 0; 수정 후 PASS. 전체 pytest 기본 수집 충돌 및 선택 yaml/httpx 의존성 누락, 지원 범위 장기 시도 중단·출력 미회수는 PASS가 아니다. Alembic 경고 14건은 설정 deprecation이며 해당 테스트 성공과 분리 기록.
+- 기본 host owner 결선·브라우저/UI·Provider·WSL staging 배포·PG18 formal RC·ysna Production은 미검증. F-15~20 후속 조건이며 본 결과를 release/운영 PASS로 승격하지 않는다.
+- Main이 두 lease를 회수. 다음: F-14 PR 병합·merged-main smoke·branch/worktree 정리 후 F-15.
+
 # F-14 PostgreSQL migration·backup/restore 착수
 
 - WSL 격리 검증 사전 범위: Git-only 임시 checkout `/tmp/anvil-f14-1b8211f` (제품 commit `1b8211f`), 신규 컨테이너 `anvil-f14-pg15-1b8211f` 및 `anvil-f14-pg18-1b8211f`만 생성한다. 기존 `local-postgres`, `anvil-web`, 타 프로젝트 컨테이너·DB·볼륨·네트워크에는 접근·변경하지 않는다. 이미 로컬에 있는 이미지 `pgvector/pgvector:0.8.2-pg15` (sha256:75f6767185020459c7e2c3f88fb66f1bd2d9790c435bc91512497146c8bf8d7e), `pgvector/pgvector:0.8.2-pg18` (sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c)을 사용한다. 전용 임시 DB 저장소는 Docker tmpfs, host port는 loopback 동적 할당, 별도 named volume/network 생성 없음. 검증 후 정확히 두 컨테이너를 정지·제거하고 해당 임시 checkout·테스트 산출물을 제거한 뒤 이름·경로·볼륨 잔류 0을 확인한다.
