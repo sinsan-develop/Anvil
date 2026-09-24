@@ -76,6 +76,18 @@ def r3_all_product_paths():
     return sorted(set(product_paths()) | set(r3_product_paths()))
 
 
+def post_qa_evidence_paths():
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        DIGEST,
+        MANIFEST,
+    }
+
+
 def control_paths():
     return sorted([
         WI, PROMPT, "docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
@@ -89,8 +101,11 @@ def validate_start_git_facts(*, branch, upstream, head, remote_head, staged,
                              dirty, changed, base_is_ancestor, allowed_product_paths=None,
                              allow_merged_main=False, parents=(),
                              first_parent_contains_base=False,
+                             first_parent_is_base=False,
                              merge_tree_matches_feature=False,
-                             feature_contains_checkpoint=False):
+                             feature_contains_checkpoint=False,
+                             require_qa_binding=False, qa_head_bound=False,
+                             post_qa_changed=()):
     scope = set(control_paths())
     allowed = set(product_paths() if allowed_product_paths is None else allowed_product_paths)
     common = (base_is_ancestor and not staged and remote_head == head
@@ -99,8 +114,11 @@ def validate_start_git_facts(*, branch, upstream, head, remote_head, staged,
                and set(dirty) <= allowed)
     merged = (allow_merged_main and branch == "main" and upstream == "development/main"
               and not dirty and len(parents) == 2 and first_parent_contains_base
+              and first_parent_is_base
               and merge_tree_matches_feature and feature_contains_checkpoint)
-    return [] if common and (feature or merged) else ["F18_LOCAL_START_GIT_INVALID"]
+    qa_ok = (not require_qa_binding or
+             (qa_head_bound and set(post_qa_changed) <= post_qa_evidence_paths()))
+    return [] if common and qa_ok and (feature or merged) else ["F18_LOCAL_START_GIT_INVALID"]
 
 
 def validate_start_state(progress):
@@ -531,6 +549,7 @@ def collect_git(root):
     first_parent_contains_base = (len(parents) == 2 and subprocess.run(
         ["git", "merge-base", "--is-ancestor", BASE, parents[0]], cwd=root
     ).returncode == 0)
+    first_parent_is_base = len(parents) == 2 and parents[0] == BASE
     merge_tree_matches_feature = (len(parents) == 2 and run("rev-parse", "HEAD^{tree}")
                                   == run("rev-parse", f"{parents[1]}^{{tree}}"))
     checkpoint = progress.get("repository", {}).get("local_head")
@@ -538,14 +557,26 @@ def collect_git(root):
         and re.fullmatch(r"[0-9a-f]{40}", checkpoint) is not None and subprocess.run(
             ["git", "merge-base", "--is-ancestor", checkpoint, parents[1]], cwd=root
         ).returncode == 0)
+    qa_head = progress.get("repository", {}).get("local_wsl_qa_head")
+    qa_head_bound = (isinstance(qa_head, str) and re.fullmatch(r"[0-9a-f]{40}", qa_head) is not None
+        and isinstance(checkpoint, str) and re.fullmatch(r"[0-9a-f]{40}", checkpoint) is not None
+        and subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, qa_head],
+                           cwd=root).returncode == 0
+        and subprocess.run(["git", "merge-base", "--is-ancestor", qa_head,
+                            parents[1] if branch == "main" and len(parents) == 2 else head],
+                           cwd=root).returncode == 0)
+    post_qa_changed = set(filter(None, run("diff", "--name-only", f"{qa_head}..{head}").splitlines())) if qa_head_bound else set()
     allowed = r3_all_product_paths() if mode in {R3_MODE, R3_FINAL_MODE} else product_paths()
     return validate_start_git_facts(branch=branch, upstream=upstream, head=head,
         remote_head=remote_head, staged=staged, dirty=dirty, changed=changed,
         base_is_ancestor=ancestor, allowed_product_paths=allowed,
         allow_merged_main=allow_merged_main, parents=parents,
         first_parent_contains_base=first_parent_contains_base,
+        first_parent_is_base=first_parent_is_base,
         merge_tree_matches_feature=merge_tree_matches_feature,
-        feature_contains_checkpoint=feature_contains_checkpoint)
+        feature_contains_checkpoint=feature_contains_checkpoint,
+        require_qa_binding=mode == R3_FINAL_MODE,
+        qa_head_bound=qa_head_bound, post_qa_changed=post_qa_changed)
 
 
 def validate(root, bundle):

@@ -1,11 +1,85 @@
 """F-18 local/WSL-only start must not imply production acceptance."""
 
+import json
+from pathlib import Path
+import subprocess
+
+import scripts.f18_progress_overlay as overlay
 from scripts.f18_progress_overlay import (
     BASE, BRANCH, MODE, control_paths, product_paths,
     validate_start_git_facts, validate_start_state, validate_final_state,
     r2_product_paths, validate_r2_start_state, validate_r2_final_state,
     r3_product_paths, validate_r3_start_state, validate_r3_final_state,
 )
+
+
+def _real_merged_git_facts(tmp_path: Path, monkeypatch, *, main_drift=False, post_qa_code=False):
+    repo = tmp_path / "repo"
+    repo.mkdir(parents=True)
+
+    def git(*args):
+        return subprocess.check_output(["git", *args], cwd=repo, text=True).strip()
+
+    git("init", "-b", "main")
+    git("config", "user.name", "F18 QA")
+    git("config", "user.email", "f18-qa@example.invalid")
+    paths = set(control_paths()) | set(product_paths()) | set(r3_product_paths())
+    for relative in paths | {"unrelated.txt"}:
+        path = repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("base\n", encoding="utf-8")
+    git("add", "--all")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+    monkeypatch.setattr(overlay, "BASE", base)
+
+    git("checkout", "-b", BRANCH)
+    for relative in paths:
+        (repo / relative).write_text("feature\n", encoding="utf-8")
+    (repo / "docs/progress/build-progress.json").write_text(json.dumps({
+        "repository": {"projection_mode": overlay.R3_FINAL_MODE, "local_head": base}
+    }), encoding="utf-8")
+    git("add", "--all")
+    git("commit", "-m", "qa code")
+    qa_head = git("rev-parse", "HEAD")
+    (repo / "docs/progress/build-progress.json").write_text(json.dumps({
+        "repository": {"projection_mode": overlay.R3_FINAL_MODE,
+                       "local_head": base, "local_wsl_qa_head": qa_head}
+    }), encoding="utf-8")
+    git("add", "docs/progress/build-progress.json")
+    git("commit", "-m", "record qa")
+    if post_qa_code:
+        (repo / "scripts/f18_progress_overlay.py").write_text("untested code\n", encoding="utf-8")
+        git("add", "scripts/f18_progress_overlay.py")
+        git("commit", "-m", "untested code")
+
+    git("checkout", "main")
+    if main_drift:
+        (repo / "unrelated.txt").write_text("main drift\n", encoding="utf-8")
+        git("add", "unrelated.txt")
+        git("commit", "-m", "main drift")
+        git("merge", "--no-ff", "--no-commit", BRANCH)
+        (repo / "unrelated.txt").write_text("base\n", encoding="utf-8")
+        git("add", "unrelated.txt")
+        git("commit", "-m", "merge discarding drift")
+    else:
+        git("merge", "--no-ff", "--no-edit", BRANCH)
+    git("remote", "add", "development", str(repo))
+    git("update-ref", "refs/remotes/development/main", git("rev-parse", "HEAD"))
+    git("branch", "--set-upstream-to=development/main", "main")
+    return overlay.collect_git(repo)
+
+
+def test_f18_real_git_merge_accepts_only_tested_code_and_unchanged_main(tmp_path, monkeypatch):
+    assert _real_merged_git_facts(tmp_path / "valid", monkeypatch) == []
+
+
+def test_f18_real_git_merge_rejects_main_drift_hidden_by_merge_tree(tmp_path, monkeypatch):
+    assert _real_merged_git_facts(tmp_path / "drift", monkeypatch, main_drift=True)
+
+
+def test_f18_real_git_merge_rejects_code_commit_after_wsl_qa(tmp_path, monkeypatch):
+    assert _real_merged_git_facts(tmp_path / "untested", monkeypatch, post_qa_code=True)
 
 
 def test_f18_start_accepts_only_bounded_published_branch():
@@ -28,16 +102,34 @@ def test_f18_local_checkpoint_accepts_only_exact_merged_main_tree():
                  base_is_ancestor=True, allow_merged_main=True,
                  allowed_product_paths=sorted(set(product_paths()) | set(r3_product_paths())),
                  parents=("main-parent", "feature-parent"),
-                 first_parent_contains_base=True, merge_tree_matches_feature=True,
-                 feature_contains_checkpoint=True)
+                 first_parent_contains_base=True, first_parent_is_base=True,
+                 merge_tree_matches_feature=True,
+                 feature_contains_checkpoint=True, qa_head_bound=True,
+                 post_qa_changed={"docs/WORK_STATUS.md"}, require_qa_binding=True)
     assert validate_start_git_facts(**facts) == []
     assert validate_start_git_facts(**{**facts, "merge_tree_matches_feature": False})
     assert validate_start_git_facts(**{**facts, "parents": ("main-parent",)})
     assert validate_start_git_facts(**{**facts, "first_parent_contains_base": False})
+    assert validate_start_git_facts(**{**facts, "first_parent_is_base": False})
     assert validate_start_git_facts(**{**facts, "feature_contains_checkpoint": False})
+    assert validate_start_git_facts(**{**facts, "qa_head_bound": False})
+    assert validate_start_git_facts(**{**facts, "post_qa_changed": {"scripts/f18_progress_overlay.py"}})
     assert validate_start_git_facts(**{**facts, "allow_merged_main": False})
     assert validate_start_git_facts(**{**facts, "dirty": {"docs/WORK_STATUS.md"}})
     assert validate_start_git_facts(**{**facts, "changed": paths | {"unrelated.txt"}})
+
+
+def test_f18_final_feature_requires_bound_wsl_qa_without_later_code_changes():
+    paths = set(control_paths()) | set(product_paths()) | set(r3_product_paths())
+    facts = dict(branch=BRANCH, upstream=f"development/{BRANCH}",
+                 head="feature-head", remote_head="feature-head", staged=set(),
+                 dirty=set(), changed=paths, base_is_ancestor=True,
+                 allowed_product_paths=sorted(set(product_paths()) | set(r3_product_paths())),
+                 require_qa_binding=True, qa_head_bound=True,
+                 post_qa_changed={"docs/WORK_STATUS.md"})
+    assert validate_start_git_facts(**facts) == []
+    assert validate_start_git_facts(**{**facts, "qa_head_bound": False})
+    assert validate_start_git_facts(**{**facts, "post_qa_changed": {"tests/tooling/test_f18_progress_overlay.py"}})
 
 
 def test_f18_start_state_explicitly_blocks_production_and_f19():
