@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .disaster import BackupVerification, RestoreVerification, MigrationVerification
+from .retention import RollbackApproval, RollbackApprovalOwner, rollback_decision
 
 
 class RunbookService:
@@ -26,3 +27,21 @@ class RunbookService:
                     "next_action": "RUN_ISOLATED_MIGRATION_REHEARSAL"}
         return {"status": "MIGRATION_COMPATIBLE", "evidence": compatibility.evidence_hash,
                 "next_action": "REVIEW_ROLLBACK_DECISION"}
+
+    def rollback(self, *, data_loss_possible: bool, subject_hash: str,
+                 approval: RollbackApproval | None,
+                 approval_owner: RollbackApprovalOwner | None = None) -> dict:
+        try:
+            status = rollback_decision(data_loss_possible=data_loss_possible,
+                                       subject_hash=subject_hash, approval=approval,
+                                       approval_owner=approval_owner)
+        except ValueError:
+            status = "DEPLOYMENT_ROLLBACK_DECISION_REQUIRED"
+        allowed = status == "ROLLBACK_ALLOWED"
+        evidence = (approval.decision_hash if data_loss_possible and type(approval) is RollbackApproval
+                    else subject_hash) if allowed else None
+        return {"status": status,
+                "input": {"subject_hash": subject_hash, "data_loss_possible": data_loss_possible},
+                "evidence": evidence,
+                "next_action": "REVIEW_APPROVED_ROLLBACK_PLAN" if allowed
+                               else "OBTAIN_CANONICAL_HUMAN_DECISION"}

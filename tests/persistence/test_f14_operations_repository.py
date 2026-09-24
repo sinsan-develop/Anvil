@@ -19,11 +19,11 @@ def test_operations_event_rejects_token_secret_and_cross_scope_before_connection
     base = {"action": "DETECTED", "alert_id": "alert-1", "actor_id": "system:detector",
             "at": "2026-09-24T00:00:00+00:00", "approval_id": None,
             "evidence_hash": "sha256:" + "a" * 64,
-            "alert": {"alert_id": "alert-1", "level": "warning", "source": "worker",
+            "alert": {"alert_id": "alert-1", "level": "critical", "source": "worker",
                       "category": "availability", "code": "WORKER_LEASE_EXPIRED",
-                      "related_entity_id": "run-1", "dedupe_key": "f13:p:e:worker:run-1",
-                      "detector_rule_revision": "f13-r2", "cause": "lease expired",
-                      "impact": "ownership unknown", "next_action": "REVIEW_WORKER_TAKEOVER",
+                      "related_entity_id": "run-1", "dedupe_key": "f13-r2:project-1:test:WORKER_LEASE_EXPIRED:run-1",
+                      "detector_rule_revision": "f13-r2", "cause": "Worker lease expiry observed",
+                      "impact": "Run ownership cannot be trusted", "next_action": "REVIEW_WORKER_TAKEOVER",
                       "deep_link": "/operations/workers", "evidence_hash": "sha256:" + "a" * 64,
                       "status": "open", "owner_id": None, "observed_at": "2026-09-24T00:00:00+00:00",
                       "project_id": "project-1", "environment_id": "test"}}
@@ -32,9 +32,63 @@ def test_operations_event_rejects_token_secret_and_cross_scope_before_connection
                     {**base, "alert": {**base["alert"], "secret": "raw"}},
                     {**base, "alert": {**base["alert"], "project_id": "other"}},
                     {**base, "alert": {**base["alert"], "cause": "secret://vault/key"}},
-                    {**base, "alert": {**base["alert"], "impact": "token=raw"}}):
+                    {**base, "alert": {**base["alert"], "impact": "token=raw"}},
+                    {**base, "alert": {**base["alert"], "cause": "sk-synthetic-credential"}}):
         with pytest.raises(ValueError, match="AUDIT_EVENT_INVALID"):
             _safe_event(changed, "project-1", "test")
+
+
+def test_existing_f13_detector_event_is_accepted_by_strict_owner_boundary():
+    from datetime import datetime, timedelta, timezone
+    from packages.observability.models import HealthSignal
+    from packages.observability.projection import OperationsSources
+    from packages.observability.service import OperationsService
+    from packages.persistence.operations_repository import _safe_event
+    now = datetime(2026, 9, 24, tzinfo=timezone.utc)
+    class ValidatingOwner:
+        def __init__(self):
+            self.events = ()
+        def load(self, _project, _environment):
+            return self.events
+        def append(self, project, environment, expected_sequence, event):
+            assert expected_sequence == len(self.events)
+            self.events += (_safe_event(event, project, environment),)
+    owner = ValidatingOwner()
+    sources = OperationsSources(health_signals=(HealthSignal("database", "UNKNOWN", now,
+        timedelta(minutes=5), 0, "sha256:" + "a" * 64, "/operations/database"),))
+    service = OperationsService("project-1", "test", sources, repository=owner, clock=lambda: now)
+    assert service.detect() == 1
+    assert service.alerts()[0]["code"] == "HEALTH_SIGNAL_UNKNOWN"
+
+
+def test_queue_quarantine_task_id_reaches_audit_owner_without_token_false_positive():
+    from datetime import datetime, timedelta, timezone
+    from packages.observability.projection import OperationsSources
+    from packages.observability.service import OperationsService
+    from packages.persistence.operations_repository import _safe_event, _safe_identifier
+    from packages.queue.models import QueueJob
+    from packages.queue.service import DurableQueue
+    now = datetime(2026, 9, 24, tzinfo=timezone.utc)
+    queue = DurableQueue(token_factory=lambda: "synthetic-fence")
+    queue.enqueue(QueueJob("task-1", "run-1", "payload", now, 1))
+    claim = queue.claim("worker-1", now, visibility_timeout=timedelta(seconds=10))
+    queue.fail(claim.job_id, claim.execution_fencing_token, now, "poison")
+    class ValidatingOwner:
+        def __init__(self):
+            self.events = ()
+        def load(self, _project, _environment):
+            return self.events
+        def append(self, project, environment, expected_sequence, event):
+            assert expected_sequence == len(self.events)
+            self.events += (_safe_event(event, project, environment),)
+    owner = ValidatingOwner()
+    service = OperationsService("project-1", "test",
+        OperationsSources(queue=queue, queue_job_ids=("task-1",)), repository=owner,
+        clock=lambda: now)
+    assert service.detect() == 1
+    assert service.alerts()[0]["code"] == "QUEUE_JOB_QUARANTINED"
+    assert service.alerts()[0]["related_entity_id"] == "task-1"
+    assert not _safe_identifier("sk-synthetic-credential")
 
 
 @requires_postgres

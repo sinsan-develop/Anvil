@@ -8,12 +8,13 @@ from packages.recovery.disaster import RecoveryManifest, RecoveryMismatch, Resto
 
 HASH = "sha256:" + "a" * 64
 NOW = datetime(2026, 9, 24, tzinfo=timezone.utc)
+SOURCE = {key: HASH for key in ("project", "run", "approval", "progress", "terminal_learning", "audit")}
 
 
 def manifest():
     return RecoveryManifest("project-1", "wsl-pg15", "a" * 40, "0016_operations_recovery",
                             15, HASH, "vector:0.8", HASH, 12, {"artifact-1": HASH}, NOW,
-                            "operator-1", HASH)
+                            "operator-1", HASH, SOURCE)
 
 
 def observation(lineage):
@@ -53,6 +54,22 @@ def test_restore_receipt_must_match_manifest_backup_digest():
     source = {key: HASH for key in ("project", "run", "approval", "progress", "terminal_learning", "audit")}
     with pytest.raises(RecoveryMismatch):
         verify_restore(manifest(), source, replace(observation(source), restored_from_digest="sha256:" + "b" * 64))
+
+
+def test_colluding_source_and_target_lineage_cannot_override_sidecar_origin():
+    source = {key: HASH for key in ("project", "run", "approval", "progress", "terminal_learning", "audit")}
+    forged = dict(source)
+    forged["approval"] = "sha256:" + "b" * 64
+    with pytest.raises(RecoveryMismatch, match="RESTORE_LINEAGE_MISMATCH"):
+        verify_restore(manifest(), forged, observation(forged))
+
+
+def test_restore_target_observation_cannot_change_during_comparison():
+    target = observation(dict(SOURCE))
+    with pytest.raises(TypeError):
+        target.lineage_hashes["approval"] = "sha256:" + "b" * 64
+    with pytest.raises(TypeError):
+        target.artifact_checksums["artifact-1"] = "sha256:" + "b" * 64
 
 
 def test_backup_requires_bytes_checksum_and_restore_listing():

@@ -8,20 +8,42 @@ import re
 
 _HASH = re.compile(r"sha256:[0-9a-f]{64}\Z")
 _ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9:._-]{0,127}\Z")
+_CREDENTIAL_MARKER = re.compile(r"(?<![A-Za-z0-9])sk-", re.IGNORECASE)
 _ACTIONS = frozenset({"DETECTED", "ACKNOWLEDGED", "RESOLVED"})
 _FIELDS = frozenset({"action", "alert_id", "actor_id", "at", "approval_id", "evidence_hash", "alert"})
 _ALERT_FIELDS = frozenset({"alert_id", "level", "source", "category", "code", "related_entity_id",
                            "dedupe_key", "detector_rule_revision", "cause", "impact", "next_action",
                            "deep_link", "evidence_hash", "status", "owner_id", "observed_at",
                            "project_id", "environment_id"})
+_RULES = {
+    "WORKER_LEASE_EXPIRED": ("worker", "availability", "Worker lease expiry observed",
+                             "Run ownership cannot be trusted", "REVIEW_WORKER_TAKEOVER", "/operations/workers"),
+    "QUEUE_JOB_QUARANTINED": ("orchestrator", "backlog", "Queue job reached quarantine",
+                              "Run cannot advance automatically", "REVIEW_QUARANTINE", "/operations/queue"),
+    "BUDGET_RECONCILIATION_REQUIRED": ("provider", "cost", "Usage is not finalized",
+                                       "Budget exposure remains reserved", "RECONCILE_USAGE", "/operations/cost"),
+    "HEALTH_ERROR_COUNT": ("environment", "availability", "Health observation requires attention",
+                           "Current service health requires review", "CHECK_SOURCE_HEALTH", None),
+    "HEALTH_SIGNAL_UNKNOWN": ("environment", "availability", "Health observation requires attention",
+                              "Current service health requires review", "CHECK_SOURCE_HEALTH", None),
+    "HEALTH_SIGNAL_LATE": ("environment", "availability", "Health observation requires attention",
+                           "Current service health requires review", "CHECK_SOURCE_HEALTH", None),
+    "HEALTH_SIGNAL_EXPIRED": ("environment", "availability", "Health observation requires attention",
+                              "Current service health requires review", "CHECK_SOURCE_HEALTH", None),
+}
+
+
+def _safe_identifier(value: object) -> bool:
+    return type(value) is str and _ID.fullmatch(value) is not None and _CREDENTIAL_MARKER.search(value) is None
 
 
 def _safe_event(event: dict, project_id: str, environment_id: str) -> dict:
     if type(event) is not dict or set(event) - _FIELDS or not {"action", "alert_id", "actor_id", "at", "approval_id", "evidence_hash"}.issubset(event):
         raise ValueError("AUDIT_EVENT_INVALID")
-    if (type(event["action"]) is not str or event["action"] not in _ACTIONS or type(event["alert_id"]) is not str
-            or _ID.fullmatch(event["alert_id"]) is None or type(event["actor_id"]) is not str
-            or _ID.fullmatch(event["actor_id"]) is None or type(event["evidence_hash"]) is not str
+    if (type(event["action"]) is not str or event["action"] not in _ACTIONS
+            or not _safe_identifier(project_id) or not _safe_identifier(environment_id)
+            or not _safe_identifier(event["alert_id"]) or not _safe_identifier(event["actor_id"])
+            or type(event["evidence_hash"]) is not str
             or _HASH.fullmatch(event["evidence_hash"]) is None):
         raise ValueError("AUDIT_EVENT_INVALID")
     from datetime import datetime
@@ -30,23 +52,37 @@ def _safe_event(event: dict, project_id: str, environment_id: str) -> dict:
     except (TypeError, ValueError):
         raise ValueError("AUDIT_EVENT_INVALID") from None
     if at.tzinfo is None or (event["approval_id"] is not None and
-            (type(event["approval_id"]) is not str or _ID.fullmatch(event["approval_id"]) is None)):
+            not _safe_identifier(event["approval_id"])):
         raise ValueError("AUDIT_EVENT_INVALID")
     if event["action"] == "DETECTED":
         alert = event.get("alert")
         if (type(alert) is not dict or set(alert) != _ALERT_FIELDS
                 or alert["alert_id"] != event["alert_id"]
                 or alert["project_id"] != project_id or alert["environment_id"] != environment_id
+                or not _safe_identifier(alert["related_entity_id"])
+                or alert["detector_rule_revision"] != "f13-r2"
+                or alert["dedupe_key"] !=
+                    f'f13-r2:{project_id}:{environment_id}:{alert["code"]}:{alert["related_entity_id"]}'
                 or type(alert["evidence_hash"]) is not str
                 or _HASH.fullmatch(alert["evidence_hash"]) is None
+                or alert["evidence_hash"] != event["evidence_hash"]
                 or type(alert["deep_link"]) is not str
                 or not alert["deep_link"].startswith("/") or alert["deep_link"].startswith("//")
-                or "?" in alert["deep_link"] or "#" in alert["deep_link"]):
+                or "?" in alert["deep_link"] or "#" in alert["deep_link"]
+                or alert["observed_at"] != event["at"] or alert["status"] != "open"
+                or alert["owner_id"] is not None):
+            raise ValueError("AUDIT_EVENT_INVALID")
+        rule = _RULES.get(alert["code"]) if type(alert["code"]) is str else None
+        if (rule is None or tuple(alert[key] for key in
+                ("source", "category", "cause", "impact", "next_action")) != rule[:5]
+                or rule[5] is not None and alert["deep_link"] != rule[5]
+                or alert["level"] != ("critical" if "EXPIRED" in alert["code"] or "QUARANTINED" in alert["code"] else "warning")):
             raise ValueError("AUDIT_EVENT_INVALID")
         for key, value in alert.items():
             if type(value) not in (str, type(None)):
                 raise ValueError("AUDIT_EVENT_INVALID")
-            if type(value) is str and (len(value) > 512 or any(marker in value.lower() for marker in
+            if type(value) is str and (len(value) > 512 or _CREDENTIAL_MARKER.search(value) is not None
+                    or any(marker in value.lower() for marker in
                     ("secret://", "token=", "bearer ", "http://", "https://", "127.0.0.1", "localhost"))):
                 raise ValueError("AUDIT_EVENT_INVALID")
     elif "alert" in event or event["approval_id"] is None:

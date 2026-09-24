@@ -39,6 +39,7 @@ class RecoveryManifest:
     created_at: datetime
     actor_id: str
     backup_digest: str
+    source_lineage_hashes: Mapping[str, str]
 
     def __post_init__(self):
         if (type(self.project_id) is not str or not self.project_id
@@ -54,9 +55,13 @@ class RecoveryManifest:
                        for key, value in self.artifact_checksums.items())
                 or type(self.created_at) is not datetime or self.created_at.tzinfo is None
                 or type(self.actor_id) is not str or not self.actor_id
-                or not _valid_hash(self.backup_digest)):
+                or not _valid_hash(self.backup_digest)
+                or type(self.source_lineage_hashes) not in (dict, MappingProxyType)
+                or set(self.source_lineage_hashes) != _LINEAGE
+                or any(not _valid_hash(value) for value in self.source_lineage_hashes.values())):
             raise RecoveryMismatch("RECOVERY_MANIFEST_INVALID")
         object.__setattr__(self, "artifact_checksums", MappingProxyType(dict(self.artifact_checksums)))
+        object.__setattr__(self, "source_lineage_hashes", MappingProxyType(dict(self.source_lineage_hashes)))
 
 
 @dataclass(frozen=True)
@@ -75,6 +80,13 @@ class RestoreObservation:
     replayed: bool
     project_id: str
     environment_id: str
+
+    def __post_init__(self):
+        if (type(self.artifact_checksums) not in (dict, MappingProxyType)
+                or type(self.lineage_hashes) not in (dict, MappingProxyType)):
+            raise RecoveryMismatch("RESTORE_OBSERVATION_INVALID")
+        object.__setattr__(self, "artifact_checksums", MappingProxyType(dict(self.artifact_checksums)))
+        object.__setattr__(self, "lineage_hashes", MappingProxyType(dict(self.lineage_hashes)))
 
 
 @dataclass(frozen=True)
@@ -129,6 +141,7 @@ def encode_manifest(manifest: RecoveryManifest) -> bytes:
     data = {name: getattr(manifest, name) for name in manifest.__dataclass_fields__}
     data["created_at"] = manifest.created_at.isoformat()
     data["artifact_checksums"] = dict(manifest.artifact_checksums)
+    data["source_lineage_hashes"] = dict(manifest.source_lineage_hashes)
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
                       allow_nan=False).encode("utf-8")
 
@@ -169,14 +182,15 @@ def verify_restore(manifest: RecoveryManifest, original_lineage: dict[str, str],
             or set(original_lineage) != _LINEAGE or set(target.lineage_hashes) != _LINEAGE
             or any(not _valid_hash(value) for value in original_lineage.values())
             or any(not _valid_hash(value) for value in target.lineage_hashes.values())
-            or original_lineage != target.lineage_hashes):
+            or original_lineage != manifest.source_lineage_hashes
+            or target.lineage_hashes != manifest.source_lineage_hashes):
         raise RecoveryMismatch("RESTORE_LINEAGE_MISMATCH")
     for name in ("project_id", "environment_id", "git_sha", "migration_head", "pg_major", "image_digest",
                  "extension_version", "schema_hash", "event_sequence", "artifact_checksums"):
         if getattr(manifest, name) != getattr(target, name):
             raise RecoveryMismatch("RESTORE_TARGET_MISMATCH")
     evidence = "sha256:" + sha256(encode_manifest(manifest) +
-        json.dumps(target.lineage_hashes, sort_keys=True, separators=(",", ":")).encode("utf-8") +
+        json.dumps(dict(target.lineage_hashes), sort_keys=True, separators=(",", ":")).encode("utf-8") +
         target.target_database_id.encode("utf-8")).hexdigest()
     return RestoreVerification("RESTORE_VERIFIED", target.target_database_id,
                                target.event_sequence, evidence)
