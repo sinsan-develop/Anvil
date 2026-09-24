@@ -1,5 +1,7 @@
 # F-18 Task 5 read-only signed CLI 지시 개정 / 2026-09-24
 
+- Main R3 독립 로컬 검증: Developer exact3 commit `96b6f17bfe7aa716bd1bb283af5ee3f3d8eae922`를 공개 branch에 게시했다. Windows 6-file F16/F17/F18 독립 109 PASS(exit0, 64.56초), diff-check exit0, 전용 `.f18-r3-main-review-temp` exact path/비-reparse 확인 후 제거·잔류0. CLI는 Production `READY`나 실제 배포를 수행하지 않는다.
+- WSL 격리 QA 사전 자원 계획(생성 전 기록): `ssh WSL-server`에서 새 exact `/srv/anvil-wsl/f18-local-qa-r4`만 생성하여 공개 commit `96b6f17bfe7aa716bd1bb283af5ee3f3d8eae922`를 clean detached checkout한다. 내부 pytest `--basetemp=.f18-r4-pytest-temp`로 CLI+F16/F18 관련 5파일을 실행한다. 기존 `/srv/anvil-wsl/repo`, 서비스·DB·Docker·브라우저·Production에는 접촉하지 않는다. 종료 후 realpath exact/비-symlink/소유권/HEAD/dirty 범위를 확인해 임시 내용물을 제거하고, root 소유 parent 아래 빈 exact 디렉터리만 `sudo rmdir`로 정리한다. DB/role/container/venv는 생성하지 않는다.
 - 판정: F18 `PARTIAL_LOCAL_WSL_VERIFIED`, `accepted=false`, F19 차단; R2 seq1504 lease 회수 상태에서 동일 branch의 Task 5를 승인된 F18 local/WSL 범위로 분리한다. 새 CLI는 signed manifest·독립 expected observations·approval subject·WSL artifact·기존 checkout Git guard를 묶되 Production capability/실배포는 판정하지 않는다. 로컬 `deploy/ysna` legacy 경로는 수정하지 않는다.
 - Main control 변경: F18 계획/호출 지시, R3 overlay/G-05 dispatcher/테스트, 이 WORK_STATUS. 새 exact3 제품 범위는 `production_preflight_cli.py`, 해당 테스트, F18 보고서. 정식 제품 실패 0회. Overlay 테스트는 의도한 RED(import 없음) 뒤 8 PASS, diff-check exit0. 다음: control 게시→R3 canonical lease·G-05→Developer TDD→Main Windows/WSL 독립 QA·임시 자원 정리→독립 review→lease 회수/checkpoint. Production 증거 없으면 F18 merge/acceptance·F19 착수 금지.
 
