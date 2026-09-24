@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-18",
-  "event_sequence": 1495,
+  "event_sequence": 1498,
   "accepted": false,
-  "projection_mode": "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
+  "projection_mode": "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
   "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
   "exact_allowed_paths": [
     "docs/WORK_STATUS.md",
@@ -28,13 +28,13 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 481877,
-      "sha256": "05000C6C66B5BDE5FDC6DFF2DAC8EC8BFDD7B3E50D494B5595669583684F7D8D"
+      "bytes": 483200,
+      "sha256": "82C0CD7B16520947174ABBC093F8F99E8E9ACBBC210169A848A746A12C6474CA"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4159247,
-      "sha256": "5636622DC75A6AA96AEFD484D9C71CBB1995C49707FF267F8449381DCE0D42F6"
+      "bytes": 4161456,
+      "sha256": "EA8C45BC48EDC0E674FEB2669193F378BF6A9D3A8293BC2AAE1AA8A129F97AE7"
     },
     {
       "path": "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
@@ -48,18 +48,18 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 4731845,
-      "sha256": "73C23378B850ABF9FF5F423EEC81739B67B4C2CCA9A7D433F9EBBE82AC033A7A"
+      "bytes": 4731977,
+      "sha256": "83241B8B3CDEC65CF592F1B9C87E4F6A7AB162108A100E9F69DEF3DDE04F388A"
     },
     {
       "path": "scripts/f18_progress_overlay.py",
-      "bytes": 15614,
-      "sha256": "056336E8014C561312B2533DFFD22AA1B7CB97A726A68E0EB7F1C004F7706050"
+      "bytes": 22343,
+      "sha256": "377EC78EB71376B0E9DF9FCB43374793A64A8777D36D99D6C4DAEAC0578BD2CB"
     },
     {
       "path": "tests/tooling/test_f18_progress_overlay.py",
-      "bytes": 2205,
-      "sha256": "B845113444945157273D293FF14217F80A24DC0F9629539BF52D6F0E69F72517"
+      "bytes": 3128,
+      "sha256": "2D5FBBBF1DCE3CE6AEA09B29608E68E4641989D58CC159BBA10147527723C427"
     }
   ],
   "self_reference": false,
