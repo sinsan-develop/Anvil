@@ -1,3 +1,9 @@
+# F-18 Task 4 Git guard 지시 개정 / 2026-09-24
+
+- 판정: F-18 `PARTIAL_LOCAL_WSL_VERIFIED`, `accepted=false`; F-19 차단, 기존 R1 lease 회수(seq1498), 현재 제품 writer 없음. `codex/f18-local-wsl-preflight` 단일 branch에서 read-only existing-checkout Git guard를 Task 4로 분리했다. 기능 범위·요구사항·중요 위험의 확장이 아닌 기존 F-18 deployment adapter의 로컬 사전검증 구현이다.
+- 변경 예정: Main control 파일(작업지시·실행 지시·overlay·G-05 dispatcher·overlay 테스트·WORK_STATUS)을 공개 checkpoint로 push한 뒤 새 R2 exact3 lease를 발행한다. Developer만 `promotion_preflight.py`, 해당 test, F-18 보고서를 쓴다. 정식 실패 0회; Python 기본 명령 부재 1회와 bundled Python pytest 부재 1회는 `C:\Users\cyhuh\anaconda3\python.exe`로 해결했다. 새 overlay RED(import 누락) 후 6 PASS.
+- 미검증: 실제 Web/API/Worker digest 결박 서명 manifest, Production checkout·서비스·DB·OIDC·object storage·network 및 사용자 인수는 모두 NOT_EXECUTED. `ysna-server`는 접근하지 않는다. 다음: control commit/push → R2 G-05 → Developer TDD → WSL 격리 QA와 정확한 임시 자원 정리 → R2 checkpoint.
+
 # F-18 Local/WSL preflight start / 2026-09-24
 
 - 판정: ACTIVE, F-18 전체 합격 아님. 신산님 최신 직접 지시에 따라 작업 대상은 로컬과 WSL-server뿐이며 ysna-server 접근·변경·검증은 금지한다. F-19 및 U Gate는 F-18 최종 미충족으로 대기한다.

@@ -61,7 +61,21 @@
 - [ ] `ysna-server` Git checkout, `shared-db` 전용 DB/role, 실제 OIDC/object storage/network policy, `envil.sinsan.kr` browser, DeployApproval, Monitoring/Release는 모두 `NOT_EXECUTED`로 남긴다. F-18/AV-OPS-016/020/021 최종 acceptance를 발행하지 않는다.
 - [ ] 정본 G-05와 diff-check를 실행하고 branch를 안전한 checkpoint로 push한다. 서버 실측을 요구하는 F-18 gate가 미충족인 한 PR 자동 병합·branch 삭제·F-19 branch 생성은 하지 않는다.
 
+### Task 4: 이미 존재하는 checkout의 읽기 전용 Promotion Git guard — 2026-09-24 Main 후속 지시
+
+**범위 판정:** 정본 F-18의 production deployment adapter 중 승인 remote/tag/commit/clean checkout 사전 차단만 로컬·WSL에서 구현한다. 신산님이 제외한 `ysna-server` 접속, fetch·checkout 생성, DB·서비스 변경, 실제 DeployApproval·Release는 하지 않는다. 이 Task는 Task 1~3의 완료 증거를 변경하지 않고 같은 작업 branch에서 수행한다.
+
+**Files:** Modify `packages/deployment/promotion_preflight.py` and `tests/deploy/test_f18_promotion_preflight.py`; update `docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md` for worker results. Main만 control status/progress/HANDOFF를 갱신한다.
+
+**Interface:** `VerifiedApprovalRelease`에 서명 검증 당시의 `source_git_remote`를 결박한다. `validate_existing_checkout(verified_release, wsl_evidence, approval_subject, observed_environment_id, migration_plan_hash, rollback_plan_hash, checkout: Path, approved_remote: str = APPROVED_DEVELOPMENT_REMOTE) -> PreflightDecision`은 기존 `validate_promotion`의 `ready=True` 후에만 F-16 `verify_exact_checkout`을 호출한다. 불일치/미검증은 `ready=False`와 안정적인 `GIT_CHECKOUT_NOT_VERIFIED` 또는 기존 reason code를 반환한다. 기존 입력·반환의 의미를 바꾸지 않는다.
+
+- [ ] RED: 합성 서명 manifest + 임시 bare Git remote/tag의 실제 clean detached checkout은 private rehearsal 준비가 된다. 다른 remote·tag·commit, attached HEAD, tracked/untracked dirty, 복사된 비-Git source는 차단한다. Web digest가 없는 실제 F-17 shape 또는 approval mismatch면 Git guard가 호출되지 않음을 확인한다. 원격 서명 subject와 `approved_remote`가 달라도 차단한다.
+- [ ] RED 명령: `python -B -m pytest -q -p no:cacheprovider tests/deploy/test_f18_promotion_preflight.py`; 새 함수/필드 부재로 실패한 결과를 기록한다.
+- [ ] 최소 구현: 기존 F-16 Git guard와 F-18 순수 preflight를 순서대로 결합한다. 승인 remote 기본값은 고정 SSH alias이며, 테스트의 임시 bare remote는 서명 subject와 일치할 때만 허용한다. 네트워크·Git 예외 내용을 노출하지 않고 차단한다. fetch·checkout 생성·배포·서버 접속 함수를 추가하지 않는다.
+- [ ] focused GREEN, F-16/F-17 회귀 및 diff-check를 실행한다. 정확한 명령/exit/미검증을 보고서에 기록하고 exact3 제품 파일만 commit한다.
+- [ ] Main은 published exact Git commit의 WSL 격리 QA와 자원 정리, 독립 review, G-05 checkpoint를 수행한다. Web image·실 서명 manifest·Production 환경 증거가 없는 한 F-18 `accepted=false`, F-19 차단을 유지한다.
+
 ## Self-review
 
-- F-18 전체 요구 중 이 계획이 수행하는 것은 approval subject와 artifact mismatch 차단의 로컬·WSL 사전검증뿐이다. Production checkout/DB/OIDC/object storage/network/도메인 실측은 의도적으로 미포함이며 F-18 최종 완료의 필수 미충족 조건이다.
-- 각 제품 task는 자기 테스트로 검토할 수 있고, Task 3은 evidence·cleanup·상태 경계만 검토한다. 공개 API나 DB schema를 변경하지 않는다.
+- F-18 전체 요구 중 이 계획이 수행하는 것은 approval subject·artifact mismatch·기존 checkout Git guard의 로컬·WSL 사전검증뿐이다. Production checkout/DB/OIDC/object storage/network/도메인 실측은 의도적으로 미포함이며 F-18 최종 완료의 필수 미충족 조건이다.
+- 각 제품 task는 자기 테스트로 검토할 수 있고, Task 3은 evidence·cleanup·상태 경계만 검토한다. Task 4는 새로운 내부 read-only preflight 진입점만 추가하며 공개 HTTP API나 DB schema를 변경하지 않는다.
