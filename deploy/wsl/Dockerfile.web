@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y libpq5 tini pos
 COPY deploy/wsl/requirements-runtime.txt /tmp/requirements-runtime.txt
 RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements-runtime.txt
 COPY packages ./packages
+COPY deploy/wsl/f16_staging.py ./deploy/wsl/f16_staging.py
 COPY apps/api ./apps/api
 COPY apps/web ./apps/web
 COPY migrations ./migrations
