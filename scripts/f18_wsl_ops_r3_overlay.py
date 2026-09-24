@@ -39,6 +39,7 @@ EXECUTION_TOKEN = "f18-wsl-ops-execution-fence-epoch-3-69247977e4e51781"
 WRITE_TOKEN = "f18-wsl-ops-write-fence-epoch-3-69247977e4e51781"
 WI = "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_WORK_INSTRUCTION.md"
 INVOCATION = "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_INVOCATION.md"
+CONTROL_QA_HEAD = "0f0ff0df5495edcec8a3e49cacea516e5d1de3c6"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r3.json"
 MANIFEST = "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json"
 
@@ -92,7 +93,7 @@ def validate_state(progress, wi_sha, invocation_sha):
         and repo.get("branch") == BRANCH
         and repo.get("exact_allowed_paths") == control_paths()
         and repo.get("product_write_scope") == write_paths()
-        and isinstance(qa, str) and re.fullmatch(r"[0-9a-f]{40}", qa) is not None
+        and qa == CONTROL_QA_HEAD
         and worker.get("lease_id") == WORKER
         and worker.get("actor_id") == ACTOR
         and worker.get("status") == "ACTIVE"
@@ -177,7 +178,10 @@ def collect_git(root):
     if _run(root, "rev-parse", "development/main") != BASE:
         errors.append("F18_WSL_OPS_R3_MAIN_DRIFT")
     qa = progress.get("repository", {}).get("control_qa_head")
-    if not (isinstance(qa, str) and re.fullmatch(r"[0-9a-f]{40}", qa)
+    anchor = _run(root, "log", "--diff-filter=A", "--format=%H", "--", WI).splitlines()
+    if anchor != [CONTROL_QA_HEAD]:
+        errors.append("F18_WSL_OPS_R3_QA_ANCHOR_INVALID")
+    if not (qa == CONTROL_QA_HEAD
             and _is_ancestor(root, BASE, qa) and _is_ancestor(root, qa, head)):
         errors.append("F18_WSL_OPS_R3_QA_HEAD_INVALID")
     else:
@@ -268,7 +272,8 @@ def materialize(root, qa_head):
     if (_run(root, "branch", "--show-current") != BRANCH
             or _run(root, "rev-parse", "development/main") != BASE
             or _run(root, "rev-parse", f"development/{BRANCH}") != head
-            or not re.fullmatch(r"[0-9a-f]{40}", qa_head)
+            or qa_head != CONTROL_QA_HEAD
+            or _run(root, "log", "--diff-filter=A", "--format=%H", "--", WI).splitlines() != [CONTROL_QA_HEAD]
             or not _is_ancestor(root, BASE, qa_head)
             or not _is_ancestor(root, qa_head, head)
             or set(filter(None, _run(root, "diff", "--name-only", f"{BASE}..{head}").splitlines())) -

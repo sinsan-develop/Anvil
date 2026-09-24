@@ -11,12 +11,13 @@ from scripts import f18_wsl_ops_r3_overlay as overlay
 def _state():
     now = datetime.now(timezone.utc)
     issued, expires = (now - timedelta(minutes=1)).isoformat(), (now + timedelta(hours=1)).isoformat()
+    qa_head = "0f0ff0df5495edcec8a3e49cacea516e5d1de3c6"
     base = {"actor_id": overlay.ACTOR, "status": "ACTIVE",
             "execution_fencing_token": overlay.EXECUTION_TOKEN,
             "path_scope": overlay.write_paths(), "issued_at": issued,
             "expires_at": expires, "lease_epoch": 3,
-            "baseline_git_commit": "a" * 40,
-            "dispatch_head": "a" * 40}
+            "baseline_git_commit": qa_head,
+            "dispatch_head": qa_head}
     worker = {**base, "lease_id": overlay.WORKER}
     write = {**base, "lease_id": overlay.WRITE, "worker_lease_id": overlay.WORKER,
              "write_epoch": 3, "write_fencing_token": overlay.WRITE_TOKEN}
@@ -29,7 +30,7 @@ def _state():
                                         "invocation_sha256": "B" * 64},
             "repository": {"projection_mode": overlay.MODE, "branch": overlay.BRANCH,
                            "validated_base_commit": overlay.BASE,
-                           "control_qa_head": "a" * 40,
+                           "control_qa_head": qa_head,
                            "exact_allowed_paths": overlay.control_paths(),
                            "product_write_scope": overlay.write_paths()},
             "scope_revision_binding": {"approval_id": overlay.APPROVAL_ID,
@@ -45,6 +46,16 @@ def test_r3_new_exact_lease_excludes_r2_and_expired_token():
     expired = deepcopy(state)
     expired["worker_lease"]["expires_at"] = "2020-01-01T00:00:00+00:00"
     assert overlay.validate_state(expired, "A" * 64, "B" * 64)
+
+
+def test_r3_rejects_rebound_qa_even_when_both_leases_follow():
+    state = _state()
+    moved = "d27c5264a56c80ccf4f96571fcca15ec50ca93e7"
+    state["repository"]["control_qa_head"] = moved
+    for lease in (state["worker_lease"], state["write_lease"]):
+        lease["baseline_git_commit"] = moved
+        lease["dispatch_head"] = moved
+    assert overlay.validate_state(state, "A" * 64, "B" * 64)
 
 
 def test_r3_git_scope_rejects_outside_path():
