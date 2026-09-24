@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1482,
+  "last_sequence": 1491,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80175,7 +80175,233 @@
       "USER_ACCEPTANCE"
     ]
   }
+},
+{
+  "sequence": 1483,
+  "event_id": "evt_f17_1483_f16_merged_main_verified",
+  "event_type": "F16_MERGED_MAIN_VERIFIED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E9F0E4B10E6EA21B61D0C5628E36F817C20263ED09609F630EEF6FBAED4D4D5D",
+  "details": {
+    "merge_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
+    "pull_request": "https://github.com/sinsan-develop/Anvil/pull/32",
+    "feature_commit": "183b1d5b82779dcd79d196185b699cfbb4cb9cf7",
+    "feature_ancestor": true,
+    "merge_tree_matches_feature": true,
+    "merged_main_g05": "PASS_1482",
+    "local_remote_branch_deleted": true,
+    "git_worktree_removed": true
+  }
+},
+{
+  "sequence": 1484,
+  "event_id": "evt_f17_1484_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E87874C0900CF5399680D99C7D7EB57BE5FBEFF84E2C2C80456EC26AED9D2675",
+  "details": {
+    "package_id": "F-17",
+    "branch": "codex/f17-wsl-pg18-rc",
+    "base_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
+    "work_instruction": "docs/work_orders/F-17_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "deploy/wsl/compose.f17.yml",
+      "deploy/wsl/f17_validation.py",
+      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
+      "tests/deploy/test_f17_validation.py",
+      "tests/integration/test_f17_runtime_e2e.py"
+    ]
+  }
+},
+{
+  "sequence": 1485,
+  "event_id": "evt_f17_1485_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "24007BE1FA0A15BE22F72716FE3AD85B5FD4CE56CA44FEE827FDC6A59C978C12",
+  "details": {
+    "lease_id": "worker-lease-f17-r1-20260924-001",
+    "execution_fencing_token": "f17-r1-execution-fence-epoch-1-3460d9768b039568",
+    "actor_id": "developer-primary-f17-r1"
+  }
+},
+{
+  "sequence": 1486,
+  "event_id": "evt_f17_1486_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6C42C65CB3D184006AC3B05851D4220C74C6EC3D6E718378484D37B39E944017",
+  "details": {
+    "lease_id": "write-lease-f17-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f17-r1-20260924-001",
+    "write_fencing_token": "f17-r1-write-fence-epoch-1-022fd43e24577cc0",
+    "path_scope": [
+      "deploy/wsl/compose.f17.yml",
+      "deploy/wsl/f17_validation.py",
+      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
+      "tests/deploy/test_f17_validation.py",
+      "tests/integration/test_f17_runtime_e2e.py"
+    ]
+  }
+},
+{
+  "sequence": 1487,
+  "event_id": "evt_f17_1487_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-17/FINAL",
+  "occurred_at": "2026-09-24T15:57:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "620B5CF0E65537AFA32669E52C80FAE80A9D6689B6A28E8586E9761E138A5DCD",
+  "details": {
+    "package_id": "F-17",
+    "product_head": "7083e2aa90ced5bb109fd268cf22e34de34ff6d9",
+    "exact_tag": "f17-rc-7083e2a",
+    "runtime_image_digest": "sha256:f6c481954d3ec9013b4974aa9514c8646b06616ffbc84cc4d645c7a5d4432a82",
+    "pg15": "REAL_HTTP_DB_RESTART_ROLLBACK_PASS",
+    "pg18": "ISOLATED_RC_REAL_HTTP_DB_RESTART_RESTORE_ROLLBACK_PASS",
+    "browser": "PLAYWRIGHT_DASHBOARD_SAME_ORIGIN_PASS",
+    "temporary_resource_residue": 0
+  }
+},
+{
+  "sequence": 1488,
+  "event_id": "evt_f17_1488_independent_test_judgment_recorded",
+  "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-17/FINAL",
+  "occurred_at": "2026-09-24T15:57:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "44EB4522A93DDC076AA220789BC6B66355181B5D2D9489AA3B02BF139D16E770",
+  "details": {
+    "verdict": "F17_SCOPED_ACCEPTED",
+    "critical": 0,
+    "important": 0,
+    "criterion_ids": [
+      "AV-OPS-015",
+      "AV-OPS-025"
+    ],
+    "evidence_manifest": "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
+    "web_only_auth": "NOT_VERIFIED_F18_PROXY_DEPENDENCY"
+  }
+},
+{
+  "sequence": 1489,
+  "event_id": "evt_f17_1489_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-17/FINAL",
+  "occurred_at": "2026-09-24T15:57:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "FE393AB452A3C64E576FC293D6642BE45D8020341F1C501D3AEA0FDB99525B92",
+  "details": {
+    "lease_id": "write-lease-f17-r1-20260924-001",
+    "reason": "F17_SCOPED_ACCEPTED"
+  }
+},
+{
+  "sequence": 1490,
+  "event_id": "evt_f17_1490_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-17/FINAL",
+  "occurred_at": "2026-09-24T15:57:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "4313111EB5A0215ABA3A3991B0742DCFF2207FF1374F373C506FAA16A4F557FA",
+  "details": {
+    "lease_id": "worker-lease-f17-r1-20260924-001",
+    "reason": "F17_SCOPED_ACCEPTED"
+  }
+},
+{
+  "sequence": 1491,
+  "event_id": "evt_f17_1491_main_package_accepted",
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "FINAL",
+  "subject_ref": "F-17/FINAL",
+  "occurred_at": "2026-09-24T15:57:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "21D149CAD474738E54B0F2B0236981B146E3C4CB87D23C5CF69DFA086DD8E324",
+  "details": {
+    "package_id": "F-17",
+    "decision": "ACCEPTED_F17_PG15_PG18_SCOPED",
+    "next_work_package": "F-18",
+    "unverified": [
+      "WEB_ONLY_DIRECT_AUTH_PROXY",
+      "FULL_UI_WORKFLOW",
+      "PRODUCT_VALIDATION_API_501",
+      "REAL_PROVIDER",
+      "F18_YSNA_PRODUCTION",
+      "HUMAN_RELEASE_DECISION"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f16_1482_main_package_accepted"
+  "last_event_id": "evt_f17_1491_main_package_accepted"
 }

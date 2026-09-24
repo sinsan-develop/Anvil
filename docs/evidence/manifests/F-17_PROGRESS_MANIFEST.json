@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-17",
+  "event_sequence": 1491,
+  "accepted": true,
+  "acceptance_scope": "PG15_PG18_SCOPED",
+  "projection_mode": "F17_FINAL_ACCEPTANCE_EXACT13_PRODUCT_EXACT5",
+  "validated_base_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-17_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f17.json",
+    "docs/work_orders/F-17_INVOCATION_PROMPT.md",
+    "docs/work_orders/F-17_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f17_progress_overlay.py",
+    "tests/tooling/test_f17_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "deploy/wsl/compose.f17.yml",
+    "deploy/wsl/f17_validation.py",
+    "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
+    "tests/deploy/test_f17_validation.py",
+    "tests/integration/test_f17_runtime_e2e.py"
+  ],
+  "product_head": "7083e2aa90ced5bb109fd268cf22e34de34ff6d9",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
+      "bytes": 8323,
+      "sha256": "B3CD355F44160D63FFA63755164DE4DC346CA68226F9F71700B643D0F2CCB59C"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 477360,
+      "sha256": "9E99F442B755CEA6CE857FC4372CE958A7FB8D74792D98692AEE918F0F035B13"
+    },
+    {
+      "path": "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
+      "bytes": 4905,
+      "sha256": "768EDD67877A9CC0160346D3477FB368D937FD6E552BF7F1FC56714B4EEC3956"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4155701,
+      "sha256": "0F902416CF43162AAD7EE2415248A20126AF547A495D8DF683600F08B9A968D0"
+    },
+    {
+      "path": "docs/work_orders/F-17_INVOCATION_PROMPT.md",
+      "bytes": 532,
+      "sha256": "1DD45EF085F5E2BD37BB2D18CD7DB6BA68C92B7344CD1FBDDC6CFECC6C571714"
+    },
+    {
+      "path": "docs/work_orders/F-17_WORK_INSTRUCTION.md",
+      "bytes": 5226,
+      "sha256": "B76BC2D471E4E9810BBD01CAEAB778B364D7B22BD9F761116399254DE2FEA9EE"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4731065,
+      "sha256": "423CE8546D42B2727A3290F63347F81CFB40B4B6E981C2220668AF06AD462DE3"
+    },
+    {
+      "path": "scripts/f17_progress_overlay.py",
+      "bytes": 28170,
+      "sha256": "3EC373CD4009940C1C46F86D1BF34AC1336DB9697D4B4192BA3F33B0462895B5"
+    },
+    {
+      "path": "tests/tooling/test_f17_progress_overlay.py",
+      "bytes": 2955,
+      "sha256": "34C7EBA5A1E4ED5805EB39FEBE04F1E0ADA8C85FAEE2237F1DD696CBCA2A46F8"
+    }
+  ],
+  "self_reference": false,
+  "runtime_boundary": {
+    "shared_pg15": "PASS_F17_SCOPE",
+    "isolated_pg18": "PASS_F17_SCOPE",
+    "actual_e2e": "PASS_SAME_GIT_IMAGE",
+    "browser": "PASS_DASHBOARD_NETWORK_SCOPE",
+    "production": "NOT_EXECUTED"
+  }
+}

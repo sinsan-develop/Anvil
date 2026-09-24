@@ -1,3 +1,18 @@
+# F-17 WSL PG15/PG18 범위 인수
+
+- 판정: `ACCEPTED_F17_PG15_PG18_SCOPED`; seq1491. 동일 Git 7083e2a·runtime image f6c481의 PG15/PG18 실측과 AV-OPS-015/025 ProductValidation SUITABLE. 브라우저 dashboard same-origin만 PASS, Web-only auth/전체 UI/운영 배포는 미검증.
+- Main이 worker/write lease를 모두 회수했다. **WSL F17 runtime/QA 자원 잔류 0**. Windows 로컬 Web `node_modules`·dist와 F17 `.pyc`는 제거했으나 pytest basetemp exact 5개는 OS `Access denied`로 남아 있다(실행 오류 1, 제품 실패 0). ACL/소유권은 변경하지 않았고 전역 cleanup PASS로 승격하지 않는다. 다음은 F17 PR 병합·merged-main smoke·branch/worktree 정리이며 그 전 F18 branch 금지.
+
+# F-17 WSL 실제 기능·격리 PG18 RC 착수
+
+- 2026-09-24 F-16 merged-main 보완 검증: Anaconda Python `C:\Users\cyhuh\anaconda3\python.exe`를 확인해 main merge `3460d9768b039568022fd43e24577cc0e2402dea`에서 `tests/tooling/test_f16_progress_overlay.py` 및 F-16 deploy focused 3파일을 실행, exit0/52 PASS(26.78초). GUID 전용 pytest basetemp를 정확한 임시 경로 검증 후 제거했으며 cacheprovider를 비활성화했다. 이전 번들 Python의 pytest 부재는 도구 선택 문제였고 merged-main focused 미검증을 여기서 해소했다. F-17 PG15/PG18 E2E PASS로 전용하지 않는다.
+- 2026-09-24 F-17 생성 전 읽기 전용 WSL inventory: 기존 `local-postgres`는 image ID `sha256:75f6767185020459c7e2c3f88fb66f1bd2d9790c435bc91512497146c8bf8d7e`의 PG15이며 5432가 IPv4 `0.0.0.0`/IPv6 `::`에 bind된다. 기존 `anvil` DB 소유자는 `anvil_app`, role은 LOGIN=true/SUPERUSER=false/CREATEDB=false/CREATEROLE=false/REPLICATION=false/BYPASSRLS=false다. HBA는 loopback trust 및 일반 host scram-sha-256으로 확인했다. 기존 DB/role에는 mutation 0; F-17은 고유 임시 DB/role로 분리한다. 격리 PG18 후보 image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c`가 이미 존재한다. F-17 새 checkout/container/DB/role 생성은 아직 0.
+- F-16 PR Broker 요청 태그 첫 게시에서 태그가 신뢰 main 대신 작업 HEAD를 가리킨 실수 1회를 Main이 발견했다. Broker가 fail-closed로 병합하지 않았고 그 정확한 요청 태그만 삭제·main 대상 재생성한 뒤 PR #32로 정상 병합했다. 브랜치/제품/기존 데이터 영향 0. 원인: 태그 이름의 HEAD SHA와 태그 대상 main SHA를 혼동. 후속 요청은 태그 대상 `development/main`을 push 전에 직접 검증한다.
+- 판정: `ACTIVE`. F-16 PR #32 merged main 3460d97, feature ancestry/tree·merged-main G-05 PASS, F-16 remote/local branch 및 worktree 삭제 확인. F-17 branch는 clean main에서 생성. 담당 Main 어울 통제, developer-primary-f17-r1 exact5 write lease, 정식 FAILURE_REPORT 0회.
+- F-17은 기존 local-postgres PG15의 전용 임시 Anvil DB/비-superuser role 일반 경로와 별도 PG18 격리 instance를 구분한다. 전역 bind/pg_hba/network나 기존 DB·role은 변경하지 않고 WSL host loopback/SSH tunnel만 쓴다. WSL 실제 자원은 생성 전 exact inventory·cleanup 방법을 기록한다.
+- F-14 과거 PG15/18 백업·복원 실측 및 F-16 staging/browser PASS를 F-17 새 exact Git/image E2E로 재사용하지 않는다. 현재 ProductValidation 공개 API는 501 미결선이므로 실제 API·DB 관측에 결박된 criterion별 검증 기록을 F-17 범위로 두며 API/DB 지속화 PASS는 주장하지 않는다.
+- 다음: G-05 start gate→Developer TDD exact5→Main 독립 검토→WSL PG15 일반/PG18 격리 동일 E2E·migration/backup/restore/rollback·브라우저/ProductValidation 실측→정확한 자원 정리. ysna/Production·사용자 인수 미실행.
+
 # F-16 격리 WSL Test/Staging 인수
 
 - 판정: `ACCEPTED_ISOLATED_WSL_STAGING`. R2 제품 HEAD 383bd8cb, Windows focused 48 PASS 각 2회, WSL focused 48 PASS, published exact Git tag/서명 ReleaseManifest 사전·사후 검증 PASS. PG15 migration0016, app 최소권한·DDL 거부, Web/API/Worker·재시작 health, Chromium 1920/390 same-origin Network·오류/누출 0을 실측했다. R1의 superuser 결함은 R2 분리 role로 수정·재검증했다. 정식 Developer FAILURE_REPORT 0회.
@@ -2489,6 +2504,27 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - CDP fault-injection UI 증거이며 실제 서버 생성400/Provider/production/PG18 증거가 아니다.
 - 모든 disposable/Chrome/profile/tunnel residue0, 기존 anvil-web tuple/healthy 불변.
 - 다음 행동은 C30R3 독립 재검토이며 통과 전 formal acceptance를 기록하지 않는다.
+
+## F-17 WSL QA 생성 전 자원 계획 — 2026-09-24
+
+- 판정: F-17 제품 코드 `509fb22`(선행 `d39432b`) 기준 Windows 회귀 83 PASS/2 SKIP(exit 0); 실제 WSL PG15/PG18·HTTPS/browser·backup/restore는 `NOT_EXECUTED`. 담당 Main, 제품 오류 0, 환경 오류 1(Windows 기본 pytest temp ACL; 별도 basetemp로 재실행 PASS).
+- WSL 접근은 `ssh WSL-server`만 사용한다. 읽기 전용 확인에서 기존 `local-postgres`(PG15), 기존 `anvil` DB/`anvil_app` role, 기존 `anvil-web`은 존재한다. 아래 신규 F-17 대상은 생성 전 모두 부재, 포트 32769/8300/8301/8443은 비어 있다. 기존 자원·전역 HBA/bind/network/firewall에는 변경을 가하지 않는다.
+- exact Git checkout `/srv/anvil-wsl/f17-rc`(공개 tag/commit의 clean detached 상태), QA 임시 경로 `/srv/anvil-wsl/f17-rc-qa`. 생성 전 경로 부재 확인. QA 안에 합성 비밀·TLS cert/key·브라우저 프로필·venv·시험 산출물을 0700/0600으로 보관하고 완료 후 exact path 확인 후 제거한다. Git checkout은 공개 ref로 복구 가능하다.
+- PG15: 기존 `local-postgres` 서비스 내부에 **새로운** `anvil_f17_pg15_d39432b` DB 및 `anvil_f17_migrator_d39432b`, `anvil_f17_app_d39432b` role만 생성한다. 현재 부재 확인 완료. migrator가 해당 DB를 소유하고 migration을 실행하며 app은 비-superuser/non-createdb/non-createrole, 해당 DB DML만 수행한다. 테스트 후 해당 DB와 두 role을 정확히 확인해 제거한다. 기존 `anvil` DB/role은 건드리지 않는다.
+- PG18: 기존에 로컬 존재하는 `pgvector/pgvector:0.8.2-pg18` image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c`를 고정해 `anvil-f17-pg18-rc` Compose project로 postgres/web/api/worker, labeled network 두 개, named volume 0, PGDATA tmpfs, DB host 127.0.0.1:32769, Web host 127.0.0.1:8300만 생성한다. 완료 후 이 project/label/이미지·volume 수를 확인해 down하고 잔류 0을 확인한다.
+- PG15 API는 exact F17 image의 전용 `anvil-f17-pg15-api-d39432b` host-network container(127.0.0.1:8301), HTTPS QA proxy는 `anvil-f17-qa-tls-d39432b`(127.0.0.1:8443)로 제한한다. PG15와 PG18 시험은 순차로 수행한다. image tag는 `anvil-f17-runtime:d39432b`, `anvil-f17-web:d39432b`로 고정하고 exact image ID를 기록한 후 생성된 tag만 제거한다. `anvil-f14-pg18-d39432b` 별도 backup/rollback container가 필요하면 F17 Compose를 내린 뒤 F14 guard label/tmpfs/loopback 조건으로 일시 생성·제거한다.
+- 모든 테스트는 합성 actor/project/run, 임시 DB와 same-origin HTTPS만 사용한다. 실 Provider/계정/운영 서버/외부 배포는 제외한다. 자원 생성 전 exact 공개 commit과 image, role/port/path 부재를 재확인한다. 생성·시험·정리 결과와 미검증 범위는 `F-17_WSL_TEST_REPORT.md`에 누적 기록한다.
+- AV-OPS-015 보완 계획: PG15 shared QA DB의 migration/E2E/restart PASS만으로 rollback을 PASS라 하지 않는다. `pgvector/pgvector:0.8.2-pg15` image ID `sha256:75f6767185020459c7e2c3f88fb66f1bd2d9790c435bc91512497146c8bf8d7e`의 별도 `anvil-f14-pg15-7083e2a` tmpfs/label `F14_ISOLATED_TEST`/127.0.0.1:32768 컨테이너에서 F17 exact Git SHA로 6계보·version-matched dump/restore·유자료 downgrade 거부를 검증한다. 기존 `local-postgres`와 DB를 공유하지 않으며, 임시 checkout `/srv/anvil-wsl/f17-rc`·QA `/srv/anvil-wsl/f17-rc-qa`를 재생성해 완료 후 정확히 제거한다. 생성 전 경로/컨테이너/포트 부재 확인 완료.
+- F-17 비교 기준 보완: 최초 PG15 E2E는 `509fb22`/image `d38dbda3`였고 PG18은 Compose 포트 실제 결함 수정 후 `7083e2a`/image `65b17826`이다. 두 개를 동일 source/image PASS로 합산하지 않는다. F14 PG15/18 rollback rehearsal은 최종 `7083e2a`에서 각각 PASS했고 임시 자원은 정리됐다. F-17의 PG15 핵심 HTTP+DB·restart를 최종 `7083e2a` clean tag 및 동일 runtime image digest로 다시 실행한다. 기존 F17 전용 DB/role·path·port 부재를 확인한 뒤만 재생성하며 완료 후 다시 제거한다. 기존 `anvil` DB/role과 `anvil-web`은 보존한다.
+
+## F-17 WSL 실측·정리 — 2026-09-24
+
+- 판정: Main 독립 검증 기준 AV-OPS-015/025 **F17 범위 PASS**, 각 criterion 최종 ProductValidation `SUITABLE`(증거 기반 Main 판단, 공개 API/DB 기록 아님). 담당 Main, 작업 branch `codex/f17-wsl-pg18-rc`; 제품 최종 공개 tag `f17-rc-7083e2a` → `7083e2aa90ced5bb109fd268cf22e34de34ff6d9`. 동일 runtime image ID `sha256:f6c481954d3ec9013b4974aa9514c8646b06616ffbc84cc4d645c7a5d4432a82`로 PG15/18 순차 E2E·restart PASS. 전용 WSL 보고서와 RC EvidenceManifest에 정확한 target/evidence hash 기록.
+- PG15 공유 서비스의 **전용** DB·최소 app role에서 migration0016/vector/query/HTTPS ready200/Task→Run HTTP+DB/재시작 후 SSE=DB PASS. PG18 별도 tmpfs Compose(4 containers, 2 networks, named volume0, DB loopback 32769)에서도 동일 시나리오 PASS. PG18 최종 실제 synthetic DB custom dump→동일 major restore의 migration/task/run/event/vector 값 일치 PASS. F14 guard의 별도 PG15/18 tmpfs 컨테이너에서 6계보 backup/restore·유자료 downgrade 거부 각각 exit0/1 PASS.
+- 최종 Web image Playwright 1920/390 둘 다 200, overflow0, JS error0, same-origin 요청4/foreign0. 화면의 Environment NOT CONNECTED, Queue/Worker UNAVAILABLE는 사실대로 보존했고 전체 UI 정상 주장 없음. Windows Main 관련 회귀 exit0/83 PASS·2 opt-in SKIP·warning1; PG18 internal-only port 결함은 테스트 RED1→수정 GREEN으로 고정했다.
+- 중간 진단 오류·조치: (1) internal-only PG18 DB port 미게시 → postgres를 격리 ingress에도 연결, 실제 127.0.0.1:32769 확인. (2) QA Caddy `*:8443` → 즉시 종료·loopback bind. (3) Web-only `/auth/session` 405 → F17 전용 HTTPS QA gateway에서 `/auth/*`만 API 내부 IP로 전달, Secure cookie 검증 PASS; Web-only 직결 인증은 미검증/F18 proxy 재확인 항목. (4) PG15 image 자동 anonymous volume → 해당 container+정확한 volume 즉시 제거하고 PGDATA tmpfs `Mounts=[]`로 재실행. (5) 초기 Git/image 불일치 및 레거시 빌드 ID 변동 → 최종 동일 checkout/image를 **유지**하며 양 환경 재검증. 동일 정식 Developer 실패 3회가 아니며 Main 인수 횟수 0.
+- 정리: 전용 PG15 DB·2 role, PG18 Compose/container/network/tmpfs, PG15/18 rehearsal container·anonymous volume, TLS·브라우저 프로필·합성 비밀·인증서·QA screenshot, F17 image tags, `/srv/anvil-wsl/f17-rc`와 `-qa` exact paths 잔류0. 기존 `anvil|anvil_app` 확인, `local-postgres` Up·`anvil-web` Up/healthy. 임시 합성 DB·비밀은 삭제돼 복구 불가; source는 공개 tag로 복구 가능.
+- 변경 파일: `deploy/wsl/compose.f17.yml`, `deploy/wsl/f17_validation.py`, `tests/deploy/test_f17_validation.py`, `tests/integration/test_f17_runtime_e2e.py`, `docs/04_test_reports/F-17_COMPLETION_REPORT.md`, 본 WORK_STATUS, `docs/04_test_reports/F-17_WSL_TEST_REPORT.md`, `docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json` 및 raw checksum manifest. 미검증: ProductValidation API 501, Web-only auth route, 전체 UI 업무 흐름, 실제 Provider/production/user ReleaseDecision. 다음 행동: report/manifest hash·G-05·독립 review 후 PR Broker→main merge→merged-main smoke→branch/worktree 삭제; 그 전 F-18 branch 생성 금지.
 - 독립 재검토 결과 spec/quality 각각 C0/I0/M0 PASS. seq1323 Main acceptance는
   C30R3 fixture formal 범위만 적용한다. active agent/worker/write lease0.
 - C30 전체 acceptance는 보류: canonical progress checker의 기존 C03 embedded SyntaxError가
