@@ -69,6 +69,7 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 ## Production 인수에 남은 정확한 증거
 
 1. F-16 형식의 실제 서명된 ReleaseManifest와 독립 신뢰 public key/fingerprint, 관측값이 필요하다. 현재 `docs/evidence`·`deploy`의 JSON에는 F-16 `public_key_fingerprint` 서명 envelope가 발견되지 않았다. `deploy/ysna/ReleaseManifest.json`은 과거 C-21 `AnvilReleaseManifest` 형식과 다른 commit·migration을 가리켜 F-18 ReleaseManifest로 재사용할 수 없다.
+   추가 읽기 전용 확인에서 WSL-server의 `/srv/anvil-wsl/evidence`, `/srv/anvil-wsl/control`, `/srv/anvil-wsl/runtime` 아래 깊이 3 이내의 `*release*manifest*.json`·`*evidence*manifest*.json` 경로도 발견되지 않았다. 첫 일반 `find`는 control 경로 권한 거부를 냈고, 동일한 세 정확한 경로의 `sudo find`로 확인했다. `.env` 내용이나 Secret은 읽지 않았다. 이는 조사한 경로의 부재 증거이며 WSL 전체 파일시스템의 전역 부재 선언은 아니다.
 2. F-17 RC EvidenceManifest에는 `runtime_image_digest` 하나만 있고 Web/API/Worker 세 digest 결박이 없다. F-17 보고서에 기록된 Web image ID `sha256:5f02bdbbc2e26844e07f3d34208162bdb9a73c82f04670ae223e331281f44a32`는 현재 WSL Docker에서 `No such image`로 조회됐다. 이전 기록만으로 현존·동일 artifact를 증명할 수 없어 preflight는 `WEB_IMAGE_NOT_VERIFIED`를 유지한다. 임의 재빌드 image를 검증된 동일 digest로 간주하지 않는다.
 3. 별도 운영 담당 범위에서 `ysna-server`의 승인 Git remote/tag/clean checkout, 실제 Web/API/Worker digest, `shared-db` PG18 전용 DB·role, OIDC·object storage·network capability, `envil.sinsan.kr` browser Network, backup/drain/migration/smoke/rollback/monitoring 및 승인 대상의 environment+manifest+migration+rollback hash를 실측해야 한다. 신산님이 Main의 작업 대상을 로컬·WSL로 한정했으므로 Main은 이 항목에 접속하거나 PASS를 발행하지 않는다.
 
