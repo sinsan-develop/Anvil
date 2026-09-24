@@ -232,3 +232,113 @@ def test_f18_r3_cli_checkpoint_revokes_writer_and_blocks_f19():
                                       "status": "BLOCKED_PENDING_F18_ACCEPTANCE"}}
     assert validate_r3_final_state(progress) == []
     assert validate_r3_final_state({**progress, "status": "ACCEPTED"})
+
+
+def test_successor_integration_rejects_unbounded_git_facts():
+    controls = {
+        "docs/WORK_STATUS.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json", "docs/progress/BUILD_HANDOFF.md",
+        overlay.DIGEST, overlay.MANIFEST,
+        "scripts/f18_progress_overlay.py", "tests/tooling/test_f18_progress_overlay.py",
+        "scripts/check_project_progress.py",
+        "docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md",
+    }
+    products = {
+        "pyproject.toml", "uv.lock", "packages/provider_catalog/service.py",
+        "docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md",
+    }
+    facts = dict(branch="codex/f19-test-dependency",
+                 upstream="development/codex/f19-test-dependency",
+                 head="feature", remote_head="feature", staged=set(), dirty=set(),
+                 changed=controls | products, base_is_ancestor=True,
+                 expected_branch="codex/f19-test-dependency",
+                 required_control_paths=controls, allowed_product_paths=products,
+                 require_clean_feature=True,
+                 require_qa_binding=True, qa_head_bound=True,
+                 post_qa_allowed_paths=controls - {
+                     "scripts/f18_progress_overlay.py", "tests/tooling/test_f18_progress_overlay.py",
+                     "scripts/check_project_progress.py",
+                     "docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md"} |
+                     {"docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md"},
+                 post_qa_changed={"docs/WORK_STATUS.md"})
+    assert validate_start_git_facts(**facts) == []
+    assert validate_start_git_facts(**{**facts, "changed": facts["changed"] | {"unrelated"}})
+    assert validate_start_git_facts(**{**facts, "qa_head_bound": False})
+    assert validate_start_git_facts(**{**facts, "post_qa_changed": {"pyproject.toml"}})
+    assert validate_start_git_facts(**{**facts, "dirty": {"pyproject.toml"}})
+
+
+def test_successor_integration_keeps_formal_acceptance_blocked():
+    base = {"repository": {"projection_mode": overlay.SUCCESSOR_MODE,
+                           "validated_base_commit": overlay.SUCCESSOR_BASE,
+                           "branch": overlay.SUCCESSOR_BRANCH,
+                           "exact_allowed_paths": overlay.successor_control_paths(),
+                           "product_write_scope": overlay.successor_product_paths()},
+            "event_sequence": 1511, "current_work_package": "F-18",
+            "status": "PAUSED", "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED",
+            "active_agent": None, "worker_lease": None, "write_lease": None,
+            "next_work_package": {"package_id": "F-19",
+                                  "status": "BLOCKED_PENDING_F18_ACCEPTANCE"}}
+    assert overlay.validate_successor_state(base) == []
+    assert overlay.validate_successor_state({**base, "f18_overall_status": "ACCEPTED"})
+    assert overlay.validate_successor_state({**base, "next_work_package":
+        {"package_id": "F-19", "status": "READY"}})
+
+
+def test_successor_real_merge_rejects_main_drift_and_post_qa_code(tmp_path, monkeypatch):
+    def scenario(name, *, drift=False, late_code=False):
+        repo = tmp_path / name
+        repo.mkdir()
+
+        def git(*args):
+            return subprocess.check_output(["git", *args], cwd=repo, text=True).strip()
+
+        git("init", "-b", "main")
+        git("config", "user.name", "Successor QA")
+        git("config", "user.email", "successor-qa@example.invalid")
+        scope = set(overlay.successor_control_paths()) | set(overlay.successor_product_paths())
+        for relative in scope | {"unrelated.txt"}:
+            path = repo / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("base\n", encoding="utf-8")
+        git("add", "--all")
+        git("commit", "-m", "base")
+        base = git("rev-parse", "HEAD")
+        monkeypatch.setattr(overlay, "SUCCESSOR_BASE", base)
+        git("checkout", "-b", overlay.SUCCESSOR_BRANCH)
+        for relative in scope:
+            (repo / relative).write_text("feature\n", encoding="utf-8")
+        (repo / "docs/progress/build-progress.json").write_text(json.dumps({
+            "repository": {"projection_mode": overlay.SUCCESSOR_MODE,
+                           "local_head": base}}), encoding="utf-8")
+        git("add", "--all")
+        git("commit", "-m", "qa code")
+        qa = git("rev-parse", "HEAD")
+        (repo / "docs/progress/build-progress.json").write_text(json.dumps({
+            "repository": {"projection_mode": overlay.SUCCESSOR_MODE,
+                           "local_head": base, "local_wsl_qa_head": qa}}), encoding="utf-8")
+        git("add", "docs/progress/build-progress.json")
+        git("commit", "-m", "bind qa")
+        if late_code:
+            (repo / "packages/provider_catalog/service.py").write_text("late\n", encoding="utf-8")
+            git("add", "packages/provider_catalog/service.py")
+            git("commit", "-m", "late code")
+        git("checkout", "main")
+        if drift:
+            (repo / "unrelated.txt").write_text("drift\n", encoding="utf-8")
+            git("add", "unrelated.txt")
+            git("commit", "-m", "drift")
+            git("merge", "--no-ff", "--no-commit", overlay.SUCCESSOR_BRANCH)
+            (repo / "unrelated.txt").write_text("base\n", encoding="utf-8")
+            git("add", "unrelated.txt")
+            git("commit", "-m", "merge hiding drift")
+        else:
+            git("merge", "--no-ff", "--no-edit", overlay.SUCCESSOR_BRANCH)
+        git("remote", "add", "development", str(repo))
+        git("update-ref", "refs/remotes/development/main", git("rev-parse", "HEAD"))
+        git("branch", "--set-upstream-to=development/main", "main")
+        return overlay.collect_git(repo)
+
+    assert scenario("valid") == []
+    assert scenario("drift", drift=True)
+    assert scenario("late", late_code=True)

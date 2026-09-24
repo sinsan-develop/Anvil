@@ -1,3 +1,11 @@
+# F-18/F-19 로컬·WSL 통합 게이트 보완 / 2026-09-25
+
+- 판정: `CODE_CHECKPOINT_PREPARED`, F-18 전체 `accepted=false`, F-19 정식 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production `NOT_EXECUTED`. 담당 Main 어울, 동일 정식 Developer 실패보고 0회. 신산님 지정 범위인 로컬 개발→Git push→WSL-server Git 수신·테스트만 수행하고 운영/ysna-server는 제외한다.
+- 현재 단일 branch `codex/f19-test-dependency`, base `development/main@e2f3d994b95c2e60f6a3e597101c30daa25089b4`. 후속 integration mode는 exact base/branch/upstream/remote, 변경 경로, WSL QA SHA 이후 evidence-only, 2-parent merge 첫 부모와 tree 일치 조건을 fail-closed로 확인한다. 기존 F18 mode는 보존한다. 계획 `docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md`.
+- TDD: 신규 계약 테스트 RED 2건(`TypeError`, `AttributeError`) 후 overlay·dispatcher 구현. Windows 단위·실제 임시 Git graph 16 PASS(exit0/13.60초), `git diff --check` exit0. 임시 pytest 경로 `.f19-gate-pytest-temp`는 exact 경로/비-reparse 확인 후 제거·잔류0. 아직 code checkpoint push·WSL 재검증·G-05·PR·병합은 미완료다.
+- WSL-server QA 사전 자원 계획: 새 격리 `/srv/anvil-wsl/f19-integration-qa-e2f3d99` 하나에 승인 Git remote에서 게시된 정확한 code checkpoint를 detached checkout한다. 전용 `.venv`와 pytest temp는 이 경로 안에만 생성한다. 기존 서비스/DB/Docker/브라우저는 변경하지 않는다. 정확한 realpath·비-symlink·owner·HEAD·dirty 범위를 확인하고 QA 후 이 새 checkout만 제거해 잔류 0을 확인한다. 원격 Git commit이 복구 ref다.
+- 다음: 코드 checkpoint 선별 commit/push → WSL-server 동일 SHA 대상 회귀 → QA SHA를 seq1511 canonical evidence에 결박 → 브랜치 G-05/review → PR Broker/main 병합/merged-main smoke/브랜치 정리. 실측 전 PASS나 전체 인수로 표시하지 않는다.
+
 # F-18 병합 후 Provider·보안 회귀 준비 / 2026-09-24
 
 - 판정: `PREPARED_UNMERGED`, 담당 Main 어울, 정식 Developer 실패보고 0회. F18 로컬·WSL 개발분은 PR #35로 `main@e2f3d994b95c2e60f6a3e597101c30daa25089b4`에 병합되어 merged-main G-05와 관련 124 PASS를 확인하고 기존 작업 브랜치/worktree를 삭제했다. F18 전체 `accepted=false`, Production `NOT_EXECUTED`, F19 정식 착수 `BLOCKED_PENDING_F18_ACCEPTANCE`는 유지한다.
