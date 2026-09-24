@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -288,6 +289,50 @@ def materialize_r2(root):
         "push_status": "PENDING"})
     _write_r2_projection(root, progress, event_raw, mode=R2_MODE, sequence=1501,
                          handoff_title="F-18 local/WSL Task 4 Git guard start")
+
+
+def finalize_r2(root):
+    """Revoke Task 4 writer after published local/WSL verification; never accept F-18."""
+    root = Path(root)
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
+    if validate_r2_start_state(progress) or ledger.get("last_sequence") != 1501:
+        raise RuntimeError("F18_LOCAL_R2_START_REQUIRED")
+    if collect_git(root):
+        raise RuntimeError("F18_LOCAL_R2_PUBLISHED_CLEAN_GIT_REQUIRED")
+    source_head = subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                          cwd=root, text=True).strip()
+    at = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
+    events = ledger["events"]
+    old_id = progress["last_event_id"]
+    _event(events, "WRITE_LEASE_REVOKED", {"lease_id": R2_WRITE,
+        "reason": "LOCAL_WSL_GIT_GUARD_VERIFIED"}, at=at, step="LOCAL_WSL_R2_CHECKPOINT")
+    _event(events, "WORKER_LEASE_REVOKED", {"lease_id": R2_WORKER,
+        "reason": "LOCAL_WSL_GIT_GUARD_VERIFIED"}, at=at, step="LOCAL_WSL_R2_CHECKPOINT")
+    last = _event(events, "PACKAGE_PAUSED", {"accepted": False,
+        "production": "NOT_EXECUTED", "f19": "BLOCKED_PENDING_F18_ACCEPTANCE",
+        "published_source_head": source_head,
+        "reason": "USER_SCOPE_LOCAL_AND_WSL_ONLY"},
+        at=at, step="LOCAL_WSL_R2_CHECKPOINT")
+    event_raw = _append_events_raw((root / "docs/progress/progress-events.json").read_bytes(),
+                                   old_id, 1501, events[-3:])
+    progress.update({"snapshot_id": "snapshot-f18-local-r2-checkpoint-seq1504",
+        "event_sequence": 1504, "last_event_id": last["event_id"],
+        "updated_at": at, "recorded_at": at,
+        "status": "PAUSED", "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED",
+        "active_agent": None, "worker_lease": None, "write_lease": None,
+        "next_safe_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
+        "runtime_next_action": "F18_PRODUCTION_OWNER_EVIDENCE_REQUIRED_OUTSIDE_MAIN_SCOPE",
+        "reporting_decision": {"decision": "SCOPE_BOUNDARY_REPORT",
+            "reason_codes": ["F18_PRODUCTION_TARGET_EXCLUDED_BY_USER"],
+            "stop_before_dialogue_report": True}})
+    progress["active_work_instruction"]["result_status"] = "PARTIAL_LOCAL_WSL_VERIFIED"
+    progress["repository"].update({"projection_mode": R2_FINAL_MODE,
+        "local_head": source_head, "remote_head": source_head,
+        "worktree_status": "F18_PAUSED_SCOPE_BOUNDARY",
+        "commit_status": "PUBLISHED_CHECKPOINT", "push_status": "PUBLISHED_CHECKPOINT"})
+    _write_r2_projection(root, progress, event_raw, mode=R2_FINAL_MODE, sequence=1504,
+                         handoff_title="F-18 local/WSL Task 4 Git guard checkpoint")
 
 
 def collect_git(root):
