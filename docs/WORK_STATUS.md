@@ -2564,3 +2564,10 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 5-file 79건을 한 명령으로 실행해 exit·PASS/FAIL/SKIP을 기록한다. 추가 모듈 부재 또는 설치 불가 시 원인과 실행 범위를 기록하고 무한 재시도하지 않는다. 종료 시 realpath·비-symlink·Git HEAD·dirty 상태를 확인하고 exact 임시 경로만 제거해 잔류0 및 기존 서비스 상태 불변을 검증한다. source는 공개 Git ref로 복구 가능하다.
 - R2 실행 결과: 공개 `ad0ddb16ed9504563128934a647db3390515e5cc` clean detached checkout, 전용 `.f18-venv`에 `SQLAlchemy==2.0.52`/`greenlet==3.5.6`만 설치. 동일 F-18/F-16/F-17 5-file WSL 회귀 **79 PASS**, exit0, 2.59s. 앞선 WSL F-17 12 NOT_RUN은 이 실행으로 해소했다. 환경 의존성 보완 1회이며 제품 정식 실패 0.
 - 정리 전 R2 realpath exact/비 symlink/owner `daon:daon` 0700/HEAD를 확인했고 untracked는 `.f18-venv/`와 `.f18-wsl-pytest-temp/`뿐이었다. exact `/srv/anvil-wsl/f18-local-qa-r2` 삭제 후 잔류0. `local-postgres` Up, `anvil-web` Up/healthy 불변. Production 및 Web 실제 digest 결박은 여전히 미검증이고 F-18 `accepted=false`, F-19 차단, branch 보존을 유지한다.
+
+## F-18 WSL 공개 tag Git 경계 QA 자원 계획 — 2026-09-24
+
+- 신산님의 `계속진행하자`에 따라 기존 F-18 브랜치를 유지하면서 AV-OPS-021의 WSL 측 공개 Git tag/clean-detached 경계만 실제 원격으로 추가 확인한다. Product/Production 파일 mutation, `ysna-server` 접속, 신규 브랜치·PR 병합은 하지 않는다. 이 검증은 운영 서버의 checkout PASS가 아니다.
+- 생성 전 `ssh WSL-server`에서 exact 임시 `/srv/anvil-wsl/f18-git-gate-qa` 부재, `local-postgres` Up·`anvil-web` Up/healthy를 확인했다. 승인 remote `git@github-sinsan-develop:sinsan-develop/Anvil.git`의 `f17-rc-7083e2a` annotated tag object `6eda3d5f984b6237250fb460d496970b7182e019`, peeled commit `7083e2aa90ced5bb109fd268cf22e34de34ff6d9`를 직접 조회했다.
+- 신규 자원은 root 소유 `/srv/anvil-wsl` 아래 daon 소유 mode0700 exact 임시 Git checkout 한 개뿐이다. 공개 tag로 clone하고 승인 remote·annotated tag object·peeled commit·detached HEAD·clean status를 확인한다. DB·Docker·브라우저·Secret·프로세스·network listener는 생성하지 않는다.
+- 종료 시 realpath exact·비 symlink·Git HEAD/dirty를 확인한 뒤 exact 임시 checkout만 제거하고 경로 잔류0 및 기존 서비스 불변을 재확인한다. 실패는 PASS로 승격하지 않으며 결과·미검증은 F-18 보고서에 기록한다. 소스는 공개 tag로 복구 가능하다.
