@@ -1,9 +1,9 @@
-# F-18 WSL R4 independent QA anchor checkpoint
+# F-18 WSL R5 stable historical QA fixture checkpoint
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1527,
-  "last_event_id": "evt_f18_local_1527_worker_lease_revoked",
+  "event_sequence": 1528,
+  "last_event_id": "evt_f18_local_1528_control_test_fix_recorded",
   "status": "ACTIVE",
   "current_phase": "F",
   "current_work_package": "F-18",
@@ -19,4 +19,4 @@
 }
 ```
 
-- R3 writer leases revoked; R4 QA Git anchor fixed; F-18 accepted=false; Production NOT_EXECUTED.
+- R3 leases remain revoked; no product writer; F-18 accepted=false; Production NOT_EXECUTED.
