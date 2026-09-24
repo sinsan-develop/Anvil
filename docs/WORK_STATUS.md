@@ -1,3 +1,8 @@
+# F-18 R1 WSL 격리 재현 자원 계획 / 2026-09-25
+
+- 정확한 임시 대상은 `ssh WSL-server`의 신규 `/srv/anvil-wsl/f18-ops-r1-qa` 하나다. 생성 전 부재·비 symlink와 상위 경로를 확인하고 `daon:daon`, mode 700으로 생성한다. 승인 Git SSH remote의 게시 SHA `5fd4c1013fb4015929700874c61c09cea22519d2`를 clean detached checkout한다. 이 checkout 안의 `.venv`와 `.f18-r1-pytest-temp`만 사용한다. 기존 `/srv/anvil-wsl/repo`, `anvil-web`, `local-postgres`, Docker/DB/브라우저와 다른 프로젝트 자원은 변경하지 않는다.
+- 이번 재현은 제품 순수 계약의 Linux 실행 확인이다. 현재 `uv.lock`에 `cryptography`가 선언되지 않아 잠긴 venv만으로는 F-16/F-18 import가 불가능할 수 있다. 실제 의존성 오류를 기록하고, 필요하면 기존 WSL system Python의 crypto를 임시 QA에만 결합해 결과를 `PROVISIONAL`로 구분한다. 정식 잠긴 환경 PASS는 별도 의존성 수정 이후에만 판정한다. 검증 후 exact realpath·비-symlink·owner/mode·HEAD·dirty 범위를 확인하고 새 대상만 제거·잔류0을 확인한다. 원격 commit은 복구 ref다.
+
 # F-18 WSL 운영 유사 target 착수 준비 / 2026-09-25
 
 - R1 통제 code checkpoint `b865ccb3b0a3f978b67b8c9e69b626a49b0874f8`을 승인 Git SSH alias로 게시하고 WSL-server 전용 `/srv/anvil-wsl/f18-ops-control-qa`에서 같은 HEAD를 detached checkout했다. Python 3.12 잠긴 dev 의존성으로 신규·기존 진행상태 계약 22 PASS(exit0/0.75초), Windows 동일 범위 22 PASS(exit0/13.68초). WSL checkout exact realpath·비-symlink·HEAD를 확인한 뒤 전용 경로 제거·잔류0. 기존 서비스·DB·Docker/브라우저 변경 0. 이 결과는 lease 통제 코드 QA이지 F-18 제품 runtime PASS가 아니다. 이후 code/authority는 수정하지 않고 evidence만 seq1515에 결박한다.
