@@ -1,3 +1,10 @@
+# F-16 Git-only WSL Test/Staging 착수
+
+- 판정: ACTIVE. F-15 PR #31 merged main f2b124a, feature ancestry/tree 및 merged-main G-05·49 PASS, 원격/로컬 F-15 branch 삭제와 Git worktree 등록 제거 확인. F-15 작업 디렉터리에는 ACL 거부된 .pytest_cache 하나만 고아 잔류하며 다른 자료는 정리했다. ACL 변경은 임의 수행하지 않았다.
+- 담당: Main 어울 통제, developer-primary-f16-r1 제품 exact8 write lease. 기준 문서 hash 일치, F-16 branch main f2b124a에서 생성·원격 게시 후 clean 시작. 정식 FAILURE_REPORT 0회.
+- 기존 WSL /srv/anvil-wsl/repo는 root-owned clean detached a681e0c, anvil-web 컨테이너 OCI revision bb2ff437로 F-16 exact target이 아니다. 기존 C21/C01 스크립트도 고정 SHA 계약이라 수정·재사용하지 않는다. F-16 별도 경로·Compose/DB/서명 QA 자원은 생성 전 이름·수명·정리 방법을 기록한다.
+- 다음: G-05 start gate 후 Developer TDD 구현, Main 독립 검토, 원격 exact SHA WSL 격리 정식 staging에서 서명/checkout/migration/health/rollback 준비 검증 및 임시 자원 정리. F-17 PG18 RC·ysna/Oracle 미실행.
+
 # F-15 Local 운영 셸·SSH tunnel 인수
 
 - 판정: `ACCEPTED_LOCAL_BROWSER_WINDOWS_SSH_TUNNEL`; 제품 HEAD 1d1fe19, Windows 관련 49 PASS, Web Node 3·기존 Node 3 PASS, lint/typecheck/build PASS. Main 통합 최초 Nginx tmpfs chown 실패 1회는 R2 USER 101:101 수정 후 실제 Web Up/HTTP 200으로 재검증했다. 정식 Developer FAILURE_REPORT 0회.
