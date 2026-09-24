@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1525,
+  "last_sequence": 1527,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -81170,7 +81170,47 @@
       "uv.lock"
     ]
   }
+},
+{
+  "sequence": 1526,
+  "event_id": "evt_f18_local_1526_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R4_ANCHOR",
+  "subject_ref": "F-18/WSL_OPS_R4_ANCHOR",
+  "occurred_at": "2026-09-25T04:42:05+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A0CB2395D923F80EBC39B084ECC826EE9BFF84A6FCB6AD46B7892B37101624AB",
+  "details": {
+    "lease_id": "write-lease-f18-wsl-ops-r3-20260925-001",
+    "reason": "R3_RUNTIME_VERIFIED_CONTROL_ANCHOR_HARDENED"
+  }
+},
+{
+  "sequence": 1527,
+  "event_id": "evt_f18_local_1527_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R4_ANCHOR",
+  "subject_ref": "F-18/WSL_OPS_R4_ANCHOR",
+  "occurred_at": "2026-09-25T04:42:05+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "62FD121450EC7FD56B04EAF036F2BAAFC618EA42388AB995345CD7523AF98C39",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r3-20260925-001",
+    "reason": "R3_RUNTIME_VERIFIED_CONTROL_ANCHOR_HARDENED"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1525_write_lease_issued"
+  "last_event_id": "evt_f18_local_1527_worker_lease_revoked"
 }
