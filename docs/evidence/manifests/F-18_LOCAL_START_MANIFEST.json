@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-18",
-  "event_sequence": 1498,
+  "event_sequence": 1501,
   "accepted": false,
-  "projection_mode": "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
+  "projection_mode": "F18_LOCAL_WSL_R2_START_EXACT3",
   "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
   "exact_allowed_paths": [
     "docs/WORK_STATUS.md",
@@ -28,38 +28,38 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 488530,
-      "sha256": "AD1FA8BDED02AD59B5FB00107BD9665BC7392360513CC62F92C4E39E185947D9"
+      "bytes": 489782,
+      "sha256": "7ADE02D1E89A53D0916D6A2310F7666A4BBED0ED9F4C7A96A06E7A7D83E2A7D8"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4161456,
-      "sha256": "EA8C45BC48EDC0E674FEB2669193F378BF6A9D3A8293BC2AAE1AA8A129F97AE7"
+      "bytes": 4163982,
+      "sha256": "CF7C58904661551D50BF547BFC08EBE42C523A29E9788CEA95BDE3E349301674"
     },
     {
       "path": "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
-      "bytes": 524,
-      "sha256": "B07C5ED37EAE86714892303FDA0EA0F7CFB724BF8E30BEEB01AED050688BD959"
+      "bytes": 912,
+      "sha256": "CA4584955BFD91469BE44B27D9335E0280FDCE4FB1AAA390BCA3F76BA7149E5A"
     },
     {
       "path": "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
-      "bytes": 7174,
-      "sha256": "BE517087E033575A639DE3EE76E1ED14688DB38E8A1794A07EE99C48F71E5837"
+      "bytes": 10070,
+      "sha256": "D59287F8D13759D865D78977236785DC2194A278A09F3D0FFADD4396BC737631"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 4731977,
-      "sha256": "83241B8B3CDEC65CF592F1B9C87E4F6A7AB162108A100E9F69DEF3DDE04F388A"
+      "bytes": 4732167,
+      "sha256": "E07001CA2C57C076F1A56468EB0B171B0BD2FA5CA1CD889FC1C4E10B2D4C6983"
     },
     {
       "path": "scripts/f18_progress_overlay.py",
-      "bytes": 22343,
-      "sha256": "377EC78EB71376B0E9DF9FCB43374793A64A8777D36D99D6C4DAEAC0578BD2CB"
+      "bytes": 31797,
+      "sha256": "554A8DB430EE29DF0C31ED45E78DA2DB6B6F4EF0D0F422E594D44E2EED389617"
     },
     {
       "path": "tests/tooling/test_f18_progress_overlay.py",
-      "bytes": 3128,
-      "sha256": "2D5FBBBF1DCE3CE6AEA09B29608E68E4641989D58CC159BBA10147527723C427"
+      "bytes": 5173,
+      "sha256": "01F5E172DDB7A58AD436570A98FCBC0C2F9BA4FD56F639D6F3148FBB48B4E295"
     }
   ],
   "self_reference": false,
