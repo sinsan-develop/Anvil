@@ -43,6 +43,9 @@
 Main 독립 리뷰의 admin-DSN 오판과 WSL_ACCEPTANCE mode 누락을 각각 RED로 재현한 뒤 수정했다. 최종 관련 suite를 `--basetemp=C:\Users\cyhuh\AppData\Local\Temp\anvil-f17-pytest-20260924-a5`로 재실행하여 **exit 0 / 82 PASS, 2 SKIP, 1 warning**이었다. 누적 기대 RED 7회, 환경 오류 1회, 미해결 제품 오류 0회. live 2 SKIP은 여전히 실제 PG15/18·HTTPS PASS가 아니다.
 추가 basetemp `a4/a5` 및 재생성된 F17 이름의 세 `.pyc`도 exact path 확인 후 제거했고 잔류 확인은 모두 `False`였다.
 
+마지막 독립 자체 검토에서 PG15 관측을 AV-OPS-025로 잘못 결박할 수 있는 RED를 추가해 환경별 criterion을 고정했다. `--basetemp=C:\Users\cyhuh\AppData\Local\Temp\anvil-f17-pytest-20260924-a6` 최종 suite는 **exit 0 / 83 PASS, 2 SKIP, 1 warning**. 누적 기대 RED 8회, 환경 오류 1회, 미해결 제품 오류 0회.
+`a6` basetemp와 F17 `.pyc`도 exact path 확인 후 제거, 잔류 확인 모두 `False`.
+
 테스트가 만든 정확한 basetemp `anvil-f17-pytest-20260924-a1/a2/a3` 및 F17 이름의 세 `.pyc`만 확인 후 제거했고 존재 확인은 모두 `False`였다. 마지막 `git status --short --untracked-files=all`은 위 exact5 신규 파일만 표시했다. 전역 Git ignore 파일 접근 경고는 sandbox 환경에서 발생했으며 제품 diff나 판정에 반영하지 않았다.
 
 ## 조치·Main 인계

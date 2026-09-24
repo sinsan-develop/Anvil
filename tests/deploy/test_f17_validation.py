@@ -49,6 +49,7 @@ def test_target_preflight_fails_closed(change):
     ObservedCriterion("AV-OPS-015", H, "f17-pg18", "PASS", "http+database", "sha256:" + "d" * 64, "matched"),
     ObservedCriterion("AV-OPS-015", H, "f17-pg15", "PASS", "fixture", "sha256:" + "d" * 64, "matched"),
     ObservedCriterion("AV-OPS-015", H, "f17-pg15", "NOT_EXECUTED", "http+database", "sha256:" + "d" * 64, "matched"),
+    ObservedCriterion("AV-OPS-025", H, "f17-pg15", "PASS", "http+database", "sha256:" + "d" * 64, "matched"),
 ])
 def test_unbound_or_unexecuted_observation_cannot_be_suitable(observed):
     target = validate_target(git_sha=GIT, published_sha=GIT, clean=True,

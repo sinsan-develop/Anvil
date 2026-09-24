@@ -59,7 +59,7 @@ def build_validation_records(target: VerifiedTarget,
     rows = []
     seen = set()
     for observation in observations:
-        if (observation.criterion_id not in {"AV-OPS-015", "AV-OPS-025"}
+        if (observation.criterion_id != {"f17-pg15": "AV-OPS-015", "f17-pg18": "AV-OPS-025"}[target.environment_id]
                 or observation.criterion_id in seen
                 or observation.target_hash != target.target_hash
                 or observation.environment_id != target.environment_id
