@@ -21,4 +21,5 @@
 
 - Local/WSL evidence: Windows 79 PASS; WSL F-18/F-16 67 PASS.
 - Initial WSL F-17 12 tests NOT_RUN (SQLAlchemy absent); isolated R2 replay at published ad0ddb16: 79 PASS, temp checkout/venv residue zero. Production NOT_EXECUTED.
+- Real WSL approved-remote F-17 annotated tag checkout passed existing F-16 Git guard (clean detached exact commit/tag); temp checkout residue zero. No F-16 signed envelope or three-image F-17 binding; Production remains NOT_EXECUTED.
 - F-18 accepted=false; F-19 blocked. Branch retained, no further branch.

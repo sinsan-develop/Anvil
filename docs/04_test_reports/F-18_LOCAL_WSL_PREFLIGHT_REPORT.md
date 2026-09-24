@@ -59,3 +59,17 @@ Main review에서 F-16 `VerifiedRelease.subject_hash`가 서명된 envelope가 �
 - `PYTHONDONTWRITEBYTECODE=1 .f18-venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=.f18-wsl-pytest-temp tests/deploy/test_f18_deploy_approval.py tests/deploy/test_f18_promotion_preflight.py tests/deploy/test_f16_release_manifest.py tests/deploy/test_f16_staging_git.py tests/deploy/test_f17_validation.py`: exit 0, **79 PASS**, 2.59초. 첫 WSL 실행의 F-17 12 NOT_RUN은 이 동일 5-file 범위에서 해소됐다.
 - 정리 전 realpath exact 일치, 비 symlink, `daon:daon` mode `0700`, HEAD `ad0ddb16…`를 확인했다. Git dirty는 checkout 내부 `?? .f18-venv/`와 `?? .f18-wsl-pytest-temp/`뿐이었다. exact 임시 checkout과 두 산출물을 제거한 뒤 경로 잔류 0. 기존 `local-postgres` Up, `anvil-web` Up/healthy 불변이다. 삭제된 임시 패키지/시험 산출물은 복구 불필요하며 소스는 공개 commit으로 복구 가능하다.
 - 이 PASS는 Python 계약 회귀에 한정한다. Web 실제 digest 결박, Production Git checkout·`shared-db`, OIDC, object storage, network, `envil.sinsan.kr`, 실제 DeployApproval/Monitoring/Release는 계속 `NOT_EXECUTED` 또는 `NOT_VERIFIED`; F-18 `accepted=false`, F-19 차단을 유지한다.
+
+## Main의 WSL 공개 tag Git 경계 QA — 2026-09-24
+
+- 생성 전 exact `/srv/anvil-wsl/f18-git-gate-qa` 부재를 확인했다. 승인 remote `git@github-sinsan-develop:sinsan-develop/Anvil.git`의 공개 annotated tag `f17-rc-7083e2a`는 tag object `6eda3d5f984b6237250fb460d496970b7182e019`, peeled commit `7083e2aa90ced5bb109fd268cf22e34de34ff6d9`였다.
+- WSL에서 위 tag를 mode0700 단일 격리 checkout으로 Git clone했다. 실제 `origin` URL은 승인 remote, HEAD는 peeled commit, 로컬 tag object는 공개 object와 동일, detached HEAD, `git status --porcelain=v1` 빈 출력이었다. 그 checkout에서 기존 `deploy.wsl.f16_staging.verify_exact_checkout`을 승인 remote·commit·tag 입력으로 직접 실행해 exit0을 확인했다. 이는 실제 원격을 사용한 **WSL 측 Git preflight PASS**이며 Production checkout 증거가 아니다.
+- 정리 전 realpath exact 일치, 비 symlink, `daon:daon` mode0700, HEAD/clean을 확인했다. exact 임시 checkout 제거 후 경로 잔류0; 기존 `local-postgres` Up, `anvil-web` Up/healthy 불변. DB·Docker·브라우저·Secret·`ysna-server`에는 접속하거나 변경하지 않았다.
+
+## Production 인수에 남은 정확한 증거
+
+1. F-16 형식의 실제 서명된 ReleaseManifest와 독립 신뢰 public key/fingerprint, 관측값이 필요하다. 현재 `docs/evidence`·`deploy`의 JSON에는 F-16 `public_key_fingerprint` 서명 envelope가 발견되지 않았다. `deploy/ysna/ReleaseManifest.json`은 과거 C-21 `AnvilReleaseManifest` 형식과 다른 commit·migration을 가리켜 F-18 ReleaseManifest로 재사용할 수 없다.
+2. F-17 RC EvidenceManifest에는 `runtime_image_digest` 하나만 있고 Web/API/Worker 세 digest 결박이 없다. F-17 보고서에 기록된 Web image ID `sha256:5f02bdbbc2e26844e07f3d34208162bdb9a73c82f04670ae223e331281f44a32`는 현재 WSL Docker에서 `No such image`로 조회됐다. 이전 기록만으로 현존·동일 artifact를 증명할 수 없어 preflight는 `WEB_IMAGE_NOT_VERIFIED`를 유지한다. 임의 재빌드 image를 검증된 동일 digest로 간주하지 않는다.
+3. 별도 운영 담당 범위에서 `ysna-server`의 승인 Git remote/tag/clean checkout, 실제 Web/API/Worker digest, `shared-db` PG18 전용 DB·role, OIDC·object storage·network capability, `envil.sinsan.kr` browser Network, backup/drain/migration/smoke/rollback/monitoring 및 승인 대상의 environment+manifest+migration+rollback hash를 실측해야 한다. 신산님이 Main의 작업 대상을 로컬·WSL로 한정했으므로 Main은 이 항목에 접속하거나 PASS를 발행하지 않는다.
+
+결론: 로컬·WSL Git 경계와 Python 계약은 검증됐지만 AV-OPS-013/016/020/021의 Production 기준은 미충족이다. F-18 `accepted=false`, F-19 차단, 기존 작업 branch 보존을 유지한다.
