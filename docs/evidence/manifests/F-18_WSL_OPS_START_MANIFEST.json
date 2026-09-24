@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1515,
+  "accepted": false,
+  "projection_mode": "F18_WSL_OPS_R1_START",
+  "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-18_WSL_OPS_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops.json",
+    "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f18_wsl_ops_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
+    "packages/deployment/wsl_operational.py",
+    "tests/deploy/test_f18_wsl_operational.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 518351,
+      "sha256": "B85BE754AF1CE69BC6FF885DA8CD113E942DA74FB72E6E8EBB28688B8B279F2F"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4175955,
+      "sha256": "E965A8858007C0F2B9F1F7E6B94DA655166F133BE77A3F6E03E826733CCCE5AA"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
+      "bytes": 709,
+      "sha256": "19B70844850C4488D5370AD5364D2028663631F5D3522EEF4B09AB7643F45939"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_WORK_INSTRUCTION.md",
+      "bytes": 8561,
+      "sha256": "A7398305655DCFBFB283414256F08132C8B69DCB64A39FDBAAFC0C7D13A9231A"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4733293,
+      "sha256": "4BD1B5B2E76119FCA976E7464E6C2720A3680635C1CF868214785CFD4FE19049"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_overlay.py",
+      "bytes": 16031,
+      "sha256": "B2933BCD986F484ED86173D90AB831D385ADF6F33CC3132ACF54FE0794CB6B50"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_overlay.py",
+      "bytes": 3172,
+      "sha256": "DB276762E4BEEBE080251B122A86BBC281E8C7D82A94B4A55160DD68DD078391"
+    }
+  ],
+  "self_reference": false,
+  "production": "NOT_EXECUTED"
+}
