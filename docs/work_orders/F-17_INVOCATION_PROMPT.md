@@ -1,0 +1,1 @@
+F-17 WorkInstruction의 exact5 제품 경로에서만 TDD로 WSL PG15 일반 통합과 격리 PG18 RC의 동일 핵심 E2E·ProductValidation 검증 harness를 구현하고 기본 테스트를 완료하라. 실제 WSL/DB/Docker/브라우저 자원의 생성·실측·정리는 Main 소유다. 경로·범위 확장이 필요하면 mutation 전에 Main에 구체적으로 보고하라. 완료보고는 판정→판단 이유→조치와 실행 명령·exit·미검증·rollback을 포함하고 commit/push/PR/merge는 하지 말라.

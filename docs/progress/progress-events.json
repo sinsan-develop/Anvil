@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1482,
+  "last_sequence": 1486,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80175,7 +80175,111 @@
       "USER_ACCEPTANCE"
     ]
   }
+},
+{
+  "sequence": 1483,
+  "event_id": "evt_f17_1483_f16_merged_main_verified",
+  "event_type": "F16_MERGED_MAIN_VERIFIED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E9F0E4B10E6EA21B61D0C5628E36F817C20263ED09609F630EEF6FBAED4D4D5D",
+  "details": {
+    "merge_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
+    "pull_request": "https://github.com/sinsan-develop/Anvil/pull/32",
+    "feature_commit": "183b1d5b82779dcd79d196185b699cfbb4cb9cf7",
+    "feature_ancestor": true,
+    "merge_tree_matches_feature": true,
+    "merged_main_g05": "PASS_1482",
+    "local_remote_branch_deleted": true,
+    "git_worktree_removed": true
+  }
+},
+{
+  "sequence": 1484,
+  "event_id": "evt_f17_1484_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E87874C0900CF5399680D99C7D7EB57BE5FBEFF84E2C2C80456EC26AED9D2675",
+  "details": {
+    "package_id": "F-17",
+    "branch": "codex/f17-wsl-pg18-rc",
+    "base_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
+    "work_instruction": "docs/work_orders/F-17_WORK_INSTRUCTION.md",
+    "product_paths": [
+      "deploy/wsl/compose.f17.yml",
+      "deploy/wsl/f17_validation.py",
+      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
+      "tests/deploy/test_f17_validation.py",
+      "tests/integration/test_f17_runtime_e2e.py"
+    ]
+  }
+},
+{
+  "sequence": 1485,
+  "event_id": "evt_f17_1485_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "24007BE1FA0A15BE22F72716FE3AD85B5FD4CE56CA44FEE827FDC6A59C978C12",
+  "details": {
+    "lease_id": "worker-lease-f17-r1-20260924-001",
+    "execution_fencing_token": "f17-r1-execution-fence-epoch-1-3460d9768b039568",
+    "actor_id": "developer-primary-f17-r1"
+  }
+},
+{
+  "sequence": 1486,
+  "event_id": "evt_f17_1486_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-17",
+  "run_id": null,
+  "step_id": "START",
+  "subject_ref": "F-17/START",
+  "occurred_at": "2026-09-24T14:23:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6C42C65CB3D184006AC3B05851D4220C74C6EC3D6E718378484D37B39E944017",
+  "details": {
+    "lease_id": "write-lease-f17-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f17-r1-20260924-001",
+    "write_fencing_token": "f17-r1-write-fence-epoch-1-022fd43e24577cc0",
+    "path_scope": [
+      "deploy/wsl/compose.f17.yml",
+      "deploy/wsl/f17_validation.py",
+      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
+      "tests/deploy/test_f17_validation.py",
+      "tests/integration/test_f17_runtime_e2e.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f16_1482_main_package_accepted"
+  "last_event_id": "evt_f17_1486_write_lease_issued"
 }

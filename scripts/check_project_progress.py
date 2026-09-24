@@ -58187,5 +58187,19 @@ def validate_bundle(bundle):
     from f16_progress_overlay import validate
     return validate(bundle["_root"], bundle)
 
+_validate_git_projection_before_f17 = _validate_git_projection
+def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F17_START_EXACT13_PRODUCT_EXACT5":
+        from f17_progress_overlay import collect_git
+        return collect_git(bundle["_root"])
+    return _validate_git_projection_before_f17(bundle)
+
+_validate_bundle_before_f17 = validate_bundle
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") != "F17_START_EXACT13_PRODUCT_EXACT5":
+        return _validate_bundle_before_f17(bundle)
+    from f17_progress_overlay import validate
+    return validate(bundle["_root"], bundle)
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,3 +1,10 @@
+# F-17 WSL 실제 기능·격리 PG18 RC 착수
+
+- 판정: `ACTIVE`. F-16 PR #32 merged main 3460d97, feature ancestry/tree·merged-main G-05 PASS, F-16 remote/local branch 및 worktree 삭제 확인. F-17 branch는 clean main에서 생성. 담당 Main 어울 통제, developer-primary-f17-r1 exact5 write lease, 정식 FAILURE_REPORT 0회.
+- F-17은 기존 local-postgres PG15의 전용 임시 Anvil DB/비-superuser role 일반 경로와 별도 PG18 격리 instance를 구분한다. 전역 bind/pg_hba/network나 기존 DB·role은 변경하지 않고 WSL host loopback/SSH tunnel만 쓴다. WSL 실제 자원은 생성 전 exact inventory·cleanup 방법을 기록한다.
+- F-14 과거 PG15/18 백업·복원 실측 및 F-16 staging/browser PASS를 F-17 새 exact Git/image E2E로 재사용하지 않는다. 현재 ProductValidation 공개 API는 501 미결선이므로 실제 API·DB 관측에 결박된 criterion별 검증 기록을 F-17 범위로 두며 API/DB 지속화 PASS는 주장하지 않는다.
+- 다음: G-05 start gate→Developer TDD exact5→Main 독립 검토→WSL PG15 일반/PG18 격리 동일 E2E·migration/backup/restore/rollback·브라우저/ProductValidation 실측→정확한 자원 정리. ysna/Production·사용자 인수 미실행.
+
 # F-16 격리 WSL Test/Staging 인수
 
 - 판정: `ACCEPTED_ISOLATED_WSL_STAGING`. R2 제품 HEAD 383bd8cb, Windows focused 48 PASS 각 2회, WSL focused 48 PASS, published exact Git tag/서명 ReleaseManifest 사전·사후 검증 PASS. PG15 migration0016, app 최소권한·DDL 거부, Web/API/Worker·재시작 health, Chromium 1920/390 same-origin Network·오류/누출 0을 실측했다. R1의 superuser 결함은 R2 분리 role로 수정·재검증했다. 정식 Developer FAILURE_REPORT 0회.
