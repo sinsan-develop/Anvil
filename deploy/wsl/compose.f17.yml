@@ -1,0 +1,94 @@
+name: anvil-f17-pg18-rc
+
+services:
+  postgres:
+    image: "${ANVIL_F17_PG18_IMAGE_REF:?verified pg18 image ID required}"
+    environment:
+      POSTGRES_DB: anvil_f17_qa
+      POSTGRES_USER: anvil_admin
+      POSTGRES_PASSWORD: "${ANVIL_F17_PG_ADMIN_PASSWORD:?required}"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports: ["127.0.0.1:${ANVIL_F17_PG18_PORT:?reserved loopback port required}:5432"]
+    tmpfs: ["/var/lib/postgresql:rw,noexec,nosuid,size=512m"]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anvil_admin -d anvil_f17_qa"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      com.anvil.cleanup-scope: F17_ISOLATED_PG18_RC
+
+  web:
+    image: "${ANVIL_F17_WEB_IMAGE_REF:?verified F16 web image required}"
+    ports: ["127.0.0.1:${ANVIL_F17_HTTP_PORT:?reserved loopback port required}:8080"]
+    depends_on: [api]
+    networks: [internal, ingress]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F17_ISOLATED_PG18_RC
+
+  api:
+    image: "${ANVIL_F17_API_IMAGE_REF:?verified F16 API image required}"
+    command: ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "8301"]
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F17_APP_PASSWORD:?required}@postgres:5432/anvil_f17_qa"
+      ANVIL_F15_OPERATIONAL_SHELL: "1"
+      ANVIL_AUTH_MODE: WSL_ACCEPTANCE
+      ANVIL_RUNTIME_ENVIRONMENT: WSL_SERVER_TEST_STAGING
+      ANVIL_CONSOLE_BASE_URL: "https://127.0.0.1:8443"
+      ANVIL_PUBLIC_HOST: "127.0.0.1"
+      TELEGRAM_WEBHOOK_SECRET: "${ANVIL_F17_TELEGRAM_WEBHOOK_SECRET:?synthetic only}"
+      TELEGRAM_INTERNAL_SIGNING_SECRET: "${ANVIL_F17_TELEGRAM_SIGNING_SECRET:?synthetic only}"
+      TELEGRAM_ALLOWED_IDENTITIES: "${ANVIL_F17_TELEGRAM_ALLOWED_IDENTITIES:?synthetic only}"
+      ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN: "${ANVIL_F17_TEST_SESSION_TOKEN:?synthetic only}"
+      ANVIL_TEST_SESSION_ACTOR_ID: "${ANVIL_F17_ACTOR_ID:?required}"
+      ANVIL_TEST_SESSION_PROJECT_ID: "${ANVIL_F17_PROJECT_ID:?required}"
+      ANVIL_TEST_SESSION_ENVIRONMENT_ID: "${ANVIL_F17_ENVIRONMENT_ID:?required}"
+      ANVIL_TEST_SESSION_RUN_IDS: "${ANVIL_F17_RUN_IDS:?seed run ID or restart with new run ID}"
+      ANVIL_TEST_SESSION_PERMISSION_SCOPES: "tasks:write,tasks:read,run:events:read"
+      ANVIL_TEST_SESSION_TTL_SECONDS: "900"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      internal:
+        aliases: [anvil-api]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F17_ISOLATED_PG18_RC
+
+  worker:
+    image: "${ANVIL_F17_WORKER_IMAGE_REF:?verified F16 worker image required}"
+    command: ["/opt/venv/bin/python", "-m", "apps.worker.anvil_worker.main"]
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F17_APP_PASSWORD:?required}@postgres:5432/anvil_f17_qa"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F17_ISOLATED_PG18_RC
+
+networks:
+  internal:
+    internal: true
+    labels:
+      com.anvil.cleanup-scope: F17_ISOLATED_PG18_RC
+  ingress:
+    internal: false
+    labels:
+      com.anvil.cleanup-scope: F17_ISOLATED_PG18_RC
