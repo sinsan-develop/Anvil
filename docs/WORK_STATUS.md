@@ -1,3 +1,8 @@
+# F-18 R6 제품 lease 회수 통제 QA 계획 / 2026-09-25
+
+- 담당 Main 어울, 동일 `codex/f18-wsl-ops` branch. R6 제품·WSL 실제 MinIO 검증 후 활성 epoch4 write→worker lease를 순서대로 회수하는 코드/증거 전환이다. 고정 게시 predecessor `8e2e89bf820a26fa84f1dc66562d35e87efb4b89`, 제품 `6f95fd9033b9e4017854c2ea467f0580ffc71e52` 조상 관계와 seq1531 전체 역사, 회수 후 제품 write scope 빈 목록을 검증한다. 신규 기능·제품 파일 mutation·새 branch는 없다. TDD module 부재 RED 2 FAIL(exit1)→focused 2 PASS(exit0), Windows R1~R6·close 통제 **35 PASS**(exit0/16.14초), diff-check exit0. `.f18-r6-close-red`/`green` temp는 미생성, QA temp는 종료 후 exact 정리. 정식 Developer 실패보고 0회. F-18 전체 accepted=false/F-19 차단/Production `NOT_EXECUTED` 유지.
+- WSL-server 읽기 전용 사전 확인: 새 exact `/srv/anvil-wsl/f18-ops-r6-close-qa` 부재·비-symlink, 기존 `local-postgres` Up·`anvil-web` Up/healthy. 통제 code checkpoint를 승인 SSH alias로 push한 뒤 이 경로만 `daon:daon`/700으로 만들고 동일 게시 SHA를 clean detached 수신한다. 내부 `.venv`와 `.f18-r6-close-test-temp`만 사용해 Python3.12 잠긴 dev 환경, offline lock check, R1~R6·close 통제 회귀를 실행한다. DB·Docker·브라우저·Secret·포트·기존 `/srv/anvil-wsl/repo`는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·dirty를 확인하고 전용 checkout만 제거·잔류0을 확인한다. 그 뒤에만 seq1532/1533 회수를 evidence-only 투영한다.
+
 # F-18 R6 S3 호환 ArtifactStore 통제 QA 자원 계획 / 2026-09-25
 
 - Main 독립 R6 제품 리뷰: exact6 diff에서 기존 `FileSystemArtifactStore`·공개 API·기본 선택 변경 없음, 주입 client와 고정 bucket/prefix, 사전 hash/size, 조건부 write, 412 byte 비교, 409/transport fail-closed, read 무결성 검사 확인. R6 관련 Windows 전체 9-file **180 PASS**(exit0/64.35초), `.f18-r6-main-full-temp` exact 비-reparse 정리·잔류0. R6 범위 Critical/Important 발견 0; 제품 로컬·WSL object store capability에 한정된 검증이며 F-18 전체 Gate가 아니다. 활성 R6 lease는 후속 canonical 회수 전까지 재사용·확대하지 않는다.
