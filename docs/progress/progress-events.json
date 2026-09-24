@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1491,
+  "last_sequence": 1495,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80401,7 +80401,102 @@
       "HUMAN_RELEASE_DECISION"
     ]
   }
+},
+{
+  "sequence": 1492,
+  "event_id": "evt_f18_local_1492_f17_merged_main_verified",
+  "event_type": "F17_MERGED_MAIN_VERIFIED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_START",
+  "subject_ref": "F-18/LOCAL_WSL_START",
+  "occurred_at": "2026-09-24T19:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "104297739C3FF9F2F6068D18FD568E64E4934F5226FB3384C9CF3FBF94246303",
+  "details": {
+    "merge_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "pull_request": "https://github.com/sinsan-develop/Anvil/pull/34",
+    "merged_main_g05": "PASS_1491",
+    "branch_worktree_removed": true
+  }
+},
+{
+  "sequence": 1493,
+  "event_id": "evt_f18_local_1493_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_START",
+  "subject_ref": "F-18/LOCAL_WSL_START",
+  "occurred_at": "2026-09-24T19:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "1C2444EF0F27D6CD6A2583FAD2B1F8510B9B97197841C206997615D3B81F82C5",
+  "details": {
+    "package_id": "F-18",
+    "scope": "LOCAL_WSL_PREFLIGHT_ONLY",
+    "branch": "codex/f18-local-wsl-preflight",
+    "base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "work_instruction": "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
+    "production": "NOT_EXECUTED"
+  }
+},
+{
+  "sequence": 1494,
+  "event_id": "evt_f18_local_1494_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_START",
+  "subject_ref": "F-18/LOCAL_WSL_START",
+  "occurred_at": "2026-09-24T19:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3E1504EDFD9B37F3F5FAE64177CFD18737AF12212369351661A3EAB19C844380",
+  "details": {
+    "lease_id": "worker-lease-f18-local-r1-20260924-001",
+    "actor_id": "developer-primary-f18-local-r1",
+    "execution_fencing_token": "f18-local-execution-fence-epoch-1-b6b3ff047b311ced"
+  }
+},
+{
+  "sequence": 1495,
+  "event_id": "evt_f18_local_1495_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_START",
+  "subject_ref": "F-18/LOCAL_WSL_START",
+  "occurred_at": "2026-09-24T19:20:00+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "C33BF152E2EF1FBB535EBA7E09529659BF1ABB7DE3B0EB366E69246DE1FD490C",
+  "details": {
+    "lease_id": "write-lease-f18-local-r1-20260924-001",
+    "worker_lease_id": "worker-lease-f18-local-r1-20260924-001",
+    "write_fencing_token": "f18-local-write-fence-epoch-1-abecdd745e8ef0cc",
+    "path_scope": [
+      "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
+      "packages/deployment/deploy_approval.py",
+      "packages/deployment/promotion_preflight.py",
+      "tests/deploy/test_f18_deploy_approval.py",
+      "tests/deploy/test_f18_promotion_preflight.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f17_1491_main_package_accepted"
+  "last_event_id": "evt_f18_local_1495_write_lease_issued"
 }

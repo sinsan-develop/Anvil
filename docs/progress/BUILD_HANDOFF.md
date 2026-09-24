@@ -1,24 +1,64 @@
-# F-17 WSL PG15/PG18 scoped acceptance
+# F-18 Local/WSL preflight start; Production NOT_EXECUTED
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1491,
-  "last_event_id": "evt_f17_1491_main_package_accepted",
-  "status": "ACCEPTED",
+  "event_sequence": 1495,
+  "last_event_id": "evt_f18_local_1495_write_lease_issued",
+  "status": "ACTIVE",
   "current_phase": "F",
-  "current_work_package": "F-17",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
-  "next_work_package": {
-    "package_id": "F-18",
-    "status": "READY_AFTER_F17_MERGE_CLEANUP"
+  "current_work_package": "F-18",
+  "active_agent": "developer-primary-f18-local-r1",
+  "worker_lease": {
+    "lease_id": "worker-lease-f18-local-r1-20260924-001",
+    "actor_id": "developer-primary-f18-local-r1",
+    "subject_ref": "F-18/LOCAL_WSL_PREFLIGHT",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T19:20:00+09:00",
+    "expires_at": "2026-09-25T07:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f18-local-execution-fence-epoch-1-b6b3ff047b311ced",
+    "execution_fencing_token": "f18-local-execution-fence-epoch-1-b6b3ff047b311ced",
+    "baseline_git_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "dispatch_head": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "path_scope": [
+      "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
+      "packages/deployment/deploy_approval.py",
+      "packages/deployment/promotion_preflight.py",
+      "tests/deploy/test_f18_deploy_approval.py",
+      "tests/deploy/test_f18_promotion_preflight.py"
+    ]
   },
-  "next_safe_action": "MERGE_F17_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
-  "runtime_next_action": "MERGE_F17_PR_THEN_DELETE_BRANCH_AND_WORKTREE"
+  "write_lease": {
+    "lease_id": "write-lease-f18-local-r1-20260924-001",
+    "actor_id": "developer-primary-f18-local-r1",
+    "subject_ref": "F-18/LOCAL_WSL_PREFLIGHT",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-24T19:20:00+09:00",
+    "expires_at": "2026-09-25T07:20:00+09:00",
+    "lease_epoch": 1,
+    "fencing_token": "f18-local-write-fence-epoch-1-abecdd745e8ef0cc",
+    "execution_fencing_token": "f18-local-execution-fence-epoch-1-b6b3ff047b311ced",
+    "baseline_git_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "dispatch_head": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+    "path_scope": [
+      "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
+      "packages/deployment/deploy_approval.py",
+      "packages/deployment/promotion_preflight.py",
+      "tests/deploy/test_f18_deploy_approval.py",
+      "tests/deploy/test_f18_promotion_preflight.py"
+    ],
+    "worker_lease_id": "worker-lease-f18-local-r1-20260924-001",
+    "write_epoch": 1,
+    "write_fencing_token": "f18-local-write-fence-epoch-1-abecdd745e8ef0cc"
+  },
+  "next_work_package": {
+    "package_id": "F-19",
+    "status": "BLOCKED_PENDING_F18_ACCEPTANCE"
+  },
+  "next_safe_action": "DEVELOPER_IMPLEMENT_F18_LOCAL_PREFLIGHT_EXACT5",
+  "runtime_next_action": "DEVELOPER_IMPLEMENT_F18_LOCAL_PREFLIGHT_EXACT5"
 }
 ```
 
-- 판정: F-17 범위 ACCEPTED. AV-OPS-015/025의 최종 Main ProductValidation SUITABLE은 실제 WSL PG15/PG18 동일 Git/image, 핵심 E2E·restart·backup/restore·rollback, 브라우저 Network 및 잔류 0에 한정한다.
-- Web-only /auth/session 경로와 전체 UI·ProductValidation API·Provider·ysna/운영·사용자 ReleaseDecision은 미검증. F18 proxy/auth 라우팅 재확인 필수.
-- 두 lease를 회수했다. 다음: F17 PR 병합→merged-main smoke→branch/worktree 정리 후 F18.
+- F-18 overall acceptance and F-19 remain blocked on Production evidence.
+- This worker may modify only local product paths and use WSL-server for QA.

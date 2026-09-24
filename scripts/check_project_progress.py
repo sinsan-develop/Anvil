@@ -58203,5 +58203,21 @@ def validate_bundle(bundle):
     from f17_progress_overlay import validate
     return validate(bundle["_root"], bundle)
 
+_validate_git_projection_before_f18_local = _validate_git_projection
+def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == \
+            "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5":
+        from f18_progress_overlay import collect_git
+        return collect_git(bundle["_root"])
+    return _validate_git_projection_before_f18_local(bundle)
+
+_validate_bundle_before_f18_local = validate_bundle
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") != \
+            "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5":
+        return _validate_bundle_before_f18_local(bundle)
+    from f18_progress_overlay import validate
+    return validate(bundle["_root"], bundle)
+
 if __name__ == "__main__":
     raise SystemExit(main())

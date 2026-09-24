@@ -1,3 +1,10 @@
+# F-18 Local/WSL preflight start / 2026-09-24
+
+- 판정: ACTIVE, F-18 전체 합격 아님. 신산님 최신 직접 지시에 따라 작업 대상은 로컬과 WSL-server뿐이며 ysna-server 접근·변경·검증은 금지한다. F-19 및 U Gate는 F-18 최종 미충족으로 대기한다.
+- Main 기준 main b6b3ff0, F-17 PR #34 merged-main G-05 PASS/관련 19 PASS·2 opt-in SKIP, F-17 작업 branch/worktree 삭제. 단일 branch codex/f18-local-wsl-preflight, Developer exact5 lease, 정식 실패 0회.
+- 현재 작업은 DeployApprovalSubject와 WSL→target artifact mismatch의 로컬 순수 계약 및 WSL 격리 재현뿐이다. Production checkout, shared-db, OIDC/object storage/network, envil.sinsan.kr, 실제 DeployApproval/ReleaseDecision은 NOT_EXECUTED.
+- 다음: G-05 start gate→Developer TDD exact5→Main 로컬/WSL 독립 검증→미검증 경계와 서버 담당자 인수 증거를 기록. F-18 전체 acceptance·PR merge·후속 branch는 수행하지 않는다.
+
 # F-17 WSL PG15/PG18 범위 인수
 
 - 판정: `ACCEPTED_F17_PG15_PG18_SCOPED`; seq1491. 동일 Git 7083e2a·runtime image f6c481의 PG15/PG18 실측과 AV-OPS-015/025 ProductValidation SUITABLE. 브라우저 dashboard same-origin만 PASS, Web-only auth/전체 UI/운영 배포는 미검증.
