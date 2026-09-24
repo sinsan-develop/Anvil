@@ -18,6 +18,9 @@ R2_MODE = "F18_LOCAL_WSL_R2_START_EXACT3"
 R2_FINAL_MODE = "F18_LOCAL_WSL_R2_CHECKPOINT_EXACT3"
 R3_MODE = "F18_LOCAL_WSL_R3_START_EXACT3"
 R3_FINAL_MODE = "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3"
+SUCCESSOR_BASE = "e2f3d994b95c2e60f6a3e597101c30daa25089b4"
+SUCCESSOR_BRANCH = "codex/f19-test-dependency"
+SUCCESSOR_MODE = "F18_F19_LOCAL_INTEGRATION_CHECKPOINT"
 AT = "2026-09-24T19:20:00+09:00"
 FINAL_AT = "2026-09-24T19:48:00+09:00"
 EXPIRES = "2026-09-25T07:20:00+09:00"
@@ -97,6 +100,34 @@ def control_paths():
     ])
 
 
+def successor_control_paths():
+    return sorted({
+        "docs/WORK_STATUS.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json", "docs/progress/BUILD_HANDOFF.md",
+        DIGEST, MANIFEST, "scripts/f18_progress_overlay.py",
+        "scripts/check_project_progress.py", "tests/tooling/test_f18_progress_overlay.py",
+        "docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md",
+    })
+
+
+def successor_product_paths():
+    return sorted({"pyproject.toml", "uv.lock", "packages/provider_catalog/service.py",
+                   "docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md"})
+
+
+def successor_evidence_paths():
+    return set(successor_control_paths()) - {
+        "scripts/f18_progress_overlay.py", "scripts/check_project_progress.py",
+        "tests/tooling/test_f18_progress_overlay.py",
+        "docs/work_orders/F-18_F-19_LOCAL_INTEGRATION_PLAN.md",
+    } | {"docs/04_test_reports/F-19_LOCAL_PROVIDER_SECURITY_PRECHECK_REPORT.md"}
+
+
+def parse_git_porcelain_paths(status):
+    # The first XY column can be a space; stripping the whole output corrupts it.
+    return {row[3:].replace("\\", "/") for row in status.splitlines() if row}
+
+
 def validate_start_git_facts(*, branch, upstream, head, remote_head, staged,
                              dirty, changed, base_is_ancestor, allowed_product_paths=None,
                              allow_merged_main=False, parents=(),
@@ -105,19 +136,23 @@ def validate_start_git_facts(*, branch, upstream, head, remote_head, staged,
                              merge_tree_matches_feature=False,
                              feature_contains_checkpoint=False,
                              require_qa_binding=False, qa_head_bound=False,
-                             post_qa_changed=()):
-    scope = set(control_paths())
+                             post_qa_changed=(), expected_branch=BRANCH,
+                             required_control_paths=None, post_qa_allowed_paths=None,
+                             require_clean_feature=False):
+    scope = set(control_paths() if required_control_paths is None else required_control_paths)
     allowed = set(product_paths() if allowed_product_paths is None else allowed_product_paths)
     common = (base_is_ancestor and not staged and remote_head == head
               and scope <= set(changed) <= scope | allowed)
-    feature = (branch == BRANCH and upstream == f"development/{BRANCH}"
-               and set(dirty) <= allowed)
+    feature = (branch == expected_branch and upstream == f"development/{expected_branch}"
+               and set(dirty) <= allowed and (not require_clean_feature or not dirty))
     merged = (allow_merged_main and branch == "main" and upstream == "development/main"
               and not dirty and len(parents) == 2 and first_parent_contains_base
               and first_parent_is_base
               and merge_tree_matches_feature and feature_contains_checkpoint)
     qa_ok = (not require_qa_binding or
-             (qa_head_bound and set(post_qa_changed) <= post_qa_evidence_paths()))
+             (qa_head_bound and set(post_qa_changed) <= (
+                 post_qa_evidence_paths() if post_qa_allowed_paths is None
+                 else set(post_qa_allowed_paths))))
     return [] if common and qa_ok and (feature or merged) else ["F18_LOCAL_START_GIT_INVALID"]
 
 
@@ -214,6 +249,25 @@ def validate_r3_final_state(progress):
     return [] if good else ["F18_LOCAL_R3_CHECKPOINT_STATE_INVALID"]
 
 
+def validate_successor_state(progress):
+    repo = progress.get("repository", {})
+    good = (repo.get("projection_mode") == SUCCESSOR_MODE
+            and repo.get("validated_base_commit") == SUCCESSOR_BASE
+            and repo.get("branch") == SUCCESSOR_BRANCH
+            and repo.get("exact_allowed_paths") == successor_control_paths()
+            and repo.get("product_write_scope") == successor_product_paths()
+            and progress.get("event_sequence") == 1511
+            and progress.get("current_work_package") == "F-18"
+            and progress.get("status") == "PAUSED"
+            and progress.get("f18_overall_status") == "PARTIAL_LOCAL_WSL_VERIFIED"
+            and progress.get("active_agent") is None
+            and progress.get("worker_lease") is None
+            and progress.get("write_lease") is None
+            and progress.get("next_work_package") == {
+                "package_id": "F-19", "status": "BLOCKED_PENDING_F18_ACCEPTANCE"})
+    return [] if good else ["F18_F19_LOCAL_INTEGRATION_STATE_INVALID"]
+
+
 def _canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True,
                       separators=(",", ":"), allow_nan=False).encode("utf-8")
@@ -299,6 +353,7 @@ def _append_events_raw(original, old_id, old_sequence, new_events):
 
 
 def _write_r2_projection(root, progress, event_raw, *, mode, sequence, handoff_title):
+    successor = mode == SUCCESSOR_MODE
     progress["registry_refs"]["progress_events"] = {
         "path": "docs/progress/progress-events.json", "sha256": _sha(event_raw)}
     snapshot = deepcopy(progress)
@@ -312,8 +367,9 @@ def _write_r2_projection(root, progress, event_raw, *, mode, sequence, handoff_t
                        "current_work_package", "active_agent", "worker_lease",
                        "write_lease", "next_work_package", "next_safe_action",
                        "runtime_next_action")}) + b"```\n\n"
-                   b"- F-18 accepted=false; Production NOT_EXECUTED; F-19 blocked.\n"
-                   b"- Branch retained until F-18 acceptance.\n")
+                   + b"- F-18 accepted=false; Production NOT_EXECUTED; F-19 blocked.\n" +
+                   (b"- Local integration only; branch cleanup follows merged-main validation.\n"
+                    if successor else b"- Branch retained until F-18 acceptance.\n"))
     (root / "docs/progress/build-progress.json").write_bytes(progress_raw)
     (root / "docs/progress/progress-events.json").write_bytes(event_raw)
     (root / "docs/progress/BUILD_HANDOFF.md").write_bytes(handoff_raw)
@@ -324,16 +380,19 @@ def _write_r2_projection(root, progress, event_raw, *, mode, sequence, handoff_t
         "handoff": {"path": "docs/progress/BUILD_HANDOFF.md",
                     "bytes": len(handoff_raw), "file_sha256": _sha(handoff_raw)}}))
     checksums = []
-    for relative in sorted(set(control_paths()) - {
+    required_controls = successor_control_paths() if successor else control_paths()
+    for relative in sorted(set(required_controls) - {
             "docs/progress/build-progress.json", "docs/progress/BUILD_HANDOFF.md",
             DIGEST, MANIFEST}):
         raw = (root / relative).read_bytes()
         checksums.append({"path": relative, "bytes": len(raw), "sha256": _sha(raw)})
-    product_scope = r3_all_product_paths() if mode in {R3_MODE, R3_FINAL_MODE} else product_paths()
+    product_scope = (successor_product_paths() if successor else
+                     r3_all_product_paths() if mode in {R3_MODE, R3_FINAL_MODE}
+                     else product_paths())
     (root / MANIFEST).write_bytes(_pretty({"schema_version": "1.0.0",
         "package_id": "F-18", "event_sequence": sequence, "accepted": False,
-        "projection_mode": mode, "validated_base_commit": BASE,
-        "exact_allowed_paths": control_paths(), "product_write_scope": product_scope,
+        "projection_mode": mode, "validated_base_commit": SUCCESSOR_BASE if successor else BASE,
+        "exact_allowed_paths": required_controls, "product_write_scope": product_scope,
         "raw_checksums": checksums, "self_reference": False,
         "production": "NOT_EXECUTED"}))
 
@@ -523,6 +582,66 @@ def finalize_r3(root):
                          handoff_title="F-18 local/WSL Task 5 signed CLI checkpoint")
 
 
+def materialize_successor(root, qa_head):
+    """Bind the published local/WSL code QA without changing F-18/F-19 acceptance."""
+    root = Path(root)
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    ledger = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))
+    if (validate_r3_final_state(progress) or ledger.get("last_sequence") != 1510
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None):
+        raise RuntimeError("F18_R3_PAUSED_CHECKPOINT_REQUIRED")
+
+    def run(*args):
+        return subprocess.check_output(["git", "-c", "core.excludesFile=", *args],
+                                       cwd=root, text=True).strip()
+
+    head = run("rev-parse", "HEAD")
+    if (run("branch", "--show-current") != SUCCESSOR_BRANCH
+            or run("rev-parse", "development/main") != SUCCESSOR_BASE
+            or run("rev-parse", f"development/{SUCCESSOR_BRANCH}") != head
+            or not re.fullmatch(r"[0-9a-f]{40}", qa_head)
+            or subprocess.run(["git", "merge-base", "--is-ancestor", SUCCESSOR_BASE,
+                               qa_head], cwd=root).returncode != 0
+            or subprocess.run(["git", "merge-base", "--is-ancestor", qa_head, head],
+                              cwd=root).returncode != 0
+            or set(filter(None, run("diff", "--name-only", f"{qa_head}..{head}").splitlines()))
+               - successor_evidence_paths()
+            or set(filter(None, run("diff", "--name-only", f"{SUCCESSOR_BASE}..{head}").splitlines()))
+               - (set(successor_control_paths()) | set(successor_product_paths()))):
+        raise RuntimeError("F18_F19_SUCCESSOR_GIT_INVALID")
+    status = subprocess.check_output(
+        ["git", "-c", "core.excludesFile=", "status", "--porcelain=v1",
+         "--untracked-files=all"], cwd=root, text=True)
+    dirty = parse_git_porcelain_paths(status)
+    if dirty - successor_evidence_paths() or not dirty:
+        raise RuntimeError("F18_F19_SUCCESSOR_DIRTY_INVALID")
+    events = ledger["events"]
+    old_id = progress["last_event_id"]
+    at = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
+    last = _event(events, "HANDOFF_RECORDED", {
+        "scope": "LOCAL_WSL_ONLY", "accepted": False, "production": "NOT_EXECUTED",
+        "f19": "BLOCKED_PENDING_F18_ACCEPTANCE", "qa_head": qa_head,
+        "source_head": head}, at=at, step="LOCAL_WSL_SUCCESSOR_INTEGRATION")
+    event_raw = _append_events_raw((root / "docs/progress/progress-events.json").read_bytes(),
+                                   old_id, 1510, events[-1:])
+    progress.update({"snapshot_id": "snapshot-f18-f19-local-integration-seq1511",
+        "event_sequence": 1511, "last_event_id": last["event_id"],
+        "updated_at": at, "recorded_at": at,
+        "next_safe_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW",
+        "runtime_next_action": "MERGE_LOCAL_WSL_BRANCH_AFTER_G05_AND_REVIEW"})
+    progress["repository"].update({"branch": SUCCESSOR_BRANCH,
+        "upstream": f"development/{SUCCESSOR_BRANCH}", "local_head": SUCCESSOR_BASE,
+        "remote_head": head, "local_wsl_qa_head": qa_head,
+        "validated_base_commit": SUCCESSOR_BASE,
+        "exact_allowed_paths": successor_control_paths(),
+        "product_write_scope": successor_product_paths(),
+        "projection_mode": SUCCESSOR_MODE, "worktree_status": "LOCAL_WSL_INTEGRATION",
+        "commit_status": "EVIDENCE_COMMIT_PENDING", "push_status": "EVIDENCE_PUSH_PENDING"})
+    _write_r2_projection(root, progress, event_raw, mode=SUCCESSOR_MODE, sequence=1511,
+                         handoff_title="F-18/F-19 local/WSL integration checkpoint")
+
+
 def collect_git(root):
     root = Path(root)
 
@@ -534,22 +653,25 @@ def collect_git(root):
     upstream = run("rev-parse", "--abbrev-ref", "@{upstream}")
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     mode = progress.get("repository", {}).get("projection_mode")
-    allow_merged_main = mode == R3_FINAL_MODE
-    remote_ref = "development/main" if branch == "main" and allow_merged_main else f"development/{BRANCH}"
+    successor = mode == SUCCESSOR_MODE
+    base = SUCCESSOR_BASE if successor else BASE
+    expected_branch = SUCCESSOR_BRANCH if successor else BRANCH
+    allow_merged_main = mode in {R3_FINAL_MODE, SUCCESSOR_MODE}
+    remote_ref = "development/main" if branch == "main" and allow_merged_main else f"development/{expected_branch}"
     remote_head = run("rev-parse", remote_ref)
     staged = set(filter(None, run("diff", "--cached", "--name-only").splitlines()))
-    changed = set(filter(None, run("diff", "--name-only", f"{BASE}..{head}").splitlines()))
+    changed = set(filter(None, run("diff", "--name-only", f"{base}..{head}").splitlines()))
     status = subprocess.check_output(["git", "-c", "core.excludesFile=", "status",
                                       "--porcelain=v1", "--untracked-files=all"],
                                      cwd=root, text=True)
-    dirty = {row[3:].replace("\\", "/") for row in status.splitlines() if row}
-    ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", BASE, head],
+    dirty = parse_git_porcelain_paths(status)
+    ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", base, head],
                               cwd=root).returncode == 0
     parents = tuple(run("rev-list", "--parents", "-n", "1", "HEAD").split()[1:])
     first_parent_contains_base = (len(parents) == 2 and subprocess.run(
-        ["git", "merge-base", "--is-ancestor", BASE, parents[0]], cwd=root
+        ["git", "merge-base", "--is-ancestor", base, parents[0]], cwd=root
     ).returncode == 0)
-    first_parent_is_base = len(parents) == 2 and parents[0] == BASE
+    first_parent_is_base = len(parents) == 2 and parents[0] == base
     merge_tree_matches_feature = (len(parents) == 2 and run("rev-parse", "HEAD^{tree}")
                                   == run("rev-parse", f"{parents[1]}^{{tree}}"))
     checkpoint = progress.get("repository", {}).get("local_head")
@@ -566,7 +688,9 @@ def collect_git(root):
                             parents[1] if branch == "main" and len(parents) == 2 else head],
                            cwd=root).returncode == 0)
     post_qa_changed = set(filter(None, run("diff", "--name-only", f"{qa_head}..{head}").splitlines())) if qa_head_bound else set()
-    allowed = r3_all_product_paths() if mode in {R3_MODE, R3_FINAL_MODE} else product_paths()
+    allowed = (successor_product_paths() if successor else
+               r3_all_product_paths() if mode in {R3_MODE, R3_FINAL_MODE}
+               else product_paths())
     return validate_start_git_facts(branch=branch, upstream=upstream, head=head,
         remote_head=remote_head, staged=staged, dirty=dirty, changed=changed,
         base_is_ancestor=ancestor, allowed_product_paths=allowed,
@@ -575,8 +699,12 @@ def collect_git(root):
         first_parent_is_base=first_parent_is_base,
         merge_tree_matches_feature=merge_tree_matches_feature,
         feature_contains_checkpoint=feature_contains_checkpoint,
-        require_qa_binding=mode == R3_FINAL_MODE,
-        qa_head_bound=qa_head_bound, post_qa_changed=post_qa_changed)
+        require_qa_binding=mode in {R3_FINAL_MODE, SUCCESSOR_MODE},
+        qa_head_bound=qa_head_bound, post_qa_changed=post_qa_changed,
+        expected_branch=expected_branch,
+        required_control_paths=successor_control_paths() if successor else None,
+        post_qa_allowed_paths=successor_evidence_paths() if successor else None,
+        require_clean_feature=successor)
 
 
 def validate(root, bundle):
@@ -588,7 +716,8 @@ def validate(root, bundle):
               R2_MODE: (validate_r2_start_state, 1501),
               R2_FINAL_MODE: (validate_r2_final_state, 1504),
               R3_MODE: (validate_r3_start_state, 1507),
-              R3_FINAL_MODE: (validate_r3_final_state, 1510)}
+              R3_FINAL_MODE: (validate_r3_final_state, 1510),
+              SUCCESSOR_MODE: (validate_successor_state, 1511)}
     if mode not in states:
         return ["F18_LOCAL_PROJECTION_MODE_INVALID"]
     validator, expected_sequence = states[mode]
@@ -608,9 +737,13 @@ def validate(root, bundle):
     if (manifest.get("accepted") is not False
             or manifest.get("event_sequence") != expected_sequence
             or manifest.get("projection_mode") != mode
-            or manifest.get("exact_allowed_paths") != control_paths()
+            or manifest.get("exact_allowed_paths") != (
+                successor_control_paths() if mode == SUCCESSOR_MODE else control_paths())
             or manifest.get("product_write_scope") != (
+                successor_product_paths() if mode == SUCCESSOR_MODE else
                 r3_all_product_paths() if mode in {R3_MODE, R3_FINAL_MODE} else product_paths())
+            or manifest.get("validated_base_commit") != (
+                SUCCESSOR_BASE if mode == SUCCESSOR_MODE else BASE)
             or manifest.get("production") != "NOT_EXECUTED"):
         errors.append("F18_LOCAL_MANIFEST_INVALID")
     for row in manifest.get("raw_checksums", []):

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1510,
+  "last_sequence": 1511,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -80823,7 +80823,31 @@
     "published_source_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
     "reason": "USER_SCOPE_LOCAL_AND_WSL_ONLY"
   }
+},
+{
+  "sequence": 1511,
+  "event_id": "evt_f18_local_1511_handoff_recorded",
+  "event_type": "HANDOFF_RECORDED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "LOCAL_WSL_SUCCESSOR_INTEGRATION",
+  "subject_ref": "F-18/LOCAL_WSL_SUCCESSOR_INTEGRATION",
+  "occurred_at": "2026-09-25T02:00:37+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EFC88CF6D0018A6E726FE61F5291DC49FC7A621E1B1D6EDBD43033CDE3C046AF",
+  "details": {
+    "scope": "LOCAL_WSL_ONLY",
+    "accepted": false,
+    "production": "NOT_EXECUTED",
+    "f19": "BLOCKED_PENDING_F18_ACCEPTANCE",
+    "qa_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02",
+    "source_head": "dcac6d6ff2a9dc750a5d5083963a60d1d2972b02"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1510_package_paused"
+  "last_event_id": "evt_f18_local_1511_handoff_recorded"
 }
