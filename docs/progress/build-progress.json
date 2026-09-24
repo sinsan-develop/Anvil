@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f17-final-seq1491",
-  "event_sequence": 1491,
-  "updated_at": "2026-09-24T15:57:00+09:00",
-  "last_event_id": "evt_f17_1491_main_package_accepted",
+  "snapshot_id": "snapshot-f18-local-r3-checkpoint-seq1510",
+  "event_sequence": 1510,
+  "updated_at": "2026-09-24T21:24:32+09:00",
+  "last_event_id": "evt_f18_local_1510_package_paused",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,8 +91,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "F",
-  "current_work_package": "F-17",
-  "status": "ACCEPTED",
+  "current_work_package": "F-18",
+  "status": "PAUSED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -455,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MERGE_F17_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "next_safe_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -565,39 +565,39 @@
     }
   },
   "repository": {
-    "branch": "codex/f17-wsl-pg18-rc",
-    "local_head": "3460d9768b039568022fd43e24577cc0e2402dea",
-    "upstream": "development/codex/f17-wsl-pg18-rc",
-    "remote_head": "3460d9768b039568022fd43e24577cc0e2402dea",
-    "projection_mode": "F17_FINAL_ACCEPTANCE_EXACT13_PRODUCT_EXACT5",
-    "validated_base_commit": "3460d9768b039568022fd43e24577cc0e2402dea",
+    "branch": "codex/f18-local-wsl-preflight",
+    "local_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
+    "local_wsl_qa_head": "4a8f8a999d70184a28d455659125081317cf9aa8",
+    "upstream": "development/codex/f18-local-wsl-preflight",
+    "remote_head": "a229c359ae3b2f34667e4014a5c3d409bb4b8d0b",
+    "projection_mode": "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3",
+    "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
-      "docs/04_test_reports/F-17_WSL_TEST_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/F-17_PROGRESS_MANIFEST.json",
-      "docs/evidence/manifests/F-17_RC_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/F-18_LOCAL_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-f17.json",
-      "docs/work_orders/F-17_INVOCATION_PROMPT.md",
-      "docs/work_orders/F-17_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-f18-local.json",
+      "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
+      "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
       "scripts/check_project_progress.py",
-      "scripts/f17_progress_overlay.py",
-      "tests/tooling/test_f17_progress_overlay.py"
+      "scripts/f18_progress_overlay.py",
+      "tests/tooling/test_f18_progress_overlay.py"
     ],
     "product_write_scope": [
-      "deploy/wsl/compose.f17.yml",
-      "deploy/wsl/f17_validation.py",
-      "docs/04_test_reports/F-17_COMPLETION_REPORT.md",
-      "tests/deploy/test_f17_validation.py",
-      "tests/integration/test_f17_runtime_e2e.py"
+      "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
+      "packages/deployment/deploy_approval.py",
+      "packages/deployment/production_preflight_cli.py",
+      "packages/deployment/promotion_preflight.py",
+      "tests/deploy/test_f18_deploy_approval.py",
+      "tests/deploy/test_f18_production_preflight_cli.py",
+      "tests/deploy/test_f18_promotion_preflight.py"
     ],
-    "worktree_status": "F17_ACCEPTED_PENDING_MERGE",
-    "commit_status": "FINAL_PENDING_OR_COMPLETE",
-    "push_status": "BRANCH_PUBLISHED",
-    "product_head": "7083e2aa90ced5bb109fd268cf22e34de34ff6d9"
+    "worktree_status": "F18_PAUSED_SCOPE_BOUNDARY",
+    "commit_status": "PUBLISHED_CHECKPOINT",
+    "push_status": "PUBLISHED_CHECKPOINT"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -704,12 +704,11 @@
     ]
   },
   "reporting_decision": {
-    "decision": "AUTO_CONTINUE",
+    "decision": "SCOPE_BOUNDARY_REPORT",
     "reason_codes": [
-      "F17_SCOPED_ACCEPTED",
-      "F17_APPROVED_SCOPE"
+      "F18_PRODUCTION_TARGET_EXCLUDED_BY_USER"
     ],
-    "stop_before_dialogue_report": false
+    "stop_before_dialogue_report": true
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -757,7 +756,21 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-F-18-LOCAL-R3-20260924-001",
+    "path": "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
+    "sha256": "7FFDB76B2AB5F46A186E352F0E4A333084C286F968A9D01654178C204A5A46FA",
+    "invocation_path": "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
+    "invocation_sha256": "CE0033CE90BED6475335D65FB371E061FEC0E39C7A761C80F187C42806F47A41",
+    "assigned_verification_ids": [
+      "AV-OPS-013",
+      "AV-OPS-016",
+      "AV-OPS-020",
+      "AV-OPS-021"
+    ],
+    "verification_scope": "LOCAL_WSL_SIGNED_CLI_ONLY",
+    "result_status": "PARTIAL_LOCAL_WSL_VERIFIED"
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -887,9 +900,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-17",
-    "path": "docs/progress/progress-handoff-detached-digest-f17.json",
-    "manifest_path": "docs/evidence/manifests/F-17_PROGRESS_MANIFEST.json"
+    "package_id": "F-18",
+    "path": "docs/progress/progress-handoff-detached-digest-f18-local.json",
+    "manifest_path": "docs/evidence/manifests/F-18_LOCAL_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -910,16 +923,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "0F902416CF43162AAD7EE2415248A20126AF547A495D8DF683600F08B9A968D0"
+      "sha256": "9120F3ECFF876C022CE8E0409685429F06153EF0DD98EE6FE8BB6F068D8DC039"
     }
   },
   "next_work_package": {
-    "package_id": "F-18",
-    "status": "READY_AFTER_F17_MERGE_CLEANUP"
+    "package_id": "F-19",
+    "status": "BLOCKED_PENDING_F18_ACCEPTANCE"
   },
   "next_successor_work_package": {
-    "package_id": "F-18",
-    "status": "READY_AFTER_F17_MERGE_CLEANUP"
+    "package_id": "F-19",
+    "status": "BLOCKED_PENDING_F18_ACCEPTANCE"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1307,8 +1320,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "861159F2C0DF0AF04EF781A69A74935326591FF12E27C056A55CC8679F681E56",
-  "runtime_next_action": "MERGE_F17_PR_THEN_DELETE_BRANCH_AND_WORKTREE",
+  "snapshot_hash": "A434C0BB452429AA405A8E0BAB1536799D53E5FC7B039F27C07847CF1F67D2FB",
+  "runtime_next_action": "INTEGRATE_F18_LOCAL_WSL_DEVELOPMENT_CHECKPOINT_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2920,7 +2933,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-24T15:57:00+09:00",
+  "recorded_at": "2026-09-24T21:24:32+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22704,5 +22717,6 @@
       "F18_YSNA_PRODUCTION",
       "HUMAN_RELEASE_DECISION"
     ]
-  }
+  },
+  "f18_overall_status": "PARTIAL_LOCAL_WSL_VERIFIED"
 }

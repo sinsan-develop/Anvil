@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1510,
+  "accepted": false,
+  "projection_mode": "F18_LOCAL_WSL_R3_CHECKPOINT_EXACT3",
+  "validated_base_commit": "b6b3ff047b311cedabecdd745e8ef0cccac2f92e",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-18_LOCAL_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f18-local.json",
+    "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
+    "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
+    "scripts/check_project_progress.py",
+    "scripts/f18_progress_overlay.py",
+    "tests/tooling/test_f18_progress_overlay.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/F-18_LOCAL_WSL_PREFLIGHT_REPORT.md",
+    "packages/deployment/deploy_approval.py",
+    "packages/deployment/production_preflight_cli.py",
+    "packages/deployment/promotion_preflight.py",
+    "tests/deploy/test_f18_deploy_approval.py",
+    "tests/deploy/test_f18_production_preflight_cli.py",
+    "tests/deploy/test_f18_promotion_preflight.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 503899,
+      "sha256": "FFE0D06C999A48CAEC3D918A3B0E5257A1502E9C0C01634AD6DC36232D04E3A8"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4170991,
+      "sha256": "9120F3ECFF876C022CE8E0409685429F06153EF0DD98EE6FE8BB6F068D8DC039"
+    },
+    {
+      "path": "docs/work_orders/F-18_LOCAL_WSL_INVOCATION.md",
+      "bytes": 1316,
+      "sha256": "CE0033CE90BED6475335D65FB371E061FEC0E39C7A761C80F187C42806F47A41"
+    },
+    {
+      "path": "docs/work_orders/F-18_LOCAL_WSL_PREFLIGHT_PLAN.md",
+      "bytes": 12830,
+      "sha256": "7FFDB76B2AB5F46A186E352F0E4A333084C286F968A9D01654178C204A5A46FA"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4732357,
+      "sha256": "F630CE23B3EF0C7B52F9FF03082A4057497DD63D6EFA3D8BF2E0871B738A62CE"
+    },
+    {
+      "path": "scripts/f18_progress_overlay.py",
+      "bytes": 48051,
+      "sha256": "5C6E7E8CA32C7110F67F716E2EA478A3467320EA9115B7CC63D65E9C811ED543"
+    },
+    {
+      "path": "tests/tooling/test_f18_progress_overlay.py",
+      "bytes": 12833,
+      "sha256": "B9932170C7BDEEEFFE184B9374DA4DAB14C73F6BD125D417F518B1C5EA1FC81F"
+    }
+  ],
+  "self_reference": false,
+  "production": "NOT_EXECUTED"
+}
