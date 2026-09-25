@@ -174,7 +174,9 @@ def materialize(root):
     if (_run(root, "branch", "--show-current") != BRANCH
             or _run(root, "rev-parse", "development/main") != BASE
             or _run(root, "rev-parse", f"development/{BRANCH}") != head
-            or control_qa_commit(root) != head
+            or not _is_ancestor(root, control_qa_commit(root), head)
+            or set(filter(None, _run(root, "diff", "--name-only",
+                                     f"{control_qa_commit(root)}..{head}").splitlines())) - evidence_paths()
             or r9.GIT_HELPERS._porcelain(root) - evidence_paths()):
         raise RuntimeError("F18_WSL_OPS_R9_CLOSE_GIT_INVALID")
     at = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
