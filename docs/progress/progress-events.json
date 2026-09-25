@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1558,
+  "last_sequence": 1561,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -81925,7 +81925,77 @@
     "product_head": "8bcb630cdd913ed0a4dc9fa456b814c0d71f1424",
     "control_qa_head": "b523ff57ea740b60e262d1480027aa69afbde457"
   }
+},
+{
+  "sequence": 1559,
+  "event_id": "evt_f18_local_1559_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R12_AUTH_INGRESS",
+  "subject_ref": "F-18/WSL_OPS_R12_AUTH_INGRESS",
+  "occurred_at": "2026-09-25T20:02:58+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "4039A4D484B0D1FB88DFA6B0BD74BD7549748DFB5CDFB00ED14D97F26C60BDBA",
+  "details": {
+    "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_WORK_INSTRUCTION.md",
+    "sha256": "3E105EBDACACA6A4761FE270E2C0EF2E49DD8B4260B0DDA4234BCDE07E2F6137",
+    "invocation_path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_INVOCATION.md",
+    "invocation_sha256": "0D065D5821EFC352BC18FF97B83575D50B1E6ABC70905174F702D6E1D2ABAB25",
+    "control_qa_head": "30637da8301acdeccd32510656e914677c123e23"
+  }
+},
+{
+  "sequence": 1560,
+  "event_id": "evt_f18_local_1560_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R12_AUTH_INGRESS",
+  "subject_ref": "F-18/WSL_OPS_R12_AUTH_INGRESS",
+  "occurred_at": "2026-09-25T20:02:58+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "F52E646319228CBFD2A392C07960343CD088C4C72197F0D6ED6F5AAB994130C6",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r12-20260925-001",
+    "actor_id": "developer-primary-f18-wsl-ops-r12-auth-ingress",
+    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-10-69247977e4e51781"
+  }
+},
+{
+  "sequence": 1561,
+  "event_id": "evt_f18_local_1561_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R12_AUTH_INGRESS",
+  "subject_ref": "F-18/WSL_OPS_R12_AUTH_INGRESS",
+  "occurred_at": "2026-09-25T20:02:58+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0B2DB6AAB9F59EC261BB1AADEE49DFE248E0417AE84E319748DC3BC557A4E351",
+  "details": {
+    "lease_id": "write-lease-f18-wsl-ops-r12-20260925-001",
+    "worker_lease_id": "worker-lease-f18-wsl-ops-r12-20260925-001",
+    "write_fencing_token": "f18-wsl-ops-write-fence-epoch-10-69247977e4e51781",
+    "path_scope": [
+      "deploy/local/nginx.conf",
+      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
+      "tests/integration/test_f15_local_stack.py"
+    ]
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1558_worker_lease_revoked"
+  "last_event_id": "evt_f18_local_1561_write_lease_issued"
 }
