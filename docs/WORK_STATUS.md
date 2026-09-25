@@ -1,3 +1,10 @@
+# F-18 R17 WSL-server 세 image 실측 자원 계획 / 2026-09-26
+
+- 판정: `R17_PRODUCT_POSTED_QA_PENDING`. 담당 Main, 단일 branch `codex/f18-wsl-ops`의 게시 exact 제품 commit `57653ee835d47c810a1f90d48d9fbe332fb3540c`, clean/G-05 seq1566 PASS. 로컬 exact4 구현·104 focused PASS·Web typecheck/build exit0이며 전체 pytest는 기존 수집 13 ERROR/exit1, 실제 image는 아직 미검증이다. 독립 read-only 검토와 WSL 실측을 분리한다.
+- WSL-server 전용 자원은 새 `/home/daon/anvil-f18-r17-qa` checkout 및 그 안의 제한 Git archive build context뿐이다. 생성 전 정확한 경로 부재·`/home/daon` 소유권·비-symlink를 확인하고, 승인 SSH alias에서 위 SHA만 받아 clean detached checkout한다. 기존 root 소유 `/srv/anvil-wsl/repo`, 실행 중인 `anvil-web`·PostgreSQL 및 다른 서비스는 수정하지 않는다.
+- 세 image tag는 `anvil-f18-r17-web:57653ee`, `anvil-f18-r17-api:57653ee`, `anvil-f18-r17-worker:57653ee`로 한정한다. legacy Docker는 Dockerfile별 ignore를 보장하지 않으므로 repository root를 빌드 context로 넘기지 않는다. 필요한 tracked 경로만 Git archive에 넣고 tar 목록에서 `.git`·`.env*`·Secret·cache·임시 산출물 부재를 확인한 뒤 순차 `--pull=false`/제한 CPU·memory로 빌드한다. image ID·OCI revision·OS/arch·역할 source/entrypoint와 Web 정적/HTTP, API import, Worker `--check` 경계를 검사한다. 별도 DB/Secret/network/port/운영 배포는 생성하지 않는다.
+- 검증 후 생성된 tag/ID와 전용 checkout을 exact path·label·소유자·비-symlink로 확인해 해당 자원만 제거하고 잔류0 및 기존 서비스 ID 불변을 확인한다. 검사 실패 시 합격 처리하지 않고 재현 가능한 Git SHA·오류를 기록한다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED를 유지한다.
+
 # F-18 R17 세 역할 image 제품 writer lease 발행 / 2026-09-26
 
 - 판정: `F18_R17_CONTROL_LEASE_ISSUED_PENDING_PUSH`, 제품 write·image build·WSL runtime 실측 전. 담당 Main. 시작 기존 branch `codex/f18-wsl-ops` clean/원격 동일 `4c5b40db2a49e34dc6279012d5f86901991e400d`, canonical seq1563 worker/write lease=None, G-05 PASS. 기존 계획 F-18 단계1의 Web/API/Worker image 세 digest 결박을 내부 구현 단위로 분리한다. 새 branch·`ysna-server`·Production은 제외한다.
