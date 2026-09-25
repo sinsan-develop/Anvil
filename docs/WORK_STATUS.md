@@ -1,3 +1,8 @@
+# F-18 R12 종료 통제 사후 범위 보정 / 2026-09-25
+
+- 판정: `F18_R12_CLOSE_CONTROL_SCOPE_REPAIR`, 제품 실패·F-18 인수 아님. R12 종료 control commit `c7610e2` 게시 후 활성 R12 G-05는 `F18_LOCAL_START_GIT_INVALID`와 `F18_WSL_OPS_R12_POST_QA_SCOPE_INVALID`로 차단됐다. 원인은 R12 시작 검사기의 사후 허용 집합에 알려진 종료 plan/overlay/test와 checker dispatch exact4가 빠진 것이며, 발급 제품 exact3·lease token·원래 QA SHA·canonical snapshot은 정상이다. 동일 범주의 Main 통제 허용 경로 오류 두 번째 발견, 정식 Developer 실패0.
+- 해당 exact4 control path만 시작 검사기의 Git 허용 경로에 더하고 발급된 canonical `control_paths()`/worker/write scope는 바꾸지 않는다. 현재 실제 상태 거부 회귀 RED 1 FAIL, 별도 `deploy/ysna/unrelated-change.sh` 주입은 계속 거부. 보정 테스트·checksum 동기화·게시 후 G-05를 재실행한다. 미통과 동안 lease 회수 증거는 materialize하지 않는다.
+
 # F-18 R12 writer 종료 통제 준비 / 2026-09-25
 
 - 담당 Main. 제품 exact3 및 같은 SHA 기반 WSL-server 실제 ingress HTTP QA, 로컬 Web 타입검사·빌드, 독립 리뷰 0 finding을 확인했다. 현재 seq1561/G-05 PASS, epoch10 worker/write lease ACTIVE인 상태에서 종료 통제만 준비한다. 제품 write·새 branch·운영 서버 변경은 하지 않는다.

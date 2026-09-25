@@ -58,6 +58,15 @@ def all_product_paths():
     return sorted(set(previous.r11.all_product_paths()) | set(write_paths()))
 
 
+def close_control_paths():
+    # The active R12 validator permits only the known closeout control files;
+    # this does not change the issued worker/write lease or canonical snapshot.
+    return {"docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
+            "scripts/check_project_progress.py",
+            "scripts/f18_wsl_ops_r12_close_overlay.py",
+            "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py"}
+
+
 def control_qa_commit(root):
     # A post-issuance validator correction must not rewrite an active lease's
     # original QA binding. Its exact file changes remain manifest-bound.
@@ -153,7 +162,8 @@ def collect_git(root):
         staged=set(filter(None, _run(root, "diff", "--cached", "--name-only").splitlines())),
         dirty=GIT_HELPERS._porcelain(root), changed=changed,
         base_is_ancestor=_is_ancestor(root, BASE, head), expected_branch=BRANCH,
-        required_control_paths=control_paths(), allowed_product_paths=all_product_paths(),
+        required_control_paths=sorted(set(control_paths()) | close_control_paths()),
+        allowed_product_paths=all_product_paths(),
         require_clean_feature=True)
     if _run(root, "rev-parse", "development/main") != BASE:
         errors.append("F18_WSL_OPS_R12_MAIN_DRIFT")
@@ -161,7 +171,7 @@ def collect_git(root):
             and _is_ancestor(root, PREVIOUS_HEAD, qa) and _is_ancestor(root, qa, head)):
         errors.append("F18_WSL_OPS_R12_QA_HEAD_INVALID")
     elif set(filter(None, _run(root, "diff", "--name-only", f"{qa}..{head}").splitlines())) - (
-            evidence_paths() | set(write_paths()) | {SELF, TEST}):
+            evidence_paths() | set(write_paths()) | {SELF, TEST} | close_control_paths()):
         errors.append("F18_WSL_OPS_R12_POST_QA_SCOPE_INVALID")
     return sorted(set(errors))
 
