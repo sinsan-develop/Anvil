@@ -1,3 +1,7 @@
+# F-18 R9 종료 및 다음 경계 / 2026-09-25
+
+- 교정된 종료 통제 `02973873a827776c7e47cafd074e09065edc090d`에 결박하여 seq1547 `WRITE_LEASE_REVOKED` → seq1548 `WORKER_LEASE_REVOKED`를 재생성했다. Main 소유, 제품 write scope=[], worker/write lease=None, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED를 유지한다. 실제 issuer/API/browser 통합은 미검증이며 같은 단일 브랜치의 다음 로컬·WSL-server 작업이다. G-05 최종 게시 검증 전까지 종료 PASS 주장은 보류한다.
+
 # F-18 R9 종료 SHA 결박 교정 / 2026-09-25
 
 - 교정 통제 WSL QA: 게시 exact `02973873a827776c7e47cafd074e09065edc090d` clean detached, Python3.12.3, offline lock exit0/47 resolved, 잠긴 dev 43 installed, R1~R9 종료 통제 **30 PASS**(exit0/1.85초). realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/` 확인 후 신규 `-r3` checkout만 제거·잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 이 control code SHA를 seq1547~1548 이벤트와 repository에 결박한다.
