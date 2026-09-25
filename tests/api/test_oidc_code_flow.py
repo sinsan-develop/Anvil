@@ -181,6 +181,60 @@ def test_saved_step_up_purpose_controls_verification(setup_flow):
                       browser_state=step_up.browser_state)
 
 
+def test_ordinary_request_does_not_ask_for_step_up(setup_flow):
+    flow, store, _, _, response, _ = setup_flow
+    request = _begin(flow, store, response)
+    query = parse_qs(urlsplit(request.url).query)
+    assert "claims" not in query
+    assert "max_age" not in query
+    assert "acr_values" not in query
+
+
+def test_step_up_request_demands_essential_acr_and_recent_authentication(setup_flow):
+    flow, store, _, _, response, _ = setup_flow
+    request = _begin(flow, store, response, step_up=True)
+    query = parse_qs(urlsplit(request.url).query)
+    assert flow._verifier.step_up_acr == "urn:anvil:step-up"
+    assert flow._verifier.step_up_max_age_seconds == 300
+    assert query["max_age"] == ["300"]
+    assert query["claims"] == [
+        '{"id_token":{"acr":{"essential":true,"values":["urn:anvil:step-up"]},'
+        '"auth_time":{"essential":true}}}'
+    ]
+    with pytest.raises(AttributeError):
+        flow._verifier.step_up_acr = "urn:forged:acr"
+    pending = next(iter(store.values.values()))
+    assert pending.require_step_up is True
+    assert query["state"] == [request.browser_state]
+    assert query["nonce"] == [pending.nonce]
+    expected_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(pending.code_verifier.encode("ascii")).digest()
+    ).rstrip(b"=").decode("ascii")
+    assert query["code_challenge"] == [expected_challenge]
+    assert query["code_challenge_method"] == ["S256"]
+
+
+@pytest.mark.parametrize("acr,age,accepted", [
+    ("urn:anvil:step-up", 300, True),
+    ("urn:anvil:step-up", 301, False),
+    ("urn:other:acr", 0, False),
+])
+def test_step_up_return_requires_matching_acr_and_recent_auth_time(
+    setup_flow, acr, age, accepted
+):
+    flow, store, _, _, response, claims = setup_flow
+    request = _begin(flow, store, response, step_up=True)
+    claims.update(acr=acr, auth_time=int(NOW.timestamp()) - age)
+    if accepted:
+        identity = flow.complete(code="code", state=request.browser_state,
+                                 browser_state=request.browser_state)
+        assert identity.step_up_verified is True
+    else:
+        with pytest.raises(OidcCodeFlowRejected):
+            flow.complete(code="code", state=request.browser_state,
+                          browser_state=request.browser_state)
+
+
 @pytest.mark.parametrize("endpoint,redirect,client", [
     ("http://issuer.example/authorize", REDIRECT, CLIENT),
     ("https://user:password@issuer.example/authorize", REDIRECT, CLIENT),

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
@@ -119,11 +120,20 @@ class OidcCodeFlow:
             digest = sha256(state.encode("ascii")).digest()
             self._store.put(digest, pending)
             challenge = _base64url(sha256(code_verifier.encode("ascii")).digest())
-            query = urlencode({
+            parameters = {
                 "response_type": "code", "scope": "openid", "client_id": self._client_id,
                 "redirect_uri": self._redirect_uri, "state": state, "nonce": nonce,
                 "code_challenge": challenge, "code_challenge_method": "S256",
-            })
+            }
+            if require_step_up:
+                parameters["claims"] = json.dumps({
+                    "id_token": {
+                        "acr": {"essential": True, "values": [self._verifier.step_up_acr]},
+                        "auth_time": {"essential": True},
+                    }
+                }, separators=(",", ":"))
+                parameters["max_age"] = str(self._verifier.step_up_max_age_seconds)
+            query = urlencode(parameters)
             return OidcAuthorizationRequest(self._authorization_endpoint + "?" + query, state)
         except Exception:
             raise _reject() from None

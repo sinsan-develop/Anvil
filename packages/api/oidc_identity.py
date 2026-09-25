@@ -91,6 +91,16 @@ class OidcIdTokenVerifier:
         self._step_up_acr = step_up_acr
         self._clock = clock
 
+    @property
+    def step_up_acr(self) -> str:
+        """The pinned ACR required by this verifier, for request construction."""
+        return self._step_up_acr
+
+    @property
+    def step_up_max_age_seconds(self) -> int:
+        """The same recent-authentication bound used for token verification."""
+        return _STEP_UP_MAX_AGE_SECONDS
+
     def verify(
         self, token: str, *, expected_nonce: str, require_step_up: bool = False
     ) -> OidcIdentity:
