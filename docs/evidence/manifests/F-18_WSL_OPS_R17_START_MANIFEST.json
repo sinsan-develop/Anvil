@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-18",
-  "event_sequence": 1563,
+  "event_sequence": 1566,
   "accepted": false,
-  "projection_mode": "F18_WSL_OPS_R12_AUTH_INGRESS_CHECKPOINT",
+  "projection_mode": "F18_WSL_OPS_R17_ROLE_IMAGES_START",
   "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
   "exact_allowed_paths": [
     "docs/WORK_STATUS.md",
@@ -13,6 +13,7 @@
     "docs/evidence/manifests/F-18_WSL_OPS_R11_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R12_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R17_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R2_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
@@ -35,6 +36,7 @@
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r2.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r3.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r4.json",
@@ -61,6 +63,9 @@
     "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_PLAN.md",
     "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_WORK_INSTRUCTION.md",
     "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_WORK_INSTRUCTION.md",
     "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_INVOCATION.md",
     "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_WORK_INSTRUCTION.md",
     "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_INVOCATION.md",
@@ -91,6 +96,7 @@
     "scripts/f18_wsl_ops_r11_overlay.py",
     "scripts/f18_wsl_ops_r12_close_overlay.py",
     "scripts/f18_wsl_ops_r12_overlay.py",
+    "scripts/f18_wsl_ops_r17_overlay.py",
     "scripts/f18_wsl_ops_r2_overlay.py",
     "scripts/f18_wsl_ops_r3_overlay.py",
     "scripts/f18_wsl_ops_r4_overlay.py",
@@ -110,6 +116,7 @@
     "tests/tooling/test_f18_wsl_ops_r11_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r17_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r3_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
@@ -123,7 +130,12 @@
     "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
   ],
-  "product_write_scope": [],
+  "product_write_scope": [
+    "deploy/wsl/Dockerfile.f18",
+    "deploy/wsl/Dockerfile.f18.dockerignore",
+    "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
+    "tests/deploy/test_f18_role_images.py"
+  ],
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
@@ -149,6 +161,11 @@
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R11_START_MANIFEST.json",
       "bytes": 24256,
       "sha256": "46FA097168C20383229B331D9C8784C7AACDD304B152BE2EC7C70891DC5D6A99"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json",
+      "bytes": 28417,
+      "sha256": "01D5BFD282675FF44250EC268B9617488CDDA93F275566CAB3C181AC613501D0"
     },
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R12_START_MANIFEST.json",
@@ -222,8 +239,8 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4218294,
-      "sha256": "0501A3A7AA07CBE7D47CFACCB081009436B1C5FF830B6969A90D608710E62F37"
+      "bytes": 4221155,
+      "sha256": "C7B1E099DEC60120F4067B51260B67367C9E0C0F511691FF4133FF89C8C4A8C4"
     },
     {
       "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10-close.json",
@@ -244,6 +261,11 @@
       "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11.json",
       "bytes": 460,
       "sha256": "31DB6680603B1A625FD75AC275890BDD6943F6F7127C4B0792FE2BEF3D8118D9"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json",
+      "bytes": 459,
+      "sha256": "1EC7B1E254A8E07C137B58F9849389FEA5D22421B31B39180BFF3BF64BACEA93"
     },
     {
       "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12.json",
@@ -379,6 +401,21 @@
       "path": "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
       "bytes": 1339,
       "sha256": "B2819CED9BE44A02866EB0F5C4106841971CE27F7135A4CA2799BBABD30F81FF"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_INVOCATION.md",
+      "bytes": 592,
+      "sha256": "FAB1AAEBAB9911780A49466AA529F00329E20FD86726CAC3CE4DEDBDCBA69A55"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_PLAN.md",
+      "bytes": 5649,
+      "sha256": "182A9DED2CB4ECF2D31A6B1978DE14988D662F4189FC94D25A980980A408CDCD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_WORK_INSTRUCTION.md",
+      "bytes": 2469,
+      "sha256": "5AA794D7BDEFD9FC7044EFAD6C26C9F0DB67C0A4A486A739EA6CEAD614840FDC"
     },
     {
       "path": "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_INVOCATION.md",
@@ -531,6 +568,11 @@
       "sha256": "4F25784D7A0258E468635957087247090A79F2E4B97C7DFA440D810455B07BB0"
     },
     {
+      "path": "scripts/f18_wsl_ops_r17_overlay.py",
+      "bytes": 18334,
+      "sha256": "1FAE332919AB29A68A1446BD8C0CF8861DCC370D11122997BCE32D4EEC4E1B35"
+    },
+    {
       "path": "scripts/f18_wsl_ops_r2_overlay.py",
       "bytes": 20103,
       "sha256": "0B62E758D39D590F97C03597C1CFB3714849B55463708053DA4D26E6D22CCAEA"
@@ -624,6 +666,11 @@
       "path": "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
       "bytes": 3772,
       "sha256": "9AC04DB3449BE02B0969A91BF251A322D583FAE0935EA2968753FF686B5CE919"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r17_overlay.py",
+      "bytes": 3046,
+      "sha256": "B2E49AAE7AD12216928CBA77F28C00326A5E684CD98D89A4BC245DD82F369B31"
     },
     {
       "path": "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
