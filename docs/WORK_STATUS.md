@@ -1,3 +1,9 @@
+# F-18 R9 OIDC step-up 요청 계약 준비 / 2026-09-25
+
+- 담당 Main. 현재 clean `codex/f18-wsl-ops` HEAD `c8064226835fc142c46350a62009b653c907cbfb`, canonical seq1543/G-05 PASS, worker/write lease0, F-18 `accepted=false`, F-19 차단을 재확인했다. 승인 계획의 다음 미완료 범위는 WSL-server 격리 OIDC·step-up 실제 검증이다. 기존 R7 verifier와 R8 PKCE transaction을 확인한 결과 `require_step_up=True`는 pending intent·반환 ID Token 검사에만 반영되고 authorization URL에 ACR 요청을 넣지 않는다. 이는 R8 내부 단위의 미구현 경계이지 R8 QA PASS를 취소하거나 실제 issuer PASS로 승격할 근거가 아니다.
+- R9 내부 단위는 기존 `packages/api/oidc_code_flow.py`의 step-up 요청에 고정 ACR을 essential ID Token claim으로 요구하고 최근 인증을 요구하며, ordinary 요청에는 이를 넣지 않는 계약으로 한정한다. 응답은 R7의 고정 ACR·최근 `auth_time` 검증을 계속 통과해야 한다. token role/scope를 권한으로 승격하거나 기존 local test session·공개 API·DB·Secret을 변경하지 않는다. TDD에서 URL의 literal query/JSON과 다운그레이드·위조 거부를 먼저 고정하고 R8/R7 및 기존 인증 회귀를 재실행한다. 실제 issuer/API/browser는 R9 코드 단위만으로 PASS가 아니다.
+- 후속 실제 issuer/API 통합은 같은 작업 branch에서 별도 exact scope와 resource plan으로 수행한다. WSL-server 전용 issuer 후보는 공식 Keycloak의 OIDC essential ACR/LoA step-up 지원을 기준으로 하며, QA image는 실행 전에 digest를 고정하고 loopback/격리 네트워크·일회성 계정·임시 Secret/인증서·정확한 수명과 정리 대상을 기록한다. 기존 서비스·DB·운영 issuer/`ysna-server`는 사용하지 않는다. Keycloak `start-dev`는 공식 문서상 개발 모드이므로 격리 QA에서만 고려하고 Production 증거로 사용하지 않는다. 근거: `https://openid.net/specs/openid-connect-core-1_0.html`, `https://www.rfc-editor.org/rfc/rfc7636/`, `https://www.keycloak.org/docs/latest/server_admin/`, `https://www.keycloak.org/server/containers`.
+
 # F-18 R8 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
 
 - 최종 종료 통제 재QA: 최신 verifier exact `9884dc415c0e1e18c0ee8b6e76054e6ae4311b9d` clean detached, WSL-server Python3.12.3, offline lock exit0/47 resolved, 잠긴 dev 43 installed, R1~R8 종료 통제 **26 PASS**(exit0/1.56초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인 후 exact QA checkout 제거·잔류0, 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 최초 추가 commit이 아닌 최신 검증 control SHA를 종료 projection에 결박한다.
