@@ -1,3 +1,10 @@
+# F-18 R24 동일 artifact PG15 HTTPS Task/Run E2E 자원 계획 / 2026-09-26
+
+- 판정: `R24_SAME_IMAGE_PG15_HTTPS_E2E_PLANNED`, 담당 Main. 기존 단일 branch의 공개 QA tag `f18-wsl-qa-4eadfcd`와 R21 보존 Web/API/Worker image ID 세 개를 재빌드 없이 사용한다. R23 PG18과 동일 image를 WSL-server PostgreSQL15 일반 통합의 합성 Task→Run HTTP+DB·API 재생성 후 SSE=DB에 적용하되, 전체 F-18 인수나 운영 검증으로 승격하지 않는다.
+- WSL-server read-only inventory: 새 QA path `/home/daon/anvil-f18-r24-pg15-qa`, Compose project `anvil-f18-r24-pg15`, TLS container `anvil-f18-r24-tls` 부재, loopback 8315/8443 free. 기존 `local-postgres` ID `99f3bf939d40c265f44bc330fb143675ecad96c9ab27bd517500ef04eaa2506c` running/PG15 `150018`·pgvector 사용 가능 버전 `0.8.2`, `anvil-web` ID `f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738` running. 정확한 신규 DB `anvil_f17_pg15_f18r24`, migrator/app role `anvil_f17_migrator_f18r24`/`anvil_f17_app_f18r24`는 모두 부재.
+- 기존 PG15의 다른 DB·role·설정·기존 서비스는 변경하지 않는다. 전용 DB·두 role 및 그 안의 vector/migration0016·합성 row만 만들고, source 수정 없이 QA 전용 Compose Web/API/Worker와 HTTPS proxy를 별도 network/path에 둔다. 잠긴 Python3.12 임시 venv·합성 credential/CA만 사용한다. 실제 HTTP/DB/재시작/SSE 결과와 실패 단계를 분리해 기록한다.
+- 성공·실패 모두 QA API/Worker/TLS를 먼저 종료하고 전용 DB 연결0·정확한 DB/role identity 확인 후 해당 DB/role만 삭제한다. QA container/network/path/venv/cert/loopback listener 잔류0·기존 PG15/Web 불변을 독립 확인한다. R21 세 image/checkout은 다음 동일-artifact QA를 위해 ACTIVE 유지한다. 기존 PG15의 사전 외부 bind는 이 시험에서 변경·확대하지 않으며 network policy PASS로 간주하지 않는다.
+
 # F-18 R23 동일 artifact PG18 HTTPS Task/Run·SSE QA 및 정리 / 2026-09-26
 
 - 판정: `R23_SAME_IMAGE_PG18_HTTPS_TASK_RUN_SSE_BOUNDED_PASS`, 전체 F-18 인수 아님. 공개 QA tag `f18-wsl-qa-4eadfcd`의 clean checkout·R21 보존 Web/API/Worker image ID(`61f13f7f…`/`ad6a2b73…`/`6a8a0e1d…`)와 격리 PG18 image ID `5a9c2dbe…`를 사용했다. Web `/`·Web→API `/api/health/ready`의 loopback TLS HTTP200, 실제 PG `180004`·vector `0.8.2`·migration `0016_operations_recovery`·최소 app role을 재확인했다. TLS proxy는 `/auth/`와 `/api/` 모두 제품 Web을 거쳤고 API 직접 우회 경로는 만들지 않았다.
