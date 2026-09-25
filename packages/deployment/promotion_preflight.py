@@ -94,7 +94,7 @@ def validate_promotion(
         return blocked("EVIDENCE_TARGET_MISMATCH")
     if set(release_images) != {"web", "api", "worker"} or not all(map(_digest, release_images.values())):
         return blocked("EVIDENCE_TARGET_MISMATCH")
-    if commit != verified_release.release.source_commit or runtime != release_images["api"] or runtime != release_images["worker"]:
+    if commit != verified_release.release.source_commit or runtime != release_images["api"]:
         return blocked("DEPLOY_ARTIFACT_MISMATCH")
     evidence_images = wsl_evidence.get("image_digests")
     if evidence_images is None:

@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from packages.deployment.deploy_approval import DeployApprovalSubject
 from packages.deployment.deploy_approval import subject_hash
-from packages.deployment.promotion_preflight import PreflightDecision, VerifiedApprovalRelease
+from packages.deployment.promotion_preflight import PreflightDecision, VerifiedApprovalRelease, validate_promotion
 from packages.deployment.release_manifest import VerifiedRelease
 import packages.deployment.wsl_operational as operational
 
@@ -109,6 +109,31 @@ def check(monkeypatch, payload_value=None, *, base_ready=True, signer_override=N
 def test_signed_bound_capabilities_only_allow_wsl_rehearsal(monkeypatch):
     decision, calls = check(monkeypatch)
     assert calls == ["git-artifact"]
+    assert (decision.ready, decision.reason_code) == (True, "READY_FOR_WSL_REHEARSAL")
+
+
+def test_distinct_worker_digest_passes_artifact_and_signed_capability_gates(monkeypatch):
+    distinct = IMAGES | {"worker": DIGEST("c")}
+    release, approval, wsl = subjects()
+    release = VerifiedApprovalRelease(
+        VerifiedRelease(COMMIT, "f18-test-tag", DIGEST("f"), tuple(sorted(distinct.items()))),
+        MANIFEST, release.source_git_remote,
+    )
+    wsl["image_digests"] = distinct.copy()
+    observed = payload()
+    observed["image_digests"] = distinct.copy()
+
+    def artifact_gate(*args, **kwargs):
+        return validate_promotion(*args[:6])
+
+    monkeypatch.setattr(operational, "validate_existing_checkout", artifact_gate)
+    raw, public, fingerprint = signed_bundle(observed)
+    decision = operational.validate_wsl_operational(
+        release, wsl, approval, ENVIRONMENT, MIGRATION, ROLLBACK, "unused-checkout",
+        raw, trusted_public_key_pem=public, trusted_fingerprint=fingerprint,
+        expected_collector_id=COLLECTOR, expected_target_instance_id=TARGET_INSTANCE,
+        expected_rehearsal_run_id=REHEARSAL_RUN, now_utc=NOW,
+    )
     assert (decision.ready, decision.reason_code) == (True, "READY_FOR_WSL_REHEARSAL")
 
 
