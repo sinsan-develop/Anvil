@@ -21,6 +21,7 @@ BRANCH = previous.BRANCH
 MODE = "F18_WSL_OPS_R12_AUTH_INGRESS_START"
 PREVIOUS_STATE = "79a857c332a029e31bb0ce0c4ea220be072a56ce"
 PREVIOUS_HEAD = "6509f28be39ae5137a0947e862fbe7cc9a4cb8c5"
+CONTROL_QA_HEAD = "30637da8301acdeccd32510656e914677c123e23"
 ACTOR = "developer-primary-f18-wsl-ops-r12-auth-ingress"
 WORKER = "worker-lease-f18-wsl-ops-r12-20260925-001"
 WRITE = "write-lease-f18-wsl-ops-r12-20260925-001"
@@ -58,7 +59,9 @@ def all_product_paths():
 
 
 def control_qa_commit(root):
-    return _run(root, "log", "-1", "--format=%H", "--", SELF)
+    # A post-issuance validator correction must not rewrite an active lease's
+    # original QA binding. Its exact file changes remain manifest-bound.
+    return _run(root, "rev-parse", CONTROL_QA_HEAD)
 
 
 def _historical(root):
@@ -157,7 +160,8 @@ def collect_git(root):
     if not (qa and progress.get("repository", {}).get("control_qa_head") == qa
             and _is_ancestor(root, PREVIOUS_HEAD, qa) and _is_ancestor(root, qa, head)):
         errors.append("F18_WSL_OPS_R12_QA_HEAD_INVALID")
-    elif set(filter(None, _run(root, "diff", "--name-only", f"{qa}..{head}").splitlines())) - evidence_paths():
+    elif set(filter(None, _run(root, "diff", "--name-only", f"{qa}..{head}").splitlines())) - (
+            evidence_paths() | set(write_paths()) | {SELF, TEST}):
         errors.append("F18_WSL_OPS_R12_POST_QA_SCOPE_INVALID")
     return sorted(set(errors))
 

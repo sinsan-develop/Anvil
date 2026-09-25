@@ -1,3 +1,8 @@
+# F-18 R12 사후 통제 검사기 보정 / 2026-09-25
+
+- 판정: `F18_R12_VALIDATOR_POST_QA_SCOPE_REPAIR` (F-18 인수 아님). 단일 Developer 제품 exact3 `cae47aa8c2dd14d561d03b8eaf25948c860f136e`를 Main이 diff·clean·독립 로컬 관련 55 PASS(exit0, warning1)로 확인하고 `development/codex/f18-wsl-ops`에 push했다. 이후 G-05는 `F18_WSL_OPS_R12_POST_QA_SCOPE_INVALID`로 차단됐다. 재현·집합 대조 결과, R12 검사기 `collect_git`의 QA 이후 허용 집합에 `write_paths()`가 빠져 있었고 실제 변경은 발급된 정확한 제품 3경로뿐이었다. 제품 결함이나 정식 Developer 실패가 아닌 Main 통제 코드 오류 1회다.
+- 조치: 제품 commit·발급 WI/hash·epoch10 token·`control_qa_head=30637da8301acdeccd32510656e914677c123e23`을 보존한다. 검사기는 기존 evidence와 발급된 제품 exact3 및 이 통제 보정의 overlay/test 경로만 사후 허용하며, `deploy/ysna/unrelated-change.sh` 주입은 명시 거부한다. 관련 RED는 기대된 POST_QA_SCOPE_INVALID 1 FAIL, GREEN 1 PASS, R11 start/close+R12 통제 8 PASS(exit0), R12 전체 5 PASS(exit0). 보정 코드·manifest를 commit/push하고 G-05 재통과 전 WSL QA를 시작하지 않는다. 임시 pytest 경로 잔류0, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R12 auth ingress 통제 준비 / 2026-09-25
 
 - 담당 Main. 기준 clean/원격 일치 `6509f28be39ae5137a0947e862fbe7cc9a4cb8c5`, canonical seq1558의 worker/write lease=None, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED. F-18 단계3의 `/auth/*` 제품 ingress same-origin을 위한 기존 Web Nginx 라우팅 보완을 R12 exact3(`deploy/local/nginx.conf`, `tests/integration/test_f15_local_stack.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`)로 좁혔다. 기존 F-18 후보 파일 상한에서 벗어난 파일 배치는 내부 구현 revision으로 분류하고 새 WorkInstruction/hash·epoch10 fencing token·canonical lease를 제품 write 전에 결박한다. 인증·권한·공개 API·DB·Secret·운영 대상 변경은 금지한다.

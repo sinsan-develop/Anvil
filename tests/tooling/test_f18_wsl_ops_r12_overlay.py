@@ -42,3 +42,27 @@ def test_r12_write_lease_carries_new_epoch_and_exact_scope():
     assert lease["lease_epoch"] == 10 and lease["write_epoch"] == 10
     assert lease["path_scope"] == EXACT3
     assert lease["worker_lease_id"] == start.WORKER
+
+
+def test_r12_post_qa_accepts_only_issued_product_scope(monkeypatch):
+    start = importlib.import_module("scripts.f18_wsl_ops_r12_overlay")
+    monkeypatch.setattr(start.GIT_HELPERS, "_porcelain", lambda root: set())
+    assert start.control_qa_commit(ROOT) == "30637da8301acdeccd32510656e914677c123e23"
+    assert start.collect_git(ROOT) == []
+
+
+def test_r12_post_qa_rejects_unrelated_path(monkeypatch):
+    start = importlib.import_module("scripts.f18_wsl_ops_r12_overlay")
+    monkeypatch.setattr(start.GIT_HELPERS, "_porcelain", lambda root: set())
+    real_run = start._run
+    qa = start.control_qa_commit(ROOT)
+    head = real_run(ROOT, "rev-parse", "HEAD")
+
+    def with_unrelated(root, *args):
+        result = real_run(root, *args)
+        if args == ("diff", "--name-only", f"{qa}..{head}"):
+            return result + "\ndeploy/ysna/unrelated-change.sh"
+        return result
+
+    monkeypatch.setattr(start, "_run", with_unrelated)
+    assert "F18_WSL_OPS_R12_POST_QA_SCOPE_INVALID" in start.collect_git(ROOT)
