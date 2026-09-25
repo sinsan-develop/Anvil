@@ -1,3 +1,8 @@
+# F-18 R11 제품 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. Developer exact3 clean commit `8bcb630cdd913ed0a4dc9fa456b814c0d71f1424`을 승인 SSH alias의 기존 branch에 push했다. Main 독립 Anaconda 관련 5-file **151 PASS**(exit0/7.76초), 게시 후 G-05 seq1556 PASS, branch clean. Developer 잠긴 로컬 151 PASS와 구분한다. 전체 suite 13 collection ERROR 비-GREEN, 실제 issuer/API/browser/Production은 미검증이다.
+- WSL-server 신규 exact `/srv/anvil-wsl/f18-ops-r11-product-qa` clean detached checkout 하나만 생성한다. 생성 전 경로 부재·기존 서비스 상태를 확인하고 승인 remote의 위 제품 SHA를 checkout한다. `daon:daon`/0700, 내부 `.uv-cache`·`.venv`의 잠긴 Python3.12에서 offline lock 및 OIDC identity/code-flow/issuer-transport/local-session/web-security 회귀를 실행한다. DB·Docker·기존 서비스·Secret·listener·브라우저는 변경하지 않는다. 완료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 범위를 확인하고 checkout만 제거해 잔류0을 증명한다. 합성 계약 PASS를 실제 issuer PASS로 승격하지 않는다.
+
 # F-18 R11 mixed-use JWKS 통제·WSL-server QA 자원 계획 / 2026-09-25
 
 - 담당 Main, 제품 writer developer-primary. 같은 `codex/f18-wsl-ops` branch에서 R11 exact3만 발급한다. 최초 실제 issuer QA의 공개 JWKS 혼합 용도 실패를 회귀 테스트로 고정하고 RS256 서명 후보만 신뢰한다. 암호화 전용/비지원 키만 있는 JWKS, 잘못된 서명 후보, 중복 `kid`는 계속 거부한다. 기존 공개 API·DB·권한·Secret·운영 환경 변경 없음. 신규 control test는 모듈 부재 RED 2 FAIL(exit1) → 구현 후 GREEN 2 PASS(exit0); checker diff 3줄 추가/삭제0. seq1553/lease0/F-18 accepted=false/F-19 차단/Production NOT_EXECUTED 유지.
