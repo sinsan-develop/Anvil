@@ -53,7 +53,7 @@ def control_paths():
 def evidence_paths():
     return {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
             "docs/progress/build-progress.json", "docs/progress/progress-events.json",
-            r9_close.MANIFEST, DIGEST, MANIFEST}
+            r9_close.r9.MANIFEST, r9_close.MANIFEST, DIGEST, MANIFEST}
 
 
 def control_qa_commit(root):

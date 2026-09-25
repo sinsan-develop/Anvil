@@ -34,3 +34,4 @@ def test_r10_control_scope_cannot_claim_product_as_evidence():
     assert set(start.write_paths()).isdisjoint(start.evidence_paths())
     assert start.MANIFEST in start.control_paths()
     assert start.r9_close.MANIFEST in start.evidence_paths()
+    assert start.r9_close.r9.MANIFEST in start.evidence_paths()
