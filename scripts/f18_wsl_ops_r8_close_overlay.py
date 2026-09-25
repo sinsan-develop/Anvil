@@ -26,6 +26,11 @@ MANIFEST = "docs/evidence/manifests/F-18_WSL_OPS_R8_CLOSE_MANIFEST.json"
 SELF = "scripts/f18_wsl_ops_r8_close_overlay.py"
 
 
+def control_qa_commit(root):
+    """The latest committed verifier revision, not its initial add commit."""
+    return _run(root, "log", "-1", "--format=%H", "--", SELF)
+
+
 def control_paths():
     return sorted(set(r8.control_paths()) | {PLAN, DIGEST, MANIFEST, SELF,
             "tests/tooling/test_f18_wsl_ops_r8_close_overlay.py"})
@@ -87,7 +92,7 @@ def validate_state(progress, qa_head):
 def collect_git(root):
     root = Path(root)
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    head, qa = _run(root, "rev-parse", "HEAD"), r8.GIT_HELPERS.git_added_commit(root, SELF)
+    head, qa = _run(root, "rev-parse", "HEAD"), control_qa_commit(root)
     changed = set(filter(None, _run(root, "diff", "--name-only", f"{BASE}..{head}").splitlines()))
     errors = validate_start_git_facts(
         branch=_run(root, "branch", "--show-current"),
@@ -113,7 +118,7 @@ def collect_git(root):
 def validate(root, bundle):
     root = Path(root)
     progress, ledger = bundle["progress"], bundle["events"]
-    rows, qa = ledger.get("events", []), r8.GIT_HELPERS.git_added_commit(root, SELF)
+    rows, qa = ledger.get("events", []), control_qa_commit(root)
     old_progress, old_events = _historical(root)
     errors = validate_state(progress, qa) + validate_predecessor(root, old_progress)
     if rows[:1541] != old_events:
@@ -173,7 +178,7 @@ def materialize(root):
     if (_run(root, "branch", "--show-current") != BRANCH
             or _run(root, "rev-parse", "development/main") != BASE
             or _run(root, "rev-parse", f"development/{BRANCH}") != head
-            or r8.GIT_HELPERS.git_added_commit(root, SELF) != head
+            or control_qa_commit(root) != head
             or r8.GIT_HELPERS._porcelain(root) - evidence_paths()):
         raise RuntimeError("F18_WSL_OPS_R8_CLOSE_GIT_INVALID")
     at = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
