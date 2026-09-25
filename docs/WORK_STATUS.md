@@ -1,3 +1,12 @@
+# F-18 R12 종료 후 역사 fixture 보정 / 2026-09-25
+
+- seq1563 회수 증거를 materialize한 직후 R12 시작 검사기 자체의 post-QA 단위 테스트 2건이 현재 progress를 ACTIVE라고 가정해 2 FAIL했다. 제품·G-05 실패가 아니라 테스트의 역사 fixture drift다. 게시 제품 commit의 정확한 seq1561 ACTIVE progress를 fixture로 고정하고, 허용/무관 경로 거부 검사를 다시 실행해 R11 close+R12 start/close 통제 9 PASS(exit0)로 복구했다. 발급 lease/제품 코드/현재 seq1563 progress는 변경하지 않았다.
+
+# F-18 R12 writer 회수 결과 / 2026-09-25
+
+- 담당 Main. 종료 통제/회귀 commit `b08d0c0`을 승인 SSH alias에 게시하고 G-05 seq1561 PASS를 확인했다. clean 동일 HEAD의 검증된 종료 코드에 결박해 seq1562 `WRITE_LEASE_REVOKED` → seq1563 `WORKER_LEASE_REVOKED`를 순서대로 materialize(exit0), canonical worker/write lease=None, active agent=Main, 제품 write scope=[]로 전환했다. 발급된 epoch10 제품 commit 및 원래 R12 시작 QA binding은 변경하지 않았다.
+- 결과는 F-18 부분 checkpoint일 뿐 accepted=false, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production NOT_EXECUTED다. 이 문서·연쇄 manifest·progress/handoff/digest/event를 정확히 commit/push하고 clean G-05 seq1563 PASS를 확인하기 전에는 종료 완료로 표시하지 않는다. 다음은 같은 branch의 승인된 F-18 잔여 검증이며 새 branch/main 병합/운영 서버 작업은 없다.
+
 # F-18 R12 종료 통제 QA 경계 보정 / 2026-09-25
 
 - 종료 materialize 첫 시도는 `F18_WSL_OPS_R12_CLOSE_GIT_INVALID`로 fail-closed 되었고 canonical progress/lease는 seq1561 그대로다. 진단 결과 첫 종료 control QA commit `c7610e2` 이후 게시된 R12 시작 검사기 exact 자체 보정 파일 `scripts/f18_wsl_ops_r12_overlay.py`를 종료 검사기의 사후 허용 집합에서 누락했다. 제품 변경·원격 drift·dirty 파일은 없었다. 거부 회귀 RED 1 FAIL, 이 한 파일만 허용해 GREEN을 확인하고 새 종료 control QA commit에 재결박한다. `F-18 accepted=false`/F-19 차단/Production NOT_EXECUTED 유지.
