@@ -1,3 +1,9 @@
+# F-18 R18 동일 SHA WSL-server 순수 preflight QA·정리 / 2026-09-26
+
+- 판정: `R18_DISTINCT_DIGEST_CONTRACT_LOCAL_WSL_PASS_BOUNDED`, 전체 F-18 acceptance 아님. 담당 Main. 제품 exact4 commit `3586c8400172a8357d9c239e59a65550c0596d68`를 원격 기존 branch에 게시했고, G-05 seq1571 PASS·독립 read-only review Critical/Important 0(Minor: 새 signed capability fixture는 별도 Git checkout gate를 직접 증명하지 않음)을 확인했다.
+- WSL-server 전용 `/home/daon/anvil-f18-r18-qa/repo`의 clean detached HEAD를 제품 SHA로 대조했다. `uv sync --locked --group dev --no-install-project` exit0, `.venv/bin/python -m pytest -q -p no:cacheprovider --basetemp=<전용 .pytest-temp>`로 F-16 ReleaseManifest/staging, F-17 validation, F-18 promotion/WSL operational/deploy approval/role images의 8개 파일 **143 PASS**(exit0, 2.86초). 이는 WSL 실제 순수 preflight 코드/테스트 실행이지 signed collector·현재 SHA 세 image/DB/OIDC/object storage/network/PG18 제품 실측이 아니다.
+- 정리 전 전용 경로 realpath/daon/0700/비-symlink, clean HEAD와 하위 repo·.venv(내부)·.uv-cache·pytest temp·두 로그만 확인했다. 정확한 전용 path만 제거해 path/tag/container 잔류0. 기존 `anvil-web` ID `f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738` running, `local-postgres` ID `99f3bf939d40c265f44bc330fb143675ecad96c9ab27bd517500ef04eaa2506c` running 불변. 정식 Developer 실패0; 로컬 전체 pytest는 기존 수집 오류 13건으로 미통과. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED 유지. 다음은 R18 lease 회수 뒤 실제 세 image 현재 SHA·서명 manifest/collector와 나머지 capability 검증이다.
+
 # F-18 R18 동일 SHA WSL-server 순수 preflight QA 자원 계획 / 2026-09-26
 
 - 판정: `R18_PRODUCT_POSTED_WSL_QA_PENDING`. 담당 Main, 단일 branch `codex/f18-wsl-ops`의 게시 제품 SHA `3586c8400172a8357d9c239e59a65550c0596d68`, checkout clean/G-05 seq1571 PASS. 제품 exact4 로컬 RED→GREEN, focused 143 PASS, 전체 pytest 기존 수집 오류 13건/exit1. 독립 read-only review와 실제 WSL 테스트를 분리한다.
