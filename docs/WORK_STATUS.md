@@ -1,3 +1,9 @@
+# F-18 R7 ID Token 제품 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. 공개된 제품 exact SHA `0b220b8a57922e051ad1fc43ea433c1ec189c5aa`만 승인 Git SSH alias에서 수신한다. 신규 exact `/srv/anvil-wsl/f18-ops-r7-product-qa` 한 경로를 `daon:daon`/mode0700으로 생성하고 clean detached checkout한다. 생성 직전 경로·기존 서비스 상태를 읽기 전용 재확인한다.
+- checkout 내부 `.venv`와 `.f18-r7-product-test-temp`에서 잠긴 Python3.12 dev 설치, offline lock 검사, 신규 ID Token 및 기존 API 보안 회귀, R1~R7 통제 회귀를 실행한다. 새 Docker image/container/network/volume, DB, listener/port, credential/Secret, 브라우저는 생성하지 않는다. 기존 `/srv/anvil-wsl/repo`, `local-postgres`, `anvil-web` 및 다른 서비스는 보존한다.
+- 시험 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·untracked 범위를 확인한 뒤 이 신규 QA 경로만 제거하고 부재 및 기존 서비스 불변을 증명한다. source는 공개 Git commit으로 복구할 수 있다. 이 verifier 단위 결과는 실제 OIDC issuer/API/step-up capability PASS나 F-18 전체 인수가 아니다.
+
 # F-18 R7 ID Token 검증 writer 통제 QA 계획 / 2026-09-25
 
 - R7 통제 code QA: 게시 exact SHA `aa4d71cbfb6f74a25e23ae3738eafe6b66ee96b6`를 WSL-server 신규 clean detached `/srv/anvil-wsl/f18-ops-r7-control-qa`에 수신, 잠긴 Python3.12 `uv sync --locked --group dev --no-install-project` exit0/46 resolved·42 installed, `uv lock --check --offline` exit0, R1~R7 통제 **37 PASS**(exit0/1.48초). Windows 동일 37 PASS(exit0/15.74초). 새 checkout realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·untracked `.f18-r7-control-test-temp/`만 확인 후 exact 제거·잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 이제 QA SHA 결박 seq1534~1536 evidence-only 투영을 수행한다.
