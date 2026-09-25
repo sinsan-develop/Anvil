@@ -1,0 +1,19 @@
+# BuildKit Dockerfile-specific context filter. Legacy Docker requires a
+# restricted Git archive context; do not build from the repository root.
+.git
+**/.git
+.env*
+**/.env*
+**/__pycache__
+**/*.pyc
+**/node_modules
+apps/web/dist
+**/.pytest_cache
+**/.venv
+.f18-*
+**/.f18-*
+.codex-sandbox
+**/.codex-sandbox
+**/.pytest-*
+**/.mypy_cache
+**/.ruff_cache
