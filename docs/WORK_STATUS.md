@@ -1,3 +1,10 @@
+# F-18 R21 동일 artifact 유지형 WSL 이미지 QA 자원 계획 / 2026-09-26
+
+- 판정: `R21_SAME_TAG_IMAGE_BUILD_PLANNED`. 담당 Main, 기존 branch `codex/f18-wsl-ops`/canonical seq1573·worker/write lease=None. 공개 annotated QA tag `f18-wsl-qa-4eadfcd`의 peeled commit `4eadfcd441b55445237545146ae5ba4051739904`만 source로 사용한다. 현재 R19 `fac742eb` image ID는 재사용하지 않는다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+- WSL-server 읽기 전용 inventory에서 신규 `/home/daon/anvil-f18-r21-artifact`와 전용 `anvil-f18-r21-{web,api,worker}:4eadfcd` tag 부재, 기존 `local-postgres`·`anvil-web` ID/status 불변, root 파일시스템 여유 562GiB·메모리 available 약 5.4GiB를 확인했다. 실행 직전 exact 경로·tag·기존 서비스 ID를 다시 확인한다.
+- 신규 자원은 daon 소유 mode0700 전용 checkout `/home/daon/anvil-f18-r21-artifact/repo`, 하위 제한된 Git archive context, 전용 image tag 세 개뿐이다. 승인 tag fetch→clean detached exact checkout을 F-16 gate로 검증하고, tracked 최소 입력만 archive해 `Dockerfile.f18` 세 role을 `--pull=false`, 1GiB/2CPU 제한으로 빌드한다. image ID·revision·role entrypoint·user를 기록한다. 이 단위에서는 container/DB/network/port/Secret/브라우저를 생성하지 않는다.
+- R19와 달리 세 전용 image tag는 후속 동일 digest Test/Staging·격리 rehearsal에 재사용하기 위해 **ACTIVE Main 소유 QA 자원**으로 보존한다. 다른 branch/프로젝트와 공유하거나 Production에 사용하지 않는다. source tag/object·image ID가 달라지거나 F-18 증거 수집이 중단되면 exact tag·checkout의 owner/revision/ID를 대조하고 정리한다. 후속 검증 완료 때도 동일 방식으로 전용 자원만 제거해 잔류0을 기록한다. 보존은 합격이나 ReleaseManifest 서명을 의미하지 않는다.
+
 # F-18 R20 공개 QA tag 실제 Git gate·정리 / 2026-09-26
 
 - 판정: `R20_ANNOTATED_TAG_EXACT_CHECKOUT_PASS_BOUNDED`, 전체 F-18 인수 아님. 승인 remote의 annotated tag `f18-wsl-qa-4eadfcd` object `dc9f0c64e22c78c9fce6a28d471a74756a430a0f`가 commit `4eadfcd441b55445237545146ae5ba4051739904`를 가리킴을 로컬·WSL-server에서 확인했다. WSL-server 전용 `/home/daon/anvil-f18-r20-git-qa/repo`에서 해당 tag만 fetch, clean detached exact HEAD로 `deploy.wsl.f16_staging.verify_exact_checkout` 실행 exit0 `F16_EXACT_CHECKOUT_PASS`.
