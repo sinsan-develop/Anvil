@@ -1,5 +1,6 @@
 # F-18 R9 종료 SHA 결박 교정 / 2026-09-25
 
+- 교정 통제 WSL QA: 게시 exact `02973873a827776c7e47cafd074e09065edc090d` clean detached, Python3.12.3, offline lock exit0/47 resolved, 잠긴 dev 43 installed, R1~R9 종료 통제 **30 PASS**(exit0/1.85초). realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/` 확인 후 신규 `-r3` checkout만 제거·잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 이 control code SHA를 seq1547~1548 이벤트와 repository에 결박한다.
 - 첫 seq1547~1548 종료 projection `af421fe`는 G-05에서 `QA_HEAD_INVALID`, `REVOCATION_INVALID`, `STATE_INVALID`로 거부됐다. 원인은 materializer가 WSL 검증된 최신 control code commit이 아니라 그 뒤 QA 결과 evidence commit을 `control_qa_head`와 이벤트에 적은 것이다. 제품·WSL 서비스 영향0, 인수 기록으로 승인하지 않았다. 게시 Git 이력은 보존하고 exact 잘못된 종료 commit만 `7dd4988` revert로 원복했다.
 - 종료 통제 코드는 실제 `control_qa_commit`을 이벤트·repository에 동일하게 결박하도록 수정한다. 로컬 focused와 WSL-server 신규 exact `/srv/anvil-wsl/f18-ops-r9-close-control-qa-r3`에서 게시 수정 SHA를 재검증한 뒤에만 seq1547~1548을 재생성한다. 경로 부재·기존 서비스 상태를 먼저 확인하고 clean detached/daon 0700/잠긴 Python3.12/정확한 삭제·잔류0 경계를 유지한다. 정식 Developer 실패0, Main 통제 projection 오류1·교정1이다.
 
