@@ -1,3 +1,10 @@
+# F-18 R9 제품 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. developer-primary의 exact4 제품 commit `0b8adc634ff98a6649d615a03399292c835b81d8`을 승인 Git SSH alias의 기존 `codex/f18-wsl-ops`에 push했다. G-05 seq1546 PASS(exit0). TDD RED 신규 assertion 1 FAIL/31 PASS → GREEN 신규 32 PASS, 관련 잠긴 회귀 118 PASS(exit0), diff-check exit0, 제품 작업 트리 clean. 전체 pytest는 기존 수집 오류 13건으로 exit1이므로 전체 PASS 미확인. 실제 issuer/API/browser/Production은 미검증이고 F-18 accepted=false, F-19 차단이다.
+- Main 통제 오류 1회: 대형 `scripts/check_project_progress.py`에 직접 patch 적용 시 무관한 embedded 내용이 비정상 절단되었다. `git diff`로 즉시 탐지해 해당 미커밋 변경만 역적용하고 작은 검증된 `git apply` patch로 필요한 dispatcher 6줄만 다시 반영했다. 제품·원격·WSL 영향 0, 해당 통제 회귀 Windows/WSL 각각 28 PASS. 정식 Developer 실패 횟수 0.
+- 제품 QA 신규 exact checkout `/srv/anvil-wsl/f18-ops-r9-product-qa`의 부재와 기존 `local-postgres`/`anvil-web` 상태를 생성 직전 읽기 전용 확인한다. 승인 remote의 위 제품 exact SHA를 clean detached checkout하고 `daon:daon`/0700 경로 안에만 `.uv-cache`, `.venv`, `.f18-r9-product-test-temp`를 둔다. WSL Python3.12 잠긴 dev 환경에서 offline lock 검사와 OIDC code-flow/identity/local-session/web-security 관련 회귀 및 통제 회귀를 실행한다. DB·Docker·기존 서비스·브라우저·Secret·listener/port는 생성·변경하지 않는다.
+- 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored/임시 파일 범위를 확인하고 이 신규 QA 경로만 제거한다. 잔류0·기존 두 서비스 상태 불변을 증명한다. source는 게시 Git commit으로 복구 가능하며 제품 QA 결과를 기록한 뒤 R9 worker/write lease 회수와 G-05 재검증을 한다.
+
 # F-18 R9 step-up 요청 통제 WSL-server QA 자원 계획 / 2026-09-25
 
 - R9 통제 QA 결과: 게시 exact `c1870433d1298433235b23f945eae0c5fa117924` clean detached, WSL-server Python3.12.3, `uv lock --check --offline` exit0/47 resolved, locked dev 43 installed, R1~R9 통제 **28 PASS**(exit0/1.70초). Windows 동일 28 PASS(exit0/4.00초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인 후 신규 QA checkout exact 경로만 제거, 잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 다음은 seq1544~1546 evidence-only writer 발급이다.
