@@ -1,5 +1,6 @@
 # F-18 R9 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
 
+- 종료 통제 QA 결과: 게시 exact `dbfee16c1814ff5e6b9c33301ab8582840dc8e1f` clean detached, WSL-server Python3.12.3, offline lock exit0/47 resolved, 잠긴 dev 43 installed, R1~R9 종료 통제 **30 PASS**(exit0/1.69초). Windows 동일 30 PASS(exit0/4.81초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인하고 신규 QA 경로만 제거해 잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 다음은 seq1547~1548 evidence-only lease 회수 및 G-05다.
 - 담당 Main. 동일 게시 제품 `0b8adc634ff98a6649d615a03399292c835b81d8`의 WSL-server 148 PASS와 checkout 잔류0을 확인했다. R9 종료 통제는 canonical seq1546의 ACTIVE write/worker lease를 seq1547~1548로 순서대로 회수한다. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED는 유지한다. TDD는 종료 상태/선행 상태 거부를 검증하며 Windows·WSL 통제 회귀와 G-05를 수행한다.
 - 신규 exact WSL checkout `/srv/anvil-wsl/f18-ops-r9-close-control-qa`만 생성한다. 생성 전 경로 부재와 기존 `local-postgres`/`anvil-web` 상태를 확인한다. 게시된 종료 통제 SHA를 clean detached checkout해 `daon:daon`/0700, 내부 `.uv-cache`·`.venv`·임시 pytest만 사용한다. DB·Docker·browser·Secret·포트·기존 서비스는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean을 확인한 뒤 exact 경로만 제거해 잔류0을 증명한다.
 
