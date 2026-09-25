@@ -1,3 +1,9 @@
+# F-18 R20 공개 QA tag 실제 Git gate·정리 / 2026-09-26
+
+- 판정: `R20_ANNOTATED_TAG_EXACT_CHECKOUT_PASS_BOUNDED`, 전체 F-18 인수 아님. 승인 remote의 annotated tag `f18-wsl-qa-4eadfcd` object `dc9f0c64e22c78c9fce6a28d471a74756a430a0f`가 commit `4eadfcd441b55445237545146ae5ba4051739904`를 가리킴을 로컬·WSL-server에서 확인했다. WSL-server 전용 `/home/daon/anvil-f18-r20-git-qa/repo`에서 해당 tag만 fetch, clean detached exact HEAD로 `deploy.wsl.f16_staging.verify_exact_checkout` 실행 exit0 `F16_EXACT_CHECKOUT_PASS`.
+- 정리 전 전용 path realpath·비-symlink·`daon:daon`/0700·clean HEAD를 확인한 뒤 exact checkout을 삭제해 경로 잔류0. 기존 `local-postgres`·`anvil-web` ID와 Up/healthy 상태 불변. 신규 Docker/DB/Secret/port/browser/network listener 없음. QA tag는 게시된 Git 재현 입력으로 보존한다.
+- R19의 세 image ID는 **이전** `fac742eb99ff13d1d78af1bce761534cde52df6c` 기준이었고 정리됐다. R20 tag의 `4eadfcd`와 동일 commit·digest artifact가 아니므로 ReleaseManifest에 합산할 수 없다. 다음 안전 조치는 단일 공개 QA tag commit에서 세 image를 다시 빌드·실제 Test/Staging 기능을 검증하고, 동일 artifact를 격리 target에 재사용할 수 있는 수명·저장·정리 경계를 마련한 뒤 독립 신뢰키와 실측 입력으로 서명 manifest/collector를 결박하는 것이다. 실제 서명 manifest·세 현재 image의 유지·capability/PG18/운영 유사 rehearsal은 미검증, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+
 # F-18 R20 서명 manifest 선행 Git tag 경계 QA 계획 / 2026-09-26
 
 - 판정: `R20_ANNOTATED_QA_TAG_PUBLISHED_GIT_GATE_PENDING`. 담당 Main, 제품 수정·신규 branch 없음. 기존 `codex/f18-wsl-ops`의 clean·게시 commit `4eadfcd441b55445237545146ae5ba4051739904`에 QA 전용 annotated tag `f18-wsl-qa-4eadfcd`를 생성·게시했다. tag object `dc9f0c64e22c78c9fce6a28d471a74756a430a0f`, peeled commit은 위 SHA다. 이는 F-16 `verify_exact_checkout`의 공개 tag 입력 준비이며 ReleaseDecision/배포 승인이 아니다. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
