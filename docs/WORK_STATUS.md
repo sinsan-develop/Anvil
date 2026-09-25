@@ -1,3 +1,9 @@
+# F-18 R18 동일 SHA WSL-server 순수 preflight QA 자원 계획 / 2026-09-26
+
+- 판정: `R18_PRODUCT_POSTED_WSL_QA_PENDING`. 담당 Main, 단일 branch `codex/f18-wsl-ops`의 게시 제품 SHA `3586c8400172a8357d9c239e59a65550c0596d68`, checkout clean/G-05 seq1571 PASS. 제품 exact4 로컬 RED→GREEN, focused 143 PASS, 전체 pytest 기존 수집 오류 13건/exit1. 독립 read-only review와 실제 WSL 테스트를 분리한다.
+- WSL-server 새 전용 `/home/daon/anvil-f18-r18-qa`만 만든다. 생성 전 경로 부재·home 소유·비-symlink를 재확인하고 승인 SSH alias로 위 SHA의 clean detached checkout을 받는다. 그 하위 `.venv`·`.uv-cache`·`.pytest-temp`만 쓰며 `uv sync --locked --group dev --no-install-project` 후 순수 F-16/F-17/F-18 preflight focused pytest를 실행한다. Docker/DB/network/port/Secret/기존 `/srv/anvil-wsl/repo` 및 공유 서비스는 생성·변경하지 않는다.
+- 검증 후 exact path·owner/0700·비-symlink·clean HEAD와 생성물 범위를 확인해 전용 path만 제거한다. 기존 `anvil-web`·`local-postgres` ID/running 불변, 전용 path 잔류0을 확인한다. 이 pytest는 세 실제 image ID·signed ReleaseManifest/collector·OIDC/object store/network/PG18·브라우저/rollback의 현재 SHA 실측이 아니므로 F-18 accepted=false/F-19 차단/Production NOT_EXECUTED를 유지한다.
+
 # F-18 R18 분리 Worker digest writer 준비 / 2026-09-26
 
 - 판정: `R18_CONTROL_QA_POSTED_LEASE_PENDING`. 담당 Main. 기존 branch `codex/f18-wsl-ops` clean/게시 기준 `3f664fb8d9c474a98e739dd5de0545c2b5edd045`, canonical seq1568 worker/write lease=None·G-05 PASS. R17 세 역할 image 실측과 preflight의 API=Worker digest 강제 충돌을 승인된 F-18 단계1 내부 정합 단위로 분리했다. 새 branch/운영 서버/Production 범위 없음.
