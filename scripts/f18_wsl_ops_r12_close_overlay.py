@@ -24,10 +24,12 @@ PLAN = "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json"
 MANIFEST = "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json"
 SELF = "scripts/f18_wsl_ops_r12_close_overlay.py"
+CONTROL_QA_HEAD = "b08d0c026a27332f72334bc8f6166457b9d6de07"
 
 
 def control_qa_commit(root):
-    return _run(root, "log", "-1", "--format=%H", "--", SELF)
+    # Keep the QA binding used by the published seq1562/1563 events.
+    return _run(root, "rev-parse", CONTROL_QA_HEAD)
 
 
 def control_paths():
@@ -38,7 +40,7 @@ def control_paths():
 def evidence_paths():
     # The exact R12 start validator correction was published after this
     # closeout overlay's first QA commit; it is not a product-scope expansion.
-    return set(r12.evidence_paths()) | {DIGEST, MANIFEST, r12.SELF}
+    return set(r12.evidence_paths()) | {DIGEST, MANIFEST, r12.SELF, r12.TEST, SELF}
 
 
 def _historical(root):

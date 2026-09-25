@@ -1,3 +1,7 @@
+# F-18 R12 종료 증거 사후 검증 범위 보정 / 2026-09-25
+
+- seq1563 회수 증거 commit `cc71295` 게시 후 G-05는 `F18_WSL_OPS_R12_CLOSE_POST_QA_SCOPE_INVALID`로 차단됐다. 원인은 종료 QA SHA `b08d0c026a27332f72334bc8f6166457b9d6de07` 이후 수정한 R12 시작 검사기의 역사 fixture test 경로가 종료 사후 허용 집합에서 누락된 것이다. 실제 제품/lease 범위와 seq1562/1563 이벤트는 보존한다. 종료 overlay의 QA SHA를 위 이벤트 binding으로 고정하고 정확한 R12 시작 test·종료 overlay 자체만 추가 허용한다. 관련 거부 회귀와 G-05를 게시 clean HEAD에서 다시 확인한다. 제품 실패·F-18 인수 아님.
+
 # F-18 R12 종료 후 역사 fixture 보정 / 2026-09-25
 
 - seq1563 회수 증거를 materialize한 직후 R12 시작 검사기 자체의 post-QA 단위 테스트 2건이 현재 progress를 ACTIVE라고 가정해 2 FAIL했다. 제품·G-05 실패가 아니라 테스트의 역사 fixture drift다. 게시 제품 commit의 정확한 seq1561 ACTIVE progress를 fixture로 고정하고, 허용/무관 경로 거부 검사를 다시 실행해 R11 close+R12 start/close 통제 9 PASS(exit0)로 복구했다. 발급 lease/제품 코드/현재 seq1563 progress는 변경하지 않았다.

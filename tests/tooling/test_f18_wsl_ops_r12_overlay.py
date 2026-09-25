@@ -55,6 +55,15 @@ def test_r12_post_qa_accepts_only_issued_product_scope(monkeypatch):
     active = _active_progress()
     monkeypatch.setattr(start.json, "loads", lambda raw: active)
     monkeypatch.setattr(start.GIT_HELPERS, "_porcelain", lambda root: set())
+    monkeypatch.setattr(start, "validate_start_git_facts", lambda **kwargs: [])
+    real_run = start._run
+
+    def at_active_product(root, *args):
+        if args == ("rev-parse", "HEAD"):
+            return PUBLISHED_ACTIVE
+        return real_run(root, *args)
+
+    monkeypatch.setattr(start, "_run", at_active_product)
     assert start.control_qa_commit(ROOT) == "30637da8301acdeccd32510656e914677c123e23"
     assert start.collect_git(ROOT) == []
 
@@ -64,11 +73,14 @@ def test_r12_post_qa_rejects_unrelated_path(monkeypatch):
     active = _active_progress()
     monkeypatch.setattr(start.json, "loads", lambda raw: active)
     monkeypatch.setattr(start.GIT_HELPERS, "_porcelain", lambda root: set())
+    monkeypatch.setattr(start, "validate_start_git_facts", lambda **kwargs: [])
     real_run = start._run
     qa = start.control_qa_commit(ROOT)
-    head = real_run(ROOT, "rev-parse", "HEAD")
+    head = PUBLISHED_ACTIVE
 
     def with_unrelated(root, *args):
+        if args == ("rev-parse", "HEAD"):
+            return head
         result = real_run(root, *args)
         if args == ("diff", "--name-only", f"{qa}..{head}"):
             return result + "\ndeploy/ysna/unrelated-change.sh"

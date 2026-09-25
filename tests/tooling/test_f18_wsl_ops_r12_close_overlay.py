@@ -18,8 +18,10 @@ def _published_progress():
 
 def test_r12_close_requires_published_active_predecessor():
     close = importlib.import_module("scripts.f18_wsl_ops_r12_close_overlay")
+    assert close.control_qa_commit(ROOT) == "b08d0c026a27332f72334bc8f6166457b9d6de07"
     assert close.r12.MANIFEST in close.evidence_paths()
     assert close.r12.SELF in close.evidence_paths()
+    assert close.r12.TEST in close.evidence_paths()
     assert close.r12.previous.MANIFEST in close.evidence_paths()
     state = _published_progress()
     assert close.validate_predecessor(ROOT, state) == []
