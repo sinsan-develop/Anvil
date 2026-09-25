@@ -58264,6 +58264,9 @@ def validate_bundle(bundle):
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R10_OIDC_TRANSPORT_START":
         from f18_wsl_ops_r10_overlay import validate
         return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R10_OIDC_TRANSPORT_CHECKPOINT":
+        from f18_wsl_ops_r10_close_overlay import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R9_STEP_UP_REQUEST_CHECKPOINT":
         from f18_wsl_ops_r9_close_overlay import validate
         return validate(bundle["_root"], bundle)
