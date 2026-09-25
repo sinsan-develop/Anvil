@@ -1,3 +1,9 @@
+# F-18 R18 분리 Worker digest writer 준비 / 2026-09-26
+
+- 판정: `R18_CONTROL_QA_POSTED_LEASE_PENDING`. 담당 Main. 기존 branch `codex/f18-wsl-ops` clean/게시 기준 `3f664fb8d9c474a98e739dd5de0545c2b5edd045`, canonical seq1568 worker/write lease=None·G-05 PASS. R17 세 역할 image 실측과 preflight의 API=Worker digest 강제 충돌을 승인된 F-18 단계1 내부 정합 단위로 분리했다. 새 branch/운영 서버/Production 범위 없음.
+- R18 exact4 제품 scope는 `packages/deployment/promotion_preflight.py`, `tests/deploy/test_f18_promotion_preflight.py`, `tests/deploy/test_f18_wsl_operational.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`. legacy `runtime_image_digest`는 API에만 결박하고 Worker는 signed manifest와 실제 `image_digests` map의 독립 대조를 유지한다. 기존 reject reason/approval·checkout·capability gate를 유지한다.
+- 계획·WorkInstruction·invocation, R18 overlay·거부 테스트·checker 3줄 분기를 control-only QA `fa8a9ea1d754203adddb0fc034282ed34d3518bc`로 게시했다. R18 통제 테스트 3 PASS(exit0), compileall·diff-check exit0, checker net diff 3줄 확인. seq1569 instruction→1570 worker lease→1571 write lease의 새 epoch12 exact4 발급·G-05 후 단일 Developer가 RED→GREEN을 수행한다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED 유지.
+
 # F-18 다음 내부 작업: 세 역할 digest preflight 계약 불일치 / 2026-09-26
 
 - 판정: `F18_THREE_DISTINCT_IMAGES_PREFLIGHT_GAP`, 제품 변경 전 read-only 확인. `packages/deployment/promotion_preflight.py`의 `validate_promotion`은 signed manifest의 `web/api/worker` 세 digest와 관측 map을 비교하면서도 legacy `runtime_image_digest`가 API와 **Worker 모두** 같아야 한다고 요구한다. R17 WSL-server에서 실제 세 역할 image ID가 서로 다른 것을 확인했으므로, 현 계약으로는 정직한 세 image 증거가 `DEPLOY_ARTIFACT_MISMATCH`로 거부된다. 기존 테스트 fixture도 API=Worker digest를 가정한다.
