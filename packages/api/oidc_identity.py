@@ -76,13 +76,18 @@ class OidcIdTokenVerifier:
                 raise _reject()
             keys: dict[str, object] = {}
             for item in jwks["keys"]:
-                if (not isinstance(item, dict) or item.get("kty") != "RSA"
-                        or item.get("use") != "sig" or item.get("alg") != "RS256"
+                if not isinstance(item, dict):
+                    raise _reject()
+                if item.get("use") != "sig" or item.get("alg") != "RS256":
+                    continue
+                if (item.get("kty") != "RSA"
                         or not _canonical(item.get("kid")) or item["kid"] in keys
                         or _PRIVATE_JWK_FIELDS.intersection(item)
                         or not _canonical(item.get("n")) or not _canonical(item.get("e"))):
                     raise _reject()
                 keys[item["kid"]] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(item))
+            if not keys:
+                raise _reject()
         except Exception:
             raise _reject() from None
         self._keys = keys

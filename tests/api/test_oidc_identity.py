@@ -108,6 +108,53 @@ def test_invalid_trust_jwks_rejected(signed, mutation):
     assert "secret" not in str(error.value)
 
 
+def _encryption_public():
+    other = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public = json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(other.public_key()))
+    return {**public, "kid": "enc-1", "use": "enc", "alg": "RSA-OAEP"}
+
+
+def test_mixed_use_jwks_accepts_only_rs256_signing_key(signed):
+    _, make, signing, _ = signed
+    encryption = _encryption_public()
+    verifier = OidcIdTokenVerifier(
+        json.dumps({"keys": [signing, encryption]}), issuer=ISSUER,
+        client_id=CLIENT, step_up_acr="urn:anvil:step-up", clock=lambda: NOW,
+    )
+    assert verifier.verify(make(), expected_nonce=NONCE).subject == "user-1"
+    with pytest.raises(OidcTokenRejected, match="^OIDC_ID_TOKEN_NOT_VERIFIED$"):
+        verifier.verify(make(headers={"kid": "enc-1"}), expected_nonce=NONCE)
+
+
+@pytest.mark.parametrize("mutation", [
+    lambda key: [key, {**key}],
+    lambda key: [{**key, "d": "private-secret"}],
+    lambda key: [{**key, "n": "bad*base64"}],
+    lambda key: [{**key, "kty": "EC"}],
+])
+def test_mixed_use_jwks_rejects_malformed_signing_candidate(signed, mutation):
+    _, _, signing, _ = signed
+    with pytest.raises(OidcTokenRejected, match="^OIDC_ID_TOKEN_NOT_VERIFIED$") as error:
+        OidcIdTokenVerifier(
+            json.dumps({"keys": [_encryption_public(), *mutation(signing)]}),
+            issuer=ISSUER, client_id=CLIENT, step_up_acr="urn:anvil:step-up",
+        )
+    assert "private-secret" not in str(error.value)
+
+
+@pytest.mark.parametrize("keys", [
+    lambda enc: [enc],
+    lambda enc: [{**enc, "use": "sig", "alg": "RS512"}],
+    lambda enc: [enc, {**enc, "use": "sig", "alg": "RS512"}],
+])
+def test_mixed_use_jwks_requires_rs256_signer(keys):
+    with pytest.raises(OidcTokenRejected, match="^OIDC_ID_TOKEN_NOT_VERIFIED$"):
+        OidcIdTokenVerifier(
+            json.dumps({"keys": keys(_encryption_public())}), issuer=ISSUER,
+            client_id=CLIENT, step_up_acr="urn:anvil:step-up",
+        )
+
+
 @pytest.mark.parametrize("age,accepted", [(0, True), (300, True), (301, False),
                                           (-30, True), (-31, False)])
 def test_step_up_auth_time_window(signed, age, accepted):
