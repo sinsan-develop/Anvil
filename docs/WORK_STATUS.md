@@ -1,3 +1,8 @@
+# F-18 R10 OIDC transport 제품 WSL-server QA 자원 계획 / 2026-09-25
+
+- Main 독립 검토: Developer exact6 clean commit `5c0a9ba2ec907b8e7a4b05c92389de9456304736`을 승인 SSH alias로 push했다. 로컬 `test_oidc_issuer_transport/code_flow/identity/local_session/web_security` 143 PASS(exit0/9.42초), compileall·diff-check exit0. 전체 suite는 기존 13 collection ERROR로 비-GREEN, ruff 미설치로 미실행. 개발자 보고의 잠긴 로컬 148 PASS와 구분한다.
+- QA 자원은 WSL-server 신규 exact `/srv/anvil-wsl/f18-ops-r10-product-qa` 하나만 사용한다. 생성 전 경로 부재·기존 서비스 상태를 확인한다. `daon:daon`/0700, 승인 remote의 제품 SHA clean detached checkout, 경로 내부 `.uv-cache`·`.venv`에서 offline lock·잠긴 Python3.12 설치 및 관련 단위·통합 회귀를 실행한다. DB·Docker image/container/network/volume, 기존 웹·PostgreSQL, Secret·listener/port·브라우저는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 전용 파일을 확인한 뒤 이 checkout만 제거하고 잔류0을 확인한다. 이는 synthetic issuer 검증이며 실제 Keycloak/HTTPS issuer, browser/API/Production 검증으로 승격하지 않는다.
+
 # F-18 R10 OIDC transport 통제 WSL-server QA 자원 계획 / 2026-09-25
 
 - R10 통제 발급: 검증된 control code SHA `46e45ed1bc2cd1cea98d267de1703b83a0799b32`에 결박해 seq1549 `WORK_INSTRUCTION_ISSUED` → seq1550 `WORKER_LEASE_ISSUED` → seq1551 `WRITE_LEASE_ISSUED`를 materialize했다. exact6 제품 경로의 epoch8 worker/write token, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED 유지. 다음은 checksum 동기화·G-05 뒤 Developer 구현이며 실제 issuer/browser 검증은 아직 미실행이다.
