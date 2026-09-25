@@ -1,3 +1,9 @@
+# F-18 R10 OIDC transport 통제 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. 게시 clean `codex/f18-wsl-ops` HEAD `752c6b75e939e98b06286a227e7cebaff4876b88`, G-05 seq1548 PASS, worker/write lease0, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED를 확인했다. 승인 계획의 다음 범위를 R8의 주입 token exchange port에 연결하는 고정 HTTPS issuer transport exact6으로 한정한다. 기존 LocalTestSessionService를 OIDC 사용자 세션으로 재사용하거나 token claim을 role/permission으로 매핑하지 않는다. R10 계획·WI·invocation과 epoch8 control overlay를 준비하며 신규 모듈 부재 TDD RED 2 FAIL(exit1) → GREEN 2 PASS(exit0/0.57초), Windows R1~R10 통제 32 PASS(exit0/5.06초), checker diff 3줄 추가/삭제0이다.
+- R10 통제 code QA의 유일한 신규 자원은 WSL-server exact `/srv/anvil-wsl/f18-ops-r10-control-qa` Git checkout이다. `ssh WSL-server`에서 생성 직전 경로 부재·기존 `local-postgres` Up/`anvil-web` Up/healthy를 읽기 전용 확인한다. 승인 remote에 게시한 control HEAD를 clean detached checkout하고 `daon:daon`/0700 경로 내부 `.uv-cache`·`.venv`만 사용해 offline lock·잠긴 Python3.12 R1~R10 통제 회귀를 실행한다. DB·Docker image/container/network/volume, 브라우저·Secret·listener/port·기존 서비스는 생성·변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 파일만 확인하고 이 checkout만 제거해 잔류0을 증명한다.
+- 읽기 전용 선행 확인: WSL-server에 기존 Keycloak/OIDC issuer image는 없고 headless Chromium cache는 있다. 공식 Keycloak 26.7.4 amd64 manifest digest `sha256:3d911baa186f352563854039b95f21a7e2c01c76b527fdc64f24a0885b927bdf`를 원격 registry에서 조회했으나 아직 pull·container 생성은 하지 않았다. 이 image는 이후 별도 실 issuer QA 자원 계획과 격리·정리 경계가 확정된 뒤에만 사용한다.
+
 # F-18 R9 종료 및 다음 경계 / 2026-09-25
 
 - 교정된 종료 통제 `02973873a827776c7e47cafd074e09065edc090d`에 결박하여 seq1547 `WRITE_LEASE_REVOKED` → seq1548 `WORKER_LEASE_REVOKED`를 재생성했다. 종료 commit `d30aeff5684788539d3fe127e40515f150780f30` 원격 게시 후 G-05 seq1548 PASS(exit0), clean branch 확인. Main 소유, 제품 write scope=[], worker/write lease=None, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED를 유지한다. 실제 issuer/API/browser 통합은 미검증이며 같은 단일 브랜치의 다음 로컬·WSL-server 작업이다.
