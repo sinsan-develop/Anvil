@@ -1,3 +1,10 @@
+# F-18 R21 공개 QA tag 동일 artifact 이미지 빌드·보존 / 2026-09-26
+
+- 판정: `R21_SAME_TAG_THREE_IMAGES_BUILT_RETAINED`, F-18 인수 아님. WSL-server 전용 `/home/daon/anvil-f18-r21-artifact/repo`에서 공개 annotated tag `f18-wsl-qa-4eadfcd`의 clean detached commit `4eadfcd441b55445237545146ae5ba4051739904`를 F-16 `verify_exact_checkout` exit0으로 검증했다. tracked 최소 archive context를 만들어 Web/API/Worker target을 각각 `--pull=false`, 1GiB/2CPU 제한으로 빌드 exit0. Docker legacy builder 경고 외 빌드 오류0.
+- 실제 Web image ID `sha256:61f13f7ffa9d20713c6cc4234b4529bce2d4b0c8f1d11b73832a28c3213910bf`, API `sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b`, Worker `sha256:6a8a0e1de3346c2a348487295504c9070557650a50459805798cb6f41262d43f`. 세 ID는 구분되며 OCI revision은 모두 exact tag commit. Web은 UID101/Nginx, API·Worker는 UID10001/각 역할 entrypoint. `docker image inspect` 재조회에서도 ID/revision 동일, source checkout clean. 이미지 runtime/PG15/PG18·실제 OIDC/object store/network/browser 검증은 아직 하지 않았다.
+- 세 전용 tag `anvil-f18-r21-{web,api,worker}:4eadfcd` 및 exact checkout/context는 Main 소유 `ACTIVE`로 후속 Test/Staging→격리 rehearsal의 동일 image ID 검증 전까지 보존한다. 새 container/DB/network/port/Secret은 없고 기존 `local-postgres` ID `99f3bf939d40c265f44bc330fb143675ecad96c9ab27bd517500ef04eaa2506c` Up, `anvil-web` ID `f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738` Up/healthy 불변. 완료·중단 시 exact path/tag/ID/owner를 대조하고 전용 자원만 제거한다.
+- 다음 안전 행동: 이 세 ID를 유지한 채 같은 checkout에서 lockfile/SBOM/migration/config/provider/evidence의 실제 관측값을 수집하고 QA 전용 독립 신뢰키의 출처를 정의한 뒤 서명 manifest를 검증한다. 이후에만 동일 image ID를 Test/Staging·격리 target의 PG15/PG18/OIDC/object store/network/브라우저·rollback 시험에 사용한다. 지금은 ReleaseManifest·capability collector·운영 유사 rehearsal 미검증이며 F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R21 동일 artifact 유지형 WSL 이미지 QA 자원 계획 / 2026-09-26
 
 - 판정: `R21_SAME_TAG_IMAGE_BUILD_PLANNED`. 담당 Main, 기존 branch `codex/f18-wsl-ops`/canonical seq1573·worker/write lease=None. 공개 annotated QA tag `f18-wsl-qa-4eadfcd`의 peeled commit `4eadfcd441b55445237545146ae5ba4051739904`만 source로 사용한다. 현재 R19 `fac742eb` image ID는 재사용하지 않는다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
