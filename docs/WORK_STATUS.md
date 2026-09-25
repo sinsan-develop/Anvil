@@ -1,3 +1,11 @@
+# F-18 R22 현재 세 image의 WSL 격리 PG18 HTTP+DB QA 자원 계획 / 2026-09-26
+
+- 판정: `R22_PG18_HTTP_DB_QA_PLANNED`, 담당 Main. R21 공개 tag `f18-wsl-qa-4eadfcd`의 clean detached checkout과 동일 image ID Web `61f13f7f…`, API `ad6a2b73…`, Worker `6a8a0e1d…`만 사용한다. 기존 F-17 `deploy/wsl/compose.f17.yml`을 source 변경 없이 별도 Compose project `anvil-f18-r22-pg18`으로 재사용한다. 이 단위는 F-18 단계1의 실제 PG18 migration·Web→API HTTP·DB 관측만 확인하며 F-17 ProductValidation 또는 전체 F-18 인수 판정이 아니다.
+- 생성 전 WSL-server read-only inventory: 신규 exact `/home/daon/anvil-f18-r22-pg18-qa` 부재, project label container 0, loopback `32769`·`8300`·`8443` listener 0. PG18 공유 cache image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c` 확인. 기존 `local-postgres` ID `99f3bf939d40` Up·`anvil-web` ID `f0107aada3b2` Up/healthy, 다른 Compose project는 보존한다.
+- 신규 QA 자원은 daon 소유 mode0700 exact 경로 한 개, 전용 Compose project의 postgres/web/api/worker container 네 개·internal/ingress network 두 개, PGDATA tmpfs와 loopback PG18 `:32769`·Web `:8300`뿐이다. named volume 0. postgres는 위 정확한 PG18 image, 세 app service는 R21 image ID로 지정한다. 합성 admin/app/Telegram/test-session credential은 임시 프로세스 변수에서 생성하고 값은 문서·로그에 출력하지 않는다. 기존 `anvil` DB·role, 공유 PostgreSQL/서비스/네트워크/전역 설정을 변경하지 않는다.
+- postgres healthy 뒤 전용 `anvil_f17_qa` DB에 vector extension·Alembic head `0016_operations_recovery`를 admin으로 적용하고 최소 app role `anvil_app`의 DB/스키마 CREATE=false·비-superuser를 확인한다. 이후 정확한 세 app image로 API/Web/Worker를 구동해 loopback Web→API ready·실제 DB version/head/vector query를 관측한다. HTTPS 인증·Task/Run/SSE·PG15·OIDC/MinIO/network capability·backup/rollback은 이 단위의 PASS에 포함하지 않는다.
+- 성공·실패 모두 project label/ID·image ID·port와 exact QA path realpath/owner/비-symlink를 확인해 전용 Compose project(`down -v`)와 exact QA path만 제거하고 container/network/volume/port/path 잔류0을 확인한다. R21 세 image tag와 checkout은 다음 동일-artifact 시험을 위해 유지한다. 기존 두 서비스 ID/status 불변을 재확인한다.
+
 # F-18 R21 공개 QA tag 동일 artifact 이미지 빌드·보존 / 2026-09-26
 
 - 판정: `R21_SAME_TAG_THREE_IMAGES_BUILT_RETAINED`, F-18 인수 아님. WSL-server 전용 `/home/daon/anvil-f18-r21-artifact/repo`에서 공개 annotated tag `f18-wsl-qa-4eadfcd`의 clean detached commit `4eadfcd441b55445237545146ae5ba4051739904`를 F-16 `verify_exact_checkout` exit0으로 검증했다. tracked 최소 archive context를 만들어 Web/API/Worker target을 각각 `--pull=false`, 1GiB/2CPU 제한으로 빌드 exit0. Docker legacy builder 경고 외 빌드 오류0.
