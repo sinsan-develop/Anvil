@@ -1,3 +1,8 @@
+# F-18 다음 내부 작업: 세 역할 digest preflight 계약 불일치 / 2026-09-26
+
+- 판정: `F18_THREE_DISTINCT_IMAGES_PREFLIGHT_GAP`, 제품 변경 전 read-only 확인. `packages/deployment/promotion_preflight.py`의 `validate_promotion`은 signed manifest의 `web/api/worker` 세 digest와 관측 map을 비교하면서도 legacy `runtime_image_digest`가 API와 **Worker 모두** 같아야 한다고 요구한다. R17 WSL-server에서 실제 세 역할 image ID가 서로 다른 것을 확인했으므로, 현 계약으로는 정직한 세 image 증거가 `DEPLOY_ARTIFACT_MISMATCH`로 거부된다. 기존 테스트 fixture도 API=Worker digest를 가정한다.
+- 다음 안전 조치: 같은 branch에서 별도 exact-file WorkInstruction·새 worker/write fencing epoch을 발급한 뒤 단일 Developer가 RED→GREEN으로 legacy runtime digest는 API에만 결박하고 Worker는 signed manifest와 관측 `image_digests["worker"]`로 독립 대조하도록 최소 수정한다. mismatch·누락·위조 거부 및 기존 동일 digest 호환성을 유지하고, 제품 commit/독립 review/로컬·WSL 확인 후 lease를 회수한다. 이 단계만으로 서명 ReleaseManifest·actual collector·PG18/OIDC/운영 유사 rehearsal PASS를 선언하지 않는다.
+
 # F-18 R17 세 역할 image writer lease 회수 / 2026-09-26
 
 - 판정: `R17_WRITER_LEASE_REVOKED_PENDING_PUSH`. 제품 exact4 commit `57653ee835d47c810a1f90d48d9fbe332fb3540c`의 로컬 104 PASS/Web build·WSL-server 세 image build/inspect·일회성 HTTP/import·전용 자원 잔류0을 확인한 뒤 canonical seq1567 `WRITE_LEASE_REVOKED` → seq1568 `WORKER_LEASE_REVOKED`를 materialize했다. active agent는 Main, 두 lease=None, 제품 write scope=[]이다. F-18은 여전히 `IN_PROGRESS_WSL_OPS`/accepted=false, F-19 차단, Production NOT_EXECUTED다.
