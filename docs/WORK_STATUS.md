@@ -1,3 +1,7 @@
+# F-18 R9 종료 및 다음 경계 / 2026-09-25
+
+- Main이 게시 R9 제품 exact `0b8adc634ff98a6649d615a03399292c835b81d8`과 종료 통제 WSL-server 30 PASS를 근거로 seq1547 `WRITE_LEASE_REVOKED` → seq1548 `WORKER_LEASE_REVOKED`를 materialize했다. active agent는 Main으로 복귀, 제품 write scope=[], worker/write lease=None. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED를 유지한다. 실제 issuer/API/browser 통합은 미검증이며 같은 단일 브랜치의 다음 로컬·WSL-server 작업으로 남는다. 새 branch/병합·운영 서버 작업은 하지 않는다.
+
 # F-18 R9 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
 
 - 수정 종료 통제 재QA: 게시 exact `7df4476326da0602444548a45c4efb1963b34eb2` clean detached, control code SHA `c57d4d2` 조상, WSL-server Python3.12.3, offline lock exit0/47 resolved, 잠긴 dev 43 installed, R1~R9 종료 통제 **30 PASS**(exit0/1.76초). realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인 후 신규 `-r2` checkout 제거·잔류0, 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 이제 seq1547~1548 lease 회수를 materialize한다.
