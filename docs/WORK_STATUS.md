@@ -1,3 +1,9 @@
+# F-18 OIDC 런타임 연결 경계 재확인 / 2026-09-26
+
+- 판정: `OIDC_API_RUNTIME_NOT_INTEGRATED`, F-18 단계3 인증 합격 아님. 담당 Main, 제품 변경0·정식 Developer 실패0. 동일 작업 branch `codex/f18-wsl-ops`의 게시 HEAD `756cf37`에서 `tests/api/test_oidc_identity.py`, `test_oidc_code_flow.py`, `test_oidc_issuer_transport.py`, `test_local_session.py` 로컬 회귀 138 PASS(exit0, 9.87초), warning 1(`python_multipart` PendingDeprecation). `git diff --check` exit0, 작업 checkout clean.
+- 근거: `packages/api/runtime.py`는 `ANVIL_AUTH_MODE`를 COOKIE 또는 WSL_ACCEPTANCE로만 받으며 `LocalTestSessionService`를 `authenticate`/`session_issuer`로 연결한다. OIDC verifier/code-flow/issuer transport를 `create_runtime_app` 또는 `create_app`에서 연결하는 경로와 실제 API 로그인·callback·권한 매핑은 없다. 이전 WSL 격리 Keycloak/PKCE/step-up PASS와 이번 138 PASS는 제품 API OIDC 인증 PASS가 아니다.
+- 다음: 승인된 F-18 단계3 범위에서 기존 세션·API·권한 계약과 설계서의 인증 경계를 대조해 OIDC runtime exact-file 작업지시·canonical worker/write lease를 확정한 뒤 단일 writer가 TDD로 연결한다. 인증·권한 계약을 임의 확대하지 않는다. 같은 branch 유지, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED; WSL-server 외 서버 작업 없음.
+
 # F-18 R16 현재 SHA object-store 격리 실측·정리 / 2026-09-26
 
 - 판정: `F18_R16_OBJECT_STORE_BOUNDED_PASS`, F-18 단계3 전체/정식 WSL 인수 아님. 담당 Main, 제품 변경0·정식 Developer 실패0. 승인 Git alias의 clean detached exact SHA `373e73b17ceab9d010f2afe5bf528692a1210733`에서 로컬 artifact 두 파일 21 PASS(exit0), WSL locked Python3.12 환경 같은 두 파일 21 PASS(exit0). 실제 MinIO image ID `sha256:69b2ec208575b69597784255eec6fa6a2985ee9e1a47f4411a51f7f5fdd193a9`, 전용 container ID `75fef529510d9a51c39e4677ef4a5bf68253b8dfbbb4efdf98d7354e6136da96`, label `F18_R16_OBJECT_QA`, loopback `127.0.0.1:19016` health200.
