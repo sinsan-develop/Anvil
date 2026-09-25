@@ -1,3 +1,9 @@
+# F-18 R9 step-up 요청 통제 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. R8 종료 공개 checkpoint `c8064226835fc142c46350a62009b653c907cbfb`, seq1543, worker/write lease0, F-18 `accepted=false`, F-19 차단, G-05 PASS를 확인하고 같은 `codex/f18-wsl-ops` branch를 유지한다. R9 exact4는 R7 고정 ACR을 R8 요청에 필수값으로 전달하는 내부 계약 보완이며 실제 issuer/API/세션/권한/DB/Secret은 변경하지 않는다. 계획·WI·invocation과 제품 scope를 canonical seq1544~1546에 결박한다. 통제 TDD RED는 overlay 부재 2 FAIL(exit1), GREEN은 2 PASS(exit0/0.59초), R8 close+R9 focused 4 PASS(exit0/1.14초)다.
+- 통제 code QA는 승인 Git SSH alias에 게시된 exact SHA를 WSL-server 신규 clean detached `/srv/anvil-wsl/f18-ops-r9-control-qa`에 수신한다. 생성 직전 경로 부재·기존 `local-postgres`/`anvil-web` 상태를 읽기 전용 확인하고 `daon:daon`/mode0700 한 경로만 만든다. 내부 `.venv`·`.uv-cache`에서 잠긴 Python3.12 dev 환경, offline lock 검사, R1~R9 통제 회귀를 수행한다. Docker image/container/network/volume, DB, listener/port, Secret, 브라우저는 생성·변경하지 않는다.
+- 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 범위를 확인하고 이 신규 QA 경로만 제거한다. 잔류0 및 기존 서비스 불변을 증명한 뒤에만 evidence-only writer 발급·G-05 검증을 수행한다. 이 통제 QA는 실제 OIDC issuer/API capability가 아니다.
+
 # F-18 R9 OIDC step-up 요청 계약 준비 / 2026-09-25
 
 - 담당 Main. 현재 clean `codex/f18-wsl-ops` HEAD `c8064226835fc142c46350a62009b653c907cbfb`, canonical seq1543/G-05 PASS, worker/write lease0, F-18 `accepted=false`, F-19 차단을 재확인했다. 승인 계획의 다음 미완료 범위는 WSL-server 격리 OIDC·step-up 실제 검증이다. 기존 R7 verifier와 R8 PKCE transaction을 확인한 결과 `require_step_up=True`는 pending intent·반환 ID Token 검사에만 반영되고 authorization URL에 ACR 요청을 넣지 않는다. 이는 R8 내부 단위의 미구현 경계이지 R8 QA PASS를 취소하거나 실제 issuer PASS로 승격할 근거가 아니다.
