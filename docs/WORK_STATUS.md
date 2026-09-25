@@ -1,3 +1,10 @@
+# F-18 현재 SHA 배포 preflight WSL 단위 QA 자원 계획 / 2026-09-26
+
+- 담당 Main, 동일 `codex/f18-wsl-ops` branch. 시작 clean·원격 동일 HEAD `72642964c1126fd6ef6ed31ecccc95ba4b9543e9`, G-05 seq1563 PASS, worker/write lease=None. 현재 SHA의 F-17/F-18 배포 preflight 5개 파일을 WSL-server 잠긴 Python 환경에서 실행해 로컬/WSL 단위 계약 차이만 확인한다. 실제 image·API·OIDC·network policy·DB·배포·browser PASS는 아니다.
+- 로컬 최초 실행은 Windows 기본 pytest 임시 경로 `C:\Users\cyhuh\AppData\Local\Temp\pytest-of-cyhuh` 접근 거부로 79 PASS/11 setup ERROR(exit1). 기본 `TEMP`는 존재하지만 pytest의 해당 하위 디렉터리 열거가 거부됐다. 전용 `--basetemp=.f18-r17-pytest-temp`에서 문제 파일 단독 27 PASS(exit0), 5개 파일 합계 90 PASS(exit0, 21.39초). 전용 temp의 resolved exact worktree 내부·비-reparse를 확인해 제거, 잔류0. 제품 실패/정식 Developer 실패로 계상하지 않는다.
+- WSL 생성 대상은 신규 exact `/srv/anvil-wsl/f18-gate-qa-20260926` 하나뿐이다. 생성 직전 부재·realpath/owner·기존 서비스 상태를 재확인한다. 승인 SSH Git alias의 게시 HEAD를 그 경로의 `repo`에 clean detached checkout하고, 그 하위에만 `.venv`, `.uv-cache`, pytest temp를 둔다. Docker/DB/network/port/Secret/기존 checkout은 생성·변경하지 않는다. 작업 후 exact 경로·비-symlink·owner0700·HEAD/tracked clean·ignored 생성물만 확인하고 해당 QA 경로만 제거해 잔류0 및 기존 서비스 불변을 확인한다.
+- WSL 실제 결과 전 F-18 accepted=false/F-19 차단/Production NOT_EXECUTED를 유지한다. Web/API/Worker 세 image digest, 실제 OIDC API, object store 제품 연결, network policy, 정식 Test/Staging·운영 유사 rehearsal은 이 단위 QA의 판정 밖이다.
+
 # F-18 OIDC 런타임 연결 경계 재확인 / 2026-09-26
 
 - 판정: `OIDC_API_RUNTIME_NOT_INTEGRATED`, F-18 단계3 인증 합격 아님. 담당 Main, 제품 변경0·정식 Developer 실패0. 동일 작업 branch `codex/f18-wsl-ops`의 게시 HEAD `756cf37`에서 `tests/api/test_oidc_identity.py`, `test_oidc_code_flow.py`, `test_oidc_issuer_transport.py`, `test_local_session.py` 로컬 회귀 138 PASS(exit0, 9.87초), warning 1(`python_multipart` PendingDeprecation). `git diff --check` exit0, 작업 checkout clean.
