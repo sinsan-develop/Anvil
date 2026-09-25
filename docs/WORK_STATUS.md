@@ -1,3 +1,8 @@
+# F-18 R12 writer 종료 통제 준비 / 2026-09-25
+
+- 담당 Main. 제품 exact3 및 같은 SHA 기반 WSL-server 실제 ingress HTTP QA, 로컬 Web 타입검사·빌드, 독립 리뷰 0 finding을 확인했다. 현재 seq1561/G-05 PASS, epoch10 worker/write lease ACTIVE인 상태에서 종료 통제만 준비한다. 제품 write·새 branch·운영 서버 변경은 하지 않는다.
+- R12 close overlay/계획/거부 회귀와 G-05 분기를 추가했다. R11 close+R12 start/close 통제 9 PASS(exit0), 임시 pytest 경로는 생성되지 않았다. 다음은 control code·manifest 게시 후 exact QA commit에 결박해 seq1562 write→seq1563 worker 회수하고 증거 게시·G-05를 재확인한다. 회수 전 완료로 주장하지 않는다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R12 auth ingress 실제 QA·독립 리뷰 결과 / 2026-09-25
 
 - 판정: `F18_R12_AUTH_INGRESS_BOUNDED_PASS`, F-18 전체 인수 아님. 담당 Main, 단일 제품 writer `developer-primary`, 독립 read-only reviewer. 발급된 epoch10 exact3 제품 commit `cae47aa8c2dd14d561d03b8eaf25948c860f136e`, 게시·WSL-server 검증 SHA `88004220423c324374b47a32ad7a50728c810094`를 구분한다. 독립 제품 리뷰 Critical/Important/Minor 0이며 `/api/`와 SPA fallback의 변경은 없다. 로컬 Main 관련 회귀 55 PASS(exit0); Developer의 RED 1 FAIL→GREEN 1 PASS. 전체 pytest는 기존 수집 13 ERROR로 비-GREEN이다.
