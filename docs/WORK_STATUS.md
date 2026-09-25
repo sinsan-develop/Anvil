@@ -1,3 +1,8 @@
+# F-18 R12 auth ingress 통제 준비 / 2026-09-25
+
+- 담당 Main. 기준 clean/원격 일치 `6509f28be39ae5137a0947e862fbe7cc9a4cb8c5`, canonical seq1558의 worker/write lease=None, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED. F-18 단계3의 `/auth/*` 제품 ingress same-origin을 위한 기존 Web Nginx 라우팅 보완을 R12 exact3(`deploy/local/nginx.conf`, `tests/integration/test_f15_local_stack.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`)로 좁혔다. 기존 F-18 후보 파일 상한에서 벗어난 파일 배치는 내부 구현 revision으로 분류하고 새 WorkInstruction/hash·epoch10 fencing token·canonical lease를 제품 write 전에 결박한다. 인증·권한·공개 API·DB·Secret·운영 대상 변경은 금지한다.
+- 통제 파일은 R12 계획·WI·invocation·overlay·tooling test와 checker dispatch다. 이전 seq1558 progress/events 원문·Git 조상·branch/remote·control QA commit·exact path를 검증하고, 새 seq1559~1561 이벤트와 detached digest/manifest를 생성한 후에만 Developer를 배정한다. 현재 제품 파일 변경0·정식 Developer 실패0. 통제 테스트는 Windows 관련 R11 start/close+R12 7 PASS(exit0), 아직 새 G-05/lease 발급 전이다. 다음은 통제 commit/push→materialize/G-05→단일 Developer TDD이다.
+
 # F-18 auth ingress 후속 경계·로컬 기준선 / 2026-09-25
 
 - 판정: `F18_AUTH_INGRESS_PRODUCT_FIX_PENDING` (F-18 인수 아님). 제품 Web image의 `deploy/local/nginx.conf`에는 `/api/` upstream만 있고 `/auth/`는 SPA fallback으로 간다. 반면 `apps/web/server.mjs`의 개발 proxy에는 `/auth/`가 있으며 실제 API에는 `/auth/session`·`/auth/session/status`가 등록되어 있다. 기존 F-18 WorkInstruction의 제품 ingress same-origin `/auth/*` 검증에는 Web Nginx 라우트 보완이 필요하다. 이 경로는 R1 제품 후보 상한 밖이므로 Main이 WorkInstruction revision/hash·exact write lease를 새로 결박한 뒤 단일 Developer writer에게만 맡긴다. `deploy/ysna`와 운영 대상은 제외한다.
