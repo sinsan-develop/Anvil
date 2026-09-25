@@ -1,5 +1,14 @@
+# F-18 R7 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
+
+- 종료 통제 TDD RED: 새 `scripts/f18_wsl_ops_r7_close_overlay.py` 부재로 신규 테스트 2 FAIL(exit1). GREEN: 동일 신규 테스트 2 PASS(exit0/0.51초), Windows R1~R7 종료 통제 회귀 22 PASS(exit0/2.72초), `git diff --check` exit0. 제품 exact6은 추가 변경0이다. 현재 seq1536은 통제 QA·lease 회수 전 ACTIVE이며 종료 PASS로 승격하지 않는다.
+- 담당 Main. R7 종료 통제 code의 게시 exact SHA만 승인 Git SSH alias에서 WSL-server 신규 `/srv/anvil-wsl/f18-ops-r7-close-control-qa`에 clean detached checkout한다. 생성 직전 경로 부재·기존 서비스 상태를 읽기 전용으로 재확인하고 `daon:daon`/mode0700 한 경로만 만든다.
+- 전용 checkout 내부 `.venv` 및 `.f18-r7-close-test-temp`만 사용해 잠긴 Python3.12, offline lock 검사, R1~R7 종료 통제 회귀를 실행한다. Docker image/container/network/volume, DB, port/listener, Secret, browser는 새로 만들지 않는다. 기존 `/srv/anvil-wsl/repo`, `local-postgres`, `anvil-web` 및 다른 서비스는 건드리지 않는다.
+- 종료 전 realpath exact·비-symlink·owner/mode·HEAD·dirty/untracked 범위를 확인해 이 신규 경로만 제거하고 잔류0 및 기존 서비스 불변을 증명한다. 소스는 공개 Git commit으로 복구 가능하다. 통제 QA가 실제 OIDC issuer/API capability를 증명하지 않는다.
+
 # F-18 R7 ID Token 제품 WSL-server QA 자원 계획 / 2026-09-25
 
+- 결과: 공개 제품 exact SHA `0b220b8a57922e051ad1fc43ea433c1ec189c5aa` clean detached, `daon:daon`/700. 첫 `uv sync --locked`는 기본 Python 3.14.3을 선택해 회귀 108 PASS였으나 목표 interpreter가 아니므로 최종 판정에 쓰지 않는다. 같은 checkout에서 `--python /usr/bin/python3.12`로 전용 `.venv`를 교체해 Python 3.12.3·47 resolved/43 installed, `uv lock --check --offline` exit0, 신규 ID Token·기존 API 보안·R1~R7 통제 회귀 **108 PASS**(exit0/6.08초)를 확인했다. 환경 선택 교정 1회, 제품 정식 실패 0.
+- 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD exact·tracked clean, ignored 산출물 `.venv/`만 확인했다. exact 신규 QA checkout만 제거해 잔류0, 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 실제 issuer/discovery/authorization code/API/session/cookie/step-up endpoint·Production은 미검증이며 F-18 `accepted=false`, F-19 차단을 유지한다.
 - 담당 Main. 공개된 제품 exact SHA `0b220b8a57922e051ad1fc43ea433c1ec189c5aa`만 승인 Git SSH alias에서 수신한다. 신규 exact `/srv/anvil-wsl/f18-ops-r7-product-qa` 한 경로를 `daon:daon`/mode0700으로 생성하고 clean detached checkout한다. 생성 직전 경로·기존 서비스 상태를 읽기 전용 재확인한다.
 - checkout 내부 `.venv`와 `.f18-r7-product-test-temp`에서 잠긴 Python3.12 dev 설치, offline lock 검사, 신규 ID Token 및 기존 API 보안 회귀, R1~R7 통제 회귀를 실행한다. 새 Docker image/container/network/volume, DB, listener/port, credential/Secret, 브라우저는 생성하지 않는다. 기존 `/srv/anvil-wsl/repo`, `local-postgres`, `anvil-web` 및 다른 서비스는 보존한다.
 - 시험 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·untracked 범위를 확인한 뒤 이 신규 QA 경로만 제거하고 부재 및 기존 서비스 불변을 증명한다. source는 공개 Git commit으로 복구할 수 있다. 이 verifier 단위 결과는 실제 OIDC issuer/API/step-up capability PASS나 F-18 전체 인수가 아니다.
