@@ -1,5 +1,6 @@
 # F-18 R7 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
 
+- 통제 QA 결과: 게시 exact `9c288bd7d87641c72e92df15759115ed494f1e33` clean detached, Python3.12.3, 47 resolved/43 installed, `uv lock --check --offline` exit0, R1~R7 종료 통제 **22 PASS**(exit0/1.27초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.venv/`만 확인해 exact checkout 제거·잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 실제 issuer/API·Production 미검증, F-18 `accepted=false`, F-19 차단. 이제 seq1537/1538 lease 회수 evidence-only 투영 및 G-05를 진행한다.
 - 종료 통제 TDD RED: 새 `scripts/f18_wsl_ops_r7_close_overlay.py` 부재로 신규 테스트 2 FAIL(exit1). GREEN: 동일 신규 테스트 2 PASS(exit0/0.51초), Windows R1~R7 종료 통제 회귀 22 PASS(exit0/2.72초), `git diff --check` exit0. 제품 exact6은 추가 변경0이다. 현재 seq1536은 통제 QA·lease 회수 전 ACTIVE이며 종료 PASS로 승격하지 않는다.
 - 담당 Main. R7 종료 통제 code의 게시 exact SHA만 승인 Git SSH alias에서 WSL-server 신규 `/srv/anvil-wsl/f18-ops-r7-close-control-qa`에 clean detached checkout한다. 생성 직전 경로 부재·기존 서비스 상태를 읽기 전용으로 재확인하고 `daon:daon`/mode0700 한 경로만 만든다.
 - 전용 checkout 내부 `.venv` 및 `.f18-r7-close-test-temp`만 사용해 잠긴 Python3.12, offline lock 검사, R1~R7 종료 통제 회귀를 실행한다. Docker image/container/network/volume, DB, port/listener, Secret, browser는 새로 만들지 않는다. 기존 `/srv/anvil-wsl/repo`, `local-postgres`, `anvil-web` 및 다른 서비스는 건드리지 않는다.
