@@ -1,5 +1,8 @@
 """F-15 operational shell boundary; historical injected ASGI tests remain separate."""
 
+import re
+from pathlib import Path
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -134,8 +137,6 @@ def test_worker_probe_masks_database_failure():
 
 
 def test_local_compose_is_loopback_web_only_and_external_database():
-    from pathlib import Path
-
     root = Path(__file__).resolve().parents[2]
     compose = (root / "docker-compose.local.yml").read_text(encoding="utf-8")
     assert '"127.0.0.1:8300:8080"' in compose
@@ -147,6 +148,25 @@ def test_local_compose_is_loopback_web_only_and_external_database():
     nginx = (root / "deploy/local/nginx.conf").read_text(encoding="utf-8")
     assert "proxy_pass http://anvil-api:8301" in nginx
     assert "location /api/" in nginx
+
+
+def test_auth_ingress_nginx_config_routes_to_same_api_upstream_not_spa():
+    """Config contract only; real HTTP ingress requires separate WSL verification."""
+    nginx = (Path(__file__).resolve().parents[2] / "deploy/local/nginx.conf").read_text(
+        encoding="utf-8"
+    )
+    for route in ("api", "auth"):
+        match = re.search(rf"location /{route}/ \{{([^{{}}]*)\}}", nginx)
+        assert match is not None, f"/{route}/ must have an explicit proxy location"
+        directives = match.group(1)
+        for required in (
+            "proxy_pass http://anvil-api:8301;",
+            "proxy_set_header Host $http_host;",
+            "proxy_set_header X-Forwarded-For $remote_addr;",
+            "proxy_set_header X-Forwarded-Proto $scheme;",
+        ):
+            assert required in directives
+        assert "try_files" not in directives
 
 
 def test_nginx_web_stage_runs_as_unprivileged_image_owner_for_read_only_compose():
