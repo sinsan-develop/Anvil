@@ -1,3 +1,9 @@
+# F-18 OIDC 실제 issuer 격리 QA 자원 계획 / 2026-09-25
+
+- 담당 Main, read-only 선행 확인: canonical seq1553/G-05 PASS, worker/write lease 없음, branch `codex/f18-wsl-ops` clean·remote 동일 `2e6535359b60de1708bea6e25613b3bd6402aa1f`. WSL-server exact `/srv/anvil-wsl/f18-oidc-real-qa` 부재, `anvil-f18-oidc-qa` container 부재, loopback `127.0.0.1:4771` listener 부재, 메모리 available 5.8GiB; 공유 서비스는 건드리지 않는다.
+- 이번 QA는 공식 Keycloak 26.7.4 고정 image 하나를 WSL-server에 가져오고 임시 container `anvil-f18-oidc-qa` 하나만 1GiB 상한·`127.0.0.1:4771:8443` loopback publish로 시작한다. exact 경로에는 임시 localhost SAN 자체서명 PEM만 생성한다. Keycloak 내 임시 `anvilqa` realm/public PKCE client/합성 사용자만 만들고 기존 DB·network·container·웹·계정·Secret은 사용하지 않는다. `start-dev`는 격리 QA 전용이며 운영 구성으로 간주하지 않는다. 실제 제품 `OidcIssuerTransport`의 TLS 검증·code/PKCE 교환과 R7 ID Token 서명/issuer/audience/nonce 검증을 확인하되, browser UI·운영 인증·step-up 전체 PASS는 주장하지 않는다.
+- 실패·성공 모두 exact container와 PEM 경로를 확인 후 제거하고, 새 image가 다른 container에서 사용되지 않았음을 확인한 뒤 exact QA image도 제거한다. 잔여 container/path/listener/image 0과 기존 서비스 상태를 재확인한다. 테스트 기록에는 합성 credential·authorization code·token·private key를 남기지 않는다.
+
 # F-18 R10 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
 
 - R10 종료 projection: 검증된 control code SHA `7d8ffaec49c60aa4df7330254c52d8ee96bfbfb3`에 결박하여 seq1552 `WRITE_LEASE_REVOKED` → seq1553 `WORKER_LEASE_REVOKED`를 materialize했다. 제품 SHA `5c0a9ba2ec907b8e7a4b05c92389de9456304736` WSL 관련 143 PASS와 control 34 PASS만 증명한다. Main 소유, 제품 write scope=[], worker/write lease=None, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED 유지. 다음은 격리 실제 OIDC issuer QA이다.
