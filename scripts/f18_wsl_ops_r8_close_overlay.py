@@ -34,7 +34,7 @@ def control_paths():
 def evidence_paths():
     return {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
             "docs/progress/build-progress.json", "docs/progress/progress-events.json",
-            DIGEST, MANIFEST}
+            r8.MANIFEST, DIGEST, MANIFEST}
 
 
 def _historical(root):

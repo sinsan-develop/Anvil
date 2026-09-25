@@ -18,6 +18,7 @@ def _published_progress():
 
 def test_r8_close_requires_published_active_predecessor():
     close = importlib.import_module("scripts.f18_wsl_ops_r8_close_overlay")
+    assert close.r8.MANIFEST in close.evidence_paths()
     state = _published_progress()
     assert close.validate_predecessor(ROOT, state) == []
     changed = deepcopy(state)
