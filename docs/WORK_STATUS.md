@@ -1,6 +1,6 @@
 # F-18 R9 종료 및 다음 경계 / 2026-09-25
 
-- 교정된 종료 통제 `02973873a827776c7e47cafd074e09065edc090d`에 결박하여 seq1547 `WRITE_LEASE_REVOKED` → seq1548 `WORKER_LEASE_REVOKED`를 재생성했다. Main 소유, 제품 write scope=[], worker/write lease=None, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED를 유지한다. 실제 issuer/API/browser 통합은 미검증이며 같은 단일 브랜치의 다음 로컬·WSL-server 작업이다. G-05 최종 게시 검증 전까지 종료 PASS 주장은 보류한다.
+- 교정된 종료 통제 `02973873a827776c7e47cafd074e09065edc090d`에 결박하여 seq1547 `WRITE_LEASE_REVOKED` → seq1548 `WORKER_LEASE_REVOKED`를 재생성했다. 종료 commit `d30aeff5684788539d3fe127e40515f150780f30` 원격 게시 후 G-05 seq1548 PASS(exit0), clean branch 확인. Main 소유, 제품 write scope=[], worker/write lease=None, F-18 accepted=false, F-19 차단, Production NOT_EXECUTED를 유지한다. 실제 issuer/API/browser 통합은 미검증이며 같은 단일 브랜치의 다음 로컬·WSL-server 작업이다.
 
 # F-18 R9 종료 SHA 결박 교정 / 2026-09-25
 
