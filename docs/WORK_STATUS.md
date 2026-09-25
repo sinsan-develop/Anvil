@@ -1,5 +1,6 @@
 # F-18 R10 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
 
+- 종료 통제 QA: 게시 exact `7d8ffaec49c60aa4df7330254c52d8ee96bfbfb3` clean detached, WSL-server Python3.12.3, offline lock exit0/47 resolved, 잠긴 dev 43 installed, R1~R10 종료 통제 **34 PASS**(exit0/2.51초). realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인 후 신규 QA checkout 제거·잔류0. 기존 `anvil-web` Up/healthy 불변. 이제 검증된 control code SHA에 결박해 seq1552~1553 lease 회수를 materialize한다.
 - 담당 Main. 게시 제품 `5c0a9ba2ec907b8e7a4b05c92389de9456304736`의 WSL-server 143 PASS와 checkout 잔류0을 확인했다. R10 종료 통제는 canonical seq1551의 ACTIVE write/worker lease를 seq1552~1553으로 순서대로 회수한다. TDD 신규 모듈 부재 RED 2 FAIL(exit1) → GREEN 2 PASS(exit0/0.73초), Windows R1~R10 종료 통제 **34 PASS**(exit0/5.58초), checker diff 3줄 추가/삭제0. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED는 유지한다.
 - WSL control QA 자원은 신규 exact `/srv/anvil-wsl/f18-ops-r10-close-control-qa` 하나다. 생성 전 경로 부재·기존 서비스 상태를 확인하고 게시된 control SHA를 `daon:daon`/0700 clean detached로 checkout한다. 경로 안의 `.uv-cache`·`.venv`에서 offline lock·잠긴 Python3.12 R1~R10 종료 통제를 실행한다. 기존 DB·Docker image/container/network/volume·서비스·Secret·브라우저·listener는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 목록을 확인하고 이 checkout만 제거해 잔류0을 확인한다.
 
