@@ -58261,6 +58261,9 @@ def validate_bundle(bundle):
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R9_STEP_UP_REQUEST_START":
         from f18_wsl_ops_r9_overlay import validate
         return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R11_MIXED_JWKS_CHECKPOINT":
+        from f18_wsl_ops_r11_close_overlay import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R11_MIXED_JWKS_START":
         from f18_wsl_ops_r11_overlay import validate
         return validate(bundle["_root"], bundle)

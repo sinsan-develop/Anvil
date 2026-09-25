@@ -1,3 +1,8 @@
+# F-18 R11 writer 종료 통제·WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. 게시 제품 `8bcb630cdd913ed0a4dc9fa456b814c0d71f1424` WSL 잠긴 관련 151 PASS와 격리 실제 Keycloak ordinary code-flow/PKCE negative PASS, 자원 잔류0을 확인했다. R11 writer 종료는 seq1557 WRITE_LEASE_REVOKED → seq1558 WORKER_LEASE_REVOKED 증거-only이며 F-18 accepted=false/F-19 차단/Production NOT_EXECUTED를 유지한다. 신규 통제 모듈 부재 RED 2 FAIL(exit1) → GREEN 2 PASS(exit0), Windows R1~R11 종료 통제 38 PASS(exit0/6.67초), checker diff 3줄 추가/삭제0. 최초 PowerShell wildcard literal로 pytest 경로를 찾지 못한 read-only 호출(exit4)은 파일 목록을 명시적으로 전달해 해소했다.
+- WSL-server 신규 exact `/srv/anvil-wsl/f18-ops-r11-close-control-qa` clean detached checkout 하나만 생성한다. 생성 전 경로 부재·기존 서비스 상태를 확인하고 게시된 control code SHA를 `daon:daon`/0700 경로에 가져온다. 내부 `.uv-cache`·`.venv`의 잠긴 Python3.12에서 offline lock·R1~R11 종료 통제 회귀를 실행한다. DB·Docker·기존 서비스·Secret·browser·listener는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 범위를 확인하고 해당 checkout만 제거해 잔류0을 증명한다. WSL PASS 전 lease 회수 증거는 발급하지 않는다.
+
 # F-18 R11 실제 issuer 격리 재QA 자원 계획 / 2026-09-25
 
 - Main 소유, WSL-server만 사용. 게시 exact 제품 SHA `8bcb630cdd913ed0a4dc9fa456b814c0d71f1424`을 신규 `/srv/anvil-wsl/f18-oidc-real-r11-qa/repo` clean detached로 가져오고 부모 exact 경로는 `daon:daon`/0700으로 격리한다. 기존 `/srv/anvil-wsl/f18-oidc-real-qa`의 자원은 잔류0이며 재사용하지 않는다. 내부 `.uv-cache`·`.venv`의 잠긴 Python3.12에서 Anvil 실제 `OidcCodeFlow`/`OidcIssuerTransport`/`OidcIdTokenVerifier`를 실행한다.
