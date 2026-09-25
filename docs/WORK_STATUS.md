@@ -1,7 +1,14 @@
+# F-18 R11 실제 issuer 격리 재QA 자원 계획 / 2026-09-25
+
+- Main 소유, WSL-server만 사용. 게시 exact 제품 SHA `8bcb630cdd913ed0a4dc9fa456b814c0d71f1424`을 신규 `/srv/anvil-wsl/f18-oidc-real-r11-qa/repo` clean detached로 가져오고 부모 exact 경로는 `daon:daon`/0700으로 격리한다. 기존 `/srv/anvil-wsl/f18-oidc-real-qa`의 자원은 잔류0이며 재사용하지 않는다. 내부 `.uv-cache`·`.venv`의 잠긴 Python3.12에서 Anvil 실제 `OidcCodeFlow`/`OidcIssuerTransport`/`OidcIdTokenVerifier`를 실행한다.
+- 공식 Keycloak 26.7.4 고정 image를 다시 가져와 임시 `anvil-f18-oidc-r11-qa` container 하나만 1GiB/2 CPU/pids256과 `127.0.0.1:4771:8443` loopback publish로 사용한다. 부모 exact 경로에 1일짜리 localhost SAN 자체서명 cert/key를 만들고 0600 key/0644 cert, 임시 realm/public client/합성 user만 사용한다. 기존 서비스·DB·계정·Secret·network/volume·운영 환경은 건드리지 않는다. 실제 code/PKCE/TLS/서명/issuer/audience/nonce를 확인하고 틀린 verifier 거부도 시도한다. UI/browser·step-up 전체·Production PASS로 승격하지 않는다.
+- 성공·실패 모두 exact path realpath·비-symlink·owner/mode·repo SHA/tracked clean·ignored 범위를 확인하고 해당 임시 container/path/cert만 제거한다. image는 다른 container 미사용을 확인 후 제거한다. path/container/image/listener 잔류0 및 `anvil-web` 기존 healthy를 재검증한다. synthetic credential, code, token, private key는 기록하지 않는다.
+
 # F-18 R11 제품 WSL-server QA 자원 계획 / 2026-09-25
 
 - 담당 Main. Developer exact3 clean commit `8bcb630cdd913ed0a4dc9fa456b814c0d71f1424`을 승인 SSH alias의 기존 branch에 push했다. Main 독립 Anaconda 관련 5-file **151 PASS**(exit0/7.76초), 게시 후 G-05 seq1556 PASS, branch clean. Developer 잠긴 로컬 151 PASS와 구분한다. 전체 suite 13 collection ERROR 비-GREEN, 실제 issuer/API/browser/Production은 미검증이다.
 - WSL-server 신규 exact `/srv/anvil-wsl/f18-ops-r11-product-qa` clean detached checkout 하나만 생성한다. 생성 전 경로 부재·기존 서비스 상태를 확인하고 승인 remote의 위 제품 SHA를 checkout한다. `daon:daon`/0700, 내부 `.uv-cache`·`.venv`의 잠긴 Python3.12에서 offline lock 및 OIDC identity/code-flow/issuer-transport/local-session/web-security 회귀를 실행한다. DB·Docker·기존 서비스·Secret·listener·브라우저는 변경하지 않는다. 완료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 범위를 확인하고 checkout만 제거해 잔류0을 증명한다. 합성 계약 PASS를 실제 issuer PASS로 승격하지 않는다.
+- WSL-server 결과: 게시 exact 제품 SHA clean detached, Python3.12.3, offline lock 47 resolved, 잠긴 dev 43 installed, 관련 **151 PASS**(exit0/7.15초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인하고 해당 checkout만 sudo 삭제했다. path 잔류0, 기존 `anvil-web` Up/healthy 불변. 실제 issuer/API/browser/Production은 여전히 미검증이다.
 
 # F-18 R11 mixed-use JWKS 통제·WSL-server QA 자원 계획 / 2026-09-25
 
