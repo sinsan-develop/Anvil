@@ -1,3 +1,9 @@
+# F-18 R8 code-flow 제품 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. developer-primary exact3 제품 commit `e6a6c9b9b0f642e51d4dffbc0d8f803ed6b90c2b`를 지정 `development` SSH alias의 기존 `codex/f18-wsl-ops`에 push하고 G-05 seq1541 PASS를 확인했다. 로컬 잠긴 R8/R7/기존 보안 focused 113 PASS이며 전체 pytest는 기존 13 collection ERROR 및 보정 장시간 실행 중단으로 PASS 미확인이다. F-18 `accepted=false`, F-19 차단, Production `NOT_EXECUTED`를 유지한다.
+- 제품 QA는 WSL-server의 신규 전용 `/srv/anvil-wsl/f18-ops-r8-product-qa` 경로만 사용한다. 생성 전 exact 경로 부재·기존 `local-postgres`/`anvil-web` 상태를 읽기 전용 확인하고, `daon:daon`/mode0700 전용 디렉터리 하나를 만든다. 승인 Git SSH alias에서 제품 exact SHA를 fetch한 clean detached checkout에 잠긴 Python3.12 dev 환경을 `.venv`로 설치하며 offline lock 검사와 R8/R7/local_session/web_security 및 통제 회귀를 실행한다. 기존 checkout, DB, Docker image/container/network/volume, listener/port, Secret, 브라우저는 변경·생성하지 않는다.
+- 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·untracked/ignored 범위를 확인하고 이 신규 QA 경로만 제거한다. 잔류0 및 기존 서비스 불변을 확인한다. 이 단위 QA는 실제 issuer/Authorization Code 네트워크/API/세션·step-up 실측이나 F-18 인수를 증명하지 않는다. 결과와 미검증 범위를 본 파일에 추가한 후 R8 lease 종료 통제를 진행한다.
+
 # F-18 R8 code-flow 통제 QA 계획 / 2026-09-25
 
 - R8 통제 QA 결과: 게시 exact `ac44e8e7fc447128cd68d3cb015410eee54644c8` clean detached, WSL-server Python3.12.3, 47 resolved/43 installed, `uv lock --check --offline` exit0, R1~R8 통제 **24 PASS**(exit0/1.08초). Windows 동일 24 PASS(exit0/3.04초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.venv/`만 확인 후 exact 신규 checkout 제거·잔류0. 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 실제 OIDC issuer/API 미검증이며 다음은 seq1539~1541 evidence-only writer 발급이다.
