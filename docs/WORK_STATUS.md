@@ -1,3 +1,7 @@
+# F-18 R12 종료 통제 QA 경계 보정 / 2026-09-25
+
+- 종료 materialize 첫 시도는 `F18_WSL_OPS_R12_CLOSE_GIT_INVALID`로 fail-closed 되었고 canonical progress/lease는 seq1561 그대로다. 진단 결과 첫 종료 control QA commit `c7610e2` 이후 게시된 R12 시작 검사기 exact 자체 보정 파일 `scripts/f18_wsl_ops_r12_overlay.py`를 종료 검사기의 사후 허용 집합에서 누락했다. 제품 변경·원격 drift·dirty 파일은 없었다. 거부 회귀 RED 1 FAIL, 이 한 파일만 허용해 GREEN을 확인하고 새 종료 control QA commit에 재결박한다. `F-18 accepted=false`/F-19 차단/Production NOT_EXECUTED 유지.
+
 # F-18 R12 종료 통제 사후 범위 보정 / 2026-09-25
 
 - 판정: `F18_R12_CLOSE_CONTROL_SCOPE_REPAIR`, 제품 실패·F-18 인수 아님. R12 종료 control commit `c7610e2` 게시 후 활성 R12 G-05는 `F18_LOCAL_START_GIT_INVALID`와 `F18_WSL_OPS_R12_POST_QA_SCOPE_INVALID`로 차단됐다. 원인은 R12 시작 검사기의 사후 허용 집합에 알려진 종료 plan/overlay/test와 checker dispatch exact4가 빠진 것이며, 발급 제품 exact3·lease token·원래 QA SHA·canonical snapshot은 정상이다. 동일 범주의 Main 통제 허용 경로 오류 두 번째 발견, 정식 Developer 실패0.
