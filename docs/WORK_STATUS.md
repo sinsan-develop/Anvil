@@ -1,3 +1,10 @@
+# F-18 R14 PG18 실제 HTTP·DB E2E 격리 QA 자원 계획 / 2026-09-25
+
+- 담당 Main. 대상은 같은 `codex/f18-wsl-ops` branch의 승인 alias 게시 SHA이며 WSL-server만 사용한다. 현재 HEAD/원격 `279d01ebf51786a8c79a705d6ae189747541d6b8` clean, G-05 seq1563 PASS, worker/write lease=None. 기존 F-17 합성 opt-in HTTP+DB harness를 현재 revision에 실행한다. F-18 전체 인수·PG15·OIDC·브라우저·운영 서버 검증으로 승격하지 않는다.
+- 생성 전 읽기 전용 확인: `/srv/anvil-wsl/f18-pg18-api-r14-qa`, 전용 `anvil-f18-r14-*` container/network/tag가 부재하고 loopback 포트 32769/8314/8443이 비어 있으며 `local-postgres` Up·`anvil-web` healthy. 생성 대상은 위 exact 경로의 clean detached Git checkout 및 mode0700 QA 산출물, 현재 SHA OCI revision의 기존 Dockerfile runtime/Web target 전용 image tag 각 하나, cached PG18 image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c`, 전용 internal/ingress network 둘, PG18/API/Web/TLS 전용 container 각 하나로 제한한다. PGDATA tmpfs, named volume0, DB/Web/TLS host bind는 각각 127.0.0.1:32769/8314/8443이다. F-17 Compose의 synthetic test-session 설정을 전용 project name으로 재사용하며 실제 계정·운영 Secret은 사용하지 않는다.
+- migration은 격리 DB에 admin으로 0016까지 적용하고 최소 권한 `anvil_app` runtime role을 만든다. 실제 HTTPS same-origin readiness, 합성 session, Task→Run HTTP와 DB 행 일치, API restart 후 SSE event ID와 DB 일치를 확인한다. 인증서는 전용 Caddy internal CA를 QA 경로에만 보관해 검증 클라이언트에 지정한다. 어떤 실패도 PASS로 승격하지 않는다.
+- 성공·실패 모두 exact path realpath/비-symlink/owner/HEAD와 container/image/network ID·label 및 loopback bind를 대조하고 이 QA의 container/network/image tag/path·합성 credential·DB tmpfs를 제거한다. 전용 잔류0 및 기존 서비스 불변을 확인하고 결과·오류 횟수·미검증 범위를 여기 기록한다. 공용 builder cache와 기존 DB·서비스는 보존한다.
+
 # F-18 R13 PG18 격리 migration·backup 실측 / 2026-09-25
 
 - 판정: `F18_R13_PG18_BOUNDED_QA_PASS`, F-18 전체 인수 아님. 담당 Main. 승인 SSH alias에 게시한 clean SHA `a81fdc70c80c029a72e3a7316e9f907f8fc7639c`를 WSL-server 전용 checkout에서 detached/clean으로 확인했다. 기존 runtime Dockerfile의 전용 image ID `sha256:42006154975182d12549a1e21d893033e08c2dca14c8a0fa7c83fd74b0721744`, OCI revision=게시 SHA, base PG18 image ID `sha256:5a9c2dbe6ab521f35e87c81124aa5137678992ddabb9c11ef46e04e5172af73c`를 확인했다. 빌드 exit0(`--pull=false`, 1GiB/2CPU).
