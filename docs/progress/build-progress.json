@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-wsl-ops-r8-seq1541",
-  "event_sequence": 1541,
-  "updated_at": "2026-09-25T13:03:10+09:00",
-  "last_event_id": "evt_f18_local_1541_write_lease_issued",
+  "snapshot_id": "snapshot-f18-wsl-ops-r8-close-seq1543",
+  "event_sequence": 1543,
+  "updated_at": "2026-09-25T13:31:58+09:00",
+  "last_event_id": "evt_f18_local_1543_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -200,28 +200,8 @@
     "F-16",
     "F-17"
   ],
-  "active_agent": "developer-primary-f18-wsl-ops-r8-code-flow",
-  "write_lease": {
-    "lease_id": "write-lease-f18-wsl-ops-r8-20260925-001",
-    "actor_id": "developer-primary-f18-wsl-ops-r8-code-flow",
-    "subject_ref": "F-18/WSL_OPS_R8_CODE_FLOW",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-25T13:03:10+09:00",
-    "expires_at": "2026-09-26T01:03:10+09:00",
-    "lease_epoch": 6,
-    "fencing_token": "f18-wsl-ops-write-fence-epoch-6-69247977e4e51781",
-    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-6-69247977e4e51781",
-    "baseline_git_commit": "ac44e8e7fc447128cd68d3cb015410eee54644c8",
-    "dispatch_head": "ac44e8e7fc447128cd68d3cb015410eee54644c8",
-    "path_scope": [
-      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
-      "packages/api/oidc_code_flow.py",
-      "tests/api/test_oidc_code_flow.py"
-    ],
-    "worker_lease_id": "worker-lease-f18-wsl-ops-r8-20260925-001",
-    "write_epoch": 6,
-    "write_fencing_token": "f18-wsl-ops-write-fence-epoch-6-69247977e4e51781"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -253,24 +233,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f18-wsl-ops-r8-20260925-001",
-    "actor_id": "developer-primary-f18-wsl-ops-r8-code-flow",
-    "subject_ref": "F-18/WSL_OPS_R8_CODE_FLOW",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-25T13:03:10+09:00",
-    "expires_at": "2026-09-26T01:03:10+09:00",
-    "lease_epoch": 6,
-    "fencing_token": "f18-wsl-ops-execution-fence-epoch-6-69247977e4e51781",
-    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-6-69247977e4e51781",
-    "baseline_git_commit": "ac44e8e7fc447128cd68d3cb015410eee54644c8",
-    "dispatch_head": "ac44e8e7fc447128cd68d3cb015410eee54644c8",
-    "path_scope": [
-      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
-      "packages/api/oidc_code_flow.py",
-      "tests/api/test_oidc_code_flow.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -492,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_BUILD_F18_OIDC_CODE_FLOW_EXACT3",
+  "next_safe_action": "PREPARE_F18_WSL_OIDC_ISSUER_API_STAGE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -606,8 +569,8 @@
     "local_head": "69247977e4e51781401e45348fd3a290d8393c36",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "ac44e8e7fc447128cd68d3cb015410eee54644c8",
-    "projection_mode": "F18_WSL_OPS_R8_CODE_FLOW_START",
+    "remote_head": "9884dc415c0e1e18c0ee8b6e76054e6ae4311b9d",
+    "projection_mode": "F18_WSL_OPS_R8_CODE_FLOW_CHECKPOINT",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -620,6 +583,7 @@
       "docs/evidence/manifests/F-18_WSL_OPS_R6_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R7_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R7_START_MANIFEST.json",
+      "docs/evidence/manifests/F-18_WSL_OPS_R8_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R8_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -633,6 +597,7 @@
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r7-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r7.json",
+      "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r8-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r8.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops.json",
       "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
@@ -649,6 +614,7 @@
       "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_WORK_INSTRUCTION.md",
+      "docs/work_orders/F-18_WSL_OPS_R8_CLOSE_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_WORK_INSTRUCTION.md",
@@ -663,6 +629,7 @@
       "scripts/f18_wsl_ops_r6_overlay.py",
       "scripts/f18_wsl_ops_r7_close_overlay.py",
       "scripts/f18_wsl_ops_r7_overlay.py",
+      "scripts/f18_wsl_ops_r8_close_overlay.py",
       "scripts/f18_wsl_ops_r8_overlay.py",
       "tests/tooling/test_f18_wsl_ops_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
@@ -673,17 +640,14 @@
       "tests/tooling/test_f18_wsl_ops_r6_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r7_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r7_overlay.py",
+      "tests/tooling/test_f18_wsl_ops_r8_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r8_overlay.py"
     ],
-    "product_write_scope": [
-      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
-      "packages/api/oidc_code_flow.py",
-      "tests/api/test_oidc_code_flow.py"
-    ],
-    "worktree_status": "F18_WSL_OPS_R8_CODE_FLOW_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F18_WSL_OPS_R8_CODE_FLOW_CHECKPOINT",
     "commit_status": "PENDING",
     "push_status": "PENDING",
-    "control_qa_head": "ac44e8e7fc447128cd68d3cb015410eee54644c8"
+    "control_qa_head": "9884dc415c0e1e18c0ee8b6e76054e6ae4311b9d"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1008,7 +972,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "630DE8AD12019451763A322EFF48453243C5EA1810FE0957B044968B0A4A2DCB"
+      "sha256": "42EDAEC0797BDB93E7D53787C7F8A2AE9CF12DF025E693317924EE116ADD28BD"
     }
   },
   "next_work_package": {
@@ -1405,8 +1369,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "DB6B91D4C327747B401E4F9CEB5F07F38EB817CB1EC0A12BA7B0390BE565E943",
-  "runtime_next_action": "DEVELOPER_BUILD_F18_OIDC_CODE_FLOW_EXACT3",
+  "snapshot_hash": "09031BB9F74CEDB1108912C291D30F6BC23A679C53CE661ACEA4719DD0402969",
+  "runtime_next_action": "PREPARE_F18_WSL_OIDC_ISSUER_API_STAGE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3018,7 +2982,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-25T13:03:10+09:00",
+  "recorded_at": "2026-09-25T13:31:58+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
