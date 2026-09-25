@@ -1,10 +1,12 @@
 """R6 closeout rejects altered history and any surviving product writer."""
 
 from copy import deepcopy
+from datetime import datetime, timedelta
 import importlib
 import json
 from pathlib import Path
 import subprocess
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,10 +21,15 @@ def _published_progress():
 def test_r6_close_requires_frozen_predecessor_ancestry():
     close = importlib.import_module("scripts.f18_wsl_ops_r6_close_overlay")
     state = _published_progress()
-    assert close.validate_predecessor(ROOT, state) == []
-    changed = deepcopy(state)
-    changed["worker_lease"]["status"] = "REVOKED"
-    assert close.validate_predecessor(ROOT, changed)
+    # The published historical lease must be checked at its issue time, not
+    # against the wall clock of a later test run after that lease expires.
+    issued = datetime.fromisoformat(state["worker_lease"]["issued_at"])
+    with patch.object(close.r6, "datetime") as mocked_datetime:
+        mocked_datetime.now.return_value = issued + timedelta(seconds=1)
+        assert close.validate_predecessor(ROOT, state) == []
+        changed = deepcopy(state)
+        changed["worker_lease"]["status"] = "REVOKED"
+        assert close.validate_predecessor(ROOT, changed)
 
 
 def test_r6_close_state_has_no_active_writer_and_keeps_f18_partial():

@@ -1,3 +1,16 @@
+# F-18 R11 mixed-use JWKS 통제·WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main, 제품 writer developer-primary. 같은 `codex/f18-wsl-ops` branch에서 R11 exact3만 발급한다. 최초 실제 issuer QA의 공개 JWKS 혼합 용도 실패를 회귀 테스트로 고정하고 RS256 서명 후보만 신뢰한다. 암호화 전용/비지원 키만 있는 JWKS, 잘못된 서명 후보, 중복 `kid`는 계속 거부한다. 기존 공개 API·DB·권한·Secret·운영 환경 변경 없음. 신규 control test는 모듈 부재 RED 2 FAIL(exit1) → 구현 후 GREEN 2 PASS(exit0); checker diff 3줄 추가/삭제0. seq1553/lease0/F-18 accepted=false/F-19 차단/Production NOT_EXECUTED 유지.
+- 통제 전체 36건 중 최초 35 PASS/1 FAIL(exit1): R6 종료의 역사적 ACTIVE lease가 현재 시각 기준 만료되어 test가 과거 상태를 유효하지 않다고 오판했다. 제품·canonical lease에는 손대지 않고 해당 역사 검증 test에서 당시 `issued_at+1초`로 시계를 고정했다. 수정 전 집중 R6/R11 1 FAIL, 수정 후 4 PASS(exit0). R11 제품 scope나 런타임 동작은 변경하지 않았다.
+- 통제 QA 신규 exact 경로 `/srv/anvil-wsl/f18-ops-r11-control-qa` 하나만 WSL-server에 생성한다. 생성 전 경로 부재·기존 서비스 상태를 확인한다. 승인 SSH alias에 게시된 control SHA를 `daon:daon`/0700 clean detached로 checkout하고 내부 `.uv-cache`·`.venv`에서 offline lock·잠긴 Python3.12 R1~R11 통제 회귀를 실행한다. DB·Docker·기존 서비스·Secret·브라우저·listener는 변경하지 않는다. 종료 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 범위를 확인하고 그 checkout만 제거하여 잔류0을 검증한다. PASS 전에는 lease를 발급하지 않는다.
+
+# F-18 실제 OIDC issuer QA 1차 결과·R11 보완 / 2026-09-25
+
+- 판정: `REAL_ISSUER_JWKS_MIXED_USE_REWORK`, 전체 F-18 인수 아님. WSL-server 일회성 Keycloak 26.7.4 image digest `sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c`를 1GiB·loopback HTTPS로 실행했다. 자체서명 localhost SAN 인증서 검증과 discovery HTTPS 200, 임시 realm/public client/합성 user 생성, exact 제품 SHA `5c0a9ba2ec907b8e7a4b05c92389de9456304736` 잠긴 Python3.12 R10 25 PASS를 확인했다. 실제 로그인·code exchange 전 R7 `OidcIdTokenVerifier`가 Keycloak 공개 JWKS를 `OIDC_ID_TOKEN_NOT_VERIFIED`로 거부했다. 인증 코드/ID Token 실제 발급과 browser/API/step-up/Production은 미검증이다.
+- 원인·재현: 공개 JWKS 메타데이터는 RS256 `use=sig` RSA 키 1개와 RSA-OAEP `use=enc` RSA 키 1개다. 동일 응답 전체는 R7 생성자에서 거부되고, 값 노출 없이 서명 키만 남긴 진단 입력은 수용된다. R7 생성자가 모든 JWK에 `use=sig`, `alg=RS256`을 요구하는 설계가 정상적인 혼합 용도 JWKS와 충돌한다. 수정은 비서명/비지원 키를 후보에서 제외하되 유효한 RS256 서명 키 최소1개, 후보의 구조·개인키 필드·중복 kid는 fail-closed로 유지한다. 기존 공개 API·세션 권한·DB는 변경하지 않는다.
+- 정리: exact `/srv/anvil-wsl/f18-oidc-real-qa` realpath·비-symlink·`daon:daon`/700, Git 제품 SHA·tracked clean·ignored cache/venv만 확인 후 컨테이너 `anvil-f18-oidc-qa`, exact 경로/PEM, 유일 QA image를 제거했다. 독립 재확인 path/container/image/listener `127.0.0.1:4771` 잔류0, 기존 `anvil-web` Up/healthy. Windows shell의 검증용 `$(docker...)` 보간 오류1은 정리 명령의 앞 단계 실행과 무관했고 독립 잔류 검증으로 해소했다. 정식 Developer 실패0, Main 실제 통합 오류1·원인 확정1.
+- 다음: 같은 branch의 R11 exact3(`oidc_identity.py`, `test_oidc_identity.py`, F-18 report) TDD·잠긴 로컬/WSL 회귀 후 격리 issuer를 새 exact QA 경로로 재생성해 실제 code/PKCE/TLS/서명·nonce 흐름을 재실행한다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED, seq1553 lease0 유지.
+
 # F-18 OIDC 실제 issuer 격리 QA 자원 계획 / 2026-09-25
 
 - 자원 계획 revision 1: 실제 Anvil `OidcCodeFlow`/`OidcIssuerTransport`/`OidcIdTokenVerifier`를 WSL-server에서 실행하려면 기존 system Python에 `httpx`가 없으므로, 같은 exact QA 경로의 자식 `repo`에 게시 제품 SHA `5c0a9ba2ec907b8e7a4b05c92389de9456304736` clean detached Git checkout을 추가한다. 그 안의 `.uv-cache`·`.venv`에서 offline lock·잠긴 Python3.12를 사용한다. 새 root 경로·container·listener는 추가하지 않고 종료 시 parent exact 경로와 함께 제거한다. 기존 QA 서버나 checkout을 재사용하지 않는다.
