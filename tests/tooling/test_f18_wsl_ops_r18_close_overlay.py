@@ -18,7 +18,7 @@ def _published_progress():
 
 def test_r18_close_requires_published_active_predecessor():
     close = importlib.import_module("scripts.f18_wsl_ops_r18_close_overlay")
-    assert close.control_qa_commit(ROOT) == "0000000000000000000000000000000000000000"
+    assert close.control_qa_commit(ROOT) == "7aff259eee8a4fe5923b5516c34112a2f2332b8b"
     assert close.r18.MANIFEST in close.evidence_paths()
     assert close.r18.SELF in close.evidence_paths()
     assert close.r18.TEST in close.evidence_paths()

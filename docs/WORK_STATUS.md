@@ -1,3 +1,8 @@
+# F-18 R18 분리 Worker digest writer lease 회수 / 2026-09-26
+
+- 판정: `R18_WRITER_LEASE_REVOKED_PENDING_PUSH`. 제품 exact4 commit `3586c8400172a8357d9c239e59a65550c0596d68`의 로컬 focused 143 PASS, 독립 review Critical/Important 0, WSL-server 동일 제품 SHA 순수 preflight 143 PASS·전용 자원 잔류0 후 canonical seq1572 `WRITE_LEASE_REVOKED` → seq1573 `WORKER_LEASE_REVOKED`를 materialize했다. active agent=Main, 두 lease=None, 제품 write scope=[]이다. F-18은 여전히 IN_PROGRESS_WSL_OPS/accepted=false, F-19 차단, Production NOT_EXECUTED다.
+- close 통제 QA `7aff259eee8a4fe5923b5516c34112a2f2332b8b` 게시, close 거부 테스트 2 PASS(exit0), checker net 3줄 확인. 다음은 seq1573 progress/HANDOFF·manifest checksum·detached digest를 검증해 evidence commit/push하고 G-05 재실행이다. 실제 현재 SHA 세 image·signed ReleaseManifest/collector·OIDC/object store/network/PG18·브라우저/rollback/운영 유사 rehearsal은 아직 미검증이며 신규 branch나 `ysna-server` 작업 없음.
+
 # F-18 R18 동일 SHA WSL-server 순수 preflight QA·정리 / 2026-09-26
 
 - 판정: `R18_DISTINCT_DIGEST_CONTRACT_LOCAL_WSL_PASS_BOUNDED`, 전체 F-18 acceptance 아님. 담당 Main. 제품 exact4 commit `3586c8400172a8357d9c239e59a65550c0596d68`를 원격 기존 branch에 게시했고, G-05 seq1571 PASS·독립 read-only review Critical/Important 0(Minor: 새 signed capability fixture는 별도 Git checkout gate를 직접 증명하지 않음)을 확인했다.
