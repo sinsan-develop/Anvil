@@ -171,19 +171,20 @@ def materialize(root):
             or ledger.get("last_sequence") != 1546 or validate_predecessor(root, progress)):
         raise RuntimeError("F18_WSL_OPS_R9_CLOSE_PREDECESSOR_INVALID")
     head = _run(root, "rev-parse", "HEAD")
+    qa = control_qa_commit(root)
     if (_run(root, "branch", "--show-current") != BRANCH
             or _run(root, "rev-parse", "development/main") != BASE
             or _run(root, "rev-parse", f"development/{BRANCH}") != head
-            or not _is_ancestor(root, control_qa_commit(root), head)
+            or not _is_ancestor(root, qa, head)
             or set(filter(None, _run(root, "diff", "--name-only",
-                                     f"{control_qa_commit(root)}..{head}").splitlines())) - evidence_paths()
+                                     f"{qa}..{head}").splitlines())) - evidence_paths()
             or r9.GIT_HELPERS._porcelain(root) - evidence_paths()):
         raise RuntimeError("F18_WSL_OPS_R9_CLOSE_GIT_INVALID")
     at = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds")
     rows, old_id = ledger["events"], progress["last_event_id"]
     for kind, lease in (("WRITE_LEASE_REVOKED", r9.WRITE), ("WORKER_LEASE_REVOKED", r9.WORKER)):
         last = _event(rows, kind, {"lease_id": lease, "reason": "R9_STEP_UP_REQUEST_WSL_QA_COMPLETE",
-                                   "product_head": PRODUCT, "control_qa_head": head},
+                                   "product_head": PRODUCT, "control_qa_head": qa},
                       at=at, step="WSL_OPS_R9_CLOSE")
     event_raw = _append_events_raw((root / "docs/progress/progress-events.json").read_bytes(), old_id, 1546, rows[-2:])
     progress.update({"snapshot_id": "snapshot-f18-wsl-ops-r9-close-seq1548",
@@ -193,7 +194,7 @@ def materialize(root):
                      "next_safe_action": "PREPARE_F18_WSL_OIDC_ISSUER_API_STAGE",
                      "runtime_next_action": "PREPARE_F18_WSL_OIDC_ISSUER_API_STAGE"})
     progress["repository"].update({"branch": BRANCH, "upstream": f"development/{BRANCH}",
-        "local_head": BASE, "remote_head": head, "control_qa_head": head,
+        "local_head": BASE, "remote_head": head, "control_qa_head": qa,
         "validated_base_commit": BASE, "exact_allowed_paths": control_paths(),
         "product_write_scope": [], "projection_mode": MODE,
         "worktree_status": "F18_WSL_OPS_R9_STEP_UP_REQUEST_CHECKPOINT",
