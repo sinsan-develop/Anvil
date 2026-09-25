@@ -1,3 +1,9 @@
+# F-18 R20 서명 manifest 선행 Git tag 경계 QA 계획 / 2026-09-26
+
+- 판정: `R20_ANNOTATED_QA_TAG_PUBLISHED_GIT_GATE_PENDING`. 담당 Main, 제품 수정·신규 branch 없음. 기존 `codex/f18-wsl-ops`의 clean·게시 commit `4eadfcd441b55445237545146ae5ba4051739904`에 QA 전용 annotated tag `f18-wsl-qa-4eadfcd`를 생성·게시했다. tag object `dc9f0c64e22c78c9fce6a28d471a74756a430a0f`, peeled commit은 위 SHA다. 이는 F-16 `verify_exact_checkout`의 공개 tag 입력 준비이며 ReleaseDecision/배포 승인이 아니다. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+- WSL-server 읽기 전용 사전 확인: 승인 Git SSH alias에서 정확한 tag object가 조회됐고 신규 `/home/daon/anvil-f18-r20-git-qa`는 부재, 기존 `local-postgres` ID `99f3bf939d40` Up·`anvil-web` ID `f0107aada3b2` Up/healthy다. 신규 자원은 daon 소유 mode0700 전용 checkout 한 개와 그 안의 Git metadata뿐이다. 승인 tag를 fetch해 clean detached exact commit·tag object·remote를 `verify_exact_checkout`으로 확인한다. Docker/DB/Secret/port/browser/network listener는 만들지 않는다.
+- 종료 시 exact realpath·owner·비-symlink·HEAD/dirty를 확인한 뒤 전용 checkout만 제거하고 경로 잔류0·기존 두 서비스 불변을 재확인한다. Git tag는 재현 가능한 QA 입력으로 보존한다. 이 검증은 서명 manifest, 세 현재 image의 유지·동일 digest, capability collector 또는 운영 유사 rehearsal PASS가 아니다.
+
 # F-18 R19 현재 SHA 세 역할 image 재검증 자원 계획 / 2026-09-26
 
 - 판정: `R19_CURRENT_SHA_IMAGE_QA_PLANNED`. 담당 Main, 기존 단일 branch `codex/f18-wsl-ops`, 게시·clean HEAD `fac742eb99ff13d1d78af1bce761534cde52df6c`, canonical seq1573·worker/write lease=None·G-05 PASS. 제품 write 없이 F-18 단계1의 현재 SHA image 증거만 수집한다. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
