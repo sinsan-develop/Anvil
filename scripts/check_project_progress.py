@@ -58258,6 +58258,9 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_f18_local = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R17_ROLE_IMAGES_START":
+        from f18_wsl_ops_r17_overlay import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R12_AUTH_INGRESS_CHECKPOINT":
         from f18_wsl_ops_r12_close_overlay import validate
         return validate(bundle["_root"], bundle)
