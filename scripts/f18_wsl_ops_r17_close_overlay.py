@@ -24,7 +24,7 @@ PLAN = "docs/work_orders/F-18_WSL_OPS_R17_CLOSE_PLAN.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17-close.json"
 MANIFEST = "docs/evidence/manifests/F-18_WSL_OPS_R17_CLOSE_MANIFEST.json"
 SELF = "scripts/f18_wsl_ops_r17_close_overlay.py"
-CONTROL_QA_HEAD = "0000000000000000000000000000000000000000"
+CONTROL_QA_HEAD = "2fe4b4ac9f2bcc52b9b42d3f671e0b43f79f96b2"
 
 
 def control_qa_commit(root):

@@ -1,3 +1,9 @@
+# F-18 R17 세 역할 image writer lease 회수 / 2026-09-26
+
+- 판정: `R17_WRITER_LEASE_REVOKED_PENDING_PUSH`. 제품 exact4 commit `57653ee835d47c810a1f90d48d9fbe332fb3540c`의 로컬 104 PASS/Web build·WSL-server 세 image build/inspect·일회성 HTTP/import·전용 자원 잔류0을 확인한 뒤 canonical seq1567 `WRITE_LEASE_REVOKED` → seq1568 `WORKER_LEASE_REVOKED`를 materialize했다. active agent는 Main, 두 lease=None, 제품 write scope=[]이다. F-18은 여전히 `IN_PROGRESS_WSL_OPS`/accepted=false, F-19 차단, Production NOT_EXECUTED다.
+- 통제 QA는 `2fe4b4ac9f2bcc52b9b42d3f671e0b43f79f96b2`로 게시됐고 close 전용 거부 테스트 2 PASS(exit0), overlay compile·diff-check exit0이다. 대형 progress checker에 3줄 분기를 적용할 때 patch 도구가 무관한 과거 코드 약 1,500줄을 잘못 삭제한 오류를 commit 직후 diff에서 발견했다. 원격 push 전 `559cf9a`의 원본 checker와 비교해 순수 3줄만 남도록 복원했고 후속 `2fe4b4a` commit에 복구를 기록했다. 이 두 local commit은 함께 게시되어 원격 최종 checker의 net diff는 3줄이며 제품 파일·과거 이벤트는 변하지 않았다. 해당 도구/복구 오류는 정식 Developer 실패로 계상하지 않는다.
+- 다음은 seq1568 progress/HANDOFF·manifest checksum·detached digest를 검증해 evidence commit/push하고 G-05를 재실행하는 것이다. WSL 실제 제품 DB/OIDC/object-store/network/PG18/브라우저/rollback/운영 인수는 미검증이며 새 branch나 `ysna-server` 작업은 하지 않는다.
+
 # F-18 R17 WSL-server 세 image 실측·정리 / 2026-09-26
 
 - 판정: `R17_THREE_ROLE_IMAGE_QA_PASS_BOUNDED`, 전체 F-18 acceptance 아님. 담당 Main, 기존 `codex/f18-wsl-ops`의 게시 제품 SHA `57653ee835d47c810a1f90d48d9fbe332fb3540c`; 로컬 G-05 seq1566 PASS. 독립 review의 `ENTRYPOINT`가 base `CMD`를 상속한다는 Important 지적은 Dockerfile 공식 규칙과 실측 `.Config.Cmd=None`으로 반증되어 제품 변경 없이 기각했다. 검토 중 만든 미커밋 테스트만 Developer가 제거해 checkout clean, 정식 실패 0회.

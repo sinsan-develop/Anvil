@@ -1,12 +1,20 @@
 {
   "schema_version": "1.0.0",
   "package_id": "F-18",
-  "event_sequence": 1548,
+  "event_sequence": 1568,
   "accepted": false,
-  "projection_mode": "F18_WSL_OPS_R9_STEP_UP_REQUEST_CHECKPOINT",
+  "projection_mode": "F18_WSL_OPS_R17_ROLE_IMAGES_CHECKPOINT",
   "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
   "exact_allowed_paths": [
     "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R10_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R11_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R11_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R12_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R17_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R17_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R2_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json",
     "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
@@ -23,6 +31,14 @@
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r2.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r3.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r4.json",
@@ -37,6 +53,22 @@
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9.json",
     "docs/progress/progress-handoff-detached-digest-f18-wsl-ops.json",
     "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_WORK_INSTRUCTION.md",
     "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_INVOCATION.md",
     "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_WORK_INSTRUCTION.md",
     "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_INVOCATION.md",
@@ -61,6 +93,14 @@
     "docs/work_orders/F-18_WSL_OPS_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "scripts/f18_wsl_ops_overlay.py",
+    "scripts/f18_wsl_ops_r10_close_overlay.py",
+    "scripts/f18_wsl_ops_r10_overlay.py",
+    "scripts/f18_wsl_ops_r11_close_overlay.py",
+    "scripts/f18_wsl_ops_r11_overlay.py",
+    "scripts/f18_wsl_ops_r12_close_overlay.py",
+    "scripts/f18_wsl_ops_r12_overlay.py",
+    "scripts/f18_wsl_ops_r17_close_overlay.py",
+    "scripts/f18_wsl_ops_r17_overlay.py",
     "scripts/f18_wsl_ops_r2_overlay.py",
     "scripts/f18_wsl_ops_r3_overlay.py",
     "scripts/f18_wsl_ops_r4_overlay.py",
@@ -74,6 +114,14 @@
     "scripts/f18_wsl_ops_r9_close_overlay.py",
     "scripts/f18_wsl_ops_r9_overlay.py",
     "tests/tooling/test_f18_wsl_ops_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r10_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r10_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r11_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r11_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r17_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r17_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r3_overlay.py",
     "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
@@ -93,6 +141,41 @@
       "path": "docs/WORK_STATUS.md",
       "bytes": 673270,
       "sha256": "74E383A0782C16317A859F8F77DD4FFEB3F21AC85A11FC924964BD126532F523"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",
+      "bytes": 22369,
+      "sha256": "C848308BCE557D7C6714BB0358A14A2E1364EFD0A37A237A2A82C09D141FF02D"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_START_MANIFEST.json",
+      "bytes": 21337,
+      "sha256": "C54F2ABCA565AD430E9FE22AB41C728BA96CE3FE17313AE6FD1E231939B0B839"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R11_CLOSE_MANIFEST.json",
+      "bytes": 25384,
+      "sha256": "EF093D04B0FBAE6534988C9DB39308D9DB9CE9F6E881947E486A74F6AB7B5528"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R11_START_MANIFEST.json",
+      "bytes": 24256,
+      "sha256": "5F07A40FBB87C16657339C28B07E2CD23FA52401B5D928BB2C90452A695413E0"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json",
+      "bytes": 28417,
+      "sha256": "B770B362F7689FF4B5BBA034D1BBD2F94412C22E937336D4C56EDFD035E40728"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R12_START_MANIFEST.json",
+      "bytes": 27293,
+      "sha256": "AA14874B100211E7D5E699B377C52443E5D73C0E05DB001ED44A878E9AFE52E1"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R17_START_MANIFEST.json",
+      "bytes": 30360,
+      "sha256": "AB664D957276761D837F4DE9CC10672470DF211AF00F7560F548874F9D5D881F"
     },
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R2_START_MANIFEST.json",
@@ -145,6 +228,11 @@
       "sha256": "6A87BE59BAC87B2CCC86C8CC4936B3606E3B6DA42F37F805185E804C196DDAF5"
     },
     {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R9_CLOSE_MANIFEST.json",
+      "bytes": 19328,
+      "sha256": "69139FDD4D96BEC6AFADDF95FE02AED618D21371AC4FE8F55DCB235452A0CDCE"
+    },
+    {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R9_START_MANIFEST.json",
       "bytes": 18249,
       "sha256": "E68CDEC155687758E6F62AF0626D064F704E073AA348EE1E88CD4537DB149676"
@@ -156,8 +244,43 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "bytes": 4218294,
-      "sha256": "0501A3A7AA07CBE7D47CFACCB081009436B1C5FF830B6969A90D608710E62F37"
+      "bytes": 4222828,
+      "sha256": "0462DAFEC87AC75C3D7A874806981BB32ED803E5272C38C26376DC5430153C9B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10-close.json",
+      "bytes": 459,
+      "sha256": "52B0037B31639D7CEA4BBF21AB15EDEAE5CE06BD43A255B4679CF20413780C57"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10.json",
+      "bytes": 460,
+      "sha256": "59F5C966B8ABD98A2763D4A86E29AE6F3CE783BCFED64DF40A2A5335533B70C0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11-close.json",
+      "bytes": 459,
+      "sha256": "B18673B78E15F8991163BB377A9AEF5E269DC13FAF06BCA350E48EFEE89FE49E"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11.json",
+      "bytes": 460,
+      "sha256": "31DB6680603B1A625FD75AC275890BDD6943F6F7127C4B0792FE2BEF3D8118D9"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json",
+      "bytes": 459,
+      "sha256": "1EC7B1E254A8E07C137B58F9849389FEA5D22421B31B39180BFF3BF64BACEA93"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12.json",
+      "bytes": 460,
+      "sha256": "3CCEADE2AE2D6534F9DCD9D75538BEB659DC9FA3DC1F1E26B50A667E21BF52E8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17.json",
+      "bytes": 460,
+      "sha256": "21334E5FA8F800AA36CBD35D167B1AC2D7F487A39DA26473C14D59790DE59E27"
     },
     {
       "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r2.json",
@@ -210,6 +333,11 @@
       "sha256": "E8FA9D9B65089FDCC5048DB7B2807026F717D345B593D4648273A75344B94304"
     },
     {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9-close.json",
+      "bytes": 459,
+      "sha256": "1FBE8FA727F1C02BAC151C0B5CCBCD2BBD7D5274A57A758A15EF540417A6079D"
+    },
+    {
       "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9.json",
       "bytes": 460,
       "sha256": "E1F10A45933507B36613B84DA7A8FF203A34FC9446AFBEAB469FD08362C3B118"
@@ -223,6 +351,86 @@
       "path": "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
       "bytes": 709,
       "sha256": "19B70844850C4488D5370AD5364D2028663631F5D3522EEF4B09AB7643F45939"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_CLOSE_PLAN.md",
+      "bytes": 1125,
+      "sha256": "DFD37E00D6A52504458E1032E7232612A847DBE3AF3A4DB43BB1D4845682BCA7"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_INVOCATION.md",
+      "bytes": 491,
+      "sha256": "4F1F4945BBD8E6DA9AA9BB52E639FF0F7D4F7CB6785427D14AEC45AD76297BFA"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_PLAN.md",
+      "bytes": 7158,
+      "sha256": "CD4BE0D6ECCA22F93BE00D1A271CE800C80C205AF653CC7C6D70B494E2C39E76"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_WORK_INSTRUCTION.md",
+      "bytes": 1649,
+      "sha256": "5EDC8EC4034EFD04386321339A04B170F444B0A9097D2B047EF84AA73FCB4B5E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_CLOSE_PLAN.md",
+      "bytes": 1611,
+      "sha256": "090699741B935A328B1F7C6293BC7297AB6A32BCCBC38D142CB9D0A0764F8FDD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_INVOCATION.md",
+      "bytes": 515,
+      "sha256": "D9FC688086AD4D1983CF47391B9ADAB683295DAC3E4FDBA7FA4C3E9466A5353E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_PLAN.md",
+      "bytes": 5501,
+      "sha256": "B6893A7A3B8644991FD049F722F12095B9DD827D8ACAF9658719CCB3008C6494"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_WORK_INSTRUCTION.md",
+      "bytes": 1332,
+      "sha256": "63CB8E04E7DAC080519A0BCCB6C7ECE5DFEDBF01F249D249FAEEA103BA726036"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_INVOCATION.md",
+      "bytes": 524,
+      "sha256": "0D065D5821EFC352BC18FF97B83575D50B1E6ABC70905174F702D6E1D2ABAB25"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_PLAN.md",
+      "bytes": 5508,
+      "sha256": "7A974F6EA3BA52F0D4EAE852BE77F52724733D38A3EEA533984BBFD70499B5DD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_WORK_INSTRUCTION.md",
+      "bytes": 2038,
+      "sha256": "3E105EBDACACA6A4761FE270E2C0EF2E49DD8B4260B0DDA4234BCDE07E2F6137"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
+      "bytes": 1339,
+      "sha256": "B2819CED9BE44A02866EB0F5C4106841971CE27F7135A4CA2799BBABD30F81FF"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_CLOSE_PLAN.md",
+      "bytes": 1428,
+      "sha256": "81FC883FD780691202A79785C7052DFCC28D2DF38A39D1A69D8E885C66346837"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_INVOCATION.md",
+      "bytes": 592,
+      "sha256": "FAB1AAEBAB9911780A49466AA529F00329E20FD86726CAC3CE4DEDBDCBA69A55"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_PLAN.md",
+      "bytes": 5649,
+      "sha256": "182A9DED2CB4ECF2D31A6B1978DE14988D662F4189FC94D25A980980A408CDCD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_WORK_INSTRUCTION.md",
+      "bytes": 2469,
+      "sha256": "5AA794D7BDEFD9FC7044EFAD6C26C9F0DB67C0A4A486A739EA6CEAD614840FDC"
     },
     {
       "path": "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_INVOCATION.md",
@@ -345,6 +553,46 @@
       "sha256": "B2933BCD986F484ED86173D90AB831D385ADF6F33CC3132ACF54FE0794CB6B50"
     },
     {
+      "path": "scripts/f18_wsl_ops_r10_close_overlay.py",
+      "bytes": 14128,
+      "sha256": "4A8089C34C184D95D06CA79265D2EDCCECE8219E71B21354FC5F450A9537DC6E"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r10_overlay.py",
+      "bytes": 17862,
+      "sha256": "B18CF78E9772366E98D6C1D7B78D2F3B709DB5B5FCE6BD9A13F0C79684F755FA"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r11_close_overlay.py",
+      "bytes": 13968,
+      "sha256": "76EBC5E198C081DA040D58902C7D77FC75FCE144DA460C5EEC51451739FFE892"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r11_overlay.py",
+      "bytes": 17841,
+      "sha256": "7C3E60A70CE5543C8F49362071DDBAD259AE061CACBFBA59244595E651AE5585"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r12_close_overlay.py",
+      "bytes": 14328,
+      "sha256": "79DE5A122FB9E25499943910578CD35FDFAAC282388A77BC8D85F951341BFF05"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r12_overlay.py",
+      "bytes": 19094,
+      "sha256": "4F25784D7A0258E468635957087247090A79F2E4B97C7DFA440D810455B07BB0"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r17_close_overlay.py",
+      "bytes": 14319,
+      "sha256": "006FB278D7981BE76684C1E89847A490BDF9522C0E961C57CE2FB091E3A1D9FC"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r17_overlay.py",
+      "bytes": 18334,
+      "sha256": "1FAE332919AB29A68A1446BD8C0CF8861DCC370D11122997BCE32D4EEC4E1B35"
+    },
+    {
       "path": "scripts/f18_wsl_ops_r2_overlay.py",
       "bytes": 20103,
       "sha256": "0B62E758D39D590F97C03597C1CFB3714849B55463708053DA4D26E6D22CCAEA"
@@ -408,6 +656,46 @@
       "path": "tests/tooling/test_f18_wsl_ops_overlay.py",
       "bytes": 3172,
       "sha256": "DB276762E4BEEBE080251B122A86BBC281E8C7D82A94B4A55160DD68DD078391"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r10_close_overlay.py",
+      "bytes": 1880,
+      "sha256": "EFE6772F53A09DBEF585A7F526908FBDFA7CA6273C792B588F52C8A3FF1F5E4F"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r10_overlay.py",
+      "bytes": 1490,
+      "sha256": "A89BCD891788E440CB36C93D1EA0E3F79EFE77510351A405DEFAED7BE69674BB"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r11_close_overlay.py",
+      "bytes": 1705,
+      "sha256": "2E4068D59C60E2A4D544849142058564428D13846F393D343DF7E1F8B518CFB4"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r11_overlay.py",
+      "bytes": 1460,
+      "sha256": "720AC10644341666CFE6326A23A903F351F68D58E692AA3AAF82F554EEACE129"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py",
+      "bytes": 1891,
+      "sha256": "2D324C8D167E98379BFA0DEA56F27ED005CD59DAEE3271A9A2EF1835268EF5E5"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
+      "bytes": 3772,
+      "sha256": "9AC04DB3449BE02B0969A91BF251A322D583FAE0935EA2968753FF686B5CE919"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r17_close_overlay.py",
+      "bytes": 1891,
+      "sha256": "1DA9C68790DC324E423394278905113E3CCA671CFA97786AC9A674980124A8FB"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r17_overlay.py",
+      "bytes": 3046,
+      "sha256": "B2E49AAE7AD12216928CBA77F28C00326A5E684CD98D89A4BC245DD82F369B31"
     },
     {
       "path": "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
