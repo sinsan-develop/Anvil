@@ -1,3 +1,9 @@
+# F-18 R8 종료 통제 WSL-server QA 자원 계획 / 2026-09-25
+
+- 담당 Main. 게시 제품 exact `e6a6c9b9b0f642e51d4dffbc0d8f803ed6b90c2b`의 WSL-server Python3.12 잠긴 관련 회귀 139 PASS·전용 checkout 잔류0을 확인했다. 새 R8 종료 통제는 seq1542~1543에서 write/worker lease를 순서대로 회수하고 F-18 `accepted=false`, F-19 차단, Production `NOT_EXECUTED`를 유지한다. TDD RED는 overlay 부재 2 FAIL(exit1), GREEN은 2 PASS(exit0/0.51초)다.
+- 종료 통제 code QA는 승인 Git alias에 게시된 exact control SHA를 WSL-server의 신규 `/srv/anvil-wsl/f18-ops-r8-close-control-qa`에 clean detached checkout한다. 생성 전 경로 부재·기존 `local-postgres`/`anvil-web` 상태를 읽기 전용 확인하고 `daon:daon`/mode0700 한 경로만 만든다. 내부 `.venv`·`.uv-cache`에서 잠긴 Python3.12 dev 환경, offline lock 검사, R1~R8 종료 통제 회귀를 실행한다. Docker/DB/port/Secret/browser는 생성·변경하지 않는다.
+- 정리 전 realpath exact·비-symlink·owner/mode·HEAD·tracked clean·ignored 범위를 확인하고 신규 QA checkout 한 경로만 제거해 잔류0과 기존 서비스 불변을 확인한다. QA 후에만 evidence-only 종료 투영을 수행하며 실제 issuer/API 인수로 승격하지 않는다.
+
 # F-18 R8 code-flow 제품 WSL-server QA 자원 계획 / 2026-09-25
 
 - 제품 QA 결과: 승인 Git alias에서 제품 exact `e6a6c9b9b0f642e51d4dffbc0d8f803ed6b90c2b` clean detached checkout, WSL-server Python3.12.3, `uv lock --check --offline` exit0/47 resolved, locked dev 43 installed. `tests/api/test_oidc_code_flow.py`, R7 identity, 기존 local session/web security 및 R1~R8 통제 회귀 **139 PASS**(exit0/7.73초). 정리 전 realpath exact·비-symlink·`daon:daon`/700·HEAD·tracked clean·ignored `.uv-cache/`, `.venv/`만 확인하고 신규 QA checkout exact 경로만 제거했다. 잔류0, 기존 `local-postgres` Up·`anvil-web` Up/healthy 불변. 실제 issuer/API/세션·Production은 `NOT_EXECUTED`; F-18 `accepted=false`, F-19 차단을 유지하며 다음은 R8 lease 종료 통제다.
