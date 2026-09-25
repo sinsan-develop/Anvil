@@ -40,7 +40,8 @@ def control_paths():
 def evidence_paths():
     # The exact R12 start validator correction was published after this
     # closeout overlay's first QA commit; it is not a product-scope expansion.
-    return set(r12.evidence_paths()) | {DIGEST, MANIFEST, r12.SELF, r12.TEST, SELF}
+    return set(r12.evidence_paths()) | {DIGEST, MANIFEST, r12.SELF, r12.TEST, SELF,
+                                        "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py"}
 
 
 def _historical(root):
