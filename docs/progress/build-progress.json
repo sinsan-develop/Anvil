@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-wsl-ops-r43d-seq1663",
-  "event_sequence": 1663,
-  "updated_at": "2026-09-27T04:29:28+09:00",
-  "last_event_id": "evt_f18_local_1663_worker_lease_issued",
+  "snapshot_id": "snapshot-f18-wsl-ops-r43d-close-seq1664",
+  "event_sequence": 1664,
+  "updated_at": "2026-09-27T04:52:53+09:00",
+  "last_event_id": "evt_f18_local_1664_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -233,20 +233,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f18-wsl-ops-r43d-20260927-001",
-    "actor_id": "main-agent-eoul",
-    "subject_ref": "F-18/WSL_OPS_R43D_RUNTIME_RETEST",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-27T04:29:28+09:00",
-    "expires_at": "2026-09-27T16:29:28+09:00",
-    "lease_epoch": 31,
-    "fencing_token": "f18-wsl-ops-execution-fence-epoch-31-567514f0801c7087",
-    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-31-567514f0801c7087",
-    "baseline_git_commit": "4d93d025191c3fce3b8c6fadc1c9776fcd1cb1c0",
-    "dispatch_head": "4d93d025191c3fce3b8c6fadc1c9776fcd1cb1c0",
-    "path_scope": []
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -468,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MAIN_VERIFY_F18_OIDC_RUNTIME_R43D",
+  "next_safe_action": "AUDIT_F18_REMAINING_ACCEPTANCE_AND_NEGATIVE_GAPS",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -582,8 +569,8 @@
     "local_head": "69247977e4e51781401e45348fd3a290d8393c36",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "4d93d025191c3fce3b8c6fadc1c9776fcd1cb1c0",
-    "projection_mode": "F18_WSL_OPS_R43D_RUNTIME_RETEST_START",
+    "remote_head": "8f5f5fad11a180dcd7db3022ec7c14553b84c240",
+    "projection_mode": "F18_WSL_OPS_R43D_RUNTIME_RETEST_CHECKPOINT",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -638,6 +625,7 @@
       "docs/evidence/manifests/F-18_WSL_OPS_R43B2_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R43C_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R43C_START_MANIFEST.json",
+      "docs/evidence/manifests/F-18_WSL_OPS_R43D_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R43D_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R5_CHECKPOINT_MANIFEST.json",
@@ -702,6 +690,7 @@
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r43b2.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r43c-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r43c.json",
+      "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r43d-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r43d.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r5.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6-close.json",
@@ -807,6 +796,7 @@
       "docs/work_orders/F-18_WSL_OPS_R43C_RUNTIME_REWORK_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R43C_RUNTIME_REWORK_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R43C_RUNTIME_REWORK_WORK_INSTRUCTION.md",
+      "docs/work_orders/F-18_WSL_OPS_R43D_CLOSE_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R43D_RUNTIME_RETEST_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R43D_RUNTIME_RETEST_WORK_INSTRUCTION.md",
       "docs/work_orders/F-18_WSL_OPS_R43_OIDC_FORMAL_HOST_PLAN.md",
@@ -878,6 +868,7 @@
       "scripts/f18_wsl_ops_r43b2_overlay.py",
       "scripts/f18_wsl_ops_r43c_close_overlay.py",
       "scripts/f18_wsl_ops_r43c_overlay.py",
+      "scripts/f18_wsl_ops_r43d_close_overlay.py",
       "scripts/f18_wsl_ops_r43d_overlay.py",
       "scripts/f18_wsl_ops_r4_overlay.py",
       "scripts/f18_wsl_ops_r5_overlay.py",
@@ -938,6 +929,7 @@
       "tests/tooling/test_f18_wsl_ops_r43b2_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r43c_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r43c_overlay.py",
+      "tests/tooling/test_f18_wsl_ops_r43d_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r43d_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r5_overlay.py",
@@ -951,10 +943,10 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F18_WSL_OPS_R43D_RUNTIME_RETEST_ACTIVE",
+    "worktree_status": "F18_WSL_OPS_R43D_CORE_RUNTIME_CHECKPOINT",
     "commit_status": "PENDING",
     "push_status": "PENDING",
-    "control_qa_head": "4d93d025191c3fce3b8c6fadc1c9776fcd1cb1c0"
+    "control_qa_head": "8f5f5fad11a180dcd7db3022ec7c14553b84c240"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1281,7 +1273,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "37D9AD1001B3F7FBD609B82E7B354A6935FE44B79B5D6F265075F47DE867E3FA"
+      "sha256": "33A13EEE1F0B878D5F25AC8C2F71E63B66FBA85441AEBAFDD7CB0513A8919B98"
     }
   },
   "next_work_package": {
@@ -1678,8 +1670,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "01BFC8094AF8BEEDB00E49C94809D27B4AB1E850C1DB32FDBC186EDCDAE919FA",
-  "runtime_next_action": "MAIN_VERIFY_F18_OIDC_RUNTIME_R43D",
+  "snapshot_hash": "769C432609BD52A7A24F96B462BF28980D2DAA9E935762BF60B3C54E06793F96",
+  "runtime_next_action": "AUDIT_F18_REMAINING_ACCEPTANCE_AND_NEGATIVE_GAPS",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3291,7 +3283,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-27T04:29:28+09:00",
+  "recorded_at": "2026-09-27T04:52:53+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
