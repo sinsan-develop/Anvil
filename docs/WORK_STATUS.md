@@ -1,3 +1,9 @@
+# F-18 R32 trusted directory 통제 준비 / 2026-09-26
+
+- 판정: `R32_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 시작 branch `codex/f18-wsl-ops`, HEAD·원격 `ae3d7b24165ff9dd3aa34c536a564486ba1d0dbf` clean, G-05 seq1588 PASS, worker/write lease=null. 로컬 관련 기준 회귀 57 PASS/PG opt-in 4 SKIP/기존 warning2(exit0). 기존 분리 checkout과 동일 브랜치를 유지하고 새 브랜치·worktree를 만들지 않는다.
+- 설계/코드 대조: 설계서 17.1의 `users/roles/user_roles`는 migration 0001~0017에 없으며 R30 `OidcPrincipalResolver`는 Protocol뿐이다. F-18 기본 WorkInstruction 단계3의 실제 OIDC 권한 검증을 위한 내부 계보로 R32 전용 additive `0018`과 read-only resolver만 한정했다. 토큰 role/scope/project claim은 권한 근거로 사용하지 않는다. 기존 `SessionPrincipal`의 독립 project/environment 집합을 통한 교차 조합 확대를 막기 위해 단일 활성 role·project·environment만 허용한다. 다중 범위, provisioning UI/API, 제품 auth route/session, 기존 표·공유 DB·Production은 이 Task 밖이다. 기능 범위·공개 API·권한 확대 없이 내부 구현 방법을 확정한 `MAIN_RECONFIRMED_NON_SEMANTIC`이다.
+- Main 통제 파일: R32 plan/WorkInstruction/invocation, start overlay와 checker dispatch/control test, 본 WORK_STATUS와 manifest. 새 control test는 모듈 부재 RED 1 collection ERROR 후 GREEN 2 PASS(exit0). 전체 G-05는 control 파일 미커밋·미투영 중에는 기준 상태로 판정하지 않는다. 다음은 exact control QA commit/push 후 seq1589 WorkInstruction→1590 worker→1591 write lease(epoch16, 제품 exact5) 투영, G-05 확인, `developer-primary` 단일 writer 위임이다. 제품 변경0·Developer 정식 실패0, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R31 OIDC pending-store 종료 G-05 / 2026-09-26
 
 - 판정: `R31_PENDING_STORE_CHECKPOINT_PASS`. Main의 control QA `42f834911341daefa7adf72cb3e167aaaf28af0f` 뒤 seq1587 `WRITE_LEASE_REVOKED`→seq1588 `WORKER_LEASE_REVOKED`를 투영해 `2856aee`로 동일 작업 브랜치에 게시했다. `worker_lease=null`, `write_lease=null`, 제품 write scope 빈 목록, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED. G-05 seq1588 PASS(exit0), R31 close control test 2 PASS(exit0), branch clean·원격 HEAD 일치다.
