@@ -1,0 +1,1 @@
+F-18 R43B1 WorkInstruction과 R43 계획을 따르십시오. Main이 발급한 ACTIVE worker/write lease의 두 fencing token·exact5 경로·G-05 PASS를 확인한 뒤 RED→GREEN 구현을 시작하십시오. 제품 exact5 밖의 수정, WSL 자원 생성·push·병합은 하지 말고 증거와 미검증 경계를 구조화해 보고하십시오.
