@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 import importlib.util
 import os
 from pathlib import Path
-from threading import Barrier
+from threading import Barrier, Event, current_thread, main_thread
+import time
 
 import pytest
 import sqlalchemy as sa
@@ -87,3 +88,27 @@ def test_postgres_expired_row_and_downgrade_data_guard(postgres):
     assert SqlAlchemyPendingAuthStore(factory).consume(digest) is None
     with engine.connect() as connection:
         assert connection.execute(sa.text("SELECT count(*) FROM oidc_pending_auth")).scalar_one() == 0
+
+
+def test_postgres_locked_row_expiring_during_wait_is_not_returned(postgres):
+    engine, factory, _ = postgres
+    digest = b"w" * 32
+    SqlAlchemyPendingAuthStore(factory).put(digest, _pending(seconds=3))
+    transaction_started = Event()
+
+    def observed_worker_query(_connection, _cursor, _statement, _parameters, _context, _many):
+        if current_thread() is not main_thread():
+            transaction_started.set()
+
+    sa.event.listen(engine, "after_cursor_execute", observed_worker_query)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with engine.begin() as blocker:
+            blocker.execute(sa.text(
+                "SELECT state_digest FROM oidc_pending_auth WHERE state_digest = :digest FOR UPDATE"
+            ), {"digest": digest}).one()
+            waiting = pool.submit(SqlAlchemyPendingAuthStore(factory).consume, digest)
+            assert transaction_started.wait(timeout=5)
+            time.sleep(4)
+        # The blocker transaction releases the row lock on context exit.
+        assert waiting.result(timeout=10) is None
+    sa.event.remove(engine, "after_cursor_execute", observed_worker_query)

@@ -250,3 +250,10 @@
 
 - 실제 PostgreSQL 18, 두 세션 경합/만료/rollback, WSL isolated DB/role 접근, 실제 issuer·trusted mapping·session/API/browser, Production은 `NOT_EXECUTED`. PostgreSQL 전용 테스트 2건은 로컬 DSN·marker 부재로 `SKIPPED`다. 실제 OIDC login/session PASS를 주장하지 않는다.
 - rollback은 새 표에 row가 없는 경우에만 0017 downgrade다. row가 남으면 데이터 보존 결정 후 진행한다. R31 제품 commit은 정상 Git revert가 가능하다. Main control progress/HANDOFF, 원격 push, WSL/Production은 수정하지 않는다. 정식 Developer `FAILURE_REPORT` 0회.
+
+### R31 Important 보안 보완 — 동일 exact5 correction
+
+- 최초 제품 commit `64827e05257dd7dd5f5ccc6c04f1975749cc91af` 뒤 Main 독립 점검에서 두 문제가 확인됐다. 첫째, `raise ... from None`은 표시 traceback만 억제하고 원 SQL 예외/민감 parameter를 `__context__`에 남길 수 있었다. 둘째, PostgreSQL `CURRENT_TIMESTAMP`는 transaction 시작 시각에 고정되어 row lock 대기 중 만료된 요청을 반환할 수 있었다.
+- redaction RED: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/persistence/test_oidc_pending_auth.py -k 'duplicate or database_error or failed_commit' --tb=short` → exit1, 3 FAIL/1 PASS. 중복·DB 부재·commit 실패 예외의 `__context__`에 원 오류가 남는 것을 확인했다. 보완 뒤 같은 명령 → exit0, 4 PASS/17 deselected. 오류 코드를 except 밖에서 새로 발생시키고 원 예외 chain을 끊었다. 이 경로는 메시지·`__cause__`·`__context__` 모두 원문 비노출이며 실패 transaction rollback을 유지한다.
+- PostgreSQL 잠금 경합 RED 테스트를 `test_oidc_pending_auth_postgres.py`에 추가했다. 격리 DSN/marker가 로컬에 없어 실제 RED와 GREEN은 `NOT_EXECUTED`; Main의 WSL 격리 PG18 QA에서 검증이 필요하다. 구현은 PostgreSQL의 volatile `clock_timestamp()`를 사용하고 `DELETE ... RETURNING` 뒤 실제 DB 시각을 다시 조회해 만료 row 반환을 거부한다. SQLite 로컬 계약은 `CURRENT_TIMESTAMP`를 사용한다. 실제 PG 동시성 PASS로 승격하지 않는다.
+- 보완 후 관련 focused 동일 6개 테스트 파일 → exit0, **89 PASS/3 PostgreSQL SKIP/2 warning**. 새 SKIP 1건은 잠금 대기 중 만료 테스트다. 전체 pytest 재시도 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --tb=line` → exit1, 이전과 같은 collection 13 ERROR(동일 basename 10, fixture `src` 3), 전체 PASS 미확인. 보완 후 같은 `py_compile` 명령과 `git diff --check`는 각각 exit0. correction commit SHA는 Main 완료보고에 전달한다.

@@ -52,8 +52,15 @@ def _pending(value: object, db_now: datetime) -> PendingOidcRequest:
     return value
 
 
+def _db_clock(session):
+    # PostgreSQL CURRENT_TIMESTAMP is fixed at transaction start, including lock waits.
+    if session.get_bind().dialect.name == "postgresql":
+        return sa.func.clock_timestamp()
+    return sa.func.current_timestamp()
+
+
 def _database_utc(session) -> datetime:
-    value = session.execute(sa.select(sa.func.current_timestamp())).scalar_one()
+    value = session.execute(sa.select(_db_clock(session))).scalar_one()
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
@@ -69,14 +76,15 @@ class SqlAlchemyPendingAuthStore:
 
     def put(self, state_digest: bytes, pending: PendingOidcRequest) -> None:
         digest = _digest(state_digest)
+        failure = None
         try:
             with self._session_factory() as session:
                 with session.begin():
-                    valid = _pending(pending, _database_utc(session))
                     session.execute(oidc_pending_auth.delete().where(
-                        oidc_pending_auth.c.expires_at <= sa.func.current_timestamp(),
+                        oidc_pending_auth.c.expires_at <= _db_clock(session),
                         oidc_pending_auth.c.state_digest != digest,
                     ))
+                    valid = _pending(pending, _database_utc(session))
                     session.execute(oidc_pending_auth.insert().values(
                         state_digest=digest, nonce=valid.nonce,
                         code_verifier=valid.code_verifier,
@@ -86,21 +94,24 @@ class SqlAlchemyPendingAuthStore:
         except PendingAuthStoreRejected:
             raise
         except sa.exc.IntegrityError:
-            raise PendingAuthStoreRejected("OIDC_PENDING_STORE_DUPLICATE") from None
+            failure = "OIDC_PENDING_STORE_DUPLICATE"
         except Exception:
-            raise PendingAuthStoreRejected("OIDC_PENDING_STORE_NOT_AVAILABLE") from None
+            failure = "OIDC_PENDING_STORE_NOT_AVAILABLE"
+        if failure is not None:
+            raise PendingAuthStoreRejected(failure)
 
     def consume(self, state_digest: bytes) -> PendingOidcRequest | None:
         digest = _digest(state_digest)
+        failed = False
         try:
             with self._session_factory() as session:
                 with session.begin():
-                    db_now = _database_utc(session)
                     session.execute(oidc_pending_auth.delete().where(
-                        oidc_pending_auth.c.expires_at <= sa.func.current_timestamp(),
+                        oidc_pending_auth.c.expires_at <= _db_clock(session),
                     ))
                     row = session.execute(oidc_pending_auth.delete().where(
                         oidc_pending_auth.c.state_digest == digest,
+                        oidc_pending_auth.c.expires_at > _db_clock(session),
                     ).returning(
                         oidc_pending_auth.c.nonce,
                         oidc_pending_auth.c.code_verifier,
@@ -114,12 +125,15 @@ class SqlAlchemyPendingAuthStore:
                         expiry = expiry.replace(tzinfo=timezone.utc)
                     else:
                         expiry = expiry.astimezone(timezone.utc)
-                    if expiry <= db_now:
+                    if expiry <= _database_utc(session):
                         return None
                     return PendingOidcRequest(row.nonce, row.code_verifier,
                                               expiry, row.require_step_up)
         except Exception:
-            raise PendingAuthStoreRejected("OIDC_PENDING_STORE_NOT_AVAILABLE") from None
+            failed = True
+        if failed:
+            raise PendingAuthStoreRejected("OIDC_PENDING_STORE_NOT_AVAILABLE")
+        return None
 
 
 __all__ = ["OIDC_PENDING_METADATA", "PendingAuthStoreRejected",

@@ -59,8 +59,9 @@ def test_put_consume_is_one_use_and_duplicate_does_not_overwrite(database):
     digest = b"a" * 32
     pending = _pending()
     store.put(digest, pending)
-    with pytest.raises(PendingAuthStoreRejected, match="^OIDC_PENDING_STORE_DUPLICATE$"):
+    with pytest.raises(PendingAuthStoreRejected, match="^OIDC_PENDING_STORE_DUPLICATE$") as error:
         store.put(digest, _pending())
+    assert error.value.__cause__ is None and error.value.__context__ is None
     with engine.connect() as connection:
         assert connection.execute(sa.text("SELECT count(*) FROM oidc_pending_auth")).scalar_one() == 1
     assert store.consume(digest) == pending
@@ -176,6 +177,7 @@ def test_database_error_is_redacted_and_failed_transaction_rolls_back(database):
             operation()
         assert str(error.value) == "OIDC_PENDING_STORE_NOT_AVAILABLE"
         assert error.value.__cause__ is None
+        assert error.value.__context__ is None
         assert "n" * 43 not in repr(error.value)
 
 
@@ -195,12 +197,14 @@ def test_failed_commit_rolls_back_insert_and_delete(database):
     with pytest.raises(ValueError, match="^OIDC_PENDING_STORE_NOT_AVAILABLE$") as error:
         broken.put(digest, _pending())
     assert "secret-verifier" not in str(error.value)
+    assert error.value.__cause__ is None and error.value.__context__ is None
     with engine.connect() as connection:
         assert connection.execute(sa.text("SELECT count(*) FROM oidc_pending_auth")).scalar_one() == 0
 
     SqlAlchemyPendingAuthStore(factory).put(digest, _pending())
-    with pytest.raises(ValueError, match="^OIDC_PENDING_STORE_NOT_AVAILABLE$"):
+    with pytest.raises(ValueError, match="^OIDC_PENDING_STORE_NOT_AVAILABLE$") as error:
         broken.consume(digest)
+    assert error.value.__cause__ is None and error.value.__context__ is None
     assert isinstance(SqlAlchemyPendingAuthStore(factory).consume(digest), PendingOidcRequest)
 
 
