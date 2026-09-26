@@ -1,3 +1,9 @@
+# F-18 R29 network writer lease 회수 / 2026-09-26
+
+- 판정: `R29_WORKER_WRITE_LEASE_REVOKED_PROJECTION_PENDING_G05`. Main이 게시 제품 commit `a9550612084aa0b85c75e2c49844ba0367701d5a`의 로컬 정적 구현·독립 review와 같은 SHA WSL-server bounded network QA·잔류0을 근거로 canonical seq1577 `WRITE_LEASE_REVOKED`→seq1578 `WORKER_LEASE_REVOKED`를 순서대로 투영했다. Main의 `worker_lease=null`, `write_lease=null`, 제품 `product_write_scope=[]`; F-18 accepted=false, F-19 차단, Production NOT_EXECUTED. R29 제품 추가 변경0, 통제/보고서만 변경했다.
+- 이전 QA 시행 오류는 PG health 대기 누락 1건과 Docker 빈 PortBindings `null` 가정 1건, 이어진 진단/교정 후 최종 bounded PASS이며 Developer 정식 실패0으로 분리했다. 변경된 통제 파일은 R29 close plan/overlay/test, progress checker, events/progress/handoff/digest/manifest와 본 WORK_STATUS다. local close test 2 PASS·compileall exit0; 최종 G-05와 게시 HEAD 일치는 projection commit/push 후 검증한다.
+- 다음 안전 행동: R29 closure commit·push 및 G-05 PASS를 확인한 뒤 승인된 F-18의 실제 OIDC/API 세션·권한 연결을 별도 exact-path WorkInstruction/lease로 분해한다. R29 token은 재사용하지 않는다. 새 branch·`ysna-server`·Production 작업 없음.
+
 # F-18 R29 동일 SHA WSL-server 내부망·HTTP 실측 및 정리 / 2026-09-26
 
 - 판정: `R29_SAME_SHA_WSL_NETWORK_BOUNDED_PASS`, F-18 전체 인수 아님. 승인 Git SSH alias에서 전용 clean detached checkout으로 게시 제품 commit `a9550612084aa0b85c75e2c49844ba0367701d5a`를 받아 제한 Git archive context(2,865,372 bytes)에서 Web/API/Worker image를 순차·오프라인 빌드했다. 실제 image ID는 Web `sha256:46cd7f36ef939baa2ea3cc929adceb40d82096ffe2dc812e7d63991e785a2702`, API `sha256:63fcc0f379923d18f6eb09bd072834869729f88cb123275940056b409b575f56`, Worker `sha256:dfd627c31d3e7c96a48795302915e3a6486888353576ddf61a851a775484f250`이며 각 OCI revision은 같은 commit이다.
