@@ -1,3 +1,9 @@
+# F-18 R25 현재 API image의 WSL 격리 객체 저장소 QA 자원 계획 / 2026-09-26
+
+- 판정: `R25_SAME_IMAGE_OBJECT_STORE_QA_PLANNED`, 담당 Main. 공개 QA tag `f18-wsl-qa-4eadfcd`의 R21 보존 API image ID `sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b` **내부** Python과 `S3ArtifactStore`를 격리 MinIO 실제 API에 연결한다. 소스 재빌드·제품 write·기존 DB/서비스 접근은 하지 않는다.
+- WSL-server read-only inventory: 전용 `anvil-f18-r25-minio`·`anvil-f18-r25-client` container, `anvil-f18-r25-object` network, `/home/daon/anvil-f18-r25-object-qa` path 부재, 9000 host listener 없음. 캐시된 MinIO image ID `sha256:69b2ec208575b69597784255eec6fa6a2985ee9e1a47f4411a51f7f5fdd193a9`. 신규 자원은 내부 전용 Docker network, tmpfs `/data`의 MinIO container, 동일 API image의 일회성 검증 container뿐이며 host port·volume·파일 경로는 생성하지 않는다. 합성 일회성 credential·bucket·객체만 사용한다.
+- 실제 put/read, 같은 바이트 dedupe, 다른 바이트 collision, 저장 객체 corruption 감지, 잘못된 credential 권한 거부를 분리 관측한다. 오류는 endpoint/credential 원문 없이 기록한다. 성공·실패 모두 이름·label·image를 확인한 정확한 두 container와 전용 network만 제거하고 container/network/volume/host listener 잔류0 및 기존 `local-postgres`/`anvil-web` 불변을 재검사한다. 이 시험은 현재 API image의 객체 저장 adapter에 한정되고 전체 F-18, OIDC, signed manifest, network policy, 브라우저, 운영 유사 target 인수가 아니다.
+
 # F-18 R24 동일 artifact PG15 HTTPS Task/Run·SSE QA 및 정리 / 2026-09-26
 
 - 판정: `R24_SAME_IMAGE_PG15_HTTPS_TASK_RUN_SSE_BOUNDED_PASS`, F-18 전체 인수·정식 WSL Test/Staging 인수 아님. R23 PG18과 동일 clean Git tag commit `4eadfcd441b55445237545146ae5ba4051739904`와 R21 보존 Web/API/Worker image ID(`61f13f7f…`/`ad6a2b73…`/`6a8a0e1d…`)를 재빌드 없이 사용했다. 기존 `local-postgres` 안에 **새 전용** `anvil_f17_pg15_f18r24` DB와 migrator/app role만 생성했고, PG15 `150018`, pgvector `0.8.2`, Alembic `0016_operations_recovery`, vector distance `1`, HTTPS Web·API readiness HTTP200을 관측했다. TLS proxy의 `/auth/`·`/api/`는 모두 제품 Web을 거쳤다.
