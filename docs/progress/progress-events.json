@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1655,
+  "last_sequence": 1656,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84149,7 +84149,30 @@
     "actor_id": "main-agent-eoul",
     "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-29-c6baa6a75da984ba3"
   }
+},
+{
+  "sequence": 1656,
+  "event_id": "evt_f18_local_1656_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R43B2_CLOSE",
+  "subject_ref": "F-18/WSL_OPS_R43B2_CLOSE",
+  "occurred_at": "2026-09-27T04:02:01+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3C6F72BF6E6BE58C3BF5438759239EDD64E6465637B5DAFA548EC42BDB09780C",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r43b2-20260927-001",
+    "reason": "R43B2_REWORK_REQUIRED_CLEAN_QA",
+    "tested_git_sha": "91bdc617ae0c3d1096d173d1e64cbe4207c4022b",
+    "resource_residue": 0,
+    "control_qa_head": "f81c8e58fadd7aa763516dfd17905f1fb8da1b1e"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1655_worker_lease_issued"
+  "last_event_id": "evt_f18_local_1656_worker_lease_revoked"
 }
