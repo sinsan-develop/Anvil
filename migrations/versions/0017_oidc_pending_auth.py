@@ -24,7 +24,12 @@ def upgrade():
 
 
 def downgrade():
-    row_count = op.get_bind().execute(sa.text("SELECT count(*) FROM oidc_pending_auth")).scalar_one()
+    connection = op.get_bind()
+    if connection.dialect.name == "postgresql":
+        # Hold this lock through COUNT and DROP: a concurrent INSERT must not
+        # commit after the empty check and be silently removed by DROP TABLE.
+        connection.execute(sa.text("LOCK TABLE oidc_pending_auth IN ACCESS EXCLUSIVE MODE"))
+    row_count = connection.execute(sa.text("SELECT count(*) FROM oidc_pending_auth")).scalar_one()
     if row_count:
         raise RuntimeError("DEPLOYMENT_ROLLBACK_DECISION_REQUIRED")
     op.drop_index("ix_oidc_pending_expires_at", table_name="oidc_pending_auth")

@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import sqlalchemy as sa
@@ -238,3 +239,58 @@ def test_migration_refuses_downgrade_when_row_exists():
                 migration.downgrade()
             assert "oidc_pending_auth" in sa.inspect(connection).get_table_names()
     engine.dispose()
+
+
+def test_postgres_downgrade_obtains_write_blocking_lock_before_count(monkeypatch):
+    migration = _migration()
+    calls = []
+
+    class Result:
+        def scalar_one(self):
+            return 0
+
+    class Bind:
+        dialect = SimpleNamespace(name="postgresql")
+
+        def execute(self, statement):
+            sql = str(statement)
+            calls.append(sql)
+            if sql.startswith("SELECT count"):
+                assert any("LOCK TABLE oidc_pending_auth IN ACCESS EXCLUSIVE MODE" in call
+                           for call in calls[:-1]), "count ran before the write-blocking lock"
+            return Result()
+
+    monkeypatch.setattr(migration.op, "get_bind", lambda: Bind())
+    monkeypatch.setattr(migration.op, "drop_index", lambda *args, **kwargs: None)
+    monkeypatch.setattr(migration.op, "drop_table", lambda *args, **kwargs: None)
+    migration.downgrade()
+
+
+def test_postgres_fixture_does_not_delete_preexisting_table(monkeypatch, tmp_path):
+    """Local ownership guard; real PG behavior is separately opt-in."""
+    from packages.persistence.oidc_pending_auth import OIDC_PENDING_METADATA, oidc_pending_auth
+
+    path = ROOT / "tests/persistence/test_oidc_pending_auth_postgres.py"
+    spec = importlib.util.spec_from_file_location("oidc_pending_pg_fixture", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    original_create_engine = sa.create_engine
+    url = f"sqlite+pysqlite:///{(tmp_path / 'existing.sqlite').as_posix()}"
+    engine = original_create_engine(url)
+    OIDC_PENDING_METADATA.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(oidc_pending_auth.insert().values(
+            state_digest=b"z" * 32, nonce="n" * 43, code_verifier="v" * 43,
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=60),
+            require_step_up=False,
+        ))
+    # Only the fixture's preflight dialect gate is simulated; persisted table is real.
+    monkeypatch.setattr(engine.dialect, "name", "postgresql")
+    monkeypatch.setattr(sa, "create_engine", lambda _dsn: engine)
+    monkeypatch.setenv("ANVIL_OIDC_PENDING_TEST_DSN", "explicit-isolated-fixture")
+    monkeypatch.setenv("ANVIL_OIDC_PENDING_TEST_ISOLATED", "1")
+    with pytest.raises(AssertionError, match="dedicated empty QA DB required"):
+        next(module.postgres.__wrapped__())
+    with original_create_engine(url).connect() as connection:
+        assert "oidc_pending_auth" in sa.inspect(connection).get_table_names()
+        assert connection.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 1
