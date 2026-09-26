@@ -48,6 +48,8 @@ def _https(value: object) -> bool:
     try:
         parts = urlsplit(value)
         return (parts.scheme == "https" and bool(parts.hostname)
+                and (parts.port is None or 0 < parts.port <= 65535)
+                and not parts.netloc.endswith(":")
                 and parts.username is None and parts.password is None
                 and not parts.query and not parts.fragment
                 and parts.path.startswith("/"))

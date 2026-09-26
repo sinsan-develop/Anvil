@@ -67,6 +67,14 @@ def setup():
 @pytest.mark.parametrize("change", [
     {"issuer": "http://issuer.example.test/realms/anvil"},
     {"issuer": ISSUER + "?secret=exposed"},
+    {"issuer": "https://issuer.example.test:invalid/realms/anvil",
+     "principal_policy": OidcPrincipalPolicy(
+         "https://issuer.example.test:invalid/realms/anvil", frozenset({"operator"}),
+         frozenset({"tasks:read"}), frozenset({"project-1"}), frozenset({"wsl-qa"}))},
+    {"issuer": "https://issuer.example.test:65536/realms/anvil",
+     "principal_policy": OidcPrincipalPolicy(
+         "https://issuer.example.test:65536/realms/anvil", frozenset({"operator"}),
+         frozenset({"tasks:read"}), frozenset({"project-1"}), frozenset({"wsl-qa"}))},
     {"client_id": ""},
     {"redirect_uri": "http://anvil.example.test/auth/oidc/callback"},
     {"jwks_json": '{"keys":[{'},
@@ -183,11 +191,41 @@ def test_signed_exchange_binds_server_authority_and_revokes(setup):
         coordinator.complete(code="one-use-code", state=request.browser_state,
                              browser_state=request.browser_state)
     assert len(calls) == 1
+    assert coordinator.authenticate(issued.session_token) is not None
+    coordinator.revoke(issued.session_token)
+    assert coordinator.authenticate(issued.session_token) is None
+    with engine.connect() as db:
+        assert db.execute(sa.select(oidc_sessions.c.revoked_at)).scalar_one() is not None
+
+
+def test_authority_change_denies_unrevoked_session(setup):
+    engine, factory, private, config = setup
+    nonce = [None]
+
+    def handler(request):
+        now = int(datetime.now(timezone.utc).timestamp())
+        token = jwt.encode({"iss": ISSUER, "aud": CLIENT, "sub": "subject-1",
+                            "nonce": nonce[0], "exp": now + 60, "iat": now},
+                           private, algorithm="RS256", headers={"kid": "key-1"})
+        return httpx.Response(200, headers={"Content-Type": "application/json"},
+                              json={"id_token": token})
+
+    coordinator = build_oidc_session_coordinator(config, factory,
+                                                  transport=httpx.MockTransport(handler))
+    request = coordinator.begin()
+    with engine.connect() as db:
+        nonce[0] = db.execute(sa.select(oidc_pending_auth.c.nonce).where(
+            oidc_pending_auth.c.state_digest == hashlib.sha256(
+                request.browser_state.encode("ascii")).digest(),
+        )).scalar_one()
+    issued = coordinator.complete(code="one-use-code", state=request.browser_state,
+                                  browser_state=request.browser_state)
+    assert coordinator.authenticate(issued.session_token) is not None
     with engine.begin() as db:
         db.execute(roles.update().values(permissions=["tasks:write"]))
     assert coordinator.authenticate(issued.session_token) is None
-    coordinator.revoke(issued.session_token)
-    assert coordinator.authenticate(issued.session_token) is None
+    with engine.connect() as db:
+        assert db.execute(sa.select(oidc_sessions.c.revoked_at)).scalar_one() is None
 
 
 @pytest.mark.parametrize("claim_change", [
