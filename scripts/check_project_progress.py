@@ -58205,6 +58205,9 @@ def validate_bundle(bundle):
 
 _validate_git_projection_before_f18_local = _validate_git_projection
 def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_CHECKPOINT":
+        from f18_wsl_ops_r44_close_overlay import collect_git
+        return collect_git(bundle["_root"])
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_START":
         from f18_wsl_ops_r44_overlay import collect_git
         return collect_git(bundle["_root"])
@@ -58376,6 +58379,9 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_f18_local = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_CHECKPOINT":
+        from f18_wsl_ops_r44_close_overlay import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_START":
         from f18_wsl_ops_r44_overlay import validate
         return validate(bundle["_root"], bundle)
