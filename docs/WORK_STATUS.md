@@ -1,3 +1,9 @@
+# F-18 R30 WSL-server QA 의존성 보완 계획 / 2026-09-26
+
+- 판정: `R30_WSL_QA_ENVIRONMENT_REWORK_PLANNED`, 담당 Main. 사전 계획대로 exact `/home/daon/anvil-f18-r30-oidc-qa`를 daon mode0700으로 생성해 승인 Git alias의 clean detached 제품 commit `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6`를 확인했다. 첫 동일 SHA 6-file pytest는 **exit1, collection 6 ERROR**이며 WSL 시스템 Python에 `sqlalchemy`, `httpx`, `fastapi`가 없어 API package import에서 중단됐다. 제품 assertion 실행0·제품 실패 판정0. 전역 패키지/기존 서비스 변경0.
+- read-only 로그인 셸에서 `uv 0.11.2`가 `/home/daon/.local/bin/uv`에 있고 사용자 cache가 존재함을 확인했다. 기존 QA 자원 상한에 **같은 checkout 내부 `.venv/` 하나**를 추가한다. `uv.lock` 고정 버전으로 `uv sync --frozen --offline --no-install-project`를 실행해 외부 네트워크·전역 Python 변경 없이 필요한 의존성을 설치한다. cache 부족 등으로 실패하면 원인/범위를 그대로 기록하고 임의 시스템 설치는 하지 않는다. 테스트는 `.venv/bin/python -B -m pytest -p no:cacheprovider --basetemp <exact checkout>/.pytest-r30`로 재실행한다.
+- 기존 계획의 DB/Docker/network/listener/Secret 생성0 및 정확한 경로 정리 조건은 유지한다. 종료 시 `.venv`와 pytest temp는 QA checkout 안에만 존재해야 하며 realpath·owner·HEAD/dirty를 확인한 후 checkout 전체 exact path만 제거한다. 기존 `local-postgres`·`anvil-web`·R21 보존 checkout의 ID/SHA 불변을 독립 확인한다. 새 승인 경계·설계/요구사항 변경이 아닌 테스트 환경 보완이며 F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+
 # F-18 R30 동일 SHA WSL-server OIDC adapter QA 자원 계획 / 2026-09-26
 
 - 판정: `R30_SAME_SHA_WSL_OIDC_UNIT_QA_PLANNED`, 담당 Main. 제품 exact3 commit `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6` 지정 SSH 원격 push·로컬/원격 HEAD 일치·G-05 seq1581 PASS, Main 독립 focused 185 PASS/기존 warning1, read-only Task review Spec PASS/quality Approved(Critical/Important 0, 내부 공백·제어문자 허용 가능성 Minor1)을 확인했다. 전체 pytest 기존 collection 13 ERROR는 전체 PASS가 아니다.
