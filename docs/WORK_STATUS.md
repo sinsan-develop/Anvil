@@ -1,3 +1,8 @@
+# F-18 R30 종료 G-05 확인 / 2026-09-26
+
+- 판정: `R30_CLOSE_G05_PASS`. `ba547708d1ed222ea435729b17670c3862f51551`가 로컬·지정 원격 branch에 일치하며 clean, `C:\Users\cyhuh\anaconda3\python.exe -B scripts/check_project_progress.py .`는 `G-05 ... PASS sequence=1583 reporting=AUTO_CONTINUE`(exit0), R30 시작·종료 통제 pytest 5 PASS(exit0), `git diff --check` exit0이다. canonical worker/write lease는 null, 제품 write scope는 빈 목록이다. R30 로컬·WSL 동일 제품 SHA focused 185 PASS는 실제 OIDC issuer/API/browser PASS가 아니며 F-18 accepted=false, F-19 차단, Production NOT_EXECUTED를 유지한다.
+- 다음 안전 행동: 기존 `codex/f18-wsl-ops`에서 OIDC 영속 pending state·trusted mapping/session/API의 실제 소유권과 필요한 schema 경계를 조사하고, 승인 F-18의 좁은 후속 WorkInstruction을 발행한다. 새 branch·Production 작업 없음.
+
 # F-18 R30 OIDC principal writer lease 회수 / 2026-09-26
 
 - 판정: `R30_WORKER_WRITE_LEASE_REVOKED_PROJECTION_PENDING_G05`. Main이 제품 exact3 `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6`, 독립 Spec PASS/quality Approved(Critical/Important 0), 로컬·WSL 동일 SHA focused185 PASS, WSL 전용 QA 경로 잔류0을 근거로 canonical seq1582 `WRITE_LEASE_REVOKED`→seq1583 `WORKER_LEASE_REVOKED`를 순서대로 투영했다. worker_lease=null, write_lease=null, product_write_scope=[]; F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
