@@ -1,3 +1,9 @@
+# F-18 R26 동일 artifact 서명 ReleaseManifest QA 계획 / 2026-09-26
+
+- 판정: `R26_SIGNED_MANIFEST_BOUNDED_QA_PLANNED`, 담당 Main. R21 clean detached source `/home/daon/anvil-f18-r21-artifact/repo`의 공개 annotated QA tag `f18-wsl-qa-4eadfcd`/commit `4eadfcd441b55445237545146ae5ba4051739904`와 보존 Web/API/Worker image ID `61f13f7f…`/`ad6a2b73…`/`6a8a0e1d…`를 재사용한다. lockfile SHA-256은 로컬·WSL에서 `b1cba45d362401032ef3ba362073b7c80a8cc42cdef6ee6583884b66e619d8a3`로 일치한다. 세 image의 OCI revision도 해당 commit으로 확인했다. source/image·기존 서비스 변경은 하지 않는다.
+- WSL-server 사전 읽기 전용 inventory에서 전용 exact path `/home/daon/anvil-f18-r26-manifest-qa` 부재, 시스템 Python cryptography 41.0.7 확인. 신규 자원은 daon 소유 mode0700 QA 디렉터리 안의 **일회성 합성 Ed25519 개인키/공개키, 현재 관측값 JSON, 부분 source-dependency SBOM, 범위 제한 evidence/report, 서명 envelope**뿐이다. container/DB/network/port/volume/프로세스 상주 자원은 생성하지 않는다. 실제 운영 신뢰키나 승인 기록을 만들지 않는다.
+- 계획 검증은 F-16 `preflight_release`의 실제 remote/tag/clean checkout, `package-lock.json`, 세 image ID, 독립 공개키 fingerprint·서명·관측값 결박과 변조 signature/image/commit 거부다. 부분 SBOM은 npm/uv lock 해시와 image ID만 다루며 전체 image/OS SBOM이 아니다. QA key와 파일은 검사 후 exact path realpath·owner·비-symlink를 확인해 삭제하고 잔류0을 재조회한다. R21 checkout/image는 Main 소유 ACTIVE로 유지한다. 성공해도 OIDC·network policy·trusted capability collector·backup/rollback·운영 유사 rehearsal·Production을 PASS로 올리지 않는다. F-18 accepted=false, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`.
+
 # F-18 R25 현재 API image의 WSL 격리 MinIO 객체 저장소 QA·정리 / 2026-09-26
 
 - 판정: `R25_CURRENT_API_IMAGE_MINIO_BOUNDED_PASS`, F-18 전체 인수 아님. R21 보존 API image ID `sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b` **내부** Python의 `S3ArtifactStore`를 전용 MinIO image ID `sha256:69b2ec208575b69597784255eec6fa6a2985ee9e1a47f4411a51f7f5fdd193a9`와 실제 S3 API로 연결했다. 전용 Docker internal network, MinIO tmpfs `/data`, host bind/volume0, 일회성 합성 credential·bucket·객체만 사용했다.
