@@ -1,3 +1,9 @@
+# F-18 R28 동일 이미지의 WSL-server 내부망 격리 probe 자원 계획 / 2026-09-26
+
+- 판정: `R28_INTERNAL_NETWORK_PRIMITIVE_QA_PLANNED`, 담당 Main. 공개 tag `f18-wsl-qa-4eadfcd`의 보존 API image ID `sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b`, Worker image ID `sha256:6a8a0e1de3346c2a348487295504c9070557650a50459805798cb6f41262d43f`를 재빌드 없이 사용한다. WSL-server 사전 inventory에서 전용 `anvil-f18-r28-internal` network와 `anvil-f18-r28-*` container가 없고 기존 `local-postgres`/`anvil-web`은 Up/healthy, image OCI revision은 모두 `4eadfcd441b55445237545146ae5ba4051739904`였다.
+- 새 자원: label `com.anvil.cleanup-scope=F18_R28_NETWORK_QA`의 Docker internal bridge network `anvil-f18-r28-internal` 하나, API image의 일회성 `anvil-f18-r28-peer` Python HTTP probe container와 Worker image의 `anvil-f18-r28-worker-probe` 일회성 container. host port/volume/DB/role/파일 경로/Secret/외부 계정은 0. 두 container는 read-only, cap-drop ALL, no-new-privileges, tmpfs `/tmp`, 내부망만 사용한다. API 이미지의 테스트 HTTP server는 제품 API가 아니며 같은 image의 네트워크 namespace/권한 관측용이다.
+- internal network label·internal=true, Worker→peer 내부 DNS/HTTP 허용, Worker의 외부 IP direct socket 거부, container의 host PortBindings=0/cap-drop/read-only를 관측한다. 성공·실패 모두 exact label·container ID·image ID·network ID를 검사해 두 QA container와 해당 network만 종료·삭제하고 잔류0, 기존 서비스 ID/status와 R21 image/checkout 불변을 독립 확인한다. 이 시험은 F-18 전용 Compose, 실제 제품 API/Worker/PG18/object-store/OIDC egress 정책, 브라우저, 운영 유사 rehearsal PASS가 아니다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED 유지.
+
 # F-18 R27 실제 OIDC/API·network capability 결박 전 코드/계획 대조 / 2026-09-26
 
 - 판정: `R27_CAPABILITY_GAP_CONFIRMED_READ_ONLY`, F-18 전체 인수 아님. Main이 clean `codex/f18-wsl-ops` HEAD `07095daa51c329403d7b5e7a12b9364749b42c2a`/원격 동일, canonical F-18 seq1573·worker/write lease=None을 확인했다. 설계 §49.11~49.12, 계획 F-18, 기본 WorkInstruction 단계3~5의 실제 OIDC/API·network capability 조건을 현재 source와 대조했다. 제품·Git branch·WSL resource 변경0, 조사 오류0·Developer 정식 실패0.
