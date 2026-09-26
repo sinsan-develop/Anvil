@@ -1,3 +1,8 @@
+# F-18 R30 writer 종료 통제 준비 / 2026-09-26
+
+- 판정: `R30_CLOSE_CONTROL_QA_PENDING_REVOCATION`. 담당 Main. R30 제품 `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6`의 exact3 독립 review, 로컬·WSL 동일 SHA focused 185 PASS, WSL 전용 QA 자원 잔류0, G-05 seq1581 PASS와 브랜치 clean·원격 HEAD `ac4d463eff90ffa8665aef09e40bc5d99661c54e` 일치를 확인했다. 제품 정식 실패0, 전체 pytest 기존 collection13 ERROR는 전체 PASS 아님.
+- R30 close plan/overlay/test와 progress checker dispatch를 Main 통제 경로에 추가했다. closure test 2 PASS·py_compile/diff-check exit0. 다음은 control QA commit/push 후 canonical seq1582 WRITE_LEASE_REVOKED→seq1583 WORKER_LEASE_REVOKED를 투영하고 G-05로 검증한다. 제품 파일 추가 write0, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R30 동일 SHA WSL-server OIDC adapter QA·정리 / 2026-09-26
 
 - 판정: `R30_SAME_SHA_WSL_OIDC_UNIT_BOUNDED_PASS`, 전체 OIDC capability/F-18 인수 아님. 승인 Git SSH alias의 제품 commit `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6`를 전용 `/home/daon/anvil-f18-r30-oidc-qa` mode0700 clean detached checkout으로 받았다. checkout 내부 잠금 venv는 Python3.12.3·`uv.lock`의 43개 패키지로 `uv sync --python /usr/bin/python3.12 --frozen --offline --no-install-project` exit0 구성했다. `.venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp <전용 checkout>/.pytest-r30`의 신규 R30+기존 OIDC/session/runtime 6파일은 **185 passed in 7.06s**, exit0. 이는 순수 adapter와 기존 API 계약의 WSL Python unit/contract 회귀일 뿐 실제 issuer/API HTTP·브라우저 검증이 아니다.
