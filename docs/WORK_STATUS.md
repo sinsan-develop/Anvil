@@ -1,3 +1,8 @@
+# F-18 R31 OIDC pending-store 종료 통제 준비 / 2026-09-26
+
+- 판정: `R31_WSL_PG18_QA_PASS_CLOSE_CONTROL_PENDING`. Main은 동일 제품 SHA `b0536b6d66530b8c6e12e68a8d129d435ba20dc8`를 WSL-server clean detached checkout과 전용 PG18 tmpfs DB·비관리자 역할에서 검증했다. opt-in 포함 focused 98 PASS/1 기존 SQLite datetime warning, 최종 wrapper exit0. 첫 2회는 테스트 98 PASS 후 Windows 파이프 끝 CR로 wrapper exit127이었고 매번 cleanup residue0; 마지막 명시적 exit0 실행으로 래퍼까지 해소했다. 전용 컨테이너·checkout·포트 잔류0, 기존 `local-postgres` ID `99f3bf939d40` Up·`anvil-web` ID `f0107aada3b2` Up/healthy 불변. 제품 보고서 commit `d69a0b8eaeba2123fc40ab08052ca8bb8ac25162`를 지정 원격에 push했고 G-05 seq1586 PASS, branch clean·원격 HEAD 일치다.
+- R31 제품 독립 review Critical/Important 0, Task quality Approved. Main의 close plan/control checker/test/overlay를 준비하고 epoch15 write→worker lease 회수를 seq1587~1588에 투영할 예정이다. 이 단계는 통제 파일만 변경한다. 다음 safe action은 trusted issuer+subject 소유권 매핑 Stage 준비이며 실제 issuer/API/browser·전체 F-18은 미검증, F-18 accepted=false/F-19 차단/Production `NOT_EXECUTED`. Developer 정식 실패0; 전체 pytest 기존 collection13 ERROR는 전체 PASS 아님.
+
 # F-18 R31 OIDC pending-store WSL 격리 QA 생성 전 계획 / 2026-09-26
 
 - 판정: `R31_PRODUCT_REVIEW_APPROVED_WSL_PG18_PENDING`. 담당 Main; `developer-primary` 단일 writer의 제품 exact5 최종 SHA `b0536b6d66530b8c6e12e68a8d129d435ba20dc8`를 지정 SSH remote `codex/f18-wsl-ops`에 push했다. 독립 최종 재검토 Critical 0/Important 0, Task quality Approved. 로컬 집중 회귀 94 PASS/4 PG opt-in SKIP(exit0), diff-check exit0. 전체 pytest는 기존 중복 basename/import의 collection 13 error로 non-green; PostgreSQL 실측으로 승격하지 않는다. Developer 정식 실패 0, review 보완 2회(다운그레이드·fixture 소유권, 실제 lock-wait 관측), 로컬 pytest 기본 Temp ACL 환경오류 1회는 전용 basetemp 재실행으로 해소했다.
