@@ -7,6 +7,8 @@ import httpx
 
 from fastapi import Response
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 from fastapi import FastAPI
 from packages.api.runtime import create_runtime_app
 from packages.api.fastapi_app import AuthorizationResolver
@@ -21,7 +23,8 @@ from apps.api.anvil_api.routes.agent_console import create_agent_console_app
 def _oidc_host_origin(
     value: object, *, allow_path: bool = False,
 ) -> tuple[str, str, int | None] | None:
-    if not isinstance(value, str) or value != value.strip() or not value.isascii():
+    if (not isinstance(value, str) or value != value.strip()
+            or not all(32 < ord(char) < 127 for char in value)):
         return None
     try:
         parts = urlsplit(value)
@@ -35,9 +38,25 @@ def _oidc_host_origin(
         return None
 
 
+def _oidc_same_database(engine: object, session_factory: object) -> bool:
+    if not isinstance(engine, Engine) or not callable(session_factory):
+        return False
+    try:
+        session = session_factory()
+        if not isinstance(session, Session):
+            return False
+        try:
+            return session.get_bind() is engine
+        finally:
+            session.close()
+    except Exception:
+        return False
+
+
 def create_oidc_asgi_app(
     *,
     oidc_config: OidcRuntimeConfig,
+    engine: Engine,
     session_factory: Callable,
     authorization_resolver: AuthorizationResolver,
     environment: Mapping[str, str],
@@ -56,13 +75,14 @@ def create_oidc_asgi_app(
             or console_origin is None or redirect_origin is None
             or console_origin != redirect_origin
             or environment.get("ANVIL_PUBLIC_HOST") != redirect_origin[1]
-            or any(name.startswith("ANVIL_TEST_SESSION_") for name in environment)):
+            or any(name.startswith("ANVIL_TEST_SESSION_") for name in environment)
+            or not _oidc_same_database(engine, session_factory)):
         raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
     coordinator = build_oidc_session_coordinator(
         oidc_config, session_factory, transport=transport,
     )
     runtime = create_runtime_app(
-        environment=environment, session_factory=session_factory,
+        environment=environment, session_factory=session_factory, engine=engine,
         oidc_session_coordinator=coordinator,
         authorization_resolver=authorization_resolver,
     )

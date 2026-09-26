@@ -49,6 +49,8 @@ def host(monkeypatch):
     for metadata in (OIDC_PENDING_METADATA, DIRECTORY_METADATA, OIDC_SESSION_METADATA):
         metadata.create_all(engine)
     with engine.begin() as db:
+        db.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
+        db.execute(sa.text("INSERT INTO alembic_version (version_num) VALUES ('0013_task_bootstrap_authority')"))
         db.execute(users.insert().values(actor_id="actor-1", active=True))
         db.execute(roles.insert().values(role_code="operator", permissions=["provider:read"]))
         db.execute(user_roles.insert().values(
@@ -106,11 +108,11 @@ def _scope(_endpoint, _params):
     {"ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "sensitive-bootstrap-token"},
 ])
 def test_invalid_host_configuration_rejected_before_routes_or_exchange(host, change):
-    asgi, _, factory, _, config, environment = host
+    asgi, engine, factory, _, config, environment = host
     environment.update(change)
     with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$") as error:
         asgi.create_oidc_asgi_app(
-            oidc_config=config, session_factory=factory,
+            oidc_config=config, engine=engine, session_factory=factory,
             authorization_resolver=_scope, environment=environment,
             transport=httpx.MockTransport(lambda request: pytest.fail("unexpected issuer exchange")),
         )
@@ -124,10 +126,71 @@ def test_invalid_host_configuration_rejected_before_routes_or_exchange(host, cha
     "https://anvil.example.test:8443/auth/oidc/callback",
 ])
 def test_redirect_origin_must_match_host_origin(host, redirect):
+    asgi, engine, factory, _, config, environment = host
+    with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$"):
+        asgi.create_oidc_asgi_app(
+            oidc_config=replace(config, redirect_uri=redirect), engine=engine,
+            session_factory=factory,
+            authorization_resolver=_scope, environment=environment,
+        )
+
+
+@pytest.mark.parametrize("control", ["\n", "\r", "\t"])
+def test_console_url_control_characters_rejected_before_url_parse(host, control):
+    asgi, engine, factory, _, config, environment = host
+    environment["ANVIL_CONSOLE_BASE_URL"] = "https://anvil.exa" + control + "mple.test"
+    with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$") as error:
+        asgi.create_oidc_asgi_app(
+            oidc_config=config, engine=engine, session_factory=factory,
+            authorization_resolver=_scope, environment=environment,
+        )
+    assert error.value.__cause__ is None and error.value.__context__ is None
+
+
+def test_oidc_host_readiness_uses_the_same_bound_database(host):
+    asgi, engine, factory, _, config, environment = host
+    app = asgi.create_oidc_asgi_app(
+        oidc_config=config, engine=engine, session_factory=factory,
+        authorization_resolver=_scope, environment=environment,
+    )
+    with TestClient(app, base_url=ORIGIN) as client:
+        ready = client.get("/health/ready", headers=HEADERS)
+        assert ready.status_code == 200
+        assert ready.json() == {"status": "ready", "migration_head": "0013_task_bootstrap_authority"}
+        with engine.begin() as db:
+            db.execute(sa.text("UPDATE alembic_version SET version_num = '0012_run_authority'"))
+        mismatch = client.get("/health/ready", headers=HEADERS)
+        assert mismatch.status_code == 503
+        assert mismatch.json() == {"status": "not_ready", "reason": "migration_head_mismatch"}
+
+
+def test_oidc_host_rejects_missing_engine(host):
+    asgi, _, factory, _, config, environment = host
+    with pytest.raises(TypeError):
+        asgi.create_oidc_asgi_app(
+            oidc_config=config, session_factory=factory,
+            authorization_resolver=_scope, environment=environment,
+        )
+
+
+def test_oidc_host_rejects_engine_not_bound_to_session_factory(host):
+    asgi, _, factory, _, config, environment = host
+    other_engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    try:
+        with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$"):
+            asgi.create_oidc_asgi_app(
+                oidc_config=config, engine=other_engine, session_factory=factory,
+                authorization_resolver=_scope, environment=environment,
+            )
+    finally:
+        other_engine.dispose()
+
+
+def test_oidc_host_rejects_non_engine(host):
     asgi, _, factory, _, config, environment = host
     with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$"):
         asgi.create_oidc_asgi_app(
-            oidc_config=replace(config, redirect_uri=redirect), session_factory=factory,
+            oidc_config=config, engine=None, session_factory=factory,
             authorization_resolver=_scope, environment=environment,
         )
 
@@ -159,7 +222,8 @@ def test_signed_oidc_flow_binds_same_coordinator_to_asgi_api_and_logout(host):
 
     default_app = asgi.app
     app = asgi.create_oidc_asgi_app(
-        oidc_config=replace(config, client_secret=secret), session_factory=factory,
+        oidc_config=replace(config, client_secret=secret), engine=engine,
+        session_factory=factory,
         authorization_resolver=scope, environment=environment,
         transport=httpx.MockTransport(exchange),
     )
