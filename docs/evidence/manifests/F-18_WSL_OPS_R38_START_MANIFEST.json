@@ -1255,8 +1255,8 @@
     },
     {
       "path": "scripts/f18_wsl_ops_r38_oidc_host_binding_overlay.py",
-      "bytes": 16389,
-      "sha256": "1157004E3D0CCF19771493AFCD85BC9A4FC30FC6BCE6CF03345596BA41B8ED0F"
+      "bytes": 16401,
+      "sha256": "2A41E2274C2A949F2B09AC362468DC2D37A35A31702CF16D7B6D607C3A413767"
     },
     {
       "path": "scripts/f18_wsl_ops_r3_overlay.py",
