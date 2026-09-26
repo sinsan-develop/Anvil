@@ -49,7 +49,7 @@ def host_errors(base, overlay):
     web = services.get("web", {})
     api = services.get("api", {})
     issuer = services.get("oidc-issuer", {})
-    if set(services) != {"web", "api", "oidc-issuer"}:
+    if set(services) != {"web", "api", "worker", "oidc-issuer"}:
         errors.append("service-set")
     if base.get("services", {}).get("web", {}).get("ports") != [
         "127.0.0.1:${ANVIL_F18_HTTP_PORT:?reserved loopback port required}:8080"
@@ -90,6 +90,12 @@ def host_errors(base, overlay):
     if any(key in api for key in ("ports", "publish", "extra_hosts", "network_mode", "build")):
         errors.append("api-host-exposure")
     env = api.get("environment", {})
+    if env.get("FORWARDED_ALLOW_IPS") != "${ANVIL_F18_WEB_PROXY_IP:?exact QA Web internal IP required}":
+        errors.append("proxy-trust")
+    worker = services.get("worker", {})
+    if (worker.get("environment") != {"ANVIL_AUTH_MODE": "OIDC"}
+            or any(key in worker for key in ("ports", "publish", "extra_hosts", "network_mode", "build"))):
+        errors.append("worker-oidc-mode")
     expected = {
         "ANVIL_AUTH_MODE": "OIDC",
         "ANVIL_CONSOLE_BASE_URL": "https://anvil-f18-qa.local:8444",
@@ -126,6 +132,28 @@ def host_errors(base, overlay):
 
 def test_oidc_overlay_is_fail_closed():
     assert host_errors(_base(), _overlay()) == []
+
+
+def test_oidc_overlay_requires_exact_web_ip_proxy_trust_and_worker_mode():
+    overlay = _overlay()
+    assert overlay["services"]["api"]["environment"]["FORWARDED_ALLOW_IPS"] == (
+        "${ANVIL_F18_WEB_PROXY_IP:?exact QA Web internal IP required}"
+    )
+    assert overlay["services"]["worker"]["environment"] == {"ANVIL_AUTH_MODE": "OIDC"}
+    assert "ports" not in overlay["services"]["worker"]
+
+
+@pytest.mark.parametrize("bad_proxy", ["", "*", "0.0.0.0/0", "172.28.0.0/16", "127.0.0.1"])
+def test_oidc_overlay_rejects_hardcoded_or_broad_proxy_trust(bad_proxy):
+    overlay = _overlay()
+    overlay["services"]["api"]["environment"]["FORWARDED_ALLOW_IPS"] = bad_proxy
+    assert "proxy-trust" in host_errors(_base(), overlay)
+
+
+def test_oidc_overlay_rejects_worker_mode_drift():
+    overlay = _overlay()
+    overlay["services"]["worker"]["environment"]["ANVIL_AUTH_MODE"] = "COOKIE"
+    assert "worker-oidc-mode" in host_errors(_base(), overlay)
 
 
 @pytest.mark.parametrize("bad_ports", [["0.0.0.0:8444:8444"], ["127.0.0.1:8080:8080"], ["127.0.0.1:8444:8444", "127.0.0.1:8080:8080"]])

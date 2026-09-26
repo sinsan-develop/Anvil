@@ -28,6 +28,7 @@ services:
   api:
     environment:
       ANVIL_AUTH_MODE: OIDC
+      FORWARDED_ALLOW_IPS: ${ANVIL_F18_WEB_PROXY_IP:?exact QA Web internal IP required}
       ANVIL_CONSOLE_BASE_URL: https://anvil-f18-qa.local:8444
       ANVIL_PUBLIC_HOST: anvil-f18-qa.local
       ANVIL_OIDC_ISSUER: https://anvil-f18-qa.local:8444/realms/anvil
@@ -47,6 +48,10 @@ services:
         source: ${ANVIL_F18_OIDC_MATERIAL_DIR:?dedicated synthetic material directory required}/client-secret
         target: /run/anvil-f18-oidc/client-secret
         read_only: true
+
+  worker:
+    environment:
+      ANVIL_AUTH_MODE: OIDC
 
   oidc-issuer:
     image: "${ANVIL_F18_OIDC_ISSUER_IMAGE_REF:?verified QA issuer image ID required}"
