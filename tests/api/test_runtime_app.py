@@ -8,6 +8,8 @@ from packages.api.common import SessionPrincipal
 from packages.api.fastapi_app import AuthorizationScope
 from packages.api.sse import PostgresEventStream
 from packages.api.sse import InMemoryEventJournal, StreamEvent
+from packages.api.oidc_session_coordinator import OidcSessionCoordinator
+from packages.persistence.task_bootstrap_repository import TaskBootstrapAuthority
 
 
 def _env() -> dict[str, str]:
@@ -42,6 +44,110 @@ def _wsl_acceptance_env() -> dict[str, str]:
 
 class _FakeSession:
     pass
+
+
+class _OidcCoordinator(OidcSessionCoordinator):
+    def __init__(self) -> None:
+        self.tokens: list[str] = []
+
+    def authenticate(self, token: str) -> SessionPrincipal | None:
+        self.tokens.append(token)
+        if token != "oidc-cookie":
+            return None
+        return SessionPrincipal(
+            "oidc-actor", "operator", "csrf", frozenset({"provider:read", "tasks:read"}),
+            frozenset({"project-1"}), frozenset({"env-1"}),
+        )
+
+
+def _oidc_env() -> dict[str, str]:
+    return {**_env(), "ANVIL_AUTH_MODE": "OIDC"}
+
+
+def _oidc_scope(_endpoint, _params) -> AuthorizationScope:
+    return AuthorizationScope("project-1", "env-1", frozenset({"operator"}))
+
+
+@pytest.mark.parametrize("missing", ("oidc_session_coordinator", "authorization_resolver"))
+def test_oidc_runtime_requires_both_trusted_dependencies(missing: str) -> None:
+    dependencies = {
+        "oidc_session_coordinator": _OidcCoordinator(),
+        "authorization_resolver": _oidc_scope,
+    }
+    dependencies.pop(missing)
+    with pytest.raises(RuntimeConfigurationError, match="OIDC"):
+        create_runtime_app(environment=_oidc_env(), session_factory=lambda: _FakeSession(), **dependencies)
+
+
+@pytest.mark.parametrize("injection", (
+    {"session_issuer": object()},
+    {"authenticate": lambda _token: None},
+    {"trusted_read_principal": SessionPrincipal(
+        "fallback", "reader", "csrf", frozenset(), frozenset(), frozenset())},
+))
+def test_oidc_runtime_rejects_competing_authentication(injection: dict) -> None:
+    with pytest.raises(RuntimeConfigurationError, match="OIDC"):
+        create_runtime_app(
+            environment=_oidc_env(), session_factory=lambda: _FakeSession(),
+            oidc_session_coordinator=_OidcCoordinator(), authorization_resolver=_oidc_scope,
+            **injection,
+        )
+
+
+@pytest.mark.parametrize("test_session_name", (
+    "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN", "ANVIL_TEST_SESSION_TTL_SECONDS",
+    "ANVIL_TEST_SESSION_PERMISSION_SCOPES",
+))
+def test_oidc_runtime_rejects_even_partial_test_session_environment(test_session_name: str) -> None:
+    env = _oidc_env()
+    env[test_session_name] = "leftover-test-setting"
+    with pytest.raises(RuntimeConfigurationError, match="OIDC"):
+        create_runtime_app(
+            environment=env, session_factory=lambda: _FakeSession(),
+            oidc_session_coordinator=_OidcCoordinator(), authorization_resolver=_oidc_scope,
+        )
+
+
+@pytest.mark.parametrize("mode", ("COOKIE", "WSL_ACCEPTANCE"))
+def test_non_oidc_runtime_rejects_oidc_coordinator(mode: str) -> None:
+    env = _wsl_acceptance_env() if mode == "WSL_ACCEPTANCE" else _env()
+    env["ANVIL_AUTH_MODE"] = mode
+    with pytest.raises(RuntimeConfigurationError, match="OIDC"):
+        create_runtime_app(
+            environment=env, session_factory=lambda: _FakeSession(),
+            oidc_session_coordinator=_OidcCoordinator(),
+        )
+
+
+def test_oidc_runtime_uses_one_coordinator_for_api_and_console_and_keeps_task_authority_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from packages.persistence.task_bootstrap_repository import SqlAlchemyTaskBootstrapRepository
+
+    coordinator = _OidcCoordinator()
+    app = create_runtime_app(
+        environment=_oidc_env(), session_factory=lambda: _FakeSession(),
+        oidc_session_coordinator=coordinator, authorization_resolver=_oidc_scope,
+        console_mapping_resolver=lambda _principal, _hash: None,
+    )
+    assert app.state.auth_mode == "OIDC"
+    assert app.state.local_test_session_enabled is False
+    assert app.state.agent_console_runtime._authenticate == coordinator.authenticate
+    with TestClient(app, base_url="https://anvil.sinsan.kr") as client:
+        status = client.get("/auth/session/status", headers={"host": "anvil.sinsan.kr"})
+        assert status.json() == {"authenticated": False, "mode": "OIDC", "actor_role": None}
+        client.cookies.set("anvil_session", "oidc-cookie")
+        status = client.get("/auth/session/status", headers={"host": "anvil.sinsan.kr"})
+        providers = client.get("/api/providers", headers={"host": "anvil.sinsan.kr"})
+        assert status.json() == {"authenticated": True, "mode": "OIDC", "actor_role": "operator"}
+        assert providers.status_code == 200
+        assert coordinator.tokens == ["oidc-cookie", "oidc-cookie"]
+
+        monkeypatch.setattr(SqlAlchemyTaskBootstrapRepository, "resolve_task_authority",
+                            lambda _self, _task_id: TaskBootstrapAuthority("other-project", "repo", "env-1", 1))
+        denied = client.get("/api/tasks/task-1", headers={"host": "anvil.sinsan.kr"})
+        assert denied.status_code == 403
+        assert denied.json()["error"]["code"] == "AUTHORIZATION_SCOPE_UNRESOLVED"
 
 
 @pytest.mark.parametrize("bound,expected", [(False, 501), (True, 400)])

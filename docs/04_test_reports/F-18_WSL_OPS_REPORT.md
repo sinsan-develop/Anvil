@@ -446,3 +446,28 @@
 - 결박 환경: `/home/daon/anvil-f18-r35-oidc-http-qa` clean detached exact 제품 SHA, WSL-server Python 3.14.3 및 uv locked development environment(43 packages). Main 실행 명령은 checkout에서 `.venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=.pytest-r35 tests/api/test_oidc_http.py tests/api/test_local_session.py tests/api/test_runtime_app.py tests/api/test_oidc_session_coordinator.py tests/api/test_web_security.py tests/api/test_task_bootstrap.py --tb=short`였으며 exit0, **128 PASS/7.47초**다. 합성/TestClient HTTP 경계 회귀의 WSL 반복이지 실제 issuer·제품 ingress 브라우저 Network·PostgreSQL coordinator 결합·정식 WSL E2E PASS는 아니다.
 - Main은 checkout 생성 전 exact 경로 부재를 확인했고, 종료 전 HEAD exact/dirty0/realpath exact/비-symlink/owner `daon`을 확인한 뒤 이 전용 checkout을 제거해 exact 경로 잔류0을 확인했다. 기존 `local-postgres` ID prefix `99f3bf939d40` running, `anvil-web` ID prefix `f0107aada3b2` healthy 및 pasu/alpha 서비스 ID·status는 불변이라고 보고했다. 공유 DB·기존 container/network/Secret·ysna-server·Production은 작업 대상이 아니다.
 - 남은 미검증은 실제 OIDC issuer/API 결합, PostgreSQL 저장소와 thread 동작, Web callback·브라우저 same-origin 요청, 정식 WSL 운영 유사 target 통합과 전체 pytest GREEN이다. 로컬 전체 pytest의 기존 13 collection ERROR도 이 scoped 결과로 해소되지 않았다. 이 보고서-only commit은 제품 SHA를 바꾸지 않으며 Main control/progress/HANDOFF와 push·lease 회수는 Main 소유다.
+
+## R36 OIDC runtime binding 로컬 Task 1 — 2026-09-26
+
+### 판정
+
+`COMPLETED` — 승인된 exact3의 로컬 OIDC 런타임 결선과 지정 회귀 139건이 PASS다. 전체 pytest는 기존 수집 오류 13건으로 non-green이다. 실제 issuer, PostgreSQL coordinator 결합, Web callback, 브라우저 Network, 정식 WSL 통합과 Production은 `NOT_EXECUTED`; F-18 `accepted=false`, F-19 차단을 유지한다.
+
+### 판단 이유와 변경
+
+- 시작 checkout `D:\Project\Anvil\.codex-sandbox\anvil-main-integration`, branch `codex/f18-wsl-ops`, HEAD/지정 원격 `f30203516bfabda6e6e91e7a5c8a177b667ed5ba`, clean. Main 전달 canonical G-05 seq1611 PASS. Worker `worker-lease-f18-wsl-ops-r36-20260926-001`, 실행 fence `f18-wsl-ops-execution-fence-epoch-20-8570ab4d0d723db9`; 종속 write `write-lease-f18-wsl-ops-r36-20260926-001`, write fence `f18-wsl-ops-write-fence-epoch-20-8570ab4d0d723db9`, epoch20·actor·exact3 경로 일치, 만료 `2026-09-27T08:15:04+09:00`. Lease의 dispatch baseline `13268e3` 뒤 현재 HEAD `f302035`는 lease 발행 control commit이다.
+- 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`, R36 Plan `0A9DA7DC636FA5EA0BEA2694C0BE5A3AD04347FE1B889274E730E5831D0ADB8C`, WI `783562C0645EA66D55E5BA7DAFE57C70EBE855DA52066589A5CC93F1E8EDCE53`, Invocation `22BCDA8E2B8C7EA5F0A718B1C3F4A16142DF83D8E9859E5AB6985A4E53C7F516`.
+- `packages/api/runtime.py`는 `ANVIL_AUTH_MODE=OIDC`를 명시적으로 허용하며 실제 `OidcSessionCoordinator`와 호출 가능한 업무 `authorization_resolver`를 요구한다. OIDC와 테스트 세션 환경변수의 일부라도 공존하거나 local issuer, 별도 authenticator, trusted-read principal, 별도 auth mode가 주입되면 시작 전에 거부한다. COOKIE/WSL_ACCEPTANCE에 coordinator를 주입해도 거부한다. OIDC에서 API와 console owner는 같은 coordinator의 인증을 사용하고, API는 기존 task authority 일치 검사를 거친다. `app.state.auth_mode`와 `/auth/session/status`는 `OIDC`를 보고한다.
+- `tests/api/test_runtime_app.py`에 누락·혼합·mode 불일치 fail-closed와 정상 OIDC status/API/console, task authority mismatch 거부를 추가했다. 이 테스트의 coordinator는 합성 subclass이므로 실제 issuer·세션 저장소 증거가 아니다. ASGI/Web/DB/deploy 설정과 기존 OIDC 코어는 수정하지 않았다.
+
+### 실행 검증·오류 횟수
+
+- RED: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=D:\Project\Anvil\.codex-sandbox\anvil-r36-pytest-temp tests/api/test_runtime_app.py -k 'oidc_runtime or non_oidc_runtime' --tb=short` → exit1, **11 FAIL/16 deselected/1 warning**. OIDC mode 미허용, COOKIE coordinator 오허용, WSL coordinator 혼합의 `ValueError`가 실제 실패 원인이었다.
+- 최소 구현 뒤 같은 명령 → exit0, **11 PASS/16 deselected/1 warning**. 관련 회귀 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=D:\Project\Anvil\.codex-sandbox\anvil-r36-pytest-temp tests/api/test_runtime_app.py tests/api/test_oidc_http.py tests/api/test_local_session.py tests/api/test_oidc_session_coordinator.py tests/api/test_web_security.py tests/api/test_task_bootstrap.py --tb=short` → exit0, **139 PASS/1 기존 python_multipart warning/6.99초**. COOKIE·WSL_ACCEPTANCE 기존 동작 보존은 이 회귀 범위에 한한다.
+- 전체 시도 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=D:\Project\Anvil\.codex-sandbox\anvil-r36-pytest-full --tb=line` → exit2, **13 collection ERROR/1 warning/10.70초**. 기존 basename import mismatch 10건, fixture `src` 부재 3건과 동일하다. 테스트 본문에 도달하지 못했고 전체 PASS가 아니다. `git diff --check` → exit0. 지정 basetemp 두 경로는 생성되지 않았고 DB/container/listener 임시 자원0이다.
+- 오류 횟수: 계획된 RED 1회, 새 제품 결함으로 확정된 오류0, 정식 Developer `FAILURE_REPORT` 0회. 변경 경로는 `packages/api/runtime.py`, `tests/api/test_runtime_app.py`, 이 보고서 exact3뿐이다.
+
+### 조치·미검증·복구
+
+- Main은 exact3 diff/독립 리뷰, 제품 SHA 지정 원격 push와 동일 SHA clean WSL checkout의 scoped QA를 소유한다. 실제 issuer/JWKS, DB-backed coordinator와 thread 동작, Web callback/브라우저 same-origin, 운영 유사 target E2E는 후속 F-18 검증이다. 이 로컬 fixture PASS를 실제 OIDC 로그인·WSL PASS로 승격하지 않는다.
+- Rollback은 R36 제품 commit의 정상 revert다. DB schema/row와 외부 자원은 변경하지 않았다. Main control/progress/HANDOFF·push·lease 회수는 Developer가 실행하지 않았다.
