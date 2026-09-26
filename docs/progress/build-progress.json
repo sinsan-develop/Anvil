@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-wsl-ops-r31-seq1586",
-  "event_sequence": 1586,
-  "updated_at": "2026-09-26T12:43:40+09:00",
-  "last_event_id": "evt_f18_local_1586_write_lease_issued",
+  "snapshot_id": "snapshot-f18-wsl-ops-r31-close-seq1588",
+  "event_sequence": 1588,
+  "updated_at": "2026-09-26T13:30:30+09:00",
+  "last_event_id": "evt_f18_local_1588_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -200,30 +200,8 @@
     "F-16",
     "F-17"
   ],
-  "active_agent": "developer-primary-f18-wsl-ops-r31-pending-store",
-  "write_lease": {
-    "lease_id": "write-lease-f18-wsl-ops-r31-20260926-001",
-    "actor_id": "developer-primary-f18-wsl-ops-r31-pending-store",
-    "subject_ref": "F-18/WSL_OPS_R31_PENDING_STORE",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-26T12:43:40+09:00",
-    "expires_at": "2026-09-27T00:43:40+09:00",
-    "lease_epoch": 15,
-    "fencing_token": "f18-wsl-ops-write-fence-epoch-15-fb8903edc8892aa0",
-    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-15-fb8903edc8892aa0",
-    "baseline_git_commit": "c5a131abeaa7319cfe894d0bdc96613fd9a1eac4",
-    "dispatch_head": "c5a131abeaa7319cfe894d0bdc96613fd9a1eac4",
-    "path_scope": [
-      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
-      "migrations/versions/0017_oidc_pending_auth.py",
-      "packages/persistence/oidc_pending_auth.py",
-      "tests/persistence/test_oidc_pending_auth.py",
-      "tests/persistence/test_oidc_pending_auth_postgres.py"
-    ],
-    "worker_lease_id": "worker-lease-f18-wsl-ops-r31-20260926-001",
-    "write_epoch": 15,
-    "write_fencing_token": "f18-wsl-ops-write-fence-epoch-15-fb8903edc8892aa0"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -255,26 +233,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f18-wsl-ops-r31-20260926-001",
-    "actor_id": "developer-primary-f18-wsl-ops-r31-pending-store",
-    "subject_ref": "F-18/WSL_OPS_R31_PENDING_STORE",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-26T12:43:40+09:00",
-    "expires_at": "2026-09-27T00:43:40+09:00",
-    "lease_epoch": 15,
-    "fencing_token": "f18-wsl-ops-execution-fence-epoch-15-fb8903edc8892aa0",
-    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-15-fb8903edc8892aa0",
-    "baseline_git_commit": "c5a131abeaa7319cfe894d0bdc96613fd9a1eac4",
-    "dispatch_head": "c5a131abeaa7319cfe894d0bdc96613fd9a1eac4",
-    "path_scope": [
-      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
-      "migrations/versions/0017_oidc_pending_auth.py",
-      "packages/persistence/oidc_pending_auth.py",
-      "tests/persistence/test_oidc_pending_auth.py",
-      "tests/persistence/test_oidc_pending_auth_postgres.py"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -496,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "DEVELOPER_IMPLEMENT_F18_OIDC_PENDING_STORE_EXACT5",
+  "next_safe_action": "PREPARE_F18_OIDC_TRUSTED_MAPPING_STAGE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -610,8 +569,8 @@
     "local_head": "69247977e4e51781401e45348fd3a290d8393c36",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "c5a131abeaa7319cfe894d0bdc96613fd9a1eac4",
-    "projection_mode": "F18_WSL_OPS_R31_PENDING_STORE_START",
+    "remote_head": "42f834911341daefa7adf72cb3e167aaaf28af0f",
+    "projection_mode": "F18_WSL_OPS_R31_PENDING_STORE_CHECKPOINT",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -631,6 +590,7 @@
       "docs/evidence/manifests/F-18_WSL_OPS_R2_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R30_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R30_START_MANIFEST.json",
+      "docs/evidence/manifests/F-18_WSL_OPS_R31_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R31_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
@@ -663,6 +623,7 @@
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r3.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r30-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r30.json",
+      "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r31-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r31.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r4.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r5.json",
@@ -706,6 +667,7 @@
       "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_WORK_INSTRUCTION.md",
+      "docs/work_orders/F-18_WSL_OPS_R31_CLOSE_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_WORK_INSTRUCTION.md",
@@ -746,6 +708,7 @@
       "scripts/f18_wsl_ops_r2_overlay.py",
       "scripts/f18_wsl_ops_r30_close_overlay.py",
       "scripts/f18_wsl_ops_r30_oidc_principal_overlay.py",
+      "scripts/f18_wsl_ops_r31_close_overlay.py",
       "scripts/f18_wsl_ops_r31_pending_store_overlay.py",
       "scripts/f18_wsl_ops_r3_overlay.py",
       "scripts/f18_wsl_ops_r4_overlay.py",
@@ -774,6 +737,7 @@
       "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r30_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r30_oidc_principal_overlay.py",
+      "tests/tooling/test_f18_wsl_ops_r31_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r31_pending_store_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r3_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
@@ -787,17 +751,11 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [
-      "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
-      "migrations/versions/0017_oidc_pending_auth.py",
-      "packages/persistence/oidc_pending_auth.py",
-      "tests/persistence/test_oidc_pending_auth.py",
-      "tests/persistence/test_oidc_pending_auth_postgres.py"
-    ],
-    "worktree_status": "F18_WSL_OPS_R31_PENDING_STORE_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F18_WSL_OPS_R31_PENDING_STORE_CHECKPOINT",
     "commit_status": "PENDING",
     "push_status": "PENDING",
-    "control_qa_head": "c5a131abeaa7319cfe894d0bdc96613fd9a1eac4"
+    "control_qa_head": "42f834911341daefa7adf72cb3e167aaaf28af0f"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1124,7 +1082,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "D299B0028F55FA78ECF4F4985AF3B77621A173463A02A135ABD46B5E5EB67893"
+      "sha256": "005813531B011483C2DFFB62864A46E9D835730D84997A5843A0FC9207F36190"
     }
   },
   "next_work_package": {
@@ -1521,8 +1479,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "253ED39230B6F0FE9A0E7B50B22B57D37FA0A41A0AF04B319C7C295B168B62E2",
-  "runtime_next_action": "DEVELOPER_IMPLEMENT_F18_OIDC_PENDING_STORE_EXACT5",
+  "snapshot_hash": "524EC2DDA8AEBDED4C26EBFA77628D71AD21671CE32472409F5EB43D6E009C94",
+  "runtime_next_action": "PREPARE_F18_OIDC_TRUSTED_MAPPING_STAGE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3134,7 +3092,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-26T12:43:40+09:00",
+  "recorded_at": "2026-09-26T13:30:30+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
