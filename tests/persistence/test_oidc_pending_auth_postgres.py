@@ -118,12 +118,35 @@ def test_postgres_locked_row_expiring_during_wait_is_not_returned(postgres):
     sa.event.remove(engine, "after_cursor_execute", observed_worker_query)
 
 
+def _assert_backend_lock_wait(engine, pid, inserting, *, timeout_seconds):
+    """Require the connected inserter itself to wait on a PostgreSQL lock."""
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        if inserting.done():
+            outcome = inserting.result()
+            raise AssertionError(f"INSERT finished before Lock wait: {outcome}")
+        with engine.connect() as observer:
+            row = observer.execute(sa.text(
+                "SELECT activity.wait_event_type FROM pg_stat_activity AS activity "
+                "JOIN pg_locks AS waiting ON waiting.pid = activity.pid "
+                "AND waiting.locktype = 'relation' AND NOT waiting.granted "
+                "WHERE activity.pid = :pid "
+                "AND waiting.relation = to_regclass('oidc_pending_auth')"
+            ), {"pid": pid}).one_or_none()
+        if row is not None and row.wait_event_type == "Lock":
+            return
+        if time.monotonic() >= deadline:
+            raise AssertionError("INSERT backend did not enter Lock wait")
+        time.sleep(0.05)
+
+
 def test_postgres_downgrade_blocks_insert_between_count_and_drop(postgres):
     engine, _, migration = postgres
     counted = Event()
     release_drop = Event()
-    insert_started = Event()
-    insert_completed = Event()
+    backend_ready = Event()
+    begin_insert = Event()
+    backend_pid = []
     original_drop_index = migration.op.drop_index
 
     def pause_before_drop(*args, **kwargs):
@@ -138,30 +161,43 @@ def test_postgres_downgrade_blocks_insert_between_count_and_drop(postgres):
                     migration.downgrade()
 
     def insert():
-        insert_started.set()
-        try:
-            with engine.begin() as connection:
-                connection.execute(sa.text(
-                    "INSERT INTO oidc_pending_auth "
-                    "(state_digest, nonce, code_verifier, expires_at, require_step_up) "
-                    "VALUES (:digest, :nonce, :verifier, CURRENT_TIMESTAMP, false)"
-                ), {"digest": b"i" * 32, "nonce": "n" * 43, "verifier": "v" * 43})
-            insert_completed.set()
-        except sa.exc.DBAPIError:
-            pass  # The table was dropped after the lock released.
+        with engine.connect() as connection:
+            backend_pid.append(connection.execute(sa.text("SELECT pg_backend_pid()")).scalar_one())
+            connection.rollback()
+            backend_ready.set()
+            assert begin_insert.wait(timeout=10)
+            try:
+                with connection.begin():
+                    connection.execute(sa.text(
+                        "INSERT INTO oidc_pending_auth "
+                        "(state_digest, nonce, code_verifier, expires_at, require_step_up) "
+                        "VALUES (:digest, :nonce, :verifier, CURRENT_TIMESTAMP, false)"
+                    ), {"digest": b"i" * 32, "nonce": "n" * 43, "verifier": "v" * 43})
+            except sa.exc.DBAPIError as error:
+                sqlstate = getattr(error.orig, "sqlstate", None) or getattr(error.orig, "pgcode", None)
+                if sqlstate != "42P01":
+                    raise
+                return sqlstate
+            return "COMMITTED"
 
     try:
         with ThreadPoolExecutor(max_workers=2) as pool:
             removing = pool.submit(downgrade)
             assert counted.wait(timeout=10)
             inserting = pool.submit(insert)
-            assert insert_started.wait(timeout=5)
-            committed_before_drop = insert_completed.wait(timeout=1)
-            release_drop.set()
+            if not backend_ready.wait(timeout=5):
+                if inserting.done():
+                    inserting.result()  # Surface connection/SQL failure unchanged.
+                raise AssertionError("INSERT backend did not connect")
+            begin_insert.set()
+            try:
+                _assert_backend_lock_wait(engine, backend_pid[0], inserting, timeout_seconds=8)
+            finally:
+                release_drop.set()
             removing.result(timeout=15)
-            inserting.result(timeout=15)
-        assert not committed_before_drop, "concurrent insert committed after empty count"
+            assert inserting.result(timeout=15) == "42P01"
     finally:
+        begin_insert.set()
         release_drop.set()
         if "oidc_pending_auth" not in sa.inspect(engine).get_table_names():
             with engine.begin() as connection:

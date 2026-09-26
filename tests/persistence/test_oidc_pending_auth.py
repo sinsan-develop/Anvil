@@ -294,3 +294,95 @@ def test_postgres_fixture_does_not_delete_preexisting_table(monkeypatch, tmp_pat
     with original_create_engine(url).connect() as connection:
         assert "oidc_pending_auth" in sa.inspect(connection).get_table_names()
         assert connection.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 1
+
+
+def test_postgres_lock_observer_rejects_finished_insert_without_lock():
+    path = ROOT / "tests/persistence/test_oidc_pending_auth_postgres.py"
+    spec = importlib.util.spec_from_file_location("oidc_pending_pg_lock", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class InsertFinished:
+        def done(self):
+            return True
+
+        def result(self):
+            return "COMMITTED"
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def execute(self, *_args, **_kwargs):
+            return SimpleNamespace(one_or_none=lambda: SimpleNamespace(wait_event_type=None))
+
+    class Engine:
+        def connect(self):
+            return Connection()
+
+    with pytest.raises(AssertionError, match="INSERT finished before Lock wait"):
+        module._assert_backend_lock_wait(Engine(), 123, InsertFinished(), timeout_seconds=1)
+
+
+def test_postgres_lock_observer_requires_matching_backend_lock():
+    path = ROOT / "tests/persistence/test_oidc_pending_auth_postgres.py"
+    spec = importlib.util.spec_from_file_location("oidc_pending_pg_lock_success", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    observed = []
+
+    class InProgress:
+        def done(self):
+            return False
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def execute(self, query, params):
+            observed.append((str(query), params))
+            return SimpleNamespace(one_or_none=lambda: SimpleNamespace(wait_event_type="Lock"))
+
+    class Engine:
+        def connect(self):
+            return Connection()
+
+    module._assert_backend_lock_wait(Engine(), 987, InProgress(), timeout_seconds=1)
+    assert len(observed) == 1
+    assert "pg_stat_activity" in observed[0][0]
+    assert "pg_locks" in observed[0][0] and "NOT waiting.granted" in observed[0][0]
+    assert observed[0][1] == {"pid": 987}
+
+
+def test_postgres_lock_observer_rejects_connected_backend_without_lock():
+    path = ROOT / "tests/persistence/test_oidc_pending_auth_postgres.py"
+    spec = importlib.util.spec_from_file_location("oidc_pending_pg_lock_absent", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class InProgress:
+        def done(self):
+            return False
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def execute(self, *_args, **_kwargs):
+            return SimpleNamespace(one_or_none=lambda: SimpleNamespace(wait_event_type=None))
+
+    class Engine:
+        def connect(self):
+            return Connection()
+
+    with pytest.raises(AssertionError, match="INSERT backend did not enter Lock wait"):
+        module._assert_backend_lock_wait(Engine(), 123, InProgress(), timeout_seconds=0)
