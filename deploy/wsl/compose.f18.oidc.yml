@@ -22,8 +22,6 @@ services:
         target: /run/anvil-f18-oidc/tls.key
         read_only: true
     read_only: true
-    cap_drop: [ALL]
-    security_opt: ["no-new-privileges:true"]
     labels:
       com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
 

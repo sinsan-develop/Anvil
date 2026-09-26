@@ -76,11 +76,17 @@ def host_errors(base, overlay):
         errors.append("issuer-isolation")
     if issuer.get("image") != "${ANVIL_F18_OIDC_ISSUER_IMAGE_REF:?verified QA issuer image ID required}":
         errors.append("issuer-image")
-    for name, service in (("web", web), ("issuer", issuer)):
-        if (service.get("read_only") is not True or service.get("cap_drop") != ["ALL"]
-                or service.get("security_opt") != ["no-new-privileges:true"]
-                or service.get("labels", {}).get("com.anvil.cleanup-scope") != "F18_ISOLATED_WSL_OPS"):
-            errors.append(name + "-security")
+    base_web = base.get("services", {}).get("web", {})
+    if (web.get("read_only") is not True
+            or base_web.get("cap_drop") != ["ALL"]
+            or base_web.get("security_opt") != ["no-new-privileges:true"]
+            or any(key in web for key in ("cap_drop", "security_opt"))
+            or web.get("labels", {}).get("com.anvil.cleanup-scope") != "F18_ISOLATED_WSL_OPS"):
+        errors.append("web-security")
+    if (issuer.get("read_only") is not True or issuer.get("cap_drop") != ["ALL"]
+            or issuer.get("security_opt") != ["no-new-privileges:true"]
+            or issuer.get("labels", {}).get("com.anvil.cleanup-scope") != "F18_ISOLATED_WSL_OPS"):
+        errors.append("issuer-security")
     if any(key in api for key in ("ports", "publish", "extra_hosts", "network_mode", "build")):
         errors.append("api-host-exposure")
     env = api.get("environment", {})
@@ -133,6 +139,14 @@ def test_plain_list_does_not_replace_base_http_publish():
     overlay = _overlay()
     overlay["services"]["web"]["ports"] = ["127.0.0.1:8444:8444"]
     assert "https-exclusive-loopback" in host_errors(_base(), overlay)
+
+
+@pytest.mark.parametrize("key", ["security_opt", "cap_drop"])
+def test_web_inherited_security_sequence_does_not_duplicate_on_compose_merge(key):
+    base_values = _base()["services"]["web"][key]
+    overlay_values = _overlay()["services"]["web"].get(key, [])
+    merged = base_values + overlay_values
+    assert len(merged) == len(set(merged))
 
 
 def test_web_without_internal_dns_alias_is_rejected():
