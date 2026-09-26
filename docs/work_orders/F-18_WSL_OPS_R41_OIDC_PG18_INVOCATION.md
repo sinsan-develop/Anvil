@@ -1,0 +1,1 @@
+기준 `F-18_WSL_OPS_R41_OIDC_PG18_WORK_INSTRUCTION.md`와 신규 두 lease/fencing token을 확인하고 exact5만 TDD RED→GREEN으로 구현·검증하라. 로컬 opt-in PG18 SKIP과 실제 PG18 PASS를 구분해 보고하고, 제품 commit 뒤 Main에게 인계하라. Push·WSL·control·lease 회수는 수행하지 마라.
