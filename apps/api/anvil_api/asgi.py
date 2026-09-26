@@ -1,13 +1,74 @@
 """ASGI entrypoint for the unified public runtime; secrets stay in process env."""
 import os
+from collections.abc import Callable, Mapping
+from urllib.parse import urlsplit
+
+import httpx
 
 from fastapi import Response
 from sqlalchemy import text
 from fastapi import FastAPI
 from packages.api.runtime import create_runtime_app
+from packages.api.fastapi_app import AuthorizationResolver
+from packages.api.oidc_runtime_factory import (
+    OidcRuntimeConfig, OidcRuntimeRejected, build_oidc_session_coordinator,
+)
 from packages.api.fastapi_app import mount_frontend
 from pathlib import Path
 from apps.api.anvil_api.routes.agent_console import create_agent_console_app
+
+
+def _oidc_host_origin(
+    value: object, *, allow_path: bool = False,
+) -> tuple[str, str, int | None] | None:
+    if not isinstance(value, str) or value != value.strip() or not value.isascii():
+        return None
+    try:
+        parts = urlsplit(value)
+        if (parts.scheme != "https" or not parts.hostname or parts.username is not None
+                or parts.password is not None or parts.query or parts.fragment
+                or (not allow_path and parts.path not in {"", "/"})
+                or parts.netloc.endswith(":")):
+            return None
+        return parts.scheme, parts.hostname, parts.port
+    except ValueError:
+        return None
+
+
+def create_oidc_asgi_app(
+    *,
+    oidc_config: OidcRuntimeConfig,
+    session_factory: Callable,
+    authorization_resolver: AuthorizationResolver,
+    environment: Mapping[str, str],
+    transport: httpx.BaseTransport | None = None,
+    operational_shell: bool = False,
+    frontend_directory: Path | None = None,
+) -> FastAPI:
+    """Bind trusted OIDC inputs to one coordinator before exposing host routes."""
+    if not isinstance(environment, Mapping):
+        raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
+    console = environment.get("ANVIL_CONSOLE_BASE_URL")
+    redirect = oidc_config.redirect_uri if isinstance(oidc_config, OidcRuntimeConfig) else None
+    console_origin = _oidc_host_origin(console)
+    redirect_origin = _oidc_host_origin(redirect, allow_path=True)
+    if (environment.get("ANVIL_AUTH_MODE") != "OIDC"
+            or console_origin is None or redirect_origin is None
+            or console_origin != redirect_origin
+            or environment.get("ANVIL_PUBLIC_HOST") != redirect_origin[1]
+            or any(name.startswith("ANVIL_TEST_SESSION_") for name in environment)):
+        raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
+    coordinator = build_oidc_session_coordinator(
+        oidc_config, session_factory, transport=transport,
+    )
+    runtime = create_runtime_app(
+        environment=environment, session_factory=session_factory,
+        oidc_session_coordinator=coordinator,
+        authorization_resolver=authorization_resolver,
+    )
+    return create_asgi_app(
+        runtime, operational_shell=operational_shell, frontend_directory=frontend_directory,
+    )
 
 def create_asgi_app(
     app: FastAPI, *, operational_shell: bool = False, frontend_directory: Path | None = None
