@@ -1,3 +1,9 @@
+# F-18 R25 현재 API image의 WSL 격리 MinIO 객체 저장소 QA·정리 / 2026-09-26
+
+- 판정: `R25_CURRENT_API_IMAGE_MINIO_BOUNDED_PASS`, F-18 전체 인수 아님. R21 보존 API image ID `sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b` **내부** Python의 `S3ArtifactStore`를 전용 MinIO image ID `sha256:69b2ec208575b69597784255eec6fa6a2985ee9e1a47f4411a51f7f5fdd193a9`와 실제 S3 API로 연결했다. 전용 Docker internal network, MinIO tmpfs `/data`, host bind/volume0, 일회성 합성 credential·bucket·객체만 사용했다.
+- 실제 실행 exit0: content-addressed put/read 및 hash `sha256:066f48792700fe7453601730cda09c3217d5f2d16683b2d78165a18aad63a27b` 일치, 동일 바이트 조건부 재기록의 dedupe, 다른 바이트로 변조된 기존 객체의 collision 거부, 손상 객체 read 무결성 거부, 잘못된 credential 쓰기 거부와 redacted 오류를 각각 관측했다. 제품 source/image 변경0, QA runner 오류0, Developer 정식 실패0. 이는 현재 API image의 저장 adapter 직접 호출 증거이지 API 업무 흐름/Release capability collector 전체 PASS가 아니다.
+- 종료 trap 및 독립 read-only 재조회에서 `anvil-f18-r25-minio`·`anvil-f18-r25-client` container, `anvil-f18-r25-object` network, 전용 volume, host 9000 listener 잔류0. 기존 `local-postgres`·`anvil-web` ID/running 상태 불변, R21 API image ID 보존. 합성 객체·credential은 tmpfs/container 제거로 폐기. 실제 OIDC issuer/API, network policy, signed ReleaseManifest·trusted collector, backup/rollback·브라우저·운영 유사 rehearsal은 미검증이다. F-18 accepted=false, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production NOT_EXECUTED. 다음은 현재 세 image의 신뢰 입력·서명 manifest와 실측 capability 결박을 진행한다.
+
 # F-18 R25 현재 API image의 WSL 격리 객체 저장소 QA 자원 계획 / 2026-09-26
 
 - 판정: `R25_SAME_IMAGE_OBJECT_STORE_QA_PLANNED`, 담당 Main. 공개 QA tag `f18-wsl-qa-4eadfcd`의 R21 보존 API image ID `sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b` **내부** Python과 `S3ArtifactStore`를 격리 MinIO 실제 API에 연결한다. 소스 재빌드·제품 write·기존 DB/서비스 접근은 하지 않는다.
