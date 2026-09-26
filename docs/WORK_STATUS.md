@@ -3405,3 +3405,7 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `R33_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 시작 branch `codex/f18-wsl-ops`, HEAD·원격 `89674c15f8288bab484894b072224ddbf8c1f03c`, clean, G-05 seq1593 PASS, worker/write lease=null을 확인했다. 로컬 OIDC 관련 baseline 142 PASS/기존 warning2(exit0). 설계·계획·기본 F-18 WorkInstruction 승인 범위의 세션 영속 저장 경계 exact5를 계획·지시하고, API/runtime/Web/실제 issuer/Production 변경은 제외했다.
 - control 변경: R33 계획·WorkInstruction·Invocation, epoch17 overlay·checker dispatch·overlay test. control test 2 PASS(exit0), overlay import/write scope 확인 PASS. 다음은 exact control QA commit/push 후 seq1594 WorkInstruction→1595 worker→1596 write lease를 투영하고 G-05 PASS를 확인하여 `developer-primary` 단일 writer에게 RED→GREEN 구현을 전달하는 것이다. 제품 변경0, 정식 Developer 실패0, 실제 PG18/session/API/browser 미검증, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+# F-18 R33 OIDC session store canonical writer 임대 발행 / 2026-09-26
+
+- 판정: `R33_CANONICAL_WRITER_LEASE_ACTIVE`. Main은 control QA `1010c64`와 seq1594 `WORK_INSTRUCTION_ISSUED`→1595 `WORKER_LEASE_ISSUED`→1596 `WRITE_LEASE_ISSUED` 투영 `f087e3694ce0a8556436d4435171f3ce11f40389`를 지정 SSH 원격에 게시했다. epoch17 실행/write fencing token은 R32와 다르며 제품 exact5(`0019` migration, session store, local/PG test, F-18 보고서)에만 결박된다. G-05 seq1596 PASS, control test 2 PASS(exit0), branch clean·원격 HEAD 일치다.
+- 조치·다음: `developer-primary` 단일 writer에게 R33 RED→GREEN 구현과 기본 검증을 전달한다. Main은 제품 파일을 수정하지 않는다. 제품 변경0, 정식 Developer 실패0, 실제 PG18/issuer/API/browser 미검증, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
