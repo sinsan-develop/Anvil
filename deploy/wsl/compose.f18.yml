@@ -21,6 +21,9 @@ services:
       ANVIL_RUNTIME_ENVIRONMENT: WSL_SERVER_TEST_STAGING
       ANVIL_CONSOLE_BASE_URL: "http://127.0.0.1:${ANVIL_F18_HTTP_PORT:?reserved loopback port required}"
       ANVIL_PUBLIC_HOST: "127.0.0.1"
+      TELEGRAM_WEBHOOK_SECRET: "${ANVIL_F18_TELEGRAM_WEBHOOK_SECRET:?synthetic only}"
+      TELEGRAM_INTERNAL_SIGNING_SECRET: "${ANVIL_F18_TELEGRAM_SIGNING_SECRET:?synthetic only}"
+      TELEGRAM_ALLOWED_IDENTITIES: "${ANVIL_F18_TELEGRAM_ALLOWED_IDENTITIES:?synthetic only}"
     depends_on:
       postgres:
         condition: service_healthy

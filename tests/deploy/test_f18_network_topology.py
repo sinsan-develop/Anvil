@@ -10,6 +10,11 @@ import yaml
 COMPOSE = Path(__file__).resolve().parents[2] / "deploy/wsl/compose.f18.yml"
 SERVICE_NAMES = {"web", "api", "worker", "postgres", "minio"}
 PRIVATE_SERVICES = SERVICE_NAMES - {"web"}
+API_TELEGRAM_ENV = {
+    "TELEGRAM_WEBHOOK_SECRET": "ANVIL_F18_TELEGRAM_WEBHOOK_SECRET",
+    "TELEGRAM_INTERNAL_SIGNING_SECRET": "ANVIL_F18_TELEGRAM_SIGNING_SECRET",
+    "TELEGRAM_ALLOWED_IDENTITIES": "ANVIL_F18_TELEGRAM_ALLOWED_IDENTITIES",
+}
 
 
 def _networks(service):
@@ -60,6 +65,13 @@ def topology_errors(compose):
 
 def _compose():
     return yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))
+
+
+def api_startup_errors(environment):
+    return [
+        key for key, ref in API_TELEGRAM_ENV.items()
+        if environment.get(key) != "${" + ref + ":?synthetic only}"
+    ]
 
 
 def test_f18_compose_has_fail_closed_topology():
@@ -124,3 +136,19 @@ def test_web_uses_private_api_alias_without_application_command_override():
     assert "command" not in services["api"]
     assert "command" not in services["worker"]
     assert services["web"]["read_only"] is True
+
+
+def test_api_startup_requires_synthetic_telegram_configuration():
+    api_env = _compose()["services"]["api"]["environment"]
+    assert api_startup_errors(api_env) == []
+
+
+@pytest.mark.parametrize("key", list(API_TELEGRAM_ENV))
+@pytest.mark.parametrize("bad_value", [None, "hard-coded-placeholder"])
+def test_api_startup_missing_or_literal_telegram_setting_is_rejected(key, bad_value):
+    api_env = deepcopy(_compose()["services"]["api"]["environment"])
+    if bad_value is None:
+        api_env.pop(key, None)
+    else:
+        api_env[key] = bad_value
+    assert key in api_startup_errors(api_env)
