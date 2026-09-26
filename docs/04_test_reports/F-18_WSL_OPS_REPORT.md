@@ -219,3 +219,34 @@
 
 - 이 로컬 단위 결과는 OIDC token 검증이나 실제 login/session/API 결합을 증명하지 않는다. 신뢰 resolver의 영속 mapping, 실제 issuer·role/scope·step-up API, browser, WSL-server, DB, Production은 `NOT_EXECUTED`다. Main이 exact3 commit을 독립 검토·push하고 실제 WSL 검증 및 후속 Stage를 판단한다.
 - rollback은 R30 exact3 제품 commit만 정상 revert한다. progress/HANDOFF와 원격 push·lease 회수는 Main 소유로 미수정. 정식 Developer `FAILURE_REPORT` 0회; 전체 pytest 수집 오류는 기존 환경/테스트 구조 문제로 별도 미검증 기록이다.
+
+## R31 OIDC PendingAuthStore 로컬 Task 1 — 2026-09-26
+
+### 판정
+
+- `COMPLETED` 후보는 R31 exact5의 로컬 구현·검증에 한정한다. F-18 전체 `accepted=false`, F-19 차단, Production `NOT_EXECUTED`를 유지한다. PostgreSQL/WSL 실제 결과는 Main의 독립 격리 QA 전까지 `NOT_EXECUTED`다.
+- 시작 checkout `D:\Project\Anvil\.codex-sandbox\anvil-main-integration`, branch `codex/f18-wsl-ops`, HEAD `676dc09a054d6f2354178a6fce93f6e69c95a603`, clean. Lease baseline/dispatch `c5a131abeaa7319cfe894d0bdc96613fd9a1eac4`에서 시작 HEAD까지 변경은 Main control 파일 6개뿐이며 exact5 제품 변경은 없었다. G-05 `C:\Users\cyhuh\anaconda3\python.exe -B scripts/check_project_progress.py .` → exit0, `PASS sequence=1586 reporting=AUTO_CONTINUE`.
+- canonical worker `worker-lease-f18-wsl-ops-r31-20260926-001`와 종속 write `write-lease-f18-wsl-ops-r31-20260926-001`는 actor `developer-primary-f18-wsl-ops-r31-pending-store`, `ACTIVE`, epoch15, exact5 path scope가 일치한다. execution fencing token `f18-wsl-ops-execution-fence-epoch-15-fb8903edc8892aa0`, 별도 write fencing token `f18-wsl-ops-write-fence-epoch-15-fb8903edc8892aa0`; 만료 `2026-09-27T00:43:40+09:00`, 착수 확인 `2026-09-26T12:47:17+09:00`.
+- 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`, R31 Plan `3507702A87EC92966A485E683191EE2AEACE699DF82F35A61467A70036071CA3`, WorkInstruction `B816B3417368C7CFFD06A4AA12283FBF1B6BCA023A6167A6D8D69318D567270E`, Invocation `F82E238BFDF8FC086F070EA977D0D3BC011A6E1611D7159F3CAB4B14190BCF16`.
+
+### 판단 이유와 exact5 변경
+
+- `0017_oidc_pending_auth.py`는 기존 migration 뒤에 전용 `oidc_pending_auth` 표와 expiry index만 추가한다. state SHA-256 digest 32바이트 PK, 단기 nonce/PKCE verifier, UTC-aware expiry, step-up bool을 저장한다. 기존 표와 권한은 바꾸지 않는다. row가 남아 있으면 downgrade가 `DEPLOYMENT_ROLLBACK_DECISION_REQUIRED`로 중단한다.
+- `oidc_pending_auth.py`는 `PendingAuthStore` 구현이다. 입력 digest/nonce/verifier/UTC-aware expiry/최대 300초를 검증한다. `put`은 중복 digest를 덮어쓰지 않고 거부하며, `consume`은 한 DB transaction의 `DELETE ... RETURNING`으로 한 요청에만 pending을 반환한다. DB UTC 시각 기준 만료 row는 반환하지 않는다. put/consume 호출 때 다른 만료 row를 opportunistic prune 한다. DB 실패는 `OIDC_PENDING_STORE_NOT_AVAILABLE`로 redaction하고 transaction rollback한다.
+- 두 테스트 파일은 로컬 SQLite 계약과 opt-in 실제 PostgreSQL migration·경합·만료·rollback 경계를 분리한다. PostgreSQL 테스트는 격리 DSN `ANVIL_OIDC_PENDING_TEST_DSN` 및 명시 marker `ANVIL_OIDC_PENDING_TEST_ISOLATED=1`이 없으면 SKIP한다. 로컬 SQLite PASS를 PostgreSQL 실측으로 표기하지 않는다.
+- Main 판정에 따라 이 Task는 DB role 생성/GRANT, 운영 설정, scheduler/pg_cron을 하지 않는다. TTL 300초는 인증 유효기간이며 무활동 시 미소비 row의 물리적 잔류는 별도 정리 정책이 필요한 미검증 위험이다. WSL 격리 QA의 전용 DB/role·접근 경계와 종료 후 DB 제거는 Main 소유다.
+
+### 실행 검증
+
+- 최초 TDD RED: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/persistence/test_oidc_pending_auth.py --tb=short` → exit1, 신규 persistence module 부재 15 ERROR 및 migration 파일 부재 2 FAIL. GREEN 동일 명령 → exit0, 17 PASS/2 warning.
+- opportunistic prune TDD RED: 같은 pytest 명령에 `-k prunes` → 첫 시도 exit1, 1 의도한 FAIL과 1 테스트 fixture 중복 삽입 오류. fixture 수정 후 재실행 exit1, 의도한 2 FAIL. 구현 뒤 exit0, 2 PASS/18 deselected. 만료된 동일 digest 재삽입 거부 RED `-k expired_duplicate` → exit1, 1 FAIL; 보완 뒤 전체 로컬 파일 → exit0, 21 PASS/2 warning. Commit 실패 때 insert/delete rollback 테스트도 통과했다.
+- 관련 회귀 첫 실행: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/persistence/test_oidc_pending_auth.py tests/persistence/test_oidc_pending_auth_postgres.py tests/api/test_oidc_code_flow.py tests/api/test_oidc_principal.py tests/persistence/test_migration_contract.py tests/persistence/test_telegram_webhook_state.py --tb=short` → exit0, 85 PASS/2 PostgreSQL SKIP/2 warning. 이는 prune 보완 전 수치이므로 최종 보완 후 재실행 수치는 아래에 별도 기입한다.
+- 같은 관련 회귀 최종 재실행 → exit0, **89 PASS/2 PostgreSQL SKIP/2 warning**. warning은 기존 `python_multipart` PendingDeprecationWarning과 SQLite datetime adapter DeprecationWarning이다.
+- `C:\Users\cyhuh\anaconda3\python.exe -B -m py_compile migrations/versions/0017_oidc_pending_auth.py packages/persistence/oidc_pending_auth.py tests/persistence/test_oidc_pending_auth.py tests/persistence/test_oidc_pending_auth_postgres.py` → exit0.
+- 전체 pytest 1회 시도: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --tb=line` → exit1, collection 13 ERROR/9.16초. 기존 동일 basename import mismatch 10건과 fixture repository `src` import 부재 3건이다. 신규 R31 파일의 테스트 실패는 이 수집 단계에서 관측되지 않았고 전체 PASS는 미확인이다.
+- 최종 `py_compile` 동일 명령 → exit0. `git diff --check`와 exact5 stage 뒤 `git diff --cached --check` → 각각 exit0. stage 목록은 지정 exact5와 정확히 일치하며 제품 commit SHA는 Main 완료보고에 전달한다.
+
+### 조치·미검증·복구
+
+- 실제 PostgreSQL 18, 두 세션 경합/만료/rollback, WSL isolated DB/role 접근, 실제 issuer·trusted mapping·session/API/browser, Production은 `NOT_EXECUTED`. PostgreSQL 전용 테스트 2건은 로컬 DSN·marker 부재로 `SKIPPED`다. 실제 OIDC login/session PASS를 주장하지 않는다.
+- rollback은 새 표에 row가 없는 경우에만 0017 downgrade다. row가 남으면 데이터 보존 결정 후 진행한다. R31 제품 commit은 정상 Git revert가 가능하다. Main control progress/HANDOFF, 원격 push, WSL/Production은 수정하지 않는다. 정식 Developer `FAILURE_REPORT` 0회.
