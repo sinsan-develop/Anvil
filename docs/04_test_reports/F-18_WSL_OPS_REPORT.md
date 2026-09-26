@@ -471,3 +471,11 @@
 
 - Main은 exact3 diff/독립 리뷰, 제품 SHA 지정 원격 push와 동일 SHA clean WSL checkout의 scoped QA를 소유한다. 실제 issuer/JWKS, DB-backed coordinator와 thread 동작, Web callback/브라우저 same-origin, 운영 유사 target E2E는 후속 F-18 검증이다. 이 로컬 fixture PASS를 실제 OIDC 로그인·WSL PASS로 승격하지 않는다.
 - Rollback은 R36 제품 commit의 정상 revert다. DB schema/row와 외부 자원은 변경하지 않았다. Main control/progress/HANDOFF·push·lease 회수는 Developer가 실행하지 않았다.
+
+### R36 Main 동일 제품 SHA WSL-server scoped QA 결과 전달 — 2026-09-26
+
+- 판정: Main이 전달한 공개 제품 SHA `5f1b57a21b1b874d3e6af9c6f92605bce9c11c13`의 WSL-server 전용 clean detached checkout에서 지정 6파일 scoped pytest가 exit0, **139 PASS/8.58초**였다. Developer는 WSL을 직접 실행하지 않았으며 이 절은 Main의 실행 결과를 이관한 것이다. Main 로컬 동일 6파일 재검증도 **139 PASS/기존 warning 1**이고, 독립 리뷰는 Critical 0·Important 0·Minor 1이다. Minor는 `RuntimeConsoleOwner`의 실제 restore principal 소비를 후속 실제 DB 통합에서 확인할 항목이다.
+- 결박 환경: `/home/daon/anvil-f18-r36-oidc-runtime-qa`, clean detached exact 제품 SHA, WSL-server Python 3.14.3 및 uv locked development environment(43 packages). Main 실행 명령은 checkout에서 `.venv/bin/python -B -m pytest -q -p no:cacheprovider --basetemp=.pytest-r36 tests/api/test_runtime_app.py tests/api/test_oidc_http.py tests/api/test_local_session.py tests/api/test_oidc_session_coordinator.py tests/api/test_web_security.py tests/api/test_task_bootstrap.py --tb=short`였고 exit0, **139 PASS/8.58초**다.
+- 최초 clone wrapper exit1은 PowerShell이 SSH 명령 내부의 `$()`를 로컬에서 선확장한 인용 실수다. WSL clone/checkout 자체는 성공했으며 Main의 별도 read-only 재확인에서 HEAD exact, dirty0, owner `daon`, realpath exact였다. 보안·제품 결함이 아닌 Main 실행 절차 오류 1건으로 기록하며 최초 wrapper exit1을 성공 exit로 소급하지 않는다.
+- Main은 QA 종료 전 exact 경로·비-symlink·owner·HEAD·dirty를 확인한 뒤 해당 전용 checkout만 제거했고 `QA_RESIDUE=0`을 확인했다. 기존 `local-postgres` ID `99f3bf939d40`은 running, `anvil-web` ID `f0107aada3b2`는 healthy로 불변이다. 공유 DB·기존 서비스·Production은 작업 대상이 아니다.
+- 이 PASS는 합성 coordinator/TestClient 중심의 동일 제품 SHA scoped 회귀다. 실제 issuer/JWKS, PostgreSQL coordinator 결합, Web callback·브라우저 Network, 정식 WSL E2E 및 Production은 `NOT_EXECUTED`다. 로컬 전체 pytest의 기존 **13 collection ERROR**도 non-green 그대로다. F-18 `accepted=false`, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production `NOT_EXECUTED`를 유지한다. 보고서-only 변경은 제품 SHA를 바꾸지 않으며 Main control/progress/HANDOFF·push·lease 회수는 Main 소유다.
