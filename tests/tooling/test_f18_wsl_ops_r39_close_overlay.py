@@ -42,4 +42,3 @@ def test_r39_close_rejects_reintroduced_writer_and_wrong_event():
     tampered = deepcopy(bundle)
     tampered["events"]["events"][-2]["event_type"] = "WORKER_LEASE_REVOKED"
     assert "F18_R39_CLOSE_REVOCATION_INVALID" in overlay.validate(ROOT, tampered)
-
