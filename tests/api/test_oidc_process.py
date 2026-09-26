@@ -177,3 +177,25 @@ def test_process_factory_binds_one_engine_and_disposes_on_host_failure(tmp_path,
         oidc_process.create_oidc_process_app(_environment(path), failing_host)
     assert error.value.__cause__ is None and error.value.__context__ is None
     assert made == [engine, engine] and disposed == [True]
+
+
+@pytest.mark.parametrize("flag,expected", [("1", True), ("0", False), ("true", False)])
+def test_process_factory_preserves_operational_shell_flag(tmp_path, monkeypatch, flag, expected):
+    from apps.api.anvil_api import oidc_process
+
+    path, _, _ = _trust(tmp_path)
+    environment = _environment(path)
+    environment["ANVIL_F15_OPERATIONAL_SHELL"] = flag
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    monkeypatch.setattr(oidc_process, "create_engine", lambda *_a, **_kw: engine)
+    observed = []
+
+    def host(**kwargs):
+        observed.append(kwargs.get("operational_shell"))
+        return FastAPI()
+
+    try:
+        oidc_process.create_oidc_process_app(environment, host)
+        assert observed == [expected]
+    finally:
+        engine.dispose()

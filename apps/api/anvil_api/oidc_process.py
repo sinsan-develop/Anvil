@@ -164,6 +164,7 @@ def create_oidc_process_app(
             principal_policy=inputs.principal_policy,
             pinned_jwks_json=inputs.pinned_jwks_json,
             client_secret=inputs.client_secret, ca_bundle=inputs.ca_bundle,
+            operational_shell=environment.get("ANVIL_F15_OPERATIONAL_SHELL") == "1",
         )
     except Exception:
         if engine is not None:
