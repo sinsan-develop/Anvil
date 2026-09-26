@@ -282,3 +282,28 @@
 - 첫 두 실행 역시 pytest 98 PASS였으나 PowerShell 파이프 끝 CR로 wrapper가 각각 exit127이었다. 두 실행 모두 자동 정리 잔류0이었고, 세 번째 최종 실행에서 wrapper exit0을 확인했다. 첫 두 wrapper 실패를 성공 exit로 소급하지 않는다.
 - 종료 후 전용 container·checkout path 잔류 `ZERO`, 포트 `55431` listener 없음. 기존 `local-postgres` ID `99f3bf939d40`은 Up, `anvil-web` ID `f0107aada3b2`는 Up healthy로 불변이다. 전용 tmpfs DB·합성 role은 container 종료와 함께 폐기됐다.
 - 이 PASS는 격리 PG18의 지정 6개 파일 테스트 범위다. 실제 OIDC issuer, trusted mapping, session/API/browser, Production은 미검증이며 전체 pytest는 로컬의 기존 13 collection error로 non-green이다. 후속 F-18 인수 판정과 다음 Stage는 Main 소유다.
+
+## R32 OIDC 서버 소유 trusted directory 로컬 Task 1 — 2026-09-26
+
+### 판정
+
+`COMPLETED` — exact5 제품 Task의 로컬 계약·회귀 검증 결과다. 격리 PostgreSQL 18 opt-in 실측과 실제 issuer/session/API/browser/Production은 아직 `NOT_EXECUTED`다. F-18 `accepted=false`, F-19 차단을 유지한다.
+
+### 판단 이유와 변경
+
+- 시작 checkout `D:\Project\Anvil\.codex-sandbox\anvil-main-integration`, branch `codex/f18-wsl-ops`, HEAD `d50d8951e4161e2f628b0a19d2e2b96145c1863f`. 시작 시 Main 소유 `docs/WORK_STATUS.md`가 통제 갱신으로 dirty였으나 제품 exact5와 비중첩이어서 보존했다. Main의 해당 control/manifest commit 뒤 현재 기준 HEAD는 `a57241cfc4cb5dbccb8ca94dc40a05167933d0e9`, G-05 seq1591 PASS, 제품 작업 외 branch clean이었다. Canonical worker/write lease는 동일 epoch16 `ACTIVE`, actor `developer-primary-f18-wsl-ops-r32-trusted-directory`, exact5 scope, execution token `f18-wsl-ops-execution-fence-epoch-16-ae3d7b24165ff9d`, 종속 write token `f18-wsl-ops-write-fence-epoch-16-ae3d7b24165ff9d`, 만료 `2026-09-27T02:47:00+09:00`으로 확인했다. Control progress/HANDOFF는 Main 소유라 미수정했다.
+- 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 작업계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`, R32 Plan `B0AE9D5DB1ECBCED2104161A957E1D50A721121B85ADBFCE51899011A6237F85`, WorkInstruction `E1365F08270B812F4A5CA2F097FF5E9450F156AD5E7D28176A2141CEBB0627CC`, Invocation `61758730F75E43E1D4507874E8D62F5879BBF72B0D85FCFBCF90C8529B6163EF`.
+- exact5 diff: 새 `0018_oidc_principal_directory.py`는 서버 소유 `users/roles/user_roles/oidc_subject_bindings` 네 표를 추가하고, 하나라도 row가 있으면 downgrade를 거부한다. PostgreSQL downgrade는 네 표 모두에 ACCESS EXCLUSIVE lock을 count 이전에 취득해 concurrent INSERT와 DROP 사이 데이터 손실을 막는다. 새 `SqlAlchemyOidcPrincipalResolver`는 `(issuer,subject)` 매개변수 SELECT JOIN만 하며 활성 단일 user/role/project/environment와 유효·중복 없는 permissions를 `OidcPrincipalBinding`으로 만든다. 누락·비활성은 None, 손상·DB 오류는 비식별 안정 오류로 fail-closed하고 원래 SQL exception chain은 남기지 않는다. 새 두 테스트 파일은 SQLite 로컬 계약과 opt-in 격리 PostgreSQL 실제 경합을 분리한다. 기존 migration0017, R30 binding/policy, R31 pending store, runtime/API, LocalTestSessionService, 기존 데이터·role/GRANT는 미수정이다.
+
+### 실행 검증
+
+- RED `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/persistence/test_oidc_principal_directory.py --tb=short` → exit1, 새 제품 모듈 부재로 **21 ERROR/2 FAIL/1 warning**. GREEN 동일 명령 → exit0, **23 PASS/1 warning**. 중간 두 테스트의 FK/CHECK fixture 오류는 테스트 준비를 교정하고 다시 GREEN을 확인했으며 제품 동작 실패로 오인하지 않았다.
+- 첫 관련 회귀는 기본 Windows pytest temp ACL 때문에 exit1, **81 PASS/8 PG SKIP/1 ERROR/2 warning** (`C:\Users\cyhuh\AppData\Local\Temp\pytest-of-cyhuh` PermissionError)였다. `--basetemp=.pytest-r32`로 재실행해 최초 82 PASS/8 PG SKIP/2 warning을 확인했다. 정적 PG DDL 검사에서 `boolean IN (0,1)`은 PostgreSQL의 boolean/integer 타입 비교 오류를 낼 수 있어 새 dialect-compiled DDL 테스트를 RED로 추가했다: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/persistence/test_oidc_principal_directory.py -k postgres_boolean_constraint --tb=short` → exit1, **1 FAIL/23 deselected/1 warning**. CHECK를 PG/SQLite 공통 `IN (false, true)`로 보완한 동일 명령 → exit0, **1 PASS/23 deselected/1 warning**.
+- 최종 관련 회귀 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.pytest-r32 tests/persistence/test_oidc_principal_directory.py tests/persistence/test_oidc_principal_directory_postgres.py tests/api/test_oidc_principal.py tests/persistence/test_oidc_pending_auth.py tests/persistence/test_oidc_pending_auth_postgres.py tests/persistence/test_migration_contract.py --tb=short` → exit0, **83 PASS/8 PG SKIP/2 warning/1.71초**. 두 warning은 기존 `python_multipart` PendingDeprecationWarning 및 Python SQLite datetime adapter DeprecationWarning이다. PostgreSQL DSN/격리 marker 부재의 8 SKIP을 PG PASS로 승격하지 않는다.
+- 최종 전체 시도 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.pytest-r32-full --tb=line` → exit1, **13 collection ERROR/1 warning/9.55초**. 이전과 같은 중복 basename import mismatch 10건과 fixture `src` import 부재 3건이다. 새 R32 테스트 실패는 수집 단계에서 관측되지 않았으나 전체 suite PASS는 미확인이다.
+- 네 제품 Python 파일 `C:\Users\cyhuh\anaconda3\python.exe -B -m py_compile migrations/versions/0018_oidc_principal_directory.py packages/persistence/oidc_principal_directory.py tests/persistence/test_oidc_principal_directory.py tests/persistence/test_oidc_principal_directory_postgres.py` → exit0. 최종 stage 후 `git diff --cached --check`와 exact5 path 검사를 수행한다.
+
+### 조치·미검증·복구
+
+- Main이 동일 제품 SHA의 격리 PostgreSQL 18에서 migration/seed/lookup/denial/data-bearing downgrade 및 실제 lock 대기 경합을 실행해야 한다. 로컬 SQLite·mock 검사는 그 실제 DB 증거를 대체하지 않는다. 제품에는 provisioning API, 운영 mapping/role/Secret, 로그인/session 연결, 권한 확대가 없다. 실제 issuer/API/browser/Production은 `NOT_EXECUTED`; F-18 인수 판정은 Main 소유다.
+- Rollback은 R32 exact5 제품 commit의 정상 revert와 0018 migration downgrade다. 네 표 중 row 하나라도 있으면 자동 drop하지 않고 `DEPLOYMENT_ROLLBACK_DECISION_REQUIRED`로 데이터 보존 및 사람 판단을 요구한다. 정식 Developer `FAILURE_REPORT` 0회. Push·lease 회수·progress/HANDOFF 변경은 Main 소유다.
