@@ -188,8 +188,8 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 764338,
-      "sha256": "6C326862C24DE0B9E9419C8BF964BF0D9AA5E0A6A54B09DBF6DA22C501B09525"
+      "bytes": 765936,
+      "sha256": "9F620061AF68D27C3C808B528CA755B1EB6B9A09115BDCC10883F707CE4136ED"
     },
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",

@@ -1,3 +1,9 @@
+# F-18 R32 trusted directory WSL 격리 QA 실측 / 2026-09-26
+
+- 판정: `R32_WSL_PG18_QA_PASS_PENDING_REPORT_AND_LEASE_CLOSE`. Main은 공개 제품 SHA `ca5f6597239fb8f031925ee5e1ffc8ee921a7075` clean detached checkout과 별도 tmpfs PG18 합성 DB의 비-superuser migrator로 focused 실행했다. exit0 **87 PASS/4 R31 PG opt-in SKIP/기존 SQLite datetime warning1/3.45초**; R32 PostgreSQL 전용 4개는 실제 PASS다. 별도 SELECT 전용 reader role(비-superuser/non-createdb/non-createrole)에서 resolver 조회 정상, INSERT는 SQLSTATE `42501` 거부. 전체 QA wrapper exit0. 실제 운영 DB·기존 migration 표는 건드리지 않았다.
+- QA container ID `06f0b4dd1383ab639b700a3d6801c0efa65bc0b7a9caa94a79d8b7d2feaf7a53`, checkout과 port55432 모두 exact 정리·잔류0, 기존 `local-postgres` ID `99f3bf939d40` Up 및 `anvil-web` ID `f0107aada3b2` Up/healthy 불변을 별도 읽기 전용으로 재확인했다. 전용 tmpfs DB·두 합성 역할·암호는 컨테이너 제거로 폐기돼 복구 불가, 제품 source는 지정 원격 commit으로 복구 가능하다.
+- 독립 read-only review Spec PASS/Task quality Approved C0/I0/M0, 로컬 Main focused 83 PASS/8 PG SKIP. 현재 전체 pytest 기존 13 collection ERROR는 non-green이고 실제 issuer/session/API/browser·정식 WSL 통합·Production은 미검증이다. Developer가 지정 보고서만 실측 결과를 누적한 뒤 Main은 report push/G-05와 epoch16 write→worker lease 회수를 수행한다. F-18 accepted=false/F-19 차단, 오류 횟수: Developer 정식 실패0·WSL QA 오류0.
+
 # F-18 R32 trusted directory WSL 격리 QA 생성 전 계획 / 2026-09-26
 
 - 판정: `R32_PRODUCT_REVIEW_APPROVED_WSL_PG18_PENDING`. 담당 Main. 단일 writer 제품 exact5 SHA `ca5f6597239fb8f031925ee5e1ffc8ee921a7075`를 지정 원격에 push했고 G-05 seq1591 PASS·branch clean·원격 HEAD 일치다. 독립 review Spec PASS/Task quality Approved, Critical 0/Important 0/Minor 0. Main 로컬 focused 83 PASS/PG opt-in 8 SKIP/기존 warning2(exit0), diff-check exit0. 전체 pytest 기존 collection 13 ERROR는 전체 PASS가 아니다. Developer 정식 실패0, 테스트 RED→GREEN 완료; 실제 PG18/권한 경계는 아직 미검증이다.
