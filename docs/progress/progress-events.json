@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1631,
+  "last_sequence": 1633,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -83599,7 +83599,51 @@
       "tests/integration/test_f18_oidc_live_host.py"
     ]
   }
+},
+{
+  "sequence": 1632,
+  "event_id": "evt_f18_local_1632_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R40_CLOSE",
+  "subject_ref": "F-18/WSL_OPS_R40_CLOSE",
+  "occurred_at": "2026-09-26T23:52:43+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "04337651BAA9F1E2BA456FE7BE9A9B64D00AD74E2E6FFC735816F663547CB9F5",
+  "details": {
+    "lease_id": "write-lease-f18-wsl-ops-r40-20260926-001",
+    "reason": "R40_LIVE_OIDC_HOST_WSL_QA_COMPLETE",
+    "product_head": "bd82973a2e2527f3299feb7ae8e26a23c68fdc47",
+    "control_qa_head": "db695afcaff57867922c584d3860df6bfc79618c"
+  }
+},
+{
+  "sequence": 1633,
+  "event_id": "evt_f18_local_1633_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R40_CLOSE",
+  "subject_ref": "F-18/WSL_OPS_R40_CLOSE",
+  "occurred_at": "2026-09-26T23:52:43+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "F3CC7BAD4BB8AB0A53F14977972044851FFA1E8C9463B50E49C63DA419260491",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r40-20260926-001",
+    "reason": "R40_LIVE_OIDC_HOST_WSL_QA_COMPLETE",
+    "product_head": "bd82973a2e2527f3299feb7ae8e26a23c68fdc47",
+    "control_qa_head": "db695afcaff57867922c584d3860df6bfc79618c"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1631_write_lease_issued"
+  "last_event_id": "evt_f18_local_1633_worker_lease_revoked"
 }
