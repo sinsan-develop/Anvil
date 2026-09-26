@@ -1,6 +1,10 @@
 """Same-origin HTTP boundary for the explicitly injected OIDC coordinator."""
 
+import asyncio
 from datetime import datetime, timezone
+from threading import Event, Timer
+
+import httpx
 
 from fastapi.testclient import TestClient
 import pytest
@@ -197,3 +201,140 @@ def test_unexpected_oidc_backend_exception_is_redacted():
         assert response.json()["error"]["code"] == "INTERNAL_ERROR"
         assert "secret-code" not in response.text
         assert "sensitive backend stack" not in response.text
+
+
+def test_slow_oidc_exchange_does_not_block_unrelated_asgi_request():
+    """A synchronous HTTPS exchange must not monopolize the event loop."""
+    entered, release = Event(), Event()
+
+    class SlowCoordinator(Coordinator):
+        def complete(self, *, code, state, browser_state):
+            entered.set()
+            release.wait(5)
+            return super().complete(code=code, state=state, browser_state=browser_state)
+
+    app = _client(SlowCoordinator()).app
+
+    async def scenario():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as client:
+            callback = asyncio.create_task(client.post(
+                "/auth/oidc/callback", headers=HEADERS,
+                json={"code": "secret-code", "state": "secret-state", "browser_state": "secret-state"},
+            ))
+            try:
+                assert await asyncio.to_thread(entered.wait, 5)
+                status = await client.get("/auth/session/status", headers=HEADERS)
+                assert status.status_code == 200
+                assert not callback.done()
+            finally:
+                release.set()
+                assert (await callback).status_code == 200
+
+    timer = Timer(3, release.set)
+    timer.start()
+    try:
+        asyncio.run(scenario())
+    finally:
+        release.set()
+        timer.cancel()
+
+
+@pytest.mark.parametrize(("method", "path", "expected"), [
+    ("GET", "/auth/session/status", 200),
+    ("GET", "/api/providers", 403),
+    ("GET", "/api/runs/run-1/events", 403),
+    ("POST", "/auth/oidc/logout", 200),
+])
+def test_slow_oidc_authentication_does_not_block_unrelated_asgi_request(method, path, expected):
+    """Session DB/authority lookup must not block a concurrent auth start."""
+    entered, release = Event(), Event()
+
+    class SlowCoordinator(Coordinator):
+        def authenticate(self, token):
+            entered.set()
+            release.wait(5)
+            return super().authenticate(token)
+
+    app = _client(SlowCoordinator()).app
+
+    async def scenario():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as client:
+            client.cookies.set("anvil_session", BEARER)
+            status = asyncio.create_task(client.request(method, path, headers={**HEADERS, "x-csrf-token": CSRF}))
+            try:
+                assert await asyncio.to_thread(entered.wait, 5)
+                started = await client.post("/auth/oidc/authorization", headers=HEADERS, json={})
+                assert started.status_code == 200
+                assert not status.done()
+            finally:
+                release.set()
+                assert (await status).status_code == expected
+
+    timer = Timer(3, release.set)
+    timer.start()
+    try:
+        asyncio.run(scenario())
+    finally:
+        release.set()
+        timer.cancel()
+
+
+@pytest.mark.parametrize("route", ["authorization", "callback", "logout"])
+def test_oidc_mutations_reject_https_origin_on_untrusted_direct_http(route):
+    app = _client(Coordinator()).app
+    with TestClient(app, base_url="http://anvil.example.test") as client:
+        client.cookies.set("anvil_session", BEARER)
+        body = ({"code": "secret-code", "state": "secret-state", "browser_state": "secret-state"}
+                if route == "callback" else {})
+        response = client.post(
+            f"/auth/oidc/{route}",
+            headers={**HEADERS, "x-csrf-token": CSRF,
+                     "x-forwarded-proto": "https", "x-forwarded-host": "anvil.example.test"},
+            json=body,
+        )
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "ORIGIN_VALIDATION_FAILED"
+
+
+@pytest.mark.parametrize("route", ["authorization", "callback", "logout"])
+def test_oidc_mutations_trust_configured_tls_terminating_proxy_only(route):
+    from packages.api.security import WebSecurityConfig
+    coordinator = Coordinator()
+    app = create_app(
+        oidc_session_coordinator=coordinator,
+        security_config=WebSecurityConfig(
+            allowed_hosts=frozenset({"anvil.example.test"}),
+            allowed_origins=frozenset({ORIGIN}),
+            trusted_proxy_ips=frozenset({"testclient"}),
+        ),
+    )
+    headers = {"host": "internal.invalid", "origin": ORIGIN,
+               "x-forwarded-host": "anvil.example.test", "x-forwarded-proto": "https",
+               "x-csrf-token": CSRF}
+    with TestClient(app, base_url="http://internal.invalid") as client:
+        client.cookies.set("anvil_session", BEARER)
+        body = ({"code": "secret-code", "state": "secret-state", "browser_state": "secret-state"}
+                if route == "callback" else {})
+        response = client.post(f"/auth/oidc/{route}", headers=headers, json=body)
+        assert response.status_code == 200
+
+
+def test_trusted_proxy_forwarded_scheme_must_match_origin():
+    from packages.api.security import WebSecurityConfig
+    app = create_app(
+        oidc_session_coordinator=Coordinator(),
+        security_config=WebSecurityConfig(
+            allowed_hosts=frozenset({"anvil.example.test"}),
+            allowed_origins=frozenset({ORIGIN}),
+            trusted_proxy_ips=frozenset({"testclient"}),
+        ),
+    )
+    with TestClient(app, base_url="http://internal.invalid") as client:
+        response = client.post(
+            "/auth/oidc/authorization",
+            headers={"host": "internal.invalid", "origin": ORIGIN,
+                     "x-forwarded-host": "anvil.example.test", "x-forwarded-proto": "http"},
+            json={},
+        )
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "ORIGIN_VALIDATION_FAILED"

@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from packages.events.transition_guard import OptimisticVersionConflict
 from packages.execution.models import TaskStatus
@@ -187,14 +188,14 @@ def _principal(request: Request, authenticate: Authenticator, config: WebSecurit
     return principal
 
 
-def _read_principal(
+async def _read_principal(
     request: Request,
     authenticate: Authenticator,
     config: WebSecurityConfig,
     trusted_read_principal: SessionPrincipal | None,
 ) -> SessionPrincipal:
     token = request.cookies.get(config.session_cookie_name)
-    principal = _authenticate_session(authenticate, token) if token else None
+    principal = await run_in_threadpool(_authenticate_session, authenticate, token) if token else None
     if principal is not None:
         return principal
     if trusted_read_principal is not None:
@@ -316,6 +317,44 @@ def _origin(request: Request, config: WebSecurityConfig, *, required: bool) -> N
         )
 
 
+def _oidc_origin(request: Request, config: WebSecurityConfig) -> None:
+    """Match the browser origin to the observed or explicitly trusted TLS authority."""
+    denied = ApiContractError("ORIGIN_VALIDATION_FAILED", "The request origin is not allowed.", 403)
+    origin = request.headers.get("origin")
+    if origin is None or origin not in config.allowed_origins:
+        raise denied
+    scheme = request.url.scheme.lower()
+    authority = request.headers.get("host", "")
+    client_ip = request.client.host if request.client else None
+    if client_ip in config.trusted_proxy_ips:
+        forwarded_schemes = request.headers.getlist("x-forwarded-proto")
+        forwarded_hosts = request.headers.getlist("x-forwarded-host")
+        if forwarded_schemes or forwarded_hosts:
+            if len(forwarded_schemes) != 1 or len(forwarded_hosts) != 1:
+                raise denied
+            scheme, authority = forwarded_schemes[0], forwarded_hosts[0]
+    if scheme not in {"http", "https"} or not authority or "," in authority:
+        raise denied
+    try:
+        parsed_origin = urlsplit(origin)
+        parsed_authority = urlsplit(f"{scheme}://{authority}")
+        if (
+            parsed_origin.scheme != scheme
+            or parsed_origin.username is not None or parsed_origin.password is not None
+            or parsed_origin.path or parsed_origin.query or parsed_origin.fragment
+            or parsed_authority.username is not None or parsed_authority.password is not None
+            or parsed_authority.path or parsed_authority.query or parsed_authority.fragment
+            or parsed_origin.hostname is None or parsed_authority.hostname is None
+            or parsed_origin.hostname.lower() != parsed_authority.hostname.lower()
+        ):
+            raise denied
+        default_port = 443 if scheme == "https" else 80
+        if (parsed_origin.port or default_port) != (parsed_authority.port or default_port):
+            raise denied
+    except ValueError:
+        raise denied from None
+
+
 def _bootstrap_credential(request: Request) -> str:
     authorization = request.headers.get("authorization")
     if not isinstance(authorization, str) or not authorization.startswith("Bearer "):
@@ -361,7 +400,7 @@ def _endpoint_handler(
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
-            principal = _read_principal(
+            principal = await _read_principal(
                 request, authenticate, config, trusted_read_principal
             )
             body = await _body(request) if endpoint.is_mutation else {}
@@ -447,7 +486,7 @@ def _sse_handler(
         try:
             _host(request, config)
             _origin(request, config, required=False)
-            principal = _read_principal(request, authenticate, config, trusted_read_principal)
+            principal = await _read_principal(request, authenticate, config, trusted_read_principal)
             _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             if "after" in request.query_params:
                 raise ApiContractError(
@@ -655,9 +694,11 @@ def create_app(
         async def oidc_authorization(request: Request) -> JSONResponse:
             try:
                 _host(request, config)
-                _origin(request, config, required=True)
+                _oidc_origin(request, config)
                 body = await _oidc_body(request, frozenset(), frozenset({"require_step_up"}))
-                started = oidc_session_coordinator.begin(require_step_up=body.get("require_step_up", False))
+                started = await run_in_threadpool(
+                    oidc_session_coordinator.begin, require_step_up=body.get("require_step_up", False)
+                )
                 url = urlsplit(started.url)
                 if url.scheme != "https" or not url.hostname or url.username or url.password:
                     raise ValueError("invalid authorization url")
@@ -676,9 +717,9 @@ def create_app(
         async def oidc_callback(request: Request) -> JSONResponse:
             try:
                 _host(request, config)
-                _origin(request, config, required=True)
+                _oidc_origin(request, config)
                 body = await _oidc_body(request, frozenset({"code", "state", "browser_state"}))
-                issued = oidc_session_coordinator.complete(
+                issued = await run_in_threadpool(oidc_session_coordinator.complete,
                     code=body["code"], state=body["state"], browser_state=body["browser_state"]
                 )
                 if not isinstance(issued.max_age_seconds, int) or not 0 < issued.max_age_seconds <= 900:
@@ -705,17 +746,17 @@ def create_app(
         async def oidc_logout(request: Request) -> JSONResponse:
             try:
                 _host(request, config)
-                _origin(request, config, required=True)
+                _oidc_origin(request, config)
                 token = request.cookies.get(config.session_cookie_name)
                 if not token:
                     raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
-                principal = _authenticate_session(authenticator, token)
+                principal = await run_in_threadpool(_authenticate_session, authenticator, token)
                 if principal is None:
                     raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
                 csrf = request.headers.get("x-csrf-token")
                 if csrf is None or not hmac.compare_digest(csrf, principal.csrf_token):
                     raise ApiContractError("CSRF_VALIDATION_FAILED", "The CSRF token is invalid.", 403)
-                oidc_session_coordinator.revoke(token)
+                await run_in_threadpool(oidc_session_coordinator.revoke, token)
                 response = JSONResponse({"authenticated": False})
                 response.delete_cookie(config.session_cookie_name, path="/", secure=True,
                                        httponly=True, samesite="strict")
@@ -764,7 +805,7 @@ def create_app(
         try:
             _host(request, config)
             token = request.cookies.get(config.session_cookie_name)
-            principal = _authenticate_session(authenticator, token) if token else None
+            principal = await run_in_threadpool(_authenticate_session, authenticator, token) if token else None
             if principal is None:
                 principal = trusted_read_principal
             return JSONResponse(
