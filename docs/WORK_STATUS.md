@@ -1,3 +1,8 @@
+# F-18 R31 OIDC pending-store 통제 준비 / 2026-09-26
+
+- 판정: `R31_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 동일 `codex/f18-wsl-ops`의 시작 HEAD·원격 `fb8903edc8892aa0f7b0c4bea38325159059c3a5` clean/G-05 seq1583 PASS, 기존 worker/write lease=null을 확인했다. F-18 단계3 안의 pending-store를 전용 additive migration+원자 일회성 PostgreSQL 저장소의 제품 exact5로 좁혔다. 기존 `OidcCodeFlow`/runtime/API/테스트 bootstrap/공유 DB/Production은 이 Task에서 수정하지 않는다.
+- Main 통제 변경: R31 plan/WorkInstruction/invocation, start overlay/control test, progress checker dispatch와 본 WORK_STATUS·manifest. 신규 control test 3 PASS(exit0), R30 close control과 합산한 현 4 PASS/1 FAIL은 **미투영 R31 파일이 존재하는 dirty 상태에서 R30 `F18_LOCAL_START_GIT_INVALID` 및 raw checksum 불일치**이며 제품 오류가 아니다. 다음은 checksum 보정과 exact control QA commit/push 뒤 새 canonical seq1584~1586 및 epoch15 worker/write lease를 투영·게시해 G-05를 확인한다. 제품 write0, Developer 정식 실패0, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R31 OIDC runtime Stage 경계 조사 / 2026-09-26
 
 - 판정: `PREPARE_F18_OIDC_RUNTIME_STAGE_SCOPED`, 제품 write 0. 담당 Main. clean `codex/f18-wsl-ops`의 로컬/지정 원격 `8e9c1f2c2c4ae134f795e472d239ca3c8371f025`, G-05 seq1583 PASS와 R30 worker/write lease=null을 시작점으로 삼았다. 승인된 F-18 WorkInstruction 단계3은 QA 전용 OIDC issuer 또는 동등 인증의 issuer/audience/서명·만료·역할·scope를 **실제 API**에서 검증하고 `/auth/*` same-origin 제품 ingress까지 확인하도록 한다.
