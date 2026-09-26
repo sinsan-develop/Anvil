@@ -15,6 +15,7 @@ from packages.api.fastapi_app import AuthorizationResolver
 from packages.api.oidc_runtime_factory import (
     OidcRuntimeConfig, OidcRuntimeRejected, build_oidc_session_coordinator,
 )
+from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.fastapi_app import mount_frontend
 from pathlib import Path
 from apps.api.anvil_api.routes.agent_console import create_agent_console_app
@@ -51,6 +52,53 @@ def _oidc_same_database(engine: object, session_factory: object) -> bool:
             session.close()
     except Exception:
         return False
+
+
+def create_configured_oidc_asgi_app(
+    *,
+    environment: Mapping[str, str],
+    engine: Engine,
+    session_factory: Callable,
+    authorization_resolver: AuthorizationResolver,
+    principal_policy: OidcPrincipalPolicy,
+    pinned_jwks_json: str,
+    client_secret: Callable[[], str] | None = None,
+    ca_bundle: str | None = None,
+    transport: httpx.BaseTransport | None = None,
+    operational_shell: bool = False,
+    frontend_directory: Path | None = None,
+) -> FastAPI:
+    """Assemble nonsecret server settings before binding trusted OIDC material."""
+    allowed = {
+        "ANVIL_OIDC_ISSUER", "ANVIL_OIDC_CLIENT_ID", "ANVIL_OIDC_STEP_UP_ACR",
+    }
+    if (not isinstance(environment, Mapping)
+            or any(isinstance(name, str) and name.startswith("ANVIL_OIDC_")
+                   and name not in allowed for name in environment)):
+        raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
+    values = [environment.get(name) for name in (
+        "ANVIL_OIDC_ISSUER", "ANVIL_OIDC_CLIENT_ID", "ANVIL_OIDC_STEP_UP_ACR",
+    )]
+    if any(type(value) is not str or not value
+           or value != value.strip() or not all(32 < ord(char) < 127 for char in value)
+           for value in values):
+        raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
+    console = environment.get("ANVIL_CONSOLE_BASE_URL")
+    if _oidc_host_origin(console) is None:
+        raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
+    config = OidcRuntimeConfig(
+        issuer=values[0], client_id=values[1],
+        redirect_uri=console.rstrip("/") + "/auth/oidc/callback",
+        jwks_json=pinned_jwks_json, step_up_acr=values[2],
+        principal_policy=principal_policy, ca_bundle=ca_bundle,
+        client_secret=client_secret,
+    )
+    return create_oidc_asgi_app(
+        oidc_config=config, engine=engine, session_factory=session_factory,
+        authorization_resolver=authorization_resolver, environment=environment,
+        transport=transport, operational_shell=operational_shell,
+        frontend_directory=frontend_directory,
+    )
 
 
 def create_oidc_asgi_app(

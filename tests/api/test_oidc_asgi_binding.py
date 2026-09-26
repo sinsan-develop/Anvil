@@ -92,6 +92,102 @@ def _scope(_endpoint, _params):
     return AuthorizationScope("project-1", "wsl-qa", frozenset({"operator"}))
 
 
+def _configured_app(host, *, change=None, secret=None, transport=None):
+    asgi, engine, factory, _, config, environment = host
+    environment.update({
+        "ANVIL_OIDC_ISSUER": ISSUER,
+        "ANVIL_OIDC_CLIENT_ID": "anvil-web",
+        "ANVIL_OIDC_STEP_UP_ACR": "urn:anvil:step-up",
+    })
+    environment.update(change or {})
+    return asgi.create_configured_oidc_asgi_app(
+        environment=environment, engine=engine, session_factory=factory,
+        authorization_resolver=_scope, principal_policy=config.principal_policy,
+        pinned_jwks_json=config.jwks_json, client_secret=secret, transport=transport,
+    )
+
+
+@pytest.mark.parametrize("change", [
+    {"ANVIL_OIDC_ISSUER": ""},
+    {"ANVIL_OIDC_CLIENT_ID": " anvil-web"},
+    {"ANVIL_OIDC_STEP_UP_ACR": "urn:anvil:step-up\n"},
+    {"ANVIL_OIDC_CLIENT_SECRET": "sensitive-client-secret"},
+    {"ANVIL_OIDC_JWKS_JSON": "sensitive-jwks"},
+    {"ANVIL_OIDC_UNRECOGNIZED": "sensitive-unknown"},
+    {"ANVIL_CONSOLE_BASE_URL": "https://sensitive@anvil.example.test"},
+    {"ANVIL_AUTH_MODE": "COOKIE"},
+    {"ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "sensitive-token"},
+])
+def test_configured_oidc_rejects_invalid_host_input_without_reflection(host, change):
+    with pytest.raises(OidcRuntimeRejected) as error:
+        _configured_app(host, change=change)
+    assert str(error.value) == "OIDC_RUNTIME_NOT_CONFIGURED"
+    assert error.value.__cause__ is None and error.value.__context__ is None
+
+
+@pytest.mark.parametrize("missing", [
+    "ANVIL_OIDC_ISSUER", "ANVIL_OIDC_CLIENT_ID", "ANVIL_OIDC_STEP_UP_ACR",
+])
+def test_configured_oidc_requires_each_nonsecret_field(host, missing):
+    asgi, engine, factory, _, config, environment = host
+    environment.update({
+        "ANVIL_OIDC_ISSUER": ISSUER,
+        "ANVIL_OIDC_CLIENT_ID": "anvil-web",
+        "ANVIL_OIDC_STEP_UP_ACR": "urn:anvil:step-up",
+    })
+    del environment[missing]
+    with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$"):
+        asgi.create_configured_oidc_asgi_app(
+            environment=environment, engine=engine, session_factory=factory,
+            authorization_resolver=_scope, principal_policy=config.principal_policy,
+            pinned_jwks_json=config.jwks_json,
+        )
+
+
+def test_configured_oidc_binds_ready_host_and_keeps_secret_provider_lazy(host):
+    asgi, engine, _, private, _, _ = host
+    default_app = asgi.app
+    secret_calls = []
+    nonce = [None]
+
+    def secret():
+        secret_calls.append(True)
+        return "synthetic-client-secret"
+
+    def exchange(request):
+        now = int(datetime.now(timezone.utc).timestamp())
+        token = jwt.encode({
+            "iss": ISSUER, "aud": "anvil-web", "sub": "subject-1", "nonce": nonce[0],
+            "exp": now + 60, "iat": now,
+        }, private, algorithm="RS256", headers={"kid": "key-1"})
+        return httpx.Response(200, json={"id_token": token})
+
+    app = _configured_app(
+        host, secret=secret, transport=httpx.MockTransport(exchange),
+    )
+    assert asgi.app is default_app
+    assert app.state.auth_mode == "OIDC"
+    assert app.state.local_test_session_enabled is False
+    assert secret_calls == []
+    with TestClient(app, base_url=ORIGIN) as client:
+        assert client.get("/health/ready", headers=HEADERS).status_code == 200
+        started = client.post("/auth/oidc/authorization", headers=HEADERS, json={})
+        assert started.status_code == 200
+        url = urlsplit(started.json()["data"]["authorization_url"])
+        assert parse_qs(url.query)["redirect_uri"] == [REDIRECT]
+        assert secret_calls == []
+        state = started.json()["data"]["browser_state"]
+        with engine.connect() as db:
+            nonce[0] = db.execute(sa.select(oidc_pending_auth.c.nonce).where(
+                oidc_pending_auth.c.state_digest == hashlib.sha256(state.encode()).digest(),
+            )).scalar_one()
+        callback = client.post("/auth/oidc/callback", headers=HEADERS, json={
+            "code": "configured-code", "state": state, "browser_state": state,
+        })
+        assert callback.status_code == 200
+        assert secret_calls == [True]
+
+
 @pytest.mark.parametrize("change", [
     {"ANVIL_AUTH_MODE": "COOKIE"},
     {"ANVIL_AUTH_MODE": "WSL_ACCEPTANCE"},
