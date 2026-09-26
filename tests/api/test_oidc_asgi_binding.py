@@ -50,7 +50,7 @@ def host(monkeypatch):
         metadata.create_all(engine)
     with engine.begin() as db:
         db.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
-        db.execute(sa.text("INSERT INTO alembic_version (version_num) VALUES ('0013_task_bootstrap_authority')"))
+        db.execute(sa.text("INSERT INTO alembic_version (version_num) VALUES ('0019_oidc_sessions')"))
         db.execute(users.insert().values(actor_id="actor-1", active=True))
         db.execute(roles.insert().values(role_code="operator", permissions=["provider:read"]))
         db.execute(user_roles.insert().values(
@@ -252,12 +252,15 @@ def test_oidc_host_readiness_uses_the_same_bound_database(host):
     with TestClient(app, base_url=ORIGIN) as client:
         ready = client.get("/health/ready", headers=HEADERS)
         assert ready.status_code == 200
-        assert ready.json() == {"status": "ready", "migration_head": "0013_task_bootstrap_authority"}
+        assert ready.json() == {"status": "ready", "migration_head": "0019_oidc_sessions"}
         with engine.begin() as db:
-            db.execute(sa.text("UPDATE alembic_version SET version_num = '0012_run_authority'"))
+            db.execute(sa.text("UPDATE alembic_version SET version_num = '0016_operations_recovery'"))
         mismatch = client.get("/health/ready", headers=HEADERS)
         assert mismatch.status_code == 503
         assert mismatch.json() == {"status": "not_ready", "reason": "migration_head_mismatch"}
+        with engine.begin() as db:
+            db.execute(sa.text("UPDATE alembic_version SET version_num = '0013_task_bootstrap_authority'"))
+        assert client.get("/health/ready", headers=HEADERS).status_code == 503
 
 
 def test_oidc_host_rejects_missing_engine(host):

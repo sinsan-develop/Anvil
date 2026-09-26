@@ -33,11 +33,11 @@ from sqlalchemy.orm import sessionmaker
 
 from packages.api.fastapi_app import AuthorizationScope
 from packages.api.oidc_principal import OidcPrincipalPolicy
-from packages.persistence.oidc_pending_auth import OIDC_PENDING_METADATA
+from packages.persistence.oidc_pending_auth import OIDC_PENDING_METADATA, oidc_pending_auth
 from packages.persistence.oidc_principal_directory import (
     DIRECTORY_METADATA, oidc_subject_bindings, roles, user_roles, users,
 )
-from packages.persistence.oidc_session_store import OIDC_SESSION_METADATA
+from packages.persistence.oidc_session_store import OIDC_SESSION_METADATA, oidc_sessions
 
 
 @dataclass(frozen=True)
@@ -51,6 +51,10 @@ class LiveOidcEvidence:
     secret_calls: int
     issuer_token_requests: int
     cleanup_verified: bool
+    ready_status: int | None = None
+    pending_rows: int | None = None
+    session_rows: int | None = None
+    directory_rows: int | None = None
 
 
 def _certificate(directory: Path, name: str) -> tuple[Path, Path]:
@@ -97,14 +101,19 @@ def _listener(app: FastAPI, cert: Path, key: Path, listener: socket.socket | Non
     return server, thread, listener, f"https://127.0.0.1:{port}"
 
 
-def run_live_oidc_host_flow(*, reject: str | None = None) -> LiveOidcEvidence:
+def run_live_oidc_host_flow(
+    *, reject: str | None = None, database_engine: sa.Engine | None = None,
+) -> LiveOidcEvidence:
     """Exercise two network listeners; own and close every synthetic resource."""
     if reject not in {None, "bad_secret", "wrong_nonce", "wrong_audience",
                       "wrong_issuer", "reused_state", "invalid_tls"}:
         raise ValueError("unsupported rejection case")
     resources: list[tuple[uvicorn.Server, threading.Thread, socket.socket, str]] = []
     pending_socket = None
-    engine = None
+    engine = database_engine
+    issuer_url = None
+    pending_digest = None
+    seeded = False
     result = None
     cleaned = False
     with tempfile.TemporaryDirectory(prefix=".anvil-f18-r40-", dir=Path(__file__).parent) as temporary:
@@ -175,13 +184,15 @@ def run_live_oidc_host_flow(*, reject: str | None = None) -> LiveOidcEvidence:
 
             resources.append(_listener(issuer_app, issuer_cert, issuer_key))
             issuer_url = resources[0][3] + "/realms/anvil"
-            engine = sa.create_engine("sqlite+pysqlite:///" + (directory / "oidc.sqlite").as_posix(),
-                                      connect_args={"check_same_thread": False})
-            for metadata in (OIDC_PENDING_METADATA, DIRECTORY_METADATA, OIDC_SESSION_METADATA):
-                metadata.create_all(engine)
+            if engine is None:
+                engine = sa.create_engine("sqlite+pysqlite:///" + (directory / "oidc.sqlite").as_posix(),
+                                          connect_args={"check_same_thread": False})
+                for metadata in (OIDC_PENDING_METADATA, DIRECTORY_METADATA, OIDC_SESSION_METADATA):
+                    metadata.create_all(engine)
             with engine.begin() as db:
-                db.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
-                db.execute(sa.text("INSERT INTO alembic_version VALUES ('0013_task_bootstrap_authority')"))
+                if database_engine is None:
+                    db.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
+                    db.execute(sa.text("INSERT INTO alembic_version VALUES ('0019_oidc_sessions')"))
                 db.execute(users.insert().values(actor_id="actor-1", active=True))
                 db.execute(roles.insert().values(role_code="operator", permissions=["provider:read"]))
                 db.execute(user_roles.insert().values(
@@ -191,6 +202,7 @@ def run_live_oidc_host_flow(*, reject: str | None = None) -> LiveOidcEvidence:
                 db.execute(oidc_subject_bindings.insert().values(
                     issuer=issuer_url, subject="subject-1", actor_id="actor-1", active=True,
                 ))
+            seeded = True
             api_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             pending_socket = api_socket
             api_socket.bind(("127.0.0.1", 0))
@@ -233,7 +245,11 @@ def run_live_oidc_host_flow(*, reject: str | None = None) -> LiveOidcEvidence:
                                             headers=headers, json={})
                 authorization.raise_for_status()
                 assert not secret_calls and not token_requests
+                ready_status = client.get(api_url + "/health/ready", headers=headers).status_code
+                with engine.connect() as db:
+                    pending_rows = db.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one()
                 payload = authorization.json()["data"]
+                pending_digest = hashlib.sha256(payload["browser_state"].encode()).digest()
                 with httpx.Client(verify=ssl.create_default_context(cafile=str(issuer_cert)),
                                   trust_env=False, timeout=5) as issuer_client:
                     issuer_response = issuer_client.get(payload["authorization_url"],
@@ -273,9 +289,14 @@ def run_live_oidc_host_flow(*, reject: str | None = None) -> LiveOidcEvidence:
                 else:
                     assert "synthetic-client-secret" not in status.text
                     assert "synthetic-code" not in status.text
+                with engine.connect() as db:
+                    session_rows = db.execute(sa.select(sa.func.count()).select_from(oidc_sessions)).scalar_one()
+                    directory_rows = db.execute(sa.select(sa.func.count()).select_from(
+                        oidc_subject_bindings).where(oidc_subject_bindings.c.issuer == issuer_url)).scalar_one()
                 result = LiveOidcEvidence(
                     issuer_url, api_url, authorization.status_code, callback.status_code,
                     status.status_code, replay, len(secret_calls), len(token_requests), False,
+                    ready_status, pending_rows, session_rows, directory_rows,
                 )
         finally:
             if pending_socket is not None:
@@ -285,7 +306,20 @@ def run_live_oidc_host_flow(*, reject: str | None = None) -> LiveOidcEvidence:
                 thread.join(timeout=10)
                 listener.close()
             if engine is not None:
-                engine.dispose()
+                try:
+                    if database_engine is not None and seeded:
+                        with engine.begin() as db:
+                            db.execute(oidc_sessions.delete().where(oidc_sessions.c.issuer == issuer_url))
+                            if pending_digest is not None:
+                                db.execute(oidc_pending_auth.delete().where(
+                                    oidc_pending_auth.c.state_digest == pending_digest))
+                            db.execute(oidc_subject_bindings.delete().where(
+                                oidc_subject_bindings.c.issuer == issuer_url))
+                            db.execute(user_roles.delete().where(user_roles.c.actor_id == "actor-1"))
+                            db.execute(roles.delete().where(roles.c.role_code == "operator"))
+                            db.execute(users.delete().where(users.c.actor_id == "actor-1"))
+                finally:
+                    engine.dispose()
             cleaned = all(not thread.is_alive() and listener.fileno() == -1
                           for _, thread, listener, _ in resources)
     if result is None:

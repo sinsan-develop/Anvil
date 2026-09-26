@@ -136,17 +136,20 @@ def create_oidc_asgi_app(
     )
     return create_asgi_app(
         runtime, operational_shell=operational_shell, frontend_directory=frontend_directory,
+        required_migration_head="0019_oidc_sessions",
     )
 
 def create_asgi_app(
-    app: FastAPI, *, operational_shell: bool = False, frontend_directory: Path | None = None
+    app: FastAPI, *, operational_shell: bool = False, frontend_directory: Path | None = None,
+    required_migration_head: str | None = None,
 ) -> FastAPI:
     # The injected legacy seam preserves historical C-21 regression contracts.
     # F-15 operational hosting requires the F-14 migration head.
-    required_migration_head = (
-        "0016_operations_recovery" if operational_shell else "0013_task_bootstrap_authority"
-    )
-    if operational_shell:
+    if required_migration_head is None:
+        required_migration_head = (
+            "0016_operations_recovery" if operational_shell else "0013_task_bootstrap_authority"
+        )
+    if operational_shell or required_migration_head == "0019_oidc_sessions":
         # Runtime's historical 0013 declaration is not the operational contract.
         # Readiness still checks the independent database alembic_version below.
         app.state.migration_head = required_migration_head
