@@ -124,7 +124,7 @@ def validate(root, bundle):
             or progress.get("scope_revision_binding", {}).get("production") != "NOT_EXECUTED"
             or progress.get("scope_revision_binding", {}).get("release_decision") != "DEFER"):
         errors.append("F18_R42_STATE_INVALID")
-    valid_lease = previous.r41.r40.previous.r39.previous.r38.previous.r37.previous.r36.previous.r35.previous.r34.previous.r33.previous.r32.previous.r31.previous.r30.previous.r29.previous.r18.GIT_HELPERS.r3.r2._valid_active_lease
+    valid_lease = previous.r41.previous.r40.previous.r39.previous.r38.previous.r37.previous.r36.previous.r35.previous.r34.previous.r33.previous.r32.previous.r31.previous.r30.previous.r29.previous.r18.GIT_HELPERS.r3.r2._valid_active_lease
     for lease, lease_id, token in ((worker, WORKER, EXECUTION_TOKEN), (write, WRITE, WRITE_TOKEN)):
         if (lease.get("lease_id") != lease_id or lease.get("actor_id") != ACTOR
                 or lease.get("status") != "ACTIVE" or lease.get("execution_fencing_token") != EXECUTION_TOKEN
