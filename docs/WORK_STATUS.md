@@ -1,3 +1,8 @@
+# F-18 R31 OIDC pending-store canonical lease 발행 / 2026-09-26
+
+- 판정: `R31_CANONICAL_WRITER_LEASE_ISSUED_PENDING_G05`. Main이 control QA commit `c5a131a`를 지정 원격에 게시하고 seq1584 `WORK_INSTRUCTION_ISSUED`→1585 `WORKER_LEASE_ISSUED`→1586 `WRITE_LEASE_ISSUED`를 투영했다. epoch15의 독립 execution/write fencing token은 제품 exact5(`migrations/versions/0017_oidc_pending_auth.py`, `packages/persistence/oidc_pending_auth.py`, `tests/persistence/test_oidc_pending_auth.py`, `tests/persistence/test_oidc_pending_auth_postgres.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`)에만 결박되며 R30 token을 재사용하지 않는다.
+- 투영 직후 validator/control test의 유일한 `F18_LOCAL_START_GIT_INVALID`는 새 progress/events/handoff/digest/manifest가 미커밋·미게시라서 발생한다. 새 schema/제품 mutation0, Developer 정식 실패0. 다음은 projection exact5 control 파일을 commit/push해 G-05와 clean·원격 HEAD 일치를 확인한 뒤 단일 Developer에게 위임한다. F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R31 OIDC pending-store 통제 준비 / 2026-09-26
 
 - 판정: `R31_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 동일 `codex/f18-wsl-ops`의 시작 HEAD·원격 `fb8903edc8892aa0f7b0c4bea38325159059c3a5` clean/G-05 seq1583 PASS, 기존 worker/write lease=null을 확인했다. F-18 단계3 안의 pending-store를 전용 additive migration+원자 일회성 PostgreSQL 저장소의 제품 exact5로 좁혔다. 기존 `OidcCodeFlow`/runtime/API/테스트 bootstrap/공유 DB/Production은 이 Task에서 수정하지 않는다.
