@@ -1,3 +1,7 @@
+# F-18 R29 회수 후 canonical 검증 / 2026-09-26
+
+- 판정: `R29_NETWORK_CHECKPOINT_G05_PASS`. 회수 projection commit `ba727a00a09f90ee128d8b9000feccfb14ce1b31` push 후 `C:\Users\cyhuh\anaconda3\python.exe -B scripts/check_project_progress.py .` exit0, `G-05 project progress contract: PASS sequence=1578 reporting=AUTO_CONTINUE`; R29 start/close 통제 pytest 5 PASS(exit0), branch `codex/f18-wsl-ops` clean 및 local/remote HEAD 일치. canonical worker/write lease=None·제품 write scope=[]을 유지한다. 다음은 승인된 F-18 OIDC/API 제품 연결 계약 조사·새 단일 writer 범위 확정이며 F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+
 # F-18 R29 network writer lease 회수 / 2026-09-26
 
 - 판정: `R29_WORKER_WRITE_LEASE_REVOKED_PROJECTION_PENDING_G05`. Main이 게시 제품 commit `a9550612084aa0b85c75e2c49844ba0367701d5a`의 로컬 정적 구현·독립 review와 같은 SHA WSL-server bounded network QA·잔류0을 근거로 canonical seq1577 `WRITE_LEASE_REVOKED`→seq1578 `WORKER_LEASE_REVOKED`를 순서대로 투영했다. Main의 `worker_lease=null`, `write_lease=null`, 제품 `product_write_scope=[]`; F-18 accepted=false, F-19 차단, Production NOT_EXECUTED. R29 제품 추가 변경0, 통제/보고서만 변경했다.
