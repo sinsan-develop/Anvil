@@ -16,6 +16,10 @@
 
 ## 실행 순서와 검증
 
+R43A는 HTTPS ingress·OIDC Compose 결선의 정적·정규화 계약, R43B는 QA issuer executable/image·합성 trust 자료·실제 WSL-server OIDC/PG18/브라우저 검증으로 나눈다. 둘 다 동일 F-18 작업 branch 안의 순차 Task이며 R43A 완료만으로 R43 또는 F-18을 합격시키지 않는다.
+
+R43A의 제품 exact4는 `deploy/wsl/compose.f18.oidc.yml`, `deploy/wsl/nginx-f18-oidc.conf`, `tests/deploy/test_f18_oidc_formal_host_contract.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`다. 기존 base Compose·Dockerfile·`deploy/local/nginx.conf`는 수정하지 않는다. 내부·브라우저의 공통 QA hostname은 `anvil-f18-qa.local`, Nginx listener/WSL loopback publish/Windows SSH tunnel 포트는 모두 8444로 고정해 issuer·console origin이 일치하게 한다. 합성 인증서 SAN도 이 이름을 사용한다. issuer 서비스의 실행 artifact는 R43B에서 별도 exact lease로 추가한다.
+
 1. Main이 R43 WorkInstruction에 정확한 제품 파일 목록·검증 기준을 고정하고 canonical worker/write lease 및 두 fencing token을 새 epoch으로 발급한다. G-05가 PASS하기 전에는 Developer 제품 write를 시작하지 않는다.
 2. 단일 `developer-primary`가 허가된 경로만 TDD로 수정한다. 거부 테스트에는 HTTP 재노출, 비-loopback port, issuer host publish/ingress 연결, trust 파일 누락, Secret의 environment 원문 주입, CA/JWKS mismatch, COOKIE fallback을 포함한다. 기존 HTTP F-18과 Web/API/Worker role-image 계약은 회귀 검증한다.
 3. Main이 diff·보안 경계를 독립 검토하고 로컬 테스트/build·`docker compose config`를 확인한다. 정확한 제품 SHA push 후 WSL-server의 전용 checkout에서 image build/digest·PG18 migration head0019·HTTPS `/auth/*`/OIDC 허용·거부·same-origin 요청을 검증한다. Windows Chrome 검증은 임시 프로필/프로세스/산출물을 종료·제거하고 Network 증거를 남긴다.
