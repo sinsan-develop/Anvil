@@ -1,3 +1,8 @@
+# F-18 R30 OIDC principal canonical writer lease 발행 / 2026-09-26
+
+- 판정: `R30_CANONICAL_WRITER_LEASE_ISSUED_PENDING_G05`. Main이 control QA commit `d9b384b01b003e06d327e7cd9c2bd4e98e97b298`을 지정 원격에 push하고 새 seq1579 `WORK_INSTRUCTION_ISSUED`→1580 `WORKER_LEASE_ISSUED`→1581 `WRITE_LEASE_ISSUED`를 투영했다. epoch14의 worker `worker-lease-f18-wsl-ops-r30-20260926-001`·write `write-lease-f18-wsl-ops-r30-20260926-001`은 서로 다른 fencing token과 제품 exact3(`packages/api/oidc_principal.py`, `tests/api/test_oidc_principal.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`)에만 결박됐다. 이전 R29 token 재사용0.
+- 투영 직후 R30 overlay validator의 유일한 `F18_LOCAL_START_GIT_INVALID`는 아직 새 progress/events/handoff/digest/manifest가 미커밋·미게시 상태이기 때문이다. 제품 mutation0, 오류0·Developer 정식 실패0. Main 통제·문서 외 파일 수정0. 다음은 이 projection을 commit/push하고 G-05 및 clean·원격 HEAD 일치를 확인한 뒤 단일 Developer에게 위임한다. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+
 # F-18 R30 OIDC principal 단일 writer 통제 준비 / 2026-09-26
 
 - 판정: `R30_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 시작 branch `codex/f18-wsl-ops`, HEAD·원격 `1dfe23d453a93fca1aa9710c3bd0acbdbe085d33`, clean, G-05 seq1578 PASS, worker/write lease=null을 확인했다. 기존 OIDC identity/code-flow/issuer transport focused baseline `109 passed, 1 existing python_multipart PendingDeprecationWarning`(exit0). 설계·계획·기본 F-18 WorkInstruction의 승인 범위 안에서 R30 OIDC 신원→서버측 권한 매핑의 exact3 제품 Task를 한정했다.
