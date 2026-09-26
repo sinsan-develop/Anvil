@@ -1,0 +1,1 @@
+Main은 R43B2 검증 전용 WorkInstruction을 따른다. epoch29 ACTIVE worker lease, 제품 write scope 공란, G-05 PASS, WSL-server 자원 사전 기록을 확인한 후 지정 SSH alias로 exact Git SHA의 격리 QA만 수행한다. 제품 결함 발견 시 전용 자원 정리·lease 회수 후 별도 개발 지시를 발급한다. 실제 증거와 미검증을 WORK_STATUS/B2 report에 기록하고 F-18 합격을 추정하지 않는다.

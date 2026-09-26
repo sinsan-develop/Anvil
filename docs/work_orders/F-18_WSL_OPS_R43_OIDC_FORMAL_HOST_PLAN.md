@@ -20,6 +20,8 @@ R43A는 HTTPS ingress·OIDC Compose 결선의 정적·정규화 계약, R43B는 
 
 R43A 정적 결선 이후 R43B는 두 개의 순차 lease로 실행한다. R43B1은 WSL 전용 합성 issuer executable/image와 거부 계약만 구현·로컬 검증한다. R43B2는 B1 결과의 정확한 Git SHA를 WSL-server에서 받아 격리 Compose/PG18/TLS/OIDC/브라우저를 실측한다. B1의 pytest PASS는 B2 또는 F-18 인수가 아니다. B1의 제품 exact5는 `deploy/wsl/oidc_qa_issuer.py`, `deploy/wsl/Dockerfile.f18.oidc-qa`, `deploy/wsl/compose.f18.oidc.yml`, `tests/deploy/test_f18_oidc_qa_issuer.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`로 고정한다. B1은 제품 API/Worker와 기본 Compose를 수정하지 않는다.
 
+R43B2는 Main 소유 검증 lease로만 WSL-server에 진입한다. 제품 write scope는 비워 두고, 새 제품 결함이 확인되면 B2 자원 정리·worker lease 회수 후 별도 단일 Developer 지시를 발급한다. 결과 증거는 `WORK_STATUS`와 별도 B2 report에 기록하되 제품 파일·기존 runtime·공유 DB·OS 전역 신뢰 저장소는 변경하지 않는다.
+
 R43A의 제품 exact4는 `deploy/wsl/compose.f18.oidc.yml`, `deploy/wsl/nginx-f18-oidc.conf`, `tests/deploy/test_f18_oidc_formal_host_contract.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`다. 기존 base Compose·Dockerfile·`deploy/local/nginx.conf`는 수정하지 않는다. 내부·브라우저의 공통 QA hostname은 `anvil-f18-qa.local`, Nginx listener/WSL loopback publish/Windows SSH tunnel 포트는 모두 8444로 고정해 issuer·console origin이 일치하게 한다. 합성 인증서 SAN도 이 이름을 사용한다. issuer 서비스의 실행 artifact는 R43B에서 별도 exact lease로 추가한다.
 
 1. Main이 R43 WorkInstruction에 정확한 제품 파일 목록·검증 기준을 고정하고 canonical worker/write lease 및 두 fencing token을 새 epoch으로 발급한다. G-05가 PASS하기 전에는 Developer 제품 write를 시작하지 않는다.
