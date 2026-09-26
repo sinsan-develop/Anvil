@@ -102,6 +102,35 @@ def test_valid_detached_signature_binds_all_release_subject_fields():
     assert verified.image_digests == tuple(sorted(IMAGES.items()))
 
 
+def test_current_oidc_migration_head_can_be_signed_and_verified():
+    value = subject()
+    value["db_migration_head"] = "0019_oidc_sessions"
+    envelope, public_pem, fingerprint = signed_manifest(value)
+    verified = verify(envelope, public_pem, fingerprint, ReleaseExpectations(**value))
+    assert verified.subject_hash == envelope["subject_hash"]
+
+
+@pytest.mark.parametrize("head", ["0017_unknown", "0018_unknown", "0020_unknown", "other_head", None])
+def test_unapproved_migration_head_cannot_enter_signed_subject(head):
+    value = subject()
+    value["db_migration_head"] = head
+    with pytest.raises(ManifestVerificationError, match="MANIFEST_MIGRATION_INVALID"):
+        canonical_subject_bytes(value)
+
+
+@pytest.mark.parametrize("signed_head, observed_head", [
+    ("0016_operations_recovery", "0019_oidc_sessions"),
+    ("0019_oidc_sessions", "0016_operations_recovery"),
+])
+def test_valid_signed_migration_head_must_match_observation(signed_head, observed_head):
+    value = subject()
+    value["db_migration_head"] = signed_head
+    envelope, public_pem, fingerprint = signed_manifest(value)
+    observed = ReleaseExpectations(**{**value, "db_migration_head": observed_head})
+    with pytest.raises(ManifestVerificationError, match="MANIFEST_OBSERVATION_MISMATCH"):
+        verify(envelope, public_pem, fingerprint, observed)
+
+
 @pytest.mark.parametrize("attack", ["signature", "other-public-key", "other-trust-fingerprint", "body", "hash"])
 def test_signature_trust_or_subject_tamper_is_rejected(attack):
     envelope, public_pem, fingerprint = signed_manifest(subject())

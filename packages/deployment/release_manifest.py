@@ -84,7 +84,7 @@ def _validate_subject(subject: object) -> dict:
     for field in ("lockfile_hash", "sbom_ref", "config_schema_revision", "evidence_manifest_hash", "verification_report_hash"):
         if not _digest(subject[field]):
             raise ManifestVerificationError("MANIFEST_DIGEST_INVALID")
-    if subject["db_migration_head"] != "0016_operations_recovery":
+    if subject["db_migration_head"] not in {"0016_operations_recovery", "0019_oidc_sessions"}:
         raise ManifestVerificationError("MANIFEST_MIGRATION_INVALID")
     providers = subject["provider_adapter_versions"]
     if not isinstance(providers, dict) or set(providers) != _PROVIDERS or not all(
