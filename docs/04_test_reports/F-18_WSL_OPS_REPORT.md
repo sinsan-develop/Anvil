@@ -479,3 +479,27 @@
 - 최초 clone wrapper exit1은 PowerShell이 SSH 명령 내부의 `$()`를 로컬에서 선확장한 인용 실수다. WSL clone/checkout 자체는 성공했으며 Main의 별도 read-only 재확인에서 HEAD exact, dirty0, owner `daon`, realpath exact였다. 보안·제품 결함이 아닌 Main 실행 절차 오류 1건으로 기록하며 최초 wrapper exit1을 성공 exit로 소급하지 않는다.
 - Main은 QA 종료 전 exact 경로·비-symlink·owner·HEAD·dirty를 확인한 뒤 해당 전용 checkout만 제거했고 `QA_RESIDUE=0`을 확인했다. 기존 `local-postgres` ID `99f3bf939d40`은 running, `anvil-web` ID `f0107aada3b2`는 healthy로 불변이다. 공유 DB·기존 서비스·Production은 작업 대상이 아니다.
 - 이 PASS는 합성 coordinator/TestClient 중심의 동일 제품 SHA scoped 회귀다. 실제 issuer/JWKS, PostgreSQL coordinator 결합, Web callback·브라우저 Network, 정식 WSL E2E 및 Production은 `NOT_EXECUTED`다. 로컬 전체 pytest의 기존 **13 collection ERROR**도 non-green 그대로다. F-18 `accepted=false`, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production `NOT_EXECUTED`를 유지한다. 보고서-only 변경은 제품 SHA를 바꾸지 않으며 Main control/progress/HANDOFF·push·lease 회수는 Main 소유다.
+
+## R37 OIDC trusted composition 로컬 Task — 2026-09-26
+
+### 판정
+
+`COMPLETED` — R37 exact3 로컬 구성 단계의 제품 commit은 `00dc874`다. 합성 서명 ID token, 네트워크 경계 MockTransport, 실제 SQLAlchemy SQLite의 pending/directory/session store를 통한 begin→exchange→complete→서버 role/scope bind→opaque cookie authenticate→revoke를 검증했다. 전체 pytest는 기존 수집 오류 13건으로 non-green이다. 이 결과는 실제 issuer·PostgreSQL 18·ASGI/Web/브라우저·WSL 통합 PASS가 아니다.
+
+### 기준·변경·보안 경계
+
+- 시작 checkout `D:\Project\Anvil\.codex-sandbox\anvil-main-integration`, branch `codex/f18-wsl-ops`, HEAD `466867593e8a6385c4617d4e6cbf2444c9ea41bf`, clean. canonical seq1616 `G-05 project progress contract: PASS`(exit0). worker/write lease `ACTIVE`, epoch21, 실행 fence `f18-wsl-ops-execution-fence-epoch-21-77f2f4bd8e15cea8`, write fence `f18-wsl-ops-write-fence-epoch-21-77f2f4bd8e15cea8`, path_scope exact3 일치.
+- 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`, R37 Plan `113110A8ED2765C93338AFAEDA7F53A72BF77B31C9108D4DD0B21D8B627C14AD`, WI `2597F056532E79D24025DCD3A4D5FAE94B6F55D9A54BE13B1108E2D236B6274E`, Invocation `61743BB55DBBEC2A7447D89098A53402D1452DCBDC21CB9C49282F4CC851F20E`.
+- 변경 전 신뢰 컴포넌트는 각각 주입해야 했다. 변경 후 `OidcRuntimeConfig`와 `build_oidc_session_coordinator`가 고정 issuer에서 auth/token endpoint를 파생하고 pinned JWKS verifier, issuer transport, one-use flow, 세 SQLAlchemy store와 coordinator를 조립한다. 유효하지 않은 URL/JWKS/policy·비어 있는 role/permission/project/environment 허용집합·주입 타입은 구성 전에 `OIDC_RUNTIME_NOT_CONFIGURED`로 거부한다. JWKS와 client-secret provider는 config repr에서 제외하고 Secret provider는 code exchange 시에만 호출한다. 하위 예외는 표시하지 않는다.
+- `packages/api/oidc_runtime_factory.py`(신규 124줄), `tests/api/test_oidc_runtime_factory.py`(신규 262줄), 본 보고서만 writer exact3다. ASGI/Web/DB schema/migration/deploy/기존 OIDC 코어/Main control·progress·HANDOFF는 미수정이다. 제품 rollback은 `00dc874`의 정상 revert이며 DB downgrade나 외부 자원 복구는 없다.
+
+### 검증·오류
+
+- TDD 첫 시도는 테스트 문자열 오타로 collection `SyntaxError`(exit1)였고 RED 증거로 세지 않았다. 오타 수정 후 factory 모듈 부재 `ModuleNotFoundError`(exit1)가 의도한 기능 부재 RED다. 최소 구현 첫 실행 13 FAIL/4 PASS(exit1)에서 예외 context 단언과 SQLite 초 단위 DB clock 대비 pending TTL 상한 문제를 확인했다. 공통 UTC 초 단위 clock과 비식별 예외 context suppression 계약을 적용한 뒤 신규 테스트 17 PASS(exit0), 경계 보강 후 26 PASS/기존 warning1(exit0).
+- `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --basetemp=.pytest-f18-r37-scoped tests/api/test_oidc_runtime_factory.py tests/api/test_oidc_identity.py tests/api/test_oidc_issuer_transport.py tests/api/test_oidc_code_flow.py tests/api/test_oidc_principal.py tests/api/test_oidc_session_coordinator.py tests/api/test_oidc_http.py tests/api/test_runtime_app.py tests/persistence/test_oidc_pending_auth.py tests/persistence/test_oidc_principal_directory.py tests/persistence/test_oidc_session_store.py --tb=short` → exit0, **324 PASS/기존 warning8**. 첫 동일 목록 실행에서 시스템 `C:\Users\cyhuh\AppData\Local\Temp\pytest-of-cyhuh` 접근 거부로 `test_postgres_fixture_does_not_delete_preexisting_table` setup ERROR 1건(323 PASS/exit1); checkout 내부 전용 basetemp로 재실행해 해소했다. 임시 경로의 실제 위치·비-symlink·내용을 확인한 뒤 정확히 제거해 잔여0이다.
+- bare 전체 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --tb=line` → exit1, **13 collection ERROR/기존 warning1**, 본문 미실행·전체 PASS 아님. 오류 파일: `tests/execution/test_models.py`, `tests/fixtures/repositories/FIX-PY-CLEAN/source/tests/test_calc.py`, `FIX-PY-DIRTY/source/tests/test_calc.py`, `FIX-PY-REDFAIL/source/tests/test_calc.py`, `tests/knowledge/test_hook_runtime_d10.py`, `test_hooks_d09.py`, `test_learning_e2e_d13.py`, `test_learning_journey_d12.py`, `test_model_registry_d11.py`, `test_skill_evolution_d08.py`, `test_skills_d07.py`, `tests/planning/test_models.py`, `test_repository.py`. 원인은 기존 duplicate basename import mismatch 10건과 fixture `src` 부재 3건이다.
+- `git diff --cached --check` exit0 후 제품 exact2 commit `00dc874`; 보고서 diff check와 최종 commit은 아래 별도 checkpoint다. 계획된 RED/수정 시도 2회, 시스템 temp 접근 오류 1회, 정식 Developer `FAILURE_REPORT` 0회. 테스트 네트워크 호출은 `httpx.MockTransport`에만 한정하고 실제 서비스/DB/container/listener는 생성·변경하지 않았다.
+
+### 미검증·다음
+
+실제 issuer/JWKS Secret 로더·PostgreSQL 18 coordinator, host ASGI 결선, Web callback·브라우저 Network, WSL 운영 유사 통합, 전체 pytest GREEN, Production은 `NOT_EXECUTED`다. F-18 `accepted=false`, F-19 차단, Production `NOT_EXECUTED` 유지. Main은 exact3 diff/독립 리뷰·동일 SHA scoped WSL QA와 lease 회수·원격 게시를 소유한다. Developer는 push/PR/병합을 하지 않았다.
