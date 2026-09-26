@@ -245,6 +245,62 @@ def test_corrupt_step_up_later_than_session_expiry_fails_closed(database):
         store.get(DIGEST)
 
 
+def test_corrupt_session_expiry_beyond_db_now_plus_900_fails_closed(database):
+    from packages.persistence.oidc_session_store import (
+        OidcSessionStoreRejected, SqlAlchemyOidcSessionStore,
+    )
+
+    engine, factory = database
+    store = SqlAlchemyOidcSessionStore(factory)
+    store.put(DIGEST, _record())
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            "UPDATE oidc_sessions SET expires_at = :invalid WHERE session_digest = :digest"
+        ), {"invalid": datetime.now(timezone.utc) + timedelta(seconds=1000),
+            "digest": DIGEST})
+    with pytest.raises(OidcSessionStoreRejected,
+                       match="^OIDC_SESSION_STORE_NOT_AVAILABLE$") as error:
+        store.get(DIGEST)
+    assert error.value.__cause__ is None and error.value.__context__ is None
+
+
+def test_corrupt_step_up_beyond_db_now_plus_300_fails_closed(database):
+    from packages.persistence.oidc_session_store import (
+        OidcSessionStoreRejected, SqlAlchemyOidcSessionStore,
+    )
+
+    engine, factory = database
+    store = SqlAlchemyOidcSessionStore(factory)
+    store.put(DIGEST, _record(seconds=600, step_seconds=120))
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            "UPDATE oidc_sessions SET step_up_valid_until = :invalid "
+            "WHERE session_digest = :digest"
+        ), {"invalid": datetime.now(timezone.utc) + timedelta(seconds=400),
+            "digest": DIGEST})
+    with pytest.raises(OidcSessionStoreRejected,
+                       match="^OIDC_SESSION_STORE_NOT_AVAILABLE$") as error:
+        store.get(DIGEST)
+    assert error.value.__cause__ is None and error.value.__context__ is None
+
+
+def test_past_step_up_time_is_returned_for_coordinator_decision(database):
+    from packages.persistence.oidc_session_store import SqlAlchemyOidcSessionStore
+
+    engine, factory = database
+    store = SqlAlchemyOidcSessionStore(factory)
+    store.put(DIGEST, _record(seconds=600, step_seconds=120))
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            "UPDATE oidc_sessions SET step_up_valid_until = :past "
+            "WHERE session_digest = :digest"
+        ), {"past": datetime.now(timezone.utc) - timedelta(seconds=1),
+            "digest": DIGEST})
+    record = store.get(DIGEST)
+    assert record is not None
+    assert record.step_up_valid_until < datetime.now(timezone.utc)
+
+
 def test_migration_empty_and_data_bearing_downgrade():
     migration = _migration()
     assert migration.revision == "0019_oidc_sessions"

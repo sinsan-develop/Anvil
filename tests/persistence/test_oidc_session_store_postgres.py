@@ -141,17 +141,17 @@ def test_postgres_downgrade_blocks_concurrent_insert(postgres):
     ready = Event()
     begin_insert = Event()
     backend_pid = []
-    original_drop_table = migration.op.drop_table
+    original_drop_index = migration.op.drop_index
 
-    def pause_before_drop(*args, **kwargs):
+    def pause_before_first_drop(*args, **kwargs):
         counted.set()
         assert release_drop.wait(timeout=15)
-        return original_drop_table(*args, **kwargs)
+        return original_drop_index(*args, **kwargs)
 
     def downgrade():
         with engine.begin() as connection:
             with Operations.context(MigrationContext.configure(connection)):
-                with patch.object(migration.op, "drop_table", pause_before_drop):
+                with patch.object(migration.op, "drop_index", pause_before_first_drop):
                     migration.downgrade()
 
     def insert():
@@ -193,3 +193,64 @@ def test_postgres_downgrade_blocks_concurrent_insert(postgres):
             with engine.begin() as connection:
                 with Operations.context(MigrationContext.configure(connection)):
                     migration.upgrade()
+
+
+def test_postgres_no_lock_mutation_exposes_insert_before_first_drop(postgres):
+    """Mutation probe: suppress only LOCK; INSERT must commit before DROP INDEX."""
+    engine, _, migration = postgres
+    at_first_drop = Event()
+    release = Event()
+    ready = Event()
+    start_insert = Event()
+
+    class NoLockBind:
+        def __init__(self, connection):
+            self.connection = connection
+            self.dialect = connection.dialect
+
+        def execute(self, statement):
+            if str(statement).startswith("LOCK TABLE oidc_sessions IN ACCESS EXCLUSIVE MODE"):
+                return None
+            return self.connection.execute(statement)
+
+    def stop_before_first_drop(*args, **kwargs):
+        at_first_drop.set()
+        assert release.wait(timeout=15)
+        raise RuntimeError("MUTATION_PROBE_STOP_BEFORE_DROP")
+
+    def downgrade_without_lock():
+        with engine.begin() as connection:
+            with Operations.context(MigrationContext.configure(connection)):
+                with patch.object(migration.op, "get_bind", return_value=NoLockBind(connection)):
+                    with patch.object(migration.op, "drop_index", stop_before_first_drop):
+                        migration.downgrade()
+
+    def insert():
+        with engine.connect() as connection:
+            connection.execute(sa.text("SELECT pg_backend_pid()"))
+            connection.rollback()
+            ready.set()
+            assert start_insert.wait(timeout=10)
+            with connection.begin():
+                connection.execute(oidc_sessions.insert().values(
+                    session_digest=b"\x15" * 32, issuer="issuer", subject="subject",
+                    csrf_token=CSRF, expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+                ))
+            return "COMMITTED"
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            removing = pool.submit(downgrade_without_lock)
+            assert at_first_drop.wait(timeout=10)
+            inserting = pool.submit(insert)
+            assert ready.wait(timeout=5)
+            start_insert.set()
+            assert inserting.result(timeout=5) == "COMMITTED"
+            release.set()
+            with pytest.raises(RuntimeError, match="^MUTATION_PROBE_STOP_BEFORE_DROP$"):
+                removing.result(timeout=10)
+        with engine.connect() as connection:
+            assert connection.execute(sa.text("SELECT count(*) FROM oidc_sessions")).scalar_one() == 1
+    finally:
+        start_insert.set()
+        release.set()

@@ -151,15 +151,19 @@ class SqlAlchemyOidcSessionStore:
                     if row is None:
                         return None
                     expiry = _stored_utc(row.expires_at)
-                    if expiry <= _database_utc(session):
+                    now = _database_utc(session)
+                    if expiry <= now:
                         return None
+                    if expiry > now + _MAX_TTL:
+                        raise ValueError("invalid stored session")
                     if (not _identity(row.issuer, 2048) or not _identity(row.subject, 512)
                             or type(row.csrf_token) is not str
                             or not _CSRF.fullmatch(row.csrf_token)):
                         raise ValueError("invalid stored session")
                     step_expiry = (None if row.step_up_valid_until is None
                                    else _stored_utc(row.step_up_valid_until))
-                    if step_expiry is not None and step_expiry > expiry:
+                    if step_expiry is not None and (step_expiry > expiry
+                                                    or step_expiry > now + _STEP_UP_TTL):
                         raise ValueError("invalid stored session")
                     return OidcStoredSession(row.issuer, row.subject, row.csrf_token,
                                              expiry, step_expiry)
