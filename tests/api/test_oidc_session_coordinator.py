@@ -242,18 +242,29 @@ def test_malformed_bearer_skips_store(context, token):
     assert coordinator.authenticate(token) is None
 
 
-def test_failed_code_exchange_and_randomness_leave_no_session(context):
-    coordinator, issue, engine, _, response, flow, resolver, policy, store = context
+def test_failed_code_exchange_leaves_no_session(context):
+    coordinator, _, engine, _, response, _, _, _, _ = context
     response["fail"] = True
     request = coordinator.begin()
     with pytest.raises(OidcSessionRejected, match="^OIDC_SESSION_NOT_AUTHORIZED$") as error:
         coordinator.complete(code="sensitive-code", state=request.browser_state,
                              browser_state=request.browser_state)
     assert error.value.__cause__ is None and error.value.__context__ is None
-    response["fail"] = False
+
+    with engine.connect() as db:
+        assert db.execute(sa.select(sa.func.count()).select_from(oidc_sessions)).scalar_one() == 0
+
+
+def test_duplicate_session_randomness_is_rejected_after_signed_flow(context):
+    _, _, engine, now, response, flow, resolver, policy, store = context
     bad = OidcSessionCoordinator(flow, resolver, policy, store,
+                                 clock=lambda: now[0],
                                  random_bytes=lambda n: b"A" * n)
     request = bad.begin()
+    with engine.connect() as db:
+        response["nonce"] = db.execute(sa.select(oidc_pending_auth.c.nonce).where(
+            oidc_pending_auth.c.state_digest == _digest(request.browser_state)
+        )).scalar_one()
     with pytest.raises(OidcSessionRejected, match="^OIDC_SESSION_NOT_AUTHORIZED$"):
         bad.complete(code="sensitive-code", state=request.browser_state,
                      browser_state=request.browser_state)
