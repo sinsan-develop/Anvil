@@ -1,3 +1,9 @@
+# F-18 R29 network exact3 단일 writer 통제 전환 / 2026-09-26
+
+- 판정: `R29_CANONICAL_WRITER_LEASE_ISSUED_PENDING_PRODUCT_IMPLEMENTATION`. Main이 동일 branch의 clean 기준 commit `6bd7309b8bbd969efc14528fae27f190ec922e2f`에서 R29 계획·WorkInstruction·invocation을 고정하고 seq1574~1576 `WORK_INSTRUCTION_ISSUED`→`WORKER_LEASE_ISSUED`→`WRITE_LEASE_ISSUED`를 투영했다. canonical seq1576, worker `worker-lease-f18-wsl-ops-r29-20260926-001`, write `write-lease-f18-wsl-ops-r29-20260926-001`, epoch13·각기 다른 fencing token, 제품 exact3만 ACTIVE. R18 종료 token은 재사용하지 않는다.
+- 변경된 통제 파일: R29 plan/WI/invocation, `scripts/f18_wsl_ops_r29_network_overlay.py`, `scripts/check_project_progress.py`, overlay test, progress/events/handoff/digest/manifest와 본 WORK_STATUS. 제품 변경0. 로컬 번들 Python의 compileall exit0, stdlib 직접 실행 R29 control test 3 PASS; 로컬 `pytest`는 모듈 부재로 실행 불가(환경 오류1, Developer 정식 실패0). 생성 직후 validator의 유일한 오류 `F18_LOCAL_START_GIT_INVALID`는 projection 파일 미커밋·미게시 상태이며, exact 통제 commit/push 후 G-05로 재검증한다.
+- 다음 안전 행동: G-05 PASS 및 원격 HEAD 일치 확인 후 `developer-primary-f18-wsl-ops-r29-network`에게 exact3만 전달한다. 제품 TDD RED→GREEN·검증 뒤 Main이 독립 review하고 동일 Git SHA를 `ssh WSL-server`에서 검증한다. F-18 accepted=false, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production NOT_EXECUTED.
+
 # F-18 R29 제품 내부망·OIDC 구현 경계 확정 / 2026-09-26
 
 - 판정: `R29_PRODUCT_STAGE_SCOPE_FIXED_PENDING_CANONICAL_WRITER_LEASE`. 승인된 F-18 설계 §49.11~49.12·계획 F-18·기본 WorkInstruction 단계3~5와 현재 clean `codex/f18-wsl-ops` HEAD/원격 `e9d3bef209fd62a6795557cc11670a12eb6fcb27`을 대조했다. 설계·계획·매트릭스·테스트계획의 WorkInstruction 기준 SHA-256은 현재 파일과 일치한다. 현재 canonical progress는 seq1573, worker/write lease=null이므로 제품 파일 mutation은 아직 시작하지 않았다. Main 조사·범위 확정만 수행, 오류0·Developer 정식 실패0.
