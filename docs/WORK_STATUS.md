@@ -1,3 +1,9 @@
+# F-18 R30 OIDC principal 단일 writer 통제 준비 / 2026-09-26
+
+- 판정: `R30_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 시작 branch `codex/f18-wsl-ops`, HEAD·원격 `1dfe23d453a93fca1aa9710c3bd0acbdbe085d33`, clean, G-05 seq1578 PASS, worker/write lease=null을 확인했다. 기존 OIDC identity/code-flow/issuer transport focused baseline `109 passed, 1 existing python_multipart PendingDeprecationWarning`(exit0). 설계·계획·기본 F-18 WorkInstruction의 승인 범위 안에서 R30 OIDC 신원→서버측 권한 매핑의 exact3 제품 Task를 한정했다.
+- Main 변경은 `F-18_WSL_OPS_R30_OIDC_PRINCIPAL_{PLAN,WORK_INSTRUCTION,INVOCATION}.md`, R30 start overlay/control test, progress checker dispatch와 본 WORK_STATUS·manifest다. 신규 public API/DB schema/Secret/network/Compose 제품 mutation은 없다. control test `3 passed`(exit0), overlay compileall exit0, diff-check exit0. 통제 스크립트의 lease tamper·approval binding tamper 거부를 단위 검증했으며 아직 seq1581 projection/G-05는 미실행이다. 오류0·Developer 정식 실패0.
+- 다음 안전 행동: control-only QA commit/push 후 seq1579~1581 WorkInstruction→worker→write lease를 새 epoch14 exact3로 투영하고 G-05를 확인한다. 그 전 Developer 제품 write는 금지한다. F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+
 # F-18 R30 OIDC 신원→권한 내부 계약 범위 확정 / 2026-09-26
 
 - 판정: `R30_OIDC_PRINCIPAL_CONTRACT_SCOPED_NO_PRODUCT_WRITE`. 담당 Main. R29 종료 canonical seq1578의 worker/write lease=null과 clean `codex/f18-wsl-ops` HEAD `439768ab42f4dbdb2978671c32a59012230c0634`를 확인했다. 승인된 F-18 WorkInstruction 단계3의 OIDC issuer·역할·승인 scope 검증을 위해 현재 `OidcCodeFlow.complete()`의 결과가 `OidcIdentity(issuer, subject, auth_time, acr, step_up_verified)`까지만 제공되고, `create_runtime_app()`은 COOKIE/WSL_ACCEPTANCE만 활성화하며, DB migration 0001~0016에는 OIDC user/role/session 저장소가 없음을 대조했다. 기존 `LocalTestSessionService`는 OIDC 대체물이 아니다.
