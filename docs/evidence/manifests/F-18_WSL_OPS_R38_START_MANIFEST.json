@@ -270,8 +270,8 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 805053,
-      "sha256": "2239D933E278E180D872BE5EAACAFD0E00FB6B08B9B4267261E0A9B0F5FC9D92"
+      "bytes": 806500,
+      "sha256": "FB32DBEF3BE4C5A4D709AC6DE189733D84129E9F9438AE0F930D0B4F80E6FC01"
     },
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",
@@ -990,8 +990,8 @@
     },
     {
       "path": "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_PLAN.md",
-      "bytes": 5164,
-      "sha256": "38B62FC158FF1B18571BC3C2C8E406A64832DA06824D0DF81F7212167814D71A"
+      "bytes": 6417,
+      "sha256": "7F3091431E16269260041CFE653314CF0282983FB76F55E8F8958D206E711A3C"
     },
     {
       "path": "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_WORK_INSTRUCTION.md",
