@@ -1,0 +1,1 @@
+F-18 R43C WorkInstruction과 R43C 계획을 따르십시오. Main이 발급한 ACTIVE worker/write lease의 두 fencing token·exact5 경로·G-05 PASS를 확인한 뒤 RED→GREEN으로 두 실측 결함만 보정하십시오. 제품 exact5 밖 수정, WSL 자원 생성·push·병합은 하지 말고 실제 증거와 미검증 범위를 보고하십시오.
