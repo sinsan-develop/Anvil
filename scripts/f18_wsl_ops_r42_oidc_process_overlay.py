@@ -48,7 +48,9 @@ def control_paths():
 def evidence_paths():
     return set(previous.evidence_paths()) | {
         "docs/WORK_STATUS.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json",
-        "docs/progress/BUILD_HANDOFF.md", DIGEST, MANIFEST}
+        "docs/progress/BUILD_HANDOFF.md", DIGEST, MANIFEST,
+        # Pre-dispatch R42 checker projection repair; raw manifest checksums still bind both files.
+        "scripts/check_project_progress.py", SELF}
 
 
 def _historical(root):
