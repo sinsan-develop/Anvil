@@ -51,6 +51,15 @@ services:
   oidc-issuer:
     image: "${ANVIL_F18_OIDC_ISSUER_IMAGE_REF:?verified QA issuer image ID required}"
     networks: [internal]
+    volumes:
+      - type: bind
+        source: ${ANVIL_F18_OIDC_MATERIAL_DIR:?dedicated synthetic material directory required}/signing.key
+        target: /run/anvil-f18-oidc/signing.key
+        read_only: true
+      - type: bind
+        source: ${ANVIL_F18_OIDC_MATERIAL_DIR:?dedicated synthetic material directory required}/client-secret
+        target: /run/anvil-f18-oidc/client-secret
+        read_only: true
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
