@@ -1,3 +1,9 @@
+# F-18 R30 OIDC principal writer lease 회수 / 2026-09-26
+
+- 판정: `R30_WORKER_WRITE_LEASE_REVOKED_PROJECTION_PENDING_G05`. Main이 제품 exact3 `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6`, 독립 Spec PASS/quality Approved(Critical/Important 0), 로컬·WSL 동일 SHA focused185 PASS, WSL 전용 QA 경로 잔류0을 근거로 canonical seq1582 `WRITE_LEASE_REVOKED`→seq1583 `WORKER_LEASE_REVOKED`를 순서대로 투영했다. worker_lease=null, write_lease=null, product_write_scope=[]; F-18 accepted=false, F-19 차단, Production NOT_EXECUTED.
+- R30 제품 추가 변경0·Developer 정식 FAILURE_REPORT 0, Main 변경은 R30 close plan/overlay/test/checker와 progress/events/handoff/digest/manifest·본 WORK_STATUS다. 투영 직후 validator의 유일한 `F18_LOCAL_START_GIT_INVALID`는 projection 미커밋·미게시 상태다. 회수 control QA commit `b6e7a24`는 원격에 게시됐고 최종 G-05와 로컬/원격 HEAD 일치는 projection commit/push 후 확인한다.
+- 다음 안전 행동: R30 종료 projection commit/push·G-05 PASS 뒤 승인된 F-18의 영속 pending state·실제 trusted resolver ownership·OIDC session/API 연결을 각각 좁은 exact-path Stage로 분해한다. 내부 공백/제어문자 거부 Minor1을 해당 Stage에 흡수한다. 새 branch·F-19·`ysna-server`/Production 작업 없음.
+
 # F-18 R30 writer 종료 통제 준비 / 2026-09-26
 
 - 판정: `R30_CLOSE_CONTROL_QA_PENDING_REVOCATION`. 담당 Main. R30 제품 `5a8f0fcfffdbc48f69fd885ff0f74099d06a8cd6`의 exact3 독립 review, 로컬·WSL 동일 SHA focused 185 PASS, WSL 전용 QA 자원 잔류0, G-05 seq1581 PASS와 브랜치 clean·원격 HEAD `ac4d463eff90ffa8665aef09e40bc5d99661c54e` 일치를 확인했다. 제품 정식 실패0, 전체 pytest 기존 collection13 ERROR는 전체 PASS 아님.
