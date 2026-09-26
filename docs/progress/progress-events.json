@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1646,
+  "last_sequence": 1648,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -83945,7 +83945,51 @@
       "tests/deploy/test_f18_oidc_formal_host_contract.py"
     ]
   }
+},
+{
+  "sequence": 1647,
+  "event_id": "evt_f18_local_1647_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R43A_CLOSE",
+  "subject_ref": "F-18/WSL_OPS_R43A_CLOSE",
+  "occurred_at": "2026-09-27T02:54:45+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "71D8043B4632DC38E72E9EA4255D23C56A8C088388F833DA53D6E6853E8DD71F",
+  "details": {
+    "lease_id": "write-lease-f18-wsl-ops-r43a-20260927-001",
+    "reason": "R43A_OIDC_FORMAL_HOST_CONFIG_QA_COMPLETE",
+    "product_head": "c787f7817284fa99f5e91b2654ac200789f523de",
+    "control_qa_head": "b462121434f96f24c33df15bb706c678f70dc27a"
+  }
+},
+{
+  "sequence": 1648,
+  "event_id": "evt_f18_local_1648_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R43A_CLOSE",
+  "subject_ref": "F-18/WSL_OPS_R43A_CLOSE",
+  "occurred_at": "2026-09-27T02:54:45+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "00727418358E9B2045A4CBC35A09F3E747DF951747C6AD9EBBBBD9F911922673",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r43a-20260927-001",
+    "reason": "R43A_OIDC_FORMAL_HOST_CONFIG_QA_COMPLETE",
+    "product_head": "c787f7817284fa99f5e91b2654ac200789f523de",
+    "control_qa_head": "b462121434f96f24c33df15bb706c678f70dc27a"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1646_write_lease_issued"
+  "last_event_id": "evt_f18_local_1648_worker_lease_revoked"
 }
