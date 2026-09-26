@@ -187,8 +187,8 @@
   "raw_checksums": [
     {
       "path": "docs/WORK_STATUS.md",
-      "bytes": 761133,
-      "sha256": "80B4CE7610F2758C9F7094D229C490AAEA4CCF4653BB0E6AD59C2BF04613FC76"
+      "bytes": 762118,
+      "sha256": "E874350C460F22088727E68E8BD9644E5407C53AE53C5A52DC8D3617D7F59424"
     },
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",
@@ -268,7 +268,7 @@
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R31_START_MANIFEST.json",
       "bytes": 42730,
-      "sha256": "B72A442271002763BB6B9D6A563B24C26593821E86887090DB458A9A8BF37F71"
+      "sha256": "80A1AA5CE9D2BDA8D4AE6BB9FC7590D7EB66ABFB76E145ED068210E4B791EEE2"
     },
     {
       "path": "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json",

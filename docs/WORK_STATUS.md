@@ -1,3 +1,7 @@
+# F-18 R32 trusted directory canonical lease 발행 / 2026-09-26
+
+- 판정: `R32_CANONICAL_WRITER_LEASE_ACTIVE`. Main이 control QA `aaa00fc`와 seq1589 `WORK_INSTRUCTION_ISSUED`→1590 `WORKER_LEASE_ISSUED`→1591 `WRITE_LEASE_ISSUED` 투영 `d50d8951e4161e2f628b0a19d2e2b96145c1863f`를 지정 SSH 원격에 게시했다. epoch16 실행/write fencing token은 R31과 다르며 제품 exact5(`migrations/versions/0018_oidc_principal_directory.py`, `packages/persistence/oidc_principal_directory.py`, `tests/persistence/test_oidc_principal_directory.py`, `tests/persistence/test_oidc_principal_directory_postgres.py`, `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`)에만 결박된다. G-05 seq1591 PASS, control test 2 PASS(exit0), branch clean·원격 HEAD 일치를 확인하고 `developer-primary` 단일 writer에게 구현을 전달했다. 제품 변경0, 정식 Developer 실패0, 실제 DB/issuer/API/browser 미검증, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
 # F-18 R32 trusted directory 통제 준비 / 2026-09-26
 
 - 판정: `R32_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 시작 branch `codex/f18-wsl-ops`, HEAD·원격 `ae3d7b24165ff9dd3aa34c536a564486ba1d0dbf` clean, G-05 seq1588 PASS, worker/write lease=null. 로컬 관련 기준 회귀 57 PASS/PG opt-in 4 SKIP/기존 warning2(exit0). 기존 분리 checkout과 동일 브랜치를 유지하고 새 브랜치·worktree를 만들지 않는다.
