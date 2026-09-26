@@ -330,9 +330,11 @@ def _oidc_origin(request: Request, config: WebSecurityConfig) -> None:
         forwarded_schemes = request.headers.getlist("x-forwarded-proto")
         forwarded_hosts = request.headers.getlist("x-forwarded-host")
         if forwarded_schemes or forwarded_hosts:
-            if len(forwarded_schemes) != 1 or len(forwarded_hosts) != 1:
+            if len(forwarded_schemes) != 1 or len(forwarded_hosts) > 1:
                 raise denied
-            scheme, authority = forwarded_schemes[0], forwarded_hosts[0]
+            scheme = forwarded_schemes[0]
+            if forwarded_hosts:
+                authority = forwarded_hosts[0]
     if scheme not in {"http", "https"} or not authority or "," in authority:
         raise denied
     try:

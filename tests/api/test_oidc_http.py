@@ -338,3 +338,70 @@ def test_trusted_proxy_forwarded_scheme_must_match_origin():
         )
         assert response.status_code == 403
         assert response.json()["error"]["code"] == "ORIGIN_VALIDATION_FAILED"
+
+
+@pytest.mark.parametrize("route", ["authorization", "callback", "logout"])
+def test_oidc_mutations_accept_nginx_preserved_host_and_trusted_forwarded_proto(route):
+    """The deployed Nginx preserves Host but sends XFP without XFH."""
+    from packages.api.security import WebSecurityConfig
+    app = create_app(
+        oidc_session_coordinator=Coordinator(),
+        security_config=WebSecurityConfig(
+            allowed_hosts=frozenset({"anvil.example.test"}),
+            allowed_origins=frozenset({ORIGIN}),
+            trusted_proxy_ips=frozenset({"testclient"}),
+        ),
+    )
+    with TestClient(app, base_url="http://anvil.example.test") as client:
+        client.cookies.set("anvil_session", BEARER)
+        body = ({"code": "secret-code", "state": "secret-state", "browser_state": "secret-state"}
+                if route == "callback" else {})
+        response = client.post(
+            f"/auth/oidc/{route}",
+            headers={**HEADERS, "x-forwarded-proto": "https", "x-csrf-token": CSRF},
+            json=body,
+        )
+        assert response.status_code == 200
+
+
+@pytest.mark.parametrize("forwarded", [
+    {"x-forwarded-host": "anvil.example.test"},
+    {"x-forwarded-proto": "https,http"},
+    {"x-forwarded-proto": "https", "x-forwarded-host": "evil.invalid"},
+])
+def test_trusted_proxy_rejects_incomplete_or_ambiguous_forwarding(forwarded):
+    from packages.api.security import WebSecurityConfig
+    app = create_app(
+        oidc_session_coordinator=Coordinator(),
+        security_config=WebSecurityConfig(
+            allowed_hosts=frozenset({"anvil.example.test"}),
+            allowed_origins=frozenset({ORIGIN}),
+            trusted_proxy_ips=frozenset({"testclient"}),
+        ),
+    )
+    with TestClient(app, base_url="http://anvil.example.test") as client:
+        response = client.post(
+            "/auth/oidc/authorization", headers={**HEADERS, **forwarded}, json={},
+        )
+        assert response.status_code == 403
+
+
+def test_trusted_proxy_rejects_duplicate_forwarded_proto_headers():
+    from packages.api.security import WebSecurityConfig
+    app = create_app(
+        oidc_session_coordinator=Coordinator(),
+        security_config=WebSecurityConfig(
+            allowed_hosts=frozenset({"anvil.example.test"}),
+            allowed_origins=frozenset({ORIGIN}),
+            trusted_proxy_ips=frozenset({"testclient"}),
+        ),
+    )
+    with TestClient(app, base_url="http://anvil.example.test") as client:
+        response = client.post(
+            "/auth/oidc/authorization",
+            headers=[("host", "anvil.example.test"), ("origin", ORIGIN),
+                     ("x-forwarded-proto", "https"), ("x-forwarded-proto", "https")],
+            json={},
+        )
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "ORIGIN_VALIDATION_FAILED"
