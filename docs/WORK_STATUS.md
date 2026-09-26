@@ -3430,3 +3430,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `R34_CONTROL_QA_PENDING_CANONICAL_LEASE`. 담당 Main. 시작 branch `codex/f18-wsl-ops`, HEAD·원격 `80ec27ab62215ff853dbee8371046bc354ca0ec8`, clean, G-05 seq1598 PASS, worker/write lease=null을 확인했다. 관련 R30~R33 scoped baseline 122 PASS/7 warning(exit0). 승인 F-18 인증 범위의 내부 결합을 coordinator(R34)와 same-origin API(후속)로 분리하며 공개 API·runtime·DB schema·기존 서비스 변경은 제외했다.
 - control 변경: R34 계획·WorkInstruction·Invocation, epoch18 overlay·checker dispatch·overlay test. control test 2 PASS(exit0), exact3/서로 다른 fencing token 확인 PASS. 계획은 verified code-flow→R32 server authority→R33 SHA-256 session 저장, 매 요청 재조회, 만료·철회·step-up fail-closed를 고정한다. 다음은 exact control QA commit/push 후 seq1599 WorkInstruction→1600 worker→1601 write lease를 투영하고 G-05 PASS를 확인하여 `developer-primary` 단일 writer에게 RED→GREEN 구현을 전달한다. 제품 변경0, 정식 Developer 실패0, 실제 issuer/API/browser·R34 WSL 미검증, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
+
+# F-18 R34 OIDC session coordinator canonical writer 임대 발행 / 2026-09-26
+
+- 판정: `R34_CANONICAL_WRITER_LEASE_ACTIVE`. Main은 control QA `46145073464ebdb020440e9d8c9d7aa83dd1c26d`와 seq1599 `WORK_INSTRUCTION_ISSUED`→1600 `WORKER_LEASE_ISSUED`→1601 `WRITE_LEASE_ISSUED` 투영 `a2d424508730ca4f4f34fd987bcd9ae1cd6556f2`를 지정 SSH 원격에 게시했다. epoch18 실행/write fencing token은 R33과 다르며 제품 exact3(`oidc_session_coordinator.py`, 해당 API 테스트, F-18 보고서)에만 결박된다. G-05 seq1601 PASS, control test 2 PASS(exit0), branch clean·원격 HEAD 일치다.
+- 조치·다음: `developer-primary` 단일 writer에게 R34 RED→GREEN 구현과 기본 검증을 전달한다. Main은 제품 파일을 수정하지 않는다. 제품 변경0, 정식 Developer 실패0, 실제 issuer/API/browser·WSL R34 미검증, F-18 accepted=false/F-19 차단/Production NOT_EXECUTED.
