@@ -194,3 +194,28 @@
 - 실제 부정 fixture 검사: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/deploy/test_f18_network_topology.py -k 'host_port_is_rejected or ingress_is_rejected or security_regression_is_rejected or missing_or_literal_telegram_setting_is_rejected' --tb=short` → exit0, **20 PASS/4 deselected**. API/Worker/PG18/MinIO의 host port 4건·ingress 4건, API/Worker read-only/cap-drop/no-new-privileges 6건, API 필수 env 제거/literal 6건에서 기대 위반을 각각 확인했다. 이는 변조된 메모리 내 YAML fixture의 정적 거부이며 실제 Docker 차단 증거는 아니다.
 - 관련 최종 회귀: `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/deploy/test_f18_network_topology.py tests/deploy/test_f16_staging_compose.py tests/deploy/test_f17_validation.py tests/deploy/test_f18_role_images.py tests/api/test_runtime_app.py --tb=short` → exit0, **61 PASS/2.23초**, 기존 `python_multipart` PendingDeprecationWarning 1건. 기존 F-17 Compose와 API runtime은 미수정이다.
 - `TELEGRAM_ALLOWED_IDENTITIES`의 실제 합성 값은 API parser가 요구하는 `chat_id:actor_id` 쌍(여러 개면 쉼표 구분)이어야 한다. `${...:?}`는 존재·비공백만 검사하므로 값의 parser 적합성은 Main의 WSL 기동에서 별도 확인해야 한다. `anvil_app`은 Compose의 PG18 관리자 계정과 별도인 최소권한 앱 DB role이다. 이 Compose는 role을 암묵 생성하지 않는다. Main이 승인된 분리 WSL 운영 유사 target에서 앱 시작 전에 해당 role·전용 DB 접근 권한을 별도 준비·실측해야 한다. 아직 준비나 DB 접속은 `NOT_EXECUTED`다. rollback은 보완 commit만 정상 revert하며 최초 R29 제품 commit과 F-17 구성은 보존한다. Main이 push·G-05·동일 SHA 실제 WSL QA를 소유한다.
+
+## R30 OIDC principal 내부 결박 — 2026-09-26
+
+### 판정
+
+`COMPLETED` — R30 Task 1의 로컬 순수 adapter와 테스트에 한정한다. F-18 전체 `accepted=false`, F-19 `BLOCKED_PENDING_F18_ACCEPTANCE`, Production `NOT_EXECUTED`는 유지한다.
+
+### 판단 이유와 변경
+
+- 시작 checkout `D:\Project\Anvil\.codex-sandbox\anvil-main-integration`, branch `codex/f18-wsl-ops`, HEAD `8b08c4b373874e04887fc3bd2cb8f155cf9c4c0f`, `git status --short --branch` clean. Canonical seq1581/epoch14의 worker `worker-lease-f18-wsl-ops-r30-20260926-001`와 write `write-lease-f18-wsl-ops-r30-20260926-001`은 ACTIVE, actor `developer-primary-f18-wsl-ops-r30-oidc-principal`, exact3 scope 일치. execution fencing token `f18-wsl-ops-execution-fence-epoch-14-1dfe23d453a93fca`, write fencing token `f18-wsl-ops-write-fence-epoch-14-1dfe23d453a93fca`, 만료 `2026-09-27T00:10:15+09:00`. Lease baseline/dispatch `d9b384b01b003e06d327e7cd9c2bd4e98e97b298`는 시작 HEAD의 직전 ancestor이며 `git merge-base --is-ancestor` exit0. 사이 commit `8b08c4b`은 Main의 lease/control projection으로 제품 exact3 diff가 없다.
+- 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`, R30 Plan `FC5AF4E705E2DB372E0438F46903EA09D5B334B53B518889BB8B53DE6D70D655`, WorkInstruction `EB983605CF3E47362118CA00F959D188FF068A72775EB9FE67D6210AA65BA56F`, Invocation `C02DF6DB37A86C51053624C5D1F571F0F85CD587BAAEC521329379C134CE1BD1`.
+- 제품 diff exact3: 새 `packages/api/oidc_principal.py`는 이미 검증된 `OidcIdentity`와 서버측 resolver binding을 교차 확인해 policy 상한 이내 `SessionPrincipal`만 구성한다. 새 `tests/api/test_oidc_principal.py`는 정상 권한·CSRF 보존과 미등록/오류/타입·신원 불일치/공백·와일드카드/역할·scope 초과/step-up 거부를 31개 사례로 검사한다. 이 보고서만 누적 갱신했다. 기존 OIDC flow/verifier, local test session, runtime route, DB, Secret, Compose, network는 수정하지 않았다. 이 adapter는 token을 재검증하지 않으며 token role/project/scope claim을 입력으로 받지 않는다.
+
+### 실행 검증
+
+- RED `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/api/test_oidc_principal.py` → exit1, 수집 중 `ModuleNotFoundError: No module named 'packages.api.oidc_principal'`, 1 error. 새 production module 부재라는 의도된 RED다.
+- GREEN 동일 명령 → exit0, **31 passed**, 기존 `python_multipart` PendingDeprecationWarning 1건.
+- 기존 관련 회귀 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider tests/api/test_oidc_code_flow.py tests/api/test_oidc_identity.py tests/api/test_oidc_issuer_transport.py tests/api/test_local_session.py tests/api/test_runtime_app.py` → exit0, **154 passed**, 같은 warning 1건.
+- 전체 시도 `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --tb=line` → exit1, collection **13 errors**: 기존 동일 basename import mismatch 10건과 fixture repository `src` import 부재 3건. R29을 포함한 앞선 보고와 동일한 수집 문제이며 신규 adapter 테스트 실패는 관측되지 않았다. 전체 PASS는 미확인이다.
+- `pyproject.toml`에는 pytest 설정만 있고 별도 Python typecheck/lint 명령은 구성되지 않아 실행하지 않았다. `git diff --check`는 보고서 tracked diff에 exit0; 새 두 파일은 stage 후 `git diff --cached --check`로 함께 검사한다.
+
+### 조치·미검증·복구
+
+- 이 로컬 단위 결과는 OIDC token 검증이나 실제 login/session/API 결합을 증명하지 않는다. 신뢰 resolver의 영속 mapping, 실제 issuer·role/scope·step-up API, browser, WSL-server, DB, Production은 `NOT_EXECUTED`다. Main이 exact3 commit을 독립 검토·push하고 실제 WSL 검증 및 후속 Stage를 판단한다.
+- rollback은 R30 exact3 제품 commit만 정상 revert한다. progress/HANDOFF와 원격 push·lease 회수는 Main 소유로 미수정. 정식 Developer `FAILURE_REPORT` 0회; 전체 pytest 수집 오류는 기존 환경/테스트 구조 문제로 별도 미검증 기록이다.
