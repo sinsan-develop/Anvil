@@ -204,8 +204,13 @@ def create_asgi_app(
     return app
 
 
-app = create_asgi_app(
-    create_runtime_app(), operational_shell=os.environ.get("ANVIL_F15_OPERATIONAL_SHELL") == "1"
-)
+if os.environ.get("ANVIL_AUTH_MODE") == "OIDC":
+    from apps.api.anvil_api.oidc_process import create_oidc_process_app
+
+    app = create_oidc_process_app(os.environ, create_configured_oidc_asgi_app)
+else:
+    app = create_asgi_app(
+        create_runtime_app(), operational_shell=os.environ.get("ANVIL_F15_OPERATIONAL_SHELL") == "1"
+    )
 
 __all__ = ["app"]
