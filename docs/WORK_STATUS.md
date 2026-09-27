@@ -3889,3 +3889,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - F-20 full-suite 선행 검사에서 드러난 C-30 clean-clone 실패를 읽기 전용으로 좁혔다. 과거 기준 commit `ed3cae92597d681c76417e26576bed91a0525bad`의 Event 첫 1325개와 현재 Event 첫 1325개는 JSON 객체로는 동일(`EQUAL=True`, 최초 차이 없음)하지만, 현재 LF 정규화 raw prefix는 `4,012,498 bytes`·SHA `2D77CEB47E1F2CC98A5E1FBC83E4966F3A7AA0CF4D00523A77EC6EBA4FFD8BE2`로 기존 권위값 `3,985,246 bytes`·SHA `09A6B52717CEF4E4E49B2AA1830B670226FEB272237668CC3EC39E2D07219431`과 다르다. 구 commit의 raw prefix는 기존 권위 SHA와 일치한다. 현재 Event 객체만으로 옛 원시 바이트 증거를 대체할 수 없으므로 임의 재구성·검사 약화는 하지 않았다.
 - 로컬 `uv run` 읽기 전용 검사는 사용자 uv cache ACL 때문에 시작 실패 1회였고, 기존 worktree `.venv/Scripts/python.exe -B -c`로 같은 비교를 실행했다(exit 0). 변경 파일은 이 상태 기록만이며 C-30 제품·검사기 수정 0. 임시 checkout·DB·서비스 생성 0. 다음 조치는 F-20 통제 전환 후 원격 clean clone에도 존재하는 C-30 역사 증거 고정 방식을 별도 검증하는 것이다. 두 Windows pytest 임시 폴더 추가 정리 승인 응답 전에는 ACL·삭제를 실행하지 않는다.
+
+# F-20 R1 Windows 임시 폴더 정리 / 2026-09-27
+
+- 신산님의 계속 지시에 따라 이미 승인된 두 정확한 경로 `.pytest_tmp_f20_rework`, `.pytest_cache_f20_rework`만 다시 확인했다. 두 경로는 현재 worktree 바로 아래였고 첫 경로의 심볼릭 링크 5개는 모두 첫 경로 내부를 가리켰다. PowerShell 7에서 링크만 비재귀 삭제한 뒤 두 경로를 재귀 삭제해 두 경로 모두 잔류 0을 확인했다(exit 0). 관련 없는 `.pytest_cache`와 그 ACL은 건드리지 않았다.
+- 정리 후 `git status --porcelain=v1`은 출력이 없었다. 제거한 두 폴더는 생성된 임시 테스트 자료이며 이 작업본에서 복구할 수 없다. 정식 실패 횟수는 기존 ACL 정리 3회 이상 기록을 유지하고 이번 재개 실행은 성공 1회다. 제품 파일 수정 0, 새 정본 projection·lease·F-20 수락·main 병합은 아직 없다. 다음은 이 clean SHA를 기준으로 F-20 Task 2 append-only 정본 projection을 적용·검증한다.
