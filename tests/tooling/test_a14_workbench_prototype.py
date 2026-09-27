@@ -14,6 +14,7 @@ from scripts.evidence_portability import portable_hash
 
 
 _A14_ACCEPTED = "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9"
+_A14_R6_REGISTRY_BASE = "a03aecc74b412515dab983148838c249fca62d3a"
 _HISTORICAL_TEMP: tempfile.TemporaryDirectory[str] | None = None
 _HISTORICAL_ROOT: Path | None = None
 
@@ -55,6 +56,20 @@ def _frozen_a14() -> tuple[Path, object]:
     historical_checker = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(historical_checker)
     return _HISTORICAL_ROOT, historical_checker
+
+
+def _frozen_a14_r6_registry() -> Path:
+    """Materialize the immutable R6 registry baseline in the shared fixture clone."""
+    assert _HISTORICAL_ROOT is not None
+    subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "checkout", "--quiet", "--detach", "--force", _A14_R6_REGISTRY_BASE],
+        cwd=_HISTORICAL_ROOT, check=True,
+    )
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_HISTORICAL_ROOT, text=True).strip()
+    status = subprocess.check_output(["git", "status", "--porcelain"], cwd=_HISTORICAL_ROOT, text=True)
+    if head != _A14_R6_REGISTRY_BASE or status:
+        raise AssertionError(f"unclean A-14 R6 registry fixture: head={head} status={status!r}")
+    return _HISTORICAL_ROOT
 
 
 class A14WorkbenchArtifactTests(unittest.TestCase):
@@ -187,8 +202,9 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
             },
             set(rows),
         )
+        historical_root = _frozen_a14_r6_registry()
         for path, row in rows.items():
-            raw = (ROOT / path).read_bytes()
+            raw = (historical_root / path).read_bytes()
             self.assertEqual((len(raw), hashlib.sha256(raw).hexdigest().upper()), (row["bytes"], row["sha256"]))
 
     def test_manifest_exact_paths_and_self_reference_false(self):

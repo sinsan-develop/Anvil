@@ -36,6 +36,16 @@
 
 ## 미검증·후속
 
-- WSL-server 동일 SHA 집중/전체 suite, 11개 메뉴의 실제 브라우저·DB·운영 유사 기능 검증, F-20 최종 gate는 Main 담당으로 `NOT_EXECUTED`다. 로컬 테스트를 이 증거로 승격하지 않는다.
+- Main이 `ed858e9` WSL-server 집중 suite에서 227 PASS·5 FAIL을 확인했다. 아래 3건을 로컬에서 보완한 다음 SHA의 WSL 재검증과 전체 suite, 11개 메뉴의 실제 브라우저·DB·운영 유사 기능 검증, F-20 최종 gate는 아직 미검증이다. 로컬 테스트를 이 증거로 승격하지 않는다.
 - Windows Git Bash의 `sort -u` 실패는 해당 로컬 테스트 1건의 미검증으로 남긴다. 다른 범위의 전체 suite 실패는 Main의 후속 전체 실행 결과로 분류한다.
 - rollback: 이 보고서와 명시한 7개 코드/테스트 파일의 R2 diff만 역적용한다. Main 소유 파일이나 사용자 자료는 건드리지 않는다.
+
+## ed858e9 WSL 집중 suite 후속 3건
+
+- `tests/deploy/test_wsl_staging_harness.py`: 중복 guard source의 `readonly` 진단이 WSL 한글 locale에서 번역되므로 영어 문구 대신 실제 guarded 변수 `C21_CANDIDATE_CONTROL_REF`와 기존 exit/무변경 검사를 유지한다. 같은 파일의 rollback unit fixture는 Git mode `100644`인 `rollback.sh`의 임시 복사본에만 owner executable bit를 부여한다. Windows에서 드러난 별도 fixture `python3` 부재도 현재 테스트 인터프리터 경로로 제한해 보완했다. 원본 배포 스크립트 mode와 동작은 변경하지 않았다.
+- `tests/tooling/test_a14_workbench_prototype.py`: R6 registry의 `live_raw_checksums`는 현재 파일이 아니라 registry 최초 도입 commit `a03aecc74b412515dab983148838c249fca62d3a`의 blob에 결박된다. 기존 accepted SHA `4bb8155`에는 R6 registry가 없고 `server.mjs`는 6,254 bytes라 R6의 11,837 bytes 기준으로 사용할 수 없다. 기존 역사 fixture clone을 R6 기준 commit에 clean detached checkout해 검증하며, 현재 browser scanner 검사는 별도로 그대로 유지한다.
+- RED: `python -B -m pytest -q --tb=short -p no:cacheprovider --import-mode=importlib --basetemp=.pytest_tmp_f20_r2_a14_red_ed858e9 tests/tooling/test_a14_workbench_prototype.py -k test_a14_successor_r6_registry_binds_live_scanner_and_test` → 종료 1, 현재 `server.mjs` 22,559 bytes 대 역사 11,837 bytes 불일치. readonly 한국어 오류와 POSIX mode 126은 Main의 `ed858e9` WSL suite가 RED 증거다.
+- 첫 GREEN 시도: 두 파일에서 세 사례 선택 실행 → 종료 1, 2 PASS·1 FAIL. 직접 실행권한 126은 해소됐으나 Windows 테스트 환경에 `python3`가 없어 rollback fixture가 종료 4였다. 해당 fixture에만 현재 인터프리터 경로를 지정했다.
+- 최종 집중 명령 `python -B -m pytest -q --tb=short -p no:cacheprovider --import-mode=importlib --basetemp=.pytest_tmp_f20_r2_three_green2_ed858e9 tests/deploy/test_wsl_staging_harness.py tests/tooling/test_a14_workbench_prototype.py -k 'duplicate_real_guard_source or approved_previous_is_accepted or a14_successor_r6_registry_binds_live_scanner_and_test'` → 종료 0, 3 PASS·130 deselected.
+- rollback 회귀 명령 `python -B -m pytest -q --tb=short -p no:cacheprovider --import-mode=importlib --basetemp=.pytest_tmp_f20_r2_rollback_reg_ed858e9 tests/deploy/test_wsl_staging_harness.py -k 'WslRollbackAllowlistUnitTests or duplicate_real_guard_source'` → 종료 0, 10 PASS·109 deselected. `git diff --check` 종료 0. 네 격리 `--basetemp` 경로는 정확히 정리해 잔류 0이다.
+- 나머지 WSL 실패 중 PG volume 환경변수는 Main 실행 명령에서 설정한다. 현재 browser scanner가 두 client의 non-relative fetch를 지적한 별도 실패는 이 exact8 수정 범위에서 보완하지 않았으며, 현재 client 안전 검사 통과로 가장하지 않는다.

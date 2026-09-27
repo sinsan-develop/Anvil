@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -1812,7 +1813,9 @@ validate_c21_exact_runtime_images() {{ return 0; }}
         result, events = self._run_cleanup_entrypoint_guard_flow(duplicate_guard_source=True)
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("readonly variable", result.stderr)
+        # Bash translates the diagnostic under the host locale.  The guarded
+        # variable identity and lack of cleanup side effects are the contract.
+        self.assertIn("C21_CANDIDATE_CONTROL_REF", result.stderr)
         self.assertEqual(2, events.count("guard-source"))
         self.assertEqual(1, events.count("validate"))
         self.assertEqual(1, events.count("env-load"))
@@ -1974,6 +1977,10 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
             ref = "refs/heads/test-control"; immutable = git("rev-parse", "HEAD")
             checksum = "0" * 64 if scenario == "checksum_tamper" else hashlib.sha256(payload).hexdigest()
             shutil.copy2(DEPLOY / "rollback.sh", control / "rollback.sh")
+            # The checked-in script is mode 100644; this disposable copy is
+            # invoked directly by bash below and needs an executable bit.
+            rollback = control / "rollback.sh"
+            rollback.chmod(rollback.stat().st_mode | stat.S_IXUSR)
             # Only the authorization/runtime gate is substituted in this isolated unit.
             # Actual production guard exit22 and no-side-effect entrypoint tests remain separate.
             (control / "candidate-manifest-guard.sh").write_text("validate_wsl_candidate_manifest() { return 0; }\n", newline="\n")
@@ -1996,7 +2003,7 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
                 f"ANVIL_WSL_APPLICATION_REPO='{self._posix(repo)}' "
                 f"ANVIL_CANDIDATE_MANIFEST_REF='{ref}' "
                 f"ANVIL_CANDIDATE_MANIFEST_SHA256='{checksum}' "
-                "ANVIL_PYTHON='python3' "
+                f"ANVIL_PYTHON='{self._posix(Path(sys.executable))}' "
                 f"ANVIL_UNIT_LOG='{self._posix(log)}' "
                 "ANVIL_TEST_SESSION_PERMISSION_SCOPES='tasks:write,tasks:read,run:events:read,provider:read' "
                 f"'{self._posix(control / 'rollback.sh')}' '{self.EXPECTED}'"
