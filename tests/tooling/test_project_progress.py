@@ -1098,17 +1098,35 @@ class ProjectProgressContractTests(unittest.TestCase):
         manifest_path = ROOT / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-        self.assertTrue(hasattr(checker, "validate_detached_progress_binding"))
-        self.assertTrue(hasattr(checker, "validate_manifest_progress_binding"))
+        # F-20 uses the append-only raw-byte binding, not the older
+        # canonical-JSON digest/manifest shape. The public validator must
+        # accept the real files and reject forged in-memory projections.
+        self.assertEqual("F20_R5A_REWORK_START", bundle["progress"]["repository"]["projection_mode"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_bundle(bundle))
 
-        self.assertEqual(checker.validate_detached_progress_binding(bundle), [])
-        self.assertEqual(checker.validate_manifest_progress_binding(manifest, bundle), [])
+        forged_progress = copy.deepcopy(bundle)
+        forged_progress["progress"]["next_safe_action"] = "tampered after verification"
+        forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
+        self.assertIn("F20_R5A_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
 
-        mutated = copy.deepcopy(bundle)
-        mutated["progress"]["next_safe_action"] = "tampered after verification"
-        mutated["handoff"]["next_safe_action"] = "tampered after verification"
-        mutated["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(mutated["progress"])
-        self.assertIn("DETACHED_DIGEST_MISMATCH", checker.validate_bundle(mutated))
+        forged_handoff = copy.deepcopy(bundle)
+        forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
+        self.assertIn("HANDOFF_NEXT_ACTION_MISMATCH", checker.validate_bundle(forged_handoff))
+
+        forged_digest = copy.deepcopy(bundle)
+        forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
+        self.assertIn("F20_R5A_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+
+        forged_manifest = dict(manifest, accepted=True)
+        forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
+        original_read_bytes = Path.read_bytes
+
+        def read_forged_manifest(path: Path) -> bytes:
+            return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
+
+        with mock.patch.object(Path, "read_bytes", read_forged_manifest):
+            self.assertIn("F20_R5A_MANIFEST_INVALID", checker.validate_bundle(bundle))
 
     def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
@@ -1148,7 +1166,6 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         mismatched = copy.deepcopy(bundle)
         mismatched["progress"]["valid_failure_count"] += 1
-        mismatched["handoff"]["valid_failure_count"] += 1
         mismatched["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(mismatched["progress"])
         self.assertIn("FAILURE_PROJECTION_MISMATCH", checker.validate_bundle(mismatched))
 
@@ -1233,6 +1250,13 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "approval_text_sha256": "D" * 64,
                 "approved_scope": "fixture takeover scope", "source": "FIXTURE",
             }),
+            ("WORK_INSTRUCTION_ISSUED", "work_instruction_issued", {}),
+            ("PHASE_GATE_COMPLETED", "phase_gate_completed_and_next_ready", {
+                "result_status": "ACCEPTED_PHASE_U_SCOPED_CONTRACT_QA",
+                "report": "fixture/phase-gate-report.md",
+                "next_action": "F-20_WORK_INSTRUCTION",
+            }),
+            ("PACKAGE_REVIEWED", "package_review_recorded", {}),
         )
         for event_type, effect, details in additions:
             contract = bundle["event_contract"]["payload_contracts"][event_type]
@@ -1247,7 +1271,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             })
             fixture["last_sequence"] = sequence
 
-        for index in (-3, -2, -1):
+        for index in range(-len(additions), 0):
             for field in fixture["events"][index]["details"]:
                 mutated = copy.deepcopy(fixture)
                 del mutated["events"][index]["details"][field]

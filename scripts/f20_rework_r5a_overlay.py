@@ -283,6 +283,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     try:
         raw = (root / EVENTS).read_bytes()
         progress_raw = (root / PROGRESS).read_bytes()
+        disk_progress = json.loads(progress_raw)
         handoff_raw = (root / HANDOFF).read_bytes()
         wi_sha = r1._sha(r1._lf((root / WI).read_bytes()))
         invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
@@ -312,7 +313,8 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     old_worker, old_write = rows[1734]["details"], rows[1735]["details"]
     instruction = progress.get("active_work_instruction") or {}
     repo = progress.get("repository") or {}
-    if (progress.get("snapshot_hash") != r1._sha(r1._canonical(snapshot))
+    if (disk_progress != progress
+            or progress.get("snapshot_hash") != r1._sha(r1._canonical(snapshot))
             or progress.get("event_sequence") != END
             or progress.get("last_event_id") != rows[-1]["event_id"]
             or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-20"
@@ -343,6 +345,9 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
             or digest.get("handoff", {}).get("file_sha256") != r1._sha(handoff_raw)
             or digest.get("handoff", {}).get("bytes") != len(handoff_raw)):
         errors.append("F20_R5A_DIGEST_INVALID")
+    if ("detached_digest" in bundle and bundle["detached_digest"] != digest
+            or "_detached_digest_path" in bundle and bundle["_detached_digest_path"] != DIGEST):
+        errors.append("F20_R5A_DIGEST_INVALID")
     try:
         match = re.search(r"```json anvil-recovery-summary\s*(\{.*?\})\s*```",
                           handoff_raw.decode("utf-8"), re.DOTALL)
@@ -350,7 +355,9 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
         if (summary.get("event_sequence") != END
                 or summary.get("last_event_id") != rows[-1]["event_id"]
                 or summary.get("worker_lease") != worker or summary.get("write_lease") != write
-                or summary.get("next_safe_action") != progress.get("next_safe_action")):
+                or summary.get("next_safe_action") != progress.get("next_safe_action")
+                or "handoff" in bundle and bundle["handoff"] != summary
+                or "handoff_text" in bundle and bundle["handoff_text"] != handoff_raw.decode("utf-8")):
             errors.append("F20_R5A_HANDOFF_INVALID")
     except (UnicodeDecodeError, ValueError, TypeError):
         errors.append("F20_R5A_HANDOFF_INVALID")

@@ -71,6 +71,16 @@ def test_r5a_still_refuses_forged_current_progress(tmp_path):
     materialize(root, PREDECESSOR, NOW, "r5atest")
     bundle = load_bundle(root)
     assert validate_bundle(bundle) == []
+    old_digest = bundle["detached_digest"]["progress"]["file_sha256"]
+    bundle["detached_digest"]["progress"]["file_sha256"] = "0" * 64
+    assert validate_bundle(bundle)
+    bundle["detached_digest"]["progress"]["file_sha256"] = old_digest
+    old_commit_status = bundle["progress"]["repository"]["commit_status"]
+    bundle["progress"]["repository"]["commit_status"] = "VERIFIED"
+    bundle["progress"]["snapshot_hash"] = r1._sha(r1._canonical(
+        {key: value for key, value in bundle["progress"].items() if key != "snapshot_hash"}))
+    assert "F20_R5A_PROGRESS_INVALID" in validate_bundle(bundle)
+    bundle["progress"]["repository"]["commit_status"] = old_commit_status
     bundle["progress"]["next_safe_action"] = "FORGED"
     bundle["progress"]["snapshot_hash"] = r1._sha(r1._canonical(
         {key: value for key, value in bundle["progress"].items() if key != "snapshot_hash"}))
