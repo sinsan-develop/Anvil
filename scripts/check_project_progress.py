@@ -57910,11 +57910,17 @@ def _collect_c30r5_git(bundle):
 
 _validate_git_projection_before_c30r5 = _validate_git_projection
 def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_ACCEPTANCE_REVIEW":
+        from f18_acceptance_materialize import collect_git
+        return collect_git(bundle["_root"])
     if bundle.get("progress",{}).get("repository",{}).get("projection_mode")==C30R5_MODE:return _collect_c30r5_git(bundle)
     return _validate_git_projection_before_c30r5(bundle)
 
 _validate_bundle_before_c30r5 = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_ACCEPTANCE_REVIEW":
+        from f18_acceptance_materialize import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress",{}).get("repository",{}).get("projection_mode")!=C30R5_MODE:return _validate_bundle_before_c30r5(bundle)
     errors=[]
     try: manifest=_load_json(bundle["_root"]/C30R5_M)
