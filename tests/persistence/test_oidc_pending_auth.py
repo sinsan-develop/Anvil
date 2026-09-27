@@ -80,17 +80,24 @@ def test_rejects_invalid_digest_before_database_access(database, digest):
         store.consume(digest)
 
 
-@pytest.mark.parametrize("pending", [
-    PendingOidcRequest("", "v" * 43, datetime.now(timezone.utc) + timedelta(seconds=60), False),
-    PendingOidcRequest("n" * 43, "bad verifier", datetime.now(timezone.utc) + timedelta(seconds=60), False),
-    PendingOidcRequest("n" * 43, "v" * 43, datetime.now() + timedelta(seconds=60), False),
-    PendingOidcRequest("n" * 43, "v" * 43, datetime.now(timezone.utc) + timedelta(seconds=360), False),
-    PendingOidcRequest("n" * 43, "v" * 43, datetime.now(timezone.utc) + timedelta(seconds=60), 1),
-    object(),
+@pytest.mark.parametrize("invalid_case", [
+    "empty_nonce", "bad_verifier", "naive_expiry", "overlong_expiry", "bad_step_up", "not_pending",
 ])
-def test_put_rejects_malformed_or_overlong_pending(database, pending):
+def test_put_rejects_malformed_or_overlong_pending(database, invalid_case):
     from packages.persistence.oidc_pending_auth import SqlAlchemyPendingAuthStore, PendingAuthStoreRejected
 
+    # Construct expiry at execution, not collection: this test may run after a
+    # lengthy suite has already consumed the overlong request's extra minute.
+    expiry = datetime.now(timezone.utc) + timedelta(seconds=60)
+    cases = {
+        "empty_nonce": PendingOidcRequest("", "v" * 43, expiry, False),
+        "bad_verifier": PendingOidcRequest("n" * 43, "bad verifier", expiry, False),
+        "naive_expiry": PendingOidcRequest("n" * 43, "v" * 43, expiry.replace(tzinfo=None), False),
+        "overlong_expiry": PendingOidcRequest("n" * 43, "v" * 43, expiry + timedelta(seconds=300), False),
+        "bad_step_up": PendingOidcRequest("n" * 43, "v" * 43, expiry, 1),
+        "not_pending": object(),
+    }
+    pending = cases[invalid_case]
     store = SqlAlchemyPendingAuthStore(database[1])
     with pytest.raises(PendingAuthStoreRejected, match="^OIDC_PENDING_STORE_INVALID_INPUT$"):
         store.put(b"b" * 32, pending)

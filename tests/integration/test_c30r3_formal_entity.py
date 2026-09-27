@@ -239,9 +239,12 @@ def test_migration_source_proves_owner_tables_are_not_in_release_0013():
     for name in ("agent_owner_heads","agent_owner_history","agent_owner_requests"):
         assert tables[name]=="0015_agent_team_owner.py"
     tree=ast.parse((ROOT/"apps/api/anvil_api/asgi.py").read_text(encoding="utf-8"))
-    targets=[n.value.value for n in ast.walk(tree) if isinstance(n,ast.Assign)
+    targets=[n.value for n in ast.walk(tree) if isinstance(n,ast.Assign)
         and any(isinstance(t,ast.Name) and t.id=="required_migration_head" for t in n.targets)]
-    assert targets==["0013_task_bootstrap_authority"]
+    assert len(targets)==1 and isinstance(targets[0],ast.IfExp)
+    assert isinstance(targets[0].test,ast.Name) and targets[0].test.id=="operational_shell"
+    assert isinstance(targets[0].body,ast.Constant) and targets[0].body.value=="0016_operations_recovery"
+    assert isinstance(targets[0].orelse,ast.Constant) and targets[0].orelse.value=="0013_task_bootstrap_authority"
 
 
 def test_local_four_menus_receipts_and_new_host_instance_do_not_attest_restart(monkeypatch):

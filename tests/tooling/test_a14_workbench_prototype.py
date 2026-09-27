@@ -74,7 +74,7 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(findings, [])
 
     def test_browser_source_resolves_only_safe_root_relative_constants(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-a14-browser-source-", dir="D:/tmp") as temp:
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-browser-source-") as temp:
             source = Path(temp) / "source.js"
             source.write_text(
                 "const READY_PATH = '/api/ready';\n"
@@ -94,7 +94,7 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
                     self.assertTrue(checker.browser_source_findings([source]))
 
     def test_browser_source_rejects_commented_shadowed_and_escaped_ready_path(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-a14-ready-path-adversarial-", dir="D:/tmp") as temp:
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-ready-path-adversarial-") as temp:
             source = Path(temp) / "source.js"
             cases = (
                 ("commented-declaration", "/*\nconst READY_PATH = '/api/ready';\n*/\nfetch(READY_PATH);\n"),
@@ -120,7 +120,7 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
             self.assertTrue(checker.browser_source_findings([declaration, use]))
 
     def test_browser_source_rejects_nested_ready_path_after_regex_literal_brace(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-a14-regex-brace-", dir="D:/tmp") as temp:
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-regex-brace-") as temp:
             source = Path(temp) / "source.js"
             source.write_text(
                 "function nested() {\n"
@@ -133,7 +133,7 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
             self.assertTrue(checker.browser_source_findings([source]))
 
     def test_browser_source_rejects_nested_ready_path_when_regex_classes_balance_braces(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-a14-regex-class-braces-", dir="D:/tmp") as temp:
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-regex-class-braces-") as temp:
             source = Path(temp) / "source.js"
             source.write_text(
                 "function load(flag, value) {\n"
@@ -147,7 +147,7 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
             self.assertTrue(checker.browser_source_findings([source]))
 
     def test_browser_source_rejects_template_interpolation_ready_path_shadow(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-a14-template-shadow-", dir="D:/tmp") as temp:
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-template-shadow-") as temp:
             source = Path(temp) / "source.js"
             source.write_text(
                 "const READY_PATH = '/api/ready';\n"

@@ -3961,3 +3961,22 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `F20_R2_LEASE_WSL_GREEN; PRODUCT_REWORK_PENDING`. seq1725 R2 lease 투영 commit `441a6ca0a42eabaddb5e528d00b7d16a4c61ccdd`을 지정 원격에 push하고 SHA 일치를 확인했다. `ssh WSL-server` 전용 `/tmp/anvil-f20-r2-control-441a6ca` checkout에서 동일 SHA의 R1/R2 결박 집중 suite `24 passed in 12.21s`(exit 0), 임시 폴더 정리 후 G-05 `PASS sequence=1725 reporting=AUTO_CONTINUE`(exit 0), clean Git status를 확인했다. 전용 checkout은 SHA·프로세스·status 확인 후 제거해 `F20_R2_441A6CA_WSL_RESIDUE_ZERO`다.
 - 변경 파일은 이 상태 기록만 추가. R2 exact8 제품 수정·전체 suite·11개 메뉴 실제 기능은 아직 실행하지 않았다. 정식 Developer 실패 0, WSL 통제 QA 실패 0. 다음은 현재 lease 시각·token·scope를 확인해 `developer-primary-f20-r2` 단일 writer를 시작한다. F-20 수락·P-01·main 병합·ysna-server/Production은 제외.
+
+# F-20 역사 Git 증거의 기존 원격 ref 회복 / 2026-09-28
+
+- 판정: `F20_HISTORY_EXISTING_PR_REF_VERIFIED; FULL_SUITE_PENDING`. 원격에 새 tag/branch를 게시하지 않고 `git ls-remote development refs/pull/15/head`가 `e2ad28dded92eb0418928ddecb76353368b09d0d`임을 확인했다. 로컬 `git merge-base --is-ancestor`에서 누락 대표 commit `ec9ee09`, `abb7361`, `ed3cae9` 모두 PR #15 head의 조상(exit 0)이었다.
+- `ssh WSL-server` 전용 `/tmp/anvil-f20-history-pr15-audit-7840a8e`에서 현재 작업 SHA `7840a8e73dd05be0959a8a761dff16841a28697a` clean clone 후 기존 `refs/pull/15/head`만 명시적으로 fetch했다. `FETCH_HEAD=e2ad28d`, 세 대표 commit의 `git cat-file -e`와 `git show ed3cae9/abb7361:docs/progress/progress-events.json` 모두 exit 0, Git status clean. 전용 checkout·프로세스 확인 후 삭제해 `F20_HISTORY_PR15_AUDIT_RESIDUE_ZERO`. 공유 서버/DB/Docker·ysna-server/Production 수정 0.
+- 전체 15개 역사 참조의 suite PASS는 아직 검증하지 않았다. R2 제품 수정 후 WSL 정식 suite에 이 기존 ref fetch를 재현 가능한 준비 단계로 넣는다. 파일 변경은 회복 계획과 이 기록만이다. 새 외부 ref 게시 0, 정식 Developer 실패 0, F-20 수락·main 병합 금지.
+- 대표 실제 실패였던 `tests/tooling/test_project_progress.py::C30CanonicalReconciliationTests::test_current_mutations_fail_closed`도 별도 WSL 전용 동일 SHA `7840a8e` checkout에서 PR #15 ref fetch 후 `1 passed in 17.90s`(exit 0)로 확인했다. 전용 checkout은 clean/프로세스 확인 후 삭제해 `F20_HISTORY_TARGET_TEST_RESIDUE_ZERO`. 이 단일 PASS는 전체 역사 참조 테스트나 전체 suite PASS가 아니다.
+
+# F-20 메뉴 수직 검증의 잔여 범위 확인 / 2026-09-28
+
+- 판정: `F20_MENU_VERTICAL_VALIDATION_PENDING`. 승인 계획 §13은 U-01~U-11 각각 API/BFF·UI와 실제 Docker 브라우저 클릭/Network/DB 증거를 요구한다. 현재 U 보고서의 판정은 `LOCAL_*_SCOPED`이며 U-01·U-02·U-04 등에서 실제 WSL 브라우저/DB를 미검증으로 명시했다. 기존 F-20 보고서도 9개 메뉴가 제목과 `UNAVAILABLE` read-only만 표시했다고 기록한다. 현재 `apps/web/src/console/App.tsx`는 해당 route에 공통 `UNAVAILABLE` fallback을 렌더링한다.
+- 이전 scoped contract PASS를 11개 메뉴 기능 PASS로 승격하지 않는다. WSL 실제 재검증에서 이 상태가 유지되면 U-01~U-11을 계획 순서로 재작업·독립 검증한 뒤 F-20 최종 조건을 닫는다. 이번 확인은 read-only 문서·소스 대조로 실제 신규 브라우저/DB 실행 증거가 아니다. 변경 파일은 회복 계획과 이 기록만 추가; R2 exact8 writer 경로와 충돌 0, F-20 수락·main 병합 금지.
+
+# F-20 R2 제품 로컬 재작업 및 seq1725 통제 테스트 분류 / 2026-09-28
+
+- 판정: `F20_R2_LOCAL_PRODUCT_GREEN; WSL_EXACT_SHA_PENDING; G05_TEST_FILE_NON_GREEN`. 단일 writer `developer-primary-f20-r2`가 seq1725 유효 exact8 lease 안의 제품·테스트 7개 파일과 `F-20_REWORK_R2_RESULT.md`만 수정했다. Windows 고정 임시 경로 11곳, POSIX 가상 drive/실제 `/mnt/<drive>` 식별, Git symlink 정리, OIDC 테스트 만료 시점, C30 migration AST 기대치를 보완했다. 독립 읽기 전용 리뷰 Important 1건(`/mnt/<drive>` symlink 이탈 우회)을 새 음성 테스트 RED 1 FAIL→수정 후 경로 테스트 7 PASS로 닫았다. 정식 Developer 실패 0.
+- Main 독립 검증: 현재 diff의 경로 보안 수정과 테스트를 확인했고 로컬 관련 4개 테스트 파일 `99 passed, 1 warning in 155.48s`(exit 0), `git diff --check`(exit 0), G-05 `PASS sequence=1725 reporting=AUTO_CONTINUE`(exit 0)다. Main 테스트 임시 폴더 2개는 정확한 worktree 내부 경로·내부 symlink를 확인한 뒤 폴더만 제거해 잔류 0이다. Windows Git Bash의 `sort -u` 경로 차이로 writer의 deploy/A14 선택 테스트는 23 PASS·1 FAIL이며 WSL 동일 SHA 판정 전까지 미검증으로 둔다.
+- 별도 WSL-server 격리 checkout은 수정 전 SHA `7840a8e73dd05be0959a8a761dff16841a28697a`를 pull하고 기존 PR #15 head를 fetch한 뒤 `tests/tooling/test_project_progress.py` 전체를 실행했다. 결과 `639 passed, 42 failed in 927.67s`(exit 1). 실패 1건은 테스트 로그를 checkout 안에 생성해 R2 Git dirty 검사 `F20_R2_GIT_INVALID`를 유발했다. C21/C09~13/E09 역사 builder 계열은 과거 authority hash·parent/raw 기대와 현재 checkout의 불일치가 나타났다. 그 밖의 현재 projection/digest/fixture 실패를 포함해 42건 전부를 환경 오류로 단정하지 않으며 원인별 재현·수정이 필요하다. 이 검증은 R2 제품 수정 전 SHA이므로 R2 제품 WSL PASS가 아니다. checkout의 4개 symlink가 `.venv` 내부 일반 링크임과 프로세스 종료·정확한 SHA를 확인한 뒤 전용 checkout만 제거해 잔류 0; 공유 서비스·DB·Docker는 변경 0.
+- 변경 파일: R2 결과보고와 exact8의 제품·테스트 7경로, 회복 계획과 이 상태 기록. 미충족: 제품 수정 commit/push 후 WSL 동일 SHA 집중/전체 suite, 42건 원인별 처리, 11개 메뉴 및 F-20 통합 완료 조건. 다음은 로컬 diff review·commit/push, WSL 동일 SHA 집중 검증 후 전체 suite 실패 분류다. F-20 수락·P-01·main 병합·ysna-server/Production은 실행하지 않았다.

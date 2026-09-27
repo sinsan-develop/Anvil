@@ -1658,7 +1658,7 @@ class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
     def _run_cleanup_entrypoint_guard_flow(
         self, fail_validation_at: int = 0, duplicate_guard_source: bool = False
     ):
-        with tempfile.TemporaryDirectory(prefix="anvil-cleanup-entrypoint-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-cleanup-entrypoint-") as raw:
             root = Path(raw)
             repo = root / "repo"
             subprocess.run(
@@ -1951,7 +1951,7 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
         return value
 
     def _case(self, scenario):
-        with tempfile.TemporaryDirectory(prefix="anvil-rollback-unit-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-rollback-unit-") as raw:
             root = Path(raw); repo = root / "repo"; repo.mkdir()
             control = root / "control" / "deploy" / "wsl"; control.mkdir(parents=True)
             helper = WslCandidateManifestGuardTests()
@@ -2051,7 +2051,7 @@ class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
         return value
 
     def _bound_repo(self):
-        temp = tempfile.TemporaryDirectory(prefix="anvil-seq536-", dir="D:/tmp")
+        temp = tempfile.TemporaryDirectory(prefix="anvil-seq536-")
         repo = Path(temp.name) / "repo"
         subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--shared", "--no-checkout", str(ROOT), str(repo)], check=True)
         self._git(repo, "config", "user.email", "seq536@example.invalid")
@@ -2354,7 +2354,7 @@ class WslProviderExactBindingRuntimeStateTests(unittest.TestCase):
         return f"/{value[0].lower()}{value[2:]}" if len(value) > 1 and value[1] == ":" else value
 
     def _state(self, head: str, current: str, previous: str):
-        with tempfile.TemporaryDirectory(prefix="anvil-seq542-state-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-seq542-state-") as raw:
             root = Path(raw)
             for slug in ("pg15", "pg18rc"):
                 target = root / "runtime" / slug
@@ -2400,7 +2400,7 @@ class WslProviderExactBindingRuntimeStateTests(unittest.TestCase):
         )
 
     def test_seq542_runtime_image_revision_check_is_fail_closed(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-seq542-images-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-seq542-images-") as raw:
             root = Path(raw)
             for slug in ("pg15", "pg18rc"):
                 target = root / "runtime" / slug
@@ -2482,7 +2482,7 @@ class WslWorkbenchUiGitOnlyCandidateContractTests(unittest.TestCase):
         candidate="f0d4bc7badbdae69c2d2b21089667fdcc636518d"
         previous="324eb169fedbce958d2e8cc29362deb7af433677"
         script=WslCandidateManifestGuardTests._posix(GUARD)
-        with tempfile.TemporaryDirectory(prefix="anvil-seq590-runtime-",dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-seq590-runtime-") as raw:
             root=Path(raw)
             for slug in ("pg15","pg18rc"):
                 state=root / "runtime" / slug
