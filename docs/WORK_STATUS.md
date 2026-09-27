@@ -3747,3 +3747,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `ACCEPTED_U10_LOCAL_CONTRACT_SCOPED`. Operations API/observability·queue·budget 선택 범위를 `46 passed, 1 skipped`로 검증했다.
 - 실제 Operations 브라우저·Network·live WSL worker/queue는 미검증이다. canonical progress seq1708, 다음은 `U-11 Settings READY_FOR_WORK_INSTRUCTION`이다.
+
+# U-11 Settings 완료 / 2026-09-27
+
+- 판정: `ACCEPTED_U11_LOCAL_CONTRACT_SCOPED`. Provider/settings/security 선택 범위를 `523 passed`로 검증했다.
+- 실제 Settings 브라우저·Network와 live Provider credential/비용은 미검증이다. canonical progress seq1710, 다음은 `PHASE_U_GATE READY_FOR_GATE_REVIEW`이다.

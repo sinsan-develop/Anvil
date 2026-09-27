@@ -58788,6 +58788,16 @@ def validate_bundle(bundle):
         for path in ("docs/04_test_reports/U-10_OPERATIONS_REPORT.md", "docs/evidence/manifests/U-10_OPERATIONS_MANIFEST.json"):
             if not (root / path).is_file(): errors.append("U10_EVIDENCE_MISSING")
         return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "U11_ACCEPTANCE_REVIEW":
+        progress = bundle.get("progress", {})
+        errors = []
+        if progress.get("event_sequence") != 1710 or progress.get("current_work_package") != "U-11": errors.append("U11_ACCEPTANCE_SEQUENCE_INVALID")
+        if progress.get("next_work_package") != {"package_id": "PHASE_U_GATE", "status": "READY_FOR_GATE_REVIEW"}: errors.append("U11_NEXT_PACKAGE_INVALID")
+        if "U-11" not in progress.get("completed_packages", []): errors.append("U11_COMPLETION_MISSING")
+        root = Path(bundle["_root"])
+        for path in ("docs/04_test_reports/U-11_SETTINGS_REPORT.md", "docs/evidence/manifests/U-11_SETTINGS_MANIFEST.json"):
+            if not (root / path).is_file(): errors.append("U11_EVIDENCE_MISSING")
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
