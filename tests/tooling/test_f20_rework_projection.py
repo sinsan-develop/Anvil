@@ -205,6 +205,18 @@ def test_f20_rework_history_fixture_remains_available_after_projection(tmp_path,
     assert rows[-1]["event_id"] == "evt_f20_1714_main_package_accepted"
 
 
+def test_f20_rework_predecessor_fixture_does_not_read_current_projection(tmp_path, monkeypatch):
+    current = tmp_path / "docs/progress/progress-events.json"
+    current.parent.mkdir(parents=True)
+    current.write_text('{"last_sequence":1719,"events":[]}', encoding="utf-8")
+    monkeypatch.setitem(_history.__globals__, "ROOT", tmp_path)
+
+    predecessor = json.loads(_predecessor_bytes("docs/progress/progress-events.json"))
+    assert predecessor["last_sequence"] == 1714
+    assert len(predecessor["events"]) == 1714
+    assert _sha(_canonical(predecessor["events"])) == "AED3D00DF31948AED95781A21FCD52EAB10EFFD2247321EB6A6BBEA5CD92714F"
+
+
 def test_f20_rework_control_rejects_digest_or_historical_evidence_tampering(tmp_path):
     from scripts.f20_rework_overlay import DIGEST, materialize, validate_control
 
