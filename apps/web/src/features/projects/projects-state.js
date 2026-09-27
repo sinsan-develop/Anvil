@@ -16,7 +16,13 @@ export function reduceProjects(state, action) {
   }
   if (action.type !== 'SCAN_RECEIVED') return state;
   const payload = action.payload;
-  const scan = payload?.scan;
+  // The public FastAPI route returns the canonical projection directly;
+  // retain compatibility with the legacy local Node BFF projection.
+  const scan = payload?.scan ?? (payload?.status ? {
+    status: payload.status === 'READY' ? 'SCANNED_READ_ONLY' : payload.status,
+    repository: payload.repository,
+    noWriteIdentical: payload.noWriteProof?.identical === true,
+  } : null);
   const repository = scan?.repository;
   if (!payload?.ok || scan?.status !== 'SCANNED_READ_ONLY' || !repository || scan.noWriteIdentical !== true) {
     return {...createProjectsState(), status: 'BLOCKED', reason: 'Read-only scan did not produce a trustworthy result.'};
