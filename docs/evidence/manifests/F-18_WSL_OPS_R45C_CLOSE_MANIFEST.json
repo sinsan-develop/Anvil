@@ -98,8 +98,8 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 4762686,
-      "sha256": "613770E2A11579BC52BEDD2720AE08D48AEADF477A4ACC0406B4594E36A55E41"
+      "bytes": 4762692,
+      "sha256": "73977560349EE9B3016F74741ECA0EBB8513B270B8D51055E34C88FBA700204C"
     },
     {
       "path": "scripts/f18_wsl_ops_r45c_close_overlay.py",
@@ -114,4 +114,4 @@
   ],
   "self_reference": false,
   "production": "NOT_EXECUTED"
-}
+}\n
