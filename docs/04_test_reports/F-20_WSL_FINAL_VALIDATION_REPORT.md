@@ -2,7 +2,7 @@
 
 ## 판정
 
-`INCOMPLETE_F20_RUNTIME_BOUNDARY`. 동일 게시 commit `00677052c5791b70253389332c3837b286281dc0`를 `ssh WSL-server`의 전용 detached checkout에서 확인했지만, F-20의 실제 11개 메뉴 브라우저·Network·DB/queue/worker/Provider·backup/restore·rollback 완료조건을 모두 충족하지 못했다. F-20은 완료·ACCEPTED로 전환하지 않으며 ReleaseDecision은 `DEFER`로 유지한다.
+`INCOMPLETE_F20_RUNTIME_BOUNDARY`. 최신 게시 commit `df19100`을 `ssh WSL-server`의 격리 Docker/브라우저 경계에서 확인했지만, F-20의 live queue/worker/Provider·backup/restore/rollback과 전체 checkout scan 완료조건을 모두 충족하지 못했다. F-20은 완료·ACCEPTED로 전환하지 않으며 ReleaseDecision은 `DEFER`로 유지한다.
 
 ## 근거
 
@@ -24,6 +24,15 @@
 - 추가 recovery checkout `/home/daon/anvil-f20-r2`와 임시 `/tmp/f20-r2-*.log`도 exact cleanup 후 잔여 0이다.
 - Docker r3 checkout/image/container, loopback port 4175, SSH forward, Chrome profile/process/log도 exact cleanup 후 잔여 0이다.
 - r4 isolated PG15/API/web checkout, images, containers, internal network, port/forward, Chrome profile/process/log도 exact cleanup 후 잔여 0이다.
+
+## 최신 repair evidence (df19100)
+
+- RED→GREEN으로 새 production API route를 고정했다. 구현 전 `tests/api/test_projects_scan_api.py`는 `ModuleNotFoundError`였고, 구현 후 local Anaconda에서 API/public frontend `6 passed`였다.
+- `deploy/local/Dockerfile.runtime` runtime stage에 Git을 추가했고, repository scanner는 서버가 지정한 정확한 경로만 `safe.directory`로 허용한다. WSL Docker Node22 web image의 typecheck+Vite build는 PASS였다.
+- 격리 PG15/API/web stack에서 `/health/live=200`, `/api/health/ready=200`을 확인했다. 임시 독립 Git fixture를 read-only로 마운트한 `/api/projects/scan`은 `200`과 `status=READY`, `noWriteProof.identical=true`, `mutationAllowed=false`를 반환했다.
+- Windows 임시 격리 브라우저에서 `/projects`는 실제 `READY`/`READY_TO_REVIEW`를 표시했다. 나머지 9개 계획 route도 각 제목과 `UNAVAILABLE` read-only 화면을 표시했고 `페이지를 사용할 수 없습니다` fallback은 없었다. 브라우저 요청은 same-origin이었다.
+- 전체 Anvil checkout scan은 저장소 규모로 요청이 timeout되어 완료 증거로 승격하지 않는다. 독립 fixture와 실제 checkout의 시간 차이는 미검증 성능/운영 경계다.
+- 최신 임시 Docker/clone/fixture/network/SSH forward/browser tab을 exact cleanup했고 `F20_FIX_TEMP_RESIDUE_ZERO`를 확인했다. 남은 필수 검증은 live queue/worker/provider, backup/restore/rollback, 전체 checkout scan 완료와 critical alert 0이다.
 
 ## 조치 및 다음 안전 행동
 
