@@ -3693,3 +3693,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 판정: `ACCEPTED_U01_LOCAL_WEB_SCOPED`. 기존 Dashboard shell의 health·운영 상태·승인/경고·다음 행동 read model 표시를 계획 범위로 검증했다.
 - `npm run web:test` 3 passed, `npm run web:typecheck` PASS, `npm run web:build` PASS, `npm run web:lint` PASS. 브라우저 readiness는 same-origin `/health/ready`만 사용하고 미연결·미실행은 PASS로 표시하지 않는다.
 - WSL-server 실제 브라우저 클릭/Network, live read model·Provider·운영 인수는 미실행이다. canonical progress seq1689로 U-01을 완료하고 다음을 `U-02 Workbench READY_FOR_WORK_INSTRUCTION`으로 전환한다.
+
+# U-02 Workbench / 2026-09-27
+
+- 판정: `ACCEPTED_U02_LOCAL_WEB_CONTRACT_SCOPED`. Workbench state/client의 canonical Provider 순서, honest 상태, empty/quota/cancel/reconnect, relative same-origin API와 SSE Last-Event-ID 계약을 검증했다.
+- `node --import tsx --test apps/web/tests/workbench.test.mjs` 10 passed, `npm run web:test` Dashboard 회귀 3 passed. 한 번에 두 Node test 명령을 묶었을 때 발생한 React loader 오류는 재현되지 않은 실행 순서/loader 현상으로 PASS에 포함하지 않았다.
+- WSL-server 브라우저·Network, live LLM Provider, DB Run hash·human approval 계보와 운영은 미검증이다. canonical progress seq1691로 U-02 완료, 다음은 `U-03 Projects READY_FOR_WORK_INSTRUCTION`이다.

@@ -1,0 +1,10 @@
+{
+  "package_id": "U-02",
+  "status": "ACCEPTED_U02_LOCAL_WEB_CONTRACT_SCOPED",
+  "work_instruction": "docs/work_orders/U-02_WORKBENCH_WORK_INSTRUCTION.md",
+  "invocation": "docs/work_orders/U-02_WORKBENCH_INVOCATION.md",
+  "report": "docs/04_test_reports/U-02_WORKBENCH_REPORT.md",
+  "tests": {"workbench_contract": "10 passed", "dashboard_regression": "3 passed"},
+  "network": "RELATIVE_SAME_ORIGIN_AND_LAST_EVENT_ID_CONTRACT",
+  "unverified": ["WSL_BROWSER_CLICK", "LIVE_LLM_PROVIDER", "DB_RUN_LINEAGE", "HUMAN_APPROVAL", "PRODUCTION", "YSNA_SERVER"]
+}

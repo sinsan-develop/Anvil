@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1689,
+  "last_sequence": 1691,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84912,7 +84912,49 @@
     "manifest": "docs/evidence/manifests/U-01_DASHBOARD_MANIFEST.json",
     "next_action": "U-02_WORK_INSTRUCTION"
   }
+},
+{
+  "sequence": 1690,
+  "event_id": "evt_u02_1690_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "U-02",
+  "run_id": null,
+  "step_id": "U-02_ACCEPTANCE",
+  "subject_ref": "U-02",
+  "occurred_at": "2026-09-27T15:34:57+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0678F9D20D633A422DD53F27F8BB91821A085CBF1B4786B7C565B84C4BFF4A55",
+  "details": {
+    "status": "ACTIVE",
+    "work_instruction": "docs/work_orders/U-02_WORKBENCH_WORK_INSTRUCTION.md"
+  }
+},
+{
+  "sequence": 1691,
+  "event_id": "evt_u02_1691_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "U-02",
+  "run_id": null,
+  "step_id": "U-02_ACCEPTANCE",
+  "subject_ref": "U-02",
+  "occurred_at": "2026-09-27T15:34:57+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "81F4E8A904C9FB3C48757292DD0CD1144D32A70E291B5D74BC75EDC7D6D311F8",
+  "details": {
+    "result_status": "ACCEPTED_U02_LOCAL_WEB_CONTRACT_SCOPED",
+    "report": "docs/04_test_reports/U-02_WORKBENCH_REPORT.md",
+    "manifest": "docs/evidence/manifests/U-02_WORKBENCH_MANIFEST.json",
+    "next_action": "U-03_WORK_INSTRUCTION"
+  }
 }
   ],
-  "last_event_id": "evt_u01_1689_package_completed"
+  "last_event_id": "evt_u02_1691_package_completed"
 }
