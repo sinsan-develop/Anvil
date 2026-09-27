@@ -121,6 +121,34 @@ def test_f20_rework_rejects_reused_fencing_token():
     assert "F20_REWORK_TRANSITION_INVALID" in _validate(rows, wi_sha, invocation_sha)
 
 
+def test_f20_rework_rejects_historical_fencing_token_reuse_and_empty_token():
+    rows, wi_sha, invocation_sha = _transition()
+    old_execution = next(
+        row["details"]["execution_fencing_token"]
+        for row in rows[:1714]
+        if isinstance(row.get("details"), dict)
+        and isinstance(row["details"].get("execution_fencing_token"), str)
+        and row["details"]["execution_fencing_token"]
+    )
+    old_write = next(
+        row["details"]["write_fencing_token"]
+        for row in rows[:1714]
+        if isinstance(row.get("details"), dict)
+        and isinstance(row["details"].get("write_fencing_token"), str)
+        and row["details"]["write_fencing_token"]
+    )
+    for execution, write in ((old_execution, old_write), (None, "fresh-write")):
+        forged = copy.deepcopy(rows)
+        forged[-3]["details"]["execution_fencing_token"] = execution
+        forged[-3]["details"]["fencing_token"] = execution
+        forged[-2]["details"]["execution_fencing_token"] = execution
+        forged[-2]["details"]["fencing_token"] = write
+        forged[-2]["details"]["write_fencing_token"] = write
+        for index in range(1715, len(forged)):
+            forged[index]["previous_event_sha256"] = _sha(_canonical(forged[index - 1]))
+        assert "F20_REWORK_TRANSITION_INVALID" in _validate(forged, wi_sha, invocation_sha)
+
+
 def test_f20_rework_rejects_forged_main_actor():
     rows, wi_sha, invocation_sha = _transition()
     rows[-5]["actor_id"] = "untrusted-agent"
@@ -149,6 +177,37 @@ def test_f20_rework_rejects_false_wsl_pass_projection():
         "repository": {"projection_mode": "F20_R1_REWORK_START"},
     }
     assert "F20_REWORK_FALSE_ACCEPTANCE" in validate_rework_progress(progress, rows, wi_sha, invocation_sha, NOW)
+
+
+def test_f20_rework_rejects_premature_successor_or_work_instruction_acceptance(tmp_path):
+    from scripts.f20_rework_overlay import materialize, validate_rework_progress
+
+    paths = [
+        "docs/progress/progress-events.json", "docs/progress/build-progress.json",
+        "docs/progress/BUILD_HANDOFF.md", OLD_MANIFEST,
+        "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md", WI, INVOCATION,
+    ]
+    for relative in paths:
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(_predecessor_bytes(relative))
+    materialize(tmp_path, "a" * 40, NOW, "test")
+    rows = json.loads((tmp_path / paths[0]).read_bytes())["events"]
+    progress = json.loads((tmp_path / paths[1]).read_bytes())
+    wi_sha = _sha((tmp_path / WI).read_bytes())
+    invocation_sha = _sha((tmp_path / INVOCATION).read_bytes())
+    assert validate_rework_progress(progress, rows, wi_sha, invocation_sha, NOW) == []
+    for key, value in (
+        ("next_work_package", {"package_id": "P-01", "status": "READY_FOR_WORK_INSTRUCTION"}),
+        ("next_successor_work_package", {"package_id": "P-01", "status": "READY_FOR_WORK_INSTRUCTION"}),
+        ("runtime_next_action", "P01_START"),
+        ("active_work_instruction", {**progress["active_work_instruction"], "package_status": "ACCEPTED"}),
+    ):
+        forged = copy.deepcopy(progress)
+        forged[key] = value
+        assert "F20_REWORK_PROGRESS_INVALID" in validate_rework_progress(
+            forged, rows, wi_sha, invocation_sha, NOW
+        )
 
 
 def test_f20_rework_materialization_preserves_history_and_never_claims_completion(tmp_path):
@@ -257,6 +316,41 @@ def test_f20_rework_control_rejects_digest_or_historical_evidence_tampering(tmp_
     report = tmp_path / paths[4]
     report.write_bytes(report.read_bytes() + b"tampered")
     assert "F20_REWORK_MANIFEST_INVALID" in validate_control(tmp_path, bundle(), NOW)
+
+
+def test_f20_rework_control_rejects_historical_raw_byte_rewrite_even_with_rehashed_projection(tmp_path):
+    from scripts.f20_rework_overlay import DIGEST, materialize, validate_control
+
+    paths = [
+        "docs/progress/progress-events.json", "docs/progress/build-progress.json",
+        "docs/progress/BUILD_HANDOFF.md", OLD_MANIFEST,
+        "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md", WI, INVOCATION,
+    ]
+    for relative in paths:
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(_predecessor_bytes(relative))
+    materialize(tmp_path, "a" * 40, NOW, "test")
+    events_path = tmp_path / paths[0]
+    progress_path = tmp_path / paths[1]
+    digest_path = tmp_path / DIGEST
+    events_raw = events_path.read_bytes()
+    assert events_raw.count(b'"sequence": 1') >= 1
+    forged_events = events_raw.replace(b'"sequence": 1', b'"sequence" : 1', 1)
+    events_path.write_bytes(forged_events)
+    progress = json.loads(progress_path.read_bytes())
+    progress["registry_refs"]["progress_events"]["sha256"] = _sha(forged_events)
+    progress.pop("snapshot_hash")
+    progress["snapshot_hash"] = _sha(_canonical(progress))
+    progress_raw = (json.dumps(progress, ensure_ascii=False, indent=2) + "\n").encode()
+    progress_path.write_bytes(progress_raw)
+    digest = json.loads(digest_path.read_bytes())
+    digest["progress"]["bytes"] = len(progress_raw)
+    digest["progress"]["file_sha256"] = _sha(progress_raw)
+    digest_path.write_bytes((json.dumps(digest, ensure_ascii=False, indent=2) + "\n").encode())
+
+    bundle = {"progress": progress, "events": json.loads(forged_events)}
+    assert "F20_REWORK_HISTORY_BYTES_MUTATED" in validate_control(tmp_path, bundle, NOW)
 
 
 def test_f20_rework_control_fails_closed_when_new_event_tail_is_missing(tmp_path):

@@ -13,6 +13,8 @@ import subprocess
 
 HISTORICAL_COUNT = 1714
 HISTORICAL_SHA256 = "AED3D00DF31948AED95781A21FCD52EAB10EFFD2247321EB6A6BBEA5CD92714F"
+HISTORICAL_RAW_PREFIX_BYTES = 4419645
+HISTORICAL_RAW_PREFIX_SHA256 = "A6819BD667C4BB3A48888AC9674131CCF782AC81D6636F7E97CF7008E9D19D75"
 OLD_MANIFEST = "docs/evidence/manifests/F-20_WSL_FINAL_VALIDATION_MANIFEST.json"
 OLD_REPORT = "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md"
 WI = "docs/work_orders/F-20_REWORK_R1_WORK_INSTRUCTION.md"
@@ -80,6 +82,22 @@ def _active_lease(row: object, now: datetime) -> bool:
         return False
 
 
+def _historical_fencing_tokens(events: list[dict]) -> set[str]:
+    tokens: set[str] = set()
+    stack: list[object] = [event.get("details") for event in events]
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict):
+            for key, item in value.items():
+                if key in {"fencing_token", "execution_fencing_token", "write_fencing_token"} and isinstance(item, str):
+                    tokens.add(item)
+                elif isinstance(item, (dict, list)):
+                    stack.append(item)
+        elif isinstance(value, list):
+            stack.extend(value)
+    return tokens
+
+
 def validate_transition(events: list[dict], wi_sha: str, invocation_sha: str, now: datetime) -> list[str]:
     if not isinstance(events, list) or len(events) != HISTORICAL_COUNT + len(EVENT_TYPES):
         return ["F20_REWORK_TRANSITION_INVALID"]
@@ -109,6 +127,9 @@ def validate_transition(events: list[dict], wi_sha: str, invocation_sha: str, no
 
     invalidation, instruction, worker_event, write_event, resumed = [event["details"] for event in tail]
     worker, write = worker_event, write_event
+    prior_tokens = _historical_fencing_tokens(events[:HISTORICAL_COUNT])
+    execution_token = worker.get("execution_fencing_token")
+    write_token = write.get("write_fencing_token")
     valid = (
         invalidation.get("manifest_ref") == OLD_MANIFEST
         and invalidation.get("reason") == "F20_ACCEPTANCE_EVIDENCE_HASH_MISMATCH"
@@ -128,6 +149,10 @@ def validate_transition(events: list[dict], wi_sha: str, invocation_sha: str, no
         and isinstance(write.get("lease_id"), str)
         and write.get("lease_id", "").startswith("write-lease-f20-r1-")
         and write.get("worker_lease_id") == worker.get("lease_id")
+        and isinstance(execution_token, str) and bool(execution_token)
+        and isinstance(write_token, str) and bool(write_token)
+        and execution_token not in prior_tokens
+        and write_token not in prior_tokens
         and worker.get("execution_fencing_token") == worker.get("fencing_token")
         and write.get("execution_fencing_token") == worker.get("execution_fencing_token")
         and write.get("write_fencing_token") == write.get("fencing_token")
@@ -170,6 +195,7 @@ def validate_rework_progress(progress: dict, events: list[dict], wi_sha: str, in
         or wi.get("invocation_path") != INVOCATION
         or wi.get("invocation_sha256") != invocation_sha
         or wi.get("result_status") != "REWORK_IN_PROGRESS"
+        or wi.get("package_status") != "REWORK_IN_PROGRESS"
         or repo.get("projection_mode") != MODE
         or repo.get("branch") != "codex/f18-wsl-ops"
         or repo.get("upstream") != "development/codex/f18-wsl-ops"
@@ -177,6 +203,9 @@ def validate_rework_progress(progress: dict, events: list[dict], wi_sha: str, in
         or repo.get("validated_base_commit") != (progress.get("write_lease") or {}).get("dispatch_head")
         or repo.get("product_write_scope") != SCOPE
         or progress.get("next_safe_action") != "F20_R1_GIT_WRITE_ERROR_REWORK"
+        or progress.get("runtime_next_action") != "F20_R1_GIT_WRITE_ERROR_REWORK"
+        or progress.get("next_work_package") != {"package_id": "HUMAN_RELEASE_DECISION", "status": "BLOCKED_PENDING_F20_ACCEPTANCE"}
+        or progress.get("next_successor_work_package") != {"package_id": "HUMAN_RELEASE_DECISION", "status": "BLOCKED_PENDING_F20_ACCEPTANCE"}
     ):
         errors.append("F20_REWORK_PROGRESS_INVALID")
     return sorted(set(errors))
@@ -435,6 +464,10 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
         return ["F20_REWORK_CONTROL_MISSING"]
 
     errors = validate_rework_progress(progress, rows, wi_sha, invocation_sha, now)
+    historical_prefix = _lf(events_raw)[:HISTORICAL_RAW_PREFIX_BYTES]
+    historical_prefix = historical_prefix.replace(b'"last_sequence": 1719', b'"last_sequence": 1714', 1)
+    if _sha(historical_prefix) != HISTORICAL_RAW_PREFIX_SHA256:
+        errors.append("F20_REWORK_HISTORY_BYTES_MUTATED")
     invalidation = rows[HISTORICAL_COUNT].get("details") or {}
     if (
         invalidation.get("manifest_sha256") != _sha(old_manifest_raw)
