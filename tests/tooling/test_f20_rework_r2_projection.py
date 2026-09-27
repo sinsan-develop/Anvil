@@ -6,12 +6,14 @@ from copy import deepcopy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import subprocess
 
 from scripts import f20_rework_overlay as r1
 
 
 ROOT = Path(__file__).resolve().parents[2]
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
+PREDECESSOR_COMMIT = "fd34d507bea0e8aea4294a9263fd28301c6a0c36"
 COPIED = (
     "docs/progress/progress-events.json",
     "docs/progress/build-progress.json",
@@ -29,7 +31,10 @@ def _fixture(tmp_path):
     for relative in COPIED:
         target = tmp_path / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((ROOT / relative).read_bytes())
+        content = (subprocess.check_output(
+            ["git", "show", f"{PREDECESSOR_COMMIT}:{relative}"], cwd=ROOT)
+            if relative in COPIED[:3] else (ROOT / relative).read_bytes())
+        target.write_bytes(content)
     return tmp_path
 
 
