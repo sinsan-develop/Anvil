@@ -3758,3 +3758,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 판정: `ACCEPTED_PHASE_U_SCOPED_CONTRACT_QA`. U-01~U-11 contract evidence를 순서대로 대조했다.
 - 실제 1920×1080 브라우저 클릭/Network, live DB/worker/provider와 사용자 운영 인수는 미검증이다. 이를 `RELEASED` 또는 Production PASS로 표시하지 않는다.
 - canonical progress seq1711, 다음은 계획 순서상 `F-20 WSL-server 최종 운영 유사 검증`이다.
+
+# F-20 WSL 최종 검증 시작 / 2026-09-27
+
+- F-20 WorkInstruction을 발행하고 canonical progress seq1712로 활성화했다.
+- 검증 대상은 WSL-server 동일 commit의 11개 메뉴 smoke·monitoring·ProductValidation·Defect·backup/restore·rollback과 승인된 임시 CDP 브라우저 경계다. Production/ysna-server와 RELEASED 승격은 제외한다.
+- 다음 조치는 WSL-server runtime·browser·Network evidence 실행 후 exact cleanup과 최종 판정이다.

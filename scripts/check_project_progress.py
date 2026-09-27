@@ -58806,6 +58806,13 @@ def validate_bundle(bundle):
         if "PHASE_U_GATE" not in progress.get("completed_packages", []): errors.append("PHASE_U_GATE_COMPLETION_MISSING")
         if not (Path(bundle["_root"]) / "docs/04_test_reports/PHASE_U_GATE_REVIEW.md").is_file(): errors.append("PHASE_U_GATE_REVIEW_MISSING")
         return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_START":
+        progress = bundle.get("progress", {})
+        errors = []
+        if progress.get("event_sequence") != 1712 or progress.get("current_work_package") != "F-20": errors.append("F20_START_SEQUENCE_INVALID")
+        if progress.get("status") != "ACTIVE" or progress.get("worker_lease") is not None: errors.append("F20_START_STATUS_INVALID")
+        if not (Path(bundle["_root"]) / "docs/work_orders/F-20_WSL_FINAL_VALIDATION_WORK_INSTRUCTION.md").is_file(): errors.append("F20_WORK_INSTRUCTION_MISSING")
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
