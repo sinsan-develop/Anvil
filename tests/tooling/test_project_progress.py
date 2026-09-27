@@ -16276,6 +16276,21 @@ class C09R4ControlTests(unittest.TestCase):
 class C09MainTakeoverControlTests(unittest.TestCase):
     BASE = "85d72196eaafe3e458f8aea7016df94f810df086"
 
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+        checker = _load_checker_or_none()
+        quality = checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW
+        raw = subprocess.check_output(
+            ["git", "show", f"{checker.C09_MAIN_TAKEOVER_CONTROL_HEAD}:{quality}"], cwd=ROOT,
+        )
+        self.assertEqual(checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES, len(raw))
+        self.assertEqual(checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256,
+                         hashlib.sha256(raw).hexdigest().upper())
+        self.quality_review_raw = raw
+        overlay = _historical_bytes_overlay({quality: raw})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         checker = _load_checker_or_none()
         self.assertIsNotNone(checker)
@@ -16482,6 +16497,23 @@ class C09MainTakeoverControlTests(unittest.TestCase):
              mock.patch.object(Path, "read_bytes", tampered):
             self.assertFalse(checker._c09_main_takeover_cached_check(ROOT))
 
+    def test_seq824_historical_quality_review_missing_or_forged_fails_closed(self):
+        checker = self._checker()
+        quality = checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW
+        original = Path.read_bytes
+
+        def missing(path):
+            if path == ROOT / quality:
+                raise FileNotFoundError(quality)
+            return original(path)
+
+        with mock.patch.object(Path, "read_bytes", missing):
+            with self.assertRaises(FileNotFoundError):
+                checker.c09_main_takeover_from_root(ROOT)
+        with _historical_bytes_overlay({quality: b"forged review\n"}):
+            with self.assertRaisesRegex(ValueError, "C09_MAIN_TAKEOVER_REVIEW_RAW_INVALID"):
+                checker.c09_main_takeover_from_root(ROOT)
+
     def test_seq824_projection_tamper_and_fresh_local_clone_ignore_independence(self):
         checker = self._checker(); artifacts = checker.c09_main_takeover_from_root(ROOT)
         bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_MAIN_TAKEOVER_P]),
@@ -16516,7 +16548,10 @@ class C09MainTakeoverControlTests(unittest.TestCase):
                     checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW, "scripts/check_project_progress.py",
                     "tests/tooling/test_project_progress.py"]:
                 target = clone / relative; target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(ROOT / relative, target)
+                if relative == checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW:
+                    target.write_bytes(self.quality_review_raw)
+                else:
+                    shutil.copyfile(ROOT / relative, target)
             self.assertFalse((clone / ".superpowers").exists())
             self.assertEqual(14, len(checker.c09_main_takeover_from_root(clone)))
 
@@ -16617,10 +16652,19 @@ class C09MainTakeoverControlTests(unittest.TestCase):
 
 
 class C09FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        C09MainTakeoverControlTests.setUp(self)
+
     def _checker(self):
         checker = _load_checker_or_none()
         self.assertIsNotNone(checker)
         return checker
+
+    def test_seq829_forged_historical_quality_review_fails_closed(self):
+        checker = self._checker()
+        with _historical_bytes_overlay({checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW: b"forged review\n"}):
+            with self.assertRaisesRegex(ValueError, "C09_FINAL_SEQ824_CONTROL_MUTATED"):
+                checker.c09_final_acceptance_from_root(ROOT)
 
     def test_seq829_builder_appends_minimal_acceptance_and_binds_exact20(self):
         checker = self._checker()
