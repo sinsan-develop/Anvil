@@ -1,1 +1,8 @@
-{"status":"PENDING_REATTESTATION"}
+{
+  "data_migration_downgrade": "DEPLOYMENT_ROLLBACK_DECISION_REQUIRED",
+  "previous_image": "NOT_YET_VERIFIED",
+  "rehearsal": "NOT_EXECUTED",
+  "schema_version": 1,
+  "scope": "isolated code/container only",
+  "source_commit": "d36de847842804ca93e405abe9bff687c1162a69"
+}

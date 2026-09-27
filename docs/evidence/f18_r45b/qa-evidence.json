@@ -1,1 +1,43 @@
-{"status":"PENDING_REATTESTATION"}
+{
+  "browser": "NOT_EXECUTED",
+  "cleanup": "PENDING_ACTIVE_STAGING",
+  "environment_id": "wsl-server-r45b-staging",
+  "https": {
+    "ca_verified_root": 200,
+    "jwks": 200,
+    "ready": 200
+  },
+  "image_ids": {
+    "api": "sha256:1c1e5aec94707afde5f96b4b0eefaca83e88fd2ac988ef27ee008823a805f608",
+    "web": "sha256:aac0c07cb48f957b01d0bab7327f51c556bd82a6ff262c8577b177cc6f1c4604",
+    "worker": "sha256:ba9394ddd315810668f5f07b2f3afc7dc314281eb4b3f955875da0b71d2e4a13"
+  },
+  "object_store": {
+    "collision": "PASS",
+    "corruption": "PASS",
+    "denial": "PASS",
+    "probe_residue": 0,
+    "put_read_dedupe": "PASS"
+  },
+  "oidc": {
+    "callback": 200,
+    "issuer": 302,
+    "replay": 401,
+    "secure_httponly_cookie": true,
+    "session_authenticated": true,
+    "start": 200
+  },
+  "pg18": {
+    "app_role": "anvil_app",
+    "migration_head": "0019_oidc_sessions",
+    "public_tables": 61,
+    "superuser": false,
+    "vector": "0.8.2",
+    "vector_distance_3d": 1.0,
+    "version": "18.4"
+  },
+  "release_tag": "f18-wsl-r45a-qa",
+  "schema_version": 1,
+  "source_commit": "d36de847842804ca93e405abe9bff687c1162a69",
+  "target": "NOT_EXECUTED"
+}
