@@ -3917,3 +3917,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `F20_R1_CONTROL_REVIEW_FIX_WSL_GREEN; PRODUCT_REWORK_PENDING`. 보완 commit `bdfbce1829abdfd418d5fcc09816eec5b8d2925e`를 push하고 원격 SHA 일치를 확인했다. `ssh WSL-server`의 전용 `/tmp/anvil-f20-control-bdfbce1` checkout에서 정확한 SHA와 `development` upstream을 확인하고 F-20 집중 suite `18 passed in 5.38s`(exit 0), G-05 `PASS sequence=1719 reporting=AUTO_CONTINUE`(exit 0), clean Git status를 확인했다. 전용 checkout은 SHA 확인 후 삭제하여 `F20_CONTROL_BDFBCE1_WSL_RESIDUE_ZERO`다.
 - 변경 파일은 이 상태 기록만 추가. 제품 exact3 파일은 아직 수정하지 않았다. 정식 실패 0. 미검증: WSL 전체 suite/C-30 외부 역사 객체, Git write 오류 형식, 11개 메뉴 및 F-20 실제 검증. 다음은 유효 worker/write lease 확인 후 WorkInstruction의 정확한 제품 세 경로에 developer-primary 단일 writer를 배정하는 것이다.
+
+# F-20 R1 Git object fanout 오류 형식 로컬 재작업 / 2026-09-27
+
+- 판정: `F20_R1_EXACT3_LOCAL_GREEN; WSL_PENDING`. active seq1719 worker/write lease의 정확한 세 경로만 `developer-primary-f20-r1` 단일 writer가 수정했다. POSIX fanout 심볼릭 링크 거부에서 `BackendRejected(REPARSE_PATH_DENIED)`가 외부로 노출되던 것을 `LeaseError(WORKSPACE_GIT_STORE_DRIFT)`로 변환했다. 신규 오류 형식 테스트는 RED 1 failed(exit 1)→GREEN 1 passed(exit 0), 관련 파일 전체 로컬 회귀 `57 passed in 905.21s`(exit 0), 구문·`git diff --check` 통과다. writer 결과는 `docs/04_test_reports/F-20_REWORK_R1_RESULT.md`에 있다.
+- Main 독립 확인: 제품 diff가 POSIX guard의 예외 변환과 신규 회귀 1개, 결과 문서만 포함됨을 확인했다. 신규 테스트와 기존 외부 Git write/HEAD 보존 테스트를 재실행해 `2 passed in 25.33s`(exit 0), G-05 `PASS sequence=1719`(exit 0), diff check 통과다. Main OS 임시 pytest 경로는 내부 링크 확인 후 제거해 잔류 0; writer의 OS 임시 경로 3개도 잔류 0이다. 정식 Developer 실패 0.
+- 미검증: WSL 동일 SHA 실제 POSIX symlink 원래 실패 테스트·전체 suite, C-30 원격 역사 객체 문제, F-20 11개 메뉴·중단/재개·복구·Monitoring 등 최종 완료 조건. 변경 파일: `packages/agent_team/worktree_writes.py`, `tests/agent_team/test_worktree_writes_e06.py`, `docs/04_test_reports/F-20_REWORK_R1_RESULT.md`, 이 기록. 다음은 exact3 commit/push 후 `ssh WSL-server`에서 동일 SHA 테스트다. F-20 수락·P-01·main 병합·Production은 보류한다.
