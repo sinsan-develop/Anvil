@@ -3699,3 +3699,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 판정: `ACCEPTED_U02_LOCAL_WEB_CONTRACT_SCOPED`. Workbench state/client의 canonical Provider 순서, honest 상태, empty/quota/cancel/reconnect, relative same-origin API와 SSE Last-Event-ID 계약을 검증했다.
 - `node --import tsx --test apps/web/tests/workbench.test.mjs` 10 passed, `npm run web:test` Dashboard 회귀 3 passed. 한 번에 두 Node test 명령을 묶었을 때 발생한 React loader 오류는 재현되지 않은 실행 순서/loader 현상으로 PASS에 포함하지 않았다.
 - WSL-server 브라우저·Network, live LLM Provider, DB Run hash·human approval 계보와 운영은 미검증이다. canonical progress seq1691로 U-02 완료, 다음은 `U-03 Projects READY_FOR_WORK_INSTRUCTION`이다.
+
+# U-03 Projects 시작 / 2026-09-27
+
+- U-03 WorkInstruction을 발행하고 canonical progress seq1692로 활성화했다. repository intelligence의 zero-delta scan·dirty/untracked·baseline 경계를 기반으로 Projects 메뉴/API/UI를 구현한다.
+- 현재는 제품 변경 전 조사·구현 단계이며, `ysna-server`/Production preview는 범위에서 제외한다. 다음 조치는 로컬 Projects UI/BFF 구현 후 동일 commit을 `ssh WSL-server`에서 검증하는 것이다.

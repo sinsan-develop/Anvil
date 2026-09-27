@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1691,
+  "last_sequence": 1692,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84954,7 +84954,27 @@
     "manifest": "docs/evidence/manifests/U-02_WORKBENCH_MANIFEST.json",
     "next_action": "U-03_WORK_INSTRUCTION"
   }
+},
+{
+  "sequence": 1692,
+  "event_id": "evt_u03_1692_package_started",
+  "event_type": "PACKAGE_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "U-03",
+  "run_id": null,
+  "step_id": "U-03_START",
+  "subject_ref": "U-03",
+  "occurred_at": "2026-09-27T15:37:26+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A3A0F61389E46051A05C74433423812ADEB326EDE991FB7629051D5773F85546",
+  "details": {
+    "status": "ACTIVE",
+    "work_instruction": "docs/work_orders/U-03_PROJECTS_WORK_INSTRUCTION.md"
+  }
 }
   ],
-  "last_event_id": "evt_u02_1691_package_completed"
+  "last_event_id": "evt_u03_1692_package_started"
 }

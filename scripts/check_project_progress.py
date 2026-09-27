@@ -58686,6 +58686,16 @@ def validate_bundle(bundle):
             if not (root / path).is_file():
                 errors.append("U02_EVIDENCE_MISSING")
         return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "U03_START":
+        progress = bundle.get("progress", {})
+        errors = []
+        if progress.get("event_sequence") != 1692 or progress.get("current_work_package") != "U-03":
+            errors.append("U03_START_SEQUENCE_INVALID")
+        if progress.get("status") != "ACTIVE" or progress.get("worker_lease") is not None:
+            errors.append("U03_START_STATUS_INVALID")
+        if not (Path(bundle["_root"]) / "docs/work_orders/U-03_PROJECTS_WORK_INSTRUCTION.md").is_file():
+            errors.append("U03_WORK_INSTRUCTION_MISSING")
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
