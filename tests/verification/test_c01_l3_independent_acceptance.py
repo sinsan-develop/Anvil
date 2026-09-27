@@ -178,6 +178,8 @@ POST /api/work-plans/{id}:reopen
 # before checking the C-01 semantic delta.
 APPROVED_SUCCESSOR_OPENAPI_OPERATIONS = frozenset({
     "GET /api/delegations/{id}",
+    "GET /api/operations/alerts",
+    "GET /api/operations/audit",
     "POST /api/delegations/{id}:cancel",
     "POST /api/delegations/{id}:resume",
     "POST /api/delegations/{id}:steer",

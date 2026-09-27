@@ -3,15 +3,44 @@
 from __future__ import annotations
 
 import copy
+from contextlib import contextmanager
 import importlib.util
 import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_phase_b_gate.py"
+HISTORICAL_GATE = "355b99a1ec09cdcd6c0ac9767c3ef9c369937880"
+
+
+def historical_bytes(relative: str) -> bytes:
+    completed = subprocess.run(
+        ["git", "show", f"{HISTORICAL_GATE}:{relative}"],
+        cwd=ROOT, capture_output=True, check=True,
+    )
+    return completed.stdout
+
+
+@contextmanager
+def historical_gate_root(checker):
+    manifest_raw = historical_bytes(checker.MANIFEST_PATH)
+    manifest = json.loads(manifest_raw)
+    paths = {checker.MANIFEST_PATH, checker.MATRIX_PATH, checker.TEST_PLAN_PATH,
+             checker.WORK_INSTRUCTION_PATH, checker.APPROVAL_PATH,
+             checker.VALIDATION_PATH, checker.COMPLETION_REPORT_PATH}
+    paths.update(row["path"] for row in manifest["raw_checksums"])
+    with tempfile.TemporaryDirectory(prefix="anvil-phase-b-gate-", dir=ROOT) as temp:
+        root = Path(temp)
+        for relative in sorted(paths):
+            destination = root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(historical_bytes(relative))
+        yield root
 
 
 def load_checker():
@@ -29,7 +58,8 @@ class PhaseBGateTests(unittest.TestCase):
 
     def test_owner_approved_selector_is_exact_44_with_deferred_and_undefined_boundaries(self) -> None:
         checker = load_checker()
-        report = checker.validate_gate(ROOT)
+        with historical_gate_root(checker) as gate_root:
+            report = checker.validate_gate(gate_root)
 
         self.assertEqual([], report["errors"])
         self.assertEqual(
@@ -45,12 +75,20 @@ class PhaseBGateTests(unittest.TestCase):
 
     def test_each_direct_id_has_required_evidence_and_honest_execution_boundary(self) -> None:
         checker = load_checker()
-        report = checker.validate_gate(ROOT)
+        with historical_gate_root(checker) as gate_root:
+            report = checker.validate_gate(gate_root)
 
         required = {"verification_id", "required_evidence", "severity", "level", "owner_package", "evidence_status", "actual_execution_status"}
         self.assertTrue(all(required <= set(row) for row in report["verification_map"]))
         self.assertTrue(all(row["actual_execution_status"] == "NOT_EXECUTED" for row in report["verification_map"]))
         self.assertTrue(all(row["evidence_status"] == "REUSED_ACCEPTED_EVIDENCE_NOT_RERUN" for row in report["verification_map"]))
+
+    def test_historical_authority_byte_tamper_is_rejected(self) -> None:
+        checker = load_checker()
+        with historical_gate_root(checker) as gate_root:
+            authority = gate_root / checker.MATRIX_PATH
+            authority.write_bytes(authority.read_bytes() + b"\n")
+            self.assertIn("PHASE_B_GATE_MANIFEST_RAW_INVALID", checker.validate_gate(gate_root)["errors"])
 
     def test_scope_mutation_is_rejected_without_adding_a_definition_for_stat_029(self) -> None:
         checker = load_checker()
@@ -94,31 +132,35 @@ class PhaseBGateTests(unittest.TestCase):
             ),
         )
 
-        manifest = json.loads((ROOT / checker.MANIFEST_PATH).read_text(encoding="utf-8"))
+        manifest = json.loads(historical_bytes(checker.MANIFEST_PATH))
+        with historical_gate_root(checker) as gate_root:
+            self._assert_manifest_tampering_rejected(checker, gate_root, manifest)
+
+    def _assert_manifest_tampering_rejected(self, checker, gate_root: Path, manifest: dict) -> None:
         escaped = copy.deepcopy(manifest)
         escaped["raw_checksums"][0]["path"] = "../outside.json"
         self.assertIn(
             "PHASE_B_GATE_MANIFEST_RAW_PATH_ESCAPE",
-            checker.validate_gate(ROOT, manifest_override=escaped)["errors"],
+            checker.validate_gate(gate_root, manifest_override=escaped)["errors"],
         )
         raw_checksum_tamper = copy.deepcopy(manifest)
         raw_checksum_tamper["raw_checksums"][0]["sha256"] = "0" * 64
         self.assertIn(
             "PHASE_B_GATE_MANIFEST_RAW_INVALID",
-            checker.validate_gate(ROOT, manifest_override=raw_checksum_tamper)["errors"],
+            checker.validate_gate(gate_root, manifest_override=raw_checksum_tamper)["errors"],
         )
         target_tamper = copy.deepcopy(manifest)
         target_tamper["target_hash"] = "sha256:" + "0" * 64
-        self.assertIn("PHASE_B_GATE_MANIFEST_TARGET_INVALID", checker.validate_gate(ROOT, manifest_override=target_tamper)["errors"])
+        self.assertIn("PHASE_B_GATE_MANIFEST_TARGET_INVALID", checker.validate_gate(gate_root, manifest_override=target_tamper)["errors"])
         content_tamper = copy.deepcopy(manifest)
         content_tamper["content_hash"] = "sha256:" + "0" * 64
-        self.assertIn("PHASE_B_GATE_MANIFEST_CONTENT_HASH_INVALID", checker.validate_gate(ROOT, manifest_override=content_tamper)["errors"])
+        self.assertIn("PHASE_B_GATE_MANIFEST_CONTENT_HASH_INVALID", checker.validate_gate(gate_root, manifest_override=content_tamper)["errors"])
         map_tamper = copy.deepcopy(manifest)
         map_tamper["verification_map_sha256"] = "sha256:" + "0" * 64
-        self.assertIn("PHASE_B_GATE_MANIFEST_SCOPE_INVALID", checker.validate_gate(ROOT, manifest_override=map_tamper)["errors"])
+        self.assertIn("PHASE_B_GATE_MANIFEST_SCOPE_INVALID", checker.validate_gate(gate_root, manifest_override=map_tamper)["errors"])
         promotion = copy.deepcopy(manifest)
         promotion["direct_verification_ids"].append("AV-STAT-029")
-        self.assertIn("PHASE_B_GATE_MANIFEST_SCOPE_INVALID", checker.validate_gate(ROOT, manifest_override=promotion)["errors"])
+        self.assertIn("PHASE_B_GATE_MANIFEST_SCOPE_INVALID", checker.validate_gate(gate_root, manifest_override=promotion)["errors"])
 
 
 if __name__ == "__main__":

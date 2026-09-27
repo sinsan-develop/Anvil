@@ -331,7 +331,7 @@ class A13RepositoryScanFoundationTests(unittest.TestCase):
             result = scan_repository(
                 ScanRequest(
                     repository_path=str(allowed / ".." / escaped.name),
-                    allowed_root=str(allowed).swapcase(),
+                    allowed_root=str(allowed).swapcase() if os.name == "nt" else str(allowed),
                     output_path=str(base / "out.json"),
                     temp_root=str(base / "temp"),
                 )
