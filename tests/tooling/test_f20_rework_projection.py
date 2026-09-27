@@ -7,12 +7,14 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 from pathlib import Path
-import shutil
+import subprocess
 
 import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = ROOT
+PREDECESSOR_COMMIT = "c7a244d5611525a3e83c438dd5a2654597cb97ab"
 OLD_MANIFEST = "docs/evidence/manifests/F-20_WSL_FINAL_VALIDATION_MANIFEST.json"
 WI = "docs/work_orders/F-20_REWORK_R1_WORK_INSTRUCTION.md"
 INVOCATION = "docs/work_orders/F-20_REWORK_R1_INVOCATION.md"
@@ -30,6 +32,12 @@ def _canonical(value):
 
 def _sha(value):
     return hashlib.sha256(value).hexdigest().upper()
+
+
+def _predecessor_bytes(relative):
+    return subprocess.check_output(
+        ["git", "show", f"{PREDECESSOR_COMMIT}:{relative}"], cwd=SOURCE_ROOT
+    )
 
 
 def _history():
@@ -154,7 +162,7 @@ def test_f20_rework_materialization_preserves_history_and_never_claims_completio
     for relative in paths:
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / relative, destination)
+        destination.write_bytes(_predecessor_bytes(relative))
     old_events = (tmp_path / paths[0]).read_bytes()
     old_report = (tmp_path / paths[4]).read_bytes()
     old_manifest = (tmp_path / OLD_MANIFEST).read_bytes()
@@ -196,7 +204,7 @@ def test_f20_rework_history_fixture_remains_available_after_projection(tmp_path,
     for relative in paths:
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / relative, destination)
+        destination.write_bytes(_predecessor_bytes(relative))
     materialize(tmp_path, "a" * 40, NOW, "test")
 
     monkeypatch.setitem(_history.__globals__, "ROOT", tmp_path)
@@ -228,7 +236,7 @@ def test_f20_rework_control_rejects_digest_or_historical_evidence_tampering(tmp_
     for relative in paths:
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / relative, destination)
+        destination.write_bytes(_predecessor_bytes(relative))
     materialize(tmp_path, "a" * 40, NOW, "test")
 
     def bundle():
@@ -263,7 +271,7 @@ def test_g05_routes_f20_rework_to_the_new_validator(tmp_path):
     for relative in paths:
         destination = tmp_path / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / relative, destination)
+        destination.write_bytes(_predecessor_bytes(relative))
     materialize(tmp_path, "a" * 40, NOW, "test")
     bundle = {
         "_root": tmp_path,
