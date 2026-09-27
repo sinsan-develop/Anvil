@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-wsl-ops-r45a-port-seq1674",
-  "event_sequence": 1674,
-  "updated_at": "2026-09-27T09:11:59+09:00",
-  "last_event_id": "evt_f18_local_1674_worker_lease_issued",
+  "snapshot_id": "snapshot-f18-wsl-ops-r45a-close-seq1675",
+  "event_sequence": 1675,
+  "updated_at": "2026-09-27T09:54:57+09:00",
+  "last_event_id": "evt_f18_local_1675_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -233,20 +233,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f18-wsl-ops-r45a-20260927-002",
-    "actor_id": "main-agent-eoul",
-    "subject_ref": "F-18/WSL_OPS_R45A_STAGING_ARTIFACT_PORT_REVISION",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-27T09:11:59+09:00",
-    "expires_at": "2026-09-27T21:11:59+09:00",
-    "lease_epoch": 34,
-    "fencing_token": "f18-wsl-ops-execution-fence-epoch-34-d36de847842804ca",
-    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-34-d36de847842804ca",
-    "baseline_git_commit": "bc4ba2f8725bfc3f32f13742d642a828c4393405",
-    "dispatch_head": "bc4ba2f8725bfc3f32f13742d642a828c4393405",
-    "path_scope": []
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -468,7 +455,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "MAIN_VERIFY_F18_R45A_STAGING_ARTIFACT_PORT_CORRECTED",
+  "next_safe_action": "PREPARE_F18_R45B_SAME_ARTIFACT_TARGET_QA",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -582,8 +569,8 @@
     "local_head": "69247977e4e51781401e45348fd3a290d8393c36",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "bc4ba2f8725bfc3f32f13742d642a828c4393405",
-    "projection_mode": "F18_WSL_OPS_R45A_STAGING_ARTIFACT_PORT_REVISION",
+    "remote_head": "56a73706ebd6b00aed50ca01fa4609e3b6fa2ab2",
+    "projection_mode": "F18_WSL_OPS_R45A_STAGING_ARTIFACT_CHECKPOINT",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -643,6 +630,7 @@
       "docs/evidence/manifests/F-18_WSL_OPS_R43D_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R44_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R44_START_MANIFEST.json",
+      "docs/evidence/manifests/F-18_WSL_OPS_R45A_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R45A_PORT_REVISION_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R45A_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
@@ -712,6 +700,7 @@
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r43d.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r44-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r44.json",
+      "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45a-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45a-port.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45a.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r5.json",
@@ -826,6 +815,7 @@
       "docs/work_orders/F-18_WSL_OPS_R44_MANIFEST_HEAD_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R44_MANIFEST_HEAD_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R44_MANIFEST_HEAD_WORK_INSTRUCTION.md",
+      "docs/work_orders/F-18_WSL_OPS_R45A_CLOSE_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R45A_STAGING_ARTIFACT_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R45A_STAGING_ARTIFACT_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R45A_STAGING_ARTIFACT_WORK_INSTRUCTION.md",
@@ -901,6 +891,7 @@
       "scripts/f18_wsl_ops_r43d_overlay.py",
       "scripts/f18_wsl_ops_r44_close_overlay.py",
       "scripts/f18_wsl_ops_r44_overlay.py",
+      "scripts/f18_wsl_ops_r45a_close_overlay.py",
       "scripts/f18_wsl_ops_r45a_overlay.py",
       "scripts/f18_wsl_ops_r45a_port_revision_overlay.py",
       "scripts/f18_wsl_ops_r4_overlay.py",
@@ -966,6 +957,7 @@
       "tests/tooling/test_f18_wsl_ops_r43d_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r44_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r44_overlay.py",
+      "tests/tooling/test_f18_wsl_ops_r45a_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r45a_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r45a_port_revision_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
@@ -980,10 +972,10 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F18_WSL_OPS_R45A_STAGING_ARTIFACT_PORT_REVISION_ACTIVE",
+    "worktree_status": "F18_WSL_OPS_R45A_ARTIFACT_QA_CHECKPOINT",
     "commit_status": "PENDING",
     "push_status": "PENDING",
-    "control_qa_head": "bc4ba2f8725bfc3f32f13742d642a828c4393405"
+    "control_qa_head": "56a73706ebd6b00aed50ca01fa4609e3b6fa2ab2"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1310,7 +1302,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CD59D2A9DABB9EBD827CA8B74A99466B6E616008EEE92432F7BD2432E0D9B8D5"
+      "sha256": "1C4965E22197C5EDAD6F56C374D15DEFC0A8BE0019E4E9358B5BE7FB11DC4FC0"
     }
   },
   "next_work_package": {
@@ -1707,8 +1699,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "063349A4B5DC40613F5AF79D42AF55A6D8A713FC1584CA75A0F95173BBADB7B2",
-  "runtime_next_action": "MAIN_VERIFY_F18_R45A_STAGING_ARTIFACT_PORT_CORRECTED",
+  "snapshot_hash": "895A09B8497582038993B8A8660312034124820A8422F7113F6382384C2E0326",
+  "runtime_next_action": "PREPARE_F18_R45B_SAME_ARTIFACT_TARGET_QA",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3320,7 +3312,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-27T09:11:59+09:00",
+  "recorded_at": "2026-09-27T09:54:57+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
