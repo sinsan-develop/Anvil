@@ -62,6 +62,12 @@
 - C30의 `test_no_early_acceptance_or_lease_revoke`는 현재 원장의 과거 raw bytes 변조를 실제로 포착한 독립 감사 결함이다. `14c8c574`의 전체 Event 재직렬화와 seq1689~1712 24개 Event 변경을 Git 원본·현재 blob·스크립트로 확인했다. 이 테스트를 단순 frozen fixture로 바꿔 현재 원장의 무결성 실패를 은폐하지 않는다. 원본 재작성·history rewrite 없이 복구 가능한 append-only 사고 기록과 현재 acceptance 차단 조건을 먼저 설계·검증한다. 설계·중요 위험 변경이 필요하면 그 경계만 별도 보고한다.
 - C21 3, C09~C13 31, E09 3은 원본 authority hash 및 당시 Git tree와 현재 successor 문서/상태를 분리해 각 군별 역사 fixture와 변조 음성 검사를 유지한다. 한 번에 38건을 단일 writer 변경으로 묶지 않고, 실제 의존 파일과 검증/rollback 경계를 읽기 전용으로 확인한 다음 후속 exact-path lease를 정한다. R5a와 감사 사고 판정, 역사군 검증 모두 닫히기 전 전체 suite나 F-20을 수락하지 않는다.
 
+### R5b — C09 시작·R3·R4 역사 권위 경계 10건
+
+- 현재 C09 시작 5, R3 3, R4 2건은 당시 `C09_START_BASE=08aae12`의 설계·계획·매트릭스·테스트계획·운영규칙 hash를 현재 승인 후속 문서에 대입해 먼저 실패한다. 최신 문서 hash가 틀렸다는 뜻이 아니다. 당시 Git tree의 원문 bytes와 고정 hash를 결박하고, 현재 정본의 권위/현재 G-05를 별도로 유지한다. 당시 blob 누락·hash 변조·predecessor manifest/WorkInstruction 변조는 계속 거부한다. 테스트 skip/xfail·상수 hash 변경 금지.
+- R5a epoch5 write→worker lease를 append-only 회수한 후 R5b epoch6 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_REWORK_R5B_RESULT.md`)만 단일 writer에게 부여한다. Main이 control checker/overlay·G-05 route·상태 기록을 맡고 같은 제품 두 경로를 동시에 수정하지 않는다. C09 Main takeover·final 6건, C10~C13 15건, E09 3건, C21 WSL 객체 준비 3건과 C30 감사 사고는 R5b 범위 밖이다.
+- 해당 10개 RED를 로컬에서 재현하고 원인별 GREEN 및 역사 변조 음성 검사를 수행한다. R5b 통제 G-05·집중 테스트·WSL-server 동일 SHA를 거친 뒤 전체 suite를 다시 실행해 신규 회귀가 없음을 확인한다. 전체 suite의 다른 실패는 그대로 FAIL로 기록하고 F-20 수락하지 않는다.
+
 ## F-20 완료조건 불일치 확인
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.
