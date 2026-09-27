@@ -1,17 +1,17 @@
-# U-08 Agents and Automation accepted scoped contract
+# U-09 Environments accepted scoped contract
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1704,
-  "last_event_id": "evt_u08_1704_package_completed",
+  "event_sequence": 1706,
+  "last_event_id": "evt_u09_1706_package_completed",
   "status": "ACTIVE",
-  "current_work_package": "U-09",
+  "current_work_package": "U-10",
   "worker_lease": null,
   "write_lease": null,
   "next_work_package": {
-    "package_id": "U-09",
+    "package_id": "U-10",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
-  "next_safe_action": "U-09_WORK_INSTRUCTION"
+  "next_safe_action": "U-10_WORK_INSTRUCTION"
 }
 ```

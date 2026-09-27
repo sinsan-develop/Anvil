@@ -3737,3 +3737,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `ACCEPTED_U08_LOCAL_CONTRACT_SCOPED`. role/M1~M5/Skill·Hook/DAG/fencing/takeover 계약을 `275 passed`로 검증했다.
 - 실제 Agents 메뉴·브라우저·Network·운영 plugin은 미검증이다. canonical progress seq1704, 다음은 `U-09 Environments READY_FOR_WORK_INSTRUCTION`이다.
+
+# U-09 Environments 완료 / 2026-09-27
+
+- 판정: `ACCEPTED_U09_LOCAL_CONTRACT_SCOPED`. ReleaseManifest·WSL staging·Git SHA·deployment preflight 계약을 `111 passed, 2 skipped`로 검증했다.
+- 실제 Environments 브라우저·Network·live WSL deployment는 미검증이며 Production/ysna-server는 제외했다. canonical progress seq1706, 다음은 `U-10 Operations READY_FOR_WORK_INSTRUCTION`이다.
