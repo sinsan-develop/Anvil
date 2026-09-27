@@ -58435,6 +58435,14 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_f18_local = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_FINAL_WSL_SCOPED":
+        try:
+            from scripts.f20_evidence_binding import validate_f20_acceptance_binding
+        except ModuleNotFoundError:  # direct `python scripts/check_project_progress.py`
+            from f20_evidence_binding import validate_f20_acceptance_binding
+        errors = _validate_bundle_before_f18_local(bundle)
+        errors.extend(validate_f20_acceptance_binding(Path(bundle["_root"]), bundle["events"].get("events", [])))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45C_REWORK_CLOSE":
         from f18_wsl_ops_r45c_rework_close_overlay import validate
         return validate(bundle["_root"], bundle)

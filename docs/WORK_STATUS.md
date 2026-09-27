@@ -3831,3 +3831,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 같은 Event의 `manifest_sha256`은 `C4466666FBD82FCB503BA9CE01D3D33891CB12CAC87DB4D704D7027389E2DE8C`인데 현재 manifest 파일 SHA-256은 `814AB1441CA2997F30322FF7E3890F7D4AFCF13C2F52FD610114ABA8C6BD0692`이다. 보고서·manifest 모두 Event와 현재 파일이 결박되지 않는다.
 - 직전 재감사 commit에서 보고서에 덧붙였던 설명은 immutable evidence 경계를 보존하기 위해 `efe739e`에서 정확히 제거했다. 재감사 사실은 이 WORK_STATUS에만 남긴다. G-05 checker는 seq1714에서 `PASS`를 반환하지만 현재 보고서의 hash 결박 불일치를 검출하지 못하므로 그 PASS를 F-20 acceptance 유효성 증거로 사용하지 않는다.
 - 다음 통제 조치: seq1714와 과거 report bytes는 수정하지 않고 append-only `EVIDENCE_MANIFEST_INVALIDATED`/재작업 계보 및 새 WorkInstruction을 정식으로 투영하고, checker에 report hash 검증을 추가한다. 검증된 worker/write lease가 발급되기 전 제품 파일 mutation은 시작하지 않는다. 기능 범위·요구사항·중요 위험 변경 승인 요청은 필요하지 않다.
+
+# F-20 증거 결박 검사 TDD / 2026-09-27
+
+- 담당: Main Agent. `docs/04_test_reports/F-20_CONTROL_REWORK_PLAN.md`의 Task 1을 수행했다. `scripts/f20_evidence_binding.py`, `scripts/check_project_progress.py`, `tests/tooling/test_f20_evidence_binding.py`만 코드 변경했다. 제품 파일은 변경하지 않았다.
+- RED: 로컬 `uv run --frozen --group dev python -B -m pytest tests/tooling/test_f20_evidence_binding.py -q -o cache_dir=.pytest_cache_f20`는 신규 module 부재로 collection ERROR(종료 1). GREEN: 같은 명령 `2 passed in 0.10s`(종료 0). G-05는 수정 전 `PASS sequence=1714`; 수정 후 `F20_ACCEPTANCE_EVIDENCE_HASH_MISMATCH`(종료 1)로 기존 거짓 수락을 차단한다.
+- 정식 실패 횟수: 0. 미검증: append-only 무효화·새 lease·WSL 전체 suite·11개 메뉴 기능·중단/재개. 다음 조치는 계획 Task 2의 새 통제 projection을 검증한 뒤 유효 lease에서만 제품 회귀를 수정하는 것이다. 현재 F-20은 `REWORK_REQUIRED`, main 병합과 `P-01` 착수는 금지한다.
