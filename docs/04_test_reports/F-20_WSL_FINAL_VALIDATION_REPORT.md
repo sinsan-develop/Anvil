@@ -16,10 +16,14 @@
 - 같은 브라우저 실행에서 `/projects`는 WSL `server.mjs`의 404 응답이었다. U-03 React route의 실제 브라우저 화면으로 승격할 수 없다.
 - Docker web image를 SSH 포워드한 CDP 재검증에서는 `/`, `/projects`, `/runs`, `/reviews`, `/quality`, `/knowledge`, `/agents-automation`, `/environments`, `/operations`, `/settings`가 모두 HTTP 200 shell을 반환했다. Dashboard와 Projects는 실제 heading을 표시했지만 나머지는 `페이지를 사용할 수 없습니다` fallback이었다. `/api/health/ready`와 `/api/projects/scan`은 API container 미기동으로 502였고, 이는 live readiness/DB PASS가 아니다.
 - 위 CDP Network 요청은 `127.0.0.1:4176` same-origin 및 상대 `/api/...`만 관측됐으며 내부 API 절대주소·외부 host 요청은 없었다.
+- r4 격리 PG15·API·web stack에서는 migration `0016_operations_recovery`, API `/health/live`와 `/api/health/ready`가 각각 `200`/`200`이었다. 같은 CDP browser에서 `/api/health/ready`는 전 route `200`으로 확인되어 DB/API readiness와 same-origin Network를 입증했다.
+- r4에서 `/api/projects/scan`은 `404`였다. Projects BFF가 local `apps/web/server.mjs`에만 있고 production nginx→FastAPI 경로에는 없어 실제 Projects scan이 끊긴다. 이는 F-20 blocking defect 후보이며 0건으로 닫지 않는다.
+- r4에서 Runs/Reviews/Quality/Knowledge/Agents & Automation/Environments/Operations/Settings는 HTTP shell `200`이지만 화면 heading은 `페이지를 사용할 수 없습니다` fallback이었다. 11개 메뉴 기능 smoke PASS가 아니다.
 - F-20 target에서 live PostgreSQL/queue/worker/provider, backup/restore, application rollback과 관찰구간 critical-alert 판정은 실행하지 못했다. 이전 Package의 contract/fixture evidence를 이 target의 실제 PASS로 재사용하지 않는다.
 - WSL checkout·임시 서버·4173 listener·SSH port-forward·Chrome process/profile·로그는 exact cleanup 후 모두 잔여 0을 확인했다. Production/ysna-server는 접근하지 않았다.
 - 추가 recovery checkout `/home/daon/anvil-f20-r2`와 임시 `/tmp/f20-r2-*.log`도 exact cleanup 후 잔여 0이다.
 - Docker r3 checkout/image/container, loopback port 4175, SSH forward, Chrome profile/process/log도 exact cleanup 후 잔여 0이다.
+- r4 isolated PG15/API/web checkout, images, containers, internal network, port/forward, Chrome profile/process/log도 exact cleanup 후 잔여 0이다.
 
 ## 조치 및 다음 안전 행동
 
