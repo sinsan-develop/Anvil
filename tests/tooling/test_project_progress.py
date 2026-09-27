@@ -15695,7 +15695,8 @@ class C09StartProjectionTests(unittest.TestCase):
     def setUp(self):
         checkpoint = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
         paths = ["Anvil_설계서_v2.md", "Anvil_작업계획서_v1.md",
-                 "Anvil_통합검증매트릭스_v1.md", "Anvil_테스트계획서_v1.md"]
+                 "Anvil_통합검증매트릭스_v1.md", "Anvil_테스트계획서_v1.md",
+                 "docs/governance/ANVIL_OPERATING_RULES.md"]
         files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
                  for path in paths}
         overlay = _historical_bytes_overlay(files)
@@ -15805,6 +15806,21 @@ class C09StartProjectionTests(unittest.TestCase):
         with mock.patch.object(Path, "read_bytes", corrupt):
             with self.assertRaisesRegex(ValueError, "C09_START_AUTHORITY_HASH_INVALID"):
                 checker.c09_start_projection_from_root(ROOT)
+
+    def test_seq798_historical_governance_missing_or_tampered_is_rejected(self):
+        checker = self._checker()
+        self.assertEqual(self.EXACT11, sorted(checker.c09_start_projection_from_root(ROOT)))
+        governance = "docs/governance/ANVIL_OPERATING_RULES.md"
+        historical = (ROOT / governance).read_bytes()
+        for bad_bytes in (b"", historical + b"\nforged governance"):
+            with self.subTest(size=len(bad_bytes)), _historical_bytes_overlay({governance: bad_bytes}):
+                for builder, error in (
+                    (checker.c09_start_projection_from_root, "C09_START_AUTHORITY_HASH_INVALID"),
+                    (checker.c09_r3_from_root, "C09_R3_AUTHORITY_HASH_INVALID"),
+                    (checker.c09_r4_from_root, "C09_R4_AUTHORITY_HASH_INVALID"),
+                ):
+                    with self.assertRaisesRegex(ValueError, error):
+                        builder(ROOT)
 
     def test_seq798_review_r1_stat021_requires_l5_and_rejects_downgrade(self):
         checker = self._checker()
