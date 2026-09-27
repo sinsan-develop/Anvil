@@ -1,0 +1,1 @@
+`F-18_WSL_OPS_R3_RUNTIME_BUNDLE_WORK_INSTRUCTION.md`와 canonical seq1525의 actor·worker/write lease·두 fencing token·exact5 경로를 먼저 대조하라. 그 다섯 파일에서만 PyYAML dev lock과 Web image의 F16/F18 runtime import 누락을 최소 보완하고 RED→GREEN·관련 회귀·diff·보고를 남겨 clean commit을 Main에게 전달하라. push, WSL 접속, control 수정, Production 작업은 금지한다.

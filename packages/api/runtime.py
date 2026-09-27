@@ -29,6 +29,7 @@ from packages.persistence.config import DatabaseSettings
 from .common import SessionPrincipal
 from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
+from .oidc_session_coordinator import OidcSessionCoordinator
 from .provider_status import ProviderStatusPort
 from .provider_settings import ProviderSettingsPort
 from .operations import OperationsPort
@@ -317,9 +318,21 @@ def create_runtime_app(
     """
     source = os.environ if environment is None else environment
     configured_auth_mode = source.get("ANVIL_AUTH_MODE", "")
-    if configured_auth_mode not in {"", "COOKIE", _WSL_ACCEPTANCE_MODE}:
+    if configured_auth_mode not in {"", "COOKIE", _WSL_ACCEPTANCE_MODE, "OIDC"}:
         raise RuntimeConfigurationError("ANVIL_AUTH_MODE is invalid")
     auth_mode = configured_auth_mode or "COOKIE"
+    oidc_coordinator = app_kwargs.get("oidc_session_coordinator")
+    if auth_mode == "OIDC":
+        if not isinstance(oidc_coordinator, OidcSessionCoordinator):
+            raise RuntimeConfigurationError("OIDC requires a trusted session coordinator")
+        if not callable(app_kwargs.get("authorization_resolver")):
+            raise RuntimeConfigurationError("OIDC requires an authorization resolver")
+        if any(name in source for name in _TEST_SESSION_REQUIRED + _TEST_SESSION_OPTIONAL):
+            raise RuntimeConfigurationError("OIDC cannot use test session environment")
+        if {"session_issuer", "authenticate", "trusted_read_principal", "auth_mode"} & set(app_kwargs):
+            raise RuntimeConfigurationError("OIDC cannot use competing authentication ports")
+    elif oidc_coordinator is not None:
+        raise RuntimeConfigurationError("OIDC coordinator requires OIDC auth mode")
     if (
         auth_mode == _WSL_ACCEPTANCE_MODE
         and source.get("ANVIL_RUNTIME_ENVIRONMENT") != _WSL_RUNTIME_ENVIRONMENT
@@ -422,7 +435,7 @@ def create_runtime_app(
         allowed_hosts=frozenset({public_host, "anvil.local"}),
         allowed_origins=frozenset({console_base_url.rstrip("/"), "https://anvil.local"}),
     )
-    local_session_config = _local_test_session_config(source)
+    local_session_config = None if auth_mode == "OIDC" else _local_test_session_config(source)
     local_session = (
         LocalTestSessionService(local_session_config)
         if local_session_config is not None
@@ -524,6 +537,8 @@ def create_runtime_app(
             return scope
 
         app_kwargs["authorization_resolver"] = resolve_runtime_scope
+    if auth_mode == "OIDC":
+        app_kwargs["auth_mode"] = auth_mode
     app_kwargs.setdefault("event_stream", PostgresEventStream(session_factory))
     app = create_app(telegram_webhook=webhook, security_config=web_security, **app_kwargs)
     for path in _PROVIDER_TRAILING_SLASH_PATHS:
@@ -549,7 +564,9 @@ def create_runtime_app(
     app.state.agent_console_restore_status = "NOT_INTEGRATED"
     if console_mapping_resolver is not None or console_materializer is not None:
         app.state.agent_console_runtime = RuntimeConsoleOwner(
-            session_factory=session_factory,authenticate=app_kwargs.get("authenticate"),
+            session_factory=session_factory,authenticate=(
+                oidc_coordinator.authenticate if auth_mode == "OIDC" else app_kwargs.get("authenticate")
+            ),
             resolve_mapping=console_mapping_resolver,materialize=console_materializer,clock=console_clock,
         )
         if console_materializer is None:

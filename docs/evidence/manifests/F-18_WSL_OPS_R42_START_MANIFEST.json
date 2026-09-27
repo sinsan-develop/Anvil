@@ -1,0 +1,1818 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1641,
+  "accepted": false,
+  "projection_mode": "F18_WSL_OPS_R42_OIDC_PROCESS_START",
+  "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
+  "exact_allowed_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R10_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R11_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R11_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R12_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R17_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R17_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R18_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R18_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R29_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R29_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R2_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R30_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R30_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R31_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R31_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R32_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R32_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R33_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R33_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R34_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R34_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R35_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R35_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R36_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R36_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R37_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R37_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R38_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R38_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R39_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R39_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R40_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R40_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R41_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R41_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R42_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R5_CHECKPOINT_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R6_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R6_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R7_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R7_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R8_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R8_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R9_CLOSE_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_R9_START_MANIFEST.json",
+    "docs/evidence/manifests/F-18_WSL_OPS_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r18-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r18.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r2.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r29-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r29.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r3.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r30-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r30.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r31-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r31.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r32-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r32.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r33-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r33.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r34-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r34.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r35-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r35.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r36-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r36.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r37-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r37.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r38-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r38.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r39-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r39.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r4.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r40-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r40.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r41-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r41.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r42.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r5.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r7-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r7.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r8-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r8.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9-close.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9.json",
+    "docs/progress/progress-handoff-detached-digest-f18-wsl-ops.json",
+    "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R18_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R18_DISTINCT_DIGEST_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R18_DISTINCT_DIGEST_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R18_DISTINCT_DIGEST_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R29_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R29_NETWORK_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R29_NETWORK_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R29_NETWORK_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R30_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R31_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R32_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R32_TRUSTED_DIRECTORY_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R32_TRUSTED_DIRECTORY_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R32_TRUSTED_DIRECTORY_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R33_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R33_SESSION_STORE_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R33_SESSION_STORE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R33_SESSION_STORE_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R34_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R34_SESSION_COORDINATOR_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R34_SESSION_COORDINATOR_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R34_SESSION_COORDINATOR_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R35_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R35_OIDC_HTTP_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R35_OIDC_HTTP_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R35_OIDC_HTTP_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R36_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R37_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R37_OIDC_COMPOSITION_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R37_OIDC_COMPOSITION_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R37_OIDC_COMPOSITION_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R38_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R39_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R39_OIDC_HOST_CONFIG_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R39_OIDC_HOST_CONFIG_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R39_OIDC_HOST_CONFIG_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R40_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R40_LIVE_OIDC_HOST_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R40_LIVE_OIDC_HOST_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R40_LIVE_OIDC_HOST_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R41_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R41_OIDC_PG18_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R41_OIDC_PG18_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R41_OIDC_PG18_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R42_OIDC_PROCESS_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R42_OIDC_PROCESS_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R42_OIDC_PROCESS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R4_CONTROL_ANCHOR_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R5_TEST_FIX_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R6_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R6_OBJECT_STORE_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R6_OBJECT_STORE_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R7_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R8_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_R9_CLOSE_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R9_STEP_UP_REQUEST_INVOCATION.md",
+    "docs/work_orders/F-18_WSL_OPS_R9_STEP_UP_REQUEST_PLAN.md",
+    "docs/work_orders/F-18_WSL_OPS_R9_STEP_UP_REQUEST_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-18_WSL_OPS_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "scripts/f18_wsl_ops_overlay.py",
+    "scripts/f18_wsl_ops_r10_close_overlay.py",
+    "scripts/f18_wsl_ops_r10_overlay.py",
+    "scripts/f18_wsl_ops_r11_close_overlay.py",
+    "scripts/f18_wsl_ops_r11_overlay.py",
+    "scripts/f18_wsl_ops_r12_close_overlay.py",
+    "scripts/f18_wsl_ops_r12_overlay.py",
+    "scripts/f18_wsl_ops_r17_close_overlay.py",
+    "scripts/f18_wsl_ops_r17_overlay.py",
+    "scripts/f18_wsl_ops_r18_close_overlay.py",
+    "scripts/f18_wsl_ops_r18_overlay.py",
+    "scripts/f18_wsl_ops_r29_close_overlay.py",
+    "scripts/f18_wsl_ops_r29_network_overlay.py",
+    "scripts/f18_wsl_ops_r2_overlay.py",
+    "scripts/f18_wsl_ops_r30_close_overlay.py",
+    "scripts/f18_wsl_ops_r30_oidc_principal_overlay.py",
+    "scripts/f18_wsl_ops_r31_close_overlay.py",
+    "scripts/f18_wsl_ops_r31_pending_store_overlay.py",
+    "scripts/f18_wsl_ops_r32_close_overlay.py",
+    "scripts/f18_wsl_ops_r32_trusted_directory_overlay.py",
+    "scripts/f18_wsl_ops_r33_close_overlay.py",
+    "scripts/f18_wsl_ops_r33_session_store_overlay.py",
+    "scripts/f18_wsl_ops_r34_close_overlay.py",
+    "scripts/f18_wsl_ops_r34_session_coordinator_overlay.py",
+    "scripts/f18_wsl_ops_r35_close_overlay.py",
+    "scripts/f18_wsl_ops_r35_oidc_http_overlay.py",
+    "scripts/f18_wsl_ops_r36_close_overlay.py",
+    "scripts/f18_wsl_ops_r36_oidc_runtime_binding_overlay.py",
+    "scripts/f18_wsl_ops_r37_close_overlay.py",
+    "scripts/f18_wsl_ops_r37_oidc_composition_overlay.py",
+    "scripts/f18_wsl_ops_r38_close_overlay.py",
+    "scripts/f18_wsl_ops_r38_oidc_host_binding_overlay.py",
+    "scripts/f18_wsl_ops_r39_close_overlay.py",
+    "scripts/f18_wsl_ops_r39_oidc_host_config_overlay.py",
+    "scripts/f18_wsl_ops_r3_overlay.py",
+    "scripts/f18_wsl_ops_r40_close_overlay.py",
+    "scripts/f18_wsl_ops_r40_live_oidc_host_overlay.py",
+    "scripts/f18_wsl_ops_r41_close_overlay.py",
+    "scripts/f18_wsl_ops_r41_oidc_pg18_overlay.py",
+    "scripts/f18_wsl_ops_r42_oidc_process_overlay.py",
+    "scripts/f18_wsl_ops_r4_overlay.py",
+    "scripts/f18_wsl_ops_r5_overlay.py",
+    "scripts/f18_wsl_ops_r6_close_overlay.py",
+    "scripts/f18_wsl_ops_r6_overlay.py",
+    "scripts/f18_wsl_ops_r7_close_overlay.py",
+    "scripts/f18_wsl_ops_r7_overlay.py",
+    "scripts/f18_wsl_ops_r8_close_overlay.py",
+    "scripts/f18_wsl_ops_r8_overlay.py",
+    "scripts/f18_wsl_ops_r9_close_overlay.py",
+    "scripts/f18_wsl_ops_r9_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r10_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r10_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r11_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r11_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r17_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r17_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r18_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r18_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r29_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r29_network_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r30_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r30_oidc_principal_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r31_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r31_pending_store_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r32_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r32_trusted_directory_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r33_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r33_session_store_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r34_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r34_session_coordinator_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r35_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r35_oidc_http_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r36_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r36_oidc_runtime_binding_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r37_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r37_oidc_composition_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r38_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r38_oidc_host_binding_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r39_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r39_oidc_host_config_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r3_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r40_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r40_live_oidc_host_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r41_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r41_oidc_pg18_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r42_oidc_process_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r5_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r6_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r6_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r7_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r7_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r8_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r8_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
+    "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
+  ],
+  "product_write_scope": [
+    "apps/api/anvil_api/asgi.py",
+    "apps/api/anvil_api/oidc_process.py",
+    "docs/04_test_reports/F-18_WSL_OPS_REPORT.md",
+    "tests/api/test_oidc_process.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 827841,
+      "sha256": "222C09775A2032142FAB613B41DD1B098213FEB4973512DB01B83D29C11FA7FF"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_CLOSE_MANIFEST.json",
+      "bytes": 22369,
+      "sha256": "B40EEF293B7667490A610FACFE7A90F2AF93982040FBDEA2E0CFFC67774C7678"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R10_START_MANIFEST.json",
+      "bytes": 21337,
+      "sha256": "029748A7BB05332408D789C97365DCEA802037619C38D1A266A3BE1DDC933B4B"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R11_CLOSE_MANIFEST.json",
+      "bytes": 25384,
+      "sha256": "097D1E7F1344DC5DB6C2B4D8890D4103EEB6651FE027A706E330C67207AB96F5"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R11_START_MANIFEST.json",
+      "bytes": 24256,
+      "sha256": "55AF77641C4F2C8F78A8AAD72E8FA1BC62A528F3032FAFCECEA1F3958EF1A19C"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R12_CLOSE_MANIFEST.json",
+      "bytes": 28417,
+      "sha256": "C04FD8F880138AE2CFE3179B4085C10DA366C79A9465811B5267FA3560F0E3D5"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R12_START_MANIFEST.json",
+      "bytes": 27293,
+      "sha256": "F33B99A98EA8679BB37D3E8ADFDD27C2EA4F3ADADCF3A5D06641B19B83C88108"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R17_CLOSE_MANIFEST.json",
+      "bytes": 31441,
+      "sha256": "7D66204D1E334C8BC719F57981BB3EA03ACA9E43B3A9106824EC2CFC73BD4D18"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R17_START_MANIFEST.json",
+      "bytes": 30360,
+      "sha256": "9EF6E84D4689E15C5E1EF1B70ACC83B08CFF95262FD42ACC794C280BCA495F03"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R18_CLOSE_MANIFEST.json",
+      "bytes": 34494,
+      "sha256": "0CD9203604293FD9FD412B839E001FAA8E28778F3D55BB9F576913C47D54339E"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R18_START_MANIFEST.json",
+      "bytes": 33440,
+      "sha256": "5BFC417274BCE4BCC8239B940EAC996D3C58A320E398241AF44B8025EFE2B4BB"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R29_CLOSE_MANIFEST.json",
+      "bytes": 37519,
+      "sha256": "7E7D7AFB5263AE916B06B80A8B0C3DCD6A6343E7F4D1E52DE1A84B06AE6AFF53"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R29_START_MANIFEST.json",
+      "bytes": 36398,
+      "sha256": "C00EDAA9CAFCCC51546ADC354AE4D98B1393712F736CE2B59C70728D943CC351"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R2_START_MANIFEST.json",
+      "bytes": 3772,
+      "sha256": "A01AE213418490A28B6CDBEBAA26BC13692D6BA79FD5ED5A2EC4924046D6B907"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R30_CLOSE_MANIFEST.json",
+      "bytes": 40629,
+      "sha256": "A1B9DCFC5FDB211E3343648FD0C6FD0B48A0661EC8668983FE47464C1666A3E4"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R30_START_MANIFEST.json",
+      "bytes": 39503,
+      "sha256": "30DF57393BF9B17AB4A73454DC3D338E379C6324C44062DBAA03A890B98D794F"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R31_CLOSE_MANIFEST.json",
+      "bytes": 43721,
+      "sha256": "F4240091AFA7B7591876A16BFA75C497119867E5593612E13E8D751158D952FD"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R31_START_MANIFEST.json",
+      "bytes": 42730,
+      "sha256": "368477FFEB07706EAEA030FD7876884A9CBA19D3E5D4C314ECC9C61AAC261ECD"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R32_CLOSE_MANIFEST.json",
+      "bytes": 46858,
+      "sha256": "3F429B3A521B761175A88C1B0E8ED894D61D0DFE80ED4E01738AE2DB46F5B5B0"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R32_START_MANIFEST.json",
+      "bytes": 45895,
+      "sha256": "F75234E6ADE9C032BAA21A7FEDE901BBB2F5541355A2CA671B151F1437AC82F4"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R33_CLOSE_MANIFEST.json",
+      "bytes": 49947,
+      "sha256": "D8FA821FE13702F797B6927F5FFB7D5399F1F33DAC6B9314E38CF450D2C93DBB"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R33_START_MANIFEST.json",
+      "bytes": 48955,
+      "sha256": "678D5A9A3524B7F94190180AA192187E1E635CA4CDA6BD0455C595BD5596A87C"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R34_CLOSE_MANIFEST.json",
+      "bytes": 53106,
+      "sha256": "E89F3158126DCCFB8DB96E1E5EA2C20734070000659AFD2F2D3CA7FAE2674884"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R34_START_MANIFEST.json",
+      "bytes": 52000,
+      "sha256": "91004D4617ABB4CEABB16388D25E6AF8AF0486CD64F623EC2584CB8FBECD02F7"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R35_CLOSE_MANIFEST.json",
+      "bytes": 56149,
+      "sha256": "88C0E7D3E7390EDB706D978BB0661EC1411975F920D3B67D28E9E36E5C8E3EB5"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R35_START_MANIFEST.json",
+      "bytes": 55015,
+      "sha256": "19CFCF232E3A646130B192B90F2E606044B41277162116877CBE6AD69B45A5C1"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R36_CLOSE_MANIFEST.json",
+      "bytes": 59323,
+      "sha256": "91037C50E043DAA016D00C456A7AC528B21D6FDE1216A3751C9CB525360999B3"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R36_START_MANIFEST.json",
+      "bytes": 58187,
+      "sha256": "ED5E4BA3058C3A853F69E53CF30D712EE92AC8DB9536D99974BF109CEF4426E7"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R37_CLOSE_MANIFEST.json",
+      "bytes": 62442,
+      "sha256": "867EB39CA39E1FA5325CFCAC610E888004FDC8D4C2A44D695F90EBF0F2D749FF"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R37_START_MANIFEST.json",
+      "bytes": 61328,
+      "sha256": "22FED6FABB33DAC03CF6C5016B3B2F39D69BF92D1B41D4E1568D02122E5C49F5"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R38_CLOSE_MANIFEST.json",
+      "bytes": 65576,
+      "sha256": "758126DBAE1FF4EC9AA1B7AD3A44FFEBCA04EC94BD6A8ADFDA119925DCF2A542"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R38_START_MANIFEST.json",
+      "bytes": 64449,
+      "sha256": "AA4809811E480CF3D2D5D06B5BDCF64F19BB3205FE470DF207100C6F9486ADDC"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R39_CLOSE_MANIFEST.json",
+      "bytes": 68698,
+      "sha256": "BC38C1E0F17A50D99E8EC2EC06BD23D4AD0092BE6A4CD3DBC85FA37FF606B192"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R39_START_MANIFEST.json",
+      "bytes": 67571,
+      "sha256": "2E9CDFB9C2CFA620810A205442206DF3BF655D6F290DC1159822114828D7AC8F"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R3_START_MANIFEST.json",
+      "bytes": 5283,
+      "sha256": "DD8714F9A7F987C49BAFE88E973CF57A54329DA467BF346E693069DE6F423BC9"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R40_CLOSE_MANIFEST.json",
+      "bytes": 71799,
+      "sha256": "614BEA12DA086CF2E09BB69D8E37C708E4452733D633815892D83179FA000CE3"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R40_START_MANIFEST.json",
+      "bytes": 70694,
+      "sha256": "8786B91520FB3F262B4E7EFDF765C45681A28B9BCA253F0CA32C71071010ACAD"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R41_CLOSE_MANIFEST.json",
+      "bytes": 74847,
+      "sha256": "54F8753471BFB33D34F121C4971E8CA2E737635483F1E38279449686E940E1AB"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R41_START_MANIFEST.json",
+      "bytes": 73814,
+      "sha256": "832B7934A1F94F60F7C5CA9E8056B5542A235CE32F5A0B3A24C6D7D49A75DB8C"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
+      "bytes": 6350,
+      "sha256": "0D0BC4798F2037062888CFE7BA8BE6B0132D76D852052B6343539432D51BD55C"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R5_CHECKPOINT_MANIFEST.json",
+      "bytes": 7571,
+      "sha256": "F239110DAF85A69C290C8BA600621D83468D7919AEDCF9C344BB1174C9868EEC"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R6_CLOSE_MANIFEST.json",
+      "bytes": 10329,
+      "sha256": "0FA4648F0734825A0FCABECA5D19571175A2780704C40DA1C6C57773C376B5D6"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R6_START_MANIFEST.json",
+      "bytes": 9308,
+      "sha256": "2DE4D431525A3F51A6F7AD05DEEACD2092EC76E056FC6E8B10E11B8C4E282EE8"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R7_CLOSE_MANIFEST.json",
+      "bytes": 13307,
+      "sha256": "842927925EE9AAD46E49F1DDD9A01E5D3D7CA4888D4EAD81B7235A12AB92E467"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R7_START_MANIFEST.json",
+      "bytes": 12270,
+      "sha256": "B9DB2E451377C874DF103C90D294A78ACB8EF7643115309C0D62230AAC8E9837"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R8_CLOSE_MANIFEST.json",
+      "bytes": 16297,
+      "sha256": "15C6C117D537C82DEF1A82B43FD5734C97F232F3A3F8F51D3E9966F6C9E178CA"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R8_START_MANIFEST.json",
+      "bytes": 15181,
+      "sha256": "6A87BE59BAC87B2CCC86C8CC4936B3606E3B6DA42F37F805185E804C196DDAF5"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R9_CLOSE_MANIFEST.json",
+      "bytes": 19328,
+      "sha256": "5A2C0A3016C3B08395DBEA3A1148DD8E6ADC805636FB3484B6BF50AE10994509"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R9_START_MANIFEST.json",
+      "bytes": 18249,
+      "sha256": "A0C88DFA98A1B7F233C50A9FBB4B1AEF261DFEA7F196A43B567D2EC8AF3E9F94"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_START_MANIFEST.json",
+      "bytes": 2231,
+      "sha256": "71936E76564C0E9245A14AD958CD5AD63843EADDD457529BBBA31500B5E1C28B"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4289681,
+      "sha256": "553B69ED6FDEBBCFFADD18D10967A9D8B04CB53A17761B94C14037457D4C0B3F"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10-close.json",
+      "bytes": 459,
+      "sha256": "52B0037B31639D7CEA4BBF21AB15EDEAE5CE06BD43A255B4679CF20413780C57"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r10.json",
+      "bytes": 460,
+      "sha256": "59F5C966B8ABD98A2763D4A86E29AE6F3CE783BCFED64DF40A2A5335533B70C0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11-close.json",
+      "bytes": 459,
+      "sha256": "B18673B78E15F8991163BB377A9AEF5E269DC13FAF06BCA350E48EFEE89FE49E"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r11.json",
+      "bytes": 460,
+      "sha256": "31DB6680603B1A625FD75AC275890BDD6943F6F7127C4B0792FE2BEF3D8118D9"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12-close.json",
+      "bytes": 459,
+      "sha256": "1EC7B1E254A8E07C137B58F9849389FEA5D22421B31B39180BFF3BF64BACEA93"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r12.json",
+      "bytes": 460,
+      "sha256": "3CCEADE2AE2D6534F9DCD9D75538BEB659DC9FA3DC1F1E26B50A667E21BF52E8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17-close.json",
+      "bytes": 459,
+      "sha256": "824CB373048E80DB5D342B2523C423F0EF3C7799A8EB85858C75473034E7FB25"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r17.json",
+      "bytes": 460,
+      "sha256": "21334E5FA8F800AA36CBD35D167B1AC2D7F487A39DA26473C14D59790DE59E27"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r18-close.json",
+      "bytes": 459,
+      "sha256": "DB3B7A0E1E7D6497230367EBD8D486E9BD53841B30ADCE8C0C5B4B6E00DDDB74"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r18.json",
+      "bytes": 460,
+      "sha256": "FB17003FFD413C4F7DCA1BE5858A27C2450A2E6813209D027F0CCD1D3A35D68B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r2.json",
+      "bytes": 460,
+      "sha256": "A61365C9C858300FA17547DDD4A4DDD87D4176EF0D9854B260DB93B9FF8F3609"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r29-close.json",
+      "bytes": 459,
+      "sha256": "FC93808B5BC578CD40FFCDEB5C021AAB18981DCCCBD343336609F42C836D7633"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r29.json",
+      "bytes": 460,
+      "sha256": "BCF7E0B63542F8F86FAFBE38B928DC864C700D118A076DC662F5E010FB43B8C9"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r3.json",
+      "bytes": 460,
+      "sha256": "B3F543DD19E2B8FB16056253372A66DAEDD6ADFD02562D4B5CBA64941DCCAD74"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r30-close.json",
+      "bytes": 459,
+      "sha256": "D90B42116E0A554BE23C5B89C66076B12E7D4A90148F64E366FE3A46B6033534"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r30.json",
+      "bytes": 460,
+      "sha256": "8356DBF3AF09CB1391F3B474EB07876BE713A940D59666D2A234EF43E933DB2D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r31-close.json",
+      "bytes": 459,
+      "sha256": "3237F6304BE017F4669A81FF4292DFA81E03C20D6F60DB7EC83BF2C89299CDF1"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r31.json",
+      "bytes": 460,
+      "sha256": "1DA7EC6A1A82821B0E9F3E8016ED2768A52D140D5E0C50C50FF2300D7E678143"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r32-close.json",
+      "bytes": 459,
+      "sha256": "A7D0E07C507725DD5580251BC44343349A465C1E6AE94916570B832D9A931985"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r32.json",
+      "bytes": 460,
+      "sha256": "5E53F65EBD1D435377EF660AB722CF756885837A53B4BB576A5B2C5B0A7AC51D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r33-close.json",
+      "bytes": 459,
+      "sha256": "E81A422F49F1B4EA0E0870AEF4433DD5EBC9AF4C9926334189B9038E1920B82F"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r33.json",
+      "bytes": 460,
+      "sha256": "D215A86729CDE2B428AAD8360B27E49522E647F7EC75533AA64E1E4C8103CDC4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r34-close.json",
+      "bytes": 459,
+      "sha256": "6A6D6737454E0B023370A2C522747C0BB07B2B1ECD47727F9DC6F34E95066606"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r34.json",
+      "bytes": 460,
+      "sha256": "FCF3209898203B639E15F01F3419D3FBFD7F384FF77D9373C67F2EF27F7158CA"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r35-close.json",
+      "bytes": 459,
+      "sha256": "42F05BF8D572216DE1D6E3879CC015F7D9B587E769C6F1CED37314226B26E604"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r35.json",
+      "bytes": 460,
+      "sha256": "56E22FD2F9CFA7B0232B0CF9A0B0A8843819B912567C860665FDD4EC1EB2ACF0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r36-close.json",
+      "bytes": 459,
+      "sha256": "287CD598451F80EC5B074F12C42A89812CB1AAF121051D2B8DBBE9BC91298FF3"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r36.json",
+      "bytes": 460,
+      "sha256": "90CEC66EFB025981D52AD487C5A0D911D9EFAB255197CC799CCACCA3D77DCD0F"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r37-close.json",
+      "bytes": 459,
+      "sha256": "7FE2D74853FBB4E49EF08ADC9D12000573A90A2F0C9206CC4F20505BFAC68767"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r37.json",
+      "bytes": 460,
+      "sha256": "72F35980AAB7EC493F77C6F37542781C42BDF95EF5266F4084679E3AF5C5CDA7"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r38-close.json",
+      "bytes": 459,
+      "sha256": "48FE6D80CCBE5DC203BE76F1D24B1F8C9D231729AA12F6656BA33F458136F266"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r38.json",
+      "bytes": 460,
+      "sha256": "581D76B7BDB323DA22261A05BA36E722D7EB67110E306AB8BED546D674C46A33"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r39-close.json",
+      "bytes": 459,
+      "sha256": "92D79515340F1E10EF87C0E8F787BE9D85A781E1F8AE13E2A8CA8CBB81CE29BA"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r39.json",
+      "bytes": 460,
+      "sha256": "B285E43C50041CE7EE7FE1C1F580865116D7A920B05347EF20CE06141BF8BF6D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r4.json",
+      "bytes": 459,
+      "sha256": "2FD7AC24AEC22863913AAD5A7379A8D29AB6BE23F13C2B13217D98E4B48F9C48"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r40-close.json",
+      "bytes": 459,
+      "sha256": "64ABEAE51BB1AF0F42FBCD679FA27085382DEAF3ADA3D49EE40A0EB38A0D0331"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r40.json",
+      "bytes": 460,
+      "sha256": "2CAB3C04514869B4E83055C7B0166F02AE4DD7BC451D417847429E02FB86635E"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r41-close.json",
+      "bytes": 459,
+      "sha256": "E4A0ABB484A06162A8463F069241C6FA61EA710959D6602E41BAB3A029C902E8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r41.json",
+      "bytes": 460,
+      "sha256": "749E2F254962458C4EA7363F53F1B16BC51B7B98F8E91AF4AB2A82D94B3F1866"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r5.json",
+      "bytes": 459,
+      "sha256": "8E9A60F3CDAB75C2D7EAB0A70327C2CF1E75E1224FDF7A2B0146F7641037C1B2"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6-close.json",
+      "bytes": 459,
+      "sha256": "0F89FD6A272D3A669A65F9706EE73DC01A238ABDE125F8794C971423FBB35343"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6.json",
+      "bytes": 460,
+      "sha256": "B6B942626A7B1CA8398899BB3D2FD896D975BB857E5F231B5FFC1A761FC89C05"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r7-close.json",
+      "bytes": 459,
+      "sha256": "D945F3C4322929BF695D8E3BEE255EB3C9CC48E9E71A83C5017CD86BAF61846F"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r7.json",
+      "bytes": 460,
+      "sha256": "3B6250615C4CB4DBA3EA50A3DAE26C75E01477D8196EAA120A7D71A2362430B5"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r8-close.json",
+      "bytes": 459,
+      "sha256": "538D13A93D9C1F08BE9043DB5CE959119112C8624140269DE71CA3B535549CDC"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r8.json",
+      "bytes": 460,
+      "sha256": "E8FA9D9B65089FDCC5048DB7B2807026F717D345B593D4648273A75344B94304"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9-close.json",
+      "bytes": 459,
+      "sha256": "1FBE8FA727F1C02BAC151C0B5CCBCD2BBD7D5274A57A758A15EF540417A6079D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r9.json",
+      "bytes": 460,
+      "sha256": "E1F10A45933507B36613B84DA7A8FF203A34FC9446AFBEAB469FD08362C3B118"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f18-wsl-ops.json",
+      "bytes": 460,
+      "sha256": "6A44F914F46CA6A224E7E9B814967C0A3EEC23C73EB993FCC6F20286939E9CEE"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_INVOCATION.md",
+      "bytes": 709,
+      "sha256": "19B70844850C4488D5370AD5364D2028663631F5D3522EEF4B09AB7643F45939"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_CLOSE_PLAN.md",
+      "bytes": 1125,
+      "sha256": "DFD37E00D6A52504458E1032E7232612A847DBE3AF3A4DB43BB1D4845682BCA7"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_INVOCATION.md",
+      "bytes": 491,
+      "sha256": "4F1F4945BBD8E6DA9AA9BB52E639FF0F7D4F7CB6785427D14AEC45AD76297BFA"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_PLAN.md",
+      "bytes": 7158,
+      "sha256": "CD4BE0D6ECCA22F93BE00D1A271CE800C80C205AF653CC7C6D70B494E2C39E76"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R10_OIDC_TRANSPORT_WORK_INSTRUCTION.md",
+      "bytes": 1649,
+      "sha256": "5EDC8EC4034EFD04386321339A04B170F444B0A9097D2B047EF84AA73FCB4B5E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_CLOSE_PLAN.md",
+      "bytes": 1611,
+      "sha256": "090699741B935A328B1F7C6293BC7297AB6A32BCCBC38D142CB9D0A0764F8FDD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_INVOCATION.md",
+      "bytes": 515,
+      "sha256": "D9FC688086AD4D1983CF47391B9ADAB683295DAC3E4FDBA7FA4C3E9466A5353E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_PLAN.md",
+      "bytes": 5501,
+      "sha256": "B6893A7A3B8644991FD049F722F12095B9DD827D8ACAF9658719CCB3008C6494"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R11_MIXED_JWKS_WORK_INSTRUCTION.md",
+      "bytes": 1332,
+      "sha256": "63CB8E04E7DAC080519A0BCCB6C7ECE5DFEDBF01F249D249FAEEA103BA726036"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_INVOCATION.md",
+      "bytes": 524,
+      "sha256": "0D065D5821EFC352BC18FF97B83575D50B1E6ABC70905174F702D6E1D2ABAB25"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_PLAN.md",
+      "bytes": 5508,
+      "sha256": "7A974F6EA3BA52F0D4EAE852BE77F52724733D38A3EEA533984BBFD70499B5DD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_AUTH_INGRESS_WORK_INSTRUCTION.md",
+      "bytes": 2038,
+      "sha256": "3E105EBDACACA6A4761FE270E2C0EF2E49DD8B4260B0DDA4234BCDE07E2F6137"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R12_CLOSE_PLAN.md",
+      "bytes": 1339,
+      "sha256": "B2819CED9BE44A02866EB0F5C4106841971CE27F7135A4CA2799BBABD30F81FF"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_CLOSE_PLAN.md",
+      "bytes": 1428,
+      "sha256": "81FC883FD780691202A79785C7052DFCC28D2DF38A39D1A69D8E885C66346837"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_INVOCATION.md",
+      "bytes": 592,
+      "sha256": "FAB1AAEBAB9911780A49466AA529F00329E20FD86726CAC3CE4DEDBDCBA69A55"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_PLAN.md",
+      "bytes": 5649,
+      "sha256": "182A9DED2CB4ECF2D31A6B1978DE14988D662F4189FC94D25A980980A408CDCD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R17_ROLE_IMAGES_WORK_INSTRUCTION.md",
+      "bytes": 2469,
+      "sha256": "5AA794D7BDEFD9FC7044EFAD6C26C9F0DB67C0A4A486A739EA6CEAD614840FDC"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R18_CLOSE_PLAN.md",
+      "bytes": 1484,
+      "sha256": "0EB285080975FDCAA0318CAE2E80BDBBC396F02A414773020A7CEFA0682B2C9C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R18_DISTINCT_DIGEST_INVOCATION.md",
+      "bytes": 326,
+      "sha256": "2FAFB7899399FD703AC98F6AC1098FD16CB2B953485BF2ACE2986363108D977E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R18_DISTINCT_DIGEST_PLAN.md",
+      "bytes": 3069,
+      "sha256": "A767A89236816F93432D365FA610704B128B828B2675814C3E84495F58269726"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R18_DISTINCT_DIGEST_WORK_INSTRUCTION.md",
+      "bytes": 1877,
+      "sha256": "0894AA9481FFA5D4920E7FBE476600CFBF2B8CFEF81DB1ABA0788B4667342AB6"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R29_CLOSE_PLAN.md",
+      "bytes": 1137,
+      "sha256": "E5820F323B1F4D5EBC63ED25AF6BE63EDE41D77667E586C74454145439E6FAC3"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R29_NETWORK_INVOCATION.md",
+      "bytes": 465,
+      "sha256": "40E578841AF8D32FBB5DC28D21306373A8546FF425C31A3E91E188E67998994C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R29_NETWORK_PLAN.md",
+      "bytes": 2782,
+      "sha256": "699DEEC88CC94CD77A3E76EF41159849DAB67DDAD50F5292931926601E9B9B1E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R29_NETWORK_WORK_INSTRUCTION.md",
+      "bytes": 1871,
+      "sha256": "59085E24E81DDED90C91A3B03561D9EA2FFD2FBD78C7C5E9B639CCD696B80015"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_INVOCATION.md",
+      "bytes": 417,
+      "sha256": "AFDAD5AA3870C3A933E495DB04B0F8A7980C49CFDB801528E09C75E4FBF25ECF"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R2_DEPENDENCY_WORK_INSTRUCTION.md",
+      "bytes": 3163,
+      "sha256": "7BAFF326D48F862EAF11173DA202BBB58754738AF81C204C403266D0F57C72EA"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R30_CLOSE_PLAN.md",
+      "bytes": 1616,
+      "sha256": "BF3C44878FB5446970AD03452EC52D3AEC5FCBD1C9FAE96D8752DE7F50D77C2B"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_INVOCATION.md",
+      "bytes": 439,
+      "sha256": "C02DF6DB37A86C51053624C5D1F571F0F85CD587BAAEC521329379C134CE1BD1"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_PLAN.md",
+      "bytes": 5570,
+      "sha256": "FC5AF4E705E2DB372E0438F46903EA09D5B334B53B518889BB8B53DE6D70D655"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R30_OIDC_PRINCIPAL_WORK_INSTRUCTION.md",
+      "bytes": 1884,
+      "sha256": "EB983605CF3E47362118CA00F959D188FF068A72775EB9FE67D6210AA65BA56F"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R31_CLOSE_PLAN.md",
+      "bytes": 1288,
+      "sha256": "49D73AE8881B1622A4558FC95847B5AF0C1E22776C44E7EEDB297BEF888B9B36"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_INVOCATION.md",
+      "bytes": 420,
+      "sha256": "F82E238BFDF8FC086F070EA977D0D3BC011A6E1611D7159F3CAB4B14190BCF16"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_PLAN.md",
+      "bytes": 3981,
+      "sha256": "3507702A87EC92966A485E683191EE2AEACE699DF82F35A61467A70036071CA3"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R31_PENDING_STORE_WORK_INSTRUCTION.md",
+      "bytes": 1806,
+      "sha256": "B816B3417368C7CFFD06A4AA12283FBF1B6BCA023A6167A6D8D69318D567270E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R32_CLOSE_PLAN.md",
+      "bytes": 1086,
+      "sha256": "89E99FEAC4D4B88A194C62A569E9598946AC2C239A5E18FBD330DC9E6536083B"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R32_TRUSTED_DIRECTORY_INVOCATION.md",
+      "bytes": 424,
+      "sha256": "61758730F75E43E1D4507874E8D62F5879BBF72B0D85FCFBCF90C8529B6163EF"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R32_TRUSTED_DIRECTORY_PLAN.md",
+      "bytes": 4754,
+      "sha256": "B0AE9D5DB1ECBCED2104161A957E1D50A721121B85ADBFCE51899011A6237F85"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R32_TRUSTED_DIRECTORY_WORK_INSTRUCTION.md",
+      "bytes": 1925,
+      "sha256": "E1365F08270B812F4A5CA2F097FF5E9450F156AD5E7D28176A2141CEBB0627CC"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R33_CLOSE_PLAN.md",
+      "bytes": 1362,
+      "sha256": "ED2DAE1E8F6D6AE44EFBAC4D58A0318392A76BEB340F2141BF74BE771D2757D1"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R33_SESSION_STORE_INVOCATION.md",
+      "bytes": 478,
+      "sha256": "720B7603B8499552FC8351129F3506F5488CCB775912BF2BFBABDA6C3305C98A"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R33_SESSION_STORE_PLAN.md",
+      "bytes": 6398,
+      "sha256": "78822746109F24A640C446D54AE02848249DD5AD793E0114414DFDAEFA773FF8"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R33_SESSION_STORE_WORK_INSTRUCTION.md",
+      "bytes": 1531,
+      "sha256": "17C2804CB8FDF802C625F107BD42DB6D695B347C4BF82DE102B92F15F4EDACB5"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R34_CLOSE_PLAN.md",
+      "bytes": 1249,
+      "sha256": "D3578FA0AE96FE04BC4945C46126250CA9B9522A10D51984FE8D438372660C99"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R34_SESSION_COORDINATOR_INVOCATION.md",
+      "bytes": 481,
+      "sha256": "F66417267F46A8B78CDD32998183515F2A588FF04114BF2E411FB1BEC76F0027"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R34_SESSION_COORDINATOR_PLAN.md",
+      "bytes": 7059,
+      "sha256": "F2CF2129FF21567D72C30C024A972DF7BC08AA40503F1085449656213C9A1B93"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R34_SESSION_COORDINATOR_WORK_INSTRUCTION.md",
+      "bytes": 1307,
+      "sha256": "E7EC1426FB122D56094601063B7D64C954A9D6DD4D34C79531A7AB64506E21BF"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R35_CLOSE_PLAN.md",
+      "bytes": 1431,
+      "sha256": "B0FC504023D666AE5F0E04FDD9A4F60ED0C60DC64E397604A0D7494C5B4F59DA"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R35_OIDC_HTTP_INVOCATION.md",
+      "bytes": 424,
+      "sha256": "1C55F4DEB5CDBB5F06A6965BB0226C2921EAFC1083242216A41DF2B7C2468BC1"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R35_OIDC_HTTP_PLAN.md",
+      "bytes": 4706,
+      "sha256": "1D7240487B8A01F7209F6BED5785F9F9F4713B4B1FAC938101CFB68688D8BF2C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R35_OIDC_HTTP_WORK_INSTRUCTION.md",
+      "bytes": 1236,
+      "sha256": "916A0D263690E1EE77271725A2D0244CC39D6EE041F72E235230D46D9A2B27F9"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R36_CLOSE_PLAN.md",
+      "bytes": 1488,
+      "sha256": "19EB4415BED16F9519616A153F05CFBF5F94CA30A83A3EBC004B07EC024D865E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_INVOCATION.md",
+      "bytes": 461,
+      "sha256": "22BCDA8E2B8C7EA5F0A718B1C3F4A16142DF83D8E9859E5AB6985A4E53C7F516"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_PLAN.md",
+      "bytes": 3433,
+      "sha256": "0A9DA7DC636FA5EA0BEA2694C0BE5A3AD04347FE1B889274E730E5831D0ADB8C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_WORK_INSTRUCTION.md",
+      "bytes": 1283,
+      "sha256": "783562C0645EA66D55E5BA7DAFE57C70EBE855DA52066589A5CC93F1E8EDCE53"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R37_CLOSE_PLAN.md",
+      "bytes": 1542,
+      "sha256": "1438F15AC96C4CDBF0F19A5CF9D40F5B662A2FEC35BC7EA2297DE420FEF3442A"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R37_OIDC_COMPOSITION_INVOCATION.md",
+      "bytes": 445,
+      "sha256": "61743BB55DBBEC2A7447D89098A53402D1452DCBDC21CB9C49282F4CC851F20E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R37_OIDC_COMPOSITION_PLAN.md",
+      "bytes": 4394,
+      "sha256": "113110A8ED2765C93338AFAEDA7F53A72BF77B31C9108D4DD0B21D8B627C14AD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R37_OIDC_COMPOSITION_WORK_INSTRUCTION.md",
+      "bytes": 1309,
+      "sha256": "2597F056532E79D24025DCD3A4D5FAE94B6F55D9A54BE13B1108E2D236B6274E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R38_CLOSE_PLAN.md",
+      "bytes": 2045,
+      "sha256": "0541E98818C573C55DC16C106DC28393B5DEE33CC4D3DC0E91E153D78061CAFB"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_INVOCATION.md",
+      "bytes": 455,
+      "sha256": "68051E9F436A29328E39433A27FC4945F2476C0F09DB48B5E00330680416ED59"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_PLAN.md",
+      "bytes": 6417,
+      "sha256": "7F3091431E16269260041CFE653314CF0282983FB76F55E8F8958D206E711A3C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R38_OIDC_HOST_BINDING_WORK_INSTRUCTION.md",
+      "bytes": 1266,
+      "sha256": "49F84F407B450ABB116159F1FFAB650261ED09ED41821E4D0D7E8DAFD2CF0B8F"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R39_CLOSE_PLAN.md",
+      "bytes": 2048,
+      "sha256": "025430428D1C1D1116D7969574B1561DDED53C35CF83CFDAD5B9E421C1BF2997"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R39_OIDC_HOST_CONFIG_INVOCATION.md",
+      "bytes": 446,
+      "sha256": "A895656922DE05C8B17DAAB9DC2D2D4B22FF5B7576FB1B2BCF3DBC47DC37938B"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R39_OIDC_HOST_CONFIG_PLAN.md",
+      "bytes": 5393,
+      "sha256": "95EC1BC6890DADE0A39E71D067155A428DF829D66B3F7A3AE3F1CF2637A90FB9"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R39_OIDC_HOST_CONFIG_WORK_INSTRUCTION.md",
+      "bytes": 1225,
+      "sha256": "6E29C14B75C43523ACB3CF41DA98C90E83635EE7D2B0BCF4DA00AD4EE22AC956"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_INVOCATION.md",
+      "bytes": 434,
+      "sha256": "73DD6E236F26E0C066E42C415FDC36AA6CE73D8E86E1BC066215909D0450EF68"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R3_RUNTIME_BUNDLE_WORK_INSTRUCTION.md",
+      "bytes": 3221,
+      "sha256": "DD791B031508F9ADEA740DB3EC9547DD22BA45E2594B164540FCA084ED367BE4"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R40_CLOSE_PLAN.md",
+      "bytes": 1722,
+      "sha256": "0968945CADE1A1885631C969735A64AE6CDF08786E29CD233AD045DCFDA5047E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R40_LIVE_OIDC_HOST_INVOCATION.md",
+      "bytes": 527,
+      "sha256": "6AD4B712EA07A5FC64E9973F2B620EF393267FF39A8BD179731515F07723420F"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R40_LIVE_OIDC_HOST_PLAN.md",
+      "bytes": 5490,
+      "sha256": "F0FA79C6F97508D7E4F67C4397B0CAF3A37A58CF7F8CA182DCE65D136DE417B2"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R40_LIVE_OIDC_HOST_WORK_INSTRUCTION.md",
+      "bytes": 1283,
+      "sha256": "D367D86578F00FC7094BA3D75763DB47D84E0DD3068F46E67F7CFB715408268E"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R41_CLOSE_PLAN.md",
+      "bytes": 1723,
+      "sha256": "92342233781C52B7A385E5905399A4421068EC9E311BAE0B3C727AF3A0F7DD02"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R41_OIDC_PG18_INVOCATION.md",
+      "bytes": 331,
+      "sha256": "7CC066AAF1E15EA7D71A72ADBA6E15FD52DC6D42B713F3B66810B6CF539060F4"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R41_OIDC_PG18_PLAN.md",
+      "bytes": 4647,
+      "sha256": "FC9B9CF44AA7F856186C6A6CAB69B74A17A099867A70FD46DB21C026416576A4"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R41_OIDC_PG18_WORK_INSTRUCTION.md",
+      "bytes": 1449,
+      "sha256": "CC08E14EE09EA2BE7D5391F2A2882C94BA4161367842A177CB6096B4F882E116"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R42_OIDC_PROCESS_INVOCATION.md",
+      "bytes": 451,
+      "sha256": "14AF7DE078231CC49992567B6E48AC8B738D4BBB434519B135A284A91AB09D47"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R42_OIDC_PROCESS_PLAN.md",
+      "bytes": 5841,
+      "sha256": "35C4ABC3DFA57C086CB499456E1CF53AFA776D5A40EC0887AADEFF5903AFA64B"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R42_OIDC_PROCESS_WORK_INSTRUCTION.md",
+      "bytes": 1587,
+      "sha256": "8CF41B5F974A650C0C8D135B2BB79F3CED7E683C9C7A66EEB7D18632C660B415"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R4_CONTROL_ANCHOR_PLAN.md",
+      "bytes": 1786,
+      "sha256": "55FDFBB445411440F9883F036B5F737E633ED8514A046B62309987C31F49FB62"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R5_TEST_FIX_PLAN.md",
+      "bytes": 1589,
+      "sha256": "40C4A954F174335BD81A8B5E01E3A26159BF797C62F9E8E88258B99EC5652296"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R6_CLOSE_PLAN.md",
+      "bytes": 805,
+      "sha256": "90C4F8A34BB6A6990DF226AEE906144CCB847C8CD6F39C399A3C6A00DAE3B862"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R6_OBJECT_STORE_INVOCATION.md",
+      "bytes": 426,
+      "sha256": "70753C883EAB9ABBC723673839A8C07C205A5D5FAB7CC1C91ADA13DD0C4C195C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R6_OBJECT_STORE_WORK_INSTRUCTION.md",
+      "bytes": 3336,
+      "sha256": "0360667FA93FF4E87DD939FAAD63E8760B50246979C27C30B02AA6B69A35520C"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R7_CLOSE_PLAN.md",
+      "bytes": 944,
+      "sha256": "309FA56FDCA6E09E6E2D65149AA675512B240E2538E9E58A1B6DF221C9DC6037"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_INVOCATION.md",
+      "bytes": 405,
+      "sha256": "A9588B8714E9017A9A48F19C0735AE7F6B30C189C7A9640E9478790C0FD709C4"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_PLAN.md",
+      "bytes": 4417,
+      "sha256": "B87183D92F87ABA4D8B1993D3882AD656890F3D382BAB7FCCCAE04965B977B97"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R7_ID_TOKEN_WORK_INSTRUCTION.md",
+      "bytes": 1803,
+      "sha256": "CC558E3202BDE86C36B2F30EE64881824BD34D5F5917B3D46D0BB35389F7A7C1"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R8_CLOSE_PLAN.md",
+      "bytes": 1004,
+      "sha256": "6A763997657AF4C9AB73A211BA749F7382A0D9FEBD99D162E84D315DA83C5AAD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_INVOCATION.md",
+      "bytes": 444,
+      "sha256": "A83CCD7BC99D65C55B1927CAA3DB55DC1DB50E5AECAF1CF711B37EE7F50D2B35"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_PLAN.md",
+      "bytes": 5633,
+      "sha256": "D0C868831D3546468F801E1079784CBAB0B4BB5AE444079F81102436E70757FD"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R8_CODE_FLOW_WORK_INSTRUCTION.md",
+      "bytes": 1674,
+      "sha256": "8FDB25EF10CC9754C5F86B112811D96E9A5C00954A408EFC4B258A71953BA23F"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R9_CLOSE_PLAN.md",
+      "bytes": 1031,
+      "sha256": "C2482333C7967DD0F2A93946219C333F4DDBC526F94C71339EEAC90D48A0B861"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R9_STEP_UP_REQUEST_INVOCATION.md",
+      "bytes": 446,
+      "sha256": "DAFED511D780F1303C68DF53D66C742D3FA231997DEF331BD6F61CA64F24C23D"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R9_STEP_UP_REQUEST_PLAN.md",
+      "bytes": 4212,
+      "sha256": "042E375AC3C5CF3B89709383A012C819FDF665D821F7A414D3C395F69EDC8EA7"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R9_STEP_UP_REQUEST_WORK_INSTRUCTION.md",
+      "bytes": 1462,
+      "sha256": "A3D4DC4344DF73358BFCA030EF17D01A89FAB427857C0849FDB3F98FCB2EF200"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_WORK_INSTRUCTION.md",
+      "bytes": 8561,
+      "sha256": "A7398305655DCFBFB283414256F08132C8B69DCB64A39FDBAAFC0C7D13A9231A"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4753438,
+      "sha256": "712586353C53605810033B11479D3CB5614787AAB6DCDD2B1CEEDA6FC882140D"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_overlay.py",
+      "bytes": 16031,
+      "sha256": "B2933BCD986F484ED86173D90AB831D385ADF6F33CC3132ACF54FE0794CB6B50"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r10_close_overlay.py",
+      "bytes": 14128,
+      "sha256": "4A8089C34C184D95D06CA79265D2EDCCECE8219E71B21354FC5F450A9537DC6E"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r10_overlay.py",
+      "bytes": 17862,
+      "sha256": "B18CF78E9772366E98D6C1D7B78D2F3B709DB5B5FCE6BD9A13F0C79684F755FA"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r11_close_overlay.py",
+      "bytes": 13968,
+      "sha256": "76EBC5E198C081DA040D58902C7D77FC75FCE144DA460C5EEC51451739FFE892"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r11_overlay.py",
+      "bytes": 17841,
+      "sha256": "7C3E60A70CE5543C8F49362071DDBAD259AE061CACBFBA59244595E651AE5585"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r12_close_overlay.py",
+      "bytes": 14328,
+      "sha256": "79DE5A122FB9E25499943910578CD35FDFAAC282388A77BC8D85F951341BFF05"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r12_overlay.py",
+      "bytes": 19094,
+      "sha256": "4F25784D7A0258E468635957087247090A79F2E4B97C7DFA440D810455B07BB0"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r17_close_overlay.py",
+      "bytes": 14319,
+      "sha256": "006FB278D7981BE76684C1E89847A490BDF9522C0E961C57CE2FB091E3A1D9FC"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r17_overlay.py",
+      "bytes": 18334,
+      "sha256": "1FAE332919AB29A68A1446BD8C0CF8861DCC370D11122997BCE32D4EEC4E1B35"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r18_close_overlay.py",
+      "bytes": 14348,
+      "sha256": "3C800CDB6F3367377B144B1E059B6078FD990060326E18F81BE5C054E2B29BBE"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r18_overlay.py",
+      "bytes": 18428,
+      "sha256": "6CD9ADB0DF6BB1063DBC48C08A91A65C1AF01521ABC6ACBF3CA90F53887E9341"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r29_close_overlay.py",
+      "bytes": 12715,
+      "sha256": "8736D226AD82D84308D46FB0DC060901FAED70DE887BE74B859873C15F5E9E73"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r29_network_overlay.py",
+      "bytes": 15956,
+      "sha256": "0B35943C0E4C985369DF26ACC30C76D29451B71DAFFA14EFEA4BF40879FEFD97"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r2_overlay.py",
+      "bytes": 20103,
+      "sha256": "0B62E758D39D590F97C03597C1CFB3714849B55463708053DA4D26E6D22CCAEA"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r30_close_overlay.py",
+      "bytes": 12849,
+      "sha256": "0B1CBB7B51F1CBCEA55FD70A9425781476F376672489FD51BE1B1DA951A6FEBD"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r30_oidc_principal_overlay.py",
+      "bytes": 16163,
+      "sha256": "210FBACF152A780FEEA27F6984DCCCF258F7CACAC8D70F4AE22FDAACA15DAC52"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r31_close_overlay.py",
+      "bytes": 12978,
+      "sha256": "5DA9C38AC33A9311478727B6E487A56E5C55B89E7515CB92CAC0CFF044CD7385"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r31_pending_store_overlay.py",
+      "bytes": 16511,
+      "sha256": "8FD3D420BC724991F65098A8C7BB2BD5397BC2009D50FF4FDD776AC0DC1B6506"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r32_close_overlay.py",
+      "bytes": 13158,
+      "sha256": "5133838A4A927BCDB3C5EF749ABF721C42DAFD348C5272A99F9F178FA15ECC85"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r32_trusted_directory_overlay.py",
+      "bytes": 16742,
+      "sha256": "97D57DC1B81CFF2100D3A97F5449B333DD5927642F5C7B640044A981F4ADD9FA"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r33_close_overlay.py",
+      "bytes": 13139,
+      "sha256": "09EB2D32C29B9808AD1D2C7A3C7C799FB2C5FB51B5E13EE60D5FD61EAB773945"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r33_session_store_overlay.py",
+      "bytes": 16766,
+      "sha256": "9CDA782D50322BA28241D5F4606C9774437919BA2C10CEF9348435A50EC5AF97"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r34_close_overlay.py",
+      "bytes": 13323,
+      "sha256": "AFB7AB362BDD70CCC0497A62A612B7F88E2D5AF1740FEAC6B386DF13B0A27122"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r34_session_coordinator_overlay.py",
+      "bytes": 16883,
+      "sha256": "A430FB2B8745AC8CC8AF8953CCB202634832D92E334F57A9D31645A30EA8244F"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r35_close_overlay.py",
+      "bytes": 12770,
+      "sha256": "7F0D31BB4E8C8C11D3AD7CE7635663F07FFE642273691445FA016A140263CAED"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r35_oidc_http_overlay.py",
+      "bytes": 16235,
+      "sha256": "7D3709AEA5B565148537A783F54A38CB28A94BD14033624D87A7F8244EC24279"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r36_close_overlay.py",
+      "bytes": 12875,
+      "sha256": "32E981DE0E230F9127B3FD636350538166FF68DE00CB84FC2B7A922AA7A9E721"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r36_oidc_runtime_binding_overlay.py",
+      "bytes": 16408,
+      "sha256": "54439B35E6DC483C0674788298864CF3D359830F1B871956E855A3458CE8999D"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r37_close_overlay.py",
+      "bytes": 12827,
+      "sha256": "8516892B89CB025F6F5394E3E5DFC89870EE3C0BFB8C51BCCD160E1ACCD66F8F"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r37_oidc_composition_overlay.py",
+      "bytes": 16371,
+      "sha256": "6B23BB7FA12286E77D2E8AECF21557B1D82D7AAB3178E0958B9DD8F34698E574"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r38_close_overlay.py",
+      "bytes": 12832,
+      "sha256": "7BB149FAB302EF5B13B1741F888AED7435F2515346F9B7B3C0B9CB77DE557ECA"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r38_oidc_host_binding_overlay.py",
+      "bytes": 16401,
+      "sha256": "2A41E2274C2A949F2B09AC362468DC2D37A35A31702CF16D7B6D607C3A413767"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r39_close_overlay.py",
+      "bytes": 12826,
+      "sha256": "906D6702914628509C1A246EB2F19A40941B0FDA2838E5431591A52D93437644"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r39_oidc_host_config_overlay.py",
+      "bytes": 16388,
+      "sha256": "B8F2A245B7E62B6C908AFD549509BA58B97AFCA499A833C75156802B9210EE41"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r3_overlay.py",
+      "bytes": 20007,
+      "sha256": "5C9EE04D8E6540E85D1B64CEC1E68F659E0343BC5435478496EE8D5080EECE33"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r40_close_overlay.py",
+      "bytes": 12796,
+      "sha256": "7195C3939F96694F76E8EEBAD977F852E5E54E17D60145B30578EC9F3668D376"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r40_live_oidc_host_overlay.py",
+      "bytes": 16388,
+      "sha256": "1419B9DFC5A91622699A9CA802C6780707C8697862D50004B6927E8E8BCE2CD2"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r41_close_overlay.py",
+      "bytes": 12770,
+      "sha256": "DB93943AEC2CA09E32BDB6A0D5C07FF413C1489241EA738D2459BCD19497FDAF"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r41_oidc_pg18_overlay.py",
+      "bytes": 16405,
+      "sha256": "3A221CD0EB5594FBFADA01827434A4F923A1441B4E2CDB699926FB1557B831C1"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r42_oidc_process_overlay.py",
+      "bytes": 16564,
+      "sha256": "20AD7D6EE8943A7D7439362719A3B14A246EA275E804C0FCAFD31C6DBC159B99"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r4_overlay.py",
+      "bytes": 14652,
+      "sha256": "0E9BD649B16891D2A81A14B4E0B868CC4BC4EEF7CDCCFC5DD483519159C034A2"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r5_overlay.py",
+      "bytes": 12846,
+      "sha256": "7D09FCC4075B05118180EA8D3ABCC8BA7367B8629009AF7E4721DE00A6AA340C"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r6_close_overlay.py",
+      "bytes": 13060,
+      "sha256": "B73F49B7C7A228859DFF6EE7EBABA6AC47B4AEE66780DCF2A7658A75B7B7740B"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r6_overlay.py",
+      "bytes": 17438,
+      "sha256": "E2CC1D987E4F7C06B59230406494DBDC08B91731B802E0F0DD9FBCAB8127C309"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r7_close_overlay.py",
+      "bytes": 13758,
+      "sha256": "A06EB61ECF74DC178C08C94486DA52F69071C2CED5124645BD94B1889274AEDB"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r7_overlay.py",
+      "bytes": 17134,
+      "sha256": "6CCD0F0E039D9A142DBCFBD30572ABE8876447B9DA11FF858787F5A959E6B167"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r8_close_overlay.py",
+      "bytes": 13897,
+      "sha256": "8A9E620AF941C8D131506EBA12E9B50B2E78F09FFE9423155B330F68EC37667E"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r8_overlay.py",
+      "bytes": 17302,
+      "sha256": "414AF5F38649CFA54F7D6BE15DB600CC8FB34A9E7051207AF0E529120126A7D4"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r9_close_overlay.py",
+      "bytes": 14000,
+      "sha256": "CC0B23C9D4BC8916F84D7402D6E1829C958D58FF3AA7FEC2C6764666CBB32A64"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r9_overlay.py",
+      "bytes": 17665,
+      "sha256": "E8886BA7B7C98F20074D05AC3F7BB0D4AB03CAD27539B23B8CC0EA71E2358641"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_overlay.py",
+      "bytes": 3172,
+      "sha256": "DB276762E4BEEBE080251B122A86BBC281E8C7D82A94B4A55160DD68DD078391"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r10_close_overlay.py",
+      "bytes": 1880,
+      "sha256": "EFE6772F53A09DBEF585A7F526908FBDFA7CA6273C792B588F52C8A3FF1F5E4F"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r10_overlay.py",
+      "bytes": 1490,
+      "sha256": "A89BCD891788E440CB36C93D1EA0E3F79EFE77510351A405DEFAED7BE69674BB"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r11_close_overlay.py",
+      "bytes": 1705,
+      "sha256": "2E4068D59C60E2A4D544849142058564428D13846F393D343DF7E1F8B518CFB4"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r11_overlay.py",
+      "bytes": 1460,
+      "sha256": "720AC10644341666CFE6326A23A903F351F68D58E692AA3AAF82F554EEACE129"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r12_close_overlay.py",
+      "bytes": 1891,
+      "sha256": "2D324C8D167E98379BFA0DEA56F27ED005CD59DAEE3271A9A2EF1835268EF5E5"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
+      "bytes": 3772,
+      "sha256": "9AC04DB3449BE02B0969A91BF251A322D583FAE0935EA2968753FF686B5CE919"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r17_close_overlay.py",
+      "bytes": 1891,
+      "sha256": "1DA9C68790DC324E423394278905113E3CCA671CFA97786AC9A674980124A8FB"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r17_overlay.py",
+      "bytes": 3046,
+      "sha256": "B2E49AAE7AD12216928CBA77F28C00326A5E684CD98D89A4BC245DD82F369B31"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r18_close_overlay.py",
+      "bytes": 1891,
+      "sha256": "6822F5E8846A38EE5969604FDE3E42FBF1C3F6663861BDA657CD0B3D832D154B"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r18_overlay.py",
+      "bytes": 3083,
+      "sha256": "070168DC4BBF55BB4B2AC4A800E183E383FCCF1C125BA842648BF75AF1B14F17"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r29_close_overlay.py",
+      "bytes": 1442,
+      "sha256": "ABA52F9530CCA2A902FE917814292705DC486A540B702C1FD3EAFDFDDA302E05"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r29_network_overlay.py",
+      "bytes": 2013,
+      "sha256": "437ED64402B12CA8FC1B4CB7BAD352AB13BF96E5AF52B562C0EBDA129E06D8DE"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r2_overlay.py",
+      "bytes": 5199,
+      "sha256": "86D0359066D4D0D266B16DC7406FB0B6F3367B0D5BFBE109DF1A9BC03592046C"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r30_close_overlay.py",
+      "bytes": 1456,
+      "sha256": "4E4D6A462FCCA7C1B776C0335323D44E8483771046B06C404F16D36FB20325DF"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r30_oidc_principal_overlay.py",
+      "bytes": 2089,
+      "sha256": "B20D741473E7AE1F3E3A547E25B28ABBBEA5CBB0A83133EEEE809C865FB409A1"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r31_close_overlay.py",
+      "bytes": 1454,
+      "sha256": "2857289D50ABE3D011FE0269C540D9EE1F8C016EB823CCA92FFB625CC768DEDB"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r31_pending_store_overlay.py",
+      "bytes": 2160,
+      "sha256": "B46CE4C017BC794EB04EB83A578B356A9575FF9E18446EDE545B490145FABF01"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r32_close_overlay.py",
+      "bytes": 1401,
+      "sha256": "D4A578238691B92D9299E1AA00D8E0F0B1E8A234D07E265DDB4255331E2564A0"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r32_trusted_directory_overlay.py",
+      "bytes": 1804,
+      "sha256": "C448D3F859AC54666F0C7EC70A189925D29B56B0AEA33A72BA9A187D900813D9"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r33_close_overlay.py",
+      "bytes": 1393,
+      "sha256": "A9081064CE68943A15B389BA013AA6A98575692193A39D358B7870A1CF33266B"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r33_session_store_overlay.py",
+      "bytes": 1767,
+      "sha256": "E2302BC99CD86B46B47C82A26BA9DB03E369C39EA41AC9B1D08695CB8DA36B3C"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r34_close_overlay.py",
+      "bytes": 1397,
+      "sha256": "84CB7A79BEC471E2D24E04B81F1FB8B0BACF7613C4EC41EA79304FBC95018189"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r34_session_coordinator_overlay.py",
+      "bytes": 1566,
+      "sha256": "62C3BE1BE37AE6B06C024DCB2AAAF353B9CEF19B99A1E58F5C0C21944772B217"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r35_close_overlay.py",
+      "bytes": 1333,
+      "sha256": "442A1B8D39D156CCA2E0A285219F0E26B3B642FA2B0E4C5DE6F0F0DDAFA77E36"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r35_oidc_http_overlay.py",
+      "bytes": 1575,
+      "sha256": "5338A583EEFD52755BA361790318DE1E69797964DA17F11DBDFDCAD8F1BB4EBF"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r36_close_overlay.py",
+      "bytes": 1389,
+      "sha256": "AEEBD4615B3B7B31B52C6DB53D8194300E4FAF84863C8AF7D7385F57ED5753A6"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r36_oidc_runtime_binding_overlay.py",
+      "bytes": 1725,
+      "sha256": "C10D8FBB5FD01F07C8AE7B3423A3B3BCE91EA38D3C0EEAF8B136B113A8F6B8F4"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r37_close_overlay.py",
+      "bytes": 1389,
+      "sha256": "E9D30650D64BF2443D027AD28E5879D249ADDD7CAA84372D1C94A88342E8FFE5"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r37_oidc_composition_overlay.py",
+      "bytes": 1739,
+      "sha256": "A931A13ADFCC76E38175AEC5DA0BCF9D0C82EF059ADFD46FF32F8C3164E7C26C"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r38_close_overlay.py",
+      "bytes": 1599,
+      "sha256": "8A79304AD493B1715B0BCEBBD775718E9A48F9D480284531CCA5747FFA8C85BF"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r38_oidc_host_binding_overlay.py",
+      "bytes": 1717,
+      "sha256": "C05C49FFAFB466E37A9F2442A490BE5C0113E6A36C2AD408201CE0F61AD0ABC5"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r39_close_overlay.py",
+      "bytes": 1599,
+      "sha256": "BE8F5CF900D79DF8DA821A2C7C9FC5D71CDBDC9D55980FBE28015BB610F0C1E0"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r39_oidc_host_config_overlay.py",
+      "bytes": 1944,
+      "sha256": "39BD2068E378F36D75A993D3FA17A7FF7620FDB31643BA38ACB7DAE675CA5B27"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r3_overlay.py",
+      "bytes": 5303,
+      "sha256": "5B77B77C8D284A49362D5CD055F3F6E3769E088753561F4ED1EE63F36FE08C89"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r40_close_overlay.py",
+      "bytes": 1599,
+      "sha256": "690EF836C56BAC01CEED33098D651AB78D743D7B30219F5638132E136491370B"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r40_live_oidc_host_overlay.py",
+      "bytes": 1956,
+      "sha256": "0A9B09AB747067F8DE878E2F5A532535B2F16EE18A5C19A2BEA4ADD3EC2CCC30"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r41_close_overlay.py",
+      "bytes": 1599,
+      "sha256": "2CC632AA9D9FBA9BD2364BDF451FB6898716FA204BBB060CDE77DB2C5B31B396"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r41_oidc_pg18_overlay.py",
+      "bytes": 2018,
+      "sha256": "330B4636C43AE60249C0B77D9405F4B9DAABD1D3FB61FED265CAB1AB25B9CA27"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r42_oidc_process_overlay.py",
+      "bytes": 1966,
+      "sha256": "780AA14D22EA3514DD348F1BBDD4C3A739E4965B778112F6A05B02EB7F2D1CF1"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
+      "bytes": 2279,
+      "sha256": "E1DBA0E19CFFEA35A25D64132858884CAC219291E17F4A62F56C17F25BC98828"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r5_overlay.py",
+      "bytes": 1506,
+      "sha256": "CD96785ED4591A432B0E0C52E73AE5802BE7E5728A2353A7C53B63B165A0152D"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r6_close_overlay.py",
+      "bytes": 2058,
+      "sha256": "756F01F704C5AB87F9D0D314A14F54FF80BDFCB863746108B4D8BB079B049A2D"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r6_overlay.py",
+      "bytes": 2662,
+      "sha256": "87AFC08E3E74CA8E288D9CA91192658EC4A14AC1E3804D87F0C60847A2323065"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r7_close_overlay.py",
+      "bytes": 1580,
+      "sha256": "5CB3E4F839B0B0FE528BA6BE06CA7087A298624EB1A18E90462FE4DC16E1BC3B"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r7_overlay.py",
+      "bytes": 2623,
+      "sha256": "F0E4DEF59EC0B852245A516A8EDDE8920C6FB7224B3CB9B439EB93F1F04A79BE"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r8_close_overlay.py",
+      "bytes": 1799,
+      "sha256": "5938F0B06A391626B9AFFC7AF104972651DA0E5DE29A61C0B16684247A66473A"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r8_overlay.py",
+      "bytes": 2626,
+      "sha256": "2A2243185DB7A2B29D9DFF5D20124FCD5BA5BFA7621D6F808F31556F847EDEEF"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
+      "bytes": 1806,
+      "sha256": "6D6DA952FD9B064E79E488EA42652FC98951ED972BAA195E843949E2DAAFDA83"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r9_overlay.py",
+      "bytes": 2165,
+      "sha256": "5542E8E0C91C8D6A549F5A7316220AD28F5CA0CC91329472D587697F3CF4EBE5"
+    }
+  ],
+  "self_reference": false,
+  "production": "NOT_EXECUTED"
+}

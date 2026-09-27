@@ -19,13 +19,15 @@ from tests.deploy.test_f16_release_manifest import expectations, signed_manifest
 COMMIT = "a" * 40
 RUNTIME = "sha256:" + "1" * 64
 WEB = "sha256:" + "2" * 64
+WORKER = "sha256:" + "3" * 64
 MIGRATION = "sha256:" + "4" * 64
 ROLLBACK = "sha256:" + "5" * 64
 
 
-def verified_envelope(*, source_commit=COMMIT, source_git_remote=None, release_tag="f16-test-1"):
+def verified_envelope(*, source_commit=COMMIT, source_git_remote=None, release_tag="f16-test-1",
+                      worker_digest=RUNTIME):
     release_subject = subject()
-    release_subject["image_digests"] = {"web": WEB, "api": RUNTIME, "worker": RUNTIME}
+    release_subject["image_digests"] = {"web": WEB, "api": RUNTIME, "worker": worker_digest}
     release_subject["source_commit"] = source_commit
     if source_git_remote is not None:
         release_subject["source_git_remote"] = source_git_remote
@@ -81,6 +83,40 @@ def test_all_three_explicit_image_digests_allow_private_rehearsal_only():
     assert (decision.ready, decision.reason_code, decision.subject_hash) == (
         True, "READY_FOR_PRIVATE_REHEARSAL", subject_hash(inputs()[2])
     )
+
+
+def test_distinct_signed_worker_digest_matching_observation_is_ready():
+    release, raw = verified_envelope(worker_digest=WORKER)
+    approval = DeployApprovalSubject("production", "sha256:" + hashlib.sha256(raw).hexdigest(), MIGRATION, ROLLBACK)
+    evidence = {"git_commit": COMMIT, "runtime_image_digest": RUNTIME,
+                "image_digests": {"web": WEB, "api": RUNTIME, "worker": WORKER}}
+    decision = check(release=release, evidence=evidence, approval=approval)
+    assert (decision.ready, decision.reason_code, decision.subject_hash) == (
+        True, "READY_FOR_PRIVATE_REHEARSAL", subject_hash(approval)
+    )
+
+
+@pytest.mark.parametrize("change", [
+    {"runtime_image_digest": WORKER},
+    {"image_digests": {"web": WEB, "api": RUNTIME, "worker": RUNTIME}},
+    {"image_digests": {"web": WEB, "api": WORKER, "worker": WORKER}},
+])
+def test_distinct_digest_requires_legacy_api_and_each_observed_role_to_match(change):
+    release, raw = verified_envelope(worker_digest=WORKER)
+    approval = DeployApprovalSubject("production", "sha256:" + hashlib.sha256(raw).hexdigest(), MIGRATION, ROLLBACK)
+    evidence = {"git_commit": COMMIT, "runtime_image_digest": RUNTIME,
+                "image_digests": {"web": WEB, "api": RUNTIME, "worker": WORKER}} | change
+    decision = check(release=release, evidence=evidence, approval=approval)
+    assert (decision.ready, decision.reason_code) == (False, "DEPLOY_ARTIFACT_MISMATCH")
+
+
+def test_distinct_observed_worker_rejects_different_signed_worker():
+    release, raw = verified_envelope(worker_digest="sha256:" + "6" * 64)
+    approval = DeployApprovalSubject("production", "sha256:" + hashlib.sha256(raw).hexdigest(), MIGRATION, ROLLBACK)
+    evidence = {"git_commit": COMMIT, "runtime_image_digest": RUNTIME,
+                "image_digests": {"web": WEB, "api": RUNTIME, "worker": WORKER}}
+    decision = check(release=release, evidence=evidence, approval=approval)
+    assert (decision.ready, decision.reason_code) == (False, "DEPLOY_ARTIFACT_MISMATCH")
 
 
 @pytest.mark.parametrize("change", [

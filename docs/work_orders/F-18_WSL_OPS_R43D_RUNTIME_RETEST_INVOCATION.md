@@ -1,0 +1,1 @@
+Main 전용 F-18 R43D WorkInstruction을 실행하십시오. seq1661 종료 checkpoint에서 새 Main worker lease와 G-05 PASS를 먼저 확인하고, `WORK_STATUS`에 사전 기록한 정확한 WSL-server·Windows 격리 자원만 생성하십시오. 동일 SHA의 Worker0019와 HTTPS OIDC 허용·거부·브라우저·잔여0을 실측하여 결과를 R43D 보고서와 WORK_STATUS에 기록하십시오. 제품 write·ysna-server·Production·공유 자원 변경은 금지합니다.

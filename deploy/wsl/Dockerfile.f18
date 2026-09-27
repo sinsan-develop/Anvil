@@ -1,0 +1,52 @@
+# syntax=docker/dockerfile:1
+# WSL role artifacts. Legacy Docker must receive a restricted Git archive context;
+# Dockerfile-specific ignore rules alone do not protect a legacy root build context.
+FROM node:22.23.0-bookworm-slim@sha256:d9f850096136edbc402debdd8729579a288aac64574ada0ff4db26b6ae58b0b2 AS web-build
+WORKDIR /opt/anvil
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY apps/web ./apps/web
+RUN npm run web:typecheck && npm run web:build
+
+FROM python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 AS python-deps
+RUN python -m venv /opt/venv
+COPY deploy/wsl/requirements-runtime.txt /tmp/requirements-runtime.txt
+RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements-runtime.txt
+
+FROM nginx:1.28.3-alpine3.23@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236 AS web
+ARG ANVIL_RELEASE_COMMIT
+RUN printf '%s' "$ANVIL_RELEASE_COMMIT" | grep -Eq '^[0-9a-f]{40}$'
+LABEL org.opencontainers.image.revision="${ANVIL_RELEASE_COMMIT}"
+COPY deploy/local/nginx.conf /etc/nginx/nginx.conf
+COPY --from=web-build /opt/anvil/apps/web/dist/ /usr/share/nginx/html/
+USER 101:101
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
+
+FROM python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 AS api
+ARG ANVIL_RELEASE_COMMIT
+RUN printf '%s' "$ANVIL_RELEASE_COMMIT" | grep -Eq '^[0-9a-f]{40}$'
+LABEL org.opencontainers.image.revision="${ANVIL_RELEASE_COMMIT}"
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/opt/anvil
+WORKDIR /opt/anvil
+COPY --from=python-deps /opt/venv /opt/venv
+COPY packages ./packages
+COPY apps/api ./apps/api
+COPY migrations ./migrations
+COPY alembic.ini pyproject.toml ./
+RUN useradd --system --uid 10001 --create-home --home-dir /home/anvil anvil
+USER 10001:10001
+ENTRYPOINT ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "8301"]
+
+FROM python:3.12.8-slim-bookworm@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0 AS worker
+ARG ANVIL_RELEASE_COMMIT
+RUN printf '%s' "$ANVIL_RELEASE_COMMIT" | grep -Eq '^[0-9a-f]{40}$'
+LABEL org.opencontainers.image.revision="${ANVIL_RELEASE_COMMIT}"
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/opt/anvil
+WORKDIR /opt/anvil
+COPY --from=python-deps /opt/venv /opt/venv
+COPY packages ./packages
+COPY apps/worker ./apps/worker
+RUN useradd --system --uid 10001 --create-home --home-dir /home/anvil anvil
+USER 10001:10001
+ENTRYPOINT ["/opt/venv/bin/python", "-m", "apps.worker.anvil_worker.main"]

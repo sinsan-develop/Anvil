@@ -1,0 +1,1 @@
+승인된 F-18 R45B WorkInstruction과 canonical Main worker-only QA lease를 검증한 뒤, local 기록·Git push→WSL-server 승인 SSH Git fetch 순서로 같은 source/tag/image/envelope의 Test/Staging 재결박 및 격리 target 검증을 실행하라. 제품 파일을 수정하지 말고 계획된 QA 자원만 사용·정리하며 결과를 보고서와 WORK_STATUS에 기록하라.

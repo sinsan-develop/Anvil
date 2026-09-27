@@ -1,0 +1,27 @@
+{
+  "config_schema_revision": "sha256:f6941f0b2ae031fb992fd13c8cf30046af54830fccb26d079e51c4cb37f938a2",
+  "db_migration_head": "0019_oidc_sessions",
+  "evidence_manifest_hash": "sha256:d611655b122927aa144135394cfa3fd921821ba9926daa3979de88d2fc4d6cbe",
+  "image_digests": {
+    "api": "sha256:1c1e5aec94707afde5f96b4b0eefaca83e88fd2ac988ef27ee008823a805f608",
+    "web": "sha256:aac0c07cb48f957b01d0bab7327f51c556bd82a6ff262c8577b177cc6f1c4604",
+    "worker": "sha256:ba9394ddd315810668f5f07b2f3afc7dc314281eb4b3f955875da0b71d2e4a13"
+  },
+  "lockfile_hash": "sha256:b1cba45d362401032ef3ba362073b7c80a8cc42cdef6ee6583884b66e619d8a3",
+  "provider_adapter_versions": {
+    "anthropic": "v0.1.0+3113d495bda1",
+    "cerebras": "v0.1.0+9f3000fbdc97",
+    "gemini": "v0.1.0+8f59e9550334",
+    "groq": "v0.1.0+aadac3a022d2",
+    "mistral": "v0.1.0+2355e81bce09",
+    "ollama": "v0.1.0+401847f7769b",
+    "openai": "v0.1.0+53cbb4afabef",
+    "openrouter": "v0.1.0+c89f55a446b1",
+    "upstage": "v0.1.0+7c7720c8ad42"
+  },
+  "release_tag": "f18-wsl-r45a-qa",
+  "sbom_ref": "sha256:3414bd9847cf7714c74dc9b9f1ddfbe90cb769f00b6241ff193231e7ed3a8d67",
+  "source_commit": "d36de847842804ca93e405abe9bff687c1162a69",
+  "source_git_remote": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "verification_report_hash": "sha256:661bfc1ba1fa5eb26ce54c9f5aeb0c91a0333ab0f61f2532478701bd76790545"
+}

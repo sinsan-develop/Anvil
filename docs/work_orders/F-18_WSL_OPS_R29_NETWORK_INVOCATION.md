@@ -1,0 +1,1 @@
+`F-18_WSL_OPS_R29_NETWORK_WORK_INSTRUCTION.md`와 `F-18_WSL_OPS_R29_NETWORK_PLAN.md`를 읽고 canonical ACTIVE worker/write lease의 두 fencing token 및 exact3 scope를 먼저 확인하라. 같은 `codex/f18-wsl-ops` branch에서 RED→GREEN으로 exact3만 구현·검증하고, 제품 commit과 판정→판단 이유→조치 형식의 근거를 보고하라. Main의 통제 파일·다른 제품 파일, WSL-server 자원, Production은 수정하지 말라.

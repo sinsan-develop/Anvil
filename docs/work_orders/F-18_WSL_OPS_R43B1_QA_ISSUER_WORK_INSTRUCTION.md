@@ -1,0 +1,7 @@
+# F-18 R43B1 WorkInstruction — 격리 QA OIDC issuer
+
+- 담당 `developer-primary`, Main 어울 관리. 상위 F-18 지시·R43 계획·기존 승인 `APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001`에 종속한다. 기준 branch `codex/f18-wsl-ops`, R43A 종료 seq1648. 새 epoch의 ACTIVE worker/write lease 두 fencing token과 G-05 PASS 전 제품 write 금지.
+- 제품 exact5: 신규 `deploy/wsl/oidc_qa_issuer.py`, 신규 `deploy/wsl/Dockerfile.f18.oidc-qa`, 기존 `deploy/wsl/compose.f18.oidc.yml`, 신규 `tests/deploy/test_f18_oidc_qa_issuer.py`, 기존 `docs/04_test_reports/F-18_WSL_OPS_REPORT.md`. 이외 제품·control/progress/기본 Compose/API/Worker/Web 파일 수정 금지. 경로 확대 필요 시 Main이 mutation 전에 WI/lease를 재결박한다.
+- RED→GREEN: QA issuer는 내부망의 합성 전용 서비스이고 인증 code는 1회용·짧은 만료·PKCE S256에 결박한다. token endpoint는 client ID/합성 Secret 파일 검증, code verifier와 redirect 일치, 재사용·만료·불일치를 거부한다. RS256 ID token은 제공한 합성 서명키에서만 생성하고 issuer/audience/nonce/iat/exp/kid를 계약대로 넣는다. JWKS는 같은 키의 공개 부분만 노출한다. 리얼 계정·운영 credential·고정 secret·출처 불명 외부 network 호출 금지.
+- QA 이미지의 base digest/의존성은 고정하고 image 안에 키·Secret을 복사하지 않는다. nonroot/read-only/no-new-privileges/cap-drop, issuer host port 0, internal network only, 합성 signing key/client-secret read-only mount를 검사한다. 실제 키는 Git 밖 전용 자원에서 B2가 생성한다. 기존 R43A Compose/Nginx 정규화와 F-18 role image 계약 회귀를 유지한다.
+- Developer는 변경 전후 diff, exact5 TDD 명령·exit code·실제 결과, 미검증·rollback을 F-18 보고서에 기록한다. push·WSL 접속·Docker up·Secret/cert 생성·브라우저 실행·control/progress 변경은 하지 않는다. Main이 diff·검증·동일 SHA 게시 및 B2 실측을 수행한다. B1 PASS를 실제 issuer/TLS/PG18/browser PASS로 기록하지 않는다.

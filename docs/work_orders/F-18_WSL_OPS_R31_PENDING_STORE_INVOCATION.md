@@ -1,0 +1,1 @@
+`F-18_WSL_OPS_R31_PENDING_STORE_WORK_INSTRUCTION.md`와 계획을 읽고 canonical ACTIVE worker/write lease의 두 fencing token과 exact5 scope를 확인하라. 같은 `codex/f18-wsl-ops` branch에서 RED→GREEN으로 exact5만 구현·검증하고 제품 commit과 판정→판단 이유→조치 증거를 보고하라. Main 통제 파일·다른 제품 파일·WSL-server/Production 자원은 변경하지 말라.

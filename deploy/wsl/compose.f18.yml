@@ -1,0 +1,95 @@
+name: anvil-f18-wsl-ops
+
+services:
+  web:
+    image: "${ANVIL_F18_WEB_IMAGE_REF:?verified image ID required}"
+    ports: ["127.0.0.1:${ANVIL_F18_HTTP_PORT:?reserved loopback port required}:8080"]
+    depends_on: [api]
+    networks: [internal, ingress]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
+
+  api:
+    image: "${ANVIL_F18_API_IMAGE_REF:?verified image ID required}"
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F18_APP_PASSWORD:?synthetic credential required}@postgres:5432/anvil_f18_qa"
+      ANVIL_F15_OPERATIONAL_SHELL: "1"
+      ANVIL_RUNTIME_ENVIRONMENT: WSL_SERVER_TEST_STAGING
+      ANVIL_CONSOLE_BASE_URL: "http://127.0.0.1:${ANVIL_F18_HTTP_PORT:?reserved loopback port required}"
+      ANVIL_PUBLIC_HOST: "127.0.0.1"
+      TELEGRAM_WEBHOOK_SECRET: "${ANVIL_F18_TELEGRAM_WEBHOOK_SECRET:?synthetic only}"
+      TELEGRAM_INTERNAL_SIGNING_SECRET: "${ANVIL_F18_TELEGRAM_SIGNING_SECRET:?synthetic only}"
+      TELEGRAM_ALLOWED_IDENTITIES: "${ANVIL_F18_TELEGRAM_ALLOWED_IDENTITIES:?synthetic only}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      internal:
+        aliases: [anvil-api]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
+
+  worker:
+    image: "${ANVIL_F18_WORKER_IMAGE_REF:?verified image ID required}"
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_F18_APP_PASSWORD:?synthetic credential required}@postgres:5432/anvil_f18_qa"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
+
+  postgres:
+    image: "${ANVIL_F18_PG18_IMAGE_REF:?verified PG18 image ID required}"
+    environment:
+      POSTGRES_DB: anvil_f18_qa
+      POSTGRES_USER: anvil_admin
+      POSTGRES_PASSWORD: "${ANVIL_F18_PG_ADMIN_PASSWORD:?synthetic credential required}"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    tmpfs: ["/var/lib/postgresql:rw,noexec,nosuid,size=512m"]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anvil_admin -d anvil_f18_qa"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
+
+  minio:
+    image: "${ANVIL_F18_MINIO_IMAGE_REF:?verified image ID required}"
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: "${ANVIL_F18_MINIO_ROOT_USER:?synthetic credential required}"
+      MINIO_ROOT_PASSWORD: "${ANVIL_F18_MINIO_ROOT_PASSWORD:?synthetic credential required}"
+    tmpfs: ["/data:rw,noexec,nosuid,size=512m"]
+    networks: [internal]
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
+
+networks:
+  internal:
+    internal: true
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS
+  ingress:
+    internal: false
+    labels:
+      com.anvil.cleanup-scope: F18_ISOLATED_WSL_OPS

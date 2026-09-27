@@ -1,0 +1,1 @@
+`F-18_WSL_OPS_R2_DEPENDENCY_WORK_INSTRUCTION.md`와 canonical seq1520 worker/write lease의 actor·두 fencing token·exact5 경로를 확인하라. 그 exact5 안에서만 cryptography 직접 의존성·잠금·WSL Web runtime requirements와 RED→GREEN 테스트·보고서를 작성하고 clean commit을 Main에게 전달하라. push, WSL 접속, control 문서 수정, Production 작업은 수행하지 말라.

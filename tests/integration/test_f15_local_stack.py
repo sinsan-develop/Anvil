@@ -1,5 +1,9 @@
 """F-15 operational shell boundary; historical injected ASGI tests remain separate."""
 
+import re
+from pathlib import Path
+from types import SimpleNamespace
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -133,9 +137,83 @@ def test_worker_probe_masks_database_failure():
     assert result == {"component": "worker_process", "status": "not_ready", "reason": "database_unavailable"}
 
 
-def test_local_compose_is_loopback_web_only_and_external_database():
-    from pathlib import Path
+def test_worker_explicit_oidc_mode_requires_0019_without_changing_f15_default():
+    from apps.worker.anvil_worker.main import probe_worker_database
 
+    assert probe_worker_database(_Engine("0019_oidc_sessions"), auth_mode="OIDC") == {
+        "component": "worker_process", "status": "ready", "migration_head": "0019_oidc_sessions",
+    }
+    assert probe_worker_database(_Engine("0016_operations_recovery"), auth_mode="OIDC") == {
+        "component": "worker_process", "status": "not_ready", "reason": "migration_head_mismatch",
+    }
+    assert probe_worker_database(_Engine("0019_oidc_sessions")) == {
+        "component": "worker_process", "status": "not_ready", "reason": "migration_head_mismatch",
+    }
+
+
+@pytest.mark.parametrize("auth_mode", ["", "oidc", "UNKNOWN", "OIDC,COOKIE"])
+def test_worker_unknown_auth_mode_fails_closed_without_database_probe(auth_mode):
+    from apps.worker.anvil_worker.main import probe_worker_database
+
+    class UnexpectedEngine:
+        def connect(self):
+            raise AssertionError("unsupported mode must reject before DB access")
+
+    assert probe_worker_database(UnexpectedEngine(), auth_mode=auth_mode) == {
+        "component": "worker_process", "status": "not_ready", "reason": "invalid_auth_mode",
+    }
+
+
+def test_worker_main_uses_oidc_head_for_start_and_periodic_probe(monkeypatch, capsys):
+    from apps.worker.anvil_worker import main as worker
+
+    class DisposableEngine(_Engine):
+        disposed = False
+
+        def dispose(self):
+            self.disposed = True
+
+    class TwoTicks:
+        count = 0
+
+        def set(self):
+            pass
+
+        def wait(self, _):
+            self.count += 1
+            return self.count >= 2
+
+    engine = DisposableEngine("0019_oidc_sessions")
+    modes = []
+    probe = worker.probe_worker_database
+
+    def observed_probe(bound_engine, *, auth_mode=None):
+        modes.append(auth_mode)
+        return probe(bound_engine, auth_mode=auth_mode)
+
+    monkeypatch.setenv("ANVIL_AUTH_MODE", "OIDC")
+    monkeypatch.setattr(worker.DatabaseSettings, "from_environment", lambda _: SimpleNamespace(dsn="synthetic"))
+    monkeypatch.setattr(worker, "create_engine", lambda *_args, **_kwargs: engine)
+    monkeypatch.setattr(worker, "probe_worker_database", observed_probe)
+    monkeypatch.setattr(worker, "threading", SimpleNamespace(Event=TwoTicks))
+    monkeypatch.setattr(worker, "signal", SimpleNamespace(SIGINT=2, SIGTERM=15, signal=lambda *_: None))
+
+    assert worker.main([]) == 0
+    assert modes == ["OIDC", "OIDC"]
+    assert engine.disposed
+    assert '"migration_head": "0019_oidc_sessions"' in capsys.readouterr().out
+
+
+def test_worker_main_rejects_unknown_mode_before_database_access(monkeypatch, capsys):
+    from apps.worker.anvil_worker import main as worker
+
+    monkeypatch.setenv("ANVIL_AUTH_MODE", "UNKNOWN")
+    monkeypatch.setattr(worker.DatabaseSettings, "from_environment", lambda _: pytest.fail("DB must not be opened"))
+    assert worker.main(["--check"]) == 1
+    assert '"reason": "invalid_auth_mode"' in capsys.readouterr().out
+
+
+def test_local_compose_is_loopback_web_only_and_external_database():
     root = Path(__file__).resolve().parents[2]
     compose = (root / "docker-compose.local.yml").read_text(encoding="utf-8")
     assert '"127.0.0.1:8300:8080"' in compose
@@ -147,6 +225,25 @@ def test_local_compose_is_loopback_web_only_and_external_database():
     nginx = (root / "deploy/local/nginx.conf").read_text(encoding="utf-8")
     assert "proxy_pass http://anvil-api:8301" in nginx
     assert "location /api/" in nginx
+
+
+def test_auth_ingress_nginx_config_routes_to_same_api_upstream_not_spa():
+    """Config contract only; real HTTP ingress requires separate WSL verification."""
+    nginx = (Path(__file__).resolve().parents[2] / "deploy/local/nginx.conf").read_text(
+        encoding="utf-8"
+    )
+    for route in ("api", "auth"):
+        match = re.search(rf"location /{route}/ \{{([^{{}}]*)\}}", nginx)
+        assert match is not None, f"/{route}/ must have an explicit proxy location"
+        directives = match.group(1)
+        for required in (
+            "proxy_pass http://anvil-api:8301;",
+            "proxy_set_header Host $http_host;",
+            "proxy_set_header X-Forwarded-For $remote_addr;",
+            "proxy_set_header X-Forwarded-Proto $scheme;",
+        ):
+            assert required in directives
+        assert "try_files" not in directives
 
 
 def test_nginx_web_stage_runs_as_unprivileged_image_owner_for_read_only_compose():

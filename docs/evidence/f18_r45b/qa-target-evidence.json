@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "environment_id": "wsl-server-r45b-target",
+  "source_commit": "d36de847842804ca93e405abe9bff687c1162a69",
+  "source_tag": "f18-wsl-r45a-qa",
+  "public_evidence_commit": "8afff26f1b325be4aefa2e828963687724489518",
+  "release_manifest_hash": "sha256:12d5d654cebe0d4355489bdfacc2792c2ae6aef1f5ef57fb311ad89e5948315c",
+  "image_digests": {
+    "web": "sha256:aac0c07cb48f957b01d0bab7327f51c556bd82a6ff262c8577b177cc6f1c4604",
+    "api": "sha256:1c1e5aec94707afde5f96b4b0eefaca83e88fd2ac988ef27ee008823a805f608",
+    "worker": "sha256:ba9394ddd315810668f5f07b2f3afc7dc314281eb4b3f955875da0b71d2e4a13"
+  },
+  "capabilities": {
+    "pg18": {
+      "status": "PASS",
+      "acquisition": "real-wsl-observation",
+      "version_num": 180004,
+      "vector_version": "0.8.2",
+      "migration_head": "0019_oidc_sessions",
+      "table_count": 61,
+      "app_role_superuser": false,
+      "separate_tmpfs_database": true
+    },
+    "oidc": {
+      "status": "PASS",
+      "acquisition": "real-wsl-observation",
+      "separate_ca_and_credentials": true,
+      "authorization_status": 200,
+      "issuer_redirect_status": 302,
+      "callback_status": 200,
+      "session_status": 200,
+      "replay_status": 401,
+      "invalid_callback_status": 401,
+      "wrong_ca_rejected": true,
+      "secure_httponly_cookie": true
+    },
+    "object_storage": {
+      "status": "PASS",
+      "acquisition": "real-wsl-observation",
+      "product_store": "S3ArtifactStore",
+      "separate_minio": true,
+      "put_read": true,
+      "dedupe": true,
+      "wrong_credential_rejected": true,
+      "collision_rejected": true,
+      "corruption_rejected": true,
+      "probe_residue_zero": true
+    },
+    "network": {
+      "status": "PASS",
+      "acquisition": "real-wsl-observation",
+      "internal_network": true,
+      "ingress_network": true,
+      "web_loopback_bind": "127.0.0.1:8444",
+      "private_host_publish_count": 0,
+      "direct_external_connect_ex": 101,
+      "web_api_worker_issuer_read_only_rootfs": true,
+      "web_api_worker_issuer_cap_drop_all": true,
+      "windows_chrome_isolated_profile": true,
+      "chrome_dom_title": "Anvil Dashboard",
+      "chrome_app_requests": 5,
+      "chrome_same_origin_app_requests": 5,
+      "chrome_direct_localhost_or_internal_requests": 0,
+      "chrome_profile_tunnel_artifact_residue_zero": true
+    }
+  },
+  "backup_restore": {
+    "status": "PASS",
+    "backup_sha256": "454344c623c4e220177cb5b6c05406bc6c0a50962febbb6f76f41dab260e17be",
+    "backup_bytes": 199440,
+    "restore_head": "0019_oidc_sessions",
+    "restore_table_count": 61,
+    "source_and_restore_key_row_counts": "users=1,roles=1,user_roles=1,oidc_subject_bindings=1,oidc_sessions=1",
+    "scratch_db_role_credential_residue_zero": true
+  },
+  "code_container_rollback": "NOT_EXECUTED_PRIOR_EXACT_IMAGE_UNAVAILABLE",
+  "browser_user_login": "NOT_EXECUTED_STATIC_DOM_AND_NETWORK_ONLY",
+  "production": "NOT_EXECUTED",
+  "f18_accepted": false,
+  "f19_blocked": true
+}

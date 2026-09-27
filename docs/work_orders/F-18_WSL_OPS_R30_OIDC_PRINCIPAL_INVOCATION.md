@@ -1,0 +1,1 @@
+`F-18_WSL_OPS_R30_OIDC_PRINCIPAL_WORK_INSTRUCTION.md`와 R30 계획을 읽고 canonical ACTIVE worker/write lease의 두 fencing token과 exact3 scope를 먼저 확인하라. 같은 `codex/f18-wsl-ops` branch에서 TDD RED→GREEN으로 exact3만 구현·검증하고 제품 commit과 판정→판단 이유→조치 근거를 보고하라. Main 통제 파일·다른 제품 파일, WSL-server와 Production 자원은 수정하지 말라.

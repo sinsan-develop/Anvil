@@ -1,0 +1,7 @@
+{
+  "downgrade": "FORBIDDEN_WITHOUT_HUMAN_DECISION",
+  "schema_version": 1,
+  "source_commit": "d36de847842804ca93e405abe9bff687c1162a69",
+  "target_head": "0019_oidc_sessions",
+  "upgrade": "alembic upgrade head in isolated PG18 with non-super app role"
+}

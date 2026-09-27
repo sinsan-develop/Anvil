@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from packages.events.transition_guard import OptimisticVersionConflict
 from packages.execution.models import TaskStatus
@@ -20,6 +21,7 @@ from packages.execution.models import TaskStatus
 from .common import ApiContractError, ApplicationRequest, ApplicationResponse, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
 from .local_session import IssuedSession
+from .oidc_session_coordinator import OidcSessionCoordinator, OidcSessionRejected
 from .security import (
     WebSecurityConfig,
     build_session_cookie,
@@ -96,6 +98,19 @@ def _deny_authentication(_token: str) -> SessionPrincipal | None:
     return None
 
 
+def _oidc_error(error: OidcSessionRejected) -> ApiContractError:
+    if str(error) == "OIDC_SESSION_NOT_AVAILABLE":
+        return ApiContractError("OIDC_SESSION_NOT_AVAILABLE", "Authentication is unavailable.", 503)
+    return ApiContractError("OIDC_SESSION_NOT_AUTHORIZED", "Authentication is required.", 401)
+
+
+def _authenticate_session(authenticate: Authenticator, token: str) -> SessionPrincipal | None:
+    try:
+        return authenticate(token)
+    except OidcSessionRejected as error:
+        raise _oidc_error(error) from None
+
+
 def _error_response(request: Request, error: ApiContractError) -> JSONResponse:
     rid = request.state.request_id
     return JSONResponse(
@@ -145,22 +160,42 @@ async def _body(request: Request) -> Mapping[str, Any]:
     return value
 
 
+async def _oidc_body(request: Request, required: frozenset[str], optional: frozenset[str] = frozenset()) -> Mapping[str, Any]:
+    raw = await request.body()
+    if len(raw) > 8192:
+        raise ApiContractError("INVALID_BODY", "The request body is invalid.")
+    if not raw and not required:
+        return {}
+    if not raw:
+        raise ApiContractError("INVALID_BODY", "The request body is invalid.")
+    value = await _body(request)
+    if set(value) < required or set(value) - (required | optional):
+        raise ApiContractError("INVALID_BODY", "The request body is invalid.")
+    for key in required:
+        item = value[key]
+        if type(item) is not str or not item or item != item.strip() or len(item) > 4096:
+            raise ApiContractError("INVALID_BODY", "The request body is invalid.")
+    if "require_step_up" in value and type(value["require_step_up"]) is not bool:
+        raise ApiContractError("INVALID_BODY", "The request body is invalid.")
+    return value
+
+
 def _principal(request: Request, authenticate: Authenticator, config: WebSecurityConfig) -> SessionPrincipal:
     token = request.cookies.get(config.session_cookie_name)
-    principal = authenticate(token) if token else None
+    principal = _authenticate_session(authenticate, token) if token else None
     if principal is None:
         raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
     return principal
 
 
-def _read_principal(
+async def _read_principal(
     request: Request,
     authenticate: Authenticator,
     config: WebSecurityConfig,
     trusted_read_principal: SessionPrincipal | None,
 ) -> SessionPrincipal:
     token = request.cookies.get(config.session_cookie_name)
-    principal = authenticate(token) if token else None
+    principal = await run_in_threadpool(_authenticate_session, authenticate, token) if token else None
     if principal is not None:
         return principal
     if trusted_read_principal is not None:
@@ -282,6 +317,46 @@ def _origin(request: Request, config: WebSecurityConfig, *, required: bool) -> N
         )
 
 
+def _oidc_origin(request: Request, config: WebSecurityConfig) -> None:
+    """Match the browser origin to the observed or explicitly trusted TLS authority."""
+    denied = ApiContractError("ORIGIN_VALIDATION_FAILED", "The request origin is not allowed.", 403)
+    origin = request.headers.get("origin")
+    if origin is None or origin not in config.allowed_origins:
+        raise denied
+    scheme = request.url.scheme.lower()
+    authority = request.headers.get("host", "")
+    client_ip = request.client.host if request.client else None
+    if client_ip in config.trusted_proxy_ips:
+        forwarded_schemes = request.headers.getlist("x-forwarded-proto")
+        forwarded_hosts = request.headers.getlist("x-forwarded-host")
+        if forwarded_schemes or forwarded_hosts:
+            if len(forwarded_schemes) != 1 or len(forwarded_hosts) > 1:
+                raise denied
+            scheme = forwarded_schemes[0]
+            if forwarded_hosts:
+                authority = forwarded_hosts[0]
+    if scheme not in {"http", "https"} or not authority or "," in authority:
+        raise denied
+    try:
+        parsed_origin = urlsplit(origin)
+        parsed_authority = urlsplit(f"{scheme}://{authority}")
+        if (
+            parsed_origin.scheme != scheme
+            or parsed_origin.username is not None or parsed_origin.password is not None
+            or parsed_origin.path or parsed_origin.query or parsed_origin.fragment
+            or parsed_authority.username is not None or parsed_authority.password is not None
+            or parsed_authority.path or parsed_authority.query or parsed_authority.fragment
+            or parsed_origin.hostname is None or parsed_authority.hostname is None
+            or parsed_origin.hostname.lower() != parsed_authority.hostname.lower()
+        ):
+            raise denied
+        default_port = 443 if scheme == "https" else 80
+        if (parsed_origin.port or default_port) != (parsed_authority.port or default_port):
+            raise denied
+    except ValueError:
+        raise denied from None
+
+
 def _bootstrap_credential(request: Request) -> str:
     authorization = request.headers.get("authorization")
     if not isinstance(authorization, str) or not authorization.startswith("Bearer "):
@@ -327,7 +402,7 @@ def _endpoint_handler(
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
-            principal = _read_principal(
+            principal = await _read_principal(
                 request, authenticate, config, trusted_read_principal
             )
             body = await _body(request) if endpoint.is_mutation else {}
@@ -413,7 +488,7 @@ def _sse_handler(
         try:
             _host(request, config)
             _origin(request, config, required=False)
-            principal = _read_principal(request, authenticate, config, trusted_read_principal)
+            principal = await _read_principal(request, authenticate, config, trusted_read_principal)
             _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             if "after" in request.query_params:
                 raise ApiContractError(
@@ -528,9 +603,12 @@ def create_app(
     recovery_ports: ApiPorts | None = None,
     telegram_webhook: TelegramWebhook | None = None,
     session_issuer: SessionIssuer | None = None,
+    oidc_session_coordinator: OidcSessionCoordinator | None = None,
     trusted_read_principal: SessionPrincipal | None = None,
     auth_mode: str = "COOKIE",
 ) -> FastAPI:
+    if oidc_session_coordinator is not None and session_issuer is not None:
+        raise ValueError("OIDC and local session issuance cannot both be active")
     api_registry = registry or canonical_api_registry()
     base_ports = ports or ApiPorts()
     if recovery_ports is None:
@@ -545,13 +623,21 @@ def create_app(
             queries={**base_ports.queries, **recovery_ports.queries},
         )
     stream = event_stream or EmptyEventStream()
-    authenticator = authenticate or _deny_authentication
+    authenticator = (
+        oidc_session_coordinator.authenticate
+        if oidc_session_coordinator is not None
+        else authenticate or _deny_authentication
+    )
+    if oidc_session_coordinator is not None:
+        trusted_read_principal = None
     config = security_config or WebSecurityConfig()
     app = FastAPI(title="Anvil Control API", version="1.0.0", docs_url=None, redoc_url=None)
 
     @app.middleware("http")
     async def common_web_security(request: Request, call_next: Callable[[Request], Any]) -> Response:
-        request.state.request_id = request_id(request.headers.get("x-request-id"))
+        request.state.request_id = request_id(
+            None if request.url.path.startswith("/auth/oidc/") else request.headers.get("x-request-id")
+        )
         origin = request.headers.get("origin")
         if request.method == "OPTIONS" and request.headers.get("access-control-request-method"):
             if origin not in config.allowed_origins:
@@ -605,6 +691,84 @@ def create_app(
             )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source], **_task_openapi(endpoint))
+    if oidc_session_coordinator is not None:
+        @app.post("/auth/oidc/authorization", include_in_schema=False)
+        async def oidc_authorization(request: Request) -> JSONResponse:
+            try:
+                _host(request, config)
+                _oidc_origin(request, config)
+                body = await _oidc_body(request, frozenset(), frozenset({"require_step_up"}))
+                started = await run_in_threadpool(
+                    oidc_session_coordinator.begin, require_step_up=body.get("require_step_up", False)
+                )
+                url = urlsplit(started.url)
+                if url.scheme != "https" or not url.hostname or url.username or url.password:
+                    raise ValueError("invalid authorization url")
+                return JSONResponse({"data": {
+                    "authorization_url": started.url,
+                    "browser_state": started.browser_state,
+                }})
+            except OidcSessionRejected as error:
+                return _error_response(request, _oidc_error(error))
+            except ApiContractError as error:
+                return _error_response(request, error)
+            except Exception:
+                return _error_response(request, ApiContractError("INTERNAL_ERROR", "An internal error occurred.", 500))
+
+        @app.post("/auth/oidc/callback", include_in_schema=False)
+        async def oidc_callback(request: Request) -> JSONResponse:
+            try:
+                _host(request, config)
+                _oidc_origin(request, config)
+                body = await _oidc_body(request, frozenset({"code", "state", "browser_state"}))
+                issued = await run_in_threadpool(oidc_session_coordinator.complete,
+                    code=body["code"], state=body["state"], browser_state=body["browser_state"]
+                )
+                if not isinstance(issued.max_age_seconds, int) or not 0 < issued.max_age_seconds <= 900:
+                    raise ValueError("invalid session lifetime")
+                response = JSONResponse({"data": {
+                    "csrf_token": issued.csrf_token,
+                    "expires_at": issued.expires_at.isoformat(),
+                    "expires_in": issued.max_age_seconds,
+                }})
+                response.headers.append("set-cookie", build_session_cookie(
+                    issued.session_token,
+                    max_age_seconds=issued.max_age_seconds,
+                    name=config.session_cookie_name,
+                ))
+                return response
+            except OidcSessionRejected as error:
+                return _error_response(request, _oidc_error(error))
+            except ApiContractError as error:
+                return _error_response(request, error)
+            except Exception:
+                return _error_response(request, ApiContractError("INTERNAL_ERROR", "An internal error occurred.", 500))
+
+        @app.post("/auth/oidc/logout", include_in_schema=False)
+        async def oidc_logout(request: Request) -> JSONResponse:
+            try:
+                _host(request, config)
+                _oidc_origin(request, config)
+                token = request.cookies.get(config.session_cookie_name)
+                if not token:
+                    raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
+                principal = await run_in_threadpool(_authenticate_session, authenticator, token)
+                if principal is None:
+                    raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
+                csrf = request.headers.get("x-csrf-token")
+                if csrf is None or not hmac.compare_digest(csrf, principal.csrf_token):
+                    raise ApiContractError("CSRF_VALIDATION_FAILED", "The CSRF token is invalid.", 403)
+                await run_in_threadpool(oidc_session_coordinator.revoke, token)
+                response = JSONResponse({"authenticated": False})
+                response.delete_cookie(config.session_cookie_name, path="/", secure=True,
+                                       httponly=True, samesite="strict")
+                return response
+            except OidcSessionRejected as error:
+                return _error_response(request, _oidc_error(error))
+            except ApiContractError as error:
+                return _error_response(request, error)
+            except Exception:
+                return _error_response(request, ApiContractError("INTERNAL_ERROR", "An internal error occurred.", 500))
     if session_issuer is not None:
         @app.post("/auth/session", include_in_schema=False, status_code=201)
         async def issue_session(request: Request) -> JSONResponse:
@@ -643,7 +807,7 @@ def create_app(
         try:
             _host(request, config)
             token = request.cookies.get(config.session_cookie_name)
-            principal = authenticator(token) if token else None
+            principal = await run_in_threadpool(_authenticate_session, authenticator, token) if token else None
             if principal is None:
                 principal = trusted_read_principal
             return JSONResponse(

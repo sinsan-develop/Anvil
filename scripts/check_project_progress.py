@@ -58205,6 +58205,181 @@ def validate_bundle(bundle):
 
 _validate_git_projection_before_f18_local = _validate_git_projection
 def _validate_git_projection(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_START":
+        from f18_wsl_ops_r45c_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45B_TARGET_QA_CHECKPOINT":
+        from f18_wsl_ops_r45b_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45B_SAME_ARTIFACT_START":
+        from f18_wsl_ops_r45b_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45A_STAGING_ARTIFACT_CHECKPOINT":
+        from f18_wsl_ops_r45a_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45A_STAGING_ARTIFACT_PORT_REVISION":
+        from f18_wsl_ops_r45a_port_revision_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45A_STAGING_ARTIFACT_START":
+        from f18_wsl_ops_r45a_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_CHECKPOINT":
+        from f18_wsl_ops_r44_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_START":
+        from f18_wsl_ops_r44_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43D_RUNTIME_RETEST_CHECKPOINT":
+        from f18_wsl_ops_r43d_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43D_RUNTIME_RETEST_START":
+        from f18_wsl_ops_r43d_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43C_RUNTIME_REWORK_CHECKPOINT":
+        from f18_wsl_ops_r43c_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43C_RUNTIME_REWORK_START":
+        from f18_wsl_ops_r43c_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B2_FORMAL_RUNTIME_CHECKPOINT":
+        from f18_wsl_ops_r43b2_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B2_FORMAL_RUNTIME_START":
+        from f18_wsl_ops_r43b2_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B1_QA_ISSUER_CHECKPOINT":
+        from f18_wsl_ops_r43b1_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B1_QA_ISSUER_START":
+        from f18_wsl_ops_r43b1_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43A_OIDC_FORMAL_HOST_CHECKPOINT":
+        from f18_wsl_ops_r43a_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43A_OIDC_FORMAL_HOST_START":
+        from f18_wsl_ops_r43a_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R42_OIDC_PROCESS_CHECKPOINT":
+        from f18_wsl_ops_r42_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R42_OIDC_PROCESS_START":
+        from f18_wsl_ops_r42_oidc_process_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R41_OIDC_PG18_CHECKPOINT":
+        from f18_wsl_ops_r41_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R41_OIDC_PG18_START":
+        from f18_wsl_ops_r41_oidc_pg18_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R40_LIVE_OIDC_HOST_CHECKPOINT":
+        from f18_wsl_ops_r40_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R40_LIVE_OIDC_HOST_START":
+        from f18_wsl_ops_r40_live_oidc_host_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R39_OIDC_HOST_CONFIG_CHECKPOINT":
+        from f18_wsl_ops_r39_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R39_OIDC_HOST_CONFIG_START":
+        from f18_wsl_ops_r39_oidc_host_config_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R38_OIDC_HOST_BINDING_CHECKPOINT":
+        from f18_wsl_ops_r38_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R38_OIDC_HOST_BINDING_START":
+        from f18_wsl_ops_r38_oidc_host_binding_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R37_OIDC_COMPOSITION_CHECKPOINT":
+        from f18_wsl_ops_r37_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R37_OIDC_COMPOSITION_START":
+        from f18_wsl_ops_r37_oidc_composition_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_CHECKPOINT":
+        from f18_wsl_ops_r36_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_START":
+        from f18_wsl_ops_r36_oidc_runtime_binding_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R35_OIDC_HTTP_CHECKPOINT":
+        from f18_wsl_ops_r35_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R35_OIDC_HTTP_START":
+        from f18_wsl_ops_r35_oidc_http_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R34_SESSION_COORDINATOR_CHECKPOINT":
+        from f18_wsl_ops_r34_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R34_SESSION_COORDINATOR_START":
+        from f18_wsl_ops_r34_session_coordinator_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R33_SESSION_STORE_CHECKPOINT":
+        from f18_wsl_ops_r33_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R33_SESSION_STORE_START":
+        from f18_wsl_ops_r33_session_store_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R32_TRUSTED_DIRECTORY_CHECKPOINT":
+        from f18_wsl_ops_r32_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R32_TRUSTED_DIRECTORY_START":
+        from f18_wsl_ops_r32_trusted_directory_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R31_PENDING_STORE_CHECKPOINT":
+        from f18_wsl_ops_r31_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R31_PENDING_STORE_START":
+        from f18_wsl_ops_r31_pending_store_overlay import collect_git
+
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R30_OIDC_PRINCIPAL_CHECKPOINT":
+        from f18_wsl_ops_r30_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R30_OIDC_PRINCIPAL_START":
+        from f18_wsl_ops_r30_oidc_principal_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R29_NETWORK_CHECKPOINT":
+        from f18_wsl_ops_r29_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R29_NETWORK_START":
+        from f18_wsl_ops_r29_network_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R9_STEP_UP_REQUEST_START":
+        from f18_wsl_ops_r9_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R8_CODE_FLOW_CHECKPOINT":
+        from f18_wsl_ops_r8_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R8_CODE_FLOW_START":
+        from f18_wsl_ops_r8_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R7_ID_TOKEN_CHECKPOINT":
+        from f18_wsl_ops_r7_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R7_ID_TOKEN_START":
+        from f18_wsl_ops_r7_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R6_OBJECT_STORE_CHECKPOINT":
+        from f18_wsl_ops_r6_close_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R6_OBJECT_STORE_START":
+        from f18_wsl_ops_r6_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R5_TEST_FIX_CHECKPOINT":
+        from f18_wsl_ops_r5_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R4_CONTROL_ANCHOR_CHECKPOINT":
+        from f18_wsl_ops_r4_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R3_RUNTIME_BUNDLE_START":
+        from f18_wsl_ops_r3_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R2_DEPENDENCY_START":
+        from f18_wsl_ops_r2_overlay import collect_git
+        return collect_git(bundle["_root"])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R1_START":
+        from f18_wsl_ops_overlay import collect_git
+        return collect_git(bundle["_root"])
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_F20_LOCAL_WSL_SCOPE_REVISION":
         from wsl_scope_overlay import collect_git
         return collect_git(bundle["_root"])
@@ -58222,6 +58397,214 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_f18_local = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_START":
+        from f18_wsl_ops_r45c_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45B_TARGET_QA_CHECKPOINT":
+        from f18_wsl_ops_r45b_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45B_SAME_ARTIFACT_START":
+        from f18_wsl_ops_r45b_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45A_STAGING_ARTIFACT_CHECKPOINT":
+        from f18_wsl_ops_r45a_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45A_STAGING_ARTIFACT_PORT_REVISION":
+        from f18_wsl_ops_r45a_port_revision_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R45A_STAGING_ARTIFACT_START":
+        from f18_wsl_ops_r45a_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_CHECKPOINT":
+        from f18_wsl_ops_r44_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R44_MANIFEST_HEAD_START":
+        from f18_wsl_ops_r44_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43D_RUNTIME_RETEST_CHECKPOINT":
+        from f18_wsl_ops_r43d_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43D_RUNTIME_RETEST_START":
+        from f18_wsl_ops_r43d_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43C_RUNTIME_REWORK_CHECKPOINT":
+        from f18_wsl_ops_r43c_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43C_RUNTIME_REWORK_START":
+        from f18_wsl_ops_r43c_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B2_FORMAL_RUNTIME_CHECKPOINT":
+        from f18_wsl_ops_r43b2_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B2_FORMAL_RUNTIME_START":
+        from f18_wsl_ops_r43b2_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B1_QA_ISSUER_CHECKPOINT":
+        from f18_wsl_ops_r43b1_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43B1_QA_ISSUER_START":
+        from f18_wsl_ops_r43b1_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43A_OIDC_FORMAL_HOST_CHECKPOINT":
+        from f18_wsl_ops_r43a_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R43A_OIDC_FORMAL_HOST_START":
+        from f18_wsl_ops_r43a_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R42_OIDC_PROCESS_CHECKPOINT":
+        from f18_wsl_ops_r42_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R42_OIDC_PROCESS_START":
+        from f18_wsl_ops_r42_oidc_process_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R41_OIDC_PG18_CHECKPOINT":
+        from f18_wsl_ops_r41_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R41_OIDC_PG18_START":
+        from f18_wsl_ops_r41_oidc_pg18_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R40_LIVE_OIDC_HOST_CHECKPOINT":
+        from f18_wsl_ops_r40_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R40_LIVE_OIDC_HOST_START":
+        from f18_wsl_ops_r40_live_oidc_host_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R39_OIDC_HOST_CONFIG_CHECKPOINT":
+        from f18_wsl_ops_r39_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R39_OIDC_HOST_CONFIG_START":
+        from f18_wsl_ops_r39_oidc_host_config_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R38_OIDC_HOST_BINDING_CHECKPOINT":
+        from f18_wsl_ops_r38_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R38_OIDC_HOST_BINDING_START":
+        from f18_wsl_ops_r38_oidc_host_binding_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R37_OIDC_COMPOSITION_CHECKPOINT":
+        from f18_wsl_ops_r37_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R37_OIDC_COMPOSITION_START":
+        from f18_wsl_ops_r37_oidc_composition_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_CHECKPOINT":
+        from f18_wsl_ops_r36_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R36_OIDC_RUNTIME_BINDING_START":
+        from f18_wsl_ops_r36_oidc_runtime_binding_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R35_OIDC_HTTP_CHECKPOINT":
+        from f18_wsl_ops_r35_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R35_OIDC_HTTP_START":
+        from f18_wsl_ops_r35_oidc_http_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R34_SESSION_COORDINATOR_CHECKPOINT":
+        from f18_wsl_ops_r34_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R34_SESSION_COORDINATOR_START":
+        from f18_wsl_ops_r34_session_coordinator_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R33_SESSION_STORE_CHECKPOINT":
+        from f18_wsl_ops_r33_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R33_SESSION_STORE_START":
+        from f18_wsl_ops_r33_session_store_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R32_TRUSTED_DIRECTORY_CHECKPOINT":
+        from f18_wsl_ops_r32_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R32_TRUSTED_DIRECTORY_START":
+        from f18_wsl_ops_r32_trusted_directory_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R31_PENDING_STORE_CHECKPOINT":
+        from f18_wsl_ops_r31_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R31_PENDING_STORE_START":
+        from f18_wsl_ops_r31_pending_store_overlay import validate
+
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R30_OIDC_PRINCIPAL_CHECKPOINT":
+        from f18_wsl_ops_r30_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R30_OIDC_PRINCIPAL_START":
+        from f18_wsl_ops_r30_oidc_principal_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R29_NETWORK_CHECKPOINT":
+        from f18_wsl_ops_r29_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R29_NETWORK_START":
+        from f18_wsl_ops_r29_network_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R18_DISTINCT_DIGEST_CHECKPOINT":
+        from f18_wsl_ops_r18_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R18_DISTINCT_DIGEST_START":
+        from f18_wsl_ops_r18_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R17_ROLE_IMAGES_CHECKPOINT":
+        from f18_wsl_ops_r17_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R17_ROLE_IMAGES_START":
+        from f18_wsl_ops_r17_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R12_AUTH_INGRESS_CHECKPOINT":
+        from f18_wsl_ops_r12_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R12_AUTH_INGRESS_START":
+        from f18_wsl_ops_r12_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R9_STEP_UP_REQUEST_START":
+        from f18_wsl_ops_r9_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R11_MIXED_JWKS_CHECKPOINT":
+        from f18_wsl_ops_r11_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R11_MIXED_JWKS_START":
+        from f18_wsl_ops_r11_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R10_OIDC_TRANSPORT_START":
+        from f18_wsl_ops_r10_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R10_OIDC_TRANSPORT_CHECKPOINT":
+        from f18_wsl_ops_r10_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R9_STEP_UP_REQUEST_CHECKPOINT":
+        from f18_wsl_ops_r9_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R8_CODE_FLOW_CHECKPOINT":
+        from f18_wsl_ops_r8_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R8_CODE_FLOW_START":
+        from f18_wsl_ops_r8_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R7_ID_TOKEN_CHECKPOINT":
+        from f18_wsl_ops_r7_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R7_ID_TOKEN_START":
+        from f18_wsl_ops_r7_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R6_OBJECT_STORE_CHECKPOINT":
+        from f18_wsl_ops_r6_close_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R6_OBJECT_STORE_START":
+        from f18_wsl_ops_r6_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R5_TEST_FIX_CHECKPOINT":
+        from f18_wsl_ops_r5_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R4_CONTROL_ANCHOR_CHECKPOINT":
+        from f18_wsl_ops_r4_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R3_RUNTIME_BUNDLE_START":
+        from f18_wsl_ops_r3_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R2_DEPENDENCY_START":
+        from f18_wsl_ops_r2_overlay import validate
+        return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_WSL_OPS_R1_START":
+        from f18_wsl_ops_overlay import validate
+        return validate(bundle["_root"], bundle)
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_F20_LOCAL_WSL_SCOPE_REVISION":
         from wsl_scope_overlay import validate
         return validate(bundle["_root"], bundle)
