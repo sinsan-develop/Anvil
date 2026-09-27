@@ -13,12 +13,15 @@ from scripts import f20_rework_overlay as r1
 
 ROOT = Path(__file__).resolve().parents[2]
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
+PREDECESSOR_COMMIT = "e6e85b631ddc82308b1ae9fe90c3f818c8136627"
 
 
 def _fixture(tmp_path: Path) -> Path:
     root = tmp_path / "repository"
     subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--local",
                     "--no-hardlinks", str(ROOT), str(root)], check=True)
+    subprocess.run(["git", "checkout", "--quiet", "--detach", PREDECESSOR_COMMIT],
+                   cwd=root, check=True)
     for relative in ("docs/work_orders/F-20_REWORK_R3_WORK_INSTRUCTION.md",
                      "docs/work_orders/F-20_REWORK_R3_INVOCATION.md"):
         target = root / relative
