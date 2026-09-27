@@ -40,5 +40,10 @@
 
 - [x] Task 1 — 로컬 RED→GREEN 및 G-05 PASS; WSL 동일 SHA 검증은 별도 상태 기록
 - [x] Task 2 — R2 exact8 로컬 보완 및 WSL 동일 SHA 집중 231 PASS; 1 FAIL은 R2 범위 밖 browser 경로 안전 검사로 Task 3에 이관. 전체 suite는 아직 비GREEN
-- [ ] Task 3 — 기존 PR #15 ref fetch 후 WSL의 C-30 대표 회귀 1 PASS. seq1725 통제 테스트 파일 전체는 639 PASS·42 FAIL로 아직 비GREEN; R3 browser 경로와 잔여 전체 suite 원인별 재검증 대기
+- [ ] Task 3 — R3 제품 SHA `c759956` WSL 동일 SHA Node 21 PASS, A14 browser-source 1 PASS, G-05 seq1731 PASS. WSL web typecheck·lint PASS, 격리 Node 22와 lockfile 일치 optional rolldown binding에서 build PASS(시스템 Node 18 build는 실패). 전체 pytest는 `8112 passed, 48 failed, 116 skipped`로 비GREEN. 실패군: C30 contract 2, A13 POSIX 경로 1, F18 R12 원격 ref 전제 2, Phase B gate 1, progress/history 41, C01 OpenAPI 1. 각 실패의 현재 결함·역사 fixture·실행 환경 원인을 분리해 RED→GREEN 처리하고 전체 suite 재실행 대기.
 - [ ] Task 4
+
+## F-20 완료조건 불일치 확인
+
+- `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.
+- 기존 F-20 R3 lease는 정확한 browser client 5개 파일에만 유효하다. 새로운 제품 경로는 기존 lease 회수와 새 exact-path WorkInstruction·lease 검증 뒤 단일 writer가 수정한다. 브라우저 Network는 아직 미검증이다.
