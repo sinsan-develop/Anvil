@@ -3805,3 +3805,13 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - `finishing-a-development-branch` 병합 전 전체 pytest를 실행했으나 collection 단계에서 13건 오류로 중단했다. 중복 test module basename(`test_models`, `test_hooks_d09` 등)와 fixture 내부 `src` import 경로가 원인이다.
 - F-20 targeted API 6개 테스트와 G-05 seq1714는 PASS지만, 전체 suite가 non-green이므로 현재 `codex/f18-wsl-ops`를 `main`에 병합하지 않고 보존한다. 현재 main checkout은 다른 branch의 dirty 상태라 변경하지 않았다.
 - 다음 조치는 계획 범위를 넓히지 않는 별도 test-collection 정리/검토 후 전체 suite를 재실행하는 것이다. Production·ysna-server는 계속 제외한다.
+
+# F-20 branch integration gate 재검증 / 2026-09-27
+
+- 판정: `HOLD_F20_BRANCH_INTEGRATION_NON_GREEN`.
+- 정식 collection 경계(`-p no:cacheprovider --import-mode=importlib --ignore=tests/fixtures/repositories`)는 `8245 tests collected in 6.82s`, 종료 코드 0으로 통과했다.
+- 같은 기준의 전체 실행은 약 27%에서 요약·종료 코드 없이 중단되어 PASS로 판정할 수 없다. `--maxfail=1` 재현에서는 `1044 passed, 1 warning, 1 error in 16.68s`로 종료 코드 1이 확인됐다.
+- 첫 확정 오류는 `tests/agent_team/test_worktree_writes_e06.py::test_real_disjoint_write_commit_and_source_zero_mutation` setup의 pytest `tmp_path` 생성 단계 `PermissionError: [WinError 5]`이며 대상은 `C:\Users\cyhuh\AppData\Local\Temp\pytest-of-cyhuh`이다. 이는 제품 기능 실패가 아니라 현재 Windows 임시 디렉터리 권한/잔여 상태 차단으로 분류한다.
+- 저장소 내부 `--basetemp` 우회 실행도 정상 요약을 남기지 못했으므로 전체 suite GREEN 또는 제품 회귀로 승격하지 않는다. 임시 `.pytest-f20-basetemp`는 제거했다.
+- F-20 WSL targeted/runtime evidence와 G-05 seq1714는 기존 PASS를 유지하지만, branch integration gate는 non-green HOLD이며 `main` 병합·push·branch 삭제를 수행하지 않는다. Production·ysna-server는 계속 제외한다.
+- 다음 조치: 별도 승인 없이 제품 코드를 변경하지 않고, pytest 임시 디렉터리 권한/환경을 정리한 뒤 동일 정식 명령의 종료 코드와 전체 요약을 다시 확보한다.
