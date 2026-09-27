@@ -3675,3 +3675,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - F-18 scoped QA acceptance 후 F-19 WorkInstruction을 발행했다. 제품 변경 없이 Provider/catalog/settings/Web/secret 회귀를 로컬→WSL-server 동일 commit으로 검증한다.
 - 로컬 anaconda pytest 범위는 `525 passed, 1 warning`으로 통과했다. WSL 전용 checkout `/home/daon/anvil-f19-provider-security-qa`, owner `daon`, 수명은 이번 회귀 1회이며 종료 후 exact cleanup한다.
 - 실제 Provider credential 호출과 Production은 실행하지 않고 `UNVERIFIED/NOT_EXECUTED`로 기록한다. 다음은 WSL checkout 수신·동일 suite 실행이다.
+
+# F-19 Provider·보안 회귀 결과 / 2026-09-27
+
+- 로컬 지정 범위 `525 passed, 1 warning`, WSL-server 동일 exact commit `4d8e9529b78aea15698747e1500180c2d34ba86f`의 잠긴 Python 3.12 범위 `525 passed in 6.79s`로 통과했다.
+- WSL 전용 checkout·venv는 제거해 `F19_WSL_CHECKOUT_RESIDUE_ZERO`를 확인했다. R45B browser Network·payload·DB/log/artifact 비노출 evidence도 대조했다.
+- live Provider credential 호출·비용·운영 도메인은 실행하지 않았으므로 `UNVERIFIED/NOT_EXECUTED`다. 다음은 F-19 evidence manifest와 acceptance review를 기록하는 것이다.
