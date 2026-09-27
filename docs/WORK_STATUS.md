@@ -3687,3 +3687,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 판정: `ACCEPTED_PHASE_F_SCOPED_CAPABILITY_QA`. F-01~F-19 acceptance evidence, Local·WSL-server 경계, F-18 격리 rollback/restore, F-19 Provider·egress·Web·secret 회귀를 대조해 Gate를 통과시켰다.
 - Production·ysna-server, 실제 Provider credential/비용 호출, 전체 메뉴 사용자 인수와 human ReleaseDecision은 `UNVERIFIED/NOT_EXECUTED`로 유지한다. 이를 운영 PASS로 표시하지 않는다.
 - canonical progress seq1687/G-05를 기록했고 다음 계획 항목을 `U-01 Dashboard READY_FOR_WORK_INSTRUCTION`으로 전환했다. 다음 조치는 U-01 WorkInstruction 발행이며, 메뉴 write는 순차적으로 한 개만 수행한다.
+
+# U-01 Dashboard / 2026-09-27
+
+- 판정: `ACCEPTED_U01_LOCAL_WEB_SCOPED`. 기존 Dashboard shell의 health·운영 상태·승인/경고·다음 행동 read model 표시를 계획 범위로 검증했다.
+- `npm run web:test` 3 passed, `npm run web:typecheck` PASS, `npm run web:build` PASS, `npm run web:lint` PASS. 브라우저 readiness는 same-origin `/health/ready`만 사용하고 미연결·미실행은 PASS로 표시하지 않는다.
+- WSL-server 실제 브라우저 클릭/Network, live read model·Provider·운영 인수는 미실행이다. canonical progress seq1689로 U-01을 완료하고 다음을 `U-02 Workbench READY_FOR_WORK_INSTRUCTION`으로 전환한다.

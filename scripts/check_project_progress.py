@@ -58654,6 +58654,22 @@ def validate_bundle(bundle):
         if not (Path(bundle["_root"]) / "docs/04_test_reports/PHASE_F_GATE_REVIEW.md").is_file():
             errors.append("PHASE_F_GATE_REVIEW_MISSING")
         return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "U01_ACCEPTANCE_REVIEW":
+        progress = bundle.get("progress", {})
+        errors = []
+        if progress.get("event_sequence") != 1689 or progress.get("current_work_package") != "U-01":
+            errors.append("U01_ACCEPTANCE_SEQUENCE_INVALID")
+        if progress.get("next_work_package") != {"package_id": "U-02", "status": "READY_FOR_WORK_INSTRUCTION"}:
+            errors.append("U01_NEXT_PACKAGE_INVALID")
+        if "U-01" not in progress.get("completed_packages", []):
+            errors.append("U01_COMPLETION_MISSING")
+        if progress.get("worker_lease") is not None or progress.get("write_lease") is not None:
+            errors.append("U01_LEASE_NOT_CLEAR")
+        root = Path(bundle["_root"])
+        for path in ("docs/04_test_reports/U-01_DASHBOARD_REPORT.md", "docs/evidence/manifests/U-01_DASHBOARD_MANIFEST.json"):
+            if not (root / path).is_file():
+                errors.append("U01_EVIDENCE_MISSING")
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",
