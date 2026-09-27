@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1685,
+  "last_sequence": 1686,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84826,7 +84826,30 @@
     "acceptance_review": "docs/04_test_reports/F-18_ACCEPTANCE_REVIEW.md",
     "next_action": "ISSUE_F19_WORK_INSTRUCTION"
   }
+},
+{
+  "sequence": 1686,
+  "event_id": "evt_f18_local_1686_package_completed",
+  "event_type": "PACKAGE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "F19_ACCEPTANCE_REVIEW",
+  "subject_ref": "F-18/F19_ACCEPTANCE_REVIEW",
+  "occurred_at": "2026-09-27T15:24:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A3369974155A241F47355C819CB08FDA45949C6F8CF5D54B89423ABC52D905BB",
+  "details": {
+    "package_id": "F-19",
+    "result_status": "COMPLETED",
+    "package_status": "ACCEPTED_F19_SCOPED_SECURITY_QA",
+    "acceptance_review": "docs/04_test_reports/F-19_ACCEPTANCE_REVIEW.md",
+    "next_action": "PHASE_F_GATE_REVIEW"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1685_package_completed"
+  "last_event_id": "evt_f18_local_1686_package_completed"
 }
