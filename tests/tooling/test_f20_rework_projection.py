@@ -397,6 +397,32 @@ def test_g05_routes_f20_rework_to_the_new_validator(tmp_path):
     assert "F20_REWORK_GIT_INVALID" in validate_bundle(bundle)
 
 
+def test_f20_rework_retains_common_progress_and_handoff_guards():
+    from scripts.check_project_progress import (
+        _validate_f20_common_invariants, load_bundle, validate_bundle,
+    )
+
+    source = load_bundle(ROOT)
+    assert _validate_f20_common_invariants(source) == []
+    assert "PRG_MINIMUM_FIELD_MISSING" not in validate_bundle(source)
+
+    missing_field = copy.deepcopy(source)
+    missing_field["progress"].pop("plan_version")
+    assert "PRG_MINIMUM_FIELD_MISSING" in validate_bundle(missing_field)
+
+    wrong_handoff = copy.deepcopy(source)
+    wrong_handoff["handoff"]["event_sequence"] += 1
+    assert "HANDOFF_SEQUENCE_MISMATCH" in validate_bundle(wrong_handoff)
+
+
+def test_f20_rework_rejects_incomplete_bundle_instead_of_skipping_common_guards():
+    from scripts.check_project_progress import load_bundle, validate_bundle
+
+    source = load_bundle(ROOT)
+    source.pop("event_contract")
+    assert "F20_REWORK_BUNDLE_INCOMPLETE" in validate_bundle(source)
+
+
 def test_f20_rework_git_guard_rejects_foreign_mutation_or_wrong_branch():
     from scripts.f20_rework_overlay import validate_git_facts
 

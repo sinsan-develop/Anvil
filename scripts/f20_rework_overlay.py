@@ -31,6 +31,7 @@ SCOPE = [
 CONTROL_SCOPE = {
     "docs/WORK_STATUS.md",
     "docs/04_test_reports/F-20_CONTROL_REWORK_PLAN.md",
+    "docs/04_test_reports/F-20_FULL_SUITE_RECOVERY_PLAN.md",
     "docs/progress/progress-events.json",
     "docs/progress/build-progress.json",
     "docs/progress/BUILD_HANDOFF.md",

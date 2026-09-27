@@ -58434,6 +58434,46 @@ def _validate_git_projection(bundle):
     return _validate_git_projection_before_f18_local(bundle)
 
 _validate_bundle_before_f18_local = validate_bundle
+def _validate_f20_common_invariants(bundle):
+    """Preserve format-independent G-05 guards in the F-20 rework mode."""
+    progress = bundle["progress"]
+    errors = []
+    if not CHAPTER_15_MINIMUM_FIELDS.issubset(progress):
+        errors.append("PRG_MINIMUM_FIELD_MISSING")
+    if not EXTENDED_PROGRESS_FIELDS.issubset(progress):
+        errors.append("PRG_EXTENDED_FIELD_MISSING")
+    if progress.get("snapshot_hash") != compute_snapshot_hash(progress):
+        errors.append("PRG_SNAPSHOT_HASH_MISMATCH")
+    evidence_by_path = {}
+    for reference in progress.get("latest_evidence_refs", []):
+        if not isinstance(reference, dict):
+            errors.append("PRG_EVIDENCE_REF_INVALID")
+            continue
+        path, checksum = reference.get("path"), reference.get("sha256")
+        if path in evidence_by_path and evidence_by_path[path] != checksum:
+            errors.append("PRG_DUPLICATE_EVIDENCE_HASH")
+        evidence_by_path[path] = checksum
+
+    errors.extend(_validate_events(bundle))
+    # These three legacy handoff fields are deliberately superseded by the
+    # F-20 append-only projection; validate_control checks its bound summary.
+    superseded = {
+        "HANDOFF_BASELINE_MISMATCH",
+        "HANDOFF_FAILURE_COUNT_MISMATCH",
+        "HANDOFF_DIR_STATUS_MISMATCH",
+    }
+    errors.extend(error for error in _validate_handoff(bundle) if error not in superseded)
+    errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+    errors.extend(_validate_failure_projection(bundle))
+    errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+    errors.extend(_validate_dir(bundle))
+    errors.extend(_validate_reporting(progress))
+    errors.extend(_validate_reporting_state(bundle))
+    errors.extend(_validate_registry_refs(bundle))
+    errors.extend(_validate_referenced_hashes(bundle))
+    return errors
+
+
 def validate_bundle(bundle):
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_R1_REWORK_START":
         from datetime import datetime, timezone
@@ -58442,6 +58482,12 @@ def validate_bundle(bundle):
         except ModuleNotFoundError:  # direct `python scripts/check_project_progress.py`
             from f20_rework_overlay import collect_git, validate_control
         errors = validate_control(Path(bundle["_root"]), bundle, datetime.now(timezone.utc))
+        if all(key in bundle for key in (
+            "handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract",
+        )):
+            errors.extend(_validate_f20_common_invariants(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
         errors.extend(collect_git(Path(bundle["_root"]), bundle["progress"]))
         return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_FINAL_WSL_SCOPED":
