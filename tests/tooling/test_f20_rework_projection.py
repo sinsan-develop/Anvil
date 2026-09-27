@@ -259,6 +259,28 @@ def test_f20_rework_control_rejects_digest_or_historical_evidence_tampering(tmp_
     assert "F20_REWORK_MANIFEST_INVALID" in validate_control(tmp_path, bundle(), NOW)
 
 
+def test_f20_rework_control_fails_closed_when_new_event_tail_is_missing(tmp_path):
+    from scripts.f20_rework_overlay import materialize, validate_control
+
+    paths = [
+        "docs/progress/progress-events.json", "docs/progress/build-progress.json",
+        "docs/progress/BUILD_HANDOFF.md", OLD_MANIFEST,
+        "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md", WI, INVOCATION,
+    ]
+    for relative in paths:
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(_predecessor_bytes(relative))
+    materialize(tmp_path, "a" * 40, NOW, "test")
+    bundle = {
+        "progress": json.loads((tmp_path / paths[1]).read_bytes()),
+        "events": json.loads((tmp_path / paths[0]).read_bytes()),
+    }
+    bundle["events"]["events"] = bundle["events"]["events"][:1714]
+
+    assert "F20_REWORK_TRANSITION_INVALID" in validate_control(tmp_path, bundle, NOW)
+
+
 def test_g05_routes_f20_rework_to_the_new_validator(tmp_path):
     from scripts.check_project_progress import validate_bundle
     from scripts.f20_rework_overlay import materialize
