@@ -3732,3 +3732,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `ACCEPTED_U07_LOCAL_CONTRACT_SCOPED`. Knowledge 계보·revoke·snapshot 계약을 `406 passed`로 검증했다.
 - 실제 Knowledge 브라우저·Network·live vector/DB는 미검증이다. canonical progress seq1702, 다음은 `U-08 Agents & Automation READY_FOR_WORK_INSTRUCTION`이다.
+
+# U-08 Agents & Automation 완료 / 2026-09-27
+
+- 판정: `ACCEPTED_U08_LOCAL_CONTRACT_SCOPED`. role/M1~M5/Skill·Hook/DAG/fencing/takeover 계약을 `275 passed`로 검증했다.
+- 실제 Agents 메뉴·브라우저·Network·운영 plugin은 미검증이다. canonical progress seq1704, 다음은 `U-09 Environments READY_FOR_WORK_INSTRUCTION`이다.

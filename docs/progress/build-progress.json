@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-f18-wsl-ops-r45c-close-seq1681",
-  "event_sequence": 1702,
-  "updated_at": "2026-09-27T16:04:15+09:00",
-  "last_event_id": "evt_u07_1702_package_completed",
+  "event_sequence": 1704,
+  "updated_at": "2026-09-27T16:06:05+09:00",
+  "last_event_id": "evt_u08_1704_package_completed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -91,7 +91,7 @@
   "work_plan_hash": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
   "design_baseline_hash": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
   "current_phase": "U",
-  "current_work_package": "U-07",
+  "current_work_package": "U-08",
   "status": "ACTIVE",
   "completed_packages": [
     "G-01",
@@ -208,7 +208,8 @@
     "U-04",
     "U-05",
     "U-06",
-    "U-07"
+    "U-07",
+    "U-08"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -465,7 +466,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U-08_WORK_INSTRUCTION",
+  "next_safe_action": "U-09_WORK_INSTRUCTION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -580,7 +581,7 @@
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
     "remote_head": "28417a864313a1bff771c9cafaf4096436cfbb24",
-    "projection_mode": "U07_ACCEPTANCE_REVIEW",
+    "projection_mode": "U08_ACCEPTANCE_REVIEW",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -1016,7 +1017,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U07_ACCEPTED_LOCAL_CONTRACT_SCOPED",
+    "worktree_status": "U08_ACCEPTED_LOCAL_CONTRACT_SCOPED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1339,15 +1340,15 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "04E10AF3C26F192AF581F8CAACD848B9F8C8E333A5F3A6CD7822A77EF0FCA7A3"
+      "sha256": "B4A1FE80D78912D8494A4D72BC7E96A81CE940DDA49847A00F46F1C270751324"
     }
   },
   "next_work_package": {
-    "package_id": "U-08",
+    "package_id": "U-09",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
-    "package_id": "U-08",
+    "package_id": "U-09",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
@@ -1736,8 +1737,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5C4464A4150833FE4B728737B3C391C7C2C1C3F5FD43FBA115A03DE3F71D4F8A",
-  "runtime_next_action": "U-08_WORK_INSTRUCTION",
+  "snapshot_hash": "4A742FCF0408D15FA2337C2CDE9D097A6E5F5C1D75DD285C98F6956EEBDC96FE",
+  "runtime_next_action": "U-09_WORK_INSTRUCTION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3349,7 +3350,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-27T16:04:15+09:00",
+  "recorded_at": "2026-09-27T16:06:05+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
