@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1675,
+  "last_sequence": 1677,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84602,7 +84602,51 @@
     "resource_residue": 0,
     "control_qa_head": "56a73706ebd6b00aed50ca01fa4609e3b6fa2ab2"
   }
+},
+{
+  "sequence": 1676,
+  "event_id": "evt_f18_local_1676_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R45B_SAME_ARTIFACT",
+  "subject_ref": "F-18/WSL_OPS_R45B_SAME_ARTIFACT",
+  "occurred_at": "2026-09-27T10:02:37+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "CBAAC0CF414525E41E49BADF0741587D4B7729AF7244B3E40923EF012A6DFBC5",
+  "details": {
+    "path": "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_WORK_INSTRUCTION.md",
+    "sha256": "7CBDB4C2250A3081E9628EEFF2BE213A9F4275A96443A681F9B652F42887D118",
+    "invocation_path": "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_INVOCATION.md",
+    "invocation_sha256": "8F3B07ED3A3577901D85769100A6F987693B03EFEED8D4462BB067F15D47C158",
+    "control_qa_head": "6563b8312077432755b7d7ae0a7d8e1e96c7a7fe"
+  }
+},
+{
+  "sequence": 1677,
+  "event_id": "evt_f18_local_1677_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R45B_SAME_ARTIFACT",
+  "subject_ref": "F-18/WSL_OPS_R45B_SAME_ARTIFACT",
+  "occurred_at": "2026-09-27T10:02:37+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "38484137A99E7B95468D11955809DC16837B2A53324C66DE01E62C9CC8763302",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r45b-20260927-001",
+    "actor_id": "main-agent-eoul",
+    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-35-c655984e0e434223"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1675_worker_lease_revoked"
+  "last_event_id": "evt_f18_local_1677_worker_lease_issued"
 }
