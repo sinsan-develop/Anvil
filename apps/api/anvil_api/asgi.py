@@ -19,6 +19,7 @@ from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.fastapi_app import mount_frontend
 from pathlib import Path
 from apps.api.anvil_api.routes.agent_console import create_agent_console_app
+from apps.api.anvil_api.projects_scan import create_projects_scan_router
 
 
 def _oidc_host_origin(
@@ -188,6 +189,7 @@ def create_asgi_app(
     app.router.routes.extend(create_agent_console_app(
         runtime_owner=getattr(app.state, "agent_console_runtime", None),
     ).router.routes)
+    app.router.routes.extend(create_projects_scan_router().routes)
 
     # Mount only after every explicit API route so StaticFiles cannot shadow APIs.
     web_root = Path(__file__).resolve().parents[3] / "apps" / "web"

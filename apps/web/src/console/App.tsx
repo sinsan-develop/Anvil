@@ -7,6 +7,8 @@ type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
 type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
 
+const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
+
 export function classifyReadiness(value: unknown): Readiness {
   if (typeof value !== 'object' || value === null) return 'NOT CONNECTED';
   const payload = value as Record<string, unknown>;
@@ -82,7 +84,7 @@ function Shell({route}: AppProps) {
       <nav aria-label="Anvil 전체 메뉴"><ul id="app-menu" className="app-menu">
         {MENU_ITEMS.map((item) => <li key={item.id}>
           {item.state === 'ACTIVE'
-            ? <a href={item.id === 'dashboard' ? '/' : item.href} aria-current={(item.id === 'dashboard' ? currentRoute === '/' : currentRoute === '/projects') ? 'page' : undefined}>{item.label}</a>
+            ? <a href={item.href} aria-current={currentRoute === item.href ? 'page' : undefined}>{item.label}</a>
             : <span aria-disabled="true" title="이 메뉴는 아직 준비 중입니다.">{item.label}</span>}
           {item.state !== 'ACTIVE' && <span className="menu-state">PREPARING</span>}
         </li>)}
@@ -111,6 +113,9 @@ function Shell({route}: AppProps) {
         <div className="dashboard-heading"><div><p className="header-status">REPOSITORY ONBOARDING</p><h1>Projects</h1></div><p>읽기 전용 scan · {projects.status}</p></div>
         <section className="status-card" aria-labelledby="projects-status-heading"><h2 id="projects-status-heading">Repository 상태</h2><p className={projects.status === 'READY' ? 'status-ready' : 'status-unavailable'}>{projects.status}</p><p>{projects.reason}</p>{projects.repository && <dl className="status-metadata"><div><dt>Branch</dt><dd>{projects.repository.branch}</dd></div><div><dt>HEAD</dt><dd>{projects.repository.head}</dd></div><div><dt>Tracked dirty</dt><dd>{projects.repository.dirtyPaths}</dd></div><div><dt>Untracked</dt><dd>{projects.repository.untrackedPaths}</dd></div></dl>}</section>
         <section className="status-card" aria-labelledby="projects-baseline-heading"><h2 id="projects-baseline-heading">Baseline</h2><p className={projects.baseline.status === 'READY_TO_REVIEW' ? 'status-ready' : 'status-unavailable'}>{projects.baseline.status}</p><p>{projects.baseline.reason}</p><p className="status-reason">승인 없는 mutation은 수행하지 않습니다.</p></section>
+      </main> : READ_ONLY_MENU.has(currentRoute) ? <main className="dashboard">
+        <div className="dashboard-heading"><div><p className="header-status">READ-ONLY CONSOLE</p><h1>{READ_ONLY_MENU.get(currentRoute)}</h1></div><p>상태 · UNAVAILABLE</p></div>
+        <section className="status-card" aria-labelledby="menu-status-heading"><h2 id="menu-status-heading">연결 상태</h2><p className="status-unavailable">UNAVAILABLE</p><p>이 화면의 read model은 아직 연결되지 않았습니다. 실제 실행·변경은 수행하지 않습니다.</p></section>
       </main> : <main className="dashboard" role="alert"><h1>페이지를 사용할 수 없습니다</h1>
         <p>준비되지 않은 경로입니다. <a href="/">Dashboard로 돌아가기</a></p></main>}
     </section>

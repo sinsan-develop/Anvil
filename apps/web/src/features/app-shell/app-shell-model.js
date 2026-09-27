@@ -1,15 +1,15 @@
 export const MENU_ITEMS = Object.freeze([
   {id:'dashboard', label:'Dashboard', href:'/', state:'ACTIVE'},
-  {id:'workbench', label:'Workbench', href:'#workbench', state:'PREPARING'},
+  {id:'workbench', label:'Workbench', href:'/workbench', state:'ACTIVE'},
   {id:'projects', label:'Projects', href:'/projects', state:'ACTIVE'},
-  {id:'runs', label:'Runs', href:'#runs', state:'PREPARING'},
-  {id:'reviews', label:'Reviews', href:'#reviews', state:'PREPARING'},
-  {id:'quality', label:'Quality', href:'#quality', state:'PREPARING'},
-  {id:'knowledge', label:'Knowledge', href:'#knowledge', state:'PREPARING'},
-  {id:'agents-automation', label:'Agents & Automation', href:'#agents-automation', state:'PREPARING'},
-  {id:'environments', label:'Environments', href:'#environments', state:'PREPARING'},
-  {id:'operations', label:'Operations', href:'#operations', state:'PREPARING'},
-  {id:'settings', label:'Settings', href:'#settings', secondaryHref:'/provider-workbench.html', state:'PREPARING'},
+  {id:'runs', label:'Runs', href:'/runs', state:'ACTIVE'},
+  {id:'reviews', label:'Reviews', href:'/reviews', state:'ACTIVE'},
+  {id:'quality', label:'Quality', href:'/quality', state:'ACTIVE'},
+  {id:'knowledge', label:'Knowledge', href:'/knowledge', state:'ACTIVE'},
+  {id:'agents-automation', label:'Agents & Automation', href:'/agents-automation', state:'ACTIVE'},
+  {id:'environments', label:'Environments', href:'/environments', state:'ACTIVE'},
+  {id:'operations', label:'Operations', href:'/operations', state:'ACTIVE'},
+  {id:'settings', label:'Settings', href:'/settings', secondaryHref:'/provider-workbench.html', state:'ACTIVE'},
 ]);
 
 export const DASHBOARD_HEALTH = Object.freeze(['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store']);
