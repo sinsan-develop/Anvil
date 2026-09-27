@@ -1101,14 +1101,14 @@ class ProjectProgressContractTests(unittest.TestCase):
         # F-20 uses the append-only raw-byte binding, not the older
         # canonical-JSON digest/manifest shape. The public validator must
         # accept the real files and reject forged in-memory projections.
-        self.assertEqual("F20_R5A_REWORK_START", bundle["progress"]["repository"]["projection_mode"])
+        self.assertEqual("F20_R5B_REWORK_START", bundle["progress"]["repository"]["projection_mode"])
         self.assertFalse(manifest["accepted"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
         forged_progress = copy.deepcopy(bundle)
         forged_progress["progress"]["next_safe_action"] = "tampered after verification"
         forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
-        self.assertIn("F20_R5A_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
+        self.assertIn("F20_R5B_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
 
         forged_handoff = copy.deepcopy(bundle)
         forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
@@ -1116,7 +1116,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         forged_digest = copy.deepcopy(bundle)
         forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
-        self.assertIn("F20_R5A_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+        self.assertIn("F20_R5B_DIGEST_INVALID", checker.validate_bundle(forged_digest))
 
         forged_manifest = dict(manifest, accepted=True)
         forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
@@ -1126,7 +1126,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
 
         with mock.patch.object(Path, "read_bytes", read_forged_manifest):
-            self.assertIn("F20_R5A_MANIFEST_INVALID", checker.validate_bundle(bundle))
+            self.assertIn("F20_R5B_MANIFEST_INVALID", checker.validate_bundle(bundle))
 
     def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
