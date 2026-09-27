@@ -3669,3 +3669,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 판정: `ACCEPTED_F18_WSL_SCOPED_QA`. R45A/R45B의 동일 artifact·PG18/OIDC/object/network evidence와 R45C 보완의 old 비-OIDC rollback/restore PASS를 기준별로 대조했다. F-18 완료조건의 Critical/Important 미해결 finding은 0건이다.
 - acceptance 범위는 WSL-server 격리 운영 유사 QA로 한정한다. `ysna-server`/Production, 사용자 운영 인수, 전체 pytest, 브라우저 사용자 로그인, human ReleaseDecision은 `UNVERIFIED/NOT_EXECUTED`로 유지한다.
 - 다음 조치: canonical F-18 completion event를 기록하고 F-19 WorkInstruction을 계획 순서대로 시작한다.
+
+# F-19 Provider·보안 회귀 시작 / 2026-09-27
+
+- F-18 scoped QA acceptance 후 F-19 WorkInstruction을 발행했다. 제품 변경 없이 Provider/catalog/settings/Web/secret 회귀를 로컬→WSL-server 동일 commit으로 검증한다.
+- 로컬 anaconda pytest 범위는 `525 passed, 1 warning`으로 통과했다. WSL 전용 checkout `/home/daon/anvil-f19-provider-security-qa`, owner `daon`, 수명은 이번 회귀 1회이며 종료 후 exact cleanup한다.
+- 실제 Provider credential 호출과 Production은 실행하지 않고 `UNVERIFIED/NOT_EXECUTED`로 기록한다. 다음은 WSL checkout 수신·동일 suite 실행이다.
