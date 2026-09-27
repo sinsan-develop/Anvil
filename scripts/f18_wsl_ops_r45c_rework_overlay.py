@@ -42,7 +42,7 @@ def collect_git(root):
     return errors
 
 def materialize(root):
-    root=Path(root); p=json.loads((root/"docs/progress/build-progress.json").read_text()); ledger=json.loads((root/"docs/progress/progress-events.json").read_text())
+    root=Path(root); p=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); ledger=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))
     if p.get("event_sequence") != 1681 or p.get("repository",{}).get("projection_mode") != "F18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_CLOSE" or p.get("worker_lease") is not None or p.get("write_lease") is not None:
         raise RuntimeError("F18_R45C_REWORK_PRECONDITION_INVALID")
     at=datetime.now(timezone(timedelta(hours=9))).isoformat(timespec="seconds"); rows=ledger["events"]; old=p["last_event_id"]
