@@ -38,9 +38,15 @@ CONTROL_SCOPE = {
     DIGEST, MANIFEST,
     "docs/work_orders/F-20_REWORK_R1_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_REWORK_R1_INVOCATION.md",
+    "docs/work_orders/F-20_REWORK_R2_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_REWORK_R2_INVOCATION.md",
     "scripts/f20_rework_overlay.py",
+    "scripts/f20_rework_r2_overlay.py",
     "scripts/check_project_progress.py",
     "tests/tooling/test_f20_rework_projection.py",
+    "tests/tooling/test_f20_rework_r2_projection.py",
+    "docs/progress/progress-handoff-detached-digest-f20-r2-rework-start.json",
+    "docs/evidence/manifests/F-20_R2_REWORK_START_MANIFEST.json",
 }
 EVENT_TYPES = [
     "EVIDENCE_MANIFEST_INVALIDATED",
