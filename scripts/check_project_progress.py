@@ -14386,6 +14386,18 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if not repository.get("worktree_status"):
             errors.append("GIT_WORKTREE_STATUS_MISSING")
         return sorted(set(errors))
+    if repository.get("projection_mode") == "F20_FINAL_WSL_SCOPED":
+        # F-20 evidence is recorded on the validated runtime commit while the
+        # append-only progress/report commit may advance the checkout afterward.
+        # Keep branch/upstream and clean-state checks strict; head identity is
+        # bound by the F-20 manifest and event evidence instead.
+        if repository.get("branch") != actual_branch:
+            errors.append("GIT_BRANCH_MISMATCH")
+        if repository.get("upstream") != actual_upstream:
+            errors.append("GIT_UPSTREAM_MISMATCH")
+        if not repository.get("worktree_status"):
+            errors.append("GIT_WORKTREE_STATUS_MISSING")
+        return errors
     if repository.get("local_head") != actual_head:
         errors.append("GIT_LOCAL_HEAD_MISMATCH")
     if repository.get("branch") != actual_branch:
