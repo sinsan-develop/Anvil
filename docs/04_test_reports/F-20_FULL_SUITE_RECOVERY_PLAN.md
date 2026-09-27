@@ -55,6 +55,13 @@
 - C30 원본 Event hash는 해당 checkpoint에서 검증하고 현재 seq1731의 상태/연결 증거는 현재 projection에서 별도로 검증한다. F18 R12는 과거 `development/main`을 현재 remote에 의존하지 않는 고정 Git 기준선으로 재현하며 실제 scope 변조 거부는 유지한다. Phase B는 당시 manifest와 해당 authority 문서의 역사 bytes를 함께 검증한다. C01은 승인된 F-13 Operations GET 2개만 후속 경로로 인정하고 기존 execute route·권한·schema·parent hash 검사는 유지한다. A13은 POSIX에서 존재하지 않는 case-flipped root가 아니라 실제 허용 root를 사용해 경계 이탈을 검증한다.
 - 각 실패를 정확한 원인으로 RED 재현하고 해당 파일의 다른 계약 테스트·G-05를 GREEN으로 확인한다. WSL-server 동일 SHA 집중 검증 후 전체 suite를 재실행한다. 41개 진행상태 실패와 seq1196 이후 raw Event 변경은 R4에서 숨기거나 skip하지 않고 별도 R5 진단·복구 경계로 유지한다.
 
+### R5 — 진행상태/역사 41건의 분리 복구
+
+- R4 동일 SHA `bd6a543` WSL 전체 suite는 `8131 passed, 41 failed, 116 skipped`였다. 실패 41건은 모두 `tests/tooling/test_project_progress.py`: 현재 C30 원문 prefix/현재 불변식 4, C21 runtime 역사 3, C09~C13 역사 31, E09 역사 3이다. 원본 Event와 frozen manifest의 hash는 고치거나 테스트를 skip하지 않는다.
+- R5a는 현재 F-20 모드의 세 진행상태 테스트(`detached digest`, failure count, Event category fixture)를 별도 exact-path lease로 다룬다. 예정 제품 쓰기 경로는 `tests/tooling/test_project_progress.py`와 `docs/04_test_reports/F-20_REWORK_R5A_RESULT.md` 두 곳뿐이다. 레거시 digest/manifest helper를 현재 F-20 raw-byte 형식에 무비판적으로 대입하지 않고, 현재 R4 control의 digest·handoff·manifest 결박 및 in-memory 변조 거부를 실제로 검증한다. failure count는 현재 handoff에 없는 필드를 조작하지 않고 정본 projection의 실제 필드를 사용한다. Event fixture는 계약상 빠진 구체 타입만 명시적 payload로 채운다. 검사 약화나 wildcard 타입 허용은 금지한다.
+- C30의 `test_no_early_acceptance_or_lease_revoke`는 현재 원장의 과거 raw bytes 변조를 실제로 포착한 독립 감사 결함이다. `14c8c574`의 전체 Event 재직렬화와 seq1689~1712 24개 Event 변경을 Git 원본·현재 blob·스크립트로 확인했다. 이 테스트를 단순 frozen fixture로 바꿔 현재 원장의 무결성 실패를 은폐하지 않는다. 원본 재작성·history rewrite 없이 복구 가능한 append-only 사고 기록과 현재 acceptance 차단 조건을 먼저 설계·검증한다. 설계·중요 위험 변경이 필요하면 그 경계만 별도 보고한다.
+- C21 3, C09~C13 31, E09 3은 원본 authority hash 및 당시 Git tree와 현재 successor 문서/상태를 분리해 각 군별 역사 fixture와 변조 음성 검사를 유지한다. 한 번에 38건을 단일 writer 변경으로 묶지 않고, 실제 의존 파일과 검증/rollback 경계를 읽기 전용으로 확인한 다음 후속 exact-path lease를 정한다. R5a와 감사 사고 판정, 역사군 검증 모두 닫히기 전 전체 suite나 F-20을 수락하지 않는다.
+
 ## F-20 완료조건 불일치 확인
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.
