@@ -184,6 +184,26 @@ def test_f20_rework_materialization_preserves_history_and_never_claims_completio
         materialize(tmp_path, "a" * 40, NOW, "test")
 
 
+def test_f20_rework_history_fixture_remains_available_after_projection(tmp_path, monkeypatch):
+    from scripts.f20_rework_overlay import materialize
+
+    paths = [
+        "docs/progress/progress-events.json", "docs/progress/build-progress.json",
+        "docs/progress/BUILD_HANDOFF.md", OLD_MANIFEST,
+        "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md", WI, INVOCATION,
+    ]
+    for relative in paths:
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / relative, destination)
+    materialize(tmp_path, "a" * 40, NOW, "test")
+
+    monkeypatch.setitem(_history.__globals__, "ROOT", tmp_path)
+    rows = _history()
+    assert len(rows) == 1714
+    assert rows[-1]["event_id"] == "evt_f20_1714_main_package_accepted"
+
+
 def test_f20_rework_control_rejects_digest_or_historical_evidence_tampering(tmp_path):
     from scripts.f20_rework_overlay import DIGEST, materialize, validate_control
 
