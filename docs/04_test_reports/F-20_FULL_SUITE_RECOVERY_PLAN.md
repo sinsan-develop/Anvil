@@ -43,6 +43,12 @@
 - [ ] Task 3 — R3 제품 SHA `c759956` WSL 동일 SHA Node 21 PASS, A14 browser-source 1 PASS, G-05 seq1731 PASS. WSL web typecheck·lint PASS, 격리 Node 22와 lockfile 일치 optional rolldown binding에서 build PASS(시스템 Node 18 build는 실패). 전체 pytest는 `8112 passed, 48 failed, 116 skipped`로 비GREEN. 실패군: C30 contract 2, A13 POSIX 경로 1, F18 R12 원격 ref 전제 2, Phase B gate 1, progress/history 41, C01 OpenAPI 1. 각 실패의 현재 결함·역사 fixture·실행 환경 원인을 분리해 RED→GREEN 처리하고 전체 suite 재실행 대기.
 - [ ] Task 4
 
+### 48건의 우선 원인 분리
+
+- F18 R12 두 실패는 WSL 격리 clone에 `development/main` ref가 없어 `rev-parse`가 먼저 실패했다. ref가 있는 로컬에서 같은 두 테스트를 재실행하면 1 PASS·1 FAIL이고, 남은 실패는 과거 `BASE`와 현재 `development/main` 불일치(`F18_WSL_OPS_R12_MAIN_DRIFT`)다. 단순 ref fetch만으로 GREEN이라고 간주하지 않고, 역사 Git 기준선 고정 fixture로 재현한다.
+- C30 contract 두 테스트는 현재 seq1731의 Event raw bytes·projection을 과거 seq1357 고정값과 비교한다. 이력 checkpoint 증거와 현재 투영 검증을 분리한다. A13의 Linux `swapcase()` 경로는 존재하지 않는 allowed root를 만들므로 Windows 전제인지 제품 경로 판정 오류인지 POSIX 최소 재현으로 분리한다.
+- B Gate·C01 OpenAPI와 진행상태·이력 41건은 현재 정본을 과거 frozen 기준선에 대입하는 사례와 실제 현재 불변식 회귀를 각각 확인한다. 모든 변경은 기존 보안·승인 검사를 약화하지 않고 새 exact-path lease 뒤 진행한다.
+
 ## F-20 완료조건 불일치 확인
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.
