@@ -3824,3 +3824,10 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 같은 WSL 환경의 전체 suite `-x` 실행은 `1080 passed, 1 failed in 44.05s`에서 종료 코드 1이었다. 첫 실패 `tests/agent_team/test_worktree_writes_e06.py::test_managed_object_fanout_redirect_is_rejected_before_foreign_write`는 심볼릭 링크를 안전하게 차단하면서 `BackendRejected(REPARSE_PATH_DENIED)`를 반환했으나 계약은 `LeaseError`를 요구한다. 해당 파일 전체 재검증은 `55 passed, 1 failed in 34.51s`; 보안 차단 유지와 공개 오류 형식 정합화가 필요한 제품 회귀다. 전용 WSL checkout·가상환경은 경로/실행 상태 확인 후 제거했고 `F20_SUITE_TEMP_RESIDUE_ZERO`를 확인했다.
 - 계획서 F-20 완료조건의 동일 ReleaseManifest 11개 메뉴 기능 smoke·중단/재개와 Phase F Gate의 화면 기반 조작을 최종 보고서 증거와 대조했다. 최종 보고서는 Projects 이외 9개 메뉴를 `UNAVAILABLE` read-only로 기록한다. 따라서 기존 canonical F-20 accepted Event를 임의 수정하지 않되, 현재의 완료 선언을 Gate 충족 증거로 사용하지 않고 독립 재판정 대상으로 표시한다.
 - 이 브랜치는 `main` 병합·삭제 전 상태를 유지한다. 다음 조치는 동일 브랜치에서 정확한 제품 수정 WorkInstruction/유효한 worker·write lease를 발행해 Git 쓰기 예외 계약을 RED→GREEN으로 보완하고, F-20의 실제 11개 메뉴·중단/재개 완료조건을 재검증하는 것이다. `P-01`은 F Gate 충족 전 착수하지 않는다. Production·ysna-server는 제외한다.
+
+# F-20 완료 증거 hash 결박 감사 / 2026-09-27
+
+- 판정: `F20_ACCEPTANCE_BINDING_REWORK_REQUIRED`. seq1714 `MAIN_PACKAGE_ACCEPTED`의 `test_report_sha256`은 `14DC37EDAE4589A26EC393B94BD843734FD86BF9ACA5B7EBD54F5FBC99C97D7F`인데 현재 보고서 SHA-256은 `3F4B009A3D401B2727E88A36694083657853F47DD171E1396B6FECDAF82EC7A0`이다. 현재 파일은 기존 완료 commit `14c8c57`의 보고서와 동일하여 이 불일치는 이번 재감사에서 새로 만든 것이 아니다.
+- 같은 Event의 `manifest_sha256`은 `C4466666FBD82FCB503BA9CE01D3D33891CB12CAC87DB4D704D7027389E2DE8C`인데 현재 manifest 파일 SHA-256은 `814AB1441CA2997F30322FF7E3890F7D4AFCF13C2F52FD610114ABA8C6BD0692`이다. 보고서·manifest 모두 Event와 현재 파일이 결박되지 않는다.
+- 직전 재감사 commit에서 보고서에 덧붙였던 설명은 immutable evidence 경계를 보존하기 위해 `efe739e`에서 정확히 제거했다. 재감사 사실은 이 WORK_STATUS에만 남긴다. G-05 checker는 seq1714에서 `PASS`를 반환하지만 현재 보고서의 hash 결박 불일치를 검출하지 못하므로 그 PASS를 F-20 acceptance 유효성 증거로 사용하지 않는다.
+- 다음 통제 조치: seq1714와 과거 report bytes는 수정하지 않고 append-only `EVIDENCE_MANIFEST_INVALIDATED`/재작업 계보 및 새 WorkInstruction을 정식으로 투영하고, checker에 report hash 검증을 추가한다. 검증된 worker/write lease가 발급되기 전 제품 파일 mutation은 시작하지 않는다. 기능 범위·요구사항·중요 위험 변경 승인 요청은 필요하지 않다.
