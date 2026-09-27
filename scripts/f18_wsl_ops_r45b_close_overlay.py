@@ -212,4 +212,3 @@ def materialize(root):
         "validated_base_commit": BASE, "exact_allowed_paths": control_paths(),
         "product_write_scope": [], "raw_checksums": checksums,
         "self_reference": False, "production": "NOT_EXECUTED"}))
-
