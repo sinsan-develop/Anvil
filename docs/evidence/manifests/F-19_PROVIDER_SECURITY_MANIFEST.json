@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-19",
+  "status": "ACCEPTED_F19_SCOPED_SECURITY_QA",
+  "commit": "03d6c27",
+  "local_provider_security": "525 passed, 1 warning",
+  "wsl_provider_security": "525 passed in 6.79s",
+  "browser_network": "same-origin, secret/internal-address exposure 0",
+  "temporary_resource_residue": 0,
+  "live_provider_calls": "UNVERIFIED",
+  "production": "NOT_EXECUTED"
+}
