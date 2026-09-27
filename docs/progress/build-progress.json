@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f18-wsl-ops-r45b-close-seq1678",
-  "event_sequence": 1678,
-  "updated_at": "2026-09-27T12:43:30+09:00",
-  "last_event_id": "evt_f18_local_1678_worker_lease_revoked",
+  "snapshot_id": "snapshot-f18-wsl-ops-r45c-seq1680",
+  "event_sequence": 1680,
+  "updated_at": "2026-09-27T13:24:25+09:00",
+  "last_event_id": "evt_f18_local_1680_worker_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -233,7 +233,20 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f18-wsl-ops-r45c-20260927-001",
+    "actor_id": "main-agent-eoul",
+    "subject_ref": "F-18/WSL_OPS_R45C_ROLLBACK_REHEARSAL",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-27T13:24:25+09:00",
+    "expires_at": "2026-09-28T01:24:25+09:00",
+    "lease_epoch": 36,
+    "fencing_token": "f18-wsl-ops-execution-fence-epoch-36-da187871091219e8",
+    "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-36-da187871091219e8",
+    "baseline_git_commit": "28417a864313a1bff771c9cafaf4096436cfbb24",
+    "dispatch_head": "28417a864313a1bff771c9cafaf4096436cfbb24",
+    "path_scope": []
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -455,7 +468,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "PREPARE_F18_EXACT_ROLLBACK_ARTIFACT_RECOVERY",
+  "next_safe_action": "MAIN_VERIFY_F18_R45C_ROLLBACK_REHEARSAL",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -569,8 +582,8 @@
     "local_head": "69247977e4e51781401e45348fd3a290d8393c36",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "650fd1e2609777cf4980cb866a42a1f4159a4606",
-    "projection_mode": "F18_WSL_OPS_R45B_TARGET_QA_CHECKPOINT",
+    "remote_head": "28417a864313a1bff771c9cafaf4096436cfbb24",
+    "projection_mode": "F18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_START",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -578,6 +591,7 @@
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R45A_STAGING_ARTIFACT_REPORT.md",
       "docs/04_test_reports/F-18_R45B_SAME_ARTIFACT_REPORT.md",
+      "docs/04_test_reports/F-18_R45C_ROLLBACK_ARTIFACT_AUDIT.md",
       "docs/WORK_STATUS.md",
       "docs/evidence/f18_r45b/README.md",
       "docs/evidence/f18_r45b/qa-capability-envelope.json",
@@ -649,6 +663,7 @@
       "docs/evidence/manifests/F-18_WSL_OPS_R45A_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R45B_CLOSE_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R45B_START_MANIFEST.json",
+      "docs/evidence/manifests/F-18_WSL_OPS_R45C_START_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R4_CHECKPOINT_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R5_CHECKPOINT_MANIFEST.json",
       "docs/evidence/manifests/F-18_WSL_OPS_R6_CLOSE_MANIFEST.json",
@@ -721,6 +736,7 @@
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45a.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45b-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45b.json",
+      "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r45c.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r5.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6-close.json",
       "docs/progress/progress-handoff-detached-digest-f18-wsl-ops-r6.json",
@@ -841,6 +857,9 @@
       "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_INVOCATION.md",
       "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_WORK_INSTRUCTION.md",
+      "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_INVOCATION.md",
+      "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_PLAN.md",
+      "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_WORK_INSTRUCTION.md",
       "docs/work_orders/F-18_WSL_OPS_R4_CONTROL_ANCHOR_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R5_TEST_FIX_PLAN.md",
       "docs/work_orders/F-18_WSL_OPS_R6_CLOSE_PLAN.md",
@@ -918,6 +937,7 @@
       "scripts/f18_wsl_ops_r45a_port_revision_overlay.py",
       "scripts/f18_wsl_ops_r45b_close_overlay.py",
       "scripts/f18_wsl_ops_r45b_overlay.py",
+      "scripts/f18_wsl_ops_r45c_overlay.py",
       "scripts/f18_wsl_ops_r4_overlay.py",
       "scripts/f18_wsl_ops_r5_overlay.py",
       "scripts/f18_wsl_ops_r6_close_overlay.py",
@@ -986,6 +1006,7 @@
       "tests/tooling/test_f18_wsl_ops_r45a_port_revision_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r45b_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r45b_overlay.py",
+      "tests/tooling/test_f18_wsl_ops_r45c_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r4_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r5_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r6_close_overlay.py",
@@ -998,10 +1019,10 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F18_WSL_OPS_R45B_TARGET_QA_CHECKPOINT",
+    "worktree_status": "F18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
-    "control_qa_head": "650fd1e2609777cf4980cb866a42a1f4159a4606"
+    "control_qa_head": "28417a864313a1bff771c9cafaf4096436cfbb24"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1161,11 +1182,11 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F-18-WSL-OPS-R45B-20260927-001",
-    "path": "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_WORK_INSTRUCTION.md",
-    "sha256": "7CBDB4C2250A3081E9628EEFF2BE213A9F4275A96443A681F9B652F42887D118",
-    "invocation_path": "docs/work_orders/F-18_WSL_OPS_R45B_SAME_ARTIFACT_INVOCATION.md",
-    "invocation_sha256": "8F3B07ED3A3577901D85769100A6F987693B03EFEED8D4462BB067F15D47C158",
+    "artifact_id": "WI-F-18-WSL-OPS-R45C-20260927-001",
+    "path": "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_WORK_INSTRUCTION.md",
+    "sha256": "1C439D01B0BB45F559ACAF8CFC1D2F28C5C749306D6B28D428588A4DFA6D0B4F",
+    "invocation_path": "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_INVOCATION.md",
+    "invocation_sha256": "5B665F95A8BFDAFF57F3C9BF5EA082AC86AE3FA0558966CAACABB4541FF76D66",
     "revision_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
     "parent_approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "assigned_verification_ids": [
@@ -1174,7 +1195,7 @@
       "AV-OPS-020",
       "AV-OPS-021"
     ],
-    "verification_scope": "WSL_OPS_R45B_SAME_ARTIFACT_MAIN_QA_ONLY"
+    "verification_scope": "WSL_OPS_R45C_ROLLBACK_REHEARSAL_MAIN_QA_ONLY"
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1328,7 +1349,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F5583631BD720C4ED9FA7952B58891DFAF8BD4D3E4140C14C100A9AD522F0456"
+      "sha256": "147498BAAA1FEF8C7CE7A7D27EE3C4C97A24F92D11DE7EE234864C2AED646237"
     }
   },
   "next_work_package": {
@@ -1725,8 +1746,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "F39112BCA13FAEF0FC89050EFF1F3C45C79BD98BAF52EFC7F6C982B374562570",
-  "runtime_next_action": "PREPARE_F18_EXACT_ROLLBACK_ARTIFACT_RECOVERY",
+  "snapshot_hash": "95384A297F36E6F3EE30EFAAC926AE441EEA2B8F5BA84E9A312EFC2CFB0502E8",
+  "runtime_next_action": "MAIN_VERIFY_F18_R45C_ROLLBACK_REHEARSAL",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3338,7 +3359,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-27T12:43:30+09:00",
+  "recorded_at": "2026-09-27T13:24:25+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
