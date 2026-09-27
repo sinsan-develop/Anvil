@@ -57,9 +57,3 @@ F-20의 WSL 개발·테스트 완료를 기록한다. 이는 Production PASS나 
 
 제품 변경은 없었다. 임시 runtime과 checkout만 제거했으며, 코드 rollback 대상은 없다. 기준 commit은 `97adc5c`이다.
 
-## 병합 전 독립 재감사 / 2026-09-27
-
-- 기존 WSL scoped 완료 문구는 당시 실행한 격리 검증의 기록으로 보존한다. 그러나 계획서의 11개 메뉴 기능 smoke·중단/재개 조건과 대조하면, 위 증거에 적힌 9개 메뉴의 `UNAVAILABLE` read-only 상태는 기능 완료 증거가 아니다. F-20 완료와 Phase F Gate는 독립 재판정이 필요하다.
-- 동일 브랜치 SHA `94dcc85a2cc394c056a0b039d4741ccf8b0ecc2a`를 WSL-server에 격리 checkout하고 잠금 의존성을 설치했다. pytest 정식 수집은 `8245 tests collected`였으며 첫 실패까지의 실행은 `1080 passed, 1 failed`였다. `test_managed_object_fanout_redirect_is_rejected_before_foreign_write`의 기대 `LeaseError` 대신 `BackendRejected(REPARSE_PATH_DENIED)`가 발생했다. 해당 파일 전체는 `55 passed, 1 failed`다.
-- 이 발견은 이전 Runtime/DB/브라우저 관측치를 지우지 않지만, 제품 회귀와 미충족 완료조건을 해소하기 전에는 branch 병합·P-01 착수 근거가 될 수 없다. WSL 테스트 checkout/venv는 `F20_SUITE_TEMP_RESIDUE_ZERO`로 정리했다.
-
