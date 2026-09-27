@@ -1,8 +1,11 @@
-import {Component, useEffect, useState, type ErrorInfo, type ReactNode} from 'react';
+import React, {Component, useEffect, useState, type ErrorInfo, type ReactNode} from 'react';
 import {MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
+import {scanProjects} from '../api/projects-client.js';
+import {createProjectsState, reduceProjects} from '../features/projects/projects-state.js';
 
 type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
+type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
 
 export function classifyReadiness(value: unknown): Readiness {
   if (typeof value !== 'object' || value === null) return 'NOT CONNECTED';
@@ -34,6 +37,7 @@ function Shell({route}: AppProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [readiness, setReadiness] = useState<Readiness>('NOT CONNECTED');
   const [checked, setChecked] = useState('NOT REQUESTED');
+  const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
 
   useEffect(() => {
@@ -59,6 +63,17 @@ function Shell({route}: AppProps) {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    if (currentRoute !== '/projects') return;
+    let live = true;
+    void scanProjects().then((payload) => {
+      if (live) setProjects(reduceProjects(createProjectsState(), {type: 'SCAN_RECEIVED', payload}));
+    }).catch((error: Error) => {
+      if (live) setProjects(reduceProjects(createProjectsState(), {type: 'SCAN_FAILED', message: error.message}));
+    });
+    return () => { live = false; };
+  }, [currentRoute]);
+
   return <div className={`app-shell${collapsed ? ' sidebar-collapsed' : ''}`}>
     <aside className="sidebar">
       <a className="brand" href="/" aria-label="Anvil Dashboard"><strong>A</strong><span>ANVIL<small>AI Development OS</small></span></a>
@@ -66,10 +81,10 @@ function Shell({route}: AppProps) {
         onClick={() => setCollapsed(!collapsed)}>{collapsed ? '메뉴 펼치기' : '메뉴 접기'}</button>
       <nav aria-label="Anvil 전체 메뉴"><ul id="app-menu" className="app-menu">
         {MENU_ITEMS.map((item) => <li key={item.id}>
-          {item.id === 'dashboard'
-            ? <a href="/" aria-current={currentRoute === '/' ? 'page' : undefined}>{item.label}</a>
+          {item.state === 'ACTIVE'
+            ? <a href={item.id === 'dashboard' ? '/' : item.href} aria-current={(item.id === 'dashboard' ? currentRoute === '/' : currentRoute === '/projects') ? 'page' : undefined}>{item.label}</a>
             : <span aria-disabled="true" title="이 메뉴는 아직 준비 중입니다.">{item.label}</span>}
-          {item.id !== 'dashboard' && <span className="menu-state">PREPARING</span>}
+          {item.state !== 'ACTIVE' && <span className="menu-state">PREPARING</span>}
         </li>)}
       </ul></nav>
     </aside>
@@ -92,6 +107,10 @@ function Shell({route}: AppProps) {
         <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
           <p>실행·승인·비용·알람 read model은 아직 연결되지 않았습니다. UNAVAILABLE</p>
         </section>
+      </main> : currentRoute === '/projects' ? <main className="dashboard">
+        <div className="dashboard-heading"><div><p className="header-status">REPOSITORY ONBOARDING</p><h1>Projects</h1></div><p>읽기 전용 scan · {projects.status}</p></div>
+        <section className="status-card" aria-labelledby="projects-status-heading"><h2 id="projects-status-heading">Repository 상태</h2><p className={projects.status === 'READY' ? 'status-ready' : 'status-unavailable'}>{projects.status}</p><p>{projects.reason}</p>{projects.repository && <dl className="status-metadata"><div><dt>Branch</dt><dd>{projects.repository.branch}</dd></div><div><dt>HEAD</dt><dd>{projects.repository.head}</dd></div><div><dt>Tracked dirty</dt><dd>{projects.repository.dirtyPaths}</dd></div><div><dt>Untracked</dt><dd>{projects.repository.untrackedPaths}</dd></div></dl>}</section>
+        <section className="status-card" aria-labelledby="projects-baseline-heading"><h2 id="projects-baseline-heading">Baseline</h2><p className={projects.baseline.status === 'READY_TO_REVIEW' ? 'status-ready' : 'status-unavailable'}>{projects.baseline.status}</p><p>{projects.baseline.reason}</p><p className="status-reason">승인 없는 mutation은 수행하지 않습니다.</p></section>
       </main> : <main className="dashboard" role="alert"><h1>페이지를 사용할 수 없습니다</h1>
         <p>준비되지 않은 경로입니다. <a href="/">Dashboard로 돌아가기</a></p></main>}
     </section>

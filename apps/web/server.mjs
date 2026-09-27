@@ -92,6 +92,20 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
+async function scanCurrentRepository() {
+  const code=`import json
+from pathlib import Path
+from packages.repository_intelligence import ScanRequest, scan_repository
+root=Path.cwd()
+# Git worktrees keep the common metadata in the repository root; the scan remains
+# read-only and is confined to the Anvil repository boundary.
+result=scan_repository(ScanRequest(repository_path=str(root), allowed_root=str(root.parent.parent)))
+print(json.dumps(result.to_dict(), ensure_ascii=False))`;
+  const python=await resolvePythonExecutable();
+  const {stdout}=await execFileAsync(python,['-c',code],{cwd:repoRoot,timeout:30000,windowsHide:true,maxBuffer:4_000_000});
+  return JSON.parse(stdout);
+}
+
 export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false,agentConsoleUpstream='',qaLoginUpstream=''}={}) {
   let consoleUpstream=null;
   if (agentConsoleUpstream) {
@@ -205,6 +219,12 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
         }
       }
       if (request.method==='GET' && requestUrl.pathname==='/api/workbench/config') return send(response,200,{ok:true,project,fixtures:Object.entries(fixtures).map(([fixtureId,value])=>({fixtureId,label:value.label})),csrfToken,runtimeBoundary:'FIXTURE_BROWSER_RUNTIME_ONLY',actualProvider:'NOT_EXECUTED'});
+      if (request.method==='GET' && requestUrl.pathname==='/api/projects/scan') {
+        try {
+          const scan=await scanCurrentRepository();
+          return send(response,scan.success?200:409,{ok:scan.success,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,head:scan.repository?.head ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0,untrackedPaths:scan.repository?.untracked_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},message:scan.success?'읽기 전용 repository scan이 완료됐습니다.':'repository 상태가 변경되어 baseline을 차단했습니다.'});
+        } catch { return safeFailure(response,503,'OFFLINE','Repository scan을 실행할 수 없습니다.'); }
+      }
       if (request.method==='POST' && requestUrl.pathname==='/api/workbench/scan') {
         const hostHeader=request.headers.host;
         const expectedOrigin=`http://${allowedHost}`;

@@ -4,7 +4,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {App, classifyReadiness} from '../src/console/App.tsx';
 
-test('operational shell keeps canonical menu order but only Dashboard active', () => {
+test('operational shell keeps canonical menu order with only the current Dashboard active', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   for (const label of ['Dashboard', 'Workbench', 'Projects', 'Runs', 'Reviews', 'Quality',
                        'Knowledge', 'Agents &amp; Automation', 'Environments', 'Operations', 'Settings']) {

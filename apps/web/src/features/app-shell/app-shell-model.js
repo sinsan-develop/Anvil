@@ -1,7 +1,7 @@
 export const MENU_ITEMS = Object.freeze([
   {id:'dashboard', label:'Dashboard', href:'/', state:'ACTIVE'},
   {id:'workbench', label:'Workbench', href:'#workbench', state:'PREPARING'},
-  {id:'projects', label:'Projects', href:'#projects', state:'PREPARING'},
+  {id:'projects', label:'Projects', href:'/projects', state:'ACTIVE'},
   {id:'runs', label:'Runs', href:'#runs', state:'PREPARING'},
   {id:'reviews', label:'Reviews', href:'#reviews', state:'PREPARING'},
   {id:'quality', label:'Quality', href:'#quality', state:'PREPARING'},
