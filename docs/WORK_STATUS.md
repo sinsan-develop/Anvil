@@ -3727,3 +3727,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `ACCEPTED_U06_LOCAL_CONTRACT_SCOPED`. Gate/EvidenceManifest 상태 계약을 `370 passed`로 검증했다.
 - 실제 Quality 브라우저·Network·live deployment는 미검증이며 PASS로 승격하지 않았다. canonical progress seq1700, 다음은 `U-07 Knowledge READY_FOR_WORK_INSTRUCTION`이다.
+
+# U-07 Knowledge 완료 / 2026-09-27
+
+- 판정: `ACCEPTED_U07_LOCAL_CONTRACT_SCOPED`. Knowledge 계보·revoke·snapshot 계약을 `406 passed`로 검증했다.
+- 실제 Knowledge 브라우저·Network·live vector/DB는 미검증이다. canonical progress seq1702, 다음은 `U-08 Agents & Automation READY_FOR_WORK_INSTRUCTION`이다.
