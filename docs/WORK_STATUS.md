@@ -3717,3 +3717,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 판정: `ACCEPTED_U04_LOCAL_WSL_CONTRACT_SCOPED`. Run·Step·Delegation·attempt·queue·중단·재개·취소 계약을 검증했다.
 - 로컬 execution/queue/delegation 선택 범위 `77 passed, 1 skipped, 1 warning`, Workbench SSE/state 10개 PASS를 기준으로 기록한다. 실제 WSL DB queue·브라우저·live worker는 미검증이다.
 - canonical progress seq1696으로 U-04를 완료하고 다음 항목을 `U-05 Reviews READY_FOR_WORK_INSTRUCTION`으로 전환한다.
+
+# U-05 Reviews 완료 / 2026-09-27
+
+- 판정: `ACCEPTED_U05_LOCAL_CONTRACT_SCOPED`. Release guard와 ProductValidation·DefectAssessment·human ReleaseDecision 분리 계약을 `173 passed`로 검증했다.
+- 실제 Reviews 브라우저·Network·live DB·사용자 승인·Production은 미검증으로 유지한다. canonical progress seq1698, 다음은 `U-06 Quality READY_FOR_WORK_INSTRUCTION`이다.
