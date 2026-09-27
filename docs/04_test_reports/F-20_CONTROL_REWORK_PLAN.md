@@ -63,7 +63,7 @@
 - [x] **Step 2:** 재작업 WorkInstruction에 Git 쓰기 오류 형식, 11개 메뉴 실제 기능 검증, 중단/재개, WSL 환경 및 제외 범위를 기록한다.
 - [x] **Step 3:** 새 Event와 파생 projection만 생성하고 신규 lease를 검사한다.
 - [x] **Step 4:** G-05·projection 테스트 GREEN, `git diff --check`, 과거 Event/보고서/manifest의 byte 동등성을 확인한다.
-- [ ] **Step 5:** 통제 상태를 commit·push하고 원격 SHA를 확인한다.
+- [x] **Step 5:** 통제 상태를 commit·push하고 원격 SHA를 확인한다.
 
 ## 후속 구현 경계
 
