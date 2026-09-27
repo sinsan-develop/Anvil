@@ -11,10 +11,10 @@
 ## 자원 사전 계획
 
 - 대상은 `ssh WSL-server`만. Windows local은 계획·기록·Git push용이고 로컬 `wsl.exe`, `ysna-server`, 공유 `/srv/anvil-wsl/repo`, `anvil-web`, `local-postgres`, 다른 container/DB/network, 기존 Chrome/계정/OS 설정은 변경하지 않는다.
-- 전용 clean detached Git checkout `/home/daon/anvil-f18-r45a-staging`, Git 밖 합성 material `/home/daon/anvil-f18-r45a-material`, Compose project `anvil-f18-r45a`를 사용한다. 두 경로 owner `daon`, symlink 불가. 합성 material의 Secret/키는 Git·보고서·로그에 원문을 남기지 않는다.
-- Test/Staging 전용 PG15와 RC 전용 pgvector-PG18은 각각 독립 container/volume/role/schema를 사용한다. `local-postgres` 0.0.0.0:5432에는 접속·변경하지 않는다. 전용 Web만 WSL loopback `127.0.0.1:8454`에 publish하고 API/Worker/DB/object store는 host port 0, ingress/internal network 분리·최소 권한을 확인한다. 이미지 4종(Web/API/Worker/OIDC QA)과 pgvector PG18 cache는 exact SHA/tag·image ID를 기록하고, 공유 cache image는 지우지 않는다. 필요 시 PG15/MinIO cache 사용 전 ID를 기록한다.
-- Windows 브라우저가 필요한 단계가 되면 별도 사전 기록 후 임시 격리 Chrome profile과 `127.0.0.2:8454` SSH tunnel만 만든다. R45A 최초 artifact/DB 검증에서는 Windows 브라우저 자원 생성0이다.
-- 수명은 R45A 한 차례. 생성 직전 exact 경로·project label·port 부재, 공유 서비스 ID/status를 읽기 전용 확인한다. 종료 전 realpath/owner/HEAD/dirty, container/network/volume/image tag와 연결자를 확인하고 전용 Compose `down` 및 전용 경로·tag만 삭제한다. 전용 볼륨은 백업/복원 증거가 저장된 뒤에만 정확히 제거한다. 공유 image/cache와 서비스는 보존하며 잔여0과 공유 ID/status 불변을 확인한다.
+- 전용 clean detached Git checkout `/home/daon/anvil-f18-r45a-staging`, Git 밖 합성 material `/home/daon/anvil-f18-r45a-material`, Compose project `anvil-f18-r45a`를 사용한다. 두 경로 owner `daon`, symlink 불가. 합성 material의 Secret/키는 Git·보고서·로그에 원문을 남기지 않는다. 첫 epoch33에서 이미 생성한 checkout은 정확한 tag/HEAD/remote/clean/owner를 다시 확인한 뒤 epoch34에서 재사용하고, 재생성하거나 복사하지 않는다.
+- Test/Staging 전용 PG15와 RC 전용 pgvector-PG18은 각각 독립 container/volume/role/schema를 사용한다. `local-postgres` 0.0.0.0:5432에는 접속·변경하지 않는다. 전용 Web만 WSL loopback `127.0.0.1:8444`에 publish하고 API/Worker/DB/object store는 host port 0, ingress/internal network 분리·최소 권한을 확인한다. 실제 `compose.f18.oidc.yml`·Nginx·QA issuer의 고정 8444 계약과 일치하며 새 포트 설정이나 서버 직접 patch를 도입하지 않는다. 이미지 4종(Web/API/Worker/OIDC QA)과 pgvector PG18 cache는 exact SHA/tag·image ID를 기록하고, 공유 cache image는 지우지 않는다. 필요 시 PG15/MinIO cache 사용 전 ID를 기록한다.
+- Windows 브라우저가 필요한 단계가 되면 별도 사전 기록 후 임시 격리 Chrome profile과 `127.0.0.2:8444` SSH tunnel만 만든다. R45A 최초 artifact/DB 검증에서는 Windows 브라우저 자원 생성0이다.
+- 수명은 R45A 한 차례. 생성 직전 exact 경로·project label·8444 port 부재, 공유 서비스 ID/status를 읽기 전용 확인한다. 종료 전 realpath/owner/HEAD/dirty, container/network/volume/image tag와 연결자를 확인하고 전용 Compose `down` 및 전용 경로·tag만 삭제한다. 게시된 annotated QA tag는 검증 이력으로 보존하며 강제 이동·삭제하지 않는다. 전용 볼륨은 백업/복원 증거가 저장된 뒤에만 정확히 제거한다. 공유 image/cache와 서비스는 보존하며 잔여0과 공유 ID/status 불변을 확인한다.
 
 ## 실행·판정
 
