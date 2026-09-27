@@ -43,6 +43,10 @@ CONTROL_SCOPE = r1.CONTROL_SCOPE | {
     WI, INVOCATION, DIGEST, MANIFEST,
     "scripts/f20_rework_r2_overlay.py",
     "tests/tooling/test_f20_rework_r2_projection.py",
+    "docs/work_orders/F-20_REWORK_R3_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_REWORK_R3_INVOCATION.md",
+    "scripts/f20_rework_r3_overlay.py",
+    "tests/tooling/test_f20_rework_r3_projection.py",
 }
 
 

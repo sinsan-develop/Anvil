@@ -22,6 +22,8 @@
 
 ## Task 3 — 역사 Git 증거와 잔여 전체 suite
 
+- R2 집중 WSL의 유일한 남은 실패는 두 browser API client가 기존 `apiPath` 안전 검증 없이 간접 `fetchImpl`을 호출한다는 A14 정적 검사 결과다. R2 exact8 밖이므로 R2 lease를 회수한 뒤 R3 exact5(`F-20_REWORK_R3_RESULT.md`, 두 client, 각 client 테스트 2개)로 append-only 전환한다. browser scanner 자체는 수정하지 않고 기존 same-origin 경로 검증을 호출 지점에 적용한다.
+- R3 보안 경로 수정은 cross-origin/내부 주소 거부 음성 테스트를 먼저 추가하고, A14 검사·해당 Node 테스트·브라우저 Network를 로컬/WSL 동일 SHA에서 확인한다. R3는 새 브랜치가 아니라 현재 `codex/f18-wsl-ops`의 다음 F-20 재작업 lease다.
 - 누락된 15개 commit 객체가 요구하는 검증 의미와 외부 공개 범위를 먼저 감사한다. 큰 고아 이력을 원격 tag로 바로 게시하지 않는다.
 - 기존 지정 원격 `refs/pull/15/head`가 과거 `ec9ee09`와 대표 `abb7361`·`ed3cae9`의 후손임을 확인했다. WSL clean checkout은 현재 작업 SHA를 pull한 뒤 이 기존 ref만 명시적으로 fetch하여 역사 증거 객체를 읽는다. 새 원격 branch/tag나 테스트 편의를 위한 코드 fixture를 게시하지 않는다.
 - 공개 영향 없이 재현 가능한 이식성 해결책을 우선 구현하고, 변경이 필요하면 정확한 경로 lease와 RED→GREEN을 따른다.
@@ -37,6 +39,6 @@
 ## 실행 기록
 
 - [x] Task 1 — 로컬 RED→GREEN 및 G-05 PASS; WSL 동일 SHA 검증은 별도 상태 기록
-- [ ] Task 2 — R2 exact8 로컬 재작업·독립 검토 보완 완료; 같은 SHA WSL 집중/전체 검증 대기
-- [ ] Task 3 — 기존 PR #15 ref fetch 후 WSL의 C-30 대표 회귀 1 PASS. seq1725 통제 테스트 파일 전체는 639 PASS·42 FAIL로 아직 비GREEN; 로컬 제품 수정 반영 SHA에서 원인별 재검증 대기
+- [x] Task 2 — R2 exact8 로컬 보완 및 WSL 동일 SHA 집중 231 PASS; 1 FAIL은 R2 범위 밖 browser 경로 안전 검사로 Task 3에 이관. 전체 suite는 아직 비GREEN
+- [ ] Task 3 — 기존 PR #15 ref fetch 후 WSL의 C-30 대표 회귀 1 PASS. seq1725 통제 테스트 파일 전체는 639 PASS·42 FAIL로 아직 비GREEN; R3 browser 경로와 잔여 전체 suite 원인별 재검증 대기
 - [ ] Task 4
