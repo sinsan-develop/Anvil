@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createProjectsState, reduceProjects, projectsApiPath } from '../src/features/projects/projects-state.js';
 import {scanProjects} from '../src/api/projects-client.js';
+import {apiPath} from '../src/api/workbench-client.js';
+import {readFileSync} from 'node:fs';
 
 test('projects starts disconnected and never invents a baseline', () => {
   const state = createProjectsState();
@@ -51,5 +53,13 @@ test('projects client uses only the relative same-origin scan endpoint', async (
   assert.equal(calls[0][0], '/api/projects/scan');
   assert.equal(calls[0][1].credentials, 'same-origin');
   assert.equal(calls[0][1].method, 'GET');
+});
+
+test('projects fetch validates its endpoint at the network boundary', () => {
+  const source=readFileSync(new URL('../src/api/projects-client.js',import.meta.url),'utf8');
+  assert.match(source,/fetchImpl\(apiPath\(projectsApiPath\(\)\),/);
+  for(const unsafe of ['https://external.test/api/projects/scan','http://localhost:8301/api/projects/scan','//internal/api/projects/scan','/other']){
+    assert.throws(()=>apiPath(unsafe),/same-origin/i);
+  }
 });
 

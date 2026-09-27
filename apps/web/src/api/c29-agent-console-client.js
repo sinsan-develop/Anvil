@@ -1,3 +1,5 @@
+import {apiPath} from './workbench-client.js';
+
 const menus=['team','moa','sns','adapters'];
 export function checkMenu(menu){if(typeof menu!=='string'||!menus.includes(menu))throw Error('MENU_INVALID');return menu;}
 const hash=value=>typeof value==='string'&&/^sha256:[a-f0-9]{64}$/.test(value);
@@ -19,7 +21,7 @@ export function checkedProjection(value,menu){
 export function createAgentConsoleClient(fetchImpl=globalThis.fetch){
   async function call(path,options={}){
     let response;
-    try{response=await fetchImpl(path,{credentials:'same-origin',redirect:'error',...options});}catch{throw Object.assign(Error('CONSOLE_REQUEST_FAILED'),{status:503});}
+    try{response=await fetchImpl(apiPath(path),{credentials:'same-origin',redirect:'error',...options});}catch{throw Object.assign(Error('CONSOLE_REQUEST_FAILED'),{status:503});}
     if(!response.ok)throw Object.assign(Error('CONSOLE_REQUEST_FAILED'),{status:response.status});
     const text=await response.text();if(text.length>262144)throw Error('CONSOLE_REQUEST_FAILED');
     try{return JSON.parse(text);}catch{throw Error('CONSOLE_REQUEST_FAILED');}
