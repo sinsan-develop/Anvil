@@ -44,3 +44,11 @@ Rollback: 이 보고서/작업현황 기록만 정상 Git revert 가능하다. �
 - 실측 old/new image ID, source tag·commit, lockfile/requirements·Compose 설정 SHA를 각각 `old-qa-*`/`new-qa-*` 공개 원본으로 고정했다. source·Docker ID·OCI revision·공개 원본 hash를 WSL-server에서 다시 대조해 `OLD_QA_FACTS_MATCH_SOURCE_AND_DOCKER`와 `NEW_QA_FACTS_MATCH_SOURCE_AND_DOCKER`를 확인했다.
 - WSL-server 메모리에서만 생성한 Ed25519 private key로 두 QA-only manifest를 서명하고 즉시 verifier로 검증했다. public fingerprint는 `sha256:8cddccfc708c2119c7c786f56855aad6b1f5a9d85450757077cfa5a113c3e2b8`; private key 저장·출력·Git 기록은 0건이다. 잘못된 image ID를 주입한 expected 값은 `MANIFEST_OBSERVATION_MISMATCH`로 거부됐다.
 - 이 manifest는 `R45C_QA_ONLY` 증거다. old는 `0016_operations_recovery` 역사 QA, new는 `0019_oidc_sessions` 새 QA image에 해당하며 PG18 기동·backup/restore·code/container rollback·browser login은 아직 `NOT_EXECUTED`다. F-18 accepted=false/F-19 blocked/Production NOT_EXECUTED를 유지한다.
+
+## R45C PG18 restore·runtime 결과
+
+- old 격리 PG18을 migration `0016_operations_recovery`로 초기화하고 custom-format backup `190028` bytes를 `/home/daon/anvil-f18-r45c-material/old/backup.dump`에 보존했다. old API 컨테이너 내부 readiness는 HTTP 200, Worker 로그는 head0016 ready였다.
+- old Web은 historical `nginx-wsl.conf`의 고정 upstream `anvil-web:3770` 때문에 loopback `8445/api/health/ready`가 502였다. 이는 제품 수정 없이 `R21_HISTORICAL_QA` proxy incompatibility로 분류한다.
+- old backup을 new 격리 PG18의 별도 `anvil_f18_r45c_restore` DB/role에 `pg_restore --no-owner --no-privileges --no-comments`로 복원했고, 복원 head는 `0016_operations_recovery`였다. 이는 별도 DB restore PASS이며 현행 DB downgrade가 아니다.
+- new target DB는 `0019_oidc_sessions`까지 올라갔지만 OIDC trust material을 아직 만들지 않아 API readiness는 503, Worker는 기본 auth mode에서 `migration_head_mismatch`였다. old image를 restore DB에 code/container rollback으로 기동한 시도도 HTTP 503으로 readiness 미통과였다. 따라서 code/container rollback은 `NOT_EXECUTED/REWORK_REQUIRED`이고 F-18 accepted=false를 유지한다.
+- 위 시험의 QA 컨테이너·scratch DB·role·network·material·backup·image alias·checkout은 정리 대상이며, 공유 `anvil-web`/`local-postgres`와 Production은 대상이 아니다.

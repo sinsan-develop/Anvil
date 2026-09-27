@@ -3635,3 +3635,10 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 담당 Main. `codex/f18-wsl-ops`의 `155cd7f`를 WSL-server new checkout이 지정 Git alias로 fetch한 뒤, 공개 원본 8개를 source·Docker image ID·OCI revision과 재대조했다. old/new 각각 `*_QA_FACTS_MATCH_SOURCE_AND_DOCKER` PASS, checkout clean, tag peeled commit 일치, 제품 write0.
 - WSL-server 메모리에서만 Ed25519 private key를 생성해 old/new QA-only manifest를 서명·검증했다. public fingerprint `sha256:8cddccfc708c2119c7c786f56855aad6b1f5a9d85450757077cfa5a113c3e2b8`; public key와 서명 envelope만 `docs/evidence/f18_r45c/`에 기록하고 private key·credential은 저장하지 않았다. wrong image ID expected 값은 `MANIFEST_OBSERVATION_MISMATCH`로 거부됐다.
 - 실행한 실제 검증: WSL Python verifier exit0, old/new source·artifact·Docker 대조 exit0, JSON/diff check exit0. 새 PG18 DB·Compose container/network·MinIO·backup·browser·Secret은 아직 0. R45C manifest는 QA-only이며 runtime/backup-restore/code-container rollback은 `NOT_EXECUTED`; F-18 accepted=false/F-19 blocked/Production NOT_EXECUTED. G-05는 아직 seq1680 raw checksum 재결박 전 non-green.
+
+# F-18 R45C PG18 restore·runtime 결과 및 정리 / 2026-09-27
+
+- old 격리 PG18 head0016에서 custom-format backup `190028` bytes를 생성했다. old API 내부 readiness=200, Worker head0016 ready. old Web loopback=502는 historical nginx 고정 upstream `anvil-web:3770` incompatibility로 기록했으며 제품 수정은 0건이다.
+- backup을 new 격리 PG18의 별도 scratch DB `anvil_f18_r45c_restore`/role에 복원해 head0016 일치 PASS를 확인했다. new target DB는 head0019까지 migration됐으나 OIDC trust material 미구성으로 API=503, Worker는 기본 auth mode에서 migration_head_mismatch. old exact API image를 scratch DB에 재기동한 code/container rollback도 readiness=503으로 미통과했다. 이 결과는 데이터 restore PASS, code/container rollback NOT_EXECUTED/REWORK_REQUIRED로 분리한다.
+- Main QA 오류: Compose old 첫 기동은 이미지 entrypoint 중복 command로 실패 1회, old token 길이 제약 1회, MinIO floating tag pull 거부 1회, old app role·schema 권한 보완 2회, runtime readiness 502/503은 제품/역사 artifact 결과로 기록했다. 정식 Developer FAILURE_REPORT 0.
+- 다음 조치: R45C 임시 자원 exact cleanup 후 worker lease 회수·G-05 raw checksum 재결박. OIDC runtime과 old image rollback은 별도 보완 작업 없이는 PASS로 승격하지 않는다. F-18 accepted=false/F-19 blocked/Production NOT_EXECUTED.
