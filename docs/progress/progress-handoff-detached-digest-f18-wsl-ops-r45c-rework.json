@@ -1,0 +1,12 @@
+{
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1176384,
+    "file_sha256": "C059CA0D023F7678A5102BE68D0DDBAAEEDA59A68A7EB68F7E0E5EED5F670484"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 991,
+    "file_sha256": "356C9F1E24BB92A08276F6A6486EF4D8F713A566DA73F9CE845ACC5E5C95D3C0"
+  }
+}
