@@ -1,0 +1,46 @@
+{
+  "payload": {
+    "approval_subject_hash": "sha256:3819c469d3e36669477149d7ef2562a09c22ee896441632ad38e3a3ffed0ec80",
+    "capabilities": {
+      "network": {
+        "acquisition": "real-wsl-observation",
+        "evidence_hash": "sha256:019f4e8848107159f6ad568009f454da3cbce063980d09154b5ec441739dc513",
+        "status": "PASS"
+      },
+      "object_storage": {
+        "acquisition": "real-wsl-observation",
+        "evidence_hash": "sha256:b2ca1f9d54c85f604c42d47ee7335dc1020f9f8bd796b05d1ff2082f433f38ff",
+        "status": "PASS"
+      },
+      "oidc": {
+        "acquisition": "real-wsl-observation",
+        "evidence_hash": "sha256:faa72c9159950a1a7cbddb7e198ae8bd00b40be70272f32282a58303e1a4b784",
+        "status": "PASS"
+      },
+      "pg18": {
+        "acquisition": "real-wsl-observation",
+        "evidence_hash": "sha256:b4e51452e3050f73e554c07016ed61430ce21288097d8c37cc28eb2fb8310273",
+        "status": "PASS"
+      }
+    },
+    "collector_id": "wsl-server-r45b-main-qa",
+    "environment_id": "wsl-server-r45b-target",
+    "expires_at": "2026-09-27T03:37:36Z",
+    "image_digests": {
+      "api": "sha256:1c1e5aec94707afde5f96b4b0eefaca83e88fd2ac988ef27ee008823a805f608",
+      "web": "sha256:aac0c07cb48f957b01d0bab7327f51c556bd82a6ff262c8577b177cc6f1c4604",
+      "worker": "sha256:ba9394ddd315810668f5f07b2f3afc7dc314281eb4b3f955875da0b71d2e4a13"
+    },
+    "issued_at": "2026-09-27T03:33:36Z",
+    "migration_plan_hash": "sha256:e795e1cbcb69fc8ed95abbbc17b91dbddaea31d3af65e6a24d17d0813d40df97",
+    "rehearsal_run_id": "r45b-target-20260927",
+    "release_manifest_hash": "sha256:12d5d654cebe0d4355489bdfacc2792c2ae6aef1f5ef57fb311ad89e5948315c",
+    "rollback_plan_hash": "sha256:1d85f847b69fb56a6323f337d3563c75cde489d80105e11d25acc5ddb8e4351d",
+    "source_commit": "d36de847842804ca93e405abe9bff687c1162a69",
+    "target_instance_id": "anvil-f18-r45b-target"
+  },
+  "payload_hash": "sha256:85bdca7af8dc9012e2f5e754da48c22a38bc79ea1b7876a5e9d5ed92fb69d488",
+  "public_key_fingerprint": "sha256:cf484b823f82ad3652dcd77e84291eb1693b8d70f3f4c5de8d8a695bedde779e",
+  "schema_version": 1,
+  "signature": "Be9ocMvAb3wcF/GmrMtPJB5MLi39yICH+qOKNyOgcjX9cErerynSCA0yQ6Q5/hU2lgCsjmg6N49HJkoQfPuWBA=="
+}
