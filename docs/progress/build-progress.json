@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-f18-wsl-ops-r45c-close-seq1681",
-  "event_sequence": 1692,
-  "updated_at": "2026-09-27T15:37:26+09:00",
-  "last_event_id": "evt_u03_1692_package_started",
+  "event_sequence": 1694,
+  "updated_at": "2026-09-27T15:55:26+09:00",
+  "last_event_id": "evt_u03_1694_package_completed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -203,9 +203,10 @@
     "F-19",
     "PHASE_F_GATE",
     "U-01",
-    "U-02"
+    "U-02",
+    "U-03"
   ],
-  "active_agent": "main-agent-eoul",
+  "active_agent": null,
   "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -460,7 +461,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U-03_IMPLEMENT_AND_VERIFY",
+  "next_safe_action": "U-04_WORK_INSTRUCTION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -575,7 +576,7 @@
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
     "remote_head": "28417a864313a1bff771c9cafaf4096436cfbb24",
-    "projection_mode": "U03_START",
+    "projection_mode": "U03_ACCEPTANCE_REVIEW",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -1011,7 +1012,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U03_ACTIVE",
+    "worktree_status": "U03_ACCEPTED_LOCAL_WSL_CONTRACT_SCOPED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1334,15 +1335,15 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1674F1F9A737403B4C3A506325C72CFE45C801469767766CE5F7E1BCE4AC42F5"
+      "sha256": "39FEB7E37AB62BEEAC543A02AE295A332821BB80241C247E8CF00461085B9004"
     }
   },
   "next_work_package": {
-    "package_id": "U-03",
+    "package_id": "U-04",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
-    "package_id": "U-03",
+    "package_id": "U-04",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
@@ -1731,8 +1732,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "041B34FA7E00486497E0E6C579363C0979AEBAB7F67A5A2DDB9FEB59A4B7CD18",
-  "runtime_next_action": "U-03_IMPLEMENT_AND_VERIFY",
+  "snapshot_hash": "D54EBDCA0A6A66CCB115CF741702FD79D5BCB7939771C390479407CFE93263C7",
+  "runtime_next_action": "U-04_WORK_INSTRUCTION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3344,7 +3345,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-27T15:37:26+09:00",
+  "recorded_at": "2026-09-27T15:55:26+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

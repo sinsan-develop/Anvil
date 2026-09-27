@@ -3704,3 +3704,10 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - U-03 WorkInstruction을 발행하고 canonical progress seq1692로 활성화했다. repository intelligence의 zero-delta scan·dirty/untracked·baseline 경계를 기반으로 Projects 메뉴/API/UI를 구현한다.
 - 현재는 제품 변경 전 조사·구현 단계이며, `ysna-server`/Production preview는 범위에서 제외한다. 다음 조치는 로컬 Projects UI/BFF 구현 후 동일 commit을 `ssh WSL-server`에서 검증하는 것이다.
+
+# U-03 Projects 완료 / 2026-09-27
+
+- 판정: `ACCEPTED_U03_LOCAL_WSL_CONTRACT_SCOPED`. Projects read-only onboarding UI/client/BFF와 dirty·untracked·baseline 차단 계약을 구현했다.
+- 로컬 state/client 5개·route 1개·Dashboard 3개·Workbench 10개, typecheck/build/lint가 통과했다. WSL exact commit `9904541`에서 state/client 5개·route 1개·typecheck가 통과했고 전용 checkout 잔여0을 확인했다.
+- WSL Node 18에서는 Vite 8 build가 runtime 요구사항 불충족으로 미검증이다. live browser click/Network·live repository scan·DB baseline도 미검증이며 PASS로 승격하지 않았다.
+- canonical progress seq1694로 U-03을 기록했고 다음 항목은 `U-04 Runs READY_FOR_WORK_INSTRUCTION`이다.

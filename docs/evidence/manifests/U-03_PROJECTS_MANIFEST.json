@@ -1,0 +1,10 @@
+{
+  "package_id": "U-03",
+  "status": "ACCEPTED_U03_LOCAL_WSL_CONTRACT_SCOPED",
+  "product_commit": "9904541414bffd1edb656bbc5dc9fd019b906b32",
+  "report": "docs/04_test_reports/U-03_PROJECTS_REPORT.md",
+  "tests": {"local_state_client": "5 passed", "local_route": "1 passed", "dashboard_regression": "3 passed", "workbench_regression": "10 passed", "wsl_state_client": "5 passed", "wsl_route": "1 passed", "wsl_typecheck": "PASS", "local_typecheck": "PASS", "local_build": "PASS"},
+  "same_origin": true,
+  "mutation_allowed": false,
+  "unverified": ["WSL_BUILD_NODE18", "BROWSER_CLICK_NETWORK", "LIVE_REPOSITORY_SCAN", "DB_BASELINE", "PRODUCTION", "YSNA_SERVER"]
+}
