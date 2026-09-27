@@ -25,7 +25,7 @@ progress_path = ROOT / "docs/progress/build-progress.json"
 handoff_path = ROOT / "docs/progress/BUILD_HANDOFF.md"
 manifest_path = ROOT / "docs/evidence/manifests/F-20_WSL_FINAL_VALIDATION_MANIFEST.json"
 report_path = ROOT / "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md"
-current_head = "97adc5cf7070c71b61a5d6902d31cf195329b38f"
+current_head = "14c8c5743890c4a8a58686b9430144a55b1317e7"
 existing_progress = json.loads(progress_path.read_text(encoding="utf-8"))
 allowed_paths = existing_progress.get("repository", {}).get("exact_allowed_paths", [])
 

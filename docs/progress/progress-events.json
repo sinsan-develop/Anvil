@@ -88582,7 +88582,7 @@
         "test_report_ref": "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md",
         "test_report_sha256": "14DC37EDAE4589A26EC393B94BD843734FD86BF9ACA5B7EBD54F5FBC99C97D7F",
         "manifest_ref": "docs/evidence/manifests/F-20_WSL_FINAL_VALIDATION_MANIFEST.json",
-        "manifest_sha256": "3B07ABD17BED969685DC85FE3F16228C70C57E344C4470795B07B924F9BF4B97",
+        "manifest_sha256": "C4466666FBD82FCB503BA9CE01D3D33891CB12CAC87DB4D704D7027389E2DE8C",
         "next_work_package": "HUMAN_RELEASE_DECISION",
         "blocking_findings": 0,
         "unverified": [

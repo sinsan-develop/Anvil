@@ -582,12 +582,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
+    "local_head": "14c8c5743890c4a8a58686b9430144a55b1317e7",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
+    "remote_head": "14c8c5743890c4a8a58686b9430144a55b1317e7",
     "projection_mode": "F20_FINAL_WSL_SCOPED",
-    "validated_base_commit": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
+    "validated_base_commit": "14c8c5743890c4a8a58686b9430144a55b1317e7",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1345,7 +1345,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "84C67AE3A349316CCE5B795CF0B1183FBDA6D723A5A6D5D03C0BBC09ADC4BE33"
+      "sha256": "6A98D87F58AEB4FAE49EAB58430402AB559F49DC2805E9D7CD49770F16DFF44F"
     }
   },
   "next_work_package": {
@@ -1742,7 +1742,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "8296A078E97222F0C70A316D9887B1E2313E1FE5D14AC871A90998699332F02A",
+  "snapshot_hash": "563A1F85FFF9AB3AEB937B21D09B50741E4CEE1BD2241B48213961D0DCE88874",
   "runtime_next_action": "F20_WSL_RUNTIME_VALIDATION",
   "seq527_clean_review": {
     "event_sequence": 527,
