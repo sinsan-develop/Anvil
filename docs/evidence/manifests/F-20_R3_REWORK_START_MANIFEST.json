@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1731,
+  "accepted": false,
+  "projection_mode": "F20_R3_REWORK_START",
+  "previous_event_sequence": 1725,
+  "product_write_scope": [
+    "docs/04_test_reports/F-20_REWORK_R3_RESULT.md",
+    "apps/web/src/api/c29-agent-console-client.js",
+    "apps/web/src/api/projects-client.js",
+    "apps/web/tests/c29-console-runtime.test.mjs",
+    "apps/web/tests/projects.test.mjs"
+  ],
+  "predecessor_commit": "e6e85b631ddc82308b1ae9fe90c3f818c8136627",
+  "predecessor_events_sha256": "C4A343295E186D832A17562250327D49BD4FEDF65DB8C0875E1C45DD68920831",
+  "predecessor_report_sha256": "CFC5F369CCF6B5AF5926B927BBCBF57CF9BB2E7CACF70F7876FD387E032BAF1C",
+  "work_instruction_sha256": "18FDB8355913EC39A37FC36403806D52F7EC4D5550FCFA8C7DD4688588B383D3",
+  "invocation_sha256": "4BCFC5B5AFC67DEADBEE5095B8734DC06D8DBC708793B5A356E9A87A5810C872",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

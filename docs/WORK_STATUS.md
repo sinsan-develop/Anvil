@@ -4003,3 +4003,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `F20_R3_CONTROL_QA_WSL_GREEN; LEASE_NOT_ISSUED`. 통제 준비 commit `b7bf2a1c1209875933659f32031f2c32f77bb47f`를 지정 원격에 push하고 SHA 일치를 확인했다. `ssh WSL-server` 전용 `/tmp/anvil-f20-r3-control-b7bf2a1` checkout에서 동일 SHA·upstream·기존 PR #15 ref를 확인하고 R1/R2/R3 통제 집중 suite `27 passed in 27.16s`(exit 0)를 실행했다. 테스트 `.pytest_tmp`의 16개 symlink target이 모두 폴더 내부임을 확인해 제거한 뒤 G-05 `PASS sequence=1725 reporting=AUTO_CONTINUE`(exit 0), clean Git status를 확인했다. checkout의 4개 symlink는 `.venv` 표준 링크뿐임을 확인하고 정확한 checkout만 제거해 `F20_R3_CONTROL_WSL_CLEANED`; 공유 DB/Docker/서비스·Production 변경 0.
 - 이 기록 외 추가 제품 변경 없음. 정식 Developer 실패 0, WSL 통제 QA 실패 0. 다음은 이 기록 commit/push 후 clean·G-05 기준선에서 R2 write→worker lease를 append-only 회수하고 R3 exact5 worker/write lease를 발급한다. F-20 수락·P-01·main 병합은 금지.
+
+# F-20 R3 exact5 lease 실제 투영 로컬 검증 / 2026-09-28
+
+- 판정: `F20_R3_LEASE_LOCAL_GREEN; WSL_PENDING`. R3 통제 QA 기록 commit `e6e85b631ddc82308b1ae9fe90c3f818c8136627`을 지정 원격에 push하고 SHA 일치·clean status·G-05 seq1725 PASS를 확인한 뒤, 이 commit을 immutable predecessor로 seq1726~1731 write revoke→worker revoke→R3 WI→worker grant→write grant→resume 6 Event를 append-only로 투영했다. 기존 1725개 Event는 원본 Git bytes와 비교되어 변경되지 않았다. 기존 R2 worker/write는 `REVOKED`, 새 `developer-primary-f20-r3` epoch3 worker/write는 `ACTIVE`, 정확한 5개 제품 경로·발행 후 최대 12시간으로 결박됐다. 새 기준 Git SHA는 `e6e85b6`이다.
+- 실제 투영 후 G-05 `PASS sequence=1731 reporting=AUTO_CONTINUE`(exit 0), R1/R2/R3 집중 suite `27 passed in 58.07s`(exit 0), diff check exit 0. 테스트 임시 폴더는 정확한 worktree 내부 위치와 내부 symlink target을 확인하고 삭제해 잔류 0. 정식 Developer 실패 0, 제품 writer는 아직 시작하지 않았다.
+- 변경 파일: progress Event/projection/handoff, 신규 R3 digest·manifest와 이 기록. 미검증: 투영 commit/push 후 WSL 동일 SHA, R3 두 browser client 제품 수정, 전체 suite, 11개 메뉴 실측. 다음은 통제 투영 commit/push→WSL 동일 SHA G-05·집중 테스트 후 유효 epoch3 token을 확인해 단일 writer를 시작하는 것이다. F-20 수락·P-01·main 병합·Production 제외.
