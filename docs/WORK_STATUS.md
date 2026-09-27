@@ -3681,3 +3681,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 로컬 지정 범위 `525 passed, 1 warning`, WSL-server 동일 exact commit `4d8e9529b78aea15698747e1500180c2d34ba86f`의 잠긴 Python 3.12 범위 `525 passed in 6.79s`로 통과했다.
 - WSL 전용 checkout·venv는 제거해 `F19_WSL_CHECKOUT_RESIDUE_ZERO`를 확인했다. R45B browser Network·payload·DB/log/artifact 비노출 evidence도 대조했다.
 - live Provider credential 호출·비용·운영 도메인은 실행하지 않았으므로 `UNVERIFIED/NOT_EXECUTED`다. 다음은 F-19 evidence manifest와 acceptance review를 기록하는 것이다.
+
+# Phase F Capability Gate / 2026-09-27
+
+- 판정: `ACCEPTED_PHASE_F_SCOPED_CAPABILITY_QA`. F-01~F-19 acceptance evidence, Local·WSL-server 경계, F-18 격리 rollback/restore, F-19 Provider·egress·Web·secret 회귀를 대조해 Gate를 통과시켰다.
+- Production·ysna-server, 실제 Provider credential/비용 호출, 전체 메뉴 사용자 인수와 human ReleaseDecision은 `UNVERIFIED/NOT_EXECUTED`로 유지한다. 이를 운영 PASS로 표시하지 않는다.
+- canonical progress seq1687/G-05를 기록했고 다음 계획 항목을 `U-01 Dashboard READY_FOR_WORK_INSTRUCTION`으로 전환했다. 다음 조치는 U-01 WorkInstruction 발행이며, 메뉴 write는 순차적으로 한 개만 수행한다.

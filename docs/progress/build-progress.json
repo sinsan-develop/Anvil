@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-f18-wsl-ops-r45c-close-seq1681",
-  "event_sequence": 1686,
-  "updated_at": "2026-09-27T15:24:31+09:00",
-  "last_event_id": "evt_f18_local_1686_package_completed",
+  "event_sequence": 1687,
+  "updated_at": "2026-09-27T15:28:31+09:00",
+  "last_event_id": "evt_phase_f_gate_1687",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -90,8 +90,8 @@
   "plan_version": "1.7",
   "work_plan_hash": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
   "design_baseline_hash": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
-  "current_phase": "F",
-  "current_work_package": "F-18",
+  "current_phase": "U",
+  "current_work_package": "U-01",
   "status": "ACTIVE",
   "completed_packages": [
     "G-01",
@@ -200,7 +200,8 @@
     "F-16",
     "F-17",
     "F-18",
-    "F-19"
+    "F-19",
+    "PHASE_F_GATE"
   ],
   "active_agent": "main-agent-eoul",
   "write_lease": null,
@@ -457,7 +458,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "PHASE_F_GATE_REVIEW",
+  "next_safe_action": "U-01_WORK_INSTRUCTION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -572,7 +573,7 @@
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
     "remote_head": "28417a864313a1bff771c9cafaf4096436cfbb24",
-    "projection_mode": "F19_ACCEPTANCE_REVIEW",
+    "projection_mode": "PHASE_F_GATE_REVIEW",
     "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
@@ -1008,7 +1009,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19_ACCEPTED_SCOPED_SECURITY_QA",
+    "worktree_status": "PHASE_F_ACCEPTED_SCOPED_CAPABILITY_QA",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1331,16 +1332,16 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "9B73A9E776D527EA1F4993A597D2E5684C174E39F9D3DA8743946AB74B82B1C3"
+      "sha256": "24F312856DB3FAF308F97E840F4B0C426B61C693EBB31FD2F06B6B714851BBF4"
     }
   },
   "next_work_package": {
-    "package_id": "PHASE_F_GATE",
-    "status": "READY_FOR_GATE_REVIEW"
+    "package_id": "U-01",
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": {
-    "package_id": "PHASE_F_GATE",
-    "status": "READY_FOR_GATE_REVIEW"
+    "package_id": "U-01",
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1728,8 +1729,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "86DCDE5F8CE43366CBD8219C44038652B968781C7C390ADCAFD2C7836A74EF7D",
-  "runtime_next_action": "PHASE_F_GATE_REVIEW",
+  "snapshot_hash": "B0F924C1518D9DA5F1BF698F1EF2A32A848DF5458153439D2AD9A2BDC1941ED8",
+  "runtime_next_action": "U-01_WORK_INSTRUCTION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3341,7 +3342,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-27T15:24:31+09:00",
+  "recorded_at": "2026-09-27T15:28:31+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {

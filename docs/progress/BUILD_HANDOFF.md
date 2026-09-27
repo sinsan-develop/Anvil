@@ -1,18 +1,17 @@
-# F-19 accepted scoped security QA
+# Phase F gate accepted scoped capability QA
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1686,
-  "last_event_id": "evt_f18_local_1686_package_completed",
+  "event_sequence": 1687,
+  "last_event_id": "evt_phase_f_gate_1687",
   "status": "ACTIVE",
-  "current_work_package": "F-19",
+  "current_work_package": "U-01",
   "worker_lease": null,
   "write_lease": null,
   "next_work_package": {
-    "package_id": "PHASE_F_GATE",
-    "status": "READY_FOR_GATE_REVIEW"
+    "package_id": "U-01",
+    "status": "READY_FOR_WORK_INSTRUCTION"
   },
-  "next_safe_action": "PHASE_F_GATE_REVIEW",
-  "runtime_next_action": "PHASE_F_GATE_REVIEW"
+  "next_safe_action": "U-01_WORK_INSTRUCTION"
 }
 ```

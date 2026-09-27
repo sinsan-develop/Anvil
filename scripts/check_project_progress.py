@@ -58638,6 +58638,22 @@ def validate_bundle(bundle):
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F18_F20_LOCAL_WSL_SCOPE_REVISION":
         from wsl_scope_overlay import validate
         return validate(bundle["_root"], bundle)
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "PHASE_F_GATE_REVIEW":
+        progress = bundle.get("progress", {})
+        errors = []
+        if progress.get("event_sequence") != 1687:
+            errors.append("PHASE_F_GATE_SEQUENCE_INVALID")
+        if progress.get("current_phase") != "U" or progress.get("current_work_package") != "U-01":
+            errors.append("PHASE_F_GATE_NEXT_PACKAGE_INVALID")
+        if progress.get("next_work_package") != {"package_id": "U-01", "status": "READY_FOR_WORK_INSTRUCTION"}:
+            errors.append("PHASE_F_GATE_NEXT_ACTION_INVALID")
+        if "PHASE_F_GATE" not in progress.get("completed_packages", []):
+            errors.append("PHASE_F_GATE_COMPLETION_MISSING")
+        if progress.get("worker_lease") is not None or progress.get("write_lease") is not None:
+            errors.append("PHASE_F_GATE_LEASE_NOT_CLEAR")
+        if not (Path(bundle["_root"]) / "docs/04_test_reports/PHASE_F_GATE_REVIEW.md").is_file():
+            errors.append("PHASE_F_GATE_REVIEW_MISSING")
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") not in {
             "F18_LOCAL_WSL_START_EXACT11_PRODUCT_EXACT5",
             "F18_LOCAL_WSL_CHECKPOINT_EXACT11_PRODUCT_EXACT5",

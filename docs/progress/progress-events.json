@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1686,
+  "last_sequence": 1687,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84849,7 +84849,28 @@
     "acceptance_review": "docs/04_test_reports/F-19_ACCEPTANCE_REVIEW.md",
     "next_action": "PHASE_F_GATE_REVIEW"
   }
+},
+{
+  "sequence": 1687,
+  "event_id": "evt_phase_f_gate_1687",
+  "event_type": "PHASE_GATE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "PHASE_F_GATE",
+  "run_id": null,
+  "step_id": "PHASE_F_GATE_REVIEW",
+  "subject_ref": "PHASE_F_GATE",
+  "occurred_at": "2026-09-27T15:28:31+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "9C89A757E79BF976C38D3B6869B25EAF3ECAC3AC6E23BC9F3B9BA926CE284862",
+  "details": {
+    "result_status": "ACCEPTED_PHASE_F_SCOPED_CAPABILITY_QA",
+    "report": "docs/04_test_reports/PHASE_F_GATE_REVIEW.md",
+    "next_action": "U-01_WORK_INSTRUCTION"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1686_package_completed"
+  "last_event_id": "evt_phase_f_gate_1687"
 }
