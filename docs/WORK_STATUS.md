@@ -4054,3 +4054,13 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `F20_R4_WSL_CONTROL_FIXTURE_REWORK; R4_LEASE_NOT_ISSUED`. 통제 checkpoint `fefd180f3fe3feb4a5333b08fbe6351a5f7ab49c`는 지정 원격 SHA 일치·clean이었고, WSL-server 전용 `/tmp/anvil-f20-r4-control-fefd180`에 동일 SHA로 가져왔다. `uv sync --frozen --group dev` exit0. WSL 집중 결과는 `34 passed, 6 failed in 44.95s`(exit1); 6건 모두 과거 `b8e9e68`을 합성하는 R4 fixture가 `development/codex/f18-wsl-ops`의 현재 원격 끝 `fefd180`을 가져와 이전 SHA 발급 검사에서 거부된 같은 근본 원인이다. 실제 R4 materialize의 정확한 SHA 검사 자체는 완화하지 않는다.
 - 테스트 fixture 안의 전용 Git remote-tracking ref만 과거 `b8e9e68`로 고정하고, 로컬 R4 `11 passed in 131.49s`(exit0)로 재확인했다. WSL 첫 실행의 임시 checkout·venv·pytest 산출물은 아직 정리 전이며 공유 DB/Docker·Production 변경0. 정식 Developer 실패0, 통제 fixture 이식성 오류1. 변경 파일은 `tests/tooling/test_f20_rework_r4_projection.py`와 본 기록만이다. 다음은 전용 임시 폴더 정리→fixture 보완 commit/push→WSL 동일 SHA 40건·G-05 재검증→정본 R4 lease 발급이다.
+
+# F-20 R4 통제 WSL 동일 SHA 검증 / 2026-09-28
+
+- 판정: `F20_R4_CONTROL_WSL_GREEN; R4_LEASE_NOT_ISSUED`. fixture 보완 commit `508d6cef57bc2ca30801b3574aaac2fb12017215`를 지정 원격에 push하고 로컬·원격·WSL-server 전용 checkout의 SHA 일치를 확인했다. WSL 전용 checkout에서 R1~R4/evidence binding 집중 `40 passed in 39.82s`(exit0), G-05 `PASS sequence=1731 reporting=AUTO_CONTINUE`(exit0), Git clean을 확인했다. 테스트가 만든 `.pytest_tmp_r4`의 26 symlink가 모두 해당 전용 경로 내부를 가리킴을 확인하고 정확한 폴더만 삭제하여 잔류0. 전용 checkout·venv는 다음 canonical projection의 동일 SHA 검증까지 보존하며 공유 DB/Docker·Production 변경0.
+- 변경 파일은 본 기록만이다. 정본은 여전히 seq1731/R3 lease이며 R4 write는 아직 시작하지 않았다. 정식 Developer 실패0, 환경/fixture 오류1, WSL 통제 집중 재검증 PASS. 다음은 clean Git 기준 `508d6ce`에서 R3 write→worker revoke/R4 exact6 grant를 append-only 투영하고 G-05·Git diff를 검증한 뒤 그 결과를 commit/push·WSL 동일 SHA로 확인한다.
+
+# F-20 R4 정본 lease 투영·로컬 재검증 / 2026-09-28
+
+- 판정: `F20_R4_LEASE_PROJECTED_LOCAL_GREEN; WSL_PROJECTION_PENDING`. 지정 원격과 일치한 `codex/f18-wsl-ops@508d6cef57bc2ca30801b3574aaac2fb12017215`에서 기존 R3 worker/write lease를 append-only 회수하고 Event seq1732~1737에 R4 WI→epoch4 worker/write exact6 lease→resume을 투영했다. 변경 정본은 `docs/progress/progress-events.json`, `build-progress.json`, `BUILD_HANDOFF.md`, 새 R4 detached digest·manifest와 본 기록 6개 경로뿐이다. F-20 accepted=false, P-01 차단, 제품 runtime/API 수정0. 신규 lease 만료는 `2026-09-28T07:09:26+00:00`이며 유효성은 다음 writer 시작 전 다시 확인한다.
+- 투영 직후 로컬 G-05 `PASS sequence=1737 reporting=AUTO_CONTINUE`(exit0), R1~R4/evidence binding 집중 `40 passed in 218.49s`(exit0), `git diff --check` exit0. 전용 `.pytest_tmp_f20_r4_projection_live`의 symlink 26개가 내부를 가리킴을 확인 후 해당 폴더만 삭제해 잔류0. 정식 Developer 실패0, 투영 오류0. WSL-server 동일 SHA 검증 및 R4 제품 exact6 변경은 아직 미실행. 다음은 정본 checkpoint commit/push→WSL-server seq1737 G-05·집중 테스트→단일 writer R4 7건 RED→GREEN이다.
