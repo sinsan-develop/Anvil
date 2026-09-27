@@ -26,6 +26,8 @@ def _fixture(tmp_path: Path) -> Path:
     subprocess.run(["git", "checkout", "--quiet", "-B", "codex/f18-wsl-ops", PREDECESSOR], cwd=root, check=True)
     subprocess.run(["git", "remote", "add", "development", str(ROOT)], cwd=root, check=True)
     subprocess.run(["git", "fetch", "--quiet", "development", "codex/f18-wsl-ops"], cwd=root, check=True)
+    subprocess.run(["git", "update-ref", "refs/remotes/development/codex/f18-wsl-ops", PREDECESSOR],
+                   cwd=root, check=True)
     subprocess.run(["git", "branch", "--set-upstream-to=development/codex/f18-wsl-ops"], cwd=root, check=True)
     for relative in ("docs/work_orders/F-20_REWORK_R4_WORK_INSTRUCTION.md",
                      "docs/work_orders/F-20_REWORK_R4_INVOCATION.md"):
