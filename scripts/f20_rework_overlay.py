@@ -419,6 +419,8 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     progress = bundle.get("progress") or {}
     stream = bundle.get("events") or {}
     rows = stream.get("events") or []
+    if not isinstance(rows, list) or len(rows) != HISTORICAL_COUNT + len(EVENT_TYPES):
+        return ["F20_REWORK_TRANSITION_INVALID"]
     try:
         wi_sha = _sha(_lf((root / WI).read_bytes()))
         invocation_sha = _sha(_lf((root / INVOCATION).read_bytes()))
