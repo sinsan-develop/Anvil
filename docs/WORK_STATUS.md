@@ -3759,8 +3759,18 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 실제 1920×1080 브라우저 클릭/Network, live DB/worker/provider와 사용자 운영 인수는 미검증이다. 이를 `RELEASED` 또는 Production PASS로 표시하지 않는다.
 - canonical progress seq1711, 다음은 계획 순서상 `F-20 WSL-server 최종 운영 유사 검증`이다.
 
+@@
 # F-20 WSL 최종 검증 시작 / 2026-09-27
 
 - F-20 WorkInstruction을 발행하고 canonical progress seq1712로 활성화했다.
 - 검증 대상은 WSL-server 동일 commit의 11개 메뉴 smoke·monitoring·ProductValidation·Defect·backup/restore·rollback과 승인된 임시 CDP 브라우저 경계다. Production/ysna-server와 RELEASED 승격은 제외한다.
 - 다음 조치는 WSL-server runtime·browser·Network evidence 실행 후 exact cleanup과 최종 판정이다.
+
+# F-20 WSL 최종 검증 checkpoint / 2026-09-27
+
+- 판정: `INCOMPLETE_F20_RUNTIME_BOUNDARY`. 동일 게시 commit `00677052c5791b70253389332c3837b286281dc0`의 WSL 전용 checkout에서 Python 지정 회귀 `153 passed`, 웹 Projects/Workbench `15 passed`, Projects route `1 passed`, Dashboard `3 passed`, typecheck PASS를 확인했다.
+- WSL Node `v18.19.1`에서는 Vite 8 build가 `node:util styleText` 요구사항으로 미검증이며, WSL native Chromium 계열 실행 파일은 없었다.
+- 승인된 Windows Chrome 임시 headless/CDP 프로필을 SSH 포워드된 동일 WSL runtime에 연결했다. Dashboard·Provider 화면과 same-origin Network 요청은 확인했지만 `/projects`는 WSL `server.mjs`에서 404였다. 이를 11개 메뉴 브라우저 PASS로 승격하지 않는다.
+- F-20 target의 live DB/queue/worker/Provider 상태, backup/restore, application rollback, 관찰구간 critical alert 0은 미실행/미검증이다. 이전 Package evidence를 재사용하지 않는다. Production·ysna-server는 접근하지 않았다.
+- 임시 WSL checkout·서버·port·SSH forward·Chrome 프로필/process·로그를 exact cleanup하고 WSL/로컬 residue 0을 확인했다.
+- 보고서: `docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md`. 다음 조치: 이미 설치된 WSL 호환 Node runtime 확인 후 동일 commit의 실제 11개 메뉴 runtime과 DB/queue/worker/provider·backup/restore·rollback을 재검증한다. F-20 active/ReleaseDecision `DEFER` 유지.
