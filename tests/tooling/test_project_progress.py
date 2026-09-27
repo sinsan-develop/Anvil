@@ -16540,6 +16540,8 @@ class C09MainTakeoverControlTests(unittest.TestCase):
             clone = Path(temp) / "clone"
             subprocess.run(["git", "clone", "--no-local", str(ROOT), str(clone)], check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "fetch", "--no-tags", str(ROOT), self.BASE], cwd=clone, check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["git", "checkout", "--detach", self.BASE], cwd=clone, check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if (clone / ".superpowers").exists():

@@ -34,3 +34,9 @@
 Main이 exact2 diff·독립 리뷰 후 같은 branch에 안전한 commit/push를 수행하고, `ssh WSL-server`에서 그 정확한 SHA를 Git으로 받아 C09 대상과 전체 suite를 검증해야 한다. 기존 잔여 C30 1·E09 3은 이 범위 밖이며 skip/xfail하지 않았다. 실제 PG15/PG18RC, API, 브라우저 Network, 11개 메뉴·backup/restore·rollback도 미검증이다. F-20 수락·main 병합은 불가하다.
 
 회귀 시 Main이 R5c 제품 commit을 대상으로 정상 Git revert하고 G-05·대상 테스트를 재검증한다. 이 writer는 commit/push·progress/HANDOFF 갱신 권한이 없으며 결과와 diff를 Main에 인계한다.
+
+## WSL 동일 SHA 역사 객체 이관 후속 보완 / 2026-09-28
+
+- Main 전달 증거: 최초 제품 SHA `e05f9c2e7986e459f1fed3d3b87ba210db62441d` WSL 전용 checkout은 G-05 PASS였으나 `10bbb879fb15ce4fa7b1a750f872c33af3cddf46` Git 객체가 없어 C09 13건의 setUp이 실패했다. Main이 정확한 SHA를 `development`에서 fetch한 후 11 PASS/2 FAIL. 남은 하나는 `8f5af5f0efc6f287ce556fd9a908e991a586f97e` 객체 부재로 Main이 기존 PR ref에서 준비하며, 다른 하나는 테스트의 임시 `git clone --no-local`이 source ROOT에 존재하는 `85d72196eaafe3e458f8aea7016df94f810df086` 객체를 복제하지 않은 문제다. 이 WSL 결과는 Main 전달 증거이며 writer가 직접 실행한 WSL 결과로 표기하지 않는다.
+- 후자의 임시 clone에서 detached checkout 직전에 source ROOT의 **정확한 역사 SHA**를 `git fetch --no-tags <ROOT> <SHA>`로 요청하도록 테스트 fixture 한 줄만 추가했다. 새 branch/tag를 만들지 않으며 FETCH_HEAD와 임시 clone만 사용한다. source에도 해당 객체가 없으면 fetch가 실패하여 테스트가 fail-closed된다. frozen 원문 hash·검증기·Event는 변경하지 않았다.
+- 동일 단일 node는 변경 전 로컬에서 `1 passed in 30.90s`(exit0)였다. Windows 로컬 저장소에는 이미 객체가 있어 WSL clone 결함을 로컬 RED로 재현할 수 없었으며, 위 WSL 실패를 RED 근거로 기록한다. 변경 후 두 C09 class 전체: `.\.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -k 'C09MainTakeoverControlTests or C09FinalAcceptanceControlTests' --basetemp=.pytest_tmp_f20_r5c_clone_green` → `13 passed, 671 deselected in 43.68s`(exit0). 다음 commit SHA의 WSL 동일 SHA 재검증과 전체 suite는 Main 담당이며 아직 미검증이다.
