@@ -3752,3 +3752,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 판정: `ACCEPTED_U11_LOCAL_CONTRACT_SCOPED`. Provider/settings/security 선택 범위를 `523 passed`로 검증했다.
 - 실제 Settings 브라우저·Network와 live Provider credential/비용은 미검증이다. canonical progress seq1710, 다음은 `PHASE_U_GATE READY_FOR_GATE_REVIEW`이다.
+
+# Phase U Gate / 2026-09-27
+
+- 판정: `ACCEPTED_PHASE_U_SCOPED_CONTRACT_QA`. U-01~U-11 contract evidence를 순서대로 대조했다.
+- 실제 1920×1080 브라우저 클릭/Network, live DB/worker/provider와 사용자 운영 인수는 미검증이다. 이를 `RELEASED` 또는 Production PASS로 표시하지 않는다.
+- canonical progress seq1711, 다음은 계획 순서상 `F-20 WSL-server 최종 운영 유사 검증`이다.

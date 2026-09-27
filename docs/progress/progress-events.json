@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1710,
+  "last_sequence": 1711,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -85353,7 +85353,28 @@
     "manifest": "docs/evidence/manifests/U-11_SETTINGS_MANIFEST.json",
     "next_action": "PHASE_U_GATE_REVIEW"
   }
+},
+{
+  "sequence": 1711,
+  "event_id": "evt_phase_u_gate_1711_phase_gate_completed",
+  "event_type": "PHASE_GATE_COMPLETED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "PHASE_U_GATE",
+  "run_id": null,
+  "step_id": "PHASE_U_GATE_REVIEW",
+  "subject_ref": "PHASE_U_GATE",
+  "occurred_at": "2026-09-27T16:14:11+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "4BB94F7C9471328AF2725CBE2E1A2E0797282AA3B78213E524796424BA9597BC",
+  "details": {
+    "result_status": "ACCEPTED_PHASE_U_SCOPED_CONTRACT_QA",
+    "report": "docs/04_test_reports/PHASE_U_GATE_REVIEW.md",
+    "next_action": "F-20_WORK_INSTRUCTION"
+  }
 }
   ],
-  "last_event_id": "evt_u11_1710_package_completed"
+  "last_event_id": "evt_phase_u_gate_1711_phase_gate_completed"
 }
