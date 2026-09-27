@@ -68,6 +68,11 @@
 - R5a epoch5 write→worker lease를 append-only 회수한 후 R5b epoch6 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_REWORK_R5B_RESULT.md`)만 단일 writer에게 부여한다. Main이 control checker/overlay·G-05 route·상태 기록을 맡고 같은 제품 두 경로를 동시에 수정하지 않는다. C09 Main takeover·final 6건, C10~C13 15건, E09 3건, C21 WSL 객체 준비 3건과 C30 감사 사고는 R5b 범위 밖이다.
 - 해당 10개 RED를 로컬에서 재현하고 원인별 GREEN 및 역사 변조 음성 검사를 수행한다. R5b 통제 G-05·집중 테스트·WSL-server 동일 SHA를 거친 뒤 전체 suite를 다시 실행해 신규 회귀가 없음을 확인한다. 전체 suite의 다른 실패는 그대로 FAIL로 기록하고 F-20 수락하지 않는다.
 
+### R5c — C09 Main takeover·final 역사 검토 원문 6건
+
+- R5b `9af4923` WSL 전체 suite의 남은 10 FAIL 중 C09 Main takeover 4와 final 2는 과거 품질 검토 원문의 현재 파일이 당시 18,269-byte Git blob보다 마지막 LF 1 byte 짧아 발생한다. `10bbb87`의 역사 품질 검토 blob과 고정 SHA `E109EB0D...`를 확인하고 현재 승인 후속 문서를 덮거나 frozen hash를 바꾸지 않는다. Main takeover 및 final의 다른 선행 WI/manifest, 제품 raw map, raw Event prefix, review severity·failure counting, successor 계약은 유지한다.
+- R5b epoch6 write→worker lease를 append-only 회수한 뒤 R5c epoch7 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_REWORK_R5C_RESULT.md`)만 단일 writer에게 부여한다. C30 감사 사고 1과 E09 3은 범위 밖이다. 역사 review blob 누락·위조와 다른 선행 파일 변조는 계속 거부한다. R5c 6건과 기존 관련 검사를 로컬/WSL 동일 SHA에서 확인하고 전체 suite를 재실행해 신규 회귀를 분리한다. 그 결과가 GREEN이어도 F-20 전체 수락은 하지 않는다.
+
 ## F-20 완료조건 불일치 확인
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.

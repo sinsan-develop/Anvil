@@ -1,4 +1,4 @@
-"""Append-only F-20 R5a-to-R5b handoff for C09 historical authority."""
+"""Append-only F-20 R5b-to-R5c handoff for C09 review history."""
 
 from __future__ import annotations
 
@@ -10,36 +10,32 @@ import re
 import subprocess
 
 try:
-    from scripts import f20_rework_r5a_overlay as r5a
+    from scripts import f20_rework_r5b_overlay as r5b
 except ModuleNotFoundError:  # direct project-progress invocation
-    import f20_rework_r5a_overlay as r5a
+    import f20_rework_r5b_overlay as r5b
 
 
-r1 = r5a.r1
-MODE = "F20_R5B_REWORK_START"
-ACTOR = "developer-primary-f20-r5b"
-WI = "docs/work_orders/F-20_REWORK_R5B_WORK_INSTRUCTION.md"
-INVOCATION = "docs/work_orders/F-20_REWORK_R5B_INVOCATION.md"
-REPORT = "docs/04_test_reports/F-20_REWORK_R5A_RESULT.md"
-DIGEST = "docs/progress/progress-handoff-detached-digest-f20-r5b-rework-start.json"
-MANIFEST = "docs/evidence/manifests/F-20_R5B_REWORK_START_MANIFEST.json"
-EVENTS, PROGRESS, HANDOFF = r5a.EVENTS, r5a.PROGRESS, r5a.HANDOFF
+r1 = r5b.r1
+MODE = "F20_R5C_REWORK_START"
+ACTOR = "developer-primary-f20-r5c"
+WI = "docs/work_orders/F-20_REWORK_R5C_WORK_INSTRUCTION.md"
+INVOCATION = "docs/work_orders/F-20_REWORK_R5C_INVOCATION.md"
+REPORT = "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md"
+DIGEST = "docs/progress/progress-handoff-detached-digest-f20-r5c-rework-start.json"
+MANIFEST = "docs/evidence/manifests/F-20_R5C_REWORK_START_MANIFEST.json"
+EVENTS, PROGRESS, HANDOFF = r5b.EVENTS, r5b.PROGRESS, r5b.HANDOFF
 SCOPE = [
-    "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md",
+    "docs/04_test_reports/F-20_REWORK_R5C_RESULT.md",
     "tests/tooling/test_project_progress.py",
 ]
-CONTROL_SCOPE = r5a.CONTROL_SCOPE | {
+CONTROL_SCOPE = r5b.CONTROL_SCOPE | {
     WI, INVOCATION, DIGEST, MANIFEST,
-    "scripts/f20_rework_r5b_overlay.py",
-    "tests/tooling/test_f20_rework_r5b_projection.py",
-    "docs/work_orders/F-20_REWORK_R5C_WORK_INSTRUCTION.md",
-    "docs/work_orders/F-20_REWORK_R5C_INVOCATION.md",
     "scripts/f20_rework_r5c_overlay.py",
     "tests/tooling/test_f20_rework_r5c_projection.py",
 }
-TYPES = r5a.TYPES
-LAST = "evt_f20_1743_package_resumed"
-START = 1743
+TYPES = r5b.TYPES
+LAST = "evt_f20_1749_package_resumed"
+START = 1749
 END = START + len(TYPES)
 
 
@@ -49,13 +45,13 @@ def _git(root: Path, *args: str) -> bytes:
 
 def _append_raw(raw: bytes, additions: list[dict]) -> bytes:
     if raw != r1._lf(raw):
-        raise ValueError("F20_R5B_EVENT_BYTES_INVALID")
+        raise ValueError("F20_R5C_EVENT_BYTES_INVALID")
     marker = b'\n  ],\n  "last_event_id": "' + LAST.encode() + b'"'
-    if raw.count(marker) != 1 or raw.count(b'"last_sequence": 1743') != 1:
-        raise ValueError("F20_R5B_EVENT_BYTES_INVALID")
+    if raw.count(marker) != 1 or raw.count(b'"last_sequence": 1749') != 1:
+        raise ValueError("F20_R5C_EVENT_BYTES_INVALID")
     insertion = b",\n" + b",\n".join(r1._pretty(row).rstrip() for row in additions)
     return raw.replace(marker, insertion + marker.replace(LAST.encode(), additions[-1]["event_id"].encode())).replace(
-        b'"last_sequence": 1743', b'"last_sequence": 1749', 1)
+        b'"last_sequence": 1749', b'"last_sequence": 1755', 1)
 
 
 def _event(previous: dict, event_type: str, details: dict, at: str) -> dict:
@@ -64,7 +60,7 @@ def _event(previous: dict, event_type: str, details: dict, at: str) -> dict:
         "sequence": sequence, "event_id": f"evt_f20_{sequence}_{event_type.lower()}",
         "event_type": event_type, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
         "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-20",
-        "run_id": None, "step_id": "F-20_R5B_REWORK_START", "subject_ref": "F-20/R5b",
+        "run_id": None, "step_id": "F-20_R5C_REWORK_START", "subject_ref": "F-20/R5c",
         "occurred_at": at, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
         "previous_event_sha256": r1._sha(r1._canonical(previous)), "details": details,
     }
@@ -73,13 +69,13 @@ def _event(previous: dict, event_type: str, details: dict, at: str) -> dict:
 def validate_transition(rows: object, wi_sha: str, invocation_sha: str,
                         now: datetime) -> list[str]:
     if not isinstance(rows, list) or len(rows) != END or not all(isinstance(row, dict) for row in rows):
-        return ["F20_R5B_TRANSITION_INVALID"]
+        return ["F20_R5C_TRANSITION_INVALID"]
     try:
-        old_worker, old_write = rows[1740]["details"], rows[1741]["details"]
+        old_worker, old_write = rows[1746]["details"], rows[1747]["details"]
         prior_issued = datetime.fromisoformat(old_worker["issued_at"])
-        if r5a.validate_transition(rows[:START], rows[1739]["details"]["sha256"],
-                                  rows[1739]["details"]["invocation_sha256"], prior_issued):
-            return ["F20_R5B_TRANSITION_INVALID"]
+        if r5b.validate_transition(rows[:START], rows[1745]["details"]["sha256"],
+                                  rows[1745]["details"]["invocation_sha256"], prior_issued):
+            return ["F20_R5C_TRANSITION_INVALID"]
         tail = rows[START:]
         for offset, (row, kind) in enumerate(zip(tail, TYPES)):
             if (row.get("sequence") != START + 1 + offset
@@ -91,13 +87,13 @@ def validate_transition(rows: object, wi_sha: str, invocation_sha: str,
                     or row.get("project_id") != "anvil"
                     or row.get("work_package_id") != "F-20"
                     or row.get("run_id") is not None
-                    or row.get("step_id") != "F-20_R5B_REWORK_START"
-                    or row.get("subject_ref") != "F-20/R5b"
+                    or row.get("step_id") != "F-20_R5C_REWORK_START"
+                    or row.get("subject_ref") != "F-20/R5c"
                     or row.get("occurred_at_source") != "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME"
                     or row.get("occurred_at") != tail[0].get("occurred_at")
                     or row.get("previous_event_sha256") != r1._sha(r1._canonical(rows[START - 1 + offset]))
                     or not isinstance(row.get("details"), dict)):
-                return ["F20_R5B_TRANSITION_INVALID"]
+                return ["F20_R5C_TRANSITION_INVALID"]
         revoke_write, revoke_worker, instruction, worker, write, resume = [row["details"] for row in tail]
         prior_tokens = r1._historical_fencing_tokens(rows[:START])
         execution = worker.get("execution_fencing_token")
@@ -107,21 +103,21 @@ def validate_transition(rows: object, wi_sha: str, invocation_sha: str,
         valid = (
             revoke_write == {"lease_id": old_write["lease_id"],
                              "write_fencing_token": old_write["write_fencing_token"],
-                             "reason": "F20_R5A_EXACT2_DONE_R5B_C09_HISTORY_REWORK"}
+                             "reason": "F20_R5B_EXACT2_DONE_R5C_C09_HISTORY_REWORK"}
             and revoke_worker == {"lease_id": old_worker["lease_id"],
                                   "execution_fencing_token": old_worker["execution_fencing_token"],
-                                  "reason": "F20_R5A_EXACT2_DONE_R5B_C09_HISTORY_REWORK"}
+                                  "reason": "F20_R5B_EXACT2_DONE_R5C_C09_HISTORY_REWORK"}
             and instruction == {"path": WI, "sha256": wi_sha, "invocation_path": INVOCATION,
                                 "invocation_sha256": invocation_sha,
                                 "classification": "MAIN_INTERNAL_REWORK"}
             and worker.get("actor_id") == ACTOR and write.get("actor_id") == ACTOR
-            and worker.get("subject_ref") == "F-20/R5b" and write.get("subject_ref") == "F-20/R5b"
+            and worker.get("subject_ref") == "F-20/R5c" and write.get("subject_ref") == "F-20/R5c"
             and worker.get("status") == "ACTIVE" and write.get("status") == "ACTIVE"
             and worker.get("path_scope") == SCOPE and write.get("path_scope") == SCOPE
-            and worker.get("lease_epoch") == 6 and write.get("lease_epoch") == 6
-            and write.get("write_epoch") == 6
-            and worker.get("lease_id", "").startswith("worker-lease-f20-r5b-")
-            and write.get("lease_id", "").startswith("write-lease-f20-r5b-")
+            and worker.get("lease_epoch") == 7 and write.get("lease_epoch") == 7
+            and write.get("write_epoch") == 7
+            and worker.get("lease_id", "").startswith("worker-lease-f20-r5c-")
+            and write.get("lease_id", "").startswith("write-lease-f20-r5c-")
             and write.get("worker_lease_id") == worker.get("lease_id")
             and worker.get("issued_at") == tail[0]["occurred_at"]
             and write.get("issued_at") == worker.get("issued_at")
@@ -132,13 +128,13 @@ def validate_transition(rows: object, wi_sha: str, invocation_sha: str,
             and worker.get("baseline_git_commit") == worker.get("dispatch_head")
             and write.get("baseline_git_commit") == worker.get("dispatch_head")
             and isinstance(execution, str)
-            and re.fullmatch(r"f20-r5b-execution-fence-epoch-6-[a-z0-9]{4,32}", execution) is not None
+            and re.fullmatch(r"f20-r5c-execution-fence-epoch-7-[a-z0-9]{4,32}", execution) is not None
             and execution not in prior_tokens
             and isinstance(write_token, str)
-            and re.fullmatch(r"f20-r5b-write-fence-epoch-6-[a-z0-9]{4,32}", write_token) is not None
+            and re.fullmatch(r"f20-r5c-write-fence-epoch-7-[a-z0-9]{4,32}", write_token) is not None
             and write_token not in prior_tokens
-            and execution.removeprefix("f20-r5b-execution-fence-epoch-6-")
-                == write_token.removeprefix("f20-r5b-write-fence-epoch-6-")
+            and execution.removeprefix("f20-r5c-execution-fence-epoch-7-")
+                == write_token.removeprefix("f20-r5c-write-fence-epoch-7-")
             and execution != write_token
             and worker.get("fencing_token") == execution
             and write.get("execution_fencing_token") == execution
@@ -147,9 +143,9 @@ def validate_transition(rows: object, wi_sha: str, invocation_sha: str,
                            "work_instruction_sha256": wi_sha, "invocation_sha256": invocation_sha,
                            "package_status": "REWORK_IN_PROGRESS", "accepted": False}
         )
-        return [] if valid else ["F20_R5B_TRANSITION_INVALID"]
+        return [] if valid else ["F20_R5C_TRANSITION_INVALID"]
     except (KeyError, TypeError, ValueError, OverflowError):
-        return ["F20_R5B_TRANSITION_INVALID"]
+        return ["F20_R5C_TRANSITION_INVALID"]
 
 
 def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> None:
@@ -160,9 +156,9 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
     progress = json.loads((root / PROGRESS).read_bytes())
     if (len(rows) != START or stream.get("last_sequence") != START
             or progress.get("event_sequence") != START
-            or progress.get("repository", {}).get("projection_mode") != r5a.MODE
-            or progress.get("worker_lease") != rows[1740]["details"]
-            or progress.get("write_lease") != rows[1741]["details"]
+            or progress.get("repository", {}).get("projection_mode") != r5b.MODE
+            or progress.get("worker_lease") != rows[1746]["details"]
+            or progress.get("write_lease") != rows[1747]["details"]
             or at.tzinfo is None or not re.fullmatch(r"[0-9a-f]{40}", dispatch_head)
             or not re.fullmatch(r"[a-z0-9]{4,32}", nonce)
             or _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() != "codex/f18-wsl-ops"
@@ -172,29 +168,29 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip() != dispatch_head
             or _git(root, "show", f"{dispatch_head}:{EVENTS}") != raw
             or (root / REPORT).read_bytes() != _git(root, "show", f"{dispatch_head}:{REPORT}")):
-        raise RuntimeError("F20_R5B_PREDECESSOR_INVALID")
+        raise RuntimeError("F20_R5C_PREDECESSOR_INVALID")
     prior_issued = datetime.fromisoformat(progress["worker_lease"]["issued_at"])
     prior_bundle = {"_root": root, "progress": progress, "events": stream}
-    if r5a.validate_control(root, prior_bundle, prior_issued):
-        raise RuntimeError("F20_R5B_PREDECESSOR_INVALID")
+    if r5b.validate_control(root, prior_bundle, prior_issued):
+        raise RuntimeError("F20_R5C_PREDECESSOR_INVALID")
     old_worker, old_write = progress["worker_lease"], progress["write_lease"]
     at_text = at.isoformat(timespec="seconds")
     expires = (at + timedelta(hours=12)).isoformat(timespec="seconds")
-    execution = f"f20-r5b-execution-fence-epoch-6-{nonce}"
-    write_token = f"f20-r5b-write-fence-epoch-6-{nonce}"
+    execution = f"f20-r5c-execution-fence-epoch-7-{nonce}"
+    write_token = f"f20-r5c-write-fence-epoch-7-{nonce}"
     worker = {
-        "lease_id": f"worker-lease-f20-r5b-{nonce}", "actor_id": ACTOR,
-        "subject_ref": "F-20/R5b", "status": "ACTIVE", "issued_at": at_text,
-        "expires_at": expires, "lease_epoch": 6, "fencing_token": execution,
+        "lease_id": f"worker-lease-f20-r5c-{nonce}", "actor_id": ACTOR,
+        "subject_ref": "F-20/R5c", "status": "ACTIVE", "issued_at": at_text,
+        "expires_at": expires, "lease_epoch": 7, "fencing_token": execution,
         "execution_fencing_token": execution, "baseline_git_commit": dispatch_head,
         "dispatch_head": dispatch_head, "path_scope": SCOPE,
     }
-    write = {**worker, "lease_id": f"write-lease-f20-r5b-{nonce}",
-             "worker_lease_id": worker["lease_id"], "write_epoch": 6,
+    write = {**worker, "lease_id": f"write-lease-f20-r5c-{nonce}",
+             "worker_lease_id": worker["lease_id"], "write_epoch": 7,
              "fencing_token": write_token, "write_fencing_token": write_token}
     wi_sha = r1._sha(r1._lf((root / WI).read_bytes()))
     invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
-    reason = "F20_R5A_EXACT2_DONE_R5B_C09_HISTORY_REWORK"
+    reason = "F20_R5B_EXACT2_DONE_R5C_C09_HISTORY_REWORK"
     details = (
         {"lease_id": old_write["lease_id"], "write_fencing_token": old_write["write_fencing_token"], "reason": reason},
         {"lease_id": old_worker["lease_id"], "execution_fencing_token": old_worker["execution_fencing_token"], "reason": reason},
@@ -209,21 +205,21 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
     for kind, detail in zip(TYPES, details):
         additions.append(_event(additions[-1] if additions else rows[-1], kind, detail, at_text))
     if validate_transition(rows + additions, wi_sha, invocation_sha, at):
-        raise RuntimeError("F20_R5B_TRANSITION_INVALID")
+        raise RuntimeError("F20_R5C_TRANSITION_INVALID")
     event_raw = _append_raw(raw, additions)
     progress = deepcopy(progress)
     progress.update({
-        "snapshot_id": "snapshot-f20-r5b-rework-start-seq1749", "event_sequence": END,
+        "snapshot_id": "snapshot-f20-r5c-rework-start-seq1755", "event_sequence": END,
         "last_event_id": additions[-1]["event_id"], "updated_at": at_text,
         "status": "ACTIVE", "active_agent": ACTOR,
         "worker_lease": worker, "write_lease": write,
-        "completed_f20_r5a_worker_lease": {**old_worker, "status": "REVOKED", "revoked_at": at_text},
-        "completed_f20_r5a_write_lease": {**old_write, "status": "REVOKED", "revoked_at": at_text},
+        "completed_f20_r5b_worker_lease": {**old_worker, "status": "REVOKED", "revoked_at": at_text},
+        "completed_f20_r5b_write_lease": {**old_write, "status": "REVOKED", "revoked_at": at_text},
         "f20_overall_status": "REWORK_IN_PROGRESS",
-        "next_safe_action": "F20_R5B_C09_HISTORY_REWORK",
-        "runtime_next_action": "F20_R5B_C09_HISTORY_REWORK",
+        "next_safe_action": "F20_R5C_C09_HISTORY_REWORK",
+        "runtime_next_action": "F20_R5C_C09_HISTORY_REWORK",
         "active_work_instruction": {
-            "artifact_id": "WI-F-20-REWORK-R5B-20260928-001", "path": WI,
+            "artifact_id": "WI-F-20-REWORK-R5C-20260928-001", "path": WI,
             "sha256": wi_sha, "invocation_path": INVOCATION,
             "invocation_sha256": invocation_sha,
             "result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_IN_PROGRESS",
@@ -235,7 +231,7 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
     progress["repository"].update({
         "local_head": dispatch_head, "remote_head": dispatch_head,
         "validated_base_commit": dispatch_head, "projection_mode": MODE,
-        "worktree_status": "F20_R5B_REWORK_ACTIVE", "product_write_scope": SCOPE,
+        "worktree_status": "F20_R5C_REWORK_ACTIVE", "product_write_scope": SCOPE,
         "commit_status": "PENDING", "push_status": "PENDING",
     })
     progress["registry_refs"]["progress_events"]["sha256"] = r1._sha(event_raw)
@@ -251,7 +247,7 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
         "repository_upstream": "development/codex/f18-wsl-ops",
         "reporting_decision": progress["reporting_decision"]["decision"],
     }
-    handoff_raw = (b"# F-20 R5b append-only lease handoff and C09 historical authority rework\n\n"
+    handoff_raw = (b"# F-20 R5c append-only lease handoff and C09 historical review rework\n\n"
                    b"```json anvil-recovery-summary\n" + r1._pretty(summary) +
                    b"```\n\n- F-20 incomplete; Production NOT_EXECUTED.\n")
     digest_raw = r1._pretty({
@@ -284,7 +280,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     progress, stream = bundle.get("progress") or {}, bundle.get("events") or {}
     rows = stream.get("events") or []
     if not isinstance(rows, list) or len(rows) != END:
-        return ["F20_R5B_TRANSITION_INVALID"]
+        return ["F20_R5C_TRANSITION_INVALID"]
     try:
         raw = (root / EVENTS).read_bytes()
         progress_raw = (root / PROGRESS).read_bytes()
@@ -296,37 +292,39 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
         manifest = json.loads((root / MANIFEST).read_bytes())
         report_raw = (root / REPORT).read_bytes()
     except (OSError, KeyError, TypeError, ValueError, subprocess.CalledProcessError):
-        return ["F20_R5B_CONTROL_MISSING"]
+        return ["F20_R5C_CONTROL_MISSING"]
     errors = validate_transition(rows, wi_sha, invocation_sha, now)
     if errors:
         return errors
     try:
-        base = rows[1746]["details"]["dispatch_head"]
+        base = rows[1752]["details"]["dispatch_head"]
         old_raw = _git(root, "show", f"{base}:{EVENTS}")
         old_report = _git(root, "show", f"{base}:{REPORT}")
         old_progress = json.loads(_git(root, "show", f"{base}:{PROGRESS}"))
-        predecessor_paths = (r5a.WI, r5a.INVOCATION, r5a.DIGEST, r5a.MANIFEST,
-                             r5a.REPORT, REPORT, WI, INVOCATION)
+        predecessor_paths = (r5b.r5a.WI, r5b.r5a.INVOCATION, r5b.r5a.DIGEST,
+                             r5b.r5a.MANIFEST, r5b.r5a.REPORT, r5b.WI,
+                             r5b.INVOCATION, r5b.DIGEST, r5b.MANIFEST,
+                             r5b.REPORT, REPORT, WI, INVOCATION)
         predecessor_unchanged = all(
             (root / relative).read_bytes() == _git(root, "show", f"{base}:{relative}")
             for relative in predecessor_paths
         )
     except (OSError, KeyError, TypeError, ValueError, subprocess.CalledProcessError):
-        return ["F20_R5B_CONTROL_MISSING"]
+        return ["F20_R5C_CONTROL_MISSING"]
     if not predecessor_unchanged:
-        errors.append("F20_R5B_PREDECESSOR_INVALID")
+        errors.append("F20_R5C_PREDECESSOR_INVALID")
     if (json.loads(raw) != stream or stream.get("last_sequence") != END
             or stream.get("last_event_id") != rows[-1]["event_id"]
             or json.loads(old_raw).get("events") != rows[:START]
             or raw != _append_raw(old_raw, rows[START:])
             or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256") != r1._sha(raw)):
-        errors.append("F20_R5B_HISTORY_MUTATED")
+        errors.append("F20_R5C_HISTORY_MUTATED")
     snapshot = deepcopy(progress)
     snapshot.pop("snapshot_hash", None)
     changed_progress_keys = {
         "snapshot_id", "event_sequence", "last_event_id", "updated_at", "status",
-        "active_agent", "worker_lease", "write_lease", "completed_f20_r5a_worker_lease",
-        "completed_f20_r5a_write_lease", "f20_overall_status", "next_safe_action",
+        "active_agent", "worker_lease", "write_lease", "completed_f20_r5b_worker_lease",
+        "completed_f20_r5b_write_lease", "f20_overall_status", "next_safe_action",
         "runtime_next_action", "active_work_instruction", "current_progress_evidence_ref",
         "repository", "registry_refs", "snapshot_hash",
     }
@@ -346,26 +344,26 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     if isinstance(old_registry, dict) and isinstance(old_registry.get("progress_events"), dict):
         old_registry["progress_events"]["sha256"] = r1._sha(raw)
     inherited_valid = inherited_valid and progress.get("registry_refs") == old_registry
-    worker, write = rows[1746]["details"], rows[1747]["details"]
-    old_worker, old_write = rows[1740]["details"], rows[1741]["details"]
+    worker, write = rows[1752]["details"], rows[1753]["details"]
+    old_worker, old_write = rows[1746]["details"], rows[1747]["details"]
     instruction = progress.get("active_work_instruction") or {}
     repo = progress.get("repository") or {}
     if (not inherited_valid or disk_progress != progress
             or progress.get("snapshot_hash") != r1._sha(r1._canonical(snapshot))
-            or progress.get("snapshot_id") != "snapshot-f20-r5b-rework-start-seq1749"
-            or progress.get("updated_at") != rows[1743]["occurred_at"]
+            or progress.get("snapshot_id") != "snapshot-f20-r5c-rework-start-seq1755"
+            or progress.get("updated_at") != rows[1749]["occurred_at"]
             or progress.get("event_sequence") != END
             or progress.get("last_event_id") != rows[-1]["event_id"]
             or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-20"
             or progress.get("active_agent") != ACTOR
             or progress.get("worker_lease") != worker or progress.get("write_lease") != write
-            or progress.get("completed_f20_r5a_worker_lease") != {**old_worker, "status": "REVOKED", "revoked_at": rows[1744]["occurred_at"]}
-            or progress.get("completed_f20_r5a_write_lease") != {**old_write, "status": "REVOKED", "revoked_at": rows[1743]["occurred_at"]}
+            or progress.get("completed_f20_r5b_worker_lease") != {**old_worker, "status": "REVOKED", "revoked_at": rows[1750]["occurred_at"]}
+            or progress.get("completed_f20_r5b_write_lease") != {**old_write, "status": "REVOKED", "revoked_at": rows[1749]["occurred_at"]}
             or "F-20" in progress.get("completed_packages", [])
             or progress.get("f20_overall_status") != "REWORK_IN_PROGRESS"
             or progress.get("wsl_full_suite") == "PASS"
             or instruction != {
-                "artifact_id": "WI-F-20-REWORK-R5B-20260928-001", "path": WI,
+                "artifact_id": "WI-F-20-REWORK-R5C-20260928-001", "path": WI,
                 "sha256": wi_sha, "invocation_path": INVOCATION,
                 "invocation_sha256": invocation_sha,
                 "result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_IN_PROGRESS",
@@ -377,22 +375,22 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
             or repo.get("validated_base_commit") != base
             or repo.get("local_head") != base or repo.get("remote_head") != base
             or repo.get("commit_status") != "PENDING" or repo.get("push_status") != "PENDING"
-            or repo.get("worktree_status") != "F20_R5B_REWORK_ACTIVE"
-            or progress.get("next_safe_action") != "F20_R5B_C09_HISTORY_REWORK"
-            or progress.get("runtime_next_action") != "F20_R5B_C09_HISTORY_REWORK"
+            or repo.get("worktree_status") != "F20_R5C_REWORK_ACTIVE"
+            or progress.get("next_safe_action") != "F20_R5C_C09_HISTORY_REWORK"
+            or progress.get("runtime_next_action") != "F20_R5C_C09_HISTORY_REWORK"
             or progress.get("next_work_package") != {"package_id": "HUMAN_RELEASE_DECISION", "status": "BLOCKED_PENDING_F20_ACCEPTANCE"}
             or progress.get("next_successor_work_package") != {"package_id": "HUMAN_RELEASE_DECISION", "status": "BLOCKED_PENDING_F20_ACCEPTANCE"}
             or progress.get("current_progress_evidence_ref") != {"package_id": "F-20", "path": DIGEST, "manifest_path": MANIFEST}):
-        errors.append("F20_R5B_PROGRESS_INVALID")
+        errors.append("F20_R5C_PROGRESS_INVALID")
     if (digest.get("event_sequence") != END or digest.get("self_reference") is not False
             or digest.get("progress", {}).get("file_sha256") != r1._sha(progress_raw)
             or digest.get("progress", {}).get("bytes") != len(progress_raw)
             or digest.get("handoff", {}).get("file_sha256") != r1._sha(handoff_raw)
             or digest.get("handoff", {}).get("bytes") != len(handoff_raw)):
-        errors.append("F20_R5B_DIGEST_INVALID")
+        errors.append("F20_R5C_DIGEST_INVALID")
     if ("detached_digest" in bundle and bundle["detached_digest"] != digest
             or "_detached_digest_path" in bundle and bundle["_detached_digest_path"] != DIGEST):
-        errors.append("F20_R5B_DIGEST_INVALID")
+        errors.append("F20_R5C_DIGEST_INVALID")
     try:
         match = re.search(r"```json anvil-recovery-summary\s*(\{.*?\})\s*```",
                           handoff_raw.decode("utf-8"), re.DOTALL)
@@ -403,9 +401,9 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
                 or summary.get("next_safe_action") != progress.get("next_safe_action")
                 or "handoff" in bundle and bundle["handoff"] != summary
                 or "handoff_text" in bundle and bundle["handoff_text"] != handoff_raw.decode("utf-8")):
-            errors.append("F20_R5B_HANDOFF_INVALID")
+            errors.append("F20_R5C_HANDOFF_INVALID")
     except (UnicodeDecodeError, ValueError, TypeError):
-        errors.append("F20_R5B_HANDOFF_INVALID")
+        errors.append("F20_R5C_HANDOFF_INVALID")
     if (manifest.get("schema_version") != "1.0.0" or manifest.get("self_reference") is not False
             or manifest.get("previous_event_sequence") != START
             or manifest.get("package_id") != "F-20" or manifest.get("event_sequence") != END
@@ -418,7 +416,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
             or manifest.get("work_instruction_sha256") != wi_sha
             or manifest.get("invocation_sha256") != invocation_sha
             or manifest.get("production") != "NOT_EXECUTED"):
-        errors.append("F20_R5B_MANIFEST_INVALID")
+        errors.append("F20_R5C_MANIFEST_INVALID")
     return sorted(set(errors))
 
 
@@ -445,6 +443,6 @@ def collect_git(root: Path, progress: dict) -> list[str]:
                  and ancestor(head) and ancestor(remote)
                  and changed <= CONTROL_SCOPE | set(SCOPE)
                  and dirty <= CONTROL_SCOPE | set(SCOPE))
-        return [] if valid else ["F20_R5B_GIT_INVALID"]
+        return [] if valid else ["F20_R5C_GIT_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, TypeError, UnicodeDecodeError):
-        return ["F20_R5B_GIT_INVALID"]
+        return ["F20_R5C_GIT_INVALID"]
