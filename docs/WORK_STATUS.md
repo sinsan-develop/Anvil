@@ -3884,3 +3884,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 담당 Main Agent. `validate_control`은 새 Event tail이 누락된 경우 `validate_rework_progress`의 오류 판정 이후에도 `rows[1714]`를 접근해 `IndexError`를 내는 것을 코드 검토에서 확인했다. WSL SHA `9602bb7`의 신규 회귀 테스트에서 동일 `IndexError` RED(exit 1)를 재현한 뒤, Event row의 타입·정확한 길이를 먼저 검사해 `F20_REWORK_TRANSITION_INVALID`로 거부하도록 `scripts/f20_rework_overlay.py`를 최소 수정했다.
 - WSL-server는 동일 전용 checkout을 SHA `35395670c7f56bbaf55df31cbf0b976a9e57375a`로 fast-forward pull한 뒤 F-20 evidence binding+projection 전체 `15 passed in 2.94s`(exit 0)를 확인했다. 정확한 SHA 확인 후 전용 checkout을 제거해 `F20_TRUNCATED_TDD_TEMP_RESIDUE_ZERO`를 확인했다. 변경 파일은 검사기와 해당 테스트 각 1개, 정식 실패 횟수 0(의도한 RED 제외). 실제 seq1719·G-05·제품 회귀·WSL 전체 suite·11개 메뉴는 아직 미검증이다.
 - Windows 임시 폴더 두 곳은 여전히 존재한다. 링크·폴더 정리 1회 추가 실행 여부를 신산님께 확인 요청한 상태에서 ACL·삭제 재시도는 하지 않았다. 다음은 잔류 0 확인 후 F-20 Task 2 canonical projection·lease 발급·G-05 검증이다.
+
+# C-30 역사 Git 객체 의존성 읽기 전용 분리 / 2026-09-27
+
+- F-20 full-suite 선행 검사에서 드러난 C-30 clean-clone 실패를 읽기 전용으로 좁혔다. 과거 기준 commit `ed3cae92597d681c76417e26576bed91a0525bad`의 Event 첫 1325개와 현재 Event 첫 1325개는 JSON 객체로는 동일(`EQUAL=True`, 최초 차이 없음)하지만, 현재 LF 정규화 raw prefix는 `4,012,498 bytes`·SHA `2D77CEB47E1F2CC98A5E1FBC83E4966F3A7AA0CF4D00523A77EC6EBA4FFD8BE2`로 기존 권위값 `3,985,246 bytes`·SHA `09A6B52717CEF4E4E49B2AA1830B670226FEB272237668CC3EC39E2D07219431`과 다르다. 구 commit의 raw prefix는 기존 권위 SHA와 일치한다. 현재 Event 객체만으로 옛 원시 바이트 증거를 대체할 수 없으므로 임의 재구성·검사 약화는 하지 않았다.
+- 로컬 `uv run` 읽기 전용 검사는 사용자 uv cache ACL 때문에 시작 실패 1회였고, 기존 worktree `.venv/Scripts/python.exe -B -c`로 같은 비교를 실행했다(exit 0). 변경 파일은 이 상태 기록만이며 C-30 제품·검사기 수정 0. 임시 checkout·DB·서비스 생성 0. 다음 조치는 F-20 통제 전환 후 원격 clean clone에도 존재하는 C-30 역사 증거 고정 방식을 별도 검증하는 것이다. 두 Windows pytest 임시 폴더 추가 정리 승인 응답 전에는 ACL·삭제를 실행하지 않는다.
