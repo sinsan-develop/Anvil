@@ -3894,3 +3894,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 
 - 신산님의 계속 지시에 따라 이미 승인된 두 정확한 경로 `.pytest_tmp_f20_rework`, `.pytest_cache_f20_rework`만 다시 확인했다. 두 경로는 현재 worktree 바로 아래였고 첫 경로의 심볼릭 링크 5개는 모두 첫 경로 내부를 가리켰다. PowerShell 7에서 링크만 비재귀 삭제한 뒤 두 경로를 재귀 삭제해 두 경로 모두 잔류 0을 확인했다(exit 0). 관련 없는 `.pytest_cache`와 그 ACL은 건드리지 않았다.
 - 정리 후 `git status --porcelain=v1`은 출력이 없었다. 제거한 두 폴더는 생성된 임시 테스트 자료이며 이 작업본에서 복구할 수 없다. 정식 실패 횟수는 기존 ACL 정리 3회 이상 기록을 유지하고 이번 재개 실행은 성공 1회다. 제품 파일 수정 0, 새 정본 projection·lease·F-20 수락·main 병합은 아직 없다. 다음은 이 clean SHA를 기준으로 F-20 Task 2 append-only 정본 projection을 적용·검증한다.
+
+# F-20 R1 seq1719 통제 projection / 2026-09-27
+
+- 담당 Main Agent. 임시 폴더 정리 기록 commit `2c966d6b5fb275360e07d6440b011a5b6df351ed`를 `development/codex/f18-wsl-ops`에 push하고 `git ls-remote`로 동일 SHA를 확인했다. 이 clean 기준 commit에서 seq1715~1719의 수락 무효화 → 재작업 지시 → worker lease → 정확한 제품 경로 3개에 대한 write lease → 재개 Event와 progress/handoff/digest/manifest를 생성했다. 과거 1714개 Event의 JSON 객체 및 원시 prefix bytes는 기준 Git blob과 동일하며 역사 보고서와 manifest는 이번 변경 범위 밖이다.
+- 검증: `scripts/check_project_progress.py`는 `G-05 ... PASS sequence=1719 reporting=AUTO_CONTINUE`(exit 0). F-20 evidence binding+projection 로컬 집중 테스트는 `15 passed in 8.75s`(exit 0). `git diff --check` exit 0, 독립 read-only 비교 `HISTORICAL_RAW_PREFIX_IDENTICAL=True`, `HISTORICAL_JSON_EVENTS_IDENTICAL=True`, 신규 Event 5개를 확인했다. 테스트 전용 OS 임시 경로 1개는 내부 링크를 확인한 후 삭제해 잔류 0이다.
+- 변경 파일: `docs/progress/progress-events.json`, `build-progress.json`, `BUILD_HANDOFF.md`, 신규 F-20 R1 digest·manifest, 이 기록과 F-20 control plan 체크. 정식 실패 횟수 0. 미검증: commit/push 후 WSL-server 동일 SHA 재검증, 전체 suite, 제품 3경로 Git write 오류 수정, 11개 메뉴·중단/재개·복구·Monitoring·blocking defect 0 검증. 제품 파일 변경·F-20 수락·main 병합·Production 작업은 하지 않았다. 다음은 통제 projection commit/push 및 WSL-server 검증이다.
