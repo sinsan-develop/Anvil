@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1685,
+  "accepted": true,
+  "projection_mode": "F18_ACCEPTANCE_REVIEW",
+  "next_work_package": "F-19",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-18_ACCEPTANCE_REVIEW.md",
+      "bytes": 1153,
+      "sha256": "05060B7EA1577220A66508F1AE94D16B841232FE3DDA6C1B02B272FEA974FCAF"
+    },
+    {
+      "path": "scripts/f18_acceptance_materialize.py",
+      "bytes": 4041,
+      "sha256": "E05457F721172435B780FAF8F67F6FD510629AA944EF3783CA3974E3FB30F23B"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 899972,
+      "sha256": "4487A4AEE2C210D9E895A645C68169541CE27F55A93522CEC6009CEA446E56DC"
+    }
+  ],
+  "production": "NOT_EXECUTED"
+}
