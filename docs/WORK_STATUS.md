@@ -3815,3 +3815,12 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 저장소 내부 `--basetemp` 우회 실행도 정상 요약을 남기지 못했으므로 전체 suite GREEN 또는 제품 회귀로 승격하지 않는다. 임시 `.pytest-f20-basetemp`는 제거했다.
 - F-20 WSL targeted/runtime evidence와 G-05 seq1714는 기존 PASS를 유지하지만, branch integration gate는 non-green HOLD이며 `main` 병합·push·branch 삭제를 수행하지 않는다. Production·ysna-server는 계속 제외한다.
 - 다음 조치: 별도 승인 없이 제품 코드를 변경하지 않고, pytest 임시 디렉터리 권한/환경을 정리한 뒤 동일 정식 명령의 종료 코드와 전체 요약을 다시 확보한다.
+
+# F-20 통합 Gate 원인 재분류 / 2026-09-27
+
+- 판정: `REWORK_REQUIRED_F20_INTEGRATION_AND_ACCEPTANCE`. 이전 `HOLD`의 Windows pytest 임시 경로 원인을 분리했다. 독립 `--basetemp`에서 첫 대상 테스트 `1 passed in 18.15s`였으며 전용 임시 경로를 정리했다. Windows 전체 실행은 28%에서 중단했고 25% 부근 실패를 관측했으므로 전체 PASS가 아니다.
+- Windows `tests/deploy/test_c01_wsl_formal_single_runtime_contract.py`는 `26 passed, 4 failed`였다. 네 실패는 테스트의 `wsl -d Ubuntu` 직접 호출이 현재 지정된 `ssh WSL-server` 경계와 맞지 않고 WSL subprocess가 `4294967295`로 종료된 것이다. 이 결과를 WSL-server 제품 검증 실패로 승격하지 않는다.
+- 지정 원격 `codex/f18-wsl-ops`의 `94dcc85a2cc394c056a0b039d4741ccf8b0ecc2a`를 `ssh WSL-server` 전용 checkout으로 가져와 `uv sync --frozen --group dev`로 격리 Python 3.14.3/pytest 8.4.2 환경을 구성했다. 정식 수집(`--import-mode=importlib --ignore=tests/fixtures/repositories`)은 `8245 tests collected in 11.69s`로 통과했다.
+- 같은 WSL 환경의 전체 suite `-x` 실행은 `1080 passed, 1 failed in 44.05s`에서 종료 코드 1이었다. 첫 실패 `tests/agent_team/test_worktree_writes_e06.py::test_managed_object_fanout_redirect_is_rejected_before_foreign_write`는 심볼릭 링크를 안전하게 차단하면서 `BackendRejected(REPARSE_PATH_DENIED)`를 반환했으나 계약은 `LeaseError`를 요구한다. 해당 파일 전체 재검증은 `55 passed, 1 failed in 34.51s`; 보안 차단 유지와 공개 오류 형식 정합화가 필요한 제품 회귀다. 전용 WSL checkout·가상환경은 경로/실행 상태 확인 후 제거했고 `F20_SUITE_TEMP_RESIDUE_ZERO`를 확인했다.
+- 계획서 F-20 완료조건의 동일 ReleaseManifest 11개 메뉴 기능 smoke·중단/재개와 Phase F Gate의 화면 기반 조작을 최종 보고서 증거와 대조했다. 최종 보고서는 Projects 이외 9개 메뉴를 `UNAVAILABLE` read-only로 기록한다. 따라서 기존 canonical F-20 accepted Event를 임의 수정하지 않되, 현재의 완료 선언을 Gate 충족 증거로 사용하지 않고 독립 재판정 대상으로 표시한다.
+- 이 브랜치는 `main` 병합·삭제 전 상태를 유지한다. 다음 조치는 동일 브랜치에서 정확한 제품 수정 WorkInstruction/유효한 worker·write lease를 발행해 Git 쓰기 예외 계약을 RED→GREEN으로 보완하고, F-20의 실제 11개 메뉴·중단/재개 완료조건을 재검증하는 것이다. `P-01`은 F Gate 충족 전 착수하지 않는다. Production·ysna-server는 제외한다.
