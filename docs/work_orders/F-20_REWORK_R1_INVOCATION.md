@@ -1,0 +1,1 @@
+`docs/work_orders/F-20_REWORK_R1_WORK_INSTRUCTION.md`의 F-20 R1 exact-path 작업만 수행하라. 현재 canonical worker/write lease와 두 fencing token, branch·HEAD·dirty 상태를 먼저 확인하고, 허용된 제품 경로에서 Git 쓰기 오류 형식을 RED→GREEN으로 보완하라. 로컬 검증 후 같은 브랜치를 push하고 `ssh WSL-server`에서 동일 SHA를 pull해 실제 회귀를 재실행하라. F-20 전체 완료나 11개 메뉴 PASS를 이 국소 수정으로 선언하지 말고, 결과·미검증·rollback을 R1 보고서에 기록하라.

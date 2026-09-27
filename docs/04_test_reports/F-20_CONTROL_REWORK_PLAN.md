@@ -49,15 +49,17 @@
 
 **Files:**
 - Create: `docs/work_orders/F-20_REWORK_R1_WORK_INSTRUCTION.md`
+- Create: `docs/work_orders/F-20_REWORK_R1_INVOCATION.md`
 - Create: `tests/tooling/test_f20_rework_projection.py`
+- Create: `scripts/f20_rework_overlay.py`
 - Modify: `docs/progress/progress-events.json`, `docs/progress/build-progress.json`, `docs/progress/BUILD_HANDOFF.md`, `scripts/check_project_progress.py`
-- Create: F-20 R1 전용 detached digest와 evidence manifest (정확한 파일명은 WorkInstruction에 고정).
+- Create: `docs/progress/progress-handoff-detached-digest-f20-r1-rework-start.json`, `docs/evidence/manifests/F-20_R1_REWORK_START_MANIFEST.json`.
 
 **Interfaces:**
 - Consumes: seq1714, Task 1의 해시 검사, 현재 브랜치 HEAD.
 - Produces: `EVIDENCE_MANIFEST_INVALIDATED` → 재작업 지시 → `WORKER_LEASE_ISSUED` → `WRITE_LEASE_ISSUED` → `PACKAGE_RESUMED` 순서의 새 Event 및 일치하는 progress/handoff/digest/manifest.
 
-- [ ] **Step 1:** 과거 seq1714 보존, 대상 manifest 고정, 서로 다른 fencing token과 정확한 제품 경로 범위를 요구하는 RED 테스트를 작성한다.
+- [x] **Step 1:** 과거 seq1714 보존, 대상 manifest 고정, 서로 다른 fencing token과 정확한 제품 경로 범위를 요구하는 RED 테스트를 작성한다.
 - [x] **Step 2:** 재작업 WorkInstruction에 Git 쓰기 오류 형식, 11개 메뉴 실제 기능 검증, 중단/재개, WSL 환경 및 제외 범위를 기록한다.
 - [ ] **Step 3:** 새 Event와 파생 projection만 생성하고 신규 lease를 검사한다.
 - [ ] **Step 4:** G-05·projection 테스트 GREEN, `git diff --check`, 과거 Event/보고서/manifest의 byte 동등성을 확인한다.
