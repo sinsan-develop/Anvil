@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-r5b-rework-start-seq1749",
-  "event_sequence": 1749,
-  "updated_at": "2026-09-27T22:01:29+00:00",
-  "last_event_id": "evt_f20_1749_package_resumed",
+  "snapshot_id": "snapshot-f20-r5c-rework-start-seq1755",
+  "event_sequence": 1755,
+  "updated_at": "2026-09-27T23:29:27+00:00",
+  "last_event_id": "evt_f20_1755_package_resumed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,26 +215,26 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-r5b",
+  "active_agent": "developer-primary-f20-r5c",
   "write_lease": {
-    "lease_id": "write-lease-f20-r5b-2c8cd368",
-    "actor_id": "developer-primary-f20-r5b",
-    "subject_ref": "F-20/R5b",
+    "lease_id": "write-lease-f20-r5c-0cd188a1",
+    "actor_id": "developer-primary-f20-r5c",
+    "subject_ref": "F-20/R5c",
     "status": "ACTIVE",
-    "issued_at": "2026-09-27T22:01:29+00:00",
-    "expires_at": "2026-09-28T10:01:29+00:00",
-    "lease_epoch": 6,
-    "fencing_token": "f20-r5b-write-fence-epoch-6-2c8cd368",
-    "execution_fencing_token": "f20-r5b-execution-fence-epoch-6-2c8cd368",
-    "baseline_git_commit": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
-    "dispatch_head": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "issued_at": "2026-09-27T23:29:27+00:00",
+    "expires_at": "2026-09-28T11:29:27+00:00",
+    "lease_epoch": 7,
+    "fencing_token": "f20-r5c-write-fence-epoch-7-0cd188a1",
+    "execution_fencing_token": "f20-r5c-execution-fence-epoch-7-0cd188a1",
+    "baseline_git_commit": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
+    "dispatch_head": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
     "path_scope": [
-      "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md",
+      "docs/04_test_reports/F-20_REWORK_R5C_RESULT.md",
       "tests/tooling/test_project_progress.py"
     ],
-    "worker_lease_id": "worker-lease-f20-r5b-2c8cd368",
-    "write_epoch": 6,
-    "write_fencing_token": "f20-r5b-write-fence-epoch-6-2c8cd368"
+    "worker_lease_id": "worker-lease-f20-r5c-0cd188a1",
+    "write_epoch": 7,
+    "write_fencing_token": "f20-r5c-write-fence-epoch-7-0cd188a1"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -268,19 +268,19 @@
     ]
   },
   "worker_lease": {
-    "lease_id": "worker-lease-f20-r5b-2c8cd368",
-    "actor_id": "developer-primary-f20-r5b",
-    "subject_ref": "F-20/R5b",
+    "lease_id": "worker-lease-f20-r5c-0cd188a1",
+    "actor_id": "developer-primary-f20-r5c",
+    "subject_ref": "F-20/R5c",
     "status": "ACTIVE",
-    "issued_at": "2026-09-27T22:01:29+00:00",
-    "expires_at": "2026-09-28T10:01:29+00:00",
-    "lease_epoch": 6,
-    "fencing_token": "f20-r5b-execution-fence-epoch-6-2c8cd368",
-    "execution_fencing_token": "f20-r5b-execution-fence-epoch-6-2c8cd368",
-    "baseline_git_commit": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
-    "dispatch_head": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "issued_at": "2026-09-27T23:29:27+00:00",
+    "expires_at": "2026-09-28T11:29:27+00:00",
+    "lease_epoch": 7,
+    "fencing_token": "f20-r5c-execution-fence-epoch-7-0cd188a1",
+    "execution_fencing_token": "f20-r5c-execution-fence-epoch-7-0cd188a1",
+    "baseline_git_commit": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
+    "dispatch_head": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
     "path_scope": [
-      "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md",
+      "docs/04_test_reports/F-20_REWORK_R5C_RESULT.md",
       "tests/tooling/test_project_progress.py"
     ]
   },
@@ -505,7 +505,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_R5B_C09_HISTORY_REWORK",
+  "next_safe_action": "F20_R5C_C09_HISTORY_REWORK",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -616,12 +616,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "local_head": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
-    "projection_mode": "F20_R5B_REWORK_START",
-    "validated_base_commit": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "remote_head": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
+    "projection_mode": "F20_R5C_REWORK_START",
+    "validated_base_commit": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1056,10 +1056,10 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [
-      "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md",
+      "docs/04_test_reports/F-20_REWORK_R5C_RESULT.md",
       "tests/tooling/test_project_progress.py"
     ],
-    "worktree_status": "F20_R5B_REWORK_ACTIVE",
+    "worktree_status": "F20_R5C_REWORK_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1221,11 +1221,11 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F-20-REWORK-R5B-20260928-001",
-    "path": "docs/work_orders/F-20_REWORK_R5B_WORK_INSTRUCTION.md",
-    "sha256": "B1C0121A3CA19777FDBF4753D46878AEC96FF34EF3310941B3CCEB59CAEB6E65",
-    "invocation_path": "docs/work_orders/F-20_REWORK_R5B_INVOCATION.md",
-    "invocation_sha256": "2D4DA3FEFC8ADE8A4F536BF7529DF9498E72CFAA638E16A463CA4DE66923F8BF",
+    "artifact_id": "WI-F-20-REWORK-R5C-20260928-001",
+    "path": "docs/work_orders/F-20_REWORK_R5C_WORK_INSTRUCTION.md",
+    "sha256": "80F3EFB374D7E2A624D81D7D2C5D901E12561FE86B7E272A86707AEBBFBEC4BD",
+    "invocation_path": "docs/work_orders/F-20_REWORK_R5C_INVOCATION.md",
+    "invocation_sha256": "45489FF08D24D369D56BFBA3A871A1CD2CDFC36C85B27B80851000648A120A44",
     "result_status": "REWORK_IN_PROGRESS",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "MAIN_INTERNAL_REWORK"
@@ -1360,8 +1360,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-r5b-rework-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_R5B_REWORK_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-r5c-rework-start.json",
+    "manifest_path": "docs/evidence/manifests/F-20_R5C_REWORK_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1382,7 +1382,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2B372033996877CA65C3F388AB4DC95449CD062825A38810705F18C1A1466072"
+      "sha256": "2586A00A19DE7DCE0305D16EA62503D2F182D0B8F57B6CFCAD2739B5D1F27F25"
     }
   },
   "next_work_package": {
@@ -1779,8 +1779,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "3BBE03D7ED78BDAB816A5B49A63EBA58A100559313D3915EC0E203BC458D49B2",
-  "runtime_next_action": "F20_R5B_C09_HISTORY_REWORK",
+  "snapshot_hash": "7870B101B906722490C61F04E2667F3D8D2C09CF4CC68B217095D553034A8A2D",
+  "runtime_next_action": "F20_R5C_C09_HISTORY_REWORK",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23424,5 +23424,44 @@
     "write_epoch": 5,
     "write_fencing_token": "f20-r5a-write-fence-epoch-5-f3a32d5d",
     "revoked_at": "2026-09-27T22:01:29+00:00"
+  },
+  "completed_f20_r5b_worker_lease": {
+    "lease_id": "worker-lease-f20-r5b-2c8cd368",
+    "actor_id": "developer-primary-f20-r5b",
+    "subject_ref": "F-20/R5b",
+    "status": "REVOKED",
+    "issued_at": "2026-09-27T22:01:29+00:00",
+    "expires_at": "2026-09-28T10:01:29+00:00",
+    "lease_epoch": 6,
+    "fencing_token": "f20-r5b-execution-fence-epoch-6-2c8cd368",
+    "execution_fencing_token": "f20-r5b-execution-fence-epoch-6-2c8cd368",
+    "baseline_git_commit": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "dispatch_head": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "path_scope": [
+      "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "revoked_at": "2026-09-27T23:29:27+00:00"
+  },
+  "completed_f20_r5b_write_lease": {
+    "lease_id": "write-lease-f20-r5b-2c8cd368",
+    "actor_id": "developer-primary-f20-r5b",
+    "subject_ref": "F-20/R5b",
+    "status": "REVOKED",
+    "issued_at": "2026-09-27T22:01:29+00:00",
+    "expires_at": "2026-09-28T10:01:29+00:00",
+    "lease_epoch": 6,
+    "fencing_token": "f20-r5b-write-fence-epoch-6-2c8cd368",
+    "execution_fencing_token": "f20-r5b-execution-fence-epoch-6-2c8cd368",
+    "baseline_git_commit": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "dispatch_head": "d8a7e2dd4ce2a144c53607242b326a9afd16c468",
+    "path_scope": [
+      "docs/04_test_reports/F-20_REWORK_R5B_RESULT.md",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "worker_lease_id": "worker-lease-f20-r5b-2c8cd368",
+    "write_epoch": 6,
+    "write_fencing_token": "f20-r5b-write-fence-epoch-6-2c8cd368",
+    "revoked_at": "2026-09-27T23:29:27+00:00"
   }
 }

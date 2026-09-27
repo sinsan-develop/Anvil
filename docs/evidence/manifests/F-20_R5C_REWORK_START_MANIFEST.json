@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1755,
+  "accepted": false,
+  "projection_mode": "F20_R5C_REWORK_START",
+  "previous_event_sequence": 1749,
+  "product_write_scope": [
+    "docs/04_test_reports/F-20_REWORK_R5C_RESULT.md",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "predecessor_commit": "7c6c10b4a8dbf29c4a5b6c810100fe0ab8aff71d",
+  "predecessor_events_sha256": "2B372033996877CA65C3F388AB4DC95449CD062825A38810705F18C1A1466072",
+  "predecessor_report_sha256": "A27C2B78E3102942F543AD75CCBD66D8E194F2CCDD2113F09A23B5864EDB3DB6",
+  "work_instruction_sha256": "80F3EFB374D7E2A624D81D7D2C5D901E12561FE86B7E272A86707AEBBFBEC4BD",
+  "invocation_sha256": "45489FF08D24D369D56BFBA3A871A1CD2CDFC36C85B27B80851000648A120A44",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
