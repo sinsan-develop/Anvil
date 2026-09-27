@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "G-05-PROGRESS-HANDOFF-DIGEST-F20-WSL-FINAL",
+  "event_sequence": 1714,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1199101,
+    "file_sha256": "6AFAF1C597C28EBD7956F58C8F125603A7B266710C0C6FEEC225104640FBF4DD",
+    "canonical_json_sha256": "F06B35FAFA535341CFEC41EE131C83E1E243BDF6C6FE89A796B66C45168B1EC1"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 687,
+    "file_sha256": "2F39765DF2629F4A3A69300DEAFBD7BCEACFC6819942F28FCB3A758AF4747BFE",
+    "machine_summary_canonical_sha256": "2828D42DB02163C4AA93693D5167CDAD6FF96B481FA1D988515D8EFA3E1E4760"
+  },
+  "created_at": "2026-09-27T17:05:00+09:00"
+}

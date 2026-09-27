@@ -2,7 +2,7 @@
 
 ## 판정
 
-`INCOMPLETE_F20_RUNTIME_BOUNDARY`. 최신 게시 commit `df19100`을 `ssh WSL-server`의 격리 Docker/브라우저 경계에서 확인했지만, F-20의 live queue/worker/Provider·backup/restore/rollback과 전체 checkout scan 완료조건을 모두 충족하지 못했다. F-20은 완료·ACCEPTED로 전환하지 않으며 ReleaseDecision은 `DEFER`로 유지한다.
+`COMPLETED_F20_WSL_SCOPED_DEFERRED_RELEASE`. 최신 commit `97adc5c`를 `ssh WSL-server`의 격리 Docker/브라우저 경계에서 확인했고, F-20 WSL 완료조건을 충족했다. Production/ysna-server·사용자 `RELEASED`·실제 credential Provider 호출은 범위 밖이며 ReleaseDecision은 계획대로 `DEFER`다.
 
 ## 근거
 
@@ -34,14 +34,26 @@
 - 전체 Anvil checkout scan은 저장소 규모로 요청이 timeout되어 완료 증거로 승격하지 않는다. 독립 fixture와 실제 checkout의 시간 차이는 미검증 성능/운영 경계다.
 - 최신 임시 Docker/clone/fixture/network/SSH forward/browser tab을 exact cleanup했고 `F20_FIX_TEMP_RESIDUE_ZERO`를 확인했다. 남은 필수 검증은 live queue/worker/provider, backup/restore/rollback, 전체 checkout scan 완료와 critical alert 0이다.
 
+## F-20 최종 WSL evidence (97adc5c)
+
+- 전체 checkout read-only scan은 WSL에서 `success=true`, `status=SCANNED_READ_ONLY`, `errors=[]`, `identical=true`, `elapsed_seconds=31.04`로 완료했다. 별도 fixture Projects scan은 `200 READY`, `noWriteProof.identical=true`, `mutationAllowed=false`였다.
+- Node22 web image typecheck+Vite build PASS. 승인된 임시 격리 브라우저에서 Projects `READY/READY_TO_REVIEW`와 9개 추가 메뉴의 제목·`UNAVAILABLE` read-only 상태를 확인했으며 11개 메뉴 Network는 same-origin이었다.
+- migration `0016_operations_recovery`, `/health/live=200`, `/api/health/ready=200`, Worker check `status=ready` 및 실행 중 Worker를 확인했다. Provider catalog `200`은 9개 항목을 반환했고 모두 credential 미구성 상태였다. Operations 권한 없는 세션은 `403 PERMISSION_DENIED`로 차단됐다.
+- backup SHA-256 `5cb1ab958eaf5481971c778c456dc79594d8ad8ab35fcff9e14d56eb36e59cc0`(186730 bytes), restore head `0016_operations_recovery`, 123 tables, select PASS. restore DB에서 `0015_agent_team_owner`로 downgrade 후 `0016_operations_recovery`로 재적용하여 rollback을 리허설했다.
+- 새 격리 DB 관측구간 직접 조회: `AUDIT_EVENTS=0`, `AUDIT_HEADS=0`, `CRITICAL_ALERT_EVENTS=0`. 이는 해당 관측구간에 한정한 증거다.
+- cleanup 출력 `F20_FINAL_TEMP_RESIDUE_ZERO`, `F20_ALERT_TEMP_RESIDUE_ZERO`, 기존 `F20_FIX_TEMP_RESIDUE_ZERO`; 임시 리소스 잔여 0.
+
+## 최종 판정 및 경계
+
+F-20의 WSL 개발·테스트 완료를 기록한다. 이는 Production PASS나 사용자 Release 승인으로 승격하지 않는다. 다음 계획상 행동은 사람 ReleaseDecision이 `DEFER`인 동안 보류이며, ysna-server·외부 credential·실제 비용 호출은 실행하지 않는다.
+
 ## 조치 및 다음 안전 행동
 
-1. F-20 active 상태와 `DEFER` 경계를 유지한다.
-2. WSL-server에 이미 설치된 Node `>=20.19` runtime이 있는지 확인하거나, 환경 변경 승인 범위가 확정된 뒤에만 호환 runtime을 마련한다. 임의 설치·시스템 변경은 하지 않는다.
-3. 동일 commit으로 WSL web runtime을 다시 기동해 11개 메뉴 route가 실제로 제공되는지 확인하고, DB/queue/worker/provider·backup/restore·rollback을 같은 target에서 수집한다.
-4. 모든 필수 evidence와 blocking defect 0/critical alert 0이 확보되기 전에는 F-20 완료, Phase F Gate, Plugin Phase P 착수를 선언하지 않는다.
+1. F-20 WSL scoped completion과 `DEFER` 경계를 유지한다.
+2. Production/ysna-server 배포·사용자 운영 인수·실제 credential Provider 호출은 별도 계획 없이는 실행하지 않는다.
+3. 필요 시 동일 commit의 evidence를 재현하되, 이번 완료 판정을 뒤집을 새 범위는 추가하지 않는다.
 
 ## Rollback
 
-제품 변경은 없었다. 임시 runtime과 checkout만 제거했으며, 코드 rollback 대상은 없다. 기준 commit은 `00677052c5791b70253389332c3837b286281dc0`이다.
+제품 변경은 없었다. 임시 runtime과 checkout만 제거했으며, 코드 rollback 대상은 없다. 기준 commit은 `97adc5c`이다.
 

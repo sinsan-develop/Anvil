@@ -3788,3 +3788,14 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 승인된 임시 격리 브라우저에서 `/projects`가 `READY`, branch/head/dirty/untracked와 `READY_TO_REVIEW`를 표시했고, `/workbench`, `/runs`, `/reviews`, `/quality`, `/knowledge`, `/agents-automation`, `/environments`, `/operations`, `/settings`가 각 제목과 `UNAVAILABLE` read-only 상태를 표시하며 fallback 없이 열렸다. 메뉴 요청은 same-origin이었다.
 - 전체 Anvil checkout scan은 실제 저장소 규모로 단일 요청이 timeout되어 완료 증거가 아니며, 동일 API 경로의 독립 임시 Git fixture scan은 `200`, `SCANNED_READ_ONLY`, `noWriteProof.identical=true`, `mutationAllowed=false`로 확인했다. 이 차이는 미검증 범위로 유지한다.
 - Docker/clone/fixture/network/port/SSH forward/브라우저 탭을 exact cleanup해 `F20_FIX_TEMP_RESIDUE_ZERO`를 확인했다. 다음 조치는 F-20 WorkInstruction의 live queue/worker/provider, backup/restore/rollback 및 전체 checkout scan 성능 경계를 같은 target에서 검증하는 것이다.
+
+# F-20 WSL 최종 검증 완료 / 2026-09-27
+
+- 판정: `COMPLETED_F20_WSL_SCOPED_DEFERRED_RELEASE`. 최신 commit `97adc5c`를 `ssh WSL-server` 격리 runtime에서 검증했고, Production/ysna-server와 사용자 `RELEASED`는 계획대로 제외했다.
+- 동일 checkout의 전체 read-only repository scan은 `success=true`, `status=SCANNED_READ_ONLY`, `errors=[]`, `identical=true`, `elapsed_seconds=31.04`였다. Projects API fixture scan도 `200 READY`, `noWriteProof.identical=true`, `mutationAllowed=false`였다.
+- Docker Node22 web build의 typecheck+Vite build가 PASS했고, 승인된 임시 격리 브라우저에서 Projects `READY/READY_TO_REVIEW`와 9개 추가 메뉴의 제목·`UNAVAILABLE` read-only 상태를 확인했다. 11개 메뉴 요청은 same-origin이었다.
+- WSL runtime은 migration `0016_operations_recovery`, `/health/live=200`, `/api/health/ready=200`, Worker `ready` 및 실행 중 상태를 확인했다. Provider catalog는 9개 항목을 반환했으며 credential 미구성 상태를 정직하게 표시했다. 권한 없는 Operations 세션은 `403 PERMISSION_DENIED`로 fail-closed했다.
+- 격리 DB backup SHA-256 `5cb1ab958eaf5481971c778c456dc79594d8ad8ab35fcff9e14d56eb36e59cc0`(186730 bytes), restore head `0016_operations_recovery`, 123 tables, select PASS를 확인했다. restore DB에서 downgrade `0015_agent_team_owner` 후 upgrade `0016_operations_recovery` rollback 재적용을 완료했다.
+- 새 격리 DB 관측구간에서 `AUDIT_EVENTS=0`, `AUDIT_HEADS=0`, `CRITICAL_ALERT_EVENTS=0`을 직접 확인했다. 이는 해당 관측구간의 증거이며 장기 모니터링 보장을 의미하지 않는다.
+- `F20_FINAL_TEMP_RESIDUE_ZERO`, `F20_ALERT_TEMP_RESIDUE_ZERO`, 기존 `F20_FIX_TEMP_RESIDUE_ZERO`로 임시 checkout·container·image·network·dump·port·SSH forward·브라우저 잔여 0을 확인했다.
+- F-20은 WSL 범위에서 완료했지만 ReleaseDecision은 계획대로 `DEFER`이며 Production 배포·사용자 운영 인수·실제 credential Provider 호출은 실행하지 않았다.

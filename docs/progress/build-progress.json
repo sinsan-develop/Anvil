@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-f18-wsl-ops-r45c-close-seq1681",
-  "event_sequence": 1712,
-  "updated_at": "2026-09-27T16:15:41+09:00",
-  "last_event_id": "evt_f20_1712_package_started",
+  "event_sequence": 1714,
+  "updated_at": "2026-09-27T17:05:00+09:00",
+  "last_event_id": "evt_f20_1714_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -213,7 +213,8 @@
     "U-09",
     "U-10",
     "U-11",
-    "PHASE_U_GATE"
+    "PHASE_U_GATE",
+    "F-20"
   ],
   "active_agent": "main-agent-eoul",
   "write_lease": null,
@@ -470,7 +471,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_WSL_RUNTIME_VALIDATION",
+  "next_safe_action": "HUMAN_RELEASE_DECISION_DEFERRED",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -581,12 +582,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "69247977e4e51781401e45348fd3a290d8393c36",
+    "local_head": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
     "local_wsl_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "28417a864313a1bff771c9cafaf4096436cfbb24",
-    "projection_mode": "F20_START",
-    "validated_base_commit": "69247977e4e51781401e45348fd3a290d8393c36",
+    "remote_head": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
+    "projection_mode": "F20_FINAL_WSL_SCOPED",
+    "validated_base_commit": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1021,7 +1022,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F20_ACTIVE",
+    "worktree_status": "F20_COMPLETED_WSL_SCOPED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1120,15 +1121,14 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-F-17-20260924-001",
-    "path": "docs/work_orders/F-17_WORK_INSTRUCTION.md",
-    "sha256": "B76BC2D471E4E9810BBD01CAEAB778B364D7B22BD9F761116399254DE2FEA9EE",
-    "invocation_path": "docs/work_orders/F-17_INVOCATION_PROMPT.md",
-    "invocation_sha256": "1DD45EF085F5E2BD37BB2D18CD7DB6BA68C92B7344CD1FBDDC6CFECC6C571714",
-    "assigned_verification_ids": [
-      "AV-OPS-015",
-      "AV-OPS-025"
-    ]
+    "artifact_id": "WI-F-20-WSL-FINAL-20260927-001",
+    "path": "docs/work_orders/F-20_WSL_FINAL_VALIDATION_WORK_INSTRUCTION.md",
+    "sha256": "6014DBAEBD53C5383A2509E99AB33E4DEA957CD038A8EBC2FC7F7AE0806B538A",
+    "revision_classification": "MAIN_INTERNAL_DEVELOPMENT_WSL_VALIDATION",
+    "result_status": "COMPLETED",
+    "package_status": "ACCEPTED",
+    "accepted_event_id": "evt_f20_1714_main_package_accepted",
+    "release_decision": "DEFER"
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
@@ -1184,13 +1184,14 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F-18-WSL-OPS-R45C-REWORK-20260927-001",
-    "path": "docs/work_orders/F-18_WSL_OPS_R45C_REWORK_WORK_INSTRUCTION.md",
-    "sha256": "7D03A50A6D5E5C0D72FAAEDA9798396B20808A3D3C5A39B1EDAD903571D1E547",
-    "invocation_path": "docs/work_orders/F-18_WSL_OPS_R45C_REWORK_INVOCATION.md",
-    "invocation_sha256": "D98DEB080EBF1EAE091A428EFEDA2A157702100E858A6917EDCB140197815F34",
-    "revision_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
-    "parent_approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001"
+    "artifact_id": "WI-F-20-WSL-FINAL-20260927-001",
+    "path": "docs/work_orders/F-20_WSL_FINAL_VALIDATION_WORK_INSTRUCTION.md",
+    "sha256": "6014DBAEBD53C5383A2509E99AB33E4DEA957CD038A8EBC2FC7F7AE0806B538A",
+    "revision_classification": "MAIN_INTERNAL_DEVELOPMENT_WSL_VALIDATION",
+    "result_status": "COMPLETED",
+    "package_status": "ACCEPTED",
+    "accepted_event_id": "evt_f20_1714_main_package_accepted",
+    "release_decision": "DEFER"
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1321,9 +1322,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "F-18",
-    "path": "docs/progress/progress-handoff-detached-digest-f18-local.json",
-    "manifest_path": "docs/evidence/manifests/F-18_LOCAL_START_MANIFEST.json"
+    "package_id": "F-20",
+    "path": "docs/progress/progress-handoff-detached-digest-f20-wsl-final.json",
+    "manifest_path": "docs/evidence/manifests/F-20_WSL_FINAL_VALIDATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1340,20 +1341,20 @@
     },
     "progress_event_contract": {
       "path": "docs/progress/progress-event-contract.json",
-      "sha256": "15D10F1AD4C5D053C1BD8F3348CD97A8EC8E9FD850C7598B248771698D74DA52"
+      "sha256": "5D1198A312E21889D2FE8F0EE7B8B999AB51E4320283DF92EDF8368D4D5DAD9D"
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2755283A52C6AA384129E516A3EA52D23647DD5E7BF1D68EC63C248A0B0EE36F"
+      "sha256": "84C67AE3A349316CCE5B795CF0B1183FBDA6D723A5A6D5D03C0BBC09ADC4BE33"
     }
   },
   "next_work_package": {
-    "package_id": "F-20",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "HUMAN_RELEASE_DECISION",
+    "status": "DEFERRED_BY_PLAN"
   },
   "next_successor_work_package": {
-    "package_id": "F-20",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "HUMAN_RELEASE_DECISION",
+    "status": "DEFERRED_BY_PLAN"
   },
   "historical_phase_b_gate": {
     "event_sequence": 375,
@@ -1741,7 +1742,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "3E2205111AD8CFED987835EF5A9CD1F33B83CB245F483561C9353D6C9C6125D7",
+  "snapshot_hash": "8296A078E97222F0C70A316D9887B1E2313E1FE5D14AC871A90998699332F02A",
   "runtime_next_action": "F20_WSL_RUNTIME_VALIDATION",
   "seq527_clean_review": {
     "event_sequence": 527,

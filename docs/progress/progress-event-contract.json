@@ -47,6 +47,9 @@
     "DEPLOYMENT_STARTED",
     "DEPLOYMENT_COMPLETED",
     "MONITORING_BOUNDARY_RECORDED",
+    "PHASE_GATE_COMPLETED",
+    "WORK_INSTRUCTION_ISSUED",
+    "PACKAGE_REVIEWED",
     "WORK_INSTRUCTION_REVISED",
     "HUMAN_OVERRIDE_TAKEOVER_RECORDED"
   ],
@@ -413,6 +416,22 @@
         "evidence_ref"
       ],
       "effect": "monitoring_boundary_complete"
+    },
+    "PHASE_GATE_COMPLETED": {
+      "required_details": [
+        "result_status",
+        "report",
+        "next_action"
+      ],
+      "effect": "phase_gate_completed_and_next_ready"
+    },
+    "WORK_INSTRUCTION_ISSUED": {
+      "required_details": [],
+      "effect": "work_instruction_issued"
+    },
+    "PACKAGE_REVIEWED": {
+      "required_details": [],
+      "effect": "package_review_recorded"
     },
     "WORK_INSTRUCTION_REVISED": {
       "required_details": [

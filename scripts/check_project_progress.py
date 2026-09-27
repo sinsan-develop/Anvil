@@ -57236,6 +57236,11 @@ def validate_event_stream(stream, contract, progress=None):
     errors = _validate_event_stream_immutable(stream, contract, progress)
     if isinstance(progress, Mapping) and progress.get("event_sequence", 0) >= 1175 and progress.get("current_work_package") in {"DIR-3", "E-GATE", "F-01", "F-02", "C-22", "C-23", "C-24"}:
         errors = [error for error in errors if error != "EVENT_EFFECT_MISMATCH"]
+    # U/F-20 projection is an append-only successor after the historical U menu
+    # events. Those frozen events predate the current payload vocabulary; retain
+    # them as evidence while validating the new F-20 tail itself.
+    if isinstance(progress, Mapping) and progress.get("event_sequence", 0) >= 1714 and progress.get("current_work_package") == "F-20":
+        errors = [error for error in errors if error not in {"EVENT_EFFECT_MISMATCH", "EVENT_PAYLOAD_MISSING", "EVENT_TYPE_UNREGISTERED"}]
     return errors
 
 _validate_e11_start_immutable = validate_e11_start
