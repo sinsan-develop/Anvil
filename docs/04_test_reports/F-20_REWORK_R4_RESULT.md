@@ -2,13 +2,13 @@
 
 ## 판정
 
-`COMPLETED_LOCAL_SCOPED` — 지정된 비G-05 실패 7건의 테스트 기준을 원인별로 보완했다. 로컬의 대상 5개 파일 전체 실행은 `91 passed, 8 skipped`이다. 이는 WSL-server 동일 SHA 전체 suite, G-05/history 41건, F-20 기능 인수 또는 main 병합의 PASS가 아니다.
+`COMPLETED_R4_SCOPED_LOCAL_WSL; FULL_SUITE_NON_GREEN_41` — 지정된 비G-05 실패 7건의 테스트 기준을 원인별로 보완했다. 로컬·WSL-server 동일 SHA의 대상 5개 파일은 각각 `91 passed, 8 skipped`다. 전체 suite는 41건 실패로 비GREEN이며 F-20 기능 인수나 main 병합의 PASS가 아니다.
 
 ## 기준과 시작 상태
 
 - Work Package `F-20/R4`; 작업계획서 SHA-256 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`; WorkInstruction SHA-256 `2CF4C28381C44192ABF51A7E7C1754DC54ADD3D5BE76BC9D558F9CDC89EB6A3B`.
 - 시작 branch `codex/f18-wsl-ops`, clean HEAD `c64d709165ad8ccf473347c36709e588a905b7b0`; canonical seq1737, worker/write epoch4 actor `developer-primary-f20-r4`, exact6 scope, 만료 `2026-09-28T07:09:26+00:00`. 시작 G-05 `PASS sequence=1737`(exit 0).
-- 수정은 본 보고서와 WorkInstruction이 허용한 5개 테스트 파일만 수행했다. 제품 runtime/API, 원본 Event/manifest, 승인 문서, Git commit/push/branch, WSL-server/Production은 변경하지 않았다.
+- Developer 수정은 본 보고서와 WorkInstruction이 허용한 5개 테스트 파일만 수행했다. 제품 runtime/API, 원본 Event/manifest, 승인 문서 및 Production은 변경하지 않았다. Git commit/push와 WSL-server 검증은 Main이 별도로 수행했다.
 
 ## 원인과 조치
 
@@ -31,9 +31,17 @@
 - 최종 `git diff --check` exit 0; `.pytest_tmp_f20_r4_writer` 안의 symlink 2개가 모두 해당 경로 내부를 가리킴을 확인한 후 그 임시 폴더만 삭제, residue 0. 검증 도중 생성된 정확한 5개 일반 `.pyc`도 식별·제거했다. 임시 폴더 정리 후 `scripts/check_project_progress.py` → exit 0, `G-05 project progress contract: PASS sequence=1737 reporting=AUTO_CONTINUE`.
 - 독립 검토 Minor 2 보완: C30 검사명을 실제 범위인 frozen prefix hash·현재 비수락 evidence 연결로 명확히 하고, F18 음성 검사가 실제 파일 변조가 아닌 Git diff 반환값 주입임을 위 표에 구분했다. C30 2개와 F18 R12 파일 전체를 같은 pytest 옵션으로 `--basetemp=.pytest_tmp_f20_r4_minor_review`에서 재실행하여 `7 passed in 24.46s`(exit 0). 임시 폴더의 symlink 2개가 모두 내부를 가리킴을 확인 후 해당 폴더만 삭제, residue 0.
 
+## Main의 WSL-server 동일 SHA 검증
+
+- 검증 기준 commit `bd6a5439c5f744e364a3daed13533ec21e13cc22`: Main이 로컬·지정 원격·WSL-server 전용 checkout의 SHA 일치와 clean 상태를 확인했다. 기존 PR #15 ref만 fetch해 C30 frozen `abb7361` 객체를 확인했고 새 branch/tag는 게시하지 않았다.
+- WSL Python `3.14.3`, 격리 Node `22.23.0`: G-05 `PASS sequence=1737`(exit 0), R4 대상 5개 파일 집중 pytest `91 passed, 8 skipped in 12.14s`(exit 0). 집중 테스트의 8 skip은 실제 DB 검증이 아니다.
+- 동일 SHA 전체 pytest: `ANVIL_POSTGRES_VOLUME_TARGET=/var/lib/postgresql/data`로 `--import-mode=importlib --ignore=tests/fixtures/repositories --basetemp=/tmp/anvil-f20-pytest-bd6a543` 실행 결과 `8131 passed, 41 failed, 116 skipped, 14 warnings in 1469.59s`(exit 1). 이전 48 FAIL 중 R4 대상 7건은 제거됐고, 남은 41건은 모두 `tests/tooling/test_project_progress.py`다.
+- 잔여 41건은 C30 현재 raw prefix·현재 불변식 4, C21 runtime control 3, C09~C13 역사 authority·review·projection 31, E09 역사 authority 3으로 분류됐다. 현재 Event 원장의 과거 변조를 R4의 역사 fixture GREEN으로 덮지 않는다.
+- Main은 R4 집중 pytest 임시 폴더를 별도로 정리하고 G-05를 재실행했다. 전체 suite 종료 후에도 exact SHA `bd6a5439c5f744e364a3daed13533ec21e13cc22` checkout clean·pytest Python process 0을 확인했다. 전용 pytest base의 symlink 223개와 Node cache symlink 2개는 모두 각 전용 경로 내부였고, checkout의 `.venv` 표준 Python symlink 4개를 확인했다. 전체 로그는 22,488 bytes, SHA-256 `829036a5321a1b83bfe36404307b264244c4288857e5a4fd3ee7db560dc62882`였다. 정확한 네 경로 `/tmp/anvil-f20-r4-control-fefd180`, `/tmp/anvil-f20-pytest-bd6a543`, `/tmp/anvil-f20-node22-cache-bd6a543`, `/tmp/anvil-f20-full-bd6a543.log`만 제거하고 `F20_BD6A543_WSL_RESIDUE_ZERO`를 확인했다.
+
 ## 잔여 범위와 인계
 
 - 정식 Developer `FAILURE_REPORT` 0회. 위 중간 실패는 RED 확인·fixture 조정이며 unresolved 정식 실패가 아니다.
-- WSL-server 동일 SHA, 전체 pytest, 브라우저 Network, 실제 DB/API/Provider, 11개 메뉴·복구 흐름, G-05/history 41건 및 C30 현재 ledger raw prefix의 과거 변조는 미검증·미해결이다. 역사 checksum을 새 현재값으로 갱신하지 않았고 테스트 skip/xfail도 추가하지 않았다.
-- Main은 정확한 6개 파일 diff/lease를 검토하고 commit/push 후 WSL-server에서 동일 SHA 집중 및 전체 suite를 실행한다. rollback은 이 R4의 5개 테스트 변경과 본 보고서만 되돌리는 것이며 frozen checkpoint·audit Event를 손대지 않는다.
+- WSL-server 동일 SHA 집중 검증과 G-05 seq1737은 PASS이나 전체 pytest는 비GREEN이다. `tests/tooling/test_project_progress.py` 41건은 실제 실행해 FAIL을 확정했으며 미검증으로 분류하지 않는다. C30 현재 ledger의 과거 audit raw prefix 변조는 미해결이다. 실제 DB·브라우저 Network·API·Provider·11개 메뉴·복구 흐름은 미검증이다. 역사 checksum을 새 현재값으로 갱신하지 않았고 테스트 skip/xfail도 추가하지 않았다.
+- Main의 다음 조치는 R5 역사 불변식 복구 범위 판단이다. rollback은 이 R4의 5개 테스트 변경과 본 보고서만 되돌리는 것이며 frozen checkpoint·audit Event를 손대지 않는다.
 - `docs/progress/build-progress.json` 및 `BUILD_HANDOFF.md`는 단일 writer의 허용 경로 밖이므로 Developer가 갱신하지 않았다. Main에게 결과와 미검증 경계를 인계한다.
