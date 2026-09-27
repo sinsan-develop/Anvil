@@ -3642,3 +3642,10 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - backup을 new 격리 PG18의 별도 scratch DB `anvil_f18_r45c_restore`/role에 복원해 head0016 일치 PASS를 확인했다. new target DB는 head0019까지 migration됐으나 OIDC trust material 미구성으로 API=503, Worker는 기본 auth mode에서 migration_head_mismatch. old exact API image를 scratch DB에 재기동한 code/container rollback도 readiness=503으로 미통과했다. 이 결과는 데이터 restore PASS, code/container rollback NOT_EXECUTED/REWORK_REQUIRED로 분리한다.
 - Main QA 오류: Compose old 첫 기동은 이미지 entrypoint 중복 command로 실패 1회, old token 길이 제약 1회, MinIO floating tag pull 거부 1회, old app role·schema 권한 보완 2회, runtime readiness 502/503은 제품/역사 artifact 결과로 기록했다. 정식 Developer FAILURE_REPORT 0.
 - 다음 조치: R45C 임시 자원 exact cleanup 후 worker lease 회수·G-05 raw checksum 재결박. OIDC runtime과 old image rollback은 별도 보완 작업 없이는 PASS로 승격하지 않는다. F-18 accepted=false/F-19 blocked/Production NOT_EXECUTED.
+
+# F-18 R45C rollback rehearsal 보완 시작 / 2026-09-27
+
+- 판정: `IN_PROGRESS`. 기존 R45C의 503은 old image를 OIDC trust 없는 현행 환경으로 기동한 결과로 분리되었으므로, 승인된 F-18 범위 안에서 old 비-OIDC 환경과 restore head0016 DB의 code/container rollback을 재검증한다.
+- 이번 실행의 WSL-server 전용 자원은 `/home/daon/anvil-f18-r45c-rework-old`, `/home/daon/anvil-f18-r45c-rework-new`, `/home/daon/anvil-f18-r45c-rework-material`, Compose project `anvil-f18-r45c-rework-old`/`anvil-f18-r45c-rework-new`, 전용 PG18·network·container·image alias·backup·loopback `127.0.0.1:8446`이다. owner는 `daon`, 수명은 이 보완 QA 1회, 종료 시 exact path/ID/연결자 확인 후 전량 제거한다.
+- 생성 전 inventory와 공유 `anvil-web`/`local-postgres` ID를 `ssh WSL-server`로 확인하고, old runtime은 `WSL_ACCEPTANCE`/head0016, new target은 기존 R45C OIDC/head0019와 분리한다. Production·ysna-server·shared DB·운영 credential은 사용하지 않는다.
+- 다음 조치: inventory PASS 후 old backup restore와 old API/Worker readiness를 실행하고, 실패 시 해당 단계만 중단·기록한 뒤 exact cleanup한다.
