@@ -3649,3 +3649,17 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 이번 실행의 WSL-server 전용 자원은 `/home/daon/anvil-f18-r45c-rework-old`, `/home/daon/anvil-f18-r45c-rework-new`, `/home/daon/anvil-f18-r45c-rework-material`, Compose project `anvil-f18-r45c-rework-old`/`anvil-f18-r45c-rework-new`, 전용 PG18·network·container·image alias·backup·loopback `127.0.0.1:8446`이다. owner는 `daon`, 수명은 이 보완 QA 1회, 종료 시 exact path/ID/연결자 확인 후 전량 제거한다.
 - 생성 전 inventory와 공유 `anvil-web`/`local-postgres` ID를 `ssh WSL-server`로 확인하고, old runtime은 `WSL_ACCEPTANCE`/head0016, new target은 기존 R45C OIDC/head0019와 분리한다. Production·ysna-server·shared DB·운영 credential은 사용하지 않는다.
 - 다음 조치: inventory PASS 후 old backup restore와 old API/Worker readiness를 실행하고, 실패 시 해당 단계만 중단·기록한 뒤 exact cleanup한다.
+
+# F-18 R45C rollback rehearsal 보완 runtime 결과 / 2026-09-27
+
+- old exact `4eadfcd441b55445237545146ae5ba4051739904`와 보존 R21 image를 old `WSL_ACCEPTANCE` 환경으로 기동했다. API readiness `200`, Worker `0016_operations_recovery ready`를 확인했다.
+- old DB backup `190559` bytes를 별도 restore DB/role에 복원하고 head0016을 확인했다. old image를 restore DB에 연결한 rollback API readiness도 `200`/head0016으로 통과했다. 기존 R45C의 503은 OIDC trust 없는 현행 overlay와 old image를 혼용한 절차 문제로 분리한다.
+- 보정 오류 3건(entrypoint command 중복, 합성 identity 형식, restore role 권한)을 각각 수정해 통과시켰고 제품 source/migration/shared DB 변경은 0건이다. 전용 자원 ID와 공유 Web/PG 불변은 `F-18_R45C_REWORK_REPORT.md`에 기록했다.
+- 다음 조치: WSL 전용 old project·restore DB/role·backup·checkout/material·image alias를 exact cleanup하고 residue 0을 확인한 뒤 worker lease를 회수한다. F-18 accepted 판정 전 negative gate와 독립 evidence 검토를 유지한다.
+
+# F-18 R45C rollback rehearsal 보완 종료 준비 / 2026-09-27
+
+- old 비-OIDC runtime/API/Worker와 별도 restore head0016 DB의 readiness가 모두 HTTP 200/ready로 통과했다. code/container rollback과 data restore를 분리해 PASS로 기록한다.
+- 전용 container·network·DB/role·backup·checkout/material·port를 exact cleanup했고 `R45C_REWORK_CLEANUP_RESIDUE_ZERO_SHARED_UNCHANGED`를 확인했다. 공유 `anvil-web`/`local-postgres` ID와 running 상태는 불변이다.
+- 기존 R45C의 wrong image/source/signature mismatch 거부 증거와 이번 G-05 clean projection을 negative gate 근거로 유지한다. 브라우저 사용자 로그인·전체 suite·Production은 미검증/미실행이다.
+- 다음 조치: rework worker lease 회수 및 close manifest/G-05 재검증 후 F-18 독립 acceptance review를 수행한다. F-19는 아직 시작하지 않는다.
