@@ -43,7 +43,7 @@
 - [x] **Step 2:** 전용 Python으로 해당 테스트를 실행해 RED를 확인한다.
 - [x] **Step 3:** 순수 해시 검사 함수를 별도 module에 구현하고 G-05의 F-20 수락 projection에 연결한다. 역사적 파일은 변경하지 않는다.
 - [x] **Step 4:** 같은 테스트에서 GREEN을 확인하고 G-05는 이 checkout에서 기대대로 FAIL인지 확인한다.
-- [ ] **Step 5:** 테스트·검사기만 별도 commit한다.
+- [x] **Step 5:** 테스트·검사기만 별도 commit한다.
 
 ### Task 2: Append-only 무효화와 재작업 projection
 
@@ -58,7 +58,7 @@
 - Produces: `EVIDENCE_MANIFEST_INVALIDATED` → 재작업 지시 → `WORKER_LEASE_ISSUED` → `WRITE_LEASE_ISSUED` → `PACKAGE_RESUMED` 순서의 새 Event 및 일치하는 progress/handoff/digest/manifest.
 
 - [ ] **Step 1:** 과거 seq1714 보존, 대상 manifest 고정, 서로 다른 fencing token과 정확한 제품 경로 범위를 요구하는 RED 테스트를 작성한다.
-- [ ] **Step 2:** 재작업 WorkInstruction에 Git 쓰기 오류 형식, 11개 메뉴 실제 기능 검증, 중단/재개, WSL 환경 및 제외 범위를 기록한다.
+- [x] **Step 2:** 재작업 WorkInstruction에 Git 쓰기 오류 형식, 11개 메뉴 실제 기능 검증, 중단/재개, WSL 환경 및 제외 범위를 기록한다.
 - [ ] **Step 3:** 새 Event와 파생 projection만 생성하고 신규 lease를 검사한다.
 - [ ] **Step 4:** G-05·projection 테스트 GREEN, `git diff --check`, 과거 Event/보고서/manifest의 byte 동등성을 확인한다.
 - [ ] **Step 5:** 통제 상태를 commit·push하고 원격 SHA를 확인한다.
