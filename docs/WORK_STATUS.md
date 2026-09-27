@@ -3773,4 +3773,5 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 승인된 Windows Chrome 임시 headless/CDP 프로필을 SSH 포워드된 동일 WSL runtime에 연결했다. Dashboard·Provider 화면과 same-origin Network 요청은 확인했지만 `/projects`는 WSL `server.mjs`에서 404였다. 이를 11개 메뉴 브라우저 PASS로 승격하지 않는다.
 - F-20 target의 live DB/queue/worker/Provider 상태, backup/restore, application rollback, 관찰구간 critical alert 0은 미실행/미검증이다. 이전 Package evidence를 재사용하지 않는다. Production·ysna-server는 접근하지 않았다.
 - 임시 WSL checkout·서버·port·SSH forward·Chrome 프로필/process·로그를 exact cleanup하고 WSL/로컬 residue 0을 확인했다.
+- 동일 pushed checkpoint의 별도 WSL recovery checkout에서 `test_f14_runbook`, `test_f14_disaster`, `test_f14_retention`, `test_f13_operations_api`, `test_f17_validation`, `test_gates_c14`, `test_release_guard`를 실행해 `170 passed in 3.56s`를 확인했다. 이는 계약·격리 회귀이며 live DB/backup/restore/rollback PASS가 아니다. `/home/daon/anvil-f20-r2`와 `/tmp/f20-r2-*.log` exact cleanup 후 잔류0.
 - 보고서: `docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md`. 다음 조치: 이미 설치된 WSL 호환 Node runtime 확인 후 동일 commit의 실제 11개 메뉴 runtime과 DB/queue/worker/provider·backup/restore·rollback을 재검증한다. F-20 active/ReleaseDecision `DEFER` 유지.

@@ -7,6 +7,7 @@
 ## 근거
 
 - WSL-server 전용 checkout에서 Python 지정 회귀는 `153 passed in 3.94s`였다.
+- 동일 pushed checkpoint의 recovery/deployment 지정 회귀를 별도 checkout에서 추가 실행해 `170 passed in 3.56s`를 확인했다 (`test_f14_runbook`, `test_f14_disaster`, `test_f14_retention`, `test_f13_operations_api`, `test_f17_validation`, `test_gates_c14`, `test_release_guard`). 이 결과는 계약·격리 회귀 증거이며 live DB/backup/restore/rollback 실행 증거가 아니다.
 - WSL 웹 회귀는 Projects/Workbench `15 passed`, Projects route `1 passed`, Dashboard `3 passed`, `npm run web:typecheck` PASS였다.
 - WSL runtime은 Node `v18.19.1`이며 Vite 8 build는 `node:util styleText` 부재로 실행할 수 없었다. 이를 build PASS로 표시하지 않는다.
 - WSL-server에는 `chromium`, `chromium-browser`, `google-chrome` 실행 파일이 없었다.
@@ -14,6 +15,7 @@
 - 같은 브라우저 실행에서 `/projects`는 WSL `server.mjs`의 404 응답이었다. U-03 React route의 실제 브라우저 화면으로 승격할 수 없다.
 - F-20 target에서 live PostgreSQL/queue/worker/provider, backup/restore, application rollback과 관찰구간 critical-alert 판정은 실행하지 못했다. 이전 Package의 contract/fixture evidence를 이 target의 실제 PASS로 재사용하지 않는다.
 - WSL checkout·임시 서버·4173 listener·SSH port-forward·Chrome process/profile·로그는 exact cleanup 후 모두 잔여 0을 확인했다. Production/ysna-server는 접근하지 않았다.
+- 추가 recovery checkout `/home/daon/anvil-f20-r2`와 임시 `/tmp/f20-r2-*.log`도 exact cleanup 후 잔여 0이다.
 
 ## 조치 및 다음 안전 행동
 
