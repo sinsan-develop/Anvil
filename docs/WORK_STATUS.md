@@ -3799,3 +3799,9 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 새 격리 DB 관측구간에서 `AUDIT_EVENTS=0`, `AUDIT_HEADS=0`, `CRITICAL_ALERT_EVENTS=0`을 직접 확인했다. 이는 해당 관측구간의 증거이며 장기 모니터링 보장을 의미하지 않는다.
 - `F20_FINAL_TEMP_RESIDUE_ZERO`, `F20_ALERT_TEMP_RESIDUE_ZERO`, 기존 `F20_FIX_TEMP_RESIDUE_ZERO`로 임시 checkout·container·image·network·dump·port·SSH forward·브라우저 잔여 0을 확인했다.
 - F-20은 WSL 범위에서 완료했지만 ReleaseDecision은 계획대로 `DEFER`이며 Production 배포·사용자 운영 인수·실제 credential Provider 호출은 실행하지 않았다.
+
+# F-20 branch integration gate / 2026-09-27
+
+- `finishing-a-development-branch` 병합 전 전체 pytest를 실행했으나 collection 단계에서 13건 오류로 중단했다. 중복 test module basename(`test_models`, `test_hooks_d09` 등)와 fixture 내부 `src` import 경로가 원인이다.
+- F-20 targeted API 6개 테스트와 G-05 seq1714는 PASS지만, 전체 suite가 non-green이므로 현재 `codex/f18-wsl-ops`를 `main`에 병합하지 않고 보존한다. 현재 main checkout은 다른 branch의 dirty 상태라 변경하지 않았다.
+- 다음 조치는 계획 범위를 넓히지 않는 별도 test-collection 정리/검토 후 전체 suite를 재실행하는 것이다. Production·ysna-server는 계속 제외한다.
