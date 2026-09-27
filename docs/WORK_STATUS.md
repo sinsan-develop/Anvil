@@ -3847,3 +3847,15 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - 로컬 임시 QA 자원: 이 worktree의 `.pytest_tmp_f20_rework`·`.pytest_cache_f20_rework`, 소유 F-20 R1, 수명 해당 로컬 테스트까지, 정리 대상은 두 정확한 경로다. 아직 정본 projection을 적용하거나 유효 worker/write lease를 발급하지 않았다. 정식 실패 횟수 0, 미검증은 G-05 새 projection·WSL 전체 suite·11개 메뉴·중단/재개·F-20 최종 인수다. 다음은 control 코드 안전 commit/push → 해당 SHA 기준 정본 append-only materialize → G-05/해시/remote 확인이다.
 - 추가 회귀 실행: `tests/tooling/test_project_progress.py -q -x`는 `8 passed, 1 failed in 112.58s`(exit 1). 첫 실패 `C30CanonicalReconciliationTests.test_no_early_acceptance_or_lease_revoke`는 현재 Windows 작업본의 과거 Event raw CRLF와 C-30 생성본 LF의 바이트 비교이며 F-20 신규 validator의 결과가 아니다. `.gitattributes`의 `eol=lf`와 Git blob SHA `5327C583FAAB44F74290062F41CB03389C2D07609941CEE4F40D37C5C9DE045A`가 작업본 CRLF→LF SHA와 동일함을 확인했다. 이에 F-20 생성기는 Git 정본 LF로 Event를 append하고 신규 manifest row도 LF 기준으로 hash한다. 이 수정 후 F-20 전용 `11 passed in 6.37s`(exit 0), 전체 tooling 재검증은 새 projection 적용 뒤 수행한다.
 - 사전 검증 최신: F-20 증거 결박+R1 projection 테스트 `12 passed in 6.57s`(exit 0). Main actor 위조, 잘못된 무효화 대상·hash, 동일 fencing token, 과거 Event 변조, 잘못된 Git branch/path, 거짓 WSL PASS, digest/manifest 변조를 거부한다. canonical G-05는 아직 seq1714를 읽어 `F20_ACCEPTANCE_EVIDENCE_HASH_MISMATCH`(exit 1)이며 새 상태가 적용될 때까지 이 RED를 완료 근거로 쓰지 않는다.
+
+# F-20 R1 control 기준 commit 후 QA / 2026-09-27
+
+- 담당 Main Agent, 기준 commit `c7a244d5611525a3e83c438dd5a2654597cb97ab`는 `development/codex/f18-wsl-ops`에 push·원격 SHA 일치 확인했다. 제품 파일은 여전히 변경하지 않았다.
+- 로컬 pytest 임시 경로 `.pytest_tmp_f20_rework`와 `.pytest_cache_f20_rework` 두 곳의 읽기·삭제가 OS ACL `Access is denied`로 거부됐다. PowerShell 재귀·비재귀 삭제, 같은 Python 런타임 삭제, 읽기 전용 ACL 조회까지 실패했다. 삭제 성공으로 표시하지 않는다. 권한 변경은 기존 계획 승인의 일부로 해석하지 않고 두 경로로 한정된 ACL 복구·삭제 허용 여부를 신산님께 비동기로 요청했다. 관련 없는 작업은 계속한다. 현재 Git에는 `.pytest_tmp_f20_rework/`가 untracked로 보이므로 정본 lease 발급은 이 오염 해소 전 보류한다.
+- 임시 WSL QA 예정 자원: `ssh WSL-server`의 `/tmp/anvil-f20-r1-control-c7a244d` Git checkout·전용 가상환경. 목적은 동일 SHA의 F-20 control 테스트 확인, 수명은 이번 검증까지, 완료/실패 즉시 checkout·가상환경만 제거하고 경로 잔류 0을 확인한다. 기존 `/srv/anvil-wsl/repo`·Docker·DB·secret·서비스는 변경하지 않는다.
+
+# F-20 R1 control WSL 검증 및 Windows 임시 폴더 권한 예외 / 2026-09-27
+
+- 판정: `F20_R1_CONTROL_CODE_WSL_GREEN; CANONICAL_PROJECTION_PENDING`. `ssh WSL-server`에서 `development/codex/f18-wsl-ops`의 `c7a244d5611525a3e83c438dd5a2654597cb97ab`를 전용 `/tmp/anvil-f20-r1-control-c7a244d`에 checkout하고 `uv sync --frozen --group dev` 후 F-20 결박·projection 테스트를 실행했다. 결과는 `12 passed in 2.34s`(exit 0)다. 정확한 checkout SHA를 재확인하고 그 전용 경로만 제거해 `F20_R1_WSL_CONTROL_TEMP_RESIDUE_ZERO`를 확인했다. canonical seq1714 이후 projection·lease는 아직 발급하지 않았다.
+- 신산님은 `.pytest_tmp_f20_rework`, `.pytest_cache_f20_rework` 두 폴더만 ACL 복구 후 삭제를 승인했다. 그러나 현 실행 토큰에서 해당 폴더의 읽기·삭제 및 `takeown.exe /F`가 모두 `Access is denied`였다. 동일 근본 원인의 권한 실패는 3회 이상으로 분류하고 추가 권한 변경 변형 시도를 중단했다. 두 폴더는 삭제되지 않았으며 Git에는 첫 폴더가 untracked로 남는다. 다른 경로의 ACL이나 기존 Chrome·WSL 서비스는 변경하지 않았다.
+- 변경 파일: 이 `WORK_STATUS` 기록만 추가. 테스트 범위는 위 WSL 12개로 제한하며 G-05 새 projection, WSL 전체 suite, 11개 메뉴 기능·중단/재개는 미검증이다. 다음 조치는 정확한 두 폴더에 대한 관리자 권한의 ACL 복구·삭제와 잔류 0 확인 후 정본 append-only projection을 적용·검증하는 것이다. 그 전 제품 파일 write, F-20 재수락, `P-01`, main 병합은 수행하지 않는다.
