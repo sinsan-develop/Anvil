@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1683,
+  "last_sequence": 1684,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -84781,7 +84781,29 @@
     "lease_id": "worker-lease-f18-wsl-ops-r45c-rework-20260927-001",
     "execution_fencing_token": "f18-wsl-ops-execution-fence-epoch-37-r45c-rework"
   }
+},
+{
+  "sequence": 1684,
+  "event_id": "evt_f18_local_1684_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-18",
+  "run_id": null,
+  "step_id": "WSL_OPS_R45C_REWORK_CLOSE",
+  "subject_ref": "F-18/WSL_OPS_R45C_REWORK_CLOSE",
+  "occurred_at": "2026-09-27T15:15:07+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "BD213FFB3E5807AEB49BC708EC5CC03842DAB9B15787E3F47DDCC06E4522785A",
+  "details": {
+    "lease_id": "worker-lease-f18-wsl-ops-r45c-rework-20260927-001",
+    "reason": "R45C_REWORK_QA_RESIDUE_ZERO_ROLLBACK_REVIEW",
+    "resource_residue": 0,
+    "rollback_code_container": "REWORK_RECORDED"
+  }
 }
   ],
-  "last_event_id": "evt_f18_local_1683_worker_lease_issued"
+  "last_event_id": "evt_f18_local_1684_worker_lease_revoked"
 }
