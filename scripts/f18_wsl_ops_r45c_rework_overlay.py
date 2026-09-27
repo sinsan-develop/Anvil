@@ -10,7 +10,8 @@ except ModuleNotFoundError:
     from f18_progress_overlay import _append_events_raw, _canonical, _event, _pretty, _sha
 
 BRANCH = "codex/f18-wsl-ops"
-PREDECESSOR = "__SET_AFTER_DOC_COMMIT__"
+BASE = "462c2e5b27823de2c1184f56f0fa9908a2cea328"
+PREDECESSOR = "a3af6e6373ab4f2ad41cf7f25e93b76819f36b1b"
 MODE = "F18_WSL_OPS_R45C_REWORK_START"
 ACTOR = "main-agent-eoul"
 WORKER = "worker-lease-f18-wsl-ops-r45c-rework-20260927-001"
@@ -37,7 +38,7 @@ def collect_git(root):
     root = Path(root); errors=[]
     if _git(root,"branch","--show-current") != BRANCH: errors.append("F18_R45C_REWORK_BRANCH_INVALID")
     if _git(root,"status","--porcelain=v1","--untracked-files=all"): errors.append("F18_R45C_REWORK_DIRTY")
-    if _git(root,"rev-parse","development/main") != _git(root,"rev-parse",PREDECESSOR): errors.append("F18_R45C_REWORK_BASE_INVALID")
+    if _git(root,"rev-parse","development/main") != BASE: errors.append("F18_R45C_REWORK_BASE_INVALID")
     return errors
 
 def materialize(root):
