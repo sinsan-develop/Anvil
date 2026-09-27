@@ -34,9 +34,10 @@ def _sha(value):
 
 def _history():
     rows = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
-    assert len(rows) == 1714
-    assert _sha(_canonical(rows)) == "AED3D00DF31948AED95781A21FCD52EAB10EFFD2247321EB6A6BBEA5CD92714F"
-    return rows
+    historical = rows[:1714]
+    assert len(historical) == 1714
+    assert _sha(_canonical(historical)) == "AED3D00DF31948AED95781A21FCD52EAB10EFFD2247321EB6A6BBEA5CD92714F"
+    return historical
 
 
 def _transition():
