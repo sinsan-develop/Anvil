@@ -138,3 +138,9 @@
 - 이미 승인된 `GET /api/providers`의 `data` 목록만 Dashboard에서 same-origin·credential 포함 읽기로 사용한다. 9개 canonical 항목, `credential_status=REGISTERED/MISSING`, `health_status=NOT_CHECKED`를 검증한 응답에 한하여 등록 개수를 표시하고 건강은 항상 `NOT CHECKED`로 유지한다. `DEGRADED`를 연결 성공이나 `READY`로 승격하지 않는다. 인증 거부·통신 실패·불완전/위조 응답·빈 목록은 `UNAVAILABLE`이고 Secret 값, 내부 endpoint, 모델 추정값을 화면에 표시하지 않는다.
 - TDD는 정상·무등록·401/403·malformed·transport failure를 RED→GREEN으로 분리한다. 기존 Database/다른 카드·메뉴·auth/API/DB 계약은 변경하지 않는다. Main 독립 Node·typecheck·lint·build·G-05 검토 후 같은 branch commit/push, WSL-server exact SHA의 API·브라우저 Network·1920×1080/390×844·접근성/오류 표시를 확인한다. 임시 자원은 대상 확인 후 정리한다.
 - R2 결과가 GREEN이어도 실제 Provider 연결 건강, 다른 Dashboard source, U-01 전체 acceptance, C30 `OPEN_BLOCKING` 복구, F-20 수락, release, Production은 미완료다.
+
+#### U-01 R2b — 현재 projection 계약과 역사 검증 분리
+
+- R2 제품 SHA `89d19b34af326ad5f162fae30c8de37eb4f4dcdc`의 WSL-server 실제 API·브라우저는 지정 Provider 등록 표시를 확인했지만, 역사 PR ref를 준비한 전체 suite는 `8219 passed, 1 failed, 116 skipped, 14 warnings`였다. 유일 실패는 `tests/tooling/test_project_progress.py:1189`의 현재 bundle 기대값이 이전 R1b mode에 고정된 것이다. 이 결과를 R2 제품 회귀나 전체 GREEN으로 오인하지 않는다.
+- R2 epoch12 write→worker를 순서대로 회수한 뒤 R2b epoch13 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_U01_R2B_CURRENT_HISTORY_RESULT.md`)만 새 WI/Invocation과 dual lease로 발급한다. 현재 bundle은 발급 후 R2b mode·미수락·C30 `OPEN_BLOCKING`·release `DEFER`를 검증하고, R1b/R2 역사 blob은 각 당시 Git SHA로 별도 검증한다. 현재 progress/digest/manifest/handoff의 위조 거부를 유지하며 assertion 삭제·skip·xfail은 금지한다.
+- 단일 writer RED→GREEN, Main 독립 리뷰·commit/push, WSL-server 동일 SHA의 집중·전체 suite를 수행한다. 원격 PR 역사 ref가 필요한 격리 clone에는 제품 HEAD·파일을 바꾸지 않는 정확한 ref만 준비하고, skip/warning은 PASS로 승격하지 않는다. 임시 자원은 검사 후 제거한다. R2b GREEN이어도 U-01/F-20 수락, C30 사고 복구, main 병합, 새 branch, ysna-server/Production은 허용하지 않는다.
