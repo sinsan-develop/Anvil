@@ -94,4 +94,3 @@ def test_r5_public_validator_keeps_f20_hold(tmp_path):
     bundle["progress"]["next_safe_action"] = "forged"
     bundle["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(bundle["progress"])
     assert "F20_U01_R5_PROGRESS_INVALID" in checker.validate_bundle(bundle)
-
