@@ -20541,10 +20541,50 @@ class E08FinalAcceptanceControlTests(unittest.TestCase):
         self.assertIn('E08_FINAL_PROJECTION_INVALID',c.validate_e08_final(forged_bundle,manifest))
 
 
+E09_HISTORICAL_WI_COMMIT = '30ca8a2d5a8f856ee4d82ae4f47b47bc60109342'
+E09_HISTORICAL_WI_PATH = 'docs/work_orders/E-09_WORK_INSTRUCTION.md'
+E09_HISTORICAL_WI_SHA256 = '2DCA27CDB9DF351F62AA77FE0424711DB7E31AF2CD287C4239A8834B3B77B85D'
+
+
+def _e09_historical_wi_bytes():
+    raw = subprocess.check_output(
+        ['git', 'show', f'{E09_HISTORICAL_WI_COMMIT}:{E09_HISTORICAL_WI_PATH}'], cwd=ROOT,
+    )
+    if len(raw) != 5196 or hashlib.sha256(raw).hexdigest().upper() != E09_HISTORICAL_WI_SHA256:
+        raise ValueError('E09_HISTORICAL_WI_INVALID')
+    return raw
+
+
+def _e09_historical_wi_setup(case):
+    raw = _e09_historical_wi_bytes()
+    checker = case._checker()
+    case.assertEqual(E09_HISTORICAL_WI_PATH, checker.E09_WI)
+    case.assertEqual(E09_HISTORICAL_WI_SHA256, checker.E09_WI_HASH)
+    overlay = _historical_bytes_overlay({E09_HISTORICAL_WI_PATH: raw})
+    overlay.__enter__()
+    case.addCleanup(overlay.__exit__, None, None, None)
+
+
 class E09StartControlTests(unittest.TestCase):
+    def setUp(self):
+        _e09_historical_wi_setup(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e09_start',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_historical_wi_missing_git_blob_is_rejected(self):
+        with mock.patch.object(subprocess, 'check_output', side_effect=subprocess.CalledProcessError(128, 'git show')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                _e09_historical_wi_bytes()
+
+    def test_historical_wi_forged_git_blob_is_rejected(self):
+        forged=subprocess.check_output(
+            ['git', 'show', f'{E09_HISTORICAL_WI_COMMIT}:{E09_HISTORICAL_WI_PATH}'], cwd=ROOT,
+        )[:-1]
+        with mock.patch.object(subprocess, 'check_output', return_value=forged):
+            with self.assertRaisesRegex(ValueError, 'E09_HISTORICAL_WI_INVALID'):
+                _e09_historical_wi_bytes()
 
     def test_start_prefix_scope_and_dual_fence(self):
         c=self._checker();self.assertTrue(callable(getattr(c,'e09_start_from_root',None)),'E09 start missing')
@@ -20569,6 +20609,9 @@ class E09StartControlTests(unittest.TestCase):
 
 
 class E09FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        _e09_historical_wi_setup(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e09_final',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
