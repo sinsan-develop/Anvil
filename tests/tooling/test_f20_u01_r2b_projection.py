@@ -137,8 +137,12 @@ def test_r2b_rejects_forged_prepared_instruction_commit(tmp_path):
 def test_r2b_allows_only_named_r3a_control_preparation(tmp_path):
     root = _fixture(tmp_path)
     overlay.materialize(root, BASE, NOW, "r2btest")
-    plan = root / "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_BINDING_PLAN.md"
-    plan.write_text("R3a draft", encoding="utf-8")
+    for relative in (
+        "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_BINDING_PLAN.md",
+        "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_WORK_INSTRUCTION.md",
+        "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_INVOCATION.md",
+    ):
+        (root / relative).write_text("R3a draft", encoding="utf-8")
     assert overlay.collect_git(root, _bundle(root)["progress"]) == []
     (root / "docs/04_test_reports/unrelated-plan.md").write_text("unrelated", encoding="utf-8")
     assert "F20_U01_R2B_GIT_INVALID" in overlay.collect_git(root, _bundle(root)["progress"])

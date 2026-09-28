@@ -29,6 +29,8 @@ SCOPE = ["tests/tooling/test_project_progress.py",
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "docs/WORK_STATUS.md",
                  "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_BINDING_PLAN.md",
+                 "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_INVOCATION.md",
                  "scripts/f20_u01_r2b_overlay.py",
                  "tests/tooling/test_f20_u01_r2b_projection.py"}
 START = 1786
