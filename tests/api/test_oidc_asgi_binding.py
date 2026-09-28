@@ -504,7 +504,7 @@ def test_configured_oidc_factory_forwards_explicit_operations_owner(host):
     assert app.state.operations_bound is True
 
 
-def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path):
+def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path, monkeypatch):
     """WSL-only: exercise process -> host -> real PostgreSQL audit under one QA scope."""
     dsn = os.environ.get("ANVIL_F20_R3A_PG_DSN")
     isolated = os.environ.get("ANVIL_F20_R3A_PG_ISOLATED")
@@ -527,7 +527,6 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path):
         pytest.fail("R3A_PG_TARGET_REJECTED", pytrace=False)
 
     import certifi
-    from apps.api.anvil_api import asgi
     from apps.api.anvil_api.oidc_process import create_oidc_process_app
     from packages.leases.service import LeaseService
     from packages.observability.projection import OperationsSources
@@ -537,12 +536,32 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path):
     from tests.api.test_oidc_process import _environment, _trust
     from datetime import timedelta
 
+    # Module import creates the default app; supply only synthetic bootstrap
+    # inputs here. The opt-in DSN is passed explicitly to the process below.
+    with monkeypatch.context() as startup:
+        startup.delenv("ANVIL_AUTH_MODE", raising=False)
+        for name, value in {
+            "ANVIL_DATABASE_URL": "postgresql://isolated.invalid/anvil",
+            "TELEGRAM_WEBHOOK_SECRET": "synthetic-telegram-secret",
+            "TELEGRAM_INTERNAL_SIGNING_SECRET": "synthetic-signing-secret",
+            "TELEGRAM_ALLOWED_IDENTITIES": "chat-1:user-1",
+            "ANVIL_CONSOLE_BASE_URL": ORIGIN,
+            "ANVIL_PUBLIC_HOST": "anvil.example.test",
+            "UPSTAGE_API_KEY": "synthetic-presence",
+        }.items():
+            startup.setenv(name, value)
+        asgi = importlib.import_module("apps.api.anvil_api.asgi")
+
+    engine = None
     try:
-        engine = sa.create_engine(DatabaseSettings(dsn).dsn)
+        engine = sa.create_engine(DatabaseSettings(dsn).dsn, connect_args={"connect_timeout": 2})
     except Exception:
+        pass
+    if engine is None:
         pytest.fail("R3A_PG_TARGET_REJECTED", pytrace=False)
     app = None
     failure_app = None
+    preflight_ok = False
     try:
         with engine.connect() as db:
             version, database, role, superuser = db.execute(sa.text(
@@ -559,10 +578,14 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path):
                 "operations_audit_heads",
             ):
                 assert db.execute(sa.text("SELECT count(*) FROM " + table)).scalar_one() == 0
+        preflight_ok = True
     except Exception:
+        pass
+    if not preflight_ok:
         engine.dispose()
         pytest.fail("R3A_PG_TARGET_REJECTED", pytrace=False)
 
+    flow_ok = False
     try:
         path, trust, _ = _trust(tmp_path)
         signing = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -690,8 +713,9 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path):
                 assert failure.json()["error"]["code"] == "INTERNAL_ERROR"
                 assert dsn not in failure.text
             assert repository.load("project-1", "wsl-qa") == before
+        flow_ok = True
     except Exception:
-        pytest.fail("R3A_PG_FLOW_FAILED", pytrace=False)
+        pass
     finally:
         try:
             with engine.begin() as db:
@@ -711,3 +735,5 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path):
             if failure_app is not None:
                 failure_app.state.database_engine.dispose()
             engine.dispose()
+    if not flow_ok:
+        pytest.fail("R3A_PG_FLOW_FAILED", pytrace=False)

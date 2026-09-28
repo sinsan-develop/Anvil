@@ -39,3 +39,11 @@ Main이 지정 원격에서 제품 exact SHA를 Git으로 수신하고 **공유 
 - 로컬 RED/GREEN/전체 pytest 전용 경로 세 곳은 모두 worktree `runtime` 하위 resolved path였다. reparse link 1/12/93개가 각각 해당 전용 경로 내부만 가리킴을 확인하고 정확한 세 폴더만 제거해 잔류0; 시험 Python 프로세스 0. Main 소유의 다른 runtime/dirty 자료는 보존했다.
 - 미검증: WSL-server 실제 PG15/OIDC opt-in 실행, WSL exact SHA 전체 suite와 19개 표시 실패의 이름·원인, 실제 배포/브라우저, Queue/Worker/Backend detector·Dashboard Next Actions/UI, U-01/F-20 acceptance 및 C30 복구. 기존 skip/warning은 별도 최종 결과가 있어야 집계한다.
 - rollback: Main의 R3a 제품 commit만 후속 정상 Git revert commit으로 되돌려 OIDC host의 Alerts 501로 복귀한다. DB schema·지속 데이터·기존 Event 원장/incident는 되돌리지 않는다. progress/HANDOFF 갱신과 commit/push/WSL 검증·lease 회수는 Main 소유다.
+
+## R3a 실제 PG15 테스트 import 순서 보정 / Developer 재작업
+
+- Main의 WSL-server exact SHA `36307cf33cf524840ffeeb9c65dd2fa6e1788e82`에서 격리 PG15 container와 migration `0019_oidc_sessions`는 준비됐으나 opt-in 테스트가 API 실행 전에 실패했다. `tests/api/test_oidc_asgi_binding.py`의 `asgi` import가 합성 프로세스 환경 구성보다 앞서 기본 앱을 즉시 생성했고, 외부 shell의 `TELEGRAM_WEBHOOK_SECRET` 또는 `ANVIL_DATABASE_URL` 유무에 종속됐다. WSL 본 테스트 200/401/403/500은 **미실행**이다. Main이 해당 전용 WSL 자원을 정리했다는 인수 정보를 받았으며 Developer는 WSL에 접속하거나 자원을 변경하지 않았다.
+- 이 파일의 opt-in 테스트만 보정해 `asgi`를 합성 bootstrap 환경에서 import하며, 실제 테스트 대상 DSN은 이후 검증된 입력으로 OIDC process에 명시 전달한다. 외부 shell의 Telegram/OIDC Secret 존재에 의존하지 않는다. DB 사전 점검 connection timeout은 2초로 한정하고, 예외의 DSN·비밀번호가 pytest traceback에 나타나지 않도록 `R3A_PG_TARGET_REJECTED` / `R3A_PG_FLOW_FAILED`를 예외 블록 밖에서 출력한다. 공개 route·permission·schema·제품 구현은 바꾸지 않았다.
+- RED 재현: `ANVIL_F20_R3A_PG_DSN=postgresql+psycopg://anvil_f20_r3a_test@127.0.0.1:35499/anvil_f20_r3a_test` 및 isolated=1, 선택 pytest → exit1, `asgi.py` module import의 `RuntimeConfigurationError: ANVIL_DATABASE_URL is required`(기존 WSL의 Telegram 변수 부족과 같은 bootstrap 경계).
+- 보정 후 같은 닫힌 포트 음성 → exit1 `R3A_PG_TARGET_REJECTED` 약 3.7초, import 실패 0. 합성 비밀번호를 포함한 동일 음성도 출력에는 비밀번호/DSN 0. 포트가 없으므로 성공 기대 시험이 아니라 DB preflight까지 도달하는 확인이다.
+- 집중 회귀: `.\.venv\Scripts\python.exe -B -m pytest -q tests/api/test_oidc_process.py tests/api/test_oidc_asgi_binding.py tests/api/test_f13_operations_api.py --basetemp=runtime/pytest-r3a-import-green -p no:cacheprovider --tb=short` → exit0, **69 passed / 1 skipped**. skip=실제 PG15 opt-in 미설정; WSL 실측 PASS가 아니다. `git diff --check` exit0. 새 제품 commit/WSL 재실행은 Main 소유다.
