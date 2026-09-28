@@ -116,3 +116,12 @@
 - 선택한 방향: 기존 F-13 `OperationsService`/projection을 인증된 read-only Dashboard 소유자의 입력으로 재사용하고, 없는 실제 source는 이유와 관측 시각을 동반해 fail-closed 표시한다. 새 독립 DB 질의 계층을 중복 구축하거나 브라우저가 여러 내부 endpoint를 무권한 fan-out하는 방식은 채택하지 않는다. 이는 승인된 U-01 service·API/BFF·UI의 내부 구현 순서이며 별도 기능을 추가하지 않는다.
 - 첫 제품 slice 전에 계약을 확정할 것: (1) 기존 canonical API registry의 추가 읽기 route 및 scope/permission, (2) OIDC·WSL acceptance 호스트의 실제 owner binding, (3) DB/queue/worker/provider/backend/artifact 각 source의 관측·stale/unknown 정책, (4) Project/Run/Agent/승인/Gate/baseline durable owner. 계약/권한이 상위 승인 범위를 바꾼다면 그 항목은 구현하지 않고 정확히 분리 보고한다.
 - 음성 검증: 타 project/environment 403, 미인증 401, owner 부재·source gap·stale 상태의 READY 오표시 0, secret/fencing token/내부 주소 노출 0, GET audit mutation 0. WSL-server에는 local push의 exact SHA를 pull한 격리 프로세스·DB·브라우저만 사용하고 테스트 종료 후 정리한다. C30 원장 사건은 이 slice와 독립적으로 계속 차단한다.
+
+#### U-01 R1 — 실제 readiness 표시의 첫 수직 slice
+
+- 목적: 기존 same-origin `/api/health/ready`가 OIDC 호스트에서 `status=ready`, `migration_head=0019_oidc_sessions`를 반환할 때 Dashboard의 Database 카드가 이를 `NOT CONNECTED`로 오판하고 `0016_operations_recovery`를 고정 설명하는 결함을 먼저 제거한다. 이는 승인된 U-01 실제 read model의 최소 독립 테스트 단위이며 U-01 전체 수락은 아니다.
+- 정확한 제품 파일: `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, `docs/04_test_reports/F-20_U01_R1_READINESS_RESULT.md` 세 경로. ASGI/readiness server, API registry, 인증·DB schema, 다른 메뉴는 이 slice에서 변경하지 않는다.
+- 제품 TDD: `f15-console.test.mjs`에서 0019 ready→READY, 0016 operational-shell ready→READY, 0013/알 수 없는 head·not_ready/무응답→NOT CONNECTED를 각각 검증한다. 서버가 확인한 실제 migration head와 다른 고정 문구가 READY 카드에 표시되지 않도록 관찰 가능한 화면 결과를 검사한다. 기대값은 테스트가 직접 적고 구현 helper를 재사용해 생성하지 않는다. RED 확인 후 최소 구현, 해당 Node 테스트→web typecheck/lint/build→전체 가능한 프로젝트 테스트 순서로 실행한다.
+- 통제 순서: 현재 R5e epoch9 write→worker를 회수하고 새 F-20/U01-R1 exact3 WI·invocation·epoch10 worker/write를 append-only 발급한다. G-05가 이전 Event raw prefix, 순서, token, exact3, 기존 C30 `OPEN_BLOCKING`, F-20 미수락/DEFER를 검사하기 전에는 제품 파일을 수정하지 않는다. 단일 `developer-primary`만 exact3을 쓰고 Main은 통제·독립 검토·commit/push를 맡는다.
+- WSL-server: local push의 exact SHA를 전용 checkout에 pull하고 Node 22 잠긴 의존성으로 동일 테스트/빌드, 격리 PostgreSQL/API/브라우저에서 0019 ready와 503/not_ready 화면·Network same-origin을 확인한다. 임시 checkout·DB·프로세스·브라우저 프로필은 이름/경계/잔류를 확인해 제거한다. 모든 검증은 실행 명령·exit·원문 응답과 미검증을 결과보고서에 분리한다.
+- R1 후속: Queue/Worker/Provider/Backend/Artifact 및 operations/Project/Run/Agent/approval/Gate/baseline의 실제 scoped owner/API/UI를 후속 직렬 slice로 연결한다. source가 없는 항목은 계속 `UNAVAILABLE`; R1 통과를 U-01 acceptance, F-20 acceptance, C30 사고 해결로 승격하지 않는다.

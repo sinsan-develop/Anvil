@@ -29,6 +29,8 @@ SCOPE = ["docs/04_test_reports/F-20_REWORK_R5E_RESULT.md",
 CONTROL_SCOPE = r5d.CONTROL_SCOPE | {
     DIGEST, MANIFEST, "scripts/f20_rework_r5e_overlay.py",
     "tests/tooling/test_f20_rework_r5e_projection.py",
+    "docs/work_orders/F-20_U01_R1_READINESS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R1_READINESS_INVOCATION.md",
 }
 START = 1761
 TYPES = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "DEFECT_RECORDED",
