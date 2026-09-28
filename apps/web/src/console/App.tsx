@@ -1,4 +1,4 @@
-import React, {Component, useEffect, useState, type ErrorInfo, type ReactNode} from 'react';
+import {Component, useEffect, useState, type ErrorInfo, type ReactNode} from 'react';
 import {MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
 import {scanProjects} from '../api/projects-client.js';
 import {createProjectsState, reduceProjects} from '../features/projects/projects-state.js';
@@ -12,8 +12,17 @@ const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label])
 export function classifyReadiness(value: unknown): Readiness {
   if (typeof value !== 'object' || value === null) return 'NOT CONNECTED';
   const payload = value as Record<string, unknown>;
-  return payload.status === 'ready' && payload.migration_head === '0016_operations_recovery'
+  return payload.status === 'ready' && (payload.migration_head === '0016_operations_recovery' || payload.migration_head === '0019_oidc_sessions')
     ? 'READY' : 'NOT CONNECTED';
+}
+
+export function DatabaseHealthCard({value}: {value: unknown}) {
+  const status = classifyReadiness(value);
+  const head = status === 'READY' ? (value as {migration_head: string}).migration_head : null;
+  return <article className="status-card"><h3>Database</h3>
+    <p className={status === 'READY' ? 'status-ready' : 'status-unavailable'}>{status}</p>
+    <p>{head ? `Migration ${head}` : '연결된 상태 정보가 없습니다.'}</p>
+  </article>;
 }
 
 class ShellErrorBoundary extends Component<{children: ReactNode}, {failed: boolean}> {
@@ -37,7 +46,7 @@ class ShellErrorBoundary extends Component<{children: ReactNode}, {failed: boole
 
 function Shell({route}: AppProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [readiness, setReadiness] = useState<Readiness>('NOT CONNECTED');
+  const [readinessPayload, setReadinessPayload] = useState<unknown>(null);
   const [checked, setChecked] = useState('NOT REQUESTED');
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
@@ -51,12 +60,12 @@ function Shell({route}: AppProps) {
         });
         const payload: unknown = response.ok ? await response.json() : null;
         if (!controller.signal.aborted) {
-          setReadiness(classifyReadiness(payload));
+          setReadinessPayload(payload);
           setChecked('JUST NOW');
         }
       } catch {
         if (!controller.signal.aborted) {
-          setReadiness('NOT CONNECTED');
+          setReadinessPayload(null);
           setChecked('FAILED');
         }
       }
@@ -98,10 +107,10 @@ function Shell({route}: AppProps) {
         <section aria-labelledby="health-heading"><h2 id="health-heading">Health</h2>
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
-              const status = name === 'Database' ? readiness : 'UNAVAILABLE';
+              if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}/>;
               return <article className="status-card" key={name}><h3>{name}</h3>
-                <p className={status === 'READY' ? 'status-ready' : 'status-unavailable'}>{status}</p>
-                <p>{name === 'Database' && status === 'READY' ? 'Migration 0016_operations_recovery' : '연결된 상태 정보가 없습니다.'}</p>
+                <p className="status-unavailable">UNAVAILABLE</p>
+                <p>연결된 상태 정보가 없습니다.</p>
               </article>;
             })}
           </div>
