@@ -40,7 +40,7 @@
 
 - [x] Task 1 — 로컬 RED→GREEN 및 G-05 PASS; WSL 동일 SHA 검증은 별도 상태 기록
 - [x] Task 2 — R2 exact8 로컬 보완 및 WSL 동일 SHA 집중 231 PASS; 1 FAIL은 R2 범위 밖 browser 경로 안전 검사로 Task 3에 이관. 전체 suite는 아직 비GREEN
-- [ ] Task 3 — R3 제품 SHA `c759956` WSL 동일 SHA Node 21 PASS, A14 browser-source 1 PASS, G-05 seq1731 PASS. WSL web typecheck·lint PASS, 격리 Node 22와 lockfile 일치 optional rolldown binding에서 build PASS(시스템 Node 18 build는 실패). 전체 pytest는 `8112 passed, 48 failed, 116 skipped`로 비GREEN. 실패군: C30 contract 2, A13 POSIX 경로 1, F18 R12 원격 ref 전제 2, Phase B gate 1, progress/history 41, C01 OpenAPI 1. 각 실패의 현재 결함·역사 fixture·실행 환경 원인을 분리해 RED→GREEN 처리하고 전체 suite 재실행 대기.
+- [x] Task 3 — R5e exact SHA `69bfeb0` WSL-server에서 C30 역사 PR #15와 C21 immutable runtime-control sibling 정확한 Git 객체를 준비한 전체 pytest **exit0: 8202 passed, 116 skipped, 14 warnings**. 과거 원장 raw는 복원하지 않았고 CRITICAL/blocking 사고를 append-only 기록하여 수락을 차단한다. fixture/pytest GREEN은 실제 DB·API·브라우저 및 F-20 전체 수락 증거가 아니다. 첫 전체 실행은 WSL 재기동으로 중단, 객체 누락 상태의 두 번째 실행은 C21 3 FAIL, 올바른 역사 객체가 준비된 세 번째 실행만 공식 GREEN이다. 전용 임시 checkout·pytest·로그 잔류0.
 - [ ] Task 4
 
 ### 48건의 우선 원인 분리
