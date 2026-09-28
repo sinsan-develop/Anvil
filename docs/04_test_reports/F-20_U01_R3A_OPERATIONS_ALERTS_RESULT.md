@@ -32,7 +32,7 @@
 
 Main이 지정 원격에서 제품 exact SHA를 Git으로 수신하고 **공유 `local-postgres`와 분리된** 일회성 PostgreSQL 15 DB/container를 만든 후, 기존 migration `0019_oidc_sessions`까지 적용한다. DSN은 실행 환경에만 `ANVIL_F20_R3A_PG_DSN`으로 전달하고 보고서·명령 로그에 Secret 원문을 남기지 않는다. `ANVIL_F20_R3A_PG_ISOLATED=1`도 필수다. DSN은 `127.0.0.1`의 1024 초과·5432 아닌 격리 포트, database `anvil_f20_r3a_` 접두사, 비-superuser role `anvil_f20_r3a_` 접두사, query 없는 PostgreSQL URI여야 한다. 테스트는 서버 major 15, 실제 DB/role, head0019 및 OIDC 6개·Operations audit 2개 테이블의 빈 상태를 읽기 전용으로 확인한 뒤에만 합성 OIDC directory와 audit 경고 1건을 삽입한다.
 
-실행 예시(DSN 값은 Main의 비출력 환경 주입): `./.venv/bin/python -B -m pytest -q tests/api/test_oidc_asgi_binding.py -k opt_in_isolated_pg15_oidc_process_reads_stored_alerts --basetemp=<사전 기록한 전용 pytest 경로> -p no:cacheprovider --tb=short`. 이 테스트는 실제 psycopg/PostgreSQL의 저장 경고를 process→configured ASGI→runtime에서 200으로 읽고, 미인증 401, permission·cross-scope 403, 별도 loopback port 1 연결 거부의 repository에서 500 fail-closed, GET append 0을 확인한다. synthetic DB 행은 `finally`에서 제거하고 connection을 dispose한다. Main은 테스트 종료 후 전용 DB/container/pytest 경로·프로세스 잔류0을 독립 확인한다. 브라우저 Network·detector 완전성·Dashboard UI는 이 테스트로 검증되지 않는다.
+실행 예시(DSN 값은 Main의 비출력 환경 주입): `./.venv/bin/python -B -m pytest -q tests/api/test_oidc_asgi_binding.py -k opt_in_isolated_pg15_oidc_process_reads_stored_alerts --basetemp=<사전 기록한 전용 pytest 경로> -p no:cacheprovider --tb=short`. 이 테스트는 실제 psycopg/PostgreSQL의 저장 경고를 process→configured ASGI→runtime에서 200으로 읽고, 미인증 401, permission·cross-scope 403, 별도 loopback port 1 연결 거부의 repository에서 500 fail-closed, GET append 0을 확인한다. `finally`에서는 변경 가능한 합성 OIDC identity/session 행만 제거하고 connection을 dispose한다. 불변 Operations audit 행·head는 삭제하지 않으며 격리 DB/container 전체 폐기로 정리한다. Main은 테스트 종료 후 전용 DB/container/pytest 경로·프로세스 잔류0을 독립 확인한다. 브라우저 Network·detector 완전성·Dashboard UI는 이 테스트로 검증되지 않는다.
 
 ## 정리·미검증·rollback
 
@@ -47,3 +47,9 @@ Main이 지정 원격에서 제품 exact SHA를 Git으로 수신하고 **공유 
 - RED 재현: `ANVIL_F20_R3A_PG_DSN=postgresql+psycopg://anvil_f20_r3a_test@127.0.0.1:35499/anvil_f20_r3a_test` 및 isolated=1, 선택 pytest → exit1, `asgi.py` module import의 `RuntimeConfigurationError: ANVIL_DATABASE_URL is required`(기존 WSL의 Telegram 변수 부족과 같은 bootstrap 경계).
 - 보정 후 같은 닫힌 포트 음성 → exit1 `R3A_PG_TARGET_REJECTED` 약 3.7초, import 실패 0. 합성 비밀번호를 포함한 동일 음성도 출력에는 비밀번호/DSN 0. 포트가 없으므로 성공 기대 시험이 아니라 DB preflight까지 도달하는 확인이다.
 - 집중 회귀: `.\.venv\Scripts\python.exe -B -m pytest -q tests/api/test_oidc_process.py tests/api/test_oidc_asgi_binding.py tests/api/test_f13_operations_api.py --basetemp=runtime/pytest-r3a-import-green -p no:cacheprovider --tb=short` → exit0, **69 passed / 1 skipped**. skip=실제 PG15 opt-in 미설정; WSL 실측 PASS가 아니다. `git diff --check` exit0. 새 제품 commit/WSL 재실행은 Main 소유다.
+
+## R3a 실제 PG15 append-only teardown 보정 / Developer 재작업
+
+- Main의 WSL-server exact SHA `e75524ad74e70d4add35e159e91d348a85c25d17`에서 전용 PG15/migration0019 및 opt-in 테스트는 실행됐으나, 테스트의 마지막 `DELETE FROM operations_audit_events`가 기존 `anvil_operations_audit_immutable` trigger에 의해 거부됐다. 이 cleanup 예외가 앞선 API flow 결과를 가렸으므로 200/401/403/500 판정은 아직 Main의 재실행 전까지 **미확인**이다. Main은 전용 컨테이너/port/pytest base를 정리했다.
+- 설계된 불변 audit 행과 head를 변경·삭제하지 않는다. 테스트 전 전용 DB 8개 테이블 empty preflight를 유지하고, `finally`는 mutable OIDC identity/session 행만 지운다. append-only audit는 Main의 disposable DB/container 폐기로 정리한다. cleanup 오류와 flow 오류를 각각 `R3A_PG_CLEANUP_FAILED` / `R3A_PG_FLOW_FAILED`로 분리해 앞선 flow 실패를 가리지 않는다.
+- RED: SQLite 테스트 DB에 `operations_audit_events`와 DELETE 거부 trigger를 만들어 mutable OIDC row와 불변 audit row를 함께 둔 뒤 `_cleanup_r3a_oidc_rows` 부재 `NameError` exit1. GREEN: helper 구현 후 동일 테스트 1 passed/exit0, audit row 유지·OIDC row 제거. 이어 집중/F-13 회귀 `70 passed / 1 skipped` exit0(실제 PG15 미설정 skip). `git diff --check` exit0. WSL 재실행/제품 commit·push는 Main 소유다.

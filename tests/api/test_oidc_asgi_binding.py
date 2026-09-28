@@ -504,6 +504,36 @@ def test_configured_oidc_factory_forwards_explicit_operations_owner(host):
     assert app.state.operations_bound is True
 
 
+def _cleanup_r3a_oidc_rows(engine):
+    """Remove mutable QA identity rows; isolated container owns audit lifetime."""
+    with engine.begin() as db:
+        db.execute(oidc_sessions.delete())
+        db.execute(oidc_pending_auth.delete())
+        db.execute(oidc_subject_bindings.delete())
+        db.execute(user_roles.delete())
+        db.execute(roles.delete())
+        db.execute(users.delete())
+
+
+def test_isolated_pg_teardown_keeps_immutable_operations_audit():
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    try:
+        for metadata in (OIDC_PENDING_METADATA, DIRECTORY_METADATA, OIDC_SESSION_METADATA):
+            metadata.create_all(engine)
+        with engine.begin() as db:
+            db.execute(users.insert().values(actor_id="r3a-actor", active=True))
+            db.execute(sa.text("CREATE TABLE operations_audit_events (payload TEXT NOT NULL)"))
+            db.execute(sa.text("INSERT INTO operations_audit_events(payload) VALUES ('append-only')"))
+            db.execute(sa.text("CREATE TRIGGER immutable_audit BEFORE DELETE ON operations_audit_events "
+                               "BEGIN SELECT RAISE(ABORT, 'operations audit is append-only'); END"))
+        _cleanup_r3a_oidc_rows(engine)
+        with engine.connect() as db:
+            assert db.execute(sa.select(sa.func.count()).select_from(users)).scalar_one() == 0
+            assert db.execute(sa.text("SELECT payload FROM operations_audit_events")).scalar_one() == "append-only"
+    finally:
+        engine.dispose()
+
+
 def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path, monkeypatch):
     """WSL-only: exercise process -> host -> real PostgreSQL audit under one QA scope."""
     dsn = os.environ.get("ANVIL_F20_R3A_PG_DSN")
@@ -586,6 +616,7 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path, monkeyp
         pytest.fail("R3A_PG_TARGET_REJECTED", pytrace=False)
 
     flow_ok = False
+    cleanup_ok = False
     try:
         path, trust, _ = _trust(tmp_path)
         signing = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -718,17 +749,10 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path, monkeyp
         pass
     finally:
         try:
-            with engine.begin() as db:
-                db.execute(oidc_sessions.delete())
-                db.execute(oidc_pending_auth.delete())
-                db.execute(oidc_subject_bindings.delete())
-                db.execute(user_roles.delete())
-                db.execute(roles.delete())
-                db.execute(users.delete())
-                db.execute(sa.text(
-                    "DELETE FROM operations_audit_events WHERE project_id='project-1' AND environment_id='wsl-qa'"))
-                db.execute(sa.text(
-                    "DELETE FROM operations_audit_heads WHERE project_id='project-1' AND environment_id='wsl-qa'"))
+            _cleanup_r3a_oidc_rows(engine)
+            cleanup_ok = True
+        except Exception:
+            pass
         finally:
             if app is not None:
                 app.state.database_engine.dispose()
@@ -737,3 +761,5 @@ def test_opt_in_isolated_pg15_oidc_process_reads_stored_alerts(tmp_path, monkeyp
             engine.dispose()
     if not flow_ok:
         pytest.fail("R3A_PG_FLOW_FAILED", pytrace=False)
+    if not cleanup_ok:
+        pytest.fail("R3A_PG_CLEANUP_FAILED", pytrace=False)
