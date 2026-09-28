@@ -27,7 +27,12 @@ REPORT = "docs/04_test_reports/F-20_U01_R4_CRITICAL_ALERTS_RESULT.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r4-start.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R4_CRITICAL_ALERTS_START_MANIFEST.json"
 SCOPE = ["apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs", REPORT]
-CONTROL_SCOPE = prior.CONTROL_SCOPE | {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST}
+CONTROL_SCOPE = prior.CONTROL_SCOPE | {
+    EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
+    "docs/04_test_reports/F-20_U01_R5_ALERT_PAGING_BINDING_PLAN.md",
+    "docs/work_orders/F-20_U01_R5_ALERT_PAGING_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R5_ALERT_PAGING_INVOCATION.md",
+}
 START, END = 1804, 1810
 PREP_ANCHOR = "2c37dd780fd72ad7dd7fda3ed6f447ccec8d8a44"
 TYPES = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORK_INSTRUCTION_ISSUED",
