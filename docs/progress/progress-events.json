@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1768,
+  "last_sequence": 1774,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -90093,7 +90093,167 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 1769,
+  "event_id": "evt_f20_1769_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F-20_U01_R1_READINESS_START",
+  "subject_ref": "F-20/U01-R1",
+  "occurred_at": "2026-09-28T06:21:00+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "7F5D5C9D2136138DF55CAC93F37C9A5E025BD1983E4CA1A755F3A510D0912B5D",
+  "details": {
+    "lease_id": "write-lease-f20-r5e-27674f6cecba",
+    "write_fencing_token": "f20-r5e-write-fence-epoch-9-27674f6cecba",
+    "reason": "F20_R5E_DONE_U01_R1_READINESS"
+  }
+},
+{
+  "sequence": 1770,
+  "event_id": "evt_f20_1770_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F-20_U01_R1_READINESS_START",
+  "subject_ref": "F-20/U01-R1",
+  "occurred_at": "2026-09-28T06:21:00+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "89B2AFC85BE0B18AE3AE4C87DDF4D80A614EA2CD5182975604FD29DBCDB4768D",
+  "details": {
+    "lease_id": "worker-lease-f20-r5e-27674f6cecba",
+    "execution_fencing_token": "f20-r5e-execution-fence-epoch-9-27674f6cecba",
+    "reason": "F20_R5E_DONE_U01_R1_READINESS"
+  }
+},
+{
+  "sequence": 1771,
+  "event_id": "evt_f20_1771_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F-20_U01_R1_READINESS_START",
+  "subject_ref": "F-20/U01-R1",
+  "occurred_at": "2026-09-28T06:21:00+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "2A2D0A53081AF19ECCEA7EEEBD8168DADD8F2CEB422176DFA37FED9C18FD576E",
+  "details": {
+    "path": "docs/work_orders/F-20_U01_R1_READINESS_WORK_INSTRUCTION.md",
+    "sha256": "034A0697B72B347190405AEE9709D8FC0CA2287CE16968818C3DB73E6AC01615",
+    "invocation_path": "docs/work_orders/F-20_U01_R1_READINESS_INVOCATION.md",
+    "invocation_sha256": "BC889BB504AAF664A748EBB1DD0697D0460951D78F7109030EC4A7244FD23610",
+    "classification": "MAIN_INTERNAL_REWORK"
+  }
+},
+{
+  "sequence": 1772,
+  "event_id": "evt_f20_1772_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F-20_U01_R1_READINESS_START",
+  "subject_ref": "F-20/U01-R1",
+  "occurred_at": "2026-09-28T06:21:00+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "43CC0DCEED7AB5009CDAA8F6F25CA3F492E11D8CD29D48D936511FC4D33E2C1B",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r1-9c5a60a8951c",
+    "actor_id": "developer-primary-f20-u01-r1",
+    "subject_ref": "F-20/U01-R1",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-28T06:21:00+00:00",
+    "expires_at": "2026-09-28T18:21:00+00:00",
+    "lease_epoch": 10,
+    "fencing_token": "f20-u01-r1-execution-fence-epoch-10-9c5a60a8951c",
+    "execution_fencing_token": "f20-u01-r1-execution-fence-epoch-10-9c5a60a8951c",
+    "baseline_git_commit": "b013b21c5de08d5528625f6cd93d5a7854665fc8",
+    "dispatch_head": "b013b21c5de08d5528625f6cd93d5a7854665fc8",
+    "path_scope": [
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "docs/04_test_reports/F-20_U01_R1_READINESS_RESULT.md"
+    ]
+  }
+},
+{
+  "sequence": 1773,
+  "event_id": "evt_f20_1773_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F-20_U01_R1_READINESS_START",
+  "subject_ref": "F-20/U01-R1",
+  "occurred_at": "2026-09-28T06:21:00+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "99D94F9F0ABDE3B911B3FE012FD7E24ED64772C506737B1B32427DAABE10F04C",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r1-9c5a60a8951c",
+    "actor_id": "developer-primary-f20-u01-r1",
+    "subject_ref": "F-20/U01-R1",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-28T06:21:00+00:00",
+    "expires_at": "2026-09-28T18:21:00+00:00",
+    "lease_epoch": 10,
+    "fencing_token": "f20-u01-r1-write-fence-epoch-10-9c5a60a8951c",
+    "execution_fencing_token": "f20-u01-r1-execution-fence-epoch-10-9c5a60a8951c",
+    "baseline_git_commit": "b013b21c5de08d5528625f6cd93d5a7854665fc8",
+    "dispatch_head": "b013b21c5de08d5528625f6cd93d5a7854665fc8",
+    "path_scope": [
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "docs/04_test_reports/F-20_U01_R1_READINESS_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r1-9c5a60a8951c",
+    "write_epoch": 10,
+    "write_fencing_token": "f20-u01-r1-write-fence-epoch-10-9c5a60a8951c"
+  }
+},
+{
+  "sequence": 1774,
+  "event_id": "evt_f20_1774_package_resumed",
+  "event_type": "PACKAGE_RESUMED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F-20_U01_R1_READINESS_START",
+  "subject_ref": "F-20/U01-R1",
+  "occurred_at": "2026-09-28T06:21:00+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0176A26BD37AAF8D40435B8C9460B8A039AF4D456EBDDCE42679FC4FE7C2DD14",
+  "details": {
+    "worker_lease_id": "worker-lease-f20-u01-r1-9c5a60a8951c",
+    "write_lease_id": "write-lease-f20-u01-r1-9c5a60a8951c",
+    "work_instruction_sha256": "034A0697B72B347190405AEE9709D8FC0CA2287CE16968818C3DB73E6AC01615",
+    "invocation_sha256": "BC889BB504AAF664A748EBB1DD0697D0460951D78F7109030EC4A7244FD23610",
+    "package_status": "REWORK_IN_PROGRESS",
+    "accepted": false
+  }
 }
   ],
-  "last_event_id": "evt_f20_1768_package_resumed"
+  "last_event_id": "evt_f20_1774_package_resumed"
 }
