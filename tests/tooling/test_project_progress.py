@@ -9,6 +9,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -22,6 +23,13 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _current_u01_route_prefix(step_id: str) -> str:
+    match = re.fullmatch(r"(F20_U01_R[1-9][0-9]*[A-Z]?)_[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*", step_id)
+    if match is None:
+        raise ValueError("F20_U01_STEP_FORMAT_INVALID")
+    return match.group(1)
 
 # seq496 intentionally kept its independent-review authority source outside Git.
 # Freeze the exact historical bytes here so detached historical tests do not
@@ -1186,7 +1194,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         # F-20 uses the append-only raw-byte binding, not the older
         # canonical-JSON digest/manifest shape. The public validator must
         # accept the real files and reject forged in-memory projections.
-        self.assertEqual("F20_U01_R2B_CURRENT_HISTORY_START", bundle["progress"]["repository"]["projection_mode"])
+        current_step = bundle["events"]["events"][-1]["step_id"]
+        current_mode = bundle["progress"]["repository"]["projection_mode"]
+        self.assertEqual(bundle["progress"]["event_sequence"], bundle["events"]["events"][-1]["sequence"])
+        self.assertEqual(current_step, current_mode)
+        self.assertEqual(current_step, manifest["projection_mode"])
+        error_prefix = _current_u01_route_prefix(current_step)
         self.assertFalse(manifest["accepted"])
         self.assertEqual("OPEN_BLOCKING", bundle["progress"]["f20_c30_event_integrity_incident"]["status"])
         self.assertEqual("DEFER", bundle["progress"]["scope_revision_binding"]["release_decision"])
@@ -1195,7 +1208,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         forged_progress = copy.deepcopy(bundle)
         forged_progress["progress"]["next_safe_action"] = "tampered after verification"
         forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
-        self.assertIn("F20_U01_R2B_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
+        self.assertIn(f"{error_prefix}_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
 
         forged_handoff = copy.deepcopy(bundle)
         forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
@@ -1203,7 +1216,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         forged_digest = copy.deepcopy(bundle)
         forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
-        self.assertIn("F20_U01_R2B_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+        self.assertIn(f"{error_prefix}_DIGEST_INVALID", checker.validate_bundle(forged_digest))
 
         forged_manifest = dict(manifest, accepted=True)
         forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
@@ -1213,7 +1226,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
 
         with mock.patch.object(Path, "read_bytes", read_forged_manifest):
-            self.assertIn("F20_U01_R2B_MANIFEST_INVALID", checker.validate_bundle(bundle))
+            self.assertIn(f"{error_prefix}_MANIFEST_INVALID", checker.validate_bundle(bundle))
+
+    def test_current_u01_route_prefix_rejects_invalid_step_format(self) -> None:
+        self.assertEqual("F20_U01_R4", _current_u01_route_prefix("F20_U01_R4_OPERATIONS_ALERTS_START"))
+        for invalid in (
+            "F20_U01_CURRENT_PROJECTION_START",
+            "F20_U01_R4",
+            "F20_U02_R4_OPERATIONS_ALERTS_START",
+            "F20_U01_R4__START",
+        ):
+            with self.subTest(step_id=invalid), self.assertRaisesRegex(ValueError, "F20_U01_STEP_FORMAT_INVALID"):
+                _current_u01_route_prefix(invalid)
 
     def test_f20_r5e_and_u01_history_remains_bound_to_git_blobs(self) -> None:
         historical = (
