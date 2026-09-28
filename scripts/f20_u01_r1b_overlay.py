@@ -30,6 +30,8 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     DIGEST, MANIFEST, "scripts/f20_u01_r1b_overlay.py",
     "tests/tooling/test_f20_u01_r1b_projection.py",
     "scripts/check_project_progress.py", "docs/WORK_STATUS.md",
+    "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_INVOCATION.md",
 }
 START = 1774
 TYPES = prior.TYPES
