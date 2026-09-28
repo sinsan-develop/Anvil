@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — epoch16 exact3의 로컬 UI/계약 구현과 기본 검증을 마쳤다. 현재 화면은 기존 `GET /api/operations/alerts`의 저장 기록 한 페이지만 읽고, 현재 페이지의 active critical 기록을 표시한다. 이 판정은 Main 독립 검토, WSL-server 동일 SHA API·브라우저·Network 실측, U-01/F-20 수락을 뜻하지 않는다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, manifest 미수락을 유지한다.
+`COMPLETED` — epoch16 exact3의 로컬 UI/계약 구현과 기본 검증을 마쳤고, Main이 제품 SHA `cc94334c1594f85a22402aa990aaf309f84d73fa`의 WSL-server에서 범위가 한정된 API·브라우저 fixture 검증을 수행했다. 현재 화면은 기존 `GET /api/operations/alerts`의 저장 기록 한 페이지만 읽고, 현재 페이지의 active critical 기록을 표시한다. 이 판정은 실제 OIDC+브라우저 통합 E2E 또는 U-01/F-20 수락을 뜻하지 않는다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, manifest 미수락을 유지한다.
 
 ## 기준과 쓰기 권한
 
@@ -25,8 +25,15 @@
 - `& '.\.venv\Scripts\python.exe' scripts/check_project_progress.py` → exit 0, `G-05 project progress contract: PASS sequence=1810 reporting=AUTO_CONTINUE`; `git diff --check` → exit 0.
 - 일회성 F-13 pytest base `runtime/pytest-r4-developer-f13`은 Main이 사전 WORK_STATUS에 기록했고 pytest 후 실제 생성되지 않아 잔류 0이다. web build 산출물은 사전 부재·Main 기록된 이 worktree `apps/web/dist`만 사용했다. build exit 0 뒤 경로가 worktree 내부이고 root reparse 0/내부 reparse 0임을 확인하고 정확한 `dist`만 삭제해 잔류 0이다. 각 명령 launcher는 종료됐으며 공유 Node 프로세스에는 손대지 않았다.
 
+## Main WSL-server 동일 SHA 후속 실측
+
+- Main이 제품 SHA `cc94334c1594f85a22402aa990aaf309f84d73fa`의 WSL-server에서 Node `13/13 pass`, typecheck·lint·build 각각 exit 0을 확인했다. 이 절은 Main이 전달한 후속 실측 기록이며 Developer가 WSL에서 재실행한 결과는 아니다.
+- headless Chromium API interception fixture에서 1920×1080과 390×844 viewport 모두 `scrollWidth=viewport`였다. 저장 critical·partial·악성 텍스트·403 상태와 각 viewport의 `/api/operations/alerts` same-origin 상대 요청 4건을 확인했다. 이는 실제 브라우저 엔진의 fixture 검증이며 실제 OIDC 세션과 API를 연결한 browser E2E가 아니다.
+- 별도 격리 PG15와 migration 0019에서 OIDC 저장 경고 opt-in 검증은 `1 passed, 41 deselected in 2.33s`였다. 200/401/403/500 응답과 GET 요청 전후 audit 무변경을 확인했다. 이 API 검증은 위 브라우저 interception fixture와 구별한다.
+- 첫 두 브라우저 시도는 harness cwd/EROFS 오류로 앱 로드 전에 실패했고, 세 번째 read-only static server 시도가 PASS했다. 첫 posttest G-05는 untracked `dist` 때문에 `F20_U01_R4_GIT_INVALID`였으나, 사전 기록된 `node_modules`/`dist`를 정확히 정리한 뒤 G-05 `PASS sequence=1810`이었다. QA 컨테이너·PG·pytest·port 및 두 임시 경로의 잔류는 0이다.
+
 ## 미검증과 다음 조치
 
-- WSL-server의 새 제품 commit 동일 SHA OIDC/API·실제 브라우저 1920×1080/390×844·Network same-origin, 실제 저장 경고 데이터, 운영 유사 흐름은 미실행이다. Local Node/fixture, API 계약, 빌드 PASS를 이 항목의 PASS로 승격하지 않는다. 기존 skip/warning 및 Production 미실행 경계도 유지한다.
-- Main이 exact3 diff·회귀·G-05를 독립 검토하고 안전한 commit/push 후 WSL-server에서 같은 SHA의 API·브라우저·Network를 실측해야 한다. U-01/F-20 수락은 후속 별도 판정이다.
-- 동일 원인 유효 `FAILURE_REPORT` 0회. rollback은 R4 제품 변경만 후속 정상 Git commit으로 되돌려 Alerts 영역을 `UNAVAILABLE`로 복귀하는 것이다. 원장·이전 승인 기록·DB는 변경하지 않는다. Developer는 commit/push/merge·배포하지 않았고 progress/HANDOFF는 Main 소유로 변경하지 않았다. Main이 사전 리소스 통제를 기록한 `docs/WORK_STATUS.md`는 보존했다.
+- 실제 OIDC 세션을 사용한 브라우저·API 통합 E2E는 미검증이다. 위 interception fixture와 별도 PG15 API 검증을 그 통합 PASS로 승격하지 않는다. detector, Next Actions, 다른 Health, Production 및 운영 배포도 미검증이다. 기존 skip/warning 경계도 유지한다.
+- Main의 독립 검토와 WSL-server 동일 SHA 범위 검증은 위와 같이 기록했으나, U-01/F-20 수락은 후속 별도 판정이다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, manifest 미수락을 유지한다.
+- 동일 원인 유효 `FAILURE_REPORT` 0회. rollback은 R4 제품 변경만 후속 정상 Git commit으로 되돌려 Alerts 영역을 `UNAVAILABLE`로 복귀하는 것이다. 원장·이전 승인 기록·DB는 변경하지 않는다. Developer는 이 보고서 보완에서 commit/push/merge·배포하지 않았고 progress/HANDOFF는 Main 소유로 변경하지 않았다. Main이 관리하는 `docs/WORK_STATUS.md`는 보존했다.
