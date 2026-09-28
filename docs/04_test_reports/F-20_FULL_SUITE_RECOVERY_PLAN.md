@@ -73,6 +73,14 @@
 - R5b `9af4923` WSL 전체 suite의 남은 10 FAIL 중 C09 Main takeover 4와 final 2는 과거 품질 검토 원문의 현재 파일이 당시 18,269-byte Git blob보다 마지막 LF 1 byte 짧아 발생한다. `10bbb87`의 역사 품질 검토 blob과 고정 SHA `E109EB0D...`를 확인하고 현재 승인 후속 문서를 덮거나 frozen hash를 바꾸지 않는다. Main takeover 및 final의 다른 선행 WI/manifest, 제품 raw map, raw Event prefix, review severity·failure counting, successor 계약은 유지한다.
 - R5b epoch6 write→worker lease를 append-only 회수한 뒤 R5c epoch7 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_REWORK_R5C_RESULT.md`)만 단일 writer에게 부여한다. C30 감사 사고 1과 E09 3은 범위 밖이다. 역사 review blob 누락·위조와 다른 선행 파일 변조는 계속 거부한다. R5c 6건과 기존 관련 검사를 로컬/WSL 동일 SHA에서 확인하고 전체 suite를 재실행해 신규 회귀를 분리한다. 그 결과가 GREEN이어도 F-20 전체 수락은 하지 않는다.
 
+### R5d — E09 역사 WI 권위 경계 3건
+
+- R5c 정확한 SHA `eaea6d0`의 WSL-server 전체 suite는 `8184 passed, 4 failed, 116 skipped`였다. 잔여 E09 start1/final2의 첫 실패는 당시 WI frozen SHA `2DCA27...`와 현재 후속 WI SHA `71DA40...`의 차이다. `30ca8a2` 당시 Git blob은 5,196 bytes/frozen SHA와 일치하고 현재 파일은 5,195 bytes이며 마지막 LF 1 byte 차이. 다른 E09 고정 제품 5경로, invocation, start digest/manifest는 현재 고정 SHA와 일치한다. 당시 원문과 후속 파일을 분리하되 검증기·frozen 상수·Event·현재 WI를 수정하지 않는다.
+- R5c epoch7 write→worker lease를 append-only 회수한 뒤 R5d epoch8 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_REWORK_R5D_RESULT.md`)만 단일 writer에게 부여한다. 역사 WI 누락·위조 음성, E09의 다른 고정 경로 위조 거부, 현재 G-05를 유지한다. WSL-server 동일 SHA에 역사 객체를 준비하고 집중·전체 suite를 재실행한다. C30 raw Event 감사 1은 별도 경계로 계속 FAIL이며 F-20 전체 수락과 main 병합은 금지한다.
+- 통제 준비: 기존 R5c overlay·projection을 기준으로 현재 문서/원장/lease/원격 SHA 변조 음성 테스트를 RED로 만든다. 새 R5d WI/Invocation, checker route, append-only overlay를 최소 구현하고 R5b/R5c 회귀·G-05를 GREEN으로 확인한다. 통제 준비 commit/push 뒤 R5c write→worker 회수와 R5d grant를 발급하며 로컬·WSL-server 통제를 검사한다.
+- 제품 재작업: E09 start/final의 기존 3 RED를 확인하고, `30ca8a2` Git blob의 byte 길이·frozen SHA를 결박하는 fixture와 WI 누락·위조 음성을 추가한다. 현재 WI·checker·Event와 다른 E09 고정 검증은 보존한다. 단일 writer의 exact2 diff·결과를 독립 검토하고 집중/G-05 GREEN 뒤 commit/push한다.
+- 동일 SHA 검증: WSL-server가 지정 원격에서 정확한 commit을 pull하고 필요한 역사 객체만 준비한다. E09·통제 집중 및 전체 suite를 실행하여 pass/fail/skip/warning·로그 해시·잔여 C30·미검증 DB/API/브라우저를 기록한다. 임시 리소스는 정확한 경로 확인 뒤 정리한다. C30 감사와 기능 완료조건이 열려 있으면 R5d가 GREEN이어도 F-20은 미수락으로 유지한다.
+
 ## F-20 완료조건 불일치 확인
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.

@@ -4198,3 +4198,8 @@ MCowBQYDK2VwAyEABXkHx/qL8fC4lIji9es1M6xNtms7lSCnDo/uoYVkepI=
 - R5c 결과보고서에 최종 WSL 증거를 writer가 반영 중이다. 전용 checkout·두 전체 로그·pytest base들은 정확한 결과 기록 후 링크/경로와 타 프로세스 이용을 확인해 정리한다. 미검증: E09 역사 3과 C30 원장 감사 1, 실제 PG15/PG18RC·API/브라우저·11개 메뉴/backup/restore/rollback. 다음은 R5c 기록 commit/push·임시 자원 정리→epoch7 write/worker lease 회수→E09 exact-path 후속 R5d 통제·제품 순차 재작업이다. F-20 수락·main 병합·신규 branch는 하지 않는다.
 
 - R5c 결과보고서가 최종 SHA/집계/로그 해시를 반영했고 G-05 seq1755 PASS, diff check PASS, 정식 Developer 실패0이다. WSL 전용 checkout 1, 전체 로그 2, pytest base 4의 정확한 경로·Anvil 사용 프로세스 0을 확인했다. pytest symlink 492개 모두 각 전용 경로 내부이며 checkout `.venv`의 외부 Python runtime symlink는 링크만 삭제되고 공유 runtime은 보존된다. 일곱 경로만 제거하고 `F20_R5C_WSL_RESIDUE_ZERO`를 확인했다. 다른 프로젝트 pytest·공유 DB/Docker·Production은 건드리지 않았다. 두 로그 원문은 정리 후 복구되지 않고 집계·크기·SHA가 이 status와 결과보고서에 보존된다.
+
+# F-20 R5d E09 역사 WI 재작업 계획 / 2026-09-28
+
+- 판정: `R5D_PLAN_DEFINED; R5C_LEASE_STILL_ACTIVE; PRODUCT_NOT_STARTED`. R5c 최종 기록 commit `7a28fe0559b9943090304e752634e354801caf5d`가 지정 원격과 일치하고 현재 작업 branch clean을 확인했다. WSL 전체의 잔여 E09 3건은 당시 E09 WI 5,196 bytes/SHA `2DCA27...`와 현재 5,195 bytes/SHA `71DA40...`의 역사/후속 경계로 좁혔다. E09의 다른 frozen 제품 5경로·invocation·start digest/manifest는 고정 hash와 일치한다. C30 감사 1건은 변경 없이 열려 있다.
+- 승인된 F-20 회복 계획의 R5d 절에 통제 준비→epoch7 회수/epoch8 exact2 grant→단일 writer 역사 fixture·음성→독립 검토→WSL 동일 SHA 전체 suite의 작업·검증 경계를 정했다. 이는 기존 계획의 E09 역사군 분리이며 기능 범위·요구사항·중요 위험 확장이나 새 branch 생성은 아니다. 별도 계획 신규 파일은 현재 R5c G-05 경로 제한에 걸려 생성 직후 제거하고 기존 허용 계획서에 통합했다. 현 단계 제품 파일·현재 E09 WI·검증기·frozen hash·Event 수정0; 새 lease 전 writer는 시작하지 않는다. 다음은 R5d 통제 음성 RED→GREEN과 유효 lease 발급이다.
