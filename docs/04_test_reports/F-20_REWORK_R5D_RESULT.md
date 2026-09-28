@@ -33,3 +33,10 @@
 Main의 exact2 diff 독립 검토 후 기존 branch에 commit/push하고, `ssh WSL-server`가 해당 SHA를 Git pull하여 E-09 집중·통제·전체 suite를 실행해야 한다. C30 raw Event 감사 1, 실제 PG15/PG18RC·API/브라우저 Network·11개 메뉴·backup/restore·rollback은 R5d 집중 검증으로 입증되지 않는다. skip/xfail하지 않았고 F-20 수락·main 병합·신규 branch 생성은 금지 상태다.
 
 회귀 시 Main이 R5d 제품 commit을 정상 Git revert하고 G-05·E-09 대상 테스트를 재검증한다. 이 writer는 commit/push·progress/HANDOFF 갱신 권한이 없으며 결과와 diff를 Main에 인계한다.
+
+## 첫 동일 SHA WSL-server 전체 suite 및 현재 digest 기대값 보완 / 2026-09-28
+
+- Main 전달 증거: R5d 제품 SHA `9024c6e59666673e11375f5df8d514ae02886e47`의 WSL-server 전체 suite는 **exit1: 8195 passed, 2 failed, 116 skipped, 14 warnings in 877.01s**였다. 로그는 15,196 bytes/SHA-256 `7bfc018f698c82c64f4dc04cc3481928a81a326a9379246a79eccb061ebdb9ff`다. 실패는 기존 범위 밖 C30 raw Event 감사 1건과 `ProjectProgressContractTests.test_detached_digest_binds_current_progress_and_handoff_into_manifest_target` 1건이다. E-09 역사 3건은 이 실행에서 실패하지 않았다. 이는 Main이 수행·전달한 증거이며 writer가 WSL을 직접 실행한 것으로 표시하지 않는다.
+- 후자의 로컬 RED는 기존 테스트가 `F20_R5C_REWORK_START`를 기대하지만 현재 canonical repository mode는 `F20_R5D_REWORK_START`인 점이다. 동일 node는 수정 전 **1 failed in 1.01s**(exit1). mode 기대를 R5d로 바꾼 뒤에도 위조 progress 기대 오류 코드가 R5c로 남아 **1 failed in 6.61s**(exit1). 테스트의 mode와 progress/digest/manifest 오류 코드 기대 네 곳만 R5d로 갱신하고, 정상 bundle 수락 및 위조 progress/handoff/digest/manifest 음성 입력·검증은 그대로 유지했다.
+- 로컬 재검증: `.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider --import-mode=importlib tests/tooling/test_project_progress.py::ProjectProgressContractTests::test_detached_digest_binds_current_progress_and_handoff_into_manifest_target tests/tooling/test_project_progress.py::E09StartControlTests tests/tooling/test_project_progress.py::E09FinalAcceptanceControlTests --basetemp=D:/tmp/anvil-f20-r5d-digest-green-base` → **8 passed in 26.11s**(exit0). G-05 `PASS sequence=1761`(exit0), `git diff --check` exit0. 현재 제품 변경은 여전히 exact2 경로뿐이며 checker·frozen 상수·Event·현재 E-09 WI는 변경하지 않았다. 정식 Developer 실패 0.
+- 새 제품 SHA의 WSL 동일 SHA 집중·전체 suite는 Main 후속 실행 전까지 **미검증**이다. C30 raw Event 감사 1건은 이 보완 범위 밖이며 skip/xfail하지 않았다. 실제 DB/API/브라우저·11개 메뉴·PG15/PG18RC·backup/restore·rollback 및 F-20 전체 수락·main 병합도 미검증·금지 상태다.
