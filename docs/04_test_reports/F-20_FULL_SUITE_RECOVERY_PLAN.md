@@ -144,3 +144,10 @@
 - R2 제품 SHA `89d19b34af326ad5f162fae30c8de37eb4f4dcdc`의 WSL-server 실제 API·브라우저는 지정 Provider 등록 표시를 확인했지만, 역사 PR ref를 준비한 전체 suite는 `8219 passed, 1 failed, 116 skipped, 14 warnings`였다. 유일 실패는 `tests/tooling/test_project_progress.py:1189`의 현재 bundle 기대값이 이전 R1b mode에 고정된 것이다. 이 결과를 R2 제품 회귀나 전체 GREEN으로 오인하지 않는다.
 - R2 epoch12 write→worker를 순서대로 회수한 뒤 R2b epoch13 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_U01_R2B_CURRENT_HISTORY_RESULT.md`)만 새 WI/Invocation과 dual lease로 발급한다. 현재 bundle은 발급 후 R2b mode·미수락·C30 `OPEN_BLOCKING`·release `DEFER`를 검증하고, R1b/R2 역사 blob은 각 당시 Git SHA로 별도 검증한다. 현재 progress/digest/manifest/handoff의 위조 거부를 유지하며 assertion 삭제·skip·xfail은 금지한다.
 - 단일 writer RED→GREEN, Main 독립 리뷰·commit/push, WSL-server 동일 SHA의 집중·전체 suite를 수행한다. 원격 PR 역사 ref가 필요한 격리 clone에는 제품 HEAD·파일을 바꾸지 않는 정확한 ref만 준비하고, skip/warning은 PASS로 승격하지 않는다. 임시 자원은 검사 후 제거한다. R2b GREEN이어도 U-01/F-20 수락, C30 사고 복구, main 병합, 새 branch, ysna-server/Production은 허용하지 않는다.
+
+#### U-01 R3b — 현재 projection 계약 테스트의 재발 방지
+
+- R3a 제품 SHA `fdaa66f52054a34364e5fba66f83e772d3d98fcc`의 WSL-server PG15/OIDC opt-in은 PASS였으나, 정식 전체 suite는 `8234 passed, 1 failed, 117 skipped, 14 warnings`였다. 유일 실패는 `tests/tooling/test_project_progress.py:1189`가 현재 R3a progress를 과거 R2b mode로 고정 기대한 것이다. 테스트 결과는 전체 GREEN이나 U-01/F-20 수락이 아니다.
+- R3a epoch14 write→worker lease를 순서대로 회수하고 R3b epoch15 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_U01_R3B_CURRENT_PROJECTION_RESULT.md`)를 새 WI/Invocation 및 dual lease로 발급한다. 발급 전 제품 exact2 수정은 금지한다. Main은 통제·상태만 수정하고 단일 Developer에게 exact2를 넘긴다.
+- 현재 bundle의 mode는 최신 canonical Event `step_id`와 일치하는지, 위조한 progress/digest/manifest는 **현재 route의** 오류 코드로 거부되는지 검증한다. 오류 prefix는 검증된 현 mode에서 도출하여 다음 정상 epoch로 진전해도 과거 mode를 고정 기대하지 않는다. 역사 R2b/R3a blob·hash와 C30 차단/미수락/DEFER/공통 handoff 음성은 유지한다. assertion 삭제·skip·xfail, 검증기 완화, 원본 Event 재작성은 금지한다.
+- RED→GREEN 집중·인접 역사군/G-05, Main 독립 리뷰, 동일 branch commit/push, WSL-server exact SHA 정식 전체 suite를 순서대로 시행한다. 기존 임시 QA 자원은 정확한 대상 확인 후 정리한다. R3b GREEN도 C30 `OPEN_BLOCKING` 복구, U-01/F-20 수락, main 병합, 새 branch, ysna-server/Production을 허용하지 않는다.

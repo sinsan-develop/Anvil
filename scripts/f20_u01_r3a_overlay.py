@@ -29,6 +29,9 @@ SCOPE = ["apps/api/anvil_api/oidc_process.py", "apps/api/anvil_api/asgi.py",
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "docs/WORK_STATUS.md", "scripts/f20_u01_r3a_overlay.py",
                  "scripts/check_project_progress.py",
+                 "docs/04_test_reports/F-20_FULL_SUITE_RECOVERY_PLAN.md",
+                 "docs/work_orders/F-20_U01_R3B_CURRENT_PROJECTION_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R3B_CURRENT_PROJECTION_INVOCATION.md",
                  "tests/tooling/test_f20_u01_r3a_projection.py"}
 START, END = 1792, 1798
 PREP_ANCHOR = "b998e96d"
