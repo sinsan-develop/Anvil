@@ -27,7 +27,10 @@ EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 SCOPE = ["tests/tooling/test_project_progress.py",
          "docs/04_test_reports/F-20_U01_R2B_CURRENT_HISTORY_RESULT.md"]
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
-                 "docs/WORK_STATUS.md"}
+                 "docs/WORK_STATUS.md",
+                 "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_BINDING_PLAN.md",
+                 "scripts/f20_u01_r2b_overlay.py",
+                 "tests/tooling/test_f20_u01_r2b_projection.py"}
 START = 1786
 END = START + len(prior.prior.TYPES)
 REASON = "F20_U01_R2_DONE_R2B_CURRENT_HISTORY"
