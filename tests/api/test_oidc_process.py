@@ -199,3 +199,58 @@ def test_process_factory_preserves_operational_shell_flag(tmp_path, monkeypatch,
         assert observed == [expected]
     finally:
         engine.dispose()
+
+
+@pytest.mark.parametrize("dsn,expected", [
+    ("postgresql://user:password@isolated.invalid/anvil", "postgresql://user:password@isolated.invalid/anvil"),
+    ("postgresql+psycopg://user:password@isolated.invalid/anvil", "postgresql://user:password@isolated.invalid/anvil"),
+    ("postgresql+psycopg2://user:password@isolated.invalid/anvil", "postgresql://user:password@isolated.invalid/anvil"),
+])
+def test_process_binds_scoped_operations_owner_with_psycopg_dsn(tmp_path, monkeypatch, dsn, expected):
+    from apps.api.anvil_api import oidc_process
+    from packages.observability.service import OperationsService
+
+    path, _, _ = _trust(tmp_path)
+    environment = _environment(path)
+    environment["ANVIL_DATABASE_URL"] = dsn
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    monkeypatch.setattr(oidc_process, "create_engine", lambda *_args, **_kwargs: engine)
+    supplied = []
+
+    class RecordingPostgresRepository:
+        def __init__(self, value):
+            supplied.append(value)
+
+        def load(self, project_id, environment_id):
+            return ()
+
+        def append(self, project_id, environment_id, expected_sequence, event):
+            raise AssertionError("GET must not append")
+
+    monkeypatch.setattr(oidc_process, "PostgresOperationsRepository", RecordingPostgresRepository, raising=False)
+    observed = []
+
+    def host(**kwargs):
+        observed.append(kwargs)
+        return FastAPI()
+
+    try:
+        assert isinstance(oidc_process.create_oidc_process_app(environment, host), FastAPI)
+        owner = observed[0]["operations_owner"]
+        assert type(owner) is OperationsService
+        assert (owner.project_id, owner.environment_id) == ("project-1", "wsl-qa")
+        assert owner.alert_page() == {"alerts": [], "next_before_sequence": None}
+        assert supplied == [expected]
+    finally:
+        engine.dispose()
+
+
+def test_process_rejects_non_postgresql_operations_dsn_without_reflection(tmp_path):
+    from apps.api.anvil_api.oidc_process import create_oidc_process_app
+
+    path, _, _ = _trust(tmp_path)
+    environment = _environment(path)
+    environment["ANVIL_DATABASE_URL"] = "mysql://secret@isolated.invalid/anvil"
+    with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$") as error:
+        create_oidc_process_app(environment, lambda **_kwargs: pytest.fail("host must not start"))
+    assert error.value.__cause__ is None and error.value.__context__ is None

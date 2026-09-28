@@ -17,6 +17,7 @@ from packages.api.oidc_runtime_factory import (
 )
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.fastapi_app import mount_frontend
+from packages.observability.service import OperationsService
 from pathlib import Path
 from apps.api.anvil_api.routes.agent_console import create_agent_console_app
 from apps.api.anvil_api.projects_scan import create_projects_scan_router
@@ -68,6 +69,7 @@ def create_configured_oidc_asgi_app(
     transport: httpx.BaseTransport | None = None,
     operational_shell: bool = False,
     frontend_directory: Path | None = None,
+    operations_owner: OperationsService | None = None,
 ) -> FastAPI:
     """Assemble nonsecret server settings before binding trusted OIDC material."""
     allowed = {
@@ -99,6 +101,7 @@ def create_configured_oidc_asgi_app(
         authorization_resolver=authorization_resolver, environment=environment,
         transport=transport, operational_shell=operational_shell,
         frontend_directory=frontend_directory,
+        operations_owner=operations_owner,
     )
 
 
@@ -112,6 +115,7 @@ def create_oidc_asgi_app(
     transport: httpx.BaseTransport | None = None,
     operational_shell: bool = False,
     frontend_directory: Path | None = None,
+    operations_owner: OperationsService | None = None,
 ) -> FastAPI:
     """Bind trusted OIDC inputs to one coordinator before exposing host routes."""
     if not isinstance(environment, Mapping):
@@ -134,6 +138,7 @@ def create_oidc_asgi_app(
         environment=environment, session_factory=session_factory, engine=engine,
         oidc_session_coordinator=coordinator,
         authorization_resolver=authorization_resolver,
+        operations_owner=operations_owner,
     )
     return create_asgi_app(
         runtime, operational_shell=operational_shell, frontend_directory=frontend_directory,

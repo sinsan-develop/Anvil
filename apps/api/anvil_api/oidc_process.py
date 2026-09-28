@@ -18,6 +18,9 @@ from packages.api.fastapi_app import AuthorizationScope
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.oidc_runtime_factory import OidcRuntimeRejected
 from packages.persistence.config import DatabaseSettings
+from packages.persistence.operations_repository import PostgresOperationsRepository
+from packages.observability.projection import OperationsSources
+from packages.observability.service import OperationsService
 
 
 _KEYS = frozenset({
@@ -158,6 +161,13 @@ def create_oidc_process_app(
         engine = create_engine(settings.dsn, pool_pre_ping=True)
         sessions = sessionmaker(bind=engine, expire_on_commit=False)
         scope = inputs.authorization_scope
+        operations_dsn = settings.dsn
+        if operations_dsn.startswith("postgresql+psycopg://"):
+            operations_dsn = "postgresql://" + operations_dsn[len("postgresql+psycopg://"):]
+        operations_owner = OperationsService(
+            scope.project_id, scope.environment_id, OperationsSources(),
+            repository=PostgresOperationsRepository(operations_dsn),
+        )
         return host_factory(
             environment=environment, engine=engine, session_factory=sessions,
             authorization_resolver=lambda _endpoint, _params: scope,
@@ -165,6 +175,7 @@ def create_oidc_process_app(
             pinned_jwks_json=inputs.pinned_jwks_json,
             client_secret=inputs.client_secret, ca_bundle=inputs.ca_bundle,
             operational_shell=environment.get("ANVIL_F15_OPERATIONAL_SHELL") == "1",
+            operations_owner=operations_owner,
         )
     except Exception:
         if engine is not None:
