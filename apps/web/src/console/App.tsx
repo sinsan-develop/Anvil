@@ -1,4 +1,4 @@
-import {Component, useEffect, useState, type ErrorInfo, type ReactNode} from 'react';
+import {Component, useEffect, useRef, useState, type ErrorInfo, type ReactNode} from 'react';
 import {MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
 import {scanProjects} from '../api/projects-client.js';
 import {createProjectsState, reduceProjects} from '../features/projects/projects-state.js';
@@ -9,7 +9,8 @@ type ProjectsState = {status: string; reason: string; repository: {branch: strin
 type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
-type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean} | {status: 'UNAVAILABLE'};
+type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
+  nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'UNAVAILABLE'};
 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
@@ -42,7 +43,7 @@ function validObservedAt(value: unknown): value is string {
     && Number.isFinite(Date.parse(value));
 }
 
-function classifyCriticalAlerts(payload: unknown): CriticalAlertsState {
+function classifyCriticalAlerts(payload: unknown, beforeSequence?: number): CriticalAlertsState {
   if (!record(payload) || !record(payload.data)
     || !Object.keys(payload).every((key) => key === 'data' || key === 'request_id')
     || (Object.hasOwn(payload, 'request_id') && !nonempty(payload.request_id))
@@ -57,6 +58,7 @@ function classifyCriticalAlerts(payload: unknown): CriticalAlertsState {
     if (!record(item) || !exactFields(item, ALERT_FIELDS)
       || !Number.isSafeInteger(item.sequence) || (item.sequence as number) < 1
       || (item.sequence as number) <= previousSequence
+      || (beforeSequence !== undefined && (item.sequence as number) >= beforeSequence)
       || !nonempty(item.alert_id) || ids.has(item.alert_id)
       || (item.level !== 'critical' && item.level !== 'warning')
       || (item.status !== 'open' && item.status !== 'acknowledged' && item.status !== 'resolved')
@@ -76,8 +78,11 @@ function classifyCriticalAlerts(payload: unknown): CriticalAlertsState {
         status: item.status});
     }
   }
-  if (cursor !== null && (alerts.length === 0 || cursor !== alerts[0].sequence)) return ALERTS_UNAVAILABLE;
-  return {status: 'LOADED', alerts: visible, partial: cursor !== null};
+  if (cursor !== null && (alerts.length === 0 || cursor !== alerts[0].sequence
+    || (beforeSequence !== undefined && (cursor as number) >= beforeSequence))) return ALERTS_UNAVAILABLE;
+  if (beforeSequence !== undefined && alerts.length === 0) return ALERTS_UNAVAILABLE;
+  return {status: 'LOADED', alerts: visible.reverse(), partial: cursor !== null,
+    nextBeforeSequence: cursor as number | null, seenAlertIds: [...ids]};
 }
 
 export async function loadCriticalAlerts(signal: AbortSignal, request: typeof fetch = fetch): Promise<CriticalAlertsState> {
@@ -92,7 +97,40 @@ export async function loadCriticalAlerts(signal: AbortSignal, request: typeof fe
   }
 }
 
-export function CriticalAlertsCard({value}: {value: CriticalAlertsState}) {
+export async function loadOlderCriticalAlerts(current: CriticalAlertsState, signal: AbortSignal,
+  request: typeof fetch = fetch): Promise<CriticalAlertsState> {
+  if (current.status !== 'LOADED' || current.nextBeforeSequence === null) return ALERTS_UNAVAILABLE;
+  const beforeSequence = current.nextBeforeSequence;
+  try {
+    const response = await request('/api/operations/alerts', {
+      credentials: 'same-origin', signal,
+      headers: {Accept: 'application/json', 'x-alert-before-sequence': String(beforeSequence)},
+    });
+    if (!response.ok) return ALERTS_UNAVAILABLE;
+    const page = classifyCriticalAlerts(await response.json(), beforeSequence);
+    if (page.status !== 'LOADED' || page.seenAlertIds.some((id) => current.seenAlertIds.includes(id))) {
+      return ALERTS_UNAVAILABLE;
+    }
+    return {status: 'LOADED', alerts: [...current.alerts, ...page.alerts], partial: page.partial,
+      nextBeforeSequence: page.nextBeforeSequence, seenAlertIds: [...current.seenAlertIds, ...page.seenAlertIds]};
+  } catch {
+    return ALERTS_UNAVAILABLE;
+  }
+}
+
+export async function loadOlderCriticalAlertsOnce(current: CriticalAlertsState, signal: AbortSignal,
+  inFlight: {current: boolean}, request: typeof fetch = fetch): Promise<CriticalAlertsState | null> {
+  if (inFlight.current) return null;
+  inFlight.current = true;
+  try {
+    return await loadOlderCriticalAlerts(current, signal, request);
+  } finally {
+    inFlight.current = false;
+  }
+}
+
+export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false}: {value: CriticalAlertsState;
+  onLoadOlder?: () => void; loadingOlder?: boolean}) {
   return <section className="status-card" aria-labelledby="critical-alerts-heading">
     <h3 id="critical-alerts-heading">Critical Alerts</h3>
     <div aria-live="polite" aria-atomic="true">
@@ -107,6 +145,10 @@ export function CriticalAlertsCard({value}: {value: CriticalAlertsState}) {
             <p>원인 · {alert.cause}</p><p>대상 · {alert.related_entity_id}</p>
           </li>)}</ul>}
         {value.partial && <p>과거 페이지 미조회 · 부분 결과</p>}
+        {value.partial && onLoadOlder && <button type="button" disabled={loadingOlder}
+          onClick={onLoadOlder}>과거 저장 경고 더 보기</button>}
+        {loadingOlder && <p>과거 저장 경고를 읽는 중입니다.</p>}
+        {!value.partial && <p>저장된 페이지 조회 종료</p>}
         <p>탐지 실행·경고 완전성·신선도는 확인되지 않았습니다.</p>
       </>}
     </div>
@@ -197,6 +239,9 @@ function Shell({route}: AppProps) {
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_UNAVAILABLE);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_UNAVAILABLE);
+  const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
+  const alertsController = useRef<AbortController | null>(null);
+  const olderRequestInFlight = useRef(false);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
 
   useEffect(() => {
@@ -225,14 +270,31 @@ function Shell({route}: AppProps) {
   useEffect(() => {
     if (currentRoute !== '/') return;
     const controller = new AbortController();
+    alertsController.current = controller;
     void loadProviderRegistration(controller.signal).then((value) => {
       if (!controller.signal.aborted) setProviderRegistration(value);
     });
     void loadCriticalAlerts(controller.signal).then((value) => {
       if (!controller.signal.aborted) setCriticalAlerts(value);
     });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      if (alertsController.current === controller) alertsController.current = null;
+    };
   }, [currentRoute]);
+
+  const loadOlderAlerts = async () => {
+    const controller = alertsController.current;
+    if (!controller || olderRequestInFlight.current || criticalAlerts.status !== 'LOADED'
+      || !criticalAlerts.partial) return;
+    setLoadingOlderAlerts(true);
+    try {
+      const next = await loadOlderCriticalAlertsOnce(criticalAlerts, controller.signal, olderRequestInFlight);
+      if (next && !controller.signal.aborted) setCriticalAlerts(next);
+    } finally {
+      if (!controller.signal.aborted) setLoadingOlderAlerts(false);
+    }
+  };
 
   useEffect(() => {
     if (currentRoute !== '/projects') return;
@@ -279,7 +341,8 @@ function Shell({route}: AppProps) {
         <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
           <p>실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE</p>
         </section>
-        <CriticalAlertsCard value={criticalAlerts}/>
+        <CriticalAlertsCard value={criticalAlerts} onLoadOlder={() => { void loadOlderAlerts(); }}
+          loadingOlder={loadingOlderAlerts}/>
       </main> : currentRoute === '/projects' ? <main className="dashboard">
         <div className="dashboard-heading"><div><p className="header-status">REPOSITORY ONBOARDING</p><h1>Projects</h1></div><p>읽기 전용 scan · {projects.status}</p></div>
         <section className="status-card" aria-labelledby="projects-status-heading"><h2 id="projects-status-heading">Repository 상태</h2><p className={projects.status === 'READY' ? 'status-ready' : 'status-unavailable'}>{projects.status}</p><p>{projects.reason}</p>{projects.repository && <dl className="status-metadata"><div><dt>Branch</dt><dd>{projects.repository.branch}</dd></div><div><dt>HEAD</dt><dd>{projects.repository.head}</dd></div><div><dt>Tracked dirty</dt><dd>{projects.repository.dirtyPaths}</dd></div><div><dt>Untracked</dt><dd>{projects.repository.untrackedPaths}</dd></div></dl>}</section>

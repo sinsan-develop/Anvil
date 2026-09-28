@@ -151,7 +151,7 @@ test('Critical Alerts reads only stored same-origin records and renders active c
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
   assert.match(html, /&lt;script&gt;bad&lt;\/script&gt;/);
   assert.match(html, /&lt;b&gt;unsafe&lt;\/b&gt;.*&lt;run-7&gt;/s);
-  assert.match(html, /미배정.*operator-1/s);
+  assert.match(html, /operator-1.*미배정/s);
   assert.doesNotMatch(html, /<script>|<img|HEALTH_SIGNAL_LATE|private-dedupe-key|private-evidence|REVIEW_WORKER_TAKEOVER|href="\/operations\/workers"/);
 });
 
@@ -206,4 +206,98 @@ test('Dashboard includes Critical Alerts while unrelated operating state stays U
   assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
   assert.doesNotMatch(html, /알람 read model은 아직 연결되지 않았습니다/);
   assert.match(html, /Database.*LLM Providers/s);
+});
+
+test('Critical Alerts loads a second stored page with exclusive cursor and newest-first records', async () => {
+  const firstRows = Array.from({length: 100}, (_, index) =>
+    alertRow({alert_id: `alert-${index + 2}`, sequence: index + 2, code: `CODE_${index + 2}`}));
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse(calls.length === 1
+      ? alertResponse(firstRows, 2)
+      : alertResponse([alertRow({alert_id: 'alert-1', sequence: 1, code: 'CODE_1'})]));
+  };
+  const signal = new AbortController().signal;
+  const first = await consoleApp.loadCriticalAlerts(signal, request);
+  assert.equal(first.status, 'LOADED');
+  assert.equal(first.partial, true);
+  const second = await consoleApp.loadOlderCriticalAlerts(first, signal, request);
+  assert.equal(second.status, 'LOADED');
+  assert.equal(second.partial, false);
+  assert.equal(second.alerts.length, 101);
+  assert.deepEqual(second.alerts.map(({code}) => code),
+    Array.from({length: 101}, (_, index) => `CODE_${101 - index}`));
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(([url]) => url), ['/api/operations/alerts', '/api/operations/alerts']);
+  assert.equal(calls[1][1].credentials, 'same-origin');
+  assert.equal(calls[1][1].signal, signal);
+  assert.equal(calls[1][1].headers['x-alert-before-sequence'], '2');
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: second}));
+  assert.match(html, /저장된 페이지 조회 종료/);
+  assert.doesNotMatch(html, /과거 페이지 미조회|부분 결과/);
+});
+
+test('Critical Alerts exposes an accessible older-page button only while a cursor remains', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow()], 7)));
+  const callback = () => {};
+  const ready = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: first, onLoadOlder: callback, loadingOlder: false}));
+  assert.match(ready, /<button type="button"[^>]*>과거 저장 경고 더 보기<\/button>/);
+  assert.match(ready, /aria-live="polite"/);
+  const loading = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: first, onLoadOlder: callback, loadingOlder: true}));
+  assert.match(loading, /<button type="button"[^>]*disabled=""[^>]*>과거 저장 경고 더 보기<\/button>/);
+  const ended = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow()])));
+  assert.doesNotMatch(renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: ended, onLoadOlder: callback})), /과거 저장 경고 더 보기/);
+});
+
+test('Critical Alerts allows only one in-flight request for the same older cursor', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
+  const guard = {current: false};
+  let release;
+  const waitForResponse = new Promise((resolve) => { release = resolve; });
+  let calls = 0;
+  const request = async () => {
+    calls += 1;
+    await waitForResponse;
+    return jsonResponse(alertResponse([alertRow({alert_id: 'alert-6', sequence: 6})]));
+  };
+  const signal = new AbortController().signal;
+  const pending = consoleApp.loadOlderCriticalAlertsOnce(first, signal, guard, request);
+  assert.equal(guard.current, true);
+  assert.equal(await consoleApp.loadOlderCriticalAlertsOnce(first, signal, guard, request), null);
+  assert.equal(calls, 1);
+  release();
+  assert.equal((await pending).status, 'LOADED');
+  assert.equal(guard.current, false);
+});
+
+test('Critical Alerts drops earlier protected records if an older page is invalid or unavailable', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
+  const responses = [jsonResponse({}, 401), jsonResponse({}, 403), jsonResponse({}, 500),
+    jsonResponse(alertResponse([])),
+    jsonResponse(alertResponse([alertRow({sequence: 7})])),
+    jsonResponse(alertResponse([alertRow({alert_id: 'alert-7', sequence: 6})])),
+    jsonResponse(alertResponse([alertRow({sequence: 6})], 7)),
+    jsonResponse(alertResponse([alertRow({sequence: 6, cause: '<script>secret</script>', extra: true})])),
+    jsonResponse({data: {alerts: null, next_before_sequence: null}})];
+  for (const response of responses) {
+    const next = await consoleApp.loadOlderCriticalAlerts(first, new AbortController().signal,
+      async () => response);
+    assert.deepEqual(next, {status: 'UNAVAILABLE'});
+  }
+  for (const request of [async () => { throw new Error('secret'); },
+    async () => ({ok: true, json: async () => { throw new Error('secret'); }})]) {
+    assert.deepEqual(await consoleApp.loadOlderCriticalAlerts(first,
+      new AbortController().signal, request), {status: 'UNAVAILABLE'});
+  }
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: {status: 'UNAVAILABLE'}}));
+  assert.doesNotMatch(html, /alert-7|secret|<script>/);
 });
