@@ -93,3 +93,11 @@
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.
 - 기존 F-20 R3 lease는 정확한 browser client 5개 파일에만 유효하다. 새로운 제품 경로는 기존 lease 회수와 새 exact-path WorkInstruction·lease 검증 뒤 단일 writer가 수정한다. 브라우저 Network는 아직 미검증이다.
+
+### Task 4 / U-01 실제 수직 완료 준비
+
+- 상위 작업계획서 §13의 U-01 완료조건을 기준으로 한다. 기존 `ACCEPTED_U01_LOCAL_WEB_SCOPED`는 shell의 정직한 미연결 표시만 검증했으며 실제 read model·API/BFF·브라우저·DB의 수락 증거가 아니다. 이를 소급해 `ACCEPTED`로 승격하지 않는다.
+- 현재 React Dashboard는 `/api/health/ready`의 Database 카드만 연결하고 Queue·Worker·Provider·Backend·Artifact와 운영 카드·Next Actions·Critical Alerts는 미연결이다. 기존 `packages/observability/projection.py`는 queue/lease/budget/provider/health/deployment 소스의 읽기 전용 projection을 제공하지만, `packages/api/operations.py`는 alerts/audit 조회만 공개하고 runtime의 `operations_owner`는 선택 주입이다. 실제 host owner·인증된 project/environment scope·persistent source와 브라우저 same-origin 연결이 필수다.
+- 먼저 각 카드/운영 항목의 실제 owner와 source availability를 읽기 전용으로 표로 고정한다. 없는 owner는 `UNAVAILABLE`과 원인을 유지하고 mock·fixture 값을 운영 화면에 내보내지 않는다. 실제 source가 있는 항목만 TDD로 API/BFF·UI에 연결하며 프로젝트/Run/Agent·승인 대기·Gate·baseline 충돌은 다른 메뉴와의 계약/소유권을 확인한다.
+- U-01 제품 mutation 전 R5e epoch9 write→worker lease를 순서대로 회수하고, 변경할 정확한 경로·계약·rollback을 담은 새 WorkInstruction/Invocation 및 dual lease를 G-05로 검증한다. 제품 단일 writer가 로컬에서 RED→GREEN으로 개발하고 Main이 동일 SHA를 push한 뒤 WSL-server 격리 DB/API/실제 브라우저·Network·1920×1080/좁은 화면/키보드 증거를 확인한다. Secret·내부 주소 노출, 미연결의 READY 오표시, 무권한 cross-scope 조회는 거부한다.
+- U-01 독립 Tester의 실제 `ACCEPTED` 전에는 U-02를 시작하지 않는다. F-20의 C30 CRITICAL 원장 사고는 별개로 계속 `OPEN_BLOCKING`; U-01 GREEN만으로 F-20 수락·main 병합·다음 branch·Production을 허용하지 않는다.
