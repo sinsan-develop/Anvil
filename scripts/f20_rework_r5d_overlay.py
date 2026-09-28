@@ -40,6 +40,10 @@ CONTROL_SCOPE = r5c.CONTROL_SCOPE | {
     "docs/evidence/manifests/F-20_R5D_REWORK_START_MANIFEST.json",
     "docs/work_orders/F-20_REWORK_R5E_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_REWORK_R5E_INVOCATION.md",
+    "scripts/f20_rework_r5e_overlay.py",
+    "tests/tooling/test_f20_rework_r5e_projection.py",
+    "docs/progress/progress-handoff-detached-digest-f20-r5e-start.json",
+    "docs/evidence/manifests/F-20_R5E_AUDIT_INCIDENT_START_MANIFEST.json",
 }
 TYPES = r5c.TYPES
 LAST = "evt_f20_1755_package_resumed"
