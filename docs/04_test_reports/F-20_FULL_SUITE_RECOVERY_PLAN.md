@@ -81,6 +81,13 @@
 - 제품 재작업: E09 start/final의 기존 3 RED를 확인하고, `30ca8a2` Git blob의 byte 길이·frozen SHA를 결박하는 fixture와 WI 누락·위조 음성을 추가한다. 현재 WI·checker·Event와 다른 E09 고정 검증은 보존한다. 단일 writer의 exact2 diff·결과를 독립 검토하고 집중/G-05 GREEN 뒤 commit/push한다.
 - 동일 SHA 검증: WSL-server가 지정 원격에서 정확한 commit을 pull하고 필요한 역사 객체만 준비한다. E09·통제 집중 및 전체 suite를 실행하여 pass/fail/skip/warning·로그 해시·잔여 C30·미검증 DB/API/브라우저를 기록한다. 임시 리소스는 정확한 경로 확인 뒤 정리한다. C30 감사와 기능 완료조건이 열려 있으면 R5d가 GREEN이어도 F-20은 미수락으로 유지한다.
 
+### R5e — C30 원장 무결성 사고의 append-only 기록과 수락 차단
+
+- R5d 최종 제품 SHA `e12f74c`의 WSL-server 전체 suite는 `8196 passed, 1 failed, 116 skipped`이며 유일 실패는 C30 `test_no_early_acceptance_or_lease_revoke`의 현재 Event raw prefix와 역사 원문 불일치다. 당시 1334-event prefix는 3,994,695 bytes/SHA-256 `BDB3AA...`; 현재 원장의 같은 prefix는 4,022,935 bytes/SHA-256 `50195E...`다. `14c8c574`의 전체 재직렬화가 최초 원인이고, 그 부모 `97adc5c`의 seq1~1712와 현재 JSON의 의미 차이는 seq1689~1712 정확히 24개다. seq1715의 기존 F-20 수락 증거 무효화는 별개 사건이며 `historical_bytes_mutated=false`라는 당시 기록으로 이번 원장 변조를 덮지 않는다.
+- R5d epoch8 lease를 결과·정리 commit/push 후 write→worker 순서로 회수한다. R5e는 기존 Event contract의 `DEFECT_RECORDED`(severity CRITICAL, blocking true)만 append하여 원본 Git commit·원문/current prefix의 byte 길이와 SHA, 최초 차이, 24개 의미 변경 범위와 현재 미복구 상태를 결박한다. 과거 Event 객체·frozen manifest/hash·Git history를 덮거나 재직렬화하지 않으며 새 event는 현재 seq1761 raw prefix를 정확히 보존한다. 현재 F-20 수락은 무효·release decision `DEFER`·blocking defect 활성으로 유지하고, 자동 acceptance/merge를 금지한다. 기존 계약 안의 사고 기록이지 기능·schema·운영 범위 확장이 아니다.
+- Main이 R5e append-only overlay·G-05 route·상태/manifest/digest, 정확한 WI/Invocation 및 epoch9 worker/write lease를 통제한다. 제품 writer는 exact2(`tests/tooling/test_project_progress.py`, `docs/04_test_reports/F-20_REWORK_R5E_RESULT.md`)만 수정한다. 역사 C30 projection의 조기 수락/lease 거부 검사는 보존하되 현재 원문과 역사 원문을 동일하다고 주장하는 assertion은 단순 skip/xfail이나 frozen fixture 치환으로 없애지 않는다. 현재 원장의 확인된 불일치와 CRITICAL blocking 사고 Event·원본/current hash 결박·현재 수락 차단을 함께 검증하고, Event/사고 기록/acceptance 위조 음성을 추가한다.
+- local RED→GREEN, 독립 read-only 검토, G-05와 C30 집중·다른 역사군 회귀 후 같은 branch commit/push, WSL-server exact SHA 집중·전체 suite를 수행한다. 전체 suite가 GREEN이더라도 이는 알려진 원장 사고가 투명하게 기록·차단됨을 뜻할 뿐 원장 복원이나 F-20 수락·실제 DB/API/브라우저·11개 메뉴 완료를 뜻하지 않는다. 임시 자원은 정확한 대상 검증 뒤 정리한다. 새 branch·main 병합·ysna-server/Production 없음.
+
 ## F-20 완료조건 불일치 확인
 
 - `U-01_DASHBOARD_WORK_INSTRUCTION.md`는 미연결 표시를 완료조건으로 삼고 `U-01_DASHBOARD_REPORT.md`는 `ACCEPTED_U01_LOCAL_WEB_SCOPED`이다. 그러나 상위 작업계획서 §13은 각 메뉴의 실제 service·API/BFF·UI·브라우저·DB 증거와 독립 수락을 요구한다. `apps/web/src/console/App.tsx`의 나머지 9개 메뉴는 현재 공통 `UNAVAILABLE` fallback이다. 하위 scoped 수락을 11개 메뉴 실제 완료로 승격하지 않고 U-01부터 직렬 재작업한다.
