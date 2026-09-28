@@ -1,59 +1,53 @@
-# F-20/U-01 R3a Operations Alerts handoff
+# F-20/U-01 R3b Current Projection handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1798,
-  "last_event_id": "evt_f20_1798_package_resumed",
+  "event_sequence": 1804,
+  "last_event_id": "evt_f20_1804_package_resumed",
   "status": "ACTIVE",
   "current_work_package": "F-20",
-  "active_agent": "developer-primary-f20-u01-r3a",
+  "active_agent": "developer-primary-f20-u01-r3b",
   "worker_lease": {
-    "lease_id": "worker-lease-f20-u01-r3a-20260928r3a01",
-    "actor_id": "developer-primary-f20-u01-r3a",
-    "subject_ref": "F-20/U01-R3A",
+    "lease_id": "worker-lease-f20-u01-r3b-20260928r3b01",
+    "actor_id": "developer-primary-f20-u01-r3b",
+    "subject_ref": "F-20/U01-R3B",
     "status": "ACTIVE",
-    "issued_at": "2026-09-28T14:56:09+00:00",
-    "expires_at": "2026-09-29T02:56:09+00:00",
-    "lease_epoch": 14,
-    "fencing_token": "f20-u01-r3a-execution-fence-epoch-14-20260928r3a01",
-    "execution_fencing_token": "f20-u01-r3a-execution-fence-epoch-14-20260928r3a01",
-    "baseline_git_commit": "e1f6ef284b1f95cd80599a7779d9cd2ae80aa8d8",
-    "dispatch_head": "e1f6ef284b1f95cd80599a7779d9cd2ae80aa8d8",
+    "issued_at": "2026-09-28T17:56:31+00:00",
+    "expires_at": "2026-09-29T05:56:31+00:00",
+    "lease_epoch": 15,
+    "fencing_token": "f20-u01-r3b-execution-fence-epoch-15-20260928r3b01",
+    "execution_fencing_token": "f20-u01-r3b-execution-fence-epoch-15-20260928r3b01",
+    "baseline_git_commit": "3f51dcc015d9db8696cf733e42a5c6aae319f26d",
+    "dispatch_head": "3f51dcc015d9db8696cf733e42a5c6aae319f26d",
     "path_scope": [
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/api/anvil_api/asgi.py",
-      "tests/api/test_oidc_process.py",
-      "tests/api/test_oidc_asgi_binding.py",
-      "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_RESULT.md"
+      "tests/tooling/test_project_progress.py",
+      "docs/04_test_reports/F-20_U01_R3B_CURRENT_PROJECTION_RESULT.md"
     ]
   },
   "write_lease": {
-    "lease_id": "write-lease-f20-u01-r3a-20260928r3a01",
-    "actor_id": "developer-primary-f20-u01-r3a",
-    "subject_ref": "F-20/U01-R3A",
+    "lease_id": "write-lease-f20-u01-r3b-20260928r3b01",
+    "actor_id": "developer-primary-f20-u01-r3b",
+    "subject_ref": "F-20/U01-R3B",
     "status": "ACTIVE",
-    "issued_at": "2026-09-28T14:56:09+00:00",
-    "expires_at": "2026-09-29T02:56:09+00:00",
-    "lease_epoch": 14,
-    "fencing_token": "f20-u01-r3a-write-fence-epoch-14-20260928r3a01",
-    "execution_fencing_token": "f20-u01-r3a-execution-fence-epoch-14-20260928r3a01",
-    "baseline_git_commit": "e1f6ef284b1f95cd80599a7779d9cd2ae80aa8d8",
-    "dispatch_head": "e1f6ef284b1f95cd80599a7779d9cd2ae80aa8d8",
+    "issued_at": "2026-09-28T17:56:31+00:00",
+    "expires_at": "2026-09-29T05:56:31+00:00",
+    "lease_epoch": 15,
+    "fencing_token": "f20-u01-r3b-write-fence-epoch-15-20260928r3b01",
+    "execution_fencing_token": "f20-u01-r3b-execution-fence-epoch-15-20260928r3b01",
+    "baseline_git_commit": "3f51dcc015d9db8696cf733e42a5c6aae319f26d",
+    "dispatch_head": "3f51dcc015d9db8696cf733e42a5c6aae319f26d",
     "path_scope": [
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/api/anvil_api/asgi.py",
-      "tests/api/test_oidc_process.py",
-      "tests/api/test_oidc_asgi_binding.py",
-      "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_RESULT.md"
+      "tests/tooling/test_project_progress.py",
+      "docs/04_test_reports/F-20_U01_R3B_CURRENT_PROJECTION_RESULT.md"
     ],
-    "worker_lease_id": "worker-lease-f20-u01-r3a-20260928r3a01",
-    "write_epoch": 14,
-    "write_fencing_token": "f20-u01-r3a-write-fence-epoch-14-20260928r3a01"
+    "worker_lease_id": "worker-lease-f20-u01-r3b-20260928r3b01",
+    "write_epoch": 15,
+    "write_fencing_token": "f20-u01-r3b-write-fence-epoch-15-20260928r3b01"
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": true,
-  "next_safe_action": "F20_U01_R3A_OPERATIONS_ALERTS_REWORK",
-  "repository_head": "e1f6ef284b1f95cd80599a7779d9cd2ae80aa8d8",
+  "next_safe_action": "F20_U01_R3B_CURRENT_PROJECTION_REWORK",
+  "repository_head": "3f51dcc015d9db8696cf733e42a5c6aae319f26d",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
