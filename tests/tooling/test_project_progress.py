@@ -1186,14 +1186,16 @@ class ProjectProgressContractTests(unittest.TestCase):
         # F-20 uses the append-only raw-byte binding, not the older
         # canonical-JSON digest/manifest shape. The public validator must
         # accept the real files and reject forged in-memory projections.
-        self.assertEqual("F20_R5E_AUDIT_INCIDENT_START", bundle["progress"]["repository"]["projection_mode"])
+        self.assertEqual("F20_U01_R1B_HISTORY_START", bundle["progress"]["repository"]["projection_mode"])
         self.assertFalse(manifest["accepted"])
+        self.assertEqual("OPEN_BLOCKING", bundle["progress"]["f20_c30_event_integrity_incident"]["status"])
+        self.assertEqual("DEFER", bundle["progress"]["scope_revision_binding"]["release_decision"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
         forged_progress = copy.deepcopy(bundle)
         forged_progress["progress"]["next_safe_action"] = "tampered after verification"
         forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
-        self.assertIn("F20_R5E_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
+        self.assertIn("F20_U01_R1B_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
 
         forged_handoff = copy.deepcopy(bundle)
         forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
@@ -1201,7 +1203,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         forged_digest = copy.deepcopy(bundle)
         forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
-        self.assertIn("F20_R5E_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+        self.assertIn("F20_U01_R1B_DIGEST_INVALID", checker.validate_bundle(forged_digest))
 
         forged_manifest = dict(manifest, accepted=True)
         forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
@@ -1211,7 +1213,43 @@ class ProjectProgressContractTests(unittest.TestCase):
             return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
 
         with mock.patch.object(Path, "read_bytes", read_forged_manifest):
-            self.assertIn("F20_R5E_MANIFEST_INVALID", checker.validate_bundle(bundle))
+            self.assertIn("F20_U01_R1B_MANIFEST_INVALID", checker.validate_bundle(bundle))
+
+    def test_f20_r5e_and_u01_r1_history_remains_bound_to_git_blobs(self) -> None:
+        historical = (
+            (
+                "69bfeb0aed7ee239ff8f353a327d21994668e5e0",
+                "F20_R5E_AUDIT_INCIDENT_START",
+                (
+                    ("docs/progress/build-progress.json", "6401f82d36fcf8c49c3c3fe4a734b9f6b276abb4"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-r5e-start.json", "71a98ec9e3fba0d752fbdf9a5b44719ca47cd92f"),
+                    ("docs/evidence/manifests/F-20_R5E_AUDIT_INCIDENT_START_MANIFEST.json", "42acd3edc54460652aaa4be5a263a3efb79603b1"),
+                ),
+            ),
+            (
+                "6cd90bb9ac5b173991dceaa9fd00432bafa4ebdd",
+                "F20_U01_R1_READINESS_START",
+                (
+                    ("docs/progress/build-progress.json", "f027f154efe4a0be15899ebe681634351fb0c678"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-u01-r1-start.json", "ffaf9ed751535b797e60f914dbfb2cbdd78450de"),
+                    ("docs/evidence/manifests/F-20_U01_R1_READINESS_START_MANIFEST.json", "61f927f3f525d69aaa828ff7875cf332ed2128b7"),
+                ),
+            ),
+        )
+        for commit, mode, blobs in historical:
+            with self.subTest(commit=commit):
+                artifacts = {}
+                for path, expected_blob in blobs:
+                    raw = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)
+                    actual_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+                    self.assertEqual(expected_blob, actual_blob, path)
+                    artifacts[path] = json.loads(raw)
+                progress = artifacts["docs/progress/build-progress.json"]
+                self.assertEqual(mode, progress["repository"]["projection_mode"])
+                self.assertIn(progress["current_progress_evidence_ref"]["path"], artifacts)
+                manifest_path = progress["current_progress_evidence_ref"]["manifest_path"]
+                self.assertIn(manifest_path, artifacts)
+                self.assertFalse(artifacts[manifest_path]["accepted"])
 
     def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
