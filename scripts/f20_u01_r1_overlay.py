@@ -32,6 +32,8 @@ CONTROL_SCOPE = r5e.CONTROL_SCOPE | {
     "tests/tooling/test_f20_u01_r1_projection.py",
     "docs/work_orders/F-20_U01_R1B_HISTORY_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_U01_R1B_HISTORY_INVOCATION.md",
+    "scripts/f20_u01_r1b_overlay.py",
+    "tests/tooling/test_f20_u01_r1b_projection.py",
 }
 START = 1768
 TYPES = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORK_INSTRUCTION_ISSUED",
