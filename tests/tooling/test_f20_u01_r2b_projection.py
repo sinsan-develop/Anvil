@@ -141,8 +141,12 @@ def test_r2b_allows_only_named_r3a_control_preparation(tmp_path):
         "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_BINDING_PLAN.md",
         "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_WORK_INSTRUCTION.md",
         "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_INVOCATION.md",
+        "scripts/f20_u01_r3a_overlay.py",
+        "tests/tooling/test_f20_u01_r3a_projection.py",
     ):
         (root / relative).write_text("R3a draft", encoding="utf-8")
+    checker = root / "scripts/check_project_progress.py"
+    checker.write_bytes(checker.read_bytes() + b"\n")
     assert overlay.collect_git(root, _bundle(root)["progress"]) == []
     (root / "docs/04_test_reports/unrelated-plan.md").write_text("unrelated", encoding="utf-8")
     assert "F20_U01_R2B_GIT_INVALID" in overlay.collect_git(root, _bundle(root)["progress"])

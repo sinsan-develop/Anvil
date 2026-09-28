@@ -32,7 +32,10 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_WORK_INSTRUCTION.md",
                  "docs/work_orders/F-20_U01_R3A_OPERATIONS_ALERTS_INVOCATION.md",
                  "scripts/f20_u01_r2b_overlay.py",
-                 "tests/tooling/test_f20_u01_r2b_projection.py"}
+                 "tests/tooling/test_f20_u01_r2b_projection.py",
+                 "scripts/f20_u01_r3a_overlay.py",
+                 "scripts/check_project_progress.py",
+                 "tests/tooling/test_f20_u01_r3a_projection.py"}
 START = 1786
 END = START + len(prior.prior.TYPES)
 REASON = "F20_U01_R2_DONE_R2B_CURRENT_HISTORY"
