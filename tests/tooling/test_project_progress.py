@@ -1186,7 +1186,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         # F-20 uses the append-only raw-byte binding, not the older
         # canonical-JSON digest/manifest shape. The public validator must
         # accept the real files and reject forged in-memory projections.
-        self.assertEqual("F20_U01_R1B_HISTORY_START", bundle["progress"]["repository"]["projection_mode"])
+        self.assertEqual("F20_U01_R2B_CURRENT_HISTORY_START", bundle["progress"]["repository"]["projection_mode"])
         self.assertFalse(manifest["accepted"])
         self.assertEqual("OPEN_BLOCKING", bundle["progress"]["f20_c30_event_integrity_incident"]["status"])
         self.assertEqual("DEFER", bundle["progress"]["scope_revision_binding"]["release_decision"])
@@ -1195,7 +1195,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         forged_progress = copy.deepcopy(bundle)
         forged_progress["progress"]["next_safe_action"] = "tampered after verification"
         forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
-        self.assertIn("F20_U01_R1B_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
+        self.assertIn("F20_U01_R2B_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
 
         forged_handoff = copy.deepcopy(bundle)
         forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
@@ -1203,7 +1203,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         forged_digest = copy.deepcopy(bundle)
         forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
-        self.assertIn("F20_U01_R1B_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+        self.assertIn("F20_U01_R2B_DIGEST_INVALID", checker.validate_bundle(forged_digest))
 
         forged_manifest = dict(manifest, accepted=True)
         forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
@@ -1213,9 +1213,9 @@ class ProjectProgressContractTests(unittest.TestCase):
             return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
 
         with mock.patch.object(Path, "read_bytes", read_forged_manifest):
-            self.assertIn("F20_U01_R1B_MANIFEST_INVALID", checker.validate_bundle(bundle))
+            self.assertIn("F20_U01_R2B_MANIFEST_INVALID", checker.validate_bundle(bundle))
 
-    def test_f20_r5e_and_u01_r1_history_remains_bound_to_git_blobs(self) -> None:
+    def test_f20_r5e_and_u01_history_remains_bound_to_git_blobs(self) -> None:
         historical = (
             (
                 "69bfeb0aed7ee239ff8f353a327d21994668e5e0",
@@ -1235,6 +1235,24 @@ class ProjectProgressContractTests(unittest.TestCase):
                     ("docs/evidence/manifests/F-20_U01_R1_READINESS_START_MANIFEST.json", "61f927f3f525d69aaa828ff7875cf332ed2128b7"),
                 ),
             ),
+            (
+                "1126444733f2dabe0525d5e6be250b079ace1042",
+                "F20_U01_R1B_HISTORY_START",
+                (
+                    ("docs/progress/build-progress.json", "dc60ee5b4ab183a45ccb837c1ca0860acaf5edc2"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-u01-r1b-start.json", "a833830b0f7a4f4e199ad7a0951800b2d3a061e9"),
+                    ("docs/evidence/manifests/F-20_U01_R1B_HISTORY_START_MANIFEST.json", "4738af7b0a9d5e0f15cecca0cc01b05a6720297c"),
+                ),
+            ),
+            (
+                "214cd61740c84971a71b6e1178047eec40322d52",
+                "F20_U01_R2_PROVIDER_STATUS_START",
+                (
+                    ("docs/progress/build-progress.json", "76273188600e6167e830223c95f8f43e0a7df310"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-u01-r2-start.json", "2c05a09566ddb10623d4b8804e6891e21618356d"),
+                    ("docs/evidence/manifests/F-20_U01_R2_PROVIDER_STATUS_START_MANIFEST.json", "018ece6cb861754d79c5e2512825fe0906a5cbda"),
+                ),
+            ),
         )
         for commit, mode, blobs in historical:
             with self.subTest(commit=commit):
@@ -1250,6 +1268,20 @@ class ProjectProgressContractTests(unittest.TestCase):
                 manifest_path = progress["current_progress_evidence_ref"]["manifest_path"]
                 self.assertIn(manifest_path, artifacts)
                 self.assertFalse(artifacts[manifest_path]["accepted"])
+
+        historical_work = (
+            ("1126444733f2dabe0525d5e6be250b079ace1042", "docs/work_orders/F-20_U01_R1B_HISTORY_WORK_INSTRUCTION.md", "0124e614ad01cb11c8917488aba715a69875d859"),
+            ("1126444733f2dabe0525d5e6be250b079ace1042", "docs/work_orders/F-20_U01_R1B_HISTORY_INVOCATION.md", "e37f6704bb59492bce8eef1138e52c21ea771b76"),
+            ("edf0fcc5505e8a74bc48c93fa1b67641e4146492", "docs/04_test_reports/F-20_U01_R1B_HISTORY_RESULT.md", "e248054880aaa3ac116f11da953caeb92085f0e3"),
+            ("214cd61740c84971a71b6e1178047eec40322d52", "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_WORK_INSTRUCTION.md", "d432073760f9cecf7086b1d93ef916737e5e76fb"),
+            ("214cd61740c84971a71b6e1178047eec40322d52", "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_INVOCATION.md", "baa671537ff4cb34580d1a64a9b76011ab9e1104"),
+            ("da86090f72645c4c6ec7812618cbae5249bd8a69", "docs/04_test_reports/F-20_U01_R2_PROVIDER_STATUS_RESULT.md", "0dc43587caea6ca352a7d289efa7e7bec2616cdb"),
+        )
+        for commit, path, expected_blob in historical_work:
+            with self.subTest(commit=commit, path=path):
+                raw = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)
+                actual_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+                self.assertEqual(expected_blob, actual_blob, path)
 
     def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
