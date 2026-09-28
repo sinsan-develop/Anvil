@@ -101,3 +101,18 @@
 - 먼저 각 카드/운영 항목의 실제 owner와 source availability를 읽기 전용으로 표로 고정한다. 없는 owner는 `UNAVAILABLE`과 원인을 유지하고 mock·fixture 값을 운영 화면에 내보내지 않는다. 실제 source가 있는 항목만 TDD로 API/BFF·UI에 연결하며 프로젝트/Run/Agent·승인 대기·Gate·baseline 충돌은 다른 메뉴와의 계약/소유권을 확인한다.
 - U-01 제품 mutation 전 R5e epoch9 write→worker lease를 순서대로 회수하고, 변경할 정확한 경로·계약·rollback을 담은 새 WorkInstruction/Invocation 및 dual lease를 G-05로 검증한다. 제품 단일 writer가 로컬에서 RED→GREEN으로 개발하고 Main이 동일 SHA를 push한 뒤 WSL-server 격리 DB/API/실제 브라우저·Network·1920×1080/좁은 화면/키보드 증거를 확인한다. Secret·내부 주소 노출, 미연결의 READY 오표시, 무권한 cross-scope 조회는 거부한다.
 - U-01 독립 Tester의 실제 `ACCEPTED` 전에는 U-02를 시작하지 않는다. F-20의 C30 CRITICAL 원장 사고는 별개로 계속 `OPEN_BLOCKING`; U-01 GREEN만으로 F-20 수락·main 병합·다음 branch·Production을 허용하지 않는다.
+
+#### U-01 실제 source/owner 감사와 구현 경계 (2026-09-28)
+
+| 표시 항목 | 현재 확인한 소유자·경로 | 현재 판정·U-01 경계 |
+| --- | --- | --- |
+| Database | ASGI `GET /api/health/ready`가 DB `SELECT 1`·`alembic_version`·runtime 참조를 검사한다. React `classifyReadiness`는 `0016_operations_recovery`만 READY로 인정한다. | OIDC 호스트의 요구 head는 `0019_oidc_sessions`이므로 정상 준비 응답도 Dashboard가 `NOT CONNECTED`로 잘못 분류할 수 있다. 브라우저 응답의 실제 상태·head와 호스트 모드를 일치시켜 검증한다. readiness는 DB 외 항목의 건강 증거가 아니다. |
+| Queue·Worker·Budget | `OperationsSources`는 queue/lease/budget 객체와 ID 목록을 **호스트가 공급**해야 투영한다. `project_operations`의 목록은 공급된 ID만 읽는다. | 현재 ASGI는 이 source를 생성·주입하지 않는다. 빈 목록은 실제 0건 증거가 아니다. persistent scoped 조회/관측 소유자를 확인하고 없으면 `UNAVAILABLE`로 유지한다. |
+| Provider | `GET /api/providers`는 환경변수의 credential **존재**만 표시하고 건강은 `NOT_CHECKED`다. `OperationsSources.provider`도 호스트 주입형이다. | credential 등록을 live Provider 건강으로 승격하지 않는다. 안전한 상태 조회와 실제 probe의 증거를 분리한다. 키 문제는 별도 건강 실패로 기록하되 나머지 검증을 멈추지 않는다. |
+| Backend·Artifact Store·환경 | `OperationsSources.health_signals`가 비어 있으면 여섯 health component는 `UNKNOWN`으로 투영된다. ASGI readiness는 이 구성요소들을 검사하지 않는다. | host-observed timestamp·TTL·evidence가 있는 source만 연결한다. 미관측·만료·오류는 READY 금지. |
+| Alerts·Next Actions | `OperationsService.snapshot()`은 persistent audit repository의 alerts와 다음 행동을 계산한다. 현재 `OperationsPort`는 alerts/audit 두 조회만 노출하고 `create_runtime_app`의 `operations_owner`는 선택 주입이며 ASGI는 주입하지 않는다. | 인증된 project/environment scope를 결박한 실제 owner와 additive read API가 필요하다. GET은 detector를 실행하거나 audit를 쓰지 않는다. 미구성은 명시적으로 unavailable. |
+| Project·Run·Agent·승인 대기·Gate·baseline | `/api/projects/scan`은 server path의 repository scan이며 project/environment 권한 scope를 가진 Dashboard read model이 아니다. 기존 F-13 projection에도 이 항목들은 없다. | 기존 Project/Run/Agent/approval/Gate의 durable owner·권한 계약을 식별한 뒤 별도 수직 slice로 잇는다. scan 결과를 임의 project의 상태로 재사용하거나 fixture를 실데이터로 표시하지 않는다. |
+
+- 선택한 방향: 기존 F-13 `OperationsService`/projection을 인증된 read-only Dashboard 소유자의 입력으로 재사용하고, 없는 실제 source는 이유와 관측 시각을 동반해 fail-closed 표시한다. 새 독립 DB 질의 계층을 중복 구축하거나 브라우저가 여러 내부 endpoint를 무권한 fan-out하는 방식은 채택하지 않는다. 이는 승인된 U-01 service·API/BFF·UI의 내부 구현 순서이며 별도 기능을 추가하지 않는다.
+- 첫 제품 slice 전에 계약을 확정할 것: (1) 기존 canonical API registry의 추가 읽기 route 및 scope/permission, (2) OIDC·WSL acceptance 호스트의 실제 owner binding, (3) DB/queue/worker/provider/backend/artifact 각 source의 관측·stale/unknown 정책, (4) Project/Run/Agent/승인/Gate/baseline durable owner. 계약/권한이 상위 승인 범위를 바꾼다면 그 항목은 구현하지 않고 정확히 분리 보고한다.
+- 음성 검증: 타 project/environment 403, 미인증 401, owner 부재·source gap·stale 상태의 READY 오표시 0, secret/fencing token/내부 주소 노출 0, GET audit mutation 0. WSL-server에는 local push의 exact SHA를 pull한 격리 프로세스·DB·브라우저만 사용하고 테스트 종료 후 정리한다. C30 원장 사건은 이 slice와 독립적으로 계속 차단한다.
