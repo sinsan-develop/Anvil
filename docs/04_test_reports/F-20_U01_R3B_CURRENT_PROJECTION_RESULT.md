@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — 지정 exact2의 로컬 테스트 보정과 기본 검증을 마쳤다. Main 독립 검토, 새 commit의 WSL-server 동일 SHA 전체 suite, F-20/U-01 수락은 미완료다. C30 사고는 `OPEN_BLOCKING`, release 결정은 `DEFER`이며 manifest `accepted=false`를 유지한다.
+`COMPLETED` — 지정 exact2의 로컬 테스트 보정과 기본 검증을 마쳤다. Main은 제품 commit `98b8d0b31d884cf1517ce039d73d7f6b7a7bae2a`의 WSL-server 동일 SHA focused·G-05·정식 전체 suite PASS를 전달했다. 이는 F-20/U-01 수락이나 실제 UI·브라우저·운영 실측이 아니다. C30 사고는 `OPEN_BLOCKING`, release 결정은 `DEFER`이며 manifest `accepted=false`를 유지한다.
 
 ## 기준선과 권한
 
@@ -31,9 +31,10 @@
 - 도구 확인 중 `python`은 명령 없음(exit 1), `py -3.12`는 설치 Python 없음(exit 1), bundled Python의 `-m pytest`는 module 없음(exit 1)이어서 worktree `.venv` Python으로 검증했다. 이들은 제품 테스트 실패로 집계하지 않는다.
 - 테스트 base는 지정된 `runtime/pytest-r3b-developer-{red,green,regression}`만 사용했다. red/green은 생성되지 않았고 regression의 실경로가 현재 worktree 내부, directory 자체 reparse 아님, 내부 reparse 3개가 모두 이 base 내부 대상임을 확인했다. 해당 base만 삭제해 세 경로 잔류 0을 확인했다. pytest 세션은 종료됐다. 별도 관측된 Anaconda Python PID 2개는 이 실행의 `.venv` 프로세스가 아니며 CIM 명령행 조회는 ACL로 거부되어 소유 업무는 확인하지 못했다.
 - Main 검토 후 재실행에서도 green base는 생성되지 않았고 regression base의 내부 reparse 3개를 다시 확인해 정확한 경로만 삭제했다. 세 지정 base 잔류 0, 실행 pytest 프로세스 0을 확인했다.
+- Main 후속 WSL-server 실측 인계: 제품 SHA `98b8d0b31d884cf1517ce039d73d7f6b7a7bae2a`에서 focused `6 passed in 13.11s`(exit 0), G-05 `PASS sequence=1804`(exit 0), 정식 전체 suite `8239 passed, 117 skipped, 14 warnings in 2032.40s`(exit 0). 전체 로그는 11,489 bytes, SHA-256 `77bbf574e4ae85c3a4d64bc2bb103221d8c3b1233490ac73ec58726c762e1514`였다. Main은 Git clean, bash/pytest PID 종료를 확인했다. 전용 focused/full pytest bases와 full log/exit는 경로·내부 symlink 277개/외부 0개·로그 hash/exit 확인 후 정확한 대상만 삭제해 잔류 0으로 보고했다. 이 항목은 Main의 실제 WSL 검증 결과를 인계받아 기록한 것이며 Developer가 WSL에서 재실행하지 않았다.
 
 ## 미검증·인계
 
-- 새 exact2 변경의 WSL-server 동일 SHA, 전체 suite, 실제 DB/API/UI/브라우저/운영·Production은 실행하지 않았다. 이전 `fdaa66f` WSL 전체 `1 failed, 8234 passed, 117 skipped, 14 warnings`는 이번 변경의 검증 결과가 아니다.
-- Main이 diff와 정본 결박을 독립 검토하고 안전한 commit/push 후, WSL-server에서 동일 SHA 전체 suite를 다시 실행해야 한다. 실패·skip·warning을 그대로 기록하고 F-20/U-01 인수를 별도로 판정한다.
-- rollback은 Main이 이 exact2 diff만 정상 후속 Git commit으로 되돌리는 것이다. 이 Subagent는 commit/push/merge·배포를 수행하지 않았다. progress/HANDOFF와 Main 소유 `docs/WORK_STATUS.md` 갱신은 Main에 인계한다.
+- Main의 WSL 동일 SHA 전체 suite PASS에도 `117 skipped`와 `14 warnings`가 남는다. 실제 DB/API/UI/브라우저/운영·Production 수락 증거로 승격하지 않는다. C30 `OPEN_BLOCKING` 복구, U-01/F-20 acceptance 및 계획상 11개 메뉴 실제 검증은 별도 판정이 필요하다. 이전 `fdaa66f` WSL 전체 `1 failed, 8234 passed, 117 skipped, 14 warnings`는 이번 제품 SHA의 결과가 아니다.
+- Main이 제품 exact2를 포함한 `98b8d0b3` commit과 후속 PID 기록 `721ef201cc56df35fa3586564133621b1535798b`를 현재 branch에 반영했다. 이 Subagent는 이번 결과보고서 후속 보완 외에 테스트 코드를 수정하지 않았고 commit/push/merge·배포를 수행하지 않았다. Main 소유 `docs/WORK_STATUS.md`는 건드리지 않았다.
+- rollback은 Main이 제품 exact2 변경만 정상 후속 Git commit으로 되돌리는 것이다. `98b8d0b3`에는 Main 소유 WORK_STATUS 기록도 포함되므로 전체 commit을 무검토로 되돌리지 않는다.
