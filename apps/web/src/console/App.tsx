@@ -6,8 +6,53 @@ import {createProjectsState, reduceProjects} from '../features/projects/projects
 type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
 type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
+type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null};
 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
+const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
+const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
+
+function classifyProviderRegistration(payload: unknown): ProviderRegistration {
+  if (typeof payload !== 'object' || payload === null || !('data' in payload)) return PROVIDER_UNAVAILABLE;
+  const rows = payload.data;
+  if (!Array.isArray(rows) || rows.length !== PROVIDER_IDS.size) return PROVIDER_UNAVAILABLE;
+  const seen = new Set<string>();
+  let registered = 0;
+  for (const row of rows) {
+    if (typeof row !== 'object' || row === null) return PROVIDER_UNAVAILABLE;
+    const {provider_id, credential_status, health_status} = row as Record<string, unknown>;
+    if (typeof provider_id !== 'string' || !PROVIDER_IDS.has(provider_id) || seen.has(provider_id)
+      || (credential_status !== 'REGISTERED' && credential_status !== 'MISSING')
+      || health_status !== 'NOT_CHECKED') return PROVIDER_UNAVAILABLE;
+    seen.add(provider_id);
+    if (credential_status === 'REGISTERED') registered += 1;
+  }
+  return {status: 'VALID', registered};
+}
+
+export async function loadProviderRegistration(signal: AbortSignal, request: typeof fetch = fetch): Promise<ProviderRegistration> {
+  try {
+    const response = await request('/api/providers', {
+      credentials: 'same-origin', signal, headers: {Accept: 'application/json'},
+    });
+    if (!response.ok) return PROVIDER_UNAVAILABLE;
+    return classifyProviderRegistration(await response.json());
+  } catch {
+    return PROVIDER_UNAVAILABLE;
+  }
+}
+
+export function ProviderHealthCard({value}: {value: ProviderRegistration}) {
+  return <article className="status-card"><h3>LLM Providers</h3>
+    <div aria-live="polite" aria-atomic="true">
+      {value.status === 'VALID' ? <>
+        <p>등록 {value.registered} / 9</p>
+        <p>연결 상태 · NOT CHECKED</p>
+      </> : <><p className="status-unavailable">UNAVAILABLE</p>
+        <p>연결된 상태 정보가 없습니다.</p></>}
+    </div>
+  </article>;
+}
 
 export function classifyReadiness(value: unknown): Readiness {
   if (typeof value !== 'object' || value === null) return 'NOT CONNECTED';
@@ -49,6 +94,7 @@ function Shell({route}: AppProps) {
   const [readinessPayload, setReadinessPayload] = useState<unknown>(null);
   const [checked, setChecked] = useState('NOT REQUESTED');
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
+  const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_UNAVAILABLE);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
 
   useEffect(() => {
@@ -73,6 +119,15 @@ function Shell({route}: AppProps) {
     void read();
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (currentRoute !== '/') return;
+    const controller = new AbortController();
+    void loadProviderRegistration(controller.signal).then((value) => {
+      if (!controller.signal.aborted) setProviderRegistration(value);
+    });
+    return () => controller.abort();
+  }, [currentRoute]);
 
   useEffect(() => {
     if (currentRoute !== '/projects') return;
@@ -108,6 +163,7 @@ function Shell({route}: AppProps) {
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
               if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}/>;
+              if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration}/>;
               return <article className="status-card" key={name}><h3>{name}</h3>
                 <p className="status-unavailable">UNAVAILABLE</p>
                 <p>연결된 상태 정보가 없습니다.</p>
