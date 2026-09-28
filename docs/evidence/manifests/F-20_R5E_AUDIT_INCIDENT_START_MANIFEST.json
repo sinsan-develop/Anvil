@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1768,
+  "accepted": false,
+  "projection_mode": "F20_R5E_AUDIT_INCIDENT_START",
+  "previous_event_sequence": 1761,
+  "product_write_scope": [
+    "docs/04_test_reports/F-20_REWORK_R5E_RESULT.md",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "predecessor_commit": "55c7730071e6bd99064b4bceb57d1c6e59353ae0",
+  "predecessor_events_sha256": "2E5EE94417C76975999C290CC296CD9E20A995ADE0A4EDDDC502C17CC482BFDC",
+  "predecessor_report_sha256": "B55468C5D895FE35B485D676DB36B92571F6FD836CCD1254FF10B73BE6021019",
+  "work_instruction_sha256": "18E727C18AFCC6084403ADC232054B04EC94605A89C1054232EF00BDDF4D9F31",
+  "invocation_sha256": "24CE31A6163B88C4CA9747568EA456B8E0359E054417A00DF48144B3E3EAB265",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
