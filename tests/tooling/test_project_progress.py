@@ -233,9 +233,56 @@ class C30CanonicalReconciliationTests(unittest.TestCase):
                         <= set(checker.c30_canonical_paths()))
         self.assertIn("docs/WORK_STATUS.md", checker.c30_canonical_paths())
         self.assertTrue(p["active_work_instruction"]["artifact_path"].endswith("_R2.md"))
+        # The historical C30 projection stays frozen. The live ledger's
+        # different raw bytes are an OPEN_BLOCKING incident, not repaired history.
         actual = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
-        self.assertEqual(checker.raw_event_object_prefix_bytes(actual, 1334),
-                         checker.raw_event_object_prefix_bytes(generated[checker.BUNDLE_PATHS["events"]], 1334))
+        current_prefix = checker.raw_event_object_prefix_bytes(actual, 1334)
+        historical_prefix = checker.raw_event_object_prefix_bytes(
+            generated[checker.BUNDLE_PATHS["events"]], 1334
+        )
+        self.assertEqual(
+            (3994695, "BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B"),
+            (len(historical_prefix), hashlib.sha256(historical_prefix).hexdigest().upper()),
+        )
+        self.assertEqual(
+            (4022935, "50195E96FCD9EEA4357DEAD1554AC20ADF3AFF81E916376A10DCA9EA2958DDBC"),
+            (len(current_prefix), hashlib.sha256(current_prefix).hexdigest().upper()),
+        )
+        self.assertNotEqual(current_prefix, historical_prefix)
+        self.assertEqual(
+            3868706,
+            next(index for index, (old, new) in enumerate(zip(historical_prefix, current_prefix))
+                 if old != new),
+        )
+        live = checker.load_bundle(ROOT)
+        incident = live["events"]["events"][1763]
+        self.assertEqual((1764, "evt_f20_1764_defect_recorded", "DEFECT_RECORDED"),
+                         (incident["sequence"], incident["event_id"], incident["event_type"]))
+        self.assertEqual(
+            ("CRITICAL", True, "OPEN_BLOCKING", 3994695, 4022935, 3868706),
+            tuple(incident["details"][field] for field in (
+                "severity", "blocking", "status", "historical_prefix_bytes",
+                "current_prefix_bytes", "first_raw_difference_offset")),
+        )
+        self.assertEqual(
+            ("BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B",
+             "50195E96FCD9EEA4357DEAD1554AC20ADF3AFF81E916376A10DCA9EA2958DDBC",
+             "14c8c5743890c4a8a58686b9430144a55b1317e7",
+             list(range(1689, 1713)), [1714]),
+            tuple(incident["details"][field] for field in (
+                "historical_prefix_sha256", "current_prefix_sha256", "cause_commit",
+                "semantic_changed_sequences", "post_cause_changed_sequences")),
+        )
+        self.assertEqual(
+            ("OPEN_BLOCKING", "CRITICAL", True, "DEFER", "REWORK_IN_PROGRESS"),
+            (live["progress"]["f20_c30_event_integrity_incident"]["status"],
+             live["progress"]["f20_c30_event_integrity_incident"]["severity"],
+             live["progress"]["f20_c30_event_integrity_incident"]["blocking"],
+             live["progress"]["scope_revision_binding"]["release_decision"],
+             live["progress"]["f20_overall_status"]),
+        )
+        self.assertNotIn("F-20", live["progress"]["completed_packages"])
+        self.assertEqual([], checker.validate_bundle(live))
         events = json.loads(generated[checker.BUNDLE_PATHS["events"]])["events"]
         self.assertEqual(["HUMAN_OVERRIDE_TAKEOVER_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "LEASE_TAKEOVER",
                           "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
@@ -250,6 +297,44 @@ class C30CanonicalReconciliationTests(unittest.TestCase):
         self.assertEqual(approval["approval_id"], events[1337]["details"]["human_override_approval_id"])
         with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
             checker.c30_canonical_projection_from_root(ROOT, completion={"accepted": True})
+
+    def test_live_c30_incident_rejects_forged_event_and_source(self):
+        checker = _load_checker_or_none()
+        from scripts import f20_rework_r5e_overlay as incident_overlay
+
+        raw = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
+        self.assertTrue(incident_overlay._incident_source(ROOT, raw))
+        bundle = checker.load_bundle(ROOT)
+        for mutation in ("missing", "forged"):
+            candidate = copy.deepcopy(bundle)
+            if mutation == "missing":
+                candidate["events"]["events"].pop(1763)
+            else:
+                candidate["events"]["events"][1763]["details"]["blocking"] = False
+            with self.subTest(event=mutation):
+                self.assertNotEqual([], checker.validate_bundle(candidate))
+
+        cause_path = f"{incident_overlay.DEFECT['cause_commit']}:{incident_overlay.EVENTS}"
+        original_git = incident_overlay._git
+
+        def missing_cause(root, *args):
+            if args == ("show", cause_path):
+                raise subprocess.CalledProcessError(128, ["git", *args])
+            return original_git(root, *args)
+
+        with mock.patch.object(incident_overlay, "_git", side_effect=missing_cause):
+            self.assertFalse(incident_overlay._incident_source(ROOT, raw))
+
+        def forged_cause(root, *args):
+            source = original_git(root, *args)
+            if args == ("show", cause_path):
+                return source.replace(b'"event_id":', b'"event_id" :', 1)
+            return source
+
+        with mock.patch.object(incident_overlay, "_git", side_effect=forged_cause):
+            self.assertFalse(incident_overlay._incident_source(ROOT, raw))
+        self.assertFalse(incident_overlay._incident_source(
+            ROOT, raw.replace(b'"event_id":', b'"event_id" :', 1)))
 
     def test_revision_is_bound_to_original_issued_instruction(self):
         checker = _load_checker_or_none()
@@ -1101,14 +1186,14 @@ class ProjectProgressContractTests(unittest.TestCase):
         # F-20 uses the append-only raw-byte binding, not the older
         # canonical-JSON digest/manifest shape. The public validator must
         # accept the real files and reject forged in-memory projections.
-        self.assertEqual("F20_R5D_REWORK_START", bundle["progress"]["repository"]["projection_mode"])
+        self.assertEqual("F20_R5E_AUDIT_INCIDENT_START", bundle["progress"]["repository"]["projection_mode"])
         self.assertFalse(manifest["accepted"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
         forged_progress = copy.deepcopy(bundle)
         forged_progress["progress"]["next_safe_action"] = "tampered after verification"
         forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
-        self.assertIn("F20_R5D_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
+        self.assertIn("F20_R5E_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
 
         forged_handoff = copy.deepcopy(bundle)
         forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
@@ -1116,7 +1201,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         forged_digest = copy.deepcopy(bundle)
         forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
-        self.assertIn("F20_R5D_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+        self.assertIn("F20_R5E_DIGEST_INVALID", checker.validate_bundle(forged_digest))
 
         forged_manifest = dict(manifest, accepted=True)
         forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
@@ -1126,7 +1211,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
 
         with mock.patch.object(Path, "read_bytes", read_forged_manifest):
-            self.assertIn("F20_R5D_MANIFEST_INVALID", checker.validate_bundle(bundle))
+            self.assertIn("F20_R5E_MANIFEST_INVALID", checker.validate_bundle(bundle))
 
     def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
