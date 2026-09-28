@@ -1,4 +1,4 @@
-"""Append-only U01 R1b history-test handoff; C30 remains blocking."""
+"""Append-only U01 R2 Provider Dashboard handoff; C30 remains blocking."""
 
 from __future__ import annotations
 
@@ -10,42 +10,36 @@ import re
 import subprocess
 
 try:
-    from scripts import f20_u01_r1_overlay as prior
+    from scripts import f20_u01_r1b_overlay as prior
 except ModuleNotFoundError:  # direct G-05 invocation
-    import f20_u01_r1_overlay as prior
+    import f20_u01_r1b_overlay as prior
 
 
 r1 = prior.r1
-MODE = "F20_U01_R1B_HISTORY_START"
-ACTOR = "developer-primary-f20-u01-r1b"
-WI = "docs/work_orders/F-20_U01_R1B_HISTORY_WORK_INSTRUCTION.md"
-INVOCATION = "docs/work_orders/F-20_U01_R1B_HISTORY_INVOCATION.md"
-REPORT = "docs/04_test_reports/F-20_U01_R1_READINESS_RESULT.md"
-DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r1b-start.json"
-MANIFEST = "docs/evidence/manifests/F-20_U01_R1B_HISTORY_START_MANIFEST.json"
+MODE = "F20_U01_R2_PROVIDER_STATUS_START"
+ACTOR = "developer-primary-f20-u01-r2"
+WI = "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_WORK_INSTRUCTION.md"
+INVOCATION = "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_INVOCATION.md"
+REPORT = "docs/04_test_reports/F-20_U01_R1B_HISTORY_RESULT.md"
+DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r2-start.json"
+MANIFEST = "docs/evidence/manifests/F-20_U01_R2_PROVIDER_STATUS_START_MANIFEST.json"
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
-SCOPE = ["tests/tooling/test_project_progress.py",
-         "docs/04_test_reports/F-20_U01_R1B_HISTORY_RESULT.md"]
-CONTROL_SCOPE = prior.CONTROL_SCOPE | {
-    DIGEST, MANIFEST, "scripts/f20_u01_r1b_overlay.py",
-    "tests/tooling/test_f20_u01_r1b_projection.py",
-    "scripts/check_project_progress.py", "docs/WORK_STATUS.md",
-    "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_WORK_INSTRUCTION.md",
-    "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_INVOCATION.md",
-    "scripts/f20_u01_r2_overlay.py",
-    "tests/tooling/test_f20_u01_r2_projection.py",
-}
-START = 1774
-TYPES = prior.TYPES
-END = START + len(TYPES)
-REASON = "F20_U01_R1_READINESS_DONE_R1B_HISTORY_TEST"
-STEP = "F-20_U01_R1B_HISTORY_START"
-SUBJECT = "F-20/U01-R1B"
-INSTRUCTION_ID = "WI-F-20-U01-R1B-20260928-001"
-NEXT = "F20_U01_R1B_HISTORY_REWORK"
-R1_ANCHOR = "ac69a780d253a39f62fe238a98ce06cb7c127501"
-R1_IMMUTABLE = (EVENTS, PROGRESS, HANDOFF, prior.DIGEST, prior.MANIFEST,
-                REPORT, prior.WI, prior.INVOCATION)
+SCOPE = ["apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
+         "docs/04_test_reports/F-20_U01_R2_PROVIDER_STATUS_RESULT.md"]
+CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
+                 "docs/WORK_STATUS.md"}
+START = 1780
+END = START + len(prior.TYPES)
+REASON = "F20_U01_R1B_DONE_R2_PROVIDER_DASHBOARD"
+STEP = "F-20_U01_R2_PROVIDER_STATUS_START"
+SUBJECT = "F-20/U01-R2"
+INSTRUCTION_ID = "WI-F-20-U01-R2-20260928-001"
+NEXT = "F20_U01_R2_PROVIDER_STATUS_REWORK"
+ANCHOR = "3553e6c78056ddd07feac6e3d4e36b40ae15eaea"
+PREDECESSOR_SNAPSHOT = (EVENTS, PROGRESS, HANDOFF)
+IMMUTABLE = (WI, INVOCATION, prior.WI, prior.INVOCATION, prior.REPORT, REPORT,
+             prior.DIGEST, prior.MANIFEST,
+             prior.prior.WI, prior.prior.INVOCATION, prior.prior.REPORT)
 
 
 def _git(root: Path, *args: str) -> bytes:
@@ -53,31 +47,31 @@ def _git(root: Path, *args: str) -> bytes:
 
 
 def _append_raw(raw: bytes, additions: list[dict]) -> bytes:
-    if raw != r1._lf(raw) or len(additions) != len(TYPES):
-        raise ValueError("F20_U01_R1B_EVENT_BYTES_INVALID")
-    marker = b'\n  ],\n  "last_event_id": "evt_f20_1774_package_resumed"'
-    if raw.count(marker) != 1 or raw.count(b'"last_sequence": 1774') != 1:
-        raise ValueError("F20_U01_R1B_EVENT_BYTES_INVALID")
+    if raw != r1._lf(raw) or len(additions) != len(prior.TYPES):
+        raise ValueError("F20_U01_R2_EVENT_BYTES_INVALID")
+    marker = b'\n  ],\n  "last_event_id": "evt_f20_1780_package_resumed"'
+    if raw.count(marker) != 1 or raw.count(b'"last_sequence": 1780') != 1:
+        raise ValueError("F20_U01_R2_EVENT_BYTES_INVALID")
     insertion = b",\n" + b",\n".join(r1._pretty(row).rstrip() for row in additions)
     return raw.replace(marker, insertion + marker.replace(
-        b"evt_f20_1774_package_resumed", additions[-1]["event_id"].encode()
-    )).replace(b'"last_sequence": 1774', b'"last_sequence": 1780', 1)
+        b"evt_f20_1780_package_resumed", additions[-1]["event_id"].encode()
+    )).replace(b'"last_sequence": 1780', b'"last_sequence": 1786', 1)
 
 
 def _make_rows(old_rows: list[dict], wi_sha: str, invocation_sha: str,
                dispatch_head: str, at: datetime, nonce: str) -> list[dict]:
     at_text = at.isoformat(timespec="seconds")
     expires = (at + timedelta(hours=12)).isoformat(timespec="seconds")
-    old_worker, old_write = old_rows[1771]["details"], old_rows[1772]["details"]
-    execution = f"f20-u01-r1b-execution-fence-epoch-11-{nonce}"
-    write_token = f"f20-u01-r1b-write-fence-epoch-11-{nonce}"
-    worker = {"lease_id": f"worker-lease-f20-u01-r1b-{nonce}", "actor_id": ACTOR,
+    old_worker, old_write = old_rows[1777]["details"], old_rows[1778]["details"]
+    execution = f"f20-u01-r2-execution-fence-epoch-12-{nonce}"
+    write_token = f"f20-u01-r2-write-fence-epoch-12-{nonce}"
+    worker = {"lease_id": f"worker-lease-f20-u01-r2-{nonce}", "actor_id": ACTOR,
               "subject_ref": SUBJECT, "status": "ACTIVE", "issued_at": at_text,
-              "expires_at": expires, "lease_epoch": 11, "fencing_token": execution,
+              "expires_at": expires, "lease_epoch": 12, "fencing_token": execution,
               "execution_fencing_token": execution, "baseline_git_commit": dispatch_head,
               "dispatch_head": dispatch_head, "path_scope": SCOPE}
-    write = {**worker, "lease_id": f"write-lease-f20-u01-r1b-{nonce}",
-             "worker_lease_id": worker["lease_id"], "write_epoch": 11,
+    write = {**worker, "lease_id": f"write-lease-f20-u01-r2-{nonce}",
+             "worker_lease_id": worker["lease_id"], "write_epoch": 12,
              "fencing_token": write_token, "write_fencing_token": write_token}
     details = (
         {"lease_id": old_write["lease_id"],
@@ -92,7 +86,7 @@ def _make_rows(old_rows: list[dict], wi_sha: str, invocation_sha: str,
          "package_status": "REWORK_IN_PROGRESS", "accepted": False},
     )
     additions = []
-    for kind, detail in zip(TYPES, details):
+    for kind, detail in zip(prior.TYPES, details):
         previous = additions[-1] if additions else old_rows[-1]
         sequence = previous["sequence"] + 1
         additions.append({
@@ -112,16 +106,16 @@ def _projection(old_progress: dict, old_raw: bytes, old_rows: list[dict],
                 invocation_sha: str, report_raw: bytes) -> dict[str, bytes]:
     event_raw = _append_raw(old_raw, additions)
     worker, write = additions[3]["details"], additions[4]["details"]
-    old_worker, old_write = old_rows[1771]["details"], old_rows[1772]["details"]
+    old_worker, old_write = old_rows[1777]["details"], old_rows[1778]["details"]
     at_text = additions[0]["occurred_at"]
     progress = deepcopy(old_progress)
     progress.update({
-        "snapshot_id": "snapshot-f20-u01-r1b-history-start-seq1780",
+        "snapshot_id": "snapshot-f20-u01-r2-provider-status-start-seq1786",
         "event_sequence": END, "last_event_id": additions[-1]["event_id"],
         "updated_at": at_text, "status": "ACTIVE", "active_agent": ACTOR,
         "worker_lease": worker, "write_lease": write,
-        "completed_f20_u01_r1_worker_lease": {**old_worker, "status": "REVOKED", "revoked_at": at_text},
-        "completed_f20_u01_r1_write_lease": {**old_write, "status": "REVOKED", "revoked_at": at_text},
+        "completed_f20_u01_r1b_worker_lease": {**old_worker, "status": "REVOKED", "revoked_at": at_text},
+        "completed_f20_u01_r1b_write_lease": {**old_write, "status": "REVOKED", "revoked_at": at_text},
         "f20_overall_status": "REWORK_IN_PROGRESS",
         "next_safe_action": NEXT, "runtime_next_action": NEXT,
         "active_work_instruction": {
@@ -135,7 +129,7 @@ def _projection(old_progress: dict, old_raw: bytes, old_rows: list[dict],
     progress["repository"].update({
         "local_head": dispatch_head, "remote_head": dispatch_head,
         "validated_base_commit": dispatch_head, "projection_mode": MODE,
-        "worktree_status": "F20_U01_R1B_HISTORY_ACTIVE", "product_write_scope": SCOPE,
+        "worktree_status": "F20_U01_R2_PROVIDER_STATUS_ACTIVE", "product_write_scope": SCOPE,
         "commit_status": "PENDING", "push_status": "PENDING",
     })
     progress["registry_refs"]["progress_events"]["sha256"] = r1._sha(event_raw)
@@ -146,11 +140,11 @@ def _projection(old_progress: dict, old_raw: bytes, old_rows: list[dict],
     summary = {"event_sequence": END, "last_event_id": additions[-1]["event_id"],
                "status": "ACTIVE", "current_work_package": "F-20", "active_agent": ACTOR,
                "worker_lease": worker, "write_lease": write,
-               "incident_event_id": prior.INCIDENT_ID, "incident_blocking": True,
+               "incident_event_id": prior.prior.INCIDENT_ID, "incident_blocking": True,
                "next_safe_action": NEXT, "repository_head": dispatch_head,
                "repository_upstream": "development/codex/f18-wsl-ops",
                "reporting_decision": progress["reporting_decision"]["decision"]}
-    handoff_raw = (b"# F-20/U-01 R1b history-test handoff\n\n"
+    handoff_raw = (b"# F-20/U-01 R2 Provider Dashboard handoff\n\n"
                    b"```json anvil-recovery-summary\n" + r1._pretty(summary)
                    + b"```\n\n- C30 CRITICAL OPEN_BLOCKING; F-20 incomplete; Production NOT_EXECUTED.\n")
     digest_raw = r1._pretty({
@@ -168,7 +162,7 @@ def _projection(old_progress: dict, old_raw: bytes, old_rows: list[dict],
         "predecessor_events_sha256": r1._sha(old_raw),
         "predecessor_report_sha256": r1._sha(report_raw),
         "work_instruction_sha256": wi_sha, "invocation_sha256": invocation_sha,
-        "incident_event_id": prior.INCIDENT_ID, "incident_blocking": True,
+        "incident_event_id": prior.prior.INCIDENT_ID, "incident_blocking": True,
         "release_decision": "DEFER", "production": "NOT_EXECUTED", "self_reference": False,
     })
     return {EVENTS: event_raw, PROGRESS: progress_raw, HANDOFF: handoff_raw,
@@ -184,8 +178,8 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
     if (len(rows) != START or stream.get("last_sequence") != START
             or progress.get("event_sequence") != START
             or progress.get("repository", {}).get("projection_mode") != prior.MODE
-            or progress.get("worker_lease") != rows[1771]["details"]
-            or progress.get("write_lease") != rows[1772]["details"]
+            or progress.get("worker_lease") != rows[1777]["details"]
+            or progress.get("write_lease") != rows[1778]["details"]
             or at.tzinfo is None or not re.fullmatch(r"[0-9a-f]{40}", dispatch_head)
             or not re.fullmatch(r"[a-z0-9]{4,32}", nonce)
             or _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip()
@@ -197,17 +191,17 @@ def materialize(root: Path, dispatch_head: str, at: datetime, nonce: str) -> Non
                 != dispatch_head
             or _git(root, "show", f"{dispatch_head}:{EVENTS}") != raw
             or _git(root, "show", f"{dispatch_head}:{REPORT}") != (root / REPORT).read_bytes()
-            or _git(root, "show", f"{dispatch_head}:{prior.DIGEST}")
-                != (root / prior.DIGEST).read_bytes()
-            or _git(root, "show", f"{dispatch_head}:{prior.MANIFEST}")
-                != (root / prior.MANIFEST).read_bytes()
-            or any(_git(root, "show", f"{R1_ANCHOR}:{path}")
-                   != (root / path).read_bytes() for path in R1_IMMUTABLE)):
-        raise RuntimeError("F20_U01_R1B_PREDECESSOR_INVALID")
-    issued = datetime.fromisoformat(rows[1771]["details"]["issued_at"])
-    if prior.validate_control(root, {"_root": root, "progress": progress,
-                                     "events": stream}, issued) or at < issued:
-        raise RuntimeError("F20_U01_R1B_PREDECESSOR_INVALID")
+            or any(_git(root, "show", f"{ANCHOR}:{path}")
+                   != _git(root, "show", f"{dispatch_head}:{path}")
+                   for path in PREDECESSOR_SNAPSHOT)
+            or any(_git(root, "show", f"{ANCHOR}:{path}")
+                   != (root / path).read_bytes() for path in IMMUTABLE)):
+        raise RuntimeError("F20_U01_R2_PREDECESSOR_INVALID")
+    issued = datetime.fromisoformat(rows[1777]["details"]["issued_at"])
+    if (prior.validate_control(root, {"_root": root, "progress": progress,
+                                     "events": stream}, issued) or at < issued
+            or at >= datetime.fromisoformat(rows[1777]["details"]["expires_at"])):
+        raise RuntimeError("F20_U01_R2_PREDECESSOR_INVALID")
     wi_sha = r1._sha(r1._lf((root / WI).read_bytes()))
     invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
     additions = _make_rows(rows, wi_sha, invocation_sha, dispatch_head, at, nonce)
@@ -224,18 +218,18 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     progress, stream = bundle.get("progress") or {}, bundle.get("events") or {}
     rows = stream.get("events") or []
     if not isinstance(rows, list) or len(rows) != END:
-        return ["F20_U01_R1B_TRANSITION_INVALID"]
+        return ["F20_U01_R2_TRANSITION_INVALID"]
     try:
-        worker = rows[1777]["details"]
+        worker = rows[1783]["details"]
         dispatch_head = worker["dispatch_head"]
-        nonce = worker["lease_id"].removeprefix("worker-lease-f20-u01-r1b-")
-        at = datetime.fromisoformat(rows[1774]["occurred_at"])
+        nonce = worker["lease_id"].removeprefix("worker-lease-f20-u01-r2-")
+        at = datetime.fromisoformat(rows[1780]["occurred_at"])
         expiry = datetime.fromisoformat(worker["expires_at"])
         if (not re.fullmatch(r"[0-9a-f]{40}", dispatch_head)
                 or not re.fullmatch(r"[a-z0-9]{4,32}", nonce)
                 or at.tzinfo is None or expiry.tzinfo is None
                 or not at <= now < expiry or expiry - at != timedelta(hours=12)):
-            return ["F20_U01_R1B_TRANSITION_INVALID"]
+            return ["F20_U01_R2_TRANSITION_INVALID"]
         old_raw = _git(root, "show", f"{dispatch_head}:{EVENTS}")
         old_stream = json.loads(old_raw)
         old_rows = old_stream["events"]
@@ -245,63 +239,55 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
         invocation_raw = _git(root, "show", f"{dispatch_head}:{INVOCATION}")
         wi_sha = r1._sha(r1._lf(wi_raw))
         invocation_sha = r1._sha(r1._lf(invocation_raw))
-        issued = datetime.fromisoformat(old_rows[1771]["details"]["issued_at"])
+        issued = datetime.fromisoformat(old_rows[1777]["details"]["issued_at"])
         if (len(old_rows) != START or old_stream["last_sequence"] != START
-                or at < issued
-                or any(_git(root, "show", f"{R1_ANCHOR}:{path}")
+                or at < issued or at >= datetime.fromisoformat(old_rows[1777]["details"]["expires_at"])
+                or any(_git(root, "show", f"{ANCHOR}:{path}")
                        != _git(root, "show", f"{dispatch_head}:{path}")
-                       for path in R1_IMMUTABLE)
-                or prior.validate_transition(old_rows,
-                                             r1._sha(r1._lf(_git(root, "show", f"{dispatch_head}:{prior.WI}"))),
-                                             r1._sha(r1._lf(_git(root, "show", f"{dispatch_head}:{prior.INVOCATION}"))),
-                                             issued)
+                       for path in PREDECESSOR_SNAPSHOT)
+                or any(_git(root, "show", f"{ANCHOR}:{path}")
+                       != _git(root, "show", f"{dispatch_head}:{path}")
+                       for path in IMMUTABLE)
                 or rows[:START] != old_rows or (root / WI).read_bytes() != wi_raw
                 or (root / INVOCATION).read_bytes() != invocation_raw
                 or (root / REPORT).read_bytes() != old_report
-                or (root / prior.DIGEST).read_bytes()
-                    != _git(root, "show", f"{dispatch_head}:{prior.DIGEST}")
-                or (root / prior.MANIFEST).read_bytes()
-                    != _git(root, "show", f"{dispatch_head}:{prior.MANIFEST}")
                 or any((root / path).read_bytes()
                        != _git(root, "show", f"{dispatch_head}:{path}")
-                       for path in R1_IMMUTABLE if path not in (EVENTS, PROGRESS, HANDOFF))):
-            return ["F20_U01_R1B_PREDECESSOR_INVALID"]
+                       for path in IMMUTABLE)):
+            return ["F20_U01_R2_PREDECESSOR_INVALID"]
         expected_rows = _make_rows(old_rows, wi_sha, invocation_sha, dispatch_head, at, nonce)
         previous_tokens = r1._historical_fencing_tokens(old_rows)
         if (rows[START:] != expected_rows
                 or worker["execution_fencing_token"] in previous_tokens
-                or rows[1778]["details"]["write_fencing_token"] in previous_tokens):
-            return ["F20_U01_R1B_TRANSITION_INVALID"]
+                or rows[1784]["details"]["write_fencing_token"] in previous_tokens):
+            return ["F20_U01_R2_TRANSITION_INVALID"]
         expected = _projection(old_progress, old_raw, old_rows, expected_rows,
                                dispatch_head, wi_sha, invocation_sha, old_report)
-        errors = []
         current_raw = {relative: (root / relative).read_bytes() for relative in expected}
+        errors = []
         if current_raw[EVENTS] != expected[EVENTS] or json.loads(current_raw[EVENTS]) != stream:
-            errors.append("F20_U01_R1B_HISTORY_MUTATED")
-        if (current_raw[PROGRESS] != expected[PROGRESS]
-                or json.loads(current_raw[PROGRESS]) != progress):
-            errors.append("F20_U01_R1B_PROGRESS_INVALID")
+            errors.append("F20_U01_R2_HISTORY_MUTATED")
+        if current_raw[PROGRESS] != expected[PROGRESS] or json.loads(current_raw[PROGRESS]) != progress:
+            errors.append("F20_U01_R2_PROGRESS_INVALID")
         if current_raw[HANDOFF] != expected[HANDOFF]:
-            errors.append("F20_U01_R1B_HANDOFF_INVALID")
+            errors.append("F20_U01_R2_HANDOFF_INVALID")
         if current_raw[DIGEST] != expected[DIGEST]:
-            errors.append("F20_U01_R1B_DIGEST_INVALID")
+            errors.append("F20_U01_R2_DIGEST_INVALID")
         if current_raw[MANIFEST] != expected[MANIFEST]:
-            errors.append("F20_U01_R1B_MANIFEST_INVALID")
-        if ("detached_digest" in bundle
-                and bundle["detached_digest"] != json.loads(current_raw[DIGEST])):
-            errors.append("F20_U01_R1B_DIGEST_INVALID")
-        if ("_detached_digest_path" in bundle
-                and bundle["_detached_digest_path"] != DIGEST):
-            errors.append("F20_U01_R1B_DIGEST_INVALID")
+            errors.append("F20_U01_R2_MANIFEST_INVALID")
+        if "detached_digest" in bundle and bundle["detached_digest"] != json.loads(current_raw[DIGEST]):
+            errors.append("F20_U01_R2_DIGEST_INVALID")
+        if "_detached_digest_path" in bundle and bundle["_detached_digest_path"] != DIGEST:
+            errors.append("F20_U01_R2_DIGEST_INVALID")
         if progress.get("f20_c30_event_integrity_incident", {}).get("status") != "OPEN_BLOCKING":
-            errors.append("F20_U01_R1B_PROGRESS_INVALID")
+            errors.append("F20_U01_R2_PROGRESS_INVALID")
         if progress.get("scope_revision_binding", {}).get("release_decision") != "DEFER":
-            errors.append("F20_U01_R1B_PROGRESS_INVALID")
+            errors.append("F20_U01_R2_PROGRESS_INVALID")
         if "F-20" in progress.get("completed_packages", []):
-            errors.append("F20_U01_R1B_PROGRESS_INVALID")
+            errors.append("F20_U01_R2_PROGRESS_INVALID")
         return sorted(set(errors))
     except (OSError, ValueError, KeyError, TypeError, IndexError, subprocess.CalledProcessError):
-        return ["F20_U01_R1B_CONTROL_MISSING"]
+        return ["F20_U01_R2_CONTROL_MISSING"]
 
 
 def collect_git(root: Path, progress: dict) -> list[str]:
@@ -327,6 +313,6 @@ def collect_git(root: Path, progress: dict) -> list[str]:
                                         cwd=root, capture_output=True, check=False).returncode == 0
                          for target in (head, remote))
                  and changed <= allowed and dirty <= allowed)
-        return [] if valid else ["F20_U01_R1B_GIT_INVALID"]
+        return [] if valid else ["F20_U01_R2_GIT_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, TypeError, UnicodeDecodeError):
-        return ["F20_U01_R1B_GIT_INVALID"]
+        return ["F20_U01_R2_GIT_INVALID"]
