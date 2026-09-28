@@ -7,10 +7,111 @@ type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
 type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
 type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null};
+type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
+  owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
+type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean} | {status: 'UNAVAILABLE'};
 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
+const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
+const ALERT_FIELDS = ['alert_id', 'sequence', 'level', 'source', 'category', 'code',
+  'related_entity_id', 'dedupe_key', 'detector_rule_revision', 'cause', 'impact',
+  'next_action', 'deep_link', 'evidence_hash', 'status', 'owner_id', 'observed_at',
+  'project_id', 'environment_id'];
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function exactFields(value: Record<string, unknown>, fields: string[]): boolean {
+  return Object.keys(value).length === fields.length && fields.every((field) => Object.hasOwn(value, field));
+}
+
+function nonempty(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function validObservedAt(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.exec(value);
+  if (!match) return false;
+  const [, year, month, day, hour, minute, second] = match;
+  return Number(hour) < 24 && Number(minute) < 60 && Number(second) < 60
+    && new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).toISOString().slice(0, 10) === value.slice(0, 10)
+    && Number.isFinite(Date.parse(value));
+}
+
+function classifyCriticalAlerts(payload: unknown): CriticalAlertsState {
+  if (!record(payload) || !record(payload.data)
+    || !Object.keys(payload).every((key) => key === 'data' || key === 'request_id')
+    || (Object.hasOwn(payload, 'request_id') && !nonempty(payload.request_id))
+    || !exactFields(payload.data, ['alerts', 'next_before_sequence'])) return ALERTS_UNAVAILABLE;
+  const {alerts, next_before_sequence: cursor} = payload.data;
+  if (!Array.isArray(alerts) || alerts.length > 100
+    || (cursor !== null && (!Number.isSafeInteger(cursor) || (cursor as number) < 1))) return ALERTS_UNAVAILABLE;
+  const ids = new Set<string>();
+  let previousSequence = 0;
+  const visible: CriticalAlert[] = [];
+  for (const item of alerts) {
+    if (!record(item) || !exactFields(item, ALERT_FIELDS)
+      || !Number.isSafeInteger(item.sequence) || (item.sequence as number) < 1
+      || (item.sequence as number) <= previousSequence
+      || !nonempty(item.alert_id) || ids.has(item.alert_id)
+      || (item.level !== 'critical' && item.level !== 'warning')
+      || (item.status !== 'open' && item.status !== 'acknowledged' && item.status !== 'resolved')
+      || !validObservedAt(item.observed_at)
+      || (item.owner_id !== null && !nonempty(item.owner_id))
+      || !['source', 'category', 'code', 'related_entity_id', 'dedupe_key',
+        'detector_rule_revision', 'cause', 'impact', 'next_action', 'deep_link',
+        'evidence_hash', 'project_id', 'environment_id'].every((key) => nonempty(item[key]))) {
+      return ALERTS_UNAVAILABLE;
+    }
+    previousSequence = item.sequence as number;
+    ids.add(item.alert_id);
+    if (item.level === 'critical' && item.status !== 'resolved') {
+      visible.push({alert_id: item.alert_id, code: item.code as string, source: item.source as string,
+        observed_at: item.observed_at, owner_id: item.owner_id as string | null,
+        cause: item.cause as string, related_entity_id: item.related_entity_id as string,
+        status: item.status});
+    }
+  }
+  if (cursor !== null && (alerts.length === 0 || cursor !== alerts[0].sequence)) return ALERTS_UNAVAILABLE;
+  return {status: 'LOADED', alerts: visible, partial: cursor !== null};
+}
+
+export async function loadCriticalAlerts(signal: AbortSignal, request: typeof fetch = fetch): Promise<CriticalAlertsState> {
+  try {
+    const response = await request('/api/operations/alerts', {
+      credentials: 'same-origin', signal, headers: {Accept: 'application/json'},
+    });
+    if (!response.ok) return ALERTS_UNAVAILABLE;
+    return classifyCriticalAlerts(await response.json());
+  } catch {
+    return ALERTS_UNAVAILABLE;
+  }
+}
+
+export function CriticalAlertsCard({value}: {value: CriticalAlertsState}) {
+  return <section className="status-card" aria-labelledby="critical-alerts-heading">
+    <h3 id="critical-alerts-heading">Critical Alerts</h3>
+    <div aria-live="polite" aria-atomic="true">
+      {value.status === 'UNAVAILABLE' ? <><p className="status-unavailable">UNAVAILABLE</p>
+        <p>저장 경고 기록을 확인할 수 없습니다.</p></> : <>
+        <p>저장된 Critical 기록 · 현재 페이지</p>
+        {value.alerts.length === 0 ? <p>이 페이지에 저장된 Critical 기록 없음</p> :
+          <ul>{value.alerts.map((alert) => <li key={alert.alert_id}>
+            <strong>{alert.code}</strong><span> · {alert.source}</span>
+            <p>발생시각 · {alert.observed_at}</p>
+            <p>담당자 · {alert.owner_id ?? '미배정'} · {alert.status}</p>
+            <p>원인 · {alert.cause}</p><p>대상 · {alert.related_entity_id}</p>
+          </li>)}</ul>}
+        {value.partial && <p>과거 페이지 미조회 · 부분 결과</p>}
+        <p>탐지 실행·경고 완전성·신선도는 확인되지 않았습니다.</p>
+      </>}
+    </div>
+  </section>;
+}
 
 function classifyProviderRegistration(payload: unknown): ProviderRegistration {
   if (typeof payload !== 'object' || payload === null || !('data' in payload)) return PROVIDER_UNAVAILABLE;
@@ -95,6 +196,7 @@ function Shell({route}: AppProps) {
   const [checked, setChecked] = useState('NOT REQUESTED');
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_UNAVAILABLE);
+  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_UNAVAILABLE);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
 
   useEffect(() => {
@@ -125,6 +227,9 @@ function Shell({route}: AppProps) {
     const controller = new AbortController();
     void loadProviderRegistration(controller.signal).then((value) => {
       if (!controller.signal.aborted) setProviderRegistration(value);
+    });
+    void loadCriticalAlerts(controller.signal).then((value) => {
+      if (!controller.signal.aborted) setCriticalAlerts(value);
     });
     return () => controller.abort();
   }, [currentRoute]);
@@ -172,8 +277,9 @@ function Shell({route}: AppProps) {
           </div>
         </section>
         <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
-          <p>실행·승인·비용·알람 read model은 아직 연결되지 않았습니다. UNAVAILABLE</p>
+          <p>실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE</p>
         </section>
+        <CriticalAlertsCard value={criticalAlerts}/>
       </main> : currentRoute === '/projects' ? <main className="dashboard">
         <div className="dashboard-heading"><div><p className="header-status">REPOSITORY ONBOARDING</p><h1>Projects</h1></div><p>읽기 전용 scan · {projects.status}</p></div>
         <section className="status-card" aria-labelledby="projects-status-heading"><h2 id="projects-status-heading">Repository 상태</h2><p className={projects.status === 'READY' ? 'status-ready' : 'status-unavailable'}>{projects.status}</p><p>{projects.reason}</p>{projects.repository && <dl className="status-metadata"><div><dt>Branch</dt><dd>{projects.repository.branch}</dd></div><div><dt>HEAD</dt><dd>{projects.repository.head}</dd></div><div><dt>Tracked dirty</dt><dd>{projects.repository.dirtyPaths}</dd></div><div><dt>Untracked</dt><dd>{projects.repository.untrackedPaths}</dd></div></dl>}</section>

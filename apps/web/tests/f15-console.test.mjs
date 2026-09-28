@@ -115,3 +115,95 @@ test('Provider request and JSON failures never expose raw errors', async () => {
     assert.deepEqual(state, {status: 'UNAVAILABLE', registered: null});
   }
 });
+
+const alertRow = (overrides = {}) => ({
+  alert_id: 'alert-1', sequence: 7, level: 'critical', source: 'worker',
+  category: 'availability', code: 'WORKER_LEASE_EXPIRED', related_entity_id: 'run-7',
+  dedupe_key: 'private-dedupe-key', detector_rule_revision: 'f13-v1',
+  cause: 'Worker lease expiry observed', impact: 'Run ownership cannot be trusted',
+  next_action: 'REVIEW_WORKER_TAKEOVER', deep_link: '/operations/workers',
+  evidence_hash: 'sha256:private-evidence', status: 'open', owner_id: null,
+  observed_at: '2026-09-29T02:00:00+00:00', project_id: 'project-1', environment_id: 'env-1',
+  ...overrides,
+});
+const alertResponse = (alerts, next_before_sequence = null) =>
+  ({data: {alerts, next_before_sequence}, request_id: 'request-1'});
+
+test('Critical Alerts reads only stored same-origin records and renders active critical details as text', async () => {
+  const calls = [];
+  const controller = new AbortController();
+  const rows = [alertRow({code: '<img src=x onerror=alert(1)>', source: '<script>bad</script>',
+    cause: '<b>unsafe</b>', related_entity_id: '<run-7>'}),
+    alertRow({alert_id: 'alert-2', sequence: 8, level: 'warning', code: 'HEALTH_SIGNAL_LATE'}),
+    alertRow({alert_id: 'alert-3', sequence: 9, status: 'resolved'}),
+    alertRow({alert_id: 'alert-4', sequence: 10, status: 'acknowledged', owner_id: 'operator-1'})];
+  const state = await consoleApp.loadCriticalAlerts(controller.signal, async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse(alertResponse(rows));
+  });
+  assert.deepEqual(calls.map(([url]) => url), ['/api/operations/alerts']);
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.equal(calls[0][1].signal, controller.signal);
+  assert.equal(state.status, 'LOADED');
+  assert.equal(state.alerts.length, 2);
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /Critical Alerts.*WORKER_LEASE_EXPIRED|Critical Alerts.*&lt;img/s);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.match(html, /&lt;script&gt;bad&lt;\/script&gt;/);
+  assert.match(html, /&lt;b&gt;unsafe&lt;\/b&gt;.*&lt;run-7&gt;/s);
+  assert.match(html, /미배정.*operator-1/s);
+  assert.doesNotMatch(html, /<script>|<img|HEALTH_SIGNAL_LATE|private-dedupe-key|private-evidence|REVIEW_WORKER_TAKEOVER|href="\/operations\/workers"/);
+});
+
+test('Critical Alerts empty page states only that this stored page has no critical records', async () => {
+  const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([])));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /이 페이지에 저장된 Critical 기록 없음/);
+  assert.doesNotMatch(html, /전체.*0건|정상|안전|detector.*실행/);
+});
+
+test('Critical Alerts marks older pages unread even when this page has no critical records', async () => {
+  const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({level: 'warning'})], 7)));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /이 페이지에 저장된 Critical 기록 없음/);
+  assert.match(html, /과거 페이지.*미조회|부분 결과/);
+  assert.doesNotMatch(html, /전체.*0건|정상|안전/);
+});
+
+test('Critical Alerts rejects auth, transport, malformed, duplicate and forged pages as UNAVAILABLE', async () => {
+  const badBodies = [null, {}, {data: {alerts: []}},
+    alertResponse([alertRow({status: 'unknown'})]),
+    alertResponse([alertRow({level: 'ok'})]),
+    alertResponse([alertRow({observed_at: 'not-a-time'})]),
+    alertResponse([alertRow({owner_id: 7})]),
+    alertResponse([alertRow(), alertRow({sequence: 8})]),
+    alertResponse(Array.from({length: 101}, (_, index) => alertRow({alert_id: `alert-${index}`, sequence: index + 1}))),
+    alertResponse([alertRow()], 0), alertResponse([alertRow()], 8),
+    alertResponse([alertRow({secret: 'must-not-render'})]),
+    {...alertResponse([alertRow()]), admin: true}];
+  const responses = [jsonResponse({}, 401), jsonResponse({}, 403), jsonResponse({}, 500),
+    ...badBodies.map((body) => jsonResponse(body))];
+  for (const response of responses) {
+    const state = await consoleApp.loadCriticalAlerts(new AbortController().signal, async () => response);
+    assert.equal(state.status, 'UNAVAILABLE');
+  }
+  for (const request of [async () => { throw new Error('secret-must-not-render'); },
+    async () => ({ok: true, json: async () => { throw new Error('internal-must-not-render'); }})]) {
+    const state = await consoleApp.loadCriticalAlerts(new AbortController().signal, request);
+    assert.equal(state.status, 'UNAVAILABLE');
+  }
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: {status: 'UNAVAILABLE'}}));
+  assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
+  assert.doesNotMatch(html, /정상|안전|secret-must-not-render|internal-must-not-render/);
+});
+
+test('Dashboard includes Critical Alerts while unrelated operating state stays UNAVAILABLE', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
+  assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
+  assert.doesNotMatch(html, /알람 read model은 아직 연결되지 않았습니다/);
+  assert.match(html, /Database.*LLM Providers/s);
+});
