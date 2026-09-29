@@ -32,6 +32,9 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     "docs/04_test_reports/F-20_U01_R5_ALERT_PAGING_BINDING_PLAN.md",
     "docs/work_orders/F-20_U01_R5_ALERT_PAGING_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_U01_R5_ALERT_PAGING_INVOCATION.md",
+    "docs/04_test_reports/F-20_U01_R6_OIDC_BROWSER_PG15_BINDING_PLAN.md",
+    "docs/work_orders/F-20_U01_R6_OIDC_BROWSER_PG15_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R6_OIDC_BROWSER_PG15_INVOCATION.md",
 }
 START, END = 1810, 1816
 PREP_ANCHOR = "36aa83aae3e2992da768000a894e2fbe9328eb0a"
