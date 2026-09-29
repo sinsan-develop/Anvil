@@ -57,6 +57,10 @@ _BROWSER_ERROR_CLASSES = frozenset({
     "AssertionError", "Error", "TypeError", "TimeoutError", "SyntaxError",
     "ReferenceError", "RangeError", "AggregateError", "TargetClosedError",
 })
+_RESPONSE_CATEGORIES = frozenset({
+    "DOCUMENT", "ASSET", "ALERT_API", "HEALTH_API", "PROVIDER_API",
+    "EVENT_REPLAY_API", "OIDC_AUTH", "OTHER_API", "OTHER_APP", "UNKNOWN",
+})
 
 
 def _validated_target(dsn: str | None, isolated: str | None) -> sa.engine.URL:
@@ -197,6 +201,18 @@ def _last_browser_progress(output: bytes | str | None) -> str:
     return last
 
 
+def _safe_response_diagnostic(output: str) -> str:
+    for match in re.finditer(
+        r"^R6_RESPONSE_CAPTURE_FAILED category=([A-Z_]+) status=([0-9]{1,3}) "
+        r"reason=(TIMEOUT|UNREADABLE)\r?$", output, flags=re.MULTILINE,
+    ):
+        category, raw_status, reason = match.groups()
+        status = int(raw_status)
+        if category in _RESPONSE_CATEGORIES and (status == 0 or 100 <= status <= 599):
+            return f" category={category} status={status} reason={reason}"
+    return ""
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -232,14 +248,19 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
                                 text=True, encoding="utf-8", timeout=120, check=False)
     except subprocess.TimeoutExpired as error:
         stage = _last_browser_progress(error.stdout)
+        stdout = (error.stdout.decode("utf-8", errors="replace") if isinstance(error.stdout, bytes)
+                  else error.stdout if isinstance(error.stdout, str) else "")
+        detail = _safe_response_diagnostic(stdout) if stage == "NETWORK_RESPONSE_FACTS" else ""
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit=TIMEOUT class=TimeoutExpired; "
-                    "MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED", pytrace=False)
+                    f"MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED{detail}", pytrace=False)
     except OSError:
         pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=LAUNCH class=OSError", pytrace=False)
     if result.returncode != 0:
         stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
+        detail = (_safe_response_diagnostic(result.stdout + "\n" + result.stderr)
+                  if stage == "NETWORK_RESPONSE_FACTS" else "")
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
-                    f"class={error_class}", pytrace=False)
+                    f"class={error_class}{detail}", pytrace=False)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
     assert len(result_lines) == 1, "R6_BROWSER_RESULT_MISSING"
     return json.loads(result_lines[0][len("R6_RESULT "):])
@@ -565,7 +586,9 @@ def test_r6_browser_failure_classification_never_returns_raw_output():
 def test_r6_timeout_reports_last_whitelisted_progress_without_raw_output(monkeypatch):
     secret = "private-dsn-or-token"
     partial_stdout = ("R6_STAGE PRE_AUTH_DOCUMENT\n" + secret + "\n"
-                      "R6_STAGE PRE_AUTH_CARD\nR6_STAGE PRIVATE_SECRET\n").encode()
+                      "R6_STAGE NETWORK_RESPONSE_FACTS\nR6_STAGE PRIVATE_SECRET\n"
+                      "R6_RESPONSE_CAPTURE_FAILED category=ALERT_API status=200 "
+                      "reason=TIMEOUT\n").encode()
 
     def timed_out(*_args, **_kwargs):
         raise subprocess.TimeoutExpired(cmd="browser", timeout=120, output=partial_stdout,
@@ -578,10 +601,34 @@ def test_r6_timeout_reports_last_whitelisted_progress_without_raw_output(monkeyp
         _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                    "postgresql://isolated@127.0.0.1:5545/isolated", alert)
     message = str(failure.value)
-    assert "stage=PRE_AUTH_CARD exit=TIMEOUT class=TimeoutExpired" in message
+    assert "stage=NETWORK_RESPONSE_FACTS exit=TIMEOUT class=TimeoutExpired" in message
+    assert "category=ALERT_API status=200 reason=TIMEOUT" in message
     assert "MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED" in message
     assert secret not in message
     assert "PRIVATE_SECRET" not in message
+
+
+def test_r6_response_capture_failure_reports_only_safe_category_status(monkeypatch):
+    secret = "private-dsn-or-token"
+    stdout = ("R6_NODE_STARTED\nR6_STAGE NETWORK_RESPONSE_FACTS\n"
+              "R6_RESPONSE_CAPTURE_FAILED category=ALERT_API status=200 reason=TIMEOUT\n"
+              + secret)
+    stderr = "R6_BROWSER_FAILED stage=NETWORK_RESPONSE_FACTS class=Error\n" + secret
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=["browser"], returncode=1,
+                                           stdout=stdout, stderr=stderr)
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    message = str(failure.value)
+    assert "stage=NETWORK_RESPONSE_FACTS exit=1 class=Error" in message
+    assert "category=ALERT_API status=200 reason=TIMEOUT" in message
+    assert secret not in message
 
 
 def test_opt_in_r6_oidc_browser_pg15():

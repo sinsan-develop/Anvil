@@ -60,8 +60,35 @@ function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
 function settleCapture(work) {
   return Promise.resolve().then(work).then(
     (value) => ({ ok: true, value }),
-    () => ({ ok: false }),
+    (error) => ({ ok: false, reason: error?.message === 'R6_CAPTURE_TIMEOUT' ? 'TIMEOUT' : 'UNREADABLE' }),
   );
+}
+
+function boundedCapture(work, timeoutMs) {
+  let timer;
+  return Promise.race([
+    Promise.resolve().then(work),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('R6_CAPTURE_TIMEOUT')), timeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+function responseCategory(url) {
+  try {
+    const path = new URL(url).pathname;
+    if (path === '/') return 'DOCUMENT';
+    if (path.startsWith('/assets/')) return 'ASSET';
+    if (path === '/api/operations/alerts') return 'ALERT_API';
+    if (path === '/api/health/ready') return 'HEALTH_API';
+    if (path === '/api/providers') return 'PROVIDER_API';
+    if (/^\/api\/runs\/[^/]+\/events$/.test(path)) return 'EVENT_REPLAY_API';
+    if (path.startsWith('/auth/oidc/')) return 'OIDC_AUTH';
+    if (path.startsWith('/api/')) return 'OTHER_API';
+    return 'OTHER_APP';
+  } catch {
+    return 'UNKNOWN';
+  }
 }
 
 function captureRequestFact(request) {
@@ -71,25 +98,39 @@ function captureRequestFact(request) {
   }));
 }
 
-function captureResponseFact(response) {
-  return settleCapture(async () => {
+function captureResponseFact(response, timeoutMs = 10000) {
+  let status = 0;
+  let category = 'UNKNOWN';
+  try {
+    status = response.status();
+    if (!Number.isInteger(status) || status < 100 || status > 599) status = 0;
+    category = responseCategory(response.url());
+  } catch { /* fail closed through the capture result */ }
+  return settleCapture(() => boundedCapture(async () => {
     const headers = await response.allHeaders();
     let body;
     try {
-      body = await response.text();
-    } catch {
-      if (![204, 301, 302, 303, 304, 307, 308].includes(response.status())) {
-        throw new Error('R6_RESPONSE_BODY_UNAVAILABLE');
-      }
+      body = await boundedCapture(() => response.text(), Math.max(10, Math.floor(timeoutMs / 3)));
+    } catch (error) {
+      if (![204, 301, 302, 303, 304, 307, 308].includes(status)) throw error;
       body = '';
     }
     return { origin: new URL(response.url()).origin, url: response.url(), headers, body };
-  });
+  }, timeoutMs)).then((result) => ({ ...result, category, status }));
 }
 
 function verifiedFacts(results) {
   assert.ok(results.length > 0 && results.every(({ ok }) => ok), 'R6_NETWORK_CAPTURE_UNREADABLE');
   return results.map(({ value }) => value);
+}
+
+function verifiedResponseFacts(results) {
+  const failed = results.find(({ ok }) => !ok);
+  if (failed) {
+    writeSync(1, `R6_RESPONSE_CAPTURE_FAILED category=${failed.category} status=${failed.status} reason=${failed.reason}\n`);
+    throw new Error('R6_RESPONSE_CAPTURE_FAILED');
+  }
+  return verifiedFacts(results);
 }
 
 async function fetchOnPage(page, path, options = {}) {
@@ -211,7 +252,7 @@ async function main() {
     markStage('NETWORK_REQUEST_FACTS');
     const requests = verifiedFacts(await Promise.all(requestFacts));
     markStage('NETWORK_RESPONSE_FACTS');
-    const responses = verifiedFacts(await Promise.all(responseFacts));
+    const responses = verifiedResponseFacts(await Promise.all(responseFacts));
     markStage('NETWORK_DOM');
     const domText = await page.locator('body').innerText();
     const { allAppRequestsSameOrigin, offOriginCredentialLeak, secretExposure } =
@@ -307,6 +348,25 @@ if (auditSelfTest) {
   markStage('PRE_AUTH_DOCUMENT');
   assert.equal(stage, 'PRE_AUTH_DOCUMENT');
   assert.throws(() => markStage('PRIVATE_SECRET'), /R6_STAGE_INVALID/);
+  const hangingResponse = (status, path) => ({
+    status: () => status, url: () => apiUrl + path,
+    allHeaders: async () => ({ 'content-type': 'application/json' }),
+    text: () => new Promise(() => {}),
+  });
+  const bounded = await Promise.race([
+    captureResponseFact(hangingResponse(200, '/api/operations/alerts?opaque=private'), 60),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('R6_SELF_TEST_CAPTURE_TIMEOUT')), 500)),
+  ]);
+  assert.equal(bounded.ok, false);
+  assert.equal(bounded.category, 'ALERT_API');
+  assert.equal(bounded.status, 200);
+  assert.equal(bounded.reason, 'TIMEOUT');
+  assert.throws(() => verifiedResponseFacts([bounded]), /R6_RESPONSE_CAPTURE_FAILED/);
+  for (const status of [204, 302, 304]) {
+    const accepted = await captureResponseFact(hangingResponse(status, '/auth/oidc/callback'), 60);
+    assert.equal(accepted.ok, true);
+    assert.equal(accepted.value.body, '');
+  }
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
   writeSync(1, 'R6_NODE_STARTED\n');

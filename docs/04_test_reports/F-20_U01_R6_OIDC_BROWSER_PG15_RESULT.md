@@ -1,8 +1,8 @@
-# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (WSL R5 진행 marker)
+# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (WSL R6 응답 캡처 보완)
 
 ## 판정
 
-`LOCAL_GREEN; WSL_R5_RUNNER_TIMEOUT; E2E_NOT_PASSED`. SHA `d7ab58599fb5b6571571a8655485c441c0329021`의 WSL opt-in은 browser subprocess 120초 timeout으로 중단됐다. 종료되지 않는 await를 특정할 증거가 기존 출력에는 없어, Node가 각 주요 await 직전에 whitelist stage를 즉시 stdout에 기록하고 Python이 timeout의 부분 stdout bytes에서 마지막 허용 stage만 보고하도록 RED→GREEN 보완했다. 주소·제품 API·필수 401/200/403·DOM·Network 판정은 변경하지 않았다. 실제 정지 지점과 원인은 새 SHA WSL 재실행 전까지 미확정이다. 이 보고는 U-01/F-20 수락, C30 사고 해소, Production 검증이 아니다.
+`LOCAL_GREEN; WSL_R6_RESPONSE_CAPTURE_TIMEOUT; E2E_NOT_PASSED`. SHA `495e5bcbfd7a99164de47bff175947d7a55136c5`의 WSL opt-in은 OIDC·저장 경고 표시·권한 철회 403·화면 stale-clear를 지나 `NETWORK_RESPONSE_FACTS`에서 120초 timeout으로 중단됐다. 응답별 `allHeaders()/text()` 캡처를 bounded 처리하고 미완료 200은 fail-close, route category/status/reason의 고정 안전 진단만 보고하도록 RED→GREEN 보완했다. 어떤 응답이 실제 미완료였는지는 새 SHA 실측 전까지 미확정이다. 이 보고는 U-01/F-20 수락, C30 사고 해소, Production 검증이 아니다.
 
 ## 판단 이유와 기준선
 
@@ -12,6 +12,7 @@
 - R3 수집 보완 시작 HEAD `b98eb9c77c6c95d63af0d367e9995728297edac2`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
 - R4 탐색 보완 시작 HEAD `2b7d7b030084074bfa0669270266f48b3c60971e`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
 - R5 진행 marker 시작 HEAD `d7ab58599fb5b6571571a8655485c441c0329021`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
+- R6 응답 캡처 보완 시작 HEAD `495e5bcbfd7a99164de47bff175947d7a55136c5`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
 - canonical seq1822, actor `developer-primary-f20-u01-r6`, epoch18 worker `worker-lease-f20-u01-r6-r6oidcstart1`/execution token `f20-u01-r6-execution-fence-epoch-18-r6oidcstart1`, 종속 write `write-lease-f20-u01-r6-r6oidcstart1`/write token `f20-u01-r6-write-fence-epoch-18-r6oidcstart1`, 둘 다 ACTIVE·만료 `2026-09-29T14:19:55+00:00`, 발급 dispatch `6d946bb9792e328ae97233726ac6322fece4f68f`. G-05 seq1822 PASS 후 정확한 세 파일만 작성했다.
 - 설계 SHA-256 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`; 작업계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`; 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`; 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`; 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`; R6 WI `7BFE973A0741B5E00493DE2884F15F3741EB260043433BC140F3FF15146C27A0`, Invocation `0A0CA362F4F7294581A340F734AF36D8609A4DF04D46FB79FAD86E00B5F53A45`.
 
@@ -19,8 +20,8 @@
 
 | 파일 | 변경 |
 |---|---|
-| `tests/integration/test_f20_u01_oidc_browser_pg15.py` | 격리 DSN 뒤 Docker inspect의 exact SHA7 container·QA label·PG15·AutoRemove·loopback5545·data tmpfs·volume/bind 0을 DB 접속/seed 전에 검사, 기존 factory와 저장 Operations owner, 임시 HTTPS IdP/API, 시험 전용 role 철회 control, Node 결과·audit 무변경·세션 확인, 정확한 TLS 파일/row/listener 정리. R1 import 환경, R2 Secret-safe 실패 분류, R4 고정 stage, R5 부분 stdout bytes의 마지막 허용 진행 단계만 timeout에 보고 |
-| `tests/browser/f20-u01-oidc-browser-pg15.mjs` | 단일 Chromium context의 401→same-origin authorization/callback→Secure·HttpOnly session→저장 Critical API·DOM→권한 철회 403/재표시 stale-clear, 별도 issuer request context, 모든 page request origin/민감값 URL·header·body·response·DOM 검사, 저장 row code/entity/cause API↔DOM 대조. R2 시작 marker, R3 즉시 settled Network 수집, R4 DOM 준비 대기, R5 주요 await 직전 비밀 없는 고정 stage 즉시 stdout 출력 |
+| `tests/integration/test_f20_u01_oidc_browser_pg15.py` | 격리 DSN 뒤 Docker inspect의 exact SHA7 container·QA label·PG15·AutoRemove·loopback5545·data tmpfs·volume/bind 0을 DB 접속/seed 전에 검사, 기존 factory와 저장 Operations owner, 임시 HTTPS IdP/API, 시험 전용 role 철회 control, Node 결과·audit 무변경·세션 확인, 정확한 TLS 파일/row/listener 정리. R1 import 환경, R2 Secret-safe 실패 분류, R4 고정 stage, R5 timeout 마지막 stage, R6 whitelist 응답 category/status/reason만 실패 진단에 부착 |
+| `tests/browser/f20-u01-oidc-browser-pg15.mjs` | 단일 Chromium context의 401→same-origin authorization/callback→Secure·HttpOnly session→저장 Critical API·DOM→권한 철회 403/재표시 stale-clear, 별도 issuer request context, 모든 page request origin/민감값 URL·header·body·response·DOM 검사, 저장 row code/entity/cause API↔DOM 대조. R2 시작 marker, R3 즉시 settled Network 수집, R4 DOM 준비 대기, R5 진행 stage, R6 응답 capture bounded timeout·200 fail-close·고정 route category/status 진단 |
 | 본 보고서 | 로컬 RED/GREEN·실행 명령·미검증·rollback 기록 |
 
 새 공개 endpoint, role/permission 계약, migration/schema, 제품 UI/서비스, 공유 WSL 자원, 운영 환경은 변경하지 않았다. 브라우저는 현재 로그인 UI가 없으므로 화면 버튼 클릭이 아니라 같은 context의 상대 경로 fetch와 임시 issuer code를 사용한다.
@@ -38,6 +39,7 @@
 | `R6_NODE_UNHANDLED_R3` | `page.on('request')`의 `allHeaders()`와 `page.on('response')`의 `allHeaders()/text()`가 최종 `Promise.all` 전 reject하면 unhandled가 될 수 있다. 캡처 시점에 성공/실패가 모두 resolve되는 결과를 만들고, 최종 감사에서 실패·빈 수집은 고정 오류로 거부한다. 204/304/redirect의 읽을 수 없는 빈 body만 허용한다. | 새 SHA WSL E2E에서 실제 원인과 전체 Network 감사 확인 필요. |
 | `R6_PRE_AUTH_TIMEOUT_R4` | `2b7d7b0` WSL에서 PRE_AUTH 30초대 TimeoutError. 기존 `page.goto(...waitUntil:'networkidle')`가 가장 강한 후보지만 직접 await별 증거는 없었다. `domcontentloaded` 뒤 실제 Critical Alerts section visible을 기다리고, 별도의 같은-origin alerts API 401 확인은 유지한다. 이후 reload도 같은 DOM 준비 기준으로 하고 저장 code/철회 UNAVAILABLE 실제 표시를 계속 기다린다. 단계는 PRE_AUTH_DOCUMENT/CARD/FETCH/CARD_CHECK 및 후속 reload 단계로 세분했다. | 새 SHA WSL에서 정확한 실패 단계와 E2E 결과 확인 필요. |
 | `R6_RUNNER_TIMEOUT_R5` | `d7ab585` WSL에서 Docker browser subprocess가 120초 종료되지 않았다. Node는 주요 await 전 `fs.writeSync(1, 'R6_STAGE <whitelist>')`로 즉시 기록하고 Python은 `TimeoutExpired.stdout` bytes에서 마지막 허용 값만 사용한다. stdout/stderr 원문·URL·Secret은 실패 문자열에 포함하지 않는다. | 다음 WSL에서 마지막 단계 관측 후 hang 원인 판정 필요. timeout 뒤 exact named container 정리는 Main 소유. |
+| `R6_RESPONSE_CAPTURE_TIMEOUT_R6` | `495e5bc` WSL의 마지막 단계가 `NETWORK_RESPONSE_FACTS`. 모든 response 캡처 전체를 기본 10초로 bound하고 body read도 더 짧게 bound한다. 정상 204/304/redirect의 읽을 수 없는 빈 body만 기존 예외로 유지하며 비스트리밍 200 미완료는 `{ok:false}` 후 감사에서 실패. 실패 대상은 `DOCUMENT/ASSET/ALERT_API/HEALTH_API/PROVIDER_API/OIDC_AUTH/EVENT_REPLAY_API/OTHER_API/OTHER_APP/UNKNOWN` 중 고정 category와 정수 status, `TIMEOUT/UNREADABLE`만 노출한다. Node 종료 대기 중 Python timeout이 나도 부분 stdout의 허용 진단만 유지한다. | 새 SHA WSL에서 실제 미완료 응답 category/status 및 전체 E2E 확인 필요. |
 
 ## 로컬 실행 증거
 
@@ -83,6 +85,13 @@
 | `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` (R5 RED→GREEN) | 1→0 | `markStage` 미구현 ReferenceError → whitelist stage 즉시 출력과 비허용 stage 거부, `R6_AUDIT_SELF_TEST_PASS`. |
 | `tests/integration/test_f20_u01_oidc_browser_pg15.py` 단독 (R5) | 0 | 6 PASS/1 SKIP, 3.84초. 구 stage명 분류 테스트를 현 세분 stage명으로 갱신. |
 | `tests/integration/test_f20_u01_oidc_browser_pg15.py tests/api/test_oidc_asgi_binding.py --basetemp=.pytest_tmp_f20_u01_r6_progress_adjacent` | 0 | 47 PASS/2 SKIP, 7.63초. |
+| `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` (R6 RED→GREEN) | 1→0 | 합성 200 alert body 영구 pending의 500ms 음성에서 `R6_SELF_TEST_CAPTURE_TIMEOUT` → 기본 10초(테스트 주입 60ms) bounded 실패와 `R6_RESPONSE_CAPTURE_FAILED category=ALERT_API status=200 reason=TIMEOUT`, `R6_AUDIT_SELF_TEST_PASS`. 204/302/304 빈 body 예외 유지. |
+| `-k response_capture_failure_reports` (R6 RED→GREEN) | 1→0 | Python이 category/status를 누락하여 1 FAIL/7 deselected → whitelist 진단만 부착해 1 PASS/7 deselected. 원문 Secret 미출력. |
+| `-k timeout_reports` (R6 최종 진단 RED→GREEN) | 1→0 | 안전 응답 marker가 부분 stdout bytes에 있어도 timeout 실패 문자열에서 누락되는 음성 1 FAIL/7 deselected → 허용 category/status/reason만 부착해 1 PASS/7 deselected. |
+| `tests/integration/test_f20_u01_oidc_browser_pg15.py` 단독 (R6) | 0 | 7 PASS/1 SKIP, 5.93초. |
+| `tests/integration/test_f20_u01_oidc_browser_pg15.py tests/api/test_oidc_asgi_binding.py --basetemp=.pytest_tmp_f20_u01_r6_response_adjacent` | 0 | 48 PASS/2 SKIP, 8.69초. |
+| `tests/integration/test_f20_u01_oidc_browser_pg15.py tests/api/test_oidc_asgi_binding.py --basetemp=.pytest_tmp_f20_u01_r6_response_final` | 0 | 마지막 timeout 진단 보완 포함 48 PASS/2 SKIP, 10.45초. |
+| `node --import tsx --test tests/f15-console.test.mjs` (`apps/web` cwd, R6), G-05 | 각 0 | Dashboard 17/17 PASS, G-05 seq1822 PASS. |
 
 Main의 사전 WORK_STATUS 기록 뒤 전용 `.pytest_tmp_f20_u01_r6_adjacent`를 사용했다. 실경로는 현재 worktree 내부, 내부 `current` reparse link 1개의 대상도 같은 폴더 내부였다. 정확한 폴더 한 곳만 `Remove-Item -LiteralPath ... -Recurse -Force`로 제거했고 `R6_ADJACENT_TEMP_RESIDUE_ZERO` exit0이다. 기본 `%TEMP%`의 접근권한은 바꾸지 않았다. R6 TLS 전용 `tests/integration/.anvil-f20-u01-r6-oidc-host`는 로컬에서 생성하지 않았다.
 
@@ -97,6 +106,10 @@ R3 수집 보완의 `.pytest_tmp_f20_u01_r6_settled_adjacent`도 Main이 WORK_ST
 R4 탐색 보완의 `.pytest_tmp_f20_u01_r6_nav_adjacent`도 Main이 WORK_STATUS에 생성 전 기록했다. 현재 worktree 내부 실경로와 내부 reparse link 1개의 같은 base 대상 확인 뒤 정확한 base만 제거해 `R6_NAV_ADJACENT_TEMP_RESIDUE_ZERO` exit0이다. 로컬 TLS 전용 경로는 미생성이다.
 
 R5 진행 marker의 `.pytest_tmp_f20_u01_r6_progress_adjacent`도 Main이 WORK_STATUS에 생성 전 기록했다. 현재 worktree 내부 실경로와 내부 reparse link 1개의 같은 base 대상 확인 뒤 정확한 base만 제거해 `R6_PROGRESS_ADJACENT_TEMP_RESIDUE_ZERO` exit0이다. 로컬 TLS 전용 경로는 미생성이다.
+
+R6 응답 캡처의 `.pytest_tmp_f20_u01_r6_response_adjacent`도 Main이 WORK_STATUS에 생성 전 기록했다. 현재 worktree 내부 실경로와 내부 reparse link 1개의 같은 base 대상 확인 뒤 정확한 base만 제거해 `R6_RESPONSE_ADJACENT_TEMP_RESIDUE_ZERO` exit0이다. 로컬 TLS 전용 경로는 미생성이다.
+
+R6 마지막 timeout 진단 포함 `.pytest_tmp_f20_u01_r6_response_final`도 Main이 WORK_STATUS에 생성 전 기록하고 사전 부재를 확인했다. 현재 worktree 내부 실경로와 내부 reparse link 1개의 같은 base 대상 확인 뒤 정확한 base만 제거해 `R6_RESPONSE_FINAL_TEMP_RESIDUE_ZERO` exit0이다. 로컬 TLS 전용 경로는 미생성이다.
 
 ## WSL R1 실제 실패
 
@@ -123,12 +136,17 @@ R5 진행 marker의 `.pytest_tmp_f20_u01_r6_progress_adjacent`도 Main이 WORK_S
 - Main 실행 기준 SHA `d7ab58599fb5b6571571a8655485c441c0329021`: opt-in `1 failed/5 deselected in 122.87s`, `R6_BROWSER_FAILED stage=RUNNER exit=TIMEOUT class=TimeoutExpired`. Docker CLI 자식 종료 뒤에도 정확한 `--rm` browser container가 running이어서 Main이 image/mount/host network와 PG label을 확인한 후 해당 browser·PG 두 컨테이너만 stop/자동제거해 잔여0을 확인했다. 이는 브라우저 E2E PASS가 아니다.
 - Main의 일회성 연결성 실측은 WSL-server Python `127.0.0.1:18545` listener에 같은 Playwright image `--network host` Node TCP가 접속해 `R6_LOOPBACK_CONNECTED`/Docker exit0이었고, listener·port·container 잔여0이었다. 따라서 Docker host network와 WSL loopback 분리 가설은 이 환경에서 반증됐다. R5 보완은 주소를 바꾸지 않는다.
 
+## WSL R6 실제 timeout과 응답 계약
+
+- Main 실행 기준 SHA `495e5bcbfd7a99164de47bff175947d7a55136c5`: opt-in `1 failed/6 deselected in 122.28s`, `R6_BROWSER_FAILED stage=NETWORK_RESPONSE_FACTS exit=TIMEOUT class=TimeoutExpired`. Docker logs의 허용 stage marker도 동일했다. OIDC/저장 경고/철회 403/화면 제거 단계까지 도달했지만 최종 전체 Network 감사는 완료되지 않았다. Main은 정확한 browser image/read-only mount/host network와 PG label 확인 뒤 두 전용 컨테이너만 stop/자동제거하고 잔여0을 확인했다.
+- 코드상 `/api/runs/{id}/events`는 `StreamingResponse`가 아니라 유한 `Response(encode_sse(events), media_type='text/event-stream')`이고 Dashboard는 SSE/EventSource를 시작하지 않는다. 그러므로 R6의 200 응답을 스트리밍 예외로 head-only PASS 처리할 근거가 없다. 204/304/redirect만 기존 빈 body 예외를 유지하며 200 body 미가용은 정확한 category/status/reason으로 fail-close한다.
+
 ## 미검증과 다음 행동
 
-- WSL R1은 ASGI import, R2는 runner exit1, R3는 Node unhandled, R4는 PRE_AUTH TimeoutError, R5는 runner 120초 timeout에서 중단됐다. 실제 cookie/저장 경고 DOM/same-origin Network/secret 비노출은 아직 PASS가 아니다. 새 SHA에서 마지막 진행 stage가 포함된 전체 opt-in 재실행이 필요하다. 원인 확인 전 timeout을 늘리거나 검증을 생략하지 않는다.
-- Main은 R5 diff·경계 독립 검토 후 exact3만 새 commit/private push하고 동일 SHA 격리 checkout에서 새 일회성 자원·path·port와 정리법을 생성 전에 WORK_STATUS에 기록해야 한다. 실행 때 `ANVIL_F20_R6_PG_DSN`, `ANVIL_F20_R6_PG_ISOLATED=1`, `ANVIL_F20_R6_FRONTEND_DIST`(그 checkout의 `apps/web/dist`), `ANVIL_PLAYWRIGHT_MODULE`(pinned Playwright module)을 주입한다. WSL host Node18에는 Playwright module이 없으므로, 사전 기록한 pinned Playwright 1.62.1 container의 전체 JSON argv를 `ANVIL_F20_R6_BROWSER_COMMAND_JSON`에 준다. container는 host loopback HTTPS listener에 닿아야 하고 `ANVIL_F20_R6_API_URL/ISSUER_URL/ALERT_CODE/CONTROL_TOKEN/ALERT_ENTITY/ALERT_CAUSE/SECRET_VALUES_JSON` 일곱 환경변수를 `-e NAME`으로만 전달해야 한다. 값은 임시 시험 프로세스에서만 사용하고 출력하지 않는다. 테스트 stdout의 `R6_E2E_EVIDENCE`와 정확한 exit, DB/Network/DOM 결과, 임시 자원 잔류0을 이 보고서에 후속 기록해야 한다. timeout이면 Python이 Docker CLI 자식을 종료하더라도 container가 남을 수 있어 Main의 사전 명명 대상 확인·정리 절차가 필수다.
+- WSL R1은 ASGI import, R2는 runner exit1, R3는 Node unhandled, R4는 PRE_AUTH TimeoutError, R5는 runner 120초 timeout, R6는 responseFacts 미완료에서 중단됐다. 실제 cookie/저장 경고 DOM 일부는 도달했지만 전체 same-origin Network/secret 비노출·DB 최종 확인을 포함한 E2E PASS가 아니다. 새 SHA에서 category/status 진단과 전체 opt-in 재실행이 필요하다. 원인 확인 전 timeout을 늘리거나 검증을 생략하지 않는다.
+- Main은 R6 diff·경계 독립 검토 후 exact3만 새 commit/private push하고 동일 SHA 격리 checkout에서 새 일회성 자원·path·port와 정리법을 생성 전에 WORK_STATUS에 기록해야 한다. 실행 때 `ANVIL_F20_R6_PG_DSN`, `ANVIL_F20_R6_PG_ISOLATED=1`, `ANVIL_F20_R6_FRONTEND_DIST`(그 checkout의 `apps/web/dist`), `ANVIL_PLAYWRIGHT_MODULE`(pinned Playwright module)을 주입한다. WSL host Node18에는 Playwright module이 없으므로, 사전 기록한 pinned Playwright 1.62.1 container의 전체 JSON argv를 `ANVIL_F20_R6_BROWSER_COMMAND_JSON`에 준다. container는 host loopback HTTPS listener에 닿아야 하고 `ANVIL_F20_R6_API_URL/ISSUER_URL/ALERT_CODE/CONTROL_TOKEN/ALERT_ENTITY/ALERT_CAUSE/SECRET_VALUES_JSON` 일곱 환경변수를 `-e NAME`으로만 전달해야 한다. 값은 임시 시험 프로세스에서만 사용하고 출력하지 않는다. 테스트 stdout의 `R6_E2E_EVIDENCE`와 정확한 exit, DB/Network/DOM 결과, 임시 자원 잔류0을 이 보고서에 후속 기록해야 한다. timeout이면 Python이 Docker CLI 자식을 종료하더라도 container가 남을 수 있어 Main의 사전 명명 대상 확인·정리 절차가 필수다.
 - 정식 WSL entity/checkout, 실제 로그인 화면 클릭, E-SHOT와 전체 E-NET formal acceptance, 다른 Dashboard Health/Next Actions/ack, 전체 U-01/F-20 수락, C30 `OPEN_BLOCKING`/ReleaseDecision `DEFER`, 사용자 인수와 Production은 계속 미검증이다.
 
 ## rollback
 
-R5 시작 SHA `d7ab585`까지의 기존 제품 테스트 commit은 Main이 보존한다. 이번 미커밋 진행 marker 보완은 exact3의 Python 테스트·Node 브라우저·본 보고서 diff만 되돌리면 R5 직전 상태로 돌아간다. 통합 전체 rollback 판단은 Main이 정확한 commit·자원 소유를 확인해 수행하며 다른 dirty/untracked 자료, 원장, 진행 문서, 공유 자원은 건드리지 않는다. WSL 실행 뒤에는 Main이 사전 기록한 정확한 일회성 자원만 확인·제거한다.
+R6 시작 SHA `495e5bc`까지의 기존 제품 테스트 commit은 Main이 보존한다. 이번 미커밋 응답 캡처 보완은 exact3의 Python 테스트·Node 브라우저·본 보고서 diff만 되돌리면 R6 직전 상태로 돌아간다. 통합 전체 rollback 판단은 Main이 정확한 commit·자원 소유를 확인해 수행하며 다른 dirty/untracked 자료, 원장, 진행 문서, 공유 자원은 건드리지 않는다. WSL 실행 뒤에는 Main이 사전 기록한 정확한 일회성 자원만 확인·제거한다.
