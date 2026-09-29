@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from pathlib import Path
+from copy import deepcopy
 import json
 
 from scripts import f20_u01_r10_start_overlay as overlay
@@ -53,3 +54,14 @@ def test_r10_scope_is_only_dashboard_api_slice():
         "tests/api/test_f20_u01_r10_oidc_dashboard.py",
         "docs/04_test_reports/F-20_U01_R10_DASHBOARD_READ_API_RESULT.md",
     ]
+
+
+def test_r10_rejects_mutated_write_fence():
+    bundle = {
+        "events": json.loads((ROOT / overlay.EVENTS).read_bytes()),
+        "progress": json.loads((ROOT / overlay.PROGRESS).read_bytes()),
+    }
+    tampered = deepcopy(bundle)
+    tampered["events"]["events"][1850]["details"]["write_fencing_token"] = "forged"
+    assert "F20_U01_R10_TRANSITION_INVALID" in overlay.validate_control(
+        ROOT, tampered, datetime.now(timezone.utc))

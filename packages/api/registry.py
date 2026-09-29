@@ -71,6 +71,7 @@ def _permission(method: str, path: str) -> str:
         "GET /api/providers/{providerId}/models": "provider:read",
         "GET /api/operations/alerts": "operations:alerts:read",
         "GET /api/operations/audit": "operations:audit:read",
+        "GET /api/dashboard/operations": "dashboard:read",
         "POST /api/projects/{projectId}/tasks": "tasks:write",
         "GET /api/tasks/{taskId}": "tasks:read",
         "GET /api/runs/{id}/events": "run:events:read",
@@ -96,6 +97,7 @@ def _permission(method: str, path: str) -> str:
 _V1_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
     ("GET", "/api/operations/alerts", "16.2"),
     ("GET", "/api/operations/audit", "16.2"),
+    ("GET", "/api/dashboard/operations", "16.2"),
     ("POST", "/api/projects/{projectId}/tasks", "28.2"),
     ("GET", "/api/tasks/{taskId}", "28.3"),
     ("POST", "/api/projects/{id}/intents", "47.13"),
