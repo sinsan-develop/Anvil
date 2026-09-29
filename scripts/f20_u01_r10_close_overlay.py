@@ -31,7 +31,9 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN,
                  "docs/04_test_reports/F-20_U01_R10_DASHBOARD_READ_API_PLAN.md",
                  "docs/work_orders/F-20_U01_R10_DASHBOARD_READ_API_WORK_INSTRUCTION.md",
                  "docs/work_orders/F-20_U01_R10_DASHBOARD_READ_API_INVOCATION.md",
-                 "docs/04_test_reports/F-20_U01_R11_DASHBOARD_QUEUE_UI_PLAN.md"}
+                 "docs/04_test_reports/F-20_U01_R11_DASHBOARD_QUEUE_UI_PLAN.md",
+                 "docs/work_orders/F-20_U01_R11_DASHBOARD_QUEUE_UI_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R11_DASHBOARD_QUEUE_UI_INVOCATION.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 
