@@ -224,6 +224,26 @@ def _safe_response_diagnostic(output: str) -> str:
     return detail
 
 
+def _safe_probe_diagnostic(output: str) -> str:
+    detail = ""
+    for match in re.finditer(
+        r"^R6_RESPONSE_PROBE category=PROVIDER_API status=401 "
+        r"length=(MISSING|ZERO|POSITIVE|INVALID) "
+        r"transfer=(MISSING|CHUNKED|OTHER) "
+        r"finished=(DONE|ERROR|TIMEOUT) "
+        r"native=(READABLE_401|EMPTY_BODY|OTHER_STATUS|ERROR|TIMEOUT)\r?$",
+        output, flags=re.MULTILINE,
+    ):
+        length, transfer, finished, native = match.groups()
+        detail = (f" length={length} transfer={transfer} finished={finished} "
+                  f"native={native}")
+    return detail
+
+
+def _safe_network_diagnostic(output: str) -> str:
+    return _safe_response_diagnostic(output) + _safe_probe_diagnostic(output)
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -261,14 +281,14 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         stage = _last_browser_progress(error.stdout)
         stdout = (error.stdout.decode("utf-8", errors="replace") if isinstance(error.stdout, bytes)
                   else error.stdout if isinstance(error.stdout, str) else "")
-        detail = _safe_response_diagnostic(stdout) if stage in _RESPONSE_FAILURE_STAGES else ""
+        detail = _safe_network_diagnostic(stdout) if stage in _RESPONSE_FAILURE_STAGES else ""
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit=TIMEOUT class=TimeoutExpired; "
                     f"MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED{detail}", pytrace=False)
     except OSError:
         pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=LAUNCH class=OSError", pytrace=False)
     if result.returncode != 0:
         stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
-        detail = (_safe_response_diagnostic(result.stdout + "\n" + result.stderr)
+        detail = (_safe_network_diagnostic(result.stdout + "\n" + result.stderr)
                   if stage in _RESPONSE_FAILURE_STAGES else "")
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
                     f"class={error_class}{detail}", pytrace=False)
@@ -675,6 +695,33 @@ def test_r6_phase_response_failure_reports_only_safe_diagnostic(monkeypatch, sta
     message = str(failure.value)
     assert f"stage={stage} exit=1 class=Error" in message
     assert expected in message
+    assert secret not in message
+
+
+def test_r6_provider_401_probe_reports_only_fixed_facts(monkeypatch):
+    secret = "private-dsn-or-token"
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1,
+            stdout=("R6_NODE_STARTED\nR6_STAGE PRE_AUTH_RESPONSES\n"
+                    "R6_RESPONSE_PROBE category=PROVIDER_API status=401 length=POSITIVE "
+                    "transfer=CHUNKED finished=TIMEOUT native=READABLE_401\n"
+                    "R6_RESPONSE_CAPTURE_FAILED category=PROVIDER_API status=401 "
+                    f"reason=TIMEOUT\n{secret}"),
+            stderr=f"R6_BROWSER_FAILED stage=PRE_AUTH_RESPONSES class=Error\n{secret}",
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    message = str(failure.value)
+    assert "stage=PRE_AUTH_RESPONSES exit=1 class=Error" in message
+    assert "category=PROVIDER_API status=401 reason=TIMEOUT" in message
+    assert "length=POSITIVE transfer=CHUNKED finished=TIMEOUT native=READABLE_401" in message
     assert secret not in message
 
 

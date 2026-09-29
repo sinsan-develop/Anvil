@@ -140,6 +140,31 @@ function failPhaseResponse(category, status, reason) {
   throw new Error('R6_PHASE_RESPONSE_FAILED');
 }
 
+async function probeResponseTransport(response, nativeRead, timeoutMs = 2000) {
+  let headers = {};
+  try { headers = response.headers() || {}; } catch { /* diagnostics stay unknown */ }
+  const normalized = Object.fromEntries(Object.entries(headers)
+    .map(([name, value]) => [name.toLowerCase(), value]));
+  const rawLength = normalized['content-length'];
+  const length = rawLength === undefined ? 'MISSING'
+    : /^0+$/.test(rawLength) ? 'ZERO'
+      : /^[0-9]+$/.test(rawLength) ? 'POSITIVE' : 'INVALID';
+  const rawTransfer = normalized['transfer-encoding'];
+  const transfer = rawTransfer === undefined ? 'MISSING'
+    : String(rawTransfer).toLowerCase() === 'chunked' ? 'CHUNKED' : 'OTHER';
+  const completed = await settleCapture(() => boundedCapture(() => response.finished(), timeoutMs));
+  const finished = completed.ok ? (completed.value == null ? 'DONE' : 'ERROR')
+    : completed.reason === 'TIMEOUT' ? 'TIMEOUT' : 'ERROR';
+  const read = await settleCapture(() => boundedCapture(nativeRead, timeoutMs));
+  const native = read.ok
+    ? read.value?.status === 401
+      ? typeof read.value.text === 'string' && read.value.text.length > 0
+        ? 'READABLE_401' : 'EMPTY_BODY'
+      : 'OTHER_STATUS'
+    : read.reason === 'TIMEOUT' ? 'TIMEOUT' : 'ERROR';
+  return { length, transfer, finished, native };
+}
+
 async function fetchOnPage(page, path, options = {}) {
   return page.evaluate(async ({ path, options }) => {
     const response = await fetch(path, { credentials: 'same-origin', ...options });
@@ -194,7 +219,17 @@ async function readyDashboard(page, action, origin, phase, responseCaptures) {
     }
     return capture;
   });
-  verifiedResponseFacts(await Promise.all(captures));
+  const results = await Promise.all(captures);
+  const providerIndex = categories.indexOf('PROVIDER_API');
+  const provider = results[providerIndex];
+  if (!provider.ok && provider.status === 401 && provider.reason === 'TIMEOUT') {
+    const probe = await probeResponseTransport(settled[providerIndex].value,
+      () => fetchOnPage(page, '/api/providers'));
+    writeSync(1, `R6_RESPONSE_PROBE category=PROVIDER_API status=401 `
+      + `length=${probe.length} transfer=${probe.transfer} `
+      + `finished=${probe.finished} native=${probe.native}\n`);
+  }
+  verifiedResponseFacts(results);
   return card;
 }
 
@@ -370,11 +405,13 @@ if (auditSelfTest) {
   const phaseCaptures = new WeakMap();
   const captureResolutions = [];
   const phasePaths = ['/api/health/ready', '/api/providers', '/api/operations/alerts'];
+  let nativeReads = 0;
   let phaseFailureMode = 'CAPTURE_TIMEOUT';
   function releasePhaseResponses(mode = 'NONE') {
     assert.equal(phaseWaiters.length, 3);
     for (const path of phasePaths) {
-      const response = { url: () => apiUrl + path, status: () => 401 };
+      const response = { url: () => apiUrl + path, status: () => 401,
+        headers: () => ({ 'content-length': '29' }), finished: async () => null };
       const matching = phaseWaiters.filter(({ predicate }) => predicate(response));
       assert.equal(matching.length, 1);
       if (path === '/api/providers' && mode === 'WAIT_TIMEOUT') {
@@ -397,6 +434,11 @@ if (auditSelfTest) {
     navigationSteps.push('card');
   } };
   const fakePage = {
+    evaluate: async (_script, { path }) => {
+      assert.equal(path, '/api/providers');
+      nativeReads += 1;
+      return { status: 401, text: '{"error":"private-not-printed"}' };
+    },
     waitForResponse: (predicate, { timeout }) => {
       assert.equal(timeout, 10000);
       return new Promise((resolve, reject) => phaseWaiters.push({ predicate, resolve, reject }));
@@ -434,6 +476,7 @@ if (auditSelfTest) {
       : { ok: true, value: {} });
   }
   await assert.rejects(revokedReady, /R6_RESPONSE_CAPTURE_FAILED/);
+  assert.equal(nativeReads, 1);
   assert.deepEqual(navigationSteps, ['reload', 'card']);
   for (const mode of ['WAIT_TIMEOUT', 'CAPTURE_MISSING']) {
     phaseFailureMode = mode;
@@ -460,6 +503,19 @@ if (auditSelfTest) {
   assert.equal(bounded.status, 200);
   assert.equal(bounded.reason, 'TIMEOUT');
   assert.throws(() => verifiedResponseFacts([bounded]), /R6_RESPONSE_CAPTURE_FAILED/);
+  const probe = await probeResponseTransport({
+    headers: () => ({ 'content-length': '29', 'transfer-encoding': 'chunked' }),
+    finished: async () => null,
+  }, async () => ({ status: 401, text: '{"error":"private-not-printed"}' }), 60);
+  assert.deepEqual(probe, {
+    length: 'POSITIVE', transfer: 'CHUNKED', finished: 'DONE', native: 'READABLE_401',
+  });
+  const stalledProbe = await probeResponseTransport({
+    headers: () => ({}), finished: () => new Promise(() => {}),
+  }, () => new Promise(() => {}), 60);
+  assert.deepEqual(stalledProbe, {
+    length: 'MISSING', transfer: 'MISSING', finished: 'TIMEOUT', native: 'TIMEOUT',
+  });
   for (const status of [204, 302, 304]) {
     const accepted = await captureResponseFact(hangingResponse(status, '/auth/oidc/callback'), 60);
     assert.equal(accepted.ok, true);
