@@ -34,7 +34,9 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN,
                  "docs/work_orders/F-20_U01_R11_DASHBOARD_QUEUE_UI_INVOCATION.md",
                  "docs/04_test_reports/F-20_U01_R12_SCOPED_RUN_READ_PLAN.md",
                  "docs/work_orders/F-20_U01_R12_SCOPED_RUN_READ_WORK_INSTRUCTION.md",
-                 "docs/work_orders/F-20_U01_R12_SCOPED_RUN_READ_INVOCATION.md"}
+                 "docs/work_orders/F-20_U01_R12_SCOPED_RUN_READ_INVOCATION.md",
+                 "scripts/f20_u01_r12_start_overlay.py",
+                 "tests/tooling/test_f20_u01_r12_start_projection.py"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 

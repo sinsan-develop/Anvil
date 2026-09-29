@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1864,
+  "accepted": false,
+  "projection_mode": "F20_U01_R12_SCOPED_RUN_READ_START",
+  "previous_event_sequence": 1860,
+  "product_write_scope": [
+    "packages/persistence/operations_run_read.py",
+    "tests/persistence/test_f20_u01_run_read.py",
+    "docs/04_test_reports/F-20_U01_R12_SCOPED_RUN_READ_RESULT.md"
+  ],
+  "predecessor_commit": "b31fc6856eadc30d8fb9c2a1cbf8c2c4141cde41",
+  "predecessor_events_sha256": "BCE5CCD733A64D82A54029138A09786EB68AA99FFC1F392EE0D74FC5350D3FD3",
+  "plan_path": "docs/04_test_reports/F-20_U01_R12_SCOPED_RUN_READ_PLAN.md",
+  "plan_sha256": "8A7F5876F1D3DC1E4085B3383B80D79E57F444F48E10282DB52BD80A3409C401",
+  "work_instruction_sha256": "6EFB3281E7595B0513676DC272D191E2CC5F5E45545A2FCB4CAB58087654A2FB",
+  "invocation_sha256": "C400DC3493F8F55A85281545341A9A7A9F97276A86FBAC1ED1F4757AB6509236",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
