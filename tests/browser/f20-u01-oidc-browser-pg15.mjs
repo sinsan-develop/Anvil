@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Single Chromium context against the Python-owned HTTPS OIDC/PG15 host.
 import assert from 'node:assert/strict';
+import { writeSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -13,6 +14,23 @@ const expectedEntity = process.env.ANVIL_F20_R6_ALERT_ENTITY;
 const expectedCause = process.env.ANVIL_F20_R6_ALERT_CAUSE;
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
+const progressStages = new Set([
+  'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
+  'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
+  'PRE_AUTH_FETCH', 'PRE_AUTH_CARD_CHECK', 'OIDC_AUTH_REQUEST',
+  'OIDC_ISSUER_REDIRECT', 'OIDC_CALLBACK', 'OIDC_SESSION', 'OIDC_COOKIE',
+  'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_ALERT_WAIT',
+  'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
+  'REVOKE_CARD', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
+  'NETWORK_RESPONSE_FACTS', 'NETWORK_DOM', 'NETWORK_IDP_STATE',
+  'NETWORK_ASSERT', 'ISSUER_DISPOSE', 'BROWSER_CLOSE',
+]);
+
+function markStage(value) {
+  if (!progressStages.has(value)) throw new Error('R6_STAGE_INVALID');
+  stage = value;
+  writeSync(1, `R6_STAGE ${value}\n`);
+}
 
 function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
   const markers = [...sensitiveValues, sessionValue].filter((value) => typeof value === 'string' && value);
@@ -83,7 +101,7 @@ async function fetchOnPage(page, path, options = {}) {
 }
 
 async function readyDashboard(page, action, origin, phase) {
-  stage = phase + '_DOCUMENT';
+  markStage(phase + '_DOCUMENT');
   if (action === 'goto') {
     await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
   } else if (action === 'reload') {
@@ -91,26 +109,32 @@ async function readyDashboard(page, action, origin, phase) {
   } else {
     throw new Error('R6_NAVIGATION_ACTION_INVALID');
   }
-  stage = phase + '_CARD';
+  markStage(phase + '_CARD');
   const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
   await card.waitFor({ state: 'visible' });
   return card;
 }
 
 async function main() {
+  markStage('BOOTSTRAP');
   sensitiveValues = JSON.parse(process.env.ANVIL_F20_R6_SECRET_VALUES_JSON || '[]');
   assert.equal(new URL(apiUrl).hostname, '127.0.0.1');
   assert.equal(new URL(issuerUrl).hostname, '127.0.0.1');
   assert.equal(alertCode, 'WORKER_LEASE_EXPIRED');
   assert.ok(controlToken?.length >= 32);
   assert.ok(expectedEntity && expectedCause && Array.isArray(sensitiveValues));
+  markStage('PLAYWRIGHT_REQUIRE');
   const { chromium, request: playwrightRequest } = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
-  stage = 'BROWSER_LAUNCH';
+  markStage('BROWSER_LAUNCH');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  let flowComplete = false;
   try {
+    markStage('BROWSER_CONTEXT');
     const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1920, height: 1080 } });
+    markStage('ISSUER_CONTEXT');
     const issuerClient = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
     try {
+    markStage('PAGE_CREATE');
     const page = await context.newPage();
     const requestFacts = [];
     const responseFacts = [];
@@ -121,38 +145,42 @@ async function main() {
       responseFacts.push(captureResponseFact(response));
     });
     const card = await readyDashboard(page, 'goto', apiUrl, 'PRE_AUTH');
-    stage = 'PRE_AUTH_FETCH';
+    markStage('PRE_AUTH_FETCH');
     const preAuth = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(preAuth.status, 401);
-    stage = 'PRE_AUTH_CARD_CHECK';
+    markStage('PRE_AUTH_CARD_CHECK');
     assert.equal(await card.getByText(alertCode, { exact: true }).count(), 0);
 
-    stage = 'OIDC_AUTH';
+    markStage('OIDC_AUTH_REQUEST');
     const authorization = await fetchOnPage(page, '/auth/oidc/authorization', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
     });
     assert.equal(authorization.status, 200);
     const authPayload = JSON.parse(authorization.text).data;
     assert.equal(new URL(authPayload.authorization_url).origin, new URL(issuerUrl).origin);
+    markStage('OIDC_ISSUER_REDIRECT');
     const redirect = await issuerClient.get(authPayload.authorization_url, { maxRedirects: 0 });
     assert.equal(redirect.status(), 302);
     const callbackLocation = new URL(redirect.headers().location);
     assert.equal(callbackLocation.origin, apiUrl);
     assert.equal(callbackLocation.pathname, '/auth/oidc/callback');
     assert.equal(callbackLocation.searchParams.get('state'), authPayload.browser_state);
+    markStage('OIDC_CALLBACK');
     const callback = await fetchOnPage(page, '/auth/oidc/callback', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: callbackLocation.searchParams.get('code'),
         state: authPayload.browser_state, browser_state: authPayload.browser_state }),
     });
     assert.equal(callback.status, 200);
+    markStage('OIDC_SESSION');
     const session = await fetchOnPage(page, '/auth/session/status');
     assert.equal(session.status, 200);
     assert.equal(JSON.parse(session.text).authenticated, true);
+    markStage('OIDC_COOKIE');
     const cookie = (await context.cookies(apiUrl)).find(({ name }) => name === 'anvil_session');
     assert.ok(cookie?.secure && cookie?.httpOnly);
 
-    stage = 'STORED_ALERT';
+    markStage('STORED_ALERT_FETCH');
     const stored = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(stored.status, 200);
     const alerts = JSON.parse(stored.text).data.alerts;
@@ -160,31 +188,38 @@ async function main() {
     assert.equal(alerts[0].related_entity_id, expectedEntity);
     assert.equal(alerts[0].cause, expectedCause);
     await readyDashboard(page, 'reload', apiUrl, 'STORED');
-    stage = 'STORED_ALERT';
+    markStage('STORED_ALERT_WAIT');
     await card.getByText(alertCode, { exact: true }).waitFor();
     const visibleBeforeRevoke = await card.getByText(alertCode, { exact: true }).count() === 1;
+    markStage('STORED_ROW');
     const rowText = await card.locator('li').filter({ hasText: alertCode }).innerText();
     const rowMatches = rowText.includes(expectedEntity) && rowText.includes(expectedCause);
     assert.ok(rowMatches);
 
-    stage = 'REVOKE';
+    markStage('REVOKE_CONTROL');
     const released = await issuerClient.post(new URL('/r6-control/revoke', issuerUrl).href, {
       headers: { 'x-r6-control-token': controlToken },
     });
     assert.equal(released.status(), 200);
+    markStage('REVOKE_FETCH');
     const revoked = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(revoked.status, 403);
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE');
-    stage = 'REVOKE_CLEAR';
+    markStage('REVOKE_CLEAR');
     await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
-    stage = 'NETWORK_AUDIT';
+    markStage('NETWORK_REQUEST_FACTS');
     const requests = verifiedFacts(await Promise.all(requestFacts));
+    markStage('NETWORK_RESPONSE_FACTS');
     const responses = verifiedFacts(await Promise.all(responseFacts));
+    markStage('NETWORK_DOM');
+    const domText = await page.locator('body').innerText();
     const { allAppRequestsSameOrigin, offOriginCredentialLeak, secretExposure } =
-      auditTraffic(requests, responses, await page.locator('body').innerText(), cookie.value);
+      auditTraffic(requests, responses, domText, cookie.value);
+    markStage('NETWORK_IDP_STATE');
     const idpContextSeparate = (await issuerClient.storageState()).cookies
       .every(({ name }) => name !== 'anvil_session');
+    markStage('NETWORK_ASSERT');
     const appApiRequestCount = requests.filter(({ url }) => new URL(url).pathname.startsWith('/api/')).length;
     assert.ok(allAppRequestsSameOrigin && !offOriginCredentialLeak && !secretExposure
       && idpContextSeparate && staleCleared && appApiRequestCount > 0);
@@ -198,10 +233,13 @@ async function main() {
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
       pageRequestCount: requests.length, appApiRequestCount,
     }));
+    flowComplete = true;
     } finally {
+      if (flowComplete) markStage('ISSUER_DISPOSE');
       await issuerClient.dispose();
     }
   } finally {
+    if (flowComplete) markStage('BROWSER_CLOSE');
     await browser.close();
   }
 }
@@ -266,9 +304,12 @@ if (auditSelfTest) {
   navigationSteps.length = 0;
   assert.equal(await readyDashboard(fakePage, 'reload', apiUrl, 'REVOKE'), fakeCard);
   assert.deepEqual(navigationSteps, ['reload', 'card']);
+  markStage('PRE_AUTH_DOCUMENT');
+  assert.equal(stage, 'PRE_AUTH_DOCUMENT');
+  assert.throws(() => markStage('PRIVATE_SECRET'), /R6_STAGE_INVALID/);
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
-  console.log('R6_NODE_STARTED');
+  writeSync(1, 'R6_NODE_STARTED\n');
   main().catch((error) => {
     console.error('R6_BROWSER_FAILED stage=' + stage + ' class=' + error.name);
     process.exitCode = 1;

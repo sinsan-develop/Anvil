@@ -43,10 +43,15 @@ _CERT_FILES = ("issuer.pem", "issuer.key", "api.pem", "api.key")
 _ALERT_CODE = "WORKER_LEASE_EXPIRED"
 _PG_DATA_PATH = "/var/lib/postgresql/data"
 _BROWSER_STAGES = frozenset({
-    "BOOTSTRAP", "BROWSER_LAUNCH", "PRE_AUTH", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
-    "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH", "STORED_ALERT",
-    "STORED_DOCUMENT", "STORED_CARD", "REVOKE", "REVOKE_DOCUMENT", "REVOKE_CARD",
-    "REVOKE_CLEAR", "NETWORK_AUDIT",
+    "BOOTSTRAP", "PLAYWRIGHT_REQUIRE", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
+    "ISSUER_CONTEXT", "PAGE_CREATE", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
+    "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH_REQUEST",
+    "OIDC_ISSUER_REDIRECT", "OIDC_CALLBACK", "OIDC_SESSION", "OIDC_COOKIE",
+    "STORED_ALERT_FETCH", "STORED_DOCUMENT", "STORED_CARD", "STORED_ALERT_WAIT",
+    "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DOCUMENT",
+    "REVOKE_CARD", "REVOKE_CLEAR", "NETWORK_REQUEST_FACTS",
+    "NETWORK_RESPONSE_FACTS", "NETWORK_DOM", "NETWORK_IDP_STATE",
+    "NETWORK_ASSERT", "ISSUER_DISPOSE", "BROWSER_CLOSE",
 })
 _BROWSER_ERROR_CLASSES = frozenset({
     "AssertionError", "Error", "TypeError", "TimeoutError", "SyntaxError",
@@ -180,6 +185,18 @@ def _classify_browser_failure(stdout: str, stderr: str) -> tuple[str, str]:
     return "PRE_NODE_UNKNOWN", "ProcessError"
 
 
+def _last_browser_progress(output: bytes | str | None) -> str:
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", errors="replace")
+    if not isinstance(output, str):
+        return "RUNNER"
+    last = "RUNNER"
+    for match in re.finditer(r"^R6_STAGE ([A-Z_]+)\r?$", output, flags=re.MULTILINE):
+        if match.group(1) in _BROWSER_STAGES:
+            last = match.group(1)
+    return last
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -213,8 +230,9 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
     try:
         result = subprocess.run(command, shell=False, env=environment, capture_output=True,
                                 text=True, encoding="utf-8", timeout=120, check=False)
-    except subprocess.TimeoutExpired:
-        pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=TIMEOUT class=TimeoutExpired; "
+    except subprocess.TimeoutExpired as error:
+        stage = _last_browser_progress(error.stdout)
+        pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit=TIMEOUT class=TimeoutExpired; "
                     "MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED", pytrace=False)
     except OSError:
         pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=LAUNCH class=OSError", pytrace=False)
@@ -523,12 +541,12 @@ def test_r6_asgi_import_uses_test_console_origin_without_host_environment():
 def test_r6_browser_failure_classification_never_returns_raw_output():
     secret = "private-dsn-or-token"
     cases = (
-        ("", f"R6_BROWSER_FAILED stage=PRE_AUTH class=Error\n{secret}",
-         ("PRE_AUTH", "Error")),
+        ("", f"R6_BROWSER_FAILED stage=PRE_AUTH_FETCH class=Error\n{secret}",
+         ("PRE_AUTH_FETCH", "Error")),
         ("R6_NODE_STARTED\nR6_BROWSER_FAILED stage=PRE_AUTH_DOCUMENT class=TimeoutError\n", "",
          ("PRE_AUTH_DOCUMENT", "TimeoutError")),
-        ("R6_BROWSER_FAILED stage=OIDC_AUTH class=AssertionError\n", "",
-         ("OIDC_AUTH", "AssertionError")),
+        ("R6_BROWSER_FAILED stage=OIDC_AUTH_REQUEST class=AssertionError\n", "",
+         ("OIDC_AUTH_REQUEST", "AssertionError")),
         ("R6_NODE_STARTED\n", secret, ("NODE_UNHANDLED", "UnhandledError")),
         ("", f"npm error code EAI_AGAIN\n{secret}",
          ("NPM_INSTALL", "PackageManagerError")),
@@ -542,6 +560,28 @@ def test_r6_browser_failure_classification_never_returns_raw_output():
         actual = _classify_browser_failure(stdout, stderr)
         assert actual == expected
         assert secret not in " ".join(actual)
+
+
+def test_r6_timeout_reports_last_whitelisted_progress_without_raw_output(monkeypatch):
+    secret = "private-dsn-or-token"
+    partial_stdout = ("R6_STAGE PRE_AUTH_DOCUMENT\n" + secret + "\n"
+                      "R6_STAGE PRE_AUTH_CARD\nR6_STAGE PRIVATE_SECRET\n").encode()
+
+    def timed_out(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired(cmd="browser", timeout=120, output=partial_stdout,
+                                        stderr=secret.encode())
+
+    monkeypatch.setattr(subprocess, "run", timed_out)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    message = str(failure.value)
+    assert "stage=PRE_AUTH_CARD exit=TIMEOUT class=TimeoutExpired" in message
+    assert "MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED" in message
+    assert secret not in message
+    assert "PRIVATE_SECRET" not in message
 
 
 def test_opt_in_r6_oidc_browser_pg15():
