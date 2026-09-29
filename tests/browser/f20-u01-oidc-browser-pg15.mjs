@@ -17,11 +17,13 @@ let stage = 'BOOTSTRAP';
 const progressStages = new Set([
   'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
+  'PRE_AUTH_RESPONSES',
   'PRE_AUTH_FETCH', 'PRE_AUTH_CARD_CHECK', 'OIDC_AUTH_REQUEST',
   'OIDC_ISSUER_REDIRECT', 'OIDC_CALLBACK', 'OIDC_SESSION', 'OIDC_COOKIE',
-  'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_ALERT_WAIT',
+  'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_RESPONSES',
+  'STORED_ALERT_WAIT',
   'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
-  'REVOKE_CARD', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
+  'REVOKE_CARD', 'REVOKE_RESPONSES', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
   'NETWORK_RESPONSE_FACTS', 'NETWORK_DOM', 'NETWORK_IDP_STATE',
   'NETWORK_ASSERT', 'ISSUER_DISPOSE', 'BROWSER_CLOSE',
 ]);
@@ -141,7 +143,16 @@ async function fetchOnPage(page, path, options = {}) {
   }, { path, options });
 }
 
-async function readyDashboard(page, action, origin, phase) {
+async function readyDashboard(page, action, origin, phase, responseCaptures) {
+  const categories = ['HEALTH_API', 'PROVIDER_API', 'ALERT_API'];
+  const responses = categories.map((category) => page.waitForResponse((response) => {
+    try {
+      return new URL(response.url()).origin === origin && responseCategory(response.url()) === category;
+    } catch {
+      return false;
+    }
+  }, { timeout: 10000 }));
+  const responseReady = settleCapture(() => Promise.all(responses));
   markStage(phase + '_DOCUMENT');
   if (action === 'goto') {
     await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
@@ -153,6 +164,12 @@ async function readyDashboard(page, action, origin, phase) {
   markStage(phase + '_CARD');
   const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
   await card.waitFor({ state: 'visible' });
+  markStage(phase + '_RESPONSES');
+  const settled = await responseReady;
+  assert.ok(settled.ok, 'R6_DASHBOARD_RESPONSE_MISSING');
+  const captures = settled.value.map((response) => responseCaptures.get(response));
+  assert.ok(captures.every(Boolean), 'R6_DASHBOARD_CAPTURE_MISSING');
+  verifiedResponseFacts(await Promise.all(captures));
   return card;
 }
 
@@ -179,13 +196,16 @@ async function main() {
     const page = await context.newPage();
     const requestFacts = [];
     const responseFacts = [];
+    const responseCaptures = new WeakMap();
     page.on('request', (request) => {
       requestFacts.push(captureRequestFact(request));
     });
     page.on('response', (response) => {
-      responseFacts.push(captureResponseFact(response));
+      const capture = captureResponseFact(response);
+      responseCaptures.set(response, capture);
+      responseFacts.push(capture);
     });
-    const card = await readyDashboard(page, 'goto', apiUrl, 'PRE_AUTH');
+    const card = await readyDashboard(page, 'goto', apiUrl, 'PRE_AUTH', responseCaptures);
     markStage('PRE_AUTH_FETCH');
     const preAuth = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(preAuth.status, 401);
@@ -228,7 +248,7 @@ async function main() {
     assert.deepEqual(alerts.map(({ code }) => code), [alertCode]);
     assert.equal(alerts[0].related_entity_id, expectedEntity);
     assert.equal(alerts[0].cause, expectedCause);
-    await readyDashboard(page, 'reload', apiUrl, 'STORED');
+    await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
     markStage('STORED_ALERT_WAIT');
     await card.getByText(alertCode, { exact: true }).waitFor();
     const visibleBeforeRevoke = await card.getByText(alertCode, { exact: true }).count() === 1;
@@ -245,7 +265,7 @@ async function main() {
     markStage('REVOKE_FETCH');
     const revoked = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(revoked.status, 403);
-    await readyDashboard(page, 'reload', apiUrl, 'REVOKE');
+    await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
     markStage('REVOKE_CLEAR');
     await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
@@ -321,29 +341,65 @@ if (auditSelfTest) {
     assert.equal(result.value.body, '');
   }
   const navigationSteps = [];
+  const phaseWaiters = [];
+  const phaseCaptures = new WeakMap();
+  const captureResolutions = [];
+  const phasePaths = ['/api/health/ready', '/api/providers', '/api/operations/alerts'];
+  function releasePhaseResponses(failedProvider = false) {
+    assert.equal(phaseWaiters.length, 3);
+    for (const path of phasePaths) {
+      const response = { url: () => apiUrl + path, status: () => 401 };
+      const matching = phaseWaiters.filter(({ predicate }) => predicate(response));
+      assert.equal(matching.length, 1);
+      let release;
+      phaseCaptures.set(response, new Promise((resolve) => { release = resolve; }));
+      captureResolutions.push({ release, path, failedProvider });
+      matching[0].resolve(response);
+    }
+    phaseWaiters.length = 0;
+  }
   const fakeCard = { waitFor: async ({ state }) => {
     assert.equal(state, 'visible');
     navigationSteps.push('card');
   } };
   const fakePage = {
+    waitForResponse: (predicate, { timeout }) => {
+      assert.equal(timeout, 10000);
+      return new Promise((resolve) => phaseWaiters.push({ predicate, resolve }));
+    },
     goto: async (url, { waitUntil }) => {
       assert.equal(url, apiUrl + '/');
       assert.equal(waitUntil, 'domcontentloaded');
       navigationSteps.push('document');
+      releasePhaseResponses();
     },
     reload: async ({ waitUntil }) => {
       assert.equal(waitUntil, 'domcontentloaded');
       navigationSteps.push('reload');
+      releasePhaseResponses(true);
     },
     locator: (selector) => {
       assert.equal(selector, 'section[aria-labelledby="critical-alerts-heading"]');
       return fakeCard;
     },
   };
-  assert.equal(await readyDashboard(fakePage, 'goto', apiUrl, 'PRE_AUTH'), fakeCard);
+  let readySettled = false;
+  const initialReady = readyDashboard(fakePage, 'goto', apiUrl, 'PRE_AUTH', phaseCaptures)
+    .then((value) => { readySettled = true; return value; });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(readySettled, false);
+  for (const { release } of captureResolutions.splice(0)) release({ ok: true, value: {} });
+  assert.equal(await initialReady, fakeCard);
   assert.deepEqual(navigationSteps, ['document', 'card']);
   navigationSteps.length = 0;
-  assert.equal(await readyDashboard(fakePage, 'reload', apiUrl, 'REVOKE'), fakeCard);
+  const revokedReady = readyDashboard(fakePage, 'reload', apiUrl, 'REVOKE', phaseCaptures);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  for (const { release, path, failedProvider } of captureResolutions.splice(0)) {
+    release(path === '/api/providers' && failedProvider
+      ? { ok: false, category: 'PROVIDER_API', status: 401, reason: 'TIMEOUT' }
+      : { ok: true, value: {} });
+  }
+  await assert.rejects(revokedReady, /R6_RESPONSE_CAPTURE_FAILED/);
   assert.deepEqual(navigationSteps, ['reload', 'card']);
   markStage('PRE_AUTH_DOCUMENT');
   assert.equal(stage, 'PRE_AUTH_DOCUMENT');
