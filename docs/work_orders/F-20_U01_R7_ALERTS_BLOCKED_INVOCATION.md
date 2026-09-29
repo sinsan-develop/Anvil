@@ -1,0 +1,1 @@
+기존 `codex/f18-wsl-ops` worktree에서 R7 WorkInstruction을 읽고 epoch20 worker/write dual lease·G-05 PASS를 확인하라. exact4 안에서 Alerts 조회 403의 `BLOCKED` 표시와 저장 경고 제거를 RED→GREEN으로 구현하고 인접·브라우저 검증 결과를 Main에게 보고하라. commit/push/merge나 공유 WSL 자원 변경은 하지 말라.
