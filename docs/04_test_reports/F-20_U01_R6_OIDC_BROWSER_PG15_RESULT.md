@@ -1,8 +1,8 @@
-# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (R10 기본 OFF A/B 진단)
+# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (R11 WSL A/B 실측)
 
 ## 판정
 
-`LOCAL_GREEN; R10_DIAGNOSTIC_AB_READY; NORMAL_E2E_NOT_PASSED`. SHA `5c62e8a75f7cb09e26d3c778cccab4173ed0fb9f`의 기본 모드 WSL opt-in은 `PRE_AUTH_RESPONSES`에서 Provider 401 body TIMEOUT으로 실패했고, `length=POSITIVE transfer=MISSING finished=TIMEOUT native=READABLE_401`이었다. Main 승인으로 기본 OFF인 테스트 전용 A/B 진단 모드를 추가했다. ON일 때만 Chromium 초기 스크립트가 same-origin non-ok fetch의 원래 Response clone 본문을 bounded 소비해 원 요청 완료 가설을 시험한다. 기존 상태·Network·Secret·DB 판정은 모두 유지하고, ON의 모든 검증이 통과해도 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP으로 끝낸다. A/B WSL 결과 전까지 App body 미소비의 인과와 실제 E2E는 미확정이다. 이 보고는 U-01/F-20 수락, C30 사고 해소, Production 검증이 아니다.
+`R11_AB_SUPPORTS_BODY_CONSUMPTION_HYPOTHESIS; NORMAL_E2E_NOT_PASSED`. 동일 SHA `be182efdaf0658bff13e6ea01f57dd994b809869`의 WSL 실제 opt-in에서 기본 OFF는 Provider 401 본문 TIMEOUT으로 재실패했다. 새 일회성 PG를 사용한 진단 ON은 기존 브라우저·Network·Secret·DB 사후검사를 끝내고 `nonOkDrainCount=5`, `provider401DrainCount=1`을 기록한 뒤 예정된 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP이었다. 차이는 원래 same-origin non-ok Response clone의 bounded 소비 계측이므로 body 미소비 가설을 강하게 지지하지만, 계측 없는 제품 `App.tsx` 수정의 효과나 수락 PASS를 입증하지 않는다. 제품 변경은 현재 exact3/WI/write lease 범위 밖이며 이번에는 수행하지 않았다.
 
 ## 판단 이유와 기준선
 
@@ -17,6 +17,7 @@
 - R8 화면 phase 실패 진단 보완 시작 HEAD `1a9806a06534bd71807dcd63da43adb15437f924`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
 - R9 Provider 401 본문 진단 보완 시작 HEAD `5b9a574b10a109c1c0a1abff9fcf512dbbcc2583`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
 - R10 A/B 진단 시작 HEAD `5c62e8a75f7cb09e26d3c778cccab4173ed0fb9f`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다.
+- R11 WSL A/B 결과 기록 시작 HEAD `be182efdaf0658bff13e6ea01f57dd994b809869`, 같은 branch, 제품 Git status clean. Main의 `docs/WORK_STATUS.md`는 별도 소유다. 본 writer는 결과보고서만 수정한다.
 - canonical seq1822, actor `developer-primary-f20-u01-r6`, epoch18 worker `worker-lease-f20-u01-r6-r6oidcstart1`/execution token `f20-u01-r6-execution-fence-epoch-18-r6oidcstart1`, 종속 write `write-lease-f20-u01-r6-r6oidcstart1`/write token `f20-u01-r6-write-fence-epoch-18-r6oidcstart1`, 둘 다 ACTIVE·만료 `2026-09-29T14:19:55+00:00`, 발급 dispatch `6d946bb9792e328ae97233726ac6322fece4f68f`. G-05 seq1822 PASS 후 정확한 세 파일만 작성했다.
 - 설계 SHA-256 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`; 작업계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`; 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`; 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`; 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`; R6 WI `7BFE973A0741B5E00493DE2884F15F3741EB260043433BC140F3FF15146C27A0`, Invocation `0A0CA362F4F7294581A340F734AF36D8609A4DF04D46FB79FAD86E00B5F53A45`.
 
@@ -47,7 +48,7 @@
 | `R6_PROVIDER_401_CAPTURE_TIMEOUT_R7` | `dafa66c` WSL에서 초기 `PROVIDER_API` 401 본문이 최종 감사 시 이미 TIMEOUT. 각 `goto`/`reload` 전에 same-origin Health·Provider·Alerts의 response waiter를 등록하고 카드 visible 뒤 세 응답의 기존 수집 Promise 완료·성공을 요구한다. 하나라도 누락/미완료면 phase에서 fail-close하고 고정 category/status/reason만 노출한다. | 화면 navigation에 따른 취소 가설과 전체 E2E는 새 SHA WSL 실측 대기. |
 | `R6_PRE_AUTH_RESPONSES_UNCLASSIFIED_R8` | `1a9806a` WSL에서 `PRE_AUTH_RESPONSES` exit1/Error, 10.68초. Node의 waiter 실패·WeakMap capture 부재·기존 body capture 실패는 모두 가능하고 Python은 이 phase marker를 숨겼다. waiter별 rejection을 즉시 settled로 만들어 category별 `WAIT_TIMEOUT/WAIT_ERROR`, capture 연결 부재면 `CAPTURE_MISSING`, body 실패면 기존 `TIMEOUT/UNREADABLE`을 고정 category/status와 함께 출력하고 Python은 허용 단계·값만 전달한다. | 실제 실패 category/reason과 E2E는 새 SHA WSL 실측 대기. 이는 harness 진단 보완이며 제품 기능 정식 실패로 세지 않는다. |
 | `R6_PROVIDER_401_BODY_TIMEOUT_R9` | `5b9a574` WSL에서 response 객체가 있는 Provider 401의 `response.text()`만 bounded 만료. 유한 JSONResponse이지만 App의 `!response.ok` 분기는 body를 소비하지 않는다. 인과관계는 미확정이므로 실제 401을 무시하지 않고, 그 실패 때만 Content-Length·Transfer-Encoding의 고정 형태, `response.finished()`의 bounded 완료, 별도 same-origin native fetch의 401 본문 읽힘 여부를 고정 열거값으로 수집한다. 원문 header/body/URL은 출력하지 않는다. | 새 SHA WSL probe 결과로 서버 전송/브라우저 fetch/Playwright event 캡처 경계를 좁혀야 함. 전체 E2E 미통과는 유지. |
-| `R6_PROVIDER_401_ORIGINAL_FETCH_AB_R10` | `5c62e8a`에서 원 401은 positive length인데 unfinished, 별도 native fetch는 읽혔다. 기본 OFF/명시적 `ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK=1` ON을 분리한다. ON은 page load 이전 fetch wrapper로 같은-origin non-ok Response clone만 2초 bounded 소비하며 body·URL·header 원문은 전달/출력하지 않고 고정 category/status/outcome만 수집한다. 기존 원 응답 capture·401/200·권한·DOM·Network/비밀 검증은 그대로 요구한다. | WSL A/B 미실행. ON의 전체 검증 도달도 acceptance가 아니라 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP; 제품 App 수정은 현 WI/lease 밖. |
+| `R6_PROVIDER_401_ORIGINAL_FETCH_AB_R10` | `5c62e8a`에서 원 401은 positive length인데 unfinished, 별도 native fetch는 읽혔다. 기본 OFF/명시적 `ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK=1` ON을 분리한다. ON은 page load 이전 fetch wrapper로 같은-origin non-ok Response clone만 2초 bounded 소비하며 body·URL·header 원문은 전달/출력하지 않고 고정 category/status/outcome만 수집한다. 기존 원 응답 capture·401/200·권한·DOM·Network/비밀 검증은 그대로 요구한다. | R11 WSL에서 OFF 실패·ON 전체 진단 도달 및 예정 SKIP을 실측. 제품 App의 비계측 수정·수락은 미검증. |
 
 ## 로컬 실행 증거
 
@@ -191,12 +192,19 @@ R10의 `.pytest_tmp_f20_u01_r6_drain_ab_adjacent`도 Main이 WORK_STATUS에 생�
 - Main 실행 기준 SHA `5c62e8a75f7cb09e26d3c778cccab4173ed0fb9f`: 기본 모드 opt-in `1 failed/11 deselected in 11.12s`, `PRE_AUTH_RESPONSES PROVIDER_API 401 reason=TIMEOUT length=POSITIVE transfer=MISSING finished=TIMEOUT native=READABLE_401`. 같은-origin 별도 요청의 본문으로 원래 응답의 body 감사를 대체할 수는 없다. Main은 전용 PG를 정리해 WORK_STATUS에 기록했다.
 - Main 승인 테스트 전용 A/B는 원래 응답을 `Response.clone().text()`로 소비하는 계측의 인과 효과만 확인한다. 명시적 env flag 없이는 완전히 비활성이다. ON에서 node/browser/DB 감사가 끝까지 통과해도 Python은 `R6_DIAGNOSTIC_EVIDENCE` 고정 drain count만 출력하고 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE`로 SKIP한다. 따라서 OFF 실패는 그대로 남고 ON은 R6/U-01 수락 PASS가 아니다.
 
+## WSL R11 동일 SHA A/B 실제 결과
+
+- Main 제공 실행 증거, SHA `be182efdaf0658bff13e6ea01f57dd994b809869`: 기본 OFF opt-in `1 failed, 1 passed, 12 deselected in 15.58s`, `PRE_AUTH_RESPONSES PROVIDER_API status=401 reason=TIMEOUT`, `finished=TIMEOUT`, `native=READABLE_401`. 실패한 전용 PG는 Main이 정리했다.
+- 같은 SHA에서 새 일회성 PG를 생성한 진단 ON opt-in은 `1 passed, 1 skipped, 12 deselected in 8.90s`, `R6_DIAGNOSTIC_EVIDENCE {nonOkDrainCount:5, provider401DrainCount:1}`. Browser의 OIDC→저장 경고 DOM→권한 철회 403/stale-clear, same-origin·비밀 검사와 Python DB postcheck까지 도달한 뒤 계획된 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP이다. Main은 전용 PG를 정리했고 named container/TLS/base 잔여가 없다고 보고했다. 실행 전체 명령·원본 로그는 본 writer가 직접 수집하지 않았으며 수치·자원 정리 사실은 Main 전달 증거다.
+- 두 실행의 코드 SHA는 같고 clone 소비 계측의 ON/OFF가 관찰된 핵심 차이다. 이는 원 비인증 fetch body 미소비가 Playwright 원 응답 완료 정체에 관여한다는 인과 가설을 지지한다. 그러나 ON은 실행 중인 앱 fetch를 가로채 원 응답 clone을 소비하므로, 계측 없는 `App.tsx` 변경이 같은 결과를 낼지 또는 다른 영향이 없는지는 증명하지 않는다. ON의 pytest PASS 1건은 인접 선택 테스트이며 R6 opt-in 자체는 SKIP이다.
+
 ## 미검증과 다음 행동
 
-- WSL R1은 ASGI import, R2는 runner exit1, R3는 Node unhandled, R4는 PRE_AUTH TimeoutError, R5는 runner 120초 timeout, R6는 responseFacts 미완료, R7은 Provider 401 본문 TIMEOUT, R8은 PRE_AUTH_RESPONSES 미분류, R9와 R10 기본 모드는 Provider 401 본문 TIMEOUT에서 중단됐다. 실제 cookie/저장 경고 DOM 일부는 도달했지만 전체 same-origin Network/secret 비노출·DB 최종 확인을 포함한 E2E PASS가 아니다. 새 SHA에서 기본 OFF와 별도 ON A/B 실측이 필요하다. 401/200을 허용하거나 검증을 생략하지 않는다.
-- Main은 R6 diff·경계 독립 검토 후 exact3만 새 commit/private push하고 동일 SHA 격리 checkout에서 새 일회성 자원·path·port와 정리법을 생성 전에 WORK_STATUS에 기록해야 한다. 실행 때 `ANVIL_F20_R6_PG_DSN`, `ANVIL_F20_R6_PG_ISOLATED=1`, `ANVIL_F20_R6_FRONTEND_DIST`(그 checkout의 `apps/web/dist`), `ANVIL_PLAYWRIGHT_MODULE`(pinned Playwright module)을 주입한다. WSL host Node18에는 Playwright module이 없으므로, 사전 기록한 pinned Playwright 1.62.1 container의 전체 JSON argv를 `ANVIL_F20_R6_BROWSER_COMMAND_JSON`에 준다. container는 host loopback HTTPS listener에 닿아야 하고 기본 일곱 `ANVIL_F20_R6_API_URL/ISSUER_URL/ALERT_CODE/CONTROL_TOKEN/ALERT_ENTITY/ALERT_CAUSE/SECRET_VALUES_JSON` 환경변수를 `-e NAME`으로만 전달해야 한다. 진단 ON은 여기에 `ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK=1`을 Python env에 주고 browser Docker에도 `-e ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK` 이름만 추가한다. 값·Secret은 출력하지 않는다. 기본 OFF의 실제 PASS 여부와 ON의 `R6_DIAGNOSTIC_EVIDENCE`/최종 SKIP, DB/Network/DOM, 임시 자원 잔류0을 분리 기록해야 한다. timeout이면 Python이 Docker CLI 자식을 종료하더라도 container가 남을 수 있어 Main의 사전 명명 대상 확인·정리 절차가 필수다.
+- WSL R1은 ASGI import, R2는 runner exit1, R3는 Node unhandled, R4는 PRE_AUTH TimeoutError, R5는 runner 120초 timeout, R6는 responseFacts 미완료, R7은 Provider 401 본문 TIMEOUT, R8은 PRE_AUTH_RESPONSES 미분류, R9·R10·R11 기본 모드는 Provider 401 본문 TIMEOUT에서 중단됐다. R11 진단 ON은 전체 검사를 지나 예상 SKIP했으나 기본 제품 흐름의 E2E PASS가 아니다. 제품 수정 없이 401/200을 허용하거나 별도 fetch body를 원래 응답 body로 대체 감사하지 않는다.
+- 권장 다음 경계: Main이 `docs/work_orders/F-20_U01_R6_OIDC_BROWSER_PG15_WORK_INSTRUCTION.md`와 종속 write lease를 별도 개정해 `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, 기존 R6 Python·Node harness와 본 결과보고서의 정확한 범위를 명시한다. 비인증 Provider뿐 아니라 Alerts/Health의 non-ok body 미소비도 테스트로 확인한 뒤 필요한 최소 변경만 수행한다. 제품 수정 후 진단 flag 기본 OFF, exact SHA 격리 PG15/Chromium에서 401→OIDC/저장 row→403/stale-clear 및 전체 Network/Secret·DB 검사를 다시 통과해야 수락 논의를 시작할 수 있다. 제품 App·테스트·WI/lease 확장은 이번 writer의 현재 exact3 권한 밖이다.
+- 향후 격리 재실측의 Docker browser argv는 비밀 값 없이 필요한 `-e NAME`만 전달하고, timeout 시 Main은 사전 명명한 정확한 전용 container만 확인·정리해야 한다.
 - 정식 WSL entity/checkout, 실제 로그인 화면 클릭, E-SHOT와 전체 E-NET formal acceptance, 다른 Dashboard Health/Next Actions/ack, 전체 U-01/F-20 수락, C30 `OPEN_BLOCKING`/ReleaseDecision `DEFER`, 사용자 인수와 Production은 계속 미검증이다.
 
 ## rollback
 
-R10 시작 SHA `5c62e8a`까지의 기존 제품 테스트 commit은 Main이 보존한다. 이번 미커밋 A/B 진단은 exact3의 Python 테스트·Node 브라우저·본 보고서 diff만 되돌리면 R10 직전 상태로 돌아간다. 통합 전체 rollback 판단은 Main이 정확한 commit·자원 소유를 확인해 수행하며 다른 dirty/untracked 자료, 원장, 진행 문서, 공유 자원은 건드리지 않는다. WSL 실행 뒤에는 Main이 사전 기록한 정확한 일회성 자원만 확인·제거한다.
+R11 시작 SHA `be182ef`까지의 기존 제품 테스트 commit은 Main이 보존한다. 이번에는 본 결과보고서의 미커밋 R11 기록만 되돌리면 R11 직전 문서 상태로 돌아간다. 기존 R10 A/B harness는 기본 OFF로 유지되며 ON의 SKIP은 수락 증거가 아니다. 통합 전체 rollback 판단은 Main이 정확한 commit·자원 소유를 확인해 수행하며 다른 dirty/untracked 자료, 원장, 진행 문서, 공유 자원은 건드리지 않는다. WSL의 전용 자원은 Main 보고상 이미 정리됐고 잔여0이며, 본 writer는 자원을 변경하지 않았다.
