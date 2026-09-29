@@ -35,6 +35,17 @@ def _bundle(root: Path, overlay) -> dict:
             "progress": json.loads((root / overlay.PROGRESS).read_bytes())}
 
 
+def test_r6b_control_scope_allows_only_exact_qa_evidence_files():
+    overlay = _overlay()
+    evidence = "docs/test_reports/U-01/evidence/r6b-d497ec1/"
+    required = {evidence + name for name in (
+        "pre-auth-error.png", "stored-critical.png", "revoked-blocked.png",
+        "page-requests.json")}
+    assert required <= overlay.CONTROL_SCOPE
+    assert evidence + "unrelated.txt" not in overlay.CONTROL_SCOPE
+    assert required.isdisjoint(overlay.SCOPE)
+
+
 def test_r6b_exact5_append_only_transition_and_blocking_hold(tmp_path):
     overlay = _overlay()
     root = _fixture(tmp_path)

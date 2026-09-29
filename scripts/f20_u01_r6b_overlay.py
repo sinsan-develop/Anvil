@@ -38,6 +38,10 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     WI, INVOCATION, PLAN,
     "scripts/f20_u01_r6b_overlay.py", "scripts/check_project_progress.py",
     "tests/tooling/test_f20_u01_r6b_projection.py",
+    "docs/test_reports/U-01/evidence/r6b-d497ec1/pre-auth-error.png",
+    "docs/test_reports/U-01/evidence/r6b-d497ec1/stored-critical.png",
+    "docs/test_reports/U-01/evidence/r6b-d497ec1/revoked-blocked.png",
+    "docs/test_reports/U-01/evidence/r6b-d497ec1/page-requests.json",
 }
 START, END = 1822, 1828
 PREP_ANCHOR = "cec01570ea3ea738564c6e50741114941e513a1f"
