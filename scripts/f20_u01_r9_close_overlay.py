@@ -28,7 +28,9 @@ SCOPE = prior.SCOPE
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN,
                  "scripts/f20_u01_r9_close_overlay.py", "scripts/check_project_progress.py",
                  "tests/tooling/test_f20_u01_r9_close_projection.py", "docs/WORK_STATUS.md",
-                 "docs/04_test_reports/F-20_U01_R10_DASHBOARD_READ_API_PLAN.md"}
+                 "docs/04_test_reports/F-20_U01_R10_DASHBOARD_READ_API_PLAN.md",
+                 "docs/work_orders/F-20_U01_R10_DASHBOARD_READ_API_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R10_DASHBOARD_READ_API_INVOCATION.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 
