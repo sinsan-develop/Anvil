@@ -135,6 +135,11 @@ function verifiedResponseFacts(results) {
   return verifiedFacts(results);
 }
 
+function failPhaseResponse(category, status, reason) {
+  writeSync(1, `R6_PHASE_RESPONSE_FAILED category=${category} status=${status} reason=${reason}\n`);
+  throw new Error('R6_PHASE_RESPONSE_FAILED');
+}
+
 async function fetchOnPage(page, path, options = {}) {
   return page.evaluate(async ({ path, options }) => {
     const response = await fetch(path, { credentials: 'same-origin', ...options });
@@ -145,14 +150,25 @@ async function fetchOnPage(page, path, options = {}) {
 
 async function readyDashboard(page, action, origin, phase, responseCaptures) {
   const categories = ['HEALTH_API', 'PROVIDER_API', 'ALERT_API'];
-  const responses = categories.map((category) => page.waitForResponse((response) => {
+  const responseReady = categories.map((category) => {
+    let pending;
     try {
-      return new URL(response.url()).origin === origin && responseCategory(response.url()) === category;
-    } catch {
-      return false;
+      pending = page.waitForResponse((response) => {
+        try {
+          return new URL(response.url()).origin === origin && responseCategory(response.url()) === category;
+        } catch {
+          return false;
+        }
+      }, { timeout: 10000 });
+    } catch (error) {
+      pending = Promise.reject(error);
     }
-  }, { timeout: 10000 }));
-  const responseReady = settleCapture(() => Promise.all(responses));
+    return Promise.resolve(pending).then(
+      (value) => ({ ok: true, value, category }),
+      (error) => ({ ok: false, category,
+        reason: error?.name === 'TimeoutError' ? 'WAIT_TIMEOUT' : 'WAIT_ERROR' }),
+    );
+  });
   markStage(phase + '_DOCUMENT');
   if (action === 'goto') {
     await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
@@ -165,10 +181,19 @@ async function readyDashboard(page, action, origin, phase, responseCaptures) {
   const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
   await card.waitFor({ state: 'visible' });
   markStage(phase + '_RESPONSES');
-  const settled = await responseReady;
-  assert.ok(settled.ok, 'R6_DASHBOARD_RESPONSE_MISSING');
-  const captures = settled.value.map((response) => responseCaptures.get(response));
-  assert.ok(captures.every(Boolean), 'R6_DASHBOARD_CAPTURE_MISSING');
+  const settled = await Promise.all(responseReady);
+  const missing = settled.find(({ ok }) => !ok);
+  if (missing) failPhaseResponse(missing.category, 0, missing.reason);
+  const captures = settled.map(({ value, category }) => {
+    const capture = responseCaptures.get(value);
+    if (!capture) {
+      let status = 0;
+      try { status = value.status(); } catch { /* unknown status stays zero */ }
+      if (!Number.isInteger(status) || status < 100 || status > 599) status = 0;
+      failPhaseResponse(category, status, 'CAPTURE_MISSING');
+    }
+    return capture;
+  });
   verifiedResponseFacts(await Promise.all(captures));
   return card;
 }
@@ -345,15 +370,24 @@ if (auditSelfTest) {
   const phaseCaptures = new WeakMap();
   const captureResolutions = [];
   const phasePaths = ['/api/health/ready', '/api/providers', '/api/operations/alerts'];
-  function releasePhaseResponses(failedProvider = false) {
+  let phaseFailureMode = 'CAPTURE_TIMEOUT';
+  function releasePhaseResponses(mode = 'NONE') {
     assert.equal(phaseWaiters.length, 3);
     for (const path of phasePaths) {
       const response = { url: () => apiUrl + path, status: () => 401 };
       const matching = phaseWaiters.filter(({ predicate }) => predicate(response));
       assert.equal(matching.length, 1);
+      if (path === '/api/providers' && mode === 'WAIT_TIMEOUT') {
+        matching[0].reject(Object.assign(new Error('private-url'), { name: 'TimeoutError' }));
+        continue;
+      }
+      if (path === '/api/providers' && mode === 'CAPTURE_MISSING') {
+        matching[0].resolve(response);
+        continue;
+      }
       let release;
       phaseCaptures.set(response, new Promise((resolve) => { release = resolve; }));
-      captureResolutions.push({ release, path, failedProvider });
+      captureResolutions.push({ release, path, mode });
       matching[0].resolve(response);
     }
     phaseWaiters.length = 0;
@@ -365,7 +399,7 @@ if (auditSelfTest) {
   const fakePage = {
     waitForResponse: (predicate, { timeout }) => {
       assert.equal(timeout, 10000);
-      return new Promise((resolve) => phaseWaiters.push({ predicate, resolve }));
+      return new Promise((resolve, reject) => phaseWaiters.push({ predicate, resolve, reject }));
     },
     goto: async (url, { waitUntil }) => {
       assert.equal(url, apiUrl + '/');
@@ -376,7 +410,7 @@ if (auditSelfTest) {
     reload: async ({ waitUntil }) => {
       assert.equal(waitUntil, 'domcontentloaded');
       navigationSteps.push('reload');
-      releasePhaseResponses(true);
+      releasePhaseResponses(phaseFailureMode);
     },
     locator: (selector) => {
       assert.equal(selector, 'section[aria-labelledby="critical-alerts-heading"]');
@@ -394,13 +428,21 @@ if (auditSelfTest) {
   navigationSteps.length = 0;
   const revokedReady = readyDashboard(fakePage, 'reload', apiUrl, 'REVOKE', phaseCaptures);
   await new Promise((resolve) => setTimeout(resolve, 0));
-  for (const { release, path, failedProvider } of captureResolutions.splice(0)) {
-    release(path === '/api/providers' && failedProvider
+  for (const { release, path, mode } of captureResolutions.splice(0)) {
+    release(path === '/api/providers' && mode === 'CAPTURE_TIMEOUT'
       ? { ok: false, category: 'PROVIDER_API', status: 401, reason: 'TIMEOUT' }
       : { ok: true, value: {} });
   }
   await assert.rejects(revokedReady, /R6_RESPONSE_CAPTURE_FAILED/);
   assert.deepEqual(navigationSteps, ['reload', 'card']);
+  for (const mode of ['WAIT_TIMEOUT', 'CAPTURE_MISSING']) {
+    phaseFailureMode = mode;
+    const phaseReady = readyDashboard(fakePage, 'reload', apiUrl, 'STORED', phaseCaptures);
+    const phaseFailure = assert.rejects(phaseReady, /R6_PHASE_RESPONSE_FAILED/);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    for (const { release } of captureResolutions.splice(0)) release({ ok: true, value: {} });
+    await phaseFailure;
+  }
   markStage('PRE_AUTH_DOCUMENT');
   assert.equal(stage, 'PRE_AUTH_DOCUMENT');
   assert.throws(() => markStage('PRIVATE_SECRET'), /R6_STAGE_INVALID/);

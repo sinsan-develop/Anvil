@@ -63,6 +63,10 @@ _RESPONSE_CATEGORIES = frozenset({
     "DOCUMENT", "ASSET", "ALERT_API", "HEALTH_API", "PROVIDER_API",
     "EVENT_REPLAY_API", "OIDC_AUTH", "OTHER_API", "OTHER_APP", "UNKNOWN",
 })
+_RESPONSE_FAILURE_STAGES = frozenset({
+    "PRE_AUTH_RESPONSES", "STORED_RESPONSES", "REVOKE_RESPONSES",
+    "NETWORK_RESPONSE_FACTS",
+})
 
 
 def _validated_target(dsn: str | None, isolated: str | None) -> sa.engine.URL:
@@ -204,15 +208,20 @@ def _last_browser_progress(output: bytes | str | None) -> str:
 
 
 def _safe_response_diagnostic(output: str) -> str:
+    detail = ""
     for match in re.finditer(
-        r"^R6_RESPONSE_CAPTURE_FAILED category=([A-Z_]+) status=([0-9]{1,3}) "
-        r"reason=(TIMEOUT|UNREADABLE)\r?$", output, flags=re.MULTILINE,
+        r"^R6_(RESPONSE_CAPTURE|PHASE_RESPONSE)_FAILED category=([A-Z_]+) "
+        r"status=([0-9]{1,3}) reason=([A-Z_]+)\r?$", output, flags=re.MULTILINE,
     ):
-        category, raw_status, reason = match.groups()
+        kind, category, raw_status, reason = match.groups()
         status = int(raw_status)
-        if category in _RESPONSE_CATEGORIES and (status == 0 or 100 <= status <= 599):
-            return f" category={category} status={status} reason={reason}"
-    return ""
+        valid_reason = ((kind == "RESPONSE_CAPTURE" and reason in {"TIMEOUT", "UNREADABLE"})
+                        or (kind == "PHASE_RESPONSE" and reason in {
+                            "WAIT_TIMEOUT", "WAIT_ERROR", "CAPTURE_MISSING"}))
+        if (category in _RESPONSE_CATEGORIES and (status == 0 or 100 <= status <= 599)
+                and valid_reason):
+            detail = f" category={category} status={status} reason={reason}"
+    return detail
 
 
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
@@ -252,7 +261,7 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         stage = _last_browser_progress(error.stdout)
         stdout = (error.stdout.decode("utf-8", errors="replace") if isinstance(error.stdout, bytes)
                   else error.stdout if isinstance(error.stdout, str) else "")
-        detail = _safe_response_diagnostic(stdout) if stage == "NETWORK_RESPONSE_FACTS" else ""
+        detail = _safe_response_diagnostic(stdout) if stage in _RESPONSE_FAILURE_STAGES else ""
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit=TIMEOUT class=TimeoutExpired; "
                     f"MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED{detail}", pytrace=False)
     except OSError:
@@ -260,7 +269,7 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
     if result.returncode != 0:
         stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
         detail = (_safe_response_diagnostic(result.stdout + "\n" + result.stderr)
-                  if stage == "NETWORK_RESPONSE_FACTS" else "")
+                  if stage in _RESPONSE_FAILURE_STAGES else "")
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
                     f"class={error_class}{detail}", pytrace=False)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
@@ -632,6 +641,40 @@ def test_r6_response_capture_failure_reports_only_safe_category_status(monkeypat
     message = str(failure.value)
     assert "stage=NETWORK_RESPONSE_FACTS exit=1 class=Error" in message
     assert "category=ALERT_API status=200 reason=TIMEOUT" in message
+    assert secret not in message
+
+
+@pytest.mark.parametrize(("stage", "marker", "expected"), [
+    ("PRE_AUTH_RESPONSES",
+     "R6_RESPONSE_CAPTURE_FAILED category=PROVIDER_API status=401 reason=TIMEOUT",
+     "category=PROVIDER_API status=401 reason=TIMEOUT"),
+    ("PRE_AUTH_RESPONSES",
+     "R6_PHASE_RESPONSE_FAILED category=HEALTH_API status=0 reason=WAIT_TIMEOUT",
+     "category=HEALTH_API status=0 reason=WAIT_TIMEOUT"),
+    ("STORED_RESPONSES",
+     "R6_PHASE_RESPONSE_FAILED category=ALERT_API status=200 reason=CAPTURE_MISSING",
+     "category=ALERT_API status=200 reason=CAPTURE_MISSING"),
+])
+def test_r6_phase_response_failure_reports_only_safe_diagnostic(monkeypatch, stage, marker,
+                                                               expected):
+    secret = "private-dsn-or-token"
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1,
+            stdout=f"R6_NODE_STARTED\nR6_STAGE {stage}\n{marker}\n{secret}",
+            stderr=f"R6_BROWSER_FAILED stage={stage} class=Error\n{secret}",
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    message = str(failure.value)
+    assert f"stage={stage} exit=1 class=Error" in message
+    assert expected in message
     assert secret not in message
 
 
