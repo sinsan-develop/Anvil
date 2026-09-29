@@ -39,6 +39,41 @@ function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
     secretExposure: requestExposure || responseExposure || containsSensitive(domText) };
 }
 
+function settleCapture(work) {
+  return Promise.resolve().then(work).then(
+    (value) => ({ ok: true, value }),
+    () => ({ ok: false }),
+  );
+}
+
+function captureRequestFact(request) {
+  return settleCapture(async () => ({
+    origin: new URL(request.url()).origin, url: request.url(),
+    body: request.postData() || '', headers: await request.allHeaders(),
+  }));
+}
+
+function captureResponseFact(response) {
+  return settleCapture(async () => {
+    const headers = await response.allHeaders();
+    let body;
+    try {
+      body = await response.text();
+    } catch {
+      if (![204, 301, 302, 303, 304, 307, 308].includes(response.status())) {
+        throw new Error('R6_RESPONSE_BODY_UNAVAILABLE');
+      }
+      body = '';
+    }
+    return { origin: new URL(response.url()).origin, url: response.url(), headers, body };
+  });
+}
+
+function verifiedFacts(results) {
+  assert.ok(results.length > 0 && results.every(({ ok }) => ok), 'R6_NETWORK_CAPTURE_UNREADABLE');
+  return results.map(({ value }) => value);
+}
+
 async function fetchOnPage(page, path, options = {}) {
   return page.evaluate(async ({ path, options }) => {
     const response = await fetch(path, { credentials: 'same-origin', ...options });
@@ -65,20 +100,10 @@ async function main() {
     const requestFacts = [];
     const responseFacts = [];
     page.on('request', (request) => {
-      requestFacts.push(request.allHeaders().then((headers) => ({
-        origin: new URL(request.url()).origin, url: request.url(),
-        body: request.postData() || '', headers,
-      })));
+      requestFacts.push(captureRequestFact(request));
     });
     page.on('response', (response) => {
-      responseFacts.push(Promise.all([
-        response.allHeaders(), response.text().catch(() => {
-          if ([204, 301, 302, 303, 304, 307, 308].includes(response.status())) return '';
-          throw new Error('R6_RESPONSE_BODY_UNAVAILABLE');
-        }),
-      ]).then(([headers, body]) => ({
-        origin: new URL(response.url()).origin, url: response.url(), headers, body,
-      })));
+      responseFacts.push(captureResponseFact(response));
     });
     stage = 'PRE_AUTH';
     await page.goto(apiUrl + '/', { waitUntil: 'networkidle' });
@@ -137,8 +162,8 @@ async function main() {
     await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
     stage = 'NETWORK_AUDIT';
-    const requests = await Promise.all(requestFacts);
-    const responses = await Promise.all(responseFacts);
+    const requests = verifiedFacts(await Promise.all(requestFacts));
+    const responses = verifiedFacts(await Promise.all(responseFacts));
     const { allAppRequestsSameOrigin, offOriginCredentialLeak, secretExposure } =
       auditTraffic(requests, responses, await page.locator('body').innerText(), cookie.value);
     const idpContextSeparate = (await issuerClient.storageState()).cookies
@@ -177,6 +202,28 @@ if (auditSelfTest) {
   assert.equal(auditTraffic([{ ...safeRequest, origin: 'https://outside.invalid',
     url: 'https://outside.invalid/', headers: { cookie: 'anvil_session=session-sentinel' } }],
     [safeResponse], '', 'session-sentinel').offOriginCredentialLeak, true);
+  const unreadableResponse = (status) => ({
+    status: () => status, url: () => apiUrl + '/unreadable',
+    allHeaders: async () => ({}),
+    text: async () => { throw new Error('private-response-content'); },
+  });
+  const pendingResponse = captureResponseFact(unreadableResponse(200));
+  const pendingRequest = captureRequestFact({
+    url: () => apiUrl + '/unreadable', postData: () => '',
+    allHeaders: async () => { throw new Error('private-request-content'); },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const failedResponse = await pendingResponse;
+  const failedRequest = await pendingRequest;
+  assert.equal(failedResponse.ok, false);
+  assert.equal(failedRequest.ok, false);
+  assert.throws(() => verifiedFacts([failedResponse]), /R6_NETWORK_CAPTURE_UNREADABLE/);
+  assert.throws(() => verifiedFacts([failedRequest]), /R6_NETWORK_CAPTURE_UNREADABLE/);
+  for (const status of [204, 301, 302, 303, 304, 307, 308]) {
+    const result = await captureResponseFact(unreadableResponse(status));
+    assert.equal(result.ok, true);
+    assert.equal(result.value.body, '');
+  }
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
   console.log('R6_NODE_STARTED');
