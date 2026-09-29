@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1852,
+  "accepted": false,
+  "projection_mode": "F20_U01_R10_DASHBOARD_READ_API_START",
+  "previous_event_sequence": 1848,
+  "product_write_scope": [
+    "packages/api/registry.py",
+    "packages/api/operations.py",
+    "tests/api/test_f20_u01_r10_dashboard_api.py",
+    "tests/api/test_f20_u01_r10_oidc_dashboard.py",
+    "docs/04_test_reports/F-20_U01_R10_DASHBOARD_READ_API_RESULT.md"
+  ],
+  "predecessor_commit": "641a0007e385aef4112b3ae642ec309115274ef0",
+  "predecessor_events_sha256": "8E1FAB8FF0116B1752ADBEFB969836E225CE2823C0A9C6444DD3F6BCFD69399A",
+  "plan_path": "docs/04_test_reports/F-20_U01_R10_DASHBOARD_READ_API_PLAN.md",
+  "plan_sha256": "C7FF3B1915C9834AF3E2E1E2E5F355D4DF074B7A68C35718A382CDE1B97D9A85",
+  "work_instruction_sha256": "1C1F2E197889FCD447EF126926BDB54EE64C955FDBEA9FD6798A636D3BC4EB02",
+  "invocation_sha256": "478252D0696CCDA84C38679EAA9E17094356E1C2C4096FA43CF87122AB345BA6",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
