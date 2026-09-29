@@ -468,7 +468,9 @@ async function main() {
     assert.equal(revoked.status, 403);
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
     markStage('REVOKE_CLEAR');
-    await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
+    await card.getByText('BLOCKED', { exact: true }).waitFor();
+    await card.getByText('조회 차단', { exact: false }).waitFor();
+    assert.equal(await card.getByText('UNAVAILABLE', { exact: true }).count(), 0);
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
     if (evidenceDir) {
       assert.ok(staleCleared, 'R6_EVIDENCE_REVOKE_STATE_REJECTED');

@@ -81,13 +81,32 @@ test('non-ok Provider, Alerts, and Health bodies finish without exposing their c
     async () => failure('older-alerts', 401));
   assert.deepEqual(calls, ['provider', 'alerts', 'health', 'older-alerts']);
   assert.deepEqual(provider, {status: 'UNAVAILABLE', registered: null});
-  assert.deepEqual(alerts, {status: 'UNAVAILABLE'});
+  assert.deepEqual(alerts, {status: 'BLOCKED'});
   assert.deepEqual(older, {status: 'UNAVAILABLE'});
   assert.deepEqual(health, {payload: null, checked: 'JUST NOW'});
   const html = [renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard, {value: provider})),
     renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: alerts})),
     renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard, {value: health.payload}))].join('');
   assert.doesNotMatch(html, /private-response-body-must-not-render/);
+});
+
+test('Critical Alerts 403 waits for body completion then shows BLOCKED without response contents', async () => {
+  let releaseBody;
+  const privateBody = 'private-403-response-must-not-render';
+  const body = new Promise((resolve) => { releaseBody = resolve; });
+  const pending = consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => ({ok: false, status: 403, text: () => body,
+      json: async () => { throw new Error('403 JSON must not be parsed'); }}));
+  let settled = false;
+  void pending.then(() => { settled = true; });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(settled, false);
+  releaseBody(privateBody);
+  const state = await pending;
+  assert.deepEqual(state, {status: 'BLOCKED'});
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /Critical Alerts.*BLOCKED.*조회 차단/s);
+  assert.doesNotMatch(html, /private-403-response-must-not-render|저장된 Critical 기록 없음/);
 });
 
 test('non-ok body read errors and abort remain fail-closed without stale success', async () => {
@@ -259,7 +278,7 @@ test('Critical Alerts rejects auth, transport, malformed, duplicate and forged p
     alertResponse([alertRow()], 0), alertResponse([alertRow()], 8),
     alertResponse([alertRow({secret: 'must-not-render'})]),
     {...alertResponse([alertRow()]), admin: true}];
-  const responses = [jsonResponse({}, 401), jsonResponse({}, 403), jsonResponse({}, 500),
+  const responses = [jsonResponse({}, 401), jsonResponse({}, 500),
     ...badBodies.map((body) => jsonResponse(body))];
   for (const response of responses) {
     const state = await consoleApp.loadCriticalAlerts(new AbortController().signal, async () => response);
@@ -353,10 +372,40 @@ test('Critical Alerts allows only one in-flight request for the same older curso
   assert.equal(guard.current, false);
 });
 
+test('Critical Alerts older-page 403 clears previously loaded records after body completion', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7', code: 'OLD_PRIVATE_CODE'})], 7)));
+  let releaseBody;
+  const body = new Promise((resolve) => { releaseBody = resolve; });
+  const pending = consoleApp.loadOlderCriticalAlerts(first, new AbortController().signal,
+    async () => ({ok: false, status: 403, text: () => body,
+      json: async () => { throw new Error('403 JSON must not be parsed'); }}));
+  let settled = false;
+  void pending.then(() => { settled = true; });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(settled, false);
+  releaseBody('private-older-403-body');
+  const next = await pending;
+  assert.deepEqual(next, {status: 'BLOCKED'});
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: next}));
+  assert.match(html, /Critical Alerts.*BLOCKED.*조회 차단/s);
+  assert.doesNotMatch(html, /OLD_PRIVATE_CODE|private-older-403-body|과거 저장 경고 더 보기/);
+});
+
+test('Critical Alerts unreadable 403 bodies stay UNAVAILABLE for initial and older pages', async () => {
+  const denied = async () => ({ok: false, status: 403,
+    text: async () => { throw new Error('private-body-error'); }});
+  const signal = new AbortController().signal;
+  assert.deepEqual(await consoleApp.loadCriticalAlerts(signal, denied), {status: 'UNAVAILABLE'});
+  const first = await consoleApp.loadCriticalAlerts(signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
+  assert.deepEqual(await consoleApp.loadOlderCriticalAlerts(first, signal, denied), {status: 'UNAVAILABLE'});
+});
+
 test('Critical Alerts drops earlier protected records if an older page is invalid or unavailable', async () => {
   const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
     async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
-  const responses = [jsonResponse({}, 401), jsonResponse({}, 403), jsonResponse({}, 500),
+  const responses = [jsonResponse({}, 401), jsonResponse({}, 500),
     jsonResponse(alertResponse([])),
     jsonResponse(alertResponse([alertRow({sequence: 7})])),
     jsonResponse(alertResponse([alertRow({alert_id: 'alert-7', sequence: 6})])),

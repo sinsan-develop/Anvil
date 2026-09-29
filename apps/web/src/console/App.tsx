@@ -10,12 +10,13 @@ type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UN
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
-  nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'UNAVAILABLE'};
+  nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'UNAVAILABLE' | 'BLOCKED'};
 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
 const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
+const ALERTS_BLOCKED: CriticalAlertsState = {status: 'BLOCKED'};
 const ALERT_FIELDS = ['alert_id', 'sequence', 'level', 'source', 'category', 'code',
   'related_entity_id', 'dedupe_key', 'detector_rule_revision', 'cause', 'impact',
   'next_action', 'deep_link', 'evidence_hash', 'status', 'owner_id', 'observed_at',
@@ -92,7 +93,7 @@ export async function loadCriticalAlerts(signal: AbortSignal, request: typeof fe
     });
     if (!response.ok) {
       await response.text();
-      return ALERTS_UNAVAILABLE;
+      return response.status === 403 ? ALERTS_BLOCKED : ALERTS_UNAVAILABLE;
     }
     return classifyCriticalAlerts(await response.json());
   } catch {
@@ -111,7 +112,7 @@ export async function loadOlderCriticalAlerts(current: CriticalAlertsState, sign
     });
     if (!response.ok) {
       await response.text();
-      return ALERTS_UNAVAILABLE;
+      return response.status === 403 ? ALERTS_BLOCKED : ALERTS_UNAVAILABLE;
     }
     const page = classifyCriticalAlerts(await response.json(), beforeSequence);
     if (page.status !== 'LOADED' || page.seenAlertIds.some((id) => current.seenAlertIds.includes(id))) {
@@ -140,8 +141,9 @@ export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false}: {
   return <section className="status-card" aria-labelledby="critical-alerts-heading">
     <h3 id="critical-alerts-heading">Critical Alerts</h3>
     <div aria-live="polite" aria-atomic="true">
-      {value.status === 'UNAVAILABLE' ? <><p className="status-unavailable">UNAVAILABLE</p>
-        <p>저장 경고 기록을 확인할 수 없습니다.</p></> : <>
+      {value.status !== 'LOADED' ? <><p className="status-unavailable">{value.status}</p>
+        <p>{value.status === 'BLOCKED' ? '조회 차단 · 저장 경고 기록을 표시하지 않습니다.'
+          : '저장 경고 기록을 확인할 수 없습니다.'}</p></> : <>
         <p>저장된 Critical 기록 · 현재 페이지</p>
         {value.alerts.length === 0 ? <p>이 페이지에 저장된 Critical 기록 없음</p> :
           <ul>{value.alerts.map((alert) => <li key={alert.alert_id}>
