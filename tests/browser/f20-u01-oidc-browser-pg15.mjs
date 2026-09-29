@@ -12,6 +12,7 @@ const alertCode = process.env.ANVIL_F20_R6_ALERT_CODE;
 const controlToken = process.env.ANVIL_F20_R6_CONTROL_TOKEN;
 const expectedEntity = process.env.ANVIL_F20_R6_ALERT_ENTITY;
 const expectedCause = process.env.ANVIL_F20_R6_ALERT_CAUSE;
+const diagnosticDrain = process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1';
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
 const progressStages = new Set([
@@ -140,6 +141,51 @@ function failPhaseResponse(category, status, reason) {
   throw new Error('R6_PHASE_RESPONSE_FAILED');
 }
 
+function diagnosticDrainBootstrap(timeoutMs) {
+  const browserWindow = globalThis.window;
+  const originalFetch = browserWindow.fetch.bind(browserWindow);
+  browserWindow.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    let target;
+    try { target = new URL(response.url, browserWindow.location.href); }
+    catch { return response; }
+    if (response.ok || target.origin !== browserWindow.location.origin) return response;
+    let outcome = 'DONE';
+    let timer;
+    try {
+      const cloned = response.clone();
+      await Promise.race([
+        cloned.text(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('R6_DIAG_DRAIN_TIMEOUT')), timeoutMs);
+        }),
+      ]);
+    } catch (error) {
+      outcome = error?.message === 'R6_DIAG_DRAIN_TIMEOUT' ? 'TIMEOUT' : 'ERROR';
+    } finally {
+      clearTimeout(timer);
+    }
+    const path = target.pathname;
+    const category = path === '/api/providers' ? 'PROVIDER_API'
+      : path === '/api/operations/alerts' ? 'ALERT_API'
+        : path === '/api/health/ready' ? 'HEALTH_API' : 'OTHER_APP';
+    await browserWindow.__anvilR6DrainEvent({ category, status: response.status, outcome });
+    return response;
+  };
+}
+
+async function configureDiagnosticDrain(page, enabled, events) {
+  if (!enabled) return;
+  await page.exposeFunction('__anvilR6DrainEvent', (event) => {
+    assert.ok(event && ['PROVIDER_API', 'ALERT_API', 'HEALTH_API', 'OTHER_APP']
+      .includes(event.category) && Number.isInteger(event.status)
+      && event.status >= 100 && event.status <= 599
+      && ['DONE', 'TIMEOUT', 'ERROR'].includes(event.outcome), 'R6_DIAG_EVENT_INVALID');
+    events.push({ category: event.category, status: event.status, outcome: event.outcome });
+  });
+  await page.addInitScript(diagnosticDrainBootstrap, 2000);
+}
+
 async function probeResponseTransport(response, nativeRead, timeoutMs = 2000) {
   let headers = {};
   try { headers = response.headers() || {}; } catch { /* diagnostics stay unknown */ }
@@ -235,6 +281,8 @@ async function readyDashboard(page, action, origin, phase, responseCaptures) {
 
 async function main() {
   markStage('BOOTSTRAP');
+  assert.ok(process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === undefined
+    || process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1', 'R6_DIAG_FLAG_INVALID');
   sensitiveValues = JSON.parse(process.env.ANVIL_F20_R6_SECRET_VALUES_JSON || '[]');
   assert.equal(new URL(apiUrl).hostname, '127.0.0.1');
   assert.equal(new URL(issuerUrl).hostname, '127.0.0.1');
@@ -254,6 +302,8 @@ async function main() {
     try {
     markStage('PAGE_CREATE');
     const page = await context.newPage();
+    const diagnosticEvents = [];
+    await configureDiagnosticDrain(page, diagnosticDrain, diagnosticEvents);
     const requestFacts = [];
     const responseFacts = [];
     const responseCaptures = new WeakMap();
@@ -344,6 +394,12 @@ async function main() {
     const appApiRequestCount = requests.filter(({ url }) => new URL(url).pathname.startsWith('/api/')).length;
     assert.ok(allAppRequestsSameOrigin && !offOriginCredentialLeak && !secretExposure
       && idpContextSeparate && staleCleared && appApiRequestCount > 0);
+    if (diagnosticDrain) {
+      assert.ok(diagnosticEvents.length > 0
+        && diagnosticEvents.every(({ outcome }) => outcome === 'DONE')
+        && diagnosticEvents.some(({ category, status }) =>
+          category === 'PROVIDER_API' && status === 401), 'R6_DIAG_DRAIN_INCOMPLETE');
+    }
     console.log('R6_RESULT ' + JSON.stringify({
       preAuthStatus: preAuth.status, authorizationStatus: authorization.status,
       callbackStatus: callback.status, sessionAuthenticated: true,
@@ -353,6 +409,12 @@ async function main() {
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
       pageRequestCount: requests.length, appApiRequestCount,
+      ...(diagnosticDrain ? {
+        diagnosticDrainMode: true,
+        diagnosticNonOkDrainCount: diagnosticEvents.length,
+        diagnosticProvider401DrainCount: diagnosticEvents.filter(({ category, status }) =>
+          category === 'PROVIDER_API' && status === 401).length,
+      } : {}),
     }));
     flowComplete = true;
     } finally {
@@ -520,6 +582,49 @@ if (auditSelfTest) {
     const accepted = await captureResponseFact(hangingResponse(status, '/auth/oidc/callback'), 60);
     assert.equal(accepted.ok, true);
     assert.equal(accepted.value.body, '');
+  }
+  const installCalls = [];
+  const diagnosticEvents = [];
+  const installPage = {
+    exposeFunction: async (name, callback) => installCalls.push({ name, callback }),
+    addInitScript: async (bootstrap, timeoutMs) => installCalls.push({ bootstrap, timeoutMs }),
+  };
+  await configureDiagnosticDrain(installPage, false, diagnosticEvents);
+  assert.deepEqual(installCalls, []);
+  await configureDiagnosticDrain(installPage, true, diagnosticEvents);
+  assert.equal(installCalls.length, 2);
+  assert.equal(installCalls[0].name, '__anvilR6DrainEvent');
+  assert.equal(installCalls[1].timeoutMs, 2000);
+  const previousWindow = globalThis.window;
+  try {
+    let cloneReads = 0;
+    const nonOk = { ok: false, status: 401, url: apiUrl + '/api/providers',
+      clone: () => ({ text: async () => { cloneReads += 1; return 'private-body-not-output'; } }) };
+    globalThis.window = { location: { origin: apiUrl, href: apiUrl + '/' },
+      fetch: async () => nonOk,
+      __anvilR6DrainEvent: async (event) => installCalls[0].callback(event) };
+    installCalls[1].bootstrap(60);
+    assert.equal(await globalThis.window.fetch('/api/providers'), nonOk);
+    assert.equal(cloneReads, 1);
+    assert.deepEqual(diagnosticEvents, [
+      { category: 'PROVIDER_API', status: 401, outcome: 'DONE' },
+    ]);
+    assert.equal(JSON.stringify(diagnosticEvents).includes('private-body-not-output'), false);
+    const offOrigin = { ...nonOk, url: 'https://outside.invalid/api/providers',
+      clone: () => { throw new Error('off-origin-clone-must-not-run'); } };
+    globalThis.window.fetch = async () => offOrigin;
+    installCalls[1].bootstrap(60);
+    assert.equal(await globalThis.window.fetch('https://outside.invalid/api/providers'), offOrigin);
+    assert.equal(diagnosticEvents.length, 1);
+    globalThis.window.fetch = async () => ({ ...nonOk,
+      clone: () => ({ text: () => new Promise(() => {}) }) });
+    installCalls[1].bootstrap(60);
+    await globalThis.window.fetch('/api/providers');
+    assert.deepEqual(diagnosticEvents[1],
+      { category: 'PROVIDER_API', status: 401, outcome: 'TIMEOUT' });
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
   }
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {

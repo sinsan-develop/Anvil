@@ -244,6 +244,26 @@ def _safe_network_diagnostic(output: str) -> str:
     return _safe_response_diagnostic(output) + _safe_probe_diagnostic(output)
 
 
+def _diagnostic_drain_mode() -> bool:
+    value = os.environ.get("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK")
+    assert value in (None, "1"), "R6_DIAG_FLAG_INVALID"
+    return value == "1"
+
+
+def _finish_r6_evidence(evidence: dict, *, diagnostic: bool) -> None:
+    if diagnostic:
+        assert evidence.get("diagnosticDrainMode") is True
+        nonok = evidence.get("diagnosticNonOkDrainCount")
+        provider = evidence.get("diagnosticProvider401DrainCount")
+        assert (type(nonok) is int and type(provider) is int
+                and nonok >= provider >= 1), "R6_DIAG_DRAIN_INCOMPLETE"
+        print("R6_DIAGNOSTIC_EVIDENCE " + json.dumps({
+            "nonOkDrainCount": nonok, "provider401DrainCount": provider,
+        }, sort_keys=True))
+        pytest.skip("R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE")
+    print("R6_E2E_EVIDENCE " + json.dumps(evidence, sort_keys=True))
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -257,6 +277,8 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
                        ANVIL_F20_R6_CONTROL_TOKEN=control_token,
                        ANVIL_F20_R6_ALERT_ENTITY=alert["related_entity_id"],
                        ANVIL_F20_R6_ALERT_CAUSE=alert["cause"])
+    if _diagnostic_drain_mode():
+        environment["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] = "1"
     password = sa.engine.make_url(dsn).password
     dsn_forms = {dsn, "postgresql://" + dsn.split("://", 1)[1]}
     sensitive = [*sorted(dsn_forms), control_token, "synthetic-client-secret",
@@ -312,6 +334,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
     from packages.persistence.oidc_pending_auth import oidc_pending_auth
     from packages.persistence.oidc_session_store import oidc_sessions
 
+    diagnostic = _diagnostic_drain_mode()
     _guard_pg_container(url)
     frontend = Path(os.environ["ANVIL_F20_R6_FRONTEND_DIST"]).resolve(strict=True)
     expected_frontend = Path(__file__).resolve().parents[2] / "apps" / "web" / "dist"
@@ -454,8 +477,14 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         evidence = _node_flow(api_url, issuer_url, control_token, dsn, before[0])
         assert evidence.get("pageRequestCount", 0) > 0, "R6_PAGE_NETWORK_EMPTY"
         assert evidence.get("appApiRequestCount", 0) > 0, "R6_API_NETWORK_EMPTY"
+        diagnostic_keys = {"diagnosticDrainMode", "diagnosticNonOkDrainCount",
+                           "diagnosticProvider401DrainCount"}
+        if diagnostic:
+            assert evidence.get("diagnosticDrainMode") is True, "R6_DIAG_MODE_NOT_ACTIVE"
+        else:
+            assert not diagnostic_keys.intersection(evidence), "R6_DIAG_MODE_UNEXPECTED"
         checked = {key: value for key, value in evidence.items()
-                   if key not in {"pageRequestCount", "appApiRequestCount"}}
+                   if key not in {"pageRequestCount", "appApiRequestCount"} | diagnostic_keys}
         assert checked == {
             "preAuthStatus": 401, "authorizationStatus": 200, "callbackStatus": 200,
             "sessionAuthenticated": True, "cookieSecure": True, "cookieHttpOnly": True,
@@ -466,13 +495,13 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             "allAppRequestsSameOrigin": True, "idpContextSeparate": True,
             "offOriginCredentialLeak": False, "secretExposure": False,
         }, "R6_BROWSER_EVIDENCE_MISMATCH"
-        print("R6_E2E_EVIDENCE " + json.dumps(evidence, sort_keys=True))
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
         assert owner.alerts() == before, "R6_GET_MUTATED_AUDIT"
         with engine.connect() as db:
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_sessions)).scalar_one() == 1
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 0
+        _finish_r6_evidence(evidence, diagnostic=diagnostic)
     finally:
         cleanup_errors = []
         if pending_socket is not None:
@@ -723,6 +752,40 @@ def test_r6_provider_401_probe_reports_only_fixed_facts(monkeypatch):
     assert "category=PROVIDER_API status=401 reason=TIMEOUT" in message
     assert "length=POSITIVE transfer=CHUNKED finished=TIMEOUT native=READABLE_401" in message
     assert secret not in message
+
+
+def test_r6_diagnostic_drain_is_opt_in_and_passed_to_browser_only_when_enabled(monkeypatch):
+    observed = []
+
+    def succeeded(*_args, **kwargs):
+        observed.append(kwargs["env"])
+        return subprocess.CompletedProcess(args=["browser"], returncode=0,
+                                           stdout='R6_RESULT {"diagnosticDrainMode":true}\n',
+                                           stderr="")
+
+    monkeypatch.setattr(subprocess, "run", succeeded)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    monkeypatch.delenv("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK", raising=False)
+    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    assert _diagnostic_drain_mode() is False
+    _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+               "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    assert "ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK" not in observed[-1]
+    monkeypatch.setenv("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK", "1")
+    assert _diagnostic_drain_mode() is True
+    _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+               "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    assert observed[-1]["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] == "1"
+
+
+def test_r6_diagnostic_evidence_cannot_be_acceptance(capsys):
+    evidence = {"diagnosticDrainMode": True, "diagnosticNonOkDrainCount": 3,
+                "diagnosticProvider401DrainCount": 1}
+    with pytest.raises(pytest.skip.Exception, match="R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE"):
+        _finish_r6_evidence(evidence, diagnostic=True)
+    output = capsys.readouterr().out
+    assert "R6_DIAGNOSTIC_EVIDENCE " in output
+    assert "R6_E2E_EVIDENCE " not in output
 
 
 def test_opt_in_r6_oidc_browser_pg15():
