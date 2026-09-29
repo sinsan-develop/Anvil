@@ -99,6 +99,36 @@ def test_close_rejects_expired_lease_and_out_of_scope_git(tmp_path):
     assert overlay.collect_git(root, _bundle(root, overlay)["progress"])
 
 
+def test_close_preflight_rejects_dirty_product_before_control_write(tmp_path):
+    overlay = _overlay()
+    root = _fixture(tmp_path)
+    events, progress = (root / overlay.EVENTS).read_bytes(), (root / overlay.PROGRESS).read_bytes()
+    product = root / "packages/persistence/operations_queue_read.py"
+    product.write_bytes(product.read_bytes() + b"\n# unverified user work\n")
+    with pytest.raises(RuntimeError, match="PREDECESSOR_INVALID"):
+        overlay.materialize(root, BASE, AT)
+    assert (root / overlay.EVENTS).read_bytes() == events
+    assert (root / overlay.PROGRESS).read_bytes() == progress
+    assert not (root / overlay.DIGEST).exists()
+    assert not (root / overlay.MANIFEST).exists()
+
+
+def test_close_git_rejects_remote_descendant_diverged_from_local_head(tmp_path):
+    overlay = _overlay()
+    root = _fixture(tmp_path)
+    overlay.materialize(root, BASE, AT)
+    tree = subprocess.check_output(["git", "rev-parse", f"{BASE}^{{tree}}"], cwd=root,
+                                   text=True).strip()
+    fork = subprocess.check_output([
+        "git", "-c", "user.name=QA", "-c", "user.email=qa@example.invalid",
+        "commit-tree", tree, "-p", BASE, "-m", "divergent remote"],
+        cwd=root, text=True).strip()
+    subprocess.run(["git", "update-ref", "refs/remotes/development/codex/f18-wsl-ops",
+                    fork], cwd=root, check=True)
+    assert overlay.collect_git(root, _bundle(root, overlay)["progress"]) == [
+        "F20_U01_R8_CLOSE_GIT_INVALID"]
+
+
 def test_close_public_g05_route(tmp_path):
     overlay = _overlay()
     checker = importlib.import_module("scripts.check_project_progress")

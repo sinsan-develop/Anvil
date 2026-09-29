@@ -35,6 +35,16 @@ def _git(root: Path, *args: str) -> bytes:
     return subprocess.check_output(["git", "-c", "core.excludesFile=", *args], cwd=root)
 
 
+def _dirty_paths(root: Path) -> set[str]:
+    paths = set(filter(None, _git(root, "diff", "--no-renames", "--name-only")
+                       .decode().splitlines()))
+    paths.update(filter(None, _git(root, "diff", "--cached", "--no-renames",
+                                  "--name-only").decode().splitlines()))
+    paths.update(filter(None, _git(root, "ls-files", "--others", "--exclude-standard")
+                        .decode().splitlines()))
+    return paths
+
+
 def _historical(root: Path) -> tuple[bytes, dict, dict]:
     raw = _git(root, "show", f"{BASE}:{EVENTS}")
     return raw, json.loads(raw), json.loads(_git(root, "show", f"{BASE}:{PROGRESS}"))
@@ -162,9 +172,12 @@ def materialize(root: Path, dispatch_head: str, at: datetime) -> None:
             or (root / PROGRESS).read_bytes() != _git(root, "show", f"{BASE}:{PROGRESS}")
             or _git(root, "branch", "--show-current").decode().strip()
                != "codex/f18-wsl-ops"
+            or _git(root, "rev-parse", "--abbrev-ref", "@{upstream}").decode().strip()
+               != "development/codex/f18-wsl-ops"
             or _git(root, "rev-parse", "HEAD").decode().strip() != BASE
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip()
                != BASE
+            or not _dirty_paths(root) <= CONTROL_SCOPE
             or prior.validate_control(root, {"_root": root, "progress": progress,
                                              "events": stream}, at)):
         raise RuntimeError("F20_U01_R8_CLOSE_PREDECESSOR_INVALID")
@@ -221,16 +234,15 @@ def collect_git(root: Path, progress: dict) -> list[str]:
         upstream = _git(root, "rev-parse", "--abbrev-ref", "@{upstream}").decode().strip()
         changed = set(filter(None, _git(root, "diff", "--no-renames", "--name-only",
                                         f"{BASE}..HEAD").decode().splitlines()))
-        dirty = set(filter(None, _git(root, "diff", "--no-renames", "--name-only").decode().splitlines()))
-        dirty.update(filter(None, _git(root, "diff", "--cached", "--no-renames",
-                                       "--name-only").decode().splitlines()))
-        dirty.update(filter(None, _git(root, "ls-files", "--others", "--exclude-standard").decode().splitlines()))
+        dirty = _dirty_paths(root)
         good = (branch == "codex/f18-wsl-ops"
                 and upstream == "development/codex/f18-wsl-ops"
                 and all(re.fullmatch(r"[0-9a-f]{40}", value or "") for value in (head, remote))
                 and all(subprocess.run(["git", "merge-base", "--is-ancestor", BASE, value],
                                        cwd=root, capture_output=True).returncode == 0
                         for value in (head, remote))
+                and subprocess.run(["git", "merge-base", "--is-ancestor", remote, head],
+                                   cwd=root, capture_output=True).returncode == 0
                 and changed <= CONTROL_SCOPE and dirty <= CONTROL_SCOPE
                 and progress["repository"]["projection_mode"] == MODE)
         return [] if good else ["F20_U01_R8_CLOSE_GIT_INVALID"]
