@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1848,
+  "accepted": false,
+  "projection_mode": "F20_U01_R9_QUEUE_SOURCE_HOST_CLOSE",
+  "previous_event_sequence": 1846,
+  "product_write_scope": [],
+  "predecessor_commit": "a4782daffa403a1862aaee53ac0841c887dfd253",
+  "predecessor_events_sha256": "A86E344F76A47A71590F5DFD1C0F05EF9A4513E9E9C325C94265C3BB90F228AB",
+  "plan_path": "docs/04_test_reports/F-20_U01_R9_CLOSE_PLAN.md",
+  "plan_sha256": "C8EE9C0881ADE4D9A002FE71DFA5B30F414B3F6A961DA246980A1964A48C6F61",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
