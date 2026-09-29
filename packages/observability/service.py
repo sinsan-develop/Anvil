@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import re
 from threading import RLock
-from typing import Protocol
+from typing import Callable, Protocol
 
 from .projection import OperationsSources, project_operations
 
@@ -32,18 +32,55 @@ _MAX_READ = 100
 
 class OperationsService:
     def __init__(self, project_id: str, environment_id: str, sources: OperationsSources,
-                 *, repository: OperationsRepository | None = None, clock=None):
+                 *, repository: OperationsRepository | None = None, clock=None,
+                 source_loader: Callable[[str, str], OperationsSources] | None = None):
         if not project_id or not environment_id or type(sources) is not OperationsSources:
             raise OperationsError("OPERATIONS_OWNER_INVALID")
         if repository is None or not all(callable(getattr(repository, name, None))
                                          for name in ("load", "append")):
             raise OperationsError("AUDIT_OWNER_REQUIRED")
+        if source_loader is not None and not callable(source_loader):
+            raise OperationsError("OPERATIONS_SOURCE_LOADER_INVALID")
         self.project_id = project_id
         self.environment_id = environment_id
         self._sources = sources
+        self._source_loader = source_loader
         self._repository = repository
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._lock = RLock()
+
+    def _fresh_sources(self) -> OperationsSources:
+        if self._source_loader is None:
+            return self._sources
+        try:
+            sources = self._source_loader(self.project_id, self.environment_id)
+        except ValueError as exc:
+            if str(exc) == "QUEUE_SOURCE_LIMIT_EXCEEDED":
+                raise OperationsError("QUEUE_SOURCE_LIMIT_EXCEEDED") from None
+            raise OperationsError("QUEUE_SOURCE_UNAVAILABLE") from None
+        except Exception:
+            raise OperationsError("QUEUE_SOURCE_UNAVAILABLE") from None
+        try:
+            if type(sources) is not OperationsSources or sources.queue is None:
+                raise OperationsError("QUEUE_SOURCE_INVALID")
+            if getattr(sources.queue, "legacy_unscoped_present", False):
+                raise OperationsError("QUEUE_SOURCE_LEGACY_UNSCOPED")
+            if type(sources.queue_job_ids) is not tuple or len(sources.queue_job_ids) > 100:
+                raise OperationsError("QUEUE_SOURCE_INVALID")
+        except OperationsError:
+            raise
+        except Exception:
+            raise OperationsError("QUEUE_SOURCE_INVALID") from None
+        return sources
+
+    def _projection(self, now: str) -> dict:
+        sources = self._fresh_sources()
+        if self._source_loader is None:
+            return project_operations(sources, observed_at=datetime.fromisoformat(now))
+        try:
+            return project_operations(sources, observed_at=datetime.fromisoformat(now))
+        except Exception:
+            raise OperationsError("QUEUE_SOURCE_UNAVAILABLE") from None
 
     def _at(self) -> str:
         value = self._clock()
@@ -100,7 +137,7 @@ class OperationsService:
         """Host calls this before reads/on source events; HTTP GET never runs it."""
         with self._lock:
             now = self._at()
-            snapshot = project_operations(self._sources, observed_at=datetime.fromisoformat(now))
+            snapshot = self._projection(now)
             events = self._events()
             before = len(events)
             for worker in snapshot["worker"]:
@@ -143,7 +180,7 @@ class OperationsService:
 
     def snapshot(self) -> dict:
         """Host dashboard projection; does not mutate audit or source owners."""
-        result = project_operations(self._sources, observed_at=datetime.fromisoformat(self._at()))
+        result = self._projection(self._at())
         result["alerts"] = self.alerts()
         result["next_actions"] = [{"priority": a["level"], "reason": a["cause"],
             "target": a["related_entity_id"], "action": a["next_action"],
