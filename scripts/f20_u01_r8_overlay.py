@@ -32,7 +32,10 @@ SCOPE = ["packages/persistence/operations_queue_read.py",
          "tests/persistence/test_f20_u01_r8_queue_read.py", REPORT]
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, WI, INVOCATION,
                  PLAN, "scripts/f20_u01_r8_overlay.py", "scripts/check_project_progress.py",
-                 "tests/tooling/test_f20_u01_r8_projection.py", "docs/WORK_STATUS.md"}
+                 "tests/tooling/test_f20_u01_r8_projection.py", "docs/WORK_STATUS.md",
+                 "docs/04_test_reports/F-20_U01_R8_CLOSE_PLAN.md",
+                 "scripts/f20_u01_r8_close_overlay.py",
+                 "tests/tooling/test_f20_u01_r8_close_projection.py"}
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
          "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")
 
