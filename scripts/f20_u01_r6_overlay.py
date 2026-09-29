@@ -35,6 +35,11 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     "scripts/f20_u01_r6_overlay.py",
     "scripts/check_project_progress.py",
     "tests/tooling/test_f20_u01_r6_projection.py",
+    "docs/04_test_reports/F-20_U01_R6B_ERROR_BODY_BINDING_PLAN.md",
+    "docs/work_orders/F-20_U01_R6B_ERROR_BODY_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R6B_ERROR_BODY_INVOCATION.md",
+    "scripts/f20_u01_r6b_overlay.py",
+    "tests/tooling/test_f20_u01_r6b_projection.py",
 }
 START, END = 1816, 1822
 PREP_ANCHOR = "1862d8559d598458f3b385ee6adc2df51d37a1fd"
