@@ -42,6 +42,14 @@ _TEMP_NAME = ".anvil-f20-u01-r6-oidc-host"
 _CERT_FILES = ("issuer.pem", "issuer.key", "api.pem", "api.key")
 _ALERT_CODE = "WORKER_LEASE_EXPIRED"
 _PG_DATA_PATH = "/var/lib/postgresql/data"
+_BROWSER_STAGES = frozenset({
+    "BOOTSTRAP", "BROWSER_LAUNCH", "PRE_AUTH", "OIDC_AUTH", "STORED_ALERT",
+    "REVOKE", "NETWORK_AUDIT",
+})
+_BROWSER_ERROR_CLASSES = frozenset({
+    "AssertionError", "Error", "TypeError", "TimeoutError", "SyntaxError",
+    "ReferenceError", "RangeError", "AggregateError", "TargetClosedError",
+})
 
 
 def _validated_target(dsn: str | None, isolated: str | None) -> sa.engine.URL:
@@ -154,6 +162,22 @@ def _preflight(engine: sa.Engine, url: sa.engine.URL) -> None:
             )
 
 
+def _classify_browser_failure(stdout: str, stderr: str) -> tuple[str, str]:
+    output = stdout + "\n" + stderr
+    for match in re.finditer(r"^R6_BROWSER_FAILED stage=([A-Z_]+) class=([A-Za-z]+)\r?$",
+                             output, flags=re.MULTILINE):
+        stage, error_class = match.groups()
+        if stage in _BROWSER_STAGES:
+            return stage, error_class if error_class in _BROWSER_ERROR_CLASSES else "NodeError"
+    if re.search(r"^R6_NODE_STARTED\r?$", output, flags=re.MULTILINE):
+        return "NODE_UNHANDLED", "UnhandledError"
+    if re.search(r"^npm (?:ERR!|error)(?:\s|$)", output, flags=re.MULTILINE):
+        return "NPM_INSTALL", "PackageManagerError"
+    if re.search(r"^(?:docker: |Error response from daemon:)", output, flags=re.MULTILINE):
+        return "CONTAINER_START", "ContainerError"
+    return "PRE_NODE_UNKNOWN", "ProcessError"
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -193,8 +217,7 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
     except OSError:
         pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=LAUNCH class=OSError", pytrace=False)
     if result.returncode != 0:
-        match = re.search(r"R6_BROWSER_FAILED stage=([A-Z_]+) class=([A-Za-z]+)", result.stderr)
-        stage, error_class = match.groups() if match else ("RUNNER", "ProcessError")
+        stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
                     f"class={error_class}", pytrace=False)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
@@ -493,6 +516,28 @@ def test_r6_asgi_import_uses_test_console_origin_without_host_environment():
     ], shell=False, cwd=Path(__file__).resolve().parents[2], env=environment,
        capture_output=True, text=True, timeout=20, check=False)
     assert child.returncode == 0, "R6_ASGI_IMPORT_CONSOLE_BASE_URL_MISSING"
+
+
+def test_r6_browser_failure_classification_never_returns_raw_output():
+    secret = "private-dsn-or-token"
+    cases = (
+        ("", f"R6_BROWSER_FAILED stage=PRE_AUTH class=Error\n{secret}",
+         ("PRE_AUTH", "Error")),
+        ("R6_BROWSER_FAILED stage=OIDC_AUTH class=AssertionError\n", "",
+         ("OIDC_AUTH", "AssertionError")),
+        ("R6_NODE_STARTED\n", secret, ("NODE_UNHANDLED", "UnhandledError")),
+        ("", f"npm error code EAI_AGAIN\n{secret}",
+         ("NPM_INSTALL", "PackageManagerError")),
+        ("", f"docker: Error response from daemon\n{secret}",
+         ("CONTAINER_START", "ContainerError")),
+        ("", secret, ("PRE_NODE_UNKNOWN", "ProcessError")),
+        ("R6_NODE_STARTED\nR6_BROWSER_FAILED stage=LEAK class=Secret\n", secret,
+         ("NODE_UNHANDLED", "UnhandledError")),
+    )
+    for stdout, stderr, expected in cases:
+        actual = _classify_browser_failure(stdout, stderr)
+        assert actual == expected
+        assert secret not in " ".join(actual)
 
 
 def test_opt_in_r6_oidc_browser_pg15():

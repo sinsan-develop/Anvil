@@ -179,6 +179,7 @@ if (auditSelfTest) {
     [safeResponse], '', 'session-sentinel').offOriginCredentialLeak, true);
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
+  console.log('R6_NODE_STARTED');
   main().catch((error) => {
     console.error('R6_BROWSER_FAILED stage=' + stage + ' class=' + error.name);
     process.exitCode = 1;
