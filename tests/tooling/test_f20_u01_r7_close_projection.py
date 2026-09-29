@@ -21,6 +21,17 @@ def _overlay():
         pytest.fail("R7 close projection is missing")
 
 
+def test_r8_draft_control_scope_is_exact():
+    overlay = _overlay()
+    draft = {
+        "docs/04_test_reports/F-20_U01_R8_SCOPED_QUEUE_SOURCE_PLAN.md",
+        "docs/work_orders/F-20_U01_R8_SCOPED_QUEUE_SOURCE_WORK_INSTRUCTION.md",
+        "docs/work_orders/F-20_U01_R8_SCOPED_QUEUE_SOURCE_INVOCATION.md",
+    }
+    assert draft <= overlay.CONTROL_SCOPE
+    assert "packages/persistence/operations_queue_read.py" not in overlay.CONTROL_SCOPE
+
+
 def _fixture(tmp_path: Path) -> Path:
     root = tmp_path / "repository"
     subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--local",

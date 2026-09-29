@@ -1,0 +1,1 @@
+기존 `codex/f18-wsl-ops` worktree에서 R8 계획·WorkInstruction과 새 canonical worker/write dual lease·G-05 PASS를 확인하라. exact3에서 scoped PostgreSQL Queue read source를 RED→GREEN으로 구현하고 로컬 검증·결과를 Main에 보고하라. commit/push/merge나 공유 WSL 자원 변경은 하지 말라.

@@ -25,7 +25,10 @@ DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r7-close.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R7_CLOSE_MANIFEST.json"
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "scripts/f20_u01_r7_close_overlay.py", "scripts/check_project_progress.py",
-                 "tests/tooling/test_f20_u01_r7_close_projection.py", "docs/WORK_STATUS.md"}
+                 "tests/tooling/test_f20_u01_r7_close_projection.py", "docs/WORK_STATUS.md",
+                 "docs/04_test_reports/F-20_U01_R8_SCOPED_QUEUE_SOURCE_PLAN.md",
+                 "docs/work_orders/F-20_U01_R8_SCOPED_QUEUE_SOURCE_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R8_SCOPED_QUEUE_SOURCE_INVOCATION.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 
