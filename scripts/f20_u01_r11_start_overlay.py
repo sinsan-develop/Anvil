@@ -34,6 +34,8 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, WI,
                  INVOCATION, "scripts/f20_u01_r11_start_overlay.py",
                  "scripts/check_project_progress.py",
                  "tests/tooling/test_f20_u01_r11_start_projection.py",
+                 "scripts/f20_u01_r11_close_overlay.py",
+                 "tests/tooling/test_f20_u01_r11_close_projection.py",
                  "docs/WORK_STATUS.md"}
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
          "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")
