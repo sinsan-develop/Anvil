@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED_LOCAL_SCOPE`. R8의 지정된 세 파일 안에서 PostgreSQL Queue 읽기 source와 로컬 계약 테스트를 작성했다. 실제 PostgreSQL 15·WSL-server 동일 SHA 실측, Main 독립 검토, U-01/F-20 인수는 이 판정에 포함하지 않는다.
+`COMPLETED_LOCAL_SCOPE`. R8의 지정된 세 파일 안에서 PostgreSQL Queue 읽기 source와 로컬 계약 테스트를 작성했다. 아래 WSL PostgreSQL 15 실측은 Main Agent가 별도로 수행해 인계한 증거이며, 이 판정을 U-01/F-20 전체 인수로 확장하지 않는다.
 
 ## 기준·시작 상태
 
@@ -36,6 +36,16 @@
 | `.\\.venv\\Scripts\\python.exe -B scripts/check_project_progress.py .` | 0 | `G-05 project progress contract: PASS sequence=1840 reporting=AUTO_CONTINUE`. |
 | `git diff --check` | 0 | 출력 없음. |
 
+## Main Agent 별도 WSL PostgreSQL 15 실측
+
+Main Agent 전달 기준 commit은 `3140e769e310d19317bb6c461116947fcf1ab0b5`다. 이 절의 실행·관측 주체는 Main Agent이며 Developer가 WSL 명령을 재실행하지 않았다.
+
+- 격리된 `postgres:15` 컨테이너, loopback `5546`, tmpfs, 비-superuser `anvil_u01_r8`에서 migration0019 적용 exit0. 첫 migration 시도는 WSL system Python에 `alembic`이 없어 실패했으며, 격리 `/tmp/anvil-u01-r8-venv`에 패키지를 설치해 해결했다. 공유 Python은 변경하지 않았다.
+- 같은 SHA의 WSL R8+F13 테스트 `25 passed`, exit0. 실제 합성 데이터는 job 4건·quarantine 1건이며 `p1/e1`에서 job 1건, `p1/e2`와 `p2/e1`에서 각 1건이 해당 scope에만 표시됐다. legacy flag는 true였고, 읽기 전후 DB row 수는 불변이었다. projection Queue health는 `UNKNOWN`, 출력 payload는 없었다.
+- job 조회 후 동시 insert를 수행해도 동일 repeatable-read transaction의 quarantine은 이전 snapshot을 유지하고 새 snapshot에만 신규 row가 나타났다: `R8_PG15_REPEATABLE_READ_PASS`.
+- 동일 scope 102개 row는 일부 목록 반환 없이 `QUEUE_SOURCE_LIMIT_EXCEEDED`로 거부됐다: `R8_PG15_101_LIMIT_PASS`.
+- Main Agent는 전용 컨테이너의 identity·image·labels·tmpfs·AutoRemove·loopback·mount 없음과 정확한 경로를 확인한 뒤 `docker stop anvil-u01-r8-pg`로 자동 제거하고 `/tmp/anvil-u01-r8-venv`만 제거했다. pytest base 부재, port5546 listener 0, QA checkout clean을 확인했으며 `R8_PG15_TEMP_RESIDUE_ZERO` exit0이다. WSL 실측 PASS를 정식 E-SHOT/E-NET, U-01/F-20 acceptance 또는 Production 판정으로 사용하지 않는다.
+
 ## 임시 자원·오류
 
 - Main이 정확한 pytest base `.pytest_tmp_f20_u01_r8_queue_read`의 소유·수명·정리를 사전 기록했고, 실행 전 부재를 확인했다. pytest 실행 후에도 경로가 생성되지 않아 실제 삭제 대상·잔여물은 0이다.
@@ -44,8 +54,8 @@
 
 ## 미검증·잔여 위험·다음 조치
 
-- 로컬 fake connection PASS는 실제 PostgreSQL SQL 실행, migration0019 schema, 동시 transaction, WSL-server exact SHA를 증명하지 않는다. 5개 PostgreSQL 의존 E04 테스트는 skip이다.
+- 로컬 fake connection PASS 자체는 실제 PostgreSQL 실행을 증명하지 않는다. 위 Main Agent의 동일 SHA 격리 PG15 실측은 별도 근거이며, 로컬 E04 PostgreSQL 의존 테스트 5개는 여전히 skip이다.
 - 전체 제품 suite, 실제 브라우저/API, 정식 E-SHOT/E-NET, U-01/F-20 acceptance, C30 사건 복구, Production은 미검증 또는 범위 밖이다.
-- Main이 세 파일의 diff와 G-05를 독립 검토한 다음 기존 branch에 안전한 checkpoint를 만들고, 동일 SHA WSL-server 격리 PG15에서 실제 scope·legacy·quarantine·DB 불변을 검증한다. `legacy_unscoped_present` 해석과 Queue health 표시를 host 연결 단계에서 보존한다.
+- Main이 확인한 WSL 임시 자원 잔여0 증거를 최종 인수 기록에 반영한다. 후속 host 연결 단계에서는 `legacy_unscoped_present` 해석과 Queue health `UNKNOWN` 표시를 보존한다.
 - Rollback: Main이 이 R8 단위의 세 신규 파일만 이전 checkpoint 기준으로 제거할 수 있다. Main 소유 `docs/WORK_STATUS.md`와 다른 dirty/untracked 자료는 대상이 아니다.
 - `docs/progress/build-progress.json`과 `BUILD_HANDOFF.md`는 Developer가 수정하지 않았다. Main이 검증·인수 후 갱신한다.
