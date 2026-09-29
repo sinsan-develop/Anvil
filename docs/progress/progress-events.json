@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1834,
+  "last_sequence": 1836,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -91859,7 +91859,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 1835,
+  "event_id": "evt_f20_1835_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R7_SCOPED_QA_CLOSE",
+  "subject_ref": "F-20/U01-R7",
+  "occurred_at": "2026-09-29T08:45:44+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "03882B8B5E7BFC4BA2050A5A3231AA698C2A2994D25DEB9E97DDEDD692968526",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r7-n0805",
+    "write_fencing_token": "f20-u01-r7-write-fence-epoch-20-n0805",
+    "reason": "R7_SCOPED_QA_RETRY_PASS_F20_STILL_BLOCKED",
+    "evidence_head": "880b087d5ad0b8ce112c561f41c446f8348f666f"
+  }
+},
+{
+  "sequence": 1836,
+  "event_id": "evt_f20_1836_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R7_SCOPED_QA_CLOSE",
+  "subject_ref": "F-20/U01-R7",
+  "occurred_at": "2026-09-29T08:45:44+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EB4510F1601538049B86B66B1A9803DF6437B6EAD95047BB48D3F582C138911E",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r7-n0805",
+    "execution_fencing_token": "f20-u01-r7-execution-fence-epoch-20-n0805",
+    "reason": "R7_SCOPED_QA_RETRY_PASS_F20_STILL_BLOCKED",
+    "evidence_head": "880b087d5ad0b8ce112c561f41c446f8348f666f"
+  }
 }
   ],
-  "last_event_id": "evt_f20_1834_package_resumed"
+  "last_event_id": "evt_f20_1836_worker_lease_revoked"
 }
