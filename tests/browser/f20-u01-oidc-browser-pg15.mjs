@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Single Chromium context against the Python-owned HTTPS OIDC/PG15 host.
 import assert from 'node:assert/strict';
-import { writeSync } from 'node:fs';
+import { closeSync, existsSync, lstatSync, openSync, readdirSync, realpathSync,
+  renameSync, unlinkSync, writeFileSync, writeSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { basename, isAbsolute, join, resolve } from 'node:path';
 
 const require = createRequire(import.meta.url);
 const auditSelfTest = process.argv.includes('--audit-self-test');
@@ -13,6 +15,7 @@ const controlToken = process.env.ANVIL_F20_R6_CONTROL_TOKEN;
 const expectedEntity = process.env.ANVIL_F20_R6_ALERT_ENTITY;
 const expectedCause = process.env.ANVIL_F20_R6_ALERT_CAUSE;
 const diagnosticDrain = process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1';
+const evidenceDir = process.env.ANVIL_F20_R6_EVIDENCE_DIR;
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
 const progressStages = new Set([
@@ -26,7 +29,8 @@ const progressStages = new Set([
   'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
   'REVOKE_CARD', 'REVOKE_RESPONSES', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
   'NETWORK_RESPONSE_FACTS', 'NETWORK_DOM', 'NETWORK_IDP_STATE',
-  'NETWORK_ASSERT', 'ISSUER_DISPOSE', 'BROWSER_CLOSE',
+  'NETWORK_ASSERT', 'EVIDENCE_PRE_AUTH', 'EVIDENCE_STORED', 'EVIDENCE_REVOKED',
+  'ISSUER_DISPOSE', 'BROWSER_CLOSE', 'EVIDENCE_EXPORT',
 ]);
 
 function markStage(value) {
@@ -58,6 +62,80 @@ function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
   });
   return { allAppRequestsSameOrigin, offOriginCredentialLeak,
     secretExposure: requestExposure || responseExposure || containsSensitive(domText) };
+}
+
+function containsEvidenceSecret(value, markers) {
+  return markers.filter((marker) => typeof marker === 'string' && marker)
+    .flatMap((marker) => [marker, encodeURIComponent(marker)])
+    .some((marker) => String(value).includes(marker));
+}
+
+function safeEvidenceUrls(requests, origin, markers) {
+  assert.ok(requests.length > 0, 'R6_EVIDENCE_URL_REJECTED');
+  return requests.map(({ url }) => {
+    let parsed;
+    try { parsed = new URL(url); }
+    catch { throw new Error('R6_EVIDENCE_URL_REJECTED'); }
+    assert.ok(parsed.origin === origin && parsed.protocol === 'https:'
+      && !parsed.username && !parsed.password && !parsed.search && !parsed.hash
+      && !url.includes('?') && !url.includes('#')
+      && !containsEvidenceSecret(url, markers), 'R6_EVIDENCE_URL_REJECTED');
+    return parsed.href;
+  });
+}
+
+async function captureEvidenceScreen(page, markers) {
+  assert.deepEqual(page.viewportSize(), { width: 1920, height: 1080 },
+    'R6_EVIDENCE_SCREEN_REJECTED');
+  const visibleText = await page.locator('body').innerText();
+  assert.ok(!containsEvidenceSecret(visibleText, markers), 'R6_EVIDENCE_SCREEN_REJECTED');
+  return page.screenshot({ type: 'png', fullPage: false });
+}
+
+function publishEvidence(directory, screens, urls) {
+  assert.ok(isAbsolute(directory) && resolve(directory) === directory
+    && /^anvil-u01-r6-evidence-[0-9a-f]{7}$/.test(basename(directory)),
+  'R6_EVIDENCE_DIR_REJECTED');
+  try {
+    const stat = lstatSync(directory);
+    assert.ok(stat.isDirectory() && !stat.isSymbolicLink()
+      && realpathSync(directory) === directory && readdirSync(directory).length === 0,
+    'R6_EVIDENCE_DIR_REJECTED');
+  } catch {
+    throw new Error('R6_EVIDENCE_DIR_REJECTED');
+  }
+  const files = [
+    ['pre-auth-error.png', screens.preAuth],
+    ['stored-critical.png', screens.stored],
+    ['revoked-blocked.png', screens.revoked],
+    ['page-requests.json', JSON.stringify({ scope: 'R6B_LOOPBACK_QA_ONLY',
+      pageRequestCount: urls.length, urls }) + '\n'],
+  ];
+  const created = [];
+  try {
+    for (const [name, content] of files) {
+      const pending = join(directory, name + '.pending');
+      let fd;
+      try {
+        fd = openSync(pending, 'wx', 0o644);
+        created.push(pending);
+        writeFileSync(fd, content);
+      } finally {
+        if (fd !== undefined) closeSync(fd);
+      }
+    }
+    for (const [name] of files) {
+      const destination = join(directory, name);
+      if (existsSync(destination)) throw new Error('R6_EVIDENCE_WRITE_FAILED');
+      renameSync(join(directory, name + '.pending'), destination);
+      created.push(destination);
+    }
+  } catch {
+    for (const path of created.reverse()) {
+      try { if (existsSync(path)) unlinkSync(path); } catch { /* Main owns residue check. */ }
+    }
+    throw new Error('R6_EVIDENCE_WRITE_FAILED');
+  }
 }
 
 function settleCapture(work) {
@@ -289,11 +367,14 @@ async function main() {
   assert.equal(alertCode, 'WORKER_LEASE_EXPIRED');
   assert.ok(controlToken?.length >= 32);
   assert.ok(expectedEntity && expectedCause && Array.isArray(sensitiveValues));
+  assert.ok(!evidenceDir || !diagnosticDrain, 'R6_EVIDENCE_DIAGNOSTIC_CONFLICT');
   markStage('PLAYWRIGHT_REQUIRE');
   const { chromium, request: playwrightRequest } = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
   markStage('BROWSER_LAUNCH');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
   let flowComplete = false;
+  let resultEvidence;
+  let exportPayload;
   try {
     markStage('BROWSER_CONTEXT');
     const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1920, height: 1080 } });
@@ -321,6 +402,11 @@ async function main() {
     assert.equal(preAuth.status, 401);
     markStage('PRE_AUTH_CARD_CHECK');
     assert.equal(await card.getByText(alertCode, { exact: true }).count(), 0);
+    if (evidenceDir) {
+      await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
+      markStage('EVIDENCE_PRE_AUTH');
+      exportPayload = { screens: { preAuth: await captureEvidenceScreen(page, sensitiveValues) } };
+    }
 
     markStage('OIDC_AUTH_REQUEST');
     const authorization = await fetchOnPage(page, '/auth/oidc/authorization', {
@@ -366,6 +452,11 @@ async function main() {
     const rowText = await card.locator('li').filter({ hasText: alertCode }).innerText();
     const rowMatches = rowText.includes(expectedEntity) && rowText.includes(expectedCause);
     assert.ok(rowMatches);
+    if (evidenceDir) {
+      markStage('EVIDENCE_STORED');
+      exportPayload.screens.stored = await captureEvidenceScreen(page,
+        [...sensitiveValues, cookie.value]);
+    }
 
     markStage('REVOKE_CONTROL');
     const released = await issuerClient.post(new URL('/r6-control/revoke', issuerUrl).href, {
@@ -379,6 +470,12 @@ async function main() {
     markStage('REVOKE_CLEAR');
     await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
+    if (evidenceDir) {
+      assert.ok(staleCleared, 'R6_EVIDENCE_REVOKE_STATE_REJECTED');
+      markStage('EVIDENCE_REVOKED');
+      exportPayload.screens.revoked = await captureEvidenceScreen(page,
+        [...sensitiveValues, cookie.value]);
+    }
     markStage('NETWORK_REQUEST_FACTS');
     const requests = verifiedFacts(await Promise.all(requestFacts));
     markStage('NETWORK_RESPONSE_FACTS');
@@ -400,7 +497,10 @@ async function main() {
         && diagnosticEvents.some(({ category, status }) =>
           category === 'PROVIDER_API' && status === 401), 'R6_DIAG_DRAIN_INCOMPLETE');
     }
-    console.log('R6_RESULT ' + JSON.stringify({
+    if (evidenceDir) {
+      exportPayload.urls = safeEvidenceUrls(requests, apiUrl, [...sensitiveValues, cookie.value]);
+    }
+    resultEvidence = {
       preAuthStatus: preAuth.status, authorizationStatus: authorization.status,
       callbackStatus: callback.status, sessionAuthenticated: true,
       cookieSecure: cookie.secure, cookieHttpOnly: cookie.httpOnly,
@@ -415,7 +515,7 @@ async function main() {
         diagnosticProvider401DrainCount: diagnosticEvents.filter(({ category, status }) =>
           category === 'PROVIDER_API' && status === 401).length,
       } : {}),
-    }));
+    };
     flowComplete = true;
     } finally {
       if (flowComplete) markStage('ISSUER_DISPOSE');
@@ -425,9 +525,43 @@ async function main() {
     if (flowComplete) markStage('BROWSER_CLOSE');
     await browser.close();
   }
+  if (evidenceDir) {
+    markStage('EVIDENCE_EXPORT');
+    publishEvidence(evidenceDir, exportPayload.screens, exportPayload.urls);
+    resultEvidence.evidenceExported = true;
+  }
+  console.log('R6_RESULT ' + JSON.stringify(resultEvidence));
 }
 
 if (auditSelfTest) {
+  const evidenceRequests = [
+    { origin: apiUrl, url: apiUrl + '/', body: '', headers: {} },
+    { origin: apiUrl, url: apiUrl + '/api/operations/alerts', body: '', headers: {} },
+    { origin: apiUrl, url: apiUrl + '/api/operations/alerts', body: '', headers: {} },
+  ];
+  assert.deepEqual(safeEvidenceUrls(evidenceRequests, apiUrl, ['private-token']), [
+    apiUrl + '/', apiUrl + '/api/operations/alerts', apiUrl + '/api/operations/alerts',
+  ]);
+  for (const url of [apiUrl + '/?', apiUrl + '/#',
+    apiUrl + '/auth/oidc/callback?code=private-token',
+    apiUrl + '/api/private-token', 'https://outside.invalid/api/operations/alerts',
+    'https://user:password@127.0.0.1:9/api/operations/alerts']) {
+    assert.throws(() => safeEvidenceUrls([{ origin: apiUrl, url }], apiUrl,
+      ['private-token']), /R6_EVIDENCE_URL_REJECTED/);
+  }
+  const screenshotCalls = [];
+  const fakeScreen = {
+    viewportSize: () => ({ width: 1920, height: 1080 }),
+    locator: () => ({ innerText: async () => 'safe dashboard' }),
+    screenshot: async (options) => { screenshotCalls.push(options); return Buffer.from('png-buffer'); },
+  };
+  assert.deepEqual(await captureEvidenceScreen(fakeScreen, ['private-token']), Buffer.from('png-buffer'));
+  assert.deepEqual(screenshotCalls, [{ type: 'png', fullPage: false }]);
+  fakeScreen.viewportSize = () => ({ width: 1280, height: 720 });
+  await assert.rejects(captureEvidenceScreen(fakeScreen, ['private-token']), /R6_EVIDENCE_SCREEN_REJECTED/);
+  fakeScreen.viewportSize = () => ({ width: 1920, height: 1080 });
+  fakeScreen.locator = () => ({ innerText: async () => 'private-token' });
+  await assert.rejects(captureEvidenceScreen(fakeScreen, ['private-token']), /R6_EVIDENCE_SCREEN_REJECTED/);
   const safeRequest = { origin: apiUrl, url: apiUrl + '/api/operations/alerts', body: '',
     headers: { cookie: 'anvil_session=session-sentinel' } };
   const safeResponse = { origin: apiUrl, url: safeRequest.url, body: '',
@@ -625,6 +759,15 @@ if (auditSelfTest) {
   } finally {
     if (previousWindow === undefined) delete globalThis.window;
     else globalThis.window = previousWindow;
+  }
+  if (process.env.ANVIL_F20_R6_SELFTEST_EVIDENCE_DIR) {
+    const png = Buffer.concat([Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex'),
+      Buffer.from('0000078000000438', 'hex')]);
+    const directory = process.env.ANVIL_F20_R6_SELFTEST_EVIDENCE_DIR;
+    publishEvidence(directory, { preAuth: png, stored: png, revoked: png },
+      safeEvidenceUrls(evidenceRequests, apiUrl, ['private-token']));
+    assert.throws(() => publishEvidence(directory, { preAuth: png, stored: png, revoked: png },
+      [apiUrl + '/']), /R6_EVIDENCE_DIR_REJECTED/);
   }
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {

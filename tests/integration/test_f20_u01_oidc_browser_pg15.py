@@ -11,11 +11,12 @@ import os
 import re
 import secrets
 import socket
+import stat
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlsplit
 
 import certifi
 import jwt
@@ -42,6 +43,8 @@ _TEMP_NAME = ".anvil-f20-u01-r6-oidc-host"
 _CERT_FILES = ("issuer.pem", "issuer.key", "api.pem", "api.key")
 _ALERT_CODE = "WORKER_LEASE_EXPIRED"
 _PG_DATA_PATH = "/var/lib/postgresql/data"
+_EVIDENCE_FILES = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked.png",
+                   "page-requests.json")
 _BROWSER_STAGES = frozenset({
     "BOOTSTRAP", "PLAYWRIGHT_REQUIRE", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "ISSUER_CONTEXT", "PAGE_CREATE", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
@@ -53,7 +56,8 @@ _BROWSER_STAGES = frozenset({
     "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DOCUMENT",
     "REVOKE_CARD", "REVOKE_RESPONSES", "REVOKE_CLEAR", "NETWORK_REQUEST_FACTS",
     "NETWORK_RESPONSE_FACTS", "NETWORK_DOM", "NETWORK_IDP_STATE",
-    "NETWORK_ASSERT", "ISSUER_DISPOSE", "BROWSER_CLOSE",
+    "NETWORK_ASSERT", "EVIDENCE_PRE_AUTH", "EVIDENCE_STORED", "EVIDENCE_REVOKED",
+    "ISSUER_DISPOSE", "BROWSER_CLOSE", "EVIDENCE_EXPORT",
 })
 _BROWSER_ERROR_CLASSES = frozenset({
     "AssertionError", "Error", "TypeError", "TimeoutError", "SyntaxError",
@@ -250,6 +254,59 @@ def _diagnostic_drain_mode() -> bool:
     return value == "1"
 
 
+def _requested_evidence_dir(value: str | None, sha7: str, *,
+                            root: Path = Path("/tmp"), diagnostic: bool) -> Path | None:
+    if value is None:
+        return None
+    expected = root / ("anvil-u01-r6-evidence-" + sha7)
+    try:
+        path = Path(value)
+        details = path.lstat()
+        owner = os.getuid() if hasattr(os, "getuid") else details.st_uid
+        valid = (re.fullmatch(r"[0-9a-f]{7}", sha7) is not None
+                 and not diagnostic and path.is_absolute() and path == expected
+                 and root.resolve(strict=True) == root
+                 and path.resolve(strict=True) == path
+                 and stat.S_ISDIR(details.st_mode) and not path.is_symlink()
+                 and details.st_uid == owner
+                 and (os.name == "nt" or details.st_mode & 0o077 == 0)
+                 and not any(path.iterdir()))
+    except (OSError, RuntimeError, ValueError):
+        valid = False
+    if not valid:
+        raise ValueError("R6_EVIDENCE_DIR_REJECTED") from None
+    return expected
+
+
+def _verify_evidence_artifacts(directory: Path, api_url: str, count: int) -> None:
+    try:
+        assert {item.name for item in directory.iterdir()} == set(_EVIDENCE_FILES)
+        for name in _EVIDENCE_FILES[:3]:
+            path = directory / name
+            assert path.is_file() and not path.is_symlink()
+            with path.open("rb") as stream:
+                header = stream.read(24)
+            assert (header[:16] == b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+                    and int.from_bytes(header[16:20], "big") == 1920
+                    and int.from_bytes(header[20:24], "big") == 1080)
+        manifest = directory / "page-requests.json"
+        assert manifest.is_file() and not manifest.is_symlink()
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+        assert isinstance(payload, dict) and set(payload) == {"scope", "pageRequestCount", "urls"}
+        assert payload["scope"] == "R6B_LOOPBACK_QA_ONLY"
+        urls = payload["urls"]
+        assert (type(payload["pageRequestCount"]) is int and payload["pageRequestCount"] == count
+                and isinstance(urls, list) and len(urls) == count and count > 0)
+        for url in urls:
+            assert isinstance(url, str) and url == urlsplit(url).geturl()
+            parsed = urlsplit(url)
+            assert (parsed.scheme == "https" and parsed.netloc == urlsplit(api_url).netloc
+                    and parsed.path.startswith("/") and not parsed.query and not parsed.fragment
+                    and parsed.username is None and parsed.password is None)
+    except (AssertionError, OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        raise AssertionError("R6_EVIDENCE_ARTIFACT_REJECTED") from None
+
+
 def _finish_r6_evidence(evidence: dict, *, diagnostic: bool) -> None:
     if diagnostic:
         assert evidence.get("diagnosticDrainMode") is True
@@ -265,7 +322,7 @@ def _finish_r6_evidence(evidence: dict, *, diagnostic: bool) -> None:
 
 
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
-               dsn: str, alert: dict) -> dict:
+               dsn: str, alert: dict, evidence_dir: Path | None = None) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
     assert script.is_file(), "R6_BROWSER_SCRIPT_MISSING"
     environment = {name: os.environ[name] for name in (
@@ -279,6 +336,8 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
                        ANVIL_F20_R6_ALERT_CAUSE=alert["cause"])
     if _diagnostic_drain_mode():
         environment["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] = "1"
+    if evidence_dir is not None:
+        environment["ANVIL_F20_R6_EVIDENCE_DIR"] = str(evidence_dir)
     password = sa.engine.make_url(dsn).password
     dsn_forms = {dsn, "postgresql://" + dsn.split("://", 1)[1]}
     sensitive = [*sorted(dsn_forms), control_token, "synthetic-client-secret",
@@ -336,6 +395,10 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
 
     diagnostic = _diagnostic_drain_mode()
     _guard_pg_container(url)
+    evidence_dir = _requested_evidence_dir(
+        os.environ.get("ANVIL_F20_R6_EVIDENCE_DIR"), url.database.removeprefix("anvil_f20_r3a_"),
+        diagnostic=diagnostic,
+    )
     frontend = Path(os.environ["ANVIL_F20_R6_FRONTEND_DIST"]).resolve(strict=True)
     expected_frontend = Path(__file__).resolve().parents[2] / "apps" / "web" / "dist"
     assert (frontend == expected_frontend and frontend.is_dir()
@@ -474,17 +537,22 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             raise
         pending_socket = None
         assert listeners[1][3] == api_url
-        evidence = _node_flow(api_url, issuer_url, control_token, dsn, before[0])
+        evidence = _node_flow(api_url, issuer_url, control_token, dsn, before[0], evidence_dir)
         assert evidence.get("pageRequestCount", 0) > 0, "R6_PAGE_NETWORK_EMPTY"
         assert evidence.get("appApiRequestCount", 0) > 0, "R6_API_NETWORK_EMPTY"
         diagnostic_keys = {"diagnosticDrainMode", "diagnosticNonOkDrainCount",
                            "diagnosticProvider401DrainCount"}
+        artifact_keys = {"evidenceExported"}
         if diagnostic:
             assert evidence.get("diagnosticDrainMode") is True, "R6_DIAG_MODE_NOT_ACTIVE"
         else:
             assert not diagnostic_keys.intersection(evidence), "R6_DIAG_MODE_UNEXPECTED"
+        if evidence_dir is not None:
+            assert evidence.get("evidenceExported") is True, "R6_EVIDENCE_OUTPUT_MISSING"
+        else:
+            assert not artifact_keys.intersection(evidence), "R6_EVIDENCE_OUTPUT_UNEXPECTED"
         checked = {key: value for key, value in evidence.items()
-                   if key not in {"pageRequestCount", "appApiRequestCount"} | diagnostic_keys}
+                   if key not in {"pageRequestCount", "appApiRequestCount"} | diagnostic_keys | artifact_keys}
         assert checked == {
             "preAuthStatus": 401, "authorizationStatus": 200, "callbackStatus": 200,
             "sessionAuthenticated": True, "cookieSecure": True, "cookieHttpOnly": True,
@@ -501,6 +569,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         with engine.connect() as db:
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_sessions)).scalar_one() == 1
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 0
+        if evidence_dir is not None:
+            _verify_evidence_artifacts(evidence_dir, api_url, evidence["pageRequestCount"])
         _finish_r6_evidence(evidence, diagnostic=diagnostic)
     finally:
         cleanup_errors = []
@@ -786,6 +856,71 @@ def test_r6_diagnostic_evidence_cannot_be_acceptance(capsys):
     output = capsys.readouterr().out
     assert "R6_DIAGNOSTIC_EVIDENCE " in output
     assert "R6_E2E_EVIDENCE " not in output
+
+
+def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):
+    sha7 = "c3a7626"
+    directory = tmp_path / ("anvil-u01-r6-evidence-" + sha7)
+    directory.mkdir(mode=0o700)
+    assert _requested_evidence_dir(str(directory), sha7, root=tmp_path,
+                                   diagnostic=False) == directory
+    assert _requested_evidence_dir(None, sha7, root=tmp_path, diagnostic=False) is None
+    for value in ("relative/evidence", str(tmp_path / "other"),
+                  str(tmp_path / "anvil-u01-r6-evidence-other")):
+        with pytest.raises(ValueError, match="R6_EVIDENCE_DIR_REJECTED"):
+            _requested_evidence_dir(value, sha7, root=tmp_path, diagnostic=False)
+    with pytest.raises(ValueError, match="R6_EVIDENCE_DIR_REJECTED"):
+        _requested_evidence_dir(str(directory), sha7, root=tmp_path, diagnostic=True)
+    (directory / "occupied").write_text("not ours", encoding="utf-8")
+    with pytest.raises(ValueError, match="R6_EVIDENCE_DIR_REJECTED"):
+        _requested_evidence_dir(str(directory), sha7, root=tmp_path, diagnostic=False)
+    (directory / "occupied").unlink()
+    if os.name != "nt":
+        directory.chmod(0o755)
+        with pytest.raises(ValueError, match="R6_EVIDENCE_DIR_REJECTED"):
+            _requested_evidence_dir(str(directory), sha7, root=tmp_path, diagnostic=False)
+        directory.chmod(0o700)
+        directory.rmdir()
+        directory.symlink_to(tmp_path, target_is_directory=True)
+        with pytest.raises(ValueError, match="R6_EVIDENCE_DIR_REJECTED"):
+            _requested_evidence_dir(str(directory), sha7, root=tmp_path, diagnostic=False)
+
+
+def test_r6_evidence_artifacts_require_three_1920x1080_pngs_and_safe_full_urls(tmp_path):
+    names = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked.png")
+    png = (b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+           + (1920).to_bytes(4, "big") + (1080).to_bytes(4, "big"))
+    for name in names:
+        (tmp_path / name).write_bytes(png)
+    urls = ["https://127.0.0.1:48123/", "https://127.0.0.1:48123/api/providers"]
+    manifest = tmp_path / "page-requests.json"
+    manifest.write_text(json.dumps({"scope": "R6B_LOOPBACK_QA_ONLY",
+                                    "pageRequestCount": 2, "urls": urls}), encoding="utf-8")
+    _verify_evidence_artifacts(tmp_path, "https://127.0.0.1:48123", 2)
+    manifest.write_text(json.dumps({"scope": "R6B_LOOPBACK_QA_ONLY",
+                                    "pageRequestCount": 2,
+                                    "urls": [urls[0], urls[1] + "?code=private"]}), encoding="utf-8")
+    with pytest.raises(AssertionError, match="R6_EVIDENCE_ARTIFACT_REJECTED"):
+        _verify_evidence_artifacts(tmp_path, "https://127.0.0.1:48123", 2)
+
+
+def test_r6_node_evidence_writer_uses_only_the_opt_in_empty_directory(tmp_path):
+    directory = tmp_path / "anvil-u01-r6-evidence-c3a7626"
+    directory.mkdir()
+    environment = os.environ.copy()
+    environment["ANVIL_F20_R6_SELFTEST_EVIDENCE_DIR"] = str(directory)
+    script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
+    result = subprocess.run(["node", str(script), "--audit-self-test"], shell=False,
+                            env=environment, capture_output=True, text=True, timeout=15, check=False)
+    assert result.returncode == 0, "R6_EVIDENCE_SELFTEST_FAILED"
+    assert {item.name for item in directory.iterdir()} == set(_EVIDENCE_FILES)
+    payload = json.loads((directory / "page-requests.json").read_text(encoding="utf-8"))
+    assert payload == {"scope": "R6B_LOOPBACK_QA_ONLY", "pageRequestCount": 3,
+                       "urls": ["https://127.0.0.1:9/",
+                                "https://127.0.0.1:9/api/operations/alerts",
+                                "https://127.0.0.1:9/api/operations/alerts"]}
+    assert "private-token" not in result.stdout + result.stderr
+    assert "https://127.0.0.1:9" not in result.stdout + result.stderr
 
 
 def test_opt_in_r6_oidc_browser_pg15():
