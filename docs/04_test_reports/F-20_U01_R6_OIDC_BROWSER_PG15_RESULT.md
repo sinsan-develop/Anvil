@@ -1,8 +1,22 @@
-# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (R11 WSL A/B 실측)
+# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (R6B 제품 오류 본문 로컬 보완)
 
 ## 판정
 
-`R11_AB_SUPPORTS_BODY_CONSUMPTION_HYPOTHESIS; NORMAL_E2E_NOT_PASSED`. 동일 SHA `be182efdaf0658bff13e6ea01f57dd994b809869`의 WSL 실제 opt-in에서 기본 OFF는 Provider 401 본문 TIMEOUT으로 재실패했다. 새 일회성 PG를 사용한 진단 ON은 기존 브라우저·Network·Secret·DB 사후검사를 끝내고 `nonOkDrainCount=5`, `provider401DrainCount=1`을 기록한 뒤 예정된 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP이었다. 차이는 원래 same-origin non-ok Response clone의 bounded 소비 계측이므로 body 미소비 가설을 강하게 지지하지만, 계측 없는 제품 `App.tsx` 수정의 효과나 수락 PASS를 입증하지 않는다. 제품 변경은 현재 exact3/WI/write lease 범위 밖이며 이번에는 수행하지 않았다.
+`R6B_LOCAL_GREEN; NORMAL_WSL_E2E_PENDING`. epoch19 exact5에 따라 제품 Dashboard의 Provider·Alerts·Health 비정상 응답 본문을 소비·폐기하도록 수정했다. RED→GREEN 및 로컬 인접 검증은 통과했지만, 계측 OFF의 실제 WSL PG15/OIDC/Chromium E2E는 새 SHA에서 아직 실행하지 않았다. 기존 R11 동일 SHA A/B에서 기본 OFF는 Provider 401 본문 TIMEOUT으로 실패했고, 진단 ON은 모든 검사 뒤 의도된 SKIP이었다. 그 기록은 아래에 역사적 증거로 보존하며 R6B 합격 근거로 사용하지 않는다.
+
+## R6B 기준선·조치·로컬 증거
+
+- 시작 branch `codex/f18-wsl-ops`, HEAD `e5b7144d82d097c80b4a3f3c19b367ac6168c41c`. 제품 exact5는 clean이었고 `docs/WORK_STATUS.md`만 Main 소유 dirty로 관측했다. 본 writer는 그 파일·Git·WSL을 변경하지 않았다.
+- canonical Event seq1828, actor `developer-primary-f20-u01-r6b`, epoch19 worker `worker-lease-f20-u01-r6b-r6bbody1`와 종속 write `write-lease-f20-u01-r6b-r6bbody1` 모두 ACTIVE, 만료 `2026-09-29T17:48:19+00:00`. execution fence `f20-u01-r6b-execution-fence-epoch-19-r6bbody1`, write fence `f20-u01-r6b-write-fence-epoch-19-r6bbody1`. WI SHA-256 `DE4D4D7EC824DF8547A9130DEAF46ED7C41C715D4957DB8BF638C2AA21B468F1`, Invocation `301718C9CAE2F833602CD393F1392D2CEDBFAFF2C3C004BA42FB615637609D3F`, binding plan `53940A2E6B74E9988EA359B86E2AD554F4F6EED3ED635610A70CBEA86E76F2DC`. G-05 seq1828 PASS.
+- 변경 전 `App.tsx`의 Provider·Alerts·Health `!response.ok`는 본문을 읽지 않았다. 변경 후 실패 응답에서만 `response.text()`를 기다리고 결과는 즉시 폐기한다. 읽기 오류는 기존 Provider/Alerts UNAVAILABLE·Health FAILED로 귀결한다. 성공 JSON 경로, same-origin URL/credentials, AbortController cleanup과 `signal.aborted` 상태 반영 차단은 유지한다. Health 로더를 테스트 가능한 내부 함수로 분리했으며 새 공개 API/화면 문구·권한·DB 계약은 없다.
+- 변경 파일은 `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, 본 보고서 3개다. Python/Node R6 harness는 이 수정에서 변경하지 않았고 진단 모드 기본 OFF/ON 최종 SKIP 계약을 유지한다.
+- `npm run test:console -- --test-name-pattern="non-ok"` (`apps/web` cwd) exit1: 신규 2건 RED (`loadReadiness` 부재, 실패 본문 소비 전). 이후 `npm run test:console` exit0: 21/21 PASS. 실패 본문 호출·폐기 및 완료 전 미settled, Provider/Alerts/Health/older Alerts 안전 상태, 본문 오류·Abort, 성공 Health same-origin 경로와 기존 Dashboard 회귀를 포함한다.
+- `npm run typecheck` exit0, `npm run lint` exit0, `npm run build` exit0. build의 사전 기록된 임시 `apps/web/dist`는 생성 전 부재, 생성 후 reparse 0·정확한 경로 확인 뒤 그 폴더만 제거하여 잔여0이다.
+- `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0, `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit0 (`R6_AUDIT_SELF_TEST_PASS`). `.\.venv\Scripts\python.exe -B -m pytest -q -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py tests/api/test_oidc_asgi_binding.py --basetemp=.pytest_tmp_f20_u01_r6b_error_body_adjacent` exit0: 54 PASS/2 SKIP. 사전 기록된 base는 생성 전 부재, 내부 `current` link 1개가 동일 base 내부를 가리킴을 확인한 후 정확한 base만 제거하여 잔여0. `.\.venv\Scripts\python.exe -B scripts/check_project_progress.py` exit0 (`G-05 ... sequence=1828`), `git diff --check` exit0.
+- 미검증: 새 제품 코드의 WSL exact-SHA 기본 OFF 실제 브라우저, 원 401/403/5xx 본문 Network 완료, OIDC→저장 Critical→철회 403/stale-clear와 DB postcheck, 형식적 E-SHOT/full E-NET, U-01/F-20 전체 수락 및 Production. 로컬 2 SKIP은 opt-in 미실행 경계를 포함하며 브라우저 PASS가 아니다. 본문 읽기가 장시간 멈추면 기존 안전 상태 표시도 지연될 수 있으므로 실제 E2E에서 수집·완료를 재확인해야 한다.
+- rollback: Main은 exact SHA·dirty 소유를 확인한 뒤 R6B의 `App.tsx`/`f15-console.test.mjs`/본 보고서 변경만 이전 commit으로 되돌릴 수 있다. 여기서 commit/push/merge, WSL PG·컨테이너·자격 증명·진단 flag 변경은 하지 않았다. Main 소유 `docs/WORK_STATUS.md`와 다른 사용자 파일은 rollback 대상이 아니다.
+
+## R6~R11 이전 증거
 
 ## 판단 이유와 기준선
 

@@ -90,7 +90,10 @@ export async function loadCriticalAlerts(signal: AbortSignal, request: typeof fe
     const response = await request('/api/operations/alerts', {
       credentials: 'same-origin', signal, headers: {Accept: 'application/json'},
     });
-    if (!response.ok) return ALERTS_UNAVAILABLE;
+    if (!response.ok) {
+      await response.text();
+      return ALERTS_UNAVAILABLE;
+    }
     return classifyCriticalAlerts(await response.json());
   } catch {
     return ALERTS_UNAVAILABLE;
@@ -106,7 +109,10 @@ export async function loadOlderCriticalAlerts(current: CriticalAlertsState, sign
       credentials: 'same-origin', signal,
       headers: {Accept: 'application/json', 'x-alert-before-sequence': String(beforeSequence)},
     });
-    if (!response.ok) return ALERTS_UNAVAILABLE;
+    if (!response.ok) {
+      await response.text();
+      return ALERTS_UNAVAILABLE;
+    }
     const page = classifyCriticalAlerts(await response.json(), beforeSequence);
     if (page.status !== 'LOADED' || page.seenAlertIds.some((id) => current.seenAlertIds.includes(id))) {
       return ALERTS_UNAVAILABLE;
@@ -178,7 +184,10 @@ export async function loadProviderRegistration(signal: AbortSignal, request: typ
     const response = await request('/api/providers', {
       credentials: 'same-origin', signal, headers: {Accept: 'application/json'},
     });
-    if (!response.ok) return PROVIDER_UNAVAILABLE;
+    if (!response.ok) {
+      await response.text();
+      return PROVIDER_UNAVAILABLE;
+    }
     return classifyProviderRegistration(await response.json());
   } catch {
     return PROVIDER_UNAVAILABLE;
@@ -202,6 +211,22 @@ export function classifyReadiness(value: unknown): Readiness {
   const payload = value as Record<string, unknown>;
   return payload.status === 'ready' && (payload.migration_head === '0016_operations_recovery' || payload.migration_head === '0019_oidc_sessions')
     ? 'READY' : 'NOT CONNECTED';
+}
+
+export async function loadReadiness(signal: AbortSignal, request: typeof fetch = fetch):
+  Promise<{payload: unknown; checked: 'JUST NOW' | 'FAILED'}> {
+  try {
+    const response = await request('/api/health/ready', {
+      credentials: 'same-origin', signal, headers: {Accept: 'application/json'},
+    });
+    if (!response.ok) {
+      await response.text();
+      return {payload: null, checked: 'JUST NOW'};
+    }
+    return {payload: await response.json(), checked: 'JUST NOW'};
+  } catch {
+    return {payload: null, checked: 'FAILED'};
+  }
 }
 
 export function DatabaseHealthCard({value}: {value: unknown}) {
@@ -247,20 +272,10 @@ function Shell({route}: AppProps) {
   useEffect(() => {
     const controller = new AbortController();
     const read = async () => {
-      try {
-        const response = await fetch('/api/health/ready', {
-          credentials: 'same-origin', signal: controller.signal, headers: {Accept: 'application/json'},
-        });
-        const payload: unknown = response.ok ? await response.json() : null;
-        if (!controller.signal.aborted) {
-          setReadinessPayload(payload);
-          setChecked('JUST NOW');
-        }
-      } catch {
-        if (!controller.signal.aborted) {
-          setReadinessPayload(null);
-          setChecked('FAILED');
-        }
+      const {payload, checked: nextChecked} = await loadReadiness(controller.signal);
+      if (!controller.signal.aborted) {
+        setReadinessPayload(payload);
+        setChecked(nextChecked);
       }
     };
     void read();

@@ -62,7 +62,83 @@ const providerRows = (registered = []) => providerIds.map((provider_id) => ({
   credential: 'secret-must-not-render',
   server_endpoint: 'http://internal-must-not-render:8301',
 }));
-const jsonResponse = (data, status = 200) => ({ok: status >= 200 && status < 300, status, json: async () => data});
+const jsonResponse = (data, status = 200) => ({ok: status >= 200 && status < 300, status,
+  json: async () => data, text: async () => JSON.stringify(data)});
+
+test('non-ok Provider, Alerts, and Health bodies finish without exposing their contents', async () => {
+  const secret = 'private-response-body-must-not-render';
+  const calls = [];
+  const failure = (name, status) => ({ok: false, status,
+    text: async () => { calls.push(name); return secret; },
+    json: async () => { throw new Error('non-ok JSON must not be parsed'); }});
+  const signal = new AbortController().signal;
+  const provider = await consoleApp.loadProviderRegistration(signal, async () => failure('provider', 401));
+  const alerts = await consoleApp.loadCriticalAlerts(signal, async () => failure('alerts', 403));
+  const health = await consoleApp.loadReadiness(signal, async () => failure('health', 503));
+  const firstPage = await consoleApp.loadCriticalAlerts(signal,
+    async () => jsonResponse(alertResponse([alertRow()], 7)));
+  const older = await consoleApp.loadOlderCriticalAlerts(firstPage, signal,
+    async () => failure('older-alerts', 401));
+  assert.deepEqual(calls, ['provider', 'alerts', 'health', 'older-alerts']);
+  assert.deepEqual(provider, {status: 'UNAVAILABLE', registered: null});
+  assert.deepEqual(alerts, {status: 'UNAVAILABLE'});
+  assert.deepEqual(older, {status: 'UNAVAILABLE'});
+  assert.deepEqual(health, {payload: null, checked: 'JUST NOW'});
+  const html = [renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard, {value: provider})),
+    renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: alerts})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard, {value: health.payload}))].join('');
+  assert.doesNotMatch(html, /private-response-body-must-not-render/);
+});
+
+test('non-ok body read errors and abort remain fail-closed without stale success', async () => {
+  const controller = new AbortController();
+  const request = async () => ({ok: false, status: 401, text: async () => {
+    controller.abort();
+    throw new Error('private-body-read-error');
+  }});
+  assert.deepEqual(await consoleApp.loadProviderRegistration(controller.signal, request),
+    {status: 'UNAVAILABLE', registered: null});
+  assert.deepEqual(await consoleApp.loadCriticalAlerts(new AbortController().signal, request),
+    {status: 'UNAVAILABLE'});
+  assert.deepEqual(await consoleApp.loadReadiness(new AbortController().signal, request),
+    {payload: null, checked: 'FAILED'});
+});
+
+test('non-ok Provider, Alerts, and Health wait for body completion before settling', async () => {
+  const cases = [
+    [consoleApp.loadProviderRegistration, {status: 'UNAVAILABLE', registered: null}],
+    [consoleApp.loadCriticalAlerts, {status: 'UNAVAILABLE'}],
+    [consoleApp.loadReadiness, {payload: null, checked: 'JUST NOW'}],
+  ];
+  for (const [loader, expected] of cases) {
+    let finishBody;
+    const body = new Promise((resolve) => { finishBody = resolve; });
+    const pending = loader(new AbortController().signal,
+      async () => ({ok: false, status: 401, text: () => body}));
+    let settled = false;
+    void pending.then(() => { settled = true; });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(settled, false);
+    finishBody('discarded-private-body');
+    assert.deepEqual(await pending, expected);
+  }
+});
+
+test('successful Health retains same-origin request and readiness payload', async () => {
+  const controller = new AbortController();
+  const expected = {status: 'ready', migration_head: '0019_oidc_sessions'};
+  const calls = [];
+  const health = await consoleApp.loadReadiness(controller.signal, async (url, options) => {
+    calls.push([url, options]);
+    return {ok: true, json: async () => expected,
+      text: async () => { throw new Error('successful body must not use failure reader'); }};
+  });
+  assert.deepEqual(health, {payload: expected, checked: 'JUST NOW'});
+  assert.equal(calls[0][0], '/api/health/ready');
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.equal(calls[0][1].signal, controller.signal);
+  assert.equal(consoleApp.classifyReadiness(health.payload), 'READY');
+});
 
 test('Provider card counts only registered credentials and keeps health NOT CHECKED', async () => {
   const requests = [];
