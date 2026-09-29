@@ -43,8 +43,10 @@ _CERT_FILES = ("issuer.pem", "issuer.key", "api.pem", "api.key")
 _ALERT_CODE = "WORKER_LEASE_EXPIRED"
 _PG_DATA_PATH = "/var/lib/postgresql/data"
 _BROWSER_STAGES = frozenset({
-    "BOOTSTRAP", "BROWSER_LAUNCH", "PRE_AUTH", "OIDC_AUTH", "STORED_ALERT",
-    "REVOKE", "NETWORK_AUDIT",
+    "BOOTSTRAP", "BROWSER_LAUNCH", "PRE_AUTH", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
+    "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH", "STORED_ALERT",
+    "STORED_DOCUMENT", "STORED_CARD", "REVOKE", "REVOKE_DOCUMENT", "REVOKE_CARD",
+    "REVOKE_CLEAR", "NETWORK_AUDIT",
 })
 _BROWSER_ERROR_CLASSES = frozenset({
     "AssertionError", "Error", "TypeError", "TimeoutError", "SyntaxError",
@@ -523,6 +525,8 @@ def test_r6_browser_failure_classification_never_returns_raw_output():
     cases = (
         ("", f"R6_BROWSER_FAILED stage=PRE_AUTH class=Error\n{secret}",
          ("PRE_AUTH", "Error")),
+        ("R6_NODE_STARTED\nR6_BROWSER_FAILED stage=PRE_AUTH_DOCUMENT class=TimeoutError\n", "",
+         ("PRE_AUTH_DOCUMENT", "TimeoutError")),
         ("R6_BROWSER_FAILED stage=OIDC_AUTH class=AssertionError\n", "",
          ("OIDC_AUTH", "AssertionError")),
         ("R6_NODE_STARTED\n", secret, ("NODE_UNHANDLED", "UnhandledError")),

@@ -82,6 +82,21 @@ async function fetchOnPage(page, path, options = {}) {
   }, { path, options });
 }
 
+async function readyDashboard(page, action, origin, phase) {
+  stage = phase + '_DOCUMENT';
+  if (action === 'goto') {
+    await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
+  } else if (action === 'reload') {
+    await page.reload({ waitUntil: 'domcontentloaded' });
+  } else {
+    throw new Error('R6_NAVIGATION_ACTION_INVALID');
+  }
+  stage = phase + '_CARD';
+  const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  await card.waitFor({ state: 'visible' });
+  return card;
+}
+
 async function main() {
   sensitiveValues = JSON.parse(process.env.ANVIL_F20_R6_SECRET_VALUES_JSON || '[]');
   assert.equal(new URL(apiUrl).hostname, '127.0.0.1');
@@ -105,11 +120,11 @@ async function main() {
     page.on('response', (response) => {
       responseFacts.push(captureResponseFact(response));
     });
-    stage = 'PRE_AUTH';
-    await page.goto(apiUrl + '/', { waitUntil: 'networkidle' });
-    const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+    const card = await readyDashboard(page, 'goto', apiUrl, 'PRE_AUTH');
+    stage = 'PRE_AUTH_FETCH';
     const preAuth = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(preAuth.status, 401);
+    stage = 'PRE_AUTH_CARD_CHECK';
     assert.equal(await card.getByText(alertCode, { exact: true }).count(), 0);
 
     stage = 'OIDC_AUTH';
@@ -144,7 +159,8 @@ async function main() {
     assert.deepEqual(alerts.map(({ code }) => code), [alertCode]);
     assert.equal(alerts[0].related_entity_id, expectedEntity);
     assert.equal(alerts[0].cause, expectedCause);
-    await page.reload({ waitUntil: 'networkidle' });
+    await readyDashboard(page, 'reload', apiUrl, 'STORED');
+    stage = 'STORED_ALERT';
     await card.getByText(alertCode, { exact: true }).waitFor();
     const visibleBeforeRevoke = await card.getByText(alertCode, { exact: true }).count() === 1;
     const rowText = await card.locator('li').filter({ hasText: alertCode }).innerText();
@@ -158,7 +174,8 @@ async function main() {
     assert.equal(released.status(), 200);
     const revoked = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(revoked.status, 403);
-    await page.reload({ waitUntil: 'networkidle' });
+    await readyDashboard(page, 'reload', apiUrl, 'REVOKE');
+    stage = 'REVOKE_CLEAR';
     await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
     stage = 'NETWORK_AUDIT';
@@ -224,6 +241,31 @@ if (auditSelfTest) {
     assert.equal(result.ok, true);
     assert.equal(result.value.body, '');
   }
+  const navigationSteps = [];
+  const fakeCard = { waitFor: async ({ state }) => {
+    assert.equal(state, 'visible');
+    navigationSteps.push('card');
+  } };
+  const fakePage = {
+    goto: async (url, { waitUntil }) => {
+      assert.equal(url, apiUrl + '/');
+      assert.equal(waitUntil, 'domcontentloaded');
+      navigationSteps.push('document');
+    },
+    reload: async ({ waitUntil }) => {
+      assert.equal(waitUntil, 'domcontentloaded');
+      navigationSteps.push('reload');
+    },
+    locator: (selector) => {
+      assert.equal(selector, 'section[aria-labelledby="critical-alerts-heading"]');
+      return fakeCard;
+    },
+  };
+  assert.equal(await readyDashboard(fakePage, 'goto', apiUrl, 'PRE_AUTH'), fakeCard);
+  assert.deepEqual(navigationSteps, ['document', 'card']);
+  navigationSteps.length = 0;
+  assert.equal(await readyDashboard(fakePage, 'reload', apiUrl, 'REVOKE'), fakeCard);
+  assert.deepEqual(navigationSteps, ['reload', 'card']);
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
   console.log('R6_NODE_STARTED');
