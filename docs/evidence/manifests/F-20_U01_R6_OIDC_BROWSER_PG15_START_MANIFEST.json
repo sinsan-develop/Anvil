@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1822,
+  "accepted": false,
+  "projection_mode": "F20_U01_R6_OIDC_BROWSER_PG15_START",
+  "previous_event_sequence": 1816,
+  "product_write_scope": [
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "docs/04_test_reports/F-20_U01_R6_OIDC_BROWSER_PG15_RESULT.md"
+  ],
+  "predecessor_commit": "6d946bb9792e328ae97233726ac6322fece4f68f",
+  "predecessor_events_sha256": "9E97503BDE2D4DB88DFFC170F8443C102575852A4C3D8539F8FC761131E2FE88",
+  "work_instruction_sha256": "7BFE973A0741B5E00493DE2884F15F3741EB260043433BC140F3FF15146C27A0",
+  "invocation_sha256": "0A0CA362F4F7294581A340F734AF36D8609A4DF04D46FB79FAD86E00B5F53A45",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
