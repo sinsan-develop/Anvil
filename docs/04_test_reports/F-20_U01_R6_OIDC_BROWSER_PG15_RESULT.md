@@ -1,8 +1,8 @@
-# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (R6B 제품 오류 본문 로컬 보완)
+# F-20/U-01 R6 OIDC·브라우저·PG15 결과보고 (R6B 기본 OFF WSL 실측)
 
 ## 판정
 
-`R6B_LOCAL_GREEN; NORMAL_WSL_E2E_PENDING`. epoch19 exact5에 따라 제품 Dashboard의 Provider·Alerts·Health 비정상 응답 본문을 소비·폐기하도록 수정했다. RED→GREEN 및 로컬 인접 검증은 통과했지만, 계측 OFF의 실제 WSL PG15/OIDC/Chromium E2E는 새 SHA에서 아직 실행하지 않았다. 기존 R11 동일 SHA A/B에서 기본 OFF는 Provider 401 본문 TIMEOUT으로 실패했고, 진단 ON은 모든 검사 뒤 의도된 SKIP이었다. 그 기록은 아래에 역사적 증거로 보존하며 R6B 합격 근거로 사용하지 않는다.
+`R6B_SLICE_PASS; U01_F20_NOT_ACCEPTED`. epoch19 exact5에서 제품 Dashboard의 Provider·Alerts·Health 비정상 응답 본문을 소비·폐기하도록 수정했고, Main이 동일 SHA `8e7557ae29324cf4b66438ca2bfa3b1d7f1c5ebd`의 WSL-server 일회성 PG15·합성 HTTPS OIDC·실제 Chromium을 진단 flag 기본 OFF로 실행하여 범위 한정 E2E를 통과했다. 기존 R11 진단 ON의 의도된 SKIP은 수락 근거로 사용하지 않는다. 이 PASS는 U-01/F-20 전체 수락, C30 `OPEN_BLOCKING` 해소·ReleaseDecision `DEFER` 변경, E-SHOT/full E-NET 정식 수락 또는 Production 검증이 아니다.
 
 ## R6B 기준선·조치·로컬 증거
 
@@ -13,10 +13,14 @@
 - `npm run test:console -- --test-name-pattern="non-ok"` (`apps/web` cwd) exit1: 신규 2건 RED (`loadReadiness` 부재, 실패 본문 소비 전). 이후 `npm run test:console` exit0: 21/21 PASS. 실패 본문 호출·폐기 및 완료 전 미settled, Provider/Alerts/Health/older Alerts 안전 상태, 본문 오류·Abort, 성공 Health same-origin 경로와 기존 Dashboard 회귀를 포함한다.
 - `npm run typecheck` exit0, `npm run lint` exit0, `npm run build` exit0. build의 사전 기록된 임시 `apps/web/dist`는 생성 전 부재, 생성 후 reparse 0·정확한 경로 확인 뒤 그 폴더만 제거하여 잔여0이다.
 - `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0, `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit0 (`R6_AUDIT_SELF_TEST_PASS`). `.\.venv\Scripts\python.exe -B -m pytest -q -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py tests/api/test_oidc_asgi_binding.py --basetemp=.pytest_tmp_f20_u01_r6b_error_body_adjacent` exit0: 54 PASS/2 SKIP. 사전 기록된 base는 생성 전 부재, 내부 `current` link 1개가 동일 base 내부를 가리킴을 확인한 후 정확한 base만 제거하여 잔여0. `.\.venv\Scripts\python.exe -B scripts/check_project_progress.py` exit0 (`G-05 ... sequence=1828`), `git diff --check` exit0.
-- 미검증: 새 제품 코드의 WSL exact-SHA 기본 OFF 실제 브라우저, 원 401/403/5xx 본문 Network 완료, OIDC→저장 Critical→철회 403/stale-clear와 DB postcheck, 형식적 E-SHOT/full E-NET, U-01/F-20 전체 수락 및 Production. 로컬 2 SKIP은 opt-in 미실행 경계를 포함하며 브라우저 PASS가 아니다. 본문 읽기가 장시간 멈추면 기존 안전 상태 표시도 지연될 수 있으므로 실제 E2E에서 수집·완료를 재확인해야 한다.
-- rollback: Main은 exact SHA·dirty 소유를 확인한 뒤 R6B의 `App.tsx`/`f15-console.test.mjs`/본 보고서 변경만 이전 commit으로 되돌릴 수 있다. 여기서 commit/push/merge, WSL PG·컨테이너·자격 증명·진단 flag 변경은 하지 않았다. Main 소유 `docs/WORK_STATUS.md`와 다른 사용자 파일은 rollback 대상이 아니다.
+- WSL 기본 OFF 실측(Main 전달, SHA `8e7557ae29324cf4b66438ca2bfa3b1d7f1c5ebd`): 사설 push 후 격리 QA checkout의 동일 SHA/Git clean/G-05 seq1828 확인. Node22의 Dashboard 21/21·typecheck·lint·build(20 modules) 각 exit0, 전용 PostgreSQL 15 비-superuser DB/role에서 migration `0019_oidc_sessions` 완료. 합성 HTTPS OIDC+실제 Chromium opt-in은 `R6_E2E_EVIDENCE`를 남기고 `2 passed, 12 deselected, 1 warning in 10.92s`, exit0이었다. pre-auth 401→authorization/callback 200, Secure·HttpOnly 세션 쿠키, 저장 Critical의 code/entity/cause API↔DOM 일치, 권한 철회 403·stale clear를 확인했다. 앱 API 요청 12건·page 요청 24건은 same-origin, IdP request context는 별개였고 off-origin credential leak=false·secretExposure=false였다. 원문 URL·header·body·비밀값은 본 보고서에 싣지 않는다. 상세 실행 원문은 Main 소유이며 본 writer가 WSL에서 직접 재실행하지 않았다.
+- WSL 자원 종료(Main 전달): browser `--rm`, 정확한 PG image/label/tmpfs/AutoRemove/loopback/mount0 신원 확인 후 전용 PG stop·자동제거. root-owned QA `node_modules`(내부 symlink 8/외부0)와 `apps/web/dist`(symlink0)는 정확한 checkout 내부 경로를 확인한 뒤 명명된 일회성 network-none helper로 그 두 경로만 정리했다. 전용 pytest/TLS 경로 부재, port 5545 listener 0, Git clean·postcleanup G-05 seq1828 PASS, `R6B_WSL_QA_RESIDUE_ZERO`. 이 자원 조작은 Main 소유이며 본 writer는 수행하지 않았다.
+- 잔여·미검증: 로컬 2 SKIP은 과거 로컬 opt-in 미실행이며 위 별도 WSL 기본 OFF PASS와 혼동하지 않는다. 실제 로그인 화면 클릭, 다른 Dashboard Health/Next Actions/ack, 형식적 E-SHOT/full E-NET 정식 수락, U-01/F-20 전체 수락, Oracle Cloud·Production은 계속 미검증 또는 미승인이다. C30 incident `OPEN_BLOCKING`과 ReleaseDecision `DEFER`는 그대로 유지한다. 유한한 실패 본문 외 장시간/비정상 응답의 일반 동작은 이 범위 한정 E2E로 보장하지 않는다.
+- rollback: 검증 기준선은 부모 commit `e5b7144d82d097c80b4a3f3c19b367ac6168c41c`, R6B 제품 수정 commit은 `8e7557ae29324cf4b66438ca2bfa3b1d7f1c5ebd`다. 제품 보완 철회가 필요하면 Main이 이 두 SHA와 작업 상태를 확인하고 `App.tsx`·`f15-console.test.mjs`의 R6B 변경만 별도 역방향 commit으로 되돌리며, 본 결과보고서·WORK_STATUS의 실행 이력과 다른 dirty 자료는 보존한다. 이번 보고서 보완 자체는 아직 미커밋이며 불채택 시 본 파일의 이번 delta만 HEAD 상태로 복원할 수 있다. 본 writer는 commit/push/merge·WSL 자원 변경을 하지 않았다.
 
 ## R6~R11 이전 증거
+
+이하의 `미검증`·`rollback`은 R6~R11 당시 판단을 보존한 역사적 기록이다. 현재 R6B 판정은 위 기본 OFF WSL 실측과 잔여·rollback 항목을 따른다.
 
 ## 판단 이유와 기준선
 
@@ -212,13 +216,13 @@ R10의 `.pytest_tmp_f20_u01_r6_drain_ab_adjacent`도 Main이 WORK_STATUS에 생�
 - 같은 SHA에서 새 일회성 PG를 생성한 진단 ON opt-in은 `1 passed, 1 skipped, 12 deselected in 8.90s`, `R6_DIAGNOSTIC_EVIDENCE {nonOkDrainCount:5, provider401DrainCount:1}`. Browser의 OIDC→저장 경고 DOM→권한 철회 403/stale-clear, same-origin·비밀 검사와 Python DB postcheck까지 도달한 뒤 계획된 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP이다. Main은 전용 PG를 정리했고 named container/TLS/base 잔여가 없다고 보고했다. 실행 전체 명령·원본 로그는 본 writer가 직접 수집하지 않았으며 수치·자원 정리 사실은 Main 전달 증거다.
 - 두 실행의 코드 SHA는 같고 clone 소비 계측의 ON/OFF가 관찰된 핵심 차이다. 이는 원 비인증 fetch body 미소비가 Playwright 원 응답 완료 정체에 관여한다는 인과 가설을 지지한다. 그러나 ON은 실행 중인 앱 fetch를 가로채 원 응답 clone을 소비하므로, 계측 없는 `App.tsx` 변경이 같은 결과를 낼지 또는 다른 영향이 없는지는 증명하지 않는다. ON의 pytest PASS 1건은 인접 선택 테스트이며 R6 opt-in 자체는 SKIP이다.
 
-## 미검증과 다음 행동
+## R6~R11 당시 미검증과 다음 행동 (역사적)
 
 - WSL R1은 ASGI import, R2는 runner exit1, R3는 Node unhandled, R4는 PRE_AUTH TimeoutError, R5는 runner 120초 timeout, R6는 responseFacts 미완료, R7은 Provider 401 본문 TIMEOUT, R8은 PRE_AUTH_RESPONSES 미분류, R9·R10·R11 기본 모드는 Provider 401 본문 TIMEOUT에서 중단됐다. R11 진단 ON은 전체 검사를 지나 예상 SKIP했으나 기본 제품 흐름의 E2E PASS가 아니다. 제품 수정 없이 401/200을 허용하거나 별도 fetch body를 원래 응답 body로 대체 감사하지 않는다.
 - 권장 다음 경계: Main이 `docs/work_orders/F-20_U01_R6_OIDC_BROWSER_PG15_WORK_INSTRUCTION.md`와 종속 write lease를 별도 개정해 `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, 기존 R6 Python·Node harness와 본 결과보고서의 정확한 범위를 명시한다. 비인증 Provider뿐 아니라 Alerts/Health의 non-ok body 미소비도 테스트로 확인한 뒤 필요한 최소 변경만 수행한다. 제품 수정 후 진단 flag 기본 OFF, exact SHA 격리 PG15/Chromium에서 401→OIDC/저장 row→403/stale-clear 및 전체 Network/Secret·DB 검사를 다시 통과해야 수락 논의를 시작할 수 있다. 제품 App·테스트·WI/lease 확장은 이번 writer의 현재 exact3 권한 밖이다.
 - 향후 격리 재실측의 Docker browser argv는 비밀 값 없이 필요한 `-e NAME`만 전달하고, timeout 시 Main은 사전 명명한 정확한 전용 container만 확인·정리해야 한다.
 - 정식 WSL entity/checkout, 실제 로그인 화면 클릭, E-SHOT와 전체 E-NET formal acceptance, 다른 Dashboard Health/Next Actions/ack, 전체 U-01/F-20 수락, C30 `OPEN_BLOCKING`/ReleaseDecision `DEFER`, 사용자 인수와 Production은 계속 미검증이다.
 
-## rollback
+## R6~R11 당시 rollback (역사적)
 
 R11 시작 SHA `be182ef`까지의 기존 제품 테스트 commit은 Main이 보존한다. 이번에는 본 결과보고서의 미커밋 R11 기록만 되돌리면 R11 직전 문서 상태로 돌아간다. 기존 R10 A/B harness는 기본 OFF로 유지되며 ON의 SKIP은 수락 증거가 아니다. 통합 전체 rollback 판단은 Main이 정확한 commit·자원 소유를 확인해 수행하며 다른 dirty/untracked 자료, 원장, 진행 문서, 공유 자원은 건드리지 않는다. WSL의 전용 자원은 Main 보고상 이미 정리됐고 잔여0이며, 본 writer는 자원을 변경하지 않았다.
