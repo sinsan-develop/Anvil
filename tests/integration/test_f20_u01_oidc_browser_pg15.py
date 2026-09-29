@@ -12,6 +12,7 @@ import re
 import secrets
 import socket
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qs
@@ -201,6 +202,17 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
     return json.loads(result_lines[0][len("R6_RESULT "):])
 
 
+def _import_asgi_for_r6(api_url: str):
+    with pytest.MonkeyPatch.context() as startup:
+        startup.setenv("ANVIL_DATABASE_URL", "postgresql://isolated.invalid/anvil")
+        startup.setenv("TELEGRAM_WEBHOOK_SECRET", "synthetic-telegram-secret")
+        startup.setenv("TELEGRAM_INTERNAL_SIGNING_SECRET", "synthetic-signing-secret")
+        startup.setenv("TELEGRAM_ALLOWED_IDENTITIES", "chat-1:user-1")
+        startup.setenv("ANVIL_CONSOLE_BASE_URL", api_url)
+        startup.setenv("ANVIL_PUBLIC_HOST", "127.0.0.1")
+        return importlib.import_module("apps.api.anvil_api.asgi")
+
+
 def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
     from packages.persistence.oidc_pending_auth import oidc_pending_auth
     from packages.persistence.oidc_session_store import oidc_sessions
@@ -324,12 +336,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             "TELEGRAM_INTERNAL_SIGNING_SECRET": "synthetic-signing-secret",
             "TELEGRAM_ALLOWED_IDENTITIES": "chat-1:user-1", "UPSTAGE_API_KEY": "synthetic-presence",
         }
-        with pytest.MonkeyPatch.context() as startup:
-            startup.setenv("ANVIL_DATABASE_URL", "postgresql://isolated.invalid/anvil")
-            startup.setenv("TELEGRAM_WEBHOOK_SECRET", "synthetic-telegram-secret")
-            startup.setenv("TELEGRAM_INTERNAL_SIGNING_SECRET", "synthetic-signing-secret")
-            startup.setenv("TELEGRAM_ALLOWED_IDENTITIES", "chat-1:user-1")
-            asgi = importlib.import_module("apps.api.anvil_api.asgi")
+        asgi = _import_asgi_for_r6(api_url)
         app = asgi.create_configured_oidc_asgi_app(
             environment=environment, engine=engine, session_factory=sessionmaker(bind=engine),
             authorization_resolver=lambda _endpoint, _params: AuthorizationScope(
@@ -472,6 +479,20 @@ def test_r6_container_rejection_precedes_any_database_connection(monkeypatch):
     with pytest.raises(ValueError, match="R6_PG_CONTAINER_REJECTED"):
         _run_opt_in(dsn, _validated_target(dsn, "1"))
     assert calls == ["inspect"]
+
+
+def test_r6_asgi_import_uses_test_console_origin_without_host_environment():
+    environment = os.environ.copy()
+    for name in ("ANVIL_AUTH_MODE", "ANVIL_CONSOLE_BASE_URL", "ANVIL_PUBLIC_HOST"):
+        environment.pop(name, None)
+    child = subprocess.run([
+        sys.executable, "-B", "-c",
+        "from tests.integration.test_f20_u01_oidc_browser_pg15 "
+        "import _import_asgi_for_r6; "
+        "assert _import_asgi_for_r6('https://127.0.0.1:48123').app is not None",
+    ], shell=False, cwd=Path(__file__).resolve().parents[2], env=environment,
+       capture_output=True, text=True, timeout=20, check=False)
+    assert child.returncode == 0, "R6_ASGI_IMPORT_CONSOLE_BASE_URL_MISSING"
 
 
 def test_opt_in_r6_oidc_browser_pg15():
