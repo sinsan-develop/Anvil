@@ -426,3 +426,104 @@ test('Critical Alerts drops earlier protected records if an older page is invali
     {value: {status: 'UNAVAILABLE'}}));
   assert.doesNotMatch(html, /alert-7|secret|<script>/);
 });
+
+const dashboardQueueRow = (overrides = {}) => ({
+  job_id: 'private-job-id', run_id: 'private-run-id', state: 'PENDING',
+  available_at: '2026-09-30T00:00:00+00:00', attempts: 0, max_attempts: 2,
+  lease_epoch: 0, lease_expires_at: null, dependency_ids: [], conflict_keys: [],
+  priority: 'UNKNOWN', required_capability: 'UNKNOWN', input_verified: true,
+  backoff_until: '2026-09-30T00:00:00+00:00', ...overrides,
+});
+const dashboardSnapshot = (queue = [], gaps = ['queue']) => ({
+  observed_at: '2026-09-30T00:00:00+00:00',
+  health: Object.fromEntries(['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store']
+    .map((component) => [component, {state: 'UNKNOWN', observed_at: null,
+      stale_after_seconds: null, last_check: null, error_count: null,
+      detail_path: null, evidence_ref: null}])),
+  queue, quarantine: [], worker: [], budget: [], reservations: [], providers: [],
+  deployments: [], source_gaps: gaps, alerts: [], next_actions: [],
+});
+const dashboardResponse = (queue = [], gaps = ['queue']) =>
+  ({data: dashboardSnapshot(queue, gaps), request_id: 'request-1'});
+
+test('Dashboard Queue uses same-origin authenticated GET and shows only scoped observed row count', async () => {
+  const controller = new AbortController();
+  const calls = [];
+  const state = await consoleApp.loadDashboardQueue(controller.signal, async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse(dashboardResponse([dashboardQueueRow()]));
+  });
+  assert.equal(calls[0][0], '/api/dashboard/operations');
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.equal(calls[0][1].headers.Accept, 'application/json');
+  assert.equal(calls[0][1].signal, controller.signal);
+  const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+  assert.match(html, /Queue.*UNKNOWN.*범위 내 관측 1건/s);
+  assert.doesNotMatch(html, /private-job-id|private-run-id|PENDING|HEALTHY|성공률|전체 Queue/);
+});
+
+test('Dashboard Queue zero and absent gap remain observed-only, never healthy or complete', async () => {
+  for (const [rows, gaps, count] of [[[], ['queue'], 0], [[], [], 0],
+    [[dashboardQueueRow()], [], 1]]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse(dashboardResponse(rows, gaps)));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.match(html, new RegExp(`범위 내 관측 ${count}건`));
+    assert.match(html, /UNKNOWN/);
+    assert.doesNotMatch(html, /HEALTHY|전체.*0건|실제.*0건|성공률/);
+    if (gaps.length === 0) assert.match(html, /완전성은 확인되지 않았습니다/);
+  }
+});
+
+test('Dashboard Queue auth denial is BLOCKED, server and transport errors are UNAVAILABLE without body leak', async () => {
+  const privateBody = 'postgresql://secret:credential@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    let reads = 0;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => { reads += 1; return privateBody; },
+        json: async () => { throw new Error('non-ok JSON must not be parsed'); }}));
+    assert.equal(reads, 1);
+    assert.deepEqual(state, {status: status < 500 ? 'BLOCKED' : 'UNAVAILABLE'});
+    const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.doesNotMatch(html, /secret|credential|internal|private-payload/);
+  }
+  for (const request of [async () => { throw new Error(privateBody); },
+    async () => ({ok: true, json: async () => { throw new Error(privateBody); }})]) {
+    assert.deepEqual(await consoleApp.loadDashboardQueue(new AbortController().signal, request),
+      {status: 'UNAVAILABLE'});
+  }
+});
+
+test('Dashboard Queue rejects malformed envelope, snapshot, rows and source gaps before counting', async () => {
+  const row = dashboardQueueRow();
+  const good = dashboardSnapshot([row]);
+  const malformed = [null, {}, {data: good, request_id: ''},
+    {data: {...good, secret: 'private-payload'}},
+    {data: {...good, queue: null}},
+    {data: {...good, queue: Array.from({length: 101}, () => row)}},
+    {data: {...good, queue: [{...row, payload: 'private-payload'}]}},
+    {data: {...good, queue: [{...row, attempts: -1}]}},
+    {data: {...good, queue: [row, {...row}]}},
+    {data: {...good, source_gaps: ['queue', 'queue']}},
+    {data: {...good, source_gaps: ['private-payload']}},
+    {data: {...good, health: {...good.health, queue: null}}},
+    {data: {...good, observed_at: 'not-a-time'}}];
+  for (const body of malformed) {
+    const completeEnvelope = body && typeof body === 'object' && Object.hasOwn(body, 'data')
+      && !Object.hasOwn(body, 'request_id') ? {...body, request_id: 'request-1'} : body;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse(completeEnvelope));
+    assert.deepEqual(state, {status: 'UNAVAILABLE'});
+    const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.doesNotMatch(html, /private-payload|범위 내 관측/);
+  }
+});
+
+test('Dashboard Queue is the only newly connected health card and other Dashboard paths remain unchanged', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /Database.*Queue.*Worker.*LLM Providers.*Execution Backends.*Artifact Store/s);
+  assert.match(html, /Queue.*UNAVAILABLE.*Worker.*UNAVAILABLE/s);
+  assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
+  assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
+  assert.doesNotMatch(html, /private-job-id|private-run-id|HEALTHY/);
+});

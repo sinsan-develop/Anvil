@@ -7,6 +7,8 @@ type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
 type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
 type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null};
+type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean}
+  | {status: 'UNAVAILABLE' | 'BLOCKED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
@@ -15,6 +17,18 @@ type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
+const DASHBOARD_QUEUE_UNAVAILABLE: DashboardQueueState = {status: 'UNAVAILABLE'};
+const DASHBOARD_QUEUE_BLOCKED: DashboardQueueState = {status: 'BLOCKED'};
+const DASHBOARD_SNAPSHOT_FIELDS = ['observed_at', 'health', 'queue', 'quarantine',
+  'worker', 'budget', 'reservations', 'providers', 'deployments', 'source_gaps',
+  'alerts', 'next_actions'];
+const DASHBOARD_HEALTH_COMPONENTS = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
+const DASHBOARD_HEALTH_FIELDS = ['state', 'observed_at', 'stale_after_seconds',
+  'last_check', 'error_count', 'detail_path', 'evidence_ref'];
+const DASHBOARD_QUEUE_FIELDS = ['job_id', 'run_id', 'state', 'available_at', 'attempts',
+  'max_attempts', 'lease_epoch', 'lease_expires_at', 'dependency_ids', 'conflict_keys',
+  'priority', 'required_capability', 'input_verified', 'backoff_until'];
+const DASHBOARD_GAPS = new Set([...DASHBOARD_HEALTH_COMPONENTS, 'deployment']);
 const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
 const ALERTS_BLOCKED: CriticalAlertsState = {status: 'BLOCKED'};
 const ALERT_FIELDS = ['alert_id', 'sequence', 'level', 'source', 'category', 'code',
@@ -42,6 +56,84 @@ function validObservedAt(value: unknown): value is string {
   return Number(hour) < 24 && Number(minute) < 60 && Number(second) < 60
     && new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).toISOString().slice(0, 10) === value.slice(0, 10)
     && Number.isFinite(Date.parse(value));
+}
+
+function nonnegativeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function uniqueNames(value: unknown, allowed?: Set<string>): value is string[] {
+  return Array.isArray(value) && value.length <= 100
+    && value.every((item) => nonempty(item) && (!allowed || allowed.has(item)))
+    && new Set(value).size === value.length;
+}
+
+function validDashboardQueueRow(value: unknown): boolean {
+  if (!record(value) || !exactFields(value, DASHBOARD_QUEUE_FIELDS)) return false;
+  return nonempty(value.job_id) && nonempty(value.run_id)
+    && ['PENDING', 'CLAIMED', 'SUCCEEDED', 'QUARANTINED'].includes(value.state as string)
+    && validObservedAt(value.available_at) && nonnegativeInteger(value.attempts)
+    && Number.isSafeInteger(value.max_attempts) && (value.max_attempts as number) >= 1
+    && nonnegativeInteger(value.lease_epoch)
+    && (value.lease_expires_at === null || validObservedAt(value.lease_expires_at))
+    && uniqueNames(value.dependency_ids) && uniqueNames(value.conflict_keys)
+    && value.priority === 'UNKNOWN' && value.required_capability === 'UNKNOWN'
+    && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
+}
+
+function classifyDashboardQueue(payload: unknown): DashboardQueueState {
+  if (!record(payload) || !exactFields(payload, ['data', 'request_id'])
+    || !nonempty(payload.request_id) || !record(payload.data)
+    || !exactFields(payload.data, DASHBOARD_SNAPSHOT_FIELDS)) return DASHBOARD_QUEUE_UNAVAILABLE;
+  const snapshot = payload.data;
+  if (!validObservedAt(snapshot.observed_at) || !record(snapshot.health)
+    || !exactFields(snapshot.health, DASHBOARD_HEALTH_COMPONENTS)
+    || !DASHBOARD_HEALTH_COMPONENTS.every((name) => {
+      const health = snapshot.health as Record<string, unknown>;
+      return record(health[name]) && exactFields(health[name], DASHBOARD_HEALTH_FIELDS)
+        && ['UNKNOWN', 'HEALTHY', 'LATE', 'EXPIRED', 'DEGRADED', 'UNHEALTHY'].includes(health[name].state as string);
+    })
+    || !Array.isArray(snapshot.queue) || snapshot.queue.length > 100
+    || !snapshot.queue.every(validDashboardQueueRow)
+    || new Set(snapshot.queue.map((row) => row.job_id)).size !== snapshot.queue.length
+    || !uniqueNames(snapshot.source_gaps, DASHBOARD_GAPS)
+    || !['quarantine', 'worker', 'budget', 'reservations', 'providers',
+      'deployments', 'alerts', 'next_actions'].every((name) => Array.isArray(snapshot[name]))) {
+    return DASHBOARD_QUEUE_UNAVAILABLE;
+  }
+  return {status: 'LOADED', observed: snapshot.queue.length,
+    sourceGap: snapshot.source_gaps.includes('queue')};
+}
+
+export async function loadDashboardQueue(signal: AbortSignal, request: typeof fetch = fetch): Promise<DashboardQueueState> {
+  try {
+    const response = await request('/api/dashboard/operations', {
+      credentials: 'same-origin', signal, headers: {Accept: 'application/json'},
+    });
+    if (!response.ok) {
+      await response.text();
+      return response.status === 401 || response.status === 403
+        ? DASHBOARD_QUEUE_BLOCKED : DASHBOARD_QUEUE_UNAVAILABLE;
+    }
+    return classifyDashboardQueue(await response.json());
+  } catch {
+    return DASHBOARD_QUEUE_UNAVAILABLE;
+  }
+}
+
+export function QueueHealthCard({value}: {value: DashboardQueueState}) {
+  return <article className="status-card"><h3>Queue</h3>
+    <div aria-live="polite" aria-atomic="true">
+      {value.status === 'LOADED' ? <>
+        <p className="status-unavailable">UNKNOWN</p>
+        <p>범위 내 관측 {value.observed}건</p>
+        <p>{value.sourceGap ? 'Queue source 연결 정보가 부족합니다.'
+          : 'Queue source의 완전성은 확인되지 않았습니다.'}</p>
+      </> : <><p className="status-unavailable">{value.status}</p>
+        <p>{value.status === 'BLOCKED' ? '조회 차단 · Queue 기록을 표시하지 않습니다.'
+          : 'Queue 상태 정보를 확인할 수 없습니다.'}</p></>}
+    </div>
+  </article>;
 }
 
 function classifyCriticalAlerts(payload: unknown, beforeSequence?: number): CriticalAlertsState {
@@ -265,6 +357,7 @@ function Shell({route}: AppProps) {
   const [checked, setChecked] = useState('NOT REQUESTED');
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_UNAVAILABLE);
+  const [dashboardQueue, setDashboardQueue] = useState<DashboardQueueState>(DASHBOARD_QUEUE_UNAVAILABLE);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_UNAVAILABLE);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
   const alertsController = useRef<AbortController | null>(null);
@@ -290,6 +383,9 @@ function Shell({route}: AppProps) {
     alertsController.current = controller;
     void loadProviderRegistration(controller.signal).then((value) => {
       if (!controller.signal.aborted) setProviderRegistration(value);
+    });
+    void loadDashboardQueue(controller.signal).then((value) => {
+      if (!controller.signal.aborted) setDashboardQueue(value);
     });
     void loadCriticalAlerts(controller.signal).then((value) => {
       if (!controller.signal.aborted) setCriticalAlerts(value);
@@ -347,6 +443,7 @@ function Shell({route}: AppProps) {
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
               if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}/>;
+              if (name === 'Queue') return <QueueHealthCard key={name} value={dashboardQueue}/>;
               if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration}/>;
               return <article className="status-card" key={name}><h3>{name}</h3>
                 <p className="status-unavailable">UNAVAILABLE</p>
