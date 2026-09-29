@@ -76,3 +76,20 @@ def test_r7_public_g05_route(tmp_path):
     root = _fixture(tmp_path)
     overlay.materialize(root, AT, "testnonce")
     assert checker.validate_bundle(checker.load_bundle(root)) == []
+
+
+def test_r7_evidence_scope_accepts_only_four_named_artifacts(tmp_path):
+    overlay = importlib.import_module("scripts.f20_u01_r7_overlay")
+    root = _fixture(tmp_path)
+    overlay.materialize(root, AT, "testnonce")
+    progress = json.loads((root / overlay.PROGRESS).read_bytes())
+    evidence = "docs/test_reports/U-01/evidence/r7-14694e5"
+    for name in ("page-requests.json", "pre-auth-error.png", "revoked-blocked.png",
+                 "stored-critical.png"):
+        relative = f"{evidence}/{name}"
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / relative).read_bytes())
+    assert overlay.collect_git(root, progress) == []
+    (root / evidence / "unexpected.txt").write_text("not scoped", encoding="utf-8")
+    assert overlay.collect_git(root, progress) == ["F20_U01_R7_GIT_INVALID"]

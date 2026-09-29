@@ -32,7 +32,11 @@ SCOPE = ["apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
          "tests/browser/f20-u01-oidc-browser-pg15.mjs", REPORT]
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, WI, INVOCATION,
                  PLAN, "scripts/f20_u01_r7_overlay.py", "scripts/check_project_progress.py",
-                 "tests/tooling/test_f20_u01_r7_projection.py", "docs/WORK_STATUS.md"}
+                 "tests/tooling/test_f20_u01_r7_projection.py", "docs/WORK_STATUS.md",
+                 "docs/test_reports/U-01/evidence/r7-14694e5/page-requests.json",
+                 "docs/test_reports/U-01/evidence/r7-14694e5/pre-auth-error.png",
+                 "docs/test_reports/U-01/evidence/r7-14694e5/revoked-blocked.png",
+                 "docs/test_reports/U-01/evidence/r7-14694e5/stored-critical.png"}
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
          "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")
 
