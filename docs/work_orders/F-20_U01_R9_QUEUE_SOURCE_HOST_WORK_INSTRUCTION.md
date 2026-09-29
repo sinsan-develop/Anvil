@@ -1,6 +1,6 @@
 # F-20/U-01 R9 Queue source host WorkInstruction
 
-- 발행자: Main 어울. **DRAFT — canonical WI Event·새 worker/write dual lease·G-05 PASS 전 제품 수정 금지.**
+- 발행자: Main 어울. **효력 조건: canonical WI Event·새 worker/write dual lease·G-05 PASS 전 제품 수정 금지.**
 - 상위 권위: 승인된 Anvil 설계·작업계획·매트릭스·테스트계획과 `docs/04_test_reports/F-20_U01_R9_QUEUE_SOURCE_HOST_PLAN.md` (SHA-256 `DC703FBDAD5ADA1C20F6E8657A000C9F3539F0F1FD6F7263CC72AAC590CD1919`).
 - 분류: U-01 실제 read model의 내부 host 연결. 공개 API·permission·DB schema·Secret·운영 영향 변경 없음.
 
