@@ -10,6 +10,10 @@ from scripts import f20_u01_r22_close_overlay as overlay
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_r22_close_allows_exact_r23_browser_qa_plan_handoff():
+    assert "docs/04_test_reports/F-20_U01_R23_LOADING_BROWSER_QA_PLAN.md" in overlay.CONTROL_SCOPE
+
+
 def test_r22_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
