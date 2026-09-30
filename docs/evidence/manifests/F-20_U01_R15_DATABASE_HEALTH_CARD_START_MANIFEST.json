@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1882,
+  "accepted": false,
+  "projection_mode": "F20_U01_R15_DATABASE_HEALTH_CARD_START",
+  "previous_event_sequence": 1878,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
+  ],
+  "predecessor_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+  "predecessor_events_sha256": "633768D0931D9E68E9BD4921F70FBC78C9EDD48771842E42D8FC0C94F68E156A",
+  "plan_path": "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_PLAN.md",
+  "plan_sha256": "CCED2D0C0116D960FC8BBDC21156C04EC50183F255D88BFAD5B8110C0ED7FF78",
+  "work_instruction_sha256": "80136398E837D1355AF644C7EEF400515FFF2CB0383D892FAA2C0BD4D24546A3",
+  "invocation_sha256": "616E2BF6F121423EFE77CC35AC62D4C12B50978E26CD47D5C599DED7D8F5ECA5",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

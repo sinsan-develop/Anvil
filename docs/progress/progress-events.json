@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1878,
+  "last_sequence": 1882,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -93045,7 +93045,125 @@
     "reason": "R14_DASHBOARD_HEALTH_CARDS_NODE24_PASS_F20_STILL_BLOCKED",
     "evidence_head": "bb0d035bd5e89680ee09ca1beec40d4d0da01b32"
   }
+},
+{
+  "sequence": 1879,
+  "event_id": "evt_f20_1879_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R15_DATABASE_HEALTH_CARD_START",
+  "subject_ref": "F-20/U01-R15",
+  "occurred_at": "2026-09-30T01:26:28+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3A22506FE2CBAC560C25377F72C3D6E50EB1DB8F4F03697969069038E6EAE2B8",
+  "details": {
+    "path": "docs/work_orders/F-20_U01_R15_DATABASE_HEALTH_CARD_WORK_INSTRUCTION.md",
+    "sha256": "80136398E837D1355AF644C7EEF400515FFF2CB0383D892FAA2C0BD4D24546A3",
+    "invocation_path": "docs/work_orders/F-20_U01_R15_DATABASE_HEALTH_CARD_INVOCATION.md",
+    "invocation_sha256": "616E2BF6F121423EFE77CC35AC62D4C12B50978E26CD47D5C599DED7D8F5ECA5",
+    "classification": "MAIN_INTERNAL_IMPLEMENTATION"
+  }
+},
+{
+  "sequence": 1880,
+  "event_id": "evt_f20_1880_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R15_DATABASE_HEALTH_CARD_START",
+  "subject_ref": "F-20/U01-R15",
+  "occurred_at": "2026-09-30T01:26:28+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "118FA9220E73ADAFF968C57F995C4C3DAFA4DF208A51C282C574E9E915977FC5",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r15-r15run3009b",
+    "actor_id": "developer-primary-f20-u01-r15",
+    "subject_ref": "F-20/U01-R15",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-30T01:26:28+00:00",
+    "expires_at": "2026-09-30T13:26:28+00:00",
+    "lease_epoch": 28,
+    "fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
+    "execution_fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
+    "baseline_git_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "dispatch_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "path_scope": [
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
+    ]
+  }
+},
+{
+  "sequence": 1881,
+  "event_id": "evt_f20_1881_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R15_DATABASE_HEALTH_CARD_START",
+  "subject_ref": "F-20/U01-R15",
+  "occurred_at": "2026-09-30T01:26:28+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "075B9ED70B99F1EB88A405D32BCBE4F1BDD7EF5A1BC9A72A0FD2F0D26697DECD",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r15-r15run3009b",
+    "actor_id": "developer-primary-f20-u01-r15",
+    "subject_ref": "F-20/U01-R15",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-30T01:26:28+00:00",
+    "expires_at": "2026-09-30T13:26:28+00:00",
+    "lease_epoch": 28,
+    "fencing_token": "f20-u01-r15-write-fence-epoch-28-r15run3009b",
+    "execution_fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
+    "baseline_git_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "dispatch_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "path_scope": [
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r15-r15run3009b",
+    "write_epoch": 28,
+    "write_fencing_token": "f20-u01-r15-write-fence-epoch-28-r15run3009b"
+  }
+},
+{
+  "sequence": 1882,
+  "event_id": "evt_f20_1882_package_resumed",
+  "event_type": "PACKAGE_RESUMED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R15_DATABASE_HEALTH_CARD_START",
+  "subject_ref": "F-20/U01-R15",
+  "occurred_at": "2026-09-30T01:26:28+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "22F85D835F142CB15A4DCB56BD35ABCFF001CD7DA4CF2F942D868271D9D63CF8",
+  "details": {
+    "worker_lease_id": "worker-lease-f20-u01-r15-r15run3009b",
+    "write_lease_id": "write-lease-f20-u01-r15-r15run3009b",
+    "work_instruction_sha256": "80136398E837D1355AF644C7EEF400515FFF2CB0383D892FAA2C0BD4D24546A3",
+    "invocation_sha256": "616E2BF6F121423EFE77CC35AC62D4C12B50978E26CD47D5C599DED7D8F5ECA5",
+    "package_status": "REWORK_IN_PROGRESS",
+    "accepted": false
+  }
 }
   ],
-  "last_event_id": "evt_f20_1878_worker_lease_revoked"
+  "last_event_id": "evt_f20_1882_package_resumed"
 }
