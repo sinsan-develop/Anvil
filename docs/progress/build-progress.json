@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r15-database-health-card-close-seq1884",
-  "event_sequence": 1884,
-  "updated_at": "2026-09-30T01:44:50+00:00",
-  "last_event_id": "evt_f20_1884_worker_lease_revoked",
+  "snapshot_id": "snapshot-f20-u01-r16-scoped-run-status-summary-start-seq1888",
+  "event_sequence": 1888,
+  "updated_at": "2026-09-30T02:15:18+00:00",
+  "last_event_id": "evt_f20_1888_package_resumed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,8 +215,28 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "main-agent-eoul",
-  "write_lease": null,
+  "active_agent": "developer-primary-f20-u01-r16",
+  "write_lease": {
+    "lease_id": "write-lease-f20-u01-r16-r16run3009c",
+    "actor_id": "developer-primary-f20-u01-r16",
+    "subject_ref": "F-20/U01-R16",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-30T02:15:18+00:00",
+    "expires_at": "2026-09-30T14:15:18+00:00",
+    "lease_epoch": 29,
+    "fencing_token": "f20-u01-r16-write-fence-epoch-29-r16run3009c",
+    "execution_fencing_token": "f20-u01-r16-execution-fence-epoch-29-r16run3009c",
+    "baseline_git_commit": "609a43562ec6f18434523beb5db04a9e661a70ff",
+    "dispatch_head": "609a43562ec6f18434523beb5db04a9e661a70ff",
+    "path_scope": [
+      "packages/observability/run_status_summary.py",
+      "tests/observability/test_f20_u01_run_status_summary.py",
+      "docs/04_test_reports/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r16-r16run3009c",
+    "write_epoch": 29,
+    "write_fencing_token": "f20-u01-r16-write-fence-epoch-29-r16run3009c"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -248,7 +268,24 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r16-r16run3009c",
+    "actor_id": "developer-primary-f20-u01-r16",
+    "subject_ref": "F-20/U01-R16",
+    "status": "ACTIVE",
+    "issued_at": "2026-09-30T02:15:18+00:00",
+    "expires_at": "2026-09-30T14:15:18+00:00",
+    "lease_epoch": 29,
+    "fencing_token": "f20-u01-r16-execution-fence-epoch-29-r16run3009c",
+    "execution_fencing_token": "f20-u01-r16-execution-fence-epoch-29-r16run3009c",
+    "baseline_git_commit": "609a43562ec6f18434523beb5db04a9e661a70ff",
+    "dispatch_head": "609a43562ec6f18434523beb5db04a9e661a70ff",
+    "path_scope": [
+      "packages/observability/run_status_summary.py",
+      "tests/observability/test_f20_u01_run_status_summary.py",
+      "docs/04_test_reports/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_RESULT.md"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -470,7 +507,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_NEXT_DASHBOARD_SLICE_AUDIT",
+  "next_safe_action": "F20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_IMPLEMENTATION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -581,12 +618,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "85f060d58deba6adbc8709de819c09b81bb6e383",
-    "local_wsl_qa_head": "85f060d58deba6adbc8709de819c09b81bb6e383",
+    "local_head": "609a43562ec6f18434523beb5db04a9e661a70ff",
+    "local_wsl_qa_head": "609a43562ec6f18434523beb5db04a9e661a70ff",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "85f060d58deba6adbc8709de819c09b81bb6e383",
-    "projection_mode": "F20_U01_R15_DATABASE_HEALTH_CARD_CLOSE",
-    "validated_base_commit": "85f060d58deba6adbc8709de819c09b81bb6e383",
+    "remote_head": "609a43562ec6f18434523beb5db04a9e661a70ff",
+    "projection_mode": "F20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_START",
+    "validated_base_commit": "609a43562ec6f18434523beb5db04a9e661a70ff",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1020,8 +1057,12 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [],
-    "worktree_status": "F20_U01_R15_DATABASE_HEALTH_CARD_CLOSED",
+    "product_write_scope": [
+      "packages/observability/run_status_summary.py",
+      "tests/observability/test_f20_u01_run_status_summary.py",
+      "docs/04_test_reports/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_RESULT.md"
+    ],
+    "worktree_status": "F20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1183,12 +1224,12 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F-20-U01-R15-20260930-001",
-    "path": "docs/work_orders/F-20_U01_R15_DATABASE_HEALTH_CARD_WORK_INSTRUCTION.md",
-    "sha256": "80136398E837D1355AF644C7EEF400515FFF2CB0383D892FAA2C0BD4D24546A3",
-    "invocation_path": "docs/work_orders/F-20_U01_R15_DATABASE_HEALTH_CARD_INVOCATION.md",
-    "invocation_sha256": "616E2BF6F121423EFE77CC35AC62D4C12B50978E26CD47D5C599DED7D8F5ECA5",
-    "result_status": "COMPLETED_R15_DATABASE_HEALTH_CARD_NODE24_PASS",
+    "artifact_id": "WI-F-20-U01-R16-20260930-001",
+    "path": "docs/work_orders/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_WORK_INSTRUCTION.md",
+    "sha256": "F40D87E23B04B56809A146743658310258461C7D96529168CE4F4D27F6E7658A",
+    "invocation_path": "docs/work_orders/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_INVOCATION.md",
+    "invocation_sha256": "DAF11BC9EF70F7FEC8A671FE1257B55A1D7A647001F83857A44F7DB9602F5508",
+    "result_status": "REWORK_IN_PROGRESS",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "MAIN_INTERNAL_IMPLEMENTATION"
   },
@@ -1322,8 +1363,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r15-close.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R15_DATABASE_HEALTH_CARD_CLOSE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r16-start.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1344,7 +1385,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "FD5BEFFDD4E22A1DBE7E79BB840CF5977BA69A60BE145253C75D48EAE4EA68D5"
+      "sha256": "DDFD71B758FAA15E8D943513393FD71AE1B15CDA0A07DBDEAC6EFC79451D62FC"
     }
   },
   "next_work_package": {
@@ -1741,8 +1782,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "3A05F0AABFBBC32FE11CF0D434ABF424CD335F1994423D6282F26E8D2A3A0929",
-  "runtime_next_action": "F20_U01_NEXT_DASHBOARD_SLICE_AUDIT",
+  "snapshot_hash": "EE322357CBDB1C6111A8FE548C02245B145FD99E1F0AB10CFC09EA421D3B323B",
+  "runtime_next_action": "F20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_IMPLEMENTATION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
