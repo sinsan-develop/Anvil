@@ -25,6 +25,7 @@ REPORT = "docs/04_test_reports/F-20_U01_R18_RUN_HOST_PG15_QA_RESULT.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r18-r1-close.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R18_R1_RUN_HOST_PG15_QA_CLOSE_MANIFEST.json"
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN,
+                 "docs/04_test_reports/F-20_U01_R19_NEXT_ACTIONS_UI_PLAN.md",
                  "scripts/f20_u01_r18_r1_close_overlay.py",
                  "tests/tooling/test_f20_u01_r18_r1_close_projection.py",
                  "scripts/f20_u01_r18_r1_start_overlay.py",
