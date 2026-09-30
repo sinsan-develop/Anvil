@@ -11,7 +11,7 @@ type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' 
   lastCheck: string | null; errorCount: number | null};
 type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
 type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean;
-  health: Record<DashboardSignalComponent, DashboardSignalState>}
+  health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState}
   | {status: 'UNAVAILABLE' | 'BLOCKED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
@@ -115,6 +115,14 @@ function dashboardSignals(health: Record<string, unknown>, gaps: string[], snaps
   return {worker: signal('worker'), backend: signal('backend'), artifact_store: signal('artifact_store')};
 }
 
+function dashboardDatabaseSignal(value: unknown, gaps: string[], snapshotTime: string): DashboardSignalState {
+  if (Date.parse(snapshotTime) > Date.now() || !validDashboardSignal(value, snapshotTime)) {
+    return {status: 'UNAVAILABLE', lastCheck: null, errorCount: null};
+  }
+  return {status: gaps.includes('database') ? 'UNKNOWN' : value.state as DashboardSignalState['status'],
+    lastCheck: value.last_check as string | null, errorCount: value.error_count as number | null};
+}
+
 function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   if (!record(payload) || !exactFields(payload, ['data', 'request_id'])
     || !nonempty(payload.request_id) || !record(payload.data)
@@ -122,7 +130,7 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   const snapshot = payload.data;
   if (!validObservedAt(snapshot.observed_at) || !record(snapshot.health)
     || !exactFields(snapshot.health, DASHBOARD_HEALTH_COMPONENTS)
-    || !DASHBOARD_HEALTH_COMPONENTS.every((name) => {
+    || !DASHBOARD_HEALTH_COMPONENTS.filter((name) => name !== 'database').every((name) => {
       const health = snapshot.health as Record<string, unknown>;
       return record(health[name]) && exactFields(health[name], DASHBOARD_HEALTH_FIELDS)
         && ['UNKNOWN', 'HEALTHY', 'LATE', 'EXPIRED', 'DEGRADED', 'UNHEALTHY'].includes(health[name].state as string);
@@ -137,6 +145,8 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   }
   return {status: 'LOADED', observed: snapshot.queue.length,
     sourceGap: snapshot.source_gaps.includes('queue'),
+    database: dashboardDatabaseSignal((snapshot.health as Record<string, unknown>).database,
+      snapshot.source_gaps, snapshot.observed_at),
     health: dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps,
       snapshot.observed_at)};
 }
@@ -372,12 +382,20 @@ export async function loadReadiness(signal: AbortSignal, request: typeof fetch =
   }
 }
 
-export function DatabaseHealthCard({value}: {value: unknown}) {
-  const status = classifyReadiness(value);
-  const head = status === 'READY' ? (value as {migration_head: string}).migration_head : null;
+export function DatabaseHealthCard({value, operations}: {value: unknown; operations?: DashboardQueueState}) {
+  const readiness = classifyReadiness(value);
+  const head = readiness === 'READY' ? (value as {migration_head: string}).migration_head : null;
+  const signal = readiness === 'READY'
+    ? operations?.status === 'LOADED' ? operations.database
+      : {status: operations?.status ?? 'UNAVAILABLE', lastCheck: null, errorCount: null}
+    : {status: 'NOT CONNECTED', lastCheck: null, errorCount: null};
   return <article className="status-card"><h3>Database</h3>
-    <p className={status === 'READY' ? 'status-ready' : 'status-unavailable'}>{status}</p>
-    <p>{head ? `Migration ${head}` : '연결된 상태 정보가 없습니다.'}</p>
+    <div aria-live="polite" aria-atomic="true">
+      <p className={signal.status === 'HEALTHY' ? 'status-ready' : 'status-unavailable'}>{signal.status}</p>
+      <p>{head ? `API 준비 READY · Migration ${head}` : '연결된 상태 정보가 없습니다.'}</p>
+      {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
+      {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
+    </div>
   </article>;
 }
 
@@ -491,7 +509,8 @@ function Shell({route}: AppProps) {
         <section aria-labelledby="health-heading"><h2 id="health-heading">Health</h2>
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
-              if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}/>;
+              if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}
+                operations={dashboardQueue}/>;
               if (name === 'Queue') return <QueueHealthCard key={name} value={dashboardQueue}/>;
               if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration}/>;
               if (name === 'Worker') return <DashboardSignalCard key={name} label={name}

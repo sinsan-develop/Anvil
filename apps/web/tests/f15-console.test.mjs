@@ -39,13 +39,14 @@ test('Database card shows the server-confirmed head without claiming a different
   const oidc = renderToStaticMarkup(React.createElement(card, {
     value: {status:'ready', migration_head:'0019_oidc_sessions'},
   }));
-  assert.match(oidc, /Database.*READY.*Migration 0019_oidc_sessions/s);
+  assert.match(oidc, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0019_oidc_sessions/s);
+  assert.doesNotMatch(oidc, /status-ready|HEALTHY/);
   assert.doesNotMatch(oidc, /0016_operations_recovery/);
 
   const operations = renderToStaticMarkup(React.createElement(card, {
     value: {status:'ready', migration_head:'0016_operations_recovery'},
   }));
-  assert.match(operations, /Database.*READY.*Migration 0016_operations_recovery/s);
+  assert.match(operations, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0016_operations_recovery/s);
 
   const unknown = renderToStaticMarkup(React.createElement(card, {
     value: {status:'ready', migration_head:'unknown'},
@@ -453,6 +454,112 @@ const observedHealth = (state, overrides = {}) => ({
   ...overrides,
 });
 
+const renderDatabase = (readiness, operations) => renderToStaticMarkup(
+  React.createElement(consoleApp.DatabaseHealthCard, {value: readiness, operations}));
+
+test('Database card uses the existing operations request for health and keeps migration readiness separate', async () => {
+  for (const status of ['HEALTHY', 'LATE', 'EXPIRED']) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.health.database = observedHealth(status);
+    snapshot.health.worker = observedHealth('HEALTHY');
+    let calls = 0;
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async (url, options) => {
+        calls += 1;
+        assert.equal(url, '/api/dashboard/operations');
+        assert.equal(options.credentials, 'same-origin');
+        return jsonResponse({data: snapshot, request_id: 'request-1'});
+      });
+    assert.equal(calls, 1);
+    const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+    assert.match(html, new RegExp(`Database.*${status}.*API 준비 READY.*Migration 0019_oidc_sessions.*마지막 점검 2026-09-30T00:00:00\\+00:00.*오류 2건`, 's'));
+    assert.doesNotMatch(html, /sha256:|\/operations\/health|private-job-id|private-run-id|href=/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: operations})),
+      /범위 내 관측 1건/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: operations})), /HEALTHY/);
+  }
+});
+
+test('Database readiness failure never upgrades a healthy observation', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.health.database = observedHealth('HEALTHY');
+  const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  for (const readiness of [null, {status: 'not_ready', migration_head: '0019_oidc_sessions'}]) {
+    const html = renderDatabase(readiness, operations);
+    assert.match(html, /Database.*NOT CONNECTED.*연결된 상태 정보가 없습니다/s);
+    assert.doesNotMatch(html, /HEALTHY|API 준비 READY|Migration 0019|마지막 점검|오류 2건/);
+  }
+});
+
+test('Database UNKNOWN and source gap remain unknown while other cards and Queue retain observations', async () => {
+  for (const gap of [false, true]) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], gap ? ['database'] : []);
+    if (gap) snapshot.health.database = observedHealth('HEALTHY');
+    snapshot.health.worker = observedHealth('LATE');
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderDatabase({status: 'ready', migration_head: '0016_operations_recovery'}, operations);
+    assert.match(html, /Database.*UNKNOWN.*API 준비 READY.*Migration 0016_operations_recovery/s);
+    assert.doesNotMatch(html, /HEALTHY|sha256:|\/operations\/health/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: operations})), /LATE/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: operations})),
+      /범위 내 관측 1건/);
+  }
+});
+
+test('Database malformed or future signal fails closed without changing the three R14 cards or Queue', async () => {
+  const invalid = [null, {state: 'DEGRADED'}, {observed_at: '2999-01-01T00:00:00+00:00'},
+    {last_check: null}, {stale_after_seconds: 0}, {error_count: -1}, {error_count: 1.5},
+    {evidence_ref: 'secret://private'}, {detail_path: '//internal/private'},
+    {detail_path: 'http://internal/private'}, {extra: 'private-payload'}];
+  for (const change of invalid) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.health.database = change === null ? null : observedHealth('HEALTHY', change);
+    snapshot.health.worker = observedHealth('HEALTHY');
+    snapshot.health.backend = observedHealth('LATE');
+    snapshot.health.artifact_store = observedHealth('EXPIRED');
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+    assert.match(html, /Database.*UNAVAILABLE.*API 준비 READY/s);
+    assert.doesNotMatch(html, /HEALTHY|private|internal|secret|sha256:|마지막 점검|오류 2건/);
+    for (const [component, expected] of [['worker', 'HEALTHY'], ['backend', 'LATE'],
+      ['artifact_store', 'EXPIRED']]) {
+      assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {label: component, component, value: operations})), new RegExp(expected));
+    }
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: operations})),
+      /범위 내 관측 1건/);
+  }
+  const snapshot = {...dashboardSnapshot([], []), observed_at: '2999-01-01T00:00:00+00:00'};
+  const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  assert.match(renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations),
+    /Database.*UNAVAILABLE.*API 준비 READY/s);
+});
+
+test('Database operations auth, server and transport errors are safe while readiness stays separate', async () => {
+  const privateBody = 'postgresql://secret@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    let reads = 0;
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => { reads += 1; return privateBody; }}));
+    assert.equal(reads, 1);
+    const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+    assert.match(html, new RegExp(`Database.*${status < 500 ? 'BLOCKED' : 'UNAVAILABLE'}.*API 준비 READY`, 's'));
+    assert.doesNotMatch(html, /private-payload|postgresql:|secret|internal|HEALTHY/);
+  }
+  for (const request of [async () => { throw new Error(privateBody); },
+    async () => jsonResponse({data: {health: {}}, request_id: 'request-1'})]) {
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal, request);
+    assert.match(renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations),
+      /Database.*UNAVAILABLE.*API 준비 READY/s);
+  }
+});
+
 test('Dashboard renders three observed Health signals from one existing same-origin request', async () => {
   const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
   snapshot.health.worker = observedHealth('HEALTHY');
@@ -628,7 +735,7 @@ test('Dashboard Queue rejects malformed envelope, snapshot, rows and source gaps
   }
 });
 
-test('Dashboard Queue is the only newly connected health card and other Dashboard paths remain unchanged', () => {
+test('Dashboard preserves existing health cards and unrelated operating paths', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   assert.match(html, /Database.*Queue.*Worker.*LLM Providers.*Execution Backends.*Artifact Store/s);
   assert.match(html, /Queue.*UNAVAILABLE.*Worker.*UNAVAILABLE/s);
