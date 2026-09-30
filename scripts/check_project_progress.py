@@ -58475,6 +58475,21 @@ def _validate_f20_common_invariants(bundle):
 
 
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_R14_DASHBOARD_HEALTH_CARDS_CLOSE":
+        from datetime import datetime, timezone
+        try:
+            from scripts.f20_u01_r14_close_overlay import collect_git, validate_control
+        except ModuleNotFoundError:  # direct `python scripts/check_project_progress.py`
+            from f20_u01_r14_close_overlay import collect_git, validate_control
+        errors = validate_control(Path(bundle["_root"]), bundle, datetime.now(timezone.utc))
+        if all(key in bundle for key in (
+            "handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract",
+        )):
+            errors.extend(_validate_f20_common_invariants(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(collect_git(Path(bundle["_root"]), bundle["progress"]))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_R14_DASHBOARD_HEALTH_CARDS_START":
         from datetime import datetime, timezone
         try:
