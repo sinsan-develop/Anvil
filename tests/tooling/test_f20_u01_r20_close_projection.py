@@ -10,6 +10,13 @@ from scripts import f20_u01_r20_close_overlay as overlay
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_r20_post_close_review_is_bounded_control_path():
+    path = "docs/04_test_reports/F-20_U01_POST_R20_COVERAGE_REVIEW.md"
+    assert path in overlay.CONTROL_SCOPE
+    assert path in overlay.prior.CONTROL_SCOPE
+    assert not any(item.endswith("/") for item in overlay.CONTROL_SCOPE)
+
+
 def test_r20_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
