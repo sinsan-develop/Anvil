@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r15-database-health-card-start-seq1882",
-  "event_sequence": 1882,
-  "updated_at": "2026-09-30T01:26:28+00:00",
-  "last_event_id": "evt_f20_1882_package_resumed",
+  "snapshot_id": "snapshot-f20-u01-r15-database-health-card-close-seq1884",
+  "event_sequence": 1884,
+  "updated_at": "2026-09-30T01:44:50+00:00",
+  "last_event_id": "evt_f20_1884_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,28 +215,8 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-u01-r15",
-  "write_lease": {
-    "lease_id": "write-lease-f20-u01-r15-r15run3009b",
-    "actor_id": "developer-primary-f20-u01-r15",
-    "subject_ref": "F-20/U01-R15",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-30T01:26:28+00:00",
-    "expires_at": "2026-09-30T13:26:28+00:00",
-    "lease_epoch": 28,
-    "fencing_token": "f20-u01-r15-write-fence-epoch-28-r15run3009b",
-    "execution_fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
-    "baseline_git_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
-    "dispatch_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
-    "path_scope": [
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
-    ],
-    "worker_lease_id": "worker-lease-f20-u01-r15-r15run3009b",
-    "write_epoch": 28,
-    "write_fencing_token": "f20-u01-r15-write-fence-epoch-28-r15run3009b"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -268,24 +248,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f20-u01-r15-r15run3009b",
-    "actor_id": "developer-primary-f20-u01-r15",
-    "subject_ref": "F-20/U01-R15",
-    "status": "ACTIVE",
-    "issued_at": "2026-09-30T01:26:28+00:00",
-    "expires_at": "2026-09-30T13:26:28+00:00",
-    "lease_epoch": 28,
-    "fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
-    "execution_fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
-    "baseline_git_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
-    "dispatch_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
-    "path_scope": [
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -507,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_R15_DATABASE_HEALTH_CARD_IMPLEMENTATION",
+  "next_safe_action": "F20_U01_NEXT_DASHBOARD_SLICE_AUDIT",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -618,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
-    "local_wsl_qa_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "local_head": "85f060d58deba6adbc8709de819c09b81bb6e383",
+    "local_wsl_qa_head": "85f060d58deba6adbc8709de819c09b81bb6e383",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
-    "projection_mode": "F20_U01_R15_DATABASE_HEALTH_CARD_START",
-    "validated_base_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "remote_head": "85f060d58deba6adbc8709de819c09b81bb6e383",
+    "projection_mode": "F20_U01_R15_DATABASE_HEALTH_CARD_CLOSE",
+    "validated_base_commit": "85f060d58deba6adbc8709de819c09b81bb6e383",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1057,12 +1020,8 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
-    ],
-    "worktree_status": "F20_U01_R15_DATABASE_HEALTH_CARD_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F20_U01_R15_DATABASE_HEALTH_CARD_CLOSED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1229,7 +1188,7 @@
     "sha256": "80136398E837D1355AF644C7EEF400515FFF2CB0383D892FAA2C0BD4D24546A3",
     "invocation_path": "docs/work_orders/F-20_U01_R15_DATABASE_HEALTH_CARD_INVOCATION.md",
     "invocation_sha256": "616E2BF6F121423EFE77CC35AC62D4C12B50978E26CD47D5C599DED7D8F5ECA5",
-    "result_status": "REWORK_IN_PROGRESS",
+    "result_status": "COMPLETED_R15_DATABASE_HEALTH_CARD_NODE24_PASS",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "MAIN_INTERNAL_IMPLEMENTATION"
   },
@@ -1363,8 +1322,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r15-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R15_DATABASE_HEALTH_CARD_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r15-close.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R15_DATABASE_HEALTH_CARD_CLOSE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1385,7 +1344,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "5CEE99F46C846331D470853084FCDD030379219A754DB9165B4B786F7CE1EEE5"
+      "sha256": "FD5BEFFDD4E22A1DBE7E79BB840CF5977BA69A60BE145253C75D48EAE4EA68D5"
     }
   },
   "next_work_package": {
@@ -1782,8 +1741,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "02870F54694371F28F820FF51843D8CA9112016237C245CED8931E3DE408212B",
-  "runtime_next_action": "F20_U01_R15_DATABASE_HEALTH_CARD_IMPLEMENTATION",
+  "snapshot_hash": "3A05F0AABFBBC32FE11CF0D434ABF424CD335F1994423D6282F26E8D2A3A0929",
+  "runtime_next_action": "F20_U01_NEXT_DASHBOARD_SLICE_AUDIT",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -24340,5 +24299,46 @@
     "write_epoch": 27,
     "write_fencing_token": "f20-u01-r14-write-fence-epoch-27-r14run3009a",
     "revoked_at": "2026-09-30T00:26:24+00:00"
+  },
+  "completed_f20_u01_r15_worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r15-r15run3009b",
+    "actor_id": "developer-primary-f20-u01-r15",
+    "subject_ref": "F-20/U01-R15",
+    "status": "REVOKED",
+    "issued_at": "2026-09-30T01:26:28+00:00",
+    "expires_at": "2026-09-30T13:26:28+00:00",
+    "lease_epoch": 28,
+    "fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
+    "execution_fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
+    "baseline_git_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "dispatch_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "path_scope": [
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
+    ],
+    "revoked_at": "2026-09-30T01:44:50+00:00"
+  },
+  "completed_f20_u01_r15_write_lease": {
+    "lease_id": "write-lease-f20-u01-r15-r15run3009b",
+    "actor_id": "developer-primary-f20-u01-r15",
+    "subject_ref": "F-20/U01-R15",
+    "status": "REVOKED",
+    "issued_at": "2026-09-30T01:26:28+00:00",
+    "expires_at": "2026-09-30T13:26:28+00:00",
+    "lease_epoch": 28,
+    "fencing_token": "f20-u01-r15-write-fence-epoch-28-r15run3009b",
+    "execution_fencing_token": "f20-u01-r15-execution-fence-epoch-28-r15run3009b",
+    "baseline_git_commit": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "dispatch_head": "2fe2c7c13a3cb17cc6892011c56f9353123d9696",
+    "path_scope": [
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r15-r15run3009b",
+    "write_epoch": 28,
+    "write_fencing_token": "f20-u01-r15-write-fence-epoch-28-r15run3009b",
+    "revoked_at": "2026-09-30T01:44:50+00:00"
   }
 }
