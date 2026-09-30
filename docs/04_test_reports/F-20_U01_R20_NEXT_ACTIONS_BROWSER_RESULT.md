@@ -2,7 +2,7 @@
 
 ## 판정
 
-- `COMPLETED` — R20 계획 작업 1의 로컬 하네스 변경과 지정 검증을 수행했다. WSL-server 실제 PG15/OIDC/Chromium opt-in은 Main의 작업 2로 남는다. U-01/F-20 미수락, C30 `OPEN_BLOCKING` 및 ReleaseDecision `DEFER`는 유지한다.
+- `COMPLETED` — R20 계획 작업 1의 로컬 하네스 변경과 지정 검증을 수행했다. 이어 Main이 작업 2의 WSL-server 실제 PG15/OIDC/Chromium opt-in을 동일 QA SHA에서 통과시켰다. U-01/F-20 미수락, C30 `OPEN_BLOCKING` 및 ReleaseDecision `DEFER`는 유지한다.
 - 담당 `developer-primary-f20-u01-r20`, 정식 동일 실패보고 0회. 도구·환경 진단 오류는 아래에 별도 기록한다.
 
 ## 기준과 변경
@@ -33,7 +33,15 @@
 
 ## 미검증·자원·인계
 
-- 실제 WSL-server 격리 PG15/OIDC/Chromium, Dashboard API↔저장 경고↔DOM의 런타임 결과, screenshot 3장 육안 대조, 전체 페이지 Network 및 secret 노출 증거는 Main의 동일 SHA 작업 2까지 `UNVERIFIED`. 로컬 자기검증과 build만으로 formal E-SHOT/full E-NET 또는 사용자 인수를 선언하지 않는다.
+- 아래 Main 추가 검증 전까지 실제 WSL-server 격리 PG15/OIDC/Chromium, Dashboard API↔저장 경고↔DOM의 런타임 결과, screenshot 3장 육안 대조, 전체 페이지 Network 및 secret 노출 증거는 `UNVERIFIED`였다. 로컬 자기검증과 build만으로 formal E-SHOT/full E-NET 또는 사용자 인수를 선언하지 않는다.
 - 전용 `.pytest_tmp_f20_u01_r20_browser`와 빌드 전 부재를 확인한 `apps/web/dist`는 완료 후 root 실경로가 지정 worktree 내부, root non-reparse, 내부 link는 pytest base 안만 가리킴, 해당 테스트 프로세스 종료를 확인했다. 정확한 두 경로만 제거하고 각각 `Test-Path=False`로 잔여 0을 확인했다. WSL/Docker/DB/TLS/스크린샷 자원 생성 0.
 - 최종 `node --check`/`--audit-self-test`, `git diff --check`, `.\.venv\Scripts\python.exe scripts/check_project_progress.py` 모두 exit0이며 G-05 `PASS sequence=1918 reporting=AUTO_CONTINUE`. 최종 `git status --short --branch` 변경은 allowed_paths 정확히 세 파일뿐이다. epoch34 dual lease는 최종 확인 시에도 `ACTIVE`였다.
 - Main 소유 `docs/WORK_STATUS.md`, progress, HANDOFF, Git commit/push는 갱신하지 않았다. Main은 변경 diff를 독립 검토하고 기존 branch에 기록·push한 같은 SHA에서 WSL 작업 2를 수행해야 한다. rollback은 Main이 후속 Git 기록을 보존한 상태에서 이 두 테스트 파일과 보고서의 R20 변경만 되돌려 R6 하네스로 복귀하는 것이다. 제품 상태 및 지속 데이터 rollback 대상은 없다.
+
+## Main의 작업 2 실제 WSL-server 검증 추가
+
+- 기존 `codex/f18-wsl-ops`의 사설 원격과 WSL-server 격리 checkout `/tmp/anvil-u01-r8-qa-360880a`를 QA SHA `7e3fdfff1790177b26b1ef0356ed5d89b7793dc8`로 일치시키고 clean/G-05 seq1918을 확인했다. 제품 변경 SHA `40877a7112b091dad9da790f7e3e53960691d315`는 이 QA SHA의 조상이다. Node24 일회성 컨테이너에서 `npm ci --offline --ignore-scripts`, console 44 PASS, typecheck·lint·build20 modules exit0. 전용 venv 비 opt-in은 17 PASS/1 SKIP.
+- `postgres:15` 전용 `anvil-u01-r6-pg-7e3fdff`는 AutoRemove/data tmpfs `rw,size=256m`/bind·volume0/host loopback5545/정확한 scope·SHA label을 inspect했고, 비-superuser DB·role `anvil_f20_r3a_7e3fdff` 및 migration `0019_oidc_sessions`를 확인했다. 합성 OIDC와 일회성 Playwright1.62.1 Chromium, 1920×1080 viewport에서 opt-in `3 passed, 15 deselected, 2 deprecation warnings` exit0. Dashboard200/조치1/저장 경고 5필드↔DOM 일치, 철회 후 Dashboard403/BLOCKED/행0, 전체 앱 요청 same-origin·credential 비노출을 검사했다.
+- 최초 실행은 runner가 증거 디렉터리를 컨테이너 안 `/evidence`로 바꿔 전달해 `EVIDENCE_EXPORT` AssertionError, opt-in 2 PASS/1 FAIL이었다. `publishEvidence`의 정확한 basename 계약과 비교해 원인을 확인하고 첫 seed DB 컨테이너를 신원 확인 후 제거했다. 새 일회성 DB에서 runner bind/환경의 내부 경로만 호스트 절대경로와 동일하게 바꿔 위 PASS를 얻었다. 앞선 실패는 제품 PASS에 합산하지 않는다. 준비 중 SQL 따옴표 전사 오류와 PowerShell→SSH CRLF 수집 오류도 별도 진단 후 수정했으며 제품 코드는 바꾸지 않았다.
+- pre-auth/stored/revoked 스크린샷 3장 육안 대조: 각각 Next Actions `BLOCKED`, `critical` 조치 한 행, 철회 후 `BLOCKED`/stale 0. SHA-256은 각각 `738dc78abc555cafd4dcc2b9c4fd7d5a743af1e295deb842fd62337ccb67f316`, `6a53c2f01d42097616d748b66469eca69556711feac7c547a383bdf1da7f7040`, `d091b8d584c8735309834eb0ed41d0e5000c5031f1c3fe46c8cb22826714005d`; Network JSON `7d49b7862b13b7791776d4eeeb54af89eda3da79f1bd05ef619792943108225f`, HTTPS loopback 29/29, query 0. 원본 증거는 임시 QA 수명 종료 뒤 제거했으며 hash와 제한된 사실만 보존했다.
+- 두 번째 DB, browser/node, 전용 venv/pytest/evidence, checkout `node_modules`/`apps/web/dist`, TLS와 로컬 육안 검토 복사본은 각각 신원·실경로·link 경계 확인 뒤 정확한 전용 자원만 정리해 잔여0. WSL checkout clean/G-05 seq1918 PASS. 이 결과는 R20 Next Actions 실제 흐름만 증명하며 formal E-SHOT/full E-NET 전체, U-01/F-20 사용자 인수, C30 해소·main 병합은 여전히 미검증/차단이다. 공유 WSL 서비스·`/srv`·ysna/Production 변경0.
