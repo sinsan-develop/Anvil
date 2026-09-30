@@ -42,6 +42,10 @@ def _git(root: Path, *args: str) -> bytes:
     return subprocess.check_output(["git", "-c", "core.excludesFile=", *args], cwd=root)
 
 
+def _dirty(root: Path) -> set[str]:
+    return prior.prior.prior.prior.prior.prior._dirty(root)
+
+
 def _historical(root: Path) -> tuple[bytes, dict, dict]:
     raw = _git(root, "show", f"{BASE}:{EVENTS}")
     return raw, json.loads(raw), json.loads(_git(root, "show", f"{BASE}:{PROGRESS}"))
@@ -189,7 +193,7 @@ def materialize(root: Path, at: datetime, nonce: str) -> None:
                != "development/codex/f18-wsl-ops"
             or _git(root, "rev-parse", "HEAD").decode().strip() != BASE
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip() != BASE
-            or not prior.prior.prior.prior.prior._dirty(root) <= CONTROL_SCOPE
+            or not _dirty(root) <= CONTROL_SCOPE
             or prior.validate_control(root, {"_root": root, "progress": progress,
                                              "events": stream}, at)):
         raise RuntimeError("F20_U01_R20_PREDECESSOR_INVALID")
@@ -265,7 +269,7 @@ def collect_git(root: Path, progress: dict) -> list[str]:
                 and subprocess.run(["git", "merge-base", "--is-ancestor", remote, head],
                                    cwd=root, capture_output=True).returncode == 0
                 and changed <= CONTROL_SCOPE | set(SCOPE)
-                and prior.prior.prior.prior.prior._dirty(root) <= CONTROL_SCOPE | set(SCOPE)
+                and _dirty(root) <= CONTROL_SCOPE | set(SCOPE)
                 and progress["repository"]["projection_mode"] == MODE)
         return [] if good else ["F20_U01_R20_GIT_INVALID"]
     except (OSError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):

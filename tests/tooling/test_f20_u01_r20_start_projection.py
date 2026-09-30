@@ -33,3 +33,8 @@ def test_r20_epoch34_exact3_and_prior_event_prefix():
     assert projected["scope_revision_binding"]["release_decision"] == "DEFER"
     assert projected["repository"]["product_write_scope"] == worker["path_scope"]
     assert "F-20" not in projected["completed_packages"]
+
+
+def test_r20_start_reads_actual_clean_git_scope():
+    overlay = import_module("scripts.f20_u01_r20_start_overlay")
+    assert overlay._dirty(ROOT) <= overlay.CONTROL_SCOPE
