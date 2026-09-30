@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1912,
+  "last_sequence": 1914,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -93975,7 +93975,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 1913,
+  "event_id": "evt_f20_1913_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R19_NEXT_ACTIONS_UI_CLOSE",
+  "subject_ref": "F-20/U01-R19",
+  "occurred_at": "2026-09-30T15:28:17+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "844133170A137C49F4D1669EA7853F84A57E2E9292A66163E66CA77150A11CDE",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r19-r19ui3009a",
+    "write_fencing_token": "f20-u01-r19-write-fence-epoch-33-r19ui3009a",
+    "reason": "R19_NEXT_ACTIONS_UI_QA_COMPLETE_TEMP_RESIDUE_ZERO",
+    "evidence_head": "5f60039e0f3e19f6116dceee86888afab3e38e20"
+  }
+},
+{
+  "sequence": 1914,
+  "event_id": "evt_f20_1914_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R19_NEXT_ACTIONS_UI_CLOSE",
+  "subject_ref": "F-20/U01-R19",
+  "occurred_at": "2026-09-30T15:28:17+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "A74C2D695B34F39FB105546AB5EB34E3AE75473370F3FCA562790F5E986E95ED",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r19-r19ui3009a",
+    "execution_fencing_token": "f20-u01-r19-execution-fence-epoch-33-r19ui3009a",
+    "reason": "R19_NEXT_ACTIONS_UI_QA_COMPLETE_TEMP_RESIDUE_ZERO",
+    "evidence_head": "5f60039e0f3e19f6116dceee86888afab3e38e20"
+  }
 }
   ],
-  "last_event_id": "evt_f20_1912_package_resumed"
+  "last_event_id": "evt_f20_1914_worker_lease_revoked"
 }
