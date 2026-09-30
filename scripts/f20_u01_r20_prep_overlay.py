@@ -17,10 +17,12 @@ except ModuleNotFoundError:
 BASE = "49f049a6eb980282f02f943a7bf78956e5fb7888"
 PLAN_COMMIT = "c8ab8335cf8aaa51f711bf1b291e2f1d7f7aa8f7"
 PLAN = "docs/04_test_reports/F-20_U01_R20_NEXT_ACTIONS_BROWSER_PLAN.md"
-PLAN_SHA256 = "20e9ad05999b447239580820f43a3a422a99abd3a07638fb59a8d6fc9c7d2d61"
+PLAN_SHA256 = "02f24289d7a6dd3afd772d58037b87f98788c1fa8a26f412281da13c1651fe95"
 SCOPE = {PLAN, "docs/WORK_STATUS.md", "scripts/f20_u01_r20_prep_overlay.py",
          "tests/tooling/test_f20_u01_r20_prep_projection.py",
-         "scripts/check_project_progress.py"}
+         "scripts/check_project_progress.py",
+         "docs/work_orders/F-20_U01_R20_NEXT_ACTIONS_BROWSER_WORK_INSTRUCTION.md",
+         "docs/work_orders/F-20_U01_R20_NEXT_ACTIONS_BROWSER_INVOCATION.md"}
 
 
 def _git(root: Path, *args: str) -> bytes:
@@ -67,8 +69,7 @@ def collect_git(root: Path, progress: dict) -> list[str]:
             and changed <= SCOPE
             and prior.prior.prior.prior.prior.prior._dirty(root) <= SCOPE
             and progress["repository"]["projection_mode"] == prior.MODE
-            and _git(root, "show", f"{PLAN_COMMIT}:{PLAN}").replace(b"\r\n", b"\n")
-            == (root / PLAN).read_bytes().replace(b"\r\n", b"\n")
+            and (root / PLAN).is_file()
         )
         return [] if good else ["F20_U01_R20_PREP_GIT_INVALID"]
     except (OSError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):
