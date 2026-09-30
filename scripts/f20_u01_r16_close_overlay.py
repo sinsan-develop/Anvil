@@ -33,6 +33,8 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "docs/04_test_reports/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_CLOSE_PLAN.md",
                  "docs/04_test_reports/F-20_U01_POST_R16_DASHBOARD_SOURCE_AUDIT.md",
                  "docs/04_test_reports/F-20_U01_R17_SCOPED_RUN_HOST_BINDING_PLAN.md",
+                 "docs/work_orders/F-20_U01_R17_SCOPED_RUN_HOST_BINDING_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R17_SCOPED_RUN_HOST_BINDING_INVOCATION.md",
                  "docs/WORK_STATUS.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
