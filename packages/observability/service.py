@@ -9,6 +9,7 @@ from threading import RLock
 from typing import Callable, Protocol
 
 from .projection import OperationsSources, project_operations
+from .run_status_summary import ScopedRunStatusSummary
 
 
 class OperationsError(ValueError):
@@ -33,7 +34,8 @@ _MAX_READ = 100
 class OperationsService:
     def __init__(self, project_id: str, environment_id: str, sources: OperationsSources,
                  *, repository: OperationsRepository | None = None, clock=None,
-                 source_loader: Callable[[str, str], OperationsSources] | None = None):
+                 source_loader: Callable[[str, str], OperationsSources] | None = None,
+                 run_summary_loader: Callable[[str, str], ScopedRunStatusSummary] | None = None):
         if not project_id or not environment_id or type(sources) is not OperationsSources:
             raise OperationsError("OPERATIONS_OWNER_INVALID")
         if repository is None or not all(callable(getattr(repository, name, None))
@@ -41,13 +43,28 @@ class OperationsService:
             raise OperationsError("AUDIT_OWNER_REQUIRED")
         if source_loader is not None and not callable(source_loader):
             raise OperationsError("OPERATIONS_SOURCE_LOADER_INVALID")
+        if run_summary_loader is not None and not callable(run_summary_loader):
+            raise OperationsError("RUN_SUMMARY_UNAVAILABLE")
         self.project_id = project_id
         self.environment_id = environment_id
         self._sources = sources
         self._source_loader = source_loader
+        self._run_summary_loader = run_summary_loader
         self._repository = repository
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._lock = RLock()
+
+    def run_summary(self) -> ScopedRunStatusSummary:
+        """Read the optional scoped Run owner without altering Queue projections."""
+        if self._run_summary_loader is None:
+            raise OperationsError("RUN_SUMMARY_UNAVAILABLE")
+        try:
+            result = self._run_summary_loader(self.project_id, self.environment_id)
+            if type(result) is not ScopedRunStatusSummary:
+                raise ValueError("invalid Run summary")
+            return result
+        except Exception:
+            raise OperationsError("RUN_SUMMARY_UNAVAILABLE") from None
 
     def _fresh_sources(self) -> OperationsSources:
         if self._source_loader is None:

@@ -20,7 +20,9 @@ from packages.api.oidc_runtime_factory import OidcRuntimeRejected
 from packages.persistence.config import DatabaseSettings
 from packages.persistence.operations_repository import PostgresOperationsRepository
 from packages.persistence.operations_queue_read import load_scoped_queue_source
+from packages.persistence.operations_run_read import load_scoped_run_source
 from packages.observability.projection import OperationsSources
+from packages.observability.run_status_summary import ScopedRunStatusSummary, summarize_scoped_runs
 from packages.observability.service import OperationsService
 
 
@@ -172,10 +174,18 @@ def create_oidc_process_app(
             queue = load_scoped_queue_source(engine, scope.project_id, scope.environment_id)
             return OperationsSources(queue=queue, queue_job_ids=queue.job_ids)
 
+        def load_run_summary(project_id: str, environment_id: str) -> ScopedRunStatusSummary:
+            if (project_id, environment_id) != (scope.project_id, scope.environment_id):
+                raise ValueError("RUN_SOURCE_SCOPE_INVALID")
+            return summarize_scoped_runs(
+                load_scoped_run_source(engine, scope.project_id, scope.environment_id)
+            )
+
         operations_owner = OperationsService(
             scope.project_id, scope.environment_id, OperationsSources(),
             repository=PostgresOperationsRepository(operations_dsn),
             source_loader=load_queue_sources,
+            run_summary_loader=load_run_summary,
         )
         return host_factory(
             environment=environment, engine=engine, session_factory=sessions,
