@@ -31,6 +31,7 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "scripts/check_project_progress.py",
                  "tests/tooling/test_f20_u01_r15_close_projection.py",
                  "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_CLOSE_PLAN.md",
+                 "docs/04_test_reports/F-20_U01_R16_SCOPED_RUN_STATUS_SUMMARY_PLAN.md",
                  "docs/WORK_STATUS.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
