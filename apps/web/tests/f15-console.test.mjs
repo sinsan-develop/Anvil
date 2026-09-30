@@ -446,6 +446,115 @@ const dashboardSnapshot = (queue = [], gaps = ['queue']) => ({
 const dashboardResponse = (queue = [], gaps = ['queue']) =>
   ({data: dashboardSnapshot(queue, gaps), request_id: 'request-1'});
 
+const observedHealth = (state, overrides = {}) => ({
+  state, observed_at: '2026-09-30T00:00:00+00:00', stale_after_seconds: 60,
+  last_check: '2026-09-30T00:00:00+00:00', error_count: 2,
+  detail_path: '/operations/health', evidence_ref: `sha256:${'a'.repeat(64)}`,
+  ...overrides,
+});
+
+test('Dashboard renders three observed Health signals from one existing same-origin request', async () => {
+  const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+  snapshot.health.worker = observedHealth('HEALTHY');
+  snapshot.health.backend = observedHealth('LATE');
+  snapshot.health.artifact_store = observedHealth('EXPIRED');
+  let calls = 0;
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async (url, options) => {
+      calls += 1;
+      assert.equal(url, '/api/dashboard/operations');
+      assert.equal(options.credentials, 'same-origin');
+      return jsonResponse({data: snapshot, request_id: 'request-1'});
+    });
+  assert.equal(calls, 1);
+  for (const [component, label, status] of [
+    ['worker', 'Worker', 'HEALTHY'], ['backend', 'Execution Backends', 'LATE'],
+    ['artifact_store', 'Artifact Store', 'EXPIRED'],
+  ]) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label, component, value: state}));
+    assert.match(html, new RegExp(`${label}.*${status}.*2026-09-30T00:00:00\\+00:00.*오류 2건`, 's'));
+    assert.doesNotMatch(html, /sha256:|\/operations\/health|private-job-id|private-run-id/);
+  }
+  const queue = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+  assert.match(queue, /범위 내 관측 1건/);
+});
+
+test('Dashboard Health cards keep source gaps and UNKNOWN signals unknown without leaking evidence', async () => {
+  const snapshot = dashboardSnapshot([], ['worker']);
+  snapshot.health.worker = observedHealth('HEALTHY', {detail_path: '/private/internal',
+    evidence_ref: `sha256:${'f'.repeat(64)}`});
+  snapshot.health.backend = observedHealth('UNKNOWN');
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  for (const [component, label] of [['worker', 'Worker'], ['backend', 'Execution Backends'],
+    ['artifact_store', 'Artifact Store']]) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label, component, value: state}));
+    assert.match(html, /UNKNOWN/);
+    assert.doesNotMatch(html, /HEALTHY|\/private\/internal|sha256:|null|undefined/);
+  }
+});
+
+test('Dashboard Health rejects malformed, future and secret-bearing signal rows without changing Queue count', async () => {
+  const invalid = [
+    {observed_at: '2999-01-01T00:00:00+00:00'}, {last_check: '2026-09-29T00:00:00+00:00'},
+    {stale_after_seconds: 0}, {error_count: -1}, {error_count: 1.5},
+    {detail_path: '//internal/secret'}, {detail_path: 'http://internal/secret'},
+    {evidence_ref: 'secret://internal'}, {extra: 'private-payload'},
+  ];
+  for (const change of invalid) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.health.worker = observedHealth('HEALTHY', change);
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /private-payload|secret|internal|sha256:|HEALTHY|오류 2건/);
+    const queue = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.match(queue, Object.hasOwn(change, 'extra') ? /UNAVAILABLE/ : /범위 내 관측 1건/);
+  }
+});
+
+test('Dashboard Health cards block on auth and fail closed on server, transport and malformed snapshots', async () => {
+  const privateBody = 'postgresql://secret@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    let reads = 0;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => {reads += 1; return privateBody;}}));
+    assert.equal(reads, 1);
+    for (const [component, label] of [['worker', 'Worker'], ['backend', 'Execution Backends'],
+      ['artifact_store', 'Artifact Store']]) {
+      const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {label, component, value: state}));
+      assert.match(html, new RegExp(status < 500 ? 'BLOCKED' : 'UNAVAILABLE'));
+      assert.doesNotMatch(html, /secret|internal|private-payload/);
+    }
+  }
+  for (const request of [async () => {throw new Error(privateBody);},
+    async () => jsonResponse({data: {health: {}}, request_id: 'request-1'})]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal, request);
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /secret|internal|private-payload/);
+  }
+});
+
+test('Dashboard Health does not trust a future snapshot timestamp even for UNKNOWN rows', async () => {
+  const snapshot = {...dashboardSnapshot([], []), observed_at: '2999-01-01T00:00:00+00:00'};
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  for (const [component, label] of [['worker', 'Worker'], ['backend', 'Execution Backends'],
+    ['artifact_store', 'Artifact Store']]) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label, component, value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /UNKNOWN|HEALTHY/);
+  }
+});
+
 test('Dashboard Queue uses same-origin authenticated GET and shows only scoped observed row count', async () => {
   const controller = new AbortController();
   const calls = [];

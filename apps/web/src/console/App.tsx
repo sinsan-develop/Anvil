@@ -7,7 +7,11 @@ type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
 type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
 type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null};
-type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean}
+type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' | 'UNAVAILABLE' | 'BLOCKED';
+  lastCheck: string | null; errorCount: number | null};
+type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
+type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean;
+  health: Record<DashboardSignalComponent, DashboardSignalState>}
   | {status: 'UNAVAILABLE' | 'BLOCKED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
@@ -29,6 +33,7 @@ const DASHBOARD_QUEUE_FIELDS = ['job_id', 'run_id', 'state', 'available_at', 'at
   'max_attempts', 'lease_epoch', 'lease_expires_at', 'dependency_ids', 'conflict_keys',
   'priority', 'required_capability', 'input_verified', 'backoff_until'];
 const DASHBOARD_GAPS = new Set([...DASHBOARD_HEALTH_COMPONENTS, 'deployment']);
+const DASHBOARD_SIGNAL_COMPONENTS: DashboardSignalComponent[] = ['worker', 'backend', 'artifact_store'];
 const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
 const ALERTS_BLOCKED: CriticalAlertsState = {status: 'BLOCKED'};
 const ALERT_FIELDS = ['alert_id', 'sequence', 'level', 'source', 'category', 'code',
@@ -81,6 +86,35 @@ function validDashboardQueueRow(value: unknown): boolean {
     && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
 }
 
+function validDashboardSignal(value: unknown, snapshotTime: string): value is Record<string, unknown> {
+  if (!record(value) || !exactFields(value, DASHBOARD_HEALTH_FIELDS)) return false;
+  if (value.state === 'UNKNOWN' && DASHBOARD_HEALTH_FIELDS.slice(1).every((field) => value[field] === null)) return true;
+  return ['HEALTHY', 'LATE', 'EXPIRED', 'UNKNOWN'].includes(value.state as string)
+    && validObservedAt(value.observed_at) && value.last_check === value.observed_at
+    && Date.parse(value.observed_at) <= Date.parse(snapshotTime)
+    && Date.parse(value.observed_at) <= Date.now()
+    && Number.isSafeInteger(value.stale_after_seconds) && (value.stale_after_seconds as number) > 0
+    && nonnegativeInteger(value.error_count)
+    && typeof value.evidence_ref === 'string' && /^sha256:[0-9a-f]{64}$/.test(value.evidence_ref)
+    && typeof value.detail_path === 'string' && !value.detail_path.startsWith('//')
+    && /^\/[A-Za-z0-9/_-]+$/.test(value.detail_path);
+}
+
+function dashboardSignals(health: Record<string, unknown>, gaps: string[], snapshotTime: string):
+    Record<DashboardSignalComponent, DashboardSignalState> {
+  const unavailable: DashboardSignalState = {status: 'UNAVAILABLE', lastCheck: null, errorCount: null};
+  if (Date.parse(snapshotTime) > Date.now()
+    || !DASHBOARD_SIGNAL_COMPONENTS.every((name) => validDashboardSignal(health[name], snapshotTime))) {
+    return {worker: unavailable, backend: unavailable, artifact_store: unavailable};
+  }
+  const signal = (name: DashboardSignalComponent): DashboardSignalState => {
+    const row = health[name] as Record<string, unknown>;
+    return {status: gaps.includes(name) ? 'UNKNOWN' : row.state as DashboardSignalState['status'],
+      lastCheck: row.last_check as string | null, errorCount: row.error_count as number | null};
+  };
+  return {worker: signal('worker'), backend: signal('backend'), artifact_store: signal('artifact_store')};
+}
+
 function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   if (!record(payload) || !exactFields(payload, ['data', 'request_id'])
     || !nonempty(payload.request_id) || !record(payload.data)
@@ -102,7 +136,9 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
   return {status: 'LOADED', observed: snapshot.queue.length,
-    sourceGap: snapshot.source_gaps.includes('queue')};
+    sourceGap: snapshot.source_gaps.includes('queue'),
+    health: dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps,
+      snapshot.observed_at)};
 }
 
 export async function loadDashboardQueue(signal: AbortSignal, request: typeof fetch = fetch): Promise<DashboardQueueState> {
@@ -132,6 +168,19 @@ export function QueueHealthCard({value}: {value: DashboardQueueState}) {
       </> : <><p className="status-unavailable">{value.status}</p>
         <p>{value.status === 'BLOCKED' ? '조회 차단 · Queue 기록을 표시하지 않습니다.'
           : 'Queue 상태 정보를 확인할 수 없습니다.'}</p></>}
+    </div>
+  </article>;
+}
+
+export function DashboardSignalCard({label, component, value}:
+    {label: string; component: DashboardSignalComponent; value: DashboardQueueState}) {
+  const signal = value.status === 'LOADED' ? value.health[component]
+    : {status: value.status, lastCheck: null, errorCount: null};
+  return <article className="status-card"><h3>{label}</h3>
+    <div aria-live="polite" aria-atomic="true">
+      <p className={signal.status === 'HEALTHY' ? 'status-ready' : 'status-unavailable'}>{signal.status}</p>
+      {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
+      {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
     </div>
   </article>;
 }
@@ -445,6 +494,12 @@ function Shell({route}: AppProps) {
               if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}/>;
               if (name === 'Queue') return <QueueHealthCard key={name} value={dashboardQueue}/>;
               if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration}/>;
+              if (name === 'Worker') return <DashboardSignalCard key={name} label={name}
+                component="worker" value={dashboardQueue}/>;
+              if (name === 'Execution Backends') return <DashboardSignalCard key={name} label={name}
+                component="backend" value={dashboardQueue}/>;
+              if (name === 'Artifact Store') return <DashboardSignalCard key={name} label={name}
+                component="artifact_store" value={dashboardQueue}/>;
               return <article className="status-card" key={name}><h3>{name}</h3>
                 <p className="status-unavailable">UNAVAILABLE</p>
                 <p>연결된 상태 정보가 없습니다.</p>
