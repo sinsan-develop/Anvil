@@ -20,6 +20,8 @@ PLAN = "docs/04_test_reports/F-20_U01_R20_NEXT_ACTIONS_BROWSER_PLAN.md"
 PLAN_SHA256 = "02f24289d7a6dd3afd772d58037b87f98788c1fa8a26f412281da13c1651fe95"
 SCOPE = {PLAN, "docs/WORK_STATUS.md", "scripts/f20_u01_r20_prep_overlay.py",
          "tests/tooling/test_f20_u01_r20_prep_projection.py",
+         "scripts/f20_u01_r20_start_overlay.py",
+         "tests/tooling/test_f20_u01_r20_start_projection.py",
          "scripts/check_project_progress.py",
          "docs/work_orders/F-20_U01_R20_NEXT_ACTIONS_BROWSER_WORK_INSTRUCTION.md",
          "docs/work_orders/F-20_U01_R20_NEXT_ACTIONS_BROWSER_INVOCATION.md"}
