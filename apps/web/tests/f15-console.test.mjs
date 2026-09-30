@@ -738,10 +738,30 @@ test('Dashboard Queue rejects malformed envelope, snapshot, rows and source gaps
 test('Dashboard preserves existing health cards and unrelated operating paths', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   assert.match(html, /Database.*Queue.*Worker.*LLM Providers.*Execution Backends.*Artifact Store/s);
-  assert.match(html, /Queue.*UNAVAILABLE.*Worker.*UNAVAILABLE/s);
+  assert.match(html, /Queue.*LOADING.*Worker.*LOADING/s);
   assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
   assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
   assert.doesNotMatch(html, /private-job-id|private-run-id|HEALTHY/);
+});
+
+test('Dashboard pending operations read shows LOADING in all five cards without false failure or zero', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  const loading = {status: 'LOADING'};
+  const cards = [
+    ['Queue', consoleApp.QueueHealthCard, {value: loading}],
+    ['Worker', consoleApp.DashboardSignalCard, {label: 'Worker', component: 'worker', value: loading}],
+    ['Execution Backends', consoleApp.DashboardSignalCard,
+      {label: 'Execution Backends', component: 'backend', value: loading}],
+    ['Artifact Store', consoleApp.DashboardSignalCard,
+      {label: 'Artifact Store', component: 'artifact_store', value: loading}],
+    ['Next Actions', consoleApp.NextActionsCard, {value: loading}],
+  ];
+  for (const [label, component, props] of cards) {
+    const card = renderToStaticMarkup(React.createElement(component, props));
+    assert.match(card, new RegExp(`${label}.*aria-live="polite" aria-atomic="true".*LOADING.*조회 중`, 's'));
+    assert.doesNotMatch(card, /UNAVAILABLE|BLOCKED|HEALTHY|0건|조회 차단|확인할 수 없습니다|status-unavailable/);
+    assert.ok(html.includes(card), `${label} first render`);
+  }
 });
 
 test('Dashboard Next Actions renders validated rows from the existing operations read', async () => {

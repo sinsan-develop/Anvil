@@ -12,11 +12,11 @@ type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' 
 type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
-type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'UNAVAILABLE' | 'BLOCKED'};
+type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
 type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean;
   health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
   nextActions: NextActionsState}
-  | {status: 'UNAVAILABLE' | 'BLOCKED'};
+  | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
@@ -25,6 +25,7 @@ type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
+const DASHBOARD_QUEUE_LOADING: DashboardQueueState = {status: 'LOADING'};
 const DASHBOARD_QUEUE_UNAVAILABLE: DashboardQueueState = {status: 'UNAVAILABLE'};
 const DASHBOARD_QUEUE_BLOCKED: DashboardQueueState = {status: 'BLOCKED'};
 const DASHBOARD_SNAPSHOT_FIELDS = ['observed_at', 'health', 'queue', 'quarantine',
@@ -177,8 +178,9 @@ export function NextActionsCard({value}: {value: DashboardQueueState}) {
   return <section className="status-card" aria-labelledby="next-actions-heading">
     <h3 id="next-actions-heading">Next Actions</h3>
     <div aria-live="polite" aria-atomic="true">
-      {state.status !== 'LOADED' ? <><p className="status-unavailable">{state.status}</p>
-        <p>{state.status === 'BLOCKED' ? '조회 차단 · 다음 조치를 표시하지 않습니다.'
+      {state.status !== 'LOADED' ? <><p className={state.status === 'LOADING' ? undefined : 'status-unavailable'}>{state.status}</p>
+        <p>{state.status === 'LOADING' ? '다음 조치 조회 중입니다.'
+          : state.status === 'BLOCKED' ? '조회 차단 · 다음 조치를 표시하지 않습니다.'
           : '다음 조치를 확인할 수 없습니다.'}</p></> : state.actions.length === 0
         ? <p>현재 관측된 다음 조치 0건 · 전체 범위의 부재는 확인되지 않았습니다.</p>
         : <ul>{state.actions.map((item) => {
@@ -219,8 +221,9 @@ export function QueueHealthCard({value}: {value: DashboardQueueState}) {
         <p>범위 내 관측 {value.observed}건</p>
         <p>{value.sourceGap ? 'Queue source 연결 정보가 부족합니다.'
           : 'Queue source의 완전성은 확인되지 않았습니다.'}</p>
-      </> : <><p className="status-unavailable">{value.status}</p>
-        <p>{value.status === 'BLOCKED' ? '조회 차단 · Queue 기록을 표시하지 않습니다.'
+      </> : <><p className={value.status === 'LOADING' ? undefined : 'status-unavailable'}>{value.status}</p>
+        <p>{value.status === 'LOADING' ? 'Queue 조회 중입니다.'
+          : value.status === 'BLOCKED' ? '조회 차단 · Queue 기록을 표시하지 않습니다.'
           : 'Queue 상태 정보를 확인할 수 없습니다.'}</p></>}
     </div>
   </article>;
@@ -232,7 +235,9 @@ export function DashboardSignalCard({label, component, value}:
     : {status: value.status, lastCheck: null, errorCount: null};
   return <article className="status-card"><h3>{label}</h3>
     <div aria-live="polite" aria-atomic="true">
-      <p className={signal.status === 'HEALTHY' ? 'status-ready' : 'status-unavailable'}>{signal.status}</p>
+      <p className={signal.status === 'HEALTHY' ? 'status-ready'
+        : signal.status === 'LOADING' ? undefined : 'status-unavailable'}>{signal.status}</p>
+      {signal.status === 'LOADING' ? <p>{label} 조회 중입니다.</p> : null}
       {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
       {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
     </div>
@@ -468,7 +473,7 @@ function Shell({route}: AppProps) {
   const [checked, setChecked] = useState('NOT REQUESTED');
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_UNAVAILABLE);
-  const [dashboardQueue, setDashboardQueue] = useState<DashboardQueueState>(DASHBOARD_QUEUE_UNAVAILABLE);
+  const [dashboardQueue, setDashboardQueue] = useState<DashboardQueueState>(DASHBOARD_QUEUE_LOADING);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_UNAVAILABLE);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
   const alertsController = useRef<AbortController | null>(null);
