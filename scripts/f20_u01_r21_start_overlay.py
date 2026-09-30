@@ -1,4 +1,4 @@
-"""Issue R20 browser-test lease after the closed R19 UI QA."""
+"""Issue a bounded R21 Dashboard loading-state lease after R20 close."""
 
 from __future__ import annotations
 
@@ -10,37 +10,30 @@ import re
 import subprocess
 
 try:
-    from scripts import f20_u01_r19_close_overlay as prior
+    from scripts import f20_u01_r20_close_overlay as prior
 except ModuleNotFoundError:
-    import f20_u01_r19_close_overlay as prior
+    import f20_u01_r20_close_overlay as prior
 
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
-START, END = 1914, 1918
-BASE = "2302980694acaf214b213d8e6728b294ca172a9a"
-MODE = "F20_U01_R20_NEXT_ACTIONS_BROWSER_START"
-ACTOR = "developer-primary-f20-u01-r20"
-SUBJECT = "F-20/U01-R20"
-NEXT = "F20_U01_R20_BROWSER_HARNESS_IMPLEMENTATION"
-PLAN = "docs/04_test_reports/F-20_U01_R20_NEXT_ACTIONS_BROWSER_PLAN.md"
-WI = "docs/work_orders/F-20_U01_R20_NEXT_ACTIONS_BROWSER_WORK_INSTRUCTION.md"
-INVOCATION = "docs/work_orders/F-20_U01_R20_NEXT_ACTIONS_BROWSER_INVOCATION.md"
-DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r20-start.json"
-MANIFEST = "docs/evidence/manifests/F-20_U01_R20_NEXT_ACTIONS_BROWSER_START_MANIFEST.json"
-SCOPE = ["tests/browser/f20-u01-oidc-browser-pg15.mjs",
-         "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-         "docs/04_test_reports/F-20_U01_R20_NEXT_ACTIONS_BROWSER_RESULT.md"]
+START, END = 1920, 1924
+BASE = "343a32a26796791a543bb027594c6f25987e873a"
+MODE = "F20_U01_R21_LOADING_STATE_START"
+ACTOR = "developer-primary-f20-u01-r21"
+SUBJECT = "F-20/U01-R21"
+NEXT = "F20_U01_R21_LOADING_STATE_IMPLEMENTATION"
+PLAN = "docs/04_test_reports/F-20_U01_R21_LOADING_STATE_PLAN.md"
+WI = "docs/work_orders/F-20_U01_R21_LOADING_STATE_WORK_INSTRUCTION.md"
+INVOCATION = "docs/work_orders/F-20_U01_R21_LOADING_STATE_INVOCATION.md"
+DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r21-start.json"
+MANIFEST = "docs/evidence/manifests/F-20_U01_R21_LOADING_STATE_START_MANIFEST.json"
+SCOPE = ["apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
+         "docs/04_test_reports/F-20_U01_R21_LOADING_STATE_RESULT.md"]
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, WI, INVOCATION,
                  "scripts/f20_u01_r20_start_overlay.py",
-                 "tests/tooling/test_f20_u01_r20_start_projection.py",
-                 "tests/tooling/test_f20_u01_r20_prep_projection.py",
                  "scripts/f20_u01_r20_close_overlay.py",
-                 "tests/tooling/test_f20_u01_r20_close_projection.py",
-                 "docs/04_test_reports/F-20_U01_POST_R20_COVERAGE_REVIEW.md",
-                 "docs/04_test_reports/F-20_U01_R21_LOADING_STATE_PLAN.md",
-                 "docs/work_orders/F-20_U01_R21_LOADING_STATE_WORK_INSTRUCTION.md",
-                 "docs/work_orders/F-20_U01_R21_LOADING_STATE_INVOCATION.md",
                  "scripts/f20_u01_r21_start_overlay.py",
+                 "tests/tooling/test_f20_u01_r20_close_projection.py",
                  "tests/tooling/test_f20_u01_r21_start_projection.py",
                  "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
@@ -52,7 +45,7 @@ def _git(root: Path, *args: str) -> bytes:
 
 
 def _dirty(root: Path) -> set[str]:
-    return prior.prior.prior.prior.prior.prior._dirty(root)
+    return prior.prior._dirty(root)
 
 
 def _historical(root: Path) -> tuple[bytes, dict, dict]:
@@ -61,37 +54,37 @@ def _historical(root: Path) -> tuple[bytes, dict, dict]:
 
 
 def _append_raw(raw: bytes, additions: list[dict]) -> bytes:
-    marker = b'\n  ],\n  "last_event_id": "evt_f20_1914_worker_lease_revoked"'
+    marker = b'\n  ],\n  "last_event_id": "evt_f20_1920_worker_lease_revoked"'
     if (raw != r1._lf(raw) or len(additions) != 4 or raw.count(marker) != 1
-            or raw.count(b'"last_sequence": 1914') != 1):
-        raise ValueError("F20_U01_R20_EVENT_BYTES_INVALID")
+            or raw.count(b'"last_sequence": 1920') != 1):
+        raise ValueError("F20_U01_R21_EVENT_BYTES_INVALID")
     insertion = b",\n" + b",\n".join(r1._pretty(row).rstrip() for row in additions)
     return raw.replace(marker, insertion + marker.replace(
-        b"evt_f20_1914_worker_lease_revoked", additions[-1]["event_id"].encode()
-    )).replace(b'"last_sequence": 1914', b'"last_sequence": 1918', 1)
+        b"evt_f20_1920_worker_lease_revoked", additions[-1]["event_id"].encode()
+    )).replace(b'"last_sequence": 1920', b'"last_sequence": 1924', 1)
 
 
 def _make_rows(old: list[dict], wi_sha: str, invocation_sha: str,
                at: datetime, nonce: str) -> list[dict]:
     stamp = at.isoformat(timespec="seconds")
     expiry = (at + timedelta(hours=12)).isoformat(timespec="seconds")
-    execution = f"f20-u01-r20-execution-fence-epoch-34-{nonce}"
-    write_token = f"f20-u01-r20-write-fence-epoch-34-{nonce}"
-    worker = {"lease_id": f"worker-lease-f20-u01-r20-{nonce}",
+    execution = f"f20-u01-r21-execution-fence-epoch-35-{nonce}"
+    write_token = f"f20-u01-r21-write-fence-epoch-35-{nonce}"
+    worker = {"lease_id": f"worker-lease-f20-u01-r21-{nonce}",
               "actor_id": ACTOR, "subject_ref": SUBJECT, "status": "ACTIVE",
-              "issued_at": stamp, "expires_at": expiry, "lease_epoch": 34,
+              "issued_at": stamp, "expires_at": expiry, "lease_epoch": 35,
               "fencing_token": execution, "execution_fencing_token": execution,
               "baseline_git_commit": BASE, "dispatch_head": BASE,
               "path_scope": SCOPE}
-    write = {**worker, "lease_id": f"write-lease-f20-u01-r20-{nonce}",
-             "worker_lease_id": worker["lease_id"], "write_epoch": 34,
+    write = {**worker, "lease_id": f"write-lease-f20-u01-r21-{nonce}",
+             "worker_lease_id": worker["lease_id"], "write_epoch": 35,
              "fencing_token": write_token, "write_fencing_token": write_token}
     details = (
         {"path": WI, "sha256": wi_sha, "invocation_path": INVOCATION,
          "invocation_sha256": invocation_sha,
          "classification": "MAIN_INTERNAL_APPROVED_SCOPE",
          "parent_work_instruction": prior.prior.WI,
-         "revision_reason": "U01_EXISTING_NEXT_ACTIONS_BROWSER_QA"},
+         "revision_reason": "U01_DASHBOARD_INITIAL_LOADING_STATE"},
         worker, write,
         {"worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
          "work_instruction_sha256": wi_sha, "invocation_sha256": invocation_sha,
@@ -121,14 +114,14 @@ def _projection(root: Path, old_progress: dict, old_raw: bytes,
     stamp = additions[0]["occurred_at"]
     progress = deepcopy(old_progress)
     progress.update({
-        "snapshot_id": "snapshot-f20-u01-r20-next-actions-browser-start-seq1918",
+        "snapshot_id": "snapshot-f20-u01-r21-loading-state-start-seq1924",
         "event_sequence": END, "last_event_id": additions[-1]["event_id"],
         "updated_at": stamp, "status": "ACTIVE", "active_agent": ACTOR,
         "worker_lease": worker, "write_lease": write,
         "f20_overall_status": "REWORK_IN_PROGRESS", "next_safe_action": NEXT,
         "runtime_next_action": NEXT,
         "active_work_instruction": {
-            "artifact_id": "WI-F-20-U01-R20-20261001-001", "path": WI,
+            "artifact_id": "WI-F-20-U01-R21-20261001-001", "path": WI,
             "sha256": wi_sha, "invocation_path": INVOCATION,
             "invocation_sha256": invocation_sha,
             "result_status": "REWORK_IN_PROGRESS",
@@ -140,7 +133,7 @@ def _projection(root: Path, old_progress: dict, old_raw: bytes,
     progress["repository"].update({
         "local_head": BASE, "remote_head": BASE, "local_wsl_qa_head": BASE,
         "validated_base_commit": BASE, "projection_mode": MODE,
-        "worktree_status": "F20_U01_R20_NEXT_ACTIONS_BROWSER_ACTIVE",
+        "worktree_status": "F20_U01_R21_LOADING_STATE_ACTIVE",
         "product_write_scope": SCOPE, "commit_status": "PENDING",
         "push_status": "PENDING",
     })
@@ -157,7 +150,7 @@ def _projection(root: Path, old_progress: dict, old_raw: bytes,
                "repository_head": BASE,
                "repository_upstream": "development/codex/f18-wsl-ops",
                "reporting_decision": progress["reporting_decision"]["decision"]}
-    handoff_raw = (b"# F-20/U-01 R20 Next Actions Browser handoff\n\n"
+    handoff_raw = (b"# F-20/U-01 R21 Dashboard Loading State handoff\n\n"
                    b"```json anvil-recovery-summary\n" + r1._pretty(summary)
                    + b"```\n\n- C30 OPEN_BLOCKING; F-20 incomplete; Production NOT_EXECUTED.\n")
     digest_raw = r1._pretty({
@@ -205,7 +198,7 @@ def materialize(root: Path, at: datetime, nonce: str) -> None:
             or not _dirty(root) <= CONTROL_SCOPE
             or prior.validate_control(root, {"_root": root, "progress": progress,
                                              "events": stream}, at)):
-        raise RuntimeError("F20_U01_R20_PREDECESSOR_INVALID")
+        raise RuntimeError("F20_U01_R21_PREDECESSOR_INVALID")
     wi_sha = r1._sha(r1._lf((root / WI).read_bytes()))
     invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
     additions = _make_rows(stream["events"], wi_sha, invocation_sha, at, nonce)
@@ -221,8 +214,8 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     try:
         raw, old_stream, old_progress = _historical(root)
         rows = bundle["events"]["events"]
-        worker, write = rows[1915]["details"], rows[1916]["details"]
-        nonce = worker["lease_id"].removeprefix("worker-lease-f20-u01-r20-")
+        worker, write = rows[1921]["details"], rows[1922]["details"]
+        nonce = worker["lease_id"].removeprefix("worker-lease-f20-u01-r21-")
         at = datetime.fromisoformat(rows[START]["occurred_at"])
         wi_sha = r1._sha(r1._lf(_git(root, "show", f"{BASE}:{WI}")))
         invocation_sha = r1._sha(r1._lf(_git(root, "show", f"{BASE}:{INVOCATION}")))
@@ -239,26 +232,26 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
                 or write["write_fencing_token"] in r1._historical_fencing_tokens(old_stream["events"])
                 or any((root / path).read_bytes() != _git(root, "show", f"{BASE}:{path}")
                        for path in (PLAN, WI, INVOCATION))):
-            return ["F20_U01_R20_TRANSITION_INVALID"]
+            return ["F20_U01_R21_TRANSITION_INVALID"]
         expected = _projection(root, old_progress, raw, rows[START:], wi_sha,
                                invocation_sha)
-        errors = [f"F20_U01_R20_{path.split('/')[-1].upper()}_INVALID"
+        errors = [f"F20_U01_R21_{path.split('/')[-1].upper()}_INVALID"
                   for path, content in expected.items() if (root / path).read_bytes() != content]
         if (bundle["progress"] != json.loads(expected[PROGRESS])
                 or bundle["events"] != json.loads(expected[EVENTS])
                 or bundle.get("detached_digest", json.loads(expected[DIGEST]))
                    != json.loads(expected[DIGEST])
                 or bundle.get("_detached_digest_path", DIGEST) != DIGEST):
-            errors.append("F20_U01_R20_PROJECTION_INVALID")
+            errors.append("F20_U01_R21_PROJECTION_INVALID")
         if (bundle["progress"].get("f20_c30_event_integrity_incident", {}).get("status")
                 != "OPEN_BLOCKING" or bundle["progress"].get(
                     "scope_revision_binding", {}).get("release_decision") != "DEFER"
                 or "F-20" in bundle["progress"].get("completed_packages", [])):
-            errors.append("F20_U01_R20_BLOCKING_STATE_INVALID")
+            errors.append("F20_U01_R21_BLOCKING_STATE_INVALID")
         return sorted(set(errors))
     except (OSError, ValueError, KeyError, TypeError, IndexError,
             subprocess.CalledProcessError):
-        return ["F20_U01_R20_CONTROL_MISSING"]
+        return ["F20_U01_R21_CONTROL_MISSING"]
 
 
 def collect_git(root: Path, progress: dict) -> list[str]:
@@ -280,6 +273,6 @@ def collect_git(root: Path, progress: dict) -> list[str]:
                 and changed <= CONTROL_SCOPE | set(SCOPE)
                 and _dirty(root) <= CONTROL_SCOPE | set(SCOPE)
                 and progress["repository"]["projection_mode"] == MODE)
-        return [] if good else ["F20_U01_R20_GIT_INVALID"]
+        return [] if good else ["F20_U01_R21_GIT_INVALID"]
     except (OSError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):
-        return ["F20_U01_R20_GIT_INVALID"]
+        return ["F20_U01_R21_GIT_INVALID"]
