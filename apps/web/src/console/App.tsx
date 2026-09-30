@@ -10,8 +10,12 @@ type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UN
 type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' | 'UNAVAILABLE' | 'BLOCKED';
   lastCheck: string | null; errorCount: number | null};
 type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
+type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
+  action: string; deep_link: string};
+type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'UNAVAILABLE' | 'BLOCKED'};
 type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean;
-  health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState}
+  health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
+  nextActions: NextActionsState}
   | {status: 'UNAVAILABLE' | 'BLOCKED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
@@ -34,6 +38,7 @@ const DASHBOARD_QUEUE_FIELDS = ['job_id', 'run_id', 'state', 'available_at', 'at
   'priority', 'required_capability', 'input_verified', 'backoff_until'];
 const DASHBOARD_GAPS = new Set([...DASHBOARD_HEALTH_COMPONENTS, 'deployment']);
 const DASHBOARD_SIGNAL_COMPONENTS: DashboardSignalComponent[] = ['worker', 'backend', 'artifact_store'];
+const NEXT_ACTION_FIELDS = ['priority', 'reason', 'target', 'action', 'deep_link'];
 const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
 const ALERTS_BLOCKED: CriticalAlertsState = {status: 'BLOCKED'};
 const ALERT_FIELDS = ['alert_id', 'sequence', 'level', 'source', 'category', 'code',
@@ -84,6 +89,20 @@ function validDashboardQueueRow(value: unknown): boolean {
     && uniqueNames(value.dependency_ids) && uniqueNames(value.conflict_keys)
     && value.priority === 'UNKNOWN' && value.required_capability === 'UNKNOWN'
     && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
+}
+
+function dashboardNextActions(value: unknown): NextActionsState {
+  if (!Array.isArray(value) || value.length > 100 || !value.every((item) =>
+    record(item) && exactFields(item, NEXT_ACTION_FIELDS)
+    && (item.priority === 'critical' || item.priority === 'warning')
+    && nonempty(item.reason) && nonempty(item.target) && nonempty(item.action)
+    && nonempty(item.deep_link))) return {status: 'UNAVAILABLE'};
+  return {status: 'LOADED', actions: value as NextAction[]};
+}
+
+function safeMenuLink(value: string): string | null {
+  return /^\/[A-Za-z0-9/_-]*$/.test(value) && !value.startsWith('//')
+    && READ_ONLY_MENU.has(value) ? value : null;
 }
 
 function validDashboardSignal(value: unknown, snapshotTime: string): value is Record<string, unknown> {
@@ -145,10 +164,35 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   }
   return {status: 'LOADED', observed: snapshot.queue.length,
     sourceGap: snapshot.source_gaps.includes('queue'),
+    nextActions: dashboardNextActions(snapshot.next_actions),
     database: dashboardDatabaseSignal((snapshot.health as Record<string, unknown>).database,
       snapshot.source_gaps, snapshot.observed_at),
     health: dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps,
       snapshot.observed_at)};
+}
+
+export function NextActionsCard({value}: {value: DashboardQueueState}) {
+  const state: NextActionsState = value.status === 'LOADED' ? value.nextActions : {status: value.status};
+  const occurrences = new Map<string, number>();
+  return <section className="status-card" aria-labelledby="next-actions-heading">
+    <h3 id="next-actions-heading">Next Actions</h3>
+    <div aria-live="polite" aria-atomic="true">
+      {state.status !== 'LOADED' ? <><p className="status-unavailable">{state.status}</p>
+        <p>{state.status === 'BLOCKED' ? '조회 차단 · 다음 조치를 표시하지 않습니다.'
+          : '다음 조치를 확인할 수 없습니다.'}</p></> : state.actions.length === 0
+        ? <p>현재 관측된 다음 조치 0건 · 전체 범위의 부재는 확인되지 않았습니다.</p>
+        : <ul>{state.actions.map((item) => {
+          const link = safeMenuLink(item.deep_link);
+          const identity = JSON.stringify(item);
+          const occurrence = (occurrences.get(identity) ?? 0) + 1;
+          occurrences.set(identity, occurrence);
+          return <li key={`${identity}:${occurrence}`}><strong>{item.priority}</strong>
+            <p>원인 · {item.reason}</p><p>대상 · {item.target}</p>
+            <p>조치 · {link ? <a href={link}>{item.action}</a> : item.action}</p>
+          </li>;
+        })}</ul>}
+    </div>
+  </section>;
 }
 
 export async function loadDashboardQueue(signal: AbortSignal, request: typeof fetch = fetch): Promise<DashboardQueueState> {
@@ -529,6 +573,7 @@ function Shell({route}: AppProps) {
         <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
           <p>실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE</p>
         </section>
+        <NextActionsCard value={dashboardQueue}/>
         <CriticalAlertsCard value={criticalAlerts} onLoadOlder={() => { void loadOlderAlerts(); }}
           loadingOlder={loadingOlderAlerts}/>
       </main> : currentRoute === '/projects' ? <main className="dashboard">

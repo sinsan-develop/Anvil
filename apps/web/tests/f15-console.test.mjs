@@ -743,3 +743,75 @@ test('Dashboard preserves existing health cards and unrelated operating paths', 
   assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
   assert.doesNotMatch(html, /private-job-id|private-run-id|HEALTHY/);
 });
+
+test('Dashboard Next Actions renders validated rows from the existing operations read', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.next_actions = [{priority: 'critical', reason: '<script>cause</script>',
+    target: 'run-1', action: '검토', deep_link: '/operations'}];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  assert.deepEqual(state.nextActions?.status, 'LOADED');
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /Next Actions.*critical.*&lt;script&gt;cause&lt;\/script&gt;.*run-1.*검토/s);
+  assert.match(html, /href="\/operations"/);
+  assert.doesNotMatch(html, /<script>|private-job-id|private-run-id/);
+});
+
+test('Dashboard Next Actions empty response is an observed zero, not a global absence', async () => {
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse(dashboardResponse()));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /Next Actions.*현재 관측된 다음 조치 0건/s);
+  assert.doesNotMatch(html, /전체.*0건|href=/);
+});
+
+test('Dashboard Next Actions auth and source failures remain blocked or unavailable without body leak', async () => {
+  const secret = 'postgresql://secret@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => secret}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, new RegExp(status < 500 ? 'BLOCKED' : 'UNAVAILABLE'));
+    assert.doesNotMatch(html, /postgresql:|secret|internal|private-payload|href=/);
+  }
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => {throw new Error(secret);});
+  assert.match(renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state})),
+    /UNAVAILABLE/);
+});
+
+test('Dashboard Next Actions malformed rows fail closed while Queue and Health remain observed', async () => {
+  const valid = {priority: 'warning', reason: '원인', target: 'run-1',
+    action: '검토', deep_link: '/runs'};
+  const badRows = [null, {...valid, reason: ''}, {...valid, priority: 'secret'},
+    {...valid, action: null}, {...valid, extra: 'private-payload'},
+    Array.from({length: 101}, () => valid)];
+  for (const bad of badRows) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.next_actions = Array.isArray(bad) ? bad : [bad];
+    snapshot.health.worker = observedHealth('HEALTHY');
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /private-payload|run-1|href=/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state})),
+      /범위 내 관측 1건/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state})), /HEALTHY/);
+  }
+});
+
+test('Dashboard Next Actions never navigates unsafe or unimplemented deep links', async () => {
+  for (const deepLink of ['javascript:alert(1)', 'https://evil.example', '//evil.example',
+    '/operations?token=private', '/operations#private', '/operations\\bad', '/not-implemented']) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.next_actions = [{priority: 'warning', reason: '원인', target: 'run-1',
+      action: '검토', deep_link: deepLink}];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /검토/);
+    assert.doesNotMatch(html, /href=|evil\.example|private|javascript:/);
+  }
+});
