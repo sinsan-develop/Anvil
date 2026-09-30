@@ -33,6 +33,9 @@ SCOPE = ["apps/web/src/console/App.tsx",
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, WI, INVOCATION,
                  "scripts/f20_u01_r19_start_overlay.py",
                  "tests/tooling/test_f20_u01_r19_start_projection.py",
+                 "docs/04_test_reports/F-20_U01_R19_COMPLETE_CLOSE_PLAN.md",
+                 "scripts/f20_u01_r19_close_overlay.py",
+                 "tests/tooling/test_f20_u01_r19_close_projection.py",
                  "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
          "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")
