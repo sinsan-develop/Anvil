@@ -10,6 +10,12 @@ from scripts import f20_u01_r21_close_overlay as overlay
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_r21_close_allows_only_r22_followup_plan_not_product_write():
+    assert "docs/04_test_reports/F-20_U01_R22_INDEPENDENT_LOADING_PLAN.md" in overlay.CONTROL_SCOPE
+    assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
+    assert "apps/web/tests/f15-console.test.mjs" not in overlay.CONTROL_SCOPE
+
+
 def test_r21_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
