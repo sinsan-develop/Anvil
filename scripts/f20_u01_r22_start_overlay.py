@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 1926, 1930
-BASE = "ef280ae692fbcaca220b5ed674a67f004b4d46ba"
+BASE = "9f643bdeafa73967fdbb4dcadd7b18defd092cec"
 MODE = "F20_U01_R22_INDEPENDENT_LOADING_START"
 ACTOR = "developer-primary-f20-u01-r22"
 SUBJECT = "F-20/U01-R22"
