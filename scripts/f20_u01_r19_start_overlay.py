@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 1908, 1912
-BASE = "f58a804f9de17ac1cb56ecbf41da496ae9e72100"
+BASE = "4c8e6a339e9685e7bd407cc3b26aae57dbb32ecc"
 MODE = "F20_U01_R19_NEXT_ACTIONS_UI_START"
 ACTOR = "developer-primary-f20-u01-r19"
 SUBJECT = "F-20/U01-R19"
@@ -208,7 +208,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     try:
         raw, old_stream, old_progress = _historical(root)
         rows = bundle["events"]["events"]
-        worker, write = rows[1903]["details"], rows[1904]["details"]
+        worker, write = rows[1909]["details"], rows[1910]["details"]
         nonce = worker["lease_id"].removeprefix("worker-lease-f20-u01-r19-")
         at = datetime.fromisoformat(rows[START]["occurred_at"])
         wi_sha = r1._sha(r1._lf(_git(root, "show", f"{BASE}:{WI}")))
