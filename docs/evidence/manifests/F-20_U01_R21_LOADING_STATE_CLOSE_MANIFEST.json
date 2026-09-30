@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1926,
+  "accepted": false,
+  "projection_mode": "F20_U01_R21_LOADING_STATE_CLOSE",
+  "previous_event_sequence": 1924,
+  "product_write_scope": [],
+  "predecessor_commit": "ca94630f2bbd64bb837fa3eb3892162e05abfdad",
+  "predecessor_events_sha256": "DA1C842AA269E35CF88690DE218B4F370DB3BE45D9981AAB24F57F85CC993620",
+  "plan_path": "docs/04_test_reports/F-20_U01_R21_LOADING_STATE_PLAN.md",
+  "plan_sha256": "45C570BAEC2E9D139FD257B36D4CEC0569619D34D5CEA8032E029B5BB3FB5A20",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
