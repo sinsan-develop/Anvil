@@ -33,6 +33,8 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
                  "docs/04_test_reports/F-20_U01_R14_DASHBOARD_HEALTH_CARDS_PLAN.md",
                  "docs/work_orders/F-20_U01_R14_DASHBOARD_HEALTH_CARDS_WORK_INSTRUCTION.md",
                  "docs/work_orders/F-20_U01_R14_DASHBOARD_HEALTH_CARDS_INVOCATION.md",
+                 "scripts/f20_u01_r14_start_overlay.py",
+                 "tests/tooling/test_f20_u01_r14_start_projection.py",
                  "docs/04_test_reports/F-20_U01_R13_SCOPED_AGENT_OWNER_CLOSE_PLAN.md",
                  "docs/WORK_STATUS.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
