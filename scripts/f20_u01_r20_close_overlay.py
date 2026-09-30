@@ -29,6 +29,9 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, REPORT,
                  "scripts/f20_u01_r20_close_overlay.py",
                  "tests/tooling/test_f20_u01_r20_close_projection.py",
                  "docs/04_test_reports/F-20_U01_POST_R20_COVERAGE_REVIEW.md",
+                 "docs/04_test_reports/F-20_U01_R21_LOADING_STATE_PLAN.md",
+                 "docs/work_orders/F-20_U01_R21_LOADING_STATE_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R21_LOADING_STATE_INVOCATION.md",
                  "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
