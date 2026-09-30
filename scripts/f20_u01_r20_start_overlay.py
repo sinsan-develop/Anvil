@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 1914, 1918
-BASE = "a1995e194581637f294baf1f84a836052581e6a2"
+BASE = "2302980694acaf214b213d8e6728b294ca172a9a"
 MODE = "F20_U01_R20_NEXT_ACTIONS_BROWSER_START"
 ACTOR = "developer-primary-f20-u01-r20"
 SUBJECT = "F-20/U01-R20"
@@ -33,6 +33,7 @@ SCOPE = ["tests/browser/f20-u01-oidc-browser-pg15.mjs",
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, WI, INVOCATION,
                  "scripts/f20_u01_r20_start_overlay.py",
                  "tests/tooling/test_f20_u01_r20_start_projection.py",
+                 "tests/tooling/test_f20_u01_r20_prep_projection.py",
                  "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
          "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")
