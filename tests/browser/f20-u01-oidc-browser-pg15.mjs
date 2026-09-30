@@ -27,6 +27,8 @@ const progressStages = new Set([
   'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_RESPONSES',
   'STORED_ALERT_WAIT',
   'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
+  'STORED_DASHBOARD_FETCH', 'STORED_NEXT_ACTION', 'REVOKE_DASHBOARD_FETCH',
+  'REVOKE_NEXT_ACTION',
   'REVOKE_CARD', 'REVOKE_RESPONSES', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
   'NETWORK_RESPONSE_FACTS', 'NETWORK_DOM', 'NETWORK_IDP_STATE',
   'NETWORK_ASSERT', 'EVIDENCE_PRE_AUTH', 'EVIDENCE_STORED', 'EVIDENCE_REVOKED',
@@ -62,6 +64,32 @@ function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
   });
   return { allAppRequestsSameOrigin, offOriginCredentialLeak,
     secretExposure: requestExposure || responseExposure || containsSensitive(domText) };
+}
+
+function validateStoredNextAction(dashboard, alert, expected, rowText, rowCount) {
+  const fields = ['priority', 'reason', 'target', 'action', 'deep_link'];
+  const fromAlert = { priority: alert.level, reason: alert.cause,
+    target: alert.related_entity_id, action: alert.next_action, deep_link: alert.deep_link };
+  assert.ok(dashboard.status === 200 && Array.isArray(dashboard.actions)
+    && dashboard.actions.length === 1 && rowCount === 1
+    && fields.every((field) => typeof expected[field] === 'string' && expected[field].length > 0
+      && dashboard.actions[0][field] === expected[field]
+      && fromAlert[field] === expected[field])
+    && Object.keys(dashboard.actions[0]).length === fields.length
+    && rowText.includes(expected.priority)
+    && rowText.includes(`원인 · ${expected.reason}`)
+    && rowText.includes(`대상 · ${expected.target}`)
+    && rowText.includes(`조치 · ${expected.action}`), 'R20_NEXT_ACTION_MISMATCH');
+  return { dashboardStatus: dashboard.status, actionCount: dashboard.actions.length,
+    alertApiDomMatch: true };
+}
+
+function validateRevokedNextAction(status, cardText, rowCount) {
+  assert.ok(status === 403 && cardText.includes('BLOCKED')
+    && cardText.includes('조회 차단') && rowCount === 0,
+  'R20_REVOKED_ACTION_MISMATCH');
+  return { revokedDashboardStatus: status, revokedActionCount: rowCount,
+    revokedActionCleared: true };
 }
 
 function containsEvidenceSecret(value, markers) {
@@ -367,6 +395,8 @@ async function main() {
   assert.equal(alertCode, 'WORKER_LEASE_EXPIRED');
   assert.ok(controlToken?.length >= 32);
   assert.ok(expectedEntity && expectedCause && Array.isArray(sensitiveValues));
+  const expectedAction = JSON.parse(process.env.ANVIL_F20_R6_EXPECTED_ACTION_JSON || 'null');
+  assert.ok(expectedAction && typeof expectedAction === 'object', 'R20_ACTION_EXPECTATION_INVALID');
   assert.ok(!evidenceDir || !diagnosticDrain, 'R6_EVIDENCE_DIAGNOSTIC_CONFLICT');
   markStage('PLAYWRIGHT_REQUIRE');
   const { chromium, request: playwrightRequest } = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
@@ -444,6 +474,10 @@ async function main() {
     assert.deepEqual(alerts.map(({ code }) => code), [alertCode]);
     assert.equal(alerts[0].related_entity_id, expectedEntity);
     assert.equal(alerts[0].cause, expectedCause);
+    markStage('STORED_DASHBOARD_FETCH');
+    const storedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    assert.equal(storedDashboard.status, 200, 'R20_NEXT_ACTION_MISMATCH');
+    const dashboardActions = JSON.parse(storedDashboard.text).data.next_actions;
     await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
     markStage('STORED_ALERT_WAIT');
     await card.getByText(alertCode, { exact: true }).waitFor();
@@ -452,6 +486,14 @@ async function main() {
     const rowText = await card.locator('li').filter({ hasText: alertCode }).innerText();
     const rowMatches = rowText.includes(expectedEntity) && rowText.includes(expectedCause);
     assert.ok(rowMatches);
+    markStage('STORED_NEXT_ACTION');
+    const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+    await nextCard.waitFor({ state: 'visible' });
+    await nextCard.locator('li').filter({ hasText: expectedAction.action }).waitFor();
+    const actionRow = nextCard.locator('li');
+    const storedActionEvidence = validateStoredNextAction(
+      { status: storedDashboard.status, actions: dashboardActions }, alerts[0], expectedAction,
+      await actionRow.first().innerText(), await actionRow.count());
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -466,12 +508,18 @@ async function main() {
     markStage('REVOKE_FETCH');
     const revoked = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(revoked.status, 403);
+    markStage('REVOKE_DASHBOARD_FETCH');
+    const revokedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
     markStage('REVOKE_CLEAR');
     await card.getByText('BLOCKED', { exact: true }).waitFor();
     await card.getByText('조회 차단', { exact: false }).waitFor();
     assert.equal(await card.getByText('UNAVAILABLE', { exact: true }).count(), 0);
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
+    markStage('REVOKE_NEXT_ACTION');
+    await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
+    const revokedActionEvidence = validateRevokedNextAction(revokedDashboard.status,
+      await nextCard.innerText(), await nextCard.locator('li').count());
     if (evidenceDir) {
       assert.ok(staleCleared, 'R6_EVIDENCE_REVOKE_STATE_REJECTED');
       markStage('EVIDENCE_REVOKED');
@@ -509,6 +557,7 @@ async function main() {
       storedStatus: stored.status, storedAlertCode: alerts[0].code,
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
+      ...storedActionEvidence, ...revokedActionEvidence,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
       pageRequestCount: requests.length, appApiRequestCount,
       ...(diagnosticDrain ? {
@@ -536,6 +585,37 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  const actionAlert = {
+    level: 'critical', cause: 'Worker lease expiry observed',
+    related_entity_id: 'r6-run', next_action: 'REVIEW_WORKER_LEASE',
+    deep_link: '/operations',
+  };
+  const expectedAction = {
+    priority: 'critical', reason: 'Worker lease expiry observed',
+    target: 'r6-run', action: 'REVIEW_WORKER_LEASE', deep_link: '/operations',
+  };
+  const dashboardOk = { status: 200, actions: [expectedAction] };
+  const displayed = 'critical\n원인 · Worker lease expiry observed\n대상 · r6-run\n조치 · REVIEW_WORKER_LEASE';
+  assert.deepEqual(validateStoredNextAction(dashboardOk, actionAlert, expectedAction,
+    displayed, 1), { dashboardStatus: 200, actionCount: 1,
+    alertApiDomMatch: true });
+  for (const field of Object.keys(expectedAction)) {
+    const wrong = { ...expectedAction, [field]: 'wrong' };
+    assert.throws(() => validateStoredNextAction({ status: 200, actions: [wrong] },
+      actionAlert, expectedAction, displayed, 1), /R20_NEXT_ACTION_MISMATCH/);
+  }
+  assert.throws(() => validateStoredNextAction({ status: 403, actions: [] },
+    actionAlert, expectedAction, displayed, 0), /R20_NEXT_ACTION_MISMATCH/);
+  assert.throws(() => validateStoredNextAction(dashboardOk, actionAlert,
+    expectedAction, displayed.replace('r6-run', 'wrong'), 1),
+  /R20_NEXT_ACTION_MISMATCH/);
+  assert.deepEqual(validateRevokedNextAction(403, 'BLOCKED\n조회 차단', 0),
+    { revokedDashboardStatus: 403, revokedActionCount: 0, revokedActionCleared: true });
+  for (const [status, text, count] of [[200, 'BLOCKED\n조회 차단', 0],
+    [403, 'UNAVAILABLE', 0], [403, 'BLOCKED\n조회 차단', 1]]) {
+    assert.throws(() => validateRevokedNextAction(status, text, count),
+      /R20_REVOKED_ACTION_MISMATCH/);
+  }
   const evidenceRequests = [
     { origin: apiUrl, url: apiUrl + '/', body: '', headers: {} },
     { origin: apiUrl, url: apiUrl + '/api/operations/alerts', body: '', headers: {} },

@@ -42,6 +42,9 @@ from tests.integration.f18_oidc_live_host import _certificate, _listener
 _TEMP_NAME = ".anvil-f20-u01-r6-oidc-host"
 _CERT_FILES = ("issuer.pem", "issuer.key", "api.pem", "api.key")
 _ALERT_CODE = "WORKER_LEASE_EXPIRED"
+_TEST_ALERT = {"level": "critical", "related_entity_id": "r6-run",
+               "cause": "Worker lease expiry observed", "next_action": "REVIEW_WORKER_LEASE",
+               "deep_link": "/operations"}
 _PG_DATA_PATH = "/var/lib/postgresql/data"
 _EVIDENCE_FILES = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked.png",
                    "page-requests.json")
@@ -334,6 +337,11 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
                        ANVIL_F20_R6_CONTROL_TOKEN=control_token,
                        ANVIL_F20_R6_ALERT_ENTITY=alert["related_entity_id"],
                        ANVIL_F20_R6_ALERT_CAUSE=alert["cause"])
+    environment["ANVIL_F20_R6_EXPECTED_ACTION_JSON"] = json.dumps({
+        "priority": alert["level"], "reason": alert["cause"],
+        "target": alert["related_entity_id"], "action": alert["next_action"],
+        "deep_link": alert["deep_link"],
+    })
     if _diagnostic_drain_mode():
         environment["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] = "1"
     if evidence_dir is not None:
@@ -480,7 +488,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         with engine.begin() as db:
             db.execute(users.insert().values(actor_id="r6-actor", active=True))
             db.execute(roles.insert().values(role_code="operator", permissions=[
-                "provider:read", "operations:alerts:read",
+                "provider:read", "operations:alerts:read", "dashboard:read",
             ]))
             db.execute(user_roles.insert().values(
                 actor_id="r6-actor", role_code="operator", project_id="project-1",
@@ -524,7 +532,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                 "project-1", "wsl-qa", frozenset({"operator"})),
             principal_policy=OidcPrincipalPolicy(
                 issuer_url, frozenset({"operator"}),
-                frozenset({"provider:read", "operations:alerts:read"}),
+                frozenset({"provider:read", "operations:alerts:read", "dashboard:read"}),
                 frozenset({"project-1"}), frozenset({"wsl-qa"})),
             pinned_jwks_json=json.dumps({"keys": [public]}),
             client_secret=lambda: "synthetic-client-secret", ca_bundle=str(issuer_cert),
@@ -559,6 +567,9 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             "storedStatus": 200, "storedAlertCode": _ALERT_CODE, "visibleBeforeRevoke": True,
             "storedEntity": before[0]["related_entity_id"],
             "storedCause": before[0]["cause"], "rowMatches": True,
+            "dashboardStatus": 200, "actionCount": 1, "alertApiDomMatch": True,
+            "revokedDashboardStatus": 403, "revokedActionCount": 0,
+            "revokedActionCleared": True,
             "revokedStatus": 403, "staleCleared": True,
             "allAppRequestsSameOrigin": True, "idpContextSeparate": True,
             "offOriginCredentialLeak": False, "secretExposure": False,
@@ -728,7 +739,7 @@ def test_r6_timeout_reports_last_whitelisted_progress_without_raw_output(monkeyp
 
     monkeypatch.setattr(subprocess, "run", timed_out)
     monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
-    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    alert = _TEST_ALERT
     with pytest.raises(pytest.fail.Exception) as failure:
         _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                    "postgresql://isolated@127.0.0.1:5545/isolated", alert)
@@ -753,7 +764,7 @@ def test_r6_response_capture_failure_reports_only_safe_category_status(monkeypat
 
     monkeypatch.setattr(subprocess, "run", failed)
     monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
-    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    alert = _TEST_ALERT
     with pytest.raises(pytest.fail.Exception) as failure:
         _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                    "postgresql://isolated@127.0.0.1:5545/isolated", alert)
@@ -787,7 +798,7 @@ def test_r6_phase_response_failure_reports_only_safe_diagnostic(monkeypatch, sta
 
     monkeypatch.setattr(subprocess, "run", failed)
     monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
-    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    alert = _TEST_ALERT
     with pytest.raises(pytest.fail.Exception) as failure:
         _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                    "postgresql://isolated@127.0.0.1:5545/isolated", alert)
@@ -813,7 +824,7 @@ def test_r6_provider_401_probe_reports_only_fixed_facts(monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", failed)
     monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
-    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    alert = _TEST_ALERT
     with pytest.raises(pytest.fail.Exception) as failure:
         _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                    "postgresql://isolated@127.0.0.1:5545/isolated", alert)
@@ -836,7 +847,7 @@ def test_r6_diagnostic_drain_is_opt_in_and_passed_to_browser_only_when_enabled(m
     monkeypatch.setattr(subprocess, "run", succeeded)
     monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
     monkeypatch.delenv("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK", raising=False)
-    alert = {"related_entity_id": "r6-run", "cause": "Worker lease expiry observed"}
+    alert = _TEST_ALERT
     assert _diagnostic_drain_mode() is False
     _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                "postgresql://isolated@127.0.0.1:5545/isolated", alert)
@@ -856,6 +867,28 @@ def test_r6_diagnostic_evidence_cannot_be_acceptance(capsys):
     output = capsys.readouterr().out
     assert "R6_DIAGNOSTIC_EVIDENCE " in output
     assert "R6_E2E_EVIDENCE " not in output
+
+
+def test_r20_node_receives_only_expected_action_fields_from_stored_alert(monkeypatch):
+    observed = []
+
+    def succeeded(*_args, **kwargs):
+        observed.append(kwargs["env"])
+        return subprocess.CompletedProcess(args=["browser"], returncode=0,
+                                           stdout='R6_RESULT {}\n', stderr="")
+
+    monkeypatch.setattr(subprocess, "run", succeeded)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    alert = {"level": "critical", "cause": "Worker lease expiry observed",
+             "related_entity_id": "r6-run", "next_action": "REVIEW_WORKER_LEASE",
+             "deep_link": "/operations", "evidence_hash": "private-not-forwarded"}
+    _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+               "postgresql://isolated@127.0.0.1:5545/isolated", alert)
+    assert json.loads(observed[-1]["ANVIL_F20_R6_EXPECTED_ACTION_JSON"]) == {
+        "priority": "critical", "reason": "Worker lease expiry observed",
+        "target": "r6-run", "action": "REVIEW_WORKER_LEASE", "deep_link": "/operations",
+    }
+    assert "private-not-forwarded" not in observed[-1]["ANVIL_F20_R6_EXPECTED_ACTION_JSON"]
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):
