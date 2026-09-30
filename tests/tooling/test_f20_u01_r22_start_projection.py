@@ -10,6 +10,12 @@ from scripts import f20_u01_r22_start_overlay as overlay
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_r22_start_allows_exact_close_control_paths():
+    assert "scripts/f20_u01_r22_close_overlay.py" in overlay.CONTROL_SCOPE
+    assert "tests/tooling/test_f20_u01_r22_close_projection.py" in overlay.CONTROL_SCOPE
+    assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
+
+
 def test_r22_start_preserves_r21_close_and_bounded_writer():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
