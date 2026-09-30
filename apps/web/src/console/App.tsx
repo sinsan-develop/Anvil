@@ -6,7 +6,8 @@ import {createProjectsState, reduceProjects} from '../features/projects/projects
 type Readiness = 'NOT CONNECTED' | 'READY';
 type AppProps = {route?: string};
 type ProjectsState = {status: string; reason: string; repository: {branch: string; head: string; dirtyPaths: number; untrackedPaths: number} | null; baseline: {status: string; reason: string}; mutationAllowed: boolean};
-type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null};
+type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null}
+  | {status: 'LOADING'};
 type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' | 'UNAVAILABLE' | 'BLOCKED';
   lastCheck: string | null; errorCount: number | null};
 type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
@@ -20,11 +21,12 @@ type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boole
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
-  nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'UNAVAILABLE' | 'BLOCKED'};
+  nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
+const PROVIDER_LOADING: ProviderRegistration = {status: 'LOADING'};
 const DASHBOARD_QUEUE_LOADING: DashboardQueueState = {status: 'LOADING'};
 const DASHBOARD_QUEUE_UNAVAILABLE: DashboardQueueState = {status: 'UNAVAILABLE'};
 const DASHBOARD_QUEUE_BLOCKED: DashboardQueueState = {status: 'BLOCKED'};
@@ -41,6 +43,7 @@ const DASHBOARD_GAPS = new Set([...DASHBOARD_HEALTH_COMPONENTS, 'deployment']);
 const DASHBOARD_SIGNAL_COMPONENTS: DashboardSignalComponent[] = ['worker', 'backend', 'artifact_store'];
 const NEXT_ACTION_FIELDS = ['priority', 'reason', 'target', 'action', 'deep_link'];
 const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
+const ALERTS_LOADING: CriticalAlertsState = {status: 'LOADING'};
 const ALERTS_BLOCKED: CriticalAlertsState = {status: 'BLOCKED'};
 const ALERT_FIELDS = ['alert_id', 'sequence', 'level', 'source', 'category', 'code',
   'related_entity_id', 'dedupe_key', 'detector_rule_revision', 'cause', 'impact',
@@ -341,8 +344,9 @@ export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false}: {
   return <section className="status-card" aria-labelledby="critical-alerts-heading">
     <h3 id="critical-alerts-heading">Critical Alerts</h3>
     <div aria-live="polite" aria-atomic="true">
-      {value.status !== 'LOADED' ? <><p className="status-unavailable">{value.status}</p>
+      {value.status !== 'LOADED' ? <><p className={value.status === 'LOADING' ? undefined : 'status-unavailable'}>{value.status}</p>
         <p>{value.status === 'BLOCKED' ? '조회 차단 · 저장 경고 기록을 표시하지 않습니다.'
+          : value.status === 'LOADING' ? 'Critical Alerts 조회 중입니다.'
           : '저장 경고 기록을 확인할 수 없습니다.'}</p></> : <>
         <p>저장된 Critical 기록 · 현재 페이지</p>
         {value.alerts.length === 0 ? <p>이 페이지에 저장된 Critical 기록 없음</p> :
@@ -402,8 +406,8 @@ export function ProviderHealthCard({value}: {value: ProviderRegistration}) {
       {value.status === 'VALID' ? <>
         <p>등록 {value.registered} / 9</p>
         <p>연결 상태 · NOT CHECKED</p>
-      </> : <><p className="status-unavailable">UNAVAILABLE</p>
-        <p>연결된 상태 정보가 없습니다.</p></>}
+      </> : <><p className={value.status === 'LOADING' ? undefined : 'status-unavailable'}>{value.status}</p>
+        <p>{value.status === 'LOADING' ? 'LLM Providers 조회 중입니다.' : '연결된 상태 정보가 없습니다.'}</p></>}
     </div>
   </article>;
 }
@@ -431,17 +435,21 @@ export async function loadReadiness(signal: AbortSignal, request: typeof fetch =
   }
 }
 
-export function DatabaseHealthCard({value, operations}: {value: unknown; operations?: DashboardQueueState}) {
+export function DatabaseHealthCard({value, operations, readinessPending = false}: {value: unknown;
+  operations?: DashboardQueueState; readinessPending?: boolean}) {
   const readiness = classifyReadiness(value);
   const head = readiness === 'READY' ? (value as {migration_head: string}).migration_head : null;
-  const signal = readiness === 'READY'
+  const signal = readinessPending ? {status: 'LOADING', lastCheck: null, errorCount: null}
+    : readiness === 'READY'
     ? operations?.status === 'LOADED' ? operations.database
       : {status: operations?.status ?? 'UNAVAILABLE', lastCheck: null, errorCount: null}
     : {status: 'NOT CONNECTED', lastCheck: null, errorCount: null};
   return <article className="status-card"><h3>Database</h3>
     <div aria-live="polite" aria-atomic="true">
-      <p className={signal.status === 'HEALTHY' ? 'status-ready' : 'status-unavailable'}>{signal.status}</p>
-      <p>{head ? `API 준비 READY · Migration ${head}` : '연결된 상태 정보가 없습니다.'}</p>
+      <p className={signal.status === 'HEALTHY' ? 'status-ready'
+        : signal.status === 'LOADING' ? undefined : 'status-unavailable'}>{signal.status}</p>
+      <p>{signal.status === 'LOADING' ? 'Database 조회 중입니다.'
+        : head ? `API 준비 READY · Migration ${head}` : '연결된 상태 정보가 없습니다.'}</p>
       {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
       {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
     </div>
@@ -472,9 +480,9 @@ function Shell({route}: AppProps) {
   const [readinessPayload, setReadinessPayload] = useState<unknown>(null);
   const [checked, setChecked] = useState('NOT REQUESTED');
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
-  const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_UNAVAILABLE);
+  const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_LOADING);
   const [dashboardQueue, setDashboardQueue] = useState<DashboardQueueState>(DASHBOARD_QUEUE_LOADING);
-  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_UNAVAILABLE);
+  const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_LOADING);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
   const alertsController = useRef<AbortController | null>(null);
   const olderRequestInFlight = useRef(false);
@@ -559,6 +567,7 @@ function Shell({route}: AppProps) {
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
               if (name === 'Database') return <DatabaseHealthCard key={name} value={readinessPayload}
+                readinessPending={checked === 'NOT REQUESTED'}
                 operations={dashboardQueue}/>;
               if (name === 'Queue') return <QueueHealthCard key={name} value={dashboardQueue}/>;
               if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration}/>;

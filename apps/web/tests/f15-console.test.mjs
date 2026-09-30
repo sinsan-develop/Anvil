@@ -298,7 +298,7 @@ test('Critical Alerts rejects auth, transport, malformed, duplicate and forged p
 
 test('Dashboard includes Critical Alerts while unrelated operating state stays UNAVAILABLE', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
-  assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
+  assert.match(html, /Critical Alerts.*LOADING/s);
   assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
   assert.doesNotMatch(html, /알람 read model은 아직 연결되지 않았습니다/);
   assert.match(html, /Database.*LLM Providers/s);
@@ -739,9 +739,48 @@ test('Dashboard preserves existing health cards and unrelated operating paths', 
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   assert.match(html, /Database.*Queue.*Worker.*LLM Providers.*Execution Backends.*Artifact Store/s);
   assert.match(html, /Queue.*LOADING.*Worker.*LOADING/s);
-  assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
+  assert.match(html, /Critical Alerts.*LOADING/s);
   assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
   assert.doesNotMatch(html, /private-job-id|private-run-id|HEALTHY/);
+});
+
+test('independent Provider and Critical Alerts reads begin with accessible LOADING states', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  for (const [label, component, props] of [
+    ['LLM Providers', consoleApp.ProviderHealthCard, {value: {status: 'LOADING'}}],
+    ['Critical Alerts', consoleApp.CriticalAlertsCard, {value: {status: 'LOADING'}}],
+  ]) {
+    const card = renderToStaticMarkup(React.createElement(component, props));
+    assert.match(card, new RegExp(`${label}.*aria-live="polite" aria-atomic="true".*LOADING.*조회 중`, 's'));
+    assert.doesNotMatch(card, /UNAVAILABLE|BLOCKED|VALID|등록 0|기록 없음|status-unavailable/);
+    assert.ok(html.includes(card), `${label} first render`);
+  }
+});
+
+test('Database distinguishes independent readiness and operations completion in either order', () => {
+  const ready = {status: 'ready', migration_head: '0019_oidc_sessions'};
+  const healthy = {status: 'LOADED', database: {status: 'HEALTHY', lastCheck: null, errorCount: 0}};
+  const pending = {status: 'LOADING'};
+  const stages = [
+    [null, true, pending, 'LOADING'],
+    [ready, false, pending, 'LOADING'],
+    [null, true, healthy, 'LOADING'],
+    [ready, false, healthy, 'HEALTHY'],
+    [null, false, healthy, 'NOT CONNECTED'],
+    [{status: 'not_ready'}, false, pending, 'NOT CONNECTED'],
+  ];
+  for (const [value, readinessPending, operations, expected] of stages) {
+    const card = renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value, readinessPending, operations}));
+    assert.match(card, new RegExp(`Database.*aria-live="polite" aria-atomic="true".*${expected}`, 's'));
+    if (expected === 'LOADING') {
+      assert.match(card, /조회 중/);
+      assert.doesNotMatch(card, /status-unavailable|HEALTHY|NOT CONNECTED|오류 0건/);
+    }
+  }
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /Database.*LOADING.*Queue/s);
+  assert.doesNotMatch(html, /Database.*HEALTHY.*Queue/s);
 });
 
 test('Dashboard pending operations read shows LOADING in all five cards without false failure or zero', () => {
