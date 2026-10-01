@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1944,
+  "last_sequence": 1948,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -94839,7 +94839,127 @@
     "reason": "R24_EMPTY_ERROR_BROWSER_QA_COMPLETE_TEMP_RESIDUE_ZERO",
     "evidence_head": "f33f48a882355eecfea5c510485a664d96604578"
   }
+},
+{
+  "sequence": 1945,
+  "event_id": "evt_f20_1945_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_START",
+  "subject_ref": "F-20/U01-R25",
+  "occurred_at": "2026-10-01T19:04:53+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "83F689DA02CB2D180B534A0468ACAC3D3A94025CCDF8D5AA1E313B09E893D133",
+  "details": {
+    "path": "docs/work_orders/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_WORK_INSTRUCTION.md",
+    "sha256": "DE9BA51EFCA117E84A52C4B93029EEEC130F53AF0E23D9959B70952D34E53FF7",
+    "invocation_path": "docs/work_orders/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_INVOCATION.md",
+    "invocation_sha256": "1816D1B22F05477F3B01D40C68F841A51FF3AE8B129BAEC619C15574DE66465E",
+    "classification": "MAIN_INTERNAL_APPROVED_SCOPE",
+    "parent_work_instruction": "docs/work_orders/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_WORK_INSTRUCTION.md",
+    "revision_reason": "U01_DASHBOARD_ACCESSIBILITY_BROWSER_QA"
+  }
+},
+{
+  "sequence": 1946,
+  "event_id": "evt_f20_1946_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_START",
+  "subject_ref": "F-20/U01-R25",
+  "occurred_at": "2026-10-01T19:04:53+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "655CCCE5759C7461DC4F1D57564C58A7EE7C4EC287CA6E15B6044A7DB532268D",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r25-r25access1001",
+    "actor_id": "developer-primary-f20-u01-r25",
+    "subject_ref": "F-20/U01-R25",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-01T19:04:53+00:00",
+    "expires_at": "2026-10-02T07:04:53+00:00",
+    "lease_epoch": 39,
+    "fencing_token": "f20-u01-r25-execution-fence-epoch-39-r25access1001",
+    "execution_fencing_token": "f20-u01-r25-execution-fence-epoch-39-r25access1001",
+    "baseline_git_commit": "53db69408bb00e7bd9b3dba3f1fd153ca50f2868",
+    "dispatch_head": "53db69408bb00e7bd9b3dba3f1fd153ca50f2868",
+    "path_scope": [
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "docs/04_test_reports/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_RESULT.md"
+    ]
+  }
+},
+{
+  "sequence": 1947,
+  "event_id": "evt_f20_1947_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_START",
+  "subject_ref": "F-20/U01-R25",
+  "occurred_at": "2026-10-01T19:04:53+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "B8DE077B498837AAE2B13C199517121EFEA742F2CE2C78A7BC21FE51069A7785",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r25-r25access1001",
+    "actor_id": "developer-primary-f20-u01-r25",
+    "subject_ref": "F-20/U01-R25",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-01T19:04:53+00:00",
+    "expires_at": "2026-10-02T07:04:53+00:00",
+    "lease_epoch": 39,
+    "fencing_token": "f20-u01-r25-write-fence-epoch-39-r25access1001",
+    "execution_fencing_token": "f20-u01-r25-execution-fence-epoch-39-r25access1001",
+    "baseline_git_commit": "53db69408bb00e7bd9b3dba3f1fd153ca50f2868",
+    "dispatch_head": "53db69408bb00e7bd9b3dba3f1fd153ca50f2868",
+    "path_scope": [
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "docs/04_test_reports/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r25-r25access1001",
+    "write_epoch": 39,
+    "write_fencing_token": "f20-u01-r25-write-fence-epoch-39-r25access1001"
+  }
+},
+{
+  "sequence": 1948,
+  "event_id": "evt_f20_1948_package_resumed",
+  "event_type": "PACKAGE_RESUMED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_START",
+  "subject_ref": "F-20/U01-R25",
+  "occurred_at": "2026-10-01T19:04:53+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "73B15BB9A970F227F6EB8B4DB1633C688C1CAEB7712C6C7D4C0EF522BAC86DA4",
+  "details": {
+    "worker_lease_id": "worker-lease-f20-u01-r25-r25access1001",
+    "write_lease_id": "write-lease-f20-u01-r25-r25access1001",
+    "work_instruction_sha256": "DE9BA51EFCA117E84A52C4B93029EEEC130F53AF0E23D9959B70952D34E53FF7",
+    "invocation_sha256": "1816D1B22F05477F3B01D40C68F841A51FF3AE8B129BAEC619C15574DE66465E",
+    "package_status": "REWORK_IN_PROGRESS",
+    "accepted": false
+  }
 }
   ],
-  "last_event_id": "evt_f20_1944_worker_lease_revoked"
+  "last_event_id": "evt_f20_1948_package_resumed"
 }

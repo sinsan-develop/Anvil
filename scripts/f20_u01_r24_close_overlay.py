@@ -31,7 +31,9 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, REPORT,
                  "docs/work_orders/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_WORK_INSTRUCTION.md",
                  "docs/work_orders/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_INVOCATION.md",
                  "scripts/f20_u01_r24_close_overlay.py",
+                 "scripts/f20_u01_r25_start_overlay.py",
                  "tests/tooling/test_f20_u01_r24_close_projection.py",
+                 "tests/tooling/test_f20_u01_r25_start_projection.py",
                  "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
