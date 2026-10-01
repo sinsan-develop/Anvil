@@ -26,6 +26,9 @@ const progressStages = new Set([
   'PRE_AUTH_LOADING_RELEASE',
   'PRE_AUTH_FETCH', 'PRE_AUTH_CARD_CHECK', 'OIDC_AUTH_REQUEST',
   'OIDC_ISSUER_REDIRECT', 'OIDC_CALLBACK', 'OIDC_SESSION', 'OIDC_COOKIE',
+  'EMPTY_ALERT_FETCH', 'EMPTY_DASHBOARD_FETCH', 'EMPTY_DOCUMENT', 'EMPTY_CARD',
+  'EMPTY_RESPONSES', 'EMPTY_ASSERT', 'SEED_CONTROL',
+  'ERROR_DOCUMENT', 'ERROR_CARD', 'ERROR_RESPONSES', 'ERROR_ASSERT',
   'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_RESPONSES',
   'STORED_ALERT_WAIT',
   'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
@@ -92,6 +95,59 @@ function validateRevokedNextAction(status, cardText, rowCount) {
   'R20_REVOKED_ACTION_MISMATCH');
   return { revokedDashboardStatus: status, revokedActionCount: rowCount,
     revokedActionCleared: true };
+}
+
+function validateEmptyDashboard(api, alertText, actionText, alertRows, actionRows) {
+  assert.ok(api.alertStatus === 200 && Array.isArray(api.alerts) && api.alerts.length === 0
+    && api.actionStatus === 200 && Array.isArray(api.actions) && api.actions.length === 0
+    && api.storedCount === 0 && alertRows === 0 && actionRows === 0
+    && alertText.includes('이 페이지에 저장된 Critical 기록 없음')
+    && actionText.includes('현재 관측된 다음 조치 0건')
+    && !alertText.includes('BLOCKED') && !alertText.includes('UNAVAILABLE')
+    && !actionText.includes('BLOCKED') && !actionText.includes('UNAVAILABLE'),
+  'R24_EMPTY_STATE_MISMATCH');
+  return { emptyCriticalAlerts: true, emptyNextActions: true, emptyIsObserved: true };
+}
+
+function validateDashboardError(view) {
+  assert.ok(view.count === 1 && view.status === 503
+    && view.alerts.includes('이 페이지에 저장된 Critical 기록 없음')
+    && view.actions.includes('UNAVAILABLE')
+    && view.actions.includes('다음 조치를 확인할 수 없습니다.')
+    && !view.actions.includes('0건')
+    && view.queue.includes('UNAVAILABLE') && !view.queue.includes('HEALTHY')
+    && view.independentBefore.length > 0
+    && view.independentAfter === view.independentBefore
+    && !view.dom.includes('r24-private-error-body-marker'),
+  'R24_ERROR_STATE_MISMATCH');
+  return { errorIsNotZero: true, independentCardsPreserved: true, errorBodyHidden: true };
+}
+
+async function injectSingleDashboardError(page, origin, work) {
+  let count = 0;
+  const handler = async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.origin !== origin || url.pathname !== '/api/dashboard/operations'
+      || request.method() !== 'GET') {
+      await route.continue();
+      return;
+    }
+    count += 1;
+    if (count !== 1) {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({ status: 503, contentType: 'application/json',
+      body: '{"error":"r24-private-error-body-marker"}' });
+  };
+  await page.route('**/api/dashboard/operations', handler);
+  try {
+    const value = await work();
+    return { count, value };
+  } finally {
+    await page.unrouteAll({ behavior: 'wait' });
+  }
 }
 
 function containsEvidenceSecret(value, markers) {
@@ -620,6 +676,67 @@ async function main() {
     const cookie = (await context.cookies(apiUrl)).find(({ name }) => name === 'anvil_session');
     assert.ok(cookie?.secure && cookie?.httpOnly);
 
+    markStage('EMPTY_ALERT_FETCH');
+    const emptyAlerts = await fetchOnPage(page, '/api/operations/alerts');
+    markStage('EMPTY_DASHBOARD_FETCH');
+    const emptyDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    await readyDashboard(page, 'reload', apiUrl, 'EMPTY', responseCaptures);
+    markStage('EMPTY_CARD');
+    const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+    await nextCard.waitFor({ state: 'visible' });
+    await card.getByText('이 페이지에 저장된 Critical 기록 없음').waitFor();
+    await nextCard.getByText('현재 관측된 다음 조치 0건', { exact: false }).waitFor();
+    const emptyAlertText = await card.innerText();
+    const emptyActionText = await nextCard.innerText();
+    const emptyAlertRows = await card.locator('li').count();
+    const emptyActionRows = await nextCard.locator('li').count();
+    markStage('EMPTY_ASSERT');
+    assert.ok(emptyAlertText.includes('이 페이지에 저장된 Critical 기록 없음')
+      && emptyActionText.includes('현재 관측된 다음 조치 0건'),
+    'R24_EMPTY_STATE_MISMATCH');
+    const providerCard = page.locator('section[aria-labelledby="health-heading"]')
+      .locator('article.status-card').filter({ hasText: 'LLM Providers' });
+    await page.waitForFunction(() => {
+      const card = [...document.querySelectorAll('section[aria-labelledby="health-heading"] article.status-card')]
+        .find((item) => item.textContent?.includes('LLM Providers'));
+      return card && !card.textContent?.includes('조회 중입니다.');
+    });
+    const independentBefore = await providerCard.innerText();
+
+    const errorResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.origin === apiUrl && url.pathname === '/api/dashboard/operations'
+        && response.status() === 503;
+    }, { timeout: 10000 });
+    const injectedFlow = await injectSingleDashboardError(page, apiUrl,
+      () => readyDashboard(page, 'reload', apiUrl, 'ERROR', responseCaptures));
+    const injected = await errorResponse;
+    markStage('ERROR_ASSERT');
+    await nextCard.getByText('UNAVAILABLE', { exact: true }).waitFor();
+    await card.getByText('이 페이지에 저장된 Critical 기록 없음').waitFor();
+    const errorEvidence = validateDashboardError({
+      count: injectedFlow.count, status: injected.status(),
+      alerts: await card.innerText(), actions: await nextCard.innerText(),
+      queue: await page.locator('section[aria-labelledby="health-heading"]')
+        .locator('article.status-card').filter({ hasText: 'Queue' }).first().innerText(),
+      independentBefore,
+      independentAfter: await providerCard.innerText(),
+      dom: await page.locator('body').innerText(),
+    });
+    markStage('SEED_CONTROL');
+    const seed = await issuerClient.post(new URL('/r6-control/seed', issuerUrl).href, {
+      headers: { 'x-r6-control-token': controlToken },
+    });
+    assert.equal(seed.status(), 200, 'R24_SEED_FAILED');
+    const seedResult = await seed.json();
+    assert.deepEqual(seedResult, { before_count: 0, seeded_count: 1 }, 'R24_SEED_FAILED');
+    const emptyEvidence = validateEmptyDashboard({
+      alertStatus: emptyAlerts.status, alerts: JSON.parse(emptyAlerts.text).data.alerts,
+      actionStatus: emptyDashboard.status,
+      actions: JSON.parse(emptyDashboard.text).data.next_actions,
+      storedCount: seedResult.before_count,
+    }, emptyAlertText, emptyActionText, emptyAlertRows, emptyActionRows);
+
     markStage('STORED_ALERT_FETCH');
     const stored = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(stored.status, 200);
@@ -640,7 +757,6 @@ async function main() {
     const rowMatches = rowText.includes(expectedEntity) && rowText.includes(expectedCause);
     assert.ok(rowMatches);
     markStage('STORED_NEXT_ACTION');
-    const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
     await nextCard.waitFor({ state: 'visible' });
     await nextCard.locator('li').filter({ hasText: expectedAction.action }).waitFor();
     const actionRow = nextCard.locator('li');
@@ -711,7 +827,7 @@ async function main() {
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
       ...storedActionEvidence, ...revokedActionEvidence,
-      ...loadingEvidence,
+      ...loadingEvidence, ...emptyEvidence, ...errorEvidence, r23Regression: true,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
       pageRequestCount: requests.length, appApiRequestCount,
       ...(diagnosticDrain ? {
@@ -739,6 +855,58 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(validateEmptyDashboard(
+    { alertStatus: 200, alerts: [], actionStatus: 200, actions: [], storedCount: 0 },
+    '이 페이지에 저장된 Critical 기록 없음',
+    '현재 관측된 다음 조치 0건 · 전체 범위의 부재는 확인되지 않았습니다.',
+    0, 0), { emptyCriticalAlerts: true, emptyNextActions: true, emptyIsObserved: true });
+  for (const altered of [
+    { alertStatus: 401, alerts: [], actionStatus: 200, actions: [], storedCount: 0 },
+    { alertStatus: 200, alerts: [], actionStatus: 503, actions: [], storedCount: 0 },
+    { alertStatus: 200, alerts: [], actionStatus: 200, actions: [], storedCount: 1 },
+  ]) assert.throws(() => validateEmptyDashboard(altered,
+    '이 페이지에 저장된 Critical 기록 없음', '현재 관측된 다음 조치 0건', 0, 0),
+  /R24_EMPTY_STATE_MISMATCH/);
+  const errorView = { count: 1, status: 503,
+    alerts: '이 페이지에 저장된 Critical 기록 없음',
+    actions: 'UNAVAILABLE\n다음 조치를 확인할 수 없습니다.',
+    queue: 'UNAVAILABLE\nQueue 상태 정보를 확인할 수 없습니다.',
+    independentBefore: '등록 9 / 9', independentAfter: '등록 9 / 9',
+    dom: 'safe dashboard' };
+  assert.deepEqual(validateDashboardError(errorView), {
+    errorIsNotZero: true, independentCardsPreserved: true, errorBodyHidden: true,
+  });
+  for (const changed of [
+    { ...errorView, count: 2 }, { ...errorView, status: 200 },
+    { ...errorView, actions: '현재 관측된 다음 조치 0건' },
+    { ...errorView, queue: 'HEALTHY' },
+    { ...errorView, alerts: 'UNAVAILABLE' },
+    { ...errorView, independentAfter: 'UNAVAILABLE' },
+    { ...errorView, dom: 'r24-private-error-body-marker' },
+  ]) assert.throws(() => validateDashboardError(changed), /R24_ERROR_STATE_MISMATCH/);
+  const routeCalls = [];
+  let injectedHandler;
+  const routePage = {
+    route: async (_path, handler) => { injectedHandler = handler; },
+    unrouteAll: async ({ behavior }) => { routeCalls.push(`drain:${behavior}`); },
+  };
+  const requestRoute = () => ({
+    request: () => ({ url: () => apiUrl + '/api/dashboard/operations', method: () => 'GET' }),
+    fulfill: async ({ status, body }) => { routeCalls.push(`fulfill:${status}`);
+      assert.equal(body, '{"error":"r24-private-error-body-marker"}'); },
+    continue: async () => { routeCalls.push('continue'); },
+  });
+  const injection = await injectSingleDashboardError(routePage, apiUrl, async () => {
+    await injectedHandler(requestRoute());
+    return 'done';
+  });
+  assert.deepEqual(injection, { count: 1, value: 'done' });
+  assert.deepEqual(routeCalls, ['fulfill:503', 'drain:wait']);
+  routeCalls.length = 0;
+  await assert.rejects(injectSingleDashboardError(routePage, apiUrl,
+    async () => { throw new Error('expected-route-work-failure'); }),
+  /expected-route-work-failure/);
+  assert.deepEqual(routeCalls, ['drain:wait']);
   assert.deepEqual(cardsStillPending(new Set(['PROVIDER_API'])),
     ['ALERTS', 'NEXT_ACTIONS']);
   assert.deepEqual(cardsStillPending(new Set(['PROVIDER_API', 'ALERT_API'])),

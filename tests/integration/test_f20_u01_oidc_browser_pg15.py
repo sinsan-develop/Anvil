@@ -55,6 +55,9 @@ _BROWSER_STAGES = frozenset({
     "PRE_AUTH_KEYBOARD", "PRE_AUTH_LOADING_RELEASE",
     "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH_REQUEST",
     "OIDC_ISSUER_REDIRECT", "OIDC_CALLBACK", "OIDC_SESSION", "OIDC_COOKIE",
+    "EMPTY_ALERT_FETCH", "EMPTY_DASHBOARD_FETCH", "EMPTY_DOCUMENT", "EMPTY_CARD",
+    "EMPTY_RESPONSES", "EMPTY_ASSERT", "SEED_CONTROL",
+    "ERROR_DOCUMENT", "ERROR_CARD", "ERROR_RESPONSES", "ERROR_ASSERT",
     "STORED_ALERT_FETCH", "STORED_DOCUMENT", "STORED_CARD", "STORED_RESPONSES",
     "STORED_ALERT_WAIT",
     "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DOCUMENT",
@@ -344,6 +347,26 @@ def _r23_loading_evidence(evidence: dict) -> dict:
     return actual
 
 
+def _r24_empty_evidence(evidence: dict) -> dict:
+    expected = {"emptyCriticalAlerts": True, "emptyNextActions": True,
+                "emptyIsObserved": True}
+    actual = {key: evidence.get(key) for key in expected}
+    assert all(type(actual[key]) is bool and actual[key] is True for key in expected), (
+        "R24_EMPTY_BROWSER_EVIDENCE_MISMATCH"
+    )
+    return actual
+
+
+def _r24_error_evidence(evidence: dict) -> dict:
+    expected = {"errorIsNotZero": True, "independentCardsPreserved": True,
+                "errorBodyHidden": True, "r23Regression": True}
+    actual = {key: evidence.get(key) for key in expected}
+    assert all(type(actual[key]) is bool and actual[key] is True for key in expected), (
+        "R24_ERROR_BROWSER_EVIDENCE_MISMATCH"
+    )
+    return actual
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict, evidence_dir: Path | None = None) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -440,6 +463,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
     pending_socket = None
     created = False
     seeded = False
+    seeded_alerts = []
     revoke_count = [0]
     control_token = secrets.token_urlsafe(32)
     try:
@@ -504,6 +528,21 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             revoke_count[0] += 1
             return {"status": "revoked"}
 
+        @issuer_app.post("/r6-control/seed")
+        async def seed(request: Request):
+            if not hmac.compare_digest(request.headers.get("x-r6-control-token", ""), control_token):
+                return JSONResponse({"error": "forbidden"}, status_code=403)
+            if seeded_alerts:
+                return JSONResponse({"error": "already_seeded"}, status_code=409)
+            with engine.connect() as db:
+                count = db.execute(sa.text("SELECT count(*) FROM operations_audit_events")).scalar_one()
+            assert count == 0 and owner.alerts() == [], "R24_PG_NOT_EMPTY"
+            assert owner.detect() == 1, "R6_PG_ALERT_SEED_FAILED"
+            snapshot = owner.alerts()
+            assert [alert["code"] for alert in snapshot] == [_ALERT_CODE]
+            seeded_alerts.append(snapshot)
+            return {"before_count": count, "seeded_count": len(snapshot)}
+
         listeners.append(_listener(issuer_app, issuer_cert, issuer_key))
         issuer_url = listeners[0][3] + "/realms/anvil"
         with engine.begin() as db:
@@ -530,9 +569,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         owner = OperationsService("project-1", "wsl-qa",
             OperationsSources(leases=leases, lease_run_ids=("r6-run",)),
             repository=PostgresOperationsRepository(repository_dsn), clock=lambda: at)
-        assert owner.detect() == 1, "R6_PG_ALERT_SEED_FAILED"
-        before = owner.alerts()
-        assert [alert["code"] for alert in before] == [_ALERT_CODE]
+        assert owner.alerts() == [], "R24_PG_NOT_EMPTY"
         api_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         pending_socket = api_socket
         api_socket.bind(("127.0.0.1", 0))
@@ -566,8 +603,12 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             raise
         pending_socket = None
         assert listeners[1][3] == api_url
-        evidence = _node_flow(api_url, issuer_url, control_token, dsn, before[0], evidence_dir)
+        evidence = _node_flow(api_url, issuer_url, control_token, dsn, _TEST_ALERT, evidence_dir)
+        assert len(seeded_alerts) == 1, "R24_SEED_MISSING"
+        before = seeded_alerts[0]
         loading_evidence = _r23_loading_evidence(evidence)
+        empty_evidence = _r24_empty_evidence(evidence)
+        error_evidence = _r24_error_evidence(evidence)
         assert evidence.get("pageRequestCount", 0) > 0, "R6_PAGE_NETWORK_EMPTY"
         assert evidence.get("appApiRequestCount", 0) > 0, "R6_API_NETWORK_EMPTY"
         diagnostic_keys = {"diagnosticDrainMode", "diagnosticNonOkDrainCount",
@@ -583,7 +624,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             assert not artifact_keys.intersection(evidence), "R6_EVIDENCE_OUTPUT_UNEXPECTED"
         checked = {key: value for key, value in evidence.items()
                    if key not in {"pageRequestCount", "appApiRequestCount"}
-                   | diagnostic_keys | artifact_keys | set(loading_evidence)}
+                   | diagnostic_keys | artifact_keys | set(loading_evidence) | set(empty_evidence)
+                   | set(error_evidence)}
         assert checked == {
             "preAuthStatus": 401, "authorizationStatus": 200, "callbackStatus": 200,
             "sessionAuthenticated": True, "cookieSecure": True, "cookieHttpOnly": True,
@@ -950,6 +992,28 @@ def test_r23_loading_browser_evidence_is_exact_and_fail_closed():
             _r23_loading_evidence({**expected, key: bad})
     with pytest.raises(AssertionError, match="R23_LOADING_BROWSER_EVIDENCE_MISMATCH"):
         _r23_loading_evidence({**expected, "loadingCardCount": True})
+
+
+def test_r24_empty_browser_evidence_requires_real_observed_zero():
+    expected = {"emptyCriticalAlerts": True, "emptyNextActions": True,
+                "emptyIsObserved": True}
+    assert _r24_empty_evidence(expected) == expected
+    for key in expected:
+        with pytest.raises(AssertionError, match="R24_EMPTY_BROWSER_EVIDENCE_MISMATCH"):
+            _r24_empty_evidence({**expected, key: False})
+    with pytest.raises(AssertionError, match="R24_EMPTY_BROWSER_EVIDENCE_MISMATCH"):
+        _r24_empty_evidence({**expected, "emptyCriticalAlerts": 1})
+
+
+def test_r24_error_browser_evidence_requires_isolated_failure():
+    expected = {"errorIsNotZero": True, "independentCardsPreserved": True,
+                "errorBodyHidden": True, "r23Regression": True}
+    assert _r24_error_evidence(expected) == expected
+    for key in expected:
+        with pytest.raises(AssertionError, match="R24_ERROR_BROWSER_EVIDENCE_MISMATCH"):
+            _r24_error_evidence({**expected, key: False})
+    with pytest.raises(AssertionError, match="R24_ERROR_BROWSER_EVIDENCE_MISMATCH"):
+        _r24_error_evidence({**expected, "errorBodyHidden": 1})
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):
