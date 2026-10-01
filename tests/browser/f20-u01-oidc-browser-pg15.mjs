@@ -502,6 +502,21 @@ const loadingPaths = new Map([
   ['/api/dashboard/operations', 'DASHBOARD_API'],
 ]);
 
+function validateObservationTime(view, expected) {
+  assert.ok(view.live === 'polite' && view.atomic === 'true'
+    && view.text === `대시보드 관측 시각 · ${expected}`,
+  'R26_OBSERVATION_TIME_MISMATCH');
+  return { observationTimeAccessible: true };
+}
+
+async function verifyObservationTime(page, expected) {
+  const observation = page.locator('.dashboard-heading p[aria-live]');
+  await page.locator('.dashboard-heading').getByText(
+    `대시보드 관측 시각 · ${expected}`, { exact: true }).waitFor();
+  return validateObservationTime({ live: await observation.getAttribute('aria-live'),
+    atomic: await observation.getAttribute('aria-atomic'), text: await observation.innerText() }, expected);
+}
+
 function validateLoadingFacts(facts) {
   const names = ['Database', 'Queue', 'Worker', 'LLM Providers',
     'Execution Backends', 'Artifact Store'];
@@ -625,6 +640,7 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
       await boundedCapture(() => Promise.all([...pending.values()].map((gate) => gate.requested)), 10000);
       markStage('PRE_AUTH_LOADING_DOM');
       const loading = validateLoadingFacts(await loadingFacts(page));
+      await verifyObservationTime(page, '조회 중');
       markStage('PRE_AUTH_KEYBOARD');
       const keyboard = await verifyDashboardKeyboard(page, observed.size === loadingPaths.size);
       markStage('PRE_AUTH_LOADING_RELEASE');
@@ -643,6 +659,7 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
           assert.equal(await page.locator(`section[aria-labelledby="${selector}"]`)
             .locator('[aria-live] p').first().innerText(), 'LOADING', 'R23_EARLY_SETTLEMENT');
         }
+        if (!released.has('DASHBOARD_API')) await verifyObservationTime(page, '조회 중');
       }
       assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()),
         'Dashboard', 'R25_LOADING_KEYBOARD_MISMATCH');
@@ -767,6 +784,7 @@ async function main() {
     assert.equal(preAuthDashboard.status, 401, 'R25_PRE_AUTH_ACCESSIBILITY_MISMATCH');
     const preAuthNext = page.locator('section[aria-labelledby="next-actions-heading"]');
     await preAuthNext.getByText('BLOCKED', { exact: true }).waitFor();
+    await verifyObservationTime(page, '조회 차단');
     const preAuthAlertLive = card.locator('[aria-live]');
     const preAuthActionLive = preAuthNext.locator('[aria-live]');
     const preAuthAlertText = await preAuthAlertLive.innerText();
@@ -904,6 +922,11 @@ async function main() {
     assert.equal(storedDashboard.status, 200, 'R20_NEXT_ACTION_MISMATCH');
     const dashboardActions = JSON.parse(storedDashboard.text).data.next_actions;
     const storedReady = await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
+    const storedObservedAt = JSON.parse(storedReady.dashboardResponse.value.body).data.observed_at;
+    assert.ok(/^\d{4}-\d{2}-\d{2}T/.test(storedObservedAt)
+      && Number.isFinite(Date.parse(storedObservedAt)) && Date.parse(storedObservedAt) <= Date.now(),
+    'R26_OBSERVATION_TIME_MISMATCH');
+    await verifyObservationTime(page, storedObservedAt);
     markStage('STORED_ALERT_WAIT');
     await card.getByText(alertCode, { exact: true }).waitFor();
     const visibleBeforeRevoke = await card.getByText(alertCode, { exact: true }).count() === 1;
@@ -957,6 +980,7 @@ async function main() {
     markStage('REVOKE_DASHBOARD_FETCH');
     const revokedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
+    await verifyObservationTime(page, '조회 차단');
     markStage('REVOKE_CLEAR');
     await card.getByText('BLOCKED', { exact: true }).waitFor();
     await card.getByText('조회 차단', { exact: false }).waitFor();
@@ -1045,6 +1069,14 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(validateObservationTime({ live: 'polite', atomic: 'true',
+    text: '대시보드 관측 시각 · 조회 중' }, '조회 중'), { observationTimeAccessible: true });
+  assert.throws(() => validateObservationTime({ live: 'polite', atomic: 'true',
+    text: '대시보드 관측 시각 · JUST NOW' }, '2026-09-30T00:00:00+00:00'),
+  /R26_OBSERVATION_TIME_MISMATCH/);
+  assert.throws(() => validateObservationTime({ live: null, atomic: 'true',
+    text: '대시보드 관측 시각 · 조회 차단' }, '조회 차단'),
+  /R26_OBSERVATION_TIME_MISMATCH/);
   assert.deepEqual(validateEmptyErrorAccessibility({ emptyAlertLive: 'polite',
     emptyActionLive: 'polite', emptyAlertText: '이 페이지에 저장된 Critical 기록 없음',
     emptyActionText: '현재 관측된 다음 조치 0건', errorAlertText: '이 페이지에 저장된 Critical 기록 없음',

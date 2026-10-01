@@ -457,6 +457,41 @@ const observedHealth = (state, overrides = {}) => ({
 const renderDatabase = (readiness, operations) => renderToStaticMarkup(
   React.createElement(consoleApp.DatabaseHealthCard, {value: readiness, operations}));
 
+const renderObservationTime = (operations) => renderToStaticMarkup(
+  React.createElement(consoleApp.DashboardObservationTime, {value: operations}));
+
+test('Dashboard observation time shows only the validated operations timestamp and keeps Queue unchanged', async () => {
+  const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  assert.equal(state.observedAt, '2026-09-30T00:00:00+00:00');
+  assert.match(renderObservationTime(state), /aria-live="polite" aria-atomic="true"[^>]*>대시보드 관측 시각 · 2026-09-30T00:00:00\+00:00/);
+  assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state})),
+    /범위 내 관측 1건/);
+  assert.doesNotMatch(renderObservationTime(state), /JUST NOW|private-job-id|private-run-id/);
+});
+
+test('Dashboard observation time distinguishes loading, denied, unavailable and future snapshots', async () => {
+  assert.match(renderObservationTime({status: 'LOADING'}), /대시보드 관측 시각 · 조회 중/);
+  for (const status of [401, 403, 503]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => 'private-secret'}));
+    assert.match(renderObservationTime(state), status === 503
+      ? /대시보드 관측 시각 · 확인 불가/ : /대시보드 관측 시각 · 조회 차단/);
+    assert.doesNotMatch(renderObservationTime(state), /private-secret|JUST NOW|2026-09-30/);
+  }
+  for (const observed_at of ['2999-01-01T00:00:00+00:00', 'invalid']) {
+    const snapshot = {...dashboardSnapshot([], []), observed_at};
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    assert.match(renderObservationTime(state), /대시보드 관측 시각 · 확인 불가/);
+    assert.doesNotMatch(renderObservationTime(state), /2999|invalid|JUST NOW/);
+  }
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /마지막 확인 · NOT REQUESTED/);
+  assert.match(html, /대시보드 관측 시각 · 조회 중/);
+});
+
 test('Database card uses the existing operations request for health and keeps migration readiness separate', async () => {
   for (const status of ['HEALTHY', 'LATE', 'EXPIRED']) {
     const snapshot = dashboardSnapshot([dashboardQueueRow()], []);

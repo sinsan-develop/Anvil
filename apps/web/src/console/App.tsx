@@ -14,7 +14,7 @@ type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
 type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
-type DashboardQueueState = {status: 'LOADED'; observed: number; sourceGap: boolean;
+type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: string | null; sourceGap: boolean;
   health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
   nextActions: NextActionsState}
   | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
@@ -167,6 +167,7 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
   return {status: 'LOADED', observed: snapshot.queue.length,
+    observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
     nextActions: dashboardNextActions(snapshot.next_actions),
     database: dashboardDatabaseSignal((snapshot.health as Record<string, unknown>).database,
@@ -214,6 +215,13 @@ export async function loadDashboardQueue(signal: AbortSignal, request: typeof fe
   } catch {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
+}
+
+export function DashboardObservationTime({value}: {value: DashboardQueueState}) {
+  const observation = value.status === 'LOADED' && value.observedAt !== null
+    ? value.observedAt : value.status === 'LOADING' ? '조회 중'
+      : value.status === 'BLOCKED' ? '조회 차단' : '확인 불가';
+  return <p aria-live="polite" aria-atomic="true">대시보드 관측 시각 · {observation}</p>;
 }
 
 export function QueueHealthCard({value}: {value: DashboardQueueState}) {
@@ -562,7 +570,8 @@ function Shell({route}: AppProps) {
       <header className="app-header"><p>Dashboard / Overview</p><p>Environment · NOT CONNECTED</p>
         <div className="header-actions"><span>알림 · UNAVAILABLE</span><span>권한 · 미확인</span></div></header>
       {currentRoute === '/' ? <main className="dashboard">
-        <div className="dashboard-heading"><h1>Dashboard</h1><p>마지막 확인 · {checked}</p></div>
+        <div className="dashboard-heading"><h1>Dashboard</h1><div><p>마지막 확인 · {checked}</p>
+          <DashboardObservationTime value={dashboardQueue}/></div></div>
         <section aria-labelledby="health-heading"><h2 id="health-heading">Health</h2>
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
