@@ -10,6 +10,11 @@ from scripts import f20_u01_r23_close_overlay as overlay
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_r23_close_allows_only_the_next_r24_plan_document():
+    assert "docs/04_test_reports/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_PLAN.md" in overlay.CONTROL_SCOPE
+    assert "tests/browser/f20-u01-oidc-browser-pg15.mjs" not in overlay.CONTROL_SCOPE
+
+
 def test_r23_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
