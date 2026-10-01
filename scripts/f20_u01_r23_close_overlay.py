@@ -27,6 +27,8 @@ MANIFEST = "docs/evidence/manifests/F-20_U01_R23_LOADING_BROWSER_QA_CLOSE_MANIFE
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, REPORT,
                  prior.WI, prior.INVOCATION,
                  "docs/04_test_reports/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_PLAN.md",
+                 "docs/work_orders/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_INVOCATION.md",
                  "scripts/f20_u01_r23_start_overlay.py",
                  "tests/tooling/test_f20_u01_r23_start_projection.py",
                  "scripts/f20_u01_r23_close_overlay.py",

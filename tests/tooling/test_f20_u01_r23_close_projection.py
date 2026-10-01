@@ -15,6 +15,12 @@ def test_r23_close_allows_only_the_next_r24_plan_document():
     assert "tests/browser/f20-u01-oidc-browser-pg15.mjs" not in overlay.CONTROL_SCOPE
 
 
+def test_r23_close_allows_r24_instruction_without_product_write():
+    assert "docs/work_orders/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_WORK_INSTRUCTION.md" in overlay.CONTROL_SCOPE
+    assert "docs/work_orders/F-20_U01_R24_EMPTY_ERROR_BROWSER_QA_INVOCATION.md" in overlay.CONTROL_SCOPE
+    assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
+
+
 def test_r23_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
