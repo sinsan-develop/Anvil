@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` (Developer의 로컬 exact3 범위) — R25 로컬 TDD·회귀·정리를 마쳤다. WSL-server 동일 SHA의 실제 PG15/OIDC/Chromium opt-in은 Main 소유이며 아직 `NOT_EXECUTED`다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, U-01/F-20 미수락을 유지한다.
+`COMPLETED` (Developer의 로컬 exact3 범위), R25 좁은 접근성 브라우저 QA `PASS` — 로컬 TDD·회귀·정리를 마쳤고 Main이 동일 clean SHA의 WSL-server 격리 PG15/OIDC/HTTPS/Chromium opt-in과 PNG·Network를 독립 확인했다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, U-01/F-20 미수락을 유지한다.
 
 ## 기준·변경·검증
 
@@ -30,10 +30,18 @@
 
 Python3.14 subprocess 핸들 오류는 이번 실행에서 보지 않았고 설치된 Python3.13으로 검증했다. `D:\tmp\anvil-u01-r25-dev-pytest`는 생성 전 부재·일반 디렉터리였고 내부 symlink 3개의 target이 전부 이 경로 안임을 확인했다. 세 link를 제거한 뒤 전용 pytest root와 생성 전 부재였던 일반 디렉터리 `apps/web/dist`만 제거했다. 두 경로 잔여 0을 확인했다. 기존 `.venv`, `node_modules`, `.pytest_cache`, Main 소유 `docs/WORK_STATUS.md`는 보존했다. 작업 오류 횟수: Windows 기본 sandbox ACL helper 실패 2회(실행 설정으로 해결), TDD 예상 RED 각 1회, 정식 구현 실패 0회.
 
+## Main 제공 WSL-server 실제 QA·정리 증거
+
+- Main이 기존 branch에 commit/private push한 정확한 clean SHA는 `d24bb66bbe9dafabf555880bfacdadd917029ede`다. WSL-server 격리 PG15/OIDC/HTTPS/Chromium opt-in은 exit 0, `1 passed, 25 deselected, 2 deprecation warnings in 8.64s`였다. R25 boolean fact 4개와 기존 R23/R24 API·DB·DOM·Network·Secret 단언이 함께 통과했다. 이는 Main 실행·검증 결과이며 Developer가 WSL에서 직접 실행한 결과가 아니다.
+- 준비 중 전용 checkout의 첫 `git clone`은 원격 이름이 기본 `origin`이어서 G-05 `F20_U01_R25_GIT_INVALID` exit 1이었다. Main이 전용 checkout의 원격 이름을 canonical `development`로 바로잡아 동일 SHA clean/G-05 seq1948 PASS를 확인했다. Python editable 설치는 저장소 flat-layout 자동 검색 오류로 exit 1이었고, Main은 제품을 변경하지 않고 전용 venv에 선언 의존성을 직접 설치한 뒤 실제 opt-in을 통과시켰다.
+- Main의 독립 PNG 3개 육안 확인: 인증 전 보호 카드 비노출·차단, 저장 Critical Alerts와 Next Actions 각 1행, 철회 뒤 `BLOCKED`와 저장 행 제거. Network JSON은 선언/실제 요청 `46/46`, app API `28`, HTTPS loopback origin `1`, URL userinfo/query/fragment `0`이다.
+- 증거 SHA-256: pre-auth PNG `6c209c479a221377b13756d1e965df4eeb2081d5cdb54415f5b4c5d07f9541fc`; stored PNG `f2feb815498fc650fb9be42443731c7cd66dee00bb174d8f94ff30a58d284395`; revoked PNG `1696e33d24500a1368e2fee842bae5d61ede0c768c6a05a6a121c8819d0bb691`; Network JSON `d61c0701dec4525308d0aa550177a3188c8480ff717446c29323bc7e744c1921`.
+- Main이 전용 PG/Node/browser container `0`, port 5545 listener `0`, WSL TLS/venv/pytest/evidence/node_modules/dist/checkout `0`, 로컬 visual-review `0`을 신원·경계 검사 후 확인했다. 공유 서비스·기타 DB/컨테이너·ysna/Production 변경은 없었다.
+
 ## 인계·미검증·rollback
 
-Main은 exact3 diff를 독립 검토하고 기존 branch에 commit/private push한 같은 SHA를 WSL-server clean checkout에서 격리 PG15/OIDC/Chromium opt-in으로 실행해야 한다. 이 실행의 실제 DOM/API/Network/PNG 및 WSL 임시자원 잔여 0은 아직 미검증이다. 독립 Tester E-SHOT/E-NET/E-API/E-EVT, U-01 전체 7상태·필터·운영 카드와 Production도 미검증이다. rollback은 R25 exact3 테스트·보고서 diff만 정상 Git revert하며 제품·DB·과거 원장은 건드리지 않는다. canonical progress/HANDOFF/WORK_STATUS는 Main 소유로 Developer 갱신하지 않았다.
+Main의 동일 SHA 실제 검증과 임시자원 정리는 위 범위에서 확인됐다. 이 Developer의 후속 작업은 결과보고서 갱신과 diff 검사까지만이다. 독립 Tester E-SHOT/E-NET/E-API/E-EVT, U-01 전체 7상태·필터·운영 카드와 Production은 미검증이다. rollback은 R25 exact3 테스트·보고서 diff만 정상 Git revert하며 제품·DB·과거 원장은 건드리지 않는다. canonical progress/HANDOFF/WORK_STATUS와 Git 후속 조치는 Main 소유다.
 
 ## 미검증
 
-R25 실제 실행 전이므로 접근성 PASS를 주장하지 않는다. U-01 전체 7상태·필터·운영 카드, 독립 Tester E-SHOT/E-NET/E-API/E-EVT, C30 복구와 F-20 인수는 별도다.
+R25는 연결된 카드의 지정 접근성 흐름만 PASS다. Project/Environment/기간 필터·새로고침 시각, 운영 상태 실데이터·quota/cancel/reconnect, U-01 전체 7상태, 독립 Tester E-SHOT/E-NET/E-API/E-EVT, C30 복구와 F-20 인수는 별도 미충족이다.
