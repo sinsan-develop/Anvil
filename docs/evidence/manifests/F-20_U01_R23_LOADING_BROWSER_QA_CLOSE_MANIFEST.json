@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1938,
+  "accepted": false,
+  "projection_mode": "F20_U01_R23_LOADING_BROWSER_QA_CLOSE",
+  "previous_event_sequence": 1936,
+  "product_write_scope": [],
+  "predecessor_commit": "8f3e5188b8babef2770b837bbc2d80cd059a2a8d",
+  "predecessor_events_sha256": "7EF5239B2BD22550849CFFFC469A4F182F2790043E45727786327169493F51BD",
+  "plan_path": "docs/04_test_reports/F-20_U01_R23_LOADING_BROWSER_QA_PLAN.md",
+  "plan_sha256": "8898A9C9420814656C3E12B74D131AA64D0C318260A59651F385E73B90E5184F",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
