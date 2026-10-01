@@ -390,6 +390,38 @@ async function verifyDashboardKeyboard(page) {
   return { dashboardTabFocused: true, sidebarEnterToggle: true };
 }
 
+function createTrackedRouteHandler(origin, pending, observed) {
+  const active = [];
+  let failed = false;
+  let signalFailure;
+  const failure = new Promise((resolveFailure) => { signalFailure = resolveFailure; });
+  const handler = (route) => {
+    const work = (async () => {
+      const url = new URL(route.request().url());
+      const category = url.origin === origin ? loadingPaths.get(url.pathname) : undefined;
+      if (!category || observed.has(category)) { await route.continue(); return; }
+      observed.set(category, true);
+      const gate = pending.get(category);
+      gate.resolveRequest();
+      await gate.released;
+      await route.continue();
+    })().catch(() => {
+      if (!failed) {
+        failed = true;
+        writeSync(1, 'R23_ROUTE_CONTINUE_FAILED\n');
+        signalFailure();
+      }
+    });
+    active.push(work);
+    return work;
+  };
+  return { handler, failure,
+    async drain() {
+      await Promise.all(active);
+      if (failed) throw new Error('R23_ROUTE_CONTINUE_FAILED');
+    } };
+}
+
 async function holdFirstDashboardRequests(page, origin, navigate) {
   const pending = new Map();
   const observed = new Map();
@@ -400,17 +432,8 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
     const released = new Promise((releaseNow) => { release = releaseNow; });
     pending.set(category, { requested, resolveRequest, released, release });
   }
-  const handler = async (route) => {
-    const url = new URL(route.request().url());
-    const category = url.origin === origin ? loadingPaths.get(url.pathname) : undefined;
-    if (!category || observed.has(category)) { await route.continue(); return; }
-    observed.set(category, true);
-    const gate = pending.get(category);
-    gate.resolveRequest();
-    await gate.released;
-    await route.continue();
-  };
-  await page.route('**/*', handler);
+  const routes = createTrackedRouteHandler(origin, pending, observed);
+  await page.route('**/*', routes.handler);
   try {
     await navigate();
     const evidence = await (async () => {
@@ -426,7 +449,9 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
           new URL(value.url()).origin === origin && responseCategory(value.url()) === category,
         { timeout: 10000 });
         pending.get(category).release();
-        await response;
+        await Promise.race([response, routes.failure.then(() => {
+          throw new Error('R23_ROUTE_CONTINUE_FAILED');
+        })]);
         if (category !== 'ALERT_API') {
           assert.equal(await page.locator('section[aria-labelledby="critical-alerts-heading"]')
             .locator('[aria-live] p').first().innerText(), 'LOADING',
@@ -443,7 +468,8 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
     return evidence;
   } finally {
     for (const gate of pending.values()) gate.release();
-    await page.unroute('**/*', handler);
+    await page.unrouteAll({ behavior: 'wait' });
+    await routes.drain();
   }
 }
 
@@ -709,6 +735,36 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  const testGate = {};
+  testGate.requested = new Promise((resolveRequest) => { testGate.resolveRequest = resolveRequest; });
+  testGate.released = new Promise((release) => { testGate.release = release; });
+  const testPending = new Map([['PROVIDER_API', testGate]]);
+  const testObserved = new Map();
+  const routeTracker = createTrackedRouteHandler(apiUrl, testPending, testObserved);
+  let rejectContinue;
+  const delayedContinue = new Promise((_, reject) => { rejectContinue = reject; });
+  let continueCalls = 0;
+  const unhandled = [];
+  const onUnhandled = (error) => { unhandled.push(error); };
+  process.on('unhandledRejection', onUnhandled);
+  try {
+    const handling = routeTracker.handler({
+      request: () => ({ url: () => apiUrl + '/api/providers' }),
+      continue: () => { continueCalls += 1; return delayedContinue; },
+    });
+    await testGate.requested;
+    testGate.release();
+    const draining = assert.rejects(routeTracker.drain(), /R23_ROUTE_CONTINUE_FAILED/);
+    rejectContinue(new Error('private-route-detail'));
+    await draining;
+    await handling;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(unhandled.length, 0, 'R23_ROUTE_UNHANDLED');
+    assert.equal(continueCalls, 1);
+    assert.equal(testObserved.size, 1);
+  } finally {
+    process.off('unhandledRejection', onUnhandled);
+  }
   const loadingFacts = {
     cards: ['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store']
       .map((name) => ({ name, status: 'LOADING', live: 'polite', atomic: 'true',

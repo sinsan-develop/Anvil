@@ -252,6 +252,12 @@ def _safe_network_diagnostic(output: str) -> str:
     return _safe_response_diagnostic(output) + _safe_probe_diagnostic(output)
 
 
+def _safe_route_diagnostic(output: str) -> str:
+    return (" R23_ROUTE_CONTINUE_FAILED"
+            if re.search(r"^R23_ROUTE_CONTINUE_FAILED\r?$", output, flags=re.MULTILINE)
+            else "")
+
+
 def _diagnostic_drain_mode() -> bool:
     value = os.environ.get("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK")
     assert value in (None, "1"), "R6_DIAG_FLAG_INVALID"
@@ -393,6 +399,7 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
         detail = (_safe_network_diagnostic(result.stdout + "\n" + result.stderr)
                   if stage in _RESPONSE_FAILURE_STAGES else "")
+        detail += _safe_route_diagnostic(result.stdout)
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
                     f"class={error_class}{detail}", pytrace=False)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
@@ -787,6 +794,28 @@ def test_r6_response_capture_failure_reports_only_safe_category_status(monkeypat
     message = str(failure.value)
     assert "stage=NETWORK_RESPONSE_FACTS exit=1 class=Error" in message
     assert "category=ALERT_API status=200 reason=TIMEOUT" in message
+    assert secret not in message
+
+
+def test_r23_route_failure_reports_only_fixed_marker(monkeypatch):
+    secret = "private-route-detail"
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1,
+            stdout="R6_NODE_STARTED\nR6_STAGE PRE_AUTH_LOADING_RELEASE\n"
+                   f"R23_ROUTE_CONTINUE_FAILED\n{secret}",
+            stderr=f"R6_BROWSER_FAILED stage=PRE_AUTH_LOADING_RELEASE class=Error\n{secret}",
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    message = str(failure.value)
+    assert "stage=PRE_AUTH_LOADING_RELEASE exit=1 class=Error" in message
+    assert "R23_ROUTE_CONTINUE_FAILED" in message
     assert secret not in message
 
 
