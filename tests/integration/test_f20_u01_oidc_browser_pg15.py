@@ -396,6 +396,13 @@ def _r24_error_evidence(evidence: dict) -> dict:
     return actual
 
 
+def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
+    assert before_count == 0 and len(snapshot) == 1, "R24_PG_NOT_EMPTY"
+    fields = ("code", "level", "cause", "related_entity_id", "next_action", "deep_link")
+    return {"before_count": before_count, "seeded_count": len(snapshot),
+            "stored_alert": {field: snapshot[0][field] for field in fields}}
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict, evidence_dir: Path | None = None) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -409,11 +416,6 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
                        ANVIL_F20_R6_CONTROL_TOKEN=control_token,
                        ANVIL_F20_R6_ALERT_ENTITY=alert["related_entity_id"],
                        ANVIL_F20_R6_ALERT_CAUSE=alert["cause"])
-    environment["ANVIL_F20_R6_EXPECTED_ACTION_JSON"] = json.dumps({
-        "priority": alert["level"], "reason": alert["cause"],
-        "target": alert["related_entity_id"], "action": alert["next_action"],
-        "deep_link": alert["deep_link"],
-    })
     if _diagnostic_drain_mode():
         environment["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] = "1"
     if evidence_dir is not None:
@@ -571,8 +573,9 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             assert owner.detect() == 1, "R6_PG_ALERT_SEED_FAILED"
             snapshot = owner.alerts()
             assert [alert["code"] for alert in snapshot] == [_ALERT_CODE]
+            result = _r24_seed_result(count, snapshot)
             seeded_alerts.append(snapshot)
-            return {"before_count": count, "seeded_count": len(snapshot)}
+            return result
 
         listeners.append(_listener(issuer_app, issuer_cert, issuer_key))
         issuer_url = listeners[0][3] + "/realms/anvil"
@@ -1016,7 +1019,21 @@ def test_r6_diagnostic_evidence_cannot_be_acceptance(capsys):
     assert "R6_E2E_EVIDENCE " not in output
 
 
-def test_r20_node_receives_only_expected_action_fields_from_stored_alert(monkeypatch):
+def test_r24_seed_control_uses_actual_persisted_action_not_fixture():
+    actual = {"code": _ALERT_CODE, "level": "critical", "cause": _TEST_ALERT["cause"],
+              "related_entity_id": _TEST_ALERT["related_entity_id"],
+              "next_action": "REVIEW_WORKER_TAKEOVER", "deep_link": "/operations/workers",
+              "evidence_hash": "private-not-forwarded"}
+    assert _r24_seed_result(0, [actual]) == {
+        "before_count": 0, "seeded_count": 1,
+        "stored_alert": {key: actual[key] for key in (
+            "code", "level", "cause", "related_entity_id", "next_action", "deep_link")},
+    }
+    assert actual["next_action"] != _TEST_ALERT["next_action"]
+    assert actual["deep_link"] != _TEST_ALERT["deep_link"]
+
+
+def test_r24_node_does_not_forward_fixture_action_as_expected(monkeypatch):
     observed = []
 
     def succeeded(*_args, **kwargs):
@@ -1031,11 +1048,8 @@ def test_r20_node_receives_only_expected_action_fields_from_stored_alert(monkeyp
              "deep_link": "/operations", "evidence_hash": "private-not-forwarded"}
     _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
                "postgresql://isolated@127.0.0.1:5545/isolated", alert)
-    assert json.loads(observed[-1]["ANVIL_F20_R6_EXPECTED_ACTION_JSON"]) == {
-        "priority": "critical", "reason": "Worker lease expiry observed",
-        "target": "r6-run", "action": "REVIEW_WORKER_LEASE", "deep_link": "/operations",
-    }
-    assert "private-not-forwarded" not in observed[-1]["ANVIL_F20_R6_EXPECTED_ACTION_JSON"]
+    assert "ANVIL_F20_R6_EXPECTED_ACTION_JSON" not in observed[-1]
+    assert "private-not-forwarded" not in json.dumps(observed[-1])
 
 
 def test_r23_loading_browser_evidence_is_exact_and_fail_closed():

@@ -89,6 +89,19 @@ function validateStoredNextAction(dashboard, alert, expected, rowText, rowCount)
     alertApiDomMatch: true };
 }
 
+function validateSeedResult(seed, code, entity, cause) {
+  const alert = seed?.stored_alert;
+  const fields = ['code', 'level', 'cause', 'related_entity_id', 'next_action', 'deep_link'];
+  assert.ok(seed?.before_count === 0 && seed?.seeded_count === 1
+    && alert && Object.keys(alert).length === fields.length
+    && fields.every((field) => typeof alert[field] === 'string' && alert[field].length > 0)
+    && alert.code === code && alert.level === 'critical'
+    && alert.related_entity_id === entity && alert.cause === cause,
+  'R24_SEED_FAILED');
+  return { priority: alert.level, reason: alert.cause,
+    target: alert.related_entity_id, action: alert.next_action, deep_link: alert.deep_link };
+}
+
 function validateRevokedNextAction(status, cardText, rowCount) {
   assert.ok(status === 403 && cardText.includes('BLOCKED')
     && cardText.includes('조회 차단') && rowCount === 0,
@@ -654,8 +667,6 @@ async function main() {
   assert.equal(alertCode, 'WORKER_LEASE_EXPIRED');
   assert.ok(controlToken?.length >= 32);
   assert.ok(expectedEntity && expectedCause && Array.isArray(sensitiveValues));
-  const expectedAction = JSON.parse(process.env.ANVIL_F20_R6_EXPECTED_ACTION_JSON || 'null');
-  assert.ok(expectedAction && typeof expectedAction === 'object', 'R20_ACTION_EXPECTATION_INVALID');
   assert.ok(!evidenceDir || !diagnosticDrain, 'R6_EVIDENCE_DIAGNOSTIC_CONFLICT');
   markStage('PLAYWRIGHT_REQUIRE');
   const { chromium, request: playwrightRequest } = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
@@ -781,7 +792,7 @@ async function main() {
     });
     assert.equal(seed.status(), 200, 'R24_SEED_FAILED');
     const seedResult = await seed.json();
-    assert.deepEqual(seedResult, { before_count: 0, seeded_count: 1 }, 'R24_SEED_FAILED');
+    const expectedAction = validateSeedResult(seedResult, alertCode, expectedEntity, expectedCause);
     const emptyEvidence = validateEmptyDashboard({
       alertStatus: emptyAlerts.status, alerts: JSON.parse(emptyAlerts.text).data.alerts,
       actionStatus: emptyDashboard.status,
@@ -929,6 +940,18 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(validateSeedResult({ before_count: 0, seeded_count: 1,
+    stored_alert: { code: 'WORKER_LEASE_EXPIRED', level: 'critical',
+      cause: 'Worker lease expiry observed', related_entity_id: 'r6-run',
+      next_action: 'REVIEW_WORKER_TAKEOVER', deep_link: '/operations/workers' } },
+  'WORKER_LEASE_EXPIRED', 'r6-run', 'Worker lease expiry observed'),
+  { priority: 'critical', reason: 'Worker lease expiry observed', target: 'r6-run',
+    action: 'REVIEW_WORKER_TAKEOVER', deep_link: '/operations/workers' });
+  assert.throws(() => validateSeedResult({ before_count: 0, seeded_count: 1,
+    stored_alert: { code: 'WORKER_LEASE_EXPIRED', level: 'critical',
+      cause: 'wrong cause', related_entity_id: 'r6-run',
+      next_action: 'REVIEW_WORKER_TAKEOVER', deep_link: '/operations/workers' } },
+  'WORKER_LEASE_EXPIRED', 'r6-run', 'Worker lease expiry observed'), /R24_SEED_FAILED/);
   assert.deepEqual(safeStoredComparison(
     '{"data":{"next_actions":[{"action":"REVIEW_WORKER_LEASE"}]}}',
     '{"data":{"next_actions":[{"action":"REVIEW_WORKER_LEASE"}]}}',
