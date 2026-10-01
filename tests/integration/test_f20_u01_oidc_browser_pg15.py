@@ -51,7 +51,8 @@ _EVIDENCE_FILES = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked
 _BROWSER_STAGES = frozenset({
     "BOOTSTRAP", "PLAYWRIGHT_REQUIRE", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "ISSUER_CONTEXT", "PAGE_CREATE", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
-    "PRE_AUTH_RESPONSES",
+    "PRE_AUTH_RESPONSES", "PRE_AUTH_LOADING_REQUESTS", "PRE_AUTH_LOADING_DOM",
+    "PRE_AUTH_KEYBOARD", "PRE_AUTH_LOADING_RELEASE",
     "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH_REQUEST",
     "OIDC_ISSUER_REDIRECT", "OIDC_CALLBACK", "OIDC_SESSION", "OIDC_COOKIE",
     "STORED_ALERT_FETCH", "STORED_DOCUMENT", "STORED_CARD", "STORED_RESPONSES",
@@ -67,7 +68,7 @@ _BROWSER_ERROR_CLASSES = frozenset({
     "ReferenceError", "RangeError", "AggregateError", "TargetClosedError",
 })
 _RESPONSE_CATEGORIES = frozenset({
-    "DOCUMENT", "ASSET", "ALERT_API", "HEALTH_API", "PROVIDER_API",
+    "DOCUMENT", "ASSET", "ALERT_API", "HEALTH_API", "PROVIDER_API", "DASHBOARD_API",
     "EVENT_REPLAY_API", "OIDC_AUTH", "OTHER_API", "OTHER_APP", "UNKNOWN",
 })
 _RESPONSE_FAILURE_STAGES = frozenset({
@@ -324,6 +325,19 @@ def _finish_r6_evidence(evidence: dict, *, diagnostic: bool) -> None:
     print("R6_E2E_EVIDENCE " + json.dumps(evidence, sort_keys=True))
 
 
+def _r23_loading_evidence(evidence: dict) -> dict:
+    expected = {
+        "loadingCardCount": 6, "loadingNextActions": True,
+        "loadingCriticalAlerts": True, "dashboardTabFocused": True,
+        "sidebarEnterToggle": True, "heldRequestCount": 4,
+        "individuallyReleased": True,
+    }
+    actual = {key: evidence.get(key) for key in expected}
+    assert all(type(actual[key]) is type(value) and actual[key] == value
+               for key, value in expected.items()), "R23_LOADING_BROWSER_EVIDENCE_MISMATCH"
+    return actual
+
+
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
                dsn: str, alert: dict, evidence_dir: Path | None = None) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
@@ -546,6 +560,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         pending_socket = None
         assert listeners[1][3] == api_url
         evidence = _node_flow(api_url, issuer_url, control_token, dsn, before[0], evidence_dir)
+        loading_evidence = _r23_loading_evidence(evidence)
         assert evidence.get("pageRequestCount", 0) > 0, "R6_PAGE_NETWORK_EMPTY"
         assert evidence.get("appApiRequestCount", 0) > 0, "R6_API_NETWORK_EMPTY"
         diagnostic_keys = {"diagnosticDrainMode", "diagnosticNonOkDrainCount",
@@ -560,7 +575,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         else:
             assert not artifact_keys.intersection(evidence), "R6_EVIDENCE_OUTPUT_UNEXPECTED"
         checked = {key: value for key, value in evidence.items()
-                   if key not in {"pageRequestCount", "appApiRequestCount"} | diagnostic_keys | artifact_keys}
+                   if key not in {"pageRequestCount", "appApiRequestCount"}
+                   | diagnostic_keys | artifact_keys | set(loading_evidence)}
         assert checked == {
             "preAuthStatus": 401, "authorizationStatus": 200, "callbackStatus": 200,
             "sessionAuthenticated": True, "cookieSecure": True, "cookieHttpOnly": True,
@@ -889,6 +905,22 @@ def test_r20_node_receives_only_expected_action_fields_from_stored_alert(monkeyp
         "target": "r6-run", "action": "REVIEW_WORKER_LEASE", "deep_link": "/operations",
     }
     assert "private-not-forwarded" not in observed[-1]["ANVIL_F20_R6_EXPECTED_ACTION_JSON"]
+
+
+def test_r23_loading_browser_evidence_is_exact_and_fail_closed():
+    expected = {"loadingCardCount": 6, "loadingNextActions": True,
+                "loadingCriticalAlerts": True, "dashboardTabFocused": True,
+                "sidebarEnterToggle": True, "heldRequestCount": 4,
+                "individuallyReleased": True}
+    assert _r23_loading_evidence(expected) == expected
+    for key, bad in (("loadingCardCount", 5), ("loadingNextActions", False),
+                     ("loadingCriticalAlerts", False), ("dashboardTabFocused", False),
+                     ("sidebarEnterToggle", False), ("heldRequestCount", 3),
+                     ("individuallyReleased", False)):
+        with pytest.raises(AssertionError, match="R23_LOADING_BROWSER_EVIDENCE_MISMATCH"):
+            _r23_loading_evidence({**expected, key: bad})
+    with pytest.raises(AssertionError, match="R23_LOADING_BROWSER_EVIDENCE_MISMATCH"):
+        _r23_loading_evidence({**expected, "loadingCardCount": True})
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):

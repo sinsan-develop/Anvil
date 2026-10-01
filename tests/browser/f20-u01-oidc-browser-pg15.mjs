@@ -22,6 +22,8 @@ const progressStages = new Set([
   'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
   'PRE_AUTH_RESPONSES',
+  'PRE_AUTH_LOADING_REQUESTS', 'PRE_AUTH_LOADING_DOM', 'PRE_AUTH_KEYBOARD',
+  'PRE_AUTH_LOADING_RELEASE',
   'PRE_AUTH_FETCH', 'PRE_AUTH_CARD_CHECK', 'OIDC_AUTH_REQUEST',
   'OIDC_ISSUER_REDIRECT', 'OIDC_CALLBACK', 'OIDC_SESSION', 'OIDC_COOKIE',
   'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_RESPONSES',
@@ -190,6 +192,7 @@ function responseCategory(url) {
     if (path.startsWith('/assets/')) return 'ASSET';
     if (path === '/api/operations/alerts') return 'ALERT_API';
     if (path === '/api/health/ready') return 'HEALTH_API';
+    if (path === '/api/dashboard/operations') return 'DASHBOARD_API';
     if (path === '/api/providers') return 'PROVIDER_API';
     if (/^\/api\/runs\/[^/]+\/events$/.test(path)) return 'EVENT_REPLAY_API';
     if (path.startsWith('/auth/oidc/')) return 'OIDC_AUTH';
@@ -325,8 +328,127 @@ async function fetchOnPage(page, path, options = {}) {
   }, { path, options });
 }
 
-async function readyDashboard(page, action, origin, phase, responseCaptures) {
-  const categories = ['HEALTH_API', 'PROVIDER_API', 'ALERT_API'];
+const loadingPaths = new Map([
+  ['/api/providers', 'PROVIDER_API'],
+  ['/api/operations/alerts', 'ALERT_API'],
+  ['/api/health/ready', 'HEALTH_API'],
+  ['/api/dashboard/operations', 'DASHBOARD_API'],
+]);
+
+function validateLoadingFacts(facts) {
+  const names = ['Database', 'Queue', 'Worker', 'LLM Providers',
+    'Execution Backends', 'Artifact Store'];
+  const valid = (item, name) => item?.status === 'LOADING'
+    && item.live === 'polite' && item.atomic === 'true'
+    && item.text === `${name} 조회 중입니다.`;
+  assert.ok(facts.cards?.length === names.length
+    && facts.cards.every((item, index) => item.name === names[index] && valid(item, item.name))
+    && valid(facts.next, '다음 조치')
+    && valid(facts.alerts, 'Critical Alerts')
+    && facts.checked === 'NOT REQUESTED', 'R23_LOADING_STATE_MISMATCH');
+  return { loadingCardCount: names.length, loadingNextActions: true,
+    loadingCriticalAlerts: true };
+}
+
+async function loadingFacts(page) {
+  const liveFact = async (locator) => {
+    const live = locator.locator('[aria-live]');
+    return { status: await live.locator('p').first().innerText(),
+      live: await live.getAttribute('aria-live'), atomic: await live.getAttribute('aria-atomic'),
+      text: await live.locator('p').nth(1).innerText() };
+  };
+  const health = page.locator('section[aria-labelledby="health-heading"]');
+  const cards = [];
+  for (const name of ['Database', 'Queue', 'Worker', 'LLM Providers',
+    'Execution Backends', 'Artifact Store']) {
+    const card = health.locator('article.status-card').filter({ hasText: name });
+    cards.push({ name, ...await liveFact(card) });
+  }
+  const next = await liveFact(page.locator('section[aria-labelledby="next-actions-heading"]'));
+  const alerts = await liveFact(page.locator('section[aria-labelledby="critical-alerts-heading"]'));
+  const checked = (await page.locator('.dashboard-heading').innerText()).includes('NOT REQUESTED')
+    ? 'NOT REQUESTED' : 'SETTLED';
+  return { cards, next, alerts, checked };
+}
+
+async function verifyDashboardKeyboard(page) {
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
+    'Anvil Dashboard', 'R23_KEYBOARD_MISMATCH');
+  await page.keyboard.press('Tab');
+  const toggle = page.locator('button.sidebar-toggle');
+  assert.equal(await toggle.evaluate((element) => element === document.activeElement), true,
+    'R23_KEYBOARD_MISMATCH');
+  assert.equal(await toggle.getAttribute('aria-expanded'), 'true', 'R23_KEYBOARD_MISMATCH');
+  await page.keyboard.press('Enter');
+  assert.equal(await toggle.getAttribute('aria-expanded'), 'false', 'R23_KEYBOARD_MISMATCH');
+  await page.keyboard.press('Enter');
+  assert.equal(await toggle.getAttribute('aria-expanded'), 'true', 'R23_KEYBOARD_MISMATCH');
+  await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()),
+    'Dashboard', 'R23_KEYBOARD_MISMATCH');
+  return { dashboardTabFocused: true, sidebarEnterToggle: true };
+}
+
+async function holdFirstDashboardRequests(page, origin, navigate) {
+  const pending = new Map();
+  const observed = new Map();
+  for (const category of loadingPaths.values()) {
+    let resolveRequest;
+    const requested = new Promise((resolveRequestNow) => { resolveRequest = resolveRequestNow; });
+    let release;
+    const released = new Promise((releaseNow) => { release = releaseNow; });
+    pending.set(category, { requested, resolveRequest, released, release });
+  }
+  const handler = async (route) => {
+    const url = new URL(route.request().url());
+    const category = url.origin === origin ? loadingPaths.get(url.pathname) : undefined;
+    if (!category || observed.has(category)) { await route.continue(); return; }
+    observed.set(category, true);
+    const gate = pending.get(category);
+    gate.resolveRequest();
+    await gate.released;
+    await route.continue();
+  };
+  await page.route('**/*', handler);
+  try {
+    await navigate();
+    const evidence = await (async () => {
+      markStage('PRE_AUTH_LOADING_REQUESTS');
+      await boundedCapture(() => Promise.all([...pending.values()].map((gate) => gate.requested)), 10000);
+      markStage('PRE_AUTH_LOADING_DOM');
+      const loading = validateLoadingFacts(await loadingFacts(page));
+      markStage('PRE_AUTH_KEYBOARD');
+      const keyboard = await verifyDashboardKeyboard(page);
+      markStage('PRE_AUTH_LOADING_RELEASE');
+      for (const category of loadingPaths.values()) {
+        const response = page.waitForResponse((value) =>
+          new URL(value.url()).origin === origin && responseCategory(value.url()) === category,
+        { timeout: 10000 });
+        pending.get(category).release();
+        await response;
+        if (category !== 'ALERT_API') {
+          assert.equal(await page.locator('section[aria-labelledby="critical-alerts-heading"]')
+            .locator('[aria-live] p').first().innerText(), 'LOADING',
+          'R23_EARLY_SETTLEMENT');
+        }
+        if (category !== 'DASHBOARD_API') {
+          assert.equal(await page.locator('section[aria-labelledby="next-actions-heading"]')
+            .locator('[aria-live] p').first().innerText(), 'LOADING',
+          'R23_EARLY_SETTLEMENT');
+        }
+      }
+      return { ...loading, ...keyboard, heldRequestCount: observed.size, individuallyReleased: true };
+    })();
+    return evidence;
+  } finally {
+    for (const gate of pending.values()) gate.release();
+    await page.unroute('**/*', handler);
+  }
+}
+
+async function readyDashboard(page, action, origin, phase, responseCaptures, beforeResponses) {
+  const categories = ['HEALTH_API', 'PROVIDER_API', 'ALERT_API', 'DASHBOARD_API'];
   const responseReady = categories.map((category) => {
     let pending;
     try {
@@ -347,13 +469,12 @@ async function readyDashboard(page, action, origin, phase, responseCaptures) {
     );
   });
   markStage(phase + '_DOCUMENT');
-  if (action === 'goto') {
-    await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
-  } else if (action === 'reload') {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-  } else {
-    throw new Error('R6_NAVIGATION_ACTION_INVALID');
-  }
+  const navigate = async () => {
+    if (action === 'goto') await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
+    else if (action === 'reload') await page.reload({ waitUntil: 'domcontentloaded' });
+    else throw new Error('R6_NAVIGATION_ACTION_INVALID');
+  };
+  const beforeEvidence = beforeResponses ? await beforeResponses(navigate) : (await navigate(), {});
   markStage(phase + '_CARD');
   const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
   await card.waitFor({ state: 'visible' });
@@ -382,7 +503,7 @@ async function readyDashboard(page, action, origin, phase, responseCaptures) {
       + `finished=${probe.finished} native=${probe.native}\n`);
   }
   verifiedResponseFacts(results);
-  return card;
+  return { card, beforeEvidence };
 }
 
 async function main() {
@@ -426,7 +547,9 @@ async function main() {
       responseCaptures.set(response, capture);
       responseFacts.push(capture);
     });
-    const card = await readyDashboard(page, 'goto', apiUrl, 'PRE_AUTH', responseCaptures);
+    const { card, beforeEvidence: loadingEvidence } = await readyDashboard(page, 'goto', apiUrl,
+      'PRE_AUTH', responseCaptures,
+      (navigate) => holdFirstDashboardRequests(page, apiUrl, navigate));
     markStage('PRE_AUTH_FETCH');
     const preAuth = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(preAuth.status, 401);
@@ -558,6 +681,7 @@ async function main() {
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
       ...storedActionEvidence, ...revokedActionEvidence,
+      ...loadingEvidence,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
       pageRequestCount: requests.length, appApiRequestCount,
       ...(diagnosticDrain ? {
@@ -585,6 +709,23 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  const loadingFacts = {
+    cards: ['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store']
+      .map((name) => ({ name, status: 'LOADING', live: 'polite', atomic: 'true',
+        text: `${name} 조회 중입니다.` })),
+    next: { status: 'LOADING', live: 'polite', atomic: 'true', text: '다음 조치 조회 중입니다.' },
+    alerts: { status: 'LOADING', live: 'polite', atomic: 'true', text: 'Critical Alerts 조회 중입니다.' },
+    checked: 'NOT REQUESTED',
+  };
+  assert.deepEqual(validateLoadingFacts(loadingFacts), { loadingCardCount: 6,
+    loadingNextActions: true, loadingCriticalAlerts: true });
+  for (const changed of [
+    { ...loadingFacts, cards: loadingFacts.cards.map((card) =>
+      card.name === 'Database' ? { ...card, status: 'NOT CONNECTED' } : card) },
+    { ...loadingFacts, next: { ...loadingFacts.next, text: '현재 관측된 다음 조치 0건' } },
+    { ...loadingFacts, alerts: { ...loadingFacts.alerts, live: null } },
+    { ...loadingFacts, checked: 'JUST NOW' },
+  ]) assert.throws(() => validateLoadingFacts(changed), /R23_LOADING_STATE_MISMATCH/);
   const actionAlert = {
     level: 'critical', cause: 'Worker lease expiry observed',
     related_entity_id: 'r6-run', next_action: 'REVIEW_WORKER_LEASE',
@@ -682,11 +823,12 @@ if (auditSelfTest) {
   const phaseWaiters = [];
   const phaseCaptures = new WeakMap();
   const captureResolutions = [];
-  const phasePaths = ['/api/health/ready', '/api/providers', '/api/operations/alerts'];
+  const phasePaths = ['/api/health/ready', '/api/providers', '/api/operations/alerts',
+    '/api/dashboard/operations'];
   let nativeReads = 0;
   let phaseFailureMode = 'CAPTURE_TIMEOUT';
   function releasePhaseResponses(mode = 'NONE') {
-    assert.equal(phaseWaiters.length, 3);
+    assert.equal(phaseWaiters.length, 4);
     for (const path of phasePaths) {
       const response = { url: () => apiUrl + path, status: () => 401,
         headers: () => ({ 'content-length': '29' }), finished: async () => null };
@@ -743,7 +885,7 @@ if (auditSelfTest) {
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(readySettled, false);
   for (const { release } of captureResolutions.splice(0)) release({ ok: true, value: {} });
-  assert.equal(await initialReady, fakeCard);
+  assert.deepEqual(await initialReady, { card: fakeCard, beforeEvidence: {} });
   assert.deepEqual(navigationSteps, ['document', 'card']);
   navigationSteps.length = 0;
   const revokedReady = readyDashboard(fakePage, 'reload', apiUrl, 'REVOKE', phaseCaptures);
