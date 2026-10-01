@@ -10,6 +10,18 @@ from scripts import f20_u01_r24_close_overlay as overlay
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_r24_close_allows_only_r25_control_documents_before_a_new_lease():
+    expected = {
+        "docs/04_test_reports/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_PLAN.md",
+        "docs/04_test_reports/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_RESULT.md",
+        "docs/work_orders/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_WORK_INSTRUCTION.md",
+        "docs/work_orders/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_INVOCATION.md",
+    }
+    assert expected <= overlay.CONTROL_SCOPE
+    assert "tests/browser/f20-u01-oidc-browser-pg15.mjs" not in overlay.CONTROL_SCOPE
+    assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
+
+
 def test_r24_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
