@@ -135,6 +135,29 @@ function safeDashboardSummary(response) {
   return { status, actions };
 }
 
+function safeStoredComparison(directText, reloadText, expected, rowTexts, visible) {
+  const singleAction = (text) => {
+    try {
+      const rows = JSON.parse(text)?.data?.next_actions;
+      return Array.isArray(rows) && rows.length === 1 && typeof rows[0]?.action === 'string'
+        ? rows[0].action : null;
+    } catch { return null; }
+  };
+  const direct = singleAction(directText);
+  const reload = singleAction(reloadText);
+  const matches = (value) => value === null ? 'INVALID' : value === expected ? 'YES' : 'NO';
+  const safeRows = Array.isArray(rowTexts) && rowTexts.length <= 100
+    && rowTexts.every((row) => typeof row === 'string') ? rowTexts : null;
+  const rowMatch = (value) => safeRows === null || value === null ? 'INVALID'
+    : safeRows.some((row) => row.includes(value)) ? 'YES' : 'NO';
+  return {
+    directExpected: matches(direct), reloadExpected: matches(reload),
+    domExpected: rowMatch(expected), domReload: rowMatch(reload),
+    rows: safeRows === null ? 'INVALID' : String(safeRows.length),
+    visible: typeof visible === 'boolean' ? visible ? 'YES' : 'NO' : 'INVALID',
+  };
+}
+
 function safeStoredCardState(status, rows, empty) {
   if (rows > 0) return 'ROW';
   if (empty) return 'EMPTY';
@@ -796,6 +819,18 @@ async function main() {
       const dom = await storedCardState(nextCard);
       writeSync(1, `R24_STORED_UI_DIAG directStatus=${direct.status} directActions=${direct.actions}`
         + ` reloadStatus=${reload.status} reloadActions=${reload.actions} dom=${dom}\n`);
+      let rowTexts = null;
+      let visible = null;
+      try {
+        const rows = nextCard.locator('li');
+        rowTexts = await rows.allInnerTexts();
+        visible = rowTexts.length > 0 ? await rows.first().isVisible() : false;
+      } catch { /* Diagnostic collection must not replace the original failure. */ }
+      const comparison = safeStoredComparison(storedDashboard.text,
+        storedReady.dashboardResponse.value.body, expectedAction.action, rowTexts, visible);
+      writeSync(1, `R24_STORED_COMPARE directExpected=${comparison.directExpected}`
+        + ` reloadExpected=${comparison.reloadExpected} domExpected=${comparison.domExpected}`
+        + ` domReload=${comparison.domReload} rows=${comparison.rows} visible=${comparison.visible}\n`);
       throw error;
     }
     const actionRow = nextCard.locator('li');
@@ -894,6 +929,18 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(safeStoredComparison(
+    '{"data":{"next_actions":[{"action":"REVIEW_WORKER_LEASE"}]}}',
+    '{"data":{"next_actions":[{"action":"REVIEW_WORKER_LEASE"}]}}',
+    'REVIEW_WORKER_LEASE', ['critical\n조치 · REVIEW_WORKER_LEASE'], true),
+  { directExpected: 'YES', reloadExpected: 'YES', domExpected: 'YES',
+    domReload: 'YES', rows: '1', visible: 'YES' });
+  assert.deepEqual(safeStoredComparison(
+    '{"data":{"next_actions":[{"action":"REVIEW_WORKER_LEASE"}]}}',
+    '{"data":{"next_actions":[{"action":"OTHER_ACTION"}]}}',
+    'REVIEW_WORKER_LEASE', ['critical\n조치 · OTHER_ACTION'], false),
+  { directExpected: 'YES', reloadExpected: 'NO', domExpected: 'NO',
+    domReload: 'YES', rows: '1', visible: 'NO' });
   assert.deepEqual(safeDashboardSummary({ status: 200,
     text: '{"data":{"next_actions":[{"action":"private"}]}}' }),
   { status: 200, actions: '1' });

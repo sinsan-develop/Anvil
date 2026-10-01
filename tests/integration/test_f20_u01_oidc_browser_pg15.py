@@ -276,6 +276,17 @@ def _safe_stored_diagnostic(output: str) -> str:
                 and all(count == "INVALID" or int(count) <= 100 for count in counts)):
             detail = (f" directStatus={direct_status} directActions={direct_actions}"
                       f" reloadStatus={reload_status} reloadActions={reload_actions} dom={dom}")
+    for match in re.finditer(
+        r"^R24_STORED_COMPARE directExpected=(YES|NO|INVALID) "
+        r"reloadExpected=(YES|NO|INVALID) domExpected=(YES|NO|INVALID) "
+        r"domReload=(YES|NO|INVALID) rows=(INVALID|[0-9]{1,3}) "
+        r"visible=(YES|NO|INVALID)\r?$", output, flags=re.MULTILINE,
+    ):
+        direct_expected, reload_expected, dom_expected, dom_reload, rows, visible = match.groups()
+        if rows == "INVALID" or int(rows) <= 100:
+            detail += (f" directExpected={direct_expected} reloadExpected={reload_expected}"
+                       f" domExpected={dom_expected} domReload={dom_reload}"
+                       f" rows={rows} visible={visible}")
     return detail
 
 
@@ -887,7 +898,9 @@ def test_r24_stored_timeout_reports_only_whitelisted_diagnostic(monkeypatch):
     secret = "private-response-body"
     stdout = ("R6_NODE_STARTED\nR6_STAGE STORED_NEXT_ACTION\n"
               "R24_STORED_UI_DIAG directStatus=200 directActions=1 "
-              "reloadStatus=200 reloadActions=0 dom=EMPTY\n" + secret)
+              "reloadStatus=200 reloadActions=1 dom=ROW\n"
+              "R24_STORED_COMPARE directExpected=YES reloadExpected=NO "
+              "domExpected=NO domReload=YES rows=1 visible=YES\n" + secret)
 
     def failed(*_args, **_kwargs):
         return subprocess.CompletedProcess(
@@ -902,7 +915,9 @@ def test_r24_stored_timeout_reports_only_whitelisted_diagnostic(monkeypatch):
                    "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
     message = str(failure.value)
     assert "stage=STORED_NEXT_ACTION exit=1 class=TimeoutError" in message
-    assert "directStatus=200 directActions=1 reloadStatus=200 reloadActions=0 dom=EMPTY" in message
+    assert "directStatus=200 directActions=1 reloadStatus=200 reloadActions=1 dom=ROW" in message
+    assert ("directExpected=YES reloadExpected=NO domExpected=NO "
+            "domReload=YES rows=1 visible=YES") in message
     assert secret not in message
 
 
