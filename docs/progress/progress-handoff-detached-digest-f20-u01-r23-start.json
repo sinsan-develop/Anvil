@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0.0",
+  "algorithm": "SHA-256",
+  "event_sequence": 1936,
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1245934,
+    "file_sha256": "7AE0CA57F78B94C102E0E4740ECC53B42A29022170F01502DB157E1F43145D87"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 2414,
+    "file_sha256": "9BBD1B66E1B74B7FD532D063D9654070C3BF4BBAD2DFEB93B3822C894EE95CE5"
+  }
+}
