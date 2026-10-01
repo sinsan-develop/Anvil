@@ -14,6 +14,13 @@ def test_r22_close_allows_exact_r23_browser_qa_plan_handoff():
     assert "docs/04_test_reports/F-20_U01_R23_LOADING_BROWSER_QA_PLAN.md" in overlay.CONTROL_SCOPE
 
 
+def test_r22_close_allows_exact_r23_instruction_handoff():
+    assert {
+        "docs/work_orders/F-20_U01_R23_LOADING_BROWSER_QA_WORK_INSTRUCTION.md",
+        "docs/work_orders/F-20_U01_R23_LOADING_BROWSER_QA_INVOCATION.md",
+    } <= overlay.CONTROL_SCOPE
+
+
 def test_r22_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)

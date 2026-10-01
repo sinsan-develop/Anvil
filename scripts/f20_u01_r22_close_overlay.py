@@ -27,6 +27,8 @@ MANIFEST = "docs/evidence/manifests/F-20_U01_R22_INDEPENDENT_LOADING_CLOSE_MANIF
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, REPORT,
                  "docs/04_test_reports/F-20_U01_R22_INDEPENDENT_LOADING_PLAN.md",
                  "docs/04_test_reports/F-20_U01_R23_LOADING_BROWSER_QA_PLAN.md",
+                 "docs/work_orders/F-20_U01_R23_LOADING_BROWSER_QA_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R23_LOADING_BROWSER_QA_INVOCATION.md",
                  "docs/work_orders/F-20_U01_R22_INDEPENDENT_LOADING_WORK_INSTRUCTION.md",
                  "docs/work_orders/F-20_U01_R22_INDEPENDENT_LOADING_INVOCATION.md",
                  "scripts/f20_u01_r22_start_overlay.py",
