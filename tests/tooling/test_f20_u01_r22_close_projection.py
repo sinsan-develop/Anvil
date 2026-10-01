@@ -21,6 +21,13 @@ def test_r22_close_allows_exact_r23_instruction_handoff():
     } <= overlay.CONTROL_SCOPE
 
 
+def test_r22_close_allows_exact_r23_start_control_handoff():
+    assert {
+        "scripts/f20_u01_r23_start_overlay.py",
+        "tests/tooling/test_f20_u01_r23_start_projection.py",
+    } <= overlay.CONTROL_SCOPE
+
+
 def test_r22_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
