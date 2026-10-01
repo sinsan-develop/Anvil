@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — 지정된 브라우저 하네스·Python opt-in 계약·이 보고서 exact3의 로컬 구현과 검증을 완료했다. 실제 WSL-server PG15/OIDC/Chromium DOM·Network·DB 실행은 Main의 동일 SHA push 이후 수행하므로 `UNVERIFIED`다. C30은 `OPEN_BLOCKING`, U-01/F-20은 미수락, Production은 `NOT_EXECUTED`다. 정식 동일 실패 횟수 0.
+`COMPLETED` — 지정된 브라우저 하네스·Python opt-in 계약·이 보고서 exact3의 로컬 구현과 검증을 완료했다. 후속 Main 실측에서 clean SHA `f8c543f538edbf4dd279914f6e9ecab6d10687ed`의 격리 WSL PG15/OIDC/Chromium R23 범위 opt-in이 PASS했고, 전용 임시자원 정리·잔여 0도 완료했다(아래 최신 기록). C30은 `OPEN_BLOCKING`, U-01/F-20은 미수락, Production은 `NOT_EXECUTED`다. 정식 Developer 동일 실패 횟수 0.
 
 ## 기준·권한·변경
 
@@ -61,3 +61,12 @@
 - TDD: 단계별 아직 해제되지 않은 카드의 기대값 `Provider→[Alerts,Next Actions]`, `Alert→[Next Actions]`, `Health→[Next Actions]`, `Dashboard→[]`를 자기검증에 먼저 추가했다. `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test`는 `cardsStillPending is not defined`의 예상 RED exit1 → 해제된 category 집합만으로 검사 대상을 정한 뒤 GREEN exit0 `R6_AUDIT_SELF_TEST_PASS`다. 해제 전 조기 settled 단언은 유지하고 이미 해제한 카드만 제외했다.
 - 로컬 재검증 exit0: `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs`; Python 비 opt-in `19 passed, 1 skipped` (`-p no:cacheprovider --basetemp=.pytest_tmp_f20_u01_r23_dev`); `npm run web:test` console 47 PASS; `npm run web:typecheck`; `npm run web:lint` 3 files/수정0; `npm run web:build` Vite 20 modules. 임시 출력 정리와 보고서 갱신 뒤 `.\.venv\Scripts\python.exe -B scripts/check_project_progress.py` exit0 `PASS sequence=1936 reporting=AUTO_CONTINUE`, `git diff --check` exit0이다.
 - 사전 기록한 같은 `.pytest_tmp_f20_u01_r23_dev`·`apps/web/dist`만 사용했다. 두 root는 worktree 내부 비-link, pytest symlink 대상은 모두 해당 base 내부임을 확인하고 정확히 해당 출력만 제거해 잔여0. 기존 `.venv`/`node_modules` 보존. 새 임시 경로·Git/WSL/제품 write0. 실제 새 SHA의 WSL PG15/OIDC/Chromium·DOM/Network·저장 alert→Next Actions→revoke/403·DB는 Main 재실행 전까지 `UNVERIFIED`. 정식 Developer 동일 실패 횟수 0.
+
+## R23 동일 SHA WSL 실제 opt-in 결과 / 2026-10-01
+
+- 최신 Main 전달 실측: clean `f8c543f538edbf4dd279914f6e9ecab6d10687ed`에서 격리 PostgreSQL 15 migration head `0019_oidc_sessions`, HTTPS OIDC/Chromium opt-in **1 passed**, 실행 10.87초, 기존 httpx deprecation warning 1건. 이 PASS는 R23에 한정하며 앞선 `e75f949`·`f59496f` WSL 실패 이력은 보존한다.
+- 초기 DOM·키보드 결과: `loadingCardCount=6`, `loadingNextActions=true`, `loadingCriticalAlerts=true`, `dashboardTabFocused=true`, `sidebarEnterToggle=true`, `heldRequestCount=4`, `individuallyReleased=true`. 네 요청 보류 중의 초기 `LOADING`·`aria-live`와 기본 Tab/Enter·`aria-expanded`를 실제 Chromium에서 확인했다.
+- 기존 저장 경고 회귀: pre-auth 401, OIDC callback 200, 저장 Critical 및 Next Actions 각 1건, 권한 철회 뒤 Dashboard 403/BLOCKED·행 0건. 브라우저 요청 29건 중 API 17건, 앱 요청 same-origin, off-origin credential leak `false`, secret exposure `false`로 Main이 보고했다. 이는 해당 실행의 제한된 Network 감사이며 U-01 전체 E-NET 인수는 아니다.
+- 증거: 전용 mode `0700` 디렉터리에 PNG 3개·JSON 1개가 생성됐다. SHA-256은 pre-auth `6c209c479a221377b13756d1e965df4eeb2081d5cdb54415f5b4c5d07f9541fc`, stored `6d1f82a2e77d89ebd4dc059033912d45324f47f03ba23eadbc9041ba576f5258`, revoked `1696e33d24500a1368e2fee842bae5d61ede0c768c6a05a6a121c8819d0bb691`, Network JSON `4ad1648ba2b44faa8538f9df69680fe9d24098bca07b2778ce89fa7b10a6f191`. Main은 사전 기록된 로컬 임시 위치로 PNG 3개를 복사해 hash 일치를 확인하고, pre-auth BLOCKED·stored critical 행 1건·revoked BLOCKED/오래된 행 0건을 육안 확인한 뒤 로컬 복사본을 제거했다.
+- Main 전달 정리 실측: 전용 PG container ID `f1babca28ba8fb97982356db2c0d4211c41f43770bbe2d11ea8ec331e3048e2`의 name/image/SHA label/AutoRemove를 확인한 뒤 중지했고 자동 제거됐다. Browser·Node container 0, host port `5545` listener 0, TLS 파일과 pytest base 부재를 확인했다. 전용 경로의 owner·realpath·root 비-link 및 내부 symlink 경계를 검사하고 증거 exact4를 확인한 뒤 `/tmp/anvil-u01-r23-venv`, `/tmp/anvil-u01-r6-evidence-f8c543f`, WSL checkout의 `node_modules`·`apps/web/dist`만 제거했다. 지정된 여섯 경로 모두 부재, WSL checkout clean/G-05 seq1936 PASS다. 로컬 `.r23-visual-review`의 PNG 3개도 hash 일치·육안 확인 후 제거해 잔여 0이다. 이 정리 사실은 Main 실측 전달이며 Developer는 WSL/로컬 복사본에 접근·변경하지 않았다.
+- 이 실측은 초기 LOADING·기본 키보드·저장 alert/Next Actions/revoke 흐름만 증명한다. U-01 전체 7상태·전체 접근성/필터/운영 read model·독립 Tester acceptance, 정식 전체 E-SHOT/E-NET/E-API/E-EVT, F-20 최종 검증과 C30 해소는 여전히 미충족이다. `ysna-server`/Production은 `NOT_EXECUTED`다.
