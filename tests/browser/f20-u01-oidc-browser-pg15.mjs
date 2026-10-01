@@ -422,6 +422,13 @@ function createTrackedRouteHandler(origin, pending, observed) {
     } };
 }
 
+function cardsStillPending(released) {
+  const cards = [];
+  if (!released.has('ALERT_API')) cards.push('ALERTS');
+  if (!released.has('DASHBOARD_API')) cards.push('NEXT_ACTIONS');
+  return cards;
+}
+
 async function holdFirstDashboardRequests(page, origin, navigate) {
   const pending = new Map();
   const observed = new Map();
@@ -444,23 +451,20 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
       markStage('PRE_AUTH_KEYBOARD');
       const keyboard = await verifyDashboardKeyboard(page);
       markStage('PRE_AUTH_LOADING_RELEASE');
+      const released = new Set();
       for (const category of loadingPaths.values()) {
         const response = page.waitForResponse((value) =>
           new URL(value.url()).origin === origin && responseCategory(value.url()) === category,
         { timeout: 10000 });
+        released.add(category);
         pending.get(category).release();
         await Promise.race([response, routes.failure.then(() => {
           throw new Error('R23_ROUTE_CONTINUE_FAILED');
         })]);
-        if (category !== 'ALERT_API') {
-          assert.equal(await page.locator('section[aria-labelledby="critical-alerts-heading"]')
-            .locator('[aria-live] p').first().innerText(), 'LOADING',
-          'R23_EARLY_SETTLEMENT');
-        }
-        if (category !== 'DASHBOARD_API') {
-          assert.equal(await page.locator('section[aria-labelledby="next-actions-heading"]')
-            .locator('[aria-live] p').first().innerText(), 'LOADING',
-          'R23_EARLY_SETTLEMENT');
+        for (const card of cardsStillPending(released)) {
+          const selector = card === 'ALERTS' ? 'critical-alerts-heading' : 'next-actions-heading';
+          assert.equal(await page.locator(`section[aria-labelledby="${selector}"]`)
+            .locator('[aria-live] p').first().innerText(), 'LOADING', 'R23_EARLY_SETTLEMENT');
         }
       }
       return { ...loading, ...keyboard, heldRequestCount: observed.size, individuallyReleased: true };
@@ -735,6 +739,14 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(cardsStillPending(new Set(['PROVIDER_API'])),
+    ['ALERTS', 'NEXT_ACTIONS']);
+  assert.deepEqual(cardsStillPending(new Set(['PROVIDER_API', 'ALERT_API'])),
+    ['NEXT_ACTIONS']);
+  assert.deepEqual(cardsStillPending(new Set(['PROVIDER_API', 'ALERT_API', 'HEALTH_API'])),
+    ['NEXT_ACTIONS']);
+  assert.deepEqual(cardsStillPending(new Set(['PROVIDER_API', 'ALERT_API',
+    'HEALTH_API', 'DASHBOARD_API'])), []);
   const testGate = {};
   testGate.requested = new Promise((resolveRequest) => { testGate.resolveRequest = resolveRequest; });
   testGate.released = new Promise((release) => { testGate.release = release; });

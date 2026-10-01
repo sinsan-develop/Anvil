@@ -52,3 +52,12 @@
 | `npm run web:build` | 0 | Vite 20 modules 변환 |
 
 - 사전 기록된 정확한 `.pytest_tmp_f20_u01_r23_dev`와 `apps/web/dist`만 사용했다. root는 두 곳 모두 worktree 내부 비-link였고 pytest base의 symlink 3개 대상도 해당 base 내부였다. 종료된 명령을 확인한 뒤 내부 symlink와 두 출력 경로를 정확히 제거해 잔여 0; 기존 `.venv`·`node_modules` 보존. Main의 WSL 동일 새 SHA 재실행, 실제 DOM/Network/DB·저장 alert→Next Actions→revoke/403는 여전히 `UNVERIFIED`; WSL FAIL 해결 여부는 Main이 검증한다. 정식 Developer 동일 실패 횟수 0, 새 임시 경로·Git/WSL/제품 write 0.
+
+## R23 해제 순서 단언 보완 / 2026-10-01
+
+- Main 전달 WSL 실측: clean `f59496fe177efcc3ec0c03c61fb91fa854d19d4e`의 새 격리 PG15/OIDC/Chromium opt-in이 두 번 `R6_BROWSER_FAILED stage=PRE_AUTH_LOADING_RELEASE class=AssertionError`로 실패했다. 안전한 child 진단에서 `R23_ROUTE_CONTINUE_FAILED` marker는 없었다. 이는 WSL 실제 브라우저 **FAIL**이며 전체 U-01/F-20 인수나 DB/Network PASS가 아니다.
+- 결정적 하네스 원인: 해제 순서가 Provider→Alert→Health→Dashboard인데 기존 조건 `category !== 'ALERT_API'`는 Alert를 의도적으로 해제한 이후 Health와 Dashboard 단계에서도 Alerts가 `LOADING`이라고 잘못 요구했다. 정상 응답으로 Alert가 settled되면 Health 단계의 `R23_EARLY_SETTLEMENT`이 발생한다. 같은 종류 요청의 중복 bypass는 코드상 별도 가능성이 있으나 이번 재현의 설명에 필요하지 않으며 관측되지 않았다.
+- 이 보완 시작 HEAD는 위 `f59496f`, branch `codex/f18-wsl-ops`; 기존 Main 소유 `docs/WORK_STATUS.md` dirty를 보존했다. epoch37 ACTIVE worker/write의 두 token·exact3 범위 안에서 브라우저 하네스와 본 보고서만 수정했다. 첫 네 요청을 모두 보류했을 때의 여섯 Health 카드·Next Actions·Critical Alerts LOADING/aria-live 검증은 그대로다.
+- TDD: 단계별 아직 해제되지 않은 카드의 기대값 `Provider→[Alerts,Next Actions]`, `Alert→[Next Actions]`, `Health→[Next Actions]`, `Dashboard→[]`를 자기검증에 먼저 추가했다. `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test`는 `cardsStillPending is not defined`의 예상 RED exit1 → 해제된 category 집합만으로 검사 대상을 정한 뒤 GREEN exit0 `R6_AUDIT_SELF_TEST_PASS`다. 해제 전 조기 settled 단언은 유지하고 이미 해제한 카드만 제외했다.
+- 로컬 재검증 exit0: `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs`; Python 비 opt-in `19 passed, 1 skipped` (`-p no:cacheprovider --basetemp=.pytest_tmp_f20_u01_r23_dev`); `npm run web:test` console 47 PASS; `npm run web:typecheck`; `npm run web:lint` 3 files/수정0; `npm run web:build` Vite 20 modules. 임시 출력 정리와 보고서 갱신 뒤 `.\.venv\Scripts\python.exe -B scripts/check_project_progress.py` exit0 `PASS sequence=1936 reporting=AUTO_CONTINUE`, `git diff --check` exit0이다.
+- 사전 기록한 같은 `.pytest_tmp_f20_u01_r23_dev`·`apps/web/dist`만 사용했다. 두 root는 worktree 내부 비-link, pytest symlink 대상은 모두 해당 base 내부임을 확인하고 정확히 해당 출력만 제거해 잔여0. 기존 `.venv`/`node_modules` 보존. 새 임시 경로·Git/WSL/제품 write0. 실제 새 SHA의 WSL PG15/OIDC/Chromium·DOM/Network·저장 alert→Next Actions→revoke/403·DB는 Main 재실행 전까지 `UNVERIFIED`. 정식 Developer 동일 실패 횟수 0.
