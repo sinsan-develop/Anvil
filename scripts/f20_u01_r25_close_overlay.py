@@ -26,6 +26,10 @@ DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r25-close.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_CLOSE_MANIFEST.json"
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, REPORT,
                  prior.WI, prior.INVOCATION,
+                 "docs/04_test_reports/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_PLAN.md",
+                 "docs/04_test_reports/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_RESULT.md",
+                 "docs/work_orders/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_WORK_INSTRUCTION.md",
+                 "docs/work_orders/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_INVOCATION.md",
                  "scripts/f20_u01_r25_close_overlay.py",
                  "tests/tooling/test_f20_u01_r25_close_projection.py",
                  "scripts/f20_u01_r25_start_overlay.py",
