@@ -35,5 +35,7 @@ def test_r25_close_allows_only_control_followup():
     assert "docs/04_test_reports/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_RESULT.md" in overlay.CONTROL_SCOPE
     assert "docs/work_orders/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_WORK_INSTRUCTION.md" in overlay.CONTROL_SCOPE
     assert "docs/work_orders/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_INVOCATION.md" in overlay.CONTROL_SCOPE
+    assert "scripts/f20_u01_r26_start_overlay.py" in overlay.CONTROL_SCOPE
+    assert "tests/tooling/test_f20_u01_r26_start_projection.py" in overlay.CONTROL_SCOPE
     assert "tests/browser/f20-u01-oidc-browser-pg15.mjs" not in overlay.CONTROL_SCOPE
     assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
