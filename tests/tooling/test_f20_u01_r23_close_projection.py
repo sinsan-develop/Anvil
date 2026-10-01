@@ -21,6 +21,12 @@ def test_r23_close_allows_r24_instruction_without_product_write():
     assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
 
 
+def test_r23_close_allows_r24_start_control_without_product_write():
+    assert "scripts/f20_u01_r24_start_overlay.py" in overlay.CONTROL_SCOPE
+    assert "tests/tooling/test_f20_u01_r24_start_projection.py" in overlay.CONTROL_SCOPE
+    assert "tests/browser/f20-u01-oidc-browser-pg15.mjs" not in overlay.CONTROL_SCOPE
+
+
 def test_r23_close_preserves_prefix_and_block():
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
