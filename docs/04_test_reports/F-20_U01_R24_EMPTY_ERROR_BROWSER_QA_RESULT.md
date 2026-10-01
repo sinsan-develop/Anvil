@@ -2,9 +2,17 @@
 
 ## 판정
 
-`INCOMPLETE` — WSL-server PostgreSQL 15/OIDC/Chromium에서 저장 Next Actions 기대값의 원인을 확인했고 하네스만 TDD로 수정했으나, 수정 SHA의 실제 WSL opt-in은 아직 실행되지 않았다. 로컬 GREEN을 실제 브라우저 PASS로 승격하지 않는다. U-01/F-20 또는 C30 완료 판정이 아니다.
+`COMPLETED` — 동일 clean SHA `366d2fc5904987183c9158eaa8854761202acbc3`의 격리 WSL-server PostgreSQL 15/OIDC/Chromium에서 R24의 실제 빈 결과·단일 조회 오류·저장/철회 회귀가 통과했고 증거 확인과 전용 자원 정리가 끝났다. 이는 **R24 좁은 QA만 PASS**이며 U-01/F-20 수락 또는 C30 해소가 아니다.
 
-## R24 저장 Alert 기대값 회귀 수정 checkpoint (현재)
+## R24 실제 WSL-server 좁은 QA 최종 증거 (현재)
+
+- Main이 기존 branch·사설 remote·WSL QA checkout의 동일 clean SHA `366d2fc5904987183c9158eaa8854761202acbc3`, G-05 seq1942 PASS를 확인했다. SHA7 전용 PG15 ID `819141ee...`는 `postgres:15` image, AutoRemove, data tmpfs, mount 0, loopback `127.0.0.1:5545` 경계를 확인했고 비-superuser DB/role 및 migration `0019`를 사용했다. Node 24 build는 20 modules transformed/exit 0. Main 실행 OIDC/Chromium opt-in은 exit 0, `1 passed, 23 deselected, 2 deprecation warnings in 7.05s`였다. deprecation warning 2건은 경고로 남기며 전체 U-01 합격으로 해석하지 않는다.
+- 실 DB/API/DOM의 seed 전 빈 Critical Alerts/Next Actions, 테스트 경계의 정확한 Dashboard GET 1회 503과 `UNAVAILABLE`/0건·`HEALTHY` 오인 방지, 오류 본문 비노출·독립 카드 보존, 실제 seed된 저장 Alert/Next Actions 1행→권한 철회 403/BLOCKED/행 제거, 기존 초기 LOADING/키보드 및 same-origin/Secret 단언이 같은 실제 실행에서 통과했다. Main은 PNG 육안으로 pre-auth BLOCKED, 저장 Alert와 실제 `REVIEW_WORKER_TAKEOVER` Next Actions 1행, revoke BLOCKED/행 제거를 확인했다. Network JSON은 page 요청 45건 중 45건, app API 27건, 동일 HTTPS loopback origin 1개, query/fragment 0건으로 확인했다.
+- Evidence는 mode 0700의 정확히 4개(PNG 3·Network JSON 1)였고 SHA-256은 pre-auth `6c209c479a221377b13756d1e965df4eeb2081d5cdb54415f5b4c5d07f9541fc`, stored `6d1f82a2e77d89ebd4dc059033912d45324f47f03ba23eadbc9041ba576f5258`, revoked `1696e33d24500a1368e2fee842bae5d61ede0c768c6a05a6a121c8819d0bb691`, Network `6b3fda695b09daa3f1a97eb8e3d2b69e562e7c2c740d68bf4bc19ae0f067ae3f`다. Main의 로컬 육안 검토용 PNG3 복사본은 원본 hash 일치 확인 후 정확한 경로만 삭제해 잔여 0이다.
+- Main이 전용 PG ID를 신원 확인 후 stop/AutoRemove하고 지정 WSL 경로의 실경로·link/소유 경계를 검사한 뒤 정리했다. 최종 PG/Node/browser 컨테이너 0, loopback port 5545 listener 0, TLS/venv/pytest/evidence/node_modules/dist 0, WSL QA checkout clean/G-05 seq1942 PASS다. 기존 공용 서비스·다른 DB·ysna/Production에는 변경이 없다. Local/remote/WSL의 테스트 SHA는 같고, 이 보고서 후속 기록만 현재 작업 브랜치의 미커밋 diff다. Git commit/push와 lease 회수는 Main 소유다.
+- 미검증: quota/cancel/reconnect·필터/운영 카드·전체 접근성·정식 독립 E-SHOT/E-NET/E-API/E-EVT 및 C30. U-01/F-20 미수락, ReleaseDecision `DEFER` 유지. rollback은 R24 exact3의 테스트·보고서 변경만 해당 checkpoint 이전으로 되돌리는 것이며 제품·지속 DB를 복구할 변경은 없다.
+
+## R24 저장 Alert 기대값 회귀 수정 checkpoint (이력)
 
 - Main의 동일 SHA `545ef29520602e0f1adac488c5cf69acea926913` 실제 WSL 진단은 `STORED_NEXT_ACTION`/`TimeoutError`, `directExpected=NO reloadExpected=NO domExpected=NO domReload=YES rows=1 visible=YES`였다. 직접/reload API와 화면은 실제 저장 action으로 서로 일치했다. 하네스만 seed 전 fixture `_TEST_ALERT.next_action=REVIEW_WORKER_LEASE`, `deep_link=/operations`를 기대값으로 전달했다. 실제 `owner.detect()`의 `packages/observability/service.py` 값은 `REVIEW_WORKER_TAKEOVER`, `/operations/workers`다. 제품/UI/API/DB 결함이라는 증거는 없고, 원인은 R24의 seed 시점 이동 뒤 기대값 출처를 바꾸지 않은 테스트 회귀다.
 - 수정 전: `_node_flow(..., _TEST_ALERT, ...)`가 fixture의 action/deep_link를 `ANVIL_F20_R6_EXPECTED_ACTION_JSON`으로 seed **전** Node에 전달했다. 수정 후: token-guarded 테스트 전용 `/r6-control/seed`가 `owner.alerts()` 실제 저장 snapshot에서 `code/level/cause/related_entity_id/next_action/deep_link`만 응답한다. 브라우저는 기존 fixture의 code/entity/cause와 0→1 seed 경계를 먼저 검증하고 이 제한된 실제 snapshot을 저장 Alert→Dashboard API→DOM의 기대값으로 사용한다. 전체 저장 snapshot은 Python 최종 `owner.alerts() == before`로 계속 고정한다. 비밀성 `evidence_hash`와 fixture action을 Node 환경에 전달하지 않는다. 기존 저장/철회/403·same-origin/Secret 단언과 제품 코드는 변경하지 않았다.
@@ -68,7 +76,7 @@
 
 로컬 `.pytest_tmp_f20_u01_r24_dev`와 `apps/web/dist`는 Main의 사전 부재 기록 후 생성됐다. 두 경로의 절대 실경로·root 비-link를 확인했고 pytest base의 하위 symlink 3개 target도 같은 전용 base 내부임을 확인했다. 테스트 명령 종료 뒤 해당 link와 전용 두 경로만 제거했으며 `Test-Path` 잔여 `False/False`다. 기존 `.venv`, `node_modules`, `.pytest_cache`는 보존했다. 도구 실행 초기 `apply deny-read ACLs` 사전 오류 2회는 `require_escalated` 읽기/실행으로 우회했고 코드·정식 Developer 실패 횟수는 0이다. 예상 TDD RED 4회는 정식 실패로 집계하지 않는다.
 
-## 미검증·다음 조치·rollback
+## 이전 로컬 checkpoint의 미검증·다음 조치·rollback (이력)
 
 - Main이 exact3 diff 및 로컬 결과를 독립 검토한 다음 안전한 commit/private push를 수행하고, WSL-server의 동일 SHA에서 격리 PostgreSQL 15/OIDC/Chromium opt-in을 실행해야 한다. 실제 빈 DB/API/DOM, 단일 503·다른 카드 유지·본문 비노출, R23 저장 Alert/Next Actions/revoke/403, Network/Secret, 자원 잔류 0을 기록해야 한다.
 - 이번 로컬 실행은 실제 브라우저/DB/WSL/Production 검증이 아니다. quota/cancel/reconnect·필터/운영 카드·전체 접근성·독립 E-SHOT/E-NET/E-API/E-EVT 및 C30은 미충족이다.
