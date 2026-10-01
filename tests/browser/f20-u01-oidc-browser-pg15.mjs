@@ -123,6 +123,34 @@ function validateDashboardError(view) {
   return { errorIsNotZero: true, independentCardsPreserved: true, errorBodyHidden: true };
 }
 
+function safeDashboardSummary(response) {
+  let actions = 'INVALID';
+  try {
+    const parsed = JSON.parse(response.text);
+    const rows = parsed?.data?.next_actions;
+    if (Array.isArray(rows) && rows.length <= 100) actions = String(rows.length);
+  } catch { /* Raw response bodies never enter diagnostics. */ }
+  const status = Number.isInteger(response.status) && response.status >= 100
+    && response.status <= 599 ? response.status : 0;
+  return { status, actions };
+}
+
+function safeStoredCardState(status, rows, empty) {
+  if (rows > 0) return 'ROW';
+  if (empty) return 'EMPTY';
+  return ['LOADING', 'BLOCKED', 'UNAVAILABLE'].includes(status) ? status : 'OTHER';
+}
+
+async function storedCardState(card) {
+  try {
+    const text = await card.innerText();
+    const rows = await card.locator('li').count();
+    const status = await card.locator('p.status-unavailable').first().count()
+      ? await card.locator('p.status-unavailable').first().innerText() : '';
+    return safeStoredCardState(status, rows, text.includes('현재 관측된 다음 조치 0건'));
+  } catch { return 'OTHER'; }
+}
+
 async function injectSingleDashboardError(page, origin, work) {
   let count = 0;
   const handler = async (route) => {
@@ -589,7 +617,8 @@ async function readyDashboard(page, action, origin, phase, responseCaptures, bef
       + `finished=${probe.finished} native=${probe.native}\n`);
   }
   verifiedResponseFacts(results);
-  return { card, beforeEvidence };
+  return { card, beforeEvidence,
+    ...(phase === 'STORED' ? { dashboardResponse: results[categories.indexOf('DASHBOARD_API')] } : {}) };
 }
 
 async function main() {
@@ -748,7 +777,7 @@ async function main() {
     const storedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
     assert.equal(storedDashboard.status, 200, 'R20_NEXT_ACTION_MISMATCH');
     const dashboardActions = JSON.parse(storedDashboard.text).data.next_actions;
-    await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
+    const storedReady = await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
     markStage('STORED_ALERT_WAIT');
     await card.getByText(alertCode, { exact: true }).waitFor();
     const visibleBeforeRevoke = await card.getByText(alertCode, { exact: true }).count() === 1;
@@ -758,7 +787,17 @@ async function main() {
     assert.ok(rowMatches);
     markStage('STORED_NEXT_ACTION');
     await nextCard.waitFor({ state: 'visible' });
-    await nextCard.locator('li').filter({ hasText: expectedAction.action }).waitFor();
+    try {
+      await nextCard.locator('li').filter({ hasText: expectedAction.action }).waitFor();
+    } catch (error) {
+      const direct = safeDashboardSummary(storedDashboard);
+      const reload = safeDashboardSummary({ status: storedReady.dashboardResponse.status,
+        text: storedReady.dashboardResponse.value.body });
+      const dom = await storedCardState(nextCard);
+      writeSync(1, `R24_STORED_UI_DIAG directStatus=${direct.status} directActions=${direct.actions}`
+        + ` reloadStatus=${reload.status} reloadActions=${reload.actions} dom=${dom}\n`);
+      throw error;
+    }
     const actionRow = nextCard.locator('li');
     const storedActionEvidence = validateStoredNextAction(
       { status: storedDashboard.status, actions: dashboardActions }, alerts[0], expectedAction,
@@ -855,6 +894,16 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(safeDashboardSummary({ status: 200,
+    text: '{"data":{"next_actions":[{"action":"private"}]}}' }),
+  { status: 200, actions: '1' });
+  assert.deepEqual(safeDashboardSummary({ status: 503, text: 'private-error-body' }),
+    { status: 503, actions: 'INVALID' });
+  assert.deepEqual(safeDashboardSummary({ status: 200, text: '{"data":{"next_actions":"private"}}' }),
+    { status: 200, actions: 'INVALID' });
+  assert.equal(safeStoredCardState('UNAVAILABLE', 0, false), 'UNAVAILABLE');
+  assert.equal(safeStoredCardState('private-text', 0, false), 'OTHER');
+  assert.equal(safeStoredCardState('', 1, false), 'ROW');
   assert.deepEqual(validateEmptyDashboard(
     { alertStatus: 200, alerts: [], actionStatus: 200, actions: [], storedCount: 0 },
     '이 페이지에 저장된 Critical 기록 없음',

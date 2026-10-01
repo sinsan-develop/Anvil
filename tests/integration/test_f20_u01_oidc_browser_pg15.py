@@ -59,7 +59,7 @@ _BROWSER_STAGES = frozenset({
     "EMPTY_RESPONSES", "EMPTY_ASSERT", "SEED_CONTROL",
     "ERROR_DOCUMENT", "ERROR_CARD", "ERROR_RESPONSES", "ERROR_ASSERT",
     "STORED_ALERT_FETCH", "STORED_DOCUMENT", "STORED_CARD", "STORED_RESPONSES",
-    "STORED_ALERT_WAIT",
+    "STORED_ALERT_WAIT", "STORED_NEXT_ACTION",
     "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DOCUMENT",
     "REVOKE_CARD", "REVOKE_RESPONSES", "REVOKE_CLEAR", "NETWORK_REQUEST_FACTS",
     "NETWORK_RESPONSE_FACTS", "NETWORK_DOM", "NETWORK_IDP_STATE",
@@ -261,6 +261,24 @@ def _safe_route_diagnostic(output: str) -> str:
             else "")
 
 
+def _safe_stored_diagnostic(output: str) -> str:
+    detail = ""
+    for match in re.finditer(
+        r"^R24_STORED_UI_DIAG directStatus=([0-9]{1,3}) directActions=(INVALID|[0-9]{1,3}) "
+        r"reloadStatus=([0-9]{1,3}) reloadActions=(INVALID|[0-9]{1,3}) "
+        r"dom=(ROW|EMPTY|LOADING|BLOCKED|UNAVAILABLE|OTHER)\r?$",
+        output, flags=re.MULTILINE,
+    ):
+        direct_status, direct_actions, reload_status, reload_actions, dom = match.groups()
+        counts = (direct_actions, reload_actions)
+        if (all(status == "0" or 100 <= int(status) <= 599
+                for status in (direct_status, reload_status))
+                and all(count == "INVALID" or int(count) <= 100 for count in counts)):
+            detail = (f" directStatus={direct_status} directActions={direct_actions}"
+                      f" reloadStatus={reload_status} reloadActions={reload_actions} dom={dom}")
+    return detail
+
+
 def _diagnostic_drain_mode() -> bool:
     value = os.environ.get("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK")
     assert value in (None, "1"), "R6_DIAG_FLAG_INVALID"
@@ -423,6 +441,8 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         detail = (_safe_network_diagnostic(result.stdout + "\n" + result.stderr)
                   if stage in _RESPONSE_FAILURE_STAGES else "")
         detail += _safe_route_diagnostic(result.stdout)
+        if stage == "STORED_NEXT_ACTION":
+            detail += _safe_stored_diagnostic(result.stdout)
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
                     f"class={error_class}{detail}", pytrace=False)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
@@ -776,6 +796,8 @@ def test_r6_browser_failure_classification_never_returns_raw_output():
          ("PRE_AUTH_RESPONSES", "Error")),
         ("R6_BROWSER_FAILED stage=OIDC_AUTH_REQUEST class=AssertionError\n", "",
          ("OIDC_AUTH_REQUEST", "AssertionError")),
+        ("R6_NODE_STARTED\nR6_BROWSER_FAILED stage=STORED_NEXT_ACTION class=TimeoutError\n", "",
+         ("STORED_NEXT_ACTION", "TimeoutError")),
         ("R6_NODE_STARTED\n", secret, ("NODE_UNHANDLED", "UnhandledError")),
         ("", f"npm error code EAI_AGAIN\n{secret}",
          ("NPM_INSTALL", "PackageManagerError")),
@@ -858,6 +880,29 @@ def test_r23_route_failure_reports_only_fixed_marker(monkeypatch):
     message = str(failure.value)
     assert "stage=PRE_AUTH_LOADING_RELEASE exit=1 class=Error" in message
     assert "R23_ROUTE_CONTINUE_FAILED" in message
+    assert secret not in message
+
+
+def test_r24_stored_timeout_reports_only_whitelisted_diagnostic(monkeypatch):
+    secret = "private-response-body"
+    stdout = ("R6_NODE_STARTED\nR6_STAGE STORED_NEXT_ACTION\n"
+              "R24_STORED_UI_DIAG directStatus=200 directActions=1 "
+              "reloadStatus=200 reloadActions=0 dom=EMPTY\n" + secret)
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1, stdout=stdout,
+            stderr="R6_BROWSER_FAILED stage=STORED_NEXT_ACTION class=TimeoutError\n" + secret,
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    message = str(failure.value)
+    assert "stage=STORED_NEXT_ACTION exit=1 class=TimeoutError" in message
+    assert "directStatus=200 directActions=1 reloadStatus=200 reloadActions=0 dom=EMPTY" in message
     assert secret not in message
 
 

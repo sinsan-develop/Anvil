@@ -2,7 +2,17 @@
 
 ## 판정
 
-`COMPLETED` — 승인된 exact3의 로컬 하네스 보강과 비 opt-in 회귀를 완료했다. 실제 WSL-server PostgreSQL 15/OIDC/Chromium opt-in의 DOM·API·Network·DB 결과는 `UNVERIFIED`이며 Main의 동일 SHA 실행과 독립 판정이 남아 있다. U-01/F-20 또는 C30 완료 판정이 아니다.
+`INCOMPLETE` — Main의 첫 WSL-server PostgreSQL 15/OIDC/Chromium opt-in이 `STORED_NEXT_ACTION`에서 실패했다. 아래의 진단 재작업은 로컬 GREEN이지만 저장 Dashboard 재조회 응답과 UI 상태의 불일치를 실제 WSL에서 다시 분리해야 한다. U-01/F-20 또는 C30 완료 판정이 아니다.
+
+## R24 WSL 1차 실패·진단 재작업 checkpoint
+
+- Main의 동일 SHA `58c0b75c5e2468b840bde9e334173277d3053950` 격리 QA는 실제 `STORED_NEXT_ACTION`/`TimeoutError`에서 실패했다. 선행 저장 Alert API 200, 저장 Dashboard 직접 API 200/`next_actions` 1건, Alert DOM 1행을 지났으나 저장 Next Actions DOM 1행을 10초 안에 보지 못했다. Python stage whitelist 누락으로 외부 오류는 `NODE_UNHANDLED`로 오분류됐다. 제품 PASS나 R24 PASS가 아니다.
+- 확인된 결함: Python에 `STORED_NEXT_ACTION`을 whitelist로 추가하고 안전 진단의 정수 상태·제한된 개수·DOM enum만 실패 메시지에 허용한다. 비밀값·URL·응답 본문·화면 원문은 출력하지 않는다.
+- 미확정 원인: 직접 API의 1건과 브라우저 reload가 받은 응답이 같은지, reload 응답은 유효하나 UI의 전체 snapshot 분류가 `UNAVAILABLE`인지, 렌더 시점 문제인지 아직 구분되지 않았다. 제품 UI/API/DB 계약·단언을 완화하지 않았다.
+- 브라우저 하네스는 실패 시에만 직접 API와 reload 응답의 HTTP status/`next_actions` 개수(0~100 또는 `INVALID`) 및 Next Actions DOM 상태(`ROW/EMPTY/LOADING/BLOCKED/UNAVAILABLE/OTHER`)를 `R24_STORED_UI_DIAG` 한 줄로 출력한다. `finally`의 기존 자원 정리 경계는 유지한다.
+- 예상 RED: `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit 1 `ReferenceError: safeDashboardSummary is not defined`; `.\.venv\Scripts\python.exe -m pytest tests/integration/test_f20_u01_oidc_browser_pg15.py -q -k 'r6_browser_failure_classification or r24_stored_timeout' --basetemp=.pytest_tmp_f20_u01_r24_dev -p no:cacheprovider` exit 1, 2 failed/21 deselected (`NODE_UNHANDLED` 오분류).
+- GREEN: `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit 0, 하네스 `--audit-self-test` exit 0/`R6_AUDIT_SELF_TEST_PASS`, 위 Python focused exit 0/2 passed·21 deselected, Python 전체 비 opt-in exit 0/22 passed·1 opt-in skipped. 이후 전용 pytest base의 root 비-link·하위 symlink 3개 target 내부를 확인해 해당 base만 삭제했고 잔여 0이다.
+- Main은 첫 실패 SHA의 전용 WSL 자원을 정확한 신원 검사 뒤 정리했다고 보고했고, 현재 branch `9e4547e400c6a6fed4b3dba28866e2f27f9613c9`에서 WSL checkout/G-05가 동일하다고 전달했다. 이 진단 diff는 아직 commit/push/WSL 실행되지 않았다. Main이 새 SHA로 재실측하고 안전 진단 한 줄을 전달하면 원인을 확정해 exact3 내에서만 다음 TDD 보완 여부를 결정한다. 정식 Developer 실패 0, 이 재작업의 미완료 조건은 실제 WSL 진단이다.
 
 ## 기준과 소유권
 
