@@ -376,6 +376,24 @@ def _r23_loading_evidence(evidence: dict) -> dict:
     return actual
 
 
+def _r25_task1_evidence(evidence: dict) -> dict:
+    expected = ("r25PreAuthAccessible", "r25LoadingKeyboardStable")
+    actual = {key: evidence.get(key) for key in expected}
+    assert all(type(value) is bool and value is True for value in actual.values()), (
+        "R25_TASK1_BROWSER_EVIDENCE_MISMATCH"
+    )
+    return actual
+
+
+def _r25_task2_evidence(evidence: dict) -> dict:
+    expected = ("r25EmptyErrorDistinct", "r25RevokedRowsInaccessible")
+    actual = {key: evidence.get(key) for key in expected}
+    assert all(type(value) is bool and value is True for value in actual.values()), (
+        "R25_TASK2_BROWSER_EVIDENCE_MISMATCH"
+    )
+    return actual
+
+
 def _r24_empty_evidence(evidence: dict) -> dict:
     expected = {"emptyCriticalAlerts": True, "emptyNextActions": True,
                 "emptyIsObserved": True}
@@ -641,6 +659,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         assert len(seeded_alerts) == 1, "R24_SEED_MISSING"
         before = seeded_alerts[0]
         loading_evidence = _r23_loading_evidence(evidence)
+        r25_task1_evidence = _r25_task1_evidence(evidence)
+        r25_task2_evidence = _r25_task2_evidence(evidence)
         empty_evidence = _r24_empty_evidence(evidence)
         error_evidence = _r24_error_evidence(evidence)
         assert evidence.get("pageRequestCount", 0) > 0, "R6_PAGE_NETWORK_EMPTY"
@@ -658,7 +678,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             assert not artifact_keys.intersection(evidence), "R6_EVIDENCE_OUTPUT_UNEXPECTED"
         checked = {key: value for key, value in evidence.items()
                    if key not in {"pageRequestCount", "appApiRequestCount"}
-                   | diagnostic_keys | artifact_keys | set(loading_evidence) | set(empty_evidence)
+                   | diagnostic_keys | artifact_keys | set(loading_evidence) | set(r25_task1_evidence)
+                   | set(r25_task2_evidence) | set(empty_evidence)
                    | set(error_evidence)}
         assert checked == {
             "preAuthStatus": 401, "authorizationStatus": 200, "callbackStatus": 200,
@@ -1066,6 +1087,26 @@ def test_r23_loading_browser_evidence_is_exact_and_fail_closed():
             _r23_loading_evidence({**expected, key: bad})
     with pytest.raises(AssertionError, match="R23_LOADING_BROWSER_EVIDENCE_MISMATCH"):
         _r23_loading_evidence({**expected, "loadingCardCount": True})
+
+
+def test_r25_pre_auth_and_loading_keyboard_facts_are_strict_booleans():
+    expected = {"r25PreAuthAccessible": True, "r25LoadingKeyboardStable": True}
+    assert _r25_task1_evidence(expected) == expected
+    for key in expected:
+        with pytest.raises(AssertionError, match="R25_TASK1_BROWSER_EVIDENCE_MISMATCH"):
+            _r25_task1_evidence({**expected, key: False})
+        with pytest.raises(AssertionError, match="R25_TASK1_BROWSER_EVIDENCE_MISMATCH"):
+            _r25_task1_evidence({**expected, key: 1})
+
+
+def test_r25_empty_error_and_revocation_facts_are_strict_booleans():
+    expected = {"r25EmptyErrorDistinct": True, "r25RevokedRowsInaccessible": True}
+    assert _r25_task2_evidence(expected) == expected
+    for key in expected:
+        with pytest.raises(AssertionError, match="R25_TASK2_BROWSER_EVIDENCE_MISMATCH"):
+            _r25_task2_evidence({**expected, key: False})
+        with pytest.raises(AssertionError, match="R25_TASK2_BROWSER_EVIDENCE_MISMATCH"):
+            _r25_task2_evidence({**expected, key: 1})
 
 
 def test_r24_empty_browser_evidence_requires_real_observed_zero():

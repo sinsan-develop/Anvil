@@ -136,6 +136,53 @@ function validateDashboardError(view) {
   return { errorIsNotZero: true, independentCardsPreserved: true, errorBodyHidden: true };
 }
 
+function validatePreAuthAccessibility(view) {
+  assert.ok(view.alertLive === 'polite' && view.alertAtomic === 'true'
+    && view.actionLive === 'polite' && view.actionAtomic === 'true'
+    && view.alertText.includes('UNAVAILABLE')
+    && view.alertText.includes('저장 경고 기록을 확인할 수 없습니다.')
+    && view.actionText.includes('BLOCKED') && view.actionText.includes('조회 차단')
+    && !view.alertText.includes('0건') && !view.actionText.includes('0건')
+    && view.alertRows === 0 && view.actionRows === 0
+    && view.sensitiveTextVisible === false, 'R25_PRE_AUTH_ACCESSIBILITY_MISMATCH');
+  return { r25PreAuthAccessible: true };
+}
+
+function validateEmptyErrorAccessibility(view) {
+  assert.ok(view.emptyAlertLive === 'polite' && view.emptyActionLive === 'polite'
+    && view.errorActionLive === 'polite'
+    && view.emptyAlertText.includes('이 페이지에 저장된 Critical 기록 없음')
+    && view.emptyActionText.includes('현재 관측된 다음 조치 0건')
+    && view.errorAlertText.includes('이 페이지에 저장된 Critical 기록 없음')
+    && view.errorActionText.includes('UNAVAILABLE')
+    && view.errorActionText.includes('다음 조치를 확인할 수 없습니다.')
+    && !view.errorActionText.includes('0건')
+    && view.independentBefore.length > 0
+    && view.independentAfter === view.independentBefore
+    && view.errorBodyVisible === false,
+  'R25_EMPTY_ERROR_ACCESSIBILITY_MISMATCH');
+  return { r25EmptyErrorDistinct: true };
+}
+
+function validateRevokedAccessibility(view) {
+  assert.ok(view.alertLive === 'polite' && view.actionLive === 'polite'
+    && view.alertText.includes('BLOCKED') && view.alertText.includes('조회 차단')
+    && view.actionText.includes('BLOCKED') && view.actionText.includes('조회 차단')
+    && !view.alertText.includes('0건') && !view.actionText.includes('0건')
+    && view.alertRows === 0 && view.actionRows === 0
+    && view.staleFocusable === 0 && view.staleTextVisible === false,
+  'R25_REVOKED_ACCESSIBILITY_MISMATCH');
+  return { r25RevokedRowsInaccessible: true };
+}
+
+function validateLoadingKeyboardStability(view) {
+  assert.ok(view.beforeFocused === true && view.afterFocused === true
+    && view.firstExpanded === 'true' && view.collapsedExpanded === 'false'
+    && view.restoredExpanded === 'true' && view.pendingDuringToggle === true,
+  'R25_LOADING_KEYBOARD_MISMATCH');
+  return { r25LoadingKeyboardStable: true };
+}
+
 function safeDashboardSummary(response) {
   let actions = 'INVALID';
   try {
@@ -491,7 +538,7 @@ async function loadingFacts(page) {
   return { cards, next, alerts, checked };
 }
 
-async function verifyDashboardKeyboard(page) {
+async function verifyDashboardKeyboard(page, requestsPending) {
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
     'Anvil Dashboard', 'R23_KEYBOARD_MISMATCH');
@@ -499,15 +546,25 @@ async function verifyDashboardKeyboard(page) {
   const toggle = page.locator('button.sidebar-toggle');
   assert.equal(await toggle.evaluate((element) => element === document.activeElement), true,
     'R23_KEYBOARD_MISMATCH');
-  assert.equal(await toggle.getAttribute('aria-expanded'), 'true', 'R23_KEYBOARD_MISMATCH');
+  const beforeFocused = await toggle.evaluate((element) => element === document.activeElement);
+  const firstExpanded = await toggle.getAttribute('aria-expanded');
+  assert.equal(firstExpanded, 'true', 'R23_KEYBOARD_MISMATCH');
   await page.keyboard.press('Enter');
-  assert.equal(await toggle.getAttribute('aria-expanded'), 'false', 'R23_KEYBOARD_MISMATCH');
+  const collapsedExpanded = await toggle.getAttribute('aria-expanded');
+  assert.equal(collapsedExpanded, 'false', 'R23_KEYBOARD_MISMATCH');
   await page.keyboard.press('Enter');
-  assert.equal(await toggle.getAttribute('aria-expanded'), 'true', 'R23_KEYBOARD_MISMATCH');
+  const restoredExpanded = await toggle.getAttribute('aria-expanded');
+  assert.equal(restoredExpanded, 'true', 'R23_KEYBOARD_MISMATCH');
+  const afterFocused = await toggle.evaluate((element) => element === document.activeElement);
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()),
     'Dashboard', 'R23_KEYBOARD_MISMATCH');
-  return { dashboardTabFocused: true, sidebarEnterToggle: true };
+  const loading = await loadingFacts(page);
+  const pendingDuringToggle = requestsPending && loading.cards.every(({ status }) => status === 'LOADING')
+    && loading.next.status === 'LOADING' && loading.alerts.status === 'LOADING';
+  return { dashboardTabFocused: true, sidebarEnterToggle: true,
+    ...validateLoadingKeyboardStability({ beforeFocused, afterFocused,
+      firstExpanded, collapsedExpanded, restoredExpanded, pendingDuringToggle }) };
 }
 
 function createTrackedRouteHandler(origin, pending, observed) {
@@ -569,7 +626,7 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
       markStage('PRE_AUTH_LOADING_DOM');
       const loading = validateLoadingFacts(await loadingFacts(page));
       markStage('PRE_AUTH_KEYBOARD');
-      const keyboard = await verifyDashboardKeyboard(page);
+      const keyboard = await verifyDashboardKeyboard(page, observed.size === loadingPaths.size);
       markStage('PRE_AUTH_LOADING_RELEASE');
       const released = new Set();
       for (const category of loadingPaths.values()) {
@@ -587,6 +644,8 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
             .locator('[aria-live] p').first().innerText(), 'LOADING', 'R23_EARLY_SETTLEMENT');
         }
       }
+      assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()),
+        'Dashboard', 'R25_LOADING_KEYBOARD_MISMATCH');
       return { ...loading, ...keyboard, heldRequestCount: observed.size, individuallyReleased: true };
     })();
     return evidence;
@@ -704,6 +763,24 @@ async function main() {
     assert.equal(preAuth.status, 401);
     markStage('PRE_AUTH_CARD_CHECK');
     assert.equal(await card.getByText(alertCode, { exact: true }).count(), 0);
+    const preAuthDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    assert.equal(preAuthDashboard.status, 401, 'R25_PRE_AUTH_ACCESSIBILITY_MISMATCH');
+    const preAuthNext = page.locator('section[aria-labelledby="next-actions-heading"]');
+    await preAuthNext.getByText('BLOCKED', { exact: true }).waitFor();
+    const preAuthAlertLive = card.locator('[aria-live]');
+    const preAuthActionLive = preAuthNext.locator('[aria-live]');
+    const preAuthAlertText = await preAuthAlertLive.innerText();
+    const preAuthActionText = await preAuthActionLive.innerText();
+    const preAuthAccessible = validatePreAuthAccessibility({
+      alertLive: await preAuthAlertLive.getAttribute('aria-live'),
+      alertAtomic: await preAuthAlertLive.getAttribute('aria-atomic'),
+      alertText: preAuthAlertText, alertRows: await card.locator('li').count(),
+      actionLive: await preAuthActionLive.getAttribute('aria-live'),
+      actionAtomic: await preAuthActionLive.getAttribute('aria-atomic'),
+      actionText: preAuthActionText, actionRows: await preAuthNext.locator('li').count(),
+      sensitiveTextVisible: [alertCode, expectedEntity, expectedCause]
+        .some((value) => Boolean(value) && (preAuthAlertText + preAuthActionText).includes(value)),
+    });
     if (evidenceDir) {
       await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
       markStage('EVIDENCE_PRE_AUTH');
@@ -751,6 +828,12 @@ async function main() {
     await nextCard.getByText('현재 관측된 다음 조치 0건', { exact: false }).waitFor();
     const emptyAlertText = await card.innerText();
     const emptyActionText = await nextCard.innerText();
+    const emptyAlertLive = card.locator('[aria-live]');
+    const emptyActionLive = nextCard.locator('[aria-live]');
+    const emptyAlertLiveText = await emptyAlertLive.innerText();
+    const emptyActionLiveText = await emptyActionLive.innerText();
+    const emptyAlertLiveMode = await emptyAlertLive.getAttribute('aria-live');
+    const emptyActionLiveMode = await emptyActionLive.getAttribute('aria-live');
     const emptyAlertRows = await card.locator('li').count();
     const emptyActionRows = await nextCard.locator('li').count();
     markStage('EMPTY_ASSERT');
@@ -785,6 +868,15 @@ async function main() {
       independentBefore,
       independentAfter: await providerCard.innerText(),
       dom: await page.locator('body').innerText(),
+    });
+    const emptyErrorAccessible = validateEmptyErrorAccessibility({
+      emptyAlertLive: emptyAlertLiveMode, emptyActionLive: emptyActionLiveMode,
+      emptyAlertText: emptyAlertLiveText, emptyActionText: emptyActionLiveText,
+      errorAlertText: await card.locator('[aria-live]').innerText(),
+      errorActionLive: await nextCard.locator('[aria-live]').getAttribute('aria-live'),
+      errorActionText: await nextCard.locator('[aria-live]').innerText(),
+      independentBefore, independentAfter: await providerCard.innerText(),
+      errorBodyVisible: (await page.locator('body').innerText()).includes('r24-private-error-body-marker'),
     });
     markStage('SEED_CONTROL');
     const seed = await issuerClient.post(new URL('/r6-control/seed', issuerUrl).href, {
@@ -874,6 +966,18 @@ async function main() {
     await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
     const revokedActionEvidence = validateRevokedNextAction(revokedDashboard.status,
       await nextCard.innerText(), await nextCard.locator('li').count());
+    const revokedAlertText = await card.locator('[aria-live]').innerText();
+    const revokedActionText = await nextCard.locator('[aria-live]').innerText();
+    const revokedAccessible = validateRevokedAccessibility({
+      alertLive: await card.locator('[aria-live]').getAttribute('aria-live'),
+      actionLive: await nextCard.locator('[aria-live]').getAttribute('aria-live'),
+      alertText: revokedAlertText, actionText: revokedActionText,
+      alertRows: await card.locator('li').count(), actionRows: await nextCard.locator('li').count(),
+      staleFocusable: await card.locator('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])').count()
+        + await nextCard.locator('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])').count(),
+      staleTextVisible: [alertCode, expectedAction.action, expectedEntity, expectedCause]
+        .some((value) => Boolean(value) && (revokedAlertText + revokedActionText).includes(value)),
+    });
     if (evidenceDir) {
       assert.ok(staleCleared, 'R6_EVIDENCE_REVOKE_STATE_REJECTED');
       markStage('EVIDENCE_REVOKED');
@@ -912,7 +1016,8 @@ async function main() {
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
       ...storedActionEvidence, ...revokedActionEvidence,
-      ...loadingEvidence, ...emptyEvidence, ...errorEvidence, r23Regression: true,
+      ...loadingEvidence, ...preAuthAccessible, ...emptyEvidence, ...errorEvidence,
+      ...emptyErrorAccessible, ...revokedAccessible, r23Regression: true,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
       pageRequestCount: requests.length, appApiRequestCount,
       ...(diagnosticDrain ? {
@@ -940,6 +1045,43 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.deepEqual(validateEmptyErrorAccessibility({ emptyAlertLive: 'polite',
+    emptyActionLive: 'polite', emptyAlertText: '이 페이지에 저장된 Critical 기록 없음',
+    emptyActionText: '현재 관측된 다음 조치 0건', errorAlertText: '이 페이지에 저장된 Critical 기록 없음',
+    errorActionLive: 'polite', errorActionText: 'UNAVAILABLE\n다음 조치를 확인할 수 없습니다.',
+    independentBefore: '등록 9 / 9', independentAfter: '등록 9 / 9', errorBodyVisible: false }),
+  { r25EmptyErrorDistinct: true });
+  assert.throws(() => validateEmptyErrorAccessibility({ emptyAlertLive: 'polite',
+    emptyActionLive: 'polite', emptyAlertText: '이 페이지에 저장된 Critical 기록 없음',
+    emptyActionText: '현재 관측된 다음 조치 0건', errorAlertText: '이 페이지에 저장된 Critical 기록 없음',
+    errorActionLive: 'polite', errorActionText: '현재 관측된 다음 조치 0건',
+    independentBefore: '등록 9 / 9', independentAfter: '등록 9 / 9', errorBodyVisible: false }),
+  /R25_EMPTY_ERROR_ACCESSIBILITY_MISMATCH/);
+  assert.deepEqual(validateRevokedAccessibility({ alertLive: 'polite', actionLive: 'polite',
+    alertText: 'BLOCKED\n조회 차단', actionText: 'BLOCKED\n조회 차단',
+    alertRows: 0, actionRows: 0, staleFocusable: 0, staleTextVisible: false }),
+  { r25RevokedRowsInaccessible: true });
+  assert.throws(() => validateRevokedAccessibility({ alertLive: 'polite', actionLive: 'polite',
+    alertText: 'BLOCKED\n조회 차단', actionText: 'BLOCKED\n조회 차단',
+    alertRows: 0, actionRows: 0, staleFocusable: 1, staleTextVisible: false }),
+  /R25_REVOKED_ACCESSIBILITY_MISMATCH/);
+  assert.deepEqual(validatePreAuthAccessibility({ alertLive: 'polite', alertAtomic: 'true',
+    alertText: 'UNAVAILABLE\n저장 경고 기록을 확인할 수 없습니다.', alertRows: 0,
+    actionLive: 'polite', actionAtomic: 'true',
+    actionText: 'BLOCKED\n조회 차단 · 다음 조치를 표시하지 않습니다.', actionRows: 0,
+    sensitiveTextVisible: false }), { r25PreAuthAccessible: true });
+  assert.throws(() => validatePreAuthAccessibility({ alertLive: null, alertAtomic: 'true',
+    alertText: 'UNAVAILABLE', alertRows: 0, actionLive: 'polite', actionAtomic: 'true',
+    actionText: 'BLOCKED', actionRows: 0, sensitiveTextVisible: false }),
+  /R25_PRE_AUTH_ACCESSIBILITY_MISMATCH/);
+  assert.deepEqual(validateLoadingKeyboardStability({ beforeFocused: true,
+    afterFocused: true, firstExpanded: 'true', collapsedExpanded: 'false',
+    restoredExpanded: 'true', pendingDuringToggle: true }),
+  { r25LoadingKeyboardStable: true });
+  assert.throws(() => validateLoadingKeyboardStability({ beforeFocused: true,
+    afterFocused: false, firstExpanded: 'true', collapsedExpanded: 'false',
+    restoredExpanded: 'true', pendingDuringToggle: true }),
+  /R25_LOADING_KEYBOARD_MISMATCH/);
   assert.deepEqual(validateSeedResult({ before_count: 0, seeded_count: 1,
     stored_alert: { code: 'WORKER_LEASE_EXPIRED', level: 'critical',
       cause: 'Worker lease expiry observed', related_entity_id: 'r6-run',
