@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` (Developer의 R28 Python 증거 계약·로컬 검증). R27 네 번째 WSL 실제 opt-in은 브라우저 흐름을 완료했지만 Python exact 증거 사전에서 `R6_BROWSER_EVIDENCE_MISMATCH`로 FAIL이었다. R28 epoch42 dual lease에서 새 증거의 top-level·중첩 키, type·값과 고정 관측 시각을 엄격히 검증하도록 보정했다. Main의 동일 clean SHA WSL 실제 재검증은 아직 `NOT_EXECUTED`이며 이 로컬 결과만으로 R27/U-01/F-20을 수락하지 않는다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`.
+`INCOMPLETE` (R28 증거 계약 보정 후 Main WSL 실제 재검증 대기). R27 네 번째 WSL 실제 opt-in은 브라우저 흐름을 완료했지만 Python exact 증거 사전에서 `R6_BROWSER_EVIDENCE_MISMATCH`로 FAIL이었다. R28의 첫 번째/전체 다섯 번째 WSL 재실행도 같은 불일치로 FAIL했다. R28 epoch42 dual lease에서 실제 R27 신규 증거의 top-level·중첩 키, type·값과 고정 관측 시각을 엄격히 검증하되 기존 R24와 공유하는 `independentCardsPreserved`의 중복 소비를 정정했다. 보정 후 Main의 동일 clean SHA WSL 실제 재검증은 아직 `NOT_EXECUTED`이며 이 로컬 결과만으로 R27/U-01/F-20을 수락하지 않는다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`.
 
 ## 기준과 RED→GREEN
 
@@ -11,7 +11,8 @@
 - 상위 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 작업계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`.
 - lease: actor `developer-primary-f20-u01-r28`, canonical seq1966 epoch42 worker/write ACTIVE, execution token `f20-u01-r28-execution-fence-epoch-42-r28contract1002`, write token `f20-u01-r28-write-fence-epoch-42-r28contract1002`, 만료 `2026-10-02T17:07:36+00:00`; allowed exact2는 이 결과보고서와 Python integration 테스트 파일이다.
 - TDD RED: Main의 실제 WSL 4차 `1 failed, 25 deselected, 2 warnings in 9.07s`, `R6_BROWSER_EVIDENCE_MISMATCH`. 로컬 신규 negative 계약 테스트는 helper 구현 전 `NameError`로 1 FAIL/26 deselected(exit1)하여 미구현 지점을 확인했다. helper·최종 사전 결박 후 focused 1 PASS/26 deselected(exit0).
-- Python 변경: R27 새 top-level 10키와 중첩 3계약을 exact-key/deep type/value로 검증한다. 수동·키보드 조회의 관측 시각은 이 실제 WSL fixture `OperationsService` clock `2026-09-28T00:00:00+00:00`과 각각 정확히 일치해야 한다. 수동/키보드 GET1, 독립 카드 보존, 503/invalid의 구별된 응답 상태·fail-closed, 철회 403/기존 보호값 제거를 정확히 요구한다. 새 키가 누락·추가되면 R28 exact 사전이 거부하고, 기존 R6/R23~R26 exact 사전도 그대로 유지한다. Network/Secret/artifact 검사는 제거·완화하지 않았다. 누락·잘못된 type/value·중첩/상위 여분 키 negative 테스트를 포함한다.
+- Python 변경: R27 신규 top-level **9키**와 중첩 3계약을 exact-key/deep type/value로 검증한다. top-level `independentCardsPreserved=True`는 이미 `_r24_error_evidence`가 bool type과 값을 엄격 검증·`prior_keys`로 소비하므로 R28 candidate에서 다시 요구하지 않는다. 반면 중첩 `keyboardRefreshEvidence.independentCardsPreserved=True`는 R28이 계속 정확히 검증한다. 수동·키보드 조회의 관측 시각은 실제 WSL fixture `OperationsService` clock `2026-09-28T00:00:00+00:00`과 각각 정확히 일치해야 한다. 수동/키보드 GET1, 독립 카드 보존, 503/invalid의 구별된 응답 상태·fail-closed, 철회 403/기존 보호값 제거를 정확히 요구한다. 새 키가 누락·추가되면 R28 exact 사전이 거부하고, 기존 R6/R23~R26 exact 사전도 그대로 유지한다. Network/Secret/artifact 검사는 제거·완화하지 않았다. 누락·잘못된 type/value·중첩/상위 여분 키 negative 테스트를 포함한다.
+- Main의 다섯 번째 fresh WSL opt-in은 `1 failed, 26 deselected, 2 warnings in 9.08s`로 브라우저 흐름은 끝났지만 `_r28_manual_evidence` exact mismatch였다. read-only 코드 대조로 위 공유 key의 이중 요구를 확인했다. 이 실제 실패를 RED로 두고 R28 focused 테스트를 신규 9키 candidate 및 R24 공유 key `False`/`1`/`None` 거부로 바꾸자 예상 `R28_BROWSER_EVIDENCE_MISMATCH` 1 FAIL/26 deselected(exit1)였다. helper의 top-level 기대만 9키로 고쳐 focused 1 PASS/26 deselected(exit0). 기존 R24 검증과 Browser/Network/Secret 단언은 유지했으며 수정 후 실제 WSL GREEN은 아직 미확인이다.
 
 ## 로컬 임시자원 사전 기록
 

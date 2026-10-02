@@ -417,7 +417,9 @@ def _r24_error_evidence(evidence: dict) -> dict:
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
     refresh = {"manualRefreshClicked": True, "manualRefreshRequestCount": 1,
                "manualRefreshObservedAt": observed_at, "independentCardsPreserved": True}
-    expected = {**refresh, "revokedManualRefreshStatus": 403,
+    expected = {**{key: value for key, value in refresh.items()
+                   if key != "independentCardsPreserved"},
+                "revokedManualRefreshStatus": 403,
                 "revokedManualRefreshCleared": True, "revokedManualRefreshFromStored": True,
                 "failedRefresh503": {"requestCount": 1, "responseStatus": 503,
                                      "failClosed": True},
@@ -1162,7 +1164,9 @@ def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation(
     observed_at = "2026-09-28T00:00:00+00:00"
     refresh = {"manualRefreshClicked": True, "manualRefreshRequestCount": 1,
                "manualRefreshObservedAt": observed_at, "independentCardsPreserved": True}
-    expected = {**refresh, "revokedManualRefreshStatus": 403,
+    expected = {**{key: value for key, value in refresh.items()
+                   if key != "independentCardsPreserved"},
+                "revokedManualRefreshStatus": 403,
                 "revokedManualRefreshCleared": True, "revokedManualRefreshFromStored": True,
                 "failedRefresh503": {"requestCount": 1, "responseStatus": 503,
                                      "failClosed": True},
@@ -1170,6 +1174,12 @@ def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation(
                                          "failClosed": True},
                 "keyboardRefreshEvidence": refresh.copy()}
     assert _r28_manual_evidence(expected, observed_at) == expected
+    shared = {"errorIsNotZero": True, "independentCardsPreserved": True,
+              "errorBodyHidden": True, "r23Regression": True}
+    assert _r24_error_evidence(shared)["independentCardsPreserved"] is True
+    for bad in (False, 1, None):
+        with pytest.raises(AssertionError, match="R24_ERROR_BROWSER_EVIDENCE_MISMATCH"):
+            _r24_error_evidence({**shared, "independentCardsPreserved": bad})
     for key in expected:
         with pytest.raises(AssertionError, match="R28_BROWSER_EVIDENCE_MISMATCH"):
             _r28_manual_evidence({name: value for name, value in expected.items()
