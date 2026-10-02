@@ -764,6 +764,232 @@ async function verifyQuotaRefresh(page, origin, expectedAction) {
   }
 }
 
+async function verifyDashboardCancellation(page, origin, expectedAction, previousObservedAt) {
+  const refresh = page.getByRole('button', { name: '대시보드 새로고침' });
+  const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const health = page.locator('section[aria-labelledby="health-heading"]');
+  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  const providerBefore = await provider.innerText();
+  const alertsBefore = await alerts.innerText();
+  assert.equal(await nextCard.locator('li').count(), 1, 'R30_CANCEL_STORED_SETUP_MISSING');
+  await verifyObservationTime(page, previousObservedAt);
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let received;
+  const requested = new Promise((resolve) => { received = resolve; });
+  let settled;
+  const completed = new Promise((resolve) => { settled = resolve; });
+  let requestCount = 0;
+  let requestPath = null;
+  let requestMethod = null;
+  let responseStatus = null;
+  let lateObservedAt = null;
+  let routeError = null;
+  let mutationRequestCount = 0;
+  let oldRequest = null;
+  let oldResponseDistinct = false;
+  let observedFailure;
+  const requestFailed = new Promise((resolve) => { observedFailure = resolve; });
+  const captureFailure = (request) => {
+    if (request === oldRequest) observedFailure(request.failure());
+  };
+  const countMutation = (request) => {
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname.startsWith('/api/') && request.method() !== 'GET') {
+      mutationRequestCount += 1;
+    }
+  };
+  const handler = async (route) => {
+    requestCount += 1;
+    const request = route.request();
+    oldRequest = request;
+    const url = new URL(request.url());
+    requestPath = url.origin === origin ? url.pathname : null;
+    requestMethod = request.method();
+    try {
+      const response = await route.fetch();
+      responseStatus = response.status();
+      const payload = await response.json();
+      lateObservedAt = payload?.data?.observed_at ?? null;
+      oldResponseDistinct = Array.isArray(payload?.data?.next_actions)
+        && payload.data.next_actions.length === 1;
+      received();
+      await held;
+      // A valid older empty snapshot makes an overwrite after the new 200 observable.
+      try { await route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ...payload, data: { ...payload.data, next_actions: [] } }) }); }
+      catch (error) { routeError = error; }
+    } catch (error) {
+      routeError = error;
+      received();
+    } finally {
+      settled();
+    }
+  };
+  page.on('request', countMutation);
+  page.on('requestfailed', captureFailure);
+  await page.route('**/api/dashboard/operations', handler);
+  let oldRouteRegistered = true;
+  try {
+    await refresh.click();
+    await boundedCapture(() => requested, 10000);
+    assert.equal(responseStatus, 200, 'R30_CANCEL_UPSTREAM_NOT_READY');
+    assert.equal(lateObservedAt, previousObservedAt, 'R30_CANCEL_LATE_RESPONSE_MISMATCH');
+    assert.equal(oldResponseDistinct, true, 'R30_CANCEL_OLD_RESPONSE_NOT_DISTINCT');
+    await verifyObservationTime(page, '조회 중');
+    const duplicateRequestPrevented = await refresh.isDisabled();
+    await refresh.evaluate((element) => element.click());
+    assert.equal(requestCount, 1, 'R30_CANCEL_DUPLICATE_GET');
+    await cancel.focus();
+    await page.keyboard.press('Enter');
+    const failure = await boundedCapture(() => requestFailed, 10000);
+    const browserRequestAborted = typeof failure === 'string' && failure.length > 0;
+    assert.equal(browserRequestAborted, true, 'R30_CANCEL_BROWSER_ABORT_MISSING');
+    await verifyObservationTime(page, '조회 취소');
+    await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
+    const cancelledVisible = await nextCard.getByText('CANCELLED', { exact: true }).count() === 1
+      && await cancel.count() === 0 && await refresh.isEnabled();
+    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardText = await Promise.all(cardNames.map(async (name) =>
+      health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
+    const cancelledCards = cardText.every((text, index) => text.includes('CANCELLED')
+      && text.includes(index === 1 ? '조회 취소 · Queue 기록을 표시하지 않습니다.'
+        : `조회 취소 · ${cardNames[index]} 상태 정보를 표시하지 않습니다.`))
+      && (await nextCard.innerText()).includes('조회 취소 · 다음 조치를 표시하지 않습니다.');
+    const cancelledBody = await page.locator('body').innerText();
+    const staleRowsCleared = await nextCard.locator('li').count() === 0
+      && !cancelledBody.includes(expectedAction);
+    const observationCleared = cancelledBody.includes('대시보드 관측 시각 · 조회 취소')
+      && !cancelledBody.includes(`대시보드 관측 시각 · ${previousObservedAt}`);
+    const independentCardsPreserved = await provider.innerText() === providerBefore
+      && await alerts.innerText() === alertsBefore && cardText[0].includes('API 준비 READY');
+    const secretHidden = !cancelledBody.includes('r29-private-quota-body-marker');
+    // Leave the old handler pending while the next manual GET completes.
+    await page.unroute('**/api/dashboard/operations', handler);
+    oldRouteRegistered = false;
+    const cancelRecoveryEvidence = await verifyManualRefresh(page, origin, expectedAction);
+    assert.equal(await nextCard.locator('li').count(), 1, 'R30_CANCEL_RECOVERY_ROW_MISSING');
+    release();
+    await boundedCapture(() => completed, 10000);
+    await page.waitForTimeout(50);
+    const lateAfterRecoveryIgnored = await nextCard.locator('li').count() === 1
+      && (await nextCard.locator('li').first().innerText()).includes(expectedAction)
+      && (await page.locator('.dashboard-heading p[aria-live]').innerText())
+        === `대시보드 관측 시각 · ${cancelRecoveryEvidence.manualRefreshObservedAt}`;
+    assert.ok(requestCount === 1 && requestPath === '/api/dashboard/operations'
+      && requestMethod === 'GET' && cancelledVisible && cancelledCards && staleRowsCleared
+      && observationCleared && independentCardsPreserved && browserRequestAborted
+      && oldResponseDistinct && lateAfterRecoveryIgnored
+      && secretHidden && duplicateRequestPrevented && mutationRequestCount === 0,
+    `R30_CANCEL_STATE_MISMATCH route=${routeError ? 'SETTLED_WITH_ABORT' : 'FULFILLED'}`);
+    return { cancelEvidence: { requestCount, requestPath, requestMethod, cancelledVisible,
+      staleRowsCleared, observationCleared, independentCardsPreserved,
+      browserRequestAborted, oldResponseDistinct, lateAfterRecoveryIgnored,
+      secretHidden, duplicateRequestPrevented, mutationRequestCount }, cancelRecoveryEvidence };
+  } finally {
+    release();
+    page.off('request', countMutation);
+    page.off('requestfailed', captureFailure);
+    if (oldRouteRegistered) await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
+async function verifyClientLateSuccessRace(page, origin, expectedAction) {
+  const refresh = page.getByRole('button', { name: '대시보드 새로고침' });
+  const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const direct = await fetchOnPage(page, '/api/dashboard/operations');
+  assert.equal(direct.status, 200, 'R30_CLIENT_RACE_BASELINE_MISSING');
+  const source = JSON.parse(direct.text);
+  assert.ok(Array.isArray(source?.data?.next_actions)
+    && source.data.next_actions.length === 1, 'R30_CLIENT_RACE_BASELINE_MISSING');
+  const stale = { ...source, data: { ...source.data, next_actions: [] } };
+  const staleResponseDistinct = source.data.next_actions[0].action === expectedAction
+    && stale.data.next_actions.length === 0;
+  assert.equal(staleResponseDistinct, true, 'R30_CLIENT_RACE_STALE_NOT_DISTINCT');
+  let mutationRequestCount = 0;
+  const countMutation = (request) => {
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname.startsWith('/api/') && request.method() !== 'GET') {
+      mutationRequestCount += 1;
+    }
+  };
+  page.on('request', countMutation);
+  let installed = false;
+  try {
+    await page.evaluate((oldPayload) => {
+      const nativeFetch = window.fetch;
+      let calls = 0;
+      let firstSignal = null;
+      let resolveFirst = null;
+      let released = false;
+      window.fetch = (input, init) => {
+        const url = new URL(typeof input === 'string' ? input : input.url, location.href);
+        if (url.origin === location.origin && url.pathname === '/api/dashboard/operations') {
+          calls += 1;
+          if (calls === 1) {
+            firstSignal = init?.signal ?? null;
+            // Deliberately ignore abort to exercise Shell's request-identity guard.
+            return new Promise((resolve) => { resolveFirst = resolve; });
+          }
+        }
+        return nativeFetch.call(window, input, init);
+      };
+      globalThis.__anvilR30Race = {
+        facts: () => ({ calls, firstSignalAborted: firstSignal?.aborted === true, released }),
+        releaseOld: () => {
+          if (!resolveFirst || released) return false;
+          released = true;
+          resolveFirst(new Response(JSON.stringify(oldPayload), { status: 200,
+            headers: { 'content-type': 'application/json' } }));
+          return true;
+        },
+        restore: () => { window.fetch = nativeFetch; },
+      };
+    }, stale);
+    installed = true;
+    await refresh.click();
+    await verifyObservationTime(page, '조회 중');
+    const held = await page.evaluate(() => globalThis.__anvilR30Race.facts());
+    assert.equal(held.calls, 1, 'R30_CLIENT_RACE_HELD_GET_MISSING');
+    await cancel.click();
+    await verifyObservationTime(page, '조회 취소');
+    await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
+    const cancelledVisible = await nextCard.locator('li').count() === 0;
+    const firstSignalAborted = (await page.evaluate(() => globalThis.__anvilR30Race.facts()))
+      .firstSignalAborted;
+    assert.ok(cancelledVisible && firstSignalAborted, 'R30_CLIENT_RACE_CANCEL_MISSING');
+    const recovered = await verifyManualRefresh(page, origin, expectedAction);
+    const observedAt = recovered.manualRefreshObservedAt;
+    const beforeRelease = await page.evaluate(() => globalThis.__anvilR30Race.facts());
+    assert.equal(beforeRelease.calls, 2, 'R30_CLIENT_RACE_NEW_GET_MISSING');
+    assert.equal(await nextCard.locator('li').count(), 1, 'R30_CLIENT_RACE_RECOVERY_MISSING');
+    const releasedAfterRecovery = await page.evaluate(() => globalThis.__anvilR30Race.releaseOld());
+    assert.equal(releasedAfterRecovery, true, 'R30_CLIENT_RACE_OLD_RELEASE_MISSING');
+    await page.waitForTimeout(50);
+    const latestRowPreserved = await nextCard.locator('li').count() === 1
+      && (await nextCard.locator('li').first().innerText()).includes(expectedAction)
+      && !(await nextCard.innerText()).includes('현재 관측된 다음 조치 0건');
+    const latestObservationPreserved = (await page.locator('.dashboard-heading p[aria-live]').innerText())
+      === `대시보드 관측 시각 · ${observedAt}`;
+    assert.ok(staleResponseDistinct && latestRowPreserved && latestObservationPreserved
+      && mutationRequestCount === 0, 'R30_CLIENT_RACE_LATE_SUCCESS_OVERWROTE_RECOVERY');
+    return { interceptedDashboardCalls: 2, firstSignalAborted, cancelledVisible,
+      staleResponseDistinct, oldPromiseResolvedAfterRecovery: releasedAfterRecovery,
+      latestRowPreserved, latestObservationPreserved,
+      manualRefreshRequestCount: recovered.manualRefreshRequestCount,
+      manualRefreshObservedAt: observedAt, mutationRequestCount };
+  } finally {
+    page.off('request', countMutation);
+    if (installed) await page.evaluate(() => {
+      globalThis.__anvilR30Race.restore();
+      delete globalThis.__anvilR30Race;
+    });
+  }
+}
+
 async function verifyObservationTime(page, expected) {
   const observation = page.locator('.dashboard-heading p[aria-live]');
   await page.locator('.dashboard-heading').getByText(
@@ -1243,6 +1469,9 @@ async function main() {
     manualPhase('KEYBOARD_RECOVERY_DONE');
     const quotaRefreshEvidence = await verifyQuotaRefresh(page, apiUrl, expectedAction.action);
     const quotaRecoveryEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
+    const { cancelEvidence, cancelRecoveryEvidence } = await verifyDashboardCancellation(
+      page, apiUrl, expectedAction.action, quotaRecoveryEvidence.manualRefreshObservedAt);
+    const clientRaceEvidence = await verifyClientLateSuccessRace(page, apiUrl, expectedAction.action);
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -1261,7 +1490,7 @@ async function main() {
     const revokedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
     assert.equal(revokedDashboard.status, 403, 'R27_REVOKED_REFRESH_MISMATCH');
     assert.equal(await nextCard.locator('li').count(), 1, 'R27_REVOKED_STALE_SETUP_MISSING');
-    await verifyObservationTime(page, keyboardRefreshEvidence.manualRefreshObservedAt);
+    await verifyObservationTime(page, clientRaceEvidence.manualRefreshObservedAt);
     markStage('REVOKE_FETCH');
     manualPhase('REVOKED_CLICK_BEGIN');
     let deniedRequestCount = 0;
@@ -1353,6 +1582,8 @@ async function main() {
       ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
       failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
       quotaRefreshEvidence, quotaRecoveryEvidence,
+      cancelEvidence, cancelRecoveryEvidence,
+      clientRaceEvidence,
       ...loadingEvidence, ...preAuthAccessible, ...emptyEvidence, ...errorEvidence,
       ...emptyErrorAccessible, ...revokedAccessible, r23Regression: true,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,

@@ -868,8 +868,26 @@ test('Dashboard pending operations read shows LOADING in all five cards without 
 test('Dashboard exposes a keyboard-operable manual refresh that waits during the initial read', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   assert.match(html, /<button[^>]*type="button"[^>]*disabled=""[^>]*>대시보드 새로고침<\/button>/);
+  assert.match(html, /<button[^>]*type="button"[^>]*>대시보드 조회 취소<\/button>/);
   assert.match(html, /대시보드 관측 시각 · 조회 중/);
   assert.doesNotMatch(html, /Next Actions.*private-job-id|대시보드 관측 시각 · JUST NOW/s);
+});
+
+test('Dashboard cancelled read clears dependent cards and observation without claiming a completed read', () => {
+  const cancelled = {status: 'CANCELLED'};
+  const cards = [
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardObservationTime, {value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value: {status: 'ready', migration_head: '0019_oidc_sessions'}, operations: cancelled})),
+  ];
+  assert.match(cards[0], /대시보드 관측 시각 · 조회 취소/);
+  for (const card of cards.slice(1)) assert.match(card, /CANCELLED/);
+  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d/);
+  assert.match(cards.at(-1), /API 준비 READY/);
 });
 
 test('Dashboard Next Actions renders validated rows from the existing operations read', async () => {
