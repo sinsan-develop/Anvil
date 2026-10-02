@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1980,
+  "accepted": false,
+  "projection_mode": "F20_U01_R30_DASHBOARD_CANCEL_STATE_CLOSE",
+  "previous_event_sequence": 1978,
+  "product_write_scope": [],
+  "predecessor_commit": "7133893865341c5837afc881b696cd57c450e1a6",
+  "predecessor_events_sha256": "07DD4C9D945F9C721C9298EDC45BC2DB0660AE9E4EF23602572E3EE80F055B3B",
+  "plan_path": "docs/04_test_reports/F-20_U01_R30_DASHBOARD_CANCEL_STATE_PLAN.md",
+  "plan_sha256": "625BD29153074EA8743D6142E5B39002B3413EB78FF5CB489B39B0083F80C4BE",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
