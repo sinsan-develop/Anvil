@@ -438,6 +438,28 @@ def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
     return evidence
 
 
+def _r29_quota_evidence(evidence: dict, observed_at: str) -> dict:
+    expected = {"quotaRefreshEvidence": {
+        "requestCount": 1, "responseStatus": 429, "sameOriginGet": True,
+        "quotaVisible": True, "staleRowsCleared": True,
+        "observationRestricted": True, "secretHidden": True,
+        "independentCardsPreserved": True},
+        "quotaRecoveryEvidence": {
+            "manualRefreshClicked": True, "manualRefreshRequestCount": 1,
+            "manualRefreshObservedAt": observed_at,
+            "independentCardsPreserved": True}}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert exact(evidence, expected), "R29_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
 def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
     assert before_count == 0 and len(snapshot) == 1, "R24_PG_NOT_EMPTY"
     fields = ("code", "level", "cause", "related_entity_id", "next_action", "deep_link")
@@ -718,10 +740,14 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                       | set(r25_task1_evidence) | set(r25_task2_evidence)
                       | set(empty_evidence) | set(error_evidence))
         r28_candidate = {key: value for key, value in evidence.items()
-                         if key not in prior_keys | set(expected_legacy)}
+                         if key not in prior_keys | set(expected_legacy)
+                         | {"quotaRefreshEvidence", "quotaRecoveryEvidence"}}
         r28_evidence = _r28_manual_evidence(r28_candidate, at.isoformat())
+        r29_candidate = {key: value for key, value in evidence.items()
+                         if key in {"quotaRefreshEvidence", "quotaRecoveryEvidence"}}
+        r29_evidence = _r29_quota_evidence(r29_candidate, at.isoformat())
         checked = {key: value for key, value in evidence.items()
-                   if key not in prior_keys | set(r28_evidence)}
+                   if key not in prior_keys | set(r28_evidence) | set(r29_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1198,6 +1224,30 @@ def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation(
     ):
         with pytest.raises(AssertionError, match="R28_BROWSER_EVIDENCE_MISMATCH"):
             _r28_manual_evidence({**expected, **changed}, observed_at)
+
+
+def test_r29_quota_evidence_requires_exact_keys_types_and_recovery():
+    observed_at = "2026-09-28T00:00:00+00:00"
+    expected = {"quotaRefreshEvidence": {
+        "requestCount": 1, "responseStatus": 429, "sameOriginGet": True,
+        "quotaVisible": True, "staleRowsCleared": True,
+        "observationRestricted": True, "secretHidden": True,
+        "independentCardsPreserved": True},
+        "quotaRecoveryEvidence": {
+            "manualRefreshClicked": True, "manualRefreshRequestCount": 1,
+            "manualRefreshObservedAt": observed_at,
+            "independentCardsPreserved": True}}
+    assert _r29_quota_evidence(expected, observed_at) == expected
+    for changed in (
+        {"quotaRefreshEvidence": {**expected["quotaRefreshEvidence"], "responseStatus": 503}},
+        {"quotaRefreshEvidence": {**expected["quotaRefreshEvidence"], "requestCount": True}},
+        {"quotaRefreshEvidence": {**expected["quotaRefreshEvidence"], "staleRowsCleared": False}},
+        {"quotaRecoveryEvidence": {**expected["quotaRecoveryEvidence"], "manualRefreshObservedAt": "other"}},
+        {"quotaRecoveryEvidence": {**expected["quotaRecoveryEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R29_BROWSER_EVIDENCE_MISMATCH"):
+            _r29_quota_evidence({**expected, **changed}, observed_at)
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):

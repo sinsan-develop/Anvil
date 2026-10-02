@@ -699,6 +699,71 @@ async function verifyManualFailure(page, origin, status, body) {
   }
 }
 
+async function verifyQuotaRefresh(page, origin, expectedAction) {
+  const button = page.getByRole('button', { name: '대시보드 새로고침' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const health = page.locator('section[aria-labelledby="health-heading"]');
+  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  const providerBefore = await provider.innerText();
+  const alertsBefore = await alerts.innerText();
+  assert.equal(await nextCard.locator('li').count(), 1, 'R29_QUOTA_STORED_SETUP_MISSING');
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let received;
+  const requested = new Promise((resolve) => { received = resolve; });
+  let requestCount = 0;
+  let sameOriginGet = true;
+  const handler = async (route) => {
+    requestCount += 1;
+    const request = route.request();
+    sameOriginGet &&= new URL(request.url()).origin === origin
+      && new URL(request.url()).pathname === '/api/dashboard/operations'
+      && request.method() === 'GET';
+    received();
+    await held;
+    await route.fulfill({ status: 429, contentType: 'application/json',
+      body: '{"error":"r29-private-quota-body-marker"}' });
+  };
+  await page.route('**/api/dashboard/operations', handler);
+  try {
+    await button.click();
+    await boundedCapture(() => requested, 10000);
+    await verifyObservationTime(page, '조회 중');
+    assert.equal(await button.isDisabled(), true, 'R29_QUOTA_DUPLICATE_GET');
+    assert.equal(await nextCard.locator('li').count(), 0, 'R29_QUOTA_STALE_ROW');
+    await button.evaluate((element) => element.click());
+    assert.equal(requestCount, 1, 'R29_QUOTA_DUPLICATE_GET');
+    release();
+    await verifyObservationTime(page, '조회 제한');
+    await nextCard.getByText('QUOTA', { exact: true }).waitFor();
+    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardText = await Promise.all(cardNames.map(async (name) =>
+      health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
+    const body = await page.locator('body').innerText();
+    const quotaVisible = cardText.every((text, index) => text.includes('QUOTA')
+      && text.includes(index === 1 ? '조회 제한 · Queue 기록을 표시하지 않습니다.'
+        : `조회 제한 · ${cardNames[index]} 상태 정보를 표시하지 않습니다.`))
+      && cardText[0].includes('API 준비 READY')
+      && (await nextCard.innerText()).includes('조회 제한');
+    const staleRowsCleared = await nextCard.locator('li').count() === 0
+      && !body.includes(expectedAction);
+    const observationRestricted = body.includes('대시보드 관측 시각 · 조회 제한')
+      && !body.includes('대시보드 관측 시각 · 2026-');
+    const secretHidden = !body.includes('r29-private-quota-body-marker');
+    const independentCardsPreserved = await provider.innerText() === providerBefore
+      && await alerts.innerText() === alertsBefore;
+    assert.ok(requestCount === 1 && sameOriginGet && quotaVisible && staleRowsCleared
+      && observationRestricted && secretHidden && independentCardsPreserved
+      && await button.isEnabled(), 'R29_QUOTA_STATE_MISMATCH');
+    return { requestCount, responseStatus: 429, sameOriginGet, quotaVisible,
+      staleRowsCleared, observationRestricted, secretHidden, independentCardsPreserved };
+  } finally {
+    release();
+    await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
 async function verifyObservationTime(page, expected) {
   const observation = page.locator('.dashboard-heading p[aria-live]');
   await page.locator('.dashboard-heading').getByText(
@@ -1176,6 +1241,8 @@ async function main() {
     const keyboardRefreshEvidence = await verifyManualRefresh(
       page, apiUrl, expectedAction.action, 'keyboard');
     manualPhase('KEYBOARD_RECOVERY_DONE');
+    const quotaRefreshEvidence = await verifyQuotaRefresh(page, apiUrl, expectedAction.action);
+    const quotaRecoveryEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -1285,6 +1352,7 @@ async function main() {
       ...storedActionEvidence, ...revokedActionEvidence,
       ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
       failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
+      quotaRefreshEvidence, quotaRecoveryEvidence,
       ...loadingEvidence, ...preAuthAccessible, ...emptyEvidence, ...errorEvidence,
       ...emptyErrorAccessible, ...revokedAccessible, r23Regression: true,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,

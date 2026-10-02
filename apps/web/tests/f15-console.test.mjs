@@ -460,6 +460,33 @@ const renderDatabase = (readiness, operations) => renderToStaticMarkup(
 const renderObservationTime = (operations) => renderToStaticMarkup(
   React.createElement(consoleApp.DashboardObservationTime, {value: operations}));
 
+test('Dashboard 429 clears protected state and shows quota across dependent cards without exposing its body', async () => {
+  const secret = 'postgresql://quota-secret@internal/private-payload';
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async (url, options) => {
+      assert.equal(url, '/api/dashboard/operations');
+      assert.equal(options.credentials, 'same-origin');
+      return {ok: false, status: 429, text: async () => secret};
+    });
+  assert.deepEqual(state, {status: 'QUOTA'});
+  const cards = [renderObservationTime(state),
+    renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value: {status: 'ready', migration_head: '0019_oidc_sessions'}, operations: state})),
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state})),
+    renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}))];
+  assert.match(cards[0], /대시보드 관측 시각 · 조회 제한/);
+  for (const card of cards.slice(1)) assert.match(card, /QUOTA/);
+  assert.match(cards[1], /조회 제한/);
+  assert.match(cards[2], /API 준비 READY · Migration 0019_oidc_sessions/);
+  assert.match(cards[2], /조회 제한 · Database 상태 정보를 표시하지 않습니다/);
+  assert.match(cards[3], /조회 제한 · Worker 상태 정보를 표시하지 않습니다/);
+  assert.match(cards[4], /조회 제한/);
+  for (const card of cards) assert.doesNotMatch(card,
+    /private-payload|quota-secret|internal|private-job-id|2026-09-30|0건|href=/);
+});
+
 test('Dashboard observation time shows only the validated operations timestamp and keeps Queue unchanged', async () => {
   const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
   const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
