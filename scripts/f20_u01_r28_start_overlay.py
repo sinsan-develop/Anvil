@@ -35,6 +35,10 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, PLAN, WI, INVOCATI
                  "scripts/f20_u01_r27_start_overlay.py", "scripts/f20_u01_r28_start_overlay.py",
                  "tests/tooling/test_f20_u01_r27_start_projection.py",
                  "tests/tooling/test_f20_u01_r28_start_projection.py",
+                 "scripts/f20_u01_r28_close_overlay.py",
+                 "tests/tooling/test_f20_u01_r28_close_projection.py",
+                 "docs/progress/progress-handoff-detached-digest-f20-u01-r28-close.json",
+                 "docs/evidence/manifests/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_CLOSE_MANIFEST.json",
                  "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORK_INSTRUCTION_ISSUED",
          "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")

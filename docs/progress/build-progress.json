@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r28-browser-evidence-contract-start-seq1966",
-  "event_sequence": 1966,
-  "updated_at": "2026-10-02T05:07:36+00:00",
-  "last_event_id": "evt_f20_1966_package_resumed",
+  "snapshot_id": "snapshot-f20-u01-r28-browser-evidence-contract-close-seq1968",
+  "event_sequence": 1968,
+  "updated_at": "2026-10-02T06:22:08+00:00",
+  "last_event_id": "evt_f20_1968_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,27 +215,8 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-u01-r28",
-  "write_lease": {
-    "lease_id": "write-lease-f20-u01-r28-r28contract1002",
-    "actor_id": "developer-primary-f20-u01-r28",
-    "subject_ref": "F-20/U01-R28",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-02T05:07:36+00:00",
-    "expires_at": "2026-10-02T17:07:36+00:00",
-    "lease_epoch": 42,
-    "fencing_token": "f20-u01-r28-write-fence-epoch-42-r28contract1002",
-    "execution_fencing_token": "f20-u01-r28-execution-fence-epoch-42-r28contract1002",
-    "baseline_git_commit": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
-    "dispatch_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
-    "path_scope": [
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md"
-    ],
-    "worker_lease_id": "worker-lease-f20-u01-r28-r28contract1002",
-    "write_epoch": 42,
-    "write_fencing_token": "f20-u01-r28-write-fence-epoch-42-r28contract1002"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -267,23 +248,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f20-u01-r28-r28contract1002",
-    "actor_id": "developer-primary-f20-u01-r28",
-    "subject_ref": "F-20/U01-R28",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-02T05:07:36+00:00",
-    "expires_at": "2026-10-02T17:07:36+00:00",
-    "lease_epoch": 42,
-    "fencing_token": "f20-u01-r28-execution-fence-epoch-42-r28contract1002",
-    "execution_fencing_token": "f20-u01-r28-execution-fence-epoch-42-r28contract1002",
-    "baseline_git_commit": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
-    "dispatch_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
-    "path_scope": [
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -505,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_REWORK",
+  "next_safe_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -616,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
-    "local_wsl_qa_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+    "local_head": "6bb2cacd18ff750e4987c5baa992a6db42fbf890",
+    "local_wsl_qa_head": "6bb2cacd18ff750e4987c5baa992a6db42fbf890",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
-    "projection_mode": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_START",
-    "validated_base_commit": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+    "remote_head": "6bb2cacd18ff750e4987c5baa992a6db42fbf890",
+    "projection_mode": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_CLOSE",
+    "validated_base_commit": "6bb2cacd18ff750e4987c5baa992a6db42fbf890",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1055,11 +1020,8 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md"
-    ],
-    "worktree_status": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_COMPLETE_LEASE_CLOSED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1226,7 +1188,7 @@
     "sha256": "2BFC73C1EE4F5F0A37421D76C80102E0C0D7574FEF9196C8C82CB995EA19C85B",
     "invocation_path": "docs/work_orders/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_INVOCATION.md",
     "invocation_sha256": "EBEFFD04753AAA4632CC107FDADE06214211ABE5BFFBF6D38DEDAC6FA5FC436C",
-    "result_status": "REWORK_IN_PROGRESS",
+    "result_status": "COMPLETED_R28_BROWSER_EVIDENCE_CONTRACT_PG15_OIDC_QA_ONLY",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "MAIN_INTERNAL_APPROVED_SCOPE"
   },
@@ -1360,8 +1322,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r28-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r28-close.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_CLOSE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1382,7 +1344,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2F4E187B13101993E82C9AD0FFCFE71B2EF5062B93F99817A0BB558BDF85BA3C"
+      "sha256": "A97E6363BB5ED6277BC41348CEFB571316F6A226ED991D21A40FDD4E1E359D5F"
     }
   },
   "next_work_package": {
@@ -1779,8 +1741,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5D8B7B96BA1571859B43C90A2D035EB94A2D9CEEF5CFA6CC3974A74D2AE0762E",
-  "runtime_next_action": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_REWORK",
+  "snapshot_hash": "D00E69B2FF1FAD8D4EC51E3CD29B3FC59AA702A56F0A0E384337940AE0C8F7D8",
+  "runtime_next_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -24913,5 +24875,44 @@
     "write_epoch": 41,
     "write_fencing_token": "f20-u01-r27-write-fence-epoch-41-r27refresh1002",
     "revoked_at": "2026-10-02T05:07:36+00:00"
+  },
+  "completed_f20_u01_r28_worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r28-r28contract1002",
+    "actor_id": "developer-primary-f20-u01-r28",
+    "subject_ref": "F-20/U01-R28",
+    "status": "REVOKED",
+    "issued_at": "2026-10-02T05:07:36+00:00",
+    "expires_at": "2026-10-02T17:07:36+00:00",
+    "lease_epoch": 42,
+    "fencing_token": "f20-u01-r28-execution-fence-epoch-42-r28contract1002",
+    "execution_fencing_token": "f20-u01-r28-execution-fence-epoch-42-r28contract1002",
+    "baseline_git_commit": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+    "dispatch_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+    "path_scope": [
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md"
+    ],
+    "revoked_at": "2026-10-02T06:22:08+00:00"
+  },
+  "completed_f20_u01_r28_write_lease": {
+    "lease_id": "write-lease-f20-u01-r28-r28contract1002",
+    "actor_id": "developer-primary-f20-u01-r28",
+    "subject_ref": "F-20/U01-R28",
+    "status": "REVOKED",
+    "issued_at": "2026-10-02T05:07:36+00:00",
+    "expires_at": "2026-10-02T17:07:36+00:00",
+    "lease_epoch": 42,
+    "fencing_token": "f20-u01-r28-write-fence-epoch-42-r28contract1002",
+    "execution_fencing_token": "f20-u01-r28-execution-fence-epoch-42-r28contract1002",
+    "baseline_git_commit": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+    "dispatch_head": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+    "path_scope": [
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r28-r28contract1002",
+    "write_epoch": 42,
+    "write_fencing_token": "f20-u01-r28-write-fence-epoch-42-r28contract1002",
+    "revoked_at": "2026-10-02T06:22:08+00:00"
   }
 }
