@@ -792,6 +792,10 @@ async function verifyQuotaRefresh(page, origin, expectedAction) {
   }
 }
 
+function hasFailedRequestReason(failure) {
+  return typeof failure?.errorText === 'string' && failure.errorText.trim().length > 0;
+}
+
 async function verifyDashboardCancellation(page, origin, expectedAction, previousObservedAt) {
   r30Phase('CANCEL_BEGIN');
   const refresh = page.getByRole('button', { name: '대시보드 새로고침' });
@@ -875,7 +879,7 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
     await cancel.focus();
     await page.keyboard.press('Enter');
     const failure = await boundedCapture(() => requestFailed, 10000);
-    const browserRequestAborted = typeof failure === 'string' && failure.length > 0;
+    const browserRequestAborted = hasFailedRequestReason(failure);
     assert.equal(browserRequestAborted, true, 'R30_CANCEL_BROWSER_ABORT_MISSING');
     r30Phase('CANCEL_ABORT');
     await verifyObservationTime(page, '조회 취소');
@@ -1652,6 +1656,11 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.equal(hasFailedRequestReason({ errorText: 'synthetic-abort' }), true);
+  for (const failure of [null, '', 'synthetic-abort', {}, { errorText: '' },
+    { errorText: ' ' }, { errorText: 1 }]) {
+    assert.equal(hasFailedRequestReason(failure), false);
+  }
   assert.equal(safeR30FailureCode({ message: 'R30_CANCEL_BROWSER_ABORT_MISSING private-secret' }),
     'R30_CANCEL_BROWSER_ABORT_MISSING');
   assert.equal(safeR30FailureCode({ message: 'R30_PRIVATE_SECRET private-secret' }),
