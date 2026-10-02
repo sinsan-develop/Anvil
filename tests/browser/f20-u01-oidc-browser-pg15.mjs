@@ -72,6 +72,34 @@ function manualPhase(value) {
   writeSync(1, `R27_MANUAL_PHASE ${value}\n`);
 }
 
+const r30Phases = new Set(['CANCEL_BEGIN', 'CANCEL_UPSTREAM', 'CANCEL_ABORT',
+  'CANCEL_RECOVERY', 'CANCEL_LATE', 'CLIENT_BEGIN', 'CLIENT_HELD',
+  'CLIENT_CANCEL', 'CLIENT_RECOVERY', 'CLIENT_STALE']);
+const r30Assertions = new Set([
+  'R30_CANCEL_STORED_SETUP_MISSING', 'R30_CANCEL_UPSTREAM_NOT_READY',
+  'R30_CANCEL_LATE_RESPONSE_MISMATCH', 'R30_CANCEL_OLD_RESPONSE_NOT_DISTINCT',
+  'R30_CANCEL_DUPLICATE_GET', 'R30_CANCEL_BROWSER_ABORT_MISSING',
+  'R30_CANCEL_RECOVERY_ROW_MISSING', 'R30_CANCEL_STATE_MISMATCH',
+  'R30_CLIENT_RACE_BASELINE_MISSING', 'R30_CLIENT_RACE_STALE_NOT_DISTINCT',
+  'R30_CLIENT_RACE_HELD_GET_MISSING', 'R30_CLIENT_RACE_CANCEL_MISSING',
+  'R30_CLIENT_RACE_NEW_GET_MISSING', 'R30_CLIENT_RACE_RECOVERY_MISSING',
+  'R30_CLIENT_RACE_OLD_RELEASE_MISSING',
+  'R30_CLIENT_RACE_LATE_SUCCESS_OVERWROTE_RECOVERY',
+]);
+let currentR30Phase = null;
+
+function r30Phase(value) {
+  if (!r30Phases.has(value)) throw new Error('R30_PHASE_INVALID');
+  currentR30Phase = value;
+  writeSync(1, `R30_PHASE ${value}\n`);
+}
+
+function safeR30FailureCode(error) {
+  const code = typeof error?.message === 'string'
+    ? /^R30_[A-Z_]+/.exec(error.message)?.[0] : null;
+  return r30Assertions.has(code) ? code : 'R30_UNCLASSIFIED';
+}
+
 function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
   const markers = [...sensitiveValues, sessionValue].filter((value) => typeof value === 'string' && value);
   const variants = markers.flatMap((value) => [value, encodeURIComponent(value)]);
@@ -765,6 +793,7 @@ async function verifyQuotaRefresh(page, origin, expectedAction) {
 }
 
 async function verifyDashboardCancellation(page, origin, expectedAction, previousObservedAt) {
+  r30Phase('CANCEL_BEGIN');
   const refresh = page.getByRole('button', { name: '대시보드 새로고침' });
   const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
@@ -838,6 +867,7 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
     assert.equal(responseStatus, 200, 'R30_CANCEL_UPSTREAM_NOT_READY');
     assert.equal(lateObservedAt, previousObservedAt, 'R30_CANCEL_LATE_RESPONSE_MISMATCH');
     assert.equal(oldResponseDistinct, true, 'R30_CANCEL_OLD_RESPONSE_NOT_DISTINCT');
+    r30Phase('CANCEL_UPSTREAM');
     await verifyObservationTime(page, '조회 중');
     const duplicateRequestPrevented = await refresh.isDisabled();
     await refresh.evaluate((element) => element.click());
@@ -847,6 +877,7 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
     const failure = await boundedCapture(() => requestFailed, 10000);
     const browserRequestAborted = typeof failure === 'string' && failure.length > 0;
     assert.equal(browserRequestAborted, true, 'R30_CANCEL_BROWSER_ABORT_MISSING');
+    r30Phase('CANCEL_ABORT');
     await verifyObservationTime(page, '조회 취소');
     await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
     const cancelledVisible = await nextCard.getByText('CANCELLED', { exact: true }).count() === 1
@@ -869,10 +900,12 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
     // Leave the old handler pending while the next manual GET completes.
     await page.unroute('**/api/dashboard/operations', handler);
     oldRouteRegistered = false;
+    r30Phase('CANCEL_RECOVERY');
     const cancelRecoveryEvidence = await verifyManualRefresh(page, origin, expectedAction);
     assert.equal(await nextCard.locator('li').count(), 1, 'R30_CANCEL_RECOVERY_ROW_MISSING');
     release();
     await boundedCapture(() => completed, 10000);
+    r30Phase('CANCEL_LATE');
     await page.waitForTimeout(50);
     const lateAfterRecoveryIgnored = await nextCard.locator('li').count() === 1
       && (await nextCard.locator('li').first().innerText()).includes(expectedAction)
@@ -897,6 +930,7 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
 }
 
 async function verifyClientLateSuccessRace(page, origin, expectedAction) {
+  r30Phase('CLIENT_BEGIN');
   const refresh = page.getByRole('button', { name: '대시보드 새로고침' });
   const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
@@ -954,6 +988,7 @@ async function verifyClientLateSuccessRace(page, origin, expectedAction) {
     await verifyObservationTime(page, '조회 중');
     const held = await page.evaluate(() => globalThis.__anvilR30Race.facts());
     assert.equal(held.calls, 1, 'R30_CLIENT_RACE_HELD_GET_MISSING');
+    r30Phase('CLIENT_HELD');
     await cancel.click();
     await verifyObservationTime(page, '조회 취소');
     await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
@@ -961,6 +996,8 @@ async function verifyClientLateSuccessRace(page, origin, expectedAction) {
     const firstSignalAborted = (await page.evaluate(() => globalThis.__anvilR30Race.facts()))
       .firstSignalAborted;
     assert.ok(cancelledVisible && firstSignalAborted, 'R30_CLIENT_RACE_CANCEL_MISSING');
+    r30Phase('CLIENT_CANCEL');
+    r30Phase('CLIENT_RECOVERY');
     const recovered = await verifyManualRefresh(page, origin, expectedAction);
     const observedAt = recovered.manualRefreshObservedAt;
     const beforeRelease = await page.evaluate(() => globalThis.__anvilR30Race.facts());
@@ -968,6 +1005,7 @@ async function verifyClientLateSuccessRace(page, origin, expectedAction) {
     assert.equal(await nextCard.locator('li').count(), 1, 'R30_CLIENT_RACE_RECOVERY_MISSING');
     const releasedAfterRecovery = await page.evaluate(() => globalThis.__anvilR30Race.releaseOld());
     assert.equal(releasedAfterRecovery, true, 'R30_CLIENT_RACE_OLD_RELEASE_MISSING');
+    r30Phase('CLIENT_STALE');
     await page.waitForTimeout(50);
     const latestRowPreserved = await nextCard.locator('li').count() === 1
       && (await nextCard.locator('li').first().innerText()).includes(expectedAction)
@@ -1472,6 +1510,7 @@ async function main() {
     const { cancelEvidence, cancelRecoveryEvidence } = await verifyDashboardCancellation(
       page, apiUrl, expectedAction.action, quotaRecoveryEvidence.manualRefreshObservedAt);
     const clientRaceEvidence = await verifyClientLateSuccessRace(page, apiUrl, expectedAction.action);
+    currentR30Phase = null;
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -1613,6 +1652,10 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.equal(safeR30FailureCode({ message: 'R30_CANCEL_BROWSER_ABORT_MISSING private-secret' }),
+    'R30_CANCEL_BROWSER_ABORT_MISSING');
+  assert.equal(safeR30FailureCode({ message: 'R30_PRIVATE_SECRET private-secret' }),
+    'R30_UNCLASSIFIED');
   assert.ok([...manualPhases].every((value) => /^[A-Z_]+$/.test(value)),
     'R27_MANUAL_PHASE_GRAMMAR_INVALID');
   assert.throws(() => manualPhase('PRIVATE_TOKEN_VALUE'), /R27_MANUAL_PHASE_INVALID/);
@@ -2092,6 +2135,9 @@ if (auditSelfTest) {
 } else {
   writeSync(1, 'R6_NODE_STARTED\n');
   main().catch((error) => {
+    if (currentR30Phase !== null) {
+      writeSync(2, `R30_DIAG code=${safeR30FailureCode(error)}\n`);
+    }
     console.error('R6_BROWSER_FAILED stage=' + stage + ' class=' + error.name);
     process.exitCode = 1;
   });

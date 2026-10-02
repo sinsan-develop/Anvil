@@ -78,6 +78,22 @@ _RESPONSE_FAILURE_STAGES = frozenset({
     "PRE_AUTH_RESPONSES", "STORED_RESPONSES", "REVOKE_RESPONSES",
     "NETWORK_RESPONSE_FACTS",
 })
+_R30_PHASES = frozenset({
+    "CANCEL_BEGIN", "CANCEL_UPSTREAM", "CANCEL_ABORT", "CANCEL_RECOVERY",
+    "CANCEL_LATE", "CLIENT_BEGIN", "CLIENT_HELD", "CLIENT_CANCEL",
+    "CLIENT_RECOVERY", "CLIENT_STALE",
+})
+_R30_ASSERTIONS = frozenset({
+    "R30_CANCEL_STORED_SETUP_MISSING", "R30_CANCEL_UPSTREAM_NOT_READY",
+    "R30_CANCEL_LATE_RESPONSE_MISMATCH", "R30_CANCEL_OLD_RESPONSE_NOT_DISTINCT",
+    "R30_CANCEL_DUPLICATE_GET", "R30_CANCEL_BROWSER_ABORT_MISSING",
+    "R30_CANCEL_RECOVERY_ROW_MISSING", "R30_CANCEL_STATE_MISMATCH",
+    "R30_CLIENT_RACE_BASELINE_MISSING", "R30_CLIENT_RACE_STALE_NOT_DISTINCT",
+    "R30_CLIENT_RACE_HELD_GET_MISSING", "R30_CLIENT_RACE_CANCEL_MISSING",
+    "R30_CLIENT_RACE_NEW_GET_MISSING", "R30_CLIENT_RACE_RECOVERY_MISSING",
+    "R30_CLIENT_RACE_OLD_RELEASE_MISSING",
+    "R30_CLIENT_RACE_LATE_SUCCESS_OVERWROTE_RECOVERY", "R30_UNCLASSIFIED",
+})
 
 
 def _validated_target(dsn: str | None, isolated: str | None) -> sa.engine.URL:
@@ -259,6 +275,22 @@ def _safe_route_diagnostic(output: str) -> str:
     return (" R23_ROUTE_CONTINUE_FAILED"
             if re.search(r"^R23_ROUTE_CONTINUE_FAILED\r?$", output, flags=re.MULTILINE)
             else "")
+
+
+def _safe_r30_diagnostic(output: str) -> str:
+    phase = None
+    assertion = None
+    for match in re.finditer(r"^R30_PHASE ([A-Z_]+)\r?$", output, flags=re.MULTILINE):
+        if match.group(1) in _R30_PHASES:
+            phase = match.group(1)
+    for match in re.finditer(r"^R30_DIAG code=(R30_[A-Z_]+)\r?$", output,
+                             flags=re.MULTILINE):
+        if match.group(1) in _R30_ASSERTIONS:
+            assertion = match.group(1)
+    if assertion is None:
+        return ""
+    return ((f" R30_PHASE={phase}" if phase is not None else "")
+            + (f" R30_ASSERT={assertion}" if assertion is not None else ""))
 
 
 def _safe_stored_diagnostic(output: str) -> str:
@@ -552,6 +584,7 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         detail += _safe_route_diagnostic(result.stdout)
         if stage == "STORED_NEXT_ACTION":
             detail += _safe_stored_diagnostic(result.stdout)
+            detail += _safe_r30_diagnostic(result.stdout + "\n" + result.stderr)
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
                     f"class={error_class}{detail}", pytrace=False)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
@@ -1095,6 +1128,43 @@ def test_r6_provider_401_probe_reports_only_fixed_facts(monkeypatch):
     assert "stage=PRE_AUTH_RESPONSES exit=1 class=Error" in message
     assert "category=PROVIDER_API status=401 reason=TIMEOUT" in message
     assert "length=POSITIVE transfer=CHUNKED finished=TIMEOUT native=READABLE_401" in message
+    assert secret not in message
+
+
+def test_r30_diagnostic_reports_only_whitelisted_phase_and_assertion_code():
+    safe = ("R30_PHASE CLIENT_CANCEL\n"
+            "R30_DIAG code=R30_CLIENT_RACE_CANCEL_MISSING\n"
+            "private-secret-value\n")
+    assert _safe_r30_diagnostic(safe) == (
+        " R30_PHASE=CLIENT_CANCEL R30_ASSERT=R30_CLIENT_RACE_CANCEL_MISSING")
+    unsafe = ("R30_PHASE CLIENT_CANCEL private-secret-value\n"
+              "R30_DIAG code=R30_CLIENT_RACE_CANCEL_MISSING private-secret-value\n"
+              "R30_DIAG code=R30_PRIVATE_SECRET\n")
+    assert _safe_r30_diagnostic(unsafe) == ""
+
+
+def test_r30_node_failure_exposes_only_safe_diagnostic(monkeypatch):
+    secret = "private-secret-value"
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1,
+            stdout=("R6_NODE_STARTED\nR6_STAGE STORED_NEXT_ACTION\n"
+                    "R30_PHASE CLIENT_CANCEL\n" + secret + "\n"),
+            stderr=("R30_DIAG code=R30_CLIENT_RACE_CANCEL_MISSING\n"
+                    "R6_BROWSER_FAILED stage=STORED_NEXT_ACTION class=AssertionError\n"
+                    + secret),
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124",
+                   "control-token", "postgresql://isolated@127.0.0.1:5545/isolated",
+                   _TEST_ALERT)
+    message = str(failure.value)
+    assert "stage=STORED_NEXT_ACTION exit=1 class=AssertionError" in message
+    assert "R30_PHASE=CLIENT_CANCEL R30_ASSERT=R30_CLIENT_RACE_CANCEL_MISSING" in message
     assert secret not in message
 
 

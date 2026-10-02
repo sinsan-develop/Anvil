@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — Developer 지정 exact5의 로컬 구현·검증을 완료하고 Main의 독립 검토·동일 clean SHA WSL 실제 브라우저 검증에 인계한다. 이 결과는 브라우저 Dashboard GET 취소 절편에 한정한다. C30 `OPEN_BLOCKING`, F-20/U-01 `REWORK_IN_PROGRESS`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
+Developer 지정 exact5의 최초 로컬 구현·검증은 완료했다. 후속 Main 실측의 WSL 실제 브라우저 검증은 아래 기록처럼 `FAILED`이며 R30 절편의 실제 인수는 미완료다. C30 `OPEN_BLOCKING`, F-20/U-01 `REWORK_IN_PROGRESS`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
 
 ## 판단 이유
 
@@ -52,3 +52,11 @@
 - GREEN: 실제 브라우저 페이지의 `fetch`를 한 구간만 제어하여 첫 Dashboard GET의 AbortSignal을 의도적으로 무시하고 promise를 보류한다. 취소로 `CANCELLED`와 signal.aborted를 확인하고, 두 번째 GET은 원래 fetch의 서버 200과 저장 행·관측 시각을 확인한다. 이후 유효한 `next_actions: []` stale200으로 첫 promise를 resolve하여 최신 행·시각 불변을 단언한다. 제어 fetch는 `finally`에서 복원한다. 같은 focused 명령을 `--basetemp=.pytest-r30-review2-green`으로 실행해 exit0/1 PASS·28 deselected, `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0.
 - 기존 실제 네트워크 abort 검사는 유지했다. 이 신규 client 경합은 fetch 제어를 사용한 실제 React 화면 전이 증거이며 서버 Run/Task 취소 또는 자연 발생 네트워크 지연 증거가 아니다. Main의 WSL opt-in 실제 실행 전에는 여전히 `UNVERIFIED`다.
 - 전체 로컬 재검증: `npm run test:console -w @anvil/web` exit0/52 PASS; `.\.venv\Scripts\python.exe -m pytest -q tests/integration/test_f20_u01_oidc_browser_pg15.py -m 'not wsl_browser_pg15' --basetemp=.pytest-r30-review2-full` exit0/28 PASS·1 SKIP; `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit0/`R6_AUDIT_SELF_TEST_PASS`(의도적 negative 진단 포함); `npm run typecheck` (`apps/web`) exit0; `npm run web:lint` exit0/수정0; `npm run web:build` exit0/20 modules. 실제 WSL/PG15/OIDC/HTTPS/Chromium 검증은 Developer가 실행하지 않았다.
+
+## Main WSL 실제 검증 1차 실패와 진단 준비
+
+- Main 전달 실측: 기존 worktree 제품 SHA `786a60ba2b6d53d597216b9f43a4fc95a704641a`의 WSL-server opt-in 첫 실행이 `R6_BROWSER_FAILED stage=STORED_NEXT_ACTION exit=1 class=AssertionError`, pytest 1 failed/28 deselected로 종료됐다. 안전한 phase 출력은 quota recovery의 `REFRESH_ENABLED_DONE`까지 확인됐다. 현재 출력에는 R30 어느 검사에서 실패했는지 없으므로 원인은 미확정이다. 같은 PG seed를 그대로 재사용한 재실행은 유효하지 않으며 전용 tmpfs PG reset은 Main 소유다.
+- 진단 변경: browser helper에 고정 `R30_PHASE` 지점만 기록하고 최종 실패에서는 명시 허용된 `R30_[A-Z_]+` assertion 코드 또는 `R30_UNCLASSIFIED`만 출력한다. Python runner는 허용 목록의 단계·코드만 실패 요약에 반영한다. 임의 예외 메시지·request/response body·URL·Secret은 출력하지 않는다. R30 제품 동작과 기존 test 판정 조건은 바꾸지 않았다.
+- RED: `.\.venv\Scripts\python.exe -m pytest -q tests/integration/test_f20_u01_oidc_browser_pg15.py -k r30_diagnostic_reports --basetemp=.pytest-r30-diag-red` exit1/`_safe_r30_diagnostic` 부재. `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test`도 새 안전 코드 추출 함수 부재로 exit1이었다. GREEN focused와 전체 로컬 재검증 결과는 아래 후속 기록에 둔다.
+- 아직 실패 원인에 대한 제품·하네스 추정 수정은 하지 않았다. Main이 안전한 전용 PG reset 뒤 동일 clean SHA로 재실행한 진단 코드를 확인한 다음에만 원인별 보완을 결정한다. Developer는 WSL/Docker/DB/commit/push/WORK_STATUS를 변경하지 않았다. formal FAILURE 0회.
+- GREEN·전체 로컬 검증: `.\.venv\Scripts\python.exe -m pytest -q tests/integration/test_f20_u01_oidc_browser_pg15.py -m 'not wsl_browser_pg15' --basetemp=.pytest-r30-diag-full` exit0/30 PASS·1 SKIP(안전한 Python 전달과 비밀 문자열 차단 2개 포함); `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit0/`R6_AUDIT_SELF_TEST_PASS`(허용 코드 추출/미등록 코드 거부 포함); `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0; `npm run test:console -w @anvil/web` exit0/52 PASS; `npm run typecheck` (`apps/web`) exit0; `npm run web:lint` exit0/수정0; `npm run web:build` exit0/20 modules. 전용 `.pytest-r30-diag-full`과 `apps/web/dist`는 정확한 worktree 하위 절대 경로를 확인한 뒤 삭제했고 잔여 0이다.
