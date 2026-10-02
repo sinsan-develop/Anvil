@@ -33,10 +33,7 @@ const progressStages = new Set([
   'STORED_ALERT_WAIT',
   'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
   'STORED_DASHBOARD_FETCH', 'STORED_NEXT_ACTION', 'REVOKE_DASHBOARD_FETCH',
-  'STORED_MANUAL_REFRESH', 'STORED_MANUAL_503', 'STORED_MANUAL_INVALID',
-  'STORED_MANUAL_RECOVERY',
   'REVOKE_NEXT_ACTION',
-  'REVOKE_MANUAL_REFRESH',
   'REVOKE_CARD', 'REVOKE_RESPONSES', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
   'NETWORK_RESPONSE_FACTS', 'NETWORK_DOM', 'NETWORK_IDP_STATE',
   'NETWORK_ASSERT', 'EVIDENCE_PRE_AUTH', 'EVIDENCE_STORED', 'EVIDENCE_REVOKED',
@@ -1086,17 +1083,17 @@ async function main() {
     const storedActionEvidence = validateStoredNextAction(
       { status: storedDashboard.status, actions: dashboardActions }, alerts[0], expectedAction,
       await actionRow.first().innerText(), await actionRow.count());
-    markStage('STORED_MANUAL_REFRESH');
+    markStage('STORED_NEXT_ACTION');
     const manualRefreshEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
-    markStage('STORED_MANUAL_503');
+    markStage('STORED_NEXT_ACTION');
     const failedRefresh503 = await verifyManualFailure(page, apiUrl, 503,
       '{"error":"r27-private-error-body-marker"}');
-    markStage('STORED_MANUAL_RECOVERY');
+    markStage('STORED_NEXT_ACTION');
     await verifyManualRefresh(page, apiUrl, expectedAction.action);
-    markStage('STORED_MANUAL_INVALID');
+    markStage('STORED_NEXT_ACTION');
     const failedRefreshInvalid = await verifyManualFailure(page, apiUrl, 200,
       '{"data":{"observed_at":"2026-09-28T00:00:00+00:00"}}');
-    markStage('STORED_MANUAL_RECOVERY');
+    markStage('STORED_NEXT_ACTION');
     const keyboardRefreshEvidence = await verifyManualRefresh(
       page, apiUrl, expectedAction.action, 'keyboard');
     if (evidenceDir) {
@@ -1118,7 +1115,7 @@ async function main() {
     assert.equal(revokedDashboard.status, 403, 'R27_REVOKED_REFRESH_MISMATCH');
     assert.equal(await nextCard.locator('li').count(), 1, 'R27_REVOKED_STALE_SETUP_MISSING');
     await verifyObservationTime(page, keyboardRefreshEvidence.manualRefreshObservedAt);
-    markStage('REVOKE_MANUAL_REFRESH');
+    markStage('REVOKE_FETCH');
     let deniedRequestCount = 0;
     const countDeniedRequest = (request) => {
       const url = new URL(request.url());
@@ -1235,6 +1232,10 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  for (const manualStage of ['STORED_NEXT_ACTION', 'REVOKE_FETCH']) {
+    assert.match(manualStage, /^[A-Z_]+$/, 'R27_STAGE_CLASSIFIER_GRAMMAR_MISMATCH');
+    assert.equal(progressStages.has(manualStage), true, 'R27_STAGE_CLASSIFIER_GRAMMAR_MISMATCH');
+  }
   const manualFacts = { requestCount: 1, requestPath: '/api/dashboard/operations', requestMethod: 'GET',
     loadingDisabled: true, loadingTime: '대시보드 관측 시각 · 조회 중', staleActionCount: 0,
     providerBefore: 'provider-safe', providerDuring: 'provider-safe',
