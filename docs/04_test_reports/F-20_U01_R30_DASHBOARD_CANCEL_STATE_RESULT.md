@@ -2,7 +2,7 @@
 
 ## 판정
 
-Developer 지정 exact5의 최초 로컬 구현·검증은 완료했다. 후속 Main 실측의 WSL 실제 브라우저 검증은 아래 기록처럼 `FAILED`이며 R30 절편의 실제 인수는 미완료다. C30 `OPEN_BLOCKING`, F-20/U-01 `REWORK_IN_PROGRESS`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
+Developer 지정 exact5의 로컬 구현·검증을 완료했고, Main이 전달한 최신 WSL-server 동일 clean SHA 실측에서 R30 절편의 PG15/OIDC/HTTPS/Chromium opt-in이 `PASS`했다. 아래 1·2차 WSL 실패와 진단 기록은 당시 이력이며 최신 PASS가 이를 대체한다. 별도 취소 PNG는 없고 취소 판정은 DOM·strict evidence에 한정한다. F-20/U-01 전체 인수는 완료되지 않았으며 C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
 
 ## 판단 이유
 
@@ -69,3 +69,11 @@ Developer 지정 exact5의 최초 로컬 구현·검증은 완료했다. 후속 
 - GREEN: `hasFailedRequestReason(failure)`가 `failure?.errorText`의 비어 있지 않은 문자열 여부만 boolean으로 반환하도록 최소 보완하고 기존 `browserRequestAborted` 단언에 연결했다. 같은 audit self-test exit0/`R6_AUDIT_SELF_TEST_PASS`; `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0. 나머지 제품 동작·하네스 흐름은 변경하지 않았다.
 - Main이 새 clean SHA의 fresh PG로 실제 Chromium 재검증하기 전까지 결과는 `UNVERIFIED`다. 정식 `FAILURE_REPORT` 0회, Developer는 WSL/DB/commit/push/WORK_STATUS를 변경하지 않았다.
 - 전체 로컬 회귀: `.\.venv\Scripts\python.exe -m pytest -q tests/integration/test_f20_u01_oidc_browser_pg15.py -m 'not wsl_browser_pg15' --basetemp=.pytest-r30-failure-shape-full` exit0/30 PASS·1 SKIP; `npm run test:console -w @anvil/web` exit0/52 PASS; `npm run typecheck` (`apps/web`) exit0; `npm run web:lint` exit0/수정0; `npm run web:build` exit0/20 modules. `.pytest-r30-failure-shape-full`과 `apps/web/dist`는 정확한 worktree 하위 절대 경로를 확인해 삭제했으며 잔여 0이다.
+
+## Main WSL 실제 검증 최신 PASS — R30 절편 한정
+
+- 출처·기준: 아래 수치는 Main이 전달한 WSL-server 실제 QA 결과이며 Developer가 WSL에서 재실행한 결과가 아니다. 제품 exact clean SHA `fc4fcba9646b4c936944ea31ccffca027d1ca99a`, G-05 seq1978, 격리 PostgreSQL 15의 migration 0019, Node 24 환경이었다.
+- Main 실측: console 52 PASS, typecheck PASS, build 20 modules. PG15/OIDC/HTTPS/Chromium opt-in exit0, `1 passed, 30 deselected, 2 warnings in 11.08s`. Network `R6B_LOOPBACK_QA_ONLY` 58/58, Dashboard path 21, HTTPS loopback origin 1, unsafe 0이었다.
+- 1920×1080 PNG 3개는 pre-auth `BLOCKED`, 저장된 Next Action·Critical·observed time, revoked `BLOCKED` 상태를 담았다. 취소 상태의 별도 PNG는 없으며 Dashboard 취소의 실제 브라우저 증거는 DOM 전이와 strict evidence에 있다. 이 증거를 backend Run/Task 취소로 확대하지 않는다.
+- Main 전달 자원 확인: 전용 QA 및 로컬 복사 자원 잔여 0. 별도 WSL control checkout은 `ACTIVE`로 남아 있으며 이 정리 대상에 포함하지 않는다.
+- 범위 판정: 앞선 두 WSL 실패 및 Playwright 반환형 진단 이력은 그대로 보존한다. 최신 PASS는 R30 절편의 WSL 실제 검증에 한정되며 F-20/U-01 전체 인수는 아니다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED` 유지. Developer는 이 기록을 위해 결과보고서 외 파일, WORK_STATUS/progress/HANDOFF/control, WSL/DB, commit/push를 변경하지 않았다.
