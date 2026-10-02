@@ -33,7 +33,10 @@ const progressStages = new Set([
   'STORED_ALERT_WAIT',
   'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
   'STORED_DASHBOARD_FETCH', 'STORED_NEXT_ACTION', 'REVOKE_DASHBOARD_FETCH',
+  'STORED_MANUAL_REFRESH', 'STORED_MANUAL_503', 'STORED_MANUAL_INVALID',
+  'STORED_MANUAL_RECOVERY',
   'REVOKE_NEXT_ACTION',
+  'REVOKE_MANUAL_REFRESH',
   'REVOKE_CARD', 'REVOKE_RESPONSES', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
   'NETWORK_RESPONSE_FACTS', 'NETWORK_DOM', 'NETWORK_IDP_STATE',
   'NETWORK_ASSERT', 'EVIDENCE_PRE_AUTH', 'EVIDENCE_STORED', 'EVIDENCE_REVOKED',
@@ -509,6 +512,126 @@ function validateObservationTime(view, expected) {
   return { observationTimeAccessible: true };
 }
 
+function validateManualRefreshFacts(facts, expectedObservedAt) {
+  assert.ok(facts.requestCount === 1 && facts.requestPath === '/api/dashboard/operations'
+    && facts.requestMethod === 'GET' && facts.loadingDisabled
+    && facts.loadingTime === '대시보드 관측 시각 · 조회 중'
+    && facts.staleActionCount === 0 && facts.providerBefore === facts.providerDuring
+    && facts.alertBefore === facts.alertDuring && facts.readinessBefore === facts.readinessDuring
+    && facts.responseStatus === 200 && facts.observedAt === expectedObservedAt,
+  'R27_MANUAL_REFRESH_MISMATCH');
+  return { manualRefreshClicked: true, manualRefreshRequestCount: 1,
+    manualRefreshObservedAt: expectedObservedAt, independentCardsPreserved: true };
+}
+
+async function verifyManualRefresh(page, origin, expectedAction, activation = 'click') {
+  const button = page.getByRole('button', { name: '대시보드 새로고침' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const provider = page.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  const heading = page.locator('.dashboard-heading');
+  const providerBefore = await provider.innerText();
+  const alertBefore = await alerts.innerText();
+  const readinessBefore = (await heading.innerText()).split('\n').find((line) => line.startsWith('마지막 확인'));
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let received;
+  const requested = new Promise((resolve) => { received = resolve; });
+  let requestCount = 0;
+  let requestPath = null;
+  let requestMethod = null;
+  let responseStatus = null;
+  let observedAt = null;
+  const handler = async (route) => {
+    requestCount += 1;
+    const request = route.request();
+    const url = new URL(request.url());
+    requestPath = url.origin === origin ? url.pathname : null;
+    requestMethod = request.method();
+    try {
+      const response = await route.fetch();
+      responseStatus = response.status();
+      const body = await response.json();
+      observedAt = body?.data?.observed_at ?? null;
+      received();
+      await held;
+      await route.fulfill({ response });
+    } catch (error) {
+      received();
+      throw error;
+    }
+  };
+  await page.route('**/api/dashboard/operations', handler);
+  try {
+    if (activation === 'keyboard') {
+      await button.focus();
+      await page.keyboard.press('Enter');
+    } else {
+      await button.click();
+    }
+    await boundedCapture(() => requested, 10000);
+    await verifyObservationTime(page, '조회 중');
+    const loadingDisabled = await button.isDisabled();
+    const staleActionCount = await nextCard.locator('li').count();
+    const loadingTime = await heading.locator('p[aria-live]').innerText();
+    const providerDuring = await provider.innerText();
+    const alertDuring = await alerts.innerText();
+    const readinessDuring = (await heading.innerText()).split('\n')
+      .find((line) => line.startsWith('마지막 확인'));
+    release();
+    await verifyObservationTime(page, observedAt);
+    await nextCard.locator('li').filter({ hasText: expectedAction }).waitFor();
+    assert.equal(await button.isEnabled(), true, 'R27_MANUAL_REFRESH_MISMATCH');
+    return validateManualRefreshFacts({ requestCount, requestPath, requestMethod,
+      loadingDisabled, loadingTime, staleActionCount, providerBefore, providerDuring,
+      alertBefore, alertDuring, readinessBefore, readinessDuring, responseStatus, observedAt }, observedAt);
+  } finally {
+    release();
+    await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
+async function verifyManualFailure(page, origin, status, body) {
+  const button = page.getByRole('button', { name: '대시보드 새로고침' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let received;
+  const requested = new Promise((resolve) => { received = resolve; });
+  let requestCount = 0;
+  const handler = async (route) => {
+    requestCount += 1;
+    assert.equal(new URL(route.request().url()).origin, origin, 'R27_MANUAL_FAILURE_MISMATCH');
+    assert.equal(route.request().method(), 'GET', 'R27_MANUAL_FAILURE_MISMATCH');
+    received();
+    await held;
+    await route.fulfill({ status, contentType: 'application/json', body });
+  };
+  await page.route('**/api/dashboard/operations', handler);
+  try {
+    assert.equal(await nextCard.locator('li').count(), 1, 'R27_MANUAL_FAILURE_MISMATCH');
+    await button.click();
+    await boundedCapture(() => requested, 10000);
+    await verifyObservationTime(page, '조회 중');
+    assert.equal(await button.isDisabled(), true, 'R27_MANUAL_FAILURE_MISMATCH');
+    assert.equal(await nextCard.locator('li').count(), 0, 'R27_MANUAL_FAILURE_MISMATCH');
+    await button.evaluate((element) => element.click());
+    assert.equal(requestCount, 1, 'R27_MANUAL_FAILURE_DUPLICATE');
+    release();
+    await verifyObservationTime(page, '조회 불가');
+    await nextCard.getByText('UNAVAILABLE', { exact: true }).waitFor();
+    assert.equal(await nextCard.locator('li').count(), 0, 'R27_MANUAL_FAILURE_MISMATCH');
+    assert.equal(await button.isEnabled(), true, 'R27_MANUAL_FAILURE_MISMATCH');
+    assert.equal(requestCount, 1, 'R27_MANUAL_FAILURE_DUPLICATE');
+    assert.equal((await page.locator('body').innerText()).includes('r27-private-error-body-marker'), false,
+      'R27_MANUAL_FAILURE_BODY_LEAK');
+    return { requestCount, responseStatus: status, failClosed: true };
+  } finally {
+    release();
+    await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
 async function verifyObservationTime(page, expected) {
   const observation = page.locator('.dashboard-heading p[aria-live]');
   await page.locator('.dashboard-heading').getByText(
@@ -963,6 +1086,19 @@ async function main() {
     const storedActionEvidence = validateStoredNextAction(
       { status: storedDashboard.status, actions: dashboardActions }, alerts[0], expectedAction,
       await actionRow.first().innerText(), await actionRow.count());
+    markStage('STORED_MANUAL_REFRESH');
+    const manualRefreshEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
+    markStage('STORED_MANUAL_503');
+    const failedRefresh503 = await verifyManualFailure(page, apiUrl, 503,
+      '{"error":"r27-private-error-body-marker"}');
+    markStage('STORED_MANUAL_RECOVERY');
+    await verifyManualRefresh(page, apiUrl, expectedAction.action);
+    markStage('STORED_MANUAL_INVALID');
+    const failedRefreshInvalid = await verifyManualFailure(page, apiUrl, 200,
+      '{"data":{"observed_at":"2026-09-28T00:00:00+00:00"}}');
+    markStage('STORED_MANUAL_RECOVERY');
+    const keyboardRefreshEvidence = await verifyManualRefresh(
+      page, apiUrl, expectedAction.action, 'keyboard');
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -979,6 +1115,34 @@ async function main() {
     assert.equal(revoked.status, 403);
     markStage('REVOKE_DASHBOARD_FETCH');
     const revokedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    assert.equal(revokedDashboard.status, 403, 'R27_REVOKED_REFRESH_MISMATCH');
+    assert.equal(await nextCard.locator('li').count(), 1, 'R27_REVOKED_STALE_SETUP_MISSING');
+    await verifyObservationTime(page, keyboardRefreshEvidence.manualRefreshObservedAt);
+    markStage('REVOKE_MANUAL_REFRESH');
+    let deniedRequestCount = 0;
+    const countDeniedRequest = (request) => {
+      const url = new URL(request.url());
+      if (url.origin === apiUrl && url.pathname === '/api/dashboard/operations'
+        && request.method() === 'GET') deniedRequestCount += 1;
+    };
+    const deniedRefresh = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.origin === apiUrl && url.pathname === '/api/dashboard/operations'
+        && response.request().method() === 'GET';
+    }, { timeout: 10000 });
+    page.on('request', countDeniedRequest);
+    try {
+      await page.getByRole('button', { name: '대시보드 새로고침' }).click();
+      assert.equal((await deniedRefresh).status(), 403, 'R27_REVOKED_REFRESH_MISMATCH');
+      await verifyObservationTime(page, '조회 차단');
+      await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
+      assert.equal(await nextCard.locator('li').count(), 0, 'R27_REVOKED_REFRESH_MISMATCH');
+      assert.equal(deniedRequestCount, 1, 'R27_REVOKED_REFRESH_MISMATCH');
+    } finally {
+      page.off('request', countDeniedRequest);
+    }
+    const revokedManualRefreshEvidence = { revokedManualRefreshStatus: 403,
+      revokedManualRefreshCleared: true, revokedManualRefreshFromStored: true };
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
     await verifyObservationTime(page, '조회 차단');
     markStage('REVOKE_CLEAR');
@@ -1040,6 +1204,8 @@ async function main() {
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
       ...storedActionEvidence, ...revokedActionEvidence,
+      ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
+      failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
       ...loadingEvidence, ...preAuthAccessible, ...emptyEvidence, ...errorEvidence,
       ...emptyErrorAccessible, ...revokedAccessible, r23Regression: true,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,
@@ -1069,6 +1235,21 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  const manualFacts = { requestCount: 1, requestPath: '/api/dashboard/operations', requestMethod: 'GET',
+    loadingDisabled: true, loadingTime: '대시보드 관측 시각 · 조회 중', staleActionCount: 0,
+    providerBefore: 'provider-safe', providerDuring: 'provider-safe',
+    alertBefore: 'alert-safe', alertDuring: 'alert-safe', readinessBefore: '마지막 확인 · JUST NOW',
+    readinessDuring: '마지막 확인 · JUST NOW', responseStatus: 200,
+    observedAt: '2026-09-28T00:00:00+00:00' };
+  assert.deepEqual(validateManualRefreshFacts(manualFacts, manualFacts.observedAt),
+    { manualRefreshClicked: true, manualRefreshRequestCount: 1,
+      manualRefreshObservedAt: manualFacts.observedAt, independentCardsPreserved: true });
+  for (const changed of [{ requestCount: 2 }, { requestPath: '/api/providers' },
+    { loadingDisabled: false }, { staleActionCount: 1 }, { responseStatus: 403 },
+    { providerDuring: 'changed' }, { observedAt: 'wrong' }]) {
+    assert.throws(() => validateManualRefreshFacts({ ...manualFacts, ...changed },
+      manualFacts.observedAt), /R27_MANUAL_REFRESH_MISMATCH/);
+  }
   assert.deepEqual(validateObservationTime({ live: 'polite', atomic: 'true',
     text: '대시보드 관측 시각 · 조회 중' }, '조회 중'), { observationTimeAccessible: true });
   assert.throws(() => validateObservationTime({ live: 'polite', atomic: 'true',

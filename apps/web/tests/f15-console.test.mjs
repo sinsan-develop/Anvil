@@ -838,6 +838,13 @@ test('Dashboard pending operations read shows LOADING in all five cards without 
   }
 });
 
+test('Dashboard exposes a keyboard-operable manual refresh that waits during the initial read', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /<button[^>]*type="button"[^>]*disabled=""[^>]*>대시보드 새로고침<\/button>/);
+  assert.match(html, /대시보드 관측 시각 · 조회 중/);
+  assert.doesNotMatch(html, /Next Actions.*private-job-id|대시보드 관측 시각 · JUST NOW/s);
+});
+
 test('Dashboard Next Actions renders validated rows from the existing operations read', async () => {
   const snapshot = dashboardSnapshot([], []);
   snapshot.next_actions = [{priority: 'critical', reason: '<script>cause</script>',

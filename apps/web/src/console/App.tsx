@@ -1,4 +1,4 @@
-import {Component, useEffect, useRef, useState, type ErrorInfo, type ReactNode} from 'react';
+import {Component, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode} from 'react';
 import {MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
 import {scanProjects} from '../api/projects-client.js';
 import {createProjectsState, reduceProjects} from '../features/projects/projects-state.js';
@@ -493,8 +493,28 @@ function Shell({route}: AppProps) {
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_LOADING);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
   const alertsController = useRef<AbortController | null>(null);
+  const dashboardController = useRef<AbortController | null>(null);
+  const dashboardInFlight = useRef(false);
   const olderRequestInFlight = useRef(false);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
+
+  const refreshDashboard = useCallback(() => {
+    if (currentRoute !== '/' || dashboardInFlight.current) return;
+    const controller = new AbortController();
+    dashboardController.current = controller;
+    dashboardInFlight.current = true;
+    setDashboardQueue(DASHBOARD_QUEUE_LOADING);
+    void loadDashboardQueue(controller.signal).then((value) => {
+      if (dashboardController.current === controller && !controller.signal.aborted) {
+        setDashboardQueue(value);
+      }
+    }).finally(() => {
+      if (dashboardController.current === controller) {
+        dashboardController.current = null;
+        dashboardInFlight.current = false;
+      }
+    });
+  }, [currentRoute]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -516,17 +536,18 @@ function Shell({route}: AppProps) {
     void loadProviderRegistration(controller.signal).then((value) => {
       if (!controller.signal.aborted) setProviderRegistration(value);
     });
-    void loadDashboardQueue(controller.signal).then((value) => {
-      if (!controller.signal.aborted) setDashboardQueue(value);
-    });
+    refreshDashboard();
     void loadCriticalAlerts(controller.signal).then((value) => {
       if (!controller.signal.aborted) setCriticalAlerts(value);
     });
     return () => {
       controller.abort();
+      dashboardController.current?.abort();
+      dashboardController.current = null;
+      dashboardInFlight.current = false;
       if (alertsController.current === controller) alertsController.current = null;
     };
-  }, [currentRoute]);
+  }, [currentRoute, refreshDashboard]);
 
   const loadOlderAlerts = async () => {
     const controller = alertsController.current;
@@ -571,7 +592,9 @@ function Shell({route}: AppProps) {
         <div className="header-actions"><span>알림 · UNAVAILABLE</span><span>권한 · 미확인</span></div></header>
       {currentRoute === '/' ? <main className="dashboard">
         <div className="dashboard-heading"><h1>Dashboard</h1><div><p>마지막 확인 · {checked}</p>
-          <DashboardObservationTime value={dashboardQueue}/></div></div>
+          <DashboardObservationTime value={dashboardQueue}/>
+          <button type="button" disabled={dashboardQueue.status === 'LOADING'}
+            onClick={refreshDashboard}>대시보드 새로고침</button></div></div>
         <section aria-labelledby="health-heading"><h2 id="health-heading">Health</h2>
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {
