@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` (Developer 로컬 절편) — 기존 Dashboard operations 응답의 검증된 관측 시각을 별도 live 영역에 표시한다. Main의 독립 검토와 동일 SHA WSL PG15/OIDC/HTTPS/Chromium opt-in은 아직 미실행이므로 R26 실제 브라우저 PASS나 U-01/F-20 수락은 아니다.
+`COMPLETED` (R26 좁은 절편) — 기존 Dashboard operations 응답의 검증된 관측 시각을 별도 live 영역에 표시한다. Developer 로컬 검증 후 Main이 동일 clean SHA의 독립 로컬 검토와 WSL PG15/OIDC/HTTPS/Chromium 실제 QA를 완료했다. R26 관측 시각 절편의 실제 QA PASS이며 U-01/F-20 수락은 아니다.
 
 ## 기준·증거
 
@@ -31,8 +31,16 @@
 | `git diff --check` | 0 | whitespace error 0 |
 
 - 임시자원: 생성 전 `apps/web/dist`와 `.pytest_tmp_f20_u01_r26_dev` 부재 확인. build 산출물 `dist`는 실경로·link0·정확한 내용 확인 뒤 해당 폴더만 삭제하고 잔여0. pytest base는 실경로·root 비-link, 내부 symlink3 대상이 모두 base 내부임을 확인했다. `Get-CimInstance Win32_Process` 명령은 접근거부(exit1)였고, `Get-Process python,pytest`에는 별도 Anaconda Python 1개만 보여 본 pytest 종료(exit0) 후 base만 삭제·잔여0으로 확인했다. 기존 `.pytest_cache` ACL 경고·내용은 보존했다.
-- 미검증/잔여 위험: 실제 WSL PG15/OIDC/HTTPS/Chromium 새 SHA 실행, 1920×1080 screenshot·Network/API·DB 독립 사실, 사용자 인수·정식 Tester E-SHOT/E-NET/E-API/E-EVT, 필터·수동 refresh·실행/승인/비용 read model·7상태 완성은 미검증/미충족. R26 UI 변경이 기존 카드 값을 바꾸지 않는 로컬 회귀만 확인했다.
-- Main 인계: exact4 diff 독립 검토 후 같은 branch commit/private push, WSL clean 동일 SHA 실제 opt-in과 전용 자원 정리, canonical 결과·상태 반영 및 dual lease 회수. Developer는 control/status/Git commit/push/WSL/DB/Docker/Production을 변경하지 않았다. 정식 Developer 실패보고 0회.
+- Developer 로컬 완료 시점에는 실제 WSL/브라우저가 미검증이었다. 아래 Main 제공 실측과 별도로 위 로컬 명령·결과를 보존한다. Developer는 control/status/Git commit/push/WSL/DB/Docker/Production을 변경하지 않았다. 정식 Developer 실패보고 0회.
+
+## Main 제공 독립 검토·WSL 실제 QA
+
+- 출처: Main의 `docs/WORK_STATUS.md` R26 독립 로컬 판정, WSL 실제 opt-in·PNG/Network 검토·최종 정리 기록. 이 절의 WSL 명령·브라우저·DB·자원 정리는 Main이 수행했으며 Developer가 직접 실행한 결과가 아니다.
+- 기존 branch/private remote/WSL QA checkout의 동일 clean SHA `c48cca5e1d26f05221ba296411a8e8e48b4753ea`에서 Main 독립 로컬 console 49 PASS, typecheck/lint, Node 문법·감사 자기검증, Python 비 opt-in 25 PASS/1 SKIP, G-05 seq1954, diff check exit0. 격리 WSL PostgreSQL 15 비-superuser DB/migration0019과 OIDC/HTTPS/Chromium 실제 opt-in은 exit0, `1 passed, 25 deselected, 2 deprecation warnings in 7.96s`였다. 기존 R23~R25 DOM/키보드/API/DB/Network/Secret 단언과 R26 관측 시각 pre-auth 보류·저장 성공·403 철회 단언이 함께 통과했다.
+- Main의 1920×1080 PNG 3장 육안 확인: 인증 전과 권한 철회 뒤 `대시보드 관측 시각 · 조회 차단`, 보호 행 제거; 저장 성공 화면에 `2026-09-28T00:00:00+00:00`와 Critical/Next Actions 각각 1행. 저장 시각은 하네스의 고정 관측 clock이며 현재 시각이나 수동 refresh 성공을 뜻하지 않는다.
+- 증거 SHA-256: pre-auth PNG `ca7f05bbc9d8faea87d08c899d641d6248adeb223e9536173ff040a323a5f417`, stored PNG `93c15315f3e5c19d3351a2a6e24671e5533c6f492e8785f1b1048be6a2f6ba0d`, revoked PNG `c891b2268502d7608ea8b5e73cb2f8b75374a9845026a7fb3b039f7933c5f3a2`, Network JSON `c4478df62dac154e33fabe3d004e215ff37b1333b923ea2c24db5ea011e5c4c3`. Main의 Network 집계는 선언/실제 요청 46/46, app API 28, HTTPS loopback origin 1, userinfo/query/fragment 0이다.
+- Main이 전용 PG/Node/browser 컨테이너 0, port 5545 listener 0, WSL checkout/venv/pytest/evidence/node_modules/dist/TLS 0, 로컬 visual-review 0을 신원·실경로 확인 후 정리·검증했다. 공유 자원·ysna/Production 변경 없음.
+- 잔여 미충족: Project/Environment/기간 필터, 수동 refresh, 실행·승인·비용 운영 read model, 전체 7상태, 정식 독립 Tester E-SHOT/E-NET/E-API/E-EVT, C30 `OPEN_BLOCKING`. U-01/F-20은 미수락, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`다. Main의 다음 조치는 결과보고서 diff/G-05 확인, 기존 branch checkpoint/private push, epoch40 dual lease 회수다.
 - C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, U-01/F-20 미수락·Production `NOT_EXECUTED` 유지.
 
 Rollback: Main이 R26 exact4 변경만 정상 Git revert한다. 기존 Event·DB 지속 데이터는 변경하지 않았다.
