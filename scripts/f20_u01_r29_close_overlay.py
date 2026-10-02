@@ -25,6 +25,11 @@ PLAN = prior.PLAN
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r29-close.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R29_DASHBOARD_QUOTA_STATE_CLOSE_MANIFEST.json"
 CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST,
+    "docs/04_test_reports/F-20_U01_POST_R29_COVERAGE_REVIEW.md",
+    "docs/04_test_reports/F-20_U01_R30_DASHBOARD_CANCEL_STATE_PLAN.md",
+    "docs/04_test_reports/F-20_U01_R30_DASHBOARD_CANCEL_STATE_RESULT.md",
+    "docs/work_orders/F-20_U01_R30_DASHBOARD_CANCEL_STATE_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R30_DASHBOARD_CANCEL_STATE_INVOCATION.md",
     "docs/04_test_reports/F-20_U01_R29_DASHBOARD_QUOTA_STATE_PLAN.md",
     "docs/04_test_reports/F-20_U01_R29_DASHBOARD_QUOTA_STATE_RESULT.md",
     "docs/work_orders/F-20_U01_R29_DASHBOARD_QUOTA_STATE_WORK_INSTRUCTION.md",
