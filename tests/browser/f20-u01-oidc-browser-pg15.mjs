@@ -682,7 +682,7 @@ async function verifyManualFailure(page, origin, status, body) {
     manualPhase('FAILURE_RELEASE');
     release();
     manualPhase('FAILURE_OBSERVATION_WAIT');
-    await verifyObservationTime(page, '조회 불가');
+    await verifyObservationTime(page, '확인 불가');
     manualPhase('FAILURE_OBSERVATION_DONE');
     manualPhase('FAILURE_ACTION_WAIT');
     await nextCard.getByText('UNAVAILABLE', { exact: true }).waitFor();
