@@ -46,6 +46,32 @@ function markStage(value) {
   writeSync(1, `R6_STAGE ${value}\n`);
 }
 
+const manualPhases = new Set([
+  'STORED_CLICK_BEGIN', 'STORED_CLICK_DONE', 'SERVICE_ERROR_BEGIN', 'SERVICE_ERROR_DONE',
+  'SERVICE_RECOVERY_BEGIN', 'SERVICE_RECOVERY_DONE', 'INVALID_BEGIN', 'INVALID_DONE',
+  'KEYBOARD_RECOVERY_BEGIN', 'KEYBOARD_RECOVERY_DONE', 'REVOKED_CLICK_BEGIN',
+  'REVOKED_CLICK_DONE', 'REFRESH_BASELINE_BEGIN', 'REFRESH_BASELINE_DONE',
+  'REFRESH_ROUTE_READY', 'REFRESH_TRIGGER_BEGIN', 'REFRESH_TRIGGER_DONE',
+  'REFRESH_REQUEST_WAIT', 'REFRESH_REQUEST_DONE', 'REFRESH_LOADING_WAIT',
+  'REFRESH_LOADING_DONE', 'REFRESH_LOADING_FACTS_BEGIN', 'REFRESH_LOADING_FACTS_DONE',
+  'REFRESH_RELEASE', 'REFRESH_OBSERVATION_WAIT', 'REFRESH_OBSERVATION_DONE',
+  'REFRESH_ACTION_WAIT', 'REFRESH_ACTION_DONE', 'REFRESH_ENABLED_WAIT',
+  'REFRESH_ENABLED_DONE', 'REFRESH_UPSTREAM_WAIT', 'REFRESH_UPSTREAM_DONE',
+  'REFRESH_BODY_WAIT', 'REFRESH_BODY_DONE', 'REFRESH_GATE_WAIT', 'REFRESH_GATE_DONE',
+  'REFRESH_FULFILL_WAIT', 'REFRESH_FULFILL_DONE', 'FAILURE_ROUTE_READY',
+  'FAILURE_BASELINE_WAIT', 'FAILURE_BASELINE_DONE', 'FAILURE_TRIGGER_BEGIN',
+  'FAILURE_TRIGGER_DONE', 'FAILURE_REQUEST_WAIT', 'FAILURE_REQUEST_DONE',
+  'FAILURE_LOADING_WAIT', 'FAILURE_LOADING_DONE', 'FAILURE_RELEASE',
+  'FAILURE_OBSERVATION_WAIT', 'FAILURE_OBSERVATION_DONE', 'FAILURE_ACTION_WAIT',
+  'FAILURE_ACTION_DONE', 'FAILURE_FULFILL_WAIT', 'FAILURE_FULFILL_DONE',
+  'FAILURE_GATE_WAIT', 'FAILURE_GATE_DONE',
+]);
+
+function manualPhase(value) {
+  if (!manualPhases.has(value)) throw new Error('R27_MANUAL_PHASE_INVALID');
+  writeSync(1, `R27_MANUAL_PHASE ${value}\n`);
+}
+
 function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
   const markers = [...sensitiveValues, sessionValue].filter((value) => typeof value === 'string' && value);
   const variants = markers.flatMap((value) => [value, encodeURIComponent(value)]);
@@ -522,6 +548,7 @@ function validateManualRefreshFacts(facts, expectedObservedAt) {
 }
 
 async function verifyManualRefresh(page, origin, expectedAction, activation = 'click') {
+  manualPhase('REFRESH_BASELINE_BEGIN');
   const button = page.getByRole('button', { name: '대시보드 새로고침' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
   const provider = page.locator('article.status-card').filter({ hasText: 'LLM Providers' });
@@ -530,6 +557,7 @@ async function verifyManualRefresh(page, origin, expectedAction, activation = 'c
   const providerBefore = await provider.innerText();
   const alertBefore = await alerts.innerText();
   const readinessBefore = (await heading.innerText()).split('\n').find((line) => line.startsWith('마지막 확인'));
+  manualPhase('REFRESH_BASELINE_DONE');
   let release;
   const held = new Promise((resolve) => { release = resolve; });
   let received;
@@ -546,28 +574,44 @@ async function verifyManualRefresh(page, origin, expectedAction, activation = 'c
     requestPath = url.origin === origin ? url.pathname : null;
     requestMethod = request.method();
     try {
+      manualPhase('REFRESH_UPSTREAM_WAIT');
       const response = await route.fetch();
+      manualPhase('REFRESH_UPSTREAM_DONE');
       responseStatus = response.status();
+      manualPhase('REFRESH_BODY_WAIT');
       const body = await response.json();
+      manualPhase('REFRESH_BODY_DONE');
       observedAt = body?.data?.observed_at ?? null;
       received();
+      manualPhase('REFRESH_GATE_WAIT');
       await held;
+      manualPhase('REFRESH_GATE_DONE');
+      manualPhase('REFRESH_FULFILL_WAIT');
       await route.fulfill({ response });
+      manualPhase('REFRESH_FULFILL_DONE');
     } catch (error) {
       received();
       throw error;
     }
   };
   await page.route('**/api/dashboard/operations', handler);
+  manualPhase('REFRESH_ROUTE_READY');
   try {
+    manualPhase('REFRESH_TRIGGER_BEGIN');
     if (activation === 'keyboard') {
       await button.focus();
       await page.keyboard.press('Enter');
     } else {
       await button.click();
     }
+    manualPhase('REFRESH_TRIGGER_DONE');
+    manualPhase('REFRESH_REQUEST_WAIT');
     await boundedCapture(() => requested, 10000);
+    manualPhase('REFRESH_REQUEST_DONE');
+    manualPhase('REFRESH_LOADING_WAIT');
     await verifyObservationTime(page, '조회 중');
+    manualPhase('REFRESH_LOADING_DONE');
+    manualPhase('REFRESH_LOADING_FACTS_BEGIN');
     const loadingDisabled = await button.isDisabled();
     const staleActionCount = await nextCard.locator('li').count();
     const loadingTime = await heading.locator('p[aria-live]').innerText();
@@ -575,10 +619,18 @@ async function verifyManualRefresh(page, origin, expectedAction, activation = 'c
     const alertDuring = await alerts.innerText();
     const readinessDuring = (await heading.innerText()).split('\n')
       .find((line) => line.startsWith('마지막 확인'));
+    manualPhase('REFRESH_LOADING_FACTS_DONE');
+    manualPhase('REFRESH_RELEASE');
     release();
+    manualPhase('REFRESH_OBSERVATION_WAIT');
     await verifyObservationTime(page, observedAt);
+    manualPhase('REFRESH_OBSERVATION_DONE');
+    manualPhase('REFRESH_ACTION_WAIT');
     await nextCard.locator('li').filter({ hasText: expectedAction }).waitFor();
+    manualPhase('REFRESH_ACTION_DONE');
+    manualPhase('REFRESH_ENABLED_WAIT');
     assert.equal(await button.isEnabled(), true, 'R27_MANUAL_REFRESH_MISMATCH');
+    manualPhase('REFRESH_ENABLED_DONE');
     return validateManualRefreshFacts({ requestCount, requestPath, requestMethod,
       loadingDisabled, loadingTime, staleActionCount, providerBefore, providerDuring,
       alertBefore, alertDuring, readinessBefore, readinessDuring, responseStatus, observedAt }, observedAt);
@@ -601,22 +653,40 @@ async function verifyManualFailure(page, origin, status, body) {
     assert.equal(new URL(route.request().url()).origin, origin, 'R27_MANUAL_FAILURE_MISMATCH');
     assert.equal(route.request().method(), 'GET', 'R27_MANUAL_FAILURE_MISMATCH');
     received();
+    manualPhase('FAILURE_GATE_WAIT');
     await held;
+    manualPhase('FAILURE_GATE_DONE');
+    manualPhase('FAILURE_FULFILL_WAIT');
     await route.fulfill({ status, contentType: 'application/json', body });
+    manualPhase('FAILURE_FULFILL_DONE');
   };
   await page.route('**/api/dashboard/operations', handler);
+  manualPhase('FAILURE_ROUTE_READY');
   try {
+    manualPhase('FAILURE_BASELINE_WAIT');
     assert.equal(await nextCard.locator('li').count(), 1, 'R27_MANUAL_FAILURE_MISMATCH');
+    manualPhase('FAILURE_BASELINE_DONE');
+    manualPhase('FAILURE_TRIGGER_BEGIN');
     await button.click();
+    manualPhase('FAILURE_TRIGGER_DONE');
+    manualPhase('FAILURE_REQUEST_WAIT');
     await boundedCapture(() => requested, 10000);
+    manualPhase('FAILURE_REQUEST_DONE');
+    manualPhase('FAILURE_LOADING_WAIT');
     await verifyObservationTime(page, '조회 중');
+    manualPhase('FAILURE_LOADING_DONE');
     assert.equal(await button.isDisabled(), true, 'R27_MANUAL_FAILURE_MISMATCH');
     assert.equal(await nextCard.locator('li').count(), 0, 'R27_MANUAL_FAILURE_MISMATCH');
     await button.evaluate((element) => element.click());
     assert.equal(requestCount, 1, 'R27_MANUAL_FAILURE_DUPLICATE');
+    manualPhase('FAILURE_RELEASE');
     release();
+    manualPhase('FAILURE_OBSERVATION_WAIT');
     await verifyObservationTime(page, '조회 불가');
+    manualPhase('FAILURE_OBSERVATION_DONE');
+    manualPhase('FAILURE_ACTION_WAIT');
     await nextCard.getByText('UNAVAILABLE', { exact: true }).waitFor();
+    manualPhase('FAILURE_ACTION_DONE');
     assert.equal(await nextCard.locator('li').count(), 0, 'R27_MANUAL_FAILURE_MISMATCH');
     assert.equal(await button.isEnabled(), true, 'R27_MANUAL_FAILURE_MISMATCH');
     assert.equal(requestCount, 1, 'R27_MANUAL_FAILURE_DUPLICATE');
@@ -1084,18 +1154,28 @@ async function main() {
       { status: storedDashboard.status, actions: dashboardActions }, alerts[0], expectedAction,
       await actionRow.first().innerText(), await actionRow.count());
     markStage('STORED_NEXT_ACTION');
+    manualPhase('STORED_CLICK_BEGIN');
     const manualRefreshEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
+    manualPhase('STORED_CLICK_DONE');
     markStage('STORED_NEXT_ACTION');
+    manualPhase('SERVICE_ERROR_BEGIN');
     const failedRefresh503 = await verifyManualFailure(page, apiUrl, 503,
       '{"error":"r27-private-error-body-marker"}');
+    manualPhase('SERVICE_ERROR_DONE');
     markStage('STORED_NEXT_ACTION');
+    manualPhase('SERVICE_RECOVERY_BEGIN');
     await verifyManualRefresh(page, apiUrl, expectedAction.action);
+    manualPhase('SERVICE_RECOVERY_DONE');
     markStage('STORED_NEXT_ACTION');
+    manualPhase('INVALID_BEGIN');
     const failedRefreshInvalid = await verifyManualFailure(page, apiUrl, 200,
       '{"data":{"observed_at":"2026-09-28T00:00:00+00:00"}}');
+    manualPhase('INVALID_DONE');
     markStage('STORED_NEXT_ACTION');
+    manualPhase('KEYBOARD_RECOVERY_BEGIN');
     const keyboardRefreshEvidence = await verifyManualRefresh(
       page, apiUrl, expectedAction.action, 'keyboard');
+    manualPhase('KEYBOARD_RECOVERY_DONE');
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -1116,6 +1196,7 @@ async function main() {
     assert.equal(await nextCard.locator('li').count(), 1, 'R27_REVOKED_STALE_SETUP_MISSING');
     await verifyObservationTime(page, keyboardRefreshEvidence.manualRefreshObservedAt);
     markStage('REVOKE_FETCH');
+    manualPhase('REVOKED_CLICK_BEGIN');
     let deniedRequestCount = 0;
     const countDeniedRequest = (request) => {
       const url = new URL(request.url());
@@ -1140,6 +1221,7 @@ async function main() {
     }
     const revokedManualRefreshEvidence = { revokedManualRefreshStatus: 403,
       revokedManualRefreshCleared: true, revokedManualRefreshFromStored: true };
+    manualPhase('REVOKED_CLICK_DONE');
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
     await verifyObservationTime(page, '조회 차단');
     markStage('REVOKE_CLEAR');
@@ -1232,6 +1314,9 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  assert.ok([...manualPhases].every((value) => /^[A-Z_]+$/.test(value)),
+    'R27_MANUAL_PHASE_GRAMMAR_INVALID');
+  assert.throws(() => manualPhase('PRIVATE_TOKEN_VALUE'), /R27_MANUAL_PHASE_INVALID/);
   for (const manualStage of ['STORED_NEXT_ACTION', 'REVOKE_FETCH']) {
     assert.match(manualStage, /^[A-Z_]+$/, 'R27_STAGE_CLASSIFIER_GRAMMAR_MISMATCH');
     assert.equal(progressStages.has(manualStage), true, 'R27_STAGE_CLASSIFIER_GRAMMAR_MISMATCH');
