@@ -32,6 +32,10 @@ def test_r26_close_preserves_prefix_and_block():
 def test_r26_close_allows_only_control_followup():
     assert "docs/WORK_STATUS.md" in overlay.CONTROL_SCOPE
     assert "docs/04_test_reports/F-20_U01_R26_DASHBOARD_OBSERVATION_TIME_RESULT.md" in overlay.CONTROL_SCOPE
+    assert "docs/04_test_reports/F-20_U01_R27_DASHBOARD_MANUAL_REFRESH_PLAN.md" in overlay.CONTROL_SCOPE
+    assert "docs/04_test_reports/F-20_U01_R27_DASHBOARD_MANUAL_REFRESH_RESULT.md" in overlay.CONTROL_SCOPE
+    assert "docs/work_orders/F-20_U01_R27_DASHBOARD_MANUAL_REFRESH_WORK_INSTRUCTION.md" in overlay.CONTROL_SCOPE
+    assert "docs/work_orders/F-20_U01_R27_DASHBOARD_MANUAL_REFRESH_INVOCATION.md" in overlay.CONTROL_SCOPE
     assert "tests/browser/f20-u01-oidc-browser-pg15.mjs" not in overlay.CONTROL_SCOPE
     assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
     assert "apps/web/tests/f15-console.test.mjs" not in overlay.CONTROL_SCOPE
