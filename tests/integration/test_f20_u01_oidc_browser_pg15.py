@@ -414,6 +414,28 @@ def _r24_error_evidence(evidence: dict) -> dict:
     return actual
 
 
+def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
+    refresh = {"manualRefreshClicked": True, "manualRefreshRequestCount": 1,
+               "manualRefreshObservedAt": observed_at, "independentCardsPreserved": True}
+    expected = {**refresh, "revokedManualRefreshStatus": 403,
+                "revokedManualRefreshCleared": True, "revokedManualRefreshFromStored": True,
+                "failedRefresh503": {"requestCount": 1, "responseStatus": 503,
+                                     "failClosed": True},
+                "failedRefreshInvalid": {"requestCount": 1, "responseStatus": 200,
+                                         "failClosed": True},
+                "keyboardRefreshEvidence": refresh.copy()}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert exact(evidence, expected), "R28_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
 def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
     assert before_count == 0 and len(snapshot) == 1, "R24_PG_NOT_EMPTY"
     fields = ("code", "level", "cause", "related_entity_id", "next_action", "deep_link")
@@ -676,12 +698,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             assert evidence.get("evidenceExported") is True, "R6_EVIDENCE_OUTPUT_MISSING"
         else:
             assert not artifact_keys.intersection(evidence), "R6_EVIDENCE_OUTPUT_UNEXPECTED"
-        checked = {key: value for key, value in evidence.items()
-                   if key not in {"pageRequestCount", "appApiRequestCount"}
-                   | diagnostic_keys | artifact_keys | set(loading_evidence) | set(r25_task1_evidence)
-                   | set(r25_task2_evidence) | set(empty_evidence)
-                   | set(error_evidence)}
-        assert checked == {
+        expected_legacy = {
             "preAuthStatus": 401, "authorizationStatus": 200, "callbackStatus": 200,
             "sessionAuthenticated": True, "cookieSecure": True, "cookieHttpOnly": True,
             "storedStatus": 200, "storedAlertCode": _ALERT_CODE, "visibleBeforeRevoke": True,
@@ -693,7 +710,17 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             "revokedStatus": 403, "staleCleared": True,
             "allAppRequestsSameOrigin": True, "idpContextSeparate": True,
             "offOriginCredentialLeak": False, "secretExposure": False,
-        }, "R6_BROWSER_EVIDENCE_MISMATCH"
+        }
+        prior_keys = ({"pageRequestCount", "appApiRequestCount"}
+                      | diagnostic_keys | artifact_keys | set(loading_evidence)
+                      | set(r25_task1_evidence) | set(r25_task2_evidence)
+                      | set(empty_evidence) | set(error_evidence))
+        r28_candidate = {key: value for key, value in evidence.items()
+                         if key not in prior_keys | set(expected_legacy)}
+        r28_evidence = _r28_manual_evidence(r28_candidate, at.isoformat())
+        checked = {key: value for key, value in evidence.items()
+                   if key not in prior_keys | set(r28_evidence)}
+        assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
         assert owner.alerts() == before, "R6_GET_MUTATED_AUDIT"
@@ -1129,6 +1156,38 @@ def test_r24_error_browser_evidence_requires_isolated_failure():
             _r24_error_evidence({**expected, key: False})
     with pytest.raises(AssertionError, match="R24_ERROR_BROWSER_EVIDENCE_MISMATCH"):
         _r24_error_evidence({**expected, "errorBodyHidden": 1})
+
+
+def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation():
+    observed_at = "2026-09-28T00:00:00+00:00"
+    refresh = {"manualRefreshClicked": True, "manualRefreshRequestCount": 1,
+               "manualRefreshObservedAt": observed_at, "independentCardsPreserved": True}
+    expected = {**refresh, "revokedManualRefreshStatus": 403,
+                "revokedManualRefreshCleared": True, "revokedManualRefreshFromStored": True,
+                "failedRefresh503": {"requestCount": 1, "responseStatus": 503,
+                                     "failClosed": True},
+                "failedRefreshInvalid": {"requestCount": 1, "responseStatus": 200,
+                                         "failClosed": True},
+                "keyboardRefreshEvidence": refresh.copy()}
+    assert _r28_manual_evidence(expected, observed_at) == expected
+    for key in expected:
+        with pytest.raises(AssertionError, match="R28_BROWSER_EVIDENCE_MISMATCH"):
+            _r28_manual_evidence({name: value for name, value in expected.items()
+                                  if name != key}, observed_at)
+    for changed in (
+        {"manualRefreshClicked": 1}, {"manualRefreshRequestCount": True},
+        {"manualRefreshRequestCount": 2}, {"manualRefreshObservedAt": "invalid"},
+        {"independentCardsPreserved": False}, {"revokedManualRefreshStatus": 200},
+        {"revokedManualRefreshCleared": 1}, {"revokedManualRefreshFromStored": False},
+        {"failedRefresh503": {**expected["failedRefresh503"], "responseStatus": 200}},
+        {"failedRefreshInvalid": {**expected["failedRefreshInvalid"], "failClosed": 1}},
+        {"keyboardRefreshEvidence": {**refresh, "manualRefreshObservedAt": "other"}},
+        {"failedRefresh503": {**expected["failedRefresh503"], "extra": True}},
+        {"keyboardRefreshEvidence": {**refresh, "extra": True}},
+        {"unexpectedManualEvidence": True},
+    ):
+        with pytest.raises(AssertionError, match="R28_BROWSER_EVIDENCE_MISMATCH"):
+            _r28_manual_evidence({**expected, **changed}, observed_at)
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):
