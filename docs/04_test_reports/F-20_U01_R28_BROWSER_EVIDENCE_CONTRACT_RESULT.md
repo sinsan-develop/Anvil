@@ -2,7 +2,7 @@
 
 ## 판정
 
-`INCOMPLETE` (R28 증거 계약 보정 후 Main WSL 실제 재검증 대기). R27 네 번째 WSL 실제 opt-in은 브라우저 흐름을 완료했지만 Python exact 증거 사전에서 `R6_BROWSER_EVIDENCE_MISMATCH`로 FAIL이었다. R28의 첫 번째/전체 다섯 번째 WSL 재실행도 같은 불일치로 FAIL했다. R28 epoch42 dual lease에서 실제 R27 신규 증거의 top-level·중첩 키, type·값과 고정 관측 시각을 엄격히 검증하되 기존 R24와 공유하는 `independentCardsPreserved`의 중복 소비를 정정했다. 보정 후 Main의 동일 clean SHA WSL 실제 재검증은 아직 `NOT_EXECUTED`이며 이 로컬 결과만으로 R27/U-01/F-20을 수락하지 않는다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`.
+`R28_SLICE_PASS` (Main의 여섯 번째 WSL-server 실제 검증 기준). R27 네 번째 WSL 실제 opt-in은 브라우저 흐름을 완료했지만 Python exact 증거 사전에서 `R6_BROWSER_EVIDENCE_MISMATCH`로 FAIL이었다. R28의 첫 번째/전체 다섯 번째 WSL 재실행도 같은 불일치로 FAIL했다. R28 epoch42 dual lease에서 R27 신규 증거의 top-level·중첩 키, type·값과 고정 관측 시각을 엄격히 검증하되 기존 R24와 공유하는 `independentCardsPreserved`의 중복 소비를 정정했다. 보정된 clean SHA `fe3e56fd739a29fa38b432564f801631b251cf02`의 격리 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 exit0, `1 passed, 26 deselected, 2 warnings in 11.52s`였다. 이는 R28 slice의 PASS이지 F-20/U-01 전체 수락이 아니다. F-20/U-01 `REWORK`/open, C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
 
 ## 기준과 RED→GREEN
 
@@ -12,7 +12,15 @@
 - lease: actor `developer-primary-f20-u01-r28`, canonical seq1966 epoch42 worker/write ACTIVE, execution token `f20-u01-r28-execution-fence-epoch-42-r28contract1002`, write token `f20-u01-r28-write-fence-epoch-42-r28contract1002`, 만료 `2026-10-02T17:07:36+00:00`; allowed exact2는 이 결과보고서와 Python integration 테스트 파일이다.
 - TDD RED: Main의 실제 WSL 4차 `1 failed, 25 deselected, 2 warnings in 9.07s`, `R6_BROWSER_EVIDENCE_MISMATCH`. 로컬 신규 negative 계약 테스트는 helper 구현 전 `NameError`로 1 FAIL/26 deselected(exit1)하여 미구현 지점을 확인했다. helper·최종 사전 결박 후 focused 1 PASS/26 deselected(exit0).
 - Python 변경: R27 신규 top-level **9키**와 중첩 3계약을 exact-key/deep type/value로 검증한다. top-level `independentCardsPreserved=True`는 이미 `_r24_error_evidence`가 bool type과 값을 엄격 검증·`prior_keys`로 소비하므로 R28 candidate에서 다시 요구하지 않는다. 반면 중첩 `keyboardRefreshEvidence.independentCardsPreserved=True`는 R28이 계속 정확히 검증한다. 수동·키보드 조회의 관측 시각은 실제 WSL fixture `OperationsService` clock `2026-09-28T00:00:00+00:00`과 각각 정확히 일치해야 한다. 수동/키보드 GET1, 독립 카드 보존, 503/invalid의 구별된 응답 상태·fail-closed, 철회 403/기존 보호값 제거를 정확히 요구한다. 새 키가 누락·추가되면 R28 exact 사전이 거부하고, 기존 R6/R23~R26 exact 사전도 그대로 유지한다. Network/Secret/artifact 검사는 제거·완화하지 않았다. 누락·잘못된 type/value·중첩/상위 여분 키 negative 테스트를 포함한다.
-- Main의 다섯 번째 fresh WSL opt-in은 `1 failed, 26 deselected, 2 warnings in 9.08s`로 브라우저 흐름은 끝났지만 `_r28_manual_evidence` exact mismatch였다. read-only 코드 대조로 위 공유 key의 이중 요구를 확인했다. 이 실제 실패를 RED로 두고 R28 focused 테스트를 신규 9키 candidate 및 R24 공유 key `False`/`1`/`None` 거부로 바꾸자 예상 `R28_BROWSER_EVIDENCE_MISMATCH` 1 FAIL/26 deselected(exit1)였다. helper의 top-level 기대만 9키로 고쳐 focused 1 PASS/26 deselected(exit0). 기존 R24 검증과 Browser/Network/Secret 단언은 유지했으며 수정 후 실제 WSL GREEN은 아직 미확인이다.
+- Main의 다섯 번째 fresh WSL opt-in은 `1 failed, 26 deselected, 2 warnings in 9.08s`로 브라우저 흐름은 끝났지만 `_r28_manual_evidence` exact mismatch였다. read-only 코드 대조로 위 공유 key의 이중 요구를 확인했다. 이 실제 실패를 RED로 두고 R28 focused 테스트를 신규 9키 candidate 및 R24 공유 key `False`/`1`/`None` 거부로 바꾸자 예상 `R28_BROWSER_EVIDENCE_MISMATCH` 1 FAIL/26 deselected(exit1)였다. helper의 top-level 기대만 9키로 고쳐 focused 1 PASS/26 deselected(exit0). 기존 R24 검증과 Browser/Network/Secret 단언은 유지했다.
+
+## Main의 여섯 번째 WSL-server 실제 검증
+
+- 보정된 clean SHA `fe3e56fd739a29fa38b432564f801631b251cf02`를 대상으로 fresh 격리 PG15/OIDC/HTTPS/Chromium opt-in을 실행했다. Main이 전달한 pytest 결과는 exit0, `1 passed, 26 deselected, 2 warnings in 11.52s`다. 이 인계에는 실행 명령 전체가 포함되지 않아 명령 문자열은 미기록하며, 해당 실제 결과를 로컬 non-opt-in 결과와 합산하지 않는다.
+- Main이 1920×1080 PNG 3장을 직접 시각 확인했다. pre-auth Dashboard/Next Actions는 `BLOCKED`이고 보호 alert가 없었다. 저장된 Next Actions는 critical 행과 관측 시각을 표시했다. 권한 철회 후 Dashboard/Next Actions/Critical Alerts는 `BLOCKED`이고 저장된 행이 제거됐다.
+- 브라우저 Network `page-requests.json`은 52/52 요청이 `R6B_LOOPBACK_QA_ONLY` 범위, HTTPS origin 1개, query/fragment 0개였다. same-origin dashboard operations 15회, alerts 9회, providers 5회를 확인했다. 이는 이 격리 QA의 실제 Network 증거이며 운영 환경 검증은 아니다.
+- 산출물 SHA-256: `page-requests.json` `251ea1ac5f59a5061e0b693373063158f3c5fc177ef148ea683b6e47ec3f4bd1`; pre-auth PNG `795c9ea95707e96ccb08d7d737898623304443bcaf30ff76a4d66c0fb5c49647`; revoked PNG `30d72bfadcd332f0fdeec8dfbec49a25393dd4c788c64fbd4944c7b824bb5a16`; stored PNG `e8d4ff0d9ae7f526900c3c3cad50343454716a4a6bbf6e6adb6798a5643f3b90`.
+- Main은 해당 여섯 번째 QA의 격리 PG container, checkout, venv, evidence, browser/Node, port 5545, local copy의 잔여 0을 확인했다. 별도 활성 WSL control checkout은 보존했다.
 
 ## 로컬 임시자원 사전 기록
 
@@ -23,5 +31,5 @@
 - `./.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py -k r28_manual_refresh_evidence_requires_exact_keys_values_and_observation --tb=short`: RED exit1/`NameError` 1 FAIL·26 deselected, helper 후 GREEN exit0/1 PASS·26 deselected. 전체 `./.venv/Scripts/python.exe -m pytest -q -p no:cacheprovider --basetemp=.pytest_tmp_f20_u01_r28_dev tests/integration/test_f20_u01_oidc_browser_pg15.py --tb=short`: exit0/**26 PASS/1 SKIP**. SKIP은 opt-in 실제 WSL이 아니다.
 - `npm run test:console -w @anvil/web`: exit0/50 PASS. `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs`: exit0. `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test`: exit0/`R6_AUDIT_SELF_TEST_PASS`. `npm run web:typecheck`: exit0. `npm run web:lint`: exit0/3 files·수정0. `npm run web:build`: exit0/20 modules. `./.venv/Scripts/python.exe -m scripts.check_project_progress`: 전용 pytest base가 남은 중간 시점에는 Main read-only 조회에서 `F20_U01_R28_GIT_INVALID`; 해당 base 정리 후 exit0/G-05 seq1966 PASS. `git diff --check`: exit0.
 - 변경은 `tests/integration/test_f20_u01_oidc_browser_pg15.py`와 이 결과보고서 exact2다. 정식 Developer `FAILURE_REPORT` 0회; 최초 실제 WSL 증거 계약 불일치와 focused 예상 RED는 정식 반복 실패로 세지 않는다. 기존 `docs/WORK_STATUS.md`는 Main 소유 dirty로 보존했고 Developer는 Git commit/push·WSL/DB/Docker/control 변경0이다.
-- Main은 exact2를 독립 검토해 기존 branch에만 checkpoint commit/private push, WSL-server가 Git으로 동일 clean SHA를 받아 격리 PG15/OIDC/HTTPS/Chromium opt-in 전체 결과·PNG/Network·Secret 비노출을 확인하고 정확한 임시자원 잔여0을 증명해야 한다. 그 전 R28은 Developer 로컬 결과일 뿐 실제 브라우저 PASS가 아니다.
+- Main은 exact2를 독립 검토해 기존 branch에 checkpoint commit/private push했고, 위 동일 clean SHA의 격리 WSL-server 실제 opt-in·PNG·Network 확인과 해당 QA 임시자원 잔여0을 보고했다. R28 slice의 후속 통합 판정은 Main이 관리하며 F-20/U-01 전체 인수와 운영 검증은 여전히 열려 있다.
 - Rollback: R28 exact2만 정상 Git revert한다. 제품/API/DB/schema/auth/Secret·지속 데이터 변경은 없다.
