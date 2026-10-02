@@ -24,7 +24,8 @@ REPORT = prior.REPORT
 PLAN = prior.PLAN
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r28-close.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_CLOSE_MANIFEST.json"
-CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST}
+CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST,
+    "docs/04_test_reports/F-20_U01_POST_R28_COVERAGE_REVIEW.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 
