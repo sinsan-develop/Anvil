@@ -17,13 +17,11 @@ def test_r28_scope_is_only_python_evidence_contract_and_report():
         "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md",
     ]
     assert re.fullmatch(r"[0-9a-f]{40}", overlay.BASE)
-    assert not set(overlay.SCOPE) & overlay.prior.SCOPE
+    assert not set(overlay.SCOPE) & set(overlay.prior.SCOPE)
 
 
 def test_r28_projection_revokes_r27_then_issues_new_epoch_without_acceptance():
-    raw = (ROOT / overlay.EVENTS).read_bytes()
-    stream = json.loads(raw)
-    progress = json.loads((ROOT / overlay.PROGRESS).read_bytes())
+    raw, stream, progress = overlay._historical(ROOT)
     assert stream["last_sequence"] == overlay.START
     at = datetime.now(timezone.utc).replace(microsecond=0)
     wi_sha = overlay.r1._sha(overlay.r1._lf((ROOT / overlay.WI).read_bytes()))
