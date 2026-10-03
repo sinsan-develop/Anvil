@@ -21,6 +21,7 @@ from packages.agent_team.provider_status import ProviderStatusService
 from packages.persistence.config import DatabaseSettings
 from packages.persistence.operations_repository import PostgresOperationsRepository
 from packages.persistence.operations_queue_read import load_scoped_queue_source
+from packages.persistence.operations_budget_read import load_scoped_budget_source
 from packages.persistence.operations_run_read import load_scoped_run_source
 from packages.persistence.operations_agent_owner_read import load_scoped_agent_owner_source
 from packages.observability.agent_owner_summary import (
@@ -178,7 +179,10 @@ def create_oidc_process_app(
                     or (project_id, environment_id) != (scope.project_id, scope.environment_id)):
                 raise ValueError("QUEUE_SOURCE_SCOPE_INVALID")
             queue = load_scoped_queue_source(engine, scope.project_id, scope.environment_id)
+            budget = load_scoped_budget_source(engine, scope.project_id, scope.environment_id)
             return OperationsSources(queue=queue, queue_job_ids=queue.job_ids,
+                                     budget=budget, budget_ids=budget.budget_ids,
+                                     reservation_ids=budget.reservation_ids,
                                      provider=ProviderStatusService(environment))
 
         def load_run_summary(project_id: str, environment_id: str) -> ScopedRunStatusSummary:
