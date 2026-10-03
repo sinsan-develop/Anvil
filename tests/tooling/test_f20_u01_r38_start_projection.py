@@ -94,4 +94,3 @@ def test_r38_frozen_work_instruction_tamper_is_rejected():
 
     with mock.patch.object(Path, "read_bytes", changed):
         assert not overlay._frozen_prior_match(ROOT)
-

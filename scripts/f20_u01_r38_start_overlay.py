@@ -299,4 +299,3 @@ def collect_git(root: Path, progress: dict) -> list[str]:
         return [] if good else ["F20_U01_R38_GIT_INVALID"]
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):
         return ["F20_U01_R38_GIT_INVALID"]
-
