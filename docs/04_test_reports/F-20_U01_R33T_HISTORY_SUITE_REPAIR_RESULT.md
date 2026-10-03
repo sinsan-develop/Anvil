@@ -151,3 +151,24 @@ $files=@('2','2b','3b','4','5','6','6b','7','8' | ForEach-Object { "tests/toolin
 | `D:\Project\Anvil\.worktrees\anvil-f18-wsl-ops\.tmp_subagent_review\r33t-review-regression` | 290398 | 21747 | 43 | 0 |
 
 - rollback은 Main이 이번 HEAD77730ced 대비 정확11개 diff만 선택 역적용하는 방식이며 실제 실행0. 신규 lease/progress/WORK_STATUS/commit/push 작성0. 최종 수락 및 cleanup 판단은 Main에 인계한다.
+
+## Main 출처 후속 증거 — WSL-server 동일 SHA 전체 QA
+
+이 단락은 Main이 직접 실행·확인하여 전달한 결과다. Developer의 WSL 실행 또는 독립 재실측으로 주장하지 않는다. 기록 전 epoch48 actor/두 fencing token/exact13/만료 유효성을 다시 확인했다. 기존 `docs/WORK_STATUS.md` dirty는 보존하고 본 보고서만 누적 수정했다.
+
+- private/검증 SHA: `8c0af9638d1e52fb29a1010a42f457b4448c0655`.
+- 전용 checkout: `/tmp/anvil-f20-full-8c0af96`. 실행 전 clean/exact SHA/G-05 seq2002 PASS.
+- 환경: uv frozen dev offline, 43 packages, Python3.14.3/pytest8.4.2, Node22 PATH. `ANVIL_POSTGRES_VOLUME_TARGET=/var/lib/postgresql/data`.
+- cwd는 위 WSL 전용 checkout이며 전체 실행 명령은 다음과 같다.
+
+```sh
+.venv/bin/python -B -m pytest -q --tb=short -p no:cacheprovider --import-mode=importlib --ignore=tests/fixtures/repositories --basetemp=/tmp/anvil-f20-full-pytest-8c0af96
+```
+
+- **exit0: 8581 passed, 120 skipped, 14 warnings in 1878.32s (0:31:18)**.
+- 종료 후 clean/exact SHA/G-05 seq2002 재확인, 실행 PID1132833 부재. checkout242M/pytest base15G를 확인했다.
+- Main은 `/tmp` 실경로와 두 정확한 대상의 non-link 경계를 확인한 뒤 `/tmp/anvil-f20-full-8c0af96` 및 `/tmp/anvil-f20-full-pytest-8c0af96`만 제거하여 residue0을 확인했다. 이 cleanup 증거는 해당 WSL 두 경로만 의미하며 앞선 Windows 임시 root 정리까지 자동 증명하지 않는다.
+- read-only ps probe에서 awk quoting 오류1회가 있었고 효과는 없었으며 후속 ps 확인은 성공했다. 이는 Main 실행 진단 오류이며 제품 실패 또는 formal FAILURE_REPORT로 계상하지 않는다.
+- 이전 b996798 전체 suite의 18 failed는 R33T 후 동일 SHA WSL 전체 실행에서 재발하지 않았다. 앞선 Windows 통합 interrupt 기록은 그대로 보존하며, 이번 Main WSL 전체 PASS와 구분한다.
+- **검증 한계 유지:** 120 SKIP을 PASS로 승격하지 않는다. DB opt-in/실제 browser/Provider/Production acceptance를 추론하지 않는다. C30 OPEN_BLOCKING, F-20/U-01 REWORK, ReleaseDecision DEFER, Production NOT_EXECUTED 유지.
+- Developer 후속 조치: 보고서 한 파일만 수정, WSL/제품/control/WORK_STATUS/commit/push 변경0. 최종 수락은 Main 판정 소유다.
