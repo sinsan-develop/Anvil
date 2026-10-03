@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_r32_close_preserves_history_and_block():
+    assert overlay._git(
+        ROOT, "cat-file", "-e", f"{overlay.BASE}:scripts/f20_u01_r32_close_overlay.py",
+    ) == b""
     raw, stream, progress = overlay._historical(ROOT)
     at = datetime.now(timezone.utc).replace(microsecond=0)
     rows = overlay._make_rows(stream["events"], at)
