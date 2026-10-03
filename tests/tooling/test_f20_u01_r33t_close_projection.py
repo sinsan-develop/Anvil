@@ -81,3 +81,16 @@ def test_r33t_base_contains_its_close_control_script():
     assert overlay._git(
         ROOT, "cat-file", "-e", f"{overlay.BASE}:scripts/f20_u01_r33t_close_overlay.py",
     ) == b""
+
+
+def test_r33t_close_allows_only_r34_preparation_documents_before_new_lease():
+    preparation = {
+        "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_PLAN.md",
+        "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md",
+        "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_WORK_INSTRUCTION.md",
+        "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_INVOCATION.md",
+    }
+    assert preparation <= overlay.CONTROL_SCOPE
+    assert "packages/api/operations.py" not in overlay.CONTROL_SCOPE
+    assert "apps/web/src/console/App.tsx" not in overlay.CONTROL_SCOPE
+    assert set(overlay.AUTHORITY_FILES).isdisjoint(overlay.CONTROL_SCOPE)

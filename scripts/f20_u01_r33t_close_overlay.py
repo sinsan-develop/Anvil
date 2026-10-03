@@ -29,7 +29,11 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
     "scripts/check_project_progress.py", "docs/WORK_STATUS.md",
     "scripts/f20_u01_r33t_close_overlay.py",
     "tests/tooling/test_f20_u01_r33t_close_projection.py",
-    "tests/tooling/test_project_progress.py"}
+    "tests/tooling/test_project_progress.py",
+    "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_PLAN.md",
+    "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md",
+    "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_INVOCATION.md"}
 AUTHORITY_FILES = (PLAN, prior.WI, prior.INVOCATION, REPORT,
                    prior.DIGEST, prior.MANIFEST,
                    "scripts/f20_u01_r33t_start_overlay.py",
