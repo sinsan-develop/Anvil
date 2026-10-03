@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2022,
+  "accepted": false,
+  "projection_mode": "F20_U01_R36_SCOPED_AGENT_SUMMARY_CLOSE",
+  "previous_event_sequence": 2020,
+  "product_write_scope": [],
+  "predecessor_commit": "cdc9e25a032e112db7e49197de3c5077938c7a41",
+  "predecessor_events_sha256": "7060063B7F6F484FC8847FDDAB101B838A6F578E1970599DDEEB8A325777EBC4",
+  "plan_path": "docs/04_test_reports/F-20_U01_R36_SCOPED_AGENT_SUMMARY_PLAN.md",
+  "plan_sha256": "2298C982B702E9E365347AA1FA434B8AD93AEDA26A95FB64E7E717B4164B7DF2",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
