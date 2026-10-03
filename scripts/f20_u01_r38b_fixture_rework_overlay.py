@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2032, 2038
-BASE = "9374313e90ccdf5f1898504d21eb82e09b20107a"
+BASE = "b6474bb55168fbb96fea594439ab865af2f9f2d4"
 MODE = "F20_U01_R38B_BUDGET_FIXTURE_REWORK_START"
 ACTOR = "developer-primary-f20-u01-r38b"
 SUBJECT = "F-20/U01-R38B"
@@ -324,6 +324,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
         invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
         binding = _binding(root, old_progress, wi_sha)
         if (now.tzinfo is None or at.tzinfo is None or not at <= now
+                or datetime.fromisoformat(binding["reconfirmed_at"]) > at
                 < datetime.fromisoformat(worker["expires_at"])
                 or datetime.fromisoformat(worker["expires_at"]) - at != timedelta(hours=12)
                 or not re.fullmatch(r"[a-z0-9]{4,32}", nonce)
