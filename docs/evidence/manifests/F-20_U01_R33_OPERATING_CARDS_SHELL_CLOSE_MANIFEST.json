@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1998,
+  "accepted": false,
+  "projection_mode": "F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE",
+  "previous_event_sequence": 1996,
+  "product_write_scope": [],
+  "predecessor_commit": "768d94168fdd1c4a044785d5fca562051b13b118",
+  "predecessor_events_sha256": "1627791EF74254DA8EA5E71643C1879C05CD31FD410E2633F8C4BC7EE6C85A58",
+  "plan_path": "docs/04_test_reports/F-20_U01_R33_OPERATING_CARDS_SHELL_PLAN.md",
+  "plan_sha256": "19BAD417C1D87A8057FA5F96146D768162D2C1FC05FF236FCB8896E3C58CFD21",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
