@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2032, 2038
-BASE = "PENDING_R38B_BASE"
+BASE = "9374313e90ccdf5f1898504d21eb82e09b20107a"
 MODE = "F20_U01_R38B_BUDGET_FIXTURE_REWORK_START"
 ACTOR = "developer-primary-f20-u01-r38b"
 SUBJECT = "F-20/U01-R38B"
@@ -30,6 +30,8 @@ INVOCATION = "docs/work_orders/F-20_U01_R38B_BUDGET_FIXTURE_REWORK_INVOCATION.md
 REPORT = "docs/04_test_reports/F-20_U01_R38B_BUDGET_FIXTURE_REWORK_RESULT.md"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-u01-r38b-start.json"
 MANIFEST = "docs/evidence/manifests/F-20_U01_R38B_BUDGET_FIXTURE_REWORK_START_MANIFEST.json"
+REGISTRY = "docs/progress/non-semantic-revision-binding-f20-u01-r38b.json"
+BINDING_ID = "MAIN_RECONFIRMED_NON_SEMANTIC:F20-U01-R38B-FIXTURE-20261004-001"
 SCOPE = [
     "tests/observability/test_f20_u01_r17_run_host_binding.py",
     "tests/observability/test_f20_u01_r36_agent_host_binding.py",
@@ -50,6 +52,7 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
 }
 FROZEN_PRIOR = (PLAN, PRIOR_WI, PRIOR_INVOCATION, PRIOR_REPORT, WI, INVOCATION,
                 prior.DIGEST, prior.MANIFEST,
+                REGISTRY,
                 "scripts/f20_u01_r38_start_overlay.py",
                 "tests/tooling/test_f20_u01_r38_start_projection.py")
 CONTROL_SCOPE -= set(FROZEN_PRIOR)
@@ -79,6 +82,37 @@ def _frozen_prior_match(root: Path) -> bool:
         return False
 
 
+def _binding(root: Path, progress: dict, wi_sha: str) -> dict:
+    registry = json.loads((root / REGISTRY).read_bytes())
+    parent_registry = registry["parent_registry_path"]
+    if (parent_registry != "docs/progress/non-semantic-revision-bindings.json"
+            or registry["parent_registry_sha256"] != r1._sha((root / parent_registry).read_bytes())):
+        raise ValueError("R38B_PARENT_REGISTRY_INVALID")
+    rows = [row for row in registry["bindings"] if row.get("binding_id") == BINDING_ID]
+    if len(rows) != 1:
+        raise ValueError("R38B_BINDING_MISSING_OR_DUPLICATE")
+    binding = rows[0]
+    approval = progress["root_human_approval_binding"]
+    if (binding.get("parent_baseline_id") != progress["snapshot_id"]
+            or binding.get("derived_baseline_id")
+               != "snapshot-f20-u01-r38b-budget-fixture-rework-start-seq2038"
+            or binding.get("root_human_approval_id") != approval["approval_id"]
+            or binding.get("root_approval_subject_hash") != approval["approval_subject_hash"]
+            or binding.get("artifact_id") != "WI-F-20-U01-R38B-20261004-001"
+            or binding.get("artifact_path") != WI
+            or binding.get("old_hash") != progress["active_work_instruction"]["sha256"]
+            or binding.get("new_hash") != wi_sha
+            or binding.get("semantic_diff_classification") != "NON_SEMANTIC"
+            or binding.get("derived_scope") != SCOPE
+            or binding.get("reconfirmed_actor")
+               != {"actor_type": "agent", "actor_id": "main-agent-eoul"}
+            or not binding.get("changed_clauses") or not binding.get("impact")
+            or not binding.get("rationale") or not binding.get("root_approval_scope")
+            or datetime.fromisoformat(binding["reconfirmed_at"]).tzinfo is None):
+        raise ValueError("R38B_BINDING_INVALID")
+    return binding
+
+
 def _append_raw(raw: bytes, old: dict, additions: list[dict]) -> bytes:
     marker = b'\n  ],\n  "last_event_id": "' + old["last_event_id"].encode() + b'"'
     sequence = f'"last_sequence": {START}'.encode()
@@ -92,7 +126,7 @@ def _append_raw(raw: bytes, old: dict, additions: list[dict]) -> bytes:
 
 
 def _make_rows(events: list[dict], progress: dict, wi_sha: str, invocation_sha: str,
-               at: datetime, nonce: str) -> list[dict]:
+               at: datetime, nonce: str, binding: dict) -> list[dict]:
     stamp = at.isoformat(timespec="seconds")
     expiry = (at + timedelta(hours=12)).isoformat(timespec="seconds")
     old_worker, old_write = progress["worker_lease"], progress["write_lease"]
@@ -115,11 +149,20 @@ def _make_rows(events: list[dict], progress: dict, wi_sha: str, invocation_sha: 
          "reason": "R38_INCOMPLETE_FIXTURE_REWORK"},
         {"classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
          "parent_approval_id": progress["scope_revision_binding"]["approval_id"],
-         "scope_expansion": False, "parent_path": PRIOR_WI,
-         "parent_sha256": progress["active_work_instruction"]["sha256"],
-         "revised_path": WI, "revised_sha256": wi_sha,
-         "invocation_path": INVOCATION, "invocation_sha256": invocation_sha,
-         "reason": "EXISTING_SQLITE_HOST_FIXTURE_BUDGET_SOURCE"},
+         "scope_expansion": False,
+         "parent_work_instruction": {
+             "path": PRIOR_WI,
+             "sha256": progress["active_work_instruction"]["sha256"]},
+         "derived_work_instruction": {"path": WI, "sha256": wi_sha},
+         "semantic_diff": "LOCAL_TEST_FIXTURE_ONLY_NO_PRODUCT_CONTRACT_CHANGE",
+         "invocation": {"path": INVOCATION, "sha256": invocation_sha},
+         "work_instruction_id": "WI-F-20-U01-R38B-20261004-001",
+         "previous_work_instruction_sha256": progress["active_work_instruction"]["sha256"],
+         "work_instruction_sha256": wi_sha,
+         "reason": "EXISTING_SQLITE_HOST_FIXTURE_BUDGET_SOURCE",
+         "product_write_scope": SCOPE, "projection_mode": MODE,
+         "exact_allowed_paths": SCOPE,
+         "revision_binding": binding},
         worker, write,
         {"worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
          "work_instruction_sha256": wi_sha, "invocation_sha256": invocation_sha,
@@ -143,7 +186,8 @@ def _make_rows(events: list[dict], progress: dict, wi_sha: str, invocation_sha: 
 
 
 def _projection(root: Path, progress: dict, raw: bytes, stream: dict,
-                rows: list[dict], wi_sha: str, invocation_sha: str) -> dict[str, bytes]:
+                rows: list[dict], wi_sha: str, invocation_sha: str,
+                binding: dict) -> dict[str, bytes]:
     event_raw = _append_raw(raw, stream, rows)
     old_worker, old_write = progress["worker_lease"], progress["write_lease"]
     worker, write = rows[3]["details"], rows[4]["details"]
@@ -158,6 +202,7 @@ def _projection(root: Path, progress: dict, raw: bytes, stream: dict,
                                                  "revoked_at": stamp},
         "completed_f20_u01_r38_write_lease": {**old_write, "status": "REVOKED",
                                                 "revoked_at": stamp},
+        "r38b_nonsemantic_revision_binding": binding,
         "f20_overall_status": "REWORK_IN_PROGRESS", "next_safe_action": NEXT,
         "runtime_next_action": NEXT,
         "active_work_instruction": {
@@ -167,6 +212,7 @@ def _projection(root: Path, progress: dict, raw: bytes, stream: dict,
             "result_status": "REWORK_IN_PROGRESS",
             "package_status": "REWORK_IN_PROGRESS",
             "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+            "revision_binding_id": BINDING_ID,
             "parent_approval_id": progress["scope_revision_binding"]["approval_id"],
             "parent_work_instruction_sha256": progress["active_work_instruction"]["sha256"]},
         "current_progress_evidence_ref": {"package_id": "F-20", "path": DIGEST,
@@ -191,6 +237,7 @@ def _projection(root: Path, progress: dict, raw: bytes, stream: dict,
                "repository_head": BASE,
                "repository_upstream": "development/codex/f18-wsl-ops",
                "reporting_decision": updated["reporting_decision"]["decision"]}
+    summary["revision_binding_id"] = BINDING_ID
     handoff_raw = (b"# F-20/U-01 R38B Budget fixture rework start handoff\n\n"
                    b"```json anvil-recovery-summary\n" + r1._pretty(summary)
                    + b"```\n\n- Fixture-only local rework; R38 remains INCOMPLETE, C30 OPEN_BLOCKING; "
@@ -210,6 +257,9 @@ def _projection(root: Path, progress: dict, raw: bytes, stream: dict,
         "plan_sha256": r1._sha(r1._lf((root / PLAN).read_bytes())),
         "parent_work_instruction_sha256": progress["active_work_instruction"]["sha256"],
         "revision_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "revision_binding_id": BINDING_ID,
+        "revision_binding_path": REGISTRY,
+        "revision_binding_file_sha256": r1._sha((root / REGISTRY).read_bytes()),
         "parent_approval_id": progress["scope_revision_binding"]["approval_id"],
         "work_instruction_sha256": wi_sha, "invocation_sha256": invocation_sha,
         "incident_event_id": progress["f20_c30_event_integrity_incident"]["event_id"],
@@ -249,8 +299,11 @@ def materialize(root: Path, at: datetime, nonce: str) -> None:
         raise RuntimeError("F20_U01_R38B_PREDECESSOR_INVALID")
     wi_sha = r1._sha(r1._lf((root / WI).read_bytes()))
     invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
-    rows = _make_rows(stream["events"], progress, wi_sha, invocation_sha, at, nonce)
-    outputs = _projection(root, progress, raw, stream, rows, wi_sha, invocation_sha)
+    binding = _binding(root, progress, wi_sha)
+    if datetime.fromisoformat(binding["reconfirmed_at"]) > at:
+        raise RuntimeError("F20_U01_R38B_BINDING_FROM_FUTURE")
+    rows = _make_rows(stream["events"], progress, wi_sha, invocation_sha, at, nonce, binding)
+    outputs = _projection(root, progress, raw, stream, rows, wi_sha, invocation_sha, binding)
     for relative, content in outputs.items():
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -269,6 +322,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
         at = datetime.fromisoformat(rows[START]["occurred_at"])
         wi_sha = r1._sha(r1._lf((root / WI).read_bytes()))
         invocation_sha = r1._sha(r1._lf((root / INVOCATION).read_bytes()))
+        binding = _binding(root, old_progress, wi_sha)
         if (now.tzinfo is None or at.tzinfo is None or not at <= now
                 < datetime.fromisoformat(worker["expires_at"])
                 or datetime.fromisoformat(worker["expires_at"]) - at != timedelta(hours=12)
@@ -277,14 +331,14 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
                 or bundle["events"]["last_sequence"] != END
                 or [row["event_type"] for row in rows[START:]] != list(KINDS)
                 or rows[START:] != _make_rows(old_stream["events"], old_progress,
-                                              wi_sha, invocation_sha, at, nonce)
+                                              wi_sha, invocation_sha, at, nonce, binding)
                 or worker["execution_fencing_token"] in r1._historical_fencing_tokens(
                     old_stream["events"])
                 or write["write_fencing_token"] in r1._historical_fencing_tokens(
                     old_stream["events"])):
             return ["F20_U01_R38B_TRANSITION_INVALID"]
         expected = _projection(root, old_progress, raw, old_stream, rows[START:],
-                               wi_sha, invocation_sha)
+                               wi_sha, invocation_sha, binding)
         errors = [f"F20_U01_R38B_{path.split('/')[-1].upper()}_INVALID"
                   for path, content in expected.items() if (root / path).read_bytes() != content]
         if (bundle["progress"] != json.loads(expected[PROGRESS])

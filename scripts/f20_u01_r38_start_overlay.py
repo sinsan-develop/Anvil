@@ -50,6 +50,7 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     "tests/tooling/test_f20_u01_r38b_fixture_rework_projection.py",
     "docs/progress/progress-handoff-detached-digest-f20-u01-r38b-start.json",
     "docs/evidence/manifests/F-20_U01_R38B_BUDGET_FIXTURE_REWORK_START_MANIFEST.json",
+    "docs/progress/non-semantic-revision-binding-f20-u01-r38b.json",
 }
 FROZEN_PRIOR = (PLAN, WI, INVOCATION,
                 "docs/04_test_reports/F-20_U01_POST_R37_ACCEPTANCE_GAP_REVIEW.md",
