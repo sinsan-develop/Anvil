@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2020,
+  "accepted": false,
+  "projection_mode": "F20_U01_R36_SCOPED_AGENT_SUMMARY_START",
+  "previous_event_sequence": 2016,
+  "product_write_scope": [
+    "packages/observability/agent_owner_summary.py",
+    "tests/observability/test_f20_u01_r36_agent_owner_summary.py",
+    "packages/observability/service.py",
+    "apps/api/anvil_api/oidc_process.py",
+    "tests/observability/test_f20_u01_r36_agent_host_binding.py",
+    "tests/integration/test_f20_u01_r36_agent_host_pg15.py",
+    "docs/04_test_reports/F-20_U01_R36_SCOPED_AGENT_SUMMARY_RESULT.md"
+  ],
+  "predecessor_commit": "94f5347edd9f9d9235507172598abe0d792944ad",
+  "predecessor_events_sha256": "918D5C4B01CBE48C933A7D2F76411BE2A409785D52CA441AF8E764C54946A2A9",
+  "plan_path": "docs/04_test_reports/F-20_U01_R36_SCOPED_AGENT_SUMMARY_PLAN.md",
+  "plan_sha256": "2298C982B702E9E365347AA1FA434B8AD93AEDA26A95FB64E7E717B4164B7DF2",
+  "work_instruction_sha256": "767CB89CF156B5C477BBE3E64625E6C1D37BBE2424A56D285847A7406BD64BDB",
+  "invocation_sha256": "C9267C555F01B9E791DE9DDDD92838A2CF92723FEA73F2E8CE68224DCAC5ABBE",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
