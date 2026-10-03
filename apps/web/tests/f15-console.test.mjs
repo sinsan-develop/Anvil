@@ -299,9 +299,30 @@ test('Critical Alerts rejects auth, transport, malformed, duplicate and forged p
 test('Dashboard includes Critical Alerts while unrelated operating state stays UNAVAILABLE', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   assert.match(html, /Critical Alerts.*LOADING/s);
-  assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
+  assert.match(html, /운영 상태.*실행 중.*UNAVAILABLE/s);
   assert.doesNotMatch(html, /알람 read model은 아직 연결되지 않았습니다/);
   assert.match(html, /Database.*LLM Providers/s);
+});
+
+test('Dashboard second row shows six ordered unavailable operating cards without invented values or actions', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  const section = html.match(/<section aria-labelledby="operations-heading">([\s\S]*?)<\/section>/)?.[1];
+  assert.ok(section, 'operating section exists');
+  assert.match(section, /<div class="status-grid">/);
+  const cards = [...section.matchAll(/<article class="status-card">([\s\S]*?)<\/article>/g)]
+    .map((match) => match[1]);
+  assert.deepEqual(cards.map((card) => card.match(/<h3>(.*?)<\/h3>/)?.[1]), [
+    '실행 중', '승인 대기', 'BLOCKED', '필수 Gate 미통과', '예상 비용 초과', 'baseline 충돌',
+  ]);
+  for (const card of cards) {
+    assert.match(card, /<p class="status-unavailable">UNAVAILABLE<\/p>/);
+    assert.match(card, /<p>[^<>]*아직 연결되지 않았습니다\.<\/p>/);
+    assert.equal((card.match(/<p\b/g) ?? []).length, 2);
+    assert.doesNotMatch(card, /<a\b|<button\b|\b0건\b|\d+%/);
+  }
+  assert.ok(html.indexOf('id="health-heading"') < html.indexOf('id="operations-heading"'));
+  assert.ok(html.indexOf('id="operations-heading"') < html.indexOf('id="next-actions-heading"'));
+  assert.ok(html.indexOf('id="next-actions-heading"') < html.indexOf('id="critical-alerts-heading"'));
 });
 
 test('Critical Alerts loads a second stored page with exclusive cursor and newest-first records', async () => {
@@ -802,7 +823,7 @@ test('Dashboard preserves existing health cards and unrelated operating paths', 
   assert.match(html, /Database.*Queue.*Worker.*LLM Providers.*Execution Backends.*Artifact Store/s);
   assert.match(html, /Queue.*LOADING.*Worker.*LOADING/s);
   assert.match(html, /Critical Alerts.*LOADING/s);
-  assert.match(html, /실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE/);
+  assert.match(html, /운영 상태.*실행 중.*UNAVAILABLE/s);
   assert.doesNotMatch(html, /private-job-id|private-run-id|HEALTHY/);
 });
 

@@ -1,5 +1,5 @@
 import {Component, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode} from 'react';
-import {MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
+import {DASHBOARD_OPERATION_DEFINITIONS, MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
 import {scanProjects} from '../api/projects-client.js';
 import {createProjectsState, reduceProjects} from '../features/projects/projects-state.js';
 
@@ -685,7 +685,13 @@ function Shell({route}: AppProps) {
           </div>
         </section>
         <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
-          <p>실행·승인·비용 read model은 아직 연결되지 않았습니다. UNAVAILABLE</p>
+          <div className="status-grid">
+            {DASHBOARD_OPERATION_DEFINITIONS.map(({key, label}) =>
+              <article className="status-card" key={key}><h3>{label}</h3>
+                <p className="status-unavailable">UNAVAILABLE</p>
+                <p>이 운영 카드의 read model은 아직 연결되지 않았습니다.</p>
+              </article>)}
+          </div>
         </section>
         <NextActionsCard value={dashboardQueue}/>
         <CriticalAlertsCard value={criticalAlerts} onLoadOlder={() => { void loadOlderAlerts(); }}

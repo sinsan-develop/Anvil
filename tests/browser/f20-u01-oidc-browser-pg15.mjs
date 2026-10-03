@@ -1448,6 +1448,24 @@ async function loadingFacts(page) {
   return { cards, next, alerts, checked };
 }
 
+async function verifyOperatingCards(page) {
+  const section = page.locator('section[aria-labelledby="operations-heading"]');
+  const cards = section.locator('.status-grid > article.status-card');
+  const names = ['실행 중', '승인 대기', 'BLOCKED', '필수 Gate 미통과',
+    '예상 비용 초과', 'baseline 충돌'];
+  assert.equal(await cards.count(), names.length, 'R33_OPERATING_CARDS_MISMATCH');
+  for (let index = 0; index < names.length; index += 1) {
+    const card = cards.nth(index);
+    assert.equal(await card.locator('h3').innerText(), names[index],
+      'R33_OPERATING_CARDS_MISMATCH');
+    assert.deepEqual(await card.locator('p').allInnerTexts(), [
+      'UNAVAILABLE', '이 운영 카드의 read model은 아직 연결되지 않았습니다.',
+    ], 'R33_OPERATING_CARDS_MISMATCH');
+    assert.equal(await card.locator('a, button, input, select, textarea, [tabindex]').count(),
+      0, 'R33_OPERATING_CARDS_MISMATCH');
+  }
+}
+
 async function verifyDashboardKeyboard(page, requestsPending) {
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
@@ -1670,6 +1688,7 @@ async function main() {
     const { card, beforeEvidence: loadingEvidence } = await readyDashboard(page, 'goto', apiUrl,
       'PRE_AUTH', responseCaptures,
       (navigate) => holdFirstDashboardRequests(page, apiUrl, navigate));
+    await verifyOperatingCards(page);
     markStage('PRE_AUTH_FETCH');
     const preAuth = await fetchOnPage(page, '/api/operations/alerts');
     assert.equal(preAuth.status, 401);
@@ -1817,6 +1836,7 @@ async function main() {
     assert.equal(storedDashboard.status, 200, 'R20_NEXT_ACTION_MISMATCH');
     const dashboardActions = JSON.parse(storedDashboard.text).data.next_actions;
     const storedReady = await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
+    await verifyOperatingCards(page);
     const storedObservedAt = JSON.parse(storedReady.dashboardResponse.value.body).data.observed_at;
     assert.ok(/^\d{4}-\d{2}-\d{2}T/.test(storedObservedAt)
       && Number.isFinite(Date.parse(storedObservedAt)) && Date.parse(storedObservedAt) <= Date.now(),
@@ -1946,6 +1966,7 @@ async function main() {
       revokedManualRefreshCleared: true, revokedManualRefreshFromStored: true };
     manualPhase('REVOKED_CLICK_DONE');
     await readyDashboard(page, 'reload', apiUrl, 'REVOKE', responseCaptures);
+    await verifyOperatingCards(page);
     await verifyObservationTime(page, '조회 차단');
     markStage('REVOKE_CLEAR');
     await card.getByText('BLOCKED', { exact: true }).waitFor();
