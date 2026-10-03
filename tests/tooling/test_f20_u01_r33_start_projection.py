@@ -45,6 +45,11 @@ def test_r33_start_detects_only_its_bounded_control_dirt():
     assert overlay._dirty(ROOT) <= overlay.CONTROL_SCOPE
 
 
+def test_r33_base_contains_its_own_control_script():
+    source = overlay._git(ROOT, "show", f"{overlay.BASE}:scripts/f20_u01_r33_start_overlay.py")
+    assert b"F20_U01_R33_OPERATING_CARDS_SHELL_START" in source
+
+
 def test_r33_control_imports_from_direct_checker_script_path():
     result = subprocess.run([sys.executable, "-I", "-c",
         f"import sys; sys.path.insert(0, {str(ROOT / 'scripts')!r}); import f20_u01_r33_start_overlay"],
