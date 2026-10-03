@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2026,
+  "accepted": false,
+  "projection_mode": "F20_U01_R37_PROVIDER_REGISTRATION_SOURCE_START",
+  "previous_event_sequence": 2022,
+  "product_write_scope": [
+    "apps/api/anvil_api/oidc_process.py",
+    "tests/api/test_f20_u01_r37_provider_host_binding.py",
+    "tests/integration/test_f20_u01_r37_provider_host_pg15.py",
+    "docs/04_test_reports/F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_RESULT.md"
+  ],
+  "predecessor_commit": "6aa7fd80f78ea849cccd0c6378d298c2b317b35d",
+  "predecessor_events_sha256": "C2C62FB61E1AF7318D631555C24DB168F824DC641E6A965DD957D3EF65CDF091",
+  "plan_path": "docs/04_test_reports/F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_PLAN.md",
+  "plan_sha256": "719B854C7D23602B1633070C85BF019463BBC813BDC360265795BEE90B97B230",
+  "work_instruction_sha256": "574B009FE062DFA1396EE7B6DADDAB6D1C044C03DE49797A94A4CC20E414719E",
+  "invocation_sha256": "435D3D99397E43D4CE4FAA9593893FBF2A502EA16DAD9C98AF5310B70685371B",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
