@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2010,
+  "accepted": false,
+  "projection_mode": "F20_U01_R34_SCOPED_RUN_CARDS_CLOSE",
+  "previous_event_sequence": 2008,
+  "product_write_scope": [],
+  "predecessor_commit": "a0ade7a8e00a0870689cea53fb8ceca985b98af3",
+  "predecessor_events_sha256": "CE7AE27096A552765393E72568B50FA0A3EB926F8330B3E6B63B14EC9AC79B88",
+  "plan_path": "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_PLAN.md",
+  "plan_sha256": "168184B390CE1760D7E0498ABE46502A5105AD7306DB2256339A18942720DAB4",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

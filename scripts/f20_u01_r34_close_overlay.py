@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2008, 2010
-BASE = "PENDING_R34_CLOSE_BASE"
+BASE = "a0ade7a8e00a0870689cea53fb8ceca985b98af3"
 QA_HEAD = "0a67e71854ba1a995bbc95722e31533ac964bcc1"
 MODE = "F20_U01_R34_SCOPED_RUN_CARDS_CLOSE"
 NEXT = "F20_U01_R35_NEXT_INTERNAL_SOURCE_REVIEW_C30_BLOCKED"
@@ -184,7 +184,7 @@ def materialize(root: Path, dispatch_head: str, at: datetime) -> None:
                != "development/codex/f18-wsl-ops"
             or _git(root, "rev-parse", "HEAD").decode().strip() != BASE
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip() != BASE
-            or not prior._dirty(root) <= CONTROL_SCOPE
+            or not prior.prior.prior._dirty(root) <= CONTROL_SCOPE
             or prior.validate_control(root, {"_root": root, "progress": progress,
                                           "events": stream}, at)):
         raise RuntimeError("F20_U01_R34_CLOSE_PREDECESSOR_INVALID")
@@ -251,7 +251,7 @@ def collect_git(root: Path, progress: dict) -> list[str]:
                 and subprocess.run(["git", "merge-base", "--is-ancestor", remote, head],
                                    cwd=root, capture_output=True).returncode == 0
                 and changed <= CONTROL_SCOPE
-                and prior._dirty(root) <= CONTROL_SCOPE
+                and prior.prior.prior._dirty(root) <= CONTROL_SCOPE
                 and progress["repository"]["projection_mode"] == MODE)
         return [] if good else ["F20_U01_R34_CLOSE_GIT_INVALID"]
     except (OSError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):
