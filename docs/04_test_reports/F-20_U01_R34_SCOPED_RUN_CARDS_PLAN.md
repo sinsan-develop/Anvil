@@ -13,10 +13,11 @@
 ## 단일 writer 순서와 검증
 
 1. Main이 기준 hash·깨끗한 Git·G-05·기존 no-lease를 확인하고 R34 정확 경로의 WorkInstruction 및 worker/write dual lease를 append-only로 발급한다. 이 전 제품 write는 없다.
-2. Developer는 API/Console/브라우저 계약의 예상 RED를 먼저 만들고, 기존 `OperationsPort`·`App`만 최소 수정하여 GREEN으로 만든다. 기존 service/DB reader/OIDC host/registry와 과거 Event는 변경하지 않는다.
-3. 정상·빈 범위 0·인가 밖 403·loader 부재/오류/오염/101건 초과 비가용·비밀 노출0·다른 카드 비가용·상위 조회 상태를 검증한다. 기존 R10 API/OIDC, R12/R16/R17/R18, Console 전체, browser 문법/audit, typecheck/lint/build, 관련 비 opt-in Python, G-05/diff를 실행한다. 독립 diff/spec 검토에서 Critical/Important 0을 확인한다.
-4. Main이 같은 branch에서 안전 checkpoint/private push 후 WSL-server에 exact clean SHA를 Git으로 받아 격리 PG15/OIDC/HTTPS/Chromium의 API↔DOM·same-origin/secret·1920×1080 증거를 확인한다. 임시 checkout/DB/container/evidence 경로·수명·정리 방법을 생성 전에 WORK_STATUS에 기록하고 검사 후 정확 자원만 제거해 잔여0을 확인한다.
-5. 결과보고·현황·append-only 종료 통제로 dual lease를 회수한다. U-01 독립 Tester 전량 수락과 F-20 최종 검증 전에는 branch를 main에 병합하거나 다음 branch를 만들지 않는다.
+2. 착수 전 발견된 R33T 시작 시점 테스트 2건은 현행 seq2004를 과거 seq2002로 잘못 취급한다. Developer가 과거 시작 상태를 고정 Git SHA에서 검증하고 현행 G-05는 현재 상태로 별도 검증하도록 test-only RED→GREEN 복구한다. 역사 위조·만료 거부는 삭제·skip/xfail하지 않는다. 2026-10-03 로컬 시작 테스트는 1 PASS/2 FAIL이며, 인접 원장 전체 테스트는 약 10%에서 의도 중단했으므로 `INTERRUPTED_UNVERIFIED`다.
+3. Developer는 API/Console/브라우저 계약의 예상 RED를 먼저 만들고, 기존 `OperationsPort`·`App`만 최소 수정하여 GREEN으로 만든다. 기존 service/DB reader/OIDC host/registry와 과거 Event는 변경하지 않는다.
+4. 정상·빈 범위 0·인가 밖 403·loader 부재/오류/오염/101건 초과 비가용·비밀 노출0·다른 카드 비가용·상위 조회 상태를 검증한다. 기존 R10 API/OIDC, R12/R16/R17/R18, R33T 시작/종료와 현재 G-05, Console 전체, browser 문법/audit, typecheck/lint/build, 관련 비 opt-in Python, G-05/diff를 실행한다. 독립 diff/spec 검토에서 Critical/Important 0을 확인한다.
+5. Main이 같은 branch에서 안전 checkpoint/private push 후 WSL-server에 exact clean SHA를 Git으로 받아 격리 PG15/OIDC/HTTPS/Chromium의 API↔DOM·same-origin/secret·1920×1080 증거를 확인한다. 임시 checkout/DB/container/evidence 경로·수명·정리 방법을 생성 전에 WORK_STATUS에 기록하고 검사 후 정확 자원만 제거해 잔여0을 확인한다.
+6. 결과보고·현황·append-only 종료 통제로 dual lease를 회수한다. U-01 독립 Tester 전량 수락과 F-20 최종 검증 전에는 branch를 main에 병합하거나 다음 branch를 만들지 않는다.
 
 ## 완료 한계와 rollback
 
