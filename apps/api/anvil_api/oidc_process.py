@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker
 from packages.api.fastapi_app import AuthorizationScope
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.oidc_runtime_factory import OidcRuntimeRejected
+from packages.agent_team.provider_status import ProviderStatusService
 from packages.persistence.config import DatabaseSettings
 from packages.persistence.operations_repository import PostgresOperationsRepository
 from packages.persistence.operations_queue_read import load_scoped_queue_source
@@ -173,10 +174,12 @@ def create_oidc_process_app(
             operations_dsn = "postgresql://" + operations_dsn[len("postgresql+psycopg://"):]
 
         def load_queue_sources(project_id: str, environment_id: str) -> OperationsSources:
-            if (project_id, environment_id) != (scope.project_id, scope.environment_id):
+            if (type(project_id) is not str or type(environment_id) is not str
+                    or (project_id, environment_id) != (scope.project_id, scope.environment_id)):
                 raise ValueError("QUEUE_SOURCE_SCOPE_INVALID")
             queue = load_scoped_queue_source(engine, scope.project_id, scope.environment_id)
-            return OperationsSources(queue=queue, queue_job_ids=queue.job_ids)
+            return OperationsSources(queue=queue, queue_job_ids=queue.job_ids,
+                                     provider=ProviderStatusService(environment))
 
         def load_run_summary(project_id: str, environment_id: str) -> ScopedRunStatusSummary:
             if (project_id, environment_id) != (scope.project_id, scope.environment_id):
