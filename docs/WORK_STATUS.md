@@ -1,3 +1,14 @@
+# F-20/U-01 R35 권위 문서 Git 결박 재준비 / 2026-10-04
+
+- 판정: `R35_PREP_AUTHORITY_REBIND / NO_ACTIVE_LEASE`. 독립 read-only 리뷰에서 Important 1건을 발견했다. 최초 R35 start overlay가 신규 Plan/WI/Invocation의 현재 바이트만 Event·manifest에 기록하고 기준 Git blob으로 대조하지 않아, 문서와 projection을 함께 바꾸는 경우 감지할 수 없었다. 제품 writer 인계·제품 수정·원격 게시 전이었다. Main은 정확한 로컬 생성 seq2011~2014 projection과 digest/manifest가 당시 overlay 출력과 byte-for-byte 일치함을 검사한 뒤, **미게시·미인계한 자신의 생성물만** 기준 `8270bc4e4012e7ed18063a44eb39ac3287350bae`의 seq2010 Event/progress/HANDOFF 원문으로 복원하고 R35 생성 digest/manifest만 제거했다. 현재 canonical lease 없음, C30 `OPEN_BLOCKING`/DEFER 불변. 원격·사용자 자료·제품 파일 변경0. 최초 통제 설계 오류1회(해소 진행), 정식 Developer 실패0.
+- 다음 조치: R35 Plan/WI/Invocation을 먼저 기존 branch의 준비 commit에 고정하고 정확 Git blob 바이트 검사를 materialize/validate 양쪽에 추가한다. 그 뒤 seq2010에서 새 epoch50 dual lease를 **다시** append-only 발급한다. 기존 준비 중 `G-05`가 신규 control dirty를 거부한 사실은 실제 PASS로 승격하지 않는다. 수정 control의 G-05·위조 거부·동일 SHA 확인 및 독립 Important 재검토 전 Developer dispatch 금지.
+
+# F-20/U-01 R35 첫 통제 시도 — 미게시·미인계, 철회됨
+
+- 판정: `WITHDRAWN_BEFORE_DISPATCH`. 담당 Main 어울. 기준 기존 branch/private clean `8270bc4e4012e7ed18063a44eb39ac3287350bae`, seq2010 worker/write null, C30 `OPEN_BLOCKING`/ReleaseDecision `DEFER`를 확인했다. 읽기 전용 독립 검토에서 기존 GET의 Health 신호와 Critical `impact`·`next_action` UI만 DB/API/auth 변경 없이 구현 가능한 절편으로 분리했다. 승인된 U-01 §29.2 범위이며 Project/Environment/기간 필터, Critical ACK 쓰기, 나머지 세 카드 집계는 제외한다.
+- 계획·WorkInstruction·Invocation과 R35 epoch50 start overlay/검사 route/test를 작성했다. 정확한 제품 write scope는 `App.tsx`, Console test, 기존 PG15 browser integration test, browser harness, 결과보고서의 5경로뿐이다. 2010개 역사 Event 원문을 append-only 보존하고 seq2011 `WORK_INSTRUCTION_ISSUED`→2012 worker→2013 write→2014 `PACKAGE_RESUMED`를 투영했다. worker/write는 서로 다른 fencing token의 epoch50 `ACTIVE`, 만료 `2026-10-04T05:00:29+00:00`, 제품 write 아직0. 문서 SHA-256은 Plan `861CA69678283F9DCCB0DA512DA9A946913B256CEB378456C4433BE8E7C8E46C`, WI `EF0D9A37BF7A53B28864C41F0948BFD778436BAC3F6973AFF143CBF47656EADD`, Invocation `CBE94EB20BFE3CC30AA917FE4C819EA88DA6A3F3015748C2A86516F7E7102407`.
+- 당시 검증: R35 통제 생성물 3 PASS(exit0), 당시 공개 route 위조 거부 1 PASS(exit0), G-05 당시 seq2014 PASS, diff check exit0이었다. 그러나 독립 리뷰의 권위 문서 결박 Important 때문에 전체 통제 합격이 아니며 이 최초 projection은 위 기록대로 철회했다. 정식 Developer 실패0, 제품/WSL QA·독립 U-01 수락 `NOT_EXECUTED`. main 병합·신규 branch·ysna/Production 작업0.
+
 # F-20/U-01 R35 source-boundary 조사 / 2026-10-04
 
 - 판정: `U01_REWORK_IN_PROGRESS / THREE_CARDS_UNAVAILABLE`. Main 어울과 읽기 전용 `developer-primary`가 clean `723675c53d3432a8ddf44c15b38a047f4e2e7e85`, seq2010·worker/write lease null에서 설계 §29.2의 남은 운영 카드 소스를 대조했다. 제품·DB·API·WSL 변경0, 정식 Developer 실패0. R34의 실행 중·승인 대기·BLOCKED 세 카드 실제 검증은 보존한다.
