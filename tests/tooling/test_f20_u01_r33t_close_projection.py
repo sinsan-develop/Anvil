@@ -37,6 +37,11 @@ def test_r33t_close_preserves_history_and_block():
     assert final["scope_revision_binding"]["release_decision"] == "DEFER"
     assert final["f20_overall_status"] == "REWORK_IN_PROGRESS"
     assert "F-20" not in final["completed_packages"]
+    assert final["repository"]["validated_base_commit"] == overlay.BASE
+    assert final["repository"]["local_wsl_qa_head"] == (
+        "8c0af9638d1e52fb29a1010a42f457b4448c0655"
+    )
+    assert b"8c0af9638d1e52fb29a1010a42f457b4448c0655" in outputs[overlay.HANDOFF]
 
 
 def test_r33t_close_rejects_changed_event_prefix():

@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2004,
+  "accepted": false,
+  "projection_mode": "F20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE",
+  "previous_event_sequence": 2002,
+  "product_write_scope": [],
+  "predecessor_commit": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd",
+  "predecessor_events_sha256": "32B73D5AA907BB403545198D55EC9B35933D16B9D345BA13EEFB16E0AE53CCAC",
+  "plan_path": "docs/04_test_reports/F-20_U01_R33T_HISTORY_SUITE_REPAIR_PLAN.md",
+  "plan_sha256": "1BAE23BEFF4090C218C25F4977387DF88ACBABC08B0FAA62213EB130EF180DDD",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

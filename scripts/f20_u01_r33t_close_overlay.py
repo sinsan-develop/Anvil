@@ -18,7 +18,8 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2002, 2004
-BASE = "3176c9ae8e2c6c791554395f6cbe408da4a50b1d"
+BASE = "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd"
+QA_HEAD = "8c0af9638d1e52fb29a1010a42f457b4448c0655"
 MODE = "F20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE"
 NEXT = "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED"
 REPORT, PLAN = prior.REPORT, prior.PLAN
@@ -27,7 +28,8 @@ MANIFEST = "docs/evidence/manifests/F-20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE_MAN
 CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
     "scripts/check_project_progress.py", "docs/WORK_STATUS.md",
     "scripts/f20_u01_r33t_close_overlay.py",
-    "tests/tooling/test_f20_u01_r33t_close_projection.py"}
+    "tests/tooling/test_f20_u01_r33t_close_projection.py",
+    "tests/tooling/test_project_progress.py"}
 AUTHORITY_FILES = (PLAN, prior.WI, prior.INVOCATION, REPORT,
                    prior.DIGEST, prior.MANIFEST,
                    "scripts/f20_u01_r33t_start_overlay.py",
@@ -115,7 +117,7 @@ def _projection(root: Path, old_progress: dict, old_raw: bytes,
         "result_status": "COMPLETED_R33T_HISTORY_SUITE_WSL_FULL_NON_OPT_IN_QA_ONLY",
         "package_status": "REWORK_IN_PROGRESS"}
     progress["repository"].update({
-        "local_head": BASE, "remote_head": BASE, "local_wsl_qa_head": BASE,
+        "local_head": BASE, "remote_head": BASE, "local_wsl_qa_head": QA_HEAD,
         "validated_base_commit": BASE, "projection_mode": MODE,
         "worktree_status": "F20_U01_R33T_HISTORY_SUITE_REPAIR_COMPLETE_LEASE_CLOSED",
         "product_write_scope": [], "commit_status": "PENDING", "push_status": "PENDING",
@@ -136,8 +138,10 @@ def _projection(root: Path, old_progress: dict, old_raw: bytes,
                "reporting_decision": progress["reporting_decision"]["decision"]}
     handoff_raw = (b"# F-20/U-01 R33T History Suite Repair close handoff\n\n"
                    b"```json anvil-recovery-summary\n" + r1._pretty(summary)
-                   + b"```\n\n- R33T same-SHA WSL non-opt-in Python suite PASS and temp residue zero; "
-                     b"C30 OPEN_BLOCKING; F-20 incomplete; Production NOT_EXECUTED.\n")
+                   + b"```\n\n- R33T WSL non-opt-in Python suite PASS at QA commit "
+                   + QA_HEAD.encode() + b"; close control base " + BASE.encode()
+                   + b"; temp residue zero; C30 OPEN_BLOCKING; F-20 incomplete; "
+                     b"Production NOT_EXECUTED.\n")
     digest_raw = r1._pretty({
         "schema_version": "1.0.0", "algorithm": "SHA-256", "event_sequence": END,
         "self_reference": False,

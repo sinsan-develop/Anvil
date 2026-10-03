@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2002,
+  "last_sequence": 2004,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -96475,7 +96475,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 2003,
+  "event_id": "evt_f20_2003_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE",
+  "subject_ref": "F-20/U01-R33T",
+  "occurred_at": "2026-10-03T13:02:38+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "49EBF51C35F082A0C196D5427D4059155A92B260F06273B3FD6212CC8262D95A",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r33t-historyfix1003a",
+    "write_fencing_token": "f20-u01-r33t-write-fence-epoch-48-historyfix1003a",
+    "reason": "R33T_HISTORY_SUITE_WSL_FULL_GREEN_TEMP_RESIDUE_ZERO",
+    "evidence_head": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd"
+  }
+},
+{
+  "sequence": 2004,
+  "event_id": "evt_f20_2004_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE",
+  "subject_ref": "F-20/U01-R33T",
+  "occurred_at": "2026-10-03T13:02:38+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "4AE7500D0AB8A4AEC4E60367C4FB79E8B010350AE31DAB56F2736567DF9B2545",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r33t-historyfix1003a",
+    "execution_fencing_token": "f20-u01-r33t-execution-fence-epoch-48-historyfix1003a",
+    "reason": "R33T_HISTORY_SUITE_WSL_FULL_GREEN_TEMP_RESIDUE_ZERO",
+    "evidence_head": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2002_package_resumed"
+  "last_event_id": "evt_f20_2004_worker_lease_revoked"
 }
