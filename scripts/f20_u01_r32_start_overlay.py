@@ -7,12 +7,15 @@ from pathlib import Path
 import re
 import subprocess
 
-from scripts import f20_u01_r31_close_overlay as prior
+try:
+    from scripts import f20_u01_r31_close_overlay as prior
+except ModuleNotFoundError:
+    import f20_u01_r31_close_overlay as prior
 
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 1986, 1990
-BASE = "20032f94b8fdd2f983a4081072363969866c5b92"
+BASE = "b0296d8147136516262686c63cf941786d8fe4a8"
 MODE = "F20_U01_R32_NEXT_ACTION_ELAPSED_START"
 ACTOR = "developer-primary-f20-u01-r32"
 SUBJECT = "F-20/U01-R32"
@@ -32,6 +35,7 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST, PLAN, WI, INVOCATION, R
     "scripts/f20_u01_r32_start_overlay.py",
     "tests/tooling/test_f20_u01_r32_start_projection.py",
     "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
+_dirty = prior.prior._dirty
 
 
 def _git(root: Path, *args: str) -> bytes:
@@ -181,7 +185,7 @@ def materialize(root: Path, at: datetime, nonce: str) -> None:
                != "development/codex/f18-wsl-ops"
             or _git(root, "rev-parse", "HEAD").decode().strip() != BASE
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip() != BASE
-            or not prior._dirty(root) <= CONTROL_SCOPE
+            or not _dirty(root) <= CONTROL_SCOPE
             or prior.validate_control(root, {"_root": root, "progress": progress,
                                           "events": stream}, at)):
         raise RuntimeError("F20_U01_R32_PREDECESSOR_INVALID")
@@ -259,7 +263,7 @@ def collect_git(root: Path, progress: dict) -> list[str]:
                 and subprocess.run(["git", "merge-base", "--is-ancestor", remote, head],
                                    cwd=root, capture_output=True).returncode == 0
                 and changed <= CONTROL_SCOPE | set(SCOPE)
-                and prior._dirty(root) <= CONTROL_SCOPE | set(SCOPE)
+                and _dirty(root) <= CONTROL_SCOPE | set(SCOPE)
                 and progress["repository"]["projection_mode"] == MODE)
         return [] if good else ["F20_U01_R32_GIT_INVALID"]
     except (OSError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):

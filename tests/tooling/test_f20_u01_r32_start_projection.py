@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 from scripts import f20_u01_r32_start_overlay as overlay
 
@@ -37,3 +39,14 @@ def test_r32_projection_issues_one_epoch46_dual_lease():
     assert final["scope_revision_binding"]["release_decision"] == "DEFER"
     assert "F-20" not in final["completed_packages"]
     assert final["repository"]["product_write_scope"] == overlay.SCOPE
+
+
+def test_r32_start_detects_only_its_bounded_control_dirt():
+    assert overlay._dirty(ROOT) <= overlay.CONTROL_SCOPE
+
+
+def test_r32_control_imports_from_direct_checker_script_path():
+    result = subprocess.run([sys.executable, "-I", "-c",
+        f"import sys; sys.path.insert(0, {str(ROOT / 'scripts')!r}); import f20_u01_r32_start_overlay"],
+        cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
