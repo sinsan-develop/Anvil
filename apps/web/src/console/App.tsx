@@ -13,11 +13,11 @@ type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' 
 type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
-type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
+type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: string | null; sourceGap: boolean;
   health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
   nextActions: NextActionsState}
-  | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
+  | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
@@ -28,6 +28,7 @@ const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upst
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
 const PROVIDER_LOADING: ProviderRegistration = {status: 'LOADING'};
 const DASHBOARD_QUEUE_LOADING: DashboardQueueState = {status: 'LOADING'};
+const DASHBOARD_QUEUE_RECONNECTING: DashboardQueueState = {status: 'RECONNECTING'};
 const DASHBOARD_QUEUE_UNAVAILABLE: DashboardQueueState = {status: 'UNAVAILABLE'};
 const DASHBOARD_QUEUE_BLOCKED: DashboardQueueState = {status: 'BLOCKED'};
 const DASHBOARD_QUEUE_QUOTA: DashboardQueueState = {status: 'QUOTA'};
@@ -184,8 +185,10 @@ export function NextActionsCard({value}: {value: DashboardQueueState}) {
   return <section className="status-card" aria-labelledby="next-actions-heading">
     <h3 id="next-actions-heading">Next Actions</h3>
     <div aria-live="polite" aria-atomic="true">
-      {state.status !== 'LOADED' ? <><p className={state.status === 'LOADING' ? undefined : 'status-unavailable'}>{state.status}</p>
+      {state.status !== 'LOADED' ? <><p className={state.status === 'LOADING' || state.status === 'RECONNECTING'
+        ? undefined : 'status-unavailable'}>{state.status}</p>
         <p>{state.status === 'LOADING' ? '다음 조치 조회 중입니다.'
+          : state.status === 'RECONNECTING' ? '재연결 중 · 다음 조치를 표시하지 않습니다.'
           : state.status === 'BLOCKED' ? '조회 차단 · 다음 조치를 표시하지 않습니다.'
           : state.status === 'QUOTA' ? '조회 제한 · 다음 조치를 표시하지 않습니다.'
           : state.status === 'CANCELLED' ? '조회 취소 · 다음 조치를 표시하지 않습니다.'
@@ -225,6 +228,7 @@ export async function loadDashboardQueue(signal: AbortSignal, request: typeof fe
 export function DashboardObservationTime({value}: {value: DashboardQueueState}) {
   const observation = value.status === 'LOADED' && value.observedAt !== null
     ? value.observedAt : value.status === 'LOADING' ? '조회 중'
+      : value.status === 'RECONNECTING' ? '재연결 중'
       : value.status === 'BLOCKED' ? '조회 차단'
         : value.status === 'QUOTA' ? '조회 제한'
           : value.status === 'CANCELLED' ? '조회 취소' : '확인 불가';
@@ -239,8 +243,10 @@ export function QueueHealthCard({value}: {value: DashboardQueueState}) {
         <p>범위 내 관측 {value.observed}건</p>
         <p>{value.sourceGap ? 'Queue source 연결 정보가 부족합니다.'
           : 'Queue source의 완전성은 확인되지 않았습니다.'}</p>
-      </> : <><p className={value.status === 'LOADING' ? undefined : 'status-unavailable'}>{value.status}</p>
+      </> : <><p className={value.status === 'LOADING' || value.status === 'RECONNECTING'
+        ? undefined : 'status-unavailable'}>{value.status}</p>
         <p>{value.status === 'LOADING' ? 'Queue 조회 중입니다.'
+          : value.status === 'RECONNECTING' ? '재연결 중 · Queue 기록을 표시하지 않습니다.'
           : value.status === 'BLOCKED' ? '조회 차단 · Queue 기록을 표시하지 않습니다.'
           : value.status === 'QUOTA' ? '조회 제한 · Queue 기록을 표시하지 않습니다.'
           : value.status === 'CANCELLED' ? '조회 취소 · Queue 기록을 표시하지 않습니다.'
@@ -256,8 +262,10 @@ export function DashboardSignalCard({label, component, value}:
   return <article className="status-card"><h3>{label}</h3>
     <div aria-live="polite" aria-atomic="true">
       <p className={signal.status === 'HEALTHY' ? 'status-ready'
-        : signal.status === 'LOADING' ? undefined : 'status-unavailable'}>{signal.status}</p>
+        : signal.status === 'LOADING' || signal.status === 'RECONNECTING'
+          ? undefined : 'status-unavailable'}>{signal.status}</p>
       {signal.status === 'LOADING' ? <p>{label} 조회 중입니다.</p> : null}
+      {signal.status === 'RECONNECTING' ? <p>재연결 중 · {label} 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.status === 'QUOTA' ? <p>조회 제한 · {label} 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.status === 'CANCELLED' ? <p>조회 취소 · {label} 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
@@ -466,10 +474,12 @@ export function DatabaseHealthCard({value, operations, readinessPending = false}
   return <article className="status-card"><h3>Database</h3>
     <div aria-live="polite" aria-atomic="true">
       <p className={signal.status === 'HEALTHY' ? 'status-ready'
-        : signal.status === 'LOADING' ? undefined : 'status-unavailable'}>{signal.status}</p>
+        : signal.status === 'LOADING' || signal.status === 'RECONNECTING'
+          ? undefined : 'status-unavailable'}>{signal.status}</p>
       <p>{signal.status === 'LOADING' ? 'Database 조회 중입니다.'
         : head ? `API 준비 READY · Migration ${head}` : '연결된 상태 정보가 없습니다.'}</p>
       {signal.status === 'QUOTA' ? <p>조회 제한 · Database 상태 정보를 표시하지 않습니다.</p> : null}
+      {signal.status === 'RECONNECTING' ? <p>재연결 중 · Database 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.status === 'CANCELLED' ? <p>조회 취소 · Database 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
       {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
@@ -496,6 +506,16 @@ class ShellErrorBoundary extends Component<{children: ReactNode}, {failed: boole
   }
 }
 
+export function DashboardReadControls({status, onRefresh, onReconnect, onCancel}:
+    {status: DashboardQueueState['status']; onRefresh: () => void;
+      onReconnect: () => void; onCancel: () => void}) {
+  const pending = status === 'LOADING' || status === 'RECONNECTING';
+  return <><button type="button" disabled={pending} onClick={onRefresh}>대시보드 새로고침</button>
+    {status === 'UNAVAILABLE'
+      ? <button type="button" onClick={onReconnect}>대시보드 연결 재시도</button> : null}
+    {pending ? <button type="button" onClick={onCancel}>대시보드 조회 취소</button> : null}</>;
+}
+
 function Shell({route}: AppProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [readinessPayload, setReadinessPayload] = useState<unknown>(null);
@@ -511,12 +531,12 @@ function Shell({route}: AppProps) {
   const olderRequestInFlight = useRef(false);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
 
-  const refreshDashboard = useCallback(() => {
+  const refreshDashboard = useCallback((reconnect = false) => {
     if (currentRoute !== '/' || dashboardInFlight.current) return;
     const controller = new AbortController();
     dashboardController.current = controller;
     dashboardInFlight.current = true;
-    setDashboardQueue(DASHBOARD_QUEUE_LOADING);
+    setDashboardQueue(reconnect ? DASHBOARD_QUEUE_RECONNECTING : DASHBOARD_QUEUE_LOADING);
     void loadDashboardQueue(controller.signal).then((value) => {
       if (dashboardController.current === controller && !controller.signal.aborted) {
         setDashboardQueue(value);
@@ -615,10 +635,8 @@ function Shell({route}: AppProps) {
       {currentRoute === '/' ? <main className="dashboard">
         <div className="dashboard-heading"><h1>Dashboard</h1><div><p>마지막 확인 · {checked}</p>
           <DashboardObservationTime value={dashboardQueue}/>
-          <button type="button" disabled={dashboardQueue.status === 'LOADING'}
-            onClick={refreshDashboard}>대시보드 새로고침</button>
-          {dashboardQueue.status === 'LOADING'
-            ? <button type="button" onClick={cancelDashboard}>대시보드 조회 취소</button> : null}</div></div>
+          <DashboardReadControls status={dashboardQueue.status} onRefresh={() => refreshDashboard()}
+            onReconnect={() => refreshDashboard(true)} onCancel={cancelDashboard}/></div></div>
         <section aria-labelledby="health-heading"><h2 id="health-heading">Health</h2>
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {

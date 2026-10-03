@@ -524,6 +524,91 @@ def _r30_cancel_evidence(evidence: dict, observed_at: str) -> dict:
     return evidence
 
 
+def _r31_reconnect_evidence(evidence: dict, observed_at: str) -> dict:
+    expected = {"reconnectEvidence": {
+        "failureStatus": 503, "retryRequestCount": 1,
+        "requestPath": "/api/dashboard/operations", "requestMethod": "GET",
+        "reconnectingVisible": True, "dependentCardsCleared": True,
+        "observationCleared": True, "independentCardsPreserved": True,
+        "duplicateRequestPrevented": True, "recoveryStatus": 200,
+        "recoveredRowVisible": True, "recoveredObservedAt": observed_at,
+        "secretHidden": True, "mutationRequestCount": 0,
+    }}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert exact(evidence, expected), "R31_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def _r31_reconnect_cancel_evidence(evidence: dict, observed_at: str) -> dict:
+    expected = {"reconnectCancelEvidence": {
+        "failureStatus": 503, "retryRequestCount": 1,
+        "requestPath": "/api/dashboard/operations", "requestMethod": "GET",
+        "cancelledVisible": True, "requestAborted": True,
+        "staleRowsCleared": True, "independentCardsPreserved": True,
+        "secretHidden": True,
+        "recoveredObservedAt": observed_at, "abortedRouteNoOverwrite": True,
+        "mutationRequestCount": 0,
+    }}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert exact(evidence, expected), "R31_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def _r31_reconnect_denial_evidence(evidence: dict) -> dict:
+    expected = {"reconnectDeniedEvidence": {
+        "failureStatus": 503, "retryRequestCount": 1,
+        "requestPath": "/api/dashboard/operations", "requestMethod": "GET",
+        "deniedStatus": 403, "blockedVisible": True,
+        "staleRowsCleared": True, "observationBlocked": True,
+        "independentCardsPreserved": True, "secretHidden": True,
+        "mutationRequestCount": 0,
+    }}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert exact(evidence, expected), "R31_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def _r31_reconnect_race_evidence(evidence: dict, observed_at: str) -> dict:
+    expected = {"reconnectRaceEvidence": {
+        "interceptedDashboardCalls": 2, "firstSignalAborted": True,
+        "cancelledVisible": True, "staleResponseDistinct": True,
+        "oldPromiseResolvedAfterRecovery": True,
+        "latestRowPreserved": True, "latestObservationPreserved": True,
+        "recoveredObservedAt": observed_at, "mutationRequestCount": 0,
+    }}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert exact(evidence, expected), "R31_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
 def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
     assert before_count == 0 and len(snapshot) == 1, "R24_PG_NOT_EMPTY"
     fields = ("code", "level", "cause", "related_entity_id", "next_action", "deep_link")
@@ -807,7 +892,9 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         r28_candidate = {key: value for key, value in evidence.items()
                          if key not in prior_keys | set(expected_legacy)
                          | {"quotaRefreshEvidence", "quotaRecoveryEvidence",
-                            "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence"}}
+                            "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
+                            "reconnectEvidence", "reconnectCancelEvidence",
+                            "reconnectDeniedEvidence", "reconnectRaceEvidence"}}
         r28_evidence = _r28_manual_evidence(r28_candidate, at.isoformat())
         r29_candidate = {key: value for key, value in evidence.items()
                          if key in {"quotaRefreshEvidence", "quotaRecoveryEvidence"}}
@@ -815,9 +902,24 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         r30_candidate = {key: value for key, value in evidence.items()
                          if key in {"cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence"}}
         r30_evidence = _r30_cancel_evidence(r30_candidate, at.isoformat())
+        r31_candidate = {key: value for key, value in evidence.items()
+                         if key == "reconnectEvidence"}
+        r31_evidence = _r31_reconnect_evidence(r31_candidate, at.isoformat())
+        r31_cancel_candidate = {key: value for key, value in evidence.items()
+                                if key == "reconnectCancelEvidence"}
+        r31_cancel_evidence = _r31_reconnect_cancel_evidence(
+            r31_cancel_candidate, at.isoformat())
+        r31_denied_candidate = {key: value for key, value in evidence.items()
+                                if key == "reconnectDeniedEvidence"}
+        r31_denied_evidence = _r31_reconnect_denial_evidence(r31_denied_candidate)
+        r31_race_candidate = {key: value for key, value in evidence.items()
+                              if key == "reconnectRaceEvidence"}
+        r31_race_evidence = _r31_reconnect_race_evidence(
+            r31_race_candidate, at.isoformat())
         checked = {key: value for key, value in evidence.items()
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
-                   | set(r30_evidence)}
+                   | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
+                   | set(r31_denied_evidence) | set(r31_race_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1396,6 +1498,97 @@ def test_r30_cancel_evidence_requires_one_get_cleared_state_late_guard_and_recov
     ):
         with pytest.raises(AssertionError, match="R30_BROWSER_EVIDENCE_MISMATCH"):
             _r30_cancel_evidence({**expected, **changed}, observed_at)
+
+
+def test_r31_reconnect_evidence_requires_manual_one_get_protected_pending_and_recovery():
+    observed_at = "2026-09-28T00:00:00+00:00"
+    expected = {"reconnectEvidence": {
+        "failureStatus": 503, "retryRequestCount": 1,
+        "requestPath": "/api/dashboard/operations", "requestMethod": "GET",
+        "reconnectingVisible": True, "dependentCardsCleared": True,
+        "observationCleared": True, "independentCardsPreserved": True,
+        "duplicateRequestPrevented": True, "recoveryStatus": 200,
+        "recoveredRowVisible": True, "recoveredObservedAt": observed_at,
+        "secretHidden": True, "mutationRequestCount": 0,
+    }}
+    assert _r31_reconnect_evidence(expected, observed_at) == expected
+    for changed in (
+        {"reconnectEvidence": {**expected["reconnectEvidence"], "retryRequestCount": True}},
+        {"reconnectEvidence": {**expected["reconnectEvidence"], "reconnectingVisible": False}},
+        {"reconnectEvidence": {**expected["reconnectEvidence"], "recoveredObservedAt": "other"}},
+        {"reconnectEvidence": {**expected["reconnectEvidence"], "mutationRequestCount": 1}},
+        {"reconnectEvidence": {**expected["reconnectEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R31_BROWSER_EVIDENCE_MISMATCH"):
+            _r31_reconnect_evidence({**expected, **changed}, observed_at)
+
+
+def test_r31_reconnect_cancel_evidence_requires_abort_and_late_response_guard():
+    observed_at = "2026-09-28T00:00:00+00:00"
+    expected = {"reconnectCancelEvidence": {
+        "failureStatus": 503, "retryRequestCount": 1,
+        "requestPath": "/api/dashboard/operations", "requestMethod": "GET",
+        "cancelledVisible": True, "requestAborted": True,
+        "staleRowsCleared": True, "independentCardsPreserved": True,
+        "secretHidden": True,
+        "recoveredObservedAt": observed_at, "abortedRouteNoOverwrite": True,
+        "mutationRequestCount": 0,
+    }}
+    assert _r31_reconnect_cancel_evidence(expected, observed_at) == expected
+    for changed in (
+        {"reconnectCancelEvidence": {**expected["reconnectCancelEvidence"], "requestAborted": False}},
+        {"reconnectCancelEvidence": {**expected["reconnectCancelEvidence"], "abortedRouteNoOverwrite": False}},
+        {"reconnectCancelEvidence": {**expected["reconnectCancelEvidence"], "retryRequestCount": True}},
+        {"reconnectCancelEvidence": {**expected["reconnectCancelEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R31_BROWSER_EVIDENCE_MISMATCH"):
+            _r31_reconnect_cancel_evidence({**expected, **changed}, observed_at)
+
+
+def test_r31_reconnect_denial_evidence_requires_blocked_without_stale_or_secret():
+    expected = {"reconnectDeniedEvidence": {
+        "failureStatus": 503, "retryRequestCount": 1,
+        "requestPath": "/api/dashboard/operations", "requestMethod": "GET",
+        "deniedStatus": 403, "blockedVisible": True,
+        "staleRowsCleared": True, "observationBlocked": True,
+        "independentCardsPreserved": True, "secretHidden": True,
+        "mutationRequestCount": 0,
+    }}
+    assert _r31_reconnect_denial_evidence(expected) == expected
+    for changed in (
+        {"reconnectDeniedEvidence": {**expected["reconnectDeniedEvidence"], "blockedVisible": False}},
+        {"reconnectDeniedEvidence": {**expected["reconnectDeniedEvidence"], "retryRequestCount": True}},
+        {"reconnectDeniedEvidence": {**expected["reconnectDeniedEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R31_BROWSER_EVIDENCE_MISMATCH"):
+            _r31_reconnect_denial_evidence({**expected, **changed})
+
+
+def test_r31_reconnect_client_race_requires_late_stale_200_after_new_200():
+    observed_at = "2026-09-28T00:00:00+00:00"
+    expected = {"reconnectRaceEvidence": {
+        "interceptedDashboardCalls": 2, "firstSignalAborted": True,
+        "cancelledVisible": True, "staleResponseDistinct": True,
+        "oldPromiseResolvedAfterRecovery": True,
+        "latestRowPreserved": True, "latestObservationPreserved": True,
+        "recoveredObservedAt": observed_at, "mutationRequestCount": 0,
+    }}
+    assert _r31_reconnect_race_evidence(expected, observed_at) == expected
+    for changed in (
+        {"reconnectRaceEvidence": {**expected["reconnectRaceEvidence"],
+                                   "oldPromiseResolvedAfterRecovery": False}},
+        {"reconnectRaceEvidence": {**expected["reconnectRaceEvidence"],
+                                   "latestRowPreserved": False}},
+        {"reconnectRaceEvidence": {**expected["reconnectRaceEvidence"],
+                                   "recoveredObservedAt": "other"}},
+        {"reconnectRaceEvidence": {**expected["reconnectRaceEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R31_BROWSER_EVIDENCE_MISMATCH"):
+            _r31_reconnect_race_evidence({**expected, **changed}, observed_at)
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):

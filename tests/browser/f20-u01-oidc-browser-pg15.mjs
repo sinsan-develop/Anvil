@@ -1032,6 +1032,356 @@ async function verifyClientLateSuccessRace(page, origin, expectedAction) {
   }
 }
 
+async function verifyDashboardReconnect(page, origin, expectedAction) {
+  const retry = page.getByRole('button', { name: '대시보드 연결 재시도' });
+  const refresh = page.getByRole('button', { name: '대시보드 새로고침' });
+  const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const health = page.locator('section[aria-labelledby="health-heading"]');
+  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  const providerBefore = await provider.innerText();
+  const alertsBefore = await alerts.innerText();
+  await retry.waitFor();
+  await nextCard.getByText('UNAVAILABLE', { exact: true }).waitFor();
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let received;
+  const requested = new Promise((resolve) => { received = resolve; });
+  let retryRequestCount = 0;
+  let requestPath = null;
+  let requestMethod = null;
+  let recoveryStatus = null;
+  let recoveredObservedAt = null;
+  let mutationRequestCount = 0;
+  const countMutation = (request) => {
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname.startsWith('/api/') && request.method() !== 'GET') {
+      mutationRequestCount += 1;
+    }
+  };
+  const handler = async (route) => {
+    retryRequestCount += 1;
+    const request = route.request();
+    const url = new URL(request.url());
+    requestPath = url.origin === origin ? url.pathname : null;
+    requestMethod = request.method();
+    try {
+      const response = await route.fetch();
+      recoveryStatus = response.status();
+      const payload = await response.json();
+      recoveredObservedAt = payload?.data?.observed_at ?? null;
+      received();
+      await held;
+      await route.fulfill({ response });
+    } catch (error) {
+      received();
+      throw error;
+    }
+  };
+  page.on('request', countMutation);
+  await page.route('**/api/dashboard/operations', handler);
+  try {
+    await retry.focus();
+    await page.keyboard.press('Enter');
+    await boundedCapture(() => requested, 10000);
+    await verifyObservationTime(page, '재연결 중');
+    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardText = await Promise.all(cardNames.map(async (name) =>
+      health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
+    const pendingBody = await page.locator('body').innerText();
+    const reconnectingVisible = await cancel.count() === 1 && await retry.count() === 0
+      && cardText.every((text) => text.includes('RECONNECTING'))
+      && (await nextCard.innerText()).includes('RECONNECTING');
+    const dependentCardsCleared = await nextCard.locator('li').count() === 0
+      && !pendingBody.includes(expectedAction);
+    const observationCleared = pendingBody.includes('대시보드 관측 시각 · 재연결 중')
+      && !pendingBody.includes(`대시보드 관측 시각 · ${recoveredObservedAt}`);
+    const independentCardsPreserved = await provider.innerText() === providerBefore
+      && await alerts.innerText() === alertsBefore && cardText[0].includes('API 준비 READY');
+    const duplicateRequestPrevented = await refresh.isDisabled();
+    await refresh.evaluate((element) => element.click());
+    assert.equal(retryRequestCount, 1, 'R31_RECONNECT_DUPLICATE_GET');
+    release();
+    await verifyObservationTime(page, recoveredObservedAt);
+    await nextCard.locator('li').filter({ hasText: expectedAction }).waitFor();
+    const recoveredRowVisible = await nextCard.locator('li').count() === 1
+      && await retry.count() === 0 && await cancel.count() === 0;
+    const recoveredBody = await page.locator('body').innerText();
+    const secretHidden = !pendingBody.includes('r31-private-reconnect-marker')
+      && !recoveredBody.includes('r31-private-reconnect-marker');
+    assert.ok(retryRequestCount === 1 && requestPath === '/api/dashboard/operations'
+      && requestMethod === 'GET' && reconnectingVisible && dependentCardsCleared
+      && observationCleared && independentCardsPreserved && duplicateRequestPrevented
+      && recoveryStatus === 200 && recoveredRowVisible && secretHidden
+      && mutationRequestCount === 0, 'R31_RECONNECT_STATE_MISMATCH');
+    return { failureStatus: 503, retryRequestCount, requestPath, requestMethod,
+      reconnectingVisible, dependentCardsCleared, observationCleared,
+      independentCardsPreserved, duplicateRequestPrevented, recoveryStatus,
+      recoveredRowVisible, recoveredObservedAt, secretHidden, mutationRequestCount };
+  } finally {
+    release();
+    page.off('request', countMutation);
+    await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
+async function verifyReconnectCancellation(page, origin, expectedAction) {
+  const retry = page.getByRole('button', { name: '대시보드 연결 재시도' });
+  const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const health = page.locator('section[aria-labelledby="health-heading"]');
+  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  const providerBefore = await provider.innerText();
+  const alertsBefore = await alerts.innerText();
+  await retry.waitFor();
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  let received;
+  const requested = new Promise((resolve) => { received = resolve; });
+  let settled;
+  const completed = new Promise((resolve) => { settled = resolve; });
+  let retryRequestCount = 0;
+  let requestPath = null;
+  let requestMethod = null;
+  let oldRequest = null;
+  let mutationRequestCount = 0;
+  let observedFailure;
+  const requestFailed = new Promise((resolve) => { observedFailure = resolve; });
+  const captureFailure = (request) => {
+    if (request === oldRequest) observedFailure(request.failure());
+  };
+  const countMutation = (request) => {
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname.startsWith('/api/') && request.method() !== 'GET') {
+      mutationRequestCount += 1;
+    }
+  };
+  const handler = async (route) => {
+    retryRequestCount += 1;
+    oldRequest = route.request();
+    const url = new URL(oldRequest.url());
+    requestPath = url.origin === origin ? url.pathname : null;
+    requestMethod = oldRequest.method();
+    try {
+      const response = await route.fetch();
+      assert.equal(response.status(), 200, 'R31_RECONNECT_CANCEL_UPSTREAM_NOT_READY');
+      const payload = await response.json();
+      received();
+      await held;
+      try { await route.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ...payload, data: { ...payload.data, next_actions: [] } }) }); }
+      catch { /* Browser abort may close this exact routed request. */ }
+    } catch (error) {
+      received();
+      throw error;
+    } finally {
+      settled();
+    }
+  };
+  page.on('request', countMutation);
+  page.on('requestfailed', captureFailure);
+  await page.route('**/api/dashboard/operations', handler);
+  let oldRouteRegistered = true;
+  try {
+    await retry.click();
+    await boundedCapture(() => requested, 10000);
+    await verifyObservationTime(page, '재연결 중');
+    await cancel.click();
+    const requestAborted = hasFailedRequestReason(await boundedCapture(() => requestFailed, 10000));
+    await verifyObservationTime(page, '조회 취소');
+    await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
+    const cancelledVisible = await cancel.count() === 0
+      && await nextCard.getByText('CANCELLED', { exact: true }).count() === 1;
+    const cancelledBody = await page.locator('body').innerText();
+    const staleRowsCleared = await nextCard.locator('li').count() === 0
+      && !cancelledBody.includes(expectedAction);
+    const secretHidden = !cancelledBody.includes('r31-private-reconnect-marker');
+    const independentCardsPreserved = await provider.innerText() === providerBefore
+      && await alerts.innerText() === alertsBefore
+      && (await health.locator('article.status-card').filter({ hasText: 'Database' }).first().innerText())
+        .includes('API 준비 READY');
+    await page.unroute('**/api/dashboard/operations', handler);
+    oldRouteRegistered = false;
+    const recovery = await verifyManualRefresh(page, origin, expectedAction);
+    const recoveredObservedAt = recovery.manualRefreshObservedAt;
+    release();
+    await boundedCapture(() => completed, 10000);
+    await page.waitForTimeout(50);
+    const abortedRouteNoOverwrite = await nextCard.locator('li').count() === 1
+      && (await nextCard.locator('li').first().innerText()).includes(expectedAction)
+      && (await page.locator('.dashboard-heading p[aria-live]').innerText())
+        === `대시보드 관측 시각 · ${recoveredObservedAt}`;
+    assert.ok(retryRequestCount === 1 && requestPath === '/api/dashboard/operations'
+      && requestMethod === 'GET' && cancelledVisible && requestAborted
+      && staleRowsCleared && secretHidden && independentCardsPreserved && abortedRouteNoOverwrite
+      && mutationRequestCount === 0, 'R31_RECONNECT_CANCEL_MISMATCH');
+    return { failureStatus: 503, retryRequestCount, requestPath, requestMethod,
+      cancelledVisible, requestAborted, staleRowsCleared, independentCardsPreserved,
+      secretHidden,
+      recoveredObservedAt, abortedRouteNoOverwrite, mutationRequestCount };
+  } finally {
+    release();
+    page.off('request', countMutation);
+    page.off('requestfailed', captureFailure);
+    if (oldRouteRegistered) await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
+async function verifyReconnectDenied(page, origin, expectedAction) {
+  const retry = page.getByRole('button', { name: '대시보드 연결 재시도' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  const health = page.locator('section[aria-labelledby="health-heading"]');
+  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
+  const providerBefore = await provider.innerText();
+  const alertsBefore = await alerts.innerText();
+  await retry.waitFor();
+  let retryRequestCount = 0;
+  let requestPath = null;
+  let requestMethod = null;
+  let mutationRequestCount = 0;
+  const countMutation = (request) => {
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname.startsWith('/api/') && request.method() !== 'GET') {
+      mutationRequestCount += 1;
+    }
+  };
+  const handler = async (route) => {
+    retryRequestCount += 1;
+    const request = route.request();
+    const url = new URL(request.url());
+    requestPath = url.origin === origin ? url.pathname : null;
+    requestMethod = request.method();
+    await route.fulfill({ status: 403, contentType: 'application/json',
+      body: '{"error":"r31-private-denial-marker"}' });
+  };
+  page.on('request', countMutation);
+  await page.route('**/api/dashboard/operations', handler);
+  try {
+    await retry.click();
+    await verifyObservationTime(page, '조회 차단');
+    await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
+    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardText = await Promise.all(cardNames.map(async (name) =>
+      health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
+    const body = await page.locator('body').innerText();
+    const blockedVisible = await retry.count() === 0
+      && cardText.every((text) => text.includes('BLOCKED'));
+    const staleRowsCleared = await nextCard.locator('li').count() === 0
+      && !body.includes(expectedAction);
+    const observationBlocked = body.includes('대시보드 관측 시각 · 조회 차단');
+    const independentCardsPreserved = await provider.innerText() === providerBefore
+      && await alerts.innerText() === alertsBefore && cardText[0].includes('API 준비 READY');
+    const secretHidden = !body.includes('r31-private-denial-marker');
+    assert.ok(retryRequestCount === 1 && requestPath === '/api/dashboard/operations'
+      && requestMethod === 'GET' && blockedVisible && staleRowsCleared
+      && observationBlocked && independentCardsPreserved && secretHidden
+      && mutationRequestCount === 0, 'R31_RECONNECT_DENIAL_MISMATCH');
+    return { failureStatus: 503, retryRequestCount, requestPath, requestMethod,
+      deniedStatus: 403, blockedVisible, staleRowsCleared, observationBlocked,
+      independentCardsPreserved, secretHidden, mutationRequestCount };
+  } finally {
+    page.off('request', countMutation);
+    await page.unroute('**/api/dashboard/operations', handler);
+  }
+}
+
+async function verifyReconnectClientRace(page, origin, expectedAction) {
+  const retry = page.getByRole('button', { name: '대시보드 연결 재시도' });
+  const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
+  const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
+  await retry.waitFor();
+  const direct = await fetchOnPage(page, '/api/dashboard/operations');
+  assert.equal(direct.status, 200, 'R31_RACE_BASELINE_MISSING');
+  const source = JSON.parse(direct.text);
+  assert.ok(Array.isArray(source?.data?.next_actions)
+    && source.data.next_actions.length === 1, 'R31_RACE_BASELINE_MISSING');
+  const stale = { ...source, data: { ...source.data, next_actions: [] } };
+  const staleResponseDistinct = source.data.next_actions[0].action === expectedAction
+    && stale.data.next_actions.length === 0;
+  assert.equal(staleResponseDistinct, true, 'R31_RACE_STALE_NOT_DISTINCT');
+  let mutationRequestCount = 0;
+  const countMutation = (request) => {
+    const url = new URL(request.url());
+    if (url.origin === origin && url.pathname.startsWith('/api/') && request.method() !== 'GET') {
+      mutationRequestCount += 1;
+    }
+  };
+  page.on('request', countMutation);
+  let installed = false;
+  try {
+    await page.evaluate((oldPayload) => {
+      const nativeFetch = window.fetch;
+      let calls = 0;
+      let firstSignal = null;
+      let resolveFirst = null;
+      let released = false;
+      window.fetch = (input, init) => {
+        const url = new URL(typeof input === 'string' ? input : input.url, location.href);
+        if (url.origin === location.origin && url.pathname === '/api/dashboard/operations') {
+          calls += 1;
+          if (calls === 1) {
+            firstSignal = init?.signal ?? null;
+            // The old client Promise deliberately ignores abort, unlike the routed browser Request.
+            return new Promise((resolve) => { resolveFirst = resolve; });
+          }
+        }
+        return nativeFetch.call(window, input, init);
+      };
+      globalThis.__anvilR31Race = {
+        facts: () => ({ calls, firstSignalAborted: firstSignal?.aborted === true, released }),
+        releaseOld: () => {
+          if (!resolveFirst || released) return false;
+          released = true;
+          resolveFirst(new Response(JSON.stringify(oldPayload), { status: 200,
+            headers: { 'content-type': 'application/json' } }));
+          return true;
+        },
+        restore: () => { window.fetch = nativeFetch; },
+      };
+    }, stale);
+    installed = true;
+    await retry.click();
+    await verifyObservationTime(page, '재연결 중');
+    const held = await page.evaluate(() => globalThis.__anvilR31Race.facts());
+    assert.equal(held.calls, 1, 'R31_RACE_HELD_GET_MISSING');
+    await cancel.click();
+    await verifyObservationTime(page, '조회 취소');
+    await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
+    const cancelledVisible = await nextCard.locator('li').count() === 0;
+    const firstSignalAborted = (await page.evaluate(() => globalThis.__anvilR31Race.facts()))
+      .firstSignalAborted;
+    assert.ok(cancelledVisible && firstSignalAborted, 'R31_RACE_CANCEL_MISSING');
+    const recovery = await verifyManualRefresh(page, origin, expectedAction);
+    const recoveredObservedAt = recovery.manualRefreshObservedAt;
+    const beforeRelease = await page.evaluate(() => globalThis.__anvilR31Race.facts());
+    assert.equal(beforeRelease.calls, 2, 'R31_RACE_NEW_GET_MISSING');
+    assert.equal(await nextCard.locator('li').count(), 1, 'R31_RACE_RECOVERY_MISSING');
+    const oldPromiseResolvedAfterRecovery = await page.evaluate(() => globalThis.__anvilR31Race.releaseOld());
+    assert.equal(oldPromiseResolvedAfterRecovery, true, 'R31_RACE_OLD_RELEASE_MISSING');
+    await page.waitForTimeout(50);
+    const latestRowPreserved = await nextCard.locator('li').count() === 1
+      && (await nextCard.locator('li').first().innerText()).includes(expectedAction)
+      && !(await nextCard.innerText()).includes('현재 관측된 다음 조치 0건');
+    const latestObservationPreserved = (await page.locator('.dashboard-heading p[aria-live]').innerText())
+      === `대시보드 관측 시각 · ${recoveredObservedAt}`;
+    assert.ok(staleResponseDistinct && latestRowPreserved && latestObservationPreserved
+      && mutationRequestCount === 0, 'R31_RACE_LATE_SUCCESS_OVERWROTE_RECOVERY');
+    return { interceptedDashboardCalls: 2, firstSignalAborted, cancelledVisible,
+      staleResponseDistinct, oldPromiseResolvedAfterRecovery,
+      latestRowPreserved, latestObservationPreserved, recoveredObservedAt,
+      mutationRequestCount };
+  } finally {
+    page.off('request', countMutation);
+    if (installed) await page.evaluate(() => {
+      globalThis.__anvilR31Race.restore();
+      delete globalThis.__anvilR31Race;
+    });
+  }
+}
+
 async function verifyObservationTime(page, expected) {
   const observation = page.locator('.dashboard-heading p[aria-live]');
   await page.locator('.dashboard-heading').getByText(
@@ -1515,6 +1865,15 @@ async function main() {
       page, apiUrl, expectedAction.action, quotaRecoveryEvidence.manualRefreshObservedAt);
     const clientRaceEvidence = await verifyClientLateSuccessRace(page, apiUrl, expectedAction.action);
     currentR30Phase = null;
+    await verifyManualFailure(page, apiUrl, 503, '{"error":"r31-private-reconnect-marker"}');
+    const reconnectEvidence = await verifyDashboardReconnect(page, apiUrl, expectedAction.action);
+    await verifyManualFailure(page, apiUrl, 503, '{"error":"r31-private-reconnect-marker"}');
+    const reconnectCancelEvidence = await verifyReconnectCancellation(page, apiUrl, expectedAction.action);
+    await verifyManualFailure(page, apiUrl, 503, '{"error":"r31-private-reconnect-marker"}');
+    const reconnectDeniedEvidence = await verifyReconnectDenied(page, apiUrl, expectedAction.action);
+    await verifyManualRefresh(page, apiUrl, expectedAction.action);
+    await verifyManualFailure(page, apiUrl, 503, '{"error":"r31-private-reconnect-marker"}');
+    const reconnectRaceEvidence = await verifyReconnectClientRace(page, apiUrl, expectedAction.action);
     if (evidenceDir) {
       markStage('EVIDENCE_STORED');
       exportPayload.screens.stored = await captureEvidenceScreen(page,
@@ -1627,6 +1986,10 @@ async function main() {
       quotaRefreshEvidence, quotaRecoveryEvidence,
       cancelEvidence, cancelRecoveryEvidence,
       clientRaceEvidence,
+      reconnectEvidence,
+      reconnectCancelEvidence,
+      reconnectDeniedEvidence,
+      reconnectRaceEvidence,
       ...loadingEvidence, ...preAuthAccessible, ...emptyEvidence, ...errorEvidence,
       ...emptyErrorAccessible, ...revokedAccessible, r23Regression: true,
       allAppRequestsSameOrigin, idpContextSeparate, offOriginCredentialLeak, secretExposure,

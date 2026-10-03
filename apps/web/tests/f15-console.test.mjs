@@ -890,6 +890,41 @@ test('Dashboard cancelled read clears dependent cards and observation without cl
   assert.match(cards.at(-1), /API 준비 READY/);
 });
 
+test('Dashboard reconnecting read clears dependent cards and observation while preserving API readiness', () => {
+  const reconnecting = {status: 'RECONNECTING'};
+  const cards = [
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardObservationTime, {value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value: {status: 'ready', migration_head: '0019_oidc_sessions'}, operations: reconnecting})),
+  ];
+  assert.match(cards[0], /대시보드 관측 시각 · 재연결 중/);
+  for (const card of cards.slice(1)) assert.match(card, /RECONNECTING/);
+  assert.doesNotMatch(cards.join(' '), /status-unavailable/);
+  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d/);
+  assert.match(cards.at(-1), /API 준비 READY/);
+});
+
+test('Dashboard read controls offer one explicit reconnect only after unavailable and keep cancel during reconnect', () => {
+  assert.equal(typeof consoleApp.DashboardReadControls, 'function');
+  const controls = (status) => renderToStaticMarkup(React.createElement(consoleApp.DashboardReadControls,
+    {status, onRefresh: () => {}, onReconnect: () => {}, onCancel: () => {}}));
+  const unavailable = controls('UNAVAILABLE');
+  assert.match(unavailable, /대시보드 새로고침/);
+  assert.match(unavailable, /대시보드 연결 재시도/);
+  assert.doesNotMatch(unavailable, /대시보드 조회 취소/);
+  const reconnecting = controls('RECONNECTING');
+  assert.match(reconnecting, /<button[^>]*disabled=""[^>]*>대시보드 새로고침<\/button>/);
+  assert.match(reconnecting, /대시보드 조회 취소/);
+  assert.doesNotMatch(reconnecting, /대시보드 연결 재시도/);
+  for (const status of ['LOADING', 'LOADED', 'BLOCKED', 'QUOTA', 'CANCELLED']) {
+    assert.doesNotMatch(controls(status), /대시보드 연결 재시도/, status);
+  }
+});
+
 test('Dashboard Next Actions renders validated rows from the existing operations read', async () => {
   const snapshot = dashboardSnapshot([], []);
   snapshot.next_actions = [{priority: 'critical', reason: '<script>cause</script>',
