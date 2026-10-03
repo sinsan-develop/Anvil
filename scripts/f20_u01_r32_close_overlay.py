@@ -32,6 +32,10 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST,
     "docs/04_test_reports/F-20_U01_R33_OPERATING_CARDS_SHELL_RESULT.md",
     "docs/work_orders/F-20_U01_R33_OPERATING_CARDS_SHELL_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_U01_R33_OPERATING_CARDS_SHELL_INVOCATION.md"}
+CONTROL_SCOPE |= {"scripts/f20_u01_r33_start_overlay.py",
+                  "tests/tooling/test_f20_u01_r33_start_projection.py",
+                  "docs/progress/progress-handoff-detached-digest-f20-u01-r33-start.json",
+                  "docs/evidence/manifests/F-20_U01_R33_OPERATING_CARDS_SHELL_START_MANIFEST.json"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 
