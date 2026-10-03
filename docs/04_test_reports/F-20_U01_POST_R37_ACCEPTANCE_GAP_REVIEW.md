@@ -17,7 +17,13 @@
 
 ## 다음 안전 순서
 
-1. 기존 계획 U-01 범위의 Project/Environment와 기간·카드별 owner 계약을 분리한다. 우선 현재 OIDC trust/DB principal의 **인가된 조합**이 실제로 어디서 결정되는지 읽기 전용으로 추적하고, cross-product 추정·권한 확대 없이 단일 current scope부터 계약을 정의한다. 같은 조사를 통해 각 집계의 원본·완전성·시간 경계를 식별한다.
+### Project/Environment 인가 추적
+
+- `oidc_process.py`의 trust 입력은 허용 Project ID 집합·Environment ID 집합과 `scope_project_id`/`scope_environment_id` 단일 조합을 검증한다. 현재 host는 `authorization_resolver=lambda ...: scope`로 그 조합 하나를 모든 요청에 고정하고 `OperationsService`도 같은 조합으로 생성한다.
+- `OidcPrincipalBinding`/`SessionPrincipal`은 별도 `project_ids`·`environment_ids` 집합만 가진다. `fastapi_app.py`의 scope 검사는 각 집합의 membership과 role을 확인하지만, 두 ID의 허용 **쌍** 목록은 보유하지 않는다. 두 집합의 임의 cross-product를 UI 선택 목록으로 만들면 기존 고정 host의 인가 의미를 확장한다.
+- `/auth/session/status`는 authenticated/mode/actor_role만 반환한다. Dashboard 응답은 고정 scope의 자료이지만 공개 scope ID나 선택 목록을 제공하지 않는다. 따라서 현재 계약으로 브라우저가 안전하게 다른 Project/Environment를 선택하거나 서버가 해당 조합으로 재조회할 수 없다. 고정 scope 하나를 읽는 현재 기능을 다중 필터 완료로 표시하지 않는다.
+
+1. 기존 계획 U-01 범위의 Project/Environment와 기간·카드별 owner 계약을 분리한다. 특히 인가된 **조합**의 권위 owner와 권한 철회·scope별 서비스 생성을 정의해야 한다. 임의 cross-product 추정·권한 확대 없이 단일 current scope부터 계약을 정의한다. 같은 조사를 통해 각 집계의 원본·완전성·시간 경계를 식별한다.
 2. 공개 API 또는 인증·권한 계약의 변경이 필요한 절편은 설계/위험 영향을 명시적으로 분류한다. 계획에 있는 U-01을 새 요구로 꾸미지 않되, 승인된 범위 밖의 권한 확대나 데이터 계약 변경을 내부 구현이라고 처리하지 않는다. 영향을 받지 않는 read-only owner 조사와 기존 계약 회귀는 계속한다.
 3. 실제 owner가 확인된 절편만 단일 writer의 정확한 WorkInstruction/dual lease로 RED→GREEN 구현한다. 로컬 관련 회귀 후 동일 commit을 private Git→`WSL-server`로 가져와 격리 QA와 정식 WSL 통합/E-API/E-NET/E-SHOT을 구분한다. C30 `OPEN_BLOCKING`, 미검증 Provider/IdP, PG18, 브라우저, 11메뉴/최종 F-20을 수락으로 승격하지 않는다.
 
