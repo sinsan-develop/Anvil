@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — Developer 지정 범위의 Dashboard 2행 화면 골격과 로컬 검증을 완료했다. 여섯 운영 수치와 소스는 여전히 `UNAVAILABLE`이며 U-01/F-20 인수 판정이 아니다. Main의 독립 diff 검토, 정확 SHA WSL-server PG15/OIDC/HTTPS/Chromium 실제 브라우저·Network 검증은 미실행이다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
+`COMPLETED` — Developer 지정 범위의 Dashboard 2행 화면 골격과 로컬 검증을 완료했다. Main은 별도 출처에서 동일 clean/private SHA의 WSL-server PG15/OIDC/HTTPS/Chromium 실제 QA PASS와 전용 자원 잔여 0을 전달했다. 여섯 운영 수치와 소스는 여전히 `UNAVAILABLE`이며 U-01/F-20 인수 판정이 아니다. C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`를 유지한다.
 
 ## 기준·소유권
 
@@ -37,9 +37,18 @@
 
 검증 중 설치된 `python`이 PATH에 없어 초기 G-05 명령이 실행되지 않았다. 번들 Python으로 착수 전 G-05 PASS를 확인했고 프로젝트 `.venv`로 최종 검사했다. build/pytest 임시 출력이 남은 동안 G-05는 `F20_U01_R33_GIT_INVALID` exit 1을 냈다. 전용 `.r33_pytest_tmp`, `.r33_web_build`의 실제 root가 worktree 내부이며 root link 0, pytest 내부 symlink 2개의 target이 같은 임시 root 내부임을 확인하고 정확한 두 root만 삭제했다. 잔여 0 뒤 G-05 재실행 PASS. 이들은 제품/정식 실패가 아닌 로컬 명령·임시 출력 환경 조치이며 동일 근본 원인 정식 FAILURE_REPORT 횟수 0이다.
 
+## Main 출처 — 동일 SHA WSL-server 실제 QA
+
+- Main 전달 대상 commit은 `789e2ca06d0efc5b27e6d531fb65441abb648058`이다. Main이 사전 전용 checkout `/tmp/anvil-u01-r33-qa-789e2ca`의 clean HEAD와 private Git SHA 일치, G-05 `PASS sequence=1996`을 확인했다. Developer는 WSL 명령이나 원격 자원을 직접 실행·검증하지 않았다.
+- `node:24.21.0-bookworm-slim`에서 Console 59/59, web typecheck·lint·build 20 modules PASS. tmpfs PostgreSQL 15 컨테이너 ID `58159d407660b78c224f84c13947c6ca2a47cf3e11345991c86d5e39adbf7d4f`는 scope label `F-20/U-01/R6/SHA7`, loopback `5545`, AutoRemove였다. 비관리자 role/DB `anvil_f20_r3a_789e2ca`에 migration `0019_oidc_sessions`를 적용했다.
+- 실제 OIDC/HTTPS/Chromium opt-in은 exit 0, `1 passed, 36 deselected, 2 deprecation warnings in 16.07s`. Browser PNG 3개는 각 1920×1080이며 Network JSON scope는 `R6B_LOOPBACK_QA_ONLY`, `pageRequestCount=69`다. 브라우저 테스트 자체의 정확 URL/origin/Secret 검사 PASS이며, 기존 evidence key·파일명·allowlist는 변경하지 않았다.
+- Main 전달 SHA-256: `page-requests.json` `5695c0f767e5e7e3e0556e9c4c788608ebc34911d087917efc73ef64fd4a84cc`; `pre-auth-error.png` `26f9e0b00da9d1c9a9342f594748a744f72e8d59d5c795a0ca53109d0ad2afb0`; `stored-critical.png` `1eae1542bf1b658624ac4327a59a3bdd792a7e454cdc6744e0cba000dabe16a0`; `revoked-blocked.png` `e179cc696e6cfcfb45545245099efe28cb4aa60dbc6f51ecfa06bac80275791c`.
+- 첫 WSL venv `pip install -e`는 기존 flat-layout auto-discovery 오류로 exit 1이었고 제품 검증 실패로 계상하지 않았다. Main이 pyproject 의존성을 직접 설치해 QA를 완료했다. 첫 증거 요약 도구의 `jq` 부재/template 인용 오류와 경로·링크 진단의 인용 오류는 읽기 전용 시도였으며 재검증으로 해소했다.
+- Main이 전용 PG/QA checkout/venv/evidence/secret/pytest 경로의 신원·실경로를 확인한 뒤 정리해 잔여 0을 확인했다. 전용 컨테이너와 포트 `5545` 잔여도 0이며 별도 control checkout은 보존했다. 이 단락은 Main 출처의 후속 QA 기록으로, 위 Developer 로컬 명령 결과와 구분한다.
+
 ## 미검증·잔여 위험·rollback·인계
 
-- 실제 OIDC/HTTPS/Chromium, PG15/DB, browser Network, WSL-server 동일 clean SHA, 1920×1080 실제 화면은 Main 후속 범위이며 이 로컬 결과로 PASS를 주장하지 않는다.
+- Main 출처의 동일 SHA WSL PG15/OIDC/HTTPS/Chromium과 1920×1080 PNG·Network 증거는 위 범위에서 PASS다. Developer는 원격 출처를 독립 재현하지 않았고, 이를 Production 또는 U-01 전체 인수 증거로 승격하지 않는다.
 - 여섯 카드의 실제 read model·필터·Critical 확인 동작, U-01 독립 acceptance, F-20 최종 smoke/Monitoring/복구, Production은 미검증·미수락이다. 공개 API/DB/인증/Secret/지속 데이터는 변경하지 않았다.
 - 회귀 시 Main이 R33 제품 변경만 정상 Git revert한다. append-only Event prefix, R32 결과, 기존 dirty/untracked 자료는 보존한다.
-- Main이 정확 4파일 diff와 로컬 결과를 독립 검토하고 commit/private push 후 동일 SHA의 격리 WSL-server 실제 QA를 수행한다. progress/HANDOFF 갱신은 Main 소유로 Developer가 수행하지 않았다.
+- 현재 보고서 후속 문서 diff의 검토·기록과 U-01 다음 절편 판단은 Main 소유다. progress/HANDOFF 갱신은 Developer가 수행하지 않았다.
