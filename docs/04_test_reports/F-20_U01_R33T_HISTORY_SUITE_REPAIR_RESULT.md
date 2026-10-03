@@ -1,6 +1,11 @@
 # F-20/U-01 R33T 역사 검증 복구 결과
 
-## 판정 — INCOMPLETE (구현·집중 검증 완료, 통합 검증 인계)
+## 최신 판정 — COMPLETED (독립 SPEC 리뷰 보완 범위)
+
+- Important1 영속 public 위조 회귀 및 Minor1 pytest 소유 임시 clone 보완 완료. 9개 파일 전체 44 passed/exit0, R33 CLOSE/current 2 passed/exit0. Main 독립 재검토 전이며 자동 acceptance 아님.
+- 아래 최초 인계의 전체 통합 `INTERRUPTED_UNVERIFIED`, WSL·DB 미검증 및 C30 OPEN_BLOCKING/Release DEFER는 해소하지 않았다. 전체 tooling/WSL 및 임시물 정리는 Main 소유다.
+
+## 최초 인계 판정 — INCOMPLETE (구현·집중 검증 완료, 통합 검증 인계)
 
 - Task1~4 test-only 수정 및 집중 GREEN 완료. Windows exact12 통합은 Main 지시로 정상 interrupt하여 `INTERRUPTED_UNVERIFIED`; 통합 PASS 또는 F-20/U-01 acceptance로 주장하지 않는다.
 - formal FAILURE_REPORT 0. 예상 RED, 환경 setup/import/의존성 차이 및 Main 지시 interrupt는 정식 제품 실패로 계상하지 않는다.
@@ -97,3 +102,52 @@ print('COMPILE_12_PASS PROTECTED_BYTES_UNCHANGED')
 - 임시물 6개 root 보존 및 전체 commandline 확인 제한은 잔여 환경 위험이다. Main이 정확 경계와 프로세스를 확인한 후 정리하며 Developer는 삭제를 추가 시도하지 않는다.
 - rollback: Main이 사용자 변경과 분리하여 이 정확13개 diff만 검토·역적용할 수 있다. 역사 manifest/Event, 제품 및 원 hash는 변경하지 않았으므로 데이터 migration rollback 없음. 실제 rollback 미실행.
 - progress/HANDOFF/WORK_STATUS는 Main 소유로 수정하지 않았다. C30 OPEN_BLOCKING, F-20/U-01 미수락, ReleaseDecision DEFER, Production NOT_EXECUTED 유지.
+
+## 독립 SPEC 리뷰 대응 — Important1 / Minor1 (2026-10-03)
+
+- Main이 기존 결과를 반영한 HEAD `77730ced4cbad45c9ff7c89bd808df84aaf23ba2` / 동일 branch / clean에서 재개했다. epoch48 actor·worker/write token·exact13·만료 `2026-10-03T22:30:16Z`를 현재 projection과 직접 대조하고 G-05 seq2002 PASS 확인 후 썼다. 별도 commit/push 없음.
+- receiving-code-review/TDD 절차로 실제 public dispatcher의 역사 정상·거부를 검증한다. 이전 inline 적대36만으로 영속 회귀가 충족된다고 보지 않고 해당 9개 테스트 파일에 public 위조 테스트를 각각 추가했다.
+- 각 route에서 정상 bundle PASS 전후 사이에 execution token, write token, actor, baseline commit, WorkInstruction hash, predecessor event, progress snapshot hash를 독립 deepcopy하여 위조한다. 토큰/actor/baseline/WI hash는 exact route TRANSITION_INVALID, predecessor는 route별 PREDECESSOR_INVALID 또는 TRANSITION_INVALID, snapshot은 PRG_SNAPSHOT_HASH_MISMATCH를 요구한다. 실제 overlay 함수는 그대로 실행하며 public 호출 안에서만 역사 시각을 전달한다.
+- Minor: R33 CLOSE clone을 repository-root 직접 생성 경로에서 pytest가 소유한 `tmp_path/repository`로 옮겼다. 기존 exact tamper 계약/역사 checkpoint는 유지한다. 테스트 자체는 repository-root 임시 parent를 생성하지 않는다.
+- RED 전 첫 실행은 Main cleanup 후 `.tmp_subagent_review` parent 부재로 setup10ERROR/exit1/5.27s. 환경 오류로 분리하고 전용 parent 생성 후 재실행했다. 기존 임시물 삭제·우회 재시도는 하지 않았다.
+- 실제 RED: 아래 선택으로 exit1, 10 failed/93.38s. 9개 public 정상 bundle은 현재 wall-clock 때문에 exact route TRANSITION_INVALID, R33 CLOSE는 pytest tmp_path가 아닌 parent라는 assertion에서 실패했다. 제품 결함으로 계상하지 않는다.
+
+```powershell
+$env:PYTHONPATH=(Get-Location).Path
+$nodes=@('2','2b','3b','4','5','6','6b','7','8' | ForEach-Object { "tests/tooling/test_f20_u01_r$($_)_projection.py::test_r$($_)_public_history_rejects_authority_forgery" })
+$nodes += 'tests/tooling/test_project_progress.py::ProjectProgressContractTests::test_r33_close_checkpoint_retains_exact_tamper_contract'
+.\.venv\Scripts\python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib @nodes --basetemp=.tmp_subagent_review/r33t-review-red --tb=short
+```
+
+- GREEN 첫 실행: 위 명령의 basetemp만 `r33t-review-green`으로 변경 → exit1, 9 passed/1 failed, 215.37s. public 위조9개/63개 거부 assertion은 통과. R33 CLOSE는 tmp_path 아래 추가 TemporaryDirectory 중첩으로 Git checkout `Filename too long` 환경 오류. 추가 중첩을 제거하고 pytest 소유 경로로 단순화했으며 validator/기대값/전역 Git 설정은 변경하지 않았다.
+- CLOSE/current GREEN: 아래 명령 exit0, 2 passed/20.09s.
+
+```powershell
+.\.venv\Scripts\python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/tooling/test_project_progress.py::ProjectProgressContractTests::test_r33_close_checkpoint_retains_exact_tamper_contract tests/tooling/test_project_progress.py::ProjectProgressContractTests::test_detached_digest_binds_current_progress_and_handoff_into_manifest_target --basetemp=.tmp_subagent_review/r33t-review-close --tb=short
+```
+
+- 기존 positive/boundary 및 신규 위조 전체 회귀 실행 명령:
+
+```powershell
+$env:PYTHONPATH=(Get-Location).Path
+$files=@('2','2b','3b','4','5','6','6b','7','8' | ForEach-Object { "tests/tooling/test_f20_u01_r$($_)_projection.py" })
+.\.venv\Scripts\python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib @files --basetemp=.tmp_subagent_review/r33t-review-regression --tb=short
+```
+
+- 위 9파일 전체 회귀: **exit0, 44 passed, 598.41s**, skip0. 신규 public9개에 각7종의 독립 위조 assertion(63개)과 정상 bundle 전후 PASS가 포함됐다. 기존 positive/expiry/직접 overlay 거부 검사는 삭제·완화하지 않았다.
+- fresh G-05 명령 `.\.venv\Scripts\python.exe -B -m scripts.check_project_progress`: exit0, seq2002 PASS. builtin `compile(Path(name).read_bytes(), name, 'exec')`로 변경 Python10개 구문 PASS/exit0, `git diff --check` exit0, staged0. checker/제품/overlay/원장 mutation0. review 범위는 테스트10+보고서1이며 허용13 안이다.
+- 최초 집중36 inline 증거는 보존하되 이번 영속63 assertion을 그 대체 회귀로 추가했다. RED 및 두 환경 오류(parent 부재/MAX_PATH)는 formal FAILURE_REPORT가 아니며 count0 유지.
+- 전체 tooling/WSL/full suite는 Main 지시에 따라 재실행하지 않았다. Python/패키지 의존성 변경0. Main 독립 diff 및 동일 SHA 전체 검증 필요.
+
+### 리뷰 실행 종료 후 임시물 인계
+
+2026-10-03 20:56:26 KST, session32903 exit0 뒤 `Get-Process -Id 17664,35248 -ErrorAction SilentlyContinue`는 둘 다 부재. 아래 root 모두 일반 Directory/Resolve-Path 동일, link target은 자기 root 내부이며 외부0. 삭제는 시도하지 않았다. 아래는 이번 리뷰에서 만든 root이며 과거 inventory와 별도다.
+
+| 절대 root | 파일 | 디렉터리 | 링크 | 외부 target |
+|---|---:|---:|---:|---:|
+| `D:\Project\Anvil\.worktrees\anvil-f18-wsl-ops\.tmp_subagent_review\r33t-review-close` | 7150 | 509 | 1 | 0 |
+| `D:\Project\Anvil\.worktrees\anvil-f18-wsl-ops\.tmp_subagent_review\r33t-review-green` | 60812 | 4554 | 10 | 0 |
+| `D:\Project\Anvil\.worktrees\anvil-f18-wsl-ops\.tmp_subagent_review\r33t-review-red` | 60812 | 4554 | 10 | 0 |
+| `D:\Project\Anvil\.worktrees\anvil-f18-wsl-ops\.tmp_subagent_review\r33t-review-regression` | 290398 | 21747 | 43 | 0 |
+
+- rollback은 Main이 이번 HEAD77730ced 대비 정확11개 diff만 선택 역적용하는 방식이며 실제 실행0. 신규 lease/progress/WORK_STATUS/commit/push 작성0. 최종 수락 및 cleanup 판단은 Main에 인계한다.

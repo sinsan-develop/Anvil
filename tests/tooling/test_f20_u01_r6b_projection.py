@@ -9,6 +9,46 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+def test_r6b_public_history_rejects_authority_forgery(tmp_path):
+    """Clock isolation must never mask token, actor, predecessor or hash forgery."""
+    import copy
+    import importlib
+    checker = importlib.import_module("scripts.check_project_progress")
+    overlay = importlib.import_module("scripts.f20_u01_r6b_overlay")
+    root = _fixture(tmp_path)
+    overlay.materialize(root, BASE, AT, "reviewtest")
+    bundle = checker.load_bundle(root)
+
+    def public(candidate):
+        real_validate = overlay.validate_control
+        with mock.patch.object(overlay, "validate_control", side_effect=
+                lambda root, incoming, wall_now: real_validate(root, incoming, AT + timedelta(seconds=1))):
+            errors = checker.validate_bundle(candidate)
+        assert overlay.validate_control is real_validate
+        return errors
+
+    assert public(bundle) == []
+    for event_type, field, replacement in (
+        ("WORKER_LEASE_ISSUED", "execution_fencing_token", "forged-execution"),
+        ("WRITE_LEASE_ISSUED", "write_fencing_token", "forged-write"),
+        ("WORKER_LEASE_ISSUED", "actor_id", "foreign-actor"),
+        ("WORKER_LEASE_ISSUED", "baseline_git_commit", "0" * 40),
+        ("WORK_INSTRUCTION_ISSUED", "sha256", "0" * 64),
+    ):
+        forged = copy.deepcopy(bundle)
+        row = next(row for row in reversed(forged["events"]["events"])
+                   if row["event_type"] == event_type)
+        assert field in row["details"]
+        row["details"][field] = replacement
+        assert public(forged) == ["F20_U01_R6B_TRANSITION_INVALID"], field
+    forged = copy.deepcopy(bundle)
+    forged["events"]["events"][0]["event_id"] = "forged-predecessor"
+    assert public(forged) == ["F20_U01_R6B_PREDECESSOR_INVALID"]
+    forged = copy.deepcopy(bundle)
+    forged["progress"]["snapshot_hash"] = "0" * 64
+    assert "PRG_SNAPSHOT_HASH_MISMATCH" in public(forged)
+    assert public(bundle) == []
 BASE = "cec01570ea3ea738564c6e50741114941e513a1f"
 AT = datetime(2026, 9, 29, 5, 45, tzinfo=timezone.utc)
 

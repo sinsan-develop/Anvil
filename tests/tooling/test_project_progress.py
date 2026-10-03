@@ -20,6 +20,7 @@ import zlib
 from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -1208,26 +1209,29 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_detached_digest_binds_current_progress_and_handoff_into_manifest_target(self) -> None:
         self._assert_u01_tamper_contract(ROOT)
 
+    @pytest.fixture
+    def _r33_close_tmp(self, tmp_path):
+        self.r33_close_tmp = tmp_path
+
+    @pytest.mark.usefixtures("_r33_close_tmp")
     def test_r33_close_checkpoint_retains_exact_tamper_contract(self) -> None:
         checkpoint = "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8"
-        parent = ROOT / ".tmp_subagent_review"
-        parent.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="r33t-close-", dir=parent) as directory:
-            root = Path(directory) / "repository"
-            subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet",
-                            "--local", "--no-hardlinks", str(ROOT), str(root)], check=True)
-            subprocess.run(["git", "checkout", "--quiet", "-B", "codex/f18-wsl-ops", checkpoint],
-                           cwd=root, check=True)
-            subprocess.run(["git", "remote", "add", "development", str(ROOT)], cwd=root, check=True)
-            subprocess.run(["git", "update-ref", "refs/remotes/development/codex/f18-wsl-ops", checkpoint],
-                           cwd=root, check=True)
-            subprocess.run(["git", "branch", "--set-upstream-to=development/codex/f18-wsl-ops"],
-                           cwd=root, check=True, capture_output=True)
-            bundle = self.require_checker().load_bundle(root)
-            self.assertEqual(1998, bundle["progress"]["event_sequence"])
-            self.assertEqual("F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE",
-                             bundle["progress"]["repository"]["projection_mode"])
-            self._assert_u01_tamper_contract(root)
+        root = self.r33_close_tmp / "repository"
+        self.assertTrue(root.is_relative_to(self.r33_close_tmp))
+        subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet",
+                        "--local", "--no-hardlinks", str(ROOT), str(root)], check=True)
+        subprocess.run(["git", "checkout", "--quiet", "-B", "codex/f18-wsl-ops", checkpoint],
+                       cwd=root, check=True)
+        subprocess.run(["git", "remote", "add", "development", str(ROOT)], cwd=root, check=True)
+        subprocess.run(["git", "update-ref", "refs/remotes/development/codex/f18-wsl-ops", checkpoint],
+                       cwd=root, check=True)
+        subprocess.run(["git", "branch", "--set-upstream-to=development/codex/f18-wsl-ops"],
+                       cwd=root, check=True, capture_output=True)
+        bundle = self.require_checker().load_bundle(root)
+        self.assertEqual(1998, bundle["progress"]["event_sequence"])
+        self.assertEqual("F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE",
+                         bundle["progress"]["repository"]["projection_mode"])
+        self._assert_u01_tamper_contract(root)
 
     def _assert_u01_tamper_contract(self, root: Path) -> None:
         checker = self.require_checker()
