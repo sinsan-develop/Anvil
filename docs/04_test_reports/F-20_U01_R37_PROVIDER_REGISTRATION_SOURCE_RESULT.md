@@ -128,3 +128,42 @@ git diff --no-index --check -- NUL docs/04_test_reports/F-20_U01_R37_PROVIDER_RE
 ```
 
 실행 결과: tracked check exit0/출력0; 신규 세 파일의 no-index check는 각각 exit1/출력0이다. no-index가 NUL 대비 새 파일 차이 존재를 exit1로 표시한 것이며 whitespace 오류 출력은 없다(이를 exit0으로 기록하지 않음). Git stage/commit/push0, Main WORK_STATUS/control 변경0. 실제 PG/브라우저/운영 미검증 및 C30 OPEN_BLOCKING/DEFER 유지.
+
+## Main 출처 후속 증거 — 동일 SHA WSL-server PG15 QA
+
+판정: **R37 실제 PG15 opt-in PASS(Main 실행)**. 앞선 로컬 결과의 PG 미실행은 당시 사실로 보존하며, 이 단락이 PG15에 한해 후속 증거를 추가한다. Developer가 WSL/DB를 실행한 결과가 아니다. Provider 호출·IdP login·브라우저 Network·PG18·U01/F20 전체 수락은 여전히 미검증이고 C30 `OPEN_BLOCKING` / `DEFER`를 유지한다.
+
+### 실행 주체·동일성·명령 결과
+
+- Main이 제품 checkpoint `e117f2281e9bd6e125df8888d3e6f81f9e9caa2f`의 local/private/WSL 동일성을 확인했다. QA checkout branch `codex/f18-wsl-ops`, 사후 HEAD/upstream/clean도 동일했다.
+- Developer는 이 단락 작성 전 `2026-10-04T06:12:30+09:00`에 local HEAD/clean, canonical seq2026, actor `developer-primary-f20-u01-r37`, epoch52 worker/write ACTIVE 및 기존 두 token/exact4·만료 `2026-10-04T08:21:43+00:00`를 재확인했다. 수정 대상은 이 보고서 한 파일뿐이다.
+- Main 전용 venv: Python3.12.3, uv offline lock 43 packages. 실제 opt-in 대상 `tests/integration/test_f20_u01_r37_provider_host_pg15.py`: exit0 **13 passed in 3.33s**. 기존 opt-in 없는 관련 회귀: exit0 **253 passed, 3 skipped in 10.10s**. SKIP은 R3a/R36/R37 실제 PG 각각1이며 관련 회귀의 SKIP을 PASS로 승격하지 않는다.
+- Main이 전달한 실행 경로는 `/tmp/anvil-u01-r37-venv/bin/python`이다. 아래 명령은 `ssh -o BatchMode=yes WSL-server`의 single-quoted `set -eu; cd /tmp/anvil-u01-r37-qa; ...` 내부에서 실행했다. DSN synthetic password만 `***`로 마스킹한 기록이며 완전한 무수정 argv 원문이라고 주장하지 않는다.
+- 최초 QA clone G-05는 detached HEAD로 exit1 `F20_U01_R37_GIT_INVALID`. `git switch -c` 시도는 같은 로컬 branch가 이미 있어 exit1/상태 변경0이었다. 기존 branch `codex/f18-wsl-ops`로 정확 switch/upstream 확인 후 G-05 seq2026 PASS. 사후 G-05도 seq2026 PASS. 제품 오류나 정식 FAILURE_REPORT로 계상하지 않는다.
+
+### 격리 PG·실측 범위
+
+- cached PG15 image `sha256:40710ae201396ad27dfd01526815d5ad83c83850e7cb16dce9f0012da66f4689`.
+- 전용 container `660d38008ed4456bc2ff7c8dc3495547827f362da6e9192eef14337bef043ba1`, label `F-20/U-01/R37` 및 제품 SHA, AutoRemove, tmpfs data, bind0, loopback5550.
+- 최초 `docker inspect` template에서 nil Binds에 len을 호출해 exit1이 발생했다. 컨테이너 생성은 정상이었고 별도 inspect 검증 PASS로 구성 확인했다. 실행 진단 오류1이며 제품 실패가 아니다.
+- 비관리자 role/DB `anvil_u01_r37`, migration `0019_oidc_sessions`. 테스트는 실제 OIDC 앱 팩토리·인증 session/권한 경로로 Dashboard GET200/무cookie401/권한 축소403과 등록9행을 확인했다. 합성 auth fixture를 실제 외부 IdP 인증 성공으로 해석하지 않는다.
+- Dashboard 사업 테이블8개 및 auth6개, 총14곳 사후 각각0행. fixture의 준비/권한 음성 변경과 읽기 무변경·정확 row 정리의 경계를 유지한다. Provider 건강은 UNKNOWN/NOT_CHECKED이며 등록 값의 실제 유효성은 검증하지 않았다.
+
+### Main 정리·rollback·보존 경계
+
+- Main 정리 대상은 정확히 `/tmp/anvil-u01-r37-qa`, `/tmp/anvil-u01-r37-venv`, `/tmp/anvil-u01-r37-pytest`였다. UID1000, 실경로/비링크/mount0, checkout link0, venv 표준 link4, pytest 내부 link30 확인 후 해당 자원만 삭제했다.
+- 전용 container exact ID stop/AutoRemove 완료. 세 root/container/port5550 사후 residue0: `R37_ALL_TEMP_RESIDUE_ZERO`.
+- 공유 `/srv`, 다른 DB/서비스, ysna/Production 변경0. 이 정리는 Main 실측 전달이며 Developer가 직접 재실행하거나 자원을 조작하지 않았다.
+- 제품 rollback은 기존 exact4 delta만 검토해 역적용하는 방식이며 schema 변경 없음. QA fixture 자료는 전용 tmpfs DB와 함께 제거되어 운영 DB 복구 작업은 없다. 이번 보고서 갱신 rollback은 checkpoint e117f228의 이 파일과 diff를 대조하여 후속 단락만 역적용한다.
+- 이번 Developer 작업은 보고서1개만 수정, stage/commit/push/Git 통제/WORK_STATUS/control 변경0. writer lease는 유지하며 Main의 종료 통제를 기다린다.
+
+Main 전달 명령(비밀값 마스킹):
+
+```sh
+/home/daon/.local/bin/uv venv --python /usr/bin/python3.12 /tmp/anvil-u01-r37-venv
+VIRTUAL_ENV=/tmp/anvil-u01-r37-venv /home/daon/.local/bin/uv sync --active --offline --frozen --no-install-project --group dev
+ANVIL_U01_R37_PG_ISOLATED=1 ANVIL_U01_R37_PG_DSN=postgresql+psycopg://anvil_u01_r37:***@127.0.0.1:5550/anvil_u01_r37 PYTHONDONTWRITEBYTECODE=1 /tmp/anvil-u01-r37-venv/bin/python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_f20_u01_r37_provider_host_pg15.py --basetemp=/tmp/anvil-u01-r37-pytest --tb=short -rs
+PYTHONDONTWRITEBYTECODE=1 /tmp/anvil-u01-r37-venv/bin/python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/observability tests/api/test_oidc_process.py tests/api/test_oidc_asgi_binding.py tests/api/test_f13_operations_api.py tests/api/test_f20_u01_r10_dashboard_api.py tests/api/test_f20_u01_r10_oidc_dashboard.py tests/api/test_f20_u01_r9_oidc_queue_host.py tests/api/test_provider_status.py tests/agent_team/test_provider_status.py tests/agent_team/test_provider_status_c24.py tests/api/test_f20_u01_r37_provider_host_binding.py tests/integration/test_f20_u01_r37_provider_host_pg15.py tests/integration/test_f20_u01_r36_agent_host_pg15.py --basetemp=/tmp/anvil-u01-r37-pytest/related --tb=short -rs
+```
+
+pytest 첫 명령 exit0/13P/3.33s, 두 번째 exit0/253P·3S/10.10s. opt-in 환경변수는 첫 명령에만 적용되며 두 번째에 유지되지 않는다. 환경 준비 완료는 Python3.12.3/offline frozen43 packages로 확인됐고 별도 설치 명령별 exit 숫자는 Main 전달에 없으므로 추정하지 않는다.
