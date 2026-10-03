@@ -91,6 +91,11 @@ def _u01_tamper_errors(step_id: str) -> tuple[str, str, str]:
             "F20_U01_R37_CLOSE_PROJECTION_INVALID",
             "F20_U01_R37_CLOSE_F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_CLOSE_MANIFEST.JSON_INVALID",
         ),
+        "F20_U01_R38_SCOPED_BUDGET_SOURCE_START": (
+            "F20_U01_R38_PROJECTION_INVALID",
+            "F20_U01_R38_PROJECTION_INVALID",
+            "F20_U01_R38_F-20_U01_R38_SCOPED_BUDGET_SOURCE_START_MANIFEST.JSON_INVALID",
+        ),
     }
     if step_id in exact:
         return exact[step_id]
