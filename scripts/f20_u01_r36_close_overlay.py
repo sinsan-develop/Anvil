@@ -36,6 +36,10 @@ CONTROL_SCOPE = (prior.CONTROL_SCOPE | {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIF
     "docs/04_test_reports/F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_PLAN.md",
     "docs/work_orders/F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_INVOCATION.md",
+    "scripts/f20_u01_r37_start_overlay.py",
+    "tests/tooling/test_f20_u01_r37_start_projection.py",
+    "docs/progress/progress-handoff-detached-digest-f20-u01-r37-start.json",
+    "docs/evidence/manifests/F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_START_MANIFEST.json",
     "tests/tooling/test_project_progress.py"}) - set(AUTHORITY_FILES)
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
