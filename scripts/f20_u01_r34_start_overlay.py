@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2004, 2008
-BASE = "5217d3891de8473816baea71db0f42cdd0c87ca3"
+BASE = "02ecd4617761fca7defcf98f8b1620e5ef35fc1b"
 MODE = "F20_U01_R34_SCOPED_RUN_CARDS_START"
 ACTOR = "developer-primary-f20-u01-r34"
 SUBJECT = "F-20/U01-R34"
@@ -47,7 +47,7 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFE
     "tests/tooling/test_f20_u01_r34_start_projection.py",
     "scripts/f20_u01_r34_close_overlay.py",
     "tests/tooling/test_f20_u01_r34_close_projection.py",
-    "scripts/check_project_progress.py"}
+    "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"}
 AUTHORITY_FILES = (PLAN, WI, INVOCATION, REPORT,
                    prior.DIGEST, prior.MANIFEST,
                    "scripts/f20_u01_r33t_close_overlay.py",

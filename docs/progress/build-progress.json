@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r33t-history-suite-repair-close-seq2004",
-  "event_sequence": 2004,
-  "updated_at": "2026-10-03T13:02:38+00:00",
-  "last_event_id": "evt_f20_2004_worker_lease_revoked",
+  "snapshot_id": "snapshot-f20-u01-r34-scoped-run-cards-start-seq2008",
+  "event_sequence": 2008,
+  "updated_at": "2026-10-03T13:49:47+00:00",
+  "last_event_id": "evt_f20_2008_package_resumed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,8 +215,33 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "main-agent-eoul",
-  "write_lease": null,
+  "active_agent": "developer-primary-f20-u01-r34",
+  "write_lease": {
+    "lease_id": "write-lease-f20-u01-r34-r34run031003",
+    "actor_id": "developer-primary-f20-u01-r34",
+    "subject_ref": "F-20/U01-R34",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T13:49:47+00:00",
+    "expires_at": "2026-10-04T01:49:47+00:00",
+    "lease_epoch": 49,
+    "fencing_token": "f20-u01-r34-write-fence-epoch-49-r34run031003",
+    "execution_fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "baseline_git_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "dispatch_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "write_epoch": 49,
+    "write_fencing_token": "f20-u01-r34-write-fence-epoch-49-r34run031003"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -248,7 +273,29 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "actor_id": "developer-primary-f20-u01-r34",
+    "subject_ref": "F-20/U01-R34",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T13:49:47+00:00",
+    "expires_at": "2026-10-04T01:49:47+00:00",
+    "lease_epoch": 49,
+    "fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "execution_fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "baseline_git_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "dispatch_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -470,7 +517,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
+  "next_safe_action": "F20_U01_R34_HISTORY_THEN_SCOPED_RUN_CARDS_IMPLEMENTATION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -581,12 +628,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd",
+    "local_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
     "local_wsl_qa_head": "8c0af9638d1e52fb29a1010a42f457b4448c0655",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd",
-    "projection_mode": "F20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE",
-    "validated_base_commit": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd",
+    "remote_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "projection_mode": "F20_U01_R34_SCOPED_RUN_CARDS_START",
+    "validated_base_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1020,8 +1067,17 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [],
-    "worktree_status": "F20_U01_R33T_HISTORY_SUITE_REPAIR_COMPLETE_LEASE_CLOSED",
+    "product_write_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ],
+    "worktree_status": "F20_U01_R34_SCOPED_RUN_CARDS_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1183,12 +1239,12 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F-20-U01-R33T-20261003-001",
-    "path": "docs/work_orders/F-20_U01_R33T_HISTORY_SUITE_REPAIR_WORK_INSTRUCTION.md",
-    "sha256": "D3C1E812CC2669E393A0BB02358EBDC10C54E7FF8BB5C323B0D04AE89E3AE54C",
-    "invocation_path": "docs/work_orders/F-20_U01_R33T_HISTORY_SUITE_REPAIR_INVOCATION.md",
-    "invocation_sha256": "179987A13759712E800BFC9BE3C4B5AE82ED4FF95FBB9ABD271F2DD4F89075C9",
-    "result_status": "COMPLETED_R33T_HISTORY_SUITE_WSL_FULL_NON_OPT_IN_QA_ONLY",
+    "artifact_id": "WI-F-20-U01-R34-20261003-001",
+    "path": "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_WORK_INSTRUCTION.md",
+    "sha256": "40184D95A40EA45D0BF33DFF0D48D0C56DA75E1C2654F10B10A4616F0F580F6E",
+    "invocation_path": "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_INVOCATION.md",
+    "invocation_sha256": "01F36DA399F85FCED48F1C556BBA425B832662A034E8CDA8E7E13BBF6FCE50D6",
+    "result_status": "REWORK_IN_PROGRESS",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "MAIN_INTERNAL_APPROVED_SCOPE"
   },
@@ -1322,8 +1378,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r33t-close.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r34-start.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R34_SCOPED_RUN_CARDS_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1344,7 +1400,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "559CCBED2C5A85731C40E3A33727CDA889E49EEF220841A92C8793D31D411D49"
+      "sha256": "CE7AE27096A552765393E72568B50FA0A3EB926F8330B3E6B63B14EC9AC79B88"
     }
   },
   "next_work_package": {
@@ -1741,8 +1797,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "CC5EA7AAAEA650EF6AF35B974EE558A635238D6476BB79C2A9AB6E80D1D5B365",
-  "runtime_next_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
+  "snapshot_hash": "670E106947F0A97162683D405EF8A6A29D5BECAA6C9CD30DFADCA37911E8C3AF",
+  "runtime_next_action": "F20_U01_R34_HISTORY_THEN_SCOPED_RUN_CARDS_IMPLEMENTATION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",

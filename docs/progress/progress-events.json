@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2004,
+  "last_sequence": 2008,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -96519,7 +96519,137 @@
     "reason": "R33T_HISTORY_SUITE_WSL_FULL_GREEN_TEMP_RESIDUE_ZERO",
     "evidence_head": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd"
   }
+},
+{
+  "sequence": 2005,
+  "event_id": "evt_f20_2005_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R34_SCOPED_RUN_CARDS_START",
+  "subject_ref": "F-20/U01-R34",
+  "occurred_at": "2026-10-03T13:49:47+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "11AF8D5EA8BA9A59894B7D87A7F9F9F0A914504A38CF68D9A599C9FF2E8CD99E",
+  "details": {
+    "path": "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_WORK_INSTRUCTION.md",
+    "sha256": "40184D95A40EA45D0BF33DFF0D48D0C56DA75E1C2654F10B10A4616F0F580F6E",
+    "invocation_path": "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_INVOCATION.md",
+    "invocation_sha256": "01F36DA399F85FCED48F1C556BBA425B832662A034E8CDA8E7E13BBF6FCE50D6",
+    "classification": "MAIN_INTERNAL_APPROVED_SCOPE",
+    "parent_work_instruction": "docs/work_orders/F-20_U01_R33T_HISTORY_SUITE_REPAIR_WORK_INSTRUCTION.md",
+    "revision_reason": "U01_R34_SCOPED_RUN_CARDS_AND_HISTORY_PREFLIGHT"
+  }
+},
+{
+  "sequence": 2006,
+  "event_id": "evt_f20_2006_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R34_SCOPED_RUN_CARDS_START",
+  "subject_ref": "F-20/U01-R34",
+  "occurred_at": "2026-10-03T13:49:47+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "B737BE32397CEDBACB9D1CCEFC914F60BD8C043D9B9F9AB3D43D626DF1C75C34",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "actor_id": "developer-primary-f20-u01-r34",
+    "subject_ref": "F-20/U01-R34",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T13:49:47+00:00",
+    "expires_at": "2026-10-04T01:49:47+00:00",
+    "lease_epoch": 49,
+    "fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "execution_fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "baseline_git_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "dispatch_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ]
+  }
+},
+{
+  "sequence": 2007,
+  "event_id": "evt_f20_2007_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R34_SCOPED_RUN_CARDS_START",
+  "subject_ref": "F-20/U01-R34",
+  "occurred_at": "2026-10-03T13:49:47+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "9AA5BACAFFC412B057DEA9F3D9580741D50FAD73CC5B38577AA76B184472DA0D",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r34-r34run031003",
+    "actor_id": "developer-primary-f20-u01-r34",
+    "subject_ref": "F-20/U01-R34",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T13:49:47+00:00",
+    "expires_at": "2026-10-04T01:49:47+00:00",
+    "lease_epoch": 49,
+    "fencing_token": "f20-u01-r34-write-fence-epoch-49-r34run031003",
+    "execution_fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "baseline_git_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "dispatch_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "write_epoch": 49,
+    "write_fencing_token": "f20-u01-r34-write-fence-epoch-49-r34run031003"
+  }
+},
+{
+  "sequence": 2008,
+  "event_id": "evt_f20_2008_package_resumed",
+  "event_type": "PACKAGE_RESUMED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R34_SCOPED_RUN_CARDS_START",
+  "subject_ref": "F-20/U01-R34",
+  "occurred_at": "2026-10-03T13:49:47+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E1C0AE621CCF33F8CE80961626B4B7318570AC16FD3BBDEC6F8E7E240C9F553C",
+  "details": {
+    "worker_lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "write_lease_id": "write-lease-f20-u01-r34-r34run031003",
+    "work_instruction_sha256": "40184D95A40EA45D0BF33DFF0D48D0C56DA75E1C2654F10B10A4616F0F580F6E",
+    "invocation_sha256": "01F36DA399F85FCED48F1C556BBA425B832662A034E8CDA8E7E13BBF6FCE50D6",
+    "package_status": "REWORK_IN_PROGRESS",
+    "accepted": false
+  }
 }
   ],
-  "last_event_id": "evt_f20_2004_worker_lease_revoked"
+  "last_event_id": "evt_f20_2008_package_resumed"
 }

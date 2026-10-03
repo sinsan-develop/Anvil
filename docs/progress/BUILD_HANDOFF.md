@@ -1,21 +1,68 @@
-# F-20/U-01 R33T History Suite Repair close handoff
+# F-20/U-01 R34 Scoped Run Cards start handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2004,
-  "last_event_id": "evt_f20_2004_worker_lease_revoked",
+  "event_sequence": 2008,
+  "last_event_id": "evt_f20_2008_package_resumed",
   "status": "ACTIVE",
   "current_work_package": "F-20",
-  "active_agent": "main-agent-eoul",
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f20-u01-r34",
+  "worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "actor_id": "developer-primary-f20-u01-r34",
+    "subject_ref": "F-20/U01-R34",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T13:49:47+00:00",
+    "expires_at": "2026-10-04T01:49:47+00:00",
+    "lease_epoch": 49,
+    "fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "execution_fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "baseline_git_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "dispatch_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-f20-u01-r34-r34run031003",
+    "actor_id": "developer-primary-f20-u01-r34",
+    "subject_ref": "F-20/U01-R34",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T13:49:47+00:00",
+    "expires_at": "2026-10-04T01:49:47+00:00",
+    "lease_epoch": 49,
+    "fencing_token": "f20-u01-r34-write-fence-epoch-49-r34run031003",
+    "execution_fencing_token": "f20-u01-r34-execution-fence-epoch-49-r34run031003",
+    "baseline_git_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "dispatch_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r33t_start_projection.py",
+      "packages/api/operations.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r34-r34run031003",
+    "write_epoch": 49,
+    "write_fencing_token": "f20-u01-r34-write-fence-epoch-49-r34run031003"
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": true,
-  "next_safe_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
-  "repository_head": "28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd",
+  "next_safe_action": "F20_U01_R34_HISTORY_THEN_SCOPED_RUN_CARDS_IMPLEMENTATION",
+  "repository_head": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 
-- R33T WSL non-opt-in Python suite PASS at QA commit 8c0af9638d1e52fb29a1010a42f457b4448c0655; close control base 28b54a9cc6e38ec3d5f0f5b417cacafd84bb44fd; temp residue zero; C30 OPEN_BLOCKING; F-20 incomplete; Production NOT_EXECUTED.
+- Historical test repair first; Run cards read-only; C30 OPEN_BLOCKING; F-20 incomplete; Production NOT_EXECUTED.
