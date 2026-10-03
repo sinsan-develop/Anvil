@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2026,
+  "last_sequence": 2028,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -97155,7 +97155,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 2027,
+  "event_id": "evt_f20_2027_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R37_PROVIDER_REGISTRATION_SOURCE_CLOSE",
+  "subject_ref": "F-20/U01-R37",
+  "occurred_at": "2026-10-03T21:33:28+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "4DBAADA52ABC78D0F78A109C2FC2509D21D75C24CD0B7737C91C62ED39E86851",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r37-r37prov1004",
+    "write_fencing_token": "f20-u01-r37-write-fence-epoch-52-r37prov1004",
+    "reason": "R37_PROVIDER_REGISTRATION_SOURCE_WSL_PG15_GREEN_TEMP_RESIDUE_ZERO",
+    "evidence_head": "58347e8b09a480c59abd7479ef7eeb9c77f803f0"
+  }
+},
+{
+  "sequence": 2028,
+  "event_id": "evt_f20_2028_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R37_PROVIDER_REGISTRATION_SOURCE_CLOSE",
+  "subject_ref": "F-20/U01-R37",
+  "occurred_at": "2026-10-03T21:33:28+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "8D8452458D720F238B1E310C6BDD3B814673C42A7981DD0488A1CA56898F66F9",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r37-r37prov1004",
+    "execution_fencing_token": "f20-u01-r37-execution-fence-epoch-52-r37prov1004",
+    "reason": "R37_PROVIDER_REGISTRATION_SOURCE_WSL_PG15_GREEN_TEMP_RESIDUE_ZERO",
+    "evidence_head": "58347e8b09a480c59abd7479ef7eeb9c77f803f0"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2026_package_resumed"
+  "last_event_id": "evt_f20_2028_worker_lease_revoked"
 }
