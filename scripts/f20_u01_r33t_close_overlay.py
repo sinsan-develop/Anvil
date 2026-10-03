@@ -33,7 +33,11 @@ CONTROL_SCOPE = {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
     "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_PLAN.md",
     "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md",
     "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_WORK_INSTRUCTION.md",
-    "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_INVOCATION.md"}
+    "docs/work_orders/F-20_U01_R34_SCOPED_RUN_CARDS_INVOCATION.md",
+    "scripts/f20_u01_r34_start_overlay.py",
+    "tests/tooling/test_f20_u01_r34_start_projection.py",
+    "docs/progress/progress-handoff-detached-digest-f20-u01-r34-start.json",
+    "docs/evidence/manifests/F-20_U01_R34_SCOPED_RUN_CARDS_START_MANIFEST.json"}
 AUTHORITY_FILES = (PLAN, prior.WI, prior.INVOCATION, REPORT,
                    prior.DIGEST, prior.MANIFEST,
                    "scripts/f20_u01_r33t_start_overlay.py",
