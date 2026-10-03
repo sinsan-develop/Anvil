@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1984,
+  "last_sequence": 1986,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -95957,7 +95957,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 1985,
+  "event_id": "evt_f20_1985_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R31_DASHBOARD_RECONNECT_STATE_CLOSE",
+  "subject_ref": "F-20/U01-R31",
+  "occurred_at": "2026-10-03T00:56:57+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "37A206095AB4B0F38A0033830C73C7B9986E95EB2911CDDB5F9CF82A97B35058",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r31-r31reconnect1003",
+    "write_fencing_token": "f20-u01-r31-write-fence-epoch-45-r31reconnect1003",
+    "reason": "R31_DASHBOARD_RECONNECT_STATE_PG15_OIDC_QA_PASS_TEMP_RESIDUE_ZERO",
+    "evidence_head": "e4cf1fc73ea2bd63351714e858d8fbd85d8c83af"
+  }
+},
+{
+  "sequence": 1986,
+  "event_id": "evt_f20_1986_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R31_DASHBOARD_RECONNECT_STATE_CLOSE",
+  "subject_ref": "F-20/U01-R31",
+  "occurred_at": "2026-10-03T00:56:57+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EFA4FC2B489876BEC8B9F8DAB791E64914B6DA43EEF588D5980EAC4FE1DDDA60",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r31-r31reconnect1003",
+    "execution_fencing_token": "f20-u01-r31-execution-fence-epoch-45-r31reconnect1003",
+    "reason": "R31_DASHBOARD_RECONNECT_STATE_PG15_OIDC_QA_PASS_TEMP_RESIDUE_ZERO",
+    "evidence_head": "e4cf1fc73ea2bd63351714e858d8fbd85d8c83af"
+  }
 }
   ],
-  "last_event_id": "evt_f20_1984_package_resumed"
+  "last_event_id": "evt_f20_1986_worker_lease_revoked"
 }
