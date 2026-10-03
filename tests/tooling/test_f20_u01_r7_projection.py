@@ -5,11 +5,22 @@ import importlib
 import json
 from pathlib import Path
 import subprocess
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "0c4d08d908aca48ea7a7024ce5f10685b472af52"
 AT = datetime(2026, 9, 29, 8, 0, tzinfo=timezone.utc)
+
+
+def _public_at(checker, overlay, bundle, at):
+    """Fix only this historical route's clock, retaining its real authority checks."""
+    real_validate = overlay.validate_control
+    with mock.patch.object(overlay, "validate_control", side_effect=
+            lambda root, candidate, wall_now: real_validate(root, candidate, at)):
+        errors = checker.validate_bundle(bundle)
+    assert overlay.validate_control is real_validate
+    return errors
 
 
 def _fixture(tmp_path: Path) -> Path:
@@ -75,7 +86,12 @@ def test_r7_public_g05_route(tmp_path):
     checker = importlib.import_module("scripts.check_project_progress")
     root = _fixture(tmp_path)
     overlay.materialize(root, AT, "testnonce")
-    assert checker.validate_bundle(checker.load_bundle(root)) == []
+    bundle = checker.load_bundle(root)
+    assert _public_at(checker, overlay, bundle, AT + timedelta(seconds=1)) == []
+    for at in (AT - timedelta(microseconds=1), AT + timedelta(hours=12),
+               AT + timedelta(hours=12, seconds=1)):
+        assert "F20_U01_R7_TRANSITION_INVALID" in _public_at(
+            checker, overlay, bundle, at)
 
 
 def test_r7_evidence_scope_accepts_only_four_named_artifacts(tmp_path):

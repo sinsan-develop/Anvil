@@ -31,6 +31,26 @@ def _current_u01_route_prefix(step_id: str) -> str:
         raise ValueError("F20_U01_STEP_FORMAT_INVALID")
     return match.group(1)
 
+
+def _u01_tamper_errors(step_id: str) -> tuple[str, str, str]:
+    """Public route contracts differ between legacy START and file-bound CLOSE."""
+    exact = {
+        "F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE": (
+            "F20_U01_R33_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R33_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R33_CLOSE_F-20_U01_R33_OPERATING_CARDS_SHELL_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R33T_HISTORY_SUITE_REPAIR_START": (
+            "F20_U01_R33T_PROJECTION_INVALID",
+            "F20_U01_R33T_PROJECTION_INVALID",
+            "F20_U01_R33T_F-20_U01_R33T_HISTORY_SUITE_REPAIR_START_MANIFEST.JSON_INVALID",
+        ),
+    }
+    if step_id in exact:
+        return exact[step_id]
+    prefix = _current_u01_route_prefix(step_id)
+    return tuple(f"{prefix}_{field}_INVALID" for field in ("PROGRESS", "DIGEST", "MANIFEST"))
+
 # seq496 intentionally kept its independent-review authority source outside Git.
 # Freeze the exact historical bytes here so detached historical tests do not
 # depend on residue from whichever worktree happens to execute the suite.
@@ -1186,9 +1206,33 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(len(bundle["schema_catalog"]["schemas"]), 6)
 
     def test_detached_digest_binds_current_progress_and_handoff_into_manifest_target(self) -> None:
+        self._assert_u01_tamper_contract(ROOT)
+
+    def test_r33_close_checkpoint_retains_exact_tamper_contract(self) -> None:
+        checkpoint = "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8"
+        parent = ROOT / ".tmp_subagent_review"
+        parent.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="r33t-close-", dir=parent) as directory:
+            root = Path(directory) / "repository"
+            subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet",
+                            "--local", "--no-hardlinks", str(ROOT), str(root)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", "codex/f18-wsl-ops", checkpoint],
+                           cwd=root, check=True)
+            subprocess.run(["git", "remote", "add", "development", str(ROOT)], cwd=root, check=True)
+            subprocess.run(["git", "update-ref", "refs/remotes/development/codex/f18-wsl-ops", checkpoint],
+                           cwd=root, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to=development/codex/f18-wsl-ops"],
+                           cwd=root, check=True, capture_output=True)
+            bundle = self.require_checker().load_bundle(root)
+            self.assertEqual(1998, bundle["progress"]["event_sequence"])
+            self.assertEqual("F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE",
+                             bundle["progress"]["repository"]["projection_mode"])
+            self._assert_u01_tamper_contract(root)
+
+    def _assert_u01_tamper_contract(self, root: Path) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest_path = ROOT / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
+        bundle = checker.load_bundle(root)
+        manifest_path = root / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
         # F-20 uses the append-only raw-byte binding, not the older
@@ -1199,7 +1243,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(bundle["progress"]["event_sequence"], bundle["events"]["events"][-1]["sequence"])
         self.assertEqual(current_step, current_mode)
         self.assertEqual(current_step, manifest["projection_mode"])
-        error_prefix = _current_u01_route_prefix(current_step)
+        progress_error, digest_error, manifest_error = _u01_tamper_errors(current_step)
         self.assertFalse(manifest["accepted"])
         self.assertEqual("OPEN_BLOCKING", bundle["progress"]["f20_c30_event_integrity_incident"]["status"])
         self.assertEqual("DEFER", bundle["progress"]["scope_revision_binding"]["release_decision"])
@@ -1208,7 +1252,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         forged_progress = copy.deepcopy(bundle)
         forged_progress["progress"]["next_safe_action"] = "tampered after verification"
         forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
-        self.assertIn(f"{error_prefix}_PROGRESS_INVALID", checker.validate_bundle(forged_progress))
+        self.assertIn(progress_error, checker.validate_bundle(forged_progress))
 
         forged_handoff = copy.deepcopy(bundle)
         forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
@@ -1216,7 +1260,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         forged_digest = copy.deepcopy(bundle)
         forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
-        self.assertIn(f"{error_prefix}_DIGEST_INVALID", checker.validate_bundle(forged_digest))
+        self.assertIn(digest_error, checker.validate_bundle(forged_digest))
 
         forged_manifest = dict(manifest, accepted=True)
         forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
@@ -1226,7 +1270,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
 
         with mock.patch.object(Path, "read_bytes", read_forged_manifest):
-            self.assertIn(f"{error_prefix}_MANIFEST_INVALID", checker.validate_bundle(bundle))
+            self.assertIn(manifest_error, checker.validate_bundle(bundle))
 
     def test_current_u01_route_prefix_rejects_invalid_step_format(self) -> None:
         self.assertEqual("F20_U01_R4", _current_u01_route_prefix("F20_U01_R4_OPERATIONS_ALERTS_START"))

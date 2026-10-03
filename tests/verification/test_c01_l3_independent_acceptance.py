@@ -177,6 +177,8 @@ POST /api/work-plans/{id}:reopen
 # historical contract; project those explicitly approved successor routes out
 # before checking the C-01 semantic delta.
 APPROVED_SUCCESSOR_OPENAPI_OPERATIONS = frozenset({
+    # F-20/U-01 R10: approved read-only route with separate dashboard:read.
+    "GET /api/dashboard/operations",
     "GET /api/delegations/{id}",
     "GET /api/operations/alerts",
     "GET /api/operations/audit",
@@ -253,6 +255,17 @@ def _parent_openapi_hash(current_schema: dict) -> str:
     assert isinstance(removed, dict) and set(removed) == {"post"}, "C01_L3_EXECUTE_PATH_MUST_BE_AN_ISOLATED_ADDITION"
     raw = json.dumps(parent_projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     return sha256(raw).hexdigest()
+
+
+def test_c01_historical_projection_never_hides_an_unapproved_route() -> None:
+    schema = _app().openapi()
+    schema["paths"]["/api/unapproved-successor"] = {"get": {"responses": {"200": {}}}}
+    projected = _c01_historical_schema(schema)
+    assert _normalized_operations(projected) == (
+        BASELINE_OPENAPI_OPERATIONS | {EXECUTE_KEY, "GET /api/unapproved-successor"})
+    assert _parent_openapi_hash(projected) != PARENT_OPENAPI_SHA256
+    assert "/api/unapproved-successor" in schema["paths"]
+    assert "GET /api/unapproved-successor" not in APPROVED_SUCCESSOR_OPENAPI_OPERATIONS
 
 
 def test_registry_and_openapi_have_only_the_approved_execute_semantic_diff() -> None:

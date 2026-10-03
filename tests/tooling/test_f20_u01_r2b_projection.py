@@ -4,13 +4,15 @@ from datetime import datetime, timezone, timedelta
 import json
 from pathlib import Path
 import subprocess
+from unittest import mock
 
 from scripts import f20_u01_r2b_overlay as overlay
 
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "e57ba12c92209663261b2d36bedb97a05477f795"
-NOW = datetime.now(timezone.utc).replace(microsecond=0)
+# Inside the immutable predecessor lease; never use today's clock for history.
+NOW = datetime(2026, 9, 28, 11, 0, tzinfo=timezone.utc)
 
 
 def _fixture(tmp_path: Path) -> Path:
@@ -53,7 +55,19 @@ def test_r2b_transition_exact2_prefix_and_blocking_hold(tmp_path):
     assert json.loads((root / overlay.MANIFEST).read_bytes())["accepted"] is False
     assert overlay.validate_control(root, bundle, NOW) == []
     assert overlay.collect_git(root, progress) == []
-    assert validate_bundle(load_bundle(root)) == []
+    real_validate = overlay.validate_control
+    for checked_at, expected in (
+        (NOW, []),
+        (NOW - timedelta(microseconds=1), ["F20_U01_R2B_TRANSITION_INVALID"]),
+        (NOW + timedelta(hours=12), ["F20_U01_R2B_TRANSITION_INVALID"]),
+        (NOW + timedelta(hours=12, seconds=1), ["F20_U01_R2B_TRANSITION_INVALID"]),
+    ):
+        # Only substitute this historical route's clock; execute its real checks.
+        with mock.patch.object(overlay, "validate_control", side_effect=
+                lambda root, bundle, wall_now, at=checked_at:
+                    real_validate(root, bundle, at)):
+            assert validate_bundle(load_bundle(root)) == expected
+    assert overlay.validate_control is real_validate
 
 
 def test_r2b_rejects_forged_lease_progress_digest_manifest(tmp_path):

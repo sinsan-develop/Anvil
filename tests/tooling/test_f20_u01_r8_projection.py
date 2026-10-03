@@ -5,6 +5,7 @@ import importlib
 import json
 from pathlib import Path
 import subprocess
+from unittest import mock
 
 import pytest
 
@@ -19,6 +20,16 @@ def _overlay():
         return importlib.import_module("scripts.f20_u01_r8_overlay")
     except ModuleNotFoundError:
         pytest.fail("R8 queue source lease overlay is missing")
+
+
+def _public_at(checker, overlay, bundle, at):
+    """Fix only this historical route's clock, retaining its real authority checks."""
+    real_validate = overlay.validate_control
+    with mock.patch.object(overlay, "validate_control", side_effect=
+            lambda root, candidate, wall_now: real_validate(root, candidate, at)):
+        errors = checker.validate_bundle(bundle)
+    assert overlay.validate_control is real_validate
+    return errors
 
 
 def _fixture(tmp_path: Path) -> Path:
@@ -88,4 +99,9 @@ def test_r8_public_g05_route(tmp_path):
     checker = importlib.import_module("scripts.check_project_progress")
     root = _fixture(tmp_path)
     overlay.materialize(root, AT, "testnonce")
-    assert checker.validate_bundle(checker.load_bundle(root)) == []
+    bundle = checker.load_bundle(root)
+    assert _public_at(checker, overlay, bundle, AT + timedelta(seconds=1)) == []
+    for at in (AT - timedelta(microseconds=1), AT + timedelta(hours=12),
+               AT + timedelta(hours=12, seconds=1)):
+        assert "F20_U01_R8_TRANSITION_INVALID" in _public_at(
+            checker, overlay, bundle, at)

@@ -5,6 +5,7 @@ import importlib
 import json
 from pathlib import Path
 import subprocess
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,6 +15,16 @@ AT = datetime(2026, 9, 29, 2, 12, tzinfo=timezone.utc)
 
 def _overlay():
     return importlib.import_module("scripts.f20_u01_r6_overlay")
+
+
+def _public_at(checker, overlay, bundle, at):
+    """Fix only this historical route's clock, retaining its real authority checks."""
+    real_validate = overlay.validate_control
+    with mock.patch.object(overlay, "validate_control", side_effect=
+            lambda root, candidate, wall_now: real_validate(root, candidate, at)):
+        errors = checker.validate_bundle(bundle)
+    assert overlay.validate_control is real_validate
+    return errors
 
 
 def _fixture(tmp_path: Path) -> Path:
@@ -90,7 +101,12 @@ def test_r6_public_validator_keeps_f20_hold(tmp_path):
     overlay.materialize(root, BASE, AT, "r6test")
     bundle = checker.load_bundle(root)
     assert bundle["progress"]["repository"]["projection_mode"] == overlay.MODE
-    assert checker.validate_bundle(bundle) == []
+    assert _public_at(checker, overlay, bundle, AT + timedelta(seconds=1)) == []
+    for at in (AT - timedelta(microseconds=1), AT + timedelta(hours=12),
+               AT + timedelta(hours=12, seconds=1)):
+        assert "F20_U01_R6_TRANSITION_INVALID" in _public_at(
+            checker, overlay, bundle, at)
     bundle["progress"]["next_safe_action"] = "forged"
     bundle["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(bundle["progress"])
-    assert "F20_U01_R6_PROGRESS_INVALID" in checker.validate_bundle(bundle)
+    assert "F20_U01_R6_PROGRESS_INVALID" in _public_at(
+        checker, overlay, bundle, AT + timedelta(seconds=1))
