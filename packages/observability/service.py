@@ -9,6 +9,7 @@ from threading import RLock
 from typing import Callable, Protocol
 
 from .projection import OperationsSources, project_operations
+from .agent_owner_summary import ScopedAgentOwnerSummary, _checked_summary
 from .run_status_summary import ScopedRunStatusSummary
 
 
@@ -35,7 +36,8 @@ class OperationsService:
     def __init__(self, project_id: str, environment_id: str, sources: OperationsSources,
                  *, repository: OperationsRepository | None = None, clock=None,
                  source_loader: Callable[[str, str], OperationsSources] | None = None,
-                 run_summary_loader: Callable[[str, str], ScopedRunStatusSummary] | None = None):
+                 run_summary_loader: Callable[[str, str], ScopedRunStatusSummary] | None = None,
+                 agent_owner_summary_loader: Callable[[str, str], ScopedAgentOwnerSummary] | None = None):
         if not project_id or not environment_id or type(sources) is not OperationsSources:
             raise OperationsError("OPERATIONS_OWNER_INVALID")
         if repository is None or not all(callable(getattr(repository, name, None))
@@ -45,14 +47,27 @@ class OperationsService:
             raise OperationsError("OPERATIONS_SOURCE_LOADER_INVALID")
         if run_summary_loader is not None and not callable(run_summary_loader):
             raise OperationsError("RUN_SUMMARY_UNAVAILABLE")
+        if agent_owner_summary_loader is not None and not callable(agent_owner_summary_loader):
+            raise OperationsError("AGENT_OWNER_SUMMARY_UNAVAILABLE")
         self.project_id = project_id
         self.environment_id = environment_id
         self._sources = sources
         self._source_loader = source_loader
         self._run_summary_loader = run_summary_loader
+        self._agent_owner_summary_loader = agent_owner_summary_loader
         self._repository = repository
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._lock = RLock()
+
+    def agent_owner_summary(self) -> ScopedAgentOwnerSummary:
+        """Explicit internal read only; never called by the public snapshot/detector."""
+        if self._agent_owner_summary_loader is None:
+            raise OperationsError("AGENT_OWNER_SUMMARY_UNAVAILABLE")
+        try:
+            return _checked_summary(self._agent_owner_summary_loader(
+                self.project_id, self.environment_id))
+        except Exception:
+            raise OperationsError("AGENT_OWNER_SUMMARY_UNAVAILABLE") from None
 
     def run_summary(self) -> ScopedRunStatusSummary:
         """Read the optional scoped Run owner without altering Queue projections."""

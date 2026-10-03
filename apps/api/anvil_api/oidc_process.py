@@ -21,6 +21,10 @@ from packages.persistence.config import DatabaseSettings
 from packages.persistence.operations_repository import PostgresOperationsRepository
 from packages.persistence.operations_queue_read import load_scoped_queue_source
 from packages.persistence.operations_run_read import load_scoped_run_source
+from packages.persistence.operations_agent_owner_read import load_scoped_agent_owner_source
+from packages.observability.agent_owner_summary import (
+    ScopedAgentOwnerSummary, summarize_scoped_agent_owners,
+)
 from packages.observability.projection import OperationsSources
 from packages.observability.run_status_summary import ScopedRunStatusSummary, summarize_scoped_runs
 from packages.observability.service import OperationsService
@@ -181,11 +185,20 @@ def create_oidc_process_app(
                 load_scoped_run_source(engine, scope.project_id, scope.environment_id)
             )
 
+        def load_agent_owner_summary(project_id: str, environment_id: str) -> ScopedAgentOwnerSummary:
+            if (type(project_id) is not str or type(environment_id) is not str
+                    or (project_id, environment_id) != (scope.project_id, scope.environment_id)):
+                raise ValueError("AGENT_SOURCE_SCOPE_INVALID")
+            return summarize_scoped_agent_owners(
+                load_scoped_agent_owner_source(engine, scope.project_id, scope.environment_id)
+            )
+
         operations_owner = OperationsService(
             scope.project_id, scope.environment_id, OperationsSources(),
             repository=PostgresOperationsRepository(operations_dsn),
             source_loader=load_queue_sources,
             run_summary_loader=load_run_summary,
+            agent_owner_summary_loader=load_agent_owner_summary,
         )
         return host_factory(
             environment=environment, engine=engine, session_factory=sessions,
