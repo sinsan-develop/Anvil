@@ -452,7 +452,8 @@ def _r28_manual_candidate(evidence: dict, excluded_keys: set[str]) -> dict:
             | {"quotaRefreshEvidence", "quotaRecoveryEvidence",
                "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
                "reconnectEvidence", "reconnectCancelEvidence",
-               "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence"}}
+               "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence",
+               "runCardsEvidence"}}
 
 
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
@@ -1505,7 +1506,8 @@ def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation(
             _r28_manual_evidence({**expected, **changed}, observed_at)
 
 
-def test_r32_elapsed_evidence_does_not_contaminate_r28_manual_candidate():
+@pytest.mark.parametrize("successor_key", ["elapsedEvidence", "runCardsEvidence"])
+def test_r32_r34_evidence_does_not_contaminate_r28_manual_candidate(successor_key):
     observed_at = "2026-09-28T00:00:00+00:00"
     manual = {
         "manualRefreshClicked": True, "manualRefreshRequestCount": 1,
@@ -1519,9 +1521,14 @@ def test_r32_elapsed_evidence_does_not_contaminate_r28_manual_candidate():
                                     "independentCardsPreserved": True},
     }
     evidence = {**manual, "storedStatus": 200, "quotaRefreshEvidence": {},
-                "elapsedEvidence": {"snapshotObservedAt": observed_at}}
+                successor_key: {"snapshotObservedAt": observed_at}}
     candidate = _r28_manual_candidate(evidence, {"storedStatus"})
     assert _r28_manual_evidence(candidate, observed_at) == manual
+    with pytest.raises(AssertionError, match="R28_BROWSER_EVIDENCE_MISMATCH"):
+        _r28_manual_evidence(
+            _r28_manual_candidate({**evidence, "unknownEvidence": {}}, {"storedStatus"}),
+            observed_at,
+        )
 
 
 def test_r29_quota_evidence_requires_exact_keys_types_and_recovery():
@@ -1779,6 +1786,12 @@ def test_r34_browser_run_evidence_requires_nonzero_exact_counts_and_revocation()
             _r34_run_evidence(changed)
     with pytest.raises(AssertionError, match="R34_BROWSER_EVIDENCE_MISMATCH"):
         _r34_run_evidence({"runCardsEvidence": {**evidence["runCardsEvidence"], "secret": "synthetic"}})
+    for missing in ({}, {"runCardsEvidence": {}},
+                    {"runCardsEvidence": {key: value for key, value in evidence["runCardsEvidence"].items()
+                                          if key != "apiDomMatch"}},
+                    {**evidence, "unknownEvidence": {}}):
+        with pytest.raises(AssertionError, match="R34_BROWSER_EVIDENCE_MISMATCH"):
+            _r34_run_evidence(missing)
 
 
 def test_opt_in_r6_oidc_browser_pg15():
