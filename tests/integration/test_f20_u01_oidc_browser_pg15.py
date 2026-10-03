@@ -637,6 +637,24 @@ def _r32_elapsed_evidence(evidence: dict, snapshot_at: str, alert_at: str) -> di
     return evidence
 
 
+def _r34_run_evidence(evidence: dict) -> dict:
+    expected = {"observedAt", "observedTotal", "active", "waiting", "blocked",
+                "apiDomMatch", "remainingUnavailable", "revokedCleared"}
+    assert type(evidence) is dict and set(evidence) == {"runCardsEvidence"}, "R34_BROWSER_EVIDENCE_MISMATCH"
+    row = evidence["runCardsEvidence"]
+    assert type(row) is dict and set(row) == expected, "R34_BROWSER_EVIDENCE_MISMATCH"
+    for field, value in (("observedTotal", 3), ("active", 1), ("waiting", 1), ("blocked", 1),
+                         ("apiDomMatch", True), ("remainingUnavailable", True), ("revokedCleared", True)):
+        assert type(row[field]) is type(value) and row[field] == value, "R34_BROWSER_EVIDENCE_MISMATCH"
+    assert type(row["observedAt"]) is str, "R34_BROWSER_EVIDENCE_MISMATCH"
+    try:
+        at = datetime.fromisoformat(row["observedAt"])
+        assert at.tzinfo is not None and at <= datetime.now(timezone.utc)
+    except (ValueError, TypeError, AssertionError):
+        raise AssertionError("R34_BROWSER_EVIDENCE_MISMATCH") from None
+    return evidence
+
+
 def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
     assert before_count == 0 and len(snapshot) == 1, "R24_PG_NOT_EMPTY"
     fields = ("code", "level", "cause", "related_entity_id", "next_action", "deep_link")
@@ -834,6 +852,27 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                 issuer=issuer_url, subject="r6-subject", actor_id="r6-actor", active=True,
             ))
         seeded = True
+        # R18's normal Task/Run repository path; only this opt-in disposable DB.
+        from tests.api.test_f20_u01_r18_run_host_pg15 import _mapped_project, _authority, _create_run
+        from packages.persistence.operations_run_read import load_scoped_run_source
+        from packages.observability.run_status_summary import summarize_scoped_runs
+        repository = _mapped_project(engine, "project-1", "wsl-qa", "r34")
+        wi, plan = _authority(engine, "project-1", "r34")
+        created_runs = {status: _create_run(engine, "project-1", "wsl-qa", repository,
+            wi, plan, "r34-" + status.lower()) for status in ("ACTIVE", "WAITING_APPROVAL", "BLOCKED")}
+        with engine.begin() as db:
+            for status in ("WAITING_APPROVAL", "BLOCKED"):
+                assert db.execute(sa.text("UPDATE runs SET status=:status WHERE run_id=:run"),
+                    {"status": status, "run": created_runs[status]}).rowcount == 1
+
+        def load_run_summary(project, environment):
+            if (project, environment) != ("project-1", "wsl-qa"):
+                raise ValueError("RUN_SOURCE_SCOPE_INVALID")
+            return summarize_scoped_runs(load_scoped_run_source(engine, project, environment))
+
+        initial_runs = load_run_summary("project-1", "wsl-qa")
+        assert (initial_runs.observed_total, initial_runs.active_runs,
+                initial_runs.waiting_approval_runs, initial_runs.blocked_runs) == (3, 1, 1, 1)
         repository_dsn = dsn
         for prefix in ("postgresql+psycopg://", "postgresql+psycopg2://"):
             if repository_dsn.startswith(prefix):
@@ -844,7 +883,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         leases.issue_worker("r6-run", "r6-worker", at - timedelta(minutes=10), timedelta(minutes=1))
         owner = OperationsService("project-1", "wsl-qa",
             OperationsSources(leases=leases, lease_run_ids=("r6-run",)),
-            repository=PostgresOperationsRepository(repository_dsn), clock=lambda: at)
+            repository=PostgresOperationsRepository(repository_dsn), clock=lambda: at,
+            run_summary_loader=load_run_summary)
         assert owner.alerts() == [], "R24_PG_NOT_EMPTY"
         api_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         pending_socket = api_socket
@@ -943,10 +983,13 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                          if key == "elapsedEvidence"}
         r32_evidence = _r32_elapsed_evidence(
             r32_candidate, at.isoformat(), before[0]["observed_at"])
+        r34_evidence = _r34_run_evidence({key: value for key, value in evidence.items()
+                                        if key == "runCardsEvidence"})
         checked = {key: value for key, value in evidence.items()
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
-                   | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)}
+                   | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)
+                   | set(r34_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1720,6 +1763,22 @@ def test_r6_node_evidence_writer_uses_only_the_opt_in_empty_directory(tmp_path):
                                 "https://127.0.0.1:9/api/operations/alerts"]}
     assert "private-token" not in result.stdout + result.stderr
     assert "https://127.0.0.1:9" not in result.stdout + result.stderr
+
+
+def test_r34_browser_run_evidence_requires_nonzero_exact_counts_and_revocation():
+    evidence = {"runCardsEvidence": {"observedAt": "2026-09-30T00:00:00+00:00",
+        "observedTotal": 3, "active": 1, "waiting": 1, "blocked": 1,
+        "apiDomMatch": True, "remainingUnavailable": True, "revokedCleared": True}}
+    assert _r34_run_evidence(evidence) == evidence
+    for field, bad in (("active", 0), ("observedTotal", 0), ("waiting", True),
+                       ("apiDomMatch", False), ("revokedCleared", False),
+                       ("observedAt", "2099-01-01T00:00:00+00:00"),
+                       ("observedAt", "2026-09-30T00:00:00")):
+        changed = {"runCardsEvidence": {**evidence["runCardsEvidence"], field: bad}}
+        with pytest.raises(AssertionError, match="R34_BROWSER_EVIDENCE_MISMATCH"):
+            _r34_run_evidence(changed)
+    with pytest.raises(AssertionError, match="R34_BROWSER_EVIDENCE_MISMATCH"):
+        _r34_run_evidence({"runCardsEvidence": {**evidence["runCardsEvidence"], "secret": "synthetic"}})
 
 
 def test_opt_in_r6_oidc_browser_pg15():

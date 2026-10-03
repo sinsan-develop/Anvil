@@ -46,6 +46,8 @@ def test_r34_start_preserves_event_prefix_and_issues_exact8_epoch49():
 def test_r34_start_rejects_wrong_prefix_and_bounds_scope():
     stream, _, rows, _ = _candidate()
     raw, _, _ = overlay._historical(ROOT)
+    assert overlay.REPORT in overlay.SCOPE
+    assert overlay.REPORT not in overlay.AUTHORITY_FILES
     assert set(overlay.SCOPE).isdisjoint(overlay.CONTROL_SCOPE - {overlay.REPORT})
     assert "docs/progress/progress-events.json" not in overlay.SCOPE
     assert "docs/progress/build-progress.json" not in overlay.SCOPE

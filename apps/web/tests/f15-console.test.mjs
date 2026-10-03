@@ -464,9 +464,77 @@ const dashboardSnapshot = (queue = [], gaps = ['queue']) => ({
       detail_path: null, evidence_ref: null}])),
   queue, quarantine: [], worker: [], budget: [], reservations: [], providers: [],
   deployments: [], source_gaps: gaps, alerts: [], next_actions: [],
+  run_summary: {status: 'UNAVAILABLE', observed_at: null, observed_total: null,
+    active_runs: null, waiting_approval_runs: null, blocked_runs: null},
 });
 const dashboardResponse = (queue = [], gaps = ['queue']) =>
   ({data: dashboardSnapshot(queue, gaps), request_id: 'request-1'});
+
+const renderRunCards = value => renderToStaticMarkup(
+  React.createElement(consoleApp.DashboardOperatingCards, {value}));
+const availableRuns = () => ({status: 'AVAILABLE', observed_at: '2026-09-29T23:59:00+00:00',
+  observed_total: 7, active_runs: 2, waiting_approval_runs: 1, blocked_runs: 3});
+
+test('R34 three Run cards show separate counts denominator and Run observation only', async () => {
+  for (const empty of [false, true]) {
+    const snapshot = dashboardSnapshot();
+    snapshot.run_summary = availableRuns();
+    if (empty) Object.assign(snapshot.run_summary, {observed_total: 0, active_runs: 0,
+      waiting_approval_runs: 0, blocked_runs: 0});
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+    const html = renderRunCards(state);
+    for (const [label, count] of [['실행 중', 2], ['승인 대기', 1], ['BLOCKED', 3]]) {
+      assert.match(html, new RegExp(`${label}.*?${empty ? 0 : count}건.*?범위 내 관측 ${empty ? 0 : 7} Run.*?2026-09-29T23:59:00\\+00:00`, 's'));
+    }
+    for (const label of ['필수 Gate 미통과', '예상 비용 초과', 'baseline 충돌'])
+      assert.match(html, new RegExp(`${label}.*?UNAVAILABLE`, 's'));
+    assert.doesNotMatch(html, /<button|<a |2026-09-30T00:00:00/);
+  }
+});
+
+test('R34 invalid Run summary hides numbers but does not erase valid Queue evidence', async () => {
+  for (const change of [{observed_total: true}, {observed_total: 101}, {active_runs: -1},
+    {active_runs: 1.5}, {blocked_runs: '3'}, {observed_total: 5},
+    {observed_at: '2999-01-01T00:00:00+00:00'}, {observed_at: '2026-09-30'},
+    {extra: 'private-secret'}, {status: 'UNAVAILABLE'}, {observed_at: null}]) {
+    const snapshot = dashboardSnapshot();
+    snapshot.run_summary = {...availableRuns(), ...change};
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+    assert.equal(state.status, 'LOADED');
+    const html = renderRunCards(state);
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /[0-9]건|범위 내 관측|private-secret|2026-/);
+  }
+});
+
+test('R34 parent failure and cancellation never retain protected Run numbers', async () => {
+  for (const status of ['LOADING', 'RECONNECTING', 'CANCELLED', 'BLOCKED', 'QUOTA', 'UNAVAILABLE']) {
+    const html = renderRunCards({status});
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /[0-9]건|범위 내 관측|2026-/);
+  }
+  for (const status of [401, 403, 429, 500, 503]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, json() {throw Error('must not read body');}}));
+    assert.doesNotMatch(renderRunCards(state), /[0-9]건|범위 내 관측/);
+  }
+  const snapshot = dashboardSnapshot();
+  delete snapshot.run_summary;
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+  assert.equal(state.status, 'UNAVAILABLE');
+});
+
+test('R34 future parent observation cannot publish otherwise valid Run counts', async () => {
+  const snapshot = dashboardSnapshot();
+  snapshot.observed_at = '2999-01-01T00:00:00+00:00';
+  snapshot.run_summary = availableRuns();
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+  assert.doesNotMatch(renderRunCards(state), /[0-9]건|범위 내 관측/);
+});
 
 const observedHealth = (state, overrides = {}) => ({
   state, observed_at: '2026-09-30T00:00:00+00:00', stale_after_seconds: 60,

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import importlib
 import json
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -37,23 +38,32 @@ def test_r33t_projection_issues_exact13_epoch48_dual_lease():
     assert "F-20" not in final["completed_packages"]
 
 
-def test_r33t_start_rejects_scope_and_expiry_tampering():
+def test_r33t_start_rejects_scope_and_expiry_tampering(tmp_path):
     overlay = importlib.import_module("scripts.f20_u01_r33t_start_overlay")
-    checker = importlib.import_module("scripts.check_project_progress")
-    bundle = checker.load_bundle(ROOT)
+    # Immutable accepted R33T start, not a successor's revoked/new lease.
+    checkpoint = "8c0af9638d1e52fb29a1010a42f457b4448c0655"
+    for path in (overlay.EVENTS, overlay.PROGRESS, overlay.HANDOFF, overlay.DIGEST,
+                 overlay.MANIFEST, overlay.PLAN, overlay.WI, overlay.INVOCATION):
+        target = tmp_path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(overlay._git(ROOT, "show", f"{checkpoint}:{path}"))
+    bundle = {"events": json.loads((tmp_path / overlay.EVENTS).read_bytes()),
+              "progress": json.loads((tmp_path / overlay.PROGRESS).read_bytes())}
     at = datetime.fromisoformat(bundle["events"]["events"][1998]["occurred_at"])
-    assert overlay.validate_control(ROOT, bundle, at) == []
-    assert "F20_U01_R33T_TRANSITION_INVALID" in overlay.validate_control(
-        ROOT, bundle, at.replace(year=2027))
-    bundle["events"]["events"][2000]["details"]["path_scope"] = ["packages/api/runtime.py"]
-    assert "F20_U01_R33T_TRANSITION_INVALID" in overlay.validate_control(ROOT, bundle, at)
+    historical = overlay._historical(ROOT)
+    with mock.patch.object(overlay, "_historical", return_value=historical):
+        assert overlay.validate_control(tmp_path, bundle, at) == []
+        assert overlay.validate_control(tmp_path, bundle, at.replace(year=2027)) == [
+            "F20_U01_R33T_TRANSITION_INVALID"]
+        bundle["events"]["events"][2000]["details"]["path_scope"] = ["packages/api/runtime.py"]
+        assert overlay.validate_control(tmp_path, bundle, at) == [
+            "F20_U01_R33T_TRANSITION_INVALID"]
 
 
 def test_r33t_public_g05_keeps_f20_blocked():
     checker = importlib.import_module("scripts.check_project_progress")
     bundle = checker.load_bundle(ROOT)
-    assert bundle["progress"]["repository"]["projection_mode"] == (
-        "F20_U01_R33T_HISTORY_SUITE_REPAIR_START")
+    assert bundle["progress"]["event_sequence"] >= 2002
     assert checker.validate_bundle(bundle) == []
     assert bundle["progress"]["f20_c30_event_integrity_incident"]["status"] == "OPEN_BLOCKING"
     assert bundle["progress"]["scope_revision_binding"]["release_decision"] == "DEFER"

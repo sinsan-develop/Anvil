@@ -14,10 +14,12 @@ type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
 type NextActionRow = NextAction & {elapsedMinutes: number | null};
+type RunSummary = {observedAt: string; observedTotal: number;
+  active: number; waiting: number; blocked: number};
 type NextActionsState = {status: 'LOADED'; actions: NextActionRow[]} | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: string | null; sourceGap: boolean;
   health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
-  nextActions: NextActionsState}
+  nextActions: NextActionsState; runSummary: RunSummary | null}
   | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
@@ -36,7 +38,7 @@ const DASHBOARD_QUEUE_QUOTA: DashboardQueueState = {status: 'QUOTA'};
 const DASHBOARD_QUEUE_CANCELLED: DashboardQueueState = {status: 'CANCELLED'};
 const DASHBOARD_SNAPSHOT_FIELDS = ['observed_at', 'health', 'queue', 'quarantine',
   'worker', 'budget', 'reservations', 'providers', 'deployments', 'source_gaps',
-  'alerts', 'next_actions'];
+  'alerts', 'next_actions', 'run_summary'];
 const DASHBOARD_HEALTH_COMPONENTS = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
 const DASHBOARD_HEALTH_FIELDS = ['state', 'observed_at', 'stale_after_seconds',
   'last_check', 'error_count', 'detail_path', 'evidence_ref'];
@@ -174,6 +176,32 @@ function dashboardDatabaseSignal(value: unknown, gaps: string[], snapshotTime: s
     lastCheck: value.last_check as string | null, errorCount: value.error_count as number | null};
 }
 
+function dashboardRunSummary(value: unknown): RunSummary | null {
+  if (!record(value) || !exactFields(value, ['status', 'observed_at', 'observed_total',
+    'active_runs', 'waiting_approval_runs', 'blocked_runs']) || value.status !== 'AVAILABLE'
+    || !validObservedAt(value.observed_at) || Date.parse(value.observed_at) > Date.now()) return null;
+  const counts = [value.observed_total, value.active_runs, value.waiting_approval_runs, value.blocked_runs];
+  if (!counts.every((count) => typeof count === 'number' && Number.isInteger(count) && count >= 0 && count <= 100)) return null;
+  const [total, active, waiting, blocked] = counts as number[];
+  if (active + waiting + blocked > total) return null;
+  return {observedAt: value.observed_at, observedTotal: total, active, waiting, blocked};
+}
+
+export function DashboardOperatingCards({value}: {value: DashboardQueueState}) {
+  const runs = value.status === 'LOADED' ? value.runSummary : null;
+  const numbers = runs ? [runs.active, runs.waiting, runs.blocked] : [];
+  return <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
+    <div className="status-grid">{DASHBOARD_OPERATION_DEFINITIONS.map(({key, label}, index) =>
+      <article className="status-card" key={key}><h3>{label}</h3>
+        {runs && index < 3 ? <><p className="status-ready">{numbers[index]}건</p>
+          <p>범위 내 관측 {runs.observedTotal} Run</p><p>Run 관측 시각 · {runs.observedAt}</p>
+          <p>Run 상태 집계 · 실제 프로세스/승인 객체 수가 아닙니다.</p></>
+          : <><p className="status-unavailable">UNAVAILABLE</p>
+            <p>이 운영 카드의 read model은 아직 연결되지 않았습니다.</p></>}
+      </article>)}</div>
+  </section>;
+}
+
 function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   if (!record(payload) || !exactFields(payload, ['data', 'request_id'])
     || !nonempty(payload.request_id) || !record(payload.data)
@@ -195,6 +223,7 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
   return {status: 'LOADED', observed: snapshot.queue.length,
+    runSummary: Date.parse(snapshot.observed_at) <= Date.now() ? dashboardRunSummary(snapshot.run_summary) : null,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
     nextActions: dashboardNextActions(snapshot.next_actions, snapshot.alerts as unknown[], snapshot.observed_at),
@@ -684,15 +713,7 @@ function Shell({route}: AppProps) {
             })}
           </div>
         </section>
-        <section aria-labelledby="operations-heading"><h2 id="operations-heading">운영 상태</h2>
-          <div className="status-grid">
-            {DASHBOARD_OPERATION_DEFINITIONS.map(({key, label}) =>
-              <article className="status-card" key={key}><h3>{label}</h3>
-                <p className="status-unavailable">UNAVAILABLE</p>
-                <p>이 운영 카드의 read model은 아직 연결되지 않았습니다.</p>
-              </article>)}
-          </div>
-        </section>
+        <DashboardOperatingCards value={dashboardQueue}/>
         <NextActionsCard value={dashboardQueue}/>
         <CriticalAlertsCard value={criticalAlerts} onLoadOlder={() => { void loadOlderAlerts(); }}
           loadingOlder={loadingOlderAlerts}/>

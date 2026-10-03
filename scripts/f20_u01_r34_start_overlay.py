@@ -48,7 +48,7 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFE
     "scripts/f20_u01_r34_close_overlay.py",
     "tests/tooling/test_f20_u01_r34_close_projection.py",
     "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"}
-AUTHORITY_FILES = (PLAN, WI, INVOCATION, REPORT,
+AUTHORITY_FILES = (PLAN, WI, INVOCATION,
                    prior.DIGEST, prior.MANIFEST,
                    "scripts/f20_u01_r33t_close_overlay.py",
                    "tests/tooling/test_f20_u01_r33t_close_projection.py")

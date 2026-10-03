@@ -1448,7 +1448,7 @@ async function loadingFacts(page) {
   return { cards, next, alerts, checked };
 }
 
-async function verifyOperatingCards(page) {
+async function verifyOperatingCards(page, runs = null) {
   const section = page.locator('section[aria-labelledby="operations-heading"]');
   const cards = section.locator('.status-grid > article.status-card');
   const names = ['실행 중', '승인 대기', 'BLOCKED', '필수 Gate 미통과',
@@ -1458,7 +1458,17 @@ async function verifyOperatingCards(page) {
     const card = cards.nth(index);
     assert.equal(await card.locator('h3').innerText(), names[index],
       'R33_OPERATING_CARDS_MISMATCH');
-    assert.deepEqual(await card.locator('p').allInnerTexts(), [
+    if (runs && index < 3) {
+      assert.equal(runs.status, 'AVAILABLE', 'R34_RUN_API_MISMATCH');
+      assert.deepEqual([runs.observed_total, runs.active_runs, runs.waiting_approval_runs,
+        runs.blocked_runs], [3, 1, 1, 1], 'R34_RUN_API_MISMATCH');
+      assert.ok(Number.isFinite(Date.parse(runs.observed_at))
+        && Date.parse(runs.observed_at) <= Date.now(), 'R34_RUN_API_MISMATCH');
+      assert.deepEqual(await card.locator('p').allInnerTexts(), [
+        '1건', '범위 내 관측 3 Run', `Run 관측 시각 · ${runs.observed_at}`,
+        'Run 상태 집계 · 실제 프로세스/승인 객체 수가 아닙니다.',
+      ], 'R34_RUN_DOM_MISMATCH');
+    } else assert.deepEqual(await card.locator('p').allInnerTexts(), [
       'UNAVAILABLE', '이 운영 카드의 read model은 아직 연결되지 않았습니다.',
     ], 'R33_OPERATING_CARDS_MISMATCH');
     assert.equal(await card.locator('a, button, input, select, textarea, [tabindex]').count(),
@@ -1836,7 +1846,8 @@ async function main() {
     assert.equal(storedDashboard.status, 200, 'R20_NEXT_ACTION_MISMATCH');
     const dashboardActions = JSON.parse(storedDashboard.text).data.next_actions;
     const storedReady = await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
-    await verifyOperatingCards(page);
+    const storedRunSummary = JSON.parse(storedReady.dashboardResponse.value.body).data.run_summary;
+    await verifyOperatingCards(page, storedRunSummary);
     const storedObservedAt = JSON.parse(storedReady.dashboardResponse.value.body).data.observed_at;
     assert.ok(/^\d{4}-\d{2}-\d{2}T/.test(storedObservedAt)
       && Number.isFinite(Date.parse(storedObservedAt)) && Date.parse(storedObservedAt) <= Date.now(),
@@ -1889,6 +1900,7 @@ async function main() {
     manualPhase('SERVICE_ERROR_BEGIN');
     const failedRefresh503 = await verifyManualFailure(page, apiUrl, 503,
       '{"error":"r27-private-error-body-marker"}');
+    await verifyOperatingCards(page);
     manualPhase('SERVICE_ERROR_DONE');
     markStage('STORED_NEXT_ACTION');
     manualPhase('SERVICE_RECOVERY_BEGIN');
@@ -1898,6 +1910,7 @@ async function main() {
     manualPhase('INVALID_BEGIN');
     const failedRefreshInvalid = await verifyManualFailure(page, apiUrl, 200,
       '{"data":{"observed_at":"2026-09-28T00:00:00+00:00"}}');
+    await verifyOperatingCards(page);
     manualPhase('INVALID_DONE');
     markStage('STORED_NEXT_ACTION');
     manualPhase('KEYBOARD_RECOVERY_BEGIN');
@@ -2020,6 +2033,10 @@ async function main() {
       exportPayload.urls = safeEvidenceUrls(requests, apiUrl, [...sensitiveValues, cookie.value]);
     }
     resultEvidence = {
+      runCardsEvidence: {observedAt: storedRunSummary.observed_at,
+        observedTotal: storedRunSummary.observed_total, active: storedRunSummary.active_runs,
+        waiting: storedRunSummary.waiting_approval_runs, blocked: storedRunSummary.blocked_runs,
+        apiDomMatch: true, remainingUnavailable: true, revokedCleared: true},
       preAuthStatus: preAuth.status, authorizationStatus: authorization.status,
       callbackStatus: callback.status, sessionAuthenticated: true,
       cookieSecure: cookie.secure, cookieHttpOnly: cookie.httpOnly,

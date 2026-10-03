@@ -1,7 +1,10 @@
 """Authenticated F-13 Operations read port over a trusted scoped owner."""
 
 from packages.observability.service import OperationsService
+from packages.observability.run_status_summary import ScopedRunStatusSummary
 from packages.persistence.operations_repository import _safe_event, _safe_identifier
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import re
 
 from .common import ApiContractError, ApplicationRequest
@@ -26,6 +29,27 @@ class OperationsPort:
 
     def query_ports(self):
         return {self._ALERTS: self, self._AUDIT: self, self._DASHBOARD: self}
+
+    def _run_summary(self):
+        fields = ("observed_total", "active_runs", "waiting_approval_runs", "blocked_runs")
+        unavailable = {"status": "UNAVAILABLE", "observed_at": None,
+                       **{key: None for key in fields}}
+        try:
+            summary = self._owner.run_summary()
+            if type(summary) is not ScopedRunStatusSummary:
+                return unavailable
+            at = summary.observed_at
+            counts = [getattr(summary, key) for key in fields]
+            # Reject custom datetime/tz callbacks before comparisons/serialization.
+            if (type(at) is not datetime or type(at.tzinfo) not in (timezone, ZoneInfo)
+                    or at > datetime.now(timezone.utc)
+                    or any(type(value) is not int or not 0 <= value <= 100 for value in counts)
+                    or sum(counts[1:]) > counts[0]):
+                return unavailable
+            return {"status": "AVAILABLE", "observed_at": at.isoformat(),
+                    **dict(zip(fields, counts))}
+        except Exception:
+            return unavailable
 
     def __call__(self, request: ApplicationRequest):
         if (request.authorized_project_id != self._owner.project_id
@@ -64,6 +88,7 @@ class OperationsPort:
                     "reason": alert["cause"], "target": alert["related_entity_id"],
                     "action": alert["next_action"], "deep_link": alert["deep_link"]}
                     for alert in alerts if alert["status"] != "resolved"]
+                result["run_summary"] = self._run_summary()
                 return result
             except Exception:
                 raise ApiContractError("DASHBOARD_SOURCE_UNAVAILABLE",
