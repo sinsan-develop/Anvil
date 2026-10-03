@@ -1,6 +1,6 @@
 # F-20/U-01 R32 Next Actions 경과시간 결과
 
-판정: `COMPLETED` (Developer의 local exact5 구현·검증). Main 독립 검토·동일 clean SHA WSL-server PG15/OIDC/HTTPS/Chromium 실제 QA는 `NOT_EXECUTED`이며 U-01/F-20 인수 판정이 아니다.
+판정: `COMPLETED` (Developer의 local exact5 구현·재작업·검증). Main의 동일 clean SHA WSL-server PG15/OIDC/HTTPS/Chromium 첫 opt-in 실행은 Python evidence 분류에서 실패했고, 수정 SHA의 실제 재검증은 `PENDING`이다. U-01/F-20 인수 판정이 아니다.
 
 ## 판단 이유
 
@@ -31,7 +31,14 @@
 ## 인계·미검증·rollback
 
 - Developer 제품 write는 정확 4개 코드/테스트 파일과 이 결과보고서 1개다. Main이 동시 수정 중인 `docs/WORK_STATUS.md`는 건드리지 않았다. Git commit/push/WSL-server/DB/Docker/progress/HANDOFF/control/main/Production 변경0.
-- Main 독립 exact5 diff 리뷰, checkpoint/private push, WSL-server 동일 clean SHA 격리 PG15/OIDC/HTTPS/Chromium 실제 저장 Next Action DOM·same-origin Network·Secret 및 전용 자원 잔여0 검증은 미실행이다. local fixture/audit PASS를 실제 브라우저 PASS로 승격하지 않는다.
-- rollback: Main이 R32 exact5 checkpoint 후 해당 commit만 정상 `git revert`하고 기존 R31 Event prefix와 다른 dirty 자료를 보존한다. 현 시점 미커밋 R32 exact5 diff는 Main이 검토 후 필요한 경로만 되돌릴 수 있다.
+- Main이 첫 exact5 checkpoint/private push를 수행한 뒤 clean SHA `3930469024f085129d997820f1d76edf2ca1575a`의 WSL-server 격리 PG15/OIDC/HTTPS/Chromium opt-in을 실행했다. 결과 `1 failed, 2 passed, 33 deselected`이며 제품/브라우저 실행 후 Python `_r28_manual_evidence`의 `R28_BROWSER_EVIDENCE_MISMATCH`에서 중단됐다. 브라우저 화면·Network·Secret 증거와 전용 자원 정리의 최종 PASS는 이 실행으로 주장하지 않는다. 수정 SHA 동일 환경 실제 재검증은 Main 담당 `PENDING`이다.
+- rollback: Main이 R32 exact5 checkpoint를 정상 `git revert`하고 기존 R31 Event prefix와 다른 dirty 자료를 보존한다. 현 시점 미커밋 재작업은 Python 테스트 파일과 이 결과보고서의 R32 범위만 검토해 처리한다.
+
+## WSL 첫 실패에 따른 Main 리뷰 재작업
+
+- 재작업 시작: branch `codex/f18-wsl-ops`, clean HEAD/private/WSL QA 대상 `3930469024f085129d997820f1d76edf2ca1575a`; canonical epoch46 dual lease와 exact5 scope는 계속 ACTIVE였다. Main의 실제 WSL stack상 새 `elapsedEvidence`가 R28 후보에 남아 R28 exact-key 계약에 의해 거부됐고, 그 뒤의 R32 helper 검증에는 도달하지 못했다.
+- `tests/integration/test_f20_u01_oidc_browser_pg15.py`만 수정했다. R28 후보 집합을 작은 함수로 추출해 실제 선택 코드를 테스트하고, 다른 분류 유지 상태에서 `elapsedEvidence` 하나만 제외했다. 새 테스트는 최초 `NameError` RED(exit1), 기존 분류식 추출 후 실제 `R28_BROWSER_EVIDENCE_MISMATCH` RED(exit1), 제외 후 GREEN(exit0) 순서로 확인했다. 정식 `FAILURE_REPORT`가 아닌 Main 리뷰 재작업이다.
+- 로컬 명령: `.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py -k 'r32_elapsed_evidence_does_not_contaminate_r28_manual_candidate or r32_elapsed_evidence_requires_exact_snapshot_alert_and_display or r28_manual_refresh_evidence_requires_exact_keys_values_and_observation'` exit0 `3 passed, 34 deselected`; 같은 파일 `-k 'not opt_in' --basetemp D:\Project\Anvil\.worktrees\anvil-f18-wsl-ops\.r32_pytest_review` exit0 `34 passed, 3 deselected`; `.\.venv\Scripts\python.exe scripts/check_project_progress.py .` exit0 `PASS sequence=1990 reporting=AUTO_CONTINUE`; `git diff --check` exit0.
+- 전용 `.r32_pytest_review`는 생성 전 부재, 소유 worktree 경로, 내부 symlink 대상 확인 후 이 root만 삭제해 잔여0이다. 다른 코드, Git commit/push, WSL 자원/DB/브라우저, WORK_STATUS/control에는 손대지 않았다. 첫 WSL 실패의 실제 재검증은 Main이 새 clean SHA에서 수행한다.
 
 F-20/U-01 전체 미수락, C30 `OPEN_BLOCKING`, ReleaseDecision `DEFER`, Production `NOT_EXECUTED` 유지.

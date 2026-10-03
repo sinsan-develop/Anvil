@@ -446,6 +446,15 @@ def _r24_error_evidence(evidence: dict) -> dict:
     return actual
 
 
+def _r28_manual_candidate(evidence: dict, excluded_keys: set[str]) -> dict:
+    return {key: value for key, value in evidence.items()
+            if key not in excluded_keys
+            | {"quotaRefreshEvidence", "quotaRecoveryEvidence",
+               "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
+               "reconnectEvidence", "reconnectCancelEvidence",
+               "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence"}}
+
+
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
     refresh = {"manualRefreshClicked": True, "manualRefreshRequestCount": 1,
                "manualRefreshObservedAt": observed_at, "independentCardsPreserved": True}
@@ -908,12 +917,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                       | diagnostic_keys | artifact_keys | set(loading_evidence)
                       | set(r25_task1_evidence) | set(r25_task2_evidence)
                       | set(empty_evidence) | set(error_evidence))
-        r28_candidate = {key: value for key, value in evidence.items()
-                         if key not in prior_keys | set(expected_legacy)
-                         | {"quotaRefreshEvidence", "quotaRecoveryEvidence",
-                            "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
-                            "reconnectEvidence", "reconnectCancelEvidence",
-                            "reconnectDeniedEvidence", "reconnectRaceEvidence"}}
+        r28_candidate = _r28_manual_candidate(evidence, prior_keys | set(expected_legacy))
         r28_evidence = _r28_manual_evidence(r28_candidate, at.isoformat())
         r29_candidate = {key: value for key, value in evidence.items()
                          if key in {"quotaRefreshEvidence", "quotaRecoveryEvidence"}}
@@ -1456,6 +1460,25 @@ def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation(
     ):
         with pytest.raises(AssertionError, match="R28_BROWSER_EVIDENCE_MISMATCH"):
             _r28_manual_evidence({**expected, **changed}, observed_at)
+
+
+def test_r32_elapsed_evidence_does_not_contaminate_r28_manual_candidate():
+    observed_at = "2026-09-28T00:00:00+00:00"
+    manual = {
+        "manualRefreshClicked": True, "manualRefreshRequestCount": 1,
+        "manualRefreshObservedAt": observed_at, "revokedManualRefreshStatus": 403,
+        "revokedManualRefreshCleared": True, "revokedManualRefreshFromStored": True,
+        "failedRefresh503": {"requestCount": 1, "responseStatus": 503, "failClosed": True},
+        "failedRefreshInvalid": {"requestCount": 1, "responseStatus": 200, "failClosed": True},
+        "keyboardRefreshEvidence": {"manualRefreshClicked": True,
+                                    "manualRefreshRequestCount": 1,
+                                    "manualRefreshObservedAt": observed_at,
+                                    "independentCardsPreserved": True},
+    }
+    evidence = {**manual, "storedStatus": 200, "quotaRefreshEvidence": {},
+                "elapsedEvidence": {"snapshotObservedAt": observed_at}}
+    candidate = _r28_manual_candidate(evidence, {"storedStatus"})
+    assert _r28_manual_evidence(candidate, observed_at) == manual
 
 
 def test_r29_quota_evidence_requires_exact_keys_types_and_recovery():
