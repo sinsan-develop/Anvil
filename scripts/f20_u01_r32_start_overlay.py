@@ -34,7 +34,11 @@ KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
 CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST, PLAN, WI, INVOCATION, REPORT,
     "scripts/f20_u01_r32_start_overlay.py",
     "tests/tooling/test_f20_u01_r32_start_projection.py",
-    "scripts/check_project_progress.py", "docs/WORK_STATUS.md"}
+    "scripts/check_project_progress.py", "docs/WORK_STATUS.md",
+    "scripts/f20_u01_r32_close_overlay.py",
+    "tests/tooling/test_f20_u01_r32_close_projection.py",
+    "docs/progress/progress-handoff-detached-digest-f20-u01-r32-close.json",
+    "docs/evidence/manifests/F-20_U01_R32_NEXT_ACTION_ELAPSED_CLOSE_MANIFEST.json"}
 _dirty = prior.prior._dirty
 
 
