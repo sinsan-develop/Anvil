@@ -13,7 +13,8 @@ type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' 
 type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
-type NextActionsState = {status: 'LOADED'; actions: NextAction[]} | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
+type NextActionRow = NextAction & {elapsedMinutes: number | null};
+type NextActionsState = {status: 'LOADED'; actions: NextActionRow[]} | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: string | null; sourceGap: boolean;
   health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
   nextActions: NextActionsState}
@@ -98,13 +99,37 @@ function validDashboardQueueRow(value: unknown): boolean {
     && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
 }
 
-function dashboardNextActions(value: unknown): NextActionsState {
+function dashboardNextActions(value: unknown, alerts: unknown[], snapshotTime: string): NextActionsState {
   if (!Array.isArray(value) || value.length > 100 || !value.every((item) =>
     record(item) && exactFields(item, NEXT_ACTION_FIELDS)
     && (item.priority === 'critical' || item.priority === 'warning')
     && nonempty(item.reason) && nonempty(item.target) && nonempty(item.action)
     && nonempty(item.deep_link))) return {status: 'UNAVAILABLE'};
-  return {status: 'LOADED', actions: value as NextAction[]};
+  const actions = value as NextAction[];
+  const matches = (alert: unknown, action: NextAction): alert is Record<string, unknown> =>
+    record(alert) && (alert.status === 'open' || alert.status === 'acknowledged')
+    && alert.level === action.priority && alert.cause === action.reason
+    && alert.related_entity_id === action.target && alert.next_action === action.action
+    && alert.deep_link === action.deep_link;
+  const validAlert = (alert: Record<string, unknown>) => exactFields(alert, ALERT_FIELDS)
+    && nonempty(alert.alert_id) && Number.isSafeInteger(alert.sequence) && (alert.sequence as number) > 0
+    && validObservedAt(alert.observed_at)
+    && (alert.status === 'open' ? alert.owner_id === null : nonempty(alert.owner_id))
+    && ['source', 'category', 'code', 'dedupe_key', 'detector_rule_revision',
+      'impact', 'evidence_hash', 'project_id', 'environment_id'].every((key) => nonempty(alert[key]));
+  const sameAction = (left: NextAction, right: NextAction) =>
+    NEXT_ACTION_FIELDS.every((field) => left[field as keyof NextAction] === right[field as keyof NextAction]);
+  return {status: 'LOADED', actions: actions.map((action) => {
+    const candidates = alerts.filter((alert) => matches(alert, action));
+    const unique = candidates.length === 1 && validAlert(candidates[0])
+      && actions.filter((other) => sameAction(other, action)).length === 1
+      && Date.parse(snapshotTime) <= Date.now();
+    const at = unique && validObservedAt(candidates[0].observed_at)
+      ? Date.parse(candidates[0].observed_at) : NaN;
+    const elapsed = Math.floor((Date.parse(snapshotTime) - at) / 60_000);
+    return {...action, elapsedMinutes: unique && Number.isSafeInteger(elapsed) && elapsed >= 0
+      ? elapsed : null};
+  })};
 }
 
 function safeMenuLink(value: string): string | null {
@@ -172,7 +197,7 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   return {status: 'LOADED', observed: snapshot.queue.length,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
-    nextActions: dashboardNextActions(snapshot.next_actions),
+    nextActions: dashboardNextActions(snapshot.next_actions, snapshot.alerts as unknown[], snapshot.observed_at),
     database: dashboardDatabaseSignal((snapshot.health as Record<string, unknown>).database,
       snapshot.source_gaps, snapshot.observed_at),
     health: dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps,
@@ -202,6 +227,7 @@ export function NextActionsCard({value}: {value: DashboardQueueState}) {
           return <li key={`${identity}:${occurrence}`}><strong>{item.priority}</strong>
             <p>원인 · {item.reason}</p><p>대상 · {item.target}</p>
             <p>조치 · {link ? <a href={link}>{item.action}</a> : item.action}</p>
+            <p>{item.elapsedMinutes === null ? '경과시간 확인 불가' : `경과시간 · ${item.elapsedMinutes}분`}</p>
           </li>;
         })}</ul>}
     </div>

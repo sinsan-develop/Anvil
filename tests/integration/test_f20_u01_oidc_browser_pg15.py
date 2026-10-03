@@ -609,6 +609,25 @@ def _r31_reconnect_race_evidence(evidence: dict, observed_at: str) -> dict:
     return evidence
 
 
+def _r32_elapsed_evidence(evidence: dict, snapshot_at: str, alert_at: str) -> dict:
+    elapsed = int((datetime.fromisoformat(snapshot_at)
+                   - datetime.fromisoformat(alert_at)).total_seconds() // 60)
+    expected = {"elapsedEvidence": {
+        "snapshotObservedAt": snapshot_at, "alertObservedAt": alert_at,
+        "elapsedMinutes": elapsed, "uniqueAlertMatch": True, "rowDisplayed": True,
+    }}
+
+    def exact(actual: object, required: dict) -> bool:
+        return (type(actual) is dict and actual.keys() == required.keys()
+                and all(type(actual[key]) is type(value)
+                        and (exact(actual[key], value) if type(value) is dict
+                             else actual[key] == value)
+                        for key, value in required.items()))
+
+    assert elapsed >= 0 and exact(evidence, expected), "R32_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
 def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
     assert before_count == 0 and len(snapshot) == 1, "R24_PG_NOT_EMPTY"
     fields = ("code", "level", "cause", "related_entity_id", "next_action", "deep_link")
@@ -916,10 +935,14 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                               if key == "reconnectRaceEvidence"}
         r31_race_evidence = _r31_reconnect_race_evidence(
             r31_race_candidate, at.isoformat())
+        r32_candidate = {key: value for key, value in evidence.items()
+                         if key == "elapsedEvidence"}
+        r32_evidence = _r32_elapsed_evidence(
+            r32_candidate, at.isoformat(), before[0]["observed_at"])
         checked = {key: value for key, value in evidence.items()
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
-                   | set(r31_denied_evidence) | set(r31_race_evidence)}
+                   | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1589,6 +1612,26 @@ def test_r31_reconnect_client_race_requires_late_stale_200_after_new_200():
     ):
         with pytest.raises(AssertionError, match="R31_BROWSER_EVIDENCE_MISMATCH"):
             _r31_reconnect_race_evidence({**expected, **changed}, observed_at)
+
+
+def test_r32_elapsed_evidence_requires_exact_snapshot_alert_and_display():
+    snapshot_at = "2026-09-28T00:05:00+00:00"
+    alert_at = "2026-09-28T00:00:00+00:00"
+    expected = {"elapsedEvidence": {
+        "snapshotObservedAt": snapshot_at, "alertObservedAt": alert_at,
+        "elapsedMinutes": 5, "uniqueAlertMatch": True, "rowDisplayed": True,
+    }}
+    assert _r32_elapsed_evidence(expected, snapshot_at, alert_at) == expected
+    for changed in (
+        {"elapsedEvidence": {**expected["elapsedEvidence"], "elapsedMinutes": 0}},
+        {"elapsedEvidence": {**expected["elapsedEvidence"], "snapshotObservedAt": alert_at}},
+        {"elapsedEvidence": {**expected["elapsedEvidence"], "uniqueAlertMatch": 1}},
+        {"elapsedEvidence": {**expected["elapsedEvidence"], "rowDisplayed": False}},
+        {"elapsedEvidence": {**expected["elapsedEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R32_BROWSER_EVIDENCE_MISMATCH"):
+            _r32_elapsed_evidence({**expected, **changed}, snapshot_at, alert_at)
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):

@@ -143,6 +143,28 @@ function validateStoredNextAction(dashboard, alert, expected, rowText, rowCount)
     alertApiDomMatch: true };
 }
 
+function validateStoredElapsed(snapshot, expected, rowText, storedAlertAt) {
+  const fields = ['priority', 'reason', 'target', 'action', 'deep_link'];
+  const actions = snapshot?.next_actions;
+  const matchingAlerts = Array.isArray(snapshot?.alerts) ? snapshot.alerts.filter((alert) =>
+    ['open', 'acknowledged'].includes(alert?.status)
+    && alert.level === expected.priority && alert.cause === expected.reason
+    && alert.related_entity_id === expected.target && alert.next_action === expected.action
+    && alert.deep_link === expected.deep_link) : [];
+  const matchingActions = Array.isArray(actions) ? actions.filter((action) =>
+    fields.every((field) => action?.[field] === expected[field])) : [];
+  const alertAt = matchingAlerts[0]?.observed_at;
+  const snapshotAt = snapshot?.observed_at;
+  const elapsed = Math.floor((Date.parse(snapshotAt) - Date.parse(alertAt)) / 60_000);
+  assert.ok(matchingAlerts.length === 1 && matchingActions.length === 1
+    && typeof snapshotAt === 'string' && typeof alertAt === 'string'
+    && alertAt === storedAlertAt && Number.isSafeInteger(elapsed) && elapsed >= 0
+    && rowText.includes(`경과시간 · ${elapsed}분`)
+    && !rowText.includes('경과시간 확인 불가'), 'R32_ELAPSED_MISMATCH');
+  return { elapsedEvidence: { snapshotObservedAt: snapshotAt, alertObservedAt: alertAt,
+    elapsedMinutes: elapsed, uniqueAlertMatch: true, rowDisplayed: true } };
+}
+
 function validateSeedResult(seed, code, entity, cause) {
   const alert = seed?.stored_alert;
   const fields = ['code', 'level', 'cause', 'related_entity_id', 'next_action', 'deep_link'];
@@ -1836,6 +1858,9 @@ async function main() {
     const storedActionEvidence = validateStoredNextAction(
       { status: storedDashboard.status, actions: dashboardActions }, alerts[0], expectedAction,
       await actionRow.first().innerText(), await actionRow.count());
+    const elapsedEvidence = validateStoredElapsed(
+      JSON.parse(storedReady.dashboardResponse.value.body).data, expectedAction,
+      await actionRow.first().innerText(), alerts[0].observed_at);
     markStage('STORED_NEXT_ACTION');
     manualPhase('STORED_CLICK_BEGIN');
     const manualRefreshEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
@@ -1980,7 +2005,7 @@ async function main() {
       storedStatus: stored.status, storedAlertCode: alerts[0].code,
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
-      ...storedActionEvidence, ...revokedActionEvidence,
+      ...storedActionEvidence, ...elapsedEvidence, ...revokedActionEvidence,
       ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
       failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
       quotaRefreshEvidence, quotaRecoveryEvidence,
@@ -2250,6 +2275,26 @@ if (auditSelfTest) {
   assert.deepEqual(validateStoredNextAction(dashboardOk, actionAlert, expectedAction,
     displayed, 1), { dashboardStatus: 200, actionCount: 1,
     alertApiDomMatch: true });
+  const elapsedSnapshot = { observed_at: '2026-09-28T00:05:00+00:00',
+    alerts: [{ ...actionAlert, status: 'open', observed_at: '2026-09-28T00:00:00+00:00' }],
+    next_actions: [expectedAction] };
+  const elapsedRow = `${displayed}\n경과시간 · 5분`;
+  assert.deepEqual(validateStoredElapsed(elapsedSnapshot, expectedAction, elapsedRow,
+    elapsedSnapshot.alerts[0].observed_at),
+    { elapsedEvidence: { snapshotObservedAt: elapsedSnapshot.observed_at,
+      alertObservedAt: '2026-09-28T00:00:00+00:00', elapsedMinutes: 5,
+      uniqueAlertMatch: true, rowDisplayed: true } });
+  for (const bad of [
+    { ...elapsedSnapshot, alerts: [...elapsedSnapshot.alerts, ...elapsedSnapshot.alerts] },
+    { ...elapsedSnapshot, alerts: [{ ...elapsedSnapshot.alerts[0], status: 'resolved' }] },
+    { ...elapsedSnapshot, alerts: [{ ...elapsedSnapshot.alerts[0], observed_at: 'bad' }] },
+    { ...elapsedSnapshot, next_actions: [...elapsedSnapshot.next_actions, expectedAction] },
+  ]) assert.throws(() => validateStoredElapsed(bad, expectedAction, elapsedRow,
+    elapsedSnapshot.alerts[0].observed_at),
+    /R32_ELAPSED_MISMATCH/);
+  assert.throws(() => validateStoredElapsed(elapsedSnapshot, expectedAction,
+    displayed + '\n경과시간 확인 불가', elapsedSnapshot.alerts[0].observed_at),
+  /R32_ELAPSED_MISMATCH/);
   for (const field of Object.keys(expectedAction)) {
     const wrong = { ...expectedAction, [field]: 'wrong' };
     assert.throws(() => validateStoredNextAction({ status: 200, actions: [wrong] },

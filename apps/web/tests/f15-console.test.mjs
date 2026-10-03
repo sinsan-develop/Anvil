@@ -484,7 +484,7 @@ test('Dashboard 429 clears protected state and shows quota across dependent card
   assert.match(cards[3], /조회 제한 · Worker 상태 정보를 표시하지 않습니다/);
   assert.match(cards[4], /조회 제한/);
   for (const card of cards) assert.doesNotMatch(card,
-    /private-payload|quota-secret|internal|private-job-id|2026-09-30|0건|href=/);
+    /private-payload|quota-secret|internal|private-job-id|2026-09-30|0건|href=|경과시간/);
 });
 
 test('Dashboard observation time shows only the validated operations timestamp and keeps Queue unchanged', async () => {
@@ -886,7 +886,7 @@ test('Dashboard cancelled read clears dependent cards and observation without cl
   ];
   assert.match(cards[0], /대시보드 관측 시각 · 조회 취소/);
   for (const card of cards.slice(1)) assert.match(card, /CANCELLED/);
-  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d/);
+  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d|경과시간/);
   assert.match(cards.at(-1), /API 준비 READY/);
 });
 
@@ -904,7 +904,7 @@ test('Dashboard reconnecting read clears dependent cards and observation while p
   assert.match(cards[0], /대시보드 관측 시각 · 재연결 중/);
   for (const card of cards.slice(1)) assert.match(card, /RECONNECTING/);
   assert.doesNotMatch(cards.join(' '), /status-unavailable/);
-  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d/);
+  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d|경과시간/);
   assert.match(cards.at(-1), /API 준비 READY/);
 });
 
@@ -938,6 +938,88 @@ test('Dashboard Next Actions renders validated rows from the existing operations
   assert.doesNotMatch(html, /<script>|private-job-id|private-run-id/);
 });
 
+test('Dashboard Next Actions elapsed minutes use the unique unresolved alert in the same snapshot', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  snapshot.next_actions = [{priority: 'critical', reason: 'Worker lease expiry observed',
+    target: 'run-1', action: 'REVIEW_WORKER_LEASE', deep_link: '/operations'}];
+  snapshot.alerts = [alertRow({related_entity_id: 'run-1', next_action: 'REVIEW_WORKER_LEASE',
+    deep_link: '/operations', observed_at: '2026-09-30T01:00:00+00:00'})];
+  snapshot.alerts.push({...snapshot.alerts[0], alert_id: 'alert-2', sequence: 8,
+    status: 'resolved', owner_id: 'operator-1'});
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /경과시간 · 65분/);
+  assert.doesNotMatch(html, /경과시간 확인 불가/);
+});
+
+test('Dashboard Next Actions ambiguous or invalid alert time never becomes zero minutes', async () => {
+  const action = {priority: 'warning', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: '/operations'};
+  const alert = alertRow({level: 'warning', cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: '/operations', status: 'acknowledged',
+    owner_id: 'operator-1', observed_at: '2026-09-30T00:00:00+00:00'});
+  const cases = [
+    {actions: [action], alerts: []},
+    {actions: [action], alerts: [{...alert, level: 'critical'}]},
+    {actions: [action], alerts: [{...alert, cause: 'different'}]},
+    {actions: [action], alerts: [{...alert, related_entity_id: 'different'}]},
+    {actions: [action], alerts: [{...alert, next_action: 'different'}]},
+    {actions: [action], alerts: [{...alert, deep_link: '/runs'}]},
+    {actions: [action], alerts: [alert, {...alert}]},
+    {actions: [action, {...action}], alerts: [alert]},
+    {actions: [action], alerts: [{...alert, status: 'resolved'}]},
+    {actions: [action], alerts: [{...alert, observed_at: '2026-09-30T03:00:00+00:00'}]},
+    {actions: [action], alerts: [{...alert, observed_at: 'invalid'}]},
+    {actions: [action], alerts: [{...alert, alert_id: ''}]},
+    {actions: [action], alerts: [{...alert, sequence: null}]},
+    {actions: [action], alerts: [{level: 'warning', cause: 'Cause',
+      related_entity_id: 'run-1', next_action: 'REVIEW', deep_link: '/operations',
+      status: 'acknowledged', observed_at: '2026-09-30T00:00:00+00:00'}]},
+  ];
+  for (const {actions, alerts} of cases) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.next_actions = actions;
+    snapshot.alerts = alerts;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.equal((html.match(/경과시간 확인 불가/g) ?? []).length, actions.length);
+    assert.doesNotMatch(html, /경과시간 · 0분/);
+  }
+});
+
+test('Dashboard Next Actions displays a real zero only for a uniquely matched subminute alert', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  snapshot.next_actions = [{priority: 'warning', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: '/operations'}];
+  snapshot.alerts = [alertRow({level: 'warning', cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: '/operations', status: 'acknowledged',
+    owner_id: 'operator-1', observed_at: '2026-09-30T02:04:30+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /경과시간 · 0분/);
+  assert.doesNotMatch(html, /경과시간 확인 불가/);
+});
+
+test('Dashboard Next Actions rejects elapsed minutes from a future snapshot', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2999-01-01T00:01:00+00:00';
+  snapshot.next_actions = [{priority: 'critical', reason: 'Worker lease expiry observed',
+    target: 'run-1', action: 'REVIEW_WORKER_LEASE', deep_link: '/operations'}];
+  snapshot.alerts = [alertRow({related_entity_id: 'run-1', next_action: 'REVIEW_WORKER_LEASE',
+    deep_link: '/operations', observed_at: '2999-01-01T00:00:00+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /경과시간 확인 불가/);
+  assert.doesNotMatch(html, /경과시간 · 1분/);
+});
+
 test('Dashboard Next Actions empty response is an observed zero, not a global absence', async () => {
   const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
     async () => jsonResponse(dashboardResponse()));
@@ -953,7 +1035,7 @@ test('Dashboard Next Actions auth and source failures remain blocked or unavaila
       async () => ({ok: false, status, text: async () => secret}));
     const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
     assert.match(html, new RegExp(status < 500 ? 'BLOCKED' : 'UNAVAILABLE'));
-    assert.doesNotMatch(html, /postgresql:|secret|internal|private-payload|href=/);
+    assert.doesNotMatch(html, /postgresql:|secret|internal|private-payload|href=|경과시간/);
   }
   const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
     async () => {throw new Error(secret);});
