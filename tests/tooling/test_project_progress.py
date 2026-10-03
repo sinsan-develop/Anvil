@@ -66,6 +66,11 @@ def _u01_tamper_errors(step_id: str) -> tuple[str, str, str]:
             "F20_U01_R35_PROJECTION_INVALID",
             "F20_U01_R35_F-20_U01_R35_HEALTH_ALERT_READ_START_MANIFEST.JSON_INVALID",
         ),
+        "F20_U01_R35_HEALTH_ALERT_READ_CLOSE": (
+            "F20_U01_R35_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R35_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R35_CLOSE_F-20_U01_R35_HEALTH_ALERT_READ_CLOSE_MANIFEST.JSON_INVALID",
+        ),
     }
     if step_id in exact:
         return exact[step_id]
