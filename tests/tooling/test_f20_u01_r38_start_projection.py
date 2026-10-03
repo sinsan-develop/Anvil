@@ -37,7 +37,14 @@ def test_r38_start_preserves_prefix_and_issues_exact6_epoch53():
     assert events["events"][:2028] == stream["events"]
     assert [row["sequence"] for row in rows] == [2029, 2030, 2031, 2032]
     assert [row["event_type"] for row in rows] == list(overlay.KINDS)
-    assert len(overlay.SCOPE) == 6
+    assert overlay.SCOPE == [
+        "packages/persistence/operations_budget_read.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/persistence/test_operations_budget_read.py",
+        "tests/api/test_f20_u01_r38_budget_host_binding.py",
+        "tests/integration/test_f20_u01_r38_budget_host_pg15.py",
+        "docs/04_test_reports/F-20_U01_R38_SCOPED_BUDGET_SOURCE_RESULT.md",
+    ]
     assert final["worker_lease"]["lease_epoch"] == 53
     assert final["write_lease"]["write_epoch"] == 53
     assert final["worker_lease"]["path_scope"] == overlay.SCOPE
