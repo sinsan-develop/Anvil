@@ -1,3 +1,9 @@
+# F-20/U-01 R32 이후 다음 절편 조사 / 2026-10-03
+
+- 판정: `U01_PARTIAL_INTERNAL_QA_ONLY`, 다음 후보는 운영 카드 중 실행 중·승인 대기·BLOCKED의 범위 지정 Run 집계 연결이다. 설계 §29.2/작업계획 U-01과 현재 `ScopedRunStatusSummary`·`ScopedRunSource`·Dashboard GET/UI를 대조했다. 내부 집계는 project/environment 범위·최대 100개·관측시각·총 표본 수·세 상태 수를 fail-closed로 제공하지만 Dashboard 공개 응답/화면에는 연결되지 않았다. 따라서 기존 Queue/Worker 수치를 Run 수치로 오인하여 표시하지 않는다. 필터·나머지 운영 카드·Critical 확인은 별도 소스/계약 검토가 필요하다.
+- 담당 Main 어울, branch `codex/f18-wsl-ops`, 시작 HEAD/private `b4d7ab46a917aa57f235f9818c00ade820782bc1`, 시작 clean, seq1992 worker/write null. 로컬 읽기 전용 기준 테스트 첫 실행은 34 PASS/1 setup ERROR(exit1, Windows 기본 pytest 임시 폴더 ACL); 작업 전용 `.r33_baseline_pytest`로 재실행 35 PASS(exit0). 전용 폴더 내부 링크가 동일 root만 가리킴을 확인해 링크와 정확 폴더만 제거·잔여0, 이후 G-05 seq1992 PASS(exit0). 제품/원장/API/DB/WSL 자원 변경0, 정식 Developer 실패0. R33 WorkInstruction·새 lease 미발급, 실제 R33 제품/WSL 검증 `NOT_EXECUTED`.
+- 다음 조치: 계획된 U-01 범위에서 세 Run 운영 카드의 관측 총수·신선도·UNKNOWN·권한 실패 닫힘을 명시한 최소 read 계약과 WorkInstruction을 구성하고, 기존 branch의 정식 dual lease 후 단일 Developer가 TDD로 연결한다. 공개 API·데이터 계약 변경 여부를 통제 단계에서 재분류하며 새 승인 경계가 발생하면 해당 mutation을 보류하고 영향받지 않는 검증을 계속한다. C30 `OPEN_BLOCKING`, F-20/U-01 미수락, ReleaseDecision `DEFER`, Production `NOT_EXECUTED`; main 병합·새 branch·ysna 제외.
+
 # F-18 R32 trusted directory WSL 격리 QA 실측 / 2026-09-26
 
 - 판정: `R32_WSL_PG18_QA_PASS_PENDING_REPORT_AND_LEASE_CLOSE`. Main은 공개 제품 SHA `ca5f6597239fb8f031925ee5e1ffc8ee921a7075` clean detached checkout과 별도 tmpfs PG18 합성 DB의 비-superuser migrator로 focused 실행했다. exit0 **87 PASS/4 R31 PG opt-in SKIP/기존 SQLite datetime warning1/3.45초**; R32 PostgreSQL 전용 4개는 실제 PASS다. 별도 SELECT 전용 reader role(비-superuser/non-createdb/non-createrole)에서 resolver 조회 정상, INSERT는 SQLSTATE `42501` 거부. 전체 QA wrapper exit0. 실제 운영 DB·기존 migration 표는 건드리지 않았다.
