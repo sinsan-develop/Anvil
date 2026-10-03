@@ -27,7 +27,11 @@ MANIFEST = "docs/evidence/manifests/F-20_U01_R32_NEXT_ACTION_ELAPSED_CLOSE_MANIF
 CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST,
     "scripts/check_project_progress.py", "docs/WORK_STATUS.md",
     "scripts/f20_u01_r32_close_overlay.py",
-    "tests/tooling/test_f20_u01_r32_close_projection.py"}
+    "tests/tooling/test_f20_u01_r32_close_projection.py",
+    "docs/04_test_reports/F-20_U01_R33_OPERATING_CARDS_SHELL_PLAN.md",
+    "docs/04_test_reports/F-20_U01_R33_OPERATING_CARDS_SHELL_RESULT.md",
+    "docs/work_orders/F-20_U01_R33_OPERATING_CARDS_SHELL_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R33_OPERATING_CARDS_SHELL_INVOCATION.md"}
 KINDS = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED")
 
 
