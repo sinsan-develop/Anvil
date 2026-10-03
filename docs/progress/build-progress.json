@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r33-operating-cards-shell-close-seq1998",
-  "event_sequence": 1998,
-  "updated_at": "2026-10-03T04:34:55+00:00",
-  "last_event_id": "evt_f20_1998_worker_lease_revoked",
+  "snapshot_id": "snapshot-f20-u01-r33t-history-suite-repair-start-seq2002",
+  "event_sequence": 2002,
+  "updated_at": "2026-10-03T10:30:16+00:00",
+  "last_event_id": "evt_f20_2002_package_resumed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,8 +215,38 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "main-agent-eoul",
-  "write_lease": null,
+  "active_agent": "developer-primary-f20-u01-r33t",
+  "write_lease": {
+    "lease_id": "write-lease-f20-u01-r33t-historyfix1003a",
+    "actor_id": "developer-primary-f20-u01-r33t",
+    "subject_ref": "F-20/U01-R33T",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T10:30:16+00:00",
+    "expires_at": "2026-10-03T22:30:16+00:00",
+    "lease_epoch": 48,
+    "fencing_token": "f20-u01-r33t-write-fence-epoch-48-historyfix1003a",
+    "execution_fencing_token": "f20-u01-r33t-execution-fence-epoch-48-historyfix1003a",
+    "baseline_git_commit": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
+    "dispatch_head": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r2_projection.py",
+      "tests/tooling/test_f20_u01_r2b_projection.py",
+      "tests/tooling/test_f20_u01_r3b_projection.py",
+      "tests/tooling/test_f20_u01_r4_projection.py",
+      "tests/tooling/test_f20_u01_r5_projection.py",
+      "tests/tooling/test_f20_u01_r6_projection.py",
+      "tests/tooling/test_f20_u01_r6b_projection.py",
+      "tests/tooling/test_f20_u01_r7_projection.py",
+      "tests/tooling/test_f20_u01_r8_projection.py",
+      "tests/tooling/test_f20_u01_r20_prep_projection.py",
+      "tests/tooling/test_project_progress.py",
+      "tests/verification/test_c01_l3_independent_acceptance.py",
+      "docs/04_test_reports/F-20_U01_R33T_HISTORY_SUITE_REPAIR_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r33t-historyfix1003a",
+    "write_epoch": 48,
+    "write_fencing_token": "f20-u01-r33t-write-fence-epoch-48-historyfix1003a"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -248,7 +278,34 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r33t-historyfix1003a",
+    "actor_id": "developer-primary-f20-u01-r33t",
+    "subject_ref": "F-20/U01-R33T",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-03T10:30:16+00:00",
+    "expires_at": "2026-10-03T22:30:16+00:00",
+    "lease_epoch": 48,
+    "fencing_token": "f20-u01-r33t-execution-fence-epoch-48-historyfix1003a",
+    "execution_fencing_token": "f20-u01-r33t-execution-fence-epoch-48-historyfix1003a",
+    "baseline_git_commit": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
+    "dispatch_head": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
+    "path_scope": [
+      "tests/tooling/test_f20_u01_r2_projection.py",
+      "tests/tooling/test_f20_u01_r2b_projection.py",
+      "tests/tooling/test_f20_u01_r3b_projection.py",
+      "tests/tooling/test_f20_u01_r4_projection.py",
+      "tests/tooling/test_f20_u01_r5_projection.py",
+      "tests/tooling/test_f20_u01_r6_projection.py",
+      "tests/tooling/test_f20_u01_r6b_projection.py",
+      "tests/tooling/test_f20_u01_r7_projection.py",
+      "tests/tooling/test_f20_u01_r8_projection.py",
+      "tests/tooling/test_f20_u01_r20_prep_projection.py",
+      "tests/tooling/test_project_progress.py",
+      "tests/verification/test_c01_l3_independent_acceptance.py",
+      "docs/04_test_reports/F-20_U01_R33T_HISTORY_SUITE_REPAIR_RESULT.md"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -470,7 +527,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
+  "next_safe_action": "F20_U01_R33T_HISTORY_SUITE_REPAIR_IMPLEMENTATION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -581,12 +638,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "768d94168fdd1c4a044785d5fca562051b13b118",
-    "local_wsl_qa_head": "768d94168fdd1c4a044785d5fca562051b13b118",
+    "local_head": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
+    "local_wsl_qa_head": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "768d94168fdd1c4a044785d5fca562051b13b118",
-    "projection_mode": "F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE",
-    "validated_base_commit": "768d94168fdd1c4a044785d5fca562051b13b118",
+    "remote_head": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
+    "projection_mode": "F20_U01_R33T_HISTORY_SUITE_REPAIR_START",
+    "validated_base_commit": "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1020,8 +1077,22 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [],
-    "worktree_status": "F20_U01_R33_OPERATING_CARDS_SHELL_COMPLETE_LEASE_CLOSED",
+    "product_write_scope": [
+      "tests/tooling/test_f20_u01_r2_projection.py",
+      "tests/tooling/test_f20_u01_r2b_projection.py",
+      "tests/tooling/test_f20_u01_r3b_projection.py",
+      "tests/tooling/test_f20_u01_r4_projection.py",
+      "tests/tooling/test_f20_u01_r5_projection.py",
+      "tests/tooling/test_f20_u01_r6_projection.py",
+      "tests/tooling/test_f20_u01_r6b_projection.py",
+      "tests/tooling/test_f20_u01_r7_projection.py",
+      "tests/tooling/test_f20_u01_r8_projection.py",
+      "tests/tooling/test_f20_u01_r20_prep_projection.py",
+      "tests/tooling/test_project_progress.py",
+      "tests/verification/test_c01_l3_independent_acceptance.py",
+      "docs/04_test_reports/F-20_U01_R33T_HISTORY_SUITE_REPAIR_RESULT.md"
+    ],
+    "worktree_status": "F20_U01_R33T_HISTORY_SUITE_REPAIR_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1183,12 +1254,12 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F-20-U01-R33-20261003-001",
-    "path": "docs/work_orders/F-20_U01_R33_OPERATING_CARDS_SHELL_WORK_INSTRUCTION.md",
-    "sha256": "D34E117D45405B97ED4A509EA0EF425019264BB3131849CC8C9A5E8C0BA5B21B",
-    "invocation_path": "docs/work_orders/F-20_U01_R33_OPERATING_CARDS_SHELL_INVOCATION.md",
-    "invocation_sha256": "8FC7BE8C6A824BCFCFCE1AAE5BBE84F638479A86DED88EEFA7FE9D9E5B2B639A",
-    "result_status": "COMPLETED_R33_OPERATING_CARDS_SHELL_PG15_OIDC_QA_ONLY",
+    "artifact_id": "WI-F-20-U01-R33T-20261003-001",
+    "path": "docs/work_orders/F-20_U01_R33T_HISTORY_SUITE_REPAIR_WORK_INSTRUCTION.md",
+    "sha256": "D3C1E812CC2669E393A0BB02358EBDC10C54E7FF8BB5C323B0D04AE89E3AE54C",
+    "invocation_path": "docs/work_orders/F-20_U01_R33T_HISTORY_SUITE_REPAIR_INVOCATION.md",
+    "invocation_sha256": "179987A13759712E800BFC9BE3C4B5AE82ED4FF95FBB9ABD271F2DD4F89075C9",
+    "result_status": "REWORK_IN_PROGRESS",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "MAIN_INTERNAL_APPROVED_SCOPE"
   },
@@ -1322,8 +1393,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r33-close.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R33_OPERATING_CARDS_SHELL_CLOSE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r33t-start.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R33T_HISTORY_SUITE_REPAIR_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1344,7 +1415,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "AA671C485B3BD0A7BF279859441909ED561C51DDA0F266A480EE8A5B7C4E6CAF"
+      "sha256": "32B73D5AA907BB403545198D55EC9B35933D16B9D345BA13EEFB16E0AE53CCAC"
     }
   },
   "next_work_package": {
@@ -1741,8 +1812,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "4BF99EFD87A1057CCEEFF13F609DA432D62299D31B1BE2BD5CD2824A44B2CA95",
-  "runtime_next_action": "F20_U01_NEXT_INTERNAL_QA_REVIEW_C30_BLOCKED",
+  "snapshot_hash": "E50680C94C9BDA039EEB4B5478FAFFB34C5B4A7BA3BD4CFE27DF2A49E86D83C9",
+  "runtime_next_action": "F20_U01_R33T_HISTORY_SUITE_REPAIR_IMPLEMENTATION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
