@@ -30,6 +30,7 @@ from sqlalchemy.orm import sessionmaker
 from packages.api.fastapi_app import AuthorizationScope
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.leases.service import LeaseService
+from packages.observability.models import HealthSignal
 from packages.observability.projection import OperationsSources
 from packages.observability.service import OperationsService
 from packages.persistence.oidc_principal_directory import (
@@ -453,7 +454,7 @@ def _r28_manual_candidate(evidence: dict, excluded_keys: set[str]) -> dict:
                "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
                "reconnectEvidence", "reconnectCancelEvidence",
                "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence",
-               "runCardsEvidence"}}
+               "runCardsEvidence", "healthAlertEvidence"}}
 
 
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
@@ -635,6 +636,28 @@ def _r32_elapsed_evidence(evidence: dict, snapshot_at: str, alert_at: str) -> di
                         for key, value in required.items()))
 
     assert elapsed >= 0 and exact(evidence, expected), "R32_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def _r35_qa_health_signal(at: datetime) -> HealthSignal:
+    # Deliberately injected QA observation, not a database liveness measurement.
+    return HealthSignal("database", "HEALTHY", at - timedelta(seconds=10),
+        timedelta(minutes=5), 0, "sha256:" + hashlib.sha256(b"R35_QA_SIGNAL_ONLY").hexdigest(),
+        "/operations")
+
+
+def _r35_health_alert_evidence(evidence: dict) -> dict:
+    expected = {"healthCardCount": 6, "healthApiDomMatch": True,
+        "sourceGapUnknown": True, "alertImpactMatch": True, "alertNextActionMatch": True,
+        "readOnlyText": True, "revokedCleared": True,
+        "source": "ISOLATED_QA_HEALTH_SIGNAL_NOT_LIVENESS", "observedComponent": "database",
+        "observedState": "HEALTHY", "observedErrorCount": 0,
+        "observedAt": "2026-09-27T23:59:50+00:00"}
+    assert type(evidence) is dict and set(evidence) == {"healthAlertEvidence"}, "R35_BROWSER_EVIDENCE_MISMATCH"
+    row = evidence["healthAlertEvidence"]
+    assert type(row) is dict and set(row) == set(expected), "R35_BROWSER_EVIDENCE_MISMATCH"
+    assert all(type(row[key]) is type(value) and row[key] == value
+               for key, value in expected.items()), "R35_BROWSER_EVIDENCE_MISMATCH"
     return evidence
 
 
@@ -883,7 +906,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
         at = datetime(2026, 9, 28, tzinfo=timezone.utc)
         leases.issue_worker("r6-run", "r6-worker", at - timedelta(minutes=10), timedelta(minutes=1))
         owner = OperationsService("project-1", "wsl-qa",
-            OperationsSources(leases=leases, lease_run_ids=("r6-run",)),
+            OperationsSources(leases=leases, lease_run_ids=("r6-run",),
+                              health_signals=(_r35_qa_health_signal(at),)),
             repository=PostgresOperationsRepository(repository_dsn), clock=lambda: at,
             run_summary_loader=load_run_summary)
         assert owner.alerts() == [], "R24_PG_NOT_EMPTY"
@@ -986,11 +1010,13 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             r32_candidate, at.isoformat(), before[0]["observed_at"])
         r34_evidence = _r34_run_evidence({key: value for key, value in evidence.items()
                                         if key == "runCardsEvidence"})
+        r35_evidence = _r35_health_alert_evidence({key: value for key, value in evidence.items()
+                                                if key == "healthAlertEvidence"})
         checked = {key: value for key, value in evidence.items()
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
                    | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)
-                   | set(r34_evidence)}
+                   | set(r34_evidence) | set(r35_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1506,7 +1532,7 @@ def test_r28_manual_refresh_evidence_requires_exact_keys_values_and_observation(
             _r28_manual_evidence({**expected, **changed}, observed_at)
 
 
-@pytest.mark.parametrize("successor_key", ["elapsedEvidence", "runCardsEvidence"])
+@pytest.mark.parametrize("successor_key", ["elapsedEvidence", "runCardsEvidence", "healthAlertEvidence"])
 def test_r32_r34_evidence_does_not_contaminate_r28_manual_candidate(successor_key):
     observed_at = "2026-09-28T00:00:00+00:00"
     manual = {
@@ -1801,3 +1827,39 @@ def test_opt_in_r6_oidc_browser_pg15():
         pytest.skip("R6 isolated PG15 browser opt-in not configured; E2E unverified")
     url = _validated_target(dsn, isolated)
     _run_opt_in(dsn, url)
+
+
+def test_r35_health_alert_evidence_requires_exact_live_read_facts():
+    evidence = {"healthAlertEvidence": {"healthCardCount": 6, "healthApiDomMatch": True,
+        "sourceGapUnknown": True, "alertImpactMatch": True, "alertNextActionMatch": True,
+        "readOnlyText": True, "revokedCleared": True,
+        "source": "ISOLATED_QA_HEALTH_SIGNAL_NOT_LIVENESS", "observedComponent": "database",
+        "observedState": "HEALTHY", "observedErrorCount": 0,
+        "observedAt": "2026-09-27T23:59:50+00:00"}}
+    assert _r35_health_alert_evidence(evidence) == evidence
+    for field, value in evidence["healthAlertEvidence"].items():
+        for bad in (None, False, "true", 0):
+            if type(bad) is type(value) and bad == value:
+                continue
+            with pytest.raises(AssertionError, match="R35_BROWSER_EVIDENCE_MISMATCH"):
+                _r35_health_alert_evidence({"healthAlertEvidence": {
+                    **evidence["healthAlertEvidence"], field: bad}})
+        with pytest.raises(AssertionError, match="R35_BROWSER_EVIDENCE_MISMATCH"):
+            _r35_health_alert_evidence({"healthAlertEvidence": {
+                key: item for key, item in evidence["healthAlertEvidence"].items() if key != field}})
+    for bad in ({}, {**evidence, "unknown": True}, {"healthAlertEvidence": {
+            **evidence["healthAlertEvidence"], "extra": True}}):
+        with pytest.raises(AssertionError, match="R35_BROWSER_EVIDENCE_MISMATCH"):
+            _r35_health_alert_evidence(bad)
+
+
+def test_r35_qa_signal_is_explicit_observed_fixture_not_inferred_readiness():
+    from packages.observability.projection import project_operations
+    at = datetime(2026, 9, 28, tzinfo=timezone.utc)
+    signal = _r35_qa_health_signal(at)
+    snapshot = project_operations(OperationsSources(health_signals=(signal,)), observed_at=at)
+    assert snapshot["health"]["database"]["state"] == "HEALTHY"
+    assert snapshot["health"]["database"]["last_check"] == (at - timedelta(seconds=10)).isoformat()
+    assert snapshot["health"]["database"]["error_count"] == 0
+    assert all(row["state"] == "UNKNOWN" and row["error_count"] is None
+               for key, row in snapshot["health"].items() if key != "database")

@@ -10,7 +10,7 @@ type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UN
   | {status: 'LOADING'};
 type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' | 'UNAVAILABLE' | 'BLOCKED';
   lastCheck: string | null; errorCount: number | null};
-type DashboardSignalComponent = 'worker' | 'backend' | 'artifact_store';
+type DashboardSignalComponent = 'database' | 'queue' | 'worker' | 'provider' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
 type NextActionRow = NextAction & {elapsedMinutes: number | null};
@@ -22,7 +22,8 @@ type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: stri
   nextActions: NextActionsState; runSummary: RunSummary | null}
   | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
-  owner_id: string | null; cause: string; related_entity_id: string; status: 'open' | 'acknowledged'};
+  owner_id: string | null; cause: string; impact: string; next_action: string;
+  related_entity_id: string; status: 'open' | 'acknowledged'};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
   nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
 
@@ -46,7 +47,7 @@ const DASHBOARD_QUEUE_FIELDS = ['job_id', 'run_id', 'state', 'available_at', 'at
   'max_attempts', 'lease_epoch', 'lease_expires_at', 'dependency_ids', 'conflict_keys',
   'priority', 'required_capability', 'input_verified', 'backoff_until'];
 const DASHBOARD_GAPS = new Set([...DASHBOARD_HEALTH_COMPONENTS, 'deployment']);
-const DASHBOARD_SIGNAL_COMPONENTS: DashboardSignalComponent[] = ['worker', 'backend', 'artifact_store'];
+const DASHBOARD_SIGNAL_COMPONENTS: DashboardSignalComponent[] = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
 const NEXT_ACTION_FIELDS = ['priority', 'reason', 'target', 'action', 'deep_link'];
 const ALERTS_UNAVAILABLE: CriticalAlertsState = {status: 'UNAVAILABLE'};
 const ALERTS_LOADING: CriticalAlertsState = {status: 'LOADING'};
@@ -156,24 +157,15 @@ function validDashboardSignal(value: unknown, snapshotTime: string): value is Re
 function dashboardSignals(health: Record<string, unknown>, gaps: string[], snapshotTime: string):
     Record<DashboardSignalComponent, DashboardSignalState> {
   const unavailable: DashboardSignalState = {status: 'UNAVAILABLE', lastCheck: null, errorCount: null};
-  if (Date.parse(snapshotTime) > Date.now()
-    || !DASHBOARD_SIGNAL_COMPONENTS.every((name) => validDashboardSignal(health[name], snapshotTime))) {
-    return {worker: unavailable, backend: unavailable, artifact_store: unavailable};
-  }
   const signal = (name: DashboardSignalComponent): DashboardSignalState => {
+    if (Date.parse(snapshotTime) > Date.now() || !validDashboardSignal(health[name], snapshotTime)) return unavailable;
     const row = health[name] as Record<string, unknown>;
-    return {status: gaps.includes(name) ? 'UNKNOWN' : row.state as DashboardSignalState['status'],
+    if (gaps.includes(name) || row.state === 'UNKNOWN') return {status: 'UNKNOWN', lastCheck: null, errorCount: null};
+    return {status: row.state as DashboardSignalState['status'],
       lastCheck: row.last_check as string | null, errorCount: row.error_count as number | null};
   };
-  return {worker: signal('worker'), backend: signal('backend'), artifact_store: signal('artifact_store')};
-}
-
-function dashboardDatabaseSignal(value: unknown, gaps: string[], snapshotTime: string): DashboardSignalState {
-  if (Date.parse(snapshotTime) > Date.now() || !validDashboardSignal(value, snapshotTime)) {
-    return {status: 'UNAVAILABLE', lastCheck: null, errorCount: null};
-  }
-  return {status: gaps.includes('database') ? 'UNKNOWN' : value.state as DashboardSignalState['status'],
-    lastCheck: value.last_check as string | null, errorCount: value.error_count as number | null};
+  return Object.fromEntries(DASHBOARD_SIGNAL_COMPONENTS.map((name) => [name, signal(name)])) as
+    Record<DashboardSignalComponent, DashboardSignalState>;
 }
 
 function dashboardRunSummary(value: unknown): RunSummary | null {
@@ -222,15 +214,13 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
       'deployments', 'alerts', 'next_actions'].every((name) => Array.isArray(snapshot[name]))) {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
+  const health = dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps, snapshot.observed_at);
   return {status: 'LOADED', observed: snapshot.queue.length,
     runSummary: Date.parse(snapshot.observed_at) <= Date.now() ? dashboardRunSummary(snapshot.run_summary) : null,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
     nextActions: dashboardNextActions(snapshot.next_actions, snapshot.alerts as unknown[], snapshot.observed_at),
-    database: dashboardDatabaseSignal((snapshot.health as Record<string, unknown>).database,
-      snapshot.source_gaps, snapshot.observed_at),
-    health: dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps,
-      snapshot.observed_at)};
+    database: health.database, health};
 }
 
 export function NextActionsCard({value}: {value: DashboardQueueState}) {
@@ -291,27 +281,22 @@ export function DashboardObservationTime({value}: {value: DashboardQueueState}) 
 }
 
 export function QueueHealthCard({value}: {value: DashboardQueueState}) {
-  return <article className="status-card"><h3>Queue</h3>
-    <div aria-live="polite" aria-atomic="true">
+  return <DashboardSignalCard label="Queue" component="queue" value={value}>
       {value.status === 'LOADED' ? <>
-        <p className="status-unavailable">UNKNOWN</p>
         <p>범위 내 관측 {value.observed}건</p>
         <p>{value.sourceGap ? 'Queue source 연결 정보가 부족합니다.'
           : 'Queue source의 완전성은 확인되지 않았습니다.'}</p>
-      </> : <><p className={value.status === 'LOADING' || value.status === 'RECONNECTING'
-        ? undefined : 'status-unavailable'}>{value.status}</p>
-        <p>{value.status === 'LOADING' ? 'Queue 조회 중입니다.'
+      </> : <p>{value.status === 'LOADING' ? 'Queue 조회 중입니다.'
           : value.status === 'RECONNECTING' ? '재연결 중 · Queue 기록을 표시하지 않습니다.'
           : value.status === 'BLOCKED' ? '조회 차단 · Queue 기록을 표시하지 않습니다.'
           : value.status === 'QUOTA' ? '조회 제한 · Queue 기록을 표시하지 않습니다.'
           : value.status === 'CANCELLED' ? '조회 취소 · Queue 기록을 표시하지 않습니다.'
-          : 'Queue 상태 정보를 확인할 수 없습니다.'}</p></>}
-    </div>
-  </article>;
+          : 'Queue 상태 정보를 확인할 수 없습니다.'}</p>}
+  </DashboardSignalCard>;
 }
 
-export function DashboardSignalCard({label, component, value}:
-    {label: string; component: DashboardSignalComponent; value: DashboardQueueState}) {
+export function DashboardSignalCard({label, component, value, children}:
+    {label: string; component: DashboardSignalComponent; value: DashboardQueueState; children?: ReactNode}) {
   const signal = value.status === 'LOADED' ? value.health[component]
     : {status: value.status, lastCheck: null, errorCount: null};
   return <article className="status-card"><h3>{label}</h3>
@@ -325,8 +310,22 @@ export function DashboardSignalCard({label, component, value}:
       {signal.status === 'CANCELLED' ? <p>조회 취소 · {label} 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
       {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
+      {children}
     </div>
   </article>;
+}
+
+function safeAlertText(value: unknown): value is string {
+  if (!nonempty(value) || value.length > 2048) return false;
+  let inspection = value;
+  const normalize = (text: string) => text.normalize('NFKC').replace(/[\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g, '');
+  for (let index = 0; index < 4; index += 1) {
+    const normalized = normalize(inspection);
+    try { inspection = /%[0-9a-f]{2}/i.test(normalized) ? decodeURIComponent(normalized) : normalized; } catch { return false; }
+    if (inspection === normalized) break;
+  }
+  inspection = normalize(inspection);
+  return !/(?:%[0-9a-f]{2}|\/\/|www\.|localhost|127\.0\.0\.1|authorization\s*:|(?:api[\s_-]*key|token|password|secret)\s*[:=]\s*\S|-----BEGIN.*PRIVATE KEY)/i.test(inspection);
 }
 
 function classifyCriticalAlerts(payload: unknown, beforeSequence?: number): CriticalAlertsState {
@@ -349,6 +348,7 @@ function classifyCriticalAlerts(payload: unknown, beforeSequence?: number): Crit
       || (item.level !== 'critical' && item.level !== 'warning')
       || (item.status !== 'open' && item.status !== 'acknowledged' && item.status !== 'resolved')
       || !validObservedAt(item.observed_at)
+      || !safeAlertText(item.impact) || !safeAlertText(item.next_action)
       || (item.owner_id !== null && !nonempty(item.owner_id))
       || !['source', 'category', 'code', 'related_entity_id', 'dedupe_key',
         'detector_rule_revision', 'cause', 'impact', 'next_action', 'deep_link',
@@ -360,7 +360,8 @@ function classifyCriticalAlerts(payload: unknown, beforeSequence?: number): Crit
     if (item.level === 'critical' && item.status !== 'resolved') {
       visible.push({alert_id: item.alert_id, code: item.code as string, source: item.source as string,
         observed_at: item.observed_at, owner_id: item.owner_id as string | null,
-        cause: item.cause as string, related_entity_id: item.related_entity_id as string,
+        cause: item.cause as string, impact: item.impact, next_action: item.next_action,
+        related_entity_id: item.related_entity_id as string,
         status: item.status});
     }
   }
@@ -437,6 +438,7 @@ export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false}: {
             <p>발생시각 · {alert.observed_at}</p>
             <p>담당자 · {alert.owner_id ?? '미배정'} · {alert.status}</p>
             <p>원인 · {alert.cause}</p><p>대상 · {alert.related_entity_id}</p>
+            <p>영향 · {alert.impact}</p><p>다음 조치 · {alert.next_action}</p>
           </li>)}</ul>}
         {value.partial && <p>과거 페이지 미조회 · 부분 결과</p>}
         {value.partial && onLoadOlder && <button type="button" disabled={loadingOlder}
@@ -482,7 +484,12 @@ export async function loadProviderRegistration(signal: AbortSignal, request: typ
   }
 }
 
-export function ProviderHealthCard({value}: {value: ProviderRegistration}) {
+export function ProviderHealthCard({value, operations}: {value: ProviderRegistration; operations?: DashboardQueueState}) {
+  if (operations) return <DashboardSignalCard label="LLM Providers" component="provider" value={operations}>
+    {operations.status === 'LOADED' && value.status === 'VALID' ? <>
+      <p>등록 {value.registered} / 9</p><p>등록 정보는 연결 상태 검증이 아닙니다.</p>
+    </> : null}
+  </DashboardSignalCard>;
   return <article className="status-card"><h3>LLM Providers</h3>
     <div aria-live="polite" aria-atomic="true">
       {value.status === 'VALID' ? <>
@@ -521,10 +528,12 @@ export function DatabaseHealthCard({value, operations, readinessPending = false}
   operations?: DashboardQueueState; readinessPending?: boolean}) {
   const readiness = classifyReadiness(value);
   const head = readiness === 'READY' ? (value as {migration_head: string}).migration_head : null;
+  if (operations) return <DashboardSignalCard label="Database" component="database" value={operations}>
+    <p>{readinessPending ? 'API 준비 조회 중' : head ? `API 준비 READY · Migration ${head}` : 'API 준비 NOT CONNECTED · 연결된 상태 정보가 없습니다.'}</p>
+  </DashboardSignalCard>;
   const signal = readinessPending ? {status: 'LOADING', lastCheck: null, errorCount: null}
     : readiness === 'READY'
-    ? operations?.status === 'LOADED' ? operations.database
-      : {status: operations?.status ?? 'UNAVAILABLE', lastCheck: null, errorCount: null}
+    ? {status: 'UNAVAILABLE', lastCheck: null, errorCount: null}
     : {status: 'NOT CONNECTED', lastCheck: null, errorCount: null};
   return <article className="status-card"><h3>Database</h3>
     <div aria-live="polite" aria-atomic="true">
@@ -699,7 +708,7 @@ function Shell({route}: AppProps) {
                 readinessPending={checked === 'NOT REQUESTED'}
                 operations={dashboardQueue}/>;
               if (name === 'Queue') return <QueueHealthCard key={name} value={dashboardQueue}/>;
-              if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration}/>;
+              if (name === 'LLM Providers') return <ProviderHealthCard key={name} value={providerRegistration} operations={dashboardQueue}/>;
               if (name === 'Worker') return <DashboardSignalCard key={name} label={name}
                 component="worker" value={dashboardQueue}/>;
               if (name === 'Execution Backends') return <DashboardSignalCard key={name} label={name}

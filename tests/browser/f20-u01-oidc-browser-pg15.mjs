@@ -589,7 +589,7 @@ function validateManualRefreshFacts(facts, expectedObservedAt) {
   assert.ok(facts.requestCount === 1 && facts.requestPath === '/api/dashboard/operations'
     && facts.requestMethod === 'GET' && facts.loadingDisabled
     && facts.loadingTime === '대시보드 관측 시각 · 조회 중'
-    && facts.staleActionCount === 0 && facts.providerBefore === facts.providerDuring
+    && facts.staleActionCount === 0 && facts.providerDuring === 'LOADING'
     && facts.alertBefore === facts.alertDuring && facts.readinessBefore === facts.readinessDuring
     && facts.responseStatus === 200 && facts.observedAt === expectedObservedAt,
   'R27_MANUAL_REFRESH_MISMATCH');
@@ -604,7 +604,6 @@ async function verifyManualRefresh(page, origin, expectedAction, activation = 'c
   const provider = page.locator('article.status-card').filter({ hasText: 'LLM Providers' });
   const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
   const heading = page.locator('.dashboard-heading');
-  const providerBefore = await provider.innerText();
   const alertBefore = await alerts.innerText();
   const readinessBefore = (await heading.innerText()).split('\n').find((line) => line.startsWith('마지막 확인'));
   manualPhase('REFRESH_BASELINE_DONE');
@@ -665,7 +664,7 @@ async function verifyManualRefresh(page, origin, expectedAction, activation = 'c
     const loadingDisabled = await button.isDisabled();
     const staleActionCount = await nextCard.locator('li').count();
     const loadingTime = await heading.locator('p[aria-live]').innerText();
-    const providerDuring = await provider.innerText();
+    const providerDuring = await provider.locator('[aria-live] p').first().innerText();
     const alertDuring = await alerts.innerText();
     const readinessDuring = (await heading.innerText()).split('\n')
       .find((line) => line.startsWith('마지막 확인'));
@@ -682,7 +681,7 @@ async function verifyManualRefresh(page, origin, expectedAction, activation = 'c
     assert.equal(await button.isEnabled(), true, 'R27_MANUAL_REFRESH_MISMATCH');
     manualPhase('REFRESH_ENABLED_DONE');
     return validateManualRefreshFacts({ requestCount, requestPath, requestMethod,
-      loadingDisabled, loadingTime, staleActionCount, providerBefore, providerDuring,
+      loadingDisabled, loadingTime, staleActionCount, providerDuring,
       alertBefore, alertDuring, readinessBefore, readinessDuring, responseStatus, observedAt }, observedAt);
   } finally {
     release();
@@ -753,9 +752,9 @@ async function verifyQuotaRefresh(page, origin, expectedAction) {
   const button = page.getByRole('button', { name: '대시보드 새로고침' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
   const health = page.locator('section[aria-labelledby="health-heading"]');
-  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const independentReadiness = health.locator('article.status-card').filter({hasText: 'Database'}).locator('p').filter({hasText: 'API 준비'});
   const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
-  const providerBefore = await provider.innerText();
+  const readinessBefore = await independentReadiness.innerText();
   const alertsBefore = await alerts.innerText();
   assert.equal(await nextCard.locator('li').count(), 1, 'R29_QUOTA_STORED_SETUP_MISSING');
   let release;
@@ -787,7 +786,7 @@ async function verifyQuotaRefresh(page, origin, expectedAction) {
     release();
     await verifyObservationTime(page, '조회 제한');
     await nextCard.getByText('QUOTA', { exact: true }).waitFor();
-    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardNames = ['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'];
     const cardText = await Promise.all(cardNames.map(async (name) =>
       health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
     const body = await page.locator('body').innerText();
@@ -797,11 +796,11 @@ async function verifyQuotaRefresh(page, origin, expectedAction) {
       && cardText[0].includes('API 준비 READY')
       && (await nextCard.innerText()).includes('조회 제한');
     const staleRowsCleared = await nextCard.locator('li').count() === 0
-      && !body.includes(expectedAction);
+      && !(await nextCard.innerText()).includes(expectedAction);
     const observationRestricted = body.includes('대시보드 관측 시각 · 조회 제한')
       && !body.includes('대시보드 관측 시각 · 2026-');
     const secretHidden = !body.includes('r29-private-quota-body-marker');
-    const independentCardsPreserved = await provider.innerText() === providerBefore
+    const independentCardsPreserved = await independentReadiness.innerText() === readinessBefore
       && await alerts.innerText() === alertsBefore;
     assert.ok(requestCount === 1 && sameOriginGet && quotaVisible && staleRowsCleared
       && observationRestricted && secretHidden && independentCardsPreserved
@@ -824,9 +823,9 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
   const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
   const health = page.locator('section[aria-labelledby="health-heading"]');
-  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const independentReadiness = health.locator('article.status-card').filter({hasText: 'Database'}).locator('p').filter({hasText: 'API 준비'});
   const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
-  const providerBefore = await provider.innerText();
+  const readinessBefore = await independentReadiness.innerText();
   const alertsBefore = await alerts.innerText();
   assert.equal(await nextCard.locator('li').count(), 1, 'R30_CANCEL_STORED_SETUP_MISSING');
   await verifyObservationTime(page, previousObservedAt);
@@ -908,7 +907,7 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
     await nextCard.getByText('CANCELLED', { exact: true }).waitFor();
     const cancelledVisible = await nextCard.getByText('CANCELLED', { exact: true }).count() === 1
       && await cancel.count() === 0 && await refresh.isEnabled();
-    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardNames = ['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'];
     const cardText = await Promise.all(cardNames.map(async (name) =>
       health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
     const cancelledCards = cardText.every((text, index) => text.includes('CANCELLED')
@@ -917,10 +916,10 @@ async function verifyDashboardCancellation(page, origin, expectedAction, previou
       && (await nextCard.innerText()).includes('조회 취소 · 다음 조치를 표시하지 않습니다.');
     const cancelledBody = await page.locator('body').innerText();
     const staleRowsCleared = await nextCard.locator('li').count() === 0
-      && !cancelledBody.includes(expectedAction);
+      && !(await nextCard.innerText()).includes(expectedAction);
     const observationCleared = cancelledBody.includes('대시보드 관측 시각 · 조회 취소')
       && !cancelledBody.includes(`대시보드 관측 시각 · ${previousObservedAt}`);
-    const independentCardsPreserved = await provider.innerText() === providerBefore
+    const independentCardsPreserved = await independentReadiness.innerText() === readinessBefore
       && await alerts.innerText() === alertsBefore && cardText[0].includes('API 준비 READY');
     const secretHidden = !cancelledBody.includes('r29-private-quota-body-marker');
     // Leave the old handler pending while the next manual GET completes.
@@ -1060,9 +1059,9 @@ async function verifyDashboardReconnect(page, origin, expectedAction) {
   const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
   const health = page.locator('section[aria-labelledby="health-heading"]');
-  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const independentReadiness = health.locator('article.status-card').filter({hasText: 'Database'}).locator('p').filter({hasText: 'API 준비'});
   const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
-  const providerBefore = await provider.innerText();
+  const readinessBefore = await independentReadiness.innerText();
   const alertsBefore = await alerts.innerText();
   await retry.waitFor();
   await nextCard.getByText('UNAVAILABLE', { exact: true }).waitFor();
@@ -1108,7 +1107,7 @@ async function verifyDashboardReconnect(page, origin, expectedAction) {
     await page.keyboard.press('Enter');
     await boundedCapture(() => requested, 10000);
     await verifyObservationTime(page, '재연결 중');
-    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardNames = ['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'];
     const cardText = await Promise.all(cardNames.map(async (name) =>
       health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
     const pendingBody = await page.locator('body').innerText();
@@ -1116,10 +1115,10 @@ async function verifyDashboardReconnect(page, origin, expectedAction) {
       && cardText.every((text) => text.includes('RECONNECTING'))
       && (await nextCard.innerText()).includes('RECONNECTING');
     const dependentCardsCleared = await nextCard.locator('li').count() === 0
-      && !pendingBody.includes(expectedAction);
+      && !(await nextCard.innerText()).includes(expectedAction);
     const observationCleared = pendingBody.includes('대시보드 관측 시각 · 재연결 중')
       && !pendingBody.includes(`대시보드 관측 시각 · ${recoveredObservedAt}`);
-    const independentCardsPreserved = await provider.innerText() === providerBefore
+    const independentCardsPreserved = await independentReadiness.innerText() === readinessBefore
       && await alerts.innerText() === alertsBefore && cardText[0].includes('API 준비 READY');
     const duplicateRequestPrevented = await refresh.isDisabled();
     await refresh.evaluate((element) => element.click());
@@ -1153,9 +1152,9 @@ async function verifyReconnectCancellation(page, origin, expectedAction) {
   const cancel = page.getByRole('button', { name: '대시보드 조회 취소' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
   const health = page.locator('section[aria-labelledby="health-heading"]');
-  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const independentReadiness = health.locator('article.status-card').filter({hasText: 'Database'}).locator('p').filter({hasText: 'API 준비'});
   const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
-  const providerBefore = await provider.innerText();
+  const readinessBefore = await independentReadiness.innerText();
   const alertsBefore = await alerts.innerText();
   await retry.waitFor();
   let release;
@@ -1218,9 +1217,9 @@ async function verifyReconnectCancellation(page, origin, expectedAction) {
       && await nextCard.getByText('CANCELLED', { exact: true }).count() === 1;
     const cancelledBody = await page.locator('body').innerText();
     const staleRowsCleared = await nextCard.locator('li').count() === 0
-      && !cancelledBody.includes(expectedAction);
+      && !(await nextCard.innerText()).includes(expectedAction);
     const secretHidden = !cancelledBody.includes('r31-private-reconnect-marker');
-    const independentCardsPreserved = await provider.innerText() === providerBefore
+    const independentCardsPreserved = await independentReadiness.innerText() === readinessBefore
       && await alerts.innerText() === alertsBefore
       && (await health.locator('article.status-card').filter({ hasText: 'Database' }).first().innerText())
         .includes('API 준비 READY');
@@ -1255,9 +1254,9 @@ async function verifyReconnectDenied(page, origin, expectedAction) {
   const retry = page.getByRole('button', { name: '대시보드 연결 재시도' });
   const nextCard = page.locator('section[aria-labelledby="next-actions-heading"]');
   const health = page.locator('section[aria-labelledby="health-heading"]');
-  const provider = health.locator('article.status-card').filter({ hasText: 'LLM Providers' });
+  const independentReadiness = health.locator('article.status-card').filter({hasText: 'Database'}).locator('p').filter({hasText: 'API 준비'});
   const alerts = page.locator('section[aria-labelledby="critical-alerts-heading"]');
-  const providerBefore = await provider.innerText();
+  const readinessBefore = await independentReadiness.innerText();
   const alertsBefore = await alerts.innerText();
   await retry.waitFor();
   let retryRequestCount = 0;
@@ -1285,16 +1284,16 @@ async function verifyReconnectDenied(page, origin, expectedAction) {
     await retry.click();
     await verifyObservationTime(page, '조회 차단');
     await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
-    const cardNames = ['Database', 'Queue', 'Worker', 'Execution Backends', 'Artifact Store'];
+    const cardNames = ['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'];
     const cardText = await Promise.all(cardNames.map(async (name) =>
       health.locator('article.status-card').filter({ hasText: name }).first().innerText()));
     const body = await page.locator('body').innerText();
     const blockedVisible = await retry.count() === 0
       && cardText.every((text) => text.includes('BLOCKED'));
     const staleRowsCleared = await nextCard.locator('li').count() === 0
-      && !body.includes(expectedAction);
+      && !(await nextCard.innerText()).includes(expectedAction);
     const observationBlocked = body.includes('대시보드 관측 시각 · 조회 차단');
-    const independentCardsPreserved = await provider.innerText() === providerBefore
+    const independentCardsPreserved = await independentReadiness.innerText() === readinessBefore
       && await alerts.innerText() === alertsBefore && cardText[0].includes('API 준비 READY');
     const secretHidden = !body.includes('r31-private-denial-marker');
     assert.ok(retryRequestCount === 1 && requestPath === '/api/dashboard/operations'
@@ -1446,6 +1445,38 @@ async function loadingFacts(page) {
   const checked = (await page.locator('.dashboard-heading').innerText()).includes('NOT REQUESTED')
     ? 'NOT REQUESTED' : 'SETTLED';
   return { cards, next, alerts, checked };
+}
+
+const healthCardNames = [['database', 'Database'], ['queue', 'Queue'], ['worker', 'Worker'],
+  ['provider', 'LLM Providers'], ['backend', 'Execution Backends'], ['artifact_store', 'Artifact Store']];
+
+function validateHealthCardFacts(snapshot, cards) {
+  assert.equal(cards.length, 6, 'R35_HEALTH_API_DOM_MISMATCH');
+  for (const [index, [component]] of healthCardNames.entries()) {
+    const source = snapshot.health[component];
+    const card = cards[index];
+    const unknown = snapshot.source_gaps.includes(component) || source.state === 'UNKNOWN';
+    assert.ok(card.component === component && card.actions === 0
+      && ['HEALTHY', 'LATE', 'EXPIRED', 'UNKNOWN'].includes(source.state)
+      && card.paragraphs[0] === (unknown ? 'UNKNOWN' : source.state), 'R35_HEALTH_API_DOM_MISMATCH');
+    const observations = card.paragraphs.filter(text => /^(마지막 점검 |오류 )/.test(text));
+    assert.deepEqual(observations, unknown ? [] : [
+      `마지막 점검 ${source.last_check}`, `오류 ${source.error_count}건`,
+    ], 'R35_HEALTH_API_DOM_MISMATCH');
+  }
+  return cards.length;
+}
+
+async function healthCardFacts(page) {
+  const section = page.locator('section[aria-labelledby="health-heading"]');
+  const cards = [];
+  assert.equal(await section.locator('article.status-card').count(), 6, 'R35_HEALTH_API_DOM_MISMATCH');
+  for (const [component, label] of healthCardNames) {
+    const card = section.locator('article.status-card').filter({has: page.getByRole('heading', {name: label, exact: true})});
+    cards.push({component, actions: await card.locator('a, button, input, select').count(),
+      paragraphs: await card.locator('p').allInnerTexts()});
+  }
+  return cards;
 }
 
 async function verifyOperatingCards(page, runs = null) {
@@ -1782,14 +1813,14 @@ async function main() {
     assert.ok(emptyAlertText.includes('이 페이지에 저장된 Critical 기록 없음')
       && emptyActionText.includes('현재 관측된 다음 조치 0건'),
     'R24_EMPTY_STATE_MISMATCH');
-    const providerCard = page.locator('section[aria-labelledby="health-heading"]')
-      .locator('article.status-card').filter({ hasText: 'LLM Providers' });
+    const readinessCard = page.locator('section[aria-labelledby="health-heading"]')
+      .locator('article.status-card').filter({hasText: 'Database'}).locator('p').filter({hasText: 'API 준비'});
     await page.waitForFunction(() => {
       const card = [...document.querySelectorAll('section[aria-labelledby="health-heading"] article.status-card')]
         .find((item) => item.textContent?.includes('LLM Providers'));
       return card && !card.textContent?.includes('조회 중입니다.');
     });
-    const independentBefore = await providerCard.innerText();
+    const independentBefore = await readinessCard.innerText();
 
     const errorResponse = page.waitForResponse((response) => {
       const url = new URL(response.url());
@@ -1808,7 +1839,7 @@ async function main() {
       queue: await page.locator('section[aria-labelledby="health-heading"]')
         .locator('article.status-card').filter({ hasText: 'Queue' }).first().innerText(),
       independentBefore,
-      independentAfter: await providerCard.innerText(),
+      independentAfter: await readinessCard.innerText(),
       dom: await page.locator('body').innerText(),
     });
     const emptyErrorAccessible = validateEmptyErrorAccessibility({
@@ -1817,7 +1848,7 @@ async function main() {
       errorAlertText: await card.locator('[aria-live]').innerText(),
       errorActionLive: await nextCard.locator('[aria-live]').getAttribute('aria-live'),
       errorActionText: await nextCard.locator('[aria-live]').innerText(),
-      independentBefore, independentAfter: await providerCard.innerText(),
+      independentBefore, independentAfter: await readinessCard.innerText(),
       errorBodyVisible: (await page.locator('body').innerText()).includes('r24-private-error-body-marker'),
     });
     markStage('SEED_CONTROL');
@@ -1848,6 +1879,12 @@ async function main() {
     const storedReady = await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
     const storedRunSummary = JSON.parse(storedReady.dashboardResponse.value.body).data.run_summary;
     await verifyOperatingCards(page, storedRunSummary);
+    const healthCardCount = validateHealthCardFacts(JSON.parse(storedReady.dashboardResponse.value.body).data,
+      await healthCardFacts(page));
+    const observedHealth = JSON.parse(storedReady.dashboardResponse.value.body).data.health.database;
+    assert.equal(observedHealth.state, 'HEALTHY', 'R35_QA_SOURCE_MISMATCH');
+    assert.equal(observedHealth.error_count, 0, 'R35_QA_SOURCE_MISMATCH');
+    assert.equal(observedHealth.last_check, '2026-09-27T23:59:50+00:00', 'R35_QA_SOURCE_MISMATCH');
     const storedObservedAt = JSON.parse(storedReady.dashboardResponse.value.body).data.observed_at;
     assert.ok(/^\d{4}-\d{2}-\d{2}T/.test(storedObservedAt)
       && Number.isFinite(Date.parse(storedObservedAt)) && Date.parse(storedObservedAt) <= Date.now(),
@@ -1858,6 +1895,11 @@ async function main() {
     const visibleBeforeRevoke = await card.getByText(alertCode, { exact: true }).count() === 1;
     markStage('STORED_ROW');
     const rowText = await card.locator('li').filter({ hasText: alertCode }).innerText();
+    const criticalRow = card.locator('li').filter({hasText: alertCode});
+    const criticalParagraphs = await criticalRow.locator('p').allInnerTexts();
+    assert.ok(criticalParagraphs.includes(`영향 · ${alerts[0].impact}`)
+      && criticalParagraphs.includes(`다음 조치 · ${alerts[0].next_action}`), 'R35_ALERT_API_DOM_MISMATCH');
+    assert.equal(await criticalRow.locator('a, button, input, select').count(), 0, 'R35_ALERT_API_DOM_MISMATCH');
     const rowMatches = rowText.includes(expectedEntity) && rowText.includes(expectedCause);
     assert.ok(rowMatches);
     markStage('STORED_NEXT_ACTION');
@@ -1986,6 +2028,11 @@ async function main() {
     await card.getByText('조회 차단', { exact: false }).waitFor();
     assert.equal(await card.getByText('UNAVAILABLE', { exact: true }).count(), 0);
     const staleCleared = await card.getByText(alertCode, { exact: true }).count() === 0;
+    assert.equal(await card.locator('li').count(), 0, 'R35_REVOKED_DATA_RETAINED');
+    for (const fact of await healthCardFacts(page)) {
+      assert.equal(fact.paragraphs[0], 'BLOCKED', 'R35_REVOKED_DATA_RETAINED');
+      assert.ok(!fact.paragraphs.some(text => /^(마지막 점검 |오류 |등록 )/.test(text)), 'R35_REVOKED_DATA_RETAINED');
+    }
     markStage('REVOKE_NEXT_ACTION');
     await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
     const revokedActionEvidence = validateRevokedNextAction(revokedDashboard.status,
@@ -2033,6 +2080,11 @@ async function main() {
       exportPayload.urls = safeEvidenceUrls(requests, apiUrl, [...sensitiveValues, cookie.value]);
     }
     resultEvidence = {
+      healthAlertEvidence: {healthCardCount, healthApiDomMatch: true, sourceGapUnknown: true,
+        alertImpactMatch: true, alertNextActionMatch: true, readOnlyText: true, revokedCleared: true,
+        source: 'ISOLATED_QA_HEALTH_SIGNAL_NOT_LIVENESS', observedComponent: 'database',
+        observedState: observedHealth.state, observedErrorCount: observedHealth.error_count,
+        observedAt: observedHealth.last_check},
       runCardsEvidence: {observedAt: storedRunSummary.observed_at,
         observedTotal: storedRunSummary.observed_total, active: storedRunSummary.active_runs,
         waiting: storedRunSummary.waiting_approval_runs, blocked: storedRunSummary.blocked_runs,
@@ -2082,6 +2134,18 @@ async function main() {
 }
 
 if (auditSelfTest) {
+  const names = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
+  const snapshot = {source_gaps: ['provider'], health: Object.fromEntries(names.map(name =>
+    [name, {state: 'LATE', last_check: '2026-09-30T00:00:00+00:00', error_count: 2}]))};
+  const cards = names.map(name => ({component: name, actions: 0, paragraphs: name === 'provider'
+    ? ['UNKNOWN'] : ['LATE', '마지막 점검 2026-09-30T00:00:00+00:00', '오류 2건']}));
+  assert.equal(validateHealthCardFacts(snapshot, cards), 6);
+  for (const change of [{paragraphs: ['HEALTHY']}, {actions: 1},
+    {paragraphs: ['LATE', '마지막 점검 forged', '오류 0건']}]) {
+    assert.throws(() => validateHealthCardFacts(snapshot, [{...cards[0], ...change}, ...cards.slice(1)]),
+      /R35_HEALTH_API_DOM_MISMATCH/);
+  }
+  assert.throws(() => validateHealthCardFacts(snapshot, cards.slice(1)), /R35_HEALTH_API_DOM_MISMATCH/);
   assert.equal(hasFailedRequestReason({ errorText: 'synthetic-abort' }), true);
   for (const failure of [null, '', 'synthetic-abort', {}, { errorText: '' },
     { errorText: ' ' }, { errorText: 1 }]) {
@@ -2100,7 +2164,7 @@ if (auditSelfTest) {
   }
   const manualFacts = { requestCount: 1, requestPath: '/api/dashboard/operations', requestMethod: 'GET',
     loadingDisabled: true, loadingTime: '대시보드 관측 시각 · 조회 중', staleActionCount: 0,
-    providerBefore: 'provider-safe', providerDuring: 'provider-safe',
+    providerDuring: 'LOADING',
     alertBefore: 'alert-safe', alertDuring: 'alert-safe', readinessBefore: '마지막 확인 · JUST NOW',
     readinessDuring: '마지막 확인 · JUST NOW', responseStatus: 200,
     observedAt: '2026-09-28T00:00:00+00:00' };
