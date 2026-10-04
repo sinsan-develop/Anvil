@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from scripts.check_project_progress import raw_event_object_prefix_bytes
 
@@ -52,6 +53,21 @@ class C30RecoveryVerifiedTests(unittest.TestCase):
         progress["scope_revision_binding"]["release_decision"] = "GO"
         changed[self.verified.PROGRESS] = json.dumps(progress).encode()
         self.assertTrue(self.verified.validate_outputs(ROOT, changed))
+
+    def test_changed_executed_verifier_or_report_rejected(self):
+        original = Path.read_bytes
+        for target in ("scripts/f20_c30_generation_start_overlay.py",
+                       "scripts/f20_c30_recovery_start_overlay.py",
+                       "scripts/check_project_progress.py",
+                       self.verified.REPORT):
+            with self.subTest(target=target):
+                def altered(path):
+                    raw = original(path)
+                    return raw + b"\n" if path == ROOT / target else raw
+
+                with patch.object(Path, "read_bytes", altered):
+                    with self.assertRaises(ValueError):
+                        self.verified.project(ROOT, datetime.now(timezone.utc))
 
 
 if __name__ == "__main__":

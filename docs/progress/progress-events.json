@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2047,
+  "last_sequence": 2048,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -97803,7 +97803,46 @@
     "accepted": false,
     "authority_active": false
   }
+},
+{
+  "sequence": 2048,
+  "event_id": "evt_f20_2048_event_ledger_recovery_verified",
+  "event_type": "EVENT_LEDGER_RECOVERY_VERIFIED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_C30_RECOVERY_V2_VERIFIED",
+  "subject_ref": "F-20/C30-RECOVERY-V2",
+  "occurred_at": "2026-10-04T11:41:30+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "79EABA271793A445D2B84D92C0389E2B395D1FF598B80A6E40B78C1A09299B87",
+  "details": {
+    "generation": 2,
+    "generation_start_event_id": "evt_f20_2047_event_ledger_generation_started",
+    "generation_manifest_sha256": "214C0821E37EFA59F9F4EB02E23478467FE741E824E2444D8619FE249C871F69",
+    "independent_test_report_path": "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_INDEPENDENT_TEST_REPORT.md",
+    "independent_test_report_sha256": "D4DC26CE456A5AD5B51B010A169F31C5009DC394EB3AED224DF40513AAB771C6",
+    "independent_verdict": "ELIGIBLE_C0_I0",
+    "wsl_qa_commit": "d58d95f121e24bd5cb199617e1afbcac8cafa80a",
+    "wsl_evidence_commit": "6b95360dce80904a064a636404a794074568ae9e",
+    "quarantined_event_sequences": [
+      1689,
+      1714
+    ],
+    "audit_only_event_sequences": [
+      1715,
+      2047
+    ],
+    "package_accepted": false,
+    "release_decision": "DEFER",
+    "authority_active": true,
+    "verification_manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIED_MANIFEST.json",
+    "verification_manifest_sha256": "FBC546FE67582AAB2E131377BCF33D03761AA90F246EABE325AD4A9A1CC79888"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2047_event_ledger_generation_started"
+  "last_event_id": "evt_f20_2048_event_ledger_recovery_verified"
 }

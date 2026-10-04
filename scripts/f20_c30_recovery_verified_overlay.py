@@ -18,14 +18,23 @@ r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF, CONTRACT = (
     prior.EVENTS, prior.PROGRESS, prior.HANDOFF, prior.CONTRACT)
 START, END = 2047, 2048
-BASE = "6b95360d"
+BASE = "18580166e3d1eee42d8180e5c3f930532e358f75"
 MODE = "F20_C30_RECOVERY_V2_VERIFIED"
 NEXT = "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW"
 REPORT = "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_INDEPENDENT_TEST_REPORT.md"
 MANIFEST = "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIED_MANIFEST.json"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-verified.json"
 WSL_SHA = "d58d95f121e24bd5cb199617e1afbcac8cafa80a"
-WSL_STATUS_SHA = "6b95360d"
+WSL_STATUS_SHA = "6b95360dce80904a064a636404a794074568ae9e"
+WSL_STATUS_DIGEST = "7A6F211B346F49781A10A3199DBE58D7395DF1D40B5EBB4D3E1E9E3DFAF4A255"
+FROZEN_VERIFICATION_INPUTS = (
+    "scripts/f20_c30_generation_start_overlay.py",
+    "scripts/f20_c30_recovery_close_overlay.py",
+    "scripts/f20_c30_recovery_start_overlay.py",
+    "scripts/f20_c30_recovery_v2.py", REPORT,
+    "scripts/f20_rework_overlay.py",
+    "scripts/check_project_progress.py",
+)
 CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     EVENTS, PROGRESS, HANDOFF, CONTRACT, MANIFEST, DIGEST, REPORT,
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
@@ -55,6 +64,9 @@ def _test_report(root: Path) -> bytes:
 
 
 def _predecessor(root: Path) -> tuple[bytes, dict, dict, bytes, bytes]:
+    if any((root / path).read_bytes() != _frozen(root, path)
+           for path in FROZEN_VERIFICATION_INPUTS):
+        raise ValueError("C30_VERIFIED_EXECUTED_INPUT_NOT_FROZEN")
     frozen_paths = (EVENTS, PROGRESS, HANDOFF, CONTRACT, prior.MANIFEST, prior.DIGEST)
     outputs = {path: _frozen(root, path) for path in frozen_paths}
     if prior.validate_outputs(root, outputs):
@@ -99,8 +111,11 @@ def _build(root: Path, at: datetime) -> dict[str, bytes]:
     report_raw = _test_report(root)
     if old["repository"]["projection_mode"] != prior.MODE:
         raise ValueError("C30_VERIFIED_PREDECESSOR_MODE_INVALID")
-    if _git(root, "show", f"{WSL_STATUS_SHA}:docs/WORK_STATUS.md") != _frozen(root, "docs/WORK_STATUS.md"):
-        raise ValueError("C30_VERIFIED_WSL_STATUS_CHANGED")
+    if (r1._sha(_git(root, "show", f"{WSL_STATUS_SHA}:docs/WORK_STATUS.md"))
+            != WSL_STATUS_DIGEST
+            or subprocess.run(["git", "merge-base", "--is-ancestor", WSL_STATUS_SHA, BASE],
+                              cwd=root, capture_output=True).returncode != 0):
+        raise ValueError("C30_VERIFIED_WSL_STATUS_INVALID")
     generation = old["c30_event_generation"]
     if (generation["manifest_path"] != prior.MANIFEST
             or generation["manifest_sha256"] != r1._sha(start_manifest_raw)
@@ -120,7 +135,7 @@ def _build(root: Path, at: datetime) -> dict[str, bytes]:
         "independent_test_report_sha256": r1._sha(report_raw),
         "independent_verdict": "ELIGIBLE_C0_I0",
         "wsl_qa_commit": WSL_SHA, "wsl_evidence_commit": WSL_STATUS_SHA,
-        "wsl_evidence_status_sha256": r1._sha(_frozen(root, "docs/WORK_STATUS.md")),
+        "wsl_evidence_status_sha256": WSL_STATUS_DIGEST,
         "quarantined_event_sequences": [1689, 1714],
         "audit_only_event_sequences": [1715, START],
         "incident_status": "RECOVERED_WITH_QUARANTINED_HISTORY",

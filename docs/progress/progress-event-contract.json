@@ -52,7 +52,8 @@
     "PACKAGE_REVIEWED",
     "WORK_INSTRUCTION_REVISED",
     "HUMAN_OVERRIDE_TAKEOVER_RECORDED",
-    "EVENT_LEDGER_GENERATION_STARTED"
+    "EVENT_LEDGER_GENERATION_STARTED",
+    "EVENT_LEDGER_RECOVERY_VERIFIED"
   ],
   "payload_contracts": {
     "MIGRATED_LEGACY_SNAPSHOT": {
@@ -474,6 +475,26 @@
         "authority_active"
       ],
       "effect": "begin_quarantined_generation_pending_independent_verification"
+    },
+    "EVENT_LEDGER_RECOVERY_VERIFIED": {
+      "required_details": [
+        "generation",
+        "generation_start_event_id",
+        "generation_manifest_sha256",
+        "independent_test_report_path",
+        "independent_test_report_sha256",
+        "independent_verdict",
+        "wsl_qa_commit",
+        "wsl_evidence_commit",
+        "quarantined_event_sequences",
+        "audit_only_event_sequences",
+        "package_accepted",
+        "release_decision",
+        "authority_active",
+        "verification_manifest_path",
+        "verification_manifest_sha256"
+      ],
+      "effect": "activate_verified_generation_with_quarantined_history_only"
     }
   },
   "historical_event_profiles": {

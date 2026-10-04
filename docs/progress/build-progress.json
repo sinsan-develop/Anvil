@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-c30-recovery-v2-generation-start-seq2047",
-  "event_sequence": 2047,
-  "updated_at": "2026-10-04T11:00:36+00:00",
-  "last_event_id": "evt_f20_2047_event_ledger_generation_started",
+  "snapshot_id": "snapshot-f20-c30-recovery-v2-verified-seq2048",
+  "event_sequence": 2048,
+  "updated_at": "2026-10-04T11:41:30+00:00",
+  "last_event_id": "evt_f20_2048_event_ledger_recovery_verified",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -470,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C30_V2_GENERATION_INDEPENDENT_READ_ONLY_REVIEW",
+  "next_safe_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -581,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
+    "local_head": "18580166e3d1eee42d8180e5c3f930532e358f75",
     "local_wsl_qa_head": "271cdc421b128e254b4b74b3fb755fab78d56194",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
-    "projection_mode": "F20_C30_RECOVERY_V2_GENERATION_START",
-    "validated_base_commit": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
+    "remote_head": "18580166e3d1eee42d8180e5c3f930532e358f75",
+    "projection_mode": "F20_C30_RECOVERY_V2_VERIFIED",
+    "validated_base_commit": "18580166e3d1eee42d8180e5c3f930532e358f75",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1021,7 +1021,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F20_C30_GENERATION_2_PENDING_INDEPENDENT_REVIEW",
+    "worktree_status": "F20_C30_RECOVERED_WITH_QUARANTINED_HISTORY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1321,8 +1321,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-generation-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_GENERATION_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-verified.json",
+    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIED_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1339,11 +1339,11 @@
     },
     "progress_event_contract": {
       "path": "docs/progress/progress-event-contract.json",
-      "sha256": "59185D5A6756DF97C6D7A0DB4CC14F54E446CD38614F696E78CE3811C358E1DF"
+      "sha256": "4551E15F7CE69B648FA162A0E755615CC81FF77258F3CFBD1DE00F507FC753BA"
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1FA1FAAF7D2A786DC0C9359007DD9755E62FBA2014540E5439EA96B2D6C03CCD"
+      "sha256": "F80E76F9BA0E34F35A39AA5CDBEB63B35B72C3AA56CCB3418ADC2AB820D6FA46"
     }
   },
   "next_work_package": {
@@ -1740,8 +1740,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "8C5530BB76A4A2A583CDFBA8814A023F27519F65C3F59F1DCCF174C73BCE8A19",
-  "runtime_next_action": "C30_V2_GENERATION_INDEPENDENT_READ_ONLY_REVIEW",
+  "snapshot_hash": "42E8F9BB4C40A8A496B88B9EA8CFA2F78A18DDBC07D70CCDD20FCB43A343E5E6",
+  "runtime_next_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23505,10 +23505,16 @@
   },
   "f20_c30_event_integrity_incident": {
     "event_id": "evt_f20_1764_defect_recorded",
-    "status": "OPEN_BLOCKING",
+    "status": "RECOVERED_WITH_QUARANTINED_HISTORY",
     "defect_ref": "F20-C30-EVENT-RAW-HISTORY-20260928-001",
     "severity": "CRITICAL",
-    "blocking": true
+    "blocking": false,
+    "recovery_event_id": "evt_f20_2048_event_ledger_recovery_verified",
+    "recovery_manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIED_MANIFEST.json",
+    "quarantined_event_sequences": [
+      1689,
+      1714
+    ]
   },
   "completed_f20_r5e_worker_lease": {
     "lease_id": "worker-lease-f20-r5e-27674f6cecba",
@@ -25559,11 +25565,16 @@
   },
   "c30_event_generation": {
     "generation": 2,
-    "status": "PENDING_INDEPENDENT_VERIFICATION",
+    "status": "VERIFIED_WITH_QUARANTINED_HISTORY",
     "started_event_id": "evt_f20_2047_event_ledger_generation_started",
     "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_GENERATION_START_MANIFEST.json",
     "manifest_sha256": "214C0821E37EFA59F9F4EB02E23478467FE741E824E2444D8619FE249C871F69",
-    "authority_active": false,
-    "accepted": false
+    "authority_active": true,
+    "accepted": false,
+    "verified_event_id": "evt_f20_2048_event_ledger_recovery_verified",
+    "verification_manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIED_MANIFEST.json",
+    "verification_manifest_sha256": "FBC546FE67582AAB2E131377BCF33D03761AA90F246EABE325AD4A9A1CC79888",
+    "independent_test_report_path": "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_INDEPENDENT_TEST_REPORT.md",
+    "independent_test_report_sha256": "D4DC26CE456A5AD5B51B010A169F31C5009DC394EB3AED224DF40513AAB771C6"
   }
 }
