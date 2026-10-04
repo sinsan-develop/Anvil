@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from scripts.check_project_progress import raw_event_object_prefix_bytes
 
@@ -50,6 +51,19 @@ class C30RecoveryCloseTests(unittest.TestCase):
         stream["events"][-1]["details"]["reason"] = "UNVERIFIED"
         output[close.EVENTS] = json.dumps(stream).encode()
         self.assertTrue(close.validate_outputs(ROOT, output))
+
+    def test_unfrozen_verifier_or_approval_rejects_close(self):
+        from scripts import f20_c30_recovery_close_overlay as close
+        original = Path.read_bytes
+        for target in ("scripts/f20_c30_recovery_v2.py",
+                       "docs/approvals/APPROVAL-20261004-C30-NONDESTRUCTIVE-LEDGER-RECOVERY-001.md"):
+            with self.subTest(target=target):
+                def altered(path):
+                    raw = original(path)
+                    return raw + b"\n" if path == ROOT / target else raw
+
+                with patch.object(Path, "read_bytes", altered):
+                    self.assertFalse(close._frozen_control(ROOT))
 
 
 if __name__ == "__main__":

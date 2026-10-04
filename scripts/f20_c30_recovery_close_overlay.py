@@ -10,10 +10,18 @@ import subprocess
 
 try:
     from scripts import f20_c30_recovery_start_overlay as prior
-    from scripts.f20_c30_recovery_v2 import verify_repository
+    from scripts.f20_c30_recovery_v2 import (
+        APPROVAL_PATH, RECOVERY_APPROVAL_PATH, RECOVERY_DESIGN_PATH,
+        RECOVERY_MANIFEST_PATH, RECOVERY_PLAN_PATH, RECOVERY_WI_PATH,
+        REVISION_BINDING_PATH, SCOPE_ARTIFACT_SHA256, verify_repository,
+    )
 except ModuleNotFoundError:
     import f20_c30_recovery_start_overlay as prior
-    from f20_c30_recovery_v2 import verify_repository
+    from f20_c30_recovery_v2 import (
+        APPROVAL_PATH, RECOVERY_APPROVAL_PATH, RECOVERY_DESIGN_PATH,
+        RECOVERY_MANIFEST_PATH, RECOVERY_PLAN_PATH, RECOVERY_WI_PATH,
+        REVISION_BINDING_PATH, SCOPE_ARTIFACT_SHA256, verify_repository,
+    )
 
 
 r1 = prior.r1
@@ -30,7 +38,15 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
     "scripts/f20_c30_recovery_close_overlay.py",
     "tests/tooling/test_f20_c30_recovery_close_projection.py",
+    "scripts/f20_c30_generation_start_overlay.py",
+    "tests/tooling/test_f20_c30_generation_start_projection.py",
 }
+FROZEN_CONTROL = (
+    "scripts/f20_c30_recovery_v2.py", APPROVAL_PATH,
+    RECOVERY_APPROVAL_PATH, RECOVERY_DESIGN_PATH, RECOVERY_PLAN_PATH,
+    RECOVERY_WI_PATH, RECOVERY_MANIFEST_PATH, REVISION_BINDING_PATH,
+    *SCOPE_ARTIFACT_SHA256,
+)
 
 
 def _git(root: Path, *args: str) -> bytes:
@@ -46,6 +62,15 @@ def _preflight(root: Path) -> bool:
     evidence = verify_repository(
         root, file_reader=lambda path: _git(root, "show", f"{BASE}:{path}"))
     return evidence.eligible and evidence.errors == []
+
+
+def _frozen_control(root: Path) -> bool:
+    """The executed verifier and every approval input must match pinned BASE."""
+    try:
+        return all((root / path).read_bytes() == _git(root, "show", f"{BASE}:{path}")
+                   for path in FROZEN_CONTROL)
+    except (OSError, subprocess.CalledProcessError):
+        return False
 
 
 def _rows(events: list[dict], progress: dict, at: datetime) -> list[dict]:
@@ -99,7 +124,7 @@ def _build(root: Path, at: datetime) -> dict[str, bytes]:
                    < datetime.fromisoformat(worker["expires_at"])
             or old["f20_c30_event_integrity_incident"]["status"] != "OPEN_BLOCKING"
             or old["scope_revision_binding"]["release_decision"] != "DEFER"
-            or not _preflight(root)):
+            or not _frozen_control(root) or not _preflight(root)):
         raise ValueError("C30_V2_CLOSE_BASE_INVALID")
     rows = _rows(stream["events"], old, at)
     event_raw = _append(raw, stream, rows)
