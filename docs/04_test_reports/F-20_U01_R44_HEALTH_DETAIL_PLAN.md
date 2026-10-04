@@ -41,7 +41,7 @@
 
 ### Task 2: 실제 카드 클릭과 차단 증거
 
-- [ ] RED: 기존 Chromium harness에서 저장 Health alert의 카드 상세 클릭→same-page fragment→원인 필드 API↔DOM 일치와 인증 전·철회 후 상세 0을 단언한다. Python 수집은 boolean/count만 받아들인다.
+- [ ] RED: 기존 Chromium harness의 R35 Database `HEALTHY/0` QA 관측은 보존하고, 별도 격리 QA Health 신호 1건으로 실제 저장 Health alert를 만든 뒤 그 카드 상세 클릭→same-page fragment→원인 필드 API↔DOM 일치와 인증 전·철회 후 상세 0을 단언한다. 기존 R43 경고 선택·순서와 R35 Database 증거를 오염시키지 않도록 새 신호의 선택/검증을 독립시킨다. Python 수집은 boolean/count만 받아들인다.
 - [ ] GREEN: Node browser audit self-test와 Python 비 opt-in 집중 시험을 통과하고 기존 Network/Secret/PNG 계약을 보존한다.
 - [ ] Main 독립 검토 후 정확 제품 SHA를 private push하고 WSL-server clean 동일 SHA·전용 격리 자원에서 PG15/OIDC/HTTPS/Chromium opt-in을 실행한다. 실패는 실패로 기록하고 원인 진단·재검을 분리한다.
 - [ ] 전용 PG/container/checkout/venv/evidence/secret/browser 임시 자원만 정확 신원·경로·link 확인 후 제거하고 잔여 0을 확인한다.
