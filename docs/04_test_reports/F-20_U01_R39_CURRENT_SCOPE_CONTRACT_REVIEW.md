@@ -35,3 +35,9 @@
 ## 검증·미검증
 
 이번 판정은 설계·작업계획서와 현행 `oidc_process.py`, `OperationsPort`, `OperationsService`, Web `App.tsx`의 정적 대조다. 실제 IdP, Provider, 브라우저, PG18, 전체 U-01, F-20, Production PASS를 주장하지 않는다. 제품 rollback은 불필요하다.
+
+## 전체 회귀 후속 통제 점검 (2026-10-04)
+
+WSL-server exact `f33028b3` 전체 비-opt-in pytest는 `8587 passed/225 failed/123 skipped`(exit1)였다. 격리 clone의 history ref 누락이 실패 다수의 공통 원인이었고, 원격 heads/PR 참조와 정확 C21 sibling commit만 fetch한 뒤 역사 통제 파일 전체는 `689 passed/1 failed`(exit1)로 좁혀졌다. 남은 1건은 현재 R38B CLOSE validator가 위조 progress를 `F20_U01_R38B_CLOSE_PROJECTION_INVALID`로 거부하는데 테스트의 step별 기대 표에 CLOSE 항목이 없어 START 오류를 기대한 것이다. Main 소유 현재 투영 테스트에 CLOSE 기대 3종만 추가했고 로컬 해당 node `1 passed`, 인접 R38B start/close 포함 `7 passed`, G-05 seq2040 PASS를 확인했다. 원장·checker·제품·권한·API 변경은 없다. 이는 전체 suite 재실행의 PASS가 아니다.
+
+A14 browser source 1건은 `App.tsx`가 Alert 입력의 내부 주소를 거부하려는 정규식에 `localhost`/loopback 패턴을 포함한 것을 역사 A14 checker가 실제 내부 API 주소로 오인한다. checker/test의 임시 보완은 새 반례 RED→4 GREEN, 전체 파일 15 PASS였으나, 두 파일이 역사 A14 EvidenceManifest checksum 대상임을 재확인해 **우리 변경을 정확히 되돌렸다**. 되돌린 HEAD 기준 A14 CLI는 기존 `apps/web/server.mjs` 및 역사 테스트 파일 checksum과 현재 오탐으로 FAIL이다. 역사 manifest를 고쳐 PASS로 꾸미지 않으며, 이 경계는 별도 successor authority·보안 회귀를 갖춘 수정 대상으로 남긴다. A14/API/브라우저 인수는 미검증, C30 `OPEN_BLOCKING`·ReleaseDecision `DEFER`, F-20/U-01 미수락이다.
