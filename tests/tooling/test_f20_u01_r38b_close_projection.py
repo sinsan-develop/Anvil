@@ -1,8 +1,10 @@
 """R38B close must revoke both leases without converting QA into acceptance."""
 
 from datetime import datetime, timezone
+from copy import deepcopy
 import json
 from pathlib import Path
+import subprocess
 
 import pytest
 
@@ -13,8 +15,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _source():
-    raw = (ROOT / close.EVENTS).read_bytes()
-    return raw, json.loads(raw), json.loads((ROOT / close.PROGRESS).read_bytes())
+    raw = subprocess.check_output(["git", "show", f"{close.BASE}:{close.EVENTS}"], cwd=ROOT)
+    progress = subprocess.check_output(["git", "show", f"{close.BASE}:{close.PROGRESS}"], cwd=ROOT)
+    return raw, json.loads(raw), json.loads(progress)
 
 
 def test_close_projects_exact_append_and_revokes_only_r38b_leases():
@@ -48,3 +51,23 @@ def test_close_refuses_wrong_raw_event_sequence():
     with pytest.raises(ValueError, match="EVENT_BYTES_INVALID"):
         close._append_raw(raw.replace(b'"last_sequence": 2038',
                                       b'"last_sequence": 2037'), stream, rows)
+
+
+def test_materialized_close_validates_exact_authority_and_projection():
+    events = json.loads((ROOT / close.EVENTS).read_bytes())
+    if events["last_sequence"] != close.END:
+        pytest.skip("R38B close not yet materialized")
+    bundle = {
+        "_root": ROOT,
+        "events": events,
+        "progress": json.loads((ROOT / close.PROGRESS).read_bytes()),
+        "detached_digest": json.loads((ROOT / close.DIGEST).read_bytes()),
+        "_detached_digest_path": close.DIGEST,
+    }
+    assert close.validate_control(ROOT, bundle, datetime.now(timezone.utc)) == []
+    forged = deepcopy(bundle)
+    forged["events"]["events"][-1]["details"]["reason"] = "FORGED_ACCEPTANCE"
+    assert close.validate_control(ROOT, forged, datetime.now(timezone.utc))
+    forged = deepcopy(bundle)
+    forged["progress"]["f20_c30_event_integrity_incident"]["status"] = "CLOSED"
+    assert close.validate_control(ROOT, forged, datetime.now(timezone.utc))
