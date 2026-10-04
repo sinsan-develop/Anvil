@@ -10,7 +10,7 @@
 2. Main은 C30 복구 WorkInstruction에 정확한 writer scope, dual lease, 입력 hash, 실패/rollback 조건을 기록한다. Developer 한 명만 제품·검증 코드 write lease를 갖는다. Main은 같은 파일을 동시에 쓰지 않는다.
 3. Developer는 먼저 정상 anchor/컷오버/의미 변조/후속 WorkInstruction·lease/승인 binding 음성 테스트를 추가해 RED를 확인한다. 최소한의 복구 검증기와 successor projection을 구현해 GREEN을 확인한다. 기존 C30 검사가 새 검증 없이 PASS로 바뀌면 실패다.
 4. Main은 Developer 결과와 diff·테스트를 독립 검토하고, 검증기 자체를 별도 음성 fixture로 공격한다. 불완전하면 동일 branch에서 재작업한다. 원본 bytes, SHA, accepted/Release 상태를 먼저 확인한다.
-5. 검증된 컷오버 manifest와 seq2041 generation-start Event를 append-only 기록한다. 새 세대 검증이 끝나기 전에는 C30 `OPEN_BLOCKING`을 유지한다. 독립 Tester의 read-only 검증 뒤에만 recovery-verified Event와 차단 상태 재판정을 기록한다.
+5. 검증된 컷오버 manifest와 선행 WI·dual lease 통제 Event 뒤의 generation-start Event를 append-only 기록한다. 새 세대 검증이 끝나기 전에는 C30 `OPEN_BLOCKING`을 유지한다. 독립 Tester의 read-only 검증 뒤에만 recovery-verified Event와 차단 상태 재판정을 기록한다.
 6. 로컬 focused/full G-05·회귀 검증, 변경 영향에 맞는 빌드·정적 검사, clean checkpoint/private push를 수행한다. WSL-server는 Git pull한 정확 SHA에서 동일 검사와 필요한 격리 테스트만 수행하고 전용 자원을 제거한다. 결과·오류 횟수·미검증·rollback을 `docs/WORK_STATUS.md`에 누적한다.
 7. F-20/U-01 미완료 항목으로 즉시 이어간다. 전체 Stage 조건이 충족되기 전에는 F-20 수락, Release GO, `main` 병합, branch 삭제 또는 새 branch 생성은 하지 않는다.
 

@@ -34,6 +34,7 @@ CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
     "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DESIGN.md",
     "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_PLAN.md",
     "docs/approvals/APPROVAL-20261004-C30-NONDESTRUCTIVE-LEDGER-RECOVERY-001.md",
+    "docs/work_orders/F-20_C30_EVENT_RECOVERY_V2_WORK_INSTRUCTION.md",
     "docs/evidence/manifests/A-14_A14_SUCCESSOR_R7.json",
     "scripts/check_a14_workbench_prototype.py",
     "tests/tooling/test_a14_workbench_prototype.py",

@@ -14,7 +14,7 @@
 ## 복구 표현
 
 1. 현행 `docs/progress/progress-events.json`의 Event 객체 1~2040 원시 bytes를 그대로 둔다. 이 전체 컷오버 blob의 Git object ID와 SHA256을 복구 manifest에 고정한다. JSON 외부 header는 새 Event 수에 따라 바뀔 수 있으므로 원시 보존 판정은 각 기존 Event 객체의 연속 prefix bytes와 컷오버 Git blob을 함께 사용한다.
-2. seq2041의 새 `EVENT_LEDGER_GENERATION_STARTED`는 `generation=2`, 검증된 사고 전 anchor의 Git commit·blob·원시 prefix hash, 오염된 컷오버 blob·원시 prefix hash, 격리한 Event 범위와 의미, 독립 검증 manifest, 그리고 현재의 비수락 상태를 명시한다. `previous_event_sha256`은 물리적 append 연속성만 증명하며 새 세대의 권위 근거가 아니다. 새 세대 권위는 정상 anchor와 독립 검증에만 결박한다.
+2. 먼저 현행 차단 세대에 C30 복구 WorkInstruction 및 dual lease 발행·회수 Event만 append한다. 이 통제 Event는 새 세대의 독립 수락 권위를 만들지 않는다. 검증기와 독립 증거가 준비된 뒤 이어지는 새 `EVENT_LEDGER_GENERATION_STARTED`는 `generation=2`, 검증된 사고 전 anchor의 Git commit·blob·원시 prefix hash, 오염된 컷오버 blob·원시 prefix hash, 격리한 Event 범위와 의미, 독립 검증 manifest, 그리고 현재의 비수락 상태를 명시한다. `previous_event_sha256`은 물리적 append 연속성만 증명하며 새 세대의 권위 근거가 아니다. 새 세대 권위는 정상 anchor와 독립 검증에만 결박한다.
 3. seq1689~1714의 변경·추가 Event는 역사적 사고 증거로 보존하고 권위 투영에서 제외한다. seq1715~2040은 원문 감사 자료로 보존하되, 각 WorkInstruction 파일 hash, lease 발행·회수, fencing token, 후속 상태를 독립 검증해 검증 가능한 사실만 새 세대에 명시적으로 채택한다. 과거 수락·Gate PASS·Release GO를 암묵 이월하지 않는다.
 4. 검증 성공 뒤 독립 Tester의 read-only 확인을 근거로 새 `EVENT_LEDGER_RECOVERY_VERIFIED`를 append할 수 있다. 그 전에는 C30 `OPEN_BLOCKING`을 유지한다. 확인 후에도 원문 사고는 `RECOVERED_WITH_QUARANTINED_HISTORY`처럼 감사 가능한 상태로 남기고, F-20/U-01은 미수락·Release `DEFER`를 유지한다. 확인 실패 시 새 세대를 활성 권위로 사용하지 않고 C30 차단을 유지한다.
 
