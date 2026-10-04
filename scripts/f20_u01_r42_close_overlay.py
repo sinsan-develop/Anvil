@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import subprocess
@@ -18,7 +18,7 @@ r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF, CHECKER = (
     prior.EVENTS, prior.PROGRESS, prior.HANDOFF, prior.CHECKER)
 START, END = 2058, 2060
-BASE = "571dae90382077282f350f29b68df987dde6f130"
+BASE = "712911b339f94cbef3ceff9ac256d67202608fa9"
 QA_HEAD = "e8bda8bb90b771335c2210e4b673e40b2dd02c8d"
 MODE = "F20_U01_R42_KNOWN_MENU_NAVIGATION_CLOSE"
 NEXT = "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW"
@@ -30,11 +30,11 @@ AUTHORITY_FILES = tuple(dict.fromkeys((
     "scripts/f20_u01_r42_start_overlay.py",
     "tests/tooling/test_f20_u01_r42_start_projection.py",
 )))
-CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
+CONTROL_SCOPE = {
     EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, CHECKER,
     "docs/WORK_STATUS.md", "scripts/f20_u01_r42_close_overlay.py",
     "tests/tooling/test_f20_u01_r42_close_projection.py",
-}) - set(AUTHORITY_FILES) - set(prior.SCOPE)
+}
 CHECKER_ANCHOR = (
     b'def validate_bundle(bundle):\n'
     b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_R42_KNOWN_MENU_NAVIGATION_START":\n'
@@ -254,6 +254,13 @@ def validate_outputs(root: Path, outputs: dict[str, bytes]) -> list[str]:
 def materialize(root: Path, at: datetime) -> None:
     root = Path(root)
     raw, _, old = _predecessor(root)
+    actual_now = datetime.now(timezone.utc)
+    leases = (old["worker_lease"], old["write_lease"])
+    if (at.tzinfo is None or abs((actual_now - at).total_seconds()) > 60
+            or any(not (datetime.fromisoformat(lease["issued_at"]) <= actual_now
+                            < datetime.fromisoformat(lease["expires_at"]))
+                   for lease in leases)):
+        raise RuntimeError("R42_CLOSE_CLOCK_OR_LEASE_INVALID")
     frozen = (EVENTS, PROGRESS, HANDOFF, CHECKER, prior.DIGEST, prior.MANIFEST)
     if (_git(root, "rev-parse", "HEAD").decode().strip() != BASE
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip()

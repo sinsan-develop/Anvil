@@ -46,6 +46,25 @@ class R42CloseProjectionTests(unittest.TestCase):
         self.assertEqual(output[overlay.CHECKER], overlay._checker_successor(ROOT))
         self.assertTrue(overlay._authority_match(ROOT))
         self.assertTrue(set(overlay.prior.SCOPE).isdisjoint(overlay.CONTROL_SCOPE))
+        self.assertEqual(overlay.CONTROL_SCOPE, {
+            overlay.EVENTS, overlay.PROGRESS, overlay.HANDOFF,
+            overlay.DIGEST, overlay.MANIFEST, overlay.CHECKER,
+            "docs/WORK_STATUS.md", "scripts/f20_u01_r42_close_overlay.py",
+            "tests/tooling/test_f20_u01_r42_close_projection.py",
+        })
+
+    def test_materialize_rejects_backdated_clock_without_writes(self):
+        from scripts import f20_u01_r42_close_overlay as overlay
+
+        progress = json.loads(overlay._frozen(ROOT, overlay.PROGRESS))
+        backdated = datetime.fromisoformat(progress["worker_lease"]["issued_at"])
+        before = {path: (ROOT / path).read_bytes() for path in (
+            overlay.EVENTS, overlay.PROGRESS, overlay.HANDOFF,
+            overlay.DIGEST, overlay.MANIFEST, overlay.CHECKER,
+        ) if (ROOT / path).exists()}
+        with self.assertRaisesRegex(RuntimeError, "R42_CLOSE_CLOCK_OR_LEASE_INVALID"):
+            overlay.materialize(ROOT, backdated)
+        self.assertEqual(before, {path: (ROOT / path).read_bytes() for path in before})
 
 
 if __name__ == "__main__":
