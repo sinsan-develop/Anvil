@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2044, 2046
-BASE = "6c34b38f9fde91bae6410ee73dfb44f8b92a92d4"  # rebound after preparation checkpoint
+BASE = "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7"
 MODE = "F20_C30_RECOVERY_V2_VERIFIER_CLOSE"
 NEXT = "C30_V2_LEDGER_GENERATION_START_PENDING_INDEPENDENT_CONTROL"
 DIGEST = "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-close.json"

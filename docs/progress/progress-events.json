@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2044,
+  "last_sequence": 2046,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -97721,7 +97721,49 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 2045,
+  "event_id": "evt_f20_2045_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_C30_RECOVERY_V2_VERIFIER_CLOSE",
+  "subject_ref": "F-20/C30-RECOVERY-V2",
+  "occurred_at": "2026-10-04T10:38:02+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "89370B652EE91E027442C3FB6F0159714F8AB3DE5A8DB74683042152AD320D79",
+  "details": {
+    "lease_id": "write-lease-f20-c30v2-c30v2001",
+    "write_fencing_token": "f20-c30v2-write-fence-epoch-55-c30v2001",
+    "reason": "C30_V2_PREFLIGHT_LOCAL_WSL_REVIEW_ACCEPT_EXACT_SCOPE"
+  }
+},
+{
+  "sequence": 2046,
+  "event_id": "evt_f20_2046_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_C30_RECOVERY_V2_VERIFIER_CLOSE",
+  "subject_ref": "F-20/C30-RECOVERY-V2",
+  "occurred_at": "2026-10-04T10:38:02+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "779D16CABC3855592705CCA17147392932A5E776EDA6C521BCF5B83B10E5251E",
+  "details": {
+    "lease_id": "worker-lease-f20-c30v2-c30v2001",
+    "execution_fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
+    "reason": "C30_V2_PREFLIGHT_LOCAL_WSL_REVIEW_ACCEPT_EXACT_SCOPE"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2044_package_resumed"
+  "last_event_id": "evt_f20_2046_worker_lease_revoked"
 }

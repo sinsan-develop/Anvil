@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-c30-recovery-v2-verifier-start-seq2044",
-  "event_sequence": 2044,
-  "updated_at": "2026-10-04T09:25:52+00:00",
-  "last_event_id": "evt_f20_2044_package_resumed",
+  "snapshot_id": "snapshot-f20-c30-recovery-v2-verifier-close-seq2046",
+  "event_sequence": 2046,
+  "updated_at": "2026-10-04T10:38:02+00:00",
+  "last_event_id": "evt_f20_2046_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,28 +215,8 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-c30-recovery-v2",
-  "write_lease": {
-    "lease_id": "write-lease-f20-c30v2-c30v2001",
-    "actor_id": "developer-primary-f20-c30-recovery-v2",
-    "subject_ref": "F-20/C30-RECOVERY-V2",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-04T09:25:52+00:00",
-    "expires_at": "2026-10-05T09:25:52+00:00",
-    "lease_epoch": 55,
-    "fencing_token": "f20-c30v2-write-fence-epoch-55-c30v2001",
-    "execution_fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
-    "baseline_git_commit": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
-    "dispatch_head": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
-    "path_scope": [
-      "scripts/f20_c30_recovery_v2.py",
-      "tests/tooling/test_f20_c30_recovery_v2.py",
-      "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"
-    ],
-    "worker_lease_id": "worker-lease-f20-c30v2-c30v2001",
-    "write_epoch": 55,
-    "write_fencing_token": "f20-c30v2-write-fence-epoch-55-c30v2001"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -268,24 +248,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f20-c30v2-c30v2001",
-    "actor_id": "developer-primary-f20-c30-recovery-v2",
-    "subject_ref": "F-20/C30-RECOVERY-V2",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-04T09:25:52+00:00",
-    "expires_at": "2026-10-05T09:25:52+00:00",
-    "lease_epoch": 55,
-    "fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
-    "execution_fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
-    "baseline_git_commit": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
-    "dispatch_head": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
-    "path_scope": [
-      "scripts/f20_c30_recovery_v2.py",
-      "tests/tooling/test_f20_c30_recovery_v2.py",
-      "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -507,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C30_V2_VERIFIER_EXACT_SCOPE_IMPLEMENTATION",
+  "next_safe_action": "C30_V2_LEDGER_GENERATION_START_PENDING_INDEPENDENT_CONTROL",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -618,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+    "local_head": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
     "local_wsl_qa_head": "271cdc421b128e254b4b74b3fb755fab78d56194",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
-    "projection_mode": "F20_C30_RECOVERY_V2_VERIFIER_START",
-    "validated_base_commit": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+    "remote_head": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
+    "projection_mode": "F20_C30_RECOVERY_V2_VERIFIER_CLOSE",
+    "validated_base_commit": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1057,12 +1020,8 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [
-      "scripts/f20_c30_recovery_v2.py",
-      "tests/tooling/test_f20_c30_recovery_v2.py",
-      "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"
-    ],
-    "worktree_status": "F20_C30_RECOVERY_V2_VERIFIER_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F20_C30_RECOVERY_V2_VERIFIER_COMPLETE_LEASE_CLOSED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1227,7 +1186,7 @@
     "artifact_id": "WI-F-20-C30-RECOVERY-V2-20261004-001",
     "path": "docs/work_orders/F-20_C30_EVENT_RECOVERY_V2_WORK_INSTRUCTION.md",
     "sha256": "80B4F6167097D73E61F9953AFAFD1FD488441A8895DC59B69E74B35295DC7FDA",
-    "result_status": "REWORK_IN_PROGRESS",
+    "result_status": "COMPLETED_C30_V2_PREFLIGHT_WSL_ONLY",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "C30_RECOVERY_APPROVED_DIRECTION",
     "parent_approval_id": "APPROVAL-20261004-C30-NONDESTRUCTIVE-LEDGER-RECOVERY-001"
@@ -1362,8 +1321,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIER_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-close.json",
+    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIER_CLOSE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1384,7 +1343,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "4C2CA1F4F2DEFEBF3B9899B06A7571AC14E38340B5535692161E6E61E67B0C27"
+      "sha256": "A9C7B24895642EFC62A490D7E1DE8A2F22077DC7BE38754B4FDB1DF7315CE71A"
     }
   },
   "next_work_package": {
@@ -1781,8 +1740,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "0F5237F04B483AA0A98CE788F7D62B5E20724DD91639CA3BC72C125401E9BA35",
-  "runtime_next_action": "C30_V2_VERIFIER_EXACT_SCOPE_IMPLEMENTATION",
+  "snapshot_hash": "4191ED594FD12D288F83B2E02F63B43FFA92675516A7497373A5B06DBE8BE46F",
+  "runtime_next_action": "C30_V2_LEDGER_GENERATION_START_PENDING_INDEPENDENT_CONTROL",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -25556,5 +25515,46 @@
     "path": "docs/approvals/APPROVAL-20261004-C30-NONDESTRUCTIVE-LEDGER-RECOVERY-001.md",
     "sha256": "44420B3E302ED50586BA41727E024144940F3A73F66D206550FF1CC61A1573B4",
     "scope": "NONDESTRUCTIVE_LEDGER_RECOVERY_ONLY"
+  },
+  "completed_f20_c30_v2_worker_lease": {
+    "lease_id": "worker-lease-f20-c30v2-c30v2001",
+    "actor_id": "developer-primary-f20-c30-recovery-v2",
+    "subject_ref": "F-20/C30-RECOVERY-V2",
+    "status": "REVOKED",
+    "issued_at": "2026-10-04T09:25:52+00:00",
+    "expires_at": "2026-10-05T09:25:52+00:00",
+    "lease_epoch": 55,
+    "fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
+    "execution_fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
+    "baseline_git_commit": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+    "dispatch_head": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+    "path_scope": [
+      "scripts/f20_c30_recovery_v2.py",
+      "tests/tooling/test_f20_c30_recovery_v2.py",
+      "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"
+    ],
+    "revoked_at": "2026-10-04T10:38:02+00:00"
+  },
+  "completed_f20_c30_v2_write_lease": {
+    "lease_id": "write-lease-f20-c30v2-c30v2001",
+    "actor_id": "developer-primary-f20-c30-recovery-v2",
+    "subject_ref": "F-20/C30-RECOVERY-V2",
+    "status": "REVOKED",
+    "issued_at": "2026-10-04T09:25:52+00:00",
+    "expires_at": "2026-10-05T09:25:52+00:00",
+    "lease_epoch": 55,
+    "fencing_token": "f20-c30v2-write-fence-epoch-55-c30v2001",
+    "execution_fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
+    "baseline_git_commit": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+    "dispatch_head": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+    "path_scope": [
+      "scripts/f20_c30_recovery_v2.py",
+      "tests/tooling/test_f20_c30_recovery_v2.py",
+      "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-c30v2-c30v2001",
+    "write_epoch": 55,
+    "write_fencing_token": "f20-c30v2-write-fence-epoch-55-c30v2001",
+    "revoked_at": "2026-10-04T10:38:02+00:00"
   }
 }

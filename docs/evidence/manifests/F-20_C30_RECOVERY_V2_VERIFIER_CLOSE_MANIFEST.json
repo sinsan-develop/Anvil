@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2046,
+  "accepted": false,
+  "projection_mode": "F20_C30_RECOVERY_V2_VERIFIER_CLOSE",
+  "previous_event_sequence": 2044,
+  "product_write_scope": [],
+  "predecessor_commit": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
+  "predecessor_events_sha256": "4C2CA1F4F2DEFEBF3B9899B06A7571AC14E38340B5535692161E6E61E67B0C27",
+  "preflight_eligible": true,
+  "preflight_result_scope": "SEQ2044_ONLY",
+  "preflight_verifier_path": "scripts/f20_c30_recovery_v2.py",
+  "preflight_verifier_sha256": "6C89027BFB7771B5CCA4610340C9EA6E0BD334ED2CC7ACCC2CA9A6B97849A6F3",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

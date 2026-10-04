@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 from scripts.check_project_progress import raw_event_object_prefix_bytes
@@ -17,7 +18,8 @@ class C30RecoveryCloseTests(unittest.TestCase):
             from scripts import f20_c30_recovery_close_overlay as close
         except ImportError:
             self.fail("C30 recovery lease close projection is not implemented")
-        progress = json.loads((ROOT / close.PROGRESS).read_bytes())
+        progress = json.loads(subprocess.check_output(
+            ["git", "show", f"{close.BASE}:{close.PROGRESS}"], cwd=ROOT))
         at = datetime.fromisoformat(progress["worker_lease"]["issued_at"]) + timedelta(minutes=30)
         return close, close.project(ROOT, at)
 
