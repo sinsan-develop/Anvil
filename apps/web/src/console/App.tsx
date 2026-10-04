@@ -13,7 +13,9 @@ type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' 
 type DashboardSignalComponent = 'database' | 'queue' | 'worker' | 'provider' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
-type NextActionRow = NextAction & {elapsedMinutes: number | null};
+type NextActionDetail = {code: string; source: string; impact: string;
+  observedAt: string; evidenceHash: string};
+type NextActionRow = NextAction & {elapsedMinutes: number | null; detail: NextActionDetail | null};
 type RunSummary = {observedAt: string; observedTotal: number;
   active: number; waiting: number; blocked: number};
 type NextActionsState = {status: 'LOADED'; actions: NextActionRow[]} | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
@@ -28,6 +30,8 @@ type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: 
   nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
 
 const READ_ONLY_MENU = new Map(MENU_ITEMS.map((item) => [item.href, item.label]));
+const KNOWN_DETAIL_SOURCES = new Set([...READ_ONLY_MENU.keys(),
+  '/operations/workers', '/operations/queue', '/operations/cost']);
 const PROVIDER_IDS = new Set(['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama']);
 const PROVIDER_UNAVAILABLE: ProviderRegistration = {status: 'UNAVAILABLE', registered: null};
 const PROVIDER_LOADING: ProviderRegistration = {status: 'LOADING'};
@@ -102,7 +106,8 @@ function validDashboardQueueRow(value: unknown): boolean {
     && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
 }
 
-function dashboardNextActions(value: unknown, alerts: unknown[], snapshotTime: string): NextActionsState {
+function dashboardNextActions(value: unknown, alerts: unknown[], snapshotTime: string,
+  health: Record<string, unknown>, gaps: string[]): NextActionsState {
   if (!Array.isArray(value) || value.length > 100 || !value.every((item) =>
     record(item) && exactFields(item, NEXT_ACTION_FIELDS)
     && (item.priority === 'critical' || item.priority === 'warning')
@@ -130,14 +135,33 @@ function dashboardNextActions(value: unknown, alerts: unknown[], snapshotTime: s
     const at = unique && validObservedAt(candidates[0].observed_at)
       ? Date.parse(candidates[0].observed_at) : NaN;
     const elapsed = Math.floor((Date.parse(snapshotTime) - at) / 60_000);
-    return {...action, elapsedMinutes: unique && Number.isSafeInteger(elapsed) && elapsed >= 0
-      ? elapsed : null};
+    const confirmed = unique && Number.isSafeInteger(elapsed) && elapsed >= 0;
+    const alert = candidates.length === 1 && record(candidates[0]) ? candidates[0] : null;
+    const healthSignal = DASHBOARD_SIGNAL_COMPONENTS.includes(action.target as DashboardSignalComponent)
+      && !gaps.includes(action.target) ? health[action.target] : null;
+    const healthCode = record(healthSignal) && (healthSignal.error_count as number) > 0
+      ? 'HEALTH_ERROR_COUNT' : record(healthSignal)
+        && ['UNKNOWN', 'LATE', 'EXPIRED'].includes(healthSignal.state as string)
+        ? `HEALTH_SIGNAL_${healthSignal.state}` : null;
+    const safePath = /^\/[A-Za-z0-9/_-]*$/.test(action.deep_link)
+      && !action.deep_link.startsWith('//');
+    const isHealthAlert = alert !== null && (alert.code === 'HEALTH_ERROR_COUNT'
+      || (typeof alert.code === 'string' && alert.code.startsWith('HEALTH_SIGNAL_'))
+      || alert.source === 'environment' || action.action === 'CHECK_SOURCE_HEALTH'
+      || action.reason === 'Health observation requires attention');
+    const safeHealthSource = alert !== null && alert.source === 'environment'
+      && alert.code === healthCode && action.action === 'CHECK_SOURCE_HEALTH'
+      && record(healthSignal) && validDashboardSignal(healthSignal, snapshotTime)
+      && healthSignal.detail_path === action.deep_link
+      && healthSignal.evidence_ref === alert.evidence_hash;
+    const safeSource = safePath && (isHealthAlert ? safeHealthSource
+      : KNOWN_DETAIL_SOURCES.has(action.deep_link));
+    const detailAlert = confirmed && safeSource ? alert : null;
+    return {...action, elapsedMinutes: confirmed ? elapsed : null,
+      detail: detailAlert ? {code: detailAlert.code as string, source: detailAlert.source as string,
+        impact: detailAlert.impact as string, observedAt: detailAlert.observed_at as string,
+        evidenceHash: detailAlert.evidence_hash as string} : null};
   })};
-}
-
-function safeMenuLink(value: string): string | null {
-  return /^\/[A-Za-z0-9/_-]*$/.test(value) && !value.startsWith('//')
-    && READ_ONLY_MENU.has(value) ? value : null;
 }
 
 function validDashboardSignal(value: unknown, snapshotTime: string): value is Record<string, unknown> {
@@ -219,7 +243,8 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
     runSummary: Date.parse(snapshot.observed_at) <= Date.now() ? dashboardRunSummary(snapshot.run_summary) : null,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
-    nextActions: dashboardNextActions(snapshot.next_actions, snapshot.alerts as unknown[], snapshot.observed_at),
+    nextActions: dashboardNextActions(snapshot.next_actions, snapshot.alerts as unknown[],
+      snapshot.observed_at, snapshot.health as Record<string, unknown>, snapshot.source_gaps),
     database: health.database, health};
 }
 
@@ -238,15 +263,20 @@ export function NextActionsCard({value}: {value: DashboardQueueState}) {
           : state.status === 'CANCELLED' ? '조회 취소 · 다음 조치를 표시하지 않습니다.'
           : '다음 조치를 확인할 수 없습니다.'}</p></> : state.actions.length === 0
         ? <p>현재 관측된 다음 조치 0건 · 전체 범위의 부재는 확인되지 않았습니다.</p>
-        : <ul>{state.actions.map((item) => {
-          const link = safeMenuLink(item.deep_link);
+        : <ul>{state.actions.map((item, index) => {
+          const detailId = `next-action-detail-${index + 1}`;
           const identity = JSON.stringify(item);
           const occurrence = (occurrences.get(identity) ?? 0) + 1;
           occurrences.set(identity, occurrence);
           return <li key={`${identity}:${occurrence}`}><strong>{item.priority}</strong>
             <p>원인 · {item.reason}</p><p>대상 · {item.target}</p>
-            <p>조치 · {link ? <a href={link}>{item.action}</a> : item.action}</p>
+            <p>조치 · {item.action}</p>
             <p>{item.elapsedMinutes === null ? '경과시간 확인 불가' : `경과시간 · ${item.elapsedMinutes}분`}</p>
+            {item.detail ? <><p><a href={`#${detailId}`}>상세 원인 보기</a></p>
+              <div id={detailId}><p>코드 · {item.detail.code}</p><p>출처 · {item.detail.source}</p>
+                <p>영향 · {item.detail.impact}</p><p>발생 시각 · {item.detail.observedAt}</p>
+                <p>증거 hash · {item.detail.evidenceHash}</p></div></>
+              : <p>상세 원인 확인 불가</p>}
           </li>;
         })}</ul>}
     </div>

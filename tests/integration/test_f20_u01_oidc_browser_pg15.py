@@ -454,7 +454,7 @@ def _r28_manual_candidate(evidence: dict, excluded_keys: set[str]) -> dict:
                "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
                "reconnectEvidence", "reconnectCancelEvidence",
                "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence",
-               "runCardsEvidence", "healthAlertEvidence"}}
+               "runCardsEvidence", "healthAlertEvidence", "detailEvidence"}}
 
 
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
@@ -636,6 +636,20 @@ def _r32_elapsed_evidence(evidence: dict, snapshot_at: str, alert_at: str) -> di
                         for key, value in required.items()))
 
     assert elapsed >= 0 and exact(evidence, expected), "R32_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def _r43_detail_evidence(evidence: dict) -> dict:
+    expected = {"detailEvidence": {"samePageFragment": True,
+                "detailApiDomMatch": True, "detailCount": 1,
+                "placeholderNavigation": False, "preAuthCleared": True,
+                "revokedCleared": True}}
+    actual = evidence.get("detailEvidence")
+    assert (evidence.keys() == expected.keys() and type(actual) is dict
+            and actual.keys() == expected["detailEvidence"].keys()
+            and all(type(actual[key]) is type(value) and actual[key] == value
+                    for key, value in expected["detailEvidence"].items())), (
+        "R43_BROWSER_EVIDENCE_MISMATCH")
     return evidence
 
 
@@ -1008,6 +1022,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                          if key == "elapsedEvidence"}
         r32_evidence = _r32_elapsed_evidence(
             r32_candidate, at.isoformat(), before[0]["observed_at"])
+        r43_evidence = _r43_detail_evidence({key: value for key, value in evidence.items()
+                                           if key == "detailEvidence"})
         r34_evidence = _r34_run_evidence({key: value for key, value in evidence.items()
                                         if key == "runCardsEvidence"})
         r35_evidence = _r35_health_alert_evidence({key: value for key, value in evidence.items()
@@ -1016,7 +1032,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
                    | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)
-                   | set(r34_evidence) | set(r35_evidence)}
+                   | set(r43_evidence) | set(r34_evidence) | set(r35_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1731,6 +1747,24 @@ def test_r32_elapsed_evidence_requires_exact_snapshot_alert_and_display():
     ):
         with pytest.raises(AssertionError, match="R32_BROWSER_EVIDENCE_MISMATCH"):
             _r32_elapsed_evidence({**expected, **changed}, snapshot_at, alert_at)
+
+
+def test_r43_detail_evidence_requires_exact_safe_fragment_and_clearance():
+    expected = {"detailEvidence": {"samePageFragment": True,
+                "detailApiDomMatch": True, "detailCount": 1,
+                "placeholderNavigation": False, "preAuthCleared": True,
+                "revokedCleared": True}}
+    assert _r43_detail_evidence(expected) == expected
+    for changed in (
+        {"detailEvidence": {**expected["detailEvidence"], "samePageFragment": False}},
+        {"detailEvidence": {**expected["detailEvidence"], "detailCount": 2}},
+        {"detailEvidence": {**expected["detailEvidence"], "preAuthCleared": False}},
+        {"detailEvidence": {**expected["detailEvidence"], "revokedCleared": 1}},
+        {"detailEvidence": {**expected["detailEvidence"], "extra": True}},
+        {"extra": True},
+    ):
+        with pytest.raises(AssertionError, match="R43_BROWSER_EVIDENCE_MISMATCH"):
+            _r43_detail_evidence({**expected, **changed})
 
 
 def test_r6_evidence_directory_is_exact_empty_owned_and_diagnostic_off(tmp_path):

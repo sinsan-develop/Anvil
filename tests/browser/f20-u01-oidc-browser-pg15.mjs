@@ -165,6 +165,41 @@ function validateStoredElapsed(snapshot, expected, rowText, storedAlertAt) {
     elapsedMinutes: elapsed, uniqueAlertMatch: true, rowDisplayed: true } };
 }
 
+function validateR43Detail(snapshot, storedAlert, facts, origin) {
+  const actionFields = ['priority', 'reason', 'target', 'action', 'deep_link'];
+  const detailFields = ['code', 'source', 'impact', 'observed_at', 'evidence_hash'];
+  const action = snapshot?.next_actions?.[0];
+  const matchingActions = Array.isArray(snapshot?.next_actions) ? snapshot.next_actions.filter((row) =>
+    actionFields.every((field) => row?.[field] === action?.[field])) : [];
+  const matchingAlerts = Array.isArray(snapshot?.alerts) ? snapshot.alerts.filter((row) =>
+    ['open', 'acknowledged'].includes(row?.status) && row.level === action?.priority
+    && row.cause === action?.reason && row.related_entity_id === action?.target
+    && row.next_action === action?.action && row.deep_link === action?.deep_link) : [];
+  const alert = matchingAlerts[0];
+  const expectedParagraphs = alert && [
+    `코드 · ${alert.code}`, `출처 · ${alert.source}`, `영향 · ${alert.impact}`,
+    `발생 시각 · ${alert.observed_at}`, `증거 hash · ${alert.evidence_hash}`,
+  ];
+  let url;
+  try { url = new URL(facts.url); } catch { /* Invalid navigation fails below. */ }
+  assert.ok(matchingActions.length === 1 && matchingAlerts.length === 1
+    && detailFields.every((field) => typeof alert[field] === 'string'
+      && alert[field].length > 0 && alert[field] === storedAlert[field])
+    && facts.href === '#next-action-detail-1' && facts.id === 'next-action-detail-1'
+    && facts.linkCount === 1 && facts.detailCount === 1
+    && Array.isArray(facts.paragraphs) && facts.paragraphs.length === expectedParagraphs.length
+    && facts.paragraphs.every((text, index) => text === expectedParagraphs[index])
+    && url?.origin === origin && url.pathname === '/' && url.search === ''
+    && url.hash === '#next-action-detail-1', 'R43_DETAIL_MISMATCH');
+  return {detailEvidence: {samePageFragment: true, detailApiDomMatch: true,
+    detailCount: 1, placeholderNavigation: false}};
+}
+
+function validateR43DetailCleared(linkCount, detailCount) {
+  assert.ok(linkCount === 0 && detailCount === 0, 'R43_DETAIL_RETAINED');
+  return {preAuthCleared: true};
+}
+
 function validateSeedResult(seed, code, entity, cause) {
   const alert = seed?.stored_alert;
   const fields = ['code', 'level', 'cause', 'related_entity_id', 'next_action', 'deep_link'];
@@ -1739,6 +1774,9 @@ async function main() {
     assert.equal(preAuthDashboard.status, 401, 'R25_PRE_AUTH_ACCESSIBILITY_MISMATCH');
     const preAuthNext = page.locator('section[aria-labelledby="next-actions-heading"]');
     await preAuthNext.getByText('BLOCKED', { exact: true }).waitFor();
+    const preAuthDetailEvidence = validateR43DetailCleared(
+      await preAuthNext.locator('a[href^="#next-action-detail-"]').count(),
+      await preAuthNext.locator('[id^="next-action-detail-"]').count());
     await verifyObservationTime(page, '조회 차단');
     const preAuthAlertLive = card.locator('[aria-live]');
     const preAuthActionLive = preAuthNext.locator('[aria-live]');
@@ -1934,6 +1972,17 @@ async function main() {
     const elapsedEvidence = validateStoredElapsed(
       JSON.parse(storedReady.dashboardResponse.value.body).data, expectedAction,
       await actionRow.first().innerText(), alerts[0].observed_at);
+    const detailLink = actionRow.first().locator('a[href="#next-action-detail-1"]');
+    const detailTarget = actionRow.first().locator('#next-action-detail-1');
+    const detailHref = await detailLink.getAttribute('href');
+    await detailLink.click();
+    const storedDetailEvidence = validateR43Detail(
+      JSON.parse(storedReady.dashboardResponse.value.body).data, alerts[0],
+      {href: detailHref, id: await detailTarget.getAttribute('id'),
+        paragraphs: await detailTarget.locator('p').allInnerTexts(),
+        linkCount: await nextCard.locator('a[href^="#next-action-detail-"]').count(),
+        detailCount: await nextCard.locator('[id^="next-action-detail-"]').count(),
+        url: page.url()}, apiUrl);
     markStage('STORED_NEXT_ACTION');
     manualPhase('STORED_CLICK_BEGIN');
     const manualRefreshEvidence = await verifyManualRefresh(page, apiUrl, expectedAction.action);
@@ -2013,6 +2062,9 @@ async function main() {
       await verifyObservationTime(page, '조회 차단');
       await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
       assert.equal(await nextCard.locator('li').count(), 0, 'R27_REVOKED_REFRESH_MISMATCH');
+      validateR43DetailCleared(
+        await nextCard.locator('a[href^="#next-action-detail-"]').count(),
+        await nextCard.locator('[id^="next-action-detail-"]').count());
       assert.equal(deniedRequestCount, 1, 'R27_REVOKED_REFRESH_MISMATCH');
     } finally {
       page.off('request', countDeniedRequest);
@@ -2037,6 +2089,9 @@ async function main() {
     await nextCard.getByText('BLOCKED', { exact: true }).waitFor();
     const revokedActionEvidence = validateRevokedNextAction(revokedDashboard.status,
       await nextCard.innerText(), await nextCard.locator('li').count());
+    const revokedDetailCleared = validateR43DetailCleared(
+      await nextCard.locator('a[href^="#next-action-detail-"]').count(),
+      await nextCard.locator('[id^="next-action-detail-"]').count());
     const revokedAlertText = await card.locator('[aria-live]').innerText();
     const revokedActionText = await nextCard.locator('[aria-live]').innerText();
     const revokedAccessible = validateRevokedAccessibility({
@@ -2096,6 +2151,8 @@ async function main() {
       storedEntity: alerts[0].related_entity_id, storedCause: alerts[0].cause, rowMatches,
       visibleBeforeRevoke, revokedStatus: revoked.status, staleCleared,
       ...storedActionEvidence, ...elapsedEvidence, ...revokedActionEvidence,
+      detailEvidence: {...storedDetailEvidence.detailEvidence,
+        ...preAuthDetailEvidence, revokedCleared: revokedDetailCleared.preAuthCleared},
       ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
       failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
       quotaRefreshEvidence, quotaRecoveryEvidence,
@@ -2386,6 +2443,24 @@ if (auditSelfTest) {
     { elapsedEvidence: { snapshotObservedAt: elapsedSnapshot.observed_at,
       alertObservedAt: '2026-09-28T00:00:00+00:00', elapsedMinutes: 5,
       uniqueAlertMatch: true, rowDisplayed: true } });
+  const detailAlert = {...elapsedSnapshot.alerts[0], code: 'WORKER_LEASE_EXPIRED',
+    source: 'worker', impact: 'Run ownership cannot be trusted', evidence_hash: 'sha256:qa'};
+  const detailFacts = {href: '#next-action-detail-1', id: 'next-action-detail-1',
+    paragraphs: ['코드 · WORKER_LEASE_EXPIRED', '출처 · worker',
+      '영향 · Run ownership cannot be trusted', '발생 시각 · 2026-09-28T00:00:00+00:00',
+      '증거 hash · sha256:qa'], linkCount: 1, detailCount: 1,
+    url: apiUrl + '/#next-action-detail-1'};
+  assert.deepEqual(validateR43Detail({...elapsedSnapshot, alerts: [detailAlert]},
+    detailAlert, detailFacts, apiUrl), {detailEvidence: {samePageFragment: true,
+    detailApiDomMatch: true, detailCount: 1, placeholderNavigation: false}});
+  for (const bad of [{...detailFacts, url: apiUrl + '/operations'},
+    {...detailFacts, paragraphs: [...detailFacts.paragraphs.slice(0, 4), '증거 hash · wrong']},
+    {...detailFacts, detailCount: 2}]) {
+    assert.throws(() => validateR43Detail({...elapsedSnapshot, alerts: [detailAlert]},
+      detailAlert, bad, apiUrl), /R43_DETAIL_MISMATCH/);
+  }
+  assert.deepEqual(validateR43DetailCleared(0, 0), {preAuthCleared: true});
+  assert.throws(() => validateR43DetailCleared(1, 0), /R43_DETAIL_RETAINED/);
   for (const bad of [
     { ...elapsedSnapshot, alerts: [...elapsedSnapshot.alerts, ...elapsedSnapshot.alerts] },
     { ...elapsedSnapshot, alerts: [{ ...elapsedSnapshot.alerts[0], status: 'resolved' }] },

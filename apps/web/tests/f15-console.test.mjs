@@ -1135,7 +1135,8 @@ test('Dashboard Next Actions renders validated rows from the existing operations
   assert.deepEqual(state.nextActions?.status, 'LOADED');
   const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
   assert.match(html, /Next Actions.*critical.*&lt;script&gt;cause&lt;\/script&gt;.*run-1.*검토/s);
-  assert.match(html, /href="\/operations"/);
+  assert.match(html, /상세 원인 확인 불가/);
+  assert.doesNotMatch(html, /href="\/operations"|next-action-detail-/);
   assert.doesNotMatch(html, /<script>|private-job-id|private-run-id/);
 });
 
@@ -1153,6 +1154,10 @@ test('Dashboard Next Actions elapsed minutes use the unique unresolved alert in 
   const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
   assert.match(html, /경과시간 · 65분/);
   assert.doesNotMatch(html, /경과시간 확인 불가/);
+  assert.match(html, /href="#next-action-detail-1"/);
+  assert.match(html, /id="next-action-detail-1"/);
+  assert.match(html, /WORKER_LEASE_EXPIRED.*worker.*Run ownership cannot be trusted.*2026-09-30T01:00:00\+00:00.*sha256:private-evidence/s);
+  assert.doesNotMatch(html, /href="\/operations"/);
 });
 
 test('Dashboard Next Actions ambiguous or invalid alert time never becomes zero minutes', async () => {
@@ -1189,6 +1194,8 @@ test('Dashboard Next Actions ambiguous or invalid alert time never becomes zero 
     const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
     assert.equal((html.match(/경과시간 확인 불가/g) ?? []).length, actions.length);
     assert.doesNotMatch(html, /경과시간 · 0분/);
+    assert.equal((html.match(/상세 원인 확인 불가/g) ?? []).length, actions.length);
+    assert.doesNotMatch(html, /href=|id="next-action-detail-/);
   }
 });
 
@@ -1207,6 +1214,187 @@ test('Dashboard Next Actions displays a real zero only for a uniquely matched su
   assert.doesNotMatch(html, /경과시간 확인 불가/);
 });
 
+test('Dashboard detail uses a same-page fragment for a matched alert outside Operations', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  snapshot.next_actions = [{priority: 'warning', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: '/runs'}];
+  snapshot.alerts = [alertRow({level: 'warning', cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: '/runs', status: 'acknowledged',
+    owner_id: 'operator-1', observed_at: '2026-09-30T00:00:00+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /href="#next-action-detail-1"/);
+  assert.doesNotMatch(html, /href="\/runs"/);
+});
+
+test('Dashboard detail accepts the existing server-produced Operations source paths', async () => {
+  for (const deepLink of ['/operations/workers', '/operations/queue', '/operations/cost']) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.next_actions = [{priority: 'critical', reason: 'Cause', target: 'run-1',
+      action: 'REVIEW', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({cause: 'Cause', related_entity_id: 'run-1',
+      next_action: 'REVIEW', deep_link: deepLink,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /href="#next-action-detail-1"/, deepLink);
+    assert.doesNotMatch(html, new RegExp(`href="${deepLink}"`), deepLink);
+  }
+});
+
+test('Dashboard detail stays unavailable for matched unsafe or unknown deep links', async () => {
+  for (const deepLink of ['javascript:alert(1)', 'https://outside.invalid', '//outside.invalid',
+    '/operations?token=private', '/operations#private', '/operations\\bad',
+    '/not-implemented', '/operations/not-implemented']) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.next_actions = [{priority: 'critical', reason: 'Cause', target: 'run-1',
+      action: 'REVIEW', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({cause: 'Cause', related_entity_id: 'run-1',
+      next_action: 'REVIEW', deep_link: deepLink,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /상세 원인 확인 불가/, deepLink);
+    assert.doesNotMatch(html, /href=|id="next-action-detail-/, deepLink);
+  }
+});
+
+test('Dashboard detail accepts a same-snapshot validated Health source path', async () => {
+  for (const [component, deepLink] of [['database', '/operations/database'],
+    ['provider', '/operations/providers'], ['backend', '/operations/backends']]) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.health[component] = observedHealth('LATE', {detail_path: deepLink, error_count: 0});
+    snapshot.next_actions = [{priority: 'warning', reason: 'Health observation requires attention',
+      target: component, action: 'CHECK_SOURCE_HEALTH', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({level: 'warning', source: 'environment',
+      code: 'HEALTH_SIGNAL_LATE', cause: 'Health observation requires attention',
+      related_entity_id: component, next_action: 'CHECK_SOURCE_HEALTH',
+      deep_link: deepLink, evidence_hash: snapshot.health[component].evidence_ref,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /href="#next-action-detail-1"/, component);
+    assert.doesNotMatch(html, new RegExp(`href="${deepLink}"`), component);
+  }
+});
+
+test('Dashboard detail rejects forged or unsupported Health source paths', async () => {
+  for (const change of [{}, {alert: {evidence_hash: 'sha256:wrong'}},
+    {alert: {source: 'worker'}}, {alert: {code: 'OTHER_CODE'}},
+    {health: {detail_path: 'https://outside.invalid'}},
+    {health: {evidence_ref: 'bad'}}, {gaps: ['database']}]) {
+    const deepLink = '/operations/database';
+    const snapshot = dashboardSnapshot([], change.gaps ?? []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    if (change.health || change.alert || change.gaps) {
+      snapshot.health.database = observedHealth('LATE', {detail_path: deepLink,
+        error_count: 0, ...change.health});
+    }
+    snapshot.next_actions = [{priority: 'warning', reason: 'Health observation requires attention',
+      target: 'database', action: 'CHECK_SOURCE_HEALTH', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({level: 'warning', source: 'environment',
+      code: 'HEALTH_SIGNAL_LATE', cause: 'Health observation requires attention',
+      related_entity_id: 'database', next_action: 'CHECK_SOURCE_HEALTH',
+      deep_link: deepLink, evidence_hash: `sha256:${'a'.repeat(64)}`,
+      observed_at: '2026-09-30T00:00:00+00:00', ...change.alert})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /상세 원인 확인 불가/);
+    assert.doesNotMatch(html, /href=|id="next-action-detail-/);
+  }
+});
+
+test('Dashboard known source paths never bypass Health alert verification', async () => {
+  for (const deepLink of ['/operations', '/operations/workers']) {
+    for (const change of [{}, {health: {state: 'HEALTHY'}},
+      {alert: {evidence_hash: 'sha256:wrong'}},
+      {health: {detail_path: '/operations/other'}},
+      {alert: {source: 'worker'}},
+      {alert: {source: 'worker', code: 'OTHER_CODE'}},
+      {action: 'REVIEW'},
+      {action: 'REVIEW', alert: {code: 'OTHER_CODE'}},
+      {action: 'REVIEW', alert: {source: 'worker', code: 'OTHER_CODE'}},
+      {target: 'run-1', action: 'REVIEW',
+        alert: {source: 'worker', code: 'OTHER_CODE'}}]) {
+      const snapshot = dashboardSnapshot([], []);
+      snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+      snapshot.health.database = observedHealth('LATE', {detail_path: deepLink,
+        error_count: 0, ...change.health});
+      const nextAction = change.action ?? 'CHECK_SOURCE_HEALTH';
+      snapshot.next_actions = [{priority: 'warning', reason: 'Health observation requires attention',
+        target: change.target ?? 'database', action: nextAction, deep_link: deepLink}];
+      snapshot.alerts = [alertRow({level: 'warning', source: 'environment',
+        code: 'HEALTH_SIGNAL_LATE', cause: 'Health observation requires attention',
+        related_entity_id: change.target ?? 'database', next_action: nextAction,
+        deep_link: deepLink, evidence_hash: `sha256:${'a'.repeat(64)}`,
+        observed_at: '2026-09-30T00:00:00+00:00', ...change.alert})];
+      const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+        async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+      const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+      if (Object.keys(change).length === 0) {
+        assert.match(html, /href="#next-action-detail-1"/, deepLink);
+      } else {
+        assert.match(html, /상세 원인 확인 불가/, deepLink);
+        assert.doesNotMatch(html, /href=|id="next-action-detail-/, deepLink);
+      }
+    }
+  }
+});
+
+test('Dashboard non-Health action IDs may equal Health component names', async () => {
+  for (const row of [
+    {target: 'database', reason: 'Queue job reached quarantine',
+      action: 'REVIEW_QUARANTINE', deepLink: '/operations/queue',
+      code: 'QUEUE_JOB_QUARANTINED', source: 'orchestrator'},
+    {target: 'worker', reason: 'Worker lease expiry observed',
+      action: 'REVIEW_WORKER_TAKEOVER', deepLink: '/operations/workers',
+      code: 'WORKER_LEASE_EXPIRED', source: 'worker'},
+  ]) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.health[row.target] = observedHealth('LATE', {error_count: 0});
+    snapshot.next_actions = [{priority: 'critical', reason: row.reason,
+      target: row.target, action: row.action, deep_link: row.deepLink}];
+    snapshot.alerts = [alertRow({level: 'critical', cause: row.reason,
+      related_entity_id: row.target, next_action: row.action,
+      deep_link: row.deepLink, code: row.code, source: row.source,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /href="#next-action-detail-1"/, row.target);
+    assert.match(html, new RegExp(row.code), row.target);
+    assert.doesNotMatch(html, new RegExp(`href="${row.deepLink}"`), row.target);
+  }
+});
+
+test('Dashboard detail escapes verified alert text and never uses its deep link as navigation', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  const deepLink = '/operations';
+  snapshot.next_actions = [{priority: 'critical', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: deepLink}];
+  snapshot.alerts = [alertRow({cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: deepLink, code: '<script>code</script>',
+    source: '<b>source</b>', impact: '<img src=x>',
+    observed_at: '2026-09-30T00:00:00+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /href="#next-action-detail-1"/);
+  assert.match(html, /&lt;script&gt;code&lt;\/script&gt;.*&lt;b&gt;source&lt;\/b&gt;.*&lt;img src=x&gt;/s);
+  assert.doesNotMatch(html, /href="\/operations|<script>|<b>source<\/b>|<img src=x>/);
+});
+
 test('Dashboard Next Actions rejects elapsed minutes from a future snapshot', async () => {
   const snapshot = dashboardSnapshot([], []);
   snapshot.observed_at = '2999-01-01T00:01:00+00:00';
@@ -1219,6 +1407,8 @@ test('Dashboard Next Actions rejects elapsed minutes from a future snapshot', as
   const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
   assert.match(html, /경과시간 확인 불가/);
   assert.doesNotMatch(html, /경과시간 · 1분/);
+  assert.match(html, /상세 원인 확인 불가/);
+  assert.doesNotMatch(html, /href=|id="next-action-detail-/);
 });
 
 test('Dashboard Next Actions empty response is an observed zero, not a global absence', async () => {
