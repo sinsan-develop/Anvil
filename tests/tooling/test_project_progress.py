@@ -1535,8 +1535,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             "G05-DEF-006 RED: all-category event fixture is missing",
         )
         fixture = json.loads(ALL_EVENT_FIXTURE_PATH.read_text(encoding="utf-8"))
-        # Preserve the frozen G05 fixture and extend its in-memory standard
-        # category coverage with explicit payloads, never wildcard event types.
+        # The frozen G05 fixture belongs to its historical contract. Check that
+        # boundary separately before exercising later types against today's
+        # contract; neither history nor the current type set may silently drift.
+        generic_bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
+        historical_contract = generic_bundle["event_contract"]
+        historical_types = {event["event_type"] for event in fixture["events"]}
+        self.assertEqual(historical_types, set(historical_contract["event_types"]))
+        self.assertEqual(checker.validate_event_stream(fixture, historical_contract), [])
+
+        # Add only post-fixture types in memory, with explicit payloads and
+        # effects. The exact delta assertion below detects any new type without
+        # allowing a wildcard or rewriting the historical evidence.
         additions = (
             ("WORK_INSTRUCTION_REVISED", "nonsemantic_work_instruction_revision_recorded", {
                 "parent_work_instruction": {"path": "fixture/parent.md", "sha256": "A" * 64},
@@ -1561,6 +1571,35 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "next_action": "F-20_WORK_INSTRUCTION",
             }),
             ("PACKAGE_REVIEWED", "package_review_recorded", {}),
+            ("EVENT_LEDGER_GENERATION_STARTED", "begin_quarantined_generation_pending_independent_verification", {
+                "generation": "fixture-generation", "anchor_commit": "A" * 40,
+                "anchor_blob": "B" * 40, "anchor_sha256": "A" * 64,
+                "cutover_commit": "C" * 40, "cutover_blob": "D" * 40,
+                "cutover_sha256": "B" * 64, "predecessor_commit": "E" * 40,
+                "predecessor_events_sha256": "C" * 64,
+                "predecessor_event_prefix_sha256": "D" * 64,
+                "quarantined_event_sequences": [1], "audit_only_event_sequences": [2],
+                "preflight_manifest_path": "fixture/preflight.json",
+                "preflight_manifest_sha256": "E" * 64,
+                "accepted": False, "authority_active": False,
+            }),
+            ("EVENT_LEDGER_RECOVERY_VERIFIED", "activate_verified_generation_with_quarantined_history_only", {
+                "generation": "fixture-generation", "generation_start_event_id": "fx-049",
+                "generation_manifest_sha256": "F" * 64,
+                "independent_test_report_path": "fixture/recovery.md",
+                "independent_test_report_sha256": "1" * 64,
+                "independent_verdict": "PASS", "wsl_qa_commit": "F" * 40,
+                "wsl_evidence_commit": "1" * 40,
+                "quarantined_event_sequences": [1], "audit_only_event_sequences": [2],
+                "package_accepted": False, "release_decision": "DEFER",
+                "authority_active": True,
+                "verification_manifest_path": "fixture/verification.json",
+                "verification_manifest_sha256": "2" * 64,
+            }),
+        )
+        self.assertEqual(
+            {event_type for event_type, _, _ in additions},
+            set(bundle["event_contract"]["event_types"]) - historical_types,
         )
         for event_type, effect, details in additions:
             contract = bundle["event_contract"]["payload_contracts"][event_type]
@@ -1592,7 +1631,6 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         # Exercise the generic payload/effect validator in its historical era;
         # C30's exact-tail guard is separately covered by its profile tests.
-        generic_bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
         empty_push = copy.deepcopy(generic_bundle)
         empty_push["events"]["events"].append(
             {
