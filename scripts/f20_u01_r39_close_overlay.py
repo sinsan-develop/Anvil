@@ -37,6 +37,8 @@ CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
     "docs/04_test_reports/F-20_U01_R42_KNOWN_MENU_NAVIGATION_PLAN.md",
     "docs/work_orders/F-20_U01_R42_KNOWN_MENU_NAVIGATION_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_U01_R42_KNOWN_MENU_NAVIGATION_INVOCATION.md",
+    "scripts/f20_u01_r42_start_overlay.py",
+    "tests/tooling/test_f20_u01_r42_start_projection.py",
 }) - set(AUTHORITY_FILES) - set(prior.SCOPE)
 CHECKER_ANCHOR = (
     b'def validate_bundle(bundle):\n'
