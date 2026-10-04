@@ -49,6 +49,8 @@ CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
     "scripts/f20_u01_r39_start_overlay.py",
     "tests/tooling/test_f20_u01_r39_start_projection.py",
+    "scripts/f20_u01_r39_close_overlay.py",
+    "tests/tooling/test_f20_u01_r39_close_projection.py",
 }) - set(FROZEN_PRIOR) - set(SCOPE)
 
 CHECKER = "scripts/check_project_progress.py"
