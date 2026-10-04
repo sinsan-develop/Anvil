@@ -1,0 +1,9 @@
+# F-20/U-01 R43 Next Actions 상세 원인 이동 WorkInstruction
+
+- 책임: 단일 `developer-primary` 제품 writer. Main은 canonical dual lease·독립 검토·Git/private push·WSL-server 동일 SHA QA·종료 통제를 소유한다.
+- 기준 문서 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, R43 계획 `8E6EB86117BA9DB178BB3C64D9EE6C79E4191AF83292A6A0C98304D68A776866`. 시작 전 실제 bytes/hash·branch/HEAD/status·유효 worker/write token을 확인한다.
+- exact5: `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, `tests/browser/f20-u01-oidc-browser-pg15.mjs`, `tests/integration/test_f20_u01_oidc_browser_pg15.py`, `docs/04_test_reports/F-20_U01_R43_NEXT_ACTION_DETAIL_RESULT.md`.
+- 목적: 현재 Dashboard 응답의 유일하게 검증된 action↔alert에서만 상세 code/source/impact/발생시각/evidence를 안전하게 표시하고, Next Action의 클릭 대상은 그 same-page 상세가 되게 한다. 대응이 없거나 모호하면 상세 링크 없이 확인 불가를 표시한다. 기존 `deep_link` API 필드는 검증·보존하지만 현재 미구현 메뉴 placeholder로 이동하지 않는다.
+- TDD: console에서 유일/무후보/복수 후보/중복 action/불완전 alert/미래 snapshot/악성 deep link/HTML escape를 먼저 RED로 고정한 뒤 최소 UI GREEN. browser harness는 저장 alert와 DOM 상세·same-origin fragment 클릭·인증 전/철회 후 과거 상세 제거·기존 Network/Secret 단언을 RED→GREEN으로 확인한다. Node/Python 집중 테스트, Web typecheck/lint/build, G-05, diff check를 실행한다.
+- 금지: exact5 밖 제품 write, 새 fetch·API/DB/schema·auth/권한·라우트·alert 확인 쓰기, placeholder 기능 완성 주장, Event/progress/HANDOFF/WORK_STATUS/control 수정, commit·push, WSL-server·ysna/Production 접근. 기존 브라우저 증거와 다른 Dashboard 카드 계약을 약화하지 않는다.
+- 보고: 시작 HEAD/branch/status, 수정 전후 diff, 정확 명령·exit·결과, 오류·SKIP·미검증, 기존 동작 영향, rollback을 판정→판단 이유→조치로 결과보고서에 남긴다. 상태는 `COMPLETED | FAILURE_REPORT | INCOMPLETE | BLOCKED | CANCELLED` 중 하나로 표시한다.
