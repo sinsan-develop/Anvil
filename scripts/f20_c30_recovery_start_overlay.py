@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 START, END = 2040, 2044
-BASE = "40730af313933ef3297c8fe840e16c16089143f1"
+BASE = "f1e992d85c08fabbec69db271dbf70bed7dc0fce"
 MODE = "F20_C30_RECOVERY_V2_VERIFIER_START"
 ACTOR = "developer-primary-f20-c30-recovery-v2"
 SUBJECT = "F-20/C30-RECOVERY-V2"
