@@ -39,6 +39,9 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     EVENTS, PROGRESS, HANDOFF, CONTRACT, MANIFEST, DIGEST, REPORT,
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
     "docs/04_test_reports/F-20_U01_POST_C30_RECOVERY_SCOPE_OWNER_REVIEW.md",
+    "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_PLAN.md",
+    "docs/work_orders/F-20_U01_R39_ARTIFACT_HEALTH_GAP_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R39_ARTIFACT_HEALTH_GAP_INVOCATION.md",
     "scripts/f20_c30_recovery_verified_overlay.py",
     "tests/tooling/test_f20_c30_recovery_verified_projection.py",
 }

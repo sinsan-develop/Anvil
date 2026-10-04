@@ -14,11 +14,15 @@
 | 운영 6카드 | UI는 scoped Run 3상태만 집계하고 나머지는 `UNAVAILABLE`로 표시한다. R38 PostgreSQL Budget read는 실제 budget/reservation 원장 상태를 연결했다. | 필수 Gate 미통과의 동일 artifact/environment, 미래 예상 비용 초과의 예측 기준, baseline 충돌의 범위·완전한 원본이 없다. Run `BLOCKED`나 예약 성공을 다른 세 카드 수치로 바꾸지 않는다. |
 | Next Actions/Critical Alerts | 같은 snapshot의 저장 Alert와 고유하게 대응한 action 경과시간은 R32에서 연결됐다. Critical Alert는 저장 조회와 F-13 내부 `acknowledge`가 있다. | Critical 확인의 공개 mutation, 실제 승인 객체·권한, CSRF/Origin, idempotency·동시성·재조회 계약이 없다. UI만 바꾸어 성공을 꾸미지 않는다. |
 
+추가 구체 결함: `project_operations`의 `source_gaps` 집합은 Health의 `artifact_store`가 없을 때 이 component를 포함하지 않는다. 반환 Health state 자체는 `UNKNOWN`이라 현재 즉시 거짓 `HEALTHY`가 되지는 않지만, 누락 원인 표시는 불완전하다. 또한 `DashboardSignalCard`는 signal의 `detail_path`를 검사만 하고 클릭 가능한 상세 링크를 렌더하지 않는다. 상세 목적지와 실제 원인 자료가 없는 한 임의 링크를 붙여 해결한 것으로 간주하지 않는다.
+
 ## 다음 안전한 순서
 
 1. U-01의 현재 고정 scope에서 허용 조합의 server-owned source와 인증 수명·권한 철회 시 재조회 경계를 먼저 명세한다. 현행 단일 조합을 노출하는 read-only 계약과 다중 조합 선택 권위를 구분한다. 공개 API/인가·지속 데이터 계약 변경은 구현 전에 정확한 영향과 비확대 조건을 판정한다.
 2. Health는 `HealthSignal`의 각 필드에 대응하는 실제 관측 owner가 있는 component부터 별도 절편으로 연결한다. DB readiness를 대용의 전체 건강 판정으로 사용하지 않고, 측정·상세 경로가 없으면 `UNKNOWN`을 보존한다.
 3. 기간/Gate/예상비용/baseline은 bounded·scope·완전성 계약이 정의된 후에만 집계한다. Source가 불완전할 때의 화면은 `UNAVAILABLE`이다.
 4. Critical 확인은 별도 명령/감사/인가 계약을 fail-closed로 정의하고 독립 검증한다. Local 개발→private Git 정확 SHA→WSL-server PG15/OIDC/HTTPS/Chromium, E-API/E-NET/E-SHOT을 분리해 기록한다.
+
+단기 내부 보완 후보는 `artifact_store` source gap 누락의 테스트 우선 수정이다. 이 결함은 아직 수정하지 않았고 U-01 수락이나 다른 다섯 Health source의 증거를 대체하지 않는다.
 
 이번 감사의 신규 테스트와 실제 DB·브라우저 실행은 0건이다. 기존 R41 또는 C30 PASS를 새 U-01 PASS로 계산하지 않는다. F-20/U-01 미수락, ReleaseDecision `DEFER`, Production/`ysna-server` 미검증, 같은 작업 branch 유지.
