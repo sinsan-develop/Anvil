@@ -38,6 +38,7 @@ FROZEN_VERIFICATION_INPUTS = (
 CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     EVENTS, PROGRESS, HANDOFF, CONTRACT, MANIFEST, DIGEST, REPORT,
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
+    "docs/04_test_reports/F-20_U01_POST_C30_RECOVERY_SCOPE_OWNER_REVIEW.md",
     "scripts/f20_c30_recovery_verified_overlay.py",
     "tests/tooling/test_f20_c30_recovery_verified_projection.py",
 }
