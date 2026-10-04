@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { checkedProjection } from './src/api/c29-agent-console-client.js';
+import { MENU_ITEMS } from './src/features/app-shell/app-shell-model.js';
 
 const execFileAsync=promisify(execFile);
 const webRoot=dirname(fileURLToPath(import.meta.url));
@@ -22,6 +23,7 @@ const securityHeaders={
 };
 const apiUpstream=(process.env.ANVIL_API_UPSTREAM||'').replace(/\/$/,'');
 const apiProxyPrefixes=['/api/','/health/','/integrations/','/auth/'];
+const menuPaths=new Set(MENU_ITEMS.map(item=>item.href));
 
 async function proxyApiRequest(request,response,requestUrl) {
   if (!apiUpstream || !(apiProxyPrefixes.some(prefix=>requestUrl.pathname.startsWith(prefix)) || requestUrl.pathname==='/openapi.json')) return false;
@@ -130,6 +132,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      const rawPath=request.url.split('?',1)[0];
       // Dedicated host opt-in; never route QA login through production auth.
       if (requestUrl.pathname==='/auth/c30r3-qa' || request.url.startsWith('/auth/c30r3-qa')) {
         if (!qaUpstream) return safeFailure(response,404,'EMPTY','허용된 경로가 아닙니다.');
@@ -236,7 +239,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
         const state=fixtures[body.fixtureId].state;
         return send(response,200,{ok:true,state,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,language:scan.repository?.primary_language ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},evidence:{badge:'FIXTURE',countsAsPass:false,scope:'FIXTURE_BROWSER_RUNTIME_ONLY'},message:state==='BLOCKED'?'dirty fixture가 감지되어 실행을 차단했습니다.':'읽기 전용 fixture scan이 끝났습니다.',nextAction:state==='BLOCKED'?'변경 파일을 검토한 뒤 새 scan을 시작하세요.':'실행 모드를 선택하세요.'});
       }
-      if (request.method==='GET' && requestUrl.pathname==='/') {
+      if (request.method==='GET' && rawPath===requestUrl.pathname && (requestUrl.pathname==='/' || (runtimeMode==='production' && menuPaths.has(requestUrl.pathname)))) {
         const filename=runtimeMode==='preview'?'ui-preview.html':runtimeMode==='fixture'?'fixture-workbench.html':'index.html';
         const body=await readFile(join(webRoot,filename));
         response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});

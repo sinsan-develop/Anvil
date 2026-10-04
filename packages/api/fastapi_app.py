@@ -47,6 +47,7 @@ _TRUSTED_READ_ENDPOINT_KEYS = frozenset(
 def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = False) -> None:
     """Serve the built frontend from the same ASGI listener as the API."""
     fixture_file = f"{directory}/fixture-workbench.html"
+    index_file = f"{directory}/index.html"
     if fixture_enabled:
         app.add_api_route(
             "/fixture-workbench",
@@ -65,6 +66,16 @@ def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = Fals
                 methods=["GET"],
                 include_in_schema=False,
             )
+
+    def menu_shell() -> FileResponse:
+        return FileResponse(index_file)
+
+    for path in (
+        "/workbench", "/projects", "/runs", "/reviews", "/quality",
+        "/knowledge", "/agents-automation", "/environments", "/operations",
+        "/settings",
+    ):
+        app.add_api_route(path, menu_shell, methods=["GET"], include_in_schema=False)
     app.mount("/", StaticFiles(directory=directory, html=True), name="frontend")
 Authenticator = Callable[[str], SessionPrincipal | None]
 _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')

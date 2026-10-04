@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import http from 'node:http';
 
 import {startWorkbenchServer} from '../server.mjs';
+import {MENU_ITEMS} from '../src/features/app-shell/app-shell-model.js';
 
 test('preview mode serves the preview and health endpoint', async () => {
   const runtime = await startWorkbenchServer({host: '127.0.0.1', port: 0, uiMode: 'preview'});
@@ -13,6 +15,7 @@ test('preview mode serves the preview and health endpoint', async () => {
     const health = await fetch(`${runtime.origin}/healthz`);
     assert.equal(health.status, 200);
     assert.deepEqual(await health.json(), {ok: true, service: 'anvil-web', mode: 'preview'});
+    assert.equal((await fetch(`${runtime.origin}/projects`)).status,404);
   } finally {
     await runtime.close();
   }
@@ -58,6 +61,59 @@ test('production mode serves Dashboard, keeps Provider Workbench separate, and h
     assert.equal(fixture.status,200);
     assert.match(await fixture.text(), /FIXTURE BROWSER RUNTIME/);
   } finally { await flagged.close(); }
+});
+
+test('production runtime serves only known menu paths as the same shell', async () => {
+  assert.equal(MENU_ITEMS.length,11);
+  const menuPaths=MENU_ITEMS.map(item=>item.href);
+  assert.ok(menuPaths.includes('/projects') && menuPaths.includes('/operations'));
+  const runtime=await startWorkbenchServer({host:'127.0.0.1',port:0});
+  try {
+    const shell=await fetch(`${runtime.origin}/`);
+    assert.equal(shell.status,200);
+    const html=await shell.text();
+    for (const path of menuPaths) {
+      const response=await fetch(`${runtime.origin}${path}`);
+      assert.equal(response.status,200,path);
+      assert.match(response.headers.get('content-type')??'',/^text\/html/,path);
+      assert.equal(response.headers.get('content-security-policy'),shell.headers.get('content-security-policy'),path);
+      assert.equal(await response.text(),html,path);
+    }
+    for (const path of ['/unknown','/projects/unknown','/api/not-a-route','/auth/not-a-route','/health/not-a-route','/fixture-workbench','/fixture-workbench.html']) {
+      assert.equal((await fetch(`${runtime.origin}${path}`)).status,404,path);
+    }
+  } finally { await runtime.close(); }
+
+  const fixtureRuntime=await startWorkbenchServer({host:'127.0.0.1',port:0,uiMode:'fixture',fixtureEnabled:true});
+  try {
+    assert.equal((await fetch(`${fixtureRuntime.origin}/projects`)).status,404);
+    assert.equal((await fetch(`${fixtureRuntime.origin}/fixture-workbench`)).status,200);
+  } finally { await fixtureRuntime.close(); }
+});
+
+test('production runtime rejects raw paths that normalize into menu or root routes', async () => {
+  const runtime=await startWorkbenchServer({host:'127.0.0.1',port:0});
+  const rawGet=path=>new Promise((resolve,reject)=>{
+    const request=http.request(runtime.origin,{method:'GET',path},response=>{
+      response.resume();
+      response.on('end',()=>resolve({status:response.statusCode,contentType:response.headers['content-type']}));
+      response.on('error',reject);
+    });
+    request.on('error',reject);
+    request.end();
+  });
+  try {
+    for (const path of ['/api/../projects','/auth/../settings','/health/../operations','/fixture-workbench/../projects','/api/..']) {
+      const response=await rawGet(path);
+      assert.equal(response.status,404,path);
+      assert.doesNotMatch(response.contentType??'',/^text\/html/,path);
+    }
+    for (const path of ['/?view=today','/projects?view=today']) {
+      const response=await rawGet(path);
+      assert.equal(response.status,200,path);
+      assert.match(response.contentType??'',/^text\/html/,path);
+    }
+  } finally { await runtime.close(); }
 });
 
 test('production runtime proxies Provider and SSE reads and never implements Provider writes', async () => {

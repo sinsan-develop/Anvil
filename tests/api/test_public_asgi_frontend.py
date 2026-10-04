@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+import re
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -62,6 +65,28 @@ def test_public_asgi_hides_fixture_routes_by_default() -> None:
     with TestClient(app) as client:
         assert client.get("/fixture-workbench").status_code == 404
         assert client.get("/fixture-workbench.html").status_code == 404
+
+
+def test_public_asgi_serves_only_known_menu_paths_as_the_production_shell() -> None:
+    web_root = Path(__file__).resolve().parents[2] / "apps" / "web"
+    menu_model = (web_root / "src/features/app-shell/app-shell-model.js").read_text(encoding="utf-8")
+    menu_paths = re.findall(r"\bhref:'([^']+)'", menu_model)
+    assert len(menu_paths) == 11
+    assert "/projects" in menu_paths and "/operations" in menu_paths
+
+    app = FastAPI()
+    mount_frontend(app, str(web_root))
+    client = TestClient(app)
+    shell = client.get("/")
+    assert shell.status_code == 200
+    for path in menu_paths:
+        response = client.get(path)
+        assert response.status_code == 200, path
+        assert response.headers["content-type"].startswith("text/html"), path
+        assert response.content == shell.content, path
+    for path in ("/unknown", "/projects/unknown", "/api/not-a-route", "/auth/not-a-route", "/health/not-a-route", "/fixture-workbench", "/fixture-workbench.html"):
+        response = client.get(path)
+        assert response.status_code == 404, path
 
 
 def test_fresh_asgi_route_order_keeps_health_routes_ahead_of_static_mount(monkeypatch) -> None:
