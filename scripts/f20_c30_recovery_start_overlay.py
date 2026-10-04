@@ -38,6 +38,10 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
     "scripts/f20_c30_recovery_start_overlay.py",
     "tests/tooling/test_f20_c30_recovery_start_projection.py",
+    "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-close.json",
+    "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIER_CLOSE_MANIFEST.json",
+    "scripts/f20_c30_recovery_close_overlay.py",
+    "tests/tooling/test_f20_c30_recovery_close_projection.py",
     *SCOPE,
 }
 FROZEN = (WI, DESIGN, PLAN, APPROVAL)
