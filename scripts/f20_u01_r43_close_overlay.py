@@ -34,6 +34,8 @@ CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     "docs/04_test_reports/F-20_U01_R44_HEALTH_DETAIL_RESULT.md",
     "docs/work_orders/F-20_U01_R44_HEALTH_DETAIL_WORK_INSTRUCTION.md",
     "docs/work_orders/F-20_U01_R44_HEALTH_DETAIL_INVOCATION.md",
+    "scripts/f20_u01_r44_start_overlay.py",
+    "tests/tooling/test_f20_u01_r44_start_projection.py",
 }
 CHECKER_ANCHOR = (
     b'def validate_bundle(bundle):\n'
