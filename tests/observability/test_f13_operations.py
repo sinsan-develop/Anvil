@@ -58,10 +58,28 @@ def sources():
 def test_missing_sources_remain_unknown_with_source_gaps():
     from packages.observability.projection import OperationsSources, project_operations
     result = project_operations(OperationsSources(), observed_at=NOW)
-    assert result["health"]["database"]["state"] == "UNKNOWN"
-    assert result["health"]["provider"]["state"] == "UNKNOWN"
-    assert result["health"]["backend"]["state"] == "UNKNOWN"
-    assert result["source_gaps"] == ["backend", "database", "deployment", "provider", "queue", "worker"]
+    assert set(result["health"]) == {
+        "database", "queue", "worker", "provider", "backend", "artifact_store"}
+    assert all(signal["state"] == "UNKNOWN" for signal in result["health"].values())
+    assert result["source_gaps"] == [
+        "artifact_store", "backend", "database", "deployment", "provider", "queue", "worker"]
+
+
+def test_artifact_store_signal_removes_only_its_gap_and_preserves_health_evidence():
+    from packages.observability.models import HealthSignal
+    from packages.observability.projection import OperationsSources, project_operations
+    signal = HealthSignal("artifact_store", "UNKNOWN", NOW, timedelta(minutes=10),
+                          2, HASH, "/operations/artifacts")
+    result = project_operations(OperationsSources(health_signals=(signal,)),
+                                observed_at=NOW + timedelta(minutes=1))
+    assert result["source_gaps"] == [
+        "backend", "database", "deployment", "provider", "queue", "worker"]
+    assert result["health"]["artifact_store"] == {
+        "state": "UNKNOWN", "observed_at": NOW.isoformat(),
+        "stale_after_seconds": 600, "last_check": NOW.isoformat(),
+        "error_count": 2, "detail_path": "/operations/artifacts", "evidence_ref": HASH}
+    assert all(result["health"][key]["state"] == "UNKNOWN" for key in
+               ("database", "queue", "worker", "provider", "backend"))
 
 
 def test_owner_projection_masks_tokens_and_exposes_queue_worker_budget_state():

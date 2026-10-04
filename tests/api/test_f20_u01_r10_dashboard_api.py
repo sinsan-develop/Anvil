@@ -76,7 +76,9 @@ def test_dashboard_read_is_scoped_snapshot_with_unknown_gaps_and_no_mutation():
         "budget", "reservations", "providers", "deployments", "source_gaps",
         "alerts", "next_actions", "run_summary"}
     assert data["queue"] == [] and data["health"]["queue"]["state"] == "UNKNOWN"
-    assert "queue" in data["source_gaps"]
+    assert data["health"]["artifact_store"]["state"] == "UNKNOWN"
+    assert data["source_gaps"] == [
+        "artifact_store", "backend", "database", "deployment", "provider", "queue", "worker"]
     assert repository.load("project-1", "env-1") == ()
     assert client().get(PATH).status_code == 501
 
