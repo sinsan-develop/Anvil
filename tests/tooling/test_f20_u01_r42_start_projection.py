@@ -44,8 +44,12 @@ class R42StartProjectionTests(unittest.TestCase):
         self.assertEqual(overlay.validate_outputs(ROOT, output), [])
         self.assertEqual(output[overlay.CHECKER], overlay._checker_successor(ROOT))
         self.assertTrue(set(overlay.SCOPE).isdisjoint(overlay.CONTROL_SCOPE))
-        self.assertFalse((ROOT / overlay.DIGEST).exists())
-        self.assertFalse((ROOT / overlay.MANIFEST).exists())
+        if json.loads((ROOT / overlay.PROGRESS).read_bytes())["event_sequence"] == overlay.START:
+            self.assertFalse((ROOT / overlay.DIGEST).exists())
+            self.assertFalse((ROOT / overlay.MANIFEST).exists())
+        else:
+            actual = {path: (ROOT / path).read_bytes() for path in output}
+            self.assertEqual(overlay.validate_outputs(ROOT, actual), [])
 
 
 if __name__ == "__main__":
