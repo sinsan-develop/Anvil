@@ -51,6 +51,7 @@ class R42CloseProjectionTests(unittest.TestCase):
             overlay.DIGEST, overlay.MANIFEST, overlay.CHECKER,
             "docs/WORK_STATUS.md", "scripts/f20_u01_r42_close_overlay.py",
             "tests/tooling/test_f20_u01_r42_close_projection.py",
+            "tests/tooling/test_project_progress.py",
         })
 
     def test_materialize_rejects_backdated_clock_without_writes(self):

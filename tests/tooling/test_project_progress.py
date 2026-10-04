@@ -323,7 +323,7 @@ class C30CanonicalReconciliationTests(unittest.TestCase):
         self.assertIn("docs/WORK_STATUS.md", checker.c30_canonical_paths())
         self.assertTrue(p["active_work_instruction"]["artifact_path"].endswith("_R2.md"))
         # The historical C30 projection stays frozen. The live ledger's
-        # different raw bytes are an OPEN_BLOCKING incident, not repaired history.
+        # different raw bytes remain quarantined after verified recovery.
         actual = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
         current_prefix = checker.raw_event_object_prefix_bytes(actual, 1334)
         historical_prefix = checker.raw_event_object_prefix_bytes(
@@ -363,7 +363,8 @@ class C30CanonicalReconciliationTests(unittest.TestCase):
                 "semantic_changed_sequences", "post_cause_changed_sequences")),
         )
         self.assertEqual(
-            ("OPEN_BLOCKING", "CRITICAL", True, "DEFER", "REWORK_IN_PROGRESS"),
+            ("RECOVERED_WITH_QUARANTINED_HISTORY", "CRITICAL", False,
+             "DEFER", "REWORK_IN_PROGRESS"),
             (live["progress"]["f20_c30_event_integrity_incident"]["status"],
              live["progress"]["f20_c30_event_integrity_incident"]["severity"],
              live["progress"]["f20_c30_event_integrity_incident"]["blocking"],

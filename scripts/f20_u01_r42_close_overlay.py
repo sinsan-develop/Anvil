@@ -34,6 +34,7 @@ CONTROL_SCOPE = {
     EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, CHECKER,
     "docs/WORK_STATUS.md", "scripts/f20_u01_r42_close_overlay.py",
     "tests/tooling/test_f20_u01_r42_close_projection.py",
+    "tests/tooling/test_project_progress.py",
 }
 CHECKER_ANCHOR = (
     b'def validate_bundle(bundle):\n'
