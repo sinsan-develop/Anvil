@@ -51,7 +51,8 @@
     "WORK_INSTRUCTION_ISSUED",
     "PACKAGE_REVIEWED",
     "WORK_INSTRUCTION_REVISED",
-    "HUMAN_OVERRIDE_TAKEOVER_RECORDED"
+    "HUMAN_OVERRIDE_TAKEOVER_RECORDED",
+    "EVENT_LEDGER_GENERATION_STARTED"
   ],
   "payload_contracts": {
     "MIGRATED_LEGACY_SNAPSHOT": {
@@ -452,6 +453,27 @@
         "source"
       ],
       "effect": "human_override_takeover_authorized"
+    },
+    "EVENT_LEDGER_GENERATION_STARTED": {
+      "required_details": [
+        "generation",
+        "anchor_commit",
+        "anchor_blob",
+        "anchor_sha256",
+        "cutover_commit",
+        "cutover_blob",
+        "cutover_sha256",
+        "predecessor_commit",
+        "predecessor_events_sha256",
+        "predecessor_event_prefix_sha256",
+        "quarantined_event_sequences",
+        "audit_only_event_sequences",
+        "preflight_manifest_path",
+        "preflight_manifest_sha256",
+        "accepted",
+        "authority_active"
+      ],
+      "effect": "begin_quarantined_generation_pending_independent_verification"
     }
   },
   "historical_event_profiles": {

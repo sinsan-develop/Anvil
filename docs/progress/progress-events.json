@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2046,
+  "last_sequence": 2047,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -97763,7 +97763,47 @@
     "execution_fencing_token": "f20-c30v2-execution-fence-epoch-55-c30v2001",
     "reason": "C30_V2_PREFLIGHT_LOCAL_WSL_REVIEW_ACCEPT_EXACT_SCOPE"
   }
+},
+{
+  "sequence": 2047,
+  "event_id": "evt_f20_2047_event_ledger_generation_started",
+  "event_type": "EVENT_LEDGER_GENERATION_STARTED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_C30_RECOVERY_V2_GENERATION_START",
+  "subject_ref": "F-20/C30-RECOVERY-V2",
+  "occurred_at": "2026-10-04T11:00:36+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "055DDABDDBA1A56C859186D8D2AB89F51305A65280E459F4811AD5A6B11FC94C",
+  "details": {
+    "generation": 2,
+    "anchor_commit": "97adc5cf7070c71b61a5d6902d31cf195329b38f",
+    "anchor_blob": "b59ac57228f9b5684b939dc30fc7d7bce5dbbb54",
+    "anchor_sha256": "2755283A52C6AA384129E516A3EA52D23647DD5E7BF1D68EC63C248A0B0EE36F",
+    "cutover_commit": "9485465ddb046a48e61ee14c7cdd0e62df0a6e70",
+    "cutover_blob": "0f86d09446b40905e9d33e9e6cbe4c1380a63218",
+    "cutover_sha256": "5167A3AC73E8C914144340F0B1506CE144470657AE75CAAFEF0DAFBB4E5D1DBF",
+    "predecessor_commit": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
+    "predecessor_events_sha256": "A9C7B24895642EFC62A490D7E1DE8A2F22077DC7BE38754B4FDB1DF7315CE71A",
+    "predecessor_event_prefix_sha256": "2C4B32F5B39E5A264B32A3B90B633E74061347B533E9225F7C7589D69D453F9F",
+    "quarantined_event_sequences": [
+      1689,
+      1714
+    ],
+    "audit_only_event_sequences": [
+      1715,
+      2046
+    ],
+    "preflight_manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_GENERATION_START_MANIFEST.json",
+    "preflight_manifest_sha256": "214C0821E37EFA59F9F4EB02E23478467FE741E824E2444D8619FE249C871F69",
+    "accepted": false,
+    "authority_active": false
+  }
 }
   ],
-  "last_event_id": "evt_f20_2046_worker_lease_revoked"
+  "last_event_id": "evt_f20_2047_event_ledger_generation_started"
 }

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-c30-recovery-v2-verifier-close-seq2046",
-  "event_sequence": 2046,
-  "updated_at": "2026-10-04T10:38:02+00:00",
-  "last_event_id": "evt_f20_2046_worker_lease_revoked",
+  "snapshot_id": "snapshot-f20-c30-recovery-v2-generation-start-seq2047",
+  "event_sequence": 2047,
+  "updated_at": "2026-10-04T11:00:36+00:00",
+  "last_event_id": "evt_f20_2047_event_ledger_generation_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -470,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C30_V2_LEDGER_GENERATION_START_PENDING_INDEPENDENT_CONTROL",
+  "next_safe_action": "C30_V2_GENERATION_INDEPENDENT_READ_ONLY_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -581,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
+    "local_head": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
     "local_wsl_qa_head": "271cdc421b128e254b4b74b3fb755fab78d56194",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
-    "projection_mode": "F20_C30_RECOVERY_V2_VERIFIER_CLOSE",
-    "validated_base_commit": "b58b389e3c9f2ae6d9b37937a83a1709535b0cc7",
+    "remote_head": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
+    "projection_mode": "F20_C30_RECOVERY_V2_GENERATION_START",
+    "validated_base_commit": "2bc1a4a2b011609dd9cd0da5bf94dce280e1dbe2",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1021,7 +1021,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F20_C30_RECOVERY_V2_VERIFIER_COMPLETE_LEASE_CLOSED",
+    "worktree_status": "F20_C30_GENERATION_2_PENDING_INDEPENDENT_REVIEW",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1321,8 +1321,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-close.json",
-    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIER_CLOSE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-c30-recovery-v2-generation-start.json",
+    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_GENERATION_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1339,11 +1339,11 @@
     },
     "progress_event_contract": {
       "path": "docs/progress/progress-event-contract.json",
-      "sha256": "5D1198A312E21889D2FE8F0EE7B8B999AB51E4320283DF92EDF8368D4D5DAD9D"
+      "sha256": "59185D5A6756DF97C6D7A0DB4CC14F54E446CD38614F696E78CE3811C358E1DF"
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "A9C7B24895642EFC62A490D7E1DE8A2F22077DC7BE38754B4FDB1DF7315CE71A"
+      "sha256": "1FA1FAAF7D2A786DC0C9359007DD9755E62FBA2014540E5439EA96B2D6C03CCD"
     }
   },
   "next_work_package": {
@@ -1740,8 +1740,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "4191ED594FD12D288F83B2E02F63B43FFA92675516A7497373A5B06DBE8BE46F",
-  "runtime_next_action": "C30_V2_LEDGER_GENERATION_START_PENDING_INDEPENDENT_CONTROL",
+  "snapshot_hash": "8C5530BB76A4A2A583CDFBA8814A023F27519F65C3F59F1DCCF174C73BCE8A19",
+  "runtime_next_action": "C30_V2_GENERATION_INDEPENDENT_READ_ONLY_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -25556,5 +25556,14 @@
     "write_epoch": 55,
     "write_fencing_token": "f20-c30v2-write-fence-epoch-55-c30v2001",
     "revoked_at": "2026-10-04T10:38:02+00:00"
+  },
+  "c30_event_generation": {
+    "generation": 2,
+    "status": "PENDING_INDEPENDENT_VERIFICATION",
+    "started_event_id": "evt_f20_2047_event_ledger_generation_started",
+    "manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_GENERATION_START_MANIFEST.json",
+    "manifest_sha256": "214C0821E37EFA59F9F4EB02E23478467FE741E824E2444D8619FE249C871F69",
+    "authority_active": false,
+    "accepted": false
   }
 }
