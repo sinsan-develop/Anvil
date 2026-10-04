@@ -106,6 +106,11 @@ def _u01_tamper_errors(step_id: str) -> tuple[str, str, str]:
             "F20_U01_R38B_CLOSE_PROJECTION_INVALID",
             "F20_U01_R38B_CLOSE_F-20_U01_R38B_BUDGET_FIXTURE_REWORK_CLOSE_MANIFEST.JSON_INVALID",
         ),
+        "F20_U01_R42_KNOWN_MENU_NAVIGATION_CLOSE": (
+            "R42_CLOSE_TRANSITION_INVALID",
+            "R42_CLOSE_TRANSITION_INVALID",
+            "R42_CLOSE_F-20_U01_R42_KNOWN_MENU_NAVIGATION_CLOSE_MANIFEST.JSON_INVALID",
+        ),
     }
     if step_id in exact:
         return exact[step_id]
@@ -1310,7 +1315,18 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(current_step, manifest["projection_mode"])
         progress_error, digest_error, manifest_error = _u01_tamper_errors(current_step)
         self.assertFalse(manifest["accepted"])
-        self.assertEqual("OPEN_BLOCKING", bundle["progress"]["f20_c30_event_integrity_incident"]["status"])
+        if bundle["progress"]["event_sequence"] >= 2048:
+            self.assertEqual(
+                (2048, "EVENT_LEDGER_RECOVERY_VERIFIED"),
+                (bundle["events"]["events"][2047]["sequence"],
+                 bundle["events"]["events"][2047]["event_type"]),
+            )
+            expected_incident = ("RECOVERED_WITH_QUARANTINED_HISTORY", False)
+        else:
+            expected_incident = ("OPEN_BLOCKING", True)
+        self.assertEqual(expected_incident,
+                         (bundle["progress"]["f20_c30_event_integrity_incident"]["status"],
+                          bundle["progress"]["f20_c30_event_integrity_incident"]["blocking"]))
         self.assertEqual("DEFER", bundle["progress"]["scope_revision_binding"]["release_decision"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
