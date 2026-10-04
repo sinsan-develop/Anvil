@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2048,
+  "last_sequence": 2052,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -97842,7 +97842,129 @@
     "verification_manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIED_MANIFEST.json",
     "verification_manifest_sha256": "FBC546FE67582AAB2E131377BCF33D03761AA90F246EABE325AD4A9A1CC79888"
   }
+},
+{
+  "sequence": 2049,
+  "event_id": "evt_f20_2049_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R39_ARTIFACT_HEALTH_GAP_START",
+  "subject_ref": "F-20/U01-R39",
+  "occurred_at": "2026-10-04T12:32:38+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "61EBB34797665A558F6777533543CEDFEFFB52589BBC1ED3039FD35D12F5223E",
+  "details": {
+    "path": "docs/work_orders/F-20_U01_R39_ARTIFACT_HEALTH_GAP_WORK_INSTRUCTION.md",
+    "sha256": "33DBA84D7285110DC7E2C7DEE0FC6EEF71B5B6310C47F6DADAC00EACDA7233F6",
+    "invocation_path": "docs/work_orders/F-20_U01_R39_ARTIFACT_HEALTH_GAP_INVOCATION.md",
+    "invocation_sha256": "F02041AE7540B8BEB97DB80C5B19B61C7DC5BC1B73013DEA218CA825F67D3D6F",
+    "classification": "MAIN_INTERNAL_APPROVED_SCOPE",
+    "parent_work_instruction": "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_INDEPENDENT_TEST_REPORT.md",
+    "revision_reason": "U01_R39_ARTIFACT_HEALTH_SOURCE_GAP_CORRECTION"
+  }
+},
+{
+  "sequence": 2050,
+  "event_id": "evt_f20_2050_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R39_ARTIFACT_HEALTH_GAP_START",
+  "subject_ref": "F-20/U01-R39",
+  "occurred_at": "2026-10-04T12:32:38+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EB0324C5B805BB49A5B5CA547C5082A4039BD3DE033813E1E55B631D80221C94",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r39-r39gap1004",
+    "actor_id": "developer-primary-f20-u01-r39",
+    "subject_ref": "F-20/U01-R39",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-04T12:32:38+00:00",
+    "expires_at": "2026-10-05T12:32:38+00:00",
+    "lease_epoch": 56,
+    "fencing_token": "f20-u01-r39-execution-fence-epoch-56-r39gap1004",
+    "execution_fencing_token": "f20-u01-r39-execution-fence-epoch-56-r39gap1004",
+    "baseline_git_commit": "2ba2bd721ed73e2ba7300756707c9c67551611cf",
+    "dispatch_head": "2ba2bd721ed73e2ba7300756707c9c67551611cf",
+    "path_scope": [
+      "packages/observability/projection.py",
+      "tests/observability/test_f13_operations.py",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_RESULT.md"
+    ]
+  }
+},
+{
+  "sequence": 2051,
+  "event_id": "evt_f20_2051_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R39_ARTIFACT_HEALTH_GAP_START",
+  "subject_ref": "F-20/U01-R39",
+  "occurred_at": "2026-10-04T12:32:38+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "EC47AFFE350925F8CB500D2145B0AD981F26690146AA700A13CA4D1EE40350AD",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r39-r39gap1004",
+    "actor_id": "developer-primary-f20-u01-r39",
+    "subject_ref": "F-20/U01-R39",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-04T12:32:38+00:00",
+    "expires_at": "2026-10-05T12:32:38+00:00",
+    "lease_epoch": 56,
+    "fencing_token": "f20-u01-r39-write-fence-epoch-56-r39gap1004",
+    "execution_fencing_token": "f20-u01-r39-execution-fence-epoch-56-r39gap1004",
+    "baseline_git_commit": "2ba2bd721ed73e2ba7300756707c9c67551611cf",
+    "dispatch_head": "2ba2bd721ed73e2ba7300756707c9c67551611cf",
+    "path_scope": [
+      "packages/observability/projection.py",
+      "tests/observability/test_f13_operations.py",
+      "tests/api/test_f20_u01_r10_dashboard_api.py",
+      "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r39-r39gap1004",
+    "write_epoch": 56,
+    "write_fencing_token": "f20-u01-r39-write-fence-epoch-56-r39gap1004"
+  }
+},
+{
+  "sequence": 2052,
+  "event_id": "evt_f20_2052_package_resumed",
+  "event_type": "PACKAGE_RESUMED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R39_ARTIFACT_HEALTH_GAP_START",
+  "subject_ref": "F-20/U01-R39",
+  "occurred_at": "2026-10-04T12:32:38+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "91F6853E93EB485C4F679FC0E78BA4A666975919930DDA77ABA5A1F5D0B4F322",
+  "details": {
+    "worker_lease_id": "worker-lease-f20-u01-r39-r39gap1004",
+    "write_lease_id": "write-lease-f20-u01-r39-r39gap1004",
+    "work_instruction_sha256": "33DBA84D7285110DC7E2C7DEE0FC6EEF71B5B6310C47F6DADAC00EACDA7233F6",
+    "invocation_sha256": "F02041AE7540B8BEB97DB80C5B19B61C7DC5BC1B73013DEA218CA825F67D3D6F",
+    "package_status": "REWORK_IN_PROGRESS",
+    "accepted": false
+  }
 }
   ],
-  "last_event_id": "evt_f20_2048_event_ledger_recovery_verified"
+  "last_event_id": "evt_f20_2052_package_resumed"
 }

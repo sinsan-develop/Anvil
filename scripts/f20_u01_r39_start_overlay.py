@@ -19,7 +19,7 @@ r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF = prior.EVENTS, prior.PROGRESS, prior.HANDOFF
 CONTRACT = prior.CONTRACT
 START, END = 2048, 2052
-BASE = "7edd9538dd8531bc040e7e90af15e6618efc85f0"
+BASE = "2ba2bd721ed73e2ba7300756707c9c67551611cf"
 MODE = "F20_U01_R39_ARTIFACT_HEALTH_GAP_START"
 NEXT = "F20_U01_R39_ARTIFACT_HEALTH_GAP_IMPLEMENTATION"
 ACTOR = "developer-primary-f20-u01-r39"
@@ -41,13 +41,40 @@ KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
 FROZEN_PRIOR = (PLAN, WI, INVOCATION,
                 "docs/04_test_reports/F-20_U01_POST_C30_RECOVERY_SCOPE_OWNER_REVIEW.md",
                 "scripts/f20_c30_recovery_verified_overlay.py",
-                prior.REPORT, prior.MANIFEST, prior.DIGEST)
+                prior.REPORT, prior.MANIFEST, prior.DIGEST,
+                *(path for path in prior.FROZEN_VERIFICATION_INPUTS
+                  if path != "scripts/check_project_progress.py"))
 CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
     EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
     "scripts/f20_u01_r39_start_overlay.py",
     "tests/tooling/test_f20_u01_r39_start_projection.py",
 }) - set(FROZEN_PRIOR) - set(SCOPE)
+
+CHECKER = "scripts/check_project_progress.py"
+CHECKER_ANCHOR = (
+    b'def validate_bundle(bundle):\n'
+    b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_C30_RECOVERY_V2_VERIFIED":\n'
+)
+CHECKER_ROUTE = (
+    b'def validate_bundle(bundle):\n'
+    b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_R39_ARTIFACT_HEALTH_GAP_START":\n'
+    b'        from datetime import datetime, timezone\n'
+    b'        try:\n'
+    b'            from scripts.f20_u01_r39_start_overlay import collect_git, validate_control\n'
+    b'        except ModuleNotFoundError:\n'
+    b'            from f20_u01_r39_start_overlay import collect_git, validate_control\n'
+    b'        errors = validate_control(Path(bundle["_root"]), bundle, datetime.now(timezone.utc))\n'
+    b'        if all(key in bundle for key in (\n'
+    b'            "handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract",\n'
+    b'        )):\n'
+    b'            errors.extend(_validate_f20_common_invariants(bundle))\n'
+    b'        else:\n'
+    b'            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")\n'
+    b'        errors.extend(collect_git(Path(bundle["_root"]), bundle["progress"]))\n'
+    b'        return sorted(set(errors))\n'
+    b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_C30_RECOVERY_V2_VERIFIED":\n'
+)
 
 
 def _git(root: Path, *args: str) -> bytes:
@@ -89,6 +116,13 @@ def _frozen_match(root: Path) -> bool:
                    for path in FROZEN_PRIOR)
     except (OSError, subprocess.CalledProcessError):
         return False
+
+
+def _checker_successor(root: Path) -> bytes:
+    old = _frozen(root, CHECKER)
+    if old.count(CHECKER_ANCHOR) != 1:
+        raise ValueError("R39_CHECKER_ANCHOR_INVALID")
+    return old.replace(CHECKER_ANCHOR, CHECKER_ROUTE, 1)
 
 
 def _rows(events: list[dict], wi_hash: str, invocation_hash: str,
@@ -224,7 +258,8 @@ def project(root: Path, at: datetime, nonce: str) -> dict[str, bytes]:
         "production": "NOT_EXECUTED", "self_reference": False,
     })
     return {EVENTS: event_raw, PROGRESS: progress_raw, HANDOFF: handoff_raw,
-            DIGEST: digest_raw, MANIFEST: manifest_raw}
+            DIGEST: digest_raw, MANIFEST: manifest_raw,
+            CHECKER: _checker_successor(root)}
 
 
 def validate_outputs(root: Path, outputs: dict[str, bytes]) -> list[str]:
@@ -246,7 +281,8 @@ def validate_outputs(root: Path, outputs: dict[str, bytes]) -> list[str]:
 def materialize(root: Path, at: datetime, nonce: str) -> None:
     root = Path(root)
     raw, progress_raw, _, _ = _predecessor(root)
-    frozen = (EVENTS, PROGRESS, HANDOFF, CONTRACT, prior.MANIFEST, prior.DIGEST)
+    frozen = (EVENTS, PROGRESS, HANDOFF, CONTRACT, prior.MANIFEST, prior.DIGEST,
+              CHECKER)
     if (_git(root, "rev-parse", "HEAD").decode().strip() != BASE
             or _git(root, "rev-parse", "development/codex/f18-wsl-ops").decode().strip() != BASE
             or _git(root, "branch", "--show-current").decode().strip() != "codex/f18-wsl-ops"
@@ -255,6 +291,7 @@ def materialize(root: Path, at: datetime, nonce: str) -> None:
             or (root / EVENTS).read_bytes() != raw
             or (root / PROGRESS).read_bytes() != progress_raw
             or any((root / path).read_bytes() != _frozen(root, path) for path in frozen)
+            or any((root / path).exists() for path in (DIGEST, MANIFEST))
             or not _frozen_match(root)
             or not _dirty(root) <= CONTROL_SCOPE):
         raise RuntimeError("R39_PREDECESSOR_INVALID")
@@ -271,7 +308,7 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
     root = Path(root)
     try:
         outputs = {path: (root / path).read_bytes()
-                   for path in (EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST)}
+                   for path in (EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, CHECKER)}
         errors = validate_outputs(root, outputs)
         rows = json.loads(outputs[EVENTS])["events"]
         at = datetime.fromisoformat(rows[START]["occurred_at"])
@@ -284,6 +321,8 @@ def validate_control(root: Path, bundle: dict, now: datetime) -> list[str]:
                 or rows[START + 2]["details"]["write_fencing_token"]
                    in r1._historical_fencing_tokens(rows[:START])):
             errors.append("R39_LEASE_OR_TRANSITION_INVALID")
+        if (root / CHECKER).read_bytes() != _checker_successor(root):
+            errors.append("R39_CHECKER_INVALID")
         if (bundle["events"] != json.loads(outputs[EVENTS])
                 or bundle["progress"] != json.loads(outputs[PROGRESS])
                 or bundle.get("detached_digest", json.loads(outputs[DIGEST]))

@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
+from unittest.mock import patch
+
+from scripts.check_project_progress import raw_event_object_prefix_bytes
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +24,8 @@ class R39StartProjectionTests(unittest.TestCase):
         old = json.loads(previous)
         events = json.loads(result[overlay.EVENTS])
         progress = json.loads(result[overlay.PROGRESS])
+        self.assertEqual(raw_event_object_prefix_bytes(result[overlay.EVENTS], overlay.START),
+                         raw_event_object_prefix_bytes(previous, overlay.START))
         self.assertEqual(events["events"][:overlay.START], old["events"])
         self.assertEqual(events["last_sequence"], overlay.END)
         self.assertEqual([row["event_type"] for row in events["events"][overlay.START:]],
@@ -49,6 +54,29 @@ class R39StartProjectionTests(unittest.TestCase):
         self.assertFalse(set(overlay.FROZEN_PRIOR) & overlay.CONTROL_SCOPE)
         self.assertEqual(overlay.validate_outputs(
             ROOT, overlay.project(ROOT, datetime.now(timezone.utc), "r39gap1004")), [])
+
+    def test_successor_checker_is_exactly_one_guarded_route(self):
+        from scripts import f20_u01_r39_start_overlay as overlay
+
+        old = overlay._frozen(ROOT, overlay.CHECKER)
+        new = overlay._checker_successor(ROOT)
+        self.assertEqual(old.count(overlay.CHECKER_ANCHOR), 1)
+        self.assertEqual(new.count(overlay.CHECKER_ROUTE), 1)
+        self.assertEqual(new.replace(overlay.CHECKER_ROUTE, overlay.CHECKER_ANCHOR, 1), old)
+
+    def test_existing_untracked_projection_target_is_not_overwritten(self):
+        from scripts import f20_u01_r39_start_overlay as overlay
+
+        original = Path.exists
+
+        def occupied(path: Path) -> bool:
+            return True if path == ROOT / overlay.DIGEST else original(path)
+
+        before = (ROOT / overlay.EVENTS).read_bytes()
+        with patch.object(Path, "exists", occupied):
+            with self.assertRaisesRegex(RuntimeError, "R39_PREDECESSOR_INVALID"):
+                overlay.materialize(ROOT, datetime.now(timezone.utc), "r39gap1004")
+        self.assertEqual((ROOT / overlay.EVENTS).read_bytes(), before)
 
 
 if __name__ == "__main__":
