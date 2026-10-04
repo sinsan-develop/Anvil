@@ -2,7 +2,7 @@
 
 ## 판정
 
-`A14_R7_CURRENT_STATIC_CHECK_GREEN; F20_U01_NOT_ACCEPTED`. 기존 작업 브랜치 `codex/f18-wsl-ops`의 `6e4b48e89532b9c5a2a9558f5274224bf7d0445d`에서 A-14 현행 정적 검사와 반례가 로컬·WSL-server 동일 SHA로 통과했다. C-30은 계속 `OPEN_BLOCKING`/release `DEFER`이며, 전체 suite·실제 브라우저 Network·F-20/U-01 인수 또는 main 병합을 이 결과로 주장하지 않는다.
+`A14_R7_CURRENT_STATIC_CHECK_GREEN; FULL_NON_OPT_IN_REGRESSION_GREEN; F20_U01_NOT_ACCEPTED`. 기존 작업 브랜치 `codex/f18-wsl-ops`의 `6e4b48e89532b9c5a2a9558f5274224bf7d0445d`에서 A-14 현행 정적 검사와 반례가 로컬·WSL-server 동일 SHA로 통과했다. 후속 기록 checkpoint `5f9a14f31eb2e46f1df9b7a271ce06d0a39db609`의 WSL-server 전체 비-opt-in suite도 통과했다. C-30은 계속 `OPEN_BLOCKING`/release `DEFER`이며, 이 결과를 실제 브라우저 Network·F-20/U-01 인수 또는 main 병합으로 승격하지 않는다.
 
 ## 변경 전·후와 범위
 
@@ -31,4 +31,13 @@ WSL-server의 일회성 `/tmp/anvil-f20-r40-qa-6e4b48e`는 생성 전 부재, �
 
 ## 미검증·다음 조치·rollback
 
-이번 증거는 정적 검사/통제에 한정된다. 비-opt-in 전체 suite의 최신 exact SHA 재집계, 실제 브라우저 Network/11개 메뉴, IdP/Provider, PostgreSQL18 RC, C30 사고 복구와 사용자 인수는 미검증 또는 차단 상태다. 다음은 같은 브랜치에서 전체 회귀를 재집계하고 C30/open scope를 별도로 처리한다. 회귀 발생 시 이 commit의 정확 변경만 정상 `git revert 6e4b48e8`로 되돌릴 수 있다. 역사 manifest/R6을 재작성하지 않는다.
+실제 브라우저 Network/11개 메뉴, IdP/Provider, PostgreSQL18 RC, C30 사고 복구와 사용자 인수는 이 회귀 결과로 검증되지 않았거나 차단 상태다. 다음은 같은 브랜치에서 C30/open scope를 별도로 처리한다. 회귀 발생 시 이 commit의 정확 변경만 정상 `git revert 6e4b48e8`로 되돌릴 수 있다. 역사 manifest/R6을 재작성하지 않는다.
+
+## 후속 WSL-server 전체 비-opt-in 회귀 (기록 checkpoint `5f9a14f3`)
+
+- 생성 전 exact `/tmp/anvil-f20-r40-full-5f9a14f`, `/tmp/anvil-f20-r40-pytest-5f9a14f`, `/tmp/anvil-f20-r40-run-5f9a14f` 부재와 원격 branch SHA를 확인했다. 전용 clone은 `5f9a14f31eb2e46f1df9b7a271ce06d0a39db609`/Git clean이고 원격 heads/PR refs 및 C21 sibling 정확 객체를 fetch했다. 잠긴 Python3.12.3/dev43 offline sync와 G-05 seq2040 PASS 후 실행했다.
+- 명령: `env PATH=/home/daon/.local/opt/node-v22.23.2-linux-x64/bin:$PATH PYTHONDONTWRITEBYTECODE=1 ANVIL_POSTGRES_VOLUME_TARGET=/var/lib/postgresql/data .venv/bin/python -B -m pytest tests --import-mode=importlib --ignore=tests/fixtures/repositories -p no:cacheprovider --basetemp=/tmp/anvil-f20-r40-pytest-5f9a14f --tb=short --junitxml=/tmp/anvil-f20-r40-run-5f9a14f/results.xml` (전용 run root에 로그/종료 코드 분리 저장).
+- 실제 종료 marker `0`; pytest **8815 passed / 123 skipped / 14 warnings in 2281.69s**. JUnit `tests=8938, failures=0, errors=0, skipped=123`, time `2281.446s`로 집계와 일치한다. `SKIPPED` 123개를 PASS로 세지 않는다.
+- `run.log` 48,159 bytes SHA-256 `6cacd9463b89b9732ac4305ddaaf865ea1c20d39132e8befaff89764dfb50f7e`; `results.xml` 1,438,522 bytes SHA-256 `ba2988ae9794a4b737904adfb935a5b743f085eb67d677f92e87393b271408b0`. 두 원본은 전용 임시 run root와 함께 정리되어 복구되지 않으며, 집계·hash·명령·exit는 이 보고서에 보존한다.
+- 종료 전 checkout exact HEAD/Git clean, 세 root 실경로 일치·owner `daon`·비link·mount0, pytest/checkout/run symlink 각각 352/4/0, pytest link 외부 target0, checkout link 외부 target은 표준 `/usr/bin/python3.12` 하나, 관련 pytest 프로세스0, G-05 seq2040 PASS를 확인했다. 정확 세 root만 제거해 `R40_FULL_WSL_RESIDUE_ZERO`. 공유 서비스·DB·Docker·port·`ysna-server`/Production 변경0.
+- 이 실행은 opt-in 브라우저·실 DB·Provider 호출이나 정식 운영 유사 11개 메뉴 검증이 아니다. C30 원장 원문 사고는 테스트에서 차단 상태로 유지된 것이며 해결/승인된 것이 아니다. 현재 branch의 이후 `WORK_STATUS` 기록 commit은 전체 검증 SHA와 다르므로 제품 회귀 증거를 새 HEAD에 암묵 전가하지 않는다.
