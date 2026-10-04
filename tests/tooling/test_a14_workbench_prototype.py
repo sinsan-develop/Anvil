@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -87,6 +88,66 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         browser_paths = [ROOT / "apps/web/index.html", *sorted((ROOT / "apps/web/src").rglob("*"))]
         findings = checker.browser_source_findings([path for path in browser_paths if path.is_file()])
         self.assertEqual(findings, [])
+
+    def test_browser_source_ignores_rejection_regex_but_rejects_real_absolute_url(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-address-regex-") as temp:
+            source = Path(temp) / "source.js"
+            safe = "function safe(value) { return !/localhost|127\\.0\\.0\\.1/.test(value); }\n"
+            source.write_text(safe, encoding="utf-8")
+            self.assertEqual([], checker.browser_source_findings([source]))
+
+            source.write_text(safe + "const API = 'http://localhost:8080/api';\nfetch(API);\n", encoding="utf-8")
+            self.assertTrue(any(item.startswith("internal-address:") for item in
+                                checker.browser_source_findings([source])))
+
+            source.write_text("const broken = /localhost\n", encoding="utf-8")
+            self.assertTrue(any(item.startswith("internal-address:") for item in
+                                checker.browser_source_findings([source])))
+
+    def test_r7_successor_rejects_parent_scope_and_hash_forgery(self):
+        paths = (
+            "apps/web/server.mjs",
+            "scripts/check_a14_workbench_prototype.py",
+            "tests/tooling/test_a14_workbench_prototype.py",
+        )
+        rows = []
+        for path in paths:
+            raw = (ROOT / path).read_bytes()
+            rows.append({"path": path, "bytes": len(raw),
+                         "sha256": hashlib.sha256(raw).hexdigest().upper()})
+        registry = {
+            "artifact_id": "A-14-A14-SUCCESSOR-R7-001", "artifact_type": "a14_successor_registry",
+            "package_id": "A-14", "revision": 7, "self_reference": False,
+            "a14_successor_projection": {
+                "predecessor_registry_path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+                "predecessor_registry_sha256": checker.sha256(ROOT / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json"),
+                "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+                "predecessor_manifest_sha256": checker.sha256(ROOT / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json"),
+                "live_raw_checksums": rows, "binding_mode": "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY",
+            },
+        }
+        self.assertEqual(set(paths), set(checker._a14_r7_registry_rows(ROOT, registry)))
+        for mutate in (
+            lambda value: value["a14_successor_projection"].update(predecessor_registry_sha256="0" * 64),
+            lambda value: value["a14_successor_projection"]["live_raw_checksums"].pop(),
+            lambda value: value["a14_successor_projection"]["live_raw_checksums"][0].update(sha256="0" * 64),
+            lambda value: value.update(self_reference=True),
+        ):
+            forged = deepcopy(registry)
+            mutate(forged)
+            with self.assertRaises(ValueError):
+                checker._a14_r7_registry_rows(ROOT, forged)
+
+    def test_r7_successor_registry_is_committed_clean_and_current(self):
+        relative = "docs/evidence/manifests/A-14_A14_SUCCESSOR_R7.json"
+        path = ROOT / relative
+        self.assertTrue(checker._tracked_clean(ROOT, relative))
+        registry = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            {"apps/web/server.mjs", "scripts/check_a14_workbench_prototype.py",
+             "tests/tooling/test_a14_workbench_prototype.py"},
+            set(checker._a14_r7_registry_rows(ROOT, registry)),
+        )
 
     def test_browser_source_resolves_only_safe_root_relative_constants(self):
         with tempfile.TemporaryDirectory(prefix="anvil-a14-browser-source-") as temp:

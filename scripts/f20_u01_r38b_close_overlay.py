@@ -29,6 +29,11 @@ CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
     EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST,
     "docs/WORK_STATUS.md", "scripts/check_project_progress.py",
     "docs/04_test_reports/F-20_U01_R39_CURRENT_SCOPE_CONTRACT_REVIEW.md",
+    "docs/04_test_reports/F-20_U01_R40_A14_SUCCESSOR_CHECK_PLAN.md",
+    "docs/04_test_reports/F-20_U01_R40_A14_SUCCESSOR_CHECK_RESULT.md",
+    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R7.json",
+    "scripts/check_a14_workbench_prototype.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
     "scripts/f20_u01_r38b_close_overlay.py",
     "tests/tooling/test_f20_u01_r38b_close_projection.py",
 }) - set(prior.FROZEN_PRIOR) - set(prior.SCOPE)

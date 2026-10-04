@@ -1,0 +1,31 @@
+{
+  "artifact_id": "A-14-A14-SUCCESSOR-R7-001",
+  "artifact_type": "a14_successor_registry",
+  "package_id": "A-14",
+  "revision": 7,
+  "self_reference": false,
+  "a14_successor_projection": {
+    "predecessor_registry_path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+    "predecessor_registry_sha256": "390C736F974669F6691775E778C5B168DBEF414B9AFB118B81A2819F7282EE20",
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "predecessor_manifest_sha256": "8DFFE5D5BA0BB96E758752A54AEAB830A8F8897B4FA5AAF537AA28E8D50E0378",
+    "live_raw_checksums": [
+      {
+        "path": "apps/web/server.mjs",
+        "bytes": 22559,
+        "sha256": "840B6BF0B059F665BCF84F313B187E78470CD97E6484D8DC8C18DC9C6B4228A7"
+      },
+      {
+        "path": "scripts/check_a14_workbench_prototype.py",
+        "bytes": 37735,
+        "sha256": "9488BADD0677D08BC24FDC4679587B0D1C4230D2A08F450525D2F75CA351CC62"
+      },
+      {
+        "path": "tests/tooling/test_a14_workbench_prototype.py",
+        "bytes": 19673,
+        "sha256": "1AE2CFE9D6DD87B5BF8C463028DBF5A8DC1C6756360AF505B76F54576DA720E9"
+      }
+    ],
+    "binding_mode": "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"
+  }
+}
