@@ -1,62 +1,21 @@
-# F-20/U-01 R43 next action detail start handoff
+# F-20/U-01 R43 next action detail close handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2064,
-  "last_event_id": "evt_f20_2064_package_resumed",
+  "event_sequence": 2066,
+  "last_event_id": "evt_f20_2066_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-20",
-  "active_agent": "developer-primary-f20-u01-r43",
-  "worker_lease": {
-    "lease_id": "worker-lease-f20-u01-r43-r43detail1005",
-    "actor_id": "developer-primary-f20-u01-r43",
-    "subject_ref": "F-20/U01-R43",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-04T16:41:32+00:00",
-    "expires_at": "2026-10-05T16:41:32+00:00",
-    "lease_epoch": 58,
-    "fencing_token": "f20-u01-r43-execution-fence-epoch-58-r43detail1005",
-    "execution_fencing_token": "f20-u01-r43-execution-fence-epoch-58-r43detail1005",
-    "baseline_git_commit": "bc0c2b53792888c9ddd6a92df76fb6696701a539",
-    "dispatch_head": "bc0c2b53792888c9ddd6a92df76fb6696701a539",
-    "path_scope": [
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R43_NEXT_ACTION_DETAIL_RESULT.md"
-    ]
-  },
-  "write_lease": {
-    "lease_id": "write-lease-f20-u01-r43-r43detail1005",
-    "actor_id": "developer-primary-f20-u01-r43",
-    "subject_ref": "F-20/U01-R43",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-04T16:41:32+00:00",
-    "expires_at": "2026-10-05T16:41:32+00:00",
-    "lease_epoch": 58,
-    "fencing_token": "f20-u01-r43-write-fence-epoch-58-r43detail1005",
-    "execution_fencing_token": "f20-u01-r43-execution-fence-epoch-58-r43detail1005",
-    "baseline_git_commit": "bc0c2b53792888c9ddd6a92df76fb6696701a539",
-    "dispatch_head": "bc0c2b53792888c9ddd6a92df76fb6696701a539",
-    "path_scope": [
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R43_NEXT_ACTION_DETAIL_RESULT.md"
-    ],
-    "worker_lease_id": "worker-lease-f20-u01-r43-r43detail1005",
-    "write_epoch": 58,
-    "write_fencing_token": "f20-u01-r43-write-fence-epoch-58-r43detail1005"
-  },
+  "active_agent": "main-agent-eoul",
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F20_U01_R43_NEXT_ACTION_DETAIL_IMPLEMENTATION",
-  "repository_head": "bc0c2b53792888c9ddd6a92df76fb6696701a539",
+  "next_safe_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
+  "repository_head": "8c22fab17b7e31090b5c78fc62209d3356b116dc",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 
-- Verified same-snapshot action detail only; C30 quarantined history retained; F-20 unaccepted; Release DEFER; Production NOT_EXECUTED.
+- R43 same-SHA WSL QA 911d4af0b431472eeb904641303797328f4c68fa passed, temp residue zero; first transient response read failure retained; C30 quarantined history retained; F-20/U-01 unaccepted; Release DEFER; Production NOT_EXECUTED.
