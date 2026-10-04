@@ -12,6 +12,7 @@ from packages.observability.projection import OperationsSources
 from packages.observability.run_status_summary import ScopedRunStatusSummary
 from packages.observability.service import OperationsError, OperationsService
 from packages.persistence.operations_run_read import RunObservation, ScopedRunSource
+from packages.persistence.operations_budget_read import ScopedBudgetSource
 from tests.api.test_oidc_process import _environment, _trust
 from tests.observability.test_f13_operations import RecordingRepository
 from tests.observability.test_f20_u01_r9_queue_host import QueueSource
@@ -72,6 +73,13 @@ def test_oidc_host_uses_fixed_scope_and_loads_only_on_run_summary(tmp_path, monk
     monkeypatch.setattr(oidc_process, "load_scoped_run_source", load_run, raising=False)
     monkeypatch.setattr(oidc_process, "load_scoped_queue_source",
                         lambda *_args: QueueSource("job-1"))
+
+    def load_budget(actual_engine, project_id, environment_id):
+        assert actual_engine is engine
+        assert (project_id, environment_id) == ("project-1", "wsl-qa")
+        return ScopedBudgetSource((), ())
+
+    monkeypatch.setattr(oidc_process, "load_scoped_budget_source", load_budget)
 
     class Repository:
         def __init__(self, _dsn):

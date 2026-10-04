@@ -5,6 +5,7 @@ import pytest
 import sqlalchemy as sa
 
 from apps.api.anvil_api import oidc_process
+from packages.persistence.operations_budget_read import ScopedBudgetSource
 from tests.api.test_oidc_process import _environment, _trust
 from tests.observability.test_f20_u01_r9_queue_host import QueueSource
 
@@ -20,6 +21,13 @@ def test_oidc_process_loads_queue_on_each_owner_read_with_fixed_scope(tmp_path, 
         return QueueSource(f"job-{len(calls)}")
 
     monkeypatch.setattr(oidc_process, "load_scoped_queue_source", load_queue, raising=False)
+
+    def load_budget(actual_engine, project_id, environment_id):
+        assert actual_engine is engine
+        assert (project_id, environment_id) == ("project-1", "wsl-qa")
+        return ScopedBudgetSource((), ())
+
+    monkeypatch.setattr(oidc_process, "load_scoped_budget_source", load_budget)
     class Repository:
         def __init__(self, _dsn):
             pass

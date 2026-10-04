@@ -205,6 +205,7 @@ def _exercise_returned_host(app, environment, engine):
 @pytest.fixture
 def local_host(tmp_path, monkeypatch):
     from apps.api.anvil_api import oidc_process
+    from packages.persistence.operations_budget_read import ScopedBudgetSource
     from packages.persistence.operations_run_read import ScopedRunSource
     from tests.observability.test_f13_operations import RecordingRepository
     from packages.queue.service import DurableQueue
@@ -222,6 +223,13 @@ def local_host(tmp_path, monkeypatch):
     class EmptyQueue(DurableQueue):
         job_ids = ()
     monkeypatch.setattr(oidc_process, "load_scoped_queue_source", lambda *_a: EmptyQueue())
+
+    def load_budget(actual_engine, project, environment):
+        assert actual_engine is engine
+        assert (project, environment) == ("project-1", "wsl-qa")
+        return ScopedBudgetSource((), ())
+
+    monkeypatch.setattr(oidc_process, "load_scoped_budget_source", load_budget)
     monkeypatch.setattr(oidc_process, "load_scoped_run_source",
         lambda *_a: ScopedRunSource((), datetime.now(timezone.utc), {}))
     try:

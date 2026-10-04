@@ -11,6 +11,7 @@ import sqlalchemy as sa
 from apps.api.anvil_api import oidc_process
 from packages.persistence.operations_run_read import ScopedRunSource
 from packages.persistence.operations_agent_owner_read import ScopedAgentOwnerSource
+from packages.persistence.operations_budget_read import ScopedBudgetSource
 from tests.api.test_oidc_process import _environment, _trust
 from tests.api.test_f20_u01_r10_dashboard_api import client, PATH
 from tests.observability.test_f13_operations import RecordingRepository
@@ -40,6 +41,13 @@ def bound(tmp_path, monkeypatch):
         return QueueSource("job-1")
 
     monkeypatch.setattr(oidc_process, "load_scoped_queue_source", queue)
+
+    def budget(actual_engine, project, env):
+        assert actual_engine is engine
+        assert (project, env) == ("project-1", "wsl-qa")
+        return ScopedBudgetSource((), ())
+
+    monkeypatch.setattr(oidc_process, "load_scoped_budget_source", budget)
     at = datetime(2026, 10, 3, tzinfo=timezone.utc)
     monkeypatch.setattr(oidc_process, "load_scoped_run_source",
                         lambda *_a: ScopedRunSource((), at, {}))

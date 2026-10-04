@@ -13,6 +13,7 @@ from packages.observability.projection import OperationsSources
 from packages.observability.run_status_summary import ScopedRunStatusSummary
 from packages.observability.service import OperationsError, OperationsService
 from packages.persistence.operations_agent_owner_read import AgentOwnerObservation, ScopedAgentOwnerSource
+from packages.persistence.operations_budget_read import ScopedBudgetSource
 from tests.api.test_oidc_process import _environment, _trust
 from tests.observability.test_f13_operations import RecordingRepository
 from tests.observability.test_f20_u01_r9_queue_host import QueueSource
@@ -104,6 +105,13 @@ def test_oidc_host_pins_scope_engine_and_never_eagerly_reads_agents(tmp_path, mo
     monkeypatch.setattr(oidc_process, "load_scoped_agent_owner_source", load_agents, raising=False)
     monkeypatch.setattr(oidc_process, "load_scoped_queue_source", load_queue)
     monkeypatch.setattr(oidc_process, "load_scoped_run_source", load_runs)
+
+    def load_budget(actual_engine, project, environment):
+        assert actual_engine is engine
+        assert (project, environment) == ("project-1", "wsl-qa")
+        return ScopedBudgetSource((), ())
+
+    monkeypatch.setattr(oidc_process, "load_scoped_budget_source", load_budget)
     monkeypatch.setattr(oidc_process, "PostgresOperationsRepository", lambda _: RecordingRepository())
     captured = []
 
