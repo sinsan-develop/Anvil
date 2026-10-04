@@ -28,7 +28,13 @@ AUTHORITY_FILES = tuple(dict.fromkeys((
     *prior.FROZEN, *prior.SCOPE, prior.DIGEST, prior.MANIFEST,
     "scripts/f20_u01_r43_start_overlay.py",
 )))
-CONTROL_SCOPE = prior.CONTROL_SCOPE | {DIGEST, MANIFEST}
+CONTROL_SCOPE = prior.CONTROL_SCOPE | {
+    DIGEST, MANIFEST,
+    "docs/04_test_reports/F-20_U01_R44_HEALTH_DETAIL_PLAN.md",
+    "docs/04_test_reports/F-20_U01_R44_HEALTH_DETAIL_RESULT.md",
+    "docs/work_orders/F-20_U01_R44_HEALTH_DETAIL_WORK_INSTRUCTION.md",
+    "docs/work_orders/F-20_U01_R44_HEALTH_DETAIL_INVOCATION.md",
+}
 CHECKER_ANCHOR = (
     b'def validate_bundle(bundle):\n'
     b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_R43_NEXT_ACTION_DETAIL_START":\n'
