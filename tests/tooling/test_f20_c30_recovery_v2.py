@@ -143,3 +143,74 @@ def test_current_control_cannot_reaccept_quarantined_history():
     result = recovery.verify_repository(ROOT, file_reader=altered)
     assert not result.eligible
     assert "CURRENT_CONTROL_STATE_INVALID" in result.errors
+
+
+def test_whitespace_between_cutover_events_is_part_of_raw_prefix():
+    def altered(path: str) -> bytes:
+        raw = _file(path)
+        if path == recovery.EVENTS_PATH:
+            before, marker, after = raw.partition(b'},\n    {')
+            assert marker
+            return before + b'}, \n    {' + after
+        return raw
+
+    result = recovery.verify_repository(ROOT, file_reader=altered)
+    assert not result.eligible
+    assert "CUTOVER_RAW_PREFIX_MISMATCH" in result.errors
+
+
+def test_last_resume_status_cannot_claim_acceptance():
+    def altered(path: str) -> bytes:
+        raw = _file(path)
+        if path == recovery.EVENTS_PATH:
+            before, marker, after = raw.rpartition(b'"package_status": "REWORK_IN_PROGRESS"')
+            assert marker and b'"event_id": "evt_f20_2044_package_resumed"' in before
+            return before + b'"package_status": "ACCEPTED"' + after
+        return raw
+
+    result = recovery.verify_repository(ROOT, file_reader=altered)
+    assert not result.eligible
+    assert "CURRENT_CONTROL_STATE_INVALID" in result.errors
+
+
+def test_completed_lease_projection_must_be_revoked():
+    def altered(path: str) -> bytes:
+        raw = _file(path)
+        if path == recovery.PROGRESS_PATH:
+            progress = json.loads(raw)
+            progress["completed_f20_r1_worker_lease"]["status"] = "ACTIVE"
+            return json.dumps(progress, ensure_ascii=False).encode("utf-8")
+        return raw
+
+    result = recovery.verify_repository(ROOT, file_reader=altered)
+    assert not result.eligible
+    assert any(error.startswith("COMPLETED_LEASE_PROJECTION_INVALID") for error in result.errors)
+
+
+def test_scope_artifact_hash_must_match_actual_approved_document():
+    def altered(path: str) -> bytes:
+        raw = _file(path)
+        if path == recovery.PROGRESS_PATH:
+            progress = json.loads(raw)
+            progress["scope_revision_binding"]["artifact_sha256"]["Anvil_설계서_v2.md"] = "0" * 64
+            return json.dumps(progress, ensure_ascii=False).encode("utf-8")
+        return raw
+
+    result = recovery.verify_repository(ROOT, file_reader=altered)
+    assert not result.eligible
+    assert "APPROVAL_BINDING_INVALID" in result.errors
+
+
+def test_failed_preflight_reports_inspected_not_validated_counts():
+    def altered(path: str) -> bytes:
+        raw = _file(path)
+        if path == recovery.PROGRESS_PATH:
+            progress = json.loads(raw)
+            progress["completed_f20_r1_worker_lease"]["status"] = "ACTIVE"
+            return json.dumps(progress, ensure_ascii=False).encode("utf-8")
+        return raw
+
+    result = recovery.verify_repository(ROOT, file_reader=altered)
+    assert not result.eligible
+    assert result.evidence["inspected_followup_events"] == 326
+    assert not any(key.startswith("validated_") for key in result.evidence)

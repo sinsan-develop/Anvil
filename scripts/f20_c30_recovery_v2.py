@@ -34,6 +34,17 @@ RECOVERY_APPROVAL_PATH = "docs/approvals/APPROVAL-20261004-C30-NONDESTRUCTIVE-LE
 RECOVERY_APPROVAL_SHA256 = "44420B3E302ED50586BA41727E024144940F3A73F66D206550FF1CC61A1573B4"
 RECOVERY_WI_PATH = "docs/work_orders/F-20_C30_EVENT_RECOVERY_V2_WORK_INSTRUCTION.md"
 RECOVERY_WI_SHA256 = "80B4F6167097D73E61F9953AFAFD1FD488441A8895DC59B69E74B35295DC7FDA"
+RECOVERY_DESIGN_PATH = "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DESIGN.md"
+RECOVERY_DESIGN_SHA256 = "168E4E5EEF34693AEAD3A2E827249C0E47F0F9AC02CE7FE714D8FE38EE8072DF"
+RECOVERY_PLAN_PATH = "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_PLAN.md"
+RECOVERY_PLAN_SHA256 = "20CC2EE71D1AE169F505CC88ECF64127E5FDBA2D14B94C050A93C9C792DCE1D8"
+RECOVERY_MANIFEST_PATH = "docs/evidence/manifests/F-20_C30_RECOVERY_V2_VERIFIER_START_MANIFEST.json"
+SCOPE_ARTIFACT_SHA256 = {
+    "Anvil_설계서_v2.md": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
+    "Anvil_작업계획서_v1.md": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
+    "Anvil_통합검증매트릭스_v1.md": "1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6",
+    "Anvil_테스트계획서_v1.md": "902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014",
+}
 RECOVERY_SCOPE = ["scripts/f20_c30_recovery_v2.py",
                   "tests/tooling/test_f20_c30_recovery_v2.py",
                   "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"]
@@ -71,18 +82,22 @@ def _canonical(value: dict) -> bytes:
                       separators=(",", ":"), allow_nan=False).encode("utf-8")
 
 
-def _raw_event_objects(raw: bytes) -> list[bytes]:
-    """Extract JSON object spans without reserializing or changing Unicode bytes."""
+def _raw_event_objects(raw: bytes) -> tuple[list[bytes], bytes]:
+    """Extract objects and the continuous 1..2040 array bytes as written."""
     marker = b'"events": ['
     if raw.count(marker) != 1:
         raise ValueError("events array marker missing or duplicated")
     index = raw.index(marker) + len(marker)
+    array_start = index
     objects: list[bytes] = []
+    prefix_end: int | None = None
     while True:
         while raw[index:index + 1] in (b" ", b"\n", b"\r", b"\t", b","):
             index += 1
         if raw[index:index + 1] == b"]":
-            return objects
+            if prefix_end is None:
+                raise ValueError("cutover Event prefix incomplete")
+            return objects, raw[array_start:prefix_end]
         if raw[index:index + 1] != b"{":
             raise ValueError("event object expected")
         start = index
@@ -105,6 +120,8 @@ def _raw_event_objects(raw: bytes) -> list[bytes]:
                 if depth == 0:
                     index += 1
                     objects.append(raw[start:index])
+                    if len(objects) == 2040:
+                        prefix_end = index
                     break
             index += 1
         else:
@@ -152,10 +169,11 @@ def _check_sources(result: RecoveryResult, anchor_raw: bytes, incident_raw: byte
         if (current_stream["last_sequence"] != len(current)
                 or current_stream["last_event_id"] != current[-1]["event_id"]):
             _error(result, "CURRENT_EVENT_ENVELOPE_INVALID")
-        cutover_objects = _raw_event_objects(cutover_raw)
-        current_objects = _raw_event_objects(current_raw)
+        cutover_objects, cutover_prefix = _raw_event_objects(cutover_raw)
+        current_objects, current_prefix = _raw_event_objects(current_raw)
         if (len(cutover_objects) != 2040 or len(current_objects) != len(current)
-                or cutover_objects != current_objects[:2040]):
+                or cutover_objects != current_objects[:2040]
+                or cutover_prefix != current_prefix):
             _error(result, "CUTOVER_RAW_PREFIX_MISMATCH")
         for raw_object in current_objects[1714:]:
             _json(raw_object, strict=True)
@@ -200,7 +218,7 @@ def _check_chain(result: RecoveryResult, events: list[dict]) -> None:
         if index >= 1714 and row.get("previous_event_sha256") != _digest(_canonical(events[index - 1])):
             _error(result, f"EVENT_CHAIN_INVALID:{index + 1}")
             return
-    result.evidence["validated_followup_events"] = 2040 - 1714
+    result.evidence["inspected_followup_events"] = 2040 - 1714
 
 
 def _instruction(result: RecoveryResult, reader: Callable[[str], bytes],
@@ -302,8 +320,8 @@ def _check_followups(result: RecoveryResult, events: list[dict],
             _error(result, f"LEASE_PAIRING_INVALID:{ordinal}")
         lease_ids.update((worker.get("lease_id"), write.get("lease_id")))
         tokens.update((execution, write_token))
-    result.evidence.update(validated_work_instructions=len(groups),
-                           validated_lease_pairs=len(groups), revoked_lease_pairs=len(groups))
+    result.evidence.update(inspected_work_instructions=len(groups),
+                           inspected_lease_pairs=len(groups), inspected_revoked_lease_pairs=len(groups))
 
 
 def _check_revision_binding(result: RecoveryResult, reader: Callable[[str], bytes], detail: dict) -> None:
@@ -332,6 +350,76 @@ def _check_revision_binding(result: RecoveryResult, reader: Callable[[str], byte
         _error(result, "APPROVAL_BINDING_INVALID")
 
 
+def _check_completed_lease_projection(result: RecoveryResult, events: list[dict],
+                                      progress: dict) -> None:
+    """Rebuild the 54 revoked dual leases from immutable cutover Events."""
+    expected: dict[str, dict] = {}
+    for index in range(1714, 2040):
+        worker_row = events[index]
+        if worker_row["event_type"] != "WORKER_LEASE_ISSUED":
+            continue
+        write_row, _, write_revoke, worker_revoke = events[index + 1:index + 5]
+        worker = {**worker_row["details"], "status": "REVOKED",
+                  "revoked_at": worker_revoke["occurred_at"]}
+        write = {**write_row["details"], "status": "REVOKED",
+                 "revoked_at": write_revoke["occurred_at"]}
+        expected[worker["lease_id"]] = worker
+        expected[write["lease_id"]] = write
+    projected = [value for key, value in progress.items()
+                 if key.startswith("completed_f20_")
+                 and (key.endswith("_worker_lease") or key.endswith("_write_lease"))]
+    if len(expected) != 108 or len(projected) != 108:
+        _error(result, "COMPLETED_LEASE_PROJECTION_INVALID:COUNT")
+        return
+    seen: set[str] = set()
+    for item in projected:
+        lease_id = item.get("lease_id") if isinstance(item, dict) else None
+        if not isinstance(lease_id, str) or lease_id in seen or item != expected.get(lease_id):
+            _error(result, f"COMPLETED_LEASE_PROJECTION_INVALID:{lease_id}")
+        seen.add(lease_id)
+    if seen != set(expected):
+        _error(result, "COMPLETED_LEASE_PROJECTION_INVALID:IDS")
+    result.evidence["inspected_completed_lease_projections"] = len(projected)
+
+
+def _check_approval_documents(result: RecoveryResult, progress: dict,
+                              reader: Callable[[str], bytes]) -> None:
+    """Bind both Owner scope approval and C30 derivative to actual bytes."""
+    try:
+        scope = progress["scope_revision_binding"]
+        root = progress["root_human_approval_binding"]
+        actual = {path: _digest(reader(path)) for path in SCOPE_ARTIFACT_SHA256}
+        if (scope["approval_id"] != APPROVAL_ID
+                or scope["artifact_sha256"] != SCOPE_ARTIFACT_SHA256
+                or actual != SCOPE_ARTIFACT_SHA256
+                or root["approval_id"] != APPROVAL_ID
+                or root["path"] != APPROVAL_PATH
+                or root["sha256"] != APPROVAL_SHA256
+                or root["approval_subject_hash"] != APPROVAL_SUBJECT_SHA256
+                or _digest(reader(APPROVAL_PATH)) != APPROVAL_SHA256):
+            _error(result, "APPROVAL_BINDING_INVALID")
+        manifest = _json(reader(RECOVERY_MANIFEST_PATH), strict=True)
+        pairs = (
+            ("approval_path", "approval_sha256", RECOVERY_APPROVAL_PATH, RECOVERY_APPROVAL_SHA256),
+            ("work_instruction_path", "work_instruction_sha256", RECOVERY_WI_PATH, RECOVERY_WI_SHA256),
+            ("design_path", "design_sha256", RECOVERY_DESIGN_PATH, RECOVERY_DESIGN_SHA256),
+            ("plan_path", "plan_sha256", RECOVERY_PLAN_PATH, RECOVERY_PLAN_SHA256),
+        )
+        for path_key, hash_key, path, expected in pairs:
+            if (manifest.get(path_key) != path or manifest.get(hash_key) != expected
+                    or _digest(reader(path)) != expected):
+                _error(result, "APPROVAL_BINDING_INVALID")
+        if (manifest.get("predecessor_events_sha256") != CUTOVER_SHA256
+                or manifest.get("accepted") is not False
+                or manifest.get("incident_blocking") is not True
+                or manifest.get("release_decision") != "DEFER"
+                or manifest.get("product_write_scope") != RECOVERY_SCOPE
+                or progress["current_progress_evidence_ref"]["manifest_path"] != RECOVERY_MANIFEST_PATH):
+            _error(result, "APPROVAL_BINDING_INVALID")
+    except (OSError, ValueError, KeyError, TypeError):
+        _error(result, "APPROVAL_BINDING_INVALID")
+
+
 def _check_current_control(result: RecoveryResult, events: list[dict],
                            reader: Callable[[str], bytes]) -> None:
     try:
@@ -344,6 +432,8 @@ def _check_current_control(result: RecoveryResult, events: list[dict],
                 or progress["active_work_instruction"]["sha256"] != RECOVERY_WI_SHA256
                 or _digest(reader(RECOVERY_WI_PATH)) != RECOVERY_WI_SHA256):
             _error(result, "CURRENT_CONTROL_STATE_INVALID")
+        _check_completed_lease_projection(result, events, progress)
+        _check_approval_documents(result, progress, reader)
         approval = reader(RECOVERY_APPROVAL_PATH)
         binding = progress["c30_recovery_approval_binding"]
         if (binding["path"] != RECOVERY_APPROVAL_PATH
@@ -354,10 +444,26 @@ def _check_current_control(result: RecoveryResult, events: list[dict],
         if len(events) == 2044:
             issued, worker_row, write_row, resumed = events[2040:2044]
             worker, write = worker_row["details"], write_row["details"]
+            resume_details = {
+                "resume_event_ref": "evt_f20_2040_worker_lease_revoked",
+                "worker_lease_id": worker.get("lease_id"),
+                "write_lease_id": write.get("lease_id"),
+                "work_instruction_sha256": RECOVERY_WI_SHA256,
+                "package_status": "REWORK_IN_PROGRESS",
+                "accepted": False,
+            }
             if ([row["event_type"] for row in (issued, worker_row, write_row, resumed)]
                     != ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"]
+                    or resumed.get("sequence") != 2044
+                    or resumed.get("event_id") != "evt_f20_2044_package_resumed"
+                    or resumed.get("subject_ref") != "F-20/C30-RECOVERY-V2"
+                    or resumed.get("work_package_id") != "F-20"
+                    or resumed.get("step_id") != "F20_C30_RECOVERY_V2_VERIFIER_START"
+                    or resumed.get("details") != resume_details
                     or issued["details"].get("sha256") != RECOVERY_WI_SHA256
+                    or issued["details"].get("path") != RECOVERY_WI_PATH
                     or issued["details"].get("approval_sha256") != RECOVERY_APPROVAL_SHA256
+                    or issued["details"].get("approval_path") != RECOVERY_APPROVAL_PATH
                     or progress["worker_lease"] != worker or progress["write_lease"] != write
                     or worker.get("lease_epoch") != 55 or write.get("lease_epoch") != 55
                     or worker.get("execution_fencing_token") != write.get("execution_fencing_token")
@@ -430,4 +536,13 @@ def verify_repository(root: Path, *,
     _check_followups(result, current, file_reader)
     _check_current_control(result, current, file_reader)
     result.eligible = not result.errors
+    if result.eligible:
+        for inspected, validated in (
+            ("inspected_followup_events", "validated_followup_events"),
+            ("inspected_work_instructions", "validated_work_instructions"),
+            ("inspected_lease_pairs", "validated_lease_pairs"),
+            ("inspected_revoked_lease_pairs", "revoked_lease_pairs"),
+            ("inspected_completed_lease_projections", "validated_completed_lease_projections"),
+        ):
+            result.evidence[validated] = result.evidence[inspected]
     return result
