@@ -1,4 +1,4 @@
-"""R43 close revokes exact-five writer without implying U-01 acceptance."""
+"""R44 close revokes the verified Health-detail writer without accepting U-01."""
 
 from datetime import datetime, timezone
 import json
@@ -12,24 +12,11 @@ from scripts.check_project_progress import raw_event_object_prefix_bytes
 ROOT = Path(__file__).resolve().parents[2]
 
 
-class R43CloseProjectionTests(unittest.TestCase):
-    @staticmethod
-    def _historical_or_current_output(overlay):
-        current = json.loads((ROOT / overlay.PROGRESS).read_bytes())["event_sequence"]
-        if current <= overlay.END:
-            return overlay.project(ROOT, datetime.now(timezone.utc))
-        from scripts import f20_u01_r44_start_overlay as successor
-        return {path: subprocess.check_output(
-            ["git", "-c", "core.excludesFile=", "show", f"{successor.BASE}:{path}"],
-            cwd=ROOT) for path in (
-                overlay.EVENTS, overlay.PROGRESS, overlay.HANDOFF,
-                overlay.DIGEST, overlay.MANIFEST, overlay.CHECKER,
-            )}
-
+class R44CloseProjectionTests(unittest.TestCase):
     def test_ordered_revocation_and_unaccepted_state(self):
-        from scripts import f20_u01_r43_close_overlay as overlay
+        from scripts import f20_u01_r44_close_overlay as overlay
 
-        output = self._historical_or_current_output(overlay)
+        output = overlay.project(ROOT, datetime.now(timezone.utc))
         old = subprocess.check_output(
             ["git", "-c", "core.excludesFile=", "show", f"{overlay.BASE}:{overlay.EVENTS}"],
             cwd=ROOT)
@@ -42,8 +29,8 @@ class R43CloseProjectionTests(unittest.TestCase):
                          list(overlay.KINDS))
         self.assertIsNone(progress["write_lease"])
         self.assertIsNone(progress["worker_lease"])
-        self.assertEqual(progress["completed_f20_u01_r43_worker_lease"]["status"], "REVOKED")
-        self.assertEqual(progress["completed_f20_u01_r43_write_lease"]["status"], "REVOKED")
+        self.assertEqual(progress["completed_f20_u01_r44_worker_lease"]["status"], "REVOKED")
+        self.assertEqual(progress["completed_f20_u01_r44_write_lease"]["status"], "REVOKED")
         self.assertEqual(progress["repository"]["product_write_scope"], [])
         self.assertEqual(progress["repository"]["local_wsl_qa_head"], overlay.QA_HEAD)
         self.assertEqual(progress["f20_c30_event_integrity_incident"]["status"],
@@ -52,21 +39,16 @@ class R43CloseProjectionTests(unittest.TestCase):
         self.assertEqual(progress["scope_revision_binding"]["release_decision"], "DEFER")
 
     def test_authority_checker_and_exact_scope(self):
-        from scripts import f20_u01_r43_close_overlay as overlay
+        from scripts import f20_u01_r44_close_overlay as overlay
 
-        output = self._historical_or_current_output(overlay)
+        output = overlay.project(ROOT, datetime.now(timezone.utc))
+        self.assertEqual(overlay.validate_outputs(ROOT, output), [])
         self.assertEqual(output[overlay.CHECKER], overlay._checker_successor(ROOT))
+        self.assertTrue(overlay._authority_match(ROOT))
         self.assertTrue(set(overlay.prior.SCOPE).isdisjoint(overlay.CONTROL_SCOPE))
-        if json.loads((ROOT / overlay.PROGRESS).read_bytes())["event_sequence"] <= overlay.END:
-            self.assertEqual(overlay.validate_outputs(ROOT, output), [])
-            self.assertTrue(overlay._authority_match(ROOT))
-        else:
-            archived = json.loads(output[overlay.PROGRESS])
-            self.assertEqual(archived["repository"]["projection_mode"], overlay.MODE)
-            self.assertEqual(archived["event_sequence"], overlay.END)
 
     def test_materialize_rejects_backdated_clock_without_writes(self):
-        from scripts import f20_u01_r43_close_overlay as overlay
+        from scripts import f20_u01_r44_close_overlay as overlay
 
         progress = json.loads(overlay._frozen(ROOT, overlay.PROGRESS))
         backdated = datetime.fromisoformat(progress["worker_lease"]["issued_at"])
@@ -74,7 +56,7 @@ class R43CloseProjectionTests(unittest.TestCase):
             overlay.EVENTS, overlay.PROGRESS, overlay.HANDOFF,
             overlay.DIGEST, overlay.MANIFEST, overlay.CHECKER,
         ) if (ROOT / path).exists()}
-        with self.assertRaisesRegex(RuntimeError, "R43_CLOSE_CLOCK_OR_LEASE_INVALID"):
+        with self.assertRaisesRegex(RuntimeError, "R44_CLOSE_CLOCK_OR_LEASE_INVALID"):
             overlay.materialize(ROOT, backdated)
         self.assertEqual(before, {path: (ROOT / path).read_bytes() for path in before})
 
