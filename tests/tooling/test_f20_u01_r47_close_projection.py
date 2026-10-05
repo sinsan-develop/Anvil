@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from scripts.check_project_progress import raw_event_object_prefix_bytes
 
@@ -46,6 +47,18 @@ class R47CloseProjectionTests(unittest.TestCase):
         self.assertEqual(output[overlay.CHECKER], overlay._checker_successor(ROOT))
         self.assertTrue(overlay._authority_match(ROOT))
         self.assertTrue(set(overlay.prior.SCOPE).isdisjoint(overlay.CONTROL_SCOPE))
+
+    def test_r46_history_test_allowed_unrelated_path_denied(self):
+        from scripts import f20_u01_r47_close_overlay as overlay
+
+        historical_test = "tests/tooling/test_f20_u01_r46_close_projection.py"
+        unrelated = "tests/tooling/unrelated.py"
+        progress = json.loads((ROOT / overlay.PROGRESS).read_text(encoding="utf-8"))
+        self.assertIn(historical_test, overlay.CONTROL_SCOPE)
+        self.assertNotIn(historical_test, overlay.AUTHORITY_FILES)
+        self.assertEqual(overlay.collect_git(ROOT, progress), [])
+        with patch.object(overlay.prior, "_dirty", return_value={historical_test, unrelated}):
+            self.assertEqual(overlay.collect_git(ROOT, progress), ["R47_CLOSE_GIT_INVALID"])
 
     def test_materialize_rejects_backdated_clock_without_writes(self):
         from scripts import f20_u01_r47_close_overlay as overlay

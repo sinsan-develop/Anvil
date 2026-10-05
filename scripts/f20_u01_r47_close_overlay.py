@@ -31,6 +31,7 @@ AUTHORITY_FILES = tuple(dict.fromkeys((
 CONTROL_SCOPE = prior.CONTROL_SCOPE | {
     DIGEST, MANIFEST,
     "scripts/f20_u01_r47_close_overlay.py",
+    "tests/tooling/test_f20_u01_r46_close_projection.py",
     "tests/tooling/test_f20_u01_r47_close_projection.py",
 }
 CHECKER_ANCHOR = (
