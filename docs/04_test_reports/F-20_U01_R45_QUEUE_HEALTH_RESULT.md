@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — exact5의 로컬 구현과 기본 검증을 Main 독립 검토에 인계한다. 실제 WSL-server PG15/OIDC/HTTPS/Chromium opt-in, 독립 Tester 판정, F-20/U-01 인수는 `NOT_EXECUTED`/미수락이다.
+`INCOMPLETE` — exact5의 로컬 구현과 기본 검증을 Main 독립 검토에 인계했다. 첫 실제 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 아래 응답 캡처 오류로 FAIL이며, 보완 SHA의 실제 재검증·독립 Tester 판정·F-20/U-01 인수는 남아 있다.
 
 ## 판단 이유
 
@@ -25,6 +25,15 @@
 
 ## 미검증·잔여 위험·다음 조치
 
-- Main의 exact diff/권한 독립 검토, private checkpoint, WSL-server 동일 clean SHA의 실제 PG15/OIDC/HTTPS/Chromium 카드 클릭·Network/Secret 검증과 전용 QA 자원 정리는 남아 있다. 브라우저 audit self-test와 로컬 fixture는 실제 브라우저 검증을 대체하지 않는다.
+- Main의 보완 diff/권한 독립 검토, private checkpoint, WSL-server 동일 clean SHA의 실제 PG15/OIDC/HTTPS/Chromium 카드 클릭·Network/Secret 재검증과 전용 QA 자원 정리는 남아 있다. 브라우저 audit self-test와 로컬 fixture는 실제 브라우저 검증을 대체하지 않는다.
 - Queue 전체 정상 판정, 6종 Health 실제 source 완성, 전체 U-01/F-20 인수, PG18/Provider/Production은 범위 밖이다. ReleaseDecision `DEFER` 유지.
 - rollback: Main 검증 전 exact5 변경만 이전 clean HEAD `00c35dd669c0fe67537b30fbbfdbf9bedfbc5e81`의 파일 bytes로 되돌린다. 다른 파일·원장·기존 dirty 자료는 변경하지 않는다. Developer는 commit/push/WSL 실행이나 WORK_STATUS/Event/control 수정 없이 인계한다.
+
+## 1차 실제 QA 실패와 로컬 재작업
+
+- Main 실행: clean exact SHA `2aaf95a24adfdf5440923281a5f8984fb4d5ef2a`, 격리 WSL PG15/OIDC/HTTPS/Chromium opt-in `1 FAILED / 47 deselected`, 종료 전 `NETWORK_RESPONSE_FACTS`에서 `DASHBOARD_API status=200 reason=UNREADABLE`. R45 격리 seed·Queue 카드 클릭·권한 철회는 안전 stage 순서상 도달했지만 전체 QA PASS가 아니다. 실패한 개별 response 순번은 기존 로그에 없고 정확한 원인은 미확정이다.
+- Phase 1~3 조사: 기존 `readyDashboard`는 네 API의 Playwright `response.text()` capture 완료를 기다린 뒤 다음으로 간다. R45에서 추가한 Queue snapshot `fetchOnPage`는 페이지 안의 fetch body만 기다렸고, 별도 Playwright capture가 완료되기 전에 바로 `reload`했다. 이는 `DASHBOARD_API 200 UNREADABLE`과 일치하는 경쟁 가설이다. 어떤 response가 실제 실패했는지는 새 QA 전에는 확인할 수 없다.
+- 안전한 국소 재현: 별도 Playwright response body를 지연한 브라우저 audit self-test에서 R45 fetch가 capture 전에 끝나는 `R45_DASHBOARD_CAPTURE_WAIT_MISSING` 예상 RED(exit1)를 확인했다. 해당 GET에 대한 `waitForResponse`와 기존 Playwright capture의 성공을 확인한 뒤 reload하도록 한 최소 보완에서 audit self-test GREEN(exit0)이다. 기존 Network/Secret 검사나 실패 거부를 완화하지 않았다.
+- 후속 실패를 식별할 안전 진단: `R6_RESPONSE_CAPTURE_FAILED`에 category/status/reason에 더해 bounded 응답 순번·관측 stage·navigation round만 출력하고, Python 진단 파서도 이 allowlist만 통과시킨다. URL·본문·token·예외 원문은 출력하지 않는다. Python parser RED 1 FAIL → GREEN 1 PASS를 확인했다.
+- 로컬 회귀: `npm run test:console` 78 PASS/exit0, `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0, 브라우저 `--audit-self-test` exit0. 최신 `python -B -m pytest -q -p no:cacheprovider --basetemp=.r45_diag_full_tmp tests/integration/test_f20_u01_oidc_browser_pg15.py`는 48 PASS/1 SKIP/exit0이다. SKIP은 실제 opt-in이다. 전용 pytest temp는 실경로·link 경계 확인 후 정리했고 잔류 0이다.
+- 남은 판정: 보완 SHA의 실제 동일 격리 QA에서 Network capture 전체와 R45 카드/API/DOM·same-origin/Secret을 통과해야 한다. 그 전에는 첫 실패를 PASS로 바꾸거나 R45 절편을 수락하지 않는다.

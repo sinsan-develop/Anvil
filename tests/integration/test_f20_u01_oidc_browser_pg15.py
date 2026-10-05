@@ -265,9 +265,12 @@ def _safe_response_diagnostic(output: str) -> str:
     detail = ""
     for match in re.finditer(
         r"^R6_(RESPONSE_CAPTURE|PHASE_RESPONSE)_FAILED category=([A-Z_]+) "
-        r"status=([0-9]{1,3}) reason=([A-Z_]+)\r?$", output, flags=re.MULTILINE,
+        r"status=([0-9]{1,3}) reason=([A-Z_]+)"
+        r"(?: index=([0-9]{1,5}) observed_stage=([A-Z_]+)"
+        r" observed_round=([0-9]{1,4}) settled_round=([0-9]{1,4}))?\r?$",
+        output, flags=re.MULTILINE,
     ):
-        kind, category, raw_status, reason = match.groups()
+        kind, category, raw_status, reason, raw_index, observed_stage, raw_observed, raw_settled = match.groups()
         status = int(raw_status)
         valid_reason = ((kind == "RESPONSE_CAPTURE" and reason in {"TIMEOUT", "UNREADABLE"})
                         or (kind == "PHASE_RESPONSE" and reason in {
@@ -275,6 +278,15 @@ def _safe_response_diagnostic(output: str) -> str:
         if (category in _RESPONSE_CATEGORIES and (status == 0 or 100 <= status <= 599)
                 and valid_reason):
             detail = f" category={category} status={status} reason={reason}"
+            if raw_index is not None:
+                index, observed, settled = int(raw_index), int(raw_observed), int(raw_settled)
+                if (kind != "RESPONSE_CAPTURE" or not 1 <= index <= 10000
+                        or observed_stage not in _BROWSER_STAGES
+                        or not 0 <= observed <= settled <= 1000):
+                    detail = ""
+                    continue
+                detail += (f" index={index} observed_stage={observed_stage}"
+                           f" observed_round={observed} settled_round={settled}")
     return detail
 
 
@@ -1424,6 +1436,22 @@ def test_r6_response_capture_failure_reports_only_safe_category_status(monkeypat
     assert "stage=NETWORK_RESPONSE_FACTS exit=1 class=Error" in message
     assert "category=ALERT_API status=200 reason=TIMEOUT" in message
     assert secret not in message
+
+
+def test_r45_response_capture_diagnostic_preserves_only_bounded_order_and_phase():
+    secret = "https://user:private-token@127.0.0.1/private?cookie=private"
+    marker = ("R6_RESPONSE_CAPTURE_FAILED category=DASHBOARD_API status=200 reason=UNREADABLE "
+              "index=17 observed_stage=STORED_NEXT_ACTION observed_round=6 settled_round=7\n")
+    expected = (" category=DASHBOARD_API status=200 reason=UNREADABLE"
+                " index=17 observed_stage=STORED_NEXT_ACTION observed_round=6 settled_round=7")
+    assert _safe_response_diagnostic(marker + secret) == expected
+    for invalid in [
+        marker.replace("index=17", "index=100001"),
+        marker.replace("observed_stage=STORED_NEXT_ACTION", "observed_stage=PRIVATE_SECRET"),
+        marker.replace("settled_round=7", "settled_round=5"),
+        marker.replace(" reason=UNREADABLE", " reason=" + secret),
+    ]:
+        assert _safe_response_diagnostic(invalid) == ""
 
 
 def test_r23_route_failure_reports_only_fixed_marker(monkeypatch):

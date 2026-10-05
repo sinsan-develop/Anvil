@@ -18,6 +18,7 @@ const diagnosticDrain = process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1';
 const evidenceDir = process.env.ANVIL_F20_R6_EVIDENCE_DIR;
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
+let navigationRound = 0;
 const progressStages = new Set([
   'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
@@ -616,7 +617,12 @@ function verifiedFacts(results) {
 function verifiedResponseFacts(results) {
   const failed = results.find(({ ok }) => !ok);
   if (failed) {
-    writeSync(1, `R6_RESPONSE_CAPTURE_FAILED category=${failed.category} status=${failed.status} reason=${failed.reason}\n`);
+    const index = Number.isSafeInteger(failed.captureIndex) ? failed.captureIndex : 0;
+    const observedStage = progressStages.has(failed.observedStage) ? failed.observedStage : 'BOOTSTRAP';
+    const observedRound = Number.isSafeInteger(failed.observedRound) ? failed.observedRound : 0;
+    const settledRound = Number.isSafeInteger(failed.settledRound) ? failed.settledRound : 0;
+    writeSync(1, `R6_RESPONSE_CAPTURE_FAILED category=${failed.category} status=${failed.status} reason=${failed.reason}`
+      + ` index=${index} observed_stage=${observedStage} observed_round=${observedRound} settled_round=${settledRound}\n`);
     throw new Error('R6_RESPONSE_CAPTURE_FAILED');
   }
   return verifiedFacts(results);
@@ -703,6 +709,26 @@ async function fetchOnPage(page, path, options = {}) {
     const text = await response.text();
     return { status: response.status, text };
   }, { path, options });
+}
+
+async function fetchDashboardBeforeReload(page, responseCaptures) {
+  const responseReady = page.waitForResponse((response) => {
+    try {
+      return new URL(response.url()).origin === apiUrl
+        && responseCategory(response.url()) === 'DASHBOARD_API'
+        && response.request().method() === 'GET';
+    } catch { return false; }
+  }, {timeout: 10000}).then(
+    (value) => ({ok: true, value}),
+    () => ({ok: false}),
+  );
+  const dashboard = await fetchOnPage(page, '/api/dashboard/operations');
+  const settled = await responseReady;
+  if (!settled.ok) failPhaseResponse('DASHBOARD_API', 0, 'WAIT_TIMEOUT');
+  const capture = responseCaptures.get(settled.value);
+  if (!capture) failPhaseResponse('DASHBOARD_API', settled.value.status(), 'CAPTURE_MISSING');
+  verifiedResponseFacts([await capture]);
+  return dashboard;
 }
 
 const loadingPaths = new Map([
@@ -1783,6 +1809,7 @@ async function readyDashboard(page, action, origin, phase, responseCaptures, bef
     );
   });
   markStage(phase + '_DOCUMENT');
+  navigationRound += 1;
   const navigate = async () => {
     if (action === 'goto') await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
     else if (action === 'reload') await page.reload({ waitUntil: 'domcontentloaded' });
@@ -1856,7 +1883,11 @@ async function main() {
       requestFacts.push(captureRequestFact(request));
     });
     page.on('response', (response) => {
-      const capture = captureResponseFact(response);
+      const captureIndex = responseFacts.length + 1;
+      const observedStage = stage;
+      const observedRound = navigationRound;
+      const capture = captureResponseFact(response).then((result) => ({...result,
+        captureIndex, observedStage, observedRound, settledRound: navigationRound}));
       responseCaptures.set(response, capture);
       responseFacts.push(capture);
     });
@@ -2163,7 +2194,7 @@ async function main() {
       headers: { 'x-r6-control-token': controlToken },
     });
     assert.equal(queueSeed.status(), 200, 'R45_QUEUE_SEED_FAILED');
-    const queueDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    const queueDashboard = await fetchDashboardBeforeReload(page, responseCaptures);
     assert.equal(queueDashboard.status, 200, 'R45_QUEUE_DASHBOARD_FAILED');
     const queueSnapshot = JSON.parse(queueDashboard.text).data;
     await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
@@ -2946,6 +2977,30 @@ if (auditSelfTest) {
     assert.throws(() => publishEvidence(directory, { preAuth: png, stored: png, revoked: png },
       [apiUrl + '/']), /R6_EVIDENCE_DIR_REJECTED/);
   }
+  let releaseDashboardBody;
+  const dashboardBody = new Promise((resolve) => { releaseDashboardBody = resolve; });
+  const dashboardResponse = {status: () => 200, url: () => apiUrl + '/api/dashboard/operations',
+    request: () => ({method: () => 'GET'}),
+    allHeaders: async () => ({'content-type': 'application/json'}), text: () => dashboardBody};
+  const captureMap = new WeakMap([[dashboardResponse, captureResponseFact(dashboardResponse)]]);
+  let waitedForResponse = false;
+  const dashboardPage = {
+    waitForResponse: async (predicate) => {
+      waitedForResponse = true;
+      assert.equal(predicate(dashboardResponse), true);
+      return dashboardResponse;
+    },
+    evaluate: async () => ({status: 200, text: '{}'}),
+  };
+  let dashboardFetchSettled = false;
+  const dashboardFetch = fetchDashboardBeforeReload(dashboardPage, captureMap)
+    .then((value) => { dashboardFetchSettled = true; return value; });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const settledBeforeCapture = dashboardFetchSettled;
+  releaseDashboardBody('{}');
+  assert.deepEqual(await dashboardFetch, {status: 200, text: '{}'});
+  assert.equal(waitedForResponse, true, 'R45_DASHBOARD_CAPTURE_WAIT_MISSING');
+  assert.equal(settledBeforeCapture, false, 'R45_DASHBOARD_CAPTURE_SETTLED_EARLY');
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
   writeSync(1, 'R6_NODE_STARTED\n');
