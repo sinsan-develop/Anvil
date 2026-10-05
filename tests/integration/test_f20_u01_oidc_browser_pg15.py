@@ -1093,7 +1093,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                 repository_dsn = "postgresql://" + repository_dsn[len(prefix):]
                 break
         leases = LeaseService(token_factory=lambda: "r6-private-fence")
-        at = datetime.now(timezone.utc)
+        at = datetime(2026, 9, 28, tzinfo=timezone.utc)
         observation_clock = [at]
         leases.issue_worker("r6-run", "r6-worker", at - timedelta(minutes=10), timedelta(minutes=1))
         owner = OperationsService("project-1", "wsl-qa",
