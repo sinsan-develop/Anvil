@@ -21,6 +21,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 import jwt
 import pytest
+from psycopg.conninfo import conninfo_to_dict
 import sqlalchemy as sa
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
@@ -55,7 +56,12 @@ def _isolated_dsn() -> str:
             or not database or re.fullmatch(r"anvil_f20_r48_[0-9a-f]{7}", database) is None
             or url.username != database):
         pytest.fail("R48_PG_TARGET_NOT_ISOLATED")
-    return url.set(drivername="postgresql+psycopg").render_as_string(hide_password=False)
+    return url.set(drivername="postgresql").render_as_string(hide_password=False)
+
+
+def _sqlalchemy_dsn(libpq_dsn: str) -> str:
+    return make_url(libpq_dsn).set(drivername="postgresql+psycopg").render_as_string(
+        hide_password=False)
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -64,8 +70,18 @@ def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
     for driver in ("postgresql", "postgresql+psycopg"):
         monkeypatch.setenv("ANVIL_U01_R48_PG_DSN",
             f"{driver}://{database}@127.0.0.1:5545/{database}")
-        assert _isolated_dsn() == (
-            f"postgresql+psycopg://{database}@127.0.0.1:5545/{database}")
+        libpq_dsn = _isolated_dsn()
+        assert libpq_dsn == f"postgresql://{database}@127.0.0.1:5545/{database}"
+        assert conninfo_to_dict(libpq_dsn) == {"user": database, "host": "127.0.0.1",
+            "port": "5545", "dbname": database}
+        engine = sa.create_engine(_sqlalchemy_dsn(libpq_dsn), connect_args={"connect_timeout": 2})
+        try:
+            args, kwargs = engine.dialect.create_connect_args(engine.url)
+            assert args == []
+            assert kwargs["host"] == "127.0.0.1" and kwargs["port"] == 5545
+            assert kwargs["user"] == database and kwargs["dbname"] == database
+        finally:
+            engine.dispose()
     for host, port, user, name in (
             ("remote.invalid", 5545, database, database),
             ("127.0.0.1", 5432, database, database),
@@ -84,7 +100,7 @@ def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
 
 def test_two_service_instances_append_exactly_one_critical_ack():
     dsn = _isolated_dsn()
-    engine = sa.create_engine(dsn)
+    engine = sa.create_engine(_sqlalchemy_dsn(dsn))
     project = "r48-" + uuid4().hex
     environment = "qa"
     alert_id = "alert-" + uuid4().hex
@@ -138,7 +154,7 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
     frontend = Path(__file__).resolve().parents[2] / "apps" / "web" / "dist"
     if not (frontend / "index.html").is_file():
         pytest.fail("R48_FRONTEND_BUILD_REQUIRED")
-    engine = sa.create_engine(dsn, connect_args={"connect_timeout": 2})
+    engine = sa.create_engine(_sqlalchemy_dsn(dsn), connect_args={"connect_timeout": 2})
     with engine.connect() as connection:
         database, username, version = connection.execute(sa.text(
             "SELECT current_database(), current_user, current_setting('server_version_num')::integer"
