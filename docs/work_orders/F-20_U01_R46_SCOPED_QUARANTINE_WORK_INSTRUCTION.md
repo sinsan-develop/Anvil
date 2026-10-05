@@ -1,0 +1,9 @@
+# F-20/U-01 R46 실제 범위 격리 근거 WorkInstruction
+
+- 승인/기준: PMO `01a054f5-c2b4-7af0-b31a-c8148ef74642`의 2026-10-05 제한적 **의미 변경 승인**. R45 binding은 재사용하지 않는다. R46 계획 `docs/04_test_reports/F-20_U01_R46_SCOPED_QUARANTINE_PLAN.md` bytes SHA-256 `D33786BFD4AF3BC77AD48E112904C105FBDF8493B565637B3EC0B30F3A2AF5D9`. 설계/작업계획/매트릭스/테스트계획의 기존 R45 결과보고서 명시 hash를 유지한다.
+- 책임: canonical worker/write dual lease를 받은 단일 `developer-primary`만 아래 제품 exact5를 쓴다. Main은 Event/통제·진도/HANDOFF·Git·독립 검토·WSL-server QA를 소유한다. lease 이전 제품 write는 금지한다.
+- 제품 exact5: `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, `tests/browser/f20-u01-oidc-browser-pg15.mjs`, `tests/integration/test_f20_u01_oidc_browser_pg15.py`, `docs/04_test_reports/F-20_U01_R46_SCOPED_QUARANTINE_RESULT.md`.
+- 동작: 같은 Dashboard 응답의 유효·신선(관측 시각 60초 이내)·고유 scoped 저장 격리 양성 행과 유일하게 일치하는 저장 `QUEUE_JOB_QUARANTINED` alert가 있을 때만 Queue의 확인된 이상·현재 범위 건수·R44 same-page 상세를 표시한다. `source_gaps`의 `queue`와 전체 Queue `UNKNOWN`은 남긴다. 0건/차단/누락/오래된·미래 관측/위조/중복은 경고·상세 없음. `HEALTHY/0` synthetic HealthSignal이나 HEALTH alert를 생성하지 않는다.
+- TDD: 먼저 R46 console RED를 확인하고 최소 제품 변경 후 GREEN을 확인한다. 실제 browser harness에서는 R45 QA-only `seed-quarantine`의 Queue HealthSignal 주입을 제거하고 저장 격리 alert의 카드/API↔DOM, source gap 유지, alert 중복 부재, 0건 UNKNOWN, 인증 전/철회 뒤 차단, same-origin/Secret 검사 경로를 단언한다. 기존 R35/R43/R44/R45 회귀, Web typecheck/lint/build, Python 비 opt-in·browser audit을 수행한다. 실제 WSL PG15/OIDC/HTTPS/Chromium은 Main이 동일 SHA로 별도 실행한다.
+- 금지: exact5 밖 제품 write, 새 공개 API/DB/schema/auth/권한/Secret, 서버 Event·alert·HealthSignal 생성, Queue 전체 정상 판정, 통제/Event/progress/HANDOFF/WORK_STATUS 수정, commit·push, WSL-server 또는 ysna/Production 접근. 경계 밖 위험은 Main에 보고한다.
+- 보고: 시작 HEAD/branch/status, 변경 전후 diff, 정확 명령/exit/결과, 실패 횟수·SKIP·미검증, 기존 기능 영향·rollback을 결과보고서에 판정→판단 이유→조치로 기록한다. 상태는 `COMPLETED | FAILURE_REPORT | INCOMPLETE | BLOCKED | CANCELLED` 중 하나다. R46 단독 PASS는 F-20/U-01 전체 수락이 아니며 Release `DEFER`다.
