@@ -719,6 +719,12 @@ async function fetchOnPage(page, path, options = {}) {
 
 async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, line + '\n')) {
   const facts = {request: 'NONE', response: 'NONE', status: 0, finished: 'NONE', page: 'START'};
+  let lastTrace = '';
+  const emitFacts = () => {
+    const line = `R46_REVOKE_DASHBOARD_TRACE request=${facts.request} response=${facts.response}`
+      + ` status=${facts.status} finished=${facts.finished} page=${facts.page}`;
+    if (line !== lastTrace) { emit(line); lastTrace = line; }
+  };
   const phases = new Map([['R46_FETCH_PHASE_FETCH_PENDING', 'FETCH_PENDING'],
     ['R46_FETCH_PHASE_HEADERS', 'HEADERS'], ['R46_FETCH_PHASE_BODY_PENDING', 'BODY_PENDING'],
     ['R46_FETCH_PHASE_BODY_DONE', 'BODY_DONE'], ['R46_FETCH_PHASE_FETCH_ERROR', 'FETCH_ERROR'],
@@ -730,24 +736,33 @@ async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, li
         && request.method() === 'GET';
     } catch { return false; }
   };
-  const onRequest = (request) => { if (matches(request)) facts.request = 'SEEN'; };
+  const onRequest = (request) => {
+    if (matches(request)) { facts.request = 'SEEN'; emitFacts(); }
+  };
   const onResponse = (response) => {
     if (!matches(response.request())) return;
     facts.response = 'SEEN';
     const status = response.status();
     facts.status = Number.isInteger(status) && status >= 100 && status <= 599 ? status : 0;
+    emitFacts();
   };
-  const onFinished = (request) => { if (matches(request)) facts.finished = 'DONE'; };
-  const onFailed = (request) => { if (matches(request)) facts.finished = 'FAILED'; };
+  const onFinished = (request) => {
+    if (matches(request)) { facts.finished = 'DONE'; emitFacts(); }
+  };
+  const onFailed = (request) => {
+    if (matches(request)) { facts.finished = 'FAILED'; emitFacts(); }
+  };
   const onConsole = (message) => {
     try {
-      if (message.type() === 'info') facts.page = phases.get(message.text()) || facts.page;
+      const phase = message.type() === 'info' ? phases.get(message.text()) : undefined;
+      if (phase) { facts.page = phase; emitFacts(); }
     } catch { /* observation remains bounded and unknown */ }
   };
   const observers = [['request', onRequest], ['response', onResponse],
     ['requestfinished', onFinished], ['requestfailed', onFailed], ['console', onConsole]];
   const attached = [];
   try {
+    emitFacts();
     for (const [name, callback] of observers) {
       page.on(name, callback);
       attached.push([name, callback]);
@@ -774,8 +789,7 @@ async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, li
       return {status: response.status, text};
     });
   } catch (error) {
-    emit(`R46_REVOKE_DASHBOARD_TRACE request=${facts.request} response=${facts.response}`
-      + ` status=${facts.status} finished=${facts.finished} page=${facts.page}`);
+    emitFacts();
     throw error;
   } finally {
     for (const [name, callback] of attached) page.off(name, callback);
@@ -3109,6 +3123,8 @@ if (auditSelfTest) {
       traceCallbacks.get('console')({type: () => 'error', text: () => 'private-token'});
       traceCallbacks.get('console')({type: () => 'info', text: () => 'private-response-body'});
       tracePhase('FETCH_PENDING');
+      assert.ok(traceLines.some((line) => line.endsWith('page=FETCH_PENDING')),
+        'R46_FETCH_PENDING_FACT_NOT_EMITTED_BEFORE_AWAIT');
       traceCallbacks.get('request')(traceRequest);
       traceCallbacks.get('response')({url: () => traceRequest.url(), request: () => traceRequest,
         status: () => 403});
@@ -3119,9 +3135,10 @@ if (auditSelfTest) {
   };
   await assert.rejects(traceRevokedDashboardFetch(tracePage, (line) => traceLines.push(line)),
     /private-response-body/);
-  assert.deepEqual(traceLines, [
-    'R46_REVOKE_DASHBOARD_TRACE request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING',
-  ]);
+  assert.equal(traceLines.at(-1),
+    'R46_REVOKE_DASHBOARD_TRACE request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING');
+  assert.ok(traceLines.every((line) => /^R46_REVOKE_DASHBOARD_TRACE request=(NONE|SEEN) /
+    .test(line) && !line.includes('private-')));
   assert.equal(traceCallbacks.size, 0);
   const setupCallbacks = new Map();
   const setupLines = [];

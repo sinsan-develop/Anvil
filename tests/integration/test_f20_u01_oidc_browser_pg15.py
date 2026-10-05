@@ -899,6 +899,9 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         stdout = (error.stdout.decode("utf-8", errors="replace") if isinstance(error.stdout, bytes)
                   else error.stdout if isinstance(error.stdout, str) else "")
         detail = _safe_network_diagnostic(stdout) if stage in _RESPONSE_FAILURE_STAGES else ""
+        if stage == "REVOKE_DASHBOARD_FETCH":
+            detail += (" trace=SEEN" if _safe_revoke_dashboard_diagnostic(stdout)
+                       else " trace=ABSENT")
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit=TIMEOUT class=TimeoutExpired; "
                     f"MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED{detail}", pytrace=False)
     except OSError:
@@ -908,6 +911,9 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         output = result.stdout + "\n" + result.stderr
         detail = (_safe_network_diagnostic(output)
                   if stage in _RESPONSE_FAILURE_STAGES else "")
+        if stage == "REVOKE_DASHBOARD_FETCH":
+            detail += (" trace=SEEN" if _safe_revoke_dashboard_diagnostic(output)
+                       else " trace=ABSENT")
         detail += _safe_assertion_diagnostic(output)
         detail += _safe_route_diagnostic(result.stdout)
         if stage == "STORED_NEXT_ACTION":
@@ -1498,8 +1504,10 @@ def test_r46_revoke_dashboard_timeout_keeps_stage_and_safe_trace(monkeypatch):
         return subprocess.CompletedProcess(
             args=["browser"], returncode=1,
             stdout=("R6_NODE_STARTED\nR6_STAGE REVOKE_DASHBOARD_FETCH\n"
+                    "R46_REVOKE_DASHBOARD_TRACE request=NONE response=NONE status=0 "
+                    "finished=NONE page=START\n"
                     "R46_REVOKE_DASHBOARD_TRACE request=SEEN response=SEEN status=403 "
-                    "finished=NONE page=BODY_PENDING\n" + secret),
+                    "finished=NONE page=BODY_PENDING\n" + secret * 20000),
             stderr="R6_BROWSER_FAILED stage=REVOKE_DASHBOARD_FETCH class=TimeoutError\n" + secret,
         )
 
@@ -1511,7 +1519,32 @@ def test_r46_revoke_dashboard_timeout_keeps_stage_and_safe_trace(monkeypatch):
     message = str(failure.value)
     assert "stage=REVOKE_DASHBOARD_FETCH exit=1 class=TimeoutError" in message
     assert "request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING" in message
+    assert "trace=SEEN" in message
     assert secret not in message
+    assert len(message) < 220
+
+
+def test_r46_revoke_dashboard_failure_reports_safe_trace_presence_without_raw_output(monkeypatch):
+    secret = "private-token-url-body"
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1,
+            stdout=("R6_NODE_STARTED\nR6_STAGE REVOKE_DASHBOARD_FETCH\n"
+                    + secret * 20000),
+            stderr="R6_BROWSER_FAILED stage=REVOKE_DASHBOARD_FETCH class=TimeoutError\n",
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    message = str(failure.value)
+    assert "stage=REVOKE_DASHBOARD_FETCH exit=1 class=TimeoutError" in message
+    assert "trace=ABSENT" in message
+    assert secret not in message
+    assert len(message) < 200
 
 
 def test_r23_route_failure_reports_only_fixed_marker(monkeypatch):
