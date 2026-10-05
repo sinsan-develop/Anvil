@@ -100,6 +100,23 @@ function safeR30FailureCode(error) {
   return r30Assertions.has(code) ? code : 'R30_UNCLASSIFIED';
 }
 
+const r44AssertionCodes = new Set([
+  'R44_PREAUTH_DETAIL_RETAINED', 'R44_HEALTH_SEED_FAILED',
+  'R44_HEALTH_DASHBOARD_FAILED', 'R44_R43_ORDER_CHANGED',
+  'R44_HEALTH_DETAIL_MISMATCH', 'R44_REVOKED_DETAIL_RETAINED',
+]);
+
+function safeR44FailureCode(error) {
+  const code = typeof error?.message === 'string'
+    ? /^([A-Z][A-Z0-9_]+)(?:\b|$)/.exec(error.message)?.[1] : null;
+  return code && r44AssertionCodes.has(code) ? code : 'UNCLASSIFIED';
+}
+
+function emitSafeFailure(error) {
+  const safeStage = progressStages.has(stage) ? stage : 'BOOTSTRAP';
+  writeSync(2, `R6_SAFE_FAILURE stage=${safeStage} code=${safeR44FailureCode(error)}\n`);
+}
+
 function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
   const markers = [...sensitiveValues, sessionValue].filter((value) => typeof value === 'string' && value);
   const variants = markers.flatMap((value) => [value, encodeURIComponent(value)]);
@@ -2271,6 +2288,10 @@ if (auditSelfTest) {
     'R30_CANCEL_BROWSER_ABORT_MISSING');
   assert.equal(safeR30FailureCode({ message: 'R30_PRIVATE_SECRET private-secret' }),
     'R30_UNCLASSIFIED');
+  assert.equal(safeR44FailureCode({message: 'R44_HEALTH_DETAIL_MISMATCH private-token'}),
+    'R44_HEALTH_DETAIL_MISMATCH');
+  assert.equal(safeR44FailureCode({message: 'R44_PRIVATE_TOKEN private-token'}),
+    'UNCLASSIFIED');
   assert.ok([...manualPhases].every((value) => /^[A-Z_]+$/.test(value)),
     'R27_MANUAL_PHASE_GRAMMAR_INVALID');
   assert.throws(() => manualPhase('PRIVATE_TOKEN_VALUE'), /R27_MANUAL_PHASE_INVALID/);
@@ -2811,11 +2832,23 @@ if (auditSelfTest) {
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
   writeSync(1, 'R6_NODE_STARTED\n');
+  process.on('unhandledRejection', (error) => {
+    emitSafeFailure(error);
+    process.exitCode = 1;
+  });
+  process.on('uncaughtException', (error) => {
+    emitSafeFailure(error);
+    process.exitCode = 1;
+  });
   main().catch((error) => {
+    emitSafeFailure(error);
     if (currentR30Phase !== null) {
       writeSync(2, `R30_DIAG code=${safeR30FailureCode(error)}\n`);
     }
-    console.error('R6_BROWSER_FAILED stage=' + stage + ' class=' + error.name);
+    const safeClass = ['AssertionError', 'Error', 'TypeError', 'TimeoutError', 'SyntaxError',
+      'ReferenceError', 'RangeError', 'AggregateError', 'TargetClosedError'].includes(error?.name)
+      ? error.name : 'Error';
+    writeSync(2, `R6_BROWSER_FAILED stage=${progressStages.has(stage) ? stage : 'BOOTSTRAP'} class=${safeClass}\n`);
     process.exitCode = 1;
   });
 }

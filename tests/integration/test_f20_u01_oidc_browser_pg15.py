@@ -95,6 +95,11 @@ _R30_ASSERTIONS = frozenset({
     "R30_CLIENT_RACE_OLD_RELEASE_MISSING",
     "R30_CLIENT_RACE_LATE_SUCCESS_OVERWROTE_RECOVERY", "R30_UNCLASSIFIED",
 })
+_R44_SAFE_ASSERTIONS = frozenset({
+    "R44_PREAUTH_DETAIL_RETAINED", "R44_HEALTH_SEED_FAILED",
+    "R44_HEALTH_DASHBOARD_FAILED", "R44_R43_ORDER_CHANGED",
+    "R44_HEALTH_DETAIL_MISMATCH", "R44_REVOKED_DETAIL_RETAINED",
+})
 
 
 def _validated_target(dsn: str | None, isolated: str | None) -> sa.engine.URL:
@@ -215,12 +220,25 @@ def _classify_browser_failure(stdout: str, stderr: str) -> tuple[str, str]:
         if stage in _BROWSER_STAGES:
             return stage, error_class if error_class in _BROWSER_ERROR_CLASSES else "NodeError"
     if re.search(r"^R6_NODE_STARTED\r?$", output, flags=re.MULTILINE):
-        return "NODE_UNHANDLED", "UnhandledError"
+        for match in re.finditer(r"^R6_SAFE_FAILURE stage=([A-Z_]+) code=([A-Z0-9_]+)\r?$",
+                                 output, flags=re.MULTILINE):
+            if match.group(1) in _BROWSER_STAGES:
+                return match.group(1), "UnhandledError"
+        last = _last_browser_progress(output)
+        return (last if last != "RUNNER" else "NODE_UNHANDLED"), "UnhandledError"
     if re.search(r"^npm (?:ERR!|error)(?:\s|$)", output, flags=re.MULTILINE):
         return "NPM_INSTALL", "PackageManagerError"
     if re.search(r"^(?:docker: |Error response from daemon:)", output, flags=re.MULTILINE):
         return "CONTAINER_START", "ContainerError"
     return "PRE_NODE_UNKNOWN", "ProcessError"
+
+
+def _safe_assertion_diagnostic(output: str) -> str:
+    for match in re.finditer(r"^R6_SAFE_FAILURE stage=([A-Z_]+) code=([A-Z0-9_]+)\r?$",
+                             output, flags=re.MULTILINE):
+        if match.group(1) in _BROWSER_STAGES and match.group(2) in _R44_SAFE_ASSERTIONS:
+            return "; assertion=" + match.group(2)
+    return ""
 
 
 def _last_browser_progress(output: bytes | str | None) -> str:
@@ -797,8 +815,10 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=LAUNCH class=OSError", pytrace=False)
     if result.returncode != 0:
         stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
-        detail = (_safe_network_diagnostic(result.stdout + "\n" + result.stderr)
+        output = result.stdout + "\n" + result.stderr
+        detail = (_safe_network_diagnostic(output)
                   if stage in _RESPONSE_FAILURE_STAGES else "")
+        detail += _safe_assertion_diagnostic(output)
         detail += _safe_route_diagnostic(result.stdout)
         if stage == "STORED_NEXT_ACTION":
             detail += _safe_stored_diagnostic(result.stdout)
@@ -1252,6 +1272,19 @@ def test_r6_browser_failure_classification_never_returns_raw_output():
         actual = _classify_browser_failure(stdout, stderr)
         assert actual == expected
         assert secret not in " ".join(actual)
+
+
+def test_r44_node_failure_reports_only_allowlisted_stage_and_assertion_code():
+    secret = "https://user:private-token@127.0.0.1/private?cookie=private"
+    output = ("R6_NODE_STARTED\nR6_STAGE STORED_NEXT_ACTION\n"
+              "R6_SAFE_FAILURE stage=STORED_NEXT_ACTION code=R44_HEALTH_DETAIL_MISMATCH\n"
+              + secret)
+    assert _classify_browser_failure(output, "") == ("STORED_NEXT_ACTION", "UnhandledError")
+    assert _safe_assertion_diagnostic(output) == "; assertion=R44_HEALTH_DETAIL_MISMATCH"
+    assert _safe_assertion_diagnostic("R6_SAFE_FAILURE stage=LEAK code=PRIVATE_TOKEN\n" + secret) == ""
+    assert _safe_assertion_diagnostic("R6_SAFE_FAILURE stage=STORED_NEXT_ACTION code=PRIVATE_TOKEN\n") == ""
+    assert _classify_browser_failure("R6_NODE_STARTED\nR6_STAGE EVIDENCE_STORED\n" + secret,
+                                     "") == ("EVIDENCE_STORED", "UnhandledError")
 
 
 def test_r6_timeout_reports_last_whitelisted_progress_without_raw_output(monkeypatch):
