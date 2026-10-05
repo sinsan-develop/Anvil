@@ -128,6 +128,7 @@ const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
   'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
   'ACK_DENIAL_BODY_WAIT', 'ACK_DENIAL_CODE', 'ACK_UI_BLOCKED_WAIT',
+  'ACK_DIRECT_DIAGNOSTIC',
   'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
@@ -179,6 +180,19 @@ async function readR48DenialCode(response, timeoutMs, timeoutCode) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function safeR48DirectFact(status, body, code) {
+  const safeStatus = ['403', 'OTHER', 'UNAVAILABLE'].includes(status) ? status : 'UNAVAILABLE';
+  const safeBody = ['COMPLETE', 'TIMEOUT', 'ERROR'].includes(body) ? body : 'ERROR';
+  const safeCode = ['PERMISSION_DENIED', 'OTHER', 'UNAVAILABLE'].includes(code)
+    ? code : 'UNAVAILABLE';
+  return `R48_DIRECT_FACT status=${safeStatus} body=${safeBody} code=${safeCode}`;
+}
+
+function countR48UiAckRequests(requests, alertId) {
+  const path = `/api/operations/alerts/${encodeURIComponent(alertId)}:acknowledge`;
+  return requests.filter(({url}) => url.pathname === path).length;
 }
 
 function safeFailureName(error) {
@@ -2748,25 +2762,31 @@ async function mainR48() {
     const ackButton = card.getByRole('button', {name: '확인'});
     markR48Stage('ACK_BUTTON_WAIT');
     await ackButton.waitFor({timeout: 10000});
-    if (r48Scenario === 'normal') {
+    let diagnosticHeaders;
+    let uiAlertId;
+    if (r48Scenario === 'normal' || r48Scenario === 'permission-denied') {
       const alertRead = await context.request.get(apiUrl + '/api/operations/alerts');
       assert.equal(alertRead.status(), 200);
       const alert = (await alertRead.json()).data.alerts.find((row) => row.status === 'open');
       assert.ok(alert?.sequence && alert?.evidence_hash, 'R48_OPEN_ALERT_MISSING');
-      const path = apiUrl + '/api/operations/alerts/' + encodeURIComponent(alert.alert_id) + ':acknowledge';
+      uiAlertId = alert.alert_id;
       const headers = {'content-type': 'application/json', 'x-csrf-token': csrf,
         'if-match': String(alert.sequence), 'x-target-hash': alert.evidence_hash,
         'x-permission-scope': 'operations:alerts:acknowledge', 'x-reason': 'operator_ack'};
-      for (const [reason, invalid] of [
-        ['origin', {'origin': 'https://other.invalid', 'idempotency-key': 'r48-origin-denied'}],
-        ['csrf', {'origin': apiUrl, 'x-csrf-token': 'invalid',
-          'idempotency-key': 'r48-csrf-denied'}]]) {
-        const denied = await context.request.post(path, {headers: {...headers, ...invalid}, data: '{}'});
-        assert.equal(denied.status(), 403, `R48_${reason.toUpperCase()}_NOT_DENIED`);
-        const code = (await denied.json())?.error?.code;
-        assert.ok(reason === 'origin'
-          ? ['ORIGIN_VALIDATION_FAILED', 'CORS_ORIGIN_DENIED'].includes(code)
-          : code === 'CSRF_VALIDATION_FAILED', `R48_${reason.toUpperCase()}_WRONG_DENIAL`);
+      diagnosticHeaders = headers;
+      if (r48Scenario === 'normal') {
+        const path = apiUrl + '/api/operations/alerts/' + encodeURIComponent(alert.alert_id) + ':acknowledge';
+        for (const [reason, invalid] of [
+          ['origin', {'origin': 'https://other.invalid', 'idempotency-key': 'r48-origin-denied'}],
+          ['csrf', {'origin': apiUrl, 'x-csrf-token': 'invalid',
+            'idempotency-key': 'r48-csrf-denied'}]]) {
+          const denied = await context.request.post(path, {headers: {...headers, ...invalid}, data: '{}'});
+          assert.equal(denied.status(), 403, `R48_${reason.toUpperCase()}_NOT_DENIED`);
+          const code = (await denied.json())?.error?.code;
+          assert.ok(reason === 'origin'
+            ? ['ORIGIN_VALIDATION_FAILED', 'CORS_ORIGIN_DENIED'].includes(code)
+            : code === 'CSRF_VALIDATION_FAILED', `R48_${reason.toUpperCase()}_WRONG_DENIAL`);
+        }
       }
     }
     let auditIntercepted = 0;
@@ -2803,11 +2823,39 @@ async function mainR48() {
       await Promise.race([ackNetworkTerminal, new Promise((resolve) => setTimeout(resolve, 1000))]);
       writeSync(1, `R48_ACK_FACT ui=BLOCKED network=${ackNetwork}\n`);
       markR48Stage('ACK_DENIAL_BODY_WAIT');
-      const deniedCode = await readR48DenialCode(ack, 5000, 'R48_PERMISSION_BODY_TIMEOUT');
+      let deniedCode;
+      try {
+        deniedCode = await readR48DenialCode(ack, 5000, 'R48_PERMISSION_BODY_TIMEOUT');
+      } catch (primaryError) {
+        markR48Stage('ACK_DIRECT_DIAGNOSTIC');
+        let directStatus = 'UNAVAILABLE';
+        let directBody = 'ERROR';
+        let directCode = 'UNAVAILABLE';
+        try {
+          const direct = await context.request.post(
+            apiUrl + '/api/operations/alerts/r48-diagnostic-unallocated:acknowledge', {
+              headers: {...diagnosticHeaders, origin: apiUrl,
+                'idempotency-key': 'r48-no-body-diagnostic'}, timeout: 5000,
+            });
+          directStatus = direct.status() === 403 ? '403' : 'OTHER';
+          try {
+            const code = await readR48DenialCode(direct, 3000, 'R48_PERMISSION_BODY_TIMEOUT');
+            directBody = 'COMPLETE';
+            directCode = code === 'PERMISSION_DENIED' ? 'PERMISSION_DENIED' : 'OTHER';
+          } catch (error) {
+            directBody = error?.message === 'R48_PERMISSION_BODY_TIMEOUT' ? 'TIMEOUT' : 'ERROR';
+          }
+        } catch (error) {
+          directBody = error?.name === 'TimeoutError' ? 'TIMEOUT' : 'ERROR';
+        }
+        writeSync(1, safeR48DirectFact(directStatus, directBody, directCode) + '\n');
+        markR48Stage('ACK_DENIAL_BODY_WAIT');
+        throw primaryError;
+      }
       markR48Stage('ACK_DENIAL_CODE');
       assert.equal(deniedCode, 'PERMISSION_DENIED', 'R48_PERMISSION_DENIAL_CODE');
       markR48Stage('ACK_BLOCKED_UI_WAIT');
-      assert.equal(requests.filter(({url}) => url.pathname.includes(':acknowledge')).length, 1);
+      assert.equal(countR48UiAckRequests(requests, uiAlertId), 1);
       console.log('R48_RESULT {"scenario":"permission-denied","blocked":true,"postCount":1}');
       markR48Stage('ACK_CONTEXT_CLOSE');
       await context.close();
@@ -2865,6 +2913,14 @@ if (r48DiagnosticSelfTest) {
     10, 'R48_PERMISSION_BODY_TIMEOUT'), 'PERMISSION_DENIED');
   await assert.rejects(readR48DenialCode({json: () => new Promise(() => {})},
     1, 'R48_PERMISSION_BODY_TIMEOUT'), /R48_PERMISSION_BODY_TIMEOUT/);
+  assert.equal(safeR48DirectFact('403', 'COMPLETE', 'PERMISSION_DENIED'),
+    'R48_DIRECT_FACT status=403 body=COMPLETE code=PERMISSION_DENIED');
+  assert.equal(safeR48DirectFact('private-token', 'private-token', 'private-token'),
+    'R48_DIRECT_FACT status=UNAVAILABLE body=ERROR code=UNAVAILABLE');
+  assert.equal(countR48UiAckRequests([
+    {url: new URL('https://anvil.invalid/api/operations/alerts/real:acknowledge')},
+    {url: new URL('https://anvil.invalid/api/operations/alerts/r48-diagnostic-unallocated:acknowledge')},
+  ], 'real'), 1);
   const root = 'https://anvil.invalid/';
   assert.equal(classifyR48Referer(undefined, root, 'private-code', 'private-state'), 'ABSENT');
   assert.equal(classifyR48Referer('', root, 'private-code', 'private-state'), 'ABSENT');
