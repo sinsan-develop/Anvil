@@ -176,7 +176,7 @@ def test_configured_oidc_binds_ready_host_and_keeps_secret_provider_lazy(host):
         started = client.post("/auth/oidc/authorization", headers=HEADERS, json={})
         assert started.status_code == 200
         url = urlsplit(started.json()["data"]["authorization_url"])
-        assert parse_qs(url.query)["redirect_uri"] == [REDIRECT]
+        assert parse_qs(url.query)["redirect_uri"] == [ORIGIN + "/"]
         assert secret_calls == []
         state = started.json()["data"]["browser_state"]
         with engine.connect() as db:

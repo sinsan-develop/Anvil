@@ -91,7 +91,7 @@ def create_configured_oidc_asgi_app(
         raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
     config = OidcRuntimeConfig(
         issuer=values[0], client_id=values[1],
-        redirect_uri=console.rstrip("/") + "/auth/oidc/callback",
+        redirect_uri=console.rstrip("/") + "/",
         jwks_json=pinned_jwks_json, step_up_acr=values[2],
         principal_policy=principal_policy, ca_bundle=ca_bundle,
         client_secret=client_secret,

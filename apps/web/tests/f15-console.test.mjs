@@ -226,6 +226,120 @@ const alertRow = (overrides = {}) => ({
 const alertResponse = (alerts, next_before_sequence = null) =>
   ({data: {alerts, next_before_sequence}, request_id: 'request-1'});
 
+test('Critical ACK needs in-memory CSRF and confirms the exact append through audit GET', async () => {
+  const calls = [];
+  const alert = alertRow({evidence_hash: `sha256:${'a'.repeat(64)}`});
+  const request = async (url, options) => {
+    calls.push([url, options]);
+    if (url.includes(':acknowledge')) return jsonResponse({data: {
+      alert_id: alert.alert_id, ack_sequence: 8, receipt: 'ack:unique-1',
+      evidence_hash: alert.evidence_hash}});
+    return jsonResponse({data: {events: [{sequence: 8, alert_id: alert.alert_id,
+      action: 'ACKNOWLEDGED', approval_id: 'ack:unique-1', evidence_hash: alert.evidence_hash}],
+      next_before_sequence: null}});
+  };
+  assert.deepEqual(await consoleApp.acknowledgeCriticalAlert(alert, null, 'key-1', request),
+    {status: 'BLOCKED'});
+  assert.equal(calls.length, 0);
+  assert.deepEqual(await consoleApp.acknowledgeCriticalAlert(alert, 'csrf-private', 'key-1', request),
+    {status: 'CONFIRMED', ackSequence: 8});
+  assert.deepEqual(calls.map(([url]) => url), [
+    '/api/operations/alerts/alert-1:acknowledge', '/api/operations/audit']);
+  assert.equal(calls[0][1].headers['x-csrf-token'], 'csrf-private');
+  assert.equal(calls[0][1].headers['if-match'], '7');
+  assert.equal(calls[0][1].headers['x-target-hash'], alert.evidence_hash);
+  assert.equal(calls[1][1].method, undefined);
+});
+
+test('Critical ACK never reports success when the audit receipt does not match', async () => {
+  const alert = alertRow({evidence_hash: `sha256:${'a'.repeat(64)}`});
+  let posts = 0;
+  const request = async (url) => {
+    if (url.includes(':acknowledge')) {
+      posts += 1;
+      return jsonResponse({data: {alert_id: alert.alert_id, ack_sequence: 8,
+        receipt: 'ack:unique-1', evidence_hash: alert.evidence_hash}});
+    }
+    return jsonResponse({data: {events: [{sequence: 8, alert_id: alert.alert_id,
+      action: 'ACKNOWLEDGED', approval_id: 'ack:other', evidence_hash: alert.evidence_hash}],
+      next_before_sequence: null}});
+  };
+  assert.deepEqual(await consoleApp.acknowledgeCriticalAlert(alert, 'csrf-private', 'key-1', request),
+    {status: 'BLOCKED'});
+  assert.equal(posts, 1);
+});
+
+test('Critical ACK button is disabled without memory CSRF and enabled only for open alerts', () => {
+  const value = {status: 'LOADED', alerts: [alertRow()], partial: false,
+    nextBeforeSequence: null, seenAlertIds: ['alert-1']};
+  const blocked = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value, canAcknowledge: false, onAcknowledge: () => {}}));
+  assert.match(blocked, /확인.*disabled|disabled.*확인/);
+  const enabled = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value, canAcknowledge: true, onAcknowledge: () => {}}));
+  assert.match(enabled, /<button[^>]*>확인<\/button>/);
+});
+
+test('OIDC popup scrubs code and state before messaging only its same-origin opener', () => {
+  const events = [];
+  const popup = {location: {href: 'https://anvil.local/?code=private-code&state=state-1',
+    origin: 'https://anvil.local', pathname: '/'},
+    history: {replaceState: (_state, _title, path) => events.push(['scrub', path])},
+    opener: {postMessage: (payload, origin) => events.push(['message', payload, origin])}};
+  assert.equal(consoleApp.consumeOidcPopupRedirect(popup), true);
+  assert.deepEqual(events, [['scrub', '/'], ['message',
+    {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'state-1'},
+    'https://anvil.local']]);
+  const direct = {...popup, opener: null};
+  events.length = 0;
+  assert.equal(consoleApp.consumeOidcPopupRedirect(direct), true);
+  assert.deepEqual(events, [['scrub', '/']]);
+});
+
+test('OIDC opener accepts only exact popup origin and independent expected state', async () => {
+  const popup = {};
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse({data: {csrf_token: 'private-memory-csrf',
+      expires_at: '2026-10-05T10:00:00+00:00', expires_in: 300}});
+  };
+  const message = {source: popup, origin: 'https://anvil.local',
+    data: {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'expected-state'}};
+  for (const changed of [
+    {...message, source: {}}, {...message, origin: 'https://other.invalid'},
+    {...message, data: {...message.data, state: 'wrong-state'}},
+  ]) assert.equal(await consoleApp.completeOidcPopupMessage(changed, popup,
+    'https://anvil.local', 'expected-state', request), null);
+  assert.equal(calls.length, 0);
+  assert.equal(await consoleApp.completeOidcPopupMessage(message, popup,
+    'https://anvil.local', 'expected-state', request), 'private-memory-csrf');
+  assert.equal(calls[0][0], '/auth/oidc/callback');
+  assert.deepEqual(JSON.parse(calls[0][1].body), {code: 'private-code',
+    state: 'expected-state', browser_state: 'expected-state'});
+});
+
+test('OIDC expected popup rejects mismatched state while unrelated messages are ignored', () => {
+  const popup = {closed: false};
+  const pending = {popup, browserState: 'expected-state'};
+  const message = {source: popup, origin: 'https://anvil.local',
+    data: {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'wrong-state'}};
+  assert.equal(consoleApp.classifyOidcPopupMessage(message, pending,
+    'https://anvil.local'), 'MISMATCH');
+  assert.equal(consoleApp.classifyOidcPopupMessage({...message, source: {}}, pending,
+    'https://anvil.local'), 'IGNORE');
+  assert.equal(consoleApp.classifyOidcPopupMessage({...message, origin: 'https://other.invalid'},
+    pending, 'https://anvil.local'), 'IGNORE');
+  assert.equal(consoleApp.classifyOidcPopupMessage({...message,
+    data: {...message.data, state: 'expected-state'}}, pending,
+    'https://anvil.local'), 'MATCH');
+});
+
+test('Dashboard presents an explicit reauthentication action after memory token loss', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /<button[^>]*>재인증<\/button>/);
+});
+
 test('Critical Alerts reads only stored same-origin records and renders active critical details as text', async () => {
   const calls = [];
   const controller = new AbortController();

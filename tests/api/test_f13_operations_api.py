@@ -40,10 +40,11 @@ def _client(*, owner=None, scope=("project-1", "env-1"), permissions=None, runti
     return client
 
 
-def test_canonical_operations_routes_are_exactly_two_read_queries():
+def test_canonical_operations_routes_keep_reads_and_add_scoped_ack_command():
     routes = [e for e in canonical_api_registry().endpoints if e.path.startswith("/api/operations/")]
     assert [(e.method, e.path, e.permission) for e in routes] == [
         ("GET", "/api/operations/alerts", "operations:alerts:read"),
+        ("POST", "/api/operations/alerts/{alertId}:acknowledge", "operations:alerts:acknowledge"),
         ("GET", "/api/operations/audit", "operations:audit:read")]
 
 
@@ -68,6 +69,65 @@ def test_foreign_project_environment_and_wrong_role_are_denied():
 def test_runtime_binds_only_explicit_owner_and_no_owner_is_501():
     assert _client(runtime=True).get("/api/operations/alerts").status_code == 501
     assert _client(runtime=True, owner=_owner()).get("/api/operations/alerts").status_code == 200
+
+
+def test_critical_ack_requires_exact_permission_and_returns_audited_sequence():
+    from datetime import timedelta
+    from packages.observability.service import OperationsService
+    from tests.observability.test_f13_operations import RecordingRepository, sources
+    owner = OperationsService("project-1", "env-1", sources(), repository=RecordingRepository(),
+                              clock=lambda: NOW + timedelta(minutes=6))
+    owner.detect()
+    alert = next(row for row in owner.alerts() if row["level"] == "critical")
+    path = f'/api/operations/alerts/{alert["alert_id"]}:acknowledge'
+    headers = {"origin": "https://anvil.local", "x-csrf-token": "csrf",
+        "idempotency-key": "ack-first", "if-match": str(alert["sequence"]),
+        "x-target-hash": alert["evidence_hash"],
+        "x-permission-scope": "operations:alerts:acknowledge", "x-reason": "reviewed"}
+    denied = _client(owner=owner, runtime=True, permissions={"dashboard:read"})
+    assert denied.post(path, headers=headers, json={}).status_code == 403
+    client = _client(owner=owner, runtime=True, permissions={
+        "operations:alerts:acknowledge", "operations:audit:read"})
+    accepted = client.post(path, headers=headers, json={})
+    assert accepted.status_code == 200
+    result = accepted.json()["data"]
+    assert result["alert_id"] == alert["alert_id"]
+    assert result["ack_sequence"] == len(owner.audit())
+    assert result["receipt"].startswith("ack:")
+    audit = client.get("/api/operations/audit").json()["data"]["events"][-1]
+    assert (audit["sequence"], audit["approval_id"], audit["evidence_hash"]) == (
+        result["ack_sequence"], result["receipt"], alert["evidence_hash"])
+    assert client.post(path, headers=headers, json={}).status_code == 409
+
+
+def test_critical_ack_denies_foreign_scope_before_lookup_and_rejects_precondition_and_origin():
+    from datetime import timedelta
+    from packages.observability.service import OperationsService
+    from tests.observability.test_f13_operations import RecordingRepository, sources
+    owner = OperationsService("project-1", "env-1", sources(), repository=RecordingRepository(),
+                              clock=lambda: NOW + timedelta(minutes=6))
+    owner.detect()
+    alert = next(row for row in owner.alerts() if row["level"] == "critical")
+    path = f'/api/operations/alerts/{alert["alert_id"]}:acknowledge'
+    headers = {"origin": "https://anvil.local", "x-csrf-token": "csrf",
+        "idempotency-key": "ack-first", "if-match": str(alert["sequence"]),
+        "x-target-hash": alert["evidence_hash"],
+        "x-permission-scope": "operations:alerts:acknowledge", "x-reason": "reviewed"}
+    permissions = {"operations:alerts:acknowledge"}
+    foreign = _client(owner=owner, runtime=True, scope=("other", "env-1"), permissions=permissions)
+    assert foreign.post(path, headers=headers, json={}).status_code == 403
+    client = _client(owner=owner, runtime=True, permissions=permissions)
+    assert client.post('/api/operations/alerts/missing:acknowledge', headers=headers,
+                       json={}).status_code == 404
+    assert client.post(path, headers={**headers, "if-match": "999"}, json={}).status_code == 409
+    assert client.post(path, headers={**headers, "x-target-hash": "sha256:" + "b" * 64},
+                       json={}).status_code == 409
+    assert client.post(path, headers={**headers, "origin": "https://other.invalid"},
+                       json={}).status_code == 403
+    assert client.post(path, headers={**headers, "x-csrf-token": "wrong"},
+                       json={}).status_code == 403
+    assert client.post(path, headers=headers, json={"actor_id": "forged"}).status_code == 400
+    assert not any(row["action"] == "ACKNOWLEDGED" for row in owner.audit())
 
 
 def test_raw_fencing_token_and_secret_never_appear_in_api_response():

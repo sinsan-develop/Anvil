@@ -27,7 +27,8 @@ type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: stri
   | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; impact: string; next_action: string;
-  related_entity_id: string; status: 'open' | 'acknowledged'};
+  related_entity_id: string; status: 'open' | 'acknowledged'; sequence: number;
+  evidence_hash: string};
 type CriticalAlertsState = {status: 'LOADED'; alerts: CriticalAlert[]; partial: boolean;
   nextBeforeSequence: number | null; seenAlertIds: string[]} | {status: 'LOADING' | 'UNAVAILABLE' | 'BLOCKED'};
 
@@ -74,6 +75,48 @@ function exactFields(value: Record<string, unknown>, fields: string[]): boolean 
 
 function nonempty(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+export function consumeOidcPopupRedirect(browser: Pick<Window, 'location' | 'history' | 'opener'>): boolean {
+  const url = new URL(browser.location.href);
+  if (!url.searchParams.has('code') && !url.searchParams.has('state')) return false;
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  browser.history.replaceState(null, '', browser.location.pathname);
+  if (url.searchParams.size !== 2 || !nonempty(code) || !nonempty(state)
+    || !browser.opener) return true;
+  browser.opener.postMessage({type: 'ANVIL_OIDC_CALLBACK', code, state}, browser.location.origin);
+  return true;
+}
+
+export async function completeOidcPopupMessage(message: Pick<MessageEvent, 'origin' | 'source' | 'data'>,
+  popup: Window | object, origin: string, expectedState: string,
+  request: typeof fetch = fetch): Promise<string | null> {
+  const data = message.data;
+  if (message.source !== popup || message.origin !== origin || !record(data)
+    || data.type !== 'ANVIL_OIDC_CALLBACK' || !nonempty(data.code)
+    || !nonempty(data.state) || data.state !== expectedState
+    || Object.keys(data).length !== 3) return null;
+  try {
+    const response = await request('/auth/oidc/callback', {method: 'POST',
+      credentials: 'same-origin', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({code: data.code, state: data.state, browser_state: expectedState})});
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return record(payload) && record(payload.data) && nonempty(payload.data.csrf_token)
+      ? payload.data.csrf_token : null;
+  } catch {
+    return null;
+  }
+}
+
+export function classifyOidcPopupMessage(message: Pick<MessageEvent, 'origin' | 'source' | 'data'>,
+  pending: {popup: Window | object; browserState: string}, origin: string): 'IGNORE' | 'MISMATCH' | 'MATCH' {
+  if (message.source !== pending.popup || message.origin !== origin) return 'IGNORE';
+  const data = message.data;
+  return record(data) && data.type === 'ANVIL_OIDC_CALLBACK'
+    && Object.keys(data).length === 3 && nonempty(data.code)
+    && data.state === pending.browserState ? 'MATCH' : 'MISMATCH';
 }
 
 function validObservedAt(value: unknown): value is string {
@@ -484,7 +527,8 @@ function classifyCriticalAlerts(payload: unknown, beforeSequence?: number): Crit
         observed_at: item.observed_at, owner_id: item.owner_id as string | null,
         cause: item.cause as string, impact: item.impact, next_action: item.next_action,
         related_entity_id: item.related_entity_id as string,
-        status: item.status});
+        status: item.status, sequence: item.sequence as number,
+        evidence_hash: item.evidence_hash as string});
     }
   }
   if (cursor !== null && (alerts.length === 0 || cursor !== alerts[0].sequence
@@ -506,6 +550,52 @@ export async function loadCriticalAlerts(signal: AbortSignal, request: typeof fe
     return classifyCriticalAlerts(await response.json());
   } catch {
     return ALERTS_UNAVAILABLE;
+  }
+}
+
+export async function acknowledgeCriticalAlert(alert: CriticalAlert, csrf: string | null,
+  key: string, request: typeof fetch = fetch): Promise<{status: 'BLOCKED' | 'CONFIRMED'; ackSequence?: number}> {
+  if (!csrf || alert.status !== 'open' || !Number.isSafeInteger(alert.sequence)
+    || !/^sha256:[0-9a-f]{64}$/.test(alert.evidence_hash) || !nonempty(key)) return {status: 'BLOCKED'};
+  try {
+    const response = await request(`/api/operations/alerts/${encodeURIComponent(alert.alert_id)}:acknowledge`, {
+      method: 'POST', credentials: 'same-origin', headers: {
+        'Content-Type': 'application/json', 'x-csrf-token': csrf,
+        'idempotency-key': key, 'if-match': String(alert.sequence),
+        'x-target-hash': alert.evidence_hash,
+        'x-permission-scope': 'operations:alerts:acknowledge', 'x-reason': 'operator_ack',
+      }, body: '{}',
+    });
+    if (!response.ok) return {status: 'BLOCKED'};
+    const payload = await response.json();
+    const result = record(payload) && record(payload.data) ? payload.data : null;
+    if (!result || result.alert_id !== alert.alert_id
+      || !Number.isSafeInteger(result.ack_sequence) || (result.ack_sequence as number) <= alert.sequence
+      || typeof result.receipt !== 'string' || !/^ack:[A-Za-z0-9_-]+$/.test(result.receipt)
+      || result.evidence_hash !== alert.evidence_hash) return {status: 'BLOCKED'};
+    let before: number | null = null;
+    for (let page = 0; page < 10; page += 1) {
+      const audit = await request('/api/operations/audit', {credentials: 'same-origin',
+        headers: before === null ? {Accept: 'application/json'}
+          : {Accept: 'application/json', 'x-audit-before-sequence': String(before)}});
+      if (!audit.ok) return {status: 'BLOCKED'};
+      const body = await audit.json();
+      const data = record(body) && record(body.data) ? body.data : null;
+      if (!data || !Array.isArray(data.events)) return {status: 'BLOCKED'};
+      const matched = data.events.find((item: unknown) => record(item)
+        && item.sequence === result.ack_sequence);
+      if (matched) return matched.action === 'ACKNOWLEDGED'
+        && matched.alert_id === alert.alert_id && matched.approval_id === result.receipt
+        && matched.evidence_hash === alert.evidence_hash
+          ? {status: 'CONFIRMED', ackSequence: result.ack_sequence as number} : {status: 'BLOCKED'};
+      if (!Number.isSafeInteger(data.next_before_sequence)
+        || (data.next_before_sequence as number) < 1
+        || before !== null && (data.next_before_sequence as number) >= before) break;
+      before = data.next_before_sequence as number;
+    }
+    return {status: 'BLOCKED'};
+  } catch {
+    return {status: 'BLOCKED'};
   }
 }
 
@@ -544,8 +634,11 @@ export async function loadOlderCriticalAlertsOnce(current: CriticalAlertsState, 
   }
 }
 
-export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false}: {value: CriticalAlertsState;
-  onLoadOlder?: () => void; loadingOlder?: boolean}) {
+export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false,
+  canAcknowledge = false, onAcknowledge, pendingAlertId = null, ackStatus = null}: {value: CriticalAlertsState;
+  onLoadOlder?: () => void; loadingOlder?: boolean; canAcknowledge?: boolean;
+  onAcknowledge?: (alert: CriticalAlert) => void; pendingAlertId?: string | null;
+  ackStatus?: string | null}) {
   return <section className="status-card" aria-labelledby="critical-alerts-heading">
     <h3 id="critical-alerts-heading">Critical Alerts</h3>
     <div aria-live="polite" aria-atomic="true">
@@ -561,7 +654,12 @@ export function CriticalAlertsCard({value, onLoadOlder, loadingOlder = false}: {
             <p>담당자 · {alert.owner_id ?? '미배정'} · {alert.status}</p>
             <p>원인 · {alert.cause}</p><p>대상 · {alert.related_entity_id}</p>
             <p>영향 · {alert.impact}</p><p>다음 조치 · {alert.next_action}</p>
+            {alert.status === 'open' && onAcknowledge ? <button type="button"
+              disabled={!canAcknowledge || pendingAlertId !== null}
+              onClick={() => onAcknowledge(alert)}>확인</button> : null}
           </li>)}</ul>}
+        {!canAcknowledge && onAcknowledge ? <p>확인 차단 · 재인증 필요</p> : null}
+        {ackStatus ? <p role="status">{ackStatus}</p> : null}
         {value.partial && <p>과거 페이지 미조회 · 부분 결과</p>}
         {value.partial && onLoadOlder && <button type="button" disabled={loadingOlder}
           onClick={onLoadOlder}>과거 저장 경고 더 보기</button>}
@@ -713,11 +811,100 @@ function Shell({route}: AppProps) {
   const [dashboardQueue, setDashboardQueue] = useState<DashboardQueueState>(DASHBOARD_QUEUE_LOADING);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_LOADING);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const [ackStatus, setAckStatus] = useState<string | null>(null);
+  const [pendingAlertId, setPendingAlertId] = useState<string | null>(null);
+  const authPending = useRef<{popup: Window; browserState: string} | null>(null);
   const alertsController = useRef<AbortController | null>(null);
   const dashboardController = useRef<AbortController | null>(null);
   const dashboardInFlight = useRef(false);
   const olderRequestInFlight = useRef(false);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onMessage = (event: MessageEvent) => {
+      const pending = authPending.current;
+      if (!pending) return;
+      const classification = classifyOidcPopupMessage(event, pending, window.location.origin);
+      if (classification === 'IGNORE') return;
+      authPending.current = null; // A duplicate callback never starts a second exchange.
+      if (classification === 'MISMATCH') {
+        pending.popup.close();
+        setCsrfToken(null);
+        setAckStatus('state 불일치 · 재인증 필요');
+        return;
+      }
+      void completeOidcPopupMessage(event, pending.popup, window.location.origin,
+        pending.browserState).then((token) => {
+        setCsrfToken(token);
+        setAckStatus(token ? null : '재인증 실패 · 확인 차단');
+      });
+    };
+    window.addEventListener('message', onMessage);
+    const closedCheck = window.setInterval(() => {
+      const pending = authPending.current;
+      if (pending?.popup.closed) {
+        authPending.current = null;
+        setCsrfToken(null);
+        setAckStatus('팝업 종료 · 재인증 필요');
+      }
+    }, 500);
+    return () => { window.removeEventListener('message', onMessage);
+      window.clearInterval(closedCheck); authPending.current = null; };
+  }, []);
+
+  const reauthenticate = async () => {
+    if (typeof window === 'undefined') return;
+    setCsrfToken(null);
+    setAckStatus('재인증 중');
+    authPending.current?.popup.close();
+    authPending.current = null;
+    const popup = window.open('', '_blank', 'popup,width=520,height=650');
+    if (!popup) { setAckStatus('팝업 차단 · 재인증 필요'); return; }
+    try {
+      const response = await fetch('/auth/oidc/authorization', {method: 'POST',
+        credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, body: '{}'});
+      const payload = response.ok ? await response.json() : null;
+      const data = record(payload) && record(payload.data) ? payload.data : null;
+      if (!data || !nonempty(data.browser_state) || !nonempty(data.authorization_url))
+        throw new Error('OIDC_AUTH_UNAVAILABLE');
+      const url = new URL(data.authorization_url);
+      if (url.protocol !== 'https:' || url.username || url.password)
+        throw new Error('OIDC_AUTH_UNAVAILABLE');
+      authPending.current = {popup, browserState: data.browser_state};
+      popup.location.href = url.href;
+    } catch {
+      popup.close();
+      authPending.current = null;
+      setAckStatus('재인증 실패 · 확인 차단');
+    }
+  };
+
+  const acknowledgeAlert = async (alert: CriticalAlert) => {
+    if (!csrfToken || pendingAlertId !== null || typeof window === 'undefined'
+      || !globalThis.crypto?.randomUUID) return;
+    setPendingAlertId(alert.alert_id);
+    setAckStatus('확인 중');
+    const result = await acknowledgeCriticalAlert(alert, csrfToken, crypto.randomUUID());
+    if (result.status === 'CONFIRMED') {
+      setAckStatus(`확인 완료 · audit sequence ${result.ackSequence}`);
+      const controller = alertsController.current;
+      if (controller && !controller.signal.aborted) {
+        const refreshed = await loadCriticalAlerts(controller.signal);
+        if (!controller.signal.aborted) setCriticalAlerts(refreshed);
+      }
+    } else {
+      setCsrfToken(null);
+      setAckStatus('확인 미검증 · 경고 상태 재조회 후 재인증 필요');
+      const controller = alertsController.current;
+      if (controller && !controller.signal.aborted) {
+        const refreshed = await loadCriticalAlerts(controller.signal);
+        if (!controller.signal.aborted) setCriticalAlerts(refreshed);
+      }
+    }
+    setPendingAlertId(null);
+  };
 
   const refreshDashboard = useCallback((reconnect = false) => {
     if (currentRoute !== '/' || dashboardInFlight.current) return;
@@ -778,6 +965,22 @@ function Shell({route}: AppProps) {
       if (alertsController.current === controller) alertsController.current = null;
     };
   }, [currentRoute, refreshDashboard]);
+
+  useEffect(() => {
+    if (!csrfToken || currentRoute !== '/') return;
+    alertsController.current?.abort();
+    const controller = new AbortController();
+    alertsController.current = controller;
+    setCriticalAlerts(ALERTS_LOADING);
+    void loadCriticalAlerts(controller.signal).then((value) => {
+      if (!controller.signal.aborted) setCriticalAlerts(value);
+    });
+    dashboardController.current?.abort();
+    dashboardController.current = null;
+    dashboardInFlight.current = false;
+    refreshDashboard(true);
+    return () => controller.abort();
+  }, [csrfToken, currentRoute, refreshDashboard]);
 
   const loadOlderAlerts = async () => {
     const controller = alertsController.current;
@@ -849,7 +1052,11 @@ function Shell({route}: AppProps) {
         <DashboardOperatingCards value={dashboardQueue}/>
         <NextActionsCard value={dashboardQueue}/>
         <CriticalAlertsCard value={criticalAlerts} onLoadOlder={() => { void loadOlderAlerts(); }}
-          loadingOlder={loadingOlderAlerts}/>
+          loadingOlder={loadingOlderAlerts} canAcknowledge={csrfToken !== null}
+          onAcknowledge={(alert) => { void acknowledgeAlert(alert); }}
+          pendingAlertId={pendingAlertId} ackStatus={ackStatus}/>
+        {csrfToken === null ? <button type="button" onClick={() => { void reauthenticate(); }}>
+          재인증</button> : null}
       </main> : currentRoute === '/projects' ? <main className="dashboard">
         <div className="dashboard-heading"><div><p className="header-status">REPOSITORY ONBOARDING</p><h1>Projects</h1></div><p>읽기 전용 scan · {projects.status}</p></div>
         <section className="status-card" aria-labelledby="projects-status-heading"><h2 id="projects-status-heading">Repository 상태</h2><p className={projects.status === 'READY' ? 'status-ready' : 'status-unavailable'}>{projects.status}</p><p>{projects.reason}</p>{projects.repository && <dl className="status-metadata"><div><dt>Branch</dt><dd>{projects.repository.branch}</dd></div><div><dt>HEAD</dt><dd>{projects.repository.head}</dd></div><div><dt>Tracked dirty</dt><dd>{projects.repository.dirtyPaths}</dd></div><div><dt>Untracked</dt><dd>{projects.repository.untrackedPaths}</dd></div></dl>}</section>

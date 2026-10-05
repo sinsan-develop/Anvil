@@ -273,6 +273,38 @@ class OperationsService:
         return self._transition(alert_id, actor_id=actor_id, approval_id=approval_id,
                                 evidence_hash=evidence_hash, target="acknowledged")
 
+    def acknowledge_critical(self, alert_id: str, *, actor_id: str,
+                             expected_sequence: int, evidence_hash: str,
+                             receipt: str) -> dict:
+        """Strict public ACK; legacy internal transitions keep their old behavior."""
+        if (type(actor_id) is not str or not _ACTOR.fullmatch(actor_id)
+                or type(receipt) is not str or not receipt.startswith("ack:")
+                or not _ACTOR.fullmatch(receipt)):
+            raise OperationsError("ACK_EVIDENCE_REQUIRED")
+        with self._lock:
+            events = self._events()
+            alert = self._state(events).get(alert_id)
+            if alert is None or alert["level"] != "critical":
+                raise OperationsError("ALERT_NOT_FOUND")
+            if (alert["status"] != "open"
+                    or type(expected_sequence) is not int
+                    or alert["sequence"] != expected_sequence
+                    or type(evidence_hash) is not str
+                    or not _EVIDENCE.fullmatch(evidence_hash)
+                    or evidence_hash != alert["evidence_hash"]):
+                raise OperationsError("ACK_CONFLICT")
+            event = {"action": "ACKNOWLEDGED", "alert_id": alert_id,
+                "actor_id": actor_id, "approval_id": receipt,
+                "evidence_hash": alert["evidence_hash"], "at": self._at()}
+            try:
+                self._append(events, event)
+            except ValueError as error:
+                if str(error) == "AUDIT_SEQUENCE_CONFLICT":
+                    raise OperationsError("ACK_CONFLICT") from None
+                raise
+            return {"alert_id": alert_id, "ack_sequence": len(events) + 1,
+                    "receipt": receipt, "evidence_hash": alert["evidence_hash"]}
+
     def resolve(self, alert_id, *, actor_id, approval_id=None, evidence_hash):
         return self._transition(alert_id, actor_id=actor_id, approval_id=approval_id,
                                 evidence_hash=evidence_hash, target="resolved")

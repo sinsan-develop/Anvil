@@ -23,7 +23,7 @@ ISSUER_MODULE = ROOT / "deploy/wsl/oidc_qa_issuer.py"
 DOCKERFILE = ROOT / "deploy/wsl/Dockerfile.f18.oidc-qa"
 OVERLAY = ROOT / "deploy/wsl/compose.f18.oidc.yml"
 ISSUER = "https://anvil-f18-qa.local:8444/realms/anvil"
-REDIRECT = "https://anvil-f18-qa.local:8444/auth/oidc/callback"
+REDIRECT = "https://anvil-f18-qa.local:8444/"
 VERIFIER = "v" * 43
 CHALLENGE = base64.urlsafe_b64encode(hashlib.sha256(VERIFIER.encode()).digest()).rstrip(b"=").decode()
 

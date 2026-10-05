@@ -158,6 +158,28 @@ def test_alert_detection_dedupes_and_ack_resolve_are_distinct_audited_transition
     assert restored.audit() == service.audit()
 
 
+def test_public_critical_ack_appends_once_and_replay_conflicts():
+    from packages.observability.service import OperationsService, OperationsError
+    repository = RecordingRepository()
+    service = OperationsService("project-1", "env-1", sources(), repository=repository,
+                                clock=lambda: NOW + timedelta(minutes=6))
+    service.detect()
+    alert = next(row for row in service.alerts() if row["level"] == "critical")
+    before = len(service.audit())
+    result = service.acknowledge_critical(alert["alert_id"], actor_id="operator",
+        expected_sequence=alert["sequence"], evidence_hash=alert["evidence_hash"],
+        receipt="ack:unique-1")
+    assert result["ack_sequence"] == before + 1
+    assert result["receipt"] == "ack:unique-1"
+    assert service.audit()[-1]["evidence_hash"] == alert["evidence_hash"]
+    assert service.audit()[-1]["approval_id"] == "ack:unique-1"
+    with pytest.raises(OperationsError, match="ACK_CONFLICT"):
+        service.acknowledge_critical(alert["alert_id"], actor_id="operator",
+            expected_sequence=alert["sequence"], evidence_hash=alert["evidence_hash"],
+            receipt="ack:unique-2")
+    assert len(service.audit()) == before + 1
+
+
 def test_forecast_and_unknown_usage_never_become_zero_cost_success():
     from packages.observability.projection import project_operations
     view = sources()

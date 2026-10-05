@@ -6,13 +6,16 @@ from packages.persistence.operations_repository import _safe_event, _safe_identi
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import re
+import secrets
 
 from .common import ApiContractError, ApplicationRequest
+from packages.observability.service import OperationsError
 
 
 class OperationsPort:
     _ALERTS = "GET /api/operations/alerts"
     _AUDIT = "GET /api/operations/audit"
+    _ACK = "POST /api/operations/alerts/{alertId}:acknowledge"
     _DASHBOARD = "GET /api/dashboard/operations"
     _SNAPSHOT_FIELDS = frozenset({"observed_at", "health", "queue", "quarantine",
         "worker", "budget", "reservations", "providers", "deployments",
@@ -29,6 +32,9 @@ class OperationsPort:
 
     def query_ports(self):
         return {self._ALERTS: self, self._AUDIT: self, self._DASHBOARD: self}
+
+    def command_ports(self):
+        return {self._ACK: self}
 
     def _run_summary(self):
         fields = ("observed_total", "active_runs", "waiting_approval_runs", "blocked_runs")
@@ -57,6 +63,21 @@ class OperationsPort:
                 or self._owner.project_id not in request.principal.project_ids
                 or self._owner.environment_id not in request.principal.environment_ids):
             raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH", "The Operations scope is not allowed.", 403)
+        if request.endpoint_key == self._ACK:
+            if set(request.body) - {"reason", "comment", "expected_state_version", "expectedStateVersion"}:
+                raise ApiContractError("INVALID_BODY", "The request body is invalid.", 400)
+            try:
+                return self._owner.acknowledge_critical(
+                    request.path_parameters.get("alertId"), actor_id=request.principal.actor_id,
+                    expected_sequence=request.expected_version,
+                    evidence_hash=request.target_hash,
+                    receipt="ack:" + secrets.token_urlsafe(24))
+            except OperationsError as error:
+                if str(error) == "ALERT_NOT_FOUND":
+                    raise ApiContractError("ALERT_NOT_FOUND", "The alert was not found.", 404) from None
+                if str(error) == "ACK_CONFLICT":
+                    raise ApiContractError("ACK_CONFLICT", "The alert changed. Refresh its status.", 409) from None
+                raise ApiContractError("ACK_INVALID", "The acknowledgement is invalid.", 400) from None
         if request.endpoint_key == self._DASHBOARD:
             try:
                 result = self._owner.snapshot()

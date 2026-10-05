@@ -25,7 +25,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 
 ISSUER = "https://anvil-f18-qa.local:8444/realms/anvil"
-REDIRECT_URI = "https://anvil-f18-qa.local:8444/auth/oidc/callback"
+REDIRECT_URI = "https://anvil-f18-qa.local:8444/"
 CLIENT_ID = "anvil-web"
 _OPENID = "/realms/anvil/protocol/openid-connect"
 _CODE_TTL = 60
