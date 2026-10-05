@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2088,
+  "last_sequence": 2090,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -98973,7 +98973,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 2089,
+  "event_id": "evt_f20_2089_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R46_SCOPED_QUARANTINE_CLOSE",
+  "subject_ref": "F-20/U01-R46",
+  "occurred_at": "2026-10-05T06:01:09+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "8A9E6AA73A4D0F120B17C85F023BD3466D542D72509463F1BB9BFFFD6FA52DCB",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r46-cefc04442328aaaa2af078e75e912b20",
+    "write_fencing_token": "f20-u01-r46-write-fence-epoch-62-cefc04442328aaaa2af078e75e912b20",
+    "reason": "R46_SCOPED_QUARANTINE_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
+    "evidence_head": "e8c0cd67605aadf72a0a72842a14c99308292e02"
+  }
+},
+{
+  "sequence": 2090,
+  "event_id": "evt_f20_2090_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R46_SCOPED_QUARANTINE_CLOSE",
+  "subject_ref": "F-20/U01-R46",
+  "occurred_at": "2026-10-05T06:01:09+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "3393427839FDA6C621CD6DE73037B4809B29236209F96053DEEAB86D4956289F",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r46-4af330e0cb84fa12b35488761ac5f24c",
+    "execution_fencing_token": "f20-u01-r46-execution-fence-epoch-62-4af330e0cb84fa12b35488761ac5f24c",
+    "reason": "R46_SCOPED_QUARANTINE_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
+    "evidence_head": "e8c0cd67605aadf72a0a72842a14c99308292e02"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2088_package_resumed"
+  "last_event_id": "evt_f20_2090_worker_lease_revoked"
 }
