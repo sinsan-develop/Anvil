@@ -2,9 +2,18 @@
 
 ## 판정
 
-`INCOMPLETE` — 제품 변경과 로컬 GREEN은 확보했다. Main의 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 최신 clean SHA에서도 `REVOKE_FETCH` 실패로 중단됐다. 철회 전 두 저장 조치와 안전 진단을 보정한 현재 diff의 실제 재실행은 아직 없다. R44/U-01/F-20 전체 인수는 미완료이며 ReleaseDecision `DEFER`, Production `NOT_EXECUTED`다.
+`R44 절편 PASS` — Main이 clean SHA `31e23fe5c59456484ce5072af38eba7eb41d5d10`의 WSL-server PG15/OIDC/HTTPS/Chromium 실제 검증과 전용 자원 정리를 완료했다. 앞선 실패들은 실패 이력으로 유지한다. 이 판정은 R44 Health 상세 클릭 절편에만 적용된다. U-01/F-20 전체 인수는 미완료, ReleaseDecision `DEFER`; PG18·Provider·Production은 `NOT_EXECUTED`다.
 
 ## 판단 이유
+
+### R44 최종 WSL 실제 QA PASS 및 정리 (Main 출처)
+
+- Main 보고: clean SHA `31e23fe5c59456484ce5072af38eba7eb41d5d10`, G-05 `PASS sequence=2070`, Node24 console 77 PASS·typecheck·lint·build(20 modules) PASS. 새 격리 tmpfs PostgreSQL 15 비관리자 DB migration `0019_oidc_sessions`에서 HTTPS/OIDC/Chromium opt-in `1 passed, 45 deselected, 1 httpx deprecation warning in 9.53s`, exit0.
+- 같은 실제 실행에서 새 `backend` LATE Health 신호의 저장 alert와 카드 fragment 클릭, API↔DOM 원인 일치, 인증 전·권한 철회 후 상세 0건을 확인했다. 기존 R35 Database `HEALTHY/0`와 R43 Critical 우선 Next Actions 순서도 유지했다. Network/Secret 계약 단언을 포함한다. 저장 화면 PNG에서 Health 상세는 viewport 아래였으므로 실제 클릭과 상세 내용은 Chromium/DOM 단언의 증거이며 PNG 육안 증거로 확대하지 않는다.
+- Main 전달 증거 exact4 SHA-256: `page-requests.json` `84e8abbbc6457e4e12bbfac39a2fcf348391167573a371d54f381607f908513d`; `pre-auth-error.png` `5d15edf6fa754ccaef53761ebf192c3b16b6afac8ea0155ad55e5e2a52a53c13`; `revoked-blocked.png` `551ccc100255d654a914bbc3cd8d66bbd869c0017dc727dbe82376bdc6dbf028`; `stored-critical.png` `02af741e6f0342632c151301972d15ade5cde0ed87fca8f21acee4a38ccad8a9`. Main은 복사본 hash를 대조하고 PNG 3장을 육안 확인했다: pre-auth BLOCKED, stored Critical/Next Action, revoked BLOCKED.
+- `page-requests.json` scope는 `R6B_LOOPBACK_QA_ONLY`, 선언/실제 요청 `77/77`, HTTPS `127.0.0.1` 단일 origin, query·fragment·userinfo 0이다. 이는 해당 QA Network 범위의 결과이며 전체 운영망 검증이 아니다.
+- Main은 PASS PG container ID `ec01fd80bf77eed27cc6c930a2a7b2b3fdfc147772456d420b4448016b1f16d4`의 정확 scope/SHA/AutoRemove/mount 0을 확인 후 stop/auto-remove했다. 앞선 실패 PG, R44 전용 checkout 4곳·evidence 4곳·venv·Playwright·로컬 visual copy도 신원/realpath/hash 검증 후 제거했고, R44 전용 container·port 5545·paths 잔여 0이라고 보고했다. 공유 `local-postgres` Up, `anvil-web` healthy 상태는 유지됐다.
+- Developer의 이번 변경은 이 결과보고서 exact1뿐이다. 기존 정식 FAILURE_REPORT 0회·하네스 결함/실패 이력과 rollback 경계는 유지한다. R44 절편 밖 U-01/F-20 인수, PG18·Provider·Production은 이 PASS로 승격하지 않는다.
 
 ### R44 세 번째 WSL 실패 후 철회 전 상태·안전 진단 보정 (Main 출처, Developer 로컬 재작업)
 
@@ -36,7 +45,7 @@
 - 기준 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 작업계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, R44 계획 `F8369DAC0310EF18DCAB3DC7B35E560EF8B0F95D0E9ED3C981D9A1D038297FE3`, WorkInstruction `C2515543380A1B78E8791978544A331B6C06BD5A5D1BF7A3EFD123C55D658F1F`, Invocation `F7E8674890C6358188AAC7359AAD87635D0F19838925069F1B9EBF6AE63161F1`. 실제 파일 hash 접두와 기준이 일치했다.
 - canonical seq2070의 epoch59 worker `worker-lease-f20-u01-r44-r44health1005`와 write `write-lease-f20-u01-r44-r44health1005`는 `ACTIVE`, 같은 actor/subject/만료 `2026-10-05T23:40:31+00:00`, exact5 scope 및 서로 대응하는 두 fencing token을 확인했다. 시작 G-05 seq2070 PASS 기록을 확인한 뒤 수정했다.
 - Task 1 RED: `npm run web:test` exit1, 신규 R44 카드 링크 단언 1건 실패, 기존 76건 PASS. 구현 후 77/77 PASS. 여섯 Health component의 실제 저장 alert 유일 결합, 무후보·중복·code/source/evidence 불일치·위조 경로·source gap·미래시각·정상 상태를 확인했다.
-- Task 2: 별도 격리 QA `backend` LATE 신호를 기존 R35 Database `HEALTHY/0`와 병존시키고, 기존 R43 저장 경고 검증 이후에 Health alert 1건을 생성하는 하네스와 카드 클릭 단언을 추가했다. Node audit self-test와 Python 비 opt-in은 GREEN이다. Main의 첫 실제 브라우저 실행은 순서 단언에서 실패했고, 현재 보정본의 실제 클릭 PASS는 아직 주장하지 않는다.
+- Task 2: 별도 격리 QA `backend` LATE 신호를 기존 R35 Database `HEALTHY/0`와 병존시키고, 기존 R43 저장 경고 검증 이후에 Health alert 1건을 생성하는 하네스와 카드 클릭 단언을 추가했다. Node audit self-test와 Python 비 opt-in은 GREEN이다. Main의 첫 실제 브라우저 실행은 순서 단언에서 실패했으며, 이후 최종 SHA의 실제 클릭 PASS는 위 별도 절에 기록했다.
 
 ## 조치와 변경 전후
 
@@ -64,6 +73,6 @@
 | `.\\.venv\\Scripts\\python.exe scripts/check_project_progress.py` | 0 | `G-05 project progress contract: PASS sequence=2070 reporting=AUTO_CONTINUE` |
 
 - 정식 Developer `FAILURE_REPORT` 0회. 구현 중 기존 R35 상태 객체 deep equality 회귀 1회와 typecheck 1회는 보정했다. 기본 셸 ACL 실행 오류는 지정된 권한 실행으로 해소했고, 직접 Python checker import 오류 및 임시 dist로 인한 `R44_GIT_INVALID`는 프로젝트 venv 사용과 전용 출력 정리 후 G-05 PASS로 해소했다. `.pytest_cache`는 접근·정리하지 않았다.
-- 기존 Network/Secret/PNG와 R35/R43 단언은 로컬 하네스 회귀에 남아 있다. WSL 브라우저 실행은 세 번째 clean SHA에서도 실패했으며 현재 철회 전 조치·진단 diff의 실제 Network·PNG, PG15 저장·OIDC/HTTPS 클릭 및 철회는 `NOT_EXECUTED`; Provider·PG18·Production도 미검증이다.
+- 기존 Network/Secret/PNG와 R35/R43 단언은 로컬 하네스 회귀에 남아 있다. 앞선 WSL 실패는 위 이력 그대로이며, 최종 clean SHA에서 PG15 저장·OIDC/HTTPS/Chromium 클릭·철회와 Network·PNG 검증은 Main 출처 PASS다. Provider·PG18·Production은 `NOT_EXECUTED`다.
 - Main 소유 Event/progress/HANDOFF/WORK_STATUS/control, commit/push, WSL-server·ysna/Production 변경 0. 빌드 출력 정확 3파일과 빈 `dist` 폴더만 검증 후 제거했고 임시 자원 잔여 0이다.
-- Rollback: Main이 이 exact5의 R44 diff를 검토 후 배제한다. 현재 미커밋 변경을 다른 사용자 자료와 함께 초기화하지 않는다. 다음은 Main이 새 격리 PG의 실제 WSL opt-in에서 안전 진단 marker를 확인하고, 식별된 원인에 따라 재작업을 지시한다.
+- Rollback: Main이 이 exact5의 R44 diff를 검토 후 배제한다. 현재 미커밋 변경을 다른 사용자 자료와 함께 초기화하지 않는다. 다음은 Main이 최종 PASS 증거와 본 보고서의 범위·이력을 독립 검토하고 canonical control을 정리한다.
