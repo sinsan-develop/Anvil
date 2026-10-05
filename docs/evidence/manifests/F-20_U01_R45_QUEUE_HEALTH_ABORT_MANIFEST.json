@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2078,
+  "accepted": false,
+  "projection_mode": "F20_U01_R45_QUEUE_HEALTH_ABORT",
+  "previous_event_sequence": 2076,
+  "product_write_scope": [],
+  "predecessor_commit": "eaf515c64dbe2a7a8dfef4a5e8a777192a050415",
+  "predecessor_events_sha256": "9E7408BC4CA4B1A1B5851D06FD4690F89BDD3F89539C6D62E1EF54D71904A827",
+  "plan_path": "docs/04_test_reports/F-20_U01_R45_QUEUE_HEALTH_PLAN.md",
+  "plan_sha256": "DDA7B6E79D03572E0813495BB4A6073A8F1D7F78D5EEDCFD3093228B7106EE09",
+  "work_instruction_sha256": "E1DFED788E971908ABDE82BBD4531932AA4E362D6C71430B2079458390127957",
+  "abort_reason": "R45_PREDICTABLE_FENCE_UNDISPATCHED",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
