@@ -1,6 +1,7 @@
 """Opt-in R48 two-instance ACK CAS against an isolated disposable PG15 DB."""
 
 from concurrent.futures import ThreadPoolExecutor
+import asyncio
 import base64
 from datetime import datetime, timezone
 import hashlib
@@ -15,7 +16,7 @@ import socket
 import subprocess
 import sys
 import tempfile
-from threading import Barrier
+from threading import Barrier, Lock
 from urllib.parse import parse_qs, urlencode
 from uuid import uuid4
 
@@ -153,6 +154,51 @@ def _r48_safe_timeout_stage(stdout: bytes | str | None) -> str:
     return last
 
 
+class _R48AckAsgiObserver:
+    """QA-only outer send boundary; never retain response content or request identity."""
+
+    def __init__(self, app):
+        self._app = app
+        self._lock = Lock()
+        self.reset()
+
+    def reset(self) -> None:
+        with self._lock:
+            self._count = 0
+            self._status = "NONE"
+            self._final = False
+
+    def fact(self) -> str:
+        with self._lock:
+            count = "ZERO" if self._count == 0 else "ONE" if self._count == 1 else "MANY"
+            return (f"R48_ASGI_FACT count={count} status={self._status} "
+                f"final={'YES' if self._final else 'NO'}")
+
+    async def __call__(self, scope, receive, send):
+        if (scope.get("type") != "http" or scope.get("method") != "POST"
+                or not str(scope.get("path", "")).endswith(":acknowledge")):
+            await self._app(scope, receive, send)
+            return
+        with self._lock:
+            self._count = min(2, self._count + 1)
+
+        async def observed_send(message):
+            await send(message)
+            kind = message.get("type")
+            if kind == "http.response.start":
+                status = message.get("status")
+                category = ("2XX" if type(status) is int and 200 <= status < 300 else
+                    "4XX" if type(status) is int and 400 <= status < 500 else
+                    "5XX" if type(status) is int and 500 <= status < 600 else "OTHER")
+                with self._lock:
+                    self._status = category
+            elif kind == "http.response.body" and not message.get("more_body", False):
+                with self._lock:
+                    self._final = True
+
+        await self._app(scope, receive, observed_send)
+
+
 def test_r48_disposable_cleanup_does_not_mask_primary_or_delete_append_only_rows():
     class BrokenEngine:
         def dispose(self):
@@ -191,6 +237,27 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
         "R48_ACK_FACT ui=BLOCKED network=FINISHED")
     assert _r48_safe_ack_fact("R48_ACK_FACT ui=BLOCKED network=private-token") == (
         "R48_ACK_FACT_UNAVAILABLE")
+
+
+def test_r48_asgi_ack_observer_reports_only_static_terminal_fact():
+    async def fake_app(scope, _receive, send):
+        await send({"type": "http.response.start", "status": 403,
+            "headers": [(b"x-secret", b"private-token")]})
+        await send({"type": "http.response.body", "body": b"private-token",
+            "more_body": False})
+
+    observer = _R48AckAsgiObserver(fake_app)
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+    async def send(_message):
+        return None
+    asyncio.run(observer({"type": "http", "method": "POST",
+        "path": "/api/operations/alerts/a:acknowledge"}, receive, send))
+    assert observer.fact() == "R48_ASGI_FACT count=ONE status=4XX final=YES"
+    observer.reset()
+    asyncio.run(observer({"type": "http", "method": "GET",
+        "path": "/api/operations/alerts/a:acknowledge"}, receive, send))
+    assert observer.fact() == "R48_ASGI_FACT count=ZERO status=NONE final=NO"
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -402,7 +469,8 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                 client_secret=lambda: "synthetic-client-secret",
                 ca_bundle=str(issuer_cert), operations_owner=owner,
                 operational_shell=True, frontend_directory=frontend)
-            listeners.append(_listener(app, api_cert, api_key, api_socket))
+            ack_asgi = _R48AckAsgiObserver(app)
+            listeners.append(_listener(ack_asgi, api_cert, api_key, api_socket))
             assert all(server.config.access_log is False for server, _, _, _ in listeners)
             script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
             process_environment = {name: value for name, value in os.environ.items()
@@ -424,17 +492,19 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                     connection.execute(roles.update().where(roles.c.role_code == role).values(
                         permissions=permissions))
                 before = repository.load(project, environment)
+                ack_asgi.reset()
                 process_environment["ANVIL_F20_R48_SCENARIO"] = scenario
                 try:
                     result = subprocess.run([os.environ.get("ANVIL_F20_R6_NODE_BIN", "node"), str(script)],
                         env=process_environment, text=True, capture_output=True, timeout=90, check=False)
                 except subprocess.TimeoutExpired as error:
                     pytest.fail(f"R48_BROWSER_{scenario.upper().replace('-', '_')}_TIMEOUT "
-                        f"stage={_r48_safe_timeout_stage(error.stdout)}", pytrace=False)
+                        f"stage={_r48_safe_timeout_stage(error.stdout)} "
+                        f"{ack_asgi.fact()}", pytrace=False)
                 assert result.returncode == 0, (f"R48_BROWSER_{scenario.upper().replace('-', '_')}_FAILED "
                     + _r48_safe_failure(result.stderr) + " "
                     + _r48_safe_referer_fact(result.stdout) + " "
-                    + _r48_safe_ack_fact(result.stdout))
+                    + _r48_safe_ack_fact(result.stdout) + " " + ack_asgi.fact())
                 lines = [line for line in result.stdout.splitlines() if line.startswith("R48_RESULT ")]
                 assert len(lines) == 1
                 evidence = json.loads(lines[0].removeprefix("R48_RESULT "))
