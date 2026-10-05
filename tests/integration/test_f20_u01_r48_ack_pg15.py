@@ -167,12 +167,27 @@ class _R48AckAsgiObserver:
             self._count = 0
             self._status = "NONE"
             self._final = False
+            self._framing = "NONE"
+            self._content_length = None
+            self._invalid_length = False
+            self._body_bytes = 0
 
     def fact(self) -> str:
         with self._lock:
             count = "ZERO" if self._count == 0 else "ONE" if self._count == 1 else "MANY"
+            if self._invalid_length:
+                length = "INVALID"
+            elif self._content_length is None:
+                length = "UNKNOWN"
+            elif not self._final:
+                length = "PENDING"
+            elif self._body_bytes == self._content_length:
+                length = "MATCH"
+            else:
+                length = "SHORT" if self._body_bytes < self._content_length else "OVER"
             return (f"R48_ASGI_FACT count={count} status={self._status} "
-                f"final={'YES' if self._final else 'NO'}")
+                f"final={'YES' if self._final else 'NO'} framing={self._framing} "
+                f"length={length} bytes={'ZERO' if self._body_bytes == 0 else 'NONZERO'}")
 
     async def __call__(self, scope, receive, send):
         if (scope.get("type") != "http" or scope.get("method") != "POST"
@@ -190,11 +205,33 @@ class _R48AckAsgiObserver:
                 category = ("2XX" if type(status) is int and 200 <= status < 300 else
                     "4XX" if type(status) is int and 400 <= status < 500 else
                     "5XX" if type(status) is int and 500 <= status < 600 else "OTHER")
+                headers = message.get("headers", ())
+                lengths = [value for name, value in headers if name.lower() == b"content-length"]
+                encodings = [value for name, value in headers if name.lower() == b"transfer-encoding"]
+                if lengths and encodings:
+                    framing = "BOTH"
+                elif len(lengths) > 1:
+                    framing = "INVALID"
+                elif lengths:
+                    framing = "CL"
+                elif encodings:
+                    framing = ("CHUNKED" if len(encodings) == 1
+                        and b"chunked" in encodings[0].lower().split(b",") else "TE_OTHER")
+                else:
+                    framing = "NONE"
+                valid_length = (len(lengths) == 1 and lengths[0].isdigit()
+                    and len(lengths[0]) <= 8)
                 with self._lock:
                     self._status = category
-            elif kind == "http.response.body" and not message.get("more_body", False):
+                    self._framing = framing
+                    self._content_length = int(lengths[0]) if valid_length else None
+                    self._invalid_length = bool(lengths) and not valid_length
+            elif kind == "http.response.body":
+                body = message.get("body", b"")
                 with self._lock:
-                    self._final = True
+                    self._body_bytes += len(body) if isinstance(body, bytes) else 0
+                    if not message.get("more_body", False):
+                        self._final = True
 
         await self._app(scope, receive, observed_send)
 
@@ -242,7 +279,7 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
 def test_r48_asgi_ack_observer_reports_only_static_terminal_fact():
     async def fake_app(scope, _receive, send):
         await send({"type": "http.response.start", "status": 403,
-            "headers": [(b"x-secret", b"private-token")]})
+            "headers": [(b"x-secret", b"private-token"), (b"content-length", b"13")]})
         await send({"type": "http.response.body", "body": b"private-token",
             "more_body": False})
 
@@ -253,11 +290,13 @@ def test_r48_asgi_ack_observer_reports_only_static_terminal_fact():
         return None
     asyncio.run(observer({"type": "http", "method": "POST",
         "path": "/api/operations/alerts/a:acknowledge"}, receive, send))
-    assert observer.fact() == "R48_ASGI_FACT count=ONE status=4XX final=YES"
+    assert observer.fact() == ("R48_ASGI_FACT count=ONE status=4XX final=YES "
+        "framing=CL length=MATCH bytes=NONZERO")
     observer.reset()
     asyncio.run(observer({"type": "http", "method": "GET",
         "path": "/api/operations/alerts/a:acknowledge"}, receive, send))
-    assert observer.fact() == "R48_ASGI_FACT count=ZERO status=NONE final=NO"
+    assert observer.fact() == ("R48_ASGI_FACT count=ZERO status=NONE final=NO "
+        "framing=NONE length=UNKNOWN bytes=ZERO")
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
