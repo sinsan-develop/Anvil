@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r48-critical-ack-start-seq2100",
-  "event_sequence": 2100,
-  "updated_at": "2026-10-05T10:08:19+00:00",
-  "last_event_id": "evt_f20_2100_package_resumed",
+  "snapshot_id": "snapshot-f20-u01-r48-critical-ack-close-seq2102",
+  "event_sequence": 2102,
+  "updated_at": "2026-10-05T17:13:21+00:00",
+  "last_event_id": "evt_f20_2102_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,43 +215,8 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-u01-r48",
-  "write_lease": {
-    "lease_id": "write-lease-f20-u01-r48-34a70d476f45c49c27b5422fb681310d",
-    "actor_id": "developer-primary-f20-u01-r48",
-    "subject_ref": "F-20/U01-R48",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-05T10:08:19+00:00",
-    "expires_at": "2026-10-06T10:08:19+00:00",
-    "lease_epoch": 64,
-    "fencing_token": "f20-u01-r48-write-fence-epoch-64-34a70d476f45c49c27b5422fb681310d",
-    "execution_fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
-    "baseline_git_commit": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
-    "dispatch_head": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
-    "path_scope": [
-      "packages/api/registry.py",
-      "packages/api/operations.py",
-      "packages/api/runtime.py",
-      "packages/observability/service.py",
-      "apps/api/anvil_api/asgi.py",
-      "apps/web/src/console/main.tsx",
-      "apps/web/src/console/App.tsx",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "tests/api/test_oidc_asgi_binding.py",
-      "tests/api/test_oidc_runtime_factory.py",
-      "tests/api/test_f13_operations_api.py",
-      "tests/observability/test_f13_operations.py",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_r48_ack_pg15.py",
-      "docs/04_test_reports/F-20_U01_R48_CRITICAL_ACK_RESULT.md"
-    ],
-    "worker_lease_id": "worker-lease-f20-u01-r48-a5edd4dfef98f5d55e15f3e2bd5d78cf",
-    "write_epoch": 64,
-    "write_fencing_token": "f20-u01-r48-write-fence-epoch-64-34a70d476f45c49c27b5422fb681310d"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -283,39 +248,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f20-u01-r48-a5edd4dfef98f5d55e15f3e2bd5d78cf",
-    "actor_id": "developer-primary-f20-u01-r48",
-    "subject_ref": "F-20/U01-R48",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-05T10:08:19+00:00",
-    "expires_at": "2026-10-06T10:08:19+00:00",
-    "lease_epoch": 64,
-    "fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
-    "execution_fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
-    "baseline_git_commit": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
-    "dispatch_head": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
-    "path_scope": [
-      "packages/api/registry.py",
-      "packages/api/operations.py",
-      "packages/api/runtime.py",
-      "packages/observability/service.py",
-      "apps/api/anvil_api/asgi.py",
-      "apps/web/src/console/main.tsx",
-      "apps/web/src/console/App.tsx",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "tests/api/test_oidc_asgi_binding.py",
-      "tests/api/test_oidc_runtime_factory.py",
-      "tests/api/test_f13_operations_api.py",
-      "tests/observability/test_f13_operations.py",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_r48_ack_pg15.py",
-      "docs/04_test_reports/F-20_U01_R48_CRITICAL_ACK_RESULT.md"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -537,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_R48_CRITICAL_ACK_IMPLEMENTATION",
+  "next_safe_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -648,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
-    "local_wsl_qa_head": "f3ccc561092dfc15c41380d938cadb1d28360928",
+    "local_head": "718e2da8326e985bc29b0b292eaf8ad842eba8eb",
+    "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
-    "projection_mode": "F20_U01_R48_CRITICAL_ACK_START",
-    "validated_base_commit": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
+    "remote_head": "718e2da8326e985bc29b0b292eaf8ad842eba8eb",
+    "projection_mode": "F20_U01_R48_CRITICAL_ACK_CLOSE",
+    "validated_base_commit": "718e2da8326e985bc29b0b292eaf8ad842eba8eb",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1087,27 +1020,8 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [
-      "packages/api/registry.py",
-      "packages/api/operations.py",
-      "packages/api/runtime.py",
-      "packages/observability/service.py",
-      "apps/api/anvil_api/asgi.py",
-      "apps/web/src/console/main.tsx",
-      "apps/web/src/console/App.tsx",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "tests/api/test_oidc_asgi_binding.py",
-      "tests/api/test_oidc_runtime_factory.py",
-      "tests/api/test_f13_operations_api.py",
-      "tests/observability/test_f13_operations.py",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_r48_ack_pg15.py",
-      "docs/04_test_reports/F-20_U01_R48_CRITICAL_ACK_RESULT.md"
-    ],
-    "worktree_status": "F20_U01_R48_CRITICAL_ACK_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F20_U01_R48_CRITICAL_ACK_LEASE_CLOSED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1274,7 +1188,7 @@
     "sha256": "261DC4F85575BABE0FB56400386C8FEF0BFE5BC6F29BBA6ECCAA201AB4191456",
     "invocation_path": "docs/work_orders/F-20_U01_R48_CRITICAL_ACK_INVOCATION.md",
     "invocation_sha256": "6AB4B8C1887EA42B876F0E84B48B742182A509AE7DDD7D6BE12743468829E6F6",
-    "result_status": "REWORK_IN_PROGRESS",
+    "result_status": "COMPLETED_R48_CRITICAL_ACK_SLICE_WSL_QA_ONLY",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "PMO_DELEGATED_SEMANTIC_APPROVED",
     "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642"
@@ -1409,8 +1323,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r48-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R48_CRITICAL_ACK_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r48-close.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R48_CRITICAL_ACK_CLOSE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1431,7 +1345,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "A4EC8386944544F7C812612F4025E0CF9AAF2EB338A17152B2DB4CB153385C38"
+      "sha256": "5C9540C11C77AE69E8831211B688298DB9950A1A2176142D49A7296D16EB7A03"
     }
   },
   "next_work_package": {
@@ -1828,8 +1742,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "0D98A527BFD326125937D8A294780FD267ADBA18A8F547C605220971E9566950",
-  "runtime_next_action": "F20_U01_R48_CRITICAL_ACK_IMPLEMENTATION",
+  "snapshot_hash": "26DF27D577F3B0B43B191E628F18BF1E259AB9C6D217701F03301A4F8BC0A20A",
+  "runtime_next_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -25983,5 +25897,76 @@
     "write_epoch": 63,
     "write_fencing_token": "f20-u01-r47-write-fence-epoch-63-142f159f45c27e3e49adfadbcbca4fcc",
     "revoked_at": "2026-10-05T08:20:04+00:00"
+  },
+  "completed_f20_u01_r48_worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r48-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "actor_id": "developer-primary-f20-u01-r48",
+    "subject_ref": "F-20/U01-R48",
+    "status": "REVOKED",
+    "issued_at": "2026-10-05T10:08:19+00:00",
+    "expires_at": "2026-10-06T10:08:19+00:00",
+    "lease_epoch": 64,
+    "fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "execution_fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "baseline_git_commit": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
+    "dispatch_head": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
+    "path_scope": [
+      "packages/api/registry.py",
+      "packages/api/operations.py",
+      "packages/api/runtime.py",
+      "packages/observability/service.py",
+      "apps/api/anvil_api/asgi.py",
+      "apps/web/src/console/main.tsx",
+      "apps/web/src/console/App.tsx",
+      "deploy/wsl/oidc_qa_issuer.py",
+      "tests/deploy/test_f18_oidc_qa_issuer.py",
+      "tests/api/test_oidc_asgi_binding.py",
+      "tests/api/test_oidc_runtime_factory.py",
+      "tests/api/test_f13_operations_api.py",
+      "tests/observability/test_f13_operations.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_r48_ack_pg15.py",
+      "docs/04_test_reports/F-20_U01_R48_CRITICAL_ACK_RESULT.md"
+    ],
+    "revoked_at": "2026-10-05T17:13:21+00:00"
+  },
+  "completed_f20_u01_r48_write_lease": {
+    "lease_id": "write-lease-f20-u01-r48-34a70d476f45c49c27b5422fb681310d",
+    "actor_id": "developer-primary-f20-u01-r48",
+    "subject_ref": "F-20/U01-R48",
+    "status": "REVOKED",
+    "issued_at": "2026-10-05T10:08:19+00:00",
+    "expires_at": "2026-10-06T10:08:19+00:00",
+    "lease_epoch": 64,
+    "fencing_token": "f20-u01-r48-write-fence-epoch-64-34a70d476f45c49c27b5422fb681310d",
+    "execution_fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "baseline_git_commit": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
+    "dispatch_head": "bf2da1bb64fcbc3dffdb58e2e1a14ebcdd4dc3bf",
+    "path_scope": [
+      "packages/api/registry.py",
+      "packages/api/operations.py",
+      "packages/api/runtime.py",
+      "packages/observability/service.py",
+      "apps/api/anvil_api/asgi.py",
+      "apps/web/src/console/main.tsx",
+      "apps/web/src/console/App.tsx",
+      "deploy/wsl/oidc_qa_issuer.py",
+      "tests/deploy/test_f18_oidc_qa_issuer.py",
+      "tests/api/test_oidc_asgi_binding.py",
+      "tests/api/test_oidc_runtime_factory.py",
+      "tests/api/test_f13_operations_api.py",
+      "tests/observability/test_f13_operations.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_r48_ack_pg15.py",
+      "docs/04_test_reports/F-20_U01_R48_CRITICAL_ACK_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r48-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "write_epoch": 64,
+    "write_fencing_token": "f20-u01-r48-write-fence-epoch-64-34a70d476f45c49c27b5422fb681310d",
+    "revoked_at": "2026-10-05T17:13:21+00:00"
   }
 }

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2100,
+  "last_sequence": 2102,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -99343,7 +99343,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 2101,
+  "event_id": "evt_f20_2101_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R48_CRITICAL_ACK_CLOSE",
+  "subject_ref": "F-20/U01-R48",
+  "occurred_at": "2026-10-05T17:13:21+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "84F2CF9A7CA2BD546F9F9AD9BFF6061120D6FD769A2A447802B8A381114110D7",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r48-34a70d476f45c49c27b5422fb681310d",
+    "write_fencing_token": "f20-u01-r48-write-fence-epoch-64-34a70d476f45c49c27b5422fb681310d",
+    "reason": "R48_CRITICAL_ACK_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
+    "evidence_head": "4543875bbc82545f6f0f25344273c7c47521f8bc"
+  }
+},
+{
+  "sequence": 2102,
+  "event_id": "evt_f20_2102_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R48_CRITICAL_ACK_CLOSE",
+  "subject_ref": "F-20/U01-R48",
+  "occurred_at": "2026-10-05T17:13:21+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "E8F1176789E2D34B4F1F8DBCB748B922DB8F14282520769DD403F8B1B2689263",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r48-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "execution_fencing_token": "f20-u01-r48-execution-fence-epoch-64-a5edd4dfef98f5d55e15f3e2bd5d78cf",
+    "reason": "R48_CRITICAL_ACK_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
+    "evidence_head": "4543875bbc82545f6f0f25344273c7c47521f8bc"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2100_package_resumed"
+  "last_event_id": "evt_f20_2102_worker_lease_revoked"
 }
