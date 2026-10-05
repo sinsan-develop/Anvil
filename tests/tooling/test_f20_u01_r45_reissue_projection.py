@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from scripts.check_project_progress import raw_event_object_prefix_bytes
 
@@ -75,6 +76,32 @@ class R45ReissueProjectionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "R45_CLOCK_INVALID"):
             overlay.materialize(ROOT, datetime.now(timezone.utc) - timedelta(days=2))
         self.assertEqual(before, {path: (ROOT / path).read_bytes() for path in before})
+
+    def test_materialize_draws_independent_random_values_and_aborts_collision(self):
+        from scripts import f20_u01_r45_reissue_overlay as overlay
+
+        current = json.loads((ROOT / overlay.PROGRESS).read_bytes())
+        if current["event_sequence"] == overlay.END:
+            worker = current["worker_lease"]
+            write = current["write_lease"]
+            execution_nonce = worker["execution_fencing_token"].removeprefix(
+                "f20-u01-r45-execution-fence-epoch-61-")
+            write_nonce = write["write_fencing_token"].removeprefix(
+                "f20-u01-r45-write-fence-epoch-61-")
+            self.assertEqual(len(execution_nonce), 32)
+            self.assertEqual(len(write_nonce), 32)
+            self.assertNotEqual(execution_nonce, write_nonce)
+            self.assertTrue(all(char in "0123456789abcdef" for char in execution_nonce + write_nonce))
+            return
+        before = {path: (ROOT / path).read_bytes() for path in (
+            overlay.EVENTS, overlay.PROGRESS, overlay.HANDOFF, overlay.CHECKER)}
+        with patch.object(overlay.secrets, "token_hex", side_effect=["a" * 32, "a" * 32]) as random:
+            with self.assertRaisesRegex(RuntimeError, "R45_REISSUE_NONCE_COLLISION"):
+                overlay.materialize(ROOT, datetime.now(timezone.utc))
+        self.assertEqual(random.call_count, 2)
+        self.assertEqual(before, {path: (ROOT / path).read_bytes() for path in before})
+        self.assertFalse((ROOT / overlay.DIGEST).exists())
+        self.assertFalse((ROOT / overlay.MANIFEST).exists())
 
 
 if __name__ == "__main__":
