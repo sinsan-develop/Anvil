@@ -668,6 +668,14 @@ def _r44_qa_health_signal(at: datetime) -> HealthSignal:
         "/operations/health")
 
 
+def _r44_seed_health_order(alerts: list[dict], original: dict) -> dict:
+    assert (len(alerts) == 2 and alerts[0] == original
+            and alerts[1]["code"] == "HEALTH_SIGNAL_LATE"
+            and alerts[1]["source"] == "environment"
+            and alerts[1]["related_entity_id"] == "backend"), "R44_HEALTH_ALERT_SEED_ORDER_INVALID"
+    return alerts[1]
+
+
 def _r44_health_detail_evidence(evidence: dict) -> dict:
     expected = {"storedAlert": True, "samePageFragment": True, "apiDomMatch": True,
                 "preAuthCleared": True, "revokedCleared": True, "databasePreserved": True,
@@ -690,6 +698,15 @@ def test_r44_health_detail_evidence_accepts_only_boolean_contract():
             _r44_health_detail_evidence({"healthDetailEvidence": {**values, key: 1}})
         with pytest.raises(AssertionError, match="R44_BROWSER_EVIDENCE_MISMATCH"):
             _r44_health_detail_evidence({"healthDetailEvidence": {**values, key: False}})
+
+
+def test_r44_seed_keeps_critical_before_warning_and_selects_unique_health_alert():
+    critical = {"code": "WORKER_LEASE_EXPIRED", "source": "worker", "related_entity_id": "r6-run"}
+    health = {"code": "HEALTH_SIGNAL_LATE", "source": "environment", "related_entity_id": "backend"}
+    assert _r44_seed_health_order([critical, health], critical) == health
+    for alerts in ([health, critical], [critical, health, health], [critical]):
+        with pytest.raises(AssertionError, match="R44_HEALTH_ALERT_SEED_ORDER_INVALID"):
+            _r44_seed_health_order(alerts, critical)
 
 
 def _r35_health_alert_evidence(evidence: dict) -> dict:
@@ -918,8 +935,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                 health_signals=(_r35_qa_health_signal(at), _r44_qa_health_signal(at)))
             assert owner.detect() == 1, "R44_HEALTH_ALERT_SEED_FAILED"
             snapshot = owner.alerts()
-            assert len(snapshot) == 2 and snapshot[0]["code"] == "HEALTH_SIGNAL_LATE"
-            assert snapshot[1] == seeded_alerts[0][0], "R44_R43_ORDER_CHANGED"
+            _r44_seed_health_order(snapshot, seeded_alerts[0][0])
             seeded_health_alerts.append(snapshot)
             return {"status": "seeded"}
 

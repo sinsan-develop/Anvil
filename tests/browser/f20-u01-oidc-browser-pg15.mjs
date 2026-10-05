@@ -2067,7 +2067,7 @@ async function main() {
     assert.equal(healthDashboard.status, 200, 'R44_HEALTH_DASHBOARD_FAILED');
     const healthSnapshot = JSON.parse(healthDashboard.text).data;
     assert.deepEqual(healthSnapshot.alerts.map(row => row.code),
-      ['HEALTH_SIGNAL_LATE', alertCode], 'R44_R43_ORDER_CHANGED');
+      [alertCode, 'HEALTH_SIGNAL_LATE'], 'R44_R43_ORDER_CHANGED');
     await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
     const healthCard = page.locator('section[aria-labelledby="health-heading"] article.status-card')
       .filter({hasText: 'Execution Backends'});
@@ -2527,7 +2527,8 @@ if (auditSelfTest) {
     deep_link: '/operations/health', status: 'open'};
   const healthSnapshot = {health: {database: {state: 'HEALTHY', error_count: 0},
     backend: {state: 'LATE', error_count: 0, evidence_ref: healthAlert.evidence_hash,
-      detail_path: healthAlert.deep_link}}, alerts: [healthAlert]};
+      detail_path: healthAlert.deep_link}}, alerts: [
+        {code: 'WORKER_LEASE_EXPIRED', source: 'worker', related_entity_id: 'r6-run'}, healthAlert]};
   const healthFacts = {href: '#health-detail-backend', id: 'health-detail-backend',
     linkCount: 1, detailCount: 1, paragraphs: [
       `코드 · ${healthAlert.code}`, `출처 · ${healthAlert.source}`, `원인 · ${healthAlert.cause}`,
@@ -2535,6 +2536,9 @@ if (auditSelfTest) {
       `증거 hash · ${healthAlert.evidence_hash}`], url: apiUrl + '/#health-detail-backend'};
   assert.equal(validateR44HealthDetail(healthSnapshot, healthFacts, apiUrl)
     .healthDetailEvidence.apiDomMatch, true);
+  assert.throws(() => validateR44HealthDetail({...healthSnapshot,
+    alerts: [...healthSnapshot.alerts, healthAlert]}, healthFacts, apiUrl),
+  /R44_HEALTH_DETAIL_MISMATCH/);
   for (const bad of [{...healthFacts, url: 'https://outside.invalid/'},
     {...healthFacts, paragraphs: [...healthFacts.paragraphs.slice(0, 5), '증거 hash · wrong']},
     {...healthFacts, linkCount: 2}]) {
