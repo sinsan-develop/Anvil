@@ -93,7 +93,9 @@ def _close_qa_resources(engine, listeners) -> None:
 
 
 _R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
-    "PREAUTH", "POPUP_OPEN", "CALLBACK", "REDIRECT_GET", "REDIRECT_HEADERS",
+    "PREAUTH", "POPUP_OPEN", "POPUP_BUTTON_CLICK", "POPUP_PAGE_WAIT",
+    "POPUP_REAUTH_HIDE_WAIT", "POPUP_CALLBACK_WAIT", "CALLBACK",
+    "REDIRECT_GET", "REDIRECT_HEADERS",
     "REDIRECT_SCRUB", "REDIRECT_REFERER", "REDIRECT_FETCH_DISPATCH",
     "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK",
     "ACK_BUTTON_WAIT", "ACK_CLICK", "ACK_RESPONSE_WAIT", "ACK_DENIAL_CHECK",
@@ -280,6 +282,8 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
         "REDIRECT_REFERER")
     assert _r48_safe_timeout_stage(b"R48_STAGE private-token\n") == "BOOTSTRAP"
     assert _r48_safe_timeout_stage(b"R48_STAGE ACK_BUTTON_WAIT\n") == "ACK_BUTTON_WAIT"
+    assert _r48_safe_timeout_stage(b"R48_STAGE POPUP_REAUTH_HIDE_WAIT\n") == (
+        "POPUP_REAUTH_HIDE_WAIT")
     assert _r48_safe_timeout_stage(b"R48_STAGE ACK_UI_BLOCKED_WAIT\n") == (
         "ACK_UI_BLOCKED_WAIT")
     assert _r48_safe_ack_fact("R48_ACK_FACT ui=BLOCKED network=FINISHED\nprivate-token") == (

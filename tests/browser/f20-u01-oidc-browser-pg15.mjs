@@ -123,7 +123,9 @@ function safeR44FailureCode(error) {
 }
 
 const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
-  'PREAUTH', 'POPUP_OPEN', 'CALLBACK', 'REDIRECT_GET', 'REDIRECT_HEADERS',
+  'PREAUTH', 'POPUP_OPEN', 'POPUP_BUTTON_CLICK', 'POPUP_PAGE_WAIT',
+  'POPUP_REAUTH_HIDE_WAIT', 'POPUP_CALLBACK_WAIT', 'CALLBACK',
+  'REDIRECT_GET', 'REDIRECT_HEADERS',
   'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'REDIRECT_FETCH_DISPATCH',
   'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
   'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
@@ -2701,14 +2703,21 @@ async function mainR48() {
     const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
     await card.getByText(alertCode, {exact: true}).waitFor({state: 'hidden'});
     markR48Stage('POPUP_OPEN');
-    const popupOpened = context.waitForEvent('page');
+    const popupOpened = context.waitForEvent('page', {timeout: 10000});
+    void popupOpened.catch(() => {});
     const callbackResponse = page.waitForResponse((response) =>
-      response.url().endsWith('/auth/oidc/callback') && response.request().method() === 'POST');
-    await page.getByRole('button', {name: '재인증'}).click();
+      response.url().endsWith('/auth/oidc/callback') && response.request().method() === 'POST',
+    {timeout: 20000});
+    void callbackResponse.catch(() => {});
+    markR48Stage('POPUP_BUTTON_CLICK');
+    await page.getByRole('button', {name: '재인증'}).click({timeout: 10000});
+    markR48Stage('POPUP_PAGE_WAIT');
     const popup = await popupOpened;
-    await page.getByRole('button', {name: '재인증'}).waitFor({state: 'hidden'});
-    markR48Stage('CALLBACK');
+    markR48Stage('POPUP_REAUTH_HIDE_WAIT');
+    await page.getByRole('button', {name: '재인증'}).waitFor({state: 'hidden', timeout: 10000});
+    markR48Stage('POPUP_CALLBACK_WAIT');
     const callback = await callbackResponse;
+    markR48Stage('CALLBACK');
     assert.equal(callback.status(), 200, 'R48_CALLBACK_REJECTED');
     const csrf = (await callback.json()).data.csrf_token;
     assert.ok(typeof csrf === 'string' && csrf.length > 0, 'R48_CSRF_MISSING');
@@ -2941,6 +2950,9 @@ if (r48DiagnosticSelfTest) {
   assert.equal(safeR48Stage('REDIRECT_HEADERS'), 'REDIRECT_HEADERS');
   assert.equal(safeR48Stage('ACK_BUTTON_WAIT'), 'ACK_BUTTON_WAIT');
   assert.equal(safeR48Stage('ACK_RESPONSE_WAIT'), 'ACK_RESPONSE_WAIT');
+  assert.equal(safeR48Stage('POPUP_BUTTON_CLICK'), 'POPUP_BUTTON_CLICK');
+  assert.equal(safeR48Stage('POPUP_PAGE_WAIT'), 'POPUP_PAGE_WAIT');
+  assert.equal(safeR48Stage('POPUP_REAUTH_HIDE_WAIT'), 'POPUP_REAUTH_HIDE_WAIT');
   assert.equal(safeR48Stage('ACK_UI_BLOCKED_WAIT'), 'ACK_UI_BLOCKED_WAIT');
   assert.equal(safeR48Stage('private-token'), 'BOOTSTRAP');
   console.log('R48_DIAGNOSTIC_SELF_TEST_PASS');
