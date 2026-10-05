@@ -651,6 +651,8 @@ export function DatabaseHealthCard({value, operations, readinessPending = false}
   const readiness = classifyReadiness(value);
   const head = readiness === 'READY' ? (value as {migration_head: string}).migration_head : null;
   if (operations) return <DashboardSignalCard label="Database" component="database" value={operations}>
+    {operations.status === 'LOADED' && ['HEALTHY', 'LATE', 'EXPIRED'].includes(operations.health.database.status)
+      ? <p>DB 접속·읽기 질의·Migration 일치 관측 · 전체 DB/업무 상태는 확인하지 않습니다.</p> : null}
     <p>{readinessPending ? 'API 준비 조회 중' : head ? `API 준비 READY · Migration ${head}` : 'API 준비 NOT CONNECTED · 연결된 상태 정보가 없습니다.'}</p>
   </DashboardSignalCard>;
   const signal = readinessPending ? {status: 'LOADING', lastCheck: null, errorCount: null}

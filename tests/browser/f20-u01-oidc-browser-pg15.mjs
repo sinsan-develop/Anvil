@@ -8,6 +8,8 @@ import { basename, isAbsolute, join, resolve } from 'node:path';
 
 const require = createRequire(import.meta.url);
 const auditSelfTest = process.argv.includes('--audit-self-test');
+const r47SelfTest = process.argv.includes('--r47-self-test');
+const r47Mode = process.env.ANVIL_F20_R47_MODE === '1';
 const apiUrl = process.env.ANVIL_F20_R6_API_URL || (auditSelfTest ? 'https://127.0.0.1:9' : undefined);
 const issuerUrl = process.env.ANVIL_F20_R6_ISSUER_URL;
 const alertCode = process.env.ANVIL_F20_R6_ALERT_CODE;
@@ -2484,7 +2486,125 @@ async function main() {
   console.log('R6_RESULT ' + JSON.stringify(resultEvidence));
 }
 
-if (auditSelfTest) {
+function validateR47DatabaseSnapshot(snapshot) {
+  const row = snapshot?.database;
+  return row?.state === 'HEALTHY' && row.error_count === 0
+    && typeof row.observed_at === 'string' && Number.isFinite(Date.parse(row.observed_at))
+    && typeof row.evidence_ref === 'string' && /^sha256:[0-9a-f]{64}$/.test(row.evidence_ref)
+    && Array.isArray(snapshot.source_gaps) && !snapshot.source_gaps.includes('database')
+    && ['queue', 'worker', 'provider', 'backend', 'artifact_store']
+      .every((name) => snapshot.source_gaps.includes(name));
+}
+
+function r47ControlOrigin(issuer) {
+  return new URL(issuer).origin;
+}
+
+async function mainR47() {
+  const origin = process.env.ANVIL_F20_R47_API_URL;
+  const identity = process.env.ANVIL_F20_R47_ISSUER_URL;
+  const control = process.env.ANVIL_F20_R47_CONTROL_TOKEN;
+  const secrets = JSON.parse(process.env.ANVIL_F20_R47_SECRET_VALUES_JSON || '[]');
+  assert.equal(new URL(origin).hostname, '127.0.0.1');
+  assert.equal(new URL(identity).hostname, '127.0.0.1');
+  assert.ok(control?.length >= 32 && Array.isArray(secrets));
+  const {chromium, request: playwrightRequest} = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
+  const browser = await chromium.launch({headless: true, args: ['--no-sandbox']});
+  try {
+    const context = await browser.newContext({ignoreHTTPSErrors: true,
+      viewport: {width: 1920, height: 1080}});
+    const issuerClient = await playwrightRequest.newContext({ignoreHTTPSErrors: true});
+    try {
+      const page = await context.newPage();
+      const pageRequests = [];
+      page.on('request', (request) => pageRequests.push(request.url()));
+      const card = page.locator('section[aria-labelledby="health-heading"] article.status-card')
+        .filter({has: page.locator('h3', {hasText: 'Database'})});
+      await page.goto(origin + '/');
+      const before = await fetchOnPage(page, '/api/dashboard/operations');
+      assert.equal(before.status, 401, 'R47_PREAUTH_NOT_DENIED');
+      const authorization = await fetchOnPage(page, '/auth/oidc/authorization', {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
+      });
+      assert.equal(authorization.status, 200, 'R47_AUTH_REQUEST_FAILED');
+      const auth = JSON.parse(authorization.text).data;
+      const redirect = await issuerClient.get(auth.authorization_url, {maxRedirects: 0});
+      assert.equal(redirect.status(), 302, 'R47_ISSUER_REDIRECT_FAILED');
+      const callback = new URL(redirect.headers().location);
+      assert.equal(callback.origin, origin, 'R47_CALLBACK_ORIGIN_INVALID');
+      const completed = await fetchOnPage(page, '/auth/oidc/callback', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code: callback.searchParams.get('code'),
+          state: auth.browser_state, browser_state: auth.browser_state}),
+      });
+      assert.equal(completed.status, 200, 'R47_CALLBACK_FAILED');
+      const cookie = (await context.cookies(origin)).find(({name}) => name === 'anvil_session');
+      assert.ok(cookie?.secure && cookie?.httpOnly, 'R47_SESSION_COOKIE_INVALID');
+      await page.reload();
+      const positive = await fetchOnPage(page, '/api/dashboard/operations');
+      assert.equal(positive.status, 200, 'R47_DASHBOARD_POSITIVE_FAILED');
+      const healthy = JSON.parse(positive.text).data;
+      assert.equal(validateR47DatabaseSnapshot({database: healthy.health?.database,
+        source_gaps: healthy.source_gaps}), true, 'R47_DATABASE_SOURCE_INVALID');
+      await card.getByText('HEALTHY', {exact: true}).waitFor();
+      assert.match(await card.innerText(), /DB 접속·읽기 질의·Migration 일치 관측/);
+
+      const headers = {'x-r47-control-token': control};
+      const mismatchControl = await issuerClient.post(r47ControlOrigin(identity) + '/r47-control/mismatch', {headers});
+      assert.equal(mismatchControl.status(), 200, 'R47_MISMATCH_CONTROL_FAILED');
+      await page.reload();
+      const mismatch = await fetchOnPage(page, '/api/dashboard/operations');
+      assert.equal(mismatch.status, 200, 'R47_MISMATCH_API_FAILED');
+      const mismatchData = JSON.parse(mismatch.text).data;
+      assert.equal(mismatchData.health?.database?.state, 'UNKNOWN', 'R47_MISMATCH_NOT_UNKNOWN');
+      assert.ok(mismatchData.source_gaps?.includes('database'), 'R47_MISMATCH_GAP_MISSING');
+      await card.getByText('UNKNOWN', {exact: true}).waitFor();
+      assert.doesNotMatch(await card.innerText(), /DB 접속·읽기 질의·Migration 일치 관측/);
+
+      const restoreControl = await issuerClient.post(r47ControlOrigin(identity) + '/r47-control/restore', {headers});
+      assert.equal(restoreControl.status(), 200, 'R47_RESTORE_CONTROL_FAILED');
+      await page.reload();
+      await card.getByText('HEALTHY', {exact: true}).waitFor();
+      const revokeControl = await issuerClient.post(r47ControlOrigin(identity) + '/r47-control/revoke', {headers});
+      assert.equal(revokeControl.status(), 200, 'R47_REVOKE_CONTROL_FAILED');
+      await page.reload();
+      const revoked = await fetchOnPage(page, '/api/dashboard/operations');
+      assert.equal(revoked.status, 403, 'R47_REVOKE_NOT_DENIED');
+      await card.getByText('BLOCKED', {exact: true}).waitFor();
+      assert.doesNotMatch(await card.innerText(), /DB 접속·읽기 질의·Migration 일치 관측|sha256:/);
+
+      const visible = await page.locator('body').innerText();
+      assert.ok(pageRequests.length > 0 && pageRequests.every((url) =>
+        new URL(url).origin === origin), 'R47_NETWORK_NOT_SAME_ORIGIN');
+      assert.ok([...secrets, cookie.value].every((value) => typeof value === 'string' && value.length > 0
+        && !visible.includes(value) && !positive.text.includes(value)
+        && !mismatch.text.includes(value) && !revoked.text.includes(value)
+        && !pageRequests.some((url) => url.includes(value))), 'R47_SECRET_EXPOSED');
+      console.log('R47_RESULT ' + JSON.stringify({positive: true, mismatch: true,
+        restored: true, revoked: true, sameOrigin: true, secretFree: true,
+        pageRequestCount: pageRequests.length,
+        evidenceRef: healthy.health.database.evidence_ref}));
+    } finally {
+      await issuerClient.dispose();
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+if (r47SelfTest) {
+  const healthy = {database: {state: 'HEALTHY', observed_at: '2026-10-05T00:00:00+00:00',
+    error_count: 0, evidence_ref: 'sha256:' + 'a'.repeat(64)},
+    source_gaps: ['queue', 'worker', 'provider', 'backend', 'artifact_store']};
+  assert.equal(validateR47DatabaseSnapshot(healthy), true);
+  assert.equal(validateR47DatabaseSnapshot({...healthy, source_gaps: ['database']}), false);
+  assert.equal(validateR47DatabaseSnapshot({...healthy, database: {...healthy.database,
+    evidence_ref: 'postgresql://private'}}), false);
+  assert.equal(r47ControlOrigin('https://127.0.0.1:48123/realms/anvil'),
+    'https://127.0.0.1:48123');
+  console.log('R47_BROWSER_SELF_TEST_PASS');
+} else if (auditSelfTest) {
   const names = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
   const snapshot = {source_gaps: ['provider'], health: Object.fromEntries(names.map(name =>
     [name, {state: 'LATE', last_check: '2026-09-30T00:00:00+00:00', error_count: 2}]))};
@@ -3176,7 +3296,7 @@ if (auditSelfTest) {
   assert.equal(setupCallbacks.size, 0);
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
-  writeSync(1, 'R6_NODE_STARTED\n');
+  writeSync(1, `${r47Mode ? 'R47' : 'R6'}_NODE_STARTED\n`);
   process.on('unhandledRejection', (error) => {
     emitSafeFailure(error);
     process.exitCode = 1;
@@ -3185,12 +3305,12 @@ if (auditSelfTest) {
     emitSafeFailure(error);
     process.exitCode = 1;
   });
-  main().catch((error) => {
+  (r47Mode ? mainR47() : main()).catch((error) => {
     emitSafeFailure(error);
     if (currentR30Phase !== null) {
       writeSync(2, `R30_DIAG code=${safeR30FailureCode(error)}\n`);
     }
-    writeSync(2, `R6_BROWSER_FAILED stage=${progressStages.has(stage) ? stage : 'BOOTSTRAP'} `
+    writeSync(2, `${r47Mode ? 'R47_BROWSER_FAILED' : 'R6_BROWSER_FAILED'} stage=${progressStages.has(stage) ? stage : 'BOOTSTRAP'} `
       + `class=${safeFailureName(error)}\n`);
     process.exitCode = 1;
   });

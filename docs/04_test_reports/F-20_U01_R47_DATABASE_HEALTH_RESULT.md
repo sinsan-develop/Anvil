@@ -1,12 +1,28 @@
-# F-20/U-01 R47 Database Health 결과
+# F-20/U-01 R47 Database Health Developer 결과
 
-판정: `NOT_EXECUTED` — WorkInstruction/dual lease 발급과 제품 write 전 준비 상태다. F-20/U-01 전체 미수락, ReleaseDecision `DEFER`, ysna/Production 제외.
+## 판정
 
-## 판단 이유
+`COMPLETED`는 **단일 Developer의 로컬 구현·기본 검증 제출**만 뜻한다. 독립 Tester, 동일 SHA WSL-server 실제 PG15/OIDC/HTTPS/Chromium·Network/Secret QA, F-20/U-01 전체 인수는 `NOT_EXECUTED`/Main 후속 판정이다. ReleaseDecision은 `DEFER`, ysna/Production은 범위 밖이다.
 
-- 기준 계획/WorkInstruction과 제품 exact8 경계를 준비했다. 실제 PG 관측 코드·테스트·WSL QA는 아직 수행하지 않았다.
+## 판단 이유·기준선
 
-## 조치·미검증
+- 시작 branch `codex/f18-wsl-ops`, HEAD `356dc3554cc330536c6388b1a7021a159eb2e64a`, progress G-05 seq2094 PASS. Epoch63 active worker/write dual lease와 서로 다른 execution/write fencing token·exact8 scope·만료 2026-10-06T06:36:33Z 확인. Main 소유 `docs/WORK_STATUS.md` dirty와 기존 `.pytest_cache` ACL 경고는 보존했다.
+- 정본 SHA-256: 설계 `1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712`, 작업계획 `943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB`, 통합매트릭스 `1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6`, 테스트계획 `902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014`, 운영규칙 `BFDF50FB5909BC0D3E7D2267BBDA2E458A67E858D7B5A36A2F077C4FE2DE06B0`; R47 계획 `B3A7E19029038C1EF4E01397E969DF63C71B2103ABEFA5276F5808932BED9543`, WI `C874E144036BA263A5AAEAF4F27FDB4CA648E88B3D61BC2AE9B366224680D407`.
+- `apps/api/anvil_api/oidc_process.py`: 기존 OIDC 단일 project/environment source loader에서 독립 SQL `SELECT 1` 및 `alembic_version` 단일 `0019_oidc_sessions`를 매 snapshot 관측한다. 시작 관측시각을 한 번만 소비하고, 실패·중복/불일치 head·5초 초과/역행 관측은 신호 없음→Database `UNKNOWN`/source gap이다. 성공 시 기존 `HealthSignal(database)`만 5분 freshness·오류0·credential-free SHA-256 evidence·`/operations/health`로 공급한다. Queue/Provider/나머지 5 Health를 정상으로 승격하지 않는다.
+- R35 분리 대조: `/health/ready`의 결과를 읽거나 복사하지 않는다. readiness READY 여부와 무관하게 Dashboard Database는 별도 `OperationsSources.health_signals` 실제 관측만 사용하며, UI는 좁은 DB 접속·읽기 질의·Migration 일치 의미를 표시한다. `BLOCKED`/`UNAVAILABLE`에서 성공 설명을 숨긴다. API 응답 shape·OIDC scope/auth·DB schema/migration·Secret·공개 API 불변.
 
-- Main은 준비 문서 hash·Git 기준선·정본 hash를 확인하고 canonical lease/G-05를 발급한 뒤 단일 Developer에게 인계한다.
-- 실제 source 양·음성, OIDC/HTTPS/Chromium, Network/Secret, 임시 자원 정리는 모두 `NOT_EXECUTED`다.
+## 변경 파일·검증
+
+- 변경 exact7(허용 exact8의 부분집합): `apps/api/anvil_api/oidc_process.py`, `apps/web/src/console/App.tsx`, `apps/web/tests/f15-console.test.mjs`, `tests/api/test_f20_u01_r47_database_health_host.py`, `tests/integration/test_f20_u01_r47_database_health_pg15.py`, `tests/browser/f20-u01-oidc-browser-pg15.mjs`, 이 결과 문서. `tests/integration/test_f20_u01_oidc_browser_pg15.py`는 별도 R47 opt-in에서 기존 안전한 인증 import helper만 재사용하고 파일은 무변경이다. Main 통제/progress/Event/WORK_STATUS/Git/WSL에 Developer write·접근 없음.
+- TDD RED→GREEN: 실제 SQL+정확 head 미연결 2 FAIL→호스트 구현 후 GREEN; Web 좁은 설명 없음/denied에서 과장 설명 노출 각 RED→GREEN; 한 번 쓴 시각 재사용과 Queue 실패 뒤 시각 재사용 각 RED→GREEN. 접속 자체 실패 테스트는 기존 예외 처리가 이미 있어서 첫 실행부터 GREEN이었으며 이를 RED→GREEN으로 주장하지 않는다. R47 browser evidence 검증기와 control origin 경로는 각 undefined RED→self-test GREEN.
+- 로컬 최종 관련 회귀: `python -m pytest -q -p no:cacheprovider tests/api/test_oidc_process.py tests/api/test_f20_u01_r37_provider_host_binding.py tests/api/test_f20_u01_r47_database_health_host.py tests/api/test_oidc_asgi_binding.py tests/observability/test_f13_operations.py tests/integration/test_f20_u01_r47_database_health_pg15.py tests/integration/test_f20_u01_oidc_browser_pg15.py` exit0, **155 PASS/4 SKIP/기존 deprecation warning1**(최종 재실행 11.54초). SKIP에는 R47 PG15·브라우저 실제 opt-in 미설정이 포함되며 PASS가 아니다. `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs`, `node tests/browser/f20-u01-oidc-browser-pg15.mjs --r47-self-test` 및 기존 `--audit-self-test` exit0. 최종 `python -m scripts.check_project_progress .` G-05 seq2094 PASS, `git diff --check` exit0.
+- Web `npm run test:console; npm run typecheck; npm run lint` exit0, 79 PASS/타입 오류0/lint 오류0. `npm run build` exit0, Vite20 모듈 빌드. 생성된 `apps/web/dist`는 경로·비-link·정확 내용을 확인하고 그 출력만 삭제, 잔류0.
+- bare `python -m pytest -q -p no:cacheprovider` exit1, 테스트 실행 전 **13 collection ERROR**(동명 test module과 `tests/fixtures/repositories`의 독립 `src` import). 이는 R47 PASS가 아니다. 대체 `python -m pytest -q -p no:cacheprovider --import-mode=importlib --ignore=tests/fixtures/repositories`는 약 11%까지 진행하다 R47 scoped 검증 우선으로 수동 중단(exit1); 전체 PASS가 아니며 실제 테스트 최종 집계는 없다.
+- opt-in `tests/integration/test_f20_u01_r47_database_health_pg15.py`는 `ANVIL_U01_R47_PG_DSN` 및 `ANVIL_U01_R47_PG_ISOLATED=1`, loopback5545, `anvil_f20_r47_<sha7>` 전용 DB/비root 동일 role, PG15/0019 preflight가 맞을 때만 실제 DB를 읽는다. 첫 검증은 실제 source 양성·migration mismatch/복구·scope 거부다. 두 번째는 정확 `ANVIL_F20_R47_FRONTEND_DIST=.../apps/web/dist`가 있을 때 임시 HTTPS issuer·OIDC 실제 `create_oidc_process_app` host·Chromium을 연결해 preauth401→Database HEALTHY(API/DOM/evidence)→migration mismatch UNKNOWN(API/DOM)→restore HEALTHY→권한 revoke403/BLOCKED→same-origin Network·Secret 비노출을 확인한다. Secret 검사는 양성·불일치·권한거부 API 본문, DOM, 요청 URL, synthetic 설정 비밀과 세션 쿠키 값을 포함한다. 기존 R6의 고정 QA HealthSignal을 이 경로에서 주입하지 않는다. 전용 DB의 migration 불일치 음성은 원래 head 복구를 `finally`로 수행하고 두 Engine·HTTPS listener·QA identity·임시 TLS/secret 파일을 정확 정리한다. 로컬은 opt-in 대상이 없어 두 테스트 모두 SKIP; 실제 WSL 결과는 미검증이다.
+
+## 미검증·영향·조치
+
+- 기존 R6 browser harness의 `HEALTHY`는 QA-only 주입 fixture다. 이는 화면·same-origin Network·Secret 회귀일 뿐 R47 실제 host DB Health PASS가 아니다. 새 R47 별도 opt-in은 로컬에서 self-test/guard만 검증됐고 실제 host-to-DOM 증거는 Main의 동일 SHA WSL 실행 결과에서만 확정할 수 있다. 실제 DB 접속 단절/복구는 Main의 격리 PG에서 별도 음성 실측해야 한다.
+- R45 역사적 frozen-authority close test 2 FAIL은 별도 기존 품질 기록이며 R47 관련 회귀 PASS로 덮지 않는다.
+- 도구 환경 오류 4회: shell `CreateProcess helper_unknown_error: apply deny-read ACLs`가 기본 실행에서 반복됐지만 제품 테스트 실패는 아니었다. Main 지시에 따른 읽기 전용 `require_escalated` 재확인 1회 이후 같은 worktree에서 명령·테스트·G-05가 정상 종료됐다. 제품 실패 횟수 0, 미해결 도구 차단 없음.
+- Main이 exact diff 리뷰·독립 Tester 판정→기존 branch 안전 commit/private push→동일 SHA WSL-server 격리 PG15/OIDC/HTTPS/Chromium 양·음성/Network·Secret 검증→임시자원 정리→progress/HANDOFF/WORK_STATUS를 수행한다. Rollback은 R47 변경 exact diff만 역적용; seq2090 이전 Event/lease/history 또는 다른 카드·공개 계약은 변경하지 않는다.

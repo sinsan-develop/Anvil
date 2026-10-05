@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -11,7 +14,7 @@ import re
 import stat
 
 from fastapi import FastAPI
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from packages.api.fastapi_app import AuthorizationScope
@@ -28,6 +31,7 @@ from packages.observability.agent_owner_summary import (
     ScopedAgentOwnerSummary, summarize_scoped_agent_owners,
 )
 from packages.observability.projection import OperationsSources
+from packages.observability.models import HealthSignal
 from packages.observability.run_status_summary import ScopedRunStatusSummary, summarize_scoped_runs
 from packages.observability.service import OperationsService
 
@@ -174,16 +178,50 @@ def create_oidc_process_app(
         if operations_dsn.startswith("postgresql+psycopg://"):
             operations_dsn = "postgresql://" + operations_dsn[len("postgresql+psycopg://"):]
 
+        snapshot_started_at: ContextVar[datetime | None] = ContextVar(
+            "anvil_database_health_snapshot_started_at", default=None)
+
+        def operations_clock() -> datetime:
+            now = datetime.now(timezone.utc)
+            snapshot_started_at.set(now)
+            return now
+
+        def database_signal(observed_at: datetime | None) -> HealthSignal | None:
+            if observed_at is None or observed_at.tzinfo is None:
+                return None
+            try:
+                with engine.connect() as connection:
+                    query_result = connection.execute(text("SELECT 1")).scalar_one()
+                    heads = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+                completed_at = datetime.now(timezone.utc)
+                if (query_result != 1 or heads != ["0019_oidc_sessions"]
+                        or completed_at < observed_at
+                        or completed_at - observed_at > timedelta(seconds=5)):
+                    return None
+            except Exception:
+                return None
+            fingerprint = json.dumps({"component": "database", "project_id": scope.project_id,
+                "environment_id": scope.environment_id, "observed_at": observed_at.isoformat(),
+                "migration_head": heads[0], "query_result": query_result},
+                sort_keys=True, separators=(",", ":"))
+            return HealthSignal("database", "HEALTHY", observed_at, timedelta(minutes=5), 0,
+                                "sha256:" + sha256(fingerprint.encode()).hexdigest(),
+                                "/operations/health")
+
         def load_queue_sources(project_id: str, environment_id: str) -> OperationsSources:
             if (type(project_id) is not str or type(environment_id) is not str
                     or (project_id, environment_id) != (scope.project_id, scope.environment_id)):
                 raise ValueError("QUEUE_SOURCE_SCOPE_INVALID")
+            observed_at = snapshot_started_at.get()
+            snapshot_started_at.set(None)
             queue = load_scoped_queue_source(engine, scope.project_id, scope.environment_id)
             budget = load_scoped_budget_source(engine, scope.project_id, scope.environment_id)
+            signal = database_signal(observed_at)
             return OperationsSources(queue=queue, queue_job_ids=queue.job_ids,
                                      budget=budget, budget_ids=budget.budget_ids,
                                      reservation_ids=budget.reservation_ids,
-                                     provider=ProviderStatusService(environment))
+                                     provider=ProviderStatusService(environment),
+                                     health_signals=(signal,) if signal is not None else ())
 
         def load_run_summary(project_id: str, environment_id: str) -> ScopedRunStatusSummary:
             if (project_id, environment_id) != (scope.project_id, scope.environment_id):
@@ -203,6 +241,7 @@ def create_oidc_process_app(
         operations_owner = OperationsService(
             scope.project_id, scope.environment_id, OperationsSources(),
             repository=PostgresOperationsRepository(operations_dsn),
+            clock=operations_clock,
             source_loader=load_queue_sources,
             run_summary_loader=load_run_summary,
             agent_owner_summary_loader=load_agent_owner_summary,

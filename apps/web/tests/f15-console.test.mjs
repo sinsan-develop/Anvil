@@ -771,6 +771,20 @@ test('R46 Queue keeps overall UNKNOWN while a fresh unique stored alert confirms
 const renderDatabase = (readiness, operations) => renderToStaticMarkup(
   React.createElement(consoleApp.DatabaseHealthCard, {value: readiness, operations}));
 
+test('R47 Database Health explains its narrow SQL and migration observation separately from API readiness', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.health.database = observedHealth('HEALTHY');
+  const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-r47'}));
+  const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+  assert.match(html, /Database.*HEALTHY.*DB 접속·읽기 질의·Migration 일치 관측.*API 준비 READY/s);
+  assert.doesNotMatch(html, /전체 DB 정상|업무 정상|Provider 정상|Queue 정상/);
+  for (const inaccessible of [{status: 'BLOCKED'}, {status: 'UNAVAILABLE'}]) {
+    const hidden = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, inaccessible);
+    assert.doesNotMatch(hidden, /DB 접속·읽기 질의·Migration 일치 관측/);
+  }
+});
+
 const renderObservationTime = (operations) => renderToStaticMarkup(
   React.createElement(consoleApp.DashboardObservationTime, {value: operations}));
 
