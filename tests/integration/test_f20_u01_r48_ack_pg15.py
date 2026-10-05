@@ -97,8 +97,7 @@ _R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "REDIRECT_SCRUB", "REDIRECT_REFERER", "REDIRECT_FETCH_DISPATCH",
     "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK",
     "ACK_BUTTON_WAIT", "ACK_CLICK", "ACK_RESPONSE_WAIT", "ACK_DENIAL_CHECK",
-    "ACK_DENIAL_BODY_WAIT", "ACK_DENIAL_CODE", "ACK_UI_BLOCKED_WAIT",
-    "ACK_DIRECT_DIAGNOSTIC", "ACK_PAGE_DIAGNOSTIC",
+    "ACK_UI_BLOCKED_WAIT", "ACK_PAGE_DIAGNOSTIC",
     "ACK_BLOCKED_UI_WAIT", "ACK_CONTEXT_CLOSE", "AUDIT", "DONE"})
 _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_CALLBACK_REJECTED", "R48_CSRF_MISSING", "R48_REDIRECT_GET_MISSING",
@@ -109,8 +108,9 @@ _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_REFERER_OTHER",
     "R48_OPEN_ALERT_MISSING", "R48_ORIGIN_NOT_DENIED", "R48_CSRF_NOT_DENIED",
     "R48_ORIGIN_WRONG_DENIAL", "R48_CSRF_WRONG_DENIAL",
-    "R48_PERMISSION_NOT_DENIED", "R48_PERMISSION_DENIAL_CODE",
-    "R48_PERMISSION_BODY_TIMEOUT",
+    "R48_PERMISSION_NOT_DENIED",
+    "R48_PAGE_STATUS_NOT_DENIED",
+    "R48_PAGE_BODY_UNAVAILABLE", "R48_PAGE_DENIAL_CODE",
     "R48_ACK_REJECTED", "R48_ACK_PAYLOAD_INVALID",
     "R48_AUDIT_PERMISSION_NOT_DENIED", "R48_AUDIT_DENIAL_CODE",
     "R48_ACK_RETRANSMITTED", "R48_AUDIT_PAGE_NOT_INTERCEPTED",
@@ -140,15 +140,6 @@ def _r48_safe_ack_fact(stdout: str) -> str:
         if re.fullmatch(r"R48_ACK_FACT ui=BLOCKED network=(PENDING|FINISHED|FAILED)", line):
             return line
     return "R48_ACK_FACT_UNAVAILABLE"
-
-
-def _r48_safe_direct_fact(stdout: str) -> str:
-    for line in stdout.splitlines():
-        if re.fullmatch(r"R48_DIRECT_FACT status=(403|OTHER|UNAVAILABLE) "
-                r"body=(COMPLETE|TIMEOUT|ERROR) "
-                r"code=(PERMISSION_DENIED|OTHER|UNAVAILABLE)", line):
-            return line
-    return "R48_DIRECT_FACT_UNAVAILABLE"
 
 
 def _r48_safe_page_fact(stdout: str) -> str:
@@ -295,9 +286,6 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
         "R48_ACK_FACT ui=BLOCKED network=FINISHED")
     assert _r48_safe_ack_fact("R48_ACK_FACT ui=BLOCKED network=private-token") == (
         "R48_ACK_FACT_UNAVAILABLE")
-    direct = "R48_DIRECT_FACT status=403 body=COMPLETE code=PERMISSION_DENIED"
-    assert _r48_safe_direct_fact(direct + "\nprivate-token") == direct
-    assert _r48_safe_direct_fact(direct + " private-token") == "R48_DIRECT_FACT_UNAVAILABLE"
     page = "R48_PAGE_FACT status=403 body=COMPLETE code=PERMISSION_DENIED"
     assert _r48_safe_page_fact(page + "\nprivate-token") == page
     assert _r48_safe_page_fact(page + " private-token") == "R48_PAGE_FACT_UNAVAILABLE"
@@ -575,7 +563,6 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                     + _r48_safe_failure(result.stderr) + " "
                     + _r48_safe_referer_fact(result.stdout) + " "
                     + _r48_safe_ack_fact(result.stdout) + " "
-                    + _r48_safe_direct_fact(result.stdout) + " "
                     + _r48_safe_page_fact(result.stdout) + " " + ack_asgi.fact())
                 lines = [line for line in result.stdout.splitlines() if line.startswith("R48_RESULT ")]
                 assert len(lines) == 1
