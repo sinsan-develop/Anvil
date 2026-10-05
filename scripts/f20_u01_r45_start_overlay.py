@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 r1 = prior.r1
 EVENTS, PROGRESS, HANDOFF, CHECKER = prior.EVENTS, prior.PROGRESS, prior.HANDOFF, prior.CHECKER
 START, END = 2072, 2076
-BASE = "35e38560e0ed4764d8b2894dc1ca44dedec71542"
+BASE = "2237d61b8119b29168d18830cb940288085a7abb"
 MODE = "F20_U01_R45_QUEUE_HEALTH_START"
 NEXT = "F20_U01_R45_QUEUE_HEALTH_IMPLEMENTATION"
 ACTOR = "developer-primary-f20-u01-r45"
@@ -39,11 +39,11 @@ SCOPE = [
 KINDS = ("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
          "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED")
 FROZEN = (PLAN, WI, INVOCATION, prior.DIGEST, prior.MANIFEST)
-CONTROL_SCOPE = (prior.CONTROL_SCOPE | {
+CONTROL_SCOPE = {
     EVENTS, PROGRESS, HANDOFF, DIGEST, MANIFEST, CHECKER,
     "docs/WORK_STATUS.md", "scripts/f20_u01_r45_start_overlay.py",
     "tests/tooling/test_f20_u01_r45_start_projection.py",
-}) - set(FROZEN) - set(SCOPE)
+}
 CHECKER_ANCHOR = (
     b'def validate_bundle(bundle):\n'
     b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_R44_HEALTH_DETAIL_CLOSE":\n'
