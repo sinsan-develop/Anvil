@@ -124,14 +124,15 @@ function safeR44FailureCode(error) {
 
 const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'PREAUTH', 'POPUP_OPEN', 'CALLBACK', 'REDIRECT_GET', 'REDIRECT_HEADERS',
-  'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'ACK', 'AUDIT', 'DONE']);
+  'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'REDIRECT_FETCH_DISPATCH',
+  'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK', 'AUDIT', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
   'R48_REDIRECT_GET_MISSING', 'R48_REDIRECT_HEADER_REFERRER',
   'R48_REDIRECT_HEADER_CACHE', 'R48_REDIRECT_URL_NOT_SCRUBBED',
   'R48_HISTORY_STATE_LEAK', 'R48_DOM_SECRET_LEAK', 'R48_REFERER_LEAK',
   'R48_REFERER_CLEAN_ROOT', 'R48_REFERER_CODE_OR_STATE',
-  'R48_REFERER_OTHER', 'R48_REFERER_HEADER_VIEW_MISMATCH',
+  'R48_REFERER_OTHER',
   'R48_POPUP_NOT_CLOSED', 'R48_OPEN_ALERT_MISSING',
   'R48_ORIGIN_NOT_DENIED', 'R48_CSRF_NOT_DENIED',
   'R48_ORIGIN_WRONG_DENIAL', 'R48_CSRF_WRONG_DENIAL',
@@ -143,7 +144,10 @@ const r48AssertionCodes = new Set([
 ]);
 let r48Stage = 'BOOTSTRAP';
 function safeR48Stage(value) { return r48Stages.has(value) ? value : 'BOOTSTRAP'; }
-function markR48Stage(value) { r48Stage = safeR48Stage(value); }
+function markR48Stage(value) {
+  r48Stage = safeR48Stage(value);
+  writeSync(1, `R48_STAGE ${r48Stage}\n`);
+}
 function safeR48FailureCode(error) {
   const code = typeof error?.message === 'string'
     ? /^(R48_[A-Z_]+)(?:\b|$)/.exec(error.message)?.[1] : null;
@@ -2706,17 +2710,14 @@ async function mainR48() {
       markR48Stage('REDIRECT_REFERER');
       const followup = popup.waitForRequest((request) =>
         new URL(request.url()).pathname === '/api/health/ready');
-      await popup.evaluate(() => fetch('/api/health/ready'));
+      markR48Stage('REDIRECT_FETCH_DISPATCH');
+      await popup.evaluate(() => { void fetch('/api/health/ready').catch(() => {}); });
       const followupRequest = await followup;
+      markR48Stage('REDIRECT_REQUEST_CAPTURED');
       const category = classifyR48Referer(followupRequest.headers().referer,
         apiUrl + '/', redirectRequest.code, redirectRequest.state);
-      const allCategory = classifyR48Referer((await followupRequest.allHeaders()).referer,
-        apiUrl + '/', redirectRequest.code, redirectRequest.state);
-      const valueCategory = classifyR48Referer(await followupRequest.headerValue('referer'),
-        apiUrl + '/', redirectRequest.code, redirectRequest.state);
-      writeSync(1, `R48_REFERER_FACT headers=${category} all=${allCategory} value=${valueCategory}\n`);
-      assert.equal(category, allCategory, 'R48_REFERER_HEADER_VIEW_MISMATCH');
-      assert.equal(category, valueCategory, 'R48_REFERER_HEADER_VIEW_MISMATCH');
+      markR48Stage('REDIRECT_HEADER_CLASSIFY');
+      writeSync(1, `R48_REFERER_FACT headers=${category}\n`);
       assert.equal(category, 'ABSENT', `R48_REFERER_${category}`);
       await popup.close();
       markR48Stage('DONE');

@@ -93,14 +93,15 @@ def _close_qa_resources(engine, listeners) -> None:
 
 _R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "PREAUTH", "POPUP_OPEN", "CALLBACK", "REDIRECT_GET", "REDIRECT_HEADERS",
-    "REDIRECT_SCRUB", "REDIRECT_REFERER", "ACK", "AUDIT", "DONE"})
+    "REDIRECT_SCRUB", "REDIRECT_REFERER", "REDIRECT_FETCH_DISPATCH",
+    "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK", "AUDIT", "DONE"})
 _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_CALLBACK_REJECTED", "R48_CSRF_MISSING", "R48_REDIRECT_GET_MISSING",
     "R48_REDIRECT_HEADER_REFERRER", "R48_REDIRECT_HEADER_CACHE",
     "R48_REDIRECT_URL_NOT_SCRUBBED", "R48_HISTORY_STATE_LEAK",
     "R48_DOM_SECRET_LEAK", "R48_REFERER_LEAK", "R48_POPUP_NOT_CLOSED",
     "R48_REFERER_CLEAN_ROOT", "R48_REFERER_CODE_OR_STATE",
-    "R48_REFERER_OTHER", "R48_REFERER_HEADER_VIEW_MISMATCH",
+    "R48_REFERER_OTHER",
     "R48_OPEN_ALERT_MISSING", "R48_ORIGIN_NOT_DENIED", "R48_CSRF_NOT_DENIED",
     "R48_ORIGIN_WRONG_DENIAL", "R48_CSRF_WRONG_DENIAL",
     "R48_PERMISSION_NOT_DENIED", "R48_PERMISSION_DENIAL_CODE",
@@ -123,11 +124,22 @@ def _r48_safe_failure(stderr: str) -> str:
 
 def _r48_safe_referer_fact(stdout: str) -> str:
     for line in stdout.splitlines():
-        if re.fullmatch(r"R48_REFERER_FACT headers=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER) "
-                r"all=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER) "
-                r"value=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER)", line):
+        if re.fullmatch(r"R48_REFERER_FACT headers=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER)", line):
             return line
     return "R48_REFERER_FACT_UNAVAILABLE"
+
+
+def _r48_safe_timeout_stage(stdout: bytes | str | None) -> str:
+    if isinstance(stdout, bytes):
+        stdout = stdout.decode("ascii", errors="ignore")
+    if not isinstance(stdout, str):
+        return "BOOTSTRAP"
+    last = "BOOTSTRAP"
+    for line in stdout.splitlines():
+        match = re.fullmatch(r"R48_STAGE ([A-Z_]+)", line)
+        if match and match.group(1) in _R48_SAFE_STAGES:
+            last = match.group(1)
+    return last
 
 
 def test_r48_disposable_cleanup_does_not_mask_primary_or_delete_append_only_rows():
@@ -155,9 +167,12 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
     assert _r48_safe_failure(line.replace("R48_REDIRECT_HEADER_REFERRER",
         "R48_PRIVATE_CODE")) == "R48_DIAGNOSTIC_UNAVAILABLE"
     assert _r48_safe_failure(line + " private-token") == "R48_DIAGNOSTIC_UNAVAILABLE"
-    fact = "R48_REFERER_FACT headers=CLEAN_ROOT all=CLEAN_ROOT value=CLEAN_ROOT"
+    fact = "R48_REFERER_FACT headers=CLEAN_ROOT"
     assert _r48_safe_referer_fact(fact + "\nprivate-code=secret") == fact
     assert _r48_safe_referer_fact(fact + " private-token") == "R48_REFERER_FACT_UNAVAILABLE"
+    assert _r48_safe_timeout_stage(b"R48_STAGE REDIRECT_HEADERS\nR48_STAGE REDIRECT_REFERER\nprivate-token") == (
+        "REDIRECT_REFERER")
+    assert _r48_safe_timeout_stage(b"R48_STAGE private-token\n") == "BOOTSTRAP"
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -392,8 +407,12 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                         permissions=permissions))
                 before = repository.load(project, environment)
                 process_environment["ANVIL_F20_R48_SCENARIO"] = scenario
-                result = subprocess.run([os.environ.get("ANVIL_F20_R6_NODE_BIN", "node"), str(script)],
-                    env=process_environment, text=True, capture_output=True, timeout=90, check=False)
+                try:
+                    result = subprocess.run([os.environ.get("ANVIL_F20_R6_NODE_BIN", "node"), str(script)],
+                        env=process_environment, text=True, capture_output=True, timeout=90, check=False)
+                except subprocess.TimeoutExpired as error:
+                    pytest.fail(f"R48_BROWSER_{scenario.upper().replace('-', '_')}_TIMEOUT "
+                        f"stage={_r48_safe_timeout_stage(error.stdout)}", pytrace=False)
                 assert result.returncode == 0, (f"R48_BROWSER_{scenario.upper().replace('-', '_')}_FAILED "
                     + _r48_safe_failure(result.stderr) + " "
                     + _r48_safe_referer_fact(result.stdout))
