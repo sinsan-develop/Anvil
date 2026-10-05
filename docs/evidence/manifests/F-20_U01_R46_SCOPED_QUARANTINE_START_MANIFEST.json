@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2088,
+  "accepted": false,
+  "projection_mode": "F20_U01_R46_SCOPED_QUARANTINE_START",
+  "previous_event_sequence": 2084,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+    "docs/04_test_reports/F-20_U01_R46_SCOPED_QUARANTINE_RESULT.md"
+  ],
+  "predecessor_commit": "37d7d88fbce53844c8d20725ec212431a61e7186",
+  "predecessor_events_sha256": "F58EED44CF1E7AA13E0FC27A00A4A531EE48078290FABA98AD4344B1E11F060F",
+  "plan_path": "docs/04_test_reports/F-20_U01_R46_SCOPED_QUARANTINE_PLAN.md",
+  "plan_sha256": "D33786BFD4AF3BC77AD48E112904C105FBDF8493B565637B3EC0B30F3A2AF5D9",
+  "work_instruction_sha256": "2E78E8596DB87F2E6BC87D7F7AF4DD745E3E8E708C3569F9FC0416A18159BB57",
+  "invocation_sha256": "B05392624571D90E08A8B8359E952BD4E2B6A5613780C74C7E29EAA2A0046378",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
