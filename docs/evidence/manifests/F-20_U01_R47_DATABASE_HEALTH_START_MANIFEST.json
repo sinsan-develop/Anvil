@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2094,
+  "accepted": false,
+  "projection_mode": "F20_U01_R47_DATABASE_HEALTH_START",
+  "previous_event_sequence": 2090,
+  "product_write_scope": [
+    "apps/api/anvil_api/oidc_process.py",
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/api/test_f20_u01_r47_database_health_host.py",
+    "tests/integration/test_f20_u01_r47_database_health_pg15.py",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+    "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_RESULT.md"
+  ],
+  "predecessor_commit": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
+  "predecessor_events_sha256": "30A6F26F97D0C086533A8984E52E615874C42175B5AEBF89D5FE3842BE1BE11F",
+  "plan_path": "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_PLAN.md",
+  "plan_sha256": "B3A7E19029038C1EF4E01397E969DF63C71B2103ABEFA5276F5808932BED9543",
+  "work_instruction_sha256": "C874E144036BA263A5AAEAF4F27FDB4CA648E88B3D61BC2AE9B366224680D407",
+  "invocation_sha256": "981F967CF2270249DC7D801CFC10B868307B887E370C2B378D86F49A48CE3047",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
