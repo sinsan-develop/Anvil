@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2094,
+  "last_sequence": 2096,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -99148,7 +99148,51 @@
     "package_status": "REWORK_IN_PROGRESS",
     "accepted": false
   }
+},
+{
+  "sequence": 2095,
+  "event_id": "evt_f20_2095_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R47_DATABASE_HEALTH_CLOSE",
+  "subject_ref": "F-20/U01-R47",
+  "occurred_at": "2026-10-05T08:20:04+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "1DC6A7426272E105248D39CD664EA836E694A7775C7ED96CF08E884D6FAAE047",
+  "details": {
+    "lease_id": "write-lease-f20-u01-r47-142f159f45c27e3e49adfadbcbca4fcc",
+    "write_fencing_token": "f20-u01-r47-write-fence-epoch-63-142f159f45c27e3e49adfadbcbca4fcc",
+    "reason": "R47_DATABASE_HEALTH_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
+    "evidence_head": "f3ccc561092dfc15c41380d938cadb1d28360928"
+  }
+},
+{
+  "sequence": 2096,
+  "event_id": "evt_f20_2096_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_R47_DATABASE_HEALTH_CLOSE",
+  "subject_ref": "F-20/U01-R47",
+  "occurred_at": "2026-10-05T08:20:04+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "B0E9313A75E9C87CD101854A65D8666B55896451D46A1A52560D0664A6637AF8",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-r47-f4adfb108f01fc165194f0867fb8f336",
+    "execution_fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
+    "reason": "R47_DATABASE_HEALTH_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
+    "evidence_head": "f3ccc561092dfc15c41380d938cadb1d28360928"
+  }
 }
   ],
-  "last_event_id": "evt_f20_2094_package_resumed"
+  "last_event_id": "evt_f20_2096_worker_lease_revoked"
 }

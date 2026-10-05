@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-r47-database-health-start-seq2094",
-  "event_sequence": 2094,
-  "updated_at": "2026-10-05T06:36:33+00:00",
-  "last_event_id": "evt_f20_2094_package_resumed",
+  "snapshot_id": "snapshot-f20-u01-r47-database-health-close-seq2096",
+  "event_sequence": 2096,
+  "updated_at": "2026-10-05T08:20:04+00:00",
+  "last_event_id": "evt_f20_2096_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,33 +215,8 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-u01-r47",
-  "write_lease": {
-    "lease_id": "write-lease-f20-u01-r47-142f159f45c27e3e49adfadbcbca4fcc",
-    "actor_id": "developer-primary-f20-u01-r47",
-    "subject_ref": "F-20/U01-R47",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-05T06:36:33+00:00",
-    "expires_at": "2026-10-06T06:36:33+00:00",
-    "lease_epoch": 63,
-    "fencing_token": "f20-u01-r47-write-fence-epoch-63-142f159f45c27e3e49adfadbcbca4fcc",
-    "execution_fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
-    "baseline_git_commit": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
-    "dispatch_head": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
-    "path_scope": [
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/api/test_f20_u01_r47_database_health_host.py",
-      "tests/integration/test_f20_u01_r47_database_health_pg15.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_RESULT.md"
-    ],
-    "worker_lease_id": "worker-lease-f20-u01-r47-f4adfb108f01fc165194f0867fb8f336",
-    "write_epoch": 63,
-    "write_fencing_token": "f20-u01-r47-write-fence-epoch-63-142f159f45c27e3e49adfadbcbca4fcc"
-  },
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -273,29 +248,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-f20-u01-r47-f4adfb108f01fc165194f0867fb8f336",
-    "actor_id": "developer-primary-f20-u01-r47",
-    "subject_ref": "F-20/U01-R47",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-05T06:36:33+00:00",
-    "expires_at": "2026-10-06T06:36:33+00:00",
-    "lease_epoch": 63,
-    "fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
-    "execution_fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
-    "baseline_git_commit": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
-    "dispatch_head": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
-    "path_scope": [
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/api/test_f20_u01_r47_database_health_host.py",
-      "tests/integration/test_f20_u01_r47_database_health_pg15.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_RESULT.md"
-    ]
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -517,7 +470,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_R47_DATABASE_HEALTH_IMPLEMENTATION",
+  "next_safe_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -628,12 +581,12 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
-    "local_wsl_qa_head": "e8c0cd67605aadf72a0a72842a14c99308292e02",
+    "local_head": "ccf7f794a00c8662b3abb65905730b505ae23817",
+    "local_wsl_qa_head": "f3ccc561092dfc15c41380d938cadb1d28360928",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
-    "projection_mode": "F20_U01_R47_DATABASE_HEALTH_START",
-    "validated_base_commit": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
+    "remote_head": "ccf7f794a00c8662b3abb65905730b505ae23817",
+    "projection_mode": "F20_U01_R47_DATABASE_HEALTH_CLOSE",
+    "validated_base_commit": "ccf7f794a00c8662b3abb65905730b505ae23817",
     "head_relation": "BASE_OR_FEATURE_DESCENDANT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
@@ -1067,17 +1020,8 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs",
-      "tests/api/test_f20_u01_r47_database_health_host.py",
-      "tests/integration/test_f20_u01_r47_database_health_pg15.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
-      "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_RESULT.md"
-    ],
-    "worktree_status": "F20_U01_R47_DATABASE_HEALTH_ACTIVE",
+    "product_write_scope": [],
+    "worktree_status": "F20_U01_R47_DATABASE_HEALTH_LEASE_CLOSED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1244,7 +1188,7 @@
     "sha256": "C874E144036BA263A5AAEAF4F27FDB4CA648E88B3D61BC2AE9B366224680D407",
     "invocation_path": "docs/work_orders/F-20_U01_R47_DATABASE_HEALTH_INVOCATION.md",
     "invocation_sha256": "981F967CF2270249DC7D801CFC10B868307B887E370C2B378D86F49A48CE3047",
-    "result_status": "REWORK_IN_PROGRESS",
+    "result_status": "COMPLETED_R47_DATABASE_HEALTH_SLICE_WSL_QA_ONLY",
     "package_status": "REWORK_IN_PROGRESS",
     "approval_classification": "PMO_DELEGATED_INTERNAL_APPROVED",
     "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642"
@@ -1379,8 +1323,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "F-20",
-    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r47-start.json",
-    "manifest_path": "docs/evidence/manifests/F-20_U01_R47_DATABASE_HEALTH_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-f20-u01-r47-close.json",
+    "manifest_path": "docs/evidence/manifests/F-20_U01_R47_DATABASE_HEALTH_CLOSE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1401,7 +1345,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "9161A3FA70BFE3AF516FA4B42A47E2B7984F963822FAE33903700D5DB2E56B96"
+      "sha256": "21B3839294EE6AF14BB20C461A062E978F152D16E07B1B73AEB716961BED9788"
     }
   },
   "next_work_package": {
@@ -1798,8 +1742,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "CE985E86C2BEE7AA094A2088BA59B9B546B614D5172F6E37CAF57D994FDD4064",
-  "runtime_next_action": "F20_U01_R47_DATABASE_HEALTH_IMPLEMENTATION",
+  "snapshot_hash": "A447E265424A8B62BE392F75A7D90447CDDD4C01296AE02CEAA8CED0867917EB",
+  "runtime_next_action": "F20_U01_REMAINING_APPROVED_SCOPE_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -25902,5 +25846,56 @@
     "write_epoch": 62,
     "write_fencing_token": "f20-u01-r46-write-fence-epoch-62-cefc04442328aaaa2af078e75e912b20",
     "revoked_at": "2026-10-05T06:01:09+00:00"
+  },
+  "completed_f20_u01_r47_worker_lease": {
+    "lease_id": "worker-lease-f20-u01-r47-f4adfb108f01fc165194f0867fb8f336",
+    "actor_id": "developer-primary-f20-u01-r47",
+    "subject_ref": "F-20/U01-R47",
+    "status": "REVOKED",
+    "issued_at": "2026-10-05T06:36:33+00:00",
+    "expires_at": "2026-10-06T06:36:33+00:00",
+    "lease_epoch": 63,
+    "fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
+    "execution_fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
+    "baseline_git_commit": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
+    "dispatch_head": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
+    "path_scope": [
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/api/test_f20_u01_r47_database_health_host.py",
+      "tests/integration/test_f20_u01_r47_database_health_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_RESULT.md"
+    ],
+    "revoked_at": "2026-10-05T08:20:04+00:00"
+  },
+  "completed_f20_u01_r47_write_lease": {
+    "lease_id": "write-lease-f20-u01-r47-142f159f45c27e3e49adfadbcbca4fcc",
+    "actor_id": "developer-primary-f20-u01-r47",
+    "subject_ref": "F-20/U01-R47",
+    "status": "REVOKED",
+    "issued_at": "2026-10-05T06:36:33+00:00",
+    "expires_at": "2026-10-06T06:36:33+00:00",
+    "lease_epoch": 63,
+    "fencing_token": "f20-u01-r47-write-fence-epoch-63-142f159f45c27e3e49adfadbcbca4fcc",
+    "execution_fencing_token": "f20-u01-r47-execution-fence-epoch-63-f4adfb108f01fc165194f0867fb8f336",
+    "baseline_git_commit": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
+    "dispatch_head": "9e75cde63b90a9c3afe22f75f4fcf269c4bfb000",
+    "path_scope": [
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/api/test_f20_u01_r47_database_health_host.py",
+      "tests/integration/test_f20_u01_r47_database_health_pg15.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+      "docs/04_test_reports/F-20_U01_R47_DATABASE_HEALTH_RESULT.md"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-r47-f4adfb108f01fc165194f0867fb8f336",
+    "write_epoch": 63,
+    "write_fencing_token": "f20-u01-r47-write-fence-epoch-63-142f159f45c27e3e49adfadbcbca4fcc",
+    "revoked_at": "2026-10-05T08:20:04+00:00"
   }
 }
