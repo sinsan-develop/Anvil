@@ -61,8 +61,8 @@ _BROWSER_STAGES = frozenset({
     "EMPTY_RESPONSES", "EMPTY_ASSERT", "SEED_CONTROL",
     "ERROR_DOCUMENT", "ERROR_CARD", "ERROR_RESPONSES", "ERROR_ASSERT",
     "STORED_ALERT_FETCH", "STORED_DOCUMENT", "STORED_CARD", "STORED_RESPONSES",
-    "STORED_ALERT_WAIT", "STORED_NEXT_ACTION",
-    "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DOCUMENT",
+    "STORED_ALERT_WAIT", "STORED_NEXT_ACTION", "STORED_DASHBOARD_FETCH",
+    "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DASHBOARD_FETCH", "REVOKE_DOCUMENT",
     "REVOKE_CARD", "REVOKE_RESPONSES", "REVOKE_CLEAR", "NETWORK_REQUEST_FACTS",
     "NETWORK_RESPONSE_FACTS", "NETWORK_DOM", "NETWORK_IDP_STATE",
     "NETWORK_ASSERT", "EVIDENCE_PRE_AUTH", "EVIDENCE_STORED", "EVIDENCE_REVOKED",
@@ -78,7 +78,7 @@ _RESPONSE_CATEGORIES = frozenset({
 })
 _RESPONSE_FAILURE_STAGES = frozenset({
     "PRE_AUTH_RESPONSES", "STORED_RESPONSES", "REVOKE_RESPONSES",
-    "NETWORK_RESPONSE_FACTS",
+    "REVOKE_DASHBOARD_FETCH", "NETWORK_RESPONSE_FACTS",
 })
 _R30_PHASES = frozenset({
     "CANCEL_BEGIN", "CANCEL_UPSTREAM", "CANCEL_ABORT", "CANCEL_RECOVERY",
@@ -307,7 +307,24 @@ def _safe_probe_diagnostic(output: str) -> str:
 
 
 def _safe_network_diagnostic(output: str) -> str:
-    return _safe_response_diagnostic(output) + _safe_probe_diagnostic(output)
+    return (_safe_response_diagnostic(output) + _safe_probe_diagnostic(output)
+            + _safe_revoke_dashboard_diagnostic(output))
+
+
+def _safe_revoke_dashboard_diagnostic(output: str) -> str:
+    detail = ""
+    for match in re.finditer(
+        r"^R46_REVOKE_DASHBOARD_TRACE request=(NONE|SEEN) response=(NONE|SEEN) "
+        r"status=([0-9]{1,3}) finished=(NONE|DONE|FAILED) "
+        r"page=(START|FETCH_PENDING|HEADERS|BODY_PENDING|BODY_DONE|FETCH_ERROR|BODY_ERROR)\r?$",
+        output, flags=re.MULTILINE,
+    ):
+        request, response, raw_status, finished, page = match.groups()
+        status = int(raw_status)
+        if status == 0 or 100 <= status <= 599:
+            detail = (f" request={request} response={response} status={status}"
+                      f" finished={finished} page={page}")
+    return detail
 
 
 def _safe_route_diagnostic(output: str) -> str:
@@ -1356,6 +1373,9 @@ def test_r6_browser_failure_classification_never_returns_raw_output():
          ("OIDC_AUTH_REQUEST", "AssertionError")),
         ("R6_NODE_STARTED\nR6_BROWSER_FAILED stage=STORED_NEXT_ACTION class=TimeoutError\n", "",
          ("STORED_NEXT_ACTION", "TimeoutError")),
+        ("R6_NODE_STARTED\nR6_STAGE REVOKE_DASHBOARD_FETCH\n"
+         "R6_BROWSER_FAILED stage=REVOKE_DASHBOARD_FETCH class=TimeoutError\n", "",
+         ("REVOKE_DASHBOARD_FETCH", "TimeoutError")),
         ("R6_NODE_STARTED\n", secret, ("NODE_UNHANDLED", "UnhandledError")),
         ("", f"npm error code EAI_AGAIN\n{secret}",
          ("NPM_INSTALL", "PackageManagerError")),
@@ -1451,6 +1471,43 @@ def test_r45_response_capture_diagnostic_preserves_only_bounded_order_and_phase(
         marker.replace(" reason=UNREADABLE", " reason=" + secret),
     ]:
         assert _safe_response_diagnostic(invalid) == ""
+
+
+def test_r46_revoke_dashboard_trace_reports_only_bounded_facts():
+    secret = "https://user:private-token@127.0.0.1/private?cookie=private"
+    marker = ("R46_REVOKE_DASHBOARD_TRACE request=SEEN response=SEEN status=403 "
+              "finished=NONE page=BODY_PENDING\n")
+    assert _safe_revoke_dashboard_diagnostic(marker + secret) == (
+        " request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING")
+    for invalid in [
+        marker.replace("status=403", "status=999"),
+        marker.replace("page=BODY_PENDING", "page=" + secret),
+        marker.replace("request=SEEN", "request=" + secret),
+    ]:
+        assert _safe_revoke_dashboard_diagnostic(invalid) == ""
+
+
+def test_r46_revoke_dashboard_timeout_keeps_stage_and_safe_trace(monkeypatch):
+    secret = "private-response-body-and-token"
+
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["browser"], returncode=1,
+            stdout=("R6_NODE_STARTED\nR6_STAGE REVOKE_DASHBOARD_FETCH\n"
+                    "R46_REVOKE_DASHBOARD_TRACE request=SEEN response=SEEN status=403 "
+                    "finished=NONE page=BODY_PENDING\n" + secret),
+            stderr="R6_BROWSER_FAILED stage=REVOKE_DASHBOARD_FETCH class=TimeoutError\n" + secret,
+        )
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    message = str(failure.value)
+    assert "stage=REVOKE_DASHBOARD_FETCH exit=1 class=TimeoutError" in message
+    assert "request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING" in message
+    assert secret not in message
 
 
 def test_r23_route_failure_reports_only_fixed_marker(monkeypatch):
