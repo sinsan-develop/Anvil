@@ -130,7 +130,9 @@ const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
   'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
   'ACK_UI_BLOCKED_WAIT', 'ACK_PAGE_DIAGNOSTIC',
-  'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT', 'DONE']);
+  'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT',
+  'AUDIT_RESPONSE_WAIT', 'AUDIT_DENIAL_CHECK', 'AUDIT_UI_BLOCKED_WAIT',
+  'AUDIT_PAGE_PROOF', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
   'R48_REDIRECT_GET_MISSING', 'R48_REDIRECT_HEADER_REFERRER',
@@ -145,6 +147,7 @@ const r48AssertionCodes = new Set([
   'R48_PAGE_BODY_UNAVAILABLE', 'R48_PAGE_DENIAL_CODE',
   'R48_ACK_REJECTED', 'R48_ACK_PAYLOAD_INVALID',
   'R48_AUDIT_PERMISSION_NOT_DENIED', 'R48_AUDIT_DENIAL_CODE',
+  'R48_AUDIT_BODY_UNAVAILABLE',
   'R48_ACK_RETRANSMITTED', 'R48_AUDIT_PAGE_NOT_INTERCEPTED',
   'R48_FALSE_SUCCESS', 'R48_BROWSER_API_NOT_SAME_ORIGIN',
 ]);
@@ -182,6 +185,12 @@ function assertR48PagePermissionProof(fact) {
   assert.equal(fact.status, '403', 'R48_PAGE_STATUS_NOT_DENIED');
   assert.equal(fact.body, 'COMPLETE', 'R48_PAGE_BODY_UNAVAILABLE');
   assert.equal(fact.code, 'PERMISSION_DENIED', 'R48_PAGE_DENIAL_CODE');
+}
+
+function assertR48PageAuditProof(fact) {
+  assert.equal(fact.status, '403', 'R48_AUDIT_PERMISSION_NOT_DENIED');
+  assert.equal(fact.body, 'COMPLETE', 'R48_AUDIT_BODY_UNAVAILABLE');
+  assert.equal(fact.code, 'PERMISSION_DENIED', 'R48_AUDIT_DENIAL_CODE');
 }
 
 function countR48UiAckRequests(requests, alertId) {
@@ -2797,7 +2806,9 @@ async function mainR48() {
         body: JSON.stringify({data: {events: [], next_before_sequence: null}})});
     });
     const auditDeniedResponse = r48Scenario === 'audit-denied'
-      ? page.waitForResponse((response) => response.url().includes('/api/operations/audit')) : null;
+      ? page.waitForResponse((response) => response.url().includes('/api/operations/audit'),
+        {timeout: 10000}) : null;
+    if (auditDeniedResponse) void auditDeniedResponse.catch(() => {});
     let ackNetwork = 'PENDING';
     let ackNetworkSettled;
     const ackNetworkTerminal = new Promise((resolve) => { ackNetworkSettled = resolve; });
@@ -2877,11 +2888,51 @@ async function mainR48() {
     markR48Stage('AUDIT');
     if (r48Scenario === 'audit-denied' || r48Scenario === 'audit-unreachable') {
       if (auditDeniedResponse) {
+        markR48Stage('AUDIT_RESPONSE_WAIT');
         const denied = await auditDeniedResponse;
+        markR48Stage('AUDIT_DENIAL_CHECK');
         assert.equal(denied.status(), 403, 'R48_AUDIT_PERMISSION_NOT_DENIED');
-        assert.equal((await denied.json())?.error?.code, 'PERMISSION_DENIED');
       }
-      await card.getByText(/확인 미검증/).waitFor();
+      markR48Stage('AUDIT_UI_BLOCKED_WAIT');
+      await card.getByText(/확인 미검증/).waitFor({timeout: 10000});
+      if (r48Scenario === 'audit-denied') {
+        markR48Stage('AUDIT_PAGE_PROOF');
+        let pageFact = {status: 'UNAVAILABLE', body: 'TIMEOUT', code: 'UNAVAILABLE'};
+        try {
+          pageFact = await Promise.race([
+            page.evaluate(async () => {
+              let seenStatus = 'UNAVAILABLE';
+              const attempt = (async () => {
+                try {
+                  const response = await fetch('/api/operations/audit', {
+                    credentials: 'same-origin', headers: {Accept: 'application/json'},
+                  });
+                  const status = response.status === 403 ? '403' : 'OTHER';
+                  seenStatus = status;
+                  try {
+                    const payload = await response.json();
+                    return {status, body: 'COMPLETE',
+                      code: payload?.error?.code === 'PERMISSION_DENIED'
+                        ? 'PERMISSION_DENIED' : 'OTHER'};
+                  } catch {
+                    return {status, body: 'ERROR', code: 'UNAVAILABLE'};
+                  }
+                } catch {
+                  return {status: 'UNAVAILABLE', body: 'ERROR', code: 'UNAVAILABLE'};
+                }
+              })();
+              return Promise.race([attempt, new Promise((resolve) => setTimeout(() =>
+                resolve({status: seenStatus, body: 'TIMEOUT', code: 'UNAVAILABLE'}), 5000))]);
+            }),
+            new Promise((resolve) => setTimeout(() =>
+              resolve({status: 'UNAVAILABLE', body: 'TIMEOUT', code: 'UNAVAILABLE'}), 7000)),
+          ]);
+        } catch {
+          pageFact = {status: 'UNAVAILABLE', body: 'ERROR', code: 'UNAVAILABLE'};
+        }
+        writeSync(1, safeR48PageFact(pageFact.status, pageFact.body, pageFact.code) + '\n');
+        assertR48PageAuditProof(pageFact);
+      }
       assert.equal(requests.filter(({url}) => url.pathname.includes(':acknowledge')).length, 1,
         'R48_ACK_RETRANSMITTED');
       assert.ok(r48Scenario !== 'audit-unreachable' || auditIntercepted > 0,
@@ -2930,6 +2981,16 @@ if (r48DiagnosticSelfTest) {
   /R48_PAGE_STATUS_NOT_DENIED/);
   assert.throws(() => assertR48PagePermissionProof(
     {status: '403', body: 'TIMEOUT', code: 'UNAVAILABLE'}), /R48_PAGE_BODY_UNAVAILABLE/);
+  assert.doesNotThrow(() => assertR48PageAuditProof(
+    {status: '403', body: 'COMPLETE', code: 'PERMISSION_DENIED'}));
+  assert.throws(() => assertR48PageAuditProof(
+    {status: '403', body: 'TIMEOUT', code: 'UNAVAILABLE'}), /R48_AUDIT_BODY_UNAVAILABLE/);
+  assert.throws(() => assertR48PageAuditProof(
+    {status: '403', body: 'COMPLETE', code: 'OTHER'}), /R48_AUDIT_DENIAL_CODE/);
+  assert.throws(() => assertR48PageAuditProof(
+    {status: 'OTHER', body: 'COMPLETE', code: 'PERMISSION_DENIED'}),
+  /R48_AUDIT_PERMISSION_NOT_DENIED/);
+  assert.equal(safeR48Stage('AUDIT_PAGE_PROOF'), 'AUDIT_PAGE_PROOF');
   assert.equal(countR48UiAckRequests([
     {url: new URL('https://anvil.invalid/api/operations/alerts/real:acknowledge')},
     {url: new URL('https://anvil.invalid/api/operations/alerts/r48-diagnostic-unallocated:acknowledge')},
