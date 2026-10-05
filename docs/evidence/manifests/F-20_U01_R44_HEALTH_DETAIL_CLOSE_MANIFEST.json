@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2072,
+  "accepted": false,
+  "projection_mode": "F20_U01_R44_HEALTH_DETAIL_CLOSE",
+  "previous_event_sequence": 2070,
+  "product_write_scope": [],
+  "predecessor_commit": "334fa6e1a6b0ef6dd7050f82e7833ece9a6de1cc",
+  "predecessor_events_sha256": "625B2746548CED467501264DA43E9B1B454F53DF9120155EC270F7E8F2E14EEC",
+  "plan_path": "docs/04_test_reports/F-20_U01_R44_HEALTH_DETAIL_PLAN.md",
+  "plan_sha256": "F8369DAC0310EF18DCAB3DC7B35E560EF8B0F95D0E9ED3C981D9A1D038297FE3",
+  "work_instruction_sha256": "C2515543380A1B78E8791978544A331B6C06BD5A5D1BF7A3EFD123C55D658F1F",
+  "result_path": "docs/04_test_reports/F-20_U01_R44_HEALTH_DETAIL_RESULT.md",
+  "result_sha256": "877AA019FC3B62997797306F2B54502CB10720B43F7BF3648E6AE22497713947",
+  "qa_head": "31e23fe5c59456484ce5072af38eba7eb41d5d10",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}
