@@ -94,7 +94,9 @@ def _close_qa_resources(engine, listeners) -> None:
 _R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "PREAUTH", "POPUP_OPEN", "CALLBACK", "REDIRECT_GET", "REDIRECT_HEADERS",
     "REDIRECT_SCRUB", "REDIRECT_REFERER", "REDIRECT_FETCH_DISPATCH",
-    "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK", "AUDIT", "DONE"})
+    "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK",
+    "ACK_BUTTON_WAIT", "ACK_CLICK", "ACK_RESPONSE_WAIT", "ACK_DENIAL_CHECK",
+    "ACK_BLOCKED_UI_WAIT", "ACK_CONTEXT_CLOSE", "AUDIT", "DONE"})
 _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_CALLBACK_REJECTED", "R48_CSRF_MISSING", "R48_REDIRECT_GET_MISSING",
     "R48_REDIRECT_HEADER_REFERRER", "R48_REDIRECT_HEADER_CACHE",
@@ -173,6 +175,7 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
     assert _r48_safe_timeout_stage(b"R48_STAGE REDIRECT_HEADERS\nR48_STAGE REDIRECT_REFERER\nprivate-token") == (
         "REDIRECT_REFERER")
     assert _r48_safe_timeout_stage(b"R48_STAGE private-token\n") == "BOOTSTRAP"
+    assert _r48_safe_timeout_stage(b"R48_STAGE ACK_BUTTON_WAIT\n") == "ACK_BUTTON_WAIT"
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):

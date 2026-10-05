@@ -125,7 +125,9 @@ function safeR44FailureCode(error) {
 const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'PREAUTH', 'POPUP_OPEN', 'CALLBACK', 'REDIRECT_GET', 'REDIRECT_HEADERS',
   'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'REDIRECT_FETCH_DISPATCH',
-  'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK', 'AUDIT', 'DONE']);
+  'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
+  'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
+  'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
   'R48_REDIRECT_GET_MISSING', 'R48_REDIRECT_HEADER_REFERRER',
@@ -2728,7 +2730,9 @@ async function mainR48() {
     if (!popup.isClosed()) await popup.waitForEvent('close', {timeout: 5000});
     assert.equal(popup.isClosed(), true, 'R48_POPUP_NOT_CLOSED');
     markR48Stage('ACK');
-    await card.getByRole('button', {name: '확인'}).waitFor();
+    const ackButton = card.getByRole('button', {name: '확인'});
+    markR48Stage('ACK_BUTTON_WAIT');
+    await ackButton.waitFor({timeout: 10000});
     if (r48Scenario === 'normal') {
       const alertRead = await context.request.get(apiUrl + '/api/operations/alerts');
       assert.equal(alertRead.status(), 200);
@@ -2759,16 +2763,23 @@ async function mainR48() {
     const auditDeniedResponse = r48Scenario === 'audit-denied'
       ? page.waitForResponse((response) => response.url().includes('/api/operations/audit')) : null;
     const ackResponse = page.waitForResponse((response) =>
-      response.url().includes(':acknowledge') && response.request().method() === 'POST');
-    await card.getByRole('button', {name: '확인'}).click();
+      response.url().includes(':acknowledge') && response.request().method() === 'POST',
+    {timeout: 10000});
+    markR48Stage('ACK_CLICK');
+    await ackButton.click({timeout: 10000});
+    markR48Stage('ACK_RESPONSE_WAIT');
     const ack = await ackResponse;
     if (r48Scenario === 'permission-denied') {
+      markR48Stage('ACK_DENIAL_CHECK');
       assert.equal(ack.status(), 403, 'R48_PERMISSION_NOT_DENIED');
       assert.equal((await ack.json())?.error?.code, 'PERMISSION_DENIED');
-      await card.getByText(/확인 미검증/).waitFor();
+      markR48Stage('ACK_BLOCKED_UI_WAIT');
+      await card.getByText(/확인 미검증/).waitFor({timeout: 10000});
       assert.equal(requests.filter(({url}) => url.pathname.includes(':acknowledge')).length, 1);
       console.log('R48_RESULT {"scenario":"permission-denied","blocked":true,"postCount":1}');
+      markR48Stage('ACK_CONTEXT_CLOSE');
       await context.close();
+      markR48Stage('DONE');
       return;
     }
     assert.equal(ack.status(), 200, 'R48_ACK_REJECTED');
@@ -2832,6 +2843,8 @@ if (r48DiagnosticSelfTest) {
   assert.equal(safeR48FailureCode({message: 'private-token R48_REDIRECT_HEADER_REFERRER'}),
     'UNCLASSIFIED');
   assert.equal(safeR48Stage('REDIRECT_HEADERS'), 'REDIRECT_HEADERS');
+  assert.equal(safeR48Stage('ACK_BUTTON_WAIT'), 'ACK_BUTTON_WAIT');
+  assert.equal(safeR48Stage('ACK_RESPONSE_WAIT'), 'ACK_RESPONSE_WAIT');
   assert.equal(safeR48Stage('private-token'), 'BOOTSTRAP');
   console.log('R48_DIAGNOSTIC_SELF_TEST_PASS');
 } else if (r47SelfTest) {
