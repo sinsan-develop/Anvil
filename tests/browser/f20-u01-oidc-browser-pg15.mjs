@@ -105,6 +105,8 @@ const r44AssertionCodes = new Set([
   'R44_HEALTH_DASHBOARD_FAILED', 'R44_R43_ORDER_CHANGED',
   'R44_HEALTH_DETAIL_MISMATCH', 'R44_PRE_REVOKE_ACTION_MISMATCH',
   'R44_REVOKED_DETAIL_RETAINED', 'R27_REVOKED_REFRESH_MISMATCH',
+  'R45_QUEUE_SEED_FAILED', 'R45_QUEUE_DASHBOARD_FAILED',
+  'R45_QUEUE_DETAIL_MISMATCH', 'R45_REVOKED_DETAIL_RETAINED',
   'R27_REVOKED_STALE_SETUP_MISSING',
 ]);
 
@@ -252,6 +254,36 @@ function validateR44HealthDetail(snapshot, facts, origin) {
   return {healthDetailEvidence: {storedAlert: true, samePageFragment: true,
     apiDomMatch: true, preAuthCleared: true, revokedCleared: true,
     databasePreserved: true, r43OrderPreserved: true}};
+}
+
+function validateR45QueueDetail(snapshot, facts, origin) {
+  const rows = snapshot?.quarantine;
+  const alerts = snapshot?.alerts?.filter(row => row.code === 'QUEUE_JOB_QUARANTINED'
+    && row.source === 'orchestrator');
+  const alert = alerts?.[0];
+  const expected = alert && [
+    `코드 · ${alert.code}`, `출처 · ${alert.source}`, `원인 · ${alert.cause}`,
+    `영향 · ${alert.impact}`, `발생 시각 · ${alert.observed_at}`,
+    `증거 hash · ${alert.evidence_hash}`,
+  ];
+  let url;
+  try { url = new URL(facts.url); } catch { /* Invalid navigation fails below. */ }
+  assert.ok(rows?.length === 1 && rows[0].job_id === 'r45-qa-job'
+    && rows[0].attempts === 2 && rows[0].reason === 'EXHAUSTED'
+    && alerts?.length === 1 && alert.related_entity_id === rows[0].job_id
+    && alert.status === 'open' && alert.deep_link === '/operations/queue'
+    && snapshot.health?.database?.state === 'HEALTHY'
+    && snapshot.health?.backend?.state === 'LATE'
+    && facts.status === 'LATE' && facts.count === '격리 작업 1건 · 현재 범위'
+    && facts.href === '#health-detail-queue' && facts.id === 'health-detail-queue'
+    && facts.linkCount === 1 && facts.detailCount === 1
+    && facts.paragraphs?.length === expected.length
+    && facts.paragraphs.every((text, index) => text === expected[index])
+    && url?.origin === origin && url.pathname === '/' && url.search === ''
+    && url.hash === '#health-detail-queue', 'R45_QUEUE_DETAIL_MISMATCH');
+  return {queueDetailEvidence: {storedAlert: true, samePageFragment: true,
+    apiDomMatch: true, countOne: true, preAuthCleared: true,
+    revokedCleared: true, r44Preserved: true}};
 }
 
 function validateR44PreRevokeActions(snapshot, rowCount) {
@@ -1861,6 +1893,10 @@ async function main() {
     });
     const preAuthHealthLinks = await page.locator('section[aria-labelledby="health-heading"] a[href^="#health-detail-"]').count();
     assert.equal(preAuthHealthLinks, 0, 'R44_PREAUTH_DETAIL_RETAINED');
+    const preAuthQueue = page.locator('section[aria-labelledby="health-heading"] article.status-card')
+      .filter({hasText: 'Queue'});
+    assert.equal(await preAuthQueue.getByText('격리 작업', {exact: false}).count(),
+      0, 'R45_QUEUE_DETAIL_MISMATCH');
     if (evidenceDir) {
       await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
       markStage('EVIDENCE_PRE_AUTH');
@@ -2121,6 +2157,31 @@ async function main() {
       detailCount: await healthCard.locator('[id^="health-detail-"]').count(),
       paragraphs: await healthTarget.locator('p').allInnerTexts(), url: page.url(),
     }, apiUrl);
+    validateR44PreRevokeActions(healthSnapshot, await nextCard.locator('li').count());
+
+    const queueSeed = await issuerClient.post(new URL('/r6-control/seed-quarantine', issuerUrl).href, {
+      headers: { 'x-r6-control-token': controlToken },
+    });
+    assert.equal(queueSeed.status(), 200, 'R45_QUEUE_SEED_FAILED');
+    const queueDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    assert.equal(queueDashboard.status, 200, 'R45_QUEUE_DASHBOARD_FAILED');
+    const queueSnapshot = JSON.parse(queueDashboard.text).data;
+    await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
+    const queueCard = page.locator('section[aria-labelledby="health-heading"] article.status-card')
+      .filter({hasText: 'Queue'});
+    const queueLink = queueCard.locator('a[href="#health-detail-queue"]');
+    await queueLink.waitFor();
+    const queueHref = await queueLink.getAttribute('href');
+    await queueLink.click();
+    const queueTarget = queueCard.locator('#health-detail-queue');
+    const queueDetailEvidence = validateR45QueueDetail(queueSnapshot, {
+      status: await queueCard.locator('[aria-live] > p').first().innerText(),
+      count: await queueCard.getByText('격리 작업 1건 · 현재 범위').innerText(),
+      href: queueHref, id: await queueTarget.getAttribute('id'),
+      linkCount: await queueCard.locator('a[href^="#health-detail-"]').count(),
+      detailCount: await queueCard.locator('[id^="health-detail-"]').count(),
+      paragraphs: await queueTarget.locator('p').allInnerTexts(), url: page.url(),
+    }, apiUrl);
 
     markStage('REVOKE_CONTROL');
     const released = await issuerClient.post(new URL('/r6-control/revoke', issuerUrl).href, {
@@ -2133,7 +2194,6 @@ async function main() {
     markStage('REVOKE_DASHBOARD_FETCH');
     const revokedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
     assert.equal(revokedDashboard.status, 403, 'R27_REVOKED_REFRESH_MISMATCH');
-    validateR44PreRevokeActions(healthSnapshot, await nextCard.locator('li').count());
     await verifyObservationTime(page, clientRaceEvidence.manualRefreshObservedAt);
     markStage('REVOKE_FETCH');
     manualPhase('REVOKED_CLICK_BEGIN');
@@ -2189,6 +2249,8 @@ async function main() {
       0, 'R44_REVOKED_DETAIL_RETAINED');
     assert.equal(await page.locator('section[aria-labelledby="health-heading"] [id^="health-detail-"]').count(),
       0, 'R44_REVOKED_DETAIL_RETAINED');
+    assert.equal(await queueCard.getByText('격리 작업 1건 · 현재 범위').count(),
+      0, 'R45_REVOKED_DETAIL_RETAINED');
     const revokedAlertText = await card.locator('[aria-live]').innerText();
     const revokedActionText = await nextCard.locator('[aria-live]').innerText();
     const revokedAccessible = validateRevokedAccessibility({
@@ -2251,6 +2313,7 @@ async function main() {
       detailEvidence: {...storedDetailEvidence.detailEvidence,
         ...preAuthDetailEvidence, revokedCleared: revokedDetailCleared.preAuthCleared},
       ...healthDetailEvidence,
+      ...queueDetailEvidence,
       ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
       failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
       quotaRefreshEvidence, quotaRecoveryEvidence,
@@ -2597,6 +2660,27 @@ if (auditSelfTest) {
     {...healthFacts, paragraphs: [...healthFacts.paragraphs.slice(0, 5), '증거 hash · wrong']},
     {...healthFacts, linkCount: 2}]) {
     assert.throws(() => validateR44HealthDetail(healthSnapshot, bad, apiUrl), /R44_HEALTH_DETAIL_MISMATCH/);
+  }
+  const queueAlert = {code: 'QUEUE_JOB_QUARANTINED', source: 'orchestrator',
+    related_entity_id: 'r45-qa-job', status: 'open', deep_link: '/operations/queue',
+    cause: 'Queue job reached quarantine', impact: 'Run cannot advance automatically',
+    observed_at: '2026-09-28T00:00:00+00:00', evidence_hash: `sha256:${'b'.repeat(64)}`};
+  const queueSnapshot = {quarantine: [{job_id: 'r45-qa-job', attempts: 2,
+    reason: 'EXHAUSTED'}], alerts: [queueAlert], health: {database: {state: 'HEALTHY'},
+      backend: {state: 'LATE'}}};
+  const queueFacts = {status: 'LATE', count: '격리 작업 1건 · 현재 범위',
+    href: '#health-detail-queue', id: 'health-detail-queue', linkCount: 1,
+    detailCount: 1, paragraphs: [
+      `코드 · ${queueAlert.code}`, `출처 · ${queueAlert.source}`, `원인 · ${queueAlert.cause}`,
+      `영향 · ${queueAlert.impact}`, `발생 시각 · ${queueAlert.observed_at}`,
+      `증거 hash · ${queueAlert.evidence_hash}`], url: apiUrl + '/#health-detail-queue'};
+  assert.equal(validateR45QueueDetail(queueSnapshot, queueFacts, apiUrl)
+    .queueDetailEvidence.apiDomMatch, true);
+  for (const bad of [{...queueFacts, href: '/operations/queue'},
+    {...queueFacts, count: '격리 작업 2건 · 현재 범위'},
+    {...queueFacts, paragraphs: [...queueFacts.paragraphs.slice(0, 5), '증거 hash · wrong']}]) {
+    assert.throws(() => validateR45QueueDetail(queueSnapshot, bad, apiUrl),
+      /R45_QUEUE_DETAIL_MISMATCH/);
   }
   for (const bad of [
     { ...elapsedSnapshot, alerts: [...elapsedSnapshot.alerts, ...elapsedSnapshot.alerts] },

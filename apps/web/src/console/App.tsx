@@ -23,7 +23,7 @@ type RunSummary = {observedAt: string; observedTotal: number;
 type NextActionsState = {status: 'LOADED'; actions: NextActionRow[]} | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type DashboardQueueState = {status: 'LOADED'; observed: number; observedAt: string | null; sourceGap: boolean;
   health: Record<DashboardSignalComponent, DashboardSignalState>; database: DashboardSignalState;
-  nextActions: NextActionsState; runSummary: RunSummary | null}
+  nextActions: NextActionsState; runSummary: RunSummary | null; quarantined: number | null}
   | {status: 'LOADING' | 'RECONNECTING' | 'UNAVAILABLE' | 'BLOCKED' | 'QUOTA' | 'CANCELLED'};
 type CriticalAlert = {alert_id: string; code: string; source: string; observed_at: string;
   owner_id: string | null; cause: string; impact: string; next_action: string;
@@ -52,6 +52,7 @@ const DASHBOARD_HEALTH_FIELDS = ['state', 'observed_at', 'stale_after_seconds',
 const DASHBOARD_QUEUE_FIELDS = ['job_id', 'run_id', 'state', 'available_at', 'attempts',
   'max_attempts', 'lease_epoch', 'lease_expires_at', 'dependency_ids', 'conflict_keys',
   'priority', 'required_capability', 'input_verified', 'backoff_until'];
+const DASHBOARD_QUARANTINE_FIELDS = ['job_id', 'attempts', 'reason', 'quarantined_at'];
 const DASHBOARD_GAPS = new Set([...DASHBOARD_HEALTH_COMPONENTS, 'deployment']);
 const DASHBOARD_SIGNAL_COMPONENTS: DashboardSignalComponent[] = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
 const NEXT_ACTION_FIELDS = ['priority', 'reason', 'target', 'action', 'deep_link'];
@@ -106,6 +107,48 @@ function validDashboardQueueRow(value: unknown): boolean {
     && uniqueNames(value.dependency_ids) && uniqueNames(value.conflict_keys)
     && value.priority === 'UNKNOWN' && value.required_capability === 'UNKNOWN'
     && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
+}
+
+function dashboardQuarantine(value: unknown, snapshotTime: string, gaps: string[]): Record<string, unknown>[] | null {
+  if (gaps.includes('queue') || Date.parse(snapshotTime) > Date.now()
+    || !Array.isArray(value) || value.length > 100) return null;
+  const rows = value as unknown[];
+  if (!rows.every((row) => record(row) && exactFields(row, DASHBOARD_QUARANTINE_FIELDS)
+    && safeAlertText(row.job_id) && nonnegativeInteger(row.attempts) && row.attempts > 0
+    && typeof row.reason === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/.test(row.reason)
+    && validObservedAt(row.quarantined_at)
+    && Date.parse(row.quarantined_at) <= Date.parse(snapshotTime)
+    && Date.parse(row.quarantined_at) <= Date.now())) return null;
+  const validRows = rows as Record<string, unknown>[];
+  return new Set(validRows.map((row) => row.job_id)).size === validRows.length ? validRows : null;
+}
+
+async function dashboardQuarantineDetail(rows: Record<string, unknown>[], alerts: unknown[], snapshotTime: string): Promise<HealthDetail | null> {
+  const candidates = alerts.filter((item) => record(item) && item.code === 'QUEUE_JOB_QUARANTINED'
+    && item.source === 'orchestrator');
+  if (candidates.length !== 1 || !record(candidates[0])) return null;
+  const alert = candidates[0];
+  const matching = rows.filter((row) => row.job_id === alert.related_entity_id);
+  if (matching.length !== 1 || !globalThis.crypto?.subtle) return null;
+  const row = matching[0];
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(
+    `${row.job_id}:${row.attempts}:${row.quarantined_at}`));
+  const evidence = `sha256:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+  if (matching.length !== 1 || !exactFields(alert, ALERT_FIELDS)
+    || !nonempty(alert.alert_id) || !Number.isSafeInteger(alert.sequence) || (alert.sequence as number) <= 0
+    || alert.category !== 'backlog' || alert.level !== 'critical'
+    || !['open', 'acknowledged'].includes(alert.status as string)
+    || (alert.status === 'open' ? alert.owner_id !== null : !safeAlertText(alert.owner_id))
+    || alert.cause !== 'Queue job reached quarantine'
+    || alert.next_action !== 'REVIEW_QUARANTINE' || alert.deep_link !== '/operations/queue'
+    || !validObservedAt(alert.observed_at)
+    || Date.parse(alert.observed_at) < Date.parse(matching[0].quarantined_at as string)
+    || Date.parse(alert.observed_at) > Date.parse(snapshotTime)
+    || !['code', 'source', 'cause', 'impact', 'evidence_hash'].every((key) => safeAlertText(alert[key]))
+    || alert.evidence_hash !== evidence) return null;
+  return {code: alert.code as string, source: alert.source as string,
+    cause: alert.cause as string, impact: alert.impact as string,
+    observedAt: alert.observed_at as string, evidenceHash: alert.evidence_hash as string};
 }
 
 function dashboardNextActions(value: unknown, alerts: unknown[], snapshotTime: string,
@@ -249,7 +292,7 @@ export function DashboardOperatingCards({value}: {value: DashboardQueueState}) {
   </section>;
 }
 
-function classifyDashboardQueue(payload: unknown): DashboardQueueState {
+async function classifyDashboardQueue(payload: unknown): Promise<DashboardQueueState> {
   if (!record(payload) || !exactFields(payload, ['data', 'request_id'])
     || !nonempty(payload.request_id) || !record(payload.data)
     || !exactFields(payload.data, DASHBOARD_SNAPSHOT_FIELDS)) return DASHBOARD_QUEUE_UNAVAILABLE;
@@ -275,7 +318,13 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
   DASHBOARD_SIGNAL_COMPONENTS.forEach((component) => {
     if (details[component]) health[component].detail = details[component];
   });
+  const quarantine = dashboardQuarantine(snapshot.quarantine, snapshot.observed_at, snapshot.source_gaps);
+  if (quarantine && quarantine.length > 0) {
+    health.queue = {status: 'LATE', lastCheck: snapshot.observed_at, errorCount: null,
+      detail: await dashboardQuarantineDetail(quarantine, snapshot.alerts as unknown[], snapshot.observed_at)};
+  }
   return {status: 'LOADED', observed: snapshot.queue.length,
+    quarantined: quarantine?.length ?? null,
     runSummary: Date.parse(snapshot.observed_at) <= Date.now() ? dashboardRunSummary(snapshot.run_summary) : null,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
@@ -330,7 +379,7 @@ export async function loadDashboardQueue(signal: AbortSignal, request: typeof fe
         ? DASHBOARD_QUEUE_BLOCKED : response.status === 429
           ? DASHBOARD_QUEUE_QUOTA : DASHBOARD_QUEUE_UNAVAILABLE;
     }
-    return classifyDashboardQueue(await response.json());
+    return await classifyDashboardQueue(await response.json());
   } catch {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
@@ -350,6 +399,9 @@ export function QueueHealthCard({value}: {value: DashboardQueueState}) {
   return <DashboardSignalCard label="Queue" component="queue" value={value}>
       {value.status === 'LOADED' ? <>
         <p>범위 내 관측 {value.observed}건</p>
+        {value.quarantined !== null && value.quarantined > 0
+          ? <><p>격리 작업 {value.quarantined}건 · 현재 범위</p>
+            <p>관측 시각 · {value.observedAt}</p></> : null}
         <p>{value.sourceGap ? 'Queue source 연결 정보가 부족합니다.'
           : 'Queue source의 완전성은 확인되지 않았습니다.'}</p>
       </> : <p>{value.status === 'LOADING' ? 'Queue 조회 중입니다.'

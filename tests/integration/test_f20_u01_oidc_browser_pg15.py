@@ -33,6 +33,7 @@ from packages.leases.service import LeaseService
 from packages.observability.models import HealthSignal
 from packages.observability.projection import OperationsSources
 from packages.observability.service import OperationsService
+from packages.queue.models import QuarantinedJob
 from packages.persistence.oidc_principal_directory import (
     oidc_subject_bindings, roles, user_roles, users,
 )
@@ -101,6 +102,8 @@ _R44_SAFE_ASSERTIONS = frozenset({
     "R44_HEALTH_DETAIL_MISMATCH", "R44_PRE_REVOKE_ACTION_MISMATCH",
     "R44_REVOKED_DETAIL_RETAINED", "R27_REVOKED_REFRESH_MISMATCH",
     "R27_REVOKED_STALE_SETUP_MISSING",
+    "R45_QUEUE_SEED_FAILED", "R45_QUEUE_DASHBOARD_FAILED",
+    "R45_QUEUE_DETAIL_MISMATCH", "R45_REVOKED_DETAIL_RETAINED",
 })
 
 
@@ -478,7 +481,7 @@ def _r28_manual_candidate(evidence: dict, excluded_keys: set[str]) -> dict:
                "reconnectEvidence", "reconnectCancelEvidence",
                "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence",
                "runCardsEvidence", "healthAlertEvidence", "detailEvidence",
-               "healthDetailEvidence"}}
+               "healthDetailEvidence", "queueDetailEvidence"}}
 
 
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
@@ -699,6 +702,59 @@ def _r44_seed_health_order(alerts: list[dict], original: dict) -> dict:
     return alerts[1]
 
 
+class _R45QueueSource:
+    def __init__(self, row: QuarantinedJob):
+        self._row = row
+
+    def quarantine(self):
+        return (self._row,)
+
+
+def _r45_seed_quarantine_order(alerts: list[dict], previous: list[dict], row: QuarantinedJob) -> dict:
+    assert (len(alerts) == len(previous) + 1 and alerts[:-1] == previous
+            and alerts[-1]["code"] == "QUEUE_JOB_QUARANTINED"
+            and alerts[-1]["source"] == "orchestrator"
+            and alerts[-1]["related_entity_id"] == row.job_id
+            and alerts[-1]["status"] == "open"), "R45_QUEUE_ALERT_SEED_ORDER_INVALID"
+    return alerts[-1]
+
+
+def _r45_queue_detail_evidence(evidence: dict) -> dict:
+    expected = {"storedAlert": True, "samePageFragment": True, "apiDomMatch": True,
+                "countOne": True, "preAuthCleared": True, "revokedCleared": True,
+                "r44Preserved": True}
+    actual = evidence.get("queueDetailEvidence")
+    assert evidence.keys() == {"queueDetailEvidence"} and type(actual) is dict, "R45_BROWSER_EVIDENCE_MISMATCH"
+    assert actual.keys() == expected.keys() and all(type(actual[key]) is bool and actual[key]
+        for key in expected), "R45_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def test_r45_queue_detail_evidence_rejects_missing_or_untyped_fields():
+    values = {"storedAlert": True, "samePageFragment": True, "apiDomMatch": True,
+              "countOne": True, "preAuthCleared": True, "revokedCleared": True,
+              "r44Preserved": True}
+    assert _r45_queue_detail_evidence({"queueDetailEvidence": values}) == {
+        "queueDetailEvidence": values}
+    for key in values:
+        with pytest.raises(AssertionError, match="R45_BROWSER_EVIDENCE_MISMATCH"):
+            _r45_queue_detail_evidence({"queueDetailEvidence": {**values, key: 1}})
+        with pytest.raises(AssertionError, match="R45_BROWSER_EVIDENCE_MISMATCH"):
+            _r45_queue_detail_evidence({"queueDetailEvidence": {**values, key: False}})
+
+
+def test_r45_quarantine_seed_preserves_r44_alert_order():
+    row = QuarantinedJob("r45-qa-job", 2, "EXHAUSTED", datetime(2026, 9, 28, tzinfo=timezone.utc))
+    previous = [{"code": "WORKER_LEASE_EXPIRED"}, {"code": "HEALTH_SIGNAL_LATE"}]
+    quarantine = {"code": "QUEUE_JOB_QUARANTINED", "source": "orchestrator",
+                  "related_entity_id": row.job_id, "status": "open"}
+    assert _r45_seed_quarantine_order([*previous, quarantine], previous, row) == quarantine
+    for alerts in ([quarantine, *previous], [*previous, quarantine, quarantine], previous,
+                   [*previous, {**quarantine, "status": "resolved"}]):
+        with pytest.raises(AssertionError, match="R45_QUEUE_ALERT_SEED_ORDER_INVALID"):
+            _r45_seed_quarantine_order(alerts, previous, row)
+
+
 def _r44_health_detail_evidence(evidence: dict) -> dict:
     expected = {"storedAlert": True, "samePageFragment": True, "apiDomMatch": True,
                 "preAuthCleared": True, "revokedCleared": True, "databasePreserved": True,
@@ -870,6 +926,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
     seeded = False
     seeded_alerts = []
     seeded_health_alerts = []
+    seeded_quarantine_alerts = []
     revoke_count = [0]
     control_token = secrets.token_urlsafe(32)
     try:
@@ -962,6 +1019,26 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             snapshot = owner.alerts()
             _r44_seed_health_order(snapshot, seeded_alerts[0][0])
             seeded_health_alerts.append(snapshot)
+            return {"status": "seeded"}
+
+        @issuer_app.post("/r6-control/seed-quarantine")
+        async def seed_quarantine(request: Request):
+            if not hmac.compare_digest(request.headers.get("x-r6-control-token", ""), control_token):
+                return JSONResponse({"error": "forbidden"}, status_code=403)
+            if not seeded_health_alerts or seeded_quarantine_alerts or revoke_count[0] != 0:
+                return JSONResponse({"error": "wrong_order"}, status_code=409)
+            row = QuarantinedJob("r45-qa-job", 2, "EXHAUSTED", at - timedelta(minutes=1))
+            owner._sources = OperationsSources(queue=_R45QueueSource(row), leases=leases,
+                lease_run_ids=("r6-run",), health_signals=(
+                    _r35_qa_health_signal(at), _r44_qa_health_signal(at),
+                    HealthSignal("queue", "HEALTHY", at - timedelta(seconds=10),
+                        timedelta(minutes=5), 0,
+                        "sha256:" + hashlib.sha256(b"R45_QA_QUEUE_SIGNAL").hexdigest(),
+                        "/operations/queue")))
+            assert owner.detect() == 1, "R45_QUEUE_ALERT_SEED_FAILED"
+            snapshot = owner.alerts()
+            _r45_seed_quarantine_order(snapshot, seeded_health_alerts[0], row)
+            seeded_quarantine_alerts.append(snapshot)
             return {"status": "seeded"}
 
         listeners.append(_listener(issuer_app, issuer_cert, issuer_key))
@@ -1115,6 +1192,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                                            if key == "detailEvidence"})
         r44_evidence = _r44_health_detail_evidence({key: value for key, value in evidence.items()
                                                   if key == "healthDetailEvidence"})
+        r45_evidence = _r45_queue_detail_evidence({key: value for key, value in evidence.items()
+                                                 if key == "queueDetailEvidence"})
         r34_evidence = _r34_run_evidence({key: value for key, value in evidence.items()
                                         if key == "runCardsEvidence"})
         r35_evidence = _r35_health_alert_evidence({key: value for key, value in evidence.items()
@@ -1123,11 +1202,13 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
                    | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)
-                   | set(r43_evidence) | set(r44_evidence) | set(r34_evidence) | set(r35_evidence)}
+                   | set(r43_evidence) | set(r44_evidence) | set(r45_evidence)
+                   | set(r34_evidence) | set(r35_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
-        assert len(seeded_health_alerts) == 1 and owner.alerts() == seeded_health_alerts[0], "R6_GET_MUTATED_AUDIT"
+        assert (len(seeded_health_alerts) == len(seeded_quarantine_alerts) == 1
+                and owner.alerts() == seeded_quarantine_alerts[0]), "R6_GET_MUTATED_AUDIT"
         with engine.connect() as db:
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_sessions)).scalar_one() == 1
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 0
