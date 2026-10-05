@@ -324,4 +324,3 @@ def collect_git(root: Path, progress: dict) -> list[str]:
         return [] if good else ["R45_CLOSE_GIT_INVALID"]
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError, UnicodeDecodeError):
         return ["R45_CLOSE_GIT_INVALID"]
-
