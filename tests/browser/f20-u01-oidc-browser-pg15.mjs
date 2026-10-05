@@ -1656,6 +1656,10 @@ async function verifyObservationTime(page, expected) {
     atomic: await observation.getAttribute('aria-atomic'), text: await observation.innerText() }, expected);
 }
 
+async function verifyRevokedObservationTime(page, queueSnapshot) {
+  return verifyObservationTime(page, queueSnapshot.observed_at);
+}
+
 function validateLoadingFacts(facts) {
   const names = ['Database', 'Queue', 'Worker', 'LLM Providers',
     'Execution Backends', 'Artifact Store'];
@@ -2323,7 +2327,7 @@ async function main() {
     markStage('REVOKE_DASHBOARD_FETCH');
     const revokedDashboard = await traceRevokedDashboardFetch(page);
     assert.equal(revokedDashboard.status, 403, 'R27_REVOKED_REFRESH_MISMATCH');
-    await verifyObservationTime(page, clientRaceEvidence.manualRefreshObservedAt);
+    await verifyRevokedObservationTime(page, queueSnapshot);
     markStage('REVOKE_FETCH');
     manualPhase('REVOKED_CLICK_BEGIN');
     let deniedRequestCount = 0;
@@ -2807,6 +2811,20 @@ if (auditSelfTest) {
       `증거 hash · ${queueAlert.evidence_hash}`], url: apiUrl + '/#health-detail-queue'};
   assert.equal(validateR45QueueDetail(queueSnapshot, queueFacts, apiUrl)
     .queueDetailEvidence.apiDomMatch, true);
+  assert.notEqual(queueSnapshot.observed_at, manualFacts.observedAt,
+    'R46_QUEUE_SNAPSHOT_MUST_BE_NEWER_THAN_MANUAL_REFRESH');
+  const observedLabel = `대시보드 관측 시각 · ${queueSnapshot.observed_at}`;
+  const observationStub = {
+    getByText: (label, options) => {
+      assert.equal(label, observedLabel, 'R46_REVOKED_EXPECTED_OLD_OBSERVATION');
+      assert.deepEqual(options, {exact: true});
+      return {waitFor: async () => {}};
+    },
+    getAttribute: async (name) => name === 'aria-live' ? 'polite' : 'true',
+    innerText: async () => observedLabel,
+  };
+  assert.deepEqual(await verifyRevokedObservationTime({locator: () => observationStub}, queueSnapshot),
+    {observationTimeAccessible: true});
   for (const bad of [{...queueFacts, href: '/operations/queue'},
     {...queueFacts, count: '격리 작업 2건 · 현재 범위'},
     {...queueFacts, paragraphs: [...queueFacts.paragraphs.slice(0, 5), '증거 hash · wrong']}]) {
