@@ -9,6 +9,7 @@ import { basename, isAbsolute, join, resolve } from 'node:path';
 const require = createRequire(import.meta.url);
 const auditSelfTest = process.argv.includes('--audit-self-test');
 const r47SelfTest = process.argv.includes('--r47-self-test');
+const r48DiagnosticSelfTest = process.argv.includes('--r48-diagnostic-self-test');
 const r47Mode = process.env.ANVIL_F20_R47_MODE === '1';
 const r48Mode = process.env.ANVIL_F20_R48_MODE === '1';
 const r48Scenario = process.env.ANVIL_F20_R48_SCENARIO || 'normal';
@@ -121,6 +122,32 @@ function safeR44FailureCode(error) {
   return code && r44AssertionCodes.has(code) ? code : 'UNCLASSIFIED';
 }
 
+const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
+  'PREAUTH', 'POPUP_OPEN', 'CALLBACK', 'REDIRECT_GET', 'REDIRECT_HEADERS',
+  'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'ACK', 'AUDIT', 'DONE']);
+const r48AssertionCodes = new Set([
+  'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
+  'R48_REDIRECT_GET_MISSING', 'R48_REDIRECT_HEADER_REFERRER',
+  'R48_REDIRECT_HEADER_CACHE', 'R48_REDIRECT_URL_NOT_SCRUBBED',
+  'R48_HISTORY_STATE_LEAK', 'R48_DOM_SECRET_LEAK', 'R48_REFERER_LEAK',
+  'R48_POPUP_NOT_CLOSED', 'R48_OPEN_ALERT_MISSING',
+  'R48_ORIGIN_NOT_DENIED', 'R48_CSRF_NOT_DENIED',
+  'R48_ORIGIN_WRONG_DENIAL', 'R48_CSRF_WRONG_DENIAL',
+  'R48_PERMISSION_NOT_DENIED', 'R48_PERMISSION_DENIAL_CODE',
+  'R48_ACK_REJECTED', 'R48_ACK_PAYLOAD_INVALID',
+  'R48_AUDIT_PERMISSION_NOT_DENIED', 'R48_AUDIT_DENIAL_CODE',
+  'R48_ACK_RETRANSMITTED', 'R48_AUDIT_PAGE_NOT_INTERCEPTED',
+  'R48_FALSE_SUCCESS', 'R48_BROWSER_API_NOT_SAME_ORIGIN',
+]);
+let r48Stage = 'BOOTSTRAP';
+function safeR48Stage(value) { return r48Stages.has(value) ? value : 'BOOTSTRAP'; }
+function markR48Stage(value) { r48Stage = safeR48Stage(value); }
+function safeR48FailureCode(error) {
+  const code = typeof error?.message === 'string'
+    ? /^(R48_[A-Z_]+)(?:\b|$)/.exec(error.message)?.[1] : null;
+  return code && r48AssertionCodes.has(code) ? code : 'UNCLASSIFIED';
+}
+
 function safeFailureName(error) {
   return ['AssertionError', 'Error', 'TypeError', 'TimeoutError', 'SyntaxError',
     'ReferenceError', 'RangeError', 'AggregateError', 'TargetClosedError'].includes(error?.name)
@@ -128,6 +155,13 @@ function safeFailureName(error) {
 }
 
 function emitSafeFailure(error) {
+  if (r48Mode) {
+    writeSync(2, `R48_SAFE_FAILURE scenario=${['redirect', 'permission-denied',
+      'audit-denied', 'audit-unreachable', 'normal'].includes(r48Scenario)
+      ? r48Scenario : 'invalid'} stage=${safeR48Stage(r48Stage)} `
+      + `code=${safeR48FailureCode(error)} name=${safeFailureName(error)}\n`);
+    return;
+  }
   const safeStage = progressStages.has(stage) ? stage : 'BOOTSTRAP';
   writeSync(2, `R6_SAFE_FAILURE stage=${safeStage} code=${safeR44FailureCode(error)} `
     + `name=${safeFailureName(error)}\n`);
@@ -2598,9 +2632,11 @@ async function mainR47() {
 async function mainR48() {
   assert.ok(['redirect', 'permission-denied', 'audit-denied', 'audit-unreachable',
     'normal'].includes(r48Scenario), 'R48_SCENARIO_INVALID');
+  markR48Stage('BROWSER_LAUNCH');
   const {chromium} = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
   const browser = await chromium.launch({headless: true, args: ['--no-sandbox']});
   try {
+    markR48Stage('BROWSER_CONTEXT');
     const context = await browser.newContext({ignoreHTTPSErrors: true});
     if (r48Scenario === 'redirect') await context.addInitScript(() => {
       if (window.opener) window.close = () => { window.__r48CloseRequested = true; };
@@ -2621,24 +2657,32 @@ async function mainR48() {
       if (url.origin === apiUrl && url.pathname === '/' && url.searchParams.has('code'))
         redirectResponse = response;
     });
+    markR48Stage('PREAUTH');
     await page.goto(apiUrl + '/');
     const card = page.locator('section[aria-labelledby="critical-alerts-heading"]');
     await card.getByText(alertCode, {exact: true}).waitFor({state: 'hidden'});
+    markR48Stage('POPUP_OPEN');
     const popupOpened = context.waitForEvent('page');
     const callbackResponse = page.waitForResponse((response) =>
       response.url().endsWith('/auth/oidc/callback') && response.request().method() === 'POST');
     await page.getByRole('button', {name: '재인증'}).click();
     const popup = await popupOpened;
     await page.getByRole('button', {name: '재인증'}).waitFor({state: 'hidden'});
+    markR48Stage('CALLBACK');
     const callback = await callbackResponse;
     assert.equal(callback.status(), 200, 'R48_CALLBACK_REJECTED');
     const csrf = (await callback.json()).data.csrf_token;
     assert.ok(typeof csrf === 'string' && csrf.length > 0, 'R48_CSRF_MISSING');
     if (r48Scenario === 'redirect') {
+      markR48Stage('REDIRECT_GET');
       await popup.waitForFunction(() => window.__r48CloseRequested === true);
       assert.ok(redirectRequest?.code && redirectRequest?.state, 'R48_REDIRECT_GET_MISSING');
-      assert.equal(redirectResponse?.headers()['referrer-policy'], 'no-referrer');
-      assert.equal(redirectResponse?.headers()['cache-control'], 'no-store');
+      markR48Stage('REDIRECT_HEADERS');
+      assert.equal(redirectResponse?.headers()['referrer-policy'], 'no-referrer',
+        'R48_REDIRECT_HEADER_REFERRER');
+      assert.equal(redirectResponse?.headers()['cache-control'], 'no-store',
+        'R48_REDIRECT_HEADER_CACHE');
+      markR48Stage('REDIRECT_SCRUB');
       const residue = await popup.evaluate(({code, state}) => {
         const html = document.documentElement.outerHTML;
         return {url: location.href, historyState: history.state,
@@ -2647,17 +2691,20 @@ async function mainR48() {
       assert.equal(residue.url, apiUrl + '/', 'R48_REDIRECT_URL_NOT_SCRUBBED');
       assert.equal(residue.historyState, null, 'R48_HISTORY_STATE_LEAK');
       assert.equal(residue.domLeak, false, 'R48_DOM_SECRET_LEAK');
+      markR48Stage('REDIRECT_REFERER');
       const followup = popup.waitForRequest((request) =>
         new URL(request.url()).pathname === '/api/health/ready');
       await popup.evaluate(() => fetch('/api/health/ready'));
       assert.equal((await followup).headers().referer, undefined, 'R48_REFERER_LEAK');
       await popup.close();
+      markR48Stage('DONE');
       console.log('R48_RESULT {"scenario":"redirect","scrubbed":true,"headersSafe":true,"refererSafe":true}');
       await context.close();
       return;
     }
     if (!popup.isClosed()) await popup.waitForEvent('close', {timeout: 5000});
     assert.equal(popup.isClosed(), true, 'R48_POPUP_NOT_CLOSED');
+    markR48Stage('ACK');
     await card.getByRole('button', {name: '확인'}).waitFor();
     if (r48Scenario === 'normal') {
       const alertRead = await context.request.get(apiUrl + '/api/operations/alerts');
@@ -2704,7 +2751,8 @@ async function mainR48() {
     assert.equal(ack.status(), 200, 'R48_ACK_REJECTED');
     const payload = (await ack.json()).data;
     assert.ok(Number.isSafeInteger(payload.ack_sequence) && payload.ack_sequence > 1
-      && /^ack:[A-Za-z0-9_-]+$/.test(payload.receipt));
+      && /^ack:[A-Za-z0-9_-]+$/.test(payload.receipt), 'R48_ACK_PAYLOAD_INVALID');
+    markR48Stage('AUDIT');
     if (r48Scenario === 'audit-denied' || r48Scenario === 'audit-unreachable') {
       if (auditDeniedResponse) {
         const denied = await auditDeniedResponse;
@@ -2739,13 +2787,24 @@ async function mainR48() {
     console.log(`R48_RESULT ${JSON.stringify({scenario: 'normal', ackSequence: payload.ack_sequence,
       popupClosed: true, auditConfirmed: true, postCount: 1,
       csrfOriginDenied: true})}`);
+    markR48Stage('DONE');
     await context.close();
   } finally {
     await browser.close();
   }
 }
 
-if (r47SelfTest) {
+if (r48DiagnosticSelfTest) {
+  assert.equal(safeR48FailureCode({message: 'R48_REDIRECT_HEADER_REFERRER private-code'}),
+    'R48_REDIRECT_HEADER_REFERRER');
+  assert.equal(safeR48FailureCode({message: 'R48_PRIVATE_CODE private-token'}),
+    'UNCLASSIFIED');
+  assert.equal(safeR48FailureCode({message: 'private-token R48_REDIRECT_HEADER_REFERRER'}),
+    'UNCLASSIFIED');
+  assert.equal(safeR48Stage('REDIRECT_HEADERS'), 'REDIRECT_HEADERS');
+  assert.equal(safeR48Stage('private-token'), 'BOOTSTRAP');
+  console.log('R48_DIAGNOSTIC_SELF_TEST_PASS');
+} else if (r47SelfTest) {
   const healthy = {database: {state: 'HEALTHY', observed_at: '2026-10-05T00:00:00+00:00',
     error_count: 0, evidence_ref: 'sha256:' + 'a'.repeat(64)},
     source_gaps: ['queue', 'worker', 'provider', 'backend', 'artifact_store']};
@@ -3459,6 +3518,7 @@ if (r47SelfTest) {
   });
   (r48Mode ? mainR48() : r47Mode ? mainR47() : main()).catch((error) => {
     emitSafeFailure(error);
+    if (r48Mode) { process.exitCode = 1; return; }
     if (currentR30Phase !== null) {
       writeSync(2, `R30_DIAG code=${safeR30FailureCode(error)}\n`);
     }

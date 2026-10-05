@@ -91,6 +91,34 @@ def _close_qa_resources(engine, listeners) -> None:
         raise errors[0]
 
 
+_R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
+    "PREAUTH", "POPUP_OPEN", "CALLBACK", "REDIRECT_GET", "REDIRECT_HEADERS",
+    "REDIRECT_SCRUB", "REDIRECT_REFERER", "ACK", "AUDIT", "DONE"})
+_R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
+    "R48_CALLBACK_REJECTED", "R48_CSRF_MISSING", "R48_REDIRECT_GET_MISSING",
+    "R48_REDIRECT_HEADER_REFERRER", "R48_REDIRECT_HEADER_CACHE",
+    "R48_REDIRECT_URL_NOT_SCRUBBED", "R48_HISTORY_STATE_LEAK",
+    "R48_DOM_SECRET_LEAK", "R48_REFERER_LEAK", "R48_POPUP_NOT_CLOSED",
+    "R48_OPEN_ALERT_MISSING", "R48_ORIGIN_NOT_DENIED", "R48_CSRF_NOT_DENIED",
+    "R48_ORIGIN_WRONG_DENIAL", "R48_CSRF_WRONG_DENIAL",
+    "R48_PERMISSION_NOT_DENIED", "R48_PERMISSION_DENIAL_CODE",
+    "R48_ACK_REJECTED", "R48_ACK_PAYLOAD_INVALID",
+    "R48_AUDIT_PERMISSION_NOT_DENIED", "R48_AUDIT_DENIAL_CODE",
+    "R48_ACK_RETRANSMITTED", "R48_AUDIT_PAGE_NOT_INTERCEPTED",
+    "R48_FALSE_SUCCESS", "R48_BROWSER_API_NOT_SAME_ORIGIN"})
+
+
+def _r48_safe_failure(stderr: str) -> str:
+    for line in stderr.splitlines():
+        match = re.fullmatch(r"R48_SAFE_FAILURE scenario=(redirect|permission-denied|"
+            r"audit-denied|audit-unreachable|normal|invalid) stage=([A-Z_]+) "
+            r"code=([A-Z0-9_]+) name=(AssertionError|Error|TypeError|TimeoutError|"
+            r"SyntaxError|ReferenceError|RangeError|AggregateError|TargetClosedError)", line)
+        if match and match.group(2) in _R48_SAFE_STAGES and match.group(3) in _R48_SAFE_CODES:
+            return line
+    return "R48_DIAGNOSTIC_UNAVAILABLE"
+
+
 def test_r48_disposable_cleanup_does_not_mask_primary_or_delete_append_only_rows():
     class BrokenEngine:
         def dispose(self):
@@ -107,6 +135,15 @@ def test_r48_disposable_cleanup_does_not_mask_primary_or_delete_append_only_rows
         source = inspect.getsource(flow)
         assert "DELETE FROM operations_audit" not in source
         assert "oidc_sessions.delete()" not in source
+
+
+def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
+    line = ("R48_SAFE_FAILURE scenario=redirect stage=REDIRECT_HEADERS "
+        "code=R48_REDIRECT_HEADER_REFERRER name=AssertionError")
+    assert _r48_safe_failure(line + "\nprivate-code=secret") == line
+    assert _r48_safe_failure(line.replace("R48_REDIRECT_HEADER_REFERRER",
+        "R48_PRIVATE_CODE")) == "R48_DIAGNOSTIC_UNAVAILABLE"
+    assert _r48_safe_failure(line + " private-token") == "R48_DIAGNOSTIC_UNAVAILABLE"
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -343,7 +380,8 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                 process_environment["ANVIL_F20_R48_SCENARIO"] = scenario
                 result = subprocess.run([os.environ.get("ANVIL_F20_R6_NODE_BIN", "node"), str(script)],
                     env=process_environment, text=True, capture_output=True, timeout=90, check=False)
-                assert result.returncode == 0, f"R48_BROWSER_{scenario.upper().replace('-', '_')}_FAILED"
+                assert result.returncode == 0, (f"R48_BROWSER_{scenario.upper().replace('-', '_')}_FAILED "
+                    + _r48_safe_failure(result.stderr))
                 lines = [line for line in result.stdout.splitlines() if line.startswith("R48_RESULT ")]
                 assert len(lines) == 1
                 evidence = json.loads(lines[0].removeprefix("R48_RESULT "))
