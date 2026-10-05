@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2102,
+  "last_sequence": 2105,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -99387,7 +99387,112 @@
     "reason": "R48_CRITICAL_ACK_EXACT_SHA_WSL_GREEN_TEMP_ZERO",
     "evidence_head": "4543875bbc82545f6f0f25344273c7c47521f8bc"
   }
+},
+{
+  "sequence": 2103,
+  "event_id": "evt_f20_2103_work_instruction_issued",
+  "event_type": "WORK_INSTRUCTION_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_CONTRACT_CONTROL_SUCCESSOR_START",
+  "subject_ref": "F-20/U01-CONTRACT-CONTROL",
+  "occurred_at": "2026-10-05T18:00:09+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "68A773CFC9E9F5213FE0B4003ECAB1A98070E4AB5A04DA8E95831C8DAE9C7CD1",
+  "details": {
+    "path": "docs/work_orders/F-20_U01_CONTRACT_CONTROL_SUCCESSOR_WORK_INSTRUCTION.md",
+    "sha256": "3823675EF63ECE4CE8CE97590441AA2124A47D768D532E5790D1EFB9C1F442A6",
+    "classification": "PMO_CONDITIONAL_CONTROL_BOOTSTRAP",
+    "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "parent_work_instruction": "docs/work_orders/F-20_U01_R48_CRITICAL_ACK_WORK_INSTRUCTION.md",
+    "revision_reason": "U01_CONTRACT_DOCUMENT_SUCCESSOR_G05_FROZEN_SCOPE_MISMATCH",
+    "product_write_scope": [],
+    "developer_exact_paths": [
+      "scripts/check_project_progress.py",
+      "scripts/f20_u01_contract_successor_overlay.py",
+      "tests/tooling/test_f20_u01_contract_successor_projection.py"
+    ],
+    "baseline_git_commit": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
+    "package_status": "READY",
+    "accepted": false
+  }
+},
+{
+  "sequence": 2104,
+  "event_id": "evt_f20_2104_worker_lease_issued",
+  "event_type": "WORKER_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_CONTRACT_CONTROL_SUCCESSOR_START",
+  "subject_ref": "F-20/U01-CONTRACT-CONTROL",
+  "occurred_at": "2026-10-05T18:00:09+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "6A9E1DE527FD4ADECFEFCE70008AC7E4F3FED0322929BE7626ABD1D89A3786B4",
+  "details": {
+    "lease_id": "worker-lease-f20-u01-contract-control-4cf54cc2258248d9b1654dfd3f2c4c6d",
+    "actor_id": "developer-primary-f20-u01-contract-control",
+    "subject_ref": "F-20/U01-CONTRACT-CONTROL",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-05T18:00:09+00:00",
+    "expires_at": "2026-10-06T18:00:09+00:00",
+    "lease_epoch": 65,
+    "fencing_token": "f20-u01-contract-control-execution-fence-epoch-65-4cf54cc2258248d9b1654dfd3f2c4c6d",
+    "execution_fencing_token": "f20-u01-contract-control-execution-fence-epoch-65-4cf54cc2258248d9b1654dfd3f2c4c6d",
+    "baseline_git_commit": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
+    "dispatch_head": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "scripts/f20_u01_contract_successor_overlay.py",
+      "tests/tooling/test_f20_u01_contract_successor_projection.py"
+    ]
+  }
+},
+{
+  "sequence": 2105,
+  "event_id": "evt_f20_2105_write_lease_issued",
+  "event_type": "WRITE_LEASE_ISSUED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "F-20",
+  "run_id": null,
+  "step_id": "F20_U01_CONTRACT_CONTROL_SUCCESSOR_START",
+  "subject_ref": "F-20/U01-CONTRACT-CONTROL",
+  "occurred_at": "2026-10-05T18:00:09+00:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "8276F3DEF2B6E7FE3BE08B34E4BC979AB26900A466E9E37DAEEEB759EF40AA8F",
+  "details": {
+    "lease_id": "write-lease-f20-u01-contract-control-bac68713410a4b378b2b44aa800676e1",
+    "actor_id": "developer-primary-f20-u01-contract-control",
+    "subject_ref": "F-20/U01-CONTRACT-CONTROL",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-05T18:00:09+00:00",
+    "expires_at": "2026-10-06T18:00:09+00:00",
+    "lease_epoch": 65,
+    "fencing_token": "f20-u01-contract-control-write-fence-epoch-65-bac68713410a4b378b2b44aa800676e1",
+    "execution_fencing_token": "f20-u01-contract-control-execution-fence-epoch-65-4cf54cc2258248d9b1654dfd3f2c4c6d",
+    "baseline_git_commit": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
+    "dispatch_head": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "scripts/f20_u01_contract_successor_overlay.py",
+      "tests/tooling/test_f20_u01_contract_successor_projection.py"
+    ],
+    "worker_lease_id": "worker-lease-f20-u01-contract-control-4cf54cc2258248d9b1654dfd3f2c4c6d",
+    "write_epoch": 65,
+    "write_fencing_token": "f20-u01-contract-control-write-fence-epoch-65-bac68713410a4b378b2b44aa800676e1",
+    "product_write_scope": []
+  }
 }
   ],
-  "last_event_id": "evt_f20_2102_worker_lease_revoked"
+  "last_event_id": "evt_f20_2105_write_lease_issued"
 }
