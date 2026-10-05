@@ -81,9 +81,9 @@ class R45ReissueProjectionTests(unittest.TestCase):
         from scripts import f20_u01_r45_reissue_overlay as overlay
 
         current = json.loads((ROOT / overlay.PROGRESS).read_bytes())
-        if current["event_sequence"] == overlay.END:
-            worker = current["worker_lease"]
-            write = current["write_lease"]
+        if current["event_sequence"] >= overlay.END:
+            worker = current["worker_lease"] or current["completed_f20_u01_r45_worker_lease"]
+            write = current["write_lease"] or current["completed_f20_u01_r45_write_lease"]
             execution_nonce = worker["execution_fencing_token"].removeprefix(
                 "f20-u01-r45-execution-fence-epoch-61-")
             write_nonce = write["write_fencing_token"].removeprefix(
