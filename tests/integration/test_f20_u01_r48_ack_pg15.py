@@ -51,10 +51,35 @@ def _isolated_dsn() -> str:
     if (os.environ.get("ANVIL_U01_R48_PG_ISOLATED") != "1"
             or url.drivername not in {"postgresql", "postgresql+psycopg"}
             or url.host not in {"127.0.0.1", "localhost"} or url.port != 5545
+            or bool(url.query)
             or not database or re.fullmatch(r"anvil_f20_r48_[0-9a-f]{7}", database) is None
             or url.username != database):
         pytest.fail("R48_PG_TARGET_NOT_ISOLATED")
-    return dsn.replace("postgresql+psycopg://", "postgresql://", 1)
+    return url.set(drivername="postgresql+psycopg").render_as_string(hide_password=False)
+
+
+def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
+    database = "anvil_f20_r48_abcdef0"
+    monkeypatch.setenv("ANVIL_U01_R48_PG_ISOLATED", "1")
+    for driver in ("postgresql", "postgresql+psycopg"):
+        monkeypatch.setenv("ANVIL_U01_R48_PG_DSN",
+            f"{driver}://{database}@127.0.0.1:5545/{database}")
+        assert _isolated_dsn() == (
+            f"postgresql+psycopg://{database}@127.0.0.1:5545/{database}")
+    for host, port, user, name in (
+            ("remote.invalid", 5545, database, database),
+            ("127.0.0.1", 5432, database, database),
+            ("127.0.0.1", 5545, "other", database),
+            ("127.0.0.1", 5545, database, "other")):
+        monkeypatch.setenv("ANVIL_U01_R48_PG_DSN",
+            f"postgresql+psycopg://{user}@{host}:{port}/{name}")
+        with pytest.raises(pytest.fail.Exception, match="R48_PG_TARGET_NOT_ISOLATED"):
+            _isolated_dsn()
+    for override in ("host=remote.invalid", "dbname=other"):
+        monkeypatch.setenv("ANVIL_U01_R48_PG_DSN",
+            f"postgresql+psycopg://{database}@127.0.0.1:5545/{database}?{override}")
+        with pytest.raises(pytest.fail.Exception, match="R48_PG_TARGET_NOT_ISOLATED"):
+            _isolated_dsn()
 
 
 def test_two_service_instances_append_exactly_one_critical_ack():

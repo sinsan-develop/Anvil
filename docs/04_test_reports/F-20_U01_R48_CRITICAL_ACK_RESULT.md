@@ -12,19 +12,23 @@
 - UI는 메모리 CSRF 없이는 ACK를 차단하고 POST 성공 응답만으로 완료를 표시하지 않는다. 기존 scoped audit GET에서 ACK sequence·alert ID·receipt·evidence hash 일치를 확인해야 완료한다. 감사 조회 실패·미도달·불일치는 실패-폐쇄하고 POST를 자동 재전송하지 않는다.
 - OIDC는 configured callback redirect를 같은 origin `/`로 바꾸고, 사용자 클릭 popup과 opener에 독립 보관한 browser_state·정확 origin·Window를 대조한다. popup 첫 실행에서 URL의 code/state를 지운 후 opener로 전달한다. state 불일치·popup 종료·중복/직접 진입·토큰 소실은 재인증 경계다. 기존 callback POST body/schema, 서버 PKCE·pending/session 계약과 공유/외부 IdP는 변경하지 않았다.
 - 독립 검토 Important1 보완: R48 전용 WSL opt-in harness에 5개 분리 시나리오를 넣었다. 첫 redirect GET의 code/state 유입을 확인하되 현재 URL/history state/DOM/후속 Referer 잔여0과 `no-referrer`·`no-store` 헤더 및 합성 HTTPS 두 listener의 `access_log=False`를 검증한다. 실제 PG role permission을 순차 변경해 ACK 403과 audit GET 403을 확인한다. 같은 인증 세션으로 잘못된 CSRF·Origin 요청의 실제 HTTP 403을 확인한다. audit 페이지 미도달은 Chromium route에서 유효하나 대상 ACK가 없는 합성 audit 응답으로 주입해 UI 미확인·POST 재전송0을 검증한다. 이 마지막 항목은 실제 audit 서버 장애를 재현한 것이 아니라 UI 실패-폐쇄 검증이다. 정상 ACK는 마지막 별도 시나리오에서만 실행한다.
+- WSL 첫 실측 실패 1회: Main이 정확 SHA `dfd50362`로 시작한 격리 PG CAS에서 `_isolated_dsn()`이 `postgresql+psycopg://`를 `postgresql://`로 바꾸어 SQLAlchemy가 미설치 psycopg2를 import하며 `ModuleNotFoundError`가 났다. 제품/API 문제가 아닌 테스트 하네스 DSN 변환 결함이다. exact18의 `tests/integration/test_f20_u01_r48_ack_pg15.py`만 수정해 두 opt-in 테스트가 공통으로 쓰는 helper가 검증된 loopback:5545/동일 사용자·DB 대상을 `postgresql+psycopg`으로 정규화하도록 했다. psycopg2 설치·제품 계약 변경은 없다. 새 SHA의 WSL 재실행 전이므로 PG CAS 및 브라우저 PASS 주장은 보류한다.
+- DSN delta 독립 검토 Important1: URL query의 `?host=remote.invalid` 또는 `?dbname=other`가 외형상 격리 대상 검사를 통과한 뒤 실제 SQLAlchemy 연결 대상을 바꿀 수 있었다. `_isolated_dsn()`에서 query가 조금이라도 있으면 fail-closed 거부하고 두 우회 입력의 음성 테스트를 추가했다. 수정 전 `DID NOT RAISE` RED, 수정 후 GREEN을 확인했다. WSL 새 SHA 실측은 여전히 미검증이다.
 - TDD RED→GREEN: service 명령 부재, HTTP route 부재, OIDC root redirect/합성 allowlist, Web ACK·popup·재인증 절편의 선행 실패를 확인하고 최소 구현 후 GREEN을 확인했다. 같은 근본 원인의 유효한 정식 실패보고는 0회다. 저장소 루트에서 한 차례 `npm run test:console`을 잘못 호출해 `Missing script`(exit 1)가 났으며, `apps/web`에서 즉시 재실행해 PASS했다. 이는 제품·테스트 실패가 아니다.
 
 ### 로컬 검증 증거
 
 | 명령/범위 | 종료 코드 | 결과 |
 | --- | ---: | --- |
-| `python -m pytest -p no:cacheprovider -q --tb=short tests/api/test_f13_operations_api.py tests/observability/test_f13_operations.py tests/api/test_registry_openapi.py tests/api/test_oidc_asgi_binding.py tests/api/test_oidc_runtime_factory.py tests/deploy/test_f18_oidc_qa_issuer.py tests/integration/test_f20_u01_r48_ack_pg15.py` | 0 | 112 passed, 3 skipped, 1 기존 `python_multipart` 경고. R48 PG 2건은 opt-in 격리 DB 부재로 skip. |
+| `python -m pytest -p no:cacheprovider -q --tb=short tests/api/test_f13_operations_api.py tests/observability/test_f13_operations.py tests/api/test_registry_openapi.py tests/api/test_oidc_asgi_binding.py tests/api/test_oidc_runtime_factory.py tests/deploy/test_f18_oidc_qa_issuer.py tests/integration/test_f20_u01_r48_ack_pg15.py` | 0 | DSN 수정 후 113 passed, 3 skipped, 1 기존 `python_multipart` 경고. R48 PG 2건은 opt-in 격리 DB 부재로 skip. |
 | `npm run test:console` (`apps/web`) | 0 | 86 passed, 0 failed. |
 | `npm run typecheck` (`apps/web`) | 0 | PASS. |
 | `npm run lint` (`apps/web`) | 0 | PASS. |
 | `npm run build` (`apps/web`) | 0 | PASS. 생성된 `apps/web/dist/`의 현재 빌드 3파일을 확인 후 정확한 디렉터리만 정리. |
 | `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` | 0 | PASS. |
 | `python -m pytest -p no:cacheprovider -q --tb=short tests/integration/test_f20_u01_r48_ack_pg15.py` | 0 | 2 skipped: WSL 격리 PG15 opt-in 미설정. 수집·구문만 확인했고 실측 PASS가 아니다. |
+| `python -m pytest -p no:cacheprovider -q --tb=short tests/integration/test_f20_u01_r48_ack_pg15.py -k isolated_dsn_keeps_psycopg3` | 1 → 0 | 수정 전 psycopg3 DSN이 bare `postgresql://`로 바뀌어 RED, 수정 후 GREEN. |
+| `python -m pytest -p no:cacheprovider -q --tb=short tests/integration/test_f20_u01_r48_ack_pg15.py` (DSN 수정 후) | 0 | 1 passed, 2 skipped. bare/명시 psycopg3 입력 정규화와 host·port·role/database 거절 확인. |
 | `git diff --check` | 0 | PASS. |
 
 변경은 exact18 중 제품·테스트 14파일과 신규 통합 테스트 1파일 및 본 결과 1파일에 한정된다. exact18의 `tests/api/test_oidc_runtime_factory.py`, `tests/integration/test_f20_u01_oidc_browser_pg15.py`는 기존 계약이 유지되어 수정하지 않았다. Main 소유 `docs/WORK_STATUS.md`의 병행 변경은 건드리지 않았고 결과 diff·commit 대상이 아니다. `.pytest_cache` ACL 경고도 보존했다. 코드 diff는 이 branch의 `git diff` 및 신규 통합 테스트로 추적한다.
