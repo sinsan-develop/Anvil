@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import base64
 from datetime import datetime, timezone
 import hashlib
+import inspect
 import importlib
 import json
 import os
@@ -12,6 +13,7 @@ import re
 import secrets
 import socket
 import subprocess
+import sys
 import tempfile
 from threading import Barrier
 from urllib.parse import parse_qs, urlencode
@@ -32,11 +34,9 @@ from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.observability.projection import OperationsSources
 from packages.observability.service import OperationsError, OperationsService
 from packages.persistence.operations_repository import PostgresOperationsRepository
-from packages.persistence.oidc_pending_auth import oidc_pending_auth
 from packages.persistence.oidc_principal_directory import (
     oidc_subject_bindings, roles, user_roles, users,
 )
-from packages.persistence.oidc_session_store import oidc_sessions
 from tests.integration.f18_oidc_live_host import _certificate, _listener
 
 
@@ -62,6 +62,51 @@ def _isolated_dsn() -> str:
 def _sqlalchemy_dsn(libpq_dsn: str) -> str:
     return make_url(libpq_dsn).set(drivername="postgresql+psycopg").render_as_string(
         hide_password=False)
+
+
+def _close_qa_resources(engine, listeners) -> None:
+    """Close processes/connections; the entire isolated DB is discarded by Main."""
+    primary = sys.exc_info()[1]
+    errors = []
+    for server, thread, listener, _ in reversed(listeners):
+        try:
+            server.should_exit = True
+            thread.join(timeout=5)
+            if thread.is_alive():
+                raise RuntimeError("R48_LISTENER_RESIDUE")
+        except Exception as error:
+            errors.append(error)
+        try:
+            listener.close()
+        except Exception as error:
+            errors.append(error)
+    try:
+        engine.dispose()
+    except Exception as error:
+        errors.append(error)
+    if errors and primary is not None:
+        for error in errors:
+            primary.add_note(f"R48_CLEANUP_ERROR:{type(error).__name__}")
+    elif errors:
+        raise errors[0]
+
+
+def test_r48_disposable_cleanup_does_not_mask_primary_or_delete_append_only_rows():
+    class BrokenEngine:
+        def dispose(self):
+            raise RuntimeError("cleanup failed")
+
+    with pytest.raises(ValueError, match="primary failed") as caught:
+        try:
+            raise ValueError("primary failed")
+        finally:
+            _close_qa_resources(BrokenEngine(), ())
+    assert any("R48_CLEANUP_ERROR" in note for note in caught.value.__notes__)
+    for flow in (test_two_service_instances_append_exactly_one_critical_ack,
+                 test_r48_oidc_popup_and_ack_browser_with_isolated_pg15):
+        source = inspect.getsource(flow)
+        assert "DELETE FROM operations_audit" not in source
+        assert "oidc_sessions.delete()" not in source
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -141,12 +186,7 @@ def test_two_service_instances_append_exactly_one_critical_ack():
         assert [event["action"] for event in events] == ["DETECTED", "ACKNOWLEDGED"]
         assert events[-1]["approval_id"].startswith("ack:")
     finally:
-        with engine.begin() as connection:
-            connection.execute(sa.text("DELETE FROM operations_audit_events WHERE project_id=:p AND environment_id=:e"),
-                {"p": project, "e": environment})
-            connection.execute(sa.text("DELETE FROM operations_audit_heads WHERE project_id=:p AND environment_id=:e"),
-                {"p": project, "e": environment})
-        engine.dispose()
+        _close_qa_resources(engine, ())
 
 
 def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
@@ -165,8 +205,6 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
     alert_id = "alert-" + uuid4().hex
     listeners = []
     issuer_url = None
-    seeded = False
-    pending_digests = []
     try:
         with tempfile.TemporaryDirectory(prefix="anvil-r48-") as temporary:
             directory = Path(temporary)
@@ -187,7 +225,6 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                         or query.get("code_challenge_method") != "S256"):
                     return JSONResponse({"error": "invalid_request"}, status_code=400)
                 code = "r48-code-" + secrets.token_urlsafe(16)
-                pending_digests.append(hashlib.sha256(query["state"].encode()).digest())
                 issued[code] = {key: query[key] for key in (
                     "state", "nonce", "redirect_uri", "client_id", "code_challenge")}
                 return RedirectResponse(api_url + "/?" + urlencode({
@@ -229,7 +266,6 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                     step_up_required=False, active=True))
                 connection.execute(oidc_subject_bindings.insert().values(
                     issuer=issuer_url, subject=subject, actor_id=actor, active=True))
-            seeded = True
             repository = PostgresOperationsRepository(dsn)
             def seed_critical() -> None:
                 nonlocal alert_id
@@ -331,24 +367,4 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                         assert evidence == {"ackSequence": len(after), "blocked": True,
                             "postCount": 1}
     finally:
-        for server, thread, listener, _ in reversed(listeners):
-            server.should_exit = True
-            thread.join(timeout=5)
-            listener.close()
-            assert not thread.is_alive(), "R48_LISTENER_RESIDUE"
-        if seeded:
-            with engine.begin() as connection:
-                connection.execute(oidc_sessions.delete().where(oidc_sessions.c.issuer == issuer_url))
-                if pending_digests:
-                    connection.execute(oidc_pending_auth.delete().where(
-                        oidc_pending_auth.c.state_digest.in_(pending_digests)))
-                connection.execute(sa.text("DELETE FROM operations_audit_events WHERE project_id=:p AND environment_id=:e"),
-                    {"p": project, "e": environment})
-                connection.execute(sa.text("DELETE FROM operations_audit_heads WHERE project_id=:p AND environment_id=:e"),
-                    {"p": project, "e": environment})
-                connection.execute(oidc_subject_bindings.delete().where(
-                    oidc_subject_bindings.c.issuer == issuer_url))
-                connection.execute(user_roles.delete().where(user_roles.c.actor_id == actor))
-                connection.execute(roles.delete().where(roles.c.role_code == role))
-                connection.execute(users.delete().where(users.c.actor_id == actor))
-        engine.dispose()
+        _close_qa_resources(engine, listeners)
