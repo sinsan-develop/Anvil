@@ -454,7 +454,8 @@ def _r28_manual_candidate(evidence: dict, excluded_keys: set[str]) -> dict:
                "cancelEvidence", "cancelRecoveryEvidence", "clientRaceEvidence",
                "reconnectEvidence", "reconnectCancelEvidence",
                "reconnectDeniedEvidence", "reconnectRaceEvidence", "elapsedEvidence",
-               "runCardsEvidence", "healthAlertEvidence", "detailEvidence"}}
+               "runCardsEvidence", "healthAlertEvidence", "detailEvidence",
+               "healthDetailEvidence"}}
 
 
 def _r28_manual_evidence(evidence: dict, observed_at: str) -> dict:
@@ -660,6 +661,37 @@ def _r35_qa_health_signal(at: datetime) -> HealthSignal:
         "/operations")
 
 
+def _r44_qa_health_signal(at: datetime) -> HealthSignal:
+    # Separate disposable QA source; the R35 Database HEALTHY/0 observation stays intact.
+    return HealthSignal("backend", "HEALTHY", at - timedelta(minutes=4),
+        timedelta(minutes=5), 0, "sha256:" + hashlib.sha256(b"R44_QA_BACKEND_SIGNAL").hexdigest(),
+        "/operations/health")
+
+
+def _r44_health_detail_evidence(evidence: dict) -> dict:
+    expected = {"storedAlert": True, "samePageFragment": True, "apiDomMatch": True,
+                "preAuthCleared": True, "revokedCleared": True, "databasePreserved": True,
+                "r43OrderPreserved": True}
+    actual = evidence.get("healthDetailEvidence")
+    assert evidence.keys() == {"healthDetailEvidence"} and type(actual) is dict, "R44_BROWSER_EVIDENCE_MISMATCH"
+    assert actual.keys() == expected.keys() and all(type(actual[key]) is bool and actual[key]
+        for key in expected), "R44_BROWSER_EVIDENCE_MISMATCH"
+    return evidence
+
+
+def test_r44_health_detail_evidence_accepts_only_boolean_contract():
+    values = {"storedAlert": True, "samePageFragment": True, "apiDomMatch": True,
+              "preAuthCleared": True, "revokedCleared": True, "databasePreserved": True,
+              "r43OrderPreserved": True}
+    assert _r44_health_detail_evidence({"healthDetailEvidence": values}) == {
+        "healthDetailEvidence": values}
+    for key in values:
+        with pytest.raises(AssertionError, match="R44_BROWSER_EVIDENCE_MISMATCH"):
+            _r44_health_detail_evidence({"healthDetailEvidence": {**values, key: 1}})
+        with pytest.raises(AssertionError, match="R44_BROWSER_EVIDENCE_MISMATCH"):
+            _r44_health_detail_evidence({"healthDetailEvidence": {**values, key: False}})
+
+
 def _r35_health_alert_evidence(evidence: dict) -> dict:
     expected = {"healthCardCount": 6, "healthApiDomMatch": True,
         "sourceGapUnknown": True, "alertImpactMatch": True, "alertNextActionMatch": True,
@@ -795,6 +827,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
     created = False
     seeded = False
     seeded_alerts = []
+    seeded_health_alerts = []
     revoke_count = [0]
     control_token = secrets.token_urlsafe(32)
     try:
@@ -874,6 +907,21 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             result = _r24_seed_result(count, snapshot)
             seeded_alerts.append(snapshot)
             return result
+
+        @issuer_app.post("/r6-control/seed-health")
+        async def seed_health(request: Request):
+            if not hmac.compare_digest(request.headers.get("x-r6-control-token", ""), control_token):
+                return JSONResponse({"error": "forbidden"}, status_code=403)
+            if not seeded_alerts or seeded_health_alerts:
+                return JSONResponse({"error": "wrong_order"}, status_code=409)
+            owner._sources = OperationsSources(leases=leases, lease_run_ids=("r6-run",),
+                health_signals=(_r35_qa_health_signal(at), _r44_qa_health_signal(at)))
+            assert owner.detect() == 1, "R44_HEALTH_ALERT_SEED_FAILED"
+            snapshot = owner.alerts()
+            assert len(snapshot) == 2 and snapshot[0]["code"] == "HEALTH_SIGNAL_LATE"
+            assert snapshot[1] == seeded_alerts[0][0], "R44_R43_ORDER_CHANGED"
+            seeded_health_alerts.append(snapshot)
+            return {"status": "seeded"}
 
         listeners.append(_listener(issuer_app, issuer_cert, issuer_key))
         issuer_url = listeners[0][3] + "/realms/anvil"
@@ -1024,6 +1072,8 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             r32_candidate, at.isoformat(), before[0]["observed_at"])
         r43_evidence = _r43_detail_evidence({key: value for key, value in evidence.items()
                                            if key == "detailEvidence"})
+        r44_evidence = _r44_health_detail_evidence({key: value for key, value in evidence.items()
+                                                  if key == "healthDetailEvidence"})
         r34_evidence = _r34_run_evidence({key: value for key, value in evidence.items()
                                         if key == "runCardsEvidence"})
         r35_evidence = _r35_health_alert_evidence({key: value for key, value in evidence.items()
@@ -1032,11 +1082,11 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                    if key not in prior_keys | set(r28_evidence) | set(r29_evidence)
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
                    | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)
-                   | set(r43_evidence) | set(r34_evidence) | set(r35_evidence)}
+                   | set(r43_evidence) | set(r44_evidence) | set(r34_evidence) | set(r35_evidence)}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
-        assert owner.alerts() == before, "R6_GET_MUTATED_AUDIT"
+        assert len(seeded_health_alerts) == 1 and owner.alerts() == seeded_health_alerts[0], "R6_GET_MUTATED_AUDIT"
         with engine.connect() as db:
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_sessions)).scalar_one() == 1
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 0

@@ -200,6 +200,34 @@ function validateR43DetailCleared(linkCount, detailCount) {
   return {preAuthCleared: true};
 }
 
+function validateR44HealthDetail(snapshot, facts, origin) {
+  const signal = snapshot?.health?.backend;
+  const alerts = snapshot?.alerts?.filter(row => row.source === 'environment'
+    && row.related_entity_id === 'backend');
+  const alert = alerts?.[0];
+  const expected = alert && [
+    `코드 · ${alert.code}`, `출처 · ${alert.source}`, `원인 · ${alert.cause}`,
+    `영향 · ${alert.impact}`, `발생 시각 · ${alert.observed_at}`,
+    `증거 hash · ${alert.evidence_hash}`,
+  ];
+  let url;
+  try { url = new URL(facts.url); } catch { /* Invalid navigation fails below. */ }
+  assert.ok(snapshot?.health?.database?.state === 'HEALTHY'
+    && snapshot.health.database.error_count === 0 && alerts?.length === 1
+    && signal?.state === 'LATE' && signal.error_count === 0
+    && alert.code === 'HEALTH_SIGNAL_LATE' && alert.evidence_hash === signal.evidence_ref
+    && alert.deep_link === signal.detail_path && alert.status === 'open'
+    && facts.href === '#health-detail-backend' && facts.id === 'health-detail-backend'
+    && facts.linkCount === 1 && facts.detailCount === 1
+    && facts.paragraphs?.length === expected.length
+    && facts.paragraphs.every((text, index) => text === expected[index])
+    && url?.origin === origin && url.pathname === '/' && url.search === ''
+    && url.hash === '#health-detail-backend', 'R44_HEALTH_DETAIL_MISMATCH');
+  return {healthDetailEvidence: {storedAlert: true, samePageFragment: true,
+    apiDomMatch: true, preAuthCleared: true, revokedCleared: true,
+    databasePreserved: true, r43OrderPreserved: true}};
+}
+
 function validateSeedResult(seed, code, entity, cause) {
   const alert = seed?.stored_alert;
   const fields = ['code', 'level', 'cause', 'related_entity_id', 'next_action', 'deep_link'];
@@ -1792,6 +1820,8 @@ async function main() {
       sensitiveTextVisible: [alertCode, expectedEntity, expectedCause]
         .some((value) => Boolean(value) && (preAuthAlertText + preAuthActionText).includes(value)),
     });
+    const preAuthHealthLinks = await page.locator('section[aria-labelledby="health-heading"] a[href^="#health-detail-"]').count();
+    assert.equal(preAuthHealthLinks, 0, 'R44_PREAUTH_DETAIL_RETAINED');
     if (evidenceDir) {
       await card.getByText('UNAVAILABLE', { exact: true }).waitFor();
       markStage('EVIDENCE_PRE_AUTH');
@@ -2029,6 +2059,30 @@ async function main() {
         [...sensitiveValues, cookie.value]);
     }
 
+    const healthSeed = await issuerClient.post(new URL('/r6-control/seed-health', issuerUrl).href, {
+      headers: { 'x-r6-control-token': controlToken },
+    });
+    assert.equal(healthSeed.status(), 200, 'R44_HEALTH_SEED_FAILED');
+    const healthDashboard = await fetchOnPage(page, '/api/dashboard/operations');
+    assert.equal(healthDashboard.status, 200, 'R44_HEALTH_DASHBOARD_FAILED');
+    const healthSnapshot = JSON.parse(healthDashboard.text).data;
+    assert.deepEqual(healthSnapshot.alerts.map(row => row.code),
+      ['HEALTH_SIGNAL_LATE', alertCode], 'R44_R43_ORDER_CHANGED');
+    await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
+    const healthCard = page.locator('section[aria-labelledby="health-heading"] article.status-card')
+      .filter({hasText: 'Execution Backends'});
+    const healthLink = healthCard.locator('a[href="#health-detail-backend"]');
+    await healthLink.waitFor();
+    const healthHref = await healthLink.getAttribute('href');
+    await healthLink.click();
+    const healthTarget = healthCard.locator('#health-detail-backend');
+    const healthDetailEvidence = validateR44HealthDetail(healthSnapshot, {
+      href: healthHref, id: await healthTarget.getAttribute('id'),
+      linkCount: await healthCard.locator('a[href^="#health-detail-"]').count(),
+      detailCount: await healthCard.locator('[id^="health-detail-"]').count(),
+      paragraphs: await healthTarget.locator('p').allInnerTexts(), url: page.url(),
+    }, apiUrl);
+
     markStage('REVOKE_CONTROL');
     const released = await issuerClient.post(new URL('/r6-control/revoke', issuerUrl).href, {
       headers: { 'x-r6-control-token': controlToken },
@@ -2092,6 +2146,10 @@ async function main() {
     const revokedDetailCleared = validateR43DetailCleared(
       await nextCard.locator('a[href^="#next-action-detail-"]').count(),
       await nextCard.locator('[id^="next-action-detail-"]').count());
+    assert.equal(await page.locator('section[aria-labelledby="health-heading"] a[href^="#health-detail-"]').count(),
+      0, 'R44_REVOKED_DETAIL_RETAINED');
+    assert.equal(await page.locator('section[aria-labelledby="health-heading"] [id^="health-detail-"]').count(),
+      0, 'R44_REVOKED_DETAIL_RETAINED');
     const revokedAlertText = await card.locator('[aria-live]').innerText();
     const revokedActionText = await nextCard.locator('[aria-live]').innerText();
     const revokedAccessible = validateRevokedAccessibility({
@@ -2153,6 +2211,7 @@ async function main() {
       ...storedActionEvidence, ...elapsedEvidence, ...revokedActionEvidence,
       detailEvidence: {...storedDetailEvidence.detailEvidence,
         ...preAuthDetailEvidence, revokedCleared: revokedDetailCleared.preAuthCleared},
+      ...healthDetailEvidence,
       ...manualRefreshEvidence, ...revokedManualRefreshEvidence,
       failedRefresh503, failedRefreshInvalid, keyboardRefreshEvidence,
       quotaRefreshEvidence, quotaRecoveryEvidence,
@@ -2461,6 +2520,26 @@ if (auditSelfTest) {
   }
   assert.deepEqual(validateR43DetailCleared(0, 0), {preAuthCleared: true});
   assert.throws(() => validateR43DetailCleared(1, 0), /R43_DETAIL_RETAINED/);
+  const healthAlert = {code: 'HEALTH_SIGNAL_LATE', source: 'environment',
+    related_entity_id: 'backend', cause: 'Health observation requires attention',
+    impact: 'Current service health requires review',
+    observed_at: '2026-09-28T00:00:00+00:00', evidence_hash: `sha256:${'a'.repeat(64)}`,
+    deep_link: '/operations/health', status: 'open'};
+  const healthSnapshot = {health: {database: {state: 'HEALTHY', error_count: 0},
+    backend: {state: 'LATE', error_count: 0, evidence_ref: healthAlert.evidence_hash,
+      detail_path: healthAlert.deep_link}}, alerts: [healthAlert]};
+  const healthFacts = {href: '#health-detail-backend', id: 'health-detail-backend',
+    linkCount: 1, detailCount: 1, paragraphs: [
+      `코드 · ${healthAlert.code}`, `출처 · ${healthAlert.source}`, `원인 · ${healthAlert.cause}`,
+      `영향 · ${healthAlert.impact}`, `발생 시각 · ${healthAlert.observed_at}`,
+      `증거 hash · ${healthAlert.evidence_hash}`], url: apiUrl + '/#health-detail-backend'};
+  assert.equal(validateR44HealthDetail(healthSnapshot, healthFacts, apiUrl)
+    .healthDetailEvidence.apiDomMatch, true);
+  for (const bad of [{...healthFacts, url: 'https://outside.invalid/'},
+    {...healthFacts, paragraphs: [...healthFacts.paragraphs.slice(0, 5), '증거 hash · wrong']},
+    {...healthFacts, linkCount: 2}]) {
+    assert.throws(() => validateR44HealthDetail(healthSnapshot, bad, apiUrl), /R44_HEALTH_DETAIL_MISMATCH/);
+  }
   for (const bad of [
     { ...elapsedSnapshot, alerts: [...elapsedSnapshot.alerts, ...elapsedSnapshot.alerts] },
     { ...elapsedSnapshot, alerts: [{ ...elapsedSnapshot.alerts[0], status: 'resolved' }] },

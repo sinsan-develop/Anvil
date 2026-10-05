@@ -654,6 +654,45 @@ const observedHealth = (state, overrides = {}) => ({
   ...overrides,
 });
 
+test('R44 Health cards link only a unique same-snapshot stored cause for all six components', async () => {
+  const names = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
+  for (const component of names) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.health[component] = observedHealth('LATE', {error_count: 0});
+    snapshot.alerts = [alertRow({source: 'environment', level: 'warning',
+      code: 'HEALTH_SIGNAL_LATE', related_entity_id: component,
+      cause: 'Health observation requires attention', impact: 'Source is stale',
+      next_action: 'CHECK_SOURCE_HEALTH', deep_link: '/operations/health',
+      evidence_hash: snapshot.health[component].evidence_ref})];
+    const render = async () => {
+      const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+        async () => jsonResponse({data: snapshot, request_id: 'r44'}));
+      return renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {label: component, component, value: state}));
+    };
+    const html = await render();
+    assert.match(html, /href="#health-detail-[a-z_]+".*코드 · HEALTH_SIGNAL_LATE.*출처 · environment.*원인 · Health observation requires attention.*영향 · Source is stale.*발생 시각 · /s, component);
+    assert.doesNotMatch(html, /href="\/operations\/health"|\/operations\/health/, component);
+    for (const change of [
+      () => { snapshot.alerts = []; },
+      () => { snapshot.alerts.push({...snapshot.alerts[0], alert_id: 'alert-2', sequence: 8}); },
+      () => { snapshot.alerts[0].evidence_hash = 'sha256:wrong'; },
+      () => { snapshot.alerts[0].code = 'OTHER_CODE'; },
+      () => { snapshot.alerts[0].source = 'worker'; },
+      () => { snapshot.health[component].state = 'HEALTHY'; },
+      () => { snapshot.alerts[0].observed_at = '2999-01-01T00:00:00+00:00'; },
+      () => { snapshot.health[component].detail_path = 'https://outside.invalid'; },
+      () => { snapshot.health[component].detail_path = '/operations/%2f%2foutside.invalid'; },
+      () => { snapshot.source_gaps = [component]; },
+    ]) {
+      const before = structuredClone(snapshot);
+      change();
+      assert.doesNotMatch(await render(), /href="#health-detail-/, component);
+      Object.assign(snapshot, before);
+    }
+  }
+});
+
 const renderDatabase = (readiness, operations) => renderToStaticMarkup(
   React.createElement(consoleApp.DatabaseHealthCard, {value: readiness, operations}));
 

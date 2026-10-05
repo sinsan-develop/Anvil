@@ -9,7 +9,9 @@ type ProjectsState = {status: string; reason: string; repository: {branch: strin
 type ProviderRegistration = {status: 'VALID'; registered: number} | {status: 'UNAVAILABLE'; registered: null}
   | {status: 'LOADING'};
 type DashboardSignalState = {status: 'HEALTHY' | 'LATE' | 'EXPIRED' | 'UNKNOWN' | 'UNAVAILABLE' | 'BLOCKED';
-  lastCheck: string | null; errorCount: number | null};
+  lastCheck: string | null; errorCount: number | null; detail?: HealthDetail | null};
+type HealthDetail = {code: string; source: string; cause: string; impact: string;
+  observedAt: string; evidenceHash: string};
 type DashboardSignalComponent = 'database' | 'queue' | 'worker' | 'provider' | 'backend' | 'artifact_store';
 type NextAction = {priority: 'critical' | 'warning'; reason: string; target: string;
   action: string; deep_link: string};
@@ -192,6 +194,35 @@ function dashboardSignals(health: Record<string, unknown>, gaps: string[], snaps
     Record<DashboardSignalComponent, DashboardSignalState>;
 }
 
+function dashboardHealthDetails(health: Record<string, unknown>, alerts: unknown[], gaps: string[],
+  snapshotTime: string): Record<DashboardSignalComponent, HealthDetail | null> {
+  return Object.fromEntries(DASHBOARD_SIGNAL_COMPONENTS.map((component) => {
+    const signal = health[component];
+    if (gaps.includes(component) || Date.parse(snapshotTime) > Date.now()
+      || !validDashboardSignal(signal, snapshotTime) || signal.state === 'UNKNOWN') return [component, null];
+    const code = (signal.error_count as number) > 0 ? 'HEALTH_ERROR_COUNT'
+      : ['LATE', 'EXPIRED'].includes(signal.state as string) ? `HEALTH_SIGNAL_${signal.state}` : null;
+    if (!code) return [component, null];
+    const candidates = alerts.filter((item) => record(item) && item.source === 'environment'
+      && item.related_entity_id === component && typeof item.code === 'string'
+      && (item.code === 'HEALTH_ERROR_COUNT' || item.code.startsWith('HEALTH_SIGNAL_')));
+    if (candidates.length !== 1 || !record(candidates[0])) return [component, null];
+    const alert = candidates[0];
+    if (!exactFields(alert, ALERT_FIELDS) || !nonempty(alert.alert_id)
+      || !Number.isSafeInteger(alert.sequence) || (alert.sequence as number) <= 0
+      || !['open', 'acknowledged'].includes(alert.status as string)
+      || (alert.status === 'open' ? alert.owner_id !== null : !nonempty(alert.owner_id))
+      || alert.code !== code || alert.deep_link !== signal.detail_path
+      || alert.evidence_hash !== signal.evidence_ref
+      || !validObservedAt(alert.observed_at) || Date.parse(alert.observed_at) > Date.parse(snapshotTime)
+      || !['code', 'source', 'cause', 'impact', 'evidence_hash'].every((key) => safeAlertText(alert[key]))
+      || !/^sha256:[0-9a-f]{64}$/.test(alert.evidence_hash as string)) return [component, null];
+    return [component, {code: alert.code, source: alert.source, cause: alert.cause,
+      impact: alert.impact, observedAt: alert.observed_at,
+      evidenceHash: alert.evidence_hash} as HealthDetail];
+  })) as Record<DashboardSignalComponent, HealthDetail | null>;
+}
+
 function dashboardRunSummary(value: unknown): RunSummary | null {
   if (!record(value) || !exactFields(value, ['status', 'observed_at', 'observed_total',
     'active_runs', 'waiting_approval_runs', 'blocked_runs']) || value.status !== 'AVAILABLE'
@@ -239,6 +270,11 @@ function classifyDashboardQueue(payload: unknown): DashboardQueueState {
     return DASHBOARD_QUEUE_UNAVAILABLE;
   }
   const health = dashboardSignals(snapshot.health as Record<string, unknown>, snapshot.source_gaps, snapshot.observed_at);
+  const details = dashboardHealthDetails(snapshot.health as Record<string, unknown>, snapshot.alerts as unknown[],
+    snapshot.source_gaps, snapshot.observed_at);
+  DASHBOARD_SIGNAL_COMPONENTS.forEach((component) => {
+    if (details[component]) health[component].detail = details[component];
+  });
   return {status: 'LOADED', observed: snapshot.queue.length,
     runSummary: Date.parse(snapshot.observed_at) <= Date.now() ? dashboardRunSummary(snapshot.run_summary) : null,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
@@ -328,7 +364,7 @@ export function QueueHealthCard({value}: {value: DashboardQueueState}) {
 export function DashboardSignalCard({label, component, value, children}:
     {label: string; component: DashboardSignalComponent; value: DashboardQueueState; children?: ReactNode}) {
   const signal = value.status === 'LOADED' ? value.health[component]
-    : {status: value.status, lastCheck: null, errorCount: null};
+    : {status: value.status, lastCheck: null, errorCount: null, detail: null};
   return <article className="status-card"><h3>{label}</h3>
     <div aria-live="polite" aria-atomic="true">
       <p className={signal.status === 'HEALTHY' ? 'status-ready'
@@ -340,6 +376,12 @@ export function DashboardSignalCard({label, component, value, children}:
       {signal.status === 'CANCELLED' ? <p>조회 취소 · {label} 상태 정보를 표시하지 않습니다.</p> : null}
       {signal.lastCheck !== null ? <p>마지막 점검 {signal.lastCheck}</p> : null}
       {signal.errorCount !== null ? <p>오류 {signal.errorCount}건</p> : null}
+      {signal.detail ? <><p><a href={`#health-detail-${component}`}>상세 원인 보기</a></p>
+        <div id={`health-detail-${component}`}><p>코드 · {signal.detail.code}</p>
+          <p>출처 · {signal.detail.source}</p><p>원인 · {signal.detail.cause}</p>
+          <p>영향 · {signal.detail.impact}</p><p>발생 시각 · {signal.detail.observedAt}</p>
+          <p>증거 hash · {signal.detail.evidenceHash}</p></div></>
+        : null}
       {children}
     </div>
   </article>;
