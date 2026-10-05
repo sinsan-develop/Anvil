@@ -54,11 +54,21 @@ class R47CloseProjectionTests(unittest.TestCase):
         historical_test = "tests/tooling/test_f20_u01_r46_close_projection.py"
         unrelated = "tests/tooling/unrelated.py"
         progress = json.loads((ROOT / overlay.PROGRESS).read_text(encoding="utf-8"))
+        progress["repository"]["projection_mode"] = overlay.MODE
         self.assertIn(historical_test, overlay.CONTROL_SCOPE)
         self.assertNotIn(historical_test, overlay.AUTHORITY_FILES)
-        self.assertEqual(overlay.collect_git(ROOT, progress), [])
-        with patch.object(overlay.prior, "_dirty", return_value={historical_test, unrelated}):
-            self.assertEqual(overlay.collect_git(ROOT, progress), ["R47_CLOSE_GIT_INVALID"])
+        original_git = overlay._git
+
+        def historical_changed(root, *args):
+            if args == ("diff", "--no-renames", "--name-only", f"{overlay.BASE}..HEAD"):
+                return f"{historical_test}\n".encode()
+            return original_git(root, *args)
+
+        with patch.object(overlay, "_git", side_effect=historical_changed):
+            with patch.object(overlay.prior, "_dirty", return_value={historical_test}):
+                self.assertEqual(overlay.collect_git(ROOT, progress), [])
+            with patch.object(overlay.prior, "_dirty", return_value={historical_test, unrelated}):
+                self.assertEqual(overlay.collect_git(ROOT, progress), ["R47_CLOSE_GIT_INVALID"])
 
     def test_materialize_rejects_backdated_clock_without_writes(self):
         from scripts import f20_u01_r47_close_overlay as overlay
