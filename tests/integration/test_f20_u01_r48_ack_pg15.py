@@ -96,7 +96,7 @@ _R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "REDIRECT_SCRUB", "REDIRECT_REFERER", "REDIRECT_FETCH_DISPATCH",
     "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK",
     "ACK_BUTTON_WAIT", "ACK_CLICK", "ACK_RESPONSE_WAIT", "ACK_DENIAL_CHECK",
-    "ACK_DENIAL_BODY_WAIT", "ACK_DENIAL_CODE",
+    "ACK_DENIAL_BODY_WAIT", "ACK_DENIAL_CODE", "ACK_UI_BLOCKED_WAIT",
     "ACK_BLOCKED_UI_WAIT", "ACK_CONTEXT_CLOSE", "AUDIT", "DONE"})
 _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_CALLBACK_REJECTED", "R48_CSRF_MISSING", "R48_REDIRECT_GET_MISSING",
@@ -131,6 +131,13 @@ def _r48_safe_referer_fact(stdout: str) -> str:
         if re.fullmatch(r"R48_REFERER_FACT headers=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER)", line):
             return line
     return "R48_REFERER_FACT_UNAVAILABLE"
+
+
+def _r48_safe_ack_fact(stdout: str) -> str:
+    for line in stdout.splitlines():
+        if re.fullmatch(r"R48_ACK_FACT ui=BLOCKED network=(PENDING|FINISHED|FAILED)", line):
+            return line
+    return "R48_ACK_FACT_UNAVAILABLE"
 
 
 def _r48_safe_timeout_stage(stdout: bytes | str | None) -> str:
@@ -178,6 +185,12 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
         "REDIRECT_REFERER")
     assert _r48_safe_timeout_stage(b"R48_STAGE private-token\n") == "BOOTSTRAP"
     assert _r48_safe_timeout_stage(b"R48_STAGE ACK_BUTTON_WAIT\n") == "ACK_BUTTON_WAIT"
+    assert _r48_safe_timeout_stage(b"R48_STAGE ACK_UI_BLOCKED_WAIT\n") == (
+        "ACK_UI_BLOCKED_WAIT")
+    assert _r48_safe_ack_fact("R48_ACK_FACT ui=BLOCKED network=FINISHED\nprivate-token") == (
+        "R48_ACK_FACT ui=BLOCKED network=FINISHED")
+    assert _r48_safe_ack_fact("R48_ACK_FACT ui=BLOCKED network=private-token") == (
+        "R48_ACK_FACT_UNAVAILABLE")
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -420,7 +433,8 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                         f"stage={_r48_safe_timeout_stage(error.stdout)}", pytrace=False)
                 assert result.returncode == 0, (f"R48_BROWSER_{scenario.upper().replace('-', '_')}_FAILED "
                     + _r48_safe_failure(result.stderr) + " "
-                    + _r48_safe_referer_fact(result.stdout))
+                    + _r48_safe_referer_fact(result.stdout) + " "
+                    + _r48_safe_ack_fact(result.stdout))
                 lines = [line for line in result.stdout.splitlines() if line.startswith("R48_RESULT ")]
                 assert len(lines) == 1
                 evidence = json.loads(lines[0].removeprefix("R48_RESULT "))

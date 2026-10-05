@@ -127,7 +127,7 @@ const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'REDIRECT_FETCH_DISPATCH',
   'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
   'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
-  'ACK_DENIAL_BODY_WAIT', 'ACK_DENIAL_CODE',
+  'ACK_DENIAL_BODY_WAIT', 'ACK_DENIAL_CODE', 'ACK_UI_BLOCKED_WAIT',
   'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
@@ -2777,6 +2777,17 @@ async function mainR48() {
     });
     const auditDeniedResponse = r48Scenario === 'audit-denied'
       ? page.waitForResponse((response) => response.url().includes('/api/operations/audit')) : null;
+    let ackNetwork = 'PENDING';
+    let ackNetworkSettled;
+    const ackNetworkTerminal = new Promise((resolve) => { ackNetworkSettled = resolve; });
+    const isAckRequest = (request) => request.method() === 'POST'
+      && new URL(request.url()).pathname.endsWith(':acknowledge');
+    page.on('requestfinished', (request) => {
+      if (isAckRequest(request)) { ackNetwork = 'FINISHED'; ackNetworkSettled(); }
+    });
+    page.on('requestfailed', (request) => {
+      if (isAckRequest(request)) { ackNetwork = 'FAILED'; ackNetworkSettled(); }
+    });
     const ackResponse = page.waitForResponse((response) =>
       response.url().includes(':acknowledge') && response.request().method() === 'POST',
     {timeout: 10000});
@@ -2787,12 +2798,15 @@ async function mainR48() {
     if (r48Scenario === 'permission-denied') {
       markR48Stage('ACK_DENIAL_CHECK');
       assert.equal(ack.status(), 403, 'R48_PERMISSION_NOT_DENIED');
+      markR48Stage('ACK_UI_BLOCKED_WAIT');
+      await card.getByText(/확인 미검증/).waitFor({timeout: 10000});
+      await Promise.race([ackNetworkTerminal, new Promise((resolve) => setTimeout(resolve, 1000))]);
+      writeSync(1, `R48_ACK_FACT ui=BLOCKED network=${ackNetwork}\n`);
       markR48Stage('ACK_DENIAL_BODY_WAIT');
       const deniedCode = await readR48DenialCode(ack, 5000, 'R48_PERMISSION_BODY_TIMEOUT');
       markR48Stage('ACK_DENIAL_CODE');
       assert.equal(deniedCode, 'PERMISSION_DENIED', 'R48_PERMISSION_DENIAL_CODE');
       markR48Stage('ACK_BLOCKED_UI_WAIT');
-      await card.getByText(/확인 미검증/).waitFor({timeout: 10000});
       assert.equal(requests.filter(({url}) => url.pathname.includes(':acknowledge')).length, 1);
       console.log('R48_RESULT {"scenario":"permission-denied","blocked":true,"postCount":1}');
       markR48Stage('ACK_CONTEXT_CLOSE');
@@ -2867,6 +2881,7 @@ if (r48DiagnosticSelfTest) {
   assert.equal(safeR48Stage('REDIRECT_HEADERS'), 'REDIRECT_HEADERS');
   assert.equal(safeR48Stage('ACK_BUTTON_WAIT'), 'ACK_BUTTON_WAIT');
   assert.equal(safeR48Stage('ACK_RESPONSE_WAIT'), 'ACK_RESPONSE_WAIT');
+  assert.equal(safeR48Stage('ACK_UI_BLOCKED_WAIT'), 'ACK_UI_BLOCKED_WAIT');
   assert.equal(safeR48Stage('private-token'), 'BOOTSTRAP');
   console.log('R48_DIAGNOSTIC_SELF_TEST_PASS');
 } else if (r47SelfTest) {
