@@ -2,9 +2,18 @@
 
 ## 판정
 
-`INCOMPLETE` — 제품 변경과 로컬 GREEN은 확보했다. Main의 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 저장 경고 순서 보정 뒤에도 실패했다. 최신 진단 보완 diff의 실제 재실행은 아직 없다. R44/U-01/F-20 전체 인수는 미완료이며 ReleaseDecision `DEFER`, Production `NOT_EXECUTED`다.
+`INCOMPLETE` — 제품 변경과 로컬 GREEN은 확보했다. Main의 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 최신 clean SHA에서도 `REVOKE_FETCH` 실패로 중단됐다. 철회 전 두 저장 조치와 안전 진단을 보정한 현재 diff의 실제 재실행은 아직 없다. R44/U-01/F-20 전체 인수는 미완료이며 ReleaseDecision `DEFER`, Production `NOT_EXECUTED`다.
 
 ## 판단 이유
+
+### R44 세 번째 WSL 실패 후 철회 전 상태·안전 진단 보정 (Main 출처, Developer 로컬 재작업)
+
+- Main 보고: clean SHA `4ad9954472eda897f9f595ae6e561fb758a62c7b`의 새 빈 PG/full-evidence 실제 WSL opt-in은 `R6_BROWSER_FAILED stage=REVOKE_FETCH exit=1 class=UnhandledError`로 실패했다. 새 Health 카드 클릭 블록 이후의 실패이며, 이전 safe marker의 단언 code는 허용 목록 밖 또는 `UNCLASSIFIED`여서 정확 원인은 미확정이다. 실패 PG는 Main이 정확 ID 확인 후 폐기한다고 전달했다.
+- 재작업 시작 HEAD 위 SHA, canonical seq2070 epoch59 worker/write ACTIVE·두 토큰·exact5·유효기간 및 G-05 PASS를 재확인했다. 시작 Git dirty는 Main 소유 `docs/WORK_STATUS.md`뿐이다. Main 소유 파일·Git·WSL은 수정하지 않았다.
+- source 판정: `OperationsService.snapshot()`은 열린 저장 alerts 2건을 순서대로 `next_actions`에 투영한다. R44 Health seed 후 기존 R43 Critical과 새 Health Warning 두 조치가 같은 Dashboard 응답에 있고 `readyDashboard(...,'STORED')`가 화면에도 두 행을 표시한다. 철회 직후 API를 직접 읽는 호출은 화면을 갱신하지 않는데, 기존 하네스가 그 사이 `nextCard li == 1`을 요구했다. 이 단언은 잘못됐다. 다만 해당 단언 위치의 stage는 `REVOKE_DASHBOARD_FETCH`이며 Main이 받은 `REVOKE_FETCH/UnhandledError`와 일치하지 않아 비동기 rejection 등 다른 원인 가능성은 남긴다.
+- 보정: 철회 전 Critical-first/Health-second alert와 Next Actions 2건의 API↔DOM 대응을 검증하고, 기존 철회 뒤 0건 단언을 유지한다. 제품 동작은 바꾸지 않았다. 실패 marker는 허용된 stage·Error.name·R44와 해당 R27 철회 단언 코드만 출력한다. 그 밖의 값은 `UNCLASSIFIED`/안전한 기본 오류명으로 축소하며 원본 URL/cookie/token/body/error message/stack은 출력하지 않는다.
+- RED: `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit1(두 조치 검증 함수 부재), 이후 Error.name/R27 허용 코드 회귀도 같은 명령에서 exit1; `python -m pytest -q -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py -k r44_node_failure` exit1(안전 marker의 Error.name 미분류). GREEN: Node audit self-test exit0 `R6_AUDIT_SELF_TEST_PASS`; Python 집중 1 PASS, 전체 비 opt-in `45 passed, 1 skipped, 1 warning` exit0; `git diff --check` exit0; 지정 venv G-05 seq2070 PASS exit0.
+- 현재 diff의 새 PG/Chromium 실제 재검은 Main 담당 `NOT_EXECUTED`. 이전 `REVOKE_FETCH` 실패를 보정본의 PASS로 승격하지 않는다. 정식 Developer FAILURE_REPORT 0회.
 
 ### R44 두 번째 WSL 실패 후 secret-safe 진단 보완 (Main 출처, Developer 로컬 재작업)
 
@@ -55,6 +64,6 @@
 | `.\\.venv\\Scripts\\python.exe scripts/check_project_progress.py` | 0 | `G-05 project progress contract: PASS sequence=2070 reporting=AUTO_CONTINUE` |
 
 - 정식 Developer `FAILURE_REPORT` 0회. 구현 중 기존 R35 상태 객체 deep equality 회귀 1회와 typecheck 1회는 보정했다. 기본 셸 ACL 실행 오류는 지정된 권한 실행으로 해소했고, 직접 Python checker import 오류 및 임시 dist로 인한 `R44_GIT_INVALID`는 프로젝트 venv 사용과 전용 출력 정리 후 G-05 PASS로 해소했다. `.pytest_cache`는 접근·정리하지 않았다.
-- 기존 Network/Secret/PNG와 R35/R43 단언은 로컬 하네스 회귀에 남아 있다. WSL 브라우저 실행은 두 차례 모두 실패했으며 최신 진단 diff의 실제 Network·PNG, PG15 저장·OIDC/HTTPS 클릭 및 철회는 `NOT_EXECUTED`; Provider·PG18·Production도 미검증이다.
+- 기존 Network/Secret/PNG와 R35/R43 단언은 로컬 하네스 회귀에 남아 있다. WSL 브라우저 실행은 세 번째 clean SHA에서도 실패했으며 현재 철회 전 조치·진단 diff의 실제 Network·PNG, PG15 저장·OIDC/HTTPS 클릭 및 철회는 `NOT_EXECUTED`; Provider·PG18·Production도 미검증이다.
 - Main 소유 Event/progress/HANDOFF/WORK_STATUS/control, commit/push, WSL-server·ysna/Production 변경 0. 빌드 출력 정확 3파일과 빈 `dist` 폴더만 검증 후 제거했고 임시 자원 잔여 0이다.
 - Rollback: Main이 이 exact5의 R44 diff를 검토 후 배제한다. 현재 미커밋 변경을 다른 사용자 자료와 함께 초기화하지 않는다. 다음은 Main이 새 격리 PG의 실제 WSL opt-in에서 안전 진단 marker를 확인하고, 식별된 원인에 따라 재작업을 지시한다.

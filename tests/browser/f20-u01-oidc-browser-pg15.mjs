@@ -103,7 +103,9 @@ function safeR30FailureCode(error) {
 const r44AssertionCodes = new Set([
   'R44_PREAUTH_DETAIL_RETAINED', 'R44_HEALTH_SEED_FAILED',
   'R44_HEALTH_DASHBOARD_FAILED', 'R44_R43_ORDER_CHANGED',
-  'R44_HEALTH_DETAIL_MISMATCH', 'R44_REVOKED_DETAIL_RETAINED',
+  'R44_HEALTH_DETAIL_MISMATCH', 'R44_PRE_REVOKE_ACTION_MISMATCH',
+  'R44_REVOKED_DETAIL_RETAINED', 'R27_REVOKED_REFRESH_MISMATCH',
+  'R27_REVOKED_STALE_SETUP_MISSING',
 ]);
 
 function safeR44FailureCode(error) {
@@ -112,9 +114,16 @@ function safeR44FailureCode(error) {
   return code && r44AssertionCodes.has(code) ? code : 'UNCLASSIFIED';
 }
 
+function safeFailureName(error) {
+  return ['AssertionError', 'Error', 'TypeError', 'TimeoutError', 'SyntaxError',
+    'ReferenceError', 'RangeError', 'AggregateError', 'TargetClosedError'].includes(error?.name)
+    ? error.name : 'Error';
+}
+
 function emitSafeFailure(error) {
   const safeStage = progressStages.has(stage) ? stage : 'BOOTSTRAP';
-  writeSync(2, `R6_SAFE_FAILURE stage=${safeStage} code=${safeR44FailureCode(error)}\n`);
+  writeSync(2, `R6_SAFE_FAILURE stage=${safeStage} code=${safeR44FailureCode(error)} `
+    + `name=${safeFailureName(error)}\n`);
 }
 
 function auditTraffic(requestFacts, responseFacts, domText, sessionValue) {
@@ -243,6 +252,19 @@ function validateR44HealthDetail(snapshot, facts, origin) {
   return {healthDetailEvidence: {storedAlert: true, samePageFragment: true,
     apiDomMatch: true, preAuthCleared: true, revokedCleared: true,
     databasePreserved: true, r43OrderPreserved: true}};
+}
+
+function validateR44PreRevokeActions(snapshot, rowCount) {
+  const alerts = snapshot?.alerts;
+  const actions = snapshot?.next_actions;
+  assert.ok(Array.isArray(alerts) && alerts.length === 2
+    && alerts[0].code === 'WORKER_LEASE_EXPIRED'
+    && alerts[1].code === 'HEALTH_SIGNAL_LATE'
+    && Array.isArray(actions) && actions.length === 2 && rowCount === 2
+    && actions[0].priority === 'critical' && actions[0].target === alerts[0].related_entity_id
+    && actions[1].priority === 'warning' && actions[1].target === alerts[1].related_entity_id,
+  'R44_PRE_REVOKE_ACTION_MISMATCH');
+  return true;
 }
 
 function validateSeedResult(seed, code, entity, cause) {
@@ -2111,7 +2133,7 @@ async function main() {
     markStage('REVOKE_DASHBOARD_FETCH');
     const revokedDashboard = await fetchOnPage(page, '/api/dashboard/operations');
     assert.equal(revokedDashboard.status, 403, 'R27_REVOKED_REFRESH_MISMATCH');
-    assert.equal(await nextCard.locator('li').count(), 1, 'R27_REVOKED_STALE_SETUP_MISSING');
+    validateR44PreRevokeActions(healthSnapshot, await nextCard.locator('li').count());
     await verifyObservationTime(page, clientRaceEvidence.manualRefreshObservedAt);
     markStage('REVOKE_FETCH');
     manualPhase('REVOKED_CLICK_BEGIN');
@@ -2292,6 +2314,10 @@ if (auditSelfTest) {
     'R44_HEALTH_DETAIL_MISMATCH');
   assert.equal(safeR44FailureCode({message: 'R44_PRIVATE_TOKEN private-token'}),
     'UNCLASSIFIED');
+  assert.equal(safeR44FailureCode({message: 'R27_REVOKED_REFRESH_MISMATCH private-token'}),
+    'R27_REVOKED_REFRESH_MISMATCH');
+  assert.equal(safeFailureName({name: 'AssertionError'}), 'AssertionError');
+  assert.equal(safeFailureName({name: 'private-token'}), 'Error');
   assert.ok([...manualPhases].every((value) => /^[A-Z_]+$/.test(value)),
     'R27_MANUAL_PHASE_GRAMMAR_INVALID');
   assert.throws(() => manualPhase('PRIVATE_TOKEN_VALUE'), /R27_MANUAL_PHASE_INVALID/);
@@ -2557,6 +2583,13 @@ if (auditSelfTest) {
       `증거 hash · ${healthAlert.evidence_hash}`], url: apiUrl + '/#health-detail-backend'};
   assert.equal(validateR44HealthDetail(healthSnapshot, healthFacts, apiUrl)
     .healthDetailEvidence.apiDomMatch, true);
+  const beforeRevoke = {...healthSnapshot, next_actions: [
+    {priority: 'critical', target: 'r6-run', action: 'REVIEW_WORKER_LEASE'},
+    {priority: 'warning', target: 'backend', action: 'CHECK_SOURCE_HEALTH'},
+  ]};
+  assert.equal(validateR44PreRevokeActions(beforeRevoke, 2), true);
+  assert.throws(() => validateR44PreRevokeActions(beforeRevoke, 1),
+    /R44_PRE_REVOKE_ACTION_MISMATCH/);
   assert.throws(() => validateR44HealthDetail({...healthSnapshot,
     alerts: [...healthSnapshot.alerts, healthAlert]}, healthFacts, apiUrl),
   /R44_HEALTH_DETAIL_MISMATCH/);
@@ -2845,10 +2878,8 @@ if (auditSelfTest) {
     if (currentR30Phase !== null) {
       writeSync(2, `R30_DIAG code=${safeR30FailureCode(error)}\n`);
     }
-    const safeClass = ['AssertionError', 'Error', 'TypeError', 'TimeoutError', 'SyntaxError',
-      'ReferenceError', 'RangeError', 'AggregateError', 'TargetClosedError'].includes(error?.name)
-      ? error.name : 'Error';
-    writeSync(2, `R6_BROWSER_FAILED stage=${progressStages.has(stage) ? stage : 'BOOTSTRAP'} class=${safeClass}\n`);
+    writeSync(2, `R6_BROWSER_FAILED stage=${progressStages.has(stage) ? stage : 'BOOTSTRAP'} `
+      + `class=${safeFailureName(error)}\n`);
     process.exitCode = 1;
   });
 }

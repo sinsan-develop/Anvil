@@ -98,7 +98,9 @@ _R30_ASSERTIONS = frozenset({
 _R44_SAFE_ASSERTIONS = frozenset({
     "R44_PREAUTH_DETAIL_RETAINED", "R44_HEALTH_SEED_FAILED",
     "R44_HEALTH_DASHBOARD_FAILED", "R44_R43_ORDER_CHANGED",
-    "R44_HEALTH_DETAIL_MISMATCH", "R44_REVOKED_DETAIL_RETAINED",
+    "R44_HEALTH_DETAIL_MISMATCH", "R44_PRE_REVOKE_ACTION_MISMATCH",
+    "R44_REVOKED_DETAIL_RETAINED", "R27_REVOKED_REFRESH_MISMATCH",
+    "R27_REVOKED_STALE_SETUP_MISSING",
 })
 
 
@@ -220,10 +222,12 @@ def _classify_browser_failure(stdout: str, stderr: str) -> tuple[str, str]:
         if stage in _BROWSER_STAGES:
             return stage, error_class if error_class in _BROWSER_ERROR_CLASSES else "NodeError"
     if re.search(r"^R6_NODE_STARTED\r?$", output, flags=re.MULTILINE):
-        for match in re.finditer(r"^R6_SAFE_FAILURE stage=([A-Z_]+) code=([A-Z0-9_]+)\r?$",
+        for match in re.finditer(r"^R6_SAFE_FAILURE stage=([A-Z_]+) code=([A-Z0-9_]+)"
+                                 r"(?: name=([A-Za-z]+))?\r?$",
                                  output, flags=re.MULTILINE):
             if match.group(1) in _BROWSER_STAGES:
-                return match.group(1), "UnhandledError"
+                return (match.group(1), match.group(3) if match.group(3) in _BROWSER_ERROR_CLASSES
+                        else "UnhandledError")
         last = _last_browser_progress(output)
         return (last if last != "RUNNER" else "NODE_UNHANDLED"), "UnhandledError"
     if re.search(r"^npm (?:ERR!|error)(?:\s|$)", output, flags=re.MULTILINE):
@@ -234,7 +238,8 @@ def _classify_browser_failure(stdout: str, stderr: str) -> tuple[str, str]:
 
 
 def _safe_assertion_diagnostic(output: str) -> str:
-    for match in re.finditer(r"^R6_SAFE_FAILURE stage=([A-Z_]+) code=([A-Z0-9_]+)\r?$",
+    for match in re.finditer(r"^R6_SAFE_FAILURE stage=([A-Z_]+) code=([A-Z0-9_]+)"
+                             r"(?: name=([A-Za-z]+))?\r?$",
                              output, flags=re.MULTILINE):
         if match.group(1) in _BROWSER_STAGES and match.group(2) in _R44_SAFE_ASSERTIONS:
             return "; assertion=" + match.group(2)
@@ -1285,6 +1290,11 @@ def test_r44_node_failure_reports_only_allowlisted_stage_and_assertion_code():
     assert _safe_assertion_diagnostic("R6_SAFE_FAILURE stage=STORED_NEXT_ACTION code=PRIVATE_TOKEN\n") == ""
     assert _classify_browser_failure("R6_NODE_STARTED\nR6_STAGE EVIDENCE_STORED\n" + secret,
                                      "") == ("EVIDENCE_STORED", "UnhandledError")
+    revoke = ("R6_NODE_STARTED\nR6_STAGE REVOKE_FETCH\n"
+              "R6_SAFE_FAILURE stage=REVOKE_FETCH code=R27_REVOKED_REFRESH_MISMATCH name=AssertionError\n"
+              + secret)
+    assert _classify_browser_failure(revoke, "") == ("REVOKE_FETCH", "AssertionError")
+    assert _safe_assertion_diagnostic(revoke) == "; assertion=R27_REVOKED_REFRESH_MISMATCH"
 
 
 def test_r6_timeout_reports_last_whitelisted_progress_without_raw_output(monkeypatch):
