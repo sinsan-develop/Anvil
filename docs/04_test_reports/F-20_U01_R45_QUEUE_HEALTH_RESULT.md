@@ -2,7 +2,7 @@
 
 ## 판정
 
-`INCOMPLETE` — exact5의 로컬 구현과 기본 검증을 Main 독립 검토에 인계했다. 첫 실제 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 아래 응답 캡처 오류로 FAIL이며, 보완 SHA의 실제 재검증·독립 Tester 판정·F-20/U-01 인수는 남아 있다.
+`COMPLETED_R45_QUEUE_SLICE_WSL_QA_ONLY` — Main이 clean/private/WSL 동일 SHA `558b15c11423d84fc9d3f6f16ae455b280006b8f`에서 R45 절편의 실제 PG15/OIDC/HTTPS/Chromium 재검증 PASS를 확인했다. 첫 SHA의 FAIL은 아래에 별도로 유지한다. F-20/U-01 전체 수락과 독립 Tester 판정은 아직 아니다.
 
 ## 판단 이유
 
@@ -25,7 +25,7 @@
 
 ## 미검증·잔여 위험·다음 조치
 
-- Main의 보완 diff/권한 독립 검토, private checkpoint, WSL-server 동일 clean SHA의 실제 PG15/OIDC/HTTPS/Chromium 카드 클릭·Network/Secret 재검증과 전용 QA 자원 정리는 남아 있다. 브라우저 audit self-test와 로컬 fixture는 실제 브라우저 검증을 대체하지 않는다.
+- Main의 동일 clean SHA 실제 PG15/OIDC/HTTPS/Chromium 카드 클릭·Network/Secret 재검증과 전용 QA 자원 정리는 아래 증거로 완료됐다. 이 절편의 PASS가 F-20/U-01 전체 인수나 Production 검증을 뜻하지 않는다.
 - Queue 전체 정상 판정, 6종 Health 실제 source 완성, 전체 U-01/F-20 인수, PG18/Provider/Production은 범위 밖이다. ReleaseDecision `DEFER` 유지.
 - rollback: Main 검증 전 exact5 변경만 이전 clean HEAD `00c35dd669c0fe67537b30fbbfdbf9bedfbc5e81`의 파일 bytes로 되돌린다. 다른 파일·원장·기존 dirty 자료는 변경하지 않는다. Developer는 commit/push/WSL 실행이나 WORK_STATUS/Event/control 수정 없이 인계한다.
 
@@ -36,4 +36,13 @@
 - 안전한 국소 재현: 별도 Playwright response body를 지연한 브라우저 audit self-test에서 R45 fetch가 capture 전에 끝나는 `R45_DASHBOARD_CAPTURE_WAIT_MISSING` 예상 RED(exit1)를 확인했다. 해당 GET에 대한 `waitForResponse`와 기존 Playwright capture의 성공을 확인한 뒤 reload하도록 한 최소 보완에서 audit self-test GREEN(exit0)이다. 기존 Network/Secret 검사나 실패 거부를 완화하지 않았다.
 - 후속 실패를 식별할 안전 진단: `R6_RESPONSE_CAPTURE_FAILED`에 category/status/reason에 더해 bounded 응답 순번·관측 stage·navigation round만 출력하고, Python 진단 파서도 이 allowlist만 통과시킨다. URL·본문·token·예외 원문은 출력하지 않는다. Python parser RED 1 FAIL → GREEN 1 PASS를 확인했다.
 - 로컬 회귀: `npm run test:console` 78 PASS/exit0, `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0, 브라우저 `--audit-self-test` exit0. 최신 `python -B -m pytest -q -p no:cacheprovider --basetemp=.r45_diag_full_tmp tests/integration/test_f20_u01_oidc_browser_pg15.py`는 48 PASS/1 SKIP/exit0이다. SKIP은 실제 opt-in이다. 전용 pytest temp는 실경로·link 경계 확인 후 정리했고 잔류 0이다.
-- 남은 판정: 보완 SHA의 실제 동일 격리 QA에서 Network capture 전체와 R45 카드/API/DOM·same-origin/Secret을 통과해야 한다. 그 전에는 첫 실패를 PASS로 바꾸거나 R45 절편을 수락하지 않는다.
+- 첫 실행의 `DASHBOARD_API 200 UNREADABLE` 응답별 순번이 보존되지 않아 당시 개별 응답과 근본 원인은 미확정이다. 보완 후 실제 재검증 PASS는 아래 현재 SHA의 실행 범위에 한정하며 첫 실패 기록을 PASS로 바꾸지 않는다.
+
+## Main 출처 2차 실제 WSL QA·정리
+
+- 실행 기준: 로컬·private 개발 원격·WSL-server clean 동일 SHA `558b15c11423d84fc9d3f6f16ae455b280006b8f`; G-05 seq2082 PASS. WSL Node24에서 console test 78 PASS, Web typecheck/lint/build 20 modules PASS, Python 비 opt-in 48 PASS/1 SKIP을 확인했다. 비 opt-in의 SKIP은 실제 브라우저 PASS로 계상하지 않는다.
+- 격리 tmpfs PostgreSQL 15 컨테이너 ID `f8b4ee5112e5ff0e2a5fe4c93d8eea0f42018b8d3b1059ae4c28a4b390992f38`와 비관리자 role/DB에서 migration head `0019_oidc_sessions`를 확인했다. Main이 같은 SHA의 실제 OIDC/HTTPS/Chromium opt-in을 실행해 `1 passed, 48 deselected, 1 기존 httpx deprecation warning in 19.61s`, exit0을 얻었다.
+- opt-in 범위에는 실제 저장 `QUEUE_JOB_QUARANTINED` alert의 Queue 카드 클릭, 같은 응답 API↔DOM·same-page fragment, R35/R43/R44 기존 경로, 인증 철회 후 보호 데이터 소거, Network same-origin·Secret 비노출 단언이 포함된다. 이는 테스트가 실제 실행한 R45 절편의 증거다.
+- Main이 보존한 exact4 evidence SHA-256: `page-requests.json` `b1759394737b949d0f80a6be9bd7d5ba9807cb69db6a7c5a821680df34c2816d`; `pre-auth-error.png` `5d15edf6fa754ccaef53761ebf192c3b16b6afac8ea0155ad55e5e2a52a53c13`; `stored-critical.png` `b450c1fa57bbe64e3dfed4658fb211b830813f0ce796435f70b267102237816c`; `revoked-blocked.png` `551ccc100255d654a914bbc3cd8d66bbd869c0017dc727dbe82376bdc6dbf028`.
+- Main은 첫 실패와 2차 실행의 전용 PG 컨테이너 두 개를 각각 정확한 ID·label·tmpfs·port 경계로 확인한 뒤 stop/AutoRemove를 검증했다. 두 전용 checkout·Playwright·evidence·pytest 경로도 exact 대상·실경로를 확인해 정리했고 R45 전용 경로/container/loopback port 5545 잔여는 0이다. 공유 `local-postgres`는 Up, `anvil-web`은 healthy로 확인했다.
+- 미검증·제외: Queue 전체 정상 판정, 6종 Health 실제 source 완성, F-20/U-01 독립 인수, PG18, Provider, ysna/Production은 이 절편의 PASS에 포함되지 않는다. ReleaseDecision `DEFER` 유지. 다음은 Main의 보고서 diff/G-05 및 R45 lease 종료·checkpoint 판단이다.
