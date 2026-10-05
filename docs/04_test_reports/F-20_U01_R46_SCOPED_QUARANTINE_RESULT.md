@@ -1,6 +1,6 @@
 # F-20/U-01 R46 실제 범위 격리 근거 결과
 
-판정: `INCOMPLETE` — Developer exact5 제품 변경과 로컬 검증은 통과했으나 Main의 동일 SHA `75b37984` WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 실패했다. `STORED_RESPONSES`에서 `AssertionError`, 1 failed/48 deselected/2 deprecation warnings, 7.34초. F-20/U-01 전체 미수락, ReleaseDecision `DEFER`.
+판정: `INCOMPLETE` — Developer exact5 제품 변경과 로컬 검증은 통과했으나 Main의 실제 WSL-server PG15/OIDC/HTTPS/Chromium opt-in은 실패했다. 최초 동일 SHA `75b37984`는 `STORED_RESPONSES`에서 `AssertionError`(1 failed/48 deselected/2 deprecation warnings, 7.34초), 후속 새 빈 PG 검증의 SHA `7d534224`는 `REVOKE_DASHBOARD_FETCH TimeoutError`(48.53초)였다. 두 실패 모두 PASS로 소급하지 않는다. F-20/U-01 전체 미수락, ReleaseDecision `DEFER`.
 
 ## 판단 이유
 
@@ -21,5 +21,8 @@
 - 후속 실제 WSL QA는 새 빈 전용 PG에서 3회 모두 권한 회수 뒤 Dashboard 직접 fetch timeout으로 실패했다. 3회차 안전 로그는 `R6_STAGE REVOKE_DASHBOARD_FETCH` 다음 `R6_SAFE_FAILURE stage=REVOKE_DASHBOARD_FETCH code=UNCLASSIFIED name=TimeoutError`다. Python `_BROWSER_STAGES`가 이 단계를 빠뜨려 외부 판정이 `REVOKE_FETCH/UnhandledError`로 왜곡됐다. 세 번의 동일 실패를 PASS로 소급하거나 같은 실험으로 반복하지 않는다.
 - 이번 재작업은 Python 단계 enum과 bounded 진단 parser를 TDD로 보완했다. Node의 권한 회수 Dashboard 직접 fetch에는 요청·응답·상태코드·완료 여부와 페이지 내부 `fetch`/본문 읽기 단계만 기록하는 고정값 marker를 추가했다. URL·헤더·쿠키·토큰·응답 본문·오류 원문은 marker에 넣지 않는다. 앱 interruption으로 잘렸던 Python trailing R35 테스트는 HEAD 원문과 대조해 복원했고 구문 검사 exit0이다. 근본 원인은 다음 실제 실행의 제한적 marker 없이는 확정하지 않는다.
 - 재작업 RED→GREEN: Python 단계 분류 집중 명령은 누락 단계로 exit1→exit0, bounded marker parser 집중 명령은 함수 부재로 exit1→exit0, Node audit는 진단 함수 부재로 exit1→exit0이었다. `.\.venv\Scripts\python.exe -B -m pytest -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py -q` exit0/50 PASS·1 opt-in SKIP; `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit0/`R6_AUDIT_SELF_TEST_PASS`; `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0; `npm run web:test` exit0/78 PASS; `git diff --check` exit0. 실제 WSL의 새 marker 결과는 아직 미검증이다.
+- 최신 SHA `7d534224`의 새 빈 PG 실제 opt-in에서도 `REVOKE_DASHBOARD_FETCH TimeoutError`가 48.53초에 발생했고 제한적 trace detail은 없었다. 코드 대조 결과 기존 `traceRevokedDashboardFetch`가 `await page.exposeFunction(...)`을 관측용 `try`/marker 이전에 수행했으므로 setup 실패는 무표식으로 끝날 수 있고 원래 fetch를 지연시킬 수 있었다. 이는 **진단 공백의 근거**이지 해당 WSL timeout의 확인된 근본 원인은 아니다.
+- 이 후속 작업은 Node audit에서 `exposeFunction` 의존을 금지하고 응답 본문 대기 시 제한적 단계 기록을 요구하는 RED(exit1)를 먼저 확인했다. 이후 awaited setup을 제거해 미리 등록한 Playwright 요청·응답·완료 이벤트와 고정값 `console.info` 단계만 수집한다. 관측기 등록 실패도 `START` bounded marker로 기록하고 등록된 관측기는 정리한다. URL·헤더·토큰·본문·임의 console/error 원문은 marker에 출력·저장하지 않는다. Python parser에 `START`와 비밀 문자열 차단 테스트를 추가했으며 분류 체계는 변경하지 않았다.
+- 후속 로컬 검증: `node tests/browser/f20-u01-oidc-browser-pg15.mjs --audit-self-test` exit0/`R6_AUDIT_SELF_TEST_PASS`; `node --check tests/browser/f20-u01-oidc-browser-pg15.mjs` exit0; `.\.venv\Scripts\python.exe -B -m pytest -p no:cacheprovider tests/integration/test_f20_u01_oidc_browser_pg15.py -q` exit0/50 PASS·1 실제 opt-in SKIP; `git diff --check` exit0. 해당 후속 diff의 WSL 실제 경로, 네트워크 단계, Web 재빌드는 미검증이며 Main이 새 clean SHA·새 빈 전용 PG로 검증해야 한다. 같은 실패만 반복하지 않고 새 bounded marker의 실제 값을 근거로 다음 판단을 한다.
 - Main 독립 검토·통제/Event/progress/HANDOFF/WORK_STATUS와 Git commit/push·WSL 실제 QA는 Main 소유다. Developer는 WSL/ysna/Production에 접근하지 않았다.
 - Rollback: Main이 정확한 이 5파일 diff만 제외해 깨끗한 `3e67e14d192662b237a2f57d231ec3805779f9d1` checkpoint로 복원한다. Developer는 Git reset·commit·push를 수행하지 않았다.

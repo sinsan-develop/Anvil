@@ -719,8 +719,10 @@ async function fetchOnPage(page, path, options = {}) {
 
 async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, line + '\n')) {
   const facts = {request: 'NONE', response: 'NONE', status: 0, finished: 'NONE', page: 'START'};
-  const phases = new Set(['FETCH_PENDING', 'HEADERS', 'BODY_PENDING', 'BODY_DONE',
-    'FETCH_ERROR', 'BODY_ERROR']);
+  const phases = new Map([['R46_FETCH_PHASE_FETCH_PENDING', 'FETCH_PENDING'],
+    ['R46_FETCH_PHASE_HEADERS', 'HEADERS'], ['R46_FETCH_PHASE_BODY_PENDING', 'BODY_PENDING'],
+    ['R46_FETCH_PHASE_BODY_DONE', 'BODY_DONE'], ['R46_FETCH_PHASE_FETCH_ERROR', 'FETCH_ERROR'],
+    ['R46_FETCH_PHASE_BODY_ERROR', 'BODY_ERROR']]);
   const matches = (request) => {
     try {
       const url = new URL(request.url());
@@ -737,31 +739,38 @@ async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, li
   };
   const onFinished = (request) => { if (matches(request)) facts.finished = 'DONE'; };
   const onFailed = (request) => { if (matches(request)) facts.finished = 'FAILED'; };
-  await page.exposeFunction('__anvilR46RevokedDashboardPhase', (phase) => {
-    if (phases.has(phase)) facts.page = phase;
-  });
-  for (const [name, callback] of [['request', onRequest], ['response', onResponse],
-    ['requestfinished', onFinished], ['requestfailed', onFailed]]) page.on(name, callback);
+  const onConsole = (message) => {
+    try {
+      if (message.type() === 'info') facts.page = phases.get(message.text()) || facts.page;
+    } catch { /* observation remains bounded and unknown */ }
+  };
+  const observers = [['request', onRequest], ['response', onResponse],
+    ['requestfinished', onFinished], ['requestfailed', onFailed], ['console', onConsole]];
+  const attached = [];
   try {
+    for (const [name, callback] of observers) {
+      page.on(name, callback);
+      attached.push([name, callback]);
+    }
     return await page.evaluate(async () => {
-      await window.__anvilR46RevokedDashboardPhase('FETCH_PENDING');
+      console.info('R46_FETCH_PHASE_FETCH_PENDING');
       let response;
       try {
         response = await fetch('/api/dashboard/operations', {credentials: 'same-origin'});
       } catch (error) {
-        await window.__anvilR46RevokedDashboardPhase('FETCH_ERROR');
+        console.info('R46_FETCH_PHASE_FETCH_ERROR');
         throw error;
       }
-      await window.__anvilR46RevokedDashboardPhase('HEADERS');
-      await window.__anvilR46RevokedDashboardPhase('BODY_PENDING');
+      console.info('R46_FETCH_PHASE_HEADERS');
+      console.info('R46_FETCH_PHASE_BODY_PENDING');
       let text;
       try {
         text = await response.text();
       } catch (error) {
-        await window.__anvilR46RevokedDashboardPhase('BODY_ERROR');
+        console.info('R46_FETCH_PHASE_BODY_ERROR');
         throw error;
       }
-      await window.__anvilR46RevokedDashboardPhase('BODY_DONE');
+      console.info('R46_FETCH_PHASE_BODY_DONE');
       return {status: response.status, text};
     });
   } catch (error) {
@@ -769,8 +778,7 @@ async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, li
       + ` status=${facts.status} finished=${facts.finished} page=${facts.page}`);
     throw error;
   } finally {
-    for (const [name, callback] of [['request', onRequest], ['response', onResponse],
-      ['requestfinished', onFinished], ['requestfailed', onFailed]]) page.off(name, callback);
+    for (const [name, callback] of attached) page.off(name, callback);
   }
 }
 
@@ -3090,19 +3098,22 @@ if (auditSelfTest) {
   assert.equal(settledBeforeCapture, false, 'R45_DASHBOARD_CAPTURE_SETTLED_EARLY');
   const traceCallbacks = new Map();
   const traceLines = [];
-  let pagePhase;
   const traceRequest = {url: () => apiUrl + '/api/dashboard/operations', method: () => 'GET'};
+  const tracePhase = (phase) => traceCallbacks.get('console')({type: () => 'info',
+    text: () => `R46_FETCH_PHASE_${phase}`});
   const tracePage = {
-    exposeFunction: async (_name, callback) => { pagePhase = callback; },
+    exposeFunction: async () => { throw new Error('SETUP_SHOULD_NOT_RUN'); },
     on: (name, callback) => traceCallbacks.set(name, callback),
     off: (name) => traceCallbacks.delete(name),
     evaluate: async () => {
-      await pagePhase('FETCH_PENDING');
+      traceCallbacks.get('console')({type: () => 'error', text: () => 'private-token'});
+      traceCallbacks.get('console')({type: () => 'info', text: () => 'private-response-body'});
+      tracePhase('FETCH_PENDING');
       traceCallbacks.get('request')(traceRequest);
       traceCallbacks.get('response')({url: () => traceRequest.url(), request: () => traceRequest,
         status: () => 403});
-      await pagePhase('HEADERS');
-      await pagePhase('BODY_PENDING');
+      tracePhase('HEADERS');
+      tracePhase('BODY_PENDING');
       throw Object.assign(new Error('private-response-body'), {name: 'TimeoutError'});
     },
   };
@@ -3112,6 +3123,22 @@ if (auditSelfTest) {
     'R46_REVOKE_DASHBOARD_TRACE request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING',
   ]);
   assert.equal(traceCallbacks.size, 0);
+  const setupCallbacks = new Map();
+  const setupLines = [];
+  const setupPage = {
+    on: (name, callback) => {
+      if (name === 'response') throw new Error('private-setup-detail');
+      setupCallbacks.set(name, callback);
+    },
+    off: (name) => setupCallbacks.delete(name),
+    evaluate: async () => { throw new Error('EVALUATE_SHOULD_NOT_RUN'); },
+  };
+  await assert.rejects(traceRevokedDashboardFetch(setupPage, (line) => setupLines.push(line)),
+    /private-setup-detail/);
+  assert.deepEqual(setupLines, [
+    'R46_REVOKE_DASHBOARD_TRACE request=NONE response=NONE status=0 finished=NONE page=START',
+  ]);
+  assert.equal(setupCallbacks.size, 0);
   console.log('R6_AUDIT_SELF_TEST_PASS');
 } else {
   writeSync(1, 'R6_NODE_STARTED\n');

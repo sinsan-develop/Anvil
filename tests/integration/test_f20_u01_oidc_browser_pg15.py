@@ -1479,6 +1479,10 @@ def test_r46_revoke_dashboard_trace_reports_only_bounded_facts():
               "finished=NONE page=BODY_PENDING\n")
     assert _safe_revoke_dashboard_diagnostic(marker + secret) == (
         " request=SEEN response=SEEN status=403 finished=NONE page=BODY_PENDING")
+    setup_marker = ("R46_REVOKE_DASHBOARD_TRACE request=NONE response=NONE status=0 "
+                    "finished=NONE page=START\n")
+    assert _safe_revoke_dashboard_diagnostic(setup_marker + secret) == (
+        " request=NONE response=NONE status=0 finished=NONE page=START")
     for invalid in [
         marker.replace("status=403", "status=999"),
         marker.replace("page=BODY_PENDING", "page=" + secret),
