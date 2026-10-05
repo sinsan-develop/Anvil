@@ -128,7 +128,7 @@ const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
   'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
   'ACK_DENIAL_BODY_WAIT', 'ACK_DENIAL_CODE', 'ACK_UI_BLOCKED_WAIT',
-  'ACK_DIRECT_DIAGNOSTIC',
+  'ACK_DIRECT_DIAGNOSTIC', 'ACK_PAGE_DIAGNOSTIC',
   'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
@@ -188,6 +188,10 @@ function safeR48DirectFact(status, body, code) {
   const safeCode = ['PERMISSION_DENIED', 'OTHER', 'UNAVAILABLE'].includes(code)
     ? code : 'UNAVAILABLE';
   return `R48_DIRECT_FACT status=${safeStatus} body=${safeBody} code=${safeCode}`;
+}
+
+function safeR48PageFact(status, body, code) {
+  return safeR48DirectFact(status, body, code).replace('R48_DIRECT_FACT', 'R48_PAGE_FACT');
 }
 
 function countR48UiAckRequests(requests, alertId) {
@@ -2849,6 +2853,44 @@ async function mainR48() {
           directBody = error?.name === 'TimeoutError' ? 'TIMEOUT' : 'ERROR';
         }
         writeSync(1, safeR48DirectFact(directStatus, directBody, directCode) + '\n');
+        markR48Stage('ACK_PAGE_DIAGNOSTIC');
+        let pageFact = {status: 'UNAVAILABLE', body: 'TIMEOUT', code: 'UNAVAILABLE'};
+        try {
+          pageFact = await Promise.race([
+            page.evaluate(async (headers) => {
+              let seenStatus = 'UNAVAILABLE';
+              const attempt = (async () => {
+                try {
+                  const response = await fetch(
+                    '/api/operations/alerts/r48-diagnostic-unallocated:acknowledge', {
+                      method: 'POST', credentials: 'same-origin',
+                      headers: {...headers, 'idempotency-key': 'r48-page-body-diagnostic'},
+                      body: '{}',
+                    });
+                  const status = response.status === 403 ? '403' : 'OTHER';
+                  seenStatus = status;
+                  try {
+                    const payload = await response.json();
+                    return {status, body: 'COMPLETE',
+                      code: payload?.error?.code === 'PERMISSION_DENIED'
+                        ? 'PERMISSION_DENIED' : 'OTHER'};
+                  } catch {
+                    return {status, body: 'ERROR', code: 'UNAVAILABLE'};
+                  }
+                } catch {
+                  return {status: 'UNAVAILABLE', body: 'ERROR', code: 'UNAVAILABLE'};
+                }
+              })();
+              return Promise.race([attempt, new Promise((resolve) => setTimeout(() =>
+                resolve({status: seenStatus, body: 'TIMEOUT', code: 'UNAVAILABLE'}), 5000))]);
+            }, diagnosticHeaders),
+            new Promise((resolve) => setTimeout(() =>
+              resolve({status: 'UNAVAILABLE', body: 'TIMEOUT', code: 'UNAVAILABLE'}), 7000)),
+          ]);
+        } catch {
+          pageFact = {status: 'UNAVAILABLE', body: 'ERROR', code: 'UNAVAILABLE'};
+        }
+        writeSync(1, safeR48PageFact(pageFact.status, pageFact.body, pageFact.code) + '\n');
         markR48Stage('ACK_DENIAL_BODY_WAIT');
         throw primaryError;
       }
@@ -2917,6 +2959,10 @@ if (r48DiagnosticSelfTest) {
     'R48_DIRECT_FACT status=403 body=COMPLETE code=PERMISSION_DENIED');
   assert.equal(safeR48DirectFact('private-token', 'private-token', 'private-token'),
     'R48_DIRECT_FACT status=UNAVAILABLE body=ERROR code=UNAVAILABLE');
+  assert.equal(safeR48PageFact('403', 'COMPLETE', 'PERMISSION_DENIED'),
+    'R48_PAGE_FACT status=403 body=COMPLETE code=PERMISSION_DENIED');
+  assert.equal(safeR48PageFact('private-token', 'private-token', 'private-token'),
+    'R48_PAGE_FACT status=UNAVAILABLE body=ERROR code=UNAVAILABLE');
   assert.equal(countR48UiAckRequests([
     {url: new URL('https://anvil.invalid/api/operations/alerts/real:acknowledge')},
     {url: new URL('https://anvil.invalid/api/operations/alerts/r48-diagnostic-unallocated:acknowledge')},

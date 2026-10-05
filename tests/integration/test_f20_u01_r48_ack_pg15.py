@@ -98,7 +98,7 @@ _R48_SAFE_STAGES = frozenset({"BOOTSTRAP", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "REDIRECT_REQUEST_CAPTURED", "REDIRECT_HEADER_CLASSIFY", "ACK",
     "ACK_BUTTON_WAIT", "ACK_CLICK", "ACK_RESPONSE_WAIT", "ACK_DENIAL_CHECK",
     "ACK_DENIAL_BODY_WAIT", "ACK_DENIAL_CODE", "ACK_UI_BLOCKED_WAIT",
-    "ACK_DIRECT_DIAGNOSTIC",
+    "ACK_DIRECT_DIAGNOSTIC", "ACK_PAGE_DIAGNOSTIC",
     "ACK_BLOCKED_UI_WAIT", "ACK_CONTEXT_CLOSE", "AUDIT", "DONE"})
 _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_CALLBACK_REJECTED", "R48_CSRF_MISSING", "R48_REDIRECT_GET_MISSING",
@@ -149,6 +149,15 @@ def _r48_safe_direct_fact(stdout: str) -> str:
                 r"code=(PERMISSION_DENIED|OTHER|UNAVAILABLE)", line):
             return line
     return "R48_DIRECT_FACT_UNAVAILABLE"
+
+
+def _r48_safe_page_fact(stdout: str) -> str:
+    for line in stdout.splitlines():
+        if re.fullmatch(r"R48_PAGE_FACT status=(403|OTHER|UNAVAILABLE) "
+                r"body=(COMPLETE|TIMEOUT|ERROR) "
+                r"code=(PERMISSION_DENIED|OTHER|UNAVAILABLE)", line):
+            return line
+    return "R48_PAGE_FACT_UNAVAILABLE"
 
 
 def _r48_safe_timeout_stage(stdout: bytes | str | None) -> str:
@@ -289,6 +298,9 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
     direct = "R48_DIRECT_FACT status=403 body=COMPLETE code=PERMISSION_DENIED"
     assert _r48_safe_direct_fact(direct + "\nprivate-token") == direct
     assert _r48_safe_direct_fact(direct + " private-token") == "R48_DIRECT_FACT_UNAVAILABLE"
+    page = "R48_PAGE_FACT status=403 body=COMPLETE code=PERMISSION_DENIED"
+    assert _r48_safe_page_fact(page + "\nprivate-token") == page
+    assert _r48_safe_page_fact(page + " private-token") == "R48_PAGE_FACT_UNAVAILABLE"
 
 
 def test_r48_asgi_ack_observer_reports_only_static_terminal_fact():
@@ -563,7 +575,8 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                     + _r48_safe_failure(result.stderr) + " "
                     + _r48_safe_referer_fact(result.stdout) + " "
                     + _r48_safe_ack_fact(result.stdout) + " "
-                    + _r48_safe_direct_fact(result.stdout) + " " + ack_asgi.fact())
+                    + _r48_safe_direct_fact(result.stdout) + " "
+                    + _r48_safe_page_fact(result.stdout) + " " + ack_asgi.fact())
                 lines = [line for line in result.stdout.splitlines() if line.startswith("R48_RESULT ")]
                 assert len(lines) == 1
                 evidence = json.loads(lines[0].removeprefix("R48_RESULT "))
