@@ -1039,14 +1039,12 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                 return JSONResponse({"error": "forbidden"}, status_code=403)
             if not seeded_health_alerts or seeded_quarantine_alerts or revoke_count[0] != 0:
                 return JSONResponse({"error": "wrong_order"}, status_code=409)
-            row = QuarantinedJob("r45-qa-job", 2, "EXHAUSTED", at - timedelta(minutes=1))
+            observation_clock[0] = datetime.now(timezone.utc)
+            seed_at = observation_clock[0]
+            row = QuarantinedJob("r45-qa-job", 2, "EXHAUSTED", seed_at - timedelta(minutes=1))
             owner._sources = OperationsSources(queue=_R45QueueSource(row), leases=leases,
                 lease_run_ids=("r6-run",), health_signals=(
-                    _r35_qa_health_signal(at), _r44_qa_health_signal(at),
-                    HealthSignal("queue", "HEALTHY", at - timedelta(seconds=10),
-                        timedelta(minutes=5), 0,
-                        "sha256:" + hashlib.sha256(b"R45_QA_QUEUE_SIGNAL").hexdigest(),
-                        "/operations/queue")))
+                    _r35_qa_health_signal(seed_at), _r44_qa_health_signal(seed_at)))
             assert owner.detect() == 1, "R45_QUEUE_ALERT_SEED_FAILED"
             snapshot = owner.alerts()
             _r45_seed_quarantine_order(snapshot, seeded_health_alerts[0], row)
@@ -1095,12 +1093,13 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                 repository_dsn = "postgresql://" + repository_dsn[len(prefix):]
                 break
         leases = LeaseService(token_factory=lambda: "r6-private-fence")
-        at = datetime(2026, 9, 28, tzinfo=timezone.utc)
+        at = datetime.now(timezone.utc)
+        observation_clock = [at]
         leases.issue_worker("r6-run", "r6-worker", at - timedelta(minutes=10), timedelta(minutes=1))
         owner = OperationsService("project-1", "wsl-qa",
             OperationsSources(leases=leases, lease_run_ids=("r6-run",),
                               health_signals=(_r35_qa_health_signal(at),)),
-            repository=PostgresOperationsRepository(repository_dsn), clock=lambda: at,
+            repository=PostgresOperationsRepository(repository_dsn), clock=lambda: observation_clock[0],
             run_summary_loader=load_run_summary)
         assert owner.alerts() == [], "R24_PG_NOT_EMPTY"
         api_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

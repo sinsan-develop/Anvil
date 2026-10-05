@@ -694,63 +694,70 @@ test('R44 Health cards link only a unique same-snapshot stored cause for all six
   }
 });
 
-test('R45 Queue shows only validated current quarantine rows and a unique stored alert detail', async () => {
+test('R46 Queue keeps overall UNKNOWN while a fresh unique stored alert confirms scoped quarantine', async () => {
+  const now = Date.now();
+  const snapshotAt = new Date(now - 1000).toISOString();
+  const quarantineAt = new Date(now - 3600000).toISOString();
   const quarantine = (job_id = 'job-1', overrides = {}) => ({job_id, attempts: 2,
-    reason: 'EXHAUSTED', quarantined_at: '2026-09-29T02:00:00+00:00', ...overrides});
-  const evidence = `sha256:${createHash('sha256').update('job-1:2:2026-09-29T02:00:00+00:00').digest('hex')}`;
+    reason: 'EXHAUSTED', quarantined_at: quarantineAt, ...overrides});
+  const evidence = `sha256:${createHash('sha256').update(`job-1:2:${quarantineAt}`).digest('hex')}`;
   const stored = (overrides = {}) => alertRow({source: 'orchestrator', category: 'backlog',
     code: 'QUEUE_JOB_QUARANTINED', related_entity_id: 'job-1',
     cause: 'Queue job reached quarantine', impact: 'Run cannot advance automatically',
     next_action: 'REVIEW_QUARANTINE', deep_link: '/operations/queue',
-    evidence_hash: evidence, ...overrides});
+    observed_at: snapshotAt, evidence_hash: evidence, ...overrides});
   const render = async (snapshot) => {
     const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
       async () => jsonResponse({data: snapshot, request_id: 'r45'}));
     return renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
   };
-  const snapshot = dashboardSnapshot([], []);
+  const snapshot = dashboardSnapshot([], ['queue']);
+  snapshot.observed_at = snapshotAt;
   assert.match(await render(snapshot), /UNKNOWN/);
   assert.doesNotMatch(await render(snapshot), /HEALTHY|격리 작업/);
   snapshot.quarantine = [quarantine()];
   let html = await render(snapshot);
-  assert.match(html, /LATE.*격리 작업 1건.*관측 시각/s);
+  assert.match(html, /UNKNOWN.*Queue source 연결 정보가 부족합니다/s);
+  assert.doesNotMatch(html, /격리 작업|확인된 격리 이상/);
   assert.doesNotMatch(html, /상세 원인 보기|href=/);
   snapshot.quarantine.push(quarantine('job-2'));
-  assert.match(await render(snapshot), /LATE.*격리 작업 2건/s);
+  assert.doesNotMatch(await render(snapshot), /격리 작업|확인된 격리 이상/);
   snapshot.quarantine.pop();
   snapshot.alerts = [stored()];
   html = await render(snapshot);
-  assert.match(html, /href="#health-detail-queue".*코드 · QUEUE_JOB_QUARANTINED.*원인 · Queue job reached quarantine/s);
+  assert.match(html, /UNKNOWN.*href="#health-detail-queue".*코드 · QUEUE_JOB_QUARANTINED.*원인 · Queue job reached quarantine.*확인된 격리 이상.*격리 작업 1건.*Queue source 연결 정보가 부족합니다/s);
   assert.doesNotMatch(html, /href="\/operations\/queue"/);
   for (const change of [
     () => { snapshot.alerts.push(stored({alert_id: 'alert-2', sequence: 8})); },
+    () => { snapshot.alerts.push(stored({alert_id: 'alert-2', sequence: 8, source: 'worker'})); },
     () => { snapshot.alerts[0].status = 'resolved'; },
     () => { snapshot.alerts[0].related_entity_id = 'other-job'; },
     () => { snapshot.alerts[0].evidence_hash = `sha256:${'b'.repeat(64)}`; },
-    () => { snapshot.alerts[0].observed_at = '2026-09-01T00:00:00+00:00'; },
+    () => { snapshot.alerts[0].observed_at = new Date(now - 7200000).toISOString(); },
     () => { snapshot.alerts[0].observed_at = '2999-01-01T00:00:00+00:00'; },
     () => { snapshot.alerts[0].impact = 'token=FAKE_TEST_ONLY'; },
   ]) {
     const before = structuredClone(snapshot);
     change();
     html = await render(snapshot);
-    assert.match(html, /LATE.*격리 작업 1건/s);
-    assert.doesNotMatch(html, /href="#health-detail-queue"|FAKE_TEST_ONLY/);
+    assert.match(html, /UNKNOWN.*Queue source 연결 정보가 부족합니다/s);
+    assert.doesNotMatch(html, /격리 작업|확인된 격리 이상|href="#health-detail-queue"|FAKE_TEST_ONLY/);
     Object.assign(snapshot, before);
   }
-  snapshot.alerts = [];
+  snapshot.alerts = [stored()];
   for (const change of [
     () => { snapshot.quarantine[0].attempts = -1; },
     () => { snapshot.quarantine[0].reason = 'token=FAKE_TEST_ONLY'; },
     () => { snapshot.quarantine[0].quarantined_at = '2999-01-01T00:00:00+00:00'; },
     () => { snapshot.quarantine.push(quarantine()); },
-    () => { snapshot.source_gaps = ['queue']; },
+    () => { snapshot.observed_at = new Date(now - 61000).toISOString();
+      snapshot.alerts[0].observed_at = new Date(now - 62000).toISOString(); },
     () => { snapshot.observed_at = '2999-01-01T00:00:00+00:00'; },
   ]) {
     const before = structuredClone(snapshot);
     change();
     html = await render(snapshot);
-    assert.doesNotMatch(html, /격리 작업 \d+건|href="#health-detail-queue"|FAKE_TEST_ONLY/);
+    assert.doesNotMatch(html, /격리 작업 \d+건|확인된 격리 이상|href="#health-detail-queue"|FAKE_TEST_ONLY/);
     Object.assign(snapshot, before);
   }
   for (const status of [401, 403, 429]) {

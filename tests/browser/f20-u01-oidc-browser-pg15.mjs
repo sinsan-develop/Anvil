@@ -259,8 +259,7 @@ function validateR44HealthDetail(snapshot, facts, origin) {
 
 function validateR45QueueDetail(snapshot, facts, origin) {
   const rows = snapshot?.quarantine;
-  const alerts = snapshot?.alerts?.filter(row => row.code === 'QUEUE_JOB_QUARANTINED'
-    && row.source === 'orchestrator');
+  const alerts = snapshot?.alerts?.filter(row => row.code === 'QUEUE_JOB_QUARANTINED');
   const alert = alerts?.[0];
   const expected = alert && [
     `코드 · ${alert.code}`, `출처 · ${alert.source}`, `원인 · ${alert.cause}`,
@@ -269,13 +268,20 @@ function validateR45QueueDetail(snapshot, facts, origin) {
   ];
   let url;
   try { url = new URL(facts.url); } catch { /* Invalid navigation fails below. */ }
-  assert.ok(rows?.length === 1 && rows[0].job_id === 'r45-qa-job'
+  const snapshotAge = Date.now() - Date.parse(snapshot?.observed_at);
+  assert.ok(Number.isFinite(snapshotAge) && snapshotAge >= 0 && snapshotAge <= 60_000
+    && rows?.length === 1 && rows[0].job_id === 'r45-qa-job'
     && rows[0].attempts === 2 && rows[0].reason === 'EXHAUSTED'
-    && alerts?.length === 1 && alert.related_entity_id === rows[0].job_id
+    && alerts?.length === 1 && alert.source === 'orchestrator'
+    && alert.related_entity_id === rows[0].job_id
     && alert.status === 'open' && alert.deep_link === '/operations/queue'
     && snapshot.health?.database?.state === 'HEALTHY'
     && snapshot.health?.backend?.state === 'LATE'
-    && facts.status === 'LATE' && facts.count === '격리 작업 1건 · 현재 범위'
+    && snapshot.health?.queue?.state === 'UNKNOWN'
+    && snapshot.source_gaps?.includes('queue')
+    && facts.status === 'UNKNOWN' && facts.confirmed === '확인된 격리 이상'
+    && facts.gap === 'Queue source 연결 정보가 부족합니다.'
+    && facts.count === '격리 작업 1건 · 현재 범위'
     && facts.href === '#health-detail-queue' && facts.id === 'health-detail-queue'
     && facts.linkCount === 1 && facts.detailCount === 1
     && facts.paragraphs?.length === expected.length
@@ -2174,7 +2180,18 @@ async function main() {
     const healthSnapshot = JSON.parse(healthDashboard.text).data;
     assert.deepEqual(healthSnapshot.alerts.map(row => row.code),
       [alertCode, 'HEALTH_SIGNAL_LATE'], 'R44_R43_ORDER_CHANGED');
+    assert.equal(healthSnapshot.health.queue.state, 'UNKNOWN', 'R46_ZERO_QUEUE_HEALTH_CHANGED');
+    assert.ok(healthSnapshot.source_gaps.includes('queue')
+      && healthSnapshot.quarantine.length === 0
+      && healthSnapshot.alerts.every(row => row.code !== 'QUEUE_JOB_QUARANTINED'),
+    'R46_ZERO_QUEUE_EVIDENCE_CHANGED');
     await readyDashboard(page, 'reload', apiUrl, 'STORED', responseCaptures);
+    const emptyQueueCard = page.locator('section[aria-labelledby="health-heading"] article.status-card')
+      .filter({hasText: 'Queue'});
+    assert.equal(await emptyQueueCard.locator('[aria-live] > p').first().innerText(), 'UNKNOWN',
+      'R46_ZERO_QUEUE_CARD_CHANGED');
+    assert.equal(await emptyQueueCard.getByText('확인된 격리 이상').count(), 0,
+      'R46_ZERO_QUEUE_CARD_CHANGED');
     const healthCard = page.locator('section[aria-labelledby="health-heading"] article.status-card')
       .filter({hasText: 'Execution Backends'});
     const healthLink = healthCard.locator('a[href="#health-detail-backend"]');
@@ -2207,6 +2224,8 @@ async function main() {
     const queueTarget = queueCard.locator('#health-detail-queue');
     const queueDetailEvidence = validateR45QueueDetail(queueSnapshot, {
       status: await queueCard.locator('[aria-live] > p').first().innerText(),
+      confirmed: await queueCard.getByText('확인된 격리 이상').innerText(),
+      gap: await queueCard.getByText('Queue source 연결 정보가 부족합니다.').innerText(),
       count: await queueCard.getByText('격리 작업 1건 · 현재 범위').innerText(),
       href: queueHref, id: await queueTarget.getAttribute('id'),
       linkCount: await queueCard.locator('a[href^="#health-detail-"]').count(),
@@ -2696,10 +2715,12 @@ if (auditSelfTest) {
     related_entity_id: 'r45-qa-job', status: 'open', deep_link: '/operations/queue',
     cause: 'Queue job reached quarantine', impact: 'Run cannot advance automatically',
     observed_at: '2026-09-28T00:00:00+00:00', evidence_hash: `sha256:${'b'.repeat(64)}`};
-  const queueSnapshot = {quarantine: [{job_id: 'r45-qa-job', attempts: 2,
+  const queueSnapshot = {observed_at: new Date(Date.now() - 1000).toISOString(),
+    source_gaps: ['queue'], quarantine: [{job_id: 'r45-qa-job', attempts: 2,
     reason: 'EXHAUSTED'}], alerts: [queueAlert], health: {database: {state: 'HEALTHY'},
-      backend: {state: 'LATE'}}};
-  const queueFacts = {status: 'LATE', count: '격리 작업 1건 · 현재 범위',
+      backend: {state: 'LATE'}, queue: {state: 'UNKNOWN'}}};
+  const queueFacts = {status: 'UNKNOWN', confirmed: '확인된 격리 이상',
+    gap: 'Queue source 연결 정보가 부족합니다.', count: '격리 작업 1건 · 현재 범위',
     href: '#health-detail-queue', id: 'health-detail-queue', linkCount: 1,
     detailCount: 1, paragraphs: [
       `코드 · ${queueAlert.code}`, `출처 · ${queueAlert.source}`, `원인 · ${queueAlert.cause}`,
@@ -2713,6 +2734,15 @@ if (auditSelfTest) {
     assert.throws(() => validateR45QueueDetail(queueSnapshot, bad, apiUrl),
       /R45_QUEUE_DETAIL_MISMATCH/);
   }
+  for (const bad of [
+    {...queueSnapshot, source_gaps: []},
+    {...queueSnapshot, health: {...queueSnapshot.health, queue: {state: 'HEALTHY'}}},
+    {...queueSnapshot, observed_at: new Date(Date.now() - 61000).toISOString()},
+    {...queueSnapshot, observed_at: new Date(Date.now() + 1000).toISOString()},
+    {...queueSnapshot, alerts: [...queueSnapshot.alerts, queueAlert]},
+    {...queueSnapshot, alerts: [...queueSnapshot.alerts, {...queueAlert, source: 'worker'}]},
+  ]) assert.throws(() => validateR45QueueDetail(bad, queueFacts, apiUrl),
+    /R45_QUEUE_DETAIL_MISMATCH/);
   for (const bad of [
     { ...elapsedSnapshot, alerts: [...elapsedSnapshot.alerts, ...elapsedSnapshot.alerts] },
     { ...elapsedSnapshot, alerts: [{ ...elapsedSnapshot.alerts[0], status: 'resolved' }] },

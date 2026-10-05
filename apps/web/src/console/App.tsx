@@ -109,8 +109,8 @@ function validDashboardQueueRow(value: unknown): boolean {
     && typeof value.input_verified === 'boolean' && validObservedAt(value.backoff_until);
 }
 
-function dashboardQuarantine(value: unknown, snapshotTime: string, gaps: string[]): Record<string, unknown>[] | null {
-  if (gaps.includes('queue') || Date.parse(snapshotTime) > Date.now()
+function dashboardQuarantine(value: unknown, snapshotTime: string): Record<string, unknown>[] | null {
+  if (Date.parse(snapshotTime) > Date.now() || Date.now() - Date.parse(snapshotTime) > 60_000
     || !Array.isArray(value) || value.length > 100) return null;
   const rows = value as unknown[];
   if (!rows.every((row) => record(row) && exactFields(row, DASHBOARD_QUARANTINE_FIELDS)
@@ -124,8 +124,7 @@ function dashboardQuarantine(value: unknown, snapshotTime: string, gaps: string[
 }
 
 async function dashboardQuarantineDetail(rows: Record<string, unknown>[], alerts: unknown[], snapshotTime: string): Promise<HealthDetail | null> {
-  const candidates = alerts.filter((item) => record(item) && item.code === 'QUEUE_JOB_QUARANTINED'
-    && item.source === 'orchestrator');
+  const candidates = alerts.filter((item) => record(item) && item.code === 'QUEUE_JOB_QUARANTINED');
   if (candidates.length !== 1 || !record(candidates[0])) return null;
   const alert = candidates[0];
   const matching = rows.filter((row) => row.job_id === alert.related_entity_id);
@@ -136,7 +135,7 @@ async function dashboardQuarantineDetail(rows: Record<string, unknown>[], alerts
   const evidence = `sha256:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
   if (matching.length !== 1 || !exactFields(alert, ALERT_FIELDS)
     || !nonempty(alert.alert_id) || !Number.isSafeInteger(alert.sequence) || (alert.sequence as number) <= 0
-    || alert.category !== 'backlog' || alert.level !== 'critical'
+    || alert.source !== 'orchestrator' || alert.category !== 'backlog' || alert.level !== 'critical'
     || !['open', 'acknowledged'].includes(alert.status as string)
     || (alert.status === 'open' ? alert.owner_id !== null : !safeAlertText(alert.owner_id))
     || alert.cause !== 'Queue job reached quarantine'
@@ -318,13 +317,12 @@ async function classifyDashboardQueue(payload: unknown): Promise<DashboardQueueS
   DASHBOARD_SIGNAL_COMPONENTS.forEach((component) => {
     if (details[component]) health[component].detail = details[component];
   });
-  const quarantine = dashboardQuarantine(snapshot.quarantine, snapshot.observed_at, snapshot.source_gaps);
-  if (quarantine && quarantine.length > 0) {
-    health.queue = {status: 'LATE', lastCheck: snapshot.observed_at, errorCount: null,
-      detail: await dashboardQuarantineDetail(quarantine, snapshot.alerts as unknown[], snapshot.observed_at)};
-  }
+  const quarantine = dashboardQuarantine(snapshot.quarantine, snapshot.observed_at);
+  const quarantineDetail = quarantine?.length
+    ? await dashboardQuarantineDetail(quarantine, snapshot.alerts as unknown[], snapshot.observed_at) : null;
+  if (quarantineDetail) health.queue.detail = quarantineDetail;
   return {status: 'LOADED', observed: snapshot.queue.length,
-    quarantined: quarantine?.length ?? null,
+    quarantined: quarantineDetail ? quarantine?.length ?? null : null,
     runSummary: Date.parse(snapshot.observed_at) <= Date.now() ? dashboardRunSummary(snapshot.run_summary) : null,
     observedAt: Date.parse(snapshot.observed_at) <= Date.now() ? snapshot.observed_at : null,
     sourceGap: snapshot.source_gaps.includes('queue'),
@@ -400,7 +398,7 @@ export function QueueHealthCard({value}: {value: DashboardQueueState}) {
       {value.status === 'LOADED' ? <>
         <p>범위 내 관측 {value.observed}건</p>
         {value.quarantined !== null && value.quarantined > 0
-          ? <><p>격리 작업 {value.quarantined}건 · 현재 범위</p>
+          ? <><p>확인된 격리 이상</p><p>격리 작업 {value.quarantined}건 · 현재 범위</p>
             <p>관측 시각 · {value.observedAt}</p></> : null}
         <p>{value.sourceGap ? 'Queue source 연결 정보가 부족합니다.'
           : 'Queue source의 완전성은 확인되지 않았습니다.'}</p>
