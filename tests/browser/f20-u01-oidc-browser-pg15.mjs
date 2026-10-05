@@ -130,6 +130,8 @@ const r48AssertionCodes = new Set([
   'R48_REDIRECT_GET_MISSING', 'R48_REDIRECT_HEADER_REFERRER',
   'R48_REDIRECT_HEADER_CACHE', 'R48_REDIRECT_URL_NOT_SCRUBBED',
   'R48_HISTORY_STATE_LEAK', 'R48_DOM_SECRET_LEAK', 'R48_REFERER_LEAK',
+  'R48_REFERER_CLEAN_ROOT', 'R48_REFERER_CODE_OR_STATE',
+  'R48_REFERER_OTHER', 'R48_REFERER_HEADER_VIEW_MISMATCH',
   'R48_POPUP_NOT_CLOSED', 'R48_OPEN_ALERT_MISSING',
   'R48_ORIGIN_NOT_DENIED', 'R48_CSRF_NOT_DENIED',
   'R48_ORIGIN_WRONG_DENIAL', 'R48_CSRF_WRONG_DENIAL',
@@ -146,6 +148,16 @@ function safeR48FailureCode(error) {
   const code = typeof error?.message === 'string'
     ? /^(R48_[A-Z_]+)(?:\b|$)/.exec(error.message)?.[1] : null;
   return code && r48AssertionCodes.has(code) ? code : 'UNCLASSIFIED';
+}
+
+function classifyR48Referer(value, cleanRoot, code, state) {
+  if (value === undefined || value === null || value === '') return 'ABSENT';
+  if (typeof value !== 'string') return 'OTHER';
+  if (value === cleanRoot) return 'CLEAN_ROOT';
+  if (/[?&](?:code|state)=/i.test(value)
+    || [code, state].filter(Boolean).some((secret) =>
+      value.includes(secret) || value.includes(encodeURIComponent(secret)))) return 'CODE_OR_STATE';
+  return 'OTHER';
 }
 
 function safeFailureName(error) {
@@ -2695,7 +2707,17 @@ async function mainR48() {
       const followup = popup.waitForRequest((request) =>
         new URL(request.url()).pathname === '/api/health/ready');
       await popup.evaluate(() => fetch('/api/health/ready'));
-      assert.equal((await followup).headers().referer, undefined, 'R48_REFERER_LEAK');
+      const followupRequest = await followup;
+      const category = classifyR48Referer(followupRequest.headers().referer,
+        apiUrl + '/', redirectRequest.code, redirectRequest.state);
+      const allCategory = classifyR48Referer((await followupRequest.allHeaders()).referer,
+        apiUrl + '/', redirectRequest.code, redirectRequest.state);
+      const valueCategory = classifyR48Referer(await followupRequest.headerValue('referer'),
+        apiUrl + '/', redirectRequest.code, redirectRequest.state);
+      writeSync(1, `R48_REFERER_FACT headers=${category} all=${allCategory} value=${valueCategory}\n`);
+      assert.equal(category, allCategory, 'R48_REFERER_HEADER_VIEW_MISMATCH');
+      assert.equal(category, valueCategory, 'R48_REFERER_HEADER_VIEW_MISMATCH');
+      assert.equal(category, 'ABSENT', `R48_REFERER_${category}`);
       await popup.close();
       markR48Stage('DONE');
       console.log('R48_RESULT {"scenario":"redirect","scrubbed":true,"headersSafe":true,"refererSafe":true}');
@@ -2795,6 +2817,13 @@ async function mainR48() {
 }
 
 if (r48DiagnosticSelfTest) {
+  const root = 'https://anvil.invalid/';
+  assert.equal(classifyR48Referer(undefined, root, 'private-code', 'private-state'), 'ABSENT');
+  assert.equal(classifyR48Referer('', root, 'private-code', 'private-state'), 'ABSENT');
+  assert.equal(classifyR48Referer(root, root, 'private-code', 'private-state'), 'CLEAN_ROOT');
+  assert.equal(classifyR48Referer(root + '?code=private-code&state=private-state',
+    root, 'private-code', 'private-state'), 'CODE_OR_STATE');
+  assert.equal(classifyR48Referer(root + 'other', root, 'private-code', 'private-state'), 'OTHER');
   assert.equal(safeR48FailureCode({message: 'R48_REDIRECT_HEADER_REFERRER private-code'}),
     'R48_REDIRECT_HEADER_REFERRER');
   assert.equal(safeR48FailureCode({message: 'R48_PRIVATE_CODE private-token'}),

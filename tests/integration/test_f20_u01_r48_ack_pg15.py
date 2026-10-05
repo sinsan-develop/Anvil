@@ -99,6 +99,8 @@ _R48_SAFE_CODES = frozenset({"UNCLASSIFIED", "R48_SCENARIO_INVALID",
     "R48_REDIRECT_HEADER_REFERRER", "R48_REDIRECT_HEADER_CACHE",
     "R48_REDIRECT_URL_NOT_SCRUBBED", "R48_HISTORY_STATE_LEAK",
     "R48_DOM_SECRET_LEAK", "R48_REFERER_LEAK", "R48_POPUP_NOT_CLOSED",
+    "R48_REFERER_CLEAN_ROOT", "R48_REFERER_CODE_OR_STATE",
+    "R48_REFERER_OTHER", "R48_REFERER_HEADER_VIEW_MISMATCH",
     "R48_OPEN_ALERT_MISSING", "R48_ORIGIN_NOT_DENIED", "R48_CSRF_NOT_DENIED",
     "R48_ORIGIN_WRONG_DENIAL", "R48_CSRF_WRONG_DENIAL",
     "R48_PERMISSION_NOT_DENIED", "R48_PERMISSION_DENIAL_CODE",
@@ -117,6 +119,15 @@ def _r48_safe_failure(stderr: str) -> str:
         if match and match.group(2) in _R48_SAFE_STAGES and match.group(3) in _R48_SAFE_CODES:
             return line
     return "R48_DIAGNOSTIC_UNAVAILABLE"
+
+
+def _r48_safe_referer_fact(stdout: str) -> str:
+    for line in stdout.splitlines():
+        if re.fullmatch(r"R48_REFERER_FACT headers=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER) "
+                r"all=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER) "
+                r"value=(ABSENT|CLEAN_ROOT|CODE_OR_STATE|OTHER)", line):
+            return line
+    return "R48_REFERER_FACT_UNAVAILABLE"
 
 
 def test_r48_disposable_cleanup_does_not_mask_primary_or_delete_append_only_rows():
@@ -144,6 +155,9 @@ def test_r48_browser_diagnostic_accepts_only_static_safe_fields():
     assert _r48_safe_failure(line.replace("R48_REDIRECT_HEADER_REFERRER",
         "R48_PRIVATE_CODE")) == "R48_DIAGNOSTIC_UNAVAILABLE"
     assert _r48_safe_failure(line + " private-token") == "R48_DIAGNOSTIC_UNAVAILABLE"
+    fact = "R48_REFERER_FACT headers=CLEAN_ROOT all=CLEAN_ROOT value=CLEAN_ROOT"
+    assert _r48_safe_referer_fact(fact + "\nprivate-code=secret") == fact
+    assert _r48_safe_referer_fact(fact + " private-token") == "R48_REFERER_FACT_UNAVAILABLE"
 
 
 def test_r48_isolated_dsn_keeps_psycopg3_and_denies_other_targets(monkeypatch):
@@ -381,7 +395,8 @@ def test_r48_oidc_popup_and_ack_browser_with_isolated_pg15():
                 result = subprocess.run([os.environ.get("ANVIL_F20_R6_NODE_BIN", "node"), str(script)],
                     env=process_environment, text=True, capture_output=True, timeout=90, check=False)
                 assert result.returncode == 0, (f"R48_BROWSER_{scenario.upper().replace('-', '_')}_FAILED "
-                    + _r48_safe_failure(result.stderr))
+                    + _r48_safe_failure(result.stderr) + " "
+                    + _r48_safe_referer_fact(result.stdout))
                 lines = [line for line in result.stdout.splitlines() if line.startswith("R48_RESULT ")]
                 assert len(lines) == 1
                 evidence = json.loads(lines[0].removeprefix("R48_RESULT "))
