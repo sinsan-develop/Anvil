@@ -127,6 +127,7 @@ const r48Stages = new Set(['BOOTSTRAP', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'REDIRECT_SCRUB', 'REDIRECT_REFERER', 'REDIRECT_FETCH_DISPATCH',
   'REDIRECT_REQUEST_CAPTURED', 'REDIRECT_HEADER_CLASSIFY', 'ACK',
   'ACK_BUTTON_WAIT', 'ACK_CLICK', 'ACK_RESPONSE_WAIT', 'ACK_DENIAL_CHECK',
+  'ACK_DENIAL_BODY_WAIT', 'ACK_DENIAL_CODE',
   'ACK_BLOCKED_UI_WAIT', 'ACK_CONTEXT_CLOSE', 'AUDIT', 'DONE']);
 const r48AssertionCodes = new Set([
   'R48_SCENARIO_INVALID', 'R48_CALLBACK_REJECTED', 'R48_CSRF_MISSING',
@@ -139,6 +140,7 @@ const r48AssertionCodes = new Set([
   'R48_ORIGIN_NOT_DENIED', 'R48_CSRF_NOT_DENIED',
   'R48_ORIGIN_WRONG_DENIAL', 'R48_CSRF_WRONG_DENIAL',
   'R48_PERMISSION_NOT_DENIED', 'R48_PERMISSION_DENIAL_CODE',
+  'R48_PERMISSION_BODY_TIMEOUT',
   'R48_ACK_REJECTED', 'R48_ACK_PAYLOAD_INVALID',
   'R48_AUDIT_PERMISSION_NOT_DENIED', 'R48_AUDIT_DENIAL_CODE',
   'R48_ACK_RETRANSMITTED', 'R48_AUDIT_PAGE_NOT_INTERCEPTED',
@@ -164,6 +166,19 @@ function classifyR48Referer(value, cleanRoot, code, state) {
     || [code, state].filter(Boolean).some((secret) =>
       value.includes(secret) || value.includes(encodeURIComponent(secret)))) return 'CODE_OR_STATE';
   return 'OTHER';
+}
+
+async function readR48DenialCode(response, timeoutMs, timeoutCode) {
+  let timer;
+  try {
+    const body = response.json().then((payload) => payload?.error?.code);
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(timeoutCode)), timeoutMs);
+    });
+    return await Promise.race([body, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function safeFailureName(error) {
@@ -2772,7 +2787,10 @@ async function mainR48() {
     if (r48Scenario === 'permission-denied') {
       markR48Stage('ACK_DENIAL_CHECK');
       assert.equal(ack.status(), 403, 'R48_PERMISSION_NOT_DENIED');
-      assert.equal((await ack.json())?.error?.code, 'PERMISSION_DENIED');
+      markR48Stage('ACK_DENIAL_BODY_WAIT');
+      const deniedCode = await readR48DenialCode(ack, 5000, 'R48_PERMISSION_BODY_TIMEOUT');
+      markR48Stage('ACK_DENIAL_CODE');
+      assert.equal(deniedCode, 'PERMISSION_DENIED', 'R48_PERMISSION_DENIAL_CODE');
       markR48Stage('ACK_BLOCKED_UI_WAIT');
       await card.getByText(/확인 미검증/).waitFor({timeout: 10000});
       assert.equal(requests.filter(({url}) => url.pathname.includes(':acknowledge')).length, 1);
@@ -2829,6 +2847,10 @@ async function mainR48() {
 }
 
 if (r48DiagnosticSelfTest) {
+  assert.equal(await readR48DenialCode({json: async () => ({error: {code: 'PERMISSION_DENIED'}})},
+    10, 'R48_PERMISSION_BODY_TIMEOUT'), 'PERMISSION_DENIED');
+  await assert.rejects(readR48DenialCode({json: () => new Promise(() => {})},
+    1, 'R48_PERMISSION_BODY_TIMEOUT'), /R48_PERMISSION_BODY_TIMEOUT/);
   const root = 'https://anvil.invalid/';
   assert.equal(classifyR48Referer(undefined, root, 'private-code', 'private-state'), 'ABSENT');
   assert.equal(classifyR48Referer('', root, 'private-code', 'private-state'), 'ABSENT');
