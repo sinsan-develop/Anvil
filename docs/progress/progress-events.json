@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2141,
+  "last_sequence": 2143,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -100551,7 +100551,49 @@
       "write_fencing_token": "f19a-pair-write-fence-epoch-71-6c6eed1906634a51ba4478a7f6abf50f",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2142,
+    "event_id": "evt_f19a_2142_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK0_CONTROL_CLOSE",
+    "subject_ref": "F-19A/MINIMAL-PAIR-AUTH",
+    "occurred_at": "2026-10-06T20:54:35+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "EDD15FCC97614ECDC1232F2F9B5F3A22B7B43764EF9CDA9ADEF964213D62AD37",
+    "details": {
+      "lease_id": "write-lease-f19a-pair-6c6eed1906634a51ba4478a7f6abf50f",
+      "write_fencing_token": "f19a-pair-write-fence-epoch-71-6c6eed1906634a51ba4478a7f6abf50f",
+      "reason": "F19A_TASK0_CONTROL_VALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+    }
+  },
+  {
+    "sequence": 2143,
+    "event_id": "evt_f19a_2143_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK0_CONTROL_CLOSE",
+    "subject_ref": "F-19A/MINIMAL-PAIR-AUTH",
+    "occurred_at": "2026-10-06T20:54:35+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "9EC3992A217942DC5AD1031372C66F0C1903A852590F15662EE2CDBE7E5810C5",
+    "details": {
+      "lease_id": "worker-lease-f19a-pair-bf64f25d31de4da7944fc4acce11ba77",
+      "execution_fencing_token": "f19a-pair-execution-fence-epoch-71-bf64f25d31de4da7944fc4acce11ba77",
+      "reason": "F19A_TASK0_CONTROL_VALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2141_write_lease_issued"
+  "last_event_id": "evt_f19a_2143_worker_lease_revoked"
 }

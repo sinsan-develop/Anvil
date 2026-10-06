@@ -1,22 +1,26 @@
-# F-19A 최소 등록·정확 pair grant Task0 통제 시작 handoff
+# F-19A 최소 등록·정확 pair grant Task0 통제 종료 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2141,
-  "last_event_id": "evt_f19a_2141_write_lease_issued",
+  "event_sequence": 2143,
+  "last_event_id": "evt_f19a_2143_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-pair-bf64f25d31de4da7944fc4acce11ba77",
-  "write_lease": "write-lease-f19a-pair-6c6eed1906634a51ba4478a7f6abf50f",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY",
-  "repository_head": "53feab5fa6ad0755c5c308117c756eafd371cb8c",
+  "next_safe_action": "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1",
+  "repository_head": "d6960b95b7eb9afcfe801190eaa762485b387d3f",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- F-19A Task0 통제 종료: 기존 branch/private 코드 checkpoint `d6960b95b7eb9afcfe801190eaa762485b387d3f`의 clean G-05 seq2141·전체 46 PASS와 독립 C0/I0/M0을 확인한 뒤 seq2142 write→2143 worker 회수를 원문 뒤에 append했다. 두 lease는 `REVOKED`, active worker/write와 제품 write scope는 빈 상태다. Task0 전용 binding만 종료이며 F-19A 전체는 `ACTIVE`·미수락, 다음은 새 제품 dual lease 발급 후 Task1이다. 종료 투영 G-05 seq2143 PASS·diff check0을 확인했고 최종 private checkpoint는 아직 미실행이며 Release DEFER·Production NOT_EXECUTED, WSL/ysna 작업0이다.
+
+- 종료 후 발견한 통제 예외: 집중 8건 중 4건은 live seq2141을 가정한 fixture 때문에 FAIL이며, machine `next_safe_action=F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1`는 이 RED gate에 비춰 아직 실행 가능한 행동이 아니다. 제품 dual lease/Task1을 발급하지 않는다. 이 종료 투영은 복구 가능한 WIP checkpoint로만 보존하고, 별도 non-product 통제 lease에서 fixture와 machine next action을 재결박한 뒤 전체 회귀·독립 검토를 재실행한다.
 
 - F-19A 독립 제품 Package의 신산님 직접 승인 계약을 `docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md`에 결박했다. 비의미 통제·역사 테스트 호환성 재확정 Plan SHA `0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E`, WI rev3 SHA `2D2CED73D8EFFD7E92AD3E34D0725C5AF8B3302129A2ACB615C383727E5C90A9`, frozen seq2138/base `abeab9f4...`, clean private dispatch `53feab5f...`다. seq2139 WI→2140 worker→2141 write를 epoch71의 서로 다른 token/단일 Developer **활성 exact4·제품 scope0**/24시간으로 append-only 투영했다. WI 전체 경로 상한 exact21은 후속 lease의 자동 권한이 아니다. 현재 exact4에는 checker/신규 테스트와 인접 41건 실패의 과거 fixture/시각만 보정할 역사 test 두 파일이 포함된다. 새 checker route와 독립 검토/G-05/정확 control checkpoint를 통과하고 Task0 lease를 회수한 후 별도 제품 dual lease를 발급하기 전에는 제품 write를 시작하지 않는다. 인접 41건은 38 PASS/3 FAIL 상태이고 F-19A 미수락, F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED다.
 
