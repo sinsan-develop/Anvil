@@ -17,10 +17,39 @@ ROOT = Path(__file__).resolve().parents[2]
 class ContractSuccessorProjectionTests(unittest.TestCase):
     @staticmethod
     def historical_issued():
-        rows = load_bundle(ROOT)["events"]["events"]
+        _, rows = ContractSuccessorProjectionTests.closed66()
         return rows[2103]["details"], rows[2104]["details"]
 
-    def test_active_successor_routes_to_its_control_validator(self):
+    @staticmethod
+    def closed66():
+        from scripts import f20_u01_contract_successor_overlay as overlay
+        progress = json.loads(overlay._frozen(ROOT, overlay.PROGRESS, overlay.BASE67))
+        events = json.loads(overlay._frozen(ROOT, overlay.EVENTS, overlay.BASE67))["events"]
+        return progress, events
+
+    @staticmethod
+    def issued66():
+        _, rows = ContractSuccessorProjectionTests.closed66()
+        return rows[2109]["details"], rows[2110]["details"]
+
+    @staticmethod
+    def issued67():
+        rows = load_bundle(ROOT)["events"]["events"]
+        return rows[2115]["details"], rows[2116]["details"]
+
+    @staticmethod
+    def active67_fixture():
+        bundle = deepcopy(load_bundle(ROOT))
+        rows = bundle["events"]["events"]
+        worker, write = deepcopy(rows[2115]["details"]), deepcopy(rows[2116]["details"])
+        bundle["events"]["events"] = rows[:2117]
+        bundle["events"]["last_sequence"] = bundle["progress"]["event_sequence"] = 2117
+        bundle["events"]["last_event_id"] = bundle["progress"]["last_event_id"] = rows[2116]["event_id"]
+        bundle["progress"]["worker_lease"] = worker
+        bundle["progress"]["write_lease"] = write
+        return bundle
+
+    def test_current_successor_routes_to_its_control_validator(self):
         bundle = load_bundle(ROOT)
         self.assertEqual(
             bundle["progress"]["repository"]["projection_mode"],
@@ -33,12 +62,12 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
 
         now = datetime.now(timezone.utc)
         cases = (
-            ("order", lambda b: b["events"]["events"][2109].update(event_type="WRITE_LEASE_ISSUED"), "SUCCESSOR_EVENT_ORDER_INVALID"),
-            ("token", lambda b: b["events"]["events"][2110]["details"].update(write_fencing_token="forged"), "SUCCESSOR_LEASE_INVALID"),
+            ("order", lambda b: b["events"]["events"][2115].update(event_type="WRITE_LEASE_ISSUED"), "SUCCESSOR_EVENT_ORDER_INVALID"),
+            ("token", lambda b: b["events"]["events"][2116]["details"].update(write_fencing_token="forged"), "SUCCESSOR_LEASE_INVALID"),
             ("product_scope", lambda b: b["progress"]["repository"].update(product_write_scope=["packages/api/runtime.py"]), "SUCCESSOR_SCOPE_INVALID"),
-            ("write_scope", lambda b: b["events"]["events"][2110]["details"]["path_scope"].append("packages/api/runtime.py"), "SUCCESSOR_LEASE_INVALID"),
-            ("doc_scope", lambda b: b["events"]["events"][2108]["details"]["developer_exact_paths"].append("docs/other.md"), "SUCCESSOR_WORK_INSTRUCTION_INVALID"),
-            ("wi_hash", lambda b: b["events"]["events"][2108]["details"].update(sha256="0" * 64), "SUCCESSOR_WORK_INSTRUCTION_INVALID"),
+            ("write_scope", lambda b: b["events"]["events"][2116]["details"]["path_scope"].append("packages/api/runtime.py"), "SUCCESSOR_LEASE_INVALID"),
+            ("doc_scope", lambda b: b["events"]["events"][2114]["details"]["developer_exact_paths"].append("docs/other.md"), "SUCCESSOR_WORK_INSTRUCTION_INVALID"),
+            ("wi_hash", lambda b: b["events"]["events"][2114]["details"].update(sha256="0" * 64), "SUCCESSOR_WORK_INSTRUCTION_INVALID"),
         )
         for name, mutate, code in cases:
             with self.subTest(name=name):
@@ -47,7 +76,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
                 self.assertIn(code, overlay.validate_control(ROOT, bundle, now))
         self.assertIn(
             "SUCCESSOR_ACTIVE_LEASE_INVALID",
-            overlay.validate_control(ROOT, load_bundle(ROOT), overlay.EXPIRES66 + timedelta(seconds=1)),
+            overlay.validate_control(ROOT, self.active67_fixture(), overlay.EXPIRES67 + timedelta(seconds=1)),
         )
 
     def test_rejects_forged_work_instruction_authority(self):
@@ -62,7 +91,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         ):
             with self.subTest(field=field):
                 bundle = deepcopy(load_bundle(ROOT))
-                bundle["events"]["events"][2108]["details"][field] = forged
+                bundle["events"]["events"][2114]["details"][field] = forged
                 self.assertIn("SUCCESSOR_WORK_INSTRUCTION_INVALID", overlay.validate_control(
                     ROOT, bundle, datetime.now(timezone.utc)))
 
@@ -71,8 +100,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
 
         for worker in (True, False):
             with self.subTest(worker=worker):
-                key = "worker_lease" if worker else "write_lease"
-                issued = deepcopy(load_bundle(ROOT)["progress"][key])
+                issued = deepcopy(self.issued66()[0 if worker else 1])
                 issued["status"] = "REVOKED"
                 self.assertFalse(overlay._lease_valid66(issued, worker=worker))
 
@@ -80,14 +108,14 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
         worker_issued, write_issued = self.historical_issued()
-        bundle = load_bundle(ROOT)
+        progress, events = self.closed66()
         for worker in (True, False):
             with self.subTest(worker=worker):
                 key = ("completed_f20_u01_contract_control_worker_lease" if worker else
                        "completed_f20_u01_contract_control_write_lease")
                 issued = worker_issued if worker else write_issued
-                completed = bundle["progress"][key]
-                revoked_at = bundle["events"]["events"][2107 if worker else 2106]["occurred_at"]
+                completed = progress[key]
+                revoked_at = events[2107 if worker else 2106]["occurred_at"]
                 self.assertTrue(overlay.completed_lease_matches(issued, completed, revoked_at))
                 changed = deepcopy(completed)
                 changed["path_scope"] = ["packages/api/runtime.py"]
@@ -100,22 +128,20 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
         bundle = deepcopy(load_bundle(ROOT))
-        bundle["events"]["events"][2109]["details"]["status"] = "REVOKED"
-        bundle["progress"]["worker_lease"]["status"] = "REVOKED"
+        bundle["events"]["events"][2115]["details"]["status"] = "REVOKED"
         self.assertIn("SUCCESSOR_LEASE_INVALID", overlay.validate_control(
             ROOT, bundle, datetime.now(timezone.utc)))
 
     def test_lease_issue_instant_is_bound_to_canonical_epoch(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        lease = deepcopy(load_bundle(ROOT)["progress"]["worker_lease"])
+        lease = deepcopy(self.issued66()[0])
         lease["issued_at"] = "2026-10-05T22:47:44+00:00"
         self.assertFalse(overlay._lease_valid66(lease, worker=True))
 
         bundle = deepcopy(load_bundle(ROOT))
-        future = overlay.EXPIRES66 - timedelta(seconds=1)
-        bundle["events"]["events"][2109]["details"]["issued_at"] = future.isoformat()
-        bundle["progress"]["worker_lease"]["issued_at"] = future.isoformat()
+        future = overlay.EXPIRES67 - timedelta(seconds=1)
+        bundle["events"]["events"][2115]["details"]["issued_at"] = future.isoformat()
         self.assertIn("SUCCESSOR_LEASE_INVALID", overlay.validate_control(
             ROOT, bundle, datetime.now(timezone.utc)))
 
@@ -154,7 +180,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         ):
             with self.subTest(field=field):
                 bundle = deepcopy(load_bundle(ROOT))
-                bundle["events"]["events"][2108][field] = forged
+                bundle["events"]["events"][2114][field] = forged
                 self.assertIn("SUCCESSOR_EVENT_IDENTITY_INVALID", overlay.validate_control(
                     ROOT, bundle, datetime.now(timezone.utc)))
 
@@ -162,8 +188,8 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
         bundle = deepcopy(load_bundle(ROOT))
-        bundle["events"]["events"][2110]["occurred_at"] = (
-            overlay.EXPIRES66 + timedelta(seconds=1)).isoformat()
+        bundle["events"]["events"][2116]["occurred_at"] = (
+            overlay.EXPIRES67 + timedelta(seconds=1)).isoformat()
         self.assertIn("SUCCESSOR_EVENT_TIME_INVALID", overlay.validate_control(
             ROOT, bundle, datetime.now(timezone.utc)))
 
@@ -193,7 +219,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             return fake
 
         progress = load_bundle(ROOT)["progress"]
-        with patch.object(overlay, "_dirty", return_value=set(overlay.EXACT3)):
+        with patch.object(overlay, "_dirty", return_value=set()):
             self.assertEqual(overlay.collect_git(ROOT, progress), [])
             for variant in ("branch", "remote", "dirty", "committed_scope"):
                 with self.subTest(variant=variant), patch.object(overlay, "_git", side_effect=changed(variant)):
@@ -203,7 +229,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
                     else:
                         self.assertEqual(overlay.collect_git(ROOT, progress), ["SUCCESSOR_GIT_INVALID"])
 
-    def test_epoch66_requires_baseline_ancestor_even_when_other_git_checks_pass(self):
+    def test_epoch67_requires_baseline_ancestor_even_when_other_git_checks_pass(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
         progress = load_bundle(ROOT)["progress"]
@@ -211,22 +237,20 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         observed = []
 
         def split_head(command, *args, **kwargs):
-            if command == ["git", "merge-base", "--is-ancestor", overlay.BASE66, "HEAD"]:
-                observed.append("BASE66_ONLY")
+            if command == ["git", "merge-base", "--is-ancestor", overlay.BASE67, "HEAD"]:
+                observed.append("BASE67_ONLY")
                 return SimpleNamespace(returncode=1)
             return original_run(command, *args, **kwargs)
 
         with patch.object(overlay, "_dirty", return_value=set()), \
                 patch.object(overlay.subprocess, "run", side_effect=split_head):
             self.assertEqual(overlay.collect_git(ROOT, progress), ["SUCCESSOR_GIT_INVALID"])
-        self.assertEqual(observed, ["BASE66_ONLY"])
+        self.assertEqual(observed, ["BASE67_ONLY"])
 
     def test_close_events_bind_handoff_and_revoke_write_before_worker(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = load_bundle(ROOT)
-        worker = bundle["progress"]["worker_lease"]
-        write = bundle["progress"]["write_lease"]
+        worker, write = self.issued66()
         handoff = {
             "work_instruction_sha256": overlay.WI66_HASH,
             "worker_lease_id": worker["lease_id"],
@@ -261,56 +285,84 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         self.assertIn("SUCCESSOR_REVOCATION_EVENT_INVALID",
                       overlay.validate_close_test_events(ROOT, wrong_reason, worker, write))
 
-    def test_closed_projection_accepts_exact_revocations_and_rejects_dirty(self):
+    def test_actual_closed66_snapshot_binds_revocations_and_rejects_dirty(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
-        progress, stream = bundle["progress"], bundle["events"]
-        worker, write = progress["worker_lease"], progress["write_lease"]
+        progress, rows = self.closed66()
+        worker, write = self.issued66()
+        self.assertEqual(overlay._sha(overlay._frozen(ROOT, overlay.EVENTS, overlay.BASE67)),
+                         "11C11CFB8A2B27E15CDB298E7A9BC5D50C53A0CBD200E8C6003609D3B8BDBAF3")
+        self.assertEqual(progress["event_sequence"], 2114)
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual([row["event_type"] for row in rows[2111:2114]], list(overlay.KINDS_CLOSE))
+        self.assertTrue(overlay.completed_lease_matches(
+            worker, progress["completed_f20_u01_contract_close_test_worker_lease"], rows[2113]["occurred_at"]))
+        self.assertTrue(overlay.completed_lease_matches(
+            write, progress["completed_f20_u01_contract_close_test_write_lease"], rows[2112]["occurred_at"]))
+        with patch.object(overlay, "_dirty", return_value={"scripts/f20_u01_contract_successor_overlay.py"}):
+            self.assertEqual(overlay.collect_git(ROOT, progress), ["SUCCESSOR_GIT_INVALID"])
+
+    def test_epoch67_active_dirty_is_scoped_but_closed_dirty_is_rejected(self):
+        from scripts import f20_u01_contract_successor_overlay as overlay
+
+        progress = deepcopy(load_bundle(ROOT)["progress"])
+        with patch.object(overlay, "_dirty", return_value=set(overlay.EXACT2)):
+            progress["event_sequence"] = 2117
+            self.assertEqual(overlay.collect_git(ROOT, progress), [])
+            progress["event_sequence"] = 2120
+            self.assertEqual(overlay.collect_git(ROOT, progress), ["SUCCESSOR_GIT_INVALID"])
+
+    def test_epoch67_close_events_and_completed_lease_are_exact(self):
+        from scripts import f20_u01_contract_successor_overlay as overlay
+
+        worker, write = self.issued67()
         instant = datetime.now(timezone.utc).isoformat()
-        close = [
-            ("HANDOFF_RECORDED", {
-                "work_instruction_sha256": overlay.WI66_HASH,
+        reason = "CLOSED_FIXTURE_SUCCESSOR_VALIDATED_LOCAL_ONLY"
+        rows = [
+            {"event_type": "HANDOFF_RECORDED", "details": {
+                "work_instruction_sha256": overlay.WI67_HASH,
                 "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
                 "accepted": False, "product_write_scope": [], "handoff_ref": overlay.HANDOFF,
                 "handoff_sha256": overlay._sha((ROOT / overlay.HANDOFF).read_bytes()),
-            }),
-            ("WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
-                "write_fencing_token": overlay.WRITE_TOKEN66,
-                "reason": "CONTRACT_CLOSE_TEST_SUCCESSOR_VALIDATED_LOCAL_ONLY"}),
-            ("WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
-                "execution_fencing_token": overlay.WORKER_TOKEN66,
-                "reason": "CONTRACT_CLOSE_TEST_SUCCESSOR_VALIDATED_LOCAL_ONLY"}),
+            }},
+            {"event_type": "WRITE_LEASE_REVOKED", "details": {
+                "lease_id": write["lease_id"], "write_fencing_token": overlay.WRITE_TOKEN67,
+                "reason": reason,
+            }},
+            {"event_type": "WORKER_LEASE_REVOKED", "details": {
+                "lease_id": worker["lease_id"], "execution_fencing_token": overlay.WORKER_TOKEN67,
+                "reason": reason,
+            }},
         ]
-        for sequence, (kind, details) in enumerate(close, start=2112):
-            stream["events"].append({
-                "sequence": sequence, "event_id": f"evt_f20_{sequence}_{kind.lower()}",
-                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
-                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-20",
-                "step_id": "F20_U01_CONTRACT_CLOSE_TEST_SUCCESSOR_CLOSE",
-                "subject_ref": overlay.SUBJECT66, "occurred_at": instant,
-                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
-                "previous_event_sha256": overlay._sha(overlay.prior.r1._canonical(stream["events"][-1])),
-                "details": details,
-            })
-        stream["last_sequence"] = progress["event_sequence"] = 2114
-        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
-        progress["worker_lease"] = progress["write_lease"] = None
-        progress["completed_f20_u01_contract_close_test_worker_lease"] = {
-            **worker, "status": "REVOKED", "revoked_at": instant,
-        }
-        progress["completed_f20_u01_contract_close_test_write_lease"] = {
-            **write, "status": "REVOKED", "revoked_at": instant,
-        }
-        bundle["handoff"].update(event_sequence=2114, last_event_id=stream["last_event_id"],
-                                 worker_lease=None, write_lease=None)
-        raw = json.dumps(stream).encode()
-        progress["registry_refs"]["progress_events"]["sha256"] = overlay._sha(raw)
-        with patch.object(overlay, "raw_event_object_prefix_bytes", return_value=b"frozen-test-prefix"):
-            errors = overlay.validate_control(ROOT, bundle, datetime.now(timezone.utc), event_raw=raw)
-        self.assertEqual(errors, ["SUCCESSOR_DETACHED_DIGEST_INVALID"])
-        with patch.object(overlay, "_dirty", return_value={"scripts/check_project_progress.py"}):
-            self.assertEqual(overlay.collect_git(ROOT, progress), ["SUCCESSOR_GIT_INVALID"])
+        self.assertEqual(overlay.validate_closed_fixture_events(ROOT, rows, worker, write), [])
+        for index, field, forged, code in (
+            (0, "work_instruction_sha256", "0" * 64, "SUCCESSOR_HANDOFF_EVENT_INVALID"),
+            (1, "write_fencing_token", "forged", "SUCCESSOR_REVOCATION_EVENT_INVALID"),
+            (2, "reason", "ACCEPTED", "SUCCESSOR_REVOCATION_EVENT_INVALID"),
+        ):
+            with self.subTest(index=index, field=field):
+                changed = deepcopy(rows)
+                changed[index]["details"][field] = forged
+                self.assertIn(code, overlay.validate_closed_fixture_events(ROOT, changed, worker, write))
+        self.assertTrue(overlay.completed_lease_matches(
+            worker, {**worker, "status": "REVOKED", "revoked_at": instant}, instant))
+        self.assertFalse(overlay.completed_lease_matches(
+            write, {**write, "status": "REVOKED", "revoked_at": instant, "path_scope": ["other"]}, instant))
+
+    def test_epoch67_rejects_forged_historical_completion_and_seq2114_prefix(self):
+        from scripts import f20_u01_contract_successor_overlay as overlay
+
+        bundle = deepcopy(load_bundle(ROOT))
+        bundle["progress"]["completed_f20_u01_contract_close_test_worker_lease"]["path_scope"] = ["other"]
+        self.assertIn("SUCCESSOR_HISTORICAL_LEASE_INVALID", overlay.validate_control(
+            ROOT, bundle, datetime.now(timezone.utc)))
+        raw = (ROOT / overlay.EVENTS).read_bytes().replace(
+            b'"evt_f20_2114_worker_lease_revoked"', b'"evt_f20_2114_worker_lease_forged"', 1)
+        bundle = deepcopy(load_bundle(ROOT))
+        bundle["events"] = json.loads(raw)
+        self.assertIn("SUCCESSOR_HISTORICAL_PREFIX_INVALID", overlay.validate_control(
+            ROOT, bundle, datetime.now(timezone.utc), event_raw=raw))
 
     def test_rejects_historical_successor_prefix_mutation(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -328,8 +380,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
         bundle = deepcopy(load_bundle(ROOT))
-        worker = bundle["progress"]["worker_lease"]
-        write = bundle["progress"]["write_lease"]
+        worker, write = self.issued67()
         rows = bundle["events"]["events"]
         for item in ("worker", "write"):
             with self.subTest(item=item):
