@@ -58418,12 +58418,19 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
     write_token = "f19a-pair-write-fence-epoch-71-6c6eed1906634a51ba4478a7f6abf50f"
     try:
         raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
+        rows = stream["events"]
+        closed = len(rows) == 2143
         frozen_raw = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
                                              cwd=root, stderr=subprocess.DEVNULL)
         frozen_stream = json.loads(frozen_raw)
         stable_header = lambda row: {key: value for key, value in row.items()
                                      if key not in {"events", "last_sequence", "last_event_id"}}
-        if (raw_event_object_prefix_bytes(raw, 2138) != raw_event_object_prefix_bytes(frozen_raw, 2138)
+        checkpoint_raw = subprocess.check_output(
+            ["git", "show", "0149ab1a079bc8c2ccae944e13c2e2a626ebf62b:docs/progress/progress-events.json"],
+            cwd=root, stderr=subprocess.DEVNULL) if closed else frozen_raw
+        frozen_count = 2141 if closed else 2138
+        if (raw_event_object_prefix_bytes(raw, frozen_count)
+                != raw_event_object_prefix_bytes(checkpoint_raw, frozen_count)
                 or stable_header(stream) != stable_header(frozen_stream)):
             errors.append("F19A_FROZEN_PREFIX_INVALID")
         frozen = json.loads(subprocess.check_output(["git", "show", f"{base}:docs/progress/build-progress.json"],
@@ -58433,6 +58440,8 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
                     "active_work_instruction", "current_progress_evidence_ref", "registry_refs",
                     "next_work_package", "next_successor_work_package", "snapshot_hash",
                     "runtime_next_action", "f19a_minimal_pair_auth_binding"}
+        if closed:
+            changing.update({"completed_f19a_task0_write_lease", "completed_f19a_task0_worker_lease"})
         stable = lambda row: {key: value for key, value in row.items() if key not in changing}
         repo_changing = {"local_head", "remote_head", "projection_mode", "validated_base_commit",
                          "head_relation", "product_write_scope", "worktree_status"}
@@ -58446,10 +58455,11 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
                 or {k: v for k, v in refs["progress_events"].items() if k != "sha256"}
                 != {k: v for k, v in prior_refs["progress_events"].items() if k != "sha256"}):
             errors.append("F19A_FROZEN_PROJECTION_INVALID")
-        rows = stream["events"]
         kinds = ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"]
-        if (len(rows) != 2141 or stream.get("last_sequence") != 2141
-                or progress.get("event_sequence") != 2141 or stream.get("last_event_id") != rows[-1]["event_id"]
+        if closed:
+            kinds += ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED"]
+        if (len(rows) not in {2141, 2143} or stream.get("last_sequence") != len(rows)
+                or progress.get("event_sequence") != len(rows) or stream.get("last_event_id") != rows[-1]["event_id"]
                 or progress.get("last_event_id") != rows[-1]["event_id"]
                 or stream != json.loads(raw)):
             errors.append("F19A_EVENT_INVALID")
@@ -58459,11 +58469,12 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
                     or row.get("event_type") != kind or row.get("actor") != "main-agent-eoul"
                     or row.get("actor_id") != "main-agent-eoul" or row.get("actor_type") != "AGENT"
                     or row.get("project_id") != "anvil" or row.get("work_package_id") != "F-19A"
-                    or row.get("run_id") is not None or row.get("step_id") != "F19A_MINIMAL_PAIR_AUTH_START"
+                    or row.get("run_id") is not None or row.get("step_id") != (
+                        "F19A_MINIMAL_PAIR_AUTH_START" if idx < 2141 else "F19A_TASK0_CONTROL_CLOSE")
                     or row.get("subject_ref") != "F-19A/MINIMAL-PAIR-AUTH"
                     or row.get("occurred_at_source") != "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME"
                     or row.get("previous_event_sha256") != hashlib.sha256(canonical_json_bytes(rows[idx - 1])).hexdigest().upper()
-                    or row.get("occurred_at") != rows[2138]["occurred_at"]):
+                    or (idx < 2141 and row.get("occurred_at") != rows[2138]["occurred_at"])):
                 errors.append("F19A_EVENT_INVALID")
         instruction, worker, write = (rows[2138 + idx]["details"] for idx in range(3))
         expected_instruction = {"path": wi, "sha256": hashes[wi],
@@ -58490,11 +58501,34 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
         if (rows[2138]["occurred_at"] != issued
                 or datetime.fromisoformat(expires) - datetime.fromisoformat(issued) != timedelta(hours=24)
                 or worker != expected_worker or write != expected_write or worker_token == write_token
-                or progress.get("worker_lease") != worker or progress.get("write_lease") != write
-                or current_time.tzinfo is None or not datetime.fromisoformat(issued) <= current_time < datetime.fromisoformat(expires)):
+                or current_time.tzinfo is None
+                or (not closed and (progress.get("worker_lease") != worker
+                                      or progress.get("write_lease") != write
+                                      or not datetime.fromisoformat(issued) <= current_time
+                                      < datetime.fromisoformat(expires)))):
             errors.append("F19A_LEASE_INVALID")
+        if closed:
+            write_close, worker_close = rows[2141:2143]
+            close_times = [datetime.fromisoformat(row["occurred_at"]) for row in (write_close, worker_close)]
+            reason = "F19A_TASK0_CONTROL_VALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+            if (write_close.get("details") != {"lease_id": write_id,
+                                                "write_fencing_token": write_token, "reason": reason}
+                    or worker_close.get("details") != {"lease_id": worker_id,
+                                                         "execution_fencing_token": worker_token, "reason": reason}
+                    or any(not row["occurred_at"].endswith("+00:00") for row in (write_close, worker_close))
+                    or not datetime.fromisoformat(issued) <= close_times[0] <= close_times[1]
+                           < datetime.fromisoformat(expires)
+                    or close_times[1] > current_time
+                    or progress.get("write_lease") is not None or progress.get("worker_lease") is not None
+                    or progress.get("completed_f19a_task0_write_lease") != {
+                        **write, "status": "REVOKED", "revoked_at": write_close["occurred_at"]}
+                    or progress.get("completed_f19a_task0_worker_lease") != {
+                        **worker, "status": "REVOKED", "revoked_at": worker_close["occurred_at"]}):
+                errors.append("F19A_CLOSE_INVALID")
         binding = progress.get("f19a_minimal_pair_auth_binding", {})
-        expected_binding = {"status": "CONTROL_BOOTSTRAP_ACTIVE_NOT_PRODUCT_ACCEPTED", "package_id": "F-19A",
+        checkpoint = binding.get("control_checkpoint") if closed else dispatch
+        expected_binding = {"status": ("TASK0_CONTROL_CLOSED_NOT_PRODUCT_ACCEPTED" if closed
+                                       else "CONTROL_BOOTSTRAP_ACTIVE_NOT_PRODUCT_ACCEPTED"), "package_id": "F-19A",
             "predecessor_sequence": 2138, "predecessor_head": base, "dispatch_head": dispatch,
             "work_instruction_id": "WI-F19A-MINIMAL-PAIR-AUTH-20261007-001", "work_instruction_path": wi,
             "work_instruction_sha256": hashes[wi], "approval_path": approval, "approval_sha256": hashes[approval],
@@ -58502,37 +58536,53 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
             "write_lease_id": write_id, "detached_digest_path": digest_path,
             "developer_exact_paths": exact21, "active_task0_paths": exact4,
             "task0_product_write_locked": True, "f20_overall_status": "REWORK_IN_PROGRESS",
-            "release_decision": "DEFER", "production": "NOT_EXECUTED", "event_sequence": 2141}
+            "release_decision": "DEFER", "production": "NOT_EXECUTED", "event_sequence": len(rows)}
+        if closed:
+            expected_binding["control_checkpoint"] = checkpoint
         if (binding != expected_binding or progress.get("active_work_instruction") != {
                 "artifact_id": expected_binding["work_instruction_id"], "path": wi,
-                "sha256": hashes[wi], "revision": 3, "result_status": "CONTROL_BOOTSTRAP_DISPATCH_PENDING",
+                "sha256": hashes[wi], "revision": 3, "result_status": (
+                    "TASK0_CONTROL_CLOSED_PRODUCT_LEASE_PENDING" if closed else "CONTROL_BOOTSTRAP_DISPATCH_PENDING"),
                 "package_status": "READY_CONTROL_BOOTSTRAP",
                 "approval_classification": "HUMAN_APPROVED_F19A_PRODUCT_CONTRACT", "approval_ref": approval}):
             errors.append("F19A_SCOPE_INVALID")
         repository = progress["repository"]
-        if (repository.get("projection_mode") != "F19A_MINIMAL_PAIR_AUTH_START"
-                or repository.get("validated_base_commit") != base or repository.get("local_head") != dispatch
-                or repository.get("remote_head") != dispatch or repository.get("product_write_scope") != []
-                or repository.get("head_relation") != "F19A_CONTROL_BOOTSTRAP_PENDING_CHECKPOINT"
-                or repository.get("worktree_status") != "F19A_CONTROL_BOOTSTRAP_ACTIVE_PRODUCT_WRITE_LOCKED"
-                or progress.get("current_work_package") != "F-19A" or progress.get("active_agent") != common_lease["actor_id"]
-                or progress.get("next_work_package") != {"package_id": "F-19A", "status": "CONTROL_BOOTSTRAP_ACTIVE"}
+        if (repository.get("projection_mode") != ("F19A_TASK0_CLOSED" if closed else "F19A_MINIMAL_PAIR_AUTH_START")
+                or repository.get("validated_base_commit") != base or repository.get("local_head") != checkpoint
+                or repository.get("remote_head") != checkpoint or repository.get("product_write_scope") != []
+                or repository.get("head_relation") != ("F19A_TASK0_CLOSED_PRODUCT_WRITE_LOCKED" if closed
+                                                       else "F19A_CONTROL_BOOTSTRAP_PENDING_CHECKPOINT")
+                or repository.get("worktree_status") != ("F19A_TASK0_CLOSED_PRODUCT_WRITE_LOCKED" if closed
+                                                         else "F19A_CONTROL_BOOTSTRAP_ACTIVE_PRODUCT_WRITE_LOCKED")
+                or progress.get("status") != "ACTIVE"
+                or progress.get("current_work_package") != "F-19A"
+                or progress.get("active_agent") != (None if closed else common_lease["actor_id"])
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": (
+                    "PRODUCT_DUAL_LEASE_PENDING" if closed else "CONTROL_BOOTSTRAP_ACTIVE")}
                 or progress.get("next_successor_work_package") != {"package_id": "U-01", "status": "BLOCKED_PENDING_F19A_ACCEPTANCE"}
-                or progress.get("snapshot_id") != "snapshot-f19a-minimal-pair-auth-start-seq2141"
-                or progress.get("updated_at") != "2026-10-06T19:03:48+00:00"
+                or progress.get("snapshot_id") != ("snapshot-f19a-task0-close-seq2143" if closed
+                                                       else "snapshot-f19a-minimal-pair-auth-start-seq2141")
+                or progress.get("updated_at") != (rows[2142]["occurred_at"] if closed
+                                                     else "2026-10-06T19:03:48+00:00")
                 or progress.get("current_progress_evidence_ref") != {
                     "package_id": "F-19A", "path": digest_path,
                     "manifest_path": "docs/evidence/manifests/F-20_U01_R48_CRITICAL_ACK_CLOSE_MANIFEST.json"}
-                or progress.get("next_safe_action") != "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY"
-                or progress.get("runtime_next_action") != "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY"
+                or progress.get("next_safe_action") != ("F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1" if closed
+                                                        else "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY")
+                or progress.get("runtime_next_action") != ("F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1" if closed
+                                                          else "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY")
                 or progress.get("f20_overall_status") != "REWORK_IN_PROGRESS" or "F-19A" in progress.get("completed_packages", [])):
             errors.append("F19A_SCOPE_INVALID")
         if progress["registry_refs"]["progress_events"].get("sha256") != hashlib.sha256(raw).hexdigest().upper():
             errors.append("F19A_EVENT_INVALID")
         handoff = bundle["handoff"]
-        if (handoff.get("event_sequence") != 2141 or handoff.get("last_event_id") != rows[-1]["event_id"]
-                or handoff.get("current_work_package") != "F-19A" or handoff.get("worker_lease") != worker_id
-                or handoff.get("write_lease") != write_id or handoff.get("repository_head") != dispatch
+        if (handoff.get("event_sequence") != len(rows) or handoff.get("last_event_id") != rows[-1]["event_id"]
+                or handoff.get("status") != "ACTIVE"
+                or handoff.get("active_agent") != (None if closed else common_lease["actor_id"])
+                or handoff.get("current_work_package") != "F-19A"
+                or handoff.get("worker_lease") != (None if closed else worker_id)
+                or handoff.get("write_lease") != (None if closed else write_id)
+                or handoff.get("repository_head") != checkpoint
                 or handoff.get("next_safe_action") != progress.get("next_safe_action")):
             errors.append("F19A_HANDOFF_INVALID")
         digest = json.loads((root / digest_path).read_bytes())
@@ -58543,7 +58593,7 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
                     or digest.get(section, {}).get("file_sha256") != _sha256(target)):
                 errors.append("F19A_DIGEST_INVALID")
         if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
-                or digest.get("event_sequence") != 2141 or digest.get("self_reference") is not False):
+                or digest.get("event_sequence") != len(rows) or digest.get("self_reference") is not False):
             errors.append("F19A_DIGEST_INVALID")
     except (OSError, ValueError, TypeError, KeyError, IndexError, subprocess.CalledProcessError):
         errors.append("F19A_CONTROL_MISSING")
@@ -58552,6 +58602,7 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
 
 def _collect_f19a_start_git(bundle):
     import subprocess
+    import re
     root, progress = Path(bundle["_root"]), bundle["progress"]
     base = "abeab9f4e71387dcd6fed97b7061d6f50a73bbce"
     dispatch = "53feab5fa6ad0755c5c308117c756eafd371cb8c"
@@ -58569,6 +58620,12 @@ def _collect_f19a_start_git(bundle):
         "tests/tooling/test_f20_u01_contract_successor_projection.py",
         "tests/tooling/test_f20_u01_r48_close_projection.py"}
     allowed_committed |= allowed_dirty
+    closed = progress.get("repository", {}).get("projection_mode") == "F19A_TASK0_CLOSED"
+    task0_checkpoint_base = "0149ab1a079bc8c2ccae944e13c2e2a626ebf62b"
+    task0_files = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    close_dirty = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                   "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+                   "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
     try:
         def git(*args):
             return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
@@ -58576,7 +58633,13 @@ def _collect_f19a_start_git(bundle):
         head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
         dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
         committed = set(git("diff", "--name-only", "--no-renames", f"{base}..HEAD").splitlines()) - {""}
-        checkpoint = head != dispatch
+        post_dispatch = head != dispatch
+        control_checkpoint = progress.get("f19a_minimal_pair_auth_binding", {}).get("control_checkpoint")
+        checkpoint_delta = (set(git("diff", "--name-only", "--no-renames",
+                                    f"{task0_checkpoint_base}..{control_checkpoint}").splitlines()) - {""}) if closed else set()
+        checkpoint_blobs_match = (all(subprocess.check_output(
+            ["git", "show", f"{control_checkpoint}:{path}"], cwd=root, stderr=subprocess.DEVNULL)
+            == (root / path).read_bytes() for path in task0_files) if closed else True)
         if (remote != head or git("branch", "--show-current") != "codex/f18-wsl-ops"
                 or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
                 or subprocess.run(["git", "merge-base", "--is-ancestor", base, "HEAD"],
@@ -58587,7 +58650,20 @@ def _collect_f19a_start_git(bundle):
                         "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md",
                         "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md",
                         "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_WORK_INSTRUCTION.md"} <= committed
-                or committed - allowed_committed or (dirty if checkpoint else dirty - allowed_dirty)
+                or committed - allowed_committed
+                or (dirty - close_dirty if closed else (dirty if post_dispatch else dirty - allowed_dirty))
+                or (closed and (not isinstance(control_checkpoint, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", control_checkpoint) is None
+                    or control_checkpoint == task0_checkpoint_base
+                    or not task0_files <= checkpoint_delta or checkpoint_delta - allowed_committed
+                    or not checkpoint_blobs_match
+                    or subprocess.run(["git", "merge-base", "--is-ancestor",
+                                       task0_checkpoint_base, control_checkpoint],
+                                      cwd=root, capture_output=True).returncode != 0
+                    or subprocess.run(["git", "merge-base", "--is-ancestor", control_checkpoint, "HEAD"],
+                                      cwd=root, capture_output=True).returncode != 0
+                    or progress["repository"].get("local_head") != control_checkpoint
+                    or progress["repository"].get("remote_head") != control_checkpoint))
                 or progress["repository"].get("branch") != "codex/f18-wsl-ops"
                 or progress["repository"].get("upstream") != upstream):
             return ["F19A_GIT_INVALID"]
@@ -58597,7 +58673,8 @@ def _collect_f19a_start_git(bundle):
 
 
 def validate_bundle(bundle):
-    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_MINIMAL_PAIR_AUTH_START":
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") in {
+            "F19A_MINIMAL_PAIR_AUTH_START", "F19A_TASK0_CLOSED"}:
         errors = _validate_f19a_start(bundle)
         if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
             common = _validate_f20_common_invariants(bundle)
