@@ -532,17 +532,18 @@ class F19AStartProjectionTests(unittest.TestCase):
     def test_git_scope_starts_valid_then_rejects_unrelated_dirty(self):
         current, _ = self.historical_bundle()
         collect = getattr(checker, "_collect_f19a_start_git", lambda *a: ["F19A_GIT_ROUTE_MISSING"])
-        with self.clean_git_status():
-            self.assertEqual(collect(current), [])
-        original = subprocess.check_output
+        with self.synthetic_checkpoint_git("0149ab1a079bc8c2ccae944e13c2e2a626ebf62b"):
+            with self.clean_git_status():
+                self.assertEqual(collect(current), [])
+            original = subprocess.check_output
 
-        def outside_dirty(command, *args, **kwargs):
-            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
-                return b" M packages/api/not-in-scope.py\n"
-            return original(command, *args, **kwargs)
+            def outside_dirty(command, *args, **kwargs):
+                if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
+                    return b" M packages/api/not-in-scope.py\n"
+                return original(command, *args, **kwargs)
 
-        with patch.object(subprocess, "check_output", side_effect=outside_dirty):
-            self.assertEqual(collect(current), ["F19A_GIT_INVALID"])
+            with patch.object(subprocess, "check_output", side_effect=outside_dirty):
+                self.assertEqual(collect(current), ["F19A_GIT_INVALID"])
 
     def test_clean_task0_checkpoint_descendant_only(self):
         current, _ = self.historical_bundle()
@@ -607,7 +608,9 @@ class F19AStartProjectionTests(unittest.TestCase):
         self.assertEqual(current["progress"]["event_sequence"], 2146)
         self.assertEqual(current["progress"]["repository"]["projection_mode"],
                          "F19A_TASK0_FIXTURE_REWORK_ACTIVE")
-        self.assertEqual(self.validate_rework_closed(current, active_archive, active_raw, route=True), [])
+        checkpoint = checker.load_bundle(ROOT)["progress"]["f19a_task0_postclose_fixture_binding"]["control_checkpoint"]
+        with self.synthetic_rework_checkpoint_git(checkpoint):
+            self.assertEqual(self.validate_rework_closed(current, active_archive, active_raw, route=True), [])
         for name, change, expected in (
             ("product_scope", lambda b: b["progress"]["write_lease"].update(
                 product_write_scope=["packages/api/fastapi_app.py"]), "F19A_REWORK_LEASE_INVALID"),
@@ -672,30 +675,34 @@ class F19AStartProjectionTests(unittest.TestCase):
 
     def test_epoch72_git_scope_is_valid_then_rejects_outside_dirty_and_remote(self):
         current, _ = self.rework_active_bundle()
-        self.assertEqual(checker._collect_f19a_task0_rework_git(current), [])
-        self.assertEqual(checker._collect_f19a_start_git(current), [])
-        original = subprocess.check_output
+        checkpoint = checker.load_bundle(ROOT)["progress"]["f19a_task0_postclose_fixture_binding"]["control_checkpoint"]
+        with self.synthetic_rework_checkpoint_git(checkpoint):
+            self.assertEqual(checker._collect_f19a_task0_rework_git(current), [])
+            self.assertEqual(checker._collect_f19a_start_git(current), [])
+            original = subprocess.check_output
 
-        def outside_dirty(command, *args, **kwargs):
-            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
-                return b" M packages/api/fastapi_app.py\n"
-            return original(command, *args, **kwargs)
+            def outside_dirty(command, *args, **kwargs):
+                if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
+                    return b" M packages/api/fastapi_app.py\n"
+                return original(command, *args, **kwargs)
 
-        with patch.object(subprocess, "check_output", side_effect=outside_dirty):
-            self.assertEqual(checker._collect_f19a_task0_rework_git(current), ["F19A_REWORK_GIT_INVALID"])
-            self.assertEqual(checker._collect_f19a_start_git(current), ["F19A_GIT_INVALID"])
+            with patch.object(subprocess, "check_output", side_effect=outside_dirty):
+                self.assertEqual(checker._collect_f19a_task0_rework_git(current), ["F19A_REWORK_GIT_INVALID"])
+                self.assertEqual(checker._collect_f19a_start_git(current), ["F19A_GIT_INVALID"])
 
-        def remote_divergence(command, *args, **kwargs):
-            if command[-2:] == ["rev-parse", "development/codex/f18-wsl-ops"]:
-                return b"0000000000000000000000000000000000000000\n"
-            return original(command, *args, **kwargs)
+            def remote_divergence(command, *args, **kwargs):
+                if command[-2:] == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                    return b"0000000000000000000000000000000000000000\n"
+                return original(command, *args, **kwargs)
 
-        with patch.object(subprocess, "check_output", side_effect=remote_divergence):
-            self.assertEqual(checker._collect_f19a_task0_rework_git(current), ["F19A_REWORK_GIT_INVALID"])
+            with patch.object(subprocess, "check_output", side_effect=remote_divergence):
+                self.assertEqual(checker._collect_f19a_task0_rework_git(current), ["F19A_REWORK_GIT_INVALID"])
 
     def test_epoch72_post_checkpoint_requires_clean_tree_even_for_allowed_paths(self):
         current, _ = self.rework_active_bundle()
-        self.assertEqual(checker._collect_f19a_task0_rework_git(current), [])
+        checkpoint = checker.load_bundle(ROOT)["progress"]["f19a_task0_postclose_fixture_binding"]["control_checkpoint"]
+        with self.synthetic_rework_checkpoint_git(checkpoint):
+            self.assertEqual(checker._collect_f19a_task0_rework_git(current), [])
         fake_head = "b" * 40
         original_output, original_run = subprocess.check_output, subprocess.run
 
@@ -799,6 +806,247 @@ class F19AStartProjectionTests(unittest.TestCase):
             with self.subTest(name=name), self.synthetic_rework_checkpoint_git(checkpoint, **kwargs):
                 self.assertIn("F19A_REWORK_GIT_INVALID",
                               self.validate_rework_closed(closed, archive, event_raw, route=True))
+
+    def test_epoch73_active_projection_fails_closed_on_control_forgery(self):
+        current, archive = self.r2_active_bundle()
+        raw = archive.get(ROOT / "docs/progress/progress-events.json") or (
+            ROOT / "docs/progress/progress-events.json").read_bytes()
+        self.assertEqual(current["progress"]["event_sequence"], 2151)
+        self.assertEqual(self.validate_r2_active(current, archive, raw), [])
+        for name, change in (
+            ("old_prefix", lambda b: b["events"]["events"][2147].update(event_id="forged")),
+            ("issued_token", lambda b: b["events"]["events"][2150]["details"].update(
+                write_fencing_token="forged")),
+            ("product_scope", lambda b: b["progress"]["write_lease"].update(
+                product_write_scope=["packages/api/runtime.py"])),
+            ("snapshot", lambda b: b["progress"].update(snapshot_id="forged")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(current)
+                change(forged)
+                self.assertTrue(self.validate_r2_active(forged, archive, raw))
+
+    @staticmethod
+    def r2_active_bundle():
+        live = checker.load_bundle(ROOT)
+        if live["progress"]["event_sequence"] == 2151:
+            return live, {}
+        checkpoint = live["progress"]["f19a_task0_git_fixture_r2_binding"]["control_checkpoint"]
+        return F19AStartProjectionTests.historical_bundle(checkpoint)
+
+    @staticmethod
+    def validate_r2_active(bundle, archive, event_raw):
+        original_read, original_stat, original_sha = Path.read_bytes, Path.stat, checker._sha256
+
+        def read_historical(path):
+            return archive[path] if path in archive else original_read(path)
+
+        def stat_historical(path, *args, **kwargs):
+            return SimpleNamespace(st_size=len(archive[path])) if path in archive else original_stat(path, *args, **kwargs)
+
+        def sha_historical(path):
+            return hashlib.sha256(archive[path]).hexdigest().upper() if path in archive else original_sha(path)
+
+        with patch.object(Path, "read_bytes", read_historical), patch.object(Path, "stat", stat_historical), \
+                patch.object(checker, "_sha256", side_effect=sha_historical):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2150]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_git_fixture_r2(bundle, event_raw=event_raw, now=observed)
+
+    @staticmethod
+    def r2_closed_fixture(checkpoint=None):
+        active, active_archive = F19AStartProjectionTests.r2_active_bundle()
+        closed = deepcopy(active)
+        checkpoint = checkpoint or F19AStartProjectionTests.SYNTHETIC_CHECKPOINT
+        progress, stream = closed["progress"], closed["events"]
+        active_raw = (active_archive.get(ROOT / "docs/progress/progress-events.json")
+                      or (ROOT / "docs/progress/progress-events.json").read_bytes())
+        closed["_r2_active_event_raw"] = active_raw
+        at = (datetime.fromisoformat(stream["events"][2150]["occurred_at"])
+              + timedelta(minutes=1)).isoformat()
+        worker, write = stream["events"][2149]["details"], stream["events"][2150]["details"]
+        reason = "F19A_TASK0_GIT_FIXTURE_R2_VALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+        for sequence, kind, details in (
+            (2152, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+            (2153, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            previous = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_{kind.lower()}", "event_type": kind,
+                "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+                "project_id": "anvil", "work_package_id": "F-19A", "run_id": None,
+                "step_id": "F19A_TASK0_GIT_FIXTURE_R2_CLOSE", "subject_ref": "F-19A/TASK0-GIT-FIXTURE-R2",
+                "occurred_at": at, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(previous)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2153
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        original = active_raw.decode("utf-8")
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2151_write_lease_issued"\n}'
+        assert original.endswith(footer + "\n")
+        render = lambda row: "\n".join("  " + line for line in json.dumps(
+            row, ensure_ascii=False, indent=2).splitlines())
+        event_text = (original[:-len(footer + "\n")] + ",\n"
+                      + ",\n".join(render(row) for row in stream["events"][-2:])
+                      + '\n  ],\n  "last_event_id": "evt_f19a_2153_worker_lease_revoked"\n}\n')
+        event_text = event_text.replace('"last_sequence": 2151', '"last_sequence": 2153', 1)
+        event_raw = event_text.encode("utf-8")
+        assert json.loads(event_raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(event_raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task0_git_fixture_r2_write_lease"] = {**write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task0_git_fixture_r2_worker_lease"] = {**worker, "status": "REVOKED", "revoked_at": at}
+        progress["f19a_task0_git_fixture_r2_binding"].update(
+            status="GIT_FIXTURE_R2_CLOSED_NOT_PRODUCT_ACCEPTED", control_checkpoint=checkpoint,
+            next_safe_action="F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1", event_sequence=2153)
+        progress["active_work_instruction"]["result_status"] = "TASK0_GIT_FIXTURE_R2_CLOSED_PRODUCT_LEASE_PENDING"
+        progress["snapshot_id"] = "snapshot-f19a-task0-git-fixture-r2-close-seq2153"
+        progress["updated_at"] = at
+        progress["active_agent"] = None
+        progress["next_safe_action"] = progress["runtime_next_action"] = "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1"
+        progress["next_work_package"] = {"package_id": "F-19A", "status": "PRODUCT_DUAL_LEASE_PENDING"}
+        progress["repository"].update(projection_mode="F19A_TASK0_GIT_FIXTURE_R2_CLOSED",
+            local_head=checkpoint, remote_head=checkpoint,
+            head_relation="F19A_TASK0_GIT_FIXTURE_R2_CLOSED_PRODUCT_WRITE_LOCKED",
+            worktree_status="F19A_TASK0_GIT_FIXTURE_R2_CLOSED_PRODUCT_WRITE_LOCKED")
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        summary = deepcopy(active["handoff"])
+        summary.update(event_sequence=2153, last_event_id=stream["last_event_id"], status="ACTIVE",
+            active_agent=None, worker_lease=None, write_lease=None, repository_head=checkpoint,
+            next_safe_action=progress["next_safe_action"])
+        handoff_text = re.sub(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",
+            "```json anvil-recovery-summary\n" + json.dumps(summary, ensure_ascii=False, indent=2) + "\n```",
+            active["handoff_text"], count=1, flags=re.DOTALL)
+        closed["handoff_text"] = handoff_text
+        closed["handoff"] = checker.extract_handoff_summary(handoff_text)
+        progress_raw = (json.dumps(progress, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        handoff_raw = handoff_text.encode("utf-8")
+        digest_path = "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"
+        digest = {"schema_version": "1.0.0", "algorithm": "SHA-256", "event_sequence": 2153,
+            "self_reference": False,
+            "progress": {"path": "docs/progress/build-progress.json", "bytes": len(progress_raw),
+                         "file_sha256": hashlib.sha256(progress_raw).hexdigest().upper()},
+            "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": len(handoff_raw),
+                        "file_sha256": hashlib.sha256(handoff_raw).hexdigest().upper()}}
+        archive = {ROOT / "docs/progress/progress-events.json": event_raw,
+                   ROOT / "docs/progress/build-progress.json": progress_raw,
+                   ROOT / "docs/progress/BUILD_HANDOFF.md": handoff_raw,
+                   ROOT / digest_path: (json.dumps(digest, indent=2) + "\n").encode("utf-8")}
+        closed["detached_digest"] = digest
+        for path, data in archive.items():
+            closed["_file_hashes"][path.relative_to(ROOT).as_posix()] = hashlib.sha256(data).hexdigest().upper()
+        return closed, archive, event_raw
+
+    @staticmethod
+    def validate_r2_closed(bundle, archive, event_raw, *, route=False):
+        original_read, original_stat, original_sha = Path.read_bytes, Path.stat, checker._sha256
+        original_git = subprocess.check_output
+
+        def read_historical(path):
+            return archive[path] if path in archive else original_read(path)
+
+        def stat_historical(path, *args, **kwargs):
+            return SimpleNamespace(st_size=len(archive[path])) if path in archive else original_stat(path, *args, **kwargs)
+
+        def sha_historical(path):
+            return hashlib.sha256(archive[path]).hexdigest().upper() if path in archive else original_sha(path)
+
+        def checkpoint_git(command, *args, **kwargs):
+            checkpoint = bundle["progress"]["f19a_task0_git_fixture_r2_binding"].get("control_checkpoint")
+            if command == ["git", "show", f"{checkpoint}:docs/progress/progress-events.json"] \
+                    and checkpoint == F19AStartProjectionTests.SYNTHETIC_CHECKPOINT:
+                return bundle["_r2_active_event_raw"]
+            return original_git(command, *args, **kwargs)
+
+        with patch.object(Path, "read_bytes", read_historical), patch.object(Path, "stat", stat_historical), \
+                patch.object(checker, "_sha256", side_effect=sha_historical), \
+                patch.object(subprocess, "check_output", side_effect=checkpoint_git):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2152]["occurred_at"]) + timedelta(minutes=1)
+            return checker.validate_bundle(bundle) if route else checker._validate_f19a_git_fixture_r2(
+                bundle, event_raw=event_raw, now=observed)
+
+    def test_epoch73_closed_projection_and_forgery(self):
+        closed, archive, event_raw = self.r2_closed_fixture()
+        self.assertEqual(self.validate_r2_closed(closed, archive, event_raw), [])
+        for name, change in (
+            ("revoke_order", lambda b: b["events"]["events"][2151].update(event_type="WORKER_LEASE_REVOKED")),
+            ("revoke_token", lambda b: b["events"]["events"][2151]["details"].update(write_fencing_token="forged")),
+            ("revoke_reason", lambda b: b["events"]["events"][2152]["details"].update(reason="PRODUCT_ACCEPTED")),
+            ("revoke_expiry", lambda b: b["events"]["events"][2152].update(
+                occurred_at="2026-10-07T22:41:47+00:00")),
+            ("completed_scope", lambda b: b["progress"]["completed_f19a_task0_git_fixture_r2_write_lease"].update(
+                product_write_scope=["packages/api/runtime.py"])),
+            ("product_scope", lambda b: b["progress"]["repository"].update(product_write_scope=["packages/api/runtime.py"])),
+            ("handoff", lambda b: b["handoff"].update(repository_head="0" * 40)),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(closed)
+                change(forged)
+                self.assertTrue(self.validate_r2_closed(forged, archive, event_raw))
+
+    @staticmethod
+    @contextmanager
+    def synthetic_r2_checkpoint_git(checkpoint, *, changed_paths=None, stale_blob=False,
+                                    dirty=b"", head=None, remote=None):
+        original_output, original_run = subprocess.check_output, subprocess.run
+        base = "67d20aaf334679929cd8f929b1821ac307fcbebd"
+        exact2 = ("scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py")
+        delta = exact2 if changed_paths is None else changed_paths
+        actual_head = head or checkpoint
+        active_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+
+        def git_output(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == [
+                "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["rev-parse", "HEAD"]:
+                return (actual_head + "\n").encode()
+            if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                return ((remote or actual_head) + "\n").encode()
+            if tail == ["status", "--porcelain=v1", "-uall"]:
+                return dirty
+            if tail == ["diff", "--name-only", "--no-renames", f"{base}..HEAD"]:
+                return ("\n".join(delta) + "\n").encode()
+            if tail == ["diff", "--name-only", "--no-renames", f"{base}..{checkpoint}"]:
+                return ("\n".join(delta) + "\n").encode()
+            if tail == ["show", f"{checkpoint}:docs/progress/progress-events.json"]:
+                return active_raw
+            if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(checkpoint + ":"):
+                path = tail[1].split(":", 1)[1]
+                if path in exact2:
+                    data = (ROOT / path).read_bytes()
+                    return b"stale" if stale_blob and path == exact2[0] else data
+            return original_output(command, *args, **kwargs)
+
+        def git_run(command, *args, **kwargs):
+            if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return subprocess.CompletedProcess(command, 0)
+            return original_run(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=git_output), \
+                patch.object(subprocess, "run", side_effect=git_run):
+            yield
+
+    def test_epoch73_closed_git_requires_code_checkpoint_and_publication(self):
+        checkpoint = self.SYNTHETIC_CHECKPOINT
+        closed, archive, event_raw = self.r2_closed_fixture(checkpoint)
+        control_dirty = (b" M docs/WORK_STATUS.md\n M docs/progress/BUILD_HANDOFF.md\n"
+                         b" M docs/progress/build-progress.json\n M docs/progress/progress-events.json\n"
+                         b" M docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json\n")
+        for dirty in (b"", control_dirty):
+            with self.synthetic_r2_checkpoint_git(checkpoint, dirty=dirty):
+                self.assertEqual(self.validate_r2_closed(closed, archive, event_raw, route=True), [])
+        for name, kwargs in (
+            ("unrelated_dirty", {"dirty": control_dirty + b" M packages/api/runtime.py\n"}),
+            ("code_dirty", {"dirty": control_dirty + b" M scripts/check_project_progress.py\n"}),
+            ("missing_code", {"changed_paths": ("scripts/check_project_progress.py",)}),
+            ("stale_blob", {"stale_blob": True}),
+            ("unpublished", {"remote": "b" * 40}),
+            ("postcommit_prepush", {"head": "b" * 40, "remote": checkpoint}),
+        ):
+            with self.subTest(name=name), self.synthetic_r2_checkpoint_git(checkpoint, **kwargs):
+                self.assertIn("F19A_R2_GIT_INVALID",
+                              self.validate_r2_closed(closed, archive, event_raw, route=True))
 
 
 if __name__ == "__main__":

@@ -1,22 +1,26 @@
-# F-19A Task0 종료 후 fixture 재검증 종료 handoff
+# F-19A Task0 역사 Git fixture R2 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2148,
-  "last_event_id": "evt_f19a_2148_worker_lease_revoked",
+  "event_sequence": 2151,
+  "last_event_id": "evt_f19a_2151_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-git-fixture-r2-7188810204c944bab569c9ed3b0906ef",
+  "write_lease": "write-lease-f19a-git-fixture-r2-18e39253a14641d2b32a20f7cc0fa0ef",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1",
-  "repository_head": "eccbc2a78064a8538c135c10b328e2dddcd548f4",
+  "next_safe_action": "F19A_TASK0_GIT_FIXTURE_R2_ONLY",
+  "repository_head": "67d20aaf334679929cd8f929b1821ac307fcbebd",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- R2 code 동결 검증: Developer exact2 코드/테스트 동결, focused19·인접5파일57 PASS, Main 독립 57 PASS/363.87초, actual G-05 seq2151 PASS(절대 worktree 경로), diff0, 독립 C0/I0/M0이다. 상대 `.` 경로의 로컬 venv 실행은 Python real-location 진단과 중복 경로 LOAD_ERROR(exit1)였고 절대 경로로 재검증했다. 실제 seq2152/2153 종료는 아직0, 제품 Task1 lease0. 다음은 기존 branch/private code checkpoint→clean G-05 후 write→worker 회수와 closed 회귀다.
+
+- 역사 Git fixture R2 재작업: seq2148의 NON-GREEN WIP 종료를 clean/private `67d20aaf334679929cd8f929b1821ac307fcbebd`로 보존했고 실제 원격 SHA·G-05 seq2148 PASS를 대조했다. clean에서 기존 4 FAIL의 정확 재실행은 3 PASS/1 FAIL이며, 남은 실패는 역사 seq2141 Git collector 테스트의 현재 후속 WI 혼합이다. Main WI SHA `145EE476...`를 seq2149 발행하고 epoch73 worker seq2150→write seq2151을 서로 다른 token·24시간·정확2파일·제품 scope0으로 발급했다. 현재 다음 행동은 `F19A_TASK0_GIT_FIXTURE_R2_ONLY`; 새 route 전 bootstrap G-05 RED는 PASS가 아니다. Developer는 역사 Git fixture와 seq2151/2153 active/close 검증을 같은 임대 안에서 준비한다. F-19A 전체 ACTIVE·미수락, 제품 Task1 lease0, F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED.
 
 - 종료 후 회귀 NON-GREEN: 실제 seq2148의 precommit G-05와 독립 control C0/I0/M0은 통과했지만 인접 5파일 54건에서 50 PASS/4 FAIL(exit1)이다. `test_f19a_start_projection.py` 역사 fixture의 live Git 참조 3건 및 역사 Task0 collector의 후속 WI 경계 1건으로 재현했으며 제품/DB 오류로 단정하지 않는다. 현재 제품 Task1 권한0. 정확 control5를 실패 명시 WIP checkpoint로 보존한 뒤 새로운 비제품 exact2 lease로 역사 Git fixture만 보정하고, postclose 전체 GREEN 전 제품 dual lease를 발급하지 않는다.
 
