@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-contract-close-test-start-seq2111",
-  "event_sequence": 2111,
-  "updated_at": "2026-10-05T23:47:44+00:00",
-  "last_event_id": "evt_f20_2111_write_lease_issued",
+  "snapshot_id": "snapshot-f20-u01-contract-close-test-close-seq2114",
+  "event_sequence": 2114,
+  "updated_at": "2026-10-06T00:14:49+00:00",
+  "last_event_id": "evt_f20_2114_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,12 +215,13 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f20-u01-contract-close-test",
-  "write_lease": {
+  "active_agent": "main-agent-eoul",
+  "write_lease": null,
+  "completed_f20_u01_contract_close_test_write_lease": {
     "lease_id": "write-lease-f20-u01-contract-close-test-1526e14c65074d598022ad36102f8982",
     "actor_id": "developer-primary-f20-u01-contract-close-test",
     "subject_ref": "F-20/U01-CONTRACT-CLOSE-TEST",
-    "status": "ACTIVE",
+    "status": "REVOKED",
     "issued_at": "2026-10-05T23:47:44+00:00",
     "expires_at": "2026-10-06T23:47:44+00:00",
     "lease_epoch": 66,
@@ -236,7 +237,8 @@
     "worker_lease_id": "worker-lease-f20-u01-contract-close-test-869c6ad745e44ebcaff342c35b5b8a65",
     "write_epoch": 66,
     "write_fencing_token": "f20-u01-contract-close-test-write-fence-epoch-66-1526e14c65074d598022ad36102f8982",
-    "product_write_scope": []
+    "product_write_scope": [],
+    "revoked_at": "2026-10-06T00:14:49+00:00"
   },
   "completed_f20_u01_contract_control_write_lease": {
     "lease_id": "write-lease-f20-u01-contract-control-bac68713410a4b378b2b44aa800676e1",
@@ -292,11 +294,12 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
+  "worker_lease": null,
+  "completed_f20_u01_contract_close_test_worker_lease": {
     "lease_id": "worker-lease-f20-u01-contract-close-test-869c6ad745e44ebcaff342c35b5b8a65",
     "actor_id": "developer-primary-f20-u01-contract-close-test",
     "subject_ref": "F-20/U01-CONTRACT-CLOSE-TEST",
-    "status": "ACTIVE",
+    "status": "REVOKED",
     "issued_at": "2026-10-05T23:47:44+00:00",
     "expires_at": "2026-10-06T23:47:44+00:00",
     "lease_epoch": 66,
@@ -308,7 +311,8 @@
       "scripts/check_project_progress.py",
       "scripts/f20_u01_contract_successor_overlay.py",
       "tests/tooling/test_f20_u01_contract_successor_projection.py"
-    ]
+    ],
+    "revoked_at": "2026-10-06T00:14:49+00:00"
   },
   "completed_f20_u01_contract_control_worker_lease": {
     "lease_id": "worker-lease-f20-u01-contract-control-4cf54cc2258248d9b1654dfd3f2c4c6d",
@@ -550,7 +554,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_CONTRACT_CLOSE_TEST_EXACT3_REWORK",
+  "next_safe_action": "F20_U01_SCOPED_FILTER_CONTRACT_RECONCILIATION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1424,7 +1428,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "0D0ABEF82D99E06CE2E89D151BCE90300004658004B93C50F663E76D0CBC221E"
+      "sha256": "11C11CFB8A2B27E15CDB298E7A9BC5D50C53A0CBD200E8C6003609D3B8BDBAF3"
     }
   },
   "next_work_package": {
@@ -1821,7 +1825,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "D0524EFBCDE40F2635545C357D0C9FC7C08C6FABE8EFE176CD55D4217832B567",
+  "snapshot_hash": "F8B814A46AF74483A6AE64D2BBE595BD9496B90BE4128430E7473B93D746E449",
   "runtime_next_action": "F20_U01_CONTRACT_CONTROL_EXACT3_BOOTSTRAP",
   "seq527_clean_review": {
     "event_sequence": 527,
