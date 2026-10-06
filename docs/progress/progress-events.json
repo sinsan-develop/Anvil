@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2151,
+  "last_sequence": 2153,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -100825,7 +100825,49 @@
       "write_fencing_token": "f19a-git-fixture-r2-write-fence-epoch-73-18e39253a14641d2b32a20f7cc0fa0ef",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2152,
+    "event_id": "evt_f19a_2152_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK0_GIT_FIXTURE_R2_CLOSE",
+    "subject_ref": "F-19A/TASK0-GIT-FIXTURE-R2",
+    "occurred_at": "2026-10-06T23:42:24+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A4BDEA3629E49615AB5130A780AD6050CC234C93534E26F1AC21E8950227A3DF",
+    "details": {
+      "lease_id": "write-lease-f19a-git-fixture-r2-18e39253a14641d2b32a20f7cc0fa0ef",
+      "write_fencing_token": "f19a-git-fixture-r2-write-fence-epoch-73-18e39253a14641d2b32a20f7cc0fa0ef",
+      "reason": "F19A_TASK0_GIT_FIXTURE_R2_VALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+    }
+  },
+  {
+    "sequence": 2153,
+    "event_id": "evt_f19a_2153_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK0_GIT_FIXTURE_R2_CLOSE",
+    "subject_ref": "F-19A/TASK0-GIT-FIXTURE-R2",
+    "occurred_at": "2026-10-06T23:42:24+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "EC9C4F8613EBE2AE7FC6A3BA0BC57EC24E947460C8F6BE936FD13BCCD9B60692",
+    "details": {
+      "lease_id": "worker-lease-f19a-git-fixture-r2-7188810204c944bab569c9ed3b0906ef",
+      "execution_fencing_token": "f19a-git-fixture-r2-execution-fence-epoch-73-7188810204c944bab569c9ed3b0906ef",
+      "reason": "F19A_TASK0_GIT_FIXTURE_R2_VALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2151_write_lease_issued"
+  "last_event_id": "evt_f19a_2153_worker_lease_revoked"
 }

@@ -1,22 +1,26 @@
-# F-19A Task0 역사 Git fixture R2 handoff
+# F-19A Task0 역사 Git fixture R2 종료 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2151,
-  "last_event_id": "evt_f19a_2151_write_lease_issued",
+  "event_sequence": 2153,
+  "last_event_id": "evt_f19a_2153_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-git-fixture-r2-7188810204c944bab569c9ed3b0906ef",
-  "write_lease": "write-lease-f19a-git-fixture-r2-18e39253a14641d2b32a20f7cc0fa0ef",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK0_GIT_FIXTURE_R2_ONLY",
-  "repository_head": "67d20aaf334679929cd8f929b1821ac307fcbebd",
+  "next_safe_action": "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1",
+  "repository_head": "d4ecfdc824a5289810c00d652ee24c058782675e",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- 실제 종료 precommit 검증: seq2153 G-05 PASS, 인접5파일 57 PASS/326.58초, 독립 control C0/I0/M0, diff0이다. Event/완료 lease는 유효하고 dirty는 종료 control5만 남는다. 아직 final close commit/private push 및 그 후 clean G-05/회귀는 미실행, 제품 Task1 lease0이다. 다음은 정확 control5 checkpoint→actual remote SHA 동등 확인→clean G-05·57건 재검증이다.
+
+- R2 epoch73 통제 종료: existing branch/private clean code checkpoint `d4ecfdc824a5289810c00d652ee24c058782675e`와 실제 원격 동일 SHA·G-05 seq2151 PASS를 확인한 뒤 seq2152 write→2153 worker revoke를 append했다. 두 active lease는 null이고 완료 lease는 REVOKED로 보존, 제품 write scope0이다. 종료 전 인접5파일57 PASS·독립 C0/I0/M0이며 실제 종료 후 G-05/인접 회귀와 close commit/private push는 이 기록 시점에 미실행이다. F-19A 전체 ACTIVE·미수락, Task1 제품 lease 아직0, F-20/U01 REWORK·Release DEFER·Production NOT_EXECUTED. 다음은 종료 precommit G-05·전체57·독립 control 확인→close checkpoint/private push→clean G-05·회귀다.
 
 - R2 code 동결 검증: Developer exact2 코드/테스트 동결, focused19·인접5파일57 PASS, Main 독립 57 PASS/363.87초, actual G-05 seq2151 PASS(절대 worktree 경로), diff0, 독립 C0/I0/M0이다. 상대 `.` 경로의 로컬 venv 실행은 Python real-location 진단과 중복 경로 LOAD_ERROR(exit1)였고 절대 경로로 재검증했다. 실제 seq2152/2153 종료는 아직0, 제품 Task1 lease0. 다음은 기존 branch/private code checkpoint→clean G-05 후 write→worker 회수와 closed 회귀다.
 
