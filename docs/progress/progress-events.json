@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2146,
+  "last_sequence": 2148,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -100688,7 +100688,49 @@
       "write_fencing_token": "f19a-task0-rework-write-fence-epoch-72-299d622d52044da6a9b7deba3d2f0139",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2147,
+    "event_id": "evt_f19a_2147_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK0_POSTCLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK0-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T22:27:43+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "487109BFA6784E83B7DB6A6F4026092584FFCC7D826B46B630EB08A1B2CC0163",
+    "details": {
+      "lease_id": "write-lease-f19a-task0-rework-299d622d52044da6a9b7deba3d2f0139",
+      "write_fencing_token": "f19a-task0-rework-write-fence-epoch-72-299d622d52044da6a9b7deba3d2f0139",
+      "reason": "F19A_TASK0_TEST_REVALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+    }
+  },
+  {
+    "sequence": 2148,
+    "event_id": "evt_f19a_2148_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK0_POSTCLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK0-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T22:27:43+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "169A9881515BE10143CA518AF13572DACD0A3F561153C83F407A9659BFE806D2",
+    "details": {
+      "lease_id": "worker-lease-f19a-task0-rework-42004933a57d4111acc16909eb701b1b",
+      "execution_fencing_token": "f19a-task0-rework-execution-fence-epoch-72-42004933a57d4111acc16909eb701b1b",
+      "reason": "F19A_TASK0_TEST_REVALIDATED_LOCAL_ONLY_PRODUCT_NOT_STARTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2146_write_lease_issued"
+  "last_event_id": "evt_f19a_2148_worker_lease_revoked"
 }

@@ -1,22 +1,26 @@
-# F-19A Task0 종료 후 fixture 재검증 handoff
+# F-19A Task0 종료 후 fixture 재검증 종료 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2146,
-  "last_event_id": "evt_f19a_2146_write_lease_issued",
+  "event_sequence": 2148,
+  "last_event_id": "evt_f19a_2148_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task0-rework-42004933a57d4111acc16909eb701b1b",
-  "write_lease": "write-lease-f19a-task0-rework-299d622d52044da6a9b7deba3d2f0139",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK0_TEST_REVALIDATION_ONLY",
-  "repository_head": "a5c39b1863647a10e5ce8cf70a6d9e10cc3a6f51",
+  "next_safe_action": "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1",
+  "repository_head": "eccbc2a78064a8538c135c10b328e2dddcd548f4",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- 종료 후 회귀 NON-GREEN: 실제 seq2148의 precommit G-05와 독립 control C0/I0/M0은 통과했지만 인접 5파일 54건에서 50 PASS/4 FAIL(exit1)이다. `test_f19a_start_projection.py` 역사 fixture의 live Git 참조 3건 및 역사 Task0 collector의 후속 WI 경계 1건으로 재현했으며 제품/DB 오류로 단정하지 않는다. 현재 제품 Task1 권한0. 정확 control5를 실패 명시 WIP checkpoint로 보존한 뒤 새로운 비제품 exact2 lease로 역사 Git fixture만 보정하고, postclose 전체 GREEN 전 제품 dual lease를 발급하지 않는다.
+
+- F-19A Task0 fixture epoch72 종료: Developer 최신 인접 5파일 54 PASS, Main 독립 54 PASS/303.72초, active G-05 seq2146 PASS, diff check0, 독립 C0/I0/M0이다. 기존 branch/private clean code checkpoint `eccbc2a78064a8538c135c10b328e2dddcd548f4`를 실제 원격과 대조한 뒤 seq2147 write→2148 worker revoke를 append하고 두 lease를 REVOKED로 보존했다. 제품 write scope0, F-19A 전체 ACTIVE·미수락, Task1 제품 dual lease 아직 미발급이다. 종료 G-05 및 final close commit/private push는 이 기록 시점에 미실행이며, 다음은 종료 검증·정확 checkpoint 후 별도 제품 lease 발급이다. F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED, WSL/ysna 작업0.
 
 - F-19A Task0 종료 후 RED gate 보정: clean checkpoint `a5c39b1863647a10e5ce8cf70a6d9e10cc3a6f51`의 seq2143/no-lease에서 Main 비의미 WI SHA `B1429921...`를 seq2144 발행하고 epoch72 seq2145 worker→2146 write를 서로 다른 token·정확2파일·24시간·제품 scope0으로 발급했다. machine 다음 행동은 `F19A_TASK0_TEST_REVALIDATION_ONLY`이며 제품 dual lease/Task1은 금지한다. 새 successor route 부재의 bootstrap G-05 RED는 PASS가 아니다. Developer는 역사 seq2141/2143 fixture와 현재 seq2146을 분리해 집중4 FAIL을 RED→GREEN하고 인접 전체를 재실행한다. F-19A 미수락, F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED다.
 
