@@ -1,20 +1,87 @@
 """F-20/U-01 document-only successor control validation."""
 
 from copy import deepcopy
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 import json
 from pathlib import Path
+import subprocess
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from scripts.check_project_progress import load_bundle, validate_bundle
+from scripts.check_project_progress import extract_handoff_summary, load_bundle, validate_bundle
 
 
 ROOT = Path(__file__).resolve().parents[2]
+HISTORICAL_CLOSED67 = "afa49d2c31194c20df653273344116125bc11fda"
+
+
+@lru_cache(maxsize=None)
+def frozen67(path):
+    from scripts import f20_u01_contract_successor_overlay as overlay
+    return overlay._frozen(ROOT, path, HISTORICAL_CLOSED67)
 
 
 class ContractSuccessorProjectionTests(unittest.TestCase):
+    @staticmethod
+    def closed67_fixture():
+        from scripts import f20_u01_contract_successor_overlay as overlay
+
+        bundle = deepcopy(load_bundle(ROOT))
+        bundle["progress"] = json.loads(frozen67(overlay.PROGRESS))
+        bundle["events"] = json.loads(frozen67(overlay.EVENTS))
+        bundle["handoff_text"] = frozen67(overlay.HANDOFF).decode("utf-8")
+        bundle["handoff"] = extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(frozen67(overlay.DIGEST))
+        bundle["_detached_digest_path"] = overlay.DIGEST
+        return bundle
+
+    @staticmethod
+    def validate_historical(bundle, now=None, *, event_raw=None):
+        from scripts import f20_u01_contract_successor_overlay as overlay
+
+        historical_paths = {
+            overlay.PROGRESS, overlay.EVENTS, overlay.HANDOFF, overlay.DIGEST,
+            overlay.CHECKER, *overlay.DOCS,
+        }
+        archive = {ROOT / path: frozen67(path) for path in historical_paths}
+        original_read, original_stat = Path.read_bytes, Path.stat
+
+        def read_historical(path):
+            return archive.get(path, None) if path in archive else original_read(path)
+
+        def stat_historical(path, *args, **kwargs):
+            if path in archive:
+                return SimpleNamespace(st_size=len(archive[path]))
+            return original_stat(path, *args, **kwargs)
+
+        with patch.object(Path, "read_bytes", read_historical), patch.object(Path, "stat", stat_historical):
+            return overlay.validate_control(
+                ROOT, bundle, now or datetime.now(timezone.utc), event_raw=event_raw or frozen67(overlay.EVENTS))
+
+    @staticmethod
+    @contextmanager
+    def historical_git_facts():
+        from scripts import f20_u01_contract_successor_overlay as overlay
+
+        original_git = overlay._git
+        fixed_delta = original_git(ROOT, "diff", "--name-only", "--no-renames",
+                                   f"{overlay.DOCUMENT}..{HISTORICAL_CLOSED67}")
+
+        def historical_git(root, *args):
+            if args == ("rev-parse", "HEAD"):
+                return (HISTORICAL_CLOSED67 + "\n").encode()
+            if args == ("rev-parse", overlay.UPSTREAM):
+                return (overlay.REMOTE_BASE + "\n").encode()
+            if args == ("diff", "--name-only", "--no-renames", f"{overlay.DOCUMENT}..HEAD"):
+                return fixed_delta
+            return original_git(root, *args)
+
+        with patch.object(overlay, "_git", side_effect=historical_git):
+            yield
+
     @staticmethod
     def historical_issued():
         _, rows = ContractSuccessorProjectionTests.closed66()
@@ -34,12 +101,12 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
 
     @staticmethod
     def issued67():
-        rows = load_bundle(ROOT)["events"]["events"]
+        rows = ContractSuccessorProjectionTests.closed67_fixture()["events"]["events"]
         return rows[2115]["details"], rows[2116]["details"]
 
     @staticmethod
     def active67_fixture():
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = ContractSuccessorProjectionTests.closed67_fixture()
         rows = bundle["events"]["events"]
         worker, write = deepcopy(rows[2115]["details"]), deepcopy(rows[2116]["details"])
         bundle["events"]["events"] = rows[:2117]
@@ -49,13 +116,80 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         bundle["progress"]["write_lease"] = write
         return bundle
 
-    def test_current_successor_routes_to_its_control_validator(self):
-        bundle = load_bundle(ROOT)
-        self.assertEqual(
-            bundle["progress"]["repository"]["projection_mode"],
-            "F20_U01_SCOPED_FILTER_CONTRACT_DOCUMENT_SUCCESSOR",
-        )
-        self.assertEqual(validate_bundle(bundle), [])
+    def test_historical_closed67_validator_and_current_successor_are_distinct(self):
+        historical = self.closed67_fixture()
+        self.assertEqual(historical["progress"]["event_sequence"], 2120)
+        self.assertEqual(self.validate_historical(historical), [])
+        current = load_bundle(ROOT)
+        self.assertEqual(current["progress"]["event_sequence"], 2129)
+        self.assertEqual(current["progress"]["repository"]["projection_mode"],
+                         "F20_U01_EPOCH67_TEST_COMPATIBILITY_SUCCESSOR")
+        self.assertEqual(validate_bundle(current), [])
+        for name, mutate, code in (
+            ("order", lambda b: b["events"]["events"][2128].update(event_type="WORKER_LEASE_ISSUED"), "EPOCH69_EVENT_INVALID"),
+            ("chain", lambda b: b["events"]["events"][2128].update(previous_event_sha256="0" * 64), "EPOCH69_EVENT_INVALID"),
+            ("token", lambda b: b["events"]["events"][2128]["details"].update(write_fencing_token="forged"), "EPOCH69_LEASE_INVALID"),
+            ("expiry", lambda b: b["events"]["events"][2128].update(occurred_at="2026-10-07T02:09:23+00:00"), "EPOCH69_EVENT_INVALID"),
+            ("wi_hash", lambda b: b["events"]["events"][2126]["details"].update(sha256="0" * 64), "EPOCH69_WORK_INSTRUCTION_INVALID"),
+            ("scope", lambda b: b["progress"]["repository"].update(product_write_scope=["packages/api/runtime.py"]), "EPOCH69_SCOPE_INVALID"),
+            ("snapshot", lambda b: b["progress"].update(snapshot_hash="0" * 64), "PRG_SNAPSHOT_HASH_MISMATCH"),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(current)
+                mutate(forged)
+                self.assertIn(code, validate_bundle(forged))
+
+        from scripts import check_project_progress as checker
+        original_check_output = subprocess.check_output
+
+        def outside_dirty(command, *args, **kwargs):
+            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
+                return b" M packages/api/runtime.py\n"
+            return original_check_output(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=outside_dirty):
+            self.assertEqual(checker._collect_epoch69_git(current), ["EPOCH69_GIT_INVALID"])
+
+        worker = current["events"]["events"][2127]["details"]
+        write = current["events"]["events"][2128]["details"]
+        close_at = "2026-10-06T02:10:00+00:00"
+        handoff_hash = checker._sha256(ROOT / "docs/progress/BUILD_HANDOFF.md")
+        close = [
+            {"event_type": "HANDOFF_RECORDED", "details": {
+                "work_instruction_sha256": "AE545FE4A5854CE4926987C4EEC2497ED70A0D8B8D03CBFAB20B459ADF843653",
+                "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+                "accepted": False, "product_write_scope": [],
+                "handoff_ref": "docs/progress/BUILD_HANDOFF.md", "handoff_sha256": handoff_hash,
+            }},
+            {"event_type": "WRITE_LEASE_REVOKED", "occurred_at": close_at, "details": {
+                "lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
+                "reason": "EPOCH67_TEST_COMPATIBILITY_VALIDATED_LOCAL_ONLY",
+            }},
+            {"event_type": "WORKER_LEASE_REVOKED", "occurred_at": close_at, "details": {
+                "lease_id": worker["lease_id"], "execution_fencing_token": worker["execution_fencing_token"],
+                "reason": "EPOCH67_TEST_COMPATIBILITY_VALIDATED_LOCAL_ONLY",
+            }},
+        ]
+        completed = {
+            "completed_epoch67_test_compatibility_worker_lease": {
+                **worker, "status": "REVOKED", "revoked_at": close_at},
+            "completed_epoch67_test_compatibility_write_lease": {
+                **write, "status": "REVOKED", "revoked_at": close_at},
+        }
+        close_check = getattr(checker, "_validate_epoch69_close_details", lambda *a: ["EPOCH69_CLOSE_UNVALIDATED"])
+        self.assertEqual(close_check(ROOT, close, worker, write, completed), [])
+        for name, index, field, forged in (
+            ("handoff_hash", 0, "handoff_sha256", "0" * 64),
+            ("write_token", 1, "write_fencing_token", "forged"),
+            ("worker_reason", 2, "reason", "ACCEPTED"),
+        ):
+            with self.subTest(name=name):
+                changed = deepcopy(close)
+                changed[index]["details"][field] = forged
+                self.assertIn("EPOCH69_CLOSE_INVALID", close_check(ROOT, changed, worker, write, completed))
+        changed = deepcopy(completed)
+        changed["completed_epoch67_test_compatibility_write_lease"]["path_scope"] = ["packages/api/runtime.py"]
+        self.assertIn("EPOCH69_CLOSE_INVALID", close_check(ROOT, close, worker, write, changed))
 
     def test_rejects_forged_order_token_scope_and_expiry(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -71,12 +205,12 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         )
         for name, mutate, code in cases:
             with self.subTest(name=name):
-                bundle = deepcopy(load_bundle(ROOT))
+                bundle = self.closed67_fixture()
                 mutate(bundle)
-                self.assertIn(code, overlay.validate_control(ROOT, bundle, now))
+                self.assertIn(code, self.validate_historical(bundle, now))
         self.assertIn(
             "SUCCESSOR_ACTIVE_LEASE_INVALID",
-            overlay.validate_control(ROOT, self.active67_fixture(), overlay.EXPIRES67 + timedelta(seconds=1)),
+            self.validate_historical(self.active67_fixture(), overlay.EXPIRES67 + timedelta(seconds=1)),
         )
 
     def test_rejects_forged_work_instruction_authority(self):
@@ -90,10 +224,10 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             ("package_status", "ACCEPTED"),
         ):
             with self.subTest(field=field):
-                bundle = deepcopy(load_bundle(ROOT))
+                bundle = self.closed67_fixture()
                 bundle["events"]["events"][2114]["details"][field] = forged
-                self.assertIn("SUCCESSOR_WORK_INSTRUCTION_INVALID", overlay.validate_control(
-                    ROOT, bundle, datetime.now(timezone.utc)))
+                self.assertIn("SUCCESSOR_WORK_INSTRUCTION_INVALID", self.validate_historical(
+                    bundle, datetime.now(timezone.utc)))
 
     def test_issued_rows_require_active_status(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -127,10 +261,10 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
     def test_active_lease_must_be_active_and_already_issued(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         bundle["events"]["events"][2115]["details"]["status"] = "REVOKED"
-        self.assertIn("SUCCESSOR_LEASE_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc)))
+        self.assertIn("SUCCESSOR_LEASE_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc)))
 
     def test_lease_issue_instant_is_bound_to_canonical_epoch(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -139,33 +273,33 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         lease["issued_at"] = "2026-10-05T22:47:44+00:00"
         self.assertFalse(overlay._lease_valid66(lease, worker=True))
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         future = overlay.EXPIRES67 - timedelta(seconds=1)
         bundle["events"]["events"][2115]["details"]["issued_at"] = future.isoformat()
-        self.assertIn("SUCCESSOR_LEASE_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc)))
+        self.assertIn("SUCCESSOR_LEASE_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc)))
 
     def test_rejects_r48_prefix_mutation(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
-        raw = (ROOT / overlay.EVENTS).read_bytes().replace(
+        bundle = self.closed67_fixture()
+        raw = frozen67(overlay.EVENTS).replace(
             b'"evt_g05_legacy_migration"', b'"evt_g05_legacy_migratioX"', 1
         )
         bundle["events"] = json.loads(raw)
-        self.assertIn("SUCCESSOR_R48_PREFIX_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc), event_raw=raw))
+        self.assertIn("SUCCESSOR_R48_PREFIX_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc), event_raw=raw))
 
     def test_rejects_r48_stream_header_mutation(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
-        raw = (ROOT / overlay.EVENTS).read_bytes().replace(
+        bundle = self.closed67_fixture()
+        raw = frozen67(overlay.EVENTS).replace(
             b'"stream_id": "anvil-build-main"', b'"stream_id": "forged-stream"', 1
         )
         bundle["events"] = json.loads(raw)
-        self.assertIn("SUCCESSOR_R48_PREFIX_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc), event_raw=raw))
+        self.assertIn("SUCCESSOR_R48_PREFIX_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc), event_raw=raw))
 
     def test_rejects_forged_successor_event_identity(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -179,27 +313,27 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             ("step_id", "F20_U01_R48_CRITICAL_ACK_CLOSE"),
         ):
             with self.subTest(field=field):
-                bundle = deepcopy(load_bundle(ROOT))
+                bundle = self.closed67_fixture()
                 bundle["events"]["events"][2114][field] = forged
-                self.assertIn("SUCCESSOR_EVENT_IDENTITY_INVALID", overlay.validate_control(
-                    ROOT, bundle, datetime.now(timezone.utc)))
+                self.assertIn("SUCCESSOR_EVENT_IDENTITY_INVALID", self.validate_historical(
+                    bundle, datetime.now(timezone.utc)))
 
     def test_rejects_event_recorded_after_lease_expiry(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         bundle["events"]["events"][2116]["occurred_at"] = (
             overlay.EXPIRES67 + timedelta(seconds=1)).isoformat()
-        self.assertIn("SUCCESSOR_EVENT_TIME_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc)))
+        self.assertIn("SUCCESSOR_EVENT_TIME_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc)))
 
     def test_rejects_detached_digest_pointing_outside_control_documents(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         bundle["detached_digest"]["progress"]["path"] = "packages/api/runtime.py"
-        self.assertIn("SUCCESSOR_DETACHED_DIGEST_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc)))
+        self.assertIn("SUCCESSOR_DETACHED_DIGEST_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc)))
 
     def test_rejects_git_branch_remote_and_dirty_scope(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -218,8 +352,9 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
                 return original(root, *command)
             return fake
 
-        progress = load_bundle(ROOT)["progress"]
-        with patch.object(overlay, "_dirty", return_value=set()):
+        progress = self.closed67_fixture()["progress"]
+        with self.historical_git_facts(), patch.object(overlay, "_dirty", return_value=set()):
+            original = overlay._git
             self.assertEqual(overlay.collect_git(ROOT, progress), [])
             for variant in ("branch", "remote", "dirty", "committed_scope"):
                 with self.subTest(variant=variant), patch.object(overlay, "_git", side_effect=changed(variant)):
@@ -232,7 +367,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
     def test_epoch67_requires_baseline_ancestor_even_when_other_git_checks_pass(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        progress = load_bundle(ROOT)["progress"]
+        progress = self.closed67_fixture()["progress"]
         original_run = overlay.subprocess.run
         observed = []
 
@@ -242,7 +377,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
                 return SimpleNamespace(returncode=1)
             return original_run(command, *args, **kwargs)
 
-        with patch.object(overlay, "_dirty", return_value=set()), \
+        with self.historical_git_facts(), patch.object(overlay, "_dirty", return_value=set()), \
                 patch.object(overlay.subprocess, "run", side_effect=split_head):
             self.assertEqual(overlay.collect_git(ROOT, progress), ["SUCCESSOR_GIT_INVALID"])
         self.assertEqual(observed, ["BASE67_ONLY"])
@@ -306,8 +441,8 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
     def test_epoch67_active_dirty_is_scoped_but_closed_dirty_is_rejected(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        progress = deepcopy(load_bundle(ROOT)["progress"])
-        with patch.object(overlay, "_dirty", return_value=set(overlay.EXACT2)):
+        progress = self.closed67_fixture()["progress"]
+        with self.historical_git_facts(), patch.object(overlay, "_dirty", return_value=set(overlay.EXACT2)):
             progress["event_sequence"] = 2117
             self.assertEqual(overlay.collect_git(ROOT, progress), [])
             progress["event_sequence"] = 2120
@@ -353,33 +488,33 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
     def test_epoch67_rejects_forged_historical_completion_and_seq2114_prefix(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         bundle["progress"]["completed_f20_u01_contract_close_test_worker_lease"]["path_scope"] = ["other"]
-        self.assertIn("SUCCESSOR_HISTORICAL_LEASE_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc)))
-        raw = (ROOT / overlay.EVENTS).read_bytes().replace(
+        self.assertIn("SUCCESSOR_HISTORICAL_LEASE_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc)))
+        raw = frozen67(overlay.EVENTS).replace(
             b'"evt_f20_2114_worker_lease_revoked"', b'"evt_f20_2114_worker_lease_forged"', 1)
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         bundle["events"] = json.loads(raw)
-        self.assertIn("SUCCESSOR_HISTORICAL_PREFIX_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc), event_raw=raw))
+        self.assertIn("SUCCESSOR_HISTORICAL_PREFIX_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc), event_raw=raw))
 
     def test_rejects_historical_successor_prefix_mutation(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        raw = (ROOT / overlay.EVENTS).read_bytes().replace(
+        raw = frozen67(overlay.EVENTS).replace(
             b'"evt_f20_2104_worker_lease_issued"',
             b'"evt_f20_2104_worker_lease_forged"', 1,
         )
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         bundle["events"] = json.loads(raw)
-        self.assertIn("SUCCESSOR_HISTORICAL_PREFIX_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc), event_raw=raw))
+        self.assertIn("SUCCESSOR_HISTORICAL_PREFIX_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc), event_raw=raw))
 
     def test_rejects_new_completed_lease_forgery(self):
         from scripts import f20_u01_contract_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.closed67_fixture()
         worker, write = self.issued67()
         rows = bundle["events"]["events"]
         for item in ("worker", "write"):

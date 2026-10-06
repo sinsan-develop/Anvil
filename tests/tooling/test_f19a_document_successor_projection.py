@@ -1,20 +1,83 @@
 """F-19A document-only successor projection guard."""
 
 from copy import deepcopy
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from functools import lru_cache
 import json
 from pathlib import Path
+import subprocess
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from scripts.check_project_progress import load_bundle, validate_bundle
+from scripts.check_project_progress import extract_handoff_summary, load_bundle, validate_bundle
 
 
 ROOT = Path(__file__).resolve().parents[2]
+HISTORICAL_F19A = "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9"
+
+
+@lru_cache(maxsize=None)
+def frozen_f19a(path):
+    return subprocess.check_output(["git", "show", f"{HISTORICAL_F19A}:{path}"],
+                                   cwd=ROOT, stderr=subprocess.DEVNULL)
 
 
 class F19ADocumentSuccessorTests(unittest.TestCase):
+    @staticmethod
+    def historical_bundle():
+        from scripts import f19a_document_successor_overlay as overlay
+
+        bundle = deepcopy(load_bundle(ROOT))
+        bundle["progress"] = json.loads(frozen_f19a(overlay.PROGRESS))
+        bundle["events"] = json.loads(frozen_f19a(overlay.EVENTS))
+        bundle["handoff_text"] = frozen_f19a(overlay.HANDOFF).decode("utf-8")
+        bundle["handoff"] = extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(frozen_f19a(overlay.DIGEST))
+        bundle["_detached_digest_path"] = overlay.DIGEST
+        return bundle
+
+    @staticmethod
+    def validate_historical(bundle, now=None, *, event_raw=None):
+        from scripts import f19a_document_successor_overlay as overlay
+
+        archive = {ROOT / path: frozen_f19a(path)
+                   for path in (overlay.PROGRESS, overlay.EVENTS, overlay.HANDOFF, overlay.DIGEST)}
+        original_read, original_stat = Path.read_bytes, Path.stat
+
+        def read_historical(path):
+            return archive[path] if path in archive else original_read(path)
+
+        def stat_historical(path, *args, **kwargs):
+            if path in archive:
+                return SimpleNamespace(st_size=len(archive[path]))
+            return original_stat(path, *args, **kwargs)
+
+        with patch.object(Path, "read_bytes", read_historical), patch.object(Path, "stat", stat_historical):
+            return overlay.validate_control(ROOT, bundle, now or datetime.now(timezone.utc),
+                                            event_raw=event_raw or frozen_f19a(overlay.EVENTS))
+
+    @staticmethod
+    @contextmanager
+    def historical_git_facts():
+        from scripts import f19a_document_successor_overlay as overlay
+
+        original = overlay._git
+        delta = original(ROOT, "diff", "--name-only", "--no-renames", f"{overlay.BASE}..{HISTORICAL_F19A}")
+
+        def historical(root, *args):
+            if args == ("rev-parse", "HEAD"):
+                return (HISTORICAL_F19A + "\n").encode()
+            if args == ("rev-parse", overlay.UPSTREAM):
+                return (overlay.BASE + "\n").encode()
+            if args == ("diff", "--name-only", "--no-renames", f"{overlay.BASE}..HEAD"):
+                return delta
+            return original(root, *args)
+
+        with patch.object(overlay, "_git", side_effect=historical):
+            yield
+
     def test_rejects_forged_progress_snapshot_even_with_valid_successor_binding(self):
         bundle = deepcopy(load_bundle(ROOT))
         bundle["progress"]["snapshot_hash"] = "0" * 64
@@ -32,10 +95,13 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
         bundle["handoff"]["next_safe_action"] = "FORGED_ACTION"
         self.assertIn("HANDOFF_NEXT_ACTION_MISMATCH", validate_bundle(bundle))
 
-    def test_active_route_accepts_exact_canonical_projection(self):
-        bundle = load_bundle(ROOT)
-        self.assertIn(bundle["progress"]["event_sequence"], {2123, 2126})
-        self.assertEqual(validate_bundle(bundle), [])
+    def test_historical_f19a_and_current_successor_are_distinct(self):
+        historical = self.historical_bundle()
+        self.assertEqual(historical["progress"]["event_sequence"], 2126)
+        self.assertEqual(self.validate_historical(historical), [])
+        current = load_bundle(ROOT)
+        self.assertEqual(current["progress"]["event_sequence"], 2129)
+        self.assertEqual(validate_bundle(current), [])
 
     def test_rejects_forged_event_order_token_and_expiry(self):
         from scripts import f19a_document_successor_overlay as overlay
@@ -48,9 +114,9 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
         )
         for name, mutate, code in cases:
             with self.subTest(name=name):
-                bundle = deepcopy(load_bundle(ROOT))
+                bundle = self.historical_bundle()
                 mutate(bundle)
-                self.assertIn(code, overlay.validate_control(ROOT, bundle, datetime.now(timezone.utc)))
+                self.assertIn(code, self.validate_historical(bundle, datetime.now(timezone.utc)))
 
     def test_rejects_work_instruction_and_document_binding_forgery(self):
         from scripts import f19a_document_successor_overlay as overlay
@@ -65,23 +131,23 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
         )
         for name, mutate, code in cases:
             with self.subTest(name=name):
-                bundle = deepcopy(load_bundle(ROOT))
+                bundle = self.historical_bundle()
                 mutate(bundle)
-                self.assertIn(code, overlay.validate_control(ROOT, bundle, datetime.now(timezone.utc)))
+                self.assertIn(code, self.validate_historical(bundle, datetime.now(timezone.utc)))
 
     def test_rejects_frozen_old_event_prefix_and_scope(self):
         from scripts import f19a_document_successor_overlay as overlay
 
-        raw = (ROOT / overlay.EVENTS).read_bytes().replace(
+        raw = frozen_f19a(overlay.EVENTS).replace(
             b'"evt_f20_2120_worker_lease_revoked"', b'"evt_f20_2120_worker_lease_forged"', 1)
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.historical_bundle()
         bundle["events"] = json.loads(raw)
-        self.assertIn("F19A_FROZEN_PREFIX_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc), event_raw=raw))
-        bundle = deepcopy(load_bundle(ROOT))
+        self.assertIn("F19A_FROZEN_PREFIX_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc), event_raw=raw))
+        bundle = self.historical_bundle()
         bundle["events"]["events"][2122]["details"]["path_scope"].append("packages/api/runtime.py")
-        self.assertIn("F19A_LEASE_INVALID", overlay.validate_control(
-            ROOT, bundle, datetime.now(timezone.utc)))
+        self.assertIn("F19A_LEASE_INVALID", self.validate_historical(
+            bundle, datetime.now(timezone.utc)))
 
     def test_rejects_forged_new_event_identity_chain_and_product_scope(self):
         from scripts import f19a_document_successor_overlay as overlay
@@ -92,37 +158,38 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
             ("product", lambda b: b["progress"]["repository"].update(product_write_scope=["packages/api/runtime.py"]), "F19A_SCOPE_INVALID"),
         ):
             with self.subTest(name=name):
-                bundle = deepcopy(load_bundle(ROOT))
+                bundle = self.historical_bundle()
                 mutate(bundle)
-                self.assertIn(code, overlay.validate_control(ROOT, bundle, datetime.now(timezone.utc)))
+                self.assertIn(code, self.validate_historical(bundle, datetime.now(timezone.utc)))
 
     def test_rejects_detached_digest_forgery(self):
         from scripts import f19a_document_successor_overlay as overlay
 
-        bundle = deepcopy(load_bundle(ROOT))
+        bundle = self.historical_bundle()
         with patch.object(overlay, "_load_digest", return_value={"progress": {"path": "packages/api/runtime.py"}}):
-            self.assertIn("F19A_DIGEST_INVALID", overlay.validate_control(
-                ROOT, bundle, datetime.now(timezone.utc)))
+            self.assertIn("F19A_DIGEST_INVALID", self.validate_historical(
+                bundle, datetime.now(timezone.utc)))
 
     def test_git_rejects_dirty_outside_scope_branch_and_divergent_base(self):
         from scripts import f19a_document_successor_overlay as overlay
 
-        progress = load_bundle(ROOT)["progress"]
-        self.assertEqual(overlay.collect_git(ROOT, progress), [])
-        with patch.object(overlay, "_dirty", return_value={"packages/api/runtime.py"}):
-            self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
-        original_git = overlay._git
+        progress = self.historical_bundle()["progress"]
+        with self.historical_git_facts(), patch.object(overlay, "_dirty", return_value=set()):
+            self.assertEqual(overlay.collect_git(ROOT, progress), [])
+            original_git = overlay._git
+            with patch.object(overlay, "_dirty", return_value={"packages/api/runtime.py"}):
+                self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
+            def wrong_branch(root, *args):
+                return b"codex/forged\n" if args == ("branch", "--show-current") else original_git(root, *args)
 
-        def wrong_branch(root, *args):
-            return b"codex/forged\n" if args == ("branch", "--show-current") else original_git(root, *args)
+            with patch.object(overlay, "_git", side_effect=wrong_branch):
+                self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
 
-        with patch.object(overlay, "_git", side_effect=wrong_branch):
-            self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
-        def wrong_remote(root, *args):
-            return b"0" * 40 + b"\n" if args == ("rev-parse", overlay.UPSTREAM) else original_git(root, *args)
+            def wrong_remote(root, *args):
+                return b"0" * 40 + b"\n" if args == ("rev-parse", overlay.UPSTREAM) else original_git(root, *args)
 
-        with patch.object(overlay, "_git", side_effect=wrong_remote):
-            self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
+            with patch.object(overlay, "_git", side_effect=wrong_remote):
+                self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
         original_run = overlay.subprocess.run
         seen = []
 
@@ -132,14 +199,15 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
                 return SimpleNamespace(returncode=1)
             return original_run(command, *args, **kwargs)
 
-        with patch.object(overlay.subprocess, "run", side_effect=divergent):
+        with self.historical_git_facts(), patch.object(overlay, "_dirty", return_value=set()), \
+                patch.object(overlay.subprocess, "run", side_effect=divergent):
             self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
         self.assertEqual(seen, ["BASE_ONLY"])
 
     def test_closed_control_requires_exact_handoff_and_revocation(self):
         from scripts import f19a_document_successor_overlay as overlay
 
-        rows = load_bundle(ROOT)["events"]["events"]
+        rows = self.historical_bundle()["events"]["events"]
         worker, write = rows[2121]["details"], rows[2122]["details"]
         occurred_at = datetime.now(timezone.utc).isoformat()
         close = [
@@ -169,7 +237,7 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
         self.assertFalse(overlay._completed(write, {
             **write, "status": "REVOKED", "revoked_at": occurred_at,
             "path_scope": ["packages/api/runtime.py"]}, occurred_at))
-        progress = deepcopy(load_bundle(ROOT)["progress"])
+        progress = self.historical_bundle()["progress"]
         progress["event_sequence"] = 2126
         with patch.object(overlay, "_dirty", return_value={overlay.CHECKER}):
             self.assertEqual(overlay.collect_git(ROOT, progress), ["F19A_GIT_INVALID"])
@@ -177,11 +245,12 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
     def test_checker_changes_only_new_mode_route_and_predecessor_code_is_frozen(self):
         from scripts import f19a_document_successor_overlay as overlay
 
-        before = overlay._frozen(ROOT, overlay.CHECKER)
+        before = frozen_f19a(overlay.CHECKER)
         after = (ROOT / overlay.CHECKER).read_bytes()
-        start = after.index(b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_DOCUMENT_SUCCESSOR":')
-        end = after.index(b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_SCOPED_FILTER_CONTRACT_DOCUMENT_SUCCESSOR":', start)
-        self.assertEqual(after[:start] + after[end:], before)
+        route = b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_DOCUMENT_SUCCESSOR":'
+        next_route = b'    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_SCOPED_FILTER_CONTRACT_DOCUMENT_SUCCESSOR":'
+        self.assertEqual(after[after.index(route):after.index(next_route, after.index(route))],
+                         before[before.index(route):before.index(next_route, before.index(route))])
         for path in ("scripts/f20_u01_contract_successor_overlay.py", "scripts/f20_u01_r48_close_overlay.py"):
             self.assertEqual((ROOT / path).read_bytes(), overlay._frozen(ROOT, path))
 

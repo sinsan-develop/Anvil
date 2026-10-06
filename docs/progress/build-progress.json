@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f20-u01-closed-fixture-close-seq2120",
-  "event_sequence": 2126,
-  "updated_at": "2026-10-06T01:24:31+00:00",
-  "last_event_id": "evt_f20_2126_worker_lease_revoked",
+  "snapshot_id": "snapshot-f20-u01-epoch67-test-compat-close-seq2132",
+  "event_sequence": 2132,
+  "updated_at": "2026-10-06T02:47:39+00:00",
+  "last_event_id": "evt_f20_2132_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -217,6 +217,25 @@
   ],
   "active_agent": "main-agent-eoul",
   "write_lease": null,
+  "completed_epoch67_test_compatibility_write_lease": {
+    "lease_id": "write-lease-epoch67-compat-f9e0a97cd47a476dba41e78337180262",
+    "actor_id": "developer-primary-epoch67-test-compat",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "status": "REVOKED",
+    "issued_at": "2026-10-06T02:09:22+00:00",
+    "expires_at": "2026-10-07T02:09:22+00:00",
+    "lease_epoch": 69,
+    "fencing_token": "epoch67-compat-write-fence-epoch-69-f9e0a97cd47a476dba41e78337180262",
+    "execution_fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+    "baseline_git_commit": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "dispatch_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "path_scope": ["tests/tooling/test_f20_u01_contract_successor_projection.py", "tests/tooling/test_f19a_document_successor_projection.py", "scripts/f20_u01_contract_successor_overlay.py", "scripts/check_project_progress.py"],
+    "worker_lease_id": "worker-lease-epoch67-compat-76fd3bb5d1d046be90f21f904a4d2134",
+    "write_epoch": 69,
+    "write_fencing_token": "epoch67-compat-write-fence-epoch-69-f9e0a97cd47a476dba41e78337180262",
+    "product_write_scope": [],
+    "revoked_at": "2026-10-06T02:47:39+00:00"
+  },
   "completed_f19a_document_write_lease": {
     "lease_id": "write-lease-f19a-document-0399512a5ee84403b6ae7c4f35d2dd98",
     "actor_id": "developer-primary-f19a-doc-control",
@@ -336,6 +355,21 @@
     ]
   },
   "worker_lease": null,
+  "completed_epoch67_test_compatibility_worker_lease": {
+    "lease_id": "worker-lease-epoch67-compat-76fd3bb5d1d046be90f21f904a4d2134",
+    "actor_id": "developer-primary-epoch67-test-compat",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "status": "REVOKED",
+    "issued_at": "2026-10-06T02:09:22+00:00",
+    "expires_at": "2026-10-07T02:09:22+00:00",
+    "lease_epoch": 69,
+    "fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+    "execution_fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+    "baseline_git_commit": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "dispatch_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "path_scope": ["tests/tooling/test_f20_u01_contract_successor_projection.py", "tests/tooling/test_f19a_document_successor_projection.py", "scripts/f20_u01_contract_successor_overlay.py", "scripts/check_project_progress.py"],
+    "revoked_at": "2026-10-06T02:47:39+00:00"
+  },
   "completed_f19a_document_worker_lease": {
     "lease_id": "worker-lease-f19a-document-30a431fcc95f4cb18bf0d60cd108bd2f",
     "actor_id": "developer-primary-f19a-doc-control",
@@ -628,7 +662,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_EPOCH67_TEST_COMPATIBILITY_SUCCESSOR_PACKET",
+  "next_safe_action": "F20_U01_REWORK_RECONCILIATION_AFTER_TEST_COMPAT",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -739,13 +773,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "afa49d2c31194c20df653273344116125bc11fda",
+    "local_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "afa49d2c31194c20df653273344116125bc11fda",
-    "projection_mode": "F19A_DOCUMENT_SUCCESSOR",
-    "validated_base_commit": "afa49d2c31194c20df653273344116125bc11fda",
-    "head_relation": "DOCUMENT_SUCCESSOR_DIRTY_CONTROL_BOOTSTRAP",
+    "remote_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "projection_mode": "F20_U01_EPOCH67_TEST_COMPATIBILITY_SUCCESSOR",
+    "validated_base_commit": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "head_relation": "EPOCH67_TEST_COMPATIBILITY_CLOSED_CONTROL_PENDING_CHECKPOINT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1502,7 +1536,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "44541266ADE323E147E8D4BA202F0654007C31A9AE42CA6F0717E801D80822C2"
+      "sha256": "196769BA87BBEC32CDE6C2B7C40C29B60854DC26B232A58FECC19D1F4095D623"
     }
   },
   "next_work_package": {
@@ -1899,7 +1933,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "9CBC0A105611583968E7FE743F2E91C6599FAF8DA001EEE8AFEEA12797EE321E",
+  "snapshot_hash": "6330251283F2A59BC27ECCAA3200913F1E4F6DD7387CCA3EF296ACC41F8011A1",
   "runtime_next_action": "F20_U01_CONTRACT_CONTROL_EXACT3_BOOTSTRAP",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -23345,6 +23379,25 @@
     "production": "NOT_EXECUTED",
     "event_sequence": 2126,
     "test_compatibility": "INCOMPLETE_EPOCH67_CURRENT_PROJECTION_26_FAIL"
+  },
+  "epoch67_test_compatibility_binding": {
+    "status": "TEST_COMPATIBILITY_CLOSED_NOT_PRODUCT_ACCEPTED",
+    "predecessor_sequence": 2126,
+    "predecessor_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+    "historical_epoch67_head": "afa49d2c31194c20df653273344116125bc11fda",
+    "work_instruction_id": "WI-F20-U01-EPOCH67-TEST-COMPAT-20261006-001",
+    "work_instruction_path": "docs/work_orders/F-20_U01_EPOCH67_TEST_COMPATIBILITY_WORK_INSTRUCTION.md",
+    "work_instruction_sha256": "AE545FE4A5854CE4926987C4EEC2497ED70A0D8B8D03CBFAB20B459ADF843653",
+    "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "red_fingerprint": "EPOCH67_TEST_CURRENT_PROJECTION_ASSUMPTION",
+    "red_tests": "27_RUN_26_FAIL_EXIT1",
+    "detached_digest_path": "docs/progress/progress-handoff-detached-digest-epoch67-test-compatibility.json",
+    "developer_exact_paths": ["tests/tooling/test_f20_u01_contract_successor_projection.py", "tests/tooling/test_f19a_document_successor_projection.py", "scripts/f20_u01_contract_successor_overlay.py", "scripts/check_project_progress.py"],
+    "product_write_scope": [],
+    "f20_overall_status": "REWORK_IN_PROGRESS",
+    "release_decision": "DEFER",
+    "production": "NOT_EXECUTED",
+    "event_sequence": 2132
   },
   "f20_u01_contract_control_successor": {
     "revision": 1,

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2126,
+  "last_sequence": 2132,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -100072,7 +100072,183 @@
       "execution_fencing_token": "f19a-document-execution-fence-epoch-68-30a431fcc95f4cb18bf0d60cd108bd2f",
       "reason": "F19A_DOCUMENT_CONTROL_VALIDATED_LOCAL_ONLY"
     }
+  },
+  {
+    "sequence": 2127,
+    "event_id": "evt_f20_2127_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH67_TEST_COMPATIBILITY_START",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "occurred_at": "2026-10-06T02:09:22+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A4BF83568B39EA246B34360AEF93CC4BD631850AC40A497B652399C61221B85F",
+    "details": {
+      "path": "docs/work_orders/F-20_U01_EPOCH67_TEST_COMPATIBILITY_WORK_INSTRUCTION.md",
+      "sha256": "AE545FE4A5854CE4926987C4EEC2497ED70A0D8B8D03CBFAB20B459ADF843653",
+      "classification": "PMO_CONDITIONAL_EPOCH67_TEST_COMPATIBILITY_BOOTSTRAP",
+      "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642",
+      "parent_work_instruction": "docs/work_orders/F-19A_DOCUMENT_SUCCESSOR_WORK_INSTRUCTION.md",
+      "revision_reason": "EPOCH67_TEST_CURRENT_PROJECTION_ASSUMPTION",
+      "product_write_scope": [],
+      "developer_exact_paths": [
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f19a_document_successor_projection.py",
+        "scripts/f20_u01_contract_successor_overlay.py",
+        "scripts/check_project_progress.py"
+      ],
+      "baseline_git_commit": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+      "predecessor_event_sequence": 2126,
+      "package_status": "READY",
+      "accepted": false
+    }
+  },
+  {
+    "sequence": 2128,
+    "event_id": "evt_f20_2128_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH67_TEST_COMPATIBILITY_START",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "occurred_at": "2026-10-06T02:09:22+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "F402A7464B2635449D7D7699B77674F0A5AA839E2D51B0C42F4951E7ADBE4255",
+    "details": {
+      "lease_id": "worker-lease-epoch67-compat-76fd3bb5d1d046be90f21f904a4d2134",
+      "actor_id": "developer-primary-epoch67-test-compat",
+      "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-06T02:09:22+00:00",
+      "expires_at": "2026-10-07T02:09:22+00:00",
+      "lease_epoch": 69,
+      "fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+      "execution_fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+      "baseline_git_commit": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+      "dispatch_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+      "path_scope": [
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f19a_document_successor_projection.py",
+        "scripts/f20_u01_contract_successor_overlay.py",
+        "scripts/check_project_progress.py"
+      ]
+    }
+  },
+  {
+    "sequence": 2129,
+    "event_id": "evt_f20_2129_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH67_TEST_COMPATIBILITY_START",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "occurred_at": "2026-10-06T02:09:22+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "833BB4FDE48E541E9C95569D087A215C9DBF7A2D8132ED8F0DC7339FDF5047BF",
+    "details": {
+      "lease_id": "write-lease-epoch67-compat-f9e0a97cd47a476dba41e78337180262",
+      "actor_id": "developer-primary-epoch67-test-compat",
+      "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-06T02:09:22+00:00",
+      "expires_at": "2026-10-07T02:09:22+00:00",
+      "lease_epoch": 69,
+      "fencing_token": "epoch67-compat-write-fence-epoch-69-f9e0a97cd47a476dba41e78337180262",
+      "execution_fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+      "baseline_git_commit": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+      "dispatch_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+      "path_scope": [
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f19a_document_successor_projection.py",
+        "scripts/f20_u01_contract_successor_overlay.py",
+        "scripts/check_project_progress.py"
+      ],
+      "worker_lease_id": "worker-lease-epoch67-compat-76fd3bb5d1d046be90f21f904a4d2134",
+      "write_epoch": 69,
+      "write_fencing_token": "epoch67-compat-write-fence-epoch-69-f9e0a97cd47a476dba41e78337180262",
+      "product_write_scope": []
+    }
+  },
+  {
+    "sequence": 2130,
+    "event_id": "evt_f20_2130_handoff_recorded",
+    "event_type": "HANDOFF_RECORDED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH67_TEST_COMPATIBILITY_CLOSE",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "occurred_at": "2026-10-06T02:47:39+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "7A74A6F6B36215B0535B7CD9279EF0367E8FD6DD127DBEBC1C1E374A1551141C",
+    "details": {
+      "work_instruction_sha256": "AE545FE4A5854CE4926987C4EEC2497ED70A0D8B8D03CBFAB20B459ADF843653",
+      "worker_lease_id": "worker-lease-epoch67-compat-76fd3bb5d1d046be90f21f904a4d2134",
+      "write_lease_id": "write-lease-epoch67-compat-f9e0a97cd47a476dba41e78337180262",
+      "accepted": false,
+      "product_write_scope": [],
+      "handoff_ref": "docs/progress/BUILD_HANDOFF.md",
+      "handoff_sha256": "7D679259BE632F3F0A77A9622923D29B3D8ACFFB27321E320E00E630C209BFAE"
+    }
+  },
+  {
+    "sequence": 2131,
+    "event_id": "evt_f20_2131_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH67_TEST_COMPATIBILITY_CLOSE",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "occurred_at": "2026-10-06T02:47:39+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "40EB3F41174D648D2DAF540BB0DCFF57AE4A0377EFEE81F1EEC9C9D0FC005177",
+    "details": {
+      "lease_id": "write-lease-epoch67-compat-f9e0a97cd47a476dba41e78337180262",
+      "write_fencing_token": "epoch67-compat-write-fence-epoch-69-f9e0a97cd47a476dba41e78337180262",
+      "reason": "EPOCH67_TEST_COMPATIBILITY_VALIDATED_LOCAL_ONLY"
+    }
+  },
+  {
+    "sequence": 2132,
+    "event_id": "evt_f20_2132_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH67_TEST_COMPATIBILITY_CLOSE",
+    "subject_ref": "F-20/U01-EPOCH67-TEST-COMPATIBILITY",
+    "occurred_at": "2026-10-06T02:47:39+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "7320C440B6250C4AE6F549E0F37672C25A65E8A7337B75E5A615E860282B0414",
+    "details": {
+      "lease_id": "worker-lease-epoch67-compat-76fd3bb5d1d046be90f21f904a4d2134",
+      "execution_fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
+      "reason": "EPOCH67_TEST_COMPATIBILITY_VALIDATED_LOCAL_ONLY"
+    }
   }
   ],
-  "last_event_id": "evt_f20_2126_worker_lease_revoked"
+  "last_event_id": "evt_f20_2132_worker_lease_revoked"
 }
