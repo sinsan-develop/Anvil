@@ -57937,6 +57937,239 @@ def _validate_git_projection(bundle):
     return _validate_git_projection_before_c30r5(bundle)
 
 _validate_bundle_before_c30r5 = validate_bundle
+def _validate_epoch70_close_details(root, close, worker, write, completed):
+    expected_handoff = {
+        "work_instruction_sha256": "3FAF9DF456783C331A9EFCFE849E8FA2ECC5557297D5CBBAD39FD49F5DE971AF",
+        "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+        "accepted": False, "product_write_scope": [], "handoff_ref": "docs/progress/BUILD_HANDOFF.md",
+        "handoff_sha256": _sha256(Path(root) / "docs/progress/BUILD_HANDOFF.md"),
+    }
+    reason = "EPOCH70_POSTCLOSE_FIXTURE_VALIDATED_LOCAL_ONLY"
+    try:
+        if (len(close) != 3 or close[0].get("event_type") != "HANDOFF_RECORDED"
+                or close[0].get("details") != expected_handoff
+                or close[1].get("event_type") != "WRITE_LEASE_REVOKED"
+                or close[1].get("details") != {"lease_id": write["lease_id"],
+                                               "write_fencing_token": write["write_fencing_token"], "reason": reason}
+                or close[2].get("event_type") != "WORKER_LEASE_REVOKED"
+                or close[2].get("details") != {"lease_id": worker["lease_id"],
+                                               "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}
+                or completed.get("completed_epoch70_postclose_fixture_write_lease") != {
+                    **write, "status": "REVOKED", "revoked_at": close[1]["occurred_at"]}
+                or completed.get("completed_epoch70_postclose_fixture_worker_lease") != {
+                    **worker, "status": "REVOKED", "revoked_at": close[2]["occurred_at"]}):
+            return ["EPOCH70_CLOSE_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError, IndexError):
+        return ["EPOCH70_CLOSE_INVALID"]
+    return []
+
+
+def _validate_epoch70_postclose_fixture(bundle):
+    from datetime import datetime, timezone
+    import subprocess
+    try:
+        from scripts import f19a_document_successor_overlay as predecessor
+    except ModuleNotFoundError:
+        import f19a_document_successor_overlay as predecessor
+
+    errors = []
+    root, progress, stream = Path(bundle["_root"]), bundle["progress"], bundle["events"]
+    base = "b2a44badbec1bb28305870102fc6fd2ee0cac2b3"
+    wi = "docs/work_orders/F-20_U01_EPOCH70_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md"
+    wi_hash = "3FAF9DF456783C331A9EFCFE849E8FA2ECC5557297D5CBBAD39FD49F5DE971AF"
+    digest_path = "docs/progress/progress-handoff-detached-digest-epoch70-postclose-fixture.json"
+    actor, subject = "developer-primary-epoch70-postclose-fixture", "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE"
+    worker_id = "worker-lease-epoch70-postclose-d5670a0e4d8644a889a307f344a16925"
+    write_id = "write-lease-epoch70-postclose-6022757133144f50b4b56fa0925723ae"
+    execution = "epoch70-postclose-execution-fence-epoch-70-d5670a0e4d8644a889a307f344a16925"
+    write_token = "epoch70-postclose-write-fence-epoch-70-6022757133144f50b4b56fa0925723ae"
+    issued, expires = "2026-10-06T03:00:32+00:00", "2026-10-07T03:00:32+00:00"
+    exact3 = ["tests/tooling/test_f20_u01_contract_successor_projection.py",
+              "tests/tooling/test_f19a_document_successor_projection.py", "scripts/check_project_progress.py"]
+    try:
+        raw = (root / "docs/progress/progress-events.json").read_bytes()
+        frozen = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
+                                         cwd=root, stderr=subprocess.DEVNULL)
+        rows = stream["events"]
+        if (raw_event_object_prefix_bytes(raw, 2132) != raw_event_object_prefix_bytes(frozen, 2132)
+                or any(stream.get(key) != json.loads(frozen).get(key)
+                       for key in ("schema_version", "stream_id", "first_sequence"))):
+            errors.append("EPOCH70_FROZEN_PREFIX_INVALID")
+        if (stream != json.loads(raw) or stream.get("last_sequence") != len(rows)
+                or progress.get("event_sequence") != len(rows)
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or stream.get("last_event_id") != rows[-1].get("event_id")
+                or len(rows) not in {2135, 2138}):
+            errors.append("EPOCH70_EVENT_INVALID")
+        kinds = ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"]
+        if len(rows) == 2138:
+            kinds += ["HANDOFF_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED"]
+        if [row.get("event_type") for row in rows[2132:]] != kinds:
+            errors.append("EPOCH70_EVENT_INVALID")
+        now = datetime.now(timezone.utc)
+        for index, row in enumerate(rows[2132:], 2132):
+            event_time = datetime.fromisoformat(row["occurred_at"])
+            if (row.get("sequence") != index + 1
+                    or row.get("event_id") != f"evt_f20_{index + 1}_{kinds[index - 2132].lower()}"
+                    or row.get("subject_ref") != subject
+                    or row.get("previous_event_sha256") != predecessor._sha(
+                        predecessor.r48.r1._canonical(rows[index - 1]))
+                    or row.get("actor") != "main-agent-eoul" or row.get("actor_id") != "main-agent-eoul"
+                    or row.get("actor_type") != "AGENT" or row.get("project_id") != "anvil"
+                    or row.get("work_package_id") != "F-20"
+                    or row.get("step_id") != ("F20_U01_EPOCH70_POSTCLOSE_FIXTURE_START" if index < 2135
+                                              else "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_CLOSE")
+                    or row.get("occurred_at_source") != "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME"
+                    or event_time.tzinfo is None or event_time > now
+                    or event_time >= datetime.fromisoformat(expires)
+                    or (index < 2135 and row.get("occurred_at") != issued)
+                    or (index >= 2135 and event_time < datetime.fromisoformat(rows[index - 1]["occurred_at"]))):
+                errors.append("EPOCH70_EVENT_INVALID")
+        instruction, worker, write = (rows[2132]["details"], rows[2133]["details"], rows[2134]["details"])
+        if (instruction != {"path": wi, "sha256": wi_hash,
+                            "classification": "PMO_CONDITIONAL_EPOCH70_POSTCLOSE_FIXTURE_BOOTSTRAP",
+                            "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642",
+                            "parent_work_instruction": "docs/work_orders/F-20_U01_EPOCH67_TEST_COMPATIBILITY_WORK_INSTRUCTION.md",
+                            "revision_reason": "EPOCH69_TEST_CURRENT_SEQ_ACTIVE_ONLY_ASSUMPTION",
+                            "product_write_scope": [], "developer_exact_paths": exact3,
+                            "baseline_git_commit": base, "predecessor_event_sequence": 2132,
+                            "package_status": "READY", "accepted": False}
+                or _sha256(root / wi) != wi_hash):
+            errors.append("EPOCH70_WORK_INSTRUCTION_INVALID")
+        common = {"actor_id": actor, "subject_ref": subject, "status": "ACTIVE",
+                  "issued_at": issued, "expires_at": expires, "lease_epoch": 70,
+                  "execution_fencing_token": execution, "baseline_git_commit": base,
+                  "dispatch_head": base, "path_scope": exact3}
+        expected_worker = {**common, "lease_id": worker_id, "fencing_token": execution}
+        expected_write = {**common, "lease_id": write_id, "fencing_token": write_token,
+                          "worker_lease_id": worker_id, "write_epoch": 70,
+                          "write_fencing_token": write_token, "product_write_scope": []}
+        if worker != expected_worker or write != expected_write or execution == write_token:
+            errors.append("EPOCH70_LEASE_INVALID")
+        closed = len(rows) == 2138
+        if closed:
+            errors.extend(_validate_epoch70_close_details(root, rows[2135:2138], worker, write, progress))
+            if progress.get("worker_lease") is not None or progress.get("write_lease") is not None:
+                errors.append("EPOCH70_LEASE_INVALID")
+        elif (now >= datetime.fromisoformat(expires) or now < datetime.fromisoformat(issued)
+              or progress.get("worker_lease") != worker or progress.get("write_lease") != write):
+            errors.append("EPOCH70_LEASE_INVALID")
+        prior_progress = json.loads(subprocess.check_output(
+            ["git", "show", f"{base}:docs/progress/build-progress.json"], cwd=root, stderr=subprocess.DEVNULL))
+        transition_keys = {"epoch70_postclose_fixture_binding", "event_sequence", "last_event_id",
+                           "next_safe_action", "registry_refs", "repository", "snapshot_hash",
+                           "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if closed:
+            transition_keys.update({"completed_epoch70_postclose_fixture_write_lease",
+                                    "completed_epoch70_postclose_fixture_worker_lease"})
+        frozen_fields = lambda row: {key: value for key, value in row.items() if key not in transition_keys}
+        prior_refs, current_refs = prior_progress["registry_refs"], progress["registry_refs"]
+        prior_repo, current_repo = prior_progress["repository"], progress["repository"]
+        changing_repo = {"local_head", "remote_head", "projection_mode", "validated_base_commit", "head_relation"}
+        if (frozen_fields(progress) != frozen_fields(prior_progress)
+                or {key: value for key, value in current_refs.items() if key != "progress_events"}
+                != {key: value for key, value in prior_refs.items() if key != "progress_events"}
+                or {key: value for key, value in current_refs["progress_events"].items() if key != "sha256"}
+                != {key: value for key, value in prior_refs["progress_events"].items() if key != "sha256"}
+                or {key: value for key, value in current_repo.items() if key not in changing_repo}
+                != {key: value for key, value in prior_repo.items() if key not in changing_repo}):
+            errors.append("EPOCH70_FROZEN_PROJECTION_INVALID")
+        binding = progress.get("epoch70_postclose_fixture_binding", {})
+        if (set(binding) != {"status", "predecessor_sequence", "predecessor_head",
+                             "historical_epoch69_head", "historical_f19a_head", "historical_epoch67_head",
+                             "work_instruction_id", "work_instruction_path", "work_instruction_sha256",
+                             "approval_ref", "red_fingerprint", "red_tests", "detached_digest_path",
+                             "developer_exact_paths", "product_write_scope", "f20_overall_status",
+                             "release_decision", "production", "event_sequence"}
+                or binding.get("status") != ("POSTCLOSE_FIXTURE_CLOSED_NOT_PRODUCT_ACCEPTED" if closed
+                                      else "CONTROL_BOOTSTRAP_ACTIVE_NOT_ACCEPTED")
+                or binding.get("predecessor_sequence") != 2132 or binding.get("predecessor_head") != base
+                or binding.get("historical_epoch69_head") != "825becbabd1304f3c3afa560f4f0627dec7e0f9c"
+                or binding.get("historical_f19a_head") != "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9"
+                or binding.get("historical_epoch67_head") != "afa49d2c31194c20df653273344116125bc11fda"
+                or binding.get("work_instruction_id") != "WI-F20-U01-EPOCH70-POSTCLOSE-FIXTURE-20261006-001"
+                or binding.get("work_instruction_path") != wi or binding.get("work_instruction_sha256") != wi_hash
+                or binding.get("approval_ref") != instruction["approval_ref"]
+                or binding.get("red_fingerprint") != "EPOCH69_TEST_CURRENT_SEQ_ACTIVE_ONLY_ASSUMPTION"
+                or binding.get("red_tests") != "38_RUN_2_FAIL_EXIT1"
+                or binding.get("developer_exact_paths") != exact3
+                or binding.get("product_write_scope") != []
+                or binding.get("detached_digest_path") != digest_path
+                or binding.get("f20_overall_status") != "REWORK_IN_PROGRESS"
+                or binding.get("release_decision") != "DEFER" or binding.get("production") != "NOT_EXECUTED"
+                or binding.get("event_sequence") != len(rows)):
+            errors.append("EPOCH70_SCOPE_INVALID")
+        if (progress.get("repository", {}).get("projection_mode") != "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_SUCCESSOR"
+                or progress.get("repository", {}).get("head_relation") != (
+                    "EPOCH70_POSTCLOSE_FIXTURE_CLOSED_CONTROL_PENDING_CHECKPOINT" if closed
+                    else "EPOCH70_POSTCLOSE_FIXTURE_DIRTY_CONTROL_BOOTSTRAP")
+                or progress.get("repository", {}).get("product_write_scope") != []
+                or progress.get("f20_overall_status") != "REWORK_IN_PROGRESS"
+                or progress.get("scope_revision_binding", {}).get("release_decision") != "DEFER"
+                or "F-20" in progress.get("completed_packages", [])):
+            errors.append("EPOCH70_SCOPE_INVALID")
+        if progress.get("registry_refs", {}).get("progress_events", {}).get("sha256") != predecessor._sha(raw):
+            errors.append("EPOCH70_EVENT_INVALID")
+        handoff = bundle["handoff"]
+        if (handoff.get("event_sequence") != len(rows) or handoff.get("last_event_id") != rows[-1].get("event_id")
+                or handoff.get("current_work_package") != "F-20"
+                or handoff.get("worker_lease") != (None if closed else worker_id)
+                or handoff.get("write_lease") != (None if closed else write_id)
+                or handoff.get("repository_head") != base
+                or handoff.get("repository_upstream") != "development/codex/f18-wsl-ops"
+                or handoff.get("next_safe_action") != progress.get("next_safe_action")
+                or progress.get("next_safe_action") != ("F20_U01_REWORK_RECONCILIATION_AFTER_EPOCH70" if closed
+                                                        else "EPOCH70_POSTCLOSE_FIXTURE_SINGLE_DEVELOPER_EXACT3")):
+            errors.append("EPOCH70_HANDOFF_INVALID")
+        digest = json.loads((root / digest_path).read_bytes())
+        for part, path in (("progress", "docs/progress/build-progress.json"),
+                           ("handoff", "docs/progress/BUILD_HANDOFF.md")):
+            target = root / path
+            if (digest.get(part, {}).get("path") != path or digest.get(part, {}).get("bytes") != target.stat().st_size
+                    or digest.get(part, {}).get("file_sha256") != _sha256(target)):
+                errors.append("EPOCH70_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("event_sequence") != len(rows) or digest.get("self_reference") is not False):
+            errors.append("EPOCH70_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, subprocess.CalledProcessError):
+        errors.append("EPOCH70_CONTROL_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_epoch70_git(bundle):
+    import subprocess
+    root, progress = Path(bundle["_root"]), bundle["progress"]
+    base = "b2a44badbec1bb28305870102fc6fd2ee0cac2b3"
+    upstream = "development/codex/f18-wsl-ops"
+    allowed = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+               "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+               "docs/progress/progress-handoff-detached-digest-epoch70-postclose-fixture.json",
+               "docs/work_orders/F-20_U01_EPOCH70_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md",
+               "tests/tooling/test_f20_u01_contract_successor_projection.py",
+               "tests/tooling/test_f19a_document_successor_projection.py", "scripts/check_project_progress.py"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                                           cwd=root, stderr=subprocess.DEVNULL).decode("utf-8").rstrip("\r\n")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        committed = set(git("diff", "--name-only", "--no-renames", f"{base}..HEAD").splitlines()) - {""}
+        if (git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or remote not in {base, head}
+                or subprocess.run(["git", "merge-base", "--is-ancestor", base, "HEAD"],
+                                  cwd=root, capture_output=True).returncode != 0
+                or committed - allowed or (dirty if progress.get("event_sequence") == 2138 else dirty - allowed)
+                or progress.get("repository", {}).get("branch") != "codex/f18-wsl-ops"
+                or progress.get("repository", {}).get("upstream") != upstream
+                or progress.get("repository", {}).get("validated_base_commit") != base
+                or progress.get("repository", {}).get("remote_head") not in {base, head}):
+            return ["EPOCH70_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, subprocess.CalledProcessError):
+        return ["EPOCH70_GIT_INVALID"]
+
+
 def _validate_epoch69_close_details(root, close, worker, write, completed):
     handoff = {"work_instruction_sha256": "AE545FE4A5854CE4926987C4EEC2497ED70A0D8B8D03CBFAB20B459ADF843653",
                "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
@@ -58149,6 +58382,14 @@ def _collect_epoch69_git(bundle):
 
 
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_SUCCESSOR":
+        errors = _validate_epoch70_postclose_fixture(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            errors.extend(_validate_f20_common_invariants(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_epoch70_git(bundle))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_EPOCH67_TEST_COMPATIBILITY_SUCCESSOR":
         errors = _validate_epoch69_test_compatibility(bundle)
         if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):

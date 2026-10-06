@@ -1,9 +1,9 @@
-# F-20/U-01 epoch67 역사 검증 호환성 종료 handoff
+# F-20/U-01 epoch70 종료 후 역사 fixture 분리 완료 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2132,
-  "last_event_id": "evt_f20_2132_worker_lease_revoked",
+  "event_sequence": 2138,
+  "last_event_id": "evt_f20_2138_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-20",
   "active_agent": "main-agent-eoul",
@@ -11,12 +11,16 @@
   "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F20_U01_REWORK_RECONCILIATION_AFTER_TEST_COMPAT",
-  "repository_head": "76d71374a80792fd5ffc1150b2fa8c4c1293f5e9",
+  "next_safe_action": "F20_U01_REWORK_RECONCILIATION_AFTER_EPOCH70",
+  "repository_head": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch70 exact3 Developer 최종 bytes의 역사/현재 분리 38건 PASS(exit0, 142.953초), active G-05 seq2135 PASS(exit0), diff check0이다. 독립 검토 C0/I0/M0 및 frozen 진행현황/임의 `head_relation` 위조 거절을 확인했다. seq2136 handoff→2137 write revoke→2138 worker revoke를 제품 변경 없이 기록하고 dual lease를 회수한다. 실제 closed clean G-05·38건·원격 동일성은 checkpoint 이후 별도 검증하며, F-20/U-01 전체 미수락·Release DEFER·Production NOT_EXECUTED를 유지한다.
+
+- PMO 조건부 epoch70 test/control successor는 기존 branch clean/private 동일 `b2a44badbec1bb28305870102fc6fd2ee0cac2b3`의 seq2132를 frozen predecessor로 둔다. WI `WI-F20-U01-EPOCH70-POSTCLOSE-FIXTURE-20261006-001` SHA `3FAF9DF456783C331A9EFCFE849E8FA2ECC5557297D5CBBAD39FD49F5DE971AF` 아래 seq2133 WI→2134 worker→2135 write를 별도 token/24시간 만료/Developer exact3·제품 scope0로 발급했다. 직전 closed 38건 중 2 FAIL은 현재 seq2129 하드코딩 테스트 가정이며, 단순 2132 허용으로 우회하지 않는다. 새 mode 구현 전 G-05 RED는 PASS가 아니다. 역사 seq2120·2126·2132 원문과 branch를 보존한다. F-20/U-01 미수락, Release DEFER, Production NOT_EXECUTED.
 
 - epoch69 역사 검증 호환성 절편은 단일 Developer exact4 중 실제 코드3파일만 변경했다. Main 독립 최신 active 동일27+F19A11=38 PASS(exit0, 141.537초), G-05 seq2129 PASS(exit0), diff check0, 독립 C0/I0/M0이다. 추가 음성 테스트의 import 누락은 첫 결합38에서 1 ERROR(exit1)였고 같은 파일 1줄 보정 후 전체 최신 재실행으로 대체했다. 종료 Event는 seq2130 handoff→2131 write revoke→2132 worker revoke로 투영한다. 실제 closed clean G-05/동일38/실원격 equality는 후속 확인 전까지 미검증이다. F-20/U-01 전체 미수락, Release DEFER, Production NOT_EXECUTED.
 

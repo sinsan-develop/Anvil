@@ -100,7 +100,9 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
         self.assertEqual(historical["progress"]["event_sequence"], 2126)
         self.assertEqual(self.validate_historical(historical), [])
         current = load_bundle(ROOT)
-        self.assertEqual(current["progress"]["event_sequence"], 2129)
+        self.assertEqual(current["progress"]["event_sequence"], current["events"]["last_sequence"])
+        self.assertNotEqual(current["progress"]["repository"]["projection_mode"],
+                            historical["progress"]["repository"]["projection_mode"])
         self.assertEqual(validate_bundle(current), [])
 
     def test_rejects_forged_event_order_token_and_expiry(self):

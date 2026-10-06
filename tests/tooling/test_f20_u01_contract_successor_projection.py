@@ -16,6 +16,7 @@ from scripts.check_project_progress import extract_handoff_summary, load_bundle,
 
 ROOT = Path(__file__).resolve().parents[2]
 HISTORICAL_CLOSED67 = "afa49d2c31194c20df653273344116125bc11fda"
+HISTORICAL_CLOSED69 = "825becbabd1304f3c3afa560f4f0627dec7e0f9c"
 
 
 @lru_cache(maxsize=None)
@@ -24,7 +25,46 @@ def frozen67(path):
     return overlay._frozen(ROOT, path, HISTORICAL_CLOSED67)
 
 
+@lru_cache(maxsize=None)
+def frozen69(path):
+    return subprocess.check_output(["git", "show", f"{HISTORICAL_CLOSED69}:{path}"],
+                                   cwd=ROOT, stderr=subprocess.DEVNULL)
+
+
 class ContractSuccessorProjectionTests(unittest.TestCase):
+    @staticmethod
+    def closed69_fixture():
+        from scripts import check_project_progress as checker
+
+        bundle = deepcopy(load_bundle(ROOT))
+        bundle["progress"] = json.loads(frozen69(checker.BUNDLE_PATHS["progress"]))
+        bundle["events"] = json.loads(frozen69(checker.BUNDLE_PATHS["events"]))
+        bundle["handoff_text"] = frozen69("docs/progress/BUILD_HANDOFF.md").decode("utf-8")
+        bundle["handoff"] = extract_handoff_summary(bundle["handoff_text"])
+        return bundle
+
+    @staticmethod
+    def validate_closed69(bundle):
+        from scripts import check_project_progress as checker
+
+        archive = {ROOT / path: frozen69(path) for path in (
+            "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/progress-handoff-detached-digest-epoch67-test-compatibility.json",
+        )}
+        original_read, original_stat = Path.read_bytes, Path.stat
+
+        def read_historical(path):
+            return archive[path] if path in archive else original_read(path)
+
+        def stat_historical(path, *args, **kwargs):
+            if path in archive:
+                return SimpleNamespace(st_size=len(archive[path]))
+            return original_stat(path, *args, **kwargs)
+
+        with patch.object(Path, "read_bytes", read_historical), patch.object(Path, "stat", stat_historical):
+            return checker._validate_epoch69_test_compatibility(bundle)
+
     @staticmethod
     def closed67_fixture():
         from scripts import f20_u01_contract_successor_overlay as overlay
@@ -121,10 +161,31 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         self.assertEqual(historical["progress"]["event_sequence"], 2120)
         self.assertEqual(self.validate_historical(historical), [])
         current = load_bundle(ROOT)
-        self.assertEqual(current["progress"]["event_sequence"], 2129)
-        self.assertEqual(current["progress"]["repository"]["projection_mode"],
-                         "F20_U01_EPOCH67_TEST_COMPATIBILITY_SUCCESSOR")
+        self.assertEqual(current["progress"]["event_sequence"], current["events"]["last_sequence"])
+        self.assertNotEqual(current["progress"]["repository"]["projection_mode"],
+                            historical["progress"]["repository"]["projection_mode"])
         self.assertEqual(validate_bundle(current), [])
+        for name, mutate, code in (
+            ("order", lambda b: b["events"]["events"][2134].update(event_type="WORKER_LEASE_ISSUED"), "EPOCH70_EVENT_INVALID"),
+            ("chain", lambda b: b["events"]["events"][2134].update(previous_event_sha256="0" * 64), "EPOCH70_EVENT_INVALID"),
+            ("token", lambda b: b["events"]["events"][2134]["details"].update(write_fencing_token="forged"), "EPOCH70_LEASE_INVALID"),
+            ("expiry", lambda b: b["events"]["events"][2134].update(occurred_at="2026-10-07T03:00:33+00:00"), "EPOCH70_EVENT_INVALID"),
+            ("wi_hash", lambda b: b["events"]["events"][2132]["details"].update(sha256="0" * 64), "EPOCH70_WORK_INSTRUCTION_INVALID"),
+            ("scope", lambda b: b["progress"]["repository"].update(product_write_scope=["packages/api/runtime.py"]), "EPOCH70_SCOPE_INVALID"),
+            ("old_binding", lambda b: b["progress"]["epoch67_test_compatibility_binding"].update(approval_ref="forged"), "EPOCH70_FROZEN_PROJECTION_INVALID"),
+            ("old_completed_scope", lambda b: b["progress"]["completed_f20_u01_closed_fixture_worker_lease"].update(path_scope=["packages/api/runtime.py"]), "EPOCH70_FROZEN_PROJECTION_INVALID"),
+            ("old_invalidation", lambda b: b["progress"]["f20_invalidated_acceptance"].update(invalidation_event_id="forged"), "EPOCH70_FROZEN_PROJECTION_INVALID"),
+            ("old_registry_ref", lambda b: b["progress"]["registry_refs"]["failure_ledger"].update(sha256="0" * 64), "EPOCH70_FROZEN_PROJECTION_INVALID"),
+            ("old_repository_field", lambda b: b["progress"]["repository"].update(local_wsl_qa_head="forged"), "EPOCH70_FROZEN_PROJECTION_INVALID"),
+            ("head_relation", lambda b: b["progress"]["repository"].update(head_relation="FORGED"), "EPOCH70_SCOPE_INVALID"),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(current)
+                mutate(forged)
+                self.assertIn(code, validate_bundle(forged))
+        closed69 = self.closed69_fixture()
+        self.assertEqual(closed69["progress"]["event_sequence"], 2132)
+        self.assertEqual(self.validate_closed69(closed69), [])
         for name, mutate, code in (
             ("order", lambda b: b["events"]["events"][2128].update(event_type="WORKER_LEASE_ISSUED"), "EPOCH69_EVENT_INVALID"),
             ("chain", lambda b: b["events"]["events"][2128].update(previous_event_sha256="0" * 64), "EPOCH69_EVENT_INVALID"),
@@ -132,14 +193,18 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             ("expiry", lambda b: b["events"]["events"][2128].update(occurred_at="2026-10-07T02:09:23+00:00"), "EPOCH69_EVENT_INVALID"),
             ("wi_hash", lambda b: b["events"]["events"][2126]["details"].update(sha256="0" * 64), "EPOCH69_WORK_INSTRUCTION_INVALID"),
             ("scope", lambda b: b["progress"]["repository"].update(product_write_scope=["packages/api/runtime.py"]), "EPOCH69_SCOPE_INVALID"),
-            ("snapshot", lambda b: b["progress"].update(snapshot_hash="0" * 64), "PRG_SNAPSHOT_HASH_MISMATCH"),
         ):
             with self.subTest(name=name):
-                forged = deepcopy(current)
+                forged = deepcopy(closed69)
                 mutate(forged)
-                self.assertIn(code, validate_bundle(forged))
+                self.assertIn(code, self.validate_closed69(forged))
+
+        forged_current = deepcopy(current)
+        forged_current["progress"]["snapshot_hash"] = "0" * 64
+        self.assertIn("PRG_SNAPSHOT_HASH_MISMATCH", validate_bundle(forged_current))
 
         from scripts import check_project_progress as checker
+        self.assertEqual(checker._collect_epoch70_git(current), [])
         original_check_output = subprocess.check_output
 
         def outside_dirty(command, *args, **kwargs):
@@ -148,7 +213,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             return original_check_output(command, *args, **kwargs)
 
         with patch.object(subprocess, "check_output", side_effect=outside_dirty):
-            self.assertEqual(checker._collect_epoch69_git(current), ["EPOCH69_GIT_INVALID"])
+            self.assertEqual(checker._collect_epoch70_git(current), ["EPOCH70_GIT_INVALID"])
 
         worker = current["events"]["events"][2127]["details"]
         write = current["events"]["events"][2128]["details"]
@@ -190,6 +255,43 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         changed = deepcopy(completed)
         changed["completed_epoch67_test_compatibility_write_lease"]["path_scope"] = ["packages/api/runtime.py"]
         self.assertIn("EPOCH69_CLOSE_INVALID", close_check(ROOT, close, worker, write, changed))
+
+        epoch70_worker = current["events"]["events"][2133]["details"]
+        epoch70_write = current["events"]["events"][2134]["details"]
+        epoch70_close_at = "2026-10-06T03:01:00+00:00"
+        epoch70_close = [
+            {"event_type": "HANDOFF_RECORDED", "details": {
+                "work_instruction_sha256": "3FAF9DF456783C331A9EFCFE849E8FA2ECC5557297D5CBBAD39FD49F5DE971AF",
+                "worker_lease_id": epoch70_worker["lease_id"], "write_lease_id": epoch70_write["lease_id"],
+                "accepted": False, "product_write_scope": [],
+                "handoff_ref": "docs/progress/BUILD_HANDOFF.md", "handoff_sha256": handoff_hash,
+            }},
+            {"event_type": "WRITE_LEASE_REVOKED", "occurred_at": epoch70_close_at, "details": {
+                "lease_id": epoch70_write["lease_id"], "write_fencing_token": epoch70_write["write_fencing_token"],
+                "reason": "EPOCH70_POSTCLOSE_FIXTURE_VALIDATED_LOCAL_ONLY",
+            }},
+            {"event_type": "WORKER_LEASE_REVOKED", "occurred_at": epoch70_close_at, "details": {
+                "lease_id": epoch70_worker["lease_id"],
+                "execution_fencing_token": epoch70_worker["execution_fencing_token"],
+                "reason": "EPOCH70_POSTCLOSE_FIXTURE_VALIDATED_LOCAL_ONLY",
+            }},
+        ]
+        epoch70_completed = {
+            "completed_epoch70_postclose_fixture_worker_lease": {
+                **epoch70_worker, "status": "REVOKED", "revoked_at": epoch70_close_at},
+            "completed_epoch70_postclose_fixture_write_lease": {
+                **epoch70_write, "status": "REVOKED", "revoked_at": epoch70_close_at},
+        }
+        epoch70_check = getattr(checker, "_validate_epoch70_close_details", lambda *a: ["EPOCH70_CLOSE_UNVALIDATED"])
+        self.assertEqual(epoch70_check(ROOT, epoch70_close, epoch70_worker, epoch70_write, epoch70_completed), [])
+        changed = deepcopy(epoch70_close)
+        changed[1]["details"]["write_fencing_token"] = "forged"
+        self.assertIn("EPOCH70_CLOSE_INVALID", epoch70_check(
+            ROOT, changed, epoch70_worker, epoch70_write, epoch70_completed))
+        changed_completed = deepcopy(epoch70_completed)
+        changed_completed["completed_epoch70_postclose_fixture_worker_lease"]["path_scope"] = ["packages/api/runtime.py"]
+        self.assertIn("EPOCH70_CLOSE_INVALID", epoch70_check(
+            ROOT, epoch70_close, epoch70_worker, epoch70_write, changed_completed))
 
     def test_rejects_forged_order_token_scope_and_expiry(self):
         from scripts import f20_u01_contract_successor_overlay as overlay

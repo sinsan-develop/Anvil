@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2132,
+  "last_sequence": 2138,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -100248,7 +100248,180 @@
       "execution_fencing_token": "epoch67-compat-execution-fence-epoch-69-76fd3bb5d1d046be90f21f904a4d2134",
       "reason": "EPOCH67_TEST_COMPATIBILITY_VALIDATED_LOCAL_ONLY"
     }
+  },
+  {
+    "sequence": 2133,
+    "event_id": "evt_f20_2133_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_START",
+    "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T03:00:32+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "293D5A1FD0D563E89568871AB9EBD0019FD77A6633D69AF6F2B46D256CE20A2B",
+    "details": {
+      "path": "docs/work_orders/F-20_U01_EPOCH70_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md",
+      "sha256": "3FAF9DF456783C331A9EFCFE849E8FA2ECC5557297D5CBBAD39FD49F5DE971AF",
+      "classification": "PMO_CONDITIONAL_EPOCH70_POSTCLOSE_FIXTURE_BOOTSTRAP",
+      "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642",
+      "parent_work_instruction": "docs/work_orders/F-20_U01_EPOCH67_TEST_COMPATIBILITY_WORK_INSTRUCTION.md",
+      "revision_reason": "EPOCH69_TEST_CURRENT_SEQ_ACTIVE_ONLY_ASSUMPTION",
+      "product_write_scope": [],
+      "developer_exact_paths": [
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f19a_document_successor_projection.py",
+        "scripts/check_project_progress.py"
+      ],
+      "baseline_git_commit": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
+      "predecessor_event_sequence": 2132,
+      "package_status": "READY",
+      "accepted": false
+    }
+  },
+  {
+    "sequence": 2134,
+    "event_id": "evt_f20_2134_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_START",
+    "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T03:00:32+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "8674F786DBE123707D3442506A2B2F8676DB7E8AA4165F5B02B6A1DD8DF2F8B4",
+    "details": {
+      "lease_id": "worker-lease-epoch70-postclose-d5670a0e4d8644a889a307f344a16925",
+      "actor_id": "developer-primary-epoch70-postclose-fixture",
+      "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-06T03:00:32+00:00",
+      "expires_at": "2026-10-07T03:00:32+00:00",
+      "lease_epoch": 70,
+      "fencing_token": "epoch70-postclose-execution-fence-epoch-70-d5670a0e4d8644a889a307f344a16925",
+      "execution_fencing_token": "epoch70-postclose-execution-fence-epoch-70-d5670a0e4d8644a889a307f344a16925",
+      "baseline_git_commit": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
+      "dispatch_head": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
+      "path_scope": [
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f19a_document_successor_projection.py",
+        "scripts/check_project_progress.py"
+      ]
+    }
+  },
+  {
+    "sequence": 2135,
+    "event_id": "evt_f20_2135_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_START",
+    "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T03:00:32+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "5579502C85CF59FE2E0C12F5EF63725AF9D0BE363A1B4FBEAD92CE0151FDF91F",
+    "details": {
+      "lease_id": "write-lease-epoch70-postclose-6022757133144f50b4b56fa0925723ae",
+      "actor_id": "developer-primary-epoch70-postclose-fixture",
+      "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-06T03:00:32+00:00",
+      "expires_at": "2026-10-07T03:00:32+00:00",
+      "lease_epoch": 70,
+      "fencing_token": "epoch70-postclose-write-fence-epoch-70-6022757133144f50b4b56fa0925723ae",
+      "execution_fencing_token": "epoch70-postclose-execution-fence-epoch-70-d5670a0e4d8644a889a307f344a16925",
+      "baseline_git_commit": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
+      "dispatch_head": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
+      "path_scope": [
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f19a_document_successor_projection.py",
+        "scripts/check_project_progress.py"
+      ],
+      "worker_lease_id": "worker-lease-epoch70-postclose-d5670a0e4d8644a889a307f344a16925",
+      "write_epoch": 70,
+      "write_fencing_token": "epoch70-postclose-write-fence-epoch-70-6022757133144f50b4b56fa0925723ae",
+      "product_write_scope": []
+    }
+  },
+  {
+    "sequence": 2136,
+    "event_id": "evt_f20_2136_handoff_recorded",
+    "event_type": "HANDOFF_RECORDED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T03:34:26+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4AD4C7414FDFB69599D078FF1DF8313B21B1AE4E372E62EFA256325C85162020",
+    "details": {
+      "work_instruction_sha256": "3FAF9DF456783C331A9EFCFE849E8FA2ECC5557297D5CBBAD39FD49F5DE971AF",
+      "worker_lease_id": "worker-lease-epoch70-postclose-d5670a0e4d8644a889a307f344a16925",
+      "write_lease_id": "write-lease-epoch70-postclose-6022757133144f50b4b56fa0925723ae",
+      "accepted": false,
+      "product_write_scope": [],
+      "handoff_ref": "docs/progress/BUILD_HANDOFF.md",
+      "handoff_sha256": "6D4E73E65BF4631BF05D48A8009BF733AFC08C57C7722F228F1BB68071EA7B72"
+    }
+  },
+  {
+    "sequence": 2137,
+    "event_id": "evt_f20_2137_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T03:34:26+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "33BEC700C5B8BD1A1FDE93350F424E8CB1F37D01D5C1F342028001ED8D337124",
+    "details": {
+      "lease_id": "write-lease-epoch70-postclose-6022757133144f50b4b56fa0925723ae",
+      "write_fencing_token": "epoch70-postclose-write-fence-epoch-70-6022757133144f50b4b56fa0925723ae",
+      "reason": "EPOCH70_POSTCLOSE_FIXTURE_VALIDATED_LOCAL_ONLY"
+    }
+  },
+  {
+    "sequence": 2138,
+    "event_id": "evt_f20_2138_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-20",
+    "run_id": null,
+    "step_id": "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-20/U01-EPOCH70-POSTCLOSE-FIXTURE",
+    "occurred_at": "2026-10-06T03:34:26+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "F6522E5642E1A616F6AAA6613C9DF85E6DC6822164BE856AA076DE60E1648C8E",
+    "details": {
+      "lease_id": "worker-lease-epoch70-postclose-d5670a0e4d8644a889a307f344a16925",
+      "execution_fencing_token": "epoch70-postclose-execution-fence-epoch-70-d5670a0e4d8644a889a307f344a16925",
+      "reason": "EPOCH70_POSTCLOSE_FIXTURE_VALIDATED_LOCAL_ONLY"
+    }
   }
   ],
-  "last_event_id": "evt_f20_2132_worker_lease_revoked"
+  "last_event_id": "evt_f20_2138_worker_lease_revoked"
 }
