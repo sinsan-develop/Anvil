@@ -1,22 +1,24 @@
-# F-19A 최소 등록·정확 pair grant Task0 통제 종료 handoff
+# F-19A Task0 종료 후 fixture 재검증 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2143,
-  "last_event_id": "evt_f19a_2143_worker_lease_revoked",
+  "event_sequence": 2146,
+  "last_event_id": "evt_f19a_2146_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task0-rework-42004933a57d4111acc16909eb701b1b",
+  "write_lease": "write-lease-f19a-task0-rework-299d622d52044da6a9b7deba3d2f0139",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1",
-  "repository_head": "d6960b95b7eb9afcfe801190eaa762485b387d3f",
+  "next_safe_action": "F19A_TASK0_TEST_REVALIDATION_ONLY",
+  "repository_head": "a5c39b1863647a10e5ce8cf70a6d9e10cc3a6f51",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- F-19A Task0 종료 후 RED gate 보정: clean checkpoint `a5c39b1863647a10e5ce8cf70a6d9e10cc3a6f51`의 seq2143/no-lease에서 Main 비의미 WI SHA `B1429921...`를 seq2144 발행하고 epoch72 seq2145 worker→2146 write를 서로 다른 token·정확2파일·24시간·제품 scope0으로 발급했다. machine 다음 행동은 `F19A_TASK0_TEST_REVALIDATION_ONLY`이며 제품 dual lease/Task1은 금지한다. 새 successor route 부재의 bootstrap G-05 RED는 PASS가 아니다. Developer는 역사 seq2141/2143 fixture와 현재 seq2146을 분리해 집중4 FAIL을 RED→GREEN하고 인접 전체를 재실행한다. F-19A 미수락, F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED다.
 
 - F-19A Task0 통제 종료: 기존 branch/private 코드 checkpoint `d6960b95b7eb9afcfe801190eaa762485b387d3f`의 clean G-05 seq2141·전체 46 PASS와 독립 C0/I0/M0을 확인한 뒤 seq2142 write→2143 worker 회수를 원문 뒤에 append했다. 두 lease는 `REVOKED`, active worker/write와 제품 write scope는 빈 상태다. Task0 전용 binding만 종료이며 F-19A 전체는 `ACTIVE`·미수락, 다음은 새 제품 dual lease 발급 후 Task1이다. 종료 투영 G-05 seq2143 PASS·diff check0을 확인했고 최종 private checkpoint는 아직 미실행이며 Release DEFER·Production NOT_EXECUTED, WSL/ysna 작업0이다.
 
