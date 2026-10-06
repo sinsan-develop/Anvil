@@ -13,10 +13,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class R48CloseProjectionTests(unittest.TestCase):
+    @staticmethod
+    def historical_close_time(overlay):
+        progress = json.loads(overlay._frozen(ROOT, overlay.PROGRESS))
+        worker = progress["worker_lease"]
+        issued = datetime.fromisoformat(worker["issued_at"])
+        expires = datetime.fromisoformat(worker["expires_at"])
+        return issued + (expires - issued) / 2
+
     def test_ordered_revocation_and_unaccepted_state(self):
         from scripts import f20_u01_r48_close_overlay as overlay
 
-        output = overlay.project(ROOT, datetime.now(timezone.utc))
+        output = overlay.project(ROOT, self.historical_close_time(overlay))
         old = subprocess.check_output(
             ["git", "-c", "core.excludesFile=", "show", f"{overlay.BASE}:{overlay.EVENTS}"],
             cwd=ROOT)
@@ -39,7 +47,7 @@ class R48CloseProjectionTests(unittest.TestCase):
     def test_authority_checker_and_manifest(self):
         from scripts import f20_u01_r48_close_overlay as overlay
 
-        output = overlay.project(ROOT, datetime.now(timezone.utc))
+        output = overlay.project(ROOT, self.historical_close_time(overlay))
         self.assertEqual(overlay.validate_outputs(ROOT, output), [])
         self.assertEqual(output[overlay.CHECKER], overlay._checker_successor(ROOT))
         self.assertTrue(overlay._authority_match(ROOT))

@@ -14,7 +14,7 @@
 
 - 설계/계획/매트릭스/테스트 SHA는 승인 기록에 적힌 네 값으로 고정한다. 시작 기준은 `codex/f18-wsl-ops@abeab9f4e71387dcd6fed97b7061d6f50a73bbce`, Event seq2138, dual lease 없음이다.
 - `ysna-server`·Production·공유/지속 DB 복원·U-01 제품 write·F-20/U01 수락·Release GO는 제외한다. 기존 세션·계정·Secret·공용 role을 변경하지 않는다.
-- Main만 approval/spec/plan/WI/progress/HANDOFF/Event/digest를 쓴다. F-19A code는 정확 경로 전체를 고정한 **하나의 WI·유효 dual lease·한 명의 Developer**가 Task 0~4 순서로 수정한다. Main은 lease 동안 그 파일에 쓰지 않는다.
+- Main만 approval/spec/plan/WI/progress/HANDOFF/Event/digest를 쓴다. F-19A code는 **하나의 WI·한 명의 Developer**가 Task 0~4 순서로 수정한다. Task 0은 checker/신규 test/역사 fixture test 두 파일의 정확 4경로만 활성 dual lease에 열고 제품 write scope는 비운다. 독립 검토·G-05·정확 checkpoint 뒤 그 lease를 회수하고 제품 절편의 정확 경로에 새 epoch·서로 다른 token의 dual lease를 재발급한다. 두 lease의 경로 합집합은 WI의 exact21을 넘지 않는다. Main은 유효 lease 동안 해당 파일에 쓰지 않는다.
 - 6개 route pattern과 JSON/오류·권한·rollback 계약은 Spec을 따른다. Project/Environment 등록이 grant를 자동 생성하지 않는다.
 - 기존 `GET /api/dashboard/operations`, `GET /api/operations/alerts`, `POST /api/operations/alerts/{alertId}:acknowledge`의 method/path/body/성공 결과를 보존한다. 정확 grant 부재/철회는 다음 요청에 403, DB 장애는 503이다.
 - 로컬 코드·기본 테스트→정확 commit/private push→WSL-server Git exact clean SHA의 격리 QA. 테스트/fixture/build/health만으로 실제 브라우저·DB PASS나 F-19A 수락을 주장하지 않는다.
@@ -31,19 +31,19 @@
 
 | 절편 | 책임 | 예상 파일(정확 허용 목록은 절편 WI에서 봉인) |
 |---|---|---|
-| 0 | Main 승인 결박·단일 branch control successor·dual lease; Developer checker route | Main: `docs/approvals/...`, `docs/architecture/f19a/...`, 이 계획, `docs/work_orders/F-19A_*`, `docs/progress/*`, `docs/WORK_STATUS.md`; Developer: `scripts/check_project_progress.py`, `tests/tooling/test_f19a_start_projection.py` |
+| 0 | Main 승인 결박·단일 branch control successor·dual lease; Developer checker route 및 역사 fixture 호환성 | Main: `docs/approvals/...`, `docs/architecture/f19a/...`, 이 계획, `docs/work_orders/F-19A_*`, `docs/progress/*`, `docs/WORK_STATUS.md`; Developer: `scripts/check_project_progress.py`, `tests/tooling/test_f19a_start_projection.py`, `tests/tooling/test_f20_u01_contract_successor_projection.py`, `tests/tooling/test_f20_u01_r48_close_projection.py` |
 | 1 | 0020 migration 및 등록/grant/audit 저장 권위 | `migrations/versions/0020_f19a_registration_pair_grants.py`, `packages/persistence/f19a_registration_repository.py`, `tests/persistence/test_f19a_registration_repository.py`, `tests/integration/test_f19a_registration_pg15.py` |
 | 2 | 여섯 API route와 권한·응답 변환 | `packages/api/f19a_registration.py`, `packages/api/registry.py`, `packages/api/fastapi_app.py`, `apps/api/anvil_api/asgi.py`, `apps/api/anvil_api/oidc_process.py`, `tests/api/test_f19a_registration_api.py` |
 | 3 | 기존 고정 GET/ACK의 정확 grant 매 요청 검사 | `packages/api/operations.py`, `packages/api/fastapi_app.py`, `apps/api/anvil_api/oidc_process.py`, `tests/api/test_f19a_fixed_operations_authorization.py`, 기존 OIDC/Operations 회귀 테스트 |
 | 4 | 격리 QA bootstrap·readiness·복구 가드, 동일 SHA 실제 증거 | `deploy/wsl/f19a_qa_bootstrap.py`, `tests/deploy/test_f19a_qa_bootstrap.py`, `tests/integration/test_f19a_oidc_pg15.py`, `tests/browser/f19a-pair-selection.mjs`, `docs/04_test_reports/F-19A_*`; WSL 전용 자원은 Main 소유 |
 
-Task 2·3은 `fastapi_app.py`/`oidc_process.py`를 공유하므로 **동시 writer 금지**·같은 Developer의 순차 진행이다. Task 1의 저장 interface를 먼저 확정하고 Task 2·3이 소비한다. 모든 code/test 경로는 최초 WI의 단일 path_scope에 고정하며 확대가 필요하면 Main이 semantic/risk를 분류한 revision 없이 쓰지 않는다. Task 4의 QA 코드는 WSL 실행 전 같은 branch에 commit·push한다.
+Task 2·3은 `fastapi_app.py`/`oidc_process.py`를 공유하므로 **동시 writer 금지**·같은 Developer의 순차 진행이다. Task 1의 저장 interface를 먼저 확정하고 Task 2·3이 소비한다. 모든 code/test 경로의 합집합은 WI exact21에 고정하되 활성 lease는 Task0 exact4와 이후 제품 절편의 좁은 범위로 나눈다. 확대가 필요하면 Main이 semantic/risk를 분류한 revision 없이 쓰지 않는다. Task 4의 QA 코드는 WSL 실행 전 같은 branch에 commit·push한다.
 
 ### Task 0: 승인·통제 기준선
 
 - [ ] Main이 승인 원문·Spec/Plan SHA, 실제 Git/원격·Event seq2138·no lease·G-05를 대조하고 F-19A successor WI에 목적/정확 경로/제외/회수/복구를 고정한다.
-- [ ] Main이 append-only WI→worker→write Event와 서로 다른 epoch token·24시간 만료·정확 Developer 허용 경로를 progress/HANDOFF/digest에 결박한다. 새 mode route 부재의 bootstrap RED를 기록한다.
-- [ ] 단일 Developer가 checker route의 frozen seq2138, 승인/WI SHA, Event chain, token/path/시간, snapshot/refs/digest/dirty 및 공통 불변식 테스트를 RED→GREEN한다. Main이 독립 리뷰·active G-05를 확인한 뒤 같은 유효 lease의 Task 1 제품 변경을 진행시킨다.
+- [ ] Main이 append-only WI→worker→write Event와 서로 다른 epoch token·24시간 만료·Task0 정확4 경로·제품 write scope0을 progress/HANDOFF/digest에 결박한다. 새 mode route 부재의 bootstrap RED를 기록한다. 제품 절편의 새 dual lease는 Task0 검증·회수 뒤에만 발급한다.
+- [ ] 단일 Developer가 checker route의 frozen seq2138, 승인/WI SHA, Event chain, token/path/시간, snapshot/refs/digest/dirty 및 공통 불변식 테스트를 RED→GREEN한다. 인접 41건의 현재 seq2141 오인 1건과 만료된 역사 lease에 `now()`를 대입하는 2건은 두 기존 test 파일에서만 frozen fixture/역사 시각으로 보정하고 41건 전체를 재실행한다. Main이 독립 리뷰·active G-05·정확 checkpoint를 확인해 Task0 dual lease를 회수한 뒤 별도 제품 dual lease를 발급하고 Task 1을 진행시킨다.
 
 ### Task 1: 지속 등록·정확 grant 원장
 

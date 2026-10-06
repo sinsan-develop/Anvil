@@ -17,6 +17,7 @@ from scripts.check_project_progress import extract_handoff_summary, load_bundle,
 ROOT = Path(__file__).resolve().parents[2]
 HISTORICAL_CLOSED67 = "afa49d2c31194c20df653273344116125bc11fda"
 HISTORICAL_CLOSED69 = "825becbabd1304f3c3afa560f4f0627dec7e0f9c"
+HISTORICAL_CLOSED70 = "abeab9f4e71387dcd6fed97b7061d6f50a73bbce"
 
 
 @lru_cache(maxsize=None)
@@ -31,7 +32,46 @@ def frozen69(path):
                                    cwd=ROOT, stderr=subprocess.DEVNULL)
 
 
+@lru_cache(maxsize=None)
+def frozen70(path):
+    return subprocess.check_output(["git", "show", f"{HISTORICAL_CLOSED70}:{path}"],
+                                   cwd=ROOT, stderr=subprocess.DEVNULL)
+
+
 class ContractSuccessorProjectionTests(unittest.TestCase):
+    @staticmethod
+    def closed70_fixture():
+        from scripts import check_project_progress as checker
+
+        bundle = deepcopy(load_bundle(ROOT))
+        bundle["progress"] = json.loads(frozen70(checker.BUNDLE_PATHS["progress"]))
+        bundle["events"] = json.loads(frozen70(checker.BUNDLE_PATHS["events"]))
+        bundle["handoff_text"] = frozen70("docs/progress/BUILD_HANDOFF.md").decode("utf-8")
+        bundle["handoff"] = extract_handoff_summary(bundle["handoff_text"])
+        return bundle
+
+    @staticmethod
+    def validate_closed70(bundle):
+        from scripts import check_project_progress as checker
+
+        archive = {ROOT / path: frozen70(path) for path in (
+            "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/progress-handoff-detached-digest-epoch70-postclose-fixture.json",
+        )}
+        original_read, original_stat = Path.read_bytes, Path.stat
+
+        def read_historical(path):
+            return archive[path] if path in archive else original_read(path)
+
+        def stat_historical(path, *args, **kwargs):
+            if path in archive:
+                return SimpleNamespace(st_size=len(archive[path]))
+            return original_stat(path, *args, **kwargs)
+
+        with patch.object(Path, "read_bytes", read_historical), patch.object(Path, "stat", stat_historical):
+            return checker._validate_epoch70_postclose_fixture(bundle)
+
     @staticmethod
     def closed69_fixture():
         from scripts import check_project_progress as checker
@@ -160,11 +200,14 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
         historical = self.closed67_fixture()
         self.assertEqual(historical["progress"]["event_sequence"], 2120)
         self.assertEqual(self.validate_historical(historical), [])
-        current = load_bundle(ROOT)
-        self.assertEqual(current["progress"]["event_sequence"], current["events"]["last_sequence"])
-        self.assertNotEqual(current["progress"]["repository"]["projection_mode"],
+        live = load_bundle(ROOT)
+        self.assertEqual(live["progress"]["event_sequence"], live["events"]["last_sequence"])
+        self.assertNotEqual(live["progress"]["repository"]["projection_mode"],
                             historical["progress"]["repository"]["projection_mode"])
-        self.assertEqual(validate_bundle(current), [])
+        self.assertEqual(validate_bundle(live), [])
+        current = self.closed70_fixture()
+        self.assertEqual(current["progress"]["event_sequence"], 2138)
+        self.assertEqual(self.validate_closed70(current), [])
         for name, mutate, code in (
             ("order", lambda b: b["events"]["events"][2134].update(event_type="WORKER_LEASE_ISSUED"), "EPOCH70_EVENT_INVALID"),
             ("chain", lambda b: b["events"]["events"][2134].update(previous_event_sha256="0" * 64), "EPOCH70_EVENT_INVALID"),
@@ -182,7 +225,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             with self.subTest(name=name):
                 forged = deepcopy(current)
                 mutate(forged)
-                self.assertIn(code, validate_bundle(forged))
+                self.assertIn(code, self.validate_closed70(forged))
         closed69 = self.closed69_fixture()
         self.assertEqual(closed69["progress"]["event_sequence"], 2132)
         self.assertEqual(self.validate_closed69(closed69), [])
@@ -199,12 +242,12 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
                 mutate(forged)
                 self.assertIn(code, self.validate_closed69(forged))
 
-        forged_current = deepcopy(current)
+        forged_current = deepcopy(live)
         forged_current["progress"]["snapshot_hash"] = "0" * 64
         self.assertIn("PRG_SNAPSHOT_HASH_MISMATCH", validate_bundle(forged_current))
 
         from scripts import check_project_progress as checker
-        self.assertEqual(checker._collect_epoch70_git(current), [])
+        self.assertEqual(checker._collect_f19a_start_git(live), [])
         original_check_output = subprocess.check_output
 
         def outside_dirty(command, *args, **kwargs):
@@ -213,7 +256,7 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
             return original_check_output(command, *args, **kwargs)
 
         with patch.object(subprocess, "check_output", side_effect=outside_dirty):
-            self.assertEqual(checker._collect_epoch70_git(current), ["EPOCH70_GIT_INVALID"])
+            self.assertEqual(checker._collect_f19a_start_git(live), ["F19A_GIT_INVALID"])
 
         worker = current["events"]["events"][2127]["details"]
         write = current["events"]["events"][2128]["details"]

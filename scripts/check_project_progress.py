@@ -58381,7 +58381,237 @@ def _collect_epoch69_git(bundle):
         return ["EPOCH69_GIT_INVALID"]
 
 
+def _validate_f19a_start(bundle, *, event_raw=None, now=None):
+    """Bind the new F-19A control effect without changing frozen Event contracts."""
+    import subprocess
+    from datetime import datetime, timedelta, timezone
+    root = Path(bundle["_root"])
+    progress, stream = bundle["progress"], bundle["events"]
+    errors = []
+    base = "abeab9f4e71387dcd6fed97b7061d6f50a73bbce"
+    dispatch = "53feab5fa6ad0755c5c308117c756eafd371cb8c"
+    wi = "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_WORK_INSTRUCTION.md"
+    approval = "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md"
+    spec = "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md"
+    plan = "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md"
+    digest_path = "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"
+    exact2 = ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+    exact4 = [*exact2, "tests/tooling/test_f20_u01_contract_successor_projection.py",
+              "tests/tooling/test_f20_u01_r48_close_projection.py"]
+    exact21 = [*exact2, "migrations/versions/0020_f19a_registration_pair_grants.py",
+               "packages/persistence/f19a_registration_repository.py",
+               "tests/persistence/test_f19a_registration_repository.py",
+               "tests/integration/test_f19a_registration_pg15.py", "packages/api/f19a_registration.py",
+               "packages/api/registry.py", "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py",
+               "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_registration_api.py",
+               "packages/api/operations.py", "tests/api/test_f19a_fixed_operations_authorization.py",
+               "deploy/wsl/f19a_qa_bootstrap.py", "tests/deploy/test_f19a_qa_bootstrap.py",
+               "tests/integration/test_f19a_oidc_pg15.py", "tests/browser/f19a-pair-selection.mjs",
+               "docs/04_test_reports/F-19A_MINIMAL_PAIR_AUTH_RESULT.md", *exact4[2:]]
+    hashes = {wi: "2D2CED73D8EFFD7E92AD3E34D0725C5AF8B3302129A2ACB615C383727E5C90A9",
+              approval: "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+              spec: "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247",
+              plan: "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E"}
+    worker_id = "worker-lease-f19a-pair-bf64f25d31de4da7944fc4acce11ba77"
+    write_id = "write-lease-f19a-pair-6c6eed1906634a51ba4478a7f6abf50f"
+    worker_token = "f19a-pair-execution-fence-epoch-71-bf64f25d31de4da7944fc4acce11ba77"
+    write_token = "f19a-pair-write-fence-epoch-71-6c6eed1906634a51ba4478a7f6abf50f"
+    try:
+        raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
+        frozen_raw = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
+                                             cwd=root, stderr=subprocess.DEVNULL)
+        frozen_stream = json.loads(frozen_raw)
+        stable_header = lambda row: {key: value for key, value in row.items()
+                                     if key not in {"events", "last_sequence", "last_event_id"}}
+        if (raw_event_object_prefix_bytes(raw, 2138) != raw_event_object_prefix_bytes(frozen_raw, 2138)
+                or stable_header(stream) != stable_header(frozen_stream)):
+            errors.append("F19A_FROZEN_PREFIX_INVALID")
+        frozen = json.loads(subprocess.check_output(["git", "show", f"{base}:docs/progress/build-progress.json"],
+                                                    cwd=root, stderr=subprocess.DEVNULL))
+        changing = {"snapshot_id", "event_sequence", "updated_at", "last_event_id", "current_work_package",
+                    "active_agent", "write_lease", "worker_lease", "next_safe_action", "repository",
+                    "active_work_instruction", "current_progress_evidence_ref", "registry_refs",
+                    "next_work_package", "next_successor_work_package", "snapshot_hash",
+                    "runtime_next_action", "f19a_minimal_pair_auth_binding"}
+        stable = lambda row: {key: value for key, value in row.items() if key not in changing}
+        repo_changing = {"local_head", "remote_head", "projection_mode", "validated_base_commit",
+                         "head_relation", "product_write_scope", "worktree_status"}
+        stable_repo = lambda row: {key: value for key, value in row.items() if key not in repo_changing}
+        refs = progress["registry_refs"]
+        prior_refs = frozen["registry_refs"]
+        if (stable(progress) != stable(frozen)
+                or stable_repo(progress["repository"]) != stable_repo(frozen["repository"])
+                or {k: v for k, v in refs.items() if k != "progress_events"}
+                != {k: v for k, v in prior_refs.items() if k != "progress_events"}
+                or {k: v for k, v in refs["progress_events"].items() if k != "sha256"}
+                != {k: v for k, v in prior_refs["progress_events"].items() if k != "sha256"}):
+            errors.append("F19A_FROZEN_PROJECTION_INVALID")
+        rows = stream["events"]
+        kinds = ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"]
+        if (len(rows) != 2141 or stream.get("last_sequence") != 2141
+                or progress.get("event_sequence") != 2141 or stream.get("last_event_id") != rows[-1]["event_id"]
+                or progress.get("last_event_id") != rows[-1]["event_id"]
+                or stream != json.loads(raw)):
+            errors.append("F19A_EVENT_INVALID")
+        for idx, kind in enumerate(kinds, 2138):
+            row = rows[idx]
+            if (row.get("sequence") != idx + 1 or row.get("event_id") != f"evt_f19a_{idx + 1}_{kind.lower()}"
+                    or row.get("event_type") != kind or row.get("actor") != "main-agent-eoul"
+                    or row.get("actor_id") != "main-agent-eoul" or row.get("actor_type") != "AGENT"
+                    or row.get("project_id") != "anvil" or row.get("work_package_id") != "F-19A"
+                    or row.get("run_id") is not None or row.get("step_id") != "F19A_MINIMAL_PAIR_AUTH_START"
+                    or row.get("subject_ref") != "F-19A/MINIMAL-PAIR-AUTH"
+                    or row.get("occurred_at_source") != "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME"
+                    or row.get("previous_event_sha256") != hashlib.sha256(canonical_json_bytes(rows[idx - 1])).hexdigest().upper()
+                    or row.get("occurred_at") != rows[2138]["occurred_at"]):
+                errors.append("F19A_EVENT_INVALID")
+        instruction, worker, write = (rows[2138 + idx]["details"] for idx in range(3))
+        expected_instruction = {"path": wi, "sha256": hashes[wi],
+            "classification": "HUMAN_APPROVED_F19A_PRODUCT_CONTRACT", "approval_ref": approval,
+            "approval_sha256": hashes[approval], "spec_sha256": hashes[spec], "plan_sha256": hashes[plan],
+            "baseline_git_commit": base, "dispatch_head": dispatch, "predecessor_event_sequence": 2138,
+            "package_status": "READY_CONTROL_BOOTSTRAP", "revision": 3,
+            "active_task0_paths": exact4, "product_write_scope": [], "accepted": False,
+            "developer_exact_paths": exact21}
+        if instruction != expected_instruction or any(_sha256(root / path) != value for path, value in hashes.items()):
+            errors.append("F19A_WORK_INSTRUCTION_INVALID")
+        issued = "2026-10-06T19:03:48+00:00"
+        expires = "2026-10-07T19:03:48+00:00"
+        common_lease = {"actor_id": "developer-primary-f19a-pair-grant",
+                        "subject_ref": "F-19A/MINIMAL-PAIR-AUTH", "status": "ACTIVE",
+                        "issued_at": issued, "expires_at": expires, "lease_epoch": 71,
+                        "execution_fencing_token": worker_token, "baseline_git_commit": base,
+                        "dispatch_head": dispatch, "path_scope": exact4}
+        expected_worker = {**common_lease, "lease_id": worker_id, "fencing_token": worker_token}
+        expected_write = {**common_lease, "lease_id": write_id, "fencing_token": write_token,
+                          "worker_lease_id": worker_id, "write_epoch": 71,
+                          "write_fencing_token": write_token, "product_write_scope": []}
+        current_time = now or datetime.now(timezone.utc)
+        if (rows[2138]["occurred_at"] != issued
+                or datetime.fromisoformat(expires) - datetime.fromisoformat(issued) != timedelta(hours=24)
+                or worker != expected_worker or write != expected_write or worker_token == write_token
+                or progress.get("worker_lease") != worker or progress.get("write_lease") != write
+                or current_time.tzinfo is None or not datetime.fromisoformat(issued) <= current_time < datetime.fromisoformat(expires)):
+            errors.append("F19A_LEASE_INVALID")
+        binding = progress.get("f19a_minimal_pair_auth_binding", {})
+        expected_binding = {"status": "CONTROL_BOOTSTRAP_ACTIVE_NOT_PRODUCT_ACCEPTED", "package_id": "F-19A",
+            "predecessor_sequence": 2138, "predecessor_head": base, "dispatch_head": dispatch,
+            "work_instruction_id": "WI-F19A-MINIMAL-PAIR-AUTH-20261007-001", "work_instruction_path": wi,
+            "work_instruction_sha256": hashes[wi], "approval_path": approval, "approval_sha256": hashes[approval],
+            "spec_sha256": hashes[spec], "plan_sha256": hashes[plan], "worker_lease_id": worker_id,
+            "write_lease_id": write_id, "detached_digest_path": digest_path,
+            "developer_exact_paths": exact21, "active_task0_paths": exact4,
+            "task0_product_write_locked": True, "f20_overall_status": "REWORK_IN_PROGRESS",
+            "release_decision": "DEFER", "production": "NOT_EXECUTED", "event_sequence": 2141}
+        if (binding != expected_binding or progress.get("active_work_instruction") != {
+                "artifact_id": expected_binding["work_instruction_id"], "path": wi,
+                "sha256": hashes[wi], "revision": 3, "result_status": "CONTROL_BOOTSTRAP_DISPATCH_PENDING",
+                "package_status": "READY_CONTROL_BOOTSTRAP",
+                "approval_classification": "HUMAN_APPROVED_F19A_PRODUCT_CONTRACT", "approval_ref": approval}):
+            errors.append("F19A_SCOPE_INVALID")
+        repository = progress["repository"]
+        if (repository.get("projection_mode") != "F19A_MINIMAL_PAIR_AUTH_START"
+                or repository.get("validated_base_commit") != base or repository.get("local_head") != dispatch
+                or repository.get("remote_head") != dispatch or repository.get("product_write_scope") != []
+                or repository.get("head_relation") != "F19A_CONTROL_BOOTSTRAP_PENDING_CHECKPOINT"
+                or repository.get("worktree_status") != "F19A_CONTROL_BOOTSTRAP_ACTIVE_PRODUCT_WRITE_LOCKED"
+                or progress.get("current_work_package") != "F-19A" or progress.get("active_agent") != common_lease["actor_id"]
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": "CONTROL_BOOTSTRAP_ACTIVE"}
+                or progress.get("next_successor_work_package") != {"package_id": "U-01", "status": "BLOCKED_PENDING_F19A_ACCEPTANCE"}
+                or progress.get("snapshot_id") != "snapshot-f19a-minimal-pair-auth-start-seq2141"
+                or progress.get("updated_at") != "2026-10-06T19:03:48+00:00"
+                or progress.get("current_progress_evidence_ref") != {
+                    "package_id": "F-19A", "path": digest_path,
+                    "manifest_path": "docs/evidence/manifests/F-20_U01_R48_CRITICAL_ACK_CLOSE_MANIFEST.json"}
+                or progress.get("next_safe_action") != "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY"
+                or progress.get("runtime_next_action") != "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY"
+                or progress.get("f20_overall_status") != "REWORK_IN_PROGRESS" or "F-19A" in progress.get("completed_packages", [])):
+            errors.append("F19A_SCOPE_INVALID")
+        if progress["registry_refs"]["progress_events"].get("sha256") != hashlib.sha256(raw).hexdigest().upper():
+            errors.append("F19A_EVENT_INVALID")
+        handoff = bundle["handoff"]
+        if (handoff.get("event_sequence") != 2141 or handoff.get("last_event_id") != rows[-1]["event_id"]
+                or handoff.get("current_work_package") != "F-19A" or handoff.get("worker_lease") != worker_id
+                or handoff.get("write_lease") != write_id or handoff.get("repository_head") != dispatch
+                or handoff.get("next_safe_action") != progress.get("next_safe_action")):
+            errors.append("F19A_HANDOFF_INVALID")
+        digest = json.loads((root / digest_path).read_bytes())
+        for section, path in (("progress", "docs/progress/build-progress.json"),
+                              ("handoff", "docs/progress/BUILD_HANDOFF.md")):
+            target = root / path
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != target.stat().st_size
+                    or digest.get(section, {}).get("file_sha256") != _sha256(target)):
+                errors.append("F19A_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("event_sequence") != 2141 or digest.get("self_reference") is not False):
+            errors.append("F19A_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, subprocess.CalledProcessError):
+        errors.append("F19A_CONTROL_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_start_git(bundle):
+    import subprocess
+    root, progress = Path(bundle["_root"]), bundle["progress"]
+    base = "abeab9f4e71387dcd6fed97b7061d6f50a73bbce"
+    dispatch = "53feab5fa6ad0755c5c308117c756eafd371cb8c"
+    upstream = "development/codex/f18-wsl-ops"
+    allowed_committed = {"docs/WORK_STATUS.md", "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+        "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md",
+        "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md",
+        "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_WORK_INSTRUCTION.md"}
+    allowed_dirty = {"docs/WORK_STATUS.md", "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md",
+        "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_WORK_INSTRUCTION.md",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py",
+        "tests/tooling/test_f20_u01_contract_successor_projection.py",
+        "tests/tooling/test_f20_u01_r48_close_projection.py"}
+    allowed_committed |= allowed_dirty
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                                           cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        committed = set(git("diff", "--name-only", "--no-renames", f"{base}..HEAD").splitlines()) - {""}
+        checkpoint = head != dispatch
+        if (remote != head or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or subprocess.run(["git", "merge-base", "--is-ancestor", base, "HEAD"],
+                                  cwd=root, capture_output=True).returncode != 0
+                or subprocess.run(["git", "merge-base", "--is-ancestor", dispatch, "HEAD"],
+                                  cwd=root, capture_output=True).returncode != 0
+                or not {"docs/WORK_STATUS.md", "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+                        "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md",
+                        "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md",
+                        "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_WORK_INSTRUCTION.md"} <= committed
+                or committed - allowed_committed or (dirty if checkpoint else dirty - allowed_dirty)
+                or progress["repository"].get("branch") != "codex/f18-wsl-ops"
+                or progress["repository"].get("upstream") != upstream):
+            return ["F19A_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_GIT_INVALID"]
+
+
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_MINIMAL_PAIR_AUTH_START":
+        errors = _validate_f19a_start(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            # The frozen generic contract lacks the new F-19A WI/worker/write effects.
+            # Each replacement is checked above: exact event types/identity/chain,
+            # complete WI and lease payloads, and issued→active progress effects.
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_start_git(bundle))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_EPOCH70_POSTCLOSE_FIXTURE_SUCCESSOR":
         errors = _validate_epoch70_postclose_fixture(bundle)
         if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):

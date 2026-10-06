@@ -1,22 +1,24 @@
-# F-20/U-01 epoch70 종료 후 역사 fixture 분리 완료 handoff
+# F-19A 최소 등록·정확 pair grant Task0 통제 시작 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2138,
-  "last_event_id": "evt_f20_2138_worker_lease_revoked",
+  "event_sequence": 2141,
+  "last_event_id": "evt_f19a_2141_write_lease_issued",
   "status": "ACTIVE",
-  "current_work_package": "F-20",
-  "active_agent": "main-agent-eoul",
-  "worker_lease": null,
-  "write_lease": null,
+  "current_work_package": "F-19A",
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-pair-bf64f25d31de4da7944fc4acce11ba77",
+  "write_lease": "write-lease-f19a-pair-6c6eed1906634a51ba4478a7f6abf50f",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F20_U01_REWORK_RECONCILIATION_AFTER_EPOCH70",
-  "repository_head": "b2a44badbec1bb28305870102fc6fd2ee0cac2b3",
+  "next_safe_action": "F19A_TASK0_CONTROL_ROUTE_RED_GREEN_ONLY",
+  "repository_head": "53feab5fa6ad0755c5c308117c756eafd371cb8c",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- F-19A 독립 제품 Package의 신산님 직접 승인 계약을 `docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md`에 결박했다. 비의미 통제·역사 테스트 호환성 재확정 Plan SHA `0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E`, WI rev3 SHA `2D2CED73D8EFFD7E92AD3E34D0725C5AF8B3302129A2ACB615C383727E5C90A9`, frozen seq2138/base `abeab9f4...`, clean private dispatch `53feab5f...`다. seq2139 WI→2140 worker→2141 write를 epoch71의 서로 다른 token/단일 Developer **활성 exact4·제품 scope0**/24시간으로 append-only 투영했다. WI 전체 경로 상한 exact21은 후속 lease의 자동 권한이 아니다. 현재 exact4에는 checker/신규 테스트와 인접 41건 실패의 과거 fixture/시각만 보정할 역사 test 두 파일이 포함된다. 새 checker route와 독립 검토/G-05/정확 control checkpoint를 통과하고 Task0 lease를 회수한 후 별도 제품 dual lease를 발급하기 전에는 제품 write를 시작하지 않는다. 인접 41건은 38 PASS/3 FAIL 상태이고 F-19A 미수락, F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED다.
 
 - epoch70 exact3 Developer 최종 bytes의 역사/현재 분리 38건 PASS(exit0, 142.953초), active G-05 seq2135 PASS(exit0), diff check0이다. 독립 검토 C0/I0/M0 및 frozen 진행현황/임의 `head_relation` 위조 거절을 확인했다. seq2136 handoff→2137 write revoke→2138 worker revoke를 제품 변경 없이 기록하고 dual lease를 회수한다. 실제 closed clean G-05·38건·원격 동일성은 checkpoint 이후 별도 검증하며, F-20/U-01 전체 미수락·Release DEFER·Production NOT_EXECUTED를 유지한다.
 
