@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-f20-u01-closed-fixture-close-seq2120",
-  "event_sequence": 2120,
-  "updated_at": "2026-10-06T00:48:33+00:00",
-  "last_event_id": "evt_f20_2120_worker_lease_revoked",
+  "event_sequence": 2126,
+  "updated_at": "2026-10-06T01:24:31+00:00",
+  "last_event_id": "evt_f20_2126_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -88,8 +88,8 @@
     ]
   },
   "plan_version": "1.7",
-  "work_plan_hash": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
-  "design_baseline_hash": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
+  "work_plan_hash": "19B7AC91EF17D14AA65BE2BDB871F1B6503565C67ACCEDC558972634A42ACBF4",
+  "design_baseline_hash": "2171EC811E3F25D672E00E470E1EA6D4A78A9FFBA13540B561CC38B0CAEE9BC7",
   "current_phase": "F",
   "current_work_package": "F-20",
   "status": "ACTIVE",
@@ -217,6 +217,25 @@
   ],
   "active_agent": "main-agent-eoul",
   "write_lease": null,
+  "completed_f19a_document_write_lease": {
+    "lease_id": "write-lease-f19a-document-0399512a5ee84403b6ae7c4f35d2dd98",
+    "actor_id": "developer-primary-f19a-doc-control",
+    "subject_ref": "F-20/U01-F19A-DOCUMENT",
+    "status": "REVOKED",
+    "issued_at": "2026-10-06T01:24:31+00:00",
+    "expires_at": "2026-10-07T01:24:31+00:00",
+    "lease_epoch": 68,
+    "fencing_token": "f19a-document-write-fence-epoch-68-0399512a5ee84403b6ae7c4f35d2dd98",
+    "execution_fencing_token": "f19a-document-execution-fence-epoch-68-30a431fcc95f4cb18bf0d60cd108bd2f",
+    "baseline_git_commit": "afa49d2c31194c20df653273344116125bc11fda",
+    "dispatch_head": "afa49d2c31194c20df653273344116125bc11fda",
+    "path_scope": ["scripts/check_project_progress.py", "scripts/f19a_document_successor_overlay.py", "tests/tooling/test_f19a_document_successor_projection.py"],
+    "worker_lease_id": "worker-lease-f19a-document-30a431fcc95f4cb18bf0d60cd108bd2f",
+    "write_epoch": 68,
+    "write_fencing_token": "f19a-document-write-fence-epoch-68-0399512a5ee84403b6ae7c4f35d2dd98",
+    "product_write_scope": [],
+    "revoked_at": "2026-10-06T01:56:14+00:00"
+  },
   "completed_f20_u01_closed_fixture_write_lease": {
     "lease_id": "write-lease-f20-u01-closed-fixture-46a06cd77fb141ef834b3269b7090341",
     "actor_id": "developer-primary-f20-u01-closed-fixture",
@@ -317,6 +336,21 @@
     ]
   },
   "worker_lease": null,
+  "completed_f19a_document_worker_lease": {
+    "lease_id": "worker-lease-f19a-document-30a431fcc95f4cb18bf0d60cd108bd2f",
+    "actor_id": "developer-primary-f19a-doc-control",
+    "subject_ref": "F-20/U01-F19A-DOCUMENT",
+    "status": "REVOKED",
+    "issued_at": "2026-10-06T01:24:31+00:00",
+    "expires_at": "2026-10-07T01:24:31+00:00",
+    "lease_epoch": 68,
+    "fencing_token": "f19a-document-execution-fence-epoch-68-30a431fcc95f4cb18bf0d60cd108bd2f",
+    "execution_fencing_token": "f19a-document-execution-fence-epoch-68-30a431fcc95f4cb18bf0d60cd108bd2f",
+    "baseline_git_commit": "afa49d2c31194c20df653273344116125bc11fda",
+    "dispatch_head": "afa49d2c31194c20df653273344116125bc11fda",
+    "path_scope": ["scripts/check_project_progress.py", "scripts/f19a_document_successor_overlay.py", "tests/tooling/test_f19a_document_successor_projection.py"],
+    "revoked_at": "2026-10-06T01:56:14+00:00"
+  },
   "completed_f20_u01_closed_fixture_worker_lease": {
     "lease_id": "worker-lease-f20-u01-closed-fixture-b526bd531e2a4fb389c00c88d58a77ce",
     "actor_id": "developer-primary-f20-u01-closed-fixture",
@@ -594,7 +628,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F20_U01_SCOPED_FILTER_CONTRACT_RECONCILIATION",
+  "next_safe_action": "F19A_EPOCH67_TEST_COMPATIBILITY_SUCCESSOR_PACKET",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -705,13 +739,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
+    "local_head": "afa49d2c31194c20df653273344116125bc11fda",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "d083a0e79f9bb1c80332d5d8510eeb42056a583e",
-    "projection_mode": "F20_U01_SCOPED_FILTER_CONTRACT_DOCUMENT_SUCCESSOR",
-    "validated_base_commit": "8d5e1bda081e1e9aa864259d522646d4ff3149df",
-    "head_relation": "DOCUMENT_COMMIT_LOCAL_AHEAD_CONTROL_BOOTSTRAP",
+    "remote_head": "afa49d2c31194c20df653273344116125bc11fda",
+    "projection_mode": "F19A_DOCUMENT_SUCCESSOR",
+    "validated_base_commit": "afa49d2c31194c20df653273344116125bc11fda",
+    "head_relation": "DOCUMENT_SUCCESSOR_DIRTY_CONTROL_BOOTSTRAP",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1468,7 +1502,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "BDB8D32CD1DE52EB16A4635A870703FE62111FD7C3D4D3D016CE3928DF4D145C"
+      "sha256": "44541266ADE323E147E8D4BA202F0654007C31A9AE42CA6F0717E801D80822C2"
     }
   },
   "next_work_package": {
@@ -1865,7 +1899,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "1BA57E81E3C5FF754C1C2FBB25715E353713E4E1667216EAC951409DF40A0717",
+  "snapshot_hash": "9CBC0A105611583968E7FE743F2E91C6599FAF8DA001EEE8AFEEA12797EE321E",
   "runtime_next_action": "F20_U01_CONTRACT_CONTROL_EXACT3_BOOTSTRAP",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -23281,6 +23315,36 @@
     "production": "NOT_EXECUTED",
     "release_decision": "DEFER",
     "source_code_qa_head": "378b337ad2ddc6069d2eb5549edbc224a9319aaf"
+  },
+  "f19a_document_successor_binding": {
+    "status": "DOCUMENT_CONTROL_CLOSED_NOT_PRODUCT_ACCEPTED",
+    "predecessor_sequence": 2120,
+    "predecessor_head": "afa49d2c31194c20df653273344116125bc11fda",
+    "work_instruction_id": "WI-F19A-DOC-SUCCESSOR-20261006-001",
+    "work_instruction_path": "docs/work_orders/F-19A_DOCUMENT_SUCCESSOR_WORK_INSTRUCTION.md",
+    "work_instruction_sha256": "2281621C33C4AD9D3030F4A871F87A18D137BDEE3301487426ECC49FB3D0FD91",
+    "approval_ref": "codex://threads/01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "old_artifact_sha256": {
+      "Anvil_설계서_v2.md": "1DD7D91D6A0F9406A100B43B68285AD0A06F453FEC55F497458D55B20F481712",
+      "Anvil_작업계획서_v1.md": "943B4123C5A8F273FF628E150501E0D66FAC10705A72989CA98E8453A083AEEB",
+      "Anvil_통합검증매트릭스_v1.md": "1AFDDC9A0D35868EC9D1774CE6A6087A177620875074D7198C361AFF92363AD6",
+      "Anvil_테스트계획서_v1.md": "902A6E64E06E92C5F8856EE6C18CA94983F4F72040351AD954ADD1428555A014"
+    },
+    "new_artifact_sha256": {
+      "Anvil_설계서_v2.md": "2171EC811E3F25D672E00E470E1EA6D4A78A9FFBA13540B561CC38B0CAEE9BC7",
+      "Anvil_작업계획서_v1.md": "19B7AC91EF17D14AA65BE2BDB871F1B6503565C67ACCEDC558972634A42ACBF4",
+      "Anvil_통합검증매트릭스_v1.md": "9EE200DCE480497C4DE068963B546129F73679745C27846D593688455B2D38E8",
+      "Anvil_테스트계획서_v1.md": "C9C208709E71DB7F8769757AD77B5B51E854B0AB3AECAE89C39298C0C2615C8A"
+    },
+    "package_count": 124,
+    "historical_av_count": 255,
+    "new_av_count": 4,
+    "product_write_scope": [],
+    "f20_overall_status": "REWORK_IN_PROGRESS",
+    "release_decision": "DEFER",
+    "production": "NOT_EXECUTED",
+    "event_sequence": 2126,
+    "test_compatibility": "INCOMPLETE_EPOCH67_CURRENT_PROJECTION_26_FAIL"
   },
   "f20_u01_contract_control_successor": {
     "revision": 1,

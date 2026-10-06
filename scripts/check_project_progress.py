@@ -57938,6 +57938,22 @@ def _validate_git_projection(bundle):
 
 _validate_bundle_before_c30r5 = validate_bundle
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_DOCUMENT_SUCCESSOR":
+        from datetime import datetime, timezone
+        try:
+            from scripts.f19a_document_successor_overlay import collect_git, validate_control
+        except ModuleNotFoundError:
+            from f19a_document_successor_overlay import collect_git, validate_control
+        root = Path(bundle["_root"])
+        errors = validate_control(root, bundle, datetime.now(timezone.utc))
+        if all(key in bundle for key in (
+            "handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract",
+        )):
+            errors.extend(_validate_f20_common_invariants(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(collect_git(root, bundle["progress"]))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F20_U01_SCOPED_FILTER_CONTRACT_DOCUMENT_SUCCESSOR":
         from datetime import datetime, timezone
         try:

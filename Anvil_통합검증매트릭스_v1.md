@@ -447,7 +447,7 @@ AV-<도메인>-<3자리>
 
 | Package | 메뉴 | 추가 수직 검증 ID | 필수 실제 증거 |
 |---|---|---|---|
-| U-01 | Dashboard | AV-UI-003, 004, 008, 009, AV-OPS-001~005 | E-SHOT, E-NET, E-API, E-EVT |
+| U-01 | Dashboard | AV-UI-003, 004, 008, 009, 017, AV-OPS-001~005, 027, AV-SAFE-034 | E-SHOT, E-NET, E-API, E-EVT, E-AUD |
 | U-02 | Workbench | AV-UI-004, 005, 008, 009, AV-FLOW-001, 003~009, 013~015, 017, 021, 023~025 | E-SHOT, E-NET, E-API, E-EVT, E-DEC |
 | U-03 | Projects | AV-UI-004, 005, 009, 015, AV-FLOW-002, 003, 012 | E-SHOT, E-NET, E-API, E-ART, E-AUD |
 | U-04 | Runs | AV-UI-003, 004, 008, 009, AV-FLOW-004~011, 013~015 | E-SHOT, E-NET, E-API, E-EVT, E-PRG |
@@ -460,6 +460,40 @@ AV-<도메인>-<3자리>
 | U-11 | Settings | AV-UI-003, 004, 008, 009, AV-SAFE-021, 029~032, AV-OPS-010~012, AV-FLOW-019 | E-SHOT, E-NET, E-API, E-AUD |
 
 U Package의 자동 테스트 PASS는 메뉴 인수가 아니다. 각 메뉴는 1920×1080·12px 화면, loading/empty/error/blocked/quota/cancel/reconnect 상태, 키보드·접근성, 실제 클릭→API→저장→재표시, Network 내부주소·secret 노출 0건을 독립 Tester가 확인해야 `ACCEPTED`가 된다. U-01부터 U-11까지 write lease는 직렬이며 다음 메뉴는 직전 메뉴 acceptance 전 시작할 수 없다.
+
+### 6.12 v1.7 및 F-19A successor 추가 검증 정의
+
+이 절은 historical AV 255개와 §6.11/§8의 당시 역색인을 수정하지 않는 **추가 정의**다. 신규 ID 4개의 판정은 각 Package의 실제 검증 시점에만 수행하며 문서에 적었다는 이유로 기존 Gate/Package acceptance를 소급 변경하지 않는다. 제품/API/인가/DB 구현은 별도 승인 전 `NOT_AUTHORIZED`다.
+
+| 신규 ID | 검증 항목 | 책임 Package | 레벨 | 방법 | 필수 증거 | 심각도 |
+|---|---|---|---|---|---|---|
+| AV-SAFE-034 | 등록된 활성 Project→Environment **정확 pair**와 actor·permission·active grant를 목록·조회마다 서버가 검증한다. 독립 ID 집합의 교차 조합, 비등록/비활성 pair, 철회 다음 요청, 다른 pair cache 재사용을 거부한다 | F-19A, U-01 | L3+L5 | AI+AN | E-API, E-AUD | CRITICAL |
+| AV-OPS-026 | 사용자 등록 Project·Environment의 정확 FK pair와 등록 actor/시각/상태가 권위 원본에 남고 U-03 onboarding과 중복 소유하지 않는다. 등록 원본과 현재 권한·감사 자료를 복구 가능하게 구분한다 | F-19A | L3+L6 | AI+FI | E-API, E-AUD, E-CMD | CRITICAL |
+| AV-OPS-027 | Dashboard 현재 상태와 Asia/Seoul 오늘 포함 1/7/30 달력일의 UTC `[start,end)` 발생 집계를 분리한다. 카드별 완전 원본·표본·신선도가 없으면 `UNAVAILABLE`, 미해결 Critical/Next Action은 기간 밖 발생이어도 노출한다 | U-01 | L3+L4+L7 | AI+AE+MI | E-API, E-SHOT, E-NET | CRITICAL |
+| AV-UI-017 | 인가된 pair만 선택 가능하고 선택/새로고침·권한 철회 뒤 UI가 같은 scope로 재조회되며 타 scope 결과를 표시하지 않는다. 기간과 현재 상태·발생 근거를 구분한다 | U-01 | L4+L5 | AE+AN | E-SHOT, E-NET, E-API | CRITICAL |
+
+**현 계획 전체 successor 역색인 보완**: §8의 108개 표는 v1.6 당시 historical 역색인이다. v1.7 C-16~C-30 15개와 후보 F-19A 1개를 아래에 추가하면 현 계획의 고유 Package 124개를 각 1회 이상 찾을 수 있다. 아래 기존 ID 연결은 **검증 책임 후보**이며 과거 accepted evidence가 새 기능까지 증명했다는 뜻이 아니다. C successor의 정확 새 AV 요구가 생기면 별도 승인 revision에서 확장하고 이 표의 `NOT_ACCEPTED_BY_THIS_DOCUMENT`를 유지한다.
+
+| 추가 Package | successor 검증 책임 ID | 판정 경계 |
+|---|---|---|
+| C-16 | AV-AGT-001~031, AV-FLOW-016 | 새 Team 기능 독립 증거 필요 |
+| C-17 | AV-AGT-001~038, AV-FLOW-004~009, 016, 023 | 협업 E2E 독립 증거 필요 |
+| C-18 | AV-OPS-010~012, AV-FLOW-019 | MoA/Capability 책임 별도 증거 필요 |
+| C-19 | AV-UI-010~016, AV-FLOW-013 | 원격 Console/Network 별도 증거 필요 |
+| C-20 | AV-SAFE-001, 019, AV-OPS-006 | Telegram 보조 권한·감사 별도 증거 필요 |
+| C-21 | AV-UI-003~016, AV-OPS-010~012 | Dashboard shell/Provider 상태 별도 증거 필요 |
+| C-22 | AV-AGT-001~031, AV-FLOW-016 | 역할 계약 별도 증거 필요 |
+| C-23 | AV-AGT-001~038, AV-FLOW-004~009 | Team orchestration 별도 증거 필요 |
+| C-24 | AV-OPS-010~012, AV-FLOW-019 | Agent MoA/Provider routing 별도 증거 필요 |
+| C-25 | AV-SAFE-001, 019, AV-OPS-006 | SNS Gateway/identity 별도 증거 필요 |
+| C-26 | AV-SAFE-001, 019, AV-OPS-006 | Telegram adapter 별도 증거 필요 |
+| C-27 | AV-SAFE-001, 019, AV-OPS-006 | Kakao 외부 계약 부재 시 fail-closed |
+| C-28 | AV-UI-001~016, AV-FLOW-016 | 화면/메뉴 실제 증거 필요 |
+| C-29 | AV-UI-010~016, AV-FLOW-013 | API/BFF/Network 별도 증거 필요 |
+| C-30 | AV-GATE-025, AV-OPS-013~025, AV-FLOW-020 | quarantined history accepted=false 보존 |
+| F-19A | AV-SAFE-034, AV-OPS-026 | U-01 선행 독립 acceptance 필요 |
+
+F-19A의 신규 ID는 historical F Capability Gate를 재판정하지 않고 **U-01 착수 선행 판정**에서 요구한다. U-01은 기존 공통/추가 ID와 AV-SAFE-034·AV-OPS-027·AV-UI-017을 실제 L3/L4/L5/L7 증거로 판정한다. C-16~C-30의 추가 책임 mapping은 현재 문서 추적성 보완이며 U-01/F-19A 승인이나 C-30 quarantine 해제가 아니다.
 
 ---
 
@@ -481,6 +515,8 @@ U Package의 자동 테스트 PASS는 메뉴 인수가 아니다. 각 메뉴는 
 | **F Gate** | AV-SAFE-021, AV-SAFE-029~032, AV-OPS-001~025, AV-UI-003, 010, 012, AV-GATE-025, AV-LRN-028, AV-FLOW-019, 020 | E Gate CRITICAL 전량 |
 | **U Gate** | §6.11의 U-01~U-11 공통·추가 ID 전량 | F Capability Gate CRITICAL 전량 + 직전 U Package 전량 |
 | **P Gate** | AV-PLG-001~007 | F Gate CRITICAL 전량 |
+
+**Successor Gate 적용 경계**: 위 F Gate 행은 historical 판정을 보존한다. 새 F-19A 독립 acceptance에는 `AV-SAFE-034`, `AV-OPS-026`을 추가하고, 이를 U-01 **착수 전**에 요구한다. U-01 및 이후 U Gate의 새 판정에는 §6.12의 `AV-SAFE-034`, `AV-OPS-027`, `AV-UI-017`을 §6.11 공통·추가 ID에 더한다. 이는 완료된 Gate의 과거 evidence나 심각도를 바꾸지 않는다.
 
 **회귀 원칙**: 각 Gate에서 이전 Gate의 `CRITICAL` 항목은 전량 재실행한다. `MAJOR`는 변경 영향(Impact Map)에 걸린 것만, `MINOR`는 재실행하지 않는다.
 
