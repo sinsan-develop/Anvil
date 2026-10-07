@@ -1,5 +1,7 @@
 # F-19A Task 4 runtime head 0020 호환성 시작 handoff
 
+epoch87 C checkpoint(Main, 2026-10-08): Developer 정확6 코드 `ceb9dcba85c0b170643acda261c07793a32023d3`가 local/private 동일·clean이며 제품 Worker OIDC 0019/0020·Web READY 0016/0019/0020만 확장했다. Developer Worker19·Web86·typecheck/build·epoch87 집중7·F-19A 역사105·F-20 successor21 PASS, 최종 인접142 PASS/기존 R48 authority2 FAIL, G-05 seq2221 PASS, Ruff 신규0, diff PASS. Main 독립 Worker19·Web86·집중7·G-05 PASS, 정확6 SHA/diff 검토에서 Critical/Important0이다. 첫 인접135 PASS/8 FAIL은 역사 fixture 만료5·epoch87 legacy entrypoint 누락1을 TDD 보정해 새 실패0으로 재확인했고 R48 기존2는 미해결이다. 이 B 문서가 제품 C SHA를 결박하는 활성 종료 후보이며 B G-05/게시/clean 확인 전 write→worker lease 회수 금지. WSL-server/DB/브라우저 재QA는 미실행, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
+
 epoch87 시작(Main, 2026-10-08): epoch86 종료 `db8a8d6f2e9af3179ad1037924a63e9f7f481205` local/private clean·G-05 seq2218 PASS를 기준으로 비의미 WI `8B8ACE50A9E045FC9C99D0D049F661CA4474E8639018B65838DBD598A994B56C`를 발행했다. Event seq2219 WI→2220 worker→2221 write, 24시간·분리 token·Developer 통제 정확2/제품 정확4를 결박한다. Worker OIDC는 0019/0020만, Web ready는 기존 0016/0019에 0020만 추가하고 기본/COOKIE/WSL_ACCEPTANCE는 보존한다. 새 checker route 전 bootstrap G-05 RED는 PASS가 아니다. 이번 작업은 로컬 코드·테스트에 한정하고 WSL-server QA의 세 번째 actor는 별도 WI/lease 이후 검증한다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch86 lease 종료 후보(Main, 2026-10-08): 활성 B `3bfe2fb7bd54d8c9b76ec5e69a524f4bebe37daf` local/private 동일·clean·G-05 seq2216 PASS·집중6 PASS·역사99 PASS(545.12초)를 확인했다. 원문 Event seq1~2216 뒤 seq2217 write→2218 worker revoke만 append했고 두 lease REVOKED·활성 null이다. 종료 G-05·집중/역사 재실행·private 게시/clean 확인 전 제품 재작업 WI·WSL 자원 생성 금지. 다음은 Worker OIDC head0020 호환성, other-actor 403 기대 정합, 기존 GET/alerts/ACK·DB fault 실제 QA를 위한 별도 정확 WI/dual lease다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
@@ -57,8 +59,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-runtime-head-compat-c22d92d219ef47159ac92d5dfcbe7210",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_RUNTIME_HEAD_COMPAT_ACTIVE",
-  "repository_head": "279c9ba3cd368cb6e0f4aabfa54f6b0229c8dde8",
+  "next_safe_action": "F19A_TASK4_RUNTIME_HEAD_COMPAT_CLOSE_ONLY",
+  "repository_head": "ceb9dcba85c0b170643acda261c07793a32023d3",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
