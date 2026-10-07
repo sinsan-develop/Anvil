@@ -1276,7 +1276,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": ["deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/compose.f18.oidc.yml", "tests/deploy/test_f18_oidc_qa_issuer.py"],
+    "product_write_scope": [],
     "worktree_status": "TASK4_QA_ISSUER_REVISION_CLOSED_WSL_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
