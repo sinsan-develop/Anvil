@@ -1,5 +1,7 @@
 # F-19A Task 3 종료 fixture R2 재작업 handoff
 
+활성 A2 정합 보완(Main, 2026-10-07): seq2191 `runtime_next_action`의 Task4 pending 잔류를 독립 Important로 확인하고 R2_CONTROL_ONLY로 교정했다. 기존 A@d94는 보존하고 후속 docs-only A2 exact SHA를 bootstrap Git 기준으로 고정한다. 이 문서·snapshot/digest 게시 전 통제 code checkpoint·Task4 제품 write는 금지한다.
+
 ```json anvil-recovery-summary
 {
   "event_sequence": 2191,
