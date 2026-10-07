@@ -3361,8 +3361,8 @@ class F19AStartProjectionTests(unittest.TestCase):
                 self.assertEqual(bool(errors), scenario != "positive")
 
     def test_epoch80_postclose_active_live_and_forgery(self):
-        bundle = checker.load_bundle(ROOT)
-        self.assertEqual(checker._validate_f19a_task3_postclose_fixture(bundle), [])
+        bundle = self.epoch80_archived_active_bundle()
+        self.assertEqual(self.validate_epoch80_active(bundle), [])
         for name, change in (
             ("event_envelope", lambda b: b["events"]["events"][2185].update(actor="forged")),
             ("worker_token", lambda b: b["progress"]["worker_lease"].update(fencing_token="forged")),
@@ -3373,72 +3373,107 @@ class F19AStartProjectionTests(unittest.TestCase):
             with self.subTest(name=name):
                 forged = deepcopy(bundle)
                 change(forged)
-                self.assertTrue(checker._validate_f19a_task3_postclose_fixture(forged))
+                self.assertTrue(self.validate_epoch80_active(forged))
 
     def test_epoch80_postclose_active_git_rejects_remote_and_product_dirty(self):
-        bundle = checker.load_bundle(ROOT)
-        self.assertEqual(checker._collect_f19a_task3_postclose_fixture_git(bundle), [])
-        original = subprocess.check_output
+        bundle = self.epoch80_archived_active_bundle()
+        base = "b44369a285a7786c23f7ed76b7a396423017dc7d"
+        control = "07dfbc279a28dc18118b281b2b68876c7322b644"
+        active = "cd715e5e10bee5844f9116acbac95cdaa81d71be"
+        original, original_run = subprocess.check_output, subprocess.run
 
         def check(*, remote=None, dirty=None):
             def output(command, *args, **kwargs):
                 tail = command[5:] if command[:5] == [
                     "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
-                if remote is not None and tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
-                    return (remote + "\n").encode()
-                if dirty is not None and tail == ["status", "--porcelain=v1", "-uall"]:
-                    return dirty
+                if tail == ["rev-parse", "HEAD"]:
+                    return (active + "\n").encode()
+                if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                    return ((remote or active) + "\n").encode()
+                if tail == ["branch", "--show-current"]:
+                    return b"codex/f18-wsl-ops\n"
+                if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                    return b"development/codex/f18-wsl-ops\n"
+                if tail == ["status", "--porcelain=v1", "-uall"]:
+                    return dirty or b""
+                if tail == ["diff", "--name-only", "--no-renames", f"{base}..{control}"]:
+                    return b"scripts/check_project_progress.py\ntests/tooling/test_f19a_start_projection.py\n"
+                if tail == ["diff", "--name-only", "--no-renames", f"{control}..HEAD"]:
+                    return b"docs/progress/build-progress.json\n"
+                if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(control + ":"):
+                    return original(command, *args, **kwargs)
                 return original(command, *args, **kwargs)
 
-            with patch.object(subprocess, "check_output", side_effect=output):
+            def run(command, *args, **kwargs):
+                if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                    return subprocess.CompletedProcess(command, 0)
+                return original_run(command, *args, **kwargs)
+
+            with patch.object(subprocess, "check_output", side_effect=output), \
+                    patch.object(subprocess, "run", side_effect=run), \
+                    patch.object(Path, "read_bytes", lambda path: original(["git", "show", f"{control}:{path.relative_to(ROOT).as_posix()}"], cwd=ROOT)
+                        if path in (ROOT / "scripts/check_project_progress.py", ROOT / "tests/tooling/test_f19a_start_projection.py")
+                        else Path.open(path, "rb").read()):
                 return checker._collect_f19a_task3_postclose_fixture_git(bundle)
 
+        self.assertEqual(check(), [])
         self.assertTrue(check(remote="0" * 40))
         self.assertTrue(check(dirty=b" M packages/api/operations.py\n"))
 
     @staticmethod
-    def epoch80_checkpoint_bundle():
+    def epoch80_archived_active_bundle():
+        publication = "cd715e5e10bee5844f9116acbac95cdaa81d71be"
         bundle = deepcopy(checker.load_bundle(ROOT))
-        progress = bundle["progress"]
-        checkpoint = "c" * 40
-        binding = progress["f19a_task3_postclose_fixture_binding"]
-        binding.update(status="TASK3_POSTCLOSE_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
-            control_checkpoint=checkpoint,
-            next_safe_action="F19A_TASK3_POSTCLOSE_FIXTURE_CLOSE_ONLY")
-        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
-            head_relation="F19A_TASK3_POSTCLOSE_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
-            worktree_status="F19A_TASK3_POSTCLOSE_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY")
-        progress["active_work_instruction"].update(
-            result_status="TASK3_POSTCLOSE_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
-            package_status="TASK3_POSTCLOSE_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY")
-        progress["next_work_package"]["status"] = "TASK3_POSTCLOSE_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY"
-        progress["next_safe_action"] = progress["runtime_next_action"] = binding["next_safe_action"]
-        progress["snapshot_id"] = "snapshot-f19a-task3-postclose-fixture-checkpoint-seq2186"
-        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
-        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=binding["next_safe_action"])
+        def archived(path):
+            return subprocess.check_output(["git", "show", f"{publication}:{path}"],
+                cwd=ROOT, stderr=subprocess.DEVNULL)
+        bundle["_epoch80_active_progress"] = archived("docs/progress/build-progress.json")
+        bundle["progress"] = json.loads(bundle["_epoch80_active_progress"])
+        bundle["_epoch80_active_events"] = archived("docs/progress/progress-events.json")
+        bundle["events"] = json.loads(bundle["_epoch80_active_events"])
+        bundle["_epoch80_active_handoff"] = archived("docs/progress/BUILD_HANDOFF.md")
+        bundle["handoff_text"] = bundle["_epoch80_active_handoff"].decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["_epoch80_active_digest"] = archived(
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+        bundle["detached_digest"] = json.loads(bundle["_epoch80_active_digest"])
         return bundle
+
+    @staticmethod
+    def epoch80_checkpoint_bundle():
+        return F19AStartProjectionTests.epoch80_archived_active_bundle()
+
+    @staticmethod
+    def validate_epoch80_active(bundle):
+        original_stat, original_sha = Path.stat, checker._sha256
+        progress_path = ROOT / "docs/progress/build-progress.json"
+        handoff_path = ROOT / "docs/progress/BUILD_HANDOFF.md"
+        archive = {progress_path: bundle["_epoch80_active_progress"],
+            handoff_path: bundle["_epoch80_active_handoff"]}
+        def stat_archive(path, *args, **kwargs):
+            if path in archive:
+                return SimpleNamespace(st_size=len(archive[path]))
+            return original_stat(path, *args, **kwargs)
+        def sha_archive(path):
+            if path in archive:
+                return hashlib.sha256(archive[path]).hexdigest().upper()
+            return original_sha(path)
+        with patch.object(Path, "stat", stat_archive), patch.object(checker, "_sha256", side_effect=sha_archive):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2185]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task3_postclose_fixture(bundle,
+                event_raw=bundle["_epoch80_active_events"], now=observed)
 
     def test_epoch80_postclose_control_checkpoint_projection_rejects_forgery(self):
         bundle = self.epoch80_checkpoint_bundle()
-        self.assertEqual(checker._validate_f19a_task3_postclose_fixture(bundle), [])
+        self.assertEqual(self.validate_epoch80_active(bundle), [])
         forged = deepcopy(bundle)
         forged["progress"]["f19a_task3_postclose_fixture_binding"]["control_checkpoint"] = "0" * 40
-        self.assertTrue(checker._validate_f19a_task3_postclose_fixture(forged))
+        self.assertTrue(self.validate_epoch80_active(forged))
 
     @staticmethod
     def epoch80_closed_bundle():
         bundle = F19AStartProjectionTests.epoch80_checkpoint_bundle()
         progress, stream = bundle["progress"], bundle["events"]
-        bundle["_epoch80_active_progress"] = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
-        bundle["_epoch80_active_events"] = (ROOT / "docs/progress/progress-events.json").read_bytes()
-        bundle["_epoch80_active_handoff"] = ("```json anvil-recovery-summary\n"
-            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n```\n").encode()
-        active_digest = deepcopy(bundle["detached_digest"])
-        active_digest["progress"].update(bytes=len(bundle["_epoch80_active_progress"]),
-            file_sha256=hashlib.sha256(bundle["_epoch80_active_progress"]).hexdigest().upper())
-        active_digest["handoff"].update(bytes=len(bundle["_epoch80_active_handoff"]),
-            file_sha256=hashlib.sha256(bundle["_epoch80_active_handoff"]).hexdigest().upper())
-        bundle["_epoch80_active_digest"] = (json.dumps(active_digest, ensure_ascii=False) + "\n").encode()
         bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
         bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
         worker, write = stream["events"][2184]["details"], stream["events"][2185]["details"]
@@ -3478,7 +3513,8 @@ class F19AStartProjectionTests(unittest.TestCase):
         action = "F19A_TASK4_DUAL_LEASE_PENDING"
         progress["f19a_task3_postclose_fixture_binding"].update(
             status="TASK3_POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
-            active_projection_checkpoint="e" * 40, next_safe_action=action, event_sequence=2188)
+            active_projection_checkpoint="cd715e5e10bee5844f9116acbac95cdaa81d71be",
+            next_safe_action=action, event_sequence=2188)
         progress.update(active_agent=None, updated_at=at, next_safe_action=action,
             runtime_next_action=action, next_work_package={"package_id": "F-19A",
                 "status": "TASK4_DUAL_LEASE_PENDING"},
@@ -3489,7 +3525,7 @@ class F19AStartProjectionTests(unittest.TestCase):
         progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
         bundle["handoff"].update(event_sequence=2188, last_event_id=stream["last_event_id"],
             active_agent=None, worker_lease=None, write_lease=None,
-            repository_head="c" * 40, next_safe_action=action)
+            repository_head="07dfbc279a28dc18118b281b2b68876c7322b644", next_safe_action=action)
         bundle["detached_digest"]["event_sequence"] = 2188
         return bundle, raw
 
@@ -3552,7 +3588,9 @@ class F19AStartProjectionTests(unittest.TestCase):
 
     def test_epoch80_closed_git_requires_published_control_and_docs_only(self):
         bundle, _ = self.epoch80_closed_bundle()
-        base, control, active = "b44369a285a7786c23f7ed76b7a396423017dc7d", "c" * 40, "e" * 40
+        base, control, active = ("b44369a285a7786c23f7ed76b7a396423017dc7d",
+            "07dfbc279a28dc18118b281b2b68876c7322b644",
+            "cd715e5e10bee5844f9116acbac95cdaa81d71be")
         original_output, original_run = subprocess.check_output, subprocess.run
         for scenario in ("positive", "remote", "product_dirty", "unrelated", "unpublished", "stale_blob"):
             with self.subTest(scenario=scenario):
@@ -3605,6 +3643,305 @@ class F19AStartProjectionTests(unittest.TestCase):
                 forged["detached_digest"][name] = value
                 self.assertIn("F19A_TASK3_POSTCLOSE_CLOSE_DIGEST_INVALID",
                     self.validate_epoch80_closed(forged, raw))
+
+    def test_epoch81_r2_active_live_and_forgery(self):
+        bundle = self.epoch81_archived_active_bundle()
+        self.assertEqual(self.validate_epoch81_active(bundle), [])
+        for name, change in (
+            ("event_envelope", lambda b: b["events"]["events"][2190].update(actor="forged")),
+            ("worker_token", lambda b: b["progress"]["worker_lease"].update(fencing_token="forged")),
+            ("product_scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=[
+                "packages/api/operations.py"])),
+            ("snapshot", lambda b: b["progress"].update(snapshot_hash="0" * 64)),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(self.validate_epoch81_active(forged))
+
+    @staticmethod
+    def epoch81_archived_active_bundle():
+        publication = "aaa926ffce8dbeff991646ff86732912a2b15afd"
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        def archived(path):
+            return subprocess.check_output(["git", "show", f"{publication}:{path}"],
+                cwd=ROOT, stderr=subprocess.DEVNULL)
+        bundle["_epoch81_active_progress"] = archived("docs/progress/build-progress.json")
+        bundle["progress"] = json.loads(bundle["_epoch81_active_progress"])
+        bundle["_epoch81_active_events"] = archived("docs/progress/progress-events.json")
+        bundle["events"] = json.loads(bundle["_epoch81_active_events"])
+        bundle["_epoch81_active_handoff"] = archived("docs/progress/BUILD_HANDOFF.md")
+        bundle["handoff_text"] = bundle["_epoch81_active_handoff"].decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["_epoch81_active_digest"] = archived(
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+        bundle["detached_digest"] = json.loads(bundle["_epoch81_active_digest"])
+        return bundle
+
+    @staticmethod
+    def validate_epoch81_active(bundle):
+        files = {"docs/progress/build-progress.json": bundle["_epoch81_active_progress"],
+            "docs/progress/BUILD_HANDOFF.md": bundle["_epoch81_active_handoff"]}
+        observed = datetime.fromisoformat(bundle["events"]["events"][2190]["occurred_at"]) + timedelta(minutes=1)
+        return checker._validate_f19a_task3_postclose_fixture_r2(bundle,
+            event_raw=bundle["_epoch81_active_events"], now=observed, archived_files=files)
+
+    def test_epoch81_r2_archived_active_survives_later_live_close(self):
+        bundle = self.epoch81_archived_active_bundle()
+        self.assertEqual(self.validate_epoch81_active(bundle), [])
+        for name, change in (
+            ("event", lambda b: b["events"]["events"][2190].update(actor="forged")),
+            ("scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=["packages/api/operations.py"])),
+            ("digest", lambda b: b["detached_digest"].update(algorithm="MD5")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(self.validate_epoch81_active(forged))
+
+    @staticmethod
+    def epoch81_checkpoint_bundle():
+        bundle = F19AStartProjectionTests.epoch81_archived_active_bundle()
+        progress = bundle["progress"]
+        checkpoint = "c" * 40
+        binding = progress["f19a_task3_postclose_fixture_r2_binding"]
+        binding.update(status="TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_CHECKPOINTED_CLOSE_READY",
+            control_checkpoint=checkpoint,
+            next_safe_action="F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSE_ONLY")
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation="F19A_TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_CHECKPOINTED_CLOSE_READY",
+            worktree_status="F19A_TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_CHECKPOINTED_CLOSE_READY")
+        progress["active_work_instruction"].update(
+            result_status="TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_CHECKPOINTED_CLOSE_READY",
+            package_status="TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_CHECKPOINTED_CLOSE_READY")
+        progress["next_work_package"]["status"] = "TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_CHECKPOINTED_CLOSE_READY"
+        progress["next_safe_action"] = progress["runtime_next_action"] = binding["next_safe_action"]
+        progress["snapshot_id"] = "snapshot-f19a-task3-postclose-fixture-r2-checkpoint-seq2191"
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=binding["next_safe_action"])
+        bundle["_epoch81_active_progress"] = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
+        bundle["_epoch81_active_handoff"] = ("```json anvil-recovery-summary\n"
+            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n```\n").encode()
+        bundle["detached_digest"]["progress"].update(bytes=len(bundle["_epoch81_active_progress"]),
+            file_sha256=hashlib.sha256(bundle["_epoch81_active_progress"]).hexdigest().upper())
+        bundle["detached_digest"]["handoff"].update(bytes=len(bundle["_epoch81_active_handoff"]),
+            file_sha256=hashlib.sha256(bundle["_epoch81_active_handoff"]).hexdigest().upper())
+        bundle["_epoch81_active_digest"] = (json.dumps(bundle["detached_digest"], ensure_ascii=False) + "\n").encode()
+        return bundle
+
+    def test_epoch81_r2_checkpoint_projection_rejects_forgery(self):
+        bundle = self.epoch81_checkpoint_bundle()
+        self.assertEqual(self.validate_epoch81_active(bundle), [])
+        forged = deepcopy(bundle)
+        forged["progress"]["f19a_task3_postclose_fixture_r2_binding"]["control_checkpoint"] = "0" * 40
+        self.assertTrue(self.validate_epoch81_active(forged))
+
+    @staticmethod
+    def epoch81_closed_bundle():
+        bundle = F19AStartProjectionTests.epoch81_checkpoint_bundle()
+        progress, stream = bundle["progress"], bundle["events"]
+        bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
+        bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
+        worker, write = stream["events"][2189]["details"], stream["events"][2190]["details"]
+        at = (datetime.fromisoformat(write["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_TASK3_POSTCLOSE_FIXTURE_R2_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+        for sequence, kind, details in (
+            (2192, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+            (2193, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            prior = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_task3_postclose_fixture_r2_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSE",
+                "subject_ref": "F-19A/TASK3-POSTCLOSE-FIXTURE-R2", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(prior)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2193
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2191_task3_postclose_fixture_r2_write_lease_issued"\n}\n'
+        prefix = bundle["_epoch81_active_events"].decode("utf-8")
+        assert prefix.endswith(footer)
+        def render(row):
+            return "\n".join("  " + line for line in json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+        text = (prefix[:-len(footer)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-2:])
+            + '\n  ],\n  "last_event_id": "evt_f19a_2193_task3_postclose_fixture_r2_worker_lease_revoked"\n}\n')
+        raw = text.replace('"last_sequence": 2191', '"last_sequence": 2193', 1).encode("utf-8")
+        assert json.loads(raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task3_postclose_fixture_r2_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task3_postclose_fixture_r2_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        action = "F19A_TASK4_DUAL_LEASE_PENDING"
+        progress["f19a_task3_postclose_fixture_r2_binding"].update(
+            status="TASK3_POSTCLOSE_FIXTURE_R2_CLOSED_NOT_F19A_ACCEPTED",
+            active_projection_checkpoint="e" * 40, next_safe_action=action, event_sequence=2193)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "F-19A",
+                "status": "TASK4_DUAL_LEASE_PENDING"},
+            snapshot_id="snapshot-f19a-task3-postclose-fixture-r2-close-seq2193")
+        progress["repository"].update(projection_mode="F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSED",
+            head_relation="F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSED_NOT_F19A_ACCEPTED",
+            worktree_status="F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSED_NOT_F19A_ACCEPTED")
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2193, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None,
+            repository_head="c" * 40, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2193
+        return bundle, raw
+
+    @staticmethod
+    def validate_epoch81_closed(bundle, raw):
+        original_output, original_stat, original_sha = subprocess.check_output, Path.stat, checker._sha256
+        progress_path = ROOT / "docs/progress/build-progress.json"
+        handoff_path = ROOT / "docs/progress/BUILD_HANDOFF.md"
+        active = bundle["progress"]["f19a_task3_postclose_fixture_r2_binding"]["active_projection_checkpoint"]
+        values = {"docs/progress/build-progress.json": "_epoch81_active_progress",
+            "docs/progress/progress-events.json": "_epoch81_active_events",
+            "docs/progress/BUILD_HANDOFF.md": "_epoch81_active_handoff",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                "_epoch81_active_digest"}
+        def output(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and len(command) == 3 and command[2].startswith(active + ":"):
+                path = command[2].split(":", 1)[1]
+                if path in values:
+                    return bundle[values[path]]
+            return original_output(command, *args, **kwargs)
+        def stat(path, *args, **kwargs):
+            if path == progress_path:
+                return SimpleNamespace(st_size=123)
+            if path == handoff_path:
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+        def sha(path):
+            if path == progress_path:
+                return "A" * 64
+            if path == handoff_path:
+                return "B" * 64
+            return original_sha(path)
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(Path, "stat", stat), patch.object(checker, "_sha256", side_effect=sha):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2192]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task3_postclose_fixture_r2_closed(bundle, event_raw=raw, now=observed)
+
+    def test_epoch81_r2_closed_projection_uses_immutable_active_and_rejects_forgery(self):
+        bundle, raw = self.epoch81_closed_bundle()
+        self.assertEqual(self.validate_epoch81_closed(bundle, raw), [])
+        for name, change in (
+            ("event", lambda b: b["events"]["events"][2190].update(actor="forged")),
+            ("token", lambda b: b["progress"]["completed_f19a_task3_postclose_fixture_r2_write_lease"].update(
+                write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["completed_f19a_task3_postclose_fixture_r2_write_lease"].update(
+                product_write_scope=["packages/api/operations.py"])),
+            ("publication", lambda b: b["progress"]["f19a_task3_postclose_fixture_r2_binding"].update(
+                active_projection_checkpoint="0" * 40)),
+            ("published_handoff", lambda b: b.__setitem__("_epoch81_active_handoff", b"forged")),
+            ("published_digest", lambda b: b.__setitem__("_epoch81_active_digest", b"{}")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(self.validate_epoch81_closed(forged, raw))
+
+    def test_epoch81_r2_git_requires_remote_clean_code_and_published_active(self):
+        base, control, active = "68b4b613a15a30044e91639d4837b3207b9b214b", "c" * 40, "e" * 40
+        a_bundle = self.epoch81_archived_active_bundle()
+        b_bundle = self.epoch81_checkpoint_bundle()
+        closed_bundle, _ = self.epoch81_closed_bundle()
+        original_output, original_run, original_read = subprocess.check_output, subprocess.run, Path.read_bytes
+        code_paths = ("scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py")
+        published_code = {ROOT / path: original_output(["git", "show",
+            f"aaa926ffce8dbeff991646ff86732912a2b15afd:{path}"], cwd=ROOT) for path in code_paths}
+        for phase, bundle in (("A", a_bundle), ("B", b_bundle), ("closed", closed_bundle)):
+            for scenario in ("positive", "remote", "product_dirty", "unrelated", "unpublished",
+                             "stale_blob", "later_docs", "stale_a_blob",
+                             "unpublished_a", "transient_product", "merge_between",
+                             "transient_control_to_p", "transient_p_to_head"):
+                with self.subTest(phase=phase, scenario=scenario):
+                    head = ("f" * 40 if phase == "A" and scenario == "later_docs" else
+                        "f" * 40 if phase == "closed" and scenario == "transient_p_to_head" else
+                        "aaa926ffce8dbeff991646ff86732912a2b15afd" if phase == "A" else active)
+                    def output(command, *args, **kwargs):
+                        tail = command[5:] if command[:5] == [
+                            "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if tail == ["rev-parse", "HEAD"]:
+                            return (head + "\n").encode()
+                        if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                            return (("0" * 40 if scenario == "remote" else head) + "\n").encode()
+                        if tail == ["branch", "--show-current"]:
+                            return b"codex/f18-wsl-ops\n"
+                        if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                            return b"development/codex/f18-wsl-ops\n"
+                        if tail == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M packages/api/operations.py\n" if scenario == "product_dirty" else b""
+                        if tail[:2] == ["rev-list", "--min-parents=2"]:
+                            return (b"deadbeef\n" if scenario == "merge_between" and phase != "A"
+                                and tail[2] == f"{control}..{head}" else b"")
+                        if tail == ["diff", "--name-only", "--no-renames", f"{base}..HEAD"]:
+                            return b"docs/progress/build-progress.json\n"
+                        if tail == ["diff", "--name-only", "--no-renames", f"{base}..{control}"]:
+                            return b"scripts/check_project_progress.py\ntests/tooling/test_f19a_start_projection.py\n"
+                        if tail == ["diff", "--name-only", "--no-renames", f"{control}..HEAD"]:
+                            return b"docs/progress/build-progress.json\n"
+                        if tail == ["diff", "--name-only", "--no-renames", f"{control}..{active}"]:
+                            return b"docs/progress/build-progress.json\n"
+                        if tail == ["diff", "--name-only", "--no-renames", f"{active}..HEAD"]:
+                            return b"packages/api/runtime.py\n" if scenario == "unrelated" else b""
+                        if tail == ["log", "--format=", "--name-only", "--no-renames", f"{base}..{control}"]:
+                            return b"scripts/check_project_progress.py\ntests/tooling/test_f19a_start_projection.py\n"
+                        if tail == ["log", "--format=", "--name-only", "--no-renames", f"aaa926ffce8dbeff991646ff86732912a2b15afd..{control}"]:
+                            return (b"packages/api/operations.py\n" if scenario == "transient_product" else
+                                b"scripts/check_project_progress.py\ntests/tooling/test_f19a_start_projection.py\n")
+                        if tail in (["log", "--format=", "--name-only", "--no-renames", f"{control}..HEAD"],
+                                    ["log", "--format=", "--name-only", "--no-renames", f"{control}..{active}"],
+                                    ["log", "--format=", "--name-only", "--no-renames", f"{active}..HEAD"]):
+                            return (b"packages/api/operations.py\n" if scenario in (
+                                "transient_product", "transient_control_to_p") else
+                                b"docs/progress/build-progress.json\n")
+                        if tail == ["log", "--format=", "--name-only", "--no-renames", f"{active}..{active}"]:
+                            return b""
+                        if tail == ["log", "--format=", "--name-only", "--no-renames", f"{active}..{head}"]:
+                            return (b"packages/api/operations.py\n" if scenario == "transient_p_to_head"
+                                else b"docs/progress/build-progress.json\n")
+                        if tail == ["log", "--format=", "--name-only", "--no-renames", f"{control}..{head}"]:
+                            return b"docs/progress/build-progress.json\n"
+                        if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(control + ":"):
+                            path = ROOT / tail[1].split(":", 1)[1]
+                            return b"stale" if scenario == "stale_blob" else published_code[path]
+                        if (tail[:1] == ["show"] and len(tail) == 2 and phase == "A"
+                                and scenario == "stale_a_blob"
+                                and tail[1].startswith("aaa926ffce8dbeff991646ff86732912a2b15afd:")):
+                            return b"stale"
+                        if tail == ["show", f"{active}:docs/progress/build-progress.json"]:
+                            return closed_bundle["_epoch81_active_progress"]
+                        return original_output(command, *args, **kwargs)
+                    def run(command, *args, **kwargs):
+                        if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                            return subprocess.CompletedProcess(command, 1 if (
+                                scenario == "unpublished" and command[-2:] == [control, active]
+                                or scenario == "unpublished_a" and command[-2:] == [
+                                    "aaa926ffce8dbeff991646ff86732912a2b15afd", control]) else 0)
+                        return original_run(command, *args, **kwargs)
+                    def read(path):
+                        return published_code[path] if path in published_code else original_read(path)
+                    with patch.object(subprocess, "check_output", side_effect=output), \
+                            patch.object(subprocess, "run", side_effect=run), \
+                            patch.object(Path, "read_bytes", read):
+                        errors = (checker._collect_f19a_task3_postclose_fixture_r2_closed_git(bundle)
+                            if phase == "closed" else checker._collect_f19a_task3_postclose_fixture_r2_git(bundle))
+                    expected = scenario != "positive" and not (
+                        (phase == "A" and scenario in ("unrelated", "unpublished", "stale_blob",
+                            "unpublished_a", "transient_product", "merge_between",
+                            "transient_control_to_p", "transient_p_to_head"))
+                        or (phase != "A" and scenario in ("later_docs", "stale_a_blob"))
+                        or (phase == "B" and scenario in ("unrelated", "transient_p_to_head")))
+                    self.assertEqual(bool(errors), expected, f"{phase}/{scenario}: {errors}")
 
 
 if __name__ == "__main__":
