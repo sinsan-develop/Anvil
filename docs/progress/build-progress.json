@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task3-fixed-operations-product-checkpoint-seq2181",
-  "event_sequence": 2181,
-  "updated_at": "2026-10-07T08:29:40+00:00",
-  "last_event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued",
+  "snapshot_id": "snapshot-f19a-task3-fixed-operations-close-seq2183",
+  "event_sequence": 2183,
+  "updated_at": "2026-10-07T09:36:32+00:00",
+  "last_event_id": "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -215,8 +215,9 @@
     "U-11",
     "PHASE_U_GATE"
   ],
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "write_lease": {"lease_id":"write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK3-FIXED-OPERATIONS","status":"ACTIVE","issued_at":"2026-10-07T08:29:40+00:00","expires_at":"2026-10-08T08:29:40+00:00","lease_epoch":79,"fencing_token":"f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274","execution_fencing_token":"f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4","baseline_git_commit":"71154279a7da853acbd15706126fe4c323b7016f","dispatch_head":"71154279a7da853acbd15706126fe4c323b7016f","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","packages/api/operations.py","packages/api/fastapi_app.py","packages/api/f19a_registration.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_fixed_operations_authorization.py"],"worker_lease_id":"worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4","write_epoch":79,"write_fencing_token":"f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274","product_write_scope":["packages/api/operations.py","packages/api/fastapi_app.py","packages/api/f19a_registration.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_fixed_operations_authorization.py"]},
+  "active_agent": null,
+  "write_lease": null,
+  "completed_f19a_task3_fixed_operations_write_lease": {"lease_id":"write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK3-FIXED-OPERATIONS","status":"REVOKED","issued_at":"2026-10-07T08:29:40+00:00","expires_at":"2026-10-08T08:29:40+00:00","lease_epoch":79,"fencing_token":"f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274","execution_fencing_token":"f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4","baseline_git_commit":"71154279a7da853acbd15706126fe4c323b7016f","dispatch_head":"71154279a7da853acbd15706126fe4c323b7016f","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","packages/api/operations.py","packages/api/fastapi_app.py","packages/api/f19a_registration.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_fixed_operations_authorization.py"],"worker_lease_id":"worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4","write_epoch":79,"write_fencing_token":"f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274","product_write_scope":["packages/api/operations.py","packages/api/fastapi_app.py","packages/api/f19a_registration.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_fixed_operations_authorization.py"],"revoked_at":"2026-10-07T09:36:32+00:00"},
   "completed_f19a_task2_registration_api_write_lease": {"lease_id":"write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK2-REGISTRATION-API","status":"REVOKED","issued_at":"2026-10-07T06:17:08+00:00","expires_at":"2026-10-08T06:17:08+00:00","lease_epoch":78,"fencing_token":"f19a-task2-registration-api-write-fence-epoch-78-a342fea27f77426b9670134dbadaea68","execution_fencing_token":"f19a-task2-registration-api-execution-fence-epoch-78-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8","baseline_git_commit":"daeb824524e85624e17f4ef099ec3d2b1eef7ca9","dispatch_head":"daeb824524e85624e17f4ef099ec3d2b1eef7ca9","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","packages/api/f19a_registration.py","packages/api/registry.py","packages/api/fastapi_app.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_registration_api.py"],"worker_lease_id":"worker-lease-f19a-task2-registration-api-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8","write_epoch":78,"write_fencing_token":"f19a-task2-registration-api-write-fence-epoch-78-a342fea27f77426b9670134dbadaea68","product_write_scope":["packages/api/f19a_registration.py","packages/api/registry.py","packages/api/fastapi_app.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_registration_api.py"],"revoked_at":"2026-10-07T08:17:40+00:00"},
   "completed_f19a_task1_closed_history_fixture_write_lease": {"lease_id":"write-lease-f19a-task1-closed-history-fixture-b6d0af31ec1a4eb1a2f6384889404aa1","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK1-CLOSED-HISTORY-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T05:02:53+00:00","expires_at":"2026-10-08T05:02:53+00:00","lease_epoch":77,"fencing_token":"f19a-task1-closed-history-fixture-write-fence-epoch-77-b6d0af31ec1a4eb1a2f6384889404aa1","execution_fencing_token":"f19a-task1-closed-history-fixture-execution-fence-epoch-77-110ab75ae6df4c3c9ee764b91245fa49","baseline_git_commit":"16857dbeef47180159a42352bb297ae6303dbcad","dispatch_head":"16857dbeef47180159a42352bb297ae6303dbcad","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"worker_lease_id":"worker-lease-f19a-task1-closed-history-fixture-110ab75ae6df4c3c9ee764b91245fa49","write_epoch":77,"write_fencing_token":"f19a-task1-closed-history-fixture-write-fence-epoch-77-b6d0af31ec1a4eb1a2f6384889404aa1","product_write_scope":[],"revoked_at":"2026-10-07T06:02:27+00:00"},
   "completed_f19a_task1_postclose_closed_fixture_write_lease": {"lease_id":"write-lease-f19a-task1-postclose-closed-fixture-3a96ee051e304ab989aaefd2c08eea40","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK1-POSTCLOSE-CLOSED-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T03:44:29+00:00","expires_at":"2026-10-08T03:44:29+00:00","lease_epoch":76,"fencing_token":"f19a-task1-postclose-closed-fixture-write-fence-epoch-76-3a96ee051e304ab989aaefd2c08eea40","execution_fencing_token":"f19a-task1-postclose-closed-fixture-execution-fence-epoch-76-bc3cc49e9ea4450eb95aa1667aba287e","baseline_git_commit":"cd5f6984757fe30f769b391f3a65ff14b048e0d5","dispatch_head":"cd5f6984757fe30f769b391f3a65ff14b048e0d5","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"worker_lease_id":"worker-lease-f19a-task1-postclose-closed-fixture-bc3cc49e9ea4450eb95aa1667aba287e","write_epoch":76,"write_fencing_token":"f19a-task1-postclose-closed-fixture-write-fence-epoch-76-3a96ee051e304ab989aaefd2c08eea40","product_write_scope":[],"revoked_at":"2026-10-07T04:52:39+00:00"},
@@ -381,7 +382,8 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {"lease_id":"worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK3-FIXED-OPERATIONS","status":"ACTIVE","issued_at":"2026-10-07T08:29:40+00:00","expires_at":"2026-10-08T08:29:40+00:00","lease_epoch":79,"fencing_token":"f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4","execution_fencing_token":"f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4","baseline_git_commit":"71154279a7da853acbd15706126fe4c323b7016f","dispatch_head":"71154279a7da853acbd15706126fe4c323b7016f","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","packages/api/operations.py","packages/api/fastapi_app.py","packages/api/f19a_registration.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_fixed_operations_authorization.py"]},
+  "worker_lease": null,
+  "completed_f19a_task3_fixed_operations_worker_lease": {"lease_id":"worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK3-FIXED-OPERATIONS","status":"REVOKED","issued_at":"2026-10-07T08:29:40+00:00","expires_at":"2026-10-08T08:29:40+00:00","lease_epoch":79,"fencing_token":"f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4","execution_fencing_token":"f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4","baseline_git_commit":"71154279a7da853acbd15706126fe4c323b7016f","dispatch_head":"71154279a7da853acbd15706126fe4c323b7016f","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","packages/api/operations.py","packages/api/fastapi_app.py","packages/api/f19a_registration.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_fixed_operations_authorization.py"],"revoked_at":"2026-10-07T09:36:32+00:00"},
   "completed_f19a_task2_registration_api_worker_lease": {"lease_id":"worker-lease-f19a-task2-registration-api-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK2-REGISTRATION-API","status":"REVOKED","issued_at":"2026-10-07T06:17:08+00:00","expires_at":"2026-10-08T06:17:08+00:00","lease_epoch":78,"fencing_token":"f19a-task2-registration-api-execution-fence-epoch-78-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8","execution_fencing_token":"f19a-task2-registration-api-execution-fence-epoch-78-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8","baseline_git_commit":"daeb824524e85624e17f4ef099ec3d2b1eef7ca9","dispatch_head":"daeb824524e85624e17f4ef099ec3d2b1eef7ca9","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","packages/api/f19a_registration.py","packages/api/registry.py","packages/api/fastapi_app.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/api/test_f19a_registration_api.py"],"revoked_at":"2026-10-07T08:17:40+00:00"},
   "completed_f19a_task1_closed_history_fixture_worker_lease": {"lease_id":"worker-lease-f19a-task1-closed-history-fixture-110ab75ae6df4c3c9ee764b91245fa49","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK1-CLOSED-HISTORY-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T05:02:53+00:00","expires_at":"2026-10-08T05:02:53+00:00","lease_epoch":77,"fencing_token":"f19a-task1-closed-history-fixture-execution-fence-epoch-77-110ab75ae6df4c3c9ee764b91245fa49","execution_fencing_token":"f19a-task1-closed-history-fixture-execution-fence-epoch-77-110ab75ae6df4c3c9ee764b91245fa49","baseline_git_commit":"16857dbeef47180159a42352bb297ae6303dbcad","dispatch_head":"16857dbeef47180159a42352bb297ae6303dbcad","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"revoked_at":"2026-10-07T06:02:27+00:00"},
   "completed_f19a_task1_postclose_closed_fixture_worker_lease": {"lease_id":"worker-lease-f19a-task1-postclose-closed-fixture-bc3cc49e9ea4450eb95aa1667aba287e","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK1-POSTCLOSE-CLOSED-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T03:44:29+00:00","expires_at":"2026-10-08T03:44:29+00:00","lease_epoch":76,"fencing_token":"f19a-task1-postclose-closed-fixture-execution-fence-epoch-76-bc3cc49e9ea4450eb95aa1667aba287e","execution_fencing_token":"f19a-task1-postclose-closed-fixture-execution-fence-epoch-76-bc3cc49e9ea4450eb95aa1667aba287e","baseline_git_commit":"cd5f6984757fe30f769b391f3a65ff14b048e0d5","dispatch_head":"cd5f6984757fe30f769b391f3a65ff14b048e0d5","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"revoked_at":"2026-10-07T04:52:39+00:00"},
@@ -712,7 +714,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_DUAL_LEASE_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -827,9 +829,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
     "remote_head": "1e40e1ad306de93d659ca76e07e587361f70d676",
-    "projection_mode": "F19A_TASK3_FIXED_OPERATIONS_ACTIVE",
+    "projection_mode": "F19A_TASK3_FIXED_OPERATIONS_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "head_relation": "F19A_TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1263,7 +1265,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": ["packages/api/operations.py", "packages/api/fastapi_app.py", "packages/api/f19a_registration.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_fixed_operations_authorization.py"],
-    "worktree_status": "F19A_TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "worktree_status": "F19A_TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1586,12 +1588,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-    "sha256": "BB394F6A4F8FF412AEDE2DBA8E6A6EC07E60E5E5425787E25344826A849B8769"
+    "sha256": "AF57B72BD2BEFE036D98B92C468065B01C1CE765E765E18CD75DA1B12441F5C2"
     }
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY"
+    "status": "TASK4_DUAL_LEASE_PENDING"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -1983,8 +1985,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "F6EED08FAE2AC446635C5E46BA15FDAEDE819C0BD2B83083A9AF613CB2853880",
-  "runtime_next_action": "F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY",
+  "snapshot_hash": "13D2B6446821B669A5061BE6B8A276A90C42DDF7181CFF1AC6DC48FA08C22E73",
+  "runtime_next_action": "F19A_TASK4_DUAL_LEASE_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23497,7 +23499,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task3_fixed_operations_binding": {
-    "status": "TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "status": "TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
     "package_id": "F-19A",
     "predecessor_sequence": 2178,
     "predecessor_head": "71154279a7da853acbd15706126fe4c323b7016f",
@@ -23514,13 +23516,14 @@
     "worker_lease_id": "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4",
     "write_lease_id": "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY",
+    "next_safe_action": "F19A_TASK4_DUAL_LEASE_PENDING",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
-    "event_sequence": 2181,
+    "event_sequence": 2183,
     "control_checkpoint": "c066ecdaf998535a0b80090b44d2f17b4d1e2aae",
-    "product_code_checkpoint": "1e40e1ad306de93d659ca76e07e587361f70d676"
+    "product_code_checkpoint": "1e40e1ad306de93d659ca76e07e587361f70d676",
+    "active_projection_checkpoint": "45bb14f72041b4d4b3b4b0dfa6b40030edd8f1fe"
   },
   "f19a_task2_registration_api_binding": {
     "status": "TASK2_REGISTRATION_API_CLOSED_NOT_F19A_ACCEPTED",

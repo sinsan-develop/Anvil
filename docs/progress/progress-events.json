@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2181,
+  "last_sequence": 2183,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -101688,7 +101688,49 @@
         "tests/api/test_f19a_fixed_operations_authorization.py"
       ]
     }
+  },
+  {
+    "sequence": 2182,
+    "event_id": "evt_f19a_2182_task3_fixed_operations_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_FIXED_OPERATIONS_CLOSE",
+    "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+    "occurred_at": "2026-10-07T09:36:32+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "ACAFA324096DBDDCDB4C5D8069E10EA42898ADCCF2FB56FECB0DC65BA0C82F58",
+    "details": {
+      "lease_id": "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274",
+      "write_fencing_token": "f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274",
+      "reason": "F19A_TASK3_FIXED_OPERATIONS_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2183,
+    "event_id": "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_FIXED_OPERATIONS_CLOSE",
+    "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+    "occurred_at": "2026-10-07T09:36:32+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "3C48417A661A2A5BAFD67448C37778317B6BE5979A0284E573E490BE53D60FF4",
+    "details": {
+      "lease_id": "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4",
+      "execution_fencing_token": "f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4",
+      "reason": "F19A_TASK3_FIXED_OPERATIONS_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued"
+  "last_event_id": "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked"
 }

@@ -2,21 +2,23 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2181,
-  "last_event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued",
+  "event_sequence": 2183,
+  "last_event_id": "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4",
-  "write_lease": "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_DUAL_LEASE_PENDING",
   "repository_head": "1e40e1ad306de93d659ca76e07e587361f70d676",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 3 epoch79 종료 투영(Main, 2026-10-07): 활성 제품 결박 checkpoint `45bb14f72041b4d4b3b4b0dfa6b40030edd8f1fe` local/private clean·G-05 seq2181 PASS·집중9 PASS를 확인하고 원문 Event seq1~2181을 보존한 채 seq2182 write→2183 worker revoke만 append했다. 두 lease는 `REVOKED`, 활성 lease null, Task 3은 `CLOSED_NOT_F19A_ACCEPTED`이며 다음은 별도 Task 4 WI/dual lease. 이는 문서 후보 투영으로 G-05·checkpoint/private 후 clean 검증 전까지 다음 제품 write를 열지 않는다. 실제 PG15/WSL/브라우저·F-19A 전체 수락 미검증, Release DEFER/Production NOT_EXECUTED.
 
 - Task 3 제품 checkpoint(Main, 2026-10-07): 고정 세 Operations GET/ACK에 활성 0020 모드에서만 서버 소유 정확 pair grant 매요청 검사와 저장소 누락 fail-closed 503을 연결했다. 역사 0019·audit는 불변이다. 제품 exact4 `1e40e1ad306de93d659ca76e07e587361f70d676` local/private 동일, Developer 집중9 PASS·인접7파일 136 PASS/1 SKIP, Main 독립 집중9 PASS·인접7파일 106 PASS/1 SKIP, Ruff4·diff PASS, 독립 재리뷰 C0/I0/M0. 두 차례 I1은 fail-open/역사 호환 경계로 같은 승인 범위에서 TDD 재작업해 해소했다. SKIP은 격리 PG15 미구성으로 실제 DB·WSL·브라우저는 미검증. seq2181 active Event/lease 유지, 이 문서 후보를 G-05·checkpoint/private 게시한 뒤 write→worker 순서로 회수한다. F-19A 전체 미수락, Release DEFER, Production NOT_EXECUTED.
 
