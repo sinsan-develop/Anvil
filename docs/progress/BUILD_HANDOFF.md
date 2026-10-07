@@ -1,4 +1,6 @@
-# F-19A Task 4 종료 fixture lease 회수 handoff
+# F-19A Task 4 격리 QA 제품 시작 handoff
+
+Task4 제품 epoch84 시작(Main, 2026-10-07): 종료 `b2921c67acb40732211bad615ebee7a4e23ed622` clean/private·G-05 seq2203 PASS·통제 전체81 PASS를 기준으로 WI `4E586D01FCD8D0784FEE6716DDE29C0FA17C4009E72CF182913C6CCE38B8B8E8`를 결박했다. Event seq2204 WI→2205 worker→2206 write, epoch84 24시간·분리 token·제품 정확4/통제 정확2이다. 새 route 전 bootstrap G-05 RED는 PASS 아님. 로컬 QA harness TDD·독립 리뷰·checkpoint/private 및 제품 lease 종료까지 WSL-server 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 epoch83 종료 투영 후보(Main, 2026-10-07): 활성 B `df4efc2ef2632622e37bf30d8695665df9ced241` clean/private·G-05 seq2201 PASS 뒤 원문 Event seq1~2201을 보존해 seq2202 write→2203 worker revoke만 append했다. 두 lease REVOKED·활성 null, 다음은 Task4 제품4 별도 WI/dual lease. 종료 G-05·회귀·문서 게시/clean 확인 전 제품/WSL/DB/브라우저 write 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
@@ -20,17 +22,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2203,
-  "last_event_id": "evt_f19a_2203_task4_postclose_fixture_worker_lease_revoked",
+  "event_sequence": 2206,
+  "last_event_id": "evt_f19a_2206_task4_product_qa_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-product-qa-b3d3c2e4a84a4d72a89c58d7a1d0ac07",
+  "write_lease": "write-lease-f19a-task4-product-qa-37edd712f9824648a2f94214a4559d9d",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_PRODUCT_DUAL_LEASE_PENDING",
-  "repository_head": "f88801c2d8ce42d801fdf1ef3bff2ebe63ab722e",
+  "next_safe_action": "F19A_TASK4_PRODUCT_QA_ACTIVE",
+  "repository_head": "b2921c67acb40732211bad615ebee7a4e23ed622",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }

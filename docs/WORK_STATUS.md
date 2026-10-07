@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- F-19A Task4 제품 QA epoch84 시작(Main, 2026-10-07): 종료 `b2921c67acb40732211bad615ebee7a4e23ed622` clean/private·G-05 seq2203 PASS·통제81 PASS 기준. 비의미 WI SHA `4E586D01FCD8D0784FEE6716DDE29C0FA17C4009E72CF182913C6CCE38B8B8E8`, Event seq2204 WI→2205 worker→2206 write, epoch84 24시간·서로 다른 token, Developer 제품 정확4/통제 정확2. 새 mode route 전 G-05 RED 예상/PASS 아님, 정식 실패보고0, WSL/DB/브라우저 write0. 로컬 TDD→검증·독립 리뷰→checkpoint/private→lease 회수 전 WSL QA 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
+
 - F-19A Task4 종료 fixture epoch83 최종 검증(Main, 2026-10-07): 종료 게시본 `3c8f8b7a49712efa14243b768bbb0b9a8eef4f51` local/private 동일·clean, 실제 G-05 seq2203 PASS(exit0), 종료 Task4 집중10 PASS/71 deselected(exit0), 종료 통제 전체81 PASS/350.34초(exit0). 독립 리뷰 C0/I0/M0, 인접 회귀는 Developer 최종117 PASS/기존 R48 2 FAIL이며 새 실패0. 두 lease REVOKED, 제품·WSL/DB/브라우저 write0. 이는 epoch83 종료 후 fixture 회귀 해소에 한정하고 실제 격리 PG15/OIDC/HTTPS/브라우저 및 F-19A 전체 acceptance는 미검증이다. 다음은 Task4 제품4 별도 WI/dual lease와 로컬 개발→private push→WSL-server 동일 SHA QA, Release DEFER/Production NOT_EXECUTED.
 
 - F-19A Task4 종료 fixture epoch83 lease 회수 후보(Main, 2026-10-07): 활성 B `df4efc2ef2632622e37bf30d8695665df9ced241` local/private clean·G-05 seq2201 PASS 후 Event 원문 seq1~2201 보존, seq2202 write→2203 worker revoke 순서. 두 lease REVOKED·활성 null, 다음 Task4 제품4는 별도 WI/dual lease 대기. 종료 G-05/집중 회귀·게시/clean 전 제품4·WSL/DB/브라우저 write 금지, 기존 R48 2 FAIL, F-19A 미수락, Release DEFER/Production NOT_EXECUTED.
