@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2206,
+  "last_sequence": 2208,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102440,7 +102440,49 @@
         "tests/browser/f19a-pair-selection.mjs"
       ]
     }
+  },
+  {
+    "sequence": 2207,
+    "event_id": "evt_f19a_2207_task4_product_qa_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_PRODUCT_QA_CLOSE",
+    "subject_ref": "F-19A/TASK4-PRODUCT-QA",
+    "occurred_at": "2026-10-07T14:39:58+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "DDFD637B76C7EA78472A41BECCB9704108A461A951D5408F9BC5E21758BADE7B",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-product-qa-37edd712f9824648a2f94214a4559d9d",
+      "write_fencing_token": "f19a-task4-product-qa-write-fence-epoch-84-37edd712f9824648a2f94214a4559d9d",
+      "reason": "F19A_TASK4_PRODUCT_QA_LOCAL_VALIDATED_ISSUER_REVISION_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2208,
+    "event_id": "evt_f19a_2208_task4_product_qa_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_PRODUCT_QA_CLOSE",
+    "subject_ref": "F-19A/TASK4-PRODUCT-QA",
+    "occurred_at": "2026-10-07T14:39:58+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "B073BC62141D0A4760B41A02A9E9CB86E78D77DBD33F787ACB4FE22FE325F5BF",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-product-qa-b3d3c2e4a84a4d72a89c58d7a1d0ac07",
+      "execution_fencing_token": "f19a-task4-product-qa-execution-fence-epoch-84-b3d3c2e4a84a4d72a89c58d7a1d0ac07",
+      "reason": "F19A_TASK4_PRODUCT_QA_LOCAL_VALIDATED_ISSUER_REVISION_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2206_task4_product_qa_write_lease_issued"
+  "last_event_id": "evt_f19a_2208_task4_product_qa_worker_lease_revoked"
 }

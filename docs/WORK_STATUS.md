@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- F-19A Task4 제품 QA epoch84 lease 종료 후보(Main, 2026-10-07): 활성 B `ed76138f5a017f62f9e011dc472e47b613139e8a` local/private 동일·clean·G-05 seq2206 PASS. 원문 Event seq1~2206 보존 후 seq2207 write→2208 worker revoke, 두 lease REVOKED·활성 null. 제품 exact6 검증은 로컬에 한정하며 WSL-server 실제 두 actor OIDC issuer는 고정 subject 때문에 별도 QA-only revision이 필요하다. 종료 G-05·회귀·게시/clean 전 다음 제품·WSL write 금지, 정식 실패0, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
+
 - F-19A Task4 제품 QA epoch84 C checkpoint(Main, 2026-10-07): exact6 `8c3127a5a0de986401ef5aabf1f77c85901a7aa2` local/private SHA 동일·clean. Developer 집중6 PASS·인접141 PASS/4 SKIP, Main 집중16 PASS·통제 전체87 PASS, 독립 리뷰 C0/I0/M0·정식 실패0. 최초 게시 후 G-05는 제품 SHA가 progress에 미결박되어 `F19A_TASK4_QA_GIT_INVALID` RED; 이는 코드 결함이 아니라 계획된 B 결박 단계이며 이 문서·progress·handoff·digest에서 바로잡는다. B G-05/게시/clean 전 lease 회수 금지. 실제 WSL-server PG15/OIDC 두 actor/HTTPS/Chromium/backup·restore·downgrade·잔여물0 미검증, F-19A 미수락·Release DEFER/Production NOT_EXECUTED. 다음은 B 검증·게시 후 epoch84 close 및 별도 QA issuer revision.
 
 - F-19A Task4 제품 QA epoch84 시작(Main, 2026-10-07): 종료 `b2921c67acb40732211bad615ebee7a4e23ed622` clean/private·G-05 seq2203 PASS·통제81 PASS 기준. 비의미 WI SHA `4E586D01FCD8D0784FEE6716DDE29C0FA17C4009E72CF182913C6CCE38B8B8E8`, Event seq2204 WI→2205 worker→2206 write, epoch84 24시간·서로 다른 token, Developer 제품 정확4/통제 정확2. 새 mode route 전 G-05 RED 예상/PASS 아님, 정식 실패보고0, WSL/DB/브라우저 write0. 로컬 TDD→검증·독립 리뷰→checkpoint/private→lease 회수 전 WSL QA 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.

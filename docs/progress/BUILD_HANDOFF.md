@@ -1,4 +1,6 @@
-# F-19A Task 4 격리 QA 제품 checkpoint handoff
+# F-19A Task 4 격리 QA 제품 종료 handoff
+
+Task4 제품 epoch84 lease 종료 후보(Main, 2026-10-07): 활성 B `ed76138f5a017f62f9e011dc472e47b613139e8a` local/private 동일·clean·G-05 seq2206 PASS 뒤 원문 Event seq1~2206 보존, seq2207 write→2208 worker revoke만 append했다. 두 lease REVOKED·활성 null, 다음은 QA issuer의 실제 두 actor subject 발급을 위한 별도 비의미 WI/dual lease. 종료 G-05·회귀·문서 게시/clean 전 issuer·WSL write 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 제품 epoch84 C checkpoint(Main, 2026-10-07): exact6 `8c3127a5a0de986401ef5aabf1f77c85901a7aa2` local/private 동일·clean, G-05 seq2206는 checkpoint 투영 전 Git binding 미기록으로 RED였다. Developer 집중6 PASS·인접141 PASS/4 SKIP·독립 Reviewer C0/I0/M0, Main 집중16 PASS·F-19A 통제 전체87 PASS·PG15 opt-in 1 SKIP을 확인했다. 이 B 문서 투영은 제품 SHA를 결박하며 G-05/게시/clean 검증 후 epoch84 lease 종료만 허용한다. 실제 WSL-server PG15·OIDC 두 actor·HTTPS·Chromium·backup/restore/downgrade는 미검증, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
@@ -24,16 +26,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2206,
-  "last_event_id": "evt_f19a_2206_task4_product_qa_write_lease_issued",
+  "event_sequence": 2208,
+  "last_event_id": "evt_f19a_2208_task4_product_qa_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-product-qa-b3d3c2e4a84a4d72a89c58d7a1d0ac07",
-  "write_lease": "write-lease-f19a-task4-product-qa-37edd712f9824648a2f94214a4559d9d",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_PRODUCT_QA_CONTROL_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_QA_ISSUER_REVISION_PENDING",
   "repository_head": "8c3127a5a0de986401ef5aabf1f77c85901a7aa2",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
