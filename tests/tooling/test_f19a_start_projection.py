@@ -1420,6 +1420,11 @@ class F19AStartProjectionTests(unittest.TestCase):
 
     def test_epoch75_postclose_active_git_rejects_remote_and_unrelated_dirty(self):
         bundle = checker.load_bundle(ROOT)
+        bundle["progress"] = json.loads(subprocess.check_output(
+            ["git", "show", "1e656cc7ccf7ab5e61872b88b5d66c21fb6ebe80:docs/progress/build-progress.json"],
+            cwd=ROOT, stderr=subprocess.DEVNULL))
+        self.assertEqual(bundle["progress"]["f19a_task1_postclose_fixture_binding"]["status"],
+                         "POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED")
         original = subprocess.check_output
         base = "5d1e1788ee84bb10715f497414864ff589bb76c0"
 
