@@ -2281,20 +2281,50 @@ class F19AStartProjectionTests(unittest.TestCase):
                 change(forged)
                 self.assertTrue(self.validate_epoch77_active(forged))
 
+    @contextmanager
+    def synthetic_epoch77_active_git(self, *, remote=None, dirty=b""):
+        """Keep the seq2171 A publication fixed after a later code checkpoint."""
+        head = "d5fca401181f6854a3e52d2d48688d74f239b912"
+        base = "16857dbeef47180159a42352bb297ae6303dbcad"
+        original_output, original_run = subprocess.check_output, subprocess.run
+
+        def output(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == [
+                "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["rev-parse", "HEAD"]:
+                return (head + "\n").encode()
+            if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                return ((remote or head) + "\n").encode()
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            if tail == ["status", "--porcelain=v1", "-uall"]:
+                return dirty
+            if tail == ["diff", "--name-only", "--no-renames", f"{base}..HEAD"]:
+                return b"docs/progress/build-progress.json\n"
+            return original_output(command, *args, **kwargs)
+
+        def run(command, *args, **kwargs):
+            if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return subprocess.CompletedProcess(command, 0)
+            return original_run(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(subprocess, "run", side_effect=run):
+            yield
+
     def test_epoch77_history_fixture_git_rejects_remote_and_product_dirty(self):
         bundle = self.epoch77_archived_bundle()
-        self.assertEqual(checker._collect_f19a_task1_closed_history_fixture_git(bundle), [])
+        with self.synthetic_epoch77_active_git():
+            self.assertEqual(checker._collect_f19a_task1_closed_history_fixture_git(bundle), [])
         forged = deepcopy(bundle)
         forged["progress"]["repository"]["remote_head"] = "0" * 40
-        self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_git(forged))
-        original = subprocess.check_output
-
-        def dirty_product(command, *args, **kwargs):
-            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
-                return b" M packages/api/runtime.py\n"
-            return original(command, *args, **kwargs)
-
-        with patch.object(subprocess, "check_output", side_effect=dirty_product):
+        with self.synthetic_epoch77_active_git():
+            self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_git(forged))
+        with self.synthetic_epoch77_active_git(remote="0" * 40):
+            self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_git(bundle))
+        with self.synthetic_epoch77_active_git(dirty=b" M packages/api/runtime.py\n"):
             self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_git(bundle))
 
     @staticmethod
