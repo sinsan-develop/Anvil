@@ -1,22 +1,26 @@
-# F-19A Task1 저장 원장 절편 종료 handoff
+# F-19A Task1 종료 후 역사 fixture 재작업 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2158,
-  "last_event_id": "evt_f19a_2158_task1_worker_lease_revoked",
+  "event_sequence": 2161,
+  "last_event_id": "evt_f19a_2161_task1_postclose_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task1-postclose-fixture-85e1ad69214e4ea9bea2113dc28cd988",
+  "write_lease": "write-lease-f19a-task1-postclose-fixture-6c73596c1f144b34878cb0f34db8087d",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK2_API_DUAL_LEASE_PENDING",
-  "repository_head": "e7d7976b6a2d8bfd7a71162796feaf0635e294e9",
+  "next_safe_action": "F19A_TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
+  "repository_head": "5d1e1788ee84bb10715f497414864ff589bb76c0",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch75 코드 동결·독립 검증: 정확2파일 SHA checker `D3CC1E...`, test `0D4EE3...`; 역사 seq2156 5 FAIL→5 PASS, 첫 인접65 PASS/1 FAIL은 역사 wrapper 신규 mode 미위임으로 checker 최소 보정했다. closed Event envelope/chain·active binding 동시 위조를 각각 RED→GREEN한 뒤 독립 재검토 C0/I0/M0, Developer 68 PASS/371.74초, Main 동일5파일 68 PASS/406.73초(exit0), 실제 active G-05 seq2161 PASS, diff0이다. 제품 diff0·정식 Developer 실패0. 이 시점 code+통제 checkpoint/private push·active clean G-05·실제 seq2162/2163 종료·closed 전체 재검증은 아직 미실행이다. Task2 API lease는 잠금, F-19A 전체 미수락이다.
+
+- Task1 종료 후 역사 fixture epoch75 bootstrap(Main, 2026-10-07): clean NON-GREEN 복구 SHA `5d1e1788ee84bb10715f497414864ff589bb76c0`의 실제 private 원격 동일·closed G-05 seq2158 PASS를 확인했다. 비제품 WI SHA `E2E2DF09...`를 고정하고 frozen Event seq1~2158 뒤 seq2159 WI→2160 worker→2161 write를 서로 다른 token/정확2경로/제품 scope0/24시간으로 append했다. 현재 machine 다음 행동은 `F19A_TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY`이며 Task2 API lease는 여전히 금지다. 새 검사 route가 없는 bootstrap G-05 RED는 PASS가 아니고, 통제 Event/progress/HANDOFF/digest 결박과 Developer의 RED→GREEN은 아직 진행 전이다. F-19A 전체 미수락이다.
 
 - Task1 종료 후 인접 회귀 NON-GREEN: 실제 G-05 seq2158 PASS와 별개로 기존 인접5파일은 57 PASS/5 FAIL(282.15초, exit1)이다. 다섯 실패는 모두 신규 `test_f19a_start_projection.py`가 활성 seq2156을 live로 고정한 fixture 경계에 집중된다. 실제 종료 Event/lease 검사가 실패했다는 증거는 없으나 전체 GREEN 전 Task2 API lease를 열지 않는다. Main은 control5 NON-GREEN checkpoint/private 보존 뒤 별도 정확2경로 비제품 WI/dual lease로 역사 fixture를 수정한다. 이 시점 control5 final commit/private push는 아직 미실행이다.
 

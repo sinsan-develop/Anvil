@@ -58601,6 +58601,10 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
 
 
 def _collect_f19a_start_git(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_task1_postclose_fixture_git(bundle) else []
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_POSTCLOSE_FIXTURE_CLOSED":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_task1_postclose_fixture_closed_git(bundle) else []
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_REGISTRATION_STORE_ACTIVE":
         return ["F19A_GIT_INVALID"] if _collect_f19a_task1_store_git(bundle) else []
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_REGISTRATION_STORE_CLOSED":
@@ -59608,7 +59612,476 @@ def _collect_f19a_task1_store_closed_git(bundle):
         return ["F19A_TASK1_CLOSE_GIT_INVALID"]
 
 
+def _validate_f19a_task1_postclose_fixture(bundle, *, event_raw=None, now=None):
+    """Fail closed for the epoch75 control-only repair after Task1 store closure."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    errors = []
+    base = "5d1e1788ee84bb10715f497414864ff589bb76c0"
+    wi = "docs/work_orders/F-19A_TASK1_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md"
+    approval = "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md"
+    digest_path = "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"
+    wi_hash = "E2E2DF09B854DEF3E4E3854AD16C8C1A298500587F5B03400C1202D1AEBF631F"
+    approval_hash = "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5"
+    spec_hash = "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247"
+    plan_hash = "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E"
+    scope = ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+    recorded = issued = "2026-10-07T01:36:00+00:00"
+    expires = "2026-10-08T01:36:00+00:00"
+    actor, subject = "developer-primary-f19a-pair-grant", "F-19A/TASK1-POSTCLOSE-FIXTURE"
+    worker_id = "worker-lease-f19a-task1-postclose-fixture-85e1ad69214e4ea9bea2113dc28cd988"
+    write_id = "write-lease-f19a-task1-postclose-fixture-6c73596c1f144b34878cb0f34db8087d"
+    worker_token = "f19a-task1-postclose-fixture-execution-fence-epoch-75-85e1ad69214e4ea9bea2113dc28cd988"
+    write_token = "f19a-task1-postclose-fixture-write-fence-epoch-75-6c73596c1f144b34878cb0f34db8087d"
+    action = "F19A_TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY"
+    try:
+        raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
+        frozen_raw = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
+                                             cwd=root, stderr=subprocess.DEVNULL)
+        frozen = json.loads(subprocess.check_output(["git", "show", f"{base}:docs/progress/build-progress.json"],
+                                                    cwd=root, stderr=subprocess.DEVNULL))
+        header = lambda value: {key: item for key, item in value.items()
+                                if key not in {"events", "last_sequence", "last_event_id"}}
+        if (raw_event_object_prefix_bytes(raw, 2158) != raw_event_object_prefix_bytes(frozen_raw, 2158)
+                or header(stream) != header(json.loads(frozen_raw))):
+            errors.append("F19A_TASK1_POSTCLOSE_FROZEN_INVALID")
+        changed = {"snapshot_id", "event_sequence", "updated_at", "last_event_id", "active_agent",
+                   "write_lease", "worker_lease", "next_safe_action", "repository", "active_work_instruction",
+                   "registry_refs", "next_work_package", "snapshot_hash", "runtime_next_action",
+                   "f19a_task1_postclose_fixture_binding"}
+        stable = lambda value: {key: item for key, item in value.items() if key not in changed}
+        repo_changed = {"local_head", "remote_head", "projection_mode", "head_relation", "worktree_status",
+                        "product_write_scope"}
+        stable_repo = lambda value: {key: item for key, item in value.items() if key not in repo_changed}
+        refs, old_refs = progress["registry_refs"], frozen["registry_refs"]
+        if (stable(progress) != stable(frozen)
+                or stable_repo(progress["repository"]) != stable_repo(frozen["repository"])
+                or {key: value for key, value in refs.items() if key != "progress_events"}
+                   != {key: value for key, value in old_refs.items() if key != "progress_events"}
+                or {key: value for key, value in refs["progress_events"].items() if key != "sha256"}
+                   != {key: value for key, value in old_refs["progress_events"].items() if key != "sha256"}):
+            errors.append("F19A_TASK1_POSTCLOSE_FROZEN_INVALID")
+        rows = stream["events"]
+        last_id = "evt_f19a_2161_task1_postclose_fixture_write_lease_issued"
+        if (len(rows) != 2161 or stream.get("last_sequence") != 2161
+                or stream.get("last_event_id") != last_id or progress.get("event_sequence") != 2161
+                or progress.get("last_event_id") != last_id or stream != json.loads(raw)
+                or refs["progress_events"].get("sha256") != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK1_POSTCLOSE_EVENT_INVALID")
+        for index, kind in enumerate(("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+                                      "WRITE_LEASE_ISSUED"), 2158):
+            row = rows[index]
+            expected = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task1_postclose_fixture_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK1_POSTCLOSE_FIXTURE", "subject_ref": subject,
+                "occurred_at": recorded, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(rows[index - 1])).hexdigest().upper(),
+                "details": row.get("details")}
+            if row != expected:
+                errors.append("F19A_TASK1_POSTCLOSE_EVENT_INVALID")
+        instruction, worker, write = (rows[index]["details"] for index in range(2158, 2161))
+        expected_instruction = {"path": wi, "sha256": wi_hash,
+            "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_POSTCLOSE_FIXTURE_REWORK",
+            "approval_ref": approval, "approval_sha256": approval_hash,
+            "spec_sha256": spec_hash, "plan_sha256": plan_hash,
+            "baseline_git_commit": base, "predecessor_event_sequence": 2158,
+            "package_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY", "accepted": False,
+            "developer_exact_paths": scope, "product_write_scope": []}
+        if (instruction != expected_instruction or _sha256(root / wi) != wi_hash
+                or _sha256(root / approval) != approval_hash
+                or _sha256(root / "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md") != spec_hash
+                or _sha256(root / "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md") != plan_hash):
+            errors.append("F19A_TASK1_POSTCLOSE_INSTRUCTION_INVALID")
+        common_lease = {"actor_id": actor, "subject_ref": subject, "status": "ACTIVE",
+            "issued_at": issued, "expires_at": expires, "lease_epoch": 75,
+            "execution_fencing_token": worker_token, "baseline_git_commit": base,
+            "dispatch_head": base, "path_scope": scope}
+        expected_worker = {**common_lease, "lease_id": worker_id, "fencing_token": worker_token}
+        expected_write = {**common_lease, "lease_id": write_id, "fencing_token": write_token,
+            "worker_lease_id": worker_id, "write_epoch": 75, "write_fencing_token": write_token,
+            "product_write_scope": []}
+        current_time = now or datetime.now(timezone.utc)
+        if (worker != expected_worker or write != expected_write or worker_token == write_token
+                or datetime.fromisoformat(expires) - datetime.fromisoformat(issued) != timedelta(hours=24)
+                or current_time.tzinfo is None
+                or not datetime.fromisoformat(issued) <= current_time < datetime.fromisoformat(expires)
+                or progress.get("worker_lease") != worker or progress.get("write_lease") != write):
+            errors.append("F19A_TASK1_POSTCLOSE_LEASE_INVALID")
+        expected_binding = {"status": "POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED", "package_id": "F-19A",
+            "predecessor_sequence": 2158, "predecessor_head": base,
+            "predecessor_regression": "CLOSED_G05_PASS_ADJACENT_57_PASS_5_FAIL_282_15_SECONDS",
+            "work_instruction_id": "WI-F19A-TASK1-POSTCLOSE-FIXTURE-20261007-001",
+            "work_instruction_path": wi, "work_instruction_sha256": wi_hash,
+            "approval_path": approval, "approval_sha256": approval_hash,
+            "spec_sha256": spec_hash, "plan_sha256": plan_hash,
+            "developer_exact_paths": scope, "product_write_scope": [],
+            "worker_lease_id": worker_id, "write_lease_id": write_id,
+            "detached_digest_path": digest_path, "next_safe_action": action,
+            "f20_overall_status": "REWORK_IN_PROGRESS", "release_decision": "DEFER",
+            "production": "NOT_EXECUTED", "event_sequence": 2161}
+        repository = progress["repository"]
+        if (progress.get("f19a_task1_postclose_fixture_binding") != expected_binding
+                or progress.get("active_work_instruction") != {
+                    "artifact_id": expected_binding["work_instruction_id"], "path": wi, "sha256": wi_hash,
+                    "revision": 1, "result_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
+                    "package_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
+                    "approval_classification": expected_instruction["classification"], "approval_ref": approval}
+                or progress.get("snapshot_id") != "snapshot-f19a-task1-postclose-fixture-start-seq2161"
+                or progress.get("updated_at") != recorded or progress.get("active_agent") != actor
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A",
+                                                       "status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY"}
+                or repository.get("projection_mode") != "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE"
+                or repository.get("local_head") != base or repository.get("remote_head") != base
+                or repository.get("head_relation") != "F19A_TASK1_POSTCLOSE_FIXTURE_PENDING_CHECKPOINT"
+                or repository.get("worktree_status") != "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED"
+                or repository.get("product_write_scope") != []):
+            errors.append("F19A_TASK1_POSTCLOSE_SCOPE_INVALID")
+        if (handoff.get("event_sequence") != 2161 or handoff.get("last_event_id") != last_id
+                or handoff.get("status") != "ACTIVE" or handoff.get("current_work_package") != "F-19A"
+                or handoff.get("active_agent") != actor or handoff.get("worker_lease") != worker_id
+                or handoff.get("write_lease") != write_id or handoff.get("repository_head") != base
+                or handoff.get("next_safe_action") != action):
+            errors.append("F19A_TASK1_POSTCLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", "docs/progress/build-progress.json"),
+                              ("handoff", "docs/progress/BUILD_HANDOFF.md")):
+            target = root / path
+            if (digest.get(section, {}).get("path") != path
+                    or digest.get(section, {}).get("bytes") != target.stat().st_size
+                    or digest.get(section, {}).get("file_sha256") != _sha256(target)):
+                errors.append("F19A_TASK1_POSTCLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("event_sequence") != 2161 or digest.get("self_reference") is not False
+                or bundle.get("_detached_digest_path") != digest_path):
+            errors.append("F19A_TASK1_POSTCLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK1_POSTCLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_task1_postclose_fixture_git(bundle):
+    root = Path(bundle["_root"])
+    base = "5d1e1788ee84bb10715f497414864ff589bb76c0"
+    upstream = "development/codex/f18-wsl-ops"
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                 "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+                 "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+                 "docs/work_orders/F-19A_TASK1_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                                           cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or head != base or remote != base or dirty - control - documents
+                or bundle["progress"]["repository"].get("local_head") != base
+                or bundle["progress"]["repository"].get("remote_head") != base):
+            return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
+
+
+def _validate_f19a_task1_postclose_fixture_closed(bundle, *, event_raw=None, now=None):
+    """Verify synthetic/future epoch75 closure without accepting F-19A."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    errors = []
+    action = "F19A_TASK2_API_DUAL_LEASE_PENDING"
+    reason = "F19A_TASK1_POSTCLOSE_FIXTURE_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    try:
+        binding = progress["f19a_task1_postclose_fixture_binding"]
+        checkpoint = binding["code_checkpoint"]
+        base = "5d1e1788ee84bb10715f497414864ff589bb76c0"
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or checkpoint == base):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_INVALID")
+        raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
+        frozen_raw = subprocess.check_output(["git", "show", f"{checkpoint}:docs/progress/progress-events.json"],
+                                             cwd=root, stderr=subprocess.DEVNULL)
+        base_raw = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
+                                           cwd=root, stderr=subprocess.DEVNULL)
+        frozen = json.loads(subprocess.check_output(["git", "show", f"{checkpoint}:docs/progress/build-progress.json"],
+                                                    cwd=root, stderr=subprocess.DEVNULL))
+        frozen_stream = json.loads(frozen_raw)
+        if (raw_event_object_prefix_bytes(raw, 2161) != raw_event_object_prefix_bytes(frozen_raw, 2161)
+                or raw_event_object_prefix_bytes(raw, 2158) != raw_event_object_prefix_bytes(base_raw, 2158)
+                or {key: value for key, value in stream.items() if key not in {"events", "last_sequence", "last_event_id"}}
+                   != {key: value for key, value in json.loads(base_raw).items()
+                       if key not in {"events", "last_sequence", "last_event_id"}}):
+            errors.append("F19A_TASK1_POSTCLOSE_FROZEN_INVALID")
+        frozen_rows = frozen_stream["events"]
+        expected_instruction = {"path": "docs/work_orders/F-19A_TASK1_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md",
+            "sha256": "E2E2DF09B854DEF3E4E3854AD16C8C1A298500587F5B03400C1202D1AEBF631F",
+            "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_POSTCLOSE_FIXTURE_REWORK",
+            "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+            "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+            "spec_sha256": "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247",
+            "plan_sha256": "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E",
+            "baseline_git_commit": base, "predecessor_event_sequence": 2158,
+            "package_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY", "accepted": False,
+            "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"],
+            "product_write_scope": []}
+        expected_actor = "developer-primary-f19a-pair-grant"
+        expected_subject = "F-19A/TASK1-POSTCLOSE-FIXTURE"
+        expected_worker_token = "f19a-task1-postclose-fixture-execution-fence-epoch-75-85e1ad69214e4ea9bea2113dc28cd988"
+        expected_write_token = "f19a-task1-postclose-fixture-write-fence-epoch-75-6c73596c1f144b34878cb0f34db8087d"
+        expected_worker_id = "worker-lease-f19a-task1-postclose-fixture-85e1ad69214e4ea9bea2113dc28cd988"
+        expected_write_id = "write-lease-f19a-task1-postclose-fixture-6c73596c1f144b34878cb0f34db8087d"
+        expected_common = {"actor_id": expected_actor, "subject_ref": expected_subject, "status": "ACTIVE",
+            "issued_at": "2026-10-07T01:36:00+00:00", "expires_at": "2026-10-08T01:36:00+00:00",
+            "lease_epoch": 75, "execution_fencing_token": expected_worker_token,
+            "baseline_git_commit": base, "dispatch_head": base,
+            "path_scope": expected_instruction["developer_exact_paths"]}
+        expected_worker = {**expected_common, "lease_id": expected_worker_id,
+                           "fencing_token": expected_worker_token}
+        expected_write = {**expected_common, "lease_id": expected_write_id,
+            "fencing_token": expected_write_token, "worker_lease_id": expected_worker_id,
+            "write_epoch": 75, "write_fencing_token": expected_write_token, "product_write_scope": []}
+        expected_active_binding = {
+            "status": "POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED", "package_id": "F-19A",
+            "predecessor_sequence": 2158, "predecessor_head": base,
+            "predecessor_regression": "CLOSED_G05_PASS_ADJACENT_57_PASS_5_FAIL_282_15_SECONDS",
+            "work_instruction_id": "WI-F19A-TASK1-POSTCLOSE-FIXTURE-20261007-001",
+            "work_instruction_path": expected_instruction["path"],
+            "work_instruction_sha256": expected_instruction["sha256"],
+            "approval_path": expected_instruction["approval_ref"],
+            "approval_sha256": expected_instruction["approval_sha256"],
+            "spec_sha256": expected_instruction["spec_sha256"],
+            "plan_sha256": expected_instruction["plan_sha256"],
+            "developer_exact_paths": expected_instruction["developer_exact_paths"],
+            "product_write_scope": [], "worker_lease_id": expected_worker_id,
+            "write_lease_id": expected_write_id,
+            "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+            "next_safe_action": "F19A_TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
+            "f20_overall_status": "REWORK_IN_PROGRESS", "release_decision": "DEFER",
+            "production": "NOT_EXECUTED", "event_sequence": 2161}
+        expected_active_instruction = {
+            "artifact_id": expected_active_binding["work_instruction_id"],
+            "path": expected_instruction["path"], "sha256": expected_instruction["sha256"],
+            "revision": 1, "result_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
+            "package_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
+            "approval_classification": expected_instruction["classification"],
+            "approval_ref": expected_instruction["approval_ref"]}
+        for index, kind in enumerate(("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+                                      "WRITE_LEASE_ISSUED"), 2158):
+            row = frozen_rows[index]
+            expected_row = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task1_postclose_fixture_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK1_POSTCLOSE_FIXTURE",
+                "subject_ref": expected_subject, "occurred_at": expected_common["issued_at"],
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(frozen_rows[index - 1])).hexdigest().upper(),
+                "details": (expected_instruction, expected_worker, expected_write)[index - 2158]}
+            if row != expected_row:
+                errors.append("F19A_TASK1_POSTCLOSE_FROZEN_INVALID")
+        if (len(frozen_rows) != 2161 or frozen_stream.get("last_sequence") != 2161
+                or frozen_stream.get("last_event_id") != "evt_f19a_2161_task1_postclose_fixture_write_lease_issued"
+                or frozen_rows[2158].get("details") != expected_instruction
+                or frozen_rows[2159].get("details") != expected_worker
+                or frozen_rows[2160].get("details") != expected_write
+                or frozen.get("event_sequence") != 2161
+                or frozen.get("last_event_id") != frozen_stream.get("last_event_id")
+                or frozen.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(frozen_raw).hexdigest().upper()
+                or frozen.get("snapshot_hash") != compute_snapshot_hash(frozen)
+                or frozen.get("snapshot_id") != "snapshot-f19a-task1-postclose-fixture-start-seq2161"
+                or frozen.get("f19a_task1_postclose_fixture_binding") != expected_active_binding
+                or frozen.get("active_work_instruction") != expected_active_instruction
+                or frozen.get("active_agent") != expected_actor
+                or frozen.get("next_safe_action") != expected_active_binding["next_safe_action"]
+                or frozen.get("runtime_next_action") != expected_active_binding["next_safe_action"]
+                or frozen.get("repository", {}).get("projection_mode") != "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE"
+                or frozen.get("repository", {}).get("local_head") != base
+                or frozen.get("repository", {}).get("remote_head") != base
+                or frozen.get("repository", {}).get("product_write_scope") != []
+                or frozen.get("worker_lease") != expected_worker
+                or frozen.get("write_lease") != expected_write):
+            errors.append("F19A_TASK1_POSTCLOSE_FROZEN_INVALID")
+        changed = {"snapshot_id", "event_sequence", "updated_at", "last_event_id", "active_agent",
+                   "write_lease", "worker_lease", "next_safe_action", "repository", "registry_refs",
+                   "next_work_package", "snapshot_hash", "runtime_next_action",
+                   "f19a_task1_postclose_fixture_binding",
+                   "completed_f19a_task1_postclose_fixture_write_lease",
+                   "completed_f19a_task1_postclose_fixture_worker_lease"}
+        stable = lambda value: {key: item for key, item in value.items() if key not in changed}
+        repo_changed = {"local_head", "remote_head", "projection_mode", "head_relation", "worktree_status"}
+        stable_repo = lambda value: {key: item for key, item in value.items() if key not in repo_changed}
+        refs, old_refs = progress["registry_refs"], frozen["registry_refs"]
+        if (stable(progress) != stable(frozen)
+                or stable_repo(progress["repository"]) != stable_repo(frozen["repository"])
+                or {key: value for key, value in refs.items() if key != "progress_events"}
+                   != {key: value for key, value in old_refs.items() if key != "progress_events"}
+                or {key: value for key, value in refs["progress_events"].items() if key != "sha256"}
+                   != {key: value for key, value in old_refs["progress_events"].items() if key != "sha256"}):
+            errors.append("F19A_TASK1_POSTCLOSE_FROZEN_INVALID")
+        rows = stream["events"]
+        last_id = "evt_f19a_2163_task1_postclose_fixture_worker_lease_revoked"
+        if (len(rows) != 2163 or stream.get("last_sequence") != 2163
+                or stream.get("last_event_id") != last_id or progress.get("event_sequence") != 2163
+                or progress.get("last_event_id") != last_id or stream != json.loads(raw)
+                or refs["progress_events"].get("sha256") != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_EVENT_INVALID")
+        worker, write = rows[2159]["details"], rows[2160]["details"]
+        close_at = rows[2162]["occurred_at"]
+        close_time = datetime.fromisoformat(close_at)
+        current_time = now or datetime.now(timezone.utc)
+        if (close_time.tzinfo is None or current_time.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= close_time
+                       < datetime.fromisoformat(worker["expires_at"])
+                or close_time > current_time or worker != frozen.get("worker_lease")
+                or write != frozen.get("write_lease")):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_INVALID")
+        for index, kind, details in (
+            (2161, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+            (2162, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            expected = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task1_postclose_fixture_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK1_POSTCLOSE_FIXTURE_CLOSE",
+                "subject_ref": "F-19A/TASK1-POSTCLOSE-FIXTURE", "occurred_at": close_at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(rows[index - 1])).hexdigest().upper(),
+                "details": details}
+            if rows[index] != expected:
+                errors.append("F19A_TASK1_POSTCLOSE_CLOSE_EVENT_INVALID")
+        expected_binding = {**frozen["f19a_task1_postclose_fixture_binding"],
+                            "status": "POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
+                            "code_checkpoint": checkpoint, "next_safe_action": action,
+                            "event_sequence": 2163}
+        if (binding != expected_binding
+                or binding.get("status") != "POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED"
+                or binding.get("next_safe_action") != action or binding.get("product_write_scope") != []
+                or progress.get("worker_lease") is not None or progress.get("write_lease") is not None
+                or progress.get("completed_f19a_task1_postclose_fixture_write_lease") != {
+                    **write, "status": "REVOKED", "revoked_at": close_at}
+                or progress.get("completed_f19a_task1_postclose_fixture_worker_lease") != {
+                    **worker, "status": "REVOKED", "revoked_at": close_at}
+                or progress.get("active_agent") is not None or progress.get("status") != "ACTIVE"
+                or progress.get("current_work_package") != "F-19A" or progress.get("updated_at") != close_at
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A",
+                                                      "status": "TASK2_API_DUAL_LEASE_PENDING"}
+                or progress.get("snapshot_id") != "snapshot-f19a-task1-postclose-fixture-close-seq2163"
+                or progress.get("active_work_instruction") != frozen.get("active_work_instruction")):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_INVALID")
+        if (_sha256(root / binding["work_instruction_path"]) != binding["work_instruction_sha256"]
+                or _sha256(root / binding["approval_path"]) != binding["approval_sha256"]
+                or _sha256(root / "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md") != binding["spec_sha256"]
+                or _sha256(root / "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md") != binding["plan_sha256"]):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_INVALID")
+        repo = progress["repository"]
+        if (repo.get("projection_mode") != "F19A_TASK1_POSTCLOSE_FIXTURE_CLOSED"
+                or repo.get("local_head") != checkpoint or repo.get("remote_head") != checkpoint
+                or repo.get("head_relation") != "F19A_TASK1_POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED"
+                or repo.get("worktree_status") != "F19A_TASK1_POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED"
+                or repo.get("product_write_scope") != []):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_INVALID")
+        if (handoff.get("event_sequence") != 2163 or handoff.get("last_event_id") != last_id
+                or handoff.get("status") != "ACTIVE" or handoff.get("current_work_package") != "F-19A"
+                or handoff.get("active_agent") is not None or handoff.get("worker_lease") is not None
+                or handoff.get("write_lease") is not None or handoff.get("repository_head") != checkpoint
+                or handoff.get("next_safe_action") != action):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", "docs/progress/build-progress.json"),
+                              ("handoff", "docs/progress/BUILD_HANDOFF.md")):
+            target = root / path
+            if (digest.get(section, {}).get("path") != path
+                    or digest.get(section, {}).get("bytes") != target.stat().st_size
+                    or digest.get(section, {}).get("file_sha256") != _sha256(target)):
+                errors.append("F19A_TASK1_POSTCLOSE_CLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("event_sequence") != 2163 or digest.get("self_reference") is not False
+                or bundle.get("_detached_digest_path") != binding.get("detached_digest_path")):
+            errors.append("F19A_TASK1_POSTCLOSE_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK1_POSTCLOSE_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_task1_postclose_fixture_closed_git(bundle):
+    root = Path(bundle["_root"])
+    base = "5d1e1788ee84bb10715f497414864ff589bb76c0"
+    upstream = "development/codex/f18-wsl-ops"
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                 "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+                 "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+                 "docs/work_orders/F-19A_TASK1_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                                           cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        checkpoint = bundle["progress"]["f19a_task1_postclose_fixture_binding"]["code_checkpoint"]
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or checkpoint == base):
+            return ["F19A_TASK1_POSTCLOSE_CLOSE_GIT_INVALID"]
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        control_delta = set(git("diff", "--name-only", "--no-renames", f"{base}..{checkpoint}").splitlines()) - {""}
+        close_delta = set(git("diff", "--name-only", "--no-renames", f"{checkpoint}..HEAD").splitlines()) - {""}
+        blobs_match = all(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                                                cwd=root, stderr=subprocess.DEVNULL) == (root / path).read_bytes()
+                          for path in control)
+        if (head != remote or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or not control <= control_delta or control_delta - control - documents
+                or close_delta - documents or dirty - documents or not blobs_match
+                or subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint],
+                                  cwd=root, capture_output=True).returncode != 0
+                or subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, head],
+                                  cwd=root, capture_output=True).returncode != 0
+                or bundle["progress"]["repository"].get("local_head") != checkpoint
+                or bundle["progress"]["repository"].get("remote_head") != checkpoint):
+            return ["F19A_TASK1_POSTCLOSE_CLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK1_POSTCLOSE_CLOSE_GIT_INVALID"]
+
+
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_POSTCLOSE_FIXTURE_CLOSED":
+        errors = _validate_f19a_task1_postclose_fixture_closed(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task1_postclose_fixture_closed_git(bundle))
+        return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE":
+        errors = _validate_f19a_task1_postclose_fixture(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task1_postclose_fixture_git(bundle))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK1_REGISTRATION_STORE_CLOSED":
         errors = _validate_f19a_task1_store_closed(bundle)
         if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
