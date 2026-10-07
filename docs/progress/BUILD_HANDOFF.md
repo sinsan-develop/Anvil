@@ -1,4 +1,6 @@
-# F-19A Task 3 종료 fixture R2 재작업 handoff
+# F-19A Task 3 종료 fixture R2 통제 checkpoint handoff
+
+Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `acf25937e10db593ed03ef53915f7193b8794208` local/private 동일, Main 집중18 PASS·G-05 seq2191 PASS·diff PASS, Developer 최종 통제71 PASS·인접107 PASS/2 기존 R48 기준선 FAIL, 독립 리뷰 C0/I0/M0. A2→C→P 정확 조상·커밋별 누적 경로, 종료 후 불변 Git fixture와 위조 음성을 검증했다. 이 문서/진행/digest는 C SHA에 결박하는 B 후보이며 자체 G-05·게시·clean 확인 전 임대 회수 금지. 제품/WSL/브라우저 변경0, F-19A 전체 미수락·Release DEFER.
 
 활성 A2 정합 보완(Main, 2026-10-07): seq2191 `runtime_next_action`의 Task4 pending 잔류를 독립 Important로 확인하고 R2_CONTROL_ONLY로 교정했다. 기존 A@d94는 보존하고 후속 docs-only A2 exact SHA를 bootstrap Git 기준으로 고정한다. 이 문서·snapshot/digest 게시 전 통제 code checkpoint·Task4 제품 write는 금지한다.
 
@@ -13,8 +15,8 @@
   "write_lease": "write-lease-f19a-task3-postclose-fixture-r2-0735c32f8f4540efa565e3892d30cb8f",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_CONTROL_ONLY",
-  "repository_head": "68b4b613a15a30044e91639d4837b3207b9b214b",
+  "next_safe_action": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSE_ONLY",
+  "repository_head": "acf25937e10db593ed03ef53915f7193b8794208",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
