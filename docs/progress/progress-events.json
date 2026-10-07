@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2191,
+  "last_sequence": 2193,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -101980,7 +101980,49 @@
       ],
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2192,
+    "event_id": "evt_f19a_2192_task3_postclose_fixture_r2_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSE",
+    "subject_ref": "F-19A/TASK3-POSTCLOSE-FIXTURE-R2",
+    "occurred_at": "2026-10-07T11:34:28+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "99EEF0FFD31F431F04BED0D4C7D80D411466FD70CA61D7B860E86A59F26118C5",
+    "details": {
+      "lease_id": "write-lease-f19a-task3-postclose-fixture-r2-0735c32f8f4540efa565e3892d30cb8f",
+      "write_fencing_token": "f19a-task3-postclose-fixture-r2-write-fence-epoch-81-0735c32f8f4540efa565e3892d30cb8f",
+      "reason": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2193,
+    "event_id": "evt_f19a_2193_task3_postclose_fixture_r2_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_CLOSE",
+    "subject_ref": "F-19A/TASK3-POSTCLOSE-FIXTURE-R2",
+    "occurred_at": "2026-10-07T11:34:28+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4B0710B78C9E8793A1A0DEC00CC9C1017E14EFF482B52EA9575F3A3444F4C00E",
+    "details": {
+      "lease_id": "worker-lease-f19a-task3-postclose-fixture-r2-3f515331f9184c368af81bc685521ad1",
+      "execution_fencing_token": "f19a-task3-postclose-fixture-r2-execution-fence-epoch-81-3f515331f9184c368af81bc685521ad1",
+      "reason": "F19A_TASK3_POSTCLOSE_FIXTURE_R2_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2191_task3_postclose_fixture_r2_write_lease_issued"
+  "last_event_id": "evt_f19a_2193_task3_postclose_fixture_r2_worker_lease_revoked"
 }

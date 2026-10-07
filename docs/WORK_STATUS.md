@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- F-19A Task3 종료 fixture R2 epoch81 lease 회수 후보(Main, 2026-10-07): 활성 B `8c8a3134fe7df7ca35c6f8636c6e810c657e774b` local/private clean·G-05 seq2191 PASS 뒤 원문 Event seq1~2191을 보존하고 seq2192 write→2193 worker revoke만 append. 완료 lease REVOKED·활성 null, 다음은 Task4 별도 WI/dual lease 대기. 종료 G-05·집중 회귀·문서 게시/clean 전 Task4 제품 write 금지; 기존 R48 2 FAIL·실제 PG15/WSL/브라우저 및 F-19A 전체 acceptance 미검증, Release DEFER/Production NOT_EXECUTED.
+
 - F-19A Task3 종료 fixture R2 통제 checkpoint 후보(Main, 2026-10-07): exact2 `acf25937e10db593ed03ef53915f7193b8794208` 기존 branch/private 동등. Developer 최종 통제71 PASS, 인접107 PASS/2 기존 R48 FAIL, Main 독립 집중18 PASS·G-05 seq2191 PASS·diff PASS, 독립 리뷰 C0/I0/M0, Ruff 신규0. A2→C 계보·커밋별 누적 경로와 종료 후 불변 fixture/위조 음성 해소. Event seq2191 활성 유지, 이 문서 B의 G-05·게시·clean 전 write→worker 회수 금지. 제품·DB·WSL·브라우저 write0, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 - F-19A Task3 R2 활성 문서 정합 보완(Main, 2026-10-07): 독립 리뷰에서 seq2191 활성 `next_safe_action=R2_CONTROL_ONLY`에 비해 `runtime_next_action=TASK4_DUAL_LEASE_PENDING`이 남은 Important 상태 불일치를 확인했다. 제품/범위 변경 없이 runtime_next_action을 R2_CONTROL_ONLY로 수정하고 snapshot/digest를 재결박한다. 기존 d94 발급 게시본은 불변으로 보존하고 후속 docs-only A2 게시 SHA를 새 bootstrap 정확 Git 기준으로 삼는다. 실제 코드 checkpoint와 Task4 제품 write는 보류, 종료 후 회귀는 미검증이다.
