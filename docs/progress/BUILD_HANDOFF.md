@@ -1,22 +1,26 @@
-# F-19A Task0 역사 Git fixture R2 종료 handoff
+# F-19A Task1 저장 원장 통제 bootstrap handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2153,
-  "last_event_id": "evt_f19a_2153_worker_lease_revoked",
+  "event_sequence": 2156,
+  "last_event_id": "evt_f19a_2156_task1_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task1-3109d00f63784eeeaa7435fd2660e1a2",
+  "write_lease": "write-lease-f19a-task1-587fa29e9fcf4813b46f0f2d55cc0975",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_ISSUE_PRODUCT_DUAL_LEASE_TASK1",
-  "repository_head": "d4ecfdc824a5289810c00d652ee24c058782675e",
+  "next_safe_action": "F19A_TASK1_CONTROL_BOOTSTRAP_ONLY",
+  "repository_head": "29dc2071be8f5cae4ba68a727c5e89d4ad8a12d4",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch74 통제2 코드 동결: Developer 정확2파일 SHA checker `3388E80E...`, test `D596545D...`; 첫 인접 61 PASS/1 FAIL 역사 collector 위임 보정 후 최종 62 PASS/363.11초, Main 독립 62 PASS/374.69초, 실제 G-05 seq2156 PASS, diff check0이다. 독립 C0/I0/M1은 checkpoint 허용, M1 제품4 잠금이 WI·사후 dirty 검사에 의존함을 남긴다. 제품4 변경0, 통제 checkpoint/private push·clean 재검증은 아직 미실행이고 다음은 정확8파일 checkpoint다.
+
+- Task1 승인 범위 인수: 실제 local/private `29dc2071be8f5cae4ba68a727c5e89d4ad8a12d4` 동일·clean G-05 seq2153 PASS·인접5파일 57 PASS/307.54초를 확인했다. 새 WI SHA `30C688A...`와 seq2154 WI→2155 worker→2156 write epoch74를 정확6파일(통제2/제품4)로 append-only 투영했다. 새 route 부재의 bootstrap G-05는 미통과 예상이며 이 시점 제품4 write는 잠금이다. Developer가 통제2 RED→GREEN을 완료하고 Main의 독립 C0/I0·active G-05·정확 control checkpoint/private 동일 SHA 전 제품4를 수정하지 않는다. F-19A 전체 ACTIVE·미수락, F-20/U01 REWORK, Release DEFER, Production NOT_EXECUTED, WSL/ysna 작업0.
 
 - 실제 종료 precommit 검증: seq2153 G-05 PASS, 인접5파일 57 PASS/326.58초, 독립 control C0/I0/M0, diff0이다. Event/완료 lease는 유효하고 dirty는 종료 control5만 남는다. 아직 final close commit/private push 및 그 후 clean G-05/회귀는 미실행, 제품 Task1 lease0이다. 다음은 정확 control5 checkpoint→actual remote SHA 동등 확인→clean G-05·57건 재검증이다.
 
