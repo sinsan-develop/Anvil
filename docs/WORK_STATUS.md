@@ -1,5 +1,9 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- F-19A Task4 통제 종료 후보 회귀 예외(Main, 2026-10-07): 실제 G-05 seq2198 PASS(exit0), 그러나 `test_f19a_start_projection.py -k task4`는 **4 PASS/1 FAIL(exit1)**. `test_task4_active_git_published_bootstrap_and_negative`가 불변 A 문서 blob을 읽으면서 Git HEAD/dirty는 현재 종료 후보 ROOT로 관찰하는 시점 혼용이다. 현재 코드·제품 QA 성공 증거로 승격하지 않는다. write→worker 회수 후보는 안전 기록·게시하되, 별도 통제 fixture WI/lease에서 역사 A Git 상태를 불변으로 재현하고 종료 후 전체 재실행 전 제품4/WSL write 금지. 정식 Developer FAILURE_REPORT0, 기존 R48 2 FAIL 및 실제 PG15/브라우저/F-19A acceptance 미검증, Release DEFER/Production NOT_EXECUTED.
+
+- F-19A Task4 통제 epoch82 lease 회수 후보(Main, 2026-10-07): 활성 B `b84c4bd6b9fd3fa80dfc1cf54d65f53c1dc7ce43` local/private clean·G-05 seq2196 PASS 뒤 원문 Event seq1~2196을 보존하고 seq2197 write→2198 worker revoke. 완료 lease REVOKED·활성 null, 다음은 QA 제품4 별도 WI/dual lease 대기. 종료 G-05/집중 회귀·문서 게시/clean 전 제품4·WSL/DB/브라우저 write 금지; 기존 R48 2 FAIL, F-19A 전체 미수락, Release DEFER/Production NOT_EXECUTED.
+
 - F-19A Task4 격리 QA 통제 checkpoint 후보(Main, 2026-10-07): exact2 `dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a` local/private 동일. Developer 통제 전체76 PASS·인접112 PASS/2 기존 R48 FAIL, Main 집중5 PASS·G-05 seq2196 PASS·diff PASS, 독립 리뷰 C0/I0/M0, Ruff 신규0. 활성 A `8068ea5e`→C 조상·커밋별 범위와 종료 후 불변 Git fixture 검증. Event seq2196 활성 유지, 이 문서 B의 G-05·게시·clean 전 write→worker 회수 금지. QA 제품4/DB/WSL/브라우저 write0, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 - F-19A Task4 격리 QA 통제 시작(Main, 2026-10-07): 종료 `897b0b660b9979794cc83c7ed69240a0be8bb9cc` clean/private·G-05 seq2193 PASS·통제 전체71 PASS 기준. 기존 승인 Plan Task4의 WI SHA `D52149FE7114B595FD3D058E45659E3873835E2E311030B51A64E7DC2E16C637`, Event seq2194 WI→2195 worker→2196 write, epoch82 24시간·서로 다른 token, Developer 통제 정확2·제품 scope0. 통제 route 새 구현 전 G-05 RED 예상이며 PASS가 아니다. QA 제품4/WSL/DB/브라우저 write0, 정식 실패보고0, 다음은 통제 RED→GREEN·독립 리뷰·checkpoint/private. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.

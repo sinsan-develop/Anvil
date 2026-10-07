@@ -1,4 +1,6 @@
-# F-19A Task 4 격리 QA 통제 checkpoint handoff
+# F-19A Task 4 격리 QA 통제 lease 회수 handoff
+
+Task4 통제 epoch82 종료 투영 후보(Main, 2026-10-07): 활성 B `b84c4bd6b9fd3fa80dfc1cf54d65f53c1dc7ce43` clean/private·G-05 seq2196 PASS 뒤 Event 원문 seq1~2196을 보존해 seq2197 write→2198 worker revoke만 append했다. 두 lease REVOKED·활성 null, 다음은 Task4 제품4 별도 WI/dual lease. 종료 G-05·회귀·문서 게시/clean 확인 전 제품/WSL/DB/브라우저 write 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 통제 C checkpoint(Main, 2026-10-07): exact2 `dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a` local/private 동일, Developer 통제76 PASS·인접112 PASS/2 기존 R48 FAIL, Main 집중5 PASS·G-05 seq2196 PASS·diff PASS, 독립 리뷰 C0/I0/M0. 이 문서/진행/digest는 C SHA 결박 B 후보이며 B G-05·게시·clean 확인 전 lease 회수·제품4 write 금지. WSL/DB/브라우저 미실행, F-19A 미수락·Release DEFER.
 
@@ -12,16 +14,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2196,
-  "last_event_id": "evt_f19a_2196_task4_isolated_qa_write_lease_issued",
+  "event_sequence": 2198,
+  "last_event_id": "evt_f19a_2198_task4_isolated_qa_control_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-isolated-qa-control-967ffd99104440e4bec1d21173faec03",
-  "write_lease": "write-lease-f19a-task4-isolated-qa-control-931148c5d4fe4a1e8db7ea0ff6c90bd8",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_CONTROL_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_PRODUCT_DUAL_LEASE_PENDING",
   "repository_head": "dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"

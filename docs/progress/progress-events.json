@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2196,
+  "last_sequence": 2198,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102126,7 +102126,49 @@
       "write_fencing_token": "f19a-task4-isolated-qa-write-fence-epoch-82-931148c5d4fe4a1e8db7ea0ff6c90bd8",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2197,
+    "event_id": "evt_f19a_2197_task4_isolated_qa_control_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_ISOLATED_QA_CONTROL_CLOSE",
+    "subject_ref": "F-19A/TASK4-ISOLATED-QA",
+    "occurred_at": "2026-10-07T12:16:44+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "296444BF8AECA3915E7F90BBA0C43C8C2B97DF3585FA952E8241AABD8CB43CDC",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-isolated-qa-control-931148c5d4fe4a1e8db7ea0ff6c90bd8",
+      "write_fencing_token": "f19a-task4-isolated-qa-write-fence-epoch-82-931148c5d4fe4a1e8db7ea0ff6c90bd8",
+      "reason": "F19A_TASK4_CONTROL_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2198,
+    "event_id": "evt_f19a_2198_task4_isolated_qa_control_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_ISOLATED_QA_CONTROL_CLOSE",
+    "subject_ref": "F-19A/TASK4-ISOLATED-QA",
+    "occurred_at": "2026-10-07T12:16:44+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4AAF70E5E7687280FE0CF2980812AC7D3578A279F255C4593459280E92800650",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-isolated-qa-control-967ffd99104440e4bec1d21173faec03",
+      "execution_fencing_token": "f19a-task4-isolated-qa-execution-fence-epoch-82-967ffd99104440e4bec1d21173faec03",
+      "reason": "F19A_TASK4_CONTROL_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2196_task4_isolated_qa_write_lease_issued"
+  "last_event_id": "evt_f19a_2198_task4_isolated_qa_control_worker_lease_revoked"
 }
