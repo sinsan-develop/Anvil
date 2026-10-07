@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task1-postclose-closed-fixture-start-seq2166",
+  "snapshot_id": "snapshot-f19a-task1-postclose-closed-fixture-checkpoint-seq2166",
   "event_sequence": 2166,
   "updated_at": "2026-10-07T03:44:29+00:00",
   "last_event_id": "evt_f19a_2166_task1_postclose_closed_fixture_write_lease_issued",
@@ -817,13 +817,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "cd5f6984757fe30f769b391f3a65ff14b048e0d5",
+    "local_head": "2e9af50d2d9eb886d6eacf3ef137434ca60aa7dc",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "cd5f6984757fe30f769b391f3a65ff14b048e0d5",
+    "remote_head": "2e9af50d2d9eb886d6eacf3ef137434ca60aa7dc",
     "projection_mode": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED",
+    "head_relation": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1257,7 +1257,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED",
+    "worktree_status": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1977,7 +1977,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "57382C59D6B7961D5F54CC4AEEBFE0CB72E25A710B82772B293A1E4169A69741",
+  "snapshot_hash": "5794F7965AA2677CAE868BF3F6EFBBEDCDB21825D1AE0BE9167F92DA086FA6FF",
   "runtime_next_action": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_REWORK_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -23491,7 +23491,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task1_postclose_closed_fixture_binding": {
-    "status": "POSTCLOSE_CLOSED_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED",
+    "status": "POSTCLOSE_CLOSED_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
     "package_id": "F-19A",
     "predecessor_sequence": 2163,
     "predecessor_head": "cd5f6984757fe30f769b391f3a65ff14b048e0d5",
@@ -23512,7 +23512,8 @@
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
-    "event_sequence": 2166
+    "event_sequence": 2166,
+    "code_checkpoint": "2e9af50d2d9eb886d6eacf3ef137434ca60aa7dc"
   },
   "f19a_task1_postclose_fixture_binding": {
     "status": "POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
