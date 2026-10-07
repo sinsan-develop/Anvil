@@ -1,5 +1,7 @@
 # F-19A Task 4 post-QA report control 활성 handoff
 
+활성 A3 정합 보완(Main, 2026-10-08): `registry_refs.progress_events.sha256`가 부모 seq2213 Event 파일 해시를 계속 가리켜 새 seq2216 Event 파일과 불일치했고, `next_work_package.status`도 이전 `TASK4_WSL_QA_PENDING`으로 남았다. 현 Event SHA `3B8332915E545F48F13F36AB94F1F294EA960C292C359F2F73C4D336E4D06BB0`와 현 활성 상태 `TASK4_POST_QA_REPORT_CONTROL_ACTIVE`로만 교정한다. Event 원문·WI/lease·제품 scope는 변경하지 않는다. A3 docs-only 게시·clean 전 Developer 코드 write 금지.
+
 활성 A2 정합 보완(Main, 2026-10-08): `repository.product_write_scope`에 epoch85 종료 제품3 경로가 남아 WI·seq2216 활성 write lease의 제품0과 충돌했다. 현재 repository 필드만 `[]`로 교정하고 역사 epoch85 binding/lease·원문 Event는 보존했다. `repository.local_head`·`remote_head`의 `4bbad...`는 이전 제품 code checkpoint anchor이며 실제 현재 Git HEAD/private는 별도로 검증한다. 이 A2 docs-only 게시·clean 전에 Developer 코드 write 금지.
 
 WSL-server 실제 QA 보고서 `docs/04_test_reports/F-19A_TASK4_WSL_QA_REPORT.md`는 commit `1b6629fa9150eb48d9ed6ebe66a4c6e33b6db8ec`에서 추가되었고, 기존 epoch85 종료 Git 검증의 후속 경로 5개 밖이어서 G-05 `F19A_TASK4_ISSUER_CLOSE_GIT_INVALID`이다. 보고서 SHA256 `5C0D7819BDDBDCE83AB51AF4782BD3501CA240151BFD974614B5A02DA75124CB`, blob `103aaa7c4ebececa02caaa3341696a87230bc312`와 원문 seq2213을 보존한다. Main은 비의미 WI `1EB5FE2A204F3BDFF89A1812DE255E8610961D100025B6DF4144345DE2709822`, Event seq2214 WI→2215 worker→2216 write, epoch86 분리 24시간 token을 결박했다. Developer는 통제 코드 정확2·제품0만 TDD 수정한다. Bootstrap G-05 RED는 PASS가 아니다. 독립 리뷰·C/B private clean·lease 회수 전 Worker/브라우저 다음 QA 금지. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.

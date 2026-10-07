@@ -1600,12 +1600,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-    "sha256": "300786A772D366778DD9E055BFD7A6A7DA993D44D54756A51AB65FCDEAE6DC48"
+      "sha256": "3B8332915E545F48F13F36AB94F1F294EA960C292C359F2F73C4D336E4D06BB0"
     }
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK4_WSL_QA_PENDING"
+    "status": "TASK4_POST_QA_REPORT_CONTROL_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -1997,7 +1997,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "1D932347CDC4F166CD6AE146A70A1720BF6F7DAD13E003ADECE5A7FA92B2EDC1",
+  "snapshot_hash": "579337CF8B81E1D599303815E98680D5CDC29D8C0659E1B066C936D57D90F34A",
   "runtime_next_action": "F19A_TASK4_POST_QA_REPORT_CONTROL_ACTIVE",
   "seq527_clean_review": {
     "event_sequence": 527,
