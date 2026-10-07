@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2208,
+  "last_sequence": 2211,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102482,7 +102482,72 @@
       "execution_fencing_token": "f19a-task4-product-qa-execution-fence-epoch-84-b3d3c2e4a84a4d72a89c58d7a1d0ac07",
       "reason": "F19A_TASK4_PRODUCT_QA_LOCAL_VALIDATED_ISSUER_REVISION_PENDING_F19A_NOT_ACCEPTED"
     }
+  },
+  {
+    "sequence": 2209,
+    "event_id": "evt_f19a_2209_task4_qa_issuer_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_QA_ISSUER_REVISION",
+    "subject_ref": "F-19A/TASK4-QA-ISSUER-REVISION",
+    "occurred_at": "2026-10-07T14:46:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "68C560A623BDD1C2ED5E49AEBA32F17FA58D18FB1239D428473C1A71F756CA97",
+    "details": {
+      "path": "docs/work_orders/F-19A_TASK4_QA_ISSUER_REVISION_WORK_INSTRUCTION.md",
+      "sha256": "84D508A6022A8E52B3FD5D5D68DA94C525710DCD4DDADD7E1172FDF13004D6F8",
+      "classification": "MAIN_INTERNAL_QA_ISSUER_NON_SEMANTIC",
+      "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "spec_sha256": "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247",
+      "plan_sha256": "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E",
+      "baseline_git_commit": "6f96a6422914faffa6249b1445b5719d90bf0ced",
+      "predecessor_event_sequence": 2208,
+      "package_status": "TASK4_QA_ISSUER_REVISION_ACTIVE",
+      "accepted": false,
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py", "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/compose.f18.oidc.yml", "tests/deploy/test_f18_oidc_qa_issuer.py"],
+      "product_write_scope": ["deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/compose.f18.oidc.yml", "tests/deploy/test_f18_oidc_qa_issuer.py"]
+    }
+  },
+  {
+    "sequence": 2210,
+    "event_id": "evt_f19a_2210_task4_qa_issuer_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_QA_ISSUER_REVISION",
+    "subject_ref": "F-19A/TASK4-QA-ISSUER-REVISION",
+    "occurred_at": "2026-10-07T14:46:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A19696BCF2793C12C36CAF39B1674D61067A5B0DE58CFBEE343F946F74836031",
+    "details": {"lease_id":"worker-lease-f19a-task4-qa-issuer-8f7b5ca9b30c433582793a387e6e5fcd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-QA-ISSUER-REVISION","status":"ACTIVE","issued_at":"2026-10-07T14:46:19+00:00","expires_at":"2026-10-08T14:46:19+00:00","lease_epoch":85,"fencing_token":"f19a-task4-qa-issuer-execution-fence-epoch-85-8f7b5ca9b30c433582793a387e6e5fcd","execution_fencing_token":"f19a-task4-qa-issuer-execution-fence-epoch-85-8f7b5ca9b30c433582793a387e6e5fcd","baseline_git_commit":"6f96a6422914faffa6249b1445b5719d90bf0ced","dispatch_head":"6f96a6422914faffa6249b1445b5719d90bf0ced","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","deploy/wsl/oidc_qa_issuer.py","deploy/wsl/compose.f18.oidc.yml","tests/deploy/test_f18_oidc_qa_issuer.py"]}
+  },
+  {
+    "sequence": 2211,
+    "event_id": "evt_f19a_2211_task4_qa_issuer_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_QA_ISSUER_REVISION",
+    "subject_ref": "F-19A/TASK4-QA-ISSUER-REVISION",
+    "occurred_at": "2026-10-07T14:46:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "DFF0C4DD3DA45BC0BDBBBC1340F2DE960D2BE8435D4E671B6F14CB6E3E992256",
+    "details": {"lease_id":"write-lease-f19a-task4-qa-issuer-7ae7adc5e1384cb2b38cb2075a78363b","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-QA-ISSUER-REVISION","status":"ACTIVE","issued_at":"2026-10-07T14:46:19+00:00","expires_at":"2026-10-08T14:46:19+00:00","lease_epoch":85,"fencing_token":"f19a-task4-qa-issuer-write-fence-epoch-85-7ae7adc5e1384cb2b38cb2075a78363b","execution_fencing_token":"f19a-task4-qa-issuer-execution-fence-epoch-85-8f7b5ca9b30c433582793a387e6e5fcd","baseline_git_commit":"6f96a6422914faffa6249b1445b5719d90bf0ced","dispatch_head":"6f96a6422914faffa6249b1445b5719d90bf0ced","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","deploy/wsl/oidc_qa_issuer.py","deploy/wsl/compose.f18.oidc.yml","tests/deploy/test_f18_oidc_qa_issuer.py"],"worker_lease_id":"worker-lease-f19a-task4-qa-issuer-8f7b5ca9b30c433582793a387e6e5fcd","write_epoch":85,"write_fencing_token":"f19a-task4-qa-issuer-write-fence-epoch-85-7ae7adc5e1384cb2b38cb2075a78363b","product_write_scope":["deploy/wsl/oidc_qa_issuer.py","deploy/wsl/compose.f18.oidc.yml","tests/deploy/test_f18_oidc_qa_issuer.py"]}
   }
   ],
-  "last_event_id": "evt_f19a_2208_task4_product_qa_worker_lease_revoked"
+  "last_event_id": "evt_f19a_2211_task4_qa_issuer_write_lease_issued"
 }

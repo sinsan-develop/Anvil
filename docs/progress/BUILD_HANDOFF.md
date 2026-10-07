@@ -1,4 +1,6 @@
-# F-19A Task 4 격리 QA 제품 종료 handoff
+# F-19A Task 4 QA issuer revision 시작 handoff
+
+Task4 QA issuer epoch85 시작(Main, 2026-10-07): epoch84 종료 `6f96a6422914faffa6249b1445b5719d90bf0ced` clean/private·G-05 seq2208 PASS·종료 집중16 PASS를 기준으로 비의미 WI `84D508A6022A8E52B3FD5D5D68DA94C525710DCD4DDADD7E1172FDF13004D6F8`를 결박했다. Event seq2209 WI→2210 worker→2211 write, epoch85 24시간·서로 다른 token, Developer 제품 정확3/통제 정확2다. QA issuer는 기본 synthetic subject를 보존하고 두 값만 허용하며 Compose issuer 서비스에만 전달한다. 새 route 전 bootstrap G-05 RED는 PASS 아님. 로컬 TDD·독립 검토·checkpoint/private·lease 종료 전 WSL 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 제품 epoch84 lease 종료 후보(Main, 2026-10-07): 활성 B `ed76138f5a017f62f9e011dc472e47b613139e8a` local/private 동일·clean·G-05 seq2206 PASS 뒤 원문 Event seq1~2206 보존, seq2207 write→2208 worker revoke만 append했다. 두 lease REVOKED·활성 null, 다음은 QA issuer의 실제 두 actor subject 발급을 위한 별도 비의미 WI/dual lease. 종료 G-05·회귀·문서 게시/clean 전 issuer·WSL write 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
@@ -26,17 +28,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2208,
-  "last_event_id": "evt_f19a_2208_task4_product_qa_worker_lease_revoked",
+  "event_sequence": 2211,
+  "last_event_id": "evt_f19a_2211_task4_qa_issuer_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-qa-issuer-8f7b5ca9b30c433582793a387e6e5fcd",
+  "write_lease": "write-lease-f19a-task4-qa-issuer-7ae7adc5e1384cb2b38cb2075a78363b",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_QA_ISSUER_REVISION_PENDING",
-  "repository_head": "8c3127a5a0de986401ef5aabf1f77c85901a7aa2",
+  "next_safe_action": "F19A_TASK4_QA_ISSUER_REVISION_ACTIVE",
+  "repository_head": "6f96a6422914faffa6249b1445b5719d90bf0ced",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
