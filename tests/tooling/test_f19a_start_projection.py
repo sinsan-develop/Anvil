@@ -4928,14 +4928,21 @@ class F19AStartProjectionTests(unittest.TestCase):
                 def output(command, *args, **kwargs):
                     tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
                         "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return b"8ebfc2882b2bf735b8a67711a581e0900563e4cc\n"
+                    if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                        return (("0" * 40 if scenario == "remote"
+                            else "8ebfc2882b2bf735b8a67711a581e0900563e4cc") + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
                     if tail == ["status", "--porcelain=v1", "-uall"]:
                         if scenario == "allowed_product_dirty":
                             return b" M deploy/wsl/oidc_qa_issuer.py\n"
                         if scenario == "unrelated_dirty":
                             return b" M packages/api/runtime.py\n"
                         return b""
-                    if scenario == "remote" and tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
-                        return ("0" * 40 + "\n").encode()
                     return original(command, *args, **kwargs)
                 with patch.object(subprocess, "check_output", side_effect=output):
                     result = collector(bundle)
