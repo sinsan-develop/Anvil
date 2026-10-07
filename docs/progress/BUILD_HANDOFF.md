@@ -1,4 +1,6 @@
-# F-19A Task 4 세 번째 actor QA fixture 시작 handoff
+# F-19A Task 4 세 번째 actor QA fixture checkpoint handoff
+
+epoch88 코드 checkpoint(Main, 2026-10-08): Developer의 허용 정확8 파일 `26fd154054f364ed34447303ce9831c34ddd37da`가 local/private 동일·clean이다. Main 독립 통제7 PASS·제품51 PASS/PG opt-in 1 SKIP·G-05 seq2226 PASS, 파일 SHA·diff 범위 일치, Critical/Important 확정 결함0이다. Developer 인접149 PASS/기존 R48 authority2 FAIL, 브라우저 네 phase self-test PASS이나 실제 Chromium/PG15/WSL-server는 아직 미실행이다. 이 문서 B는 C SHA를 결박하는 활성 종료 후보이며 B G-05·private 게시·clean 확인 전 write→worker lease를 회수하지 않는다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch88 시작(Main, 2026-10-08): epoch87 종료 `df253d71a4c521df69b97bdc249dd5d7e2081fb6` local/private clean·G-05 seq2223 PASS·역사106 PASS를 기준으로 비의미 WI `A02DECBCBDD930F187996E87BBA0E2F31313458345B9FA5733CF2FBA2BB01783`를 발행했다. Event seq2224 WI→2225 worker→2226 write, 24시간·분리 token·Developer 통제 정확2/QA 제품 정확6을 결박한다. 세 번째 합성 subject/전용 `dashboard:read` role의 무 grant 200 빈 목록과 기존 admin coarse403을 분리한다. 새 checker route 전 bootstrap G-05 RED는 PASS가 아니다. 이 절편은 로컬 QA harness·테스트에 한정하고 실제 WSL-server 자원/브라우저는 C/B/lease 종료 후 Main이 exact SHA로 검증한다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -63,8 +65,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-third-actor-qa-fixture-12c7a9886589434e8ddc51da6377ce4a",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_ACTIVE",
-  "repository_head": "ceb9dcba85c0b170643acda261c07793a32023d3",
+  "next_safe_action": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_CLOSE_ONLY",
+  "repository_head": "26fd154054f364ed34447303ce9831c34ddd37da",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
