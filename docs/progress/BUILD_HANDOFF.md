@@ -1,22 +1,24 @@
-# F-19A Task1 종료 후 역사 fixture 재작업 handoff
+# F-19A Task1 종료 후 closed fixture 재작업 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2163,
-  "last_event_id": "evt_f19a_2163_task1_postclose_fixture_worker_lease_revoked",
+  "event_sequence": 2166,
+  "last_event_id": "evt_f19a_2166_task1_postclose_closed_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task1-postclose-closed-fixture-bc3cc49e9ea4450eb95aa1667aba287e",
+  "write_lease": "write-lease-f19a-task1-postclose-closed-fixture-3a96ee051e304ab989aaefd2c08eea40",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK2_API_DUAL_LEASE_PENDING",
-  "repository_head": "8530f0e62c72f455c014f1b8aa78933dabd1d85b",
+  "next_safe_action": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_REWORK_ONLY",
+  "repository_head": "cd5f6984757fe30f769b391f3a65ff14b048e0d5",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch76 closed fixture 재작업 발급(Main, 2026-10-07): clean/실원격 동일 NON-GREEN 기준 SHA `cd5f6984757fe30f769b391f3a65ff14b048e0d5`, closed G-05 seq2163 PASS와 인접 64 PASS/7 FAIL을 확인했다. 새 비제품 WI SHA `8503840C...`의 정확 checker/test2·제품 scope0을 고정하고 frozen seq1~2163 뒤 seq2164 WI→2165 worker→2166 write를 append-only 기록했다. epoch76 서로 다른 execution/write token, 24시간, 단일 Developer다. 새 checker route가 아직 없어 bootstrap G-05 RED는 PASS가 아니며 제품/DB/WSL/Task2 API write0. 다음은 Developer의 7 RED→GREEN, 독립 검토, 전체 71 PASS, 정확 checkpoint/private, 임대 회수다. F-19A 전체 미수락이다.
 
 - epoch75 종료 후 회귀 NON-GREEN(Main, 2026-10-07): closed G-05 seq2163 PASS, frozen Event 1~2161 raw prefix 동일·write→worker 회수 순서 확인. 인접5파일은 64 PASS/7 FAIL(433.37초, exit1)이며 7건 모두 종료 후 `test_f19a_start_projection.py`의 active/closed live fixture 혼용 또는 이미 닫힌 Event footer에 종료 Event 재부착하는 합성 가정이다. 제품/DB/WSL 실패로 단정하지 않는다. 현재 종료 통제5를 NON-GREEN checkpoint/private 보존한 뒤 새 비제품 WI·dual lease로 불변 P Git blob 기반 fixture를 고친다. Task2 API lease는 잠금, F-19A 전체 미수락이다.
 
