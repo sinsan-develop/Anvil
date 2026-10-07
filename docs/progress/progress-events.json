@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2236,
+  "last_sequence": 2238,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103227,7 +103227,49 @@
       "write_fencing_token": "f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2237,
+    "event_id": "evt_f19a_2237_task4_epoch89_post_close_fixture_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK4-EPOCH89-POST-CLOSE-FIXTURE",
+    "occurred_at": "2026-10-07T23:17:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4C99B562D7F08DF57B580C9062D9825E8646E366B2B6C87C853118ACDEA94640",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-epoch89-post-close-fixture-abf16f5a378040318adf78e019aecc06",
+      "write_fencing_token": "f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06",
+      "reason": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2238,
+    "event_id": "evt_f19a_2238_task4_epoch89_post_close_fixture_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK4-EPOCH89-POST-CLOSE-FIXTURE",
+    "occurred_at": "2026-10-07T23:17:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "F1964A241DD1A66C2A062FA9EB48E0E5D5DF4EC7F02A3993B45FAFD43D0669DF",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-epoch89-post-close-fixture-e641b82283ae46f6b3f6f48fe337397f",
+      "execution_fencing_token": "f19a-task4-epoch89-post-close-fixture-execution-fence-epoch-90-e641b82283ae46f6b3f6f48fe337397f",
+      "reason": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2236_task4_epoch89_post_close_fixture_write_lease_issued"
+  "last_event_id": "evt_f19a_2238_task4_epoch89_post_close_fixture_worker_lease_revoked"
 }
