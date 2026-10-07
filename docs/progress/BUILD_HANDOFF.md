@@ -11,12 +11,22 @@
   "write_lease": "write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK2_REGISTRATION_API_PRODUCT_RED_TESTS_ONLY",
-  "repository_head": "716a88393838af89609bf822c59d3aab314b8ee4",
+  "next_safe_action": "F19A_TASK2_REGISTRATION_API_CLOSE_ONLY",
+  "repository_head": "5565c29ddff33677b74ff041990977990bcecb6b",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 2 제품 SHA 결박 통제(Main, 2026-10-07): 제품 `5565c29ddff33677b74ff041990977990bcecb6b`와 private ref 동일, seq2176 active Event/epoch78 lease 유지, product checkpoint·repository/HANDOFF/digest를 `CLOSE_ONLY`로 투영했다. 실제 G-05 seq2176 PASS(exit0), Task2 집중10 PASS/43 deselected/28.78초(exit0), diff check exit0. 이 문서4는 미게시이며 commit/private→clean G-05/회귀 후 write→worker 순서로 lease를 회수한다. F-19A 전체 미수락, WSL/DB/브라우저/Task3/U01 미검증, Release DEFER/Production NOT_EXECUTED.
+
+- Task 2 제품 checkpoint(Main, 2026-10-07): 기존 단일 branch 제품6 `5565c29ddff33677b74ff041990977990bcecb6b`를 지정 private `development`에 push하고 실원격 동일 확인. 이전 리뷰 C1/I1을 0020 전용 실제 OIDC host/readiness·Operations DB signal, 기존 0019 route 비공개/회귀, 실제 세션 actor POST/PUT/GET 및 여섯 route 401·다섯 mutation 악성 JSON 400 RED→GREEN으로 해소했다. 재리뷰 C0/I0/M0, Developer와 Main 각각 인접11파일 147 PASS/1 SKIP(격리 PG15 opt-in 미구성), Main Ruff6·diff exit0. 제품 checkpoint는 로컬 API 계약만 증명하며 실제 0020 PG15/WSL/HTTPS/브라우저·Task3/U01은 미검증; F-19A 전체 미수락, Release DEFER/Production NOT_EXECUTED. 다음은 seq2176 활성 투영 G-05·통제 checkpoint/private 후 seq2177~2178 lease 회수다.
+
+- Task 2 API 독립 C1/I1 재작업(Main/Reviewer, 2026-10-07): 제품 exact5 후보의 Developer/Main 로컬 API·OIDC 인접6파일 각각 93 PASS/1 SKIP, Ruff·diff PASS이나 제품 dirty로 실제 G-05는 Git INVALID(exit1). 0020 등록 원장과 OIDC readiness/Operations DB signal의 0019 고정이 충돌해 0020에서 준비 503이며, 실제 OIDC actor·0020 ASGI 통합 및 악성 JSON/401 음성 증거가 부족하다. 독립 C1/I1/M0, 제품 checkpoint 보류. 기존 0019 회귀 보존과 0020 정확 검증을 같은 허용 제품6에서 RED→GREEN한다. F-19A 전체 미수락.
+
+- Task 2 API 첫 RED(Main/Developer, 2026-10-07): 신규 test1 선작성 후 여섯 route 부재 1 FAIL 실측. 미등록 route의 StaticFiles fallback 지연으로 전체 실행은 중단했으며 PASS 아님. 정확 registry 등록 뒤 기능·오류·권한 음성을 순차 RED→GREEN한다. 구현 파일 write0, F-19A 미수락.
+
+- Task 2 제품 RED gate 개방(Main, 2026-10-07): B 문서4 checkpoint/private `361fc727eccb68d27fc2b28687d2bb4475b4b3f8` 실원격 동일·clean, 게시 후 G-05 seq2176 PASS와 인접5파일 91 PASS/347.51초(exit0), FAIL0/SKIP0. 통제2 독립 C0/I0/M0 충족, 같은 epoch78 제품6의 테스트 우선 RED만 착수 가능하다. 제품/DB/WSL·Task3 구현은 미실행, F-19A 전체 미수락.
 
 - Task 2 B/C2 사전 GREEN(Main, 2026-10-07): test-only C2 `716a88393838af89609bf822c59d3aab314b8ee4` 실제 원격 동일, seq2176 B G-05 PASS(exit0), 인접5파일 91 PASS/347.79초(exit0), FAIL0/SKIP0·diff0·제품6 diff0. 문서4 B checkpoint/private와 게시 후 clean 재확인 전 제품6 RED 테스트 gate 잠금, F-19A 전체 미수락.
 
