@@ -1,4 +1,6 @@
-# F-19A Task 4 QA issuer revision checkpoint handoff
+# F-19A Task 4 QA issuer revision 종료 handoff
+
+Task4 QA issuer epoch85 lease 종료 후보(Main, 2026-10-08): 활성 B2 `43d858ba84434fabeb65c55d9a99a4bf3460be65` local/private 동일·clean·G-05 seq2211 PASS 뒤 원문 Event seq1~2211 보존, seq2212 write→2213 worker revoke만 append했다. 두 lease REVOKED·활성 null, 다음은 WSL-server 격리 QA exact SHA PG15/OIDC 두 actor/HTTPS/Chromium 실측이다. 종료 G-05·집중/역사 회귀·게시/clean 및 사전 WORK_STATUS 자원 identity/수명/정리 기록 전 WSL 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 QA issuer epoch85 C2 test fixture checkpoint(Main, 2026-10-08): 종료 집중에서 역사 A bundle과 현재 B Git HEAD 혼용 1 FAIL을 확인해 미게시 종료 후보를 활성 B로 복구했다. 동일 epoch85 허용 test1만 수정한 `4bbad5250029a109e5e5e519200be7ad3d6da01d`가 local/private 동일·clean, Developer 집중6 PASS·역사 전체93 PASS, 독립 Reviewer C0/I0/M0·단독1 PASS다. 이전 C `feb2eb57`과 활성 B1 `1d8814f2`는 이력으로 보존하고 이 문서 B2에서 checkpoint를 C2로 재결박한다. B2 G-05/게시/clean 및 종료 후 재실행 전 lease 회수·WSL 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
@@ -32,16 +34,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2211,
-  "last_event_id": "evt_f19a_2211_task4_qa_issuer_write_lease_issued",
+  "event_sequence": 2213,
+  "last_event_id": "evt_f19a_2213_task4_qa_issuer_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-qa-issuer-8f7b5ca9b30c433582793a387e6e5fcd",
-  "write_lease": "write-lease-f19a-task4-qa-issuer-7ae7adc5e1384cb2b38cb2075a78363b",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
   "repository_head": "4bbad5250029a109e5e5e519200be7ad3d6da01d",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
