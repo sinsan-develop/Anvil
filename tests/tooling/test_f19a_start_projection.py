@@ -1849,13 +1849,55 @@ class F19AStartProjectionTests(unittest.TestCase):
                 self.assertIn("F19A_TASK1_POSTCLOSE_CLOSE_GIT_INVALID",
                               checker._collect_f19a_task1_postclose_fixture_closed_git(bundle))
 
+    @staticmethod
+    def epoch76_archived_bundle():
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        checkpoint = "7903b200e30fb0dc4b3a7cc287576b350df3f019"
+
+        def archive(path):
+            return subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                                           cwd=ROOT, stderr=subprocess.DEVNULL)
+
+        bundle["progress"] = json.loads(archive("docs/progress/build-progress.json"))
+        bundle["_epoch76_active_raw"] = archive("docs/progress/progress-events.json")
+        bundle["events"] = json.loads(bundle["_epoch76_active_raw"])
+        bundle["handoff_text"] = archive("docs/progress/BUILD_HANDOFF.md").decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(archive(
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"))
+        bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
+        bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
+        return bundle
+
+    @staticmethod
+    def validate_epoch76_active(bundle):
+        original_stat, original_sha = Path.stat, checker._sha256
+        progress_path = ROOT / "docs/progress/build-progress.json"
+        handoff_path = ROOT / "docs/progress/BUILD_HANDOFF.md"
+
+        def stat_archive(path, *args, **kwargs):
+            if path == progress_path:
+                return SimpleNamespace(st_size=123)
+            if path == handoff_path:
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+
+        def sha_archive(path):
+            if path == progress_path:
+                return "A" * 64
+            if path == handoff_path:
+                return "B" * 64
+            return original_sha(path)
+
+        with patch.object(Path, "stat", stat_archive), patch.object(checker, "_sha256", side_effect=sha_archive):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2165]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task1_postclose_closed_fixture(bundle,
+                event_raw=bundle["_epoch76_active_raw"], now=observed)
+
     def test_epoch76_closed_fixture_active_binds_frozen_parent_and_dual_lease(self):
-        bundle = checker.load_bundle(ROOT)
+        bundle = self.epoch76_archived_bundle()
         self.assertEqual(bundle["progress"]["event_sequence"], 2166)
-        raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
-        observed = datetime.fromisoformat(bundle["events"]["events"][2165]["occurred_at"]) + timedelta(minutes=1)
-        self.assertEqual(checker._validate_f19a_task1_postclose_closed_fixture(bundle,
-            event_raw=raw, now=observed), [])
+        self.assertEqual(self.validate_epoch76_active(bundle), [])
         for name, change in (
             ("parent_event", lambda b: b["events"]["events"][2162].update(event_id="forged")),
             ("new_event", lambda b: b["events"]["events"][2163].update(event_type="ACCEPTED")),
@@ -1870,8 +1912,7 @@ class F19AStartProjectionTests(unittest.TestCase):
             with self.subTest(name=name):
                 forged = deepcopy(bundle)
                 change(forged)
-                self.assertTrue(checker._validate_f19a_task1_postclose_closed_fixture(forged,
-                    event_raw=raw, now=observed))
+                self.assertTrue(self.validate_epoch76_active(forged))
 
     @staticmethod
     @contextmanager
@@ -1916,8 +1957,7 @@ class F19AStartProjectionTests(unittest.TestCase):
             yield
 
     def test_epoch76_closed_fixture_active_git_rejects_unpublished_or_product_code(self):
-        bundle = checker.load_bundle(ROOT)
-        self.assertEqual(checker._collect_f19a_task1_postclose_closed_fixture_git(bundle), [])
+        bundle = self.epoch76_archived_bundle()
         checkpoint = "c" * 40
         bundle["progress"]["f19a_task1_postclose_closed_fixture_binding"].update(
             status="POSTCLOSE_CLOSED_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
@@ -1939,9 +1979,9 @@ class F19AStartProjectionTests(unittest.TestCase):
 
     @staticmethod
     def epoch76_closed_bundle(checkpoint="c" * 40, active_checkpoint="d" * 40):
-        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle = F19AStartProjectionTests.epoch76_archived_bundle()
         stream, progress = bundle["events"], bundle["progress"]
-        active_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        active_raw = bundle["_epoch76_active_raw"]
         active = deepcopy(progress)
         active["f19a_task1_postclose_closed_fixture_binding"].update(
             status="POSTCLOSE_CLOSED_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
@@ -2011,7 +2051,7 @@ class F19AStartProjectionTests(unittest.TestCase):
 
     def test_epoch76_closed_fixture_checkpoint_active_keeps_product_locked(self):
         closed, _ = self.epoch76_closed_bundle()
-        bundle = checker.load_bundle(ROOT)
+        bundle = self.epoch76_archived_bundle()
         bundle["progress"] = json.loads(closed["_epoch76_active_progress"])
         bundle["handoff"]["repository_head"] = "c" * 40
         bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
@@ -2178,6 +2218,263 @@ class F19AStartProjectionTests(unittest.TestCase):
             with self.subTest(name=name), self.synthetic_epoch76_closed_git(**kwargs):
                 self.assertIn("F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_CLOSE_GIT_INVALID",
                               checker._collect_f19a_task1_postclose_closed_fixture_closed_git(bundle))
+
+    @staticmethod
+    def epoch77_archived_bundle():
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        checkpoint = "d5fca401181f6854a3e52d2d48688d74f239b912"
+
+        def archive(path):
+            return subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                                           cwd=ROOT, stderr=subprocess.DEVNULL)
+
+        bundle["progress"] = json.loads(archive("docs/progress/build-progress.json"))
+        bundle["_epoch77_active_raw"] = archive("docs/progress/progress-events.json")
+        bundle["events"] = json.loads(bundle["_epoch77_active_raw"])
+        bundle["handoff_text"] = archive("docs/progress/BUILD_HANDOFF.md").decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(archive(
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"))
+        bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
+        bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
+        return bundle
+
+    @staticmethod
+    def validate_epoch77_active(bundle):
+        original_stat, original_sha = Path.stat, checker._sha256
+        progress_path = ROOT / "docs/progress/build-progress.json"
+        handoff_path = ROOT / "docs/progress/BUILD_HANDOFF.md"
+
+        def stat_archive(path, *args, **kwargs):
+            if path == progress_path:
+                return SimpleNamespace(st_size=123)
+            if path == handoff_path:
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+
+        def sha_archive(path):
+            if path == progress_path:
+                return "A" * 64
+            if path == handoff_path:
+                return "B" * 64
+            return original_sha(path)
+
+        with patch.object(Path, "stat", stat_archive), patch.object(checker, "_sha256", side_effect=sha_archive):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2170]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task1_closed_history_fixture(bundle,
+                event_raw=bundle["_epoch77_active_raw"], now=observed)
+
+    def test_epoch77_history_fixture_active_uses_immutable_publication(self):
+        bundle = self.epoch77_archived_bundle()
+        self.assertEqual(bundle["progress"]["event_sequence"], 2171)
+        self.assertEqual(self.validate_epoch77_active(bundle), [])
+        for name, change in (
+            ("parent_event", lambda b: b["events"]["events"][2167].update(event_id="forged")),
+            ("issued_event", lambda b: b["events"]["events"][2168].update(event_type="ACCEPTED")),
+            ("worker_token", lambda b: b["progress"]["worker_lease"].update(fencing_token="forged")),
+            ("product_scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=["packages/api/runtime.py"])),
+            ("snapshot", lambda b: b["progress"].update(snapshot_id="forged")),
+            ("digest", lambda b: b["detached_digest"].update(event_sequence=2168)),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(self.validate_epoch77_active(forged))
+
+    def test_epoch77_history_fixture_git_rejects_remote_and_product_dirty(self):
+        bundle = self.epoch77_archived_bundle()
+        self.assertEqual(checker._collect_f19a_task1_closed_history_fixture_git(bundle), [])
+        forged = deepcopy(bundle)
+        forged["progress"]["repository"]["remote_head"] = "0" * 40
+        self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_git(forged))
+        original = subprocess.check_output
+
+        def dirty_product(command, *args, **kwargs):
+            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
+                return b" M packages/api/runtime.py\n"
+            return original(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=dirty_product):
+            self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_git(bundle))
+
+    @staticmethod
+    def epoch77_closed_bundle(checkpoint="c" * 40, active_checkpoint="d" * 40):
+        bundle = F19AStartProjectionTests.epoch77_archived_bundle()
+        stream, progress = bundle["events"], bundle["progress"]
+        active_raw = bundle["_epoch77_active_raw"]
+        active = deepcopy(progress)
+        active["f19a_task1_closed_history_fixture_binding"].update(
+            status="CLOSED_HISTORY_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
+            code_checkpoint=checkpoint)
+        active["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation="F19A_TASK1_CLOSED_HISTORY_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED",
+            worktree_status="F19A_TASK1_CLOSED_HISTORY_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED")
+        active["snapshot_id"] = "snapshot-f19a-task1-closed-history-fixture-checkpoint-seq2171"
+        active["snapshot_hash"] = checker.compute_snapshot_hash(active)
+        bundle["_epoch77_active_progress"] = (json.dumps(active, ensure_ascii=False) + "\n").encode()
+        worker, write = stream["events"][2169]["details"], stream["events"][2170]["details"]
+        at = (datetime.fromisoformat(write["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_TASK1_CLOSED_HISTORY_FIXTURE_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+        for sequence, kind, details in (
+            (2172, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+            (2173, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            prior = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_task1_closed_history_fixture_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK1_CLOSED_HISTORY_FIXTURE_CLOSE",
+                "subject_ref": "F-19A/TASK1-CLOSED-HISTORY-FIXTURE", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(prior)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2173
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2171_task1_closed_history_fixture_write_lease_issued"\n}\n'
+        prefix = active_raw.decode("utf-8")
+        assert prefix.endswith(footer)
+        render = lambda row: "\n".join("  " + line for line in json.dumps(
+            row, ensure_ascii=False, indent=2).splitlines())
+        event_text = (prefix[:-len(footer)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-2:])
+                      + '\n  ],\n  "last_event_id": "evt_f19a_2173_task1_closed_history_fixture_worker_lease_revoked"\n}\n')
+        event_raw = event_text.replace('"last_sequence": 2171', '"last_sequence": 2173', 1).encode("utf-8")
+        assert json.loads(event_raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(event_raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task1_closed_history_fixture_write_lease"] = {**write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task1_closed_history_fixture_worker_lease"] = {**worker, "status": "REVOKED", "revoked_at": at}
+        action = "F19A_TASK2_API_DUAL_LEASE_PENDING"
+        progress["f19a_task1_closed_history_fixture_binding"].update(
+            status="CLOSED_HISTORY_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
+            code_checkpoint=checkpoint, active_projection_checkpoint=active_checkpoint,
+            next_safe_action=action, event_sequence=2173)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "F-19A",
+                "status": "TASK2_API_DUAL_LEASE_PENDING"},
+            snapshot_id="snapshot-f19a-task1-closed-history-fixture-close-seq2173")
+        progress["repository"].update(projection_mode="F19A_TASK1_CLOSED_HISTORY_FIXTURE_CLOSED",
+            local_head=checkpoint, remote_head=checkpoint,
+            head_relation="F19A_TASK1_CLOSED_HISTORY_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
+            worktree_status="F19A_TASK1_CLOSED_HISTORY_FIXTURE_CLOSED_NOT_F19A_ACCEPTED")
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2173, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, repository_head=checkpoint,
+            next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2173
+        return bundle, event_raw
+
+    @staticmethod
+    def validate_epoch77_closed(bundle, event_raw):
+        original_stat, original_sha, original_output = Path.stat, checker._sha256, subprocess.check_output
+        progress_path = ROOT / "docs/progress/build-progress.json"
+        handoff_path = ROOT / "docs/progress/BUILD_HANDOFF.md"
+        checkpoint = bundle["progress"]["f19a_task1_closed_history_fixture_binding"].get(
+            "active_projection_checkpoint", "d" * 40)
+
+        def stat_closed(path, *args, **kwargs):
+            if path == progress_path:
+                return SimpleNamespace(st_size=123)
+            if path == handoff_path:
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+
+        def sha_closed(path):
+            if path == progress_path:
+                return "A" * 64
+            if path == handoff_path:
+                return "B" * 64
+            return original_sha(path)
+
+        def git_closed(command, *args, **kwargs):
+            if command == ["git", "show", checkpoint + ":docs/progress/progress-events.json"]:
+                return bundle["_epoch77_active_raw"]
+            if command == ["git", "show", checkpoint + ":docs/progress/build-progress.json"]:
+                return bundle["_epoch77_active_progress"]
+            return original_output(command, *args, **kwargs)
+
+        with patch.object(Path, "stat", stat_closed), patch.object(checker, "_sha256", side_effect=sha_closed), \
+                patch.object(subprocess, "check_output", side_effect=git_closed):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2172]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task1_closed_history_fixture_closed(bundle,
+                event_raw=event_raw, now=observed)
+
+    def test_epoch77_history_fixture_closed_uses_published_active_not_live(self):
+        bundle, raw = self.epoch77_closed_bundle()
+        self.assertEqual(self.validate_epoch77_closed(bundle, raw), [])
+        for name, change in (
+            ("order", lambda b: b["events"]["events"][2171].update(event_type="WORKER_LEASE_REVOKED")),
+            ("token", lambda b: b["events"]["events"][2171]["details"].update(write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["completed_f19a_task1_closed_history_fixture_write_lease"].update(
+                product_write_scope=["packages/api/runtime.py"])),
+            ("missing_p3", lambda b: b["progress"]["f19a_task1_closed_history_fixture_binding"].pop(
+                "active_projection_checkpoint")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(self.validate_epoch77_closed(forged, raw))
+
+    @contextmanager
+    def synthetic_epoch77_closed_git(self, *, remote=None, dirty=b"", active_delta=(),
+                                     successor_delta=(), stale_blob=False, published=True):
+        base = "16857dbeef47180159a42352bb297ae6303dbcad"
+        checkpoint, active_checkpoint, head = "c" * 40, "d" * 40, "e" * 40
+        control = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+        original_output, original_run = subprocess.check_output, subprocess.run
+
+        def output(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == [
+                "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["rev-parse", "HEAD"]:
+                return (head + "\n").encode()
+            if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                return ((remote or head) + "\n").encode()
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            if tail == ["status", "--porcelain=v1", "-uall"]:
+                return dirty
+            if tail == ["diff", "--name-only", "--no-renames", f"{base}..{checkpoint}"]:
+                return ("\n".join(control) + "\n").encode()
+            if tail == ["diff", "--name-only", "--no-renames", f"{checkpoint}..{active_checkpoint}"]:
+                return ("\n".join(active_delta) + ("\n" if active_delta else "")).encode()
+            if tail == ["diff", "--name-only", "--no-renames", f"{active_checkpoint}..HEAD"]:
+                return ("\n".join(successor_delta) + ("\n" if successor_delta else "")).encode()
+            if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(checkpoint + ":"):
+                path = tail[1].split(":", 1)[1]
+                if path in control:
+                    return b"stale" if stale_blob and path == "scripts/check_project_progress.py" else (ROOT / path).read_bytes()
+            return original_output(command, *args, **kwargs)
+
+        def run(command, *args, **kwargs):
+            if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                if command[-2:] == [active_checkpoint, head] and not published:
+                    return subprocess.CompletedProcess(command, 1)
+                return subprocess.CompletedProcess(command, 0)
+            return original_run(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(subprocess, "run", side_effect=run):
+            yield
+
+    def test_epoch77_history_fixture_closed_git_requires_published_exact_scope(self):
+        bundle, _ = self.epoch77_closed_bundle()
+        with self.synthetic_epoch77_closed_git():
+            self.assertEqual(checker._collect_f19a_task1_closed_history_fixture_closed_git(bundle), [])
+        for name, kwargs in (
+            ("remote", {"remote": "0" * 40}),
+            ("product_dirty", {"dirty": b" M packages/api/runtime.py\n"}),
+            ("product_between", {"active_delta": ("packages/api/runtime.py",)}),
+            ("unrelated_successor", {"successor_delta": ("packages/api/runtime.py",)}),
+            ("stale_blob", {"stale_blob": True}),
+            ("unpublished", {"published": False}),
+        ):
+            with self.subTest(name=name), self.synthetic_epoch77_closed_git(**kwargs):
+                self.assertTrue(checker._collect_f19a_task1_closed_history_fixture_closed_git(bundle))
 
 
 if __name__ == "__main__":
