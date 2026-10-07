@@ -85,12 +85,15 @@ def create_qa_issuer(
     *,
     clock: Callable[[], float] = time.time,
     code_factory: Callable[[], str] = lambda: secrets.token_urlsafe(32),
+    qa_subject: str = "synthetic-subject-1",
 ) -> FastAPI:
     """Build a bounded, file-backed issuer with in-memory one-use codes."""
     try:
         key = serialization.load_pem_private_key(_read_regular(signing_key_file, 8192), password=None)
         secret = _read_regular(client_secret_file, 4096).decode("ascii")
-        if (not isinstance(key, rsa.RSAPrivateKey) or key.key_size < 2048
+        if (type(qa_subject) is not str
+                or qa_subject not in {"synthetic-subject-1", "f19a-qa-reader"}
+                or not isinstance(key, rsa.RSAPrivateKey) or key.key_size < 2048
                 or not (16 <= len(secret) <= 256) or secret != secret.strip()
                 or not all(33 <= ord(char) <= 126 for char in secret)
                 or not callable(clock) or not callable(code_factory)):
@@ -178,7 +181,7 @@ def create_qa_issuer(
             actual = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
             if now >= expires or not compare_digest(actual, challenge):
                 raise ValueError()
-            claims = {"iss": ISSUER, "aud": CLIENT_ID, "sub": "synthetic-subject-1",
+            claims = {"iss": ISSUER, "aud": CLIENT_ID, "sub": qa_subject,
                       "nonce": nonce, "iat": now, "exp": now + _TOKEN_TTL}
             if stepped_up:
                 claims.update(acr="urn:anvil:step-up", auth_time=now)
@@ -193,5 +196,6 @@ if __name__ == "__main__":
     app = create_qa_issuer(
         Path("/run/anvil-f18-oidc/signing.key"),
         Path("/run/anvil-f18-oidc/client-secret"),
+        qa_subject=os.environ.get("ANVIL_F19A_QA_SUBJECT", "synthetic-subject-1"),
     )
     uvicorn.run(app, host="0.0.0.0", port=8302, access_log=False)

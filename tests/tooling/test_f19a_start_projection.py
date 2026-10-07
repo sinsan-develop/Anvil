@@ -4892,6 +4892,289 @@ class F19AStartProjectionTests(unittest.TestCase):
                     errors = collector(bundle)
                 self.assertEqual(bool(errors), scenario != "positive", f"{scenario}: {errors}")
 
+    @staticmethod
+    def task4_issuer_active_bundle():
+        bundle, archive = F19AStartProjectionTests.historical_bundle(
+            "8ebfc2882b2bf735b8a67711a581e0900563e4cc")
+        bundle["_task4_issuer_archive"] = archive
+        return bundle
+
+    def test_task4_issuer_active_publication_and_forgery(self):
+        bundle = self.task4_issuer_active_bundle()
+        archive = bundle["_task4_issuer_archive"]
+        raw = archive[ROOT / "docs/progress/progress-events.json"]
+        now = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+        validator = getattr(checker, "_validate_f19a_task4_qa_issuer", lambda *a, **k: ["route missing"])
+        def validate(candidate):
+            return validator(candidate, event_raw=raw, now=now,
+                archived_files={path.relative_to(ROOT).as_posix(): data for path, data in archive.items()})
+        self.assertEqual(validate(bundle), [])
+        for name, change in (
+            ("worker token", lambda b: b["progress"]["worker_lease"].update(fencing_token="forged")),
+            ("product scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=[])),
+            ("handoff", lambda b: b["handoff"].update(next_safe_action="forged")),
+            ("instruction", lambda b: b["progress"]["active_work_instruction"].update(sha256="0" * 64)),
+        ):
+            forged = deepcopy(bundle)
+            change(forged)
+            self.assertTrue(validate(forged), name)
+
+    def test_task4_issuer_bootstrap_git_published_and_negative(self):
+        bundle = self.task4_issuer_active_bundle()
+        collector = getattr(checker, "_collect_f19a_task4_qa_issuer_git", lambda *a: ["route missing"])
+        original = subprocess.check_output
+        for scenario in ("published", "remote", "allowed_product_dirty", "unrelated_dirty"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        if scenario == "allowed_product_dirty":
+                            return b" M deploy/wsl/oidc_qa_issuer.py\n"
+                        if scenario == "unrelated_dirty":
+                            return b" M packages/api/runtime.py\n"
+                        return b""
+                    if scenario == "remote" and tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                        return ("0" * 40 + "\n").encode()
+                    return original(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario not in {"published", "allowed_product_dirty"},
+                    f"{scenario}: {result}")
+
+    @staticmethod
+    def task4_issuer_checkpoint_bundle():
+        bundle = F19AStartProjectionTests.task4_issuer_active_bundle()
+        progress = bundle["progress"]
+        checkpoint = "c" * 40
+        status = "TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY"
+        action = "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY"
+        relation = "F19A_TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY"
+        progress["f19a_task4_qa_issuer_binding"].update(
+            status=status, code_checkpoint=checkpoint, next_safe_action=action)
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=relation, worktree_status=relation)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["next_work_package"]["status"] = status
+        progress["next_safe_action"] = progress["runtime_next_action"] = action
+        progress["snapshot_id"] = "snapshot-f19a-task4-qa-issuer-checkpoint-seq2211"
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=action)
+        raw_progress = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
+        raw_handoff = ("```json anvil-recovery-summary\n"
+            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n```\n").encode()
+        bundle["_task4_issuer_checkpoint_progress"] = raw_progress
+        bundle["_task4_issuer_checkpoint_handoff"] = raw_handoff
+        for section, raw in (("progress", raw_progress), ("handoff", raw_handoff)):
+            bundle["detached_digest"][section].update(
+                bytes=len(raw), file_sha256=hashlib.sha256(raw).hexdigest().upper())
+        bundle["_task4_issuer_checkpoint_digest"] = (
+            json.dumps(bundle["detached_digest"], ensure_ascii=False) + "\n").encode()
+        return bundle
+
+    def test_task4_issuer_checkpoint_projection_and_forgery(self):
+        bundle = self.task4_issuer_checkpoint_bundle()
+        def validate(candidate):
+            archive = candidate["_task4_issuer_archive"]
+            observed = datetime.fromisoformat(candidate["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task4_qa_issuer(candidate,
+                event_raw=archive[ROOT / "docs/progress/progress-events.json"], now=observed,
+                archived_files={"docs/progress/build-progress.json": candidate["_task4_issuer_checkpoint_progress"],
+                    "docs/progress/BUILD_HANDOFF.md": candidate["_task4_issuer_checkpoint_handoff"]})
+        self.assertEqual(validate(bundle), [])
+        for name, change in (("checkpoint", lambda b: b["progress"]["f19a_task4_qa_issuer_binding"].update(
+                code_checkpoint="0" * 40)),
+                ("instruction", lambda b: b["progress"]["active_work_instruction"].update(result_status="FORGED")),
+                ("handoff", lambda b: b["handoff"].update(status="ACCEPTED"))):
+            forged = deepcopy(bundle)
+            change(forged)
+            forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+            self.assertTrue(validate(forged), name)
+
+    @staticmethod
+    def task4_issuer_closed_bundle():
+        bundle = F19AStartProjectionTests.task4_issuer_checkpoint_bundle()
+        progress, stream = bundle["progress"], bundle["events"]
+        archive = bundle["_task4_issuer_archive"]
+        active_raw = archive[ROOT / "docs/progress/progress-events.json"]
+        worker, write = stream["events"][2209]["details"], stream["events"][2210]["details"]
+        at = (datetime.fromisoformat(write["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_TASK4_QA_ISSUER_LOCAL_VALIDATED_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+        for sequence, kind, details in ((2212, "WRITE_LEASE_REVOKED", {
+                "lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+                (2213, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                    "execution_fencing_token": worker["execution_fencing_token"], "reason": reason})):
+            prior = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_task4_qa_issuer_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK4_QA_ISSUER_REVISION_CLOSE",
+                "subject_ref": "F-19A/TASK4-QA-ISSUER-REVISION", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(prior)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2213
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2211_task4_qa_issuer_write_lease_issued"\n}\n'
+        prefix = active_raw.decode("utf-8")
+        assert prefix.endswith(footer)
+        def render(row):
+            return "\n".join("  " + line for line in json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+        text = (prefix[:-len(footer)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-2:])
+            + '\n  ],\n  "last_event_id": "evt_f19a_2213_task4_qa_issuer_worker_lease_revoked"\n}\n')
+        raw = text.replace('"last_sequence": 2211', '"last_sequence": 2213', 1).encode()
+        assert json.loads(raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task4_qa_issuer_write_lease"] = {**write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task4_qa_issuer_worker_lease"] = {**worker, "status": "REVOKED", "revoked_at": at}
+        action = "F19A_TASK4_WSL_QA_PENDING"
+        status = "TASK4_QA_ISSUER_REVISION_CLOSED_WSL_PENDING"
+        progress["f19a_task4_qa_issuer_binding"].update(
+            status=status, active_projection_checkpoint="e" * 40,
+            next_safe_action=action, event_sequence=2213)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "F-19A", "status": "TASK4_WSL_QA_PENDING"},
+            snapshot_id="snapshot-f19a-task4-qa-issuer-close-seq2213")
+        progress["repository"].update(projection_mode="F19A_TASK4_QA_ISSUER_CLOSED",
+            head_relation=status, worktree_status=status)
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2213, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, repository_head="c" * 40,
+            next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2213
+        bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
+        bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
+        return bundle, raw
+
+    @staticmethod
+    def validate_task4_issuer_closed(bundle, raw):
+        original_output, original_stat, original_sha = subprocess.check_output, Path.stat, checker._sha256
+        active = bundle["progress"]["f19a_task4_qa_issuer_binding"]["active_projection_checkpoint"]
+        values = {"docs/progress/build-progress.json": "_task4_issuer_checkpoint_progress",
+            "docs/progress/progress-events.json": None,
+            "docs/progress/BUILD_HANDOFF.md": "_task4_issuer_checkpoint_handoff",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json": "_task4_issuer_checkpoint_digest"}
+        def output(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and len(command) == 3 and command[2].startswith(active + ":"):
+                path = command[2].split(":", 1)[1]
+                if path in values:
+                    return (bundle["_task4_issuer_archive"][ROOT / path] if values[path] is None
+                        else bundle[values[path]])
+            return original_output(command, *args, **kwargs)
+        def stat(path, *args, **kwargs):
+            if path == ROOT / "docs/progress/build-progress.json":
+                return SimpleNamespace(st_size=123)
+            if path == ROOT / "docs/progress/BUILD_HANDOFF.md":
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+        def sha(path):
+            if path == ROOT / "docs/progress/build-progress.json":
+                return "A" * 64
+            if path == ROOT / "docs/progress/BUILD_HANDOFF.md":
+                return "B" * 64
+            return original_sha(path)
+        validator = getattr(checker, "_validate_f19a_task4_qa_issuer_closed", lambda *a, **k: ["route missing"])
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(Path, "stat", stat), patch.object(checker, "_sha256", side_effect=sha):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2212]["occurred_at"]) + timedelta(minutes=1)
+            return validator(bundle, event_raw=raw, now=observed)
+
+    def test_task4_issuer_closed_immutable_active_and_forgery(self):
+        bundle, raw = self.task4_issuer_closed_bundle()
+        self.assertEqual(self.validate_task4_issuer_closed(bundle, raw), [])
+        for name, change in (("token", lambda b: b["progress"]["completed_f19a_task4_qa_issuer_write_lease"].update(
+                write_fencing_token="forged")),
+                ("scope", lambda b: b["progress"]["completed_f19a_task4_qa_issuer_write_lease"].update(
+                    product_write_scope=[])),
+                ("publication", lambda b: b["progress"]["f19a_task4_qa_issuer_binding"].update(
+                    active_projection_checkpoint="0" * 40)),
+                ("published digest", lambda b: b.__setitem__("_task4_issuer_checkpoint_digest", b"{}")),
+                ("handoff", lambda b: b["handoff"].update(status="ACCEPTED"))):
+            forged = deepcopy(bundle)
+            change(forged)
+            self.assertTrue(self.validate_task4_issuer_closed(forged, raw), name)
+
+    def test_task4_issuer_checkpoint_git_exact_five_and_negative(self):
+        bundle = self.task4_issuer_checkpoint_bundle()
+        checkpoint = "c" * 40
+        exact = ("scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py",
+            "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/compose.f18.oidc.yml",
+            "tests/deploy/test_f18_oidc_qa_issuer.py")
+        original, original_run = subprocess.check_output, subprocess.run
+        for scenario in ("published", "remote", "dirty", "stale_blob", "missing_product",
+                         "transient_product", "merge"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
+                        return (("0" * 40 if scenario == "remote" and tail[1].startswith("development/")
+                            else checkpoint) + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M deploy/wsl/oidc_qa_issuer.py\n" if scenario == "dirty" else b""
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge\n" if scenario == "merge" else b""
+                    if tail[:1] == ["log"] and tail[-1] == f"8ebfc2882b2bf735b8a67711a581e0900563e4cc..{checkpoint}":
+                        return ("\n".join(exact) + "\n" + ("packages/api/runtime.py\n"
+                            if scenario == "transient_product" else "")).encode()
+                    if tail[:1] == ["log"] and tail[-1] == f"{checkpoint}..{checkpoint}":
+                        return b""
+                    if tail[:1] == ["diff"] and tail[-1] == f"8ebfc2882b2bf735b8a67711a581e0900563e4cc..{checkpoint}":
+                        return ("\n".join(exact[:2] if scenario == "missing_product" else exact) + "\n").encode()
+                    if tail[:1] == ["diff"] and tail[-1] == f"{checkpoint}..HEAD":
+                        return b""
+                    if tail[:1] == ["show"] and tail[1].startswith(checkpoint + ":"):
+                        path = tail[1].split(":", 1)[1]
+                        return b"stale" if scenario == "stale_blob" and path == exact[0] else (ROOT / path).read_bytes()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = checker._collect_f19a_task4_qa_issuer_git(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_task4_issuer_closed_git_publication_and_history_negative(self):
+        bundle, _ = self.task4_issuer_closed_bundle()
+        checkpoint, publication, head = "c" * 40, "e" * 40, "f" * 40
+        archived = {"repository": {"projection_mode": "F19A_TASK4_QA_ISSUER_ACTIVE"},
+            "f19a_task4_qa_issuer_binding": {"code_checkpoint": checkpoint}}
+        original = subprocess.check_output
+        collector = getattr(checker, "_collect_f19a_task4_qa_issuer_closed_git", lambda *a: ["route missing"])
+        for scenario in ("published", "stale_publication", "transient_product_cp",
+                         "transient_product_close", "merge", "ancestor"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge\n" if scenario == "merge" else b""
+                    if tail[:1] == ["log"]:
+                        interval = tail[-1]
+                        if scenario == "transient_product_cp" and interval == f"{checkpoint}..{publication}":
+                            return b"deploy/wsl/oidc_qa_issuer.py\n"
+                        if scenario == "transient_product_close" and interval == f"{publication}..{head}":
+                            return b"deploy/wsl/oidc_qa_issuer.py\n"
+                        return b"docs/progress/build-progress.json\n"
+                    if tail[:1] == ["diff"]:
+                        return b"docs/progress/build-progress.json\n"
+                    if tail == ["show", f"{publication}:docs/progress/build-progress.json"]:
+                        return b"{}" if scenario == "stale_publication" else json.dumps(archived).encode()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                with patch.object(checker, "_collect_f19a_task4_qa_issuer_git", return_value=[]), \
+                        patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
 
 if __name__ == "__main__":
     unittest.main()
