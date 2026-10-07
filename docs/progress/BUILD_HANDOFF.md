@@ -11,12 +11,16 @@
   "write_lease": "write-lease-f19a-task1-587fa29e9fcf4813b46f0f2d55cc0975",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK1_CONTROL_BOOTSTRAP_ONLY",
-  "repository_head": "29dc2071be8f5cae4ba68a727c5e89d4ad8a12d4",
+  "next_safe_action": "F19A_TASK1_PRODUCT_RED_TESTS_ONLY",
+  "repository_head": "26935fc4b078ffd8583042bd3643a14af7dfbcd8",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- B 승격 사전검증: 같은 seq2156과 control anchor `26935fc4...`에서 실제 G-05 PASS·인접5파일 62 PASS/339.57초·diff0이다. 현재 dirty는 Main 통제 문서4뿐이고 제품4/DB/WSL write0이다. B 문서 checkpoint/private 원격 SHA·clean G-05는 아직 미실행, 제품 RED 착수는 잠금이다.
+
+- Task1 통제 checkpoint/private 일치: Main 독립 인접5파일 62 PASS/374.69초·active G-05 seq2156 PASS·독립 C0/I0/M1·제품4 변경0·staged 정확8파일 diff0을 확인해 기존 branch commit `26935fc4b078ffd8583042bd3643a14af7dfbcd8`를 정상 fast-forward push했고 실제 원격 SHA와 동일하다. 직후 A 상태의 G-05는 기록 HEAD가 옛 `29dc...`라 `F19A_TASK1_GIT_INVALID`(exit1)였고 PASS로 승격하지 않는다. 이 B 투영은 `control_checkpoint=26935...`와 제품 RED 준비 상태를 같은 seq2156에 결박하며 제품 코드·DB/WSL write는 아직0이다. B precommit/clean G-05와 B control 문서 checkpoint/private push는 아직 검증 전이다.
 
 - epoch74 통제2 코드 동결: Developer 정확2파일 SHA checker `3388E80E...`, test `D596545D...`; 첫 인접 61 PASS/1 FAIL 역사 collector 위임 보정 후 최종 62 PASS/363.11초, Main 독립 62 PASS/374.69초, 실제 G-05 seq2156 PASS, diff check0이다. 독립 C0/I0/M1은 checkpoint 허용, M1 제품4 잠금이 WI·사후 dirty 검사에 의존함을 남긴다. 제품4 변경0, 통제 checkpoint/private push·clean 재검증은 아직 미실행이고 다음은 정확8파일 checkpoint다.
 
