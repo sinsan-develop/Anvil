@@ -61,6 +61,111 @@ def manifest():
     }
 
 
+def other_manifest():
+    return {**manifest(), "subject": "f19a-qa-other",
+        "actor_id": f"f19a_qa_other_{SOURCE_SHA[:12]}",
+        "role_code": f"f19a_qa_other_{SOURCE_SHA[:12]}",
+        "permissions": ["dashboard:read"]}
+
+
+def test_third_actor_exact_manifest_and_isolated_idempotent_seed(db):
+    engine, factory = db
+    admin, desired = manifest(), other_manifest()
+    assert bootstrap.validate_other_manifest(desired, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR) == desired
+    apply_qa_bootstrap(factory, admin, database_name=admin["database_name"], source_sha=SOURCE_SHA)
+    assert bootstrap.preflight_qa_other(factory, desired, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR) == "CREATABLE"
+    assert bootstrap.apply_qa_other(factory, desired, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR) == "CREATED"
+    assert bootstrap.apply_qa_other(factory, desired, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR) == "UNCHANGED"
+    with engine.connect() as connection:
+        assert connection.execute(sa.select(roles.c.permissions).where(
+            roles.c.role_code == desired["role_code"])).scalar_one() == ["dashboard:read"]
+        assert connection.scalar(sa.select(sa.func.count()).select_from(pair_grants).where(
+            pair_grants.c.actor_id == desired["actor_id"])) == 0
+        assert connection.scalar(sa.select(sa.func.count()).select_from(users)) == 2
+
+
+@pytest.mark.parametrize("change", [
+    {"subject": "f19a-qa-reader"}, {"actor_id": "f19a_qa_admin_aaaaaaaaaaaa"},
+    {"role_code": "shared-admin"}, {"permissions": ["dashboard:read", "pair-grants:manage"]},
+    {"project_id": "other"}, {"expires_at": "2020-01-01T00:00:00+00:00"},
+])
+def test_third_actor_manifest_rejects_wrong_identity_scope_permission_or_expiry(change):
+    desired = {**other_manifest(), **change}
+    with pytest.raises(QABootstrapRejected):
+        bootstrap.validate_other_manifest(desired, database_name=desired["database_name"],
+            source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR)
+
+
+@pytest.mark.parametrize("occupied", ["actor", "role", "binding", "grant"])
+def test_third_actor_preflight_rejects_collision_and_grants_without_writes(db, occupied):
+    engine, factory = db
+    desired = other_manifest()
+    with engine.begin() as connection:
+        if occupied == "actor":
+            connection.execute(users.insert().values(actor_id=desired["actor_id"], active=False))
+        elif occupied == "role":
+            connection.execute(roles.insert().values(role_code=desired["role_code"],
+                permissions=["admin:all"]))
+        elif occupied == "binding":
+            connection.execute(users.insert().values(actor_id="someone-else", active=True))
+            connection.execute(oidc_subject_bindings.insert().values(issuer=desired["issuer"],
+                subject=desired["subject"], actor_id="someone-else", active=True))
+        else:
+            connection.execute(pair_grants.insert().values(actor_id=desired["actor_id"],
+                project_id=desired["project_id"], environment_id=desired["environment_id"],
+                permission_code="dashboard:read", active=True, granted_by_actor_id="someone-else",
+                granted_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc)))
+    with pytest.raises(QABootstrapRejected):
+        bootstrap.apply_qa_other(factory, desired, database_name=desired["database_name"],
+            source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR)
+    with engine.connect() as connection:
+        assert connection.scalar(sa.select(sa.func.count()).select_from(user_roles)) == 0
+
+
+def test_third_actor_cleanup_removes_exact_identity_only(db):
+    engine, factory = db
+    admin, desired = manifest(), other_manifest()
+    apply_qa_bootstrap(factory, admin, database_name=admin["database_name"], source_sha=SOURCE_SHA)
+    bootstrap.apply_qa_other(factory, desired, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR)
+    expired_cleanup_manifest = {**desired, "expires_at": (datetime.now(timezone.utc)
+        - timedelta(minutes=1)).isoformat()}
+    assert bootstrap.remove_qa_other(factory, expired_cleanup_manifest, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR) == "REMOVED"
+    assert bootstrap.remove_qa_other(factory, desired, database_name=desired["database_name"],
+        source_sha=SOURCE_SHA, trusted_pair=TRUSTED_PAIR) == "ABSENT"
+    with engine.connect() as connection:
+        assert connection.scalar(sa.select(sa.func.count()).select_from(users)) == 1
+        assert connection.scalar(sa.select(sa.func.count()).select_from(roles)) == 1
+        assert connection.scalar(sa.select(sa.func.count()).select_from(oidc_subject_bindings)) == 1
+
+
+def test_third_actor_runtime_policy_requires_dedicated_role_and_dashboard_permission():
+    desired = other_manifest()
+    policy = SimpleNamespace(issuer=desired["issuer"],
+        allowed_roles=frozenset({desired["role_code"]}),
+        allowed_permissions=frozenset({"dashboard:read"}))
+    runtime = SimpleNamespace(principal_policy=policy,
+        authorization_scope=SimpleNamespace(allowed_actor_roles=policy.allowed_roles))
+    assert bootstrap.require_other_runtime_policy(runtime, desired)
+    for bad in (
+        SimpleNamespace(principal_policy=SimpleNamespace(issuer=desired["issuer"],
+            allowed_roles=frozenset(), allowed_permissions=policy.allowed_permissions),
+            authorization_scope=runtime.authorization_scope),
+        SimpleNamespace(principal_policy=policy,
+            authorization_scope=SimpleNamespace(allowed_actor_roles=frozenset())),
+        SimpleNamespace(principal_policy=SimpleNamespace(issuer=desired["issuer"],
+            allowed_roles=policy.allowed_roles, allowed_permissions=frozenset()),
+            authorization_scope=runtime.authorization_scope),
+    ):
+        with pytest.raises(QABootstrapRejected, match="F19A_QA_RUNTIME_POLICY_NOT_READY"):
+            bootstrap.require_other_runtime_policy(bad, desired)
+
+
 @pytest.fixture
 def db():
     engine = sa.create_engine("sqlite+pysqlite:///:memory:")

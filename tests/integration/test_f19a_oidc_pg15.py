@@ -167,6 +167,17 @@ def test_qa_oidc_bootstrap_registration_grant_revoke_and_fix_forward(qa_database
     assert bootstrap.check_qa_readiness(factory, manifest, target_actor_id="f19a-qa-reader",
         target_subject="f19a-qa-reader", trusted_pair=trusted_pair, runtime_inputs=inputs)
     assert repo.list_dashboard_pairs("f19a-qa-reader")[0]["projectId"] == project_id
+    other = {**manifest, "subject": "f19a-qa-other",
+        "actor_id": f"f19a_qa_other_{manifest['source_sha'][:12]}",
+        "role_code": f"f19a_qa_other_{manifest['source_sha'][:12]}",
+        "permissions": bootstrap.OTHER_PERMISSIONS}
+    assert bootstrap.require_other_runtime_policy(inputs, other)
+    assert bootstrap.apply_qa_other(factory, other, database_name=database,
+        source_sha=manifest["source_sha"], trusted_pair=trusted_pair) == "CREATED"
+    other_binding = SqlAlchemyOidcPrincipalResolver(factory).resolve(other["issuer"], other["subject"])
+    assert other_binding is not None and other_binding.actor_id == other["actor_id"]
+    assert other_binding.permissions == frozenset({"dashboard:read"})
+    assert repo.list_dashboard_pairs(other["actor_id"]) == ()
     with pytest.raises(bootstrap.QABootstrapRejected, match="FIX_FORWARD_REQUIRED"):
         bootstrap.decide_rollback(factory, manifest, target_sha="b" * 40,
                                   guarded_sha=manifest["source_sha"], trusted_pair=trusted_pair)
@@ -175,3 +186,6 @@ def test_qa_oidc_bootstrap_registration_grant_revoke_and_fix_forward(qa_database
     assert repo.list_dashboard_pairs("f19a-qa-reader") == ()
     with pytest.raises(F19ARegistrationRejected, match="AUTHORIZATION_SCOPE_MISMATCH"):
         repo.require_pair_grant("f19a-qa-reader", project_id, environment_id, "dashboard:read")
+    assert repo.list_dashboard_pairs(other["actor_id"]) == ()
+    assert bootstrap.remove_qa_other(factory, other, database_name=database,
+        source_sha=manifest["source_sha"], trusted_pair=trusted_pair) == "REMOVED"

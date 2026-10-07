@@ -149,6 +149,30 @@ def test_qa_issuer_subject_allowlist_preserves_key_and_browser_is_not_selector(i
     assert _token(reader_app, _code(reader_app), sub="synthetic-subject-1").status_code == 401
 
 
+def test_qa_issuer_third_subject_keeps_same_signing_identity_and_no_browser_selector(issuer_setup):
+    default_app, now, public_key = issuer_setup
+    module = _issuer_module()
+    other_app = module.create_qa_issuer(
+        default_app.state.qa_key_file, default_app.state.qa_secret_file,
+        qa_subject="f19a-qa-other", clock=lambda: now[0],
+        code_factory=lambda: "other-code-" + "z" * 32,
+    )
+    other_app.state.qa_test_secret = default_app.state.qa_test_secret
+    default_token = _token(default_app, _code(default_app)).json()["id_token"]
+    other_token = _token(other_app, _code(other_app)).json()["id_token"]
+    old_claims = jwt.decode(default_token, public_key, algorithms=["RS256"],
+                            audience="anvil-web", issuer=ISSUER)
+    other_claims = jwt.decode(other_token, public_key, algorithms=["RS256"],
+                              audience="anvil-web", issuer=ISSUER)
+    assert other_claims["sub"] == "f19a-qa-other"
+    assert {key: value for key, value in other_claims.items() if key != "sub"} == {
+        key: value for key, value in old_claims.items() if key != "sub"}
+    assert jwt.get_unverified_header(default_token)["kid"] == jwt.get_unverified_header(other_token)["kid"]
+    assert asyncio.run(_call(other_app, "GET", "/realms/anvil/protocol/openid-connect/auth",
+        params=_auth_params(sub="f19a-qa-reader"))).status_code == 400
+    assert _token(other_app, _code(other_app), sub="f19a-qa-reader").status_code == 401
+
+
 @pytest.mark.parametrize("qa_subject", ["", "synthetic-subject-2", "admin", "production-user",
     "f19a-qa-reader\n", "f19a-qa-réader", "f19a-qa-reader\x00", None])
 def test_qa_issuer_rejects_non_allowlisted_subjects(issuer_setup, qa_subject):

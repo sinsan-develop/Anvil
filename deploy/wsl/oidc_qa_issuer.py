@@ -92,7 +92,7 @@ def create_qa_issuer(
         key = serialization.load_pem_private_key(_read_regular(signing_key_file, 8192), password=None)
         secret = _read_regular(client_secret_file, 4096).decode("ascii")
         if (type(qa_subject) is not str
-                or qa_subject not in {"synthetic-subject-1", "f19a-qa-reader"}
+                or qa_subject not in {"synthetic-subject-1", "f19a-qa-reader", "f19a-qa-other"}
                 or not isinstance(key, rsa.RSAPrivateKey) or key.key_size < 2048
                 or not (16 <= len(secret) <= 256) or secret != secret.strip()
                 or not all(33 <= ord(char) <= 126 for char in secret)

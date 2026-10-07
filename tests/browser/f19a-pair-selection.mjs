@@ -13,7 +13,7 @@ const expectedRole = process.env.ANVIL_F19A_QA_EXPECTED_ROLE;
 const readerRole = process.env.ANVIL_F19A_QA_READER_ROLE;
 
 function config() {
-  if (!['granted', 'revoked', 'other-actor'].includes(phase)
+  if (!['granted', 'revoked', 'other-actor', 'admin-coarse'].includes(phase)
       || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(projectId || '')
       || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(environmentId || '')
       || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(expectedRole || '')
@@ -86,15 +86,27 @@ async function run() {
       assert.equal(sessionStatus.authenticated, true);
       assert.equal(sessionStatus.actor_role, expectedRole, 'F19A_QA_ACTOR_ROLE_MISMATCH');
       const list = await sameOriginFetch(page, '/api/dashboard/project-environments');
-      assert.equal(list.status, 200, 'F19A_QA_PAIR_LIST_FAILED');
-      const items = JSON.parse(list.body).items;
-      assert.ok(Array.isArray(items));
-      if (phase === 'granted') {
-        assert.equal(items.length, 1, 'F19A_QA_CROSS_PAIR_EXPOSED');
-        assert.equal(items[0].projectId, projectId);
-        assert.equal(items[0].environmentId, environmentId);
+      if (phase === 'admin-coarse') {
+        assert.equal(list.status, 403, 'F19A_QA_ADMIN_NOT_COARSE_DENIED');
+        const envelope = JSON.parse(list.body);
+        assert.deepEqual(Object.keys(envelope), ['error']);
+        assert.deepEqual(Object.keys(envelope.error).sort(), ['code', 'message', 'request_id']);
+        assert.equal(envelope.error.code, 'AUTHORIZATION_SCOPE_MISMATCH');
+        assert.equal(typeof envelope.error.message, 'string');
+        assert.ok(envelope.error.message.length > 0);
+        assert.equal(typeof envelope.error.request_id, 'string');
+        assert.ok(envelope.error.request_id.length > 0);
       } else {
-        assert.deepEqual(items, [], 'F19A_QA_REVOKED_OR_OTHER_PAIR_EXPOSED');
+        assert.equal(list.status, 200, 'F19A_QA_PAIR_LIST_FAILED');
+        const items = JSON.parse(list.body).items;
+        assert.ok(Array.isArray(items));
+        if (phase === 'granted') {
+          assert.equal(items.length, 1, 'F19A_QA_CROSS_PAIR_EXPOSED');
+          assert.equal(items[0].projectId, projectId);
+          assert.equal(items[0].environmentId, environmentId);
+        } else {
+          assert.deepEqual(items, [], 'F19A_QA_REVOKED_OR_OTHER_PAIR_EXPOSED');
+        }
       }
       assert.ok(apiRequests.length >= 2);
       assert.ok(apiRequests.every(url => url.origin === app.origin), 'F19A_QA_CROSS_ORIGIN_API');

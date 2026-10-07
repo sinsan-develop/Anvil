@@ -30,6 +30,7 @@ from packages.persistence.f19a_registration_repository import (
 
 APPROVAL_SHA = "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5"
 BOOTSTRAP_PERMISSIONS = ["projects:register", "pair-grants:manage"]
+OTHER_PERMISSIONS = ["dashboard:read"]
 READINESS_PERMISSIONS = frozenset({"dashboard:read", "operations:alerts:read", "operations:alerts:acknowledge"})
 MANIFEST_KEYS = frozenset({"approval_sha256", "source_sha", "database_name", "issuer", "subject",
     "actor_id", "role_code", "project_id", "environment_id", "permissions", "expires_at", "revoke_after"})
@@ -167,6 +168,135 @@ def apply_qa_bootstrap(session_factory, manifest: dict, *, database_name: str,
         _reject("F19A_QA_DATABASE_UNAVAILABLE")
 
 
+def validate_other_manifest(manifest: dict, *, database_name: str, source_sha: str,
+                            trusted_pair: tuple[str, str] | None = None,
+                            now: datetime | None = None, allow_expired_cleanup: bool = False) -> dict:
+    """Bind the third QA principal to one fixed subject and one permission."""
+    if (type(manifest) is not dict or type(source_sha) is not str or _SHA.fullmatch(source_sha) is None
+            or manifest.get("subject") != "f19a-qa-other"
+            or manifest.get("actor_id") != f"f19a_qa_other_{source_sha[:12]}"
+            or manifest.get("role_code") != f"f19a_qa_other_{source_sha[:12]}"
+            or manifest.get("permissions") != OTHER_PERMISSIONS):
+        _reject()
+    admin_shape = {**manifest, "subject": "synthetic-subject-1",
+        "actor_id": f"f19a_qa_admin_{source_sha[:12]}",
+        "role_code": f"f19a_qa_bootstrap_{source_sha[:12]}",
+        "permissions": BOOTSTRAP_PERMISSIONS}
+    validation_time = now or datetime.now(timezone.utc)
+    if allow_expired_cleanup:
+        try:
+            expires = datetime.fromisoformat(manifest["expires_at"])
+            if expires.tzinfo is None:
+                _reject()
+            if expires <= validation_time:
+                validation_time = expires - timedelta(seconds=1)
+        except (TypeError, ValueError, KeyError):
+            _reject()
+    validate_qa_manifest(admin_shape, database_name=database_name, source_sha=source_sha,
+        trusted_pair=trusted_pair, now=validation_time)
+    return dict(manifest)
+
+
+def _other_state(session, desired: dict) -> str:
+    actor, role, membership, binding = _rows(session, desired)
+    actor_bindings = session.execute(sa.select(oidc_subject_bindings).where(
+        oidc_subject_bindings.c.actor_id == desired["actor_id"])).mappings().all()
+    actor_memberships = session.execute(sa.select(user_roles).where(
+        user_roles.c.actor_id == desired["actor_id"])).mappings().all()
+    role_memberships = session.execute(sa.select(user_roles).where(
+        user_roles.c.role_code == desired["role_code"])).mappings().all()
+    grants = session.scalar(sa.select(sa.func.count()).select_from(pair_grants).where(
+        pair_grants.c.actor_id == desired["actor_id"]))
+    complete = all(row is not None for row in (actor, role, membership, binding))
+    absent = all(row is None for row in (actor, role, membership, binding))
+    exact = (complete and actor["active"] is True and role["permissions"] == OTHER_PERMISSIONS
+        and membership["role_code"] == desired["role_code"]
+        and membership["project_id"] == desired["project_id"]
+        and membership["environment_id"] == desired["environment_id"]
+        and membership["active"] is True and membership["step_up_required"] is False
+        and binding["actor_id"] == desired["actor_id"] and binding["active"] is True
+        and len(actor_bindings) == len(actor_memberships) == len(role_memberships) == 1
+        and grants == 0)
+    if exact:
+        return "UNCHANGED"
+    if not absent or actor_bindings or actor_memberships or role_memberships or grants:
+        _reject("F19A_QA_OTHER_IDENTITY_CONFLICT")
+    return "CREATABLE"
+
+
+def preflight_qa_other(session_factory, manifest: dict, *, database_name: str,
+                       source_sha: str, trusted_pair: tuple[str, str] | None = None) -> str:
+    desired = validate_other_manifest(manifest, database_name=database_name, source_sha=source_sha,
+                                      trusted_pair=trusted_pair)
+    if not callable(session_factory):
+        _reject("F19A_QA_DATABASE_UNAVAILABLE")
+    try:
+        with session_factory() as session:
+            return _other_state(session, desired)
+    except QABootstrapRejected:
+        raise
+    except Exception:
+        _reject("F19A_QA_DATABASE_UNAVAILABLE")
+
+
+def apply_qa_other(session_factory, manifest: dict, *, database_name: str,
+                   source_sha: str, trusted_pair: tuple[str, str] | None = None) -> str:
+    """Seed only an absent third principal; never create a pair grant."""
+    desired = validate_other_manifest(manifest, database_name=database_name, source_sha=source_sha,
+                                      trusted_pair=trusted_pair)
+    if not callable(session_factory):
+        _reject("F19A_QA_DATABASE_UNAVAILABLE")
+    try:
+        with session_factory() as session:
+            with session.begin():
+                state = _other_state(session, desired)
+                if state == "UNCHANGED":
+                    return "UNCHANGED"
+                session.execute(users.insert().values(actor_id=desired["actor_id"], active=True))
+                session.execute(roles.insert().values(role_code=desired["role_code"],
+                    permissions=OTHER_PERMISSIONS))
+                session.execute(user_roles.insert().values(actor_id=desired["actor_id"],
+                    role_code=desired["role_code"], project_id=desired["project_id"],
+                    environment_id=desired["environment_id"], step_up_required=False, active=True))
+                session.execute(oidc_subject_bindings.insert().values(issuer=desired["issuer"],
+                    subject=desired["subject"], actor_id=desired["actor_id"], active=True))
+                return "CREATED"
+    except QABootstrapRejected:
+        raise
+    except Exception:
+        _reject("F19A_QA_DATABASE_UNAVAILABLE")
+
+
+def remove_qa_other(session_factory, manifest: dict, *, database_name: str,
+                    source_sha: str, trusted_pair: tuple[str, str] | None = None) -> str:
+    """Remove only a completely matched, grant-free third QA identity."""
+    desired = validate_other_manifest(manifest, database_name=database_name, source_sha=source_sha,
+                                      trusted_pair=trusted_pair, allow_expired_cleanup=True)
+    if not callable(session_factory):
+        _reject("F19A_QA_DATABASE_UNAVAILABLE")
+    try:
+        with session_factory() as session:
+            with session.begin():
+                if _other_state(session, desired) == "CREATABLE":
+                    return "ABSENT"
+                session.execute(oidc_subject_bindings.delete().where(
+                    oidc_subject_bindings.c.issuer == desired["issuer"],
+                    oidc_subject_bindings.c.subject == desired["subject"],
+                    oidc_subject_bindings.c.actor_id == desired["actor_id"]))
+                session.execute(user_roles.delete().where(
+                    user_roles.c.actor_id == desired["actor_id"],
+                    user_roles.c.role_code == desired["role_code"],
+                    user_roles.c.project_id == desired["project_id"],
+                    user_roles.c.environment_id == desired["environment_id"]))
+                session.execute(roles.delete().where(roles.c.role_code == desired["role_code"]))
+                session.execute(users.delete().where(users.c.actor_id == desired["actor_id"]))
+                return "REMOVED"
+    except QABootstrapRejected:
+        raise
+    except Exception:
+        _reject("F19A_QA_DATABASE_UNAVAILABLE")
+
+
 def validate_isolated_pg15_url(raw: str):
     """Reject every target except a dedicated local QA database before connecting."""
     try:
@@ -247,9 +377,25 @@ def require_runtime_policy(runtime_inputs, manifest: dict, *, target_role: str |
         _reject("F19A_QA_RUNTIME_POLICY_NOT_READY")
 
 
+def require_other_runtime_policy(runtime_inputs, manifest: dict) -> bool:
+    """The dedicated third role must be usable by the actual OIDC host."""
+    try:
+        policy = runtime_inputs.principal_policy
+        roles = runtime_inputs.authorization_scope.allowed_actor_roles
+        if (policy.issuer != manifest["issuer"]
+                or manifest["role_code"] not in policy.allowed_roles
+                or manifest["role_code"] not in roles
+                or not set(OTHER_PERMISSIONS) <= policy.allowed_permissions):
+            _reject("F19A_QA_RUNTIME_POLICY_NOT_READY")
+        return True
+    except (AttributeError, KeyError, TypeError):
+        _reject("F19A_QA_RUNTIME_POLICY_NOT_READY")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="F-19A isolated WSL-server PG15 QA only")
-    parser.add_argument("action", choices=("preflight", "seed", "readiness", "rollback-check"))
+    parser.add_argument("action", choices=("preflight", "seed", "readiness", "rollback-check",
+        "other-preflight", "other-seed", "other-readiness", "other-cleanup"))
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--target-actor-id")
@@ -264,9 +410,11 @@ def main(argv=None):
         runtime_inputs = load_oidc_process_inputs(os.environ)
         trusted_pair = (runtime_inputs.authorization_scope.project_id,
                         runtime_inputs.authorization_scope.environment_id)
-        manifest = validate_qa_manifest(_read_manifest(args.manifest), database_name=url.database,
-                                        source_sha=sha, trusted_pair=trusted_pair)
-        require_runtime_policy(runtime_inputs, manifest)
+        other_action = args.action.startswith("other-")
+        manifest = (validate_other_manifest if other_action else validate_qa_manifest)(
+            _read_manifest(args.manifest), database_name=url.database,
+            source_sha=sha, trusted_pair=trusted_pair)
+        (require_other_runtime_policy if other_action else require_runtime_policy)(runtime_inputs, manifest)
         engine = sa.create_engine(url.render_as_string(hide_password=False))
         with engine.connect() as connection:
             version = int(connection.exec_driver_sql("SHOW server_version_num").scalar_one())
@@ -287,6 +435,18 @@ def main(argv=None):
             result = "READY" if check_qa_readiness(factory, manifest,
                 target_actor_id=args.target_actor_id, target_subject=args.target_subject,
                 trusted_pair=trusted_pair, runtime_inputs=runtime_inputs) else "NOT_READY"
+        elif args.action == "other-preflight":
+            result = preflight_qa_other(factory, manifest, database_name=url.database,
+                                        source_sha=sha, trusted_pair=trusted_pair)
+        elif args.action == "other-seed":
+            result = apply_qa_other(factory, manifest, database_name=url.database,
+                                    source_sha=sha, trusted_pair=trusted_pair)
+        elif args.action == "other-readiness":
+            result = "READY" if preflight_qa_other(factory, manifest, database_name=url.database,
+                source_sha=sha, trusted_pair=trusted_pair) == "UNCHANGED" else "NOT_READY"
+        elif args.action == "other-cleanup":
+            result = remove_qa_other(factory, manifest, database_name=url.database,
+                                     source_sha=sha, trusted_pair=trusted_pair)
         else:
             result = decide_rollback(factory, manifest, target_sha=args.target_sha, guarded_sha=sha,
                                      trusted_pair=trusted_pair)
