@@ -1,22 +1,26 @@
-# F-19A Task1 종료 후 역사 fixture 고정 재작업 종료 handoff
+# F-19A Task 2 최소 등록·목록 API handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2173,
-  "last_event_id": "evt_f19a_2173_task1_closed_history_fixture_worker_lease_revoked",
+  "event_sequence": 2176,
+  "last_event_id": "evt_f19a_2176_task2_registration_api_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task2-registration-api-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8",
+  "write_lease": "write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK2_API_DUAL_LEASE_PENDING",
-  "repository_head": "1fbfa0c1d8dfe8669b4ac1c03abc787bd296f140",
+  "next_safe_action": "F19A_TASK2_REGISTRATION_API_CONTROL_ONLY",
+  "repository_head": "daeb824524e85624e17f4ef099ec3d2b1eef7ca9",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 2 epoch78 bootstrap RED(Main, 2026-10-07): 신규 active checker route 부재에서 G-05 exit1, 공통 Event/HANDOFF/digest 오류 8종을 실측했다. PASS가 아니며 제품6 write 금지. Main 통제6(WI/WORK_STATUS/Event/progress/HANDOFF/digest)을 NON-GREEN checkpoint/private로 보존한 뒤 Developer exact control2 RED→GREEN에 착수한다. F-19A 전체 미수락이다.
+
+- F-19A Task 2 내부 WI 발급(Main, 2026-10-07): Task 1 최종 `daeb824524e85624e17f4ef099ec3d2b1eef7ca9` clean/실원격 동등, 종료 G-05 seq2173 PASS 및 게시 후 인접5파일 81 PASS/322.24초(exit0)를 확인했다. 승인 Spec/Plan의 여섯 API route와 정확 control2+제품6 경로 WI SHA `FD8538C3...`를 발행하고 frozen Event 1~2173 뒤 seq2174 WI→2175 worker→2176 write를 append-only 결박했다. epoch78 실행/write token 서로 다르고 24시간, 단일 Developer다. 제품 여섯 경로는 active control route 독립 검토·G-05·정확 checkpoint/private 전 WI gate로 잠긴다. 새 route bootstrap G-05는 아직 미검증이며 PASS가 아니다. F-19A 전체 ACTIVE·미수락, F-20/U01 REWORK·Release DEFER·Production NOT_EXECUTED다.
 
 - epoch77 종료 precommit GREEN(Main, 2026-10-07): closed G-05 seq2173 PASS(exit0), 인접5파일 81 PASS/323.87초(exit0), FAIL0/SKIP0. 독립 C0/I0/M0·독립 G-05 PASS·frozen Event seq1~2171 보존과 write→worker 회수·digest 일치·제품 diff0. 최종 통제5 checkpoint/private와 게시 후 clean G-05·회귀는 아직 미실행, F-19A 전체 미수락·Task2 API 새 lease0이다.
 
