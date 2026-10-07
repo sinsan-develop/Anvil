@@ -2568,20 +2568,50 @@ class F19AStartProjectionTests(unittest.TestCase):
                 change(forged)
                 self.assertTrue(self.validate_task2_registration_active(forged))
 
+    @contextmanager
+    def synthetic_task2_registration_active_git(self, *, remote=None, dirty=b""):
+        """Evaluate archived seq2176 A against its published Git state, not current C."""
+        head = "214e25c5d706328310a5f81551dbadce62eb78c2"
+        base = "daeb824524e85624e17f4ef099ec3d2b1eef7ca9"
+        original_output, original_run = subprocess.check_output, subprocess.run
+
+        def output(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == [
+                "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["rev-parse", "HEAD"]:
+                return (head + "\n").encode()
+            if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                return ((remote or head) + "\n").encode()
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            if tail == ["status", "--porcelain=v1", "-uall"]:
+                return dirty
+            if tail == ["diff", "--name-only", "--no-renames", f"{base}..HEAD"]:
+                return b"docs/progress/build-progress.json\n"
+            return original_output(command, *args, **kwargs)
+
+        def run(command, *args, **kwargs):
+            if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return subprocess.CompletedProcess(command, 0)
+            return original_run(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(subprocess, "run", side_effect=run):
+            yield
+
     def test_task2_registration_active_git_rejects_remote_and_product_dirty(self):
         bundle = self.task2_registration_active_bundle()
-        self.assertEqual(checker._collect_f19a_task2_registration_api_git(bundle), [])
+        with self.synthetic_task2_registration_active_git():
+            self.assertEqual(checker._collect_f19a_task2_registration_api_git(bundle), [])
         forged = deepcopy(bundle)
         forged["progress"]["repository"]["remote_head"] = "0" * 40
-        self.assertTrue(checker._collect_f19a_task2_registration_api_git(forged))
-        original = subprocess.check_output
-
-        def dirty_product(command, *args, **kwargs):
-            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
-                return b" M packages/api/f19a_registration.py\n"
-            return original(command, *args, **kwargs)
-
-        with patch.object(subprocess, "check_output", side_effect=dirty_product):
+        with self.synthetic_task2_registration_active_git():
+            self.assertTrue(checker._collect_f19a_task2_registration_api_git(forged))
+        with self.synthetic_task2_registration_active_git(remote="0" * 40):
+            self.assertTrue(checker._collect_f19a_task2_registration_api_git(bundle))
+        with self.synthetic_task2_registration_active_git(dirty=b" M packages/api/f19a_registration.py\n"):
             self.assertTrue(checker._collect_f19a_task2_registration_api_git(bundle))
 
     @staticmethod
