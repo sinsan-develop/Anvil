@@ -1,22 +1,26 @@
-# F-19A Task1 저장 원장 통제 bootstrap handoff
+# F-19A Task1 저장 원장 절편 종료 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2156,
-  "last_event_id": "evt_f19a_2156_task1_write_lease_issued",
+  "event_sequence": 2158,
+  "last_event_id": "evt_f19a_2158_task1_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task1-3109d00f63784eeeaa7435fd2660e1a2",
-  "write_lease": "write-lease-f19a-task1-587fa29e9fcf4813b46f0f2d55cc0975",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK1_PRODUCT_RED_TESTS_ONLY",
-  "repository_head": "26935fc4b078ffd8583042bd3643a14af7dfbcd8",
+  "next_safe_action": "F19A_TASK2_API_DUAL_LEASE_PENDING",
+  "repository_head": "e7d7976b6a2d8bfd7a71162796feaf0635e294e9",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task1 종료 후 인접 회귀 NON-GREEN: 실제 G-05 seq2158 PASS와 별개로 기존 인접5파일은 57 PASS/5 FAIL(282.15초, exit1)이다. 다섯 실패는 모두 신규 `test_f19a_start_projection.py`가 활성 seq2156을 live로 고정한 fixture 경계에 집중된다. 실제 종료 Event/lease 검사가 실패했다는 증거는 없으나 전체 GREEN 전 Task2 API lease를 열지 않는다. Main은 control5 NON-GREEN checkpoint/private 보존 뒤 별도 정확2경로 비제품 WI/dual lease로 역사 fixture를 수정한다. 이 시점 control5 final commit/private push는 아직 미실행이다.
+
+- Task1 저장 절편 종료 투영(Main, 2026-10-07): 독립 C0/I0/M0, 정확 private SHA `e7d7976b6a2d8bfd7a71162796feaf0635e294e9` clean·G-05 seq2156 PASS 뒤 Event 2157 write→2158 worker 임대를 회수했다. 활성 agent/두 임대는 null, epoch74 두 완료 임대는 REVOKED다. 로컬 104 PASS/PG opt-in 2 SKIP과 WSL-server 정확 Git SHA의 격리 PG15 2 PASS·pg_dump/restore 동등·임시 자원 잔여0을 Task1 저장 범위 증거로 보존한다. 이 문서 시점 종료 G-05·인접 회귀·final close commit/private push는 아직 미실행이다. F-19A 전체 미수락·F-20/U01 REWORK·Release DEFER·Production NOT_EXECUTED이며 다음은 Task2 API의 별도 WI/dual lease다.
 
 - Task1 저장 원장 WSL 실증: exact private Git SHA `a2669849c45c4c1848e86929e0460f329979b7ff` clean으로 WSL-server 전용 PG15에서 0020·복합 FK·철회·audit 불변·데이터 존재 downgrade guard 2 PASS(exit0), native pg_dump 212219 bytes/SHA `e36dc402...`→전용 restore DB pg_restore 완료·0020 동일·네 테이블 데이터 해시 동일/건수 2:2:1:6. 시험 전용 container/익명 volume/loopback 포트/checkout/venv/backup 파일은 신원 확인 후 제거해 잔여0이다. 앞선 잘못 적은 기대 SHA·editable pip flat-layout·checkout 안 venv의 clean 검사 exit1은 각각 정정했고 PG test 실패가 아니다. F-19A 전체 미수락, Task1 임대 종료·final checkpoint/closed G-05는 아직 미실행이다.
 

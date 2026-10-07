@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2156,
+  "last_sequence": 2158,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -100962,7 +100962,49 @@
       "write_fencing_token": "f19a-task1-write-fence-epoch-74-587fa29e9fcf4813b46f0f2d55cc0975",
       "product_write_scope": ["migrations/versions/0020_f19a_registration_pair_grants.py", "packages/persistence/f19a_registration_repository.py", "tests/persistence/test_f19a_registration_repository.py", "tests/integration/test_f19a_registration_pg15.py"]
     }
+  },
+  {
+    "sequence": 2157,
+    "event_id": "evt_f19a_2157_task1_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK1_REGISTRATION_STORE_CLOSE",
+    "subject_ref": "F-19A/TASK1-REGISTRATION-STORE",
+    "occurred_at": "2026-10-07T01:26:27+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "59EA45323FB92989115E71A22C1B089C1F2E1FEFFA3BC2BA24E16B27039D6D2C",
+    "details": {
+      "lease_id": "write-lease-f19a-task1-587fa29e9fcf4813b46f0f2d55cc0975",
+      "write_fencing_token": "f19a-task1-write-fence-epoch-74-587fa29e9fcf4813b46f0f2d55cc0975",
+      "reason": "F19A_TASK1_REGISTRATION_STORE_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2158,
+    "event_id": "evt_f19a_2158_task1_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK1_REGISTRATION_STORE_CLOSE",
+    "subject_ref": "F-19A/TASK1-REGISTRATION-STORE",
+    "occurred_at": "2026-10-07T01:26:27+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "91AF91D48A56945C0F9F21112DB5CB8D1D5475666B0F9FE8EA3071276E93502A",
+    "details": {
+      "lease_id": "worker-lease-f19a-task1-3109d00f63784eeeaa7435fd2660e1a2",
+      "execution_fencing_token": "f19a-task1-execution-fence-epoch-74-3109d00f63784eeeaa7435fd2660e1a2",
+      "reason": "F19A_TASK1_REGISTRATION_STORE_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2156_task1_write_lease_issued"
+  "last_event_id": "evt_f19a_2158_task1_worker_lease_revoked"
 }
