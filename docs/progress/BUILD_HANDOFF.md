@@ -1,4 +1,6 @@
-# F-19A Task 4 runtime head 0020 호환성 시작 handoff
+# F-19A Task 4 runtime head 0020 호환성 종료 handoff
+
+epoch87 lease 종료 후보(Main, 2026-10-08): 활성 B `ef8b387eb547b80c35a2228d4ab9400e3fc748eb` local/private 동일·clean·G-05 seq2221 PASS·집중7 PASS를 확인했다. 원문 Event seq1~2221 뒤 seq2222 write→2223 worker revoke만 append했고 두 lease REVOKED·활성 null이다. 종료 G-05·집중/역사 재실행·private 게시/clean 확인 전 세 번째 actor QA fixture WI/WSL-server 자원 생성 금지. Worker/Web 0020 로컬 코드는 검증됐지만 실제 WSL-server Worker·제3 actor·GET/alerts/ACK·DB fault는 미검증이다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch87 C checkpoint(Main, 2026-10-08): Developer 정확6 코드 `ceb9dcba85c0b170643acda261c07793a32023d3`가 local/private 동일·clean이며 제품 Worker OIDC 0019/0020·Web READY 0016/0019/0020만 확장했다. Developer Worker19·Web86·typecheck/build·epoch87 집중7·F-19A 역사105·F-20 successor21 PASS, 최종 인접142 PASS/기존 R48 authority2 FAIL, G-05 seq2221 PASS, Ruff 신규0, diff PASS. Main 독립 Worker19·Web86·집중7·G-05 PASS, 정확6 SHA/diff 검토에서 Critical/Important0이다. 첫 인접135 PASS/8 FAIL은 역사 fixture 만료5·epoch87 legacy entrypoint 누락1을 TDD 보정해 새 실패0으로 재확인했고 R48 기존2는 미해결이다. 이 B 문서가 제품 C SHA를 결박하는 활성 종료 후보이며 B G-05/게시/clean 확인 전 write→worker lease 회수 금지. WSL-server/DB/브라우저 재QA는 미실행, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -50,16 +52,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2221,
-  "last_event_id": "evt_f19a_2221_task4_runtime_head_compat_write_lease_issued",
+  "event_sequence": 2223,
+  "last_event_id": "evt_f19a_2223_task4_runtime_head_compat_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-runtime-head-compat-73f7d8b4b1f947c48687a9c66fc18e7e",
-  "write_lease": "write-lease-f19a-task4-runtime-head-compat-c22d92d219ef47159ac92d5dfcbe7210",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_RUNTIME_HEAD_COMPAT_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_QA_FIXTURE_DUAL_LEASE_PENDING",
   "repository_head": "ceb9dcba85c0b170643acda261c07793a32023d3",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"

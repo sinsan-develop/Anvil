@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2221,
+  "last_sequence": 2223,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102819,7 +102819,49 @@
       "write_fencing_token": "f19a-task4-runtime-head-compat-write-fence-epoch-87-c22d92d219ef47159ac92d5dfcbe7210",
       "product_write_scope": ["apps/worker/anvil_worker/main.py", "tests/integration/test_f15_local_stack.py", "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs"]
     }
+  },
+  {
+    "sequence": 2222,
+    "event_id": "evt_f19a_2222_task4_runtime_head_compat_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_RUNTIME_HEAD_COMPAT_CLOSE",
+    "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+    "occurred_at": "2026-10-07T20:04:12+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "BA5EE151E3E4A9BA6EEDC5FE16E148C8A7FBFCF518F8951BD2EDD25C7EE749F9",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-runtime-head-compat-c22d92d219ef47159ac92d5dfcbe7210",
+      "write_fencing_token": "f19a-task4-runtime-head-compat-write-fence-epoch-87-c22d92d219ef47159ac92d5dfcbe7210",
+      "reason": "F19A_TASK4_RUNTIME_HEAD_COMPAT_COMPLETE_QA_FIXTURE_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2223,
+    "event_id": "evt_f19a_2223_task4_runtime_head_compat_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_RUNTIME_HEAD_COMPAT_CLOSE",
+    "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+    "occurred_at": "2026-10-07T20:04:12+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "91F7C74B76D90A83F2ECA953F7B9356DECA4C4E2CCF35A2A350DB2835492D2B1",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-runtime-head-compat-73f7d8b4b1f947c48687a9c66fc18e7e",
+      "execution_fencing_token": "f19a-task4-runtime-head-compat-execution-fence-epoch-87-73f7d8b4b1f947c48687a9c66fc18e7e",
+      "reason": "F19A_TASK4_RUNTIME_HEAD_COMPAT_COMPLETE_QA_FIXTURE_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2221_task4_runtime_head_compat_write_lease_issued"
+  "last_event_id": "evt_f19a_2223_task4_runtime_head_compat_worker_lease_revoked"
 }
