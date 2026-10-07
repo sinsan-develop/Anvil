@@ -15,20 +15,21 @@ from packages.persistence.config import DatabaseSettings
 
 REQUIRED_MIGRATION_HEAD = "0016_operations_recovery"
 OIDC_MIGRATION_HEAD = "0019_oidc_sessions"
+F19A_MIGRATION_HEAD = "0020_f19a_pair_grants"
 
 
-def _required_migration_head(auth_mode: str | None) -> str | None:
+def _allowed_migration_heads(auth_mode: str | None) -> tuple[str, ...] | None:
     if auth_mode is None or auth_mode in {"COOKIE", "WSL_ACCEPTANCE"}:
-        return REQUIRED_MIGRATION_HEAD
+        return (REQUIRED_MIGRATION_HEAD,)
     if auth_mode == "OIDC":
-        return OIDC_MIGRATION_HEAD
+        return (OIDC_MIGRATION_HEAD, F19A_MIGRATION_HEAD)
     return None
 
 
 def probe_worker_database(engine, *, auth_mode: str | None = None) -> dict[str, str]:
     """Prove only DB reachability/head, never queue-processing readiness."""
-    expected_head = _required_migration_head(auth_mode)
-    if expected_head is None:
+    allowed_heads = _allowed_migration_heads(auth_mode)
+    if allowed_heads is None:
         return {"component": "worker_process", "status": "not_ready", "reason": "invalid_auth_mode"}
     try:
         with engine.connect() as connection:
@@ -36,7 +37,7 @@ def probe_worker_database(engine, *, auth_mode: str | None = None) -> dict[str, 
             head = connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one_or_none()
     except Exception:
         return {"component": "worker_process", "status": "not_ready", "reason": "database_unavailable"}
-    if head != expected_head:
+    if head not in allowed_heads:
         return {"component": "worker_process", "status": "not_ready", "reason": "migration_head_mismatch"}
     return {"component": "worker_process", "status": "ready", "migration_head": head}
 
@@ -46,7 +47,7 @@ def main(argv: list[str] | None = None) -> int:
     arguments.add_argument("--check", action="store_true", help="Check DB/head once and exit")
     args = arguments.parse_args(argv)
     auth_mode = os.environ.get("ANVIL_AUTH_MODE")
-    if _required_migration_head(auth_mode) is None:
+    if _allowed_migration_heads(auth_mode) is None:
         print(json.dumps({"component": "worker_process", "status": "not_ready", "reason": "invalid_auth_mode"}))
         return 1
     try:

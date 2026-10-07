@@ -25,10 +25,15 @@ test('unknown route is a safe route boundary without fake business content', () 
 });
 
 test('readiness accepts only confirmed operations or OIDC migration heads', () => {
+  assert.equal(classifyReadiness({status:'ready', migration_head:'0020_f19a_pair_grants'}), 'READY');
   assert.equal(classifyReadiness({status:'ready', migration_head:'0019_oidc_sessions'}), 'READY');
   assert.equal(classifyReadiness({status:'ready', migration_head:'0016_operations_recovery'}), 'READY');
   assert.equal(classifyReadiness({status:'ready', migration_head:'0013_task_bootstrap_authority'}), 'NOT CONNECTED');
   assert.equal(classifyReadiness({status:'ready', migration_head:'unknown'}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:'0018_oidc_principals'}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:['0019_oidc_sessions', '0020_f19a_pair_grants']}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:''}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'not_ready', migration_head:'0020_f19a_pair_grants'}), 'NOT CONNECTED');
   assert.equal(classifyReadiness({status:'not_ready', migration_head:'0019_oidc_sessions'}), 'NOT CONNECTED');
   assert.equal(classifyReadiness({status:'not_ready', reason:'database_unavailable'}), 'NOT CONNECTED');
   assert.equal(classifyReadiness(null), 'NOT CONNECTED');
@@ -43,6 +48,12 @@ test('Database card shows the server-confirmed head without claiming a different
   assert.match(oidc, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0019_oidc_sessions/s);
   assert.doesNotMatch(oidc, /status-ready|HEALTHY/);
   assert.doesNotMatch(oidc, /0016_operations_recovery/);
+
+  const f19a = renderToStaticMarkup(React.createElement(card, {
+    value: {status:'ready', migration_head:'0020_f19a_pair_grants'},
+  }));
+  assert.match(f19a, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0020_f19a_pair_grants/s);
+  assert.doesNotMatch(f19a, /HEALTHY|0016_operations_recovery|0019_oidc_sessions/);
 
   const operations = renderToStaticMarkup(React.createElement(card, {
     value: {status:'ready', migration_head:'0016_operations_recovery'},

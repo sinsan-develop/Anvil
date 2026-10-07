@@ -724,7 +724,8 @@ export function ProviderHealthCard({value, operations}: {value: ProviderRegistra
 export function classifyReadiness(value: unknown): Readiness {
   if (typeof value !== 'object' || value === null) return 'NOT CONNECTED';
   const payload = value as Record<string, unknown>;
-  return payload.status === 'ready' && (payload.migration_head === '0016_operations_recovery' || payload.migration_head === '0019_oidc_sessions')
+  return payload.status === 'ready' && (payload.migration_head === '0016_operations_recovery' ||
+    payload.migration_head === '0019_oidc_sessions' || payload.migration_head === '0020_f19a_pair_grants')
     ? 'READY' : 'NOT CONNECTED';
 }
 
