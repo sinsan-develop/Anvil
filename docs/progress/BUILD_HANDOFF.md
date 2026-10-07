@@ -1,4 +1,6 @@
-# F-19A Task 4 runtime head 0020 호환성 종료 handoff
+# F-19A Task 4 세 번째 actor QA fixture 시작 handoff
+
+epoch88 시작(Main, 2026-10-08): epoch87 종료 `df253d71a4c521df69b97bdc249dd5d7e2081fb6` local/private clean·G-05 seq2223 PASS·역사106 PASS를 기준으로 비의미 WI `A02DECBCBDD930F187996E87BBA0E2F31313458345B9FA5733CF2FBA2BB01783`를 발행했다. Event seq2224 WI→2225 worker→2226 write, 24시간·분리 token·Developer 통제 정확2/QA 제품 정확6을 결박한다. 세 번째 합성 subject/전용 `dashboard:read` role의 무 grant 200 빈 목록과 기존 admin coarse403을 분리한다. 새 checker route 전 bootstrap G-05 RED는 PASS가 아니다. 이 절편은 로컬 QA harness·테스트에 한정하고 실제 WSL-server 자원/브라우저는 C/B/lease 종료 후 Main이 exact SHA로 검증한다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch87 lease 종료 후보(Main, 2026-10-08): 활성 B `ef8b387eb547b80c35a2228d4ab9400e3fc748eb` local/private 동일·clean·G-05 seq2221 PASS·집중7 PASS를 확인했다. 원문 Event seq1~2221 뒤 seq2222 write→2223 worker revoke만 append했고 두 lease REVOKED·활성 null이다. 종료 G-05·집중/역사 재실행·private 게시/clean 확인 전 세 번째 actor QA fixture WI/WSL-server 자원 생성 금지. Worker/Web 0020 로컬 코드는 검증됐지만 실제 WSL-server Worker·제3 actor·GET/alerts/ACK·DB fault는 미검증이다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -52,16 +54,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2223,
-  "last_event_id": "evt_f19a_2223_task4_runtime_head_compat_worker_lease_revoked",
+  "event_sequence": 2226,
+  "last_event_id": "evt_f19a_2226_task4_third_actor_qa_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-third-actor-qa-fixture-fa00c01bcaa94d4fa457eeb7cf8d0240",
+  "write_lease": "write-lease-f19a-task4-third-actor-qa-fixture-12c7a9886589434e8ddc51da6377ce4a",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_QA_FIXTURE_DUAL_LEASE_PENDING",
+  "next_safe_action": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_ACTIVE",
   "repository_head": "ceb9dcba85c0b170643acda261c07793a32023d3",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
