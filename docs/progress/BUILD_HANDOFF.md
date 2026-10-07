@@ -1,4 +1,6 @@
-# F-19A Task 4 epoch72 역사 시계 fixture checkpoint handoff
+# F-19A Task 4 epoch72 역사 시계 fixture 종료 handoff
+
+epoch89 lease 종료 후보(Main, 2026-10-08): 활성 B `1119ab82ecd5519a54c337a81b45e900a444ee16` local/private 동일·clean·G-05 seq2231 PASS·집중8 PASS 뒤 원문 Event seq1~2231 보존, seq2232 write→2233 worker를 순차 회수했다. 완료 lease 둘 REVOKED·활성 null, 코드 C `2a6409f2b21ddf05cbc44e52ee1d6588e04e7356`와 B의 결박을 보존한다. 이 종료 후보의 G-05·역사 전체·private 게시/clean 전 WSL-server 자원 생성 금지. 실제 PG15/OIDC/HTTPS/Chromium·Worker0020·GET/alerts/ACK·DB fault·독립 Tester 미검증, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch89 코드 checkpoint(Main, 2026-10-08): Developer 정확2 `2a6409f2b21ddf05cbc44e52ee1d6588e04e7356` local/private 동일·clean. 역사 epoch72 8 PASS, epoch89 집중8 PASS, Main 독립 결합16 PASS·G-05 seq2231 PASS, Developer 인접157 PASS/기존 R48 authority2 FAIL, Ruff 변경행 신규0·diff PASS다. 두 파일 SHA와 시간 경계·Event/Git 통제 diff를 Main이 검토해 확정 Critical/Important0으로 판단했다. 이 B 문서는 C SHA를 결박하는 활성 종료 후보이며 B G-05·private 게시·clean 전 write→worker lease 회수 금지. 실제 WSL-server/PG15/OIDC/Chromium·독립 Tester는 미실행, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -62,16 +64,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2231,
-  "last_event_id": "evt_f19a_2231_task4_epoch72_clock_fixture_write_lease_issued",
+  "event_sequence": 2233,
+  "last_event_id": "evt_f19a_2233_task4_epoch72_clock_fixture_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-epoch72-clock-fixture-1535f4aff9424b81b77d847d07a1814e",
-  "write_lease": "write-lease-f19a-task4-epoch72-clock-fixture-d169a0ad569d4c059684c0f9a42251ea",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
   "repository_head": "2a6409f2b21ddf05cbc44e52ee1d6588e04e7356",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"

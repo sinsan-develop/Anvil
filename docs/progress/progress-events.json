@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2231,
+  "last_sequence": 2233,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103089,7 +103089,49 @@
       "write_fencing_token": "f19a-task4-epoch72-clock-fixture-write-fence-epoch-89-d169a0ad569d4c059684c0f9a42251ea",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2232,
+    "event_id": "evt_f19a_2232_task4_epoch72_clock_fixture_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK4-EPOCH72-CLOCK-FIXTURE",
+    "occurred_at": "2026-10-07T22:03:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A39D5D1359E174CF199F23A895E81D07A6E8AC88A0ECBB32AF0D816447678428",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-epoch72-clock-fixture-d169a0ad569d4c059684c0f9a42251ea",
+      "write_fencing_token": "f19a-task4-epoch72-clock-fixture-write-fence-epoch-89-d169a0ad569d4c059684c0f9a42251ea",
+      "reason": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2233,
+    "event_id": "evt_f19a_2233_task4_epoch72_clock_fixture_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK4-EPOCH72-CLOCK-FIXTURE",
+    "occurred_at": "2026-10-07T22:03:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "AA1DA42A94203CD717A65C1D1E637A4A17FD9B24F25F74E2626CF24889AF16CC",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-epoch72-clock-fixture-1535f4aff9424b81b77d847d07a1814e",
+      "execution_fencing_token": "f19a-task4-epoch72-clock-fixture-execution-fence-epoch-89-1535f4aff9424b81b77d847d07a1814e",
+      "reason": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2231_task4_epoch72_clock_fixture_write_lease_issued"
+  "last_event_id": "evt_f19a_2233_task4_epoch72_clock_fixture_worker_lease_revoked"
 }
