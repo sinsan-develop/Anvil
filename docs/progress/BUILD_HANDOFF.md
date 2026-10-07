@@ -18,6 +18,10 @@
 }
 ```
 
+- Task1 제품4 local 후보: 기존 I1 존재 노출을 RED 2 FAIL→GREEN 2 PASS로 해소했다. 최종 신규4파일 SHA는 migration `649B5AE3...`, repository `A8BBF664...`, unit `93D18D8C...`, PG opt-in `A1583886...`; Developer·Main 최종 104 PASS/2 PG15 SKIP, Alembic 0020 head, G-05 seq2156 PASS, diff0, 독립 C0/I0/M0이다. PG15 실측/backup-restore·제품 후보 commit/private push는 아직 미실행, F-19A 미수락이다. 다음은 정확7파일 local checkpoint→private exact SHA→WSL-server 격리 PG15 검증이다.
+
+- Task1 제품4 첫 독립 리뷰는 I1 REWORK: 비소유자의 숨김 등록 대상에 대해 existing 403/missing 404로 존재 노출이 가능하다. 같은 epoch74 Developer에게 정확4파일 내 RED 음성 테스트·최소 보정을 재지시했고 Main은 제품 checkpoint/WSL을 중지했다. 첫 로컬 102 PASS·PG15 2 SKIP은 이 결함과 실제 DB/backup/restore를 증명하지 않으며 F-19A는 ACTIVE·미수락이다.
+
 - B 승격 사전검증: 같은 seq2156과 control anchor `26935fc4...`에서 실제 G-05 PASS·인접5파일 62 PASS/339.57초·diff0이다. 현재 dirty는 Main 통제 문서4뿐이고 제품4/DB/WSL write0이다. B 문서 checkpoint/private 원격 SHA·clean G-05는 아직 미실행, 제품 RED 착수는 잠금이다.
 
 - Task1 통제 checkpoint/private 일치: Main 독립 인접5파일 62 PASS/374.69초·active G-05 seq2156 PASS·독립 C0/I0/M1·제품4 변경0·staged 정확8파일 diff0을 확인해 기존 branch commit `26935fc4b078ffd8583042bd3643a14af7dfbcd8`를 정상 fast-forward push했고 실제 원격 SHA와 동일하다. 직후 A 상태의 G-05는 기록 HEAD가 옛 `29dc...`라 `F19A_TASK1_GIT_INVALID`(exit1)였고 PASS로 승격하지 않는다. 이 B 투영은 `control_checkpoint=26935...`와 제품 RED 준비 상태를 같은 seq2156에 결박하며 제품 코드·DB/WSL write는 아직0이다. B precommit/clean G-05와 B control 문서 checkpoint/private push는 아직 검증 전이다.
