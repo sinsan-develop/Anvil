@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2213,
+  "last_sequence": 2216,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",

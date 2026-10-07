@@ -1,5 +1,7 @@
 # F-19A Task 4 post-QA report control 활성 handoff
 
+활성 A4 Main 통제 인수(Main, 2026-10-08): 같은 문서 투영 근본 원인 세 번째로 Event 최상위 `last_sequence=2213` 잔류가 발견돼 Developer 코드 write를 중지했다. Main이 이벤트 행2216·footer·progress 순번을 대조해 최상위 값을2216으로 바로잡고, 새 Event 파일 해시→registry ref→snapshot self-hash→detached digest를 순서대로 재결박한다. 읽기 전용 일괄 감사에서 마지막 순번 외 Event 마지막3 체인, WI/보고서 해시, 분리 lease와 제품0, 기존 registry/snapshot/digest는 일치했다. 역사 Event 원문·코드 dirty2는 보존한다. A4 정확 문서 게시와 통제 재검증 전 Developer code write 재개 금지.
+
 활성 A3 정합 보완(Main, 2026-10-08): `registry_refs.progress_events.sha256`가 부모 seq2213 Event 파일 해시를 계속 가리켜 새 seq2216 Event 파일과 불일치했고, `next_work_package.status`도 이전 `TASK4_WSL_QA_PENDING`으로 남았다. 현 Event SHA `3B8332915E545F48F13F36AB94F1F294EA960C292C359F2F73C4D336E4D06BB0`와 현 활성 상태 `TASK4_POST_QA_REPORT_CONTROL_ACTIVE`로만 교정한다. Event 원문·WI/lease·제품 scope는 변경하지 않는다. A3 docs-only 게시·clean 전 Developer 코드 write 금지.
 
 활성 A2 정합 보완(Main, 2026-10-08): `repository.product_write_scope`에 epoch85 종료 제품3 경로가 남아 WI·seq2216 활성 write lease의 제품0과 충돌했다. 현재 repository 필드만 `[]`로 교정하고 역사 epoch85 binding/lease·원문 Event는 보존했다. `repository.local_head`·`remote_head`의 `4bbad...`는 이전 제품 code checkpoint anchor이며 실제 현재 Git HEAD/private는 별도로 검증한다. 이 A2 docs-only 게시·clean 전에 Developer 코드 write 금지.
