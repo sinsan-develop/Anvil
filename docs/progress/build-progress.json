@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task4-epoch89-post-close-fixture-start-seq2236",
+  "snapshot_id": "snapshot-f19a-task4-epoch89-post-close-fixture-checkpoint-seq2236",
   "event_sequence": 2236,
   "updated_at": "2026-10-07T22:27:44+00:00",
   "last_event_id": "evt_f19a_2236_task4_epoch89_post_close_fixture_write_lease_issued",
@@ -734,7 +734,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CONTROL",
+  "next_safe_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -845,13 +845,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "5605c86e42b2eb0fdc12234a846adebef56114c3",
+    "local_head": "5e15fc9f092a7bb2766974aa1206d4f21654ea0a",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "5605c86e42b2eb0fdc12234a846adebef56114c3",
+    "remote_head": "5e15fc9f092a7bb2766974aa1206d4f21654ea0a",
     "projection_mode": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE",
+    "head_relation": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1285,7 +1285,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE",
+    "worktree_status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1451,8 +1451,8 @@
     "path": "docs/work_orders/F-19A_TASK4_EPOCH89_POST_CLOSE_LIVE_FIXTURE_WORK_INSTRUCTION.md",
     "sha256": "C0AE929622DFE0485C374D764B1146EDE1BD1F0C2AE09242077286010D6C457B",
     "revision": 1,
-    "result_status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE",
-    "package_status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE",
+    "result_status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
+    "package_status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_INTERNAL_TASK4_EPOCH89_POST_CLOSE_FIXTURE_NON_SEMANTIC"
   },
@@ -1613,7 +1613,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE"
+    "status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -2005,8 +2005,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "CAAD21563F81F79459A775CC8415F66768623AFE5FA3335B31A0537D8C6D50B4",
-  "runtime_next_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CONTROL",
+  "snapshot_hash": "D54A4C6432BF2FFEFA457903656BE5D409A68DDFB2E890CFCD37790E27320C68",
+  "runtime_next_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23519,7 +23519,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task4_epoch89_post_close_fixture_binding": {
-    "status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE",
+    "status": "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2233,
     "predecessor_head": "5605c86e42b2eb0fdc12234a846adebef56114c3",
@@ -23536,7 +23536,8 @@
     "worker_lease_id": "worker-lease-f19a-task4-epoch89-post-close-fixture-e641b82283ae46f6b3f6f48fe337397f",
     "write_lease_id": "write-lease-f19a-task4-epoch89-post-close-fixture-abf16f5a378040318adf78e019aecc06",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CONTROL",
+    "next_safe_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE_ONLY",
+    "code_checkpoint": "5e15fc9f092a7bb2766974aa1206d4f21654ea0a",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
