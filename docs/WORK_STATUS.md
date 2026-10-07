@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- F-19A Task4 종료 fixture epoch83 lease 회수 후보(Main, 2026-10-07): 활성 B `df4efc2ef2632622e37bf30d8695665df9ced241` local/private clean·G-05 seq2201 PASS 후 Event 원문 seq1~2201 보존, seq2202 write→2203 worker revoke 순서. 두 lease REVOKED·활성 null, 다음 Task4 제품4는 별도 WI/dual lease 대기. 종료 G-05/집중 회귀·게시/clean 전 제품4·WSL/DB/브라우저 write 금지, 기존 R48 2 FAIL, F-19A 미수락, Release DEFER/Production NOT_EXECUTED.
+
 - F-19A Task4 종료 fixture epoch83 checkpoint 후보(Main, 2026-10-07): exact2 `f88801c2d8ce42d801fdf1ef3bff2ebe63ab722e` local/private 동일. Developer Task4 집중10 PASS·인접117 PASS/2 기존 R48 FAIL, Main 독립 집중10 PASS, 독립 리뷰 C0/I0/M0, G-05 seq2201 PASS·diff PASS·Ruff 신규0. 역사 Task4 A 현재시점 혼용과 epoch83 A/B/closed 종료 후 불변 Git·위조 음성을 RED→GREEN, 인접 successor 위임 회귀 1건도 재검증해 신규 실패0. 정식 실패보고0, 제품/문서 외 제품4·WSL/DB/브라우저 write0. 이 B 후보는 G-05·게시·clean 후에만 write→worker lease 회수. F-19A 미수락, Release DEFER/Production NOT_EXECUTED.
 
 - F-19A Task4 종료 fixture epoch83 시작(Main, 2026-10-07): 종료 `e17afb882f6a897688237f6dd8294340b65ab249` clean/private·G-05 seq2198 PASS, Task4 집중4 PASS/1 FAIL 기준. 비의미 WI SHA `94BB41B3B913B872AB10CA816C930A43BB147C83264639C74176BC706B799466`, Event seq2199 WI→2200 worker→2201 write, epoch83 24시간·서로 다른 token, Developer 통제 정확2/제품 scope0. 불변 A Git fixture가 현재 ROOT 상태를 섞지 않도록 RED→GREEN하고 epoch83 종료 후 재실행을 강제한다. 새 route 전 G-05 RED 예상/PASS 아님, 정식 실패보고0, 제품4·WSL/DB/브라우저 write0, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
