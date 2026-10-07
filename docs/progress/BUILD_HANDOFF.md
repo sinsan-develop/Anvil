@@ -1,4 +1,6 @@
-# F-19A Task 4 격리 QA 통제 시작 handoff
+# F-19A Task 4 격리 QA 통제 checkpoint handoff
+
+Task4 통제 C checkpoint(Main, 2026-10-07): exact2 `dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a` local/private 동일, Developer 통제76 PASS·인접112 PASS/2 기존 R48 FAIL, Main 집중5 PASS·G-05 seq2196 PASS·diff PASS, 독립 리뷰 C0/I0/M0. 이 문서/진행/digest는 C SHA 결박 B 후보이며 B G-05·게시·clean 확인 전 lease 회수·제품4 write 금지. WSL/DB/브라우저 미실행, F-19A 미수락·Release DEFER.
 
 Task4 통제 시작(Main, 2026-10-07): 종료 `897b0b660b9979794cc83c7ed69240a0be8bb9cc` local/private clean·G-05 seq2193 PASS·종료 전체 통제71 PASS를 기준으로 WI `D52149FE7114B595FD3D058E45659E3873835E2E311030B51A64E7DC2E16C637`를 결박했다. Event seq2194 WI→2195 worker→2196 write, epoch82 24시간·분리 token·통제 정확2/제품 scope0. 새 checker route 부재의 bootstrap G-05 RED는 PASS가 아니다. 제품 QA4·WSL-server 자원·Task4 실제 요청은 통제 C/B checkpoint/private·clean 검증과 별도 lease 전 금지. F-19A 전체 미수락, Release DEFER/Production NOT_EXECUTED.
 
@@ -19,8 +21,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-isolated-qa-control-931148c5d4fe4a1e8db7ea0ff6c90bd8",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_CONTROL_ONLY",
-  "repository_head": "897b0b660b9979794cc83c7ed69240a0be8bb9cc",
+  "next_safe_action": "F19A_TASK4_CONTROL_CLOSE_ONLY",
+  "repository_head": "dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }

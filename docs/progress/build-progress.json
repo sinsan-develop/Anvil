@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task4-isolated-qa-control-start-seq2196",
+  "snapshot_id": "snapshot-f19a-task4-isolated-qa-control-checkpoint-seq2196",
   "event_sequence": 2196,
   "updated_at": "2026-10-07T11:46:47+00:00",
   "last_event_id": "evt_f19a_2196_task4_isolated_qa_write_lease_issued",
@@ -718,7 +718,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_TASK4_CONTROL_ONLY",
+  "next_safe_action": "F19A_TASK4_CONTROL_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -829,13 +829,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "897b0b660b9979794cc83c7ed69240a0be8bb9cc",
+    "local_head": "dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "897b0b660b9979794cc83c7ed69240a0be8bb9cc",
+    "remote_head": "dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a",
     "projection_mode": "F19A_TASK4_ISOLATED_QA_CONTROL_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_TASK4_ISOLATED_QA_BOOTSTRAP_CONTROL_ONLY",
+    "head_relation": "F19A_TASK4_ISOLATED_QA_CONTROL_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1269,7 +1269,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19A_TASK4_ISOLATED_QA_BOOTSTRAP_CONTROL_ONLY",
+    "worktree_status": "F19A_TASK4_ISOLATED_QA_CONTROL_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1435,8 +1435,8 @@
     "path": "docs/work_orders/F-19A_TASK4_ISOLATED_QA_WORK_INSTRUCTION.md",
     "sha256": "D52149FE7114B595FD3D058E45659E3873835E2E311030B51A64E7DC2E16C637",
     "revision": 1,
-    "result_status": "TASK4_CONTROL_ONLY",
-    "package_status": "TASK4_CONTROL_ONLY",
+    "result_status": "TASK4_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "package_status": "TASK4_CONTROL_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_INTERNAL_TASK4_ISOLATED_QA_CONTROL"
   },
@@ -1597,7 +1597,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK4_CONTROL_ONLY"
+    "status": "TASK4_CONTROL_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -1989,8 +1989,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "4E660BDFA334762FE8D242F9B1D2B406741DAC58CF2087FC7E459E82A9DD1F2A",
-  "runtime_next_action": "F19A_TASK4_CONTROL_ONLY",
+  "snapshot_hash": "BFE0A28857CF10A876E53935DE63CB7C24F675DAA508497FDF3B746C530DEF11",
+  "runtime_next_action": "F19A_TASK4_CONTROL_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23503,7 +23503,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task4_isolated_qa_binding": {
-    "status": "TASK4_CONTROL_ONLY",
+    "status": "TASK4_CONTROL_CHECKPOINTED_CLOSE_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2193,
     "predecessor_head": "897b0b660b9979794cc83c7ed69240a0be8bb9cc",
@@ -23520,11 +23520,12 @@
     "worker_lease_id": "worker-lease-f19a-task4-isolated-qa-control-967ffd99104440e4bec1d21173faec03",
     "write_lease_id": "write-lease-f19a-task4-isolated-qa-control-931148c5d4fe4a1e8db7ea0ff6c90bd8",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_TASK4_CONTROL_ONLY",
+    "next_safe_action": "F19A_TASK4_CONTROL_CLOSE_ONLY",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
-    "event_sequence": 2196
+    "event_sequence": 2196,
+    "control_checkpoint": "dc399b4deae7c5043cd88e1598dfdf3ae2d7dd5a"
   },
   "f19a_task3_postclose_fixture_r2_binding": {
     "status": "TASK3_POSTCLOSE_FIXTURE_R2_CLOSED_NOT_F19A_ACCEPTED",
