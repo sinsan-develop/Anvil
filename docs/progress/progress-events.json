@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2218,
+  "last_sequence": 2221,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102729,7 +102729,97 @@
       "execution_fencing_token": "f19a-task4-post-qa-report-control-execution-fence-epoch-86-af72db45d73d47bcb31b97055c16ec91",
       "reason": "F19A_TASK4_POST_QA_REPORT_CONTROL_COMPLETE_PRODUCT_REWORK_PENDING_F19A_NOT_ACCEPTED"
     }
+  },
+  {
+    "sequence": 2219,
+    "event_id": "evt_f19a_2219_task4_runtime_head_compat_instruction",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_RUNTIME_HEAD_COMPAT",
+    "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+    "occurred_at": "2026-10-07T18:45:22+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "3929AD67EB7548A5E01568E6C7489B3B9E37C004D8FAD4D6567DF33B3C669D89",
+    "details": {
+      "path": "docs/work_orders/F-19A_TASK4_RUNTIME_HEAD_COMPATIBILITY_WORK_INSTRUCTION.md",
+      "sha256": "8B8ACE50A9E045FC9C99D0D049F661CA4474E8639018B65838DBD598A994B56C",
+      "classification": "MAIN_INTERNAL_TASK4_RUNTIME_HEAD_COMPAT_NON_SEMANTIC",
+      "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "spec_sha256": "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247",
+      "plan_sha256": "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E",
+      "baseline_git_commit": "db8a8d6f2e9af3179ad1037924a63e9f7f481205",
+      "predecessor_event_sequence": 2218,
+      "package_status": "TASK4_RUNTIME_HEAD_COMPAT_ACTIVE",
+      "accepted": false,
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py", "apps/worker/anvil_worker/main.py", "tests/integration/test_f15_local_stack.py", "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs"],
+      "product_write_scope": ["apps/worker/anvil_worker/main.py", "tests/integration/test_f15_local_stack.py", "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs"]
+    }
+  },
+  {
+    "sequence": 2220,
+    "event_id": "evt_f19a_2220_task4_runtime_head_compat_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_RUNTIME_HEAD_COMPAT",
+    "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+    "occurred_at": "2026-10-07T18:45:22+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "1724736BAEC7CBCB63DDCD67F2A831E835B725A0AB7F5DE24C51CD4363A4FC62",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-runtime-head-compat-73f7d8b4b1f947c48687a9c66fc18e7e",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-07T18:45:22+00:00",
+      "expires_at": "2026-10-08T18:45:22+00:00",
+      "lease_epoch": 87,
+      "fencing_token": "f19a-task4-runtime-head-compat-execution-fence-epoch-87-73f7d8b4b1f947c48687a9c66fc18e7e",
+      "execution_fencing_token": "f19a-task4-runtime-head-compat-execution-fence-epoch-87-73f7d8b4b1f947c48687a9c66fc18e7e",
+      "baseline_git_commit": "db8a8d6f2e9af3179ad1037924a63e9f7f481205",
+      "dispatch_head": "db8a8d6f2e9af3179ad1037924a63e9f7f481205",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py", "apps/worker/anvil_worker/main.py", "tests/integration/test_f15_local_stack.py", "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs"]
+    }
+  },
+  {
+    "sequence": 2221,
+    "event_id": "evt_f19a_2221_task4_runtime_head_compat_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_RUNTIME_HEAD_COMPAT",
+    "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+    "occurred_at": "2026-10-07T18:45:22+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "B459F7AF2DD9AD3840CD3468AE8ADBEA3617453442735BA394B48095252916AC",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-runtime-head-compat-c22d92d219ef47159ac92d5dfcbe7210",
+      "worker_lease_id": "worker-lease-f19a-task4-runtime-head-compat-73f7d8b4b1f947c48687a9c66fc18e7e",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/TASK4-RUNTIME-HEAD-COMPAT",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-07T18:45:22+00:00",
+      "expires_at": "2026-10-08T18:45:22+00:00",
+      "lease_epoch": 87,
+      "fencing_token": "f19a-task4-runtime-head-compat-write-fence-epoch-87-c22d92d219ef47159ac92d5dfcbe7210",
+      "write_fencing_token": "f19a-task4-runtime-head-compat-write-fence-epoch-87-c22d92d219ef47159ac92d5dfcbe7210",
+      "product_write_scope": ["apps/worker/anvil_worker/main.py", "tests/integration/test_f15_local_stack.py", "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs"]
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2218_task4_post_qa_report_control_worker_lease_revoked"
+  "last_event_id": "evt_f19a_2221_task4_runtime_head_compat_write_lease_issued"
 }
