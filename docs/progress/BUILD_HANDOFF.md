@@ -11,12 +11,26 @@
   "write_lease": "write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK2_REGISTRATION_API_CONTROL_ONLY",
-  "repository_head": "daeb824524e85624e17f4ef099ec3d2b1eef7ca9",
+  "next_safe_action": "F19A_TASK2_REGISTRATION_API_PRODUCT_RED_TESTS_ONLY",
+  "repository_head": "716a88393838af89609bf822c59d3aab314b8ee4",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 2 B/C2 사전 GREEN(Main, 2026-10-07): test-only C2 `716a88393838af89609bf822c59d3aab314b8ee4` 실제 원격 동일, seq2176 B G-05 PASS(exit0), 인접5파일 91 PASS/347.79초(exit0), FAIL0/SKIP0·diff0·제품6 diff0. 문서4 B checkpoint/private와 게시 후 clean 재확인 전 제품6 RED 테스트 gate 잠금, F-19A 전체 미수락.
+
+- Task 2 테스트 전용 C2 체크포인트(Main, 2026-10-07): archived A Git 혼용 positive RED→GREEN, 원격·제품 dirty 음성 유지. Developer focused 1 PASS/4.29초, dirty full 89 PASS/2 FAIL/331.76초와 G-05 Git INVALID는 strict 미게시 코드 결박으로 PASS가 아니다. Main focused 1 PASS, 독립 C0/I0/M0·focused 1 PASS·diff0·제품 diff0. 정확 test1만 `716a88393838af89609bf822c59d3aab314b8ee4` commit/private push, 실제 원격 동일. 같은 seq2176 B `control_checkpoint`·repository·HANDOFF를 C2로 재결박 중이며 B G-05·전체91·문서 checkpoint/private 전 제품6 gate 잠금.
+
+- Task 2 B/C 역사 Git fixture 재작업(Main/Developer, 2026-10-07): B 실제 G-05 seq2176 PASS지만 인접5파일 90 PASS/1 FAIL/360.76초(exit1). archived A@214e25c5 bundle의 positive가 현재 C HEAD를 읽는 시점 혼용으로, strict checker/제품 실패 증거가 아니다. 같은 epoch78 exact test1에서 A Git 상태를 합성하고 원격·제품 dirty 음성을 유지한다. C2 게시→B 재결박·전체 GREEN 전 제품6 잠금.
+
+- Task 2 통제 코드 C 체크포인트(Main, 2026-10-07): I1/I2 RED→GREEN 최종 정확2 SHA checker `19D1088F...`, test `496BFE95...`; Developer focused 10 PASS/34.20초·인접5파일 91 PASS/348.48초·A G-05 seq2176 PASS, Main 동일 SHA·G-05·인접 91 PASS/357.82초, 독립 C0/I0/M0·독립 focused10 PASS·diff0·제품 diff0. 정확 control2만 `9091f002ba0c5300e50ef5f5030d5c05c403f0ee` commit/private push, 실제 원격 동일. 같은 seq2176 B를 C에 결박 중이며 B G-05·회귀·문서 checkpoint/private 전 제품6 RED 테스트는 여전히 금지. F-19A 전체 미수락이다.
+
+- Task 2 closed 시간 경계 I2(Main/Reviewer, 2026-10-07): 회수 Event의 미래 시각과 만료 정확 동등을 현재 checker가 허용한다. I1 P HANDOFF/digest frozen 결박과 함께 epoch77 기준의 aware `issued <= at < expires`, `at <= now/current UTC`를 음성 RED→GREEN 검증한다. 독립 Important 2건 열림, checkpoint·제품6 gate 보류.
+
+- Task 2 통제 독립 I1 재작업(Main/Reviewer, 2026-10-07): 초기 control2 focused 8 PASS·인접89 PASS·A G-05 seq2176 PASS와 SHA 일치는 확인했으나, closed 검사가 P Git HANDOFF/digest blob을 검증하지 않아 과거 active publication 위조를 놓칠 수 있다. 독립 Important1 열림, Main 구 바이트 전체 회귀 중단(exit1, PASS 아님), checkpoint·제품6 gate 보류. 같은 epoch78 exact control2에서 P blob 위조/누락 음성 RED→GREEN 후 전체 재실행한다.
+
+- Task 2 epoch78 게시 후 RED(Main/Developer, 2026-10-07): 발급 문서6 checkpoint/private `214e25c5d706328310a5f81551dbadce62eb78c2` 원격 동일·clean. 새 route 없는 실제 G-05는 precommit 8종, 게시 후 clean 10종(exit1)이며 추가 2종은 local/remote HEAD 미결박이다. 둘 다 PASS 아님. Developer exact control2만 RED→GREEN, 제품6 WI gate 잠금·F-19A 전체 미수락.
 
 - Task 2 epoch78 bootstrap RED(Main, 2026-10-07): 신규 active checker route 부재에서 G-05 exit1, 공통 Event/HANDOFF/digest 오류 8종을 실측했다. PASS가 아니며 제품6 write 금지. Main 통제6(WI/WORK_STATUS/Event/progress/HANDOFF/digest)을 NON-GREEN checkpoint/private로 보존한 뒤 Developer exact control2 RED→GREEN에 착수한다. F-19A 전체 미수락이다.
 

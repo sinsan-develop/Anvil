@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task2-registration-api-start-seq2176",
+  "snapshot_id": "snapshot-f19a-task2-registration-api-checkpoint-seq2176",
   "event_sequence": 2176,
   "updated_at": "2026-10-07T06:17:08+00:00",
   "last_event_id": "evt_f19a_2176_task2_registration_api_write_lease_issued",
@@ -710,7 +710,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_TASK2_REGISTRATION_API_CONTROL_ONLY",
+  "next_safe_action": "F19A_TASK2_REGISTRATION_API_PRODUCT_RED_TESTS_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -821,13 +821,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "daeb824524e85624e17f4ef099ec3d2b1eef7ca9",
+    "local_head": "716a88393838af89609bf822c59d3aab314b8ee4",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "daeb824524e85624e17f4ef099ec3d2b1eef7ca9",
+    "remote_head": "716a88393838af89609bf822c59d3aab314b8ee4",
     "projection_mode": "F19A_TASK2_REGISTRATION_API_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_TASK2_REGISTRATION_API_BOOTSTRAP_CONTROL_ONLY",
+    "head_relation": "F19A_TASK2_REGISTRATION_API_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1261,7 +1261,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": ["packages/api/f19a_registration.py", "packages/api/registry.py", "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_registration_api.py"],
-    "worktree_status": "F19A_TASK2_REGISTRATION_API_BOOTSTRAP_CONTROL_ONLY",
+    "worktree_status": "F19A_TASK2_REGISTRATION_API_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1427,8 +1427,8 @@
     "path": "docs/work_orders/F-19A_TASK2_REGISTRATION_API_WORK_INSTRUCTION.md",
     "sha256": "FD8538C3729B5155EBEA57EC321CF30C441CAA2FBA9B7410ED94FF1FC4F99DD1",
     "revision": 1,
-    "result_status": "TASK2_REGISTRATION_API_CONTROL_ONLY",
-    "package_status": "TASK2_REGISTRATION_API_CONTROL_ONLY",
+    "result_status": "TASK2_REGISTRATION_API_PRODUCT_RED_READY",
+    "package_status": "TASK2_REGISTRATION_API_PRODUCT_RED_READY",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC_TASK2_REGISTRATION_API",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md"
   },
@@ -1589,7 +1589,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK2_REGISTRATION_API_CONTROL_ONLY"
+    "status": "TASK2_REGISTRATION_API_PRODUCT_RED_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -1981,8 +1981,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "376DEB3243F6AAB0EB8D966C570D53819F0173DE93C43776AB46F2C3F0513FFB",
-  "runtime_next_action": "F19A_TASK2_REGISTRATION_API_CONTROL_ONLY",
+  "snapshot_hash": "E0F64333AE981000E7EB3044B22352E630825B944DDA29C0B6DB092DE19885FC",
+  "runtime_next_action": "F19A_TASK2_REGISTRATION_API_PRODUCT_RED_TESTS_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23495,7 +23495,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task2_registration_api_binding": {
-    "status": "TASK2_REGISTRATION_API_BOOTSTRAP_CONTROL_ONLY",
+    "status": "TASK2_REGISTRATION_API_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2173,
     "predecessor_head": "daeb824524e85624e17f4ef099ec3d2b1eef7ca9",
@@ -23512,11 +23512,12 @@
     "worker_lease_id": "worker-lease-f19a-task2-registration-api-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8",
     "write_lease_id": "write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_TASK2_REGISTRATION_API_CONTROL_ONLY",
+    "next_safe_action": "F19A_TASK2_REGISTRATION_API_PRODUCT_RED_TESTS_ONLY",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
-    "event_sequence": 2176
+    "event_sequence": 2176,
+    "control_checkpoint": "716a88393838af89609bf822c59d3aab314b8ee4"
   },
   "f19a_task1_closed_history_fixture_binding": {
     "status": "CLOSED_HISTORY_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
