@@ -1,5 +1,7 @@
 # F-19A Task 4 post-QA report control 활성 handoff
 
+epoch86 C checkpoint(Main, 2026-10-08): 정확2 `279c9ba3cd368cb6e0f4aabfa54f6b0229c8dde8` local/private 동일·clean. Developer focused6 PASS, 역사99 PASS(최종 fixture 보완 전), 최종 인접135 PASS/기존 R48 close2 FAIL, G-05 seq2216 PASS, diff PASS, Ruff 이번 변경 구간 신규0. Main 독립 focused6 PASS·G-05 PASS, read-only Reviewer C0/I0/M0·focused6/G-05 PASS. 정본 투영 누락3은 Main이 A4로 직접 복구했고 정식 Developer 실패0. 이 B 문서는 제품 code SHA를 결박하는 활성 종료 후보이며 B 게시·G-05/회귀/clean 후에만 epoch86 write→worker lease를 회수한다. 제품/WSL 추가 write0, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
+
 활성 A4 Main 통제 인수(Main, 2026-10-08): 같은 문서 투영 근본 원인 세 번째로 Event 최상위 `last_sequence=2213` 잔류가 발견돼 Developer 코드 write를 중지했다. Main이 이벤트 행2216·footer·progress 순번을 대조해 최상위 값을2216으로 바로잡고, 새 Event 파일 해시→registry ref→snapshot self-hash→detached digest를 순서대로 재결박한다. 읽기 전용 일괄 감사에서 마지막 순번 외 Event 마지막3 체인, WI/보고서 해시, 분리 lease와 제품0, 기존 registry/snapshot/digest는 일치했다. 역사 Event 원문·코드 dirty2는 보존한다. A4 정확 문서 게시와 통제 재검증 전 Developer code write 재개 금지.
 
 활성 A3 정합 보완(Main, 2026-10-08): `registry_refs.progress_events.sha256`가 부모 seq2213 Event 파일 해시를 계속 가리켜 새 seq2216 Event 파일과 불일치했고, `next_work_package.status`도 이전 `TASK4_WSL_QA_PENDING`으로 남았다. 현 Event SHA `3B8332915E545F48F13F36AB94F1F294EA960C292C359F2F73C4D336E4D06BB0`와 현 활성 상태 `TASK4_POST_QA_REPORT_CONTROL_ACTIVE`로만 교정한다. Event 원문·WI/lease·제품 scope는 변경하지 않는다. A3 docs-only 게시·clean 전 Developer 코드 write 금지.
@@ -51,8 +53,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-post-qa-report-control-dce5c06c48d74cc9ae9649aabd736b08",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_POST_QA_REPORT_CONTROL_ACTIVE",
-  "repository_head": "4bbad5250029a109e5e5e519200be7ad3d6da01d",
+  "next_safe_action": "F19A_TASK4_POST_QA_REPORT_CONTROL_CLOSE_ONLY",
+  "repository_head": "279c9ba3cd368cb6e0f4aabfa54f6b0229c8dde8",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
