@@ -1,4 +1,6 @@
-# F-19A Task 4 종료 fixture 재작업 handoff
+# F-19A Task 4 종료 fixture 통제 checkpoint handoff
+
+Task4 epoch83 통제 C checkpoint(Main, 2026-10-07): exact2 `f88801c2d8ce42d801fdf1ef3bff2ebe63ab722e` local/private 동일, Developer 집중10 PASS·인접117 PASS/2 기존 R48 FAIL, Main 독립 집중10 PASS·diff PASS, 독립 리뷰 C0/I0/M0, G-05 seq2201 PASS·Ruff 신규0. 역사 A와 epoch83 A/B/closed 불변 Git 재현 및 위조 음성을 보강했다. 이 문서/진행/digest는 C SHA 결박 B 후보이며 B G-05·게시·clean 확인 전 lease 회수·제품4 write 금지. WSL/DB/브라우저 미실행, F-19A 미수락·Release DEFER.
 
 Task4 post-close fixture epoch83 시작(Main, 2026-10-07): 종료 `e17afb882f6a897688237f6dd8294340b65ab249` clean/private·G-05 seq2198 PASS, 그러나 Task4 종료 집중4 PASS/1 FAIL을 기준으로 비의미 WI `94BB41B3B913B872AB10CA816C930A43BB147C83264639C74176BC706B799466`를 결박했다. Event seq2199 WI→2200 worker→2201 write, epoch83 24시간·분리 token·통제 정확2/제품 scope0. 과거 A 문서 Git blob과 현재 ROOT Git 관찰 시점 혼용을 제거하고 새 epoch83 종료 후에도 같은 테스트가 재실행되게 한다. 새 route 전 bootstrap G-05 RED는 PASS 아님. 제품4·WSL/DB/브라우저 금지, F-19A 미수락·Release DEFER.
 
@@ -25,8 +27,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-postclose-fixture-d6f3c943fcad4bb6a12b724c81794c77",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_POSTCLOSE_FIXTURE_CONTROL_ONLY",
-  "repository_head": "e17afb882f6a897688237f6dd8294340b65ab249",
+  "next_safe_action": "F19A_TASK4_POSTCLOSE_FIXTURE_CONTROL_CLOSE_ONLY",
+  "repository_head": "f88801c2d8ce42d801fdf1ef3bff2ebe63ab722e",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
