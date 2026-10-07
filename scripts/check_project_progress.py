@@ -59711,7 +59711,14 @@ def _validate_f19a_task1_postclose_fixture(bundle, *, event_raw=None, now=None):
                 or not datetime.fromisoformat(issued) <= current_time < datetime.fromisoformat(expires)
                 or progress.get("worker_lease") != worker or progress.get("write_lease") != write):
             errors.append("F19A_TASK1_POSTCLOSE_LEASE_INVALID")
-        expected_binding = {"status": "POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED", "package_id": "F-19A",
+        binding = progress.get("f19a_task1_postclose_fixture_binding")
+        checkpoint = binding.get("code_checkpoint") if isinstance(binding, dict) else None
+        checkpointed = isinstance(checkpoint, str) and re.fullmatch(r"[0-9a-f]{40}", checkpoint) and checkpoint != base
+        if checkpoint is not None and not checkpointed:
+            errors.append("F19A_TASK1_POSTCLOSE_SCOPE_INVALID")
+        anchor = checkpoint if checkpointed else base
+        expected_binding = {"status": ("POSTCLOSE_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED"
+            if checkpointed else "POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED"), "package_id": "F-19A",
             "predecessor_sequence": 2158, "predecessor_head": base,
             "predecessor_regression": "CLOSED_G05_PASS_ADJACENT_57_PASS_5_FAIL_282_15_SECONDS",
             "work_instruction_id": "WI-F19A-TASK1-POSTCLOSE-FIXTURE-20261007-001",
@@ -59723,6 +59730,8 @@ def _validate_f19a_task1_postclose_fixture(bundle, *, event_raw=None, now=None):
             "detached_digest_path": digest_path, "next_safe_action": action,
             "f20_overall_status": "REWORK_IN_PROGRESS", "release_decision": "DEFER",
             "production": "NOT_EXECUTED", "event_sequence": 2161}
+        if checkpointed:
+            expected_binding["code_checkpoint"] = checkpoint
         repository = progress["repository"]
         if (progress.get("f19a_task1_postclose_fixture_binding") != expected_binding
                 or progress.get("active_work_instruction") != {
@@ -59730,22 +59739,25 @@ def _validate_f19a_task1_postclose_fixture(bundle, *, event_raw=None, now=None):
                     "revision": 1, "result_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
                     "package_status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
                     "approval_classification": expected_instruction["classification"], "approval_ref": approval}
-                or progress.get("snapshot_id") != "snapshot-f19a-task1-postclose-fixture-start-seq2161"
+                or progress.get("snapshot_id") != ("snapshot-f19a-task1-postclose-fixture-checkpoint-seq2161"
+                    if checkpointed else "snapshot-f19a-task1-postclose-fixture-start-seq2161")
                 or progress.get("updated_at") != recorded or progress.get("active_agent") != actor
                 or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
                 or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
                 or progress.get("next_work_package") != {"package_id": "F-19A",
                                                        "status": "TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY"}
                 or repository.get("projection_mode") != "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE"
-                or repository.get("local_head") != base or repository.get("remote_head") != base
-                or repository.get("head_relation") != "F19A_TASK1_POSTCLOSE_FIXTURE_PENDING_CHECKPOINT"
-                or repository.get("worktree_status") != "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED"
+                or repository.get("local_head") != anchor or repository.get("remote_head") != anchor
+                or repository.get("head_relation") != ("F19A_TASK1_POSTCLOSE_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED"
+                    if checkpointed else "F19A_TASK1_POSTCLOSE_FIXTURE_PENDING_CHECKPOINT")
+                or repository.get("worktree_status") != ("F19A_TASK1_POSTCLOSE_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED"
+                    if checkpointed else "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED")
                 or repository.get("product_write_scope") != []):
             errors.append("F19A_TASK1_POSTCLOSE_SCOPE_INVALID")
         if (handoff.get("event_sequence") != 2161 or handoff.get("last_event_id") != last_id
                 or handoff.get("status") != "ACTIVE" or handoff.get("current_work_package") != "F-19A"
                 or handoff.get("active_agent") != actor or handoff.get("worker_lease") != worker_id
-                or handoff.get("write_lease") != write_id or handoff.get("repository_head") != base
+                or handoff.get("write_lease") != write_id or handoff.get("repository_head") != anchor
                 or handoff.get("next_safe_action") != action):
             errors.append("F19A_TASK1_POSTCLOSE_HANDOFF_INVALID")
         digest = bundle["detached_digest"]
@@ -59780,12 +59792,33 @@ def _collect_f19a_task1_postclose_fixture_git(bundle):
                                            cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
         head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
         dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        progress = bundle["progress"]
+        binding = progress.get("f19a_task1_postclose_fixture_binding", {})
+        checkpoint = binding.get("code_checkpoint")
         if (git("branch", "--show-current") != "codex/f18-wsl-ops"
-                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
-                or head != base or remote != base or dirty - control - documents
-                or bundle["progress"]["repository"].get("local_head") != base
-                or bundle["progress"]["repository"].get("remote_head") != base):
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream):
             return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
+        if checkpoint is None:
+            if (head != base or remote != base or dirty - control - documents
+                    or progress["repository"].get("local_head") != base
+                    or progress["repository"].get("remote_head") != base):
+                return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
+        else:
+            if (not isinstance(checkpoint, str) or not re.fullmatch(r"[0-9a-f]{40}", checkpoint)
+                    or checkpoint == base or head != remote or dirty - documents
+                    or progress["repository"].get("local_head") != checkpoint
+                    or progress["repository"].get("remote_head") != checkpoint
+                    or subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint],
+                        cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+                    or subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, head],
+                        cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0):
+                return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
+            changed = set(git("diff", "--name-only", "--no-renames", f"{base}..{checkpoint}").splitlines())
+            descendants = set(git("diff", "--name-only", "--no-renames", f"{checkpoint}..HEAD").splitlines())
+            if (not control <= changed or changed - control - documents or descendants - documents
+                    or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                        cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in control)):
+                return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
         return []
     except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
         return ["F19A_TASK1_POSTCLOSE_GIT_INVALID"]
@@ -59803,16 +59836,19 @@ def _validate_f19a_task1_postclose_fixture_closed(bundle, *, event_raw=None, now
     try:
         binding = progress["f19a_task1_postclose_fixture_binding"]
         checkpoint = binding["code_checkpoint"]
+        active_checkpoint = binding["active_projection_checkpoint"]
         base = "5d1e1788ee84bb10715f497414864ff589bb76c0"
         if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
-                or checkpoint == base):
+                or checkpoint == base or not isinstance(active_checkpoint, str)
+                or re.fullmatch(r"[0-9a-f]{40}", active_checkpoint) is None
+                or active_checkpoint in {base, checkpoint}):
             errors.append("F19A_TASK1_POSTCLOSE_CLOSE_INVALID")
         raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
-        frozen_raw = subprocess.check_output(["git", "show", f"{checkpoint}:docs/progress/progress-events.json"],
+        frozen_raw = subprocess.check_output(["git", "show", f"{active_checkpoint}:docs/progress/progress-events.json"],
                                              cwd=root, stderr=subprocess.DEVNULL)
         base_raw = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
                                            cwd=root, stderr=subprocess.DEVNULL)
-        frozen = json.loads(subprocess.check_output(["git", "show", f"{checkpoint}:docs/progress/build-progress.json"],
+        frozen = json.loads(subprocess.check_output(["git", "show", f"{active_checkpoint}:docs/progress/build-progress.json"],
                                                     cwd=root, stderr=subprocess.DEVNULL))
         frozen_stream = json.loads(frozen_raw)
         if (raw_event_object_prefix_bytes(raw, 2161) != raw_event_object_prefix_bytes(frozen_raw, 2161)
@@ -59850,7 +59886,7 @@ def _validate_f19a_task1_postclose_fixture_closed(bundle, *, event_raw=None, now
             "fencing_token": expected_write_token, "worker_lease_id": expected_worker_id,
             "write_epoch": 75, "write_fencing_token": expected_write_token, "product_write_scope": []}
         expected_active_binding = {
-            "status": "POSTCLOSE_FIXTURE_ACTIVE_PRODUCT_WRITE_LOCKED", "package_id": "F-19A",
+            "status": "POSTCLOSE_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED", "package_id": "F-19A",
             "predecessor_sequence": 2158, "predecessor_head": base,
             "predecessor_regression": "CLOSED_G05_PASS_ADJACENT_57_PASS_5_FAIL_282_15_SECONDS",
             "work_instruction_id": "WI-F19A-TASK1-POSTCLOSE-FIXTURE-20261007-001",
@@ -59866,7 +59902,7 @@ def _validate_f19a_task1_postclose_fixture_closed(bundle, *, event_raw=None, now
             "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
             "next_safe_action": "F19A_TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
             "f20_overall_status": "REWORK_IN_PROGRESS", "release_decision": "DEFER",
-            "production": "NOT_EXECUTED", "event_sequence": 2161}
+            "production": "NOT_EXECUTED", "event_sequence": 2161, "code_checkpoint": checkpoint}
         expected_active_instruction = {
             "artifact_id": expected_active_binding["work_instruction_id"],
             "path": expected_instruction["path"], "sha256": expected_instruction["sha256"],
@@ -59898,15 +59934,17 @@ def _validate_f19a_task1_postclose_fixture_closed(bundle, *, event_raw=None, now
                 or frozen.get("registry_refs", {}).get("progress_events", {}).get("sha256")
                    != hashlib.sha256(frozen_raw).hexdigest().upper()
                 or frozen.get("snapshot_hash") != compute_snapshot_hash(frozen)
-                or frozen.get("snapshot_id") != "snapshot-f19a-task1-postclose-fixture-start-seq2161"
+                or frozen.get("snapshot_id") != "snapshot-f19a-task1-postclose-fixture-checkpoint-seq2161"
                 or frozen.get("f19a_task1_postclose_fixture_binding") != expected_active_binding
                 or frozen.get("active_work_instruction") != expected_active_instruction
                 or frozen.get("active_agent") != expected_actor
                 or frozen.get("next_safe_action") != expected_active_binding["next_safe_action"]
                 or frozen.get("runtime_next_action") != expected_active_binding["next_safe_action"]
                 or frozen.get("repository", {}).get("projection_mode") != "F19A_TASK1_POSTCLOSE_FIXTURE_ACTIVE"
-                or frozen.get("repository", {}).get("local_head") != base
-                or frozen.get("repository", {}).get("remote_head") != base
+                or frozen.get("repository", {}).get("local_head") != checkpoint
+                or frozen.get("repository", {}).get("remote_head") != checkpoint
+                or frozen.get("repository", {}).get("head_relation") != "F19A_TASK1_POSTCLOSE_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED"
+                or frozen.get("repository", {}).get("worktree_status") != "F19A_TASK1_POSTCLOSE_FIXTURE_CODE_CHECKPOINTED_PRODUCT_WRITE_LOCKED"
                 or frozen.get("repository", {}).get("product_write_scope") != []
                 or frozen.get("worker_lease") != expected_worker
                 or frozen.get("write_lease") != expected_write):
@@ -59964,7 +60002,8 @@ def _validate_f19a_task1_postclose_fixture_closed(bundle, *, event_raw=None, now
                 errors.append("F19A_TASK1_POSTCLOSE_CLOSE_EVENT_INVALID")
         expected_binding = {**frozen["f19a_task1_postclose_fixture_binding"],
                             "status": "POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED",
-                            "code_checkpoint": checkpoint, "next_safe_action": action,
+                            "code_checkpoint": checkpoint, "active_projection_checkpoint": active_checkpoint,
+                            "next_safe_action": action,
                             "event_sequence": 2163}
         if (binding != expected_binding
                 or binding.get("status") != "POSTCLOSE_FIXTURE_CLOSED_NOT_F19A_ACCEPTED"
@@ -60031,23 +60070,29 @@ def _collect_f19a_task1_postclose_fixture_closed_git(bundle):
             return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
                                            cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
         checkpoint = bundle["progress"]["f19a_task1_postclose_fixture_binding"]["code_checkpoint"]
+        active_checkpoint = bundle["progress"]["f19a_task1_postclose_fixture_binding"]["active_projection_checkpoint"]
         if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
-                or checkpoint == base):
+                or checkpoint == base or not isinstance(active_checkpoint, str)
+                or re.fullmatch(r"[0-9a-f]{40}", active_checkpoint) is None
+                or active_checkpoint in {base, checkpoint}):
             return ["F19A_TASK1_POSTCLOSE_CLOSE_GIT_INVALID"]
         head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
         dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
         control_delta = set(git("diff", "--name-only", "--no-renames", f"{base}..{checkpoint}").splitlines()) - {""}
-        close_delta = set(git("diff", "--name-only", "--no-renames", f"{checkpoint}..HEAD").splitlines()) - {""}
+        active_delta = set(git("diff", "--name-only", "--no-renames", f"{checkpoint}..{active_checkpoint}").splitlines()) - {""}
+        close_delta = set(git("diff", "--name-only", "--no-renames", f"{active_checkpoint}..HEAD").splitlines()) - {""}
         blobs_match = all(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
                                                 cwd=root, stderr=subprocess.DEVNULL) == (root / path).read_bytes()
                           for path in control)
         if (head != remote or git("branch", "--show-current") != "codex/f18-wsl-ops"
                 or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
                 or not control <= control_delta or control_delta - control - documents
-                or close_delta - documents or dirty - documents or not blobs_match
+                or active_delta - documents or close_delta - documents or dirty - documents or not blobs_match
                 or subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint],
                                   cwd=root, capture_output=True).returncode != 0
-                or subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, head],
+                or subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, active_checkpoint],
+                                  cwd=root, capture_output=True).returncode != 0
+                or subprocess.run(["git", "merge-base", "--is-ancestor", active_checkpoint, head],
                                   cwd=root, capture_output=True).returncode != 0
                 or bundle["progress"]["repository"].get("local_head") != checkpoint
                 or bundle["progress"]["repository"].get("remote_head") != checkpoint):
