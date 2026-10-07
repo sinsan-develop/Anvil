@@ -1,4 +1,6 @@
-# F-19A Task 4 epoch72 역사 시계 fixture 종료 handoff
+# F-19A Task 4 epoch89 종료 후 활성 테스트 fixture 보완 handoff
+
+epoch90 시작(Main, 2026-10-08): epoch89 종료 `5605c86e42b2eb0fdc12234a846adebef56114c3` local/private 동일·clean·G-05 seq2233 PASS 뒤 통제 전체 120 PASS/1 FAIL(944.56초), 집중7 PASS/1 FAIL을 확인했다. 단일 실패는 종료 seq2233에서 `test_task4_epoch72_clock_live_active_route_requires_real_lease`가 현재 seq2231을 단정한 역사 fixture 오류다. 비의미 WI `C0AE929622DFE0485C374D764B1146EDE1BD1F0C2AE09242077286010D6C457B`, Event seq2234 WI→2235 worker→2236 write, 분리 24시간 token과 Developer 통제 정확2·제품0을 결박한다. 새 checker route 전 bootstrap G-05 RED는 PASS가 아니다. 제품·WSL-server 자원 write0, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch89 lease 종료 후보(Main, 2026-10-08): 활성 B `1119ab82ecd5519a54c337a81b45e900a444ee16` local/private 동일·clean·G-05 seq2231 PASS·집중8 PASS 뒤 원문 Event seq1~2231 보존, seq2232 write→2233 worker를 순차 회수했다. 완료 lease 둘 REVOKED·활성 null, 코드 C `2a6409f2b21ddf05cbc44e52ee1d6588e04e7356`와 B의 결박을 보존한다. 이 종료 후보의 G-05·역사 전체·private 게시/clean 전 WSL-server 자원 생성 금지. 실제 PG15/OIDC/HTTPS/Chromium·Worker0020·GET/alerts/ACK·DB fault·독립 Tester 미검증, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -64,17 +66,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2233,
-  "last_event_id": "evt_f19a_2233_task4_epoch72_clock_fixture_worker_lease_revoked",
+  "event_sequence": 2236,
+  "last_event_id": "evt_f19a_2236_task4_epoch89_post_close_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-epoch89-post-close-fixture-e641b82283ae46f6b3f6f48fe337397f",
+  "write_lease": "write-lease-f19a-task4-epoch89-post-close-fixture-abf16f5a378040318adf78e019aecc06",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
-  "repository_head": "2a6409f2b21ddf05cbc44e52ee1d6588e04e7356",
+  "next_safe_action": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CONTROL",
+  "repository_head": "5605c86e42b2eb0fdc12234a846adebef56114c3",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
