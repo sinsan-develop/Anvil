@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task4-qa-issuer-start-seq2211",
+  "snapshot_id": "snapshot-f19a-task4-qa-issuer-checkpoint-seq2211",
   "event_sequence": 2211,
   "updated_at": "2026-10-07T14:46:19+00:00",
   "last_event_id": "evt_f19a_2211_task4_qa_issuer_write_lease_issued",
@@ -724,7 +724,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_TASK4_QA_ISSUER_REVISION_ACTIVE",
+  "next_safe_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -835,13 +835,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "6f96a6422914faffa6249b1445b5719d90bf0ced",
+    "local_head": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "6f96a6422914faffa6249b1445b5719d90bf0ced",
+    "remote_head": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
     "projection_mode": "F19A_TASK4_QA_ISSUER_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_TASK4_QA_ISSUER_BOOTSTRAP_ONLY",
+    "head_relation": "F19A_TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1275,7 +1275,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": ["deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/compose.f18.oidc.yml", "tests/deploy/test_f18_oidc_qa_issuer.py"],
-    "worktree_status": "F19A_TASK4_QA_ISSUER_BOOTSTRAP_ONLY",
+    "worktree_status": "F19A_TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1441,8 +1441,8 @@
     "path": "docs/work_orders/F-19A_TASK4_QA_ISSUER_REVISION_WORK_INSTRUCTION.md",
     "sha256": "84D508A6022A8E52B3FD5D5D68DA94C525710DCD4DDADD7E1172FDF13004D6F8",
     "revision": 1,
-    "result_status": "TASK4_QA_ISSUER_REVISION_ACTIVE",
-    "package_status": "TASK4_QA_ISSUER_REVISION_ACTIVE",
+    "result_status": "TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY",
+    "package_status": "TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_INTERNAL_QA_ISSUER_NON_SEMANTIC"
   },
@@ -1603,7 +1603,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK4_QA_ISSUER_REVISION_ACTIVE"
+    "status": "TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -1995,8 +1995,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "638257AAF31B2703DC71132C4BB5454D1279CE9ECFE917D3C33576C018055FCD",
-  "runtime_next_action": "F19A_TASK4_QA_ISSUER_REVISION_ACTIVE",
+  "snapshot_hash": "D78C7C2F08C89A30615335876C48D0EFFD14123570F2FAF24A482BB7D193AC28",
+  "runtime_next_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23509,7 +23509,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task4_qa_issuer_binding": {
-    "status": "TASK4_QA_ISSUER_REVISION_ACTIVE",
+    "status": "TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2208,
     "predecessor_head": "6f96a6422914faffa6249b1445b5719d90bf0ced",
@@ -23526,7 +23526,8 @@
     "worker_lease_id": "worker-lease-f19a-task4-qa-issuer-8f7b5ca9b30c433582793a387e6e5fcd",
     "write_lease_id": "write-lease-f19a-task4-qa-issuer-7ae7adc5e1384cb2b38cb2075a78363b",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_TASK4_QA_ISSUER_REVISION_ACTIVE",
+    "next_safe_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
+    "code_checkpoint": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
