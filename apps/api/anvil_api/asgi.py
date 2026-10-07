@@ -151,6 +151,7 @@ def create_oidc_asgi_app(
         oidc_session_coordinator=coordinator,
         registry=registry,
         registration_repository=(F19ARegistrationRepository(session_factory) if f19a_enabled else None),
+        f19a_pair_guard_required=f19a_enabled,
         authorization_resolver=authorization_resolver,
         operations_owner=operations_owner,
     )

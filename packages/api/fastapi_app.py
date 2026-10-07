@@ -21,6 +21,7 @@ from packages.execution.models import TaskStatus
 from .common import ApiContractError, ApplicationRequest, ApplicationResponse, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
 from .f19a_registration import REGISTRATION_ENDPOINT_KEYS, RegistrationRepository, dispatch_registration
+from packages.persistence.f19a_registration_repository import F19ARegistrationRejected
 from .local_session import IssuedSession
 from .oidc_session_coordinator import OidcSessionCoordinator, OidcSessionRejected
 from .security import (
@@ -43,6 +44,11 @@ _TRUSTED_READ_ENDPOINT_KEYS = frozenset(
         "GET /api/runs/{id}/events",
     }
 )
+_F19A_FIXED_OPERATIONS_KEYS = frozenset({
+    "GET /api/dashboard/operations",
+    "GET /api/operations/alerts",
+    "POST /api/operations/alerts/{alertId}:acknowledge",
+})
 
 
 def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = False) -> None:
@@ -410,6 +416,8 @@ def _endpoint_handler(
     config: WebSecurityConfig,
     resolve_authorization: AuthorizationResolver | None,
     trusted_read_principal: SessionPrincipal | None,
+    registration_repository: RegistrationRepository | None = None,
+    f19a_pair_guard_required: bool = False,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
@@ -424,6 +432,26 @@ def _endpoint_handler(
                 if isinstance(target_environment, str):
                     authorization_parameters["targetEnvironment"] = target_environment
             authorization_scope = _authorize(principal, endpoint, authorization_parameters, resolve_authorization)
+            if endpoint.key in _F19A_FIXED_OPERATIONS_KEYS and f19a_pair_guard_required:
+                if registration_repository is None:
+                    raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+                        "Pair authorization is unavailable.", 503)
+                try:
+                    granted = await run_in_threadpool(registration_repository.require_pair_grant,
+                        principal.actor_id, authorization_scope.project_id,
+                        authorization_scope.environment_id, endpoint.permission)
+                except F19ARegistrationRejected as error:
+                    if str(error) == "AUTHORIZATION_SCOPE_MISMATCH":
+                        raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH",
+                            "The Operations scope is not allowed.", 403) from None
+                    raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+                        "Pair authorization is unavailable.", 503) from None
+                except Exception:
+                    raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+                        "Pair authorization is unavailable.", 503) from None
+                if granted is not True:
+                    raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH",
+                        "The Operations scope is not allowed.", 403)
             if endpoint.key == "POST /api/projects/{projectId}/tasks":
                 if authorization_scope.project_id != request.path_params.get("projectId"):
                     raise ApiContractError(
@@ -654,7 +682,10 @@ def create_app(
     trusted_read_principal: SessionPrincipal | None = None,
     auth_mode: str = "COOKIE",
     registration_repository: RegistrationRepository | None = None,
+    f19a_pair_guard_required: bool = False,
 ) -> FastAPI:
+    if type(f19a_pair_guard_required) is not bool:
+        raise ValueError("F-19A pair guard mode must be boolean")
     if oidc_session_coordinator is not None and session_issuer is not None:
         raise ValueError("OIDC and local session issuance cannot both be active")
     api_registry = registry or canonical_api_registry()
@@ -737,6 +768,8 @@ def create_app(
                 config,
                 authorization_resolver,
                 endpoint_trusted_read_principal,
+                registration_repository,
+                f19a_pair_guard_required,
             )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source], **_task_openapi(endpoint))
