@@ -12,11 +12,17 @@
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
   "next_safe_action": "F19A_TASK1_POSTCLOSE_FIXTURE_REWORK_ONLY",
-  "repository_head": "5d1e1788ee84bb10715f497414864ff589bb76c0",
+  "repository_head": "8530f0e62c72f455c014f1b8aa78933dabd1d85b",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch75 B/C3 precommit GREEN(Main, 2026-10-07): 실제 G-05 seq2161 PASS(exit0), 인접5파일 71 PASS/310.01초(exit0), FAIL0/SKIP0. 기존 B 문서4만 dirty이고 새 Event·제품/DB/WSL write0이다. 다음은 B P checkpoint/private·clean 재확인 후 seq2162/2163 회수·closed 검증이며 F-19A 전체 미수락, Task2 API 잠금이다.
+
+- epoch75 B 코드 기준 C3 재결박(Main, 2026-10-07): C2 B precommit G-05 seq2161 PASS 후 인접5파일 70 PASS/1 FAIL(284.10초). 실패는 신규 역사 A Git 음성 테스트가 live B progress와 A HEAD mock을 섞은 fixture 결함이었다. 정확 test1에서 불변 C1 Git blob의 A progress로 RED1→GREEN1, 독립 C0/I0/M0·Main focused 1 PASS·diff0이다. test dirty 시 인접5파일 69 PASS/2 FAIL(259.20초)과 B G-05 RED는 코드 SHA strict gate의 정상 반응으로 기록했다. 정확 test1만 NON-GREEN 복구 checkpoint `8530f0e62c72f455c014f1b8aa78933dabd1d85b`로 기존 branch/private push하고 실제 원격 동일. 현재 B `code_checkpoint`/repository/HANDOFF를 C3로 재결박 중이며 이 문서 시점 B G-05·전체71 재실행·P 문서 checkpoint/private·실제 임대 회수는 아직 미실행이다. 제품 변경0, F-19A 전체 미수락, Task2 API 잠금이다.
+
+- epoch75 B 코드 체크포인트 투영(Main, 2026-10-07): B/P 종료 경로 I1을 합성 RED→GREEN 보강한 정확2파일 SHA checker `A73179D9...`, test `A245138E...`를 독립 C0/I0/M0·Main 집중 epoch75 9 PASS·diff0로 확인했다. B 전 A@C1 인접5파일은 69 PASS/2 FAIL(274.54초, 외부 live 두 테스트가 현재 A를 유효하다고 기대), 실제 A G-05는 `F19A_TASK1_POSTCLOSE_GIT_INVALID`(exit1)이며 PASS가 아니다. 정확 코드2만 NON-GREEN 복구 checkpoint `74409d28002a909d271669cf744e440cf41c0493`로 기존 branch/private push하고 실제 원격 동일·clean을 확인했다. 같은 Event seq2161에서 binding `code_checkpoint=74409d...`/B snapshot/repository/HANDOFF를 결박 중이며 이 문서 시점 B precommit/clean G-05·전체71·문서 P commit/private·실제 임대 회수는 아직 미실행이다. Task2 API 잠금·F-19A 전체 미수락이다.
 
 - epoch75 코드 동결·독립 검증: 정확2파일 SHA checker `D3CC1E...`, test `0D4EE3...`; 역사 seq2156 5 FAIL→5 PASS, 첫 인접65 PASS/1 FAIL은 역사 wrapper 신규 mode 미위임으로 checker 최소 보정했다. closed Event envelope/chain·active binding 동시 위조를 각각 RED→GREEN한 뒤 독립 재검토 C0/I0/M0, Developer 68 PASS/371.74초, Main 동일5파일 68 PASS/406.73초(exit0), 실제 active G-05 seq2161 PASS, diff0이다. 제품 diff0·정식 Developer 실패0. 이 시점 code+통제 checkpoint/private push·active clean G-05·실제 seq2162/2163 종료·closed 전체 재검증은 아직 미실행이다. Task2 API lease는 잠금, F-19A 전체 미수락이다.
 
