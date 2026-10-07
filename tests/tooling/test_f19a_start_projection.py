@@ -2972,6 +2972,348 @@ class F19AStartProjectionTests(unittest.TestCase):
             with self.subTest(name=name), self.synthetic_task2_product_git(**defaults, **kwargs):
                 self.assertTrue(checker._collect_f19a_task2_registration_api_closed_git(bundle))
 
+    def test_task3_fixed_operations_active_live_and_forgery(self):
+        bundle = checker.load_bundle(ROOT)
+        self.assertEqual(checker._validate_f19a_task3_fixed_operations(bundle), [])
+        for name, change in (
+            ("worker_token", lambda b: b["progress"]["worker_lease"].update(fencing_token="forged")),
+            ("write_scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=[])),
+            ("event_envelope", lambda b: b["events"]["events"][2180].update(actor="forged")),
+            ("snapshot", lambda b: b["progress"].update(snapshot_hash="0" * 64)),
+            ("next_action", lambda b: b["progress"].update(next_safe_action="F19A_TASK4_START")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(checker._validate_f19a_task3_fixed_operations(forged))
+
+    def test_task3_fixed_operations_bootstrap_git_rejects_remote_and_product_dirty(self):
+        bundle = checker.load_bundle(ROOT)
+        self.assertEqual(checker._collect_f19a_task3_fixed_operations_git(bundle), [])
+        original = subprocess.check_output
+
+        def check(*, remote=None, dirty=None):
+            def output(command, *args, **kwargs):
+                tail = command[5:] if command[:5] == [
+                    "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                if remote is not None and tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                    return (remote + "\n").encode()
+                if dirty is not None and tail == ["status", "--porcelain=v1", "-uall"]:
+                    return dirty
+                return original(command, *args, **kwargs)
+
+            with patch.object(subprocess, "check_output", side_effect=output):
+                return checker._collect_f19a_task3_fixed_operations_git(bundle)
+
+        self.assertTrue(check(remote="0" * 40))
+        self.assertTrue(check(dirty=b" M packages/api/operations.py\n"))
+
+    @staticmethod
+    def task3_checkpoint_bundle(*, product=False):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        progress = bundle["progress"]
+        binding = progress["f19a_task3_fixed_operations_binding"]
+        checkpoint = "c" * 40
+        anchor = "d" * 40 if product else checkpoint
+        binding.update(status=("TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY" if product
+            else "TASK3_FIXED_OPERATIONS_CONTROL_CHECKPOINTED_PRODUCT_RED_READY"),
+            control_checkpoint=checkpoint,
+            next_safe_action=("F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY" if product
+                else "F19A_TASK3_FIXED_OPERATIONS_PRODUCT_RED_TESTS_ONLY"))
+        if product:
+            binding["product_code_checkpoint"] = anchor
+        relation = ("F19A_TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY" if product
+            else "F19A_TASK3_FIXED_OPERATIONS_CONTROL_CHECKPOINTED_PRODUCT_RED_READY")
+        status = ("TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY" if product
+            else "TASK3_FIXED_OPERATIONS_PRODUCT_RED_READY")
+        progress["repository"].update(local_head=anchor, remote_head=anchor,
+            head_relation=relation, worktree_status=relation)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["next_work_package"]["status"] = status
+        progress["next_safe_action"] = progress["runtime_next_action"] = binding["next_safe_action"]
+        progress["snapshot_id"] = ("snapshot-f19a-task3-fixed-operations-product-checkpoint-seq2181"
+            if product else "snapshot-f19a-task3-fixed-operations-checkpoint-seq2181")
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=anchor, next_safe_action=binding["next_safe_action"])
+        return bundle
+
+    def test_task3_control_and_product_checkpoint_projection_rejects_forgery(self):
+        for product in (False, True):
+            with self.subTest(product=product):
+                bundle = self.task3_checkpoint_bundle(product=product)
+                self.assertEqual(checker._validate_f19a_task3_fixed_operations(bundle), [])
+                forged = deepcopy(bundle)
+                forged["progress"]["f19a_task3_fixed_operations_binding"]["control_checkpoint"] = "0" * 40
+                self.assertTrue(checker._validate_f19a_task3_fixed_operations(forged))
+
+    @staticmethod
+    @contextmanager
+    def synthetic_task3_checkpoint_git(*, product=False, head=None, remote=None,
+                                      dirty=b"", control_delta=None, product_delta=None,
+                                      successor_delta=(), stale_control=False, stale_product=False,
+                                      published=True):
+        base, control, product_sha = "71154279a7da853acbd15706126fe4c323b7016f", "c" * 40, "d" * 40
+        head = head or (product_sha if product else control)
+        exact_control = ("scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py")
+        exact_product = ("packages/api/operations.py",)
+        original_output, original_run = subprocess.check_output, subprocess.run
+
+        def output(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == [
+                "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["rev-parse", "HEAD"]:
+                return (head + "\n").encode()
+            if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                return ((remote or head) + "\n").encode()
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            if tail == ["status", "--porcelain=v1", "-uall"]:
+                return dirty
+            if tail == ["diff", "--name-only", "--no-renames", f"{base}..{control}"]:
+                names = exact_control if control_delta is None else control_delta
+                return ("\n".join(names) + ("\n" if names else "")).encode()
+            if tail == ["diff", "--name-only", "--no-renames", f"{control}..{product_sha}"]:
+                names = exact_product if product_delta is None else product_delta
+                return ("\n".join(names) + ("\n" if names else "")).encode()
+            successor_anchor = product_sha if product else control
+            if tail == ["diff", "--name-only", "--no-renames", f"{successor_anchor}..HEAD"]:
+                return ("\n".join(successor_delta) + ("\n" if successor_delta else "")).encode()
+            if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(control + ":"):
+                path = tail[1].split(":", 1)[1]
+                if path in exact_control:
+                    return b"stale" if stale_control and path == exact_control[0] else (ROOT / path).read_bytes()
+            if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(product_sha + ":"):
+                path = tail[1].split(":", 1)[1]
+                if path in exact_product:
+                    return b"stale" if stale_product else (ROOT / path).read_bytes()
+            return original_output(command, *args, **kwargs)
+
+        def run(command, *args, **kwargs):
+            if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                if not published and command[-2:] == [product_sha if product else control, head]:
+                    return subprocess.CompletedProcess(command, 1)
+                return subprocess.CompletedProcess(command, 0)
+            return original_run(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(subprocess, "run", side_effect=run):
+            yield
+
+    def test_task3_checkpoint_git_requires_exact_c_d_p_and_clean_product(self):
+        for product in (False, True):
+            bundle = self.task3_checkpoint_bundle(product=product)
+            head = "e" * 40 if product else None
+            with self.subTest(product=product), self.synthetic_task3_checkpoint_git(product=product, head=head):
+                self.assertEqual(checker._collect_f19a_task3_fixed_operations_git(bundle), [])
+            for name, kwargs in (
+                ("remote", {"remote": "0" * 40}),
+                ("product_dirty", {"dirty": b" M packages/api/operations.py\n"}),
+                ("unrelated_control", {"control_delta": (*(
+                    "scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"),
+                    "packages/api/runtime.py")}),
+                ("stale_control", {"stale_control": True}),
+                ("unrelated_successor", {"successor_delta": ("packages/api/runtime.py",)}),
+                ("unpublished", {"published": False}),
+            ):
+                with self.subTest(product=product, name=name), self.synthetic_task3_checkpoint_git(
+                        product=product, head=head, **kwargs):
+                    self.assertTrue(checker._collect_f19a_task3_fixed_operations_git(bundle))
+            if product:
+                for name, kwargs in (("unrelated_product", {"product_delta": (
+                        "packages/api/operations.py", "packages/api/runtime.py")}),
+                        ("stale_product", {"stale_product": True})):
+                    with self.subTest(name=name), self.synthetic_task3_checkpoint_git(
+                            product=True, head=head, **kwargs):
+                        self.assertTrue(checker._collect_f19a_task3_fixed_operations_git(bundle))
+
+    @staticmethod
+    def task3_closed_bundle(close_at=None):
+        bundle = F19AStartProjectionTests.task3_checkpoint_bundle(product=True)
+        active_progress = deepcopy(bundle["progress"])
+        active_handoff = deepcopy(bundle["handoff"])
+        bundle["_task3_product_progress"] = (json.dumps(active_progress, ensure_ascii=False) + "\n").encode()
+        bundle["_task3_product_events"] = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        bundle["_task3_product_handoff"] = ("```json anvil-recovery-summary\n"
+            + json.dumps(active_handoff, ensure_ascii=False) + "\n```\n").encode()
+        active_digest = deepcopy(bundle["detached_digest"])
+        active_digest["progress"].update(bytes=len(bundle["_task3_product_progress"]),
+            file_sha256=hashlib.sha256(bundle["_task3_product_progress"]).hexdigest().upper())
+        active_digest["handoff"].update(bytes=len(bundle["_task3_product_handoff"]),
+            file_sha256=hashlib.sha256(bundle["_task3_product_handoff"]).hexdigest().upper())
+        bundle["_task3_product_digest"] = (json.dumps(active_digest, ensure_ascii=False) + "\n").encode()
+        bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
+        bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = stream["events"][2179]["details"], stream["events"][2180]["details"]
+        at = close_at or (datetime.fromisoformat(write["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_TASK3_FIXED_OPERATIONS_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+        for sequence, kind, details in (
+            (2182, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+            (2183, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            prior = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_task3_fixed_operations_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK3_FIXED_OPERATIONS_CLOSE",
+                "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(prior)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2183
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued"\n}\n'
+        prefix = bundle["_task3_product_events"].decode("utf-8")
+        assert prefix.endswith(footer)
+        def render(row):
+            return "\n".join("  " + line for line in json.dumps(
+                row, ensure_ascii=False, indent=2).splitlines())
+        text = (prefix[:-len(footer)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-2:])
+            + '\n  ],\n  "last_event_id": "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked"\n}\n')
+        raw = text.replace('"last_sequence": 2181', '"last_sequence": 2183', 1).encode("utf-8")
+        assert json.loads(raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task3_fixed_operations_write_lease"] = {**write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task3_fixed_operations_worker_lease"] = {**worker, "status": "REVOKED", "revoked_at": at}
+        action = "F19A_TASK4_DUAL_LEASE_PENDING"
+        progress["f19a_task3_fixed_operations_binding"].update(
+            status="TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
+            active_projection_checkpoint="e" * 40, next_safe_action=action, event_sequence=2183)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "F-19A",
+                "status": "TASK4_DUAL_LEASE_PENDING"},
+            snapshot_id="snapshot-f19a-task3-fixed-operations-close-seq2183")
+        progress["repository"].update(projection_mode="F19A_TASK3_FIXED_OPERATIONS_CLOSED",
+            head_relation="F19A_TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
+            worktree_status="F19A_TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED")
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2183, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None,
+            repository_head="d" * 40, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2183
+        return bundle, raw
+
+    @staticmethod
+    def validate_task3_closed(bundle, raw, *, observed=None):
+        original_stat, original_sha, original_output = Path.stat, checker._sha256, subprocess.check_output
+        progress_path, handoff_path = ROOT / "docs/progress/build-progress.json", ROOT / "docs/progress/BUILD_HANDOFF.md"
+        checkpoint = bundle["progress"]["f19a_task3_fixed_operations_binding"].get(
+            "active_projection_checkpoint", "e" * 40)
+
+        def stat(path, *args, **kwargs):
+            if path == progress_path:
+                return SimpleNamespace(st_size=123)
+            if path == handoff_path:
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+
+        def sha(path):
+            if path == progress_path:
+                return "A" * 64
+            if path == handoff_path:
+                return "B" * 64
+            return original_sha(path)
+
+        def output(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and len(command) == 3 and command[2].startswith(checkpoint + ":"):
+                path = command[2].split(":", 1)[1]
+                values = {"docs/progress/progress-events.json": "_task3_product_events",
+                    "docs/progress/build-progress.json": "_task3_product_progress",
+                    "docs/progress/BUILD_HANDOFF.md": "_task3_product_handoff",
+                    "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                        "_task3_product_digest"}
+                if path in values:
+                    return bundle[values[path]]
+            return original_output(command, *args, **kwargs)
+
+        with patch.object(Path, "stat", stat), patch.object(checker, "_sha256", side_effect=sha), \
+                patch.object(subprocess, "check_output", side_effect=output):
+            now = observed or datetime.fromisoformat(bundle["events"]["events"][2182]["occurred_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task3_fixed_operations_closed(bundle, event_raw=raw, now=now)
+
+    def test_task3_closed_projection_uses_published_active_and_rejects_forgery(self):
+        bundle, raw = self.task3_closed_bundle()
+        self.assertEqual(self.validate_task3_closed(bundle, raw), [])
+        for name, change in (
+            ("event_envelope", lambda b: b["events"]["events"][2181].update(actor="forged")),
+            ("write_token", lambda b: b["events"]["events"][2181]["details"].update(
+                write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["completed_f19a_task3_fixed_operations_write_lease"].update(
+                product_write_scope=[])),
+            ("missing_p", lambda b: b["progress"]["f19a_task3_fixed_operations_binding"].pop(
+                "active_projection_checkpoint")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(self.validate_task3_closed(forged, raw))
+
+    def test_task3_closed_projection_rejects_invalid_revocation_time(self):
+        bundle, raw = self.task3_closed_bundle()
+        lease = bundle["progress"]["completed_f19a_task3_fixed_operations_worker_lease"]
+        expiry = lease["expires_at"]
+        for name, observed in (("expiry_equal", datetime.fromisoformat(expiry) + timedelta(minutes=1)),
+                               ("future", datetime.fromisoformat(lease["issued_at"]) + timedelta(minutes=1))):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                at = expiry if name == "expiry_equal" else (observed + timedelta(minutes=1)).isoformat()
+                for row in forged["events"]["events"][-2:]:
+                    row["occurred_at"] = at
+                for key in ("completed_f19a_task3_fixed_operations_worker_lease",
+                            "completed_f19a_task3_fixed_operations_write_lease"):
+                    forged["progress"][key]["revoked_at"] = at
+                self.assertTrue(self.validate_task3_closed(forged, raw, observed=observed))
+
+    def test_task3_closed_git_requires_published_c_d_p_and_clean_scope(self):
+        bundle, _ = self.task3_closed_bundle()
+        base, control, product, active = (
+            "71154279a7da853acbd15706126fe4c323b7016f", "c" * 40, "d" * 40, "e" * 40)
+        original_output, original_run = subprocess.check_output, subprocess.run
+        scenarios = ("positive", "remote", "product_dirty", "unrelated_close", "stale_product", "unpublished")
+        for scenario in scenarios:
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (active + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                        return (("0" * 40 if scenario == "remote" else active) + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/operations.py\n" if scenario == "product_dirty" else b""
+                    if tail == ["diff", "--name-only", "--no-renames", f"{base}..{control}"]:
+                        return b"scripts/check_project_progress.py\ntests/tooling/test_f19a_start_projection.py\n"
+                    if tail == ["diff", "--name-only", "--no-renames", f"{control}..{product}"]:
+                        return b"packages/api/operations.py\n"
+                    if tail == ["diff", "--name-only", "--no-renames", f"{product}..{active}"]:
+                        return b"docs/progress/build-progress.json\n"
+                    if tail == ["diff", "--name-only", "--no-renames", f"{active}..HEAD"]:
+                        return b"packages/api/runtime.py\n" if scenario == "unrelated_close" else b""
+                    if tail[:1] == ["show"] and len(tail) == 2:
+                        sha, path = tail[1].split(":", 1)
+                        if sha in (control, product):
+                            return b"stale" if scenario == "stale_product" and sha == product else (ROOT / path).read_bytes()
+                    return original_output(command, *args, **kwargs)
+
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 1 if scenario == "unpublished" and command[-2:] == [product, active] else 0)
+                    return original_run(command, *args, **kwargs)
+
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    errors = checker._collect_f19a_task3_fixed_operations_closed_git(bundle)
+                self.assertEqual(bool(errors), scenario != "positive")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -58601,6 +58601,10 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
 
 
 def _collect_f19a_start_git(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK3_FIXED_OPERATIONS_ACTIVE":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_task3_fixed_operations_git(bundle) else []
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK3_FIXED_OPERATIONS_CLOSED":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_task3_fixed_operations_closed_git(bundle) else []
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK2_REGISTRATION_API_CLOSED":
         return ["F19A_GIT_INVALID"] if _collect_f19a_task2_registration_api_closed_git(bundle) else []
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK2_REGISTRATION_API_ACTIVE":
@@ -61571,7 +61575,497 @@ def _validate_f19a_task2_registration_api_closed(bundle, *, event_raw=None, now=
     return sorted(set(errors))
 
 
+def _validate_f19a_task3_fixed_operations_closed(bundle, *, event_raw=None, now=None):
+    """Validate revocation against the posted product-ready seq2181 projection."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    errors = []
+    reason = "F19A_TASK3_FIXED_OPERATIONS_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    action = "F19A_TASK4_DUAL_LEASE_PENDING"
+    digest_path = "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"
+    try:
+        binding = progress["f19a_task3_fixed_operations_binding"]
+        checkpoint = binding["active_projection_checkpoint"]
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or checkpoint in {binding["control_checkpoint"], binding["product_code_checkpoint"],
+                                  "71154279a7da853acbd15706126fe4c323b7016f"}):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_INVALID")
+        active_raw = subprocess.check_output(["git", "show", f"{checkpoint}:docs/progress/progress-events.json"],
+                                             cwd=root, stderr=subprocess.DEVNULL)
+        active_progress_raw = subprocess.check_output(
+            ["git", "show", f"{checkpoint}:docs/progress/build-progress.json"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        active_handoff_raw = subprocess.check_output(
+            ["git", "show", f"{checkpoint}:docs/progress/BUILD_HANDOFF.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        active_digest_raw = subprocess.check_output(
+            ["git", "show", f"{checkpoint}:{digest_path}"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        active_progress = json.loads(active_progress_raw)
+        active_stream = json.loads(active_raw)
+        if (active_stream.get("last_sequence") != 2181 or active_progress.get("event_sequence") != 2181
+                or active_progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(active_raw).hexdigest().upper()):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_FROZEN_INVALID")
+        active_bundle = copy.deepcopy(bundle)
+        active_bundle["progress"] = active_progress
+        active_bundle["events"] = active_stream
+        active_bundle["handoff_text"] = active_handoff_raw.decode("utf-8")
+        active_bundle["handoff"] = extract_handoff_summary(active_bundle["handoff_text"])
+        active_bundle["detached_digest"] = json.loads(active_digest_raw)
+        active_time = datetime.fromisoformat("2026-10-07T08:30:40+00:00")
+        active_errors = _validate_f19a_task3_fixed_operations(active_bundle,
+            event_raw=active_raw, now=active_time, archived_files={
+                "docs/progress/build-progress.json": active_progress_raw,
+                "docs/progress/BUILD_HANDOFF.md": active_handoff_raw})
+        if active_errors:
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
+        rows = stream["events"]
+        if (raw_event_object_prefix_bytes(raw, 2181) != raw_event_object_prefix_bytes(active_raw, 2181)
+                or {key: value for key, value in stream.items() if key not in {"events", "last_sequence", "last_event_id"}}
+                   != {key: value for key, value in active_stream.items()
+                       if key not in {"events", "last_sequence", "last_event_id"}}
+                or len(rows) != 2183 or stream.get("last_sequence") != 2183
+                or stream.get("last_event_id") != "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked"
+                or stream != json.loads(raw)
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_EVENT_INVALID")
+        worker = active_progress["worker_lease"]
+        write = active_progress["write_lease"]
+        at = rows[2181]["occurred_at"]
+        revoked_at = datetime.fromisoformat(at)
+        issued_at = datetime.fromisoformat(worker["issued_at"])
+        expires_at = datetime.fromisoformat(worker["expires_at"])
+        observed_at = now or datetime.now(timezone.utc)
+        if (rows[2182].get("occurred_at") != at
+                or revoked_at.tzinfo is None or observed_at.tzinfo is None
+                or not issued_at <= revoked_at < expires_at
+                or revoked_at > observed_at):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_EVENT_INVALID")
+        for index, kind, details in ((2181, "WRITE_LEASE_REVOKED", {
+                "lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
+                "reason": reason}), (2182, "WORKER_LEASE_REVOKED", {
+                "lease_id": worker["lease_id"], "execution_fencing_token": worker["execution_fencing_token"],
+                "reason": reason})):
+            expected = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task3_fixed_operations_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK3_FIXED_OPERATIONS_CLOSE",
+                "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(rows[index - 1])).hexdigest().upper(),
+                "details": details}
+            if rows[index] != expected:
+                errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_EVENT_INVALID")
+        expected_binding = {**active_progress["f19a_task3_fixed_operations_binding"],
+            "status": "TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
+            "active_projection_checkpoint": checkpoint, "next_safe_action": action,
+            "event_sequence": 2183}
+        repo = progress["repository"]
+        active_repo = active_progress["repository"]
+        expected_repo = {**active_repo, "projection_mode": "F19A_TASK3_FIXED_OPERATIONS_CLOSED",
+            "head_relation": "F19A_TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED",
+            "worktree_status": "F19A_TASK3_FIXED_OPERATIONS_CLOSED_NOT_F19A_ACCEPTED"}
+        changed = {"active_agent", "completed_f19a_task3_fixed_operations_write_lease",
+            "completed_f19a_task3_fixed_operations_worker_lease", "event_sequence",
+            "f19a_task3_fixed_operations_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action",
+            "snapshot_hash", "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        def stable(value):
+            return {key: item for key, item in value.items() if key not in changed}
+        refs, old_refs = progress["registry_refs"], active_progress["registry_refs"]
+        if (stable(progress) != stable(active_progress)
+                or {key: value for key, value in refs.items() if key != "progress_events"}
+                   != {key: value for key, value in old_refs.items() if key != "progress_events"}
+                or {key: value for key, value in refs["progress_events"].items() if key != "sha256"}
+                   != {key: value for key, value in old_refs["progress_events"].items() if key != "sha256"}):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_FROZEN_INVALID")
+        if (binding != expected_binding or repo != expected_repo
+                or progress.get("snapshot_id") != "snapshot-f19a-task3-fixed-operations-close-seq2183"
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2183 or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("active_agent") is not None or progress.get("worker_lease") is not None
+                or progress.get("write_lease") is not None or progress.get("updated_at") != at
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A",
+                    "status": "TASK4_DUAL_LEASE_PENDING"}
+                or progress.get("completed_f19a_task3_fixed_operations_write_lease")
+                   != {**write, "status": "REVOKED", "revoked_at": at}
+                or progress.get("completed_f19a_task3_fixed_operations_worker_lease")
+                   != {**worker, "status": "REVOKED", "revoked_at": at}):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_INVALID")
+        if (handoff.get("event_sequence") != 2183 or handoff.get("last_event_id") != stream.get("last_event_id")
+                or handoff.get("active_agent") is not None or handoff.get("worker_lease") is not None
+                or handoff.get("write_lease") is not None
+                or handoff.get("repository_head") != active_repo.get("local_head")
+                or handoff.get("next_safe_action") != action):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", "docs/progress/build-progress.json"),
+                              ("handoff", "docs/progress/BUILD_HANDOFF.md")):
+            target = root / path
+            if (digest.get(section, {}).get("path") != path
+                    or digest.get(section, {}).get("bytes") != target.stat().st_size
+                    or digest.get(section, {}).get("file_sha256") != _sha256(target)):
+                errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("event_sequence") != 2183 or digest.get("self_reference") is not False
+                or bundle.get("_detached_digest_path") != digest_path):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK3_FIXED_OPERATIONS_CLOSE_MISSING")
+    return sorted(set(errors))
+
+def _collect_f19a_task3_fixed_operations_closed_git(bundle):
+    root = Path(bundle["_root"])
+    base = "71154279a7da853acbd15706126fe4c323b7016f"
+    upstream = "development/codex/f18-wsl-ops"
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    product = {"packages/api/operations.py", "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py", "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_fixed_operations_authorization.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "docs/work_orders/F-19A_TASK3_FIXED_OPERATIONS_PAIR_GUARD_WORK_INSTRUCTION.md"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                                           cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        binding = bundle["progress"]["f19a_task3_fixed_operations_binding"]
+        control_checkpoint = binding["control_checkpoint"]
+        product_checkpoint = binding["product_code_checkpoint"]
+        active_checkpoint = binding["active_projection_checkpoint"]
+        anchors = (base, control_checkpoint, product_checkpoint, active_checkpoint)
+        if (any(not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{40}", value) is None for value in anchors)
+                or len(set(anchors)) != 4):
+            return ["F19A_TASK3_FIXED_OPERATIONS_CLOSE_GIT_INVALID"]
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        control_delta = set(git("diff", "--name-only", "--no-renames",
+                                f"{base}..{control_checkpoint}").splitlines()) - {""}
+        product_delta = set(git("diff", "--name-only", "--no-renames",
+                                f"{control_checkpoint}..{product_checkpoint}").splitlines()) - {""}
+        active_delta = set(git("diff", "--name-only", "--no-renames",
+                               f"{product_checkpoint}..{active_checkpoint}").splitlines()) - {""}
+        close_delta = set(git("diff", "--name-only", "--no-renames",
+                              f"{active_checkpoint}..HEAD").splitlines()) - {""}
+        changed_product = product_delta & product
+        if (head != remote or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or not control <= control_delta or control_delta - control - documents
+                or not changed_product or product_delta - product - documents
+                or active_delta - documents or close_delta - documents or dirty - documents
+                or any(subprocess.run(["git", "merge-base", "--is-ancestor", parent, child],
+                    cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+                    for parent, child in ((base, control_checkpoint), (control_checkpoint, product_checkpoint),
+                                          (product_checkpoint, active_checkpoint), (active_checkpoint, head)))
+                or bundle["progress"]["repository"].get("local_head") != product_checkpoint
+                or bundle["progress"]["repository"].get("remote_head") != product_checkpoint
+                or any(subprocess.check_output(["git", "show", f"{control_checkpoint}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in control)
+                or any(subprocess.check_output(["git", "show", f"{product_checkpoint}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in changed_product)):
+            return ["F19A_TASK3_FIXED_OPERATIONS_CLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK3_FIXED_OPERATIONS_CLOSE_GIT_INVALID"]
+
+def _collect_f19a_task3_fixed_operations_git(bundle):
+    root = Path(bundle["_root"])
+    base = "71154279a7da853acbd15706126fe4c323b7016f"
+    upstream = "development/codex/f18-wsl-ops"
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "docs/work_orders/F-19A_TASK3_FIXED_OPERATIONS_PAIR_GUARD_WORK_INSTRUCTION.md"}
+    product = {"packages/api/operations.py", "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py", "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_fixed_operations_authorization.py"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                                           cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        progress = bundle["progress"]
+        binding = progress.get("f19a_task3_fixed_operations_binding", {})
+        checkpoint = binding.get("control_checkpoint")
+        product_checkpoint = binding.get("product_code_checkpoint")
+        if (git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or head != remote
+                or subprocess.run(["git", "merge-base", "--is-ancestor", base, head],
+                    cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0):
+            return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+        if checkpoint is None:
+            delta = set(git("diff", "--name-only", "--no-renames", f"{base}..HEAD").splitlines()) - {""}
+            if (delta - documents or dirty - control - documents
+                    or progress["repository"].get("local_head") != base
+                    or progress["repository"].get("remote_head") != base):
+                return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+        else:
+            expected_anchor = product_checkpoint if product_checkpoint is not None else checkpoint
+            if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or checkpoint == base or dirty - documents
+                    or progress["repository"].get("local_head") != expected_anchor
+                    or progress["repository"].get("remote_head") != expected_anchor
+                    or subprocess.run(["git", "merge-base", "--is-ancestor", base, checkpoint],
+                        cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+                    or subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, head],
+                        cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0):
+                return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+            delta = set(git("diff", "--name-only", "--no-renames", f"{base}..{checkpoint}").splitlines()) - {""}
+            successor_anchor = product_checkpoint if product_checkpoint is not None else checkpoint
+            successors = set(git("diff", "--name-only", "--no-renames", f"{successor_anchor}..HEAD").splitlines()) - {""}
+            if (not control <= delta or delta - control - documents or successors - documents
+                    or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                        cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in control)):
+                return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+            if product_checkpoint is not None:
+                if (not isinstance(product_checkpoint, str)
+                        or re.fullmatch(r"[0-9a-f]{40}", product_checkpoint) is None
+                        or product_checkpoint in {base, checkpoint}
+                        or progress["repository"].get("local_head") != product_checkpoint
+                        or progress["repository"].get("remote_head") != product_checkpoint
+                        or subprocess.run(["git", "merge-base", "--is-ancestor", checkpoint, product_checkpoint],
+                            cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+                        or subprocess.run(["git", "merge-base", "--is-ancestor", product_checkpoint, head],
+                            cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0):
+                    return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+                product_delta = set(git("diff", "--name-only", "--no-renames",
+                                        f"{checkpoint}..{product_checkpoint}").splitlines()) - {""}
+                changed_product = product_delta & product
+                if (not changed_product or product_delta - product - documents
+                        or any(subprocess.check_output(["git", "show", f"{product_checkpoint}:{path}"],
+                            cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                            for path in changed_product)):
+                    return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK3_FIXED_OPERATIONS_GIT_INVALID"]
+
+def _validate_f19a_task3_fixed_operations(bundle, *, event_raw=None, now=None, archived_files=None):
+    """Fail closed on Task 2's immutable seq2178 parent and exact epoch79 lease."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    errors = []
+    base = "71154279a7da853acbd15706126fe4c323b7016f"
+    wi = "docs/work_orders/F-19A_TASK3_FIXED_OPERATIONS_PAIR_GUARD_WORK_INSTRUCTION.md"
+    wi_hash = "DC74FE5CADC1F266E56982127A3DFAB83471F372D649882D6A569762036B3D77"
+    approval = "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md"
+    approval_hash = "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5"
+    spec_hash = "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247"
+    plan_hash = "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E"
+    actor, subject = "developer-primary-f19a-pair-grant", "F-19A/TASK3-FIXED-OPERATIONS"
+    issued, expires = "2026-10-07T08:29:40+00:00", "2026-10-08T08:29:40+00:00"
+    worker_id = "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4"
+    write_id = "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274"
+    worker_token = "f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4"
+    write_token = "f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274"
+    control = ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+    product = ["packages/api/operations.py", "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py", "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_fixed_operations_authorization.py"]
+    scope = control + product
+    action = "F19A_TASK3_FIXED_OPERATIONS_CONTROL_ONLY"
+    digest_path = "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"
+    try:
+        raw = event_raw if event_raw is not None else (root / "docs/progress/progress-events.json").read_bytes()
+        base_raw = subprocess.check_output(["git", "show", f"{base}:docs/progress/progress-events.json"],
+                                           cwd=root, stderr=subprocess.DEVNULL)
+        frozen = json.loads(subprocess.check_output(["git", "show", f"{base}:docs/progress/build-progress.json"],
+                                                   cwd=root, stderr=subprocess.DEVNULL))
+        parent_stream = json.loads(base_raw)
+        if (raw_event_object_prefix_bytes(raw, 2178) != raw_event_object_prefix_bytes(base_raw, 2178)
+                or {key: value for key, value in stream.items() if key not in {"events", "last_sequence", "last_event_id"}}
+                   != {key: value for key, value in parent_stream.items()
+                       if key not in {"events", "last_sequence", "last_event_id"}}
+                or parent_stream.get("last_sequence") != 2178 or frozen.get("event_sequence") != 2178
+                or frozen.get("snapshot_hash") != compute_snapshot_hash(frozen)):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_FROZEN_INVALID")
+        instruction = {"path": wi, "sha256": wi_hash,
+            "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_TASK3_FIXED_OPERATIONS",
+            "approval_ref": approval, "approval_sha256": approval_hash,
+            "spec_sha256": spec_hash, "plan_sha256": plan_hash,
+            "baseline_git_commit": base, "predecessor_event_sequence": 2178,
+            "package_status": "TASK3_FIXED_OPERATIONS_CONTROL_ONLY", "accepted": False,
+            "developer_exact_paths": scope, "product_write_scope": product}
+        common = {"actor_id": actor, "subject_ref": subject, "status": "ACTIVE",
+            "issued_at": issued, "expires_at": expires, "lease_epoch": 79,
+            "execution_fencing_token": worker_token, "baseline_git_commit": base,
+            "dispatch_head": base, "path_scope": scope}
+        worker = {**common, "lease_id": worker_id, "fencing_token": worker_token}
+        write = {**common, "lease_id": write_id, "fencing_token": write_token,
+            "worker_lease_id": worker_id, "write_epoch": 79,
+            "write_fencing_token": write_token, "product_write_scope": product}
+        rows = stream["events"]
+        if (len(rows) != 2181 or stream.get("last_sequence") != 2181
+                or stream.get("last_event_id") != "evt_f19a_2181_task3_fixed_operations_write_lease_issued"
+                or stream != json.loads(raw)
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_EVENT_INVALID")
+        for index, kind, details in ((2178, "WORK_INSTRUCTION_ISSUED", instruction),
+                                      (2179, "WORKER_LEASE_ISSUED", worker),
+                                      (2180, "WRITE_LEASE_ISSUED", write)):
+            row = rows[index]
+            expected = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task3_fixed_operations_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK3_FIXED_OPERATIONS",
+                "subject_ref": subject, "occurred_at": issued,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(rows[index - 1])).hexdigest().upper(),
+                "details": details}
+            if row != expected:
+                errors.append("F19A_TASK3_FIXED_OPERATIONS_EVENT_INVALID")
+        if (_sha256(root / wi) != wi_hash or _sha256(root / approval) != approval_hash
+                or _sha256(root / "docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md") != spec_hash
+                or _sha256(root / "docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md") != plan_hash):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_INSTRUCTION_INVALID")
+        current_time = now or datetime.now(timezone.utc)
+        if (progress.get("worker_lease") != worker or progress.get("write_lease") != write
+                or worker_token == write_token or current_time.tzinfo is None
+                or datetime.fromisoformat(expires) - datetime.fromisoformat(issued) != timedelta(hours=24)
+                or not datetime.fromisoformat(issued) <= current_time < datetime.fromisoformat(expires)):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_LEASE_INVALID")
+        binding = progress.get("f19a_task3_fixed_operations_binding", {})
+        checkpoint = binding.get("control_checkpoint")
+        checkpointed = isinstance(checkpoint, str) and re.fullmatch(r"[0-9a-f]{40}", checkpoint) and checkpoint != base
+        if checkpoint is not None and not checkpointed:
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_SCOPE_INVALID")
+        product_checkpoint = binding.get("product_code_checkpoint")
+        product_checkpointed = (isinstance(product_checkpoint, str)
+            and re.fullmatch(r"[0-9a-f]{40}", product_checkpoint)
+            and checkpointed and product_checkpoint not in {base, checkpoint})
+        if product_checkpoint is not None and not product_checkpointed:
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_SCOPE_INVALID")
+        anchor = product_checkpoint if product_checkpointed else checkpoint if checkpointed else base
+        expected_binding = {"status": ("TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY"
+            if product_checkpointed else "TASK3_FIXED_OPERATIONS_CONTROL_CHECKPOINTED_PRODUCT_RED_READY"
+            if checkpointed else "TASK3_FIXED_OPERATIONS_BOOTSTRAP_CONTROL_ONLY"),
+            "package_id": "F-19A", "predecessor_sequence": 2178, "predecessor_head": base,
+            "predecessor_regression": "CLOSED_G05_PASS_F19A_CONTROL_53_PASS_200_62_SECONDS",
+            "work_instruction_id": "WI-F19A-TASK3-FIXED-OPERATIONS-PAIR-GUARD-20261007-001",
+            "work_instruction_path": wi, "work_instruction_sha256": wi_hash,
+            "approval_path": approval, "approval_sha256": approval_hash,
+            "spec_sha256": spec_hash, "plan_sha256": plan_hash,
+            "developer_exact_paths": scope, "product_write_scope": product,
+            "worker_lease_id": worker_id, "write_lease_id": write_id,
+            "detached_digest_path": digest_path,
+            "next_safe_action": ("F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY" if product_checkpointed
+                else "F19A_TASK3_FIXED_OPERATIONS_PRODUCT_RED_TESTS_ONLY" if checkpointed else action),
+            "f20_overall_status": "REWORK_IN_PROGRESS", "release_decision": "DEFER",
+            "production": "NOT_EXECUTED", "event_sequence": 2181}
+        if checkpointed:
+            expected_binding["control_checkpoint"] = checkpoint
+        if product_checkpointed:
+            expected_binding["product_code_checkpoint"] = product_checkpoint
+        repo = progress["repository"]
+        expected_relation = ("F19A_TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY"
+            if product_checkpointed else "F19A_TASK3_FIXED_OPERATIONS_CONTROL_CHECKPOINTED_PRODUCT_RED_READY"
+            if checkpointed else "F19A_TASK3_FIXED_OPERATIONS_BOOTSTRAP_CONTROL_ONLY")
+        expected_action = expected_binding["next_safe_action"]
+        expected_status = ("TASK3_FIXED_OPERATIONS_PRODUCT_CHECKPOINTED_CLOSE_READY" if product_checkpointed
+            else "TASK3_FIXED_OPERATIONS_PRODUCT_RED_READY" if checkpointed else "TASK3_FIXED_OPERATIONS_CONTROL_ONLY")
+        if (binding != expected_binding or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("snapshot_id") != ("snapshot-f19a-task3-fixed-operations-product-checkpoint-seq2181"
+                    if product_checkpointed else "snapshot-f19a-task3-fixed-operations-checkpoint-seq2181"
+                    if checkpointed else "snapshot-f19a-task3-fixed-operations-start-seq2181")
+                or progress.get("event_sequence") != 2181 or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("updated_at") != issued or progress.get("active_agent") != actor
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("next_safe_action") != expected_action
+                or progress.get("runtime_next_action") != expected_action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": expected_status}
+                or progress.get("active_work_instruction") != {"artifact_id": expected_binding["work_instruction_id"],
+                    "path": wi, "sha256": wi_hash, "revision": 1,
+                    "result_status": expected_status, "package_status": expected_status,
+                    "approval_classification": instruction["classification"], "approval_ref": approval}
+                or repo.get("projection_mode") != "F19A_TASK3_FIXED_OPERATIONS_ACTIVE"
+                or repo.get("local_head") != anchor or repo.get("remote_head") != anchor
+                or repo.get("head_relation") != expected_relation or repo.get("worktree_status") != expected_relation
+                or repo.get("product_write_scope") != product):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_SCOPE_INVALID")
+        changed = {"active_agent", "active_work_instruction", "event_sequence",
+            "f19a_task3_fixed_operations_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action",
+            "snapshot_hash", "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        def stable(value):
+            return {key: item for key, item in value.items() if key not in changed}
+        repo_changed = {"head_relation", "local_head", "projection_mode", "remote_head", "worktree_status",
+            "product_write_scope"}
+        def stable_repo(value):
+            return {key: item for key, item in value.items() if key not in repo_changed}
+        refs, old_refs = progress["registry_refs"], frozen["registry_refs"]
+        if (stable(progress) != stable(frozen)
+                or stable_repo(repo) != stable_repo(frozen["repository"])
+                or {key: value for key, value in refs.items() if key != "progress_events"}
+                   != {key: value for key, value in old_refs.items() if key != "progress_events"}
+                or {key: value for key, value in refs["progress_events"].items() if key != "sha256"}
+                   != {key: value for key, value in old_refs["progress_events"].items() if key != "sha256"}):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_FROZEN_INVALID")
+        if (handoff.get("event_sequence") != 2181 or handoff.get("last_event_id") != stream.get("last_event_id")
+                or handoff.get("status") != "ACTIVE" or handoff.get("current_work_package") != "F-19A"
+                or handoff.get("active_agent") != actor or handoff.get("worker_lease") != worker_id
+                or handoff.get("write_lease") != write_id or handoff.get("repository_head") != anchor
+                or handoff.get("next_safe_action") != expected_action):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", "docs/progress/build-progress.json"),
+                              ("handoff", "docs/progress/BUILD_HANDOFF.md")):
+            target = root / path
+            archived = archived_files.get(path) if archived_files is not None else None
+            expected_bytes = len(archived) if archived is not None else target.stat().st_size
+            expected_hash = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path
+                    or digest.get(section, {}).get("bytes") != expected_bytes
+                    or digest.get(section, {}).get("file_sha256") != expected_hash):
+                errors.append("F19A_TASK3_FIXED_OPERATIONS_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("event_sequence") != 2181 or digest.get("self_reference") is not False
+                or bundle.get("_detached_digest_path") != digest_path):
+            errors.append("F19A_TASK3_FIXED_OPERATIONS_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK3_FIXED_OPERATIONS_MISSING")
+    return sorted(set(errors))
+
+
 def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK3_FIXED_OPERATIONS_CLOSED":
+        errors = _validate_f19a_task3_fixed_operations_closed(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task3_fixed_operations_closed_git(bundle))
+        return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK3_FIXED_OPERATIONS_ACTIVE":
+        errors = _validate_f19a_task3_fixed_operations(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task3_fixed_operations_git(bundle))
+        return sorted(set(errors))
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK2_REGISTRATION_API_CLOSED":
         errors = _validate_f19a_task2_registration_api_closed(bundle)
         if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
