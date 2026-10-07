@@ -11,12 +11,14 @@
   "write_lease": "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_PRODUCT_RED_TESTS_ONLY",
-  "repository_head": "c066ecdaf998535a0b80090b44d2f17b4d1e2aae",
+  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_CLOSE_ONLY",
+  "repository_head": "1e40e1ad306de93d659ca76e07e587361f70d676",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 3 제품 checkpoint(Main, 2026-10-07): 고정 세 Operations GET/ACK에 활성 0020 모드에서만 서버 소유 정확 pair grant 매요청 검사와 저장소 누락 fail-closed 503을 연결했다. 역사 0019·audit는 불변이다. 제품 exact4 `1e40e1ad306de93d659ca76e07e587361f70d676` local/private 동일, Developer 집중9 PASS·인접7파일 136 PASS/1 SKIP, Main 독립 집중9 PASS·인접7파일 106 PASS/1 SKIP, Ruff4·diff PASS, 독립 재리뷰 C0/I0/M0. 두 차례 I1은 fail-open/역사 호환 경계로 같은 승인 범위에서 TDD 재작업해 해소했다. SKIP은 격리 PG15 미구성으로 실제 DB·WSL·브라우저는 미검증. seq2181 active Event/lease 유지, 이 문서 후보를 G-05·checkpoint/private 게시한 뒤 write→worker 순서로 회수한다. F-19A 전체 미수락, Release DEFER, Production NOT_EXECUTED.
 
 - Task 3 제어 checkpoint(Main, 2026-10-07): control exact2 `c066ecdaf998535a0b80090b44d2f17b4d1e2aae`를 기존 branch/private에 게시했다. Developer 집중60 PASS, 최신 변경 집중7 PASS, Main 독립 집중7 PASS·실제 G-05 seq2181 PASS·diff check PASS, 독립 정적 리뷰 C0/I0/M0. 인접 전체는 최신 96 PASS/2 FAIL이며 R48 역사 overlay의 BASE blob과 현재/이전 HEAD `registry.py`·`asgi.py` 불일치로 Task3 이전부터 실패한다. Ruff 전체2파일은 기존 위반 때문에 exit1이나 신규 진단0. 제품6 write0, WSL/DB/브라우저 미검증, F-19A 미수락. 이 문서·progress·digest는 제어 SHA 결박 후보이며 자체 G-05와 정확 게시 전 제품 RED 테스트 금지.
 
