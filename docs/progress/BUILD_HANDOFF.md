@@ -2,21 +2,25 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2166,
-  "last_event_id": "evt_f19a_2166_task1_postclose_closed_fixture_write_lease_issued",
+  "event_sequence": 2168,
+  "last_event_id": "evt_f19a_2168_task1_postclose_closed_fixture_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task1-postclose-closed-fixture-bc3cc49e9ea4450eb95aa1667aba287e",
-  "write_lease": "write-lease-f19a-task1-postclose-closed-fixture-3a96ee051e304ab989aaefd2c08eea40",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_REWORK_ONLY",
+  "next_safe_action": "F19A_TASK2_API_DUAL_LEASE_PENDING",
   "repository_head": "2e9af50d2d9eb886d6eacf3ef137434ca60aa7dc",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch76 종료 후 인접 회귀 NON-GREEN(Main, 2026-10-07): closed G-05 seq2168 PASS, frozen Event 1~2166 raw prefix 동일·write→worker 회수·독립 C0/I0/M0. 인접5파일은 72 PASS/5 FAIL(292.31초, exit1)이며 5건 모두 새 epoch76 테스트가 closed live 상태를 active seq2166으로 읽거나 이미 닫힌 Event footer에 회수 Event를 재부착하는 fixture 가정이다. 제품/DB/WSL 실패로 단정하지 않는다. 현재 종료 통제5를 NON-GREEN checkpoint/private 보존한 뒤 새 비제품 WI·dual lease로 불변 P2 Git blob 기반 fixture를 고친다. Task2 API lease 잠금, F-19A 전체 미수락이다.
+
+- epoch76 closed fixture 종료 투영(Main, 2026-10-07): P2 `7903b200e30fb0dc4b3a7cc287576b350df3f019` clean/실원격 동일, B G-05 seq2166 PASS와 인접5파일 77 PASS/301.07초(exit0)를 확인했다. frozen Event 뒤 seq2167 write→2168 worker 임대를 회수했고 완료 두 임대 REVOKED, active agent/임대 null이다. 제품·DB·WSL write0. closed G-05·인접 회귀·최종 통제 commit/private push는 아직 미실행으로 F-19A 전체 ACTIVE·미수락, Task2 API 잠금, F-20/U01 REWORK·Release DEFER·Production NOT_EXECUTED다.
 
 - epoch76 B/C precommit GREEN(Main, 2026-10-07): 실제 G-05 seq2166 PASS(exit0), 인접5파일 77 PASS/299.69초(exit0), FAIL0/SKIP0, diff check0. 새 Event·제품/DB/WSL write0. 다음은 이 문서4의 P2 checkpoint/private→clean G-05·회귀→seq2167/2168 회수·closed 검증이며 F-19A 전체 미수락, Task2 API 잠금이다.
 

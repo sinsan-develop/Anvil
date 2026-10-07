@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2166,
+  "last_sequence": 2168,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -101236,7 +101236,49 @@
       "write_fencing_token": "f19a-task1-postclose-closed-fixture-write-fence-epoch-76-3a96ee051e304ab989aaefd2c08eea40",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2167,
+    "event_id": "evt_f19a_2167_task1_postclose_closed_fixture_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK1-POSTCLOSE-CLOSED-FIXTURE",
+    "occurred_at": "2026-10-07T04:52:39+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "3B1F61DC8B1B1E87F166455BEF1E233282A2AA79D4FE3D3D28832B83389092DF",
+    "details": {
+      "lease_id": "write-lease-f19a-task1-postclose-closed-fixture-3a96ee051e304ab989aaefd2c08eea40",
+      "write_fencing_token": "f19a-task1-postclose-closed-fixture-write-fence-epoch-76-3a96ee051e304ab989aaefd2c08eea40",
+      "reason": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2168,
+    "event_id": "evt_f19a_2168_task1_postclose_closed_fixture_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK1-POSTCLOSE-CLOSED-FIXTURE",
+    "occurred_at": "2026-10-07T04:52:39+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "B8F21585A54C62C02B78C64C246D926C9E74006DF6A626D3C3A1B01CCA4568D3",
+    "details": {
+      "lease_id": "worker-lease-f19a-task1-postclose-closed-fixture-bc3cc49e9ea4450eb95aa1667aba287e",
+      "execution_fencing_token": "f19a-task1-postclose-closed-fixture-execution-fence-epoch-76-bc3cc49e9ea4450eb95aa1667aba287e",
+      "reason": "F19A_TASK1_POSTCLOSE_CLOSED_FIXTURE_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2166_task1_postclose_closed_fixture_write_lease_issued"
+  "last_event_id": "evt_f19a_2168_task1_postclose_closed_fixture_worker_lease_revoked"
 }
