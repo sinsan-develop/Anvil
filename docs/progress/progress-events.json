@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2226,
+  "last_sequence": 2228,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102951,7 +102951,49 @@
       "write_fencing_token": "f19a-task4-third-actor-qa-fixture-write-fence-epoch-88-12c7a9886589434e8ddc51da6377ce4a",
       "product_write_scope": ["deploy/wsl/oidc_qa_issuer.py", "tests/deploy/test_f18_oidc_qa_issuer.py", "deploy/wsl/f19a_qa_bootstrap.py", "tests/deploy/test_f19a_qa_bootstrap.py", "tests/integration/test_f19a_oidc_pg15.py", "tests/browser/f19a-pair-selection.mjs"]
     }
+  },
+  {
+    "sequence": 2227,
+    "event_id": "evt_f19a_2227_task4_third_actor_qa_fixture_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK4-THIRD-ACTOR-QA-FIXTURE",
+    "occurred_at": "2026-10-07T21:06:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "019AB231CF90BF8B57DAC0DE498FE7522223C63DF23A4A93CCA4B6437750EF5E",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-third-actor-qa-fixture-12c7a9886589434e8ddc51da6377ce4a",
+      "write_fencing_token": "f19a-task4-third-actor-qa-fixture-write-fence-epoch-88-12c7a9886589434e8ddc51da6377ce4a",
+      "reason": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2228,
+    "event_id": "evt_f19a_2228_task4_third_actor_qa_fixture_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_CLOSE",
+    "subject_ref": "F-19A/TASK4-THIRD-ACTOR-QA-FIXTURE",
+    "occurred_at": "2026-10-07T21:06:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "8B1C2D37751FF0C87AE6A4DB9AFDAD1FA5002B0AB9E6DD45FB5E91CB231E2DDF",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-third-actor-qa-fixture-fa00c01bcaa94d4fa457eeb7cf8d0240",
+      "execution_fencing_token": "f19a-task4-third-actor-qa-fixture-execution-fence-epoch-88-fa00c01bcaa94d4fa457eeb7cf8d0240",
+      "reason": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2226_task4_third_actor_qa_fixture_write_lease_issued"
+  "last_event_id": "evt_f19a_2228_task4_third_actor_qa_fixture_worker_lease_revoked"
 }

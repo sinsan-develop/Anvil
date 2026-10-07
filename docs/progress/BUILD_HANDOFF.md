@@ -1,4 +1,6 @@
-# F-19A Task 4 세 번째 actor QA fixture checkpoint handoff
+# F-19A Task 4 세 번째 actor QA fixture 종료 handoff
+
+epoch88 lease 종료 후보(Main, 2026-10-08): 활성 B `5fd27fb6db50940e26737a07cd1f98876244807f` local/private 동일·clean, G-05 seq2226 PASS·집중7 PASS를 확인했다. Event 원문 seq1~2226을 보존하고 seq2227 write→2228 worker revoke를 append해 두 lease를 REVOKED, 활성 lease·agent를 null로 투영했다. 이 종료 후보의 G-05·집중/역사 회귀·private 게시/clean 전 WSL-server 임시 자원 생성 금지. 실제 PG15/OIDC/HTTPS/Chromium, Worker0020, GET/alerts/ACK·DB fault, 독립 Tester는 미검증이며 F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch88 코드 checkpoint(Main, 2026-10-08): Developer의 허용 정확8 파일 `26fd154054f364ed34447303ce9831c34ddd37da`가 local/private 동일·clean이다. Main 독립 통제7 PASS·제품51 PASS/PG opt-in 1 SKIP·G-05 seq2226 PASS, 파일 SHA·diff 범위 일치, Critical/Important 확정 결함0이다. Developer 인접149 PASS/기존 R48 authority2 FAIL, 브라우저 네 phase self-test PASS이나 실제 Chromium/PG15/WSL-server는 아직 미실행이다. 이 문서 B는 C SHA를 결박하는 활성 종료 후보이며 B G-05·private 게시·clean 확인 전 write→worker lease를 회수하지 않는다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -56,16 +58,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2226,
-  "last_event_id": "evt_f19a_2226_task4_third_actor_qa_fixture_write_lease_issued",
+  "event_sequence": 2228,
+  "last_event_id": "evt_f19a_2228_task4_third_actor_qa_fixture_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-third-actor-qa-fixture-fa00c01bcaa94d4fa457eeb7cf8d0240",
-  "write_lease": "write-lease-f19a-task4-third-actor-qa-fixture-12c7a9886589434e8ddc51da6377ce4a",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_THIRD_ACTOR_QA_FIXTURE_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
   "repository_head": "26fd154054f364ed34447303ce9831c34ddd37da",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
