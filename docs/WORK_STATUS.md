@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- F-19A Task4 격리 QA 통제 시작(Main, 2026-10-07): 종료 `897b0b660b9979794cc83c7ed69240a0be8bb9cc` clean/private·G-05 seq2193 PASS·통제 전체71 PASS 기준. 기존 승인 Plan Task4의 WI SHA `D52149FE7114B595FD3D058E45659E3873835E2E311030B51A64E7DC2E16C637`, Event seq2194 WI→2195 worker→2196 write, epoch82 24시간·서로 다른 token, Developer 통제 정확2·제품 scope0. 통제 route 새 구현 전 G-05 RED 예상이며 PASS가 아니다. QA 제품4/WSL/DB/브라우저 write0, 정식 실패보고0, 다음은 통제 RED→GREEN·독립 리뷰·checkpoint/private. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
+
 - F-19A Task3 종료 fixture R2 최종 재검증(Main, 2026-10-07): 종료 문서 `23a8b0bd30117b45eab1f0089a88d2316cc59b84` local/private 동일·clean, 실제 G-05 seq2193 PASS(exit0), 종료 집중18 PASS/53 deselected(exit0), 게시 종료 상태 통제 전체71 PASS/312.36초(exit0). 독립 리뷰 C0/I0/M0, 제품·WSL/브라우저 write0. 이 항목은 epoch81 종료 후 fixture 회귀 해소에 한정하며, 인접 전체는 직전107 PASS/기존 R48 2 FAIL이고 실제 격리 PG15/WSL/브라우저 및 F-19A 전체 acceptance는 미검증. 다음은 승인된 Task4 별도 WI/dual lease 검토, Release DEFER/Production NOT_EXECUTED.
 
 - F-19A Task3 종료 fixture R2 epoch81 lease 회수 후보(Main, 2026-10-07): 활성 B `8c8a3134fe7df7ca35c6f8636c6e810c657e774b` local/private clean·G-05 seq2191 PASS 뒤 원문 Event seq1~2191을 보존하고 seq2192 write→2193 worker revoke만 append. 완료 lease REVOKED·활성 null, 다음은 Task4 별도 WI/dual lease 대기. 종료 G-05·집중 회귀·문서 게시/clean 전 Task4 제품 write 금지; 기존 R48 2 FAIL·실제 PG15/WSL/브라우저 및 F-19A 전체 acceptance 미검증, Release DEFER/Production NOT_EXECUTED.

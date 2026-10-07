@@ -1,4 +1,6 @@
-# F-19A Task 3 종료 fixture R2 lease 회수 handoff
+# F-19A Task 4 격리 QA 통제 시작 handoff
+
+Task4 통제 시작(Main, 2026-10-07): 종료 `897b0b660b9979794cc83c7ed69240a0be8bb9cc` local/private clean·G-05 seq2193 PASS·종료 전체 통제71 PASS를 기준으로 WI `D52149FE7114B595FD3D058E45659E3873835E2E311030B51A64E7DC2E16C637`를 결박했다. Event seq2194 WI→2195 worker→2196 write, epoch82 24시간·분리 token·통제 정확2/제품 scope0. 새 checker route 부재의 bootstrap G-05 RED는 PASS가 아니다. 제품 QA4·WSL-server 자원·Task4 실제 요청은 통제 C/B checkpoint/private·clean 검증과 별도 lease 전 금지. F-19A 전체 미수락, Release DEFER/Production NOT_EXECUTED.
 
 Task 3 post-close fixture epoch81 종료 투영 후보(Main, 2026-10-07): 활성 게시본 `8c8a3134fe7df7ca35c6f8636c6e810c657e774b` clean/private·G-05 seq2191 PASS를 확인하고 Event 원문 seq1~2191 뒤에 seq2192 write→2193 worker revoke만 append했다. 두 lease는 REVOKED·활성 null, 제품/WSL/브라우저 write0. 종료 G-05·회귀·문서 게시/clean 확인 전 Task4 WI/제품 write 금지, F-19A 전체 미수락·Release DEFER/Production NOT_EXECUTED.
 
@@ -8,17 +10,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2193,
-  "last_event_id": "evt_f19a_2193_task3_postclose_fixture_r2_worker_lease_revoked",
+  "event_sequence": 2196,
+  "last_event_id": "evt_f19a_2196_task4_isolated_qa_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-isolated-qa-control-967ffd99104440e4bec1d21173faec03",
+  "write_lease": "write-lease-f19a-task4-isolated-qa-control-931148c5d4fe4a1e8db7ea0ff6c90bd8",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_DUAL_LEASE_PENDING",
-  "repository_head": "acf25937e10db593ed03ef53915f7193b8794208",
+  "next_safe_action": "F19A_TASK4_CONTROL_ONLY",
+  "repository_head": "897b0b660b9979794cc83c7ed69240a0be8bb9cc",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
