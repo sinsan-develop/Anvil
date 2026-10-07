@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2216,
+  "last_sequence": 2218,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -102687,7 +102687,49 @@
       "write_fencing_token": "f19a-task4-post-qa-report-control-write-fence-epoch-86-dce5c06c48d74cc9ae9649aabd736b08",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2217,
+    "event_id": "evt_f19a_2217_task4_post_qa_report_control_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_POST_QA_REPORT_CONTROL_CLOSE",
+    "subject_ref": "F-19A/TASK4-POST-QA-REPORT-CONTROL",
+    "occurred_at": "2026-10-07T18:23:36+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "E75A036B8982B2123B8BEE0749EE7E13BE442444C49041090FAB59476973A5C2",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-post-qa-report-control-dce5c06c48d74cc9ae9649aabd736b08",
+      "write_fencing_token": "f19a-task4-post-qa-report-control-write-fence-epoch-86-dce5c06c48d74cc9ae9649aabd736b08",
+      "reason": "F19A_TASK4_POST_QA_REPORT_CONTROL_COMPLETE_PRODUCT_REWORK_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2218,
+    "event_id": "evt_f19a_2218_task4_post_qa_report_control_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_POST_QA_REPORT_CONTROL_CLOSE",
+    "subject_ref": "F-19A/TASK4-POST-QA-REPORT-CONTROL",
+    "occurred_at": "2026-10-07T18:23:36+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "BF52B3F3DE266E5C4E34ECCEACCC2D79D707E55FD901EE36D5ABA86838B014F0",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-post-qa-report-control-af72db45d73d47bcb31b97055c16ec91",
+      "execution_fencing_token": "f19a-task4-post-qa-report-control-execution-fence-epoch-86-af72db45d73d47bcb31b97055c16ec91",
+      "reason": "F19A_TASK4_POST_QA_REPORT_CONTROL_COMPLETE_PRODUCT_REWORK_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2216_task4_post_qa_report_control_write_lease_issued"
+  "last_event_id": "evt_f19a_2218_task4_post_qa_report_control_worker_lease_revoked"
 }

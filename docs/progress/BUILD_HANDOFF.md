@@ -1,4 +1,6 @@
-# F-19A Task 4 post-QA report control 활성 handoff
+# F-19A Task 4 post-QA report control 종료 handoff
+
+epoch86 lease 종료 후보(Main, 2026-10-08): 활성 B `3bfe2fb7bd54d8c9b76ec5e69a524f4bebe37daf` local/private 동일·clean·G-05 seq2216 PASS·집중6 PASS·역사99 PASS(545.12초)를 확인했다. 원문 Event seq1~2216 뒤 seq2217 write→2218 worker revoke만 append했고 두 lease REVOKED·활성 null이다. 종료 G-05·집중/역사 재실행·private 게시/clean 확인 전 제품 재작업 WI·WSL 자원 생성 금지. 다음은 Worker OIDC head0020 호환성, other-actor 403 기대 정합, 기존 GET/alerts/ACK·DB fault 실제 QA를 위한 별도 정확 WI/dual lease다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch86 C checkpoint(Main, 2026-10-08): 정확2 `279c9ba3cd368cb6e0f4aabfa54f6b0229c8dde8` local/private 동일·clean. Developer focused6 PASS, 역사99 PASS(최종 fixture 보완 전), 최종 인접135 PASS/기존 R48 close2 FAIL, G-05 seq2216 PASS, diff PASS, Ruff 이번 변경 구간 신규0. Main 독립 focused6 PASS·G-05 PASS, read-only Reviewer C0/I0/M0·focused6/G-05 PASS. 정본 투영 누락3은 Main이 A4로 직접 복구했고 정식 Developer 실패0. 이 B 문서는 제품 code SHA를 결박하는 활성 종료 후보이며 B 게시·G-05/회귀/clean 후에만 epoch86 write→worker lease를 회수한다. 제품/WSL 추가 write0, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -44,16 +46,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2216,
-  "last_event_id": "evt_f19a_2216_task4_post_qa_report_control_write_lease_issued",
+  "event_sequence": 2218,
+  "last_event_id": "evt_f19a_2218_task4_post_qa_report_control_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-post-qa-report-control-af72db45d73d47bcb31b97055c16ec91",
-  "write_lease": "write-lease-f19a-task4-post-qa-report-control-dce5c06c48d74cc9ae9649aabd736b08",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_POST_QA_REPORT_CONTROL_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_PRODUCT_REWORK_DUAL_LEASE_PENDING",
   "repository_head": "279c9ba3cd368cb6e0f4aabfa54f6b0229c8dde8",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
