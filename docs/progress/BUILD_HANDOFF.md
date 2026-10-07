@@ -1,4 +1,6 @@
-# F-19A Task 4 epoch72 역사 시계 fixture 시작 handoff
+# F-19A Task 4 epoch72 역사 시계 fixture checkpoint handoff
+
+epoch89 코드 checkpoint(Main, 2026-10-08): Developer 정확2 `2a6409f2b21ddf05cbc44e52ee1d6588e04e7356` local/private 동일·clean. 역사 epoch72 8 PASS, epoch89 집중8 PASS, Main 독립 결합16 PASS·G-05 seq2231 PASS, Developer 인접157 PASS/기존 R48 authority2 FAIL, Ruff 변경행 신규0·diff PASS다. 두 파일 SHA와 시간 경계·Event/Git 통제 diff를 Main이 검토해 확정 Critical/Important0으로 판단했다. 이 B 문서는 C SHA를 결박하는 활성 종료 후보이며 B G-05·private 게시·clean 전 write→worker lease 회수 금지. 실제 WSL-server/PG15/OIDC/Chromium·독립 Tester는 미실행, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
 epoch89 시작(Main, 2026-10-08): epoch88 종료 `350846be76efeb73913076887fe1538c7d0608e3` local/private clean·G-05 seq2228 PASS 뒤 역사 통제 전체 `110 PASS/3 FAIL`을 확인했다. 세 실패는 epoch72 활성 checkpoint `eccbc2a78064a8538c135c10b328e2dddcd548f4`의 lease 만료 `2026-10-07T21:07:37+00:00` 이후 테스트 helper가 실제 현재시각으로 활성 fixture를 검증한 동일 시계 원인이다. 비의미 WI `68327D179DE5D8551742D0BE595AA3672E017E6B3794C27FFFB227A4173A94F0`, Event seq2229 WI→2230 worker→2231 write, 분리 24시간 token과 Developer 통제 정확2·제품0을 결박한다. 새 checker route 전 bootstrap G-05 RED는 PASS가 아니다. 실제 WSL-server/DB/브라우저 자원 생성은 이 절편 C/B/lease 종료·역사 회귀 뒤로 미룬다. F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -69,8 +71,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-epoch72-clock-fixture-d169a0ad569d4c059684c0f9a42251ea",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_ACTIVE",
-  "repository_head": "26fd154054f364ed34447303ce9831c34ddd37da",
+  "next_safe_action": "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_CLOSE_ONLY",
+  "repository_head": "2a6409f2b21ddf05cbc44e52ee1d6588e04e7356",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
