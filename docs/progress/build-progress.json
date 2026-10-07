@@ -835,10 +835,10 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
+    "local_head": "4bbad5250029a109e5e5e519200be7ad3d6da01d",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
+    "remote_head": "4bbad5250029a109e5e5e519200be7ad3d6da01d",
     "projection_mode": "F19A_TASK4_QA_ISSUER_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
     "head_relation": "F19A_TASK4_QA_ISSUER_CHECKPOINTED_CLOSE_READY",
@@ -1995,7 +1995,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "D78C7C2F08C89A30615335876C48D0EFFD14123570F2FAF24A482BB7D193AC28",
+  "snapshot_hash": "CE555799E4DF2EBC47A967B74251C0843B2B6E9FBD3D39343A8CCEA3AA8CE132",
   "runtime_next_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -23527,7 +23527,7 @@
     "write_lease_id": "write-lease-f19a-task4-qa-issuer-7ae7adc5e1384cb2b38cb2075a78363b",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
     "next_safe_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
-    "code_checkpoint": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
+    "code_checkpoint": "4bbad5250029a109e5e5e519200be7ad3d6da01d",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",

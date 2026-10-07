@@ -1,5 +1,7 @@
 # F-19A Task 4 QA issuer revision checkpoint handoff
 
+Task4 QA issuer epoch85 C2 test fixture checkpoint(Main, 2026-10-08): 종료 집중에서 역사 A bundle과 현재 B Git HEAD 혼용 1 FAIL을 확인해 미게시 종료 후보를 활성 B로 복구했다. 동일 epoch85 허용 test1만 수정한 `4bbad5250029a109e5e5e519200be7ad3d6da01d`가 local/private 동일·clean, Developer 집중6 PASS·역사 전체93 PASS, 독립 Reviewer C0/I0/M0·단독1 PASS다. 이전 C `feb2eb57`과 활성 B1 `1d8814f2`는 이력으로 보존하고 이 문서 B2에서 checkpoint를 C2로 재결박한다. B2 G-05/게시/clean 및 종료 후 재실행 전 lease 회수·WSL 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
+
 Task4 QA issuer epoch85 C checkpoint(Main, 2026-10-08): exact5 `feb2eb5797aa709fe6bf08aa3c1d0e93ee510879` local/private 동일·clean. Developer issuer24 PASS·F-19A 통제93 PASS·인접 첫 128 PASS/3 FAIL(새 successor 단발1+기존 R48 2), Main 독립 issuer+통제30 PASS·단독 successor1 PASS·인접 전체129 PASS/기존 R48 2 FAIL, 독립 최종 리뷰 C0/I0/M0·G-05 seq2211 PASS·diff PASS다. 이 B 문서 투영은 제품 SHA를 결박하며 G-05/게시/clean 확인 후 epoch85 lease 종료만 허용한다. 실제 WSL-server PG15/OIDC 두 actor/HTTPS/Chromium/backup·restore·downgrade는 미검증, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 QA issuer epoch85 시작(Main, 2026-10-07): epoch84 종료 `6f96a6422914faffa6249b1445b5719d90bf0ced` clean/private·G-05 seq2208 PASS·종료 집중16 PASS를 기준으로 비의미 WI `84D508A6022A8E52B3FD5D5D68DA94C525710DCD4DDADD7E1172FDF13004D6F8`를 결박했다. Event seq2209 WI→2210 worker→2211 write, epoch85 24시간·서로 다른 token, Developer 제품 정확3/통제 정확2다. QA issuer는 기본 synthetic subject를 보존하고 두 값만 허용하며 Compose issuer 서비스에만 전달한다. 새 route 전 bootstrap G-05 RED는 PASS 아님. 로컬 TDD·독립 검토·checkpoint/private·lease 종료 전 WSL 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
@@ -40,7 +42,7 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
   "next_safe_action": "F19A_TASK4_QA_ISSUER_CONTROL_CLOSE_ONLY",
-  "repository_head": "feb2eb5797aa709fe6bf08aa3c1d0e93ee510879",
+  "repository_head": "4bbad5250029a109e5e5e519200be7ad3d6da01d",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
