@@ -18,6 +18,8 @@
 }
 ```
 
+- Task1 저장 원장 WSL 실증: exact private Git SHA `a2669849c45c4c1848e86929e0460f329979b7ff` clean으로 WSL-server 전용 PG15에서 0020·복합 FK·철회·audit 불변·데이터 존재 downgrade guard 2 PASS(exit0), native pg_dump 212219 bytes/SHA `e36dc402...`→전용 restore DB pg_restore 완료·0020 동일·네 테이블 데이터 해시 동일/건수 2:2:1:6. 시험 전용 container/익명 volume/loopback 포트/checkout/venv/backup 파일은 신원 확인 후 제거해 잔여0이다. 앞선 잘못 적은 기대 SHA·editable pip flat-layout·checkout 안 venv의 clean 검사 exit1은 각각 정정했고 PG test 실패가 아니다. F-19A 전체 미수락, Task1 임대 종료·final checkpoint/closed G-05는 아직 미실행이다.
+
 - Task1 제품4 local 후보: 기존 I1 존재 노출을 RED 2 FAIL→GREEN 2 PASS로 해소했다. 최종 신규4파일 SHA는 migration `649B5AE3...`, repository `A8BBF664...`, unit `93D18D8C...`, PG opt-in `A1583886...`; Developer·Main 최종 104 PASS/2 PG15 SKIP, Alembic 0020 head, G-05 seq2156 PASS, diff0, 독립 C0/I0/M0이다. PG15 실측/backup-restore·제품 후보 commit/private push는 아직 미실행, F-19A 미수락이다. 다음은 정확7파일 local checkpoint→private exact SHA→WSL-server 격리 PG15 검증이다.
 
 - Task1 제품4 첫 독립 리뷰는 I1 REWORK: 비소유자의 숨김 등록 대상에 대해 existing 403/missing 404로 존재 노출이 가능하다. 같은 epoch74 Developer에게 정확4파일 내 RED 음성 테스트·최소 보정을 재지시했고 Main은 제품 checkpoint/WSL을 중지했다. 첫 로컬 102 PASS·PG15 2 SKIP은 이 결함과 실제 DB/backup/restore를 증명하지 않으며 F-19A는 ACTIVE·미수락이다.
