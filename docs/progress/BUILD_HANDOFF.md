@@ -1,22 +1,26 @@
-# F-19A Task1 종료 후 역사 fixture 고정 재작업 handoff
+# F-19A Task1 종료 후 역사 fixture 고정 재작업 종료 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2171,
-  "last_event_id": "evt_f19a_2171_task1_closed_history_fixture_write_lease_issued",
+  "event_sequence": 2173,
+  "last_event_id": "evt_f19a_2173_task1_closed_history_fixture_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task1-closed-history-fixture-110ab75ae6df4c3c9ee764b91245fa49",
-  "write_lease": "write-lease-f19a-task1-closed-history-fixture-b6d0af31ec1a4eb1a2f6384889404aa1",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK1_CLOSED_HISTORY_FIXTURE_REWORK_ONLY",
+  "next_safe_action": "F19A_TASK2_API_DUAL_LEASE_PENDING",
   "repository_head": "1fbfa0c1d8dfe8669b4ac1c03abc787bd296f140",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- epoch77 종료 precommit GREEN(Main, 2026-10-07): closed G-05 seq2173 PASS(exit0), 인접5파일 81 PASS/323.87초(exit0), FAIL0/SKIP0. 독립 C0/I0/M0·독립 G-05 PASS·frozen Event seq1~2171 보존과 write→worker 회수·digest 일치·제품 diff0. 최종 통제5 checkpoint/private와 게시 후 clean G-05·회귀는 아직 미실행, F-19A 전체 미수락·Task2 API 새 lease0이다.
+
+- epoch77 역사 fixture 재작업 종료 투영(Main, 2026-10-07): active P3 `d62e37c9bb05c0f816248e78a3af0e0114aca1d6` clean/실원격 동일, G-05 seq2171 PASS 및 인접5파일 81 PASS/314.82초(exit0)를 확인했다. frozen Event 뒤 seq2172 write→2173 worker 임대를 회수하고 완료 두 임대를 REVOKED, 활성 agent/임대를 null로 투영했다. 제품·DB·WSL write0, Task2 API 새 lease0. 종료 G-05·인접 회귀·최종 통제 checkpoint/private push는 아직 미실행으로 PASS 표시하지 않는다. F-19A 전체 ACTIVE·미수락, F-20/U01 REWORK·Release DEFER·Production NOT_EXECUTED다.
 
 - epoch77 B/C2 사전 GREEN(Main, 2026-10-07): test-only C2 `1fbfa0c1d8dfe8669b4ac1c03abc787bd296f140` 실제 private 원격 동일, 같은 seq2171 B 재결박 G-05 PASS(exit0), 인접5파일 81 PASS/318.16초(exit0), FAIL0/SKIP0다. 새 Event·제품/DB/WSL write0. 문서4 P3 게시·clean 재검증 후에만 seq2172/2173 임대를 회수한다. F-19A 미수락·Task2 API 잠금이다.
 
