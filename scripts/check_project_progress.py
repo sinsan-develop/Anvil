@@ -58601,6 +58601,10 @@ def _validate_f19a_start(bundle, *, event_raw=None, now=None):
 
 
 def _collect_f19a_start_git(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSED":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_task4_epoch89_postclose_fixture_closed_git(bundle) else []
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_task4_epoch89_postclose_fixture_git(bundle) else []
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_CLOSED":
         return ["F19A_GIT_INVALID"] if _collect_f19a_task4_epoch72_clock_fixture_closed_git(bundle) else []
     if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_ACTIVE":
@@ -68869,6 +68873,390 @@ def validate_bundle(bundle):
         errors.extend(_collect_f19a_task4_epoch72_clock_fixture_git(bundle))
         return sorted(set(errors))
     return _validate_bundle_before_f19a_task4_epoch72_clock_fixture(bundle)
+
+
+_validate_bundle_before_f19a_task4_epoch89_postclose_fixture = validate_bundle
+
+
+def _validate_f19a_task4_epoch89_postclose_fixture(bundle, *, event_raw=None, now=None,
+                                                    archived_files=None):
+    """Validate epoch90 against its exact issued publication and closed parent."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    issued = "af80c46ceb8946cc8561055272d06f1a55fb0206"
+    parent = "5605c86e42b2eb0fdc12234a846adebef56114c3"
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    hashes = ("F453B3F8C2E7BDAC7AC8683518DDF4C158A7F40670E6B447A279B0DBDFA7D17E",
+        "E2771974A457F24A795418A34E3B93759DB331876570601778614C05A61E88F2",
+        "1200C2F4B5F02E11FFFD39724185BC40DB7F4B0F2EF740379690DD19980676B8",
+        "67A78F0A1FE805F7537CC48774BD80F108E4E35CC2C2BFD38CF7A3D97E3AF14D")
+    scope = ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+    errors = []
+    try:
+        published = {path: subprocess.check_output(["git", "show", f"{issued}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        if any(hashlib.sha256(published[path]).hexdigest().upper() != sha
+               for path, sha in zip(paths, hashes)):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_PUBLICATION_INVALID")
+        baseline = json.loads(subprocess.check_output(["git", "show", f"{parent}:{paths[0]}"],
+            cwd=root, stderr=subprocess.DEVNULL))
+        baseline_raw = subprocess.check_output(["git", "show", f"{parent}:{paths[1]}"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        issued_progress, issued_stream = json.loads(published[paths[0]]), json.loads(published[paths[1]])
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (baseline.get("event_sequence") != 2233
+                or baseline.get("repository", {}).get("projection_mode")
+                   != "F19A_TASK4_EPOCH72_CLOCK_FIXTURE_CLOSED"
+                or baseline.get("worker_lease") is not None or baseline.get("write_lease") is not None
+                or baseline.get("snapshot_hash") != compute_snapshot_hash(baseline)
+                or raw_event_object_prefix_bytes(raw, 2233)
+                   != raw_event_object_prefix_bytes(baseline_raw, 2233)):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_FROZEN_INVALID")
+        if (raw != published[paths[1]] or stream != issued_stream
+                or len(stream.get("events", [])) != 2236 or stream.get("last_sequence") != 2236
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_EVENT_INVALID")
+        worker, write = progress.get("worker_lease"), progress.get("write_lease")
+        expected_worker, expected_write = issued_progress["worker_lease"], issued_progress["write_lease"]
+        current = now or datetime.now(timezone.utc)
+        if (worker != expected_worker or write != expected_write
+                or worker["lease_epoch"] != 90 or write["lease_epoch"] != 90
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["fencing_token"] != "f19a-task4-epoch89-post-close-fixture-execution-fence-epoch-90-e641b82283ae46f6b3f6f48fe337397f"
+                or write["write_fencing_token"] != "f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06"
+                or worker["fencing_token"] == write["fencing_token"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or worker["path_scope"] != scope or write["path_scope"] != scope
+                or write["product_write_scope"] != []
+                or datetime.fromisoformat(worker["expires_at"]) - datetime.fromisoformat(worker["issued_at"])
+                   != timedelta(hours=24) or current.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= current
+                   < datetime.fromisoformat(worker["expires_at"])):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_LEASE_INVALID")
+        binding = progress.get("f19a_task4_epoch89_post_close_fixture_binding", {})
+        checkpoint = binding.get("code_checkpoint")
+        checkpointed = isinstance(checkpoint, str) and re.fullmatch(r"[0-9a-f]{40}", checkpoint) is not None
+        if checkpoint is not None and not checkpointed:
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_SCOPE_INVALID")
+        status = ("TASK4_EPOCH89_POST_CLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY" if checkpointed
+                  else "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE")
+        action = ("F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE_ONLY" if checkpointed
+                  else "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CONTROL")
+        relation = (status if checkpointed else "TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE")
+        expected_binding = {**issued_progress["f19a_task4_epoch89_post_close_fixture_binding"],
+            "status": status, "next_safe_action": action}
+        if checkpointed:
+            expected_binding["code_checkpoint"] = checkpoint
+        repo = progress["repository"]
+        expected_wi = {**issued_progress["active_work_instruction"],
+            "result_status": status, "package_status": status}
+        if (binding != expected_binding or progress.get("active_work_instruction") != expected_wi
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2236 or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("updated_at") != issued_progress["updated_at"]
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("active_agent") != expected_worker["actor_id"]
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": status}
+                or progress.get("snapshot_id") != ("snapshot-f19a-task4-epoch89-post-close-fixture-checkpoint-seq2236"
+                    if checkpointed else "snapshot-f19a-task4-epoch89-post-close-fixture-start-seq2236")
+                or repo.get("projection_mode") != "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE"
+                or repo.get("local_head") != (checkpoint if checkpointed else issued_progress["repository"]["local_head"])
+                or repo.get("remote_head") != (checkpoint if checkpointed else issued_progress["repository"]["remote_head"])
+                or repo.get("head_relation") != relation or repo.get("worktree_status") != relation
+                or repo.get("product_write_scope") != []):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_SCOPE_INVALID")
+        changed = {"active_agent", "active_work_instruction", "event_sequence",
+            "f19a_task4_epoch89_post_close_fixture_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action", "snapshot_hash",
+            "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in issued_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items() if key != "progress_events"}
+                   != {key: value for key, value in issued_progress["registry_refs"].items() if key != "progress_events"}
+                or {key: value for key, value in repo.items() if key not in {"local_head", "remote_head", "head_relation", "worktree_status"}}
+                   != {key: value for key, value in issued_progress["repository"].items()
+                       if key not in {"local_head", "remote_head", "head_relation", "worktree_status"}}):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_FROZEN_INVALID")
+        expected_handoff = {**extract_handoff_summary(published[paths[2]].decode("utf-8")),
+            "repository_head": checkpoint if checkpointed else issued_progress["repository"]["local_head"],
+            "next_safe_action": action}
+        if (handoff != expected_handoff or handoff.get("status") != "ACTIVE"
+                or handoff.get("current_work_package") != "F-19A"):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            target = root / path
+            size = len(archived) if archived is not None else target.stat().st_size
+            sha = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != size
+                    or digest.get(section, {}).get("file_sha256") != sha):
+                errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2236
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_DIGEST_INVALID")
+        for path, sha in (("docs/work_orders/F-19A_TASK4_EPOCH89_POST_CLOSE_LIVE_FIXTURE_WORK_INSTRUCTION.md",
+                "C0AE929622DFE0485C374D764B1146EDE1BD1F0C2AE09242077286010D6C457B"),
+                ("docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+                "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5"),
+                ("docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md",
+                "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247"),
+                ("docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md",
+                "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E")):
+            if _sha256(root / path) != sha:
+                errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_INSTRUCTION_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_task4_epoch89_postclose_fixture_git(bundle):
+    root = Path(bundle["_root"])
+    parent = "5605c86e42b2eb0fdc12234a846adebef56114c3"
+    issued = "af80c46ceb8946cc8561055272d06f1a55fb0206"
+    upstream = "development/codex/f18-wsl-ops"
+    scope = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "docs/work_orders/F-19A_TASK4_EPOCH89_POST_CLOSE_LIVE_FIXTURE_WORK_INSTRUCTION.md"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def ancestor(start, end):
+            return subprocess.run(["git", "merge-base", "--is-ancestor", start, end], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        def history(start, end):
+            if git("rev-list", "--min-parents=2", f"{start}..{end}"):
+                raise ValueError("merge in epoch90 fixture")
+            return set(git("log", "--format=", "--name-only", "--no-renames", f"{start}..{end}").splitlines()) - {""}
+        def delta(start, end):
+            return set(git("diff", "--name-only", "--no-renames", f"{start}..{end}").splitlines()) - {""}
+        checkpoint = bundle["progress"]["f19a_task4_epoch89_post_close_fixture_binding"].get("code_checkpoint")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (head != remote or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or not ancestor(parent, issued) or not ancestor(issued, head)
+                or history(parent, issued) - documents or delta(parent, issued) - documents):
+            return ["F19A_TASK4_EPOCH89_POSTCLOSE_GIT_INVALID"]
+        if checkpoint is None:
+            if head != issued or dirty - scope:
+                return ["F19A_TASK4_EPOCH89_POSTCLOSE_GIT_INVALID"]
+        else:
+            if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or not ancestor(issued, checkpoint) or not ancestor(checkpoint, head)
+                    or dirty - documents or history(issued, checkpoint) - scope - documents
+                    or history(checkpoint, head) - documents
+                    or scope - delta(issued, checkpoint) or delta(issued, checkpoint) - scope - documents
+                    or delta(checkpoint, head) - documents
+                    or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in scope)):
+                return ["F19A_TASK4_EPOCH89_POSTCLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK4_EPOCH89_POSTCLOSE_GIT_INVALID"]
+
+
+def _validate_f19a_task4_epoch89_postclose_fixture_closed(bundle, *, event_raw=None,
+                                                           now=None, archived_files=None):
+    """Verify seq2237/2238 against immutable active B and exact revocation."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    binding = progress.get("f19a_task4_epoch89_post_close_fixture_binding", {})
+    checkpoint, publication = binding.get("code_checkpoint"), binding.get("active_projection_checkpoint")
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    status = "TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSED_WSL_QA_PENDING"
+    action = "F19A_TASK4_WSL_QA_PENDING"
+    reason = "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    errors = []
+    try:
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or not isinstance(publication, str) or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or checkpoint == publication):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_INVALID")
+        published = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        active_progress = json.loads(published[paths[0]])
+        active_stream = json.loads(published[paths[1]])
+        active_text = published[paths[2]].decode("utf-8")
+        active_bundle = {**bundle, "progress": active_progress, "events": active_stream,
+            "handoff": extract_handoff_summary(active_text), "handoff_text": active_text,
+            "detached_digest": json.loads(published[paths[3]])}
+        active_errors = _validate_f19a_task4_epoch89_postclose_fixture(active_bundle,
+            event_raw=published[paths[1]],
+            now=datetime.fromisoformat(active_progress["worker_lease"]["issued_at"]),
+            archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+        if (active_errors or active_progress["f19a_task4_epoch89_post_close_fixture_binding"].get("code_checkpoint")
+                != checkpoint):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (raw_event_object_prefix_bytes(raw, 2236) != raw_event_object_prefix_bytes(published[paths[1]], 2236)
+                or stream != json.loads(raw) or len(stream.get("events", [])) != 2238
+                or stream.get("last_sequence") != 2238
+                or stream.get("last_event_id")
+                   != "evt_f19a_2238_task4_epoch89_post_close_fixture_worker_lease_revoked"
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_EVENT_INVALID")
+        worker, write = active_progress["worker_lease"], active_progress["write_lease"]
+        at = stream["events"][2236]["occurred_at"]
+        at_time, current = datetime.fromisoformat(at), now or datetime.now(timezone.utc)
+        if (at_time.tzinfo is None or current.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= at_time
+                   < datetime.fromisoformat(worker["expires_at"])
+                or at_time > current or stream["events"][2237]["occurred_at"] != at
+                or progress.get("completed_f19a_task4_epoch89_post_close_fixture_write_lease")
+                   != {**write, "status": "REVOKED", "revoked_at": at}
+                or progress.get("completed_f19a_task4_epoch89_post_close_fixture_worker_lease")
+                   != {**worker, "status": "REVOKED", "revoked_at": at}
+                or progress.get("worker_lease") is not None or progress.get("write_lease") is not None):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_INVALID")
+        for index, kind, details in ((2236, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+                (2237, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                    "execution_fencing_token": worker["execution_fencing_token"], "reason": reason})):
+            expected = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task4_epoch89_post_close_fixture_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSE",
+                "subject_ref": "F-19A/TASK4-EPOCH89-POST-CLOSE-FIXTURE", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(stream["events"][index - 1])).hexdigest().upper(),
+                "details": details}
+            if stream["events"][index] != expected:
+                errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_EVENT_INVALID")
+        expected_binding = {**active_progress["f19a_task4_epoch89_post_close_fixture_binding"],
+            "status": status, "active_projection_checkpoint": publication,
+            "next_safe_action": action, "event_sequence": 2238}
+        expected_repo = {**active_progress["repository"],
+            "projection_mode": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSED", "head_relation": status,
+            "worktree_status": status}
+        if (binding != expected_binding or progress.get("repository") != expected_repo
+                or progress.get("snapshot_id") != "snapshot-f19a-task4-epoch89-post-close-fixture-close-seq2238"
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2238 or progress.get("last_event_id") != stream["last_event_id"]
+                or progress.get("updated_at") != at or progress.get("active_agent") is not None
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": "TASK4_WSL_QA_PENDING"}):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_INVALID")
+        changed = {"active_agent", "completed_f19a_task4_epoch89_post_close_fixture_write_lease",
+            "completed_f19a_task4_epoch89_post_close_fixture_worker_lease", "event_sequence",
+            "f19a_task4_epoch89_post_close_fixture_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action", "snapshot_hash",
+            "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in active_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items() if key != "progress_events"}
+                   != {key: value for key, value in active_progress["registry_refs"].items()
+                       if key != "progress_events"}):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_FROZEN_INVALID")
+        expected_handoff = {**active_bundle["handoff"], "event_sequence": 2238,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "repository_head": checkpoint,
+            "next_safe_action": action}
+        if handoff != expected_handoff or handoff.get("status") != "ACTIVE":
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            target = root / path
+            size = len(archived) if archived is not None else target.stat().st_size
+            sha = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != size
+                    or digest.get(section, {}).get("file_sha256") != sha):
+                errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2238
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_task4_epoch89_postclose_fixture_closed_git(bundle):
+    root = Path(bundle["_root"])
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    try:
+        if _collect_f19a_task4_epoch89_postclose_fixture_git(bundle):
+            return ["F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_GIT_INVALID"]
+        binding = bundle["progress"]["f19a_task4_epoch89_post_close_fixture_binding"]
+        checkpoint, publication = binding["code_checkpoint"], binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str) or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication == checkpoint):
+            return ["F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_GIT_INVALID"]
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def history(start, end):
+            if git("rev-list", "--min-parents=2", f"{start}..{end}"):
+                raise ValueError("merge in epoch90 close")
+            return set(git("log", "--format=", "--name-only", "--no-renames", f"{start}..{end}").splitlines()) - {""}
+        head = git("rev-parse", "HEAD")
+        if (head != git("rev-parse", "development/codex/f18-wsl-ops")
+                or {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()} - documents):
+            return ["F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_GIT_INVALID"]
+        published = json.loads(subprocess.check_output(["git", "show",
+            f"{publication}:docs/progress/build-progress.json"], cwd=root, stderr=subprocess.DEVNULL))
+        if (not all(subprocess.run(["git", "merge-base", "--is-ancestor", start, end], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                for start, end in ((checkpoint, publication), (publication, head)))
+                or history(checkpoint, publication) - documents or history(publication, head) - documents
+                or set(git("diff", "--name-only", "--no-renames", f"{checkpoint}..{publication}").splitlines()) - documents
+                or set(git("diff", "--name-only", "--no-renames", f"{publication}..HEAD").splitlines()) - documents
+                or published.get("repository", {}).get("projection_mode")
+                   != "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE"
+                or published.get("f19a_task4_epoch89_post_close_fixture_binding", {}).get("code_checkpoint")
+                   != checkpoint):
+            return ["F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK4_EPOCH89_POSTCLOSE_CLOSE_GIT_INVALID"]
+
+
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSED":
+        errors = _validate_f19a_task4_epoch89_postclose_fixture_closed(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task4_epoch89_postclose_fixture_closed_git(bundle))
+        return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_ACTIVE":
+        errors = _validate_f19a_task4_epoch89_postclose_fixture(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task4_epoch89_postclose_fixture_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_f19a_task4_epoch89_postclose_fixture(bundle)
 
 
 if __name__ == "__main__":
