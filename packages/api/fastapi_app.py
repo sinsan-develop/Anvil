@@ -20,6 +20,7 @@ from packages.execution.models import TaskStatus
 
 from .common import ApiContractError, ApplicationRequest, ApplicationResponse, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
+from .f19a_registration import REGISTRATION_ENDPOINT_KEYS, RegistrationRepository, dispatch_registration
 from .local_session import IssuedSession
 from .oidc_session_coordinator import OidcSessionCoordinator, OidcSessionRejected
 from .security import (
@@ -487,6 +488,41 @@ def _endpoint_handler(
     return handler
 
 
+def _registration_handler(
+    endpoint: EndpointSpec,
+    repository: RegistrationRepository | None,
+    authenticate: Authenticator,
+    config: WebSecurityConfig,
+) -> Callable[[Request], Any]:
+    async def handler(request: Request, **_path_parameters: str) -> Response:
+        try:
+            _host(request, config)
+            principal = await _read_principal(request, authenticate, config, None)
+            body: Mapping[str, Any] = {}
+            if endpoint.is_mutation:
+                _origin(request, config, required=True)
+                csrf = request.headers.get("x-csrf-token")
+                if csrf is None or not hmac.compare_digest(csrf, principal.csrf_token):
+                    raise ApiContractError("CSRF_VALIDATION_FAILED", "The CSRF token is invalid.", 403)
+                body = await _body(request)
+            elif await request.body():
+                raise ApiContractError("REGISTRATION_INVALID_INPUT", "The registration input is invalid.", 400)
+            status, result = await run_in_threadpool(
+                dispatch_registration, endpoint.key, repository, principal, dict(request.path_params), body
+            )
+            return JSONResponse(result, status_code=status)
+        except ApiContractError as error:
+            return _error_response(request, error)
+        except Exception:
+            return _error_response(request, ApiContractError(
+                "INTERNAL_ERROR", "An internal error occurred.", 500
+            ))
+
+    handler.__name__ = "registration_" + re.sub(r"[^a-zA-Z0-9]", "_", endpoint.key)
+    _declare_path_parameters(handler, endpoint.path)
+    return handler
+
+
 def _sse_handler(
     endpoint: EndpointSpec,
     stream: EventStreamPort,
@@ -617,6 +653,7 @@ def create_app(
     oidc_session_coordinator: OidcSessionCoordinator | None = None,
     trusted_read_principal: SessionPrincipal | None = None,
     auth_mode: str = "COOKIE",
+    registration_repository: RegistrationRepository | None = None,
 ) -> FastAPI:
     if oidc_session_coordinator is not None and session_issuer is not None:
         raise ValueError("OIDC and local session issuance cannot both be active")
@@ -659,7 +696,7 @@ def create_app(
                 response = Response(status_code=204)
                 response.headers["access-control-allow-origin"] = origin
                 response.headers["access-control-allow-credentials"] = "true"
-                response.headers["access-control-allow-methods"] = "GET, POST, OPTIONS"
+                response.headers["access-control-allow-methods"] = "GET, POST, PATCH, PUT, OPTIONS"
                 response.headers["access-control-allow-headers"] = (
                     "Content-Type, Idempotency-Key, If-Match, Last-Event-ID, X-CSRF-Token, "
                     "X-Permission-Scope, X-Reason, X-Request-ID, X-Target-Hash"
@@ -682,7 +719,8 @@ def create_app(
             if endpoint.key in _TRUSTED_READ_ENDPOINT_KEYS
             else None
         )
-        handler = (
+        handler = (_registration_handler(endpoint, registration_repository, authenticator, config)
+            if endpoint.key in REGISTRATION_ENDPOINT_KEYS else
             _sse_handler(
                 endpoint,
                 stream,

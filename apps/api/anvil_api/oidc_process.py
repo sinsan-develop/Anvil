@@ -165,8 +165,11 @@ def load_oidc_process_inputs(environment: Mapping[str, str]) -> OidcProcessInput
 
 def create_oidc_process_app(
     environment: Mapping[str, str], host_factory: Callable[..., FastAPI],
+    *, f19a_enabled: bool = False,
 ) -> FastAPI:
     """Bind one Engine and session factory to the existing OIDC ASGI host."""
+    if type(f19a_enabled) is not bool:
+        raise _reject()
     inputs = load_oidc_process_inputs(environment)
     engine = None
     try:
@@ -180,6 +183,7 @@ def create_oidc_process_app(
 
         snapshot_started_at: ContextVar[datetime | None] = ContextVar(
             "anvil_database_health_snapshot_started_at", default=None)
+        required_head = "0020_f19a_pair_grants" if f19a_enabled else "0019_oidc_sessions"
 
         def operations_clock() -> datetime:
             now = datetime.now(timezone.utc)
@@ -194,7 +198,7 @@ def create_oidc_process_app(
                     query_result = connection.execute(text("SELECT 1")).scalar_one()
                     heads = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
                 completed_at = datetime.now(timezone.utc)
-                if (query_result != 1 or heads != ["0019_oidc_sessions"]
+                if (query_result != 1 or heads != [required_head]
                         or completed_at < observed_at
                         or completed_at - observed_at > timedelta(seconds=5)):
                     return None
@@ -254,6 +258,7 @@ def create_oidc_process_app(
             client_secret=inputs.client_secret, ca_bundle=inputs.ca_bundle,
             operational_shell=environment.get("ANVIL_F15_OPERATIONAL_SHELL") == "1",
             operations_owner=operations_owner,
+            **({"f19a_enabled": True} if f19a_enabled else {}),
         )
     except Exception:
         if engine is not None:

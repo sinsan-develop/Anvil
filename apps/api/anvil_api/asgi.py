@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 from fastapi import FastAPI
 from packages.api.runtime import create_runtime_app
 from packages.api.fastapi_app import AuthorizationResolver
+from packages.api.f19a_registration import REGISTRATION_ENDPOINT_KEYS
+from packages.api.registry import ApiRegistry, canonical_api_registry
+from packages.persistence.f19a_registration_repository import F19ARegistrationRepository
 from packages.api.oidc_runtime_factory import (
     OidcRuntimeConfig, OidcRuntimeRejected, build_oidc_session_coordinator,
 )
@@ -70,6 +73,7 @@ def create_configured_oidc_asgi_app(
     operational_shell: bool = False,
     frontend_directory: Path | None = None,
     operations_owner: OperationsService | None = None,
+    f19a_enabled: bool = False,
 ) -> FastAPI:
     """Assemble nonsecret server settings before binding trusted OIDC material."""
     allowed = {
@@ -102,6 +106,7 @@ def create_configured_oidc_asgi_app(
         transport=transport, operational_shell=operational_shell,
         frontend_directory=frontend_directory,
         operations_owner=operations_owner,
+        f19a_enabled=f19a_enabled,
     )
 
 
@@ -116,6 +121,7 @@ def create_oidc_asgi_app(
     operational_shell: bool = False,
     frontend_directory: Path | None = None,
     operations_owner: OperationsService | None = None,
+    f19a_enabled: bool = False,
 ) -> FastAPI:
     """Bind trusted OIDC inputs to one coordinator before exposing host routes."""
     if not isinstance(environment, Mapping):
@@ -134,15 +140,23 @@ def create_oidc_asgi_app(
     coordinator = build_oidc_session_coordinator(
         oidc_config, session_factory, transport=transport,
     )
+    if type(f19a_enabled) is not bool:
+        raise OidcRuntimeRejected("OIDC_RUNTIME_NOT_CONFIGURED")
+    registry = canonical_api_registry()
+    if not f19a_enabled:
+        registry = ApiRegistry(tuple(endpoint for endpoint in registry.endpoints
+                                   if endpoint.key not in REGISTRATION_ENDPOINT_KEYS))
     runtime = create_runtime_app(
         environment=environment, session_factory=session_factory, engine=engine,
         oidc_session_coordinator=coordinator,
+        registry=registry,
+        registration_repository=(F19ARegistrationRepository(session_factory) if f19a_enabled else None),
         authorization_resolver=authorization_resolver,
         operations_owner=operations_owner,
     )
     return create_asgi_app(
         runtime, operational_shell=operational_shell, frontend_directory=frontend_directory,
-        required_migration_head="0019_oidc_sessions",
+        required_migration_head=("0020_f19a_pair_grants" if f19a_enabled else "0019_oidc_sessions"),
     )
 
 def create_asgi_app(
@@ -155,7 +169,7 @@ def create_asgi_app(
         required_migration_head = (
             "0016_operations_recovery" if operational_shell else "0013_task_bootstrap_authority"
         )
-    if operational_shell or required_migration_head == "0019_oidc_sessions":
+    if operational_shell or required_migration_head in {"0019_oidc_sessions", "0020_f19a_pair_grants"}:
         # Runtime's historical 0013 declaration is not the operational contract.
         # Readiness still checks the independent database alembic_version below.
         app.state.migration_head = required_migration_head
@@ -214,7 +228,8 @@ def create_asgi_app(
 if os.environ.get("ANVIL_AUTH_MODE") == "OIDC":
     from apps.api.anvil_api.oidc_process import create_oidc_process_app
 
-    app = create_oidc_process_app(os.environ, create_configured_oidc_asgi_app)
+    app = create_oidc_process_app(os.environ, create_configured_oidc_asgi_app,
+                                  f19a_enabled=True)
 else:
     app = create_asgi_app(
         create_runtime_app(), operational_shell=os.environ.get("ANVIL_F15_OPERATIONAL_SHELL") == "1"

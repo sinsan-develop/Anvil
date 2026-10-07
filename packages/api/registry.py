@@ -30,8 +30,8 @@ class EndpointSpec:
         return self.method != "GET"
 
     def __post_init__(self) -> None:
-        if self.method not in {"GET", "POST"}:
-            raise ValueError("canonical API supports GET and POST in v1")
+        if self.method not in {"GET", "POST", "PATCH", "PUT"}:
+            raise ValueError("unsupported canonical API method")
         if not self.path.startswith("/api/") or "//" in self.path:
             raise ValueError("endpoint path must be a canonical /api path")
         if self.method == "POST" and self.path.rsplit("/", 1)[-1] in {
@@ -73,6 +73,12 @@ def _permission(method: str, path: str) -> str:
         "POST /api/operations/alerts/{alertId}:acknowledge": "operations:alerts:acknowledge",
         "GET /api/operations/audit": "operations:audit:read",
         "GET /api/dashboard/operations": "dashboard:read",
+        "GET /api/dashboard/project-environments": "dashboard:read",
+        "POST /api/registration/projects": "projects:register",
+        "POST /api/registration/projects/{projectId}/environments": "projects:register",
+        "PATCH /api/registration/projects/{projectId}": "projects:register",
+        "PATCH /api/registration/projects/{projectId}/environments/{environmentId}": "projects:register",
+        "PUT /api/authorization/pair-grants/{actorId}/{projectId}/{environmentId}/{permission}": "pair-grants:manage",
         "POST /api/projects/{projectId}/tasks": "tasks:write",
         "GET /api/tasks/{taskId}": "tasks:read",
         "GET /api/runs/{id}/events": "run:events:read",
@@ -100,6 +106,12 @@ _V1_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
     ("POST", "/api/operations/alerts/{alertId}:acknowledge", "29.2"),
     ("GET", "/api/operations/audit", "16.2"),
     ("GET", "/api/dashboard/operations", "16.2"),
+    ("GET", "/api/dashboard/project-environments", "F-19A Task2"),
+    ("POST", "/api/registration/projects", "F-19A Task2"),
+    ("POST", "/api/registration/projects/{projectId}/environments", "F-19A Task2"),
+    ("PATCH", "/api/registration/projects/{projectId}", "F-19A Task2"),
+    ("PATCH", "/api/registration/projects/{projectId}/environments/{environmentId}", "F-19A Task2"),
+    ("PUT", "/api/authorization/pair-grants/{actorId}/{projectId}/{environmentId}/{permission}", "F-19A Task2"),
     ("POST", "/api/projects/{projectId}/tasks", "28.2"),
     ("GET", "/api/tasks/{taskId}", "28.3"),
     ("POST", "/api/projects/{id}/intents", "47.13"),
