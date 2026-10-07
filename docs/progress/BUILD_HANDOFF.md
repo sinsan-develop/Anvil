@@ -1,22 +1,26 @@
-# F-19A Task 2 최소 등록·목록 API handoff
+# F-19A Task 3 고정 Operations 정확 pair guard handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2178,
-  "last_event_id": "evt_f19a_2178_task2_registration_api_worker_lease_revoked",
+  "event_sequence": 2181,
+  "last_event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4",
+  "write_lease": "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_DUAL_LEASE_PENDING",
-  "repository_head": "5565c29ddff33677b74ff041990977990bcecb6b",
+  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_PRODUCT_RED_TESTS_ONLY",
+  "repository_head": "c066ecdaf998535a0b80090b44d2f17b4d1e2aae",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 3 제어 checkpoint(Main, 2026-10-07): control exact2 `c066ecdaf998535a0b80090b44d2f17b4d1e2aae`를 기존 branch/private에 게시했다. Developer 집중60 PASS, 최신 변경 집중7 PASS, Main 독립 집중7 PASS·실제 G-05 seq2181 PASS·diff check PASS, 독립 정적 리뷰 C0/I0/M0. 인접 전체는 최신 96 PASS/2 FAIL이며 R48 역사 overlay의 BASE blob과 현재/이전 HEAD `registry.py`·`asgi.py` 불일치로 Task3 이전부터 실패한다. Ruff 전체2파일은 기존 위반 때문에 exit1이나 신규 진단0. 제품6 write0, WSL/DB/브라우저 미검증, F-19A 미수락. 이 문서·progress·digest는 제어 SHA 결박 후보이며 자체 G-05와 정확 게시 전 제품 RED 테스트 금지.
+
+- Task 3 epoch79 통제 시작(Main, 2026-10-07): Task 2 종료 `71154279a7da853acbd15706126fe4c323b7016f` local/private clean·G-05 seq2178 PASS·F-19A 통제 전체53 PASS를 기준으로 승인 Spec/Plan 동일 hash에 Task3 WI `DC74FE5CADC1F266E56982127A3DFAB83471F372D649882D6A569762036B3D77`를 결박했다. Event seq2179 WI→2180 worker→2181 write, epoch79 24시간·서로 다른 token·control2+제품6 exact8. 제품6은 control route 독립 C0/I0·G-05·정확 checkpoint/private 전까지 WI gate로 잠근다. 기존 고정 GET/ACK의 정확 pair guard만 범위, 새 route/schema·Task4/U01/WSL·Production 제외. 새 checker route 부재의 bootstrap G-05 RED를 PASS로 기록하지 않는다. F-19A 전체 미수락·Release DEFER.
 
 - Task 2 종료 검증(Main, 2026-10-07): 종료 seq2178 G-05 PASS(exit0), Task2 집중10 PASS/43 deselected/28.53초(exit0), diff check exit0. Event 원문·P/product SHA·회수 lease·F-19A 미수락을 확인했다. 종료 통제5파일 미게시, commit/private→clean G-05 전 Task3 lease·제품 write 금지; PG15/WSL/브라우저/전체 acceptance 미검증, Release DEFER/Production NOT_EXECUTED.
 

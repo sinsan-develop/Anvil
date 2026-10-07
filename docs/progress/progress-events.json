@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2178,
+  "last_sequence": 2181,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -101552,7 +101552,143 @@
       "execution_fencing_token": "f19a-task2-registration-api-execution-fence-epoch-78-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8",
       "reason": "F19A_TASK2_REGISTRATION_API_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
     }
+  },
+  {
+    "sequence": 2179,
+    "event_id": "evt_f19a_2179_task3_fixed_operations_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_FIXED_OPERATIONS",
+    "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+    "occurred_at": "2026-10-07T08:29:40+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "D87EC64CD83F974021FBEBC3B18C44F537BBDA1C98A48FB5E8860852FE4A294F",
+    "details": {
+      "path": "docs/work_orders/F-19A_TASK3_FIXED_OPERATIONS_PAIR_GUARD_WORK_INSTRUCTION.md",
+      "sha256": "DC74FE5CADC1F266E56982127A3DFAB83471F372D649882D6A569762036B3D77",
+      "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_TASK3_FIXED_OPERATIONS",
+      "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "spec_sha256": "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247",
+      "plan_sha256": "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E",
+      "baseline_git_commit": "71154279a7da853acbd15706126fe4c323b7016f",
+      "predecessor_event_sequence": 2178,
+      "package_status": "TASK3_FIXED_OPERATIONS_CONTROL_ONLY",
+      "accepted": false,
+      "developer_exact_paths": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_f19a_start_projection.py",
+        "packages/api/operations.py",
+        "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py",
+        "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/api/test_f19a_fixed_operations_authorization.py"
+      ],
+      "product_write_scope": [
+        "packages/api/operations.py",
+        "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py",
+        "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/api/test_f19a_fixed_operations_authorization.py"
+      ]
+    }
+  },
+  {
+    "sequence": 2180,
+    "event_id": "evt_f19a_2180_task3_fixed_operations_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_FIXED_OPERATIONS",
+    "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+    "occurred_at": "2026-10-07T08:29:40+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "40D70376F8A697ABC5CCA1DAB33884D2D8DBF8D19E55523F3322943F2D67AD99",
+    "details": {
+      "lease_id": "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-07T08:29:40+00:00",
+      "expires_at": "2026-10-08T08:29:40+00:00",
+      "lease_epoch": 79,
+      "fencing_token": "f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4",
+      "execution_fencing_token": "f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4",
+      "baseline_git_commit": "71154279a7da853acbd15706126fe4c323b7016f",
+      "dispatch_head": "71154279a7da853acbd15706126fe4c323b7016f",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_f19a_start_projection.py",
+        "packages/api/operations.py",
+        "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py",
+        "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/api/test_f19a_fixed_operations_authorization.py"
+      ]
+    }
+  },
+  {
+    "sequence": 2181,
+    "event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK3_FIXED_OPERATIONS",
+    "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+    "occurred_at": "2026-10-07T08:29:40+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "EC083468A14B4FC64EBC81BAB7E97638C5CCCD8D45B17CE56F518A2D1E5A2409",
+    "details": {
+      "lease_id": "write-lease-f19a-task3-fixed-operations-160f0b15410e43938c02768932683274",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/TASK3-FIXED-OPERATIONS",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-07T08:29:40+00:00",
+      "expires_at": "2026-10-08T08:29:40+00:00",
+      "lease_epoch": 79,
+      "fencing_token": "f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274",
+      "execution_fencing_token": "f19a-task3-fixed-operations-execution-fence-epoch-79-083cc7baae6d4f408ed18e396b1282c4",
+      "baseline_git_commit": "71154279a7da853acbd15706126fe4c323b7016f",
+      "dispatch_head": "71154279a7da853acbd15706126fe4c323b7016f",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_f19a_start_projection.py",
+        "packages/api/operations.py",
+        "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py",
+        "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/api/test_f19a_fixed_operations_authorization.py"
+      ],
+      "worker_lease_id": "worker-lease-f19a-task3-fixed-operations-083cc7baae6d4f408ed18e396b1282c4",
+      "write_epoch": 79,
+      "write_fencing_token": "f19a-task3-fixed-operations-write-fence-epoch-79-160f0b15410e43938c02768932683274",
+      "product_write_scope": [
+        "packages/api/operations.py",
+        "packages/api/fastapi_app.py",
+        "packages/api/f19a_registration.py",
+        "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/api/test_f19a_fixed_operations_authorization.py"
+      ]
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2178_task2_registration_api_worker_lease_revoked"
+  "last_event_id": "evt_f19a_2181_task3_fixed_operations_write_lease_issued"
 }
