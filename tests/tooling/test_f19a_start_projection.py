@@ -4578,6 +4578,320 @@ class F19AStartProjectionTests(unittest.TestCase):
                     errors = checker._collect_f19a_task4_postclose_fixture_git(bundle)
                 self.assertEqual(bool(errors), scenario != "positive", f"{scenario}: {errors}")
 
+    @staticmethod
+    def task4_product_qa_archived_active_bundle():
+        publication = "4620655145f6d3307206231376d20a65c0b62612"
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        def archived(path):
+            return subprocess.check_output(["git", "show", f"{publication}:{path}"],
+                cwd=ROOT, stderr=subprocess.DEVNULL)
+        bundle["_task4_qa_active_progress"] = archived("docs/progress/build-progress.json")
+        bundle["progress"] = json.loads(bundle["_task4_qa_active_progress"])
+        bundle["_task4_qa_active_events"] = archived("docs/progress/progress-events.json")
+        bundle["events"] = json.loads(bundle["_task4_qa_active_events"])
+        bundle["_task4_qa_active_handoff"] = archived("docs/progress/BUILD_HANDOFF.md")
+        bundle["handoff_text"] = bundle["_task4_qa_active_handoff"].decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["_task4_qa_active_digest"] = archived(
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+        bundle["detached_digest"] = json.loads(bundle["_task4_qa_active_digest"])
+        return bundle
+
+    def test_task4_product_qa_active_immutable_publication_and_forgery(self):
+        bundle = self.task4_product_qa_archived_active_bundle()
+        validator = getattr(checker, "_validate_f19a_task4_product_qa", lambda *a, **k: ["route missing"])
+        def validate(b):
+            observed = datetime.fromisoformat(b["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+            return validator(b, event_raw=b["_task4_qa_active_events"], now=observed,
+                archived_files={"docs/progress/build-progress.json": b["_task4_qa_active_progress"],
+                    "docs/progress/BUILD_HANDOFF.md": b["_task4_qa_active_handoff"]})
+        self.assertEqual(validate(bundle), [])
+        for name, change in (
+            ("event", lambda b: b["events"]["events"][2205].update(actor="forged")),
+            ("token", lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=[])),
+            ("snapshot", lambda b: b["progress"].update(snapshot_hash="0" * 64)),
+            ("digest", lambda b: b["detached_digest"].update(algorithm="MD5"))):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                change(forged)
+                self.assertTrue(validate(forged))
+
+    def test_task4_product_qa_git_bootstrap_immutable_and_negative(self):
+        bundle = self.task4_product_qa_archived_active_bundle()
+        base = "b2921c67acb40732211bad615ebee7a4e23ed622"
+        issued = "4620655145f6d3307206231376d20a65c0b62612"
+        paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+        original_output = subprocess.check_output
+        published = {path: original_output(["git", "show", f"{issued}:{path}"], cwd=ROOT) for path in paths}
+        for scenario in ("positive", "remote", "unrelated_dirty", "later_docs", "stale_blob",
+                         "transient_product", "merge_between"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == [
+                        "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (("f" * 40 if scenario == "later_docs" else issued) + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                        return (("0" * 40 if scenario == "remote" else
+                            "f" * 40 if scenario == "later_docs" else issued) + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "unrelated_dirty" else b""
+                    if tail == ["diff", "--name-only", "--no-renames", f"{base}..HEAD"]:
+                        return b"docs/progress/build-progress.json\n"
+                    if tail == ["rev-list", "--min-parents=2", f"{base}..{issued}"]:
+                        return b"deadbeef\n" if scenario == "merge_between" else b""
+                    if tail == ["log", "--format=", "--name-only", "--no-renames", f"{base}..{issued}"]:
+                        return b"packages/api/runtime.py\n" if scenario == "transient_product" else b"docs/progress/build-progress.json\n"
+                    if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(issued + ":"):
+                        return b"stale" if scenario == "stale_blob" else published[tail[1].split(":", 1)[1]]
+                    return original_output(command, *args, **kwargs)
+                collector = getattr(checker, "_collect_f19a_task4_product_qa_git", lambda *a: ["route missing"])
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)):
+                    errors = collector(bundle)
+                self.assertEqual(bool(errors), scenario != "positive", f"{scenario}: {errors}")
+
+    @staticmethod
+    def task4_product_qa_checkpoint_bundle():
+        bundle = F19AStartProjectionTests.task4_product_qa_archived_active_bundle()
+        progress = bundle["progress"]
+        checkpoint = "c" * 40
+        status = "TASK4_PRODUCT_QA_CHECKPOINTED_CLOSE_READY"
+        action = "F19A_TASK4_PRODUCT_QA_CONTROL_CLOSE_ONLY"
+        relation = "F19A_TASK4_PRODUCT_QA_CHECKPOINTED_CLOSE_READY"
+        progress["f19a_task4_product_qa_binding"].update(
+            status=status, product_checkpoint=checkpoint, next_safe_action=action)
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=relation, worktree_status=relation)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["next_work_package"]["status"] = status
+        progress["next_safe_action"] = progress["runtime_next_action"] = action
+        progress["snapshot_id"] = "snapshot-f19a-task4-product-qa-checkpoint-seq2206"
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=action)
+        bundle["_task4_qa_active_progress"] = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
+        bundle["_task4_qa_active_handoff"] = ("```json anvil-recovery-summary\n"
+            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n```\n").encode()
+        digest = bundle["detached_digest"]
+        for section, key in (("progress", "_task4_qa_active_progress"), ("handoff", "_task4_qa_active_handoff")):
+            digest[section].update(bytes=len(bundle[key]), file_sha256=hashlib.sha256(bundle[key]).hexdigest().upper())
+        bundle["_task4_qa_active_digest"] = (json.dumps(digest, ensure_ascii=False) + "\n").encode()
+        return bundle
+
+    def test_task4_product_qa_checkpoint_projection_and_forgery(self):
+        bundle = self.task4_product_qa_checkpoint_bundle()
+        def validate(b):
+            observed = datetime.fromisoformat(b["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+            return checker._validate_f19a_task4_product_qa(b, event_raw=b["_task4_qa_active_events"],
+                now=observed, archived_files={"docs/progress/build-progress.json": b["_task4_qa_active_progress"],
+                    "docs/progress/BUILD_HANDOFF.md": b["_task4_qa_active_handoff"]})
+        self.assertEqual(validate(bundle), [])
+        for name, change in (
+            ("checkpoint", lambda b: b["progress"]["f19a_task4_product_qa_binding"].update(
+                product_checkpoint="0" * 40)),
+            ("instruction", lambda b: b["progress"]["active_work_instruction"].update(result_status="FORGED")),
+            ("handoff", lambda b: b["handoff"].update(reporting_decision="HOLD"))):
+            forged = deepcopy(bundle)
+            change(forged)
+            forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+            self.assertTrue(validate(forged), name)
+
+    def test_task4_product_qa_checkpoint_git_exact_six_and_negative(self):
+        bundle = self.task4_product_qa_checkpoint_bundle()
+        base, issued, checkpoint, head = (
+            "b2921c67acb40732211bad615ebee7a4e23ed622",
+            "4620655145f6d3307206231376d20a65c0b62612", "c" * 40, "f" * 40)
+        code = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py",
+            "deploy/wsl/f19a_qa_bootstrap.py", "tests/deploy/test_f19a_qa_bootstrap.py",
+            "tests/integration/test_f19a_oidc_pg15.py", "tests/browser/f19a-pair-selection.mjs"}
+        original_output = subprocess.check_output
+        for scenario in ("positive", "remote", "unrelated_dirty", "transient_product",
+                         "stale_code", "merge", "ancestor"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                        return (("0" * 40 if scenario == "remote" else head) + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "unrelated_dirty" else b""
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge\n" if scenario == "merge" else b""
+                    if tail[:1] == ["diff"]:
+                        return ("\n".join(sorted(code)) + "\n").encode() if tail[-1] == f"{base}..{checkpoint}" \
+                            else b"docs/progress/build-progress.json\n"
+                    if tail[:1] == ["log"]:
+                        if tail[-1] == f"{issued}..{checkpoint}":
+                            return ("\n".join(sorted(code)) + "\n").encode()
+                        return b"packages/api/runtime.py\n" if scenario == "transient_product" \
+                            else b"docs/progress/build-progress.json\n"
+                    if tail[:1] == ["show"] and len(tail) == 2 and tail[1].startswith(checkpoint + ":"):
+                        path = tail[1].split(":", 1)[1]
+                        return b"stale" if scenario == "stale_code" else (ROOT / path).read_bytes()
+                    return original_output(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    errors = checker._collect_f19a_task4_product_qa_git(bundle)
+                self.assertEqual(bool(errors), scenario != "positive", f"{scenario}: {errors}")
+
+    @staticmethod
+    def task4_product_qa_closed_bundle():
+        bundle = F19AStartProjectionTests.task4_product_qa_checkpoint_bundle()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = stream["events"][2204]["details"], stream["events"][2205]["details"]
+        at = (datetime.fromisoformat(write["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_TASK4_PRODUCT_QA_LOCAL_VALIDATED_ISSUER_REVISION_PENDING_F19A_NOT_ACCEPTED"
+        for sequence, kind, details in ((2207, "WRITE_LEASE_REVOKED", {
+                "lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+                (2208, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                    "execution_fencing_token": worker["execution_fencing_token"], "reason": reason})):
+            prior = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_task4_product_qa_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK4_PRODUCT_QA_CLOSE",
+                "subject_ref": "F-19A/TASK4-PRODUCT-QA", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(prior)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2208
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2206_task4_product_qa_write_lease_issued"\n}\n'
+        prefix = bundle["_task4_qa_active_events"].decode("utf-8")
+        assert prefix.endswith(footer)
+        def render(row):
+            return "\n".join("  " + line for line in json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+        text = (prefix[:-len(footer)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-2:])
+            + '\n  ],\n  "last_event_id": "evt_f19a_2208_task4_product_qa_worker_lease_revoked"\n}\n')
+        raw = text.replace('"last_sequence": 2206', '"last_sequence": 2208', 1).encode()
+        assert json.loads(raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task4_product_qa_write_lease"] = {**write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task4_product_qa_worker_lease"] = {**worker, "status": "REVOKED", "revoked_at": at}
+        action = "F19A_TASK4_QA_ISSUER_REVISION_PENDING"
+        progress["f19a_task4_product_qa_binding"].update(
+            status="TASK4_PRODUCT_QA_CLOSED_ISSUER_REVISION_PENDING", active_projection_checkpoint="e" * 40,
+            next_safe_action=action, event_sequence=2208)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action,
+            next_work_package={"package_id": "F-19A", "status": "TASK4_QA_ISSUER_REVISION_PENDING"},
+            snapshot_id="snapshot-f19a-task4-product-qa-close-seq2208")
+        progress["repository"].update(projection_mode="F19A_TASK4_PRODUCT_QA_CLOSED",
+            head_relation="TASK4_PRODUCT_QA_CLOSED_ISSUER_REVISION_PENDING",
+            worktree_status="TASK4_PRODUCT_QA_CLOSED_ISSUER_REVISION_PENDING")
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2208, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, repository_head="c" * 40,
+            next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2208
+        bundle["detached_digest"]["progress"].update(bytes=123, file_sha256="A" * 64)
+        bundle["detached_digest"]["handoff"].update(bytes=456, file_sha256="B" * 64)
+        return bundle, raw
+
+    @staticmethod
+    def validate_task4_product_qa_closed(bundle, raw):
+        original_output, original_stat, original_sha = subprocess.check_output, Path.stat, checker._sha256
+        active = bundle["progress"]["f19a_task4_product_qa_binding"]["active_projection_checkpoint"]
+        values = {"docs/progress/build-progress.json": "_task4_qa_active_progress",
+            "docs/progress/progress-events.json": "_task4_qa_active_events",
+            "docs/progress/BUILD_HANDOFF.md": "_task4_qa_active_handoff",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json": "_task4_qa_active_digest"}
+        def output(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and len(command) == 3 and command[2].startswith(active + ":"):
+                path = command[2].split(":", 1)[1]
+                if path in values:
+                    return bundle[values[path]]
+            return original_output(command, *args, **kwargs)
+        def stat(path, *args, **kwargs):
+            if path == ROOT / "docs/progress/build-progress.json":
+                return SimpleNamespace(st_size=123)
+            if path == ROOT / "docs/progress/BUILD_HANDOFF.md":
+                return SimpleNamespace(st_size=456)
+            return original_stat(path, *args, **kwargs)
+        def sha(path):
+            if path == ROOT / "docs/progress/build-progress.json":
+                return "A" * 64
+            if path == ROOT / "docs/progress/BUILD_HANDOFF.md":
+                return "B" * 64
+            return original_sha(path)
+        validator = getattr(checker, "_validate_f19a_task4_product_qa_closed", lambda *a, **k: ["route missing"])
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(Path, "stat", stat), patch.object(checker, "_sha256", side_effect=sha):
+            observed = datetime.fromisoformat(bundle["events"]["events"][2207]["occurred_at"]) + timedelta(minutes=1)
+            return validator(bundle, event_raw=raw, now=observed)
+
+    def test_task4_product_qa_closed_immutable_active_and_forgery(self):
+        bundle, raw = self.task4_product_qa_closed_bundle()
+        self.assertEqual(self.validate_task4_product_qa_closed(bundle, raw), [])
+        for name, change in (("token", lambda b: b["progress"]["completed_f19a_task4_product_qa_write_lease"].update(
+                write_fencing_token="forged")),
+                ("scope", lambda b: b["progress"]["completed_f19a_task4_product_qa_write_lease"].update(
+                    product_write_scope=[])),
+                ("publication", lambda b: b["progress"]["f19a_task4_product_qa_binding"].update(
+                    active_projection_checkpoint="0" * 40)),
+                ("published_handoff", lambda b: b.__setitem__("_task4_qa_active_handoff", b"forged")),
+                ("closed_handoff", lambda b: b["handoff"].update(reporting_decision="HOLD"))):
+            forged = deepcopy(bundle)
+            change(forged)
+            self.assertTrue(self.validate_task4_product_qa_closed(forged, raw), name)
+
+    def test_task4_product_qa_closed_git_publication_and_history_negative(self):
+        bundle, _ = self.task4_product_qa_closed_bundle()
+        checkpoint, publication, head = "c" * 40, "e" * 40, "f" * 40
+        archived = {"repository": {"projection_mode": "F19A_TASK4_PRODUCT_QA_ACTIVE"},
+            "f19a_task4_product_qa_binding": {"product_checkpoint": checkpoint}}
+        original_output = subprocess.check_output
+        for scenario in ("positive", "stale_publication", "transient_product_cp",
+                         "transient_product_close", "merge", "ancestor"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge\n" if scenario == "merge" else b""
+                    if tail[:1] == ["log"]:
+                        interval = tail[-1]
+                        if scenario == "transient_product_cp" and interval == f"{checkpoint}..{publication}":
+                            return b"packages/api/runtime.py\n"
+                        if scenario == "transient_product_close" and interval == f"{publication}..{head}":
+                            return b"packages/api/runtime.py\n"
+                        return b"docs/progress/build-progress.json\n"
+                    if tail[:1] == ["diff"]:
+                        return b"docs/progress/build-progress.json\n"
+                    if tail == ["show", f"{publication}:docs/progress/build-progress.json"]:
+                        if scenario == "stale_publication":
+                            return b"{}"
+                        return json.dumps(archived).encode()
+                    return original_output(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                collector = getattr(checker, "_collect_f19a_task4_product_qa_closed_git",
+                    lambda *a: ["route missing"])
+                with patch.object(checker, "_collect_f19a_task4_product_qa_git", return_value=[]), \
+                        patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    errors = collector(bundle)
+                self.assertEqual(bool(errors), scenario != "positive", f"{scenario}: {errors}")
+
 
 if __name__ == "__main__":
     unittest.main()
