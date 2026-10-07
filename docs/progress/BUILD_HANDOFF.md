@@ -1,4 +1,6 @@
-# F-19A Task 4 격리 QA 제품 시작 handoff
+# F-19A Task 4 격리 QA 제품 checkpoint handoff
+
+Task4 제품 epoch84 C checkpoint(Main, 2026-10-07): exact6 `8c3127a5a0de986401ef5aabf1f77c85901a7aa2` local/private 동일·clean, G-05 seq2206는 checkpoint 투영 전 Git binding 미기록으로 RED였다. Developer 집중6 PASS·인접141 PASS/4 SKIP·독립 Reviewer C0/I0/M0, Main 집중16 PASS·F-19A 통제 전체87 PASS·PG15 opt-in 1 SKIP을 확인했다. 이 B 문서 투영은 제품 SHA를 결박하며 G-05/게시/clean 검증 후 epoch84 lease 종료만 허용한다. 실제 WSL-server PG15·OIDC 두 actor·HTTPS·Chromium·backup/restore/downgrade는 미검증, F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
 Task4 제품 epoch84 시작(Main, 2026-10-07): 종료 `b2921c67acb40732211bad615ebee7a4e23ed622` clean/private·G-05 seq2203 PASS·통제 전체81 PASS를 기준으로 WI `4E586D01FCD8D0784FEE6716DDE29C0FA17C4009E72CF182913C6CCE38B8B8E8`를 결박했다. Event seq2204 WI→2205 worker→2206 write, epoch84 24시간·분리 token·제품 정확4/통제 정확2이다. 새 route 전 bootstrap G-05 RED는 PASS 아님. 로컬 QA harness TDD·독립 리뷰·checkpoint/private 및 제품 lease 종료까지 WSL-server 자원 생성 금지. F-19A 미수락·Release DEFER/Production NOT_EXECUTED.
 
@@ -31,8 +33,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-product-qa-37edd712f9824648a2f94214a4559d9d",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_PRODUCT_QA_ACTIVE",
-  "repository_head": "b2921c67acb40732211bad615ebee7a4e23ed622",
+  "next_safe_action": "F19A_TASK4_PRODUCT_QA_CONTROL_CLOSE_ONLY",
+  "repository_head": "8c3127a5a0de986401ef5aabf1f77c85901a7aa2",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
