@@ -1,22 +1,26 @@
-# F-19A Task 3 고정 Operations 정확 pair guard handoff
+# F-19A Task 3 종료 후 역사 fixture 재작업 handoff
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2183,
-  "last_event_id": "evt_f19a_2183_task3_fixed_operations_worker_lease_revoked",
+  "event_sequence": 2186,
+  "last_event_id": "evt_f19a_2186_task3_postclose_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task3-postclose-fixture-6d37dbfa6de3455386b20da417ba3b9e",
+  "write_lease": "write-lease-f19a-task3-postclose-fixture-181ed9beb7854b49996fba889f8a8413",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_DUAL_LEASE_PENDING",
-  "repository_head": "1e40e1ad306de93d659ca76e07e587361f70d676",
+  "next_safe_action": "F19A_TASK3_POSTCLOSE_FIXTURE_CLOSE_ONLY",
+  "repository_head": "07dfbc279a28dc18118b281b2b68876c7322b644",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 3 post-close fixture 제어 checkpoint(Main, 2026-10-07): exact2 `07dfbc279a28dc18118b281b2b68876c7322b644` 기존 branch/private 동등. Developer 통제 전체66 PASS·인접101 PASS/2 기존 R48 FAIL, Main 집중13 PASS·G-05 seq2186 PASS·diff PASS, 독립 리뷰 C0/I0/M0. 종료 digest header 위조 I1은 RED→GREEN으로 해소했고 Ruff 신규 진단0(기존 누적은 non-green). 이 문서/진행/digest는 제어 SHA 결박 후보로, 자체 G-05·게시·clean 검증 전 실제 epoch80 lease 회수 금지. 제품/WSL/브라우저 미변경, F-19A 전체 미수락.
+
+- Task 3 post-close fixture epoch80 시작(Main, 2026-10-07): 종료 `b44369a285a7786c23f7ed76b7a396423017dc7d` clean/private·G-05 seq2183 PASS와 통제 집중1 PASS/6 FAIL을 기준으로 비의미 WI `6F01A29AD3BC99A8FA8E38D8CB83AEC8FB95C74B7AE52746CE4330B4E43BBABF`를 결박했다. Event seq2184 WI→2185 worker→2186 write, 정확 통제2·제품 scope0, 24시간 epoch80 서로 다른 token. 검증기는 아직 새 route가 없어 bootstrap G-05 RED이며 PASS가 아니다. Developer는 불변 C/P Git 게시본의 역사 fixture만 고치고, Task4·제품·WSL/Production은 잠근다. F-19A 전체 미수락·Release DEFER.
 
 - Task 3 epoch79 종료 투영(Main, 2026-10-07): 활성 제품 결박 checkpoint `45bb14f72041b4d4b3b4b0dfa6b40030edd8f1fe` local/private clean·G-05 seq2181 PASS·집중9 PASS를 확인하고 원문 Event seq1~2181을 보존한 채 seq2182 write→2183 worker revoke만 append했다. 두 lease는 `REVOKED`, 활성 lease null, Task 3은 `CLOSED_NOT_F19A_ACCEPTED`이며 다음은 별도 Task 4 WI/dual lease. 이는 문서 후보 투영으로 G-05·checkpoint/private 후 clean 검증 전까지 다음 제품 write를 열지 않는다. 실제 PG15/WSL/브라우저·F-19A 전체 수락 미검증, Release DEFER/Production NOT_EXECUTED.
 
