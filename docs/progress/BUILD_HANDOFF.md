@@ -2,21 +2,25 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2176,
-  "last_event_id": "evt_f19a_2176_task2_registration_api_write_lease_issued",
+  "event_sequence": 2178,
+  "last_event_id": "evt_f19a_2178_task2_registration_api_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task2-registration-api-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8",
-  "write_lease": "write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK2_REGISTRATION_API_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK3_FIXED_OPERATIONS_DUAL_LEASE_PENDING",
   "repository_head": "5565c29ddff33677b74ff041990977990bcecb6b",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
+
+- Task 2 종료 검증(Main, 2026-10-07): 종료 seq2178 G-05 PASS(exit0), Task2 집중10 PASS/43 deselected/28.53초(exit0), diff check exit0. Event 원문·P/product SHA·회수 lease·F-19A 미수락을 확인했다. 종료 통제5파일 미게시, commit/private→clean G-05 전 Task3 lease·제품 write 금지; PG15/WSL/브라우저/전체 acceptance 미검증, Release DEFER/Production NOT_EXECUTED.
+
+- Task 2 epoch78 종료 투영(Main, 2026-10-07): 활성 projection checkpoint `2dd9f677718e61e9c8dff478c54a06c50dfeaea9` local/private clean·G-05 seq2176 PASS를 확인한 뒤 원문 seq1~2176을 보존해 seq2177 `WRITE_LEASE_REVOKED`→2178 `WORKER_LEASE_REVOKED`만 append했다. worker/write null, 완료 lease 둘 `REVOKED`, 제품 write scope0, Task2 `CLOSED_NOT_F19A_ACCEPTED`. F-19A 전체 미수락이며 다음은 Task3 별도 WI/lease; Task3/U01 제품 write는 아직 금지, DB/WSL/브라우저·Production 미실행. 이 종료 투영은 G-05·집중 회귀·문서 게시 전 후보 상태다.
 
 - Task 2 제품 SHA 결박 통제(Main, 2026-10-07): 제품 `5565c29ddff33677b74ff041990977990bcecb6b`와 private ref 동일, seq2176 active Event/epoch78 lease 유지, product checkpoint·repository/HANDOFF/digest를 `CLOSE_ONLY`로 투영했다. 실제 G-05 seq2176 PASS(exit0), Task2 집중10 PASS/43 deselected/28.78초(exit0), diff check exit0. 이 문서4는 미게시이며 commit/private→clean G-05/회귀 후 write→worker 순서로 lease를 회수한다. F-19A 전체 미수락, WSL/DB/브라우저/Task3/U01 미검증, Release DEFER/Production NOT_EXECUTED.
 

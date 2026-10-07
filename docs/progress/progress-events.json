@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2176,
+  "last_sequence": 2178,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -101510,7 +101510,49 @@
       "write_fencing_token": "f19a-task2-registration-api-write-fence-epoch-78-a342fea27f77426b9670134dbadaea68",
       "product_write_scope": ["packages/api/f19a_registration.py", "packages/api/registry.py", "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/oidc_process.py", "tests/api/test_f19a_registration_api.py"]
     }
+  },
+  {
+    "sequence": 2177,
+    "event_id": "evt_f19a_2177_task2_registration_api_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK2_REGISTRATION_API_CLOSE",
+    "subject_ref": "F-19A/TASK2-REGISTRATION-API",
+    "occurred_at": "2026-10-07T08:17:40+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "D6A7633DD7235E5757287E00C03C922C48CC5178039BF62277DB944750B25E1C",
+    "details": {
+      "lease_id": "write-lease-f19a-task2-registration-api-a342fea27f77426b9670134dbadaea68",
+      "write_fencing_token": "f19a-task2-registration-api-write-fence-epoch-78-a342fea27f77426b9670134dbadaea68",
+      "reason": "F19A_TASK2_REGISTRATION_API_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2178,
+    "event_id": "evt_f19a_2178_task2_registration_api_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK2_REGISTRATION_API_CLOSE",
+    "subject_ref": "F-19A/TASK2-REGISTRATION-API",
+    "occurred_at": "2026-10-07T08:17:40+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4FE0C7527E456286DF9C4AE255DA17281BCEBC401FF759697389871A86AE3739",
+    "details": {
+      "lease_id": "worker-lease-f19a-task2-registration-api-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8",
+      "execution_fencing_token": "f19a-task2-registration-api-execution-fence-epoch-78-e9ed6adf4ef84ff2b8eb7c1a3ecdb0d8",
+      "reason": "F19A_TASK2_REGISTRATION_API_VALIDATED_LOCAL_ONLY_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2176_task2_registration_api_write_lease_issued"
+  "last_event_id": "evt_f19a_2178_task2_registration_api_worker_lease_revoked"
 }
