@@ -103611,7 +103611,7 @@
     "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
     "occurred_at": "2026-10-08T05:47:00+00:00",
     "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
-    "previous_event_sha256": "D1B5BAD4691C933F57A2425EE2FF125D94E3B17BD27667D7D5F592E8E3BEE122",
+    "previous_event_sha256": "7C29B0A3268390C6A771FF2A1320ED865E2B2AB6CD73025AF1F5B90705A2EF91",
     "details": {
       "lease_id": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
       "worker_lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",

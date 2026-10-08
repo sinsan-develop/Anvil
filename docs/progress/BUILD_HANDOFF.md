@@ -1,5 +1,7 @@
 # F-19A 독립 수락 통제 successor handoff
 
+epoch93 A2 Event 연결 교정(Main, 2026-10-08): A `072de4e8eae7f17c5934c4862ec7fa5ab4ca9909` 게시 후 자체 read-only 무결성 검사에서 seq2251의 `previous_event_sha256`가 seq2250의 최종 해시가 아닌 임시 계산값임을 발견했다. Developer code write0을 유지하고 seq≤2250 원문 보존, seq2251의 연결 해시만 교정한다. registry/snapshot/detached digest를 재결박해 A2 docs-only private/clean을 확인한 뒤에만 Developer를 재개한다. Main 문서 투영 오류 누적2, Developer 정식 FAILURE_REPORT0, F-19A NOT_ACCEPTED·U-01 잠금 유지.
+
 epoch93 수락 통제 시작(Main, 2026-10-08): F-19A Task4 종료 `9c6ab5dc17927fcbae6638718e9219fd1b208d44` local/private 동일·clean·G-05 seq2248 PASS와 독립 Tester AV-OPS-026/AV-SAFE-034 PASS·실제 WSL-server PG15/OIDC/HTTPS/Chromium·10테이블 복원·전용 잔여0을 확인했다. 승인 조건은 충족하나 canonical `ACCEPTED` 투영 전 상태는 NOT_ACCEPTED다. WI `EF2532C4B9D9E2F6621CCA76973DA289F3427AB0647A7318234BA7AF79108C0C`를 seq2249 WI→2250 worker→2251 write, 24시간 분리 token·Developer 통제2/제품0에 결박했다. A docs-only private/clean 전 코드 write 금지. 역사 R48 authority2 FAIL은 전체 GREEN이 아니며 main 병합 보류, U-01 write/새 branch 금지, Release DEFER·Production NOT_EXECUTED다.
 
 epoch92 제어 종료 후보(Main, 2026-10-08): C `749c7b759417a25f22131bc15203c7b9146dd270`와 활성 B `27df4b79fe7e49d74aad616cba08d1eab5ee4ded`가 local/private 동일·clean이고 G-05 seq2246 PASS다. Event 원문 seq1~2246을 보존한 채 seq2247 write→2248 worker를 순차 회수하여 활성 token을 null, 완료 lease를 REVOKED로 투영했다. 이 종료 문서의 G-05·private 게시·clean 전 F-19A 수락이나 U-01 write를 열지 않는다. 인접 회귀의 역사 R48 authority2 FAIL, 물리 TCP 단절·ACK COMMIT 응답 소실은 미해결/미검증으로 남기며 F-19A NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
