@@ -1,5 +1,7 @@
 # F-19A Task 4 DB 장애 유한 503 통제 checkpoint handoff
 
+epoch91 lease 종료 후보(Main, 2026-10-08): 제품 checkpoint `0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46`와 활성 결박 B `3093b746065833a00567925ddd43c23f61469f77`가 각각 local/private 동등·clean이고, 활성 G-05 seq2241 PASS·독립 정적 C0/I0/M0·관련 115 PASS/PG15 opt-in 1 SKIP·통제 집중9 PASS다. seq1~2241 Event 원문을 보존하고 seq2242 write→2243 worker lease를 순차 회수해 두 token을 REVOKED로 투영했다. 종료 후보의 G-05·private 게시·clean 확인 전 WSL-server QA 자원 생성 금지. 실제 PG15/OIDC/HTTPS/Chromium 장애·15초 상한, ACK COMMIT 결과, 독립 Tester AV-OPS-026/AV-SAFE-034 미검증이며 F-19A 미수락·U-01 잠금·Release DEFER/Production NOT_EXECUTED 유지.
+
 epoch91 제품 checkpoint·활성 종료 준비(Main, 2026-10-08): 정확 제품4와 `WORK_STATUS`를 `0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46`로 local/private 동일 게시했다. Developer·Main 각각 관련 인접 115 PASS/PG15 opt-in 1 SKIP, Main Ruff 정확4·diff exit0, 독립 정적 리뷰 C0/I0/M0이다. Main 첫 sandbox pytest는 Python shim 오류/정체로 중단했고 정상 권한 재실행 115 PASS이며 임시 base 두 경로는 identity·내부 링크 확인 후 제거 잔여0이다. 실제 WSL-server PostgreSQL 15/HTTPS/Chromium·연결 후 read stall <15초·복구·ACK COMMIT 결과는 아직 미검증이고, 역사 R48 authority 2 FAIL도 별도 잔존한다. 이 문서와 progress/digest의 제품 checkpoint 결박을 private 게시·G-05 PASS하기 전에는 epoch91 lease를 회수하거나 F-19A를 수락하지 않는다. U-01 제품 write/main 병합/새 branch 금지, Release DEFER/Production NOT_EXECUTED 유지.
 
 epoch91 통제 C/B 결박 후보(Main, 2026-10-08): Developer 동결 정확2 `scripts/check_project_progress.py` SHA `FA1007B1F7F72CAC539CBA5555442FC6C02F9605E656F713D211B7158AC40C9F`·`tests/tooling/test_f19a_start_projection.py` SHA `1D86095E77F22A7A6D8B09452FF7FA8406BA217B07344C5120D64E69F013CCF4`를 C `3b2e7c7523722330a9d6de7d69cc4e4319ad821f`로 local/private 동일·clean 게시했다. Main 독립 집중9 PASS(exit0)·G-05 활성 seq2241 PASS, 독립 정적 리뷰 C0/I0/M0·diff0. 인접5는 수정 전후 모두 173 PASS/기존 R48 authority 2 FAIL(exit1), epoch91/F-19A 신규 실패0이며 전체 GREEN 아님. C 직후 G-05 `F19A_DB_FAULT_GIT_INVALID`는 B 미게시의 예정된 RED다. 이 문서 B 게시·private/clean·G-05 PASS 전 제품5 write 금지. 실제 DB 대기 지점·503·WSL 재QA·Tester 수락은 미검증, F-19A NOT_ACCEPTED·U-01 잠금·Release DEFER·Production NOT_EXECUTED.
@@ -76,16 +78,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2241,
-  "last_event_id": "evt_f19a_2241_task4_db_fault_bounded_503_write_lease_issued",
+  "event_sequence": 2243,
+  "last_event_id": "evt_f19a_2243_task4_db_fault_bounded_503_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f",
-  "write_lease": "write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY",
+  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
   "repository_head": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"

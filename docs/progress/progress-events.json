@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2241,
+  "last_sequence": 2243,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103364,7 +103364,49 @@
       "product_write_scope": ["apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"],
       "write_epoch": 91
     }
+  },
+  {
+    "sequence": 2242,
+    "event_id": "evt_f19a_2242_task4_db_fault_bounded_503_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE",
+    "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+    "occurred_at": "2026-10-08T02:52:27+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "7860857B9BF2F44A2D080A861E0B66A332B61DD1F826C063A47EFC6217BB06D6",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989",
+      "write_fencing_token": "f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989",
+      "reason": "F19A_TASK4_DB_FAULT_BOUNDED_503_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
+  },
+  {
+    "sequence": 2243,
+    "event_id": "evt_f19a_2243_task4_db_fault_bounded_503_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE",
+    "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+    "occurred_at": "2026-10-08T02:52:27+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "9B2F1184F44CC0B9D050C2647C04A2ED25DC3FF6A4843FF93C57441654C7C151",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f",
+      "execution_fencing_token": "f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f",
+      "reason": "F19A_TASK4_DB_FAULT_BOUNDED_503_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2241_task4_db_fault_bounded_503_write_lease_issued"
+  "last_event_id": "evt_f19a_2243_task4_db_fault_bounded_503_worker_lease_revoked"
 }
