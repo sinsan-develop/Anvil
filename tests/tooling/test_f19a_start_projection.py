@@ -7436,6 +7436,310 @@ class F19AStartProjectionTests(unittest.TestCase):
                 with patch.object(checker, collector_name, return_value=["INVALID"]):
                     self.assertEqual(checker._collect_f19a_start_git(bundle), ["F19A_GIT_INVALID"])
 
+    @staticmethod
+    def f19a_acceptance_active_bundle():
+        return F19AStartProjectionTests.historical_bundle(
+            "d76dcf63b16c2526b7e078ab165d336b3d967319")
+
+    def test_f19a_acceptance_active_issued_and_forged(self):
+        bundle, archive = self.f19a_acceptance_active_bundle()
+        validator = getattr(checker, "_validate_f19a_acceptance_control", None)
+        self.assertIsNotNone(validator)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        raw = archive[ROOT / "docs/progress/progress-events.json"]
+        files = {path.relative_to(ROOT).as_posix(): data for path, data in archive.items()}
+        def validate(candidate, *, now=issued + timedelta(minutes=1)):
+            return validator(candidate, event_raw=raw, now=now, archived_files=files)
+        self.assertEqual(validate(bundle), [])
+        self.assertTrue(validate(bundle, now=datetime.fromisoformat(
+            bundle["progress"]["worker_lease"]["expires_at"])))
+        for name, mutate in (
+            ("token", lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=["U-01"])),
+            ("premature_acceptance", lambda b: b["progress"]["completed_packages"].append("F-19A")),
+            ("r48_pass", lambda b: b["progress"]["f19a_acceptance_control_binding"].update(
+                adjacent_regression="182_PASS")),
+            ("report", lambda b: b["progress"]["f19a_acceptance_control_binding"].update(
+                qa_report_sha256="0" * 64)),
+            ("handoff", lambda b: b["handoff"].update(next_safe_action="U01_PRODUCT_WRITE")),
+            ("digest", lambda b: b["detached_digest"].update(algorithm="SHA-1")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+                self.assertTrue(validate(forged), name)
+
+    @staticmethod
+    def f19a_acceptance_checkpoint_bundle():
+        bundle, archive = F19AStartProjectionTests.f19a_acceptance_active_bundle()
+        progress = bundle["progress"]
+        checkpoint = "c" * 40
+        status = "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY"
+        action = "F19A_ACCEPTANCE_CONTROL_CLOSE_ONLY"
+        progress["f19a_acceptance_control_binding"].update(status=status,
+            next_safe_action=action, control_checkpoint=checkpoint,
+            acceptance_decision="MAIN_APPROVED_PENDING_CLOSE")
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress.update(snapshot_id="snapshot-f19a-acceptance-control-checkpoint-seq2251",
+            next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "F-19A", "status": status})
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=status, worktree_status=status)
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=action)
+        raw_progress = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
+        raw_handoff = ("```json anvil-recovery-summary\n"
+            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n```\n").encode()
+        for section, raw in (("progress", raw_progress), ("handoff", raw_handoff)):
+            bundle["detached_digest"][section].update(bytes=len(raw),
+                file_sha256=hashlib.sha256(raw).hexdigest().upper())
+        bundle["_acceptance_archive"] = archive
+        bundle["_acceptance_progress"] = raw_progress
+        bundle["_acceptance_handoff"] = raw_handoff
+        bundle["_acceptance_digest"] = (json.dumps(bundle["detached_digest"]) + "\n").encode()
+        return bundle
+
+    def test_f19a_acceptance_checkpoint_projection_and_forgery(self):
+        bundle = self.f19a_acceptance_checkpoint_bundle()
+        archive = bundle["_acceptance_archive"]
+        raw = archive[ROOT / "docs/progress/progress-events.json"]
+        observed = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+        def validate(candidate):
+            return checker._validate_f19a_acceptance_control(candidate, event_raw=raw, now=observed,
+                archived_files={"docs/progress/build-progress.json": candidate["_acceptance_progress"],
+                    "docs/progress/BUILD_HANDOFF.md": candidate["_acceptance_handoff"]})
+        self.assertEqual(validate(bundle), [])
+        for name, mutate in (
+            ("decision", lambda b: b["progress"]["f19a_acceptance_control_binding"].update(
+                acceptance_decision="ACCEPTED")),
+            ("premature_completed", lambda b: b["progress"]["completed_packages"].append("F-19A")),
+            ("instruction", lambda b: b["progress"]["active_work_instruction"].update(result_status="ACCEPTED")),
+            ("handoff", lambda b: b["handoff"].update(next_safe_action="U01_WRITE"))):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+                self.assertTrue(validate(forged), name)
+
+    @staticmethod
+    def f19a_acceptance_closed_bundle():
+        bundle = F19AStartProjectionTests.f19a_acceptance_checkpoint_bundle()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
+        at = (datetime.fromisoformat(worker["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_ACCEPTANCE_CONTROL_COMPLETE_F19A_ACCEPTED_INTEGRATION_GATE_PENDING"
+        envelope = {"actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+            "project_id": "anvil", "work_package_id": "F-19A", "run_id": None,
+            "step_id": "F19A_ACCEPTANCE_CONTROL_CLOSE", "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+            "occurred_at": at, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME"}
+        rows = ((2252, "WRITE_LEASE_REVOKED", "evt_f19a_2252_acceptance_control_write_lease_revoked",
+            {"lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+            (2253, "WORKER_LEASE_REVOKED", "evt_f19a_2253_acceptance_control_worker_lease_revoked",
+            {"lease_id": worker["lease_id"], "execution_fencing_token": worker["execution_fencing_token"],
+                "reason": reason}),
+            (2254, "MAIN_PACKAGE_ACCEPTED", "evt_f19a_2254_acceptance_control_main_package_accepted",
+            {"decision": "ACCEPTED_LOCAL_WSL_SCOPE_INTEGRATION_PENDING", "package_id": "F-19A",
+                "test_report_ref": "docs/04_test_reports/F-19A_MINIMAL_PAIR_AUTH_RESULT.md",
+                "test_report_sha256": "9838B6C39006629261D22AAF4B8621214E48445E5ABABF906E934AA2A33D133D",
+                "av_ops_026": "PASS", "av_safe_034": "PASS",
+                "adjacent_regression": "180_PASS_2_PREEXISTING_R48_AUTHORITY_FAIL_EXIT1",
+                "next_work_package": "F19A_INTEGRATION_REQUIRED_GATES_PENDING", "blocking_findings": 0,
+                "unverified": ["PHYSICAL_TCP_DROP", "ACK_COMMIT_RESPONSE_LOSS", "MAIN_MERGE", "U01", "PRODUCTION"]}))
+        for sequence, kind, event_id, details in rows:
+            previous = stream["events"][-1]
+            stream["events"].append({"sequence": sequence, "event_id": event_id, "event_type": kind,
+                **envelope, "previous_event_sha256": hashlib.sha256(
+                    checker.canonical_json_bytes(previous)).hexdigest().upper(), "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2254
+        stream["last_event_id"] = progress["last_event_id"] = rows[-1][2]
+        prefix = bundle["_acceptance_archive"][ROOT / "docs/progress/progress-events.json"].decode("utf-8")
+        footer = '\n  ],\n  "last_event_id": "evt_f19a_2251_acceptance_control_write_lease_issued"\n}\n'
+        assert prefix.endswith(footer)
+        def render(row):
+            return "\n".join("  " + line for line in json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+        raw = (prefix[:-len(footer)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-3:])
+            + '\n  ],\n  "last_event_id": "evt_f19a_2254_acceptance_control_main_package_accepted"\n}\n')
+        raw = raw.replace('"last_sequence": 2251', '"last_sequence": 2254', 1).encode()
+        assert json.loads(raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_acceptance_control_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_acceptance_control_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        progress["completed_packages"].append("F-19A")
+        progress["next_successor_work_package"] = {"package_id": "U-01",
+            "status": "BLOCKED_PENDING_F19A_INTEGRATION_GATES"}
+        status, action = "F19A_ACCEPTED_INTEGRATION_GATE_PENDING", "F19A_INTEGRATION_REQUIRED_GATES_PENDING"
+        progress["f19a_acceptance_control_binding"].update(status=status, next_safe_action=action,
+            acceptance_decision="ACCEPTED_LOCAL_WSL_SCOPE_INTEGRATION_PENDING",
+            active_projection_checkpoint="e" * 40, event_sequence=2254)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "F-19A", "status": status},
+            snapshot_id="snapshot-f19a-acceptance-control-close-seq2254")
+        progress["repository"].update(projection_mode="F19A_ACCEPTANCE_CONTROL_CLOSED",
+            head_relation=status, worktree_status=status)
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2254, last_event_id=rows[-1][2], active_agent=None,
+            worker_lease=None, write_lease=None, repository_head="c" * 40, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2254
+        for section, size in (("progress", 123), ("handoff", 456)):
+            bundle["detached_digest"][section].update(bytes=size,
+                file_sha256=hashlib.sha256(b"x" * size).hexdigest().upper())
+        return bundle, raw
+
+    @staticmethod
+    def validate_f19a_acceptance_closed(bundle, raw):
+        original = subprocess.check_output
+        publication = bundle["progress"]["f19a_acceptance_control_binding"]["active_projection_checkpoint"]
+        published = {"docs/progress/build-progress.json": bundle["_acceptance_progress"],
+            "docs/progress/progress-events.json": bundle["_acceptance_archive"][
+                ROOT / "docs/progress/progress-events.json"],
+            "docs/progress/BUILD_HANDOFF.md": bundle["_acceptance_handoff"],
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                bundle["_acceptance_digest"]}
+        def output(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and len(command) == 3 and command[2].startswith(publication + ":"):
+                return published[command[2].split(":", 1)[1]]
+            return original(command, *args, **kwargs)
+        validator = getattr(checker, "_validate_f19a_acceptance_control_closed", lambda *a, **k: ["missing"])
+        observed = datetime.fromisoformat(bundle["events"]["events"][2253]["occurred_at"]) + timedelta(minutes=1)
+        with patch.object(subprocess, "check_output", side_effect=output):
+            return validator(bundle, event_raw=raw, now=observed,
+                archived_files={"docs/progress/build-progress.json": b"x" * 123,
+                    "docs/progress/BUILD_HANDOFF.md": b"x" * 456})
+
+    def test_f19a_acceptance_closed_published_and_forged(self):
+        bundle, raw = self.f19a_acceptance_closed_bundle()
+        self.assertEqual(self.validate_f19a_acceptance_closed(bundle, raw), [])
+        for name, mutate in (("decision", lambda b: b["progress"]["f19a_acceptance_control_binding"].update(
+                acceptance_decision="MAIN_APPROVED_PENDING_CLOSE")),
+            ("premature_u01", lambda b: b["progress"]["completed_packages"].append("U-01")),
+            ("stale_successor", lambda b: b["progress"].update(next_successor_work_package={
+                "package_id": "U-01", "status": "BLOCKED_PENDING_F19A_ACCEPTANCE"})),
+            ("successor_write", lambda b: b["progress"].update(next_successor_work_package={
+                "package_id": "U-01", "status": "PRODUCT_WRITE_READY"})),
+            ("r48", lambda b: b["events"]["events"][2253]["details"].update(
+                adjacent_regression="182_PASS")),
+            ("handoff", lambda b: b["handoff"].update(next_safe_action="U01_WRITE")),
+            ("digest", lambda b: b["detached_digest"].update(algorithm="SHA-1")),
+            ("published", lambda b: b.__setitem__("_acceptance_digest", b"{}"))):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+                self.assertTrue(self.validate_f19a_acceptance_closed(forged, raw), name)
+
+    def test_f19a_acceptance_git_issued_and_checkpoint_negative(self):
+        issued, checkpoint = "d76dcf63b16c2526b7e078ab165d336b3d967319", "c" * 40
+        original, original_run = subprocess.check_output, subprocess.run
+        for checkpointed in (False, True):
+            bundle = (self.f19a_acceptance_checkpoint_bundle() if checkpointed
+                else self.f19a_acceptance_active_bundle()[0])
+            for scenario in ("published", "remote", "dirty", "docs_dirty", "descendant",
+                             "merge", "transient_product", "docs_in_control", "missing_control", "stale_blob"):
+                with self.subTest(checkpointed=checkpointed, scenario=scenario):
+                    def output(command, *args, **kwargs):
+                        tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                            "-c", "core.quotePath=false"] else command[1:]
+                        if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
+                            sha = checkpoint if checkpointed else issued
+                            if scenario == "descendant" and not checkpointed:
+                                sha = checkpoint
+                            if scenario == "remote" and tail[1].startswith("development/"):
+                                sha = "0" * 40
+                            return (sha + "\n").encode()
+                        if tail == ["status", "--porcelain=v1", "-uall"]:
+                            return (b" M packages/api/runtime.py\n" if scenario == "dirty" else
+                                b" M docs/WORK_STATUS.md\n" if scenario == "docs_dirty" else b"")
+                        if tail[:1] == ["rev-list"] and checkpoint in tail[-1]:
+                            return b"merge\n" if scenario == "merge" else b""
+                        if tail[:1] in (["log"], ["diff"]):
+                            interval = tail[-1]
+                            if interval == f"{issued}..{checkpoint}":
+                                extra = ("packages/api/runtime.py\n" if scenario == "transient_product"
+                                    and tail[0] == "log" else "docs/WORK_STATUS.md\n"
+                                    if scenario == "docs_in_control" else "")
+                                paths = ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+                                if scenario == "missing_control" and tail[0] == "diff":
+                                    paths.pop()
+                                return ("\n".join(paths) + "\n" + extra).encode()
+                            if interval == f"{checkpoint}..{checkpoint}":
+                                return b""
+                        if tail[:1] == ["show"] and tail[1].startswith(checkpoint + ":"):
+                            path = tail[1].split(":", 1)[1]
+                            return b"stale" if scenario == "stale_blob" else (ROOT / path).read_bytes()
+                        return original(command, *args, **kwargs)
+                    def run(command, *args, **kwargs):
+                        if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                            return subprocess.CompletedProcess(command,
+                                1 if scenario == "descendant" and checkpointed else 0)
+                        return original_run(command, *args, **kwargs)
+                    with patch.object(subprocess, "check_output", side_effect=output), \
+                            patch.object(subprocess, "run", side_effect=run):
+                        result = checker._collect_f19a_acceptance_control_git(bundle)
+                    should_fail = scenario not in ("published",) and (checkpointed or scenario not in
+                        ("merge", "transient_product", "docs_in_control", "missing_control", "stale_blob"))
+                    self.assertEqual(bool(result), should_fail, f"{scenario}: {result}")
+
+    def test_f19a_acceptance_closed_git_publication_negative(self):
+        bundle, _ = self.f19a_acceptance_closed_bundle()
+        checkpoint, publication, head = "c" * 40, "e" * 40, "f" * 40
+        original, original_run = subprocess.check_output, subprocess.run
+        for scenario in ("published", "remote", "dirty", "missing_publication", "wrong_mode",
+                         "transient_product", "merge", "ancestor"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
+                        return (("0" * 40 if scenario == "remote" and tail[1].startswith("development/")
+                            else head) + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "dirty" else b""
+                    if tail[:1] == ["rev-list"] and publication in tail[-1]:
+                        return b"merge\n" if scenario == "merge" else b""
+                    if tail[:1] in (["log"], ["diff"]) and tail[-1] in (
+                            f"{checkpoint}..{publication}", f"{publication}..{head}"):
+                        return (b"packages/api/runtime.py\n" if scenario == "transient_product"
+                            and tail[0] == "log" else b"")
+                    if tail[:1] == ["show"] and tail[1].startswith(publication + ":"):
+                        if scenario == "missing_publication":
+                            raise subprocess.CalledProcessError(128, command)
+                        path = tail[1].split(":", 1)[1]
+                        if path == "docs/progress/build-progress.json" and scenario == "wrong_mode":
+                            published = json.loads(bundle["_acceptance_progress"])
+                            published["repository"]["projection_mode"] = "FORGED"
+                            return json.dumps(published).encode()
+                        return {"docs/progress/build-progress.json": bundle["_acceptance_progress"],
+                            "docs/progress/progress-events.json": bundle["_acceptance_archive"][
+                                ROOT / "docs/progress/progress-events.json"],
+                            "docs/progress/BUILD_HANDOFF.md": bundle["_acceptance_handoff"],
+                            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                                bundle["_acceptance_digest"]}[path]
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(checker, "_collect_f19a_acceptance_control_git", return_value=[]), \
+                        patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = checker._collect_f19a_acceptance_control_closed_git(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_f19a_acceptance_legacy_git_dispatches_both_modes(self):
+        for bundle, name in ((self.f19a_acceptance_active_bundle()[0],
+                              "_collect_f19a_acceptance_control_git"),
+                             (self.f19a_acceptance_closed_bundle()[0],
+                              "_collect_f19a_acceptance_control_closed_git")):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                with patch.object(checker, name, return_value=[]):
+                    self.assertEqual(checker._collect_f19a_start_git(bundle), [])
+                with patch.object(checker, name, return_value=["INVALID"]):
+                    self.assertEqual(checker._collect_f19a_start_git(bundle), ["F19A_GIT_INVALID"])
+
 
 if __name__ == "__main__":
     unittest.main()
