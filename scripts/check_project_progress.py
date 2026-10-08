@@ -72247,5 +72247,463 @@ def main(argv: list[str] | None = None) -> int:
     return _main_before_main_sync_smoke_95(arguments)
 
 
+def _validate_u01_postmerge_control_active(bundle, *, event_raw=None, now=None,
+                                           archived_files=None):
+    """Bind epoch97's non-product intake to the immutable post-PR A publication."""
+    from copy import deepcopy
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    hashes = ("0DEC3EB7396625E7F1995477229D1FAFFC52823B5C639ED9C7EB32D83C032F7E",
+              "57C050EFC542216C35E13984896AC60B3559FED7AAE607E876B3607C36C4A566",
+              "87B0575B217AAA3C3582D9C7552CFBC08B2B7C41B07F23270B7674AC046F65B1",
+              "5E2FEB0EABA1E64B3AAAE9417E1FC0D52A1410771344762D9CB0F1A3EC0306EA")
+    a = "a116dcd011cdfec3a0e50389976e2431e683209f"
+    errors = []
+    try:
+        published = {path: subprocess.check_output(["git", "show", f"{a}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        if any(hashlib.sha256(published[path]).hexdigest().upper() != sha
+               for path, sha in zip(paths, hashes)):
+            errors.append("U01_POSTMERGE_PUBLICATION_INVALID")
+        base = json.loads(published[paths[0]])
+        stream = json.loads(published[paths[1]])
+        progress = bundle["progress"]
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        frozen = subprocess.check_output(["git", "show",
+            f"c232cb7115c22d058e1eaa96a47f8d2818447e83:{paths[1]}"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        if (raw_event_object_prefix_bytes(raw, 2269) != raw_event_object_prefix_bytes(frozen, 2269)
+                or raw != published[paths[1]] or bundle["events"] != stream
+                or stream.get("last_sequence") != 2272 or len(stream.get("events", [])) != 2272
+                or progress.get("event_sequence") != 2272
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("U01_POSTMERGE_EVENT_INVALID")
+        for i, kind in enumerate(("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+                                  "WRITE_LEASE_ISSUED"), start=2269):
+            row, expected = bundle["events"]["events"][i], stream["events"][i]
+            if (row != expected or row.get("event_type") != kind
+                    or row.get("sequence") != i + 1
+                    or row.get("previous_event_sha256") != hashlib.sha256(
+                        canonical_json_bytes(stream["events"][i - 1])).hexdigest().upper()):
+                errors.append("U01_POSTMERGE_EVENT_INVALID")
+        worker, write = progress.get("worker_lease"), progress.get("write_lease")
+        if worker != base.get("worker_lease") or write != base.get("write_lease"):
+            errors.append("U01_POSTMERGE_LEASE_INVALID")
+        issued = datetime.fromisoformat(worker["issued_at"])
+        expires = datetime.fromisoformat(worker["expires_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (instant.tzinfo is None or issued.tzinfo is None or expires.tzinfo is None
+                or not issued <= instant < expires or expires - issued != timedelta(hours=24)
+                or write["issued_at"] != worker["issued_at"]
+                or write["expires_at"] != worker["expires_at"]
+                or worker["execution_fencing_token"] == write["write_fencing_token"]
+                or set(write.get("path_scope", [])) != {
+                    "scripts/check_project_progress.py",
+                    "tests/tooling/test_u01_postmerge_control_projection.py"}
+                or write.get("product_write_scope") != []):
+            errors.append("U01_POSTMERGE_LEASE_INVALID")
+        try:
+            updated = datetime.fromisoformat(progress["updated_at"])
+            if (updated.tzinfo is None or instant.tzinfo is None
+                    or not issued <= updated < expires or updated > instant):
+                errors.append("U01_POSTMERGE_PROJECTION_INVALID")
+        except (KeyError, TypeError, ValueError):
+            errors.append("U01_POSTMERGE_PROJECTION_INVALID")
+        binding = progress["u01_postmerge_control_binding"]
+        checkpoint = binding.get("control_checkpoint")
+        if checkpoint is not None and not re.fullmatch(r"[0-9a-f]{40}", checkpoint):
+            errors.append("U01_POSTMERGE_CHECKPOINT_INVALID")
+        expected = deepcopy(base)
+        if checkpoint is not None:
+            ready = "U01_POSTMERGE_CONTROL_CHECKPOINTED_CLOSE_READY"
+            action = "U01_POSTMERGE_CONTROL_CLOSE_ONLY"
+            expected["u01_postmerge_control_binding"].update(status=ready,
+                next_safe_action=action, control_checkpoint=checkpoint)
+            expected["next_safe_action"] = expected["runtime_next_action"] = action
+            expected["active_work_instruction"]["result_status"] = "U01_POSTMERGE_CONTROL_CLOSE_READY"
+            expected["active_work_instruction"]["package_status"] = ready
+            expected["next_work_package"]["status"] = ready
+            expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+                head_relation=ready, worktree_status=ready)
+            expected["snapshot_id"] = "snapshot-u01-postmerge-control-checkpoint-seq2272"
+        expected["updated_at"] = progress.get("updated_at")
+        expected["snapshot_hash"] = progress.get("snapshot_hash")
+        if progress != expected or progress.get("snapshot_hash") != compute_snapshot_hash(progress):
+            errors.append("U01_POSTMERGE_PROJECTION_INVALID")
+        handoff = bundle["handoff"]
+        expected_handoff = deepcopy(extract_handoff_summary(published[paths[2]].decode("utf-8")))
+        if checkpoint is not None:
+            expected_handoff["next_safe_action"] = "U01_POSTMERGE_CONTROL_CLOSE_ONLY"
+            expected_handoff["repository_head"] = checkpoint
+        if handoff != expected_handoff:
+            errors.append("U01_POSTMERGE_HANDOFF_INVALID")
+        progress_raw = (archived_files or {}).get(paths[0], (root / paths[0]).read_bytes())
+        handoff_raw = (archived_files or {}).get(paths[2], (root / paths[2]).read_bytes())
+        digest = bundle["detached_digest"]
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2272
+                or any(digest.get(key, {}).get("bytes") != len(data)
+                       or digest.get(key, {}).get("file_sha256")
+                          != hashlib.sha256(data).hexdigest().upper()
+                       for key, data in (("progress", progress_raw), ("handoff", handoff_raw)))):
+            errors.append("U01_POSTMERGE_DIGEST_INVALID")
+        for field, path, sha in (("work_instruction_sha256",
+            "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_WORK_INSTRUCTION.md",
+            "7B437FA753D8CB071B848AC44D36C744E6DE9ECC57157B64E98BD63B5F6EE09E"),
+            ("invocation_sha256", "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_INVOCATION.md",
+            "BE691B559D5C89904B3EF139FDE5E12A9EF4AC1DD3D0C65B42FCAD72CE5E92A1"),
+            ("approval_sha256", "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+            "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5")):
+            if binding.get(field) != sha or _sha256(root / path).upper() != sha:
+                errors.append("U01_POSTMERGE_INSTRUCTION_INVALID")
+        if checkpoint is None and (progress_raw != published[paths[0]]
+                or handoff_raw != published[paths[2]]
+                or digest != json.loads(published[paths[3]])):
+            errors.append("U01_POSTMERGE_A_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_POSTMERGE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_postmerge_control_git(bundle):
+    """Accept only the published PR graph and one controlled U-01 successor."""
+    root = Path(bundle["_root"])
+    old_main = "462c2e5b27823de2c1184f56f0fa9908a2cea328"
+    old_close = "c232cb7115c22d058e1eaa96a47f8d2818447e83"
+    merged = "096e6dfd695d9c8b4c7503bde751de83aca915ff"
+    pr = "0443043251d25aa77c17d23165b7c9299c8dbeb8"
+    intake = "55e225522c1121530b1e7e4678b0c46ea33352ba"
+    issued = "a116dcd011cdfec3a0e50389976e2431e683209f"
+    branch = "codex/u01-dashboard-r2"
+    upstream = "development/codex/u01-dashboard-r2"
+    control = {"scripts/check_project_progress.py",
+               "tests/tooling/test_u01_postmerge_control_projection.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/build-progress.json",
+                 "docs/progress/progress-events.json", "docs/progress/BUILD_HANDOFF.md",
+                 "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    intake_documents = {"docs/WORK_STATUS.md",
+        "docs/04_test_reports/U-01_SUCCESSOR_INTAKE_20261008.md",
+        "docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md"}
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def run(*args):
+            return subprocess.run(["git", *args], cwd=root, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL).returncode
+        def changed(a, b):
+            if git("rev-list", "--min-parents=2", f"{a}..{b}"):
+                raise ValueError("unexpected merge")
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{a}..{b}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames", f"{a}..{b}").splitlines()) - {""}
+            return history, delta
+        if (git("rev-parse", "development/main") != pr
+                or git("show", "-s", "--format=%P", pr).split() != [old_main, merged]
+                or git("show", "-s", "--format=%P", merged).split() != [old_close, old_main]
+                or git("rev-parse", f"{pr}^{{tree}}") != git("rev-parse", f"{merged}^{{tree}}")
+                or git("rev-parse", f"{merged}^{{tree}}") != git("rev-parse", f"{old_close}^{{tree}}")
+                or git("rev-list", "--count", f"{pr}..{intake}") != "2"
+                or changed(pr, intake)[0] - intake_documents
+                or changed(pr, intake)[1] != intake_documents
+                or git("rev-list", "--count", f"{intake}..{issued}") != "1"
+                or changed(intake, issued)[0] - (documents | {
+                    "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_WORK_INSTRUCTION.md",
+                    "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_INVOCATION.md"})
+                or run("merge-base", "--is-ancestor", pr, issued)):
+            raise ValueError("untrusted PR or intake")
+        archived = {path: subprocess.check_output(["git", "show", f"{old_close}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        old_bundle = {"_root": root, "_detached_digest_path": paths[3],
+            "progress": json.loads(archived[paths[0]]),
+            "events": json.loads(archived[paths[1]]),
+            "handoff": extract_handoff_summary(archived[paths[2]].decode("utf-8")),
+            "detached_digest": json.loads(archived[paths[3]])}
+        if _validate_f19a_integration_whitespace_gate_closed(old_bundle,
+                event_raw=archived[paths[1]], archived_files={paths[0]: archived[paths[0]],
+                    paths[2]: archived[paths[2]]}):
+            raise ValueError("F-19A acceptance history invalid")
+        originals = ("apps/api/anvil_api/projects_scan.py", "apps/web/tests/menu-routes.test.mjs",
+            "apps/web/tests/projects.test.mjs", "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md",
+            "tests/api/test_projects_scan_api.py")
+        if any(subprocess.check_output(["git", "show", f"{pr}:{path}"], cwd=root,
+                stderr=subprocess.DEVNULL) != subprocess.check_output(["git", "show",
+                f"4572c2837a2131156df4a159adf4dd830556ec96:{path}"], cwd=root,
+                stderr=subprocess.DEVNULL) for path in originals):
+            raise ValueError("original blob changed")
+        if (git("branch", "--show-current") != branch
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or git("rev-parse", "HEAD") != git("rev-parse", upstream)
+                or run("merge-base", "--is-ancestor", issued, git("rev-parse", "HEAD"))
+                or run("diff", "--check", "development/main...HEAD")):
+            raise ValueError("branch publication invalid")
+        binding = bundle["progress"]["u01_postmerge_control_binding"]
+        checkpoint = binding.get("control_checkpoint")
+        head = git("rev-parse", "HEAD")
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if checkpoint is None:
+            if head != issued or dirty - control:
+                raise ValueError("A not published or unrelated dirty")
+        else:
+            if (not re.fullmatch(r"[0-9a-f]{40}", checkpoint)
+                    or run("merge-base", "--is-ancestor", issued, checkpoint)
+                    or run("merge-base", "--is-ancestor", checkpoint, head)
+                    or changed(issued, checkpoint)[0] - control
+                    or changed(issued, checkpoint)[1] != control
+                    or changed(checkpoint, head)[0] - documents
+                    or changed(checkpoint, head)[1] - documents
+                    or dirty):
+                raise ValueError("checkpoint path or cleanliness invalid")
+            for path in control:
+                if (root / path).read_bytes() != subprocess.check_output(["git", "show",
+                        f"{checkpoint}:{path}"], cwd=root, stderr=subprocess.DEVNULL):
+                    raise ValueError("stale control code")
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, TypeError, AttributeError,
+            subprocess.CalledProcessError):
+        return ["U01_POSTMERGE_GIT_INVALID"]
+
+
+def _validate_u01_postmerge_control_closed(bundle, *, event_raw=None, now=None,
+                                           archived_files=None):
+    """Verify the exact seq2273/2274 revocation without accepting U-01."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    binding = progress.get("u01_postmerge_control_binding", {})
+    checkpoint, publication = binding.get("control_checkpoint"), binding.get(
+        "active_projection_checkpoint")
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    status = "U01_POSTMERGE_CONTROL_CLOSED_PUBLIC_API_APPROVAL_PENDING"
+    action = "U01_PUBLIC_API_CONTRACT_APPROVAL_PENDING"
+    reason = "U01_POSTMERGE_CONTROL_COMPLETE_PUBLIC_API_APPROVAL_PENDING"
+    errors = []
+    try:
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or not isinstance(publication, str) or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or checkpoint == publication):
+            errors.append("U01_POSTMERGE_CLOSE_INVALID")
+        published = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        active_progress = json.loads(published[paths[0]])
+        active_text = published[paths[2]].decode("utf-8")
+        active_bundle = {**bundle, "progress": active_progress,
+            "events": json.loads(published[paths[1]]),
+            "handoff": extract_handoff_summary(active_text), "handoff_text": active_text,
+            "detached_digest": json.loads(published[paths[3]])}
+        active_errors = _validate_u01_postmerge_control_active(active_bundle,
+            event_raw=published[paths[1]],
+            now=datetime.fromisoformat(stream["events"][2272]["occurred_at"]),
+            archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+        if (active_errors or active_progress["u01_postmerge_control_binding"].get(
+                "control_checkpoint") != checkpoint):
+            errors.append("U01_POSTMERGE_CLOSE_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (raw_event_object_prefix_bytes(raw, 2272)
+                != raw_event_object_prefix_bytes(published[paths[1]], 2272)
+                or stream != json.loads(raw) or len(stream.get("events", [])) != 2274
+                or stream.get("last_sequence") != 2274
+                or stream.get("last_event_id")
+                   != "evt_u01_2274_postmerge_control_worker_lease_revoked"
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("U01_POSTMERGE_CLOSE_EVENT_INVALID")
+        worker, write = active_progress["worker_lease"], active_progress["write_lease"]
+        at = stream["events"][2272]["occurred_at"]
+        at_time = datetime.fromisoformat(at)
+        current = now if now is not None else datetime.now(timezone.utc)
+        if (at_time.tzinfo is None or current.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= at_time
+                   < datetime.fromisoformat(worker["expires_at"])
+                or at_time > current or stream["events"][2273]["occurred_at"] != at
+                or progress.get("completed_u01_postmerge_control_write_lease")
+                   != {**write, "status": "REVOKED", "revoked_at": at}
+                or progress.get("completed_u01_postmerge_control_worker_lease")
+                   != {**worker, "status": "REVOKED", "revoked_at": at}
+                or progress.get("worker_lease") is not None or progress.get("write_lease") is not None):
+            errors.append("U01_POSTMERGE_CLOSE_INVALID")
+        for index, kind, event_id, details in (
+            (2272, "WRITE_LEASE_REVOKED", "evt_u01_2273_postmerge_control_write_lease_revoked",
+             {"lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
+              "reason": reason}),
+            (2273, "WORKER_LEASE_REVOKED", "evt_u01_2274_postmerge_control_worker_lease_revoked",
+             {"lease_id": worker["lease_id"], "execution_fencing_token": worker["execution_fencing_token"],
+              "reason": reason})):
+            expected = {"sequence": index + 1, "event_id": event_id, "event_type": kind,
+                "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+                "project_id": "anvil", "work_package_id": "U-01", "run_id": None,
+                "step_id": "U01_POSTMERGE_CONTROL_CLOSE",
+                "subject_ref": "U-01/POSTMERGE-INTAKE-CONTROL", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(
+                    stream["events"][index - 1])).hexdigest().upper(), "details": details}
+            if stream["events"][index] != expected:
+                errors.append("U01_POSTMERGE_CLOSE_EVENT_INVALID")
+        expected_binding = {**active_progress["u01_postmerge_control_binding"], "status": status,
+            "active_projection_checkpoint": publication, "next_safe_action": action,
+            "event_sequence": 2274}
+        expected_repo = {**active_progress["repository"],
+            "projection_mode": "U01_POSTMERGE_CONTROL_CLOSED", "head_relation": status,
+            "worktree_status": status}
+        if (binding != expected_binding or progress.get("repository") != expected_repo
+                or progress.get("snapshot_id") != "snapshot-u01-postmerge-control-close-seq2274"
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2274
+                or progress.get("last_event_id") != stream["last_event_id"]
+                or progress.get("updated_at") != at or progress.get("active_agent") is not None
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "U-01"
+                or progress.get("next_safe_action") != action
+                or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "U-01", "status": status}
+                or progress.get("completed_packages") != active_progress.get("completed_packages")
+                or "F-19A" not in progress.get("completed_packages", [])
+                or progress.get("scope_revision_binding", {}).get("release_decision") != "DEFER"):
+            errors.append("U01_POSTMERGE_CLOSE_INVALID")
+        changed = {"active_agent", "completed_u01_postmerge_control_write_lease",
+            "completed_u01_postmerge_control_worker_lease", "event_sequence",
+            "u01_postmerge_control_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action",
+            "snapshot_hash", "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in active_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items()
+                    if key != "progress_events"}
+                   != {key: value for key, value in active_progress["registry_refs"].items()
+                       if key != "progress_events"}):
+            errors.append("U01_POSTMERGE_CLOSE_FROZEN_INVALID")
+        expected_handoff = {**active_bundle["handoff"], "event_sequence": 2274,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "repository_head": checkpoint,
+            "next_safe_action": action}
+        if (handoff != expected_handoff or handoff.get("status") != "ACTIVE"
+                or handoff.get("current_work_package") != "U-01"):
+            errors.append("U01_POSTMERGE_CLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            data = archived if archived is not None else (root / path).read_bytes()
+            if (digest.get(section, {}).get("path") != path
+                    or digest.get(section, {}).get("bytes") != len(data)
+                    or digest.get(section, {}).get("file_sha256")
+                       != hashlib.sha256(data).hexdigest().upper()):
+                errors.append("U01_POSTMERGE_CLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2274
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("U01_POSTMERGE_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            subprocess.CalledProcessError):
+        errors.append("U01_POSTMERGE_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_postmerge_control_closed_git(bundle):
+    """Anchor closed H to trusted C and B without broadening active Git paths."""
+    from datetime import datetime
+
+    root = Path(bundle["_root"])
+    documents = {"docs/WORK_STATUS.md", "docs/progress/build-progress.json",
+                 "docs/progress/progress-events.json", "docs/progress/BUILD_HANDOFF.md",
+                 "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def run(*args):
+            return subprocess.run(["git", *args], cwd=root, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL).returncode
+        binding = bundle["progress"]["u01_postmerge_control_binding"]
+        checkpoint, publication = binding["control_checkpoint"], binding["active_projection_checkpoint"]
+        if (not all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value)
+                    for value in (checkpoint, publication)) or checkpoint == publication):
+            raise ValueError("invalid checkpoint")
+        published = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        active_text = published[paths[2]].decode("utf-8")
+        active_progress = json.loads(published[paths[0]])
+        active_bundle = {**bundle, "progress": active_progress,
+            "events": json.loads(published[paths[1]]),
+            "handoff": extract_handoff_summary(active_text), "handoff_text": active_text,
+            "detached_digest": json.loads(published[paths[3]])}
+        if (_validate_u01_postmerge_control_active(active_bundle, event_raw=published[paths[1]],
+                now=datetime.fromisoformat(bundle["events"]["events"][2272]["occurred_at"]),
+                archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+                or _collect_u01_postmerge_control_git(active_bundle)):
+            raise ValueError("active B not trusted")
+        head = git("rev-parse", "HEAD")
+        if (run("merge-base", "--is-ancestor", checkpoint, publication)
+                or run("merge-base", "--is-ancestor", publication, head)
+                or git("rev-list", "--count", f"{publication}..{head}") != "1"
+                or git("rev-list", "--min-parents=2", f"{checkpoint}..{head}")
+                or (set(git("log", "--format=", "--name-only", "--no-renames",
+                    f"{checkpoint}..{publication}").splitlines()) - {""}) - documents
+                or (set(git("diff", "--name-only", "--no-renames",
+                    f"{checkpoint}..{publication}").splitlines()) - {""}) - documents
+                or (set(git("log", "--format=", "--name-only", "--no-renames",
+                    f"{publication}..{head}").splitlines()) - {""}) - documents
+                or (set(git("diff", "--name-only", "--no-renames",
+                    f"{publication}..{head}").splitlines()) - {""}) - documents
+                or json.loads(subprocess.check_output(["git", "show", f"{head}:{paths[0]}"],
+                    cwd=root, stderr=subprocess.DEVNULL)) != bundle["progress"]):
+            raise ValueError("invalid H publication")
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, TypeError, AttributeError,
+            subprocess.CalledProcessError):
+        return ["U01_POSTMERGE_CLOSE_GIT_INVALID"]
+
+
+_collect_f19a_start_git_before_u01_postmerge_97 = _collect_f19a_start_git
+
+
+def _collect_f19a_start_git(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode == "U01_POSTMERGE_CONTROL_ACTIVE":
+        return ["F19A_GIT_INVALID"] if _collect_u01_postmerge_control_git(bundle) else []
+    if mode == "U01_POSTMERGE_CONTROL_CLOSED":
+        return ["F19A_GIT_INVALID"] if _collect_u01_postmerge_control_closed_git(bundle) else []
+    return _collect_f19a_start_git_before_u01_postmerge_97(bundle)
+
+
+_validate_bundle_before_u01_postmerge_97 = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode in ("U01_POSTMERGE_CONTROL_ACTIVE", "U01_POSTMERGE_CONTROL_CLOSED"):
+        errors = (_validate_u01_postmerge_control_active(bundle)
+            if mode == "U01_POSTMERGE_CONTROL_ACTIVE"
+            else _validate_u01_postmerge_control_closed(bundle))
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic",
+                                         "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_u01_postmerge_control_git(bundle)
+            if mode == "U01_POSTMERGE_CONTROL_ACTIVE"
+            else _collect_u01_postmerge_control_closed_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_postmerge_97(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
