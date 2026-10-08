@@ -1,5 +1,7 @@
 # F-19A 독립 수락 통제 successor handoff
 
+epoch93 최종 수락 종료 후보(Main, 2026-10-08): 수락 B `3bf4f3b2d609350325f497fbcac3fbf83fb1e143` local/private 동일·clean·G-05 seq2251 PASS 후 Event seq1~2251 원문 보존, seq2252 write→2253 worker lease를 회수하고 seq2254 `MAIN_PACKAGE_ACCEPTED`로 F-19A의 로컬·WSL-server 범위 수락을 기록했다. 독립 Tester AV-OPS-026/AV-SAFE-034 PASS, 실제 PG15/OIDC/HTTPS/Chromium·10테이블 restore·전용 자원 잔여0 및 기존 고정 GET/ACK를 근거로 Main이 수락했다. Event의 인접 `180 PASS/기존 R48 2 FAIL`은 epoch92 선행 기준이며 최신 epoch93 재실행은 186 PASS/동일 2 FAIL(exit1)이다. 전체 GREEN이 아니므로 `main` 병합·U-01 write·새 branch는 통합 gate 정리까지 금지한다. 물리 TCP 단절·ACK COMMIT 응답 소실은 미검증 잔여, Release DEFER·Production NOT_EXECUTED. 이 종료 후보 자체의 G-05/private/clean 확인 전 최종 게시 완료로 표시하지 않는다.
+
 epoch93 C 체크포인트·수락 B 후보(Main, 2026-10-08): Developer 정확2 `scripts/check_project_progress.py` SHA256 `FA78C51DCDEF7083A6135D30573E1A8CB4B9F8A7C8AE0682674D6DD24BE3AE7C`·`tests/tooling/test_f19a_start_projection.py` SHA256 `6A0912A6D3764CD7CCD430FA64D0632032B1F72F99FE9195621F72AB9FA82DE1`를 C `c7ef665f2e0fda2f80e15e17fda640ea8983e2a8`로 local/private 동일 게시했다. Main 집중6 PASS·G-05 활성 seq2251 PASS, 독립 재리뷰 C0/I0/M0·diff0이다. 인접5는 수정 전후 모두 186 PASS/역사 R48 authority2 FAIL(exit1), 신규 F-19A 실패0이며 전체 GREEN이 아니다. 이 B 문서는 Main의 F-19A 수락 결정을 `MAIN_APPROVED_PENDING_CLOSE`로만 결박하고 F-19A를 completed_packages에 넣지 않는다. B private/clean/G-05 후 write→worker 회수와 MAIN_PACKAGE_ACCEPTED Event를 기록할 때만 최종 수락한다. U-01 write/새 branch/main 병합 금지, Release DEFER·Production NOT_EXECUTED.
 
 epoch93 A2 Event 연결 교정(Main, 2026-10-08): A `072de4e8eae7f17c5934c4862ec7fa5ab4ca9909` 게시 후 자체 read-only 무결성 검사에서 seq2251의 `previous_event_sha256`가 seq2250의 최종 해시가 아닌 임시 계산값임을 발견했다. Developer code write0을 유지하고 seq≤2250 원문 보존, seq2251의 연결 해시만 교정한다. registry/snapshot/detached digest를 재결박해 A2 docs-only private/clean을 확인한 뒤에만 Developer를 재개한다. Main 문서 투영 오류 누적2, Developer 정식 FAILURE_REPORT0, F-19A NOT_ACCEPTED·U-01 잠금 유지.
@@ -92,16 +94,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2251,
-  "last_event_id": "evt_f19a_2251_acceptance_control_write_lease_issued",
+  "event_sequence": 2254,
+  "last_event_id": "evt_f19a_2254_acceptance_control_main_package_accepted",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
-  "write_lease": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_ACCEPTANCE_CONTROL_CLOSE_ONLY",
+  "next_safe_action": "F19A_INTEGRATION_REQUIRED_GATES_PENDING",
   "repository_head": "c7ef665f2e0fda2f80e15e17fda640ea8983e2a8",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2251,
+  "last_sequence": 2254,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103630,7 +103630,77 @@
       "product_write_scope": [],
       "write_epoch": 93
     }
+  },
+  {
+    "sequence": 2252,
+    "event_id": "evt_f19a_2252_acceptance_control_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_ACCEPTANCE_CONTROL_CLOSE",
+    "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+    "occurred_at": "2026-10-08T06:56:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "0129474A7140F7002E2EC1DC0E54B3B63A8FF8E7F88AAC367271D25D5326532E",
+    "details": {
+      "lease_id": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
+      "write_fencing_token": "f19a-acceptance-control-write-fence-epoch-93-f5f569ab920640c2bf20de1d6a00eeed",
+      "reason": "F19A_ACCEPTANCE_CONTROL_COMPLETE_F19A_ACCEPTED_INTEGRATION_GATE_PENDING"
+    }
+  },
+  {
+    "sequence": 2253,
+    "event_id": "evt_f19a_2253_acceptance_control_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_ACCEPTANCE_CONTROL_CLOSE",
+    "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+    "occurred_at": "2026-10-08T06:56:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "593753FE2C8AB7C7239A222ADDA7DF31E529E2643F86EC131F60E3E0532045D3",
+    "details": {
+      "lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
+      "execution_fencing_token": "f19a-acceptance-control-execution-fence-epoch-93-2fec8554da064b0a9e9b44931d4a133a",
+      "reason": "F19A_ACCEPTANCE_CONTROL_COMPLETE_F19A_ACCEPTED_INTEGRATION_GATE_PENDING"
+    }
+  },
+  {
+    "sequence": 2254,
+    "event_id": "evt_f19a_2254_acceptance_control_main_package_accepted",
+    "event_type": "MAIN_PACKAGE_ACCEPTED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_ACCEPTANCE_CONTROL_CLOSE",
+    "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+    "occurred_at": "2026-10-08T06:56:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "223A51235DA3E34170C356F77D33EC686F8FE48A31B21529097783B534A39331",
+    "details": {
+      "decision": "ACCEPTED_LOCAL_WSL_SCOPE_INTEGRATION_PENDING",
+      "package_id": "F-19A",
+      "test_report_ref": "docs/04_test_reports/F-19A_MINIMAL_PAIR_AUTH_RESULT.md",
+      "test_report_sha256": "9838B6C39006629261D22AAF4B8621214E48445E5ABABF906E934AA2A33D133D",
+      "av_ops_026": "PASS",
+      "av_safe_034": "PASS",
+      "adjacent_regression": "180_PASS_2_PREEXISTING_R48_AUTHORITY_FAIL_EXIT1",
+      "next_work_package": "F19A_INTEGRATION_REQUIRED_GATES_PENDING",
+      "blocking_findings": 0,
+      "unverified": ["PHYSICAL_TCP_DROP", "ACK_COMMIT_RESPONSE_LOSS", "MAIN_MERGE", "U01", "PRODUCTION"]
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2251_acceptance_control_write_lease_issued"
+  "last_event_id": "evt_f19a_2254_acceptance_control_main_package_accepted"
 }
