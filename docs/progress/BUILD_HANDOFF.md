@@ -1,5 +1,7 @@
 # F-19A main sync 통제 successor handoff
 
+epoch96 C 체크포인트(Main, 2026-10-08): Developer 정확3 SHA `.gitattributes` `3B1AD8B3A859E16A038885FB504E83E81B2BA7477DE0D08495D00D0C73C4E54F`, checker `41EB4A07FC7DA67587FBCCF0E24478DC316DDD1875B9382348E2F14E1B9B6B79`, test `2AE56AEF233C68A2DECA3B3C60C669400E0D22B887D101374BCC3805A13C41FD`를 C `21c44353ee50e5acca73d1d4586b7cc48a18974b`로 local/private 동일 게시했다. 집중31 PASS/242.62초, 인접5 216 PASS/1291.90초, 활성 G-05 seq2267 PASS, 기본·Broker diff check PASS, 임시 `.r48-history-*` 잔여0, 독립 리뷰 C0/I0/M0. 원본 EOF 다섯 blob 불변·예외 외 경로 whitespace unspecified다. Ruff 전체 기존4845 exit1/변경 줄 신규0. 이 B 문서와 종료 seq2268~2269가 private/clean/G-05를 통과하기 전 실제 main merge/PR/U-01 제품 write 금지. F-19A 수락·Release DEFER·Production NOT_EXECUTED 유지.
+
 epoch96 whitespace gate A 시작(Main, 2026-10-08): epoch95 종료 `3f0f51100d66283e39fca61ec944aabbe28467cf` local/private 동일·clean·G-05 seq2264 PASS를 확인했다. Broker diff의 역사 EOF 공백5만 경로별로 다루는 비의미 WI `30CA354631E143397DE1DFC9E026A7D0F46360A38CC333E355B5F66DA23DC769`·invocation `63079D5C64D473486C8B1F7420FA5F01417758DE6EF31DBEFAE5EABCDD1D5732`를 발행한다. Event seq2265 WI→2266 worker→2267 write, epoch96 분리 24시간 token·Developer 통제 정확3/제품0. A docs-only private/clean 전 Developer code write 금지. 기존 F-19A 수락/U-01 잠금, Release DEFER·Production NOT_EXECUTED 유지. 새 G-05 route 전 RED는 PASS가 아니다.
 
 epoch95 종료 투영(Main, 2026-10-08): B `a984d616ab1c1d8fdc21bb3cfb9313c9411649ae` local/private 동일·clean, G-05 seq2262 PASS 뒤 Event seq1~2262 원문을 보존하고 seq2263 write→2264 worker lease를 회수했다. 활성 token null, 완료 lease REVOKED다. Broker `git diff --check origin/main...HEAD`에서 역사적 EOF 공백 5경로가 걸려 실제 main merge/PR은 아직 미실행이다. 다섯 파일의 바이트와 고정 증거 해시는 보존하는 경로별 비의미 whitespace 통제를 후속 epoch에서 검증한 뒤 정확 main 병합을 진행한다. U-01 제품 write 잠금, F-19A 로컬·WSL 범위 수락, Release DEFER·Production NOT_EXECUTED 유지. 이 종료 후보의 private/clean/G-05 전 후속 write 금지.
@@ -121,8 +123,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": {"lease_id":"write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a","worker_lease_id":"worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-WHITESPACE-GATE","status":"ACTIVE","issued_at":"2026-10-08T10:25:19+00:00","expires_at":"2026-10-09T10:25:19+00:00","lease_epoch":96,"fencing_token":"f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a","write_fencing_token":"f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a","execution_fencing_token":"f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a","baseline_git_commit":"3f0f51100d66283e39fca61ec944aabbe28467cf","dispatch_head":"3f0f51100d66283e39fca61ec944aabbe28467cf","path_scope":[".gitattributes","scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":96},
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_ONLY",
-  "repository_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+  "next_safe_action": "F19A_INTEGRATION_WHITESPACE_GATE_CLOSE_ONLY",
+  "repository_head": "21c44353ee50e5acca73d1d4586b7cc48a18974b",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }

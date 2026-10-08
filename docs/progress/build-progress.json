@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-integration-whitespace-gate-start-seq2267",
+  "snapshot_id": "snapshot-f19a-integration-whitespace-gate-checkpoint-seq2267",
   "event_sequence": 2267,
   "updated_at": "2026-10-08T10:25:19+00:00",
   "last_event_id": "evt_f19a_2267_integration_whitespace_gate_write_lease_issued",
@@ -811,7 +811,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_ONLY",
+  "next_safe_action": "F19A_INTEGRATION_WHITESPACE_GATE_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -922,13 +922,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+    "local_head": "21c44353ee50e5acca73d1d4586b7cc48a18974b",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+    "remote_head": "21c44353ee50e5acca73d1d4586b7cc48a18974b",
     "projection_mode": "F19A_INTEGRATION_WHITESPACE_GATE_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_INTEGRATION_WHITESPACE_GATE_A_DOCS_ONLY_PENDING",
+    "head_relation": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1362,7 +1362,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19A_INTEGRATION_WHITESPACE_GATE_A_DOCS_ONLY_PENDING",
+    "worktree_status": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1528,8 +1528,8 @@
     "path": "docs/work_orders/F-19A_INTEGRATION_WHITESPACE_GATE_WORK_INSTRUCTION.md",
     "sha256": "30CA354631E143397DE1DFC9E026A7D0F46360A38CC333E355B5F66DA23DC769",
     "revision": 1,
-    "result_status": "F19A_INTEGRATION_WHITESPACE_GATE_A_DOCS_ONLY_PENDING",
-    "package_status": "F19A_INTEGRATION_WHITESPACE_GATE_A_DOCS_ONLY_PENDING",
+    "result_status": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "package_status": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1690,7 +1690,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "F19A_INTEGRATION_WHITESPACE_GATE_A_DOCS_ONLY_PENDING"
+    "status": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -2082,8 +2082,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "BF733A296DFFDDEA195B35D511DA09868D0AF7BB7198BD2CD16704F50CA12F45",
-  "runtime_next_action": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_ONLY",
+  "snapshot_hash": "0D31D4B257416D78E6E1603515E59DE1E8F98F693109B571B37CA8B88E8118AE",
+  "runtime_next_action": "F19A_INTEGRATION_WHITESPACE_GATE_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23596,7 +23596,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_integration_whitespace_gate_binding": {
-    "status": "F19A_INTEGRATION_WHITESPACE_GATE_A_DOCS_ONLY_PENDING",
+    "status": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2264,
     "predecessor_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
@@ -23612,7 +23612,8 @@
     "developer_exact_paths": [".gitattributes", "scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2267,
-    "next_safe_action": "F19A_INTEGRATION_WHITESPACE_GATE_CONTROL_ONLY"
+    "next_safe_action": "F19A_INTEGRATION_WHITESPACE_GATE_CLOSE_ONLY",
+    "control_checkpoint": "21c44353ee50e5acca73d1d4586b7cc48a18974b"
   },
   "f19a_integration_main_sync_binding": {
     "status": "F19A_ACCEPTED_INTEGRATION_GATES_PENDING",
