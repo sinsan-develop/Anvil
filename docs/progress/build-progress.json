@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-historical-git-fixture-rework-start-seq2277",
+  "snapshot_id": "snapshot-u01-historical-git-fixture-control-seq2277",
   "event_sequence": 2277,
-  "updated_at": "2026-10-08T13:20:01+00:00",
+  "updated_at": "2026-10-08T15:34:07+00:00",
   "last_event_id": "evt_u01_2277_historical_fixture_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -845,7 +845,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CONTROL_ONLY",
+  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -956,13 +956,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "96bef3b3dbd8aa49b3f87d4e36bf591820fc5adf",
+    "local_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "96bef3b3dbd8aa49b3f87d4e36bf591820fc5adf",
+    "remote_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
     "projection_mode": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE",
+    "head_relation": "U01_HISTORICAL_GIT_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1396,7 +1396,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE",
+    "worktree_status": "U01_HISTORICAL_GIT_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1562,8 +1562,8 @@
     "path": "docs/work_orders/U-01_HISTORICAL_GIT_FIXTURE_REWORK_WORK_INSTRUCTION.md",
     "sha256": "59F13CD4A56BE0CBC0DF1D599F7A4B8A607BA510C2BA9B8F1F1DF7C422DEDBA1",
     "revision": 1,
-    "result_status": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE",
-    "package_status": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE",
+    "result_status": "U01_HISTORICAL_GIT_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "package_status": "U01_HISTORICAL_GIT_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1734,7 +1734,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE"
+    "status": "U01_HISTORICAL_GIT_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2126,8 +2126,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "0816131C51F80C63EEE6D54F4344FCDACCF16AFF9B895E9123B29E9656FDD17D",
-  "runtime_next_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CONTROL_ONLY",
+  "snapshot_hash": "4E39D9897052EB3FA42FF501051521CD95A2D80D8374B0EA23101E06232E90AF",
+  "runtime_next_action": "U01_HISTORICAL_GIT_FIXTURE_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23640,7 +23640,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "u01_historical_git_fixture_rework_binding": {
-    "status": "U01_HISTORICAL_GIT_FIXTURE_REWORK_ACTIVE",
+    "status": "U01_HISTORICAL_GIT_FIXTURE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2274,
     "predecessor_head": "96bef3b3dbd8aa49b3f87d4e36bf591820fc5adf",
@@ -23658,10 +23658,10 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py", "tests/tooling/test_f19a_start_projection.py", "tests/tooling/test_f19a_document_successor_projection.py", "tests/tooling/test_f20_u01_contract_successor_projection.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2277,
-    "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CONTROL_ONLY",
-    "control_checkpoint": null,
+    "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_CLOSE_ONLY",
+    "control_checkpoint": "39226b82630b31cdf2dbdb67244df4b2014b636f",
     "active_projection_checkpoint": null,
-    "adjacent_regression": "187_PASS_38_FAIL_EXIT1",
+    "adjacent_regression": "232_PASS_0_FAIL_EXIT0",
     "rework_reason": "HISTORICAL_GIT_FIXTURE_POSTMERGE_OBSERVATION_MISMATCH",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "AWAITING_HUMAN_DECISION"

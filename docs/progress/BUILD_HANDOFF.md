@@ -129,8 +129,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-historical-git-fixture-015da48c825e4ceaa39ef24f0a8b5b38",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CONTROL_ONLY",
-  "repository_head": "96bef3b3dbd8aa49b3f87d4e36bf591820fc5adf",
+  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_CLOSE_ONLY",
+  "repository_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
