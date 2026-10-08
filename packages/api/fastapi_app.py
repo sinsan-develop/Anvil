@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from contextvars import ContextVar
 import hmac
 import inspect
 import re
+import time
 from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from psycopg import OperationalError as PsycopgOperationalError
 from starlette.concurrency import run_in_threadpool
 
 from packages.events.transition_guard import OptimisticVersionConflict
@@ -49,6 +52,7 @@ _F19A_FIXED_OPERATIONS_KEYS = frozenset({
     "GET /api/operations/alerts",
     "POST /api/operations/alerts/{alertId}:acknowledge",
 })
+_f19a_db_deadline: ContextVar[float | None] = ContextVar("f19a_db_deadline", default=None)
 
 
 def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = False) -> None:
@@ -120,6 +124,23 @@ def _oidc_error(error: OidcSessionRejected) -> ApiContractError:
     if str(error) == "OIDC_SESSION_NOT_AVAILABLE":
         return ApiContractError("OIDC_SESSION_NOT_AVAILABLE", "Authentication is unavailable.", 503)
     return ApiContractError("OIDC_SESSION_NOT_AUTHORIZED", "Authentication is required.", 401)
+
+
+def _f19a_database_error(error: ApiContractError) -> ApiContractError:
+    database_failure = error.code == "OIDC_SESSION_NOT_AVAILABLE"
+    if error.code == "DASHBOARD_SOURCE_UNAVAILABLE":
+        cause = error.__context__
+        seen: set[int] = set()
+        while cause is not None and id(cause) not in seen:
+            if isinstance(cause, PsycopgOperationalError):
+                database_failure = True
+                break
+            seen.add(id(cause))
+            cause = cause.__context__
+    if error.status_code == 503 and database_failure:
+        return ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+            "Pair authorization is unavailable.", 503)
+    return error
 
 
 def _authenticate_session(authenticate: Authenticator, token: str) -> SessionPrincipal | None:
@@ -504,8 +525,15 @@ def _endpoint_handler(
                 ),
             )
         except ApiContractError as error:
+            if endpoint.key in _F19A_FIXED_OPERATIONS_KEYS and f19a_pair_guard_required:
+                error = _f19a_database_error(error)
             return _error_response(request, error)
-        except Exception:
+        except Exception as error:
+            if (endpoint.key in _F19A_FIXED_OPERATIONS_KEYS
+                    and f19a_pair_guard_required
+                    and isinstance(error, PsycopgOperationalError)):
+                return _error_response(request, ApiContractError(
+                    "PAIR_AUTHORIZATION_UNAVAILABLE", "Pair authorization is unavailable.", 503))
             return _error_response(
                 request,
                 ApiContractError("INTERNAL_ERROR", "An internal error occurred.", 500),
@@ -521,6 +549,7 @@ def _registration_handler(
     repository: RegistrationRepository | None,
     authenticate: Authenticator,
     config: WebSecurityConfig,
+    f19a_enabled: bool = False,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
@@ -540,6 +569,8 @@ def _registration_handler(
             )
             return JSONResponse(result, status_code=status)
         except ApiContractError as error:
+            if f19a_enabled:
+                error = _f19a_database_error(error)
             return _error_response(request, error)
         except Exception:
             return _error_response(request, ApiContractError(
@@ -714,6 +745,17 @@ def create_app(
 
     @app.middleware("http")
     async def common_web_security(request: Request, call_next: Callable[[Request], Any]) -> Response:
+        deadline_token = (_f19a_db_deadline.set(time.monotonic() + 10.0)
+            if f19a_pair_guard_required else None)
+        try:
+            return await _common_web_security_with_deadline(request, call_next)
+        finally:
+            if deadline_token is not None:
+                _f19a_db_deadline.reset(deadline_token)
+
+    async def _common_web_security_with_deadline(
+        request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:
         request.state.request_id = request_id(
             None if request.url.path.startswith("/auth/oidc/") else request.headers.get("x-request-id")
         )
@@ -750,7 +792,8 @@ def create_app(
             if endpoint.key in _TRUSTED_READ_ENDPOINT_KEYS
             else None
         )
-        handler = (_registration_handler(endpoint, registration_repository, authenticator, config)
+        handler = (_registration_handler(endpoint, registration_repository, authenticator, config,
+                f19a_pair_guard_required)
             if endpoint.key in REGISTRATION_ENDPOINT_KEYS else
             _sse_handler(
                 endpoint,

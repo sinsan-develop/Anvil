@@ -8,16 +8,21 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import re
 import stat
+import time
 
 from fastapi import FastAPI
+import psycopg
+from psycopg.conninfo import make_conninfo
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
-from packages.api.fastapi_app import AuthorizationScope
+from packages.api.fastapi_app import AuthorizationScope, _f19a_db_deadline
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.oidc_runtime_factory import OidcRuntimeRejected
 from packages.agent_team.provider_status import ProviderStatusService
@@ -43,6 +48,47 @@ _KEYS = frozenset({
     "client_secret_file",
 })
 _POLICY = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z", re.ASCII)
+
+
+class _F19ABoundedConnection(psycopg.Connection):
+    """End a stalled libpq read by closing this request's own connection."""
+
+    def wait(self, gen, interval: float = 0.05):
+        deadline = _f19a_db_deadline.get()
+        if deadline is None:
+            return super().wait(gen, interval=interval)
+
+        def bounded():
+            try:
+                state = next(gen)
+                while True:
+                    if time.monotonic() >= deadline:
+                        # A COMMIT already sent to the server has an unknown outcome.
+                        self.close()
+                        raise psycopg.OperationalError("F19A_DB_DEADLINE_EXCEEDED")
+                    ready = yield state
+                    if time.monotonic() >= deadline:
+                        self.close()
+                        raise psycopg.OperationalError("F19A_DB_DEADLINE_EXCEEDED")
+                    state = gen.send(ready)
+            except StopIteration as finished:
+                return finished.value
+
+        return psycopg.Connection.wait(self, bounded(), interval=interval)
+
+
+def _f19a_connect(dsn: str):
+    deadline = _f19a_db_deadline.get()
+    remaining = None if deadline is None else deadline - time.monotonic()
+    if remaining is not None and remaining <= 0:
+        raise psycopg.OperationalError("F19A_DB_DEADLINE_EXCEEDED")
+    timeout = 3 if remaining is None else min(3, max(1, math.ceil(remaining)))
+    return _F19ABoundedConnection.connect(make_conninfo(dsn, connect_timeout=timeout))
+
+
+class _F19ABoundedOperationsRepository(PostgresOperationsRepository):
+    def _connect(self):
+        return _f19a_connect(self._dsn)
 
 
 def _reject() -> OidcRuntimeRejected:
@@ -174,12 +220,20 @@ def create_oidc_process_app(
     engine = None
     try:
         settings = DatabaseSettings.from_environment(environment)
-        engine = create_engine(settings.dsn, pool_pre_ping=True)
-        sessions = sessionmaker(bind=engine, expire_on_commit=False)
-        scope = inputs.authorization_scope
+        engine_options = {"pool_pre_ping": True}
+        if f19a_enabled:
+            engine_options["poolclass"] = NullPool
         operations_dsn = settings.dsn
         if operations_dsn.startswith("postgresql+psycopg://"):
             operations_dsn = "postgresql://" + operations_dsn[len("postgresql+psycopg://"):]
+        if f19a_enabled:
+            operations_dsn = make_conninfo(
+                operations_dsn, connect_timeout=3, tcp_user_timeout=4000
+            )
+            engine_options["creator"] = lambda: _f19a_connect(operations_dsn)
+        engine = create_engine(settings.dsn, **engine_options)
+        sessions = sessionmaker(bind=engine, expire_on_commit=False)
+        scope = inputs.authorization_scope
 
         snapshot_started_at: ContextVar[datetime | None] = ContextVar(
             "anvil_database_health_snapshot_started_at", default=None)
@@ -244,7 +298,8 @@ def create_oidc_process_app(
 
         operations_owner = OperationsService(
             scope.project_id, scope.environment_id, OperationsSources(),
-            repository=PostgresOperationsRepository(operations_dsn),
+            repository=(_F19ABoundedOperationsRepository(operations_dsn) if f19a_enabled
+                        else PostgresOperationsRepository(operations_dsn)),
             clock=operations_clock,
             source_loader=load_queue_sources,
             run_summary_loader=load_run_summary,

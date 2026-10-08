@@ -6,18 +6,22 @@ import base64
 import hashlib
 import json
 import runpy
+import socket
+import time
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
+import psycopg
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 import jwt
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from packages.api.common import SessionPrincipal
-from packages.api.fastapi_app import create_app
+from packages.api.common import ApiContractError, SessionPrincipal
+from packages.api.fastapi_app import ApiPorts, AuthorizationScope, create_app
+from packages.api.oidc_session_coordinator import OidcSessionRejected
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.oidc_runtime_factory import OidcRuntimeConfig
 from packages.persistence.f19a_registration_repository import F19ARegistrationRepository, REGISTRATION_METADATA
@@ -196,6 +200,283 @@ def test_database_unavailable_is_503_not_empty_or_forbidden(api):
             {"active": False}), 503, "PAIR_AUTHORIZATION_UNAVAILABLE")
     finally:
         repository._sessions = original
+
+
+@pytest.mark.parametrize("method,path", [
+    ("GET", "/api/dashboard/project-environments"),
+    ("GET", "/api/dashboard/operations"),
+    ("GET", "/api/operations/alerts"),
+    ("POST", "/api/operations/alerts/alert-1:acknowledge"),
+])
+def test_f19a_oidc_database_fault_returns_pair_unavailable_before_route_work(method, path):
+    calls = []
+    port_calls = []
+
+    def unavailable(_token):
+        calls.append("authenticate")
+        raise OidcSessionRejected("OIDC_SESSION_NOT_AVAILABLE")
+
+    app = create_app(authenticate=unavailable, registration_repository=object(),
+        f19a_pair_guard_required=True, ports=ApiPorts(commands={
+            "POST /api/operations/alerts/{alertId}:acknowledge":
+                lambda _request: port_calls.append("ack")
+        }))
+    with TestClient(app, base_url="https://anvil.local") as client:
+        client.cookies.set("anvil_session", "synthetic-session")
+        response = client.request(method, path)
+        _error(response, 503, "PAIR_AUTHORIZATION_UNAVAILABLE")
+        assert calls == ["authenticate"]
+        assert port_calls == []
+
+
+def test_oidc_database_fault_preserves_legacy_and_no_cookie_authentication_codes():
+    def unavailable(_token):
+        raise OidcSessionRejected("OIDC_SESSION_NOT_AVAILABLE")
+
+    for active, expected in ((False, "OIDC_SESSION_NOT_AVAILABLE"),
+                             (True, "PAIR_AUTHORIZATION_UNAVAILABLE")):
+        app = create_app(authenticate=unavailable, registration_repository=object(),
+            f19a_pair_guard_required=active)
+        with TestClient(app, base_url="https://anvil.local") as client:
+            _error(client.get("/api/dashboard/project-environments"), 401,
+                   "AUTHENTICATION_REQUIRED")
+            client.cookies.set("anvil_session", "synthetic-session")
+            _error(client.get("/api/dashboard/project-environments"), 503, expected)
+        if not active:
+            with TestClient(create_app(authenticate=unavailable),
+                            base_url="https://anvil.local") as legacy:
+                legacy.cookies.set("anvil_session", "synthetic-session")
+                _error(legacy.get("/api/operations/alerts"), 503,
+                       "OIDC_SESSION_NOT_AVAILABLE")
+
+
+@pytest.mark.parametrize("method,key,path", [
+    ("GET", "GET /api/dashboard/operations", "/api/dashboard/operations"),
+    ("GET", "GET /api/operations/alerts", "/api/operations/alerts"),
+    ("POST", "POST /api/operations/alerts/{alertId}:acknowledge",
+     "/api/operations/alerts/alert-1:acknowledge"),
+])
+def test_f19a_operations_database_failure_maps_503_only_in_active_host(method, key, path):
+    principal = _principal("reader", {"dashboard:read", "operations:alerts:read",
+        "operations:alerts:acknowledge"})
+    attempted = []
+
+    def unavailable(_request):
+        attempted.append(key)
+        raise psycopg.OperationalError("synthetic connection unavailable")
+
+    class PairRepository:
+        def require_pair_grant(self, *_args):
+            return True
+
+    ports = ApiPorts(commands={key: unavailable} if method == "POST" else {},
+        queries={key: unavailable} if method == "GET" else {})
+    for active, code in ((True, "PAIR_AUTHORIZATION_UNAVAILABLE"),
+                         (False, "INTERNAL_ERROR")):
+        app = create_app(ports=ports, authenticate=lambda _token: principal,
+            authorization_resolver=lambda *_args: AuthorizationScope(
+                "project-a", "test", frozenset({"operator"})),
+            registration_repository=PairRepository(), f19a_pair_guard_required=active)
+        with TestClient(app, base_url="https://anvil.local") as client:
+            client.cookies.set("anvil_session", "synthetic-session")
+            response = client.request(method, path, json={} if method == "POST" else None,
+                headers={"origin": "https://anvil.local", "x-csrf-token": "csrf",
+                    "idempotency-key": "ack-1", "if-match": "1",
+                    "x-target-hash": "sha256:" + "a" * 64,
+                    "x-permission-scope": "operations:alerts:acknowledge",
+                    "x-reason": "reviewed"} if method == "POST" else {})
+            _error(response, 503 if active else 500, code)
+    assert attempted == [key, key]
+
+
+def test_f19a_request_deadline_reaches_oidc_and_pair_threads_without_reuse():
+    from packages.api.fastapi_app import _f19a_db_deadline
+
+    observed = []
+    principal = _principal("reader", {"dashboard:read"})
+
+    def authenticate(_token):
+        observed.append(("oidc", _f19a_db_deadline.get()))
+        return principal
+
+    class PairRepository:
+        def require_pair_grant(self, *_args):
+            observed.append(("pair", _f19a_db_deadline.get()))
+            return True
+
+    key = "GET /api/dashboard/operations"
+    def port(_request):
+        observed.append(("port", _f19a_db_deadline.get()))
+        return {"items": []}
+
+    app = create_app(ports=ApiPorts(queries={key: port}),
+        authenticate=authenticate,
+        authorization_resolver=lambda *_args: AuthorizationScope(
+            "project-a", "test", frozenset({"operator"})),
+        registration_repository=PairRepository(), f19a_pair_guard_required=True)
+    with TestClient(app, base_url="https://anvil.local") as client:
+        client.cookies.set("anvil_session", "synthetic-session")
+        assert client.get("/api/dashboard/operations").status_code == 200
+        time.sleep(0.01)
+        assert client.get("/api/dashboard/operations").status_code == 200
+    assert [kind for kind, _ in observed] == ["oidc", "pair", "port"] * 2
+    assert all(deadline is not None for _, deadline in observed)
+    assert len({deadline for _, deadline in observed[:3]}) == 1
+    assert len({deadline for _, deadline in observed[3:]}) == 1
+    assert observed[3][1] > observed[0][1]
+    assert _f19a_db_deadline.get() is None
+
+
+@pytest.mark.parametrize("method,key,path", [
+    ("GET", "GET /api/dashboard/operations", "/api/dashboard/operations"),
+    ("GET", "GET /api/operations/alerts", "/api/operations/alerts"),
+    ("POST", "POST /api/operations/alerts/{alertId}:acknowledge",
+     "/api/operations/alerts/alert-1:acknowledge"),
+])
+def test_f19a_connected_stalled_operations_end_in_503_without_delayed_append(method, key, path):
+    from apps.api.anvil_api.oidc_process import _F19ABoundedConnection
+    from packages.api.fastapi_app import _f19a_db_deadline
+    from packages.api.operations import OperationsPort
+    from packages.observability.projection import OperationsSources
+    from packages.observability.service import OperationsService
+    from psycopg.waiting import WAIT_R
+
+    attempts = []
+
+    class StallingRepository:
+        def load(self, *_args):
+            attempts.append("load")
+            reader, writer = socket.socketpair()
+            class Connection:
+                pgconn = type("PGconn", (), {"socket": reader.fileno()})()
+                closed = False
+                def close(self):
+                    self.closed = True
+            connection = Connection()
+            def never_ready():
+                while True:
+                    yield WAIT_R
+            token = _f19a_db_deadline.set(time.monotonic() + 0.05)
+            try:
+                _F19ABoundedConnection.wait(connection, never_ready())
+            finally:
+                _f19a_db_deadline.reset(token)
+                reader.close()
+                writer.close()
+            raise AssertionError("stalled read unexpectedly returned")
+
+        def append(self, *_args):
+            attempts.append("append")
+
+    class PairRepository:
+        def require_pair_grant(self, *_args):
+            return True
+
+    owner = OperationsService("project-a", "test", OperationsSources(),
+        repository=StallingRepository())
+    operations = OperationsPort(owner)
+    principal = _principal("reader", {"dashboard:read", "operations:alerts:read",
+        "operations:alerts:acknowledge"})
+    app = create_app(ports=ApiPorts(commands=operations.command_ports(),
+        queries=operations.query_ports()), authenticate=lambda _token: principal,
+        authorization_resolver=lambda *_args: AuthorizationScope(
+            "project-a", "test", frozenset({"operator"})),
+        registration_repository=PairRepository(), f19a_pair_guard_required=True)
+    with TestClient(app, base_url="https://anvil.local") as client:
+        client.cookies.set("anvil_session", "synthetic-session")
+        started = time.monotonic()
+        response = client.request(method, path, json={} if method == "POST" else None,
+            headers={"origin": "https://anvil.local", "x-csrf-token": "csrf",
+                "idempotency-key": "ack-1", "if-match": "1",
+                "x-target-hash": "sha256:" + "a" * 64,
+                "x-permission-scope": "operations:alerts:acknowledge",
+                "x-reason": "reviewed"} if method == "POST" else {})
+        _error(response, 503, "PAIR_AUTHORIZATION_UNAVAILABLE")
+        assert time.monotonic() - started < 1.0
+    assert attempts == ["load"]
+
+
+@pytest.mark.parametrize("cause,active,expected", [
+    (psycopg.OperationalError, True, "PAIR_AUTHORIZATION_UNAVAILABLE"),
+    (ValueError, True, "DASHBOARD_SOURCE_UNAVAILABLE"),
+    (psycopg.OperationalError, False, "DASHBOARD_SOURCE_UNAVAILABLE"),
+])
+def test_f19a_dashboard_source_error_maps_only_database_cause(cause, active, expected):
+    principal = _principal("reader", {"dashboard:read"})
+
+    def source_unavailable(_request):
+        try:
+            try:
+                raise cause("synthetic source failure")
+            except cause:
+                raise ValueError("QUEUE_SOURCE_UNAVAILABLE") from None
+        except ValueError:
+            raise ApiContractError("DASHBOARD_SOURCE_UNAVAILABLE",
+                "The Dashboard source is unavailable.", 503) from None
+
+    class PairRepository:
+        def require_pair_grant(self, *_args):
+            return True
+
+    app = create_app(ports=ApiPorts(queries={
+        "GET /api/dashboard/operations": source_unavailable}),
+        authenticate=lambda _token: principal,
+        authorization_resolver=lambda *_args: AuthorizationScope(
+            "project-a", "test", frozenset({"operator"})),
+        registration_repository=PairRepository(), f19a_pair_guard_required=active)
+    with TestClient(app, base_url="https://anvil.local") as client:
+        client.cookies.set("anvil_session", "synthetic-session")
+        _error(client.get("/api/dashboard/operations"), 503, expected)
+
+
+def test_f19a_dashboard_sqlalchemy_wrapped_psycopg_deadline_maps_503():
+    from packages.api.fastapi_app import _f19a_database_error
+
+    try:
+        try:
+            raise psycopg.OperationalError("F19A_DB_DEADLINE_EXCEEDED")
+        except psycopg.OperationalError as db_error:
+            raise sa.exc.OperationalError("SELECT 1", {}, db_error) from db_error
+    except sa.exc.OperationalError:
+        source_error = ApiContractError("DASHBOARD_SOURCE_UNAVAILABLE",
+            "The Dashboard source is unavailable.", 503)
+        assert _f19a_database_error(source_error).code == "DASHBOARD_SOURCE_UNAVAILABLE"
+        try:
+            raise source_error from None
+        except ApiContractError as wrapped:
+            converted = _f19a_database_error(wrapped)
+            assert (converted.status_code, converted.code) == (
+                503, "PAIR_AUTHORIZATION_UNAVAILABLE")
+
+
+def test_real_operations_port_preserves_database_cause_for_f19a_dashboard():
+    from packages.api.operations import OperationsPort
+    from packages.observability.projection import OperationsSources
+    from packages.observability.service import OperationsService
+
+    class UnavailableAuditRepository:
+        def load(self, *_args):
+            raise psycopg.OperationalError("synthetic connection unavailable")
+
+        def append(self, *_args):
+            raise AssertionError("GET must not append")
+
+    class PairRepository:
+        def require_pair_grant(self, *_args):
+            return True
+
+    owner = OperationsService("project-a", "test", OperationsSources(),
+        repository=UnavailableAuditRepository())
+    principal = _principal("reader", {"dashboard:read"})
+    app = create_app(ports=ApiPorts(queries=OperationsPort(owner).query_ports()),
+        authenticate=lambda _token: principal,
+        authorization_resolver=lambda *_args: AuthorizationScope(
+            "project-a", "test", frozenset({"operator"})),
+        registration_repository=PairRepository(), f19a_pair_guard_required=True)
+    with TestClient(app, base_url="https://anvil.local") as client:
+        client.cookies.set("anvil_session", "synthetic-session")
+        _error(client.get("/api/dashboard/operations"), 503,
+               "PAIR_AUTHORIZATION_UNAVAILABLE")
 
 
 def test_hidden_and_missing_registrations_are_indistinguishable_to_nonowner(api):
@@ -385,7 +666,8 @@ def test_oidc_process_entrypoint_selects_f19a_and_exact_0020_operations_signal(m
             pinned_jwks_json="synthetic", client_secret=None, ca_bundle=None)
         monkeypatch.setattr(oidc_process, "load_oidc_process_inputs", lambda _environment: inputs)
         monkeypatch.setattr(oidc_process.DatabaseSettings, "from_environment",
-                            lambda _environment: SimpleNamespace(dsn="sqlite+pysqlite:///:memory:"))
+                            lambda _environment: SimpleNamespace(
+                                dsn="postgresql+psycopg://isolated.invalid/anvil"))
         monkeypatch.setattr(oidc_process, "create_engine", lambda *_args, **_kwargs: engine)
         class EmptyOperationsRepository:
             def __init__(self, _dsn):
