@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2282,
+  "last_sequence": 2284,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -104478,7 +104478,49 @@
       "product_write_scope": [],
       "write_epoch": 99
     }
+  },
+  {
+    "sequence": 2283,
+    "event_id": "evt_u01_2283_scoped_dashboard_control_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_CONTROL_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-CONTROL",
+    "occurred_at": "2026-10-08T21:25:33+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "661F99CDC5AF2BC9D3343EBA34B95C1C86DF1A9367C124C3DE46380AEBB4C18E",
+    "details": {
+      "lease_id": "write-lease-u01-scoped-dashboard-control-a1d09ff80ed3454ba401e932181b4c68",
+      "write_fencing_token": "u01-scoped-dashboard-control-write-fence-epoch-99-a1d09ff80ed3454ba401e932181b4c68",
+      "reason": "U01_SCOPED_DASHBOARD_CONTROL_NON_GREEN_HISTORICAL_FIXTURE_REWORK_PENDING"
+    }
+  },
+  {
+    "sequence": 2284,
+    "event_id": "evt_u01_2284_scoped_dashboard_control_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_CONTROL_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-CONTROL",
+    "occurred_at": "2026-10-08T21:25:33+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "8573E74C54B2D3816AD98EFB5CFB14AF4239510FB8A971B8D183A5EE363E9712",
+    "details": {
+      "lease_id": "worker-lease-u01-scoped-dashboard-control-3cef41d684f84f308f4c8f5ec4d726e1",
+      "execution_fencing_token": "u01-scoped-dashboard-control-execution-fence-epoch-99-3cef41d684f84f308f4c8f5ec4d726e1",
+      "reason": "U01_SCOPED_DASHBOARD_CONTROL_NON_GREEN_HISTORICAL_FIXTURE_REWORK_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2282_scoped_dashboard_control_write_lease_issued"
+  "last_event_id": "evt_u01_2284_scoped_dashboard_control_worker_lease_revoked"
 }
