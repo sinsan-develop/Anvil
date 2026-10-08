@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-acceptance-control-start-seq2251",
+  "snapshot_id": "snapshot-f19a-acceptance-control-checkpoint-seq2251",
   "event_sequence": 2251,
   "updated_at": "2026-10-08T05:47:00+00:00",
   "last_event_id": "evt_f19a_2251_acceptance_control_write_lease_issued",
@@ -772,7 +772,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_ACCEPTANCE_CONTROL_ONLY",
+  "next_safe_action": "F19A_ACCEPTANCE_CONTROL_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -883,13 +883,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
+    "local_head": "c7ef665f2e0fda2f80e15e17fda640ea8983e2a8",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
+    "remote_head": "c7ef665f2e0fda2f80e15e17fda640ea8983e2a8",
     "projection_mode": "F19A_ACCEPTANCE_CONTROL_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_ACCEPTANCE_CONTROL_ONLY",
+    "head_relation": "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1323,7 +1323,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19A_ACCEPTANCE_CONTROL_ONLY",
+    "worktree_status": "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1489,8 +1489,8 @@
     "path": "docs/work_orders/F-19A_ACCEPTANCE_CONTROL_WORK_INSTRUCTION.md",
     "sha256": "EF2532C4B9D9E2F6621CCA76973DA289F3427AB0647A7318234BA7AF79108C0C",
     "revision": 1,
-    "result_status": "F19A_ACCEPTANCE_CONTROL_ACTIVE",
-    "package_status": "F19A_ACCEPTANCE_CONTROL_ACTIVE",
+    "result_status": "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "package_status": "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_INTERNAL_F19A_ACCEPTANCE_CONTROL_NON_SEMANTIC"
   },
@@ -1651,7 +1651,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "F19A_ACCEPTANCE_CONTROL_ACTIVE"
+    "status": "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -2043,8 +2043,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "18D4F2CEF0CB988047D1E6F07567AA5A52DEF40BCCDE0882F26A2F87E13E4394",
-  "runtime_next_action": "F19A_ACCEPTANCE_CONTROL_ONLY",
+  "snapshot_hash": "DDA2A26BE6D66164B9455BD74AEA297651F379B51BDD81665C765496A4869181",
+  "runtime_next_action": "F19A_ACCEPTANCE_CONTROL_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23557,7 +23557,9 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_acceptance_control_binding": {
-    "status": "F19A_ACCEPTANCE_CONTROL_ACTIVE",
+    "status": "F19A_ACCEPTANCE_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "control_checkpoint": "c7ef665f2e0fda2f80e15e17fda640ea8983e2a8",
+    "acceptance_decision": "MAIN_APPROVED_PENDING_CLOSE",
     "package_id": "F-19A",
     "predecessor_sequence": 2248,
     "predecessor_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
@@ -23582,7 +23584,7 @@
     "worker_lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
     "write_lease_id": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_ACCEPTANCE_CONTROL_ONLY",
+    "next_safe_action": "F19A_ACCEPTANCE_CONTROL_CLOSE_ONLY",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
