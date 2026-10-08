@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2269,
+  "last_sequence": 2272,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -104104,7 +104104,101 @@
       "execution_fencing_token": "f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a",
       "reason": "F19A_INTEGRATION_WHITESPACE_GATE_COMPLETE_EXACT_MAIN_MERGE_PENDING"
     }
+  },
+  {
+    "sequence": 2270,
+    "event_id": "evt_u01_2270_postmerge_control_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_POSTMERGE_INTAKE_CONTROL",
+    "subject_ref": "U-01/POSTMERGE-INTAKE-CONTROL",
+    "occurred_at": "2026-10-08T11:45:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "486991B77BBA109E3A51BF2173243469DF20F6A2891ED9E00981A1533B570504",
+    "details": {
+      "work_instruction_id": "WI-U01-POSTMERGE-INTAKE-CONTROL-20261008-001",
+      "work_instruction_path": "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "7B437FA753D8CB071B848AC44D36C744E6DE9ECC57157B64E98BD63B5F6EE09E",
+      "approval_path": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
+      "product_write_scope": [],
+      "predecessor_sequence": 2269,
+      "predecessor_head": "c232cb7115c22d058e1eaa96a47f8d2818447e83",
+      "merged_main": "0443043251d25aa77c17d23165b7c9299c8dbeb8",
+      "dispatch_head": "55e225522c1121530b1e7e4678b0c46ea33352ba"
+    }
+  },
+  {
+    "sequence": 2271,
+    "event_id": "evt_u01_2271_postmerge_control_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_POSTMERGE_INTAKE_CONTROL",
+    "subject_ref": "U-01/POSTMERGE-INTAKE-CONTROL",
+    "occurred_at": "2026-10-08T11:45:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "5D3711F34786E942C528D8F8867B6224E3FA1C5E3B55058E040842E4B522F4AE",
+    "details": {
+      "lease_id": "worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6",
+      "actor_id": "developer-primary-u01-postmerge-control",
+      "subject_ref": "U-01/POSTMERGE-INTAKE-CONTROL",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T11:45:29+00:00",
+      "expires_at": "2026-10-09T11:45:29+00:00",
+      "lease_epoch": 97,
+      "fencing_token": "u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6",
+      "execution_fencing_token": "u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6",
+      "baseline_git_commit": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+      "dispatch_head": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"]
+    }
+  },
+  {
+    "sequence": 2272,
+    "event_id": "evt_u01_2272_postmerge_control_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_POSTMERGE_INTAKE_CONTROL",
+    "subject_ref": "U-01/POSTMERGE-INTAKE-CONTROL",
+    "occurred_at": "2026-10-08T11:45:29+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A15CBBCAF022212127233A16FFDF1289AC39794930C5C6920F12B2C3A596EE08",
+    "details": {
+      "lease_id": "write-lease-u01-postmerge-control-14f68aa4b9ba4684820af6c8727e156c",
+      "worker_lease_id": "worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6",
+      "actor_id": "developer-primary-u01-postmerge-control",
+      "subject_ref": "U-01/POSTMERGE-INTAKE-CONTROL",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T11:45:29+00:00",
+      "expires_at": "2026-10-09T11:45:29+00:00",
+      "lease_epoch": 97,
+      "fencing_token": "u01-postmerge-control-write-fence-epoch-97-14f68aa4b9ba4684820af6c8727e156c",
+      "write_fencing_token": "u01-postmerge-control-write-fence-epoch-97-14f68aa4b9ba4684820af6c8727e156c",
+      "execution_fencing_token": "u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6",
+      "baseline_git_commit": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+      "dispatch_head": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
+      "product_write_scope": [],
+      "write_epoch": 97
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2269_integration_whitespace_gate_worker_lease_revoked"
+  "last_event_id": "evt_u01_2272_postmerge_control_write_lease_issued"
 }
