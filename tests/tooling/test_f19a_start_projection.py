@@ -19,6 +19,25 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class F19AStartProjectionTests(unittest.TestCase):
+    def setUp(self):
+        # Only historical Git observations need the published F-19A branch.
+        if "git" not in self._testMethodName and self._testMethodName != "test_closed_task0_projection_and_forgery_guards":
+            return
+        original = subprocess.check_output
+
+        def historical_branch(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            return original(command, *args, **kwargs)
+
+        patcher = patch.object(subprocess, "check_output", side_effect=historical_branch)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     SYNTHETIC_CHECKPOINT = "a" * 40
     TASK1_ACTIVE_COMMIT = "e7d7976b6a2d8bfd7a71162796feaf0635e294e9"
 
@@ -73,7 +92,8 @@ class F19AStartProjectionTests(unittest.TestCase):
 
     @staticmethod
     @contextmanager
-    def synthetic_checkpoint_git(checkpoint, *, changed_paths=None, stale_blob=False):
+    def synthetic_checkpoint_git(checkpoint, *, changed_paths=None, stale_blob=False,
+                                 branch="codex/f18-wsl-ops", upstream="development/codex/f18-wsl-ops"):
         original_output, original_run = subprocess.check_output, subprocess.run
         base = "abeab9f4e71387dcd6fed97b7061d6f50a73bbce"
         old = "0149ab1a079bc8c2ccae944e13c2e2a626ebf62b"
@@ -86,6 +106,10 @@ class F19AStartProjectionTests(unittest.TestCase):
             tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
             if tail == ["rev-parse", "HEAD"] or tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
                 return (checkpoint + "\n").encode()
+            if tail == ["branch", "--show-current"]:
+                return (branch + "\n").encode()
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return (upstream + "\n").encode()
             if tail == ["status", "--porcelain=v1", "-uall"]:
                 return b""
             if tail == ["diff", "--name-only", "--no-renames", f"{base}..HEAD"]:
@@ -122,6 +146,10 @@ class F19AStartProjectionTests(unittest.TestCase):
         def git_output(command, *args, **kwargs):
             tail = command[5:] if command[:5] == [
                 "git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
             if tail == ["rev-parse", "HEAD"]:
                 return (actual_head + "\n").encode()
             if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
@@ -580,6 +608,11 @@ class F19AStartProjectionTests(unittest.TestCase):
                 return original(command, *args, **kwargs)
 
             with patch.object(subprocess, "check_output", side_effect=outside_dirty):
+                self.assertEqual(collect(current), ["F19A_GIT_INVALID"])
+        for identity in ({"branch": "codex/u01-dashboard-r2"},
+                         {"upstream": "development/codex/u01-dashboard-r2"}):
+            with self.subTest(identity=identity), self.synthetic_checkpoint_git(
+                    "0149ab1a079bc8c2ccae944e13c2e2a626ebf62b", **identity):
                 self.assertEqual(collect(current), ["F19A_GIT_INVALID"])
 
     def test_clean_task0_checkpoint_descendant_only(self):
@@ -6266,6 +6299,10 @@ class F19AStartProjectionTests(unittest.TestCase):
                         return (("f" * 40 if scenario == "descendant" else issued) + "\n").encode()
                     if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
                         return (("0" * 40 if scenario == "remote" else issued) + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
                     if tail == ["status", "--porcelain=v1", "-uall"]:
                         return b" M packages/api/runtime.py\n" if scenario == "dirty" else b""
                     if tail[:1] == ["rev-list"]:

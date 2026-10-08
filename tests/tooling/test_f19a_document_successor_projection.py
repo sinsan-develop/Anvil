@@ -67,6 +67,10 @@ class F19ADocumentSuccessorTests(unittest.TestCase):
         delta = original(ROOT, "diff", "--name-only", "--no-renames", f"{overlay.BASE}..{HISTORICAL_F19A}")
 
         def historical(root, *args):
+            if args == ("branch", "--show-current"):
+                return (overlay.BRANCH + "\n").encode()
+            if args == ("rev-parse", "--abbrev-ref", "@{upstream}"):
+                return (overlay.UPSTREAM + "\n").encode()
             if args == ("rev-parse", "HEAD"):
                 return (HISTORICAL_F19A + "\n").encode()
             if args == ("rev-parse", overlay.UPSTREAM):

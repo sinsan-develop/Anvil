@@ -1,6 +1,7 @@
 """R48 close revokes the scoped ACK writer without accepting F-20/U-01."""
 
 from copy import deepcopy
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -165,7 +166,37 @@ class R48CloseProjectionTests(unittest.TestCase):
             target.write_bytes(original)
 
 
-class R48HistoryControlTests(unittest.TestCase):
+class HistoricalF18BranchFixture:
+    def setUp(self):
+        historical_git_cases = {
+            "test_epoch94_git_issued_publication_and_remote_dirty_negative",
+            "test_epoch94_checkpoint_git_exact_two_and_history_negative",
+            "test_epoch94_closed_git_publication_and_negative",
+            "test_epoch95_issued_git_exact_private_and_dirty_negative",
+            "test_epoch95_checkpoint_git_exact_control_then_docs_negative",
+            "test_epoch95_closed_git_only_h_or_exact_zero_tree_merge",
+            "test_epoch96_checkpoint_git_exact_three_then_docs_only",
+            "test_epoch96_closed_git_only_h_or_exact_tree_preserving_main_merge",
+        }
+        if self._testMethodName not in historical_git_cases:
+            return
+        original = subprocess.check_output
+
+        def observed_branch(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            return original(command, *args, **kwargs)
+
+        patcher = patch.object(subprocess, "check_output", side_effect=observed_branch)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+
+class R48HistoryControlTests(HistoricalF18BranchFixture, unittest.TestCase):
     ISSUED = "a30d6477afe480e72e972d2cefbea6e7f16c63c4"
     PATHS = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
              "docs/progress/BUILD_HANDOFF.md",
@@ -265,11 +296,13 @@ class R48HistoryControlTests(unittest.TestCase):
         collector = getattr(checker, "_collect_f19a_integration_r48_history_git", None)
         self.assertIsNotNone(collector)
         original = subprocess.check_output
-        for scenario in ("issued", "remote", "product_dirty", "descendant"):
+        for scenario in ("issued", "remote", "product_dirty", "descendant", "wrong_branch"):
             with self.subTest(scenario=scenario):
                 def output(command, *args, **kwargs):
                     tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
                         "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["branch", "--show-current"] and scenario == "wrong_branch":
+                        return b"codex/u01-dashboard-r2\n"
                     if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
                         sha = self.ISSUED
                         if scenario == "remote" and tail[1].startswith("development/"):
@@ -483,7 +516,7 @@ class R48HistoryControlTests(unittest.TestCase):
                 self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
 
 
-class IntegrationMainSyncControlTests(unittest.TestCase):
+class IntegrationMainSyncControlTests(HistoricalF18BranchFixture, unittest.TestCase):
     ISSUED = "a76693852e49b0b5a34cf1d1806a88dd07bca1df"
     PREDECESSOR = "5aafbafd371137ac94fbbe3543f9ec6311b07eda"
     MAIN = "462c2e5b27823de2c1184f56f0fa9908a2cea328"
@@ -534,11 +567,13 @@ class IntegrationMainSyncControlTests(unittest.TestCase):
         collector = getattr(checker, "_collect_f19a_integration_main_sync_git", None)
         self.assertIsNotNone(collector)
         original = subprocess.check_output
-        for scenario in ("issued", "remote", "product_dirty", "descendant", "changed_main"):
+        for scenario in ("issued", "remote", "product_dirty", "descendant", "changed_main", "wrong_branch"):
             with self.subTest(scenario=scenario):
                 def output(command, *args, **kwargs):
                     tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
                         "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["branch", "--show-current"] and scenario == "wrong_branch":
+                        return b"codex/u01-dashboard-r2\n"
                     if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
                         sha = "0" * 40 if scenario == "remote" and tail[1].startswith("development/") else (
                             "e" * 40 if scenario == "descendant" else self.ISSUED)
@@ -616,6 +651,8 @@ class IntegrationMainSyncControlTests(unittest.TestCase):
                 def output(command, *args, **kwargs):
                     tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
                         "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "development/main"]:
+                        return (self.MAIN + "\n").encode()
                     if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
                         sha = "0" * 40 if scenario == "remote" and tail[1].startswith("development/") else publication
                         return (sha + "\n").encode()
@@ -924,7 +961,7 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class IntegrationWhitespaceGateTests(unittest.TestCase):
+class IntegrationWhitespaceGateTests(HistoricalF18BranchFixture, unittest.TestCase):
     ISSUED = "4572c2837a2131156df4a159adf4dd830556ec96"
     PREDECESSOR = "3f0f51100d66283e39fca61ec944aabbe28467cf"
     MAIN = "462c2e5b27823de2c1184f56f0fa9908a2cea328"
@@ -936,6 +973,48 @@ class IntegrationWhitespaceGateTests(unittest.TestCase):
         "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md",
         "tests/api/test_projects_scan_api.py",
     )
+
+    @classmethod
+    @contextmanager
+    def issued_git_observation(cls, *, dirty=b"", whitespace_ok=True):
+        """Observe the immutable epoch96 publication, not the postmerge checkout."""
+        original_output, original_run, original_read = subprocess.check_output, subprocess.run, Path.read_bytes
+        code_publication = "21c44353ee50e5acca73d1d4586b7cc48a18974b"
+        attributes = original_output(["git", "show", f"{code_publication}:.gitattributes"], cwd=ROOT)
+        published_check = original_run(["git", "diff", "--check", f"{cls.MAIN}...{code_publication}"],
+            cwd=ROOT, capture_output=True)
+        if published_check.returncode:
+            raise AssertionError("EPOCH96_PUBLISHED_WHITESPACE_GATE_INVALID")
+
+        def output(command, *args, **kwargs):
+            tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                "-c", "core.quotePath=false"] else command[1:]
+            if tail == ["rev-parse", "HEAD"] or tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                return (cls.ISSUED + "\n").encode()
+            if tail == ["rev-parse", "development/main"]:
+                return (cls.MAIN + "\n").encode()
+            if tail == ["branch", "--show-current"]:
+                return b"codex/f18-wsl-ops\n"
+            if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                return b"development/codex/f18-wsl-ops\n"
+            if tail == ["status", "--porcelain=v1", "-uall"]:
+                return dirty
+            return original_output(command, *args, **kwargs)
+
+        def read(path):
+            return attributes if path == ROOT / ".gitattributes" else original_read(path)
+
+        def run(command, *args, **kwargs):
+            tail = command[1:] if command[:1] == ["git"] else command
+            if tail == ["merge-base", "--is-ancestor", cls.MAIN, cls.ISSUED]:
+                return subprocess.CompletedProcess(command, 1)
+            if tail == ["diff", "--check", "development/main...HEAD"]:
+                return subprocess.CompletedProcess(command, 0 if whitespace_ok else 1)
+            return original_run(command, *args, **kwargs)
+
+        with patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(subprocess, "run", side_effect=run), patch.object(Path, "read_bytes", read):
+            yield
 
     @classmethod
     def issued_bundle(cls):
@@ -975,13 +1054,11 @@ class IntegrationWhitespaceGateTests(unittest.TestCase):
         collector = getattr(checker, "_collect_f19a_integration_whitespace_gate_git", None)
         self.assertIsNotNone(collector)
         bundle, _ = self.issued_bundle()
-        self.assertEqual(collector(bundle), [])
-        original = subprocess.check_output
-        def dirty(command, *args, **kwargs):
-            if command[-3:] == ["status", "--porcelain=v1", "-uall"]:
-                return b" M packages/api/runtime.py\n"
-            return original(command, *args, **kwargs)
-        with patch.object(subprocess, "check_output", side_effect=dirty):
+        with self.issued_git_observation():
+            self.assertEqual(collector(bundle), [])
+        with self.issued_git_observation(dirty=b" M packages/api/runtime.py\n"):
+            self.assertTrue(collector(bundle))
+        with self.issued_git_observation(whitespace_ok=False):
             self.assertTrue(collector(bundle))
 
     def test_epoch96_live_g05_dispatches_active_mode(self):
@@ -1045,11 +1122,14 @@ class IntegrationWhitespaceGateTests(unittest.TestCase):
             "tests/tooling/test_f20_u01_r48_close_projection.py")
         original, original_run = subprocess.check_output, subprocess.run
         for scenario in ("published", "remote", "dirty", "missing_attr", "docs_in_control",
-                         "product_descendant", "stale_attr", "merge", "wrong_main", "other_whitespace"):
+                         "product_descendant", "stale_attr", "merge", "wrong_main", "other_whitespace",
+                         "wrong_branch"):
             with self.subTest(scenario=scenario):
                 def output(command, *args, **kwargs):
                     tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
                         "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["branch", "--show-current"] and scenario == "wrong_branch":
+                        return b"codex/u01-dashboard-r2\n"
                     if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
                         sha = "0" * 40 if scenario == "remote" and tail[1].startswith("development/") else publication
                         return (sha + "\n").encode()

@@ -151,6 +151,10 @@ class ContractSuccessorProjectionTests(unittest.TestCase):
                                    f"{overlay.DOCUMENT}..{HISTORICAL_CLOSED67}")
 
         def historical_git(root, *args):
+            if args == ("branch", "--show-current"):
+                return (overlay.BRANCH + "\n").encode()
+            if args == ("rev-parse", "--abbrev-ref", "@{upstream}"):
+                return (overlay.UPSTREAM + "\n").encode()
             if args == ("rev-parse", "HEAD"):
                 return (HISTORICAL_CLOSED67 + "\n").encode()
             if args == ("rev-parse", overlay.UPSTREAM):
