@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2254,
+  "last_sequence": 2257,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103700,7 +103700,99 @@
       "blocking_findings": 0,
       "unverified": ["PHYSICAL_TCP_DROP", "ACK_COMMIT_RESPONSE_LOSS", "MAIN_MERGE", "U01", "PRODUCTION"]
     }
+  },
+  {
+    "sequence": 2255,
+    "event_id": "evt_f19a_2255_integration_r48_history_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_R48_HISTORY_FIX",
+    "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+    "occurred_at": "2026-10-08T07:15:09+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "9E5F643D45A88494E74E8C38CF61CE001591C25FC504787F152D14A63CEF8B26",
+    "details": {
+      "work_instruction_id": "WI-F19A-INTEGRATION-R48-HISTORY-20261008-001",
+      "work_instruction_path": "docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "75CB80A5E13F15E5DAB89A1BA9C52E5637113E0E3E7A4BE1573584A523E1EF9C",
+      "approval_path": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
+      "product_write_scope": [],
+      "predecessor_sequence": 2254,
+      "predecessor_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103"
+    }
+  },
+  {
+    "sequence": 2256,
+    "event_id": "evt_f19a_2256_integration_r48_history_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_R48_HISTORY_FIX",
+    "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+    "occurred_at": "2026-10-08T07:15:09+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "07A1331A66652434896571BA129728512B6FF15DDED340C09F5D678976748C6E",
+    "details": {
+      "lease_id": "worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T07:15:09+00:00",
+      "expires_at": "2026-10-09T07:15:09+00:00",
+      "lease_epoch": 94,
+      "fencing_token": "f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd",
+      "execution_fencing_token": "f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd",
+      "baseline_git_commit": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
+      "dispatch_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"]
+    }
+  },
+  {
+    "sequence": 2257,
+    "event_id": "evt_f19a_2257_integration_r48_history_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_R48_HISTORY_FIX",
+    "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+    "occurred_at": "2026-10-08T07:15:09+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "DFC05729709775255B0ED0B8DE06BA3A67F79E8F713C61DDF0BAD73527D92798",
+    "details": {
+      "lease_id": "write-lease-f19a-integration-r48-history-0b5be5c7492d4f948af74fdb303f3ace",
+      "worker_lease_id": "worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T07:15:09+00:00",
+      "expires_at": "2026-10-09T07:15:09+00:00",
+      "lease_epoch": 94,
+      "fencing_token": "f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace",
+      "write_fencing_token": "f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace",
+      "execution_fencing_token": "f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd",
+      "baseline_git_commit": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
+      "dispatch_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
+      "product_write_scope": [],
+      "write_epoch": 94
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2254_acceptance_control_main_package_accepted"
+  "last_event_id": "evt_f19a_2257_integration_r48_history_write_lease_issued"
 }

@@ -1,3 +1,7 @@
+# F-19A 통합 R48 역사 회귀 successor handoff
+
+epoch94 R48 역사 fixture 통제 시작(Main, 2026-10-08): F-19A 수락 종료 `c9c0c415e6a7a31b2996dd26cb80c8733cafc103` local/private 동일·clean·G-05 seq2254 PASS에서, R48 close 양성 2건이 역사 BASE authority 23개와 후속 checkout 6개 변경의 시점 혼용으로 실패함을 확정했다. 비의미 WI `75CB80A5E13F15E5DAB89A1BA9C52E5637113E0E3E7A4BE1573584A523E1EF9C`로 seq2255 WI→2256 worker→2257 write, epoch94 분리 24시간 token·Developer 통제 정확2/제품0을 기록한다. A docs-only private/clean 뒤에만 Developer가 역사 격리 clone fixture와 G-05 route를 TDD 수정한다. 기존 overlay authority guard·F-19A ACCEPTED·U-01 차단·Release DEFER/Production NOT_EXECUTED를 유지하고 새 route 전 G-05 RED를 PASS로 표시하지 않는다. 신규 branch/main 병합/제품·WSL write 금지.
+
 # F-19A 독립 수락 통제 successor handoff
 
 epoch93 최종 수락 종료 후보(Main, 2026-10-08): 수락 B `3bf4f3b2d609350325f497fbcac3fbf83fb1e143` local/private 동일·clean·G-05 seq2251 PASS 후 Event seq1~2251 원문 보존, seq2252 write→2253 worker lease를 회수하고 seq2254 `MAIN_PACKAGE_ACCEPTED`로 F-19A의 로컬·WSL-server 범위 수락을 기록했다. 독립 Tester AV-OPS-026/AV-SAFE-034 PASS, 실제 PG15/OIDC/HTTPS/Chromium·10테이블 restore·전용 자원 잔여0 및 기존 고정 GET/ACK를 근거로 Main이 수락했다. Event의 인접 `180 PASS/기존 R48 2 FAIL`은 epoch92 선행 기준이며 최신 epoch93 재실행은 186 PASS/동일 2 FAIL(exit1)이다. 전체 GREEN이 아니므로 `main` 병합·U-01 write·새 branch는 통합 gate 정리까지 금지한다. 물리 TCP 단절·ACK COMMIT 응답 소실은 미검증 잔여, Release DEFER·Production NOT_EXECUTED. 이 종료 후보 자체의 G-05/private/clean 확인 전 최종 게시 완료로 표시하지 않는다.
@@ -94,17 +98,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2254,
-  "last_event_id": "evt_f19a_2254_acceptance_control_main_package_accepted",
+  "event_sequence": 2257,
+  "last_event_id": "evt_f19a_2257_integration_r48_history_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": {"lease_id":"worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-R48-HISTORY-FIX","status":"ACTIVE","issued_at":"2026-10-08T07:15:09+00:00","expires_at":"2026-10-09T07:15:09+00:00","lease_epoch":94,"fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","execution_fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","baseline_git_commit":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","dispatch_head":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"]},
+  "write_lease": {"lease_id":"write-lease-f19a-integration-r48-history-0b5be5c7492d4f948af74fdb303f3ace","worker_lease_id":"worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-R48-HISTORY-FIX","status":"ACTIVE","issued_at":"2026-10-08T07:15:09+00:00","expires_at":"2026-10-09T07:15:09+00:00","lease_epoch":94,"fencing_token":"f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace","write_fencing_token":"f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace","execution_fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","baseline_git_commit":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","dispatch_head":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":94},
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_INTEGRATION_REQUIRED_GATES_PENDING",
-  "repository_head": "c7ef665f2e0fda2f80e15e17fda640ea8983e2a8",
+  "next_safe_action": "F19A_INTEGRATION_R48_HISTORY_CONTROL_ONLY",
+  "repository_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
