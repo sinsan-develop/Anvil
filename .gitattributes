@@ -4,3 +4,8 @@
 *.jpeg binary
 *.docx binary
 *.zip binary
+apps/api/anvil_api/projects_scan.py whitespace=-blank-at-eof
+apps/web/tests/menu-routes.test.mjs whitespace=-blank-at-eof
+apps/web/tests/projects.test.mjs whitespace=-blank-at-eof
+docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md whitespace=-blank-at-eof
+tests/api/test_projects_scan_api.py whitespace=-blank-at-eof
