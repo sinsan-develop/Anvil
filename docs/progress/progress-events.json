@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2248,
+  "last_sequence": 2251,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103539,7 +103539,98 @@
       "execution_fencing_token": "f19a-task4-final-qa-report-execution-fence-epoch-92-535fae2e8a1b45eba04221a50f997a23",
       "reason": "F19A_TASK4_FINAL_QA_REPORT_CONTROL_COMPLETE_ACCEPTANCE_REVIEW_PENDING_F19A_NOT_ACCEPTED"
     }
+  },
+  {
+    "sequence": 2249,
+    "event_id": "evt_f19a_2249_acceptance_control_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_ACCEPTANCE_CONTROL",
+    "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+    "occurred_at": "2026-10-08T05:47:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "07513FE80A248233EDD9AE9FBD5FEE1DF693B4CBF6E51A820AE8D6FAAE7A1D1A",
+    "details": {
+      "work_instruction_id": "WI-F19A-ACCEPTANCE-CONTROL-20261008-001",
+      "work_instruction_path": "docs/work_orders/F-19A_ACCEPTANCE_CONTROL_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "EF2532C4B9D9E2F6621CCA76973DA289F3427AB0647A7318234BA7AF79108C0C",
+      "approval_path": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"],
+      "product_write_scope": [],
+      "predecessor_sequence": 2248,
+      "predecessor_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44"
+    }
+  },
+  {
+    "sequence": 2250,
+    "event_id": "evt_f19a_2250_acceptance_control_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_ACCEPTANCE_CONTROL",
+    "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+    "occurred_at": "2026-10-08T05:47:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "0D69A82D45C4C131E5BEE5A582AA318BF433F5290E85759AD4956E2974F27178",
+    "details": {
+      "lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T05:47:00+00:00",
+      "expires_at": "2026-10-09T05:47:00+00:00",
+      "lease_epoch": 93,
+      "fencing_token": "f19a-acceptance-control-execution-fence-epoch-93-2fec8554da064b0a9e9b44931d4a133a",
+      "execution_fencing_token": "f19a-acceptance-control-execution-fence-epoch-93-2fec8554da064b0a9e9b44931d4a133a",
+      "baseline_git_commit": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
+      "dispatch_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+    }
+  },
+  {
+    "sequence": 2251,
+    "event_id": "evt_f19a_2251_acceptance_control_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_ACCEPTANCE_CONTROL",
+    "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+    "occurred_at": "2026-10-08T05:47:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "D1B5BAD4691C933F57A2425EE2FF125D94E3B17BD27667D7D5F592E8E3BEE122",
+    "details": {
+      "lease_id": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
+      "worker_lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/ACCEPTANCE-CONTROL",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T05:47:00+00:00",
+      "expires_at": "2026-10-09T05:47:00+00:00",
+      "lease_epoch": 93,
+      "fencing_token": "f19a-acceptance-control-write-fence-epoch-93-f5f569ab920640c2bf20de1d6a00eeed",
+      "write_fencing_token": "f19a-acceptance-control-write-fence-epoch-93-f5f569ab920640c2bf20de1d6a00eeed",
+      "execution_fencing_token": "f19a-acceptance-control-execution-fence-epoch-93-2fec8554da064b0a9e9b44931d4a133a",
+      "baseline_git_commit": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
+      "dispatch_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"],
+      "product_write_scope": [],
+      "write_epoch": 93
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2248_task4_final_qa_report_control_worker_lease_revoked"
+  "last_event_id": "evt_f19a_2251_acceptance_control_write_lease_issued"
 }

@@ -1,4 +1,6 @@
-# F-19A Task4 최종 QA 보고 통제 successor handoff
+# F-19A 독립 수락 통제 successor handoff
+
+epoch93 수락 통제 시작(Main, 2026-10-08): F-19A Task4 종료 `9c6ab5dc17927fcbae6638718e9219fd1b208d44` local/private 동일·clean·G-05 seq2248 PASS와 독립 Tester AV-OPS-026/AV-SAFE-034 PASS·실제 WSL-server PG15/OIDC/HTTPS/Chromium·10테이블 복원·전용 잔여0을 확인했다. 승인 조건은 충족하나 canonical `ACCEPTED` 투영 전 상태는 NOT_ACCEPTED다. WI `EF2532C4B9D9E2F6621CCA76973DA289F3427AB0647A7318234BA7AF79108C0C`를 seq2249 WI→2250 worker→2251 write, 24시간 분리 token·Developer 통제2/제품0에 결박했다. A docs-only private/clean 전 코드 write 금지. 역사 R48 authority2 FAIL은 전체 GREEN이 아니며 main 병합 보류, U-01 write/새 branch 금지, Release DEFER·Production NOT_EXECUTED다.
 
 epoch92 제어 종료 후보(Main, 2026-10-08): C `749c7b759417a25f22131bc15203c7b9146dd270`와 활성 B `27df4b79fe7e49d74aad616cba08d1eab5ee4ded`가 local/private 동일·clean이고 G-05 seq2246 PASS다. Event 원문 seq1~2246을 보존한 채 seq2247 write→2248 worker를 순차 회수하여 활성 token을 null, 완료 lease를 REVOKED로 투영했다. 이 종료 문서의 G-05·private 게시·clean 전 F-19A 수락이나 U-01 write를 열지 않는다. 인접 회귀의 역사 R48 authority2 FAIL, 물리 TCP 단절·ACK COMMIT 응답 소실은 미해결/미검증으로 남기며 F-19A NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
 
@@ -86,17 +88,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2248,
-  "last_event_id": "evt_f19a_2248_task4_final_qa_report_control_worker_lease_revoked",
+  "event_sequence": 2251,
+  "last_event_id": "evt_f19a_2251_acceptance_control_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
+  "write_lease": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_ACCEPTANCE_REVIEW_PENDING",
-  "repository_head": "749c7b759417a25f22131bc15203c7b9146dd270",
+  "next_safe_action": "F19A_ACCEPTANCE_CONTROL_ONLY",
+  "repository_head": "9c6ab5dc17927fcbae6638718e9219fd1b208d44",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
