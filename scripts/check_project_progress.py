@@ -72321,12 +72321,14 @@ def _validate_u01_postmerge_control_active(bundle, *, event_raw=None, now=None,
             errors.append("U01_POSTMERGE_CHECKPOINT_INVALID")
         expected = deepcopy(base)
         if checkpoint is not None:
-            ready = "U01_POSTMERGE_CONTROL_CHECKPOINTED_CLOSE_READY"
-            action = "U01_POSTMERGE_CONTROL_CLOSE_ONLY"
+            ready = "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY"
+            action = "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY"
             expected["u01_postmerge_control_binding"].update(status=ready,
-                next_safe_action=action, control_checkpoint=checkpoint)
+                next_safe_action=action, control_checkpoint=checkpoint,
+                adjacent_regression="187_PASS_38_FAIL_EXIT1",
+                rework_reason="HISTORICAL_GIT_FIXTURE_POSTMERGE_OBSERVATION_MISMATCH")
             expected["next_safe_action"] = expected["runtime_next_action"] = action
-            expected["active_work_instruction"]["result_status"] = "U01_POSTMERGE_CONTROL_CLOSE_READY"
+            expected["active_work_instruction"]["result_status"] = "U01_POSTMERGE_CONTROL_REWORK_CLOSE_READY"
             expected["active_work_instruction"]["package_status"] = ready
             expected["next_work_package"]["status"] = ready
             expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
@@ -72339,7 +72341,7 @@ def _validate_u01_postmerge_control_active(bundle, *, event_raw=None, now=None,
         handoff = bundle["handoff"]
         expected_handoff = deepcopy(extract_handoff_summary(published[paths[2]].decode("utf-8")))
         if checkpoint is not None:
-            expected_handoff["next_safe_action"] = "U01_POSTMERGE_CONTROL_CLOSE_ONLY"
+            expected_handoff["next_safe_action"] = "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY"
             expected_handoff["repository_head"] = checkpoint
         if handoff != expected_handoff:
             errors.append("U01_POSTMERGE_HANDOFF_INVALID")
@@ -72487,9 +72489,9 @@ def _validate_u01_postmerge_control_closed(bundle, *, event_raw=None, now=None,
     paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
              "docs/progress/BUILD_HANDOFF.md",
              "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
-    status = "U01_POSTMERGE_CONTROL_CLOSED_PUBLIC_API_APPROVAL_PENDING"
-    action = "U01_PUBLIC_API_CONTRACT_APPROVAL_PENDING"
-    reason = "U01_POSTMERGE_CONTROL_COMPLETE_PUBLIC_API_APPROVAL_PENDING"
+    status = "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING"
+    action = "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING"
+    reason = "U01_POSTMERGE_CONTROL_NON_GREEN_HISTORICAL_FIXTURE_REWORK_PENDING"
     errors = []
     try:
         if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
@@ -72558,7 +72560,11 @@ def _validate_u01_postmerge_control_closed(bundle, *, event_raw=None, now=None,
         expected_repo = {**active_progress["repository"],
             "projection_mode": "U01_POSTMERGE_CONTROL_CLOSED", "head_relation": status,
             "worktree_status": status}
+        expected_instruction = {**active_progress["active_work_instruction"],
+            "result_status": "INCOMPLETE_HISTORICAL_FIXTURE_REWORK_REQUIRED",
+            "package_status": status}
         if (binding != expected_binding or progress.get("repository") != expected_repo
+                or progress.get("active_work_instruction") != expected_instruction
                 or progress.get("snapshot_id") != "snapshot-u01-postmerge-control-close-seq2274"
                 or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
                 or progress.get("event_sequence") != 2274
@@ -72572,7 +72578,8 @@ def _validate_u01_postmerge_control_closed(bundle, *, event_raw=None, now=None,
                 or "F-19A" not in progress.get("completed_packages", [])
                 or progress.get("scope_revision_binding", {}).get("release_decision") != "DEFER"):
             errors.append("U01_POSTMERGE_CLOSE_INVALID")
-        changed = {"active_agent", "completed_u01_postmerge_control_write_lease",
+        changed = {"active_agent", "active_work_instruction",
+            "completed_u01_postmerge_control_write_lease",
             "completed_u01_postmerge_control_worker_lease", "event_sequence",
             "u01_postmerge_control_binding", "last_event_id", "next_safe_action",
             "next_work_package", "registry_refs", "repository", "runtime_next_action",

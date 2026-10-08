@@ -106,12 +106,14 @@ class U01PostmergeControlTests(unittest.TestCase):
         bundle, archive = archived_a()
         progress = bundle["progress"]
         checkpoint = "c" * 40
-        status = "U01_POSTMERGE_CONTROL_CHECKPOINTED_CLOSE_READY"
-        action = "U01_POSTMERGE_CONTROL_CLOSE_ONLY"
+        status = "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY"
+        action = "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY"
         progress["u01_postmerge_control_binding"].update(status=status,
-            next_safe_action=action, control_checkpoint=checkpoint)
+            next_safe_action=action, control_checkpoint=checkpoint,
+            adjacent_regression="187_PASS_38_FAIL_EXIT1",
+            rework_reason="HISTORICAL_GIT_FIXTURE_POSTMERGE_OBSERVATION_MISMATCH")
         progress["next_safe_action"] = progress["runtime_next_action"] = action
-        progress["active_work_instruction"].update(result_status="U01_POSTMERGE_CONTROL_CLOSE_READY",
+        progress["active_work_instruction"].update(result_status="U01_POSTMERGE_CONTROL_REWORK_CLOSE_READY",
             package_status=status)
         progress["next_work_package"]["status"] = status
         progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
@@ -150,6 +152,12 @@ class U01PostmergeControlTests(unittest.TestCase):
                 product_write_scope=["apps/web/src/console/App.tsx"])),
             ("vertical_acceptance", lambda b: b["progress"]["u01_postmerge_control_binding"].update(
                 vertical_acceptance="ACCEPTED")),
+            ("fake_green", lambda b: b["progress"]["u01_postmerge_control_binding"].update(
+                adjacent_regression="225_PASS_0_FAIL_EXIT0")),
+            ("missing_rework_reason", lambda b: b["progress"]["u01_postmerge_control_binding"].pop(
+                "rework_reason")),
+            ("approval_action", lambda b: b["progress"].update(
+                next_safe_action="U01_PUBLIC_API_CONTRACT_APPROVAL_PENDING")),
         ):
             with self.subTest(name=name):
                 forged = deepcopy(bundle)
@@ -232,7 +240,7 @@ class U01PostmergeControlTests(unittest.TestCase):
         progress, stream = bundle["progress"], bundle["events"]
         worker, write = deepcopy(progress["worker_lease"]), deepcopy(progress["write_lease"])
         at = (datetime.fromisoformat(worker["issued_at"]) + timedelta(minutes=5)).isoformat()
-        reason = "U01_POSTMERGE_CONTROL_COMPLETE_PUBLIC_API_APPROVAL_PENDING"
+        reason = "U01_POSTMERGE_CONTROL_NON_GREEN_HISTORICAL_FIXTURE_REWORK_PENDING"
         for sequence, kind, event_id, details in (
             (2273, "WRITE_LEASE_REVOKED", "evt_u01_2273_postmerge_control_write_lease_revoked",
              {"lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
@@ -267,10 +275,13 @@ class U01PostmergeControlTests(unittest.TestCase):
             **write, "status": "REVOKED", "revoked_at": at}
         progress["completed_u01_postmerge_control_worker_lease"] = {
             **worker, "status": "REVOKED", "revoked_at": at}
-        status = "U01_POSTMERGE_CONTROL_CLOSED_PUBLIC_API_APPROVAL_PENDING"
-        action = "U01_PUBLIC_API_CONTRACT_APPROVAL_PENDING"
+        status = "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING"
+        action = "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING"
         progress["u01_postmerge_control_binding"].update(status=status, next_safe_action=action,
             active_projection_checkpoint="e" * 40, event_sequence=2274)
+        progress["active_work_instruction"].update(
+            result_status="INCOMPLETE_HISTORICAL_FIXTURE_REWORK_REQUIRED",
+            package_status=status)
         progress.update(active_agent=None, updated_at=at, next_safe_action=action,
             runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
             snapshot_id="snapshot-u01-postmerge-control-close-seq2274")
@@ -315,6 +326,10 @@ class U01PostmergeControlTests(unittest.TestCase):
                 product_write_scope=["apps/web/src/console/App.tsx"])),
             ("missing_revoke", lambda b: b["progress"].update(
                 completed_u01_postmerge_control_write_lease=None)),
+            ("fake_green", lambda b: b["progress"]["u01_postmerge_control_binding"].update(
+                adjacent_regression="225_PASS_0_FAIL_EXIT0")),
+            ("accepted_wi", lambda b: b["progress"]["active_work_instruction"].update(
+                result_status="ACCEPTED")),
             ("digest", lambda b: b["detached_digest"].update(algorithm="MD5")),
         ):
             with self.subTest(name=name):
