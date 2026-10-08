@@ -1,5 +1,7 @@
 # F-19A main sync 통제 successor handoff
 
+epoch95 종료 투영(Main, 2026-10-08): B `a984d616ab1c1d8fdc21bb3cfb9313c9411649ae` local/private 동일·clean, G-05 seq2262 PASS 뒤 Event seq1~2262 원문을 보존하고 seq2263 write→2264 worker lease를 회수했다. 활성 token null, 완료 lease REVOKED다. Broker `git diff --check origin/main...HEAD`에서 역사적 EOF 공백 5경로가 걸려 실제 main merge/PR은 아직 미실행이다. 다섯 파일의 바이트와 고정 증거 해시는 보존하는 경로별 비의미 whitespace 통제를 후속 epoch에서 검증한 뒤 정확 main 병합을 진행한다. U-01 제품 write 잠금, F-19A 로컬·WSL 범위 수락, Release DEFER·Production NOT_EXECUTED 유지. 이 종료 후보의 private/clean/G-05 전 후속 write 금지.
+
 epoch95 C 체크포인트(Main, 2026-10-08): Developer 통제 exact2 SHA checker `C7A322412DF7C0726E810F629F671976083939A4EEFE0BCA4BED886D46FA174F`/test `C43C7B53881FB530C645125CFD13F72529EAD776C82E9C06E34900BFDC9EFE7D`를 C `66ccef2e058df5bc6d1981ace23bc9d1a8281d8e`로 local/private 동일 게시했다. 최종 집중21 PASS(167.42초), 인접5 206 PASS(1296.88초), 실제 G-05 seq2262 PASS, diff0, `.r48-history-*` 잔여0, 독립 리뷰 C0/I0/M0다. Main도 코드 SHA와 G-05 seq2262 PASS를 재확인했다. Ruff 전체 기존 진단4845 exit1/이번 변경 줄 신규0. PR 후 branch 삭제 상태의 merged-main smoke는 합성 RED→GREEN 및 독립 검토만 완료했고 실제 PR/P 미실행이다. 이 B 문서의 clean/private/G-05와 seq2263~2264 회수 전에는 실제 merge/PR/U-01 제품 write 금지. F-19A 수락, Release DEFER·Production NOT_EXECUTED 유지.
 
 epoch95 시작(Main, 2026-10-08): epoch94 seq2259 종료 `5aafbafd371137ac94fbbe3543f9ec6311b07eda` local/private 동일·clean·G-05 PASS에서, private main `462c2e5b27823de2c1184f56f0fa9908a2cea328`가 branch 비조상인 과거 PR #38 zero-tree merge임을 확인했다. Web typecheck/lint/build exit0, 콘솔 86 PASS; build 생성 임시 3파일은 정확 확인·제거, 재생성 가능·잔여0이다. 비제품 WI `CBFAD5A0FB85739BB69E098D50FEA0C2C50AF2A7F8465A20D17A886EA2B9249D`로 Event seq2260 WI→2261 worker→2262 write를 발급하고 epoch95 분리 24시간 token·Developer 통제 정확2/제품0을 결박한다. A docs-only private/clean 전 Developer code write 금지. 기존 F-19A 수락/U-01 잠금, F-20 미수락, Release DEFER·Production NOT_EXECUTED 유지. 새 route 전 G-05 RED는 PASS가 아니다. 신규 branch/main 병합/제품·WSL write 금지.
@@ -108,16 +110,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2262,
-  "last_event_id": "evt_f19a_2262_integration_main_sync_write_lease_issued",
+  "event_sequence": 2264,
+  "last_event_id": "evt_f19a_2264_integration_main_sync_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": "developer-primary-f19a-pair-grant",
-  "worker_lease": {"lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"ACTIVE","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"]},
-  "write_lease": {"lease_id":"write-lease-f19a-integration-main-sync-bb4da003b3794304b37b768b2a98db10","worker_lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"ACTIVE","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","write_fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":95},
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_INTEGRATION_MAIN_SYNC_CLOSE_ONLY",
+  "next_safe_action": "F19A_INTEGRATION_MAIN_SYNC_EXACT_MERGE_PENDING",
   "repository_head": "66ccef2e058df5bc6d1981ace23bc9d1a8281d8e",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
