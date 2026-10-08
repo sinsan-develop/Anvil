@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-integration-r48-history-start-seq2257",
+  "snapshot_id": "snapshot-f19a-integration-r48-history-checkpoint-seq2257",
   "event_sequence": 2257,
   "updated_at": "2026-10-08T07:15:09+00:00",
   "last_event_id": "evt_f19a_2257_integration_r48_history_write_lease_issued",
@@ -807,7 +807,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_INTEGRATION_R48_HISTORY_CONTROL_ONLY",
+  "next_safe_action": "F19A_INTEGRATION_R48_HISTORY_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -918,13 +918,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
+    "local_head": "2a81972ad1d67d15ec19dc25bab657a7845fe4d1",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
+    "remote_head": "2a81972ad1d67d15ec19dc25bab657a7845fe4d1",
     "projection_mode": "F19A_INTEGRATION_R48_HISTORY_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_ACTIVE",
+    "head_relation": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1358,7 +1358,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_ACTIVE",
+    "worktree_status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1524,8 +1524,8 @@
     "path": "docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_WORK_INSTRUCTION.md",
     "sha256": "75CB80A5E13F15E5DAB89A1BA9C52E5637113E0E3E7A4BE1573584A523E1EF9C",
     "revision": 1,
-    "result_status": "F19A_INTEGRATION_R48_HISTORY_ACTIVE",
-    "package_status": "F19A_INTEGRATION_R48_HISTORY_ACTIVE",
+    "result_status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "package_status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1686,7 +1686,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_ACTIVE"
+    "status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -2078,8 +2078,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "4B128DCF27A5B72D7FC04DBA1731119E2D50FCCE6191BC46C1ACF6A08FACB3B1",
-  "runtime_next_action": "F19A_INTEGRATION_R48_HISTORY_CONTROL_ONLY",
+  "snapshot_hash": "C231370A5A2904F3FA81608FA5AC847EBCFEAFB7AAC093A2F85F58B4F4CC1B35",
+  "runtime_next_action": "F19A_INTEGRATION_R48_HISTORY_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23592,7 +23592,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_integration_r48_history_binding": {
-    "status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_ACTIVE",
+    "status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2254,
     "predecessor_head": "c9c0c415e6a7a31b2996dd26cb80c8733cafc103",
@@ -23608,7 +23608,8 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2257,
-    "next_safe_action": "F19A_INTEGRATION_R48_HISTORY_CONTROL_ONLY"
+    "next_safe_action": "F19A_INTEGRATION_R48_HISTORY_CLOSE_ONLY",
+    "control_checkpoint": "2a81972ad1d67d15ec19dc25bab657a7845fe4d1"
   },
   "f19a_acceptance_control_binding": {
     "status": "F19A_ACCEPTED_INTEGRATION_GATE_PENDING",
