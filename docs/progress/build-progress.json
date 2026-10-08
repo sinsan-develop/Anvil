@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-scoped-dashboard-control-start-seq2282",
+  "snapshot_id": "snapshot-u01-scoped-dashboard-control-seq2282",
   "event_sequence": 2282,
-  "updated_at": "2026-10-08T17:26:46+00:00",
+  "updated_at": "2026-10-08T21:20:51+00:00",
   "last_event_id": "evt_u01_2282_scoped_dashboard_control_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -879,7 +879,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_REWORK_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -990,13 +990,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "72836ca629ac76d0c6276f9055f7e77aa5a1668a",
+    "local_head": "0c081f88a615ddd5630618ca247ecbe0937075bc",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "72836ca629ac76d0c6276f9055f7e77aa5a1668a",
+    "remote_head": "0c081f88a615ddd5630618ca247ecbe0937075bc",
     "projection_mode": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE",
+    "head_relation": "U01_SCOPED_DASHBOARD_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1430,7 +1430,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE",
+    "worktree_status": "U01_SCOPED_DASHBOARD_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1596,8 +1596,8 @@
     "path": "docs/work_orders/U-01_SCOPED_DASHBOARD_CONTROL_WORK_INSTRUCTION.md",
     "sha256": "C6AF8D9EE7AE62A74B5B3488AFC12F90061E0C102ED7077C0E1BA8754D632897",
     "revision": 1,
-    "result_status": "ACTIVE_CONTROL_ONLY",
-    "package_status": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE_PRODUCT_LOCKED",
+    "result_status": "U01_SCOPED_DASHBOARD_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
+    "package_status": "U01_SCOPED_DASHBOARD_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "HUMAN_APPROVED_SEMANTIC_PUBLIC_API_CONTRACT"
   },
@@ -1768,7 +1768,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE_PRODUCT_LOCKED"
+    "status": "U01_SCOPED_DASHBOARD_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2160,8 +2160,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "C2F6B0E0291858ACE2B2DEFEFED6DD0E1040D1431A81EFF1F4970FED173453D2",
-  "runtime_next_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
+  "snapshot_hash": "49D6D6D56964B938995718BEF74684DF129A339465385408A5040B16C9DA2BF2",
+  "runtime_next_action": "U01_SCOPED_DASHBOARD_CONTROL_REWORK_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23674,7 +23674,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "u01_scoped_dashboard_control_binding": {
-    "status": "A_DOCS_ONLY_PRODUCT_WRITE_LOCKED",
+    "status": "U01_SCOPED_DASHBOARD_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2279,
     "predecessor_head": "72836ca629ac76d0c6276f9055f7e77aa5a1668a",
@@ -23698,8 +23698,10 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_scoped_dashboard_control_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2282,
-    "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
+    "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_REWORK_CLOSE_ONLY",
     "a_docs_checkpoint": "35f564340272fa5b5eb5356a9cb115304dfaa339",
+    "control_checkpoint": "0c081f88a615ddd5630618ca247ecbe0937075bc",
+    "adjacent_regression": "235_PASS_1_FAIL_EXIT1",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "HUMAN_APPROVED_EXACT_PROPOSAL_B",
     "release_decision": "DEFER",
