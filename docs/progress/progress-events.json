@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2264,
+  "last_sequence": 2267,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103969,7 +103969,100 @@
       "execution_fencing_token": "f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8",
       "reason": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_COMPLETE_EXACT_MAIN_MERGE_PENDING"
     }
+  },
+  {
+    "sequence": 2265,
+    "event_id": "evt_f19a_2265_integration_whitespace_gate_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_WHITESPACE_GATE",
+    "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+    "occurred_at": "2026-10-08T10:25:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "273ACE45598C61C538B606B1DDF71244F0B2502C68C3437E307CA90C420B3248",
+    "details": {
+      "work_instruction_id": "WI-F19A-INTEGRATION-WHITESPACE-GATE-20261008-001",
+      "work_instruction_path": "docs/work_orders/F-19A_INTEGRATION_WHITESPACE_GATE_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "30CA354631E143397DE1DFC9E026A7D0F46360A38CC333E355B5F66DA23DC769",
+      "approval_path": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "developer_exact_paths": [".gitattributes", "scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
+      "product_write_scope": [],
+      "predecessor_sequence": 2264,
+      "predecessor_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+      "target_main": "462c2e5b27823de2c1184f56f0fa9908a2cea328"
+    }
+  },
+  {
+    "sequence": 2266,
+    "event_id": "evt_f19a_2266_integration_whitespace_gate_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_WHITESPACE_GATE",
+    "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+    "occurred_at": "2026-10-08T10:25:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "81A0C0534A1E1938D4D27CBE135AD0837CB01D672A38A4837193AD408AF120B0",
+    "details": {
+      "lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T10:25:19+00:00",
+      "expires_at": "2026-10-09T10:25:19+00:00",
+      "lease_epoch": 96,
+      "fencing_token": "f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a",
+      "execution_fencing_token": "f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a",
+      "baseline_git_commit": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+      "dispatch_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+      "path_scope": [".gitattributes", "scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"]
+    }
+  },
+  {
+    "sequence": 2267,
+    "event_id": "evt_f19a_2267_integration_whitespace_gate_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_WHITESPACE_GATE",
+    "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+    "occurred_at": "2026-10-08T10:25:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "2F20FDB2EA5C7BE447F7CD6DBE0662976BC4E834B8AB93C5B1CD6774D347BE1A",
+    "details": {
+      "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
+      "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T10:25:19+00:00",
+      "expires_at": "2026-10-09T10:25:19+00:00",
+      "lease_epoch": 96,
+      "fencing_token": "f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a",
+      "write_fencing_token": "f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a",
+      "execution_fencing_token": "f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a",
+      "baseline_git_commit": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+      "dispatch_head": "3f0f51100d66283e39fca61ec944aabbe28467cf",
+      "path_scope": [".gitattributes", "scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
+      "product_write_scope": [],
+      "write_epoch": 96
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2264_integration_main_sync_worker_lease_revoked"
+  "last_event_id": "evt_f19a_2267_integration_whitespace_gate_write_lease_issued"
 }
