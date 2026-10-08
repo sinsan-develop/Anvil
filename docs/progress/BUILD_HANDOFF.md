@@ -1,4 +1,6 @@
-# F-19A Task 4 epoch89 종료 후 활성 테스트 fixture 종료 handoff
+# F-19A Task 4 DB 장애 유한 503 재작업 시작 handoff
+
+epoch91 시작 후보(Main, 2026-10-08): epoch90 종료·WSL-server 격리 QA 보고 checkpoint `64237af83babd15f9df876f1aaa2494c4453e1e8`은 local/private 동일·clean·G-05 seq2238 PASS다. 독립 Tester는 `AV-OPS-026`, `AV-SAFE-034`를 미수락했고, 격리 PG15 연결0 뒤 새 인증 브라우저의 목록 GET은 15초 무응답이었다. 정확한 DB 대기 함수는 미확정이다. 승인된 F-19A 계약의 유한 503 보완 WI SHA `28F81FF98513F13E0E722B0DB86048DDEAE2D7A5FF8FA7712C26BA35610EFA72`를 seq2239 발행하고 epoch91 seq2240 worker→2241 write를 24시간·분리 token·정확7로 투영했다. 통제 C/B clean/private·G-05 전 제품5 write 금지, 새 route 전 bootstrap G-05 RED는 PASS가 아니다. WSL-server 격리 QA 자원은 전량 제거·공유 Web/PG는 보존됐다. F-19A 미수락, U-01 제품 write·main 병합·다음 branch 금지, Release DEFER·Production NOT_EXECUTED.
 
 epoch90 lease 종료 후보(Main, 2026-10-08): 활성 B `18bf0d35db066f3096f9d611adce00c520ce249c` local/private 동일·clean·G-05 seq2236 PASS·집중7 PASS 뒤 원문 Event seq1~2236 보존, seq2237 write→2238 worker를 순차 회수했다. 완료 lease 둘 REVOKED·활성 null, 코드 C `5e15fc9f092a7bb2766974aa1206d4f21654ea0a`와 B의 결박을 보존한다. 이 종료 후보의 G-05·역사 전체·private 게시/clean 전 WSL-server 자원 생성 금지. 실제 PG15/OIDC/HTTPS/Chromium·독립 Tester 미실행, F-19A 미수락·Release DEFER·Production NOT_EXECUTED.
 
@@ -70,17 +72,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2238,
-  "last_event_id": "evt_f19a_2238_task4_epoch89_post_close_fixture_worker_lease_revoked",
+  "event_sequence": 2241,
+  "last_event_id": "evt_f19a_2241_task4_db_fault_bounded_503_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f",
+  "write_lease": "write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
-  "repository_head": "5e15fc9f092a7bb2766974aa1206d4f21654ea0a",
+  "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_CONTROL_ONLY",
+  "repository_head": "64237af83babd15f9df876f1aaa2494c4453e1e8",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }

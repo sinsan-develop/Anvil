@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2238,
+  "last_sequence": 2241,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103269,7 +103269,102 @@
       "execution_fencing_token": "f19a-task4-epoch89-post-close-fixture-execution-fence-epoch-90-e641b82283ae46f6b3f6f48fe337397f",
       "reason": "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
     }
+  },
+  {
+    "sequence": 2239,
+    "event_id": "evt_f19a_2239_task4_db_fault_bounded_503_instruction",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503",
+    "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+    "occurred_at": "2026-10-08T00:26:14+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "6F0CF0CC4FFDA9D483C108D5BB01C734F2FDD36745B4DEE33675345B638AE5B8",
+    "details": {
+      "path": "docs/work_orders/F-19A_TASK4_DB_FAULT_BOUNDED_503_WORK_INSTRUCTION.md",
+      "sha256": "28F81FF98513F13E0E722B0DB86048DDEAE2D7A5FF8FA7712C26BA35610EFA72",
+      "classification": "MAIN_INTERNAL_TASK4_DB_FAULT_BOUNDED_503_NON_SEMANTIC",
+      "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+      "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+      "spec_sha256": "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247",
+      "plan_sha256": "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E",
+      "baseline_git_commit": "64237af83babd15f9df876f1aaa2494c4453e1e8",
+      "predecessor_event_sequence": 2238,
+      "package_status": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_ACTIVE",
+      "accepted": false,
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py", "apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"],
+      "product_write_scope": ["apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"]
+    }
+  },
+  {
+    "sequence": 2240,
+    "event_id": "evt_f19a_2240_task4_db_fault_bounded_503_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503",
+    "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+    "occurred_at": "2026-10-08T00:26:14+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "39695FA648FC73F63FE146B8F69098A47EFB0763F37E2C5040646372E2B64B4A",
+    "details": {
+      "lease_id": "worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T00:26:14+00:00",
+      "expires_at": "2026-10-09T00:26:14+00:00",
+      "lease_epoch": 91,
+      "fencing_token": "f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f",
+      "execution_fencing_token": "f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f",
+      "baseline_git_commit": "64237af83babd15f9df876f1aaa2494c4453e1e8",
+      "dispatch_head": "64237af83babd15f9df876f1aaa2494c4453e1e8",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py", "apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"]
+    }
+  },
+  {
+    "sequence": 2241,
+    "event_id": "evt_f19a_2241_task4_db_fault_bounded_503_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503",
+    "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+    "occurred_at": "2026-10-08T00:26:14+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "FE4D83DF4F30B7399754E97910E5A2324472E43671A40EEF6455B5C7E4D041C4",
+    "details": {
+      "lease_id": "write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989",
+      "worker_lease_id": "worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f",
+      "actor_id": "developer-primary-f19a-pair-grant",
+      "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-08T00:26:14+00:00",
+      "expires_at": "2026-10-09T00:26:14+00:00",
+      "lease_epoch": 91,
+      "fencing_token": "f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989",
+      "write_fencing_token": "f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989",
+      "execution_fencing_token": "f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f",
+      "baseline_git_commit": "64237af83babd15f9df876f1aaa2494c4453e1e8",
+      "dispatch_head": "64237af83babd15f9df876f1aaa2494c4453e1e8",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py", "apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"],
+      "product_write_scope": ["apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"],
+      "write_epoch": 91
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2238_task4_epoch89_post_close_fixture_worker_lease_revoked"
+  "last_event_id": "evt_f19a_2241_task4_db_fault_bounded_503_write_lease_issued"
 }
