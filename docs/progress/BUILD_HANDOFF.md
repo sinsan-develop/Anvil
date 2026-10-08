@@ -120,17 +120,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2274,
-  "last_event_id": "evt_u01_2274_postmerge_control_worker_lease_revoked",
+  "event_sequence": 2277,
+  "last_event_id": "evt_u01_2277_historical_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-historical-git-fixture",
+  "worker_lease": "worker-lease-u01-historical-git-fixture-a9f8a18647d04c798c9dade7e37a2e35",
+  "write_lease": "write-lease-u01-historical-git-fixture-015da48c825e4ceaa39ef24f0a8b5b38",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING",
-  "repository_head": "f74078fa071c887eb48f205f32751fa7c1480461",
+  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CONTROL_ONLY",
+  "repository_head": "96bef3b3dbd8aa49b3f87d4e36bf591820fc5adf",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
