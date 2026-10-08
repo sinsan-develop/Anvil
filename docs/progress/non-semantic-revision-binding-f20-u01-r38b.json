@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_id": "R38B-NONSEMANTIC-BINDING-20261004-001",
+  "parent_registry_path": "docs/progress/non-semantic-revision-bindings.json",
+  "parent_registry_sha256": "D7007FCFE0AF9215BE9071A85526ED2E64AC25181916A017845A55231321E994",
+  "bindings": [
+    {
+      "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:F20-U01-R38B-FIXTURE-20261004-001",
+      "parent_baseline_id": "snapshot-f20-u01-r38-scoped-budget-source-start-seq2032",
+      "derived_baseline_id": "snapshot-f20-u01-r38b-budget-fixture-rework-start-seq2038",
+      "root_human_approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
+      "root_approval_subject_hash": "5224C01841AF429E5AEAD0B10978889570548F3DFC438E7379B90A3F96E804CF",
+      "artifact_id": "WI-F-20-U01-R38B-20261004-001",
+      "artifact_path": "docs/work_orders/F-20_U01_R38B_BUDGET_FIXTURE_REWORK_WORK_INSTRUCTION.md",
+      "old_hash": "01DCABA93C05AA49627B22046C16CB615B381307B63C3B3F87941C335779A960",
+      "new_hash": "7CC62EEEB1215784AF516A050B67F224842AF8396B03F427735467669B44B7DE",
+      "semantic_diff_classification": "NON_SEMANTIC",
+      "changed_clauses": ["R38 incomplete local SQLite host fixture budget source only"],
+      "impact": "Five existing local test fixtures and one result report; no product, public API, permission, schema, production or external cost change",
+      "rationale": "R38 related regression reproduced 16 fixture failures; explicit empty source is required only in mocked local hosts while production DB failures remain fail-closed",
+      "reconfirmed_actor": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+      "reconfirmed_at": "2026-10-04T08:31:18+09:00",
+      "root_approval_scope": "Local development to private Git to WSL-server exact-SHA test; ysna-server and Production excluded",
+      "derived_scope": [
+        "tests/observability/test_f20_u01_r17_run_host_binding.py",
+        "tests/observability/test_f20_u01_r36_agent_host_binding.py",
+        "tests/api/test_f20_u01_r9_oidc_queue_host.py",
+        "tests/api/test_f20_u01_r37_provider_host_binding.py",
+        "tests/integration/test_f20_u01_r37_provider_host_pg15.py",
+        "docs/04_test_reports/F-20_U01_R38B_BUDGET_FIXTURE_REWORK_RESULT.md"
+      ]
+    }
+  ]
+}

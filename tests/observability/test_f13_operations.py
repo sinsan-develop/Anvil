@@ -58,10 +58,28 @@ def sources():
 def test_missing_sources_remain_unknown_with_source_gaps():
     from packages.observability.projection import OperationsSources, project_operations
     result = project_operations(OperationsSources(), observed_at=NOW)
-    assert result["health"]["database"]["state"] == "UNKNOWN"
-    assert result["health"]["provider"]["state"] == "UNKNOWN"
-    assert result["health"]["backend"]["state"] == "UNKNOWN"
-    assert result["source_gaps"] == ["backend", "database", "deployment", "provider", "queue", "worker"]
+    assert set(result["health"]) == {
+        "database", "queue", "worker", "provider", "backend", "artifact_store"}
+    assert all(signal["state"] == "UNKNOWN" for signal in result["health"].values())
+    assert result["source_gaps"] == [
+        "artifact_store", "backend", "database", "deployment", "provider", "queue", "worker"]
+
+
+def test_artifact_store_signal_removes_only_its_gap_and_preserves_health_evidence():
+    from packages.observability.models import HealthSignal
+    from packages.observability.projection import OperationsSources, project_operations
+    signal = HealthSignal("artifact_store", "UNKNOWN", NOW, timedelta(minutes=10),
+                          2, HASH, "/operations/artifacts")
+    result = project_operations(OperationsSources(health_signals=(signal,)),
+                                observed_at=NOW + timedelta(minutes=1))
+    assert result["source_gaps"] == [
+        "backend", "database", "deployment", "provider", "queue", "worker"]
+    assert result["health"]["artifact_store"] == {
+        "state": "UNKNOWN", "observed_at": NOW.isoformat(),
+        "stale_after_seconds": 600, "last_check": NOW.isoformat(),
+        "error_count": 2, "detail_path": "/operations/artifacts", "evidence_ref": HASH}
+    assert all(result["health"][key]["state"] == "UNKNOWN" for key in
+               ("database", "queue", "worker", "provider", "backend"))
 
 
 def test_owner_projection_masks_tokens_and_exposes_queue_worker_budget_state():
@@ -138,6 +156,28 @@ def test_alert_detection_dedupes_and_ack_resolve_are_distinct_audited_transition
                                  clock=lambda: NOW + timedelta(minutes=6))
     assert restored.alerts()[0]["status"] == "resolved"
     assert restored.audit() == service.audit()
+
+
+def test_public_critical_ack_appends_once_and_replay_conflicts():
+    from packages.observability.service import OperationsService, OperationsError
+    repository = RecordingRepository()
+    service = OperationsService("project-1", "env-1", sources(), repository=repository,
+                                clock=lambda: NOW + timedelta(minutes=6))
+    service.detect()
+    alert = next(row for row in service.alerts() if row["level"] == "critical")
+    before = len(service.audit())
+    result = service.acknowledge_critical(alert["alert_id"], actor_id="operator",
+        expected_sequence=alert["sequence"], evidence_hash=alert["evidence_hash"],
+        receipt="ack:unique-1")
+    assert result["ack_sequence"] == before + 1
+    assert result["receipt"] == "ack:unique-1"
+    assert service.audit()[-1]["evidence_hash"] == alert["evidence_hash"]
+    assert service.audit()[-1]["approval_id"] == "ack:unique-1"
+    with pytest.raises(OperationsError, match="ACK_CONFLICT"):
+        service.acknowledge_critical(alert["alert_id"], actor_id="operator",
+            expected_sequence=alert["sequence"], evidence_hash=alert["evidence_hash"],
+            receipt="ack:unique-2")
+    assert len(service.audit()) == before + 1
 
 
 def test_forecast_and_unknown_usage_never_become_zero_cost_success():

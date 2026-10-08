@@ -151,6 +151,58 @@ def test_worker_explicit_oidc_mode_requires_0019_without_changing_f15_default():
     }
 
 
+def test_worker_oidc_accepts_exact_0020_without_relaxing_other_modes_or_heads():
+    from apps.worker.anvil_worker.main import probe_worker_database
+
+    assert probe_worker_database(_Engine("0020_f19a_pair_grants"), auth_mode="OIDC") == {
+        "component": "worker_process", "status": "ready", "migration_head": "0020_f19a_pair_grants",
+    }
+    for mode in (None, "COOKIE", "WSL_ACCEPTANCE"):
+        assert probe_worker_database(_Engine("0020_f19a_pair_grants"), auth_mode=mode) == {
+            "component": "worker_process", "status": "not_ready", "reason": "migration_head_mismatch",
+        }
+        assert probe_worker_database(_Engine("0016_operations_recovery"), auth_mode=mode)["status"] == "ready"
+    for head in ("0018_oidc_principals", "0021_unknown", "", None,
+                 ["0019_oidc_sessions", "0020_f19a_pair_grants"]):
+        assert probe_worker_database(_Engine(head), auth_mode="OIDC")["status"] == "not_ready"
+
+
+def test_worker_oidc_0020_is_checked_at_start_and_on_periodic_probe(monkeypatch, capsys):
+    from apps.worker.anvil_worker import main as worker
+
+    class DisposableEngine(_Engine):
+        disposed = False
+
+        def dispose(self):
+            self.disposed = True
+
+    class TwoTicks:
+        count = 0
+
+        def set(self):
+            pass
+
+        def wait(self, _):
+            self.count += 1
+            return self.count >= 2
+
+    engine = DisposableEngine("0020_f19a_pair_grants")
+    monkeypatch.setenv("ANVIL_AUTH_MODE", "OIDC")
+    monkeypatch.setattr(worker.DatabaseSettings, "from_environment", lambda _: SimpleNamespace(dsn="synthetic"))
+    monkeypatch.setattr(worker, "create_engine", lambda *_args, **_kwargs: engine)
+    monkeypatch.setattr(worker, "threading", SimpleNamespace(Event=TwoTicks))
+    monkeypatch.setattr(worker, "signal", SimpleNamespace(SIGINT=2, SIGTERM=15, signal=lambda *_: None))
+    assert worker.main([]) == 0
+    assert capsys.readouterr().out.count('"migration_head": "0020_f19a_pair_grants"') == 1
+    assert engine.disposed
+
+    engine = DisposableEngine("0020_f19a_pair_grants")
+    monkeypatch.setattr(worker, "create_engine", lambda *_args, **_kwargs: engine)
+    assert worker.main(["--check"]) == 0
+    assert '"migration_head": "0020_f19a_pair_grants"' in capsys.readouterr().out
+    assert engine.disposed
+
+
 @pytest.mark.parametrize("auth_mode", ["", "oidc", "UNKNOWN", "OIDC,COOKIE"])
 def test_worker_unknown_auth_mode_fails_closed_without_database_probe(auth_mode):
     from apps.worker.anvil_worker.main import probe_worker_database

@@ -1,0 +1,3 @@
+# F-19A integration main-sync invocation
+
+`WI-F19A-INTEGRATION-MAIN-SYNC-20261008-001`의 정확한 통제 코드 2파일만 단일 Developer가 수정한다. WI SHA-256 `CBFAD5A0FB85739BB69E098D50FEA0C2C50AF2A7F8465A20D17A886EA2B9249D`. 출발 branch `codex/f18-wsl-ops`, 종료 seq2259 HEAD/private `5aafbafd` clean·G-05 PASS, 대상 private main `462c2e5b27823de2c1184f56f0fa9908a2cea328`이다. Main이 새 epoch95 dual lease와 A docs-only private clean을 확인한 후에만 코드를 쓴다. TDD RED→GREEN, 역사 Event/수락/잠금 불변과 단일 zero-tree 정상 merge만 허용하는 fail-closed 테스트, 실제 집중·인접 회귀·G-05·diff/Ruff 신규0을 수행한다. 제품/문서/WSL/다른 branch/commit/push/PR은 하지 않는다. 결과에는 시작 HEAD/status, 변경 diff·SHA, 명령·exit/결과, 미검증, 잔여, rollback을 보고한다.

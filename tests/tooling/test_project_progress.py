@@ -9,6 +9,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -19,9 +20,102 @@ import zlib
 from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def _current_u01_route_prefix(step_id: str) -> str:
+    match = re.fullmatch(r"(F20_U01_R[1-9][0-9]*[A-Z]?)_[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*", step_id)
+    if match is None:
+        raise ValueError("F20_U01_STEP_FORMAT_INVALID")
+    return match.group(1)
+
+
+def _u01_tamper_errors(step_id: str) -> tuple[str, str, str]:
+    """Public route contracts differ between legacy START and file-bound CLOSE."""
+    exact = {
+        "F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE": (
+            "F20_U01_R33_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R33_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R33_CLOSE_F-20_U01_R33_OPERATING_CARDS_SHELL_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R33T_HISTORY_SUITE_REPAIR_START": (
+            "F20_U01_R33T_PROJECTION_INVALID",
+            "F20_U01_R33T_PROJECTION_INVALID",
+            "F20_U01_R33T_F-20_U01_R33T_HISTORY_SUITE_REPAIR_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE": (
+            "F20_U01_R33T_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R33T_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R33T_CLOSE_F-20_U01_R33T_HISTORY_SUITE_REPAIR_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R34_SCOPED_RUN_CARDS_START": (
+            "F20_U01_R34_PROJECTION_INVALID",
+            "F20_U01_R34_PROJECTION_INVALID",
+            "F20_U01_R34_F-20_U01_R34_SCOPED_RUN_CARDS_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R34_SCOPED_RUN_CARDS_CLOSE": (
+            "F20_U01_R34_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R34_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R34_CLOSE_F-20_U01_R34_SCOPED_RUN_CARDS_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R35_HEALTH_ALERT_READ_START": (
+            "F20_U01_R35_PROJECTION_INVALID",
+            "F20_U01_R35_PROJECTION_INVALID",
+            "F20_U01_R35_F-20_U01_R35_HEALTH_ALERT_READ_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R35_HEALTH_ALERT_READ_CLOSE": (
+            "F20_U01_R35_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R35_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R35_CLOSE_F-20_U01_R35_HEALTH_ALERT_READ_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R36_SCOPED_AGENT_SUMMARY_START": (
+            "F20_U01_R36_PROJECTION_INVALID",
+            "F20_U01_R36_PROJECTION_INVALID",
+            "F20_U01_R36_F-20_U01_R36_SCOPED_AGENT_SUMMARY_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R36_SCOPED_AGENT_SUMMARY_CLOSE": (
+            "F20_U01_R36_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R36_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R36_CLOSE_F-20_U01_R36_SCOPED_AGENT_SUMMARY_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R37_PROVIDER_REGISTRATION_SOURCE_START": (
+            "F20_U01_R37_PROJECTION_INVALID",
+            "F20_U01_R37_PROJECTION_INVALID",
+            "F20_U01_R37_F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R37_PROVIDER_REGISTRATION_SOURCE_CLOSE": (
+            "F20_U01_R37_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R37_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R37_CLOSE_F-20_U01_R37_PROVIDER_REGISTRATION_SOURCE_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R38_SCOPED_BUDGET_SOURCE_START": (
+            "F20_U01_R38_PROJECTION_INVALID",
+            "F20_U01_R38_PROJECTION_INVALID",
+            "F20_U01_R38_F-20_U01_R38_SCOPED_BUDGET_SOURCE_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R38B_BUDGET_FIXTURE_REWORK_START": (
+            "F20_U01_R38B_PROJECTION_INVALID",
+            "F20_U01_R38B_PROJECTION_INVALID",
+            "F20_U01_R38B_F-20_U01_R38B_BUDGET_FIXTURE_REWORK_START_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R38B_BUDGET_FIXTURE_REWORK_CLOSE": (
+            "F20_U01_R38B_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R38B_CLOSE_PROJECTION_INVALID",
+            "F20_U01_R38B_CLOSE_F-20_U01_R38B_BUDGET_FIXTURE_REWORK_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+        "F20_U01_R42_KNOWN_MENU_NAVIGATION_CLOSE": (
+            "R42_CLOSE_TRANSITION_INVALID",
+            "R42_CLOSE_TRANSITION_INVALID",
+            "R42_CLOSE_F-20_U01_R42_KNOWN_MENU_NAVIGATION_CLOSE_MANIFEST.JSON_INVALID",
+        ),
+    }
+    if step_id in exact:
+        return exact[step_id]
+    prefix = _current_u01_route_prefix(step_id)
+    return tuple(f"{prefix}_{field}_INVALID" for field in ("PROGRESS", "DIGEST", "MANIFEST"))
 
 # seq496 intentionally kept its independent-review authority source outside Git.
 # Freeze the exact historical bytes here so detached historical tests do not
@@ -233,9 +327,57 @@ class C30CanonicalReconciliationTests(unittest.TestCase):
                         <= set(checker.c30_canonical_paths()))
         self.assertIn("docs/WORK_STATUS.md", checker.c30_canonical_paths())
         self.assertTrue(p["active_work_instruction"]["artifact_path"].endswith("_R2.md"))
+        # The historical C30 projection stays frozen. The live ledger's
+        # different raw bytes remain quarantined after verified recovery.
         actual = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
-        self.assertEqual(checker.raw_event_object_prefix_bytes(actual, 1334),
-                         checker.raw_event_object_prefix_bytes(generated[checker.BUNDLE_PATHS["events"]], 1334))
+        current_prefix = checker.raw_event_object_prefix_bytes(actual, 1334)
+        historical_prefix = checker.raw_event_object_prefix_bytes(
+            generated[checker.BUNDLE_PATHS["events"]], 1334
+        )
+        self.assertEqual(
+            (3994695, "BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B"),
+            (len(historical_prefix), hashlib.sha256(historical_prefix).hexdigest().upper()),
+        )
+        self.assertEqual(
+            (4022935, "50195E96FCD9EEA4357DEAD1554AC20ADF3AFF81E916376A10DCA9EA2958DDBC"),
+            (len(current_prefix), hashlib.sha256(current_prefix).hexdigest().upper()),
+        )
+        self.assertNotEqual(current_prefix, historical_prefix)
+        self.assertEqual(
+            3868706,
+            next(index for index, (old, new) in enumerate(zip(historical_prefix, current_prefix))
+                 if old != new),
+        )
+        live = checker.load_bundle(ROOT)
+        incident = live["events"]["events"][1763]
+        self.assertEqual((1764, "evt_f20_1764_defect_recorded", "DEFECT_RECORDED"),
+                         (incident["sequence"], incident["event_id"], incident["event_type"]))
+        self.assertEqual(
+            ("CRITICAL", True, "OPEN_BLOCKING", 3994695, 4022935, 3868706),
+            tuple(incident["details"][field] for field in (
+                "severity", "blocking", "status", "historical_prefix_bytes",
+                "current_prefix_bytes", "first_raw_difference_offset")),
+        )
+        self.assertEqual(
+            ("BDB3AA36358097923A9DD100E9DEE80B9905B09F590D49CC0F97DC557FBD119B",
+             "50195E96FCD9EEA4357DEAD1554AC20ADF3AFF81E916376A10DCA9EA2958DDBC",
+             "14c8c5743890c4a8a58686b9430144a55b1317e7",
+             list(range(1689, 1713)), [1714]),
+            tuple(incident["details"][field] for field in (
+                "historical_prefix_sha256", "current_prefix_sha256", "cause_commit",
+                "semantic_changed_sequences", "post_cause_changed_sequences")),
+        )
+        self.assertEqual(
+            ("RECOVERED_WITH_QUARANTINED_HISTORY", "CRITICAL", False,
+             "DEFER", "REWORK_IN_PROGRESS"),
+            (live["progress"]["f20_c30_event_integrity_incident"]["status"],
+             live["progress"]["f20_c30_event_integrity_incident"]["severity"],
+             live["progress"]["f20_c30_event_integrity_incident"]["blocking"],
+             live["progress"]["scope_revision_binding"]["release_decision"],
+             live["progress"]["f20_overall_status"]),
+        )
+        self.assertNotIn("F-20", live["progress"]["completed_packages"])
+        self.assertEqual([], checker.validate_bundle(live))
         events = json.loads(generated[checker.BUNDLE_PATHS["events"]])["events"]
         self.assertEqual(["HUMAN_OVERRIDE_TAKEOVER_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "LEASE_TAKEOVER",
                           "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
@@ -250,6 +392,44 @@ class C30CanonicalReconciliationTests(unittest.TestCase):
         self.assertEqual(approval["approval_id"], events[1337]["details"]["human_override_approval_id"])
         with self.assertRaisesRegex(ValueError, "C30_COMPLETION_EVIDENCE_INVALID"):
             checker.c30_canonical_projection_from_root(ROOT, completion={"accepted": True})
+
+    def test_live_c30_incident_rejects_forged_event_and_source(self):
+        checker = _load_checker_or_none()
+        from scripts import f20_rework_r5e_overlay as incident_overlay
+
+        raw = (ROOT / checker.BUNDLE_PATHS["events"]).read_bytes()
+        self.assertTrue(incident_overlay._incident_source(ROOT, raw))
+        bundle = checker.load_bundle(ROOT)
+        for mutation in ("missing", "forged"):
+            candidate = copy.deepcopy(bundle)
+            if mutation == "missing":
+                candidate["events"]["events"].pop(1763)
+            else:
+                candidate["events"]["events"][1763]["details"]["blocking"] = False
+            with self.subTest(event=mutation):
+                self.assertNotEqual([], checker.validate_bundle(candidate))
+
+        cause_path = f"{incident_overlay.DEFECT['cause_commit']}:{incident_overlay.EVENTS}"
+        original_git = incident_overlay._git
+
+        def missing_cause(root, *args):
+            if args == ("show", cause_path):
+                raise subprocess.CalledProcessError(128, ["git", *args])
+            return original_git(root, *args)
+
+        with mock.patch.object(incident_overlay, "_git", side_effect=missing_cause):
+            self.assertFalse(incident_overlay._incident_source(ROOT, raw))
+
+        def forged_cause(root, *args):
+            source = original_git(root, *args)
+            if args == ("show", cause_path):
+                return source.replace(b'"event_id":', b'"event_id" :', 1)
+            return source
+
+        with mock.patch.object(incident_overlay, "_git", side_effect=forged_cause):
+            self.assertFalse(incident_overlay._incident_source(ROOT, raw))
+        self.assertFalse(incident_overlay._incident_source(
+            ROOT, raw.replace(b'"event_id":', b'"event_id" :', 1)))
 
     def test_revision_is_bound_to_original_issued_instruction(self):
         checker = _load_checker_or_none()
@@ -1093,22 +1273,164 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(len(bundle["schema_catalog"]["schemas"]), 6)
 
     def test_detached_digest_binds_current_progress_and_handoff_into_manifest_target(self) -> None:
+        self._assert_u01_tamper_contract(ROOT)
+
+    @pytest.fixture
+    def _r33_close_tmp(self, tmp_path):
+        self.r33_close_tmp = tmp_path
+
+    @pytest.mark.usefixtures("_r33_close_tmp")
+    def test_r33_close_checkpoint_retains_exact_tamper_contract(self) -> None:
+        checkpoint = "9ed778f2ae4fad4a7c13d3ac9896e9f961e328c8"
+        root = self.r33_close_tmp / "repository"
+        self.assertTrue(root.is_relative_to(self.r33_close_tmp))
+        subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet",
+                        "--local", "--no-hardlinks", str(ROOT), str(root)], check=True)
+        subprocess.run(["git", "checkout", "--quiet", "-B", "codex/f18-wsl-ops", checkpoint],
+                       cwd=root, check=True)
+        subprocess.run(["git", "remote", "add", "development", str(ROOT)], cwd=root, check=True)
+        subprocess.run(["git", "update-ref", "refs/remotes/development/codex/f18-wsl-ops", checkpoint],
+                       cwd=root, check=True)
+        subprocess.run(["git", "branch", "--set-upstream-to=development/codex/f18-wsl-ops"],
+                       cwd=root, check=True, capture_output=True)
+        bundle = self.require_checker().load_bundle(root)
+        self.assertEqual(1998, bundle["progress"]["event_sequence"])
+        self.assertEqual("F20_U01_R33_OPERATING_CARDS_SHELL_CLOSE",
+                         bundle["progress"]["repository"]["projection_mode"])
+        self._assert_u01_tamper_contract(root)
+
+    def _assert_u01_tamper_contract(self, root: Path) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest_path = ROOT / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
+        bundle = checker.load_bundle(root)
+        manifest_path = root / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-        self.assertTrue(hasattr(checker, "validate_detached_progress_binding"))
-        self.assertTrue(hasattr(checker, "validate_manifest_progress_binding"))
+        # F-20 uses the append-only raw-byte binding, not the older
+        # canonical-JSON digest/manifest shape. The public validator must
+        # accept the real files and reject forged in-memory projections.
+        current_step = bundle["events"]["events"][-1]["step_id"]
+        current_mode = bundle["progress"]["repository"]["projection_mode"]
+        self.assertEqual(bundle["progress"]["event_sequence"], bundle["events"]["events"][-1]["sequence"])
+        self.assertEqual(current_step, current_mode)
+        self.assertEqual(current_step, manifest["projection_mode"])
+        progress_error, digest_error, manifest_error = _u01_tamper_errors(current_step)
+        self.assertFalse(manifest["accepted"])
+        if bundle["progress"]["event_sequence"] >= 2048:
+            self.assertEqual(
+                (2048, "EVENT_LEDGER_RECOVERY_VERIFIED"),
+                (bundle["events"]["events"][2047]["sequence"],
+                 bundle["events"]["events"][2047]["event_type"]),
+            )
+            expected_incident = ("RECOVERED_WITH_QUARANTINED_HISTORY", False)
+        else:
+            expected_incident = ("OPEN_BLOCKING", True)
+        self.assertEqual(expected_incident,
+                         (bundle["progress"]["f20_c30_event_integrity_incident"]["status"],
+                          bundle["progress"]["f20_c30_event_integrity_incident"]["blocking"]))
+        self.assertEqual("DEFER", bundle["progress"]["scope_revision_binding"]["release_decision"])
+        self.assertEqual([], checker.validate_bundle(bundle))
 
-        self.assertEqual(checker.validate_detached_progress_binding(bundle), [])
-        self.assertEqual(checker.validate_manifest_progress_binding(manifest, bundle), [])
+        forged_progress = copy.deepcopy(bundle)
+        forged_progress["progress"]["next_safe_action"] = "tampered after verification"
+        forged_progress["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged_progress["progress"])
+        self.assertIn(progress_error, checker.validate_bundle(forged_progress))
 
-        mutated = copy.deepcopy(bundle)
-        mutated["progress"]["next_safe_action"] = "tampered after verification"
-        mutated["handoff"]["next_safe_action"] = "tampered after verification"
-        mutated["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(mutated["progress"])
-        self.assertIn("DETACHED_DIGEST_MISMATCH", checker.validate_bundle(mutated))
+        forged_handoff = copy.deepcopy(bundle)
+        forged_handoff["handoff"]["next_safe_action"] = "tampered after verification"
+        self.assertIn("HANDOFF_NEXT_ACTION_MISMATCH", checker.validate_bundle(forged_handoff))
+
+        forged_digest = copy.deepcopy(bundle)
+        forged_digest["detached_digest"]["progress"]["file_sha256"] = "0" * 64
+        self.assertIn(digest_error, checker.validate_bundle(forged_digest))
+
+        forged_manifest = dict(manifest, accepted=True)
+        forged_manifest_raw = json.dumps(forged_manifest).encode("utf-8")
+        original_read_bytes = Path.read_bytes
+
+        def read_forged_manifest(path: Path) -> bytes:
+            return forged_manifest_raw if path == manifest_path else original_read_bytes(path)
+
+        with mock.patch.object(Path, "read_bytes", read_forged_manifest):
+            self.assertIn(manifest_error, checker.validate_bundle(bundle))
+
+    def test_current_u01_route_prefix_rejects_invalid_step_format(self) -> None:
+        self.assertEqual("F20_U01_R4", _current_u01_route_prefix("F20_U01_R4_OPERATIONS_ALERTS_START"))
+        for invalid in (
+            "F20_U01_CURRENT_PROJECTION_START",
+            "F20_U01_R4",
+            "F20_U02_R4_OPERATIONS_ALERTS_START",
+            "F20_U01_R4__START",
+        ):
+            with self.subTest(step_id=invalid), self.assertRaisesRegex(ValueError, "F20_U01_STEP_FORMAT_INVALID"):
+                _current_u01_route_prefix(invalid)
+
+    def test_f20_r5e_and_u01_history_remains_bound_to_git_blobs(self) -> None:
+        historical = (
+            (
+                "69bfeb0aed7ee239ff8f353a327d21994668e5e0",
+                "F20_R5E_AUDIT_INCIDENT_START",
+                (
+                    ("docs/progress/build-progress.json", "6401f82d36fcf8c49c3c3fe4a734b9f6b276abb4"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-r5e-start.json", "71a98ec9e3fba0d752fbdf9a5b44719ca47cd92f"),
+                    ("docs/evidence/manifests/F-20_R5E_AUDIT_INCIDENT_START_MANIFEST.json", "42acd3edc54460652aaa4be5a263a3efb79603b1"),
+                ),
+            ),
+            (
+                "6cd90bb9ac5b173991dceaa9fd00432bafa4ebdd",
+                "F20_U01_R1_READINESS_START",
+                (
+                    ("docs/progress/build-progress.json", "f027f154efe4a0be15899ebe681634351fb0c678"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-u01-r1-start.json", "ffaf9ed751535b797e60f914dbfb2cbdd78450de"),
+                    ("docs/evidence/manifests/F-20_U01_R1_READINESS_START_MANIFEST.json", "61f927f3f525d69aaa828ff7875cf332ed2128b7"),
+                ),
+            ),
+            (
+                "1126444733f2dabe0525d5e6be250b079ace1042",
+                "F20_U01_R1B_HISTORY_START",
+                (
+                    ("docs/progress/build-progress.json", "dc60ee5b4ab183a45ccb837c1ca0860acaf5edc2"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-u01-r1b-start.json", "a833830b0f7a4f4e199ad7a0951800b2d3a061e9"),
+                    ("docs/evidence/manifests/F-20_U01_R1B_HISTORY_START_MANIFEST.json", "4738af7b0a9d5e0f15cecca0cc01b05a6720297c"),
+                ),
+            ),
+            (
+                "214cd61740c84971a71b6e1178047eec40322d52",
+                "F20_U01_R2_PROVIDER_STATUS_START",
+                (
+                    ("docs/progress/build-progress.json", "76273188600e6167e830223c95f8f43e0a7df310"),
+                    ("docs/progress/progress-handoff-detached-digest-f20-u01-r2-start.json", "2c05a09566ddb10623d4b8804e6891e21618356d"),
+                    ("docs/evidence/manifests/F-20_U01_R2_PROVIDER_STATUS_START_MANIFEST.json", "018ece6cb861754d79c5e2512825fe0906a5cbda"),
+                ),
+            ),
+        )
+        for commit, mode, blobs in historical:
+            with self.subTest(commit=commit):
+                artifacts = {}
+                for path, expected_blob in blobs:
+                    raw = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)
+                    actual_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+                    self.assertEqual(expected_blob, actual_blob, path)
+                    artifacts[path] = json.loads(raw)
+                progress = artifacts["docs/progress/build-progress.json"]
+                self.assertEqual(mode, progress["repository"]["projection_mode"])
+                self.assertIn(progress["current_progress_evidence_ref"]["path"], artifacts)
+                manifest_path = progress["current_progress_evidence_ref"]["manifest_path"]
+                self.assertIn(manifest_path, artifacts)
+                self.assertFalse(artifacts[manifest_path]["accepted"])
+
+        historical_work = (
+            ("1126444733f2dabe0525d5e6be250b079ace1042", "docs/work_orders/F-20_U01_R1B_HISTORY_WORK_INSTRUCTION.md", "0124e614ad01cb11c8917488aba715a69875d859"),
+            ("1126444733f2dabe0525d5e6be250b079ace1042", "docs/work_orders/F-20_U01_R1B_HISTORY_INVOCATION.md", "e37f6704bb59492bce8eef1138e52c21ea771b76"),
+            ("edf0fcc5505e8a74bc48c93fa1b67641e4146492", "docs/04_test_reports/F-20_U01_R1B_HISTORY_RESULT.md", "e248054880aaa3ac116f11da953caeb92085f0e3"),
+            ("214cd61740c84971a71b6e1178047eec40322d52", "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_WORK_INSTRUCTION.md", "d432073760f9cecf7086b1d93ef916737e5e76fb"),
+            ("214cd61740c84971a71b6e1178047eec40322d52", "docs/work_orders/F-20_U01_R2_PROVIDER_STATUS_INVOCATION.md", "baa671537ff4cb34580d1a64a9b76011ab9e1104"),
+            ("da86090f72645c4c6ec7812618cbae5249bd8a69", "docs/04_test_reports/F-20_U01_R2_PROVIDER_STATUS_RESULT.md", "0dc43587caea6ca352a7d289efa7e7bec2616cdb"),
+        )
+        for commit, path, expected_blob in historical_work:
+            with self.subTest(commit=commit, path=path):
+                raw = subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=ROOT)
+                actual_blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+                self.assertEqual(expected_blob, actual_blob, path)
 
     def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
@@ -1148,7 +1470,6 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         mismatched = copy.deepcopy(bundle)
         mismatched["progress"]["valid_failure_count"] += 1
-        mismatched["handoff"]["valid_failure_count"] += 1
         mismatched["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(mismatched["progress"])
         self.assertIn("FAILURE_PROJECTION_MISMATCH", checker.validate_bundle(mismatched))
 
@@ -1214,8 +1535,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             "G05-DEF-006 RED: all-category event fixture is missing",
         )
         fixture = json.loads(ALL_EVENT_FIXTURE_PATH.read_text(encoding="utf-8"))
-        # Preserve the frozen G05 fixture and extend its in-memory standard
-        # category coverage with explicit payloads, never wildcard event types.
+        # The frozen G05 fixture belongs to its historical contract. Check that
+        # boundary separately before exercising later types against today's
+        # contract; neither history nor the current type set may silently drift.
+        generic_bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
+        historical_contract = generic_bundle["event_contract"]
+        historical_types = {event["event_type"] for event in fixture["events"]}
+        self.assertEqual(historical_types, set(historical_contract["event_types"]))
+        self.assertEqual(checker.validate_event_stream(fixture, historical_contract), [])
+
+        # Add only post-fixture types in memory, with explicit payloads and
+        # effects. The exact delta assertion below detects any new type without
+        # allowing a wildcard or rewriting the historical evidence.
         additions = (
             ("WORK_INSTRUCTION_REVISED", "nonsemantic_work_instruction_revision_recorded", {
                 "parent_work_instruction": {"path": "fixture/parent.md", "sha256": "A" * 64},
@@ -1233,6 +1564,42 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "approval_text_sha256": "D" * 64,
                 "approved_scope": "fixture takeover scope", "source": "FIXTURE",
             }),
+            ("WORK_INSTRUCTION_ISSUED", "work_instruction_issued", {}),
+            ("PHASE_GATE_COMPLETED", "phase_gate_completed_and_next_ready", {
+                "result_status": "ACCEPTED_PHASE_U_SCOPED_CONTRACT_QA",
+                "report": "fixture/phase-gate-report.md",
+                "next_action": "F-20_WORK_INSTRUCTION",
+            }),
+            ("PACKAGE_REVIEWED", "package_review_recorded", {}),
+            ("EVENT_LEDGER_GENERATION_STARTED", "begin_quarantined_generation_pending_independent_verification", {
+                "generation": "fixture-generation", "anchor_commit": "A" * 40,
+                "anchor_blob": "B" * 40, "anchor_sha256": "A" * 64,
+                "cutover_commit": "C" * 40, "cutover_blob": "D" * 40,
+                "cutover_sha256": "B" * 64, "predecessor_commit": "E" * 40,
+                "predecessor_events_sha256": "C" * 64,
+                "predecessor_event_prefix_sha256": "D" * 64,
+                "quarantined_event_sequences": [1], "audit_only_event_sequences": [2],
+                "preflight_manifest_path": "fixture/preflight.json",
+                "preflight_manifest_sha256": "E" * 64,
+                "accepted": False, "authority_active": False,
+            }),
+            ("EVENT_LEDGER_RECOVERY_VERIFIED", "activate_verified_generation_with_quarantined_history_only", {
+                "generation": "fixture-generation", "generation_start_event_id": "fx-049",
+                "generation_manifest_sha256": "F" * 64,
+                "independent_test_report_path": "fixture/recovery.md",
+                "independent_test_report_sha256": "1" * 64,
+                "independent_verdict": "PASS", "wsl_qa_commit": "F" * 40,
+                "wsl_evidence_commit": "1" * 40,
+                "quarantined_event_sequences": [1], "audit_only_event_sequences": [2],
+                "package_accepted": False, "release_decision": "DEFER",
+                "authority_active": True,
+                "verification_manifest_path": "fixture/verification.json",
+                "verification_manifest_sha256": "2" * 64,
+            }),
+        )
+        self.assertEqual(
+            {event_type for event_type, _, _ in additions},
+            set(bundle["event_contract"]["event_types"]) - historical_types,
         )
         for event_type, effect, details in additions:
             contract = bundle["event_contract"]["payload_contracts"][event_type]
@@ -1247,7 +1614,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             })
             fixture["last_sequence"] = sequence
 
-        for index in (-3, -2, -1):
+        for index in range(-len(additions), 0):
             for field in fixture["events"][index]["details"]:
                 mutated = copy.deepcopy(fixture)
                 del mutated["events"][index]["details"][field]
@@ -1264,7 +1631,6 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         # Exercise the generic payload/effect validator in its historical era;
         # C30's exact-tail guard is separately covered by its profile tests.
-        generic_bundle, _ = self._historical_bundle(checker, "ead1214e3f01e68e577c3163e1cf143ee5753490")
         empty_push = copy.deepcopy(generic_bundle)
         empty_push["events"]["events"].append(
             {
@@ -15671,7 +16037,8 @@ class C09StartProjectionTests(unittest.TestCase):
     def setUp(self):
         checkpoint = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
         paths = ["Anvil_설계서_v2.md", "Anvil_작업계획서_v1.md",
-                 "Anvil_통합검증매트릭스_v1.md", "Anvil_테스트계획서_v1.md"]
+                 "Anvil_통합검증매트릭스_v1.md", "Anvil_테스트계획서_v1.md",
+                 "docs/governance/ANVIL_OPERATING_RULES.md"]
         files = {path: subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=ROOT)
                  for path in paths}
         overlay = _historical_bytes_overlay(files)
@@ -15781,6 +16148,21 @@ class C09StartProjectionTests(unittest.TestCase):
         with mock.patch.object(Path, "read_bytes", corrupt):
             with self.assertRaisesRegex(ValueError, "C09_START_AUTHORITY_HASH_INVALID"):
                 checker.c09_start_projection_from_root(ROOT)
+
+    def test_seq798_historical_governance_missing_or_tampered_is_rejected(self):
+        checker = self._checker()
+        self.assertEqual(self.EXACT11, sorted(checker.c09_start_projection_from_root(ROOT)))
+        governance = "docs/governance/ANVIL_OPERATING_RULES.md"
+        historical = (ROOT / governance).read_bytes()
+        for bad_bytes in (b"", historical + b"\nforged governance"):
+            with self.subTest(size=len(bad_bytes)), _historical_bytes_overlay({governance: bad_bytes}):
+                for builder, error in (
+                    (checker.c09_start_projection_from_root, "C09_START_AUTHORITY_HASH_INVALID"),
+                    (checker.c09_r3_from_root, "C09_R3_AUTHORITY_HASH_INVALID"),
+                    (checker.c09_r4_from_root, "C09_R4_AUTHORITY_HASH_INVALID"),
+                ):
+                    with self.assertRaisesRegex(ValueError, error):
+                        builder(ROOT)
 
     def test_seq798_review_r1_stat021_requires_l5_and_rejects_downgrade(self):
         checker = self._checker()
@@ -16236,6 +16618,21 @@ class C09R4ControlTests(unittest.TestCase):
 class C09MainTakeoverControlTests(unittest.TestCase):
     BASE = "85d72196eaafe3e458f8aea7016df94f810df086"
 
+    def setUp(self):
+        C09StartProjectionTests.setUp(self)
+        checker = _load_checker_or_none()
+        quality = checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW
+        raw = subprocess.check_output(
+            ["git", "show", f"{checker.C09_MAIN_TAKEOVER_CONTROL_HEAD}:{quality}"], cwd=ROOT,
+        )
+        self.assertEqual(checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES, len(raw))
+        self.assertEqual(checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256,
+                         hashlib.sha256(raw).hexdigest().upper())
+        self.quality_review_raw = raw
+        overlay = _historical_bytes_overlay({quality: raw})
+        overlay.__enter__()
+        self.addCleanup(overlay.__exit__, None, None, None)
+
     def _checker(self):
         checker = _load_checker_or_none()
         self.assertIsNotNone(checker)
@@ -16442,6 +16839,23 @@ class C09MainTakeoverControlTests(unittest.TestCase):
              mock.patch.object(Path, "read_bytes", tampered):
             self.assertFalse(checker._c09_main_takeover_cached_check(ROOT))
 
+    def test_seq824_historical_quality_review_missing_or_forged_fails_closed(self):
+        checker = self._checker()
+        quality = checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW
+        original = Path.read_bytes
+
+        def missing(path):
+            if path == ROOT / quality:
+                raise FileNotFoundError(quality)
+            return original(path)
+
+        with mock.patch.object(Path, "read_bytes", missing):
+            with self.assertRaises(FileNotFoundError):
+                checker.c09_main_takeover_from_root(ROOT)
+        with _historical_bytes_overlay({quality: b"forged review\n"}):
+            with self.assertRaisesRegex(ValueError, "C09_MAIN_TAKEOVER_REVIEW_RAW_INVALID"):
+                checker.c09_main_takeover_from_root(ROOT)
+
     def test_seq824_projection_tamper_and_fresh_local_clone_ignore_independence(self):
         checker = self._checker(); artifacts = checker.c09_main_takeover_from_root(ROOT)
         bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_MAIN_TAKEOVER_P]),
@@ -16468,6 +16882,8 @@ class C09MainTakeoverControlTests(unittest.TestCase):
             clone = Path(temp) / "clone"
             subprocess.run(["git", "clone", "--no-local", str(ROOT), str(clone)], check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["git", "fetch", "--no-tags", str(ROOT), self.BASE], cwd=clone, check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             subprocess.run(["git", "checkout", "--detach", self.BASE], cwd=clone, check=True,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if (clone / ".superpowers").exists():
@@ -16476,7 +16892,10 @@ class C09MainTakeoverControlTests(unittest.TestCase):
                     checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW, "scripts/check_project_progress.py",
                     "tests/tooling/test_project_progress.py"]:
                 target = clone / relative; target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(ROOT / relative, target)
+                if relative == checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW:
+                    target.write_bytes(self.quality_review_raw)
+                else:
+                    shutil.copyfile(ROOT / relative, target)
             self.assertFalse((clone / ".superpowers").exists())
             self.assertEqual(14, len(checker.c09_main_takeover_from_root(clone)))
 
@@ -16577,10 +16996,19 @@ class C09MainTakeoverControlTests(unittest.TestCase):
 
 
 class C09FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        C09MainTakeoverControlTests.setUp(self)
+
     def _checker(self):
         checker = _load_checker_or_none()
         self.assertIsNotNone(checker)
         return checker
+
+    def test_seq829_forged_historical_quality_review_fails_closed(self):
+        checker = self._checker()
+        with _historical_bytes_overlay({checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW: b"forged review\n"}):
+            with self.assertRaisesRegex(ValueError, "C09_FINAL_SEQ824_CONTROL_MUTATED"):
+                checker.c09_final_acceptance_from_root(ROOT)
 
     def test_seq829_builder_appends_minimal_acceptance_and_binds_exact20(self):
         checker = self._checker()
@@ -20455,10 +20883,50 @@ class E08FinalAcceptanceControlTests(unittest.TestCase):
         self.assertIn('E08_FINAL_PROJECTION_INVALID',c.validate_e08_final(forged_bundle,manifest))
 
 
+E09_HISTORICAL_WI_COMMIT = '30ca8a2d5a8f856ee4d82ae4f47b47bc60109342'
+E09_HISTORICAL_WI_PATH = 'docs/work_orders/E-09_WORK_INSTRUCTION.md'
+E09_HISTORICAL_WI_SHA256 = '2DCA27CDB9DF351F62AA77FE0424711DB7E31AF2CD287C4239A8834B3B77B85D'
+
+
+def _e09_historical_wi_bytes():
+    raw = subprocess.check_output(
+        ['git', 'show', f'{E09_HISTORICAL_WI_COMMIT}:{E09_HISTORICAL_WI_PATH}'], cwd=ROOT,
+    )
+    if len(raw) != 5196 or hashlib.sha256(raw).hexdigest().upper() != E09_HISTORICAL_WI_SHA256:
+        raise ValueError('E09_HISTORICAL_WI_INVALID')
+    return raw
+
+
+def _e09_historical_wi_setup(case):
+    raw = _e09_historical_wi_bytes()
+    checker = case._checker()
+    case.assertEqual(E09_HISTORICAL_WI_PATH, checker.E09_WI)
+    case.assertEqual(E09_HISTORICAL_WI_SHA256, checker.E09_WI_HASH)
+    overlay = _historical_bytes_overlay({E09_HISTORICAL_WI_PATH: raw})
+    overlay.__enter__()
+    case.addCleanup(overlay.__exit__, None, None, None)
+
+
 class E09StartControlTests(unittest.TestCase):
+    def setUp(self):
+        _e09_historical_wi_setup(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e09_start',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_historical_wi_missing_git_blob_is_rejected(self):
+        with mock.patch.object(subprocess, 'check_output', side_effect=subprocess.CalledProcessError(128, 'git show')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                _e09_historical_wi_bytes()
+
+    def test_historical_wi_forged_git_blob_is_rejected(self):
+        forged=subprocess.check_output(
+            ['git', 'show', f'{E09_HISTORICAL_WI_COMMIT}:{E09_HISTORICAL_WI_PATH}'], cwd=ROOT,
+        )[:-1]
+        with mock.patch.object(subprocess, 'check_output', return_value=forged):
+            with self.assertRaisesRegex(ValueError, 'E09_HISTORICAL_WI_INVALID'):
+                _e09_historical_wi_bytes()
 
     def test_start_prefix_scope_and_dual_fence(self):
         c=self._checker();self.assertTrue(callable(getattr(c,'e09_start_from_root',None)),'E09 start missing')
@@ -20483,6 +20951,9 @@ class E09StartControlTests(unittest.TestCase):
 
 
 class E09FinalAcceptanceControlTests(unittest.TestCase):
+    def setUp(self):
+        _e09_historical_wi_setup(self)
+
     def _checker(self):
         spec=importlib.util.spec_from_file_location('e09_final',CHECKER_PATH)
         c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c

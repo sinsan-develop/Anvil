@@ -1,0 +1,9 @@
+{
+  "package_id": "U-04",
+  "status": "ACCEPTED_U04_LOCAL_WSL_CONTRACT_SCOPED",
+  "work_instruction": "docs/work_orders/U-04_RUNS_WORK_INSTRUCTION.md",
+  "invocation": "docs/work_orders/U-04_RUNS_INVOCATION.md",
+  "report": "docs/04_test_reports/U-04_RUNS_REPORT.md",
+  "tests": {"execution_queue_delegation": "77 passed, 1 skipped", "workbench_sse_contract": "10 passed"},
+  "unverified": ["WSL_LIVE_DB_QUEUE", "BROWSER_CLICK_NETWORK", "LIVE_WORKER", "PROVIDER", "HUMAN_APPROVAL", "PRODUCTION", "YSNA_SERVER"]
+}

@@ -55,6 +55,8 @@ services:
 
   oidc-issuer:
     image: "${ANVIL_F18_OIDC_ISSUER_IMAGE_REF:?verified QA issuer image ID required}"
+    environment:
+      ANVIL_F19A_QA_SUBJECT: ${ANVIL_F19A_QA_SUBJECT-synthetic-subject-1}
     networks: [internal]
     volumes:
       - type: bind

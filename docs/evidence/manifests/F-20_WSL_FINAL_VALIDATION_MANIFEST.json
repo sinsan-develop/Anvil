@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_id": "F20-WSL-FINAL-20260927-97adc5c",
+  "work_package_id": "F-20",
+  "target": {
+    "environment": "WSL-server",
+    "commit": "97adc5c",
+    "scope": "isolated runtime only",
+    "production": false,
+    "ysna_server": false
+  },
+  "decision": "COMPLETED_F20_WSL_SCOPED_DEFERRED_RELEASE",
+  "release_decision": "DEFER",
+  "evidence": {
+    "repository_scan": "success=true,status=SCANNED_READ_ONLY,errors=[],identical=true,elapsed_seconds=31.04",
+    "projects_scan": "200 READY,noWriteProof.identical=true,mutationAllowed=false",
+    "web": "Node22 typecheck+Vite build PASS; 11 menu routes same-origin; Projects READY; other planned menu screens honest UNAVAILABLE",
+    "runtime": "migration=0016_operations_recovery; health_live=200; readiness=200; worker=ready/running; provider_catalog=9 NOT_CONFIGURED",
+    "authorization": "unauthorized Operations session=403 PERMISSION_DENIED",
+    "backup": "sha256:5cb1ab958eaf5481971c778c456dc79594d8ad8ab35fcff9e14d56eb36e59cc0; bytes=186730",
+    "restore": "head=0016_operations_recovery; tables=123; select=PASS",
+    "rollback": "downgrade=0015_agent_team_owner; reapply=0016_operations_recovery",
+    "critical_alert_observation": "AUDIT_EVENTS=0; AUDIT_HEADS=0; CRITICAL_ALERT_EVENTS=0 in fresh isolated observation window",
+    "cleanup": "F20_FINAL_TEMP_RESIDUE_ZERO; F20_ALERT_TEMP_RESIDUE_ZERO; F20_FIX_TEMP_RESIDUE_ZERO"
+  },
+  "unverified": [
+    "PRODUCTION",
+    "YSNA_SERVER",
+    "USER_RELEASE_ACCEPTANCE",
+    "REAL_PROVIDER_CREDENTIAL_CALLS",
+    "LONG_TERM_MONITORING"
+  ],
+  "rollback": "No product rollback; temporary WSL resources removed.",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-f20-wsl-final.json",
+      "bytes": 762,
+      "sha256": "AB5E4A005CDEFBB2EF9C188D0C57A3D30EBEC747FB3A32058D0FCCC515BA2BD7"
+    }
+  ]
+}

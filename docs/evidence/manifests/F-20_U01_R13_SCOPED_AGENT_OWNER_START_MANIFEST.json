@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1870,
+  "accepted": false,
+  "projection_mode": "F20_U01_R13_SCOPED_AGENT_OWNER_START",
+  "previous_event_sequence": 1866,
+  "product_write_scope": [
+    "packages/persistence/operations_agent_owner_read.py",
+    "tests/persistence/test_f20_u01_agent_owner_read.py",
+    "docs/04_test_reports/F-20_U01_R13_SCOPED_AGENT_OWNER_RESULT.md"
+  ],
+  "predecessor_commit": "489d656b4715f4176b51539de89b0c09ddae3cf2",
+  "predecessor_events_sha256": "07993E950C2FD347AA4DE09D45BC1A99FD4A18B93EC2216A05133BD2A4C92AEE",
+  "plan_path": "docs/04_test_reports/F-20_U01_R13_SCOPED_AGENT_OWNER_PLAN.md",
+  "plan_sha256": "2341B482A9E144E90AD6C685EA323C93F185F81C28E44F3E262B78745AE2B0FC",
+  "work_instruction_sha256": "370050D738B120127D130E1A5291CEC60690B72895DA4C38A55CB09BE09EE672",
+  "invocation_sha256": "05BA68B7EDA389C2FF3E245FB0B436FB823A870939FD3765BEA39993867E398F",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

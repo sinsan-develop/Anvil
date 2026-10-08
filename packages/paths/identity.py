@@ -41,6 +41,11 @@ def _normalise(path: str, *, case_policy: str) -> str:
 
 def _resolve_deepest(path: str) -> str:
     """Resolve existing aliases while preserving a safe missing suffix."""
+    # A drive-qualified Windows path is virtual on POSIX hosts.  A real
+    # /mnt/<drive> input is not: it must pass the filesystem link checks below
+    # before being mapped to that same drive namespace.
+    if os.name != "nt" and _DRIVE.match(path.replace("\\", "/")):
+        return _normalise(path, case_policy="SENSITIVE")
     candidate = Path(path)
     missing: list[str] = []
     cursor = candidate
@@ -69,7 +74,9 @@ def _relative(root: str, path: str, policy: str) -> str:
     absolute = bool(_DRIVE.match(candidate_lexical) or candidate_lexical.startswith("/"))
     if not absolute:
         candidate_lexical = _normalise(root_lexical + "/" + candidate_lexical, case_policy=policy)
-    candidate = _normalise(_resolve_deepest(candidate_lexical), case_policy=policy)
+    native_mounted_path = os.name != "nt" and _MNT_DRIVE.match(path.replace("\\", "/"))
+    resolution_input = path.replace("\\", "/") if native_mounted_path else candidate_lexical
+    candidate = _normalise(_resolve_deepest(resolution_input), case_policy=policy)
     prefix = root_value.rstrip("/") + "/"
     if candidate == root_value:
         return "."

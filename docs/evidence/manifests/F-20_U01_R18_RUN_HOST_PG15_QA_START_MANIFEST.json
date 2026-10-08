@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1900,
+  "accepted": false,
+  "projection_mode": "F20_U01_R18_RUN_HOST_PG15_QA_START",
+  "previous_event_sequence": 1896,
+  "product_write_scope": [
+    "tests/api/test_f20_u01_r18_run_host_pg15.py",
+    "docs/04_test_reports/F-20_U01_R18_RUN_HOST_PG15_QA_RESULT.md"
+  ],
+  "predecessor_commit": "21021fbba6f84549767b6887e4682a4d70fac4db",
+  "predecessor_events_sha256": "ED5D83BC5F8F3C07282D5C4863084445E825F8C7A69A964C4A245D2456FB6D3C",
+  "plan_path": "docs/04_test_reports/F-20_U01_R18_RUN_HOST_PG15_QA_PLAN.md",
+  "plan_sha256": "94B93303DB6A2832BE7393AECCE452B2BD54E861B96D1CBE82D4791A072A6D87",
+  "work_instruction_sha256": "C18C6A0FE2604EED33E742874C2370CDB42FB06198E78BD96385C2BB546718A9",
+  "invocation_sha256": "4C819E5303C4AD3349A096B43FA5EB0029DEE38DA105D2970CC51FDAACBE6D06",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

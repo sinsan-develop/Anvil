@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1912,
+  "accepted": false,
+  "projection_mode": "F20_U01_R19_NEXT_ACTIONS_UI_START",
+  "previous_event_sequence": 1908,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "docs/04_test_reports/F-20_U01_R19_NEXT_ACTIONS_UI_RESULT.md"
+  ],
+  "predecessor_commit": "4c8e6a339e9685e7bd407cc3b26aae57dbb32ecc",
+  "predecessor_events_sha256": "CFB6CDB29F08A57C404B5A1C9525E8DF4CAAFB714C0454BCFBE6FF508A509A67",
+  "plan_path": "docs/04_test_reports/F-20_U01_R19_NEXT_ACTIONS_UI_PLAN.md",
+  "plan_sha256": "6543DC078DF1C3520103CE4E27CCCE6042CAF49922ECFD1BCDDB38BB101DA4EB",
+  "work_instruction_sha256": "6BBCC22982C1F08225E913D0BBBD2042AEB2F6A45B2F7E04E4E05E14FC179F7B",
+  "invocation_sha256": "4F513C2D2A6AE33B6095955FB0D5B2C0FB2EBB5DC4CCD2A7DBD5D5FD4842B49E",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

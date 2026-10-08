@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -1658,7 +1659,7 @@ class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
     def _run_cleanup_entrypoint_guard_flow(
         self, fail_validation_at: int = 0, duplicate_guard_source: bool = False
     ):
-        with tempfile.TemporaryDirectory(prefix="anvil-cleanup-entrypoint-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-cleanup-entrypoint-") as raw:
             root = Path(raw)
             repo = root / "repo"
             subprocess.run(
@@ -1812,7 +1813,9 @@ validate_c21_exact_runtime_images() {{ return 0; }}
         result, events = self._run_cleanup_entrypoint_guard_flow(duplicate_guard_source=True)
 
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("readonly variable", result.stderr)
+        # Bash translates the diagnostic under the host locale.  The guarded
+        # variable identity and lack of cleanup side effects are the contract.
+        self.assertIn("C21_CANDIDATE_CONTROL_REF", result.stderr)
         self.assertEqual(2, events.count("guard-source"))
         self.assertEqual(1, events.count("validate"))
         self.assertEqual(1, events.count("env-load"))
@@ -1951,7 +1954,7 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
         return value
 
     def _case(self, scenario):
-        with tempfile.TemporaryDirectory(prefix="anvil-rollback-unit-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-rollback-unit-") as raw:
             root = Path(raw); repo = root / "repo"; repo.mkdir()
             control = root / "control" / "deploy" / "wsl"; control.mkdir(parents=True)
             helper = WslCandidateManifestGuardTests()
@@ -1974,6 +1977,10 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
             ref = "refs/heads/test-control"; immutable = git("rev-parse", "HEAD")
             checksum = "0" * 64 if scenario == "checksum_tamper" else hashlib.sha256(payload).hexdigest()
             shutil.copy2(DEPLOY / "rollback.sh", control / "rollback.sh")
+            # The checked-in script is mode 100644; this disposable copy is
+            # invoked directly by bash below and needs an executable bit.
+            rollback = control / "rollback.sh"
+            rollback.chmod(rollback.stat().st_mode | stat.S_IXUSR)
             # Only the authorization/runtime gate is substituted in this isolated unit.
             # Actual production guard exit22 and no-side-effect entrypoint tests remain separate.
             (control / "candidate-manifest-guard.sh").write_text("validate_wsl_candidate_manifest() { return 0; }\n", newline="\n")
@@ -1996,7 +2003,7 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
                 f"ANVIL_WSL_APPLICATION_REPO='{self._posix(repo)}' "
                 f"ANVIL_CANDIDATE_MANIFEST_REF='{ref}' "
                 f"ANVIL_CANDIDATE_MANIFEST_SHA256='{checksum}' "
-                "ANVIL_PYTHON='python3' "
+                f"ANVIL_PYTHON='{self._posix(Path(sys.executable))}' "
                 f"ANVIL_UNIT_LOG='{self._posix(log)}' "
                 "ANVIL_TEST_SESSION_PERMISSION_SCOPES='tasks:write,tasks:read,run:events:read,provider:read' "
                 f"'{self._posix(control / 'rollback.sh')}' '{self.EXPECTED}'"
@@ -2051,7 +2058,7 @@ class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
         return value
 
     def _bound_repo(self):
-        temp = tempfile.TemporaryDirectory(prefix="anvil-seq536-", dir="D:/tmp")
+        temp = tempfile.TemporaryDirectory(prefix="anvil-seq536-")
         repo = Path(temp.name) / "repo"
         subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--shared", "--no-checkout", str(ROOT), str(repo)], check=True)
         self._git(repo, "config", "user.email", "seq536@example.invalid")
@@ -2354,7 +2361,7 @@ class WslProviderExactBindingRuntimeStateTests(unittest.TestCase):
         return f"/{value[0].lower()}{value[2:]}" if len(value) > 1 and value[1] == ":" else value
 
     def _state(self, head: str, current: str, previous: str):
-        with tempfile.TemporaryDirectory(prefix="anvil-seq542-state-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-seq542-state-") as raw:
             root = Path(raw)
             for slug in ("pg15", "pg18rc"):
                 target = root / "runtime" / slug
@@ -2400,7 +2407,7 @@ class WslProviderExactBindingRuntimeStateTests(unittest.TestCase):
         )
 
     def test_seq542_runtime_image_revision_check_is_fail_closed(self):
-        with tempfile.TemporaryDirectory(prefix="anvil-seq542-images-", dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-seq542-images-") as raw:
             root = Path(raw)
             for slug in ("pg15", "pg18rc"):
                 target = root / "runtime" / slug
@@ -2482,7 +2489,7 @@ class WslWorkbenchUiGitOnlyCandidateContractTests(unittest.TestCase):
         candidate="f0d4bc7badbdae69c2d2b21089667fdcc636518d"
         previous="324eb169fedbce958d2e8cc29362deb7af433677"
         script=WslCandidateManifestGuardTests._posix(GUARD)
-        with tempfile.TemporaryDirectory(prefix="anvil-seq590-runtime-",dir="D:/tmp") as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-seq590-runtime-") as raw:
             root=Path(raw)
             for slug in ("pg15","pg18rc"):
                 state=root / "runtime" / slug

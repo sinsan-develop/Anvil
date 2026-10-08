@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2040,
+  "accepted": false,
+  "projection_mode": "F20_U01_R38B_BUDGET_FIXTURE_REWORK_CLOSE",
+  "previous_event_sequence": 2038,
+  "product_write_scope": [],
+  "predecessor_commit": "10ee1cc1e8ce8e02795b7786c1c3ecf7410f917e",
+  "predecessor_events_sha256": "21B02324BE5BDD440B2496F5FC97466D728A014378C1F53DD0840B5A96680DFC",
+  "plan_path": "docs/04_test_reports/F-20_U01_R38_SCOPED_BUDGET_SOURCE_PLAN.md",
+  "plan_sha256": "8D4462112FEE4DB924C85DB06E6FC1D0489032A0D3B1DDF39559C59B57488C7F",
+  "revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:F20-U01-R38B-FIXTURE-20261004-001",
+  "revision_binding_path": "docs/progress/non-semantic-revision-binding-f20-u01-r38b.json",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

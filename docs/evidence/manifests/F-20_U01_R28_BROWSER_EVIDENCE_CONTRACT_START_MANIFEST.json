@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1966,
+  "accepted": false,
+  "projection_mode": "F20_U01_R28_BROWSER_EVIDENCE_CONTRACT_START",
+  "previous_event_sequence": 1960,
+  "product_write_scope": [
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+    "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_RESULT.md"
+  ],
+  "predecessor_commit": "91bfe15667368c7cb2e4f0be6716dffd82d53f8f",
+  "predecessor_events_sha256": "4D0FA0A41BE04BB93EE49ED8F71052089BF6676D31E2800A32D0FBE17D570D0E",
+  "plan_path": "docs/04_test_reports/F-20_U01_R28_BROWSER_EVIDENCE_CONTRACT_PLAN.md",
+  "plan_sha256": "61E9B2751595ACDC94B604A56A6E51C33D3A160F18CCA6BF4298237BEFF90D0D",
+  "work_instruction_sha256": "2BFC73C1EE4F5F0A37421D76C80102E0C0D7574FEF9196C8C82CB995EA19C85B",
+  "invocation_sha256": "EBEFFD04753AAA4632CC107FDADE06214211ABE5BFFBF6D38DEDAC6FA5FC436C",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

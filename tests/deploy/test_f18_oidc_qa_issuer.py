@@ -23,7 +23,7 @@ ISSUER_MODULE = ROOT / "deploy/wsl/oidc_qa_issuer.py"
 DOCKERFILE = ROOT / "deploy/wsl/Dockerfile.f18.oidc-qa"
 OVERLAY = ROOT / "deploy/wsl/compose.f18.oidc.yml"
 ISSUER = "https://anvil-f18-qa.local:8444/realms/anvil"
-REDIRECT = "https://anvil-f18-qa.local:8444/auth/oidc/callback"
+REDIRECT = "https://anvil-f18-qa.local:8444/"
 VERIFIER = "v" * 43
 CHALLENGE = base64.urlsafe_b64encode(hashlib.sha256(VERIFIER.encode()).digest()).rstrip(b"=").decode()
 
@@ -60,6 +60,8 @@ def issuer_setup(tmp_path):
         key_file, secret_file, clock=lambda: now[0], code_factory=lambda: "qa-code-" + "x" * 32,
     )
     app.state.qa_test_secret = synthetic_secret
+    app.state.qa_key_file = key_file
+    app.state.qa_secret_file = secret_file
     return app, now, key.public_key()
 
 
@@ -120,6 +122,65 @@ def test_issuer_exchanges_one_use_pkce_code_and_exposes_public_jwks(issuer_setup
         "nonce": "n" * 43, "iat": now[0], "exp": now[0] + 60,
     }
     assert _token(app, code).status_code == 401
+
+
+def test_qa_issuer_subject_allowlist_preserves_key_and_browser_is_not_selector(issuer_setup):
+    default_app, now, public_key = issuer_setup
+    module = _issuer_module()
+    reader_app = module.create_qa_issuer(
+        default_app.state.qa_key_file, default_app.state.qa_secret_file,
+        qa_subject="f19a-qa-reader", clock=lambda: now[0],
+        code_factory=lambda: "reader-code-" + "y" * 32,
+    )
+    reader_app.state.qa_test_secret = default_app.state.qa_test_secret
+    default_token = _token(default_app, _code(default_app)).json()["id_token"]
+    reader_token = _token(reader_app, _code(reader_app)).json()["id_token"]
+    default_claims = jwt.decode(default_token, public_key, algorithms=["RS256"],
+                                audience="anvil-web", issuer=ISSUER)
+    reader_claims = jwt.decode(reader_token, public_key, algorithms=["RS256"],
+                               audience="anvil-web", issuer=ISSUER)
+    assert default_claims["sub"] == "synthetic-subject-1"
+    assert reader_claims["sub"] == "f19a-qa-reader"
+    assert {key: value for key, value in default_claims.items() if key != "sub"} == {
+        key: value for key, value in reader_claims.items() if key != "sub"}
+    assert jwt.get_unverified_header(default_token)["kid"] == jwt.get_unverified_header(reader_token)["kid"]
+    assert asyncio.run(_call(reader_app, "GET", "/realms/anvil/protocol/openid-connect/auth",
+        params=_auth_params(sub="synthetic-subject-1"))).status_code == 400
+    assert _token(reader_app, _code(reader_app), sub="synthetic-subject-1").status_code == 401
+
+
+def test_qa_issuer_third_subject_keeps_same_signing_identity_and_no_browser_selector(issuer_setup):
+    default_app, now, public_key = issuer_setup
+    module = _issuer_module()
+    other_app = module.create_qa_issuer(
+        default_app.state.qa_key_file, default_app.state.qa_secret_file,
+        qa_subject="f19a-qa-other", clock=lambda: now[0],
+        code_factory=lambda: "other-code-" + "z" * 32,
+    )
+    other_app.state.qa_test_secret = default_app.state.qa_test_secret
+    default_token = _token(default_app, _code(default_app)).json()["id_token"]
+    other_token = _token(other_app, _code(other_app)).json()["id_token"]
+    old_claims = jwt.decode(default_token, public_key, algorithms=["RS256"],
+                            audience="anvil-web", issuer=ISSUER)
+    other_claims = jwt.decode(other_token, public_key, algorithms=["RS256"],
+                              audience="anvil-web", issuer=ISSUER)
+    assert other_claims["sub"] == "f19a-qa-other"
+    assert {key: value for key, value in other_claims.items() if key != "sub"} == {
+        key: value for key, value in old_claims.items() if key != "sub"}
+    assert jwt.get_unverified_header(default_token)["kid"] == jwt.get_unverified_header(other_token)["kid"]
+    assert asyncio.run(_call(other_app, "GET", "/realms/anvil/protocol/openid-connect/auth",
+        params=_auth_params(sub="f19a-qa-reader"))).status_code == 400
+    assert _token(other_app, _code(other_app), sub="f19a-qa-reader").status_code == 401
+
+
+@pytest.mark.parametrize("qa_subject", ["", "synthetic-subject-2", "admin", "production-user",
+    "f19a-qa-reader\n", "f19a-qa-réader", "f19a-qa-reader\x00", None])
+def test_qa_issuer_rejects_non_allowlisted_subjects(issuer_setup, qa_subject):
+    app, _, _ = issuer_setup
+    module = _issuer_module()
+    with pytest.raises(ValueError, match="^QA_ISSUER_NOT_CONFIGURED$"):
+        module.create_qa_issuer(app.state.qa_key_file, app.state.qa_secret_file,
+                                qa_subject=qa_subject)
 
 
 @pytest.mark.parametrize("changes", [
@@ -236,3 +297,6 @@ def test_qa_image_and_compose_keep_secrets_out_of_image_and_host_ports():
             "read_only": True,
         }
     assert all("SECRET" not in key.upper() for key in service.get("environment", {}))
+    assert service["environment"]["ANVIL_F19A_QA_SUBJECT"] == "${ANVIL_F19A_QA_SUBJECT-synthetic-subject-1}"
+    assert all("ANVIL_F19A_QA_SUBJECT" not in item.get("environment", {})
+               for name, item in overlay["services"].items() if name != "oidc-issuer")

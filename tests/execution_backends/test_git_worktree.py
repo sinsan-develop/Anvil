@@ -545,7 +545,8 @@ def test_nested_reparse_is_denied_after_workspace_materialization(tmp_path):
         events = backend.stream_events(handle.handle_id, run_id="run-1", session_id="session-1", workspace_id="ws-1", backend_id="git-worktree")
         assert events[1].payload["error_code"] == "REPARSE_PATH_DENIED"
     finally:
-        if link.exists(): os.rmdir(link)
+        if link.is_symlink(): link.unlink()
+        elif link.exists(): os.rmdir(link)
     backend.destroy_workspace("ws-1", _auth())
 
 

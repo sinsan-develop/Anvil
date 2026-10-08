@@ -64,7 +64,7 @@ def project_operations(sources: OperationsSources, *, observed_at: datetime) -> 
     signals = {s.component: s for s in sources.health_signals}
     health = {key: _health(signals.get(key), observed_at) for key in
               ("database", "queue", "worker", "provider", "backend", "artifact_store")}
-    gaps = {key for key in ("database", "queue", "worker", "provider", "backend") if key not in signals}
+    gaps = {key for key in health if key not in signals}
     queue_rows, quarantine_rows, worker_rows, budget_rows, reservation_rows, provider_rows = [], [], [], [], [], []
     if sources.queue is not None:
         for job_id in sources.queue_job_ids:

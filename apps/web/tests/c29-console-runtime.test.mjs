@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {existsSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import http from 'node:http';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {fileURLToPath} from 'node:url';
 import {startWorkbenchServer} from '../server.mjs';
+import {apiPath} from '../src/api/workbench-client.js';
 const h='sha256:'+'a'.repeat(64);
 async function clientModule(){const u=new URL('../src/api/c29-agent-console-client.js',import.meta.url);assert.ok(existsSync(u),'C29 client missing');return import(u.href);}
 async function runtimeModule(){const u=new URL('../src/app/c29-console-runtime.js',import.meta.url);assert.ok(existsSync(u),'C29 runtime missing');return import(u.href);}
@@ -25,6 +26,14 @@ test('browser client uses only relative paths and does not disclose raw server f
   assert.throws(()=>client.read('https://evil.test'),/MENU_INVALID/);
   const bad=m.createAgentConsoleClient(async()=>new Response(JSON.stringify({message:'FAKE_TEST_SECRET'}),{status:500}));
   await assert.rejects(bad.read('team'),e=>e.message==='CONSOLE_REQUEST_FAILED'&&!e.message.includes('FAKE'));
+});
+
+test('agent console fetch validates the path at the network boundary',()=>{
+  const source=readFileSync(new URL('../src/api/c29-agent-console-client.js',import.meta.url),'utf8');
+  assert.match(source,/fetchImpl\(apiPath\(path\),/);
+  for(const unsafe of ['https://external.test/api/agent-console/team','http://127.0.0.1:8301/api/agent-console/team','//internal/api/agent-console/team','/other']){
+    assert.throws(()=>apiPath(unsafe),/same-origin/i);
+  }
 });
 
 test('BFF permits exact loopback routes, binds CSRF and preserves POST intent',async()=>{

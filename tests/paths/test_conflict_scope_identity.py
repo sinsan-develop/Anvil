@@ -5,7 +5,10 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
+from packages.paths import identity as path_identity
 from packages.paths.identity import (
     RepositoryIdentity,
     RepositoryPathMapping,
@@ -54,6 +57,46 @@ class ConflictScopeIdentityTests(unittest.TestCase):
         self.assertEqual(canonical, conflict_scope_key(repository, "/mnt/c/Repos/Anvil/packages/queue/service.py", "INSENSITIVE"))
         self.assertEqual(canonical, conflict_scope_key(repository, "C:/REPOS/ANVIL/PACKAGES/QUEUE/SERVICE.PY", "INSENSITIVE"))
         self.assertEqual(canonical, conflict_scope_key(repository, "C:/Repos/Anvil/PROGRA~1/../packages/queue/service.py", "INSENSITIVE"))
+
+    def test_posix_mounted_drive_resolves_link_before_conflict_scope(self):
+        # Map only the /mnt/c filesystem boundary to a disposable real tree.
+        # The same test runs on Windows without requiring an actual /mnt/c mount.
+        with tempfile.TemporaryDirectory(prefix="anvil-mounted-drive-") as temporary:
+            root = Path(temporary)
+            mount = root / "mnt" / "c"
+            repo = mount / "repo"
+            outside = mount / "outside"
+            repo.mkdir(parents=True)
+            outside.mkdir()
+            (outside / "secret.py").write_text("secret", encoding="utf-8")
+            link = repo / "linked"
+            if os.name == "nt":
+                created = subprocess.run(
+                    ["cmd.exe", "/d", "/c", "mklink", "/J", str(link), str(outside)],
+                    capture_output=True, text=True, check=False,
+                )
+                if created.returncode != 0:
+                    self.skipTest("Windows junction creation unavailable")
+            else:
+                link.symlink_to(outside, target_is_directory=True)
+
+            native_path = Path
+            def mounted_path(value):
+                text = str(value)
+                if text.startswith("/mnt/c/"):
+                    return native_path(mount / text[len("/mnt/c/"):])
+                return native_path(value)
+
+            try:
+                with patch.object(path_identity, "os", SimpleNamespace(name="posix")), \
+                     patch.object(path_identity, "Path", side_effect=mounted_path):
+                    with self.assertRaises(ValueError):
+                        conflict_scope_key("C:/repo", "/mnt/c/repo/linked/secret.py", "INSENSITIVE")
+            finally:
+                if link.is_symlink():
+                    link.unlink()
+                elif link.exists():
+                    os.rmdir(link)
 
     def test_existing_filesystem_alias_converges_and_external_absolute_path_is_rejected(self):
         with tempfile.TemporaryDirectory(prefix="anvil-b09-path-") as temporary:

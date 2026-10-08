@@ -1,0 +1,1 @@
+기존 `codex/f18-wsl-ops` 격리 worktree에서 R9 계획·WorkInstruction, 새 canonical worker/write dual lease와 G-05 PASS를 확인하라. exact5 범위의 Queue source host 연결을 RED→GREEN으로 구현하고 로컬 검증·결과를 Main에 보고하라. commit/push/merge, 공유 WSL 자원·ysna/Production 변경은 하지 말라.

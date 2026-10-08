@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1798,
+  "accepted": false,
+  "projection_mode": "F20_U01_R3A_OPERATIONS_ALERTS_START",
+  "previous_event_sequence": 1792,
+  "product_write_scope": [
+    "apps/api/anvil_api/oidc_process.py",
+    "apps/api/anvil_api/asgi.py",
+    "tests/api/test_oidc_process.py",
+    "tests/api/test_oidc_asgi_binding.py",
+    "docs/04_test_reports/F-20_U01_R3A_OPERATIONS_ALERTS_RESULT.md"
+  ],
+  "predecessor_commit": "e1f6ef284b1f95cd80599a7779d9cd2ae80aa8d8",
+  "predecessor_events_sha256": "97180FB4A4D32669F9D84167F0600C4AABB317787D1ECE92434EA2595B3CF150",
+  "work_instruction_sha256": "AF6C2DA7A2F9429743B13800E30FCE4F64BA9C1C0DE4947EE4D216F72D43AB56",
+  "invocation_sha256": "082E43F012CA3D488FF113BF15520FAE5D83C1B36252643D274A4C9B07BE07AB",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

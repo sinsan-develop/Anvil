@@ -168,6 +168,8 @@ Anvil은 이 문제를 `Human Decision Graph`, `작업 상태 영속성`, `adapt
 
 ### 3.1 최초 프로젝트 등록
 
+Dashboard의 선택 가능한 범위를 만들기 위한 최소 선행 등록은 F-19A가 소유한다. 사용자가 등록한 Project와 그 Project에 속한 Environment의 **정확한 조합**만 선택 후보가 되며, 등록 사실만으로 조회 권한을 주지 않는다. 사용자별 유효 권한은 서버가 `(actor, project, environment, permission, active)`의 정확한 조합으로 검사한다. 독립 Project ID 집합과 Environment ID 집합의 교차 조합, 저장소 scan 결과, 단일 OIDC host scope는 등록 원장이나 다중 조합 권한의 대체물이 아니다. 권한 철회·비활성화는 다음 목록·조회 요청에서 적용하고 다른 조합의 cache/read model을 섞지 않는다. F-19A는 이 최소 등록·권한 경계만 준비하며, 아래의 전체 repository onboarding·baseline·정책·보호 경로와 Projects 화면 인수는 U-03에 남는다.
+
 1. 사용자가 Git 저장소 또는 기존 로컬 프로젝트를 등록한다.
 2. 시스템이 읽기 전용으로 저장소를 탐색한다.
 3. 시스템이 언어, 빌드 도구, 테스트 도구, 배포 파일, DB 변경 체계를 탐지한다.
@@ -1211,6 +1213,7 @@ notifications
 - 초기 로컬 단일 사용자도 인증 경계를 코드에 둔다.
 - 운영 배포는 OIDC 또는 동등한 인증을 사용한다.
 - Project/Environment/Approval/Deploy 권한을 분리한다.
+- Dashboard의 Project·Environment 선택 목록과 조회는 서버가 등록된 정확한 조합 및 actor별 활성 permission을 매 요청 검사한다. 두 독립 허용 ID 집합의 임의 조합은 권한이 아니며, 철회된 조합과 다른 조합의 cache 결과는 즉시 거부한다.
 - 실행 토큰은 단기·최소 권한으로 발급한다.
 
 ### 18.2 경로와 명령
@@ -1833,6 +1836,8 @@ anvil/
 
 ### 28.1 프로젝트 등록
 
+아래 기존 `POST /api/projects` 계약은 repository onboarding의 역사적 계약으로 보존한다. F-19A의 최소 Project·Environment 등록/정확 pair grant를 위한 공개 경로·요청/응답·인가 공급원·지속 schema는 별도 제품 계약 승인에서 확정한다. 이 문서 개정만으로 기존 endpoint의 의미를 바꾸거나 새 endpoint·migration을 구현하지 않는다.
+
 `POST /api/projects`
 
 ```json
@@ -2087,6 +2092,10 @@ data: {"tool":"file.apply_patch","status":"success","changedPaths":["app/users.p
 공통 상태 표시는 `아이콘 + 상태명 + 짧은 설명`으로 구성한다. tooltip은 이유와 다음 조치를 표시한다.
 
 ### 29.2 Dashboard
+
+선택 목록은 사용자가 등록한 활성 Project→Environment 정확 조합 중 현재 actor에게 서버 권한이 있는 것만 반환한다. 선택·새로고침 때마다 동일 조합의 권한을 재검사하며, 철회·비활성·존재하지 않는 조합은 fail-closed로 표시한다. 브라우저가 전송한 ID나 독립 ID 집합의 교차 조합을 인가 근거로 삼지 않는다. 등록 원본은 Project·Environment 등록 기능(F-19A의 최소 선행 절편, U-03의 전체 onboarding), 사건 이력은 각 업무 기능, Dashboard는 권한 범위의 읽기 projection이 소유한다.
+
+기간 `오늘/7일/30일`은 `Asia/Seoul` 현지 **달력일**이며 오늘을 포함한 최근 1/7/30일이다. 각 기간의 현지 자정 경계를 UTC로 변환해 `[start, end)`로 조회한다. 브라우저 로컬 시각은 권위가 아니며 조회 경계·timezone·관측시각을 결과 근거로 표시한다. Health·실행 중·승인 대기·BLOCKED·Next Actions·미해결 Critical의 **현재 상태**와 기간 내 **발생 건수**는 별도 근거로 표시한다. 기간 밖에 시작한 미해결 Critical과 Next Action은 기간 선택 때문에 숨기지 않는다. 카드별 범위·원본·사건시각·중복 제거·완전성·신선도를 증명할 수 없으면 숫자 `0`이나 성공 대신 `UNAVAILABLE`을 표시한다. 부분 페이지나 현재 snapshot을 전체 기간 모집단으로 승격하지 않는다. 상세 공개 API와 지속 데이터 계약은 별도 승인 경계다.
 
 상단 필터:
 

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2032,
+  "accepted": false,
+  "projection_mode": "F20_U01_R38_SCOPED_BUDGET_SOURCE_START",
+  "previous_event_sequence": 2028,
+  "product_write_scope": [
+    "packages/persistence/operations_budget_read.py",
+    "apps/api/anvil_api/oidc_process.py",
+    "tests/persistence/test_operations_budget_read.py",
+    "tests/api/test_f20_u01_r38_budget_host_binding.py",
+    "tests/integration/test_f20_u01_r38_budget_host_pg15.py",
+    "docs/04_test_reports/F-20_U01_R38_SCOPED_BUDGET_SOURCE_RESULT.md"
+  ],
+  "predecessor_commit": "fceffd660d3f99c27221d286b0f19c1787a13ccd",
+  "predecessor_events_sha256": "FCC279B76B4AEA8E804511140A3B68F655A6345C70DC0C01BEE8183309FC5035",
+  "plan_path": "docs/04_test_reports/F-20_U01_R38_SCOPED_BUDGET_SOURCE_PLAN.md",
+  "plan_sha256": "8D4462112FEE4DB924C85DB06E6FC1D0489032A0D3B1DDF39559C59B57488C7F",
+  "work_instruction_sha256": "01DCABA93C05AA49627B22046C16CB615B381307B63C3B3F87941C335779A960",
+  "invocation_sha256": "7A1D6BCDF9754F502F7BCABBD184E6C0FE8546BED9B9B608CEE296E8D3009BAA",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

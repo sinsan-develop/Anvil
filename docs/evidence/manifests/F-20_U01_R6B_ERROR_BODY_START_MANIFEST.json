@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1828,
+  "accepted": false,
+  "projection_mode": "F20_U01_R6B_ERROR_BODY_REWORK_START",
+  "previous_event_sequence": 1822,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "docs/04_test_reports/F-20_U01_R6_OIDC_BROWSER_PG15_RESULT.md"
+  ],
+  "predecessor_commit": "e4c483263d2ca614ce3e677c7c259a13eef14d1e",
+  "predecessor_events_sha256": "73C9F4E79A03A6F44DD27F09E22841F4B169E86161CDB41CBC16F213C5A17FE0",
+  "work_instruction_sha256": "DE4D4D7EC824DF8547A9130DEAF46ED7C41C715D4957DB8BF638C2AA21B468F1",
+  "invocation_sha256": "301718C9CAE2F833602CD393F1392D2CEDBFAFF2C3C004BA42FB615637609D3F",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

@@ -1,0 +1,1 @@
+기존 `codex/f18-wsl-ops` 격리 worktree에서 R10 계획·WorkInstruction, 새 canonical worker/write dual lease와 G-05 PASS를 확인하라. exact5 범위의 인증된 same-origin Dashboard 읽기 API를 TDD RED→GREEN으로 구현하고 로컬 검증·결과를 Main에 보고하라. commit/push/merge, WSL-server·공유 자원·ysna/Production 변경은 하지 말라.

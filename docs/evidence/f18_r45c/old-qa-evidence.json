@@ -1,0 +1,13 @@
+{
+  "environment_id": "wsl-server-r45c-old-qa",
+  "image_ids": {
+    "api": "sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b",
+    "web": "sha256:61f13f7ffa9d20713c6cc4234b4529bce2d4b0c8f1d11b73832a28c3213910bf",
+    "worker": "sha256:6a8a0e1de3346c2a348487295504c9070557650a50459805798cb6f41262d43f"
+  },
+  "runtime": "NOT_EXECUTED",
+  "schema_version": 1,
+  "source_commit": "4eadfcd441b55445237545146ae5ba4051739904",
+  "source_tag": "f18-wsl-qa-4eadfcd",
+  "trust": "HISTORICAL_QA_ONLY_NOT_APPROVED_RELEASE"
+}

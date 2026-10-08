@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "generation": 2,
+  "accepted": false,
+  "authority_active": true,
+  "predecessor_commit": "18580166e3d1eee42d8180e5c3f930532e358f75",
+  "predecessor_event_sequence": 2047,
+  "predecessor_events_sha256": "1FA1FAAF7D2A786DC0C9359007DD9755E62FBA2014540E5439EA96B2D6C03CCD",
+  "generation_start_event_id": "evt_f20_2047_event_ledger_generation_started",
+  "generation_manifest_path": "docs/evidence/manifests/F-20_C30_RECOVERY_V2_GENERATION_START_MANIFEST.json",
+  "generation_manifest_sha256": "214C0821E37EFA59F9F4EB02E23478467FE741E824E2444D8619FE249C871F69",
+  "independent_test_report_path": "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_INDEPENDENT_TEST_REPORT.md",
+  "independent_test_report_sha256": "D4DC26CE456A5AD5B51B010A169F31C5009DC394EB3AED224DF40513AAB771C6",
+  "independent_verdict": "ELIGIBLE_C0_I0",
+  "wsl_qa_commit": "d58d95f121e24bd5cb199617e1afbcac8cafa80a",
+  "wsl_evidence_commit": "6b95360dce80904a064a636404a794074568ae9e",
+  "wsl_evidence_status_sha256": "7A6F211B346F49781A10A3199DBE58D7395DF1D40B5EBB4D3E1E9E3DFAF4A255",
+  "quarantined_event_sequences": [
+    1689,
+    1714
+  ],
+  "audit_only_event_sequences": [
+    1715,
+    2047
+  ],
+  "incident_status": "RECOVERED_WITH_QUARANTINED_HISTORY",
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

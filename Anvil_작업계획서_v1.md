@@ -532,6 +532,7 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 | F-17 | WSL-server 실제 기능과 PostgreSQL 18 Release Candidate 격리 검증 | WSL test report, PG18 RC EvidenceManifest | 일반 통합은 `local-postgres` PG15 전용 DB, 별도 격리 PG18에서 migration·extension·query·backup/restore·rollback rehearsal, 핵심 E2E·ProductValidation 통과 | F-16 |
 | F-18 | WSL-server 격리 운영 유사 target의 OIDC·object storage·network policy·Git 배포 capability와 비공개 rehearsal 구현 | WSL deployment adapter, DeployApprovalSubject | F-17 합격 동일 commit/digest만 승인 Git checkout하고 분리된 pgvector PG18 전용 DB/role, environment+manifest+migration+rollback hash, secret·권한·network 경계를 검증한다. `ysna-server`·`shared-db`·공개 도메인 실측과 Production DeployApproval·Release는 제외 | F-17 |
 | F-19 | Local·WSL-server Test/Staging·WSL-server 격리 운영 유사 환경의 9개 Provider·egress·Web·secret 보안 회귀검증 | 범위별 provider/security EvidenceManifest | 환경별 지원/비지원·routing이 정직하고 WSL 브라우저 Network·payload·격리 DB·log·artifact에 secret·DB/OLLAMA 내부주소 0건; 실제 운영 도메인·서버 검증은 제외 | F-18 |
+| F-19A | U-01 Dashboard 선행 최소 Project·Environment 등록 및 **정확 pair grant** capability. U-03 전체 Projects 메뉴를 앞당기지 않음 | 등록 원본·정확 조합 권한 계약, read-only 선택 목록, 철회·격리 증거; 공개 API/schema는 별도 제품 승인 후 WI에서 확정 | 등록된 활성 Project→Environment 조합과 actor·permission·active grant의 교집합만 목록·조회 가능, 독립 ID 집합 교차 조합·철회 다음 요청·다른 조합 cache 혼합 거부, 기존 고정 GET/ACK 보존. 로컬 및 동일 SHA WSL-server의 실제 DB/OIDC/브라우저 증거와 독립 Tester 판정 전 `ACCEPTED` 금지 | F-19 |
 ### Phase F Capability Gate
 
 - F-01~F-19의 Provider·환경·운영 backend와 API/BFF가 독립 Tester `ACCEPTED`다.
@@ -539,6 +540,7 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 - Settings·Dashboard·Operations를 포함한 모든 메뉴가 사용할 read model과 API projection이 고정됐다.
 - 브라우저 코드에 내부 API 주소를 제공하지 않으며 실제 메뉴 제품 write는 아직 시작하지 않는다.
 - 이 Gate 뒤에만 U-01 Dashboard write lease를 발급한다.
+- **Successor U-01 착수 추가 조건**: historical F Capability Gate 판정은 소급 변경하지 않는다. F-19A를 독립 `ACCEPTED`로 닫고 정확 pair·등록 원본·권한·문서/검증 binding을 확인한 뒤에만 U-01 제품 write lease를 발급한다. F-19A의 API·인가·DB 계약은 이 문서 변경만으로 구현 승인되지 않는다.
 
 ---
 
@@ -559,7 +561,7 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
-| U-01 | **Dashboard** 전체 상태·경고·승인 대기·다음 행동 수직 구현 | dashboard service 보완, API/BFF, UI, E-SHOT/E-NET/E-API | Project·Run·Agent·Provider·환경 상태가 실제 read model과 일치하고 미연결·미실행을 PASS로 표시하지 않음 | B Gate, C Gate, D Gate, E Gate, F Capability Gate |
+| U-01 | **Dashboard** 전체 상태·경고·승인 대기·다음 행동 수직 구현 | dashboard service 보완, API/BFF, UI, E-SHOT/E-NET/E-API | Project·Run·Agent·Provider·환경 상태가 실제 read model과 일치하고 미연결·미실행을 PASS로 표시하지 않음. 등록·권한이 확인된 정확 Project·Environment 조합만 선택하고 Asia/Seoul 오늘 포함 1/7/30 달력일의 UTC `[start,end)` 발생 자료와 현재 상태를 분리하며, 불완전 원본은 `UNAVAILABLE`로 표시하고 미해결 Critical·Next Action을 기간으로 숨기지 않음 | B Gate, C Gate, D Gate, E Gate, F Capability Gate, F-19A 독립 acceptance |
 | U-02 | **Workbench** 어울 대화·작업 지시·진행·결과 보고·승인·기록 수직 구현 | conversation/instruction/progress/report/approval/history API·UI | LLM 요청, 사람 개입, checkpoint, 결과·승인 계보가 같은 Run hash로 연결되고 중단·재개 실제 클릭 검증 | U-01 |
 | U-03 | **Projects** 프로젝트 등록·repository onboarding·baseline·정책·보호 경로 수직 구현 | project/repository API·UI, read/write guard evidence | 실제 repository를 등록·scan하고 dirty/untracked·금지 경로를 보존하며 승인 없는 mutation 0건 | U-02 |
 | U-04 | **Runs** Run·Step·Delegation·attempt·queue·중단·재개·취소 수직 구현 | run graph API·UI, SSE/recovery evidence | Event sequence, lease epoch/token, retry·cancel·resume가 API·DB·화면에서 일치하고 stale commit 차단 | U-03 |
@@ -880,3 +882,9 @@ v1.6 successor는 설계서 v2.7, 통합검증매트릭스 successor, 테스트�
 #### 19.7.4 구현 보류와 다음 시작 조건
 
 현재는 문서 successor 작성·검토 단계다. 제품 코드, DB, WSL, Provider, Kakao, Oracle, release에는 착수하지 않는다. 다음 구현은 (1) 신산님이 successor 문서와 mockup을 확인, (2) matrix/test-plan/progress/HANDOFF/approval binding 정합화, (3) C-22 WorkInstruction exact hash 발행, (4) 단일 Code Agent write lease 발급을 모두 충족한 뒤에만 시작한다.
+
+### 19.8 U-01 등록 범위 선행 successor (2026-10-06)
+
+신산님의 Dashboard 필터 설계 방향 승인과 PMO의 문서 작성·검토 한정 결정에 따라 F-19A를 **후보 신규 Package ID**로 §12에 추가한다. U-01→U-02→U-03의 화면 순차 acceptance와 U-03의 repository onboarding·baseline·정책·보호 경로 책임은 유지한다. F-19A는 이미 판정된 historical F Capability Gate를 재작성하지 않는 U-01 선행 독립 acceptance다. 현재 계획의 고유 Package ID 123개에 이 ID 하나를 더한 문서 successor 목표는 124개다. §19.2~19.6의 108·111·113은 각 당시 successor의 역사적 중간 수로 보존하며 현재 총수나 수락 수로 읽지 않는다.
+
+설계 §3.1·§18.1·§28.1·§29.2와 매트릭스·테스트계획서의 신규 ID/역색인을 같은 문서 revision으로 결박한다. 기존 AV 255개, C-16~C-30, 완료된 Gate·Event·WorkInstruction·approval hash는 축소·소급 변경하지 않는다. 새 공개 API 경로·응답, 인가 공급원과 DB schema/migration·지속 데이터, 제품 WI/lease는 정확 계약·영향·검증·rollback을 별도 패킷으로 확정하기 전 `NOT_AUTHORIZED`다. 이번 문서 successor는 제품 구현·F-19A acceptance·U-01/F-20 수락 또는 Release를 뜻하지 않는다.

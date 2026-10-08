@@ -1,0 +1,9 @@
+{
+  "files": {
+    "deploy/wsl/compose.f18.oidc.yml": "sha256:b268ce8fe41824a4c9a46a0d493a394b09c63f692a3eeef34d04e5997463408a",
+    "deploy/wsl/compose.f18.yml": "sha256:14b45f8c6ea7997bb87015526ee8af5b7143deb447a30c771117026884ed5e1d",
+    "deploy/wsl/nginx-f18-oidc.conf": "sha256:453c6e8243051f7336c42d467df5b89a415fa648099997fa14db64f01c21c830"
+  },
+  "schema_version": 1,
+  "source_commit": "d36de847842804ca93e405abe9bff687c1162a69"
+}

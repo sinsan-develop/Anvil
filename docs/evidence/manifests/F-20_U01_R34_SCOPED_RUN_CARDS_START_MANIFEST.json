@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2008,
+  "accepted": false,
+  "projection_mode": "F20_U01_R34_SCOPED_RUN_CARDS_START",
+  "previous_event_sequence": 2004,
+  "product_write_scope": [
+    "tests/tooling/test_f20_u01_r33t_start_projection.py",
+    "packages/api/operations.py",
+    "apps/web/src/console/App.tsx",
+    "tests/api/test_f20_u01_r10_dashboard_api.py",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_RESULT.md"
+  ],
+  "predecessor_commit": "02ecd4617761fca7defcf98f8b1620e5ef35fc1b",
+  "predecessor_events_sha256": "559CCBED2C5A85731C40E3A33727CDA889E49EEF220841A92C8793D31D411D49",
+  "plan_path": "docs/04_test_reports/F-20_U01_R34_SCOPED_RUN_CARDS_PLAN.md",
+  "plan_sha256": "168184B390CE1760D7E0498ABE46502A5105AD7306DB2256339A18942720DAB4",
+  "work_instruction_sha256": "40184D95A40EA45D0BF33DFF0D48D0C56DA75E1C2654F10B10A4616F0F580F6E",
+  "invocation_sha256": "01F36DA399F85FCED48F1C556BBA425B832662A034E8CDA8E7E13BBF6FCE50D6",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

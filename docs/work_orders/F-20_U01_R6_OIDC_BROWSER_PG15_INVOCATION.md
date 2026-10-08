@@ -1,0 +1,1 @@
+기존 `codex/f18-wsl-ops` worktree와 R6 WorkInstruction을 읽고 epoch18 worker/write dual lease·G-05를 확인하라. exact3 범위에서 RED→GREEN으로 격리 OIDC·브라우저·PG15 저장 경고 E2E를 구현하고 로컬 검증 결과를 Main에게 보고하라. commit/push/merge나 공유 WSL 자원 변경은 하지 말라.

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1858,
+  "accepted": false,
+  "projection_mode": "F20_U01_R11_DASHBOARD_QUEUE_UI_START",
+  "previous_event_sequence": 1854,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "docs/04_test_reports/F-20_U01_R11_DASHBOARD_QUEUE_UI_RESULT.md"
+  ],
+  "predecessor_commit": "be616730f8390960f46e1d348a51a61ed35cbb27",
+  "predecessor_events_sha256": "870E7A0ABAE2F01CC0063D780EEA5A34B8DB5823105B369C6F5ED08DF75C3BF2",
+  "plan_path": "docs/04_test_reports/F-20_U01_R11_DASHBOARD_QUEUE_UI_PLAN.md",
+  "plan_sha256": "69153489F8C30C71E00698F0BE7FD86A0FEE7CEF0D45FD2B7D3894D589792AD3",
+  "work_instruction_sha256": "91E16FCCF59855D0024C55E4A8EB6EEC0A7380EB339F80801FA18A400BE43AD5",
+  "invocation_sha256": "C61C19B853E52C134985513F4CFA9005B304D2107231E765764B07F8BC25F050",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

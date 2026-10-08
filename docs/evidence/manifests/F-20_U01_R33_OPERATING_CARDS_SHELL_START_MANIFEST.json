@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1996,
+  "accepted": false,
+  "projection_mode": "F20_U01_R33_OPERATING_CARDS_SHELL_START",
+  "previous_event_sequence": 1992,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "docs/04_test_reports/F-20_U01_R33_OPERATING_CARDS_SHELL_RESULT.md"
+  ],
+  "predecessor_commit": "4f6a01f2e883fbbbd65a2900ca7aa48ffad8d0a2",
+  "predecessor_events_sha256": "DD6CF4DCB2024954CBD7C6B7C6152A546B7BD8BB40E57FC5B9E63AB2CFC9699A",
+  "plan_path": "docs/04_test_reports/F-20_U01_R33_OPERATING_CARDS_SHELL_PLAN.md",
+  "plan_sha256": "19BAD417C1D87A8057FA5F96146D768162D2C1FC05FF236FCB8896E3C58CFD21",
+  "work_instruction_sha256": "D34E117D45405B97ED4A509EA0EF425019264BB3131849CC8C9A5E8C0BA5B21B",
+  "invocation_sha256": "8FC7BE8C6A824BCFCFCE1AAE5BBE84F638479A86DED88EEFA7FE9D9E5B2B639A",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

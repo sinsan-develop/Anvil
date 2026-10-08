@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1834,
+  "accepted": false,
+  "projection_mode": "F20_U01_R7_ALERTS_BLOCKED_START",
+  "previous_event_sequence": 1830,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "docs/04_test_reports/F-20_U01_R7_ALERTS_BLOCKED_RESULT.md"
+  ],
+  "predecessor_commit": "0c4d08d908aca48ea7a7024ce5f10685b472af52",
+  "predecessor_events_sha256": "DDFA5AFC60F3FCF3D2922F84B2A98CDFE5D01D61C2C8C4C44F5608FBAE031DBD",
+  "plan_path": "docs/04_test_reports/F-20_U01_R7_ALERTS_BLOCKED_BINDING_PLAN.md",
+  "plan_sha256": "01EBB28672133EE0C5E7252A37EF54E8849AAEDE09F8B85294E84FCF9EF61EF6",
+  "work_instruction_sha256": "17D1710BA1F5937305FEF4AD6DB3A8CECE6BD5409F8B8E5631D687D43B80C39F",
+  "invocation_sha256": "6207DD39D44E376768DA7A2243A8AAB6FF08E7CA8ACE33E15E0FC8BC030A397D",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

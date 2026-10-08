@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1725,
+  "accepted": false,
+  "projection_mode": "F20_R2_REWORK_START",
+  "historical_event_prefix_sha256": "7070DC3E9C8BC2E66DFF7FAEFB44E5A8018280ACF649CD43B460F5D4D4DFA518",
+  "previous_event_sequence": 1719,
+  "product_write_scope": [
+    "docs/04_test_reports/F-20_REWORK_R2_RESULT.md",
+    "packages/paths/identity.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/deploy/test_wsl_staging_harness.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/persistence/test_oidc_pending_auth.py",
+    "tests/integration/test_c30r3_formal_entity.py"
+  ],
+  "work_instruction_sha256": "5399588999995AF85C88F36C589D7833FC318E7C747F4E0AA10D4085B20DAE46",
+  "invocation_sha256": "64CEED49DA586D795CE28C399C8A0E2A650EB8309E822A51DC4BBEEAA1BCB6F8",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

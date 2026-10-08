@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { checkedProjection } from './src/api/c29-agent-console-client.js';
+import { MENU_ITEMS } from './src/features/app-shell/app-shell-model.js';
 
 const execFileAsync=promisify(execFile);
 const webRoot=dirname(fileURLToPath(import.meta.url));
@@ -22,6 +23,7 @@ const securityHeaders={
 };
 const apiUpstream=(process.env.ANVIL_API_UPSTREAM||'').replace(/\/$/,'');
 const apiProxyPrefixes=['/api/','/health/','/integrations/','/auth/'];
+const menuPaths=new Set(MENU_ITEMS.map(item=>item.href));
 
 async function proxyApiRequest(request,response,requestUrl) {
   if (!apiUpstream || !(apiProxyPrefixes.some(prefix=>requestUrl.pathname.startsWith(prefix)) || requestUrl.pathname==='/openapi.json')) return false;
@@ -92,6 +94,20 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
+async function scanCurrentRepository() {
+  const code=`import json
+from pathlib import Path
+from packages.repository_intelligence import ScanRequest, scan_repository
+root=Path.cwd()
+# Git worktrees keep the common metadata in the repository root; the scan remains
+# read-only and is confined to the Anvil repository boundary.
+result=scan_repository(ScanRequest(repository_path=str(root), allowed_root=str(root.parent.parent)))
+print(json.dumps(result.to_dict(), ensure_ascii=False))`;
+  const python=await resolvePythonExecutable();
+  const {stdout}=await execFileAsync(python,['-c',code],{cwd:repoRoot,timeout:30000,windowsHide:true,maxBuffer:4_000_000});
+  return JSON.parse(stdout);
+}
+
 export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false,agentConsoleUpstream='',qaLoginUpstream=''}={}) {
   let consoleUpstream=null;
   if (agentConsoleUpstream) {
@@ -116,6 +132,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      const rawPath=request.url.split('?',1)[0];
       // Dedicated host opt-in; never route QA login through production auth.
       if (requestUrl.pathname==='/auth/c30r3-qa' || request.url.startsWith('/auth/c30r3-qa')) {
         if (!qaUpstream) return safeFailure(response,404,'EMPTY','허용된 경로가 아닙니다.');
@@ -205,6 +222,12 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
         }
       }
       if (request.method==='GET' && requestUrl.pathname==='/api/workbench/config') return send(response,200,{ok:true,project,fixtures:Object.entries(fixtures).map(([fixtureId,value])=>({fixtureId,label:value.label})),csrfToken,runtimeBoundary:'FIXTURE_BROWSER_RUNTIME_ONLY',actualProvider:'NOT_EXECUTED'});
+      if (request.method==='GET' && requestUrl.pathname==='/api/projects/scan') {
+        try {
+          const scan=await scanCurrentRepository();
+          return send(response,scan.success?200:409,{ok:scan.success,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,head:scan.repository?.head ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0,untrackedPaths:scan.repository?.untracked_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},message:scan.success?'읽기 전용 repository scan이 완료됐습니다.':'repository 상태가 변경되어 baseline을 차단했습니다.'});
+        } catch { return safeFailure(response,503,'OFFLINE','Repository scan을 실행할 수 없습니다.'); }
+      }
       if (request.method==='POST' && requestUrl.pathname==='/api/workbench/scan') {
         const hostHeader=request.headers.host;
         const expectedOrigin=`http://${allowedHost}`;
@@ -216,7 +239,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
         const state=fixtures[body.fixtureId].state;
         return send(response,200,{ok:true,state,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,language:scan.repository?.primary_language ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},evidence:{badge:'FIXTURE',countsAsPass:false,scope:'FIXTURE_BROWSER_RUNTIME_ONLY'},message:state==='BLOCKED'?'dirty fixture가 감지되어 실행을 차단했습니다.':'읽기 전용 fixture scan이 끝났습니다.',nextAction:state==='BLOCKED'?'변경 파일을 검토한 뒤 새 scan을 시작하세요.':'실행 모드를 선택하세요.'});
       }
-      if (request.method==='GET' && requestUrl.pathname==='/') {
+      if (request.method==='GET' && rawPath===requestUrl.pathname && (requestUrl.pathname==='/' || (runtimeMode==='production' && menuPaths.has(requestUrl.pathname)))) {
         const filename=runtimeMode==='preview'?'ui-preview.html':runtimeMode==='fixture'?'fixture-workbench.html':'index.html';
         const body=await readFile(join(webRoot,filename));
         response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});

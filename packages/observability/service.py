@@ -6,9 +6,11 @@ from datetime import datetime, timezone
 from hashlib import sha256
 import re
 from threading import RLock
-from typing import Protocol
+from typing import Callable, Protocol
 
 from .projection import OperationsSources, project_operations
+from .agent_owner_summary import ScopedAgentOwnerSummary, _checked_summary
+from .run_status_summary import ScopedRunStatusSummary
 
 
 class OperationsError(ValueError):
@@ -32,18 +34,85 @@ _MAX_READ = 100
 
 class OperationsService:
     def __init__(self, project_id: str, environment_id: str, sources: OperationsSources,
-                 *, repository: OperationsRepository | None = None, clock=None):
+                 *, repository: OperationsRepository | None = None, clock=None,
+                 source_loader: Callable[[str, str], OperationsSources] | None = None,
+                 run_summary_loader: Callable[[str, str], ScopedRunStatusSummary] | None = None,
+                 agent_owner_summary_loader: Callable[[str, str], ScopedAgentOwnerSummary] | None = None):
         if not project_id or not environment_id or type(sources) is not OperationsSources:
             raise OperationsError("OPERATIONS_OWNER_INVALID")
         if repository is None or not all(callable(getattr(repository, name, None))
                                          for name in ("load", "append")):
             raise OperationsError("AUDIT_OWNER_REQUIRED")
+        if source_loader is not None and not callable(source_loader):
+            raise OperationsError("OPERATIONS_SOURCE_LOADER_INVALID")
+        if run_summary_loader is not None and not callable(run_summary_loader):
+            raise OperationsError("RUN_SUMMARY_UNAVAILABLE")
+        if agent_owner_summary_loader is not None and not callable(agent_owner_summary_loader):
+            raise OperationsError("AGENT_OWNER_SUMMARY_UNAVAILABLE")
         self.project_id = project_id
         self.environment_id = environment_id
         self._sources = sources
+        self._source_loader = source_loader
+        self._run_summary_loader = run_summary_loader
+        self._agent_owner_summary_loader = agent_owner_summary_loader
         self._repository = repository
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._lock = RLock()
+
+    def agent_owner_summary(self) -> ScopedAgentOwnerSummary:
+        """Explicit internal read only; never called by the public snapshot/detector."""
+        if self._agent_owner_summary_loader is None:
+            raise OperationsError("AGENT_OWNER_SUMMARY_UNAVAILABLE")
+        try:
+            return _checked_summary(self._agent_owner_summary_loader(
+                self.project_id, self.environment_id))
+        except Exception:
+            raise OperationsError("AGENT_OWNER_SUMMARY_UNAVAILABLE") from None
+
+    def run_summary(self) -> ScopedRunStatusSummary:
+        """Read the optional scoped Run owner without altering Queue projections."""
+        if self._run_summary_loader is None:
+            raise OperationsError("RUN_SUMMARY_UNAVAILABLE")
+        try:
+            result = self._run_summary_loader(self.project_id, self.environment_id)
+            if type(result) is not ScopedRunStatusSummary:
+                raise ValueError("invalid Run summary")
+            return result
+        except Exception:
+            raise OperationsError("RUN_SUMMARY_UNAVAILABLE") from None
+
+    def _fresh_sources(self) -> OperationsSources:
+        if self._source_loader is None:
+            return self._sources
+        try:
+            sources = self._source_loader(self.project_id, self.environment_id)
+        except ValueError as exc:
+            if str(exc) == "QUEUE_SOURCE_LIMIT_EXCEEDED":
+                raise OperationsError("QUEUE_SOURCE_LIMIT_EXCEEDED") from None
+            raise OperationsError("QUEUE_SOURCE_UNAVAILABLE") from None
+        except Exception:
+            raise OperationsError("QUEUE_SOURCE_UNAVAILABLE") from None
+        try:
+            if type(sources) is not OperationsSources or sources.queue is None:
+                raise OperationsError("QUEUE_SOURCE_INVALID")
+            if getattr(sources.queue, "legacy_unscoped_present", False):
+                raise OperationsError("QUEUE_SOURCE_LEGACY_UNSCOPED")
+            if type(sources.queue_job_ids) is not tuple or len(sources.queue_job_ids) > 100:
+                raise OperationsError("QUEUE_SOURCE_INVALID")
+        except OperationsError:
+            raise
+        except Exception:
+            raise OperationsError("QUEUE_SOURCE_INVALID") from None
+        return sources
+
+    def _projection(self, now: str) -> dict:
+        sources = self._fresh_sources()
+        if self._source_loader is None:
+            return project_operations(sources, observed_at=datetime.fromisoformat(now))
+        try:
+            return project_operations(sources, observed_at=datetime.fromisoformat(now))
+        except Exception:
+            raise OperationsError("QUEUE_SOURCE_UNAVAILABLE") from None
 
     def _at(self) -> str:
         value = self._clock()
@@ -100,7 +169,7 @@ class OperationsService:
         """Host calls this before reads/on source events; HTTP GET never runs it."""
         with self._lock:
             now = self._at()
-            snapshot = project_operations(self._sources, observed_at=datetime.fromisoformat(now))
+            snapshot = self._projection(now)
             events = self._events()
             before = len(events)
             for worker in snapshot["worker"]:
@@ -143,7 +212,7 @@ class OperationsService:
 
     def snapshot(self) -> dict:
         """Host dashboard projection; does not mutate audit or source owners."""
-        result = project_operations(self._sources, observed_at=datetime.fromisoformat(self._at()))
+        result = self._projection(self._at())
         result["alerts"] = self.alerts()
         result["next_actions"] = [{"priority": a["level"], "reason": a["cause"],
             "target": a["related_entity_id"], "action": a["next_action"],
@@ -203,6 +272,38 @@ class OperationsService:
     def acknowledge(self, alert_id, *, actor_id, approval_id=None, evidence_hash):
         return self._transition(alert_id, actor_id=actor_id, approval_id=approval_id,
                                 evidence_hash=evidence_hash, target="acknowledged")
+
+    def acknowledge_critical(self, alert_id: str, *, actor_id: str,
+                             expected_sequence: int, evidence_hash: str,
+                             receipt: str) -> dict:
+        """Strict public ACK; legacy internal transitions keep their old behavior."""
+        if (type(actor_id) is not str or not _ACTOR.fullmatch(actor_id)
+                or type(receipt) is not str or not receipt.startswith("ack:")
+                or not _ACTOR.fullmatch(receipt)):
+            raise OperationsError("ACK_EVIDENCE_REQUIRED")
+        with self._lock:
+            events = self._events()
+            alert = self._state(events).get(alert_id)
+            if alert is None or alert["level"] != "critical":
+                raise OperationsError("ALERT_NOT_FOUND")
+            if (alert["status"] != "open"
+                    or type(expected_sequence) is not int
+                    or alert["sequence"] != expected_sequence
+                    or type(evidence_hash) is not str
+                    or not _EVIDENCE.fullmatch(evidence_hash)
+                    or evidence_hash != alert["evidence_hash"]):
+                raise OperationsError("ACK_CONFLICT")
+            event = {"action": "ACKNOWLEDGED", "alert_id": alert_id,
+                "actor_id": actor_id, "approval_id": receipt,
+                "evidence_hash": alert["evidence_hash"], "at": self._at()}
+            try:
+                self._append(events, event)
+            except ValueError as error:
+                if str(error) == "AUDIT_SEQUENCE_CONFLICT":
+                    raise OperationsError("ACK_CONFLICT") from None
+                raise
+            return {"alert_id": alert_id, "ack_sequence": len(events) + 1,
+                    "receipt": receipt, "evidence_hash": alert["evidence_hash"]}
 
     def resolve(self, alert_id, *, actor_id, approval_id=None, evidence_hash):
         return self._transition(alert_id, actor_id=actor_id, approval_id=approval_id,

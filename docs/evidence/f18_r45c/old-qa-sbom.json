@@ -1,0 +1,12 @@
+{
+  "image_ids": {
+    "api": "sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b",
+    "web": "sha256:61f13f7ffa9d20713c6cc4234b4529bce2d4b0c8f1d11b73832a28c3213910bf",
+    "worker": "sha256:6a8a0e1de3346c2a348487295504c9070557650a50459805798cb6f41262d43f"
+  },
+  "lockfile_sha256": "sha256:b1cba45d362401032ef3ba362073b7c80a8cc42cdef6ee6583884b66e619d8a3",
+  "python_requirements_sha256": "sha256:f900de416d5be78fb94ba01cb2280a18a17e77c36627356cc5c7ccfeece1ade0",
+  "schema_version": 1,
+  "scope": "QA_APPLICATION_DEPENDENCIES_ONLY_NOT_OS_OR_IMAGE_SBOM",
+  "source_commit": "4eadfcd441b55445237545146ae5ba4051739904"
+}

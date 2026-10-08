@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2052,
+  "accepted": false,
+  "projection_mode": "F20_U01_R39_ARTIFACT_HEALTH_GAP_START",
+  "previous_event_sequence": 2048,
+  "product_write_scope": [
+    "packages/observability/projection.py",
+    "tests/observability/test_f13_operations.py",
+    "tests/api/test_f20_u01_r10_dashboard_api.py",
+    "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_RESULT.md"
+  ],
+  "predecessor_commit": "2ba2bd721ed73e2ba7300756707c9c67551611cf",
+  "predecessor_events_sha256": "F80E76F9BA0E34F35A39AA5CDBEB63B35B72C3AA56CCB3418ADC2AB820D6FA46",
+  "plan_path": "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_PLAN.md",
+  "plan_sha256": "267DF4AFEFB70930137A86287E0F9B2D28E03C313A8FC4511BB7E75906C783DA",
+  "work_instruction_sha256": "33DBA84D7285110DC7E2C7DEE0FC6EEF71B5B6310C47F6DADAC00EACDA7233F6",
+  "invocation_sha256": "F02041AE7540B8BEB97DB80C5B19B61C7DC5BC1B73013DEA218CA825F67D3D6F",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

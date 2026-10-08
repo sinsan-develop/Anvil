@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2044,
+  "accepted": false,
+  "projection_mode": "F20_C30_RECOVERY_V2_VERIFIER_START",
+  "previous_event_sequence": 2040,
+  "product_write_scope": [
+    "scripts/f20_c30_recovery_v2.py",
+    "tests/tooling/test_f20_c30_recovery_v2.py",
+    "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DEVELOPER_RESULT.md"
+  ],
+  "predecessor_commit": "f1e992d85c08fabbec69db271dbf70bed7dc0fce",
+  "predecessor_events_sha256": "5167A3AC73E8C914144340F0B1506CE144470657AE75CAAFEF0DAFBB4E5D1DBF",
+  "approval_path": "docs/approvals/APPROVAL-20261004-C30-NONDESTRUCTIVE-LEDGER-RECOVERY-001.md",
+  "approval_sha256": "44420B3E302ED50586BA41727E024144940F3A73F66D206550FF1CC61A1573B4",
+  "work_instruction_path": "docs/work_orders/F-20_C30_EVENT_RECOVERY_V2_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "80B4F6167097D73E61F9953AFAFD1FD488441A8895DC59B69E74B35295DC7FDA",
+  "design_path": "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_DESIGN.md",
+  "design_sha256": "168E4E5EEF34693AEAD3A2E827249C0E47F0F9AC02CE7FE714D8FE38EE8072DF",
+  "plan_path": "docs/04_test_reports/F-20_C30_EVENT_RECOVERY_V2_PLAN.md",
+  "plan_sha256": "20CC2EE71D1AE169F505CC88ECF64127E5FDBA2D14B94C050A93C9C792DCE1D8",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

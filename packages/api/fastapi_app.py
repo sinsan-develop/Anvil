@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from contextvars import ContextVar
 import hmac
 import inspect
 import re
+import time
 from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from psycopg import OperationalError as PsycopgOperationalError
 from starlette.concurrency import run_in_threadpool
 
 from packages.events.transition_guard import OptimisticVersionConflict
@@ -20,6 +23,8 @@ from packages.execution.models import TaskStatus
 
 from .common import ApiContractError, ApplicationRequest, ApplicationResponse, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
+from .f19a_registration import REGISTRATION_ENDPOINT_KEYS, RegistrationRepository, dispatch_registration
+from packages.persistence.f19a_registration_repository import F19ARegistrationRejected
 from .local_session import IssuedSession
 from .oidc_session_coordinator import OidcSessionCoordinator, OidcSessionRejected
 from .security import (
@@ -42,11 +47,18 @@ _TRUSTED_READ_ENDPOINT_KEYS = frozenset(
         "GET /api/runs/{id}/events",
     }
 )
+_F19A_FIXED_OPERATIONS_KEYS = frozenset({
+    "GET /api/dashboard/operations",
+    "GET /api/operations/alerts",
+    "POST /api/operations/alerts/{alertId}:acknowledge",
+})
+_f19a_db_deadline: ContextVar[float | None] = ContextVar("f19a_db_deadline", default=None)
 
 
 def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = False) -> None:
     """Serve the built frontend from the same ASGI listener as the API."""
     fixture_file = f"{directory}/fixture-workbench.html"
+    index_file = f"{directory}/index.html"
     if fixture_enabled:
         app.add_api_route(
             "/fixture-workbench",
@@ -65,6 +77,16 @@ def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = Fals
                 methods=["GET"],
                 include_in_schema=False,
             )
+
+    def menu_shell() -> FileResponse:
+        return FileResponse(index_file)
+
+    for path in (
+        "/workbench", "/projects", "/runs", "/reviews", "/quality",
+        "/knowledge", "/agents-automation", "/environments", "/operations",
+        "/settings",
+    ):
+        app.add_api_route(path, menu_shell, methods=["GET"], include_in_schema=False)
     app.mount("/", StaticFiles(directory=directory, html=True), name="frontend")
 Authenticator = Callable[[str], SessionPrincipal | None]
 _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')
@@ -102,6 +124,23 @@ def _oidc_error(error: OidcSessionRejected) -> ApiContractError:
     if str(error) == "OIDC_SESSION_NOT_AVAILABLE":
         return ApiContractError("OIDC_SESSION_NOT_AVAILABLE", "Authentication is unavailable.", 503)
     return ApiContractError("OIDC_SESSION_NOT_AUTHORIZED", "Authentication is required.", 401)
+
+
+def _f19a_database_error(error: ApiContractError) -> ApiContractError:
+    database_failure = error.code == "OIDC_SESSION_NOT_AVAILABLE"
+    if error.code == "DASHBOARD_SOURCE_UNAVAILABLE":
+        cause = error.__context__
+        seen: set[int] = set()
+        while cause is not None and id(cause) not in seen:
+            if isinstance(cause, PsycopgOperationalError):
+                database_failure = True
+                break
+            seen.add(id(cause))
+            cause = cause.__context__
+    if error.status_code == 503 and database_failure:
+        return ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+            "Pair authorization is unavailable.", 503)
+    return error
 
 
 def _authenticate_session(authenticate: Authenticator, token: str) -> SessionPrincipal | None:
@@ -398,6 +437,8 @@ def _endpoint_handler(
     config: WebSecurityConfig,
     resolve_authorization: AuthorizationResolver | None,
     trusted_read_principal: SessionPrincipal | None,
+    registration_repository: RegistrationRepository | None = None,
+    f19a_pair_guard_required: bool = False,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
@@ -412,6 +453,26 @@ def _endpoint_handler(
                 if isinstance(target_environment, str):
                     authorization_parameters["targetEnvironment"] = target_environment
             authorization_scope = _authorize(principal, endpoint, authorization_parameters, resolve_authorization)
+            if endpoint.key in _F19A_FIXED_OPERATIONS_KEYS and f19a_pair_guard_required:
+                if registration_repository is None:
+                    raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+                        "Pair authorization is unavailable.", 503)
+                try:
+                    granted = await run_in_threadpool(registration_repository.require_pair_grant,
+                        principal.actor_id, authorization_scope.project_id,
+                        authorization_scope.environment_id, endpoint.permission)
+                except F19ARegistrationRejected as error:
+                    if str(error) == "AUTHORIZATION_SCOPE_MISMATCH":
+                        raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH",
+                            "The Operations scope is not allowed.", 403) from None
+                    raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+                        "Pair authorization is unavailable.", 503) from None
+                except Exception:
+                    raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE",
+                        "Pair authorization is unavailable.", 503) from None
+                if granted is not True:
+                    raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH",
+                        "The Operations scope is not allowed.", 403)
             if endpoint.key == "POST /api/projects/{projectId}/tasks":
                 if authorization_scope.project_id != request.path_params.get("projectId"):
                     raise ApiContractError(
@@ -464,14 +525,59 @@ def _endpoint_handler(
                 ),
             )
         except ApiContractError as error:
+            if endpoint.key in _F19A_FIXED_OPERATIONS_KEYS and f19a_pair_guard_required:
+                error = _f19a_database_error(error)
             return _error_response(request, error)
-        except Exception:
+        except Exception as error:
+            if (endpoint.key in _F19A_FIXED_OPERATIONS_KEYS
+                    and f19a_pair_guard_required
+                    and isinstance(error, PsycopgOperationalError)):
+                return _error_response(request, ApiContractError(
+                    "PAIR_AUTHORIZATION_UNAVAILABLE", "Pair authorization is unavailable.", 503))
             return _error_response(
                 request,
                 ApiContractError("INTERNAL_ERROR", "An internal error occurred.", 500),
             )
 
     handler.__name__ = "endpoint_" + re.sub(r"[^a-zA-Z0-9]", "_", endpoint.key)
+    _declare_path_parameters(handler, endpoint.path)
+    return handler
+
+
+def _registration_handler(
+    endpoint: EndpointSpec,
+    repository: RegistrationRepository | None,
+    authenticate: Authenticator,
+    config: WebSecurityConfig,
+    f19a_enabled: bool = False,
+) -> Callable[[Request], Any]:
+    async def handler(request: Request, **_path_parameters: str) -> Response:
+        try:
+            _host(request, config)
+            principal = await _read_principal(request, authenticate, config, None)
+            body: Mapping[str, Any] = {}
+            if endpoint.is_mutation:
+                _origin(request, config, required=True)
+                csrf = request.headers.get("x-csrf-token")
+                if csrf is None or not hmac.compare_digest(csrf, principal.csrf_token):
+                    raise ApiContractError("CSRF_VALIDATION_FAILED", "The CSRF token is invalid.", 403)
+                body = await _body(request)
+            elif await request.body():
+                raise ApiContractError("REGISTRATION_INVALID_INPUT", "The registration input is invalid.", 400)
+            status, result = await run_in_threadpool(
+                dispatch_registration, endpoint.key, repository, principal, dict(request.path_params), body
+            )
+            return JSONResponse(result, status_code=status)
+        except ApiContractError as error:
+            if f19a_enabled:
+                error = _f19a_database_error(error)
+            return _error_response(request, error)
+        except Exception:
+            return _error_response(request, ApiContractError(
+                "INTERNAL_ERROR", "An internal error occurred.", 500
+            ))
+
+    handler.__name__ = "registration_" + re.sub(r"[^a-zA-Z0-9]", "_", endpoint.key)
     _declare_path_parameters(handler, endpoint.path)
     return handler
 
@@ -606,7 +712,11 @@ def create_app(
     oidc_session_coordinator: OidcSessionCoordinator | None = None,
     trusted_read_principal: SessionPrincipal | None = None,
     auth_mode: str = "COOKIE",
+    registration_repository: RegistrationRepository | None = None,
+    f19a_pair_guard_required: bool = False,
 ) -> FastAPI:
+    if type(f19a_pair_guard_required) is not bool:
+        raise ValueError("F-19A pair guard mode must be boolean")
     if oidc_session_coordinator is not None and session_issuer is not None:
         raise ValueError("OIDC and local session issuance cannot both be active")
     api_registry = registry or canonical_api_registry()
@@ -635,6 +745,17 @@ def create_app(
 
     @app.middleware("http")
     async def common_web_security(request: Request, call_next: Callable[[Request], Any]) -> Response:
+        deadline_token = (_f19a_db_deadline.set(time.monotonic() + 10.0)
+            if f19a_pair_guard_required else None)
+        try:
+            return await _common_web_security_with_deadline(request, call_next)
+        finally:
+            if deadline_token is not None:
+                _f19a_db_deadline.reset(deadline_token)
+
+    async def _common_web_security_with_deadline(
+        request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:
         request.state.request_id = request_id(
             None if request.url.path.startswith("/auth/oidc/") else request.headers.get("x-request-id")
         )
@@ -648,7 +769,7 @@ def create_app(
                 response = Response(status_code=204)
                 response.headers["access-control-allow-origin"] = origin
                 response.headers["access-control-allow-credentials"] = "true"
-                response.headers["access-control-allow-methods"] = "GET, POST, OPTIONS"
+                response.headers["access-control-allow-methods"] = "GET, POST, PATCH, PUT, OPTIONS"
                 response.headers["access-control-allow-headers"] = (
                     "Content-Type, Idempotency-Key, If-Match, Last-Event-ID, X-CSRF-Token, "
                     "X-Permission-Scope, X-Reason, X-Request-ID, X-Target-Hash"
@@ -671,7 +792,9 @@ def create_app(
             if endpoint.key in _TRUSTED_READ_ENDPOINT_KEYS
             else None
         )
-        handler = (
+        handler = (_registration_handler(endpoint, registration_repository, authenticator, config,
+                f19a_pair_guard_required)
+            if endpoint.key in REGISTRATION_ENDPOINT_KEYS else
             _sse_handler(
                 endpoint,
                 stream,
@@ -688,6 +811,8 @@ def create_app(
                 config,
                 authorization_resolver,
                 endpoint_trusted_read_principal,
+                registration_repository,
+                f19a_pair_guard_required,
             )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source], **_task_openapi(endpoint))

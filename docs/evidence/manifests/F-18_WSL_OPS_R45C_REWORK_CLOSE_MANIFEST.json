@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1684,
+  "accepted": false,
+  "projection_mode": "F18_WSL_OPS_R45C_REWORK_CLOSE",
+  "product_write_scope": [],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-18_R45C_REWORK_REPORT.md",
+      "bytes": 2861,
+      "sha256": "89BBFCF6A18258E88A3F50AB2775861DDA2489093E3766319C0FC62ED7C6009E"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 899299,
+      "sha256": "A513A9CCD009BB7585059394C212F1ED5ED2F60C928A84CB6D6A00BDC037FA07"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R45C_REWORK_START_MANIFEST.json",
+      "bytes": 1684,
+      "sha256": "9EB680AD574936C0C1F0269F818252B9ACF91B75CDA467E3BAF22298E313B11B"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R45C_REWORK_INVOCATION.md",
+      "bytes": 418,
+      "sha256": "D98DEB080EBF1EAE091A428EFEDA2A157702100E858A6917EDCB140197815F34"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R45C_REWORK_PLAN.md",
+      "bytes": 1535,
+      "sha256": "8DA59CA2B459F940D30444AA119C8A152B92F6219C101134636EE9F43F0332A6"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R45C_REWORK_WORK_INSTRUCTION.md",
+      "bytes": 916,
+      "sha256": "7D03A50A6D5E5C0D72FAAEDA9798396B20808A3D3C5A39B1EDAD903571D1E547"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4763600,
+      "sha256": "A57C53B6951D985849F0BA76A71CB6CB295D5900CA93671614A18825528D25EA"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r45c_rework_close_overlay.py",
+      "bytes": 4840,
+      "sha256": "2D391D1181A01C96363DB19F2F85D8D01BD217E13CAC83376C81948DCC0CAC6D"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r45c_rework_overlay.py",
+      "bytes": 352,
+      "sha256": "F52EBC5557B35648CD58C73CFB58E268447F377CACEEBB85D435C6D70F6F0253"
+    }
+  ],
+  "production": "NOT_EXECUTED"
+}

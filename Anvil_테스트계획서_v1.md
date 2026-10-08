@@ -365,6 +365,8 @@ golden_case:
 
 **G-07 문서 정규화 successor**: 108개 Package가 매트릭스 역색인에 정확히 1회 이상 배정되고, U-01~U-11이 메뉴 순서대로 직렬이며, §49.17의 20개 시나리오가 모두 개별 AV ID와 Gate를 가져야 한다. 누락·구 Package 수·구 배포 대상·중복 메뉴 책임이 하나라도 있으면 B-05를 시작하지 않는다(AV-GATE-026).
 
+위 108개는 **v1.6 당시 G-07 historical 판정의 모집단**이다. 현재 v1.7 계획의 고유 123개와 문서 successor 후보 F-19A를 포함한 124개를 새 작업에 검증할 때는 매트릭스 §6.12의 추가 16개 역색인을 합쳐 판정한다. 과거 G-07 accepted evidence를 124개 검증으로 승격하거나 소급 변경하지 않는다.
+
 ### 10.2 Phase A — 화면·계약·읽기 전용 온보딩
 
 | 항목 | 내용 |
@@ -516,11 +518,13 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 
 F-01~F-19는 provider·관측·보안·환경 승격 capability를 준비한다. **F-20 최종 WSL 운영 유사 검증은 U-11 acceptance 뒤에만 실행**하며, U-01~U-11 전 메뉴의 동일 ReleaseManifest·same-origin·smoke·rollback evidence를 포함해야 한다. F-20 완료도 Production Release가 아니다.
 
+**F-19A/U-01 문서 successor 선행 검증**: 기존 F Capability Gate의 historical 판정은 소급 변경하지 않는다. U-01 제품 write 전에 후보 F-19A를 독립 Tester가 `AV-OPS-026`·`AV-SAFE-034`로 수락해야 한다. 등록/비등록·비활성 Project→Environment 정확 pair, 서로 허용된 독립 ID의 미허용 교차 조합, actor/permission 철회 다음 요청, scope별 cache 격리, 기존 고정 Dashboard GET/Critical ACK 호환을 각각 실패·정상 경로로 검증한다. 등록 원본·grant·감사·backup/restore 범위를 API/DB 증거로 분리하고, 실제 제품/API/인가/DB 구현 및 migration은 별도 승인 전 `NOT_EXECUTED`다. 로컬 PASS와 동일 clean SHA의 WSL-server PG15/OIDC/HTTPS/Chromium/Network PASS를 혼용하지 않는다. 필요 시 PG18 RC는 격리 실행하며 Production/ysna는 범위 밖이다.
+
 ### 10.8 Phase U — 메뉴별 순차 수직 검증
 
 | 순서 | Package | 메뉴 | 핵심 실제 검증 |
 |---:|---|---|---|
-| 1 | U-01 | Dashboard | 상태·경고·승인대기·next action이 실제 read model과 일치 |
+| 1 | U-01 | Dashboard | 인가된 정확 Project·Environment pair의 선택·철회·새로고침, Asia/Seoul 오늘 포함 1/7/30 달력일→UTC `[start,end)`, 현재 상태/기간 발생 분리, 완전 원본 결손 시 `UNAVAILABLE`, 미해결 Critical·Next Action 상시 노출, 상태·경고·승인대기와 실제 read model 일치 |
 | 2 | U-02 | Workbench | 어울 대화·지시·중단·재개·결과·승인 계보를 실제 클릭으로 확인 |
 | 3 | U-03 | Projects | intent→baseline→iteration→WI→승인 hash trace와 invalidation 표시 |
 | 4 | U-04 | Runs | Step/Attempt/Delegation/Event·pause/resume·checkpoint 흐름 |
@@ -543,6 +547,8 @@ F-01~F-19는 provider·관측·보안·환경 승격 capability를 준비한다.
 7. 다음 메뉴는 직전 메뉴 acceptance commit과 동일한 clean baseline에서 시작한다.
 
 **U Gate 종료 조건**: U-01~U-11이 순서대로 모두 `ACCEPTED`, 공통 navigation·권한·상태표현 회귀 PASS, cross-menu same-origin Network/secret 위반 0건이어야 한다. 이 조건 전에는 F-20 최종 release 검증을 시작하지 않는다.
+
+**U-01 successor 실제 시험**: `AV-SAFE-034`, `AV-OPS-027`, `AV-UI-017`과 기존 §10.8/매트릭스 §6.11 ID를 독립 판정한다. 서울 자정 전후·월말·윤일의 `[start,end)` 중복/누락, 오늘 포함 7·30일, 브라우저 로컬 timezone 변경, 기간 밖 미해결 경고, 부분 Alert 페이지, 원본 지연/결손, 응답 순서 역전·scope 전환·권한 철회 뒤 stale 결과를 실패 주입한다. Health·실행 중·승인 대기·BLOCKED·Next Actions·Critical의 현재 상태와 기간 발생 수가 서로 다른 basis임을 API/화면으로 증명한다. source completeness가 없는 카드의 `0` 또는 PASS 표기는 FAIL이다. E-API·E-AUD·E-SHOT·E-NET을 같은 scope/시간 경계에 결박하고 실제 클릭·same-origin Network를 별도 확인한다. 미실행·mock·fixture는 실제 브라우저/DB PASS가 아니다.
 
 ### 10.9 Phase P — Plugin
 

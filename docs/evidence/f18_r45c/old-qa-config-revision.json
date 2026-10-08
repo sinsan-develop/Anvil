@@ -1,0 +1,9 @@
+{
+  "files": {
+    "deploy/wsl/compose.f17.yml": "sha256:a48b9fc4a8cdc7482535ae2774e6ab862398e7c5c6e764df7815d78c05adbcab",
+    "deploy/wsl/nginx-wsl.conf": "sha256:1c3b94b5ceb691d1d0aa3ad9a8515ad516519acc1926c984b0905f189ded137e"
+  },
+  "schema_version": 1,
+  "scope": "HISTORICAL_R21_QA_SOURCE_ONLY_NO_OIDC",
+  "source_commit": "4eadfcd441b55445237545146ae5ba4051739904"
+}

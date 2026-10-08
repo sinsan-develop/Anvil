@@ -331,6 +331,28 @@ def test_managed_object_fanout_redirect_is_rejected_before_foreign_write(tmp_pat
     source_after={p.relative_to(source).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in source.rglob('*') if p.is_file()}
     assert source_before==source_after and git(work,'rev-parse','HEAD')==base
 
+def test_posix_object_fanout_rejection_uses_public_lease_error(tmp_path,monkeypatch):
+    from contextlib import contextmanager
+    import packages.agent_team.worktree_writes as module
+    from packages.execution_backends import BackendRejected
+    s,refs,g,clock,leases,source,base=setup(tmp_path)
+    binding=s._bindings[g[0].write.write_fencing_token]
+
+    class PosixOS:
+        name='posix'
+
+    @contextmanager
+    def reject_fanout(*args,**kwargs):
+        raise BackendRejected('REPARSE_PATH_DENIED')
+        yield
+
+    monkeypatch.setattr(module,'os',PosixOS())
+    monkeypatch.setattr(module,'verified_scope_guard',reject_fanout)
+    with pytest.raises(LeaseError,match='WORKSPACE_GIT_STORE_DRIFT'):
+        with s._object_write_guard(binding):
+            pytest.fail('object writer reached after fanout rejection')
+    assert git(Path(refs[0].workspace_root),'rev-parse','HEAD')==base
+
 def test_post_commit_retarget_then_receipt_failure_compensates_bound_final(tmp_path,monkeypatch):
     from contextlib import contextmanager
     import packages.agent_team.worktree_writes as module

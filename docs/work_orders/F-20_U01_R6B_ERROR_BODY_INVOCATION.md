@@ -1,0 +1,1 @@
+기존 `codex/f18-wsl-ops` worktree와 R6B WorkInstruction을 읽고 epoch19 worker/write dual lease·G-05를 확인하라. exact5 안에서 실패 응답 완료 경계를 RED→GREEN으로 보완하고 기본 OFF 실제 브라우저 E2E가 가능한지 로컬 검증 후 Main에게 보고하라. commit/push/merge나 공유 WSL 자원 변경은 하지 말라.

@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {App, classifyReadiness} from '../src/console/App.tsx';
+import * as consoleApp from '../src/console/App.tsx';
 
-test('operational shell keeps canonical menu order but only Dashboard active', () => {
+const {App, classifyReadiness} = consoleApp;
+
+test('operational shell keeps canonical menu order with only the current Dashboard active', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   for (const label of ['Dashboard', 'Workbench', 'Projects', 'Runs', 'Reviews', 'Quality',
                        'Knowledge', 'Agents &amp; Automation', 'Environments', 'Operations', 'Settings']) {
@@ -21,9 +24,1701 @@ test('unknown route is a safe route boundary without fake business content', () 
   assert.doesNotMatch(html, /Internal Server Error|stack trace/);
 });
 
-test('readiness requires the F-14 head and cannot promote absent source', () => {
+test('readiness accepts only confirmed operations or OIDC migration heads', () => {
+  assert.equal(classifyReadiness({status:'ready', migration_head:'0020_f19a_pair_grants'}), 'READY');
+  assert.equal(classifyReadiness({status:'ready', migration_head:'0019_oidc_sessions'}), 'READY');
   assert.equal(classifyReadiness({status:'ready', migration_head:'0016_operations_recovery'}), 'READY');
   assert.equal(classifyReadiness({status:'ready', migration_head:'0013_task_bootstrap_authority'}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:'unknown'}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:'0018_oidc_principals'}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:['0019_oidc_sessions', '0020_f19a_pair_grants']}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'ready', migration_head:''}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'not_ready', migration_head:'0020_f19a_pair_grants'}), 'NOT CONNECTED');
+  assert.equal(classifyReadiness({status:'not_ready', migration_head:'0019_oidc_sessions'}), 'NOT CONNECTED');
   assert.equal(classifyReadiness({status:'not_ready', reason:'database_unavailable'}), 'NOT CONNECTED');
   assert.equal(classifyReadiness(null), 'NOT CONNECTED');
+});
+
+test('Database card shows the server-confirmed head without claiming a different migration', () => {
+  const card = consoleApp.DatabaseHealthCard;
+  assert.equal(typeof card, 'function');
+  const oidc = renderToStaticMarkup(React.createElement(card, {
+    value: {status:'ready', migration_head:'0019_oidc_sessions'},
+  }));
+  assert.match(oidc, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0019_oidc_sessions/s);
+  assert.doesNotMatch(oidc, /status-ready|HEALTHY/);
+  assert.doesNotMatch(oidc, /0016_operations_recovery/);
+
+  const f19a = renderToStaticMarkup(React.createElement(card, {
+    value: {status:'ready', migration_head:'0020_f19a_pair_grants'},
+  }));
+  assert.match(f19a, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0020_f19a_pair_grants/s);
+  assert.doesNotMatch(f19a, /HEALTHY|0016_operations_recovery|0019_oidc_sessions/);
+
+  const operations = renderToStaticMarkup(React.createElement(card, {
+    value: {status:'ready', migration_head:'0016_operations_recovery'},
+  }));
+  assert.match(operations, /Database.*UNAVAILABLE.*API 준비 READY.*Migration 0016_operations_recovery/s);
+
+  const unknown = renderToStaticMarkup(React.createElement(card, {
+    value: {status:'ready', migration_head:'unknown'},
+  }));
+  assert.match(unknown, /Database.*NOT CONNECTED.*연결된 상태 정보가 없습니다/s);
+  assert.doesNotMatch(unknown, /Migration /);
+});
+
+const providerIds = ['cerebras', 'groq', 'mistral', 'openrouter', 'upstage', 'gemini', 'anthropic', 'openai', 'ollama'];
+const providerRows = (registered = []) => providerIds.map((provider_id) => ({
+  provider_id,
+  credential_status: registered.includes(provider_id) ? 'REGISTERED' : 'MISSING',
+  health_status: 'NOT_CHECKED',
+  credential: 'secret-must-not-render',
+  server_endpoint: 'http://internal-must-not-render:8301',
+}));
+const jsonResponse = (data, status = 200) => ({ok: status >= 200 && status < 300, status,
+  json: async () => data, text: async () => JSON.stringify(data)});
+
+test('non-ok Provider, Alerts, and Health bodies finish without exposing their contents', async () => {
+  const secret = 'private-response-body-must-not-render';
+  const calls = [];
+  const failure = (name, status) => ({ok: false, status,
+    text: async () => { calls.push(name); return secret; },
+    json: async () => { throw new Error('non-ok JSON must not be parsed'); }});
+  const signal = new AbortController().signal;
+  const provider = await consoleApp.loadProviderRegistration(signal, async () => failure('provider', 401));
+  const alerts = await consoleApp.loadCriticalAlerts(signal, async () => failure('alerts', 403));
+  const health = await consoleApp.loadReadiness(signal, async () => failure('health', 503));
+  const firstPage = await consoleApp.loadCriticalAlerts(signal,
+    async () => jsonResponse(alertResponse([alertRow()], 7)));
+  const older = await consoleApp.loadOlderCriticalAlerts(firstPage, signal,
+    async () => failure('older-alerts', 401));
+  assert.deepEqual(calls, ['provider', 'alerts', 'health', 'older-alerts']);
+  assert.deepEqual(provider, {status: 'UNAVAILABLE', registered: null});
+  assert.deepEqual(alerts, {status: 'BLOCKED'});
+  assert.deepEqual(older, {status: 'UNAVAILABLE'});
+  assert.deepEqual(health, {payload: null, checked: 'JUST NOW'});
+  const html = [renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard, {value: provider})),
+    renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: alerts})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard, {value: health.payload}))].join('');
+  assert.doesNotMatch(html, /private-response-body-must-not-render/);
+});
+
+test('Critical Alerts 403 waits for body completion then shows BLOCKED without response contents', async () => {
+  let releaseBody;
+  const privateBody = 'private-403-response-must-not-render';
+  const body = new Promise((resolve) => { releaseBody = resolve; });
+  const pending = consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => ({ok: false, status: 403, text: () => body,
+      json: async () => { throw new Error('403 JSON must not be parsed'); }}));
+  let settled = false;
+  void pending.then(() => { settled = true; });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(settled, false);
+  releaseBody(privateBody);
+  const state = await pending;
+  assert.deepEqual(state, {status: 'BLOCKED'});
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /Critical Alerts.*BLOCKED.*조회 차단/s);
+  assert.doesNotMatch(html, /private-403-response-must-not-render|저장된 Critical 기록 없음/);
+});
+
+test('non-ok body read errors and abort remain fail-closed without stale success', async () => {
+  const controller = new AbortController();
+  const request = async () => ({ok: false, status: 401, text: async () => {
+    controller.abort();
+    throw new Error('private-body-read-error');
+  }});
+  assert.deepEqual(await consoleApp.loadProviderRegistration(controller.signal, request),
+    {status: 'UNAVAILABLE', registered: null});
+  assert.deepEqual(await consoleApp.loadCriticalAlerts(new AbortController().signal, request),
+    {status: 'UNAVAILABLE'});
+  assert.deepEqual(await consoleApp.loadReadiness(new AbortController().signal, request),
+    {payload: null, checked: 'FAILED'});
+});
+
+test('non-ok Provider, Alerts, and Health wait for body completion before settling', async () => {
+  const cases = [
+    [consoleApp.loadProviderRegistration, {status: 'UNAVAILABLE', registered: null}],
+    [consoleApp.loadCriticalAlerts, {status: 'UNAVAILABLE'}],
+    [consoleApp.loadReadiness, {payload: null, checked: 'JUST NOW'}],
+  ];
+  for (const [loader, expected] of cases) {
+    let finishBody;
+    const body = new Promise((resolve) => { finishBody = resolve; });
+    const pending = loader(new AbortController().signal,
+      async () => ({ok: false, status: 401, text: () => body}));
+    let settled = false;
+    void pending.then(() => { settled = true; });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(settled, false);
+    finishBody('discarded-private-body');
+    assert.deepEqual(await pending, expected);
+  }
+});
+
+test('successful Health retains same-origin request and readiness payload', async () => {
+  const controller = new AbortController();
+  const expected = {status: 'ready', migration_head: '0019_oidc_sessions'};
+  const calls = [];
+  const health = await consoleApp.loadReadiness(controller.signal, async (url, options) => {
+    calls.push([url, options]);
+    return {ok: true, json: async () => expected,
+      text: async () => { throw new Error('successful body must not use failure reader'); }};
+  });
+  assert.deepEqual(health, {payload: expected, checked: 'JUST NOW'});
+  assert.equal(calls[0][0], '/api/health/ready');
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.equal(calls[0][1].signal, controller.signal);
+  assert.equal(consoleApp.classifyReadiness(health.payload), 'READY');
+});
+
+test('Provider card counts only registered credentials and keeps health NOT CHECKED', async () => {
+  const requests = [];
+  const controller = new AbortController();
+  const state = await consoleApp.loadProviderRegistration(controller.signal, async (url, options) => {
+    requests.push([url, options]);
+    return jsonResponse({data: providerRows(['groq', 'openai'])});
+  });
+  assert.deepEqual(requests.map(([url]) => url), ['/api/providers']);
+  assert.equal(requests[0][1].credentials, 'same-origin');
+  assert.equal(requests[0][1].signal, controller.signal);
+  assert.deepEqual(state, {status: 'VALID', registered: 2});
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard, {value: state}));
+  assert.match(html, /LLM Providers.*2.*9.*NOT CHECKED/s);
+  assert.match(html, /aria-live="polite" aria-atomic="true"/);
+  assert.doesNotMatch(html, /READY|secret-must-not-render|internal-must-not-render|DEGRADED/);
+});
+
+test('Provider card reports zero registered without implying connection health', async () => {
+  const state = await consoleApp.loadProviderRegistration(new AbortController().signal,
+    async () => jsonResponse({data: providerRows()}));
+  assert.deepEqual(state, {status: 'VALID', registered: 0});
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard, {value: state}));
+  assert.match(html, /0.*9.*NOT CHECKED/s);
+  assert.doesNotMatch(html, /READY/);
+});
+
+test('Provider card fails closed on auth, server, malformed, incomplete, duplicate and empty responses', async () => {
+  const malformed = [null, {}, {data: []}, {data: providerRows().slice(1)},
+    {data: [...providerRows().slice(0, 8), providerRows()[0]]},
+    {data: providerRows().map((row, index) => index === 0 ? {...row, provider_id: 'unknown'} : row)},
+    {data: providerRows().map((row, index) => index === 0 ? {...row, credential_status: 'SECRET'} : row)},
+    {data: providerRows().map((row, index) => index === 0 ? {...row, health_status: 'AVAILABLE'} : row)}];
+  for (const response of [jsonResponse({}, 401), jsonResponse({}, 403), jsonResponse({}, 500),
+    ...malformed.map((body) => jsonResponse(body))]) {
+    const state = await consoleApp.loadProviderRegistration(new AbortController().signal, async () => response);
+    assert.deepEqual(state, {status: 'UNAVAILABLE', registered: null});
+  }
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard,
+    {value: {status: 'UNAVAILABLE', registered: null}}));
+  assert.match(html, /LLM Providers.*UNAVAILABLE/s);
+  assert.match(html, /aria-live="polite" aria-atomic="true"/);
+  assert.doesNotMatch(html, /READY|secret-must-not-render|internal-must-not-render/);
+});
+
+test('Provider request and JSON failures never expose raw errors', async () => {
+  for (const request of [async () => { throw new Error('secret-must-not-render'); },
+    async () => ({ok: true, json: async () => { throw new Error('internal-must-not-render'); }})]) {
+    const state = await consoleApp.loadProviderRegistration(new AbortController().signal, request);
+    assert.deepEqual(state, {status: 'UNAVAILABLE', registered: null});
+  }
+});
+
+const alertRow = (overrides = {}) => ({
+  alert_id: 'alert-1', sequence: 7, level: 'critical', source: 'worker',
+  category: 'availability', code: 'WORKER_LEASE_EXPIRED', related_entity_id: 'run-7',
+  dedupe_key: 'private-dedupe-key', detector_rule_revision: 'f13-v1',
+  cause: 'Worker lease expiry observed', impact: 'Run ownership cannot be trusted',
+  next_action: 'REVIEW_WORKER_TAKEOVER', deep_link: '/operations/workers',
+  evidence_hash: 'sha256:private-evidence', status: 'open', owner_id: null,
+  observed_at: '2026-09-29T02:00:00+00:00', project_id: 'project-1', environment_id: 'env-1',
+  ...overrides,
+});
+const alertResponse = (alerts, next_before_sequence = null) =>
+  ({data: {alerts, next_before_sequence}, request_id: 'request-1'});
+
+test('Critical ACK needs in-memory CSRF and confirms the exact append through audit GET', async () => {
+  const calls = [];
+  const alert = alertRow({evidence_hash: `sha256:${'a'.repeat(64)}`});
+  const request = async (url, options) => {
+    calls.push([url, options]);
+    if (url.includes(':acknowledge')) return jsonResponse({data: {
+      alert_id: alert.alert_id, ack_sequence: 8, receipt: 'ack:unique-1',
+      evidence_hash: alert.evidence_hash}});
+    return jsonResponse({data: {events: [{sequence: 8, alert_id: alert.alert_id,
+      action: 'ACKNOWLEDGED', approval_id: 'ack:unique-1', evidence_hash: alert.evidence_hash}],
+      next_before_sequence: null}});
+  };
+  assert.deepEqual(await consoleApp.acknowledgeCriticalAlert(alert, null, 'key-1', request),
+    {status: 'BLOCKED'});
+  assert.equal(calls.length, 0);
+  assert.deepEqual(await consoleApp.acknowledgeCriticalAlert(alert, 'csrf-private', 'key-1', request),
+    {status: 'CONFIRMED', ackSequence: 8});
+  assert.deepEqual(calls.map(([url]) => url), [
+    '/api/operations/alerts/alert-1:acknowledge', '/api/operations/audit']);
+  assert.equal(calls[0][1].headers['x-csrf-token'], 'csrf-private');
+  assert.equal(calls[0][1].headers['if-match'], '7');
+  assert.equal(calls[0][1].headers['x-target-hash'], alert.evidence_hash);
+  assert.equal(calls[1][1].method, undefined);
+});
+
+test('Critical ACK never reports success when the audit receipt does not match', async () => {
+  const alert = alertRow({evidence_hash: `sha256:${'a'.repeat(64)}`});
+  let posts = 0;
+  const request = async (url) => {
+    if (url.includes(':acknowledge')) {
+      posts += 1;
+      return jsonResponse({data: {alert_id: alert.alert_id, ack_sequence: 8,
+        receipt: 'ack:unique-1', evidence_hash: alert.evidence_hash}});
+    }
+    return jsonResponse({data: {events: [{sequence: 8, alert_id: alert.alert_id,
+      action: 'ACKNOWLEDGED', approval_id: 'ack:other', evidence_hash: alert.evidence_hash}],
+      next_before_sequence: null}});
+  };
+  assert.deepEqual(await consoleApp.acknowledgeCriticalAlert(alert, 'csrf-private', 'key-1', request),
+    {status: 'BLOCKED'});
+  assert.equal(posts, 1);
+});
+
+test('Critical ACK button is disabled without memory CSRF and enabled only for open alerts', () => {
+  const value = {status: 'LOADED', alerts: [alertRow()], partial: false,
+    nextBeforeSequence: null, seenAlertIds: ['alert-1']};
+  const blocked = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value, canAcknowledge: false, onAcknowledge: () => {}}));
+  assert.match(blocked, /확인.*disabled|disabled.*확인/);
+  const enabled = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value, canAcknowledge: true, onAcknowledge: () => {}}));
+  assert.match(enabled, /<button[^>]*>확인<\/button>/);
+});
+
+test('OIDC popup scrubs code and state before messaging only its same-origin opener', () => {
+  const events = [];
+  const popup = {location: {href: 'https://anvil.local/?code=private-code&state=state-1',
+    origin: 'https://anvil.local', pathname: '/'},
+    history: {replaceState: (_state, _title, path) => events.push(['scrub', path])},
+    opener: {postMessage: (payload, origin) => events.push(['message', payload, origin])}};
+  assert.equal(consoleApp.consumeOidcPopupRedirect(popup), true);
+  assert.deepEqual(events, [['scrub', '/'], ['message',
+    {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'state-1'},
+    'https://anvil.local']]);
+  const direct = {...popup, opener: null};
+  events.length = 0;
+  assert.equal(consoleApp.consumeOidcPopupRedirect(direct), true);
+  assert.deepEqual(events, [['scrub', '/']]);
+});
+
+test('OIDC opener accepts only exact popup origin and independent expected state', async () => {
+  const popup = {};
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse({data: {csrf_token: 'private-memory-csrf',
+      expires_at: '2026-10-05T10:00:00+00:00', expires_in: 300}});
+  };
+  const message = {source: popup, origin: 'https://anvil.local',
+    data: {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'expected-state'}};
+  for (const changed of [
+    {...message, source: {}}, {...message, origin: 'https://other.invalid'},
+    {...message, data: {...message.data, state: 'wrong-state'}},
+  ]) assert.equal(await consoleApp.completeOidcPopupMessage(changed, popup,
+    'https://anvil.local', 'expected-state', request), null);
+  assert.equal(calls.length, 0);
+  assert.equal(await consoleApp.completeOidcPopupMessage(message, popup,
+    'https://anvil.local', 'expected-state', request), 'private-memory-csrf');
+  assert.equal(calls[0][0], '/auth/oidc/callback');
+  assert.deepEqual(JSON.parse(calls[0][1].body), {code: 'private-code',
+    state: 'expected-state', browser_state: 'expected-state'});
+});
+
+test('OIDC expected popup rejects mismatched state while unrelated messages are ignored', () => {
+  const popup = {closed: false};
+  const pending = {popup, browserState: 'expected-state'};
+  const message = {source: popup, origin: 'https://anvil.local',
+    data: {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'wrong-state'}};
+  assert.equal(consoleApp.classifyOidcPopupMessage(message, pending,
+    'https://anvil.local'), 'MISMATCH');
+  assert.equal(consoleApp.classifyOidcPopupMessage({...message, source: {}}, pending,
+    'https://anvil.local'), 'IGNORE');
+  assert.equal(consoleApp.classifyOidcPopupMessage({...message, origin: 'https://other.invalid'},
+    pending, 'https://anvil.local'), 'IGNORE');
+  assert.equal(consoleApp.classifyOidcPopupMessage({...message,
+    data: {...message.data, state: 'expected-state'}}, pending,
+    'https://anvil.local'), 'MATCH');
+});
+
+test('Dashboard presents an explicit reauthentication action after memory token loss', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /<button[^>]*>재인증<\/button>/);
+});
+
+test('Critical Alerts reads only stored same-origin records and renders active critical details as text', async () => {
+  const calls = [];
+  const controller = new AbortController();
+  const rows = [alertRow({code: '<img src=x onerror=alert(1)>', source: '<script>bad</script>',
+    cause: '<b>unsafe</b>', related_entity_id: '<run-7>'}),
+    alertRow({alert_id: 'alert-2', sequence: 8, level: 'warning', code: 'HEALTH_SIGNAL_LATE'}),
+    alertRow({alert_id: 'alert-3', sequence: 9, status: 'resolved'}),
+    alertRow({alert_id: 'alert-4', sequence: 10, status: 'acknowledged', owner_id: 'operator-1'})];
+  const state = await consoleApp.loadCriticalAlerts(controller.signal, async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse(alertResponse(rows));
+  });
+  assert.deepEqual(calls.map(([url]) => url), ['/api/operations/alerts']);
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.equal(calls[0][1].signal, controller.signal);
+  assert.equal(state.status, 'LOADED');
+  assert.equal(state.alerts.length, 2);
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /Critical Alerts.*WORKER_LEASE_EXPIRED|Critical Alerts.*&lt;img/s);
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.match(html, /&lt;script&gt;bad&lt;\/script&gt;/);
+  assert.match(html, /&lt;b&gt;unsafe&lt;\/b&gt;.*&lt;run-7&gt;/s);
+  assert.match(html, /operator-1.*미배정/s);
+  assert.match(html, /다음 조치 · REVIEW_WORKER_TAKEOVER/);
+  assert.doesNotMatch(html, /<script>|<img|HEALTH_SIGNAL_LATE|private-dedupe-key|private-evidence|href="\/operations\/workers"/);
+});
+
+test('Critical Alerts empty page states only that this stored page has no critical records', async () => {
+  const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([])));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /이 페이지에 저장된 Critical 기록 없음/);
+  assert.doesNotMatch(html, /전체.*0건|정상|안전|detector.*실행/);
+});
+
+test('Critical Alerts marks older pages unread even when this page has no critical records', async () => {
+  const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({level: 'warning'})], 7)));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /이 페이지에 저장된 Critical 기록 없음/);
+  assert.match(html, /과거 페이지.*미조회|부분 결과/);
+  assert.doesNotMatch(html, /전체.*0건|정상|안전/);
+});
+
+test('Critical Alerts rejects auth, transport, malformed, duplicate and forged pages as UNAVAILABLE', async () => {
+  const badBodies = [null, {}, {data: {alerts: []}},
+    alertResponse([alertRow({status: 'unknown'})]),
+    alertResponse([alertRow({level: 'ok'})]),
+    alertResponse([alertRow({observed_at: 'not-a-time'})]),
+    alertResponse([alertRow({owner_id: 7})]),
+    alertResponse([alertRow(), alertRow({sequence: 8})]),
+    alertResponse(Array.from({length: 101}, (_, index) => alertRow({alert_id: `alert-${index}`, sequence: index + 1}))),
+    alertResponse([alertRow()], 0), alertResponse([alertRow()], 8),
+    alertResponse([alertRow({secret: 'must-not-render'})]),
+    {...alertResponse([alertRow()]), admin: true}];
+  const responses = [jsonResponse({}, 401), jsonResponse({}, 500),
+    ...badBodies.map((body) => jsonResponse(body))];
+  for (const response of responses) {
+    const state = await consoleApp.loadCriticalAlerts(new AbortController().signal, async () => response);
+    assert.equal(state.status, 'UNAVAILABLE');
+  }
+  for (const request of [async () => { throw new Error('secret-must-not-render'); },
+    async () => ({ok: true, json: async () => { throw new Error('internal-must-not-render'); }})]) {
+    const state = await consoleApp.loadCriticalAlerts(new AbortController().signal, request);
+    assert.equal(state.status, 'UNAVAILABLE');
+  }
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: {status: 'UNAVAILABLE'}}));
+  assert.match(html, /Critical Alerts.*UNAVAILABLE/s);
+  assert.doesNotMatch(html, /정상|안전|secret-must-not-render|internal-must-not-render/);
+});
+
+test('Dashboard includes Critical Alerts while unrelated operating state stays UNAVAILABLE', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /Critical Alerts.*LOADING/s);
+  assert.match(html, /운영 상태.*실행 중.*UNAVAILABLE/s);
+  assert.doesNotMatch(html, /알람 read model은 아직 연결되지 않았습니다/);
+  assert.match(html, /Database.*LLM Providers/s);
+});
+
+test('Dashboard second row shows six ordered unavailable operating cards without invented values or actions', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  const section = html.match(/<section aria-labelledby="operations-heading">([\s\S]*?)<\/section>/)?.[1];
+  assert.ok(section, 'operating section exists');
+  assert.match(section, /<div class="status-grid">/);
+  const cards = [...section.matchAll(/<article class="status-card">([\s\S]*?)<\/article>/g)]
+    .map((match) => match[1]);
+  assert.deepEqual(cards.map((card) => card.match(/<h3>(.*?)<\/h3>/)?.[1]), [
+    '실행 중', '승인 대기', 'BLOCKED', '필수 Gate 미통과', '예상 비용 초과', 'baseline 충돌',
+  ]);
+  for (const card of cards) {
+    assert.match(card, /<p class="status-unavailable">UNAVAILABLE<\/p>/);
+    assert.match(card, /<p>[^<>]*아직 연결되지 않았습니다\.<\/p>/);
+    assert.equal((card.match(/<p\b/g) ?? []).length, 2);
+    assert.doesNotMatch(card, /<a\b|<button\b|\b0건\b|\d+%/);
+  }
+  assert.ok(html.indexOf('id="health-heading"') < html.indexOf('id="operations-heading"'));
+  assert.ok(html.indexOf('id="operations-heading"') < html.indexOf('id="next-actions-heading"'));
+  assert.ok(html.indexOf('id="next-actions-heading"') < html.indexOf('id="critical-alerts-heading"'));
+});
+
+test('Critical Alerts loads a second stored page with exclusive cursor and newest-first records', async () => {
+  const firstRows = Array.from({length: 100}, (_, index) =>
+    alertRow({alert_id: `alert-${index + 2}`, sequence: index + 2, code: `CODE_${index + 2}`}));
+  const calls = [];
+  const request = async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse(calls.length === 1
+      ? alertResponse(firstRows, 2)
+      : alertResponse([alertRow({alert_id: 'alert-1', sequence: 1, code: 'CODE_1'})]));
+  };
+  const signal = new AbortController().signal;
+  const first = await consoleApp.loadCriticalAlerts(signal, request);
+  assert.equal(first.status, 'LOADED');
+  assert.equal(first.partial, true);
+  const second = await consoleApp.loadOlderCriticalAlerts(first, signal, request);
+  assert.equal(second.status, 'LOADED');
+  assert.equal(second.partial, false);
+  assert.equal(second.alerts.length, 101);
+  assert.deepEqual(second.alerts.map(({code}) => code),
+    Array.from({length: 101}, (_, index) => `CODE_${101 - index}`));
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(([url]) => url), ['/api/operations/alerts', '/api/operations/alerts']);
+  assert.equal(calls[1][1].credentials, 'same-origin');
+  assert.equal(calls[1][1].signal, signal);
+  assert.equal(calls[1][1].headers['x-alert-before-sequence'], '2');
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: second}));
+  assert.match(html, /저장된 페이지 조회 종료/);
+  assert.doesNotMatch(html, /과거 페이지 미조회|부분 결과/);
+});
+
+test('Critical Alerts exposes an accessible older-page button only while a cursor remains', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow()], 7)));
+  const callback = () => {};
+  const ready = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: first, onLoadOlder: callback, loadingOlder: false}));
+  assert.match(ready, /<button type="button"[^>]*>과거 저장 경고 더 보기<\/button>/);
+  assert.match(ready, /aria-live="polite"/);
+  const loading = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: first, onLoadOlder: callback, loadingOlder: true}));
+  assert.match(loading, /<button type="button"[^>]*disabled=""[^>]*>과거 저장 경고 더 보기<\/button>/);
+  const ended = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow()])));
+  assert.doesNotMatch(renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: ended, onLoadOlder: callback})), /과거 저장 경고 더 보기/);
+});
+
+test('Critical Alerts allows only one in-flight request for the same older cursor', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
+  const guard = {current: false};
+  let release;
+  const waitForResponse = new Promise((resolve) => { release = resolve; });
+  let calls = 0;
+  const request = async () => {
+    calls += 1;
+    await waitForResponse;
+    return jsonResponse(alertResponse([alertRow({alert_id: 'alert-6', sequence: 6})]));
+  };
+  const signal = new AbortController().signal;
+  const pending = consoleApp.loadOlderCriticalAlertsOnce(first, signal, guard, request);
+  assert.equal(guard.current, true);
+  assert.equal(await consoleApp.loadOlderCriticalAlertsOnce(first, signal, guard, request), null);
+  assert.equal(calls, 1);
+  release();
+  assert.equal((await pending).status, 'LOADED');
+  assert.equal(guard.current, false);
+});
+
+test('Critical Alerts older-page 403 clears previously loaded records after body completion', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7', code: 'OLD_PRIVATE_CODE'})], 7)));
+  let releaseBody;
+  const body = new Promise((resolve) => { releaseBody = resolve; });
+  const pending = consoleApp.loadOlderCriticalAlerts(first, new AbortController().signal,
+    async () => ({ok: false, status: 403, text: () => body,
+      json: async () => { throw new Error('403 JSON must not be parsed'); }}));
+  let settled = false;
+  void pending.then(() => { settled = true; });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(settled, false);
+  releaseBody('private-older-403-body');
+  const next = await pending;
+  assert.deepEqual(next, {status: 'BLOCKED'});
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: next}));
+  assert.match(html, /Critical Alerts.*BLOCKED.*조회 차단/s);
+  assert.doesNotMatch(html, /OLD_PRIVATE_CODE|private-older-403-body|과거 저장 경고 더 보기/);
+});
+
+test('Critical Alerts unreadable 403 bodies stay UNAVAILABLE for initial and older pages', async () => {
+  const denied = async () => ({ok: false, status: 403,
+    text: async () => { throw new Error('private-body-error'); }});
+  const signal = new AbortController().signal;
+  assert.deepEqual(await consoleApp.loadCriticalAlerts(signal, denied), {status: 'UNAVAILABLE'});
+  const first = await consoleApp.loadCriticalAlerts(signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
+  assert.deepEqual(await consoleApp.loadOlderCriticalAlerts(first, signal, denied), {status: 'UNAVAILABLE'});
+});
+
+test('Critical Alerts drops earlier protected records if an older page is invalid or unavailable', async () => {
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({alert_id: 'alert-7'})], 7)));
+  const responses = [jsonResponse({}, 401), jsonResponse({}, 500),
+    jsonResponse(alertResponse([])),
+    jsonResponse(alertResponse([alertRow({sequence: 7})])),
+    jsonResponse(alertResponse([alertRow({alert_id: 'alert-7', sequence: 6})])),
+    jsonResponse(alertResponse([alertRow({sequence: 6})], 7)),
+    jsonResponse(alertResponse([alertRow({sequence: 6, cause: '<script>secret</script>', extra: true})])),
+    jsonResponse({data: {alerts: null, next_before_sequence: null}})];
+  for (const response of responses) {
+    const next = await consoleApp.loadOlderCriticalAlerts(first, new AbortController().signal,
+      async () => response);
+    assert.deepEqual(next, {status: 'UNAVAILABLE'});
+  }
+  for (const request of [async () => { throw new Error('secret'); },
+    async () => ({ok: true, json: async () => { throw new Error('secret'); }})]) {
+    assert.deepEqual(await consoleApp.loadOlderCriticalAlerts(first,
+      new AbortController().signal, request), {status: 'UNAVAILABLE'});
+  }
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+    {value: {status: 'UNAVAILABLE'}}));
+  assert.doesNotMatch(html, /alert-7|secret|<script>/);
+});
+
+const dashboardQueueRow = (overrides = {}) => ({
+  job_id: 'private-job-id', run_id: 'private-run-id', state: 'PENDING',
+  available_at: '2026-09-30T00:00:00+00:00', attempts: 0, max_attempts: 2,
+  lease_epoch: 0, lease_expires_at: null, dependency_ids: [], conflict_keys: [],
+  priority: 'UNKNOWN', required_capability: 'UNKNOWN', input_verified: true,
+  backoff_until: '2026-09-30T00:00:00+00:00', ...overrides,
+});
+const dashboardSnapshot = (queue = [], gaps = ['queue']) => ({
+  observed_at: '2026-09-30T00:00:00+00:00',
+  health: Object.fromEntries(['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store']
+    .map((component) => [component, {state: 'UNKNOWN', observed_at: null,
+      stale_after_seconds: null, last_check: null, error_count: null,
+      detail_path: null, evidence_ref: null}])),
+  queue, quarantine: [], worker: [], budget: [], reservations: [], providers: [],
+  deployments: [], source_gaps: gaps, alerts: [], next_actions: [],
+  run_summary: {status: 'UNAVAILABLE', observed_at: null, observed_total: null,
+    active_runs: null, waiting_approval_runs: null, blocked_runs: null},
+});
+const dashboardResponse = (queue = [], gaps = ['queue']) =>
+  ({data: dashboardSnapshot(queue, gaps), request_id: 'request-1'});
+
+test('R35 all six Health cards use their own observed source rather than counts or readiness', async () => {
+  const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+  const names = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
+  names.forEach((name, index) => { snapshot.health[name] = observedHealth('EXPIRED', {error_count: index + 1}); });
+  const value = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'r35'}));
+  for (const [index, component] of names.entries()) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: component, component, value}));
+    assert.match(html, new RegExp(`EXPIRED.*마지막 점검.*오류 ${index + 1}건`, 's'));
+    assert.doesNotMatch(html, /href=|sha256:|private/);
+  }
+  const queue = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value}));
+  assert.match(queue, /EXPIRED.*오류 2건.*범위 내 관측 1건/s);
+  const provider = renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard,
+    {value: {status: 'VALID', registered: 9}, operations: value}));
+  assert.match(provider, /EXPIRED.*오류 4건.*등록 9/s);
+  assert.doesNotMatch(provider, /HEALTHY/);
+  const database = renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+    {value: {status: 'not_ready'}, operations: value}));
+  assert.match(database, /EXPIRED.*오류 1건/s);
+});
+
+test('R35 Critical impact and next action are read-only text and unsafe content fails closed', async () => {
+  const row = alertRow({impact: '작업 지연', next_action: '담당자 확인 <확인>'});
+  const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([row])));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: state}));
+  assert.match(html, /영향 · 작업 지연/);
+  assert.match(html, /다음 조치 · 담당자 확인 &lt;확인&gt;/);
+  assert.doesNotMatch(html, /href=|<button|<확인>/);
+  for (const field of ['impact', 'next_action']) {
+    for (const bad of ['', 'http://internal:8301/private', 'token=FAKE_TEST_ONLY', 'x'.repeat(2049)]) {
+      const invalid = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+        async () => jsonResponse(alertResponse([alertRow({[field]: bad})])));
+      assert.deepEqual(invalid, {status: 'UNAVAILABLE'});
+    }
+  }
+});
+
+test('R35 six-source gaps UNKNOWN and corrupt observations never become zero errors or healthy', async () => {
+  for (const component of ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store']) {
+    for (const change of [{state: 'UNKNOWN', error_count: 0}, {state: 'DEGRADED'}, {state: 'UNHEALTHY'},
+      {error_count: true}, {error_count: Number.MAX_SAFE_INTEGER + 1},
+      {observed_at: '2999-01-01T00:00:00Z'}, {last_check: null},
+      {detail_path: 'https://private.invalid'}, {evidence_ref: 'token=FAKE_TEST_ONLY'}]) {
+      const snapshot = dashboardSnapshot([], []);
+      snapshot.health[component] = observedHealth('HEALTHY', change);
+      const value = await consoleApp.loadDashboardQueue(new AbortController().signal,
+        async () => jsonResponse({data: snapshot, request_id: 'r35'}));
+      const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {component, label: component, value}));
+      assert.match(html, change.state === 'UNKNOWN' ? /UNKNOWN/ : /UNAVAILABLE/);
+      assert.doesNotMatch(html, /HEALTHY|오류 \d+건|2999|private.invalid|FAKE_TEST_ONLY|href=/);
+    }
+    const snapshot = dashboardSnapshot([], [component]);
+    snapshot.health[component] = observedHealth('HEALTHY', {error_count: 0});
+    const value = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'r35'}));
+    assert.deepEqual(value.health[component], {status: 'UNKNOWN', lastCheck: null, errorCount: null});
+  }
+});
+
+test('R35 all six Health and Critical protected data clear on denied unavailable and reconnect', async () => {
+  for (const status of ['BLOCKED', 'UNAVAILABLE', 'RECONNECTING', 'CANCELLED', 'QUOTA']) {
+    const value = {status};
+    for (const component of ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store']) {
+      const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {component, label: component, value}));
+      assert.match(html, new RegExp(status));
+      assert.doesNotMatch(html, /오류 \d+건|마지막 점검|HEALTHY/);
+    }
+    const provider = renderToStaticMarkup(React.createElement(consoleApp.ProviderHealthCard,
+      {operations: value, value: {status: 'VALID', registered: 9}}));
+    assert.doesNotMatch(provider, /등록 9/);
+  }
+  const first = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+    async () => jsonResponse(alertResponse([alertRow({impact: '보호 영향', next_action: '보호 조치'})], 7)));
+  for (const status of [403, 503]) {
+    const denied = await consoleApp.loadOlderCriticalAlerts(first, new AbortController().signal,
+      async () => jsonResponse({private: 'private-body'}, status));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard, {value: denied}));
+    assert.doesNotMatch(html, /보호 영향|보호 조치|private-body/);
+  }
+});
+
+test('R35 alert text inspects bounded normalized encodings without exposing credentials or internal URLs', async () => {
+  const encoded = (value, depth) => { for (let i = 0; i < depth; i++) value = encodeURIComponent(value); return value; };
+  for (const bad of ['//internal/private', 'Authorization: Basic FAKE_TEST_ONLY',
+    'ａｐｉ＿ｋｅｙ=FAKE_TEST_ONLY', 'api\u200b_key=FAKE_TEST_ONLY',
+    encoded('ａｐｉ＿ｋｅｙ=FAKE_TEST_ONLY', 4), encoded('token=FAKE_TEST_ONLY', 5),
+    encoded('http://internal/private', 3)]) {
+    const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+      async () => jsonResponse(alertResponse([alertRow({impact: bad})])));
+    assert.deepEqual(state, {status: 'UNAVAILABLE'});
+    assert.doesNotMatch(renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+      {value: state})), /FAKE_TEST_ONLY|internal/);
+  }
+  for (const field of ['impact', 'next_action']) {
+    for (const text of ['진행 50% · Ａ 작업', 'CPU 95% 사용']) {
+      const state = await consoleApp.loadCriticalAlerts(new AbortController().signal,
+        async () => jsonResponse(alertResponse([alertRow({[field]: text})])));
+      assert.equal(state.status, 'LOADED');
+      assert.equal(state.alerts[0][field], text);
+      assert.ok(renderToStaticMarkup(React.createElement(consoleApp.CriticalAlertsCard,
+        {value: state})).includes(text));
+    }
+  }
+});
+
+const renderRunCards = value => renderToStaticMarkup(
+  React.createElement(consoleApp.DashboardOperatingCards, {value}));
+const availableRuns = () => ({status: 'AVAILABLE', observed_at: '2026-09-29T23:59:00+00:00',
+  observed_total: 7, active_runs: 2, waiting_approval_runs: 1, blocked_runs: 3});
+
+test('R34 three Run cards show separate counts denominator and Run observation only', async () => {
+  for (const empty of [false, true]) {
+    const snapshot = dashboardSnapshot();
+    snapshot.run_summary = availableRuns();
+    if (empty) Object.assign(snapshot.run_summary, {observed_total: 0, active_runs: 0,
+      waiting_approval_runs: 0, blocked_runs: 0});
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+    const html = renderRunCards(state);
+    for (const [label, count] of [['실행 중', 2], ['승인 대기', 1], ['BLOCKED', 3]]) {
+      assert.match(html, new RegExp(`${label}.*?${empty ? 0 : count}건.*?범위 내 관측 ${empty ? 0 : 7} Run.*?2026-09-29T23:59:00\\+00:00`, 's'));
+    }
+    for (const label of ['필수 Gate 미통과', '예상 비용 초과', 'baseline 충돌'])
+      assert.match(html, new RegExp(`${label}.*?UNAVAILABLE`, 's'));
+    assert.doesNotMatch(html, /<button|<a |2026-09-30T00:00:00/);
+  }
+});
+
+test('R34 invalid Run summary hides numbers but does not erase valid Queue evidence', async () => {
+  for (const change of [{observed_total: true}, {observed_total: 101}, {active_runs: -1},
+    {active_runs: 1.5}, {blocked_runs: '3'}, {observed_total: 5},
+    {observed_at: '2999-01-01T00:00:00+00:00'}, {observed_at: '2026-09-30'},
+    {extra: 'private-secret'}, {status: 'UNAVAILABLE'}, {observed_at: null}]) {
+    const snapshot = dashboardSnapshot();
+    snapshot.run_summary = {...availableRuns(), ...change};
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+    assert.equal(state.status, 'LOADED');
+    const html = renderRunCards(state);
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /[0-9]건|범위 내 관측|private-secret|2026-/);
+  }
+});
+
+test('R34 parent failure and cancellation never retain protected Run numbers', async () => {
+  for (const status of ['LOADING', 'RECONNECTING', 'CANCELLED', 'BLOCKED', 'QUOTA', 'UNAVAILABLE']) {
+    const html = renderRunCards({status});
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /[0-9]건|범위 내 관측|2026-/);
+  }
+  for (const status of [401, 403, 429, 500, 503]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, json() {throw Error('must not read body');}}));
+    assert.doesNotMatch(renderRunCards(state), /[0-9]건|범위 내 관측/);
+  }
+  const snapshot = dashboardSnapshot();
+  delete snapshot.run_summary;
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+  assert.equal(state.status, 'UNAVAILABLE');
+});
+
+test('R34 future parent observation cannot publish otherwise valid Run counts', async () => {
+  const snapshot = dashboardSnapshot();
+  snapshot.observed_at = '2999-01-01T00:00:00+00:00';
+  snapshot.run_summary = availableRuns();
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'r34'}));
+  assert.doesNotMatch(renderRunCards(state), /[0-9]건|범위 내 관측/);
+});
+
+const observedHealth = (state, overrides = {}) => ({
+  state, observed_at: '2026-09-30T00:00:00+00:00', stale_after_seconds: 60,
+  last_check: '2026-09-30T00:00:00+00:00', error_count: 2,
+  detail_path: '/operations/health', evidence_ref: `sha256:${'a'.repeat(64)}`,
+  ...overrides,
+});
+
+test('R44 Health cards link only a unique same-snapshot stored cause for all six components', async () => {
+  const names = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
+  for (const component of names) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.health[component] = observedHealth('LATE', {error_count: 0});
+    snapshot.alerts = [alertRow({source: 'environment', level: 'warning',
+      code: 'HEALTH_SIGNAL_LATE', related_entity_id: component,
+      cause: 'Health observation requires attention', impact: 'Source is stale',
+      next_action: 'CHECK_SOURCE_HEALTH', deep_link: '/operations/health',
+      evidence_hash: snapshot.health[component].evidence_ref})];
+    const render = async () => {
+      const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+        async () => jsonResponse({data: snapshot, request_id: 'r44'}));
+      return renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {label: component, component, value: state}));
+    };
+    const html = await render();
+    assert.match(html, /href="#health-detail-[a-z_]+".*코드 · HEALTH_SIGNAL_LATE.*출처 · environment.*원인 · Health observation requires attention.*영향 · Source is stale.*발생 시각 · /s, component);
+    assert.doesNotMatch(html, /href="\/operations\/health"|\/operations\/health/, component);
+    for (const change of [
+      () => { snapshot.alerts = []; },
+      () => { snapshot.alerts.push({...snapshot.alerts[0], alert_id: 'alert-2', sequence: 8}); },
+      () => { snapshot.alerts[0].evidence_hash = 'sha256:wrong'; },
+      () => { snapshot.alerts[0].code = 'OTHER_CODE'; },
+      () => { snapshot.alerts[0].source = 'worker'; },
+      () => { snapshot.health[component].state = 'HEALTHY'; },
+      () => { snapshot.alerts[0].observed_at = '2999-01-01T00:00:00+00:00'; },
+      () => { snapshot.health[component].detail_path = 'https://outside.invalid'; },
+      () => { snapshot.health[component].detail_path = '/operations/%2f%2foutside.invalid'; },
+      () => { snapshot.source_gaps = [component]; },
+    ]) {
+      const before = structuredClone(snapshot);
+      change();
+      assert.doesNotMatch(await render(), /href="#health-detail-/, component);
+      Object.assign(snapshot, before);
+    }
+  }
+});
+
+test('R46 Queue keeps overall UNKNOWN while a fresh unique stored alert confirms scoped quarantine', async () => {
+  const now = Date.now();
+  const snapshotAt = new Date(now - 1000).toISOString();
+  const quarantineAt = new Date(now - 3600000).toISOString();
+  const quarantine = (job_id = 'job-1', overrides = {}) => ({job_id, attempts: 2,
+    reason: 'EXHAUSTED', quarantined_at: quarantineAt, ...overrides});
+  const evidence = `sha256:${createHash('sha256').update(`job-1:2:${quarantineAt}`).digest('hex')}`;
+  const stored = (overrides = {}) => alertRow({source: 'orchestrator', category: 'backlog',
+    code: 'QUEUE_JOB_QUARANTINED', related_entity_id: 'job-1',
+    cause: 'Queue job reached quarantine', impact: 'Run cannot advance automatically',
+    next_action: 'REVIEW_QUARANTINE', deep_link: '/operations/queue',
+    observed_at: snapshotAt, evidence_hash: evidence, ...overrides});
+  const render = async (snapshot) => {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'r45'}));
+    return renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+  };
+  const snapshot = dashboardSnapshot([], ['queue']);
+  snapshot.observed_at = snapshotAt;
+  assert.match(await render(snapshot), /UNKNOWN/);
+  assert.doesNotMatch(await render(snapshot), /HEALTHY|격리 작업/);
+  snapshot.quarantine = [quarantine()];
+  let html = await render(snapshot);
+  assert.match(html, /UNKNOWN.*Queue source 연결 정보가 부족합니다/s);
+  assert.doesNotMatch(html, /격리 작업|확인된 격리 이상/);
+  assert.doesNotMatch(html, /상세 원인 보기|href=/);
+  snapshot.quarantine.push(quarantine('job-2'));
+  assert.doesNotMatch(await render(snapshot), /격리 작업|확인된 격리 이상/);
+  snapshot.quarantine.pop();
+  snapshot.alerts = [stored()];
+  html = await render(snapshot);
+  assert.match(html, /UNKNOWN.*href="#health-detail-queue".*코드 · QUEUE_JOB_QUARANTINED.*원인 · Queue job reached quarantine.*확인된 격리 이상.*격리 작업 1건.*Queue source 연결 정보가 부족합니다/s);
+  assert.doesNotMatch(html, /href="\/operations\/queue"/);
+  for (const change of [
+    () => { snapshot.alerts.push(stored({alert_id: 'alert-2', sequence: 8})); },
+    () => { snapshot.alerts.push(stored({alert_id: 'alert-2', sequence: 8, source: 'worker'})); },
+    () => { snapshot.alerts[0].status = 'resolved'; },
+    () => { snapshot.alerts[0].related_entity_id = 'other-job'; },
+    () => { snapshot.alerts[0].evidence_hash = `sha256:${'b'.repeat(64)}`; },
+    () => { snapshot.alerts[0].observed_at = new Date(now - 7200000).toISOString(); },
+    () => { snapshot.alerts[0].observed_at = '2999-01-01T00:00:00+00:00'; },
+    () => { snapshot.alerts[0].impact = 'token=FAKE_TEST_ONLY'; },
+  ]) {
+    const before = structuredClone(snapshot);
+    change();
+    html = await render(snapshot);
+    assert.match(html, /UNKNOWN.*Queue source 연결 정보가 부족합니다/s);
+    assert.doesNotMatch(html, /격리 작업|확인된 격리 이상|href="#health-detail-queue"|FAKE_TEST_ONLY/);
+    Object.assign(snapshot, before);
+  }
+  snapshot.alerts = [stored()];
+  for (const change of [
+    () => { snapshot.quarantine[0].attempts = -1; },
+    () => { snapshot.quarantine[0].reason = 'token=FAKE_TEST_ONLY'; },
+    () => { snapshot.quarantine[0].quarantined_at = '2999-01-01T00:00:00+00:00'; },
+    () => { snapshot.quarantine.push(quarantine()); },
+    () => { snapshot.observed_at = new Date(now - 61000).toISOString();
+      snapshot.alerts[0].observed_at = new Date(now - 62000).toISOString(); },
+    () => { snapshot.observed_at = '2999-01-01T00:00:00+00:00'; },
+  ]) {
+    const before = structuredClone(snapshot);
+    change();
+    html = await render(snapshot);
+    assert.doesNotMatch(html, /격리 작업 \d+건|확인된 격리 이상|href="#health-detail-queue"|FAKE_TEST_ONLY/);
+    Object.assign(snapshot, before);
+  }
+  for (const status of [401, 403, 429]) {
+    const blocked = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({private: 'token=FAKE_TEST_ONLY'}, status));
+    html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: blocked}));
+    assert.doesNotMatch(html, /격리 작업|QUEUE_JOB_QUARANTINED|FAKE_TEST_ONLY/);
+  }
+});
+
+const renderDatabase = (readiness, operations) => renderToStaticMarkup(
+  React.createElement(consoleApp.DatabaseHealthCard, {value: readiness, operations}));
+
+test('R47 Database Health explains its narrow SQL and migration observation separately from API readiness', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.health.database = observedHealth('HEALTHY');
+  const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-r47'}));
+  const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+  assert.match(html, /Database.*HEALTHY.*DB 접속·읽기 질의·Migration 일치 관측.*API 준비 READY/s);
+  assert.doesNotMatch(html, /전체 DB 정상|업무 정상|Provider 정상|Queue 정상/);
+  for (const inaccessible of [{status: 'BLOCKED'}, {status: 'UNAVAILABLE'}]) {
+    const hidden = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, inaccessible);
+    assert.doesNotMatch(hidden, /DB 접속·읽기 질의·Migration 일치 관측/);
+  }
+});
+
+const renderObservationTime = (operations) => renderToStaticMarkup(
+  React.createElement(consoleApp.DashboardObservationTime, {value: operations}));
+
+test('Dashboard 429 clears protected state and shows quota across dependent cards without exposing its body', async () => {
+  const secret = 'postgresql://quota-secret@internal/private-payload';
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async (url, options) => {
+      assert.equal(url, '/api/dashboard/operations');
+      assert.equal(options.credentials, 'same-origin');
+      return {ok: false, status: 429, text: async () => secret};
+    });
+  assert.deepEqual(state, {status: 'QUOTA'});
+  const cards = [renderObservationTime(state),
+    renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value: {status: 'ready', migration_head: '0019_oidc_sessions'}, operations: state})),
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state})),
+    renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}))];
+  assert.match(cards[0], /대시보드 관측 시각 · 조회 제한/);
+  for (const card of cards.slice(1)) assert.match(card, /QUOTA/);
+  assert.match(cards[1], /조회 제한/);
+  assert.match(cards[2], /API 준비 READY · Migration 0019_oidc_sessions/);
+  assert.match(cards[2], /조회 제한 · Database 상태 정보를 표시하지 않습니다/);
+  assert.match(cards[3], /조회 제한 · Worker 상태 정보를 표시하지 않습니다/);
+  assert.match(cards[4], /조회 제한/);
+  for (const card of cards) assert.doesNotMatch(card,
+    /private-payload|quota-secret|internal|private-job-id|2026-09-30|0건|href=|경과시간/);
+});
+
+test('Dashboard observation time shows only the validated operations timestamp and keeps Queue unchanged', async () => {
+  const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  assert.equal(state.observedAt, '2026-09-30T00:00:00+00:00');
+  assert.match(renderObservationTime(state), /aria-live="polite" aria-atomic="true"[^>]*>대시보드 관측 시각 · 2026-09-30T00:00:00\+00:00/);
+  assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state})),
+    /범위 내 관측 1건/);
+  assert.doesNotMatch(renderObservationTime(state), /JUST NOW|private-job-id|private-run-id/);
+});
+
+test('Dashboard observation time distinguishes loading, denied, unavailable and future snapshots', async () => {
+  assert.match(renderObservationTime({status: 'LOADING'}), /대시보드 관측 시각 · 조회 중/);
+  for (const status of [401, 403, 503]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => 'private-secret'}));
+    assert.match(renderObservationTime(state), status === 503
+      ? /대시보드 관측 시각 · 확인 불가/ : /대시보드 관측 시각 · 조회 차단/);
+    assert.doesNotMatch(renderObservationTime(state), /private-secret|JUST NOW|2026-09-30/);
+  }
+  for (const observed_at of ['2999-01-01T00:00:00+00:00', 'invalid']) {
+    const snapshot = {...dashboardSnapshot([], []), observed_at};
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    assert.match(renderObservationTime(state), /대시보드 관측 시각 · 확인 불가/);
+    assert.doesNotMatch(renderObservationTime(state), /2999|invalid|JUST NOW/);
+  }
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /마지막 확인 · NOT REQUESTED/);
+  assert.match(html, /대시보드 관측 시각 · 조회 중/);
+});
+
+test('Database card uses the existing operations request for health and keeps migration readiness separate', async () => {
+  for (const status of ['HEALTHY', 'LATE', 'EXPIRED']) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.health.database = observedHealth(status);
+    snapshot.health.worker = observedHealth('HEALTHY');
+    let calls = 0;
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async (url, options) => {
+        calls += 1;
+        assert.equal(url, '/api/dashboard/operations');
+        assert.equal(options.credentials, 'same-origin');
+        return jsonResponse({data: snapshot, request_id: 'request-1'});
+      });
+    assert.equal(calls, 1);
+    const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+    assert.match(html, new RegExp(`Database.*${status}.*마지막 점검 2026-09-30T00:00:00\\+00:00.*오류 2건.*API 준비 READY.*Migration 0019_oidc_sessions`, 's'));
+    assert.doesNotMatch(html, /sha256:|\/operations\/health|private-job-id|private-run-id|href=/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: operations})),
+      /범위 내 관측 1건/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: operations})), /HEALTHY/);
+  }
+});
+
+test('R35 Database readiness failure stays separate from a source-confirmed Health observation', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.health.database = observedHealth('HEALTHY');
+  const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  for (const readiness of [null, {status: 'not_ready', migration_head: '0019_oidc_sessions'}]) {
+    const html = renderDatabase(readiness, operations);
+    assert.match(html, /Database.*NOT CONNECTED.*연결된 상태 정보가 없습니다/s);
+    assert.match(html, /HEALTHY.*마지막 점검.*오류 2건/s);
+    assert.doesNotMatch(html, /API 준비 READY|Migration 0019/);
+  }
+});
+
+test('Database UNKNOWN and source gap remain unknown while other cards and Queue retain observations', async () => {
+  for (const gap of [false, true]) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], gap ? ['database'] : []);
+    if (gap) snapshot.health.database = observedHealth('HEALTHY');
+    snapshot.health.worker = observedHealth('LATE');
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderDatabase({status: 'ready', migration_head: '0016_operations_recovery'}, operations);
+    assert.match(html, /Database.*UNKNOWN.*API 준비 READY.*Migration 0016_operations_recovery/s);
+    assert.doesNotMatch(html, /HEALTHY|sha256:|\/operations\/health/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: operations})), /LATE/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: operations})),
+      /범위 내 관측 1건/);
+  }
+});
+
+test('Database malformed or future signal fails closed without changing the three R14 cards or Queue', async () => {
+  const invalid = [null, {state: 'DEGRADED'}, {observed_at: '2999-01-01T00:00:00+00:00'},
+    {last_check: null}, {stale_after_seconds: 0}, {error_count: -1}, {error_count: 1.5},
+    {evidence_ref: 'secret://private'}, {detail_path: '//internal/private'},
+    {detail_path: 'http://internal/private'}, {extra: 'private-payload'}];
+  for (const change of invalid) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.health.database = change === null ? null : observedHealth('HEALTHY', change);
+    snapshot.health.worker = observedHealth('HEALTHY');
+    snapshot.health.backend = observedHealth('LATE');
+    snapshot.health.artifact_store = observedHealth('EXPIRED');
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+    assert.match(html, /Database.*UNAVAILABLE.*API 준비 READY/s);
+    assert.doesNotMatch(html, /HEALTHY|private|internal|secret|sha256:|마지막 점검|오류 2건/);
+    for (const [component, expected] of [['worker', 'HEALTHY'], ['backend', 'LATE'],
+      ['artifact_store', 'EXPIRED']]) {
+      assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {label: component, component, value: operations})), new RegExp(expected));
+    }
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: operations})),
+      /범위 내 관측 1건/);
+  }
+  const snapshot = {...dashboardSnapshot([], []), observed_at: '2999-01-01T00:00:00+00:00'};
+  const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  assert.match(renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations),
+    /Database.*UNAVAILABLE.*API 준비 READY/s);
+});
+
+test('Database operations auth, server and transport errors are safe while readiness stays separate', async () => {
+  const privateBody = 'postgresql://secret@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    let reads = 0;
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => { reads += 1; return privateBody; }}));
+    assert.equal(reads, 1);
+    const html = renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations);
+    assert.match(html, new RegExp(`Database.*${status < 500 ? 'BLOCKED' : 'UNAVAILABLE'}.*API 준비 READY`, 's'));
+    assert.doesNotMatch(html, /private-payload|postgresql:|secret|internal|HEALTHY/);
+  }
+  for (const request of [async () => { throw new Error(privateBody); },
+    async () => jsonResponse({data: {health: {}}, request_id: 'request-1'})]) {
+    const operations = await consoleApp.loadDashboardQueue(new AbortController().signal, request);
+    assert.match(renderDatabase({status: 'ready', migration_head: '0019_oidc_sessions'}, operations),
+      /Database.*UNAVAILABLE.*API 준비 READY/s);
+  }
+});
+
+test('Dashboard renders three observed Health signals from one existing same-origin request', async () => {
+  const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+  snapshot.health.worker = observedHealth('HEALTHY');
+  snapshot.health.backend = observedHealth('LATE');
+  snapshot.health.artifact_store = observedHealth('EXPIRED');
+  let calls = 0;
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async (url, options) => {
+      calls += 1;
+      assert.equal(url, '/api/dashboard/operations');
+      assert.equal(options.credentials, 'same-origin');
+      return jsonResponse({data: snapshot, request_id: 'request-1'});
+    });
+  assert.equal(calls, 1);
+  for (const [component, label, status] of [
+    ['worker', 'Worker', 'HEALTHY'], ['backend', 'Execution Backends', 'LATE'],
+    ['artifact_store', 'Artifact Store', 'EXPIRED'],
+  ]) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label, component, value: state}));
+    assert.match(html, new RegExp(`${label}.*${status}.*2026-09-30T00:00:00\\+00:00.*오류 2건`, 's'));
+    assert.doesNotMatch(html, /sha256:|\/operations\/health|private-job-id|private-run-id/);
+  }
+  const queue = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+  assert.match(queue, /범위 내 관측 1건/);
+});
+
+test('Dashboard Health cards keep source gaps and UNKNOWN signals unknown without leaking evidence', async () => {
+  const snapshot = dashboardSnapshot([], ['worker']);
+  snapshot.health.worker = observedHealth('HEALTHY', {detail_path: '/private/internal',
+    evidence_ref: `sha256:${'f'.repeat(64)}`});
+  snapshot.health.backend = observedHealth('UNKNOWN');
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  for (const [component, label] of [['worker', 'Worker'], ['backend', 'Execution Backends'],
+    ['artifact_store', 'Artifact Store']]) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label, component, value: state}));
+    assert.match(html, /UNKNOWN/);
+    assert.doesNotMatch(html, /HEALTHY|\/private\/internal|sha256:|null|undefined/);
+  }
+});
+
+test('Dashboard Health rejects malformed, future and secret-bearing signal rows without changing Queue count', async () => {
+  const invalid = [
+    {observed_at: '2999-01-01T00:00:00+00:00'}, {last_check: '2026-09-29T00:00:00+00:00'},
+    {stale_after_seconds: 0}, {error_count: -1}, {error_count: 1.5},
+    {detail_path: '//internal/secret'}, {detail_path: 'http://internal/secret'},
+    {evidence_ref: 'secret://internal'}, {extra: 'private-payload'},
+  ];
+  for (const change of invalid) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.health.worker = observedHealth('HEALTHY', change);
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /private-payload|secret|internal|sha256:|HEALTHY|오류 2건/);
+    const queue = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.match(queue, Object.hasOwn(change, 'extra') ? /UNAVAILABLE/ : /범위 내 관측 1건/);
+  }
+});
+
+test('Dashboard Health cards block on auth and fail closed on server, transport and malformed snapshots', async () => {
+  const privateBody = 'postgresql://secret@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    let reads = 0;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => {reads += 1; return privateBody;}}));
+    assert.equal(reads, 1);
+    for (const [component, label] of [['worker', 'Worker'], ['backend', 'Execution Backends'],
+      ['artifact_store', 'Artifact Store']]) {
+      const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+        {label, component, value: state}));
+      assert.match(html, new RegExp(status < 500 ? 'BLOCKED' : 'UNAVAILABLE'));
+      assert.doesNotMatch(html, /secret|internal|private-payload/);
+    }
+  }
+  for (const request of [async () => {throw new Error(privateBody);},
+    async () => jsonResponse({data: {health: {}}, request_id: 'request-1'})]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal, request);
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /secret|internal|private-payload/);
+  }
+});
+
+test('Dashboard Health does not trust a future snapshot timestamp even for UNKNOWN rows', async () => {
+  const snapshot = {...dashboardSnapshot([], []), observed_at: '2999-01-01T00:00:00+00:00'};
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  for (const [component, label] of [['worker', 'Worker'], ['backend', 'Execution Backends'],
+    ['artifact_store', 'Artifact Store']]) {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label, component, value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /UNKNOWN|HEALTHY/);
+  }
+});
+
+test('Dashboard Queue uses same-origin authenticated GET and shows only scoped observed row count', async () => {
+  const controller = new AbortController();
+  const calls = [];
+  const state = await consoleApp.loadDashboardQueue(controller.signal, async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse(dashboardResponse([dashboardQueueRow()]));
+  });
+  assert.equal(calls[0][0], '/api/dashboard/operations');
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.equal(calls[0][1].headers.Accept, 'application/json');
+  assert.equal(calls[0][1].signal, controller.signal);
+  const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+  assert.match(html, /Queue.*UNKNOWN.*범위 내 관측 1건/s);
+  assert.doesNotMatch(html, /private-job-id|private-run-id|PENDING|HEALTHY|성공률|전체 Queue/);
+});
+
+test('Dashboard Queue zero and absent gap remain observed-only, never healthy or complete', async () => {
+  for (const [rows, gaps, count] of [[[], ['queue'], 0], [[], [], 0],
+    [[dashboardQueueRow()], [], 1]]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse(dashboardResponse(rows, gaps)));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.match(html, new RegExp(`범위 내 관측 ${count}건`));
+    assert.match(html, /UNKNOWN/);
+    assert.doesNotMatch(html, /HEALTHY|전체.*0건|실제.*0건|성공률/);
+    if (gaps.length === 0) assert.match(html, /완전성은 확인되지 않았습니다/);
+  }
+});
+
+test('Dashboard Queue auth denial is BLOCKED, server and transport errors are UNAVAILABLE without body leak', async () => {
+  const privateBody = 'postgresql://secret:credential@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    let reads = 0;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => { reads += 1; return privateBody; },
+        json: async () => { throw new Error('non-ok JSON must not be parsed'); }}));
+    assert.equal(reads, 1);
+    assert.deepEqual(state, {status: status < 500 ? 'BLOCKED' : 'UNAVAILABLE'});
+    const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.doesNotMatch(html, /secret|credential|internal|private-payload/);
+  }
+  for (const request of [async () => { throw new Error(privateBody); },
+    async () => ({ok: true, json: async () => { throw new Error(privateBody); }})]) {
+    assert.deepEqual(await consoleApp.loadDashboardQueue(new AbortController().signal, request),
+      {status: 'UNAVAILABLE'});
+  }
+});
+
+test('Dashboard Queue rejects malformed envelope, snapshot, rows and source gaps before counting', async () => {
+  const row = dashboardQueueRow();
+  const good = dashboardSnapshot([row]);
+  const malformed = [null, {}, {data: good, request_id: ''},
+    {data: {...good, secret: 'private-payload'}},
+    {data: {...good, queue: null}},
+    {data: {...good, queue: Array.from({length: 101}, () => row)}},
+    {data: {...good, queue: [{...row, payload: 'private-payload'}]}},
+    {data: {...good, queue: [{...row, attempts: -1}]}},
+    {data: {...good, queue: [row, {...row}]}},
+    {data: {...good, source_gaps: ['queue', 'queue']}},
+    {data: {...good, source_gaps: ['private-payload']}},
+    {data: {...good, health: {...good.health, queue: null}}},
+    {data: {...good, observed_at: 'not-a-time'}}];
+  for (const body of malformed) {
+    const completeEnvelope = body && typeof body === 'object' && Object.hasOwn(body, 'data')
+      && !Object.hasOwn(body, 'request_id') ? {...body, request_id: 'request-1'} : body;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse(completeEnvelope));
+    assert.deepEqual(state, {status: 'UNAVAILABLE'});
+    const html = renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state}));
+    assert.doesNotMatch(html, /private-payload|범위 내 관측/);
+  }
+});
+
+test('Dashboard preserves existing health cards and unrelated operating paths', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /Database.*Queue.*Worker.*LLM Providers.*Execution Backends.*Artifact Store/s);
+  assert.match(html, /Queue.*LOADING.*Worker.*LOADING/s);
+  assert.match(html, /Critical Alerts.*LOADING/s);
+  assert.match(html, /운영 상태.*실행 중.*UNAVAILABLE/s);
+  assert.doesNotMatch(html, /private-job-id|private-run-id|HEALTHY/);
+});
+
+test('independent Provider and Critical Alerts reads begin with accessible LOADING states', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  for (const [label, component, props] of [
+    ['LLM Providers', consoleApp.ProviderHealthCard, {value: {status: 'LOADING'}}],
+    ['Critical Alerts', consoleApp.CriticalAlertsCard, {value: {status: 'LOADING'}}],
+  ]) {
+    const card = renderToStaticMarkup(React.createElement(component, props));
+    assert.match(card, new RegExp(`${label}.*aria-live="polite" aria-atomic="true".*LOADING.*조회 중`, 's'));
+    assert.doesNotMatch(card, /UNAVAILABLE|BLOCKED|VALID|등록 0|기록 없음|status-unavailable/);
+    assert.ok(html.includes(card), `${label} first render`);
+  }
+});
+
+test('Database distinguishes independent readiness and operations completion in either order', () => {
+  const ready = {status: 'ready', migration_head: '0019_oidc_sessions'};
+  const healthy = {status: 'LOADED', health: {database: {status: 'HEALTHY', lastCheck: null, errorCount: 0}}};
+  const pending = {status: 'LOADING'};
+  const stages = [
+    [null, true, pending, 'LOADING'],
+    [ready, false, pending, 'LOADING'],
+    [null, true, healthy, 'HEALTHY'],
+    [ready, false, healthy, 'HEALTHY'],
+    [null, false, healthy, 'HEALTHY'],
+    [{status: 'not_ready'}, false, pending, 'LOADING'],
+  ];
+  for (const [value, readinessPending, operations, expected] of stages) {
+    const card = renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value, readinessPending, operations}));
+    assert.match(card, new RegExp(`Database.*aria-live="polite" aria-atomic="true".*${expected}`, 's'));
+    if (expected === 'LOADING') {
+      assert.match(card, /조회 중/);
+      assert.doesNotMatch(card, /status-unavailable|HEALTHY|오류 0건/);
+    }
+  }
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /Database.*LOADING.*Queue/s);
+  assert.doesNotMatch(html, /Database.*HEALTHY.*Queue/s);
+});
+
+test('Dashboard pending operations read shows LOADING in all five cards without false failure or zero', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  const loading = {status: 'LOADING'};
+  const cards = [
+    ['Queue', consoleApp.QueueHealthCard, {value: loading}],
+    ['Worker', consoleApp.DashboardSignalCard, {label: 'Worker', component: 'worker', value: loading}],
+    ['Execution Backends', consoleApp.DashboardSignalCard,
+      {label: 'Execution Backends', component: 'backend', value: loading}],
+    ['Artifact Store', consoleApp.DashboardSignalCard,
+      {label: 'Artifact Store', component: 'artifact_store', value: loading}],
+    ['Next Actions', consoleApp.NextActionsCard, {value: loading}],
+  ];
+  for (const [label, component, props] of cards) {
+    const card = renderToStaticMarkup(React.createElement(component, props));
+    assert.match(card, new RegExp(`${label}.*aria-live="polite" aria-atomic="true".*LOADING.*조회 중`, 's'));
+    assert.doesNotMatch(card, /UNAVAILABLE|BLOCKED|HEALTHY|0건|조회 차단|확인할 수 없습니다|status-unavailable/);
+    assert.ok(html.includes(card), `${label} first render`);
+  }
+});
+
+test('Dashboard exposes a keyboard-operable manual refresh that waits during the initial read', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /<button[^>]*type="button"[^>]*disabled=""[^>]*>대시보드 새로고침<\/button>/);
+  assert.match(html, /<button[^>]*type="button"[^>]*>대시보드 조회 취소<\/button>/);
+  assert.match(html, /대시보드 관측 시각 · 조회 중/);
+  assert.doesNotMatch(html, /Next Actions.*private-job-id|대시보드 관측 시각 · JUST NOW/s);
+});
+
+test('Dashboard cancelled read clears dependent cards and observation without claiming a completed read', () => {
+  const cancelled = {status: 'CANCELLED'};
+  const cards = [
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardObservationTime, {value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: cancelled})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value: {status: 'ready', migration_head: '0019_oidc_sessions'}, operations: cancelled})),
+  ];
+  assert.match(cards[0], /대시보드 관측 시각 · 조회 취소/);
+  for (const card of cards.slice(1)) assert.match(card, /CANCELLED/);
+  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d|경과시간/);
+  assert.match(cards.at(-1), /API 준비 READY/);
+});
+
+test('Dashboard reconnecting read clears dependent cards and observation while preserving API readiness', () => {
+  const reconnecting = {status: 'RECONNECTING'};
+  const cards = [
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardObservationTime, {value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: reconnecting})),
+    renderToStaticMarkup(React.createElement(consoleApp.DatabaseHealthCard,
+      {value: {status: 'ready', migration_head: '0019_oidc_sessions'}, operations: reconnecting})),
+  ];
+  assert.match(cards[0], /대시보드 관측 시각 · 재연결 중/);
+  for (const card of cards.slice(1)) assert.match(card, /RECONNECTING/);
+  assert.doesNotMatch(cards.join(' '), /status-unavailable/);
+  assert.doesNotMatch(cards.join(' '), /0건|last-check-private|private-job-id|HEALTHY|대시보드 관측 시각 · 20\d\d|경과시간/);
+  assert.match(cards.at(-1), /API 준비 READY/);
+});
+
+test('Dashboard read controls offer one explicit reconnect only after unavailable and keep cancel during reconnect', () => {
+  assert.equal(typeof consoleApp.DashboardReadControls, 'function');
+  const controls = (status) => renderToStaticMarkup(React.createElement(consoleApp.DashboardReadControls,
+    {status, onRefresh: () => {}, onReconnect: () => {}, onCancel: () => {}}));
+  const unavailable = controls('UNAVAILABLE');
+  assert.match(unavailable, /대시보드 새로고침/);
+  assert.match(unavailable, /대시보드 연결 재시도/);
+  assert.doesNotMatch(unavailable, /대시보드 조회 취소/);
+  const reconnecting = controls('RECONNECTING');
+  assert.match(reconnecting, /<button[^>]*disabled=""[^>]*>대시보드 새로고침<\/button>/);
+  assert.match(reconnecting, /대시보드 조회 취소/);
+  assert.doesNotMatch(reconnecting, /대시보드 연결 재시도/);
+  for (const status of ['LOADING', 'LOADED', 'BLOCKED', 'QUOTA', 'CANCELLED']) {
+    assert.doesNotMatch(controls(status), /대시보드 연결 재시도/, status);
+  }
+});
+
+test('Dashboard Next Actions renders validated rows from the existing operations read', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.next_actions = [{priority: 'critical', reason: '<script>cause</script>',
+    target: 'run-1', action: '검토', deep_link: '/operations'}];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  assert.deepEqual(state.nextActions?.status, 'LOADED');
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /Next Actions.*critical.*&lt;script&gt;cause&lt;\/script&gt;.*run-1.*검토/s);
+  assert.match(html, /상세 원인 확인 불가/);
+  assert.doesNotMatch(html, /href="\/operations"|next-action-detail-/);
+  assert.doesNotMatch(html, /<script>|private-job-id|private-run-id/);
+});
+
+test('Dashboard Next Actions elapsed minutes use the unique unresolved alert in the same snapshot', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  snapshot.next_actions = [{priority: 'critical', reason: 'Worker lease expiry observed',
+    target: 'run-1', action: 'REVIEW_WORKER_LEASE', deep_link: '/operations'}];
+  snapshot.alerts = [alertRow({related_entity_id: 'run-1', next_action: 'REVIEW_WORKER_LEASE',
+    deep_link: '/operations', observed_at: '2026-09-30T01:00:00+00:00'})];
+  snapshot.alerts.push({...snapshot.alerts[0], alert_id: 'alert-2', sequence: 8,
+    status: 'resolved', owner_id: 'operator-1'});
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /경과시간 · 65분/);
+  assert.doesNotMatch(html, /경과시간 확인 불가/);
+  assert.match(html, /href="#next-action-detail-1"/);
+  assert.match(html, /id="next-action-detail-1"/);
+  assert.match(html, /WORKER_LEASE_EXPIRED.*worker.*Run ownership cannot be trusted.*2026-09-30T01:00:00\+00:00.*sha256:private-evidence/s);
+  assert.doesNotMatch(html, /href="\/operations"/);
+});
+
+test('Dashboard Next Actions ambiguous or invalid alert time never becomes zero minutes', async () => {
+  const action = {priority: 'warning', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: '/operations'};
+  const alert = alertRow({level: 'warning', cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: '/operations', status: 'acknowledged',
+    owner_id: 'operator-1', observed_at: '2026-09-30T00:00:00+00:00'});
+  const cases = [
+    {actions: [action], alerts: []},
+    {actions: [action], alerts: [{...alert, level: 'critical'}]},
+    {actions: [action], alerts: [{...alert, cause: 'different'}]},
+    {actions: [action], alerts: [{...alert, related_entity_id: 'different'}]},
+    {actions: [action], alerts: [{...alert, next_action: 'different'}]},
+    {actions: [action], alerts: [{...alert, deep_link: '/runs'}]},
+    {actions: [action], alerts: [alert, {...alert}]},
+    {actions: [action, {...action}], alerts: [alert]},
+    {actions: [action], alerts: [{...alert, status: 'resolved'}]},
+    {actions: [action], alerts: [{...alert, observed_at: '2026-09-30T03:00:00+00:00'}]},
+    {actions: [action], alerts: [{...alert, observed_at: 'invalid'}]},
+    {actions: [action], alerts: [{...alert, alert_id: ''}]},
+    {actions: [action], alerts: [{...alert, sequence: null}]},
+    {actions: [action], alerts: [{level: 'warning', cause: 'Cause',
+      related_entity_id: 'run-1', next_action: 'REVIEW', deep_link: '/operations',
+      status: 'acknowledged', observed_at: '2026-09-30T00:00:00+00:00'}]},
+  ];
+  for (const {actions, alerts} of cases) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.next_actions = actions;
+    snapshot.alerts = alerts;
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.equal((html.match(/경과시간 확인 불가/g) ?? []).length, actions.length);
+    assert.doesNotMatch(html, /경과시간 · 0분/);
+    assert.equal((html.match(/상세 원인 확인 불가/g) ?? []).length, actions.length);
+    assert.doesNotMatch(html, /href=|id="next-action-detail-/);
+  }
+});
+
+test('Dashboard Next Actions displays a real zero only for a uniquely matched subminute alert', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  snapshot.next_actions = [{priority: 'warning', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: '/operations'}];
+  snapshot.alerts = [alertRow({level: 'warning', cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: '/operations', status: 'acknowledged',
+    owner_id: 'operator-1', observed_at: '2026-09-30T02:04:30+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /경과시간 · 0분/);
+  assert.doesNotMatch(html, /경과시간 확인 불가/);
+});
+
+test('Dashboard detail uses a same-page fragment for a matched alert outside Operations', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  snapshot.next_actions = [{priority: 'warning', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: '/runs'}];
+  snapshot.alerts = [alertRow({level: 'warning', cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: '/runs', status: 'acknowledged',
+    owner_id: 'operator-1', observed_at: '2026-09-30T00:00:00+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /href="#next-action-detail-1"/);
+  assert.doesNotMatch(html, /href="\/runs"/);
+});
+
+test('Dashboard detail accepts the existing server-produced Operations source paths', async () => {
+  for (const deepLink of ['/operations/workers', '/operations/queue', '/operations/cost']) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.next_actions = [{priority: 'critical', reason: 'Cause', target: 'run-1',
+      action: 'REVIEW', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({cause: 'Cause', related_entity_id: 'run-1',
+      next_action: 'REVIEW', deep_link: deepLink,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /href="#next-action-detail-1"/, deepLink);
+    assert.doesNotMatch(html, new RegExp(`href="${deepLink}"`), deepLink);
+  }
+});
+
+test('Dashboard detail stays unavailable for matched unsafe or unknown deep links', async () => {
+  for (const deepLink of ['javascript:alert(1)', 'https://outside.invalid', '//outside.invalid',
+    '/operations?token=private', '/operations#private', '/operations\\bad',
+    '/not-implemented', '/operations/not-implemented']) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.next_actions = [{priority: 'critical', reason: 'Cause', target: 'run-1',
+      action: 'REVIEW', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({cause: 'Cause', related_entity_id: 'run-1',
+      next_action: 'REVIEW', deep_link: deepLink,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /상세 원인 확인 불가/, deepLink);
+    assert.doesNotMatch(html, /href=|id="next-action-detail-/, deepLink);
+  }
+});
+
+test('Dashboard detail accepts a same-snapshot validated Health source path', async () => {
+  for (const [component, deepLink] of [['database', '/operations/database'],
+    ['provider', '/operations/providers'], ['backend', '/operations/backends']]) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.health[component] = observedHealth('LATE', {detail_path: deepLink, error_count: 0});
+    snapshot.next_actions = [{priority: 'warning', reason: 'Health observation requires attention',
+      target: component, action: 'CHECK_SOURCE_HEALTH', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({level: 'warning', source: 'environment',
+      code: 'HEALTH_SIGNAL_LATE', cause: 'Health observation requires attention',
+      related_entity_id: component, next_action: 'CHECK_SOURCE_HEALTH',
+      deep_link: deepLink, evidence_hash: snapshot.health[component].evidence_ref,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /href="#next-action-detail-1"/, component);
+    assert.doesNotMatch(html, new RegExp(`href="${deepLink}"`), component);
+  }
+});
+
+test('Dashboard detail rejects forged or unsupported Health source paths', async () => {
+  for (const change of [{}, {alert: {evidence_hash: 'sha256:wrong'}},
+    {alert: {source: 'worker'}}, {alert: {code: 'OTHER_CODE'}},
+    {health: {detail_path: 'https://outside.invalid'}},
+    {health: {evidence_ref: 'bad'}}, {gaps: ['database']}]) {
+    const deepLink = '/operations/database';
+    const snapshot = dashboardSnapshot([], change.gaps ?? []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    if (change.health || change.alert || change.gaps) {
+      snapshot.health.database = observedHealth('LATE', {detail_path: deepLink,
+        error_count: 0, ...change.health});
+    }
+    snapshot.next_actions = [{priority: 'warning', reason: 'Health observation requires attention',
+      target: 'database', action: 'CHECK_SOURCE_HEALTH', deep_link: deepLink}];
+    snapshot.alerts = [alertRow({level: 'warning', source: 'environment',
+      code: 'HEALTH_SIGNAL_LATE', cause: 'Health observation requires attention',
+      related_entity_id: 'database', next_action: 'CHECK_SOURCE_HEALTH',
+      deep_link: deepLink, evidence_hash: `sha256:${'a'.repeat(64)}`,
+      observed_at: '2026-09-30T00:00:00+00:00', ...change.alert})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /상세 원인 확인 불가/);
+    assert.doesNotMatch(html, /href=|id="next-action-detail-/);
+  }
+});
+
+test('Dashboard known source paths never bypass Health alert verification', async () => {
+  for (const deepLink of ['/operations', '/operations/workers']) {
+    for (const change of [{}, {health: {state: 'HEALTHY'}},
+      {alert: {evidence_hash: 'sha256:wrong'}},
+      {health: {detail_path: '/operations/other'}},
+      {alert: {source: 'worker'}},
+      {alert: {source: 'worker', code: 'OTHER_CODE'}},
+      {action: 'REVIEW'},
+      {action: 'REVIEW', alert: {code: 'OTHER_CODE'}},
+      {action: 'REVIEW', alert: {source: 'worker', code: 'OTHER_CODE'}},
+      {target: 'run-1', action: 'REVIEW',
+        alert: {source: 'worker', code: 'OTHER_CODE'}}]) {
+      const snapshot = dashboardSnapshot([], []);
+      snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+      snapshot.health.database = observedHealth('LATE', {detail_path: deepLink,
+        error_count: 0, ...change.health});
+      const nextAction = change.action ?? 'CHECK_SOURCE_HEALTH';
+      snapshot.next_actions = [{priority: 'warning', reason: 'Health observation requires attention',
+        target: change.target ?? 'database', action: nextAction, deep_link: deepLink}];
+      snapshot.alerts = [alertRow({level: 'warning', source: 'environment',
+        code: 'HEALTH_SIGNAL_LATE', cause: 'Health observation requires attention',
+        related_entity_id: change.target ?? 'database', next_action: nextAction,
+        deep_link: deepLink, evidence_hash: `sha256:${'a'.repeat(64)}`,
+        observed_at: '2026-09-30T00:00:00+00:00', ...change.alert})];
+      const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+        async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+      const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+      if (Object.keys(change).length === 0) {
+        assert.match(html, /href="#next-action-detail-1"/, deepLink);
+      } else {
+        assert.match(html, /상세 원인 확인 불가/, deepLink);
+        assert.doesNotMatch(html, /href=|id="next-action-detail-/, deepLink);
+      }
+    }
+  }
+});
+
+test('Dashboard non-Health action IDs may equal Health component names', async () => {
+  for (const row of [
+    {target: 'database', reason: 'Queue job reached quarantine',
+      action: 'REVIEW_QUARANTINE', deepLink: '/operations/queue',
+      code: 'QUEUE_JOB_QUARANTINED', source: 'orchestrator'},
+    {target: 'worker', reason: 'Worker lease expiry observed',
+      action: 'REVIEW_WORKER_TAKEOVER', deepLink: '/operations/workers',
+      code: 'WORKER_LEASE_EXPIRED', source: 'worker'},
+  ]) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+    snapshot.health[row.target] = observedHealth('LATE', {error_count: 0});
+    snapshot.next_actions = [{priority: 'critical', reason: row.reason,
+      target: row.target, action: row.action, deep_link: row.deepLink}];
+    snapshot.alerts = [alertRow({level: 'critical', cause: row.reason,
+      related_entity_id: row.target, next_action: row.action,
+      deep_link: row.deepLink, code: row.code, source: row.source,
+      observed_at: '2026-09-30T00:00:00+00:00'})];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /href="#next-action-detail-1"/, row.target);
+    assert.match(html, new RegExp(row.code), row.target);
+    assert.doesNotMatch(html, new RegExp(`href="${row.deepLink}"`), row.target);
+  }
+});
+
+test('Dashboard detail escapes verified alert text and never uses its deep link as navigation', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2026-09-30T02:05:00+00:00';
+  const deepLink = '/operations';
+  snapshot.next_actions = [{priority: 'critical', reason: 'Cause', target: 'run-1',
+    action: 'REVIEW', deep_link: deepLink}];
+  snapshot.alerts = [alertRow({cause: 'Cause', related_entity_id: 'run-1',
+    next_action: 'REVIEW', deep_link: deepLink, code: '<script>code</script>',
+    source: '<b>source</b>', impact: '<img src=x>',
+    observed_at: '2026-09-30T00:00:00+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /href="#next-action-detail-1"/);
+  assert.match(html, /&lt;script&gt;code&lt;\/script&gt;.*&lt;b&gt;source&lt;\/b&gt;.*&lt;img src=x&gt;/s);
+  assert.doesNotMatch(html, /href="\/operations|<script>|<b>source<\/b>|<img src=x>/);
+});
+
+test('Dashboard Next Actions rejects elapsed minutes from a future snapshot', async () => {
+  const snapshot = dashboardSnapshot([], []);
+  snapshot.observed_at = '2999-01-01T00:01:00+00:00';
+  snapshot.next_actions = [{priority: 'critical', reason: 'Worker lease expiry observed',
+    target: 'run-1', action: 'REVIEW_WORKER_LEASE', deep_link: '/operations'}];
+  snapshot.alerts = [alertRow({related_entity_id: 'run-1', next_action: 'REVIEW_WORKER_LEASE',
+    deep_link: '/operations', observed_at: '2999-01-01T00:00:00+00:00'})];
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /경과시간 확인 불가/);
+  assert.doesNotMatch(html, /경과시간 · 1분/);
+  assert.match(html, /상세 원인 확인 불가/);
+  assert.doesNotMatch(html, /href=|id="next-action-detail-/);
+});
+
+test('Dashboard Next Actions empty response is an observed zero, not a global absence', async () => {
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => jsonResponse(dashboardResponse()));
+  const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+  assert.match(html, /Next Actions.*현재 관측된 다음 조치 0건/s);
+  assert.doesNotMatch(html, /전체.*0건|href=/);
+});
+
+test('Dashboard Next Actions auth and source failures remain blocked or unavailable without body leak', async () => {
+  const secret = 'postgresql://secret@internal/private-payload';
+  for (const status of [401, 403, 500, 503]) {
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => ({ok: false, status, text: async () => secret}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, new RegExp(status < 500 ? 'BLOCKED' : 'UNAVAILABLE'));
+    assert.doesNotMatch(html, /postgresql:|secret|internal|private-payload|href=|경과시간/);
+  }
+  const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+    async () => {throw new Error(secret);});
+  assert.match(renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state})),
+    /UNAVAILABLE/);
+});
+
+test('Dashboard Next Actions malformed rows fail closed while Queue and Health remain observed', async () => {
+  const valid = {priority: 'warning', reason: '원인', target: 'run-1',
+    action: '검토', deep_link: '/runs'};
+  const badRows = [null, {...valid, reason: ''}, {...valid, priority: 'secret'},
+    {...valid, action: null}, {...valid, extra: 'private-payload'},
+    Array.from({length: 101}, () => valid)];
+  for (const bad of badRows) {
+    const snapshot = dashboardSnapshot([dashboardQueueRow()], []);
+    snapshot.next_actions = Array.isArray(bad) ? bad : [bad];
+    snapshot.health.worker = observedHealth('HEALTHY');
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /UNAVAILABLE/);
+    assert.doesNotMatch(html, /private-payload|run-1|href=/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.QueueHealthCard, {value: state})),
+      /범위 내 관측 1건/);
+    assert.match(renderToStaticMarkup(React.createElement(consoleApp.DashboardSignalCard,
+      {label: 'Worker', component: 'worker', value: state})), /HEALTHY/);
+  }
+});
+
+test('Dashboard Next Actions never navigates unsafe or unimplemented deep links', async () => {
+  for (const deepLink of ['javascript:alert(1)', 'https://evil.example', '//evil.example',
+    '/operations?token=private', '/operations#private', '/operations\\bad', '/not-implemented']) {
+    const snapshot = dashboardSnapshot([], []);
+    snapshot.next_actions = [{priority: 'warning', reason: '원인', target: 'run-1',
+      action: '검토', deep_link: deepLink}];
+    const state = await consoleApp.loadDashboardQueue(new AbortController().signal,
+      async () => jsonResponse({data: snapshot, request_id: 'request-1'}));
+    const html = renderToStaticMarkup(React.createElement(consoleApp.NextActionsCard, {value: state}));
+    assert.match(html, /검토/);
+    assert.doesNotMatch(html, /href=|evil\.example|private|javascript:/);
+  }
 });

@@ -1,0 +1,33 @@
+{
+  "public_key_fingerprint": "sha256:8cddccfc708c2119c7c786f56855aad6b1f5a9d85450757077cfa5a113c3e2b8",
+  "schema_version": 1,
+  "signature": "KeyUASsUHaCoG2AHDW9w+WyvytIZiRWrGrjITdsmcKuUzVQBeBreuF3C7/qV06x3O56PQV4UvSw8YJo7fCW6Cg==",
+  "subject": {
+    "config_schema_revision": "sha256:e3d2f4f9e0eca01be16636764c52aef2aa6a1db9687a3ff77b0452ebd215889d",
+    "db_migration_head": "0016_operations_recovery",
+    "evidence_manifest_hash": "sha256:00d619b07bf1bcc120b7986b9a7bd580e56b3b6cc4689c75d5bf7b1849391a36",
+    "image_digests": {
+      "api": "sha256:ad6a2b73ea8c57c5eb9635c988a18ffa4870474a82471a933377d880ed8ec06b",
+      "web": "sha256:61f13f7ffa9d20713c6cc4234b4529bce2d4b0c8f1d11b73832a28c3213910bf",
+      "worker": "sha256:6a8a0e1de3346c2a348487295504c9070557650a50459805798cb6f41262d43f"
+    },
+    "lockfile_hash": "sha256:b1cba45d362401032ef3ba362073b7c80a8cc42cdef6ee6583884b66e619d8a3",
+    "provider_adapter_versions": {
+      "anthropic": "v0.1.0+3113d495bda1",
+      "cerebras": "v0.1.0+9f3000fbdc97",
+      "gemini": "v0.1.0+8f59e9550334",
+      "groq": "v0.1.0+aadac3a022d2",
+      "mistral": "v0.1.0+2355e81bce09",
+      "ollama": "v0.1.0+401847f7769b",
+      "openai": "v0.1.0+53cbb4afabef",
+      "openrouter": "v0.1.0+c89f55a446b1",
+      "upstage": "v0.1.0+7c7720c8ad42"
+    },
+    "release_tag": "f18-wsl-qa-4eadfcd",
+    "sbom_ref": "sha256:9f5ee5f2816093295e1fa24ac2e468b1d4383cda6520f56344b8dc03fa1ee18b",
+    "source_commit": "4eadfcd441b55445237545146ae5ba4051739904",
+    "source_git_remote": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+    "verification_report_hash": "sha256:50afeaab47dd17dbe5a67f3ecc75bcc2780f8037f9d2d8dd9445790c7e071ced"
+  },
+  "subject_hash": "sha256:62b48ffb5c39a261114e8127ad24c6798933488ebe1c794aca6fe09b24fca1e0"
+}

@@ -1,0 +1,15 @@
+{
+  "package_id": "U-01",
+  "status": "ACCEPTED_U01_LOCAL_WEB_SCOPED",
+  "work_instruction": "docs/work_orders/U-01_DASHBOARD_WORK_INSTRUCTION.md",
+  "invocation": "docs/work_orders/U-01_DASHBOARD_INVOCATION.md",
+  "report": "docs/04_test_reports/U-01_DASHBOARD_REPORT.md",
+  "tests": {
+    "web_test": "3 passed",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "lint": "PASS"
+  },
+  "network": "SAME_ORIGIN_ONLY_CONTRACT",
+  "unverified": ["WSL_BROWSER_CLICK", "LIVE_READ_MODELS", "PROVIDER", "PRODUCTION", "YSNA_SERVER"]
+}

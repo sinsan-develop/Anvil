@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1737,
+  "accepted": false,
+  "projection_mode": "F20_R4_REWORK_START",
+  "previous_event_sequence": 1731,
+  "product_write_scope": [
+    "docs/04_test_reports/F-20_REWORK_R4_RESULT.md",
+    "tests/integration/test_c30_contract_matrix.py",
+    "tests/tooling/test_a13_repository_scan.py",
+    "tests/tooling/test_f18_wsl_ops_r12_overlay.py",
+    "tests/tooling/test_phase_b_gate.py",
+    "tests/verification/test_c01_l3_independent_acceptance.py"
+  ],
+  "predecessor_commit": "508d6cef57bc2ca30801b3574aaac2fb12017215",
+  "predecessor_events_sha256": "9461848134BD05A57D9922C62CE4BA8B918089222342BD9BFC1A84D4CEB9238D",
+  "predecessor_report_sha256": "9814B91F6638248702764CBFE6D7D97EBBB91F975321E515078574213A80708A",
+  "work_instruction_sha256": "2CF4C28381C44192ABF51A7E7C1754DC54ADD3D5BE76BC9D558F9CDC89EB6A3B",
+  "invocation_sha256": "9D35F3ED224B4986ABACDF001837E89F3E6C3F4DCBFCE6CF6335093A73878070",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

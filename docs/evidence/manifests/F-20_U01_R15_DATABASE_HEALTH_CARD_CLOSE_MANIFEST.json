@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1884,
+  "accepted": false,
+  "projection_mode": "F20_U01_R15_DATABASE_HEALTH_CARD_CLOSE",
+  "previous_event_sequence": 1882,
+  "product_write_scope": [],
+  "predecessor_commit": "85f060d58deba6adbc8709de819c09b81bb6e383",
+  "predecessor_events_sha256": "5CEE99F46C846331D470853084FCDD030379219A754DB9165B4B786F7CE1EEE5",
+  "plan_path": "docs/04_test_reports/F-20_U01_R15_DATABASE_HEALTH_CARD_PLAN.md",
+  "plan_sha256": "CCED2D0C0116D960FC8BBDC21156C04EC50183F255D88BFAD5B8110C0ED7FF78",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

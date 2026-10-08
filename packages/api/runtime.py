@@ -406,12 +406,17 @@ def create_runtime_app(
         raise RuntimeConfigurationError("runtime Provider settings commands cannot replace injected ports")
     if operations_owner is not None:
         try:
-            operations_query_ports = OperationsPort(operations_owner).query_ports()
+            operations_port = OperationsPort(operations_owner)
+            operations_query_ports = operations_port.query_ports()
+            operations_command_ports = operations_port.command_ports()
         except ValueError as error:
             raise RuntimeConfigurationError("trusted F-13 owner is required") from error
     else:
         operations_query_ports = {}
+        operations_command_ports = {}
     if set(operations_query_ports) & set(base_ports.queries):
+        raise RuntimeConfigurationError("runtime Operations ports cannot replace injected ports")
+    if set(operations_command_ports) & set(base_ports.commands):
         raise RuntimeConfigurationError("runtime Operations ports cannot replace injected ports")
     from packages.persistence.task_bootstrap_repository import SqlAlchemyTaskBootstrapRepository
 
@@ -421,6 +426,7 @@ def create_runtime_app(
             **base_ports.commands,
             **step_commands,
             **provider_command_ports,
+            **operations_command_ports,
             run_key: RunCreationPort(SqlAlchemyRunCreationRepository(session_factory)),
             task_create_key: TaskBootstrapPort(task_repository),
         },

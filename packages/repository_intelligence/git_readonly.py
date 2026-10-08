@@ -36,7 +36,7 @@ _COMMANDS = (
 )
 
 
-def _environment() -> dict[str, str]:
+def _environment(repository: Path) -> dict[str, str]:
     environment = dict(os.environ)
     environment.update(
         {
@@ -46,6 +46,12 @@ def _environment() -> dict[str, str]:
             "GIT_CONFIG_NOSYSTEM": "1",
             "GIT_CONFIG_SYSTEM": os.devnull,
             "GIT_CONFIG_GLOBAL": os.devnull,
+            # Container-mounted repositories are commonly owned by root while
+            # the API runs as an unprivileged user. Allow only this exact
+            # server-selected work tree, without enabling global trust.
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "safe.directory",
+            "GIT_CONFIG_VALUE_0": str(repository),
         }
     )
     return environment
@@ -68,7 +74,7 @@ def _run(command: GitCommand, repository: Path, limits: ScanLimits) -> tuple[byt
         completed = subprocess.run(
             _argv(command),
             cwd=repository,
-            env=_environment(),
+            env=_environment(repository),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

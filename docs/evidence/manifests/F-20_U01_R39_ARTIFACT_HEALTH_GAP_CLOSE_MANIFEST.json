@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2054,
+  "accepted": false,
+  "projection_mode": "F20_U01_R39_ARTIFACT_HEALTH_GAP_CLOSE",
+  "previous_event_sequence": 2052,
+  "product_write_scope": [],
+  "predecessor_commit": "89405d27fad6ceee53ae89ad3caff86e861bf27f",
+  "predecessor_events_sha256": "B3867CC0A2957CCADE945796A9D45BEA54FEB3310B50CA714C2177815EECDFA9",
+  "plan_path": "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_PLAN.md",
+  "plan_sha256": "267DF4AFEFB70930137A86287E0F9B2D28E03C313A8FC4511BB7E75906C783DA",
+  "work_instruction_sha256": "33DBA84D7285110DC7E2C7DEE0FC6EEF71B5B6310C47F6DADAC00EACDA7233F6",
+  "result_path": "docs/04_test_reports/F-20_U01_R39_ARTIFACT_HEALTH_GAP_RESULT.md",
+  "result_sha256": "6F7A2A40445717D7123D187B1BA80F0DCCF7BC6577C52E07C4E75D480B4D5869",
+  "qa_head": "a52809519c7d95fa2893c53fe16d51f725bea7de",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

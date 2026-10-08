@@ -469,9 +469,12 @@ class WorktreeWriteService:
     def _object_write_guard(self,b):
         """Pin every loose-object fanout while Git object writers run."""
         if os.name!='nt':
-            with verified_scope_guard(b['objects_dir'],_OBJECT_FANOUTS,
-                    expected_root_identity=b['objects_root_identity']):
-                yield
+            try:
+                with verified_scope_guard(b['objects_dir'],_OBJECT_FANOUTS,
+                        expected_root_identity=b['objects_root_identity']):
+                    yield
+            except BackendRejected as exc:
+                raise LeaseError('WORKSPACE_GIT_STORE_DRIFT') from exc
             return
         import ctypes
         create=ctypes.windll.kernel32.CreateFileW

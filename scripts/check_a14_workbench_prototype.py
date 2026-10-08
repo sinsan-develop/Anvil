@@ -30,10 +30,58 @@ def canonical_lf_row_matches(root: Path, path: str, row: dict) -> bool:
     raw = (root / path).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     return len(raw) == row.get("bytes") and hashlib.sha256(raw).hexdigest().upper() == row.get("sha256")
 
-def _javascript_code_mask(text: str) -> tuple[str, bool]:
+
+def _a14_r7_registry_rows(root: Path, registry: dict) -> dict[str, dict]:
+    """Bind only the three current successor bytes, without rewriting A-14 history."""
+    exact = {"apps/web/server.mjs", "scripts/check_a14_workbench_prototype.py",
+             "tests/tooling/test_a14_workbench_prototype.py"}
+    parent = "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json"
+    manifest = "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json"
+    if (type(registry) is not dict
+            or set(registry) != {"artifact_id", "artifact_type", "package_id", "revision",
+                                 "self_reference", "a14_successor_projection"}
+            or registry["artifact_id"] != "A-14-A14-SUCCESSOR-R7-001"
+            or registry["artifact_type"] != "a14_successor_registry"
+            or registry["package_id"] != "A-14"
+            or type(registry["revision"]) is not int or registry["revision"] != 7
+            or registry["self_reference"] is not False):
+        raise ValueError("A14_R7_REGISTRY_INVALID")
+    projection = registry["a14_successor_projection"]
+    if (type(projection) is not dict
+            or set(projection) != {"predecessor_registry_path", "predecessor_registry_sha256",
+                                   "predecessor_manifest_path", "predecessor_manifest_sha256",
+                                   "live_raw_checksums", "binding_mode"}
+            or projection["predecessor_registry_path"] != parent
+            or projection["predecessor_registry_sha256"] != sha256(root / parent)
+            or projection["predecessor_manifest_path"] != manifest
+            or projection["predecessor_manifest_sha256"] != sha256(root / manifest)
+            or projection["binding_mode"] != "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"):
+        raise ValueError("A14_R7_PARENT_INVALID")
+    rows = projection["live_raw_checksums"]
+    if type(rows) is not list or len(rows) != len(exact):
+        raise ValueError("A14_R7_SCOPE_INVALID")
+    indexed = {}
+    for row in rows:
+        if (type(row) is not dict or set(row) != {"path", "bytes", "sha256"}
+                or row["path"] not in exact or row["path"] in indexed
+                or type(row["bytes"]) is not int or row["bytes"] <= 0
+                or type(row["sha256"]) is not str):
+            raise ValueError("A14_R7_ROW_INVALID")
+        path = root / row["path"]
+        raw = path.read_bytes()
+        if len(raw) != row["bytes"] or hashlib.sha256(raw).hexdigest().upper() != row["sha256"]:
+            raise ValueError("A14_R7_HASH_INVALID")
+        indexed[row["path"]] = row
+    if set(indexed) != exact:
+        raise ValueError("A14_R7_SCOPE_INVALID")
+    return indexed
+
+
+def _javascript_code_mask(text: str) -> tuple[str, bool, list[tuple[int, int]]]:
     """Mask non-code lexemes while retaining code inside template interpolations."""
     masked=list(text)
     ambiguous=False
+    regex_spans=[]
     expression_prefix_words={
         "await","case","delete","do","else","in","instanceof","new","of",
         "return","throw","typeof","void","yield",
@@ -63,6 +111,7 @@ def _javascript_code_mask(text: str) -> tuple[str, bool]:
 
     def scan_regex(index: int) -> int:
         nonlocal ambiguous
+        start=index
         blank(index); index += 1; in_class=False
         while index < len(text):
             char=text[index]; blank(index)
@@ -79,6 +128,7 @@ def _javascript_code_mask(text: str) -> tuple[str, bool]:
                 index += 1
                 while index < len(text) and (text[index].isalpha() or text[index] == "_"):
                     blank(index); index += 1
+                regex_spans.append((start,index))
                 return index
             index += 1
         ambiguous=True
@@ -158,7 +208,7 @@ def _javascript_code_mask(text: str) -> tuple[str, bool]:
         return index
 
     scan_code(0)
-    return "".join(masked),ambiguous
+    return "".join(masked),ambiguous,regex_spans
 
 def _brace_depth_at(code_mask: str, position: int) -> int | None:
     depth=0
@@ -187,7 +237,7 @@ def browser_source_findings(paths: list[Path]) -> list[str]:
     sources=[]
     for path in paths:
         text=path.read_text(encoding="utf-8")
-        code_mask,lexical_ambiguous=_javascript_code_mask(text)
+        code_mask,lexical_ambiguous,regex_spans=_javascript_code_mask(text)
         # READY_PATH is a narrow security binding, not a general JavaScript parser.
         # If a slash survives masking, it may be division or a regex literal whose
         # grammar depends on statement context.  Either form makes brace/scope
@@ -205,15 +255,18 @@ def browser_source_findings(paths: list[Path]) -> list[str]:
             names=[] if named is None else [part.strip() for part in named.group(1).split(",")]
             if _brace_depth_at(code_mask,match.start()) == 0 and "READY_PATH" in names:
                 imports.append(match.span())
-        sources.append((path,text,code_mask,declarations,imports,lexical_ambiguous))
+        sources.append((path,text,code_mask,declarations,imports,lexical_ambiguous,regex_spans))
     safe_ready_path = (
         ready_declarations[0]
         if len(ready_declarations) == 1
         and _safe_root_relative(ready_declarations[0])
         else None
     )
-    for path,text,code_mask,declarations,imports,lexical_ambiguous in sources:
-        if forbidden.search(text): findings.append(f"internal-address:{path.as_posix()}")
+    for path,text,code_mask,declarations,imports,lexical_ambiguous,regex_spans in sources:
+        # A complete regex literal may *reject* an address; it is not an API endpoint.
+        if any(not any(start <= match.start() and match.end() <= end for start,end in regex_spans)
+               for match in forbidden.finditer(text)):
+            findings.append(f"internal-address:{path.as_posix()}")
         fetch_matches=list(fetches.finditer(code_mask))
         allowed_ready_spans=[span for span,_ in declarations]
         allowed_ready_spans.extend(imports)
@@ -446,6 +499,17 @@ def check(root: Path) -> dict:
                     }
                 ):
                     successor_rows.update(r6_rows)
+            r7_registry_path = root / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R7.json"
+            if r7_registry_path.is_file():
+                relative_r7 = r7_registry_path.relative_to(root).as_posix()
+                if not _tracked_clean(root, relative_r7):
+                    errors.append("r7-successor-uncommitted")
+                else:
+                    try:
+                        r7_registry = json.loads(r7_registry_path.read_text(encoding="utf-8"))
+                        successor_rows.update(_a14_r7_registry_rows(root, r7_registry))
+                    except (OSError, ValueError, KeyError, TypeError):
+                        errors.append("r7-successor-invalid")
             for path,value in raw.items():
                 actual = portable_hash(root, path)
                 row = successor_rows.get(path)

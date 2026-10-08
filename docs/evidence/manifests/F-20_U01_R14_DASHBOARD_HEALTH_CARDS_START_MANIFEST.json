@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1876,
+  "accepted": false,
+  "projection_mode": "F20_U01_R14_DASHBOARD_HEALTH_CARDS_START",
+  "previous_event_sequence": 1872,
+  "product_write_scope": [
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "docs/04_test_reports/F-20_U01_R14_DASHBOARD_HEALTH_CARDS_RESULT.md"
+  ],
+  "predecessor_commit": "fb30a9ddc05b127753f823406efd70f3d9da8134",
+  "predecessor_events_sha256": "D04CCC6A5A409916D54BD5DB0F9DBC488727404C3F584B934D8DC3B43CC43785",
+  "plan_path": "docs/04_test_reports/F-20_U01_R14_DASHBOARD_HEALTH_CARDS_PLAN.md",
+  "plan_sha256": "2F188D20491E332CBE86C0C95870293DBDAD2DF6E4EC000CE09F73B0C51C22AC",
+  "work_instruction_sha256": "C0829DAC11AA1A8E56C21EE2728F270A59A1A7DA206E062D5390838533039A32",
+  "invocation_sha256": "22AF8D56B5A5C1B05F8735918546FC2FC033810E1865583473BF126CF7BFCD4A",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

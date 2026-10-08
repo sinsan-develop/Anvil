@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1950,
+  "accepted": false,
+  "projection_mode": "F20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_CLOSE",
+  "previous_event_sequence": 1948,
+  "product_write_scope": [],
+  "predecessor_commit": "0f9d6d332fa8e86dcfccd7a7dd5e512ddbdd2eb9",
+  "predecessor_events_sha256": "1D6E9D9856F4387E0896690F1155CF775923266CCDF1939268FEB5606DEE6223",
+  "plan_path": "docs/04_test_reports/F-20_U01_R25_DASHBOARD_ACCESSIBILITY_BROWSER_QA_PLAN.md",
+  "plan_sha256": "92F45A0D0C3701EEC222E3D266CFBC68B07121E1D6EAD5AB3A215AC915C9590E",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1974,
+  "accepted": false,
+  "projection_mode": "F20_U01_R29_DASHBOARD_QUOTA_STATE_CLOSE",
+  "previous_event_sequence": 1972,
+  "product_write_scope": [],
+  "predecessor_commit": "b3c389c1a2b1bda36eaad6520162449c296b60aa",
+  "predecessor_events_sha256": "E8E3E2264FDE8BF6C93CD15E2B759F0B8B24525B4008831F7A05DD119977D9A9",
+  "plan_path": "docs/04_test_reports/F-20_U01_R29_DASHBOARD_QUOTA_STATE_PLAN.md",
+  "plan_sha256": "AC87D9C9A7B9379D3E2C2A82C417ADF63390E2E078BF196C77D33AB87AE7912D",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

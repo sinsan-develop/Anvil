@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-18",
+  "event_sequence": 1681,
+  "accepted": false,
+  "projection_mode": "F18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_CLOSE",
+  "product_write_scope": [],
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/F-18_R45C_ROLLBACK_ARTIFACT_AUDIT.md",
+      "bytes": 10929,
+      "sha256": "60C3DE7DA223C4EAA4D1F0053A58311DE26404C730335063E8380BEAE59DFCDB"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 896066,
+      "sha256": "45DB87F41E5A521E20F226E477A899EF7955E14E830708DF7B77AEAC874C7124"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/new-qa-config-revision.json",
+      "bytes": 442,
+      "sha256": "7A095777995C8DC6A6B09AD6FB0EEA356FD7C6C28A351CFB33E53EBE1C0B809E"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/new-qa-evidence.json",
+      "bytes": 523,
+      "sha256": "DD09C4130884DE9D58B305B68674DF160D23CBD457B87DE5C21B5AB800ED67B6"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/new-qa-release-manifest.json",
+      "bytes": 1778,
+      "sha256": "5DEB8A4E494846C0844C15B65D3FC79862C1B2A6D07A5B19D39C24AB7D80A83D"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/new-qa-sbom.json",
+      "bytes": 642,
+      "sha256": "822CD70D56C8DA903101261A7B3E21F766D40DCEFEE4C7AAEF310A88F72438DD"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/new-qa-verification.json",
+      "bytes": 387,
+      "sha256": "AE37F8640F50D0CE13ED84D49D1B3FF8DA3FB5312CB45A86AFCBA6E215ED8CBE"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/old-qa-config-revision.json",
+      "bytes": 375,
+      "sha256": "E3D2F4F9E0ECA01BE16636764C52AEF2AA6A1DB9687A3FF77B0452EBD215889D"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/old-qa-evidence.json",
+      "bytes": 538,
+      "sha256": "00D619B07BF1BCC120B7986B9A7BD580E56B3B6CC4689C75D5BF7B1849391A36"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/old-qa-release-manifest.json",
+      "bytes": 1787,
+      "sha256": "CDBC44684E460B00105E67A602317DFEF3AEA4AD7CCC2C9C242C71175CB9293E"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/old-qa-sbom.json",
+      "bytes": 642,
+      "sha256": "9F5EE5F2816093295E1FA24AC2E468B1D4383CDA6520F56344B8DC03FA1EE18B"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/old-qa-verification.json",
+      "bytes": 341,
+      "sha256": "50AFEAAB47DD17DBE5A67F3ECC75BCC2780F8037F9D2D8DD9445790C7E071CED"
+    },
+    {
+      "path": "docs/evidence/f18_r45c/qa-public-key.pem",
+      "bytes": 113,
+      "sha256": "1E75458EA3D4D5A119503F613244118E56E082F3D3E037E636E68454EBB960FD"
+    },
+    {
+      "path": "docs/evidence/manifests/F-18_WSL_OPS_R45C_START_MANIFEST.json",
+      "bytes": 108847,
+      "sha256": "F3ED6A8F7B84C407CB2D17B32318937B64E38567D16FE23A76DAC1144D00E608"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 4326377,
+      "sha256": "47356D5C16B702E4CB77680FFB9952F72B5EDB862E637D43DDA279845ABC7113"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_INVOCATION.md",
+      "bytes": 581,
+      "sha256": "5B665F95A8BFDAFF57F3C9BF5EA082AC86AE3FA0558966CAACABB4541FF76D66"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_PLAN.md",
+      "bytes": 5156,
+      "sha256": "D3B2C1D9ADB8A439434AF9477907699F48EBBB6B5B1EA969311DB295EBE0F104"
+    },
+    {
+      "path": "docs/work_orders/F-18_WSL_OPS_R45C_ROLLBACK_REHEARSAL_WORK_INSTRUCTION.md",
+      "bytes": 2141,
+      "sha256": "1C439D01B0BB45F559ACAF8CFC1D2F28C5C749306D6B28D428588A4DFA6D0B4F"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4762692,
+      "sha256": "73977560349EE9B3016F74741ECA0EBB8513B270B8D51055E34C88FBA700204C"
+    },
+    {
+      "path": "scripts/f18_wsl_ops_r45c_close_overlay.py",
+      "bytes": 8294,
+      "sha256": "418AF033BA854716AE17CF31C64391507D8D08F4602D1EB7ECB506761B94CD73"
+    },
+    {
+      "path": "tests/tooling/test_f18_wsl_ops_r45c_close_overlay.py",
+      "bytes": 317,
+      "sha256": "D2E33CE0467B6A506F5A5DD5C3C299A5E204AF1C90A0C9E30C3E823FB85BC6EA"
+    }
+  ],
+  "self_reference": false,
+  "production": "NOT_EXECUTED"
+}

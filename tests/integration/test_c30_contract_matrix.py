@@ -9,6 +9,7 @@ ROOT=Path(__file__).resolve().parents[2]
 MANIFEST=ROOT/'docs/evidence/manifests/C-30_EVIDENCE_MANIFEST.json'
 FROZEN_CHECKPOINT='abb736108e60a5bc3c93c3ca531f71d70a3c5ee2'
 ACCEPTED_CHECKPOINT='ec9ee09daa6c8ecc042f8ace313e6bda5dd42f5e'
+FINAL_CHECKPOINT='5e7407de43341401f412a9e41723a5faddf5d31a'
 
 
 def checkpoint_bytes(path, checkpoint=FROZEN_CHECKPOINT):
@@ -64,8 +65,8 @@ def test_confirmation_binds_frozen_c28_not_a_rewritten_mockup():
     assert value['confirmation_event']==confirmation['event_id']
 
 
-def test_developer_evidence_event_is_not_acceptance_and_history_is_unchanged():
-    value=manifest();path=ROOT/'docs/progress/progress-events.json';raw=path.read_bytes()
+def test_frozen_c30_prefix_hash_and_current_nonaccepting_evidence_link():
+    value=manifest();path=ROOT/'docs/progress/progress-events.json';raw=checkpoint_bytes('docs/progress/progress-events.json')
     history=value['historical_events']
     start=raw.index(b'  "events": [')+len(b'  "events": [')
     assert hashlib.sha256(raw[start:start+history['bytes']]).hexdigest().upper()==history['sha256']
@@ -77,6 +78,12 @@ def test_developer_evidence_event_is_not_acceptance_and_history_is_unchanged():
     assert event['details']['accepted'] is False
     assert event['details']['wsl_formal']=='NOT_EXECUTED'
     assert event['sequence']>history['last_sequence']
+    current_raw=path.read_bytes()
+    current_events=json.loads(current_raw)['events']
+    assert next(e for e in current_events if e['event_id']==event['event_id'])==event
+    current_progress=json.loads((ROOT/'docs/progress/build-progress.json').read_bytes())
+    assert current_progress['event_sequence']>event['sequence']
+    assert current_progress['registry_refs']['progress_events']['sha256']==hashlib.sha256(current_raw).hexdigest().upper()
 
 
 def test_progress_snapshot_and_handoff_reference_local_not_formal_evidence():
@@ -112,19 +119,35 @@ def test_progress_snapshot_and_handoff_reference_local_not_formal_evidence():
     assert len(accepted['unverified'])==6
     assert set(accepted['unverified'])==unverified|{'LIVE_REMOTE'}
 
+    final=handoff_summary(checkpoint_bytes(handoff_path, FINAL_CHECKPOINT))
+    final_progress=json.loads(checkpoint_bytes('docs/progress/build-progress.json', FINAL_CHECKPOINT))
+    for field in projection_fields:
+        assert final[field]==final_progress[field], field
+    assert final['event_sequence']==1359
+    assert final['current_work_package']=='C-30' and final['status']=='ACCEPTED'
+    assert final['next_work_package']=={'package_id':'C-30', 'status':'ACCEPTED'}
+    assert final['next_successor_work_package'] is None
+    assert final['c30_overall_status']=='ACCEPTED'
+    # Main resolved LIVE_REMOTE by exact push/remote checks at the R5 start.
+    assert len(final['unverified'])==5 and set(final['unverified'])==unverified
+
     handoff_raw=(ROOT/handoff_path).read_bytes()
     current=handoff_summary(handoff_raw)
-    for field in projection_fields:
+    for field in ('event_sequence', 'last_event_id', 'status', 'current_work_package',
+                  'active_agent', 'worker_lease', 'write_lease', 'next_safe_action'):
         assert current[field]==progress[field], field
-    assert current['event_sequence']==1357
-    assert current['current_work_package']=='C-30' and current['status']=='ACCEPTED'
-    assert current['next_work_package']=={'package_id':'C-30', 'status':'ACCEPTED'}
-    assert current['next_successor_work_package'] is None
-    assert current['c30_overall_status']=='ACCEPTED'
-    # Main resolved LIVE_REMOTE by exact push/remote checks at the R5 start.
-    assert len(current['unverified'])==5 and set(current['unverified'])==unverified
+    assert current['event_sequence']>final['event_sequence']
+    assert current['current_work_package']=='F-20' and current['status']=='ACTIVE'
+    final_evidence=final_progress['current_progress_evidence_ref']
+    assert final_evidence['package_id']=='C-30'
+    final_digest=json.loads(checkpoint_bytes(final_evidence['path'], FINAL_CHECKPOINT))
+    for key,path in (('progress', 'docs/progress/build-progress.json'),
+                     ('handoff', handoff_path)):
+        historical_raw=checkpoint_bytes(path, FINAL_CHECKPOINT)
+        assert final_digest[key]['file_sha256']==hashlib.sha256(historical_raw).hexdigest().upper()
+        assert final_digest[key]['bytes']==len(historical_raw)
     evidence=progress['current_progress_evidence_ref']
-    assert evidence['package_id']=='C-30R5'
+    assert evidence['package_id']==current['current_work_package']
     digest=json.loads((ROOT/evidence['path']).read_bytes())
     assert digest['event_sequence']==current['event_sequence']
     for key,path,raw in (('progress', 'docs/progress/build-progress.json',
@@ -133,8 +156,7 @@ def test_progress_snapshot_and_handoff_reference_local_not_formal_evidence():
         assert digest[key]['path']==path
         assert digest[key]['bytes']==len(raw)
         assert digest[key]['file_sha256']==hashlib.sha256(raw).hexdigest().upper()
-    full_progress=json.loads((ROOT/'docs/progress/build-progress.json').read_bytes())
-    for key,field,value in (('progress','canonical_json_sha256',full_progress),
-                            ('handoff','machine_summary_canonical_sha256',current)):
+    for key,field,value in (('progress','canonical_json_sha256',final_progress),
+                            ('handoff','machine_summary_canonical_sha256',final)):
         canonical=json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()
-        assert digest[key][field]==hashlib.sha256(canonical).hexdigest().upper()
+        assert final_digest[key][field]==hashlib.sha256(canonical).hexdigest().upper()

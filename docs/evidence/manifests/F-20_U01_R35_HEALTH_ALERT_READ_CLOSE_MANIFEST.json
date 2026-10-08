@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2016,
+  "accepted": false,
+  "projection_mode": "F20_U01_R35_HEALTH_ALERT_READ_CLOSE",
+  "previous_event_sequence": 2014,
+  "product_write_scope": [],
+  "predecessor_commit": "3ca38f8098d97a5d854f63a093ab3e7c02e8c3ff",
+  "predecessor_events_sha256": "BA82DABAE303A87842B542139983E45142B81C1EFFAE907606BE92438086266F",
+  "plan_path": "docs/04_test_reports/F-20_U01_R35_HEALTH_ALERT_READ_PLAN.md",
+  "plan_sha256": "861CA69678283F9DCCB0DA512DA9A946913B256CEB378456C4433BE8E7C8E46C",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

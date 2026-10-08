@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1792,
+  "accepted": false,
+  "projection_mode": "F20_U01_R2B_CURRENT_HISTORY_START",
+  "previous_event_sequence": 1786,
+  "product_write_scope": [
+    "tests/tooling/test_project_progress.py",
+    "docs/04_test_reports/F-20_U01_R2B_CURRENT_HISTORY_RESULT.md"
+  ],
+  "predecessor_commit": "3148cf6716a7a8be109b33f0ed25f5bc15d54c9f",
+  "predecessor_events_sha256": "574E888DF6E173D5B42282E47115A3ED76CDAC54432E9B0401FB3FA9E4FC8BB5",
+  "predecessor_report_sha256": "96A4B58A895918BBEC312504E992225957637BE06A5CAD20F37F1FD17342CD13",
+  "work_instruction_sha256": "5893B59824CD55BC13C91023489A5314A75B376FB44D8DA8AF8BA70DCB19F9BC",
+  "invocation_sha256": "205B7AC221C43BFF606B113673EDA9E97EE8A590117ACF089A0E2F7B46CC1C78",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": true,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

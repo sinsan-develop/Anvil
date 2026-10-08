@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 2090,
+  "accepted": false,
+  "projection_mode": "F20_U01_R46_SCOPED_QUARANTINE_CLOSE",
+  "previous_event_sequence": 2088,
+  "product_write_scope": [],
+  "predecessor_commit": "280c7b1bb7ffb4e824eed7475625e8cebb071a13",
+  "predecessor_events_sha256": "479BF4ECCB651946FA1B344A097521083D72E272F21D4175B39961C0034D96D7",
+  "plan_path": "docs/04_test_reports/F-20_U01_R46_SCOPED_QUARANTINE_PLAN.md",
+  "plan_sha256": "D33786BFD4AF3BC77AD48E112904C105FBDF8493B565637B3EC0B30F3A2AF5D9",
+  "work_instruction_sha256": "2E78E8596DB87F2E6BC87D7F7AF4DD745E3E8E708C3569F9FC0416A18159BB57",
+  "result_path": "docs/04_test_reports/F-20_U01_R46_SCOPED_QUARANTINE_RESULT.md",
+  "result_sha256": "C9115E658D625FDED7D4D453201C9747A6B0BE5232E49BE8CE8BE97F03BA34E6",
+  "qa_head": "e8c0cd67605aadf72a0a72842a14c99308292e02",
+  "incident_event_id": "evt_f20_1764_defect_recorded",
+  "incident_blocking": false,
+  "release_decision": "DEFER",
+  "production": "NOT_EXECUTED",
+  "self_reference": false
+}

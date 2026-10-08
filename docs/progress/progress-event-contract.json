@@ -47,8 +47,13 @@
     "DEPLOYMENT_STARTED",
     "DEPLOYMENT_COMPLETED",
     "MONITORING_BOUNDARY_RECORDED",
+    "PHASE_GATE_COMPLETED",
+    "WORK_INSTRUCTION_ISSUED",
+    "PACKAGE_REVIEWED",
     "WORK_INSTRUCTION_REVISED",
-    "HUMAN_OVERRIDE_TAKEOVER_RECORDED"
+    "HUMAN_OVERRIDE_TAKEOVER_RECORDED",
+    "EVENT_LEDGER_GENERATION_STARTED",
+    "EVENT_LEDGER_RECOVERY_VERIFIED"
   ],
   "payload_contracts": {
     "MIGRATED_LEGACY_SNAPSHOT": {
@@ -414,6 +419,22 @@
       ],
       "effect": "monitoring_boundary_complete"
     },
+    "PHASE_GATE_COMPLETED": {
+      "required_details": [
+        "result_status",
+        "report",
+        "next_action"
+      ],
+      "effect": "phase_gate_completed_and_next_ready"
+    },
+    "WORK_INSTRUCTION_ISSUED": {
+      "required_details": [],
+      "effect": "work_instruction_issued"
+    },
+    "PACKAGE_REVIEWED": {
+      "required_details": [],
+      "effect": "package_review_recorded"
+    },
     "WORK_INSTRUCTION_REVISED": {
       "required_details": [
         "parent_work_instruction",
@@ -433,6 +454,47 @@
         "source"
       ],
       "effect": "human_override_takeover_authorized"
+    },
+    "EVENT_LEDGER_GENERATION_STARTED": {
+      "required_details": [
+        "generation",
+        "anchor_commit",
+        "anchor_blob",
+        "anchor_sha256",
+        "cutover_commit",
+        "cutover_blob",
+        "cutover_sha256",
+        "predecessor_commit",
+        "predecessor_events_sha256",
+        "predecessor_event_prefix_sha256",
+        "quarantined_event_sequences",
+        "audit_only_event_sequences",
+        "preflight_manifest_path",
+        "preflight_manifest_sha256",
+        "accepted",
+        "authority_active"
+      ],
+      "effect": "begin_quarantined_generation_pending_independent_verification"
+    },
+    "EVENT_LEDGER_RECOVERY_VERIFIED": {
+      "required_details": [
+        "generation",
+        "generation_start_event_id",
+        "generation_manifest_sha256",
+        "independent_test_report_path",
+        "independent_test_report_sha256",
+        "independent_verdict",
+        "wsl_qa_commit",
+        "wsl_evidence_commit",
+        "quarantined_event_sequences",
+        "audit_only_event_sequences",
+        "package_accepted",
+        "release_decision",
+        "authority_active",
+        "verification_manifest_path",
+        "verification_manifest_sha256"
+      ],
+      "effect": "activate_verified_generation_with_quarantined_history_only"
     }
   },
   "historical_event_profiles": {

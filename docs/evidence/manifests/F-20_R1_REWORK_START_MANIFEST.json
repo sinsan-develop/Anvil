@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "F-20",
+  "event_sequence": 1719,
+  "accepted": false,
+  "projection_mode": "F20_R1_REWORK_START",
+  "historical_event_prefix_sha256": "AED3D00DF31948AED95781A21FCD52EAB10EFFD2247321EB6A6BBEA5CD92714F",
+  "invalidated_acceptance_event_id": "evt_f20_1714_main_package_accepted",
+  "product_write_scope": [
+    "docs/04_test_reports/F-20_REWORK_R1_RESULT.md",
+    "packages/agent_team/worktree_writes.py",
+    "tests/agent_team/test_worktree_writes_e06.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/work_orders/F-20_REWORK_R1_WORK_INSTRUCTION.md",
+      "bytes": 2832,
+      "sha256": "68284A753059B8C58E4847350114C2856C22329C3B67BDE145C85F0D84EC5972"
+    },
+    {
+      "path": "docs/work_orders/F-20_REWORK_R1_INVOCATION.md",
+      "bytes": 576,
+      "sha256": "D27F383051B5D0D8B5402D69CD4350ED242BA52C5D56D5CE8C64B1D40A5F21C9"
+    },
+    {
+      "path": "docs/04_test_reports/F-20_WSL_FINAL_VALIDATION_REPORT.md",
+      "bytes": 8267,
+      "sha256": "3F4B009A3D401B2727E88A36694083657853F47DD171E1396B6FECDAF82EC7A0"
+    },
+    {
+      "path": "docs/evidence/manifests/F-20_WSL_FINAL_VALIDATION_MANIFEST.json",
+      "bytes": 1883,
+      "sha256": "94E0B5FD58E166EEE6F603BCBEBE31F154B6C81354A60E33D9AD5F32373286F6"
+    }
+  ],
+  "self_reference": false,
+  "production": "NOT_EXECUTED"
+}
