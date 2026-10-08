@@ -129,8 +129,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-postmerge-control-14f68aa4b9ba4684820af6c8727e156c",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_POSTMERGE_CONTROL_ONLY_PUBLIC_API_APPROVAL_PENDING",
-  "repository_head": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+  "next_safe_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
+  "repository_head": "f74078fa071c887eb48f205f32751fa7c1480461",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

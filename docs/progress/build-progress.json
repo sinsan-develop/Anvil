@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-postmerge-control-start-seq2272",
+  "snapshot_id": "snapshot-u01-postmerge-control-checkpoint-seq2272",
   "event_sequence": 2272,
-  "updated_at": "2026-10-08T11:45:29+00:00",
+  "updated_at": "2026-10-08T13:10:48+00:00",
   "last_event_id": "evt_u01_2272_postmerge_control_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -813,7 +813,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_POSTMERGE_CONTROL_ONLY_PUBLIC_API_APPROVAL_PENDING",
+  "next_safe_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -924,13 +924,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+    "local_head": "f74078fa071c887eb48f205f32751fa7c1480461",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "55e225522c1121530b1e7e4678b0c46ea33352ba",
+    "remote_head": "f74078fa071c887eb48f205f32751fa7c1480461",
     "projection_mode": "U01_POSTMERGE_CONTROL_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_POSTMERGE_CONTROL_ACTIVE_PUBLIC_API_APPROVAL_PENDING",
+    "head_relation": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1364,7 +1364,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_POSTMERGE_CONTROL_ACTIVE_PUBLIC_API_APPROVAL_PENDING",
+    "worktree_status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1530,8 +1530,8 @@
     "path": "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_WORK_INSTRUCTION.md",
     "sha256": "7B437FA753D8CB071B848AC44D36C744E6DE9ECC57157B64E98BD63B5F6EE09E",
     "revision": 1,
-    "result_status": "U01_POSTMERGE_CONTROL_ACTIVE",
-    "package_status": "U01_POSTMERGE_CONTROL_ACTIVE_PUBLIC_API_APPROVAL_PENDING",
+    "result_status": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_READY",
+    "package_status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1692,7 +1692,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_POSTMERGE_CONTROL_ACTIVE_PUBLIC_API_APPROVAL_PENDING"
+    "status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2084,8 +2084,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "93236C7BB06A03A655B7D232003CF3C203D34CF50E885827EC997C0E8E8A2925",
-  "runtime_next_action": "U01_POSTMERGE_CONTROL_ONLY_PUBLIC_API_APPROVAL_PENDING",
+  "snapshot_hash": "A270A91AEF98FF9F822F7A790613A151D89D3C6303DFCC6F78FD8CB6434FFF58",
+  "runtime_next_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23598,7 +23598,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "u01_postmerge_control_binding": {
-    "status": "U01_POSTMERGE_CONTROL_ACTIVE_PUBLIC_API_APPROVAL_PENDING",
+    "status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2269,
     "predecessor_head": "c232cb7115c22d058e1eaa96a47f8d2818447e83",
@@ -23615,8 +23615,10 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2272,
-    "next_safe_action": "U01_POSTMERGE_CONTROL_ONLY_PUBLIC_API_APPROVAL_PENDING",
-    "control_checkpoint": null,
+    "next_safe_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
+    "control_checkpoint": "f74078fa071c887eb48f205f32751fa7c1480461",
+    "adjacent_regression": "187_PASS_38_FAIL_EXIT1",
+    "rework_reason": "HISTORICAL_GIT_FIXTURE_POSTMERGE_OBSERVATION_MISMATCH",
     "active_projection_checkpoint": null,
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "AWAITING_HUMAN_DECISION"
