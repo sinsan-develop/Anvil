@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+epoch99 A2 투영 교정(Main, 2026-10-09 KST): A `35f564340272fa5b5eb5356a9cb115304dfaa339`는 실제 local/private 동일·clean이나 machine summary가 seq2279·구 epoch98 CLOSED로 남은 오류를 확인했다. 신산님의 정확 교정 진행 지시에 따라 Event 원문 seq1~2282는 불변으로 보존하고 `repository.local_head/remote_head`를 실제 Git HEAD가 아닌 epoch99 dispatch predecessor `72836ca629ac76d0c6276f9055f7e77aa5a1668a`에, 별도 binding `a_docs_checkpoint`를 실제 A SHA `35f56434`에 결박한다. repository mode/relation/worktree_status, next action, 기계 Handoff seq/lease를 epoch99 active/control-only로 정렬한다. 제품·WSL-server write0, G-05는 새 route 전 RED·U-01 수직 NOT_ACCEPTED다. A2 문서 checkpoint와 clean 확인 뒤에만 Developer 정확 통제2파일 TDD를 재개한다.
+
 epoch99 통제 A 후보(Main, 2026-10-09 KST): 신산님은 제안 SHA `5B13E92A16A903F2887BA5F3E038AA5A41BBBBA667EE0DED57FF9C39E7BCA584`의 권고 B를 승인했다. 승인 기록 SHA `60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39`, 계획 SHA `002977BDB7B634E974E4926F1FA52D6DC520450F92EBE64AB490EE6BD773C8C3`, WI SHA `C6AF8D9EE7AE62A74B5B3488AFC12F90061E0C102ED7077C0E1BA8754D632897`와 invocation SHA `B640D99B58DB55A47B4D315B1164FE81768D6382670C58A2664AE5A4286EA459`를 기존 `codex/u01-dashboard-r2` HEAD `72836ca629ac76d0c6276f9055f7e77aa5a1668a`에 결박한다. Event seq≤2279 원문 보존 후 seq2280 WI→2281 worker→2282 write, epoch99 분리 24시간 token·Developer 검사기/신규 통제 test 정확2·제품0이다. A docs-only local/private 동일·clean 전 Developer code write 금지, 새 G-05 route 전 구 closed G-05 RED는 PASS 아님. U-01 수직 NOT_ACCEPTED, Release DEFER·Production NOT_EXECUTED, WSL-server/ysna write0. 다음은 A hash/digest/게시·clean 후 통제 RED→GREEN, 그 후 별도 제품 lease다.
 
 # U-01 postmerge intake 통제 handoff
@@ -126,17 +128,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2279,
-  "last_event_id": "evt_u01_2279_historical_git_fixture_worker_lease_revoked",
+  "event_sequence": 2282,
+  "last_event_id": "evt_u01_2282_scoped_dashboard_control_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-scoped-dashboard-control",
+  "worker_lease": "worker-lease-u01-scoped-dashboard-control-3cef41d684f84f308f4c8f5ec4d726e1",
+  "write_lease": "write-lease-u01-scoped-dashboard-control-a1d09ff80ed3454ba401e932181b4c68",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_PUBLIC_API_CONTRACT_APPROVAL_PENDING",
-  "repository_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
+  "repository_head": "72836ca629ac76d0c6276f9055f7e77aa5a1668a",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

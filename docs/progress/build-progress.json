@@ -879,7 +879,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_A_DOCS_CHECKPOINT_PENDING",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -990,13 +990,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
+    "local_head": "72836ca629ac76d0c6276f9055f7e77aa5a1668a",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
-    "projection_mode": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CLOSED",
+    "remote_head": "72836ca629ac76d0c6276f9055f7e77aa5a1668a",
+    "projection_mode": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_HISTORICAL_GIT_FIXTURE_CLOSED_PUBLIC_API_APPROVAL_PENDING",
+    "head_relation": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1430,7 +1430,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_HISTORICAL_GIT_FIXTURE_CLOSED_PUBLIC_API_APPROVAL_PENDING",
+    "worktree_status": "U01_SCOPED_DASHBOARD_CONTROL_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -2160,8 +2160,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "F5E535A94D48D9C99F80CFB305302A517CC794EFEAE9EF8165C52B6C2DFC95BF",
-  "runtime_next_action": "U01_SCOPED_DASHBOARD_CONTROL_A_DOCS_CHECKPOINT_PENDING",
+  "snapshot_hash": "C2F6B0E0291858ACE2B2DEFEFED6DD0E1040D1431A81EFF1F4970FED173453D2",
+  "runtime_next_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23698,7 +23698,8 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_scoped_dashboard_control_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2282,
-    "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_A_DOCS_CHECKPOINT_PENDING",
+    "next_safe_action": "U01_SCOPED_DASHBOARD_CONTROL_ONLY",
+    "a_docs_checkpoint": "35f564340272fa5b5eb5356a9cb115304dfaa339",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "HUMAN_APPROVED_EXACT_PROPOSAL_B",
     "release_decision": "DEFER",
