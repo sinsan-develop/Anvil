@@ -82,16 +82,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2243,
-  "last_event_id": "evt_f19a_2243_task4_db_fault_bounded_503_worker_lease_revoked",
+  "event_sequence": 2246,
+  "last_event_id": "evt_f19a_2246_task4_final_qa_report_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": "worker-lease-f19a-task4-final-qa-report-535fae2e8a1b45eba04221a50f997a23",
+  "write_lease": "write-lease-f19a-task4-final-qa-report-30e9ff1b2244411dbdf49f7bbe011007",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_WSL_QA_PENDING",
+  "next_safe_action": "F19A_TASK4_FINAL_QA_REPORT_CONTROL_ONLY",
   "repository_head": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
