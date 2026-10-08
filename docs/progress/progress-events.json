@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2267,
+  "last_sequence": 2269,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -104062,7 +104062,49 @@
       "product_write_scope": [],
       "write_epoch": 96
     }
+  },
+  {
+    "sequence": 2268,
+    "event_id": "evt_f19a_2268_integration_whitespace_gate_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_WHITESPACE_GATE_CLOSE",
+    "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+    "occurred_at": "2026-10-08T11:20:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "D2E6F5AE6847A7A59E266BC9B49587AACEF9ECBF8AF624E70B87B6C8A8B6EE74",
+    "details": {
+      "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
+      "write_fencing_token": "f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a",
+      "reason": "F19A_INTEGRATION_WHITESPACE_GATE_COMPLETE_EXACT_MAIN_MERGE_PENDING"
+    }
+  },
+  {
+    "sequence": 2269,
+    "event_id": "evt_f19a_2269_integration_whitespace_gate_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_WHITESPACE_GATE_CLOSE",
+    "subject_ref": "F-19A/INTEGRATION-WHITESPACE-GATE",
+    "occurred_at": "2026-10-08T11:20:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "1CB104F2D19448EE564D64E6F6F85B9F5B62B9F8D98F296A873EDCAA8FF67F85",
+    "details": {
+      "lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
+      "execution_fencing_token": "f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a",
+      "reason": "F19A_INTEGRATION_WHITESPACE_GATE_COMPLETE_EXACT_MAIN_MERGE_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2267_integration_whitespace_gate_write_lease_issued"
+  "last_event_id": "evt_f19a_2269_integration_whitespace_gate_worker_lease_revoked"
 }
