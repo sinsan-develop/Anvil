@@ -70585,5 +70585,454 @@ def validate_bundle(bundle):
     return _validate_bundle_before_acceptance_93(bundle)
 
 
+def _validate_f19a_integration_r48_history(bundle, *, event_raw=None, now=None,
+                                             archived_files=None):
+    """Bind epoch94's non-product history fixture to the accepted seq2254 state."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    issued = "a30d6477afe480e72e972d2cefbea6e7f16c63c4"
+    parent = "c9c0c415e6a7a31b2996dd26cb80c8733cafc103"
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    hashes = ("3DB8CA970D31417C0D33CCBF750F903066C1B0F1CA53482D0E345EF605452001",
+              "2EE2E59B59BD8735DF702CFD4D7012BC491B96719A18473502E5084334098997",
+              "648D1BD569B2A37A5E1A714DFD9901D377C78A025D7F152611FFBBB38A587BEC",
+              "1E15B3BDC1CA8088BAC9F690F4B78227F7EE7FE097DB08D423780633D881BD35")
+    control = ["scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"]
+    action_start = "F19A_INTEGRATION_R48_HISTORY_CONTROL_ONLY"
+    status_start = "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_ACTIVE"
+    status_ready = "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY"
+    action_ready = "F19A_INTEGRATION_R48_HISTORY_CLOSE_ONLY"
+    errors = []
+    try:
+        published = {path: subprocess.check_output(["git", "show", f"{issued}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        if any(hashlib.sha256(published[path]).hexdigest().upper() != sha
+               for path, sha in zip(paths, hashes)):
+            errors.append("F19A_R48_HISTORY_PUBLICATION_INVALID")
+        predecessor = json.loads(subprocess.check_output(["git", "show", f"{parent}:{paths[0]}"],
+            cwd=root, stderr=subprocess.DEVNULL))
+        predecessor_raw = subprocess.check_output(["git", "show", f"{parent}:{paths[1]}"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        issued_progress, issued_stream = json.loads(published[paths[0]]), json.loads(published[paths[1]])
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (predecessor.get("event_sequence") != 2254
+                or predecessor.get("snapshot_hash") != compute_snapshot_hash(predecessor)
+                or predecessor.get("repository", {}).get("projection_mode")
+                   != "F19A_ACCEPTANCE_CONTROL_CLOSED"
+                or predecessor.get("worker_lease") is not None or predecessor.get("write_lease") is not None
+                or "F-19A" not in predecessor.get("completed_packages", [])
+                or "F-20" in predecessor.get("completed_packages", [])
+                or predecessor.get("next_successor_work_package") != {"package_id": "U-01",
+                    "status": "BLOCKED_PENDING_F19A_INTEGRATION_GATES"}
+                or predecessor.get("scope_revision_binding", {}).get("release_decision") != "DEFER"
+                or raw_event_object_prefix_bytes(raw, 2254)
+                   != raw_event_object_prefix_bytes(predecessor_raw, 2254)):
+            errors.append("F19A_R48_HISTORY_FROZEN_INVALID")
+        if (raw != published[paths[1]] or stream != issued_stream
+                or len(stream.get("events", [])) != 2257 or stream.get("last_sequence") != 2257
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_R48_HISTORY_EVENT_INVALID")
+        worker, write = progress.get("worker_lease"), progress.get("write_lease")
+        expected_worker, expected_write = issued_progress["worker_lease"], issued_progress["write_lease"]
+        for index in (2254, 2255, 2256):
+            row = stream["events"][index]
+            if (row != issued_stream["events"][index]
+                    or row["previous_event_sha256"] != hashlib.sha256(
+                        canonical_json_bytes(stream["events"][index - 1])).hexdigest().upper()):
+                errors.append("F19A_R48_HISTORY_EVENT_INVALID")
+        if (stream["events"][2254]["details"] != {
+                "work_instruction_id": "WI-F19A-INTEGRATION-R48-HISTORY-20261008-001",
+                "work_instruction_path": "docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_WORK_INSTRUCTION.md",
+                "work_instruction_sha256": "75CB80A5E13F15E5DAB89A1BA9C52E5637113E0E3E7A4BE1573584A523E1EF9C",
+                "approval_path": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+                "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+                "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+                "developer_exact_paths": control, "product_write_scope": [], "predecessor_sequence": 2254,
+                "predecessor_head": parent}
+                or stream["events"][2255]["details"] != expected_worker
+                or stream["events"][2256]["details"] != expected_write):
+            errors.append("F19A_R48_HISTORY_EVENT_INVALID")
+        issued_at, expires = datetime.fromisoformat(expected_worker["issued_at"]), datetime.fromisoformat(
+            expected_worker["expires_at"])
+        current = now if now is not None else datetime.now(timezone.utc)
+        if (worker != expected_worker or write != expected_write
+                or worker["lease_epoch"] != 94 or write["lease_epoch"] != 94
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["execution_fencing_token"]
+                   != "f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd"
+                or write["write_fencing_token"]
+                   != "f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace"
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or worker["fencing_token"] == write["fencing_token"]
+                or worker["path_scope"] != control or write["path_scope"] != control
+                or write["product_write_scope"] != [] or expires - issued_at != timedelta(hours=24)
+                or current.tzinfo is None or not issued_at <= current < expires):
+            errors.append("F19A_R48_HISTORY_LEASE_INVALID")
+        binding = progress.get("f19a_integration_r48_history_binding", {})
+        checkpoint = binding.get("control_checkpoint")
+        checkpointed = isinstance(checkpoint, str) and re.fullmatch(r"[0-9a-f]{40}", checkpoint) is not None
+        if checkpoint is not None and not checkpointed:
+            errors.append("F19A_R48_HISTORY_SCOPE_INVALID")
+        status, action = ((status_ready, action_ready) if checkpointed else (status_start, action_start))
+        expected_binding = {**issued_progress["f19a_integration_r48_history_binding"],
+            "status": status, "next_safe_action": action}
+        if checkpointed:
+            expected_binding["control_checkpoint"] = checkpoint
+        anchor = checkpoint if checkpointed else parent
+        repo = progress["repository"]
+        expected_wi = {**issued_progress["active_work_instruction"]}
+        if checkpointed:
+            expected_wi.update(result_status=status_ready, package_status=status_ready)
+        if (binding != expected_binding or progress.get("active_work_instruction") != expected_wi
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("snapshot_id") != ("snapshot-f19a-integration-r48-history-checkpoint-seq2257"
+                    if checkpointed else "snapshot-f19a-integration-r48-history-start-seq2257")
+                or progress.get("event_sequence") != 2257
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("updated_at") != issued_progress["updated_at"]
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("active_agent") != expected_worker["actor_id"]
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": status}
+                or progress.get("next_successor_work_package") != {"package_id": "U-01",
+                    "status": "BLOCKED_PENDING_F19A_INTEGRATION_GATES"}
+                or repo.get("projection_mode") != "F19A_INTEGRATION_R48_HISTORY_ACTIVE"
+                or repo.get("local_head") != anchor or repo.get("remote_head") != anchor
+                or repo.get("head_relation") != status or repo.get("worktree_status") != status
+                or repo.get("product_write_scope") != []
+                or "F-19A" not in progress.get("completed_packages", [])
+                or "F-20" in progress.get("completed_packages", [])
+                or progress.get("scope_revision_binding", {}).get("release_decision") != "DEFER"):
+            errors.append("F19A_R48_HISTORY_SCOPE_INVALID")
+        changed = {"active_agent", "active_work_instruction", "event_sequence",
+            "f19a_integration_r48_history_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action", "snapshot_hash",
+            "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in issued_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items() if key != "progress_events"}
+                   != {key: value for key, value in issued_progress["registry_refs"].items()
+                       if key != "progress_events"}
+                or {key: value for key, value in repo.items() if key not in
+                    {"local_head", "remote_head", "head_relation", "worktree_status"}}
+                   != {key: value for key, value in issued_progress["repository"].items() if key not in
+                    {"local_head", "remote_head", "head_relation", "worktree_status"}}):
+            errors.append("F19A_R48_HISTORY_FROZEN_INVALID")
+        expected_handoff = {**extract_handoff_summary(published[paths[2]].decode("utf-8")),
+            "repository_head": anchor, "next_safe_action": action}
+        if (handoff != expected_handoff or handoff.get("status") != "ACTIVE"
+                or handoff.get("current_work_package") != "F-19A"):
+            errors.append("F19A_R48_HISTORY_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            target = root / path
+            size = len(archived) if archived is not None else target.stat().st_size
+            sha = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != size
+                    or digest.get(section, {}).get("file_sha256") != sha):
+                errors.append("F19A_R48_HISTORY_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2257
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("F19A_R48_HISTORY_DIGEST_INVALID")
+        for path, sha in (("docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_WORK_INSTRUCTION.md",
+                "75CB80A5E13F15E5DAB89A1BA9C52E5637113E0E3E7A4BE1573584A523E1EF9C"),
+                ("docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_INVOCATION.md",
+                "69F3189DCF6717F257C67549214F32C17641FAA1F387E9CC06721626E71385F8"),
+                ("docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+                "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5")):
+            if _sha256(root / path) != sha:
+                errors.append("F19A_R48_HISTORY_INSTRUCTION_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_R48_HISTORY_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_integration_r48_history_git(bundle):
+    root = Path(bundle["_root"])
+    parent = "c9c0c415e6a7a31b2996dd26cb80c8733cafc103"
+    issued = "a30d6477afe480e72e972d2cefbea6e7f16c63c4"
+    upstream = "development/codex/f18-wsl-ops"
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    issued_documents = documents | {
+        "docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_INVOCATION.md",
+        "docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_WORK_INSTRUCTION.md"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def ancestor(a, b):
+            return subprocess.run(["git", "merge-base", "--is-ancestor", a, b], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        def changed(a, b):
+            if git("rev-list", "--min-parents=2", f"{a}..{b}"):
+                raise ValueError("merge in R48 history control")
+            history = set(git("log", "--format=", "--name-only", "--no-renames", f"{a}..{b}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames", f"{a}..{b}").splitlines()) - {""}
+            return history, delta
+        checkpoint = bundle["progress"]["f19a_integration_r48_history_binding"].get("control_checkpoint")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {row[3:] for row in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (head != remote or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or not ancestor(parent, issued) or not ancestor(issued, head)
+                or changed(parent, issued)[0] - issued_documents
+                or changed(parent, issued)[1] - issued_documents):
+            return ["F19A_R48_HISTORY_GIT_INVALID"]
+        if checkpoint is None:
+            if head != issued or dirty - control:
+                return ["F19A_R48_HISTORY_GIT_INVALID"]
+        elif (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or checkpoint == issued or not ancestor(issued, checkpoint)
+                or not ancestor(checkpoint, head) or head == checkpoint or dirty
+                or changed(issued, checkpoint)[0] - control
+                or changed(issued, checkpoint)[1] != control
+                or changed(checkpoint, head)[0] - documents
+                or changed(checkpoint, head)[1] - documents
+                or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=root,
+                    stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in control)):
+            return ["F19A_R48_HISTORY_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_R48_HISTORY_GIT_INVALID"]
+
+
+def _validate_f19a_integration_r48_history_closed(bundle, *, event_raw=None, now=None,
+                                                    archived_files=None):
+    """Verify exact seq2258/2259 revocation against an immutable active B."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    binding = progress.get("f19a_integration_r48_history_binding", {})
+    checkpoint, publication = binding.get("control_checkpoint"), binding.get("active_projection_checkpoint")
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    status, action = "F19A_ACCEPTED_INTEGRATION_GATES_PENDING", "F19A_INTEGRATION_REQUIRED_GATES_PENDING"
+    reason = "F19A_INTEGRATION_R48_HISTORY_FIX_COMPLETE_INTEGRATION_GATES_PENDING"
+    errors = []
+    try:
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or not isinstance(publication, str) or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or checkpoint == publication):
+            errors.append("F19A_R48_HISTORY_CLOSE_INVALID")
+        published = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        active_progress, active_stream = json.loads(published[paths[0]]), json.loads(published[paths[1]])
+        active_text = published[paths[2]].decode("utf-8")
+        active_bundle = {**bundle, "progress": active_progress, "events": active_stream,
+            "handoff": extract_handoff_summary(active_text), "handoff_text": active_text,
+            "detached_digest": json.loads(published[paths[3]])}
+        active_errors = _validate_f19a_integration_r48_history(active_bundle,
+            event_raw=published[paths[1]],
+            now=datetime.fromisoformat(active_progress["worker_lease"]["issued_at"]),
+            archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+        if (active_errors or active_progress["f19a_integration_r48_history_binding"].get(
+                "control_checkpoint") != checkpoint):
+            errors.append("F19A_R48_HISTORY_CLOSE_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (raw_event_object_prefix_bytes(raw, 2257)
+                != raw_event_object_prefix_bytes(published[paths[1]], 2257)
+                or stream != json.loads(raw) or len(stream.get("events", [])) != 2259
+                or stream.get("last_sequence") != 2259
+                or stream.get("last_event_id")
+                   != "evt_f19a_2259_integration_r48_history_worker_lease_revoked"
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_R48_HISTORY_CLOSE_EVENT_INVALID")
+        worker, write = active_progress["worker_lease"], active_progress["write_lease"]
+        at = stream["events"][2257]["occurred_at"]
+        at_time, current = datetime.fromisoformat(at), now if now is not None else datetime.now(timezone.utc)
+        if (at_time.tzinfo is None or current.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= at_time
+                   < datetime.fromisoformat(worker["expires_at"])
+                or at_time > current or stream["events"][2258]["occurred_at"] != at
+                or progress.get("completed_f19a_integration_r48_history_write_lease")
+                   != {**write, "status": "REVOKED", "revoked_at": at}
+                or progress.get("completed_f19a_integration_r48_history_worker_lease")
+                   != {**worker, "status": "REVOKED", "revoked_at": at}
+                or progress.get("worker_lease") is not None or progress.get("write_lease") is not None):
+            errors.append("F19A_R48_HISTORY_CLOSE_INVALID")
+        for index, kind, event_id, details in (
+            (2257, "WRITE_LEASE_REVOKED", "evt_f19a_2258_integration_r48_history_write_lease_revoked",
+             {"lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
+              "reason": reason}),
+            (2258, "WORKER_LEASE_REVOKED", "evt_f19a_2259_integration_r48_history_worker_lease_revoked",
+             {"lease_id": worker["lease_id"], "execution_fencing_token": worker["execution_fencing_token"],
+              "reason": reason})):
+            expected = {"sequence": index + 1, "event_id": event_id, "event_type": kind,
+                "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+                "project_id": "anvil", "work_package_id": "F-19A", "run_id": None,
+                "step_id": "F19A_INTEGRATION_R48_HISTORY_FIX_CLOSE",
+                "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(
+                    stream["events"][index - 1])).hexdigest().upper(), "details": details}
+            if stream["events"][index] != expected:
+                errors.append("F19A_R48_HISTORY_CLOSE_EVENT_INVALID")
+        expected_binding = {**active_progress["f19a_integration_r48_history_binding"], "status": status,
+            "active_projection_checkpoint": publication, "next_safe_action": action, "event_sequence": 2259}
+        expected_repo = {**active_progress["repository"],
+            "projection_mode": "F19A_INTEGRATION_R48_HISTORY_CLOSED", "head_relation": status,
+            "worktree_status": status}
+        if (binding != expected_binding or progress.get("repository") != expected_repo
+                or progress.get("snapshot_id") != "snapshot-f19a-integration-r48-history-close-seq2259"
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2259 or progress.get("last_event_id") != stream["last_event_id"]
+                or progress.get("updated_at") != at or progress.get("active_agent") is not None
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": status}
+                or progress.get("next_successor_work_package") != {"package_id": "U-01",
+                    "status": "BLOCKED_PENDING_F19A_INTEGRATION_GATES"}
+                or progress.get("completed_packages") != active_progress.get("completed_packages")
+                or "F-19A" not in progress.get("completed_packages", [])
+                or "F-20" in progress.get("completed_packages", [])):
+            errors.append("F19A_R48_HISTORY_CLOSE_INVALID")
+        changed = {"active_agent", "completed_f19a_integration_r48_history_write_lease",
+            "completed_f19a_integration_r48_history_worker_lease", "event_sequence",
+            "f19a_integration_r48_history_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action", "snapshot_hash",
+            "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in active_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items() if key != "progress_events"}
+                   != {key: value for key, value in active_progress["registry_refs"].items()
+                       if key != "progress_events"}):
+            errors.append("F19A_R48_HISTORY_CLOSE_FROZEN_INVALID")
+        expected_handoff = {**active_bundle["handoff"], "event_sequence": 2259,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "repository_head": checkpoint,
+            "next_safe_action": action}
+        if (handoff != expected_handoff or handoff.get("status") != "ACTIVE"
+                or handoff.get("current_work_package") != "F-19A"):
+            errors.append("F19A_R48_HISTORY_CLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            target = root / path
+            size = len(archived) if archived is not None else target.stat().st_size
+            sha = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != size
+                    or digest.get(section, {}).get("file_sha256") != sha):
+                errors.append("F19A_R48_HISTORY_CLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2259
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("F19A_R48_HISTORY_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_R48_HISTORY_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_integration_r48_history_closed_git(bundle):
+    root = Path(bundle["_root"])
+    issued = "a30d6477afe480e72e972d2cefbea6e7f16c63c4"
+    upstream = "development/codex/f18-wsl-ops"
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def ancestor(a, b):
+            return subprocess.run(["git", "merge-base", "--is-ancestor", a, b], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        def changed(a, b):
+            if git("rev-list", "--min-parents=2", f"{a}..{b}"):
+                raise ValueError("merge in R48 history close")
+            history = set(git("log", "--format=", "--name-only", "--no-renames", f"{a}..{b}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames", f"{a}..{b}").splitlines()) - {""}
+            return history, delta
+        binding = bundle["progress"]["f19a_integration_r48_history_binding"]
+        checkpoint, publication = binding["control_checkpoint"], binding["active_projection_checkpoint"]
+        if (not all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{40}", value)
+                    for value in (checkpoint, publication))
+                or checkpoint in (issued, publication) or publication == issued):
+            raise ValueError("invalid checkpoints")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        if (head != remote or head in (issued, checkpoint, publication)
+                or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or git("status", "--porcelain=v1", "-uall")
+                or not ancestor(issued, checkpoint) or not ancestor(checkpoint, publication)
+                or not ancestor(publication, head)
+                or changed(issued, checkpoint)[0] - control
+                or changed(issued, checkpoint)[1] != control
+                or changed(checkpoint, publication)[0] - documents
+                or changed(checkpoint, publication)[1] - documents
+                or changed(publication, head)[0] - documents
+                or changed(publication, head)[1] - documents):
+            raise ValueError("invalid history")
+        for path in control:
+            if subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=root,
+                                       stderr=subprocess.DEVNULL) != (root / path).read_bytes():
+                raise ValueError("stale control")
+        published_raw = subprocess.check_output(["git", "show",
+            f"{publication}:docs/progress/build-progress.json"], cwd=root, stderr=subprocess.DEVNULL)
+        published = json.loads(published_raw)
+        published_binding = published["f19a_integration_r48_history_binding"]
+        if (published_binding.get("control_checkpoint") != checkpoint
+                or published_binding.get("status")
+                   != "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY"
+                or published["repository"].get("projection_mode")
+                   != "F19A_INTEGRATION_R48_HISTORY_ACTIVE"
+                or published["repository"].get("local_head") != checkpoint):
+            raise ValueError("stale active publication")
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, TypeError,
+            subprocess.CalledProcessError):
+        return ["F19A_R48_HISTORY_CLOSE_GIT_INVALID"]
+
+
+_collect_f19a_start_git_before_r48_history_94 = _collect_f19a_start_git
+
+
+def _collect_f19a_start_git(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode == "F19A_INTEGRATION_R48_HISTORY_ACTIVE":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_integration_r48_history_git(bundle) else []
+    if mode == "F19A_INTEGRATION_R48_HISTORY_CLOSED":
+        return ["F19A_GIT_INVALID"] if _collect_f19a_integration_r48_history_closed_git(bundle) else []
+    return _collect_f19a_start_git_before_r48_history_94(bundle)
+
+
+_validate_bundle_before_r48_history_94 = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode in ("F19A_INTEGRATION_R48_HISTORY_ACTIVE", "F19A_INTEGRATION_R48_HISTORY_CLOSED"):
+        errors = (_validate_f19a_integration_r48_history(bundle)
+            if mode == "F19A_INTEGRATION_R48_HISTORY_ACTIVE"
+            else _validate_f19a_integration_r48_history_closed(bundle))
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic",
+                                         "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_integration_r48_history_git(bundle)
+            if mode == "F19A_INTEGRATION_R48_HISTORY_ACTIVE"
+            else _collect_f19a_integration_r48_history_closed_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_r48_history_94(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
