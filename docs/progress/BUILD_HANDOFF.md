@@ -1,5 +1,7 @@
 # F-19A Task4 최종 QA 보고 통제 successor handoff
 
+epoch92 제어 C 체크포인트·활성 B 후보(Main, 2026-10-08): Developer 정확2 `scripts/check_project_progress.py` SHA256 `07B5B10E5332CFA00E9C7BE51B95A171F81D84844CA4C81300D9CFD7790923A6`·`tests/tooling/test_f19a_start_projection.py` SHA256 `D949EBD146D87ABB819895ECD5EDA3C36C5529D9B4206AE0ED72105167BC91A1`을 C `749c7b759417a25f22131bc15203c7b9146dd270`로 local/private 동일 게시했다. 신규 집중7 PASS, G-05 활성 seq2246 PASS, 독립 리뷰 C0/I0/M0, diff0이다. 인접5 재실행은 수정 전후 모두 180 PASS/역사 R48 authority2 FAIL(exit1)이며 신규 F-19A 실패0이다. 이 문서·progress·digest는 C SHA 결박 B 후보로, B 게시·private/clean·G-05 PASS 전 write→worker lease 종료 금지다. F-19A NOT_ACCEPTED, U-01 write/main 병합/새 branch 금지, Release DEFER·Production NOT_EXECUTED 유지.
+
 epoch92 시작 후보(Main, 2026-10-08): WSL-server exact clean source `73055ce3e8b08449cf53d371107c5bd326417ae3`의 실제 PG15/OIDC/HTTPS/Chromium·Critical ACK 및 독립 Tester AV-OPS-026/AV-SAFE-034 PASS 권고·전용 자원 잔여0을 보고서 R `ddd56c2f3c5e462f284aa6da7497c97256dd9e15`로 local/private 동일·clean 게시했다. 기존 seq2243 closed checker는 보고서 경로가 문서5 밖이라 `F19A_TASK4_DB_FAULT_CLOSE_GIT_INVALID` RED다. 비의미 WI SHA `D919D672E2E8A8D738DDE5E96F1BB17CD25B0031B1BA39D07686F90F2FAF7E91`를 Event seq2244 WI→2245 worker→2246 write로 결박하고, 분리된 24시간 epoch92 token·Developer 통제 정확2·제품0을 투영했다. A docs-only private/clean 및 Main 확인 전 Developer code write 금지; 새 route 전 G-05 RED는 PASS가 아니다. U-01 write/main 병합/다음 branch 금지, F-19A NOT_ACCEPTED·Release DEFER·Production/ysna-server NOT_EXECUTED 유지.
 
 # F-19A Task 4 DB 장애 유한 503 통제 checkpoint handoff
@@ -91,8 +93,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-final-qa-report-30e9ff1b2244411dbdf49f7bbe011007",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_FINAL_QA_REPORT_CONTROL_ONLY",
-  "repository_head": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
+  "next_safe_action": "F19A_TASK4_FINAL_QA_REPORT_CONTROL_CLOSE_ONLY",
+  "repository_head": "749c7b759417a25f22131bc15203c7b9146dd270",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
