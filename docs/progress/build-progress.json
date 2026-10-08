@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-task4-db-fault-bounded-503-control-seq2241",
+  "snapshot_id": "snapshot-f19a-task4-db-fault-bounded-503-product-seq2241",
   "event_sequence": 2241,
   "updated_at": "2026-10-08T00:26:14+00:00",
   "last_event_id": "evt_f19a_2241_task4_db_fault_bounded_503_write_lease_issued",
@@ -736,7 +736,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_PRODUCT_RED_TESTS_ONLY",
+  "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -847,13 +847,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "3b2e7c7523722330a9d6de7d69cc4e4319ad821f",
+    "local_head": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "3b2e7c7523722330a9d6de7d69cc4e4319ad821f",
+    "remote_head": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
     "projection_mode": "F19A_TASK4_DB_FAULT_BOUNDED_503_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
+    "head_relation": "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1287,7 +1287,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": ["apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py", "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py", "tests/integration/test_f19a_oidc_pg15.py"],
-    "worktree_status": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
+    "worktree_status": "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1453,8 +1453,8 @@
     "path": "docs/work_orders/F-19A_TASK4_DB_FAULT_BOUNDED_503_WORK_INSTRUCTION.md",
     "sha256": "28F81FF98513F13E0E722B0DB86048DDEAE2D7A5FF8FA7712C26BA35610EFA72",
     "revision": 1,
-    "result_status": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
-    "package_status": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
+    "result_status": "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "package_status": "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_INTERNAL_TASK4_DB_FAULT_BOUNDED_503_NON_SEMANTIC"
   },
@@ -1615,7 +1615,7 @@
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY"
+    "status": "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -2007,8 +2007,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "72A2FF2760D53EBECF24EDEF4D81CC5A7DC9EFD9720996ED1B22DF81D4D518A6",
-  "runtime_next_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_PRODUCT_RED_TESTS_ONLY",
+  "snapshot_hash": "D66101C634F0326F1DDDC60861F81DA547F038CE5157906D059AE2E8E4F09FDE",
+  "runtime_next_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23521,7 +23521,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "f19a_task4_db_fault_bounded_503_binding": {
-    "status": "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY",
+    "status": "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY",
     "package_id": "F-19A",
     "predecessor_sequence": 2238,
     "predecessor_head": "64237af83babd15f9df876f1aaa2494c4453e1e8",
@@ -23538,8 +23538,9 @@
     "worker_lease_id": "worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f",
     "write_lease_id": "write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989",
     "detached_digest_path": "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
-    "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_PRODUCT_RED_TESTS_ONLY",
+    "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY",
     "control_checkpoint": "3b2e7c7523722330a9d6de7d69cc4e4319ad821f",
+    "product_code_checkpoint": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
     "f20_overall_status": "REWORK_IN_PROGRESS",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",

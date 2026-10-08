@@ -1,5 +1,7 @@
 # F-19A Task 4 DB 장애 유한 503 통제 checkpoint handoff
 
+epoch91 제품 checkpoint·활성 종료 준비(Main, 2026-10-08): 정확 제품4와 `WORK_STATUS`를 `0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46`로 local/private 동일 게시했다. Developer·Main 각각 관련 인접 115 PASS/PG15 opt-in 1 SKIP, Main Ruff 정확4·diff exit0, 독립 정적 리뷰 C0/I0/M0이다. Main 첫 sandbox pytest는 Python shim 오류/정체로 중단했고 정상 권한 재실행 115 PASS이며 임시 base 두 경로는 identity·내부 링크 확인 후 제거 잔여0이다. 실제 WSL-server PostgreSQL 15/HTTPS/Chromium·연결 후 read stall <15초·복구·ACK COMMIT 결과는 아직 미검증이고, 역사 R48 authority 2 FAIL도 별도 잔존한다. 이 문서와 progress/digest의 제품 checkpoint 결박을 private 게시·G-05 PASS하기 전에는 epoch91 lease를 회수하거나 F-19A를 수락하지 않는다. U-01 제품 write/main 병합/새 branch 금지, Release DEFER/Production NOT_EXECUTED 유지.
+
 epoch91 통제 C/B 결박 후보(Main, 2026-10-08): Developer 동결 정확2 `scripts/check_project_progress.py` SHA `FA1007B1F7F72CAC539CBA5555442FC6C02F9605E656F713D211B7158AC40C9F`·`tests/tooling/test_f19a_start_projection.py` SHA `1D86095E77F22A7A6D8B09452FF7FA8406BA217B07344C5120D64E69F013CCF4`를 C `3b2e7c7523722330a9d6de7d69cc4e4319ad821f`로 local/private 동일·clean 게시했다. Main 독립 집중9 PASS(exit0)·G-05 활성 seq2241 PASS, 독립 정적 리뷰 C0/I0/M0·diff0. 인접5는 수정 전후 모두 173 PASS/기존 R48 authority 2 FAIL(exit1), epoch91/F-19A 신규 실패0이며 전체 GREEN 아님. C 직후 G-05 `F19A_DB_FAULT_GIT_INVALID`는 B 미게시의 예정된 RED다. 이 문서 B 게시·private/clean·G-05 PASS 전 제품5 write 금지. 실제 DB 대기 지점·503·WSL 재QA·Tester 수락은 미검증, F-19A NOT_ACCEPTED·U-01 잠금·Release DEFER·Production NOT_EXECUTED.
 
 epoch91 시작 후보(Main, 2026-10-08): epoch90 종료·WSL-server 격리 QA 보고 checkpoint `64237af83babd15f9df876f1aaa2494c4453e1e8`은 local/private 동일·clean·G-05 seq2238 PASS다. 독립 Tester는 `AV-OPS-026`, `AV-SAFE-034`를 미수락했고, 격리 PG15 연결0 뒤 새 인증 브라우저의 목록 GET은 15초 무응답이었다. 정확한 DB 대기 함수는 미확정이다. 승인된 F-19A 계약의 유한 503 보완 WI SHA `28F81FF98513F13E0E722B0DB86048DDEAE2D7A5FF8FA7712C26BA35610EFA72`를 seq2239 발행하고 epoch91 seq2240 worker→2241 write를 24시간·분리 token·정확7로 투영했다. 통제 C/B clean/private·G-05 전 제품5 write 금지, 새 route 전 bootstrap G-05 RED는 PASS가 아니다. WSL-server 격리 QA 자원은 전량 제거·공유 Web/PG는 보존됐다. F-19A 미수락, U-01 제품 write·main 병합·다음 branch 금지, Release DEFER·Production NOT_EXECUTED.
@@ -83,8 +85,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_PRODUCT_RED_TESTS_ONLY",
-  "repository_head": "3b2e7c7523722330a9d6de7d69cc4e4319ad821f",
+  "next_safe_action": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY",
+  "repository_head": "0b9a49ecb0c7323143ca48aadebb7da8ae0d6d46",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
