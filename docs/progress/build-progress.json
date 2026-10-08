@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-postmerge-control-checkpoint-seq2272",
-  "event_sequence": 2272,
-  "updated_at": "2026-10-08T13:10:48+00:00",
-  "last_event_id": "evt_u01_2272_postmerge_control_write_lease_issued",
+  "snapshot_id": "snapshot-u01-postmerge-control-close-seq2274",
+  "event_sequence": 2274,
+  "updated_at": "2026-10-08T13:14:22+00:00",
+  "last_event_id": "evt_u01_2274_postmerge_control_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-postmerge-control",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {"lease_id":"write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a","worker_lease_id":"worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-WHITESPACE-GATE","status":"REVOKED","issued_at":"2026-10-08T10:25:19+00:00","expires_at":"2026-10-09T10:25:19+00:00","lease_epoch":96,"fencing_token":"f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a","write_fencing_token":"f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a","execution_fencing_token":"f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a","baseline_git_commit":"3f0f51100d66283e39fca61ec944aabbe28467cf","dispatch_head":"3f0f51100d66283e39fca61ec944aabbe28467cf","path_scope":[".gitattributes","scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":96,"revoked_at":"2026-10-08T11:20:19+00:00"},
   "completed_f19a_integration_main_sync_write_lease": {"lease_id":"write-lease-f19a-integration-main-sync-bb4da003b3794304b37b768b2a98db10","worker_lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"REVOKED","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","write_fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":95,"revoked_at":"2026-10-08T10:18:42+00:00"},
   "completed_f19a_acceptance_control_write_lease": {
@@ -259,7 +259,8 @@
   },
   "completed_f19a_task4_db_fault_bounded_503_write_lease": {"lease_id":"write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989","worker_lease_id":"worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-DB-FAULT-BOUNDED-503","status":"REVOKED","issued_at":"2026-10-08T00:26:14+00:00","expires_at":"2026-10-09T00:26:14+00:00","lease_epoch":91,"fencing_token":"f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989","write_fencing_token":"f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989","product_write_scope":["apps/api/anvil_api/oidc_process.py","packages/api/fastapi_app.py","tests/api/test_oidc_process.py","tests/api/test_f19a_registration_api.py","tests/integration/test_f19a_oidc_pg15.py"],"execution_fencing_token":"f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f","baseline_git_commit":"64237af83babd15f9df876f1aaa2494c4453e1e8","dispatch_head":"64237af83babd15f9df876f1aaa2494c4453e1e8","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","apps/api/anvil_api/oidc_process.py","packages/api/fastapi_app.py","tests/api/test_oidc_process.py","tests/api/test_f19a_registration_api.py","tests/integration/test_f19a_oidc_pg15.py"],"write_epoch":91,"revoked_at":"2026-10-08T02:52:27+00:00"},
   "completed_f19a_integration_r48_history_write_lease": {"lease_id":"write-lease-f19a-integration-r48-history-0b5be5c7492d4f948af74fdb303f3ace","worker_lease_id":"worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-R48-HISTORY-FIX","status":"REVOKED","issued_at":"2026-10-08T07:15:09+00:00","expires_at":"2026-10-09T07:15:09+00:00","lease_epoch":94,"fencing_token":"f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace","write_fencing_token":"f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace","execution_fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","baseline_git_commit":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","dispatch_head":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":94,"revoked_at":"2026-10-08T08:33:15+00:00"},
-  "write_lease": {"lease_id":"write-lease-u01-postmerge-control-14f68aa4b9ba4684820af6c8727e156c","worker_lease_id":"worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6","actor_id":"developer-primary-u01-postmerge-control","subject_ref":"U-01/POSTMERGE-INTAKE-CONTROL","status":"ACTIVE","issued_at":"2026-10-08T11:45:29+00:00","expires_at":"2026-10-09T11:45:29+00:00","lease_epoch":97,"fencing_token":"u01-postmerge-control-write-fence-epoch-97-14f68aa4b9ba4684820af6c8727e156c","write_fencing_token":"u01-postmerge-control-write-fence-epoch-97-14f68aa4b9ba4684820af6c8727e156c","execution_fencing_token":"u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6","baseline_git_commit":"55e225522c1121530b1e7e4678b0c46ea33352ba","dispatch_head":"55e225522c1121530b1e7e4678b0c46ea33352ba","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py"],"product_write_scope":[],"write_epoch":97},
+  "write_lease": null,
+  "completed_u01_postmerge_control_write_lease": {"lease_id":"write-lease-u01-postmerge-control-14f68aa4b9ba4684820af6c8727e156c","worker_lease_id":"worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6","actor_id":"developer-primary-u01-postmerge-control","subject_ref":"U-01/POSTMERGE-INTAKE-CONTROL","status":"REVOKED","issued_at":"2026-10-08T11:45:29+00:00","expires_at":"2026-10-09T11:45:29+00:00","lease_epoch":97,"fencing_token":"u01-postmerge-control-write-fence-epoch-97-14f68aa4b9ba4684820af6c8727e156c","write_fencing_token":"u01-postmerge-control-write-fence-epoch-97-14f68aa4b9ba4684820af6c8727e156c","execution_fencing_token":"u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6","baseline_git_commit":"55e225522c1121530b1e7e4678b0c46ea33352ba","dispatch_head":"55e225522c1121530b1e7e4678b0c46ea33352ba","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py"],"product_write_scope":[],"write_epoch":97,"revoked_at":"2026-10-08T13:14:22+00:00"},
   "completed_f19a_task4_epoch89_post_close_fixture_write_lease": {"lease_id":"write-lease-f19a-task4-epoch89-post-close-fixture-abf16f5a378040318adf78e019aecc06","worker_lease_id":"worker-lease-f19a-task4-epoch89-post-close-fixture-e641b82283ae46f6b3f6f48fe337397f","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-EPOCH89-POST-CLOSE-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T22:27:44+00:00","expires_at":"2026-10-08T22:27:44+00:00","lease_epoch":90,"fencing_token":"f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06","write_fencing_token":"f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06","product_write_scope":[],"execution_fencing_token":"f19a-task4-epoch89-post-close-fixture-execution-fence-epoch-90-e641b82283ae46f6b3f6f48fe337397f","baseline_git_commit":"5605c86e42b2eb0fdc12234a846adebef56114c3","dispatch_head":"5605c86e42b2eb0fdc12234a846adebef56114c3","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"write_epoch":90,"revoked_at":"2026-10-07T23:17:19+00:00"},
   "completed_f19a_task4_epoch72_clock_fixture_write_lease": {"lease_id":"write-lease-f19a-task4-epoch72-clock-fixture-d169a0ad569d4c059684c0f9a42251ea","worker_lease_id":"worker-lease-f19a-task4-epoch72-clock-fixture-1535f4aff9424b81b77d847d07a1814e","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-EPOCH72-CLOCK-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T21:22:51+00:00","expires_at":"2026-10-08T21:22:51+00:00","lease_epoch":89,"fencing_token":"f19a-task4-epoch72-clock-fixture-write-fence-epoch-89-d169a0ad569d4c059684c0f9a42251ea","write_fencing_token":"f19a-task4-epoch72-clock-fixture-write-fence-epoch-89-d169a0ad569d4c059684c0f9a42251ea","product_write_scope":[],"execution_fencing_token":"f19a-task4-epoch72-clock-fixture-execution-fence-epoch-89-1535f4aff9424b81b77d847d07a1814e","baseline_git_commit":"350846be76efeb73913076887fe1538c7d0608e3","dispatch_head":"350846be76efeb73913076887fe1538c7d0608e3","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"write_epoch":89,"revoked_at":"2026-10-07T22:03:29+00:00"},
   "completed_f19a_task4_third_actor_qa_fixture_write_lease": {"lease_id":"write-lease-f19a-task4-third-actor-qa-fixture-12c7a9886589434e8ddc51da6377ce4a","worker_lease_id":"worker-lease-f19a-task4-third-actor-qa-fixture-fa00c01bcaa94d4fa457eeb7cf8d0240","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-THIRD-ACTOR-QA-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T20:19:46+00:00","expires_at":"2026-10-08T20:19:46+00:00","lease_epoch":88,"fencing_token":"f19a-task4-third-actor-qa-fixture-write-fence-epoch-88-12c7a9886589434e8ddc51da6377ce4a","write_fencing_token":"f19a-task4-third-actor-qa-fixture-write-fence-epoch-88-12c7a9886589434e8ddc51da6377ce4a","product_write_scope":["deploy/wsl/oidc_qa_issuer.py","tests/deploy/test_f18_oidc_qa_issuer.py","deploy/wsl/f19a_qa_bootstrap.py","tests/deploy/test_f19a_qa_bootstrap.py","tests/integration/test_f19a_oidc_pg15.py","tests/browser/f19a-pair-selection.mjs"],"execution_fencing_token":"f19a-task4-third-actor-qa-fixture-execution-fence-epoch-88-fa00c01bcaa94d4fa457eeb7cf8d0240","baseline_git_commit":"df253d71a4c521df69b97bdc249dd5d7e2081fb6","dispatch_head":"df253d71a4c521df69b97bdc249dd5d7e2081fb6","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","deploy/wsl/oidc_qa_issuer.py","tests/deploy/test_f18_oidc_qa_issuer.py","deploy/wsl/f19a_qa_bootstrap.py","tests/deploy/test_f19a_qa_bootstrap.py","tests/integration/test_f19a_oidc_pg15.py","tests/browser/f19a-pair-selection.mjs"],"write_epoch":88,"revoked_at":"2026-10-07T21:06:29+00:00"},
@@ -440,7 +441,8 @@
   "completed_f19a_integration_r48_history_worker_lease": {"lease_id":"worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-R48-HISTORY-FIX","status":"REVOKED","issued_at":"2026-10-08T07:15:09+00:00","expires_at":"2026-10-09T07:15:09+00:00","lease_epoch":94,"fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","execution_fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","baseline_git_commit":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","dispatch_head":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"revoked_at":"2026-10-08T08:33:15+00:00"},
   "completed_f19a_integration_main_sync_worker_lease": {"lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"REVOKED","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"revoked_at":"2026-10-08T10:18:42+00:00"},
   "completed_f19a_integration_whitespace_gate_worker_lease": {"lease_id":"worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-WHITESPACE-GATE","status":"REVOKED","issued_at":"2026-10-08T10:25:19+00:00","expires_at":"2026-10-09T10:25:19+00:00","lease_epoch":96,"fencing_token":"f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a","execution_fencing_token":"f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a","baseline_git_commit":"3f0f51100d66283e39fca61ec944aabbe28467cf","dispatch_head":"3f0f51100d66283e39fca61ec944aabbe28467cf","path_scope":[".gitattributes","scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"revoked_at":"2026-10-08T11:20:19+00:00"},
-  "worker_lease": {"lease_id":"worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6","actor_id":"developer-primary-u01-postmerge-control","subject_ref":"U-01/POSTMERGE-INTAKE-CONTROL","status":"ACTIVE","issued_at":"2026-10-08T11:45:29+00:00","expires_at":"2026-10-09T11:45:29+00:00","lease_epoch":97,"fencing_token":"u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6","execution_fencing_token":"u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6","baseline_git_commit":"55e225522c1121530b1e7e4678b0c46ea33352ba","dispatch_head":"55e225522c1121530b1e7e4678b0c46ea33352ba","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py"]},
+  "worker_lease": null,
+  "completed_u01_postmerge_control_worker_lease": {"lease_id":"worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6","actor_id":"developer-primary-u01-postmerge-control","subject_ref":"U-01/POSTMERGE-INTAKE-CONTROL","status":"REVOKED","issued_at":"2026-10-08T11:45:29+00:00","expires_at":"2026-10-09T11:45:29+00:00","lease_epoch":97,"fencing_token":"u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6","execution_fencing_token":"u01-postmerge-control-execution-fence-epoch-97-7798d8fdaf544cf598e8f63c8b9536d6","baseline_git_commit":"55e225522c1121530b1e7e4678b0c46ea33352ba","dispatch_head":"55e225522c1121530b1e7e4678b0c46ea33352ba","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py"],"revoked_at":"2026-10-08T13:14:22+00:00"},
   "completed_f19a_acceptance_control_worker_lease": {
     "lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
     "actor_id": "developer-primary-f19a-pair-grant",
@@ -813,7 +815,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
+  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -928,9 +930,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "f74078fa071c887eb48f205f32751fa7c1480461",
-    "projection_mode": "U01_POSTMERGE_CONTROL_ACTIVE",
+    "projection_mode": "U01_POSTMERGE_CONTROL_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
+    "head_relation": "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1364,7 +1366,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
+    "worktree_status": "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1530,8 +1532,8 @@
     "path": "docs/work_orders/U-01_POSTMERGE_INTAKE_CONTROL_WORK_INSTRUCTION.md",
     "sha256": "7B437FA753D8CB071B848AC44D36C744E6DE9ECC57157B64E98BD63B5F6EE09E",
     "revision": 1,
-    "result_status": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_READY",
-    "package_status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
+    "result_status": "INCOMPLETE_HISTORICAL_FIXTURE_REWORK_REQUIRED",
+    "package_status": "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1687,12 +1689,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "57C050EFC542216C35E13984896AC60B3559FED7AAE607E876B3607C36C4A566"
+      "sha256": "C90D60EBD455FD99C61CD4A22FA31F1764C2DEECBDFCE65681CD499010143BA1"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY"
+    "status": "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2084,8 +2086,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "A270A91AEF98FF9F822F7A790613A151D89D3C6303DFCC6F78FD8CB6434FFF58",
-  "runtime_next_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
+  "snapshot_hash": "4410019177B39374D8127C4C0E239F9C44EAEA35C769629B02457C24FC9BD4DD",
+  "runtime_next_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23598,7 +23600,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "u01_postmerge_control_binding": {
-    "status": "U01_POSTMERGE_CONTROL_CHECKPOINTED_REWORK_CLOSE_READY",
+    "status": "U01_POSTMERGE_CONTROL_CLOSED_REWORK_PENDING",
     "package_id": "U-01",
     "predecessor_sequence": 2269,
     "predecessor_head": "c232cb7115c22d058e1eaa96a47f8d2818447e83",
@@ -23614,12 +23616,12 @@
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
     "product_write_scope": [],
-    "event_sequence": 2272,
-    "next_safe_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
+    "event_sequence": 2274,
+    "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING",
     "control_checkpoint": "f74078fa071c887eb48f205f32751fa7c1480461",
     "adjacent_regression": "187_PASS_38_FAIL_EXIT1",
     "rework_reason": "HISTORICAL_GIT_FIXTURE_POSTMERGE_OBSERVATION_MISMATCH",
-    "active_projection_checkpoint": null,
+    "active_projection_checkpoint": "20290c24a588fd0249713ea90b5291f118e7f316",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "AWAITING_HUMAN_DECISION"
   },

@@ -120,16 +120,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2272,
-  "last_event_id": "evt_u01_2272_postmerge_control_write_lease_issued",
+  "event_sequence": 2274,
+  "last_event_id": "evt_u01_2274_postmerge_control_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-postmerge-control",
-  "worker_lease": "worker-lease-u01-postmerge-control-7798d8fdaf544cf598e8f63c8b9536d6",
-  "write_lease": "write-lease-u01-postmerge-control-14f68aa4b9ba4684820af6c8727e156c",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_POSTMERGE_CONTROL_REWORK_CLOSE_ONLY",
+  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_REWORK_DUAL_LEASE_PENDING",
   "repository_head": "f74078fa071c887eb48f205f32751fa7c1480461",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
