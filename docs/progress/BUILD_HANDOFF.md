@@ -1,5 +1,7 @@
 # U-01 postmerge intake 통제 handoff
 
+epoch98 역사 Git fixture 종료 후보(Main, 2026-10-09 KST): C `39226b82630b31cdf2dbdb67244df4b2014b636f`와 B `f883c8ace830a64055b29c34045c7d7d299a3bd6`가 동일 기존 branch의 local/private에서 clean 게시됐고 활성 G-05 seq2277 PASS다. 최종 인접6은 232 PASS/0 FAIL/exit0, 독립 Tester C0/I0/M0. Event 원문 seq1~2277을 보존해 seq2278 write→2279 worker를 회수하며 완료 lease REVOKED, 활성 agent/token null로 투영한다. H의 Git 게시·clean·closed G-05는 아직 미검증이므로 종료 완료로 승격하지 않는다. U-01 제품 수직 NOT_ACCEPTED, 새 공개 API 계약은 신산님 결정 대기, Release DEFER·Production NOT_EXECUTED. 다음은 H 검증·게시 후 승인된 계약 범위에서 같은 branch의 U-01 제품 작업이다.
+
 epoch97 A 문서 투영(Main, 2026-10-08): F-19A PR #39가 원격 main `0443043251d25aa77c17d23165b7c9299c8dbeb8`에 병합되고 clean main의 merged-main smoke PASS, 이전 branch·Broker tag 삭제 후 단일 `codex/u01-dashboard-r2`의 문서 체크포인트 `55e225522c1121530b1e7e4678b0c46ea33352ba` local/private 동일·clean을 확인했다. 기존 seq≤2269 원문·F-19A 수락·완료 lease를 보존하고 비제품 WI `7B437FA753D8CB071B848AC44D36C744E6DE9ECC57157B64E98BD63B5F6EE09E`·invocation `BE691B559D5C89904B3EF139FDE5E12A9EF4AC1DD3D0C65B42FCAD72CE5E92A1`를 seq2270 WI→2271 worker→2272 write, epoch97 분리 24시간 token·Developer 정확2/제품0에 결박했다. A docs-only private/clean 전 Developer code write 금지. 현재 old G-05 `F19A_WHITESPACE_CLOSE_GIT_INVALID`는 새 route 전 예상 RED이며 PASS가 아니다. 새 공개 API·인가·DB 계약은 신산님 결정 대기, U-01 수직 미수락, Release DEFER·Production NOT_EXECUTED. 다음은 checker/test exact2 RED→GREEN, 독립 검토와 C/B/lease 종료. 기존 `.pytest_cache` ACL/삭제 없음.
 
 # F-19A main sync 통제 successor handoff
@@ -120,16 +122,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2277,
-  "last_event_id": "evt_u01_2277_historical_fixture_write_lease_issued",
+  "event_sequence": 2279,
+  "last_event_id": "evt_u01_2279_historical_git_fixture_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-historical-git-fixture",
-  "worker_lease": "worker-lease-u01-historical-git-fixture-a9f8a18647d04c798c9dade7e37a2e35",
-  "write_lease": "write-lease-u01-historical-git-fixture-015da48c825e4ceaa39ef24f0a8b5b38",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_HISTORICAL_GIT_FIXTURE_CLOSE_ONLY",
+  "next_safe_action": "U01_PUBLIC_API_CONTRACT_APPROVAL_PENDING",
   "repository_head": "39226b82630b31cdf2dbdb67244df4b2014b636f",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

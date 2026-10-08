@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2277,
+  "last_sequence": 2279,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -104337,7 +104337,49 @@
       "product_write_scope": [],
       "write_epoch": 98
     }
+  },
+  {
+    "sequence": 2278,
+    "event_id": "evt_u01_2278_historical_git_fixture_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CLOSE",
+    "subject_ref": "U-01/HISTORICAL-GIT-FIXTURE-REWORK",
+    "occurred_at": "2026-10-08T15:38:23+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "726FCA8F2D8D5FEA9E2533EAEDDBBA1C81E7A2E89CFBAC9ADC57B1A2EC6C4511",
+    "details": {
+      "lease_id": "write-lease-u01-historical-git-fixture-015da48c825e4ceaa39ef24f0a8b5b38",
+      "write_fencing_token": "u01-historical-git-fixture-write-fence-epoch-98-015da48c825e4ceaa39ef24f0a8b5b38",
+      "reason": "U01_HISTORICAL_GIT_FIXTURE_REWORK_COMPLETE_PUBLIC_API_APPROVAL_PENDING"
+    }
+  },
+  {
+    "sequence": 2279,
+    "event_id": "evt_u01_2279_historical_git_fixture_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_HISTORICAL_GIT_FIXTURE_REWORK_CLOSE",
+    "subject_ref": "U-01/HISTORICAL-GIT-FIXTURE-REWORK",
+    "occurred_at": "2026-10-08T15:38:23+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4E5F9228AB3BD99F70838BB4622C32218376F16B3EB5F18C251D61BC6C88EA9F",
+    "details": {
+      "lease_id": "worker-lease-u01-historical-git-fixture-a9f8a18647d04c798c9dade7e37a2e35",
+      "execution_fencing_token": "u01-historical-git-fixture-execution-fence-epoch-98-a9f8a18647d04c798c9dade7e37a2e35",
+      "reason": "U01_HISTORICAL_GIT_FIXTURE_REWORK_COMPLETE_PUBLIC_API_APPROVAL_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2277_historical_fixture_write_lease_issued"
+  "last_event_id": "evt_u01_2279_historical_git_fixture_worker_lease_revoked"
 }
