@@ -1,3 +1,7 @@
+# U-01 승인된 scoped Dashboard successor handoff
+
+epoch99 통제 A 후보(Main, 2026-10-09 KST): 신산님은 제안 SHA `5B13E92A16A903F2887BA5F3E038AA5A41BBBBA667EE0DED57FF9C39E7BCA584`의 권고 B를 승인했다. 승인 기록 SHA `60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39`, 계획 SHA `002977BDB7B634E974E4926F1FA52D6DC520450F92EBE64AB490EE6BD773C8C3`, WI SHA `C6AF8D9EE7AE62A74B5B3488AFC12F90061E0C102ED7077C0E1BA8754D632897`와 invocation SHA `B640D99B58DB55A47B4D315B1164FE81768D6382670C58A2664AE5A4286EA459`를 기존 `codex/u01-dashboard-r2` HEAD `72836ca629ac76d0c6276f9055f7e77aa5a1668a`에 결박한다. Event seq≤2279 원문 보존 후 seq2280 WI→2281 worker→2282 write, epoch99 분리 24시간 token·Developer 검사기/신규 통제 test 정확2·제품0이다. A docs-only local/private 동일·clean 전 Developer code write 금지, 새 G-05 route 전 구 closed G-05 RED는 PASS 아님. U-01 수직 NOT_ACCEPTED, Release DEFER·Production NOT_EXECUTED, WSL-server/ysna write0. 다음은 A hash/digest/게시·clean 후 통제 RED→GREEN, 그 후 별도 제품 lease다.
+
 # U-01 postmerge intake 통제 handoff
 
 epoch98 역사 Git fixture 종료 후보(Main, 2026-10-09 KST): C `39226b82630b31cdf2dbdb67244df4b2014b636f`와 B `f883c8ace830a64055b29c34045c7d7d299a3bd6`가 동일 기존 branch의 local/private에서 clean 게시됐고 활성 G-05 seq2277 PASS다. 최종 인접6은 232 PASS/0 FAIL/exit0, 독립 Tester C0/I0/M0. Event 원문 seq1~2277을 보존해 seq2278 write→2279 worker를 회수하며 완료 lease REVOKED, 활성 agent/token null로 투영한다. H의 Git 게시·clean·closed G-05는 아직 미검증이므로 종료 완료로 승격하지 않는다. U-01 제품 수직 NOT_ACCEPTED, 새 공개 API 계약은 신산님 결정 대기, Release DEFER·Production NOT_EXECUTED. 다음은 H 검증·게시 후 승인된 계약 범위에서 같은 branch의 U-01 제품 작업이다.
