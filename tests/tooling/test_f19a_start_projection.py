@@ -6660,5 +6660,464 @@ class F19AStartProjectionTests(unittest.TestCase):
                     self.assertEqual(checker._collect_f19a_start_git(bundle), ["F19A_GIT_INVALID"])
 
 
+    @staticmethod
+    def task4_db_fault_active_bundle():
+        bundle, archive = F19AStartProjectionTests.historical_bundle(
+            "4fb588c042586c5bce10aaa5bf6ebdf61250d19e")
+        bundle["_epoch91_archive"] = archive
+        return bundle
+
+    def test_task4_db_fault_active_exact_publication_and_negative(self):
+        bundle = self.task4_db_fault_active_bundle()
+        validator = getattr(checker, "_validate_f19a_task4_db_fault_bounded_503", None)
+        self.assertIsNotNone(validator)
+        archive = bundle["_epoch91_archive"]
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+
+        def validate(candidate, *, now=issued + timedelta(minutes=1)):
+            return validator(candidate, event_raw=archive[ROOT / "docs/progress/progress-events.json"],
+                             now=now, archived_files={path.relative_to(ROOT).as_posix(): data
+                                for path, data in archive.items()})
+
+        self.assertEqual(validate(bundle), [])
+        expired = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(validate(bundle, now=expired))
+        for mutate in (
+            lambda p: p["worker_lease"].update(status="REVOKED"),
+            lambda p: p["write_lease"].update(write_fencing_token="forged"),
+            lambda p: p["f19a_task4_db_fault_bounded_503_binding"].update(work_instruction_sha256="0" * 64),
+            lambda p: p["repository"].update(product_write_scope=[]),
+        ):
+            with self.subTest(mutate=mutate):
+                forged = deepcopy(bundle)
+                mutate(forged["progress"])
+                forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+                self.assertTrue(validate(forged))
+
+    def test_task4_db_fault_issued_git_immutable_publication_and_negative(self):
+        bundle = self.task4_db_fault_active_bundle()
+        collector = checker._collect_f19a_task4_db_fault_git
+        issued = "4fb588c042586c5bce10aaa5bf6ebdf61250d19e"
+        original, original_run = subprocess.check_output, subprocess.run
+        for scenario in ("published", "remote", "dirty", "descendant", "ancestor", "merge"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
+                        sha = ("f" * 40 if scenario == "descendant" else "0" * 40
+                            if scenario == "remote" and tail[1].startswith("development/") else issued)
+                        return (sha + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "dirty" else b""
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
+                    if tail[:1] == ["rev-list"] and scenario == "merge":
+                        return b"merge"
+                    return original(command, *args, **kwargs)
+
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                    return original_run(command, *args, **kwargs)
+
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    @staticmethod
+    def task4_db_fault_control_checkpoint_bundle():
+        bundle = F19AStartProjectionTests.task4_db_fault_active_bundle()
+        progress = bundle["progress"]
+        checkpoint = "c" * 40
+        status = "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY"
+        action = "F19A_TASK4_DB_FAULT_BOUNDED_503_PRODUCT_RED_TESTS_ONLY"
+        progress["f19a_task4_db_fault_bounded_503_binding"].update(
+            status=status, control_checkpoint=checkpoint, next_safe_action=action)
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=status, worktree_status=status)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["next_work_package"]["status"] = status
+        progress["next_safe_action"] = progress["runtime_next_action"] = action
+        progress["snapshot_id"] = "snapshot-f19a-task4-db-fault-bounded-503-control-seq2241"
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=action)
+        raw_progress = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
+        raw_handoff = ("\x60\x60\x60json anvil-recovery-summary\n"
+            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n\x60\x60\x60\n").encode()
+        bundle["_epoch91_control_progress"] = raw_progress
+        bundle["_epoch91_control_handoff"] = raw_handoff
+        for section, raw in (("progress", raw_progress), ("handoff", raw_handoff)):
+            bundle["detached_digest"][section].update(
+                bytes=len(raw), file_sha256=hashlib.sha256(raw).hexdigest().upper())
+        return bundle
+
+    def test_task4_db_fault_control_checkpoint_projection_and_forgery(self):
+        bundle = self.task4_db_fault_control_checkpoint_bundle()
+        raw = bundle["_epoch91_archive"][ROOT / "docs/progress/progress-events.json"]
+        observed = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+
+        def validate(candidate):
+            return checker._validate_f19a_task4_db_fault_bounded_503(candidate,
+                event_raw=raw, now=observed,
+                archived_files={"docs/progress/build-progress.json": candidate["_epoch91_control_progress"],
+                    "docs/progress/BUILD_HANDOFF.md": candidate["_epoch91_control_handoff"]})
+
+        self.assertEqual(validate(bundle), [])
+        for name, change in (("instruction", lambda b: b["progress"]["active_work_instruction"].update(
+                package_status="FORGED")),
+                ("handoff", lambda b: b["handoff"].update(next_safe_action="FORGED")),
+                ("binding", lambda b: b["progress"]["f19a_task4_db_fault_bounded_503_binding"].update(
+                    work_instruction_sha256="0" * 64))):
+            forged = deepcopy(bundle)
+            change(forged)
+            forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+            self.assertTrue(validate(forged), name)
+
+    def test_task4_db_fault_git_control_publication_and_negative(self):
+        bundle = self.task4_db_fault_control_checkpoint_bundle()
+        collector = checker._collect_f19a_task4_db_fault_git
+        issued = "4fb588c042586c5bce10aaa5bf6ebdf61250d19e"
+        parent = "64237af83babd15f9df876f1aaa2494c4453e1e8"
+        control = ("scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py")
+        checkpoint, head = "c" * 40, "b" * 40
+        docs = {
+            "docs/progress/build-progress.json": bundle["_epoch91_control_progress"],
+            "docs/progress/BUILD_HANDOFF.md": bundle["_epoch91_control_handoff"],
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                (json.dumps(bundle["detached_digest"], ensure_ascii=False) + "\n").encode(),
+        }
+        original_output, original_run, original_read = subprocess.check_output, subprocess.run, Path.read_bytes
+        for scenario in ("published", "remote", "dirty", "unpublished", "missing_control",
+                         "transient_product", "ancestor", "merge", "stale_blob"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
+                        value = "0" * 40 if scenario == "remote" and tail[1].startswith("development/") else head
+                        return (value + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "dirty" else b""
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge" if scenario == "merge" else b""
+                    if tail[:1] == ["log"]:
+                        changes = (["docs/WORK_STATUS.md"] if tail[-1] == f"{parent}..{issued}"
+                            else list(control) if tail[-1] == f"{issued}..{checkpoint}"
+                            else ["docs/WORK_STATUS.md"])
+                        if scenario == "transient_product" and tail[-1] == f"{checkpoint}..{head}":
+                            changes.append("packages/api/runtime.py")
+                        return ("\n".join(changes) + "\n").encode()
+                    if tail[:1] == ["diff"]:
+                        changes = (["docs/WORK_STATUS.md"] if tail[-1] == f"{parent}..{issued}"
+                            else list(control) if tail[-1] == f"{issued}..{checkpoint}"
+                            else ["docs/WORK_STATUS.md"])
+                        if scenario == "missing_control" and tail[-1] == f"{issued}..{checkpoint}":
+                            changes.pop()
+                        return ("\n".join(changes) + "\n").encode()
+                    if tail[:1] == ["show"]:
+                        revision, path = tail[1].split(":", 1)
+                        if revision == head and path in docs:
+                            return b"stale" if scenario == "unpublished" and path.endswith("build-progress.json") else docs[path]
+                        if revision == checkpoint and path in control:
+                            return b"stale" if scenario == "stale_blob" and path == control[0] else original_read(ROOT / path)
+                    return original_output(command, *args, **kwargs)
+
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                    return original_run(command, *args, **kwargs)
+
+                def read(path, *args, **kwargs):
+                    relative = path.relative_to(ROOT).as_posix()
+                    return docs[relative] if relative in docs else original_read(path, *args, **kwargs)
+
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(Path, "read_bytes", read):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    @staticmethod
+    def task4_db_fault_product_checkpoint_bundle():
+        bundle = F19AStartProjectionTests.task4_db_fault_control_checkpoint_bundle()
+        progress = bundle["progress"]
+        checkpoint = "d" * 40
+        status = "TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY"
+        action = "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY"
+        progress["f19a_task4_db_fault_bounded_503_binding"].update(
+            status=status, product_code_checkpoint=checkpoint, next_safe_action=action)
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=status, worktree_status=status)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["next_work_package"]["status"] = status
+        progress["next_safe_action"] = progress["runtime_next_action"] = action
+        progress["snapshot_id"] = "snapshot-f19a-task4-db-fault-bounded-503-product-seq2241"
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=action)
+        raw_progress = (json.dumps(progress, ensure_ascii=False) + "\n").encode()
+        raw_handoff = ("\x60\x60\x60json anvil-recovery-summary\n"
+            + json.dumps(bundle["handoff"], ensure_ascii=False) + "\n\x60\x60\x60\n").encode()
+        bundle["_epoch91_product_progress"] = raw_progress
+        bundle["_epoch91_product_handoff"] = raw_handoff
+        for section, raw in (("progress", raw_progress), ("handoff", raw_handoff)):
+            bundle["detached_digest"][section].update(
+                bytes=len(raw), file_sha256=hashlib.sha256(raw).hexdigest().upper())
+        bundle["_epoch91_product_digest"] = (
+            json.dumps(bundle["detached_digest"], ensure_ascii=False) + "\n").encode()
+        return bundle
+
+    def test_task4_db_fault_product_checkpoint_projection_and_forgery(self):
+        bundle = self.task4_db_fault_product_checkpoint_bundle()
+        raw = bundle["_epoch91_archive"][ROOT / "docs/progress/progress-events.json"]
+        observed = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"]) + timedelta(minutes=1)
+
+        def validate(candidate):
+            return checker._validate_f19a_task4_db_fault_bounded_503(candidate,
+                event_raw=raw, now=observed,
+                archived_files={"docs/progress/build-progress.json": candidate["_epoch91_product_progress"],
+                    "docs/progress/BUILD_HANDOFF.md": candidate["_epoch91_product_handoff"]})
+
+        self.assertEqual(validate(bundle), [])
+        for name, change in (("product_checkpoint", lambda b: b["progress"][
+                "f19a_task4_db_fault_bounded_503_binding"].update(product_code_checkpoint="0" * 40)),
+                ("action", lambda b: b["progress"].update(runtime_next_action="FORGED")),
+                ("digest", lambda b: b["detached_digest"]["handoff"].update(file_sha256="0" * 64))):
+            forged = deepcopy(bundle)
+            change(forged)
+            forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+            self.assertTrue(validate(forged), name)
+
+    def test_task4_db_fault_product_git_publication_and_negative(self):
+        bundle = self.task4_db_fault_product_checkpoint_bundle()
+        collector = checker._collect_f19a_task4_db_fault_git
+        issued, control, product, head = (
+            "4fb588c042586c5bce10aaa5bf6ebdf61250d19e", "c" * 40, "d" * 40, "e" * 40)
+        control_paths = ("scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py")
+        product_paths = ("apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py",
+            "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py",
+            "tests/integration/test_f19a_oidc_pg15.py")
+        docs = {"docs/progress/build-progress.json": bundle["_epoch91_product_progress"],
+            "docs/progress/BUILD_HANDOFF.md": bundle["_epoch91_product_handoff"],
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                bundle["_epoch91_product_digest"]}
+        original, original_run, original_read = subprocess.check_output, subprocess.run, Path.read_bytes
+        for scenario in ("published", "one_product", "remote", "dirty", "stale_docs",
+                         "stale_product", "no_product", "transient_other", "ancestor", "merge"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"], ["rev-parse", "development/codex/f18-wsl-ops"]):
+                        value = "0" * 40 if scenario == "remote" and tail[1].startswith("development/") else head
+                        return (value + "\n").encode()
+                    if tail == ["branch", "--show-current"]:
+                        return b"codex/f18-wsl-ops\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                        return b"development/codex/f18-wsl-ops\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "dirty" else b""
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge" if scenario == "merge" else b""
+                    if tail[:1] in (["log"], ["diff"]):
+                        interval = tail[-1]
+                        paths = (list(control_paths) if interval == f"{issued}..{control}"
+                            else list(product_paths) if interval == f"{control}..{product}"
+                            else ["docs/WORK_STATUS.md"])
+                        if scenario == "one_product" and interval == f"{control}..{product}":
+                            paths = [product_paths[0]]
+                        if scenario == "no_product" and interval == f"{control}..{product}":
+                            paths = ["docs/WORK_STATUS.md"]
+                        if scenario == "transient_other" and interval == f"{control}..{product}" and tail[0] == "log":
+                            paths.append("packages/api/runtime.py")
+                        return ("\n".join(paths) + "\n").encode()
+                    if tail[:1] == ["show"]:
+                        revision, path = tail[1].split(":", 1)
+                        if revision == head and path in docs:
+                            return b"stale" if scenario == "stale_docs" and path.endswith("build-progress.json") else docs[path]
+                        if revision == control and path in control_paths:
+                            return original_read(ROOT / path)
+                        if revision == product and path in product_paths:
+                            return b"stale" if scenario == "stale_product" and path == product_paths[0] else original_read(ROOT / path)
+                    return original(command, *args, **kwargs)
+
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                    return original_run(command, *args, **kwargs)
+
+                def read(path, *args, **kwargs):
+                    relative = path.relative_to(ROOT).as_posix()
+                    return docs[relative] if relative in docs else original_read(path, *args, **kwargs)
+
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(Path, "read_bytes", read):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario not in {"published", "one_product"},
+                                 f"{scenario}: {result}")
+
+
+    @staticmethod
+    def task4_db_fault_closed_bundle():
+        bundle = F19AStartProjectionTests.task4_db_fault_product_checkpoint_bundle()
+        progress, stream = bundle["progress"], bundle["events"]
+        active_raw = bundle["_epoch91_archive"][ROOT / "docs/progress/progress-events.json"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(write["issued_at"]) + timedelta(minutes=5)).isoformat()
+        reason = "F19A_TASK4_DB_FAULT_BOUNDED_503_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+        for sequence, kind, details in ((2242, "WRITE_LEASE_REVOKED", {
+                "lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+                (2243, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                    "execution_fencing_token": worker["execution_fencing_token"], "reason": reason})):
+            prior = stream["events"][-1]
+            stream["events"].append({"sequence": sequence,
+                "event_id": f"evt_f19a_{sequence}_task4_db_fault_bounded_503_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE",
+                "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(checker.canonical_json_bytes(prior)).hexdigest().upper(),
+                "details": details})
+        stream["last_sequence"] = progress["event_sequence"] = 2243
+        stream["last_event_id"] = progress["last_event_id"] = stream["events"][-1]["event_id"]
+        prefix = active_raw.decode("utf-8")
+        suffix = '\n  ],\n  "last_event_id": "' + json.loads(active_raw)["last_event_id"] + '"\n}\n'
+        assert prefix.endswith(suffix)
+        def render(row):
+            return "\n".join("  " + line for line in json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+        raw = (prefix[:-len(suffix)] + ",\n" + ",\n".join(render(row) for row in stream["events"][-2:])
+            + '\n  ],\n  "last_event_id": "' + stream["last_event_id"] + '"\n}\n')
+        raw = raw.replace('"last_sequence": 2241', '"last_sequence": 2243', 1).encode()
+        assert json.loads(raw) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["completed_f19a_task4_db_fault_bounded_503_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_f19a_task4_db_fault_bounded_503_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        action = "F19A_TASK4_WSL_QA_PENDING"
+        status = "TASK4_DB_FAULT_BOUNDED_503_CLOSED_WSL_QA_PENDING"
+        progress["f19a_task4_db_fault_bounded_503_binding"].update(
+            status=status, active_projection_checkpoint="e" * 40,
+            next_safe_action=action, event_sequence=2243)
+        progress.update(active_agent=None, updated_at=at, next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "F-19A",
+                "status": "TASK4_WSL_QA_PENDING"},
+            snapshot_id="snapshot-f19a-task4-db-fault-bounded-503-close-seq2243")
+        progress["repository"].update(projection_mode="F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSED",
+            head_relation=status, worktree_status=status)
+        progress["snapshot_hash"] = checker.compute_snapshot_hash(progress)
+        bundle["handoff"].update(event_sequence=2243, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None,
+            repository_head="d" * 40, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2243
+        bundle["detached_digest"]["progress"].update(bytes=123,
+            file_sha256=hashlib.sha256(b"x" * 123).hexdigest().upper())
+        bundle["detached_digest"]["handoff"].update(bytes=456,
+            file_sha256=hashlib.sha256(b"x" * 456).hexdigest().upper())
+        return bundle, raw
+
+    @staticmethod
+    def validate_task4_db_fault_closed(bundle, raw):
+        validator = getattr(checker, "_validate_f19a_task4_db_fault_bounded_503_closed",
+            lambda *args, **kwargs: ["route missing"])
+        original = subprocess.check_output
+        publication = bundle["progress"]["f19a_task4_db_fault_bounded_503_binding"]["active_projection_checkpoint"]
+        values = {"docs/progress/build-progress.json": "_epoch91_product_progress",
+            "docs/progress/progress-events.json": None,
+            "docs/progress/BUILD_HANDOFF.md": "_epoch91_product_handoff",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json":
+                "_epoch91_product_digest"}
+        def output(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and len(command) == 3 and command[2].startswith(publication + ":"):
+                path = command[2].split(":", 1)[1]
+                if path in values:
+                    return (bundle["_epoch91_archive"][ROOT / path] if values[path] is None
+                        else bundle[values[path]])
+            return original(command, *args, **kwargs)
+        observed = datetime.fromisoformat(bundle["events"]["events"][2242]["occurred_at"]) + timedelta(minutes=1)
+        with patch.object(subprocess, "check_output", side_effect=output):
+            return validator(bundle, event_raw=raw, now=observed,
+                archived_files={"docs/progress/build-progress.json": b"x" * 123,
+                    "docs/progress/BUILD_HANDOFF.md": b"x" * 456})
+
+    def test_task4_db_fault_closed_immutable_product_publication_and_forgery(self):
+        bundle, raw = self.task4_db_fault_closed_bundle()
+        self.assertEqual(self.validate_task4_db_fault_closed(bundle, raw), [])
+        for name, mutate in (("event", lambda b: b["events"]["events"][2241].update(actor="forged")),
+                             ("lease", lambda b: b["progress"].update(
+                                 completed_f19a_task4_db_fault_bounded_503_worker_lease=None)),
+                             ("binding", lambda b: b["progress"][
+                                 "f19a_task4_db_fault_bounded_503_binding"].update(
+                                     work_instruction_sha256="0" * 64)),
+                             ("digest", lambda b: b["detached_digest"].update(algorithm="forged"))):
+            forged = deepcopy(bundle)
+            mutate(forged)
+            forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+            self.assertTrue(self.validate_task4_db_fault_closed(forged, raw), name)
+
+    def test_task4_db_fault_closed_git_publication_and_history_negative(self):
+        bundle, _ = self.task4_db_fault_closed_bundle()
+        checkpoint, publication, head = "d" * 40, "e" * 40, "f" * 40
+        original, original_run = subprocess.check_output, subprocess.run
+        collector = checker._collect_f19a_task4_db_fault_bounded_503_closed_git
+        published = {"repository": {"projection_mode": "F19A_TASK4_DB_FAULT_BOUNDED_503_ACTIVE"},
+            "f19a_task4_db_fault_bounded_503_binding": {"product_code_checkpoint": checkpoint}}
+        for scenario in ("published", "stale_publication", "transient_product_dp",
+                         "transient_product_close", "merge", "ancestor", "remote", "dirty"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/f18-wsl-ops"]:
+                        return (("0" * 40 if scenario == "remote" else head) + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/runtime.py\n" if scenario == "dirty" else b""
+                    if tail[:1] == ["rev-list"]:
+                        return b"merge" if scenario == "merge" else b""
+                    if tail[:1] == ["log"]:
+                        changed = (scenario == "transient_product_dp" and tail[-1] == f"{checkpoint}..{publication}"
+                            or scenario == "transient_product_close" and tail[-1] == f"{publication}..{head}")
+                        return b"packages/api/runtime.py\n" if changed else b"docs/WORK_STATUS.md\n"
+                    if tail[:1] == ["diff"]:
+                        return b"docs/WORK_STATUS.md\n"
+                    if tail == ["show", f"{publication}:docs/progress/build-progress.json"]:
+                        return json.dumps({} if scenario == "stale_publication" else published).encode()
+                    return original(command, *args, **kwargs)
+
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 1 if scenario == "ancestor" else 0)
+                    return original_run(command, *args, **kwargs)
+
+                with patch.object(checker, "_collect_f19a_task4_db_fault_git", return_value=[]), \
+                        patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_task4_db_fault_legacy_git_dispatches_active_and_closed(self):
+        active = self.task4_db_fault_active_bundle()
+        closed, _ = self.task4_db_fault_closed_bundle()
+        for bundle, collector_name in ((active, "_collect_f19a_task4_db_fault_git"),
+                                       (closed, "_collect_f19a_task4_db_fault_bounded_503_closed_git")):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                with patch.object(checker, collector_name, return_value=[]):
+                    self.assertEqual(checker._collect_f19a_start_git(bundle), [])
+                with patch.object(checker, collector_name, return_value=["INVALID"]):
+                    self.assertEqual(checker._collect_f19a_start_git(bundle), ["F19A_GIT_INVALID"])
+
+
 if __name__ == "__main__":
     unittest.main()

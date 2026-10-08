@@ -69259,5 +69259,455 @@ def validate_bundle(bundle):
     return _validate_bundle_before_f19a_task4_epoch89_postclose_fixture(bundle)
 
 
+_validate_bundle_before_f19a_db_fault_91 = validate_bundle
+_collect_f19a_start_git_before_db_fault_91 = _collect_f19a_start_git
+
+
+def _validate_f19a_task4_db_fault_bounded_503_closed(bundle, *, event_raw=None,
+                                                           now=None, archived_files=None):
+    """Verify seq2242/2243 against immutable active B and exact revocation."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+    binding = progress.get("f19a_task4_db_fault_bounded_503_binding", {})
+    checkpoint, publication = binding.get("product_code_checkpoint"), binding.get("active_projection_checkpoint")
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    status = "TASK4_DB_FAULT_BOUNDED_503_CLOSED_WSL_QA_PENDING"
+    action = "F19A_TASK4_WSL_QA_PENDING"
+    reason = "F19A_TASK4_DB_FAULT_BOUNDED_503_COMPLETE_WSL_QA_PENDING_F19A_NOT_ACCEPTED"
+    errors = []
+    try:
+        if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or not isinstance(publication, str) or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or checkpoint == publication):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_INVALID")
+        published = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        active_progress = json.loads(published[paths[0]])
+        active_stream = json.loads(published[paths[1]])
+        active_text = published[paths[2]].decode("utf-8")
+        active_bundle = {**bundle, "progress": active_progress, "events": active_stream,
+            "handoff": extract_handoff_summary(active_text), "handoff_text": active_text,
+            "detached_digest": json.loads(published[paths[3]])}
+        active_errors = _validate_f19a_task4_db_fault_bounded_503(active_bundle,
+            event_raw=published[paths[1]],
+            now=datetime.fromisoformat(active_progress["worker_lease"]["issued_at"]),
+            archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+        if (active_errors or active_progress["f19a_task4_db_fault_bounded_503_binding"].get("product_code_checkpoint")
+                != checkpoint):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (raw_event_object_prefix_bytes(raw, 2241) != raw_event_object_prefix_bytes(published[paths[1]], 2241)
+                or stream != json.loads(raw) or len(stream.get("events", [])) != 2243
+                or stream.get("last_sequence") != 2243
+                or stream.get("last_event_id")
+                   != "evt_f19a_2243_task4_db_fault_bounded_503_worker_lease_revoked"
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_EVENT_INVALID")
+        worker, write = active_progress["worker_lease"], active_progress["write_lease"]
+        at = stream["events"][2241]["occurred_at"]
+        at_time, current = datetime.fromisoformat(at), now or datetime.now(timezone.utc)
+        if (at_time.tzinfo is None or current.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= at_time
+                   < datetime.fromisoformat(worker["expires_at"])
+                or at_time > current or stream["events"][2242]["occurred_at"] != at
+                or progress.get("completed_f19a_task4_db_fault_bounded_503_write_lease")
+                   != {**write, "status": "REVOKED", "revoked_at": at}
+                or progress.get("completed_f19a_task4_db_fault_bounded_503_worker_lease")
+                   != {**worker, "status": "REVOKED", "revoked_at": at}
+                or progress.get("worker_lease") is not None or progress.get("write_lease") is not None):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_INVALID")
+        for index, kind, details in ((2241, "WRITE_LEASE_REVOKED", {"lease_id": write["lease_id"],
+                "write_fencing_token": write["write_fencing_token"], "reason": reason}),
+                (2242, "WORKER_LEASE_REVOKED", {"lease_id": worker["lease_id"],
+                    "execution_fencing_token": worker["execution_fencing_token"], "reason": reason})):
+            expected = {"sequence": index + 1,
+                "event_id": f"evt_f19a_{index + 1}_task4_db_fault_bounded_503_{kind.lower()}",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "F-19A",
+                "run_id": None, "step_id": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE",
+                "subject_ref": "F-19A/TASK4-DB-FAULT-BOUNDED-503", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": hashlib.sha256(canonical_json_bytes(stream["events"][index - 1])).hexdigest().upper(),
+                "details": details}
+            if stream["events"][index] != expected:
+                errors.append("F19A_TASK4_DB_FAULT_CLOSE_EVENT_INVALID")
+        expected_binding = {**active_progress["f19a_task4_db_fault_bounded_503_binding"],
+            "status": status, "active_projection_checkpoint": publication,
+            "next_safe_action": action, "event_sequence": 2243}
+        expected_repo = {**active_progress["repository"],
+            "projection_mode": "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSED", "head_relation": status,
+            "worktree_status": status}
+        if (binding != expected_binding or progress.get("repository") != expected_repo
+                or progress.get("snapshot_id") != "snapshot-f19a-task4-db-fault-bounded-503-close-seq2243"
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2243 or progress.get("last_event_id") != stream["last_event_id"]
+                or progress.get("updated_at") != at or progress.get("active_agent") is not None
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": "TASK4_WSL_QA_PENDING"}):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_INVALID")
+        changed = {"active_agent", "completed_f19a_task4_db_fault_bounded_503_write_lease",
+            "completed_f19a_task4_db_fault_bounded_503_worker_lease", "event_sequence",
+            "f19a_task4_db_fault_bounded_503_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action", "snapshot_hash",
+            "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in active_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items() if key != "progress_events"}
+                   != {key: value for key, value in active_progress["registry_refs"].items()
+                       if key != "progress_events"}):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_FROZEN_INVALID")
+        expected_handoff = {**active_bundle["handoff"], "event_sequence": 2243,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "repository_head": checkpoint,
+            "next_safe_action": action}
+        if handoff != expected_handoff or handoff.get("status") != "ACTIVE":
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            target = root / path
+            size = len(archived) if archived is not None else target.stat().st_size
+            sha = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != size
+                    or digest.get(section, {}).get("file_sha256") != sha):
+                errors.append("F19A_TASK4_DB_FAULT_CLOSE_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2243
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("F19A_TASK4_DB_FAULT_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_TASK4_DB_FAULT_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_task4_db_fault_bounded_503_closed_git(bundle):
+    root = Path(bundle["_root"])
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    try:
+        if _collect_f19a_task4_db_fault_git(bundle):
+            return ["F19A_TASK4_DB_FAULT_CLOSE_GIT_INVALID"]
+        binding = bundle["progress"]["f19a_task4_db_fault_bounded_503_binding"]
+        checkpoint, publication = binding["product_code_checkpoint"], binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str) or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication == checkpoint):
+            return ["F19A_TASK4_DB_FAULT_CLOSE_GIT_INVALID"]
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false", *args],
+                cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def history(start, end):
+            if git("rev-list", "--min-parents=2", f"{start}..{end}"):
+                raise ValueError("merge in epoch91 close")
+            return set(git("log", "--format=", "--name-only", "--no-renames", f"{start}..{end}").splitlines()) - {""}
+        head = git("rev-parse", "HEAD")
+        if (head != git("rev-parse", "development/codex/f18-wsl-ops")
+                or git("status", "--porcelain=v1", "-uall")):
+            return ["F19A_TASK4_DB_FAULT_CLOSE_GIT_INVALID"]
+        published = json.loads(subprocess.check_output(["git", "show",
+            f"{publication}:docs/progress/build-progress.json"], cwd=root, stderr=subprocess.DEVNULL))
+        if (not all(subprocess.run(["git", "merge-base", "--is-ancestor", start, end], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                for start, end in ((checkpoint, publication), (publication, head)))
+                or history(checkpoint, publication) - documents or history(publication, head) - documents
+                or set(git("diff", "--name-only", "--no-renames", f"{checkpoint}..{publication}").splitlines()) - documents
+                or set(git("diff", "--name-only", "--no-renames", f"{publication}..HEAD").splitlines()) - documents
+                or published.get("repository", {}).get("projection_mode")
+                   != "F19A_TASK4_DB_FAULT_BOUNDED_503_ACTIVE"
+                or published.get("f19a_task4_db_fault_bounded_503_binding", {}).get("product_code_checkpoint")
+                   != checkpoint):
+            return ["F19A_TASK4_DB_FAULT_CLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_TASK4_DB_FAULT_CLOSE_GIT_INVALID"]
+
+
+def _validate_f19a_task4_db_fault_bounded_503(bundle, *, event_raw=None, now=None,
+                                                archived_files=None):
+    """Validate the issued epoch91 control projection without trusting its own hash."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    issued = "4fb588c042586c5bce10aaa5bf6ebdf61250d19e"
+    parent = "64237af83babd15f9df876f1aaa2494c4453e1e8"
+    hashes = ("12946A55A8F1251C21AE3D2223AE849807BB1927527E811FD697B80B38BBB137",
+              "439F57EF147FF62D09F4C4AFE2609435246DE3DA6BE3F49B6BFA4358D2668652",
+              "8B2F1A0342FDBBFFD1846E49F1154A237526D3DBECD9073398EC2B7ABC4BCCF4",
+              "20CBFDF6B4824A1EF0BD26A4AF8A01E7CD04758EE043842B4C80E7FE12FA34AB")
+    control = ["scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"]
+    product = ["apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py",
+               "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py",
+               "tests/integration/test_f19a_oidc_pg15.py"]
+    scope = control + product
+    errors = []
+    try:
+        published = {path: subprocess.check_output(["git", "show", f"{issued}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        if any(hashlib.sha256(published[path]).hexdigest().upper() != sha
+               for path, sha in zip(paths, hashes)):
+            errors.append("F19A_DB_FAULT_PUBLICATION_INVALID")
+        baseline = json.loads(subprocess.check_output(["git", "show", f"{parent}:{paths[0]}"],
+            cwd=root, stderr=subprocess.DEVNULL))
+        baseline_raw = subprocess.check_output(["git", "show", f"{parent}:{paths[1]}"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        issued_progress = json.loads(published[paths[0]])
+        issued_stream = json.loads(published[paths[1]])
+        progress, stream, handoff = bundle["progress"], bundle["events"], bundle["handoff"]
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        if (baseline.get("event_sequence") != 2238
+                or baseline.get("repository", {}).get("projection_mode")
+                   != "F19A_TASK4_EPOCH89_POST_CLOSE_FIXTURE_CLOSED"
+                or baseline.get("worker_lease") is not None or baseline.get("write_lease") is not None
+                or baseline.get("snapshot_hash") != compute_snapshot_hash(baseline)
+                or raw_event_object_prefix_bytes(raw, 2238)
+                   != raw_event_object_prefix_bytes(baseline_raw, 2238)):
+            errors.append("F19A_DB_FAULT_FROZEN_INVALID")
+        if (raw != published[paths[1]] or stream != issued_stream
+                or len(stream.get("events", [])) != 2241 or stream.get("last_sequence") != 2241
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("F19A_DB_FAULT_EVENT_INVALID")
+        worker, write = progress.get("worker_lease"), progress.get("write_lease")
+        expected_worker, expected_write = issued_progress["worker_lease"], issued_progress["write_lease"]
+        current = now if now is not None else datetime.now(timezone.utc)
+        if (worker != expected_worker or write != expected_write
+                or worker["lease_epoch"] != 91 or write["lease_epoch"] != 91
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["fencing_token"] == write["fencing_token"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or worker["path_scope"] != scope or write["path_scope"] != scope
+                or write["product_write_scope"] != product
+                or datetime.fromisoformat(worker["expires_at"]) - datetime.fromisoformat(worker["issued_at"])
+                   != timedelta(hours=24) or current.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= current
+                   < datetime.fromisoformat(worker["expires_at"])):
+            errors.append("F19A_DB_FAULT_LEASE_INVALID")
+        binding = progress.get("f19a_task4_db_fault_bounded_503_binding", {})
+        checkpoint = binding.get("control_checkpoint")
+        checkpointed = isinstance(checkpoint, str) and re.fullmatch(r"[0-9a-f]{40}", checkpoint) is not None
+        product_checkpoint = binding.get("product_code_checkpoint")
+        product_checkpointed = (isinstance(product_checkpoint, str)
+            and re.fullmatch(r"[0-9a-f]{40}", product_checkpoint) is not None)
+        if checkpoint is not None and not checkpointed:
+            errors.append("F19A_DB_FAULT_SCOPE_INVALID")
+        if product_checkpoint is not None and (not product_checkpointed or not checkpointed):
+            errors.append("F19A_DB_FAULT_SCOPE_INVALID")
+        status = ("TASK4_DB_FAULT_BOUNDED_503_PRODUCT_CHECKPOINTED_CLOSE_READY"
+                  if product_checkpointed else
+                  "TASK4_DB_FAULT_BOUNDED_503_CONTROL_CHECKPOINTED_PRODUCT_RED_READY"
+                  if checkpointed else "TASK4_DB_FAULT_BOUNDED_503_CONTROL_ACTIVE")
+        action = ("F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSE_ONLY" if product_checkpointed else
+                  "F19A_TASK4_DB_FAULT_BOUNDED_503_PRODUCT_RED_TESTS_ONLY"
+                  if checkpointed else "F19A_TASK4_DB_FAULT_BOUNDED_503_CONTROL_ONLY")
+        expected_binding = {**issued_progress["f19a_task4_db_fault_bounded_503_binding"],
+            "status": status, "next_safe_action": action}
+        if checkpointed:
+            expected_binding["control_checkpoint"] = checkpoint
+        if product_checkpointed:
+            expected_binding["product_code_checkpoint"] = product_checkpoint
+        repo = progress["repository"]
+        expected_wi = {**issued_progress["active_work_instruction"],
+            "result_status": status, "package_status": status}
+        if (binding != expected_binding or progress.get("active_work_instruction") != expected_wi
+                or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("event_sequence") != 2241
+                or progress.get("last_event_id") != issued_stream.get("last_event_id")
+                or progress.get("updated_at") != issued_progress["updated_at"]
+                or progress.get("status") != "ACTIVE" or progress.get("current_work_package") != "F-19A"
+                or progress.get("active_agent") != expected_worker["actor_id"]
+                or progress.get("next_safe_action") != action or progress.get("runtime_next_action") != action
+                or progress.get("next_work_package") != {"package_id": "F-19A", "status": status}
+                or progress.get("snapshot_id") != ("snapshot-f19a-task4-db-fault-bounded-503-product-seq2241"
+                    if product_checkpointed else "snapshot-f19a-task4-db-fault-bounded-503-control-seq2241"
+                    if checkpointed else "snapshot-f19a-task4-db-fault-bounded-503-start-seq2241")
+                or repo.get("projection_mode") != "F19A_TASK4_DB_FAULT_BOUNDED_503_ACTIVE"
+                or repo.get("local_head") != (product_checkpoint if product_checkpointed else checkpoint
+                    if checkpointed else issued_progress["repository"]["local_head"])
+                or repo.get("remote_head") != (product_checkpoint if product_checkpointed else checkpoint
+                    if checkpointed else issued_progress["repository"]["remote_head"])
+                or repo.get("head_relation") != status or repo.get("worktree_status") != status
+                or repo.get("product_write_scope") != product):
+            errors.append("F19A_DB_FAULT_SCOPE_INVALID")
+        changed = {"active_agent", "active_work_instruction", "event_sequence",
+            "f19a_task4_db_fault_bounded_503_binding", "last_event_id", "next_safe_action",
+            "next_work_package", "registry_refs", "repository", "runtime_next_action", "snapshot_hash",
+            "snapshot_id", "updated_at", "worker_lease", "write_lease"}
+        if ({key: value for key, value in progress.items() if key not in changed}
+                != {key: value for key, value in issued_progress.items() if key not in changed}
+                or {key: value for key, value in progress["registry_refs"].items() if key != "progress_events"}
+                   != {key: value for key, value in issued_progress["registry_refs"].items() if key != "progress_events"}
+                or {key: value for key, value in repo.items() if key not in
+                    {"local_head", "remote_head", "head_relation", "worktree_status"}}
+                   != {key: value for key, value in issued_progress["repository"].items() if key not in
+                    {"local_head", "remote_head", "head_relation", "worktree_status"}}):
+            errors.append("F19A_DB_FAULT_FROZEN_INVALID")
+        expected_handoff = {**extract_handoff_summary(published[paths[2]].decode("utf-8")),
+            "repository_head": product_checkpoint if product_checkpointed else checkpoint
+                if checkpointed else issued_progress["repository"]["local_head"],
+            "next_safe_action": action}
+        if (handoff != expected_handoff or handoff.get("status") != "ACTIVE"
+                or handoff.get("current_work_package") != "F-19A"):
+            errors.append("F19A_DB_FAULT_HANDOFF_INVALID")
+        digest = bundle["detached_digest"]
+        for section, path in (("progress", paths[0]), ("handoff", paths[2])):
+            archived = archived_files.get(path) if archived_files is not None else None
+            target = root / path
+            size = len(archived) if archived is not None else target.stat().st_size
+            sha = hashlib.sha256(archived).hexdigest().upper() if archived is not None else _sha256(target)
+            if (digest.get(section, {}).get("path") != path or digest.get(section, {}).get("bytes") != size
+                    or digest.get(section, {}).get("file_sha256") != sha):
+                errors.append("F19A_DB_FAULT_DIGEST_INVALID")
+        if (digest.get("schema_version") != "1.0.0" or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False or digest.get("event_sequence") != 2241
+                or bundle.get("_detached_digest_path") != paths[3]):
+            errors.append("F19A_DB_FAULT_DIGEST_INVALID")
+        for path, sha in (("docs/work_orders/F-19A_TASK4_DB_FAULT_BOUNDED_503_WORK_INSTRUCTION.md",
+                "28F81FF98513F13E0E722B0DB86048DDEAE2D7A5FF8FA7712C26BA35610EFA72"),
+                ("docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+                "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5"),
+                ("docs/architecture/f19a/F19A_MINIMAL_PAIR_AUTH_CONTRACT.md",
+                "A4AE1EE80530F2A05393A18409CDE2FC94543C1FAC8598365CD8A4EBB7032247"),
+                ("docs/work_orders/F-19A_MINIMAL_PAIR_AUTH_IMPLEMENTATION_PLAN.md",
+                "0CD8309E3FD8C7F507281BF6094D6BA696973FB5AA12F27023E57E1DA51CA26E")):
+            if _sha256(root / path) != sha:
+                errors.append("F19A_DB_FAULT_INSTRUCTION_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        errors.append("F19A_DB_FAULT_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_f19a_task4_db_fault_git(bundle):
+    root = Path(bundle["_root"])
+    parent = "64237af83babd15f9df876f1aaa2494c4453e1e8"
+    issued = "4fb588c042586c5bce10aaa5bf6ebdf61250d19e"
+    upstream = "development/codex/f18-wsl-ops"
+    control = {"scripts/check_project_progress.py", "tests/tooling/test_f19a_start_projection.py"}
+    product = {"apps/api/anvil_api/oidc_process.py", "packages/api/fastapi_app.py",
+               "tests/api/test_oidc_process.py", "tests/api/test_f19a_registration_api.py",
+               "tests/integration/test_f19a_oidc_pg15.py"}
+    documents = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "docs/work_orders/F-19A_TASK4_DB_FAULT_BOUNDED_503_WORK_INSTRUCTION.md"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+
+        def ancestor(start, end):
+            return subprocess.run(["git", "merge-base", "--is-ancestor", start, end], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+        def history(start, end):
+            if git("rev-list", "--min-parents=2", f"{start}..{end}"):
+                raise ValueError("merge in epoch91")
+            return set(git("log", "--format=", "--name-only", "--no-renames", f"{start}..{end}").splitlines()) - {""}
+
+        def delta(start, end):
+            return set(git("diff", "--name-only", "--no-renames", f"{start}..{end}").splitlines()) - {""}
+
+        checkpoint = bundle["progress"]["f19a_task4_db_fault_bounded_503_binding"].get("control_checkpoint")
+        product_checkpoint = bundle["progress"]["f19a_task4_db_fault_bounded_503_binding"].get(
+            "product_code_checkpoint")
+        head, remote = git("rev-parse", "HEAD"), git("rev-parse", upstream)
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (head != remote or git("branch", "--show-current") != "codex/f18-wsl-ops"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or not ancestor(parent, issued) or not ancestor(issued, head)
+                or history(parent, issued) - documents or delta(parent, issued) - documents):
+            return ["F19A_DB_FAULT_GIT_INVALID"]
+        if checkpoint is None:
+            if head != issued or dirty - control:
+                return ["F19A_DB_FAULT_GIT_INVALID"]
+        elif product_checkpoint is None:
+            if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or head == checkpoint or not ancestor(issued, checkpoint) or not ancestor(checkpoint, head)
+                    or dirty - product or history(issued, checkpoint) - control - documents
+                    or history(checkpoint, head) - documents
+                    or control - delta(issued, checkpoint) or delta(issued, checkpoint) - control - documents
+                    or delta(checkpoint, head) - documents
+                    or any(subprocess.check_output(["git", "show", f"{head}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                        for path in ("docs/progress/build-progress.json",
+                                     "docs/progress/BUILD_HANDOFF.md",
+                                     "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"))
+                    or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in control)):
+                return ["F19A_DB_FAULT_GIT_INVALID"]
+        else:
+            if (not isinstance(checkpoint, str) or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or not isinstance(product_checkpoint, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", product_checkpoint) is None
+                    or head == product_checkpoint or not ancestor(issued, checkpoint)
+                    or not ancestor(checkpoint, product_checkpoint)
+                    or not ancestor(product_checkpoint, head) or dirty
+                    or history(issued, checkpoint) - control - documents
+                    or history(checkpoint, product_checkpoint) - product - documents
+                    or history(product_checkpoint, head) - documents
+                    or control - delta(issued, checkpoint)
+                    or delta(issued, checkpoint) - control - documents
+                    or not delta(checkpoint, product_checkpoint) & product
+                    or delta(checkpoint, product_checkpoint) - product - documents
+                    or delta(product_checkpoint, head) - documents
+                    or any(subprocess.check_output(["git", "show", f"{head}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                        for path in ("docs/progress/build-progress.json",
+                                     "docs/progress/BUILD_HANDOFF.md",
+                                     "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"))
+                    or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in control)
+                    or any(subprocess.check_output(["git", "show", f"{product_checkpoint}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes() for path in product)):
+                return ["F19A_DB_FAULT_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, UnicodeDecodeError, KeyError, subprocess.CalledProcessError):
+        return ["F19A_DB_FAULT_GIT_INVALID"]
+
+
+def _collect_f19a_start_git(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSED":
+        return (["F19A_GIT_INVALID"] if _collect_f19a_task4_db_fault_bounded_503_closed_git(bundle) else [])
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_DB_FAULT_BOUNDED_503_ACTIVE":
+        return (["F19A_GIT_INVALID"] if _collect_f19a_task4_db_fault_git(bundle) else [])
+    return _collect_f19a_start_git_before_db_fault_91(bundle)
+
+
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_DB_FAULT_BOUNDED_503_CLOSED":
+        errors = _validate_f19a_task4_db_fault_bounded_503_closed(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task4_db_fault_bounded_503_closed_git(bundle))
+        return sorted(set(errors))
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == "F19A_TASK4_DB_FAULT_BOUNDED_503_ACTIVE":
+        errors = _validate_f19a_task4_db_fault_bounded_503(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_f19a_task4_db_fault_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_f19a_db_fault_91(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
