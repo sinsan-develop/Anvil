@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-f19a-integration-r48-history-close-seq2259",
-  "event_sequence": 2259,
-  "updated_at": "2026-10-08T08:33:15+00:00",
-  "last_event_id": "evt_f19a_2259_integration_r48_history_worker_lease_revoked",
+  "snapshot_id": "snapshot-f19a-integration-main-sync-start-seq2262",
+  "event_sequence": 2262,
+  "updated_at": "2026-10-08T08:43:22+00:00",
+  "last_event_id": "evt_f19a_2262_integration_main_sync_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
   "completed_f19a_acceptance_control_write_lease": {
     "lease_id": "write-lease-f19a-acceptance-control-f5f569ab920640c2bf20de1d6a00eeed",
     "worker_lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
@@ -257,7 +257,7 @@
   },
   "completed_f19a_task4_db_fault_bounded_503_write_lease": {"lease_id":"write-lease-f19a-task4-db-fault-bounded-503-bed45cc6ae2348b7b9bdf59c6b51e989","worker_lease_id":"worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-DB-FAULT-BOUNDED-503","status":"REVOKED","issued_at":"2026-10-08T00:26:14+00:00","expires_at":"2026-10-09T00:26:14+00:00","lease_epoch":91,"fencing_token":"f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989","write_fencing_token":"f19a-task4-db-fault-bounded-503-write-fence-epoch-91-bed45cc6ae2348b7b9bdf59c6b51e989","product_write_scope":["apps/api/anvil_api/oidc_process.py","packages/api/fastapi_app.py","tests/api/test_oidc_process.py","tests/api/test_f19a_registration_api.py","tests/integration/test_f19a_oidc_pg15.py"],"execution_fencing_token":"f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f","baseline_git_commit":"64237af83babd15f9df876f1aaa2494c4453e1e8","dispatch_head":"64237af83babd15f9df876f1aaa2494c4453e1e8","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","apps/api/anvil_api/oidc_process.py","packages/api/fastapi_app.py","tests/api/test_oidc_process.py","tests/api/test_f19a_registration_api.py","tests/integration/test_f19a_oidc_pg15.py"],"write_epoch":91,"revoked_at":"2026-10-08T02:52:27+00:00"},
   "completed_f19a_integration_r48_history_write_lease": {"lease_id":"write-lease-f19a-integration-r48-history-0b5be5c7492d4f948af74fdb303f3ace","worker_lease_id":"worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-R48-HISTORY-FIX","status":"REVOKED","issued_at":"2026-10-08T07:15:09+00:00","expires_at":"2026-10-09T07:15:09+00:00","lease_epoch":94,"fencing_token":"f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace","write_fencing_token":"f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace","execution_fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","baseline_git_commit":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","dispatch_head":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":94,"revoked_at":"2026-10-08T08:33:15+00:00"},
-  "write_lease": null,
+  "write_lease": {"lease_id":"write-lease-f19a-integration-main-sync-bb4da003b3794304b37b768b2a98db10","worker_lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"ACTIVE","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","write_fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":95},
   "completed_f19a_task4_epoch89_post_close_fixture_write_lease": {"lease_id":"write-lease-f19a-task4-epoch89-post-close-fixture-abf16f5a378040318adf78e019aecc06","worker_lease_id":"worker-lease-f19a-task4-epoch89-post-close-fixture-e641b82283ae46f6b3f6f48fe337397f","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-EPOCH89-POST-CLOSE-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T22:27:44+00:00","expires_at":"2026-10-08T22:27:44+00:00","lease_epoch":90,"fencing_token":"f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06","write_fencing_token":"f19a-task4-epoch89-post-close-fixture-write-fence-epoch-90-abf16f5a378040318adf78e019aecc06","product_write_scope":[],"execution_fencing_token":"f19a-task4-epoch89-post-close-fixture-execution-fence-epoch-90-e641b82283ae46f6b3f6f48fe337397f","baseline_git_commit":"5605c86e42b2eb0fdc12234a846adebef56114c3","dispatch_head":"5605c86e42b2eb0fdc12234a846adebef56114c3","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"write_epoch":90,"revoked_at":"2026-10-07T23:17:19+00:00"},
   "completed_f19a_task4_epoch72_clock_fixture_write_lease": {"lease_id":"write-lease-f19a-task4-epoch72-clock-fixture-d169a0ad569d4c059684c0f9a42251ea","worker_lease_id":"worker-lease-f19a-task4-epoch72-clock-fixture-1535f4aff9424b81b77d847d07a1814e","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-EPOCH72-CLOCK-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T21:22:51+00:00","expires_at":"2026-10-08T21:22:51+00:00","lease_epoch":89,"fencing_token":"f19a-task4-epoch72-clock-fixture-write-fence-epoch-89-d169a0ad569d4c059684c0f9a42251ea","write_fencing_token":"f19a-task4-epoch72-clock-fixture-write-fence-epoch-89-d169a0ad569d4c059684c0f9a42251ea","product_write_scope":[],"execution_fencing_token":"f19a-task4-epoch72-clock-fixture-execution-fence-epoch-89-1535f4aff9424b81b77d847d07a1814e","baseline_git_commit":"350846be76efeb73913076887fe1538c7d0608e3","dispatch_head":"350846be76efeb73913076887fe1538c7d0608e3","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py"],"write_epoch":89,"revoked_at":"2026-10-07T22:03:29+00:00"},
   "completed_f19a_task4_third_actor_qa_fixture_write_lease": {"lease_id":"write-lease-f19a-task4-third-actor-qa-fixture-12c7a9886589434e8ddc51da6377ce4a","worker_lease_id":"worker-lease-f19a-task4-third-actor-qa-fixture-fa00c01bcaa94d4fa457eeb7cf8d0240","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-THIRD-ACTOR-QA-FIXTURE","status":"REVOKED","issued_at":"2026-10-07T20:19:46+00:00","expires_at":"2026-10-08T20:19:46+00:00","lease_epoch":88,"fencing_token":"f19a-task4-third-actor-qa-fixture-write-fence-epoch-88-12c7a9886589434e8ddc51da6377ce4a","write_fencing_token":"f19a-task4-third-actor-qa-fixture-write-fence-epoch-88-12c7a9886589434e8ddc51da6377ce4a","product_write_scope":["deploy/wsl/oidc_qa_issuer.py","tests/deploy/test_f18_oidc_qa_issuer.py","deploy/wsl/f19a_qa_bootstrap.py","tests/deploy/test_f19a_qa_bootstrap.py","tests/integration/test_f19a_oidc_pg15.py","tests/browser/f19a-pair-selection.mjs"],"execution_fencing_token":"f19a-task4-third-actor-qa-fixture-execution-fence-epoch-88-fa00c01bcaa94d4fa457eeb7cf8d0240","baseline_git_commit":"df253d71a4c521df69b97bdc249dd5d7e2081fb6","dispatch_head":"df253d71a4c521df69b97bdc249dd5d7e2081fb6","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","deploy/wsl/oidc_qa_issuer.py","tests/deploy/test_f18_oidc_qa_issuer.py","deploy/wsl/f19a_qa_bootstrap.py","tests/deploy/test_f19a_qa_bootstrap.py","tests/integration/test_f19a_oidc_pg15.py","tests/browser/f19a-pair-selection.mjs"],"write_epoch":88,"revoked_at":"2026-10-07T21:06:29+00:00"},
@@ -436,7 +436,7 @@
   },
   "completed_f19a_task4_db_fault_bounded_503_worker_lease": {"lease_id":"worker-lease-f19a-task4-db-fault-bounded-503-9a972f1406874d01b32924b85e89734f","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/TASK4-DB-FAULT-BOUNDED-503","status":"REVOKED","issued_at":"2026-10-08T00:26:14+00:00","expires_at":"2026-10-09T00:26:14+00:00","lease_epoch":91,"fencing_token":"f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f","execution_fencing_token":"f19a-task4-db-fault-bounded-503-execution-fence-epoch-91-9a972f1406874d01b32924b85e89734f","baseline_git_commit":"64237af83babd15f9df876f1aaa2494c4453e1e8","dispatch_head":"64237af83babd15f9df876f1aaa2494c4453e1e8","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f19a_start_projection.py","apps/api/anvil_api/oidc_process.py","packages/api/fastapi_app.py","tests/api/test_oidc_process.py","tests/api/test_f19a_registration_api.py","tests/integration/test_f19a_oidc_pg15.py"],"revoked_at":"2026-10-08T02:52:27+00:00"},
   "completed_f19a_integration_r48_history_worker_lease": {"lease_id":"worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-R48-HISTORY-FIX","status":"REVOKED","issued_at":"2026-10-08T07:15:09+00:00","expires_at":"2026-10-09T07:15:09+00:00","lease_epoch":94,"fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","execution_fencing_token":"f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd","baseline_git_commit":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","dispatch_head":"c9c0c415e6a7a31b2996dd26cb80c8733cafc103","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"revoked_at":"2026-10-08T08:33:15+00:00"},
-  "worker_lease": null,
+  "worker_lease": {"lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"ACTIVE","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"]},
   "completed_f19a_acceptance_control_worker_lease": {
     "lease_id": "worker-lease-f19a-acceptance-control-2fec8554da064b0a9e9b44931d4a133a",
     "actor_id": "developer-primary-f19a-pair-grant",
@@ -809,7 +809,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "F19A_INTEGRATION_REQUIRED_GATES_PENDING",
+  "next_safe_action": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -920,13 +920,13 @@
   },
   "repository": {
     "branch": "codex/f18-wsl-ops",
-    "local_head": "2a81972ad1d67d15ec19dc25bab657a7845fe4d1",
+    "local_head": "5aafbafd371137ac94fbbe3543f9ec6311b07eda",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/f18-wsl-ops",
-    "remote_head": "2a81972ad1d67d15ec19dc25bab657a7845fe4d1",
-    "projection_mode": "F19A_INTEGRATION_R48_HISTORY_CLOSED",
+    "remote_head": "5aafbafd371137ac94fbbe3543f9ec6311b07eda",
+    "projection_mode": "F19A_INTEGRATION_MAIN_SYNC_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "F19A_ACCEPTED_INTEGRATION_GATES_PENDING",
+    "head_relation": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ACTIVE",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1360,7 +1360,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "F19A_ACCEPTED_INTEGRATION_GATES_PENDING",
+    "worktree_status": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1522,12 +1522,12 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-F19A-INTEGRATION-R48-HISTORY-20261008-001",
-    "path": "docs/work_orders/F-19A_INTEGRATION_R48_HISTORY_FIX_WORK_INSTRUCTION.md",
-    "sha256": "75CB80A5E13F15E5DAB89A1BA9C52E5637113E0E3E7A4BE1573584A523E1EF9C",
+    "artifact_id": "WI-F19A-INTEGRATION-MAIN-SYNC-20261008-001",
+    "path": "docs/work_orders/F-19A_INTEGRATION_MAIN_SYNC_WORK_INSTRUCTION.md",
+    "sha256": "CBFAD5A0FB85739BB69E098D50FEA0C2C50AF2A7F8465A20D17A886EA2B9249D",
     "revision": 1,
-    "result_status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
-    "package_status": "F19A_ACCEPTED_INTEGRATION_R48_HISTORY_CONTROL_CHECKPOINTED_CLOSE_READY",
+    "result_status": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ACTIVE",
+    "package_status": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ACTIVE",
     "approval_ref": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1683,12 +1683,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1067AC75480F11CFD10DC588E3BC6DACB76DEB688522922C67140916C39F5C56"
+      "sha256": "8F7954ED1825FB366E06A0BA01E0B2F05198D273085D38EBEC2485A0482704F6"
     }
   },
   "next_work_package": {
     "package_id": "F-19A",
-    "status": "F19A_ACCEPTED_INTEGRATION_GATES_PENDING"
+    "status": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-01",
@@ -2080,8 +2080,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "03462D92AC59F30E811CD3641E3D594C2427EED5B7BD345BBB302F5D7BABE83C",
-  "runtime_next_action": "F19A_INTEGRATION_REQUIRED_GATES_PENDING",
+  "snapshot_hash": "EE55A8E52B3BA32334D3241374D689DF0DBCC5D393DCFAE3D4954FD1DF213B9B",
+  "runtime_next_action": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23592,6 +23592,25 @@
     "production": "NOT_EXECUTED",
     "event_sequence": 2148,
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
+  },
+  "f19a_integration_main_sync_binding": {
+    "status": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ACTIVE",
+    "package_id": "F-19A",
+    "predecessor_sequence": 2259,
+    "predecessor_head": "5aafbafd371137ac94fbbe3543f9ec6311b07eda",
+    "target_main": "462c2e5b27823de2c1184f56f0fa9908a2cea328",
+    "work_instruction_id": "WI-F19A-INTEGRATION-MAIN-SYNC-20261008-001",
+    "work_instruction_path": "docs/work_orders/F-19A_INTEGRATION_MAIN_SYNC_WORK_INSTRUCTION.md",
+    "work_instruction_sha256": "CBFAD5A0FB85739BB69E098D50FEA0C2C50AF2A7F8465A20D17A886EA2B9249D",
+    "invocation_path": "docs/work_orders/F-19A_INTEGRATION_MAIN_SYNC_INVOCATION.md",
+    "invocation_sha256": "C3D7A805302E243125271FE6E7ED61A124BA07895899EFBDE177772ADD4FB961",
+    "approval_path": "docs/approvals/APPROVAL-20261007-F19A-PAIR-GRANT-CONTRACT-001.md",
+    "approval_sha256": "ADF11125667CA6C374F31462D2ABD7D55C425D7A86019CB7A8D4B9BA8D0A0AF5",
+    "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
+    "product_write_scope": [],
+    "event_sequence": 2262,
+    "next_safe_action": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ONLY"
   },
   "f19a_integration_r48_history_binding": {
     "status": "F19A_ACCEPTED_INTEGRATION_GATES_PENDING",

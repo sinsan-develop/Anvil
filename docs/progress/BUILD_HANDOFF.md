@@ -1,3 +1,7 @@
+# F-19A main sync 통제 successor handoff
+
+epoch95 시작(Main, 2026-10-08): epoch94 seq2259 종료 `5aafbafd371137ac94fbbe3543f9ec6311b07eda` local/private 동일·clean·G-05 PASS에서, private main `462c2e5b27823de2c1184f56f0fa9908a2cea328`가 branch 비조상인 과거 PR #38 zero-tree merge임을 확인했다. Web typecheck/lint/build exit0, 콘솔 86 PASS; build 생성 임시 3파일은 정확 확인·제거, 재생성 가능·잔여0이다. 비제품 WI `CBFAD5A0FB85739BB69E098D50FEA0C2C50AF2A7F8465A20D17A886EA2B9249D`로 Event seq2260 WI→2261 worker→2262 write를 발급하고 epoch95 분리 24시간 token·Developer 통제 정확2/제품0을 결박한다. A docs-only private/clean 전 Developer code write 금지. 기존 F-19A 수락/U-01 잠금, F-20 미수락, Release DEFER·Production NOT_EXECUTED 유지. 새 route 전 G-05 RED는 PASS가 아니다. 신규 branch/main 병합/제품·WSL write 금지.
+
 # F-19A 통합 R48 역사 회귀 successor handoff
 
 epoch94 종료 투영(Main, 2026-10-08): C `2a81972ad1d67d15ec19dc25bab657a7845fe4d1`와 B `fb9ea03ddf1d02be522382c30cbbe0ce7295547e` local/private 동일·clean, 활성 G-05 seq2257 PASS 확인 후 Event 원문 seq1~2257을 보존하고 seq2258 write→2259 worker lease를 `2026-10-08T08:33:15+00:00`에 순서대로 회수했다. 활성 token은 null, 완료 lease는 REVOKED로 기록한다. 이 종료 문서의 clean/private/G-05 전에는 다음 통합 단계·U-01 write를 열지 않는다. F-19A 로컬·WSL 범위 수락, 통합 게이트 미완료, Release DEFER·Production NOT_EXECUTED.
@@ -102,17 +106,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2259,
-  "last_event_id": "evt_f19a_2259_integration_r48_history_worker_lease_revoked",
+  "event_sequence": 2262,
+  "last_event_id": "evt_f19a_2262_integration_main_sync_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "F-19A",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-f19a-pair-grant",
+  "worker_lease": {"lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"ACTIVE","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"]},
+  "write_lease": {"lease_id":"write-lease-f19a-integration-main-sync-bb4da003b3794304b37b768b2a98db10","worker_lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"ACTIVE","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","write_fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":95},
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "F19A_INTEGRATION_REQUIRED_GATES_PENDING",
-  "repository_head": "2a81972ad1d67d15ec19dc25bab657a7845fe4d1",
+  "next_safe_action": "F19A_INTEGRATION_MAIN_SYNC_CONTROL_ONLY",
+  "repository_head": "5aafbafd371137ac94fbbe3543f9ec6311b07eda",
   "repository_upstream": "development/codex/f18-wsl-ops",
   "reporting_decision": "AUTO_CONTINUE"
 }
