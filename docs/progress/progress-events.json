@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2257,
+  "last_sequence": 2259,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -103792,7 +103792,49 @@
       "product_write_scope": [],
       "write_epoch": 94
     }
+  },
+  {
+    "sequence": 2258,
+    "event_id": "evt_f19a_2258_integration_r48_history_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_R48_HISTORY_FIX_CLOSE",
+    "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+    "occurred_at": "2026-10-08T08:33:15+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "416CA35453B8DEE20AEE4C59587FD8089BFA875267E7E0844E198993935256EF",
+    "details": {
+      "lease_id": "write-lease-f19a-integration-r48-history-0b5be5c7492d4f948af74fdb303f3ace",
+      "write_fencing_token": "f19a-integration-r48-history-write-fence-epoch-94-0b5be5c7492d4f948af74fdb303f3ace",
+      "reason": "F19A_INTEGRATION_R48_HISTORY_FIX_COMPLETE_INTEGRATION_GATES_PENDING"
+    }
+  },
+  {
+    "sequence": 2259,
+    "event_id": "evt_f19a_2259_integration_r48_history_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "F-19A",
+    "run_id": null,
+    "step_id": "F19A_INTEGRATION_R48_HISTORY_FIX_CLOSE",
+    "subject_ref": "F-19A/INTEGRATION-R48-HISTORY-FIX",
+    "occurred_at": "2026-10-08T08:33:15+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "0060FEED05FDCFFF37CDABFD6692A9237521B401A2D1E5184A99F5C2EC9A1C23",
+    "details": {
+      "lease_id": "worker-lease-f19a-integration-r48-history-7ec3061fcffd44d7b032babad32ad2cd",
+      "execution_fencing_token": "f19a-integration-r48-history-execution-fence-epoch-94-7ec3061fcffd44d7b032babad32ad2cd",
+      "reason": "F19A_INTEGRATION_R48_HISTORY_FIX_COMPLETE_INTEGRATION_GATES_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_f19a_2257_integration_r48_history_write_lease_issued"
+  "last_event_id": "evt_f19a_2259_integration_r48_history_worker_lease_revoked"
 }
