@@ -12,4 +12,4 @@
 4. 단일 Developer가 새 active/closed route의 정상 fixture와 raw Event, payload/effect, lease fencing·만료·경로, detached digest/HANDOFF, Git ancestor/정확 경로·원격 SHA·dirty 음성 테스트를 RED→GREEN으로 작성한다. 단순 오류 무시·기존 오류 필터 확대·checksum 우회는 금지한다. Main은 독립 회귀·G-05와 WSL-server 동일 clean SHA를 확인한 뒤 control lease를 순서대로 닫는다.
 5. 이후 기존 Foundation R6 `STORED_ROW` 실패는 별도 정확 WI/lease로 실제 재현하고 보정한다. E-NET·E-API·E-AUD 전체 ID와 U-01 acceptance는 독립 Tester가 다시 판정한다. 필수 gate GREEN 전 PR/main 병합·branch 삭제·신규 branch/U-02는 금지한다.
 
-현재 단계의 next safe action은 기존 Task4 하네스 범위의 E-NET 보강이며, G-05 복구를 현 epoch106의 허용되지 않은 코드 경로에 선행 쓰기하지 않는다. WSL-server는 테스트에만 사용하고 ysna/Production은 제외한다.
+R7 네 phase의 API URL/origin 절편·독립 판정·임시 자원 정리는 `87823219d27444c529fdeeb1625ffc04d116dafb`에 보존했다. 전체 Network 사후 전수감사 공백은 DC-U01-012에 남겼다. epoch106의 현재 next safe action은 회수 투영을 검증·게시한 뒤 별도 비제품 G-05 successor control WI/dual lease 발급이다. 새 route 전 G-05 RED를 PASS로 오인하거나 현 lease 밖 checker 코드를 수정하지 않는다. WSL-server는 테스트에만 사용하고 ysna/Production은 제외한다.

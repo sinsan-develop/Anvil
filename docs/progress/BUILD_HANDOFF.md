@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 두 정확 pair 수직 QA epoch106 회수 후보(Main, 2026-10-10 KST): R7 증거·독립 판정과 미충족 DC-U01-012를 기존 branch/private clean `87823219d27444c529fdeeb1625ffc04d116dafb`에 보존했다. Event 원문 seq1~2317을 보존해 `2026-10-09T22:09:11+00:00`에 seq2318 write→2319 worker lease를 순서대로 회수하고 두 완료 lease는 REVOKED, 활성 agent/lease와 제품 write scope는 null/빈 목록으로 투영한다. 이번 투영의 G-05 successor는 아직 RED이므로 PASS·새 control lease 발급으로 승격하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 이 회수 checkpoint를 기존 branch/private에 보존하고 epoch106 별도 비제품 G-05 control WI/dual lease를 발급하는 일이다.
+
 Task4 두 정확 pair 수직 QA epoch106 A 후보(Main, 2026-10-10 KST): H2 `231bf84c843679b4eb47ea0ab09f070a31171129`는 기존 branch/private 동일·clean·G-05 seq2314 PASS, 활성 lease0이다. 새 WI/invocation SHA `CF783E2D06EBF445DFD70D36EF39B9B78A7ECC4D18391811F6805C83D74CA89A`/`66D56A004296405EB3425402A87FA6A211504B929BEE81CB61419F593B592654`는 승인 Task4의 두 pair opt-in 하네스만 연다. Event 원문 seq1~2314를 보존해 seq2315 WI→2316 worker→2317 write, epoch106 별도 token·24시간·정확 신규 시험2경로를 발급한다. A 정합성·원격 게시/clean 전 Developer 쓰기 금지, 새 route 이전 G-05 RED는 PASS가 아니다. 기존 R6 `STORED_ROW` 정확 assertion은 미확정이고 역사 시험은 수정하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 A 검증·게시→로컬 RED→GREEN→정확 SHA WSL-server 실제 수직 QA다.
 
 Task4 WSL 보고 successor H2 종료 후보(Main, 2026-10-10 KST): C `5ea421a7b95cad4015087328dcef8e0a2a5c5c9a`와 B `be491207bed19202755fab106aa017bfc2794656`는 local/private 동일·clean이며 B G-05 seq2312 PASS다. Event 원문 seq1~2312를 보존하고 `2026-10-09T15:52:20+00:00`에 seq2313 write→2314 worker lease를 순차 회수해 완료 둘 REVOKED·활성 agent/token null로 투영한다. 본 H2의 G-05·실원격 게시·clean 전에는 다음 제품 dual lease를 발급하지 않는다. U-01 실제 두 pair OIDC/HTTPS/Chromium·DB/API/화면/Network와 R6 STORED_ROW 원인 분리·독립 인수는 미완료다. U-01 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 H2 검증·게시 후 동일 기존 branch에서 별도 실제 수직 QA다.
@@ -168,17 +170,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2317,
-  "last_event_id": "evt_u01_2317_task4_two_pair_qa_write_lease_issued",
+  "event_sequence": 2319,
+  "last_event_id": "evt_u01_2319_task4_two_pair_qa_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-two-pair-qa",
-  "worker_lease": "worker-lease-u01-task4-two-pair-qa-68cf32d79c1b44e08847190ff3a06568",
-  "write_lease": "write-lease-u01-task4-two-pair-qa-b02f20217460473b884e4fc197c5445f",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_TWO_PAIR_QA_HARNESS_ONLY",
-  "repository_head": "231bf84c843679b4eb47ea0ab09f070a31171129",
+  "next_safe_action": "U01_TASK4_EPOCH106_G05_CONTROL_ONLY",
+  "repository_head": "87823219d27444c529fdeeb1625ffc04d116dafb",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
