@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task2 통제 C/B 후보(Main, 2026-10-09 KST): A2 `7b5c8bfc60e7db8d0147cf8bd7d82b5a674cc49d`에서 단일 Developer가 정확 통제2의 A/C/B/D/P/H successor와 위조 거부를 RED→GREEN했다. 최초 독립 검토 Important2/Minor 테스트 공백2는 재현 음성 및 최소 수정으로 해소됐고 재검토 Critical0/Important0이다. 최종 집중10 PASS·인접7 271 PASS/0 FAIL(exit0), G-05 seq2297 PASS, Ruff 변경구간 신규0, diff check0이다. C `ff8f26b60c22696fdb8a27ed5d551b26ab879100`는 기존 branch/private 실제 SHA 동일·clean이다. 이 B 문서는 C와 새 `design_change.md`를 결박하되 B G-05·원격 게시/clean 전 제품12 write는 잠금이다. U-01 수직 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED; 실제 PG15/WSL-server/브라우저/PR은 미검증·미실행이다.
+
 epoch100 역사 fixture 비제품 A 후보(Main, 2026-10-09 KST): epoch99 H `4d6cba41b5f1d9269572ba454c7165063f38d9a7` local/private 동일·clean·G-05 seq2284 PASS이고 두 이전 lease는 REVOKED다. 인접7의 단일 실패는 epoch98 저장 A와 현 epoch99 live Git 관찰을 혼용한 fixture이므로 `MAIN_RECONFIRMED_NON_SEMANTIC` WI SHA `168E31BDEE5A6B197B894F14181820FE1DAF0AC8B3C216B4BDFB537FB9998828`·invocation SHA `D4044618303D309A34BFF49D59D09D85021610E1820725BDD8A6F21DED0B8B41`를 발행한다. seq≤2284 원문 보존, seq2285 WI→2286 worker→2287 write, epoch100 분리 24시간 token·Developer 정확 checker/역사 test 2파일·제품 scope0이다. A docs-only private/clean 전 Developer write 금지, 새 G-05 route 전 구 종료 검사 RED는 PASS 아님. U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, WSL-server/ysna write0.
 
 epoch99 통제 H 종료 후보(Main, 2026-10-09 KST): B `5f4f6a36a91b3235e8e59fd5cb4bb880efaeb398`가 local/private 동일·clean·G-05 seq2282 PASS다. seq1~2282 원문을 보존하고 seq2283 write→2284 worker를 순서대로 회수해 두 lease를 REVOKED, active agent/token을 null로 투영한다. 인접7 전체 235 PASS/역사 fixture 1 FAIL은 NON-GREEN 그대로이며 다음은 제품이 아닌 정확 fixture 보완 dual lease다. 이 H 자체 G-05·원격 게시·clean은 아직 미검증이다. U-01 수직 NOT_ACCEPTED, Release DEFER·Production NOT_EXECUTED, WSL-server/ysna write0.
@@ -143,8 +145,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-scoped-dashboard-task2-1fe2db4bf402414d9788275789fc41e0",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_CONTROL_ONLY",
-  "repository_head": "10b7edf500699eeab91eb2c9b03988a6a2f4c34b",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_PRODUCT_RED_ONLY",
+  "repository_head": "ff8f26b60c22696fdb8a27ed5d551b26ab879100",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
