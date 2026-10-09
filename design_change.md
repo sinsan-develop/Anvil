@@ -7,7 +7,13 @@
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
-- R5 네 phase 실측과 후속 독립 Tester 판정을 반영한 최신 미충족은 DC-U01-011을 따른다. 아래 역사 실패는 삭제하지 않는다.
+- R7 네 phase 실측과 후속 독립 Tester 판정을 반영한 최신 미충족은 DC-U01-012를 따른다. 아래 역사 실패는 삭제하지 않는다.
+
+### DC-U01-012 — R7 API URL 증거 보강 후 남은 Network 전체 인수·통제
+
+- 판정: R7 exact SHA `c1d145c6fb52ab53ab9daa7ff584276b8ac1402b`의 WSL-server 네 phase는 각각 2 PASS다. 독립 Tester는 API 응답 95건의 전체 URL·origin과 request origin 148건이 허용 HTTPS origin만 사용하고 비허용 query·userinfo·fragment 0건임을 확인했다. R6의 API URL 증거 공백은 이 절편에서 해소됐지만, 전체 E-NET·E-API·E-AUD와 U-01은 `NOT_ACCEPTED`다.
+- 남은 사유·영향: 정적·OIDC 요청은 민감 query 보존을 피하기 위해 origin만 기록했으므로 증거 12개만으로 Network 전체 URL을 사후 전수 감사할 수 없다. 런타임 fail-closed URL 검사가 PASS한 절편과 전체 ID 수락은 다르다. 기존 Foundation R6 `STORED_ROW` 실패·epoch106 G-05 10개 오류도 별개로 남으며, 필수 gate GREEN이 아니므로 PR/main·branch 정리·U-02는 진행할 수 없다.
+- 수행·재개 조건: PNG4/Network4/DB-API-AUD4의 원격/로컬 SHA 일치, 네 화면 육안·독립 검토, WSL 전용 container/network/image/세 root/port 잔여0을 `docs/04_test_reports/U-01_TASK4_TWO_PAIR_WSL_QA_R7_RESULT.md`에 기록하고 기존 branch commit `58b72b07969b0afbc76593632d817cb6e4579ed3`로 사설 원격에 보존했다. 다음은 epoch106 정확2 lease 회수→별도 비제품 G-05 successor lease/RED→GREEN→Foundation R6 별도 재현, 이후 전체 Network/API/Audit와 남은 필수 ID별 독립 실측이다. 범위·요구사항·중요 위험 변경이 아니므로 일반 사용자 재승인 요청은 하지 않는다. Release `DEFER`, ysna/Production `NOT_EXECUTED` 유지.
 
 ### DC-U01-011 — R5 네 phase 통과 이후 남은 U-01 전체 인수 증거
 
