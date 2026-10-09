@@ -6,7 +6,22 @@
 
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
-- 2026-10-09 현재 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. Task 4의 실제 WSL-server·브라우저·DB 독립 수락과 PR/main 병합은 미실행이다. 이 기록으로 이번 계획 주기의 진행을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+- 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 현재 판정은 DC-U01-006~007을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+
+### DC-U01-006 — SSH 복구 후 Task 4 동일 SHA 부분 검증과 잔여 수직 인수
+
+- 판정: DC-U01-003의 SSH 접속 장애는 해소됐다. 그러나 승인 계획 Task 4의 두 정확 pair 선택→철회→재선택을 실제 OIDC/HTTPS/Chromium 화면·API·DB row·Network로 연결하는 인수는 여전히 미실행이므로 이번 주기 미충족 항목으로 기록한다.
+- 실제 수행: 기존 단일 branch `codex/u01-dashboard-r2`의 정확 H `f6257baad4d6f340301b04218e9949f1dc28c114`를 로컬·개발 원격·WSL-server 전용 Git checkout에서 일치시켰고, 양쪽 G-05 seq2309 PASS(exit0)를 확인했다. WSL-server의 H에서 API/Reader/등록 76 PASS·1 warning, Web 103 PASS와 typecheck/lint/build exit0, 격리 PostgreSQL 15의 F-19A 등록·철회 2 PASS·2 warnings 및 U-01 빈 pair 읽기 1 PASS를 확인했다. 이는 실제 DB를 쓴 제한적 검증이며 두 허용 pair의 U-01 화면 수직 검증이 아니다.
+- 독립 검토·미검증: 읽기 전용 Tester는 새 scoped GET/UI를 구동하는 두 pair 브라우저 하네스와 E-SHOT/E-NET/E-API/E-AUD 묶음이 현 H에 없음을 확인해 `U-01 NOT_ACCEPTED`로 판정했다. 1920×1080·12px, 7상태·키보드, 서울 달력일 경계의 실제 DB/API/화면/Network 대조, stale 응답 경합, `AV-SAFE-034`·`AV-OPS-027`·`AV-UI-017` 및 U-01 공통 ID의 독립 실제 인수는 PASS가 아니다.
+- 자원·영향: QA 전용 `/home/daon/deploy/anvil-u01-task4-023369b5-qa`, 전용 Playwright 임시 패키지, tmpfs PostgreSQL 15 컨테이너 두 개를 신원·SHA·포트·마운트 검사 후 제거했다. 정확 두 컨테이너와 loopback 5545, 전용 checkout·패키지·pytest base 잔여0을 확인했다. 공유 `/home/daon/deploy/anvil`, 다른 Docker/DB/서비스, `ysna-server`·Production은 변경하지 않았다.
+- 재개 조건·권고: 현재 단일 branch에서 새 U-01 두 pair OIDC/HTTPS/Chromium 수직 하네스를 승인 계획 범위·dual lease로 작성하고, 동일 SHA의 증거·독립 ID별 판정까지 실행한다. 그 전에는 Task 4 gate GREEN 또는 PR/main 병합을 주장하지 않는다. 이 기록은 다음 재작업 입력이며 추가 승인 요청은 아니다.
+
+### DC-U01-007 — 기존 Foundation 브라우저 회귀 1건 실패
+
+- 판정: H의 기존 R6 OIDC/HTTPS/Chromium/PG15 opt-in은 `1 failed, 51 deselected, 1 warning`(exit1)이며 Foundation 회귀 PASS가 아니다. 단계는 `STORED_ROW`, 오류 분류는 `AssertionError`다.
+- 근거·원인 경계: 역사 R6 브라우저 시험은 저장 Critical 행의 `a, button, input, select` 개수 0을 요구하지만 현재 화면은 열린 Critical에 `확인` 버튼을 제공한다. 이것이 충돌 원인일 가능성은 높으나 실패 출력에 정확 assertion code가 없어 확정하지 않는다. 본 시험은 신규 scoped GET/두 pair 선택 자체를 검사하지 않아, 역사 단언을 보정하더라도 U-01 수직 인수를 대체하지 못한다.
+- 영향·조치: 실패를 키 문제로 무시하거나 PASS로 승격하지 않는다. 테스트 전용 PG15는 비관리자 DB·migration0019·감사행1을 확인한 뒤 이름/label/tmpfs/loopback/mount0을 검사해 stop/자동제거했고 port5545 잔여0이다. 실제 제품 회귀인지 역사 하네스 계약 불일치인지 분리하는 최소 재작업과 새 U-01 수직 하네스를 같은 계획의 후속 검증 범위로 둔다.
+- 통제 상태: 최초 DC-U01-005의 후속 G-05 경로 부재는 H에서 seq2309 PASS로 해소됐다. 본 새 기록의 추가는 H가 고정한 역사 보고 blob을 변경하므로 새 fail-closed 보고 successor 없이 최신 G-05 PASS를 주장하지 않는다. 단일 브랜치와 원격 H를 복구 기준으로 보존한다.
 
 ### DC-U01-003 — Task 4 WSL-server 동일 SHA 실측 불가
 

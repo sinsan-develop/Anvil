@@ -1,5 +1,16 @@
 # U-01 정확 조합·기간 Dashboard 이번 주기 완료보고
 
+## 후속 실측 갱신 — 2026-10-09, Task4 H 정확 SHA
+
+- 판정: 초기 SSH 배너 차단은 해소됐고, 기존 단일 브랜치의 H `f6257baad4d6f340301b04218e9949f1dc28c114`를 WSL-server의 전용 Git checkout에서 검증했다. 로컬·개발 원격·WSL Git SHA 일치, G-05 seq2309 PASS(exit0)다. 그러나 U-01 두 정확 pair의 실제 브라우저 수직 인수는 미실행이고 기존 Foundation 브라우저 회귀 1건은 실패했으므로 U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`다. 아래 최초 차단 기록은 당시 사실로 보존하며 최신 판정은 이 절과 `design_change.md` DC-U01-006/007을 따른다.
+- 동일 H 제한적 PASS: WSL API/Reader/등록 pytest `76 passed, 1 warning` exit0, Web `103 PASS`·typecheck/lint/build 각각 exit0, 격리 PostgreSQL 15 F-19A 등록·철회 `2 passed, 2 warnings` exit0, U-01 빈 pair read `1 passed` exit0. 이 검증은 새 U-01의 두 허용 pair 선택→철회→재선택, 기간 경계 DB/API/화면/Network, OIDC/HTTPS/Chromium을 증명하지 않는다.
+- 기존 Foundation opt-in 실제 결과: 같은 H에서 일회성 PostgreSQL 15 비관리자 DB/migration0019과 Chromium을 사용한 `test_opt_in_r6_oidc_browser_pg15`가 `1 failed, 51 deselected, 1 warning` exit1, `STORED_ROW AssertionError`로 종료했다. 구 R6 시험의 Critical 행 조작 요소 0개 단언과 현재 `확인` 버튼의 계약 충돌은 유력 추론이나 정확 assertion code를 얻지 못해 원인 확정·제품 실패 판정으로 승격하지 않는다. R6는 신규 scoped GET 흐름을 검증하지 않는다.
+- 독립 Tester(읽기 전용): `AV-SAFE-034`·`AV-OPS-027`·`AV-UI-017` 및 U-01 공통 ID의 실제 환경 PASS 불가, `U-01 NOT_ACCEPTED`. 현 H에 두 pair OIDC 화면→철회→재선택과 E-SHOT/E-NET/E-API/E-AUD, 1920×1080·12px·7상태/키보드 묶음이 없다. Tester는 서버 접속·테스트 실행·파일 변경을 하지 않았다.
+- 자원 정리: 두 QA 전용 tmpfs PostgreSQL 15 컨테이너를 정확 name/image/label/port/mount 확인 뒤 stop·AutoRemove, loopback 5545 listener0; 전용 WSL Git checkout과 Playwright 임시 패키지·pytest base를 실제 경로/비링크·프로세스 부재와 추적 변경 범위 확인 뒤 제거해 잔여0이다. 공유 checkout/DB/서비스와 ysna-server/Production은 변경0이다.
+- 잔여·다음 조치: 기존 브랜치에서 단일 Developer의 정확 dual lease 아래 새 두 pair 브라우저 하네스와 R6 실패 원인 분리 재작업을 진행한 뒤 동일 SHA 실제 증거/독립 판정을 받는다. 필수 gate가 GREEN이 아니므로 PR/main 병합, merged-main smoke, 브랜치 삭제·U-02는 수행하지 않는다. 본 보고 갱신은 H의 동결된 문서 blob을 바꾸므로 새 보고 successor 검증 전 최신 G-05를 PASS라 주장하지 않는다.
+
+## 최초 SSH 배너 차단 시점의 역사 기록
+
 - 판정: 승인 계획 Task 1~3의 로컬 구현·검증 및 종료 기록은 완료. Task 4의 WSL-server 실측·독립 인수·PR/main 병합은 미실행으로 `design_change.md` DC-U01-003/004에 기록했다. 이 기록은 이번 계획 주기 완료보고이지 U-01 제품 최종 완료·사용자 인수 PASS가 아니다.
 - 기준: 승인 계약 B SHA-256 `5B13E92A16A903F2887BA5F3E038AA5A41BBBBA667EE0DED57FF9C39E7BCA584`, 승인 기록 SHA-256 `60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39`, 구현 계획 SHA-256 `002977BDB7B634E974E4926F1FA52D6DC520450F92EBE64AB490EE6BD773C8C3`.
 - 기준 Git: 기존 단일 브랜치 `codex/u01-dashboard-r2`, Task3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`은 로컬·`development/codex/u01-dashboard-r2` 동일·clean. G-05 `PASS sequence=2304 reporting=AUTO_CONTINUE` 종료 코드 0. 이 SHA는 WSL-server에 수신·실행되지 않았다.
