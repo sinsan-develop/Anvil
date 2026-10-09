@@ -8,6 +8,39 @@ import {join} from 'node:path';
 const require = createRequire(import.meta.url);
 
 const periodDays = Object.freeze({'1d': 1, '7d': 7, '30d': 30});
+const diagnosticStages = new Set(['START', 'CONFIG', 'BROWSER', 'PREAUTH', 'OIDC',
+  'SESSION', 'PAIRS', 'API', 'UI', 'STALE', 'FAULT', 'EVIDENCE']);
+const diagnosticClasses = new Set(['AssertionError', 'Error', 'TimeoutError', 'TypeError']);
+const diagnosticCodes = new Set([
+  'U01_QA_ABSOLUTE_API_FORBIDDEN', 'U01_QA_ACTOR_MISMATCH',
+  'U01_QA_API_BODY_INVALID', 'U01_QA_API_ERROR_MISMATCH', 'U01_QA_API_STATUS_MISMATCH',
+  'U01_QA_BROWSER_CONFIG_REJECTED', 'U01_QA_BROWSER_FAILED',
+  'U01_QA_BROWSER_TARGET_REJECTED', 'U01_QA_CALLBACK_ORIGIN_MISMATCH',
+  'U01_QA_CURRENT_DB_COUNT_MISMATCH', 'U01_QA_EVIDENCE_DIR_REJECTED',
+  'U01_QA_EVIDENCE_EXISTS', 'U01_QA_FONT_SIZE_MISMATCH', 'U01_QA_ISSUER_FAILED',
+  'U01_QA_ISSUER_MISMATCH', 'U01_QA_KEYBOARD_NAVIGATION_FAILED',
+  'U01_QA_NETWORK_MISSING', 'U01_QA_PAIR_CONFIG_REJECTED',
+  'U01_QA_PAIR_LIST_MISMATCH', 'U01_QA_PERIOD_DB_COUNT_MISMATCH',
+  'U01_QA_PERIOD_REJECTED', 'U01_QA_SCOPED_DATA_INVALID', 'U01_QA_SECRET_VISIBLE',
+  'U01_QA_SESSION_MISSING', 'U01_QA_STALE_PAIR_RESTORED',
+  'U01_QA_STALE_PERIOD_RESTORED', 'U01_QA_STALE_REQUEST_NOT_OBSERVED',
+  'U01_QA_UI_FAULT_NOT_EXERCISED', 'U01_QA_UI_PERIOD_MISMATCH',
+  'U01_QA_UNEXPECTED_BROWSER_ORIGIN',
+]);
+let lastStage = 'START';
+
+function markStage(stage) {
+  assert.ok(diagnosticStages.has(stage));
+  lastStage = stage;
+  process.stdout.write(`U01_QA_STAGE_${stage}\n`);
+}
+
+function safeFailure(error, stage) {
+  const safeStage = diagnosticStages.has(stage) ? stage : 'START';
+  const safeClass = diagnosticClasses.has(error?.name) ? error.name : 'Error';
+  const safeCode = diagnosticCodes.has(error?.message) ? error.message : 'U01_QA_BROWSER_FAILED';
+  return `U01_QA_FAILURE stage=${safeStage} class=${safeClass} code=${safeCode}`;
+}
 
 function expectedPairs(phase, pairs) {
   assert.ok(['granted', 'revoked', 'restored', 'other'].includes(phase)
@@ -187,11 +220,15 @@ if (process.argv.includes('--self-test')) {
     projectId: pair.projectId}}), /U01_QA_BROWSER_CONFIG_REJECTED/);
   assert.throws(() => validateConfig({...options, pairB: {...options.pairB,
     projectId: '../other'}}), /U01_QA_BROWSER_CONFIG_REJECTED/);
+  assert.equal(safeFailure(new Error('authorization-code-secret'), 'OIDC'),
+    'U01_QA_FAILURE stage=OIDC class=Error code=U01_QA_BROWSER_FAILED');
+  assert.equal(safeFailure(Object.assign(new Error('U01_QA_ISSUER_FAILED'),
+    {name: 'AssertionError'}), 'OIDC'),
+  'U01_QA_FAILURE stage=OIDC class=AssertionError code=U01_QA_ISSUER_FAILED');
   process.stdout.write('U01_TWO_PAIR_SELF_TEST_PASS\n');
 } else {
   run().catch(error => {
-    const code = /^U01_QA_[A-Z_]+$/.test(error?.message) ? error.message : 'U01_QA_BROWSER_FAILED';
-    process.stderr.write(`${code}\n`);
+    process.stderr.write(`${safeFailure(error, lastStage)}\n`);
     process.exitCode = 1;
   });
 }
@@ -249,9 +286,11 @@ function evidenceDirectory() {
 }
 
 async function run() {
+  markStage('CONFIG');
   const config = readConfig();
   const evidenceDir = evidenceDirectory();
   const {chromium} = require('playwright');
+  markStage('BROWSER');
   const browser = await chromium.launch({headless: true});
   const network = [];
   const unexpectedOrigins = [];
@@ -273,9 +312,11 @@ async function run() {
           network.push({path: url.pathname, period: url.searchParams.get('period'),
             method: response.request().method(), status: response.status()});
       });
+      markStage('PREAUTH');
       await page.goto(config.app.href, {waitUntil: 'domcontentloaded'});
       checkedEnvelope(await sameOriginFetch(page, '/api/dashboard/project-environments'),
         401, 'AUTHENTICATION_REQUIRED');
+      markStage('OIDC');
       const auth = checkedEnvelope(await sameOriginFetch(page, '/auth/oidc/authorization', {
         method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
       }), 200).data;
@@ -291,14 +332,17 @@ async function run() {
         body: JSON.stringify({code: callbackUrl.searchParams.get('code'),
           state: auth.browser_state, browser_state: auth.browser_state}),
       }), 200);
+      markStage('SESSION');
       const session = checkedEnvelope(await sameOriginFetch(page, '/auth/session/status'), 200);
       assert.equal(session.authenticated, true, 'U01_QA_SESSION_MISSING');
       assert.equal(session.actor_role, config.expectedRole, 'U01_QA_ACTOR_MISMATCH');
+      markStage('PAIRS');
       const listed = checkedEnvelope(
         await sameOriginFetch(page, '/api/dashboard/project-environments'), 200);
       const expected = expectedPairs(config.phase, [config.pairA, config.pairB]);
       assert.deepEqual(listed.items, expected, 'U01_QA_PAIR_LIST_MISMATCH');
       if (config.phase === 'other') assert.equal(expected.length, 0);
+      markStage('API');
       const observations = [];
       for (const pair of expected) {
         for (const period of Object.keys(periodDays)) {
@@ -333,6 +377,7 @@ async function run() {
         checkedEnvelope(await sameOriginFetch(page, scopedPath(cross, '1d')),
           403, 'AUTHORIZATION_SCOPE_MISMATCH');
       }
+      markStage('UI');
       await page.reload({waitUntil: 'domcontentloaded'});
       await page.getByRole('button', {name: '조합 목록 새로고침'}).click();
       const select = page.locator('#scoped-pair');
@@ -370,6 +415,7 @@ async function run() {
         }
       }
       if (expected.length === 2) {
+        markStage('STALE');
         let releaseRequest;
         const delayedRequest = new Promise(resolve => { releaseRequest = resolve; });
         const delayedPath = scopedPath(config.pairA, '30d');
@@ -403,6 +449,7 @@ async function run() {
           'U01_QA_STALE_PERIOD_RESTORED');
         await page.unroute(delayedPredicate);
       }
+      markStage('FAULT');
       let clientSimulatedFault = false;
       if (expected.length > 0) {
         const availablePair = expected.at(-1);
@@ -435,6 +482,7 @@ async function run() {
       const visible = await page.locator('body').innerText();
       assert.ok(!/\b(?:access_token|refresh_token|id_token|client_secret|Bearer\s+[A-Za-z0-9])/i
         .test(visible), 'U01_QA_SECRET_VISIBLE');
+      markStage('EVIDENCE');
       if (evidenceDir) {
         const screenshot = join(evidenceDir, `u01-${config.phase}-1920x1080.png`);
         const networkFile = join(evidenceDir, `u01-${config.phase}-network.json`);

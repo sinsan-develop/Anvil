@@ -346,9 +346,38 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
                             env={key: env[key] for key in allowed if key in env},
                             capture_output=True, text=True, timeout=180, check=False)
     if result.returncode or f"U01_TWO_PAIR_{config['phase'].upper()}_PASS" not in result.stdout:
-        code = next((line for line in result.stderr.splitlines()
-                     if re.fullmatch(r"U01_QA_[A-Z_]+", line)), "U01_QA_BROWSER_FAILED")
-        raise AssertionError(code)
+        stages = {"START", "CONFIG", "BROWSER", "PREAUTH", "OIDC", "SESSION", "PAIRS",
+                  "API", "UI", "STALE", "FAULT", "EVIDENCE"}
+        classes = {"AssertionError", "Error", "TimeoutError", "TypeError"}
+        codes = {
+            "U01_QA_ABSOLUTE_API_FORBIDDEN", "U01_QA_ACTOR_MISMATCH",
+            "U01_QA_API_BODY_INVALID", "U01_QA_API_ERROR_MISMATCH",
+            "U01_QA_API_STATUS_MISMATCH", "U01_QA_BROWSER_CONFIG_REJECTED",
+            "U01_QA_BROWSER_FAILED", "U01_QA_BROWSER_TARGET_REJECTED",
+            "U01_QA_CALLBACK_ORIGIN_MISMATCH", "U01_QA_CURRENT_DB_COUNT_MISMATCH",
+            "U01_QA_EVIDENCE_DIR_REJECTED", "U01_QA_EVIDENCE_EXISTS",
+            "U01_QA_FONT_SIZE_MISMATCH", "U01_QA_ISSUER_FAILED", "U01_QA_ISSUER_MISMATCH",
+            "U01_QA_KEYBOARD_NAVIGATION_FAILED", "U01_QA_NETWORK_MISSING",
+            "U01_QA_PAIR_CONFIG_REJECTED", "U01_QA_PAIR_LIST_MISMATCH",
+            "U01_QA_PERIOD_DB_COUNT_MISMATCH", "U01_QA_PERIOD_REJECTED",
+            "U01_QA_SCOPED_DATA_INVALID", "U01_QA_SECRET_VISIBLE", "U01_QA_SESSION_MISSING",
+            "U01_QA_STALE_PAIR_RESTORED", "U01_QA_STALE_PERIOD_RESTORED",
+            "U01_QA_STALE_REQUEST_NOT_OBSERVED", "U01_QA_UI_FAULT_NOT_EXERCISED",
+            "U01_QA_UI_PERIOD_MISMATCH", "U01_QA_UNEXPECTED_BROWSER_ORIGIN",
+        }
+        observed = [line.removeprefix("U01_QA_STAGE_") for line in result.stdout.splitlines()
+                    if line.startswith("U01_QA_STAGE_")]
+        stage = observed[-1] if observed and observed[-1] in stages else "START"
+        diagnostic = next((re.fullmatch(
+            r"U01_QA_FAILURE stage=([A-Z]+) class=([A-Za-z]+) code=(U01_QA_[A-Z_]+)",
+            line) for line in result.stderr.splitlines()
+            if line.startswith("U01_QA_FAILURE ")), None)
+        error_class = "Error"
+        code = "U01_QA_BROWSER_FAILED"
+        if diagnostic and diagnostic.group(1) == stage and diagnostic.group(2) in classes \
+                and diagnostic.group(3) in codes:
+            error_class, code = diagnostic.group(2), diagnostic.group(3)
+        raise AssertionError(f"U01_QA_BROWSER_FAILED stage={stage} class={error_class} code={code}")
 
 
 def _phase_plan(phase: str) -> tuple[tuple[str, ...], tuple[str, ...], int]:
@@ -709,6 +738,46 @@ def test_browser_exec_passes_only_nonsecret_qa_values_into_isolated_container(mo
     assert all("secret" not in arg and "ANVIL_DATABASE_URL" not in arg
                for arg in observed["argv"])
     assert "ANVIL_DATABASE_URL" not in observed["options"]["env"]
+
+
+def test_browser_failure_reports_only_fixed_last_stage_class_and_code(monkeypatch, tmp_path):
+    sha = "a" * 40
+    command = ["docker", "exec", f"anvil-u01-qa-browser-{sha[:12]}", "node",
+               "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    config = {"source_sha": sha, "phase": "granted", "app_url": "https://anvil-f18-qa.local:8444/",
+              "issuer_url": "https://anvil-f18-qa.local:8444/realms/anvil",
+              "pair_a": {"projectId": "project-a", "environmentId": "test-a"},
+              "pair_b": {"projectId": "project-b", "environmentId": "test-b"},
+              "expected_role": "f19a-qa-reader-only", "other_role": f"f19a_qa_other_{sha[:12]}",
+              "browser_command": tuple(command)}
+    secret = "private-cookie-and-authorization-code"
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(
+        returncode=1,
+        stdout="U01_QA_STAGE_BROWSER\nU01_QA_STAGE_PREAUTH\nU01_QA_STAGE_OIDC\n",
+        stderr=f"U01_QA_FAILURE stage=OIDC class=AssertionError code=U01_QA_ISSUER_FAILED\n{secret}\n"))
+    with pytest.raises(AssertionError) as caught:
+        _run_browser(config, tmp_path)
+    assert str(caught.value) == (
+        "U01_QA_BROWSER_FAILED stage=OIDC class=AssertionError code=U01_QA_ISSUER_FAILED")
+    assert secret not in str(caught.value)
+
+
+def test_browser_failure_rejects_unrecognized_or_inconsistent_diagnostics(monkeypatch, tmp_path):
+    sha = "a" * 40
+    command = ["docker", "exec", f"anvil-u01-qa-browser-{sha[:12]}", "node",
+               "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    config = {"source_sha": sha, "phase": "granted", "app_url": "https://anvil-f18-qa.local:8444/",
+              "issuer_url": "https://anvil-f18-qa.local:8444/realms/anvil",
+              "pair_a": {"projectId": "project-a", "environmentId": "test-a"},
+              "pair_b": {"projectId": "project-b", "environmentId": "test-b"},
+              "expected_role": "f19a-qa-reader-only", "other_role": f"f19a_qa_other_{sha[:12]}",
+              "browser_command": tuple(command)}
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(
+        returncode=1, stdout="U01_QA_STAGE_PREAUTH\n",
+        stderr="U01_QA_FAILURE stage=OIDC class=SecretClass code=U01_QA_FAKE\n"))
+    with pytest.raises(AssertionError) as caught:
+        _run_browser(config, tmp_path)
+    assert str(caught.value) == "U01_QA_BROWSER_FAILED stage=PREAUTH class=Error code=U01_QA_BROWSER_FAILED"
 
 
 def test_phase_plan_requires_clean_before_and_exact_after_inventory():
