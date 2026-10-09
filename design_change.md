@@ -6,7 +6,14 @@
 
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
-- 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 현재 판정은 DC-U01-006~007을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+- 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~008을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+
+### DC-U01-008 — 두 조합 하네스의 합성 실행 환경·통제 successor 미구현
+
+- 판정: Task4 두 조합 하네스 자체는 로컬·WSL 비-opt-in 검증을 통과했지만, 실제 OIDC/HTTPS/Chromium 네 phase를 기동하는 전용 runner/fixture가 빠져 이번 주기 수직 인수는 `NOT_EXECUTED`다. 새 epoch106 C 이후 G-05 경로도 RED다. 이는 제품 결함 확정이나 추가 사용자 승인 요청이 아니라 계획 범위의 재작업 입력이다.
+- 재현 근거: 기존 단일 branch의 하네스 C `0dff0ea73650a8c4d1a5b426f295b1113f6682c1`, 자원 계획 checkpoint `2c3dd55520f4296a6d642d18830a58abfee0acd9`은 개발 원격과 일치했다. `ssh WSL-server`의 clean exact SHA에서 전용 PG15 `150018`/migration0020·빈 5개 등록/감사 원장, 새 Python 22 PASS/1 opt-in SKIP, Node 자체 검사/구문 검사를 확인했다. 그러나 합성 issuer·세 principal seed·HTTPS 앱/화면 build/Playwright 런타임을 묶어 기동할 절차가 하네스에 없어 실제 네 phase는 시작하지 않았다. 기존 R6 통합 시험은 단일 host·다른 DB/name/계약이므로 재사용 가능한 runner가 아니다. G-05는 최신 branch에서 exit1 10개 mismatch/route 오류다.
+- 영향·조치: 두 조합 선택·기간·철회·복원·독립 actor의 실제 DB/API/UI/Network·E-SHOT/E-NET/E-API/E-AUD와 기존 R6 `STORED_ROW` 회귀 해소는 미검증이다. 공유 서비스를 전용 QA 대체로 사용하지 않았다. 격리 PG container/network·세 경로·합성 Secret/venv는 ID·owner·clean 상태를 대조해 정확히 정리했고 잔여0, 공유 Web/PG ID·running 불변이다. 상세 근거는 `docs/04_test_reports/U-01_TASK4_TWO_PAIR_WSL_QA_RESULT.md`에 있다.
+- 재개 조건·권고: 같은 branch에서 내부 QA runner/fixture를 정확 WI·dual lease로 로컬 구현하고 fail-closed G-05 successor를 보완한다. 그 SHA를 push해 WSL-server가 Git으로 수신한 후 전용 PG15/OIDC/HTTPS/Chromium 네 phase와 R6 정확 assertion을 재검증하고 독립 Tester 판정을 받는다. 그때까지 U-01 `NOT_ACCEPTED`, Release `DEFER`, PR/main·새 branch·U-02·ysna/Production 금지. 이 기록은 사용자에게 계속 여부를 다시 묻는 근거가 아니다.
 
 ### DC-U01-006 — SSH 복구 후 Task 4 동일 SHA 부분 검증과 잔여 수직 인수
 
