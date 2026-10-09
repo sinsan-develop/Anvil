@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 epoch106 G-05 비제품 successor A 후보(Main, 2026-10-10 KST): 기존 단일 branch/private clean 회수 H `294d2eb03ddaceab3bf6f75ae41095dcf412c26b`의 seq2319·활성 lease0과 R7 증거 `87823219...`, 최초 A 발급 `725e1012...`를 분리해 고정했다. 새 WI/invocation SHA `37300915AE6EDCDF25F77050D7199E8ED2A11E078D964F50145ECA8D498B6C25`/`532BE06F55EB8C7DF5BEF2CEC66E6B9B27D0C7E515670965BDA33ED35D952898` 아래 Event 원문 seq1~2319를 보존하고 seq2320 WI→2321 worker→2322 write, epoch107 분리 token·24시간·정확 검사기/통제 테스트 2경로·제품 scope0을 발급한다. 이 A의 결박·원격 게시/clean 전에 Developer 코드 write를 허용하지 않는다. 새 route 이전 G-05 RED는 PASS가 아니다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main·새 branch/U-02/ysna 제외. 다음은 A 내부·독립 검증→기존 branch/private 게시→단일 Developer 통제 RED→GREEN이다.
+
 Task4 두 정확 pair 수직 QA epoch106 회수 후보(Main, 2026-10-10 KST): R7 증거·독립 판정과 미충족 DC-U01-012를 기존 branch/private clean `87823219d27444c529fdeeb1625ffc04d116dafb`에 보존했다. Event 원문 seq1~2317을 보존해 `2026-10-09T22:09:11+00:00`에 seq2318 write→2319 worker lease를 순서대로 회수하고 두 완료 lease는 REVOKED, 활성 agent/lease와 제품 write scope는 null/빈 목록으로 투영한다. 이번 투영의 G-05 successor는 아직 RED이므로 PASS·새 control lease 발급으로 승격하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 이 회수 checkpoint를 기존 branch/private에 보존하고 epoch106 별도 비제품 G-05 control WI/dual lease를 발급하는 일이다.
 
 Task4 두 정확 pair 수직 QA epoch106 A 후보(Main, 2026-10-10 KST): H2 `231bf84c843679b4eb47ea0ab09f070a31171129`는 기존 branch/private 동일·clean·G-05 seq2314 PASS, 활성 lease0이다. 새 WI/invocation SHA `CF783E2D06EBF445DFD70D36EF39B9B78A7ECC4D18391811F6805C83D74CA89A`/`66D56A004296405EB3425402A87FA6A211504B929BEE81CB61419F593B592654`는 승인 Task4의 두 pair opt-in 하네스만 연다. Event 원문 seq1~2314를 보존해 seq2315 WI→2316 worker→2317 write, epoch106 별도 token·24시간·정확 신규 시험2경로를 발급한다. A 정합성·원격 게시/clean 전 Developer 쓰기 금지, 새 route 이전 G-05 RED는 PASS가 아니다. 기존 R6 `STORED_ROW` 정확 assertion은 미확정이고 역사 시험은 수정하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 A 검증·게시→로컬 RED→GREEN→정확 SHA WSL-server 실제 수직 QA다.
@@ -170,17 +172,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2319,
-  "last_event_id": "evt_u01_2319_task4_two_pair_qa_worker_lease_revoked",
+  "event_sequence": 2322,
+  "last_event_id": "evt_u01_2322_task4_epoch106_g05_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-epoch106-g05",
+  "worker_lease": "worker-lease-u01-task4-epoch106-g05-6deae520c2bc4ca7a166468689e55789",
+  "write_lease": "write-lease-u01-task4-epoch106-g05-d193c6ab1ba04ef8ae8ccffc5440cee7",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
   "next_safe_action": "U01_TASK4_EPOCH106_G05_CONTROL_ONLY",
-  "repository_head": "87823219d27444c529fdeeb1625ffc04d116dafb",
+  "repository_head": "294d2eb03ddaceab3bf6f75ae41095dcf412c26b",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
