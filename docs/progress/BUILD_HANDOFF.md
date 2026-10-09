@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 WSL 실측 보고 successor A 후보(Main, 2026-10-09 KST): Task4 보고 통제 H `f6257baa`의 clean G-05 seq2309 PASS와 직접 후손 R2 `c023235e4e483e6e545ca4943c621d7df106a094` 정확 6보고 문서·local/private 원격 동일을 기준으로 한다. R2의 G-05 `U01_TASK4_REPORT_CLOSE_GIT_INVALID`는 기존 H 동결 blob 이후의 예상 경로 부재다. 새 WI/invocation SHA `849C3F06ACAE8D9A943F78852E90768A15C3D0F8806D315295677361B0A726C1`/`B87CA1DF2C711C28E0EB4A3D04223DD5A3C00331662C6F1FB29AAB60B687AF2E` 아래 Event 원문 seq1~2309 보존 후 seq2310 WI→2311 worker→2312 write, epoch105 분리 token·단일 Developer 정확 checker/test 2경로·제품 scope0을 발급했다. 본 A의 원장·snapshot/digest 정합성·게시/clean 전 Developer code write는 잠금이며 신규 route 이전 G-05 bootstrap RED는 PASS가 아니다. U-01 두 pair 수직 인수 NOT_ACCEPTED, 기존 R6 STORED_ROW 1 FAIL, Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 A 문서·원장 정합성 확인·기존 branch 게시 후 Developer 통제 TDD다.
+
 Task4 H 후속 WSL-server 제한 실측(Main, 2026-10-09 KST): local/private/WSL 전용 Git exact H `f6257baad4d6f340301b04218e9949f1dc28c114`와 G-05 seq2309 PASS를 확인했다. H의 API/Reader/등록 76 PASS, Web 103 PASS·typecheck/lint/build exit0, 격리 PG15 F-19A 등록·철회 2 PASS와 U-01 빈 pair 1 PASS다. 기존 R6 OIDC/HTTPS/Chromium opt-in은 `STORED_ROW AssertionError`로 1 FAIL/51 deselected이며 현재 ACK 버튼과 역사 control0 단언의 충돌은 추론이다. 새 U-01 두 pair→철회→재선택 브라우저/Network/DB 수직 하네스는 없고 독립 Tester는 U-01 NOT_ACCEPTED·AV-SAFE-034/AV-OPS-027/AV-UI-017 및 공통 ID PASS 불가로 판정했다. 전용 PG 두 개/port5545, WSL QA checkout·Playwright 임시 패키지·pytest base는 정확 신원 확인 후 제거·잔여0; 공유 환경·ysna/Production 변경0. `design_change.md` DC-U01-006/007과 결과보고에 미충족 범위를 기록했다. 이 추가 문서는 H의 frozen 보고 blob 뒤의 새 변경이므로 후속 fail-closed G-05 successor 전에는 최신 상태를 GREEN으로 주장하지 않는다. 기존 브랜치 유지, active lease0, PR/main/U-02 미실행, Release DEFER·Production NOT_EXECUTED. 다음은 보고 successor 복구→동일 브랜치 dual lease의 U-01 실제 두 pair 브라우저 하네스·R6 실패 분리→독립 인수다.
 
 Task4 보고 통제 H 종료 후보(Main, 2026-10-09 KST): B `c8569e037422d05999fec21b5c28abb1c3c30c57`의 G-05 seq2307 PASS, 기존 branch/private 원격 동일·clean을 확인했다. 동일 epoch104의 write lease를 Event seq2308로 먼저 회수하고 worker lease를 seq2309로 회수한다. 종료 이유는 `U01_TASK4_REPORT_CONTROL_COMPLETE_WSL_QA_PENDING`이며 제품 범위0과 U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED를 유지한다. 이 H의 G-05·원격 게시·clean 전에는 Task4 통제 종료가 아니다. SSH 복구 후 A SHA의 격리 예비 PG15/Web 시험은 통과했지만 실제 OIDC/HTTPS/Chromium·두 pair 화면/Network·독립 수락과 PR/main은 여전히 미실행이다. 다음은 현재 정확 SHA를 WSL-server가 Git으로 수신한 격리 실측이며 ysna-server는 제외한다.
@@ -160,17 +162,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2309,
-  "last_event_id": "evt_u01_2309_task4_report_control_worker_lease_revoked",
+  "event_sequence": 2312,
+  "last_event_id": "evt_u01_2312_task4_wsl_report_successor_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-wsl-report-successor",
+  "worker_lease": "worker-lease-u01-task4-wsl-report-successor-076ae5f92e6d4e83ae23eb488aeb4f96",
+  "write_lease": "write-lease-u01-task4-wsl-report-successor-1934b6cf48d74d208920257610fe6118",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK4_WSL_QA_PENDING",
-  "repository_head": "3f246de25dcacfb1149d3b480e36aa08161c5c26",
+  "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CONTROL_ONLY",
+  "repository_head": "c023235e4e483e6e545ca4943c621d7df106a094",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
