@@ -10,6 +10,8 @@
 
 ### DC-U01-010 — R4 세 phase PASS·other 빈 목록 선택자 불일치
 
+- R5 후속 실측(2026-10-10 KST): 같은 단일 branch의 clean exact SHA `208c8fbbe0fa93f216772379e14b679cfa2436f9`를 WSL-server Git으로 수신하고 새 빈 전용 PG15/OIDC/HTTPS/Chromium의 동일 DB 수명에서 granted·revoked·restored·other 각각 2 PASS/30 deselected(exit0)를 확인했다. R4의 other 선택자 실패는 재발하지 않았다. 8개 PNG/Network 증거를 WSL 원본과 SHA-256 일치로 보존했고 전용 container/network/image tag/세 root/loopback 포트 잔여0으로 정리했다. 상세 `docs/04_test_reports/U-01_TASK4_TWO_PAIR_WSL_QA_R5_RESULT.md`. DC-U01-010의 재실행 조건은 충족됐지만 역사 R6 `STORED_ROW`, 최신 G-05 successor, 필수 증거 ID와 독립 Tester 판정은 별개로 남는다. U-01 `NOT_ACCEPTED`, Release `DEFER`, PR/main·새 branch·U-02·ysna/Production 미실행이다.
+
 - 판정: R4 exact SHA `3eb267c910422c6ee486ef664d16bd9a2f45db54`의 새 빈 전용 PG15/OIDC/HTTPS/Chromium에서 granted·revoked·restored는 같은 DB 수명으로 각각 2 PASS였다. 마지막 other는 UI status 선택자 TimeoutError로 FAIL이므로 네 phase 인수는 아니다.
 - 근거: other DB/API 접근 차단과 원장 `2|2|2|8|5`를 통과했다. Main 별도 Chromium DOM에서 다른 사용자 callback200, 빈 목록 status 텍스트1·기본 option1·pair select disabled를 확인했다. 기존 하네스의 `getByRole('status',{name:'선택 가능한 조합이 없습니다.'})`는 count0이고 같은 role의 `filter({hasText:'선택 가능한 조합이 없습니다.'})`는 count1이다. 이 선택자 불일치는 하네스 결함이며 제품 빈 상태 결함으로 단정하지 않는다. 진단 screenshot은 공식 other PASS가 아니다.
 - 조치·잔여: phase별 screenshot/network 6파일과 other 진단 PNG를 로컬 hash 일치로 보존했다. R4 전용 container/network/image tag/세 root/두 port 잔여0, 공유 Web/PG 불변. epoch106 단일 Developer가 허용 브라우저 하네스 한 파일만 최소 보완했고 로컬 Main 31 PASS/1 opt-in SKIP 및 JS 자체·구문 PASS이나 WSL 재검증은 미실행이다. 세부 `docs/04_test_reports/U-01_TASK4_TWO_PAIR_WSL_QA_R4_RESULT.md`.
