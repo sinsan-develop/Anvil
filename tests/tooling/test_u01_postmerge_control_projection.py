@@ -16,12 +16,359 @@ from scripts import check_project_progress as checker
 ROOT = Path(__file__).resolve().parents[2]
 A = "a116dcd011cdfec3a0e50389976e2431e683209f"
 TASK4_REPORT_A = "023369b5466466be1253d9273e7d67517f35c948"
+TASK4_WSL_REPORT_A = "c3b51e2bb5c72b26b5b9bc1f852fb93918eb8280"
+TASK4_REPORT_A_BLOBS = {
+    "design_change.md": "9641b9b4740ef58fa239613cc53ba8fa323b231c",
+    "docs/04_test_reports/U-01_SCOPED_DASHBOARD_RESULT.md":
+        "16758a3f1284b62751a9faebe1f64d3d30d0d247",
+    "docs/evidence/manifests/U-01_SCOPED_DASHBOARD_TASK4_DEFERRED_MANIFEST.json":
+        "891cd66adf260cfa7ec72c6a797b21b87e36a0ec",
+}
 PATHS = (
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
 )
+
+
+class U01Task4WslReportSuccessorTests(unittest.TestCase):
+    @staticmethod
+    def issued_a():
+        archive = {path: subprocess.check_output(["git", "show", f"{TASK4_WSL_REPORT_A}:{path}"],
+                    cwd=ROOT) for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(archive[PATHS[0]])
+        bundle["events"] = json.loads(archive[PATHS[1]])
+        bundle["handoff_text"] = archive[PATHS[2]].decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(archive[PATHS[3]])
+        return bundle, archive
+
+    @classmethod
+    def checkpoint_b(cls):
+        bundle, files = cls.issued_a()
+        progress = bundle["progress"]
+        status = "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY"
+        action = "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSE_ONLY"
+        checkpoint = "c" * 40
+        progress["u01_task4_wsl_report_successor_binding"].update(status=status,
+            next_safe_action=action, a_docs_checkpoint=TASK4_WSL_REPORT_A,
+            control_checkpoint=checkpoint)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=status, worktree_status=status)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-wsl-report-successor-checkpoint-seq2312")
+        bundle["handoff"].update(repository_head=checkpoint, next_safe_action=action)
+        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+
+    @classmethod
+    def closed_h2(cls):
+        bundle, files = cls.checkpoint_b()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_TASK4_WSL_REPORT_SUCCESSOR_COMPLETE_TWO_PAIR_QA_PENDING"
+        for sequence, kind, event_id, lease, token in (
+            (2313, "WRITE_LEASE_REVOKED", "evt_u01_2313_task4_wsl_report_successor_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2314, "WORKER_LEASE_REVOKED", "evt_u01_2314_task4_wsl_report_successor_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_SCOPED_DASHBOARD_TASK4_WSL_REPORT_SUCCESSOR_CLOSE",
+                "subject_ref": "U-01/SCOPED-DASHBOARD-TASK4-WSL-REPORT-SUCCESSOR",
+                "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+        stream.update(last_sequence=2314, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2312', '"last_sequence": 2314', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "evt_u01_2312_task4_wsl_report_successor_write_lease_issued"',
+            '"last_event_id": "evt_u01_2314_task4_wsl_report_successor_worker_lease_revoked"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        status = "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSED_TWO_PAIR_QA_PENDING"
+        action = "U01_SCOPED_DASHBOARD_TWO_PAIR_QA_DUAL_LEASE_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        progress["completed_u01_task4_wsl_report_successor_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_u01_task4_wsl_report_successor_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_task4_wsl_report_successor_binding"].update(status=status,
+            next_safe_action=action, active_projection_checkpoint="b" * 40,
+            event_sequence=2314)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2314,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-wsl-report-successor-close-seq2314")
+        progress["repository"].update(projection_mode="U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSED",
+            head_relation=status, worktree_status=status)
+        bundle["handoff"].update(event_sequence=2314, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2314
+        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+
+    def test_closed_h2_requires_frozen_b_and_ordered_revocations(self):
+        bundle, files = self.closed_h2()
+        validator = getattr(checker, "_validate_u01_task4_wsl_report_successor_closed", None)
+        self.assertIsNotNone(validator)
+        _, b_files = self.checkpoint_b()
+        original = subprocess.check_output
+        def frozen(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for path in PATHS:
+                    if command[-1] == f"{'b' * 40}:{path}":
+                        return b_files[path]
+            return original(command, *args, **kwargs)
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with patch.object(subprocess, "check_output", side_effect=frozen):
+            self.assertEqual(validator(bundle, event_raw=files[PATHS[1]], now=now,
+                archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+
+    def test_closed_h2_rejects_revocation_acceptance_and_digest_forgery(self):
+        bundle, files = self.closed_h2()
+        _, b_files = self.checkpoint_b()
+        original = subprocess.check_output
+        def frozen(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for path in PATHS:
+                    if command[-1] == f"{'b' * 40}:{path}":
+                        return b_files[path]
+            return original(command, *args, **kwargs)
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        validator = checker._validate_u01_task4_wsl_report_successor_closed
+        for name, mutate in (
+            ("event", lambda b: b["events"]["events"][2312]["details"].update(reason="forged")),
+            ("order", lambda b: b["events"]["events"][2312].update(event_type="WORKER_LEASE_REVOKED")),
+            ("token", lambda b: b["progress"]["completed_u01_task4_wsl_report_successor_write_lease"].update(
+                write_fencing_token="forged")),
+            ("acceptance", lambda b: b["progress"]["u01_task4_wsl_report_successor_binding"].update(
+                vertical_acceptance="ACCEPTED")),
+            ("digest", lambda b: b["detached_digest"].update(self_reference=True)),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(
+                    forged["progress"])
+                with patch.object(subprocess, "check_output", side_effect=frozen):
+                    self.assertTrue(validator(forged, event_raw=files[PATHS[1]], now=now,
+                        archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}))
+
+    def test_closed_h2_git_requires_exact_b_and_docs_only_close(self):
+        bundle, _ = self.closed_h2()
+        _, b_files = self.checkpoint_b()
+        collector = getattr(checker, "_collect_u01_task4_wsl_report_successor_closed_git", None)
+        self.assertIsNotNone(collector)
+        original, original_run = subprocess.check_output, subprocess.run
+        a, c, b, h2 = TASK4_WSL_REPORT_A, "c" * 40, "b" * 40, "d" * 40
+        control = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+        docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+        close_docs = docs | {"docs/progress/progress-events.json"}
+        for scenario in ("published", "product", "merge", "unpublished", "dirty", "stale_b"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (h2 + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return (("0" * 40 if scenario == "unpublished" else h2) + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if tail == ["show", "-s", "--format=%P", c]:
+                        return (a + "\n").encode()
+                    if tail == ["show", "-s", "--format=%P", b]:
+                        return (c + "\n").encode()
+                    if tail == ["show", "-s", "--format=%P", h2]:
+                        return (b + "\n").encode()
+                    if tail in (["rev-list", "--count", f"{a}..{c}"],
+                                ["rev-list", "--count", f"{c}..{b}"],
+                                ["rev-list", "--count", f"{b}..{h2}"]):
+                        return b"1\n"
+                    if tail in (["rev-list", "--min-parents=2", f"{a}..{c}"],
+                                ["rev-list", "--min-parents=2", f"{c}..{b}"],
+                                ["rev-list", "--min-parents=2", f"{b}..{h2}"]):
+                        return b"merge\n" if scenario == "merge" and tail[-1] == f"{b}..{h2}" else b""
+                    if tail and tail[-1] in (f"{a}..{c}", f"{c}..{b}", f"{b}..{h2}") and tail[0] in ("log", "diff"):
+                        selected = (control if tail[-1] == f"{a}..{c}" else
+                            docs if tail[-1] == f"{c}..{b}" else close_docs)
+                        selected = set(selected)
+                        if scenario == "product" and tail[-1] == f"{b}..{h2}":
+                            selected.add("apps/web/src/console/App.tsx")
+                        return ("\n".join(sorted(selected)) + "\n").encode()
+                    if tail[:1] == ["show"]:
+                        for path in PATHS:
+                            if tail[-1] == f"{b}:{path}":
+                                return (b"{}" if scenario == "stale_b" and path == PATHS[0]
+                                    else b_files[path])
+                        for path in control:
+                            if tail[-1] == f"{c}:{path}":
+                                return (ROOT / path).read_bytes()
+                        if tail[-1] == f"{h2}:docs/progress/build-progress.json":
+                            return json.dumps(bundle["progress"]).encode()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_checkpoint_b_requires_control_commit_and_exact_projection(self):
+        bundle, files = self.checkpoint_b()
+        validator = checker._validate_u01_task4_wsl_report_successor_active
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        self.assertEqual(validator(bundle, event_raw=files[PATHS[1]], now=now,
+            archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+        forged = deepcopy(bundle)
+        forged["progress"]["updated_at"] = (datetime.fromisoformat(
+            bundle["progress"]["worker_lease"]["issued_at"]) - timedelta(seconds=1)).isoformat()
+        forged, forged_files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(
+            forged, deepcopy(files))
+        self.assertTrue(validator(forged, event_raw=forged_files[PATHS[1]], now=now,
+            archived_files={PATHS[0]: forged_files[PATHS[0]], PATHS[2]: forged_files[PATHS[2]]}))
+
+    def test_checkpoint_b_git_rejects_product_merge_unpublished_and_dirty(self):
+        bundle, _ = self.checkpoint_b()
+        collector = checker._collect_u01_task4_wsl_report_successor_git
+        original, original_run = subprocess.check_output, subprocess.run
+        a, c, b = TASK4_WSL_REPORT_A, "c" * 40, "b" * 40
+        control = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+        docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+        for scenario in ("published", "product", "merge", "unpublished", "dirty"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (b + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return (("0" * 40 if scenario == "unpublished" else b) + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if tail == ["show", "-s", "--format=%P", c]:
+                        return (a + "\n").encode()
+                    if tail == ["show", "-s", "--format=%P", b]:
+                        return (c + "\n").encode()
+                    if tail in (["rev-list", "--count", f"{a}..{c}"],
+                                ["rev-list", "--count", f"{c}..{b}"]):
+                        return b"1\n"
+                    if tail in (["rev-list", "--min-parents=2", f"{a}..{c}"],
+                                ["rev-list", "--min-parents=2", f"{c}..{b}"]):
+                        return b"merge\n" if scenario == "merge" and tail[-1] == f"{c}..{b}" else b""
+                    if tail and tail[-1] in (f"{a}..{c}", f"{c}..{b}") and tail[0] in ("log", "diff"):
+                        selected = set(control if tail[-1] == f"{a}..{c}" else docs)
+                        if scenario == "product" and tail[-1] == f"{c}..{b}":
+                            selected |= {"apps/web/src/console/App.tsx"}
+                        return ("\n".join(sorted(selected)) + "\n").encode()
+                    if tail[:1] == ["show"]:
+                        for path in control:
+                            if tail[-1] == f"{c}:{path}":
+                                return (ROOT / path).read_bytes()
+                        if tail[-1] == f"{b}:docs/progress/build-progress.json":
+                            return json.dumps(bundle["progress"]).encode()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_issued_a_requires_frozen_h_r2_and_exact_event_lease(self):
+        bundle, archive = self.issued_a()
+        validator = getattr(checker, "_validate_u01_task4_wsl_report_successor_active", None)
+        self.assertIsNotNone(validator)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validator(bundle, event_raw=archive[PATHS[1]], now=issued,
+            archived_files={PATHS[0]: archive[PATHS[0]], PATHS[2]: archive[PATHS[2]]}), [])
+
+    def test_issued_a_rejects_event_token_scope_hash_and_false_acceptance(self):
+        bundle, archive = self.issued_a()
+        validator = checker._validate_u01_task4_wsl_report_successor_active
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        for name, mutate in (
+            ("event", lambda b: b["events"]["events"][2311].update(actor="forged")),
+            ("token", lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["write_lease"].update(
+                product_write_scope=["apps/web/src/console/App.tsx"])),
+            ("expiry", lambda b: b["progress"]["worker_lease"].update(
+                expires_at="2026-10-09T23:57:55+09:00")),
+            ("snapshot", lambda b: b["progress"].update(snapshot_hash="0" * 64)),
+            ("digest", lambda b: b["detached_digest"].update(algorithm="MD5")),
+            ("instruction", lambda b: b["progress"]["u01_task4_wsl_report_successor_binding"].update(
+                work_instruction_sha256="0" * 64)),
+            ("acceptance", lambda b: b["progress"]["u01_task4_wsl_report_successor_binding"].update(
+                vertical_acceptance="ACCEPTED")),
+            ("u02", lambda b: b["progress"].update(next_successor_work_package={
+                "package_id": "U-02", "status": "READY"})),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                if name != "snapshot":
+                    forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(
+                        forged["progress"])
+                self.assertTrue(validator(forged, event_raw=archive[PATHS[1]], now=issued,
+                    archived_files={PATHS[0]: archive[PATHS[0]], PATHS[2]: archive[PATHS[2]]}))
+
+    def test_issued_a_git_requires_r2_exact_report_and_rejects_remote_dirty(self):
+        bundle, _ = self.issued_a()
+        collector = checker._collect_u01_task4_wsl_report_successor_git
+        original = subprocess.check_output
+        for scenario in ("published", "remote", "branch", "upstream", "dirty", "r2_blob"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (TASK4_WSL_REPORT_A + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return (("0" * 40 if scenario == "remote" else TASK4_WSL_REPORT_A) + "\n").encode()
+                    if tail == ["branch", "--show-current"] and scenario == "branch":
+                        return b"main\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"] and scenario == "upstream":
+                        return b"origin/main\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return (b" M packages/api/fastapi_app.py\n" if scenario == "dirty"
+                            else b" M scripts/check_project_progress.py\n"
+                                 b" M tests/tooling/test_u01_postmerge_control_projection.py\n")
+                    if tail == ["rev-parse", "c023235e4e483e6e545ca4943c621d7df106a094:"
+                                "docs/04_test_reports/U-01_SCOPED_DASHBOARD_RESULT.md"] and scenario == "r2_blob":
+                        return b"0" * 40 + b"\n"
+                    return original(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
 
 
 class U01Task4ReportControlTests(unittest.TestCase):
@@ -83,6 +430,10 @@ class U01Task4ReportControlTests(unittest.TestCase):
                         "-c", "core.quotePath=false"] else command[1:]
                     if tail == ["rev-parse", "HEAD"]:
                         return (TASK4_REPORT_A + "\n").encode()
+                    if (len(tail) == 2 and tail[0] == "rev-parse"
+                            and tail[1].startswith("HEAD:")
+                            and tail[1][5:] in TASK4_REPORT_A_BLOBS):
+                        return (TASK4_REPORT_A_BLOBS[tail[1][5:]] + "\n").encode()
                     if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
                         return (("0" * 40 if scenario == "remote" else TASK4_REPORT_A) + "\n").encode()
                     if tail == ["branch", "--show-current"] and scenario == "branch":
@@ -118,6 +469,10 @@ class U01Task4ReportControlTests(unittest.TestCase):
                         "-c", "core.quotePath=false"] else command[1:]
                     if tail == ["rev-parse", "HEAD"]:
                         return (b + "\n").encode()
+                    if (len(tail) == 2 and tail[0] == "rev-parse"
+                            and tail[1].startswith("HEAD:")
+                            and tail[1][5:] in TASK4_REPORT_A_BLOBS):
+                        return (TASK4_REPORT_A_BLOBS[tail[1][5:]] + "\n").encode()
                     if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
                         return (("0" * 40 if scenario == "unpublished" else b) + "\n").encode()
                     if tail == ["status", "--porcelain=v1", "-uall"]:
