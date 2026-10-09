@@ -186,6 +186,58 @@ def test_process_factory_binds_one_engine_and_disposes_on_host_failure(tmp_path,
     assert made == [engine, engine] and disposed == [True]
 
 
+def test_f19a_reader_creates_fresh_pair_owner_only_when_called(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+    from apps.api.anvil_api import oidc_process
+
+    path, _, _ = _trust(tmp_path)
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    made = []
+    scoped_reads = []
+    monkeypatch.setattr(oidc_process, "create_engine", lambda *_args, **_kwargs: engine)
+    for loader_name in ("load_scoped_run_source", "load_scoped_queue_source",
+                        "load_scoped_agent_owner_source"):
+        monkeypatch.setattr(oidc_process, loader_name,
+            lambda _engine, project_id, environment_id, label=loader_name:
+                scoped_reads.append((label, project_id, environment_id)) or
+                SimpleNamespace(observed_at=datetime(2024, 3, 1, tzinfo=timezone.utc),
+                    run_ids=(), job_ids=(), agents=(), legacy_unscoped_present=False))
+
+    class Owner:
+        def __init__(self, dsn):
+            made.append(dsn)
+
+        def load_complete(self, project_id, environment_id):
+            made.append((project_id, environment_id))
+            return ()
+
+        def load(self, _project_id, _environment_id):
+            return ()
+
+        def append(self, *_args):
+            raise AssertionError("read-only fixture")
+
+    monkeypatch.setattr(oidc_process, "_F19ABoundedOperationsRepository", Owner)
+    captured = {}
+
+    def host(**kwargs):
+        captured.update(kwargs)
+        return FastAPI()
+
+    oidc_process.create_oidc_process_app(_environment(path), host, f19a_enabled=True)
+    assert callable(captured["scoped_dashboard_reader"])
+    assert len(made) == 1  # existing fixed Operations owner, no pair reader yet
+    captured["scoped_dashboard_reader"]("other-project", "test", "1d",
+        datetime(2024, 3, 1, tzinfo=timezone.utc))
+    assert made[-2:] == [made[0], ("other-project", "test")]
+    assert {name for name, project, environment in scoped_reads
+            if (project, environment) == ("other-project", "test")} == {
+                "load_scoped_run_source", "load_scoped_queue_source",
+                "load_scoped_agent_owner_source"}
+    engine.dispose()
+
+
 def test_f19a_process_bounds_psycopg_engine_and_operations_connections(tmp_path, monkeypatch):
     from psycopg.conninfo import conninfo_to_dict
     from apps.api.anvil_api import oidc_process

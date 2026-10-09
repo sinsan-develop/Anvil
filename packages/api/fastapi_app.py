@@ -637,7 +637,11 @@ def _scoped_dashboard_handler(
                 data = dict(result)
                 data["pair"] = pair
                 return JSONResponse({"data": data, "request_id": request.state.request_id})
-            except Exception:
+            except Exception as error:
+                from packages.api.scoped_dashboard import DashboardSourceUnavailable
+                if isinstance(error, DashboardSourceUnavailable):
+                    raise ApiContractError("DASHBOARD_SOURCE_UNAVAILABLE",
+                                           "The Dashboard source is unavailable.", 503) from None
                 raise ApiContractError("SCOPED_DASHBOARD_UNAVAILABLE", "The Dashboard source is unavailable.", 503) from None
         except ApiContractError as error:
             return _error_response(request, _f19a_database_error(error))

@@ -23,6 +23,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
 from packages.api.fastapi_app import AuthorizationScope, _f19a_db_deadline
+from packages.api.scoped_dashboard import read_scoped_dashboard
 from packages.api.oidc_principal import OidcPrincipalPolicy
 from packages.api.oidc_runtime_factory import OidcRuntimeRejected
 from packages.agent_team.provider_status import ProviderStatusService
@@ -305,6 +306,25 @@ def create_oidc_process_app(
             run_summary_loader=load_run_summary,
             agent_owner_summary_loader=load_agent_owner_summary,
         )
+
+        def scoped_dashboard_reader(project_id: str, environment_id: str,
+                                    period_key: str, observed_at: datetime) -> dict:
+            # The API calls this only after exact-pair authorization. Never reuse the
+            # fixed host Operations owner or an owner from another request/pair.
+            owner = _F19ABoundedOperationsRepository(operations_dsn)
+            current_sources = {}
+            for name, loader in (("run", load_scoped_run_source),
+                                 ("queue", load_scoped_queue_source),
+                                 ("agent", load_scoped_agent_owner_source)):
+                try:
+                    current_sources[name] = loader(engine, project_id, environment_id)
+                except Exception:
+                    # Each optional card remains explicitly unavailable; the audit
+                    # itself is mandatory and fails the entire read if incomplete.
+                    pass
+            return read_scoped_dashboard(project_id, environment_id, period_key,
+                                         observed_at, owner, current_sources)
+
         return host_factory(
             environment=environment, engine=engine, session_factory=sessions,
             authorization_resolver=lambda _endpoint, _params: scope,
@@ -313,6 +333,7 @@ def create_oidc_process_app(
             client_secret=inputs.client_secret, ca_bundle=inputs.ca_bundle,
             operational_shell=environment.get("ANVIL_F15_OPERATIONAL_SHELL") == "1",
             operations_owner=operations_owner,
+            **({"scoped_dashboard_reader": scoped_dashboard_reader} if f19a_enabled else {}),
             **({"f19a_enabled": True} if f19a_enabled else {}),
         )
     except Exception:

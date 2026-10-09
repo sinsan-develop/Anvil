@@ -14,6 +14,51 @@ def test_operations_repository_requires_explicit_postgres_owner():
         PostgresOperationsRepository("")
 
 
+def test_complete_audit_read_rejects_gap_and_missing_tail():
+    class Cursor:
+        def __init__(self, row=None, rows=None):
+            self.row, self.rows = row, rows
+
+        def fetchone(self):
+            return self.row
+
+        def fetchall(self):
+            return self.rows
+
+    class Connection:
+        def __init__(self, head, rows):
+            self.head, self.rows, self.queries = head, rows, []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, query, params=None):
+            self.queries.append((query, params))
+            if "SELECT next_sequence" in query:
+                return Cursor(row=self.head)
+            if "SELECT sequence_no,payload" in query:
+                return Cursor(rows=self.rows)
+            return Cursor()
+
+    repository = PostgresOperationsRepository("postgresql://unused.invalid/db")
+    connection = Connection((4,), [(1, {"action": "DETECTED"}), (2, {"action": "DETECTED"}),
+                                   (3, {"action": "DETECTED"})])
+    repository._connect = lambda: connection
+    rows = repository.load_complete("project-a", "test")
+    assert tuple(number for number, _event in rows) == (1, 2, 3)
+    assert connection.queries[0][0] == "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+    assert connection.queries[1][1] == ("project-a", "test")
+    assert connection.queries[2][1] == ("project-a", "test")
+    for head, rows in [((4,), [(1, {}), (3, {})]), ((4,), [(1, {}), (2, {})]),
+                       ((2,), [(1, {}), (2, {})])]:
+        repository._connect = lambda head=head, rows=rows: Connection(head, rows)
+        with pytest.raises(ValueError, match="AUDIT_SEQUENCE_INCOMPLETE"):
+            repository.load_complete("project-a", "test")
+
+
 def test_operations_event_rejects_token_secret_and_cross_scope_before_connection():
     from packages.persistence.operations_repository import _safe_event
     base = {"action": "DETECTED", "alert_id": "alert-1", "actor_id": "system:detector",

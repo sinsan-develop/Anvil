@@ -111,6 +111,28 @@ class PostgresOperationsRepository:
                 (project_id, environment_id)).fetchall()
         return tuple(deepcopy(row[0]) for row in rows)
 
+    def load_complete(self, project_id: str, environment_id: str) -> tuple[tuple[int, dict], ...]:
+        """Read one scoped, repeatable snapshot and reject missing audit sequences."""
+        if not _safe_identifier(project_id) or not _safe_identifier(environment_id):
+            raise ValueError("OPERATIONS_SCOPE_REQUIRED")
+        with self._connect() as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            head = connection.execute(
+                "SELECT next_sequence FROM operations_audit_heads "
+                "WHERE project_id=%s AND environment_id=%s", (project_id, environment_id)).fetchone()
+            rows = connection.execute(
+                "SELECT sequence_no,payload FROM operations_audit_events "
+                "WHERE project_id=%s AND environment_id=%s ORDER BY sequence_no",
+                (project_id, environment_id)).fetchall()
+        result = tuple((sequence, deepcopy(payload)) for sequence, payload in rows)
+        expected_count = 0 if head is None else head[0] - 1
+        if (type(expected_count) is not int or expected_count < 0
+                or len(result) != expected_count
+                or any(type(sequence) is not int or sequence != index
+                       for index, (sequence, _payload) in enumerate(result, 1))):
+            raise ValueError("AUDIT_SEQUENCE_INCOMPLETE")
+        return result
+
     def append(self, project_id: str, environment_id: str, expected_sequence: int,
                event: dict) -> None:
         if not project_id or not environment_id or type(expected_sequence) is not int or expected_sequence < 0:

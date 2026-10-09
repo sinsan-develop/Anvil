@@ -106,6 +106,27 @@ def test_scoped_dashboard_exact_pair_success_and_registry(api):
     assert isinstance(calls[0][3], datetime) and calls[0][3].tzinfo is timezone.utc
 
 
+def test_exact_pair_route_can_return_real_task2_reader_without_fixed_fallback(api):
+    from packages.api.scoped_dashboard import read_scoped_dashboard
+
+    _, client_for, _, _ = api
+
+    class CompleteEmptyAudit:
+        def load_complete(self, project_id, environment_id):
+            assert (project_id, environment_id) == ("project-a", "test")
+            return ()
+
+    owner = CompleteEmptyAudit()
+    with client_for(source=lambda project, environment, period, observed:
+                    read_scoped_dashboard(project, environment, period, observed, owner)) as client:
+        response = _get(client, PATH + "?period=1d")
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["period"]["timeZone"] == "Asia/Seoul"
+    assert data["occurrences"]["criticalDetected"]["count"] == 0
+    assert data["current"]["health"]["database"]["status"] == "UNAVAILABLE"
+
+
 @pytest.mark.parametrize("query", ["", "?period=", "?period=1D", "?period=01d",
                                    "?period=%31d",
                                    "?period=1d&period=7d", "?period=1d&extra=x", "?extra=x"])
@@ -165,6 +186,18 @@ def test_database_reader_and_missing_reader_are_503_without_fixed_fallback(api):
                                                 "occurrences": {}, "sourceCompleteness": {}}) as invalid:
         _error(_get(invalid, PATH + "?period=1d"), 503, "SCOPED_DASHBOARD_UNAVAILABLE")
     assert calls == []
+
+
+def test_incomplete_critical_source_uses_dashboard_source_unavailable_envelope(api):
+    from packages.api.scoped_dashboard import DashboardSourceUnavailable
+
+    _, client_for, _, _ = api
+
+    def incomplete(*_args):
+        raise DashboardSourceUnavailable("DASHBOARD_SOURCE_UNAVAILABLE")
+
+    with client_for(source=incomplete) as client:
+        _error(_get(client, PATH + "?period=7d"), 503, "DASHBOARD_SOURCE_UNAVAILABLE")
 
 
 @pytest.mark.parametrize("reader_data", [
