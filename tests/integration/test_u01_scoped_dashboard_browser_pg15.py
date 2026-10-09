@@ -347,7 +347,8 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
                             capture_output=True, text=True, timeout=180, check=False)
     if result.returncode or f"U01_TWO_PAIR_{config['phase'].upper()}_PASS" not in result.stdout:
         stages = {"START", "CONFIG", "BROWSER", "PREAUTH", "OIDC", "SESSION", "PAIRS",
-                  "API", "UI", "STALE", "FAULT", "EVIDENCE"}
+                  "API", "UI", "STALE", "STALE_TRIGGER", "STALE_REQUEST", "STALE_LOADING",
+                  "STALE_SWITCH", "STALE_SETTLED", "STALE_VERIFY", "FAULT", "EVIDENCE"}
         classes = {"AssertionError", "Error", "TimeoutError", "TypeError"}
         codes = {
             "U01_QA_ABSOLUTE_API_FORBIDDEN", "U01_QA_ACTOR_MISMATCH",
@@ -369,7 +370,7 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
                     if line.startswith("U01_QA_STAGE_")]
         stage = observed[-1] if observed and observed[-1] in stages else "START"
         diagnostic = next((re.fullmatch(
-            r"U01_QA_FAILURE stage=([A-Z]+) class=([A-Za-z]+) code=(U01_QA_[A-Z_]+)",
+            r"U01_QA_FAILURE stage=([A-Z_]+) class=([A-Za-z]+) code=(U01_QA_[A-Z_]+)",
             line) for line in result.stderr.splitlines()
             if line.startswith("U01_QA_FAILURE ")), None)
         error_class = "Error"
@@ -778,6 +779,26 @@ def test_browser_failure_rejects_unrecognized_or_inconsistent_diagnostics(monkey
     with pytest.raises(AssertionError) as caught:
         _run_browser(config, tmp_path)
     assert str(caught.value) == "U01_QA_BROWSER_FAILED stage=PREAUTH class=Error code=U01_QA_BROWSER_FAILED"
+
+
+def test_browser_failure_keeps_stale_await_substage(monkeypatch, tmp_path):
+    sha = "a" * 40
+    command = ["docker", "exec", f"anvil-u01-qa-browser-{sha[:12]}", "node",
+               "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    config = {"source_sha": sha, "phase": "granted", "app_url": "https://anvil-f18-qa.local:8444/",
+              "issuer_url": "https://anvil-f18-qa.local:8444/realms/anvil",
+              "pair_a": {"projectId": "project-a", "environmentId": "test-a"},
+              "pair_b": {"projectId": "project-b", "environmentId": "test-b"},
+              "expected_role": "f19a-qa-reader-only", "other_role": f"f19a_qa_other_{sha[:12]}",
+              "browser_command": tuple(command)}
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(
+        returncode=1, stdout="U01_QA_STAGE_STALE\nU01_QA_STAGE_STALE_LOADING\n",
+        stderr="U01_QA_FAILURE stage=STALE_LOADING class=TimeoutError "
+               "code=U01_QA_BROWSER_FAILED\n"))
+    with pytest.raises(AssertionError) as caught:
+        _run_browser(config, tmp_path)
+    assert str(caught.value) == (
+        "U01_QA_BROWSER_FAILED stage=STALE_LOADING class=TimeoutError code=U01_QA_BROWSER_FAILED")
 
 
 def test_phase_plan_requires_clean_before_and_exact_after_inventory():

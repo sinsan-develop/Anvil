@@ -9,7 +9,8 @@ const require = createRequire(import.meta.url);
 
 const periodDays = Object.freeze({'1d': 1, '7d': 7, '30d': 30});
 const diagnosticStages = new Set(['START', 'CONFIG', 'BROWSER', 'PREAUTH', 'OIDC',
-  'SESSION', 'PAIRS', 'API', 'UI', 'STALE', 'FAULT', 'EVIDENCE']);
+  'SESSION', 'PAIRS', 'API', 'UI', 'STALE', 'STALE_TRIGGER', 'STALE_REQUEST',
+  'STALE_LOADING', 'STALE_SWITCH', 'STALE_SETTLED', 'STALE_VERIFY', 'FAULT', 'EVIDENCE']);
 const diagnosticClasses = new Set(['AssertionError', 'Error', 'TimeoutError', 'TypeError']);
 const diagnosticCodes = new Set([
   'U01_QA_ABSOLUTE_API_FORBIDDEN', 'U01_QA_ACTOR_MISMATCH',
@@ -225,6 +226,20 @@ if (process.argv.includes('--self-test')) {
   assert.equal(safeFailure(Object.assign(new Error('U01_QA_ISSUER_FAILED'),
     {name: 'AssertionError'}), 'OIDC'),
   'U01_QA_FAILURE stage=OIDC class=AssertionError code=U01_QA_ISSUER_FAILED');
+  assert.equal(safeFailure(Object.assign(new Error('timeout'), {name: 'TimeoutError'}),
+    'STALE_LOADING'),
+  'U01_QA_FAILURE stage=STALE_LOADING class=TimeoutError code=U01_QA_BROWSER_FAILED');
+  let selectedRole;
+  let selectedText;
+  scopedLoadingStatus({getByRole: role => {
+    selectedRole = role;
+    return {filter: options => {
+      selectedText = options.hasText;
+      return {waitFor: () => undefined};
+    }};
+  }});
+  assert.equal(selectedRole, 'status');
+  assert.equal(selectedText, '선택한 조합·기간 조회 중');
   process.stdout.write('U01_TWO_PAIR_SELF_TEST_PASS\n');
 } else {
   run().catch(error => {
@@ -283,6 +298,10 @@ function evidenceDirectory() {
     throw new Error('U01_QA_EVIDENCE_DIR_REJECTED');
   }
   return directory;
+}
+
+function scopedLoadingStatus(page) {
+  return page.getByRole('status').filter({hasText: '선택한 조합·기간 조회 중'});
 }
 
 async function run() {
@@ -418,36 +437,50 @@ async function run() {
         markStage('STALE');
         let releaseRequest;
         const delayedRequest = new Promise(resolve => { releaseRequest = resolve; });
+        let releaseResponse;
+        const delayedResponse = new Promise(resolve => { releaseResponse = resolve; });
         const delayedPath = scopedPath(config.pairA, '30d');
         const delayedPredicate = url => url.origin === config.app.origin
           && `${url.pathname}${url.search}` === delayedPath;
         await page.route(delayedPredicate, async route => {
           releaseRequest();
-          await new Promise(resolve => setTimeout(resolve, 900));
+          await delayedResponse;
           try { await route.continue(); } catch { /* An aborted stale request is expected. */ }
         });
-        await select.selectOption(JSON.stringify([config.pairA.projectId,
-          config.pairA.environmentId]));
-        await page.locator('#scoped-period').selectOption('30d');
-        await Promise.race([delayedRequest, new Promise((_, reject) => setTimeout(
-          () => reject(new Error('U01_QA_STALE_REQUEST_NOT_OBSERVED')), 5000))]);
-        await page.getByRole('status', {name: '선택한 조합·기간 조회 중'}).waitFor();
-        await select.selectOption(JSON.stringify([config.pairB.projectId,
-          config.pairB.environmentId]));
-        await page.locator('#scoped-period').selectOption('7d');
-        await page.waitForFunction(pairKey => {
-          const cards = [...document.querySelectorAll('.scoped-dashboard .status-card')];
-          const current = cards.find(item => item.querySelector('h3')?.textContent === '미해결 Critical');
-          return document.querySelector('#scoped-pair')?.value === pairKey
-            && document.querySelector('#scoped-period')?.value === '7d'
-            && current?.textContent?.includes('2건');
-        }, JSON.stringify([config.pairB.projectId, config.pairB.environmentId]));
-        await page.waitForTimeout(1000);
-        assert.equal(await select.inputValue(), JSON.stringify([config.pairB.projectId,
-          config.pairB.environmentId]), 'U01_QA_STALE_PAIR_RESTORED');
-        assert.equal(await page.locator('#scoped-period').inputValue(), '7d',
-          'U01_QA_STALE_PERIOD_RESTORED');
-        await page.unroute(delayedPredicate);
+        try {
+          markStage('STALE_TRIGGER');
+          assert.equal(await page.locator('#scoped-period').inputValue(), '30d',
+            'U01_QA_STALE_PERIOD_RESTORED');
+          await select.selectOption(JSON.stringify([config.pairA.projectId,
+            config.pairA.environmentId]));
+          markStage('STALE_REQUEST');
+          await Promise.race([delayedRequest, new Promise((_, reject) => setTimeout(
+            () => reject(new Error('U01_QA_STALE_REQUEST_NOT_OBSERVED')), 5000))]);
+          markStage('STALE_LOADING');
+          await scopedLoadingStatus(page).waitFor();
+          markStage('STALE_SWITCH');
+          await select.selectOption(JSON.stringify([config.pairB.projectId,
+            config.pairB.environmentId]));
+          await page.locator('#scoped-period').selectOption('7d');
+          releaseResponse();
+          markStage('STALE_SETTLED');
+          await page.waitForFunction(pairKey => {
+            const cards = [...document.querySelectorAll('.scoped-dashboard .status-card')];
+            const current = cards.find(item => item.querySelector('h3')?.textContent === '미해결 Critical');
+            return document.querySelector('#scoped-pair')?.value === pairKey
+              && document.querySelector('#scoped-period')?.value === '7d'
+              && current?.textContent?.includes('2건');
+          }, JSON.stringify([config.pairB.projectId, config.pairB.environmentId]));
+          markStage('STALE_VERIFY');
+          await page.waitForTimeout(1000);
+          assert.equal(await select.inputValue(), JSON.stringify([config.pairB.projectId,
+            config.pairB.environmentId]), 'U01_QA_STALE_PAIR_RESTORED');
+          assert.equal(await page.locator('#scoped-period').inputValue(), '7d',
+            'U01_QA_STALE_PERIOD_RESTORED');
+        } finally {
+          releaseResponse();
+          await page.unroute(delayedPredicate);
+        }
       }
       markStage('FAULT');
       let clientSimulatedFault = false;
