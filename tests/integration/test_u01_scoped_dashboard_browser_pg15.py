@@ -348,7 +348,9 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
     if result.returncode or f"U01_TWO_PAIR_{config['phase'].upper()}_PASS" not in result.stdout:
         stages = {"START", "CONFIG", "BROWSER", "PREAUTH", "OIDC", "SESSION", "PAIRS",
                   "API", "UI", "STALE", "STALE_TRIGGER", "STALE_REQUEST", "STALE_LOADING",
-                  "STALE_SWITCH", "STALE_SETTLED", "STALE_VERIFY", "FAULT", "EVIDENCE"}
+                  "STALE_SWITCH", "STALE_SETTLED", "STALE_VERIFY", "FAULT",
+                  "FAULT_TRIGGER", "FAULT_REQUEST", "FAULT_ALERT", "FAULT_RETRY",
+                  "FAULT_RECOVERED", "EVIDENCE"}
         classes = {"AssertionError", "Error", "TimeoutError", "TypeError"}
         codes = {
             "U01_QA_ABSOLUTE_API_FORBIDDEN", "U01_QA_ACTOR_MISMATCH",
@@ -799,6 +801,26 @@ def test_browser_failure_keeps_stale_await_substage(monkeypatch, tmp_path):
         _run_browser(config, tmp_path)
     assert str(caught.value) == (
         "U01_QA_BROWSER_FAILED stage=STALE_LOADING class=TimeoutError code=U01_QA_BROWSER_FAILED")
+
+
+def test_browser_failure_keeps_fault_alert_substage(monkeypatch, tmp_path):
+    sha = "a" * 40
+    command = ["docker", "exec", f"anvil-u01-qa-browser-{sha[:12]}", "node",
+               "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    config = {"source_sha": sha, "phase": "granted", "app_url": "https://anvil-f18-qa.local:8444/",
+              "issuer_url": "https://anvil-f18-qa.local:8444/realms/anvil",
+              "pair_a": {"projectId": "project-a", "environmentId": "test-a"},
+              "pair_b": {"projectId": "project-b", "environmentId": "test-b"},
+              "expected_role": "f19a-qa-reader-only", "other_role": f"f19a_qa_other_{sha[:12]}",
+              "browser_command": tuple(command)}
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: SimpleNamespace(
+        returncode=1, stdout="U01_QA_STAGE_FAULT\nU01_QA_STAGE_FAULT_ALERT\n",
+        stderr="U01_QA_FAILURE stage=FAULT_ALERT class=TimeoutError "
+               "code=U01_QA_BROWSER_FAILED\n"))
+    with pytest.raises(AssertionError) as caught:
+        _run_browser(config, tmp_path)
+    assert str(caught.value) == (
+        "U01_QA_BROWSER_FAILED stage=FAULT_ALERT class=TimeoutError code=U01_QA_BROWSER_FAILED")
 
 
 def test_phase_plan_requires_clean_before_and_exact_after_inventory():

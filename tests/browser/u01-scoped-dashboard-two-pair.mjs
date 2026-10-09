@@ -10,7 +10,9 @@ const require = createRequire(import.meta.url);
 const periodDays = Object.freeze({'1d': 1, '7d': 7, '30d': 30});
 const diagnosticStages = new Set(['START', 'CONFIG', 'BROWSER', 'PREAUTH', 'OIDC',
   'SESSION', 'PAIRS', 'API', 'UI', 'STALE', 'STALE_TRIGGER', 'STALE_REQUEST',
-  'STALE_LOADING', 'STALE_SWITCH', 'STALE_SETTLED', 'STALE_VERIFY', 'FAULT', 'EVIDENCE']);
+  'STALE_LOADING', 'STALE_SWITCH', 'STALE_SETTLED', 'STALE_VERIFY', 'FAULT',
+  'FAULT_TRIGGER', 'FAULT_REQUEST', 'FAULT_ALERT', 'FAULT_RETRY', 'FAULT_RECOVERED',
+  'EVIDENCE']);
 const diagnosticClasses = new Set(['AssertionError', 'Error', 'TimeoutError', 'TypeError']);
 const diagnosticCodes = new Set([
   'U01_QA_ABSOLUTE_API_FORBIDDEN', 'U01_QA_ACTOR_MISMATCH',
@@ -240,6 +242,20 @@ if (process.argv.includes('--self-test')) {
   }});
   assert.equal(selectedRole, 'status');
   assert.equal(selectedText, '선택한 조합·기간 조회 중');
+  let alertRole;
+  let alertText;
+  scopedFaultAlert({getByRole: role => {
+    alertRole = role;
+    return {filter: options => {
+      alertText = options.hasText;
+      return {waitFor: () => undefined};
+    }};
+  }});
+  assert.equal(alertRole, 'alert');
+  assert.equal(alertText, '조합·기간 자료를 확인할 수 없습니다.');
+  assert.equal(safeFailure(Object.assign(new Error('timeout'), {name: 'TimeoutError'}),
+    'FAULT_ALERT'),
+  'U01_QA_FAILURE stage=FAULT_ALERT class=TimeoutError code=U01_QA_BROWSER_FAILED');
   process.stdout.write('U01_TWO_PAIR_SELF_TEST_PASS\n');
 } else {
   run().catch(error => {
@@ -302,6 +318,10 @@ function evidenceDirectory() {
 
 function scopedLoadingStatus(page) {
   return page.getByRole('status').filter({hasText: '선택한 조합·기간 조회 중'});
+}
+
+function scopedFaultAlert(page) {
+  return page.getByRole('alert').filter({hasText: '조합·기간 자료를 확인할 수 없습니다.'});
 }
 
 async function run() {
@@ -489,19 +509,37 @@ async function run() {
         const faultPath = scopedPath(availablePair, '1d');
         const faultPredicate = url => url.origin === config.app.origin
           && `${url.pathname}${url.search}` === faultPath;
+        let releaseFaultRequest;
+        const faultRequest = new Promise(resolve => { releaseFaultRequest = resolve; });
         await page.route(faultPredicate, async route => {
           clientSimulatedFault = true;
           await route.fulfill({status: 503, contentType: 'application/json',
             body: JSON.stringify({error: {code: 'DASHBOARD_SOURCE_UNAVAILABLE',
               message: 'QA client-side simulated fault', request_id: 'qa-synthetic'}})});
+          releaseFaultRequest();
         });
-        await select.selectOption(JSON.stringify([availablePair.projectId,
-          availablePair.environmentId]));
-        await page.locator('#scoped-period').selectOption('1d');
-        await page.getByRole('alert', {name: '조합·기간 자료를 확인할 수 없습니다.'}).waitFor();
-        assert.equal(clientSimulatedFault, true, 'U01_QA_UI_FAULT_NOT_EXERCISED');
-        await page.unroute(faultPredicate);
+        try {
+          markStage('FAULT_TRIGGER');
+          assert.equal(await page.locator('#scoped-period').inputValue(), '7d',
+            'U01_QA_UI_PERIOD_MISMATCH');
+          await select.selectOption(JSON.stringify([availablePair.projectId,
+            availablePair.environmentId]));
+          await page.locator('#scoped-period').selectOption('1d');
+          markStage('FAULT_REQUEST');
+          await Promise.race([faultRequest, new Promise((_, reject) => setTimeout(
+            () => reject(new Error('U01_QA_UI_FAULT_NOT_EXERCISED')), 5000))]);
+          markStage('FAULT_ALERT');
+          await scopedFaultAlert(page).waitFor();
+          assert.equal(clientSimulatedFault, true, 'U01_QA_UI_FAULT_NOT_EXERCISED');
+          assert.ok(network.some(item => item.path === new URL(faultPath, config.app).pathname
+            && item.period === '1d' && item.status === 503),
+          'U01_QA_UI_FAULT_NOT_EXERCISED');
+        } finally {
+          await page.unroute(faultPredicate);
+        }
+        markStage('FAULT_RETRY');
         await page.getByRole('button', {name: '선택한 자료 다시 조회'}).click();
+        markStage('FAULT_RECOVERED');
         await page.waitForFunction(() => {
           const card = [...document.querySelectorAll('.scoped-dashboard .status-card')]
             .find(item => item.querySelector('h3')?.textContent === 'criticalDetected');
