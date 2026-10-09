@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 보고 통제 A 후보(Main, 2026-10-09 KST): Task3 H `95d79d9bed1187d1480e3f341984827a19028d40`과 그 직접 후손 R `1b732d79780d2ba986530f12db5baa183c690dda`를 분리해 고정했다. R은 정확 6문서의 미실행 보고이며 local/private 원격 동일·clean이다. 기존 Task3 closed G-05는 R을 Task3 H로 오인해 `U01_TASK3_CLOSE_GIT_INVALID`이므로 Task3 validator를 완화하지 않고 새 비제품 통제 route를 단일 Developer exact2에 배정한다. WI SHA `66B214A2A49C5CC75D886DA42363D1E65094571A58E690C78BA38D6C83F30C3B`, invocation SHA `614F0BA4C604BA4F6045E4AA04C2D3AA7422A1C875C8AD3ED697EB4684C99D75`, Event seq2305 WI→2306 worker→2307 write, epoch104 분리 token·24시간·제품 scope0이다. 이 A의 G-05/원격 게시·clean 전 Developer 코드 쓰기는 잠금이며 새 route 전 bootstrap RED는 PASS가 아니다. WSL-server SSH는 TCP 연결 뒤 배너가 오지 않아 실제 PG15/OIDC/HTTPS/Chromium·브라우저는 여전히 미실행, U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
+
 U-01 이번 계획 주기 결과(Main, 2026-10-09 KST): Task3 H `95d79d9bed1187d1480e3f341984827a19028d40` local/private 동일·clean·G-05 seq2304 PASS를 확인했다. Task4의 `ssh WSL-server`가 배너 시간 초과(exit1)이므로 실제 PG15/OIDC/HTTPS/Chromium·브라우저/Network·DB row, E-SHOT/E-NET/E-API/E-AUD와 독립 환경 인수는 미실행이다. `design_change.md` DC-U01-003/004/005 및 U-01 결과보고·manifest에 재개 조건을 남겼다. 후속 보고 문서의 현재 G-05는 `U01_TASK3_CLOSE_GIT_INVALID` exit1이며 Task3 H의 과거 PASS를 최신 GREEN으로 오인하지 않는다. 독립 read-only 검토도 필수 환경 증거 부재로 NOT_ACCEPTED다. 이번 주기 완료보고는 수직 제품 인수가 아니며 machine summary는 Task3 CLOSED_TASK4_PENDING, U-01 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED를 유지한다. PR/main 병합·merged-main smoke·branch/worktree 삭제·U-02·ysna-server 작업은 실행하지 않는다.
 
 Task3 H 종료 후보(Main, 2026-10-09 KST): 제품 P `e68fd149f3af5d5e72e3ee2b9e14e34358687921` local/private 동일·clean·G-05 seq2302 PASS를 확인한 뒤 Event 원문 seq1~2302를 보존하고 seq2303 write→2304 worker lease를 회수했다. 두 임대는 REVOKED, 활성 agent/worker/write는 null이며 Task3 UI 로컬 절편만 CLOSED_TASK4_PENDING이다. Developer/Main Web 103 PASS·typecheck/lint/build exit0, API 61 PASS/2 warnings, 독립 리뷰 C0/I0/M0의 한정된 증거를 유지한다. 실제 WSL-server PG15/OIDC/HTTPS/Chromium/브라우저·Task4 독립 수락·PR/main은 미검증·미실행이다. 이 H의 G-05·private 게시·clean은 아직 별도 확인 전이며, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
@@ -152,17 +154,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2304,
-  "last_event_id": "evt_u01_2304_scoped_dashboard_task3_worker_lease_revoked",
+  "event_sequence": 2307,
+  "last_event_id": "evt_u01_2307_task4_report_control_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-report-control",
+  "worker_lease": "worker-lease-u01-task4-report-control-bf68bfe70a914a39a12706d7c1dc70d1",
+  "write_lease": "write-lease-u01-task4-report-control-b391c4f7517545caaa0c1091b6acaaf1",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK4_DUAL_LEASE_PENDING",
-  "repository_head": "a8db53ba0cfa3596ab196e5d21de491d2ce586ce",
+  "next_safe_action": "U01_TASK4_REPORT_CONTROL_ONLY",
+  "repository_head": "1b732d79780d2ba986530f12db5baa183c690dda",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
