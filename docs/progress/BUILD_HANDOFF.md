@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 보고 통제 H 종료 후보(Main, 2026-10-09 KST): B `c8569e037422d05999fec21b5c28abb1c3c30c57`의 G-05 seq2307 PASS, 기존 branch/private 원격 동일·clean을 확인했다. 동일 epoch104의 write lease를 Event seq2308로 먼저 회수하고 worker lease를 seq2309로 회수한다. 종료 이유는 `U01_TASK4_REPORT_CONTROL_COMPLETE_WSL_QA_PENDING`이며 제품 범위0과 U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED를 유지한다. 이 H의 G-05·원격 게시·clean 전에는 Task4 통제 종료가 아니다. SSH 복구 후 A SHA의 격리 예비 PG15/Web 시험은 통과했지만 실제 OIDC/HTTPS/Chromium·두 pair 화면/Network·독립 수락과 PR/main은 여전히 미실행이다. 다음은 현재 정확 SHA를 WSL-server가 Git으로 수신한 격리 실측이며 ysna-server는 제외한다.
+
 Task4 보고 통제 C/B 후보(Main, 2026-10-09 KST): 단일 Developer가 epoch104의 정확 통제2만 변경했다. 집중9 PASS, 인접7 전체290 PASS/0 FAIL/0 SKIP(exit0), Main 실제 활성 G-05 seq2307 PASS와 diff check0, 변경 줄 Ruff 신규0을 확인했다. C `3f246de25dcacfb1149d3b480e36aa08161c5c26`는 기존 branch와 개발 원격이 동일하고 로컬 추적 변경0이다. 본 B는 C를 결박해 write→worker 순차 회수만 허용하는 후보이며 자체 G-05/원격 게시 전 종료로 승격하지 않는다. WSL-server SSH는 재확인에서 exit0으로 회복됐다. 별도 Git exact A `023369b5`의 격리 예비 검증은 Web 103 PASS·typecheck/lint/build exit0, API/Reader 36 PASS, PG15 등록·철회 2 PASS와 U-01 빈 pair 1 PASS다. 첫 PG15 Reader 실패는 SQLAlchemy DSN을 psycopg 직접 연결에 잘못 준 실행 설정 오류였고 정정 재실행 exit0이다. 전용 tmpfs PG15 컨테이너 제거·5545 해제 확인, 전용 가상환경·dist 제거, QA checkout은 clean detached A로 보존했다. 이는 최종 C/B/H SHA의 OIDC/HTTPS/Chromium·두 pair 화면/Network·독립 수락이 아니므로 U-01 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED다. 기존 공유 WSL checkout, ysna-server, 운영은 변경하지 않는다.
 
 Task4 보고 통제 A 후보(Main, 2026-10-09 KST): Task3 H `95d79d9bed1187d1480e3f341984827a19028d40`과 그 직접 후손 R `1b732d79780d2ba986530f12db5baa183c690dda`를 분리해 고정했다. R은 정확 6문서의 미실행 보고이며 local/private 원격 동일·clean이다. 기존 Task3 closed G-05는 R을 Task3 H로 오인해 `U01_TASK3_CLOSE_GIT_INVALID`이므로 Task3 validator를 완화하지 않고 새 비제품 통제 route를 단일 Developer exact2에 배정한다. WI SHA `66B214A2A49C5CC75D886DA42363D1E65094571A58E690C78BA38D6C83F30C3B`, invocation SHA `614F0BA4C604BA4F6045E4AA04C2D3AA7422A1C875C8AD3ED697EB4684C99D75`, Event seq2305 WI→2306 worker→2307 write, epoch104 분리 token·24시간·제품 scope0이다. 이 A의 G-05/원격 게시·clean 전 Developer 코드 쓰기는 잠금이며 새 route 전 bootstrap RED는 PASS가 아니다. WSL-server SSH는 TCP 연결 뒤 배너가 오지 않아 실제 PG15/OIDC/HTTPS/Chromium·브라우저는 여전히 미실행, U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
@@ -156,16 +158,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2307,
-  "last_event_id": "evt_u01_2307_task4_report_control_write_lease_issued",
+  "event_sequence": 2309,
+  "last_event_id": "evt_u01_2309_task4_report_control_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-report-control",
-  "worker_lease": "worker-lease-u01-task4-report-control-bf68bfe70a914a39a12706d7c1dc70d1",
-  "write_lease": "write-lease-u01-task4-report-control-b391c4f7517545caaa0c1091b6acaaf1",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_REPORT_CONTROL_CLOSE_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK4_WSL_QA_PENDING",
   "repository_head": "3f246de25dcacfb1149d3b480e36aa08161c5c26",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

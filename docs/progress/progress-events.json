@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2307,
+  "last_sequence": 2309,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -105187,7 +105187,49 @@
       "product_write_scope": [],
       "write_epoch": 104
     }
+  },
+  {
+    "sequence": 2308,
+    "event_id": "evt_u01_2308_task4_report_control_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_TASK4_REPORT_CONTROL_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK4-REPORT-CONTROL",
+    "occurred_at": "2026-10-09T12:18:35+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "F7EFC86FA5F4B7A683C0AD2A1DDD882DCBFA147CD6D14A090B9AEA91181F02ED",
+    "details": {
+      "lease_id": "write-lease-u01-task4-report-control-b391c4f7517545caaa0c1091b6acaaf1",
+      "write_fencing_token": "u01-task4-report-control-write-fence-epoch-104-b391c4f7517545caaa0c1091b6acaaf1",
+      "reason": "U01_TASK4_REPORT_CONTROL_COMPLETE_WSL_QA_PENDING"
+    }
+  },
+  {
+    "sequence": 2309,
+    "event_id": "evt_u01_2309_task4_report_control_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_TASK4_REPORT_CONTROL_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK4-REPORT-CONTROL",
+    "occurred_at": "2026-10-09T12:18:35+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "04EFD8CA5CABFE84DC00655CDDB62CAB7F83E3076B5DC47143D117542BED1EDC",
+    "details": {
+      "lease_id": "worker-lease-u01-task4-report-control-bf68bfe70a914a39a12706d7c1dc70d1",
+      "execution_fencing_token": "u01-task4-report-control-execution-fence-epoch-104-bf68bfe70a914a39a12706d7c1dc70d1",
+      "reason": "U01_TASK4_REPORT_CONTROL_COMPLETE_WSL_QA_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2307_task4_report_control_write_lease_issued"
+  "last_event_id": "evt_u01_2309_task4_report_control_worker_lease_revoked"
 }
