@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 두 정확 pair 수직 QA epoch106 A 후보(Main, 2026-10-10 KST): H2 `231bf84c843679b4eb47ea0ab09f070a31171129`는 기존 branch/private 동일·clean·G-05 seq2314 PASS, 활성 lease0이다. 새 WI/invocation SHA `CF783E2D06EBF445DFD70D36EF39B9B78A7ECC4D18391811F6805C83D74CA89A`/`66D56A004296405EB3425402A87FA6A211504B929BEE81CB61419F593B592654`는 승인 Task4의 두 pair opt-in 하네스만 연다. Event 원문 seq1~2314를 보존해 seq2315 WI→2316 worker→2317 write, epoch106 별도 token·24시간·정확 신규 시험2경로를 발급한다. A 정합성·원격 게시/clean 전 Developer 쓰기 금지, 새 route 이전 G-05 RED는 PASS가 아니다. 기존 R6 `STORED_ROW` 정확 assertion은 미확정이고 역사 시험은 수정하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 A 검증·게시→로컬 RED→GREEN→정확 SHA WSL-server 실제 수직 QA다.
+
 Task4 WSL 보고 successor H2 종료 후보(Main, 2026-10-10 KST): C `5ea421a7b95cad4015087328dcef8e0a2a5c5c9a`와 B `be491207bed19202755fab106aa017bfc2794656`는 local/private 동일·clean이며 B G-05 seq2312 PASS다. Event 원문 seq1~2312를 보존하고 `2026-10-09T15:52:20+00:00`에 seq2313 write→2314 worker lease를 순차 회수해 완료 둘 REVOKED·활성 agent/token null로 투영한다. 본 H2의 G-05·실원격 게시·clean 전에는 다음 제품 dual lease를 발급하지 않는다. U-01 실제 두 pair OIDC/HTTPS/Chromium·DB/API/화면/Network와 R6 STORED_ROW 원인 분리·독립 인수는 미완료다. U-01 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 H2 검증·게시 후 동일 기존 branch에서 별도 실제 수직 QA다.
 
 Task4 WSL 보고 successor C/B 후보(Main, 2026-10-10 KST): epoch105 Developer 정확 통제2파일의 최종 인접7 298 PASS/0 FAIL/0 ERROR(exit0), 집중10 PASS, Main G-05 seq2312 PASS·diff check0, 변경 위치 Ruff 신규0이다. 최초 제한 채널 인접7의 2 FAIL은 역사 epoch104 Git fixture의 현재 blob 혼용을 mock에서 보정했고 5 ERROR는 R48 임시 clone 권한 채널로 분리했으며, 최종 elevated 전체 GREEN으로 다시 확인했다. C `5ea421a7b95cad4015087328dcef8e0a2a5c5c9a`는 정확2파일만 기존 branch/private 원격 동일·clean 게시됐다. 본 B는 C 결박·seq2312 유지의 종료 준비 투영으로, B 자체 G-05·실원격 게시/clean 전 seq2313 write→2314 worker 회수는 금지한다. U-01 실제 두 pair OIDC/HTTPS/Chromium·DB/API/화면/Network 인수와 R6 STORED_ROW 분리는 아직 완료되지 않았다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 B 검증·게시 후 lease 순차 회수와 별도 실제 수직 QA다.
@@ -166,17 +168,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2314,
-  "last_event_id": "evt_u01_2314_task4_wsl_report_successor_worker_lease_revoked",
+  "event_sequence": 2317,
+  "last_event_id": "evt_u01_2317_task4_two_pair_qa_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-two-pair-qa",
+  "worker_lease": "worker-lease-u01-task4-two-pair-qa-68cf32d79c1b44e08847190ff3a06568",
+  "write_lease": "write-lease-u01-task4-two-pair-qa-b02f20217460473b884e4fc197c5445f",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TWO_PAIR_QA_DUAL_LEASE_PENDING",
-  "repository_head": "5ea421a7b95cad4015087328dcef8e0a2a5c5c9a",
+  "next_safe_action": "U01_TASK4_TWO_PAIR_QA_HARNESS_ONLY",
+  "repository_head": "231bf84c843679b4eb47ea0ab09f070a31171129",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
