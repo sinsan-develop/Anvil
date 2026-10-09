@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-scoped-dashboard-task3-product-seq2302",
-  "event_sequence": 2302,
-  "updated_at": "2026-10-09T08:49:33+00:00",
-  "last_event_id": "evt_u01_2302_scoped_dashboard_task3_write_lease_issued",
+  "snapshot_id": "snapshot-u01-scoped-dashboard-task3-close-seq2304",
+  "event_sequence": 2304,
+  "updated_at": "2026-10-09T08:59:00+00:00",
+  "last_event_id": "evt_u01_2304_scoped_dashboard_task3_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-scoped-dashboard-task3",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {"lease_id":"write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a","worker_lease_id":"worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-WHITESPACE-GATE","status":"REVOKED","issued_at":"2026-10-08T10:25:19+00:00","expires_at":"2026-10-09T10:25:19+00:00","lease_epoch":96,"fencing_token":"f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a","write_fencing_token":"f19a-integration-whitespace-gate-write-fence-epoch-96-bea73da9cb1a449f9fd134ce3231099a","execution_fencing_token":"f19a-integration-whitespace-gate-execution-fence-epoch-96-b24a7ec56b8c4613b464537dacf3419a","baseline_git_commit":"3f0f51100d66283e39fca61ec944aabbe28467cf","dispatch_head":"3f0f51100d66283e39fca61ec944aabbe28467cf","path_scope":[".gitattributes","scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":96,"revoked_at":"2026-10-08T11:20:19+00:00"},
   "completed_f19a_integration_main_sync_write_lease": {"lease_id":"write-lease-f19a-integration-main-sync-bb4da003b3794304b37b768b2a98db10","worker_lease_id":"worker-lease-f19a-integration-main-sync-c2ed1ab8b74c4baa875434426fa7b8c8","actor_id":"developer-primary-f19a-pair-grant","subject_ref":"F-19A/INTEGRATION-MAIN-SYNC","status":"REVOKED","issued_at":"2026-10-08T08:43:22+00:00","expires_at":"2026-10-09T08:43:22+00:00","lease_epoch":95,"fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","write_fencing_token":"f19a-integration-main-sync-write-fence-epoch-95-bb4da003b3794304b37b768b2a98db10","execution_fencing_token":"f19a-integration-main-sync-execution-fence-epoch-95-c2ed1ab8b74c4baa875434426fa7b8c8","baseline_git_commit":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","dispatch_head":"5aafbafd371137ac94fbbe3543f9ec6311b07eda","path_scope":["scripts/check_project_progress.py","tests/tooling/test_f20_u01_r48_close_projection.py"],"product_write_scope":[],"write_epoch":95,"revoked_at":"2026-10-08T10:18:42+00:00"},
   "completed_f19a_acceptance_control_write_lease": {
@@ -278,7 +278,8 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": {"lease_id":"write-lease-u01-scoped-dashboard-task3-e833b55c13a047b78cf34cd5085fdbbd","worker_lease_id":"worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb","actor_id":"developer-primary-u01-scoped-dashboard-task3","subject_ref":"U-01/SCOPED-DASHBOARD-TASK3","status":"ACTIVE","issued_at":"2026-10-09T05:51:14+00:00","expires_at":"2026-10-10T05:51:14+00:00","lease_epoch":103,"fencing_token":"u01-scoped-dashboard-task3-write-fence-epoch-103-e833b55c13a047b78cf34cd5085fdbbd","write_fencing_token":"u01-scoped-dashboard-task3-write-fence-epoch-103-e833b55c13a047b78cf34cd5085fdbbd","execution_fencing_token":"u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb","baseline_git_commit":"36ba79fca821bb38e2585f76f96e3933f915400e","dispatch_head":"36ba79fca821bb38e2585f76f96e3933f915400e","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","apps/web/src/console/App.tsx","apps/web/src/console/app-shell.css","apps/web/tests/f15-console.test.mjs"],"product_write_scope":["apps/web/src/console/App.tsx","apps/web/src/console/app-shell.css","apps/web/tests/f15-console.test.mjs"],"product_gate":"LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN","write_epoch":103},
+  "write_lease": null,
+  "completed_u01_scoped_dashboard_task3_write_lease": {"lease_id":"write-lease-u01-scoped-dashboard-task3-e833b55c13a047b78cf34cd5085fdbbd","worker_lease_id":"worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb","actor_id":"developer-primary-u01-scoped-dashboard-task3","subject_ref":"U-01/SCOPED-DASHBOARD-TASK3","status":"REVOKED","issued_at":"2026-10-09T05:51:14+00:00","expires_at":"2026-10-10T05:51:14+00:00","lease_epoch":103,"fencing_token":"u01-scoped-dashboard-task3-write-fence-epoch-103-e833b55c13a047b78cf34cd5085fdbbd","write_fencing_token":"u01-scoped-dashboard-task3-write-fence-epoch-103-e833b55c13a047b78cf34cd5085fdbbd","execution_fencing_token":"u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb","baseline_git_commit":"36ba79fca821bb38e2585f76f96e3933f915400e","dispatch_head":"36ba79fca821bb38e2585f76f96e3933f915400e","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","apps/web/src/console/App.tsx","apps/web/src/console/app-shell.css","apps/web/tests/f15-console.test.mjs"],"product_write_scope":["apps/web/src/console/App.tsx","apps/web/src/console/app-shell.css","apps/web/tests/f15-console.test.mjs"],"product_gate":"LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN","write_epoch":103,"revoked_at":"2026-10-09T08:59:00+00:00"},
   "completed_u01_scoped_dashboard_task2_write_lease": {"lease_id":"write-lease-u01-scoped-dashboard-task2-1fe2db4bf402414d9788275789fc41e0","worker_lease_id":"worker-lease-u01-scoped-dashboard-task2-466f8961ccbc45608c5a92d103616d5a","actor_id":"developer-primary-u01-scoped-dashboard-task2","subject_ref":"U-01/SCOPED-DASHBOARD-TASK2","status":"REVOKED","issued_at":"2026-10-09T02:41:21+00:00","expires_at":"2026-10-10T02:41:21+00:00","lease_epoch":102,"fencing_token":"u01-scoped-dashboard-task2-write-fence-epoch-102-1fe2db4bf402414d9788275789fc41e0","write_fencing_token":"u01-scoped-dashboard-task2-write-fence-epoch-102-1fe2db4bf402414d9788275789fc41e0","execution_fencing_token":"u01-scoped-dashboard-task2-execution-fence-epoch-102-466f8961ccbc45608c5a92d103616d5a","baseline_git_commit":"10b7edf500699eeab91eb2c9b03988a6a2f4c34b","dispatch_head":"10b7edf500699eeab91eb2c9b03988a6a2f4c34b","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","packages/api/scoped_dashboard.py","packages/api/fastapi_app.py","packages/observability/service.py","packages/persistence/operations_repository.py","apps/api/anvil_api/oidc_process.py","tests/api/test_u01_scoped_dashboard_api.py","tests/api/test_u01_scoped_dashboard_reader.py","tests/api/test_oidc_process.py","tests/api/test_oidc_asgi_binding.py","tests/observability/test_f13_operations.py","tests/persistence/test_f14_operations_repository.py","tests/integration/test_u01_scoped_dashboard_pg15.py"],"product_write_scope":["packages/api/scoped_dashboard.py","packages/api/fastapi_app.py","packages/observability/service.py","packages/persistence/operations_repository.py","apps/api/anvil_api/oidc_process.py","tests/api/test_u01_scoped_dashboard_api.py","tests/api/test_u01_scoped_dashboard_reader.py","tests/api/test_oidc_process.py","tests/api/test_oidc_asgi_binding.py","tests/observability/test_f13_operations.py","tests/persistence/test_f14_operations_repository.py","tests/integration/test_u01_scoped_dashboard_pg15.py"],"product_gate":"LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN","write_epoch":102,"revoked_at":"2026-10-09T05:38:25+00:00"},
   "completed_u01_scoped_dashboard_task1_write_lease": {"lease_id":"write-lease-u01-scoped-dashboard-task1-034e4a9ed3af4de7b6cc3a7f07140834","worker_lease_id":"worker-lease-u01-scoped-dashboard-task1-fb010beda94d44a7a8d874089da9b12e","actor_id":"developer-primary-u01-scoped-dashboard-task1","subject_ref":"U-01/SCOPED-DASHBOARD-TASK1","status":"REVOKED","issued_at":"2026-10-09T00:10:55+00:00","expires_at":"2026-10-10T00:10:55+00:00","lease_epoch":101,"fencing_token":"u01-scoped-dashboard-task1-write-fence-epoch-101-034e4a9ed3af4de7b6cc3a7f07140834","write_fencing_token":"u01-scoped-dashboard-task1-write-fence-epoch-101-034e4a9ed3af4de7b6cc3a7f07140834","execution_fencing_token":"u01-scoped-dashboard-task1-execution-fence-epoch-101-fb010beda94d44a7a8d874089da9b12e","baseline_git_commit":"ba8c9c3c4e31c5334e658c40787f019925c8c5a6","dispatch_head":"ba8c9c3c4e31c5334e658c40787f019925c8c5a6","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","packages/persistence/f19a_registration_repository.py","packages/api/f19a_registration.py","packages/api/registry.py","packages/api/fastapi_app.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/persistence/test_f19a_registration_repository.py","tests/api/test_f19a_registration_api.py","tests/api/test_u01_scoped_dashboard_api.py"],"product_write_scope":["packages/persistence/f19a_registration_repository.py","packages/api/f19a_registration.py","packages/api/registry.py","packages/api/fastapi_app.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/persistence/test_f19a_registration_repository.py","tests/api/test_f19a_registration_api.py","tests/api/test_u01_scoped_dashboard_api.py"],"product_gate":"LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN","write_epoch":101,"revoked_at":"2026-10-09T02:28:58+00:00"},
   "completed_u01_scoped_dashboard_historical_fixture_write_lease": {
@@ -497,7 +498,8 @@
     "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py", "tests/tooling/test_f19a_start_projection.py", "tests/tooling/test_f19a_document_successor_projection.py", "tests/tooling/test_f20_u01_contract_successor_projection.py", "tests/tooling/test_f20_u01_r48_close_projection.py"],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": {"lease_id":"worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb","actor_id":"developer-primary-u01-scoped-dashboard-task3","subject_ref":"U-01/SCOPED-DASHBOARD-TASK3","status":"ACTIVE","issued_at":"2026-10-09T05:51:14+00:00","expires_at":"2026-10-10T05:51:14+00:00","lease_epoch":103,"fencing_token":"u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb","execution_fencing_token":"u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb","baseline_git_commit":"36ba79fca821bb38e2585f76f96e3933f915400e","dispatch_head":"36ba79fca821bb38e2585f76f96e3933f915400e","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","apps/web/src/console/App.tsx","apps/web/src/console/app-shell.css","apps/web/tests/f15-console.test.mjs"]},
+  "worker_lease": null,
+  "completed_u01_scoped_dashboard_task3_worker_lease": {"lease_id":"worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb","actor_id":"developer-primary-u01-scoped-dashboard-task3","subject_ref":"U-01/SCOPED-DASHBOARD-TASK3","status":"REVOKED","issued_at":"2026-10-09T05:51:14+00:00","expires_at":"2026-10-10T05:51:14+00:00","lease_epoch":103,"fencing_token":"u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb","execution_fencing_token":"u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb","baseline_git_commit":"36ba79fca821bb38e2585f76f96e3933f915400e","dispatch_head":"36ba79fca821bb38e2585f76f96e3933f915400e","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","apps/web/src/console/App.tsx","apps/web/src/console/app-shell.css","apps/web/tests/f15-console.test.mjs"],"revoked_at":"2026-10-09T08:59:00+00:00"},
   "completed_u01_scoped_dashboard_task2_worker_lease": {"lease_id":"worker-lease-u01-scoped-dashboard-task2-466f8961ccbc45608c5a92d103616d5a","actor_id":"developer-primary-u01-scoped-dashboard-task2","subject_ref":"U-01/SCOPED-DASHBOARD-TASK2","status":"REVOKED","issued_at":"2026-10-09T02:41:21+00:00","expires_at":"2026-10-10T02:41:21+00:00","lease_epoch":102,"fencing_token":"u01-scoped-dashboard-task2-execution-fence-epoch-102-466f8961ccbc45608c5a92d103616d5a","execution_fencing_token":"u01-scoped-dashboard-task2-execution-fence-epoch-102-466f8961ccbc45608c5a92d103616d5a","baseline_git_commit":"10b7edf500699eeab91eb2c9b03988a6a2f4c34b","dispatch_head":"10b7edf500699eeab91eb2c9b03988a6a2f4c34b","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","packages/api/scoped_dashboard.py","packages/api/fastapi_app.py","packages/observability/service.py","packages/persistence/operations_repository.py","apps/api/anvil_api/oidc_process.py","tests/api/test_u01_scoped_dashboard_api.py","tests/api/test_u01_scoped_dashboard_reader.py","tests/api/test_oidc_process.py","tests/api/test_oidc_asgi_binding.py","tests/observability/test_f13_operations.py","tests/persistence/test_f14_operations_repository.py","tests/integration/test_u01_scoped_dashboard_pg15.py"],"revoked_at":"2026-10-09T05:38:25+00:00"},
   "completed_u01_scoped_dashboard_task1_worker_lease": {"lease_id":"worker-lease-u01-scoped-dashboard-task1-fb010beda94d44a7a8d874089da9b12e","actor_id":"developer-primary-u01-scoped-dashboard-task1","subject_ref":"U-01/SCOPED-DASHBOARD-TASK1","status":"REVOKED","issued_at":"2026-10-09T00:10:55+00:00","expires_at":"2026-10-10T00:10:55+00:00","lease_epoch":101,"fencing_token":"u01-scoped-dashboard-task1-execution-fence-epoch-101-fb010beda94d44a7a8d874089da9b12e","execution_fencing_token":"u01-scoped-dashboard-task1-execution-fence-epoch-101-fb010beda94d44a7a8d874089da9b12e","baseline_git_commit":"ba8c9c3c4e31c5334e658c40787f019925c8c5a6","dispatch_head":"ba8c9c3c4e31c5334e658c40787f019925c8c5a6","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","packages/persistence/f19a_registration_repository.py","packages/api/f19a_registration.py","packages/api/registry.py","packages/api/fastapi_app.py","apps/api/anvil_api/asgi.py","apps/api/anvil_api/oidc_process.py","tests/persistence/test_f19a_registration_repository.py","tests/api/test_f19a_registration_api.py","tests/api/test_u01_scoped_dashboard_api.py"],"revoked_at":"2026-10-09T02:28:58+00:00"},
   "completed_u01_scoped_dashboard_historical_fixture_worker_lease": {
@@ -889,7 +891,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CLOSE_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK4_DUAL_LEASE_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1004,9 +1006,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "a8db53ba0cfa3596ab196e5d21de491d2ce586ce",
-    "projection_mode": "U01_SCOPED_DASHBOARD_TASK3_ACTIVE",
+    "projection_mode": "U01_SCOPED_DASHBOARD_TASK3_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "head_relation": "U01_SCOPED_DASHBOARD_TASK3_CLOSED_TASK4_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1440,7 +1442,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": ["apps/web/src/console/App.tsx", "apps/web/src/console/app-shell.css", "apps/web/tests/f15-console.test.mjs"],
-    "worktree_status": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "worktree_status": "U01_SCOPED_DASHBOARD_TASK3_CLOSED_TASK4_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1606,8 +1608,8 @@
     "path": "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK3_WORK_INSTRUCTION.md",
     "sha256": "122C17F35618671957AD251A5C4A2824C920C520616D4733F209258385A2350A",
     "revision": 1,
-    "result_status": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_CHECKPOINTED_CLOSE_READY",
-    "package_status": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "result_status": "U01_SCOPED_DASHBOARD_TASK3_CLOSED_TASK4_PENDING",
+    "package_status": "U01_SCOPED_DASHBOARD_TASK3_CLOSED_TASK4_PENDING",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "HUMAN_APPROVED_EXACT_PROPOSAL_B"
   },
@@ -1793,12 +1795,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CCF39D5BF927189B642C97161022BFEE7BFD145AF3F2A6842EC80FC7C071D4B5"
+      "sha256": "5BEEC9B8F93B46504D3F8BC8DE5A0674998DCF859E5100BA53D01F7C0D2473D3"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_CHECKPOINTED_CLOSE_READY"
+    "status": "U01_SCOPED_DASHBOARD_TASK3_CLOSED_TASK4_PENDING"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2190,8 +2192,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "BE46810B8A9BB306D516B09D33BD16C94C6602DF93FBC46B47B82058FEF24907",
-  "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK3_CLOSE_ONLY",
+  "snapshot_hash": "D7F9D8484CBAB4B3FD35E08BF366E81961F5BFEF6BBECFCCAD33474F328D9455",
+  "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK4_DUAL_LEASE_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23738,7 +23740,7 @@
     "production": "NOT_EXECUTED"
   },
   "u01_scoped_dashboard_task3_binding": {
-    "status": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_CHECKPOINTED_CLOSE_READY",
+    "status": "U01_SCOPED_DASHBOARD_TASK3_CLOSED_TASK4_PENDING",
     "package_id": "U-01",
     "predecessor_sequence": 2299,
     "predecessor_head": "36ba79fca821bb38e2585f76f96e3933f915400e",
@@ -23766,8 +23768,9 @@
     "control_checkpoint": "a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a",
     "control_projection_checkpoint": "db70d1bd116fc472eaa361756d45ab2586be9638",
     "product_code_checkpoint": "a8db53ba0cfa3596ab196e5d21de491d2ce586ce",
-    "event_sequence": 2302,
-    "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CLOSE_ONLY",
+    "event_sequence": 2304,
+    "next_safe_action": "U01_SCOPED_DASHBOARD_TASK4_DUAL_LEASE_PENDING",
+    "active_projection_checkpoint": "e68fd149f3af5d5e72e3ee2b9e14e34358687921",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "HUMAN_APPROVED_EXACT_PROPOSAL_B",
     "release_decision": "DEFER",

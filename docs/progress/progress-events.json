@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2302,
+  "last_sequence": 2304,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -105046,7 +105046,49 @@
       "product_gate": "LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN",
       "write_epoch": 103
     }
+  },
+  {
+    "sequence": 2303,
+    "event_id": "evt_u01_2303_scoped_dashboard_task3_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_TASK3_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK3",
+    "occurred_at": "2026-10-09T08:59:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "8DDD2E582D7866E8B39AA71146E61F1E8BC9011F455089DB80F360ABF4617CDD",
+    "details": {
+      "lease_id": "write-lease-u01-scoped-dashboard-task3-e833b55c13a047b78cf34cd5085fdbbd",
+      "write_fencing_token": "u01-scoped-dashboard-task3-write-fence-epoch-103-e833b55c13a047b78cf34cd5085fdbbd",
+      "reason": "U01_SCOPED_DASHBOARD_TASK3_UI_VERIFIED_TASK4_PENDING"
+    }
+  },
+  {
+    "sequence": 2304,
+    "event_id": "evt_u01_2304_scoped_dashboard_task3_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_TASK3_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK3",
+    "occurred_at": "2026-10-09T08:59:00+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "6C1B2B3E42B2BBC9006A6A7551F008E6404B494A8D4CD9605BB3C0ADBC4C65E4",
+    "details": {
+      "lease_id": "worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb",
+      "execution_fencing_token": "u01-scoped-dashboard-task3-execution-fence-epoch-103-d9757e0873074877a873b66005caa5eb",
+      "reason": "U01_SCOPED_DASHBOARD_TASK3_UI_VERIFIED_TASK4_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2302_scoped_dashboard_task3_write_lease_issued"
+  "last_event_id": "evt_u01_2304_scoped_dashboard_task3_worker_lease_revoked"
 }

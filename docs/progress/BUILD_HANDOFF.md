@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task3 H 종료 후보(Main, 2026-10-09 KST): 제품 P `e68fd149f3af5d5e72e3ee2b9e14e34358687921` local/private 동일·clean·G-05 seq2302 PASS를 확인한 뒤 Event 원문 seq1~2302를 보존하고 seq2303 write→2304 worker lease를 회수했다. 두 임대는 REVOKED, 활성 agent/worker/write는 null이며 Task3 UI 로컬 절편만 CLOSED_TASK4_PENDING이다. Developer/Main Web 103 PASS·typecheck/lint/build exit0, API 61 PASS/2 warnings, 독립 리뷰 C0/I0/M0의 한정된 증거를 유지한다. 실제 WSL-server PG15/OIDC/HTTPS/Chromium/브라우저·Task4 독립 수락·PR/main은 미검증·미실행이다. 이 H의 G-05·private 게시·clean은 아직 별도 확인 전이며, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
+
 Task3 제품 D/P 후보(Main, 2026-10-09 KST): 통제 B `db70d1bd116fc472eaa361756d45ab2586be9638` local/private 동일·clean·G-05 seq2302 PASS 후 단일 Developer가 정확 제품3에서 scoped pair/기간 선택·same-origin 요청·AbortController+request identity·근거 있는 current/occurrences·오류 재조회를 RED→GREEN 구현했다. 독립 UI 검토의 출처/시각 기준·Critical 상태, audit 시각/Action 포함, owner count/items 관계 중요 문제를 모두 보완해 최종 C0/I0/M0이다. Developer와 Main 각각 Web 103 PASS·typecheck/lint/build exit0, 인접 API 61 PASS/2 warnings(exit0), diff check0. 최종 제품 D `a8db53ba0cfa3596ab196e5d21de491d2ce586ce`는 같은 branch/private 원격 동일·clean이며 build 산출물 dist 3개는 정확 확인 후 정리했다. 이 P는 C/B/D와 seq2302 활성 dual lease를 보존해 종료 준비만 투영한다. P G-05·원격 게시/clean 및 write→worker 회수 전 Task3 종료는 아니다. 실제 WSL-server PG15/OIDC/HTTPS/Chromium/브라우저·Task4/PR/main은 미검증·미실행, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
 
 Task3 통제 C/B 후보(Main, 2026-10-09 KST): A2 `570ca31d521516d247edc4d32be21a066d883d11` 이후 단일 Developer가 정확 통제2에서 Task3 A/C/B/D/P/H fail-closed route와 Git 계보·위조 음성을 TDD했다. 초기 Important 테스트 공백은 추가 음성2 PASS로 보완했고 독립 재검토 Critical0/Important0이다. 최종 집중10 PASS/414.64초, 인접7 전체281 PASS/0 FAIL/0 SKIP/3468.57초(exit0), Main 활성 G-05 seq2302 PASS, diff check0, Ruff 전체 기존4844/변경 구간 신규0(최종 Ruff 재실행은 미수행)이다. C `a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a` 정확2는 기존 branch/private 실원격 동일·clean이다. 이 B는 C를 결박해 다음 행동을 제품 RED 테스트로 제한한다. B 자체 G-05·원격 게시/clean 전 제품3 write는 잠금이다. WSL-server SSH는 TCP 22 연결 후 배너 시간 초과가 세 차례 재현되어 실제 PG15/OIDC/HTTPS/Chromium/브라우저·Task4는 미검증, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
@@ -148,16 +150,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2302,
-  "last_event_id": "evt_u01_2302_scoped_dashboard_task3_write_lease_issued",
+  "event_sequence": 2304,
+  "last_event_id": "evt_u01_2304_scoped_dashboard_task3_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-scoped-dashboard-task3",
-  "worker_lease": "worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb",
-  "write_lease": "write-lease-u01-scoped-dashboard-task3-e833b55c13a047b78cf34cd5085fdbbd",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CLOSE_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK4_DUAL_LEASE_PENDING",
   "repository_head": "a8db53ba0cfa3596ab196e5d21de491d2ce586ce",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
