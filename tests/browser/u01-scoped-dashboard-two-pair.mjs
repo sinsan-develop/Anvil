@@ -249,6 +249,17 @@ if (process.argv.includes('--self-test')) {
   }});
   assert.equal(selectedRole, 'status');
   assert.equal(selectedText, '선택한 조합·기간 조회 중');
+  let emptyRole;
+  let emptyText;
+  scopedEmptyStatus({getByRole: role => {
+    emptyRole = role;
+    return {filter: options => {
+      emptyText = options.hasText;
+      return {waitFor: () => undefined};
+    }};
+  }});
+  assert.equal(emptyRole, 'status');
+  assert.equal(emptyText, '선택 가능한 조합이 없습니다.');
   let alertRole;
   let alertText;
   scopedFaultAlert({getByRole: role => {
@@ -325,6 +336,10 @@ function evidenceDirectory() {
 
 function scopedLoadingStatus(page) {
   return page.getByRole('status').filter({hasText: '선택한 조합·기간 조회 중'});
+}
+
+function scopedEmptyStatus(page) {
+  return page.getByRole('status').filter({hasText: '선택 가능한 조합이 없습니다.'});
 }
 
 function scopedFaultAlert(page) {
@@ -431,7 +446,7 @@ async function run() {
       await page.waitForFunction(count => document.querySelectorAll('#scoped-pair option').length === count + 1,
         expected.length);
       if (config.phase === 'other')
-        await page.getByRole('status', {name: '선택 가능한 조합이 없습니다.'}).waitFor();
+        await scopedEmptyStatus(page).waitFor();
       assert.equal(await select.evaluate(element => getComputedStyle(element).fontSize), '12px',
         'U01_QA_FONT_SIZE_MISMATCH');
       await select.focus();
