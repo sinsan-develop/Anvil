@@ -134,16 +134,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2292,
-  "last_event_id": "evt_u01_2292_scoped_dashboard_task1_write_lease_issued",
+  "event_sequence": 2294,
+  "last_event_id": "evt_u01_2294_scoped_dashboard_task1_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-scoped-dashboard-task1",
-  "worker_lease": "worker-lease-u01-scoped-dashboard-task1-fb010beda94d44a7a8d874089da9b12e",
-  "write_lease": "write-lease-u01-scoped-dashboard-task1-034e4a9ed3af4de7b6cc3a7f07140834",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK1_CLOSE_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_DUAL_LEASE_PENDING",
   "repository_head": "1d501aee680924d53ae601b31abfc9649e9b1a93",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
