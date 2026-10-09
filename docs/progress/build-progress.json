@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-scoped-dashboard-task1-start-seq2292",
+  "snapshot_id": "snapshot-u01-scoped-dashboard-task1-start-corrected-seq2292",
   "event_sequence": 2292,
-  "updated_at": "2026-10-09T00:10:55+00:00",
+  "updated_at": "2026-10-09T00:19:06+00:00",
   "last_event_id": "evt_u01_2292_scoped_dashboard_task1_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -996,10 +996,10 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "5020819606c83dec875364b25befd08aeb3c8fcb",
+    "local_head": "ba8c9c3c4e31c5334e658c40787f019925c8c5a6",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "5020819606c83dec875364b25befd08aeb3c8fcb",
+    "remote_head": "ba8c9c3c4e31c5334e658c40787f019925c8c5a6",
     "projection_mode": "U01_SCOPED_DASHBOARD_TASK1_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
     "head_relation": "U01_SCOPED_DASHBOARD_TASK1_ACTIVE_CONTROL_ONLY",
@@ -2186,7 +2186,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "7465250CB53CA1B7F6FB8F211DBCFC3B1CEBBF4ED91541B314749D4FDBB51FF8",
+  "snapshot_hash": "2BE62639C526CC07367C6A02256226AC948FA764BD3C0E972A106E6DD019E787",
   "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK1_CONTROL_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -23741,6 +23741,7 @@
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
     "dispatch_head": "ba8c9c3c4e31c5334e658c40787f019925c8c5a6",
+    "a_docs_checkpoint": "a960e1cc3aa3cf4c27c9f784fb41b4f8f6544fac",
     "contract_proposal_path": "docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md",
     "contract_proposal_sha256": "5B13E92A16A903F2887BA5F3E038AA5A41BBBBA667EE0DED57FF9C39E7BCA584",
     "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
