@@ -1,4 +1,4 @@
-import {Component, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode} from 'react';
+import React, {Component, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode} from 'react';
 import {DASHBOARD_OPERATION_DEFINITIONS, MENU_ITEMS} from '../features/app-shell/app-shell-model.js';
 import {scanProjects} from '../api/projects-client.js';
 import {createProjectsState, reduceProjects} from '../features/projects/projects-state.js';
@@ -803,6 +803,311 @@ export function DashboardReadControls({status, onRefresh, onReconnect, onCancel}
     {pending ? <button type="button" onClick={onCancel}>대시보드 조회 취소</button> : null}</>;
 }
 
+type ScopedPair = {projectId: string; projectName: string; environmentId: string; environmentName: string};
+type ScopedPeriod = '1d' | '7d' | '30d';
+type ScopedView = {listStatus: 'LOADING' | 'READY' | 'EMPTY' | 'BLOCKED' | 'UNAVAILABLE';
+  pairs: ScopedPair[]; selectionKey: string; periodKey: ScopedPeriod;
+  readStatus: 'IDLE' | 'LOADING' | 'LOADED' | 'BLOCKED' | 'UNAVAILABLE';
+  data: Record<string, unknown> | null};
+const SCOPED_PERIODS: ScopedPeriod[] = ['1d', '7d', '30d'];
+const SCOPED_CURRENT_METRICS = ['run', 'queue', 'agent', 'provider', 'approvalPending',
+  'blocked', 'gate', 'cost', 'baseline'] as const;
+const SCOPED_CURRENT_SOURCES: Record<string, string> = {run: 'scoped_run_owner',
+  queue: 'scoped_queue_owner', agent: 'scoped_agent_owner'};
+const SCOPED_HEALTH_COMPONENTS = ['database', 'queue', 'worker', 'provider', 'backend',
+  'artifact_store'] as const;
+const scopedPairKey = (pair: Pick<ScopedPair, 'projectId' | 'environmentId'>): string =>
+  JSON.stringify([pair.projectId, pair.environmentId]);
+const INITIAL_SCOPED_VIEW: ScopedView = {listStatus: 'LOADING', pairs: [], selectionKey: '',
+  periodKey: '1d', readStatus: 'IDLE', data: null};
+
+function validScopedPairs(payload: unknown): ScopedPair[] | null {
+  if (!record(payload) || !Array.isArray(payload.items) || !nonempty(payload.observedAt)) return null;
+  const seen = new Set<string>();
+  const pairs: ScopedPair[] = [];
+  for (const item of payload.items) {
+    if (!record(item) || !nonempty(item.projectId) || !nonempty(item.environmentId)
+      || !nonempty(item.projectName) || !nonempty(item.environmentName)) return null;
+    const pair: ScopedPair = {projectId: item.projectId, environmentId: item.environmentId,
+      projectName: item.projectName, environmentName: item.environmentName};
+    const key = scopedPairKey(pair);
+    if (seen.has(key)) return null;
+    seen.add(key);
+    pairs.push(pair);
+  }
+  return pairs;
+}
+
+function validScopedData(payload: unknown, pair: ScopedPair, period: ScopedPeriod):
+    Record<string, unknown> | null {
+  if (!record(payload) || !record(payload.data)) return null;
+  const data = payload.data;
+  if (!record(data.pair) || data.pair.projectId !== pair.projectId
+    || data.pair.environmentId !== pair.environmentId || !nonempty(data.pair.projectName)
+    || !nonempty(data.pair.environmentName) || !record(data.period)
+    || data.period.key !== period || data.period.timeZone !== 'Asia/Seoul'
+    || !validObservedAt(data.period.startUtc) || !validObservedAt(data.period.endUtc)
+    || !validObservedAt(data.period.observedAt)
+    || !/(?:Z|\+00:00)$/.test(data.period.startUtc)
+    || !/(?:Z|\+00:00)$/.test(data.period.endUtc)
+    || !/(?:Z|\+00:00)$/.test(data.period.observedAt)
+    || Date.parse(data.period.startUtc) > Date.parse(data.period.observedAt)
+    || Date.parse(data.period.observedAt) >= Date.parse(data.period.endUtc)
+    || !record(data.current)
+    || !record(data.occurrences) || !record(data.sourceCompleteness)) return null;
+  return data;
+}
+
+export function createScopedDashboardFlow(onChange: (value: ScopedView) => void,
+    request: typeof fetch = fetch) {
+  let state: ScopedView = {...INITIAL_SCOPED_VIEW};
+  let requestId = 0;
+  let controller: AbortController | null = null;
+  let disposed = false;
+  const update = (change: Partial<ScopedView>) => {
+    if (disposed) return;
+    state = {...state, ...change};
+    onChange(state);
+  };
+  const cancel = () => { requestId += 1; controller?.abort(); controller = null; };
+  const selected = () => state.pairs.find((pair) => scopedPairKey(pair) === state.selectionKey);
+  const read = async () => {
+    const pair = selected();
+    if (!pair) return;
+    cancel();
+    const id = requestId;
+    const active = new AbortController();
+    controller = active;
+    const period = state.periodKey;
+    update({readStatus: 'LOADING', data: null});
+    try {
+      const url = `/api/projects/${encodeURIComponent(pair.projectId)}`
+        + `/environments/${encodeURIComponent(pair.environmentId)}/dashboard?period=${period}`;
+      const response = await request(url, {credentials: 'same-origin', signal: active.signal});
+      if (id !== requestId || active.signal.aborted || disposed) return;
+      if (response.status === 401 || response.status === 403) {
+        update({listStatus: 'BLOCKED', pairs: [], selectionKey: '', readStatus: 'BLOCKED', data: null});
+        return;
+      }
+      const data = response.ok ? validScopedData(await response.json(), pair, period) : null;
+      if (id === requestId && !active.signal.aborted && !disposed)
+        update({readStatus: data ? 'LOADED' : 'UNAVAILABLE', data});
+    } catch {
+      if (id === requestId && !active.signal.aborted && !disposed)
+        update({readStatus: 'UNAVAILABLE', data: null});
+    } finally {
+      if (controller === active) controller = null;
+    }
+  };
+  return {
+    snapshot: () => state,
+    refreshPairs: async () => {
+      cancel();
+      const id = requestId;
+      const active = new AbortController();
+      controller = active;
+      update({listStatus: 'LOADING', pairs: [], selectionKey: '', readStatus: 'IDLE', data: null});
+      try {
+        const response = await request('/api/dashboard/project-environments',
+          {credentials: 'same-origin', signal: active.signal});
+        if (id !== requestId || active.signal.aborted || disposed) return;
+        if (response.status === 401 || response.status === 403) {
+          update({listStatus: 'BLOCKED'});
+          return;
+        }
+        const pairs = response.ok ? validScopedPairs(await response.json()) : null;
+        if (id === requestId && !active.signal.aborted && !disposed)
+          update({listStatus: pairs === null ? 'UNAVAILABLE' : pairs.length ? 'READY' : 'EMPTY',
+            pairs: pairs ?? []});
+      } catch {
+        if (id === requestId && !active.signal.aborted && !disposed)
+          update({listStatus: 'UNAVAILABLE'});
+      } finally {
+        if (controller === active) controller = null;
+      }
+    },
+    selectPair: (key: string) => {
+      if (!state.pairs.some((pair) => scopedPairKey(pair) === key)) return false;
+      update({selectionKey: key, readStatus: 'IDLE', data: null});
+      return read();
+    },
+    setPeriod: (value: string) => {
+      if (!SCOPED_PERIODS.includes(value as ScopedPeriod)) return false;
+      update({periodKey: value as ScopedPeriod, readStatus: 'IDLE', data: null});
+      return read();
+    },
+    dispose: () => { cancel(); disposed = true; },
+  };
+}
+
+function validScopedEvidence(value: unknown, pair: unknown, source: string | null,
+    eventTimeBasis: string | null, expectedObservedAt: string | null = null): boolean {
+  return source !== null && eventTimeBasis !== null && record(value)
+    && value.complete === true && value.source === source
+    && value.eventTimeBasis === eventTimeBasis
+    && record(value.pair) && record(pair)
+    && value.pair.projectId === pair.projectId && value.pair.environmentId === pair.environmentId
+    && validObservedAt(value.observedAt)
+    && (expectedObservedAt === null || value.observedAt === expectedObservedAt);
+}
+
+function scopedEvidence(value: unknown, pair: unknown, expectedSource: string | null = null,
+    eventTimeBasis: string | null = null, expectedObservedAt: string | null = null): string {
+  if (!record(value)) return 'UNAVAILABLE · 근거 없음';
+  if (value.complete === true && !validScopedEvidence(value, pair, expectedSource,
+    eventTimeBasis, expectedObservedAt))
+    return 'UNAVAILABLE · 근거 없음';
+  const source = nonempty(value.source) ? value.source : '근거 없음';
+  const observed = nonempty(value.observedAt) ? value.observedAt : '관측시각 없음';
+  const reason = nonempty(value.reason) ? value.reason : null;
+  return `${value.complete === true ? '완전' : '불완전'} · ${source} · ${observed}`
+    + (reason ? ` · ${reason}` : '');
+}
+
+function validScopedRows(value: unknown, detail: 'status' | 'action', observedAt: unknown):
+    value is Record<string, unknown>[] {
+  if (!Array.isArray(value)) return false;
+  const ids = new Set<string>();
+  for (const row of value) {
+    if (!record(row) || !nonempty(row.alertId) || !nonempty(row[detail]) || ids.has(row.alertId))
+      return false;
+    if (detail === 'status' && (row.level !== 'critical'
+      || !['open', 'acknowledged'].includes(String(row.status))
+      || !nonempty(row.nextAction) || !validObservedAt(row.observedAt)
+      || !validObservedAt(observedAt) || Date.parse(row.observedAt) > Date.parse(observedAt)))
+      return false;
+    ids.add(row.alertId);
+  }
+  return true;
+}
+
+function validScopedOwnerItems(name: string, metric: Record<string, unknown>): boolean {
+  if (!Array.isArray(metric.items) || metric.items.length !== metric.count) return false;
+  const id = name === 'run' ? 'runId' : name === 'queue' ? 'jobId' : 'sessionId';
+  const seen = new Set<string>();
+  for (const item of metric.items) {
+    if (!record(item) || !nonempty(item[id]) || !nonempty(item.status)
+      || (name === 'run' && !nonempty(item.phase)) || seen.has(item[id])) return false;
+    seen.add(item[id]);
+  }
+  return true;
+}
+
+function ScopedMetric({name, metric, completeness, pair, expectedSource, eventTimeBasis, expectedObservedAt}:
+    {name: string; metric: unknown;
+    completeness: unknown; pair: unknown; expectedSource: string | null;
+    eventTimeBasis: string | null; expectedObservedAt: string | null}) {
+  const available = record(metric) && metric.status === 'AVAILABLE'
+    && Number.isSafeInteger(metric.count) && (metric.count as number) >= 0
+    && metric.source === expectedSource && validObservedAt(metric.observedAt)
+    && validScopedEvidence(completeness, pair, expectedSource, eventTimeBasis, expectedObservedAt)
+    && record(completeness) && metric.observedAt === completeness.observedAt
+    && (eventTimeBasis !== 'CURRENT_OBSERVATION' || validScopedOwnerItems(name, metric));
+  const count = available ? String((metric as Record<string, unknown>).count) : 'UNAVAILABLE';
+  const source = record(metric) && nonempty(metric.source) ? metric.source : '근거 없음';
+  const reason = record(metric) && nonempty(metric.reason) ? metric.reason : null;
+  return <article className="status-card scoped-metric"><h3>{name}</h3>
+    <p className={available ? 'status-ready' : 'status-unavailable'}>{count}</p>
+    <p>원본 · {source}</p><p>{scopedEvidence(completeness, pair, expectedSource,
+      eventTimeBasis, expectedObservedAt)}</p>
+    {reason ? <p>사유 · {reason}</p> : null}</article>;
+}
+
+export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPeriod}:
+    {value: ScopedView; onRefresh: () => void; onSelectPair: (key: string) => void;
+      onSelectPeriod: (period: string) => void}) {
+  const data = value.readStatus === 'LOADED' ? value.data : null;
+  const period = data && record(data.period) ? data.period : null;
+  const current = data && record(data.current) ? data.current : null;
+  const occurrences = data && record(data.occurrences) ? data.occurrences : null;
+  const evidence = data && record(data.sourceCompleteness) ? data.sourceCompleteness : null;
+  const pair = data && record(data.pair) ? data.pair : null;
+  const currentEvidence = evidence && record(evidence.current) ? evidence.current : null;
+  const occurrenceEvidence = evidence && record(evidence.occurrences) ? evidence.occurrences : null;
+  const auditObservedAt = validObservedAt(period?.observedAt) ? period.observedAt : '';
+  const criticalValid = validScopedRows(current?.unresolvedCritical, 'status', period?.observedAt);
+  const actionsValid = validScopedRows(current?.nextActions, 'action', period?.observedAt);
+  const critical = criticalValid ? current?.unresolvedCritical as Record<string, unknown>[] : [];
+  const actions = actionsValid ? current?.nextActions as Record<string, unknown>[] : [];
+  const criticalEvidence = validScopedEvidence(currentEvidence?.unresolvedCritical, pair,
+    'operations_audit_events', 'DETECTED.at', auditObservedAt);
+  const actionsEvidence = validScopedEvidence(currentEvidence?.nextActions, pair,
+    'operations_audit_events', 'DETECTED.at', auditObservedAt);
+  const actionsContainCritical = !criticalEvidence || !actionsEvidence || (criticalValid
+    && actionsValid && critical.every((item) => actions.some((action) =>
+      action.alertId === item.alertId && action.action === item.nextAction)));
+  const criticalComplete = criticalEvidence && criticalValid && actionsContainCritical;
+  const actionsComplete = actionsEvidence && actionsValid && actionsContainCritical;
+  return <section className="scoped-dashboard" aria-labelledby="scoped-dashboard-heading">
+    <div className="scoped-dashboard-heading"><h2 id="scoped-dashboard-heading">조합·기간 Dashboard</h2>
+      <button type="button" onClick={onRefresh}>조합 목록 새로고침</button></div>
+    <div className="scoped-filters">
+      <label htmlFor="scoped-pair">조합 선택</label>
+      <select id="scoped-pair" value={value.selectionKey} disabled={value.listStatus !== 'READY'}
+        onChange={(event) => onSelectPair(event.target.value)}>
+        <option value="">조합을 선택하세요</option>
+        {value.pairs.map((pair) => <option key={scopedPairKey(pair)} value={scopedPairKey(pair)}>
+          {pair.projectName} / {pair.environmentName}</option>)}
+      </select>
+      <label htmlFor="scoped-period">기간 선택</label>
+      <select id="scoped-period" value={value.periodKey} onChange={(event) => onSelectPeriod(event.target.value)}>
+        {SCOPED_PERIODS.map((key) => <option key={key} value={key}>{key}</option>)}
+      </select>
+    </div>
+    {value.listStatus === 'LOADING' ? <p role="status">조합 목록 조회 중</p> : null}
+    {value.listStatus === 'EMPTY' ? <p role="status">선택 가능한 조합이 없습니다.</p> : null}
+    {value.listStatus === 'BLOCKED' ? <p role="alert">조합 조회 권한이 없습니다. 이전 정보는 제거했습니다.</p> : null}
+    {value.listStatus === 'UNAVAILABLE'
+      ? <p role="alert">조합 목록을 사용할 수 없습니다. 조합 목록 새로고침으로 다시 확인하세요.</p> : null}
+    {value.listStatus === 'READY' && !value.selectionKey ? <p>정확한 조합을 선택하세요.</p> : null}
+    {value.readStatus === 'LOADING' ? <p role="status">선택한 조합·기간 조회 중</p> : null}
+    {value.readStatus === 'BLOCKED' ? <p role="alert">선택한 조합의 조회 권한이 없습니다.</p> : null}
+    {value.readStatus === 'UNAVAILABLE' ? <div><p role="alert">조합·기간 자료를 확인할 수 없습니다.</p>
+      {value.selectionKey ? <button type="button" onClick={() => onSelectPair(value.selectionKey)}>
+        선택한 자료 다시 조회</button> : null}</div> : null}
+    {data && period ? <React.Fragment>
+      <p className="scoped-period-evidence">서버 기간 · {String(period.key)} · {String(period.timeZone)} ·
+        {String(period.startUtc)} ~ {String(period.endUtc)} · 관측 {String(period.observedAt)}</p>
+      <section aria-labelledby="scoped-current-heading"><h3 id="scoped-current-heading">현재</h3>
+        <div className="scoped-card-grid">
+          <article className="status-card"><h3>미해결 Critical</h3>
+            <p>{criticalComplete ? `${critical.length}건` : 'UNAVAILABLE'} ·
+              {scopedEvidence(currentEvidence?.unresolvedCritical, pair,
+                'operations_audit_events', 'DETECTED.at', auditObservedAt)}</p>
+            <ul>{(criticalComplete ? critical : []).map((item) => record(item) && nonempty(item.alertId)
+              ? <li key={item.alertId}>{item.alertId} · {String(item.status ?? 'UNAVAILABLE')}</li>
+              : null)}</ul></article>
+          <article className="status-card"><h3>Next Action</h3>
+            <p>{actionsComplete ? `${actions.length}건` : 'UNAVAILABLE'} ·
+              {scopedEvidence(currentEvidence?.nextActions, pair,
+                'operations_audit_events', 'DETECTED.at', auditObservedAt)}</p>
+            <ul>{(actionsComplete ? actions : []).map((item) => record(item) && nonempty(item.alertId)
+              ? <li key={item.alertId}>{item.alertId} · {String(item.action ?? 'UNAVAILABLE')}</li>
+              : null)}</ul></article>
+          {SCOPED_HEALTH_COMPONENTS.map((name) => {
+            const health = record(current?.health) ? current.health[name] : null;
+            const reason = record(health) && nonempty(health.reason) ? health.reason : 'SOURCE_UNAVAILABLE';
+            return <article className="status-card" key={`selected-${name}`}>
+              <h3>selected-{name}</h3><p className="status-unavailable">UNAVAILABLE</p>
+              <p>{scopedEvidence(currentEvidence?.health, pair)}</p><p>사유 · {reason}</p></article>;
+          })}
+          {SCOPED_CURRENT_METRICS.map((name) => <ScopedMetric key={name} name={name} metric={current?.[name]}
+              completeness={currentEvidence?.[name]} pair={pair}
+              expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}
+              eventTimeBasis="CURRENT_OBSERVATION" expectedObservedAt={null}/>)}
+        </div>
+      </section>
+      <section aria-labelledby="scoped-occurrences-heading"><h3 id="scoped-occurrences-heading">기간 발생</h3>
+        <div className="scoped-card-grid">{Object.entries(occurrences ?? {}).map(([name, metric]) =>
+          <ScopedMetric key={name} name={name} metric={metric}
+            completeness={occurrenceEvidence?.[name]} pair={pair}
+            expectedSource={name === 'criticalDetected' ? 'operations_audit_events' : null}
+            eventTimeBasis="DETECTED.at" expectedObservedAt={auditObservedAt}/>)}</div>
+      </section>
+    </React.Fragment> : null}
+  </section>;
+}
+
 function Shell({route}: AppProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [readinessPayload, setReadinessPayload] = useState<unknown>(null);
@@ -810,6 +1115,7 @@ function Shell({route}: AppProps) {
   const [projects, setProjects] = useState<ProjectsState>(createProjectsState());
   const [providerRegistration, setProviderRegistration] = useState<ProviderRegistration>(PROVIDER_LOADING);
   const [dashboardQueue, setDashboardQueue] = useState<DashboardQueueState>(DASHBOARD_QUEUE_LOADING);
+  const [scopedDashboard, setScopedDashboard] = useState<ScopedView>(INITIAL_SCOPED_VIEW);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_LOADING);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
@@ -818,6 +1124,7 @@ function Shell({route}: AppProps) {
   const authPending = useRef<{popup: Window; browserState: string} | null>(null);
   const alertsController = useRef<AbortController | null>(null);
   const dashboardController = useRef<AbortController | null>(null);
+  const scopedFlow = useRef<ReturnType<typeof createScopedDashboardFlow> | null>(null);
   const dashboardInFlight = useRef(false);
   const olderRequestInFlight = useRef(false);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
@@ -949,6 +1256,14 @@ function Shell({route}: AppProps) {
 
   useEffect(() => {
     if (currentRoute !== '/') return;
+    const flow = createScopedDashboardFlow(setScopedDashboard);
+    scopedFlow.current = flow;
+    void flow.refreshPairs();
+    return () => { flow.dispose(); if (scopedFlow.current === flow) scopedFlow.current = null; };
+  }, [currentRoute]);
+
+  useEffect(() => {
+    if (currentRoute !== '/') return;
     const controller = new AbortController();
     alertsController.current = controller;
     void loadProviderRegistration(controller.signal).then((value) => {
@@ -1029,6 +1344,10 @@ function Shell({route}: AppProps) {
           <DashboardObservationTime value={dashboardQueue}/>
           <DashboardReadControls status={dashboardQueue.status} onRefresh={() => refreshDashboard()}
             onReconnect={() => refreshDashboard(true)} onCancel={cancelDashboard}/></div></div>
+        <ScopedDashboardPanel value={scopedDashboard}
+          onRefresh={() => { void scopedFlow.current?.refreshPairs(); }}
+          onSelectPair={(key) => { void scopedFlow.current?.selectPair(key); }}
+          onSelectPeriod={(period) => { void scopedFlow.current?.setPeriod(period); }}/>
         <section aria-labelledby="health-heading"><h2 id="health-heading">Health</h2>
           <div className="status-grid">
             {['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store'].map((name) => {

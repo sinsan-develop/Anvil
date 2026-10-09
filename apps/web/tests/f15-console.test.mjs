@@ -1722,3 +1722,420 @@ test('Dashboard Next Actions never navigates unsafe or unimplemented deep links'
     assert.doesNotMatch(html, /href=|evil\.example|private|javascript:/);
   }
 });
+
+const scopedPairs = [
+  {projectId: 'project-a', projectName: 'Project A', environmentId: 'test', environmentName: 'Test'},
+  {projectId: 'project-b', projectName: 'Project B', environmentId: 'test', environmentName: 'Test'},
+];
+const scopedKey = (pair) => JSON.stringify([pair.projectId, pair.environmentId]);
+const scopedData = (pair, key = '1d') => ({
+  pair, period: {key, timeZone: 'Asia/Seoul', startUtc: '2026-10-08T15:00:00+00:00',
+    endUtc: '2026-10-09T15:00:00+00:00', observedAt: '2026-10-09T08:00:00+00:00'},
+  current: {unresolvedCritical: [{alertId: 'critical-old', level: 'critical',
+    status: 'open', nextAction: 'REVIEW', observedAt: '2026-10-09T08:00:00+00:00'}],
+    nextActions: [{alertId: 'critical-old', action: 'REVIEW'}],
+    run: {status: 'UNAVAILABLE', count: null, source: 'NO_VERIFIED_CURRENT_SOURCE',
+      observedAt: null, reason: 'SOURCE_UNAVAILABLE'}},
+  occurrences: {criticalDetected: {status: 'AVAILABLE', count: 0,
+    source: 'operations_audit_events', observedAt: '2026-10-09T08:00:00+00:00', reason: null},
+    runStarted: {status: 'UNAVAILABLE', count: null, source: 'NO_COMPLETE_PERIOD_SOURCE',
+      observedAt: null, reason: 'SOURCE_UNAVAILABLE'}},
+  sourceCompleteness: {current: {unresolvedCritical: {complete: true, source: 'operations_audit_events',
+    pair: {projectId: pair.projectId, environmentId: pair.environmentId},
+    eventTimeBasis: 'DETECTED.at', reason: null, observedAt: '2026-10-09T08:00:00+00:00'},
+    nextActions: {complete: true, source: 'operations_audit_events',
+      pair: {projectId: pair.projectId, environmentId: pair.environmentId},
+      eventTimeBasis: 'DETECTED.at', reason: null, observedAt: '2026-10-09T08:00:00+00:00'}},
+    occurrences: {criticalDetected: {complete: true, source: 'operations_audit_events',
+      pair: {projectId: pair.projectId, environmentId: pair.environmentId},
+      eventTimeBasis: 'DETECTED.at', reason: null, observedAt: '2026-10-09T08:00:00+00:00'}}},
+});
+const deferred = () => {
+  let resolve;
+  const promise = new Promise((done) => { resolve = done; });
+  return {promise, resolve};
+};
+
+test('scoped Dashboard selects only a listed exact pair and uses same-origin period URL', async () => {
+  const calls = [];
+  const flow = consoleApp.createScopedDashboardFlow(() => {}, async (url, options) => {
+    calls.push([url, options]);
+    if (url === '/api/dashboard/project-environments')
+      return jsonResponse({items: scopedPairs, observedAt: '2026-10-09T08:00:00+00:00'});
+    return jsonResponse({data: scopedData(scopedPairs[1], '7d')});
+  });
+  await flow.refreshPairs();
+  assert.equal(flow.snapshot().listStatus, 'READY');
+  assert.equal(flow.selectPair(scopedKey({projectId: 'project-a', environmentId: 'other'})), false);
+  await flow.selectPair(scopedKey(scopedPairs[1]));
+  await flow.setPeriod('7d');
+  assert.equal(flow.snapshot().readStatus, 'LOADED');
+  assert.equal(flow.snapshot().data.pair.projectId, 'project-b');
+  assert.deepEqual(calls.map(([url]) => url), [
+    '/api/dashboard/project-environments',
+    '/api/projects/project-b/environments/test/dashboard?period=1d',
+    '/api/projects/project-b/environments/test/dashboard?period=7d',
+  ]);
+  assert.ok(calls.every(([url, options]) => url.startsWith('/api/') && options.credentials === 'same-origin'));
+  flow.dispose();
+});
+
+test('scoped Dashboard drops cross-pair and out-of-order responses even when abort is ignored', async () => {
+  const old = deferred();
+  const newer = deferred();
+  let reads = 0;
+  const flow = consoleApp.createScopedDashboardFlow(() => {}, async (url) => {
+    if (url === '/api/dashboard/project-environments') return jsonResponse({items: scopedPairs,
+      observedAt: '2026-10-09T08:00:00+00:00'});
+    reads += 1;
+    return reads === 1 ? old.promise : newer.promise;
+  });
+  await flow.refreshPairs();
+  const first = flow.selectPair(scopedKey(scopedPairs[0]));
+  const second = flow.selectPair(scopedKey(scopedPairs[1]));
+  newer.resolve(jsonResponse({data: scopedData(scopedPairs[1])}));
+  await second;
+  old.resolve(jsonResponse({data: scopedData(scopedPairs[0])}));
+  await first;
+  assert.equal(flow.snapshot().data.pair.projectId, 'project-b');
+  assert.equal(flow.snapshot().readStatus, 'LOADED');
+  flow.dispose();
+});
+
+test('scoped Dashboard refresh and denied access discard previous pair data', async () => {
+  let listed = scopedPairs;
+  let denied = false;
+  const flow = consoleApp.createScopedDashboardFlow(() => {}, async (url) => {
+    if (url === '/api/dashboard/project-environments')
+      return jsonResponse({items: listed, observedAt: '2026-10-09T08:00:00+00:00'});
+    return denied ? jsonResponse({error: {code: 'AUTHORIZATION_SCOPE_MISMATCH'}}, 403)
+      : jsonResponse({data: scopedData(scopedPairs[0])});
+  });
+  await flow.refreshPairs();
+  await flow.selectPair(scopedKey(scopedPairs[0]));
+  assert.equal(flow.snapshot().readStatus, 'LOADED');
+  listed = [scopedPairs[1]];
+  await flow.refreshPairs();
+  assert.equal(flow.snapshot().data, null);
+  assert.equal(flow.snapshot().selectionKey, '');
+  assert.equal(flow.selectPair(scopedKey(scopedPairs[0])), false);
+  denied = true;
+  await flow.selectPair(scopedKey(scopedPairs[1]));
+  assert.equal(flow.snapshot().readStatus, 'BLOCKED');
+  assert.equal(flow.snapshot().data, null);
+  flow.dispose();
+});
+
+test('scoped Dashboard renders server period, separate current and occurrences, unavailable evidence and accessible selects', () => {
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data: scopedData(scopedPairs[0])},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  assert.match(html, /조합 선택/);
+  assert.match(html, /기간 선택/);
+  assert.match(html, /Asia\/Seoul/);
+  assert.match(html, /현재.*critical-old.*REVIEW.*기간 발생/s);
+  assert.match(html, /criticalDetected.*0.*operations_audit_events/s);
+  assert.match(html, /runStarted.*UNAVAILABLE.*SOURCE_UNAVAILABLE/s);
+  assert.doesNotMatch(html, /runStarted.*0/s);
+  assert.match(html, /<select[^>]*id="scoped-pair"/);
+  assert.match(html, /<select[^>]*id="scoped-period"/);
+});
+
+test('Dashboard shell includes the scoped pair and period controls without replacing fixed Operations and ACK cards', () => {
+  const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
+  assert.match(html, /조합·기간 Dashboard/);
+  assert.match(html, /조합 선택/);
+  assert.match(html, /기간 선택/);
+  assert.match(html, /Critical Alerts/);
+  assert.match(html, /대시보드 새로고침/);
+});
+
+test('scoped Dashboard distinguishes empty list, source failure and missing selected pair', async () => {
+  let response = jsonResponse({items: [], observedAt: '2026-10-09T08:00:00+00:00'});
+  const flow = consoleApp.createScopedDashboardFlow(() => {}, async () => response);
+  await flow.refreshPairs();
+  assert.equal(flow.snapshot().listStatus, 'EMPTY');
+  assert.equal(flow.snapshot().data, null);
+  response = jsonResponse({error: {code: 'PAIR_AUTHORIZATION_UNAVAILABLE'}}, 503);
+  await flow.refreshPairs();
+  assert.equal(flow.snapshot().listStatus, 'UNAVAILABLE');
+  assert.equal(flow.snapshot().data, null);
+  flow.dispose();
+  const empty = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'EMPTY', pairs: [], selectionKey: '', periodKey: '1d', readStatus: 'IDLE', data: null},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  assert.match(empty, /선택 가능한 조합이 없습니다/);
+  assert.doesNotMatch(empty, /0건/);
+  const unavailable = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'UNAVAILABLE', data: null},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  assert.match(unavailable, /조합·기간 자료를 확인할 수 없습니다/);
+  assert.match(unavailable, /선택한 자료 다시 조회/);
+});
+
+test('scoped Dashboard rejects cross-pair and wrong-period source payloads without retaining old data', async () => {
+  let data = scopedData(scopedPairs[0]);
+  const flow = consoleApp.createScopedDashboardFlow(() => {}, async (url) =>
+    url === '/api/dashboard/project-environments'
+      ? jsonResponse({items: scopedPairs, observedAt: '2026-10-09T08:00:00+00:00'})
+      : jsonResponse({data}));
+  await flow.refreshPairs();
+  await flow.selectPair(scopedKey(scopedPairs[0]));
+  assert.equal(flow.snapshot().readStatus, 'LOADED');
+  data = scopedData(scopedPairs[1], '7d');
+  await flow.setPeriod('7d');
+  assert.equal(flow.snapshot().readStatus, 'UNAVAILABLE');
+  assert.equal(flow.snapshot().data, null);
+  data = scopedData(scopedPairs[0], '1d');
+  await flow.setPeriod('30d');
+  assert.equal(flow.snapshot().readStatus, 'UNAVAILABLE');
+  flow.dispose();
+});
+
+test('scoped Dashboard never renders a zero or completed count from incomplete evidence', () => {
+  const data = scopedData(scopedPairs[0]);
+  data.current.unresolvedCritical = [];
+  data.current.nextActions = [];
+  data.sourceCompleteness.current.unresolvedCritical.complete = false;
+  data.sourceCompleteness.current.nextActions = {complete: false, source: 'operations_audit_events',
+    reason: 'SOURCE_GAP', observedAt: null};
+  data.sourceCompleteness.occurrences.criticalDetected.complete = false;
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  assert.match(html, /미해결 Critical.*UNAVAILABLE.*Next Action.*UNAVAILABLE/s);
+  assert.match(html, /criticalDetected.*UNAVAILABLE/s);
+  assert.doesNotMatch(html, /미해결 Critical.*0건|criticalDetected.*>0</s);
+});
+
+test('scoped Dashboard shows every selected current Health card as unavailable with its source reason', () => {
+  const data = scopedData(scopedPairs[0]);
+  data.current.health = Object.fromEntries(['database', 'queue', 'worker', 'provider',
+    'backend', 'artifact_store'].map((name) => [name,
+    {status: 'UNAVAILABLE', reason: 'SOURCE_UNAVAILABLE'}]));
+  data.sourceCompleteness.current.health = {complete: false, source: 'NO_VERIFIED_CURRENT_SOURCE',
+    reason: 'SOURCE_UNAVAILABLE', observedAt: null};
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  for (const name of ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'])
+    assert.match(html, new RegExp(`selected-${name}.*UNAVAILABLE.*SOURCE_UNAVAILABLE`, 's'));
+});
+
+test('scoped Dashboard does not claim zero current Critical when a complete-marked row is malformed', () => {
+  const data = scopedData(scopedPairs[0]);
+  data.current.unresolvedCritical = null;
+  data.current.nextActions = [{alertId: '', action: 'REVIEW'}];
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  assert.match(html, /미해결 Critical.*UNAVAILABLE.*Next Action.*UNAVAILABLE/s);
+  assert.doesNotMatch(html, /미해결 Critical.*0건|Next Action.*1건/s);
+});
+
+test('scoped Dashboard rejects missing or other-pair provenance before displaying any zero', () => {
+  for (const change of [
+    (data) => { data.sourceCompleteness.occurrences.criticalDetected.source = ''; },
+    (data) => { data.sourceCompleteness.occurrences.criticalDetected.observedAt = null; },
+    (data) => { data.sourceCompleteness.occurrences.criticalDetected.pair.projectId = 'project-b'; },
+    (data) => { data.occurrences.criticalDetected.observedAt = null; },
+    (data) => { delete data.sourceCompleteness.occurrences.criticalDetected.eventTimeBasis; },
+    (data) => { data.sourceCompleteness.occurrences.criticalDetected.eventTimeBasis = 'CURRENT_OBSERVATION'; },
+    (data) => { data.occurrences.criticalDetected.source = 'current_snapshot';
+      data.sourceCompleteness.occurrences.criticalDetected.source = 'current_snapshot'; },
+    (data) => { data.occurrences.criticalDetected.observedAt = '2026-10-09T07:00:00+00:00';
+      data.sourceCompleteness.occurrences.criticalDetected.observedAt = '2026-10-09T07:00:00+00:00'; },
+  ]) {
+    const data = scopedData(scopedPairs[0]);
+    change(data);
+    const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+      value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+        periodKey: '1d', readStatus: 'LOADED', data},
+      onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+    }));
+    assert.match(html, /criticalDetected<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  }
+  for (const section of ['unresolvedCritical', 'nextActions']) {
+    for (const change of [
+      (evidence) => { evidence.source = ''; },
+      (evidence) => { evidence.source = 'current_snapshot'; },
+      (evidence) => { evidence.observedAt = null; },
+      (evidence) => { evidence.pair.environmentId = 'other'; },
+      (evidence) => { delete evidence.eventTimeBasis; },
+      (evidence) => { evidence.eventTimeBasis = 'CURRENT_OBSERVATION'; },
+      (evidence) => { evidence.observedAt = '2026-10-09T07:00:00+00:00'; },
+    ]) {
+      const data = scopedData(scopedPairs[0]);
+      data.current[section] = [];
+      change(data.sourceCompleteness.current[section]);
+      const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+        value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+          periodKey: '1d', readStatus: 'LOADED', data},
+        onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+      }));
+      assert.match(html, new RegExp(`${section === 'unresolvedCritical' ? '미해결 Critical' : 'Next Action'}<\\/h3><p>UNAVAILABLE`));
+    }
+  }
+});
+
+test('scoped Dashboard rejects noncritical or resolved rows as unresolved Critical', () => {
+  for (const change of [
+    (row) => { row.level = 'warning'; },
+    (row) => { row.status = 'resolved'; },
+    (row) => { row.nextAction = ''; },
+    (row) => { row.observedAt = null; },
+  ]) {
+    const data = scopedData(scopedPairs[0]);
+    change(data.current.unresolvedCritical[0]);
+    const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+      value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+        periodKey: '1d', readStatus: 'LOADED', data},
+      onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+    }));
+    assert.match(html, /미해결 Critical<\/h3><p>UNAVAILABLE/);
+    assert.doesNotMatch(html, /미해결 Critical<\/h3><p>1건/);
+  }
+});
+
+test('scoped Dashboard does not display an available current count without matching source and scope', () => {
+  for (const change of [
+    (data) => { data.sourceCompleteness.current.run.source = ''; },
+    (data) => { data.sourceCompleteness.current.run.pair.projectId = 'project-b'; },
+    (data) => { data.sourceCompleteness.current.run.observedAt = null; },
+    (data) => { data.current.run.observedAt = null; },
+    (data) => { data.current.run.source = 'current_snapshot';
+      data.sourceCompleteness.current.run.source = 'current_snapshot'; },
+    (data) => { data.sourceCompleteness.current.run.eventTimeBasis = 'DETECTED.at'; },
+  ]) {
+    const data = scopedData(scopedPairs[0]);
+    data.current.run = {status: 'AVAILABLE', count: 0, items: [], source: 'scoped_run_owner',
+      observedAt: '2026-10-09T08:00:00+00:00', reason: null};
+    data.sourceCompleteness.current.run = {complete: true, source: 'scoped_run_owner',
+      pair: {projectId: 'project-a', environmentId: 'test'},
+      eventTimeBasis: 'CURRENT_OBSERVATION',
+      observedAt: '2026-10-09T08:00:00+00:00', reason: null};
+    const completeHtml = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+      value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+        periodKey: '1d', readStatus: 'LOADED', data},
+      onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+    }));
+    assert.match(completeHtml, /<h3>run<\/h3><p class="status-ready">0/);
+    change(data);
+    const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+      value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+        periodKey: '1d', readStatus: 'LOADED', data},
+      onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+    }));
+    assert.match(html, /<h3>run<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  }
+});
+
+test('scoped Dashboard current owner counts require matching item rows', () => {
+  for (const [name, row] of [
+    ['run', {runId: 'run-1', status: 'RUNNING', phase: 'ACTIVE'}],
+    ['queue', {jobId: 'job-1', status: 'WAITING'}],
+    ['agent', {sessionId: 'agent-1', status: 'ACTIVE'}],
+  ]) {
+    for (const change of [
+      (metric) => { delete metric.items; },
+      (metric) => { metric.items = [row]; },
+      (metric) => { metric.items = [{...row, [Object.keys(row)[0]]: ''}]; metric.count = 1; },
+    ]) {
+      const data = scopedData(scopedPairs[0]);
+      data.current[name] = {status: 'AVAILABLE', count: 0, items: [],
+        source: `scoped_${name}_owner`, observedAt: '2026-10-09T07:00:00+00:00', reason: null};
+      data.sourceCompleteness.current[name] = {complete: true, source: `scoped_${name}_owner`,
+        pair: {projectId: 'project-a', environmentId: 'test'},
+        eventTimeBasis: 'CURRENT_OBSERVATION', observedAt: '2026-10-09T07:00:00+00:00', reason: null};
+      const completeHtml = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+        value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+          periodKey: '1d', readStatus: 'LOADED', data},
+        onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+      }));
+      assert.match(completeHtml, new RegExp(`<h3>${name}<\\/h3><p class="status-ready">0`));
+      change(data.current[name]);
+      const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+        value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+          periodKey: '1d', readStatus: 'LOADED', data},
+        onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+      }));
+      assert.match(html, new RegExp(`<h3>${name}<\\/h3><p class="status-unavailable">UNAVAILABLE`));
+    }
+  }
+});
+
+test('scoped Dashboard refuses an invalid server period before displaying a complete zero', async () => {
+  for (const change of [
+    (period) => { period.startUtc = 'not-a-time'; },
+    (period) => { period.endUtc = '2026-10-08T14:00:00+00:00'; },
+    (period) => { period.observedAt = 'not-a-time'; },
+    (period) => { period.observedAt = '2026-10-08T14:00:00+00:00'; },
+  ]) {
+    const data = scopedData(scopedPairs[0]);
+    data.current.unresolvedCritical = [];
+    data.current.nextActions = [];
+    change(data.period);
+    const flow = consoleApp.createScopedDashboardFlow(() => {}, async (url) =>
+      url === '/api/dashboard/project-environments'
+        ? jsonResponse({items: scopedPairs, observedAt: '2026-10-09T08:00:00+00:00'})
+        : jsonResponse({data}));
+    await flow.refreshPairs();
+    await flow.selectPair(scopedKey(scopedPairs[0]));
+    assert.equal(flow.snapshot().readStatus, 'UNAVAILABLE');
+    assert.equal(flow.snapshot().data, null);
+    flow.dispose();
+  }
+});
+
+test('scoped Dashboard does not claim complete Critical and Next Action for inconsistent audit rows', () => {
+  for (const change of [
+    (data) => { data.current.nextActions = []; },
+    (data) => { data.current.nextActions[0].action = 'OTHER'; },
+    (data) => { data.current.nextActions[0].alertId = 'another-alert'; },
+    (data) => { data.current.unresolvedCritical[0].status = 'resolved'; },
+  ]) {
+    const data = scopedData(scopedPairs[0]);
+    change(data);
+    const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+      value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+        periodKey: '1d', readStatus: 'LOADED', data},
+      onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+    }));
+    assert.match(html, /미해결 Critical<\/h3><p>UNAVAILABLE/);
+    assert.match(html, /Next Action<\/h3><p>UNAVAILABLE/);
+  }
+});
+
+test('scoped Dashboard period switch rejects a late earlier response and keeps 503 unavailable', async () => {
+  const first = deferred();
+  const second = deferred();
+  let reads = 0;
+  const flow = consoleApp.createScopedDashboardFlow(() => {}, async (url) => {
+    if (url === '/api/dashboard/project-environments') return jsonResponse({items: scopedPairs,
+      observedAt: '2026-10-09T08:00:00+00:00'});
+    reads += 1;
+    return reads === 1 ? first.promise : second.promise;
+  });
+  await flow.refreshPairs();
+  const old = flow.selectPair(scopedKey(scopedPairs[0]));
+  const next = flow.setPeriod('30d');
+  second.resolve(jsonResponse({error: {code: 'DASHBOARD_SOURCE_UNAVAILABLE'}}, 503));
+  await next;
+  first.resolve(jsonResponse({data: scopedData(scopedPairs[0])}));
+  await old;
+  assert.equal(flow.snapshot().periodKey, '30d');
+  assert.equal(flow.snapshot().readStatus, 'UNAVAILABLE');
+  assert.equal(flow.snapshot().data, null);
+  flow.dispose();
+});
