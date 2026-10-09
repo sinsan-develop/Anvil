@@ -20,7 +20,10 @@ from packages.persistence.f19a_registration_repository import (
     F19ARegistrationRepository, pair_grants, registered_environments,
     registered_projects, registration_audit_events,
 )
-from packages.persistence.oidc_principal_directory import SqlAlchemyOidcPrincipalResolver
+from packages.persistence.oidc_principal_directory import (
+    DIRECTORY_METADATA, SqlAlchemyOidcPrincipalResolver, oidc_subject_bindings,
+    roles, user_roles, users,
+)
 from packages.persistence.operations_repository import PostgresOperationsRepository
 
 
@@ -80,12 +83,25 @@ def _assert_phase_pairs(phase: str, observed: tuple, pair_a="A", pair_b="B") -> 
         raise AssertionError("U01_QA_PAIR_INVENTORY_MISMATCH")
 
 
+def _validated_browser_command(raw: str, source_sha: str) -> tuple[str, ...]:
+    """Permit only a pre-created, source-bound Docker browser container."""
+    expected = ["docker", "exec", f"anvil-u01-qa-browser-{source_sha[:12]}", "node",
+                "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    try:
+        if (re.fullmatch(r"[0-9a-f]{40}", source_sha) is None
+                or json.loads(raw) != expected):
+            raise ValueError("browser command")
+    except (TypeError, ValueError):
+        raise AssertionError("U01_QA_BROWSER_COMMAND_REJECTED") from None
+    return tuple(expected)
+
+
 def _validated_run_config(environment: dict) -> dict:
     prefix = "ANVIL_U01_QA_"
     required = ("SOURCE_SHA", "PG_ISOLATED", "DATABASE", "PG_DSN", "PHASE", "ADMIN_ACTOR",
                 "READER_ACTOR", "OTHER_ACTOR", "ISSUER_URL", "APP_URL", "READER_SUBJECT",
                 "OTHER_SUBJECT", "ADMIN_SUBJECT", "ADMIN_ROLE", "EXPECTED_ROLE", "OTHER_ROLE",
-                "PAIR_A_JSON", "PAIR_B_JSON", "EVIDENCE_DIR")
+                "PAIR_A_JSON", "PAIR_B_JSON", "EVIDENCE_DIR", "BROWSER_COMMAND_JSON")
     try:
         values = {key.lower(): environment[prefix + key] for key in required}
         if any(type(value) is not str or not value for value in values.values()):
@@ -122,6 +138,8 @@ def _validated_run_config(environment: dict) -> dict:
         _validated_pairs(*((pair["projectId"], pair["environmentId"]) for pair in pairs))
         if pairs[0]["projectId"] >= pairs[1]["projectId"]:
             raise ValueError("ordering")
+        values["browser_command"] = _validated_browser_command(
+            values["browser_command_json"], values["source_sha"])
         app, issuer = urlsplit(values["app_url"]), urlsplit(values["issuer_url"])
         if (app.scheme != "https" or issuer.scheme != "https"
                 or app.hostname != "anvil-f18-qa.local" or issuer.hostname != app.hostname
@@ -227,8 +245,7 @@ def _assert_qa_trust(config: dict, inputs, principals: dict) -> None:
                 or principal.step_up_required is not False
                 or not principal.project_ids <= policy.allowed_project_ids
                 or not principal.environment_ids <= policy.allowed_environment_ids
-                or (subject in {config["admin_subject"], config["other_subject"]}
-                    and principal.permissions != permissions)):
+                or principal.permissions != permissions):
             raise AssertionError("U01_QA_TRUST_REJECTED")
 
 
@@ -239,6 +256,54 @@ def _preflight_principals(factory, config: dict, inputs) -> None:
                       for subject in (config["admin_subject"], config["reader_subject"],
                                       config["other_subject"])}
         _assert_qa_trust(config, inputs, principals)
+    except Exception:
+        raise AssertionError("U01_QA_TRUST_REJECTED") from None
+
+
+def _seed_qa_principals(factory, config: dict, inputs) -> None:
+    """Create only the three dedicated U-01 QA identities in one transaction."""
+    try:
+        _validated_target(config["pg_dsn"], config["pg_isolated"], config["database"])
+        policy, scope = inputs.principal_policy, inputs.authorization_scope
+        suffix = config["source_sha"][:12]
+        principals = (
+            ("synthetic-subject-1", f"f19a_qa_admin_{suffix}",
+             f"f19a_qa_bootstrap_{suffix}", ("projects:register", "pair-grants:manage")),
+            ("f19a-qa-reader", "f19a-qa-reader", "f19a-qa-reader-only",
+             ("dashboard:read",)),
+            ("f19a-qa-other", f"f19a_qa_other_{suffix}",
+             f"f19a_qa_other_{suffix}", ("dashboard:read",)),
+        )
+        if (config["phase"] != "granted" or len(config["source_sha"]) != 40
+                or re.fullmatch(r"[0-9a-f]{40}", config["source_sha"]) is None
+                or config["issuer_url"] != "https://anvil-f18-qa.local:8444/realms/anvil"
+                or policy.issuer != config["issuer_url"]
+                or any((config[f"{name}_subject"], config[f"{name}_actor"],
+                         config["expected_role" if name == "reader" else f"{name}_role"])
+                       != (subject, actor, role)
+                       for name, (subject, actor, role, _permissions) in
+                       zip(("admin", "reader", "other"), principals, strict=True))
+                or any(role not in policy.allowed_roles or role not in scope.allowed_actor_roles
+                       or not set(permissions) <= policy.allowed_permissions
+                       for _subject, _actor, role, permissions in principals)
+                or scope.project_id not in policy.allowed_project_ids
+                or scope.environment_id not in policy.allowed_environment_ids):
+            raise AssertionError("U01_QA_TRUST_REJECTED")
+        with factory() as session:
+            with session.begin():
+                if any(session.execute(sa.select(sa.func.count()).select_from(table)).scalar_one()
+                       for table in (users, roles, user_roles, oidc_subject_bindings)):
+                    raise AssertionError("U01_QA_TRUST_REJECTED")
+                for subject, actor, role, permissions in principals:
+                    session.execute(users.insert().values(actor_id=actor, active=True))
+                    session.execute(roles.insert().values(role_code=role,
+                                                         permissions=list(permissions)))
+                    session.execute(user_roles.insert().values(
+                        actor_id=actor, role_code=role, project_id=scope.project_id,
+                        environment_id=scope.environment_id, step_up_required=False, active=True))
+                    session.execute(oidc_subject_bindings.insert().values(
+                        issuer=config["issuer_url"], subject=subject, actor_id=actor,
+                        active=True))
     except Exception:
         raise AssertionError("U01_QA_TRUST_REJECTED") from None
 
@@ -262,8 +327,7 @@ def _seed_pair_data(repo, owner, config: dict) -> None:
 
 
 def _run_browser(config: dict, evidence_dir: Path) -> None:
-    allowed = ("PATH", "HOME", "USERPROFILE", "SYSTEMROOT", "WINDIR", "TEMP", "TMP",
-               "PLAYWRIGHT_BROWSERS_PATH", "NODE_PATH")
+    allowed = ("PATH", "HOME", "USERPROFILE", "SYSTEMROOT", "WINDIR", "TEMP", "TMP")
     env = {key: os.environ[key] for key in allowed if key in os.environ}
     env.update(ANVIL_U01_QA_PHASE=config["phase"],
                ANVIL_U01_QA_APP_URL=config["app_url"],
@@ -274,10 +338,13 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
                                           else config["expected_role"]),
                ANVIL_U01_QA_READER_ROLE=config["expected_role"],
                ANVIL_U01_QA_EVIDENCE_DIR=str(evidence_dir))
-    script = ROOT / "tests/browser/u01-scoped-dashboard-two-pair.mjs"
-    result = subprocess.run([env.get("ANVIL_U01_QA_NODE_BIN", "node"), str(script)],
-                            cwd=ROOT, env=env, capture_output=True, text=True,
-                            timeout=180, check=False)
+    command = _validated_browser_command(json.dumps(config["browser_command"]),
+                                         config["source_sha"])
+    docker_env = [part for key, value in env.items() if key.startswith("ANVIL_U01_QA_")
+                  for part in ("--env", f"{key}={value}")]
+    result = subprocess.run(["docker", "exec", *docker_env, *command[2:]], cwd=ROOT,
+                            env={key: env[key] for key in allowed if key in env},
+                            capture_output=True, text=True, timeout=180, check=False)
     if result.returncode or f"U01_TWO_PAIR_{config['phase'].upper()}_PASS" not in result.stdout:
         code = next((line for line in result.stderr.splitlines()
                      if re.fullmatch(r"U01_QA_[A-Z_]+", line)), "U01_QA_BROWSER_FAILED")
@@ -424,7 +491,10 @@ def test_opt_in_requires_complete_trusted_run_configuration():
                                              '"projectName":"A","environmentName":"Test A"}',
                 "ANVIL_U01_QA_PAIR_B_JSON": '{"projectId":"project-b","environmentId":"test-b",'
                                              '"projectName":"B","environmentName":"Test B"}',
-                "ANVIL_U01_QA_EVIDENCE_DIR": "u01-two-pair-qa-run"}
+                "ANVIL_U01_QA_EVIDENCE_DIR": "u01-two-pair-qa-run",
+                "ANVIL_U01_QA_BROWSER_COMMAND_JSON": json.dumps([
+                    "docker", "exec", "anvil-u01-qa-browser-aaaaaaaaaaaa", "node",
+                    "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"])}
     assert _validated_run_config(supplied)["phase"] == "granted"
     for key in ("ANVIL_U01_QA_SOURCE_SHA", "ANVIL_U01_QA_READER_SUBJECT",
                 "ANVIL_U01_QA_PAIR_B_JSON"):
@@ -489,6 +559,12 @@ def test_qa_trust_preflight_rejects_subject_role_and_permission_mismatch():
         _assert_qa_trust(config, inputs, bad)
     bad = dict(principals)
     bad["f19a-qa-reader"] = SimpleNamespace(**{**vars(principals["f19a-qa-reader"]),
+                                              "permissions": frozenset(("dashboard:read",
+                                                                        "pair-grants:manage"))})
+    with pytest.raises(AssertionError, match="U01_QA_TRUST_REJECTED"):
+        _assert_qa_trust(config, inputs, bad)
+    bad = dict(principals)
+    bad["f19a-qa-reader"] = SimpleNamespace(**{**vars(principals["f19a-qa-reader"]),
                                               "project_ids": frozenset(("other-project",))})
     with pytest.raises(AssertionError, match="U01_QA_TRUST_REJECTED"):
         _assert_qa_trust(config, inputs, bad)
@@ -496,6 +572,143 @@ def test_qa_trust_preflight_rejects_subject_role_and_permission_mismatch():
         _assert_qa_trust(config, SimpleNamespace(principal_policy=policy,
                          authorization_scope=SimpleNamespace(allowed_actor_roles=frozenset(),
                              project_id="qa-host-project", environment_id="qa-host-environment")), principals)
+
+
+def _principal_seed_case():
+    sha = "a" * 40
+    issuer = "https://anvil-f18-qa.local:8444/realms/anvil"
+    config = {"source_sha": sha, "phase": "granted", "pg_isolated": "1",
+              "database": "anvil_u01_qa_1",
+              "pg_dsn": "postgresql://anvil_u01_qa_1:secret@127.0.0.1:5546/anvil_u01_qa_1",
+              "issuer_url": issuer,
+              "admin_actor": f"f19a_qa_admin_{sha[:12]}",
+              "reader_actor": "f19a-qa-reader",
+              "other_actor": f"f19a_qa_other_{sha[:12]}",
+              "admin_role": f"f19a_qa_bootstrap_{sha[:12]}",
+              "expected_role": "f19a-qa-reader-only",
+              "other_role": f"f19a_qa_other_{sha[:12]}",
+              "admin_subject": "synthetic-subject-1",
+              "reader_subject": "f19a-qa-reader", "other_subject": "f19a-qa-other"}
+    policy = SimpleNamespace(issuer=issuer,
+        allowed_roles=frozenset((config["admin_role"], config["expected_role"],
+                                 config["other_role"])),
+        allowed_permissions=frozenset(("projects:register", "pair-grants:manage",
+                                       "dashboard:read")),
+        allowed_project_ids=frozenset(("qa-host-project",)),
+        allowed_environment_ids=frozenset(("qa-host-environment",)))
+    scope = SimpleNamespace(project_id="qa-host-project", environment_id="qa-host-environment",
+                            allowed_actor_roles=policy.allowed_roles)
+    inputs = SimpleNamespace(principal_policy=policy, authorization_scope=scope)
+    engine = sa.create_engine("sqlite://")
+    DIRECTORY_METADATA.create_all(engine)
+    return engine, sessionmaker(bind=engine), config, inputs
+
+
+def _principal_counts(engine):
+    with engine.connect() as connection:
+        return tuple(_count(connection, table) for table in
+                     (users, roles, user_roles, oidc_subject_bindings))
+
+
+def test_granted_seeds_three_exact_qa_principals_atomically():
+    engine, factory, config, inputs = _principal_seed_case()
+    try:
+        _seed_qa_principals(factory, config, inputs)
+        assert _principal_counts(engine) == (3, 3, 3, 3)
+        _preflight_principals(factory, config, inputs)
+        resolver = SqlAlchemyOidcPrincipalResolver(factory)
+        for subject, actor, role, permissions in (
+            ("synthetic-subject-1", config["admin_actor"], config["admin_role"],
+             frozenset(("projects:register", "pair-grants:manage"))),
+            ("f19a-qa-reader", "f19a-qa-reader", "f19a-qa-reader-only",
+             frozenset(("dashboard:read",))),
+            ("f19a-qa-other", config["other_actor"], config["other_role"],
+             frozenset(("dashboard:read",))),
+        ):
+            principal = resolver.resolve(config["issuer_url"], subject)
+            assert (principal.actor_id, principal.actor_role, principal.permissions) == (
+                actor, role, permissions)
+    finally:
+        engine.dispose()
+
+
+def test_granted_seed_rejects_wrong_db_trust_role_subject_and_existing_rows_without_write():
+    for mutation in ("db", "issuer", "role", "subject", "partial"):
+        engine, factory, config, inputs = _principal_seed_case()
+        try:
+            if mutation == "db":
+                config["database"] = "anvil_f19a_1234567"
+            elif mutation == "issuer":
+                inputs.principal_policy.issuer = "https://wrong.invalid"
+            elif mutation == "role":
+                config["other_role"] = "shared-admin"
+            elif mutation == "subject":
+                config["reader_subject"] = "wrong-subject"
+            else:
+                with engine.begin() as connection:
+                    connection.execute(users.insert().values(actor_id=config["reader_actor"],
+                                                             active=True))
+            before = _principal_counts(engine)
+            with pytest.raises(AssertionError, match="U01_QA_TRUST_REJECTED"):
+                _seed_qa_principals(factory, config, inputs)
+            assert _principal_counts(engine) == before
+        finally:
+            engine.dispose()
+
+
+def test_granted_seed_rolls_back_all_principals_on_late_insert_failure():
+    engine, factory, config, inputs = _principal_seed_case()
+    def fail_binding(_connection, _cursor, statement, _parameters, _context, _executemany):
+        if statement.startswith("INSERT INTO oidc_subject_bindings"):
+            raise RuntimeError("synthetic binding insert fault")
+    sa.event.listen(engine, "before_cursor_execute", fail_binding)
+    try:
+        with pytest.raises(AssertionError, match="U01_QA_TRUST_REJECTED"):
+            _seed_qa_principals(factory, config, inputs)
+        assert _principal_counts(engine) == (0, 0, 0, 0)
+    finally:
+        sa.event.remove(engine, "before_cursor_execute", fail_binding)
+        engine.dispose()
+
+
+def test_browser_command_requires_exact_isolated_docker_exec_and_rejects_host_fallback():
+    sha = "a" * 40
+    command = ["docker", "exec", f"anvil-u01-qa-browser-{sha[:12]}", "node",
+               "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    assert _validated_browser_command(json.dumps(command), sha) == tuple(command)
+    for bad in (["node", str(ROOT / "tests/browser/u01-scoped-dashboard-two-pair.mjs")],
+                ["sh", "-c", "node test.mjs"],
+                ["docker", "run", command[2], "node", command[4]],
+                ["docker", "exec", "shared-browser", "node", command[4]],
+                ["docker", "exec", command[2], "node", "/tmp/other.mjs"],
+                command + ["--extra"]):
+        with pytest.raises(AssertionError, match="U01_QA_BROWSER_COMMAND_REJECTED"):
+            _validated_browser_command(json.dumps(bad), sha)
+
+
+def test_browser_exec_passes_only_nonsecret_qa_values_into_isolated_container(monkeypatch, tmp_path):
+    sha = "a" * 40
+    command = ["docker", "exec", f"anvil-u01-qa-browser-{sha[:12]}", "node",
+               "/workspace/tests/browser/u01-scoped-dashboard-two-pair.mjs"]
+    config = {"source_sha": sha, "phase": "granted", "app_url": "https://anvil-f18-qa.local:8444/",
+              "issuer_url": "https://anvil-f18-qa.local:8444/realms/anvil",
+              "pair_a": {"projectId": "project-a", "environmentId": "test-a"},
+              "pair_b": {"projectId": "project-b", "environmentId": "test-b"},
+              "expected_role": "f19a-qa-reader-only", "other_role": f"f19a_qa_other_{sha[:12]}",
+              "browser_command": tuple(command)}
+    observed = {}
+    def capture(argv, **kwargs):
+        observed.update(argv=argv, options=kwargs)
+        return SimpleNamespace(returncode=0, stdout="U01_TWO_PAIR_GRANTED_PASS", stderr="")
+    monkeypatch.setattr(subprocess, "run", capture)
+    monkeypatch.setenv("ANVIL_DATABASE_URL", "postgresql://secret@private.invalid/db")
+    _run_browser(config, tmp_path)
+    assert observed["argv"][:2] == ["docker", "exec"]
+    assert observed["argv"][-3:] == command[-3:]
+    assert any(arg == "ANVIL_U01_QA_PHASE=granted" for arg in observed["argv"])
+    assert all("secret" not in arg and "ANVIL_DATABASE_URL" not in arg
+               for arg in observed["argv"])
+    assert "ANVIL_DATABASE_URL" not in observed["options"]["env"]
 
 
 def test_phase_plan_requires_clean_before_and_exact_after_inventory():
@@ -553,6 +766,8 @@ def test_opt_in_u01_two_pair_oidc_https_pg15():
     try:
         factory = sessionmaker(bind=engine)
         _preflight_database(engine, config)
+        if config["phase"] == "granted":
+            _seed_qa_principals(factory, config, inputs)
         _preflight_principals(factory, config, inputs)
         _preflight_pair_ledger(engine, config)
         repo = F19ARegistrationRepository(factory)
