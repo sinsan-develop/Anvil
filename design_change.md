@@ -10,6 +10,7 @@
 
 ### DC-U01-008 — 두 조합 하네스의 합성 실행 환경·통제 successor 미구현
 
+- 후속 보완(2026-10-10 KST): 합성 admin/reader/other 신원 seed와 source-bound Docker browser 명령은 기존 WI의 정확 한 파일 재작업 C `3346252c058c21915e7a3258377f9d604f61a0a9`로 구현·원격 보존했다. 독립 집중 27 PASS/1 실제 opt-in SKIP이며 수직 QA 완료가 아니다. WSL 호스트에서 합성 도메인이 외부 IP로 해석됨을 확인해 브라우저는 전용 Docker network alias 안에서만 돌리도록 R2 자원 계획을 기록했다. 남은 미충족은 exact SHA 전용 HTTPS app/issuer/Playwright 네 phase, 기존 R6 실패 분리, 최신 G-05 successor와 독립 수락이다.
 - 판정: Task4 두 조합 하네스 자체는 로컬·WSL 비-opt-in 검증을 통과했지만, 실제 OIDC/HTTPS/Chromium 네 phase를 기동하는 전용 runner/fixture가 빠져 이번 주기 수직 인수는 `NOT_EXECUTED`다. 새 epoch106 C 이후 G-05 경로도 RED다. 이는 제품 결함 확정이나 추가 사용자 승인 요청이 아니라 계획 범위의 재작업 입력이다.
 - 재현 근거: 기존 단일 branch의 하네스 C `0dff0ea73650a8c4d1a5b426f295b1113f6682c1`, 자원 계획 checkpoint `2c3dd55520f4296a6d642d18830a58abfee0acd9`은 개발 원격과 일치했다. `ssh WSL-server`의 clean exact SHA에서 전용 PG15 `150018`/migration0020·빈 5개 등록/감사 원장, 새 Python 22 PASS/1 opt-in SKIP, Node 자체 검사/구문 검사를 확인했다. 그러나 합성 issuer·세 principal seed·HTTPS 앱/화면 build/Playwright 런타임을 묶어 기동할 절차가 하네스에 없어 실제 네 phase는 시작하지 않았다. 기존 R6 통합 시험은 단일 host·다른 DB/name/계약이므로 재사용 가능한 runner가 아니다. G-05는 최신 branch에서 exit1 10개 mismatch/route 오류다.
 - 영향·조치: 두 조합 선택·기간·철회·복원·독립 actor의 실제 DB/API/UI/Network·E-SHOT/E-NET/E-API/E-AUD와 기존 R6 `STORED_ROW` 회귀 해소는 미검증이다. 공유 서비스를 전용 QA 대체로 사용하지 않았다. 격리 PG container/network·세 경로·합성 Secret/venv는 ID·owner·clean 상태를 대조해 정확히 정리했고 잔여0, 공유 Web/PG ID·running 불변이다. 상세 근거는 `docs/04_test_reports/U-01_TASK4_TWO_PAIR_WSL_QA_RESULT.md`에 있다.
