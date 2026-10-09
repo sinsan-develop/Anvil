@@ -134,17 +134,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2294,
-  "last_event_id": "evt_u01_2294_scoped_dashboard_task1_worker_lease_revoked",
+  "event_sequence": 2297,
+  "last_event_id": "evt_u01_2297_scoped_dashboard_task2_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-scoped-dashboard-task2",
+  "worker_lease": "worker-lease-u01-scoped-dashboard-task2-466f8961ccbc45608c5a92d103616d5a",
+  "write_lease": "write-lease-u01-scoped-dashboard-task2-1fe2db4bf402414d9788275789fc41e0",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_DUAL_LEASE_PENDING",
-  "repository_head": "1d501aee680924d53ae601b31abfc9649e9b1a93",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_CONTROL_ONLY",
+  "repository_head": "10b7edf500699eeab91eb2c9b03988a6a2f4c34b",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
