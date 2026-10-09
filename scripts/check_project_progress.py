@@ -74101,5 +74101,614 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_scoped_history_100(bundle)
 
 
+def _validate_u01_scoped_dashboard_task1_active(bundle, *, event_raw=None, now=None,
+                                                archived_files=None):
+    """Bind Task 1 A2 to the immutable epoch100 close and exact lease."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    predecessor = "ba8c9c3c4e31c5334e658c40787f019925c8c5a6"
+    issued = "a960e1cc3aa3cf4c27c9f784fb41b4f8f6544fac"
+    corrected = "075fceec6cb70860715b3f7e4305651624eb45f7"
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    errors = []
+    try:
+        published = {path: subprocess.check_output(["git", "show", f"{corrected}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        frozen = {path: subprocess.check_output(["git", "show", f"{predecessor}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        base = json.loads(published[paths[0]])
+        frozen_progress = json.loads(frozen[paths[0]])
+        frozen_text = frozen[paths[2]].decode("utf-8")
+        frozen_bundle = {**bundle, "progress": frozen_progress,
+            "events": json.loads(frozen[paths[1]]), "handoff_text": frozen_text,
+            "handoff": extract_handoff_summary(frozen_text),
+            "detached_digest": json.loads(frozen[paths[3]])}
+        frozen_at = datetime.fromisoformat(frozen_progress["updated_at"])
+        if _validate_u01_scoped_dashboard_historical_closed(frozen_bundle,
+                event_raw=frozen[paths[1]], now=frozen_at,
+                archived_files={paths[0]: frozen[paths[0]], paths[2]: frozen[paths[2]]}):
+            errors.append("U01_TASK1_PREDECESSOR_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        stream = bundle["events"]
+        if (raw_event_object_prefix_bytes(raw, 2289)
+                != raw_event_object_prefix_bytes(frozen[paths[1]], 2289)
+                or raw != published[paths[1]] or stream != json.loads(raw)
+                or stream.get("last_sequence") != 2292
+                or len(stream.get("events", [])) != 2292
+                or base.get("event_sequence") != 2292
+                or base.get("last_event_id") != stream.get("last_event_id")
+                or base.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("U01_TASK1_EVENT_INVALID")
+        for index, kind in enumerate(("WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+                                      "WRITE_LEASE_ISSUED"), start=2289):
+            row = stream["events"][index]
+            if (row != json.loads(published[paths[1]])["events"][index]
+                    or row.get("sequence") != index + 1 or row.get("event_type") != kind
+                    or row.get("previous_event_sha256") != hashlib.sha256(
+                        canonical_json_bytes(stream["events"][index - 1])).hexdigest().upper()):
+                errors.append("U01_TASK1_EVENT_INVALID")
+        progress = bundle["progress"]
+        binding = progress["u01_scoped_dashboard_task1_binding"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        issued_at = datetime.fromisoformat(worker["issued_at"])
+        expires = datetime.fromisoformat(worker["expires_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        control = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+        product = {"packages/persistence/f19a_registration_repository.py",
+            "packages/api/f19a_registration.py", "packages/api/registry.py",
+            "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py",
+            "apps/api/anvil_api/oidc_process.py",
+            "tests/persistence/test_f19a_registration_repository.py",
+            "tests/api/test_f19a_registration_api.py",
+            "tests/api/test_u01_scoped_dashboard_api.py"}
+        if (worker != base["worker_lease"] or write != base["write_lease"]
+                or issued_at.tzinfo is None or expires.tzinfo is None or instant.tzinfo is None
+                or not issued_at <= instant < expires or expires - issued_at != timedelta(hours=24)
+                or worker["execution_fencing_token"] == write["write_fencing_token"]
+                or set(worker["path_scope"]) != control | product
+                or set(write["path_scope"]) != control | product
+                or set(write["product_write_scope"]) != product
+                or write.get("product_gate") != "LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN"
+                or set(binding["control_write_scope"]) != control
+                or set(binding["product_write_scope"]) != product
+                or set(binding["developer_exact_paths"]) != control | product
+                or binding.get("product_gate") != write.get("product_gate")):
+            errors.append("U01_TASK1_LEASE_INVALID")
+        checkpoint = binding.get("control_checkpoint")
+        product_checkpoint = binding.get("product_code_checkpoint")
+        expected = copy.deepcopy(base)
+        expected_handoff = extract_handoff_summary(published[paths[2]].decode("utf-8"))
+        if checkpoint is not None:
+            updated = datetime.fromisoformat(progress["updated_at"])
+            base_updated = datetime.fromisoformat(base["updated_at"])
+            if (not isinstance(checkpoint, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or checkpoint in {predecessor, issued, corrected}
+                    or updated.tzinfo is None or base_updated.tzinfo is None
+                    or not issued_at <= base_updated <= updated <= instant < expires):
+                errors.append("U01_TASK1_PROJECTION_INVALID")
+            status = "U01_SCOPED_DASHBOARD_TASK1_CONTROL_CHECKPOINTED_PRODUCT_READY"
+            action = "U01_SCOPED_DASHBOARD_TASK1_PRODUCT_RED_ONLY"
+            repository_head = checkpoint
+            snapshot = "snapshot-u01-scoped-dashboard-task1-control-seq2292"
+            expected["u01_scoped_dashboard_task1_binding"].update(status=status,
+                next_safe_action=action, control_checkpoint=checkpoint)
+            if product_checkpoint is not None:
+                publication = binding.get("control_projection_checkpoint")
+                if (not isinstance(product_checkpoint, str)
+                        or re.fullmatch(r"[0-9a-f]{40}", product_checkpoint) is None
+                        or not isinstance(publication, str)
+                        or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                        or len({checkpoint, product_checkpoint, publication, corrected}) != 4):
+                    errors.append("U01_TASK1_PROJECTION_INVALID")
+                else:
+                    control_raw = subprocess.check_output(["git", "show",
+                        f"{publication}:{paths[0]}"], cwd=root, stderr=subprocess.DEVNULL)
+                    control_progress = json.loads(control_raw)
+                    control_at = datetime.fromisoformat(control_progress["updated_at"])
+                    if (control_at.tzinfo is None or not base_updated <= control_at <= updated
+                            or control_progress.get("next_safe_action")
+                               != "U01_SCOPED_DASHBOARD_TASK1_PRODUCT_RED_ONLY"
+                            or control_progress.get("u01_scoped_dashboard_task1_binding", {}).get(
+                                "control_checkpoint") != checkpoint):
+                        errors.append("U01_TASK1_PROJECTION_INVALID")
+                status = "U01_SCOPED_DASHBOARD_TASK1_PRODUCT_CHECKPOINTED_CLOSE_READY"
+                action = "U01_SCOPED_DASHBOARD_TASK1_CLOSE_ONLY"
+                repository_head = product_checkpoint
+                snapshot = "snapshot-u01-scoped-dashboard-task1-product-seq2292"
+                expected["u01_scoped_dashboard_task1_binding"].update(status=status,
+                    next_safe_action=action, product_code_checkpoint=product_checkpoint,
+                    control_projection_checkpoint=publication)
+            expected["active_work_instruction"].update(result_status=status,
+                package_status=status)
+            expected["repository"].update(local_head=repository_head,
+                remote_head=repository_head, head_relation=status, worktree_status=status)
+            expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+                runtime_next_action=action,
+                next_work_package={"package_id": "U-01", "status": status},
+                snapshot_id=snapshot)
+            expected["snapshot_hash"] = compute_snapshot_hash(expected)
+            expected_handoff.update(repository_head=repository_head, next_safe_action=action)
+        if (progress != expected or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("repository", {}).get("projection_mode")
+                   != "U01_SCOPED_DASHBOARD_TASK1_ACTIVE"
+                or binding.get("predecessor_head") != predecessor
+                or binding.get("a_docs_checkpoint") != issued
+                or binding.get("vertical_acceptance") != "NOT_ACCEPTED"
+                or binding.get("public_api_contract") != "HUMAN_APPROVED_EXACT_PROPOSAL_B"
+                or binding.get("release_decision") != "DEFER"
+                or binding.get("production") != "NOT_EXECUTED"):
+            errors.append("U01_TASK1_PROJECTION_INVALID")
+        if (bundle["handoff"] != expected_handoff
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]
+                or (checkpoint is None
+                    and bundle["handoff_text"].encode("utf-8") != published[paths[2]])):
+            errors.append("U01_TASK1_HANDOFF_INVALID")
+        progress_raw = (archived_files or {}).get(paths[0], (root / paths[0]).read_bytes())
+        handoff_raw = (archived_files or {}).get(paths[2], (root / paths[2]).read_bytes())
+        digest = bundle["detached_digest"]
+        expected_digest = json.loads(published[paths[3]])
+        if checkpoint is not None:
+            for section, data in (("progress", progress_raw), ("handoff", handoff_raw)):
+                expected_digest[section].update(bytes=len(data),
+                    file_sha256=hashlib.sha256(data).hexdigest().upper())
+        if (digest != expected_digest
+                or digest.get("schema_version") != "1.0.0"
+                or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False
+                or any(digest.get(section, {}).get("bytes") != len(data)
+                       or digest.get(section, {}).get("file_sha256")
+                          != hashlib.sha256(data).hexdigest().upper()
+                       for section, data in (("progress", progress_raw), ("handoff", handoff_raw)))):
+            errors.append("U01_TASK1_DIGEST_INVALID")
+        for field, path, sha in (("contract_proposal_sha256",
+                "docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md",
+                "5B13E92A16A903F2887BA5F3E038AA5A41BBBBA667EE0DED57FF9C39E7BCA584"),
+                ("approval_sha256",
+                "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+                "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"),
+                ("implementation_plan_sha256",
+                "docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md",
+                "002977BDB7B634E974E4926F1FA52D6DC520450F92EBE64AB490EE6BD773C8C3"),
+                ("work_instruction_sha256",
+                "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK1_WORK_INSTRUCTION.md",
+                "CB083A37CA94C262E7111A8B87E12CD3907E139ABF9C8ED23F3A04B3DA38CA09"),
+                ("invocation_sha256",
+                "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK1_INVOCATION.md",
+                "1A16F107B87047BAFBE446BDA6D38A90C67629FCC42724C0E25CB9491F066578")):
+            if binding.get(field) != sha or _sha256(root / path).upper() != sha:
+                errors.append("U01_TASK1_INSTRUCTION_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK1_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_scoped_dashboard_task1_git(bundle):
+    """Require exact epoch100 H→Task1 A→A2 publication, with product locked."""
+    from datetime import datetime
+
+    root = Path(bundle["_root"])
+    predecessor = "ba8c9c3c4e31c5334e658c40787f019925c8c5a6"
+    issued = "a960e1cc3aa3cf4c27c9f784fb41b4f8f6544fac"
+    corrected = "075fceec6cb70860715b3f7e4305651624eb45f7"
+    upstream = "development/codex/u01-dashboard-r2"
+    control = {"scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"}
+    issued_docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK1_INVOCATION.md",
+        "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK1_WORK_INSTRUCTION.md"}
+    correction_docs = {"docs/WORK_STATUS.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    projection_docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    product = {"packages/persistence/f19a_registration_repository.py",
+        "packages/api/f19a_registration.py", "packages/api/registry.py",
+        "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/persistence/test_f19a_registration_repository.py",
+        "tests/api/test_f19a_registration_api.py",
+        "tests/api/test_u01_scoped_dashboard_api.py"}
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def run(*args):
+            return subprocess.run(["git", *args], cwd=root, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL).returncode
+        def changes(start, end):
+            if git("rev-list", "--min-parents=2", f"{start}..{end}"):
+                raise ValueError("merge in Task1 bootstrap")
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{start}..{end}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames",
+                f"{start}..{end}").splitlines()) - {""}
+            return history, delta
+        head = git("rev-parse", "HEAD")
+        dirty = {row[3:] for row in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or git("rev-parse", upstream) != head
+                or git("show", "-s", "--format=%P", issued) != predecessor
+                or git("show", "-s", "--format=%P", corrected) != issued
+                or changes(predecessor, issued) != (issued_docs, issued_docs)
+                or changes(issued, corrected) != (correction_docs, correction_docs)
+                or run("diff", "--check", "development/main...HEAD")):
+            return ["U01_TASK1_GIT_INVALID"]
+        binding = bundle["progress"]["u01_scoped_dashboard_task1_binding"]
+        if binding.get("control_checkpoint") is None:
+            if head != corrected or dirty - control:
+                return ["U01_TASK1_GIT_INVALID"]
+        else:
+            checkpoint = binding["control_checkpoint"]
+            product_checkpoint = binding.get("product_code_checkpoint")
+            if (not isinstance(checkpoint, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or run("merge-base", "--is-ancestor", corrected, checkpoint)
+                    or git("rev-list", "--count", f"{corrected}..{checkpoint}") != "1"
+                    or changes(corrected, checkpoint) != (control, control)
+                    or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                        cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                        for path in control)):
+                return ["U01_TASK1_GIT_INVALID"]
+            if product_checkpoint is None:
+                if (head == checkpoint or dirty - product
+                        or run("merge-base", "--is-ancestor", checkpoint, head)
+                        or git("rev-list", "--count", f"{checkpoint}..{head}") != "1"):
+                    return ["U01_TASK1_GIT_INVALID"]
+                history, delta = changes(checkpoint, head)
+                if history - projection_docs or delta - projection_docs or not delta:
+                    return ["U01_TASK1_GIT_INVALID"]
+            else:
+                publication = binding.get("control_projection_checkpoint")
+                if (not isinstance(product_checkpoint, str)
+                        or re.fullmatch(r"[0-9a-f]{40}", product_checkpoint) is None
+                        or not isinstance(publication, str)
+                        or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                        or len({corrected, checkpoint, publication, product_checkpoint, head}) != 5
+                        or dirty
+                        or any(run("merge-base", "--is-ancestor", left, right)
+                               for left, right in ((checkpoint, publication),
+                                                   (publication, product_checkpoint),
+                                                   (product_checkpoint, head)))
+                        or any(git("rev-list", "--count", f"{left}..{right}") != "1"
+                               for left, right in ((checkpoint, publication),
+                                                   (publication, product_checkpoint),
+                                                   (product_checkpoint, head)))):
+                    return ["U01_TASK1_GIT_INVALID"]
+                history, delta = changes(checkpoint, publication)
+                if history - projection_docs or delta - projection_docs or not delta:
+                    return ["U01_TASK1_GIT_INVALID"]
+                history, delta = changes(publication, product_checkpoint)
+                if (history - product or delta - product or not delta
+                        or "tests/api/test_u01_scoped_dashboard_api.py" not in delta
+                        or not any(not path.startswith("tests/") for path in delta)):
+                    return ["U01_TASK1_GIT_INVALID"]
+                history, delta = changes(product_checkpoint, head)
+                if history - projection_docs or delta - projection_docs or not delta:
+                    return ["U01_TASK1_GIT_INVALID"]
+                frozen_paths = ("docs/progress/build-progress.json",
+                    "docs/progress/progress-events.json", "docs/progress/BUILD_HANDOFF.md",
+                    "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+                frozen = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) for path in frozen_paths}
+                frozen_text = frozen[frozen_paths[2]].decode("utf-8")
+                frozen_bundle = {**bundle, "progress": json.loads(frozen[frozen_paths[0]]),
+                    "events": json.loads(frozen[frozen_paths[1]]), "handoff_text": frozen_text,
+                    "handoff": extract_handoff_summary(frozen_text),
+                    "detached_digest": json.loads(frozen[frozen_paths[3]])}
+                frozen_at = datetime.fromisoformat(frozen_bundle["progress"]["updated_at"])
+                if _validate_u01_scoped_dashboard_task1_active(frozen_bundle,
+                        event_raw=frozen[frozen_paths[1]], now=frozen_at,
+                        archived_files={frozen_paths[0]: frozen[frozen_paths[0]],
+                                        frozen_paths[2]: frozen[frozen_paths[2]]}):
+                    return ["U01_TASK1_GIT_INVALID"]
+                if frozen_bundle["progress"]["u01_scoped_dashboard_task1_binding"].get(
+                        "control_checkpoint") != checkpoint or frozen_bundle["progress"].get(
+                        "next_safe_action") != "U01_SCOPED_DASHBOARD_TASK1_PRODUCT_RED_ONLY":
+                    return ["U01_TASK1_GIT_INVALID"]
+            published = json.loads(subprocess.check_output(["git", "show",
+                f"{head}:docs/progress/build-progress.json"], cwd=root,
+                stderr=subprocess.DEVNULL))
+            if (published != bundle["progress"]
+                    or published.get("u01_scoped_dashboard_task1_binding", {}).get(
+                        "control_checkpoint") != checkpoint):
+                return ["U01_TASK1_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError):
+        return ["U01_TASK1_GIT_INVALID"]
+
+
+def _validate_u01_scoped_dashboard_task1_closed(bundle, *, event_raw=None, now=None,
+                                                 archived_files=None):
+    """Bind Task1 close to the immutable, validated product publication."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    errors = []
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress["u01_scoped_dashboard_task1_binding"]
+        publication = binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str)
+                or re.fullmatch(r"[0-9a-f]{40}", publication) is None):
+            return ["U01_TASK1_CLOSE_INVALID"]
+        published = {path: subprocess.check_output(["git", "show", f"{publication}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        active_progress = json.loads(published[paths[0]])
+        active_text = published[paths[2]].decode("utf-8")
+        active_bundle = {**bundle, "progress": active_progress,
+            "events": json.loads(published[paths[1]]), "handoff_text": active_text,
+            "handoff": extract_handoff_summary(active_text),
+            "detached_digest": json.loads(published[paths[3]])}
+        active_at = datetime.fromisoformat(active_progress["updated_at"])
+        if (_validate_u01_scoped_dashboard_task1_active(active_bundle,
+                event_raw=published[paths[1]], now=active_at,
+                archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+                or active_progress["u01_scoped_dashboard_task1_binding"].get(
+                    "product_code_checkpoint") != binding.get("product_code_checkpoint")
+                or active_progress["u01_scoped_dashboard_task1_binding"].get(
+                    "control_projection_checkpoint") != binding.get("control_projection_checkpoint")
+                or active_progress.get("next_safe_action") != "U01_SCOPED_DASHBOARD_TASK1_CLOSE_ONLY"):
+            errors.append("U01_TASK1_CLOSE_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        published_stream = json.loads(published[paths[1]])
+        def stable(value):
+            return {key: item for key, item in value.items()
+                if key not in {"events", "last_sequence", "last_event_id"}}
+        if (raw_event_object_prefix_bytes(raw, 2292)
+                != raw_event_object_prefix_bytes(published[paths[1]], 2292)
+                or stable(stream) != stable(published_stream) or stream != json.loads(raw)
+                or stream.get("last_sequence") != 2294 or len(stream.get("events", [])) != 2294
+                or progress.get("event_sequence") != 2294
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("U01_TASK1_CLOSE_EVENT_INVALID")
+        worker, write = active_progress["worker_lease"], active_progress["write_lease"]
+        issued = datetime.fromisoformat(worker["issued_at"])
+        expires = datetime.fromisoformat(worker["expires_at"])
+        at = datetime.fromisoformat(stream["events"][2292]["occurred_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (at.tzinfo is None or instant.tzinfo is None or active_at.tzinfo is None
+                or not issued <= active_at <= at < expires or at > instant
+                or stream["events"][2293]["occurred_at"] != at.isoformat()):
+            errors.append("U01_TASK1_CLOSE_EVENT_INVALID")
+        reason = "U01_SCOPED_DASHBOARD_TASK1_API_SHELL_VERIFIED_TASK2_PENDING"
+        for index, kind, event_id, details in (
+            (2292, "WRITE_LEASE_REVOKED", "evt_u01_2293_scoped_dashboard_task1_write_lease_revoked",
+             {"lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
+              "reason": reason}),
+            (2293, "WORKER_LEASE_REVOKED", "evt_u01_2294_scoped_dashboard_task1_worker_lease_revoked",
+             {"lease_id": worker["lease_id"],
+              "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            row = stream["events"][index]
+            if row != {"sequence": index + 1, "event_id": event_id, "event_type": kind,
+                    "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                    "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                    "run_id": None, "step_id": "U01_SCOPED_DASHBOARD_TASK1_CLOSE",
+                    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK1", "occurred_at": at.isoformat(),
+                    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                    "previous_event_sha256": hashlib.sha256(canonical_json_bytes(
+                        stream["events"][index - 1])).hexdigest().upper(), "details": details}:
+                errors.append("U01_TASK1_CLOSE_EVENT_INVALID")
+        expected = copy.deepcopy(active_progress)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        expected["worker_lease"] = expected["write_lease"] = None
+        expected["completed_u01_scoped_dashboard_task1_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at.isoformat()}
+        expected["completed_u01_scoped_dashboard_task1_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at.isoformat()}
+        status = "U01_SCOPED_DASHBOARD_TASK1_CLOSED_TASK2_PENDING"
+        action = "U01_SCOPED_DASHBOARD_TASK2_DUAL_LEASE_PENDING"
+        expected["u01_scoped_dashboard_task1_binding"].update(status=status,
+            next_safe_action=action, active_projection_checkpoint=publication, event_sequence=2294)
+        expected["active_work_instruction"].update(result_status=status, package_status=status)
+        expected.update(active_agent=None, updated_at=at.isoformat(), event_sequence=2294,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-scoped-dashboard-task1-close-seq2294")
+        expected["repository"].update(projection_mode="U01_SCOPED_DASHBOARD_TASK1_CLOSED",
+            head_relation=status, worktree_status=status)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        if progress != expected or progress.get("snapshot_hash") != compute_snapshot_hash(progress):
+            errors.append("U01_TASK1_CLOSE_PROJECTION_INVALID")
+        expected_handoff = copy.deepcopy(active_bundle["handoff"])
+        expected_handoff.update(event_sequence=2294, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None,
+            repository_head=active_progress["repository"]["local_head"], next_safe_action=action)
+        if (bundle["handoff"] != expected_handoff
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]):
+            errors.append("U01_TASK1_CLOSE_HANDOFF_INVALID")
+        progress_raw = (archived_files or {}).get(paths[0], (root / paths[0]).read_bytes())
+        handoff_raw = (archived_files or {}).get(paths[2], (root / paths[2]).read_bytes())
+        expected_digest = copy.deepcopy(active_bundle["detached_digest"])
+        expected_digest["event_sequence"] = 2294
+        for section, data in (("progress", progress_raw), ("handoff", handoff_raw)):
+            expected_digest[section].update(bytes=len(data),
+                file_sha256=hashlib.sha256(data).hexdigest().upper())
+        digest = bundle["detached_digest"]
+        if (digest != expected_digest or digest.get("schema_version") != "1.0.0"
+                or digest.get("algorithm") != "SHA-256"
+                or digest.get("self_reference") is not False):
+            errors.append("U01_TASK1_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK1_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_scoped_dashboard_task1_closed_git(bundle):
+    """Require one exact control, product, and close publication per Task1 gate."""
+    from datetime import datetime
+
+    root = Path(bundle["_root"])
+    predecessor = "ba8c9c3c4e31c5334e658c40787f019925c8c5a6"
+    issued = "a960e1cc3aa3cf4c27c9f784fb41b4f8f6544fac"
+    corrected = "075fceec6cb70860715b3f7e4305651624eb45f7"
+    upstream = "development/codex/u01-dashboard-r2"
+    control = {"scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"}
+    product = {"packages/persistence/f19a_registration_repository.py",
+        "packages/api/f19a_registration.py", "packages/api/registry.py",
+        "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/persistence/test_f19a_registration_repository.py",
+        "tests/api/test_f19a_registration_api.py",
+        "tests/api/test_u01_scoped_dashboard_api.py"}
+    issued_docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+        "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK1_INVOCATION.md",
+        "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK1_WORK_INSTRUCTION.md"}
+    correction_docs = {"docs/WORK_STATUS.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    projection_docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    frozen_paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def run(*args):
+            return subprocess.run(["git", *args], cwd=root, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL).returncode
+        def changes(start, end):
+            if git("rev-list", "--min-parents=2", f"{start}..{end}"):
+                raise ValueError("merge in Task1 close")
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{start}..{end}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames",
+                f"{start}..{end}").splitlines()) - {""}
+            return history, delta
+        binding = bundle["progress"]["u01_scoped_dashboard_task1_binding"]
+        checkpoint, control_publication = binding["control_checkpoint"], binding["control_projection_checkpoint"]
+        product_checkpoint, publication = binding["product_code_checkpoint"], binding["active_projection_checkpoint"]
+        head = git("rev-parse", "HEAD")
+        dirty = {row[3:] for row in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (any(not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in (checkpoint, control_publication, product_checkpoint, publication))
+                or len({corrected, checkpoint, control_publication, product_checkpoint,
+                        publication, head}) != 6
+                or git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != upstream
+                or git("rev-parse", upstream) != head or dirty
+                or git("show", "-s", "--format=%P", issued) != predecessor
+                or git("show", "-s", "--format=%P", corrected) != issued
+                or changes(predecessor, issued) != (issued_docs, issued_docs)
+                or changes(issued, corrected) != (correction_docs, correction_docs)
+                or run("diff", "--check", "development/main...HEAD")):
+            return ["U01_TASK1_CLOSE_GIT_INVALID"]
+        legs = ((corrected, checkpoint), (checkpoint, control_publication),
+            (control_publication, product_checkpoint), (product_checkpoint, publication),
+            (publication, head))
+        if (any(run("merge-base", "--is-ancestor", left, right) for left, right in legs)
+                or any(git("rev-list", "--count", f"{left}..{right}") != "1"
+                       for left, right in legs)
+                or changes(corrected, checkpoint) != (control, control)
+                or any(subprocess.check_output(["git", "show", f"{checkpoint}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                    for path in control)):
+            return ["U01_TASK1_CLOSE_GIT_INVALID"]
+        for left, right in ((checkpoint, control_publication),
+                            (product_checkpoint, publication), (publication, head)):
+            history, delta = changes(left, right)
+            if history - projection_docs or delta - projection_docs or not delta:
+                return ["U01_TASK1_CLOSE_GIT_INVALID"]
+        history, delta = changes(control_publication, product_checkpoint)
+        if (history - product or delta - product or not delta
+                or "tests/api/test_u01_scoped_dashboard_api.py" not in delta
+                or not any(not path.startswith("tests/") for path in delta)):
+            return ["U01_TASK1_CLOSE_GIT_INVALID"]
+        for sha, action in ((control_publication, "U01_SCOPED_DASHBOARD_TASK1_PRODUCT_RED_ONLY"),
+                            (publication, "U01_SCOPED_DASHBOARD_TASK1_CLOSE_ONLY")):
+            frozen = {path: subprocess.check_output(["git", "show", f"{sha}:{path}"],
+                cwd=root, stderr=subprocess.DEVNULL) for path in frozen_paths}
+            text = frozen[frozen_paths[2]].decode("utf-8")
+            frozen_bundle = {**bundle, "progress": json.loads(frozen[frozen_paths[0]]),
+                "events": json.loads(frozen[frozen_paths[1]]), "handoff_text": text,
+                "handoff": extract_handoff_summary(text),
+                "detached_digest": json.loads(frozen[frozen_paths[3]])}
+            frozen_at = datetime.fromisoformat(frozen_bundle["progress"]["updated_at"])
+            if (_validate_u01_scoped_dashboard_task1_active(frozen_bundle,
+                    event_raw=frozen[frozen_paths[1]], now=frozen_at,
+                    archived_files={frozen_paths[0]: frozen[frozen_paths[0]],
+                                    frozen_paths[2]: frozen[frozen_paths[2]]})
+                    or frozen_bundle["progress"].get("next_safe_action") != action
+                    or frozen_bundle["progress"]["u01_scoped_dashboard_task1_binding"].get(
+                        "control_checkpoint") != checkpoint):
+                return ["U01_TASK1_CLOSE_GIT_INVALID"]
+        closed = json.loads(subprocess.check_output(["git", "show",
+            f"{head}:docs/progress/build-progress.json"], cwd=root, stderr=subprocess.DEVNULL))
+        if closed != bundle["progress"]:
+            return ["U01_TASK1_CLOSE_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError):
+        return ["U01_TASK1_CLOSE_GIT_INVALID"]
+
+
+_collect_f19a_start_git_before_u01_task1_101 = _collect_f19a_start_git
+
+
+def _collect_f19a_start_git(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode == "U01_SCOPED_DASHBOARD_TASK1_ACTIVE":
+        return (["F19A_GIT_INVALID"] if _collect_u01_scoped_dashboard_task1_git(bundle) else [])
+    if mode == "U01_SCOPED_DASHBOARD_TASK1_CLOSED":
+        return (["F19A_GIT_INVALID"] if _collect_u01_scoped_dashboard_task1_closed_git(bundle) else [])
+    return _collect_f19a_start_git_before_u01_task1_101(bundle)
+
+
+_validate_bundle_before_u01_task1_101 = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode == "U01_SCOPED_DASHBOARD_TASK1_ACTIVE":
+        errors = _validate_u01_scoped_dashboard_task1_active(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic",
+                                         "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_u01_scoped_dashboard_task1_git(bundle))
+        return sorted(set(errors))
+    if mode == "U01_SCOPED_DASHBOARD_TASK1_CLOSED":
+        errors = _validate_u01_scoped_dashboard_task1_closed(bundle)
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic",
+                                         "dir_registry", "event_contract")):
+            common = _validate_f20_common_invariants(bundle)
+            if not errors:
+                common = [error for error in common if error not in {
+                    "EVENT_TYPE_UNREGISTERED", "EVENT_PAYLOAD_MISSING", "EVENT_EFFECT_MISMATCH"}]
+            errors.extend(common)
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_u01_scoped_dashboard_task1_closed_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_task1_101(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
