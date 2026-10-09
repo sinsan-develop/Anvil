@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 WSL 보고 successor H2 종료 후보(Main, 2026-10-10 KST): C `5ea421a7b95cad4015087328dcef8e0a2a5c5c9a`와 B `be491207bed19202755fab106aa017bfc2794656`는 local/private 동일·clean이며 B G-05 seq2312 PASS다. Event 원문 seq1~2312를 보존하고 `2026-10-09T15:52:20+00:00`에 seq2313 write→2314 worker lease를 순차 회수해 완료 둘 REVOKED·활성 agent/token null로 투영한다. 본 H2의 G-05·실원격 게시·clean 전에는 다음 제품 dual lease를 발급하지 않는다. U-01 실제 두 pair OIDC/HTTPS/Chromium·DB/API/화면/Network와 R6 STORED_ROW 원인 분리·독립 인수는 미완료다. U-01 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 H2 검증·게시 후 동일 기존 branch에서 별도 실제 수직 QA다.
+
 Task4 WSL 보고 successor C/B 후보(Main, 2026-10-10 KST): epoch105 Developer 정확 통제2파일의 최종 인접7 298 PASS/0 FAIL/0 ERROR(exit0), 집중10 PASS, Main G-05 seq2312 PASS·diff check0, 변경 위치 Ruff 신규0이다. 최초 제한 채널 인접7의 2 FAIL은 역사 epoch104 Git fixture의 현재 blob 혼용을 mock에서 보정했고 5 ERROR는 R48 임시 clone 권한 채널로 분리했으며, 최종 elevated 전체 GREEN으로 다시 확인했다. C `5ea421a7b95cad4015087328dcef8e0a2a5c5c9a`는 정확2파일만 기존 branch/private 원격 동일·clean 게시됐다. 본 B는 C 결박·seq2312 유지의 종료 준비 투영으로, B 자체 G-05·실원격 게시/clean 전 seq2313 write→2314 worker 회수는 금지한다. U-01 실제 두 pair OIDC/HTTPS/Chromium·DB/API/화면/Network 인수와 R6 STORED_ROW 분리는 아직 완료되지 않았다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 B 검증·게시 후 lease 순차 회수와 별도 실제 수직 QA다.
 
 Task4 WSL 실측 보고 successor A 후보(Main, 2026-10-09 KST): Task4 보고 통제 H `f6257baa`의 clean G-05 seq2309 PASS와 직접 후손 R2 `c023235e4e483e6e545ca4943c621d7df106a094` 정확 6보고 문서·local/private 원격 동일을 기준으로 한다. R2의 G-05 `U01_TASK4_REPORT_CLOSE_GIT_INVALID`는 기존 H 동결 blob 이후의 예상 경로 부재다. 새 WI/invocation SHA `849C3F06ACAE8D9A943F78852E90768A15C3D0F8806D315295677361B0A726C1`/`B87CA1DF2C711C28E0EB4A3D04223DD5A3C00331662C6F1FB29AAB60B687AF2E` 아래 Event 원문 seq1~2309 보존 후 seq2310 WI→2311 worker→2312 write, epoch105 분리 token·단일 Developer 정확 checker/test 2경로·제품 scope0을 발급했다. 본 A의 원장·snapshot/digest 정합성·게시/clean 전 Developer code write는 잠금이며 신규 route 이전 G-05 bootstrap RED는 PASS가 아니다. U-01 두 pair 수직 인수 NOT_ACCEPTED, 기존 R6 STORED_ROW 1 FAIL, Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 A 문서·원장 정합성 확인·기존 branch 게시 후 Developer 통제 TDD다.
@@ -164,16 +166,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2312,
-  "last_event_id": "evt_u01_2312_task4_wsl_report_successor_write_lease_issued",
+  "event_sequence": 2314,
+  "last_event_id": "evt_u01_2314_task4_wsl_report_successor_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-wsl-report-successor",
-  "worker_lease": "worker-lease-u01-task4-wsl-report-successor-076ae5f92e6d4e83ae23eb488aeb4f96",
-  "write_lease": "write-lease-u01-task4-wsl-report-successor-1934b6cf48d74d208920257610fe6118",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSE_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TWO_PAIR_QA_DUAL_LEASE_PENDING",
   "repository_head": "5ea421a7b95cad4015087328dcef8e0a2a5c5c9a",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

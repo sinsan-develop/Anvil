@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2312,
+  "last_sequence": 2314,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -105328,7 +105328,49 @@
       "product_write_scope": [],
       "write_epoch": 105
     }
+  },
+  {
+    "sequence": 2313,
+    "event_id": "evt_u01_2313_task4_wsl_report_successor_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_TASK4_WSL_REPORT_SUCCESSOR_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK4-WSL-REPORT-SUCCESSOR",
+    "occurred_at": "2026-10-09T15:52:20+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "CFC0621AC7BA26F22A145986C9A37774E35BFF920A475CF80EE56A606C97B39F",
+    "details": {
+      "lease_id": "write-lease-u01-task4-wsl-report-successor-1934b6cf48d74d208920257610fe6118",
+      "write_fencing_token": "u01-task4-wsl-report-successor-write-fence-epoch-105-1934b6cf48d74d208920257610fe6118",
+      "reason": "U01_TASK4_WSL_REPORT_SUCCESSOR_COMPLETE_TWO_PAIR_QA_PENDING"
+    }
+  },
+  {
+    "sequence": 2314,
+    "event_id": "evt_u01_2314_task4_wsl_report_successor_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_TASK4_WSL_REPORT_SUCCESSOR_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-TASK4-WSL-REPORT-SUCCESSOR",
+    "occurred_at": "2026-10-09T15:52:20+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "70E25324590B1C86425C36CEB894A62A402F51A9C71A5C6FA15C1EBDF4D666A6",
+    "details": {
+      "lease_id": "worker-lease-u01-task4-wsl-report-successor-076ae5f92e6d4e83ae23eb488aeb4f96",
+      "execution_fencing_token": "u01-task4-wsl-report-successor-execution-fence-epoch-105-076ae5f92e6d4e83ae23eb488aeb4f96",
+      "reason": "U01_TASK4_WSL_REPORT_SUCCESSOR_COMPLETE_TWO_PAIR_QA_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2312_task4_wsl_report_successor_write_lease_issued"
+  "last_event_id": "evt_u01_2314_task4_wsl_report_successor_worker_lease_revoked"
 }
