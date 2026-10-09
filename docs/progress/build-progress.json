@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-scoped-dashboard-task3-start-seq2302",
+  "snapshot_id": "snapshot-u01-scoped-dashboard-task3-control-seq2302",
   "event_sequence": 2302,
-  "updated_at": "2026-10-09T05:51:14+00:00",
+  "updated_at": "2026-10-09T07:59:27+00:00",
   "last_event_id": "evt_u01_2302_scoped_dashboard_task3_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -889,7 +889,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_RED_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1000,13 +1000,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "36ba79fca821bb38e2585f76f96e3933f915400e",
+    "local_head": "a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "36ba79fca821bb38e2585f76f96e3933f915400e",
+    "remote_head": "a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a",
     "projection_mode": "U01_SCOPED_DASHBOARD_TASK3_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_SCOPED_DASHBOARD_TASK3_ACTIVE_CONTROL_ONLY",
+    "head_relation": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_CHECKPOINTED_PRODUCT_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1440,7 +1440,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": ["apps/web/src/console/App.tsx", "apps/web/src/console/app-shell.css", "apps/web/tests/f15-console.test.mjs"],
-    "worktree_status": "U01_SCOPED_DASHBOARD_TASK3_ACTIVE_CONTROL_ONLY",
+    "worktree_status": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_CHECKPOINTED_PRODUCT_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1606,8 +1606,8 @@
     "path": "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK3_WORK_INSTRUCTION.md",
     "sha256": "122C17F35618671957AD251A5C4A2824C920C520616D4733F209258385A2350A",
     "revision": 1,
-    "result_status": "ACTIVE_CONTROL_ONLY",
-    "package_status": "U01_SCOPED_DASHBOARD_TASK3_ACTIVE_PRODUCT_LOCKED",
+    "result_status": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_CHECKPOINTED_PRODUCT_READY",
+    "package_status": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_CHECKPOINTED_PRODUCT_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "HUMAN_APPROVED_EXACT_PROPOSAL_B"
   },
@@ -1798,7 +1798,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_SCOPED_DASHBOARD_TASK3_ACTIVE_PRODUCT_LOCKED"
+    "status": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_CHECKPOINTED_PRODUCT_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2190,8 +2190,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "00C15EB545D859B6A5241459FE67C847E49BB195AD1A809B63668989595E8C9B",
-  "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY",
+  "snapshot_hash": "ED28D2241645009166050905B395D89D7AAA33A1988BAB7E0A50F207660F6C54",
+  "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_RED_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23738,7 +23738,7 @@
     "production": "NOT_EXECUTED"
   },
   "u01_scoped_dashboard_task3_binding": {
-    "status": "A_DOCS_ONLY_PRODUCT_LOCKED",
+    "status": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_CHECKPOINTED_PRODUCT_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2299,
     "predecessor_head": "36ba79fca821bb38e2585f76f96e3933f915400e",
@@ -23763,8 +23763,9 @@
     "control_write_scope": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
     "product_write_scope": ["apps/web/src/console/App.tsx", "apps/web/src/console/app-shell.css", "apps/web/tests/f15-console.test.mjs"],
     "product_gate": "LOCKED_UNTIL_CONTROL_C_B_REMOTE_CLEAN_GREEN",
+    "control_checkpoint": "a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a",
     "event_sequence": 2302,
-    "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY",
+    "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_RED_ONLY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "HUMAN_APPROVED_EXACT_PROPOSAL_B",
     "release_decision": "DEFER",
