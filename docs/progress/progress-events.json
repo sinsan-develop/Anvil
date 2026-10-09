@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2287,
+  "last_sequence": 2289,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -104619,7 +104619,49 @@
       "product_write_scope": [],
       "write_epoch": 100
     }
+  },
+  {
+    "sequence": 2288,
+    "event_id": "evt_u01_2288_scoped_dashboard_historical_fixture_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-HISTORICAL-FIXTURE",
+    "occurred_at": "2026-10-09T00:05:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "E533529CC26E1FB274AB67A55AB0A7BED460881E0DDB79D982B8CA4294B6A647",
+    "details": {
+      "lease_id": "write-lease-u01-scoped-dashboard-historical-fixture-332726387810438aabf2ce67a62d7da3",
+      "write_fencing_token": "u01-scoped-dashboard-historical-fixture-write-fence-epoch-100-332726387810438aabf2ce67a62d7da3",
+      "reason": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_GREEN_CONTROL_CLOSED_PRODUCT_PENDING"
+    }
+  },
+  {
+    "sequence": 2289,
+    "event_id": "evt_u01_2289_scoped_dashboard_historical_fixture_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CLOSE",
+    "subject_ref": "U-01/SCOPED-DASHBOARD-HISTORICAL-FIXTURE",
+    "occurred_at": "2026-10-09T00:05:19+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "2E28D0F57019EC11D74137DDFF9C391777706099A9CF65708D9787DB458CD978",
+    "details": {
+      "lease_id": "worker-lease-u01-scoped-dashboard-historical-fixture-d08dc40ef8ad4266ad502a5bd19fb055",
+      "execution_fencing_token": "u01-scoped-dashboard-historical-fixture-execution-fence-epoch-100-d08dc40ef8ad4266ad502a5bd19fb055",
+      "reason": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_GREEN_CONTROL_CLOSED_PRODUCT_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2287_scoped_dashboard_historical_fixture_write_lease_issued"
+  "last_event_id": "evt_u01_2289_scoped_dashboard_historical_fixture_worker_lease_revoked"
 }
