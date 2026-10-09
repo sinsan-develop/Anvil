@@ -1598,3 +1598,487 @@ class U01ScopedDashboardTask1Epoch101Tests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+A2_102 = "7b5c8bfc60e7db8d0147cf8bd7d82b5a674cc49d"
+
+
+def archived_task2():
+    archive = {path: subprocess.check_output(["git", "show", f"{A2_102}:{path}"], cwd=ROOT)
+               for path in PATHS}
+    bundle = deepcopy(checker.load_bundle(ROOT))
+    bundle["progress"] = json.loads(archive[PATHS[0]])
+    bundle["events"] = json.loads(archive[PATHS[1]])
+    bundle["handoff_text"] = archive[PATHS[2]].decode("utf-8")
+    bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+    bundle["detached_digest"] = json.loads(archive[PATHS[3]])
+    return bundle, archive
+
+
+class U01ScopedDashboardTask2Epoch102Tests(unittest.TestCase):
+    CONTROL = "c" * 40
+    CONTROL_PUBLICATION = "b" * 40
+    PRODUCT = "d" * 40
+    PRODUCT_PUBLICATION = "e" * 40
+
+    @classmethod
+    def closed_h(cls):
+        bundle, files = cls.checkpoint_p()
+        progress, stream = bundle["progress"], bundle["events"]
+        write, worker = progress["write_lease"], progress["worker_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_SCOPED_DASHBOARD_TASK2_READER_VERIFIED_TASK3_PENDING"
+        for sequence, kind, event_id, lease, token in (
+            (2298, "WRITE_LEASE_REVOKED", "evt_u01_2298_scoped_dashboard_task2_write_lease_revoked",
+                write, "write_fencing_token"),
+            (2299, "WORKER_LEASE_REVOKED", "evt_u01_2299_scoped_dashboard_task2_worker_lease_revoked",
+                worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_SCOPED_DASHBOARD_TASK2_CLOSE",
+                "subject_ref": "U-01/SCOPED-DASHBOARD-TASK2", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+        stream.update(last_sequence=2299, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2297', '"last_sequence": 2299', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "evt_u01_2297_scoped_dashboard_task2_write_lease_issued"',
+            '"last_event_id": "evt_u01_2299_scoped_dashboard_task2_worker_lease_revoked"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        status = "U01_SCOPED_DASHBOARD_TASK2_CLOSED_TASK3_PENDING"
+        action = "U01_SCOPED_DASHBOARD_TASK3_DUAL_LEASE_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        progress["completed_u01_scoped_dashboard_task2_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_u01_scoped_dashboard_task2_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_scoped_dashboard_task2_binding"].update(status=status,
+            next_safe_action=action, active_projection_checkpoint=cls.PRODUCT_PUBLICATION,
+            event_sequence=2299)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2299,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-scoped-dashboard-task2-close-seq2299")
+        progress["repository"].update(projection_mode="U01_SCOPED_DASHBOARD_TASK2_CLOSED",
+            head_relation=status, worktree_status=status)
+        bundle["handoff"].update(event_sequence=2299, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2299
+        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+
+    def test_closed_h_requires_ordered_revocation_and_task3_pending(self):
+        bundle, files = self.closed_h()
+        _, p_files = self.checkpoint_p()
+        _, b_files = self.checkpoint_b()
+        validator = getattr(checker, "_validate_u01_scoped_dashboard_task2_closed", None)
+        self.assertIsNotNone(validator)
+        original = subprocess.check_output
+        def frozen(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for sha, archive in ((self.PRODUCT_PUBLICATION, p_files),
+                                     (self.CONTROL_PUBLICATION, b_files)):
+                    for path in PATHS:
+                        if command[-1] == f"{sha}:{path}":
+                            return archive[path]
+            return original(command, *args, **kwargs)
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with patch.object(subprocess, "check_output", side_effect=frozen):
+            self.assertEqual(validator(bundle, event_raw=files[PATHS[1]], now=now,
+                archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+            forged = deepcopy(bundle)
+            forged["events"]["events"][2298]["details"]["reason"] = "forged"
+            self.assertTrue(validator(forged, event_raw=files[PATHS[1]], now=now,
+                archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}))
+
+    def test_closed_h_rejects_clock_before_product_publication(self):
+        bundle, files = self.closed_h()
+        _, p_files = self.checkpoint_p()
+        _, b_files = self.checkpoint_b()
+        validator = checker._validate_u01_scoped_dashboard_task2_closed
+        old_at = bundle["progress"]["updated_at"]
+        p_at = datetime.fromisoformat(json.loads(p_files[PATHS[0]])["updated_at"])
+        early_at = (p_at - timedelta(seconds=1)).isoformat()
+        forged = deepcopy(bundle)
+        forged_files = deepcopy(files)
+        events = forged["events"]["events"]
+        old_prev = events[2298]["previous_event_sha256"]
+        for row in events[-2:]:
+            row["occurred_at"] = early_at
+        events[2298]["previous_event_sha256"] = hashlib.sha256(
+            checker.canonical_json_bytes(events[2297])).hexdigest().upper()
+        raw = forged_files[PATHS[1]].decode()
+        raw = raw.replace(f'"occurred_at": "{old_at}"',
+            f'"occurred_at": "{early_at}"')
+        raw = raw.replace(f'"previous_event_sha256": "{old_prev}"',
+            f'"previous_event_sha256": "{events[2298]["previous_event_sha256"]}"')
+        forged_files[PATHS[1]] = raw.encode()
+        self.assertEqual(json.loads(forged_files[PATHS[1]]), forged["events"])
+        progress = forged["progress"]
+        progress["updated_at"] = early_at
+        for key in ("completed_u01_scoped_dashboard_task2_write_lease",
+                    "completed_u01_scoped_dashboard_task2_worker_lease"):
+            progress[key]["revoked_at"] = early_at
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            forged_files[PATHS[1]]).hexdigest().upper()
+        forged, forged_files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(
+            forged, forged_files)
+        original = subprocess.check_output
+        def frozen(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for sha, archive in ((self.PRODUCT_PUBLICATION, p_files),
+                                     (self.CONTROL_PUBLICATION, b_files)):
+                    for path in PATHS:
+                        if command[-1] == f"{sha}:{path}":
+                            return archive[path]
+            return original(command, *args, **kwargs)
+        with patch.object(subprocess, "check_output", side_effect=frozen):
+            self.assertIn("U01_TASK2_CLOSE_EVENT_INVALID", validator(forged,
+                event_raw=forged_files[PATHS[1]], now=p_at,
+                archived_files={PATHS[0]: forged_files[PATHS[0]],
+                                PATHS[2]: forged_files[PATHS[2]]}))
+
+    @classmethod
+    def checkpoint_b(cls):
+        bundle, files = archived_task2()
+        progress = bundle["progress"]
+        issued = datetime.fromisoformat(progress["updated_at"])
+        status = "U01_SCOPED_DASHBOARD_TASK2_CONTROL_CHECKPOINTED_PRODUCT_READY"
+        action = "U01_SCOPED_DASHBOARD_TASK2_PRODUCT_RED_ONLY"
+        progress["u01_scoped_dashboard_task2_binding"].update(status=status,
+            next_safe_action=action, control_checkpoint=cls.CONTROL)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=cls.CONTROL, remote_head=cls.CONTROL,
+            head_relation=status, worktree_status=status)
+        progress.update(updated_at=(issued + timedelta(minutes=1)).isoformat(),
+            next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-scoped-dashboard-task2-control-seq2297")
+        bundle["handoff"].update(repository_head=cls.CONTROL, next_safe_action=action)
+        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+
+    @classmethod
+    def checkpoint_p(cls):
+        bundle, files = cls.checkpoint_b()
+        progress = bundle["progress"]
+        issued = datetime.fromisoformat(progress["updated_at"])
+        status = "U01_SCOPED_DASHBOARD_TASK2_PRODUCT_CHECKPOINTED_CLOSE_READY"
+        action = "U01_SCOPED_DASHBOARD_TASK2_CLOSE_ONLY"
+        progress["u01_scoped_dashboard_task2_binding"].update(status=status,
+            next_safe_action=action, product_code_checkpoint=cls.PRODUCT,
+            control_projection_checkpoint=cls.CONTROL_PUBLICATION)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=cls.PRODUCT, remote_head=cls.PRODUCT,
+            head_relation=status, worktree_status=status)
+        progress.update(updated_at=(issued + timedelta(minutes=1)).isoformat(),
+            next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-scoped-dashboard-task2-product-seq2297")
+        bundle["handoff"].update(repository_head=cls.PRODUCT, next_safe_action=action)
+        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+
+    def test_b_p_monotonic_projection_and_forgery(self):
+        _, b_files = self.checkpoint_b()
+        original = subprocess.check_output
+        def frozen(command, *args, **kwargs):
+            if command[:2] == ["git", "show"] and command[-1] == f"{self.CONTROL_PUBLICATION}:{PATHS[0]}":
+                return b_files[PATHS[0]]
+            return original(command, *args, **kwargs)
+        validate = checker._validate_u01_scoped_dashboard_task2_active
+        for phase, maker in (("B", self.checkpoint_b), ("P", self.checkpoint_p)):
+            with self.subTest(phase=phase):
+                bundle, files = maker()
+                now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+                with patch.object(subprocess, "check_output", side_effect=frozen):
+                    self.assertEqual(validate(bundle, event_raw=files[PATHS[1]], now=now,
+                        archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+                forged = deepcopy(bundle)
+                forged["progress"]["updated_at"] = (
+                    datetime.fromisoformat(archived_task2()[0]["progress"]["updated_at"])
+                    - timedelta(seconds=1)).isoformat()
+                forged, forged_files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(
+                    forged, deepcopy(files))
+                with patch.object(subprocess, "check_output", side_effect=frozen):
+                    self.assertTrue(validate(forged, event_raw=forged_files[PATHS[1]], now=now,
+                        archived_files={PATHS[0]: forged_files[PATHS[0]],
+                                        PATHS[2]: forged_files[PATHS[2]]}))
+        b_at = datetime.fromisoformat(json.loads(b_files[PATHS[0]])["updated_at"])
+        p_bundle, p_files = self.checkpoint_p()
+        early_p = deepcopy(p_bundle)
+        early_p["progress"]["updated_at"] = (b_at - timedelta(seconds=1)).isoformat()
+        early_p, early_files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(
+            early_p, deepcopy(p_files))
+        with patch.object(subprocess, "check_output", side_effect=frozen):
+            self.assertIn("U01_TASK2_PROJECTION_INVALID", validate(early_p,
+                event_raw=early_files[PATHS[1]], now=b_at,
+                archived_files={PATHS[0]: early_files[PATHS[0]], PATHS[2]: early_files[PATHS[2]]}))
+
+    def test_active_a2_requires_exact_published_event_lease_and_hash(self):
+        bundle, archive = archived_task2()
+        validator = getattr(checker, "_validate_u01_scoped_dashboard_task2_active", None)
+        self.assertIsNotNone(validator)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validator(bundle, event_raw=archive[PATHS[1]], now=issued,
+            archived_files={PATHS[0]: archive[PATHS[0]], PATHS[2]: archive[PATHS[2]]}), [])
+
+    def test_active_a2_rejects_event_token_scope_and_acceptance_forgery(self):
+        bundle, archive = archived_task2()
+        validator = getattr(checker, "_validate_u01_scoped_dashboard_task2_active", None)
+        self.assertIsNotNone(validator)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        for name, mutate in (
+            ("event", lambda b: b["events"]["events"][2296].update(actor="forged")),
+            ("token", lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged")),
+            ("scope", lambda b: b["progress"]["write_lease"].update(product_write_scope=[])),
+            ("acceptance", lambda b: b["progress"]["u01_scoped_dashboard_task2_binding"].update(
+                vertical_acceptance="ACCEPTED")),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+                self.assertTrue(validator(forged, event_raw=archive[PATHS[1]], now=issued,
+                    archived_files={PATHS[0]: archive[PATHS[0]], PATHS[2]: archive[PATHS[2]]}))
+
+    def test_active_a2_git_rejects_remote_branch_and_unrelated_dirty(self):
+        bundle, _ = archived_task2()
+        collector = checker._collect_u01_scoped_dashboard_task2_git
+        original = subprocess.check_output
+        for scenario in ("published", "remote", "branch", "dirty", "head", "upstream"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (("0" * 40 if scenario == "head" else A2_102) + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return (("0" * 40 if scenario == "remote" else A2_102) + "\n").encode()
+                    if tail == ["branch", "--show-current"] and scenario == "branch":
+                        return b"main\n"
+                    if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"] and scenario == "upstream":
+                        return b"origin/main\n"
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return (b" M packages/api/fastapi_app.py\n" if scenario == "dirty"
+                            else b" M scripts/check_project_progress.py\n"
+                                 b" M tests/tooling/test_u01_postmerge_control_projection.py\n")
+                    return original(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_control_b_git_requires_design_change_and_exact_code(self):
+        bundle, _ = self.checkpoint_b()
+        collector = checker._collect_u01_scoped_dashboard_task2_git
+        original, original_run = subprocess.check_output, subprocess.run
+        code = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+        docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+            "design_change.md"}
+        for scenario in ("published", "remote", "dirty", "missing_design", "product_docs",
+                         "stale_code", "merge"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"],
+                                ["rev-parse", "development/codex/u01-dashboard-r2"]):
+                        sha = ("0" * 40 if scenario == "remote" and tail[1].startswith("development/")
+                            else self.CONTROL_PUBLICATION)
+                        return (sha + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return (b" M apps/web/src/console/App.tsx\n" if scenario == "dirty" else b"")
+                    if tail == ["rev-list", "--count", f"{A2_102}..{self.CONTROL}"]:
+                        return b"1\n"
+                    if tail == ["rev-list", "--count", f"{self.CONTROL}..{self.CONTROL_PUBLICATION}"]:
+                        return b"1\n"
+                    if tail == ["rev-list", "--min-parents=2", f"{A2_102}..{self.CONTROL}"]:
+                        return b"x\n" if scenario == "merge" else b""
+                    if tail == ["rev-list", "--min-parents=2", f"{self.CONTROL}..{self.CONTROL_PUBLICATION}"]:
+                        return b""
+                    for argument, paths in ((f"{A2_102}..{self.CONTROL}", code),
+                                            (f"{self.CONTROL}..{self.CONTROL_PUBLICATION}", docs)):
+                        if tail and tail[-1] == argument and tail[0] in ("log", "diff"):
+                            selected = paths
+                            if scenario == "missing_design" and argument.startswith(self.CONTROL):
+                                selected = paths - {"design_change.md"}
+                            if scenario == "product_docs" and argument.startswith(self.CONTROL):
+                                selected = paths | {"packages/api/fastapi_app.py"}
+                            return ("\n".join(sorted(selected)) + "\n").encode()
+                    if tail[:2] == ["show", f"{self.CONTROL}:scripts/check_project_progress.py"]:
+                        return (b"stale" if scenario == "stale_code"
+                            else (ROOT / "scripts/check_project_progress.py").read_bytes())
+                    if tail[:2] == ["show", f"{self.CONTROL}:tests/tooling/test_u01_postmerge_control_projection.py"]:
+                        return (ROOT / "tests/tooling/test_u01_postmerge_control_projection.py").read_bytes()
+                    if tail == ["show", f"{self.CONTROL_PUBLICATION}:docs/progress/build-progress.json"]:
+                        return json.dumps(bundle["progress"]).encode()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_product_p_git_rejects_design_change_edit_after_b(self):
+        bundle, _ = self.checkpoint_p()
+        _, b_files = self.checkpoint_b()
+        collector = checker._collect_u01_scoped_dashboard_task2_git
+        original, original_run = subprocess.check_output, subprocess.run
+        code = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+        docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+        product = {"packages/api/scoped_dashboard.py",
+            "tests/api/test_u01_scoped_dashboard_reader.py"}
+        legs = {(A2_102, self.CONTROL): code,
+            (self.CONTROL, self.CONTROL_PUBLICATION): docs | {"design_change.md"},
+            (self.CONTROL_PUBLICATION, self.PRODUCT): product,
+            (self.PRODUCT, self.PRODUCT_PUBLICATION): docs}
+        for scenario in ("published", "p_design_change"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail in (["rev-parse", "HEAD"],
+                                ["rev-parse", "development/codex/u01-dashboard-r2"]):
+                        return (self.PRODUCT_PUBLICATION + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b""
+                    if tail[:2] == ["rev-list", "--count"]:
+                        return b"1\n"
+                    if tail[:2] == ["rev-list", "--min-parents=2"]:
+                        return b""
+                    if tail and tail[0] in ("log", "diff") and ".." in tail[-1]:
+                        pair = tuple(tail[-1].split(".."))
+                        if pair in legs:
+                            selected = set(legs[pair])
+                            if scenario == "p_design_change" and pair == (self.PRODUCT, self.PRODUCT_PUBLICATION):
+                                selected.add("design_change.md")
+                            return ("\n".join(sorted(selected)) + "\n").encode()
+                    if tail[:1] == ["show"]:
+                        for path in PATHS:
+                            if tail[-1] == f"{self.CONTROL_PUBLICATION}:{path}":
+                                return b_files[path]
+                        if tail[-1] == f"{self.PRODUCT_PUBLICATION}:{PATHS[0]}":
+                            return json.dumps(bundle["progress"]).encode()
+                        for path in code:
+                            if tail[-1] == f"{self.CONTROL}:{path}":
+                                return (ROOT / path).read_bytes()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_closed_git_requires_exact_b_product_p_and_h(self):
+        bundle, _ = self.closed_h()
+        _, b_files = self.checkpoint_b()
+        _, p_files = self.checkpoint_p()
+        collector = checker._collect_u01_scoped_dashboard_task2_closed_git
+        original, original_run = subprocess.check_output, subprocess.run
+        head = "f" * 40
+        code = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+        docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+        product = {"packages/api/scoped_dashboard.py",
+            "tests/api/test_u01_scoped_dashboard_reader.py"}
+        legs = {(A2_102, self.CONTROL): code,
+            (self.CONTROL, self.CONTROL_PUBLICATION): docs | {"design_change.md"},
+            (self.CONTROL_PUBLICATION, self.PRODUCT): product,
+            (self.PRODUCT, self.PRODUCT_PUBLICATION): docs,
+            (self.PRODUCT_PUBLICATION, head): docs}
+        for scenario in ("published", "remote", "dirty", "mixed_b", "missing_design",
+                         "product_scope", "test_only_product", "merge"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if tail == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return (("0" * 40 if scenario == "remote" else head) + "\n").encode()
+                    if tail == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if tail[:2] == ["rev-list", "--count"]:
+                        return b"1\n"
+                    if tail[:2] == ["rev-list", "--min-parents=2"]:
+                        return (b"merge\n" if scenario == "merge"
+                            and tail[-1] == f"{self.PRODUCT}..{self.PRODUCT_PUBLICATION}" else b"")
+                    if tail and tail[0] in ("log", "diff") and ".." in tail[-1]:
+                        pair = tuple(tail[-1].split(".."))
+                        if pair in legs:
+                            selected = set(legs[pair])
+                            if scenario == "mixed_b" and pair == (self.CONTROL, self.CONTROL_PUBLICATION):
+                                selected |= {"packages/api/fastapi_app.py"}
+                            if scenario == "missing_design" and pair == (self.CONTROL, self.CONTROL_PUBLICATION):
+                                selected -= {"design_change.md"}
+                            if scenario == "product_scope" and pair == (self.CONTROL_PUBLICATION, self.PRODUCT):
+                                selected |= {"apps/web/src/console/App.tsx"}
+                            if scenario == "test_only_product" and pair == (self.CONTROL_PUBLICATION, self.PRODUCT):
+                                selected = {"tests/api/test_u01_scoped_dashboard_reader.py"}
+                            return ("\n".join(sorted(selected)) + "\n").encode()
+                    if tail[:1] == ["show"]:
+                        for sha, archive in ((self.CONTROL_PUBLICATION, b_files),
+                                             (self.PRODUCT_PUBLICATION, p_files)):
+                            for path in PATHS:
+                                if tail[-1] == f"{sha}:{path}":
+                                    return archive[path]
+                        if tail[-1] == f"{head}:docs/progress/build-progress.json":
+                            return json.dumps(bundle["progress"]).encode()
+                        for path in code:
+                            if tail[-1] == f"{self.CONTROL}:{path}":
+                                return (ROOT / path).read_bytes()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "merge-base", "--is-ancestor"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", f"{scenario}: {result}")
+
+    def test_legacy_entrypoint_dispatches_task2_active_and_closed(self):
+        active, _ = archived_task2()
+        closed, _ = self.closed_h()
+        with patch.object(checker, "_collect_u01_scoped_dashboard_task2_git", return_value=[]):
+            self.assertEqual(checker._collect_f19a_start_git(active), [])
+        with patch.object(checker, "_collect_u01_scoped_dashboard_task2_git",
+                          return_value=["U01_TASK2_GIT_INVALID"]):
+            self.assertEqual(checker._collect_f19a_start_git(active), ["F19A_GIT_INVALID"])
+        with patch.object(checker, "_collect_u01_scoped_dashboard_task2_closed_git", return_value=[]):
+            self.assertEqual(checker._collect_f19a_start_git(closed), [])
+        with patch.object(checker, "_collect_u01_scoped_dashboard_task2_closed_git",
+                          return_value=["U01_TASK2_CLOSE_GIT_INVALID"]):
+            self.assertEqual(checker._collect_f19a_start_git(closed), ["F19A_GIT_INVALID"])
