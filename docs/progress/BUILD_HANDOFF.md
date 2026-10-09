@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task2 제품 D/P 후보(Main, 2026-10-09 KST): 통제 B `4e8421e66b27911384b295dbc26fcc8a4ac593db` local/private 동일·clean·G-05 seq2297 PASS 뒤 단일 Developer가 허용 제품12 중 정확9파일로 서울 달력일 Reader·요청별 owner·감사 전체성·현재/기간 분리·명시적 UNAVAILABLE을 TDD 구현했다. 첫 독립 검토 Important3(감사 payload·전이·Warning Next Action)과 Minor UTC 입력은 각각 RED→GREEN 보완했고 최종 독립 재검토 Critical0/Important0이다. Developer·Main 각각 인접7 123 PASS/4 SKIP(exit0); 4 SKIP은 실제 PostgreSQL opt-in 미실행이며 새 opt-in 자체도 빈 pair read-only smoke 범위다. Ruff exact9·diff·활성 G-05 seq2297 PASS. 제품 D `0e078fd3eec133802105c8a0822855e7960e9436`는 기존 branch/private 실원격 동일·clean이다. 이 P 문서4는 C/B/D SHA와 seq2297 활성 dual lease를 보존해 종료 준비만 투영한다. P G-05·private 게시/clean 및 write→worker 실제 회수 전 Task2 종료는 아니다. WSL-server 실제 PG15 row/OIDC/HTTPS/Chromium, Task3 UI·Task4 독립 수락·PR/main은 미검증·미실행, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED.
+
 Task2 통제 C/B 후보(Main, 2026-10-09 KST): A2 `7b5c8bfc60e7db8d0147cf8bd7d82b5a674cc49d`에서 단일 Developer가 정확 통제2의 A/C/B/D/P/H successor와 위조 거부를 RED→GREEN했다. 최초 독립 검토 Important2/Minor 테스트 공백2는 재현 음성 및 최소 수정으로 해소됐고 재검토 Critical0/Important0이다. 최종 집중10 PASS·인접7 271 PASS/0 FAIL(exit0), G-05 seq2297 PASS, Ruff 변경구간 신규0, diff check0이다. C `ff8f26b60c22696fdb8a27ed5d551b26ab879100`는 기존 branch/private 실제 SHA 동일·clean이다. 이 B 문서는 C와 새 `design_change.md`를 결박하되 B G-05·원격 게시/clean 전 제품12 write는 잠금이다. U-01 수직 NOT_ACCEPTED, Release DEFER, Production NOT_EXECUTED; 실제 PG15/WSL-server/브라우저/PR은 미검증·미실행이다.
 
 epoch100 역사 fixture 비제품 A 후보(Main, 2026-10-09 KST): epoch99 H `4d6cba41b5f1d9269572ba454c7165063f38d9a7` local/private 동일·clean·G-05 seq2284 PASS이고 두 이전 lease는 REVOKED다. 인접7의 단일 실패는 epoch98 저장 A와 현 epoch99 live Git 관찰을 혼용한 fixture이므로 `MAIN_RECONFIRMED_NON_SEMANTIC` WI SHA `168E31BDEE5A6B197B894F14181820FE1DAF0AC8B3C216B4BDFB537FB9998828`·invocation SHA `D4044618303D309A34BFF49D59D09D85021610E1820725BDD8A6F21DED0B8B41`를 발행한다. seq≤2284 원문 보존, seq2285 WI→2286 worker→2287 write, epoch100 분리 24시간 token·Developer 정확 checker/역사 test 2파일·제품 scope0이다. A docs-only private/clean 전 Developer write 금지, 새 G-05 route 전 구 종료 검사 RED는 PASS 아님. U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, WSL-server/ysna write0.
@@ -145,8 +147,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-scoped-dashboard-task2-1fe2db4bf402414d9788275789fc41e0",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_PRODUCT_RED_ONLY",
-  "repository_head": "ff8f26b60c22696fdb8a27ed5d551b26ab879100",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK2_CLOSE_ONLY",
+  "repository_head": "0e078fd3eec133802105c8a0822855e7960e9436",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
