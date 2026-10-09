@@ -889,7 +889,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_DUAL_LEASE_PENDING",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2190,7 +2190,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5BB072E8CD0F6348B7BCA2EEC885B676555E73F3C33BDCD39BF77AAA47719B54",
+  "snapshot_hash": "00C15EB545D859B6A5241459FE67C847E49BB195AD1A809B63668989595E8C9B",
   "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
