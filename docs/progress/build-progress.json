@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-wsl-report-successor-start-seq2312",
+  "snapshot_id": "snapshot-u01-task4-wsl-report-successor-checkpoint-seq2312",
   "event_sequence": 2312,
-  "updated_at": "2026-10-09T12:57:55+00:00",
+  "updated_at": "2026-10-09T15:47:24+00:00",
   "last_event_id": "evt_u01_2312_task4_wsl_report_successor_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -923,7 +923,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CONTROL_ONLY",
+  "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1034,13 +1034,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "c023235e4e483e6e545ca4943c621d7df106a094",
+    "local_head": "5ea421a7b95cad4015087328dcef8e0a2a5c5c9a",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "c023235e4e483e6e545ca4943c621d7df106a094",
+    "remote_head": "5ea421a7b95cad4015087328dcef8e0a2a5c5c9a",
     "projection_mode": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE",
+    "head_relation": "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1474,7 +1474,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE",
+    "worktree_status": "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1640,8 +1640,8 @@
     "path": "docs/work_orders/U-01_SCOPED_DASHBOARD_TASK4_WSL_REPORT_SUCCESSOR_WORK_INSTRUCTION.md",
     "sha256": "849C3F06ACAE8D9A943F78852E90768A15C3D0F8806D315295677361B0A726C1",
     "revision": 1,
-    "result_status": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE",
-    "package_status": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE",
+    "result_status": "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY",
+    "package_status": "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "HUMAN_APPROVED_EXACT_PROPOSAL_B"
   },
@@ -1832,7 +1832,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE"
+    "status": "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2224,8 +2224,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "27D79FA023C9CE188E06C3ABF4796D7ED5F78CD2B48813EBF4E1DD103AA3045B",
-  "runtime_next_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CONTROL_ONLY",
+  "snapshot_hash": "1D5C569DF1DA9B192183B80BB91E744DA450CF9C78C0F91D55A2D3F8FFE41BC3",
+  "runtime_next_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23805,7 +23805,7 @@
     "production": "NOT_EXECUTED"
   },
   "u01_task4_wsl_report_successor_binding": {
-    "status": "U01_TASK4_WSL_REPORT_SUCCESSOR_ACTIVE",
+    "status": "U01_TASK4_WSL_REPORT_SUCCESSOR_CHECKPOINTED_CLOSE_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2309,
     "task4_report_control_close_checkpoint": "f6257baad4d6f340301b04218e9949f1dc28c114",
@@ -23828,10 +23828,10 @@
     "write_lease_id": "write-lease-u01-task4-wsl-report-successor-1934b6cf48d74d208920257610fe6118",
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
     "product_write_scope": [],
-    "a_docs_checkpoint": null,
-    "control_checkpoint": null,
+    "a_docs_checkpoint": "c3b51e2bb5c72b26b5b9bc1f852fb93918eb8280",
+    "control_checkpoint": "5ea421a7b95cad4015087328dcef8e0a2a5c5c9a",
     "event_sequence": 2312,
-    "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CONTROL_ONLY",
+    "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSE_ONLY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"

@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 WSL 보고 successor C/B 후보(Main, 2026-10-10 KST): epoch105 Developer 정확 통제2파일의 최종 인접7 298 PASS/0 FAIL/0 ERROR(exit0), 집중10 PASS, Main G-05 seq2312 PASS·diff check0, 변경 위치 Ruff 신규0이다. 최초 제한 채널 인접7의 2 FAIL은 역사 epoch104 Git fixture의 현재 blob 혼용을 mock에서 보정했고 5 ERROR는 R48 임시 clone 권한 채널로 분리했으며, 최종 elevated 전체 GREEN으로 다시 확인했다. C `5ea421a7b95cad4015087328dcef8e0a2a5c5c9a`는 정확2파일만 기존 branch/private 원격 동일·clean 게시됐다. 본 B는 C 결박·seq2312 유지의 종료 준비 투영으로, B 자체 G-05·실원격 게시/clean 전 seq2313 write→2314 worker 회수는 금지한다. U-01 실제 두 pair OIDC/HTTPS/Chromium·DB/API/화면/Network 인수와 R6 STORED_ROW 분리는 아직 완료되지 않았다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 B 검증·게시 후 lease 순차 회수와 별도 실제 수직 QA다.
+
 Task4 WSL 실측 보고 successor A 후보(Main, 2026-10-09 KST): Task4 보고 통제 H `f6257baa`의 clean G-05 seq2309 PASS와 직접 후손 R2 `c023235e4e483e6e545ca4943c621d7df106a094` 정확 6보고 문서·local/private 원격 동일을 기준으로 한다. R2의 G-05 `U01_TASK4_REPORT_CLOSE_GIT_INVALID`는 기존 H 동결 blob 이후의 예상 경로 부재다. 새 WI/invocation SHA `849C3F06ACAE8D9A943F78852E90768A15C3D0F8806D315295677361B0A726C1`/`B87CA1DF2C711C28E0EB4A3D04223DD5A3C00331662C6F1FB29AAB60B687AF2E` 아래 Event 원문 seq1~2309 보존 후 seq2310 WI→2311 worker→2312 write, epoch105 분리 token·단일 Developer 정확 checker/test 2경로·제품 scope0을 발급했다. 본 A의 원장·snapshot/digest 정합성·게시/clean 전 Developer code write는 잠금이며 신규 route 이전 G-05 bootstrap RED는 PASS가 아니다. U-01 두 pair 수직 인수 NOT_ACCEPTED, 기존 R6 STORED_ROW 1 FAIL, Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 A 문서·원장 정합성 확인·기존 branch 게시 후 Developer 통제 TDD다.
 
 Task4 H 후속 WSL-server 제한 실측(Main, 2026-10-09 KST): local/private/WSL 전용 Git exact H `f6257baad4d6f340301b04218e9949f1dc28c114`와 G-05 seq2309 PASS를 확인했다. H의 API/Reader/등록 76 PASS, Web 103 PASS·typecheck/lint/build exit0, 격리 PG15 F-19A 등록·철회 2 PASS와 U-01 빈 pair 1 PASS다. 기존 R6 OIDC/HTTPS/Chromium opt-in은 `STORED_ROW AssertionError`로 1 FAIL/51 deselected이며 현재 ACK 버튼과 역사 control0 단언의 충돌은 추론이다. 새 U-01 두 pair→철회→재선택 브라우저/Network/DB 수직 하네스는 없고 독립 Tester는 U-01 NOT_ACCEPTED·AV-SAFE-034/AV-OPS-027/AV-UI-017 및 공통 ID PASS 불가로 판정했다. 전용 PG 두 개/port5545, WSL QA checkout·Playwright 임시 패키지·pytest base는 정확 신원 확인 후 제거·잔여0; 공유 환경·ysna/Production 변경0. `design_change.md` DC-U01-006/007과 결과보고에 미충족 범위를 기록했다. 이 추가 문서는 H의 frozen 보고 blob 뒤의 새 변경이므로 후속 fail-closed G-05 successor 전에는 최신 상태를 GREEN으로 주장하지 않는다. 기존 브랜치 유지, active lease0, PR/main/U-02 미실행, Release DEFER·Production NOT_EXECUTED. 다음은 보고 successor 복구→동일 브랜치 dual lease의 U-01 실제 두 pair 브라우저 하네스·R6 실패 분리→독립 인수다.
@@ -171,8 +173,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-task4-wsl-report-successor-1934b6cf48d74d208920257610fe6118",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CONTROL_ONLY",
-  "repository_head": "c023235e4e483e6e545ca4943c621d7df106a094",
+  "next_safe_action": "U01_TASK4_WSL_REPORT_SUCCESSOR_CLOSE_ONLY",
+  "repository_head": "5ea421a7b95cad4015087328dcef8e0a2a5c5c9a",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
