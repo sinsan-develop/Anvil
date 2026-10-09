@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 epoch107 G-05 코드 C/활성 B 후보(Main, 2026-10-10 KST): A `1b02af90491a957efaa3c95b90631d06f88d6a61` 뒤 Developer가 허용된 검사기·통제 테스트 두 파일만 변경했다. 독립 리뷰의 실원격 SHA 누락 Important1을 RED→GREEN으로 보정해 최종 Critical0/Important0, 신규6·역사 epoch105 8·인접 U-01 9 PASS, Main의 실제 private 원격 조회와 A G-05 seq2322 PASS를 확인했다. C `b72c86a080de5ed9b1af9e8b803ffc0a3d3c1a53`는 local/private 동일·clean이다. 본 B는 Event seq2322와 epoch107 dual lease를 유지한 채 C를 결박한 종료 준비 투영이며 B 자체 G-05·private 게시/clean 전 회수하지 않는다. 전체79와 Windows 기본 fd-capture, 실제 B/H2·WSL exact-SHA는 미검증이다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main·새 branch/U-02/ysna 제외. 다음은 B 검증·게시 후 순차 lease 회수와 별도 Foundation R6 검증이다.
+
 Task4 epoch106 G-05 비제품 successor A 후보(Main, 2026-10-10 KST): 기존 단일 branch/private clean 회수 H `294d2eb03ddaceab3bf6f75ae41095dcf412c26b`의 seq2319·활성 lease0과 R7 증거 `87823219...`, 최초 A 발급 `725e1012...`를 분리해 고정했다. 새 WI/invocation SHA `37300915AE6EDCDF25F77050D7199E8ED2A11E078D964F50145ECA8D498B6C25`/`532BE06F55EB8C7DF5BEF2CEC66E6B9B27D0C7E515670965BDA33ED35D952898` 아래 Event 원문 seq1~2319를 보존하고 seq2320 WI→2321 worker→2322 write, epoch107 분리 token·24시간·정확 검사기/통제 테스트 2경로·제품 scope0을 발급한다. 이 A의 결박·원격 게시/clean 전에 Developer 코드 write를 허용하지 않는다. 새 route 이전 G-05 RED는 PASS가 아니다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main·새 branch/U-02/ysna 제외. 다음은 A 내부·독립 검증→기존 branch/private 게시→단일 Developer 통제 RED→GREEN이다.
 
 Task4 두 정확 pair 수직 QA epoch106 회수 후보(Main, 2026-10-10 KST): R7 증거·독립 판정과 미충족 DC-U01-012를 기존 branch/private clean `87823219d27444c529fdeeb1625ffc04d116dafb`에 보존했다. Event 원문 seq1~2317을 보존해 `2026-10-09T22:09:11+00:00`에 seq2318 write→2319 worker lease를 순서대로 회수하고 두 완료 lease는 REVOKED, 활성 agent/lease와 제품 write scope는 null/빈 목록으로 투영한다. 이번 투영의 G-05 successor는 아직 RED이므로 PASS·새 control lease 발급으로 승격하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main/U-02/ysna 제외. 다음은 이 회수 checkpoint를 기존 branch/private에 보존하고 epoch106 별도 비제품 G-05 control WI/dual lease를 발급하는 일이다.
@@ -181,8 +183,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-task4-epoch106-g05-d193c6ab1ba04ef8ae8ccffc5440cee7",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_EPOCH106_G05_CONTROL_ONLY",
-  "repository_head": "294d2eb03ddaceab3bf6f75ae41095dcf412c26b",
+  "next_safe_action": "U01_TASK4_EPOCH106_G05_CLOSE_ONLY",
+  "repository_head": "b72c86a080de5ed9b1af9e8b803ffc0a3d3c1a53",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
