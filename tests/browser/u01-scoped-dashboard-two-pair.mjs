@@ -52,6 +52,10 @@ function expectedPairs(phase, pairs) {
   return phase === 'other' ? [] : phase === 'revoked' ? [pairs[1]] : pairs;
 }
 
+function expectedFaultStartPeriod(pairCount) {
+  return pairCount === 2 ? '7d' : '30d';
+}
+
 function periodBounds(observedAt, period) {
   assert.ok(Object.hasOwn(periodDays, period) && Number.isFinite(Date.parse(observedAt)),
     'U01_QA_PERIOD_REJECTED');
@@ -170,6 +174,9 @@ function validateConfig(options) {
 if (process.argv.includes('--self-test')) {
   assert.deepEqual(expectedPairs('granted', ['A', 'B']), ['A', 'B']);
   assert.deepEqual(expectedPairs('revoked', ['A', 'B']), ['B']);
+  assert.equal(expectedFaultStartPeriod(expectedPairs('granted', ['A', 'B']).length), '7d');
+  assert.equal(expectedFaultStartPeriod(expectedPairs('revoked', ['A', 'B']).length), '30d');
+  assert.equal(expectedFaultStartPeriod(expectedPairs('restored', ['A', 'B']).length), '7d');
   assert.equal(periodBounds('2026-03-01T00:00:00.000Z', '1d').startUtc,
     '2026-02-28T15:00:00.000Z');
   assert.equal(periodBounds('2024-03-01T00:00:00.000Z', '7d').startUtc,
@@ -520,7 +527,8 @@ async function run() {
         });
         try {
           markStage('FAULT_TRIGGER');
-          assert.equal(await page.locator('#scoped-period').inputValue(), '7d',
+          assert.equal(await page.locator('#scoped-period').inputValue(),
+            expectedFaultStartPeriod(expected.length),
             'U01_QA_UI_PERIOD_MISMATCH');
           await select.selectOption(JSON.stringify([availablePair.projectId,
             availablePair.environmentId]));

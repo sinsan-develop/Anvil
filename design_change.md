@@ -6,7 +6,14 @@
 
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
-- 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~008을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+- 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~009를 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+
+### DC-U01-009 — R3 실제 granted PASS와 revoked 하네스 기간 단언 충돌
+
+- 판정: 승인 Task4의 WSL-server 새 빈 DB `granted`는 실제 OIDC/HTTPS/Chromium 2 PASS와 screenshot/network 파일을 확보했다. 다음 `revoked`는 DB 철회·감사7 뒤 브라우저 `FAULT_TRIGGER` 실패이므로 네 phase 인수는 `NOT_ACCEPTED`다. `restored`/`other`는 미실행이다.
+- 근거: exact SHA `56b66b513b378b0f7865f4801ac8acae6da87128`의 `revoked` 브라우저 코드에서 1조합 UI 루프는 `30d`로 끝나고 2조합 전용 stale 블록은 건너뛰지만, fault 진입은 `7d`를 무조건 요구한다. 이것은 하네스의 phase 경로 불일치이며 제품 철회 기능의 최종 판정이 아니다. 첫 준비 단계의 API 합성 Telegram 값, DB 이름, Git remote alias, issuer subject 설정 오류는 각각 전용 자원에서 보정하고 새 빈 DB로 재시작했다.
+- 영향·조치: `granted` 증거 2개를 로컬 hash 일치로 보존했다. R3 전용 컨테이너·network·image tag·세 root·두 loopback port는 신원 대조 후 잔여0, 공유 Web/PG ID·running 불변. 상세는 `docs/04_test_reports/U-01_TASK4_TWO_PAIR_WSL_QA_R3_RESULT.md`. 기존 epoch106 exact2 범위의 단일 Developer가 브라우저 하네스 한 파일을 최소 수정했고 로컬 Main 31 PASS/1 opt-in SKIP와 JS 자체·구문 검사 PASS를 확인했다. 실제 WSL 재검증 전이므로 phase PASS를 추가하지 않는다. 일반 추가 승인 대상은 아니다.
+- 재개 조건: 하네스 변경 로컬 검증·새 exact clean SHA를 기존 branch에 push하고 WSL-server의 새 빈 격리 PG15에서 `granted→revoked→restored→other`를 모두 재실행한다. 기존 R6 실패·G-05 successor·독립 Tester 판정도 별도 남는다. 그 전 U-01 `NOT_ACCEPTED`, Release `DEFER`, PR/main·새 branch·U-02·ysna/Production 미실행.
 
 ### DC-U01-008 — 두 조합 하네스의 합성 실행 환경·통제 successor 미구현
 
