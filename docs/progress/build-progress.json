@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-scoped-dashboard-historical-fixture-start-seq2287",
+  "snapshot_id": "snapshot-u01-scoped-dashboard-historical-fixture-control-seq2287",
   "event_sequence": 2287,
-  "updated_at": "2026-10-08T21:32:48+00:00",
+  "updated_at": "2026-10-09T00:00:40+00:00",
   "last_event_id": "evt_u01_2287_scoped_dashboard_historical_fixture_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -881,7 +881,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CONTROL_ONLY",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -992,13 +992,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "4d6cba41b5f1d9269572ba454c7165063f38d9a7",
+    "local_head": "5020819606c83dec875364b25befd08aeb3c8fcb",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "4d6cba41b5f1d9269572ba454c7165063f38d9a7",
+    "remote_head": "5020819606c83dec875364b25befd08aeb3c8fcb",
     "projection_mode": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_ACTIVE",
+    "head_relation": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1432,7 +1432,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_ACTIVE",
+    "worktree_status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1598,8 +1598,8 @@
     "path": "docs/work_orders/U-01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_REWORK_WORK_INSTRUCTION.md",
     "sha256": "168E31BDEE5A6B197B894F14181820FE1DAF0AC8B3C216B4BDFB537FB9998828",
     "revision": 1,
-    "result_status": "ACTIVE_CONTROL_ONLY",
-    "package_status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_ACTIVE_PRODUCT_LOCKED",
+    "result_status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CHECKPOINTED_CLOSE_READY",
+    "package_status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1780,7 +1780,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_ACTIVE_PRODUCT_LOCKED"
+    "status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2172,8 +2172,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "FAA250BC59317A2C79CC5C4F5CE7A218CBE7037961B9CFCA1AF9B4B402100EE9",
-  "runtime_next_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CONTROL_ONLY",
+  "snapshot_hash": "2F40D3FB5F613B6C451B30E9B277C2C15CC613BDF4B30E268DCF2A91D129977A",
+  "runtime_next_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23686,7 +23686,7 @@
     "control_checkpoint": "eccbc2a78064a8538c135c10b328e2dddcd548f4"
   },
   "u01_scoped_dashboard_historical_fixture_binding": {
-    "status": "A_DOCS_ONLY_PRODUCT_WRITE_LOCKED",
+    "status": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2284,
     "predecessor_head": "4d6cba41b5f1d9269572ba454c7165063f38d9a7",
@@ -23710,7 +23710,9 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
     "product_write_scope": [],
     "event_sequence": 2287,
-    "next_safe_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CONTROL_ONLY",
+    "next_safe_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CLOSE_ONLY",
+    "control_checkpoint": "5020819606c83dec875364b25befd08aeb3c8fcb",
+    "adjacent_regression": "250_PASS_0_FAIL_EXIT0",
     "vertical_acceptance": "NOT_ACCEPTED",
     "public_api_contract": "HUMAN_APPROVED_EXACT_PROPOSAL_B",
     "release_decision": "DEFER",

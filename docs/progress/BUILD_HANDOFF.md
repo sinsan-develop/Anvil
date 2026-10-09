@@ -143,8 +143,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-scoped-dashboard-historical-fixture-332726387810438aabf2ce67a62d7da3",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CONTROL_ONLY",
-  "repository_head": "4d6cba41b5f1d9269572ba454c7165063f38d9a7",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_HISTORICAL_FIXTURE_CLOSE_ONLY",
+  "repository_head": "5020819606c83dec875364b25befd08aeb3c8fcb",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
