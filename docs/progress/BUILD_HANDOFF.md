@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task3 제품 D/P 후보(Main, 2026-10-09 KST): 통제 B `db70d1bd116fc472eaa361756d45ab2586be9638` local/private 동일·clean·G-05 seq2302 PASS 후 단일 Developer가 정확 제품3에서 scoped pair/기간 선택·same-origin 요청·AbortController+request identity·근거 있는 current/occurrences·오류 재조회를 RED→GREEN 구현했다. 독립 UI 검토의 출처/시각 기준·Critical 상태, audit 시각/Action 포함, owner count/items 관계 중요 문제를 모두 보완해 최종 C0/I0/M0이다. Developer와 Main 각각 Web 103 PASS·typecheck/lint/build exit0, 인접 API 61 PASS/2 warnings(exit0), diff check0. 최종 제품 D `a8db53ba0cfa3596ab196e5d21de491d2ce586ce`는 같은 branch/private 원격 동일·clean이며 build 산출물 dist 3개는 정확 확인 후 정리했다. 이 P는 C/B/D와 seq2302 활성 dual lease를 보존해 종료 준비만 투영한다. P G-05·원격 게시/clean 및 write→worker 회수 전 Task3 종료는 아니다. 실제 WSL-server PG15/OIDC/HTTPS/Chromium/브라우저·Task4/PR/main은 미검증·미실행, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
+
 Task3 통제 C/B 후보(Main, 2026-10-09 KST): A2 `570ca31d521516d247edc4d32be21a066d883d11` 이후 단일 Developer가 정확 통제2에서 Task3 A/C/B/D/P/H fail-closed route와 Git 계보·위조 음성을 TDD했다. 초기 Important 테스트 공백은 추가 음성2 PASS로 보완했고 독립 재검토 Critical0/Important0이다. 최종 집중10 PASS/414.64초, 인접7 전체281 PASS/0 FAIL/0 SKIP/3468.57초(exit0), Main 활성 G-05 seq2302 PASS, diff check0, Ruff 전체 기존4844/변경 구간 신규0(최종 Ruff 재실행은 미수행)이다. C `a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a` 정확2는 기존 branch/private 실원격 동일·clean이다. 이 B는 C를 결박해 다음 행동을 제품 RED 테스트로 제한한다. B 자체 G-05·원격 게시/clean 전 제품3 write는 잠금이다. WSL-server SSH는 TCP 22 연결 후 배너 시간 초과가 세 차례 재현되어 실제 PG15/OIDC/HTTPS/Chromium/브라우저·Task4는 미검증, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED다.
 
 Task3 A2 비의미 투영 교정(Main, 2026-10-09 KST): A `8bffe96258f411f1283ee710088c643fe5761c5e`는 local/private 동일·clean이나 최상위 `next_safe_action`만 이전 pending literal로 남아 HANDOFF/binding/runtime의 `U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY`와 불일치했다. 단일 Developer가 실제 A route G-05의 `HANDOFF_NEXT_ACTION_MISMATCH`로 발견해 정확 통제2의 write를 일시 중지했다. Event seq2302, WI, epoch103 dual lease/token·제품 잠금은 유지하고 최상위 표시만 교정한다. A2 snapshot/digest·원격 게시/clean과 재실행 G-05 전에는 통제 write를 재개하지 않는다. 제품/API/DB/WSL-server write0, U-01 수직 NOT_ACCEPTED다.
@@ -155,8 +157,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   "write_lease": "write-lease-u01-scoped-dashboard-task3-e833b55c13a047b78cf34cd5085fdbbd",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_PRODUCT_RED_ONLY",
-  "repository_head": "a8a706a5dd50e26a378ad50d2ad30e9881b6cc3a",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CLOSE_ONLY",
+  "repository_head": "a8db53ba0cfa3596ab196e5d21de491d2ce586ce",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
