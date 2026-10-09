@@ -582,6 +582,71 @@ def _registration_handler(
     return handler
 
 
+_SCOPED_DASHBOARD_KEY = "GET /api/projects/{projectId}/environments/{environmentId}/dashboard"
+
+
+def _scoped_dashboard_handler(
+    endpoint: EndpointSpec,
+    repository: RegistrationRepository | None,
+    reader: Callable[..., Any] | None,
+    authenticate: Authenticator,
+    config: WebSecurityConfig,
+) -> Callable[[Request], Any]:
+    async def handler(request: Request, **_path_parameters: str) -> Response:
+        try:
+            _host(request, config)
+            principal = await _read_principal(request, authenticate, config, None)
+            if endpoint.permission not in principal.permissions:
+                raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH", "The action is not allowed.", 403)
+            raw_query = request.scope.get("query_string", b"")
+            if raw_query not in {b"period=1d", b"period=7d", b"period=30d"}:
+                raise ApiContractError("SCOPED_DASHBOARD_INVALID_QUERY", "The period query is invalid.", 400)
+            period_key = raw_query.decode("ascii").split("=", 1)[1]
+            if repository is None:
+                raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE", "Pair authorization is unavailable.", 503)
+            project_id = str(request.path_params["projectId"])
+            environment_id = str(request.path_params["environmentId"])
+            try:
+                pair = await run_in_threadpool(repository.require_dashboard_pair,
+                                               principal.actor_id, project_id, environment_id)
+            except F19ARegistrationRejected as error:
+                if str(error) == "AUTHORIZATION_SCOPE_MISMATCH":
+                    raise ApiContractError("AUTHORIZATION_SCOPE_MISMATCH", "The pair is not allowed.", 403) from None
+                if str(error) == "REGISTRATION_INVALID_INPUT":
+                    raise ApiContractError("REGISTRATION_INVALID_INPUT", "The pair input is invalid.", 400) from None
+                raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE", "Pair authorization is unavailable.", 503) from None
+            except Exception:
+                raise ApiContractError("PAIR_AUTHORIZATION_UNAVAILABLE", "Pair authorization is unavailable.", 503) from None
+            if reader is None:
+                raise ApiContractError("SCOPED_DASHBOARD_UNAVAILABLE", "The Dashboard source is unavailable.", 503)
+            try:
+                observed_at = datetime.now(timezone.utc)
+                result = await run_in_threadpool(reader, project_id, environment_id, period_key, observed_at)
+                if inspect.isawaitable(result):
+                    result = await result
+                if not isinstance(result, Mapping) or set(result) != {
+                    "period", "current", "occurrences", "sourceCompleteness"
+                }:
+                    raise ValueError("invalid scoped Dashboard response")
+                if (not isinstance(result["period"], Mapping)
+                        or result["period"].get("key") != period_key
+                        or not all(isinstance(result[key], Mapping) for key in (
+                            "current", "occurrences", "sourceCompleteness"
+                        ))):
+                    raise ValueError("invalid scoped Dashboard response shape")
+                data = dict(result)
+                data["pair"] = pair
+                return JSONResponse({"data": data, "request_id": request.state.request_id})
+            except Exception:
+                raise ApiContractError("SCOPED_DASHBOARD_UNAVAILABLE", "The Dashboard source is unavailable.", 503) from None
+        except ApiContractError as error:
+            return _error_response(request, _f19a_database_error(error))
+
+    handler.__name__ = "scoped_dashboard"
+    _declare_path_parameters(handler, endpoint.path)
+    return handler
+
+
 def _sse_handler(
     endpoint: EndpointSpec,
     stream: EventStreamPort,
@@ -714,6 +779,7 @@ def create_app(
     auth_mode: str = "COOKIE",
     registration_repository: RegistrationRepository | None = None,
     f19a_pair_guard_required: bool = False,
+    scoped_dashboard_reader: Callable[..., Any] | None = None,
 ) -> FastAPI:
     if type(f19a_pair_guard_required) is not bool:
         raise ValueError("F-19A pair guard mode must be boolean")
@@ -792,7 +858,10 @@ def create_app(
             if endpoint.key in _TRUSTED_READ_ENDPOINT_KEYS
             else None
         )
-        handler = (_registration_handler(endpoint, registration_repository, authenticator, config,
+        handler = (_scoped_dashboard_handler(endpoint, registration_repository,
+                scoped_dashboard_reader, authenticator, config)
+            if endpoint.key == _SCOPED_DASHBOARD_KEY else
+            _registration_handler(endpoint, registration_repository, authenticator, config,
                 f19a_pair_guard_required)
             if endpoint.key in REGISTRATION_ENDPOINT_KEYS else
             _sse_handler(

@@ -368,6 +368,41 @@ class F19ARegistrationRepository:
 
         return self._read(read)
 
+    def require_dashboard_pair(self, actor_id: str, project_id: str, environment_id: str) -> dict:
+        actor_id, project_id, environment_id = (
+            _identifier(actor_id), _identifier(project_id), _identifier(environment_id)
+        )
+
+        def read(session):
+            _require_action(session, actor_id, "dashboard:read")
+            query = sa.select(
+                registered_projects.c.project_id,
+                registered_projects.c.display_name.label("project_name"),
+                registered_environments.c.environment_id,
+                registered_environments.c.display_name.label("environment_name"),
+            ).select_from(
+                pair_grants.join(registered_environments, sa.and_(
+                    pair_grants.c.project_id == registered_environments.c.project_id,
+                    pair_grants.c.environment_id == registered_environments.c.environment_id,
+                )).join(registered_projects,
+                        registered_environments.c.project_id == registered_projects.c.project_id)
+            ).where(
+                pair_grants.c.actor_id == actor_id,
+                pair_grants.c.project_id == project_id,
+                pair_grants.c.environment_id == environment_id,
+                pair_grants.c.permission_code == "dashboard:read",
+                pair_grants.c.active.is_(True),
+                registered_projects.c.active.is_(True),
+                registered_environments.c.active.is_(True),
+            )
+            row = session.execute(query).first()
+            if row is None:
+                raise F19ARegistrationRejected("AUTHORIZATION_SCOPE_MISMATCH")
+            return {"projectId": row.project_id, "projectName": row.project_name,
+                    "environmentId": row.environment_id, "environmentName": row.environment_name}
+
+        return self._read(read)
+
 
 __all__ = ["F19ARegistrationRepository", "F19ARegistrationRejected", "REGISTRATION_METADATA",
            "registered_projects", "registered_environments", "pair_grants", "registration_audit_events"]

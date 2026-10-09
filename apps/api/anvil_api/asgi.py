@@ -74,6 +74,7 @@ def create_configured_oidc_asgi_app(
     frontend_directory: Path | None = None,
     operations_owner: OperationsService | None = None,
     f19a_enabled: bool = False,
+    scoped_dashboard_reader: Callable | None = None,
 ) -> FastAPI:
     """Assemble nonsecret server settings before binding trusted OIDC material."""
     allowed = {
@@ -107,6 +108,7 @@ def create_configured_oidc_asgi_app(
         frontend_directory=frontend_directory,
         operations_owner=operations_owner,
         f19a_enabled=f19a_enabled,
+        scoped_dashboard_reader=scoped_dashboard_reader,
     )
 
 
@@ -122,6 +124,7 @@ def create_oidc_asgi_app(
     frontend_directory: Path | None = None,
     operations_owner: OperationsService | None = None,
     f19a_enabled: bool = False,
+    scoped_dashboard_reader: Callable | None = None,
 ) -> FastAPI:
     """Bind trusted OIDC inputs to one coordinator before exposing host routes."""
     if not isinstance(environment, Mapping):
@@ -145,13 +148,16 @@ def create_oidc_asgi_app(
     registry = canonical_api_registry()
     if not f19a_enabled:
         registry = ApiRegistry(tuple(endpoint for endpoint in registry.endpoints
-                                   if endpoint.key not in REGISTRATION_ENDPOINT_KEYS))
+                                   if endpoint.key not in REGISTRATION_ENDPOINT_KEYS
+                                   and endpoint.key !=
+                                   "GET /api/projects/{projectId}/environments/{environmentId}/dashboard"))
     runtime = create_runtime_app(
         environment=environment, session_factory=session_factory, engine=engine,
         oidc_session_coordinator=coordinator,
         registry=registry,
         registration_repository=(F19ARegistrationRepository(session_factory) if f19a_enabled else None),
         f19a_pair_guard_required=f19a_enabled,
+        scoped_dashboard_reader=scoped_dashboard_reader,
         authorization_resolver=authorization_resolver,
         operations_owner=operations_owner,
     )

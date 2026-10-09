@@ -254,3 +254,33 @@ def test_database_unavailable_is_not_empty_or_authorized():
         owner.list_dashboard_pairs("reader")
     with pytest.raises(F19ARegistrationRejected, match="PAIR_AUTHORIZATION_UNAVAILABLE"):
         owner.require_pair_grant("reader", "project-a", "test", "dashboard:read")
+
+
+def test_require_dashboard_pair_reads_exact_active_grant_and_names_in_one_read(repository):
+    owner, _, _ = repository
+    for project, name in (("project-a", "Project A"), ("project-b", "Project B")):
+        owner.register_project("admin", project, name)
+        owner.register_environment("admin", project, "test", name + " Test")
+    owner.set_pair_grant("admin", "reader", "project-a", "test", "dashboard:read", True)
+    assert owner.require_dashboard_pair("reader", "project-a", "test") == {
+        "projectId": "project-a", "projectName": "Project A",
+        "environmentId": "test", "environmentName": "Project A Test",
+    }
+    for actor, project in (("reader", "project-b"), ("other", "project-a")):
+        with pytest.raises(F19ARegistrationRejected, match="AUTHORIZATION_SCOPE_MISMATCH"):
+            owner.require_dashboard_pair(actor, project, "test")
+    owner.set_pair_grant("admin", "reader", "project-a", "test", "dashboard:read", False)
+    with pytest.raises(F19ARegistrationRejected, match="AUTHORIZATION_SCOPE_MISMATCH"):
+        owner.require_dashboard_pair("reader", "project-a", "test")
+    owner.set_pair_grant("admin", "reader", "project-a", "test", "dashboard:read", True)
+    owner.set_registration_active("admin", "project-a", "test", False)
+    with pytest.raises(F19ARegistrationRejected, match="AUTHORIZATION_SCOPE_MISMATCH"):
+        owner.require_dashboard_pair("reader", "project-a", "test")
+
+
+def test_require_dashboard_pair_database_fault_is_unavailable():
+    def unavailable():
+        raise OSError("database unavailable")
+
+    with pytest.raises(F19ARegistrationRejected, match="PAIR_AUTHORIZATION_UNAVAILABLE"):
+        F19ARegistrationRepository(unavailable).require_dashboard_pair("reader", "project-a", "test")

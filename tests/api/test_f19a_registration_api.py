@@ -625,9 +625,12 @@ def test_f19a_oidc_host_requires_exact_0020_and_uses_session_actor(monkeypatch):
         legacy = create_oidc_asgi_app(oidc_config=config, engine=engine, session_factory=sessions,
             authorization_resolver=lambda _endpoint, _params: None, environment=environment)
         assert "/api/registration/projects" not in legacy.openapi()["paths"]
+        scoped_path = "/api/projects/{projectId}/environments/{environmentId}/dashboard"
+        assert scoped_path not in legacy.openapi()["paths"]
         app = create_oidc_asgi_app(oidc_config=config, engine=engine, session_factory=sessions,
             authorization_resolver=lambda _endpoint, _params: None, environment=environment,
             f19a_enabled=True)
+        assert scoped_path in app.openapi()["paths"]
         with TestClient(app, base_url=origin) as client:
             assert client.get("/health/ready").status_code == 503
             with engine.begin() as connection:
@@ -648,6 +651,9 @@ def test_f19a_oidc_host_requires_exact_0020_and_uses_session_actor(monkeypatch):
             assert listed.status_code == 200
             assert listed.json()["items"] == [{"projectId": "project-a", "environmentId": "prod",
                 "projectName": "Project A", "environmentName": "Prod"}]
+            missing_reader = client.get("/api/projects/project-a/environments/prod/dashboard?period=1d")
+            assert missing_reader.status_code == 503
+            assert missing_reader.json()["error"]["code"] == "SCOPED_DASHBOARD_UNAVAILABLE"
     finally:
         engine.dispose()
 
