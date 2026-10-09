@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-scoped-dashboard-task2-start-seq2297",
+  "snapshot_id": "snapshot-u01-scoped-dashboard-task2-start-corrected-seq2297",
   "event_sequence": 2297,
-  "updated_at": "2026-10-09T02:41:21+00:00",
+  "updated_at": "2026-10-09T02:51:38+00:00",
   "last_event_id": "evt_u01_2297_scoped_dashboard_task2_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -1468,7 +1468,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": ["packages/persistence/f19a_registration_repository.py", "packages/api/f19a_registration.py", "packages/api/registry.py", "packages/api/fastapi_app.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/oidc_process.py", "tests/persistence/test_f19a_registration_repository.py", "tests/api/test_f19a_registration_api.py", "tests/api/test_u01_scoped_dashboard_api.py"],
+    "product_write_scope": ["packages/api/scoped_dashboard.py", "packages/api/fastapi_app.py", "packages/observability/service.py", "packages/persistence/operations_repository.py", "apps/api/anvil_api/oidc_process.py", "tests/api/test_u01_scoped_dashboard_api.py", "tests/api/test_u01_scoped_dashboard_reader.py", "tests/api/test_oidc_process.py", "tests/api/test_oidc_asgi_binding.py", "tests/observability/test_f13_operations.py", "tests/persistence/test_f14_operations_repository.py", "tests/integration/test_u01_scoped_dashboard_pg15.py"],
     "worktree_status": "U01_SCOPED_DASHBOARD_TASK2_ACTIVE_CONTROL_ONLY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
@@ -2219,7 +2219,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "30E3729ECAD1011550B6634B1A392432214527D0A4126929C9C87A4041DF5AF5",
+  "snapshot_hash": "EED250AD9BEF2D14DC84FDB68EF84847409C7D247A0A5757DC25AD48AF675520",
   "runtime_next_action": "U01_SCOPED_DASHBOARD_TASK2_CONTROL_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -23774,6 +23774,7 @@
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
     "dispatch_head": "10b7edf500699eeab91eb2c9b03988a6a2f4c34b",
+    "a_docs_checkpoint": "d89a1c6160821af0ed3fb62ee1426b9a576f201a",
     "contract_proposal_path": "docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md",
     "contract_proposal_sha256": "5B13E92A16A903F2887BA5F3E038AA5A41BBBBA667EE0DED57FF9C39E7BCA584",
     "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
