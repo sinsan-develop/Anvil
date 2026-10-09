@@ -18,6 +18,7 @@ const diagnosticCodes = new Set([
   'U01_QA_ABSOLUTE_API_FORBIDDEN', 'U01_QA_ACTOR_MISMATCH',
   'U01_QA_API_BODY_INVALID', 'U01_QA_API_ERROR_MISMATCH', 'U01_QA_API_STATUS_MISMATCH',
   'U01_QA_BROWSER_CONFIG_REJECTED', 'U01_QA_BROWSER_FAILED',
+  'U01_QA_BROWSER_TIMEZONE_MISMATCH',
   'U01_QA_BROWSER_TARGET_REJECTED', 'U01_QA_CALLBACK_ORIGIN_MISMATCH',
   'U01_QA_CURRENT_DB_COUNT_MISMATCH', 'U01_QA_EVIDENCE_DIR_REJECTED',
   'U01_QA_EVIDENCE_EXISTS', 'U01_QA_FONT_SIZE_MISMATCH', 'U01_QA_ISSUER_FAILED',
@@ -271,6 +272,9 @@ if (process.argv.includes('--self-test')) {
   }});
   assert.equal(alertRole, 'alert');
   assert.equal(alertText, '조합·기간 자료를 확인할 수 없습니다.');
+  await assertClientTimeZone({evaluate: async () => 'America/Los_Angeles'});
+  await assert.rejects(assertClientTimeZone({evaluate: async () => 'Asia/Seoul'}),
+    /U01_QA_BROWSER_TIMEZONE_MISMATCH/);
   assert.equal(safeFailure(Object.assign(new Error('timeout'), {name: 'TimeoutError'}),
     'FAULT_ALERT'),
   'U01_QA_FAILURE stage=FAULT_ALERT class=TimeoutError code=U01_QA_BROWSER_FAILED');
@@ -346,6 +350,12 @@ function scopedFaultAlert(page) {
   return page.getByRole('alert').filter({hasText: '조합·기간 자료를 확인할 수 없습니다.'});
 }
 
+async function assertClientTimeZone(page) {
+  const actual = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+  assert.equal(actual, 'America/Los_Angeles', 'U01_QA_BROWSER_TIMEZONE_MISMATCH');
+  return actual;
+}
+
 async function run() {
   markStage('CONFIG');
   const config = readConfig();
@@ -357,9 +367,11 @@ async function run() {
   const unexpectedOrigins = [];
   try {
     const context = await browser.newContext({ignoreHTTPSErrors: true,
+      timezoneId: 'America/Los_Angeles',
       viewport: {width: 1920, height: 1080}});
     try {
       const page = await context.newPage();
+      const browserTimeZone = await assertClientTimeZone(page);
       page.on('request', request => {
         const url = new URL(request.url());
         if (url.origin !== config.app.origin && url.origin !== config.issuer.origin)
@@ -584,7 +596,7 @@ async function run() {
           throw new Error('U01_QA_EVIDENCE_EXISTS');
         await page.screenshot({path: screenshot, fullPage: true});
         writeFileSync(networkFile, JSON.stringify({phase: config.phase, network, observations,
-          clientSimulatedFault}));
+          clientSimulatedFault, browserTimeZone}));
       }
       process.stdout.write(`U01_TWO_PAIR_${config.phase.toUpperCase()}_PASS `
         + JSON.stringify({pairs: expected.length, reads: observations.length, apiRequests: network.length}) + '\n');

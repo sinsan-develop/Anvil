@@ -1,13 +1,15 @@
 """Opt-in exact-SHA U-01 two-pair browser and isolated PostgreSQL 15 QA."""
 
 import json
+from hashlib import sha256
 import os
 import re
 import subprocess
 from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
+from zoneinfo import ZoneInfo
 
 import pytest
 import sqlalchemy as sa
@@ -24,7 +26,7 @@ from packages.persistence.oidc_principal_directory import (
     DIRECTORY_METADATA, SqlAlchemyOidcPrincipalResolver, oidc_subject_bindings,
     roles, user_roles, users,
 )
-from packages.persistence.operations_repository import PostgresOperationsRepository
+from packages.persistence.operations_repository import PostgresOperationsRepository, _safe_event
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -357,6 +359,7 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
             "U01_QA_API_BODY_INVALID", "U01_QA_API_ERROR_MISMATCH",
             "U01_QA_API_STATUS_MISMATCH", "U01_QA_BROWSER_CONFIG_REJECTED",
             "U01_QA_BROWSER_FAILED", "U01_QA_BROWSER_TARGET_REJECTED",
+            "U01_QA_BROWSER_TIMEZONE_MISMATCH",
             "U01_QA_CALLBACK_ORIGIN_MISMATCH", "U01_QA_CURRENT_DB_COUNT_MISMATCH",
             "U01_QA_EVIDENCE_DIR_REJECTED", "U01_QA_EVIDENCE_EXISTS",
             "U01_QA_FONT_SIZE_MISMATCH", "U01_QA_ISSUER_FAILED", "U01_QA_ISSUER_MISMATCH",
@@ -381,6 +384,139 @@ def _run_browser(config: dict, evidence_dir: Path) -> None:
                 and diagnostic.group(3) in codes:
             error_class, code = diagnostic.group(2), diagnostic.group(3)
         raise AssertionError(f"U01_QA_BROWSER_FAILED stage={stage} class={error_class} code={code}")
+
+
+def _bind_browser_observations(config: dict, evidence_dir: Path, owner) -> dict:
+    """Accept phase evidence only when every API observation matches complete scoped audit."""
+    phase = config["phase"]
+    network_file = evidence_dir / f"u01-{phase}-network.json"
+    audit_file = evidence_dir / f"u01-{phase}-db-api-audit.json"
+    if audit_file.exists() or audit_file.is_symlink():
+        raise AssertionError("U01_QA_AUDIT_BINDING_REJECTED")
+    try:
+        raw = network_file.read_bytes()
+        if len(raw) > 262144:
+            raise ValueError("oversized browser evidence")
+        def unique_object(items):
+            result = dict(items)
+            if len(result) != len(items):
+                raise ValueError("duplicate JSON key")
+            return result
+        payload = json.loads(raw, object_pairs_hook=unique_object)
+        if (type(payload) is not dict
+                or set(payload) != {"phase", "network", "observations",
+                                    "clientSimulatedFault", "browserTimeZone"}
+                or payload["phase"] != phase
+                or payload["browserTimeZone"] != "America/Los_Angeles"
+                or type(payload["network"]) is not list
+                or type(payload["observations"]) is not list):
+            raise ValueError("browser evidence shape")
+        pairs = (config["pair_a"], config["pair_b"])
+        permitted = pairs if phase in {"granted", "restored"} else (
+            pairs[1:2] if phase == "revoked" else ())
+        if phase not in {"granted", "revoked", "restored", "other"}:
+            raise ValueError("phase")
+        if payload["clientSimulatedFault"] is not bool(permitted):
+            raise ValueError("incomplete browser fault exercise")
+        expected_keys = {(pair["projectId"], pair["environmentId"], period)
+                         for pair in permitted for period in ("1d", "7d", "30d")}
+        if len(payload["observations"]) != len(expected_keys):
+            raise ValueError("partial observations")
+        def scoped_path(pair):
+            return (f"/api/projects/{quote(pair['projectId'], safe='')}/environments/"
+                    f"{quote(pair['environmentId'], safe='')}/dashboard")
+        denied = pairs[:1] if phase == "revoked" else (pairs if phase == "other" else ())
+        for pair in denied:
+            path = scoped_path(pair)
+            statuses = [entry.get("status") for entry in payload["network"]
+                        if type(entry) is dict and entry.get("path") == path
+                        and entry.get("period") == "1d" and entry.get("method") == "GET"]
+            if 403 not in statuses or 200 in statuses:
+                raise ValueError("denied scope network missing")
+        def utc(value):
+            if type(value) is not str:
+                raise ValueError("timestamp")
+            parsed = datetime.fromisoformat(value)
+            if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
+                raise ValueError("non-UTC timestamp")
+            return parsed.astimezone(timezone.utc)
+        audit_rows = {}
+        audit_digests = {}
+        for pair, expected_count in zip(pairs, (3, 2), strict=True):
+            identity = (pair["projectId"], pair["environmentId"])
+            rows = owner.load_complete(*identity)
+            if type(rows) is not tuple or len(rows) != expected_count:
+                raise ValueError("incomplete audit")
+            seen_alerts = set()
+            validated = []
+            for sequence, row in enumerate(rows, 1):
+                if (type(row) is not tuple or len(row) != 2 or row[0] != sequence
+                        or type(row[1]) is not dict):
+                    raise ValueError("audit sequence")
+                event = _safe_event(row[1], *identity)
+                alert_id = event["alert_id"]
+                if (event["action"] != "DETECTED" or alert_id in seen_alerts
+                        or event["alert"]["level"] != "critical"):
+                    raise ValueError("duplicate or incomplete detected audit")
+                seen_alerts.add(alert_id)
+                validated.append((alert_id, utc(event["at"])))
+            audit_rows[identity] = tuple(validated)
+            audit_digests[identity] = sha256(json.dumps(rows, sort_keys=True,
+                separators=(",", ":")).encode("utf-8")).hexdigest()
+        seen = set()
+        bindings = []
+        days = {"1d": 1, "7d": 7, "30d": 30}
+        for item in payload["observations"]:
+            if (type(item) is not dict or set(item) != {"pair", "period", "startUtc",
+                                                   "endUtc", "observedAt", "detected"}
+                    or type(item["pair"]) is not list or len(item["pair"]) != 2
+                    or any(type(value) is not str for value in item["pair"])):
+                raise ValueError("observation shape")
+            identity = tuple(item["pair"])
+            key = (*identity, item["period"])
+            if key not in expected_keys or key in seen:
+                raise ValueError("unexpected or duplicate observation")
+            seen.add(key)
+            start, end, observed = (utc(item[name]) for name in
+                                    ("startUtc", "endUtc", "observedAt"))
+            today = observed.astimezone(ZoneInfo("Asia/Seoul")).date()
+            expected_start = datetime.combine(today - timedelta(days=days[item["period"]] - 1),
+                                              datetime.min.time(), ZoneInfo("Asia/Seoul"))
+            expected_end = datetime.combine(today + timedelta(days=1), datetime.min.time(),
+                                            ZoneInfo("Asia/Seoul"))
+            if (start != expected_start.astimezone(timezone.utc)
+                    or end != expected_end.astimezone(timezone.utc)
+                    or not start <= observed < end
+                    or type(item["detected"]) is not int or item["detected"] < 0):
+                raise ValueError("period boundary")
+            path = scoped_path({"projectId": identity[0], "environmentId": identity[1]})
+            if not any(type(entry) is dict and entry.get("path") == path
+                       and entry.get("period") == item["period"]
+                       and entry.get("method") == "GET" and entry.get("status") == 200
+                       for entry in payload["network"]):
+                raise ValueError("missing network request")
+            audit_count = len({alert_id for alert_id, at in audit_rows[identity]
+                               if start <= at < min(end, observed)})
+            if item["detected"] != audit_count:
+                raise ValueError("API and audit count differ")
+            bindings.append({"pair": item["pair"], "period": item["period"],
+                             "startUtc": item["startUtc"], "endUtc": item["endUtc"],
+                             "observedAt": item["observedAt"],
+                             "apiDetected": item["detected"], "auditDetected": audit_count})
+        if seen != expected_keys:
+            raise ValueError("incomplete period inventory")
+        evidence = {"sourceSha": config["source_sha"], "phase": phase,
+                    "browserTimeZone": payload["browserTimeZone"],
+                    "eventTimeBasis": "DETECTED.at", "networkSha256": sha256(raw).hexdigest(),
+                    "auditPairs": [{"pair": list(identity), "rowCount": len(rows),
+                                    "auditSha256": audit_digests[identity]}
+                                   for identity, rows in audit_rows.items()],
+                    "bindings": bindings}
+        with audit_file.open("x", encoding="utf-8") as output:
+            json.dump(evidence, output, ensure_ascii=False, sort_keys=True)
+        return evidence
+    except Exception:
+        raise AssertionError("U01_QA_AUDIT_BINDING_REJECTED") from None
 
 
 def _phase_plan(phase: str) -> tuple[tuple[str, ...], tuple[str, ...], int]:
@@ -858,6 +994,160 @@ def test_operations_connection_uses_libpq_dsn_not_sqlalchemy_driver_name():
     assert "+psycopg" not in _operations_dsn(target)
 
 
+def _audit_binding_case(tmp_path):
+    pairs = ({"projectId": "project-a", "environmentId": "test-a"},
+             {"projectId": "project-b", "environmentId": "test-b"})
+    config = {"phase": "granted", "pair_a": pairs[0], "pair_b": pairs[1],
+              "source_sha": "a" * 40}
+    observed_at = "2026-03-01T00:00:00+00:00"
+    starts = {"1d": "2026-02-28T15:00:00+00:00",
+              "7d": "2026-02-22T15:00:00+00:00",
+              "30d": "2026-01-30T15:00:00+00:00"}
+    counts = ((1, 2, 3), (1, 1, 2))
+    observations = [
+        {"pair": [pair["projectId"], pair["environmentId"]], "period": period,
+         "startUtc": starts[period], "endUtc": "2026-03-01T15:00:00+00:00",
+         "observedAt": observed_at, "detected": counts[index][period_index]}
+        for index, pair in enumerate(pairs)
+        for period_index, period in enumerate(("1d", "7d", "30d"))
+    ]
+    network = [{"path": f"/api/projects/{item['pair'][0]}/environments/"
+                        f"{item['pair'][1]}/dashboard", "period": item["period"],
+                "method": "GET", "status": 200} for item in observations]
+    rows = {}
+    for index, pair in enumerate(pairs):
+        times = (("2026-02-09T00:00:00+00:00", "2026-02-25T00:00:00+00:00",
+                  "2026-02-28T23:00:00+00:00") if index == 0 else
+                 ("2026-02-21T00:00:00+00:00", "2026-02-28T23:00:00+00:00"))
+        events = tuple((sequence, _qa_detected_event(pair["projectId"],
+            pair["environmentId"], f"qa-{index}-{sequence}", at))
+            for sequence, at in enumerate(times, 1))
+        rows[(pair["projectId"], pair["environmentId"])] = events
+    payload = {"phase": "granted", "network": network, "observations": observations,
+               "clientSimulatedFault": True, "browserTimeZone": "America/Los_Angeles"}
+    network_file = tmp_path / "u01-granted-network.json"
+    network_file.write_text(json.dumps(payload), encoding="utf-8")
+    owner = SimpleNamespace(load_complete=lambda project, environment:
+                            rows[(project, environment)])
+    return config, owner, rows, payload, network_file
+
+
+def test_browser_observations_bind_exact_pair_period_and_complete_pg_audit(tmp_path):
+    config, owner, _rows, _payload, _network_file = _audit_binding_case(tmp_path)
+    evidence = _bind_browser_observations(config, tmp_path, owner)
+    assert evidence["phase"] == "granted"
+    assert len(evidence["bindings"]) == 6
+    assert [(item["pair"], item["period"], item["apiDetected"], item["auditDetected"])
+            for item in evidence["bindings"]] == [
+        (["project-a", "test-a"], "1d", 1, 1),
+        (["project-a", "test-a"], "7d", 2, 2),
+        (["project-a", "test-a"], "30d", 3, 3),
+        (["project-b", "test-b"], "1d", 1, 1),
+        (["project-b", "test-b"], "7d", 1, 1),
+        (["project-b", "test-b"], "30d", 2, 2),
+    ]
+    assert all(re.fullmatch(r"[0-9a-f]{64}", item["auditSha256"])
+               for item in evidence["auditPairs"])
+    assert (tmp_path / "u01-granted-db-api-audit.json").read_text(encoding="utf-8")
+    assert "secret" not in json.dumps(evidence)
+
+
+def test_browser_observations_use_inclusive_start_and_exclusive_observed_at(tmp_path):
+    config, owner, rows, payload, network_file = _audit_binding_case(tmp_path)
+    pair_a = ("project-a", "test-a")
+    pair_b = ("project-b", "test-b")
+    rows[pair_a] = rows[pair_a][:2] + ((3, _qa_detected_event(*pair_a, "qa-0-3",
+                                             "2026-03-01T00:00:00+00:00")),)
+    rows[pair_b] = rows[pair_b][:1] + ((2, _qa_detected_event(*pair_b, "qa-1-2",
+                                             "2026-02-28T15:00:00+00:00")),)
+    for item, count in zip(payload["observations"][:3], (0, 1, 2), strict=True):
+        item["detected"] = count
+    network_file.write_text(json.dumps(payload), encoding="utf-8")
+    evidence = _bind_browser_observations(config, tmp_path, owner)
+    assert [item["auditDetected"] for item in evidence["bindings"]] == [0, 1, 2, 1, 1, 2]
+
+
+@pytest.mark.parametrize("phase,expected_reads", [("revoked", 3), ("other", 0)])
+def test_browser_observations_respect_phase_access(tmp_path, phase, expected_reads):
+    config, owner, _rows, payload, network_file = _audit_binding_case(tmp_path)
+    config["phase"] = payload["phase"] = phase
+    payload["observations"] = (payload["observations"][3:] if phase == "revoked" else [])
+    payload["network"] = (payload["network"][3:] if phase == "revoked" else [])
+    denied_pairs = (config["pair_a"],) if phase == "revoked" else (
+        config["pair_a"], config["pair_b"])
+    payload["network"].extend({"path": f"/api/projects/{pair['projectId']}/environments/"
+                                     f"{pair['environmentId']}/dashboard",
+                               "period": "1d", "method": "GET", "status": 403}
+                              for pair in denied_pairs)
+    payload["clientSimulatedFault"] = phase == "revoked"
+    network_file.unlink()
+    (tmp_path / f"u01-{phase}-network.json").write_text(json.dumps(payload), encoding="utf-8")
+    evidence = _bind_browser_observations(config, tmp_path, owner)
+    assert len(evidence["bindings"]) == expected_reads
+    assert {tuple(item["pair"]) for item in evidence["bindings"]} == (
+        {("project-b", "test-b")} if phase == "revoked" else set())
+
+
+def test_other_phase_rejects_missing_denied_api_network(tmp_path):
+    config, owner, _rows, payload, network_file = _audit_binding_case(tmp_path)
+    config["phase"] = payload["phase"] = "other"
+    payload["observations"] = []
+    payload["network"] = []
+    payload["clientSimulatedFault"] = False
+    network_file.unlink()
+    (tmp_path / "u01-other-network.json").write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(AssertionError, match="U01_QA_AUDIT_BINDING_REJECTED"):
+        _bind_browser_observations(config, tmp_path, owner)
+
+
+@pytest.mark.parametrize("mutation", ["phase", "timezone", "missing", "duplicate", "pair", "period",
+                                       "start", "end", "observed", "count", "network",
+                                       "audit_duplicate", "audit_gap", "audit_pair", "collision"])
+def test_browser_observations_reject_unbound_or_incomplete_evidence(tmp_path, mutation):
+    config, owner, rows, payload, network_file = _audit_binding_case(tmp_path)
+    if mutation == "phase":
+        payload["phase"] = "revoked"
+    elif mutation == "timezone":
+        payload["browserTimeZone"] = "Asia/Seoul"
+    elif mutation == "missing":
+        payload["observations"].pop()
+    elif mutation == "duplicate":
+        payload["observations"].append(dict(payload["observations"][0]))
+    elif mutation == "pair":
+        payload["observations"][0]["pair"] = ["project-a", "test-b"]
+    elif mutation == "period":
+        payload["observations"][0]["period"] = "invalid"
+    elif mutation == "start":
+        payload["observations"][0]["startUtc"] = "2026-02-27T15:00:00+00:00"
+    elif mutation == "end":
+        payload["observations"][0]["endUtc"] = "2026-03-02T15:00:00+00:00"
+    elif mutation == "observed":
+        payload["observations"][0]["observedAt"] = "2026-03-02T00:00:00+00:00"
+    elif mutation == "count":
+        payload["observations"][0]["detected"] = 0
+    elif mutation == "network":
+        payload["network"].pop(0)
+    elif mutation == "audit_duplicate":
+        pair = ("project-a", "test-a")
+        duplicate = dict(rows[pair][0][1])
+        rows[pair] += ((4, duplicate),)
+    elif mutation == "audit_gap":
+        pair = ("project-a", "test-a")
+        rows[pair] = rows[pair][:1] + ((3, rows[pair][1][1]),)
+    elif mutation == "audit_pair":
+        pair = ("project-a", "test-a")
+        event = dict(rows[pair][0][1])
+        event["alert"] = {**event["alert"], "environment_id": "test-b"}
+        rows[pair] = ((1, event),) + rows[pair][1:]
+    elif mutation == "collision":
+        (tmp_path / "u01-granted-db-api-audit.json").write_text("preserve", encoding="utf-8")
+    network_file.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(AssertionError, match="U01_QA_AUDIT_BINDING_REJECTED"):
+        _bind_browser_observations(config, tmp_path, owner)
+    if mutation == "collision":
+        assert (tmp_path / "u01-granted-db-api-audit.json").read_text() == "preserve"
+
+
 def test_opt_in_u01_two_pair_oidc_https_pg15():
     """Main runs four sequential phases against one recorded, isolated QA lifetime."""
     if "ANVIL_U01_QA_SOURCE_SHA" not in os.environ:
@@ -918,6 +1208,10 @@ def test_opt_in_u01_two_pair_oidc_https_pg15():
                 for _sequence, event in rows
             ):
                 raise AssertionError("U01_QA_OPERATIONS_AUDIT_MISMATCH")
+        audit_file = evidence_dir / f"u01-{config['phase']}-db-api-audit.json"
+        if audit_file.exists() or audit_file.is_symlink():
+            raise AssertionError("U01_QA_AUDIT_BINDING_REJECTED")
         _run_browser(config, evidence_dir)
+        _bind_browser_observations(config, evidence_dir, owner)
     finally:
         engine.dispose()
