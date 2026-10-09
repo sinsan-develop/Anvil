@@ -29,7 +29,7 @@ const diagnosticCodes = new Set([
   'U01_QA_SESSION_MISSING', 'U01_QA_STALE_PAIR_RESTORED',
   'U01_QA_STALE_PERIOD_RESTORED', 'U01_QA_STALE_REQUEST_NOT_OBSERVED',
   'U01_QA_UI_FAULT_NOT_EXERCISED', 'U01_QA_UI_PERIOD_MISMATCH',
-  'U01_QA_UNEXPECTED_BROWSER_ORIGIN',
+  'U01_QA_UNEXPECTED_BROWSER_ORIGIN', 'U01_QA_UNSAFE_NETWORK_URL',
 ]);
 let lastStage = 'START';
 
@@ -275,6 +275,31 @@ if (process.argv.includes('--self-test')) {
   await assertClientTimeZone({evaluate: async () => 'America/Los_Angeles'});
   await assert.rejects(assertClientTimeZone({evaluate: async () => 'Asia/Seoul'}),
     /U01_QA_BROWSER_TIMEZONE_MISMATCH/);
+  const qaOrigin = 'https://anvil-f18-qa.local:8444';
+  const apiUrl = `${qaOrigin}/api/projects/project-a/environments/environment-a/dashboard?period=7d`;
+  assert.deepEqual(safeApiResponseUrl(apiUrl, [qaOrigin]), {url: apiUrl, origin: qaOrigin,
+    path: '/api/projects/project-a/environments/environment-a/dashboard', period: '7d'});
+  assert.equal(safeBrowserRequestOrigin(apiUrl, [qaOrigin]), qaOrigin);
+  assert.throws(() => safeApiResponseUrl(`${qaOrigin}/dashboard`, [qaOrigin]),
+    /U01_QA_UNSAFE_NETWORK_URL/);
+  const issuerUrl = `${qaOrigin}/realms/anvil`;
+  const oidcUrl = `${issuerUrl}/protocol/openid-connect/auth?response_type=code`
+    + '&scope=openid&client_id=qa&redirect_uri=callback&state=private&nonce=private'
+    + '&code_challenge=private&code_challenge_method=S256';
+  assert.equal(safeOidcAuthorizationOrigin(oidcUrl, issuerUrl), qaOrigin);
+  assert.equal(safeOidcAuthorizationOrigin(`${oidcUrl}&claims=%7B%7D&max_age=300`,
+    issuerUrl), qaOrigin);
+  assert.throws(() => safeOidcAuthorizationOrigin(`${oidcUrl}&token=private`, issuerUrl),
+    /U01_QA_UNSAFE_NETWORK_URL/);
+  for (const unsafe of [
+    `${apiUrl}&code=private`, `${apiUrl}&period=1d`, `${apiUrl}#private`,
+    `https://user:pass@anvil-f18-qa.local:8444/api/dashboard/project-environments`,
+    'http://127.0.0.1:8444/api/dashboard/project-environments',
+    `${qaOrigin}/api/dashboard/project-environments?state=private`,
+  ]) {
+    assert.throws(() => safeBrowserRequestOrigin(unsafe, [qaOrigin]),
+      /U01_QA_UNSAFE_NETWORK_URL/);
+  }
   assert.equal(safeFailure(Object.assign(new Error('timeout'), {name: 'TimeoutError'}),
     'FAULT_ALERT'),
   'U01_QA_FAILURE stage=FAULT_ALERT class=TimeoutError code=U01_QA_BROWSER_FAILED');
@@ -356,6 +381,52 @@ async function assertClientTimeZone(page) {
   return actual;
 }
 
+function safeBrowserUrl(raw, allowedOrigins) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error('U01_QA_UNSAFE_NETWORK_URL'); }
+  if (url.protocol !== 'https:' || !allowedOrigins.includes(url.origin)
+      || url.username || url.password || url.hash)
+    throw new Error('U01_QA_UNSAFE_NETWORK_URL');
+  const scoped = /^\/api\/projects\/[^/]+\/environments\/[^/]+\/dashboard$/.test(url.pathname);
+  if (scoped) {
+    if (url.searchParams.size !== 1 || !Object.hasOwn(periodDays, url.searchParams.get('period')))
+      throw new Error('U01_QA_UNSAFE_NETWORK_URL');
+  } else if (url.search) {
+    throw new Error('U01_QA_UNSAFE_NETWORK_URL');
+  }
+  return url;
+}
+
+function safeBrowserRequestOrigin(raw, allowedOrigins) {
+  return safeBrowserUrl(raw, allowedOrigins).origin;
+}
+
+function safeApiResponseUrl(raw, allowedOrigins) {
+  const url = safeBrowserUrl(raw, allowedOrigins);
+  if (!url.pathname.startsWith('/api/')) throw new Error('U01_QA_UNSAFE_NETWORK_URL');
+  return {url: url.href, origin: url.origin, path: url.pathname,
+    period: url.searchParams.get('period')};
+}
+
+function safeOidcAuthorizationOrigin(raw, issuerUrl) {
+  let url;
+  let issuer;
+  try { url = new URL(raw); issuer = new URL(issuerUrl); }
+  catch { throw new Error('U01_QA_UNSAFE_NETWORK_URL'); }
+  const required = ['response_type', 'scope', 'client_id', 'redirect_uri', 'state',
+    'nonce', 'code_challenge', 'code_challenge_method'];
+  const keys = [...url.searchParams.keys()];
+  if (url.protocol !== 'https:' || url.origin !== issuer.origin
+      || url.pathname !== `${issuer.pathname}/protocol/openid-connect/auth`
+      || url.username || url.password || url.hash
+      || required.some(key => keys.filter(value => value === key).length !== 1)
+      || keys.some(key => ![...required, 'claims', 'max_age'].includes(key))
+      || keys.filter(key => key === 'claims').length > 1
+      || keys.filter(key => key === 'max_age').length > 1)
+    throw new Error('U01_QA_UNSAFE_NETWORK_URL');
+  return url.origin;
+}
+
 async function run() {
   markStage('CONFIG');
   const config = readConfig();
@@ -364,7 +435,9 @@ async function run() {
   markStage('BROWSER');
   const browser = await chromium.launch({headless: true});
   const network = [];
-  const unexpectedOrigins = [];
+  const allowedOrigins = [...new Set([config.app.origin, config.issuer.origin])];
+  const requestOrigins = [];
+  const unsafeRequests = [];
   try {
     const context = await browser.newContext({ignoreHTTPSErrors: true,
       timezoneId: 'America/Los_Angeles',
@@ -373,17 +446,16 @@ async function run() {
       const page = await context.newPage();
       const browserTimeZone = await assertClientTimeZone(page);
       page.on('request', request => {
-        const url = new URL(request.url());
-        if (url.origin !== config.app.origin && url.origin !== config.issuer.origin)
-          unexpectedOrigins.push(url.origin);
-        if (url.pathname.startsWith('/api/') && url.origin !== config.app.origin)
-          unexpectedOrigins.push(url.origin);
+        try { requestOrigins.push(safeBrowserRequestOrigin(request.url(), allowedOrigins)); }
+        catch { unsafeRequests.push('U01_QA_UNSAFE_NETWORK_URL'); }
       });
       page.on('response', response => {
-        const url = new URL(response.url());
-        if (url.pathname.startsWith('/api/'))
-          network.push({path: url.pathname, period: url.searchParams.get('period'),
-            method: response.request().method(), status: response.status()});
+        try {
+          const url = new URL(response.url());
+          if (url.pathname.startsWith('/api/'))
+            network.push({...safeApiResponseUrl(response.url(), allowedOrigins),
+              method: response.request().method(), status: response.status()});
+        } catch { unsafeRequests.push('U01_QA_UNSAFE_NETWORK_URL'); }
       });
       markStage('PREAUTH');
       await page.goto(config.app.href, {waitUntil: 'domcontentloaded'});
@@ -393,8 +465,8 @@ async function run() {
       const auth = checkedEnvelope(await sameOriginFetch(page, '/auth/oidc/authorization', {
         method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}',
       }), 200).data;
-      assert.equal(new URL(auth.authorization_url).origin, config.issuer.origin,
-        'U01_QA_ISSUER_MISMATCH');
+      requestOrigins.push(safeOidcAuthorizationOrigin(auth.authorization_url,
+        config.issuer.href));
       const redirect = await context.request.get(auth.authorization_url, {maxRedirects: 0});
       assert.equal(redirect.status(), 302, 'U01_QA_ISSUER_FAILED');
       const callbackUrl = new URL(redirect.headers().location);
@@ -581,7 +653,9 @@ async function run() {
           return card?.querySelector('.status-ready')?.textContent === '1';
         });
       }
-      assert.deepEqual(unexpectedOrigins, [], 'U01_QA_UNEXPECTED_BROWSER_ORIGIN');
+      assert.deepEqual(unsafeRequests, [], 'U01_QA_UNSAFE_NETWORK_URL');
+      assert.ok(requestOrigins.length > 0 && requestOrigins.every(origin =>
+        allowedOrigins.includes(origin)), 'U01_QA_UNEXPECTED_BROWSER_ORIGIN');
       assert.ok(network.length >= 2 && network.every(item => item.path.startsWith('/api/')
         && Number.isInteger(item.status)),
         'U01_QA_NETWORK_MISSING');
@@ -596,7 +670,7 @@ async function run() {
           throw new Error('U01_QA_EVIDENCE_EXISTS');
         await page.screenshot({path: screenshot, fullPage: true});
         writeFileSync(networkFile, JSON.stringify({phase: config.phase, network, observations,
-          clientSimulatedFault, browserTimeZone}));
+          clientSimulatedFault, browserTimeZone, allowedOrigins, requestOrigins}));
       }
       process.stdout.write(`U01_TWO_PAIR_${config.phase.toUpperCase()}_PASS `
         + JSON.stringify({pairs: expected.length, reads: observations.length, apiRequests: network.length}) + '\n');

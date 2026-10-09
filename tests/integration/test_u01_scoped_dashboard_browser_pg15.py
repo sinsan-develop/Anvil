@@ -8,7 +8,7 @@ import subprocess
 from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import quote, urlsplit
+from urllib.parse import parse_qsl, quote, urlsplit
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -405,12 +405,54 @@ def _bind_browser_observations(config: dict, evidence_dir: Path, owner) -> dict:
         payload = json.loads(raw, object_pairs_hook=unique_object)
         if (type(payload) is not dict
                 or set(payload) != {"phase", "network", "observations",
-                                    "clientSimulatedFault", "browserTimeZone"}
+                                    "clientSimulatedFault", "browserTimeZone",
+                                    "allowedOrigins", "requestOrigins"}
                 or payload["phase"] != phase
                 or payload["browserTimeZone"] != "America/Los_Angeles"
                 or type(payload["network"]) is not list
                 or type(payload["observations"]) is not list):
             raise ValueError("browser evidence shape")
+        def configured_origin(raw_url):
+            url = urlsplit(raw_url)
+            if (url.scheme != "https" or url.hostname != "anvil-f18-qa.local"
+                    or url.username is not None or url.password is not None or url.fragment):
+                raise ValueError("unsafe configured origin")
+            return f"{url.scheme}://{url.netloc}"
+        app_origin = configured_origin(config["app_url"])
+        issuer_origin = configured_origin(config["issuer_url"])
+        if app_origin != issuer_origin:
+            raise ValueError("issuer origin differs from app")
+        allowed_origins = list(dict.fromkeys((app_origin, issuer_origin)))
+        if (type(payload["allowedOrigins"]) is not list
+                or payload["allowedOrigins"] != allowed_origins
+                or type(payload["requestOrigins"]) is not list
+                or not payload["requestOrigins"]
+                or any(type(origin) is not str or origin not in allowed_origins
+                       for origin in payload["requestOrigins"])):
+            raise ValueError("browser request origin")
+        for entry in payload["network"]:
+            if (type(entry) is not dict
+                    or set(entry) != {"path", "period", "method", "status", "url", "origin"}
+                    or type(entry["url"]) is not str or type(entry["origin"]) is not str
+                    or type(entry["path"]) is not str or type(entry["method"]) is not str
+                    or type(entry["status"]) is not int):
+                raise ValueError("API response shape")
+            url = urlsplit(entry["url"])
+            origin = configured_origin(entry["url"])
+            if (origin != app_origin or entry["origin"] != origin
+                    or origin not in payload["requestOrigins"]
+                    or not url.path.startswith("/api/") or entry["path"] != url.path):
+                raise ValueError("API response origin or path")
+            scoped = re.fullmatch(r"/api/projects/[^/]+/environments/[^/]+/dashboard",
+                                  url.path) is not None
+            query = parse_qsl(url.query, keep_blank_values=True)
+            if scoped:
+                if (len(query) != 1 or query[0][0] != "period"
+                        or query[0][1] not in {"1d", "7d", "30d"}
+                        or entry["period"] != query[0][1]):
+                    raise ValueError("scoped response query")
+            elif url.query or entry["period"] is not None:
+                raise ValueError("unscoped response query")
         pairs = (config["pair_a"], config["pair_b"])
         permitted = pairs if phase in {"granted", "restored"} else (
             pairs[1:2] if phase == "revoked" else ())
@@ -507,6 +549,9 @@ def _bind_browser_observations(config: dict, evidence_dir: Path, owner) -> dict:
             raise ValueError("incomplete period inventory")
         evidence = {"sourceSha": config["source_sha"], "phase": phase,
                     "browserTimeZone": payload["browserTimeZone"],
+                    "allowedOrigins": allowed_origins,
+                    "requestOriginCount": len(payload["requestOrigins"]),
+                    "apiResponseCount": len(payload["network"]),
                     "eventTimeBasis": "DETECTED.at", "networkSha256": sha256(raw).hexdigest(),
                     "auditPairs": [{"pair": list(identity), "rowCount": len(rows),
                                     "auditSha256": audit_digests[identity]}
@@ -997,8 +1042,10 @@ def test_operations_connection_uses_libpq_dsn_not_sqlalchemy_driver_name():
 def _audit_binding_case(tmp_path):
     pairs = ({"projectId": "project-a", "environmentId": "test-a"},
              {"projectId": "project-b", "environmentId": "test-b"})
+    origin = "https://anvil-f18-qa.local:8444"
     config = {"phase": "granted", "pair_a": pairs[0], "pair_b": pairs[1],
-              "source_sha": "a" * 40}
+              "source_sha": "a" * 40, "app_url": origin + "/",
+              "issuer_url": origin + "/realms/anvil"}
     observed_at = "2026-03-01T00:00:00+00:00"
     starts = {"1d": "2026-02-28T15:00:00+00:00",
               "7d": "2026-02-22T15:00:00+00:00",
@@ -1013,7 +1060,10 @@ def _audit_binding_case(tmp_path):
     ]
     network = [{"path": f"/api/projects/{item['pair'][0]}/environments/"
                         f"{item['pair'][1]}/dashboard", "period": item["period"],
-                "method": "GET", "status": 200} for item in observations]
+                "method": "GET", "status": 200, "origin": origin,
+                "url": f"{origin}/api/projects/{item['pair'][0]}/environments/"
+                       f"{item['pair'][1]}/dashboard?period={item['period']}"}
+               for item in observations]
     rows = {}
     for index, pair in enumerate(pairs):
         times = (("2026-02-09T00:00:00+00:00", "2026-02-25T00:00:00+00:00",
@@ -1024,7 +1074,8 @@ def _audit_binding_case(tmp_path):
             for sequence, at in enumerate(times, 1))
         rows[(pair["projectId"], pair["environmentId"])] = events
     payload = {"phase": "granted", "network": network, "observations": observations,
-               "clientSimulatedFault": True, "browserTimeZone": "America/Los_Angeles"}
+               "clientSimulatedFault": True, "browserTimeZone": "America/Los_Angeles",
+               "allowedOrigins": [origin], "requestOrigins": [origin] * (len(network) + 2)}
     network_file = tmp_path / "u01-granted-network.json"
     network_file.write_text(json.dumps(payload), encoding="utf-8")
     owner = SimpleNamespace(load_complete=lambda project, environment:
@@ -1048,6 +1099,9 @@ def test_browser_observations_bind_exact_pair_period_and_complete_pg_audit(tmp_p
     ]
     assert all(re.fullmatch(r"[0-9a-f]{64}", item["auditSha256"])
                for item in evidence["auditPairs"])
+    assert evidence["allowedOrigins"] == ["https://anvil-f18-qa.local:8444"]
+    assert evidence["requestOriginCount"] == 8
+    assert evidence["apiResponseCount"] == 6
     assert (tmp_path / "u01-granted-db-api-audit.json").read_text(encoding="utf-8")
     assert "secret" not in json.dumps(evidence)
 
@@ -1077,8 +1131,13 @@ def test_browser_observations_respect_phase_access(tmp_path, phase, expected_rea
         config["pair_a"], config["pair_b"])
     payload["network"].extend({"path": f"/api/projects/{pair['projectId']}/environments/"
                                      f"{pair['environmentId']}/dashboard",
-                               "period": "1d", "method": "GET", "status": 403}
+                               "period": "1d", "method": "GET", "status": 403,
+                               "origin": "https://anvil-f18-qa.local:8444",
+                               "url": f"https://anvil-f18-qa.local:8444/api/projects/"
+                                      f"{pair['projectId']}/environments/"
+                                      f"{pair['environmentId']}/dashboard?period=1d"}
                               for pair in denied_pairs)
+    payload["requestOrigins"] = ["https://anvil-f18-qa.local:8444"] * len(payload["network"])
     payload["clientSimulatedFault"] = phase == "revoked"
     network_file.unlink()
     (tmp_path / f"u01-{phase}-network.json").write_text(json.dumps(payload), encoding="utf-8")
@@ -1102,6 +1161,10 @@ def test_other_phase_rejects_missing_denied_api_network(tmp_path):
 
 @pytest.mark.parametrize("mutation", ["phase", "timezone", "missing", "duplicate", "pair", "period",
                                        "start", "end", "observed", "count", "network",
+                                       "api_query", "api_duplicate_period", "api_period_mismatch",
+                                       "api_path_mismatch", "api_origin_field", "api_userinfo",
+                                       "api_fragment", "api_origin",
+                                       "request_origin", "allowed_origin",
                                        "audit_duplicate", "audit_gap", "audit_pair", "collision"])
 def test_browser_observations_reject_unbound_or_incomplete_evidence(tmp_path, mutation):
     config, owner, rows, payload, network_file = _audit_binding_case(tmp_path)
@@ -1127,6 +1190,28 @@ def test_browser_observations_reject_unbound_or_incomplete_evidence(tmp_path, mu
         payload["observations"][0]["detected"] = 0
     elif mutation == "network":
         payload["network"].pop(0)
+    elif mutation == "api_query":
+        payload["network"][0]["url"] += "&code=private"
+    elif mutation == "api_duplicate_period":
+        payload["network"][0]["url"] += "&period=1d"
+    elif mutation == "api_period_mismatch":
+        payload["network"][0]["period"] = "7d"
+    elif mutation == "api_path_mismatch":
+        payload["network"][0]["path"] = "/api/projects/project-b/environments/test-b/dashboard"
+    elif mutation == "api_origin_field":
+        payload["network"][0]["origin"] = "https://127.0.0.1:8444"
+    elif mutation == "api_userinfo":
+        payload["network"][0]["url"] = payload["network"][0]["url"].replace(
+            "https://", "https://user:pass@", 1)
+    elif mutation == "api_fragment":
+        payload["network"][0]["url"] += "#private"
+    elif mutation == "api_origin":
+        payload["network"][0]["url"] = payload["network"][0]["url"].replace(
+            "anvil-f18-qa.local", "127.0.0.1", 1)
+    elif mutation == "request_origin":
+        payload["requestOrigins"][0] = "http://127.0.0.1:8444"
+    elif mutation == "allowed_origin":
+        payload["allowedOrigins"] = ["https://anvil-f18-qa.local:8444", "http://127.0.0.1:8444"]
     elif mutation == "audit_duplicate":
         pair = ("project-a", "test-a")
         duplicate = dict(rows[pair][0][1])
