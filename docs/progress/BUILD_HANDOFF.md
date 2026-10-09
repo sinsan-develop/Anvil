@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task3 통제 시작 A 후보(Main, 2026-10-09 KST): Task2 H `36ba79fca821bb38e2585f76f96e3933f915400e` local/private 동일·clean·G-05 seq2299 PASS와 종료 집중10 PASS를 기준으로 UI Task3 WI SHA `122C17F35618671957AD251A5C4A2824C920C520616D4733F209258385A2350A`, invocation SHA `7B26B3C1BDC7EE65852D2E575F4230595ECBABCF2798CDB45B5BC64ADBAB5D38`을 발행했다. Event seq1~2299 원문 보존 후 seq2300 WI→2301 worker→2302 write, epoch103 분리 24시간 token·Developer 정확5경로(통제2/제품3)다. 제품3 write는 통제 RED→GREEN·독립 C0/I0·G-05·C/B 원격 동일/clean 전 잠금이다. 이 A의 G-05와 원격 게시/clean은 아직 미검증이다. 실제 PG15/OIDC/HTTPS/Chromium/브라우저, Task4/PR/main은 미실행, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, ysna-server 제외다.
+
 Task2 epoch102 종료 후보(Main, 2026-10-09 KST): P `46af1c96bd893d7eda74dd342318d8db75907a8c` local/private 동일·clean·G-05 seq2297 PASS 뒤 기존 Event 원문 seq1~2297을 보존하고 seq2298 write→2299 worker 순서로 두 임대를 회수했다. 완료 임대 둘 REVOKED, 활성 agent/worker/write null이며 Task2 Reader 절편만 `CLOSED_TASK3_PENDING`이다. 제품 D 로컬 123 PASS/4 opt-in SKIP과 독립 C0/I0을 보존하되 실제 PG15 등록 row/100+/gap·WSL-server OIDC/HTTPS/Chromium/브라우저는 미검증이다. 본 H 문서·Event·digest의 G-05·private 게시/clean 전 Task3 WI/새 제품 write는 금지한다. U-01 수직 NOT_ACCEPTED, Release DEFER·Production NOT_EXECUTED, ysna-server 제외.
 
 Task2 제품 D/P 후보(Main, 2026-10-09 KST): 통제 B `4e8421e66b27911384b295dbc26fcc8a4ac593db` local/private 동일·clean·G-05 seq2297 PASS 뒤 단일 Developer가 허용 제품12 중 정확9파일로 서울 달력일 Reader·요청별 owner·감사 전체성·현재/기간 분리·명시적 UNAVAILABLE을 TDD 구현했다. 첫 독립 검토 Important3(감사 payload·전이·Warning Next Action)과 Minor UTC 입력은 각각 RED→GREEN 보완했고 최종 독립 재검토 Critical0/Important0이다. Developer·Main 각각 인접7 123 PASS/4 SKIP(exit0); 4 SKIP은 실제 PostgreSQL opt-in 미실행이며 새 opt-in 자체도 빈 pair read-only smoke 범위다. Ruff exact9·diff·활성 G-05 seq2297 PASS. 제품 D `0e078fd3eec133802105c8a0822855e7960e9436`는 기존 branch/private 실원격 동일·clean이다. 이 P 문서4는 C/B/D SHA와 seq2297 활성 dual lease를 보존해 종료 준비만 투영한다. P G-05·private 게시/clean 및 write→worker 실제 회수 전 Task2 종료는 아니다. WSL-server 실제 PG15 row/OIDC/HTTPS/Chromium, Task3 UI·Task4 독립 수락·PR/main은 미검증·미실행, U-01 수직 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED.
@@ -140,17 +142,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2299,
-  "last_event_id": "evt_u01_2299_scoped_dashboard_task2_worker_lease_revoked",
+  "event_sequence": 2302,
+  "last_event_id": "evt_u01_2302_scoped_dashboard_task3_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-scoped-dashboard-task3",
+  "worker_lease": "worker-lease-u01-scoped-dashboard-task3-d9757e0873074877a873b66005caa5eb",
+  "write_lease": "write-lease-u01-scoped-dashboard-task3-e833b55c13a047b78cf34cd5085fdbbd",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_DUAL_LEASE_PENDING",
-  "repository_head": "0e078fd3eec133802105c8a0822855e7960e9436",
+  "next_safe_action": "U01_SCOPED_DASHBOARD_TASK3_CONTROL_ONLY",
+  "repository_head": "36ba79fca821bb38e2585f76f96e3933f915400e",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
