@@ -7,6 +7,13 @@
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
+- R5 네 phase 실측과 후속 독립 Tester 판정을 반영한 최신 미충족은 DC-U01-011을 따른다. 아래 역사 실패는 삭제하지 않는다.
+
+### DC-U01-011 — R5 네 phase 통과 이후 남은 U-01 전체 인수 증거
+
+- 판정: R5 exact SHA `208c8fbbe0fa93f216772379e14b679cfa2436f9`의 WSL-server PG15/OIDC/HTTPS/Chromium 네 phase는 각 2 PASS지만, 독립 Tester가 `AV-SAFE-034`·`AV-OPS-027`·`AV-UI-017`을 부분 검증으로 판정했다. 기존 R6 실패와 최신 G-05 RED가 있어 U-01 전체는 `NOT_ACCEPTED`다.
+- 근거·영향: R5 PNG4/Network JSON4의 WSL/로컬 SHA-256 일치와 단계별 API/화면/DB 단언은 보존됐다. 그러나 서울 자정/월말/윤일·브라우저 시간대, 부분 Alert 페이지, 원본 지연/결손 및 카드별 완전성/신선도, 7상태 전량, ACK·Audit/운영 복구, 필수 E-SHOT/E-NET/E-API/E-EVT/E-AUD 동일 scope/시간 결박은 이 증거만으로 PASS가 아니다. 공통 UI-001/002/006/007/010~014, 추가 UI-003/004/008/009, OPS-001~005/027도 전체 ID 수락이 아니다. R6 `STORED_ROW`는 하네스 control0 단언과 현재 ACK 버튼 충돌이 유력하지만 런타임 확정 전이다. G-05는 epoch106 후속 route 부재로 exit1 10개 오류다.
+- 조치·재개 조건: R5 8개 증거와 결과보고를 기존 branch `2798e6a0`에 commit·사설 development push했고 전용 자원 잔여0이다. 독립 Tester는 읽기 전용 판정만 했다. 같은 branch에서 정확 WorkInstruction·dual lease로 R6 계약/하네스 원인 분리 및 fail-closed G-05 successor를 보완하고, 남은 ID별 실제 WSL-server 증거·독립 재판정을 실행한다. 이 기록은 실행 불가 항목의 이번 주기 추적이며 PASS·사용자 인수·병합 허용으로 승격하지 않는다. Release `DEFER`, PR/main·branch 삭제·새 branch/U-02·ysna/Production 미실행. 추가 일반 승인 요청 대상은 아니다.
 
 ### DC-U01-010 — R4 세 phase PASS·other 빈 목록 선택자 불일치
 
