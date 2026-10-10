@@ -1,5 +1,8 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 R6 PAIR response lifecycle H7 임대 회수 후보(Main, 2026-10-11T05:34:21+09:00): B7 `81e874c190d5202c41b6a67241fabcd1cd993cd1` local/private clean G-05 seq2372 PASS. C7 exact-SHA WSL G-05와 국소 Python7 PASS, 실제 R6 opt-in FAIL·QA 잔여0. seq2373 write→2374 worker REVOKED, active dual lease/agent null·제품0. H7는 B7 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private/G-05 전이다. C7 R6 PAIR_LIST_API 404/BODY PENDING 실제 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED 유지. 다음은 H7 검증·게시→첫 결과보고 tail→별도 실제 R6 원인분리 WI, PR/main·새 branch·ysna 제외.
+
+
 - Task4 R6 PAIR B7 실측 결박 후보(Main, 2026-10-11T05:28:19+09:00): C7 `edbd8e5de57740b24fc9f7f6393f5c2e9b8821ca`은 A7 직접 자식 정확 코드4, local/private/WSL exact-SHA G-05 seq2372 PASS. WSL 전용 PG15/OIDC/HTTPS/Chromium R6 opt-in은 exit1/1 failed/1 warning: 원 PAIR_LIST_API 404 BODY PENDING, ASGI 4XX body-final DONE와 독립 probe/안정 페이지 body DONE. 정확 원인 미확정·전체 R6 FAIL/U-01 NOT_ACCEPTED. 초기 setup/cleanup 스크립트 마지막 CR 전송 exit1은 실제 PG 신원·독립 경로5/컨테이너3/포트 잔여0 조회와 분리했다. 로컬 Windows 전체 비-opt-in integration은 56 PASS/1 SKIP/3 setup ERROR, 첫 전용 base 58 PASS/1 SKIP/1 WinError5 FAIL, 둘째 별도 등록 단일 escalated 1 PASS/1 warning이며 전체 PASS로 소급하지 않는다. B7은 progress/HANDOFF/digest/WORK_STATUS 정확4 후보, Event seq2372 불변·epoch117 dual lease ACTIVE·제품0. 독립 리뷰/private/actual G-05 전 H7 금지. 다음 H7 회수·보고·별도 원인분리, E-NET/E-API/E-AUD/필수 ID 미검증, PR/main·새 branch·ysna 제외.
 
 

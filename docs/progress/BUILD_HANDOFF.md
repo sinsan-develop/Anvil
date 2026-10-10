@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR response lifecycle H7 임대 회수(Main, 2026-10-11T05:34:21+09:00): B7 `81e874c190d5202c41b6a67241fabcd1cd993cd1` local/private clean G-05 seq2372 PASS, C7 WSL-server Git exact SHA G-05/국소 Python7 PASS·R6 opt-in FAIL, 전용 자원 잔여0. Event seq2373 write→2374 worker REVOKED, active worker/write null·제품0. H7 자체의 독립 검토/private/G-05는 미실행이다. C7 R6 PAIR_LIST_API 404/BODY PENDING 실제 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음은 H7 결과보고와 별도 R6 원인분리 WI.
+
+
 Task4 R6 PAIR B7 실측 결박(Main, 2026-10-11T05:28:19+09:00): C7 `edbd8e5de57740b24fc9f7f6393f5c2e9b8821ca` local/private G-05 seq2372 PASS, WSL-server Git exact SHA G-05 seq2372 PASS. 격리 PG15/OIDC/HTTPS/Chromium 실제 R6 opt-in exit1: 원 PAIR_LIST_API 404 본문 PENDING; ASGI 4XX 최종 body DONE, 독립 probe 및 안정 페이지 body DONE. 원인 미확정·전체 R6 FAIL/U-01 NOT_ACCEPTED. 전용 경로5·컨테이너3·포트 잔여0. Event seq2372·epoch117 dual lease ACTIVE·제품0 유지. 다음 H7 write→worker 회수·결과보고·별도 원인분리. PR/main·새 branch·ysna 제외.
 
 
@@ -242,55 +245,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2372,
-  "last_event_id": "evt_u01_2372_task4_r6_pair_response_lifecycle_write_lease_issued",
+  "event_sequence": 2374,
+  "last_event_id": "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
-    "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-11T04:13:25+09:00",
-    "expires_at": "2026-10-12T04:13:25+09:00",
-    "lease_epoch": 117,
-    "baseline_git_commit": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
-    "dispatch_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
-    ],
-    "lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
-    "fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
-    "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
-    "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-11T04:13:25+09:00",
-    "expires_at": "2026-10-12T04:13:25+09:00",
-    "write_epoch": 117,
-    "baseline_git_commit": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
-    "dispatch_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
-    ],
-    "lease_id": "write-lease-u01-task4-r6-tail-fixture-5cb6663a4ad687fd808fef8816c94aba",
-    "worker_lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
-    "fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
-    "write_fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
-    "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
-    "product_write_scope": []
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE_READY",
+  "next_safe_action": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RECORDED_U01_PENDING",
   "repository_head": "edbd8e5de57740b24fc9f7f6393f5c2e9b8821ca",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

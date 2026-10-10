@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2372,
+  "last_sequence": 2374,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107071,7 +107071,49 @@
         "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
         "product_write_scope": []
       }
+    },
+{
+      "sequence": 2373,
+      "event_id": "evt_u01_2373_task4_r6_pair_response_lifecycle_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T05:34:21+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "D5266E52765708B569FE923E7175252C13ABD918914D82D274791C6F409D2F72",
+      "details": {
+        "lease_id": "write-lease-u01-task4-r6-tail-fixture-5cb6663a4ad687fd808fef8816c94aba",
+        "write_fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
+        "reason": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"
+      }
+    },
+{
+      "sequence": 2374,
+      "event_id": "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T05:34:21+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "779ACDC02A515E98D52C3EFA2F8172C684B741BC2E11088B3E752DB649CAEADB",
+      "details": {
+        "lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
+        "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
+        "reason": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"
+      }
     }
   ],
-  "last_event_id": "evt_u01_2372_task4_r6_pair_response_lifecycle_write_lease_issued"
+  "last_event_id": "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked"
 }
