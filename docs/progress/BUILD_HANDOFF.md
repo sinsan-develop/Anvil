@@ -196,53 +196,53 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2342,
-  "last_event_id": "evt_u01_2342_task4_post_h4_report_tail_write_lease_issued",
+  "event_sequence": 2347,
+  "last_event_id": "evt_u01_2347_task4_post_h4_c_gate_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-post-h4-report-tail",
+  "active_agent": "developer-primary-u01-task4-post-h4-c-gate-recovery",
   "worker_lease": {
-    "actor_id": "developer-primary-u01-task4-post-h4-report-tail",
-    "subject_ref": "U-01/TASK4-POST-H4-REPORT-TAIL",
+    "actor_id": "developer-primary-u01-task4-post-h4-c-gate-recovery",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
     "status": "ACTIVE",
-    "issued_at": "2026-10-10T18:56:28+09:00",
-    "expires_at": "2026-10-11T18:56:28+09:00",
-    "lease_epoch": 111,
-    "baseline_git_commit": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
-    "dispatch_head": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+    "issued_at": "2026-10-10T20:22:19+09:00",
+    "expires_at": "2026-10-11T20:22:19+09:00",
+    "lease_epoch": 112,
+    "baseline_git_commit": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+    "dispatch_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
     "path_scope": [
       "scripts/check_project_progress.py",
       "tests/tooling/test_u01_postmerge_control_projection.py"
     ],
-    "lease_id": "worker-lease-u01-task4-post-h4-report-tail-5d0cad1e7e1f4e56816d42ba7b07480a",
-    "fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a",
-    "execution_fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a"
+    "lease_id": "worker-lease-u01-task4-post-h4-c-gate-recovery-4ec3fb2a6d9546b996f07af601bc164f",
+    "fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f",
+    "execution_fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f"
   },
   "write_lease": {
-    "actor_id": "developer-primary-u01-task4-post-h4-report-tail",
-    "subject_ref": "U-01/TASK4-POST-H4-REPORT-TAIL",
+    "actor_id": "developer-primary-u01-task4-post-h4-c-gate-recovery",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
     "status": "ACTIVE",
-    "issued_at": "2026-10-10T18:56:28+09:00",
-    "expires_at": "2026-10-11T18:56:28+09:00",
-    "lease_epoch": 111,
-    "baseline_git_commit": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
-    "dispatch_head": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+    "issued_at": "2026-10-10T20:22:19+09:00",
+    "expires_at": "2026-10-11T20:22:19+09:00",
+    "lease_epoch": 112,
+    "baseline_git_commit": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+    "dispatch_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
     "path_scope": [
       "scripts/check_project_progress.py",
       "tests/tooling/test_u01_postmerge_control_projection.py"
     ],
-    "lease_id": "write-lease-u01-task4-post-h4-report-tail-bac9042556844e8ba88624ca141687f4",
-    "worker_lease_id": "worker-lease-u01-task4-post-h4-report-tail-5d0cad1e7e1f4e56816d42ba7b07480a",
-    "fencing_token": "u01-task4-post-h4-report-tail-write-fence-epoch-111-bac9042556844e8ba88624ca141687f4",
-    "write_fencing_token": "u01-task4-post-h4-report-tail-write-fence-epoch-111-bac9042556844e8ba88624ca141687f4",
-    "execution_fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a",
+    "lease_id": "write-lease-u01-task4-post-h4-c-gate-recovery-609475e932134e1a996831a45486999a",
+    "worker_lease_id": "worker-lease-u01-task4-post-h4-c-gate-recovery-4ec3fb2a6d9546b996f07af601bc164f",
+    "fencing_token": "u01-task4-post-h4-c-gate-recovery-write-fence-epoch-112-609475e932134e1a996831a45486999a",
+    "write_fencing_token": "u01-task4-post-h4-c-gate-recovery-write-fence-epoch-112-609475e932134e1a996831a45486999a",
+    "execution_fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f",
     "product_write_scope": [],
-    "write_epoch": 111
+    "write_epoch": 112
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_POST_H4_REPORT_TAIL_CONTROL_ONLY",
-  "repository_head": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+  "next_safe_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+  "repository_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

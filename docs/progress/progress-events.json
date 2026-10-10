@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2342,
+  "last_sequence": 2347,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106179,7 +106179,156 @@
       "product_write_scope": [],
       "write_epoch": 111
     }
+  },
+  {
+    "sequence": 2343,
+    "event_id": "evt_u01_2343_task4_post_h4_c_gate_old_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T20:22:19+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "077257D7FC537DB47948C825766788295142FE49DDBCECF5419E435006074D1C",
+    "details": {
+      "lease_id": "write-lease-u01-task4-post-h4-report-tail-bac9042556844e8ba88624ca141687f4",
+      "write_fencing_token": "u01-task4-post-h4-report-tail-write-fence-epoch-111-bac9042556844e8ba88624ca141687f4",
+      "reason": "U01_TASK4_POST_H4_C_GATE_FAILURE_REPLACED_BY_EPOCH112"
+    }
+  },
+  {
+    "sequence": 2344,
+    "event_id": "evt_u01_2344_task4_post_h4_c_gate_old_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T20:22:19+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "3049662D557E45BC739F1ADBAAAD33B05C538059E154FD45E70901CED0F95D8E",
+    "details": {
+      "lease_id": "worker-lease-u01-task4-post-h4-report-tail-5d0cad1e7e1f4e56816d42ba7b07480a",
+      "execution_fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a",
+      "reason": "U01_TASK4_POST_H4_C_GATE_FAILURE_REPLACED_BY_EPOCH112"
+    }
+  },
+  {
+    "sequence": 2345,
+    "event_id": "evt_u01_2345_task4_post_h4_c_gate_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T20:22:19+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "C6880C265F32FC807F8979C2696A2A604A7AD1699BD5AAD2BC43B67B4D77EEB2",
+    "details": {
+      "work_instruction_id": "WI-U01-TASK4-POST-H4-C-GATE-RECOVERY-20261010-001",
+      "work_instruction_path": "docs/work_orders/U-01_TASK4_POST_H4_C_GATE_RECOVERY_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "A5CF2FF1187675750C2E836C04EC9DAD06C5B1D1E219127E5E436048ABA81B08",
+      "invocation_path": "docs/work_orders/U-01_TASK4_POST_H4_C_GATE_RECOVERY_INVOCATION.md",
+      "invocation_sha256": "068F574B709575D6F0958A7A32F4933D345C2ED0F957F3B0FCA4886F44FB73A0",
+      "recovery_plan_path": "docs/work_orders/U-01_TASK4_POST_H4_C_GATE_RECOVERY_PLAN.md",
+      "recovery_plan_sha256": "18F720CC5C1B3B5DB55A59ED4D24859EE44483570D257A4FF6EAE86FEACB537D",
+      "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+      "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "predecessor_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+      "predecessor_sequence": 2344,
+      "developer_exact_paths": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "product_write_scope": [],
+      "failed_c_checkpoint": "3e788ed25330910d2b55c932e3fe517e8661bd59",
+      "failed_c_g05": "U01_TASK4_POST_H4_TAIL_GIT_INVALID"
+    }
+  },
+  {
+    "sequence": 2346,
+    "event_id": "evt_u01_2346_task4_post_h4_c_gate_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T20:22:19+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "5E51353A0342A2D613D026A225770F8B1C5C102F08798811CD7694430ECCB57F",
+    "details": {
+      "actor_id": "developer-primary-u01-task4-post-h4-c-gate-recovery",
+      "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-10T20:22:19+09:00",
+      "expires_at": "2026-10-11T20:22:19+09:00",
+      "lease_epoch": 112,
+      "baseline_git_commit": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+      "dispatch_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "lease_id": "worker-lease-u01-task4-post-h4-c-gate-recovery-4ec3fb2a6d9546b996f07af601bc164f",
+      "fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f",
+      "execution_fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f"
+    }
+  },
+  {
+    "sequence": 2347,
+    "event_id": "evt_u01_2347_task4_post_h4_c_gate_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T20:22:19+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "9684466FED7F688B4A3BA4710A5E57170E869572B41B764E1645226B53646729",
+    "details": {
+      "actor_id": "developer-primary-u01-task4-post-h4-c-gate-recovery",
+      "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-10T20:22:19+09:00",
+      "expires_at": "2026-10-11T20:22:19+09:00",
+      "lease_epoch": 112,
+      "baseline_git_commit": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+      "dispatch_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "lease_id": "write-lease-u01-task4-post-h4-c-gate-recovery-609475e932134e1a996831a45486999a",
+      "worker_lease_id": "worker-lease-u01-task4-post-h4-c-gate-recovery-4ec3fb2a6d9546b996f07af601bc164f",
+      "fencing_token": "u01-task4-post-h4-c-gate-recovery-write-fence-epoch-112-609475e932134e1a996831a45486999a",
+      "write_fencing_token": "u01-task4-post-h4-c-gate-recovery-write-fence-epoch-112-609475e932134e1a996831a45486999a",
+      "execution_fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f",
+      "product_write_scope": [],
+      "write_epoch": 112
+    }
   }
   ],
-  "last_event_id": "evt_u01_2342_task4_post_h4_report_tail_write_lease_issued"
+  "last_event_id": "evt_u01_2347_task4_post_h4_c_gate_write_lease_issued"
 }
