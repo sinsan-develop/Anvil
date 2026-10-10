@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 epoch107 종료 후 fixture 복구 A 후보(Main, 2026-10-10 KST): H2 `d6cf8be5608eeb3ce438353a8184bb9b2e55cc20`의 local/WSL-server exact-SHA G-05 seq2324 PASS와 R `ee8647b2e6088e04099ab43fb38dfabd2e6048c5`의 focused 10 FAIL/2 PASS·현재 G-05 예상 RED를 구분한다. R은 local/private 동일·clean이며 보고/DC SHA는 새 WI에 고정했다. WI/Invocation SHA `A6B41836728DD956A3593A9D55A8425F7CF2F60A5E08534CE60E635FEC5C5A85`/`F659129FE76D7F66FCA9C699EEAD16187DDDFB9537612441794E413E7A222E87`로 Event 원문 seq1~2324 보존 후 seq2325 WI→2326 worker→2327 write를 epoch108 분리 token/24시간·정확 검사기/통제 테스트2·제품 scope0으로 발급한다. 이 A의 내부 projection·private 게시/clean 전 Developer code write0이다. 현재 A G-05는 새 route 전 RED이며 PASS 아님. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, 전체79·Foundation R6 STORED_ROW·E-NET/E-API/E-AUD/사용자 인수 미검증, PR/main·새 branch/ysna 제외. 다음은 A 내부/독립 검증→기존 branch/private checkpoint→단일 Developer의 역사 fixture/G-05 RED→GREEN이다.
+
 Task4 epoch107 G-05 H2 종료 후보(Main, 2026-10-10 KST): C `b72c86a080de5ed9b1af9e8b803ffc0a3d3c1a53`와 활성 B `f07bb0b0e06d0f219498d8312b1c0502f8be5b78`는 local/private 동일·clean이며 B G-05 seq2322 PASS다. Event 원문 seq1~2322를 보존하고 `2026-10-09T23:50:41+00:00`에 seq2323 write→2324 worker lease를 순차 회수해 두 완료 lease는 REVOKED·활성 agent/token null로 투영한다. 이 H2의 G-05·private 게시·clean과 WSL-server exact-SHA control 검사 전에는 별도 Foundation R6 WI/lease를 발급하지 않는다. 전체79와 Windows 기본 fd-capture, Foundation R6 `STORED_ROW`·전체 E-NET/E-API/E-AUD, U-01 수직 인수는 미검증이다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main·새 branch/U-02/ysna 제외. 다음은 H2 검증·게시→WSL-server 격리 control 검증·정리→Foundation R6 별도 작업이다.
 
 Task4 epoch107 G-05 코드 C/활성 B 후보(Main, 2026-10-10 KST): A `1b02af90491a957efaa3c95b90631d06f88d6a61` 뒤 Developer가 허용된 검사기·통제 테스트 두 파일만 변경했다. 독립 리뷰의 실원격 SHA 누락 Important1을 RED→GREEN으로 보정해 최종 Critical0/Important0, 신규6·역사 epoch105 8·인접 U-01 9 PASS, Main의 실제 private 원격 조회와 A G-05 seq2322 PASS를 확인했다. C `b72c86a080de5ed9b1af9e8b803ffc0a3d3c1a53`는 local/private 동일·clean이다. 본 B는 Event seq2322와 epoch107 dual lease를 유지한 채 C를 결박한 종료 준비 투영이며 B 자체 G-05·private 게시/clean 전 회수하지 않는다. 전체79와 Windows 기본 fd-capture, 실제 B/H2·WSL exact-SHA는 미검증이다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, PR/main·새 branch/U-02/ysna 제외. 다음은 B 검증·게시 후 순차 lease 회수와 별도 Foundation R6 검증이다.
@@ -176,17 +178,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2324,
-  "last_event_id": "evt_u01_2324_task4_epoch106_g05_worker_lease_revoked",
+    "event_sequence": 2327,
+    "last_event_id": "evt_u01_2327_task4_epoch107_postclose_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+    "active_agent": "developer-primary-u01-task4-epoch107-postclose-fixture",
+    "worker_lease": "worker-lease-u01-task4-epoch107-postclose-fixture-4289d9836538469fb9a1ab4365f410ad",
+    "write_lease": "write-lease-u01-task4-epoch107-postclose-fixture-33b75dc1038a4d799a1fac28016e29d6",
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_SEPARATE_WI_PENDING",
-  "repository_head": "b72c86a080de5ed9b1af9e8b803ffc0a3d3c1a53",
+    "next_safe_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CONTROL_ONLY",
+    "repository_head": "ee8647b2e6088e04099ab43fb38dfabd2e6048c5",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
