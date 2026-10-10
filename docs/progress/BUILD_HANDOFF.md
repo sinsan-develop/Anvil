@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 Foundation R6 STORED_ROW A3 진단 임대 후보(Main, 2026-10-10T22:19:18+09:00): W4 `c6631a22a4e8f68d68cdd5c725383f9b25c4b622` local/private clean에서 seq2350 WI→2351 epoch113 worker→2352 write를 별도 token·24시간·정확 최대4 code path·제품 scope0으로 결박한다. A3 자체 독립 검토/private 게시·G-05 및 실제 WSL PG15/OIDC/HTTPS/Chromium은 미실행이다. 역사 C 실패와 Foundation STORED_ROW의 정확 단언은 확정 전이며 U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 post-H4 C gate 복구 H2 종료 후보(Main, 2026-10-10 KST): C2 `77478cf38cc897092c443ddeb5f6e35ebc9ee731`와 활성 B2 `488581291dd313f2c012076f696b2381f40d8006`는 local/private 동일·tracked clean, B2 G-05 seq2347 PASS다. Event 원문 seq1~2347 보존 뒤 seq2348 write→2349 worker를 순차 회수해 completed 두 lease REVOKED·active agent/lease null·제품 write0으로 투영한다. 이 H2의 무결성·독립 검토·private 게시·clean G-05와 WSL-server exact-SHA focused/자원 정리는 아직 미검증이다. Foundation R6 STORED_ROW·전체 E-NET/E-API/E-AUD·U-01 인수 미검증, NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED/U-02 BLOCKED, PR/main·새 branch·ysna 제외. 다음은 H2 검증·게시 후 사전 등록 단일 WSL QA·정리와 별도 R6 WI다.
 
 Task4 post-H4 C gate 복구 B2 후보(Main, 2026-10-10 KST): C2 `77478cf38cc897092c443ddeb5f6e35ebc9ee731`는 A2 직접 자식·정확 검사기/통제 테스트2 변경, 기존 branch/private 동일·tracked clean이며 실제 G-05 seq2347 PASS다. Developer 최종 신규9·인접3 PASS, Main fresh 12 PASS, 독립 재검토 Critical0/Important0/Minor0이다. 이 B2는 C2를 활성 epoch112 seq2347에 결박하는 문서4 후보이며 B2 자체 G-05·private 게시·clean 전 seq2348/2349 임대 회수는 금지한다. Foundation R6 STORED_ROW·E-NET/E-API/E-AUD·U-01 인수 미검증, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED/U-02 BLOCKED, PR/main·새 branch·ysna 제외. 다음은 B2 검증·게시 후 write→worker 순차 회수 H2와 WSL-server exact-SHA 집중 QA다.
@@ -200,17 +203,57 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2349,
-  "last_event_id": "evt_u01_2349_task4_post_h4_c_gate_worker_lease_revoked",
+  "event_sequence": 2352,
+  "last_event_id": "evt_u01_2352_task4_r6_stored_row_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-stored-row-diagnostic",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-stored-row-diagnostic",
+    "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-10T22:19:18+09:00",
+    "expires_at": "2026-10-11T22:19:18+09:00",
+    "lease_epoch": 113,
+    "baseline_git_commit": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+    "dispatch_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
+    "fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
+    "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-stored-row-diagnostic",
+    "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-10T22:19:18+09:00",
+    "expires_at": "2026-10-11T22:19:18+09:00",
+    "lease_epoch": 113,
+    "baseline_git_commit": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+    "dispatch_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "write-lease-u01-task4-r6-stored-row-a16f84bee1b53aa1eb9a84e668c78073",
+    "worker_lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
+    "fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
+    "write_fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
+    "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
+    "product_write_scope": [],
+    "write_epoch": 113
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_SEPARATE_WI_PENDING",
-  "repository_head": "77478cf38cc897092c443ddeb5f6e35ebc9ee731",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+  "repository_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

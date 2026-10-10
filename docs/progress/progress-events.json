@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2349,
+  "last_sequence": 2352,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106370,7 +106370,116 @@
       "execution_fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f",
       "reason": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSED_R6_PENDING"
     }
-  }
+  },
+{
+      "sequence": 2350,
+      "event_id": "evt_u01_2350_task4_r6_stored_row_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+      "occurred_at": "2026-10-10T22:19:18+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "CDF2CD2CE8058CCD3D40AA9F4B6440E94E5D83C8BF25764DB681EE70C04C7B99",
+      "details": {
+        "work_instruction_id": "WI-U01-TASK4-R6-STORED-ROW-DIAGNOSTIC-20261010-001",
+        "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_STORED_ROW_DIAGNOSTIC_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "830881863E50E2644E33274548A58EC7EFE049422396DDDD07964EB173FE307C",
+        "invocation_path": "docs/work_orders/U-01_TASK4_R6_STORED_ROW_DIAGNOSTIC_INVOCATION.md",
+        "invocation_sha256": "9B72FFEBC5EAD4D111AD7100BF1DA24532801D8A1C1059D89C2E9ECC956A02BE",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+        "predecessor_sequence": 2349,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "product_write_scope": []
+      }
+    },
+{
+      "sequence": 2351,
+      "event_id": "evt_u01_2351_task4_r6_stored_row_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+      "occurred_at": "2026-10-10T22:19:18+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "B0407E7A2C72646CC0841B3643576BCCC4A93902CC8D48C6D4338FFA7AF883D4",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-stored-row-diagnostic",
+        "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-10T22:19:18+09:00",
+        "expires_at": "2026-10-11T22:19:18+09:00",
+        "lease_epoch": 113,
+        "baseline_git_commit": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+        "dispatch_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
+        "fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
+        "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842"
+      }
+    },
+{
+      "sequence": 2352,
+      "event_id": "evt_u01_2352_task4_r6_stored_row_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+      "occurred_at": "2026-10-10T22:19:18+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "53BECAA78A75262D76A24E2D554BCE0BF16D9ADC8710157443A50783FDA63DD2",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-stored-row-diagnostic",
+        "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-10T22:19:18+09:00",
+        "expires_at": "2026-10-11T22:19:18+09:00",
+        "lease_epoch": 113,
+        "baseline_git_commit": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+        "dispatch_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "write-lease-u01-task4-r6-stored-row-a16f84bee1b53aa1eb9a84e668c78073",
+        "worker_lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
+        "fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
+        "write_fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
+        "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
+        "product_write_scope": [],
+        "write_epoch": 113
+      }
+    }
   ],
-  "last_event_id": "evt_u01_2349_task4_post_h4_c_gate_worker_lease_revoked"
+  "last_event_id": "evt_u01_2352_task4_r6_stored_row_write_lease_issued"
 }
