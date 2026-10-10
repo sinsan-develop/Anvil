@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR pre-navigation B8 실측 결박(Main, 2026-10-11T07:07:11+09:00): C8 `fc80b98e9aca47ff0e81e70ff9becd5d39503002` local/private 실제 G-05 seq2377 PASS, A/B 별도 WSL-server Git exact SHA G-05 PASS. 같은 PG15/Node24/Playwright image, migration0019, seed/permission hash·harness hash·Chromium151.0.7922.34·timeout10000ms에서 A 기존 R6는 원 pair404 BODY PENDING round4 exit1, B 첫 reload 전 barrier는 `PRENAV_BODY_PENDING`/reload NOT_STARTED/round1 exit1이다. 이번 한 쌍에서 후속 reload 없이 대기가 재현되어 reload 필수 원인 가설은 지지되지 않으나 직접 원인 미확정이다. 각 전용 QA 자원·port5545 잔여0, 전체 R6 FAIL/U-01 NOT_ACCEPTED·DC-U01-019 유지. Event seq2377·epoch118 dual lease ACTIVE·제품0, 다음 H8 seq2378 write→2379 worker 회수와 결과보고. PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR pre-navigation A8 비제품 임대 후보(Main, 2026-10-11T06:04:02+09:00): W9 `5914b3ea220122d372844bceda64e350e7ab1f16`은 local/private 동일·tracked clean, WI/Invocation 독립 재검토 C0/I0/M0이며 W9 실제 G-05 `U01_TASK4_R6_PAIR_GIT_INVALID` exit1 예상 RED다. 역사 seq1~2374 원문 보존 뒤 seq2375 WI→2376 epoch118 worker→2377 write를 서로 다른 24시간 token·단일 Developer·허용 코드 최대4·제품 scope0으로 투영한다. A8 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보이며 독립 검토/private 게시·Developer dispatch 전이다. C7의 WSL 격리 실제 R6 `PAIR_LIST_API 404 BODY PENDING` exit1·전체 R6 FAIL·U-01 NOT_ACCEPTED·QA 잔여0은 불변이다. 다음은 A8 독립 검토/게시 후 유효 dual token 단일 Developer TDD, C8 clean/private 실제 G-05 전 WSL QA 금지다. PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR response lifecycle H7 임대 회수(Main, 2026-10-11T05:34:21+09:00): B7 `81e874c190d5202c41b6a67241fabcd1cd993cd1` local/private clean G-05 seq2372 PASS, C7 WSL-server Git exact SHA G-05/국소 Python7 PASS·R6 opt-in FAIL, 전용 자원 잔여0. Event seq2373 write→2374 worker REVOKED, active worker/write null·제품0. H7 자체의 독립 검토/private/G-05는 미실행이다. C7 R6 PAIR_LIST_API 404/BODY PENDING 실제 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음은 H7 결과보고와 별도 R6 원인분리 WI.
@@ -295,8 +297,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_ONLY",
-  "repository_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
+  "next_safe_action": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_CLOSE_READY",
+  "repository_head": "fc80b98e9aca47ff0e81e70ff9becd5d39503002",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
