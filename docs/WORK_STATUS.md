@@ -1,5 +1,8 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 R6 Network tail fixture H6 임대 회수 후보(Main, 2026-10-11T03:52:31+09:00): B6 `6573f4e195f46d706e6493c3c76f92f30df39f05` local/private clean G-05 seq2367 PASS. C6 exact-SHA WSL G-05와 집중 class5/31 subtests PASS, QA 잔여0. seq2368 write→2369 worker REVOKED, active dual lease/agent null·제품0. H6는 B6 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private/G-05 전이다. R6 실제 PAIR_LIST_API 404/BODY PENDING FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED 유지. 다음은 H6 검증·게시→첫 결과보고 tail→별도 실제 R6 원인분리 WI, PR/main·새 branch·ysna 제외.
+
+
 - Task4 R6 Network tail fixture B6 실측 결박 후보(Main, 2026-10-11T03:47:35+09:00): C6 `4a1e96fe35d026e91c067aac4e510312dc6224c9` direct A6 child·정확 code2, local/private clean G-05 seq2367 PASS. WSL-server Git exact SHA G-05 seq2367 PASS, 집중 class5/31 subtests PASS/26.38초, 전용 checkout realpath·owner·link·process 확인 후 정리 잔여0. 첫 single-branch clone의 development/main 누락 G-05 exit1은 분리·보존한다. B6는 progress/HANDOFF/digest/WORK_STATUS 정확4문서 후보, Event 불변·epoch116 dual lease ACTIVE·제품0. 독립 리뷰/private 게시/이 SHA G-05 전 H6 회수 금지. R6 실제 PAIR_LIST_API 404/BODY PENDING FAIL·전체 R6 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음 H6 순차 임대 회수·결과보고·별도 원인분리 WI, PR/main·새 branch·ysna 제외.
 
 
