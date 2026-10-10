@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2359,
+  "last_sequence": 2362,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106669,7 +106669,115 @@
         "execution_fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340",
         "reason": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSED"
       }
+    },
+{
+      "sequence": 2360,
+      "event_id": "evt_u01_2360_task4_r6_network_capture_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T01:22:58+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "1F4146085C3D9023D86E68446EF8D2452374CA986465E31C2D736B145BA5483E",
+      "details": {
+        "work_instruction_id": "WI-U01-TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC-20261011-001",
+        "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "B6E0B4FF4C637595CE8C4CFACCA7C980BD76BA33EA4D2358A4D6DFF3BEBAFF33",
+        "invocation_path": "docs/work_orders/U-01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_INVOCATION.md",
+        "invocation_sha256": "01A4476983F05E175E368288886EF1258F6834D95226B1846B0907911B49BC31",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+        "predecessor_sequence": 2359,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "product_write_scope": []
+      }
+    },
+{
+      "sequence": 2361,
+      "event_id": "evt_u01_2361_task4_r6_network_capture_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T01:22:58+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "8CD43BE5B6DD85C6F15BD2FEDD813C5F3A67C535329B81A7D437D84F87FB155B",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-network-capture-diagnostic",
+        "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T01:22:58+09:00",
+        "expires_at": "2026-10-12T01:22:58+09:00",
+        "lease_epoch": 115,
+        "baseline_git_commit": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+        "dispatch_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "worker-lease-u01-task4-r6-network-08dd77af9a768e34707ac4adea9c56c5",
+        "fencing_token": "u01-task4-r6-network-execution-fence-epoch-115-08dd77af9a768e34707ac4adea9c56c5",
+        "execution_fencing_token": "u01-task4-r6-network-execution-fence-epoch-115-08dd77af9a768e34707ac4adea9c56c5"
+      }
+    },
+{
+      "sequence": 2362,
+      "event_id": "evt_u01_2362_task4_r6_network_capture_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T01:22:58+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "62877D0E68F432308AAE8A3F388D6C601ECA5B65798D27198930ED4D185B3420",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-network-capture-diagnostic",
+        "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T01:22:58+09:00",
+        "expires_at": "2026-10-12T01:22:58+09:00",
+        "write_epoch": 115,
+        "baseline_git_commit": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+        "dispatch_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "write-lease-u01-task4-r6-network-6a39f5cde8b3bdb88aa2279d5881bec6",
+        "worker_lease_id": "worker-lease-u01-task4-r6-network-08dd77af9a768e34707ac4adea9c56c5",
+        "fencing_token": "u01-task4-r6-network-write-fence-epoch-115-6a39f5cde8b3bdb88aa2279d5881bec6",
+        "write_fencing_token": "u01-task4-r6-network-write-fence-epoch-115-6a39f5cde8b3bdb88aa2279d5881bec6",
+        "execution_fencing_token": "u01-task4-r6-network-execution-fence-epoch-115-08dd77af9a768e34707ac4adea9c56c5",
+        "product_write_scope": []
+      }
     }
   ],
-  "last_event_id": "evt_u01_2359_task4_r6_control_worker_lease_revoked"
+  "last_event_id": "evt_u01_2362_task4_r6_network_capture_write_lease_issued"
 }
