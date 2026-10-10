@@ -62,7 +62,8 @@ _BROWSER_STAGES = frozenset({
     "ERROR_DOCUMENT", "ERROR_CARD", "ERROR_RESPONSES", "ERROR_ASSERT",
     "STORED_ALERT_FETCH", "STORED_DOCUMENT", "STORED_CARD", "STORED_RESPONSES",
     "STORED_ALERT_WAIT", "STORED_NEXT_ACTION", "STORED_DASHBOARD_FETCH",
-    "STORED_ROW", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DASHBOARD_FETCH", "REVOKE_DOCUMENT",
+    "STORED_ROW", "STORED_ROW_PARAGRAPHS", "STORED_ROW_CONTROLS",
+    "STORED_ROW_ENTITY", "REVOKE_CONTROL", "REVOKE_FETCH", "REVOKE_DASHBOARD_FETCH", "REVOKE_DOCUMENT",
     "REVOKE_CARD", "REVOKE_RESPONSES", "REVOKE_CLEAR", "NETWORK_REQUEST_FACTS",
     "NETWORK_RESPONSE_FACTS", "NETWORK_DOM", "NETWORK_IDP_STATE",
     "NETWORK_ASSERT", "EVIDENCE_PRE_AUTH", "EVIDENCE_STORED", "EVIDENCE_REVOKED",
@@ -2141,6 +2142,33 @@ def test_r6_node_evidence_writer_uses_only_the_opt_in_empty_directory(tmp_path):
                                 "https://127.0.0.1:9/api/operations/alerts"]}
     assert "private-token" not in result.stdout + result.stderr
     assert "https://127.0.0.1:9" not in result.stdout + result.stderr
+
+
+def test_r6_stored_row_assertions_emit_distinct_secret_free_failure_stages():
+    script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
+    result = subprocess.run(["node", str(script), "--audit-self-test"], shell=False,
+                            capture_output=True, text=True, timeout=15, check=False)
+    assert result.returncode == 0, result.stderr
+    for marker in ("STORED_ROW_PARAGRAPHS", "STORED_ROW_CONTROLS", "STORED_ROW_ENTITY"):
+        assert f"R6_STAGE {marker}\n" in result.stdout
+    assert "private-token" not in result.stdout + result.stderr
+    assert "R6_AUDIT_SELF_TEST_PASS" in result.stdout
+
+
+@pytest.mark.parametrize("stage", (
+    "STORED_ROW_PARAGRAPHS", "STORED_ROW_CONTROLS", "STORED_ROW_ENTITY",
+))
+def test_r6_stored_row_marker_classification_is_allowlisted_and_secret_free(stage):
+    secret = "private-dsn-or-token"
+    output = (f"R6_NODE_STARTED\nR6_STAGE {stage}\n"
+              f"R6_SAFE_FAILURE stage={stage} code=R35_ALERT_API_DOM_MISMATCH "
+              f"name=AssertionError\n{secret}")
+    assert _last_browser_progress(output) == stage
+    assert _classify_browser_failure(output, "") == (stage, "AssertionError")
+    assert secret not in " ".join(_classify_browser_failure(output, ""))
+    forged = output.replace(stage, "STORED_ROW_PRIVATE_SECRET")
+    assert _last_browser_progress(forged) == "RUNNER"
+    assert _classify_browser_failure(forged, "") == ("NODE_UNHANDLED", "UnhandledError")
 
 
 def test_r34_browser_run_evidence_requires_nonzero_exact_counts_and_revocation():

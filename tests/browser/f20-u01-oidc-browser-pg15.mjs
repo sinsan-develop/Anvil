@@ -37,7 +37,8 @@ const progressStages = new Set([
   'ERROR_DOCUMENT', 'ERROR_CARD', 'ERROR_RESPONSES', 'ERROR_ASSERT',
   'STORED_ALERT_FETCH', 'STORED_DOCUMENT', 'STORED_CARD', 'STORED_RESPONSES',
   'STORED_ALERT_WAIT',
-  'STORED_ROW', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
+  'STORED_ROW', 'STORED_ROW_PARAGRAPHS', 'STORED_ROW_CONTROLS',
+  'STORED_ROW_ENTITY', 'REVOKE_CONTROL', 'REVOKE_FETCH', 'REVOKE_DOCUMENT',
   'STORED_DASHBOARD_FETCH', 'STORED_NEXT_ACTION', 'REVOKE_DASHBOARD_FETCH',
   'REVOKE_NEXT_ACTION',
   'REVOKE_CARD', 'REVOKE_RESPONSES', 'REVOKE_CLEAR', 'NETWORK_REQUEST_FACTS',
@@ -50,6 +51,24 @@ function markStage(value) {
   if (!progressStages.has(value)) throw new Error('R6_STAGE_INVALID');
   stage = value;
   writeSync(1, `R6_STAGE ${value}\n`);
+}
+
+function assertStoredRowParagraphs(paragraphs, alert) {
+  markStage('STORED_ROW_PARAGRAPHS');
+  assert.ok(paragraphs.includes(`영향 · ${alert.impact}`)
+    && paragraphs.includes(`다음 조치 · ${alert.next_action}`), 'R35_ALERT_API_DOM_MISMATCH');
+}
+
+function assertStoredRowControls(count) {
+  markStage('STORED_ROW_CONTROLS');
+  assert.equal(count, 0, 'R35_ALERT_API_DOM_MISMATCH');
+}
+
+function assertStoredRowEntity(rowText, entity, cause) {
+  markStage('STORED_ROW_ENTITY');
+  const rowMatches = rowText.includes(entity) && rowText.includes(cause);
+  assert.ok(rowMatches);
+  return rowMatches;
 }
 
 const manualPhases = new Set([
@@ -2248,11 +2267,9 @@ async function main() {
     const rowText = await card.locator('li').filter({ hasText: alertCode }).innerText();
     const criticalRow = card.locator('li').filter({hasText: alertCode});
     const criticalParagraphs = await criticalRow.locator('p').allInnerTexts();
-    assert.ok(criticalParagraphs.includes(`영향 · ${alerts[0].impact}`)
-      && criticalParagraphs.includes(`다음 조치 · ${alerts[0].next_action}`), 'R35_ALERT_API_DOM_MISMATCH');
-    assert.equal(await criticalRow.locator('a, button, input, select').count(), 0, 'R35_ALERT_API_DOM_MISMATCH');
-    const rowMatches = rowText.includes(expectedEntity) && rowText.includes(expectedCause);
-    assert.ok(rowMatches);
+    assertStoredRowParagraphs(criticalParagraphs, alerts[0]);
+    assertStoredRowControls(await criticalRow.locator('a, button, input, select').count());
+    const rowMatches = assertStoredRowEntity(rowText, expectedEntity, expectedCause);
     markStage('STORED_NEXT_ACTION');
     await nextCard.waitFor({ state: 'visible' });
     try {
@@ -3058,6 +3075,15 @@ if (r48DiagnosticSelfTest) {
     'R27_REVOKED_REFRESH_MISMATCH');
   assert.equal(safeFailureName({name: 'AssertionError'}), 'AssertionError');
   assert.equal(safeFailureName({name: 'private-token'}), 'Error');
+  for (const [invoke, marker] of [
+    [() => assertStoredRowParagraphs([], {impact: 'synthetic', next_action: 'synthetic'}),
+      'STORED_ROW_PARAGRAPHS'],
+    [() => assertStoredRowControls(1), 'STORED_ROW_CONTROLS'],
+    [() => assertStoredRowEntity('', 'synthetic', 'synthetic'), 'STORED_ROW_ENTITY'],
+  ]) {
+    assert.throws(invoke, (error) => safeFailureName(error) === 'AssertionError');
+    assert.equal(stage, marker);
+  }
   assert.ok([...manualPhases].every((value) => /^[A-Z_]+$/.test(value)),
     'R27_MANUAL_PHASE_GRAMMAR_INVALID');
   assert.throws(() => manualPhase('PRIVATE_TOKEN_VALUE'), /R27_MANUAL_PHASE_INVALID/);
