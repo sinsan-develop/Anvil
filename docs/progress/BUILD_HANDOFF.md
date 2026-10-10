@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 epoch108 H3 종료 후보(Main, 2026-10-10 KST): C `847941819e6be54f8821c13d8665d4f66c29cfa8`와 활성 B `856bde6cc6e0a9eb0ef9c4b7f89f1da86fd09e7a`는 local/private 동일·clean, B G-05 seq2327 PASS다. Event 원문 seq1~2327을 보존해 `2026-10-10T01:02:38+00:00`에 seq2328 write→2329 worker를 순차 회수하고 완료 두 lease REVOKED·active agent/dual token null·제품 write0으로 투영한다. H3 자체의 G-05/private/clean·WSL-server exact-SHA focused는 아직 미검증이다. 전체 현재87/Windows 기본 fd-capture와 Foundation R6 STORED_ROW·E-NET/E-API/E-AUD/U-01 인수는 미검증, H3 QA 전 새 제품 WI/PR/main/U-02 잠금이다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED, 새 branch/ysna 제외. 다음은 H3 내부·독립 검증→private 게시·G-05→등록된 단일 WSL QA와 자원 정리다.
+
 Task4 epoch108 C/활성 B 후보(Main, 2026-10-10 KST): A `39a4f4382d9105fbe2805b3f7440765268e2cf82` clean/private에서 단일 Developer가 정확 검사기·통제 테스트2만 RED→GREEN으로 수정했다. 코드 C `847941819e6be54f8821c13d8665d4f66c29cfa8`는 정확 두 파일만 local/private 동일·clean, Main의 활성 A G-05 seq2327 PASS와 신규8 PASS, 독립 Tester 신규+epoch107 14 PASS·Critical0/Important0을 확인했다. Developer epoch107 6·epoch105 8·인접 U-01 9 PASS; 전체 현재87 및 기본 Windows fd-capture는 미실행이다. Minor는 H3 synthetic full-dispatch registry mock 1과 계획서의 과거 전체79 표기가 현재87보다 낡은 점이다. 본 B는 C를 seq2327 활성 dual lease와 결박해 write→worker 순차 회수만 준비한다. B 자체 G-05/private/clean 전 회수하지 않고, H3 종료·WSL-server exact-SHA 확인 전 Foundation R6 제품 작업을 열지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, PR/main·새 branch/ysna 제외.
 
 Task4 epoch107 종료 후 fixture 복구 A 후보(Main, 2026-10-10 KST): H2 `d6cf8be5608eeb3ce438353a8184bb9b2e55cc20`의 local/WSL-server exact-SHA G-05 seq2324 PASS와 R `ee8647b2e6088e04099ab43fb38dfabd2e6048c5`의 focused 10 FAIL/2 PASS·현재 G-05 예상 RED를 구분한다. R은 local/private 동일·clean이며 보고/DC SHA는 새 WI에 고정했다. WI/Invocation SHA `A6B41836728DD956A3593A9D55A8425F7CF2F60A5E08534CE60E635FEC5C5A85`/`F659129FE76D7F66FCA9C699EEAD16187DDDFB9537612441794E413E7A222E87`로 Event 원문 seq1~2324 보존 후 seq2325 WI→2326 worker→2327 write를 epoch108 분리 token/24시간·정확 검사기/통제 테스트2·제품 scope0으로 발급한다. 이 A의 내부 projection·private 게시/clean 전 Developer code write0이다. 현재 A G-05는 새 route 전 RED이며 PASS 아님. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, 전체79·Foundation R6 STORED_ROW·E-NET/E-API/E-AUD/사용자 인수 미검증, PR/main·새 branch/ysna 제외. 다음은 A 내부/독립 검증→기존 branch/private checkpoint→단일 Developer의 역사 fixture/G-05 RED→GREEN이다.
@@ -180,16 +182,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-    "event_sequence": 2327,
-    "last_event_id": "evt_u01_2327_task4_epoch107_postclose_fixture_write_lease_issued",
+    "event_sequence": 2329,
+    "last_event_id": "evt_u01_2329_task4_epoch107_postclose_fixture_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-    "active_agent": "developer-primary-u01-task4-epoch107-postclose-fixture",
-    "worker_lease": "worker-lease-u01-task4-epoch107-postclose-fixture-4289d9836538469fb9a1ab4365f410ad",
-    "write_lease": "write-lease-u01-task4-epoch107-postclose-fixture-33b75dc1038a4d799a1fac28016e29d6",
+    "active_agent": null,
+    "worker_lease": null,
+    "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-    "next_safe_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CLOSE_ONLY",
+    "next_safe_action": "U01_TASK4_R6_SEPARATE_WI_PENDING",
     "repository_head": "847941819e6be54f8821c13d8665d4f66c29cfa8",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
