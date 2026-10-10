@@ -53,7 +53,7 @@ _EVIDENCE_FILES = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked
 _BROWSER_STAGES = frozenset({
     "BOOTSTRAP", "PLAYWRIGHT_REQUIRE", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "ISSUER_CONTEXT", "PAGE_CREATE", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
-    "PAIR_PROBE", "PAIR_STABLE_FETCH",
+    "PAIR_PROBE", "PAIR_STABLE_FETCH", "PAIR_PRENAV_BARRIER",
     "PRE_AUTH_RESPONSES", "PRE_AUTH_LOADING_REQUESTS", "PRE_AUTH_LOADING_DOM",
     "PRE_AUTH_KEYBOARD", "PRE_AUTH_LOADING_RELEASE",
     "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH_REQUEST",
@@ -80,7 +80,7 @@ _RESPONSE_CATEGORIES = frozenset({
 })
 _RESPONSE_FAILURE_STAGES = frozenset({
     "PRE_AUTH_RESPONSES", "STORED_RESPONSES", "REVOKE_RESPONSES",
-    "REVOKE_DASHBOARD_FETCH", "NETWORK_RESPONSE_FACTS",
+    "REVOKE_DASHBOARD_FETCH", "NETWORK_RESPONSE_FACTS", "PAIR_PRENAV_BARRIER",
 })
 _R30_PHASES = frozenset({
     "CANCEL_BEGIN", "CANCEL_UPSTREAM", "CANCEL_ABORT", "CANCEL_RECOVERY",
@@ -372,6 +372,32 @@ def _safe_pair_diagnostic(output: str) -> str:
             elif values[2] == "CLEAR" and values[1] != "DONE":
                 continue
             details.append(prefix + "/".join(match.groups()))
+    for match in re.finditer(
+        r"^R6_PRENAV_BARRIER mode=(B) result=(COMPLETED|PRENAV_BODY_PENDING|INVALID_PRENAV_INTERVENTION) "
+        r"index=([0-9]{1,5}) round=([0-9]{1,4}) pair_request=([0-9]{1,5})"
+        r"(?: status=(2XX|4XX|5XX|OTHER))? reload=(PENDING|NOT_STARTED)\r?$",
+        output, flags=re.MULTILINE,
+    ):
+        mode, result, index, round_number, pair_request, status, reload = match.groups()
+        identity_valid = (1 <= int(index) <= 10000 and 1 <= int(round_number) <= 1000
+                          and 1 <= int(pair_request) <= 10000)
+        identity_missing = (result == "INVALID_PRENAV_INTERVENTION"
+                            and index == round_number == pair_request == "0")
+        if ((identity_valid or identity_missing)
+                and ((result == "COMPLETED" and status is not None and reload == "PENDING")
+                     or (result != "COMPLETED" and status is None and reload == "NOT_STARTED"))):
+            details.append(f" pre_nav={mode}/{result}/{index}/{round_number}/{pair_request}/{reload}")
+    browser = re.search(
+        r"^R6_PRENAV_BROWSER mode=(A|B) chromium=([0-9]{1,5}(?:\.[0-9]{1,5}){1,3}) "
+        r"timeout_ms=(10000)\r?$", output, flags=re.MULTILINE)
+    if browser:
+        details.append(" pre_nav_browser=" + "/".join(browser.groups()))
+    reload = re.search(
+        r"^R6_PRENAV_RELOAD mode=(B) index=([0-9]{1,5}) round=([0-9]{1,4}) "
+        r"pair_request=([0-9]{1,5}) state=(DONE)\r?$",
+        output, flags=re.MULTILINE)
+    if reload and all(int(value) > 0 for value in reload.groups()[1:4]):
+        details.append(" pre_nav_reload=" + "/".join(reload.groups()))
     return "".join(details)
 
 
@@ -935,6 +961,21 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
                        ANVIL_F20_R6_CONTROL_TOKEN=control_token,
                        ANVIL_F20_R6_ALERT_ENTITY=alert["related_entity_id"],
                        ANVIL_F20_R6_ALERT_CAUSE=alert["cause"])
+    pre_nav_mode = os.environ.get("ANVIL_F20_R6_PRENAV_MODE")
+    assert pre_nav_mode is None or pre_nav_mode in {"A", "B"}, "R6_PRENAV_MODE_INVALID"
+    if pre_nav_mode == "B":
+        environment["ANVIL_F20_R6_PRENAV_MODE"] = "B"
+    harness_hash = hashlib.sha256(
+        Path(__file__).read_bytes() + b"\0" + script.read_bytes()).hexdigest().upper()
+    seed_permission_contract = {
+        "alert": _TEST_ALERT, "role": "operator",
+        "permissions": ["provider:read", "operations:alerts:read", "dashboard:read"],
+        "scope": ["project-1", "wsl-qa"], "timeout_ms": 10000,
+    }
+    contract_hash = hashlib.sha256(json.dumps(seed_permission_contract,
+        sort_keys=True, separators=(",", ":")).encode()).hexdigest().upper()
+    print(f"R6_PRENAV_CONFIG mode={pre_nav_mode or 'A'} harness_sha256={harness_hash} "
+          f"seed_permission_contract_sha256={contract_hash} timeout_ms=10000")
     if _diagnostic_drain_mode():
         environment["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] = "1"
     if evidence_dir is not None:
@@ -1827,6 +1868,71 @@ def test_r6_pair_lifecycle_markers_are_enum_only_and_fail_closed():
                    lines.replace("length=POSITIVE", "length=" + secret),
                    lines.replace("transfer=CHUNKED", "transfer=" + secret)):
         assert secret not in _safe_pair_diagnostic(forged)
+
+
+def test_r6_prenav_marker_is_secret_safe_and_rejects_forgery():
+    browser = "R6_PRENAV_BROWSER mode=A chromium=138.0.7204.4 timeout_ms=10000\n"
+    assert "pre_nav_browser=A/138.0.7204.4/10000" in _safe_pair_diagnostic(browser)
+    assert "pre_nav_browser=" not in _safe_pair_diagnostic(
+        browser.replace("138.0.7204.4", "private-token"))
+    line = ("R6_PRENAV_BARRIER mode=B result=PRENAV_BODY_PENDING index=4 "
+            "round=1 pair_request=1 reload=NOT_STARTED\n")
+    assert "pre_nav=B/PRENAV_BODY_PENDING/4/1/1/NOT_STARTED" in _safe_pair_diagnostic(line)
+    missing = ("R6_PRENAV_BARRIER mode=B result=INVALID_PRENAV_INTERVENTION "
+               "index=0 round=0 pair_request=0 reload=NOT_STARTED\n")
+    assert "pre_nav=B/INVALID_PRENAV_INTERVENTION/0/0/0/NOT_STARTED" in _safe_pair_diagnostic(missing)
+    after = "R6_PRENAV_RELOAD mode=B index=4 round=1 pair_request=1 state=DONE\n"
+    assert "pre_nav_reload=B/4/1/1/DONE" in _safe_pair_diagnostic(after)
+    assert "pre_nav_reload=" not in _safe_pair_diagnostic(after.replace("state=DONE", "state=private"))
+    for forged in (line.replace("mode=B", "mode=https://private.invalid"),
+                   line.replace("index=4", "index=private"),
+                   line.replace("reload=NOT_STARTED", "reload=STARTED")):
+        assert "pre_nav=" not in _safe_pair_diagnostic(forged)
+
+
+def test_r6_prenav_opt_in_defaults_off_and_rejects_unknown(monkeypatch, capsys):
+    seen = []
+    def succeeded(*_args, **kwargs):
+        seen.append(kwargs["env"])
+        return subprocess.CompletedProcess(args=["browser"], returncode=0,
+            stdout='R6_RESULT {"diagnosticDrainMode":false}\n', stderr="")
+    monkeypatch.setattr(subprocess, "run", succeeded)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    monkeypatch.delenv("ANVIL_F20_R6_PRENAV_MODE", raising=False)
+    args = ("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+            "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    _node_flow(*args)
+    assert "ANVIL_F20_R6_PRENAV_MODE" not in seen[-1]
+    assert re.search(r"R6_PRENAV_CONFIG mode=A harness_sha256=[0-9A-F]{64} "
+                     r"seed_permission_contract_sha256=[0-9A-F]{64} timeout_ms=10000",
+                     capsys.readouterr().out)
+    monkeypatch.setenv("ANVIL_F20_R6_PRENAV_MODE", "B")
+    _node_flow(*args)
+    assert seen[-1]["ANVIL_F20_R6_PRENAV_MODE"] == "B"
+    assert "R6_PRENAV_CONFIG mode=B " in capsys.readouterr().out
+    monkeypatch.setenv("ANVIL_F20_R6_PRENAV_MODE", "private-invalid")
+    with pytest.raises(AssertionError, match="R6_PRENAV_MODE_INVALID"):
+        _node_flow(*args)
+
+
+def test_r6_prenav_failure_reports_enum_without_secret(monkeypatch):
+    secret = "private-query-or-body"
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=["browser"], returncode=1,
+            stdout=("R6_STAGE PAIR_PRENAV_BARRIER\n"
+                    "R6_PRENAV_BARRIER mode=B result=PRENAV_BODY_PENDING index=4 "
+                    "round=1 pair_request=1 reload=NOT_STARTED\n" + secret),
+            stderr="R6_BROWSER_FAILED stage=PAIR_PRENAV_BARRIER class=Error\n" + secret)
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.setenv("ANVIL_F20_R6_PRENAV_MODE", "B")
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124",
+            "control-token", "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    message = str(failure.value)
+    assert "stage=PAIR_PRENAV_BARRIER" in message
+    assert "pre_nav=B/PRENAV_BODY_PENDING/4/1/1/NOT_STARTED" in message
+    assert secret not in message
 
 
 def test_r6_pair_failure_joins_only_safe_asgi_and_browser_enums(monkeypatch):

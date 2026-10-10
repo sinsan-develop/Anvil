@@ -20,17 +20,19 @@ const controlToken = process.env.ANVIL_F20_R6_CONTROL_TOKEN;
 const expectedEntity = process.env.ANVIL_F20_R6_ALERT_ENTITY;
 const expectedCause = process.env.ANVIL_F20_R6_ALERT_CAUSE;
 const diagnosticDrain = process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1';
+const preNavMode = validatePreNavMode(process.env.ANVIL_F20_R6_PRENAV_MODE);
 const evidenceDir = process.env.ANVIL_F20_R6_EVIDENCE_DIR;
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
 let navigationRound = 0;
 let pairClock = 0;
 let firstPairTrace = null;
+let preNavAttempted = false;
 let pairRequestSequence = 0;
 const progressStages = new Set([
   'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
-  'PAIR_PROBE', 'PAIR_STABLE_FETCH',
+  'PAIR_PROBE', 'PAIR_STABLE_FETCH', 'PAIR_PRENAV_BARRIER',
   'PRE_AUTH_RESPONSES',
   'PRE_AUTH_LOADING_REQUESTS', 'PRE_AUTH_LOADING_DOM', 'PRE_AUTH_KEYBOARD',
   'PRE_AUTH_LOADING_RELEASE',
@@ -771,14 +773,7 @@ function verifiedFacts(results) {
 function verifiedResponseFacts(results) {
   const failed = results.find(({ ok }) => !ok);
   if (failed) {
-    if (firstPairTrace) {
-      const pair = pairLifecycleSummary(firstPairTrace);
-      writeSync(1, `R6_PAIR_LIFECYCLE index=${pair.index} round=${pair.round}`
-        + ` pair_request=${pair.pairRequest}`
-        + ` headers=${pair.headers} body=${pair.body} finished=${pair.finished}`
-        + ` request=${pair.request} navigation=${pair.navigation}`
-        + ` length=${pair.length} transfer=${pair.transfer}\n`);
-    }
+    emitPairLifecycle(firstPairTrace);
     const index = Number.isSafeInteger(failed.captureIndex) ? failed.captureIndex : 0;
     const observedStage = progressStages.has(failed.observedStage) ? failed.observedStage : 'BOOTSTRAP';
     const observedRound = Number.isSafeInteger(failed.observedRound) ? failed.observedRound : 0;
@@ -891,10 +886,65 @@ function pairLifecycleSummary(trace) {
     ...classifyTransportHeaders(trace.headerValues || {})};
 }
 
+function emitPairLifecycle(trace) {
+  if (!trace) return;
+  const pair = pairLifecycleSummary(trace);
+  writeSync(1, `R6_PAIR_LIFECYCLE index=${pair.index} round=${pair.round}`
+    + ` pair_request=${pair.pairRequest}`
+    + ` headers=${pair.headers} body=${pair.body} finished=${pair.finished}`
+    + ` request=${pair.request} navigation=${pair.navigation}`
+    + ` length=${pair.length} transfer=${pair.transfer}\n`);
+}
+
+async function awaitFirstPairPreNavigation(trace, now = () => Date.now()) {
+  if (!trace || trace.observedRound !== 1 || trace.nextNavigation !== 0
+      || !Number.isSafeInteger(trace.pairRequest) || trace.pairRequest < 1
+      || !Number.isSafeInteger(trace.captureDeadlineAt)
+      || !trace.capturePromise || now() >= trace.captureDeadlineAt
+      || trace.request === 'FAILED'
+      || trace.captureResult && !trace.captureResult.ok) {
+    throw new Error('INVALID_PRENAV_INTERVENTION');
+  }
+  const remaining = trace.captureDeadlineAt - now();
+  if (remaining <= 0) throw new Error('INVALID_PRENAV_INTERVENTION');
+  let result;
+  try {
+    result = trace.captureResult || await boundedCapture(() => Promise.race([
+      trace.capturePromise,
+      trace.requestFailurePromise?.then(() => ({ok: false, reason: 'REQUEST_FAILED'}))
+        || new Promise(() => {}),
+    ]), remaining);
+  } catch {
+    throw new Error('PRENAV_BODY_PENDING');
+  }
+  if (!result.ok && result.reason === 'TIMEOUT') throw new Error('PRENAV_BODY_PENDING');
+  if (!result.ok || trace.request === 'FAILED') throw new Error('INVALID_PRENAV_INTERVENTION');
+  return result;
+}
+
 function pairStatusClass(status) {
   return Number.isInteger(status) && status >= 200 && status < 300 ? '2XX'
     : Number.isInteger(status) && status >= 400 && status < 500 ? '4XX'
       : Number.isInteger(status) && status >= 500 && status < 600 ? '5XX' : 'OTHER';
+}
+
+function safeChromiumVersion(version) {
+  if (typeof version !== 'string' || !/^[0-9]+(?:\.[0-9]+){1,3}$/.test(version)) {
+    throw new Error('R6_PRENAV_BROWSER_VERSION_INVALID');
+  }
+  return version;
+}
+
+function validatePreNavMode(value) {
+  if (value === undefined) return 'A';
+  if (value === 'A' || value === 'B') return value;
+  throw new Error('R6_PRENAV_MODE_INVALID');
+}
+
+function rejectCompletedPreNav404(trace) {
+  if (trace?.captureResult?.ok && trace.captureResult.status === 404) {
+    throw new Error('R6_PRENAV_404_UNCHANGED');
+  }
 }
 
 async function probeUnauthenticatedPair(playwrightRequest, origin, secrets) {
@@ -2120,6 +2170,25 @@ async function holdFirstDashboardRequests(page, origin, navigate) {
 }
 
 async function readyDashboard(page, action, origin, phase, responseCaptures, beforeResponses) {
+  if (action === 'reload' && preNavMode === 'B' && !preNavAttempted) {
+    preNavAttempted = true;
+    markStage('PAIR_PRENAV_BARRIER');
+    try {
+      const captured = await awaitFirstPairPreNavigation(firstPairTrace);
+      writeSync(1, `R6_PRENAV_BARRIER mode=B result=COMPLETED index=${firstPairTrace.index}`
+        + ` round=${firstPairTrace.observedRound} pair_request=${firstPairTrace.pairRequest}`
+        + ` status=${pairStatusClass(captured.status)} reload=PENDING\n`);
+      emitPairLifecycle(firstPairTrace);
+    } catch (error) {
+      const result = error.message === 'PRENAV_BODY_PENDING'
+        ? 'PRENAV_BODY_PENDING' : 'INVALID_PRENAV_INTERVENTION';
+      writeSync(1, `R6_PRENAV_BARRIER mode=B result=${result} index=${firstPairTrace?.index || 0}`
+        + ` round=${firstPairTrace?.observedRound || 0} pair_request=${firstPairTrace?.pairRequest || 0}`
+        + ` reload=NOT_STARTED\n`);
+      emitPairLifecycle(firstPairTrace);
+      throw new Error(result);
+    }
+  }
   const categories = ['HEALTH_API', 'PROVIDER_API', 'ALERT_API', 'DASHBOARD_API'];
   const responseReady = categories.map((category) => {
     let pending;
@@ -2144,12 +2213,22 @@ async function readyDashboard(page, action, origin, phase, responseCaptures, bef
   navigationRound += 1;
   const navigate = async () => {
     if (!['goto', 'reload'].includes(action)) throw new Error('R6_NAVIGATION_ACTION_INVALID');
+    let firstPairReload = false;
     if (firstPairTrace && !firstPairTrace.nextNavigation
         && navigationRound > firstPairTrace.observedRound) {
       firstPairTrace.nextNavigation = ++pairClock;
+      firstPairReload = action === 'reload' && preNavMode === 'B';
     }
     if (action === 'goto') await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
-    else await page.reload({ waitUntil: 'domcontentloaded' });
+    else {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      if (firstPairReload) {
+        writeSync(1, `R6_PRENAV_RELOAD mode=B index=${firstPairTrace.index}`
+          + ` round=${firstPairTrace.observedRound} pair_request=${firstPairTrace.pairRequest}`
+          + ` state=DONE\n`);
+        emitPairLifecycle(firstPairTrace);
+      }
+    }
   };
   const beforeEvidence = beforeResponses ? await beforeResponses(navigate) : (await navigate(), {});
   markStage(phase + '_CARD');
@@ -2186,6 +2265,7 @@ async function readyDashboard(page, action, origin, phase, responseCaptures, bef
 
 async function main() {
   markStage('BOOTSTRAP');
+  assert.ok(['A', 'B'].includes(preNavMode), 'R6_PRENAV_MODE_INVALID');
   assert.ok(process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === undefined
     || process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1', 'R6_DIAG_FLAG_INVALID');
   sensitiveValues = JSON.parse(process.env.ANVIL_F20_R6_SECRET_VALUES_JSON || '[]');
@@ -2199,6 +2279,8 @@ async function main() {
   const { chromium, request: playwrightRequest } = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
   markStage('BROWSER_LAUNCH');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  writeSync(1, `R6_PRENAV_BROWSER mode=${preNavMode}`
+    + ` chromium=${safeChromiumVersion(browser.version())} timeout_ms=10000\n`);
   let flowComplete = false;
   let resultEvidence;
   let exportPayload;
@@ -2235,7 +2317,10 @@ async function main() {
     page.on('requestfailed', (request) => {
       const lifecycle = requestLifecycle.get(request);
       if (lifecycle) lifecycle.requestFinished = 'FAILED';
-      if (firstPairTrace?.requestObject === request) firstPairTrace.request = 'FAILED';
+      if (firstPairTrace?.requestObject === request) {
+        firstPairTrace.request = 'FAILED';
+        firstPairTrace.signalRequestFailure?.();
+      }
     });
     page.on('response', (response) => {
       const captureIndex = responseFacts.length + 1;
@@ -2246,7 +2331,11 @@ async function main() {
         trace = {index: captureIndex, observedRound, requestObject: response.request(),
           pairRequest: requestLifecycle.get(response.request())?.pairRequest || 0,
           response: ++pairClock, headers: 0, body: 0, finished: 0,
-          request: 'PENDING', nextNavigation: 0};
+          request: 'PENDING', nextNavigation: 0, captureDeadlineAt: Date.now() + 10000,
+          capturePromise: null, captureResult: null};
+        trace.requestFailurePromise = new Promise((resolve) => {
+          trace.signalRequestFailure = resolve;
+        });
         firstPairTrace = trace;
       }
       const capture = captureResponseFact(response, 10000,
@@ -2257,6 +2346,10 @@ async function main() {
         } })
         .then((result) => ({...result,
         captureIndex, observedStage, observedRound, settledRound: navigationRound}));
+      if (trace) {
+        trace.capturePromise = capture;
+        void capture.then((result) => { trace.captureResult = result; });
+      }
       responseCaptures.set(response, capture);
       responseFacts.push(capture);
     });
@@ -2707,6 +2800,7 @@ async function main() {
     assert.ok(allAppRequestsSameOrigin && !offOriginCredentialLeak && !secretExposure
       && idpContextSeparate && staleCleared && appApiRequestCount > 0
       && pairProbe.audit === 'CLEAR' && pairPage.audit === 'CLEAR');
+    if (preNavMode === 'B') rejectCompletedPreNav404(firstPairTrace);
     if (diagnosticDrain) {
       assert.ok(diagnosticEvents.length > 0
         && diagnosticEvents.every(({ outcome }) => outcome === 'DONE')
@@ -3231,6 +3325,7 @@ if (r48DiagnosticSelfTest) {
     'https://127.0.0.1:48123');
   console.log('R47_BROWSER_SELF_TEST_PASS');
 } else if (auditSelfTest) {
+  if (preNavMode === 'B') preNavAttempted = true;
   const names = ['database', 'queue', 'worker', 'provider', 'backend', 'artifact_store'];
   const snapshot = {source_gaps: ['provider'], health: Object.fromEntries(names.map(name =>
     [name, {state: 'LATE', last_check: '2026-09-30T00:00:00+00:00', error_count: 2}]))};
@@ -3848,6 +3943,12 @@ if (r48DiagnosticSelfTest) {
   assert.equal(pendingBody.captureStage, 'BODY');
   assert.equal(pendingBody.requestFinished, 'PENDING');
   assert.equal(pendingBody.responseFinished, 'PENDING');
+  const failedPairRequestCapture = await captureResponseFact({
+    status: () => 404, url: () => apiUrl + '/api/dashboard/project-environments',
+    allHeaders: async () => ({}), text: async () => '{}', finished: async () => null,
+  }, 60, {requestFinished: 'FAILED'});
+  assert.equal(failedPairRequestCapture.ok, false);
+  assert.equal(failedPairRequestCapture.requestFinished, 'FAILED');
   const probe = await probeResponseTransport({
     headers: () => ({ 'content-length': '29', 'transfer-encoding': 'chunked' }),
     finished: async () => null,
@@ -3870,6 +3971,29 @@ if (r48DiagnosticSelfTest) {
     headers: 5, body: 6, finished: 7, request: 'DONE', nextNavigation: 8}),
   {index: 2, round: 1, pairRequest: 1, headers: 'DONE', body: 'DONE', finished: 'DONE',
     request: 'DONE', navigation: 'AFTER_BODY', length: 'MISSING', transfer: 'MISSING'});
+  const preNavTrace = {index: 2, observedRound: 1, pairRequest: 1,
+    nextNavigation: 0, captureDeadlineAt: 1100, captureResult: null,
+    capturePromise: Promise.resolve({ok: true, status: 404})};
+  assert.equal((await awaitFirstPairPreNavigation(preNavTrace, () => 1050)).status, 404);
+  assert.throws(() => rejectCompletedPreNav404({captureResult: {ok: true, status: 404}}),
+    /R6_PRENAV_404_UNCHANGED/);
+  assert.doesNotThrow(() => rejectCompletedPreNav404({captureResult: {ok: true, status: 200}}));
+  assert.equal(safeChromiumVersion('138.0.7204.4'), '138.0.7204.4');
+  assert.throws(() => safeChromiumVersion('138.0.0/private-token'), /R6_PRENAV_BROWSER_VERSION_INVALID/);
+  assert.equal(validatePreNavMode(undefined), 'A');
+  assert.equal(validatePreNavMode('B'), 'B');
+  for (const forgedMode of ['', 'A ', 'private-token']) {
+    assert.throws(() => validatePreNavMode(forgedMode), /R6_PRENAV_MODE_INVALID/);
+  }
+  await assert.rejects(awaitFirstPairPreNavigation({...preNavTrace,
+    captureResult: {ok: false, reason: 'TIMEOUT'}}, () => 1050),
+  /INVALID_PRENAV_INTERVENTION/);
+  await assert.rejects(awaitFirstPairPreNavigation(preNavTrace, () => 1100),
+    /INVALID_PRENAV_INTERVENTION/);
+  await assert.rejects(awaitFirstPairPreNavigation({...preNavTrace,
+    capturePromise: new Promise(() => {})}, () => 1050), /PRENAV_BODY_PENDING/);
+  await assert.rejects(awaitFirstPairPreNavigation({...preNavTrace,
+    request: 'FAILED'}, () => 1050), /INVALID_PRENAV_INTERVENTION/);
   const previousPairTrace = firstPairTrace;
   const previousRound = navigationRound;
   const previousClock = pairClock;
@@ -3900,6 +4024,79 @@ if (r48DiagnosticSelfTest) {
     navigationRound = previousRound;
     pairClock = previousClock;
     stage = previousStage;
+  }
+  if (preNavMode === 'B') {
+    const priorTrace = firstPairTrace;
+    const priorRound = navigationRound;
+    const priorAttempted = preNavAttempted;
+    try {
+      preNavAttempted = false;
+      let barrierResolved = false;
+      firstPairTrace = {index: 2, observedRound: 1, pairRequest: 1,
+        response: 1, headers: 2, body: 0, finished: 0, request: 'PENDING',
+        nextNavigation: 0, captureDeadlineAt: Date.now() + 10000,
+        captureResult: null, capturePromise: new Promise((resolve) => setTimeout(() => {
+          barrierResolved = true;
+          resolve({ok: true, status: 404});
+        }, 5))};
+      navigationRound = 1;
+      const responses = ['/api/health/ready', '/api/providers',
+        '/api/operations/alerts', '/api/dashboard/operations']
+        .map((path) => ({url: () => apiUrl + path}));
+      const captures = new WeakMap(responses.map((response) =>
+        [response, Promise.resolve({ok: true, value: {}})]));
+      const fakePage = {waitForResponse: async (predicate) => {
+        assert.equal(barrierResolved, true, 'R6_PRENAV_WAITERS_STARTED_BEFORE_BARRIER');
+        return responses.find(predicate);
+      }, reload: async () => { assert.equal(barrierResolved, true); },
+      locator: () => ({waitFor: async () => {}})};
+      await readyDashboard(fakePage, 'reload', apiUrl, 'EMPTY', captures);
+      let unexpectedNavigation = 0;
+      const blockedPage = {waitForResponse: () => { unexpectedNavigation += 1; },
+        reload: () => { unexpectedNavigation += 1; }};
+      preNavAttempted = false;
+      firstPairTrace = {...firstPairTrace, nextNavigation: 0,
+        captureDeadlineAt: Date.now() + 25, captureResult: null,
+        capturePromise: new Promise(() => {})};
+      await assert.rejects(readyDashboard(blockedPage, 'reload', apiUrl,
+        'EMPTY', captures), /PRENAV_BODY_PENDING/);
+      assert.equal(unexpectedNavigation, 0);
+      preNavAttempted = false;
+      let failRequest;
+      firstPairTrace = {...firstPairTrace, captureDeadlineAt: Date.now() + 1000,
+        request: 'PENDING', capturePromise: new Promise(() => {}),
+        requestFailurePromise: new Promise((resolve) => { failRequest = resolve; })};
+      const failedAtBarrier = readyDashboard(blockedPage, 'reload', apiUrl,
+        'EMPTY', captures);
+      await Promise.resolve();
+      firstPairTrace.request = 'FAILED';
+      failRequest();
+      await assert.rejects(failedAtBarrier, /INVALID_PRENAV_INTERVENTION/);
+      assert.equal(unexpectedNavigation, 0);
+      preNavAttempted = false;
+      firstPairTrace = {...firstPairTrace, request: 'FAILED',
+        captureDeadlineAt: Date.now() + 1000,
+        captureResult: {ok: false, reason: 'REQUEST_FAILED'},
+        capturePromise: Promise.resolve({ok: false, reason: 'REQUEST_FAILED'})};
+      await assert.rejects(readyDashboard(blockedPage, 'reload', apiUrl,
+        'EMPTY', captures), /INVALID_PRENAV_INTERVENTION/);
+      assert.equal(unexpectedNavigation, 0);
+      preNavAttempted = false;
+      firstPairTrace = {...firstPairTrace, captureDeadlineAt: Date.now() - 1,
+        captureResult: {ok: false, reason: 'TIMEOUT'}};
+      await assert.rejects(readyDashboard(blockedPage, 'reload', apiUrl,
+        'EMPTY', captures), /INVALID_PRENAV_INTERVENTION/);
+      assert.equal(unexpectedNavigation, 0);
+      preNavAttempted = false;
+      firstPairTrace = null;
+      await assert.rejects(readyDashboard(blockedPage, 'reload', apiUrl,
+        'EMPTY', captures), /INVALID_PRENAV_INTERVENTION/);
+      assert.equal(unexpectedNavigation, 0);
+    } finally {
+      firstPairTrace = priorTrace;
+      navigationRound = priorRound;
+      preNavAttempted = priorAttempted;
+    }
   }
   const stablePage = {evaluate: async () => ({status: 404, text: 'safe-body',
     headers: {'content-length': '0', 'transfer-encoding': 'chunked'}})};
