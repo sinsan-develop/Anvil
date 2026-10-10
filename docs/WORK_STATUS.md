@@ -1,5 +1,8 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 Foundation R6 H4 임대 회수 후보(Main, 2026-10-11T01:05:36+09:00): B4 `0b7eb53ce23d0d1e7411826fa3a8f344cd18aa7f` 기존 branch/private 동일·tracked clean, 실제 G-05 seq2357 PASS. C4 exact-SHA WSL R6 opt-in은 NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT exit1, 전용 자원 잔여0. Event seq2358 write→2359 worker 순차 REVOKED, active agent/dual lease null·제품0. H4는 B4 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private 게시/clean G-05 전이다. R6 전체 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 - Task4 Foundation R6 B4 실측 결박(Main, 2026-10-11T01:01:31+09:00): C4 `f4c535771f0f71f3e17e5ae9103976e50f7e71ef` local/private 동일·게시본 G-05 seq2357 PASS. WSL-server exact SHA는 G-05 seq2357 PASS이나 R6 opt-in은 exit1 `NETWORK_RESPONSE_FACTS` OTHER_API 404 TIMEOUT(1 failed/2 warnings), 전용 자원 잔여0이다. STORED_ROW_CONTROLS·entity/cause는 그 단계까지 예외 없이 지났으나 전체 R6 PASS·제품 결함·U-01 인수는 아니다. B4는 C4 직접 자식의 progress/HANDOFF/digest/WORK_STATUS 정확4문서 후보, Event 불변·epoch114 dual lease active다. 독립 검토/private 게시/G-05 전 H4 회수 금지. 다음은 H4 write→worker 회수·결과보고와 별도 capture 원인 분리. U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 

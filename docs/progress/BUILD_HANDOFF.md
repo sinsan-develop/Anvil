@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 Foundation R6 H4 임대 회수(Main, 2026-10-11T01:05:36+09:00): B4 `0b7eb53ce23d0d1e7411826fa3a8f344cd18aa7f` local/private clean G-05 seq2357 PASS와 C4 exact-SHA WSL 실측 NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT exit1·QA 자원 잔여0을 결박했다. Event seq2358 write→2359 worker 순차 REVOKED, active writer0·제품 scope0. 이 H4의 독립 검토/private 게시/G-05는 아직 미실행이다. R6 전체 FAIL·U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, 별도 원인 분리 WI 전 PR/main·새 branch·ysna 제외.
+
+
 Task4 Foundation R6 B4 실측 결박(Main, 2026-10-11T01:01:31+09:00): C4 `f4c535771f0f71f3e17e5ae9103976e50f7e71ef`의 WSL-server exact-SHA G-05 seq2357 PASS와 격리 PG15/OIDC/HTTPS/Chromium opt-in exit1 `NETWORK_RESPONSE_FACTS`/OTHER_API 404 TIMEOUT을 구분한다. 이전 STORED_ROW 단언을 지나갔으나 전체 R6 PASS·제품 결함·U-01 인수는 아니다. 전용 QA 자원 잔여0, Event seq2357·epoch114 dual lease active 유지. H4에서 write→worker 순차 회수 후 별도 최소 진단 WI가 필요하다. U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -215,54 +218,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2357,
-  "last_event_id": "evt_u01_2357_task4_r6_control_write_lease_issued",
+  "event_sequence": 2359,
+  "last_event_id": "evt_u01_2359_task4_r6_control_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-r6-stored-row-control-correction",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-stored-row-control-correction",
-    "subject_ref": "U-01/TASK4-R6-STORED-ROW-CONTROL-CORRECTION",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-11T00:02:36+09:00",
-    "expires_at": "2026-10-12T00:02:36+09:00",
-    "lease_epoch": 114,
-    "baseline_git_commit": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
-    "dispatch_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs"
-    ],
-    "lease_id": "worker-lease-u01-task4-r6-control-90bde050f3495eb0cbcc8409d67fb340",
-    "fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340",
-    "execution_fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-stored-row-control-correction",
-    "subject_ref": "U-01/TASK4-R6-STORED-ROW-CONTROL-CORRECTION",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-11T00:02:36+09:00",
-    "expires_at": "2026-10-12T00:02:36+09:00",
-    "lease_epoch": 114,
-    "baseline_git_commit": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
-    "dispatch_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs"
-    ],
-    "lease_id": "write-lease-u01-task4-r6-control-b1b073eb1311d7979b4474d050af65b6",
-    "worker_lease_id": "worker-lease-u01-task4-r6-control-90bde050f3495eb0cbcc8409d67fb340",
-    "fencing_token": "u01-task4-r6-control-write-fence-epoch-114-b1b073eb1311d7979b4474d050af65b6",
-    "write_fencing_token": "u01-task4-r6-control-write-fence-epoch-114-b1b073eb1311d7979b4474d050af65b6",
-    "execution_fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340",
-    "product_write_scope": [],
-    "write_epoch": 114
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_RECORDED_U01_PENDING",
   "repository_head": "f4c535771f0f71f3e17e5ae9103976e50f7e71ef",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
