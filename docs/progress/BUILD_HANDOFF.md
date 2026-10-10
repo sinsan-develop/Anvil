@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR B7 실측 결박(Main, 2026-10-11T05:28:19+09:00): C7 `edbd8e5de57740b24fc9f7f6393f5c2e9b8821ca` local/private G-05 seq2372 PASS, WSL-server Git exact SHA G-05 seq2372 PASS. 격리 PG15/OIDC/HTTPS/Chromium 실제 R6 opt-in exit1: 원 PAIR_LIST_API 404 본문 PENDING; ASGI 4XX 최종 body DONE, 독립 probe 및 안정 페이지 body DONE. 원인 미확정·전체 R6 FAIL/U-01 NOT_ACCEPTED. 전용 경로5·컨테이너3·포트 잔여0. Event seq2372·epoch117 dual lease ACTIVE·제품0 유지. 다음 H7 write→worker 회수·결과보고·별도 원인분리. PR/main·새 branch·ysna 제외.
+
+
 Task4 R6 PAIR response lifecycle A7 비제품 임대(Main, 2026-10-11T04:13:25+09:00): W8 `a1962ec6d47f082cdce7d10ce9745c61e4e2a947` local/private clean; Event seq2370 WI→2371 epoch117 worker→2372 write, 분리 24시간 token·정확4 code path·제품0. A7 독립 검토/private 게시와 C7/WSL은 미실행. R6 실제 PAIR_LIST_API 404/BODY PENDING exit1, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -287,8 +290,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_ONLY",
-  "repository_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+  "next_safe_action": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE_READY",
+  "repository_head": "edbd8e5de57740b24fc9f7f6393f5c2e9b8821ca",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
