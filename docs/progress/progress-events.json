@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2329,
+  "last_sequence": 2332,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -105792,7 +105792,102 @@
       "execution_fencing_token": "u01-task4-epoch107-postclose-fixture-execution-fence-epoch-108-4289d9836538469fb9a1ab4365f410ad",
       "reason": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_COMPLETE_R6_SEPARATE_WI_PENDING"
     }
+  },
+  {
+    "sequence": 2330,
+    "event_id": "evt_u01_2330_task4_epoch108_h3_regression_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_EPOCH108_H3_REGRESSION",
+    "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+    "occurred_at": "2026-10-10T03:48:01+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "546FDE74C165FDFF667EA8E02C47841A4624041B73F09B6B58219B4695BFD0F2",
+    "details": {
+      "work_instruction_id": "WI-U01-TASK4-EPOCH108-H3-REGRESSION-20261010-001",
+      "work_instruction_path": "docs/work_orders/U-01_TASK4_EPOCH108_H3_REGRESSION_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "E62808FFA0FFA2B796CCE539EB58EC7A72700886E8CA0DAE1FD5E652C378C0AE",
+      "invocation_path": "docs/work_orders/U-01_TASK4_EPOCH108_H3_REGRESSION_INVOCATION.md",
+      "invocation_sha256": "67D42BEF403C6A91B9D9B57BC809742788DE14A1BF3FFD2837CDE0EDF5115FED",
+      "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+      "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+      "recovery_plan_path": "docs/04_test_reports/U-01_TASK4_EPOCH108_H3_REGRESSION_RECOVERY_PLAN.md",
+      "recovery_plan_sha256": "F5080B4C0E455606E79205594D171A8DCE4406FB951306207ECF1385D23C5498",
+      "predecessor_head": "52aa0b865cc82accfd736c91790be25d52c7d639",
+      "predecessor_sequence": 2329,
+      "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
+      "product_write_scope": []
+    }
+  },
+  {
+    "sequence": 2331,
+    "event_id": "evt_u01_2331_task4_epoch108_h3_regression_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_EPOCH108_H3_REGRESSION",
+    "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+    "occurred_at": "2026-10-10T03:48:01+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "27282866FE16ED25BC14F33DA201A76AECF594E7F4721CF502C1961BA7B7FB82",
+    "details": {
+      "lease_id": "worker-lease-u01-task4-epoch108-h3-regression-2ad7de11685c471882af7335dd326d09",
+      "actor_id": "developer-primary-u01-task4-epoch108-h3-regression",
+      "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-10T03:48:01+00:00",
+      "expires_at": "2026-10-11T03:48:01+00:00",
+      "lease_epoch": 109,
+      "fencing_token": "u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09",
+      "execution_fencing_token": "u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09",
+      "baseline_git_commit": "52aa0b865cc82accfd736c91790be25d52c7d639",
+      "dispatch_head": "52aa0b865cc82accfd736c91790be25d52c7d639",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"]
+    }
+  },
+  {
+    "sequence": 2332,
+    "event_id": "evt_u01_2332_task4_epoch108_h3_regression_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_EPOCH108_H3_REGRESSION",
+    "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+    "occurred_at": "2026-10-10T03:48:01+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "CDBAEE93FB50C399D51752F7AD5A01C9C254DB3951ACFAC2696794C24FA6BB89",
+    "details": {
+      "lease_id": "write-lease-u01-task4-epoch108-h3-regression-f8b295706dc24e06ad861943f93eafb3",
+      "worker_lease_id": "worker-lease-u01-task4-epoch108-h3-regression-2ad7de11685c471882af7335dd326d09",
+      "actor_id": "developer-primary-u01-task4-epoch108-h3-regression",
+      "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-10T03:48:01+00:00",
+      "expires_at": "2026-10-11T03:48:01+00:00",
+      "lease_epoch": 109,
+      "fencing_token": "u01-task4-epoch108-h3-regression-write-fence-epoch-109-f8b295706dc24e06ad861943f93eafb3",
+      "write_fencing_token": "u01-task4-epoch108-h3-regression-write-fence-epoch-109-f8b295706dc24e06ad861943f93eafb3",
+      "execution_fencing_token": "u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09",
+      "baseline_git_commit": "52aa0b865cc82accfd736c91790be25d52c7d639",
+      "dispatch_head": "52aa0b865cc82accfd736c91790be25d52c7d639",
+      "path_scope": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
+      "product_write_scope": [],
+      "write_epoch": 109
+    }
   }
   ],
-  "last_event_id": "evt_u01_2329_task4_epoch107_postclose_fixture_worker_lease_revoked"
+  "last_event_id": "evt_u01_2332_task4_epoch108_h3_regression_write_lease_issued"
 }
