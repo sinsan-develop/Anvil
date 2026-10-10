@@ -11,6 +11,7 @@
 
 ### DC-U01-015 — post-H4 보고 successor H 검증 후 남은 R6·최신 보고 통제
 
+- 후속 실측(2026-10-10 KST): 결과보고 `84393391829309e4c20d140a8ff94edf8175f63e`는 기존 branch/private 동일·tracked clean이나 최신 G-05 exit1 `U01_TASK4_POST_H4_GIT_INVALID`다. collector의 B→H 정확 한 커밋 조건과 과거 R 대비 `design_change.md` 최신 blob 불변 조건은 H 다음 정확3문서 보고 커밋을 거부한다. R6 읽기 전용 대조에서는 역사 하네스의 조작 요소0 단언과 현재 `open` Critical의 `확인` 버튼·설계 §29.2가 정적 충돌하지만 실제 실패 단언은 미확정이다. 이 항목의 이번 주기 미진은 기록으로 정리하되 G-05나 R6를 PASS로 표시하지 않는다.
 - 판정: H `c821a4661a601c16b3b22964e2f4054719cc4fd2`는 로컬·WSL-server exact-SHA G-05 seq2339 PASS, WSL focused exit0 `34 passed, 71 deselected, 159 subtests passed`; 단일 사전 등록 격리 checkout 잔여0이다. 상세 `docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md`. 이 검증은 H의 통제 범위에 한하며 전체 U-01 인수는 아니다.
 - 남은 사유·영향: H 이후 결과보고·본 DC·WORK_STATUS를 새 commit에 기록하면 H의 G-05 PASS는 최신 HEAD에 상속되지 않는다. 최신 보고 successor 통제 경로가 미검증이다. Foundation R6 `STORED_ROW`는 기존 WSL `AssertionError`의 정확 단언이 불명이다. 역사 하네스의 Critical 행 조작 요소0 단언과 승인 화면의 열린 Critical `확인` 버튼은 정적 충돌 후보지만 실제 실패 원인으로 확정하지 않았다. 전체 suite/Windows 기본 fd-capture, E-NET/E-API/E-AUD와 U-01 ID별 수직 인수도 미검증이다.
 - 조치·재개 조건: 본 기록은 이번 계획 주기의 미진을 추적하며 실제 실패를 PASS로 바꾸지 않는다. 기존 단일 branch에서 최신 보고 Git 계보의 fail-closed G-05를 별도 비제품 WI/lease로 결박하고, Foundation R6는 별도 WI·격리 WSL-server PG15/OIDC/HTTPS/Chromium에서 정확 단언을 재현한 뒤 원인을 한 개씩 보완·재검증한다. U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, U-02 `BLOCKED`; PR/main 병합·새 branch·ysna 제외다.
