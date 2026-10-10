@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 Foundation R6 STORED_ROW A4 하네스 보정 임대(Main, 2026-10-11T00:02:36+09:00): W5 `30823b3602e67dbeed3d0d37b63f460ee768edd8` local/private clean, W5 G-05는 새 route 전 예상 RED다. Event seq2355 WI→2356 epoch114 worker→2357 write, 분리 24시간 token·정확3 code path·제품0. A4 독립 검토/private 게시·G-05와 C4/WSL은 미실행. 이전 R6 STORED_ROW_CONTROLS exit1/원본 C FAIL 불변; U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 Foundation R6 STORED_ROW H3 임대 회수(Main, 2026-10-10T23:49:48+09:00): B3 `e6d791171c7d0c0fa66fa6ac1c41fb351d47c108` local/private clean G-05 seq2352 PASS와 C3 exact-SHA WSL 실측 `STORED_ROW_CONTROLS` AssertionError/QA 자원 잔여0을 결박했다. Event seq2353 write→2354 worker를 유효 epoch113 token으로 순서대로 REVOKED 투영하고 제품 scope0을 유지한다. 이 H3의 독립 검토/private 게시/G-05는 아직 미실행이다. 원본 C 실패 불변, 별도 최소 하네스 보정 WI 전 R6 FAIL·U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -209,17 +212,55 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2354,
-  "last_event_id": "evt_u01_2354_task4_r6_stored_row_worker_lease_revoked",
+  "event_sequence": 2357,
+  "last_event_id": "evt_u01_2357_task4_r6_control_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-stored-row-control-correction",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-stored-row-control-correction",
+    "subject_ref": "U-01/TASK4-R6-STORED-ROW-CONTROL-CORRECTION",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T00:02:36+09:00",
+    "expires_at": "2026-10-12T00:02:36+09:00",
+    "lease_epoch": 114,
+    "baseline_git_commit": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+    "dispatch_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs"
+    ],
+    "lease_id": "worker-lease-u01-task4-r6-control-90bde050f3495eb0cbcc8409d67fb340",
+    "fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340",
+    "execution_fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-stored-row-control-correction",
+    "subject_ref": "U-01/TASK4-R6-STORED-ROW-CONTROL-CORRECTION",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T00:02:36+09:00",
+    "expires_at": "2026-10-12T00:02:36+09:00",
+    "lease_epoch": 114,
+    "baseline_git_commit": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+    "dispatch_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs"
+    ],
+    "lease_id": "write-lease-u01-task4-r6-control-b1b073eb1311d7979b4474d050af65b6",
+    "worker_lease_id": "worker-lease-u01-task4-r6-control-90bde050f3495eb0cbcc8409d67fb340",
+    "fencing_token": "u01-task4-r6-control-write-fence-epoch-114-b1b073eb1311d7979b4474d050af65b6",
+    "write_fencing_token": "u01-task4-r6-control-write-fence-epoch-114-b1b073eb1311d7979b4474d050af65b6",
+    "execution_fencing_token": "u01-task4-r6-control-execution-fence-epoch-114-90bde050f3495eb0cbcc8409d67fb340",
+    "product_write_scope": [],
+    "write_epoch": 114
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSIS_RECORDED_NEXT_WI_PENDING",
-  "repository_head": "625a117812d39beb82c08f9d8cb364e2cc28afe3",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+  "repository_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
