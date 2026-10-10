@@ -78856,5 +78856,548 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_post_h4_report_successor(bundle)
 
 
+def _validate_u01_task4_post_h4_report_tail_active(bundle, *, event_raw=None,
+                                                   now=None, archived_files=None):
+    """Bind epoch111 A/B to frozen H→R2→D→W2 and exact active controls."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    h = "c821a4661a601c16b3b22964e2f4054719cc4fd2"
+    r2 = "84393391829309e4c20d140a8ff94edf8175f63e"
+    d = "beb8cccf69150483033d0de7c1fea37bb1d56edd"
+    w2 = "11b4ae80d23a1835fdacf309500c6d02ca737a6e"
+    a = "bdfd5c4513a6de114b16e9e98b5164c71e7f1311"
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    control = ["scripts/check_project_progress.py",
+               "tests/tooling/test_u01_postmerge_control_projection.py"]
+    errors = []
+    try:
+        issued, published = _u01_task4_report_archive(bundle, a)
+        historical, frozen = _u01_task4_report_archive(bundle, h)
+        base, progress, stream = issued["progress"], bundle["progress"], bundle["events"]
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        progress_raw = (archived_files or {}).get(paths[0], (root / paths[0]).read_bytes())
+        handoff_raw = (archived_files or {}).get(paths[2], (root / paths[2]).read_bytes())
+        binding = progress["u01_task4_post_h4_report_tail_binding"]
+        old_at = datetime.fromisoformat(historical["progress"]["updated_at"])
+        if (_validate_u01_task4_post_h4_report_successor_closed(historical,
+                event_raw=frozen[paths[1]], now=old_at,
+                archived_files={paths[0]: frozen[paths[0]], paths[2]: frozen[paths[2]]})
+                or historical["progress"]["event_sequence"] != 2339
+                or historical["progress"]["worker_lease"] is not None
+                or historical["progress"]["write_lease"] is not None
+                or raw_event_object_prefix_bytes(raw, 2339)
+                   != raw_event_object_prefix_bytes(frozen[paths[1]], 2339)):
+            errors.append("U01_TASK4_POST_H4_TAIL_H_INVALID")
+        for sha, path, expected in (
+            (r2, "design_change.md", "F7AAE618844DF7337DA7921CAF5D10B7C838144AB95FC28F207E73033EE22A41"),
+            (r2, "docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md",
+             "09B684DAB14FCCD5F2039D34A77AD5100A10DECE817F31CBDEEF522C648587C6"),
+            (r2, "docs/WORK_STATUS.md", "D7803443D6D183458AD936F2E2134BB9466548ABFC0849810071A8B11187F032"),
+            (d, "design_change.md", "2899378B82ED1C3D859865BFF7B9334B5E8CF3413D64D290BBF7D52AF0EBD397"),
+            (d, "docs/WORK_STATUS.md", "C000FC4FF42026CB0E04E790FB7529718B3CF52B655E46B81054FFEECDAE0AC5"),
+            (w2, "docs/WORK_STATUS.md", "7E818F7556BC11C1A4B03DD905E5D608FEAA777A8163CFAF29BE27A1B73D33BF"),
+            (w2, "docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_WORK_INSTRUCTION.md",
+             "D1A3A09D314414B7C81E4FB0A3F006964A31D08A2B3E04ADFF626D1BB1DD0B40"),
+            (w2, "docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_INVOCATION.md",
+             "5D8639810BF3E257FCDD8F05269A01116A059358D342E8D284ED67CE2C5DACF5"),
+        ):
+            blob = subprocess.check_output(["git", "show", f"{sha}:{path}"], cwd=root,
+                stderr=subprocess.DEVNULL)
+            if hashlib.sha256(blob).hexdigest().upper() != expected:
+                errors.append("U01_TASK4_POST_H4_TAIL_HISTORY_INVALID")
+        if (raw != published[paths[1]] or stream != issued["events"]
+                or stream["last_sequence"] != 2342 or len(stream["events"]) != 2342
+                or progress["event_sequence"] != 2342
+                or progress["last_event_id"] != stream["last_event_id"]
+                or progress["registry_refs"]["progress_events"]["sha256"]
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("U01_TASK4_POST_H4_TAIL_EVENT_INVALID")
+        for index, kind, event_id in (
+            (2339, "WORK_INSTRUCTION_ISSUED", "evt_u01_2340_task4_post_h4_report_tail_work_instruction_issued"),
+            (2340, "WORKER_LEASE_ISSUED", "evt_u01_2341_task4_post_h4_report_tail_worker_lease_issued"),
+            (2341, "WRITE_LEASE_ISSUED", "evt_u01_2342_task4_post_h4_report_tail_write_lease_issued"),
+        ):
+            row = stream["events"][index]
+            if (row != issued["events"]["events"][index]
+                    or row["sequence"] != index + 1 or row["event_type"] != kind
+                    or row["event_id"] != event_id
+                    or row["previous_event_sha256"] != hashlib.sha256(
+                        canonical_json_bytes(stream["events"][index - 1])).hexdigest().upper()):
+                errors.append("U01_TASK4_POST_H4_TAIL_EVENT_INVALID")
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued_at = datetime.fromisoformat(worker["issued_at"])
+        expires_at = datetime.fromisoformat(worker["expires_at"])
+        if (worker != base["worker_lease"] or write != base["write_lease"]
+                or stream["events"][2340]["details"] != worker
+                or stream["events"][2341]["details"] != write
+                or worker["lease_epoch"] != 111 or write["write_epoch"] != 111
+                or worker["lease_id"] != binding["worker_lease_id"]
+                or write["lease_id"] != binding["write_lease_id"]
+                or worker["actor_id"] != "developer-primary-u01-task4-post-h4-report-tail"
+                or write["actor_id"] != worker["actor_id"]
+                or worker["execution_fencing_token"] !=
+                   "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a"
+                or write["write_fencing_token"] !=
+                   "u01-task4-post-h4-report-tail-write-fence-epoch-111-bac9042556844e8ba88624ca141687f4"
+                or worker["execution_fencing_token"] == write["write_fencing_token"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or worker["path_scope"] != control or write["path_scope"] != control
+                or write["product_write_scope"] != []
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["baseline_git_commit"] != w2 or write["baseline_git_commit"] != w2
+                or worker["issued_at"] != write["issued_at"]
+                or worker["expires_at"] != write["expires_at"]
+                or issued_at.tzinfo is None or expires_at.tzinfo is None
+                or instant.tzinfo is None or expires_at - issued_at != timedelta(hours=24)
+                or not issued_at <= instant < expires_at):
+            errors.append("U01_TASK4_POST_H4_TAIL_LEASE_INVALID")
+        for key, expected in (
+            ("work_instruction_sha256", "D1A3A09D314414B7C81E4FB0A3F006964A31D08A2B3E04ADFF626D1BB1DD0B40"),
+            ("invocation_sha256", "5D8639810BF3E257FCDD8F05269A01116A059358D342E8D284ED67CE2C5DACF5"),
+            ("approval_sha256", "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39")):
+            if (binding[key] != expected
+                    or _sha256(root / binding[key.removesuffix("_sha256") + "_path"]) != expected):
+                errors.append("U01_TASK4_POST_H4_TAIL_INSTRUCTION_INVALID")
+        if (binding["h_checkpoint"] != h or binding["report_checkpoint"] != r2
+                or binding["diagnostic_checkpoint"] != d or binding["w2_checkpoint"] != w2
+                or binding["predecessor_head"] != w2 or binding["predecessor_sequence"] != 2339
+                or binding["developer_exact_paths"] != control
+                or binding["product_write_scope"] != []
+                or binding["vertical_acceptance"] != "NOT_ACCEPTED"
+                or binding["release_decision"] != "DEFER"
+                or binding["production"] != "NOT_EXECUTED"):
+            errors.append("U01_TASK4_POST_H4_TAIL_PROJECTION_INVALID")
+        checkpoint = binding.get("control_checkpoint")
+        expected = copy.deepcopy(base)
+        expected_handoff = issued["handoff"]
+        expected_digest = copy.deepcopy(issued["detached_digest"])
+        if checkpoint is not None:
+            updated = datetime.fromisoformat(progress["updated_at"])
+            if (not isinstance(checkpoint, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or checkpoint in {h, r2, d, w2, a}
+                    or updated.tzinfo is None
+                    or not datetime.fromisoformat(base["updated_at"]) <= updated <= instant):
+                errors.append("U01_TASK4_POST_H4_TAIL_PROJECTION_INVALID")
+            status = "U01_TASK4_POST_H4_REPORT_TAIL_CONTROL_ONLY"
+            expected["u01_task4_post_h4_report_tail_binding"].update(
+                status=status, next_safe_action=status, a_docs_checkpoint=a,
+                control_checkpoint=checkpoint)
+            expected["active_work_instruction"].update(result_status=status,
+                package_status=status)
+            expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+                head_relation=status, worktree_status=status)
+            expected.update(updated_at=progress["updated_at"], next_safe_action=status,
+                runtime_next_action=status,
+                next_work_package={"package_id": "U-01", "status": status},
+                snapshot_id="snapshot-u01-task4-post-h4-report-tail-b-seq2342")
+            expected["snapshot_hash"] = compute_snapshot_hash(expected)
+            expected_handoff = {**issued["handoff"], "repository_head": checkpoint,
+                                "next_safe_action": status}
+            for section, data in (("progress", progress_raw), ("handoff", handoff_raw)):
+                expected_digest[section].update(bytes=len(data),
+                    file_sha256=hashlib.sha256(data).hexdigest().upper())
+        if (progress != expected
+                or progress["snapshot_hash"] != compute_snapshot_hash(progress)
+                or progress["repository"]["projection_mode"]
+                   != "U01_TASK4_POST_H4_REPORT_TAIL_ACTIVE"
+                or progress["next_successor_work_package"] != base["next_successor_work_package"]):
+            errors.append("U01_TASK4_POST_H4_TAIL_PROJECTION_INVALID")
+        if (bundle["handoff"] != expected_handoff
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]
+                or (checkpoint is None and handoff_raw != published[paths[2]])):
+            errors.append("U01_TASK4_POST_H4_TAIL_HANDOFF_INVALID")
+        if ((checkpoint is None and progress_raw != published[paths[0]])
+                or bundle["detached_digest"] != expected_digest
+                or any(bundle["detached_digest"][section]["file_sha256"]
+                       != hashlib.sha256(data).hexdigest().upper()
+                    or bundle["detached_digest"][section]["bytes"] != len(data)
+                    for section, data in (("progress", progress_raw), ("handoff", handoff_raw)))):
+            errors.append("U01_TASK4_POST_H4_TAIL_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK4_POST_H4_TAIL_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_task4_post_h4_report_tail_active_git(bundle):
+    """Require all frozen ancestors through A and the live private A ref."""
+    root = Path(bundle["_root"])
+    h4 = "91fa68b0092ebf56d8118b285499a3c88269df51"
+    r = "8c56ffc966c585fd8164ab7b7b6fde6e27e99fd3"
+    p = "fed668c6d58d5e452b457e139ea2cbe45b1413b4"
+    w = "6cb5390c7c5f94ce556524e83c2e27a843f86be3"
+    a1 = "184836072d127b3e2048a42589d29e69d99ed172"
+    c1 = "01eed2d548999559bcac971ed6820395e8eb1356"
+    b1 = "00c4376aa65c4f70bb45e11ef2c7024c03eff28e"
+    h = "c821a4661a601c16b3b22964e2f4054719cc4fd2"
+    r2 = "84393391829309e4c20d140a8ff94edf8175f63e"
+    d = "beb8cccf69150483033d0de7c1fea37bb1d56edd"
+    w2 = "11b4ae80d23a1835fdacf309500c6d02ca737a6e"
+    a = "bdfd5c4513a6de114b16e9e98b5164c71e7f1311"
+    control = {"scripts/check_project_progress.py",
+               "tests/tooling/test_u01_postmerge_control_projection.py"}
+    canonical = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                 "docs/progress/build-progress.json",
+                 "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    event = "docs/progress/progress-events.json"
+    legs = (
+        (h4, r, {"design_change.md", "docs/WORK_STATUS.md",
+                 "docs/04_test_reports/U-01_TASK4_EPOCH109_H4_WSL_CONTROL_QA_RESULT.md"}),
+        (r, p, {"docs/WORK_STATUS.md", "docs/work_orders/U-01_TASK4_POST_H4_RECOVERY_PLAN.md"}),
+        (p, w, {"docs/WORK_STATUS.md",
+                "docs/work_orders/U-01_TASK4_POST_H4_REPORT_SUCCESSOR_WORK_INSTRUCTION.md",
+                "docs/work_orders/U-01_TASK4_POST_H4_REPORT_SUCCESSOR_INVOCATION.md"}),
+        (w, a1, canonical | {event}),
+        (a1, c1, control),
+        (c1, b1, canonical),
+        (b1, h, canonical | {event}),
+        (h, r2, {"design_change.md", "docs/WORK_STATUS.md",
+                 "docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md"}),
+        (r2, d, {"design_change.md", "docs/WORK_STATUS.md"}),
+        (d, w2, {"docs/WORK_STATUS.md",
+                 "docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_WORK_INSTRUCTION.md",
+                 "docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_INVOCATION.md"}),
+        (w2, a, canonical | {event}),
+    )
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def leg(left, right, expected):
+            if (git("show", "-s", "--format=%P", right) != left
+                    or git("rev-list", "--count", f"{left}..{right}") != "1"
+                    or git("rev-list", "--min-parents=2", f"{left}..{right}")):
+                return False
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            return history == expected and delta == expected
+        head = git("rev-parse", "HEAD")
+        tracking = git("rev-parse", "development/codex/u01-dashboard-r2")
+        dirty = {line[3:] for line in git("status", "--porcelain=v1", "-uall").splitlines()}
+        if (head != a or tracking != a
+                or git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != a
+                or dirty - control
+                or any(not leg(*row) for row in legs)
+                or git("rev-parse", f"{r2}:docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md")
+                   != git("rev-parse", f"{a}:docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md")
+                or git("rev-parse", f"{d}:design_change.md")
+                   != git("rev-parse", f"{a}:design_change.md")
+                or any(git("rev-parse", f"{h}:{path}") != git("rev-parse", f"{a}:{path}")
+                       for path in control)
+                or subprocess.run(["git", "diff", "--check"], cwd=root,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode):
+            return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+
+
+def _validate_u01_task4_post_h4_report_tail_closed(bundle, *, event_raw=None,
+                                                   now=None, archived_files=None):
+    """Bind H2 to published B and ordered epoch111 write/worker revocation."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    paths = ("docs/progress/build-progress.json", "docs/progress/progress-events.json",
+             "docs/progress/BUILD_HANDOFF.md",
+             "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json")
+    errors = []
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress["u01_task4_post_h4_report_tail_binding"]
+        publication = binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str)
+                or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication == binding["control_checkpoint"]):
+            return ["U01_TASK4_POST_H4_TAIL_CLOSE_INVALID"]
+        active, published = _u01_task4_report_archive(bundle, publication)
+        active_progress = active["progress"]
+        active_at = datetime.fromisoformat(active_progress["updated_at"])
+        if (_validate_u01_task4_post_h4_report_tail_active(active,
+                event_raw=published[paths[1]], now=active_at,
+                archived_files={paths[0]: published[paths[0]], paths[2]: published[paths[2]]})
+                or active_progress["u01_task4_post_h4_report_tail_binding"]["control_checkpoint"]
+                   != binding["control_checkpoint"]
+                or active_progress["next_safe_action"]
+                   != "U01_TASK4_POST_H4_REPORT_TAIL_CONTROL_ONLY"):
+            errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_FROZEN_INVALID")
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        def stable(value):
+            return {key: item for key, item in value.items()
+                    if key not in {"events", "last_sequence", "last_event_id"}}
+        if (raw_event_object_prefix_bytes(raw, 2342)
+                != raw_event_object_prefix_bytes(published[paths[1]], 2342)
+                or stable(stream) != stable(active["events"])
+                or stream != json.loads(raw) or stream.get("last_sequence") != 2344
+                or len(stream.get("events", [])) != 2344
+                or stream.get("last_event_id")
+                   != "evt_u01_2344_task4_post_h4_report_tail_worker_lease_revoked"
+                or progress.get("event_sequence") != 2344
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or progress.get("registry_refs", {}).get("progress_events", {}).get("sha256")
+                   != hashlib.sha256(raw).hexdigest().upper()):
+            errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_EVENT_INVALID")
+        worker, write = active_progress["worker_lease"], active_progress["write_lease"]
+        at = stream["events"][2342]["occurred_at"]
+        at_time = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (at_time.tzinfo is None or active_at.tzinfo is None or instant.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= active_at <= at_time
+                   < datetime.fromisoformat(worker["expires_at"])
+                or at_time > instant or stream["events"][2343]["occurred_at"] != at):
+            errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_EVENT_INVALID")
+        reason = "U01_TASK4_POST_H4_REPORT_TAIL_CLOSED_R6_PENDING"
+        for index, kind, event_id, details in (
+            (2342, "WRITE_LEASE_REVOKED",
+             "evt_u01_2343_task4_post_h4_report_tail_write_lease_revoked",
+             {"lease_id": write["lease_id"], "write_fencing_token": write["write_fencing_token"],
+              "reason": reason}),
+            (2343, "WORKER_LEASE_REVOKED",
+             "evt_u01_2344_task4_post_h4_report_tail_worker_lease_revoked",
+             {"lease_id": worker["lease_id"],
+              "execution_fencing_token": worker["execution_fencing_token"], "reason": reason}),
+        ):
+            row = stream["events"][index]
+            if row != {"sequence": index + 1, "event_id": event_id, "event_type": kind,
+                    "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                    "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                    "run_id": None, "step_id": "U01_TASK4_POST_H4_REPORT_TAIL_CLOSE",
+                    "subject_ref": "U-01/TASK4-POST-H4-REPORT-TAIL", "occurred_at": at,
+                    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                    "previous_event_sha256": hashlib.sha256(canonical_json_bytes(
+                        stream["events"][index - 1])).hexdigest().upper(), "details": details}:
+                errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_EVENT_INVALID")
+        expected = copy.deepcopy(active_progress)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        expected["worker_lease"] = expected["write_lease"] = None
+        expected["completed_u01_task4_post_h4_report_tail_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        expected["completed_u01_task4_post_h4_report_tail_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        action = "U01_TASK4_R6_SEPARATE_WI_PENDING"
+        expected["u01_task4_post_h4_report_tail_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=publication,
+            event_sequence=2344)
+        expected["active_work_instruction"].update(result_status=reason, package_status=reason)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2344,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-post-h4-report-tail-close-seq2344")
+        expected["repository"].update(projection_mode="U01_TASK4_POST_H4_REPORT_TAIL_CLOSED",
+            head_relation=reason, worktree_status=reason)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        if (progress != expected or progress.get("snapshot_hash") != compute_snapshot_hash(progress)
+                or progress.get("status") != "ACTIVE"
+                or progress.get("next_successor_work_package")
+                   != active_progress.get("next_successor_work_package")
+                or binding.get("vertical_acceptance") != "NOT_ACCEPTED"
+                or binding.get("release_decision") != "DEFER"
+                or binding.get("production") != "NOT_EXECUTED"):
+            errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_INVALID")
+        expected_handoff = {**active["handoff"], "event_sequence": 2344,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        if (bundle["handoff"] != expected_handoff
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]):
+            errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_HANDOFF_INVALID")
+        progress_raw = (archived_files or {}).get(paths[0], (root / paths[0]).read_bytes())
+        handoff_raw = (archived_files or {}).get(paths[2], (root / paths[2]).read_bytes())
+        expected_digest = copy.deepcopy(active["detached_digest"])
+        expected_digest["event_sequence"] = 2344
+        for section, data in (("progress", progress_raw), ("handoff", handoff_raw)):
+            expected_digest[section].update(bytes=len(data),
+                file_sha256=hashlib.sha256(data).hexdigest().upper())
+        if (bundle["detached_digest"] != expected_digest
+                or bundle["detached_digest"].get("self_reference") is not False):
+            errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_DIGEST_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK4_POST_H4_TAIL_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_task4_post_h4_report_tail_successor_git(bundle):
+    """Require exact C/B/H2 and at most 256 direct report-only descendants."""
+    root = Path(bundle["_root"])
+    h4 = "91fa68b0092ebf56d8118b285499a3c88269df51"
+    r = "8c56ffc966c585fd8164ab7b7b6fde6e27e99fd3"
+    p = "fed668c6d58d5e452b457e139ea2cbe45b1413b4"
+    w = "6cb5390c7c5f94ce556524e83c2e27a843f86be3"
+    a1 = "184836072d127b3e2048a42589d29e69d99ed172"
+    c1 = "01eed2d548999559bcac971ed6820395e8eb1356"
+    b1 = "00c4376aa65c4f70bb45e11ef2c7024c03eff28e"
+    h = "c821a4661a601c16b3b22964e2f4054719cc4fd2"
+    r2 = "84393391829309e4c20d140a8ff94edf8175f63e"
+    d = "beb8cccf69150483033d0de7c1fea37bb1d56edd"
+    w2 = "11b4ae80d23a1835fdacf309500c6d02ca737a6e"
+    a = "bdfd5c4513a6de114b16e9e98b5164c71e7f1311"
+    control = {"scripts/check_project_progress.py",
+               "tests/tooling/test_u01_postmerge_control_projection.py"}
+    canonical = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                 "docs/progress/build-progress.json",
+                 "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+    event = "docs/progress/progress-events.json"
+    report = "docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md"
+    legs = (
+        (h4, r, {"design_change.md", "docs/WORK_STATUS.md",
+                 "docs/04_test_reports/U-01_TASK4_EPOCH109_H4_WSL_CONTROL_QA_RESULT.md"}),
+        (r, p, {"docs/WORK_STATUS.md", "docs/work_orders/U-01_TASK4_POST_H4_RECOVERY_PLAN.md"}),
+        (p, w, {"docs/WORK_STATUS.md",
+                "docs/work_orders/U-01_TASK4_POST_H4_REPORT_SUCCESSOR_WORK_INSTRUCTION.md",
+                "docs/work_orders/U-01_TASK4_POST_H4_REPORT_SUCCESSOR_INVOCATION.md"}),
+        (w, a1, canonical | {event}), (a1, c1, control), (c1, b1, canonical),
+        (b1, h, canonical | {event}),
+        (h, r2, {"design_change.md", "docs/WORK_STATUS.md", report}),
+        (r2, d, {"design_change.md", "docs/WORK_STATUS.md"}),
+        (d, w2, {"docs/WORK_STATUS.md",
+                 "docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_WORK_INSTRUCTION.md",
+                 "docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_INVOCATION.md"}),
+        (w2, a, canonical | {event}),
+    )
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        def leg(left, right, expected):
+            if (git("show", "-s", "--format=%P", right) != left
+                    or git("rev-list", "--count", f"{left}..{right}") != "1"
+                    or git("rev-list", "--min-parents=2", f"{left}..{right}")):
+                return False
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            return history == expected and delta == expected
+        progress = bundle["progress"]
+        binding = progress["u01_task4_post_h4_report_tail_binding"]
+        c = binding["control_checkpoint"]
+        b = binding.get("active_projection_checkpoint")
+        closed = progress["repository"]["projection_mode"] \
+            == "U01_TASK4_POST_H4_REPORT_TAIL_CLOSED"
+        head = git("rev-parse", "HEAD")
+        refs = (h4, r, p, w, a1, c1, b1, h, r2, d, w2, a, c, b, head) \
+            if closed else (h4, r, p, w, a1, c1, b1, h, r2, d, w2, a, c, head)
+        if (any(not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in refs)
+                or len(set(refs)) != len(refs)
+                or git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or any(not leg(*row) for row in legs)
+                or not leg(a, c, control)
+                or not leg(c, b if closed else head, canonical)
+                or git("rev-parse", f"{r2}:{report}")
+                   != git("rev-parse", f"{head}:{report}")
+                or git("rev-parse", f"{w2}:docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_WORK_INSTRUCTION.md")
+                   != git("rev-parse", f"{head}:docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_WORK_INSTRUCTION.md")
+                or git("rev-parse", f"{w2}:docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_INVOCATION.md")
+                   != git("rev-parse", f"{head}:docs/work_orders/U-01_TASK4_POST_H4_REPORT_TAIL_INVOCATION.md")
+                or any(subprocess.check_output(["git", "show", f"{c}:{path}"], cwd=root,
+                    stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                       for path in control)
+                or subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
+                    cwd=root, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL).returncode):
+            return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+        if closed:
+            count = int(git("rev-list", "--count", f"{b}..{head}"))
+            if not 1 <= count <= 257:
+                return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+            descendants = git("rev-list", "--reverse", f"{b}..{head}").splitlines()
+            if len(descendants) != count or len(set(descendants)) != count:
+                return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+            h2 = descendants[0]
+            if (h2 in refs[:-1] or not leg(b, h2, canonical | {event})
+                    or set(git("diff", "--name-status", "--no-renames", b, h2).splitlines())
+                       != {f"M\t{path}" for path in canonical | {event}}):
+                return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+            unchanged = control | (canonical - {"docs/WORK_STATUS.md"}) | {event,
+                "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"}
+            if any(git("rev-parse", f"{h2}:{path}") != git("rev-parse", f"{head}:{path}")
+                   for path in unchanged):
+                return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+            previous = h2
+            for successor in descendants[1:]:
+                if (re.fullmatch(r"[0-9a-f]{40}", successor) is None
+                        or git("show", "-s", "--format=%P", successor) != previous):
+                    return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+                rows = [line.split("\t") for line in git("diff", "--name-status",
+                    "--no-renames", previous, successor).splitlines()]
+                if (not rows or any(len(row) != 2 for row in rows)
+                        or rows.count(["M", "docs/WORK_STATUS.md"]) != 1):
+                    return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+                for status, path in rows:
+                    if (status, path) in (("M", "docs/WORK_STATUS.md"),
+                                          ("M", "design_change.md")):
+                        continue
+                    if (status != "A" or re.fullmatch(
+                            r"docs/04_test_reports/U-01_TASK4_[A-Za-z0-9_.-]+\.md", path) is None):
+                        return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+                previous = successor
+            if previous != head:
+                return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+        committed = json.loads(subprocess.check_output(["git", "show",
+            f"{head}:docs/progress/build-progress.json"], cwd=root, stderr=subprocess.DEVNULL))
+        return [] if committed == progress else ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ["U01_TASK4_POST_H4_TAIL_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_post_h4_report_tail = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode in {"U01_TASK4_POST_H4_REPORT_TAIL_ACTIVE",
+                "U01_TASK4_POST_H4_REPORT_TAIL_CLOSED"}:
+        errors = (_validate_u01_task4_post_h4_report_tail_active(bundle)
+                  if mode.endswith("ACTIVE")
+                  else _validate_u01_task4_post_h4_report_tail_closed(bundle))
+        if all(key in bundle for key in ("handoff", "failure_ledger", "nonsemantic",
+                                         "dir_registry", "event_contract")):
+            progress = bundle["progress"]
+            if not CHAPTER_15_MINIMUM_FIELDS.issubset(progress):
+                errors.append("PRG_MINIMUM_FIELD_MISSING")
+            if not EXTENDED_PROGRESS_FIELDS.issubset(progress):
+                errors.append("PRG_EXTENDED_FIELD_MISSING")
+            errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+            errors.extend(_validate_failure_projection(bundle))
+            errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+            errors.extend(_validate_dir(bundle))
+            errors.extend(_validate_reporting(progress))
+            errors.extend(_validate_reporting_state(bundle))
+            errors.extend(_validate_registry_refs(bundle))
+            errors.extend(_validate_referenced_hashes(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        binding = bundle["progress"].get("u01_task4_post_h4_report_tail_binding", {})
+        errors.extend(_collect_u01_task4_post_h4_report_tail_active_git(bundle)
+            if mode.endswith("ACTIVE") and binding.get("control_checkpoint") is None
+            else _collect_u01_task4_post_h4_report_tail_successor_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_post_h4_report_tail(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
