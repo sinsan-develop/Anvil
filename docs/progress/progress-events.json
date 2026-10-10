@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2374,
+  "last_sequence": 2377,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107113,7 +107113,115 @@
         "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
         "reason": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"
       }
+    },
+{
+      "sequence": 2375,
+      "event_id": "evt_u01_2375_task4_r6_pair_prenav_causal_probe_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T06:04:02+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "A7FD4C3E9CEBA05B053873ECD37F0A931A6A3923EC64FB3F0D5608CFA92B3C45",
+      "details": {
+        "work_instruction_id": "WI-U01-TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE-20261011-001",
+        "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "546064FA53412E7D2DF8873EB046929B48CC6D60287068AA0D2361A8966FD86E",
+        "invocation_path": "docs/work_orders/U-01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_INVOCATION.md",
+        "invocation_sha256": "44666EF467BE22EC5D6AF219506BCC65004DDDD2D85FCD0AD053EDEF7392AC56",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
+        "predecessor_sequence": 2374,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "product_write_scope": []
+      }
+    },
+{
+      "sequence": 2376,
+      "event_id": "evt_u01_2376_task4_r6_pair_prenav_causal_probe_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T06:04:02+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "10FFA97E3F7E1846E80BD3B198B5C128B39F18370DF054F5C917F7BA084B9698",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
+        "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T06:04:02+09:00",
+        "expires_at": "2026-10-12T06:04:02+09:00",
+        "lease_epoch": 118,
+        "baseline_git_commit": "5914b3ea220122d372844bceda64e350e7ab1f16",
+        "dispatch_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
+        "fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
+        "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a"
+      }
+    },
+{
+      "sequence": 2377,
+      "event_id": "evt_u01_2377_task4_r6_pair_prenav_causal_probe_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T06:04:02+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "FA8C7FC85F84C56FA6D7E6968852D7455B78B54CA3E0376C888945A966091892",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
+        "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T06:04:02+09:00",
+        "expires_at": "2026-10-12T06:04:02+09:00",
+        "write_epoch": 118,
+        "baseline_git_commit": "5914b3ea220122d372844bceda64e350e7ab1f16",
+        "dispatch_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "write-lease-u01-task4-r6-pair-prenav-7189776aa8a84dd69da5ee3bbe5d0580",
+        "worker_lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
+        "fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
+        "write_fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
+        "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
+        "product_write_scope": []
+      }
     }
   ],
-  "last_event_id": "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked"
+  "last_event_id": "evt_u01_2377_task4_r6_pair_prenav_causal_probe_write_lease_issued"
 }

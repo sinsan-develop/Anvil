@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR pre-navigation A8 비제품 임대 후보(Main, 2026-10-11T06:04:02+09:00): W9 `5914b3ea220122d372844bceda64e350e7ab1f16`은 local/private 동일·tracked clean, WI/Invocation 독립 재검토 C0/I0/M0이며 W9 실제 G-05 `U01_TASK4_R6_PAIR_GIT_INVALID` exit1 예상 RED다. 역사 seq1~2374 원문 보존 뒤 seq2375 WI→2376 epoch118 worker→2377 write를 서로 다른 24시간 token·단일 Developer·허용 코드 최대4·제품 scope0으로 투영한다. A8 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보이며 독립 검토/private 게시·Developer dispatch 전이다. C7의 WSL 격리 실제 R6 `PAIR_LIST_API 404 BODY PENDING` exit1·전체 R6 FAIL·U-01 NOT_ACCEPTED·QA 잔여0은 불변이다. 다음은 A8 독립 검토/게시 후 유효 dual token 단일 Developer TDD, C8 clean/private 실제 G-05 전 WSL QA 금지다. PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR response lifecycle H7 임대 회수(Main, 2026-10-11T05:34:21+09:00): B7 `81e874c190d5202c41b6a67241fabcd1cd993cd1` local/private clean G-05 seq2372 PASS, C7 WSL-server Git exact SHA G-05/국소 Python7 PASS·R6 opt-in FAIL, 전용 자원 잔여0. Event seq2373 write→2374 worker REVOKED, active worker/write null·제품0. H7 자체의 독립 검토/private/G-05는 미실행이다. C7 R6 PAIR_LIST_API 404/BODY PENDING 실제 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음은 H7 결과보고와 별도 R6 원인분리 WI.
 
 
@@ -245,17 +247,56 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2374,
-  "last_event_id": "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked",
+  "event_sequence": 2377,
+  "last_event_id": "evt_u01_2377_task4_r6_pair_prenav_causal_probe_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
+    "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T06:04:02+09:00",
+    "expires_at": "2026-10-12T06:04:02+09:00",
+    "lease_epoch": 118,
+    "baseline_git_commit": "5914b3ea220122d372844bceda64e350e7ab1f16",
+    "dispatch_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
+    "fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
+    "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
+    "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T06:04:02+09:00",
+    "expires_at": "2026-10-12T06:04:02+09:00",
+    "write_epoch": 118,
+    "baseline_git_commit": "5914b3ea220122d372844bceda64e350e7ab1f16",
+    "dispatch_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "write-lease-u01-task4-r6-pair-prenav-7189776aa8a84dd69da5ee3bbe5d0580",
+    "worker_lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
+    "fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
+    "write_fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
+    "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
+    "product_write_scope": []
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RECORDED_U01_PENDING",
-  "repository_head": "edbd8e5de57740b24fc9f7f6393f5c2e9b8821ca",
+  "next_safe_action": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_ONLY",
+  "repository_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
