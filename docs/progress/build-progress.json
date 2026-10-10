@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-post-h4-c-gate-recovery-a2-seq2347",
+  "snapshot_id": "snapshot-u01-task4-post-h4-c-gate-recovery-b2-seq2347",
   "event_sequence": 2347,
-  "updated_at": "2026-10-10T20:22:19+09:00",
+  "updated_at": "2026-10-10T21:38:00+09:00",
   "last_event_id": "evt_u01_2347_task4_post_h4_c_gate_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -937,7 +937,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+  "next_safe_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1048,13 +1048,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+    "local_head": "77478cf38cc897092c443ddeb5f6e35ebc9ee731",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
+    "remote_head": "77478cf38cc897092c443ddeb5f6e35ebc9ee731",
     "projection_mode": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+    "head_relation": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1488,7 +1488,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+    "worktree_status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1654,8 +1654,8 @@
     "path": "docs/work_orders/U-01_TASK4_POST_H4_C_GATE_RECOVERY_WORK_INSTRUCTION.md",
     "sha256": "A5CF2FF1187675750C2E836C04EC9DAD06C5B1D1E219127E5E436048ABA81B08",
     "revision": 1,
-    "result_status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
-    "package_status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+    "result_status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE",
+    "package_status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1858,7 +1858,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY"
+    "status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2250,8 +2250,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "9A7ECD6209E40BD9D9CF6574C209D4DB3FCCAD395C64E9D548731BA9EFFD869C",
-  "runtime_next_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+  "snapshot_hash": "DEA244CC82AEBBFEB3D13169CE60D18C0B06C09AECC4003C893A52C2303DEA26",
+  "runtime_next_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -27795,7 +27795,7 @@
     "revoked_at": "2026-10-10T20:22:19+09:00"
   },
   "u01_task4_post_h4_c_gate_recovery_binding": {
-    "status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+    "status": "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE",
     "package_id": "U-01",
     "predecessor_sequence": 2342,
     "predecessor_head": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
@@ -27806,8 +27806,8 @@
     "failed_c_g05": "U01_TASK4_POST_H4_TAIL_GIT_INVALID",
     "d1_checkpoint": "64d5c2f50978bceff3ae55ecf95c4f67657c3df7",
     "w3_checkpoint": "e5e131d648b5b445be9bcbfa6fac504b2b02e8b5",
-    "a2_docs_checkpoint": null,
-    "control_checkpoint": null,
+    "a2_docs_checkpoint": "2457544cc02d2992c9458e97ae708c00b5da769c",
+    "control_checkpoint": "77478cf38cc897092c443ddeb5f6e35ebc9ee731",
     "active_projection_checkpoint": null,
     "work_instruction_id": "WI-U01-TASK4-POST-H4-C-GATE-RECOVERY-20261010-001",
     "work_instruction_path": "docs/work_orders/U-01_TASK4_POST_H4_C_GATE_RECOVERY_WORK_INSTRUCTION.md",
@@ -27828,7 +27828,7 @@
     ],
     "product_write_scope": [],
     "event_sequence": 2347,
-    "next_safe_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CONTROL_ONLY",
+    "next_safe_action": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE_ONLY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
