@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 post-H4 보고 tail A 후보(Main, 2026-10-10 KST): W2 `11b4ae80d23a1835fdacf309500c6d02ca737a6e` local/private 동일·tracked clean, Event seq2339 closed/active dual lease0에서 seq2340 WI→2341 worker→2342 write를 epoch111 분리 token·24시간·검사기/통제 테스트 정확2·제품0으로 결박한다. A 무결성/독립 확인·private 게시 전 Developer code write0. 최신 G-05 예상 RED는 PASS가 아니다. Foundation R6 STORED_ROW·E-NET/E-API/E-AUD·U-01 인수 미검증, NOT_ACCEPTED·DEFER·Production NOT_EXECUTED/U-02 BLOCKED, PR/main·새 branch/ysna 제외. 다음은 A 검증·게시 후 단일 Developer TDD다.
+
 Task4 post-H4 보고 successor H 종료 후보(Main, 2026-10-10 KST): C `01eed2d548999559bcac971ed6820395e8eb1356`와 활성 B `00c4376aa65c4f70bb45e11ef2c7024c03eff28e`는 local/private 동일·clean, B G-05 seq2337 PASS. Event 원문 seq1~2337 보존 후 seq2338 write→2339 worker를 순차 회수해 두 완료 lease REVOKED·활성 agent/dual token null·제품 write0으로 투영한다. H 자체의 G-05/private/clean 및 WSL-server exact-SHA focused는 아직 미검증이다. 전체 suite/Windows 기본 fd-capture, Foundation R6 STORED_ROW·E-NET/E-API/E-AUD·U-01 인수 미검증. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED; PR/main·새 branch/ysna 제외. 다음은 H 내부·독립 검증/private 게시·G-05→사전 등록 단일 WSL QA·자원 정리다.
 
 Task4 post-H4 보고 successor 코드 C/활성 B 후보(Main, 2026-10-10 KST): A `184836072d127b3e2048a42589d29e69d99ed172` local/private 동일·clean G-05 seq2337 PASS 후 단일 Developer가 유효 epoch110 dual lease로 정확 검사기·통제 테스트2만 TDD RED→GREEN 수정했다. 신규8 PASS, 독립 정적 Critical0/Important0, Main 재실행 신규8 PASS·A G-05 PASS, diff check0. 코드 C `01eed2d548999559bcac971ed6820395e8eb1356` local/private 동일·clean이며 본 B는 C를 seq2337 활성 dual lease에 결박하는 문서 투영이다. B 자체 G-05/private/clean 전 회수 금지. 전체 suite·Windows 기본 fd-capture, Foundation R6 STORED_ROW·E-NET/E-API/E-AUD·U-01 인수 미검증. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, PR/main·새 branch/ysna 제외. 다음은 B 검증·private 게시 뒤 write→worker 회수 H와 WSL-server exact-SHA focused QA다.
@@ -194,17 +196,53 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2339,
-  "last_event_id": "evt_u01_2339_task4_post_h4_report_successor_worker_lease_revoked",
+  "event_sequence": 2342,
+  "last_event_id": "evt_u01_2342_task4_post_h4_report_tail_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-post-h4-report-tail",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-post-h4-report-tail",
+    "subject_ref": "U-01/TASK4-POST-H4-REPORT-TAIL",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-10T18:56:28+09:00",
+    "expires_at": "2026-10-11T18:56:28+09:00",
+    "lease_epoch": 111,
+    "baseline_git_commit": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+    "dispatch_head": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_id": "worker-lease-u01-task4-post-h4-report-tail-5d0cad1e7e1f4e56816d42ba7b07480a",
+    "fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a",
+    "execution_fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-post-h4-report-tail",
+    "subject_ref": "U-01/TASK4-POST-H4-REPORT-TAIL",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-10T18:56:28+09:00",
+    "expires_at": "2026-10-11T18:56:28+09:00",
+    "lease_epoch": 111,
+    "baseline_git_commit": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+    "dispatch_head": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_id": "write-lease-u01-task4-post-h4-report-tail-bac9042556844e8ba88624ca141687f4",
+    "worker_lease_id": "worker-lease-u01-task4-post-h4-report-tail-5d0cad1e7e1f4e56816d42ba7b07480a",
+    "fencing_token": "u01-task4-post-h4-report-tail-write-fence-epoch-111-bac9042556844e8ba88624ca141687f4",
+    "write_fencing_token": "u01-task4-post-h4-report-tail-write-fence-epoch-111-bac9042556844e8ba88624ca141687f4",
+    "execution_fencing_token": "u01-task4-post-h4-report-tail-execution-fence-epoch-111-5d0cad1e7e1f4e56816d42ba7b07480a",
+    "product_write_scope": [],
+    "write_epoch": 111
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_SEPARATE_WI_PENDING",
-  "repository_head": "01eed2d548999559bcac971ed6820395e8eb1356",
+  "next_safe_action": "U01_TASK4_POST_H4_REPORT_TAIL_CONTROL_ONLY",
+  "repository_head": "11b4ae80d23a1835fdacf309500c6d02ca737a6e",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
