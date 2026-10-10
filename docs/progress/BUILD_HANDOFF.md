@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 Network capture B5 실측 결박(Main, 2026-10-11T02:22:18+09:00): C5 `f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207` local/private G-05 seq2362 및 WSL-server exact SHA G-05 PASS, 격리 PG15/OIDC/HTTPS/Chromium R6 opt-in은 NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT exit1. 새 marker는 PAIR_LIST_API·BODY·requestfinished/response.finished PENDING·page BODY_DONE, 제품 원인 미확정/전체 R6 FAIL. 전용 QA 자원 독립 잔여0, Event seq2362·epoch115 dual lease active 유지. H5 write→worker 회수 후 별도 최소 원인분리 WI 필요. U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 R6 Network capture A5 비제품 임대(Main, 2026-10-11T01:22:58+09:00): W6 `af2ba067cbee7df55a69a8b0077cbca3f9323e8b` local/private clean, W6 G-05는 새 route 전 예상 RED. Event seq2360 WI→2361 epoch115 worker→2362 write, 분리 24시간 token·최대4 code path·제품0. A5 독립 검토/private 게시/G-05와 C5/WSL은 미실행. C4 R6 NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT exit1·QA 잔여0, 정확 원인 미확정. U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -269,8 +272,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
-  "repository_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+  "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY",
+  "repository_head": "f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

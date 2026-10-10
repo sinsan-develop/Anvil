@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-r6-network-capture-diagnostic-a5-seq2362",
+  "snapshot_id": "snapshot-u01-task4-r6-network-capture-diagnostic-b5-seq2362",
   "event_sequence": 2362,
-  "updated_at": "2026-10-11T01:22:58+09:00",
+  "updated_at": "2026-10-11T02:22:18+09:00",
   "last_event_id": "evt_u01_2362_task4_r6_network_capture_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -940,7 +940,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+  "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1051,13 +1051,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+    "local_head": "f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
+    "remote_head": "f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207",
     "projection_mode": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+    "head_relation": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1491,7 +1491,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+    "worktree_status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1657,8 +1657,8 @@
     "path": "docs/work_orders/U-01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_WORK_INSTRUCTION.md",
     "sha256": "B6E0B4FF4C637595CE8C4CFACCA7C980BD76BA33EA4D2358A4D6DFF3BEBAFF33",
     "revision": 1,
-    "result_status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
-    "package_status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+    "result_status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE",
+    "package_status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1861,7 +1861,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY"
+    "status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2253,8 +2253,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "E4801D3B7764879CD2ED1FB576D40E1D1BA4395B659F7807F576E1F35D465138",
-  "runtime_next_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+  "snapshot_hash": "FF92551135995D52EB87D299B8289FD630A0B0313E81522506D2155F2B8C763F",
+  "runtime_next_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -27994,15 +27994,15 @@
     "revoked_at": "2026-10-11T01:05:36+09:00"
   },
   "u01_task4_r6_network_capture_diagnostic_binding": {
-    "status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+    "status": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE",
     "package_id": "U-01",
     "predecessor_sequence": 2359,
     "predecessor_head": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
     "w6_checkpoint": "af2ba067cbee7df55a69a8b0077cbca3f9323e8b",
-    "a5_docs_checkpoint": null,
-    "control_checkpoint": null,
+    "a5_docs_checkpoint": "265c7b88becbb1aa0dca4341645539c73f71a962",
+    "control_checkpoint": "f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207",
     "active_projection_checkpoint": null,
     "work_instruction_id": "WI-U01-TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC-20261011-001",
     "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_WORK_INSTRUCTION.md",
@@ -28023,7 +28023,7 @@
     ],
     "product_write_scope": [],
     "event_sequence": 2362,
-    "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ONLY",
+    "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
