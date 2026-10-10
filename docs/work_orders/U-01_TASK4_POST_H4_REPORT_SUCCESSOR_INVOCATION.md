@@ -1,0 +1,1 @@
+`U-01_TASK4_POST_H4_REPORT_SUCCESSOR_WORK_INSTRUCTION.md`와 Main이 전달한 정확 A SHA·WI SHA·서로 다른 유효 worker/write fencing token을 대조하라. 기존 단일 branch에서 지정된 검사기·통제 테스트 두 파일만 TDD로 수정하고, H4→R→P→A→C→B→H의 역사 blob·Event·Git 계보를 fail-closed로 검증하라. 제품·문서·과거 Event·WSL-server·Secret·Git commit/push는 수정하지 말라. 정확 명령·exit·diff·미검증·rollback을 Main에 보고하라.
