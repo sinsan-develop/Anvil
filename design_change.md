@@ -9,6 +9,12 @@
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
 - R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013, epoch108 H3의 합성 B registry fixture 공백은 DC-U01-014, post-H4 보고 successor 후속 통제 경계는 DC-U01-015를 따른다. 아래 역사 실패는 삭제하지 않는다.
 
+### DC-U01-017 — Foundation R6 STORED_ROW 실측 하네스 단언 충돌
+
+- 판정: C3 `625a117812d39beb82c08f9d8cb364e2cc28afe3`의 WSL-server Git exact-SHA 격리 PG15/OIDC/HTTPS/Chromium opt-in은 exit1 `R6_BROWSER_FAILED stage=STORED_ROW_CONTROLS exit=1 class=AssertionError`(1 failed, 1 warning)다. 영향/다음 조치 문단 단언은 통과했고, 다음 역사 `open` Critical 행의 조작 요소0 단언이 승인된 확인(ACK) UI와 충돌했다. R6 PASS나 제품 ACK 결함의 판정이 아니다.
+- 근거·영향: C3 local/private/WSL G-05 seq2352 PASS와 진단용 B3 `e6d791171c7d0c0fa66fa6ac1c41fb351d47c108`의 G-05 seq2352 PASS, H3 `da1651d15248941d41c6f8525f7e708aa0345a00`의 G-05 seq2354 PASS는 비제품 진행 통제만 증명한다. 원본 C `3e788ed2`의 실패도 불변이다. R6 entity/cause 이후 단언, 전체 E-NET/E-API/E-AUD 및 U-01 인수는 이 실패 때문에 미검증이다. QA 전용 checkout·venv·PG/Node/browser/pytest/evidence/TLS와 loopback5545는 신원 확인 뒤 모두 정리해 잔여0이다.
+- 조치·재개 조건: 별도 최소 하네스 보정 WI·유효 dual lease에서 승인된 확인 버튼/인가/감사/Network 계약은 유지하고 역사 조작요소0 단언만 근거에 맞게 RED→GREEN으로 보완한다. 같은 기존 브랜치의 새 clean exact SHA를 Git push→WSL-server pull하여 새 빈 격리 PG15/OIDC/HTTPS/Chromium에서 fresh R6를 재실행하고 미도달 entity/cause 단언까지 판정한다. 이번 항목은 미진 추적일 뿐 PASS·gate 면제·PR/main 근거가 아니다. U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, U-02 `BLOCKED`; 새 branch·ysna 제외다.
+
 ### DC-U01-016 — epoch111 C 게시 후 G-05 단계 판정 결함
 
 - 판정: C `3e788ed25330910d2b55c932e3fe517e8661bd59`는 기존 branch와 사설 원격의 동일 SHA·tracked clean, A의 직접 자식·코드 정확2경로, 집중 9 PASS이나 실제 C G-05는 exit1 `U01_TASK4_POST_H4_TAIL_GIT_INVALID`다. C 단계 필수 검증은 **미충족**이며 B/H2·WSL-server·U-01 인수 PASS가 아니다.
