@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 Network tail fixture A6 비제품 임대(Main, 2026-10-11T03:00:43+09:00): W7 `1fbaf1c11743d764b0850afdefbbf204b2c71ef9` local/private clean; Event seq2365 WI→2366 epoch116 worker→2367 write, 분리 24시간 token·정확2 code path·제품0. A6 독립 검토/private 게시와 C6/WSL은 미실행. R6 실제 PAIR_LIST_API 404/BODY PENDING exit1, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 R6 Network H5 임대 회수(Main, 2026-10-11T02:25:39+09:00): B5 `d5f7cfc7742d390fb61941e2562e2aa3dc79f2f7` local/private clean G-05 seq2362 PASS, C5 exact-SHA WSL R6 opt-in NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT exit1. Event seq2363 write→2364 worker REVOKED, active writer0·제품0. H5 독립 검토/private/G-05 미실행. 전체 R6 FAIL·원인 미확정·U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED.
 
 
@@ -227,17 +230,52 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2364,
-  "last_event_id": "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked",
+  "event_sequence": 2367,
+  "last_event_id": "evt_u01_2367_task4_r6_network_tail_fixture_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-network-tail-fixture-recovery",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-network-tail-fixture-recovery",
+    "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T03:00:43+09:00",
+    "expires_at": "2026-10-12T03:00:43+09:00",
+    "lease_epoch": 116,
+    "baseline_git_commit": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+    "dispatch_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_id": "worker-lease-u01-task4-r6-tail-fixture-63518c4f869aaafa0626185da902154c",
+    "fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c",
+    "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-network-tail-fixture-recovery",
+    "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T03:00:43+09:00",
+    "expires_at": "2026-10-12T03:00:43+09:00",
+    "write_epoch": 116,
+    "baseline_git_commit": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+    "dispatch_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_id": "write-lease-u01-task4-r6-tail-fixture-4485e17f6eec9b5bbb1421aa2ac1ce5a",
+    "worker_lease_id": "worker-lease-u01-task4-r6-tail-fixture-63518c4f869aaafa0626185da902154c",
+    "fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-116-4485e17f6eec9b5bbb1421aa2ac1ce5a",
+    "write_fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-116-4485e17f6eec9b5bbb1421aa2ac1ce5a",
+    "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c",
+    "product_write_scope": []
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_RECORDED_U01_PENDING",
-  "repository_head": "f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207",
+  "next_safe_action": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_ONLY",
+  "repository_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2364,
+  "last_sequence": 2367,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106819,7 +106819,109 @@
         "execution_fencing_token": "u01-task4-r6-network-execution-fence-epoch-115-08dd77af9a768e34707ac4adea9c56c5",
         "reason": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"
       }
+    },
+{
+      "sequence": 2365,
+      "event_id": "evt_u01_2365_task4_r6_network_tail_fixture_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+      "occurred_at": "2026-10-11T03:00:43+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "20AC43DAFFF811DDE0EFAB41FE9DEC7F87079812372E6C0CFA4D10528C9E3BED",
+      "details": {
+        "work_instruction_id": "WI-U01-TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY-20261011-001",
+        "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "D07EDDB35BDD26033205779FB3F57BD7E46632F5610CA4DC33751EDC1D68FFD0",
+        "invocation_path": "docs/work_orders/U-01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_INVOCATION.md",
+        "invocation_sha256": "8AFE46776914BE35DE2526DC056D8F17E334612C0D5487B57EE0D6C66C2A8545",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+        "predecessor_sequence": 2364,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py"
+        ],
+        "product_write_scope": []
+      }
+    },
+{
+      "sequence": 2366,
+      "event_id": "evt_u01_2366_task4_r6_network_tail_fixture_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+      "occurred_at": "2026-10-11T03:00:43+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "C2FB2403D6CD98A7697DEF4FE36BCDEE744880D9B3072DF997CC6E8969A331DF",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-network-tail-fixture-recovery",
+        "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T03:00:43+09:00",
+        "expires_at": "2026-10-12T03:00:43+09:00",
+        "lease_epoch": 116,
+        "baseline_git_commit": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+        "dispatch_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py"
+        ],
+        "lease_id": "worker-lease-u01-task4-r6-tail-fixture-63518c4f869aaafa0626185da902154c",
+        "fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c",
+        "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c"
+      }
+    },
+{
+      "sequence": 2367,
+      "event_id": "evt_u01_2367_task4_r6_network_tail_fixture_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+      "occurred_at": "2026-10-11T03:00:43+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "0258975B6B9C34162DA0028D17CE4F91759AE461560BEFFE66C48DE060F62024",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-network-tail-fixture-recovery",
+        "subject_ref": "U-01/TASK4-R6-NETWORK-TAIL-FIXTURE-RECOVERY",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T03:00:43+09:00",
+        "expires_at": "2026-10-12T03:00:43+09:00",
+        "write_epoch": 116,
+        "baseline_git_commit": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+        "dispatch_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py"
+        ],
+        "lease_id": "write-lease-u01-task4-r6-tail-fixture-4485e17f6eec9b5bbb1421aa2ac1ce5a",
+        "worker_lease_id": "worker-lease-u01-task4-r6-tail-fixture-63518c4f869aaafa0626185da902154c",
+        "fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-116-4485e17f6eec9b5bbb1421aa2ac1ce5a",
+        "write_fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-116-4485e17f6eec9b5bbb1421aa2ac1ce5a",
+        "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c",
+        "product_write_scope": []
+      }
     }
   ],
-  "last_event_id": "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked"
+  "last_event_id": "evt_u01_2367_task4_r6_network_tail_fixture_write_lease_issued"
 }
