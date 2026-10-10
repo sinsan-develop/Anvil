@@ -17,6 +17,8 @@
 
 본 결과/현황/DC를 H3 뒤에 기록한 현재 dirty 문서 상태의 G-05는 exit1 `U01_TASK4_POSTCLOSE_CLOSE_FROZEN_INVALID`, `U01_TASK4_POSTCLOSE_GIT_INVALID`이다. 따라서 G-05 PASS 표기는 H3 정확 SHA에만 한정하고, 후속 보고 checkpoint의 G-05 GREEN은 주장하지 않는다.
 
+후속 로컬 재현(보고 checkpoint `4c9aa475df4888e267e61e283424b0ebf9dc908c`): `python -B -m pytest -q -p no:cacheprovider --capture=sys --basetemp=.pytest_tmp_u01_e109_probe tests/tooling/test_u01_postmerge_control_projection.py -k test_g05_dispatches_b_and_h3_without_accepting_u01 --tb=short` → exit1, `1 failed, 86 deselected`. 합성 B는 `PRG_REGISTRY_HASH_MISMATCH`에 더해 `U01_TASK4_POSTCLOSE_R_INVALID`도 냈다. 원인은 이전 validator가 과거 R의 `design_change.md` hash를 현재 작업 파일에도 요구하여 DC-U01-014 추가를 과거 위조로 오인하는 점이다. `.pytest_tmp_u01_e109_probe`는 실행 후 부재했다. 새 route는 과거 R/H3 파일을 Git archive로 확인하고 후속 문서 변경은 별도 정확 경로·해시·Git 계보로 검증해야 한다.
+
 ## 임시 자원 정리
 
 실패 후 QA checkout의 owner `daon`, mode 0700, realpath 정확 경로, Git clean과 활성 Python/pytest 작업 부재를 확인했다. 등록된 `/home/daon/anvil-u01-g05-e108-control-qa`만 제거하고 `QA_CHECKOUT_REMOVED`·경로 부재 exit0을 확인했다. 복구는 private branch H3에서 새 격리 clone으로 가능하며 공유 자원 변경·잔여0이다.
