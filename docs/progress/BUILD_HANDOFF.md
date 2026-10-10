@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 Network tail fixture B6 실측 결박(Main, 2026-10-11T03:47:35+09:00): C6 `4a1e96fe35d026e91c067aac4e510312dc6224c9` local/private G-05 seq2367 PASS, WSL-server Git exact SHA G-05 seq2367와 집중 class5/31 subtests PASS, 전용 checkout 잔여0. 첫 single-branch clone의 development/main 추적 ref 누락 G-05 RED는 기준 ref fetch 후 재검사해 분리했다. Event seq2367·epoch116 dual lease ACTIVE·제품0 유지. R6 실제 PAIR_LIST_API 404/BODY PENDING 역사 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음 H6 write→worker 순차 회수·결과보고, 별도 실제 R6 원인분리. PR/main·새 branch·ysna 제외.
+
+
 Task4 R6 Network tail fixture A6 비제품 임대(Main, 2026-10-11T03:00:43+09:00): W7 `1fbaf1c11743d764b0850afdefbbf204b2c71ef9` local/private clean; Event seq2365 WI→2366 epoch116 worker→2367 write, 분리 24시간 token·정확2 code path·제품0. A6 독립 검토/private 게시와 C6/WSL은 미실행. R6 실제 PAIR_LIST_API 404/BODY PENDING exit1, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -274,8 +277,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_ONLY",
-  "repository_head": "1fbaf1c11743d764b0850afdefbbf204b2c71ef9",
+  "next_safe_action": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_CLOSE_READY",
+  "repository_head": "4a1e96fe35d026e91c067aac4e510312dc6224c9",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
