@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-epoch107-postclose-fixture-start-seq2327",
+  "snapshot_id": "snapshot-u01-task4-epoch107-postclose-fixture-checkpoint-seq2327",
   "event_sequence": 2327,
-  "updated_at": "2026-10-10T00:14:34+00:00",
+  "updated_at": "2026-10-10T01:00:04+00:00",
   "last_event_id": "evt_u01_2327_task4_epoch107_postclose_fixture_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -899,7 +899,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CONTROL_ONLY",
+  "next_safe_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CLOSE_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1010,13 +1010,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "ee8647b2e6088e04099ab43fb38dfabd2e6048c5",
+    "local_head": "847941819e6be54f8821c13d8665d4f66c29cfa8",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "ee8647b2e6088e04099ab43fb38dfabd2e6048c5",
+    "remote_head": "847941819e6be54f8821c13d8665d4f66c29cfa8",
     "projection_mode": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE",
+    "head_relation": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1450,7 +1450,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE",
+    "worktree_status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1616,8 +1616,8 @@
     "path": "docs/work_orders/U-01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_WORK_INSTRUCTION.md",
     "sha256": "A6B41836728DD956A3593A9D55A8425F7CF2F60A5E08534CE60E635FEC5C5A85",
     "revision": 1,
-    "result_status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE",
-    "package_status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE",
+    "result_status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
+    "package_status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "HUMAN_APPROVED_EXACT_PROPOSAL_B"
   },
@@ -1819,7 +1819,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE"
+    "status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2211,8 +2211,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5BC035AD0D3C177234E29D81D47BD64A9152663833039932B534E3A66A41B152",
-  "runtime_next_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CONTROL_ONLY",
+  "snapshot_hash": "E90F0F330A874C4D5031F65D6A0F98E36B528C5F8D90DFEE5AC250B81DB41FBA",
+  "runtime_next_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CLOSE_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -23857,7 +23857,7 @@
     "production": "NOT_EXECUTED"
   },
   "u01_task4_epoch107_postclose_fixture_binding": {
-    "status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_ACTIVE",
+    "status": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CHECKPOINTED_CLOSE_READY",
     "package_id": "U-01",
     "predecessor_sequence": 2324,
     "h2_checkpoint": "d6cf8be5608eeb3ce438353a8184bb9b2e55cc20",
@@ -23884,8 +23884,10 @@
     "write_lease_id": "write-lease-u01-task4-epoch107-postclose-fixture-33b75dc1038a4d799a1fac28016e29d6",
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"],
     "product_write_scope": [],
+    "a_docs_checkpoint": "39a4f4382d9105fbe2805b3f7440765268e2cf82",
+    "control_checkpoint": "847941819e6be54f8821c13d8665d4f66c29cfa8",
     "event_sequence": 2327,
-    "next_safe_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CONTROL_ONLY",
+    "next_safe_action": "U01_TASK4_EPOCH107_POSTCLOSE_FIXTURE_CLOSE_ONLY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
