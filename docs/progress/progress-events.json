@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2332,
+  "last_sequence": 2334,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -105887,7 +105887,49 @@
       "product_write_scope": [],
       "write_epoch": 109
     }
+  },
+  {
+    "sequence": 2333,
+    "event_id": "evt_u01_2333_task4_epoch108_h3_regression_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_EPOCH108_H3_REGRESSION_CLOSE",
+    "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+    "occurred_at": "2026-10-10T05:00:56+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "96C807EB443B378DCD599AC6D3583EC0E9A044DE22FB69BAD034DD6EC3E1EFCB",
+    "details": {
+      "lease_id": "write-lease-u01-task4-epoch108-h3-regression-f8b295706dc24e06ad861943f93eafb3",
+      "write_fencing_token": "u01-task4-epoch108-h3-regression-write-fence-epoch-109-f8b295706dc24e06ad861943f93eafb3",
+      "reason": "U01_TASK4_EPOCH108_H3_REGRESSION_COMPLETE_R6_SEPARATE_WI_PENDING"
+    }
+  },
+  {
+    "sequence": 2334,
+    "event_id": "evt_u01_2334_task4_epoch108_h3_regression_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_EPOCH108_H3_REGRESSION_CLOSE",
+    "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION",
+    "occurred_at": "2026-10-10T05:00:56+00:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "EB55E98EF6F2DB7A05DAF64BD7B150EA19A06BED6B5545D1116229A5DAB1F845",
+    "details": {
+      "lease_id": "worker-lease-u01-task4-epoch108-h3-regression-2ad7de11685c471882af7335dd326d09",
+      "execution_fencing_token": "u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09",
+      "reason": "U01_TASK4_EPOCH108_H3_REGRESSION_COMPLETE_R6_SEPARATE_WI_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2332_task4_epoch108_h3_regression_write_lease_issued"
+  "last_event_id": "evt_u01_2334_task4_epoch108_h3_regression_worker_lease_revoked"
 }

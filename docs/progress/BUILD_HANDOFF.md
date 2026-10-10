@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 epoch109 H3 집중 회귀 H4 종료 후보(Main, 2026-10-10 KST): 코드 C `8af39a91aa0deca2281fd3c876eb55cae8c74004`와 활성 B `ed277d3cdbc81f791d8dd45b06f812c770dd9d27`는 local/private 동일·clean, B G-05 seq2332 PASS다. Event 원문 seq1~2332를 보존하고 `2026-10-10T05:00:56+00:00`에 seq2333 write→2334 worker를 순차 회수해 완료 두 lease REVOKED, 활성 agent/dual token null·제품 write0으로 투영한다. H4 자체의 G-05/private/clean과 WSL-server exact-SHA focused는 아직 미검증이다. 전체97은 약30 진행 후 중단·미판정, Windows 기본 fd-capture·Foundation R6 STORED_ROW·E-NET/E-API/E-AUD·U-01 인수도 미검증이다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, 새 branch/PR/main/ysna 제외. 다음은 H4 내부·독립 검증→private 게시·G-05→WSL-server 단일 격리 QA·자원 정리다.
+
 Task4 epoch109 H3 집중 회귀 코드 C/활성 B 후보(Main, 2026-10-10 KST): A `aaaefceb9fbe4099434cada3eed754350c8c94ec` clean/private의 실제 G-05 seq2332 PASS 뒤 단일 Developer가 정확 검사기·통제 테스트2만 수정했다. 기존 B/H3 registry와 과거 R/current DC 혼합을 RED→GREEN으로 복구했고 신규10 PASS, epoch108 8·epoch107 6·epoch105 8 PASS, 독립 리뷰 Critical0/Important0·3 PASS, diff check0이다. 전체97은 약30 진행 중 안전 중단해 미판정, Windows 기본 fd-capture도 미실행이다. 코드 C `8af39a91aa0deca2281fd3c876eb55cae8c74004`는 local/private 동일·clean이다. 본 B는 C를 seq2332 활성 dual lease에 결박한 회수 준비 투영이며 B 자체 G-05/private/clean 전 lease를 회수하지 않는다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, Foundation R6 STORED_ROW·전체 E-NET/E-API/E-AUD·사용자 인수 미검증, PR/main·새 branch/ysna 제외. 다음은 B 검증·게시→write/worker 순차 회수 H4→WSL-server exact-SHA 집중 검증·정리다.
 
 Task4 epoch109 H3 집중 회귀 복구 A 후보(Main, 2026-10-10 KST): H3 `37323c39839f119137fc9b22502464034086189f` local/WSL exact-SHA G-05 seq2329 PASS와 WSL focused `1 failed, 13 passed`를 분리한다. 보고 R1 `4c9aa475df4888e267e61e283424b0ebf9dc908c`→원인 분리 R2 `52aa0b865cc82accfd736c91790be25d52c7d639`은 private/clean 단일 branch 직접 자식이다. WI `E62808FFA0FFA2B796CCE539EB58EC7A72700886E8CA0DAE1FD5E652C378C0AE`/Invocation `67D42BEF403C6A91B9D9B57BC809742788DE14A1BF3FFD2837CDE0EDF5115FED`에 seq2330 WI→2331 worker→2332 write, epoch109 분리 token/24시간·검사기/통제 테스트 정확2·제품0을 결박한다. 본 A의 내부 검증·private 게시/clean 전 Developer code write0이며 새 route 전 G-05 RED는 PASS 아니다. U-01 NOT_ACCEPTED·Release DEFER·Production NOT_EXECUTED/U-02 BLOCKED, 전체87/Windows 기본 fd-capture·Foundation R6 STORED_ROW·E-NET/E-API/E-AUD 미검증. 다음은 A 무결성/독립 확인·private 게시→Developer RED→GREEN→Main C/B/H4·WSL focused/정리. PR/main·새 branch/ysna 제외.
@@ -186,16 +188,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-    "event_sequence": 2332,
-    "last_event_id": "evt_u01_2332_task4_epoch108_h3_regression_write_lease_issued",
+    "event_sequence": 2334,
+    "last_event_id": "evt_u01_2334_task4_epoch108_h3_regression_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-    "active_agent": "developer-primary-u01-task4-epoch108-h3-regression",
-    "worker_lease": {"lease_id":"worker-lease-u01-task4-epoch108-h3-regression-2ad7de11685c471882af7335dd326d09","actor_id":"developer-primary-u01-task4-epoch108-h3-regression","subject_ref":"U-01/TASK4-EPOCH108-H3-REGRESSION","status":"ACTIVE","issued_at":"2026-10-10T03:48:01+00:00","expires_at":"2026-10-11T03:48:01+00:00","lease_epoch":109,"fencing_token":"u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09","execution_fencing_token":"u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09","baseline_git_commit":"52aa0b865cc82accfd736c91790be25d52c7d639","dispatch_head":"52aa0b865cc82accfd736c91790be25d52c7d639","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py"]},
-    "write_lease": {"lease_id":"write-lease-u01-task4-epoch108-h3-regression-f8b295706dc24e06ad861943f93eafb3","worker_lease_id":"worker-lease-u01-task4-epoch108-h3-regression-2ad7de11685c471882af7335dd326d09","actor_id":"developer-primary-u01-task4-epoch108-h3-regression","subject_ref":"U-01/TASK4-EPOCH108-H3-REGRESSION","status":"ACTIVE","issued_at":"2026-10-10T03:48:01+00:00","expires_at":"2026-10-11T03:48:01+00:00","lease_epoch":109,"fencing_token":"u01-task4-epoch108-h3-regression-write-fence-epoch-109-f8b295706dc24e06ad861943f93eafb3","write_fencing_token":"u01-task4-epoch108-h3-regression-write-fence-epoch-109-f8b295706dc24e06ad861943f93eafb3","execution_fencing_token":"u01-task4-epoch108-h3-regression-execution-fence-epoch-109-2ad7de11685c471882af7335dd326d09","baseline_git_commit":"52aa0b865cc82accfd736c91790be25d52c7d639","dispatch_head":"52aa0b865cc82accfd736c91790be25d52c7d639","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py"],"product_write_scope":[],"write_epoch":109},
+    "active_agent": null,
+    "worker_lease": null,
+    "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-    "next_safe_action": "U01_TASK4_EPOCH108_H3_REGRESSION_CLOSE_ONLY",
+    "next_safe_action": "U01_TASK4_R6_SEPARATE_WI_PENDING",
     "repository_head": "8af39a91aa0deca2281fd3c876eb55cae8c74004",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
