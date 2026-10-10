@@ -1,6 +1,7 @@
 """Post-PR U-01 intake must preserve F-19A acceptance and lock product writes."""
 
 from copy import deepcopy
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 import hashlib
 import json
@@ -30,6 +31,471 @@ PATHS = (
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
 )
+
+
+class U01Task4PostH4CGateRecoveryTests(unittest.TestCase):
+    """A2's direct code child is the only clean C2 publication."""
+
+    A2 = "2457544cc02d2992c9458e97ae708c00b5da769c"
+    C2 = "c" * 40
+    B2 = "b" * 40
+    H2 = "d" * 40
+    CODE = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py"}
+
+    @staticmethod
+    def materialize(bundle, files):
+        bundle, files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(
+            bundle, files)
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @classmethod
+    def issued_a2(cls):
+        files = {path: subprocess.check_output(["git", "show", f"{cls.A2}:{path}"],
+            cwd=ROOT) for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @classmethod
+    @contextmanager
+    def a2_current_files(cls):
+        """Emulate A2's canonical disk bytes only for historical A2/C2 checks."""
+        paths = (*PATHS, "docs/WORK_STATUS.md")
+        frozen = {path: subprocess.check_output(["git", "show", f"{cls.A2}:{path}"],
+            cwd=ROOT) for path in paths}
+        original_read_bytes = Path.read_bytes
+        def read_bytes(path):
+            relative = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else None
+            return frozen[relative] if relative in frozen else original_read_bytes(path)
+        with patch.object(Path, "read_bytes", read_bytes):
+            yield frozen
+
+    def test_a2_fixture_survives_live_h2_projection(self):
+        live, h2_files = self.closed_h2()
+        self.assertEqual(live["events"]["last_sequence"], 2349)
+        self.assertIsNone(live["progress"]["worker_lease"])
+        self.assertIsNone(live["progress"]["write_lease"])
+        current = {ROOT / path: raw for path, raw in h2_files.items()}
+        current[ROOT / "docs/WORK_STATUS.md"] = b"synthetic H2 WORK_STATUS"
+        original_read_bytes = Path.read_bytes
+        def h2_read_bytes(path):
+            return current[path] if path in current else original_read_bytes(path)
+        with patch.object(checker, "load_bundle", return_value=live), \
+                patch.object(Path, "read_bytes", h2_read_bytes):
+            a, afiles = self.issued_a2()
+            b, bfiles = self.checkpoint_b2()
+            with self.a2_current_files():
+                self.assertEqual(checker._validate_u01_task4_post_h4_c_gate_recovery_active(
+                    a, now=datetime.fromisoformat(a["progress"]["updated_at"])), [])
+            self.assertEqual(self.run_c2_git(), [])
+            self.assertEqual(checker._validate_u01_task4_post_h4_c_gate_recovery_active(
+                b, event_raw=bfiles[PATHS[1]],
+                now=datetime.fromisoformat(b["progress"]["updated_at"]),
+                archived_files={PATHS[0]: bfiles[PATHS[0]],
+                                PATHS[2]: bfiles[PATHS[2]]}), [])
+            archive = checker._u01_task4_report_archive
+            with patch.object(checker, "_u01_task4_report_archive",
+                    side_effect=lambda bundle, sha:
+                        (b, bfiles) if sha == self.B2 else archive(bundle, sha)):
+                self.assertEqual(checker._validate_u01_task4_post_h4_c_gate_recovery_closed(
+                    live, event_raw=h2_files[PATHS[1]],
+                    now=datetime.fromisoformat(live["progress"]["updated_at"]),
+                    archived_files={PATHS[0]: h2_files[PATHS[0]],
+                                    PATHS[2]: h2_files[PATHS[2]]}), [])
+        self.assertEqual(a["progress"]["event_sequence"], 2347)
+        self.assertEqual(a["events"]["last_sequence"], 2347)
+        self.assertIsNotNone(a["progress"]["worker_lease"])
+        self.assertIsNotNone(a["progress"]["write_lease"])
+        self.assertEqual(a["_file_hashes"][PATHS[1]],
+                         hashlib.sha256(afiles[PATHS[1]]).hexdigest().upper())
+        self.assertEqual(b["progress"]["event_sequence"], 2347)
+        self.assertEqual(b["_file_hashes"][PATHS[0]],
+                         hashlib.sha256(bfiles[PATHS[0]]).hexdigest().upper())
+
+    @classmethod
+    def checkpoint_b2(cls):
+        bundle, files = cls.issued_a2()
+        progress = bundle["progress"]
+        binding = progress["u01_task4_post_h4_c_gate_recovery_binding"]
+        status = "U01_TASK4_POST_H4_C_GATE_RECOVERY_ACTIVE"
+        action = "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE_ONLY"
+        binding.update(status=status, next_safe_action=action,
+                       a2_docs_checkpoint=cls.A2, control_checkpoint=cls.C2)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=cls.C2, remote_head=cls.C2,
+            head_relation=status, worktree_status=status)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-post-h4-c-gate-recovery-b2-seq2347")
+        bundle["handoff"].update(repository_head=cls.C2, next_safe_action=action)
+        return cls.materialize(bundle, files)
+
+    @classmethod
+    def closed_h2(cls):
+        bundle, files = cls.checkpoint_b2()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSED_R6_PENDING"
+        for sequence, kind, event_id, lease, token in (
+            (2348, "WRITE_LEASE_REVOKED",
+             "evt_u01_2348_task4_post_h4_c_gate_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2349, "WORKER_LEASE_REVOKED",
+             "evt_u01_2349_task4_post_h4_c_gate_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE",
+                "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+        stream.update(last_sequence=2349, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2347', '"last_sequence": 2349', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "evt_u01_2347_task4_post_h4_c_gate_write_lease_issued"',
+            '"last_event_id": "evt_u01_2349_task4_post_h4_c_gate_worker_lease_revoked"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        action = "U01_TASK4_R6_SEPARATE_WI_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        progress["completed_u01_task4_post_h4_c_gate_recovery_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_u01_task4_post_h4_c_gate_recovery_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_task4_post_h4_c_gate_recovery_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=cls.B2,
+            event_sequence=2349)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2349,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-post-h4-c-gate-recovery-h2-seq2349")
+        progress["repository"].update(projection_mode="U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSED",
+            head_relation=reason, worktree_status=reason)
+        bundle["handoff"].update(event_sequence=2349, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2349
+        return cls.materialize(bundle, files)
+
+    def run_c2_git(self, scenario="published"):
+        bundle, a2_files = self.issued_a2()
+        original = subprocess.check_output
+        original_run = subprocess.run
+        original_read_bytes = Path.read_bytes
+        head = "f" * 40 if scenario == "non_c" else self.C2
+
+        def output(command, *args, **kwargs):
+            argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                "-c", "core.quotePath=false"] else command[1:]
+            if argv == ["rev-parse", "HEAD"]:
+                return (head + "\n").encode()
+            if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                value = self.A2 if scenario == "stale_tracking" else head
+                return (value + "\n").encode()
+            if argv == ["status", "--porcelain=v1", "-uall"]:
+                return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+            if argv == ["show", "-s", "--format=%P", head]:
+                parent = ("64d5c2f50978bceff3ae55ecf95c4f67657c3df7"
+                    if scenario == "non_c" else self.A2)
+                parent += " " + "0" * 40 if scenario == "merge" else ""
+                return (parent + "\n").encode()
+            if argv == ["rev-list", "--count", f"{self.A2}..{head}"]:
+                return b"1\n"
+            if argv == ["rev-list", "--min-parents=2", f"{self.A2}..{head}"]:
+                return b""
+            if argv[:1] in (["log"], ["diff"]) and argv[-1] == f"{self.A2}..{head}":
+                paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                    if scenario == "extra_path" else set())
+                return ("\n".join(sorted(paths)) + "\n").encode()
+            if argv[:2] == ["diff", "--name-status"] and argv[-2:] == [self.A2, head]:
+                paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                    if scenario == "extra_path" else set())
+                return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+            if argv[:1] == ["show"] and argv[-1] == f"{head}:docs/progress/build-progress.json":
+                return a2_files[PATHS[0]]
+            if argv[:1] == ["show"] and ":" in argv[-1] and argv[-1].startswith(f"{head}:"):
+                path = argv[-1].split(":", 1)[1]
+                if scenario == "history_forgery" and path == \
+                        "docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md":
+                    return b"forged"
+                if path in self.CODE:
+                    return original_read_bytes(ROOT / path)
+                if path in a2_files:
+                    return a2_files[path]
+                return original(["git", "show", f"{self.A2}:{path}"], cwd=ROOT)
+            return original(command, *args, **kwargs)
+
+        def run(command, *args, **kwargs):
+            if command[:3] == ["git", "diff", "--check"]:
+                return subprocess.CompletedProcess(command, 0)
+            return original_run(command, *args, **kwargs)
+
+        remote = ("" if scenario == "remote_missing" else
+                  "e" * 40 if scenario == "remote_advanced" else head)
+        live = subprocess.CalledProcessError(128, "git ls-remote") if scenario == \
+            "remote_unavailable" else remote
+        with self.a2_current_files(), \
+                patch.object(subprocess, "check_output", side_effect=output), \
+                patch.object(subprocess, "run", side_effect=run), \
+                patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                    side_effect=live if isinstance(live, Exception) else None,
+                    return_value=None if isinstance(live, Exception) else live):
+            return checker._collect_u01_task4_post_h4_c_gate_recovery_git(
+                bundle)
+
+    def test_c2_git_requires_direct_exact_code_and_live_private_head(self):
+        self.assertEqual(self.run_c2_git(), [])
+        for scenario in ("non_c", "extra_path", "merge", "dirty", "stale_tracking",
+                         "remote_missing", "remote_unavailable", "remote_advanced",
+                         "history_forgery"):
+            with self.subTest(scenario=scenario):
+                self.assertTrue(self.run_c2_git(scenario))
+
+    def test_a2_canonical_rejects_event_lease_hash_and_acceptance_forgery(self):
+        bundle, _ = self.issued_a2()
+        validate = checker._validate_u01_task4_post_h4_c_gate_recovery_active
+        with self.a2_current_files():
+            self.assertEqual(validate(bundle,
+                now=datetime.fromisoformat(bundle["progress"]["updated_at"])), [])
+            for mutate in (
+                lambda b: b["events"]["events"][2345].update(event_type="FORGED"),
+                lambda b: b["progress"]["worker_lease"].update(
+                    execution_fencing_token="forged"),
+                lambda b: b["progress"]["write_lease"].update(
+                    path_scope=["packages/api/fastapi_app.py"]),
+                lambda b: b["progress"]["u01_task4_post_h4_c_gate_recovery_binding"].update(
+                    work_instruction_sha256="0" * 64),
+                lambda b: b["progress"]["u01_task4_post_h4_c_gate_recovery_binding"].update(
+                    vertical_acceptance="ACCEPTED"),
+            ):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                self.assertTrue(validate(forged,
+                    now=datetime.fromisoformat(bundle["progress"]["updated_at"])))
+
+    def test_g05_dispatches_c2_without_accepting_a2_preparation(self):
+        bundle, _ = self.issued_a2()
+        active = checker._validate_u01_task4_post_h4_c_gate_recovery_active
+        recorded_at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with self.a2_current_files(), \
+                patch.object(checker, "_collect_u01_task4_post_h4_c_gate_recovery_git",
+                          return_value=[]), patch.object(checker,
+                          "_validate_u01_task4_post_h4_c_gate_recovery_active",
+                          side_effect=lambda b: active(b, now=recorded_at)):
+            self.assertEqual(checker.validate_bundle(bundle), [])
+        forged = deepcopy(bundle)
+        forged["progress"]["u01_task4_post_h4_c_gate_recovery_binding"]["failed_c_g05"] = "PASS"
+        with self.a2_current_files(), \
+                patch.object(checker, "_collect_u01_task4_post_h4_c_gate_recovery_git",
+                          return_value=[]), patch.object(checker,
+                          "_validate_u01_task4_post_h4_c_gate_recovery_active",
+                          side_effect=lambda b: active(b, now=recorded_at)):
+            self.assertTrue(checker.validate_bundle(forged))
+
+    def test_b2_projection_requires_c2_and_preserves_unaccepted_state(self):
+        b, files = self.checkpoint_b2()
+        validate = checker._validate_u01_task4_post_h4_c_gate_recovery_active
+        self.assertEqual(validate(b, event_raw=files[PATHS[1]],
+            now=datetime.fromisoformat(b["progress"]["updated_at"]),
+            archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+        for mutate in (
+            lambda p: p["u01_task4_post_h4_c_gate_recovery_binding"].update(
+                control_checkpoint="0" * 40),
+            lambda p: p["u01_task4_post_h4_c_gate_recovery_binding"].update(
+                vertical_acceptance="ACCEPTED"),
+            lambda p: p.update(next_successor_work_package={"package_id": "U-02", "status": "READY"}),
+        ):
+            forged = deepcopy(b)
+            mutate(forged["progress"])
+            forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(forged["progress"])
+            self.assertTrue(validate(forged, event_raw=files[PATHS[1]],
+                now=datetime.fromisoformat(b["progress"]["updated_at"]),
+                archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}))
+
+    def test_h2_requires_frozen_b2_and_ordered_revocations(self):
+        h, hfiles = self.closed_h2()
+        b, bfiles = self.checkpoint_b2()
+        closed = checker._validate_u01_task4_post_h4_c_gate_recovery_closed
+        archive = checker._u01_task4_report_archive
+        with patch.object(checker, "_u01_task4_report_archive", side_effect=lambda bundle, sha:
+                (b, bfiles) if sha == self.B2 else archive(bundle, sha)):
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files={PATHS[0]: hfiles[PATHS[0]], PATHS[2]: hfiles[PATHS[2]]}), [])
+        for mutate in (
+            lambda p, e: e["events"][2347].update(event_type="WORKER_LEASE_REVOKED"),
+            lambda p, e: p["completed_u01_task4_post_h4_c_gate_recovery_write_lease"].update(
+                write_fencing_token="forged"),
+            lambda p, e: p["u01_task4_post_h4_c_gate_recovery_binding"].update(
+                vertical_acceptance="ACCEPTED"),
+        ):
+            forged = deepcopy(h)
+            mutate(forged["progress"], forged["events"])
+            with patch.object(checker, "_u01_task4_report_archive", side_effect=lambda bundle, sha:
+                    (b, bfiles) if sha == self.B2 else archive(bundle, sha)):
+                self.assertTrue(closed(forged, event_raw=hfiles[PATHS[1]],
+                    now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                    archived_files={PATHS[0]: hfiles[PATHS[0]], PATHS[2]: hfiles[PATHS[2]]}))
+
+    def test_frozen_h2_remains_valid_after_lease_expiry_for_report_tail(self):
+        h, hfiles = self.closed_h2()
+        b, bfiles = self.checkpoint_b2()
+        later = datetime.fromisoformat(
+            b["progress"]["worker_lease"]["expires_at"]) + timedelta(days=1)
+        archive = checker._u01_task4_report_archive
+        with patch.object(checker, "_u01_task4_report_archive", side_effect=lambda bundle, sha:
+                (b, bfiles) if sha == self.B2 else archive(bundle, sha)):
+            self.assertEqual(checker._validate_u01_task4_post_h4_c_gate_recovery_closed(
+                h, event_raw=hfiles[PATHS[1]], now=later,
+                archived_files={PATHS[0]: hfiles[PATHS[0]], PATHS[2]: hfiles[PATHS[2]]}), [])
+
+    def test_g05_dispatches_b2_and_h2_with_real_registry(self):
+        b, bfiles = self.checkpoint_b2()
+        h, hfiles = self.closed_h2()
+        active = checker._validate_u01_task4_post_h4_c_gate_recovery_active
+        closed = checker._validate_u01_task4_post_h4_c_gate_recovery_closed
+        archive = checker._u01_task4_report_archive
+        self.assertEqual(checker._validate_registry_refs(b), [])
+        self.assertEqual(checker._validate_registry_refs(h), [])
+        with patch.object(checker, "_u01_task4_report_archive", side_effect=lambda bundle, sha:
+                (b, bfiles) if sha == self.B2 else archive(bundle, sha)), \
+                patch.object(checker, "_collect_u01_task4_post_h4_c_gate_recovery_successor_git",
+                    return_value=[]):
+            with patch.object(checker, "_validate_u01_task4_post_h4_c_gate_recovery_active",
+                    side_effect=lambda bundle: active(bundle, event_raw=bfiles[PATHS[1]],
+                        now=datetime.fromisoformat(bundle["progress"]["updated_at"]),
+                        archived_files={PATHS[0]: bfiles[PATHS[0]], PATHS[2]: bfiles[PATHS[2]]})):
+                self.assertEqual(checker.validate_bundle(b), [])
+            with patch.object(checker, "_validate_u01_task4_post_h4_c_gate_recovery_closed",
+                    side_effect=lambda bundle: closed(bundle, event_raw=hfiles[PATHS[1]],
+                        now=datetime.fromisoformat(bundle["progress"]["updated_at"]),
+                        archived_files={PATHS[0]: hfiles[PATHS[0]], PATHS[2]: hfiles[PATHS[2]]})):
+                self.assertEqual(checker.validate_bundle(h), [])
+
+    def test_successor_git_b2_h2_and_report_tail_fail_closed(self):
+        collector = checker._collect_u01_task4_post_h4_c_gate_recovery_successor_git
+        b, bfiles = self.checkpoint_b2()
+        h, hfiles = self.closed_h2()
+        tail = "e" * 40
+        canonical = {"docs/WORK_STATUS.md", PATHS[0], PATHS[2], PATHS[3]}
+        event = PATHS[1]
+        report = "docs/04_test_reports/U-01_TASK4_POST_H4_C_GATE_RECOVERY_QA_RESULT.md"
+        for stage, bundle, head, scenario in (
+            ("b2", b, self.B2, "published"),
+            ("b2", b, self.B2, "extra_path"),
+            ("b2", b, self.B2, "stale_remote"),
+            ("h2", h, self.H2, "published"),
+            ("h2", h, self.H2, "merge"),
+            ("tail", h, tail, "published"),
+            ("tail", h, tail, "product"),
+            ("tail", h, tail, "modified_report"),
+            ("tail", h, tail, "over_limit"),
+        ):
+            with self.subTest(stage=stage, scenario=scenario):
+                original, original_run = subprocess.check_output, subprocess.run
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return (head + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b""
+                    if argv[:3] == ["show", "-s", "--format=%P"] and argv[-1] in \
+                            (self.C2, self.B2, self.H2, tail):
+                        parent = {self.C2: self.A2, self.B2: self.C2,
+                                  self.H2: self.B2, tail: self.H2}[argv[-1]]
+                        if scenario == "merge" and argv[-1] == self.H2:
+                            parent += " " + "0" * 40
+                        return (parent + "\n").encode()
+                    if argv[:2] == ["rev-list", "--count"] and argv[-1] in (
+                            f"{self.A2}..{self.C2}", f"{self.C2}..{self.B2}",
+                            f"{self.B2}..{self.H2}"):
+                        return b"1\n"
+                    if argv[:2] == ["rev-list", "--count"] and argv[-1] == f"{self.B2}..{head}":
+                        return b"258\n" if scenario == "over_limit" else \
+                            (b"2\n" if stage == "tail" else b"1\n")
+                    if argv[:2] == ["rev-list", "--min-parents=2"] and argv[-1] in (
+                            f"{self.A2}..{self.C2}", f"{self.C2}..{self.B2}",
+                            f"{self.B2}..{self.H2}"):
+                        return b""
+                    if argv[:2] == ["rev-list", "--reverse"]:
+                        return (self.H2 + "\n" + (tail + "\n" if stage == "tail" else "")).encode()
+                    if argv[:1] in (["log"], ["diff"]) and ".." in argv[-1]:
+                        left, right = argv[-1].split("..")
+                        if (left, right) == (self.A2, self.C2): paths = self.CODE
+                        elif (left, right) == (self.C2, self.B2):
+                            paths = canonical | ({"packages/api/fastapi_app.py"}
+                                if scenario == "extra_path" else set())
+                        elif (left, right) == (self.B2, self.H2): paths = canonical | {event}
+                        else: return original(command, *args, **kwargs)
+                        return ("\n".join(sorted(paths)) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"]:
+                        left, right = argv[-2:]
+                        if (left, right) == (self.H2, tail):
+                            return (f"M\tdocs/WORK_STATUS.md\n"
+                                + (f"M\t{report}\n" if scenario == "modified_report"
+                                    else f"M\tpackages/api/fastapi_app.py\n" if scenario == "product"
+                                    else f"A\t{report}\n")).encode()
+                        paths = (self.CODE if (left, right) == (self.A2, self.C2)
+                            else canonical | {event} if (left, right) == (self.B2, self.H2)
+                            else canonical | ({"packages/api/fastapi_app.py"}
+                                if scenario == "extra_path" else set()))
+                        return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                    if argv[:1] == ["rev-parse"] and ":" in argv[-1] and \
+                            argv[-1].split(":", 1)[0] in (self.H2, tail):
+                        return ("1" * 40 + "\n").encode()
+                    if argv[:1] == ["show"] and ":" in argv[-1]:
+                        sha, path = argv[-1].split(":", 1)
+                        if sha in (self.C2, self.B2, self.H2, tail):
+                            if path in self.CODE:
+                                return (ROOT / path).read_bytes()
+                            if path == PATHS[0] and sha in (self.H2, tail):
+                                return json.dumps(h["progress"]).encode()
+                            if path == PATHS[0] and sha == self.B2:
+                                return bfiles[path]
+                            if path in hfiles and sha in (self.H2, tail):
+                                return hfiles[path]
+                            if path in bfiles and sha == self.B2:
+                                return bfiles[path]
+                            return (ROOT / path).read_bytes()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                remote = "0" * 40 if scenario == "stale_remote" else head
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            return_value=remote):
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", (stage, scenario, result))
 
 
 class U01Task4PostH4ReportTailTests(unittest.TestCase):
@@ -150,14 +616,24 @@ class U01Task4PostH4ReportTailTests(unittest.TestCase):
     def test_a_git_requires_h_r2_d_w2_a_and_live_private_sha(self):
         bundle, files = self.issued_a()
         collector = checker._collect_u01_task4_post_h4_report_tail_active_git
-        with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha", return_value=self.A):
-            self.assertEqual(collector(bundle), [])
-        with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha", return_value="0" * 40):
-            self.assertTrue(collector(bundle))
-        with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
-                          side_effect=subprocess.CalledProcessError(1, "git ls-remote")):
-            self.assertTrue(collector(bundle))
         original = subprocess.check_output
+        def frozen_a(command, *args, **kwargs):
+            argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                "-c", "core.quotePath=false"] else command[1:]
+            if argv in (["rev-parse", "HEAD"],
+                        ["rev-parse", "development/codex/u01-dashboard-r2"]):
+                return (self.A + "\n").encode()
+            return original(command, *args, **kwargs)
+        with patch.object(subprocess, "check_output", side_effect=frozen_a):
+            with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                              return_value=self.A):
+                self.assertEqual(collector(bundle), [])
+            with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                              return_value="0" * 40):
+                self.assertTrue(collector(bundle))
+            with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                              side_effect=subprocess.CalledProcessError(1, "git ls-remote")):
+                self.assertTrue(collector(bundle))
         target = "84393391829309e4c20d140a8ff94edf8175f63e:design_change.md"
         with patch.object(subprocess, "check_output", side_effect=lambda command, *args, **kwargs:
                 b"forged" if command == ["git", "show", target] else
