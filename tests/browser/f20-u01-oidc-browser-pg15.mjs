@@ -21,6 +21,7 @@ const expectedEntity = process.env.ANVIL_F20_R6_ALERT_ENTITY;
 const expectedCause = process.env.ANVIL_F20_R6_ALERT_CAUSE;
 const diagnosticDrain = process.env.ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK === '1';
 const preNavMode = validatePreNavMode(process.env.ANVIL_F20_R6_PRENAV_MODE);
+const pairOnlyMode = validatePairOnlyMode(process.env.ANVIL_F20_R6_PAIR_ONLY_BODY_MODE);
 const evidenceDir = process.env.ANVIL_F20_R6_EVIDENCE_DIR;
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
@@ -33,6 +34,7 @@ const progressStages = new Set([
   'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
   'PAIR_PROBE', 'PAIR_STABLE_FETCH', 'PAIR_PRENAV_BARRIER',
+  'PAIR_ONLY_BINDING',
   'PRE_AUTH_RESPONSES',
   'PRE_AUTH_LOADING_REQUESTS', 'PRE_AUTH_LOADING_DOM', 'PRE_AUTH_KEYBOARD',
   'PRE_AUTH_LOADING_RELEASE',
@@ -843,6 +845,125 @@ async function configureDiagnosticDrain(page, enabled, events) {
     events.push({ category: event.category, status: event.status, outcome: event.outcome });
   });
   await page.addInitScript(diagnosticDrainBootstrap, 2000);
+}
+
+function pairOnlyBodyBootstrap(mode, timeoutMs) {
+  const browserWindow = globalThis.window;
+  const originalFetch = browserWindow.fetch.bind(browserWindow);
+  const counterKey = '__anvilR6PairOnlyCount';
+  browserWindow.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    let target;
+    let source;
+    try {
+      source = new URL(typeof args[0] === 'string' ? args[0] : args[0].url,
+        browserWindow.location.href);
+      target = new URL(response.url, browserWindow.location.href);
+    } catch { return response; }
+    const exactPair = (url) => url.origin === browserWindow.location.origin
+      && url.pathname === '/api/dashboard/project-environments'
+      && !url.search && !url.hash && !url.username && !url.password;
+    if (!exactPair(source) || !exactPair(target)) return response;
+    let ordinal;
+    try {
+      const prior = Number(browserWindow.sessionStorage.getItem(counterKey) || '0');
+      ordinal = Number.isSafeInteger(prior) && prior >= 0 ? prior + 1 : 0;
+      browserWindow.sessionStorage.setItem(counterKey, String(ordinal));
+    } catch { return response; }
+    const selected = ordinal === 1 && response.status === 404;
+    const statusClass = Number.isInteger(response.status) && response.status >= 100
+      && response.status <= 599 ? `${Math.floor(response.status / 100)}XX` : 'OTHER';
+    let clone;
+    let cloneFailed = false;
+    if (mode === 'B' && selected) {
+      try { clone = response.clone(); }
+      catch { cloneFailed = true; }
+    }
+    setTimeout(() => {
+      let timer;
+      const consume = async () => {
+        if (!selected) return 'NOT_CONSUMED';
+        if (mode === 'A') return 'NOT_CONSUMED';
+        if (cloneFailed) return 'ERROR';
+        try {
+          await Promise.race([clone.text(), new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error('PAIR_ONLY_TIMEOUT')), timeoutMs);
+          })]);
+          return 'DONE';
+        } catch (error) {
+          return error?.message === 'PAIR_ONLY_TIMEOUT' ? 'TIMEOUT' : 'ERROR';
+        } finally { clearTimeout(timer); }
+      };
+      void consume().then((outcome) => browserWindow.__anvilR6PairOnlyEvent({
+        mode, ordinal, status: statusClass,
+        selected: selected ? 'YES' : 'NO', outcome, appReturn: 'DIRECT',
+      })).catch(() => {});
+    }, 0);
+    return response;
+  };
+}
+
+async function configurePairOnlyBodyProbe(page, mode, events, onEvent = () => {}) {
+  if (mode === null) return;
+  assert.ok(['A', 'B'].includes(mode), 'PAIR_ONLY_MODE_INVALID');
+  await page.exposeFunction('__anvilR6PairOnlyEvent', (event) => {
+    assert.ok(event && event.mode === mode && Number.isSafeInteger(event.ordinal)
+      && event.ordinal >= 1 && event.ordinal <= 10000
+      && ['1XX', '2XX', '3XX', '4XX', '5XX', 'OTHER'].includes(event.status)
+      && ['YES', 'NO'].includes(event.selected)
+      && ['NOT_CONSUMED', 'DONE', 'TIMEOUT', 'ERROR'].includes(event.outcome)
+      && event.appReturn === 'DIRECT', 'PAIR_ONLY_INCONCLUSIVE');
+    events.push({mode: event.mode, ordinal: event.ordinal, status: event.status,
+      selected: event.selected, outcome: event.outcome, appReturn: event.appReturn});
+    onEvent();
+    writeSync(1, `R6_PAIR_ONLY_EVENT mode=${event.mode} ordinal=${event.ordinal}`
+      + ` status=${event.status} selected=${event.selected}`
+      + ` outcome=${event.outcome} return=${event.appReturn}\n`);
+  });
+  await page.addInitScript(pairOnlyBodyBootstrap, mode, 2000);
+}
+
+async function awaitPairOnlyEvents(events, expected, setSignal, timeoutMs = 2000) {
+  assert.ok(Number.isSafeInteger(expected) && expected >= 1, 'PAIR_ONLY_INCONCLUSIVE');
+  const deadline = Date.now() + timeoutMs;
+  while (events.length < expected) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new Error('PAIR_ONLY_INCONCLUSIVE');
+    let arrival;
+    try {
+      arrival = await settleCapture(() => boundedCapture(() => new Promise((resolve) => {
+        setSignal(resolve);
+        if (events.length >= expected) resolve();
+      }), remaining));
+    } finally {
+      setSignal(() => {});
+    }
+    if (!arrival.ok) throw new Error('PAIR_ONLY_INCONCLUSIVE');
+  }
+  assert.equal(events.length, expected, 'PAIR_ONLY_INCONCLUSIVE');
+}
+
+function requirePairOnlyResult(events, mode, firstPairRequest, totalPairRequests = 1,
+  requestState = 'DONE') {
+  assert.ok(events.length === totalPairRequests && firstPairRequest === 1
+    && totalPairRequests >= 1 && requestState === 'DONE', 'PAIR_ONLY_INCONCLUSIVE');
+  const [event] = events;
+  assert.ok(event.mode === mode && event.ordinal === firstPairRequest
+    && event.status === '4XX' && event.selected === 'YES'
+    && event.appReturn === 'DIRECT'
+    && event.outcome === (mode === 'B' ? 'DONE' : 'NOT_CONSUMED'),
+  'PAIR_ONLY_INCONCLUSIVE');
+  assert.ok(events.slice(1).every((later, index) => later.mode === mode
+    && later.ordinal === index + 2 && later.status === '2XX'
+    && later.selected === 'NO' && later.outcome === 'NOT_CONSUMED'
+    && later.appReturn === 'DIRECT'), 'PAIR_ONLY_INCONCLUSIVE');
+  return event;
+}
+
+function validatePairOnlyMode(value) {
+  if (value === undefined) return null;
+  if (value === 'A' || value === 'B') return value;
+  throw new Error('PAIR_ONLY_MODE_INVALID');
 }
 
 function classifyTransportHeaders(headers) {
@@ -2275,6 +2396,9 @@ async function main() {
   assert.ok(controlToken?.length >= 32);
   assert.ok(expectedEntity && expectedCause && Array.isArray(sensitiveValues));
   assert.ok(!evidenceDir || !diagnosticDrain, 'R6_EVIDENCE_DIAGNOSTIC_CONFLICT');
+  assert.ok(!pairOnlyMode || !diagnosticDrain, 'PAIR_ONLY_DRAIN_CONFLICT');
+  assert.ok(!pairOnlyMode || preNavMode === 'A', 'PAIR_ONLY_PRENAV_CONFLICT');
+  assert.ok(!pairOnlyMode || !evidenceDir, 'PAIR_ONLY_EVIDENCE_CONFLICT');
   markStage('PLAYWRIGHT_REQUIRE');
   const { chromium, request: playwrightRequest } = require(process.env.ANVIL_PLAYWRIGHT_MODULE || 'playwright');
   markStage('BROWSER_LAUNCH');
@@ -2299,6 +2423,10 @@ async function main() {
     const page = await context.newPage();
     const diagnosticEvents = [];
     await configureDiagnosticDrain(page, diagnosticDrain, diagnosticEvents);
+    const pairOnlyEvents = [];
+    let signalPairOnlyEvent = () => {};
+    await configurePairOnlyBodyProbe(page, pairOnlyMode, pairOnlyEvents,
+      () => signalPairOnlyEvent());
     const requestFacts = [];
     const responseFacts = [];
     const responseCaptures = new WeakMap();
@@ -2792,6 +2920,20 @@ async function main() {
     const domText = await page.locator('body').innerText();
     const { allAppRequestsSameOrigin, offOriginCredentialLeak, secretExposure } =
       auditTraffic(requests, responses, domText, cookie.value);
+    let pairOnlyOutcome;
+    if (pairOnlyMode) {
+      markStage('PAIR_ONLY_BINDING');
+      await awaitPairOnlyEvents(pairOnlyEvents, pairRequestSequence,
+        (signal) => { signalPairOnlyEvent = signal; });
+      assert.ok(firstPairTrace?.captureResult?.status === 404
+        && firstPairTrace.request !== 'FAILED', 'PAIR_ONLY_INCONCLUSIVE');
+      pairOnlyOutcome = requirePairOnlyResult(pairOnlyEvents, pairOnlyMode,
+        firstPairTrace.pairRequest, pairRequestSequence, firstPairTrace.request).outcome;
+      writeSync(1, `R6_PAIR_ONLY_BINDING mode=${pairOnlyMode}`
+        + ` pair_request=${firstPairTrace.pairRequest}`
+        + ` observed=${pairOnlyEvents.length} expected=${pairRequestSequence}`
+        + ` outcome=${pairOnlyOutcome}\n`);
+    }
     markStage('NETWORK_IDP_STATE');
     const idpContextSeparate = (await issuerClient.storageState()).cookies
       .every(({ name }) => name !== 'anvil_session');
@@ -2850,6 +2992,9 @@ async function main() {
         diagnosticProvider401DrainCount: diagnosticEvents.filter(({ category, status }) =>
           category === 'PROVIDER_API' && status === 401).length,
       } : {}),
+      ...(pairOnlyMode ? {pairOnlyMode, pairOnlyOutcome,
+        pairOnlyPairRequestCount: pairRequestSequence,
+        pairOnlyFirstIndex: firstPairTrace.index} : {}),
     };
     flowComplete = true;
     } finally {
@@ -4162,6 +4307,144 @@ if (r48DiagnosticSelfTest) {
     {status: '4XX', headers: 'DONE', body: 'UNREADABLE', request: 'DONE', audit: 'PENDING',
       length: 'MISSING', transfer: 'MISSING'});
   assert.equal(unreadable.disposed(), true);
+  const pairOnlyInstall = [];
+  const delivered = [];
+  let signalDelivery = () => {};
+  const delayedArrival = awaitPairOnlyEvents(delivered, 1,
+    (signal) => { signalDelivery = signal; }, 40);
+  setTimeout(() => { delivered.push('safe-event'); signalDelivery(); }, 5);
+  await delayedArrival;
+  assert.deepEqual(delivered, ['safe-event']);
+  const missing = [];
+  let signalLate = () => {};
+  setTimeout(() => { missing.push('too-late'); signalLate(); }, 35);
+  await assert.rejects(() => awaitPairOnlyEvents(missing, 1,
+    (signal) => { signalLate = signal; }, 10), /PAIR_ONLY_INCONCLUSIVE/);
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  assert.deepEqual(missing, ['too-late']);
+  assert.equal(validatePairOnlyMode(undefined), null);
+  assert.equal(validatePairOnlyMode('A'), 'A');
+  assert.equal(validatePairOnlyMode('B'), 'B');
+  for (const forged of ['', 'a', 'B ', 'private-token']) {
+    assert.throws(() => validatePairOnlyMode(forged), /PAIR_ONLY_MODE_INVALID/);
+  }
+  const pairOnlyPage = {exposeFunction: async (name, callback) =>
+    pairOnlyInstall.push({name, callback}), addInitScript: async (bootstrap, mode, timeoutMs) =>
+    pairOnlyInstall.push({bootstrap, mode, timeoutMs})};
+  await configurePairOnlyBodyProbe(pairOnlyPage, 'A', []);
+  assert.equal(pairOnlyInstall.length, 2);
+  assert.equal(pairOnlyInstall[1].mode, 'A');
+  const pairOnlyEvents = [];
+  await configurePairOnlyBodyProbe(pairOnlyPage, 'B', pairOnlyEvents);
+  const previousPairWindow = globalThis.window;
+  try {
+    let finishClone;
+    let cloneReads = 0;
+    const pairResponse = {ok: false, status: 404,
+      url: apiUrl + '/api/dashboard/project-environments',
+      clone: () => ({text: () => {cloneReads += 1;
+        return new Promise((resolve) => {finishClone = resolve;});}})};
+    const store = new Map();
+    globalThis.window = {location: {origin: apiUrl, href: apiUrl + '/'},
+      sessionStorage: {getItem: (key) => store.get(key) || null,
+        setItem: (key, value) => store.set(key, value)},
+      fetch: async () => pairResponse,
+      __anvilR6PairOnlyEvent: pairOnlyInstall[2].callback};
+    pairOnlyInstall[3].bootstrap('B', 40);
+    assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), pairResponse);
+    assert.equal(cloneReads, 0, 'PAIR_ONLY_CLONE_READ_BEFORE_APP_RETURN');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    assert.equal(cloneReads, 1);
+    finishClone('private-body-not-output');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    assert.deepEqual(pairOnlyEvents, [{mode: 'B', ordinal: 1, status: '4XX',
+      selected: 'YES', outcome: 'DONE', appReturn: 'DIRECT'}]);
+    assert.equal(JSON.stringify(pairOnlyEvents).includes('private-body-not-output'), false);
+    assert.throws(() => requirePairOnlyResult([], 'B', 1), /PAIR_ONLY_INCONCLUSIVE/);
+    assert.deepEqual(requirePairOnlyResult(pairOnlyEvents, 'B', 1), pairOnlyEvents[0]);
+    assert.deepEqual(requirePairOnlyResult([pairOnlyEvents[0], {
+      mode: 'B', ordinal: 2, status: '2XX', selected: 'NO',
+      outcome: 'NOT_CONSUMED', appReturn: 'DIRECT',
+    }], 'B', 1, 2), pairOnlyEvents[0]);
+    assert.throws(() => requirePairOnlyResult([pairOnlyEvents[0], {
+      mode: 'B', ordinal: 2, status: '5XX', selected: 'NO',
+      outcome: 'NOT_CONSUMED', appReturn: 'DIRECT',
+    }], 'B', 1, 2), /PAIR_ONLY_INCONCLUSIVE/);
+    assert.throws(() => requirePairOnlyResult([...pairOnlyEvents, pairOnlyEvents[0]], 'B', 1),
+      /PAIR_ONLY_INCONCLUSIVE/);
+    assert.throws(() => requirePairOnlyResult([{...pairOnlyEvents[0], ordinal: 2}], 'B', 1),
+      /PAIR_ONLY_INCONCLUSIVE/);
+    assert.throws(() => requirePairOnlyResult([{...pairOnlyEvents[0], outcome: 'TIMEOUT'}], 'B', 1),
+      /PAIR_ONLY_INCONCLUSIVE/);
+    assert.throws(() => requirePairOnlyResult([{...pairOnlyEvents[0], outcome: 'ERROR'}], 'B', 1),
+      /PAIR_ONLY_INCONCLUSIVE/);
+    assert.throws(() => requirePairOnlyResult(pairOnlyEvents, 'B', 1, 1, 'FAILED'),
+      /PAIR_ONLY_INCONCLUSIVE/);
+    const next404 = {...pairResponse, clone: () => {throw new Error('multiple-clone');}};
+    globalThis.window.fetch = async () => next404;
+    pairOnlyInstall[3].bootstrap('B', 40);
+    assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), next404);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    assert.equal(cloneReads, 1, 'PAIR_ONLY_SECOND_CLONE_FORBIDDEN');
+    assert.throws(() => requirePairOnlyResult([...pairOnlyEvents], 'A', 1),
+      /PAIR_ONLY_INCONCLUSIVE/);
+    const noReadEvents = [];
+    const noReadPage = {exposeFunction: async (_, callback) => {
+      globalThis.window.__anvilR6PairOnlyEvent = callback;
+    }, addInitScript: async (bootstrap, mode, timeoutMs) => {
+      bootstrap(mode, timeoutMs);
+    }};
+    store.clear();
+    globalThis.window.fetch = async () => pairResponse;
+    await configurePairOnlyBodyProbe(noReadPage, 'A', noReadEvents);
+    assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), pairResponse);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    assert.equal(cloneReads, 1, 'PAIR_ONLY_A_CLONE_READ_FORBIDDEN');
+    assert.deepEqual(requirePairOnlyResult(noReadEvents, 'A', 1), noReadEvents[0]);
+    const deniedStore = {getItem: () => {throw new Error('storage-denied');},
+      setItem: () => {throw new Error('storage-denied');}};
+    globalThis.window.sessionStorage = deniedStore;
+    globalThis.window.fetch = async () => pairResponse;
+    await configurePairOnlyBodyProbe(noReadPage, 'B', []);
+    assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), pairResponse);
+    assert.equal(cloneReads, 1, 'PAIR_ONLY_STORAGE_FAILURE_CHANGED_APP_RESPONSE');
+    globalThis.window.sessionStorage = {getItem: (key) => store.get(key) || null,
+      setItem: (key, value) => store.set(key, value)};
+    for (const [behavior, expected] of [
+      [() => new Promise(() => {}), 'TIMEOUT'],
+      [() => Promise.reject(new Error('private-error')), 'ERROR'],
+    ]) {
+      const failedEvents = [];
+      store.clear();
+      globalThis.window.fetch = async () => ({...pairResponse,
+        clone: () => ({text: behavior})});
+      const fastPage = {exposeFunction: async (_, callback) => {
+        globalThis.window.__anvilR6PairOnlyEvent = callback;
+      }, addInitScript: async (bootstrap, mode) => bootstrap(mode, 10)};
+      await configurePairOnlyBodyProbe(fastPage, 'B', failedEvents);
+      await globalThis.window.fetch('/api/dashboard/project-environments');
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      assert.equal(failedEvents[0]?.outcome, expected);
+      assert.throws(() => requirePairOnlyResult(failedEvents, 'B', 1),
+        /PAIR_ONLY_INCONCLUSIVE/);
+    }
+    for (const other of [
+      {...pairResponse, status: 503, clone: () => {throw new Error('non-404-clone');}},
+      {...pairResponse, url: apiUrl + '/api/providers', clone: () => {throw new Error('other-path-clone');}},
+      {...pairResponse, url: 'https://outside.invalid/api/dashboard/project-environments',
+        clone: () => {throw new Error('off-origin-clone');}},
+    ]) {
+      store.clear();
+      globalThis.window.fetch = async () => other;
+      await configurePairOnlyBodyProbe(noReadPage, 'B', []);
+      assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), other);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      assert.equal(cloneReads, 1);
+    }
+  } finally {
+    if (previousPairWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousPairWindow;
+  }
   for (const status of [204, 302, 304]) {
     const accepted = await captureResponseFact(hangingResponse(status, '/auth/oidc/callback'), 60);
     assert.equal(accepted.ok, true);

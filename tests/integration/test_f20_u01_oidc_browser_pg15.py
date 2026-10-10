@@ -53,7 +53,7 @@ _EVIDENCE_FILES = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked
 _BROWSER_STAGES = frozenset({
     "BOOTSTRAP", "PLAYWRIGHT_REQUIRE", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "ISSUER_CONTEXT", "PAGE_CREATE", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
-    "PAIR_PROBE", "PAIR_STABLE_FETCH", "PAIR_PRENAV_BARRIER",
+    "PAIR_PROBE", "PAIR_STABLE_FETCH", "PAIR_PRENAV_BARRIER", "PAIR_ONLY_BINDING",
     "PRE_AUTH_RESPONSES", "PRE_AUTH_LOADING_REQUESTS", "PRE_AUTH_LOADING_DOM",
     "PRE_AUTH_KEYBOARD", "PRE_AUTH_LOADING_RELEASE",
     "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH_REQUEST",
@@ -106,6 +106,7 @@ _R44_SAFE_ASSERTIONS = frozenset({
     "R27_REVOKED_STALE_SETUP_MISSING",
     "R45_QUEUE_SEED_FAILED", "R45_QUEUE_DASHBOARD_FAILED",
     "R45_QUEUE_DETAIL_MISMATCH", "R45_REVOKED_DETAIL_RETAINED",
+    "PAIR_ONLY_INCONCLUSIVE",
 })
 
 
@@ -398,6 +399,22 @@ def _safe_pair_diagnostic(output: str) -> str:
         output, flags=re.MULTILINE)
     if reload and all(int(value) > 0 for value in reload.groups()[1:4]):
         details.append(" pre_nav_reload=" + "/".join(reload.groups()))
+    for match in re.finditer(
+        r"^R6_PAIR_ONLY_EVENT mode=(A|B) ordinal=([1-9][0-9]{0,4}) "
+        r"status=(1XX|2XX|3XX|4XX|5XX|OTHER) selected=(YES|NO) "
+        r"outcome=(NOT_CONSUMED|DONE|TIMEOUT|ERROR) return=(DIRECT)\r?$",
+        output, flags=re.MULTILINE,
+    ):
+        details.append(" pair_only=" + "/".join(match.groups()))
+    for match in re.finditer(
+        r"^R6_PAIR_ONLY_BINDING mode=(A|B) pair_request=([1-9][0-9]{0,4}) "
+        r"observed=([1-9][0-9]{0,4}) expected=([1-9][0-9]{0,4}) "
+        r"outcome=(NOT_CONSUMED|DONE)\r?$", output, flags=re.MULTILINE,
+    ):
+        mode, pair_request, observed, expected, outcome = match.groups()
+        if (pair_request == "1" and observed == expected
+                and outcome == ("DONE" if mode == "B" else "NOT_CONSUMED")):
+            details.append(" pair_only_binding=" + "/".join(match.groups()))
     return "".join(details)
 
 
@@ -527,7 +544,19 @@ def _verify_evidence_artifacts(directory: Path, api_url: str, count: int) -> Non
         raise AssertionError("R6_EVIDENCE_ARTIFACT_REJECTED") from None
 
 
-def _finish_r6_evidence(evidence: dict, *, diagnostic: bool) -> None:
+def _finish_r6_evidence(evidence: dict, *, diagnostic: bool,
+                        pair_only: str | None = None) -> None:
+    if pair_only is not None:
+        assert (not diagnostic and pair_only in {"A", "B"}
+                and evidence.get("pairOnlyMode") == pair_only
+                and evidence.get("pairOnlyOutcome") == (
+                    "DONE" if pair_only == "B" else "NOT_CONSUMED")), (
+                    "PAIR_ONLY_INCONCLUSIVE"
+                )
+        print("R6_PAIR_ONLY_EVIDENCE " + json.dumps({
+            "mode": pair_only, "outcome": evidence["pairOnlyOutcome"],
+        }, sort_keys=True))
+        pytest.skip("R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE")
     if diagnostic:
         assert evidence.get("diagnosticDrainMode") is True
         nonok = evidence.get("diagnosticNonOkDrainCount")
@@ -965,6 +994,11 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
     assert pre_nav_mode is None or pre_nav_mode in {"A", "B"}, "R6_PRENAV_MODE_INVALID"
     if pre_nav_mode == "B":
         environment["ANVIL_F20_R6_PRENAV_MODE"] = "B"
+    pair_only_mode = os.environ.get("ANVIL_F20_R6_PAIR_ONLY_BODY_MODE")
+    assert pair_only_mode is None or pair_only_mode in {"A", "B"}, "PAIR_ONLY_MODE_INVALID"
+    assert not (pair_only_mode and _diagnostic_drain_mode()), "PAIR_ONLY_DRAIN_CONFLICT"
+    if pair_only_mode:
+        environment["ANVIL_F20_R6_PAIR_ONLY_BODY_MODE"] = pair_only_mode
     harness_hash = hashlib.sha256(
         Path(__file__).read_bytes() + b"\0" + script.read_bytes()).hexdigest().upper()
     seed_permission_contract = {
@@ -976,6 +1010,9 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         sort_keys=True, separators=(",", ":")).encode()).hexdigest().upper()
     print(f"R6_PRENAV_CONFIG mode={pre_nav_mode or 'A'} harness_sha256={harness_hash} "
           f"seed_permission_contract_sha256={contract_hash} timeout_ms=10000")
+    if pair_only_mode:
+        print(f"R6_PAIR_ONLY_CONFIG mode={pair_only_mode} harness_sha256={harness_hash} "
+              f"seed_permission_contract_sha256={contract_hash} timeout_ms=10000")
     if _diagnostic_drain_mode():
         environment["ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK"] = "1"
     if evidence_dir is not None:
@@ -1135,15 +1172,32 @@ def _require_pair_probe_request_audit(events: list[dict[str, str]]) -> None:
             )
 
 
+def _bind_pair_only_asgi(evidence: dict, events: list[dict[str, str]]) -> None:
+    count = evidence.get("pairOnlyPairRequestCount")
+    index = evidence.get("pairOnlyFirstIndex")
+    page_facts = [fact for fact in events if "request_audit" not in fact]
+    assert (type(count) is int and 1 <= count <= 10000
+            and type(index) is int and 1 <= index <= 10000
+            and len(page_facts) == count
+            and all(fact.get("route") == "PAIR_LIST_API"
+                    and fact.get("disconnect") == "NONE"
+                    and fact.get("body_final") == "DONE"
+                    for fact in page_facts)
+            and page_facts[0].get("status") == "4XX"), "PAIR_ONLY_INCONCLUSIVE"
+
+
 def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
     from packages.persistence.oidc_pending_auth import oidc_pending_auth
     from packages.persistence.oidc_session_store import oidc_sessions
 
     diagnostic = _diagnostic_drain_mode()
+    pair_only_mode = os.environ.get("ANVIL_F20_R6_PAIR_ONLY_BODY_MODE")
+    assert pair_only_mode is None or pair_only_mode in {"A", "B"}, "PAIR_ONLY_MODE_INVALID"
+    assert not (diagnostic and pair_only_mode), "PAIR_ONLY_DRAIN_CONFLICT"
     _guard_pg_container(url)
     evidence_dir = _requested_evidence_dir(
         os.environ.get("ANVIL_F20_R6_EVIDENCE_DIR"), url.database.removeprefix("anvil_f20_r3a_"),
-        diagnostic=diagnostic,
+        diagnostic=diagnostic or pair_only_mode is not None,
     )
     frontend = Path(os.environ["ANVIL_F20_R6_FRONTEND_DIST"]).resolve(strict=True)
     expected_frontend = Path(__file__).resolve().parents[2] / "apps" / "web" / "dist"
@@ -1378,6 +1432,15 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             assert evidence.get("diagnosticDrainMode") is True, "R6_DIAG_MODE_NOT_ACTIVE"
         else:
             assert not diagnostic_keys.intersection(evidence), "R6_DIAG_MODE_UNEXPECTED"
+        pair_only_keys = {"pairOnlyMode", "pairOnlyOutcome",
+                          "pairOnlyPairRequestCount", "pairOnlyFirstIndex"}
+        if pair_only_mode:
+            assert evidence.get("pairOnlyMode") == pair_only_mode
+            assert evidence.get("pairOnlyOutcome") == (
+                "DONE" if pair_only_mode == "B" else "NOT_CONSUMED"), "PAIR_ONLY_INCONCLUSIVE"
+            _bind_pair_only_asgi(evidence, pair_asgi_events)
+        else:
+            assert not pair_only_keys.intersection(evidence), "PAIR_ONLY_MODE_UNEXPECTED"
         if evidence_dir is not None:
             assert evidence.get("evidenceExported") is True, "R6_EVIDENCE_OUTPUT_MISSING"
         else:
@@ -1440,7 +1503,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
                    | set(r30_evidence) | set(r31_evidence) | set(r31_cancel_evidence)
                    | set(r31_denied_evidence) | set(r31_race_evidence) | set(r32_evidence)
                    | set(r43_evidence) | set(r44_evidence) | set(r45_evidence)
-                   | set(r34_evidence) | set(r35_evidence)}
+                   | set(r34_evidence) | set(r35_evidence) | pair_only_keys}
         assert checked == expected_legacy, "R6_BROWSER_EVIDENCE_MISMATCH"
         assert revoke_count == [1], "R6_REVOKE_MISSING"
         assert len(token_requests) == 1, "R6_TOKEN_EXCHANGE_COUNT_INVALID"
@@ -1451,7 +1514,7 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             assert db.execute(sa.select(sa.func.count()).select_from(oidc_pending_auth)).scalar_one() == 0
         if evidence_dir is not None:
             _verify_evidence_artifacts(evidence_dir, api_url, evidence["pageRequestCount"])
-        _finish_r6_evidence(evidence, diagnostic=diagnostic)
+        _finish_r6_evidence(evidence, diagnostic=diagnostic, pair_only=pair_only_mode)
     finally:
         cleanup_errors = []
         if pending_socket is not None:
@@ -1933,6 +1996,90 @@ def test_r6_prenav_failure_reports_enum_without_secret(monkeypatch):
     assert "stage=PAIR_PRENAV_BARRIER" in message
     assert "pre_nav=B/PRENAV_BODY_PENDING/4/1/1/NOT_STARTED" in message
     assert secret not in message
+
+
+def test_r6_pair_only_mode_is_explicit_and_excludes_broad_drain(monkeypatch, capsys):
+    seen = []
+    def succeeded(*_args, **kwargs):
+        seen.append(kwargs["env"])
+        return subprocess.CompletedProcess(args=["browser"], returncode=0,
+            stdout='R6_RESULT {"pairOnlyMode":"B","pairOnlyOutcome":"DONE"}\n', stderr="")
+    monkeypatch.setattr(subprocess, "run", succeeded)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    monkeypatch.delenv("ANVIL_F20_R6_PAIR_ONLY_BODY_MODE", raising=False)
+    monkeypatch.delenv("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK", raising=False)
+    args = ("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+            "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT)
+    _node_flow(*args)
+    assert "ANVIL_F20_R6_PAIR_ONLY_BODY_MODE" not in seen[-1]
+    monkeypatch.setenv("ANVIL_F20_R6_PAIR_ONLY_BODY_MODE", "A")
+    _node_flow(*args)
+    assert seen[-1]["ANVIL_F20_R6_PAIR_ONLY_BODY_MODE"] == "A"
+    assert "R6_PAIR_ONLY_CONFIG mode=A " in capsys.readouterr().out
+    monkeypatch.setenv("ANVIL_F20_R6_PAIR_ONLY_BODY_MODE", "B")
+    _node_flow(*args)
+    assert seen[-1]["ANVIL_F20_R6_PAIR_ONLY_BODY_MODE"] == "B"
+    monkeypatch.setenv("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK", "1")
+    with pytest.raises(AssertionError, match="PAIR_ONLY_DRAIN_CONFLICT"):
+        _node_flow(*args)
+    monkeypatch.delenv("ANVIL_F20_R6_DIAGNOSTIC_DRAIN_NONOK")
+    monkeypatch.setenv("ANVIL_F20_R6_PAIR_ONLY_BODY_MODE", "private-invalid")
+    with pytest.raises(AssertionError, match="PAIR_ONLY_MODE_INVALID"):
+        _node_flow(*args)
+
+
+def test_r6_pair_only_marker_and_outcome_are_secret_safe_and_not_acceptance(capsys):
+    secret = "https://user:private@127.0.0.1/api?token=private"
+    line = "R6_PAIR_ONLY_EVENT mode=B ordinal=1 status=4XX selected=YES outcome=DONE return=DIRECT\n"
+    assert " pair_only=B/1/4XX/YES/DONE/DIRECT" in _safe_pair_diagnostic(line + secret)
+    assert " pair_only=B/2/5XX/NO/NOT_CONSUMED/DIRECT" in _safe_pair_diagnostic(
+        "R6_PAIR_ONLY_EVENT mode=B ordinal=2 status=5XX selected=NO "
+        "outcome=NOT_CONSUMED return=DIRECT\n")
+    binding = ("R6_PAIR_ONLY_BINDING mode=B pair_request=1 observed=2 "
+               "expected=2 outcome=DONE\n")
+    assert " pair_only_binding=B/1/2/2/DONE" in _safe_pair_diagnostic(binding)
+    assert " pair_only_binding=" not in _safe_pair_diagnostic(
+        binding.replace("observed=2", "observed=3"))
+    for forged in (line.replace("ordinal=1", "ordinal=0"),
+                   line.replace("outcome=DONE", "outcome=" + secret),
+                   line.replace("return=DIRECT", "return=WAITED")):
+        assert " pair_only=" not in _safe_pair_diagnostic(forged)
+    assert secret not in _safe_pair_diagnostic(line + secret)
+    evidence = {"pairOnlyMode": "B", "pairOnlyOutcome": "DONE"}
+    with pytest.raises(pytest.skip.Exception, match="R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE"):
+        _finish_r6_evidence(evidence, diagnostic=False, pair_only="B")
+    output = capsys.readouterr().out
+    assert "R6_PAIR_ONLY_EVIDENCE " in output
+    assert "R6_E2E_EVIDENCE " not in output
+
+
+def test_r6_pair_only_binding_requires_same_unique_page_and_asgi_ordinal():
+    evidence = {"pairOnlyMode": "B", "pairOnlyOutcome": "DONE",
+                "pairOnlyPairRequestCount": 1, "pairOnlyFirstIndex": 4}
+    probe = {"route": "PAIR_LIST_API", "registered": False, "status": "4XX",
+             "body_final": "DONE", "disconnect": "NONE", "request_audit": "CLEAR"}
+    original = {"route": "PAIR_LIST_API", "registered": False, "status": "4XX",
+                "body_final": "DONE", "disconnect": "NONE"}
+    assert _bind_pair_only_asgi(evidence, [probe, original]) is None
+    for forged_evidence, forged_events in (
+        (evidence, [probe]),
+        (evidence, [probe, original, original]),
+        ({**evidence, "pairOnlyPairRequestCount": 2}, [probe, original]),
+        ({**evidence, "pairOnlyFirstIndex": 0}, [probe, original]),
+        (evidence, [probe, {**original, "status": "2XX"}]),
+        (evidence, [probe, {**original, "body_final": "PENDING"}]),
+        (evidence, [probe, {**original, "disconnect": "SEEN"}]),
+    ):
+        with pytest.raises(AssertionError, match="PAIR_ONLY_INCONCLUSIVE"):
+            _bind_pair_only_asgi(forged_evidence, forged_events)
+
+
+def test_r6_pair_only_inconclusive_failure_keeps_only_safe_code():
+    safe = ("R6_STAGE PAIR_ONLY_BINDING\n"
+            "R6_SAFE_FAILURE stage=PAIR_ONLY_BINDING code=PAIR_ONLY_INCONCLUSIVE name=AssertionError\n")
+    assert _last_browser_progress(safe) == "PAIR_ONLY_BINDING"
+    assert _safe_assertion_diagnostic(safe) == "; assertion=PAIR_ONLY_INCONCLUSIVE"
+    assert "private" not in _safe_assertion_diagnostic(safe + "private-body")
 
 
 def test_r6_pair_failure_joins_only_safe_asgi_and_browser_enums(monkeypatch):

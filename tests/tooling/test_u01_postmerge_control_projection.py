@@ -33,6 +33,412 @@ PATHS = (
 )
 
 
+class U01Task4R6PairOnlyBodyCausalProbeTests(unittest.TestCase):
+    A9 = "25bc45c218223179ea3d6b6bc8d520d0d86ec434"
+    W10 = "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd"
+    C9 = "c" * 40
+    B9 = "b" * 40
+    H9 = "d" * 40
+    CODE = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py",
+            "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+            "tests/integration/test_f20_u01_oidc_browser_pg15.py"}
+
+    def issued_a9(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A9}:{path}"],
+            cwd=ROOT) for path in (*PATHS, "docs/WORK_STATUS.md")}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode()
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @contextmanager
+    def frozen_a9(self):
+        _, files = self.issued_a9()
+        original = Path.read_bytes
+        def read_bytes(path):
+            relative = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else None
+            return files[relative] if relative in files else original(path)
+        with patch.object(Path, "read_bytes", read_bytes):
+            yield
+
+    def test_a9_active_rejects_event_lease_hash_and_expiry_forgery(self):
+        bundle, files = self.issued_a9()
+        active = getattr(checker, "_validate_u01_task4_r6_pair_only_active", None)
+        self.assertIsNotNone(active)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(active(bundle, event_raw=files[PATHS[1]], now=issued,
+                                archived_files=files), [])
+        for mutate in (
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+            lambda b: b["progress"]["worker_lease"].update(
+                execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(
+                path_scope=["packages/api/fastapi_app.py"]),
+            lambda b: b["progress"]["u01_task4_r6_pair_only_body_causal_probe_binding"].update(
+                work_instruction_sha256="0" * 64),
+        ):
+            forged = deepcopy(bundle)
+            mutate(forged)
+            self.assertTrue(active(forged, event_raw=files[PATHS[1]], now=issued,
+                                   archived_files=files))
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(active(bundle, event_raw=files[PATHS[1]], now=expires,
+                               archived_files=files))
+
+    def test_a9_dispatch_requires_new_fail_closed_route(self):
+        bundle, _ = self.issued_a9()
+        self.assertIsNotNone(getattr(checker, "_collect_u01_task4_r6_pair_only_git", None))
+        with self.frozen_a9(), patch.object(checker,
+                "_collect_u01_task4_r6_pair_only_git", return_value=[], create=True):
+            self.assertEqual(checker.validate_bundle(bundle), [])
+
+    def test_c9_git_requires_exact_code_child_private_remote_and_clean_tree(self):
+        bundle, files = self.issued_a9()
+        collector = checker._collect_u01_task4_r6_pair_only_git
+        original = subprocess.check_output
+        original_run = subprocess.run
+        original_read = Path.read_bytes
+        for scenario in ("valid", "extra_path", "merge", "stale_tracking",
+                         "remote_advanced", "remote_missing", "remote_unavailable",
+                         "dirty", "history_forgery"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (self.C9 + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A9 if scenario == "stale_tracking" else self.C9)
+                                + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if argv == ["show", "-s", "--format=%P", self.C9]:
+                        return (self.A9 + (" " + "0" * 40 if scenario == "merge" else "")
+                                + "\n").encode()
+                    if argv == ["rev-list", "--count", f"{self.A9}..{self.C9}"]:
+                        return b"1\n"
+                    if argv == ["rev-list", "--min-parents=2", f"{self.A9}..{self.C9}"]:
+                        return b""
+                    if argv[:1] in (["log"], ["diff"]) and argv[-1] == f"{self.A9}..{self.C9}":
+                        paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                            if scenario == "extra_path" else set())
+                        return ("\n".join(sorted(paths)) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"] and argv[-2:] == [self.A9, self.C9]:
+                        paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                            if scenario == "extra_path" else set())
+                        return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                    if argv[:1] == ["show"] and argv[-1].startswith(self.C9 + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in self.CODE:
+                            return original_read(ROOT / path)
+                        if path in files:
+                            return files[path]
+                    if scenario == "history_forgery" and argv == ["show", "-s", "--format=%P",
+                            self.W10]:
+                        return ("0" * 40 + "\n").encode()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                remote = ("" if scenario == "remote_missing" else "0" * 40
+                          if scenario == "remote_advanced" else self.C9)
+                remote_error = subprocess.CalledProcessError(128, "git ls-remote") \
+                    if scenario == "remote_unavailable" else None
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            side_effect=remote_error, return_value=remote), \
+                        self.frozen_a9():
+                    errors = collector(bundle)
+                self.assertEqual(bool(errors), scenario != "valid", (scenario, errors))
+
+
+    def checkpoint_b9(self):
+        bundle, files = self.issued_a9()
+        progress = bundle["progress"]
+        status = "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_ACTIVE"
+        action = "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSE_READY"
+        progress["u01_task4_r6_pair_only_body_causal_probe_binding"].update(
+            status=status, next_safe_action=action, a9_docs_checkpoint=self.A9,
+            control_checkpoint=self.C9)
+        progress["active_work_instruction"].update(result_status=status,
+            package_status=status)
+        progress["repository"].update(local_head=self.C9, remote_head=self.C9,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-r6-pair-only-body-causal-probe-b9-seq2382")
+        bundle["handoff"].update(repository_head=self.C9, next_safe_action=action)
+        return U01Task4R6StoredRowDiagnosticTests.materialize(bundle, files)
+
+    def closed_h9(self):
+        bundle, files = self.checkpoint_b9()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSED"
+        for sequence, kind, event_id, lease, token in (
+            (2383, "WRITE_LEASE_REVOKED",
+             "evt_u01_2383_task4_r6_pair_only_body_causal_probe_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2384, "WORKER_LEASE_REVOKED",
+             "evt_u01_2384_task4_r6_pair_only_body_causal_probe_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(
+                stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None,
+                "step_id": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSE",
+                "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-BODY-CAUSAL-PROBE",
+                "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token],
+                            "reason": reason}})
+        stream.update(last_sequence=2384, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2382', '"last_sequence": 2384', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        action = "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_RECORDED_U01_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        for name, lease in (("write", write), ("worker", worker)):
+            progress[f"completed_u01_task4_r6_pair_only_body_causal_probe_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_task4_r6_pair_only_body_causal_probe_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B9,
+            event_sequence=2384)
+        progress["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2384,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-r6-pair-only-body-causal-probe-h9-seq2384")
+        progress["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2384, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2384
+        return U01Task4R6StoredRowDiagnosticTests.materialize(bundle, files)
+
+    def test_b9_h9_projection_and_close_clock(self):
+        b, bfiles = self.checkpoint_b9()
+        active = checker._validate_u01_task4_r6_pair_only_active
+        self.assertEqual(active(b, event_raw=bfiles[PATHS[1]],
+            now=datetime.fromisoformat(b["progress"]["updated_at"]), archived_files=bfiles), [])
+        h, hfiles = self.closed_h9()
+        closed = getattr(checker, "_validate_u01_task4_r6_pair_only_closed", None)
+        self.assertIsNotNone(closed)
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles), [])
+            forged = deepcopy(h)
+            forged["events"]["events"][2382]["event_type"] = "WORKER_LEASE_REVOKED"
+            self.assertTrue(closed(forged, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles))
+
+    def test_b9_h9_dispatch_frozen_bytes_and_expiry_boundaries(self):
+        b, bfiles = self.checkpoint_b9()
+        h, hfiles = self.closed_h9()
+        original_read = Path.read_bytes
+        for bundle, files in ((b, bfiles), (h, hfiles)):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                with patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_report_archive",
+                            return_value=(b, bfiles)), \
+                        patch.object(checker, "_collect_u01_task4_r6_pair_only_git",
+                            return_value=[]):
+                    self.assertEqual(checker.validate_bundle(bundle), [])
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(checker._validate_u01_task4_r6_pair_only_active(
+            b, event_raw=bfiles[PATHS[1]], now=expires, archived_files=bfiles))
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(checker._validate_u01_task4_r6_pair_only_closed(
+                h, event_raw=hfiles[PATHS[1]], now=expires + timedelta(days=1),
+                archived_files=hfiles), [])
+            forged = deepcopy(h)
+            forged["detached_digest"]["handoff"]["machine_summary_canonical_sha256"] = "0" * 64
+            self.assertTrue(checker._validate_u01_task4_r6_pair_only_closed(
+                forged, event_raw=hfiles[PATHS[1]], now=expires + timedelta(days=1),
+                archived_files=hfiles))
+        b["progress"]["updated_at"] = (expires - timedelta(minutes=1)).isoformat()
+        b, bfiles = U01Task4R6StoredRowDiagnosticTests.materialize(b, bfiles)
+        with patch.object(self, "checkpoint_b9", return_value=(deepcopy(b), deepcopy(bfiles))):
+            late, late_files = self.closed_h9()
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertIn("U01_TASK4_R6_PAIR_ONLY_CLOSE_CLOCK_INVALID",
+                checker._validate_u01_task4_r6_pair_only_closed(
+                    late, event_raw=late_files[PATHS[1]], now=expires,
+                    archived_files=late_files))
+
+
+
+    def test_b9_h9_and_first_tail_git_fail_closed(self):
+        b, bfiles = self.checkpoint_b9()
+        h, hfiles = self.closed_h9()
+        tail = "e" * 40
+        tail2 = "f" * 40
+        chain256 = [tail] + [f"{value:040x}" for value in range(1, 256)]
+        chain257 = chain256 + [f"{256:040x}"]
+        result = "docs/04_test_reports/U-01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_RESULT.md"
+        docs_b = {"docs/WORK_STATUS.md", PATHS[0], PATHS[2], PATHS[3]}
+        docs_h = docs_b | {PATHS[1]}
+        prior_dc = subprocess.check_output(["git", "show", f"{self.W10}:design_change.md"], cwd=ROOT)
+        original = subprocess.check_output
+        original_run = subprocess.run
+        original_read = Path.read_bytes
+        for scenario, bundle, files, head in (
+            ("b9", b, bfiles, self.B9), ("h9", h, hfiles, self.H9),
+            ("tail", h, hfiles, tail), ("tail_dc_append", h, hfiles, tail),
+            ("later", h, hfiles, tail2), ("later_dc", h, hfiles, tail2),
+            ("tail_dc_rewrite", h, hfiles, tail), ("tail_extra", h, hfiles, tail),
+            ("max256", h, hfiles, chain256[-1]),
+            ("over257", h, hfiles, chain257[-1]),
+            ("tail_rename", h, hfiles, tail),
+            ("remote_stale", h, hfiles, self.H9), ("dirty", h, hfiles, self.H9),
+            ("merge", b, bfiles, self.B9), ("history_dc", h, hfiles, tail),
+        ):
+            with self.subTest(scenario=scenario):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                current[ROOT / "docs/WORK_STATUS.md"] = b"synthetic current status"
+                appended_dc = prior_dc + b"\nC9 diagnostic result\n"
+                current[ROOT / "design_change.md"] = (appended_dc + b"late mutation\n"
+                    if scenario == "later_dc" else appended_dc
+                    if scenario == "tail_dc_append" else b"replaced history\n"
+                    if scenario == "tail_dc_rewrite" else prior_dc)
+                chain = chain256 if scenario == "max256" else chain257 if scenario == "over257" else []
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A9 if scenario == "remote_stale" else head) + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if argv[:3] == ["show", "-s", "--format=%P"] and argv[3] in {
+                            self.C9, self.B9, self.H9, tail, tail2, *chain}:
+                        parent = {self.C9: self.A9, self.B9: self.C9,
+                                  self.H9: self.B9, tail: self.H9, tail2: tail,
+                                  **{sha: (self.H9 if index == 0 else chain[index - 1])
+                                     for index, sha in enumerate(chain)}}[argv[3]]
+                        return (parent + (" " + "0" * 40 if scenario == "merge"
+                            and argv[3] == self.B9 else "") + "\n").encode()
+                    if argv[:2] == ["rev-list", "--count"]:
+                        if chain and argv[-1] == f"{self.B9}..{head}":
+                            return (str(len(chain) + 1) + "\n").encode()
+                        if argv[-1] == f"{self.B9}..{tail}":
+                            return b"2\n"
+                        if argv[-1] == f"{self.B9}..{tail2}":
+                            return b"3\n"
+                        if argv[-1] in {f"{self.A9}..{self.C9}", f"{self.C9}..{self.B9}",
+                                        f"{self.B9}..{self.H9}"}:
+                            return b"1\n"
+                    if argv[:2] == ["rev-list", "--min-parents=2"]:
+                        return b""
+                    if argv[:2] == ["rev-list", "--reverse"]:
+                        if chain and argv[-1] == f"{self.B9}..{head}":
+                            return ("\n".join([self.H9, *chain]) + "\n").encode()
+                        return (self.H9 + ("\n" + tail if head in {tail, tail2} else "")
+                                + ("\n" + tail2 if head == tail2 else "") + "\n").encode()
+                    if argv[:1] in (["log"], ["diff"]) and ".." in argv[-1]:
+                        legs = {f"{self.A9}..{self.C9}": self.CODE,
+                                f"{self.C9}..{self.B9}": docs_b,
+                                f"{self.B9}..{self.H9}": docs_h}
+                        if argv[-1] in legs:
+                            return ("\n".join(sorted(legs[argv[-1]])) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"]:
+                        left, right = argv[-2:]
+                        legs = {(self.A9, self.C9): self.CODE,
+                                (self.C9, self.B9): docs_b,
+                                (self.B9, self.H9): docs_h}
+                        if (left, right) in legs:
+                            return ("\n".join(f"M\t{path}" for path in sorted(legs[(left, right)]))
+                                    + "\n").encode()
+                        if (left, right) == (self.H9, tail):
+                            rows = [f"A\t{result}", "M\tdocs/WORK_STATUS.md"]
+                            if scenario == "tail_rename":
+                                rows[0] = f"R100\tdocs/04_test_reports/old.md\t{result}"
+                            if scenario in {"tail_dc_append", "tail_dc_rewrite"}:
+                                rows.append("M\tdesign_change.md")
+                            if scenario == "tail_extra":
+                                rows.append("M\tpackages/api/fastapi_app.py")
+                            return ("\n".join(rows) + "\n").encode()
+                        if chain and left in chain and right in chain:
+                            return b"M\tdocs/WORK_STATUS.md\n"
+                        if (left, right) == (tail, tail2):
+                            return (b"M\tdocs/WORK_STATUS.md\nM\tdesign_change.md\n"
+                                if scenario == "later_dc" else b"M\tdocs/WORK_STATUS.md\n")
+                    if argv[:1] == ["rev-parse"] and argv[-1].startswith(
+                            (self.H9 + ":", tail + ":", tail2 + ":",
+                             *(sha + ":" for sha in chain))):
+                        if argv[-1].endswith(":design_change.md"):
+                            return (("2" if scenario == "tail_dc_append" and
+                                argv[-1].startswith(tail + ":") else "3" if scenario == "later_dc"
+                                and argv[-1].startswith(tail2 + ":") else "1") * 40 + "\n").encode()
+                        return b"frozen\n"
+                    if argv[:1] == ["show"] and argv[-1].endswith(":design_change.md"):
+                        revision = argv[-1].split(":", 1)[0]
+                        if revision == self.H9:
+                            return b"forged history\n" if scenario == "history_dc" else prior_dc
+                        if revision in {tail, tail2, *chain}:
+                            if revision == tail and scenario == "later_dc":
+                                return prior_dc
+                            return current[ROOT / "design_change.md"]
+                    if argv[:1] == ["show"] and argv[-1].startswith(self.C9 + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in self.CODE:
+                            return original_read(ROOT / path)
+                        if path in files:
+                            return original(["git", "show", f"{self.A9}:{path}"], cwd=ROOT)
+                    if argv[:1] == ["show"] and argv[-1].startswith(head + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in PATHS or path == "docs/WORK_STATUS.md":
+                            return current[ROOT / path]
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            return_value=head):
+                    errors = checker._collect_u01_task4_r6_pair_only_git(bundle)
+                self.assertEqual(bool(errors), scenario not in {
+                    "b9", "h9", "tail", "tail_dc_append", "later", "max256"},
+                    (scenario, errors))
+
 class U01Task4R6PairPreNavCausalProbeTests(unittest.TestCase):
     A8 = "2e8bb6d1d1a81b88e597dac3ae19ab4da183848e"
     W9 = "5914b3ea220122d372844bceda64e350e7ab1f16"
