@@ -33,6 +33,424 @@ PATHS = (
 )
 
 
+class U01Task4R6NetworkCaptureDiagnosticTests(unittest.TestCase):
+    A5 = "265c7b88becbb1aa0dca4341645539c73f71a962"
+    C5 = "c" * 40
+    B5 = "b" * 40
+    H5 = "d" * 40
+    CODE = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py",
+            "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+            "tests/integration/test_f20_u01_oidc_browser_pg15.py"}
+
+    def issued_a5(self):
+        paths = (*PATHS, "docs/WORK_STATUS.md")
+        files = {path: subprocess.check_output(["git", "show", f"{self.A5}:{path}"],
+                 cwd=ROOT) for path in paths}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode()
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @staticmethod
+    def materialize(bundle, files):
+        return U01Task4R6StoredRowDiagnosticTests.materialize(bundle, files)
+
+    def checkpoint_b5(self):
+        bundle, files = self.issued_a5()
+        progress = bundle["progress"]
+        status = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE"
+        action = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY"
+        progress["u01_task4_r6_network_capture_diagnostic_binding"].update(
+            status=status, next_safe_action=action, a5_docs_checkpoint=self.A5,
+            control_checkpoint=self.C5)
+        progress["active_work_instruction"].update(result_status=status,
+            package_status=status)
+        progress["repository"].update(local_head=self.C5, remote_head=self.C5,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-r6-network-capture-diagnostic-b5-seq2362")
+        bundle["handoff"].update(repository_head=self.C5, next_safe_action=action)
+        return self.materialize(bundle, files)
+
+    def closed_h5(self):
+        bundle, files = self.checkpoint_b5()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"
+        for sequence, kind, event_id, lease, token in (
+            (2363, "WRITE_LEASE_REVOKED",
+             "evt_u01_2363_task4_r6_network_capture_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2364, "WORKER_LEASE_REVOKED",
+             "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(
+                stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE",
+                "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token],
+                            "reason": reason}})
+        stream.update(last_sequence=2364, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2362', '"last_sequence": 2364', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "evt_u01_2362_task4_r6_network_capture_write_lease_issued"',
+            '"last_event_id": "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        action = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_RECORDED_U01_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        for name, lease in (("write", write), ("worker", worker)):
+            progress[f"completed_u01_task4_r6_network_capture_diagnostic_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_task4_r6_network_capture_diagnostic_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B5, event_sequence=2364)
+        progress["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2364,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-r6-network-capture-diagnostic-h5-seq2364")
+        progress["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2364, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2364
+        return self.materialize(bundle, files)
+
+    def test_b5_h5_projection_and_forged_digest_event(self):
+        b, bfiles = self.checkpoint_b5()
+        at = datetime.fromisoformat(b["progress"]["updated_at"])
+        active = checker._validate_u01_task4_r6_network_capture_active
+        self.assertEqual(active(b, event_raw=bfiles[PATHS[1]], now=at,
+                                archived_files=bfiles), [])
+        forged = deepcopy(b)
+        forged["detached_digest"]["progress"]["canonical_json_sha256"] = "0" * 64
+        self.assertTrue(active(forged, event_raw=bfiles[PATHS[1]], now=at,
+                               archived_files=bfiles))
+        h, hfiles = self.closed_h5()
+        closed = checker._validate_u01_task4_r6_network_capture_closed
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles), [])
+            forged = deepcopy(h)
+            forged["events"]["events"][2362]["event_type"] = "WORKER_LEASE_REVOKED"
+            self.assertTrue(closed(forged, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles))
+
+    def test_h5_expiry_boundary_and_post_expiry_closed_remains_valid(self):
+        b, bfiles = self.checkpoint_b5()
+        h, hfiles = self.closed_h5()
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        closed = checker._validate_u01_task4_r6_network_capture_closed
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=expires + timedelta(days=1), archived_files=hfiles), [])
+        b["progress"]["updated_at"] = (expires - timedelta(minutes=1)).isoformat()
+        b, bfiles = self.materialize(b, bfiles)
+        with patch.object(self, "checkpoint_b5", return_value=(deepcopy(b), deepcopy(bfiles))):
+            late, late_files = self.closed_h5()
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertIn("U01_TASK4_R6_NETWORK_CLOSE_CLOCK_INVALID",
+                closed(late, event_raw=late_files[PATHS[1]], now=expires,
+                    archived_files=late_files))
+
+    def test_g05_dispatches_b5_h5_and_frozen_a5_after_live_h5(self):
+        b, bfiles = self.checkpoint_b5()
+        h, hfiles = self.closed_h5()
+        original_read = Path.read_bytes
+        for bundle, files in ((b, bfiles), (h, hfiles)):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                with patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_report_archive",
+                            return_value=(b, bfiles)), \
+                        patch.object(checker,
+                            "_collect_u01_task4_r6_network_capture_successor_git",
+                            return_value=[]) as git_check:
+                    self.assertEqual(checker.validate_bundle(bundle), [])
+                git_check.assert_called_once_with(bundle)
+        current_h5 = {ROOT / path: raw for path, raw in hfiles.items()}
+        def h5_read_bytes(path):
+            return current_h5[path] if path in current_h5 else original_read(path)
+        with patch.object(checker, "load_bundle", return_value=h), \
+                patch.object(Path, "read_bytes", h5_read_bytes):
+            a, afiles = self.issued_a5()
+            with self.frozen_a5_files():
+                self.assertEqual(checker._validate_u01_task4_r6_network_capture_active(
+                    a, event_raw=afiles[PATHS[1]],
+                    now=datetime.fromisoformat(a["progress"]["updated_at"])), [])
+
+    @contextmanager
+    def frozen_a5_files(self):
+        _, files = self.issued_a5()
+        original = Path.read_bytes
+        def read_bytes(path):
+            relative = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else None
+            return files[relative] if relative in files else original(path)
+        with patch.object(Path, "read_bytes", read_bytes):
+            yield
+
+    def test_a5_frozen_issue_and_negative_lease_event(self):
+        bundle, files = self.issued_a5()
+        at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        validate = checker._validate_u01_task4_r6_network_capture_active
+        with self.frozen_a5_files():
+            self.assertEqual(validate(bundle, event_raw=files[PATHS[1]], now=at), [])
+        for mutate in (
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+            lambda b: b["progress"]["worker_lease"].update(
+                execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(
+                path_scope=["packages/api/fastapi_app.py"]),
+            lambda b: b["progress"]["u01_task4_r6_network_capture_diagnostic_binding"].update(
+                vertical_acceptance="ACCEPTED"),
+        ):
+            forged = deepcopy(bundle)
+            mutate(forged)
+            with self.frozen_a5_files():
+                self.assertTrue(validate(forged, event_raw=files[PATHS[1]], now=at))
+
+    def test_a5_exact_expiry_and_g05_dispatch(self):
+        bundle, files = self.issued_a5()
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        validate = checker._validate_u01_task4_r6_network_capture_active
+        with self.frozen_a5_files():
+            self.assertEqual(validate(bundle, event_raw=files[PATHS[1]],
+                                      now=expires - timedelta(microseconds=1)), [])
+            self.assertTrue(validate(bundle, event_raw=files[PATHS[1]], now=expires))
+            with patch.object(checker, "_collect_u01_task4_r6_network_capture_git",
+                              return_value=[]) as git_check:
+                self.assertEqual(checker.validate_bundle(bundle), [])
+            git_check.assert_called_once_with(bundle)
+
+    def test_c5_requires_exact_child_live_private_and_clean(self):
+        bundle, _ = self.issued_a5()
+        collector = checker._collect_u01_task4_r6_network_capture_git
+        self.assertTrue(collector(bundle), "A5 preparation must remain RED")
+        original = subprocess.check_output
+        original_run = subprocess.run
+        for scenario in ("published", "extra_path", "merge", "tracking_stale",
+                         "remote_advanced", "remote_missing", "dirty"):
+            with self.subTest(scenario=scenario):
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (self.C5 + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A5 if scenario == "tracking_stale" else self.C5)
+                                + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if argv == ["show", "-s", "--format=%P", self.C5]:
+                        return (self.A5 + (" " + "0" * 40 if scenario == "merge" else "")
+                                + "\n").encode()
+                    if argv == ["rev-list", "--count", f"{self.A5}..{self.C5}"]:
+                        return b"1\n"
+                    if argv == ["rev-list", "--min-parents=2", f"{self.A5}..{self.C5}"]:
+                        return b""
+                    if argv[:1] in (["log"], ["diff"]) and argv[-1] == f"{self.A5}..{self.C5}":
+                        paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                            if scenario == "extra_path" else set())
+                        return ("\n".join(sorted(paths)) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"] and argv[-2:] == [self.A5, self.C5]:
+                        paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                            if scenario == "extra_path" else set())
+                        return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                    if argv[:1] == ["show"] and argv[-1].startswith(self.C5 + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        return (ROOT / path).read_bytes() if path in self.CODE else original(
+                            ["git", "show", f"{self.A5}:{path}"], cwd=ROOT)
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                remote = "" if scenario == "remote_missing" else \
+                    "0" * 40 if scenario == "remote_advanced" else self.C5
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            return_value=remote), self.frozen_a5_files():
+                    result = collector(bundle)
+                self.assertEqual(bool(result), scenario != "published", (scenario, result))
+
+    def test_b5_h5_tail_git_rejects_remote_dirty_and_history_forgery(self):
+        b, bfiles = self.checkpoint_b5()
+        h, hfiles = self.closed_h5()
+        collector = checker._collect_u01_task4_r6_network_capture_successor_git
+        original = subprocess.check_output
+        original_run = subprocess.run
+        original_read = Path.read_bytes
+        docs_b5 = {"docs/WORK_STATUS.md", PATHS[0], PATHS[2], PATHS[3]}
+        docs_h5 = docs_b5 | {PATHS[1]}
+        result_path = "docs/04_test_reports/U-01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_RESULT.md"
+        tail = "e" * 40
+        tail2 = "f" * 40
+        historical_dc = original(["git", "show",
+            "af2ba067cbee7df55a69a8b0077cbca3f9323e8b:design_change.md"], cwd=ROOT)
+        appended_dc = historical_dc + b"\nC5 diagnostic result\n"
+        for scenario, bundle, files, head in (
+            ("b5", b, bfiles, self.B5), ("h5", h, hfiles, self.H5),
+            ("tail", h, hfiles, tail), ("tail_dc_append", h, hfiles, tail),
+            ("tail_dc_rewrite", h, hfiles, tail),
+            ("history_dc", h, hfiles, tail), ("later_dc", h, hfiles, tail2),
+            ("extra_code", b, bfiles, self.B5),
+            ("merge", b, bfiles, self.B5), ("remote_stale", h, hfiles, self.H5),
+            ("remote_advanced", h, hfiles, self.H5),
+            ("remote_missing", h, hfiles, self.H5), ("dirty", h, hfiles, self.H5),
+            ("forged_tail", h, hfiles, tail), ("old_blob", h, hfiles, tail),
+        ):
+            with self.subTest(scenario=scenario):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                current[ROOT / "docs/WORK_STATUS.md"] = b"synthetic current WORK_STATUS"
+                if scenario in {"tail_dc_append", "later_dc"}:
+                    current[ROOT / "design_change.md"] = appended_dc
+                    if scenario == "later_dc":
+                        current[ROOT / "design_change.md"] += b"late mutation\n"
+                elif scenario == "tail_dc_rewrite":
+                    current[ROOT / "design_change.md"] = b"replaced historical text\n"
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A5 if scenario == "remote_stale" else head) + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if argv[:3] == ["show", "-s", "--format=%P"] and argv[3] in {
+                            self.C5, self.B5, self.H5, tail, tail2}:
+                        parent = {self.C5: self.A5, self.B5: self.C5,
+                                  self.H5: self.B5, tail: self.H5, tail2: tail}[argv[3]]
+                        return (parent + (" " + "0" * 40 if scenario == "merge"
+                            and argv[3] == self.B5 else "") + "\n").encode()
+                    if argv[:2] == ["rev-list", "--count"]:
+                        pair = argv[-1]
+                        if pair == f"{self.B5}..{tail}":
+                            return b"2\n"
+                        if pair == f"{self.B5}..{tail2}":
+                            return b"3\n"
+                        if pair in {f"{self.A5}..{self.C5}", f"{self.C5}..{self.B5}",
+                                    f"{self.B5}..{self.H5}"}:
+                            return b"1\n"
+                    if argv[:2] == ["rev-list", "--min-parents=2"]:
+                        return b""
+                    if argv[:2] == ["rev-list", "--reverse"]:
+                        return (self.H5 + ("\n" + tail if head in {tail, tail2} else "")
+                                + ("\n" + tail2 if head == tail2 else "") + "\n").encode()
+                    if argv[:1] in (["log"], ["diff"]) and ".." in argv[-1]:
+                        legs = {f"{self.A5}..{self.C5}": self.CODE,
+                                f"{self.C5}..{self.B5}": docs_b5,
+                                f"{self.B5}..{self.H5}": docs_h5}
+                        if argv[-1] in legs:
+                            paths = legs[argv[-1]] | ({"packages/api/fastapi_app.py"}
+                                if scenario == "extra_code" and argv[-1]
+                                == f"{self.A5}..{self.C5}" else set())
+                            return ("\n".join(sorted(paths)) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"]:
+                        left, right = argv[-2:]
+                        legs = {(self.A5, self.C5): self.CODE,
+                                (self.C5, self.B5): docs_b5,
+                                (self.B5, self.H5): docs_h5}
+                        if (left, right) in legs:
+                            paths = legs[(left, right)] | ({"packages/api/fastapi_app.py"}
+                                if scenario == "extra_code" and left == self.A5 else set())
+                            return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                        if (left, right) == (self.H5, tail):
+                            rows = [f"M\t{PATHS[1]}" if scenario == "forged_tail"
+                                    else f"A\t{result_path}", "M\tdocs/WORK_STATUS.md"]
+                            if scenario in {"tail_dc_append", "tail_dc_rewrite", "later_dc"}:
+                                rows.append("M\tdesign_change.md")
+                            return ("\n".join(rows) + "\n").encode()
+                        if (left, right) == (tail, tail2):
+                            return b"M\tdocs/WORK_STATUS.md\nM\tdesign_change.md\n"
+                    if argv[:1] == ["rev-parse"] and argv[-1].startswith(
+                            (self.H5 + ":", tail + ":", tail2 + ":")):
+                        if argv[-1].endswith(":design_change.md"):
+                            revision = argv[-1].split(":", 1)[0]
+                            if scenario == "history_dc":
+                                return ("3" * 40 + "\n").encode()
+                            if scenario == "later_dc" and revision == tail2:
+                                return ("4" * 40 + "\n").encode()
+                            if scenario in {"tail_dc_append", "tail_dc_rewrite", "later_dc"} \
+                                    and revision == tail:
+                                return ("2" * 40 + "\n").encode()
+                            return ("1" * 40 + "\n").encode()
+                        return ("forged\n" if scenario == "old_blob" and
+                            argv[-1].startswith(tail + ":") else "frozen\n").encode()
+                    if argv[:1] == ["show"] and argv[-1].endswith(":design_change.md"):
+                        revision = argv[-1].split(":", 1)[0]
+                        if revision == self.H5:
+                            return b"forged historical DC\n" if scenario == "history_dc" else historical_dc
+                        if revision in {tail, tail2}:
+                            if scenario == "history_dc":
+                                return b"forged historical DC\n"
+                            if scenario == "tail_dc_rewrite":
+                                return b"replaced historical text\n"
+                            if scenario in {"tail_dc_append", "later_dc"}:
+                                return (appended_dc + b"late mutation\n"
+                                        if scenario == "later_dc" and revision == tail2
+                                        else appended_dc)
+                            return historical_dc
+                    if argv[:1] == ["show"] and argv[-1].startswith(self.C5 + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in self.CODE:
+                            return original_read(ROOT / path)
+                    if argv[:1] == ["show"] and argv[-1].startswith(head + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path == "docs/WORK_STATUS.md":
+                            return current[ROOT / path]
+                        if path in files:
+                            return files[path]
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                remote = "" if scenario == "remote_missing" else \
+                    "0" * 40 if scenario == "remote_advanced" else head
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            return_value=remote):
+                    errors = collector(bundle)
+                self.assertEqual(bool(errors), scenario not in {"b5", "h5", "tail",
+                                                            "tail_dc_append"},
+                                 (scenario, errors))
+
+
 class U01Task4R6StoredRowControlCorrectionTests(unittest.TestCase):
     """Frozen A4 and exact C4 control-only successor."""
 

@@ -697,6 +697,17 @@ function responseCategory(url) {
   }
 }
 
+function responseRouteClass(url) {
+  try {
+    const path = new URL(url).pathname;
+    if (path === '/api/dashboard/project-environments') return 'PAIR_LIST_API';
+    if (/^\/api\/projects\/[^/]+\/environments\/[^/]+\/dashboard$/.test(path)) {
+      return 'SCOPED_DASHBOARD_API';
+    }
+    return path.startsWith('/api/') ? 'OTHER_API' : 'OTHER_APP';
+  } catch { return 'UNKNOWN'; }
+}
+
 function captureRequestFact(request) {
   return settleCapture(async () => ({
     origin: new URL(request.url()).origin, url: request.url(),
@@ -704,16 +715,29 @@ function captureRequestFact(request) {
   }));
 }
 
-function captureResponseFact(response, timeoutMs = 10000) {
+function captureResponseFact(response, timeoutMs = 10000, lifecycle = {requestFinished: 'UNKNOWN'}) {
   let status = 0;
   let category = 'UNKNOWN';
+  let captureStage = 'HEADERS';
+  let responseFinished = 'UNKNOWN';
+  let finishedPromise;
   try {
     status = response.status();
     if (!Number.isInteger(status) || status < 100 || status > 599) status = 0;
     category = responseCategory(response.url());
   } catch { /* fail closed through the capture result */ }
+  let routeClass = 'UNKNOWN';
+  try { routeClass = responseRouteClass(response.url()); }
+  catch { /* response URL is diagnostic-only; capture still fails closed. */ }
+  if (typeof response.finished === 'function') {
+    responseFinished = 'PENDING';
+    finishedPromise = Promise.resolve().then(() => response.finished()).then(
+      (result) => { responseFinished = result == null ? 'DONE' : 'ERROR'; return result; },
+      () => { responseFinished = 'ERROR'; return 'ERROR'; });
+  }
   return settleCapture(() => boundedCapture(async () => {
     const headers = await response.allHeaders();
+    captureStage = 'BODY';
     let body;
     try {
       body = await boundedCapture(() => response.text(), Math.max(10, Math.floor(timeoutMs / 3)));
@@ -721,8 +745,15 @@ function captureResponseFact(response, timeoutMs = 10000) {
       if (![204, 301, 302, 303, 304, 307, 308].includes(status)) throw error;
       body = '';
     }
+    if (status === 200) {
+      captureStage = 'FINISHED';
+      if (!finishedPromise || await finishedPromise !== null) {
+        throw new Error('R6_CAPTURE_UNFINISHED');
+      }
+    }
     return { origin: new URL(response.url()).origin, url: response.url(), headers, body };
-  }, timeoutMs)).then((result) => ({ ...result, category, status }));
+  }, timeoutMs)).then((result) => ({ ...result, category, status, routeClass,
+    captureStage, requestFinished: lifecycle.requestFinished, responseFinished }));
 }
 
 function verifiedFacts(results) {
@@ -737,8 +768,18 @@ function verifiedResponseFacts(results) {
     const observedStage = progressStages.has(failed.observedStage) ? failed.observedStage : 'BOOTSTRAP';
     const observedRound = Number.isSafeInteger(failed.observedRound) ? failed.observedRound : 0;
     const settledRound = Number.isSafeInteger(failed.settledRound) ? failed.settledRound : 0;
+    const routeClass = ['PAIR_LIST_API', 'SCOPED_DASHBOARD_API', 'OTHER_API', 'OTHER_APP', 'UNKNOWN']
+      .includes(failed.routeClass) ? failed.routeClass : 'UNKNOWN';
+    const captureStage = ['HEADERS', 'BODY', 'FINISHED'].includes(failed.captureStage)
+      ? failed.captureStage : 'HEADERS';
+    const requestFinished = ['PENDING', 'DONE', 'FAILED', 'UNKNOWN'].includes(failed.requestFinished)
+      ? failed.requestFinished : 'UNKNOWN';
+    const responseFinished = ['PENDING', 'DONE', 'ERROR', 'UNKNOWN'].includes(failed.responseFinished)
+      ? failed.responseFinished : 'UNKNOWN';
     writeSync(1, `R6_RESPONSE_CAPTURE_FAILED category=${failed.category} status=${failed.status} reason=${failed.reason}`
-      + ` index=${index} observed_stage=${observedStage} observed_round=${observedRound} settled_round=${settledRound}\n`);
+      + ` index=${index} observed_stage=${observedStage} observed_round=${observedRound} settled_round=${settledRound}`
+      + ` route=${routeClass} capture_stage=${captureStage} requestfinished=${requestFinished}`
+      + ` response_finished=${responseFinished}\n`);
     throw new Error('R6_RESPONSE_CAPTURE_FAILED');
   }
   return verifiedFacts(results);
@@ -2078,14 +2119,26 @@ async function main() {
     const requestFacts = [];
     const responseFacts = [];
     const responseCaptures = new WeakMap();
+    const requestLifecycle = new WeakMap();
     page.on('request', (request) => {
+      requestLifecycle.set(request, {requestFinished: 'PENDING'});
       requestFacts.push(captureRequestFact(request));
+    });
+    page.on('requestfinished', (request) => {
+      const lifecycle = requestLifecycle.get(request);
+      if (lifecycle) lifecycle.requestFinished = 'DONE';
+    });
+    page.on('requestfailed', (request) => {
+      const lifecycle = requestLifecycle.get(request);
+      if (lifecycle) lifecycle.requestFinished = 'FAILED';
     });
     page.on('response', (response) => {
       const captureIndex = responseFacts.length + 1;
       const observedStage = stage;
       const observedRound = navigationRound;
-      const capture = captureResponseFact(response).then((result) => ({...result,
+      const capture = captureResponseFact(response, 10000,
+        requestLifecycle.get(response.request()) || {requestFinished: 'UNKNOWN'})
+        .then((result) => ({...result,
         captureIndex, observedStage, observedRound, settledRound: navigationRound}));
       responseCaptures.set(response, capture);
       responseFacts.push(capture);
@@ -3628,6 +3681,41 @@ if (r48DiagnosticSelfTest) {
   assert.equal(bounded.status, 200);
   assert.equal(bounded.reason, 'TIMEOUT');
   assert.throws(() => verifiedResponseFacts([bounded]), /R6_RESPONSE_CAPTURE_FAILED/);
+  assert.equal(responseRouteClass(apiUrl + '/api/dashboard/project-environments?state=private'),
+    'PAIR_LIST_API');
+  assert.equal(responseRouteClass(apiUrl + '/api/projects/private/environments/private/dashboard?period=7d'),
+    'SCOPED_DASHBOARD_API');
+  assert.equal(responseRouteClass(apiUrl + '/api/unknown/private?token=private'), 'OTHER_API');
+  const diagnosticResponse = { ...bounded, routeClass: 'OTHER_API', captureStage: 'BODY',
+    requestFinished: 'DONE', responseFinished: 'PENDING' };
+  assert.throws(() => verifiedResponseFacts([diagnosticResponse]), /R6_RESPONSE_CAPTURE_FAILED/);
+  const unfinished200 = await captureResponseFact({
+    status: () => 200, url: () => apiUrl + '/api/operations/alerts',
+    allHeaders: async () => ({}), text: async () => '{}',
+    finished: () => new Promise(() => {}),
+  }, 60);
+  assert.equal(unfinished200.ok, false);
+  assert.equal(unfinished200.captureStage, 'FINISHED');
+  const pendingHeaders = await captureResponseFact({
+    status: () => 404, url: () => apiUrl + '/api/dashboard/project-environments?private=value',
+    allHeaders: () => new Promise(() => {}), text: async () => 'private-body',
+    finished: async () => null,
+  }, 60, {requestFinished: 'DONE'});
+  assert.equal(pendingHeaders.ok, false);
+  assert.equal(pendingHeaders.routeClass, 'PAIR_LIST_API');
+  assert.equal(pendingHeaders.captureStage, 'HEADERS');
+  assert.equal(pendingHeaders.requestFinished, 'DONE');
+  assert.equal(pendingHeaders.responseFinished, 'DONE');
+  const pendingBody = await captureResponseFact({
+    status: () => 404, url: () => apiUrl + '/api/unknown?private=value',
+    allHeaders: async () => ({}), text: () => new Promise(() => {}),
+    finished: () => new Promise(() => {}),
+  }, 60, {requestFinished: 'PENDING'});
+  assert.equal(pendingBody.ok, false);
+  assert.equal(pendingBody.routeClass, 'OTHER_API');
+  assert.equal(pendingBody.captureStage, 'BODY');
+  assert.equal(pendingBody.requestFinished, 'PENDING');
+  assert.equal(pendingBody.responseFinished, 'PENDING');
   const probe = await probeResponseTransport({
     headers: () => ({ 'content-length': '29', 'transfer-encoding': 'chunked' }),
     finished: async () => null,
@@ -3702,7 +3790,8 @@ if (r48DiagnosticSelfTest) {
   const dashboardBody = new Promise((resolve) => { releaseDashboardBody = resolve; });
   const dashboardResponse = {status: () => 200, url: () => apiUrl + '/api/dashboard/operations',
     request: () => ({method: () => 'GET'}),
-    allHeaders: async () => ({'content-type': 'application/json'}), text: () => dashboardBody};
+    allHeaders: async () => ({'content-type': 'application/json'}), text: () => dashboardBody,
+    finished: async () => null};
   const captureMap = new WeakMap([[dashboardResponse, captureResponseFact(dashboardResponse)]]);
   let waitedForResponse = false;
   const dashboardPage = {

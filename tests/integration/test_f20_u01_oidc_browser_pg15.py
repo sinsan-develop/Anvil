@@ -268,10 +268,13 @@ def _safe_response_diagnostic(output: str) -> str:
         r"^R6_(RESPONSE_CAPTURE|PHASE_RESPONSE)_FAILED category=([A-Z_]+) "
         r"status=([0-9]{1,3}) reason=([A-Z_]+)"
         r"(?: index=([0-9]{1,5}) observed_stage=([A-Z_]+)"
-        r" observed_round=([0-9]{1,4}) settled_round=([0-9]{1,4}))?\r?$",
+        r" observed_round=([0-9]{1,4}) settled_round=([0-9]{1,4})"
+        r"(?: route=([A-Z_]+) capture_stage=([A-Z_]+)"
+        r" requestfinished=([A-Z_]+) response_finished=([A-Z_]+))?)?\r?$",
         output, flags=re.MULTILINE,
     ):
-        kind, category, raw_status, reason, raw_index, observed_stage, raw_observed, raw_settled = match.groups()
+        (kind, category, raw_status, reason, raw_index, observed_stage, raw_observed,
+         raw_settled, route, capture_stage, requestfinished, response_finished) = match.groups()
         status = int(raw_status)
         valid_reason = ((kind == "RESPONSE_CAPTURE" and reason in {"TIMEOUT", "UNREADABLE"})
                         or (kind == "PHASE_RESPONSE" and reason in {
@@ -288,6 +291,24 @@ def _safe_response_diagnostic(output: str) -> str:
                     continue
                 detail += (f" index={index} observed_stage={observed_stage}"
                            f" observed_round={observed} settled_round={settled}")
+                if route is not None:
+                    if (route not in {"PAIR_LIST_API", "SCOPED_DASHBOARD_API", "OTHER_API",
+                                      "OTHER_APP", "UNKNOWN"}
+                            or capture_stage not in {"HEADERS", "BODY", "FINISHED"}
+                            or requestfinished not in {"PENDING", "DONE", "FAILED", "UNKNOWN"}
+                            or response_finished not in {"PENDING", "DONE", "ERROR", "UNKNOWN"}
+                            or route in {"PAIR_LIST_API", "SCOPED_DASHBOARD_API"}
+                               and category != "OTHER_API"
+                            or route == "OTHER_API" and category in {
+                                "DOCUMENT", "ASSET", "OIDC_AUTH", "OTHER_APP", "UNKNOWN"}
+                            or route == "OTHER_APP" and category not in {
+                                "DOCUMENT", "ASSET", "OIDC_AUTH", "OTHER_APP"}
+                            or route == "UNKNOWN" and category != "UNKNOWN"):
+                        detail = ""
+                        continue
+                    detail += (f" route={route} capture_stage={capture_stage}"
+                               f" requestfinished={requestfinished}"
+                               f" response_finished={response_finished}")
     return detail
 
 
@@ -1477,6 +1498,26 @@ def test_r45_response_capture_diagnostic_preserves_only_bounded_order_and_phase(
         marker.replace("settled_round=7", "settled_round=5"),
         marker.replace(" reason=UNREADABLE", " reason=" + secret),
     ]:
+        assert _safe_response_diagnostic(invalid) == ""
+
+
+def test_r6_network_capture_diagnostic_accepts_only_safe_route_and_lifecycle():
+    secret = "https://user:private-token@127.0.0.1/api/hidden?cookie=private"
+    marker = ("R6_RESPONSE_CAPTURE_FAILED category=OTHER_API status=404 reason=TIMEOUT "
+              "index=4 observed_stage=PRE_AUTH_LOADING_DOM observed_round=1 settled_round=2 "
+              "route=PAIR_LIST_API capture_stage=BODY requestfinished=DONE "
+              "response_finished=PENDING\n")
+    expected = (" category=OTHER_API status=404 reason=TIMEOUT index=4 "
+                "observed_stage=PRE_AUTH_LOADING_DOM observed_round=1 settled_round=2 "
+                "route=PAIR_LIST_API capture_stage=BODY requestfinished=DONE "
+                "response_finished=PENDING")
+    assert _safe_response_diagnostic(marker + secret) == expected
+    for invalid in (marker.replace("route=PAIR_LIST_API", "route=" + secret),
+                    marker.replace("capture_stage=BODY", "capture_stage=PRIVATE"),
+                    marker.replace("requestfinished=DONE", "requestfinished=PRIVATE"),
+                    marker.replace("response_finished=PENDING", "response_finished=PRIVATE"),
+                    marker.replace("route=PAIR_LIST_API", "route=OTHER_APP"),
+                    marker.replace("index=4", "index=100001")):
         assert _safe_response_diagnostic(invalid) == ""
 
 

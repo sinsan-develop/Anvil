@@ -80943,5 +80943,500 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_r6_stored_row_control(bundle)
 
 
+_U01_R6_NETWORK_A5 = "265c7b88becbb1aa0dca4341645539c73f71a962"
+_U01_R6_NETWORK_W6 = "af2ba067cbee7df55a69a8b0077cbca3f9323e8b"
+_U01_R6_NETWORK_PATHS = (
+    "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+    "docs/WORK_STATUS.md")
+_U01_R6_NETWORK_CODE = {
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_u01_postmerge_control_projection.py",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py"}
+_U01_R6_NETWORK_BINDING = "u01_task4_r6_network_capture_diagnostic_binding"
+
+
+def _validate_u01_task4_r6_network_capture_active(bundle, *, event_raw=None,
+                                                     now=None, archived_files=None):
+    """Bind A5/B5 to exact issued bytes, token lifetime, and immutable event prefix."""
+    from datetime import datetime, timedelta, timezone
+
+    root = Path(bundle["_root"])
+    paths = _U01_R6_NETWORK_PATHS
+    errors = []
+    try:
+        frozen = {path: subprocess.check_output(["git", "show",
+            f"{_U01_R6_NETWORK_A5}:{path}"], cwd=root, stderr=subprocess.DEVNULL)
+            for path in paths}
+        source = archived_files or {}
+        actual = {path: source[path] if path in source else (root / path).read_bytes()
+                  for path in paths}
+        if event_raw is not None:
+            actual[paths[1]] = event_raw
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_R6_NETWORK_BINDING]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        issued = datetime.fromisoformat(worker["issued_at"])
+        expires = datetime.fromisoformat(worker["expires_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expected_a5 = json.loads(frozen[paths[0]])
+        if (stream != json.loads(actual[paths[1]])
+                or actual[paths[1]] != frozen[paths[1]]
+                or raw_event_object_prefix_bytes(actual[paths[1]], 2359)
+                   != raw_event_object_prefix_bytes(subprocess.check_output(
+                       ["git", "show", f"{_U01_R6_NETWORK_W6}:{paths[1]}"], cwd=root,
+                       stderr=subprocess.DEVNULL), 2359)
+                or stream["last_sequence"] != 2362 or len(stream["events"]) != 2362
+                or [row["sequence"] for row in stream["events"][2359:]]
+                   != [2360, 2361, 2362]
+                or [row["event_type"] for row in stream["events"][2359:]]
+                   != ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+                       "WRITE_LEASE_ISSUED"]
+                or stream["events"][2360]["details"] != worker
+                or stream["events"][2361]["details"] != write
+                or progress["event_sequence"] != 2362
+                or progress["last_event_id"] != stream["last_event_id"]):
+            errors.append("U01_TASK4_R6_NETWORK_EVENT_INVALID")
+        if (worker != expected_a5["worker_lease"]
+                or write != expected_a5["write_lease"]
+                or worker["lease_epoch"] != 115 or write["write_epoch"] != 115
+                or worker["execution_fencing_token"] == write["write_fencing_token"]
+                or worker["path_scope"] != list(_U01_R6_NETWORK_CODE)
+                and set(worker["path_scope"]) != _U01_R6_NETWORK_CODE
+                or write["path_scope"] != worker["path_scope"]
+                or write["product_write_scope"] != []
+                or worker["issued_at"] != write["issued_at"]
+                or worker["expires_at"] != write["expires_at"]
+                or issued.tzinfo is None or expires.tzinfo is None
+                or expires - issued != timedelta(hours=24)
+                or instant.tzinfo is None or not issued <= instant < expires):
+            errors.append("U01_TASK4_R6_NETWORK_LEASE_INVALID")
+        for key, value in (
+            ("work_instruction_sha256", "B6E0B4FF4C637595CE8C4CFACCA7C980BD76BA33EA4D2358A4D6DFF3BEBAFF33"),
+            ("invocation_sha256", "01A4476983F05E175E368288886EF1258F6834D95226B1846B0907911B49BC31"),
+            ("approval_sha256", "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"),
+        ):
+            if (binding[key] != value
+                    or _sha256(root / binding[key.removesuffix("_sha256") + "_path"])
+                       != value):
+                errors.append("U01_TASK4_R6_NETWORK_HASH_INVALID")
+        if (binding["w6_checkpoint"] != _U01_R6_NETWORK_W6
+                or binding["active_projection_checkpoint"] is not None
+                or binding["developer_exact_paths"] != expected_a5[_U01_R6_NETWORK_BINDING]["developer_exact_paths"]
+                or binding["product_write_scope"] != []
+                or binding["vertical_acceptance"] != "NOT_ACCEPTED"
+                or binding["release_decision"] != "DEFER"
+                or binding["production"] != "NOT_EXECUTED"
+                or progress["repository"]["projection_mode"]
+                   != "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE"
+                or progress["next_successor_work_package"]
+                   != {"package_id": "U-02", "status": "BLOCKED_PENDING_U01_VERTICAL_ACCEPTANCE"}
+                or progress["snapshot_hash"] != compute_snapshot_hash(progress)):
+            errors.append("U01_TASK4_R6_NETWORK_PROJECTION_INVALID")
+        checkpoint = binding["control_checkpoint"]
+        if checkpoint is None:
+            if (actual != frozen or progress != expected_a5
+                    or bundle["handoff_text"].encode() != frozen[paths[2]]
+                    or bundle["detached_digest"] != json.loads(frozen[paths[3]])
+                    or binding["a5_docs_checkpoint"] is not None):
+                errors.append("U01_TASK4_R6_NETWORK_CANONICAL_INVALID")
+        else:
+            status = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE"
+            action = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY"
+            expected = copy.deepcopy(expected_a5)
+            updated = datetime.fromisoformat(progress["updated_at"])
+            if (re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or checkpoint == _U01_R6_NETWORK_A5
+                    or binding["a5_docs_checkpoint"] != _U01_R6_NETWORK_A5
+                    or updated.tzinfo is None
+                    or not datetime.fromisoformat(expected["updated_at"]) <= updated <= instant):
+                errors.append("U01_TASK4_R6_NETWORK_PROJECTION_INVALID")
+            expected[_U01_R6_NETWORK_BINDING].update(status=status,
+                next_safe_action=action, a5_docs_checkpoint=_U01_R6_NETWORK_A5,
+                control_checkpoint=checkpoint)
+            expected["active_work_instruction"].update(result_status=status,
+                package_status=status)
+            expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+                head_relation=action, worktree_status=action)
+            expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+                runtime_next_action=action,
+                next_work_package={"package_id": "U-01", "status": status},
+                snapshot_id="snapshot-u01-task4-r6-network-capture-diagnostic-b5-seq2362")
+            expected["snapshot_hash"] = compute_snapshot_hash(expected)
+            expected_handoff = extract_handoff_summary(frozen[paths[2]].decode())
+            expected_handoff.update(repository_head=checkpoint, next_safe_action=action)
+            expected_digest = copy.deepcopy(json.loads(frozen[paths[3]]))
+            expected_digest["progress"]["canonical_json_sha256"] = hashlib.sha256(
+                canonical_json_bytes(progress)).hexdigest().upper()
+            expected_digest["handoff"]["machine_summary_canonical_sha256"] = hashlib.sha256(
+                canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+            for section, data in (("progress", actual[paths[0]]),
+                                  ("handoff", actual[paths[2]])):
+                expected_digest[section].update(bytes=len(data),
+                    file_sha256=hashlib.sha256(data).hexdigest().upper())
+            if (progress != expected or bundle["handoff"] != expected_handoff
+                    or bundle["detached_digest"] != expected_digest
+                    or json.loads(actual[paths[0]]) != progress
+                    or actual[paths[2]].decode() != bundle["handoff_text"]
+                    or json.loads(actual[paths[3]]) != bundle["detached_digest"]):
+                errors.append("U01_TASK4_R6_NETWORK_PROJECTION_INVALID")
+        if bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"]):
+            errors.append("U01_TASK4_R6_NETWORK_HANDOFF_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK4_R6_NETWORK_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_task4_r6_network_capture_git(bundle):
+    """Require clean exact-four C5 child and actual private remote equality."""
+    root = Path(bundle["_root"])
+    canonical = set(_U01_R6_NETWORK_PATHS)
+    code = _U01_R6_NETWORK_CODE
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+        head = git("rev-parse", "HEAD")
+        if (re.fullmatch(r"[0-9a-f]{40}", head) is None
+                or head == _U01_R6_NETWORK_A5
+                or git("show", "-s", "--format=%P", head) != _U01_R6_NETWORK_A5
+                or git("rev-list", "--count", f"{_U01_R6_NETWORK_A5}..{head}") != "1"
+                or git("rev-list", "--min-parents=2", f"{_U01_R6_NETWORK_A5}..{head}")
+                or git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or set(git("log", "--format=", "--name-only", "--no-renames",
+                    f"{_U01_R6_NETWORK_A5}..{head}").splitlines()) - {""} != code
+                or set(git("diff", "--name-only", "--no-renames",
+                    f"{_U01_R6_NETWORK_A5}..{head}").splitlines()) - {""} != code
+                or set(git("diff", "--name-status", "--no-renames",
+                    _U01_R6_NETWORK_A5, head).splitlines())
+                   != {f"M\t{path}" for path in code}
+                or any(subprocess.check_output(["git", "show", f"{_U01_R6_NETWORK_A5}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                       for path in canonical)
+                or any(subprocess.check_output(["git", "show", f"{head}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                       for path in code)
+                or subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
+                    cwd=root, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL).returncode):
+            return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+        committed = json.loads(subprocess.check_output(["git", "show",
+            f"{head}:docs/progress/build-progress.json"], cwd=root,
+            stderr=subprocess.DEVNULL))
+        return [] if committed == bundle["progress"] else ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+
+
+def _validate_u01_task4_r6_network_capture_closed(bundle, *, event_raw=None,
+                                                     now=None, archived_files=None):
+    """Bind H5 to frozen B5 and exact write-before-worker revocation."""
+    from datetime import datetime, timezone
+
+    root = Path(bundle["_root"])
+    paths = _U01_R6_NETWORK_PATHS
+    errors = []
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_R6_NETWORK_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str)
+                or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_R6_NETWORK_A5, binding["control_checkpoint"]}):
+            return ["U01_TASK4_R6_NETWORK_CLOSE_INVALID"]
+        active, published = _u01_task4_report_archive(bundle, publication)
+        active_progress = active["progress"]
+        active_at = datetime.fromisoformat(active_progress["updated_at"])
+        if (_validate_u01_task4_r6_network_capture_active(active,
+                event_raw=published[paths[1]], now=active_at,
+                archived_files=published)
+                or active_progress[_U01_R6_NETWORK_BINDING]["control_checkpoint"]
+                   != binding["control_checkpoint"]
+                or active_progress["next_safe_action"]
+                   != "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE_READY"):
+            errors.append("U01_TASK4_R6_NETWORK_CLOSE_FROZEN_INVALID")
+        source = archived_files or {}
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        progress_raw = source[paths[0]] if paths[0] in source else (root / paths[0]).read_bytes()
+        handoff_raw = source[paths[2]] if paths[2] in source else (root / paths[2]).read_bytes()
+        digest_raw = source[paths[3]] if paths[3] in source else (root / paths[3]).read_bytes()
+        def stable(value):
+            return {key: item for key, item in value.items()
+                    if key not in {"events", "last_sequence", "last_event_id"}}
+        if (raw_event_object_prefix_bytes(raw, 2362)
+                != raw_event_object_prefix_bytes(published[paths[1]], 2362)
+                or stable(stream) != stable(active["events"])
+                or stream != json.loads(raw) or stream.get("last_sequence") != 2364
+                or len(stream.get("events", [])) != 2364
+                or stream.get("last_event_id")
+                   != "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked"
+                or progress.get("event_sequence") != 2364
+                or progress.get("last_event_id") != stream.get("last_event_id")):
+            errors.append("U01_TASK4_R6_NETWORK_CLOSE_EVENT_INVALID")
+        reason = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"
+        action = "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_RECORDED_U01_PENDING"
+        at = progress["updated_at"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        timestamp = datetime.fromisoformat(at)
+        expires = datetime.fromisoformat(active_progress["worker_lease"]["expires_at"])
+        if (timestamp.tzinfo is None or instant.tzinfo is None
+                or not active_at <= timestamp < expires or timestamp > instant):
+            errors.append("U01_TASK4_R6_NETWORK_CLOSE_CLOCK_INVALID")
+        for offset, sequence, kind, event_id, lease, token in (
+            (0, 2363, "WRITE_LEASE_REVOKED",
+             "evt_u01_2363_task4_r6_network_capture_write_lease_revoked",
+             active_progress["write_lease"], "write_fencing_token"),
+            (1, 2364, "WORKER_LEASE_REVOKED",
+             "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked",
+             active_progress["worker_lease"], "execution_fencing_token"),
+        ):
+            row = stream["events"][2362 + offset]
+            previous = hashlib.sha256(canonical_json_bytes(
+                stream["events"][2361 + offset])).hexdigest().upper()
+            if row != {"sequence": sequence, "event_id": event_id,
+                    "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                    "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                    "run_id": None, "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE",
+                    "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+                    "occurred_at": at,
+                    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                    "previous_event_sha256": previous,
+                    "details": {"lease_id": lease["lease_id"], token: lease[token],
+                                "reason": reason}}:
+                errors.append("U01_TASK4_R6_NETWORK_CLOSE_EVENT_INVALID")
+        expected = copy.deepcopy(active_progress)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_task4_r6_network_capture_diagnostic_{name}_lease"] = {
+                **active_progress[f"{name}_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["worker_lease"] = expected["write_lease"] = None
+        expected[_U01_R6_NETWORK_BINDING].update(status=reason, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2364)
+        expected["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2364,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-r6-network-capture-diagnostic-h5-seq2364")
+        expected["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        expected_handoff = {**active["handoff"], "event_sequence": 2364,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        expected_digest = copy.deepcopy(active["detached_digest"])
+        expected_digest["event_sequence"] = 2364
+        expected_digest["progress"]["canonical_json_sha256"] = hashlib.sha256(
+            canonical_json_bytes(progress)).hexdigest().upper()
+        expected_digest["handoff"]["machine_summary_canonical_sha256"] = hashlib.sha256(
+            canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+        for section, data in (("progress", progress_raw), ("handoff", handoff_raw)):
+            expected_digest[section].update(bytes=len(data),
+                file_sha256=hashlib.sha256(data).hexdigest().upper())
+        if (progress != expected or bundle["handoff"] != expected_handoff
+                or bundle["detached_digest"] != expected_digest
+                or json.loads(progress_raw) != progress
+                or handoff_raw.decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]
+                or json.loads(digest_raw) != bundle["detached_digest"]
+                or progress["snapshot_hash"] != compute_snapshot_hash(progress)):
+            errors.append("U01_TASK4_R6_NETWORK_CLOSE_PROJECTION_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK4_R6_NETWORK_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_task4_r6_network_capture_successor_git(bundle):
+    """Require exact W6/A5/C5/B5/H5 lineage and bounded report-only tail."""
+    root = Path(bundle["_root"])
+    work, progress_path, event, handoff, digest = (
+        _U01_R6_NETWORK_PATHS[4], *_U01_R6_NETWORK_PATHS[:4])
+    canonical = {work, progress_path, event, handoff, digest}
+    b5_paths = canonical - {event}
+    result = "docs/04_test_reports/U-01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_RESULT.md"
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+
+        def leg(left, right, expected):
+            if (git("show", "-s", "--format=%P", right) != left
+                    or git("rev-list", "--count", f"{left}..{right}") != "1"
+                    or git("rev-list", "--min-parents=2", f"{left}..{right}")):
+                return False
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            return history == expected and delta == expected
+
+        progress = bundle["progress"]
+        binding = progress[_U01_R6_NETWORK_BINDING]
+        closed = progress["repository"]["projection_mode"] \
+            == "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"
+        c5 = binding["control_checkpoint"]
+        b5 = binding["active_projection_checkpoint"] if closed else None
+        head = git("rev-parse", "HEAD")
+        refs = [_U01_R6_NETWORK_A5, c5, head] + ([b5] if closed else [])
+        if (any(not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in refs)
+                or len(set(refs)) != len(refs)
+                or binding["a5_docs_checkpoint"] != _U01_R6_NETWORK_A5
+                or git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or git("show", "-s", "--format=%P", _U01_R6_NETWORK_A5)
+                   != _U01_R6_NETWORK_W6
+                or git("show", "-s", "--format=%P", _U01_R6_NETWORK_W6)
+                   != "d36753053313b1bc5b4eab06b7d6fdf440522244"
+                or git("show", "-s", "--format=%P",
+                       "d36753053313b1bc5b4eab06b7d6fdf440522244")
+                   != "d24f50ca393deeb93e7197d9eb36fc0ee6f1ed21"
+                or not leg(_U01_R6_NETWORK_W6, _U01_R6_NETWORK_A5, canonical)
+                or not leg(_U01_R6_NETWORK_A5, c5, _U01_R6_NETWORK_CODE)
+                or set(git("diff", "--name-status", "--no-renames",
+                    _U01_R6_NETWORK_A5, c5).splitlines())
+                   != {f"M\t{path}" for path in _U01_R6_NETWORK_CODE}
+                or any(subprocess.check_output(["git", "show", f"{c5}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                       for path in _U01_R6_NETWORK_CODE)
+                or subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
+                    cwd=root, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL).returncode):
+            return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+        if not closed:
+            if (b5 is not None or not leg(c5, head, b5_paths)
+                    or set(git("diff", "--name-status", "--no-renames",
+                        c5, head).splitlines()) != {f"M\t{path}" for path in b5_paths}
+                    or subprocess.check_output(["git", "show", f"{_U01_R6_NETWORK_A5}:{event}"],
+                        cwd=root, stderr=subprocess.DEVNULL) != (root / event).read_bytes()):
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+        else:
+            if (not leg(c5, b5, b5_paths)
+                    or set(git("diff", "--name-status", "--no-renames",
+                        c5, b5).splitlines()) != {f"M\t{path}" for path in b5_paths}):
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            count = int(git("rev-list", "--count", f"{b5}..{head}"))
+            if not 1 <= count <= 257:
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            descendants = git("rev-list", "--reverse", f"{b5}..{head}").splitlines()
+            if len(descendants) != count or len(set(descendants)) != count:
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            h5 = descendants[0]
+            if (h5 in {_U01_R6_NETWORK_A5, c5, b5}
+                    or not leg(b5, h5, canonical)
+                    or set(git("diff", "--name-status", "--no-renames",
+                        b5, h5).splitlines()) != {f"M\t{path}" for path in canonical}):
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            immutable = _U01_R6_NETWORK_CODE | (canonical - {work}) | {
+                "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"}
+            if any(git("rev-parse", f"{h5}:{path}") != git("rev-parse", f"{head}:{path}")
+                   for path in immutable):
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            historical_dc = subprocess.check_output(["git", "show",
+                f"{_U01_R6_NETWORK_W6}:design_change.md"], cwd=root,
+                stderr=subprocess.DEVNULL)
+            h5_dc = subprocess.check_output(["git", "show", f"{h5}:design_change.md"],
+                cwd=root, stderr=subprocess.DEVNULL)
+            if h5_dc != historical_dc:
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            previous = h5
+            for index, successor in enumerate(descendants[1:]):
+                if (re.fullmatch(r"[0-9a-f]{40}", successor) is None
+                        or git("show", "-s", "--format=%P", successor) != previous):
+                    return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+                rows = {tuple(line.split("\t")) for line in git("diff", "--name-status",
+                    "--no-renames", previous, successor).splitlines()}
+                required = {("M", work)} | ({("A", result)} if index == 0 else set())
+                allowed = required | ({("M", "design_change.md")}
+                    if index == 0 else set())
+                if rows != required and rows != allowed:
+                    return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+                previous = successor
+            if previous != head:
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            first = descendants[1] if len(descendants) > 1 else h5
+            first_dc = subprocess.check_output(["git", "show", f"{first}:design_change.md"],
+                cwd=root, stderr=subprocess.DEVNULL)
+            dc_appended = first_dc != h5_dc
+            if (dc_appended and (len(first_dc) <= len(h5_dc)
+                                 or not first_dc.startswith(h5_dc))
+                    or dc_appended != (first != h5 and ("M", "design_change.md") in {
+                        tuple(line.split("\t")) for line in git("diff", "--name-status",
+                            "--no-renames", h5, first).splitlines()})):
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+            head_dc = subprocess.check_output(["git", "show", f"{head}:design_change.md"],
+                cwd=root, stderr=subprocess.DEVNULL)
+            if head_dc != first_dc or (root / "design_change.md").read_bytes() != head_dc:
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+        for path in canonical:
+            if subprocess.check_output(["git", "show", f"{head}:{path}"], cwd=root,
+                    stderr=subprocess.DEVNULL) != (root / path).read_bytes():
+                return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+        committed = json.loads(subprocess.check_output(["git", "show",
+            f"{head}:{progress_path}"], cwd=root, stderr=subprocess.DEVNULL))
+        return [] if committed == progress else ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ["U01_TASK4_R6_NETWORK_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_r6_network_capture = validate_bundle
+
+
+def validate_bundle(bundle):
+    progress = bundle.get("progress", {})
+    mode = progress.get("repository", {}).get("projection_mode")
+    if mode in {"U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_ACTIVE",
+                "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"}:
+        errors = (_validate_u01_task4_r6_network_capture_active(bundle)
+                  if mode.endswith("ACTIVE") else
+                  _validate_u01_task4_r6_network_capture_closed(bundle))
+        if all(key in bundle for key in ("failure_ledger", "nonsemantic",
+                                       "dir_registry", "event_contract")):
+            if not CHAPTER_15_MINIMUM_FIELDS.issubset(progress):
+                errors.append("PRG_MINIMUM_FIELD_MISSING")
+            if not EXTENDED_PROGRESS_FIELDS.issubset(progress):
+                errors.append("PRG_EXTENDED_FIELD_MISSING")
+            errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+            errors.extend(_validate_failure_projection(bundle))
+            errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+            errors.extend(_validate_dir(bundle))
+            errors.extend(_validate_reporting(progress))
+            errors.extend(_validate_reporting_state(bundle))
+            errors.extend(_validate_registry_refs(bundle))
+            errors.extend(_validate_referenced_hashes(bundle))
+            errors.extend(validate_detached_progress_binding(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        binding = progress.get(_U01_R6_NETWORK_BINDING, {})
+        errors.extend(_collect_u01_task4_r6_network_capture_git(bundle)
+            if mode.endswith("ACTIVE") and binding.get("control_checkpoint") is None
+            else _collect_u01_task4_r6_network_capture_successor_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_r6_network_capture(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
