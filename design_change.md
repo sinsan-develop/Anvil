@@ -137,3 +137,9 @@
 - 영향·조치: 각각 RED→GREEN 음성을 추가하고 C→B에만 새 기록 파일을 요구하며 D→P 문서 및 H 제품 경로를 좁혔다. 최종 통제 SHA-256은 검사기 `BDC1AD0C9D932E8C1966C5814AFAE992C880BB33479E4592205C1E2FD6A607A9`, 테스트 `F49A5D11A67BBE2D6F1E04CD63F556714A695196D7F96837755C5ED2A7816CB7`이다.
 - 실제 검증: Task 2 집중 10 PASS, 인접 7파일 271 PASS/0 FAIL(exit 0), 활성 G-05 seq2297 PASS, 독립 재검토 Critical 0/Important 0. 제품 12파일·WSL-server 실제 QA는 미실행이다.
 - 잔여·재개 조건: 통제 C `ff8f26b60c22696fdb8a27ed5d551b26ab879100`는 기존 branch/private에 게시·원격 동일·clean까지 확인했다. 이 문서를 포함한 B 투영의 G-05·원격 게시/clean 후에만 제품 RED 테스트를 시작한다.
+
+### DC-U01-019 — Foundation R6 PAIR_LIST_API 응답 본문 capture 미완료
+
+- 판정: C5 `f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207`의 새 빈 WSL-server 격리 PG15/OIDC/HTTPS/Chromium Git exact-SHA R6 opt-in은 **exit1, 1 failed/2 warnings**다. `NETWORK_RESPONSE_FACTS`의 index4는 안전 marker 기준 `PAIR_LIST_API`, `capture_stage=BODY`, `status=404`, `reason=TIMEOUT`, `requestfinished=PENDING`, `response_finished=PENDING`, `page=BODY_DONE`이다. 요청 종류와 정체 단계만 확인했으며 404와 미완료의 원인·제품 영향은 미확정이다.
+- 근거·영향: C5 local/private 및 WSL G-05 seq2362 PASS, B5 `d5f7cfc7742d390fb61941e2562e2aa3dc79f2f7` G-05 seq2362 PASS, H5 `2818112ababaa47ac120d273d1cd58a969326e70` G-05 seq2364 PASS는 각 SHA의 비제품 통제 판정이다. 전용 QA 경로5·컨테이너3·loopback5545 잔여0은 정리 스크립트 최종 exit1과 구분하여 독립 읽기 전용 조회로 확인했다. 전체 R6 FAIL, E-NET/E-API/E-AUD·U-01 필수 ID 인수 미충족이다. DC-U01-018·017의 역사 실패는 보존한다.
+- 조치·재개 조건: 기존 단일 브랜치의 별도 최소 WI/유효 dual lease에서 PAIR_LIST_API의 404 발생 경로와 본문 완료 지연을 비밀 없이 재현·원인 분리한다. 404를 무조건 허용하거나 timeout을 늘려 숨기거나 body 감사·인증·권한·same-origin 계약을 건너뛰지 않는다. 안전한 보정은 RED→GREEN·독립 검토·local/private G-05 이후 새 빈 사전 등록 WSL-server Git exact-SHA 격리 R6로 재검증하고 정확히 정리한다. 이 기록은 미진 추적일 뿐 R6 PASS·gate 면제·PR/main 근거가 아니다. U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, U-02 `BLOCKED`; 새 branch·ysna 제외다.

@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 R6 Network capture 결과보고 tail 후보(Main, 2026-10-11 KST): H5 `2818112ababaa47ac120d273d1cd58a969326e70` 기존 단일 branch/private 동일·tracked clean G-05 seq2364 PASS, epoch115 seq2363 write→2364 worker REVOKED·active lease0·제품0. C5 WSL-server exact SHA R6는 NETWORK_RESPONSE_FACTS/PAIR_LIST_API 404/BODY PENDING exit1(1 failed/2 warnings), 원인 미확정; 전용 QA 자원 독립 조회 잔여0. 신규 결과보고와 DC-U01-019 append 및 본 현황 정확3경로 후보이며 독립 검토/private 게시·이 tail의 G-05는 아직 미실행이다. 전체 R6 FAIL·U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED; 다음은 별도 최소 원인 분리 WI와 E-NET/E-API/E-AUD·필수 ID 실측. 역사 C/C3 실패 보존, PR/main·새 branch·ysna 제외.
+
 - Task4 R6 Network H5 임대 회수 후보(Main, 2026-10-11T02:25:39+09:00): B5 `d5f7cfc7742d390fb61941e2562e2aa3dc79f2f7` local/private clean G-05 seq2362 PASS. C5 WSL R6 opt-in exit1 NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT; PAIR_LIST_API·BODY·lifecycle PENDING, QA 잔여0. seq2363 write→2364 worker REVOKED, dual lease null·제품0. H5는 B5 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5 후보이며 독립 검토/private/G-05 전. 전체 R6 FAIL·원인 미확정·U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음은 결과보고와 별도 원인분리 WI.
 
 
