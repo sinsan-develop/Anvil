@@ -32,6 +32,401 @@ PATHS = (
 )
 
 
+class U01Task4Epoch108H3RegressionTests(unittest.TestCase):
+    """The epoch109 route binds H3/R1/R2/A and cannot accept U-01."""
+
+    A = "aaaefceb9fbe4099434cada3eed754350c8c94ec"
+    C = "c" * 40
+    B = "b" * 40
+
+    @classmethod
+    def issued_a(cls):
+        files = {path: subprocess.check_output(["git", "show", f"{cls.A}:{path}"],
+            cwd=ROOT) for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode("utf-8")
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @staticmethod
+    def materialize(bundle, files):
+        bundle, files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @classmethod
+    def checkpoint_b(cls):
+        bundle, files = cls.issued_a()
+        progress = bundle["progress"]
+        status = "U01_TASK4_EPOCH108_H3_REGRESSION_CHECKPOINTED_CLOSE_READY"
+        action = "U01_TASK4_EPOCH108_H3_REGRESSION_CLOSE_ONLY"
+        progress["u01_task4_epoch108_h3_regression_binding"].update(
+            status=status, next_safe_action=action, a_docs_checkpoint=cls.A,
+            control_checkpoint=cls.C)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=cls.C, remote_head=cls.C,
+            head_relation=status, worktree_status=status)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-epoch108-h3-regression-checkpoint-seq2332")
+        bundle["handoff"].update(repository_head=cls.C, next_safe_action=action)
+        return cls.materialize(bundle, files)
+
+    @classmethod
+    def closed_h4(cls):
+        bundle, files = cls.checkpoint_b()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_TASK4_EPOCH108_H3_REGRESSION_COMPLETE_R6_SEPARATE_WI_PENDING"
+        for sequence, kind, event_id, lease, token in (
+            (2333, "WRITE_LEASE_REVOKED",
+             "evt_u01_2333_task4_epoch108_h3_regression_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2334, "WORKER_LEASE_REVOKED",
+             "evt_u01_2334_task4_epoch108_h3_regression_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_TASK4_EPOCH108_H3_REGRESSION_CLOSE",
+                "subject_ref": "U-01/TASK4-EPOCH108-H3-REGRESSION", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+        stream.update(last_sequence=2334, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2332', '"last_sequence": 2334', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "evt_u01_2332_task4_epoch108_h3_regression_write_lease_issued"',
+            '"last_event_id": "evt_u01_2334_task4_epoch108_h3_regression_worker_lease_revoked"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        status = "U01_TASK4_EPOCH108_H3_REGRESSION_CLOSED_R6_PENDING"
+        action = "U01_TASK4_R6_SEPARATE_WI_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        progress["completed_u01_task4_epoch108_h3_regression_write_lease"] = {
+            **write, "status": "REVOKED", "revoked_at": at}
+        progress["completed_u01_task4_epoch108_h3_regression_worker_lease"] = {
+            **worker, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_task4_epoch108_h3_regression_binding"].update(status=status,
+            next_safe_action=action, active_projection_checkpoint=cls.B,
+            event_sequence=2334)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2334,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-epoch108-h3-regression-close-seq2334")
+        progress["repository"].update(projection_mode="U01_TASK4_EPOCH108_H3_REGRESSION_CLOSED",
+            head_relation=status, worktree_status=status)
+        bundle["handoff"].update(event_sequence=2334, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2334
+        return cls.materialize(bundle, files)
+
+    def test_a_binds_frozen_h3_r1_r2_and_epoch109_lease(self):
+        bundle, files = self.issued_a()
+        validator = checker._validate_u01_task4_epoch108_h3_regression_active
+        self.assertEqual(validator(bundle, event_raw=files[PATHS[1]],
+            now=datetime.fromisoformat(bundle["progress"]["updated_at"]),
+            archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+
+    def test_archived_a_uses_frozen_r2_blobs_not_later_current_report(self):
+        bundle, files = self.issued_a()
+        validator = checker._validate_u01_task4_epoch108_h3_regression_active
+        actual_hash = checker._sha256
+        def changed_current(path):
+            if str(path).endswith("design_change.md"):
+                return "0" * 64
+            return actual_hash(path)
+        with patch.object(checker, "_sha256", side_effect=changed_current):
+            self.assertEqual(validator(bundle, event_raw=files[PATHS[1]],
+                now=datetime.fromisoformat(bundle["progress"]["updated_at"]),
+                archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+            self.assertIn("U01_TASK4_H3_REGRESSION_REPORT_INVALID", validator(bundle,
+                event_raw=files[PATHS[1]],
+                now=datetime.fromisoformat(bundle["progress"]["updated_at"])))
+
+    def test_a_rejects_event_lease_hash_digest_and_false_downstream_state(self):
+        bundle, files = self.issued_a()
+        validator = checker._validate_u01_task4_epoch108_h3_regression_active
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        for name, mutate in (
+            ("event", lambda b: b["events"]["events"][2331].update(event_type="WORKER_LEASE_ISSUED")),
+            ("worker_token", lambda b: b["progress"]["worker_lease"].update(execution_fencing_token="forged")),
+            ("write_token", lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged")),
+            ("epoch", lambda b: b["progress"]["write_lease"].update(write_epoch=108)),
+            ("scope", lambda b: b["progress"]["write_lease"].update(path_scope=["apps/web/page.tsx"])),
+            ("expiry", lambda b: b["progress"]["worker_lease"].update(expires_at="2026-10-10T00:00:00Z")),
+            ("report", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(report_sha256="0" * 64)),
+            ("design", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(design_change_sha256="0" * 64)),
+            ("digest", lambda b: b["detached_digest"]["progress"].update(file_sha256="0" * 64)),
+            ("acceptance", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(vertical_acceptance="ACCEPTED")),
+            ("release", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(release_decision="RELEASE")),
+            ("production", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(production="EXECUTED")),
+            ("u02", lambda b: b["progress"].update(next_successor_work_package={"package_id": "U-02", "status": "READY"})),
+        ):
+            with self.subTest(name=name):
+                forged = deepcopy(bundle)
+                mutate(forged)
+                self.assertTrue(validator(forged, event_raw=files[PATHS[1]], now=now,
+                    archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), name)
+
+    def test_a_rejects_forged_r1_r2_blobs_and_h3_raw_history(self):
+        bundle, files = self.issued_a()
+        validator = checker._validate_u01_task4_epoch108_h3_regression_active
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        original = subprocess.check_output
+        for sha, path in (
+            ("4c9aa475df4888e267e61e283424b0ebf9dc908c", "design_change.md"),
+            ("52aa0b865cc82accfd736c91790be25d52c7d639",
+             "docs/04_test_reports/U-01_TASK4_EPOCH108_H3_WSL_CONTROL_QA_RESULT.md"),
+        ):
+            with self.subTest(sha=sha, path=path):
+                def forged_blob(command, *args, **kwargs):
+                    if command[:2] == ["git", "show"] and command[-1] == f"{sha}:{path}":
+                        return b"forged historical blob\n"
+                    return original(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=forged_blob):
+                    self.assertIn("U01_TASK4_H3_REGRESSION_REPORT_INVALID",
+                        validator(bundle, event_raw=files[PATHS[1]], now=now,
+                            archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}))
+        forged_raw = files[PATHS[1]].replace(b'"sequence": 2329', b'"sequence": 2229', 1)
+        self.assertIn("U01_TASK4_H3_REGRESSION_H3_INVALID",
+            validator(bundle, event_raw=forged_raw, now=now,
+                archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}))
+
+    def test_b_and_h4_bind_real_registry_hash_and_reject_acceptance(self):
+        active = checker._validate_u01_task4_epoch108_h3_regression_active
+        closed = checker._validate_u01_task4_epoch108_h3_regression_closed
+        b_bundle, b_files = self.checkpoint_b()
+        h4_bundle, h4_files = self.closed_h4()
+        original = subprocess.check_output
+        def archived(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for path in PATHS:
+                    if command[-1] == f"{self.B}:{path}":
+                        return b_files[path]
+            return original(command, *args, **kwargs)
+        with patch.object(subprocess, "check_output", side_effect=archived):
+            for bundle, files, validator in ((b_bundle, b_files, active),
+                                             (h4_bundle, h4_files, closed)):
+                now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+                self.assertEqual(checker._validate_registry_refs(bundle), [])
+                self.assertEqual(validator(bundle, event_raw=files[PATHS[1]], now=now,
+                    archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), [])
+                forged = deepcopy(bundle)
+                forged["progress"]["u01_task4_epoch108_h3_regression_binding"]["vertical_acceptance"] = "ACCEPTED"
+                self.assertTrue(validator(forged, event_raw=files[PATHS[1]], now=now,
+                    archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}))
+
+    def test_h4_rejects_revocation_order_tokens_expiry_and_downstream_escape(self):
+        bundle, files = self.closed_h4()
+        _, b_files = self.checkpoint_b()
+        validator = checker._validate_u01_task4_epoch108_h3_regression_closed
+        now = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        original = subprocess.check_output
+        def archived(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for path in PATHS:
+                    if command[-1] == f"{self.B}:{path}":
+                        return b_files[path]
+            return original(command, *args, **kwargs)
+        with patch.object(subprocess, "check_output", side_effect=archived):
+            for name, mutate in (
+                ("order", lambda b: b["events"]["events"][2332].update(event_type="WORKER_LEASE_REVOKED")),
+                ("token", lambda b: b["events"]["events"][2332]["details"].update(write_fencing_token="forged")),
+                ("expiry", lambda b: b["events"]["events"][2332].update(occurred_at="2026-10-12T00:00:00+00:00")),
+                ("acceptance", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(vertical_acceptance="ACCEPTED")),
+                ("release", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(release_decision="RELEASE")),
+                ("production", lambda b: b["progress"]["u01_task4_epoch108_h3_regression_binding"].update(production="EXECUTED")),
+                ("u02", lambda b: b["progress"].update(next_successor_work_package={"package_id": "U-02", "status": "READY"})),
+            ):
+                with self.subTest(name=name):
+                    forged = deepcopy(bundle)
+                    mutate(forged)
+                    forged["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(
+                        forged["progress"])
+                    self.assertTrue(validator(forged, event_raw=files[PATHS[1]], now=now,
+                        archived_files={PATHS[0]: files[PATHS[0]], PATHS[2]: files[PATHS[2]]}), name)
+            forged = deepcopy(bundle)
+            forged["_file_hashes"][PATHS[1]] = "0" * 64
+            self.assertIn("PRG_REGISTRY_HASH_MISMATCH",
+                checker._validate_registry_refs(forged))
+
+    def test_a_git_requires_exact_h3_r1_r2_a_and_live_private_remote(self):
+        bundle, _ = self.issued_a()
+        collector = checker._collect_u01_task4_epoch108_h3_regression_active_git
+        original = subprocess.check_output
+        def frozen_a(command, *args, **kwargs):
+            if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"]:
+                if command[5:] in (["rev-parse", "HEAD"],
+                                   ["rev-parse", "development/codex/u01-dashboard-r2"]):
+                    return (self.A + "\n").encode()
+                if command[5:] == ["status", "--porcelain=v1", "-uall"]:
+                    return b""
+            return original(command, *args, **kwargs)
+        with patch.object(subprocess, "check_output", side_effect=frozen_a):
+            with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha", return_value=self.A):
+                self.assertEqual(collector(bundle), [])
+            with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha", return_value="0" * 40):
+                self.assertTrue(collector(bundle))
+            with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                              side_effect=subprocess.CalledProcessError(1, "git ls-remote")):
+                self.assertTrue(collector(bundle))
+
+    def test_g05_dispatches_epoch109_a_without_accepting_u01(self):
+        bundle, files = self.issued_a()
+        active = checker._validate_u01_task4_epoch108_h3_regression_active
+        with patch.object(checker, "_collect_u01_task4_epoch108_h3_regression_active_git",
+                          return_value=[]), \
+                patch.object(checker, "_validate_u01_task4_epoch108_h3_regression_active",
+                    side_effect=lambda b: active(b, event_raw=files[PATHS[1]],
+                        now=datetime.fromisoformat(b["progress"]["updated_at"]),
+                        archived_files={PATHS[0]: files[PATHS[0]],
+                                        PATHS[2]: files[PATHS[2]]})):
+            self.assertEqual(checker.validate_bundle(bundle), [])
+
+    def test_successor_git_b_and_h4_require_exact_lineage_and_live_remote(self):
+        collector = checker._collect_u01_task4_epoch108_h3_regression_successor_git
+        code = {"scripts/check_project_progress.py",
+                "tests/tooling/test_u01_postmerge_control_projection.py"}
+        docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json"}
+        event = "docs/progress/progress-events.json"
+        r1_docs = {"design_change.md", "docs/WORK_STATUS.md",
+                   "docs/04_test_reports/U-01_TASK4_EPOCH108_H3_WSL_CONTROL_QA_RESULT.md"}
+        r2_docs = r1_docs | {"docs/04_test_reports/U-01_TASK4_EPOCH108_H3_REGRESSION_RECOVERY_PLAN.md"}
+        a_docs = {"docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+                  "docs/progress/build-progress.json", event,
+                  "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+                  "docs/work_orders/U-01_TASK4_EPOCH108_H3_REGRESSION_INVOCATION.md",
+                  "docs/work_orders/U-01_TASK4_EPOCH108_H3_REGRESSION_WORK_INSTRUCTION.md"}
+        h3, r1, r2 = ("37323c39839f119137fc9b22502464034086189f",
+                       "4c9aa475df4888e267e61e283424b0ebf9dc908c",
+                       "52aa0b865cc82accfd736c91790be25d52c7d639")
+        h4 = "d" * 40
+        for closed, bundle in ((False, self.checkpoint_b()[0]),
+                               (True, self.closed_h4()[0])):
+            head = h4 if closed else self.B
+            legs = {(h3, r1): r1_docs, (r1, r2): r2_docs,
+                    (r2, self.A): a_docs, (self.A, self.C): code,
+                    (self.C, self.B): docs}
+            if closed:
+                legs[(self.B, h4)] = docs | {event}
+            for scenario in ("published", "remote_missing", "remote_unavailable",
+                             "remote_advanced", "remote_diverged", "stale_tracking",
+                             "dirty", "product", "extra_report", "merge", "diverged",
+                             "stale_control"):
+                with self.subTest(closed=closed, scenario=scenario):
+                    def output(command, *args, **kwargs):
+                        tail = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                            "-c", "core.quotePath=false"] else command[1:]
+                        if tail == ["rev-parse", "HEAD"]:
+                            return (head + "\n").encode()
+                        if tail == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return (("0" * 40 if scenario == "stale_tracking" else head) + "\n").encode()
+                        if tail == ["branch", "--show-current"]:
+                            return b"codex/u01-dashboard-r2\n"
+                        if tail == ["rev-parse", "--abbrev-ref", "@{upstream}"]:
+                            return b"development/codex/u01-dashboard-r2\n"
+                        if tail == ["remote", "get-url", "development"]:
+                            return b"git@github-sinsan-develop:sinsan-develop/Anvil.git\n"
+                        if tail == ["ls-remote", "--exit-code", "development",
+                                    "refs/heads/codex/u01-dashboard-r2"]:
+                            if scenario == "remote_unavailable":
+                                raise subprocess.CalledProcessError(128, command)
+                            if scenario == "remote_missing":
+                                return b""
+                            remote = ("e" * 40 if scenario == "remote_advanced" else
+                                      "f" * 40 if scenario == "remote_diverged" else head)
+                            return f"{remote}\trefs/heads/codex/u01-dashboard-r2\n".encode()
+                        if tail == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                        if tail[:3] == ["show", "-s", "--format=%P"]:
+                            parents = {r1: h3, r2: r1, self.A: r2,
+                                       self.C: self.A, self.B: self.C, h4: self.B}
+                            parent = parents[tail[-1]]
+                            if scenario == "diverged" and tail[-1] == self.C:
+                                parent = "0" * 40
+                            return (parent + "\n").encode()
+                        if tail[:2] == ["rev-list", "--count"]:
+                            return b"1\n"
+                        if tail[:2] == ["rev-list", "--min-parents=2"]:
+                            return b"merge\n" if scenario == "merge" and tail[-1] == f"{self.A}..{self.C}" else b""
+                        if tail and tail[0] in ("log", "diff") and ".." in tail[-1]:
+                            selected = set(legs[tuple(tail[-1].split(".."))])
+                            if scenario == "product" and tail[-1] == f"{self.C}..{self.B}":
+                                selected.add("apps/web/src/console/App.tsx")
+                            if scenario == "extra_report" and tail[-1] == f"{self.C}..{self.B}":
+                                selected.add("docs/04_test_reports/U-01_TASK4_EPOCH108_H3_REGRESSION_CONTROL_REPORT.md")
+                            return ("\n".join(sorted(selected)) + "\n").encode()
+                        if tail[:1] == ["rev-parse"] and ":" in tail[-1]:
+                            return ("1" * 40 + "\n").encode()
+                        if tail[:1] == ["show"]:
+                            for path in code:
+                                if tail[-1] == f"{self.C}:{path}":
+                                    return (b"stale" if scenario == "stale_control" else
+                                            (ROOT / path).read_bytes())
+                            if tail[-1] == f"{head}:docs/progress/build-progress.json":
+                                return json.dumps(bundle["progress"]).encode()
+                        raise AssertionError(f"unhandled git command: {tail}")
+                    def run(command, *args, **kwargs):
+                        if command[:3] == ["git", "diff", "--check"]:
+                            return subprocess.CompletedProcess(command, 0)
+                        raise AssertionError(f"unhandled git run: {command}")
+                    with patch.object(subprocess, "check_output", side_effect=output), \
+                            patch.object(subprocess, "run", side_effect=run):
+                        result = collector(bundle)
+                    self.assertEqual(bool(result), scenario != "published", (scenario, result))
+
+    def test_g05_dispatches_b_and_h4_with_registry_validation(self):
+        b_bundle, b_files = self.checkpoint_b()
+        h4_bundle, h4_files = self.closed_h4()
+        active = checker._validate_u01_task4_epoch108_h3_regression_active
+        closed = checker._validate_u01_task4_epoch108_h3_regression_closed
+        original = subprocess.check_output
+        def archived(command, *args, **kwargs):
+            if command[:2] == ["git", "show"]:
+                for path in PATHS:
+                    if command[-1] == f"{self.B}:{path}":
+                        return b_files[path]
+            return original(command, *args, **kwargs)
+        with patch.object(subprocess, "check_output", side_effect=archived), \
+                patch.object(checker, "_collect_u01_task4_epoch108_h3_regression_successor_git",
+                    return_value=[]):
+            with patch.object(checker, "_validate_u01_task4_epoch108_h3_regression_active",
+                    side_effect=lambda b: active(b, event_raw=b_files[PATHS[1]],
+                        now=datetime.fromisoformat(b["progress"]["updated_at"]),
+                        archived_files={PATHS[0]: b_files[PATHS[0]],
+                                        PATHS[2]: b_files[PATHS[2]]})):
+                self.assertEqual(checker.validate_bundle(b_bundle), [])
+            with patch.object(checker, "_validate_u01_task4_epoch108_h3_regression_closed",
+                    side_effect=lambda b: closed(b, event_raw=h4_files[PATHS[1]],
+                        now=datetime.fromisoformat(b["progress"]["updated_at"]),
+                        archived_files={PATHS[0]: h4_files[PATHS[0]],
+                                        PATHS[2]: h4_files[PATHS[2]]})):
+                self.assertEqual(checker.validate_bundle(h4_bundle), [])
+
+
 class U01Task4Epoch106G05SuccessorTests(unittest.TestCase):
     """The epoch107 control route must bind the published A, not accept U-01."""
 
@@ -351,6 +746,8 @@ class U01Task4Epoch107PostcloseFixtureTests(unittest.TestCase):
         bundle["handoff_text"] = files[PATHS[2]].decode("utf-8")
         bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
         bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
         return bundle, files
 
     @classmethod
@@ -372,7 +769,10 @@ class U01Task4Epoch107PostcloseFixtureTests(unittest.TestCase):
             runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
             snapshot_id="snapshot-u01-task4-epoch107-postclose-fixture-checkpoint-seq2327")
         bundle["handoff"].update(repository_head=c, next_safe_action=action)
-        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+        bundle, files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
 
     @classmethod
     def closed_h3(cls):
@@ -434,7 +834,10 @@ class U01Task4Epoch107PostcloseFixtureTests(unittest.TestCase):
         bundle["handoff"].update(event_sequence=2329, last_event_id=stream["last_event_id"],
             active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
         bundle["detached_digest"]["event_sequence"] = 2329
-        return U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+        bundle, files = U01ScopedDashboardHistoricalFixtureEpoch100Tests.materialize(bundle, files)
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
 
     def test_active_binds_frozen_h2_r_a_and_epoch108_lease(self):
         bundle, files = self.issued_a()
@@ -608,8 +1011,7 @@ class U01Task4Epoch107PostcloseFixtureTests(unittest.TestCase):
                     side_effect=lambda b: closed(b, event_raw=h3_files[PATHS[1]],
                         now=datetime.fromisoformat(b["progress"]["updated_at"]),
                         archived_files={PATHS[0]: h3_files[PATHS[0]],
-                                        PATHS[2]: h3_files[PATHS[2]]})), \
-                    patch.object(checker, "_validate_registry_refs", return_value=[]):
+                                        PATHS[2]: h3_files[PATHS[2]]})):
                 self.assertEqual(checker.validate_bundle(h3_bundle), [])
 
     def test_active_rejects_event_lease_report_and_false_acceptance(self):
