@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2337,
+  "last_sequence": 2339,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106033,7 +106033,49 @@
     "product_write_scope": [],
     "write_epoch": 110
   }
+},
+{
+  "sequence": 2338,
+  "event_id": "evt_u01_2338_task4_post_h4_report_successor_write_lease_revoked",
+  "event_type": "WRITE_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "U-01",
+  "run_id": null,
+  "step_id": "U01_TASK4_POST_H4_REPORT_SUCCESSOR_CLOSE",
+  "subject_ref": "U-01/TASK4-POST-H4-REPORT-SUCCESSOR",
+  "occurred_at": "2026-10-10T18:10:32+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "FEE32D2326BC75E5366BDB6EAE025F0AEF5E296E7A3588B613DBDD6EA8980437",
+  "details": {
+    "lease_id": "write-lease-u01-task4-post-h4-report-successor-7412907d3e06442bbf820033a8ba967a",
+    "write_fencing_token": "u01-task4-post-h4-report-successor-write-fence-epoch-110-7412907d3e06442bbf820033a8ba967a",
+    "reason": "U01_TASK4_POST_H4_REPORT_SUCCESSOR_CLOSED_R6_PENDING"
+  }
+},
+{
+  "sequence": 2339,
+  "event_id": "evt_u01_2339_task4_post_h4_report_successor_worker_lease_revoked",
+  "event_type": "WORKER_LEASE_REVOKED",
+  "actor": "main-agent-eoul",
+  "actor_id": "main-agent-eoul",
+  "actor_type": "AGENT",
+  "project_id": "anvil",
+  "work_package_id": "U-01",
+  "run_id": null,
+  "step_id": "U01_TASK4_POST_H4_REPORT_SUCCESSOR_CLOSE",
+  "subject_ref": "U-01/TASK4-POST-H4-REPORT-SUCCESSOR",
+  "occurred_at": "2026-10-10T18:10:32+09:00",
+  "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+  "previous_event_sha256": "0E7F0EE79B107FE8F1B4D5AD180B83A97BE5E5DFD69337110B43722B786F1227",
+  "details": {
+    "lease_id": "worker-lease-u01-task4-post-h4-report-successor-29e6685709a9416193a7ec765443fa63",
+    "execution_fencing_token": "u01-task4-post-h4-report-successor-execution-fence-epoch-110-29e6685709a9416193a7ec765443fa63",
+    "reason": "U01_TASK4_POST_H4_REPORT_SUCCESSOR_CLOSED_R6_PENDING"
+  }
 }
   ],
-  "last_event_id": "evt_u01_2337_task4_post_h4_report_successor_write_lease_issued"
+  "last_event_id": "evt_u01_2339_task4_post_h4_report_successor_worker_lease_revoked"
 }
