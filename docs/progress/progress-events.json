@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2362,
+  "last_sequence": 2364,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106777,7 +106777,49 @@
         "execution_fencing_token": "u01-task4-r6-network-execution-fence-epoch-115-08dd77af9a768e34707ac4adea9c56c5",
         "product_write_scope": []
       }
+    },
+{
+      "sequence": 2363,
+      "event_id": "evt_u01_2363_task4_r6_network_capture_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T02:25:39+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "B3DF6E7ACC397A9851CB47358E762AA811ED5132A2FC37F4F671461D89265C10",
+      "details": {
+        "lease_id": "write-lease-u01-task4-r6-network-6a39f5cde8b3bdb88aa2279d5881bec6",
+        "write_fencing_token": "u01-task4-r6-network-write-fence-epoch-115-6a39f5cde8b3bdb88aa2279d5881bec6",
+        "reason": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"
+      }
+    },
+{
+      "sequence": 2364,
+      "event_id": "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-NETWORK-CAPTURE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T02:25:39+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "88FA83CE5C75AFCCF8038A2C2A5182F39BF8A90EB5BDB07158A8DB74ECA240B1",
+      "details": {
+        "lease_id": "worker-lease-u01-task4-r6-network-08dd77af9a768e34707ac4adea9c56c5",
+        "execution_fencing_token": "u01-task4-r6-network-execution-fence-epoch-115-08dd77af9a768e34707ac4adea9c56c5",
+        "reason": "U01_TASK4_R6_NETWORK_CAPTURE_DIAGNOSTIC_CLOSED"
+      }
     }
   ],
-  "last_event_id": "evt_u01_2362_task4_r6_network_capture_write_lease_issued"
+  "last_event_id": "evt_u01_2364_task4_r6_network_capture_worker_lease_revoked"
 }
