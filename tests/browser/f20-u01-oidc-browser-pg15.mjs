@@ -24,9 +24,13 @@ const evidenceDir = process.env.ANVIL_F20_R6_EVIDENCE_DIR;
 let sensitiveValues = [];
 let stage = 'BOOTSTRAP';
 let navigationRound = 0;
+let pairClock = 0;
+let firstPairTrace = null;
+let pairRequestSequence = 0;
 const progressStages = new Set([
   'BOOTSTRAP', 'PLAYWRIGHT_REQUIRE', 'BROWSER_LAUNCH', 'BROWSER_CONTEXT',
   'ISSUER_CONTEXT', 'PAGE_CREATE', 'PRE_AUTH_DOCUMENT', 'PRE_AUTH_CARD',
+  'PAIR_PROBE', 'PAIR_STABLE_FETCH',
   'PRE_AUTH_RESPONSES',
   'PRE_AUTH_LOADING_REQUESTS', 'PRE_AUTH_LOADING_DOM', 'PRE_AUTH_KEYBOARD',
   'PRE_AUTH_LOADING_RELEASE',
@@ -715,7 +719,8 @@ function captureRequestFact(request) {
   }));
 }
 
-function captureResponseFact(response, timeoutMs = 10000, lifecycle = {requestFinished: 'UNKNOWN'}) {
+function captureResponseFact(response, timeoutMs = 10000,
+  lifecycle = {requestFinished: 'UNKNOWN'}, milestone = () => {}) {
   let status = 0;
   let category = 'UNKNOWN';
   let captureStage = 'HEADERS';
@@ -732,24 +737,26 @@ function captureResponseFact(response, timeoutMs = 10000, lifecycle = {requestFi
   if (typeof response.finished === 'function') {
     responseFinished = 'PENDING';
     finishedPromise = Promise.resolve().then(() => response.finished()).then(
-      (result) => { responseFinished = result == null ? 'DONE' : 'ERROR'; return result; },
+      (result) => { responseFinished = result == null ? 'DONE' : 'ERROR';
+        if (result == null) milestone('finished'); return result; },
       () => { responseFinished = 'ERROR'; return 'ERROR'; });
   }
   return settleCapture(() => boundedCapture(async () => {
     const headers = await response.allHeaders();
+    milestone('headers', headers);
     captureStage = 'BODY';
     let body;
     try {
       body = await boundedCapture(() => response.text(), Math.max(10, Math.floor(timeoutMs / 3)));
+      milestone('body');
     } catch (error) {
       if (![204, 301, 302, 303, 304, 307, 308].includes(status)) throw error;
       body = '';
     }
-    if (status === 200) {
-      captureStage = 'FINISHED';
-      if (!finishedPromise || await finishedPromise !== null) {
-        throw new Error('R6_CAPTURE_UNFINISHED');
-      }
+    captureStage = 'FINISHED';
+    if (!finishedPromise || await finishedPromise !== null
+        || lifecycle.requestFinished === 'FAILED') {
+      throw new Error('R6_CAPTURE_UNFINISHED');
     }
     return { origin: new URL(response.url()).origin, url: response.url(), headers, body };
   }, timeoutMs)).then((result) => ({ ...result, category, status, routeClass,
@@ -764,6 +771,14 @@ function verifiedFacts(results) {
 function verifiedResponseFacts(results) {
   const failed = results.find(({ ok }) => !ok);
   if (failed) {
+    if (firstPairTrace) {
+      const pair = pairLifecycleSummary(firstPairTrace);
+      writeSync(1, `R6_PAIR_LIFECYCLE index=${pair.index} round=${pair.round}`
+        + ` pair_request=${pair.pairRequest}`
+        + ` headers=${pair.headers} body=${pair.body} finished=${pair.finished}`
+        + ` request=${pair.request} navigation=${pair.navigation}`
+        + ` length=${pair.length} transfer=${pair.transfer}\n`);
+    }
     const index = Number.isSafeInteger(failed.captureIndex) ? failed.captureIndex : 0;
     const observedStage = progressStages.has(failed.observedStage) ? failed.observedStage : 'BOOTSTRAP';
     const observedRound = Number.isSafeInteger(failed.observedRound) ? failed.observedRound : 0;
@@ -835,9 +850,7 @@ async function configureDiagnosticDrain(page, enabled, events) {
   await page.addInitScript(diagnosticDrainBootstrap, 2000);
 }
 
-async function probeResponseTransport(response, nativeRead, timeoutMs = 2000) {
-  let headers = {};
-  try { headers = response.headers() || {}; } catch { /* diagnostics stay unknown */ }
+function classifyTransportHeaders(headers) {
   const normalized = Object.fromEntries(Object.entries(headers)
     .map(([name, value]) => [name.toLowerCase(), value]));
   const rawLength = normalized['content-length'];
@@ -847,6 +860,13 @@ async function probeResponseTransport(response, nativeRead, timeoutMs = 2000) {
   const rawTransfer = normalized['transfer-encoding'];
   const transfer = rawTransfer === undefined ? 'MISSING'
     : String(rawTransfer).toLowerCase() === 'chunked' ? 'CHUNKED' : 'OTHER';
+  return {length, transfer};
+}
+
+async function probeResponseTransport(response, nativeRead, timeoutMs = 2000) {
+  let headers = {};
+  try { headers = response.headers() || {}; } catch { /* diagnostics stay unknown */ }
+  const {length, transfer} = classifyTransportHeaders(headers);
   const completed = await settleCapture(() => boundedCapture(() => response.finished(), timeoutMs));
   const finished = completed.ok ? (completed.value == null ? 'DONE' : 'ERROR')
     : completed.reason === 'TIMEOUT' ? 'TIMEOUT' : 'ERROR';
@@ -860,12 +880,84 @@ async function probeResponseTransport(response, nativeRead, timeoutMs = 2000) {
   return { length, transfer, finished, native };
 }
 
-async function fetchOnPage(page, path, options = {}) {
-  return page.evaluate(async ({ path, options }) => {
+function pairLifecycleSummary(trace) {
+  const state = (value) => Number.isSafeInteger(value) && value > 0 ? 'DONE' : 'PENDING';
+  const navigation = !trace.nextNavigation ? 'NONE'
+    : trace.body && trace.body < trace.nextNavigation ? 'AFTER_BODY'
+      : 'BEFORE_BODY';
+  return {index: trace.index, round: trace.observedRound, pairRequest: trace.pairRequest,
+    headers: state(trace.headers), body: state(trace.body),
+    finished: state(trace.finished), request: trace.request, navigation,
+    ...classifyTransportHeaders(trace.headerValues || {})};
+}
+
+function pairStatusClass(status) {
+  return Number.isInteger(status) && status >= 200 && status < 300 ? '2XX'
+    : Number.isInteger(status) && status >= 400 && status < 500 ? '4XX'
+      : Number.isInteger(status) && status >= 500 && status < 600 ? '5XX' : 'OTHER';
+}
+
+async function probeUnauthenticatedPair(playwrightRequest, origin, secrets) {
+  const target = origin + '/api/dashboard/project-environments';
+  const url = new URL(target);
+  assert.equal(url.origin, origin, 'R6_PAIR_PROBE_ORIGIN_INVALID');
+  assert.equal(url.search, '', 'R6_PAIR_PROBE_QUERY_INVALID');
+  const client = await playwrightRequest.newContext({ignoreHTTPSErrors: true,
+    storageState: {cookies: [], origins: []}});
+  let fact = {status: 'UNKNOWN', headers: 'PENDING', body: 'PENDING',
+    request: 'PENDING', audit: 'PENDING', length: 'MISSING', transfer: 'MISSING'};
+  try {
+    const state = await client.storageState();
+    assert.deepEqual(state, {cookies: [], origins: []}, 'R6_PAIR_PROBE_CREDENTIAL_INVALID');
+    const completed = await settleCapture(() => boundedCapture(
+      () => client.get(target, {maxRedirects: 0, timeout: 2000,
+        headers: {'x-anvil-r6-pair-probe': '1'}}), 2000));
+    if (!completed.ok) return {...fact, request: completed.reason};
+    const response = completed.value;
+    assert.equal(response.url(), target, 'R6_PAIR_PROBE_ORIGIN_INVALID');
+    const headers = response.headers();
+    fact = {...fact, status: pairStatusClass(response.status()), headers: 'DONE',
+      request: 'DONE', ...classifyTransportHeaders(headers)};
+    const bodyResult = await settleCapture(() => boundedCapture(() => response.text(), 2000));
+    if (!bodyResult.ok) return {...fact, body: bodyResult.reason};
+    fact.body = 'DONE';
+    const text = bodyResult.value;
+    const markers = secrets.flatMap((value) => [value, encodeURIComponent(value)]);
+    const raw = JSON.stringify(headers) + text + response.url();
+    assert.ok(!markers.some((value) => value && raw.includes(value)), 'R6_PAIR_PROBE_SECRET_EXPOSED');
+    const headerNames = Object.keys(headers).map((name) => name.toLowerCase());
+    assert.ok(!headerNames.some((name) => ['set-cookie', 'authorization',
+      'proxy-authorization', 'x-r6-control-token'].includes(name)),
+      'R6_PAIR_PROBE_CREDENTIAL_INVALID');
+    fact.audit = 'CLEAR';
+    return fact;
+  } finally {
+    await client.dispose();
+  }
+}
+
+async function probeStablePagePair(page, origin, secrets) {
+  const completed = await settleCapture(() => boundedCapture(
+    () => fetchOnPage(page, '/api/dashboard/project-environments', {}, true), 2000));
+  if (!completed.ok) return {status: 'UNKNOWN', body: completed.reason, audit: 'PENDING',
+    length: 'MISSING', transfer: 'MISSING'};
+  const {status, text, headers} = completed.value;
+  assert.ok(Number.isInteger(status) && typeof text === 'string'
+    && headers && typeof headers === 'object', 'R6_PAIR_PAGE_INVALID');
+  const markers = secrets.flatMap((value) => [value, encodeURIComponent(value)]);
+  const raw = text + JSON.stringify(headers);
+  assert.ok(!markers.some((value) => value && raw.includes(value)), 'R6_PAIR_PAGE_SECRET_EXPOSED');
+  return {status: pairStatusClass(status), body: 'DONE', audit: 'CLEAR',
+    ...classifyTransportHeaders(headers)};
+}
+
+async function fetchOnPage(page, path, options = {}, includeHeaders = false) {
+  return page.evaluate(async ({ path, options, includeHeaders }) => {
     const response = await fetch(path, { credentials: 'same-origin', ...options });
     const text = await response.text();
-    return { status: response.status, text };
-  }, { path, options });
+    return { status: response.status, text,
+      ...(includeHeaders ? {headers: Object.fromEntries(response.headers.entries())} : {}) };
+  }, { path, options, includeHeaders });
 }
 
 async function traceRevokedDashboardFetch(page, emit = (line) => writeSync(1, line + '\n')) {
@@ -2051,9 +2143,13 @@ async function readyDashboard(page, action, origin, phase, responseCaptures, bef
   markStage(phase + '_DOCUMENT');
   navigationRound += 1;
   const navigate = async () => {
+    if (!['goto', 'reload'].includes(action)) throw new Error('R6_NAVIGATION_ACTION_INVALID');
+    if (firstPairTrace && !firstPairTrace.nextNavigation
+        && navigationRound > firstPairTrace.observedRound) {
+      firstPairTrace.nextNavigation = ++pairClock;
+    }
     if (action === 'goto') await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
-    else if (action === 'reload') await page.reload({ waitUntil: 'domcontentloaded' });
-    else throw new Error('R6_NAVIGATION_ACTION_INVALID');
+    else await page.reload({ waitUntil: 'domcontentloaded' });
   };
   const beforeEvidence = beforeResponses ? await beforeResponses(navigate) : (await navigate(), {});
   markStage(phase + '_CARD');
@@ -2112,6 +2208,11 @@ async function main() {
     markStage('ISSUER_CONTEXT');
     const issuerClient = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
     try {
+    markStage('PAIR_PROBE');
+    const pairProbe = await probeUnauthenticatedPair(playwrightRequest, apiUrl, sensitiveValues);
+    writeSync(1, `R6_PAIR_PROBE status=${pairProbe.status} headers=${pairProbe.headers}`
+      + ` body=${pairProbe.body} request=${pairProbe.request} audit=${pairProbe.audit}`
+      + ` length=${pairProbe.length} transfer=${pairProbe.transfer}\n`);
     markStage('PAGE_CREATE');
     const page = await context.newPage();
     const diagnosticEvents = [];
@@ -2121,23 +2222,39 @@ async function main() {
     const responseCaptures = new WeakMap();
     const requestLifecycle = new WeakMap();
     page.on('request', (request) => {
-      requestLifecycle.set(request, {requestFinished: 'PENDING'});
+      const pairRequest = responseRouteClass(request.url()) === 'PAIR_LIST_API'
+        ? ++pairRequestSequence : 0;
+      requestLifecycle.set(request, {requestFinished: 'PENDING', pairRequest});
       requestFacts.push(captureRequestFact(request));
     });
     page.on('requestfinished', (request) => {
       const lifecycle = requestLifecycle.get(request);
       if (lifecycle) lifecycle.requestFinished = 'DONE';
+      if (firstPairTrace?.requestObject === request) firstPairTrace.request = 'DONE';
     });
     page.on('requestfailed', (request) => {
       const lifecycle = requestLifecycle.get(request);
       if (lifecycle) lifecycle.requestFinished = 'FAILED';
+      if (firstPairTrace?.requestObject === request) firstPairTrace.request = 'FAILED';
     });
     page.on('response', (response) => {
       const captureIndex = responseFacts.length + 1;
       const observedStage = stage;
       const observedRound = navigationRound;
+      let trace;
+      if (responseRouteClass(response.url()) === 'PAIR_LIST_API' && !firstPairTrace) {
+        trace = {index: captureIndex, observedRound, requestObject: response.request(),
+          pairRequest: requestLifecycle.get(response.request())?.pairRequest || 0,
+          response: ++pairClock, headers: 0, body: 0, finished: 0,
+          request: 'PENDING', nextNavigation: 0};
+        firstPairTrace = trace;
+      }
       const capture = captureResponseFact(response, 10000,
-        requestLifecycle.get(response.request()) || {requestFinished: 'UNKNOWN'})
+        requestLifecycle.get(response.request()) || {requestFinished: 'UNKNOWN'},
+        (key, headers) => { if (trace) {
+          trace[key] = ++pairClock;
+          if (key === 'headers') trace.headerValues = headers;
+        } })
         .then((result) => ({...result,
         captureIndex, observedStage, observedRound, settledRound: navigationRound}));
       responseCaptures.set(response, capture);
@@ -2146,6 +2263,11 @@ async function main() {
     const { card, beforeEvidence: loadingEvidence } = await readyDashboard(page, 'goto', apiUrl,
       'PRE_AUTH', responseCaptures,
       (navigate) => holdFirstDashboardRequests(page, apiUrl, navigate));
+    markStage('PAIR_STABLE_FETCH');
+    const pairPage = await probeStablePagePair(page, apiUrl, sensitiveValues);
+    writeSync(1, `R6_PAIR_PAGE status=${pairPage.status} body=${pairPage.body}`
+      + ` audit=${pairPage.audit} length=${pairPage.length}`
+      + ` transfer=${pairPage.transfer}\n`);
     await verifyOperatingCards(page);
     markStage('PRE_AUTH_FETCH');
     const preAuth = await fetchOnPage(page, '/api/operations/alerts');
@@ -2583,7 +2705,8 @@ async function main() {
     markStage('NETWORK_ASSERT');
     const appApiRequestCount = requests.filter(({ url }) => new URL(url).pathname.startsWith('/api/')).length;
     assert.ok(allAppRequestsSameOrigin && !offOriginCredentialLeak && !secretExposure
-      && idpContextSeparate && staleCleared && appApiRequestCount > 0);
+      && idpContextSeparate && staleCleared && appApiRequestCount > 0
+      && pairProbe.audit === 'CLEAR' && pairPage.audit === 'CLEAR');
     if (diagnosticDrain) {
       assert.ok(diagnosticEvents.length > 0
         && diagnosticEvents.every(({ outcome }) => outcome === 'DONE')
@@ -3559,6 +3682,7 @@ if (r48DiagnosticSelfTest) {
     status: () => status, url: () => apiUrl + '/unreadable',
     allHeaders: async () => ({}),
     text: async () => { throw new Error('private-response-content'); },
+    finished: async () => null,
   });
   const pendingResponse = captureResponseFact(unreadableResponse(200));
   const pendingRequest = captureRequestFact({
@@ -3671,6 +3795,7 @@ if (r48DiagnosticSelfTest) {
     status: () => status, url: () => apiUrl + path,
     allHeaders: async () => ({ 'content-type': 'application/json' }),
     text: () => new Promise(() => {}),
+    finished: async () => null,
   });
   const bounded = await Promise.race([
     captureResponseFact(hangingResponse(200, '/api/operations/alerts?opaque=private'), 60),
@@ -3696,6 +3821,13 @@ if (r48DiagnosticSelfTest) {
   }, 60);
   assert.equal(unfinished200.ok, false);
   assert.equal(unfinished200.captureStage, 'FINISHED');
+  const unfinished404 = await captureResponseFact({
+    status: () => 404, url: () => apiUrl + '/api/dashboard/project-environments',
+    allHeaders: async () => ({}), text: async () => '{}',
+    finished: () => new Promise(() => {}),
+  }, 60);
+  assert.equal(unfinished404.ok, false);
+  assert.equal(unfinished404.captureStage, 'FINISHED');
   const pendingHeaders = await captureResponseFact({
     status: () => 404, url: () => apiUrl + '/api/dashboard/project-environments?private=value',
     allHeaders: () => new Promise(() => {}), text: async () => 'private-body',
@@ -3729,6 +3861,110 @@ if (r48DiagnosticSelfTest) {
   assert.deepEqual(stalledProbe, {
     length: 'MISSING', transfer: 'MISSING', finished: 'TIMEOUT', native: 'TIMEOUT',
   });
+  assert.deepEqual(pairLifecycleSummary({index: 2, observedRound: 1, pairRequest: 1, response: 4,
+    headers: 5, body: 0, finished: 0, request: 'PENDING', nextNavigation: 6,
+    headerValues: {'content-length': '8', 'transfer-encoding': 'chunked'}}),
+  {index: 2, round: 1, pairRequest: 1, headers: 'DONE', body: 'PENDING', finished: 'PENDING',
+    request: 'PENDING', navigation: 'BEFORE_BODY', length: 'POSITIVE', transfer: 'CHUNKED'});
+  assert.deepEqual(pairLifecycleSummary({index: 2, observedRound: 1, pairRequest: 1, response: 4,
+    headers: 5, body: 6, finished: 7, request: 'DONE', nextNavigation: 8}),
+  {index: 2, round: 1, pairRequest: 1, headers: 'DONE', body: 'DONE', finished: 'DONE',
+    request: 'DONE', navigation: 'AFTER_BODY', length: 'MISSING', transfer: 'MISSING'});
+  const previousPairTrace = firstPairTrace;
+  const previousRound = navigationRound;
+  const previousClock = pairClock;
+  const previousStage = stage;
+  try {
+    firstPairTrace = {index: 1, observedRound: 1, pairRequest: 1, response: 1,
+      headers: 2, body: 0, finished: 0, request: 'PENDING', nextNavigation: 0};
+    navigationRound = 1;
+    pairClock = 2;
+    const responseByPath = ['/api/health/ready', '/api/providers',
+      '/api/operations/alerts', '/api/dashboard/operations']
+      .map((path) => ({url: () => apiUrl + path}));
+    const responseCaptures = new WeakMap(responseByPath.map((response) =>
+      [response, Promise.resolve({ok: true, value: {}})]));
+    const page = {waitForResponse: async (predicate) => responseByPath.find(predicate),
+      goto: async () => { assert.equal(firstPairTrace.nextNavigation, pairClock); },
+      locator: () => ({waitFor: async () => {}})};
+    await readyDashboard(page, 'goto', apiUrl, 'PRE_AUTH', responseCaptures,
+      async (navigate) => {
+        await Promise.resolve();
+        firstPairTrace.body = ++pairClock;
+        await navigate();
+        return {};
+      });
+    assert.equal(pairLifecycleSummary(firstPairTrace).navigation, 'AFTER_BODY');
+  } finally {
+    firstPairTrace = previousPairTrace;
+    navigationRound = previousRound;
+    pairClock = previousClock;
+    stage = previousStage;
+  }
+  const stablePage = {evaluate: async () => ({status: 404, text: 'safe-body',
+    headers: {'content-length': '0', 'transfer-encoding': 'chunked'}})};
+  assert.deepEqual(await probeStablePagePair(stablePage, apiUrl, ['private-token']),
+    {status: '4XX', body: 'DONE', audit: 'CLEAR', length: 'ZERO', transfer: 'CHUNKED'});
+  stablePage.evaluate = async () => ({status: 404, text: 'private-token', headers: {}});
+  await assert.rejects(probeStablePagePair(stablePage, apiUrl, ['private-token']),
+    /R6_PAIR_PAGE_SECRET_EXPOSED/);
+  stablePage.evaluate = async () => { throw new Error('private-page-error'); };
+  assert.deepEqual(await probeStablePagePair(stablePage, apiUrl, []),
+    {status: 'UNKNOWN', body: 'UNREADABLE', audit: 'PENDING',
+      length: 'MISSING', transfer: 'MISSING'});
+  const probeEvents = [];
+  const probeApi = {newContext: async (options) => {
+    probeEvents.push(options);
+    return {storageState: async () => ({cookies: [], origins: []}),
+      get: async (target, options) => { probeEvents.push({target, options}); return {
+        url: () => apiUrl + '/api/dashboard/project-environments',
+        status: () => 404, headers: () => ({'content-length': '12'}),
+        text: async () => 'private-body'}; },
+      dispose: async () => probeEvents.push('disposed')};
+  }};
+  const probeFact = await probeUnauthenticatedPair(probeApi, apiUrl, ['private-token']);
+  assert.deepEqual(probeFact, {status: '4XX', headers: 'DONE', body: 'DONE',
+    request: 'DONE', audit: 'CLEAR', length: 'POSITIVE', transfer: 'MISSING'});
+  assert.equal(probeEvents.at(-1), 'disposed');
+  assert.deepEqual(probeEvents[0].storageState, {cookies: [], origins: []});
+  assert.deepEqual(probeEvents[1], {target: apiUrl + '/api/dashboard/project-environments',
+    options: {maxRedirects: 0, timeout: 2000,
+      headers: {'x-anvil-r6-pair-probe': '1'}}});
+  const probeCase = (response, state = {cookies: [], origins: []}) => {
+    let disposed = false;
+    return {api: {newContext: async () => ({storageState: async () => state,
+      get: async () => response, dispose: async () => { disposed = true; }})},
+    disposed: () => disposed};
+  };
+  for (const response of [
+    {url: () => 'https://outside.invalid/api/dashboard/project-environments',
+      status: () => 404, headers: () => ({}), text: async () => ''},
+    {url: () => apiUrl + '/api/dashboard/project-environments?secret=private',
+      status: () => 404, headers: () => ({}), text: async () => ''},
+    {url: () => apiUrl + '/api/dashboard/project-environments',
+      status: () => 404, headers: () => ({}), text: async () => 'private-token'},
+    {url: () => apiUrl + '/api/dashboard/project-environments',
+      status: () => 404, headers: () => ({'set-cookie': 'session=other'}), text: async () => ''},
+    {url: () => apiUrl + '/api/dashboard/project-environments',
+      status: () => 404, headers: () => ({'Proxy-Authorization': 'Basic unrelated'}),
+      text: async () => ''},
+    {url: () => apiUrl + '/api/dashboard/project-environments',
+      status: () => 404, headers: () => ({'X-R6-Control-Token': 'unrelated'}),
+      text: async () => ''},
+  ]) {
+    const candidate = probeCase(response);
+    await assert.rejects(probeUnauthenticatedPair(candidate.api, apiUrl, ['private-token']));
+    assert.equal(candidate.disposed(), true);
+  }
+  const credentialed = probeCase({}, {cookies: [{name: 'anvil_session'}], origins: []});
+  await assert.rejects(probeUnauthenticatedPair(credentialed.api, apiUrl, []));
+  assert.equal(credentialed.disposed(), true);
+  const unreadable = probeCase({url: () => apiUrl + '/api/dashboard/project-environments',
+    status: () => 404, headers: () => ({}), text: async () => { throw new Error('private-error'); }});
+  assert.deepEqual(await probeUnauthenticatedPair(unreadable.api, apiUrl, []),
+    {status: '4XX', headers: 'DONE', body: 'UNREADABLE', request: 'DONE', audit: 'PENDING',
+      length: 'MISSING', transfer: 'MISSING'});
+  assert.equal(unreadable.disposed(), true);
   for (const status of [204, 302, 304]) {
     const accepted = await captureResponseFact(hangingResponse(status, '/auth/oidc/callback'), 60);
     assert.equal(accepted.ok, true);

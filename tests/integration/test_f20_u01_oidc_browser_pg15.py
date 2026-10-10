@@ -16,7 +16,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 import certifi
 import jwt
@@ -53,6 +53,7 @@ _EVIDENCE_FILES = ("pre-auth-error.png", "stored-critical.png", "revoked-blocked
 _BROWSER_STAGES = frozenset({
     "BOOTSTRAP", "PLAYWRIGHT_REQUIRE", "BROWSER_LAUNCH", "BROWSER_CONTEXT",
     "ISSUER_CONTEXT", "PAGE_CREATE", "PRE_AUTH_DOCUMENT", "PRE_AUTH_CARD",
+    "PAIR_PROBE", "PAIR_STABLE_FETCH",
     "PRE_AUTH_RESPONSES", "PRE_AUTH_LOADING_REQUESTS", "PRE_AUTH_LOADING_DOM",
     "PRE_AUTH_KEYBOARD", "PRE_AUTH_LOADING_RELEASE",
     "PRE_AUTH_FETCH", "PRE_AUTH_CARD_CHECK", "OIDC_AUTH_REQUEST",
@@ -330,7 +331,48 @@ def _safe_probe_diagnostic(output: str) -> str:
 
 def _safe_network_diagnostic(output: str) -> str:
     return (_safe_response_diagnostic(output) + _safe_probe_diagnostic(output)
-            + _safe_revoke_dashboard_diagnostic(output))
+            + _safe_revoke_dashboard_diagnostic(output) + _safe_pair_diagnostic(output))
+
+
+def _safe_pair_diagnostic(output: str) -> str:
+    details = []
+    patterns = (
+        (r"^R6_PAIR_PROBE status=(UNKNOWN|2XX|4XX|5XX|OTHER) "
+         r"headers=(PENDING|DONE) body=(PENDING|DONE|TIMEOUT|UNREADABLE) "
+         r"request=(PENDING|DONE|TIMEOUT|UNREADABLE) audit=(PENDING|CLEAR) "
+         r"length=(ZERO|POSITIVE|MISSING|INVALID) "
+         r"transfer=(CHUNKED|MISSING|OTHER)\r?$",
+         " pair_probe="),
+        (r"^R6_PAIR_PAGE status=(UNKNOWN|2XX|4XX|5XX|OTHER) "
+         r"body=(PENDING|DONE|TIMEOUT|UNREADABLE) audit=(PENDING|CLEAR) "
+         r"length=(ZERO|POSITIVE|MISSING|INVALID) "
+         r"transfer=(CHUNKED|MISSING|OTHER)\r?$",
+         " pair_page="),
+        (r"^R6_PAIR_LIFECYCLE index=([0-9]{1,5}) round=([0-9]{1,4}) "
+         r"pair_request=([0-9]{1,5}) "
+         r"headers=(PENDING|DONE) body=(PENDING|DONE) finished=(PENDING|DONE) "
+         r"request=(PENDING|DONE|FAILED) navigation=(NONE|BEFORE_BODY|AFTER_BODY) "
+         r"length=(ZERO|POSITIVE|MISSING|INVALID) "
+         r"transfer=(CHUNKED|MISSING|OTHER)\r?$",
+         " pair_lifecycle="),
+    )
+    for pattern, prefix in patterns:
+        match = re.search(pattern, output, flags=re.MULTILINE)
+        if match:
+            values = match.groups()
+            if prefix == " pair_lifecycle=":
+                if (not 1 <= int(values[0]) <= 10000
+                        or not 1 <= int(values[1]) <= 1000
+                        or not 1 <= int(values[2]) <= 10000
+                        or values[7] == "AFTER_BODY" and values[4] != "DONE"):
+                    continue
+            elif prefix == " pair_probe=":
+                if values[4] == "CLEAR" and values[1:4] != ("DONE", "DONE", "DONE"):
+                    continue
+            elif values[2] == "CLEAR" and values[1] != "DONE":
+                continue
+            details.append(prefix + "/".join(match.groups()))
+    return "".join(details)
 
 
 def _safe_revoke_dashboard_diagnostic(output: str) -> str:
@@ -880,7 +922,8 @@ def _r24_seed_result(before_count: int, snapshot: list[dict]) -> dict:
 
 
 def _node_flow(api_url: str, issuer_url: str, control_token: str,
-               dsn: str, alert: dict, evidence_dir: Path | None = None) -> dict:
+               dsn: str, alert: dict, evidence_dir: Path | None = None,
+               pair_asgi_events: list[dict[str, str]] | None = None) -> dict:
     script = Path(__file__).resolve().parents[1] / "browser" / "f20-u01-oidc-browser-pg15.mjs"
     assert script.is_file(), "R6_BROWSER_SCRIPT_MISSING"
     environment = {name: os.environ[name] for name in (
@@ -920,19 +963,20 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
         stage = _last_browser_progress(error.stdout)
         stdout = (error.stdout.decode("utf-8", errors="replace") if isinstance(error.stdout, bytes)
                   else error.stdout if isinstance(error.stdout, str) else "")
-        detail = _safe_network_diagnostic(stdout) if stage in _RESPONSE_FAILURE_STAGES else ""
+        detail = _safe_network_diagnostic(stdout) if stage in _RESPONSE_FAILURE_STAGES else _safe_pair_diagnostic(stdout)
         if stage == "REVOKE_DASHBOARD_FETCH":
             detail += (" trace=SEEN" if _safe_revoke_dashboard_diagnostic(stdout)
                        else " trace=ABSENT")
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit=TIMEOUT class=TimeoutExpired; "
-                    f"MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED{detail}", pytrace=False)
+                    f"MAIN_NAMED_CONTAINER_CLEANUP_REQUIRED{detail}"
+                    f"{_safe_pair_asgi_diagnostic(pair_asgi_events or [])}", pytrace=False)
     except OSError:
         pytest.fail("R6_BROWSER_FAILED stage=RUNNER exit=LAUNCH class=OSError", pytrace=False)
     if result.returncode != 0:
         stage, error_class = _classify_browser_failure(result.stdout, result.stderr)
         output = result.stdout + "\n" + result.stderr
         detail = (_safe_network_diagnostic(output)
-                  if stage in _RESPONSE_FAILURE_STAGES else "")
+                  if stage in _RESPONSE_FAILURE_STAGES else _safe_pair_diagnostic(output))
         if stage == "REVOKE_DASHBOARD_FETCH":
             detail += (" trace=SEEN" if _safe_revoke_dashboard_diagnostic(output)
                        else " trace=ABSENT")
@@ -942,7 +986,10 @@ def _node_flow(api_url: str, issuer_url: str, control_token: str,
             detail += _safe_stored_diagnostic(result.stdout)
             detail += _safe_r30_diagnostic(result.stdout + "\n" + result.stderr)
         pytest.fail(f"R6_BROWSER_FAILED stage={stage} exit={result.returncode} "
-                    f"class={error_class}{detail}", pytrace=False)
+                    f"class={error_class}{detail}"
+                    f"{_safe_pair_asgi_diagnostic(pair_asgi_events or [])}", pytrace=False)
+    if pair_asgi_events is not None:
+        _require_pair_probe_request_audit(pair_asgi_events)
     result_lines = [line for line in result.stdout.splitlines() if line.startswith("R6_RESULT ")]
     assert len(result_lines) == 1, "R6_BROWSER_RESULT_MISSING"
     return json.loads(result_lines[0][len("R6_RESULT "):])
@@ -957,6 +1004,94 @@ def _import_asgi_for_r6(api_url: str):
         startup.setenv("ANVIL_CONSOLE_BASE_URL", api_url)
         startup.setenv("ANVIL_PUBLIC_HOST", "127.0.0.1")
         return importlib.import_module("apps.api.anvil_api.asgi")
+
+
+def _observe_pair_asgi(app, events: list[dict[str, str]],
+                       probe_origin: str | None = None, secrets_to_audit=()):
+    """Observe only ASGI message classes; forward identical objects in identical order."""
+    registered = any(getattr(route, "path", None) == "/api/dashboard/project-environments"
+                     for route in getattr(app, "routes", ()))
+    async def observed(scope, receive, send):
+        if scope.get("type") != "http" or scope.get("path") != "/api/dashboard/project-environments":
+            await app(scope, receive, send)
+            return
+        fact = {"route": "PAIR_LIST_API", "registered": registered, "status": "UNKNOWN",
+                "body_final": "PENDING", "disconnect": "NONE"}
+        if probe_origin is not None:
+            raw_headers = scope.get("headers")
+            valid_headers = (isinstance(raw_headers, (list, tuple))
+                             and all(isinstance(row, (list, tuple)) and len(row) == 2
+                                     and all(isinstance(part, bytes) for part in row)
+                                     for row in raw_headers))
+            headers = [(name.lower(), value) for name, value in raw_headers] if valid_headers else []
+            values = lambda key: [value for name, value in headers if name == key]
+            origin = urlsplit(probe_origin)
+            markers = [form.encode() for secret in secrets_to_audit if secret
+                       for form in (secret, quote(secret, safe=""))]
+            forbidden = {b"authorization", b"proxy-authorization", b"cookie",
+                         b"x-r6-control-token"}
+            request_valid = (
+                valid_headers and scope.get("scheme") == origin.scheme == "https"
+                and scope.get("method") == "GET" and scope.get("query_string", b"") == b""
+                and values(b"host") == [origin.netloc.encode("ascii")]
+                and values(b"x-anvil-r6-pair-probe") == [b"1"]
+                and not any(name in forbidden for name, _ in headers)
+                and not any(marker in name or marker in value
+                            for name, value in headers for marker in markers)
+                and values(b"content-length") in ([], [b"0"])
+                and not values(b"transfer-encoding")
+            )
+            if values(b"x-anvil-r6-pair-probe"):
+                fact["request_audit"] = "CLEAR" if request_valid else "REJECTED"
+        events.append(fact)
+
+        async def forwarded_receive():
+            message = await receive()
+            if message.get("type") == "http.disconnect":
+                fact["disconnect"] = "SEEN"
+            elif (fact.get("request_audit") == "CLEAR"
+                  and message.get("type") == "http.request" and message.get("body")):
+                fact["request_audit"] = "REJECTED"
+            return message
+
+        async def forwarded_send(message):
+            await send(message)
+            if message.get("type") == "http.response.start":
+                status = message.get("status")
+                fact["status"] = ("2XX" if isinstance(status, int) and 200 <= status < 300
+                                  else "4XX" if isinstance(status, int) and 400 <= status < 500
+                                  else "5XX" if isinstance(status, int) and 500 <= status < 600
+                                  else "OTHER")
+            elif (message.get("type") == "http.response.body"
+                  and message.get("more_body", False) is False):
+                fact["body_final"] = "DONE"
+
+        await app(scope, forwarded_receive, forwarded_send)
+    return observed
+
+
+def _safe_pair_asgi_diagnostic(events: list[dict[str, str]]) -> str:
+    facts = []
+    for index, fact in enumerate(events[:20], 1):
+        if (fact.get("route") != "PAIR_LIST_API"
+                or type(fact.get("registered")) is not bool
+                or fact.get("status") not in {"UNKNOWN", "2XX", "4XX", "5XX", "OTHER"}
+                or fact.get("body_final") not in {"PENDING", "DONE"}
+                or fact.get("disconnect") not in {"NONE", "SEEN"}):
+            return " pair_asgi=INVALID"
+        facts.append(f"{index}:{'YES' if fact['registered'] else 'NO'}/{fact['status']}"
+                     f"/{fact['body_final']}/{fact['disconnect']}")
+    probe = [fact.get("request_audit") for fact in events if "request_audit" in fact]
+    audit = probe[0] if len(probe) == 1 and probe[0] in {"CLEAR", "REJECTED"} else "UNKNOWN"
+    return " pair_asgi=" + (",".join(facts) if facts else "NONE") + " pair_probe_wire=" + audit
+
+
+def _require_pair_probe_request_audit(events: list[dict[str, str]]) -> None:
+    probe = [fact for fact in events if "request_audit" in fact]
+    assert (len(probe) == 1 and probe[0].get("route") == "PAIR_LIST_API"
+            and probe[0].get("request_audit") == "CLEAR"), (
+                "R6_PAIR_PROBE_REQUEST_AUDIT_FAILED"
+            )
 
 
 def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
@@ -1173,14 +1308,19 @@ def _run_opt_in(dsn: str, url: sa.engine.URL) -> None:
             client_secret=lambda: "synthetic-client-secret", ca_bundle=str(issuer_cert),
             operations_owner=owner, operational_shell=True, frontend_directory=frontend,
         )
+        pair_asgi_events = []
         try:
-            listeners.append(_listener(app, api_cert, api_key, api_socket))
+            listeners.append(_listener(_observe_pair_asgi(app, pair_asgi_events, api_url,
+                [control_token, "synthetic-client-secret", "r6-private-fence", dsn,
+                 sa.engine.make_url(dsn).password or ""]),
+                                       api_cert, api_key, api_socket))
         except BaseException:
             api_socket.close()
             raise
         pending_socket = None
         assert listeners[1][3] == api_url
-        evidence = _node_flow(api_url, issuer_url, control_token, dsn, _TEST_ALERT, evidence_dir)
+        evidence = _node_flow(api_url, issuer_url, control_token, dsn, _TEST_ALERT,
+                              evidence_dir, pair_asgi_events)
         assert len(seeded_alerts) == 1, "R24_SEED_MISSING"
         before = seeded_alerts[0]
         loading_evidence = _r23_loading_evidence(evidence)
@@ -1519,6 +1659,203 @@ def test_r6_network_capture_diagnostic_accepts_only_safe_route_and_lifecycle():
                     marker.replace("route=PAIR_LIST_API", "route=OTHER_APP"),
                     marker.replace("index=4", "index=100001")):
         assert _safe_response_diagnostic(invalid) == ""
+
+
+def test_r6_pair_asgi_send_observation_is_path_scoped_and_non_mutating():
+    events = []
+    original = []
+
+    async def app(scope, receive, send):
+        original.append(scope)
+        await send({"type": "http.response.start", "status": 404,
+                    "headers": [(b"x-private", b"secret-value")]})
+        await send({"type": "http.response.body", "body": b"private-body",
+                    "more_body": False})
+
+    wrapped = _observe_pair_asgi(app, events)
+
+    async def run(path):
+        sent = []
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+        async def send(message):
+            sent.append(message)
+        await wrapped({"type": "http", "path": path}, receive, send)
+        return sent
+
+    def drive(coroutine):
+        try:
+            coroutine.send(None)
+        except StopIteration as complete:
+            return complete.value
+        raise AssertionError("fixture unexpectedly awaited external work")
+
+    assert drive(run("/api/dashboard/project-environments")) == [
+        {"type": "http.response.start", "status": 404,
+         "headers": [(b"x-private", b"secret-value")]},
+        {"type": "http.response.body", "body": b"private-body", "more_body": False},
+    ]
+    assert events == [{"route": "PAIR_LIST_API", "registered": False, "status": "4XX",
+                       "body_final": "DONE", "disconnect": "NONE"}]
+    drive(run("/api/operations/alerts"))
+    assert len(events) == 1 and len(original) == 2
+    assert "private" not in _safe_pair_asgi_diagnostic(events)
+
+    disconnected = []
+    async def disconnecting(scope, receive, send):
+        assert await receive() == {"type": "http.disconnect"}
+        await send({"type": "http.response.start", "status": 404})
+    wrapped_disconnect = _observe_pair_asgi(disconnecting, disconnected)
+    async def run_disconnect():
+        async def receive():
+            return {"type": "http.disconnect"}
+        async def send(_message):
+            return None
+        await wrapped_disconnect({"type": "http", "path": "/api/dashboard/project-environments"},
+                                 receive, send)
+    drive(run_disconnect())
+    assert disconnected == [{"route": "PAIR_LIST_API", "registered": False,
+                             "status": "4XX", "body_final": "PENDING", "disconnect": "SEEN"}]
+    failed_send = []
+    wrapped_failed = _observe_pair_asgi(app, failed_send)
+    async def run_failed_send():
+        async def receive():
+            return {"type": "http.disconnect"}
+        async def send(message):
+            if message["type"] == "http.response.body":
+                raise RuntimeError("private-send-error")
+        await wrapped_failed({"type": "http", "path": "/api/dashboard/project-environments"},
+                             receive, send)
+    with pytest.raises(RuntimeError, match="private-send-error"):
+        drive(run_failed_send())
+    assert failed_send[0]["body_final"] == "PENDING"
+
+
+def test_r6_pair_probe_asgi_audits_actual_request_without_echoing_secrets():
+    secret = "private-control-token"
+    origin = "https://127.0.0.1:48123"
+    events = []
+
+    async def app(_scope, receive, send):
+        await receive()
+        await send({"type": "http.response.start", "status": 404})
+        await send({"type": "http.response.body", "body": b"{}", "more_body": False})
+
+    def drive(coroutine):
+        try:
+            coroutine.send(None)
+        except StopIteration:
+            return
+        raise AssertionError("fixture unexpectedly awaited external work")
+
+    def observe(headers, *, body=b"", scheme="https", method="GET", query=b""):
+        events.clear()
+        wrapped = _observe_pair_asgi(app, events, origin, [secret])
+        async def run():
+            async def receive():
+                return {"type": "http.request", "body": body, "more_body": False}
+            async def send(_message):
+                return None
+            await wrapped({"type": "http", "path": "/api/dashboard/project-environments",
+                           "scheme": scheme, "method": method, "query_string": query,
+                           "headers": [(b"host", b"127.0.0.1:48123"),
+                                       (b"x-anvil-r6-pair-probe", b"1"), *headers]},
+                          receive, send)
+        drive(run())
+        return [event.get("request_audit") for event in events]
+
+    assert observe([]) == ["CLEAR"]
+    for headers, kwargs in (
+        ([(b"authorization", b"Bearer private")], {}),
+        ([(b"proxy-authorization", b"Basic private")], {}),
+        ([(b"x-r6-control-token", b"private")], {}),
+        ([(b"x-extra", secret.encode())], {}),
+        ([(b"content-length", b"1")], {"body": b"X"}),
+        ([], {"body": secret.encode()}),
+        ([(b"transfer-encoding", b"chunked")], {}),
+        ([(b"host", b"outside.invalid")], {}),
+        ([], {"scheme": "http"}),
+        ([], {"method": "POST"}),
+        ([], {"query": b"secret=1"}),
+    ):
+        assert observe(headers, **kwargs) == ["REJECTED"]
+        assert secret not in _safe_pair_asgi_diagnostic(events)
+
+
+def test_r6_pair_probe_requires_exactly_one_clear_wire_request():
+    base = {"route": "PAIR_LIST_API", "registered": False, "status": "4XX",
+            "body_final": "DONE", "disconnect": "NONE"}
+    assert _require_pair_probe_request_audit([{**base, "request_audit": "CLEAR"}]) is None
+    for events in ([], [base], [{**base, "request_audit": "REJECTED"}],
+                   [{**base, "request_audit": "CLEAR"}] * 2,
+                   [{**base, "request_audit": "PRIVATE"}]):
+        with pytest.raises(AssertionError, match="R6_PAIR_PROBE_REQUEST_AUDIT_FAILED"):
+            _require_pair_probe_request_audit(events)
+
+
+def test_r6_pair_browser_safe_response_cannot_override_rejected_wire_request(monkeypatch):
+    def safe_browser(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=["browser"], returncode=0,
+            stdout="R6_NODE_STARTED\nR6_RESULT {}\n", stderr="")
+    monkeypatch.setattr(subprocess, "run", safe_browser)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    base = {"route": "PAIR_LIST_API", "registered": False, "status": "4XX",
+            "body_final": "DONE", "disconnect": "NONE"}
+    for events in ([], [{**base, "request_audit": "REJECTED"}]):
+        with pytest.raises(AssertionError, match="R6_PAIR_PROBE_REQUEST_AUDIT_FAILED"):
+            _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124",
+                       "private-control-token", "postgresql://isolated@127.0.0.1:5545/isolated",
+                       _TEST_ALERT, pair_asgi_events=events)
+
+
+def test_r6_pair_lifecycle_markers_are_enum_only_and_fail_closed():
+    secret = "https://user:private@127.0.0.1/api?code=secret"
+    lines = ("R6_PAIR_PROBE status=4XX headers=DONE body=TIMEOUT request=DONE "
+             "audit=PENDING length=POSITIVE transfer=CHUNKED\n"
+             "R6_PAIR_PAGE status=4XX body=DONE audit=CLEAR length=ZERO transfer=MISSING\n"
+             "R6_PAIR_LIFECYCLE index=4 round=1 pair_request=1 headers=DONE body=PENDING "
+             "finished=PENDING request=FAILED navigation=BEFORE_BODY "
+             "length=INVALID transfer=OTHER\n")
+    detail = _safe_pair_diagnostic(lines + secret)
+    assert "private" not in detail and "secret" not in detail
+    assert "pair_probe=4XX/DONE/TIMEOUT/DONE/PENDING/POSITIVE/CHUNKED" in detail
+    assert "pair_page=4XX/DONE/CLEAR/ZERO/MISSING" in detail
+    assert "pair_lifecycle=4/1/1/DONE/PENDING/PENDING/FAILED/BEFORE_BODY/INVALID/OTHER" in detail
+    for forged in (lines.replace("index=4", "index=" + secret),
+                   lines.replace("audit=CLEAR", "audit=" + secret),
+                   lines.replace("navigation=BEFORE_BODY", "navigation=" + secret),
+                   lines.replace("length=POSITIVE", "length=" + secret),
+                   lines.replace("transfer=CHUNKED", "transfer=" + secret)):
+        assert secret not in _safe_pair_diagnostic(forged)
+
+
+def test_r6_pair_failure_joins_only_safe_asgi_and_browser_enums(monkeypatch):
+    secret = "private-body-or-token"
+    stdout = ("R6_NODE_STARTED\nR6_STAGE NETWORK_RESPONSE_FACTS\n"
+              "R6_PAIR_PROBE status=4XX headers=DONE body=DONE request=DONE audit=CLEAR "
+              "length=POSITIVE transfer=MISSING\n"
+              "R6_PAIR_PAGE status=4XX body=DONE audit=CLEAR length=ZERO transfer=MISSING\n"
+              "R6_PAIR_LIFECYCLE index=4 round=1 pair_request=1 headers=DONE "
+              "body=PENDING finished=PENDING request=FAILED navigation=BEFORE_BODY "
+              "length=POSITIVE transfer=CHUNKED\n"
+              "R6_RESPONSE_CAPTURE_FAILED category=OTHER_API status=404 reason=TIMEOUT\n"
+              + secret)
+    def failed(*_args, **_kwargs):
+        return subprocess.CompletedProcess(args=["browser"], returncode=1,
+                                           stdout=stdout, stderr=secret)
+    monkeypatch.setattr(subprocess, "run", failed)
+    monkeypatch.delenv("ANVIL_F20_R6_BROWSER_COMMAND_JSON", raising=False)
+    asgi = [{"route": "PAIR_LIST_API", "registered": False, "status": "4XX",
+             "body_final": "DONE", "disconnect": "NONE"}]
+    with pytest.raises(pytest.fail.Exception) as failure:
+        _node_flow("https://127.0.0.1:48123", "https://127.0.0.1:48124", "control-token",
+                   "postgresql://isolated@127.0.0.1:5545/isolated", _TEST_ALERT,
+                   pair_asgi_events=asgi)
+    message = str(failure.value)
+    assert "pair_asgi=1:NO/4XX/DONE/NONE" in message
+    assert "pair_probe=4XX/DONE/DONE/DONE/CLEAR/POSITIVE/MISSING" in message
+    assert "pair_lifecycle=4/1/1/DONE/PENDING/PENDING/FAILED/BEFORE_BODY/POSITIVE/CHUNKED" in message
+    assert secret not in message
 
 
 def test_r46_revoke_dashboard_trace_reports_only_bounded_facts():

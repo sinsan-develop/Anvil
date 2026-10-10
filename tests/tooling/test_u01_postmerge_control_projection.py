@@ -33,6 +33,412 @@ PATHS = (
 )
 
 
+class U01Task4R6PairResponseLifecycleDiagnosticTests(unittest.TestCase):
+    A7 = "3b5fb2d1488276ebdedb3dbcf00343e778e40d69"
+    W8 = "a1962ec6d47f082cdce7d10ce9745c61e4e2a947"
+    C7 = "c" * 40
+    CODE = {"scripts/check_project_progress.py",
+            "tests/tooling/test_u01_postmerge_control_projection.py",
+            "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+            "tests/integration/test_f20_u01_oidc_browser_pg15.py"}
+    B7 = "b" * 40
+    H7 = "d" * 40
+
+    def issued_a7(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A7}:{path}"],
+            cwd=ROOT) for path in (*PATHS, "docs/WORK_STATUS.md")}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode()
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    @contextmanager
+    def frozen_a7(self):
+        _, files = self.issued_a7()
+        original = Path.read_bytes
+        def read_bytes(path):
+            relative = path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else None
+            return files[relative] if relative in files else original(path)
+        with patch.object(Path, "read_bytes", read_bytes):
+            yield
+
+    def test_a7_active_validates_frozen_event_lease_and_hash(self):
+        bundle, files = self.issued_a7()
+        active = getattr(checker, "_validate_u01_task4_r6_pair_response_active", None)
+        self.assertIsNotNone(active)
+        at = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(active(bundle, event_raw=files[PATHS[1]], now=at,
+                                archived_files=files), [])
+        for mutate in (
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+            lambda b: b["progress"]["worker_lease"].update(
+                execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(
+                path_scope=["packages/api/fastapi_app.py"]),
+            lambda b: b["progress"]["u01_task4_r6_pair_response_lifecycle_diagnostic_binding"].update(
+                work_instruction_sha256="0" * 64),
+        ):
+            forged = deepcopy(bundle)
+            mutate(forged)
+            self.assertTrue(active(forged, event_raw=files[PATHS[1]], now=at,
+                                   archived_files=files))
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(active(bundle, event_raw=files[PATHS[1]], now=expires,
+                               archived_files=files))
+
+    def test_a7_dispatch_and_c7_collector_exist(self):
+        bundle, _ = self.issued_a7()
+        self.assertIsNotNone(getattr(checker, "_collect_u01_task4_r6_pair_response_git", None))
+        with self.frozen_a7(), patch.object(checker,
+                "_collect_u01_task4_r6_pair_response_git", return_value=[], create=True):
+            self.assertEqual(checker.validate_bundle(bundle), [])
+
+    def checkpoint_b7(self):
+        bundle, files = self.issued_a7()
+        progress = bundle["progress"]
+        status = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_ACTIVE"
+        action = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE_READY"
+        progress["u01_task4_r6_pair_response_lifecycle_diagnostic_binding"].update(
+            status=status, next_safe_action=action, a7_docs_checkpoint=self.A7,
+            control_checkpoint=self.C7)
+        progress["active_work_instruction"].update(result_status=status,
+            package_status=status)
+        progress["repository"].update(local_head=self.C7, remote_head=self.C7,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-task4-r6-pair-response-lifecycle-b7-seq2372")
+        bundle["handoff"].update(repository_head=self.C7, next_safe_action=action)
+        return U01Task4R6StoredRowDiagnosticTests.materialize(bundle, files)
+
+    def closed_h7(self):
+        bundle, files = self.checkpoint_b7()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"
+        for sequence, kind, event_id, lease, token in (
+            (2373, "WRITE_LEASE_REVOKED",
+             "evt_u01_2373_task4_r6_pair_response_lifecycle_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2374, "WORKER_LEASE_REVOKED",
+             "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(
+                stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None,
+                "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE",
+                "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+                "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token],
+                            "reason": reason}})
+        stream.update(last_sequence=2374, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2372', '"last_sequence": 2374', 1)
+        rendered = rendered.replace(
+            '"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        action = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RECORDED_U01_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        for name, lease in (("write", write), ("worker", worker)):
+            progress[f"completed_u01_task4_r6_pair_response_lifecycle_diagnostic_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_task4_r6_pair_response_lifecycle_diagnostic_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B7,
+            event_sequence=2374)
+        progress["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2374,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-r6-pair-response-lifecycle-h7-seq2374")
+        progress["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2374, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2374
+        return U01Task4R6StoredRowDiagnosticTests.materialize(bundle, files)
+
+    def test_b7_h7_projection_and_close_clock(self):
+        b, bfiles = self.checkpoint_b7()
+        active = checker._validate_u01_task4_r6_pair_response_active
+        self.assertEqual(active(b, event_raw=bfiles[PATHS[1]],
+            now=datetime.fromisoformat(b["progress"]["updated_at"]), archived_files=bfiles), [])
+        h, hfiles = self.closed_h7()
+        closed = getattr(checker, "_validate_u01_task4_r6_pair_response_closed", None)
+        self.assertIsNotNone(closed)
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles), [])
+            forged = deepcopy(h)
+            forged["events"]["events"][2372]["event_type"] = "WORKER_LEASE_REVOKED"
+            self.assertTrue(closed(forged, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles))
+
+    def test_b7_h7_dispatch_frozen_bytes_and_expiry_boundaries(self):
+        b, bfiles = self.checkpoint_b7()
+        h, hfiles = self.closed_h7()
+        original_read = Path.read_bytes
+        for bundle, files in ((b, bfiles), (h, hfiles)):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                with patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_report_archive",
+                            return_value=(b, bfiles)), \
+                        patch.object(checker, "_collect_u01_task4_r6_pair_response_git",
+                            return_value=[]):
+                    self.assertEqual(checker.validate_bundle(bundle), [])
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(checker._validate_u01_task4_r6_pair_response_active(
+            b, event_raw=bfiles[PATHS[1]], now=expires, archived_files=bfiles))
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(checker._validate_u01_task4_r6_pair_response_closed(
+                h, event_raw=hfiles[PATHS[1]], now=expires + timedelta(days=1),
+                archived_files=hfiles), [])
+            forged = deepcopy(h)
+            forged["detached_digest"]["handoff"]["machine_summary_canonical_sha256"] = "0" * 64
+            self.assertTrue(checker._validate_u01_task4_r6_pair_response_closed(
+                forged, event_raw=hfiles[PATHS[1]], now=expires + timedelta(days=1),
+                archived_files=hfiles))
+        b["progress"]["updated_at"] = (expires - timedelta(minutes=1)).isoformat()
+        b, bfiles = U01Task4R6StoredRowDiagnosticTests.materialize(b, bfiles)
+        with patch.object(self, "checkpoint_b7", return_value=(deepcopy(b), deepcopy(bfiles))):
+            late, late_files = self.closed_h7()
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertIn("U01_TASK4_R6_PAIR_CLOSE_CLOCK_INVALID",
+                checker._validate_u01_task4_r6_pair_response_closed(
+                    late, event_raw=late_files[PATHS[1]], now=expires,
+                    archived_files=late_files))
+
+    def test_c7_git_requires_exact_code_child_private_remote_and_clean_tree(self):
+        bundle, files = self.issued_a7()
+        collector = checker._collect_u01_task4_r6_pair_response_git
+        original = subprocess.check_output
+        original_run = subprocess.run
+        original_read = Path.read_bytes
+        for scenario in ("valid", "extra_path", "merge", "stale_tracking",
+                         "remote_advanced", "remote_missing", "remote_unavailable",
+                         "dirty", "history_forgery"):
+            with self.subTest(scenario=scenario):
+                calls = []
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    calls.append(argv)
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (self.C7 + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A7 if scenario == "stale_tracking" else self.C7)
+                                + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if argv == ["show", "-s", "--format=%P", self.C7]:
+                        return (self.A7 + (" " + "0" * 40 if scenario == "merge" else "")
+                                + "\n").encode()
+                    if argv == ["rev-list", "--count", f"{self.A7}..{self.C7}"]:
+                        return b"1\n"
+                    if argv == ["rev-list", "--min-parents=2", f"{self.A7}..{self.C7}"]:
+                        return b""
+                    if argv[:1] in (["log"], ["diff"]) and argv[-1] == f"{self.A7}..{self.C7}":
+                        paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                            if scenario == "extra_path" else set())
+                        return ("\n".join(sorted(paths)) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"] and argv[-2:] == [self.A7, self.C7]:
+                        paths = self.CODE | ({"packages/api/fastapi_app.py"}
+                            if scenario == "extra_path" else set())
+                        return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                    if argv[:1] == ["show"] and argv[-1].startswith(self.C7 + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in self.CODE:
+                            return original_read(ROOT / path)
+                        if path in files:
+                            return files[path]
+                    if scenario == "history_forgery" and argv == ["show", "-s", "--format=%P",
+                            "5e79fbd4cbfbf52b12e6814ebbe7381f4cd21a23"]:
+                        return ("0" * 40 + "\n").encode()
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                remote = ("" if scenario == "remote_missing" else "0" * 40
+                          if scenario == "remote_advanced" else self.C7)
+                remote_error = subprocess.CalledProcessError(128, "git ls-remote") \
+                    if scenario == "remote_unavailable" else None
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            side_effect=remote_error, return_value=remote), \
+                        self.frozen_a7():
+                    errors = collector(bundle)
+                self.assertEqual(bool(errors), scenario != "valid", (scenario, errors, calls[-8:]))
+
+    def test_b7_h7_and_first_tail_git_fail_closed(self):
+        b, bfiles = self.checkpoint_b7()
+        h, hfiles = self.closed_h7()
+        tail = "e" * 40
+        tail2 = "f" * 40
+        chain256 = [tail] + [f"{value:040x}" for value in range(1, 256)]
+        chain257 = chain256 + [f"{256:040x}"]
+        result = "docs/04_test_reports/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RESULT.md"
+        docs_b = {"docs/WORK_STATUS.md", PATHS[0], PATHS[2], PATHS[3]}
+        docs_h = docs_b | {PATHS[1]}
+        prior_dc = subprocess.check_output(["git", "show", f"{self.W8}:design_change.md"], cwd=ROOT)
+        original = subprocess.check_output
+        original_run = subprocess.run
+        original_read = Path.read_bytes
+        for scenario, bundle, files, head in (
+            ("b7", b, bfiles, self.B7), ("h7", h, hfiles, self.H7),
+            ("tail", h, hfiles, tail), ("tail_dc_append", h, hfiles, tail),
+            ("later", h, hfiles, tail2), ("later_dc", h, hfiles, tail2),
+            ("tail_dc_rewrite", h, hfiles, tail), ("tail_extra", h, hfiles, tail),
+            ("max256", h, hfiles, chain256[-1]),
+            ("over257", h, hfiles, chain257[-1]),
+            ("tail_rename", h, hfiles, tail),
+            ("remote_stale", h, hfiles, self.H7), ("dirty", h, hfiles, self.H7),
+            ("merge", b, bfiles, self.B7), ("history_dc", h, hfiles, tail),
+        ):
+            with self.subTest(scenario=scenario):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                current[ROOT / "docs/WORK_STATUS.md"] = b"synthetic current status"
+                appended_dc = prior_dc + b"\nC7 diagnostic result\n"
+                current[ROOT / "design_change.md"] = (appended_dc + b"late mutation\n"
+                    if scenario == "later_dc" else appended_dc
+                    if scenario == "tail_dc_append" else b"replaced history\n"
+                    if scenario == "tail_dc_rewrite" else prior_dc)
+                chain = chain256 if scenario == "max256" else chain257 if scenario == "over257" else []
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                def output(command, *args, **kwargs):
+                    argv = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if argv == ["rev-parse", "HEAD"]:
+                        return (head + "\n").encode()
+                    if argv == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A7 if scenario == "remote_stale" else head) + "\n").encode()
+                    if argv == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/fastapi_app.py\n" if scenario == "dirty" else b""
+                    if argv[:3] == ["show", "-s", "--format=%P"] and argv[3] in {
+                            self.C7, self.B7, self.H7, tail, tail2, *chain}:
+                        parent = {self.C7: self.A7, self.B7: self.C7,
+                                  self.H7: self.B7, tail: self.H7, tail2: tail,
+                                  **{sha: (self.H7 if index == 0 else chain[index - 1])
+                                     for index, sha in enumerate(chain)}}[argv[3]]
+                        return (parent + (" " + "0" * 40 if scenario == "merge"
+                            and argv[3] == self.B7 else "") + "\n").encode()
+                    if argv[:2] == ["rev-list", "--count"]:
+                        if chain and argv[-1] == f"{self.B7}..{head}":
+                            return (str(len(chain) + 1) + "\n").encode()
+                        if argv[-1] == f"{self.B7}..{tail}":
+                            return b"2\n"
+                        if argv[-1] == f"{self.B7}..{tail2}":
+                            return b"3\n"
+                        if argv[-1] in {f"{self.A7}..{self.C7}", f"{self.C7}..{self.B7}",
+                                        f"{self.B7}..{self.H7}"}:
+                            return b"1\n"
+                    if argv[:2] == ["rev-list", "--min-parents=2"]:
+                        return b""
+                    if argv[:2] == ["rev-list", "--reverse"]:
+                        if chain and argv[-1] == f"{self.B7}..{head}":
+                            return ("\n".join([self.H7, *chain]) + "\n").encode()
+                        return (self.H7 + ("\n" + tail if head in {tail, tail2} else "")
+                                + ("\n" + tail2 if head == tail2 else "") + "\n").encode()
+                    if argv[:1] in (["log"], ["diff"]) and ".." in argv[-1]:
+                        legs = {f"{self.A7}..{self.C7}": self.CODE,
+                                f"{self.C7}..{self.B7}": docs_b,
+                                f"{self.B7}..{self.H7}": docs_h}
+                        if argv[-1] in legs:
+                            return ("\n".join(sorted(legs[argv[-1]])) + "\n").encode()
+                    if argv[:2] == ["diff", "--name-status"]:
+                        left, right = argv[-2:]
+                        legs = {(self.A7, self.C7): self.CODE,
+                                (self.C7, self.B7): docs_b,
+                                (self.B7, self.H7): docs_h}
+                        if (left, right) in legs:
+                            return ("\n".join(f"M\t{path}" for path in sorted(legs[(left, right)]))
+                                    + "\n").encode()
+                        if (left, right) == (self.H7, tail):
+                            rows = [f"A\t{result}", "M\tdocs/WORK_STATUS.md"]
+                            if scenario == "tail_rename":
+                                rows[0] = f"R100\tdocs/04_test_reports/old.md\t{result}"
+                            if scenario in {"tail_dc_append", "tail_dc_rewrite"}:
+                                rows.append("M\tdesign_change.md")
+                            if scenario == "tail_extra":
+                                rows.append("M\tpackages/api/fastapi_app.py")
+                            return ("\n".join(rows) + "\n").encode()
+                        if chain and left in chain and right in chain:
+                            return b"M\tdocs/WORK_STATUS.md\n"
+                        if (left, right) == (tail, tail2):
+                            return (b"M\tdocs/WORK_STATUS.md\nM\tdesign_change.md\n"
+                                if scenario == "later_dc" else b"M\tdocs/WORK_STATUS.md\n")
+                    if argv[:1] == ["rev-parse"] and argv[-1].startswith(
+                            (self.H7 + ":", tail + ":", tail2 + ":",
+                             *(sha + ":" for sha in chain))):
+                        if argv[-1].endswith(":design_change.md"):
+                            return (("2" if scenario == "tail_dc_append" and
+                                argv[-1].startswith(tail + ":") else "3" if scenario == "later_dc"
+                                and argv[-1].startswith(tail2 + ":") else "1") * 40 + "\n").encode()
+                        return b"frozen\n"
+                    if argv[:1] == ["show"] and argv[-1].endswith(":design_change.md"):
+                        revision = argv[-1].split(":", 1)[0]
+                        if revision == self.H7:
+                            return b"forged history\n" if scenario == "history_dc" else prior_dc
+                        if revision in {tail, tail2, *chain}:
+                            if revision == tail and scenario == "later_dc":
+                                return prior_dc
+                            return current[ROOT / "design_change.md"]
+                    if argv[:1] == ["show"] and argv[-1].startswith(self.C7 + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in self.CODE:
+                            return original_read(ROOT / path)
+                        if path in files:
+                            return original(["git", "show", f"{self.A7}:{path}"], cwd=ROOT)
+                    if argv[:1] == ["show"] and argv[-1].startswith(head + ":"):
+                        path = argv[-1].split(":", 1)[1]
+                        if path in PATHS or path == "docs/WORK_STATUS.md":
+                            return current[ROOT / path]
+                    return original(command, *args, **kwargs)
+                def run(command, *args, **kwargs):
+                    if command[:3] == ["git", "diff", "--check"]:
+                        return subprocess.CompletedProcess(command, 0)
+                    return original_run(command, *args, **kwargs)
+                with patch.object(subprocess, "check_output", side_effect=output), \
+                        patch.object(subprocess, "run", side_effect=run), \
+                        patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                            return_value=head):
+                    errors = checker._collect_u01_task4_r6_pair_response_git(bundle)
+                self.assertEqual(bool(errors), scenario not in {
+                    "b7", "h7", "tail", "tail_dc_append", "later", "max256"},
+                    (scenario, errors))
+
+
 class U01Task4R6NetworkTailFixtureRecoveryTests(unittest.TestCase):
     A6 = "266e27cc91b0c498aee569f57f9000f56994f973"
     W7 = "1fbaf1c11743d764b0850afdefbbf204b2c71ef9"

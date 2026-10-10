@@ -81904,5 +81904,467 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_r6_tail_fixture(bundle)
 
 
+_U01_R6_PAIR_W8 = "a1962ec6d47f082cdce7d10ce9745c61e4e2a947"
+_U01_R6_PAIR_A7 = "3b5fb2d1488276ebdedb3dbcf00343e778e40d69"
+_U01_R6_PAIR_PATHS = _U01_R6_TAIL_PATHS
+_U01_R6_PAIR_CODE = {
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_u01_postmerge_control_projection.py",
+    "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+    "tests/integration/test_f20_u01_oidc_browser_pg15.py",
+}
+_U01_R6_PAIR_BINDING = "u01_task4_r6_pair_response_lifecycle_diagnostic_binding"
+
+
+def _validate_u01_task4_r6_pair_response_active(bundle, *, event_raw=None,
+                                                 now=None, archived_files=None):
+    """Require A7's exact publication or a strictly derived B7 projection."""
+    from datetime import datetime, timedelta, timezone
+    root = Path(bundle["_root"])
+    paths = _U01_R6_PAIR_PATHS
+    errors = []
+    try:
+        frozen = {path: subprocess.check_output(["git", "show", f"{_U01_R6_PAIR_A7}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in paths}
+        source = archived_files or {}
+        actual = {path: source[path] if path in source else (root / path).read_bytes()
+                  for path in paths}
+        if event_raw is not None:
+            actual[paths[1]] = event_raw
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[paths[0]])
+        binding = progress[_U01_R6_PAIR_BINDING]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        issued = datetime.fromisoformat(worker["issued_at"])
+        expires = datetime.fromisoformat(worker["expires_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (stream != json.loads(actual[paths[1]]) or actual[paths[1]] != frozen[paths[1]]
+                or raw_event_object_prefix_bytes(actual[paths[1]], 2369)
+                   != raw_event_object_prefix_bytes(subprocess.check_output(["git", "show",
+                       f"{_U01_R6_PAIR_W8}:{paths[1]}"], cwd=root,
+                       stderr=subprocess.DEVNULL), 2369)
+                or stream["last_sequence"] != 2372 or len(stream["events"]) != 2372
+                or [row["sequence"] for row in stream["events"][2369:]]
+                   != [2370, 2371, 2372]
+                or [row["event_type"] for row in stream["events"][2369:]]
+                   != ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED",
+                       "WRITE_LEASE_ISSUED"]
+                or stream["events"][2370]["details"] != worker
+                or stream["events"][2371]["details"] != write
+                or progress["event_sequence"] != 2372
+                or progress["last_event_id"] != stream["last_event_id"]):
+            errors.append("U01_TASK4_R6_PAIR_EVENT_INVALID")
+        if (worker != expected["worker_lease"] or write != expected["write_lease"]
+                or worker["lease_epoch"] != 117 or write["write_epoch"] != 117
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["execution_fencing_token"] == write["write_fencing_token"]
+                or set(worker["path_scope"]) != _U01_R6_PAIR_CODE
+                or write["path_scope"] != worker["path_scope"]
+                or write["product_write_scope"] != []
+                or worker["issued_at"] != write["issued_at"]
+                or worker["expires_at"] != write["expires_at"]
+                or issued.tzinfo is None or expires.tzinfo is None
+                or expires - issued != timedelta(hours=24)
+                or instant.tzinfo is None or not issued <= instant < expires):
+            errors.append("U01_TASK4_R6_PAIR_LEASE_INVALID")
+        for key, value in (
+            ("work_instruction_sha256", "32542762EF6ABE60F6935445E4153628C90CA85D282644248B662DF5ABC88164"),
+            ("invocation_sha256", "AD099FF4BEA1D167BE94366B87A37D7543D137FB5EE64F9E7287400569C8B373"),
+            ("approval_sha256", "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"),
+        ):
+            if (binding[key] != value
+                    or _sha256(root / binding[key.removesuffix("_sha256") + "_path"])
+                       != value):
+                errors.append("U01_TASK4_R6_PAIR_HASH_INVALID")
+        if (binding["w8_checkpoint"] != _U01_R6_PAIR_W8
+                or binding["active_projection_checkpoint"] is not None
+                or set(binding["developer_exact_paths"]) != _U01_R6_PAIR_CODE
+                or binding["product_write_scope"] != []
+                or binding["vertical_acceptance"] != "NOT_ACCEPTED"
+                or binding["release_decision"] != "DEFER"
+                or binding["production"] != "NOT_EXECUTED"
+                or progress["repository"]["projection_mode"]
+                   != "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_ACTIVE"
+                or progress["next_successor_work_package"]
+                   != {"package_id": "U-02", "status": "BLOCKED_PENDING_U01_VERTICAL_ACCEPTANCE"}
+                or progress["snapshot_hash"] != compute_snapshot_hash(progress)):
+            errors.append("U01_TASK4_R6_PAIR_PROJECTION_INVALID")
+        if binding["control_checkpoint"] is None:
+            if (actual != frozen or progress != expected
+                    or bundle["handoff_text"].encode() != frozen[paths[2]]
+                    or bundle["detached_digest"] != json.loads(frozen[paths[3]])
+                    or binding["a7_docs_checkpoint"] is not None):
+                errors.append("U01_TASK4_R6_PAIR_CANONICAL_INVALID")
+        else:
+            checkpoint = binding["control_checkpoint"]
+            status = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_ACTIVE"
+            action = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE_READY"
+            updated = datetime.fromisoformat(progress["updated_at"])
+            if (not isinstance(checkpoint, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                    or checkpoint == _U01_R6_PAIR_A7
+                    or binding["a7_docs_checkpoint"] != _U01_R6_PAIR_A7
+                    or updated.tzinfo is None
+                    or not datetime.fromisoformat(expected["updated_at"]) <= updated <= instant):
+                errors.append("U01_TASK4_R6_PAIR_PROJECTION_INVALID")
+            expected[_U01_R6_PAIR_BINDING].update(status=status,
+                next_safe_action=action, a7_docs_checkpoint=_U01_R6_PAIR_A7,
+                control_checkpoint=checkpoint)
+            expected["active_work_instruction"].update(result_status=status,
+                package_status=status)
+            expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+                head_relation=action, worktree_status=action)
+            expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+                runtime_next_action=action,
+                next_work_package={"package_id": "U-01", "status": status},
+                snapshot_id="snapshot-u01-task4-r6-pair-response-lifecycle-b7-seq2372")
+            expected["snapshot_hash"] = compute_snapshot_hash(expected)
+            expected_handoff = extract_handoff_summary(frozen[paths[2]].decode())
+            expected_handoff.update(repository_head=checkpoint, next_safe_action=action)
+            expected_digest = copy.deepcopy(json.loads(frozen[paths[3]]))
+            expected_digest["progress"]["canonical_json_sha256"] = hashlib.sha256(
+                canonical_json_bytes(progress)).hexdigest().upper()
+            expected_digest["handoff"]["machine_summary_canonical_sha256"] = hashlib.sha256(
+                canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+            for section, data in (("progress", actual[paths[0]]),
+                                  ("handoff", actual[paths[2]])):
+                expected_digest[section].update(bytes=len(data),
+                    file_sha256=hashlib.sha256(data).hexdigest().upper())
+            if (progress != expected or bundle["handoff"] != expected_handoff
+                    or bundle["detached_digest"] != expected_digest
+                    or json.loads(actual[paths[0]]) != progress
+                    or actual[paths[2]].decode() != bundle["handoff_text"]
+                    or json.loads(actual[paths[3]]) != bundle["detached_digest"]):
+                errors.append("U01_TASK4_R6_PAIR_PROJECTION_INVALID")
+        if bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"]):
+            errors.append("U01_TASK4_R6_PAIR_HANDOFF_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK4_R6_PAIR_MISSING")
+    return sorted(set(errors))
+
+
+def _validate_u01_task4_r6_pair_response_closed(bundle, *, event_raw=None,
+                                                 now=None, archived_files=None):
+    """Require frozen B7 and exact write-before-worker revoke, without renewing leases."""
+    from datetime import datetime, timezone
+    root = Path(bundle["_root"])
+    paths = _U01_R6_PAIR_PATHS
+    errors = []
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_R6_PAIR_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str)
+                or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_R6_PAIR_A7, binding["control_checkpoint"]}):
+            return ["U01_TASK4_R6_PAIR_CLOSE_INVALID"]
+        active, published = _u01_task4_report_archive(bundle, publication)
+        active_progress = active["progress"]
+        active_at = datetime.fromisoformat(active_progress["updated_at"])
+        if (_validate_u01_task4_r6_pair_response_active(active,
+                event_raw=published[paths[1]], now=active_at, archived_files=published)
+                or active_progress[_U01_R6_PAIR_BINDING]["control_checkpoint"]
+                   != binding["control_checkpoint"]
+                or active_progress["next_safe_action"]
+                   != "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE_READY"):
+            errors.append("U01_TASK4_R6_PAIR_CLOSE_FROZEN_INVALID")
+        source = archived_files or {}
+        raw = event_raw if event_raw is not None else (root / paths[1]).read_bytes()
+        progress_raw = source[paths[0]] if paths[0] in source else (root / paths[0]).read_bytes()
+        handoff_raw = source[paths[2]] if paths[2] in source else (root / paths[2]).read_bytes()
+        digest_raw = source[paths[3]] if paths[3] in source else (root / paths[3]).read_bytes()
+        def stable(value):
+            return {key: item for key, item in value.items()
+                    if key not in {"events", "last_sequence", "last_event_id"}}
+        if (raw_event_object_prefix_bytes(raw, 2372)
+                != raw_event_object_prefix_bytes(published[paths[1]], 2372)
+                or stable(stream) != stable(active["events"])
+                or stream != json.loads(raw) or stream.get("last_sequence") != 2374
+                or len(stream.get("events", [])) != 2374
+                or stream.get("last_event_id")
+                   != "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked"
+                or progress.get("event_sequence") != 2374
+                or progress.get("last_event_id") != stream.get("last_event_id")):
+            errors.append("U01_TASK4_R6_PAIR_CLOSE_EVENT_INVALID")
+        reason = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"
+        action = "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RECORDED_U01_PENDING"
+        at = progress["updated_at"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        timestamp = datetime.fromisoformat(at)
+        expires = datetime.fromisoformat(active_progress["worker_lease"]["expires_at"])
+        if (timestamp.tzinfo is None or instant.tzinfo is None
+                or not active_at <= timestamp < expires or timestamp > instant):
+            errors.append("U01_TASK4_R6_PAIR_CLOSE_CLOCK_INVALID")
+        for offset, sequence, kind, event_id, lease, token in (
+            (0, 2373, "WRITE_LEASE_REVOKED",
+             "evt_u01_2373_task4_r6_pair_response_lifecycle_write_lease_revoked",
+             active_progress["write_lease"], "write_fencing_token"),
+            (1, 2374, "WORKER_LEASE_REVOKED",
+             "evt_u01_2374_task4_r6_pair_response_lifecycle_worker_lease_revoked",
+             active_progress["worker_lease"], "execution_fencing_token"),
+        ):
+            row = stream["events"][2372 + offset]
+            previous = hashlib.sha256(canonical_json_bytes(
+                stream["events"][2371 + offset])).hexdigest().upper()
+            if row != {"sequence": sequence, "event_id": event_id,
+                    "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                    "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                    "run_id": None,
+                    "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSE",
+                    "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+                    "occurred_at": at,
+                    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                    "previous_event_sha256": previous,
+                    "details": {"lease_id": lease["lease_id"], token: lease[token],
+                                "reason": reason}}:
+                errors.append("U01_TASK4_R6_PAIR_CLOSE_EVENT_INVALID")
+        expected = copy.deepcopy(active_progress)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_task4_r6_pair_response_lifecycle_diagnostic_{name}_lease"] = {
+                **active_progress[f"{name}_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["worker_lease"] = expected["write_lease"] = None
+        expected[_U01_R6_PAIR_BINDING].update(status=reason, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2374)
+        expected["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2374,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-task4-r6-pair-response-lifecycle-h7-seq2374")
+        expected["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        expected_handoff = {**active["handoff"], "event_sequence": 2374,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        expected_digest = copy.deepcopy(active["detached_digest"])
+        expected_digest["event_sequence"] = 2374
+        expected_digest["progress"]["canonical_json_sha256"] = hashlib.sha256(
+            canonical_json_bytes(progress)).hexdigest().upper()
+        expected_digest["handoff"]["machine_summary_canonical_sha256"] = hashlib.sha256(
+            canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+        for section, data in (("progress", progress_raw), ("handoff", handoff_raw)):
+            expected_digest[section].update(bytes=len(data),
+                file_sha256=hashlib.sha256(data).hexdigest().upper())
+        if (progress != expected or bundle["handoff"] != expected_handoff
+                or bundle["detached_digest"] != expected_digest
+                or json.loads(progress_raw) != progress
+                or handoff_raw.decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]
+                or json.loads(digest_raw) != bundle["detached_digest"]
+                or progress["snapshot_hash"] != compute_snapshot_hash(progress)):
+            errors.append("U01_TASK4_R6_PAIR_CLOSE_PROJECTION_INVALID")
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        errors.append("U01_TASK4_R6_PAIR_CLOSE_MISSING")
+    return sorted(set(errors))
+
+
+def _collect_u01_task4_r6_pair_response_git(bundle):
+    """Prove H6→report→W8→A7→C7→B7→H7 and bounded report-only tail."""
+    root = Path(bundle["_root"])
+    paths = _U01_R6_PAIR_PATHS
+    canonical = set(paths)
+    code = _U01_R6_PAIR_CODE
+    event, work = paths[1], paths[4]
+    b7_paths = canonical - {event}
+    result = "docs/04_test_reports/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RESULT.md"
+    h6 = "7b9a0f1f6de9d096560cf0e47121f1d6b1f767a7"
+    prior_report = "5e79fbd4cbfbf52b12e6814ebbe7381f4cd21a23"
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().rstrip("\r\n")
+
+        def leg(left, right, expected):
+            if (git("show", "-s", "--format=%P", right) != left
+                    or git("rev-list", "--count", f"{left}..{right}") != "1"
+                    or git("rev-list", "--min-parents=2", f"{left}..{right}")):
+                return False
+            history = set(git("log", "--format=", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            delta = set(git("diff", "--name-only", "--no-renames",
+                f"{left}..{right}").splitlines()) - {""}
+            return history == expected and delta == expected
+
+        progress = bundle["progress"]
+        binding = progress[_U01_R6_PAIR_BINDING]
+        closed = progress["repository"]["projection_mode"] \
+            == "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"
+        head = git("rev-parse", "HEAD")
+        c7 = binding["control_checkpoint"] or head
+        b7 = binding["active_projection_checkpoint"] if closed else None
+        refs = [_U01_R6_PAIR_A7, c7, head] + ([b7] if closed else [])
+        if (any(not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in refs)
+                or c7 == _U01_R6_PAIR_A7
+                or binding["w8_checkpoint"] != _U01_R6_PAIR_W8
+                or (binding["a7_docs_checkpoint"] != _U01_R6_PAIR_A7
+                    if binding["control_checkpoint"] is not None else
+                    binding["a7_docs_checkpoint"] is not None)
+                or git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or git("show", "-s", "--format=%P", prior_report) != h6
+                or git("show", "-s", "--format=%P", _U01_R6_PAIR_W8) != prior_report
+                or not leg(h6, prior_report, {
+                    "docs/WORK_STATUS.md",
+                    "docs/04_test_reports/U-01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_RESULT.md"})
+                or not leg(prior_report, _U01_R6_PAIR_W8, {
+                    "docs/WORK_STATUS.md",
+                    "docs/work_orders/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_WORK_INSTRUCTION.md",
+                    "docs/work_orders/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_INVOCATION.md"})
+                or not leg(_U01_R6_PAIR_W8, _U01_R6_PAIR_A7, canonical)
+                or set(git("diff", "--name-status", "--no-renames",
+                    _U01_R6_PAIR_W8, _U01_R6_PAIR_A7).splitlines())
+                   != {f"M\t{path}" for path in canonical}
+                or not leg(_U01_R6_PAIR_A7, c7, code)
+                or set(git("diff", "--name-status", "--no-renames",
+                    _U01_R6_PAIR_A7, c7).splitlines())
+                   != {f"M\t{path}" for path in code}
+                or any(subprocess.check_output(["git", "show",
+                    f"{_U01_R6_PAIR_A7}:{path}"], cwd=root,
+                    stderr=subprocess.DEVNULL) != subprocess.check_output(["git", "show",
+                    f"{c7}:{path}"], cwd=root, stderr=subprocess.DEVNULL)
+                       for path in canonical)
+                or any(subprocess.check_output(["git", "show", f"{c7}:{path}"],
+                    cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                       for path in code)
+                or subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
+                    cwd=root, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL).returncode):
+            return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+        if binding["control_checkpoint"] is None:
+            if (closed or b7 is not None or head != c7
+                    or any(subprocess.check_output(["git", "show",
+                        f"{_U01_R6_PAIR_A7}:{path}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                           for path in canonical)):
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+        elif not closed:
+            if (head == c7 or b7 is not None or not leg(c7, head, b7_paths)
+                    or set(git("diff", "--name-status", "--no-renames",
+                        c7, head).splitlines()) != {f"M\t{path}" for path in b7_paths}
+                    or subprocess.check_output(["git", "show",
+                        f"{_U01_R6_PAIR_A7}:{event}"], cwd=root,
+                        stderr=subprocess.DEVNULL) != (root / event).read_bytes()):
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+        else:
+            if (not isinstance(b7, str) or re.fullmatch(r"[0-9a-f]{40}", b7) is None
+                    or len({_U01_R6_PAIR_A7, c7, b7, head}) != 4
+                    or not leg(c7, b7, b7_paths)
+                    or set(git("diff", "--name-status", "--no-renames",
+                        c7, b7).splitlines()) != {f"M\t{path}" for path in b7_paths}):
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            count = int(git("rev-list", "--count", f"{b7}..{head}"))
+            if not 1 <= count <= 257:
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            descendants = git("rev-list", "--reverse", f"{b7}..{head}").splitlines()
+            if len(descendants) != count or len(set(descendants)) != count:
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            h7 = descendants[0]
+            if (h7 in {_U01_R6_PAIR_A7, c7, b7}
+                    or not leg(b7, h7, canonical)
+                    or set(git("diff", "--name-status", "--no-renames",
+                        b7, h7).splitlines()) != {f"M\t{path}" for path in canonical}):
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            immutable = code | (canonical - {work}) | {
+                "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+                "docs/work_orders/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_WORK_INSTRUCTION.md",
+                "docs/work_orders/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_INVOCATION.md"}
+            if any(git("rev-parse", f"{h7}:{path}") != git("rev-parse", f"{head}:{path}")
+                   for path in immutable):
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            prior_dc = subprocess.check_output(["git", "show",
+                f"{_U01_R6_PAIR_W8}:design_change.md"], cwd=root,
+                stderr=subprocess.DEVNULL)
+            h7_dc = subprocess.check_output(["git", "show", f"{h7}:design_change.md"],
+                cwd=root, stderr=subprocess.DEVNULL)
+            if h7_dc != prior_dc:
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            previous = h7
+            for index, successor in enumerate(descendants[1:]):
+                if (re.fullmatch(r"[0-9a-f]{40}", successor) is None
+                        or git("show", "-s", "--format=%P", successor) != previous):
+                    return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+                rows = {tuple(line.split("\t")) for line in git("diff", "--name-status",
+                    "--no-renames", previous, successor).splitlines()}
+                required = {("M", work)} | ({("A", result)} if index == 0 else set())
+                allowed = required | ({("M", "design_change.md")}
+                    if index == 0 else set())
+                if rows != required and rows != allowed:
+                    return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+                previous = successor
+            if previous != head:
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            first = descendants[1] if len(descendants) > 1 else h7
+            first_dc = subprocess.check_output(["git", "show", f"{first}:design_change.md"],
+                cwd=root, stderr=subprocess.DEVNULL)
+            dc_appended = first_dc != h7_dc
+            if (dc_appended and (len(first_dc) <= len(h7_dc)
+                                 or not first_dc.startswith(h7_dc))
+                    or dc_appended != (first != h7 and ("M", "design_change.md") in {
+                        tuple(line.split("\t")) for line in git("diff", "--name-status",
+                            "--no-renames", h7, first).splitlines()})):
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+            head_dc = subprocess.check_output(["git", "show", f"{head}:design_change.md"],
+                cwd=root, stderr=subprocess.DEVNULL)
+            if head_dc != first_dc or (root / "design_change.md").read_bytes() != head_dc:
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+        for path in canonical:
+            if subprocess.check_output(["git", "show", f"{head}:{path}"], cwd=root,
+                    stderr=subprocess.DEVNULL) != (root / path).read_bytes():
+                return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+        committed = json.loads(subprocess.check_output(["git", "show", f"{head}:{paths[0]}"],
+            cwd=root, stderr=subprocess.DEVNULL))
+        return [] if committed == progress else ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError, UnicodeDecodeError,
+            subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return ["U01_TASK4_R6_PAIR_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_r6_pair_response = validate_bundle
+
+
+def validate_bundle(bundle):
+    progress = bundle.get("progress", {})
+    mode = progress.get("repository", {}).get("projection_mode")
+    if mode in {"U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_ACTIVE",
+                "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_CLOSED"}:
+        errors = (_validate_u01_task4_r6_pair_response_active(bundle)
+                  if mode.endswith("ACTIVE") else
+                  _validate_u01_task4_r6_pair_response_closed(bundle))
+        if all(key in bundle for key in ("failure_ledger", "nonsemantic",
+                                       "dir_registry", "event_contract")):
+            if not CHAPTER_15_MINIMUM_FIELDS.issubset(progress):
+                errors.append("PRG_MINIMUM_FIELD_MISSING")
+            if not EXTENDED_PROGRESS_FIELDS.issubset(progress):
+                errors.append("PRG_EXTENDED_FIELD_MISSING")
+            errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+            errors.extend(_validate_failure_projection(bundle))
+            errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+            errors.extend(_validate_dir(bundle))
+            errors.extend(_validate_reporting(progress))
+            errors.extend(_validate_reporting_state(bundle))
+            errors.extend(_validate_registry_refs(bundle))
+            errors.extend(_validate_referenced_hashes(bundle))
+            errors.extend(validate_detached_progress_binding(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_u01_task4_r6_pair_response_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_r6_pair_response(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
