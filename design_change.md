@@ -9,6 +9,12 @@
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
 - R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013, epoch108 H3의 합성 B registry fixture 공백은 DC-U01-014, post-H4 보고 successor 후속 통제 경계는 DC-U01-015를 따른다. 아래 역사 실패는 삭제하지 않는다.
 
+### DC-U01-018 — Foundation R6 후속 Network 응답 capture 실패
+
+- 판정: C4 `f4c535771f0f71f3e17e5ae9103976e50f7e71ef`의 WSL-server Git exact-SHA 새 빈 격리 PG15/OIDC/HTTPS/Chromium R6 opt-in은 exit1 `NETWORK_RESPONSE_FACTS`다. 비밀 없는 marker는 `OTHER_API status=404 reason=TIMEOUT index=4`, 관측된 `PRE_AUTH_LOADING_DOM`, response status403/finished DONE이다. 이는 capture 단언의 실패 분류이며 실제 제품 결함이나 응답 원인은 아직 확정하지 않았다.
+- 근거·영향: 해당 실행은 보정된 `STORED_ROW_CONTROLS`와 뒤따른 entity/cause 단언을 예외 없이 지났으나 전체 R6는 1 failed/2 warnings다. C4 및 B4 `0b7eb53c`의 G-05 seq2357 PASS, H4 `604921aa`의 G-05 seq2359 PASS는 각 SHA의 비제품 통제 판정이다. 전용 QA 경로4/컨테이너3/loopback5545 잔여0이며 공유 자원·ysna/Production 변경0. 전체 E-NET/E-API/E-AUD·필수 U-01 ID별 독립 인수는 미검증이다. DC-U01-017의 역사 실패는 삭제하거나 소급 PASS로 바꾸지 않는다.
+- 조치·재개 조건: 기존 단일 브랜치에서 별도 최소 WI와 유효 분리 lease로 `NETWORK_RESPONSE_FACTS`/`OTHER_API` capture의 정확한 기대와 실제 응답을 비밀 없이 분리한다. 코드 변경 필요 시 RED→GREEN·독립 검토·local/private clean G-05 뒤 새 Git exact-SHA WSL-server 격리 PG15/OIDC/HTTPS/Chromium에서 fresh R6를 검증하고 전용 자원을 정확히 정리한다. 이번 기록은 계획상 미진 추적일 뿐 R6 PASS·gate 면제·PR/main 근거가 아니다. U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, U-02 `BLOCKED`; 새 branch·ysna 제외다.
+
 ### DC-U01-017 — Foundation R6 STORED_ROW 실측 하네스 단언 충돌
 
 - 판정: C3 `625a117812d39beb82c08f9d8cb364e2cc28afe3`의 WSL-server Git exact-SHA 격리 PG15/OIDC/HTTPS/Chromium opt-in은 exit1 `R6_BROWSER_FAILED stage=STORED_ROW_CONTROLS exit=1 class=AssertionError`(1 failed, 1 warning)다. 영향/다음 조치 문단 단언은 통과했고, 다음 역사 `open` Critical 행의 조작 요소0 단언이 승인된 확인(ACK) UI와 충돌했다. R6 PASS나 제품 ACK 결함의 판정이 아니다.

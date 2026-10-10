@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 Foundation R6 H4·첫 결과보고(Main, 2026-10-11 KST): 기존 단일 브랜치 B4 `0b7eb53ce23d0d1e7411826fa3a8f344cd18aa7f`는 local/private clean G-05 seq2357 PASS다. H4 `604921aae97c5927e86009ef64b163afb15bb79a`는 B4 직접 자식 정확 Event/progress/HANDOFF/digest/WORK_STATUS5로 seq2358 write→2359 worker를 REVOKED, active agent/dual lease null·제품0; 독립 검토 Critical0/Important0/Minor0, local/private 동일·clean G-05 seq2359 PASS다. C4 exact-SHA WSL R6 opt-in은 `NETWORK_RESPONSE_FACTS` OTHER_API 404 TIMEOUT exit1(1 failed/2 warnings), 전용 QA 자원 잔여0이다. 첫 H4 보고 tail은 본 현황·신규 `docs/04_test_reports/U-01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_RESULT.md`·`design_change.md` DC-U01-018 정확3경로로 제한하며, 게시 후 최신 G-05는 별도 확인 전 PASS 아님. 전체 R6 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED/U-02 BLOCKED; 다음은 별도 최소 WI에서 Network capture 원인 분리 및 미충족 E-* 실제 검증. PR/main·새 branch·ysna 제외.
+
 - Task4 Foundation R6 H4 임대 회수 후보(Main, 2026-10-11T01:05:36+09:00): B4 `0b7eb53ce23d0d1e7411826fa3a8f344cd18aa7f` 기존 branch/private 동일·tracked clean, 실제 G-05 seq2357 PASS. C4 exact-SHA WSL R6 opt-in은 NETWORK_RESPONSE_FACTS/OTHER_API 404 TIMEOUT exit1, 전용 자원 잔여0. Event seq2358 write→2359 worker 순차 REVOKED, active agent/dual lease null·제품0. H4는 B4 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private 게시/clean G-05 전이다. R6 전체 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
