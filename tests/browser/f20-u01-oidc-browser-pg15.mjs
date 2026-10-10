@@ -59,9 +59,12 @@ function assertStoredRowParagraphs(paragraphs, alert) {
     && paragraphs.includes(`다음 조치 · ${alert.next_action}`), 'R35_ALERT_API_DOM_MISMATCH');
 }
 
-function assertStoredRowControls(count) {
+function assertStoredRowControls({ nonAckCount, buttons }) {
   markStage('STORED_ROW_CONTROLS');
-  assert.equal(count, 0, 'R35_ALERT_API_DOM_MISMATCH');
+  assert.equal(nonAckCount, 0, 'R35_ALERT_API_DOM_MISMATCH');
+  assert.equal(buttons.length, 1, 'R35_ALERT_API_DOM_MISMATCH');
+  assert.equal(buttons[0].type, 'button', 'R35_ALERT_API_DOM_MISMATCH');
+  assert.equal(buttons[0].text.trim(), '확인', 'R35_ALERT_API_DOM_MISMATCH');
 }
 
 function assertStoredRowEntity(rowText, entity, cause) {
@@ -2268,7 +2271,13 @@ async function main() {
     const criticalRow = card.locator('li').filter({hasText: alertCode});
     const criticalParagraphs = await criticalRow.locator('p').allInnerTexts();
     assertStoredRowParagraphs(criticalParagraphs, alerts[0]);
-    assertStoredRowControls(await criticalRow.locator('a, button, input, select').count());
+    const storedButtons = await criticalRow.locator('button').all();
+    assertStoredRowControls({
+      nonAckCount: await criticalRow.locator('a, input, select').count(),
+      buttons: await Promise.all(storedButtons.map(async (button) => ({
+        type: await button.getAttribute('type'), text: await button.innerText(),
+      }))),
+    });
     const rowMatches = assertStoredRowEntity(rowText, expectedEntity, expectedCause);
     markStage('STORED_NEXT_ACTION');
     await nextCard.waitFor({ state: 'visible' });
@@ -3075,10 +3084,25 @@ if (r48DiagnosticSelfTest) {
     'R27_REVOKED_REFRESH_MISMATCH');
   assert.equal(safeFailureName({name: 'AssertionError'}), 'AssertionError');
   assert.equal(safeFailureName({name: 'private-token'}), 'Error');
+  const ackOnly = { nonAckCount: 0, buttons: [{ type: 'button', text: '확인' }] };
+  assert.doesNotThrow(() => assertStoredRowControls(ackOnly));
+  assert.doesNotThrow(() => assertStoredRowControls({
+    ...ackOnly, buttons: [{ ...ackOnly.buttons[0], enabled: false }],
+  }));
+  for (const invalid of [
+    { nonAckCount: 0, buttons: [] },
+    { nonAckCount: 0, buttons: [...ackOnly.buttons, { type: 'button', text: '기타' }] },
+    { nonAckCount: 0, buttons: [{ type: 'submit', text: '확인' }] },
+    { nonAckCount: 0, buttons: [{ type: 'button', text: '다른 작업' }] },
+    { nonAckCount: 1, buttons: ackOnly.buttons },
+  ]) {
+    assert.throws(() => assertStoredRowControls(invalid),
+      (error) => safeFailureName(error) === 'AssertionError');
+    assert.equal(stage, 'STORED_ROW_CONTROLS');
+  }
   for (const [invoke, marker] of [
     [() => assertStoredRowParagraphs([], {impact: 'synthetic', next_action: 'synthetic'}),
       'STORED_ROW_PARAGRAPHS'],
-    [() => assertStoredRowControls(1), 'STORED_ROW_CONTROLS'],
     [() => assertStoredRowEntity('', 'synthetic', 'synthetic'), 'STORED_ROW_ENTITY'],
   ]) {
     assert.throws(invoke, (error) => safeFailureName(error) === 'AssertionError');
