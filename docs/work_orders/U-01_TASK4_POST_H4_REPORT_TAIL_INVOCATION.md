@@ -1,0 +1,1 @@
+`U-01_TASK4_POST_H4_REPORT_TAIL_WORK_INSTRUCTION.md`와 Main이 전달한 정확 A SHA·WI SHA·서로 다른 유효 worker/write fencing token을 대조하라. 기존 단일 브랜치에서 지정된 검사기·통제 테스트 정확 두 파일만 TDD로 수정하라. H 이전 역사 계보를 보존하고 H→R2→D와 새 통제 A/C/B/H2 및 종료 뒤 제한된 보고 전용 tail을 fail-closed로 검증하라. 제품·문서·과거 Event·WSL-server·Secret·Git commit/push는 수정하지 말고, 명령·exit·diff·미검증·rollback을 Main에 보고하라.
