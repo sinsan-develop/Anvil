@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR response lifecycle A7 비제품 임대(Main, 2026-10-11T04:13:25+09:00): W8 `a1962ec6d47f082cdce7d10ce9745c61e4e2a947` local/private clean; Event seq2370 WI→2371 epoch117 worker→2372 write, 분리 24시간 token·정확4 code path·제품0. A7 독립 검토/private 게시와 C7/WSL은 미실행. R6 실제 PAIR_LIST_API 404/BODY PENDING exit1, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 R6 Network tail fixture H6 임대 회수(Main, 2026-10-11T03:52:31+09:00): B6 `6573f4e195f46d706e6493c3c76f92f30df39f05` local/private clean G-05 seq2367 PASS, C6 WSL-server Git exact SHA G-05/집중 class5·31 subtests PASS, 전용 자원 잔여0. Event seq2368 write→2369 worker REVOKED, active worker/write null·제품0. H6 자체의 독립 검토/private/G-05는 미실행이다. R6 실제 PAIR_LIST_API 404/BODY PENDING 역사 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED. 다음은 H6 결과보고와 별도 R6 원인분리 WI.
 
 
@@ -236,17 +239,56 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2369,
-  "last_event_id": "evt_u01_2369_task4_r6_network_tail_fixture_worker_lease_revoked",
+  "event_sequence": 2372,
+  "last_event_id": "evt_u01_2372_task4_r6_pair_response_lifecycle_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
+    "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T04:13:25+09:00",
+    "expires_at": "2026-10-12T04:13:25+09:00",
+    "lease_epoch": 117,
+    "baseline_git_commit": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+    "dispatch_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
+    "fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
+    "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
+    "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T04:13:25+09:00",
+    "expires_at": "2026-10-12T04:13:25+09:00",
+    "write_epoch": 117,
+    "baseline_git_commit": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+    "dispatch_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "write-lease-u01-task4-r6-tail-fixture-5cb6663a4ad687fd808fef8816c94aba",
+    "worker_lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
+    "fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
+    "write_fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
+    "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
+    "product_write_scope": []
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_RECORDED_U01_PENDING",
-  "repository_head": "4a1e96fe35d026e91c067aac4e510312dc6224c9",
+  "next_safe_action": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_ONLY",
+  "repository_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

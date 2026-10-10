@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2369,
+  "last_sequence": 2372,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106963,7 +106963,115 @@
         "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-116-63518c4f869aaafa0626185da902154c",
         "reason": "U01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_CLOSED"
       }
+    },
+{
+      "sequence": 2370,
+      "event_id": "evt_u01_2370_task4_r6_pair_response_lifecycle_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T04:13:25+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "906C705C8772CA646E30CF9E9A20BDEE6FC07244366360E79C9D2FE8A1E568F7",
+      "details": {
+        "work_instruction_id": "WI-U01-TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC-20261011-001",
+        "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "32542762EF6ABE60F6935445E4153628C90CA85D282644248B662DF5ABC88164",
+        "invocation_path": "docs/work_orders/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_INVOCATION.md",
+        "invocation_sha256": "AD099FF4BEA1D167BE94366B87A37D7543D137FB5EE64F9E7287400569C8B373",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+        "predecessor_sequence": 2369,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "product_write_scope": []
+      }
+    },
+{
+      "sequence": 2371,
+      "event_id": "evt_u01_2371_task4_r6_pair_response_lifecycle_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T04:13:25+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "2746D77626CE50290154EBA40F259EA03C10F17266B7A0C6B5F2750674BEAFFE",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
+        "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T04:13:25+09:00",
+        "expires_at": "2026-10-12T04:13:25+09:00",
+        "lease_epoch": 117,
+        "baseline_git_commit": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+        "dispatch_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
+        "fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
+        "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29"
+      }
+    },
+{
+      "sequence": 2372,
+      "event_id": "evt_u01_2372_task4_r6_pair_response_lifecycle_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC",
+      "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+      "occurred_at": "2026-10-11T04:13:25+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "9FEC2BAB646B62A5D8F0754339CF919910AEDD84AAD0145F79CCB649669C8DF8",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-pair-response-lifecycle-recovery",
+        "subject_ref": "U-01/TASK4-R6-PAIR-RESPONSE-LIFECYCLE-DIAGNOSTIC",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T04:13:25+09:00",
+        "expires_at": "2026-10-12T04:13:25+09:00",
+        "write_epoch": 117,
+        "baseline_git_commit": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+        "dispatch_head": "a1962ec6d47f082cdce7d10ce9745c61e4e2a947",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "write-lease-u01-task4-r6-tail-fixture-5cb6663a4ad687fd808fef8816c94aba",
+        "worker_lease_id": "worker-lease-u01-task4-r6-tail-fixture-825f0766e62f2bcf58d892621730bd29",
+        "fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
+        "write_fencing_token": "u01-task4-r6-tail-fixture-write-fence-epoch-117-5cb6663a4ad687fd808fef8816c94aba",
+        "execution_fencing_token": "u01-task4-r6-tail-fixture-execution-fence-epoch-117-825f0766e62f2bcf58d892621730bd29",
+        "product_write_scope": []
+      }
     }
   ],
-  "last_event_id": "evt_u01_2369_task4_r6_network_tail_fixture_worker_lease_revoked"
+  "last_event_id": "evt_u01_2372_task4_r6_pair_response_lifecycle_write_lease_issued"
 }
