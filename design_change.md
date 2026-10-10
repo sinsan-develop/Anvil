@@ -9,6 +9,12 @@
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
 - R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013, epoch108 H3의 합성 B registry fixture 공백은 DC-U01-014, post-H4 보고 successor 후속 통제 경계는 DC-U01-015를 따른다. 아래 역사 실패는 삭제하지 않는다.
 
+### DC-U01-016 — epoch111 C 게시 후 G-05 단계 판정 결함
+
+- 판정: C `3e788ed25330910d2b55c932e3fe517e8661bd59`는 기존 branch와 사설 원격의 동일 SHA·tracked clean, A의 직접 자식·코드 정확2경로, 집중 9 PASS이나 실제 C G-05는 exit1 `U01_TASK4_POST_H4_TAIL_GIT_INVALID`다. C 단계 필수 검증은 **미충족**이며 B/H2·WSL-server·U-01 인수 PASS가 아니다.
+- 근거·영향: 활성 projection에 `control_checkpoint=null`인 C를 A 전용 Git collector가 받아 HEAD와 코드 blob을 A에 고정한다. C는 그 조건을 정상적으로 충족할 수 없다. 원문 Event/lease/digest 결함이라는 증거는 없고 Git 단계 선택에 국소화된다. 독립 재검토 Important1; 최초 정적 검토의 C 실게시 경로 누락을 보존한다. 이미 push한 C를 재작성하지 않으며 B가 나중에 GREEN이어도 C PASS로 소급하지 않는다.
+- 조치·재개 조건: Developer code write를 중단하고 현 SHA/실패를 보존했다. 기존 단일 브랜치에서 별도 비제품 WI와 유효 dual lease·추가 직접 부모 Git leg를 정의해 C 단계의 clean/private exact-SHA positive와 위조·비C negative를 RED→GREEN으로 보완한다. 역사 H/R2/D/W2/A/C의 commit·문서·Event blob을 보존하고 회수 Event는 순서대로만 append한다. 기능·공개 API·DB·보안·비용·운영 범위 변경은 없으므로 Main의 비의미 내부 재작업으로 진행하되, 이번 기록을 실제 G-05 PASS나 필수 gate 면제로 사용하지 않는다. Foundation R6 정확 단언과 전체 E-*는 별개로 `NOT_EXECUTED`/미검증, U-01 `NOT_ACCEPTED`·Release `DEFER`·Production `NOT_EXECUTED`·U-02 `BLOCKED`; PR/main·새 branch·ysna 제외다.
+
 ### DC-U01-015 — post-H4 보고 successor H 검증 후 남은 R6·최신 보고 통제
 
 - 후속 실측(2026-10-10 KST): 결과보고 `84393391829309e4c20d140a8ff94edf8175f63e`는 기존 branch/private 동일·tracked clean이나 최신 G-05 exit1 `U01_TASK4_POST_H4_GIT_INVALID`다. collector의 B→H 정확 한 커밋 조건과 과거 R 대비 `design_change.md` 최신 blob 불변 조건은 H 다음 정확3문서 보고 커밋을 거부한다. R6 읽기 전용 대조에서는 역사 하네스의 조작 요소0 단언과 현재 `open` Critical의 `확인` 버튼·설계 §29.2가 정적 충돌하지만 실제 실패 단언은 미확정이다. 이 항목의 이번 주기 미진은 기록으로 정리하되 G-05나 R6를 PASS로 표시하지 않는다.
