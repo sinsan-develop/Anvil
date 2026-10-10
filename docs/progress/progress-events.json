@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2347,
+  "last_sequence": 2349,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106328,7 +106328,49 @@
       "product_write_scope": [],
       "write_epoch": 112
     }
+  },
+  {
+    "sequence": 2348,
+    "event_id": "evt_u01_2348_task4_post_h4_c_gate_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T21:43:00+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "CC3F3DE0A2D4083C0A99950AA21D9CF696F9E85F509E212EA84FDC835CFA0296",
+    "details": {
+      "lease_id": "write-lease-u01-task4-post-h4-c-gate-recovery-609475e932134e1a996831a45486999a",
+      "write_fencing_token": "u01-task4-post-h4-c-gate-recovery-write-fence-epoch-112-609475e932134e1a996831a45486999a",
+      "reason": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSED_R6_PENDING"
+    }
+  },
+  {
+    "sequence": 2349,
+    "event_id": "evt_u01_2349_task4_post_h4_c_gate_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSE",
+    "subject_ref": "U-01/TASK4-POST-H4-C-GATE-RECOVERY",
+    "occurred_at": "2026-10-10T21:43:00+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "0EEF046615EE7FE96EEEB7C67F8DE1A6066ADBC2985FB525EC79127E8F07FE66",
+    "details": {
+      "lease_id": "worker-lease-u01-task4-post-h4-c-gate-recovery-4ec3fb2a6d9546b996f07af601bc164f",
+      "execution_fencing_token": "u01-task4-post-h4-c-gate-recovery-execution-fence-epoch-112-4ec3fb2a6d9546b996f07af601bc164f",
+      "reason": "U01_TASK4_POST_H4_C_GATE_RECOVERY_CLOSED_R6_PENDING"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2347_task4_post_h4_c_gate_write_lease_issued"
+  "last_event_id": "evt_u01_2349_task4_post_h4_c_gate_worker_lease_revoked"
 }
