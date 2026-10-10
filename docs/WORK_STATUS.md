@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 R6 Network tail fixture 첫 결과보고 tail 후보(Main, 2026-10-11 KST): H6 `7b9a0f1f6de9d096560cf0e47121f1d6b1f767a7`는 B6 직접 자식 정확5문서, epoch116 seq2368 write→2369 worker REVOKED·활성 임대/agent null·제품0, 독립 리뷰 Critical0/Important0/Minor0, local/private clean G-05 seq2369 PASS다. 신규 `docs/04_test_reports/U-01_TASK4_R6_NETWORK_TAIL_FIXTURE_RECOVERY_RESULT.md`와 본 WORK_STATUS 정확2문서만 첫 보고 tail 후보로 추가한다. DC-U01-019의 R6 실제 PAIR_LIST_API 404/BODY PENDING FAIL은 미해소이므로 `design_change.md`를 이번 tail에서 수정하지 않는다. 보고 tail 자체의 독립 검토/private 게시·최신 G-05 전이며 H6 PASS를 상속하지 않는다. 다음은 정확2 보고 검토·게시·실제 G-05 후 별도 최소 R6 원인분리 WI·dual lease와 E-NET/E-API/E-AUD/필수 ID 실측. U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
 - Task4 R6 Network tail fixture H6 임대 회수 후보(Main, 2026-10-11T03:52:31+09:00): B6 `6573f4e195f46d706e6493c3c76f92f30df39f05` local/private clean G-05 seq2367 PASS. C6 exact-SHA WSL G-05와 집중 class5/31 subtests PASS, QA 잔여0. seq2368 write→2369 worker REVOKED, active dual lease/agent null·제품0. H6는 B6 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private/G-05 전이다. R6 실제 PAIR_LIST_API 404/BODY PENDING FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED 유지. 다음은 H6 검증·게시→첫 결과보고 tail→별도 실제 R6 원인분리 WI, PR/main·새 branch·ysna 제외.
 
 
