@@ -7,7 +7,13 @@
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
-- R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013, epoch108 H3의 합성 B registry fixture 공백은 DC-U01-014를 따른다. 아래 역사 실패는 삭제하지 않는다.
+- R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013, epoch108 H3의 합성 B registry fixture 공백은 DC-U01-014, post-H4 보고 successor 후속 통제 경계는 DC-U01-015를 따른다. 아래 역사 실패는 삭제하지 않는다.
+
+### DC-U01-015 — post-H4 보고 successor H 검증 후 남은 R6·최신 보고 통제
+
+- 판정: H `c821a4661a601c16b3b22964e2f4054719cc4fd2`는 로컬·WSL-server exact-SHA G-05 seq2339 PASS, WSL focused exit0 `34 passed, 71 deselected, 159 subtests passed`; 단일 사전 등록 격리 checkout 잔여0이다. 상세 `docs/04_test_reports/U-01_TASK4_POST_H4_SUCCESSOR_H_WSL_CONTROL_QA_RESULT.md`. 이 검증은 H의 통제 범위에 한하며 전체 U-01 인수는 아니다.
+- 남은 사유·영향: H 이후 결과보고·본 DC·WORK_STATUS를 새 commit에 기록하면 H의 G-05 PASS는 최신 HEAD에 상속되지 않는다. 최신 보고 successor 통제 경로가 미검증이다. Foundation R6 `STORED_ROW`는 기존 WSL `AssertionError`의 정확 단언이 불명이다. 역사 하네스의 Critical 행 조작 요소0 단언과 승인 화면의 열린 Critical `확인` 버튼은 정적 충돌 후보지만 실제 실패 원인으로 확정하지 않았다. 전체 suite/Windows 기본 fd-capture, E-NET/E-API/E-AUD와 U-01 ID별 수직 인수도 미검증이다.
+- 조치·재개 조건: 본 기록은 이번 계획 주기의 미진을 추적하며 실제 실패를 PASS로 바꾸지 않는다. 기존 단일 branch에서 최신 보고 Git 계보의 fail-closed G-05를 별도 비제품 WI/lease로 결박하고, Foundation R6는 별도 WI·격리 WSL-server PG15/OIDC/HTTPS/Chromium에서 정확 단언을 재현한 뒤 원인을 한 개씩 보완·재검증한다. U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, U-02 `BLOCKED`; PR/main 병합·새 branch·ysna 제외다.
 
 ### DC-U01-014 — epoch108 H3 합성 B의 registry hash 불일치
 
