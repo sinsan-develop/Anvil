@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2377,
+  "last_sequence": 2379,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107221,7 +107221,49 @@
         "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
         "product_write_scope": []
       }
+    },
+    {
+      "sequence": 2378,
+      "event_id": "evt_u01_2378_task4_r6_pair_prenav_causal_probe_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T07:09:32+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "3CD77A02B3A19B4965E95BFC8A68FEA10AFD5953B0F25E9FB7531E83B652E055",
+      "details": {
+        "lease_id": "write-lease-u01-task4-r6-pair-prenav-7189776aa8a84dd69da5ee3bbe5d0580",
+        "write_fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
+        "reason": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_CLOSED"
+      }
+    },
+    {
+      "sequence": 2379,
+      "event_id": "evt_u01_2379_task4_r6_pair_prenav_causal_probe_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T07:09:32+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "2383DDE1114DF5848A15D7809D637270852F83F252075BCED789C536F870229C",
+      "details": {
+        "lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
+        "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
+        "reason": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_CLOSED"
+      }
     }
   ],
-  "last_event_id": "evt_u01_2377_task4_r6_pair_prenav_causal_probe_write_lease_issued"
+  "last_event_id": "evt_u01_2379_task4_r6_pair_prenav_causal_probe_worker_lease_revoked"
 }

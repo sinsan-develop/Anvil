@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR pre-navigation H8 종료 투영(Main, 2026-10-11T07:09:32+09:00): B8 `082b0a553e19deeef0f84ff9afea8ae56f244e46` direct parent·local/private clean G-05 seq2377 PASS를 기준으로 Event seq2378 write→2379 worker를 순서대로 REVOKED 처리했다. 활성 agent/lease는 null, 제품 write0, U-01 NOT_ACCEPTED·Release DEFER·DC-U01-019 유지다. A/B 같은 C8 exact SHA 격리 실측은 둘 다 R6 FAIL이고 B는 첫 reload 전 BODY PENDING으로 관찰됐다. 이 H8 문서 투영은 독립 검토·private 게시·게시본 G-05 전 후보이며 다음은 결과보고 tail이다. PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR pre-navigation B8 실측 결박(Main, 2026-10-11T07:07:11+09:00): C8 `fc80b98e9aca47ff0e81e70ff9becd5d39503002` local/private 실제 G-05 seq2377 PASS, A/B 별도 WSL-server Git exact SHA G-05 PASS. 같은 PG15/Node24/Playwright image, migration0019, seed/permission hash·harness hash·Chromium151.0.7922.34·timeout10000ms에서 A 기존 R6는 원 pair404 BODY PENDING round4 exit1, B 첫 reload 전 barrier는 `PRENAV_BODY_PENDING`/reload NOT_STARTED/round1 exit1이다. 이번 한 쌍에서 후속 reload 없이 대기가 재현되어 reload 필수 원인 가설은 지지되지 않으나 직접 원인 미확정이다. 각 전용 QA 자원·port5545 잔여0, 전체 R6 FAIL/U-01 NOT_ACCEPTED·DC-U01-019 유지. Event seq2377·epoch118 dual lease ACTIVE·제품0, 다음 H8 seq2378 write→2379 worker 회수와 결과보고. PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR pre-navigation A8 비제품 임대 후보(Main, 2026-10-11T06:04:02+09:00): W9 `5914b3ea220122d372844bceda64e350e7ab1f16`은 local/private 동일·tracked clean, WI/Invocation 독립 재검토 C0/I0/M0이며 W9 실제 G-05 `U01_TASK4_R6_PAIR_GIT_INVALID` exit1 예상 RED다. 역사 seq1~2374 원문 보존 뒤 seq2375 WI→2376 epoch118 worker→2377 write를 서로 다른 24시간 token·단일 Developer·허용 코드 최대4·제품 scope0으로 투영한다. A8 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보이며 독립 검토/private 게시·Developer dispatch 전이다. C7의 WSL 격리 실제 R6 `PAIR_LIST_API 404 BODY PENDING` exit1·전체 R6 FAIL·U-01 NOT_ACCEPTED·QA 잔여0은 불변이다. 다음은 A8 독립 검토/게시 후 유효 dual token 단일 Developer TDD, C8 clean/private 실제 G-05 전 WSL QA 금지다. PR/main·새 branch·ysna/Production 제외.
@@ -249,55 +251,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2377,
-  "last_event_id": "evt_u01_2377_task4_r6_pair_prenav_causal_probe_write_lease_issued",
+  "event_sequence": 2379,
+  "last_event_id": "evt_u01_2379_task4_r6_pair_prenav_causal_probe_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
-    "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-11T06:04:02+09:00",
-    "expires_at": "2026-10-12T06:04:02+09:00",
-    "lease_epoch": 118,
-    "baseline_git_commit": "5914b3ea220122d372844bceda64e350e7ab1f16",
-    "dispatch_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
-    ],
-    "lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
-    "fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
-    "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-pair-prenav-causal-probe",
-    "subject_ref": "U-01/TASK4-R6-PAIR-PRENAV-CAUSAL-PROBE",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-11T06:04:02+09:00",
-    "expires_at": "2026-10-12T06:04:02+09:00",
-    "write_epoch": 118,
-    "baseline_git_commit": "5914b3ea220122d372844bceda64e350e7ab1f16",
-    "dispatch_head": "5914b3ea220122d372844bceda64e350e7ab1f16",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
-    ],
-    "lease_id": "write-lease-u01-task4-r6-pair-prenav-7189776aa8a84dd69da5ee3bbe5d0580",
-    "worker_lease_id": "worker-lease-u01-task4-r6-pair-prenav-56303d8c164144228b265730273a302a",
-    "fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
-    "write_fencing_token": "u01-task4-r6-pair-prenav-write-fence-epoch-118-7189776aa8a84dd69da5ee3bbe5d0580",
-    "execution_fencing_token": "u01-task4-r6-pair-prenav-execution-fence-epoch-118-56303d8c164144228b265730273a302a",
-    "product_write_scope": []
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_CLOSE_READY",
+  "next_safe_action": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_RECORDED_U01_PENDING",
   "repository_head": "fc80b98e9aca47ff0e81e70ff9becd5d39503002",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
