@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 R6 PAIR response lifecycle 결과보고 tail 후보(Main, 2026-10-11 KST): H7 `de4c2afb664327bfc30c87721013f6194bda5920`은 B7 직접 자식 정확 Event/progress/HANDOFF/digest/WORK_STATUS5, seq2373 write→2374 worker REVOKED·active lease/agent null·제품0, 독립 검토 Critical0/Important0/Minor0, local/private 동일·tracked clean 실제 G-05 seq2374 PASS다. C7 `edbd8e5d`의 격리 WSL-server R6 opt-in은 `PAIR_LIST_API 404 BODY PENDING` exit1/1 failed/1 warning이며 ASGI final body DONE·독립 probe/안정 페이지 body DONE과 원 요청 PENDING을 분리했다. 전용 QA 경로5/컨테이너3/포트 잔여0은 독립 재조회 exit0; 원인 미확정·전체 R6 FAIL·U-01 NOT_ACCEPTED·Release DEFER다. 신규 `docs/04_test_reports/U-01_TASK4_R6_PAIR_RESPONSE_LIFECYCLE_DIAGNOSTIC_RESULT.md`와 본 현황 정확2경로를 H7 직접 자식 첫 보고 tail로 준비한다. 독립 보고 검토/private 게시/이 tail의 실제 G-05는 아직 미실행이며 H7 PASS를 상속하지 않는다. 다음은 보고 gate→기존 branch 별도 최소 원인분리 WI·E-NET/E-API/E-AUD/필수 ID 검증, PR/main·새 branch·ysna/Production 제외. Developer 정식 FAILURE_REPORT0.
+
 - Task4 R6 PAIR response lifecycle H7 임대 회수 후보(Main, 2026-10-11T05:34:21+09:00): B7 `81e874c190d5202c41b6a67241fabcd1cd993cd1` local/private clean G-05 seq2372 PASS. C7 exact-SHA WSL G-05와 국소 Python7 PASS, 실제 R6 opt-in FAIL·QA 잔여0. seq2373 write→2374 worker REVOKED, active dual lease/agent null·제품0. H7는 B7 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private/G-05 전이다. C7 R6 PAIR_LIST_API 404/BODY PENDING 실제 FAIL, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED 유지. 다음은 H7 검증·게시→첫 결과보고 tail→별도 실제 R6 원인분리 WI, PR/main·새 branch·ysna 제외.
 
 
