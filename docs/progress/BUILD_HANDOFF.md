@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 Foundation R6 STORED_ROW B3 실측 결박(Main, 2026-10-10T23:46:30+09:00): C3 `625a117812d39beb82c08f9d8cb364e2cc28afe3` exact-SHA WSL-server PG15/OIDC/HTTPS/Chromium에서 `STORED_ROW_CONTROLS` AssertionError(exit1, 1 failed/1 warning)를 재현했다. 문단 단언은 통과하고 역사 행 조작요소0 단언이 승인된 ACK UI와 충돌한다. 제품 결함·R6 PASS로 단정하지 않으며 임시 QA 자원 잔여0이다. Event seq2352와 active epoch113 dual lease는 유지하고 H3에서 write→worker 순서로 회수한다. 별도 최소 하네스 보정 WI/lease 전 제품·ACK·인가·감사·Network 변경0, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 Foundation R6 STORED_ROW A3 진단 임대 후보(Main, 2026-10-10T22:19:18+09:00): W4 `c6631a22a4e8f68d68cdd5c725383f9b25c4b622` local/private clean에서 seq2350 WI→2351 epoch113 worker→2352 write를 별도 token·24시간·정확 최대4 code path·제품 scope0으로 결박한다. A3 자체 독립 검토/private 게시·G-05 및 실제 WSL PG15/OIDC/HTTPS/Chromium은 미실행이다. 역사 C 실패와 Foundation STORED_ROW의 정확 단언은 확정 전이며 U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -252,8 +255,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
-  "repository_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
+  "repository_head": "625a117812d39beb82c08f9d8cb364e2cc28afe3",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

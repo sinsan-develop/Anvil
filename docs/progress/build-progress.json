@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-r6-stored-row-diagnostic-a3-seq2352",
+  "snapshot_id": "snapshot-u01-task4-r6-stored-row-diagnostic-b3-seq2352",
   "event_sequence": 2352,
-  "updated_at": "2026-10-10T22:19:18+09:00",
+  "updated_at": "2026-10-10T23:46:30+09:00",
   "last_event_id": "evt_u01_2352_task4_r6_stored_row_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -941,7 +941,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1052,13 +1052,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+    "local_head": "625a117812d39beb82c08f9d8cb364e2cc28afe3",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
+    "remote_head": "625a117812d39beb82c08f9d8cb364e2cc28afe3",
     "projection_mode": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+    "head_relation": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1492,7 +1492,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+    "worktree_status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1658,8 +1658,8 @@
     "path": "docs/work_orders/U-01_TASK4_R6_STORED_ROW_DIAGNOSTIC_WORK_INSTRUCTION.md",
     "sha256": "830881863E50E2644E33274548A58EC7EFE049422396DDDD07964EB173FE307C",
     "revision": 1,
-    "result_status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
-    "package_status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+    "result_status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ACTIVE",
+    "package_status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ACTIVE",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1862,7 +1862,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY"
+    "status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2254,8 +2254,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "BE1890522F42DF9F31775510B8D41A13E86177769D301FF9815BEED31CA5BB0F",
-  "runtime_next_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+  "snapshot_hash": "7F3B643FAF69FD1C43DD66448EBEA5DCBCB8A9413F0312458F6424257FB3A004",
+  "runtime_next_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -27840,15 +27840,15 @@
     "production": "NOT_EXECUTED"
   },
   "u01_task4_r6_stored_row_diagnostic_binding": {
-    "status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+    "status": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ACTIVE",
     "package_id": "U-01",
     "predecessor_sequence": 2349,
     "predecessor_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
     "w4_checkpoint": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
-    "a3_docs_checkpoint": null,
-    "control_checkpoint": null,
+    "a3_docs_checkpoint": "c26cc10b1a19d2459f2959efec3540ce0ca6619e",
+    "control_checkpoint": "625a117812d39beb82c08f9d8cb364e2cc28afe3",
     "active_projection_checkpoint": null,
     "work_instruction_id": "WI-U01-TASK4-R6-STORED-ROW-DIAGNOSTIC-20261010-001",
     "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_STORED_ROW_DIAGNOSTIC_WORK_INSTRUCTION.md",
@@ -27869,7 +27869,7 @@
     ],
     "product_write_scope": [],
     "event_sequence": 2352,
-    "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_ONLY",
+    "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
