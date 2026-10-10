@@ -7,7 +7,13 @@
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
-- R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013을 따른다. 아래 역사 실패는 삭제하지 않는다.
+- R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013, epoch108 H3의 합성 B registry fixture 공백은 DC-U01-014를 따른다. 아래 역사 실패는 삭제하지 않는다.
+
+### DC-U01-014 — epoch108 H3 합성 B의 registry hash 불일치
+
+- 판정: H3 `37323c39839f119137fc9b22502464034086189f`의 로컬·WSL-server exact-SHA G-05 seq2329는 PASS이나 WSL 집중 회귀는 exit1(`1 failed, 13 passed, 73 deselected, 110 subtests passed`)이다. U-01 인수나 집중 회귀 PASS가 아니다.
+- 사유·영향: `test_g05_dispatches_b_and_h3_without_accepting_u01`의 합성 B는 변경된 문서 바이트에 맞는 `_file_hashes`/registry 결박 없이 full dispatcher를 호출해 `PRG_REGISTRY_HASH_MISMATCH`가 난다. H3 fixture에는 같은 경로를 mock한 차이가 있다. 역사 fixture 결함으로 판단하지만 제품·전체 회귀 문제 부재는 아직 확정하지 않는다.
+- 조치·재개 조건: 상세 명령·결과·임시 checkout 잔여0은 `docs/04_test_reports/U-01_TASK4_EPOCH108_H3_WSL_CONTROL_QA_RESULT.md`에 보존한다. 별도 비제품 WI·유효 dual lease로 합성 fixture만 최소 수정하고 동일 기존 branch의 clean/private 정확 SHA를 Windows/WSL-server G-05·focused로 재검증한다. 이 기록으로 이번 주기 미진은 정리하되 실패를 PASS로 바꾸지 않는다. Foundation R6 `STORED_ROW`·E-NET/E-API/E-AUD는 별개, U-01 `NOT_ACCEPTED`/Release `DEFER`/Production `NOT_EXECUTED`/U-02 `BLOCKED`, PR/main·새 branch·ysna 제외다.
 
 ### DC-U01-013 — epoch107 H2의 역사 focused fixture가 현재 종료 상태를 읽음
 
