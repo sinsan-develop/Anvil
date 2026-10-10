@@ -7,7 +7,13 @@
 - 기준: 승인된 계약 B `docs/04_test_reports/U-01_SCOPED_DASHBOARD_CONTRACT_PROPOSAL.md`, 승인 기록 `docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md`, 구현 계획 `docs/work_orders/U-01_SCOPED_DASHBOARD_IMPLEMENTATION_PLAN.md`.
 - 작업 범위: Windows 로컬 개발 → 기존 단일 branch push → `ssh WSL-server`에서 동일 SHA 격리 검증. `ysna-server`와 Production은 이 주기 작업 대상이 아니다.
 - 최초 보고 시 Task 1 API shell, Task 2 Reader, Task 3 화면의 로컬 절편은 구현·검증·원격 보존했고 Task 3 종료 `95d79d9bed1187d1480e3f341984827a19028d40`의 G-05 seq2304 PASS까지 확인했다. 이후 Task 4 보고 통제 H `f6257baad4d6f340301b04218e9949f1dc28c114`의 G-05 seq2309 PASS와 WSL-server 일부 실측까지 진행했다. 아래 DC-U01-003~005는 최초 차단 당시의 역사 기록이며 최신 미충족 판정은 DC-U01-006~010을 따른다. 이 기록으로 이번 계획 주기의 미충족 항목을 정리하되 U-01 전체는 `NOT_ACCEPTED`, Release는 `DEFER`, Production은 `NOT_EXECUTED`이며 실제 미실행 항목을 PASS로 바꾸지 않는다.
-- R7 네 phase 실측과 후속 독립 Tester 판정을 반영한 최신 미충족은 DC-U01-012를 따른다. 아래 역사 실패는 삭제하지 않는다.
+- R7 네 phase의 Network 인수 공백은 DC-U01-012, epoch107 H2 이후 역사 focused fixture 공백은 DC-U01-013을 따른다. 아래 역사 실패는 삭제하지 않는다.
+
+### DC-U01-013 — epoch107 H2의 역사 focused fixture가 현재 종료 상태를 읽음
+
+- 판정: H2 `d6cf8be5608eeb3ce438353a8184bb9b2e55cc20`의 Windows·WSL-server clean G-05 seq2324는 PASS이나 WSL focused epoch107 시험은 exit1(`10 failed, 2 passed, 73 deselected`)이다. Windows 동일 H2의 A 활성 단일 시험도 같은 Event 오류로 1 FAIL이어서 WSL 특이 결함으로 승격하지 않는다.
+- 사유·영향: 시험의 `checker.load_bundle(ROOT)`가 과거 A seq2322·활성 lease 대신 현재 H2 seq2324·회수 lease를 읽는다. B/H2 합성 fixture와 active Git matching의 역사 HEAD 가정이 이 현재 상태와 충돌한다. 해당 시험 PASS·전체 통제 회귀·U-01 인수는 증명되지 않았으며 실제 H2 G-05 PASS와 구별한다.
+- 조치·재개 조건: exact SHA·WSL G-05·실패 재현, 격리 checkout 0700/owner/realpath/clean 및 삭제 잔여0을 `docs/04_test_reports/U-01_TASK4_EPOCH107_G05_WSL_CONTROL_QA_RESULT.md`에 기록한다. 별도 비제품 WI/dual lease에서 과거 A 불변 Git blob으로 fixture를 고정하고 후속 G-05 경로를 복구해 Windows/WSL-server focused를 재실행한다. 이 기록은 이번 주기 미진 정리일 뿐 FAIL을 PASS로 바꾸지 않는다. Foundation R6 `STORED_ROW`와 전체 E-NET/E-API/E-AUD는 별도이고 U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, PR/main·새 branch/U-02·ysna 제외다.
 
 ### DC-U01-012 — R7 API URL 증거 보강 후 남은 Network 전체 인수·통제
 
