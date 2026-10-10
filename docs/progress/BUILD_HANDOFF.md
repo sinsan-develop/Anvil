@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR-only body A9 비제품 임대 후보(Main, 2026-10-11T08:04:45+09:00): W10 `f4fa59bc2e2906eebd94bcb808e5baa356eba1cd` local/private 동일·tracked clean이며 W10 실제 G-05 `U01_TASK4_R6_PRENAV_GIT_INVALID` exit1 예상 RED다. 역사 seq1~2379 원문 보존 뒤 seq2380 WI→2381 epoch119 worker→2382 write를 분리 24시간 token·단일 Developer·허용 코드4·제품0으로 투영한다. A9 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보로 독립 검토/private 게시·Developer dispatch 전이다. 기존 R6 기본 OFF FAIL/진단 broad drain 계획 SKIP은 불변이며 U-01 NOT_ACCEPTED·Release DEFER다. 다음은 A9 독립 검토/게시 후 단일 Developer TDD, C9 clean/private 실제 G-05 전 WSL QA 금지다. PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR pre-navigation H8 종료 투영(Main, 2026-10-11T07:09:32+09:00): B8 `082b0a553e19deeef0f84ff9afea8ae56f244e46` direct parent·local/private clean G-05 seq2377 PASS를 기준으로 Event seq2378 write→2379 worker를 순서대로 REVOKED 처리했다. 활성 agent/lease는 null, 제품 write0, U-01 NOT_ACCEPTED·Release DEFER·DC-U01-019 유지다. A/B 같은 C8 exact SHA 격리 실측은 둘 다 R6 FAIL이고 B는 첫 reload 전 BODY PENDING으로 관찰됐다. 이 H8 문서 투영은 독립 검토·private 게시·게시본 G-05 전 후보이며 다음은 결과보고 tail이다. PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR pre-navigation B8 실측 결박(Main, 2026-10-11T07:07:11+09:00): C8 `fc80b98e9aca47ff0e81e70ff9becd5d39503002` local/private 실제 G-05 seq2377 PASS, A/B 별도 WSL-server Git exact SHA G-05 PASS. 같은 PG15/Node24/Playwright image, migration0019, seed/permission hash·harness hash·Chromium151.0.7922.34·timeout10000ms에서 A 기존 R6는 원 pair404 BODY PENDING round4 exit1, B 첫 reload 전 barrier는 `PRENAV_BODY_PENDING`/reload NOT_STARTED/round1 exit1이다. 이번 한 쌍에서 후속 reload 없이 대기가 재현되어 reload 필수 원인 가설은 지지되지 않으나 직접 원인 미확정이다. 각 전용 QA 자원·port5545 잔여0, 전체 R6 FAIL/U-01 NOT_ACCEPTED·DC-U01-019 유지. Event seq2377·epoch118 dual lease ACTIVE·제품0, 다음 H8 seq2378 write→2379 worker 회수와 결과보고. PR/main·새 branch·ysna/Production 제외.
@@ -251,17 +253,56 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2379,
-  "last_event_id": "evt_u01_2379_task4_r6_pair_prenav_causal_probe_worker_lease_revoked",
+  "event_sequence": 2382,
+  "last_event_id": "evt_u01_2382_task4_r6_pair_only_body_causal_probe_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-pair-only-body-causal-probe",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-pair-only-body-causal-probe",
+    "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-BODY-CAUSAL-PROBE",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T08:04:45+09:00",
+    "expires_at": "2026-10-12T08:04:45+09:00",
+    "lease_epoch": 119,
+    "baseline_git_commit": "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd",
+    "dispatch_head": "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "worker-lease-u01-task4-r6-pair-only-body-causal-probe-8c4fd3e2b545448ab58a203966e265d7",
+    "fencing_token": "u01-task4-r6-pair-only-body-causal-probe-execution-fence-epoch-119-8c4fd3e2b545448ab58a203966e265d7",
+    "execution_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-execution-fence-epoch-119-8c4fd3e2b545448ab58a203966e265d7"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-task4-r6-pair-only-body-causal-probe",
+    "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-BODY-CAUSAL-PROBE",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-11T08:04:45+09:00",
+    "expires_at": "2026-10-12T08:04:45+09:00",
+    "write_epoch": 119,
+    "baseline_git_commit": "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd",
+    "dispatch_head": "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+    ],
+    "lease_id": "write-lease-u01-task4-r6-pair-only-body-causal-probe-54d57294077a48cd815798c8fbf7884a",
+    "worker_lease_id": "worker-lease-u01-task4-r6-pair-only-body-causal-probe-8c4fd3e2b545448ab58a203966e265d7",
+    "fencing_token": "u01-task4-r6-pair-only-body-causal-probe-write-fence-epoch-119-54d57294077a48cd815798c8fbf7884a",
+    "write_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-write-fence-epoch-119-54d57294077a48cd815798c8fbf7884a",
+    "execution_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-execution-fence-epoch-119-8c4fd3e2b545448ab58a203966e265d7",
+    "product_write_scope": []
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_PRENAV_CAUSAL_PROBE_RECORDED_U01_PENDING",
-  "repository_head": "fc80b98e9aca47ff0e81e70ff9becd5d39503002",
+  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_ONLY",
+  "repository_head": "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
