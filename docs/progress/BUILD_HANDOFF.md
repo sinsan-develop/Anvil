@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 Foundation R6 B4 실측 결박(Main, 2026-10-11T01:01:31+09:00): C4 `f4c535771f0f71f3e17e5ae9103976e50f7e71ef`의 WSL-server exact-SHA G-05 seq2357 PASS와 격리 PG15/OIDC/HTTPS/Chromium opt-in exit1 `NETWORK_RESPONSE_FACTS`/OTHER_API 404 TIMEOUT을 구분한다. 이전 STORED_ROW 단언을 지나갔으나 전체 R6 PASS·제품 결함·U-01 인수는 아니다. 전용 QA 자원 잔여0, Event seq2357·epoch114 dual lease active 유지. H4에서 write→worker 순차 회수 후 별도 최소 진단 WI가 필요하다. U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 Foundation R6 STORED_ROW A4 하네스 보정 임대(Main, 2026-10-11T00:02:36+09:00): W5 `30823b3602e67dbeed3d0d37b63f460ee768edd8` local/private clean, W5 G-05는 새 route 전 예상 RED다. Event seq2355 WI→2356 epoch114 worker→2357 write, 분리 24시간 token·정확3 code path·제품0. A4 독립 검토/private 게시·G-05와 C4/WSL은 미실행. 이전 R6 STORED_ROW_CONTROLS exit1/원본 C FAIL 불변; U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -259,8 +262,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
-  "repository_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
+  "repository_head": "f4c535771f0f71f3e17e5ae9103976e50f7e71ef",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

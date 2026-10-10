@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-r6-stored-row-control-correction-a4-seq2357",
+  "snapshot_id": "snapshot-u01-task4-r6-stored-row-control-correction-b4-seq2357",
   "event_sequence": 2357,
-  "updated_at": "2026-10-11T00:02:36+09:00",
+  "updated_at": "2026-10-11T01:01:31+09:00",
   "last_event_id": "evt_u01_2357_task4_r6_control_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -939,7 +939,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1050,13 +1050,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+    "local_head": "f4c535771f0f71f3e17e5ae9103976e50f7e71ef",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
+    "remote_head": "f4c535771f0f71f3e17e5ae9103976e50f7e71ef",
     "projection_mode": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+    "head_relation": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1490,7 +1490,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+    "worktree_status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -1656,8 +1656,8 @@
     "path": "docs/work_orders/U-01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_WORK_INSTRUCTION.md",
     "sha256": "00E4633C779EB8932BD8F98631EA6EF51F55F724D5E6E87F0A53E39B12D56525",
     "revision": 1,
-    "result_status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
-    "package_status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+    "result_status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ACTIVE",
+    "package_status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ACTIVE",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -1860,7 +1860,7 @@
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY"
+    "status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -2252,8 +2252,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "645F7C26AA87A9DD5ECCD7E7B70491CAEC450C835B53E7090296CBC23167508C",
-  "runtime_next_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+  "snapshot_hash": "093312AFAACEADB25E6984915831B3D28362E492E1EA090F1B6B10E870E9B2AF",
+  "runtime_next_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -27917,15 +27917,15 @@
     "revoked_at": "2026-10-10T23:49:48+09:00"
   },
   "u01_task4_r6_stored_row_control_correction_binding": {
-    "status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+    "status": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ACTIVE",
     "package_id": "U-01",
     "predecessor_sequence": 2354,
     "predecessor_head": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
     "w5_checkpoint": "30823b3602e67dbeed3d0d37b63f460ee768edd8",
-    "a4_docs_checkpoint": null,
-    "control_checkpoint": null,
+    "a4_docs_checkpoint": "653f6eeaf61100826e0466284811322211dcf56c",
+    "control_checkpoint": "f4c535771f0f71f3e17e5ae9103976e50f7e71ef",
     "active_projection_checkpoint": null,
     "work_instruction_id": "WI-U01-TASK4-R6-STORED-ROW-CONTROL-CORRECTION-20261011-001",
     "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_WORK_INSTRUCTION.md",
@@ -27945,7 +27945,7 @@
     ],
     "product_write_scope": [],
     "event_sequence": 2357,
-    "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_ONLY",
+    "next_safe_action": "U01_TASK4_R6_STORED_ROW_CONTROL_CORRECTION_CLOSE_READY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
