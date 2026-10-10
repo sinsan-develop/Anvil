@@ -1,5 +1,8 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 Foundation R6 STORED_ROW H3 임대 회수(Main, 2026-10-10T23:49:48+09:00): B3 `e6d791171c7d0c0fa66fa6ac1c41fb351d47c108` local/private clean G-05 seq2352 PASS와 C3 exact-SHA WSL 실측 `STORED_ROW_CONTROLS` AssertionError/QA 자원 잔여0을 결박했다. Event seq2353 write→2354 worker를 유효 epoch113 token으로 순서대로 REVOKED 투영하고 제품 scope0을 유지한다. 이 H3의 독립 검토/private 게시/G-05는 아직 미실행이다. 원본 C 실패 불변, 별도 최소 하네스 보정 WI 전 R6 FAIL·U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 Task4 Foundation R6 STORED_ROW B3 실측 결박(Main, 2026-10-10T23:46:30+09:00): C3 `625a117812d39beb82c08f9d8cb364e2cc28afe3` exact-SHA WSL-server PG15/OIDC/HTTPS/Chromium에서 `STORED_ROW_CONTROLS` AssertionError(exit1, 1 failed/1 warning)를 재현했다. 문단 단언은 통과하고 역사 행 조작요소0 단언이 승인된 ACK UI와 충돌한다. 제품 결함·R6 PASS로 단정하지 않으며 임시 QA 자원 잔여0이다. Event seq2352와 active epoch113 dual lease는 유지하고 H3에서 write→worker 순서로 회수한다. 별도 최소 하네스 보정 WI/lease 전 제품·ACK·인가·감사·Network 변경0, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 
@@ -206,56 +209,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2352,
-  "last_event_id": "evt_u01_2352_task4_r6_stored_row_write_lease_issued",
+  "event_sequence": 2354,
+  "last_event_id": "evt_u01_2354_task4_r6_stored_row_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-r6-stored-row-diagnostic",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-stored-row-diagnostic",
-    "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-10T22:19:18+09:00",
-    "expires_at": "2026-10-11T22:19:18+09:00",
-    "lease_epoch": 113,
-    "baseline_git_commit": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
-    "dispatch_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
-    ],
-    "lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
-    "fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
-    "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-task4-r6-stored-row-diagnostic",
-    "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-10T22:19:18+09:00",
-    "expires_at": "2026-10-11T22:19:18+09:00",
-    "lease_epoch": 113,
-    "baseline_git_commit": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
-    "dispatch_head": "c6631a22a4e8f68d68cdd5c725383f9b25c4b622",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "tests/browser/f20-u01-oidc-browser-pg15.mjs",
-      "tests/integration/test_f20_u01_oidc_browser_pg15.py"
-    ],
-    "lease_id": "write-lease-u01-task4-r6-stored-row-a16f84bee1b53aa1eb9a84e668c78073",
-    "worker_lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
-    "fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
-    "write_fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
-    "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
-    "product_write_scope": [],
-    "write_epoch": 113
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE_READY",
+  "next_safe_action": "U01_TASK4_R6_STORED_ROW_DIAGNOSIS_RECORDED_NEXT_WI_PENDING",
   "repository_head": "625a117812d39beb82c08f9d8cb364e2cc28afe3",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

@@ -1,5 +1,8 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- Task4 Foundation R6 H3 임대 회수 후보(Main, 2026-10-10T23:49:48+09:00): B3 `e6d791171c7d0c0fa66fa6ac1c41fb351d47c108` 기존 branch/private 동일·tracked clean, 실제 G-05 seq2352 PASS. C3 exact-SHA WSL 진단 `STORED_ROW_CONTROLS` AssertionError exit1·QA 자원 잔여0. Event seq2353 epoch113 write→2354 worker 순서 REVOKED, active agent/dual lease null·제품 scope0. H3는 B3 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서 후보이며 독립 검토/private 게시/clean G-05 전이다. 별도 최소 하네스 보정 WI 전 R6 FAIL, 원본 C FAIL 불변, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
+
+
 - Task4 Foundation R6 B3 실측 결박(Main, 2026-10-10T23:46:30+09:00): C3 `625a117812d39beb82c08f9d8cb364e2cc28afe3` local/private 동일·게시본 G-05 seq2352 PASS, WSL-server exact-SHA 격리 PG15/OIDC/HTTPS/Chromium의 실제 opt-in은 exit1 `STORED_ROW_CONTROLS` AssertionError(1 failed/1 warning)다. 문단 단언 후 역사 조작요소0 단언이 승인 ACK UI와 충돌한다. 제품·ACK/인가/감사/Network 변경0, 자원 잔여0. 이 B3는 Event 불변·epoch113 dual lease active에서 C3 직접 자식의 progress/HANDOFF/digest/WORK_STATUS 정확4문서만 변경한다. 독립 검토/private 게시/clean G-05 전 H3 회수 금지, 별도 하네스 보정 WI가 뒤따른다. 원본 C 실패는 불변, U-01 NOT_ACCEPTED/Release DEFER/Production NOT_EXECUTED, PR/main·새 branch·ysna 제외.
 
 

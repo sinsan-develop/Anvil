@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2352,
+  "last_sequence": 2354,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -106479,7 +106479,49 @@
         "product_write_scope": [],
         "write_epoch": 113
       }
+    },
+{
+      "sequence": 2353,
+      "event_id": "evt_u01_2353_task4_r6_stored_row_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+      "occurred_at": "2026-10-10T23:49:48+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "25A58DD98D779EB9D8906E3C167987F8132CC9C07F28F8D8B4BC561EB3BC7CEF",
+      "details": {
+        "lease_id": "write-lease-u01-task4-r6-stored-row-a16f84bee1b53aa1eb9a84e668c78073",
+        "write_fencing_token": "u01-task4-r6-stored-row-write-fence-epoch-113-a16f84bee1b53aa1eb9a84e668c78073",
+        "reason": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSED"
+      }
+    },
+{
+      "sequence": 2354,
+      "event_id": "evt_u01_2354_task4_r6_stored_row_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-STORED-ROW-DIAGNOSTIC",
+      "occurred_at": "2026-10-10T23:49:48+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "2AB3A4AC0F745ED251ACC92A4E6C6EF05E9D5CAD95214F061578467199675ED4",
+      "details": {
+        "lease_id": "worker-lease-u01-task4-r6-stored-row-a5a0717af7480842febb7dcf624e8842",
+        "execution_fencing_token": "u01-task4-r6-stored-row-execution-fence-epoch-113-a5a0717af7480842febb7dcf624e8842",
+        "reason": "U01_TASK4_R6_STORED_ROW_DIAGNOSTIC_CLOSED"
+      }
     }
   ],
-  "last_event_id": "evt_u01_2352_task4_r6_stored_row_write_lease_issued"
+  "last_event_id": "evt_u01_2354_task4_r6_stored_row_worker_lease_revoked"
 }
