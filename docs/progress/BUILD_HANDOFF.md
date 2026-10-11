@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR-only init-script H10 임대 회수(Main, 2026-10-11T10:51:58+09:00): B10 `a0ea4a93d1d0a8a9a4834217808b5592d08190a9`은 C10 직접 자식 정확4문서·local/private clean G-05 seq2387 PASS다. WSL-server exact C10 A/B 실제 R6 opt-in은 둘 다 exit1: A 첫 PAIR_LIST_API 404 BODY/finished PENDING, B 첫 pair clone과 원 요청 DONE/AFTER_BODY 뒤 index21 PAIR_LIST_API 404 BODY/finished PENDING. 전체 R6 FAIL·원인 미확정·U-01 NOT_ACCEPTED이며 두 전용 QA 잔여0이다. Event seq1~2387 원문 보존 뒤 seq2388 write→2389 worker 회수, epoch120 dual lease REVOKED·active null·제품0으로 투영한다. 이 H10은 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보이며 독립 검토·private 게시·게시본 G-05 전 PASS가 아니다. 다음은 실패 결과보고 tail과 뒤 pair 인과 별도 WI, 필수 ID 검증이다. DC-U01-019·Release DEFER, PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR-only init-script B10 A/B 실패 실측 결박(Main, 2026-10-11T10:45:00+09:00): C10 `aef01973504ac050ba1660f804095f9d67f7570a`은 A10 직접 자식 정확 코드3, local/private clean·실제 G-05 seq2387 PASS다. WSL-server 사설 Git exact SHA의 새 빈 A/B 격리 PG15/OIDC/HTTPS/Chromium은 같은 PG/Node/browser image·migration0019·비관리자 role/DB·harness/seed·권한 SHA·Chromium151.0.7922.34·timeout10000 조건으로 pair-only mode만 A→B 비교했다. A 실제 opt-in exit1/1 failed/2 warnings는 첫 PAIR_LIST_API 404 BODY/requestfinished/response.finished PENDING, index4/round4였다. B 실제 opt-in exit1/1 failed/2 warnings는 첫 pair clone 소비와 원 요청 완료가 DONE/AFTER_BODY였으나 뒤 index21 PAIR_LIST_API 404 BODY/requestfinished/response.finished PENDING으로 전체 R6 FAIL이다. 이 한 쌍은 첫 요청 본문 소비와 첫 요청 완료 경계의 연관을 보여 주지만 전체 pair 대기의 직접 원인이나 제품 결함·R6 PASS·U-01 인수를 확정하지 않는다. A의 임시 clone 원격 별칭 초기 G-05 RED와 비관리자 role SQL 인용 오류2는 각각 사전환경 오류로 분리했고 A G-05 재실행 PASS·role/DB/0019을 확인했다. 각 PG exact ID·label/image/AutoRemove와 등록 경로 owner/realpath/nonlink를 확인해 A 잔여0 후 B 생성·시험·정리, A/B 경로8·컨테이너5 이름·loopback5545 독립 잔여0이다. Event seq2387·epoch120 dual lease ACTIVE·제품0, DC-U01-019·기본 R6 FAIL·U-01 NOT_ACCEPTED·Release DEFER 유지. B10은 progress/HANDOFF/digest/WORK_STATUS 정확4 후보이며 다음 H10 seq2388 write→2389 worker 회수·결과보고 tail/최신 G-05다. PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR-only init-script A10 비제품 임대 결박(Main, 2026-10-11T09:29:19+09:00): W11 `68a6c809f031a0bdc835cb3d729e2747d5388419`는 기존 branch/private 동일·tracked clean이고 epoch119 worker/write는 모두 회수됐다. Event 원문 seq1~2384를 보존하고 seq2385 WI→2386 epoch120 worker→2387 write 순서로 24시간 분리 token을 발급했다. 허용 경로는 checker/control test/browser mjs/integration Python 정확4, 제품0이다. Playwright `addInitScript` 다중 인자 `PAGE_CREATE` 실패를 단일 `{mode,timeoutMs}` 객체 계약으로만 보정하는 WI `C37ADD4AA32CC180740E409C4E4048CFBF63FEDB2E18E6AD799E94FEC30428DD`와 Invocation `CE02F1E79F3209AF44618366562AA141621B1DF1954F8EF8B4C17DCA9800A7EF`에 묶었다. 이 A10은 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 문서 후보이고 독립 검토·private 게시·실제 G-05 전에는 PASS가 아니다. 기본 R6 FAIL·A/B 인과 UNDETERMINED·U-01 NOT_ACCEPTED·Release DEFER 유지, PR/main·새 branch·ysna/Production 제외.
@@ -261,16 +263,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2387,
-  "last_event_id": "evt_u01_2387_task4_r6_pair_only_init_script_recovery_write_lease_issued",
+  "event_sequence": 2389,
+  "last_event_id": "evt_u01_2389_task4_r6_pair_only_init_script_recovery_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
-  "worker_lease": {"actor_id":"developer-primary-u01-task4-r6-pair-only-init-script-recovery","subject_ref":"U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY","status":"ACTIVE","issued_at":"2026-10-11T09:29:19+09:00","expires_at":"2026-10-12T09:29:19+09:00","lease_epoch":120,"baseline_git_commit":"68a6c809f031a0bdc835cb3d729e2747d5388419","dispatch_head":"68a6c809f031a0bdc835cb3d729e2747d5388419","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","tests/browser/f20-u01-oidc-browser-pg15.mjs","tests/integration/test_f20_u01_oidc_browser_pg15.py"],"lease_id":"worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43","fencing_token":"u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43","execution_fencing_token":"u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43"},
-  "write_lease": {"actor_id":"developer-primary-u01-task4-r6-pair-only-init-script-recovery","subject_ref":"U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY","status":"ACTIVE","issued_at":"2026-10-11T09:29:19+09:00","expires_at":"2026-10-12T09:29:19+09:00","write_epoch":120,"baseline_git_commit":"68a6c809f031a0bdc835cb3d729e2747d5388419","dispatch_head":"68a6c809f031a0bdc835cb3d729e2747d5388419","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","tests/browser/f20-u01-oidc-browser-pg15.mjs","tests/integration/test_f20_u01_oidc_browser_pg15.py"],"lease_id":"write-lease-u01-task4-r6-pair-only-init-script-recovery-b6aa48bd579a4f5eb5560ba679e26183","worker_lease_id":"worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43","fencing_token":"u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183","write_fencing_token":"u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183","execution_fencing_token":"u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43","product_write_scope":[]},
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE_READY",
+  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_RECORDED_U01_PENDING",
   "repository_head": "aef01973504ac050ba1660f804095f9d67f7570a",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

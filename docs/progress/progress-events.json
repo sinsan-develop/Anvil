@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2387,
+  "last_sequence": 2389,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107521,7 +107521,49 @@
         "execution_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43",
         "product_write_scope": []
       }
+    },
+    {
+      "sequence": 2388,
+      "event_id": "evt_u01_2388_task4_r6_pair_only_init_script_recovery_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+      "occurred_at": "2026-10-11T10:51:58+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "6D9DA59C395F9D6E0EBE4F708B1BE2212CA5E91C06797DEE64B6BA36D48F9B4E",
+      "details": {
+        "lease_id": "write-lease-u01-task4-r6-pair-only-init-script-recovery-b6aa48bd579a4f5eb5560ba679e26183",
+        "write_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183",
+        "reason": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSED"
+      }
+    },
+    {
+      "sequence": 2389,
+      "event_id": "evt_u01_2389_task4_r6_pair_only_init_script_recovery_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+      "occurred_at": "2026-10-11T10:51:58+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "6FFCFD2175B9E684230DECBB458BB95320C2E6C4458BE4E0E52663D8114B2C90",
+      "details": {
+        "lease_id": "worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43",
+        "execution_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43",
+        "reason": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSED"
+      }
     }
   ],
-  "last_event_id": "evt_u01_2387_task4_r6_pair_only_init_script_recovery_write_lease_issued"
+  "last_event_id": "evt_u01_2389_task4_r6_pair_only_init_script_recovery_worker_lease_revoked"
 }
