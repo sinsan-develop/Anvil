@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR-only init-script A10 비제품 임대 결박(Main, 2026-10-11T09:29:19+09:00): W11 `68a6c809f031a0bdc835cb3d729e2747d5388419`는 기존 branch/private 동일·tracked clean이고 epoch119 worker/write는 모두 회수됐다. Event 원문 seq1~2384를 보존하고 seq2385 WI→2386 epoch120 worker→2387 write 순서로 24시간 분리 token을 발급했다. 허용 경로는 checker/control test/browser mjs/integration Python 정확4, 제품0이다. Playwright `addInitScript` 다중 인자 `PAGE_CREATE` 실패를 단일 `{mode,timeoutMs}` 객체 계약으로만 보정하는 WI `C37ADD4AA32CC180740E409C4E4048CFBF63FEDB2E18E6AD799E94FEC30428DD`와 Invocation `CE02F1E79F3209AF44618366562AA141621B1DF1954F8EF8B4C17DCA9800A7EF`에 묶었다. 이 A10은 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 문서 후보이고 독립 검토·private 게시·실제 G-05 전에는 PASS가 아니다. 기본 R6 FAIL·A/B 인과 UNDETERMINED·U-01 NOT_ACCEPTED·Release DEFER 유지, PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR-only body H9 임대 회수(Main, 2026-10-11T09:13:45+09:00): B9 `6e2ca7d6eec51e204c4531bd9f1d0e37022dba2a`는 C9 직접 자식 정확4문서·local/private clean G-05 seq2382 PASS다. A WSL 실제 R6는 Playwright `PAGE_CREATE` 하네스 계약 오류 exit1, B `NOT_EXECUTED`, A/B 인과 `UNDETERMINED`, A QA 잔여0이다. Event 원문 seq1~2382 보존 뒤 seq2383 write→2384 worker 순서로 epoch119 임대를 `REVOKED`·활성 null로 투영하고 제품 write0을 유지한다. 이 H9는 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보이며 독립 검토·private 게시·게시본 G-05 전에는 PASS가 아니다. 다음은 실패 결과보고 tail, 별도 비제품 WI/새 lease의 Playwright 단일 객체 인자 TDD·새 A/B 실측이다. 전체 R6 FAIL·DC-U01-019·U-01 NOT_ACCEPTED·Release DEFER, PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR-only body B9 실패 실측 결박(Main, 2026-10-11T09:12:00+09:00): C9 `367222b5f11fc1643b823d326f568dc321cfe9e9` local/private 동일·clean G-05 seq2382 PASS, WSL-server A exact SHA G-05 PASS·Web build20 PASS였다. 그러나 등록 격리 A의 실제 R6 opt-in은 browser `PAGE_CREATE`에서 exit1(1 failed/1 warning)로 종료되어 제품/pair 경로를 검증하지 못했다. C9 harness의 Playwright `addInitScript` 함수 뒤 두 인자 전달이 API 단일 인자 계약을 위반함을 독립 최소 재현했다. B는 생성·실행 `NOT_EXECUTED`, A/B 인과 `UNDETERMINED`, 전체 R6 FAIL·U-01 NOT_ACCEPTED·DC-U01-019 유지다. A 설정 오류(OpenSSL 옵션·0020→0019 전용 빈 DB downgrade·Playwright package 설치)와 QA 첫 정리 권한 오류를 구분해 기록했고 정확 A 경로4·컨테이너·loopback5545 잔여0을 독립 확인했다. Event seq2382·epoch119 dual lease ACTIVE·제품0이며 다음 H9 seq2383 write→2384 worker 회수 뒤 별도 비제품 WI에서 harness 단일 객체 인자 TDD·새 A/B 재시험한다. 이번 B9은 실패·미실행 기록이지 진단 완료나 R6 PASS가 아니다. PR/main·새 branch·ysna/Production 제외.
@@ -257,17 +259,17 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2384,
-  "last_event_id": "evt_u01_2384_task4_r6_pair_only_body_causal_probe_worker_lease_revoked",
+  "event_sequence": 2387,
+  "last_event_id": "evt_u01_2387_task4_r6_pair_only_init_script_recovery_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
+  "worker_lease": {"actor_id":"developer-primary-u01-task4-r6-pair-only-init-script-recovery","subject_ref":"U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY","status":"ACTIVE","issued_at":"2026-10-11T09:29:19+09:00","expires_at":"2026-10-12T09:29:19+09:00","lease_epoch":120,"baseline_git_commit":"68a6c809f031a0bdc835cb3d729e2747d5388419","dispatch_head":"68a6c809f031a0bdc835cb3d729e2747d5388419","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","tests/browser/f20-u01-oidc-browser-pg15.mjs","tests/integration/test_f20_u01_oidc_browser_pg15.py"],"lease_id":"worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43","fencing_token":"u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43","execution_fencing_token":"u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43"},
+  "write_lease": {"actor_id":"developer-primary-u01-task4-r6-pair-only-init-script-recovery","subject_ref":"U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY","status":"ACTIVE","issued_at":"2026-10-11T09:29:19+09:00","expires_at":"2026-10-12T09:29:19+09:00","write_epoch":120,"baseline_git_commit":"68a6c809f031a0bdc835cb3d729e2747d5388419","dispatch_head":"68a6c809f031a0bdc835cb3d729e2747d5388419","path_scope":["scripts/check_project_progress.py","tests/tooling/test_u01_postmerge_control_projection.py","tests/browser/f20-u01-oidc-browser-pg15.mjs","tests/integration/test_f20_u01_oidc_browser_pg15.py"],"lease_id":"write-lease-u01-task4-r6-pair-only-init-script-recovery-b6aa48bd579a4f5eb5560ba679e26183","worker_lease_id":"worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43","fencing_token":"u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183","write_fencing_token":"u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183","execution_fencing_token":"u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43","product_write_scope":[]},
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_RECORDED_U01_PENDING",
-  "repository_head": "367222b5f11fc1643b823d326f568dc321cfe9e9",
+  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ONLY",
+  "repository_head": "68a6c809f031a0bdc835cb3d729e2747d5388419",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

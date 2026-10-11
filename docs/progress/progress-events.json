@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2384,
+  "last_sequence": 2387,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107413,7 +107413,115 @@
         "execution_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-execution-fence-epoch-119-8c4fd3e2b545448ab58a203966e265d7",
         "reason": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSED"
       }
+    },
+    {
+      "sequence": 2385,
+      "event_id": "evt_u01_2385_task4_r6_pair_only_init_script_recovery_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+      "occurred_at": "2026-10-11T09:29:19+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "B101A8B9908C832316EB7F657CEED03785A4FAF5FF89B9CEC0DE5C41182CCE81",
+      "details": {
+        "work_instruction_id": "WI-U01-TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY-20261011-001",
+        "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "C37ADD4AA32CC180740E409C4E4048CFBF63FEDB2E18E6AD799E94FEC30428DD",
+        "invocation_path": "docs/work_orders/U-01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_INVOCATION.md",
+        "invocation_sha256": "CE02F1E79F3209AF44618366562AA141621B1DF1954F8EF8B4C17DCA9800A7EF",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+        "predecessor_sequence": 2384,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "product_write_scope": []
+      }
+    },
+    {
+      "sequence": 2386,
+      "event_id": "evt_u01_2386_task4_r6_pair_only_init_script_recovery_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+      "occurred_at": "2026-10-11T09:29:19+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "6C794229A6C0B910ABDAE315FBA0EA548578D908D9F51CAA66AD9422FD0D440A",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
+        "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T09:29:19+09:00",
+        "expires_at": "2026-10-12T09:29:19+09:00",
+        "lease_epoch": 120,
+        "baseline_git_commit": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+        "dispatch_head": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43",
+        "fencing_token": "u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43",
+        "execution_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43"
+      }
+    },
+    {
+      "sequence": 2387,
+      "event_id": "evt_u01_2387_task4_r6_pair_only_init_script_recovery_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+      "occurred_at": "2026-10-11T09:29:19+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "24208590EE507B38C7F2BD1BD4EDCC2BDBC60034139F30BAA9611B93F79A9942",
+      "details": {
+        "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
+        "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-11T09:29:19+09:00",
+        "expires_at": "2026-10-12T09:29:19+09:00",
+        "write_epoch": 120,
+        "baseline_git_commit": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+        "dispatch_head": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "tests/browser/f20-u01-oidc-browser-pg15.mjs",
+          "tests/integration/test_f20_u01_oidc_browser_pg15.py"
+        ],
+        "lease_id": "write-lease-u01-task4-r6-pair-only-init-script-recovery-b6aa48bd579a4f5eb5560ba679e26183",
+        "worker_lease_id": "worker-lease-u01-task4-r6-pair-only-init-script-recovery-e9f35f1681814fd3b013a081f907fa43",
+        "fencing_token": "u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183",
+        "write_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-write-fence-epoch-120-b6aa48bd579a4f5eb5560ba679e26183",
+        "execution_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43",
+        "product_write_scope": []
+      }
     }
   ],
-  "last_event_id": "evt_u01_2384_task4_r6_pair_only_body_causal_probe_worker_lease_revoked"
+  "last_event_id": "evt_u01_2387_task4_r6_pair_only_init_script_recovery_write_lease_issued"
 }
