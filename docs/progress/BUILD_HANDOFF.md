@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+Task4 R6 PAIR-only body B9 실패 실측 결박(Main, 2026-10-11T09:12:00+09:00): C9 `367222b5f11fc1643b823d326f568dc321cfe9e9` local/private 동일·clean G-05 seq2382 PASS, WSL-server A exact SHA G-05 PASS·Web build20 PASS였다. 그러나 등록 격리 A의 실제 R6 opt-in은 browser `PAGE_CREATE`에서 exit1(1 failed/1 warning)로 종료되어 제품/pair 경로를 검증하지 못했다. C9 harness의 Playwright `addInitScript` 함수 뒤 두 인자 전달이 API 단일 인자 계약을 위반함을 독립 최소 재현했다. B는 생성·실행 `NOT_EXECUTED`, A/B 인과 `UNDETERMINED`, 전체 R6 FAIL·U-01 NOT_ACCEPTED·DC-U01-019 유지다. A 설정 오류(OpenSSL 옵션·0020→0019 전용 빈 DB downgrade·Playwright package 설치)와 QA 첫 정리 권한 오류를 구분해 기록했고 정확 A 경로4·컨테이너·loopback5545 잔여0을 독립 확인했다. Event seq2382·epoch119 dual lease ACTIVE·제품0이며 다음 H9 seq2383 write→2384 worker 회수 뒤 별도 비제품 WI에서 harness 단일 객체 인자 TDD·새 A/B 재시험한다. 이번 B9은 실패·미실행 기록이지 진단 완료나 R6 PASS가 아니다. PR/main·새 branch·ysna/Production 제외.
+
 Task4 R6 PAIR-only body A9 비제품 임대 후보(Main, 2026-10-11T08:04:45+09:00): W10 `f4fa59bc2e2906eebd94bcb808e5baa356eba1cd` local/private 동일·tracked clean이며 W10 실제 G-05 `U01_TASK4_R6_PRENAV_GIT_INVALID` exit1 예상 RED다. 역사 seq1~2379 원문 보존 뒤 seq2380 WI→2381 epoch119 worker→2382 write를 분리 24시간 token·단일 Developer·허용 코드4·제품0으로 투영한다. A9 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보로 독립 검토/private 게시·Developer dispatch 전이다. 기존 R6 기본 OFF FAIL/진단 broad drain 계획 SKIP은 불변이며 U-01 NOT_ACCEPTED·Release DEFER다. 다음은 A9 독립 검토/게시 후 단일 Developer TDD, C9 clean/private 실제 G-05 전 WSL QA 금지다. PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR pre-navigation H8 종료 투영(Main, 2026-10-11T07:09:32+09:00): B8 `082b0a553e19deeef0f84ff9afea8ae56f244e46` direct parent·local/private clean G-05 seq2377 PASS를 기준으로 Event seq2378 write→2379 worker를 순서대로 REVOKED 처리했다. 활성 agent/lease는 null, 제품 write0, U-01 NOT_ACCEPTED·Release DEFER·DC-U01-019 유지다. A/B 같은 C8 exact SHA 격리 실측은 둘 다 R6 FAIL이고 B는 첫 reload 전 BODY PENDING으로 관찰됐다. 이 H8 문서 투영은 독립 검토·private 게시·게시본 G-05 전 후보이며 다음은 결과보고 tail이다. PR/main·새 branch·ysna/Production 제외.
@@ -301,8 +303,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_ONLY",
-  "repository_head": "f4fa59bc2e2906eebd94bcb808e5baa356eba1cd",
+  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSE_READY",
+  "repository_head": "367222b5f11fc1643b823d326f568dc321cfe9e9",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
