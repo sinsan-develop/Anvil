@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-task4-r6-pair-only-init-script-recovery-a10-seq2387",
+  "snapshot_id": "snapshot-u01-task4-r6-pair-only-init-script-recovery-b10-seq2387",
   "event_sequence": 2387,
-  "updated_at": "2026-10-11T09:29:19+09:00",
+  "updated_at": "2026-10-11T10:45:00+09:00",
   "last_event_id": "evt_u01_2387_task4_r6_pair_only_init_script_recovery_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -905,7 +905,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ONLY",
+  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE_READY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -1016,13 +1016,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+    "local_head": "aef01973504ac050ba1660f804095f9d67f7570a",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "68a6c809f031a0bdc835cb3d729e2747d5388419",
+    "remote_head": "aef01973504ac050ba1660f804095f9d67f7570a",
     "projection_mode": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ONLY",
+    "head_relation": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -1456,7 +1456,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ONLY",
+    "worktree_status": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -2218,8 +2218,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "55047C5F60C65A448E920B8A4F94A119CE58B59DFF357B93C8E05956F3A87C3B",
-  "runtime_next_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ONLY",
+  "snapshot_hash": "BCFD58C595422438680D0456EC237F896B048FC760965B6600852EFA86F2B90C",
+  "runtime_next_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE_READY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -28229,8 +28229,8 @@
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
     "w11_checkpoint": "68a6c809f031a0bdc835cb3d729e2747d5388419",
-    "a10_docs_checkpoint": null,
-    "control_checkpoint": null,
+    "a10_docs_checkpoint": "8bd078929a1030b916757e069c27cc5f1b166b80",
+    "control_checkpoint": "aef01973504ac050ba1660f804095f9d67f7570a",
     "active_projection_checkpoint": null,
     "work_instruction_id": "WI-U01-TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY-20261011-001",
     "work_instruction_path": "docs/work_orders/U-01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_WORK_INSTRUCTION.md",
@@ -28246,7 +28246,7 @@
     "developer_exact_paths": ["scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py", "tests/browser/f20-u01-oidc-browser-pg15.mjs", "tests/integration/test_f20_u01_oidc_browser_pg15.py"],
     "product_write_scope": [],
     "event_sequence": 2387,
-    "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_ONLY",
+    "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSE_READY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
