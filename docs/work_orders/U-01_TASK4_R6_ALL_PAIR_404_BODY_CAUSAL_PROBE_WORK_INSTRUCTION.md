@@ -1,0 +1,27 @@
+# WI-U01-TASK4-R6-ALL-PAIR-404-BODY-CAUSAL-PROBE-20261011-001
+
+## 판정과 기준
+
+부모 승인 `APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001`(SHA-256 `60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39`), 설계 §29.2·계획 U-01 및 `U-01_TASK4_POST_H4_RECOVERY_PLAN.md` Task 2에 속한 **비제품 원인 분리**다. `MAIN_RECONFIRMED_NON_SEMANTIC` 파생 지시이며 기능 범위·요구사항·중요 위험, 제품/API/DB schema·migration·지속 데이터, 인증·권한·Secret/certificate·운영 계약을 변경하지 않는다. 기준은 단일 기존 `codex/u01-dashboard-r2`의 `eeef85cd5b0fa4b5b34ddaad53b0e1e8792a61f6`이다. 착수 전 HEAD/private 원격 동일·tracked clean·G-05 seq2389 PASS, Event raw seq1~2389, epoch120 worker/write REVOKED·active null, 이전 전용 QA 잔여0을 재확인한다. 기존 `.pytest_cache` ACL 경고는 건드리지 않는다.
+
+## 관찰과 단일 반증 질문
+
+C10 `aef01973504ac050ba1660f804095f9d67f7570a`의 새 빈 WSL-server 격리 PG15/OIDC/HTTPS/Chromium A/B는 같은 SHA·PG/Node/browser image·migration0019·seed/권한·harness·Chromium151·timeout10000에서 모두 R6 exit1이었다. A는 첫 `PAIR_LIST_API` 404의 BODY/requestfinished/response.finished가 PENDING이었다. B는 첫 pair 404 clone 소비와 원 요청이 DONE/AFTER_BODY였으나 뒤 index21 pair 404가 PENDING이었다. 기존 B의 `pairOnlyBodyBootstrap`은 ordinal1/status404만 소비하고 뒤 요청은 `NOT_CONSUMED`이므로, 이 관찰은 **뒤 요청의 본문 미소비와 양립할 뿐 직접 원인을 입증하지 않는다**. 기본 R6 FAIL·DC-U01-019·U-01 NOT_ACCEPTED·Release DEFER를 유지한다.
+
+이번 질문은 *모든 정확한 same-origin pair-list 404의 clone 본문 소비 여부만* 달리할 때, 뒤 원 Playwright response의 BODY/finished/request lifecycle PENDING이 동일한 방식으로 달라지는가이다. A/B 모두 page load 전에 **동일한 새 wrapper**를 설치하고 원 `fetch` 응답 객체를 동일 경로로 앱에 즉시 반환한다. B만 정확한 `/api/dashboard/project-environments`의 same-origin·query/fragment/userinfo 없는 404 응답마다 clone 본문을 독립 bounded promise로 소비한다. 앱에 원 응답을 반환하기 전 `clone.text()`·진단 이벤트·콜백을 `await`하지 않는다. A는 같은 wrapper를 거치되 clone을 소비하지 않는다. 기존 광범위 non-ok drain과 첫 요청 전용 pair-only 모드는 A/B 모두 OFF, 기존 `ANVIL_F20_R6_PRENAV_MODE`는 양쪽 모두 `A`로 고정한다. 새 all-pair 모드와 pre-navigation `B`의 동시 활성은 fail-closed 거부한다. 다른 status/path/origin 응답은 소비·허용하지 않고 제품 `App.tsx`의 404 처리도 불변이다. wrapper 실행비용과 clone 생성 시점은 남는 교란 변수이므로 관찰만으로 제품 결함이나 유일 원인을 확정하지 않는다.
+
+각 원 pair 요청은 페이지 측 ordinal과 Playwright request/response 객체, 응답 capture index·navigation round·status class에 결박한다. 각 404의 clone outcome(`NOT_CONSUMED|DONE|TIMEOUT|ERROR`), 원 BODY/requestfinished/response.finished, requestfailed, ASGI final-send와 기존 Network/Secret 감사를 비밀 없는 enum·정수로 대조한다. event 수·순서·원 요청 매칭이 불일치하거나 clone 실패/기한 만료, 원 capture TIMEOUT/ERROR 또는 추가 비2xx/off-origin 소비가 있으면 `ALL_PAIR_404_INCONCLUSIVE`로 fail-closed 처리한다. A/B image digest·migration0019·seed/권한·harness hash·Chromium 버전·기존 timeout이 다르면 인과 미판정이다. B가 다음 단언까지 도달해도 전체 R6는 별도 실제 PASS 전 FAIL 또는 `R6_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE` SKIP이며 U-01 수락이 아니다.
+
+404 성공 처리·allowlist 확대, timeout 연장/sleep, body/Secret/Network/off-origin 감사 생략, F-19A 임의 활성화, 제품 fetch·서버 응답·DB seed/권한 수정은 금지한다. 원문 URL/query/host/header/body/cookie/token/DSN을 진단 출력·보고에 남기지 않는다.
+
+## 순차 소유권과 Gate
+
+- Main의 **W12**는 `eeef85cd` 직접 자식으로 본 WI·대응 Invocation·`docs/WORK_STATUS.md` 정확3문서 한 commit이다. 기준 문서/승인 hash, 기존 branch/private/Event raw prefix와 lease 부재를 결박한다. 새 G-05 successor 전 W12 RED는 예상이며 PASS가 아니다.
+- **A11**은 W12 직접 자식 Event/progress/HANDOFF/detached digest/WORK_STATUS 정확5문서 한 commit이다. seq1~2389 원문을 보존하고 seq2390 WI→2391 epoch121 worker→2392 write를 append한다. 단일 기존 Primary Developer, 서로 다른 24시간 fencing token, 아래 정확 최대4 코드 경로·제품0으로 제한한다. 독립 Critical/Important0·private 게시 후에만 dispatch한다.
+- Developer 허용 코드는 `scripts/check_project_progress.py`, `tests/tooling/test_u01_postmerge_control_projection.py`, `tests/browser/f20-u01-oidc-browser-pg15.mjs`, `tests/integration/test_f20_u01_oidc_browser_pg15.py` 최대4경로다. 기존 첫 요청 전용 mode의 역사 동작과 음성을 보존하고, 새 기본 OFF·A/B 동일 wrapper·원 응답 즉시 반환·모든 정확한 pair404만 B clone 소비·다른 응답 미소비·복수/불일치/누락/TIMEOUT/ERROR·Secret 음성을 RED→GREEN TDD로 검증한다. 새 모드와 기존 광범위 drain/첫-only mode 또는 pre-navigation `B`의 동시 ON은 fail-closed이며, 그 음성 테스트도 추가한다. 기존 G-05 Event/Git/private/dirty 위조 음성을 약화하지 않는다. Main은 active write lease 동안 네 코드 파일에 쓰지 않는다. **C11**은 A11 직접 자식 허용 코드만 한 commit이며 Node 구문/self-test, Python 집중·인접, 독립 Critical/Important0, diff check0, local/private 동일·tracked clean **실제 G-05 PASS 전** WSL QA 금지다.
+- Main은 C11 게시 후 A/B 각각 생성 전에 literal 경로·컨테이너 이름/image/port/owner/수명/정리를 commentary와 WORK_STATUS에 사전 등록한 새 빈 `ssh WSL-server` Git exact-SHA PG15/OIDC/HTTPS/Chromium QA만 사용한다. A 종료·실패 시 exact ID/label/image/mount/port·경로 owner/realpath/link/process를 확인해 전용 자원만 정리·잔여0으로 만든 뒤 B를 생성한다. 비밀값/DSN 원문 출력 금지. 두 격리 실행은 동일 SHA·이미지·migration·seed/권한·harness/browser·timeout의 한 변수 비교여야 한다.
+- **B11**은 C11 직접 자식 progress/HANDOFF/digest/WORK_STATUS 정확4문서로 실제 A/B exit·요청별 안전 marker·동등성·오류·미검증·정리를 기록한다. **H11**은 B11 직접 자식 Event/progress/HANDOFF/digest/WORK_STATUS 정확5문서로 seq2393 write→2394 worker를 회수한다. H11 직접 자식 첫 결과보고 tail은 신규 `docs/04_test_reports/U-01_TASK4_R6_ALL_PAIR_404_BODY_CAUSAL_PROBE_RESULT.md` 추가(A)와 literal `docs/WORK_STATUS.md` 수정(M) 필수2경로다. 새 미진 사실에 한해서만 `design_change.md` 역사 prefix 보존 append(M)를 선택 허용한다. 첫 보고 포함 tail 최대256 직계 commit, 그 뒤 WORK_STATUS-only만 허용하고 보고/DC blob 변경·rename·삭제를 거부하는 G-05 successor를 작성한다. 각 SHA 게시 후 실제 G-05를 확인하며 과거 PASS를 상속하지 않는다.
+
+## 종료·복구
+
+원 요청별 식별·A/B 반증 결과·전용 자원 잔여0·epoch121 lease 회수·최신 G-05를 사실대로 보고하면 이 비제품 진단 WI를 닫는다. 직접 원인 미확정이면 DC-U01-019를 유지하고 다음 가설은 새 WI/승인 경계로 판정한다. E-NET/E-API/E-AUD/E-SHOT와 AV-SAFE-034/AV-OPS-027/AV-UI-017, 전체 R6·U-01은 별도 실제 증거 전까지 미충족·NOT_ACCEPTED/Release DEFER다. 새 branch/PR/main 병합, history rewrite/force push, ysna/Production은 제외한다. Rollback은 신규 비제품 commit의 정상 `git revert`와 역사 Event·승인·사설 원격 복구 ref 보존이다.
