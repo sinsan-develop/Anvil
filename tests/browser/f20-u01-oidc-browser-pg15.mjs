@@ -847,7 +847,7 @@ async function configureDiagnosticDrain(page, enabled, events) {
   await page.addInitScript(diagnosticDrainBootstrap, 2000);
 }
 
-function pairOnlyBodyBootstrap(mode, timeoutMs) {
+function pairOnlyBodyBootstrap({mode, timeoutMs}) {
   const browserWindow = globalThis.window;
   const originalFetch = browserWindow.fetch.bind(browserWindow);
   const counterKey = '__anvilR6PairOnlyCount';
@@ -920,7 +920,7 @@ async function configurePairOnlyBodyProbe(page, mode, events, onEvent = () => {}
       + ` status=${event.status} selected=${event.selected}`
       + ` outcome=${event.outcome} return=${event.appReturn}\n`);
   });
-  await page.addInitScript(pairOnlyBodyBootstrap, mode, 2000);
+  await page.addInitScript(pairOnlyBodyBootstrap, {mode, timeoutMs: 2000});
 }
 
 async function awaitPairOnlyEvents(events, expected, setSignal, timeoutMs = 2000) {
@@ -4329,13 +4329,16 @@ if (r48DiagnosticSelfTest) {
     assert.throws(() => validatePairOnlyMode(forged), /PAIR_ONLY_MODE_INVALID/);
   }
   const pairOnlyPage = {exposeFunction: async (name, callback) =>
-    pairOnlyInstall.push({name, callback}), addInitScript: async (bootstrap, mode, timeoutMs) =>
-    pairOnlyInstall.push({bootstrap, mode, timeoutMs})};
+    pairOnlyInstall.push({name, callback}), addInitScript: async (...args) => {
+    assert.equal(args.length, 2, 'PAIR_ONLY_INIT_SCRIPT_ARGUMENTS_INVALID');
+    pairOnlyInstall.push({bootstrap: args[0], options: args[1]});
+  }};
   await configurePairOnlyBodyProbe(pairOnlyPage, 'A', []);
   assert.equal(pairOnlyInstall.length, 2);
-  assert.equal(pairOnlyInstall[1].mode, 'A');
+  assert.deepEqual(pairOnlyInstall[1].options, {mode: 'A', timeoutMs: 2000});
   const pairOnlyEvents = [];
   await configurePairOnlyBodyProbe(pairOnlyPage, 'B', pairOnlyEvents);
+  assert.deepEqual(pairOnlyInstall[3].options, {mode: 'B', timeoutMs: 2000});
   const previousPairWindow = globalThis.window;
   try {
     let finishClone;
@@ -4350,7 +4353,7 @@ if (r48DiagnosticSelfTest) {
         setItem: (key, value) => store.set(key, value)},
       fetch: async () => pairResponse,
       __anvilR6PairOnlyEvent: pairOnlyInstall[2].callback};
-    pairOnlyInstall[3].bootstrap('B', 40);
+    pairOnlyInstall[3].bootstrap({mode: 'B', timeoutMs: 40});
     assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), pairResponse);
     assert.equal(cloneReads, 0, 'PAIR_ONLY_CLONE_READ_BEFORE_APP_RETURN');
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -4382,7 +4385,7 @@ if (r48DiagnosticSelfTest) {
       /PAIR_ONLY_INCONCLUSIVE/);
     const next404 = {...pairResponse, clone: () => {throw new Error('multiple-clone');}};
     globalThis.window.fetch = async () => next404;
-    pairOnlyInstall[3].bootstrap('B', 40);
+    pairOnlyInstall[3].bootstrap({mode: 'B', timeoutMs: 40});
     assert.equal(await globalThis.window.fetch('/api/dashboard/project-environments'), next404);
     await new Promise((resolve) => setTimeout(resolve, 5));
     assert.equal(cloneReads, 1, 'PAIR_ONLY_SECOND_CLONE_FORBIDDEN');
@@ -4391,8 +4394,9 @@ if (r48DiagnosticSelfTest) {
     const noReadEvents = [];
     const noReadPage = {exposeFunction: async (_, callback) => {
       globalThis.window.__anvilR6PairOnlyEvent = callback;
-    }, addInitScript: async (bootstrap, mode, timeoutMs) => {
-      bootstrap(mode, timeoutMs);
+    }, addInitScript: async (...args) => {
+      assert.equal(args.length, 2, 'PAIR_ONLY_INIT_SCRIPT_ARGUMENTS_INVALID');
+      args[0](args[1]);
     }};
     store.clear();
     globalThis.window.fetch = async () => pairResponse;
@@ -4420,7 +4424,10 @@ if (r48DiagnosticSelfTest) {
         clone: () => ({text: behavior})});
       const fastPage = {exposeFunction: async (_, callback) => {
         globalThis.window.__anvilR6PairOnlyEvent = callback;
-      }, addInitScript: async (bootstrap, mode) => bootstrap(mode, 10)};
+      }, addInitScript: async (...args) => {
+        assert.equal(args.length, 2, 'PAIR_ONLY_INIT_SCRIPT_ARGUMENTS_INVALID');
+        args[0]({...args[1], timeoutMs: 10});
+      }};
       await configurePairOnlyBodyProbe(fastPage, 'B', failedEvents);
       await globalThis.window.fetch('/api/dashboard/project-environments');
       await new Promise((resolve) => setTimeout(resolve, 60));
