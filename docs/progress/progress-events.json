@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2382,
+  "last_sequence": 2384,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107371,7 +107371,49 @@
         "execution_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-execution-fence-epoch-119-8c4fd3e2b545448ab58a203966e265d7",
         "product_write_scope": []
       }
+    },
+    {
+      "sequence": 2383,
+      "event_id": "evt_u01_2383_task4_r6_pair_only_body_causal_probe_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-BODY-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T09:13:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "0F0C35A612C532CD278CB33D1931B4379A0D44892CF3864BF3C5BF449EFFA28D",
+      "details": {
+        "lease_id": "write-lease-u01-task4-r6-pair-only-body-causal-probe-54d57294077a48cd815798c8fbf7884a",
+        "write_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-write-fence-epoch-119-54d57294077a48cd815798c8fbf7884a",
+        "reason": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSED"
+      }
+    },
+    {
+      "sequence": 2384,
+      "event_id": "evt_u01_2384_task4_r6_pair_only_body_causal_probe_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSE",
+      "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-BODY-CAUSAL-PROBE",
+      "occurred_at": "2026-10-11T09:13:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "F9008C2B17007D45151B504FDE9EF36B8088838236E91C989B976FF11C0DF308",
+      "details": {
+        "lease_id": "worker-lease-u01-task4-r6-pair-only-body-causal-probe-8c4fd3e2b545448ab58a203966e265d7",
+        "execution_fencing_token": "u01-task4-r6-pair-only-body-causal-probe-execution-fence-epoch-119-8c4fd3e2b545448ab58a203966e265d7",
+        "reason": "U01_TASK4_R6_PAIR_ONLY_BODY_CAUSAL_PROBE_CLOSED"
+      }
     }
   ],
-  "last_event_id": "evt_u01_2382_task4_r6_pair_only_body_causal_probe_write_lease_issued"
+  "last_event_id": "evt_u01_2384_task4_r6_pair_only_body_causal_probe_worker_lease_revoked"
 }
