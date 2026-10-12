@@ -1931,6 +1931,51 @@ test('scoped Dashboard shows every selected current Health card as unavailable w
     assert.match(html, new RegExp(`selected-${name}.*UNAVAILABLE.*SOURCE_UNAVAILABLE`, 's'));
 });
 
+test('scoped Database displays only pair-bound fresh verified health and never completes all Health', () => {
+  const data = scopedData(scopedPairs[0]);
+  const observedAt = data.period.observedAt;
+  data.current.health = Object.fromEntries(['database', 'queue', 'worker', 'provider',
+    'backend', 'artifact_store'].map((name) => [name,
+    {status: 'UNAVAILABLE', reason: 'SOURCE_UNAVAILABLE'}]));
+  data.sourceCompleteness.current.health = {complete: false, source: 'NO_VERIFIED_CURRENT_SOURCE',
+    reason: 'SOURCE_UNAVAILABLE', observedAt: null};
+  data.current.health.database = {status: 'HEALTHY', source: 'database_signal',
+    observedAt, reason: null, errorCount: 0};
+  data.sourceCompleteness.current.database = {source: 'database_signal', complete: true,
+    pair: {projectId: scopedPairs[0].projectId, environmentId: scopedPairs[0].environmentId},
+    eventTimeBasis: 'CURRENT_OBSERVATION', observedAt, reason: null};
+  data.sourceCompleteness.current.health.complete = false;
+  const render = () => renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  const databaseCard = () => {
+    const card = render().match(/<article class="status-card"><h3>selected-database<\/h3>(.*?)<\/article>/s);
+    assert.ok(card, 'Database article must exist');
+    return card[1];
+  };
+  const originalNow = Date.now;
+  Date.now = () => Date.parse(observedAt) + 300000;
+  try {
+    assert.match(databaseCard(), /HEALTHY.*database_signal.*관측/s);
+    Date.now = () => Date.parse(observedAt) + 300001;
+    assert.match(databaseCard(), /UNAVAILABLE.*SOURCE_UNAVAILABLE/s);
+    assert.doesNotMatch(databaseCard(), /HEALTHY/);
+    Date.now = () => Date.parse(observedAt);
+    data.sourceCompleteness.current.database.pair.projectId = 'other';
+    assert.match(databaseCard(), /UNAVAILABLE.*SOURCE_UNAVAILABLE/s);
+    assert.doesNotMatch(databaseCard(), /HEALTHY/);
+    data.sourceCompleteness.current.database.pair.projectId = scopedPairs[0].projectId;
+    data.current.health.database.source = 'private-secret';
+    assert.doesNotMatch(databaseCard(), /private-secret|HEALTHY/);
+    assert.match(databaseCard(), /UNAVAILABLE.*SOURCE_UNAVAILABLE/s);
+  } finally {
+    Date.now = originalNow;
+  }
+  assert.match(render(), /selected-queue.*UNAVAILABLE/s);
+});
+
 test('scoped Dashboard does not claim zero current Critical when a complete-marked row is malformed', () => {
   const data = scopedData(scopedPairs[0]);
   data.current.unresolvedCritical = null;

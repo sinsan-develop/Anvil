@@ -127,6 +127,31 @@ def test_exact_pair_route_can_return_real_task2_reader_without_fixed_fallback(ap
     assert data["current"]["health"]["database"]["status"] == "UNAVAILABLE"
 
 
+def test_scoped_database_sql_signal_checks_exact_head_and_hides_failure_details():
+    from apps.api.anvil_api.oidc_process import _checked_database_signal
+
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:", poolclass=sa.pool.StaticPool)
+    observed = datetime.now(timezone.utc)
+    try:
+        with engine.begin() as connection:
+            connection.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+            connection.execute(sa.text("INSERT INTO alembic_version VALUES ('0020_f19a_pair_grants')"))
+        signal = _checked_database_signal(engine, "project-a", "test", observed,
+                                          "0020_f19a_pair_grants")
+        assert signal is not None and signal.state == "HEALTHY"
+        assert signal.component == "database" and signal.error_count == 0
+        with engine.begin() as connection:
+            connection.execute(sa.text("UPDATE alembic_version SET version_num='0019_oidc_sessions'"))
+        assert _checked_database_signal(engine, "project-a", "test", observed,
+                                        "0020_f19a_pair_grants") is None
+        with engine.begin() as connection:
+            connection.execute(sa.text("DROP TABLE alembic_version"))
+        assert _checked_database_signal(engine, "project-a", "test", observed,
+                                        "0020_f19a_pair_grants") is None
+    finally:
+        engine.dispose()
+
+
 @pytest.mark.parametrize("query", ["", "?period=", "?period=1D", "?period=01d",
                                    "?period=%31d",
                                    "?period=1d&period=7d", "?period=1d&extra=x", "?extra=x"])

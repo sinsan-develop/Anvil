@@ -1024,6 +1024,19 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
   const pair = data && record(data.pair) ? data.pair : null;
   const currentEvidence = evidence && record(evidence.current) ? evidence.current : null;
   const occurrenceEvidence = evidence && record(evidence.occurrences) ? evidence.occurrences : null;
+  const databaseHealth = record(current?.health) ? current.health.database : null;
+  const databaseObservedAt = record(databaseHealth) && typeof databaseHealth.observedAt === 'string'
+    ? databaseHealth.observedAt : null;
+  const [databaseClock, setDatabaseClock] = useState(() => Date.now());
+  const dashboardNow = Math.max(databaseClock, Date.now());
+  useEffect(() => {
+    if (!record(databaseHealth) || databaseHealth.status !== 'HEALTHY'
+      || !validObservedAt(databaseObservedAt)) return;
+    const remaining = Date.parse(databaseObservedAt) + 300000 - Math.max(databaseClock, Date.now());
+    if (remaining < 0) return;
+    const timer = setTimeout(() => setDatabaseClock(Date.now()), remaining + 1);
+    return () => clearTimeout(timer);
+  }, [databaseObservedAt, databaseHealth, databaseClock]);
   const auditObservedAt = validObservedAt(period?.observedAt) ? period.observedAt : '';
   const criticalValid = validScopedRows(current?.unresolvedCritical, 'status', period?.observedAt);
   const actionsValid = validScopedRows(current?.nextActions, 'action', period?.observedAt);
@@ -1086,6 +1099,24 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
               : null)}</ul></article>
           {SCOPED_HEALTH_COMPONENTS.map((name) => {
             const health = record(current?.health) ? current.health[name] : null;
+            const databaseEvidence = currentEvidence?.database;
+            const verifiedDatabase = name === 'database' && record(health)
+              && health.status === 'HEALTHY' && health.source === 'database_signal'
+              && health.reason === null && health.errorCount === 0
+              && validObservedAt(databaseObservedAt) && validObservedAt(period.observedAt)
+              && Date.parse(databaseObservedAt as string) <= Date.parse(period.observedAt)
+              && Date.parse(period.observedAt) - Date.parse(databaseObservedAt as string) <= 300000
+              && Date.parse(databaseObservedAt as string) <= dashboardNow
+              && dashboardNow - Date.parse(databaseObservedAt as string) <= 300000
+              && validScopedEvidence(databaseEvidence, pair, 'database_signal',
+                'CURRENT_OBSERVATION', databaseObservedAt);
+            if (name === 'database') return <article className="status-card" key="selected-database">
+              <h3>selected-database</h3><p className={verifiedDatabase ? 'status-ready' : 'status-unavailable'}>
+                {verifiedDatabase ? 'HEALTHY' : 'UNAVAILABLE'}</p>
+              {verifiedDatabase ? <><p>원본 · database_signal</p><p>관측 · {databaseObservedAt}</p>
+                <p>{scopedEvidence(databaseEvidence, pair, 'database_signal',
+                  'CURRENT_OBSERVATION', databaseObservedAt)}</p></>
+                : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
             const reason = record(health) && nonempty(health.reason) ? health.reason : 'SOURCE_UNAVAILABLE';
             return <article className="status-card" key={`selected-${name}`}>
               <h3>selected-{name}</h3><p className="status-unavailable">UNAVAILABLE</p>

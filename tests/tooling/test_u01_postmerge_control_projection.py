@@ -33,6 +33,99 @@ PATHS = (
 )
 
 
+class U01DatabaseHealthVerticalEpoch121Tests(unittest.TestCase):
+    A12 = "0a17a1f48c45fc0faad873e4a6a073868c4fc0df"
+
+    def test_active_a12_canonical_snapshot_is_accepted_but_forgery_is_not(self):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        validator = getattr(checker, "_validate_u01_database_health_active", None)
+        self.assertIsNotNone(validator)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validator(bundle, now=issued), [])
+        forged = deepcopy(bundle)
+        forged["progress"]["u01_dashboard_database_health_vertical_binding"]["actor_id"] = "other"
+        self.assertTrue(validator(forged, now=issued))
+        forged = deepcopy(bundle)
+        forged["events"]["events"][-1]["event_type"] = "FORGED"
+        self.assertTrue(validator(forged, now=issued))
+        expired = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(validator(bundle, now=expired))
+
+    def test_active_dirty_checkpoint_cannot_claim_g05_pass(self):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        collector = getattr(checker, "_collect_u01_database_health_git", None)
+        self.assertIsNotNone(collector)
+        self.assertEqual(collector(bundle), ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"])
+
+    def test_clean_note_without_feature_code_cannot_claim_g05_pass(self):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        original = subprocess.check_output
+        def output(command, **kwargs):
+            if "status" in command and "--porcelain=v1" in command:
+                return b""
+            return original(command, **kwargs)
+        with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                             return_value="845ae0c30f95230adfa54f40ae9fb96eedf54123"):
+            self.assertEqual(checker._collect_u01_database_health_git(bundle),
+                             ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"])
+
+    def test_code_child_requires_exact_paths_and_live_private_sha(self):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        candidate = "c" * 40
+        note = "845ae0c30f95230adfa54f40ae9fb96eedf54123"
+        paths = checker._U01_DB_HEALTH_CODE
+        original = subprocess.check_output
+        def probe(extra=False):
+            def output(command, **kwargs):
+                args = command[5:]
+                if args == ["rev-parse", "HEAD"] or args == ["rev-parse",
+                        "development/codex/u01-dashboard-r2"]:
+                    return (candidate + "\n").encode()
+                if args == ["show", "-s", "--format=%P", candidate]:
+                    return (note + "\n").encode()
+                if args == ["status", "--porcelain=v1", "-uall"]:
+                    return b""
+                if args == ["diff", "--name-only", "--no-renames", note, candidate]:
+                    return ("\n".join(sorted(paths | ({"forged.txt"} if extra else set()))) + "\n").encode()
+                if args == ["diff", "--name-status", "--no-renames", note, candidate]:
+                    return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                return original(command, **kwargs)
+            return output
+        with patch.object(checker.subprocess, "check_output", side_effect=probe()), \
+                patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                             return_value=candidate):
+            self.assertEqual(checker._collect_u01_database_health_git(bundle), [])
+        with patch.object(checker.subprocess, "check_output", side_effect=probe()), \
+                patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                             return_value="d" * 40):
+            self.assertEqual(checker._collect_u01_database_health_git(bundle),
+                             ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"])
+        with patch.object(checker.subprocess, "check_output", side_effect=probe(extra=True)), \
+                patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                             return_value=candidate):
+            self.assertEqual(checker._collect_u01_database_health_git(bundle),
+                             ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"])
+
+    def test_new_dispatch_keeps_event_lease_digest_and_registry_guards(self):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        with patch.object(checker, "_collect_u01_database_health_git", return_value=[]):
+            self.assertEqual(checker.validate_bundle(bundle), [])
+            for name, change in (
+                ("event", lambda b: b["events"]["events"][-1].update(event_type="FORGED")),
+                ("lease", lambda b: b["progress"]["worker_lease"].update(status="REVOKED")),
+                ("approval", lambda b: b["progress"]["u01_dashboard_database_health_vertical_binding"].update(
+                    approval_sha256="0" * 64)),
+                ("digest", lambda b: b["detached_digest"].update(schema_version="forged")),
+                ("registry", lambda b: b["event_contract"].update(schema_version="forged")),
+                ("catalog", lambda b: b["schema_catalog"].update(schema_version="forged")),
+            ):
+                forged = deepcopy(bundle)
+                change(forged)
+                with self.subTest(name=name):
+                    self.assertTrue(checker.validate_bundle(forged), name)
+
+
 class U01Task4R6PairOnlyInitScriptRecoveryTests(unittest.TestCase):
     A10 = "8bd078929a1030b916757e069c27cc5f1b166b80"
     W11 = "68a6c809f031a0bdc835cb3d729e2747d5388419"

@@ -83748,5 +83748,145 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_r6_pair_init(bundle)
 
 
+# U-01 Stage 1 database card: the issued A12 control snapshot remains unchanged
+# through its WORK_STATUS-only note and the one code-only implementation commit.
+_U01_DB_HEALTH_W13 = "024ddb972ae1301e1a69fddd7102e461ed6af93d"
+_U01_DB_HEALTH_A12 = "0a17a1f48c45fc0faad873e4a6a073868c4fc0df"
+_U01_DB_HEALTH_NOTE = "845ae0c30f95230adfa54f40ae9fb96eedf54123"
+_U01_DB_HEALTH_PATHS = (
+    "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/progress-handoff-detached-digest-f19a-minimal-pair-auth-start.json",
+)
+_U01_DB_HEALTH_CODE = {
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_u01_postmerge_control_projection.py",
+    "packages/api/scoped_dashboard.py", "apps/api/anvil_api/oidc_process.py",
+    "apps/web/src/console/App.tsx", "tests/api/test_u01_scoped_dashboard_reader.py",
+    "tests/api/test_u01_scoped_dashboard_api.py", "apps/web/tests/f15-console.test.mjs",
+}
+
+
+def _validate_u01_database_health_active(bundle, *, now=None):
+    from datetime import datetime, timezone
+    root = Path(bundle["_root"])
+    try:
+        expected = {path: subprocess.check_output(["git", "show",
+            f"{_U01_DB_HEALTH_A12}:{path}"], cwd=root,
+            stderr=subprocess.DEVNULL) for path in _U01_DB_HEALTH_PATHS}
+        progress = json.loads(expected[_U01_DB_HEALTH_PATHS[0]])
+        lease = progress["worker_lease"]
+        write = progress["write_lease"]
+        moment = now or datetime.now(timezone.utc)
+        if (moment.tzinfo is None or moment >= datetime.fromisoformat(lease["expires_at"])
+                or moment >= datetime.fromisoformat(write["expires_at"])
+                or lease["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or lease["lease_epoch"] != 121 or write["write_epoch"] != 121
+                or lease["actor_id"] != "developer-primary-u01-dashboard-database-health"
+                or write["worker_lease_id"] != lease["lease_id"]
+                or write["execution_fencing_token"] != lease["execution_fencing_token"]
+                or write["write_fencing_token"] == lease["execution_fencing_token"]
+                or set(lease["path_scope"]) != _U01_DB_HEALTH_CODE
+                or set(write["path_scope"]) != _U01_DB_HEALTH_CODE
+                or set(write["product_write_scope"]) != {
+                    "packages/api/scoped_dashboard.py", "apps/api/anvil_api/oidc_process.py",
+                    "apps/web/src/console/App.tsx"}
+                or progress["repository"]["projection_mode"]
+                   != "U01_DASHBOARD_DATABASE_HEALTH_ACTIVE"
+                or progress["event_sequence"] != 2392
+                or bundle["progress"] != progress
+                or bundle["events"] != json.loads(expected[_U01_DB_HEALTH_PATHS[1]])
+                or bundle["handoff_text"].encode("utf-8") != expected[_U01_DB_HEALTH_PATHS[2]]
+                or bundle["detached_digest"] != json.loads(expected[_U01_DB_HEALTH_PATHS[3]])
+                or any((root / path).read_bytes() != raw for path, raw in expected.items())):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_CONTROL_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError,
+            subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_DATABASE_HEALTH_CONTROL_INVALID"]
+
+
+def _collect_u01_database_health_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().strip()
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or git("show", "-s", "--format=%P", _U01_DB_HEALTH_A12)
+                   != _U01_DB_HEALTH_W13
+                or git("show", "-s", "--format=%P", _U01_DB_HEALTH_NOTE)
+                   != _U01_DB_HEALTH_A12
+                or git("diff", "--name-status", "--no-renames", _U01_DB_HEALTH_A12,
+                       _U01_DB_HEALTH_NOTE) != "M\tdocs/WORK_STATUS.md"
+                or set(git("diff", "--name-only", "--no-renames", _U01_DB_HEALTH_W13,
+                           _U01_DB_HEALTH_A12).splitlines()) != set(_U01_DB_HEALTH_PATHS)
+                   | {"docs/WORK_STATUS.md"}):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        if head == _U01_DB_HEALTH_NOTE:
+            return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        changed = set(git("diff", "--name-only", "--no-renames",
+                          _U01_DB_HEALTH_NOTE, head).splitlines())
+        if (git("show", "-s", "--format=%P", head) != _U01_DB_HEALTH_NOTE
+                or changed != _U01_DB_HEALTH_CODE
+                or set(git("diff", "--name-status", "--no-renames",
+                           _U01_DB_HEALTH_NOTE, head).splitlines())
+                   != {f"M\t{path}" for path in changed}):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        if (any(subprocess.check_output(["git", "show", f"{_U01_DB_HEALTH_A12}:{path}"],
+                cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                for path in _U01_DB_HEALTH_PATHS)
+                or subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
+                    cwd=root, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL).returncode):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_database_health = validate_bundle
+
+
+def validate_bundle(bundle):
+    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == \
+            "U01_DASHBOARD_DATABASE_HEALTH_ACTIVE":
+        progress = bundle["progress"]
+        errors = _validate_u01_database_health_active(bundle)
+        root = Path(bundle["_root"])
+        for key in ("failure_ledger", "nonsemantic", "dir_registry",
+                    "event_contract", "schema_catalog"):
+            try:
+                if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                    errors.append("U01_DASHBOARD_DATABASE_HEALTH_CONTROL_INVALID")
+            except (OSError, ValueError, TypeError, KeyError):
+                errors.append("U01_DASHBOARD_DATABASE_HEALTH_CONTROL_INVALID")
+        if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry",
+                                         "event_contract")):
+            errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+            errors.extend(_validate_failure_projection(bundle))
+            errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+            errors.extend(_validate_dir(bundle))
+            errors.extend(_validate_reporting(progress))
+            errors.extend(_validate_reporting_state(bundle))
+            errors.extend(_validate_registry_refs(bundle))
+            errors.extend(_validate_referenced_hashes(bundle))
+            errors.extend(validate_detached_progress_binding(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_u01_database_health_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_database_health(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -195,3 +195,41 @@ def test_complete_scoped_run_queue_agent_sources_are_current_only_not_period_cou
     assert result["current"]["agent"]["count"] == 1
     assert result["sourceCompleteness"]["current"]["run"]["complete"] is True
     assert result["occurrences"]["runStarted"]["count"] is None
+
+
+def test_verified_database_signal_is_pair_bound_without_claiming_all_health_complete():
+    from packages.observability.models import HealthSignal
+
+    observed = datetime.now(timezone.utc)
+    signal = HealthSignal("database", "HEALTHY", observed, timedelta(minutes=5), 0,
+                          "sha256:" + "a" * 64, "/operations/health")
+    result = read_scoped_dashboard("project-a", "test", "1d", observed, AuditOwner(),
+                                   {"database": {"signal": signal,
+                                                 "projectId": "project-a", "environmentId": "test"}})
+    database = result["current"]["health"]["database"]
+    assert database == {"status": "HEALTHY", "source": "database_signal",
+                        "observedAt": observed.isoformat(), "reason": None, "errorCount": 0}
+    evidence = result["sourceCompleteness"]["current"]["database"]
+    assert evidence["pair"] == {"projectId": "project-a", "environmentId": "test"}
+    assert evidence["complete"] is True
+    assert evidence["observedAt"] == observed.isoformat()
+    assert result["sourceCompleteness"]["current"]["health"]["complete"] is False
+    assert all(row["status"] == "UNAVAILABLE" for name, row in
+               result["current"]["health"].items() if name != "database")
+
+
+def test_cross_pair_or_stale_database_signal_never_becomes_healthy():
+    from packages.observability.models import HealthSignal
+
+    observed = datetime.now(timezone.utc)
+    signal = HealthSignal("database", "HEALTHY", observed - timedelta(minutes=6),
+                          timedelta(minutes=5), 0, "sha256:" + "a" * 64,
+                          "/operations/health")
+    fresh = HealthSignal("database", "HEALTHY", observed, timedelta(minutes=5), 0,
+                         "sha256:" + "b" * 64, "/operations/health")
+    for supplied in ({"signal": signal, "projectId": "project-a", "environmentId": "test"},
+                     {"signal": fresh, "projectId": "other", "environmentId": "test"}):
+        result = read_scoped_dashboard("project-a", "test", "1d", observed, AuditOwner(),
+                                       {"database": supplied})
+        assert result["current"]["health"]["database"]["status"] == "UNAVAILABLE"
+        assert result["sourceCompleteness"]["current"]["database"]["complete"] is False

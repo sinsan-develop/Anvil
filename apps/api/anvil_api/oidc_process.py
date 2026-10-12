@@ -51,6 +51,30 @@ _KEYS = frozenset({
 _POLICY = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z", re.ASCII)
 
 
+def _checked_database_signal(engine, project_id: str, environment_id: str,
+                             observed_at: datetime | None, required_head: str) -> HealthSignal | None:
+    if observed_at is None or observed_at.tzinfo is None:
+        return None
+    try:
+        with engine.connect() as connection:
+            query_result = connection.execute(text("SELECT 1")).scalar_one()
+            heads = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+        completed_at = datetime.now(timezone.utc)
+        if (query_result != 1 or heads != [required_head]
+                or completed_at < observed_at
+                or completed_at - observed_at > timedelta(seconds=5)):
+            return None
+    except Exception:
+        return None
+    fingerprint = json.dumps({"component": "database", "project_id": project_id,
+        "environment_id": environment_id, "observed_at": observed_at.isoformat(),
+        "migration_head": heads[0], "query_result": query_result},
+        sort_keys=True, separators=(",", ":"))
+    return HealthSignal("database", "HEALTHY", observed_at, timedelta(minutes=5), 0,
+                        "sha256:" + sha256(fingerprint.encode()).hexdigest(),
+                        "/operations/health")
+
+
 class _F19ABoundedConnection(psycopg.Connection):
     """End a stalled libpq read by closing this request's own connection."""
 
@@ -246,26 +270,8 @@ def create_oidc_process_app(
             return now
 
         def database_signal(observed_at: datetime | None) -> HealthSignal | None:
-            if observed_at is None or observed_at.tzinfo is None:
-                return None
-            try:
-                with engine.connect() as connection:
-                    query_result = connection.execute(text("SELECT 1")).scalar_one()
-                    heads = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
-                completed_at = datetime.now(timezone.utc)
-                if (query_result != 1 or heads != [required_head]
-                        or completed_at < observed_at
-                        or completed_at - observed_at > timedelta(seconds=5)):
-                    return None
-            except Exception:
-                return None
-            fingerprint = json.dumps({"component": "database", "project_id": scope.project_id,
-                "environment_id": scope.environment_id, "observed_at": observed_at.isoformat(),
-                "migration_head": heads[0], "query_result": query_result},
-                sort_keys=True, separators=(",", ":"))
-            return HealthSignal("database", "HEALTHY", observed_at, timedelta(minutes=5), 0,
-                                "sha256:" + sha256(fingerprint.encode()).hexdigest(),
-                                "/operations/health")
+            return _checked_database_signal(engine, scope.project_id, scope.environment_id,
+                                            observed_at, required_head)
 
         def load_queue_sources(project_id: str, environment_id: str) -> OperationsSources:
             if (type(project_id) is not str or type(environment_id) is not str
@@ -313,6 +319,10 @@ def create_oidc_process_app(
             # fixed host Operations owner or an owner from another request/pair.
             owner = _F19ABoundedOperationsRepository(operations_dsn)
             current_sources = {}
+            current_sources["database"] = {
+                "signal": _checked_database_signal(engine, project_id, environment_id,
+                                                   observed_at, required_head),
+                "projectId": project_id, "environmentId": environment_id}
             for name, loader in (("run", load_scoped_run_source),
                                  ("queue", load_scoped_queue_source),
                                  ("agent", load_scoped_agent_owner_source)):

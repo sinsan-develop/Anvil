@@ -6,6 +6,7 @@ from datetime import datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from packages.persistence.operations_repository import _safe_event
+from packages.observability.models import HealthSignal
 
 
 class DashboardSourceUnavailable(ValueError):
@@ -113,6 +114,28 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
                 "observedAt": observed_text if complete else None, "reason": reason}
     source_cards = {}
     source_evidence = {}
+    database = {"status": "UNAVAILABLE", "reason": "SOURCE_UNAVAILABLE"}
+    database_evidence = completeness("NO_VERIFIED_CURRENT_SOURCE", False, "SOURCE_UNAVAILABLE")
+    try:
+        supplied = (current_sources or {}).get("database")
+        signal = supplied["signal"]
+        signal_time = signal.observed_at
+        if (type(supplied) is not dict or set(supplied) != {"signal", "projectId", "environmentId"}
+                or supplied["projectId"] != project_id or supplied["environmentId"] != environment_id
+                or type(signal) is not HealthSignal or signal.component != "database"
+                or signal.state != "HEALTHY" or signal.error_count != 0
+                or type(signal_time) is not datetime or signal_time.tzinfo is None
+                or signal_time.utcoffset() is None or signal_time > observed_at
+                or observed_at - signal_time > signal.stale_after):
+            raise ValueError("unverified database signal")
+        database = {"status": "HEALTHY", "source": "database_signal",
+                    "observedAt": _utc_string(signal_time), "reason": None,
+                    "errorCount": signal.error_count}
+        database_evidence = {**completeness("database_signal", True, None),
+                             "observedAt": _utc_string(signal_time),
+                             "eventTimeBasis": "CURRENT_OBSERVATION"}
+    except (KeyError, TypeError, ValueError, AttributeError):
+        pass
     for name in ("run", "queue", "agent"):
         source = (current_sources or {}).get(name)
         try:
@@ -143,9 +166,9 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
     return {
         "period": {"key": period_key, "timeZone": "Asia/Seoul", "startUtc": _utc_string(start),
                    "endUtc": _utc_string(end), "observedAt": observed_text},
-        "current": {"health": {name: {"status": "UNAVAILABLE", "reason": "SOURCE_UNAVAILABLE"}
-                               for name in ("database", "queue", "worker", "provider", "backend",
-                                            "artifact_store")},
+        "current": {"health": {"database": database, **{name: {"status": "UNAVAILABLE",
+                    "reason": "SOURCE_UNAVAILABLE"} for name in ("queue", "worker", "provider",
+                    "backend", "artifact_store")}},
                     "run": source_cards.get("run", _metric("NO_VERIFIED_CURRENT_SOURCE", None,
                                                             reason="SOURCE_UNAVAILABLE")),
                     "queue": source_cards.get("queue", _metric("NO_VERIFIED_CURRENT_SOURCE", None,
@@ -166,6 +189,7 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
             **{name: completeness("NO_VERIFIED_CURRENT_SOURCE", False, "SOURCE_UNAVAILABLE")
                for name in current_gaps},
             **source_evidence,
+            "database": database_evidence,
             "unresolvedCritical": completeness("operations_audit_events", True, None),
             "nextActions": completeness("operations_audit_events", True, None)},
             "occurrences": {name: {**completeness(metric["source"],
