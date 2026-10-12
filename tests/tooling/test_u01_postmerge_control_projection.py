@@ -35,6 +35,278 @@ PATHS = (
 
 class U01DatabaseHealthVerticalEpoch121Tests(unittest.TestCase):
     A12 = "0a17a1f48c45fc0faad873e4a6a073868c4fc0df"
+    C12 = "eb1ab97818bcb91677b317971aaa967413e0ff30"
+    QA_NOTE = "4115ca21435b37da7d9fddeb9af21d60afcaddf4"
+    D12 = "d" * 40
+    B12 = "b" * 40
+    H12 = "f" * 40
+
+    @staticmethod
+    def materialize(bundle, files):
+        bundle["detached_digest"]["progress"]["canonical_json_sha256"] = hashlib.sha256(
+            checker.canonical_json_bytes(bundle["progress"])).hexdigest().upper()
+        bundle["detached_digest"]["handoff"]["machine_summary_canonical_sha256"] = \
+            hashlib.sha256(checker.canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+        return U01Task4R6StoredRowDiagnosticTests.materialize(bundle, files)
+
+    def issued_a12(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A12}:{path}"],
+            cwd=ROOT) for path in (*PATHS, "docs/WORK_STATUS.md")}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode()
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        for path, raw in files.items():
+            bundle["_file_hashes"][path] = hashlib.sha256(raw).hexdigest().upper()
+        return bundle, files
+
+    def checkpoint_b12(self):
+        bundle, files = self.issued_a12()
+        progress = bundle["progress"]
+        action = "U01_DASHBOARD_DATABASE_HEALTH_CLOSE_READY"
+        status = "U01_DASHBOARD_DATABASE_HEALTH_ACTIVE"
+        progress["u01_dashboard_database_health_vertical_binding"].update(
+            a12_docs_checkpoint=self.A12, control_checkpoint=self.D12,
+            status=status, next_safe_action=action)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=self.D12, remote_head=self.D12,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-dashboard-database-health-b12-seq2392")
+        bundle["handoff"].update(repository_head=self.D12, next_safe_action=action)
+        return self.materialize(bundle, files)
+
+    def closed_h12(self):
+        bundle, files = self.checkpoint_b12()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"
+        for sequence, kind, event_id, lease, token in (
+            (2393, "WRITE_LEASE_REVOKED", "evt_u01_2393_dashboard_database_health_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2394, "WORKER_LEASE_REVOKED", "evt_u01_2394_dashboard_database_health_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(
+                stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_DASHBOARD_DATABASE_HEALTH_CLOSE",
+                "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+        stream.update(last_sequence=2394, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2392', '"last_sequence": 2394', 1)
+        rendered = rendered.replace('"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        action = "U01_DASHBOARD_DATABASE_HEALTH_RECORDED_U01_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        for name, lease in (("write", write), ("worker", worker)):
+            progress[f"completed_u01_dashboard_database_health_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_dashboard_database_health_vertical_binding"].update(
+            status=reason, next_safe_action=action, active_projection_checkpoint=self.B12,
+            event_sequence=2394)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2394,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-dashboard-database-health-h12-seq2394")
+        progress["repository"].update(projection_mode=reason, head_relation=action,
+            worktree_status=action)
+        bundle["handoff"].update(event_sequence=2394, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2394
+        return self.materialize(bundle, files)
+
+    def test_b12_h12_projection_requires_frozen_event_and_exact_lease_transition(self):
+        b, bfiles = self.checkpoint_b12()
+        active = getattr(checker, "_validate_u01_database_health_projection", None)
+        self.assertIsNotNone(active)
+        self.assertEqual(active(b, event_raw=bfiles[PATHS[1]],
+            now=datetime.fromisoformat(b["progress"]["updated_at"]), archived_files=bfiles), [])
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(active(b, event_raw=bfiles[PATHS[1]], now=expires,
+            archived_files=bfiles))
+        h, hfiles = self.closed_h12()
+        closed = getattr(checker, "_validate_u01_database_health_closed", None)
+        self.assertIsNotNone(closed)
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                archived_files=hfiles), [])
+            late = deepcopy(h)
+            late["progress"]["updated_at"] = expires.isoformat()
+            self.assertTrue(closed(late, event_raw=hfiles[PATHS[1]], now=expires,
+                archived_files=hfiles))
+            self.assertEqual(closed(h, event_raw=hfiles[PATHS[1]],
+                now=expires + timedelta(minutes=1), archived_files=hfiles), [])
+            for name, change in (
+                ("event", lambda x: x["events"]["events"][-1].update(event_type="FORGED")),
+                ("lease", lambda x: x["progress"][
+                    "completed_u01_dashboard_database_health_write_lease"].update(
+                        write_fencing_token="forged")),
+                ("digest", lambda x: x["detached_digest"]["progress"].update(
+                    canonical_json_sha256="0" * 64)),
+            ):
+                forged = deepcopy(h)
+                change(forged)
+                with self.subTest(name=name):
+                    self.assertTrue(closed(forged, event_raw=hfiles[PATHS[1]],
+                        now=datetime.fromisoformat(h["progress"]["updated_at"]),
+                        archived_files=hfiles))
+
+    def test_b12_h12_git_requires_exact_parent_paths_live_remote_and_clean_tree(self):
+        original = subprocess.check_output
+        canonical = set(PATHS)
+        report = "c" * 40
+        result = "docs/04_test_reports/U-01_DASHBOARD_DATABASE_HEALTH_VERTICAL_RESULT.md"
+        legs = {self.C12: ("845ae0c30f95230adfa54f40ae9fb96eedf54123",
+                             {"scripts/check_project_progress.py",
+                              "tests/tooling/test_u01_postmerge_control_projection.py",
+                              "packages/api/scoped_dashboard.py", "apps/api/anvil_api/oidc_process.py",
+                              "apps/web/src/console/App.tsx", "tests/api/test_u01_scoped_dashboard_reader.py",
+                              "tests/api/test_u01_scoped_dashboard_api.py",
+                              "apps/web/tests/f15-console.test.mjs"}),
+                self.QA_NOTE: (self.C12, {"docs/WORK_STATUS.md"}),
+                self.D12: (self.QA_NOTE, {"scripts/check_project_progress.py",
+                                              "tests/tooling/test_u01_postmerge_control_projection.py"}),
+                self.B12: (self.D12, (canonical - {PATHS[1]}) | {"docs/WORK_STATUS.md"}),
+                self.H12: (self.B12, canonical | {"docs/WORK_STATUS.md"}),
+                report: (self.H12, {result, "docs/WORK_STATUS.md"})}
+        for stage, bundle in (("b", self.checkpoint_b12()[0]),
+                              ("h", self.closed_h12()[0]),
+                              ("report", self.closed_h12()[0])):
+            head = {"b": self.B12, "h": self.H12, "report": report}[stage]
+            for scenario in ("valid", "extra", "remote", "dirty", "history"):
+                with self.subTest(stage=stage, scenario=scenario):
+                    def output(command, **kwargs):
+                        args = command[5:] if command[:5] == ["git", "-c",
+                            "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if args == ["rev-parse", "HEAD"]:
+                            return (head + "\n").encode()
+                        if args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return (head + "\n").encode()
+                        if args == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M forged.txt\n" if scenario == "dirty" else b""
+                        if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                            return (legs[args[3]][0] + "\n").encode()
+                        if args[:1] == ["rev-list"] and ".." in args[-1]:
+                            return b"1\n" if "--count" in args else b""
+                        if args[:1] in (["log"], ["diff"]) and ".." in args[-1]:
+                            right = args[-1].split("..")[-1]
+                            paths = legs.get(right, (None, set()))[1]
+                            if scenario == "history" and right == self.B12:
+                                paths = paths | {"forged.txt"}
+                            return ("\n".join(sorted(paths)) + "\n").encode()
+                        if args[:1] == ["diff"] and len(args) >= 5 and args[-1] in legs:
+                            paths = legs[args[-1]][1]
+                            if scenario == "extra" and args[-1] == head:
+                                paths = paths | {"forged.txt"}
+                            if "--name-status" in args:
+                                return ("\n".join(f"{'A' if p == result else 'M'}\t{p}"
+                                                  for p in sorted(paths)) + "\n").encode()
+                            return ("\n".join(sorted(paths)) + "\n").encode()
+                        if args[:1] == ["show"] and ":" in args[-1]:
+                            sha, path = args[-1].split(":", 1)
+                            if sha == self.B12:
+                                return self.checkpoint_b12()[1][path]
+                            if sha == self.H12:
+                                return self.closed_h12()[1][path]
+                        return original(command, **kwargs)
+                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                            patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                         return_value=("0" * 40 if scenario == "remote" else head)):
+                        errors = checker._collect_u01_database_health_git(bundle)
+                    self.assertEqual(errors, [] if scenario == "valid" else
+                                     ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"])
+
+    def test_b12_h12_dispatch_preserves_exact_current_canonical_bytes(self):
+        original_read = Path.read_bytes
+        b, bfiles = self.checkpoint_b12()
+        h, hfiles = self.closed_h12()
+        for bundle, files in ((b, bfiles), (h, hfiles)):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                with patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_report_archive",
+                                     return_value=(b, bfiles)), \
+                        patch.object(checker, "_collect_u01_database_health_git",
+                                     return_value=[]):
+                    self.assertEqual(checker.validate_bundle(bundle), [])
+                    current[ROOT / PATHS[0]] = b"{}\n"
+                    self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_post_qa_code_successor_requires_exact_status_tail_remote_and_clean_tree(self):
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        original = subprocess.check_output
+        code = {"scripts/check_project_progress.py",
+                "tests/tooling/test_u01_postmerge_control_projection.py"}
+        for scenario in ("valid", "extra", "merge", "stale_tracking", "remote_advanced",
+                         "dirty", "status_tail_forged"):
+            with self.subTest(scenario=scenario):
+                def output(command, **kwargs):
+                    args = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=",
+                        "-c", "core.quotePath=false"] else command[1:]
+                    if args == ["rev-parse", "HEAD"]:
+                        return (self.D12 + "\n").encode()
+                    if args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.QA_NOTE if scenario == "stale_tracking" else self.D12)
+                                + "\n").encode()
+                    if args == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M packages/api/scoped_dashboard.py\n" if scenario == "dirty" else b""
+                    if args == ["show", "-s", "--format=%P", self.D12]:
+                        return (self.QA_NOTE + (" " + "0" * 40 if scenario == "merge" else "")
+                                + "\n").encode()
+                    if args == ["show", "-s", "--format=%P", self.QA_NOTE] \
+                            and scenario == "status_tail_forged":
+                        return (self.A12 + "\n").encode()
+                    if args == ["rev-list", "--count", f"{self.QA_NOTE}..{self.D12}"]:
+                        return b"1\n"
+                    if args == ["rev-list", "--min-parents=2", f"{self.QA_NOTE}..{self.D12}"]:
+                        return b""
+                    if args == ["log", "--format=", "--name-only", "--no-renames",
+                                f"{self.QA_NOTE}..{self.D12}"]:
+                        return ("\n".join(sorted(code)) + "\n").encode()
+                    if args == ["diff", "--name-only", "--no-renames", self.QA_NOTE, self.D12] \
+                            or args == ["diff", "--name-only", "--no-renames",
+                                        f"{self.QA_NOTE}..{self.D12}"]:
+                        paths = code | ({"forged.txt"} if scenario == "extra" else set())
+                        return ("\n".join(sorted(paths)) + "\n").encode()
+                    if args == ["diff", "--name-status", "--no-renames", self.QA_NOTE,
+                                self.D12]:
+                        paths = code | ({"forged.txt"} if scenario == "extra" else set())
+                        return ("\n".join(f"M\t{path}" for path in sorted(paths)) + "\n").encode()
+                    if args[:1] == ["show"] and args[-1].startswith(self.D12 + ":"):
+                        return (ROOT / args[-1].split(":", 1)[1]).read_bytes()
+                    return original(command, **kwargs)
+                remote = "0" * 40 if scenario == "remote_advanced" else self.D12
+                with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                     return_value=remote):
+                    errors = checker._collect_u01_database_health_git(bundle)
+                self.assertEqual(errors, [] if scenario == "valid" else
+                                 ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"])
 
     def test_active_a12_canonical_snapshot_is_accepted_but_forgery_is_not(self):
         bundle = deepcopy(checker.load_bundle(ROOT))

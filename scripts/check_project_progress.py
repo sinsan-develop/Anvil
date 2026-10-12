@@ -83753,6 +83753,8 @@ def validate_bundle(bundle):
 _U01_DB_HEALTH_W13 = "024ddb972ae1301e1a69fddd7102e461ed6af93d"
 _U01_DB_HEALTH_A12 = "0a17a1f48c45fc0faad873e4a6a073868c4fc0df"
 _U01_DB_HEALTH_NOTE = "845ae0c30f95230adfa54f40ae9fb96eedf54123"
+_U01_DB_HEALTH_C12 = "eb1ab97818bcb91677b317971aaa967413e0ff30"
+_U01_DB_HEALTH_QA_NOTE = "4115ca21435b37da7d9fddeb9af21d60afcaddf4"
 _U01_DB_HEALTH_PATHS = (
     "docs/progress/build-progress.json", "docs/progress/progress-events.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -83765,9 +83767,12 @@ _U01_DB_HEALTH_CODE = {
     "apps/web/src/console/App.tsx", "tests/api/test_u01_scoped_dashboard_reader.py",
     "tests/api/test_u01_scoped_dashboard_api.py", "apps/web/tests/f15-console.test.mjs",
 }
+_U01_DB_HEALTH_CONTROL_CODE = {
+    "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py",
+}
 
 
-def _validate_u01_database_health_active(bundle, *, now=None):
+def _validate_u01_database_health_active(bundle, *, now=None, archived_files=None):
     from datetime import datetime, timezone
     root = Path(bundle["_root"])
     try:
@@ -83798,12 +83803,205 @@ def _validate_u01_database_health_active(bundle, *, now=None):
                 or bundle["events"] != json.loads(expected[_U01_DB_HEALTH_PATHS[1]])
                 or bundle["handoff_text"].encode("utf-8") != expected[_U01_DB_HEALTH_PATHS[2]]
                 or bundle["detached_digest"] != json.loads(expected[_U01_DB_HEALTH_PATHS[3]])
-                or any((root / path).read_bytes() != raw for path, raw in expected.items())):
+                or any((archived_files[path] if archived_files and path in archived_files
+                        else (root / path).read_bytes()) != raw
+                       for path, raw in expected.items())):
             return ["U01_DASHBOARD_DATABASE_HEALTH_CONTROL_INVALID"]
         return []
     except (OSError, ValueError, TypeError, KeyError, AttributeError,
             subprocess.CalledProcessError):
         return ["U01_DASHBOARD_DATABASE_HEALTH_CONTROL_INVALID"]
+
+
+def _u01_database_health_current_bytes(bundle, archived_files=None, event_raw=None):
+    root = Path(bundle["_root"])
+    source = archived_files or {}
+    actual = {path: source[path] if path in source else (root / path).read_bytes()
+              for path in _U01_DB_HEALTH_PATHS}
+    if event_raw is not None:
+        actual[_U01_DB_HEALTH_PATHS[1]] = event_raw
+    return actual
+
+
+def _u01_database_health_digest(expected, bundle, actual):
+    expected = copy.deepcopy(expected)
+    expected["progress"]["canonical_json_sha256"] = hashlib.sha256(
+        canonical_json_bytes(bundle["progress"])).hexdigest().upper()
+    expected["handoff"]["machine_summary_canonical_sha256"] = hashlib.sha256(
+        canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+    for section, path in (("progress", _U01_DB_HEALTH_PATHS[0]),
+                          ("handoff", _U01_DB_HEALTH_PATHS[2])):
+        expected[section].update(bytes=len(actual[path]),
+            file_sha256=hashlib.sha256(actual[path]).hexdigest().upper())
+    return expected
+
+
+def _validate_u01_database_health_projection(bundle, *, event_raw=None, now=None,
+                                              archived_files=None):
+    """Accept only B12's exact four-file projection of immutable A12."""
+    from datetime import datetime, timezone
+    root = Path(bundle["_root"])
+    paths = _U01_DB_HEALTH_PATHS
+    try:
+        frozen = {path: subprocess.check_output(["git", "show",
+            f"{_U01_DB_HEALTH_A12}:{path}"], cwd=root, stderr=subprocess.DEVNULL)
+            for path in paths}
+        actual = _u01_database_health_current_bytes(bundle, archived_files, event_raw)
+        progress = bundle["progress"]
+        stream = bundle["events"]
+        expected = json.loads(frozen[paths[0]])
+        binding = progress["u01_dashboard_database_health_vertical_binding"]
+        checkpoint = binding["control_checkpoint"]
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (not isinstance(checkpoint, str)
+                or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or checkpoint in {_U01_DB_HEALTH_A12, _U01_DB_HEALTH_C12,
+                                  _U01_DB_HEALTH_QA_NOTE}
+                or binding["a12_docs_checkpoint"] != _U01_DB_HEALTH_A12
+                or binding["active_projection_checkpoint"] is not None
+                or issued.tzinfo is None or updated.tzinfo is None
+                or instant.tzinfo is None or not issued <= updated <= instant < expires
+                or actual[paths[1]] != frozen[paths[1]]
+                or stream != json.loads(actual[paths[1]])
+                or stream["last_sequence"] != 2392
+                or progress["event_sequence"] != 2392
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_PROJECTION_INVALID"]
+        status = "U01_DASHBOARD_DATABASE_HEALTH_ACTIVE"
+        action = "U01_DASHBOARD_DATABASE_HEALTH_CLOSE_READY"
+        expected["u01_dashboard_database_health_vertical_binding"].update(
+            a12_docs_checkpoint=_U01_DB_HEALTH_A12, control_checkpoint=checkpoint,
+            status=status, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=status,
+            package_status=status)
+        expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01",
+            "status": status},
+            snapshot_id="snapshot-u01-dashboard-database-health-b12-seq2392")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        expected_handoff = extract_handoff_summary(frozen[paths[2]].decode())
+        expected_handoff.update(repository_head=checkpoint, next_safe_action=action)
+        expected_digest = _u01_database_health_digest(
+            json.loads(frozen[paths[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != expected_handoff
+                or bundle["detached_digest"] != expected_digest
+                or json.loads(actual[paths[0]]) != progress
+                or actual[paths[2]].decode() != bundle["handoff_text"]
+                or json.loads(actual[paths[3]]) != bundle["detached_digest"]):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_PROJECTION_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_DATABASE_HEALTH_PROJECTION_INVALID"]
+
+
+def _validate_u01_database_health_closed(bundle, *, event_raw=None, now=None,
+                                          archived_files=None):
+    """Accept only H12's frozen B12 plus timely write-then-worker revocation."""
+    from datetime import datetime, timezone
+    root = Path(bundle["_root"])
+    paths = _U01_DB_HEALTH_PATHS
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress["u01_dashboard_database_health_vertical_binding"]
+        publication = binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str)
+                or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_DB_HEALTH_A12, binding["control_checkpoint"]}):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_CLOSE_INVALID"]
+        active, published = _u01_task4_report_archive(bundle, publication)
+        bprogress = active["progress"]
+        btime = datetime.fromisoformat(bprogress["updated_at"])
+        if (_validate_u01_database_health_projection(active,
+                event_raw=published[paths[1]], archived_files=published, now=btime)
+                or bprogress["u01_dashboard_database_health_vertical_binding"][
+                    "control_checkpoint"] != binding["control_checkpoint"]):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_CLOSE_INVALID"]
+        actual = _u01_database_health_current_bytes(bundle, archived_files, event_raw)
+        raw = actual[paths[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(bprogress["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None
+                or not btime <= moment < expires or moment > instant
+                or raw_event_object_prefix_bytes(raw, 2392)
+                   != raw_event_object_prefix_bytes(published[paths[1]], 2392)
+                or stream != json.loads(raw) or stream.get("last_sequence") != 2394
+                or len(stream.get("events", [])) != 2394
+                or progress.get("event_sequence") != 2394
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or {k: v for k, v in stream.items() if k not in
+                    {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in
+                    {"events", "last_sequence", "last_event_id"}}):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_CLOSE_INVALID"]
+        reason = "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"
+        action = "U01_DASHBOARD_DATABASE_HEALTH_RECORDED_U01_PENDING"
+        for offset, sequence, kind, event_id, lease, token in (
+            (0, 2393, "WRITE_LEASE_REVOKED",
+             "evt_u01_2393_dashboard_database_health_write_lease_revoked",
+             bprogress["write_lease"], "write_fencing_token"),
+            (1, 2394, "WORKER_LEASE_REVOKED",
+             "evt_u01_2394_dashboard_database_health_worker_lease_revoked",
+             bprogress["worker_lease"], "execution_fencing_token"),
+        ):
+            row = stream["events"][2392 + offset]
+            previous = hashlib.sha256(canonical_json_bytes(
+                stream["events"][2391 + offset])).hexdigest().upper()
+            if row != {"sequence": sequence, "event_id": event_id,
+                    "event_type": kind, "actor": "main-agent-eoul",
+                    "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+                    "project_id": "anvil", "work_package_id": "U-01", "run_id": None,
+                    "step_id": "U01_DASHBOARD_DATABASE_HEALTH_CLOSE",
+                    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+                    "occurred_at": at,
+                    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                    "previous_event_sha256": previous,
+                    "details": {"lease_id": lease["lease_id"], token: lease[token],
+                                "reason": reason}}:
+                return ["U01_DASHBOARD_DATABASE_HEALTH_CLOSE_INVALID"]
+        expected = copy.deepcopy(bprogress)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_dashboard_database_health_{name}_lease"] = {
+                **bprogress[f"{name}_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["worker_lease"] = expected["write_lease"] = None
+        expected["u01_dashboard_database_health_vertical_binding"].update(
+            status=reason, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2394)
+        expected["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2394,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01",
+            "status": reason}, snapshot_id="snapshot-u01-dashboard-database-health-h12-seq2394")
+        expected["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        expected_handoff = {**active["handoff"], "event_sequence": 2394,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        expected_digest = copy.deepcopy(active["detached_digest"])
+        expected_digest["event_sequence"] = 2394
+        expected_digest = _u01_database_health_digest(expected_digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != expected_handoff
+                or bundle["detached_digest"] != expected_digest
+                or json.loads(actual[paths[0]]) != progress
+                or actual[paths[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]
+                or json.loads(actual[paths[3]]) != bundle["detached_digest"]):
+            return ["U01_DASHBOARD_DATABASE_HEALTH_CLOSE_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_DATABASE_HEALTH_CLOSE_INVALID"]
 
 
 def _collect_u01_database_health_git(bundle):
@@ -83813,6 +84011,18 @@ def _collect_u01_database_health_git(bundle):
             return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
                 "core.quotePath=false", *args], cwd=root,
                 stderr=subprocess.DEVNULL).decode().strip()
+        def direct_leg(left, right, changed, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                    and git("rev-list", "--count", f"{left}..{right}") == "1"
+                    and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                    and set(git("log", "--format=", "--name-only", "--no-renames",
+                                f"{left}..{right}").splitlines()) == changed
+                    and set(git("diff", "--name-only", "--no-renames",
+                                left, right).splitlines()) == changed
+                    and set(git("diff", "--name-status", "--no-renames",
+                                left, right).splitlines()) ==
+                        {f"A\t{path}" if path in added else f"M\t{path}"
+                         for path in changed})
         head = git("rev-parse", "HEAD")
         if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
                 or git("rev-parse", "--abbrev-ref", "@{upstream}")
@@ -83834,23 +84044,70 @@ def _collect_u01_database_health_git(bundle):
             return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
         if head == _U01_DB_HEALTH_NOTE:
             return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
-        changed = set(git("diff", "--name-only", "--no-renames",
-                          _U01_DB_HEALTH_NOTE, head).splitlines())
-        if (git("show", "-s", "--format=%P", head) != _U01_DB_HEALTH_NOTE
-                or changed != _U01_DB_HEALTH_CODE
-                or set(git("diff", "--name-status", "--no-renames",
-                           _U01_DB_HEALTH_NOTE, head).splitlines())
-                   != {f"M\t{path}" for path in changed}):
-            return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
-        if (any(subprocess.check_output(["git", "show", f"{_U01_DB_HEALTH_A12}:{path}"],
-                cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
-                for path in _U01_DB_HEALTH_PATHS)
+        progress = bundle["progress"]
+        binding = progress["u01_dashboard_database_health_vertical_binding"]
+        mode = progress["repository"]["projection_mode"]
+        closed = mode == "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"
+        if closed or binding["control_checkpoint"] is not None:
+            dsha = binding["control_checkpoint"]
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            result = "docs/04_test_reports/U-01_DASHBOARD_DATABASE_HEALTH_VERTICAL_RESULT.md"
+            if (not isinstance(dsha, str) or re.fullmatch(r"[0-9a-f]{40}", dsha) is None
+                    or not isinstance(bsha, str)
+                    or re.fullmatch(r"[0-9a-f]{40}", bsha) is None
+                    or binding["a12_docs_checkpoint"] != _U01_DB_HEALTH_A12
+                    or not direct_leg(_U01_DB_HEALTH_NOTE, _U01_DB_HEALTH_C12,
+                                      _U01_DB_HEALTH_CODE)
+                    or not direct_leg(_U01_DB_HEALTH_C12, _U01_DB_HEALTH_QA_NOTE,
+                                      {"docs/WORK_STATUS.md"})
+                    or not direct_leg(_U01_DB_HEALTH_QA_NOTE, dsha,
+                                      _U01_DB_HEALTH_CONTROL_CODE)
+                    or not direct_leg(dsha, bsha,
+                                      (set(_U01_DB_HEALTH_PATHS) -
+                                       {"docs/progress/progress-events.json"}) |
+                                      {"docs/WORK_STATUS.md"})):
+                return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+            if closed:
+                hsha = head
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if (re.fullmatch(r"[0-9a-f]{40}", hsha) is None
+                            or not direct_leg(hsha, head,
+                                              {result, "docs/WORK_STATUS.md"}, {result})):
+                        return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+                if not direct_leg(bsha, hsha,
+                                  set(_U01_DB_HEALTH_PATHS) | {"docs/WORK_STATUS.md"}):
+                    return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+            elif binding["active_projection_checkpoint"] is not None:
+                return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        elif git("show", "-s", "--format=%P", head) == _U01_DB_HEALTH_QA_NOTE:
+            if (not direct_leg(_U01_DB_HEALTH_NOTE, _U01_DB_HEALTH_C12,
+                               _U01_DB_HEALTH_CODE)
+                    or not direct_leg(_U01_DB_HEALTH_C12, _U01_DB_HEALTH_QA_NOTE,
+                                      {"docs/WORK_STATUS.md"})
+                    or not direct_leg(_U01_DB_HEALTH_QA_NOTE, head,
+                                      _U01_DB_HEALTH_CONTROL_CODE)):
+                return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        else:
+            changed = set(git("diff", "--name-only", "--no-renames",
+                              _U01_DB_HEALTH_NOTE, head).splitlines())
+            if (git("show", "-s", "--format=%P", head) != _U01_DB_HEALTH_NOTE
+                    or changed != _U01_DB_HEALTH_CODE
+                    or set(git("diff", "--name-status", "--no-renames",
+                               _U01_DB_HEALTH_NOTE, head).splitlines())
+                       != {f"M\t{path}" for path in changed}):
+                return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
+        if ((not closed and binding["control_checkpoint"] is None and
+             any(subprocess.check_output(["git", "show", f"{_U01_DB_HEALTH_A12}:{path}"],
+                 cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                 for path in _U01_DB_HEALTH_PATHS))
                 or subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
                     cwd=root, stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL).returncode):
             return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
         return []
-    except (OSError, ValueError, TypeError, subprocess.CalledProcessError):
+    except (OSError, ValueError, TypeError, KeyError, AttributeError,
+            subprocess.CalledProcessError):
         return ["U01_DASHBOARD_DATABASE_HEALTH_GIT_INVALID"]
 
 
@@ -83858,10 +84115,17 @@ _validate_bundle_before_u01_database_health = validate_bundle
 
 
 def validate_bundle(bundle):
-    if bundle.get("progress", {}).get("repository", {}).get("projection_mode") == \
-            "U01_DASHBOARD_DATABASE_HEALTH_ACTIVE":
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode in {"U01_DASHBOARD_DATABASE_HEALTH_ACTIVE",
+                "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"}:
         progress = bundle["progress"]
-        errors = _validate_u01_database_health_active(bundle)
+        if mode == "U01_DASHBOARD_DATABASE_HEALTH_CLOSED":
+            errors = _validate_u01_database_health_closed(bundle)
+        elif progress.get("u01_dashboard_database_health_vertical_binding", {}).get(
+                "control_checkpoint") is not None:
+            errors = _validate_u01_database_health_projection(bundle)
+        else:
+            errors = _validate_u01_database_health_active(bundle)
         root = Path(bundle["_root"])
         for key in ("failure_ledger", "nonsemantic", "dir_registry",
                     "event_contract", "schema_catalog"):
