@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2389,
+  "last_sequence": 2392,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107563,7 +107563,135 @@
         "execution_fencing_token": "u01-task4-r6-pair-only-init-script-recovery-execution-fence-epoch-120-e9f35f1681814fd3b013a081f907fa43",
         "reason": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_CLOSED"
       }
+    },
+    {
+      "sequence": 2390,
+      "event_id": "evt_u01_2390_dashboard_database_health_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_DASHBOARD_DATABASE_HEALTH_VERTICAL",
+      "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+      "occurred_at": "2026-10-12T22:01:14+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "AD244A25D8FB2AC81A1F1E1B2449F1ACF6EAAB03683853779134ED5015000D31",
+      "details": {
+        "work_instruction_id": "WI-U01-DASHBOARD-DATABASE-HEALTH-VERTICAL-20261012-001",
+        "work_instruction_path": "docs/work_orders/U-01_DASHBOARD_DATABASE_HEALTH_VERTICAL_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "E2E1AF34654E5E0AC7D7031ACC697D4EB192B9316BBCE7E137A6378FBBE363E3",
+        "invocation_path": "docs/work_orders/U-01_DASHBOARD_DATABASE_HEALTH_VERTICAL_INVOCATION.md",
+        "invocation_sha256": "16A43D631FBCF3311BD8BAC5E459A6188B199E69689DDD36EE9033148900FB73",
+        "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+        "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+        "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "predecessor_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+        "predecessor_sequence": 2389,
+        "developer_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "packages/api/scoped_dashboard.py",
+          "apps/api/anvil_api/oidc_process.py",
+          "apps/web/src/console/App.tsx",
+          "tests/api/test_u01_scoped_dashboard_reader.py",
+          "tests/api/test_u01_scoped_dashboard_api.py",
+          "apps/web/tests/f15-console.test.mjs"
+        ],
+        "product_write_scope": [
+          "packages/api/scoped_dashboard.py",
+          "apps/api/anvil_api/oidc_process.py",
+          "apps/web/src/console/App.tsx"
+        ]
+      }
+    },
+    {
+      "sequence": 2391,
+      "event_id": "evt_u01_2391_dashboard_database_health_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_DASHBOARD_DATABASE_HEALTH_VERTICAL",
+      "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+      "occurred_at": "2026-10-12T22:01:14+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "E57A33789F72C42ACA6E2A9118474568BC35D38F32557EFD06AB1101A0A3E977",
+      "details": {
+        "actor_id": "developer-primary-u01-dashboard-database-health",
+        "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-12T22:01:14+09:00",
+        "expires_at": "2026-10-13T22:01:14+09:00",
+        "baseline_git_commit": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+        "dispatch_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "packages/api/scoped_dashboard.py",
+          "apps/api/anvil_api/oidc_process.py",
+          "apps/web/src/console/App.tsx",
+          "tests/api/test_u01_scoped_dashboard_reader.py",
+          "tests/api/test_u01_scoped_dashboard_api.py",
+          "apps/web/tests/f15-console.test.mjs"
+        ],
+        "lease_epoch": 121,
+        "lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
+        "fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
+        "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911"
+      }
+    },
+    {
+      "sequence": 2392,
+      "event_id": "evt_u01_2392_dashboard_database_health_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "work_package_id": "U-01",
+      "run_id": null,
+      "step_id": "U01_DASHBOARD_DATABASE_HEALTH_VERTICAL",
+      "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+      "occurred_at": "2026-10-12T22:01:14+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "3517511915B00D7D6BA0AB96DC5592AC09BAC0BF08135330FFB6DD6DFE73D909",
+      "details": {
+        "actor_id": "developer-primary-u01-dashboard-database-health",
+        "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+        "status": "ACTIVE",
+        "issued_at": "2026-10-12T22:01:14+09:00",
+        "expires_at": "2026-10-13T22:01:14+09:00",
+        "baseline_git_commit": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+        "dispatch_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+        "path_scope": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_u01_postmerge_control_projection.py",
+          "packages/api/scoped_dashboard.py",
+          "apps/api/anvil_api/oidc_process.py",
+          "apps/web/src/console/App.tsx",
+          "tests/api/test_u01_scoped_dashboard_reader.py",
+          "tests/api/test_u01_scoped_dashboard_api.py",
+          "apps/web/tests/f15-console.test.mjs"
+        ],
+        "write_epoch": 121,
+        "lease_id": "write-lease-u01-dashboard-database-health-94f1ae9b4a914d1380c9abb4e209e968",
+        "worker_lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
+        "fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
+        "write_fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
+        "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
+        "product_write_scope": [
+          "packages/api/scoped_dashboard.py",
+          "apps/api/anvil_api/oidc_process.py",
+          "apps/web/src/console/App.tsx"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_u01_2389_task4_r6_pair_only_init_script_recovery_worker_lease_revoked"
+  "last_event_id": "evt_u01_2392_dashboard_database_health_write_lease_issued"
 }

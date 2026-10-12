@@ -263,17 +263,68 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2389,
-  "last_event_id": "evt_u01_2389_task4_r6_pair_only_init_script_recovery_worker_lease_revoked",
+  "event_sequence": 2392,
+  "last_event_id": "evt_u01_2392_dashboard_database_health_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-dashboard-database-health",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-database-health",
+    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-12T22:01:14+09:00",
+    "expires_at": "2026-10-13T22:01:14+09:00",
+    "baseline_git_commit": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+    "dispatch_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 121,
+    "lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
+    "fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
+    "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-database-health",
+    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-12T22:01:14+09:00",
+    "expires_at": "2026-10-13T22:01:14+09:00",
+    "baseline_git_commit": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+    "dispatch_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 121,
+    "lease_id": "write-lease-u01-dashboard-database-health-94f1ae9b4a914d1380c9abb4e209e968",
+    "worker_lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
+    "fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
+    "write_fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
+    "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
+    "product_write_scope": [
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_TASK4_R6_PAIR_ONLY_INIT_SCRIPT_RECOVERY_RECORDED_U01_PENDING",
-  "repository_head": "aef01973504ac050ba1660f804095f9d67f7570a",
+  "next_safe_action": "U01_DASHBOARD_DATABASE_HEALTH_IMPLEMENTATION_ONLY",
+  "repository_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
