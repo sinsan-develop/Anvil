@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2392,
+  "last_sequence": 2394,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107691,7 +107691,49 @@
           "apps/web/src/console/App.tsx"
         ]
       }
+    },
+  {
+    "sequence": 2393,
+    "event_id": "evt_u01_2393_dashboard_database_health_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_DATABASE_HEALTH_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+    "occurred_at": "2026-10-13T08:15:29+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "30D58282530175AF7B416271391F015A9CA18C165869AD6C6F4EC319714FD2DA",
+    "details": {
+      "lease_id": "write-lease-u01-dashboard-database-health-94f1ae9b4a914d1380c9abb4e209e968",
+      "write_fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
+      "reason": "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"
     }
+  },
+  {
+    "sequence": 2394,
+    "event_id": "evt_u01_2394_dashboard_database_health_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_DATABASE_HEALTH_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
+    "occurred_at": "2026-10-13T08:15:29+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "D95E78B7C9DC32C981F145BD9FB2E4234355F01EEE8FC34BF00F39FFC1AF7045",
+    "details": {
+      "lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
+      "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
+      "reason": "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"
+    }
+  }
   ],
-  "last_event_id": "evt_u01_2392_dashboard_database_health_write_lease_issued"
+  "last_event_id": "evt_u01_2394_dashboard_database_health_worker_lease_revoked"
 }

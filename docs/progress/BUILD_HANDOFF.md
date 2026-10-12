@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 DB 건강 카드 H12 임대 회수(Main, 2026-10-13T08:15:29+09:00): B12 `ef3a32858f2f97ae6244bc5175c04f643b2a99be`은 D 직접 자식 정확4문서·local/private 동일·실제 G-05 seq2392 PASS다. Event seq1~2392 객체 원문을 보존하고 seq2393 write→2394 worker 순서로 epoch121 임대를 REVOKED, active null로 투영한다. 이 H12는 Event/progress/HANDOFF/digest/WORK_STATUS 정확5 후보이며 독립 검토·private 게시·게시본 G-05 전 PASS가 아니다. WSL PG15 실제 SELECT1/reader 국소 증거는 C SHA 한정, 인증 브라우저 UI/timer·전체 API는 미검증; U-01 NOT_ACCEPTED·Release DEFER, PR/main·새 branch·ysna/Production 제외.
+
 U-01 DB 건강 카드 B12 종료 준비(Main, 2026-10-13T08:09:00+09:00): 기존 branch/private 동일·tracked clean D `c1a558a278fab0e7aef75f3b2a39c13c7e053b11`은 QA 사실 기록 `4115ca21` 직접 자식 정확 검증기/통제시험 2파일이며 실제 G-05 seq2392 PASS다. 로컬 epoch121 집중 9 PASS, 독립 코드 검토 Critical0/Important0; 과거 epoch120 벽시계 만료 인접 2 FAIL은 별도 보존한다. C `eb1ab978`의 새 빈 WSL-server PG15 실제 SELECT1/0020 migration→정확 pair reader HEALTHY와 권한 국소 4 PASS는 당시 SHA에 한정되고 실제 인증 브라우저 UI/timer 및 전체 API 요청은 미검증이다. Event seq2392 원문, epoch121 dual lease ACTIVE·제품 scope를 보존한 채 B12는 progress/HANDOFF/digest/WORK_STATUS 정확4 투영 후보이며, 종료 전 현재 시각·lease·private SHA를 재확인한다. H12는 seq2393 write→2394 worker 회수 예정이고 그 전에는 회수 또는 U-01 수락을 주장하지 않는다. 다른 health 5개·운영 카드 미구현, W12 진단 미실행, U-01 NOT_ACCEPTED·Release DEFER, PR/main·새 branch·ysna/Production 제외.
 
 Task4 R6 PAIR-only init-script H10 임대 회수(Main, 2026-10-11T10:51:58+09:00): B10 `a0ea4a93d1d0a8a9a4834217808b5592d08190a9`은 C10 직접 자식 정확4문서·local/private clean G-05 seq2387 PASS다. WSL-server exact C10 A/B 실제 R6 opt-in은 둘 다 exit1: A 첫 PAIR_LIST_API 404 BODY/finished PENDING, B 첫 pair clone과 원 요청 DONE/AFTER_BODY 뒤 index21 PAIR_LIST_API 404 BODY/finished PENDING. 전체 R6 FAIL·원인 미확정·U-01 NOT_ACCEPTED이며 두 전용 QA 잔여0이다. Event seq1~2387 원문 보존 뒤 seq2388 write→2389 worker 회수, epoch120 dual lease REVOKED·active null·제품0으로 투영한다. 이 H10은 정확 Event/progress/HANDOFF/digest/WORK_STATUS5 후보이며 독립 검토·private 게시·게시본 G-05 전 PASS가 아니다. 다음은 실패 결과보고 tail과 뒤 pair 인과 별도 WI, 필수 ID 검증이다. DC-U01-019·Release DEFER, PR/main·새 branch·ysna/Production 제외.
@@ -265,67 +267,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2392,
-  "last_event_id": "evt_u01_2392_dashboard_database_health_write_lease_issued",
+  "event_sequence": 2394,
+  "last_event_id": "evt_u01_2394_dashboard_database_health_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-dashboard-database-health",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-dashboard-database-health",
-    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-12T22:01:14+09:00",
-    "expires_at": "2026-10-13T22:01:14+09:00",
-    "baseline_git_commit": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
-    "dispatch_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "packages/api/scoped_dashboard.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "tests/api/test_u01_scoped_dashboard_reader.py",
-      "tests/api/test_u01_scoped_dashboard_api.py",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "lease_epoch": 121,
-    "lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
-    "fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
-    "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-dashboard-database-health",
-    "subject_ref": "U-01/DASHBOARD-DATABASE-HEALTH-VERTICAL",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-12T22:01:14+09:00",
-    "expires_at": "2026-10-13T22:01:14+09:00",
-    "baseline_git_commit": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
-    "dispatch_head": "024ddb972ae1301e1a69fddd7102e461ed6af93d",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "packages/api/scoped_dashboard.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "tests/api/test_u01_scoped_dashboard_reader.py",
-      "tests/api/test_u01_scoped_dashboard_api.py",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "write_epoch": 121,
-    "lease_id": "write-lease-u01-dashboard-database-health-94f1ae9b4a914d1380c9abb4e209e968",
-    "worker_lease_id": "worker-lease-u01-dashboard-database-health-ecc45000420f474da5a76c5a80569911",
-    "fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
-    "write_fencing_token": "u01-dashboard-database-health-write-fence-epoch-121-94f1ae9b4a914d1380c9abb4e209e968",
-    "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
-    "product_write_scope": [
-      "packages/api/scoped_dashboard.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_DATABASE_HEALTH_CLOSE_READY",
+  "next_safe_action": "U01_DASHBOARD_DATABASE_HEALTH_RECORDED_U01_PENDING",
   "repository_head": "c1a558a278fab0e7aef75f3b2a39c13c7e053b11",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
