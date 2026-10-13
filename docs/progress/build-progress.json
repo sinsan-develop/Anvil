@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-dashboard-active-run-b14-seq2402",
-  "event_sequence": 2402,
-  "updated_at": "2026-10-13T20:44:11+09:00",
-  "last_event_id": "evt_u01_2402_dashboard_active_run_write_lease_issued",
+  "snapshot_id": "snapshot-u01-dashboard-active-run-h14-seq2404",
+  "event_sequence": 2404,
+  "updated_at": "2026-10-13T20:46:24+09:00",
+  "last_event_id": "evt_u01_2404_dashboard_active_run_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-dashboard-active-run",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,30 +387,7 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-dashboard-active-run",
-    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-13T20:20:43+09:00",
-    "expires_at": "2026-10-14T20:20:43+09:00",
-    "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
-    "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "write_epoch": 123,
-    "lease_id": "write-lease-u01-dashboard-active-run-4ecfe8a798854e899cf2e838c0accf9d",
-    "worker_lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
-    "fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
-    "write_fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
-    "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
-    "product_write_scope": [
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "write_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1563,25 +1540,7 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-dashboard-active-run",
-    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-13T20:20:43+09:00",
-    "expires_at": "2026-10-14T20:20:43+09:00",
-    "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
-    "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "lease_epoch": 123,
-    "lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
-    "fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
-    "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655"
-  },
+  "worker_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2630,7 +2589,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY",
+  "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2745,9 +2704,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "6c71f45c5573fae3fa8ba65fcb5dd84065a5c266",
-    "projection_mode": "U01_DASHBOARD_ACTIVE_RUN_ACTIVE",
+    "projection_mode": "U01_DASHBOARD_ACTIVE_RUN_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY",
+    "head_relation": "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3183,7 +3142,7 @@
     "product_write_scope": [
       "apps/web/src/console/App.tsx"
     ],
-    "worktree_status": "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY",
+    "worktree_status": "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3349,8 +3308,8 @@
     "path": "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_WORK_INSTRUCTION.md",
     "sha256": "90AB26200FD9881B4873316440F44B5316053DD6B85F621CC62136448F9450D3",
     "revision": 1,
-    "result_status": "U01_DASHBOARD_ACTIVE_RUN_ACTIVE",
-    "package_status": "U01_DASHBOARD_ACTIVE_RUN_ACTIVE",
+    "result_status": "U01_DASHBOARD_ACTIVE_RUN_CLOSED",
+    "package_status": "U01_DASHBOARD_ACTIVE_RUN_CLOSED",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -3566,12 +3525,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "FDC52060C604172652EC33391F2B356AACABA4887261959270946F2A2E3A1479"
+      "sha256": "04639E9196C9E8133E77E7B2F0A27ACF13CF9A3E515AC9F410FBF5FD4922D7CE"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_DASHBOARD_ACTIVE_RUN_ACTIVE"
+    "status": "U01_DASHBOARD_ACTIVE_RUN_CLOSED"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3963,8 +3922,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "430ED408B8C061DEAE39A1D8B250E03EDC050055BFB90B23F9665CE9B8ACF518",
-  "runtime_next_action": "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY",
+  "snapshot_hash": "11B7869D0CDCB3653242A47E1FDFB7A4F6EF2A65BD12E8929EDA55348F014232",
+  "runtime_next_action": "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -30668,7 +30627,7 @@
     "product_write_scope": [
       "apps/web/src/console/App.tsx"
     ],
-    "status": "U01_DASHBOARD_ACTIVE_RUN_ACTIVE",
+    "status": "U01_DASHBOARD_ACTIVE_RUN_CLOSED",
     "package_id": "U-01",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
@@ -30676,14 +30635,59 @@
     "previous_result_checkpoint": "b21d1ec24f67b8cc0c9a1f2827ae021de110e750",
     "a14_docs_checkpoint": "5e1471ce2885640b30be7f190d50d0ede7a5435d",
     "control_checkpoint": "6c71f45c5573fae3fa8ba65fcb5dd84065a5c266",
-    "active_projection_checkpoint": null,
+    "active_projection_checkpoint": "7f51aabb96922207bb2a417d86a7f95ac9bda2bf",
     "actor_id": "developer-primary-u01-dashboard-active-run",
     "worker_lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
     "write_lease_id": "write-lease-u01-dashboard-active-run-4ecfe8a798854e899cf2e838c0accf9d",
-    "event_sequence": 2402,
-    "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY",
+    "event_sequence": 2404,
+    "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED"
+  },
+  "completed_u01_dashboard_active_run_write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-active-run",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "status": "REVOKED",
+    "issued_at": "2026-10-13T20:20:43+09:00",
+    "expires_at": "2026-10-14T20:20:43+09:00",
+    "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 123,
+    "lease_id": "write-lease-u01-dashboard-active-run-4ecfe8a798854e899cf2e838c0accf9d",
+    "worker_lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+    "fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+    "write_fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+    "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ],
+    "revoked_at": "2026-10-13T20:46:24+09:00"
+  },
+  "completed_u01_dashboard_active_run_worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-active-run",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "status": "REVOKED",
+    "issued_at": "2026-10-13T20:20:43+09:00",
+    "expires_at": "2026-10-14T20:20:43+09:00",
+    "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 123,
+    "lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+    "fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+    "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+    "revoked_at": "2026-10-13T20:46:24+09:00"
   }
 }

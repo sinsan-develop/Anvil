@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2402,
+  "last_sequence": 2404,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108010,7 +108010,49 @@
         "apps/web/src/console/App.tsx"
       ]
     }
+  },
+  {
+    "sequence": 2403,
+    "event_id": "evt_u01_2403_dashboard_active_run_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_ACTIVE_RUN_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "occurred_at": "2026-10-13T20:46:24+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "402F83A8856853500AAE6D7FF81BBE06559454E893A85311354A7BAE7773F6B2",
+    "details": {
+      "lease_id": "write-lease-u01-dashboard-active-run-4ecfe8a798854e899cf2e838c0accf9d",
+      "write_fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+      "reason": "U01_DASHBOARD_ACTIVE_RUN_CLOSED"
+    }
+  },
+  {
+    "sequence": 2404,
+    "event_id": "evt_u01_2404_dashboard_active_run_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_ACTIVE_RUN_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "occurred_at": "2026-10-13T20:46:24+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "81F29363D9233BA247FC97CAB7EDC0F561BEABEE6B7F86A5FF7E9B8D1BBE7E2D",
+    "details": {
+      "lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+      "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+      "reason": "U01_DASHBOARD_ACTIVE_RUN_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2402_dashboard_active_run_write_lease_issued"
+  "last_event_id": "evt_u01_2404_dashboard_active_run_worker_lease_revoked"
 }
