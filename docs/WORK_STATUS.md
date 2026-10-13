@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- W14 비의미 검증목록 보정(Main, 새lease발급전): 독립검토의 Web lint 누락Important1을 확인해 기존승인 필수축 `npm run web:lint`와API/OpenAPI 불변집중확인을WI에명시했다. DB결과보고의최종미충족문구Important1은W14게시전에격리실측완료/정식화면미반영으로보정됐다. W14 `592d9fd679d4577667a8e030e71b479c0ba6660a`는753직접자식정확4문서·private동일이다. 이revision은WI/WORK_STATUS 정확2문서이며기능범위·권한·schema/API의미변경0, 부모승인범위내 MAIN_RECONFIRMED_NON_SEMANTIC으로새hash를A13에결박한다. oldWIhash승계0, activelease0·코드write0. A13은이번보정checkpoint 직접자식으로발행한다.
+
 - U-01 DB 카드 인증핵심 실측·다음BLOCKED Run 착수(Main, 2026-10-13): exact753922a7의 새빈PG15/0020·제품create_oidc_process_app·OIDC PKCE/nonce·HTTPS·Chromium에서 HEALTHY API→화면 값/원본/관측시각/pair, 5분경과UNAVAILABLE, grant철회403·이전HEALTHY제거, `/api/`·`/auth/` same-origin 및cookieSecure/HttpOnly·DOM credential미노출을확인했다(exit0). 처음준비G05는cwd오류exit1→정확repo cwd에서seq2394 PASS로분리했다. 전용root1·container3·5545/8444/8445 잔여0 독립exit0, 정식anvil-web image/running보존. DB카드 개발상태는 구현완료·핵심동작확인(격리)이며 정식WSLUI는이전bb2ff437/0013이므로사용자화면반영미실행. reader/API/화면의미진을숨기지않고결과보고에갱신했다. 다음미완성 current.blocked는실제exactpair ScopedRunSource가있어새지속원본없이BLOCKED Run건수/목록을연결할수있음을확인했다. 승인된기존metric/원본계약안의내부구현으로WI/Invocation을발행하며새lease/코드write전이다. W14 변경은기존DB결과보고+WI+Invocation+WORK_STATUS 정확4. 시작HEAD/private753동일·trackedclean·activelease0/제품추가변경0. U-01NOT_ACCEPTED/DEFER·다른미구현유지. 신규코드G05route전W14는예상RED이며기능PASS아님.
 
 - 위 DB 카드 일회성 QA의 HTTPS listener는 loopback8444(합성 issuer)·8445(정확 SHA API/화면)로 제한하고 생성 전 두 포트 부재를 확인한다. 기존3770 서비스는 보존하며 listener/프로세스도 수명 종료 시 정리한다. QA helper는 제품 배포 소스가 아니며 등록 root 아래 orchestration만 생성한다.
