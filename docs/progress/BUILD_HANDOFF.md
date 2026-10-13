@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 BLOCKED Run B13: C13 `9215621bf6eedfb02132b3f11c2198981791e548` exact7/独立C0I0M0/local-private clean G05seq2397PASS, 새빈PG15/0020·정상repository저장3Run→BLOCKED1·OIDC/HTTPS/Chromium API/화면/7d갱신/otherpair403/철회제거 PASS. 신규API1 PASS, OpenAPI paths101 A13동일, QAroot1/container3/port3 잔여0·정식service보존. epoch122ACTIVE; 전체R6/U01미수락·정식WSLUI미반영. H13회수후첫보고예정.
+
 U-01 BLOCKED Run A13 임대(Main, 2026-10-13T11:21:39+09:00): 기존W14 `592d9fd679d4577667a8e030e71b479c0ba6660a`→비의미검증목록보정 `79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75`·private동일·activelease0을확인했다. Event seq1~2394 객체원문을보존하고2395 WI→2396 epoch122 worker→2397 write를24시간분리token/허용7코드·제품2에결박한다. WI/Invocation/부모승인hash일치이며새G05route전예상RED, PASS아니다. 단일기존Developer가실제ScopedRunSource→현재BLOCKED건수/화면을연결한다. DB카드격리핵심실측완료·정식화면미반영, U-01NOT_ACCEPTED/DEFER·새branch/PR/main/Oracle/ysna/Production제외.
 
 U-01 DB 건강 카드 H12 임대 회수(Main, 2026-10-13T08:15:29+09:00): B12 `ef3a32858f2f97ae6244bc5175c04f643b2a99be`은 D 직접 자식 정확4문서·local/private 동일·실제 G-05 seq2392 PASS다. Event seq1~2392 객체 원문을 보존하고 seq2393 write→2394 worker 순서로 epoch121 임대를 REVOKED, active null로 투영한다. 이 H12는 Event/progress/HANDOFF/digest/WORK_STATUS 정확5 후보이며 독립 검토·private 게시·게시본 G-05 전 PASS가 아니다. WSL PG15 실제 SELECT1/reader 국소 증거는 C SHA 한정, 인증 브라우저 UI/timer·전체 API는 미검증; U-01 NOT_ACCEPTED·Release DEFER, PR/main·새 branch·ysna/Production 제외.
@@ -326,8 +328,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_BLOCKED_RUN_IMPLEMENTATION_ONLY",
-  "repository_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+  "next_safe_action": "U01_DASHBOARD_BLOCKED_RUN_CLOSE_READY",
+  "repository_head": "9215621bf6eedfb02132b3f11c2198981791e548",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
