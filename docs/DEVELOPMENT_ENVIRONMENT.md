@@ -81,6 +81,14 @@
 - official 저장소에는 실제 배포 allowlist만 clean RC branch로 반영하며 private 전체 history를 mirror하지 않는다.
 - official main 직접 push, history rewrite, force push는 금지한다.
 
+## WSL 개발 화면 반영 계획 / 2026-10-14
+
+현재대화의 신산님 직접승인으로 기존 `anvil` 개발DB 백업·0013→0020 갱신과 테스트로그인·HTTPS/포트3770 연결을 진행한다. 승인/WI는 `APPROVAL-20261014-U01-WSL-DEVELOPMENT-RUNTIME-001.md` / `U-01_WSL_DEVELOPMENT_RUNTIME_WORK_INSTRUCTION.md`. 아래는 생성/전환 전 계획이지 완료 기록이 아니다.
+
+정식 source는 기존 `/srv/anvil-wsl/repo`의 Git exact C15·사설 기존branch, source를 Windows에서복사하지않는다. 기존 `/srv/anvil-wsl/.env`·원데이터·currentimagec025와container복구수단을보존한다. backup root `/srv/anvil-wsl/backups/u01-development-20261014-4b75c87f` root0700/파일0600·암호화/키·복원비교, runtime `/srv/anvil-wsl/runtime/u01-development-20261014` private자료/cert/trust/env/actualmanifest. 둘은개발배포/복구자료수명으로보존, source/Git/보고서에비밀값0.
+
+계획 서비스 `anvil-web`(기존전환·privateHTTPS3770), `anvil-u01-api`(internal3770), `anvil-u01-issuer`(internal8302)와 Anvil전용internal망 `anvil-u01-development-runtime`; 기존proxy-network설정/다른서비스수정0. 신규readonly QA계정/조합만권한부여하며외부SSO/운영인증아님. 처음테스트HTTPS 인증서경고가능·Windows전역CA자동설치0. 기존서비스는backup/복원·복사본migration/data보존확인전전환하지않는다. 일회성 restore/migration 자원literal은생성전에추가등록하고목적종료즉시정리/잔여0한다. 정확source/image/manifest·현재privateIP·owner/port/link·oldbackup tuple이확정되지않으면추측해실행하지않는다.
+
 ## WSL-server
 
 - 역할: Anvil 개발·통합 QA/Test-Staging. ysna-server와 anvil.sinsan.kr는 별도 운영 전환 선언 전까지 사용자 인수검증 staging이다.
