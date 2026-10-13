@@ -33,6 +33,308 @@ PATHS = (
 )
 
 
+class U01DashboardBlockedRunEpoch122Tests(unittest.TestCase):
+    A13 = "ebedb20287a8a7824e751b062dcf749d2ae6c548"
+    C13 = "c" * 40
+    B13 = "b" * 40
+
+    def issued_a13(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A13}:{path}"],
+            cwd=ROOT) for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode()
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        return bundle, files
+
+    def checkpoint_b13(self):
+        bundle, files = self.issued_a13()
+        progress = bundle["progress"]
+        action = "U01_DASHBOARD_BLOCKED_RUN_CLOSE_READY"
+        status = "U01_DASHBOARD_BLOCKED_RUN_ACTIVE"
+        progress["u01_dashboard_blocked_run_card_binding"].update(
+            a13_docs_checkpoint=self.A13, control_checkpoint=self.C13,
+            status=status, next_safe_action=action)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=self.C13, remote_head=self.C13,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-dashboard-blocked-run-b13-seq2397")
+        bundle["handoff"].update(repository_head=self.C13, next_safe_action=action)
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def closed_h13(self):
+        bundle, files = self.checkpoint_b13()
+        progress, stream = bundle["progress"], bundle["events"]
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_DASHBOARD_BLOCKED_RUN_CLOSED"
+        for sequence, kind, event_id, lease, token in (
+            (2398, "WRITE_LEASE_REVOKED", "evt_u01_2398_dashboard_blocked_run_write_lease_revoked",
+             write, "write_fencing_token"),
+            (2399, "WORKER_LEASE_REVOKED", "evt_u01_2399_dashboard_blocked_run_worker_lease_revoked",
+             worker, "execution_fencing_token"),
+        ):
+            previous = hashlib.sha256(checker.canonical_json_bytes(
+                stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": sequence, "event_id": event_id,
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_DASHBOARD_BLOCKED_RUN_CLOSE",
+                "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+        stream.update(last_sequence=2399, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        assert boundary >= 0
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2397', '"last_sequence": 2399', 1)
+        rendered = rendered.replace('"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        action = "U01_DASHBOARD_BLOCKED_RUN_RECORDED_U01_PENDING"
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            files[PATHS[1]]).hexdigest().upper()
+        for name, lease in (("write", write), ("worker", worker)):
+            progress[f"completed_u01_dashboard_blocked_run_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_dashboard_blocked_run_card_binding"].update(
+            status=reason, next_safe_action=action, active_projection_checkpoint=self.B13,
+            event_sequence=2399)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2399,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-dashboard-blocked-run-h13-seq2399")
+        progress["repository"].update(projection_mode=reason, head_relation=action,
+            worktree_status=action)
+        bundle["handoff"].update(event_sequence=2399, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2399
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def test_b13_projection_exact_bytes_and_expiry_boundaries(self):
+        bundle, files = self.checkpoint_b13()
+        validator = checker._validate_u01_blocked_run_projection
+        at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        self.assertEqual(validator(bundle, event_raw=files[PATHS[1]],
+            now=at, archived_files=files), [])
+        forged = deepcopy(bundle)
+        forged["detached_digest"]["progress"]["canonical_json_sha256"] = "0" * 64
+        self.assertTrue(validator(forged, event_raw=files[PATHS[1]],
+            now=at, archived_files=files))
+        forged = deepcopy(bundle)
+        forged["events"]["events"][-1]["event_type"] = "FORGED"
+        self.assertTrue(validator(forged, event_raw=files[PATHS[1]],
+            now=at, archived_files=files))
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(validator(bundle, event_raw=files[PATHS[1]],
+            now=expires, archived_files=files))
+
+    def test_h13_close_exact_event_lease_and_completed_history(self):
+        b, bfiles = self.checkpoint_b13()
+        h, hfiles = self.closed_h13()
+        at = datetime.fromisoformat(h["progress"]["updated_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)):
+            validator = checker._validate_u01_blocked_run_closed
+            self.assertEqual(validator(h, event_raw=hfiles[PATHS[1]],
+                now=at, archived_files=hfiles), [])
+            for change in (
+                lambda x: x["events"]["events"][-1].update(event_type="FORGED"),
+                lambda x: x["progress"]["completed_u01_dashboard_blocked_run_write_lease"].update(
+                    write_fencing_token="forged"),
+                lambda x: x["detached_digest"]["progress"].update(
+                    canonical_json_sha256="0" * 64),
+            ):
+                forged = deepcopy(h)
+                change(forged)
+                self.assertTrue(validator(forged, event_raw=hfiles[PATHS[1]],
+                    now=at, archived_files=hfiles))
+            expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+            late = deepcopy(h)
+            late["progress"]["updated_at"] = expires.isoformat()
+            self.assertTrue(validator(late, event_raw=hfiles[PATHS[1]],
+                now=expires, archived_files=hfiles))
+            self.assertEqual(validator(h, event_raw=hfiles[PATHS[1]],
+                now=expires + timedelta(minutes=1), archived_files=hfiles), [])
+
+    def test_c13_requires_exact_child_paths_live_private_remote_and_clean_tree(self):
+        bundle, _ = self.issued_a13()
+        original = subprocess.check_output
+        base = "753922a7e8f982e93cb7387f2a281be70bfe37a8"
+        w14 = "592d9fd679d4577667a8e030e71b479c0ba6660a"
+        revision = "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75"
+        code = {"scripts/check_project_progress.py",
+                "tests/tooling/test_u01_postmerge_control_projection.py",
+                "packages/api/scoped_dashboard.py", "apps/web/src/console/App.tsx",
+                "tests/api/test_u01_scoped_dashboard_reader.py",
+                "apps/web/tests/f15-console.test.mjs"}
+        wi = "docs/work_orders/U-01_DASHBOARD_BLOCKED_RUN_CARD_WORK_INSTRUCTION.md"
+        invocation = "docs/work_orders/U-01_DASHBOARD_BLOCKED_RUN_CARD_INVOCATION.md"
+        legs = {w14: (base, {"docs/04_test_reports/U-01_DASHBOARD_DATABASE_HEALTH_VERTICAL_RESULT.md",
+                             "docs/WORK_STATUS.md", wi, invocation}, {wi, invocation}),
+                revision: (w14, {"docs/WORK_STATUS.md", wi}, set()),
+                self.A13: (revision, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+                self.C13: (self.A13, code, set())}
+        for scenario in ("valid", "dirty", "remote", "extra", "rename", "merge",
+                         "tracking", "history"):
+            with self.subTest(scenario=scenario):
+                def output(command, **kwargs):
+                    args = command[5:] if command[:5] == ["git", "-c",
+                        "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                    if args == ["rev-parse", "HEAD"]:
+                        return (self.C13 + "\n").encode()
+                    if args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                        return ((self.A13 if scenario == "tracking" else self.C13) + "\n").encode()
+                    if args == ["status", "--porcelain=v1", "-uall"]:
+                        return b" M forged.txt\n" if scenario == "dirty" else b""
+                    if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                        parent = legs[args[3]][0]
+                        if scenario == "merge" and args[3] == self.C13:
+                            parent += " " + "0" * 40
+                        if scenario == "history" and args[3] == w14:
+                            parent = "0" * 40
+                        return (parent + "\n").encode()
+                    if args[:1] == ["rev-list"] and ".." in args[-1]:
+                        return b"1\n" if "--count" in args else b""
+                    if args[:1] == ["log"] and ".." in args[-1]:
+                        right = args[-1].split("..")[-1]
+                        return ("\n".join(sorted(legs[right][1])) + "\n").encode()
+                    if args[:1] == ["diff"] and len(args) >= 5 and args[-1] in legs:
+                        paths = legs[args[-1]][1]
+                        if scenario == "extra" and args[-1] == self.C13:
+                            paths = paths | {"forged.txt"}
+                        if "--name-status" in args:
+                            if scenario == "rename" and args[-1] == self.C13:
+                                return b"R100\told-path\tpackages/api/scoped_dashboard.py\n"
+                            return ("\n".join(f"{'A' if p in legs[args[-1]][2] else 'M'}\t{p}"
+                                              for p in sorted(paths)) + "\n").encode()
+                        return ("\n".join(sorted(paths)) + "\n").encode()
+                    return original(command, **kwargs)
+                remote = "0" * 40 if scenario == "remote" else self.C13
+                with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                        patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                     return_value=remote):
+                    errors = checker._collect_u01_blocked_run_git(bundle)
+                self.assertEqual(errors, [] if scenario == "valid" else
+                                 ["U01_DASHBOARD_BLOCKED_RUN_GIT_INVALID"])
+
+    def test_b13_h13_dispatch_uses_exact_current_canonical_bytes(self):
+        original_read = Path.read_bytes
+        b, bfiles = self.checkpoint_b13()
+        h, hfiles = self.closed_h13()
+        for bundle, files in ((b, bfiles), (h, hfiles)):
+            with self.subTest(mode=bundle["progress"]["repository"]["projection_mode"]):
+                current = {ROOT / path: raw for path, raw in files.items()}
+                def read_bytes(path):
+                    return current[path] if path in current else original_read(path)
+                with patch.object(Path, "read_bytes", read_bytes), \
+                        patch.object(checker, "_u01_task4_report_archive",
+                                     return_value=(b, bfiles)), \
+                        patch.object(checker, "_collect_u01_blocked_run_git", return_value=[]):
+                    self.assertEqual(checker.validate_bundle(bundle), [])
+                    current[ROOT / PATHS[0]] = b"{}\n"
+                    self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_b13_h13_and_first_report_git_exact_lineage(self):
+        original = subprocess.check_output
+        base = "753922a7e8f982e93cb7387f2a281be70bfe37a8"
+        w14 = "592d9fd679d4577667a8e030e71b479c0ba6660a"
+        revision = "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75"
+        report = "d" * 40
+        result = "docs/04_test_reports/U-01_DASHBOARD_BLOCKED_RUN_CARD_RESULT.md"
+        wi = "docs/work_orders/U-01_DASHBOARD_BLOCKED_RUN_CARD_WORK_INSTRUCTION.md"
+        invocation = "docs/work_orders/U-01_DASHBOARD_BLOCKED_RUN_CARD_INVOCATION.md"
+        code = {"scripts/check_project_progress.py",
+                "tests/tooling/test_u01_postmerge_control_projection.py",
+                "packages/api/scoped_dashboard.py", "apps/web/src/console/App.tsx",
+                "tests/api/test_u01_scoped_dashboard_reader.py",
+                "apps/web/tests/f15-console.test.mjs"}
+        legs = {w14: (base, {"docs/04_test_reports/U-01_DASHBOARD_DATABASE_HEALTH_VERTICAL_RESULT.md",
+                             "docs/WORK_STATUS.md", wi, invocation}, {wi, invocation}),
+                revision: (w14, {"docs/WORK_STATUS.md", wi}, set()),
+                self.A13: (revision, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+                self.C13: (self.A13, code, set()),
+                self.B13: (self.C13, set(PATHS) - {PATHS[1]} | {"docs/WORK_STATUS.md"}, set()),
+                "f" * 40: (self.B13, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+                report: ("f" * 40, {result, "docs/WORK_STATUS.md"}, {result})}
+        b, _ = self.checkpoint_b13()
+        h, _ = self.closed_h13()
+        for stage, bundle, head in (("b", b, self.B13), ("h", h, "f" * 40),
+                                    ("report", h, report)):
+            for scenario in ("valid", "extra", "rename", "remote", "dirty", "history"):
+                with self.subTest(stage=stage, scenario=scenario):
+                    def output(command, **kwargs):
+                        args = command[5:] if command[:5] == ["git", "-c",
+                            "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if args == ["rev-parse", "HEAD"]:
+                            return (head + "\n").encode()
+                        if args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return (head + "\n").encode()
+                        if args == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M forged.txt\n" if scenario == "dirty" else b""
+                        if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                            parent = legs[args[3]][0]
+                            if scenario == "history" and args[3] == self.B13:
+                                parent = "0" * 40
+                            return (parent + "\n").encode()
+                        if args[:1] == ["rev-list"] and ".." in args[-1]:
+                            return b"1\n" if "--count" in args else b""
+                        if args[:1] == ["log"] and ".." in args[-1]:
+                            right = args[-1].split("..")[-1]
+                            return ("\n".join(sorted(legs[right][1])) + "\n").encode()
+                        if args[:1] == ["diff"] and len(args) >= 5 and args[-1] in legs:
+                            paths = legs[args[-1]][1]
+                            if scenario == "extra" and args[-1] == head:
+                                paths = paths | {"forged.txt"}
+                            if "--name-status" in args:
+                                if scenario == "rename" and args[-1] == head:
+                                    return b"R100\told-path\tdocs/WORK_STATUS.md\n"
+                                return ("\n".join(f"{'A' if p in legs[args[-1]][2] else 'M'}\t{p}"
+                                                  for p in sorted(paths)) + "\n").encode()
+                            return ("\n".join(sorted(paths)) + "\n").encode()
+                        return original(command, **kwargs)
+                    remote = "0" * 40 if scenario == "remote" else head
+                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                            patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                         return_value=remote):
+                        errors = checker._collect_u01_blocked_run_git(bundle)
+                    self.assertEqual(errors, [] if scenario == "valid" else
+                                     ["U01_DASHBOARD_BLOCKED_RUN_GIT_INVALID"])
+
+    def test_a13_frozen_active_event_lease_and_canonical_bytes(self):
+        bundle = checker.load_bundle(ROOT)
+        validator = getattr(checker, "_validate_u01_blocked_run_active", None)
+        self.assertIsNotNone(validator)
+        issued = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validator(bundle, now=issued), [])
+        for change in (
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+            lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged"),
+            lambda b: b["progress"]["active_work_instruction"].update(sha256="0" * 64),
+        ):
+            forged = deepcopy(bundle)
+            change(forged)
+            self.assertTrue(validator(forged, now=issued))
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertTrue(validator(bundle, now=expires))
+
+    def test_a13_dispatch_is_fail_closed_until_clean_code_successor(self):
+        bundle = checker.load_bundle(ROOT)
+        self.assertTrue(checker.validate_bundle(bundle))
+
+
 class U01DatabaseHealthVerticalEpoch121Tests(unittest.TestCase):
     A12 = "0a17a1f48c45fc0faad873e4a6a073868c4fc0df"
     C12 = "eb1ab97818bcb91677b317971aaa967413e0ff30"

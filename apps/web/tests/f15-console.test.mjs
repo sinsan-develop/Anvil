@@ -1750,6 +1750,60 @@ const scopedData = (pair, key = '1d') => ({
       pair: {projectId: pair.projectId, environmentId: pair.environmentId},
       eventTimeBasis: 'DETECTED.at', reason: null, observedAt: '2026-10-09T08:00:00+00:00'}}},
 });
+const blockedRunData = () => {
+  const data = scopedData(scopedPairs[0]);
+  const observedAt = data.period.observedAt;
+  const evidence = {complete: true, source: 'scoped_run_owner',
+    pair: {projectId: 'project-a', environmentId: 'test'},
+    eventTimeBasis: 'CURRENT_OBSERVATION', observedAt, reason: null};
+  data.current.run = {status: 'AVAILABLE', count: 2, source: 'scoped_run_owner',
+    observedAt, reason: null, items: [
+      {runId: 'run-blocked', status: 'BLOCKED', phase: 'IMPLEMENTING'},
+      {runId: 'run-active', status: 'ACTIVE', phase: 'VERIFYING'}]};
+  data.current.blocked = {status: 'AVAILABLE', count: 1, source: 'scoped_run_owner',
+    observedAt, reason: null};
+  data.sourceCompleteness.current.run = structuredClone(evidence);
+  data.sourceCompleteness.current.blocked = structuredClone(evidence);
+  return data;
+};
+
+test('scoped BLOCKED Run displays only matching current run rows and pair-bound evidence', () => {
+  const render = (data) => renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  const card = (data) => {
+    const match = render(data).match(/<article class="status-card scoped-blocked-run">(.*?)<\/article>/s);
+    assert.ok(match, 'BLOCKED Run article must exist');
+    return match[1];
+  };
+  const good = blockedRunData();
+  assert.match(card(good), /BLOCKED Run.*1건.*scoped_run_owner.*run-blocked.*IMPLEMENTING/s);
+  assert.doesNotMatch(card(good), /run-active/);
+  for (const change of [
+    (data) => { data.current.blocked.count = 0; },
+    (data) => { data.current.run.items[0].status = 'ACTIVE'; },
+    (data) => { data.current.run.items[1].runId = 'run-blocked'; },
+    (data) => { data.current.run.count = 1; },
+    (data) => { data.current.blocked.observedAt = '2026-10-09T07:59:00+00:00'; },
+    (data) => { data.sourceCompleteness.current.blocked.pair.projectId = 'project-b'; },
+    (data) => { data.sourceCompleteness.current.run.complete = false; },
+    (data) => { data.current.blocked.reason = 'SOURCE_UNAVAILABLE'; },
+    (data) => { data.current.run.reason = 'SOURCE_UNAVAILABLE'; },
+    (data) => { data.sourceCompleteness.current.blocked.reason = 'SOURCE_UNAVAILABLE'; },
+    (data) => { data.sourceCompleteness.current.run.reason = 'SOURCE_UNAVAILABLE'; },
+  ]) {
+    const data = blockedRunData();
+    change(data);
+    assert.match(card(data), /UNAVAILABLE/);
+    assert.doesNotMatch(card(data), /run-blocked|>0건<|>1건</);
+  }
+  const empty = blockedRunData();
+  empty.current.run = {...empty.current.run, count: 0, items: []};
+  empty.current.blocked.count = 0;
+  assert.match(card(empty), /0건/);
+});
 const deferred = () => {
   let resolve;
   const promise = new Promise((done) => { resolve = done; });

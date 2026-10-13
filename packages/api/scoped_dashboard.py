@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from packages.persistence.operations_repository import _safe_event
 from packages.observability.models import HealthSignal
+from packages.observability.run_status_summary import summarize_scoped_runs
 
 
 class DashboardSourceUnavailable(ValueError):
@@ -163,6 +164,29 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
                                      "eventTimeBasis": "CURRENT_OBSERVATION"}
         except Exception:
             pass
+    blocked = _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE")
+    try:
+        source = (current_sources or {}).get("run")
+        summary = summarize_scoped_runs(source)
+        source_time = summary.observed_at.astimezone(timezone.utc)
+        run = source_cards["run"]
+        items = [{"runId": source.get(run_id).run_id,
+                  "status": source.get(run_id).status.value,
+                  "phase": source.get(run_id).phase.value}
+                 for run_id in source.run_ids]
+        if (abs((source_time - observed_at).total_seconds()) > 5
+                or source_time > datetime.now(timezone.utc) + timedelta(seconds=5)
+                or run["status"] != "AVAILABLE" or run["count"] != summary.observed_total
+                or run["items"] != items or run["observedAt"] != _utc_string(source_time)
+                or sum(item["status"] == "BLOCKED" for item in items) != summary.blocked_runs):
+            raise ValueError("unverified blocked source")
+        blocked = _metric("scoped_run_owner", _utc_string(source_time),
+                          count=summary.blocked_runs)
+        source_evidence["blocked"] = {**completeness("scoped_run_owner", True, None),
+                                      "observedAt": _utc_string(source_time),
+                                      "eventTimeBasis": "CURRENT_OBSERVATION"}
+    except Exception:
+        pass
     return {
         "period": {"key": period_key, "timeZone": "Asia/Seoul", "startUtc": _utc_string(start),
                    "endUtc": _utc_string(end), "observedAt": observed_text},
@@ -177,7 +201,7 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
                                                                 reason="SOURCE_UNAVAILABLE")),
                     "provider": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
                     "approvalPending": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
-                    "blocked": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
+                    "blocked": blocked,
                     "gate": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
                     "cost": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
                     "baseline": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),

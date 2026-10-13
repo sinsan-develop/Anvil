@@ -811,7 +811,14 @@ type ScopedView = {listStatus: 'LOADING' | 'READY' | 'EMPTY' | 'BLOCKED' | 'UNAV
   data: Record<string, unknown> | null};
 const SCOPED_PERIODS: ScopedPeriod[] = ['1d', '7d', '30d'];
 const SCOPED_CURRENT_METRICS = ['run', 'queue', 'agent', 'provider', 'approvalPending',
-  'blocked', 'gate', 'cost', 'baseline'] as const;
+  'gate', 'cost', 'baseline'] as const;
+const SCOPED_RUN_STATUSES = new Set(['QUEUED', 'ACTIVE', 'WAITING_APPROVAL', 'BLOCKED',
+  'INTERRUPTED', 'PAUSED_USER', 'PAUSE_REQUESTED', 'PAUSED_QUOTA', 'WAITING_DECISION',
+  'AWAITING_EXCEPTION_REVIEW', 'CANCEL_REQUESTED', 'CANCELLED', 'FAILED', 'SUCCEEDED',
+  'FINISHED_WITH_FAILURES', 'REJECTED', 'DISCARDED']);
+const SCOPED_RUN_PHASES = new Set(['DRAFT', 'ANALYZING', 'EXECUTION_PLAN_REVIEW',
+  'APPROVAL_PENDING', 'WORKSPACE_PREPARING', 'IMPLEMENTING', 'VERIFYING', 'RESULT_REVIEW',
+  'USER_VALIDATION', 'APPLY_PENDING', 'APPLIED', 'COMPLETED']);
 const SCOPED_CURRENT_SOURCES: Record<string, string> = {run: 'scoped_run_owner',
   queue: 'scoped_queue_owner', agent: 'scoped_agent_owner'};
 const SCOPED_HEALTH_COMPONENTS = ['database', 'queue', 'worker', 'provider', 'backend',
@@ -1013,6 +1020,39 @@ function ScopedMetric({name, metric, completeness, pair, expectedSource, eventTi
     {reason ? <p>사유 · {reason}</p> : null}</article>;
 }
 
+function ScopedBlockedRunCard({blocked, run, blockedEvidence, runEvidence, pair, observedAt}:
+    {blocked: unknown; run: unknown; blockedEvidence: unknown; runEvidence: unknown;
+      pair: unknown; observedAt: unknown}) {
+  const source = 'scoped_run_owner';
+  const runItems = record(run) && Array.isArray(run.items) ? run.items : [];
+  const blockedItems = runItems.filter((item) => record(item) && item.status === 'BLOCKED');
+  const complete = record(blocked) && record(run) && validObservedAt(observedAt)
+    && blocked.status === 'AVAILABLE' && run.status === 'AVAILABLE'
+    && blocked.source === source && run.source === source
+    && blocked.reason === null && run.reason === null
+    && record(blockedEvidence) && blockedEvidence.reason === null
+    && record(runEvidence) && runEvidence.reason === null
+    && Number.isSafeInteger(blocked.count) && (blocked.count as number) >= 0
+    && Number.isSafeInteger(run.count) && (run.count as number) >= 0
+    && validScopedOwnerItems('run', run)
+    && runItems.every((item) => record(item) && SCOPED_RUN_STATUSES.has(String(item.status))
+      && SCOPED_RUN_PHASES.has(String(item.phase)))
+    && blocked.count === blockedItems.length
+    && blocked.observedAt === run.observedAt && validObservedAt(blocked.observedAt)
+    && Math.abs(Date.parse(blocked.observedAt as string) - Date.parse(observedAt as string)) <= 5000
+    && validScopedEvidence(blockedEvidence, pair, source, 'CURRENT_OBSERVATION',
+      blocked.observedAt as string)
+    && validScopedEvidence(runEvidence, pair, source, 'CURRENT_OBSERVATION',
+      run.observedAt as string);
+  return <article className="status-card scoped-blocked-run"><h3>BLOCKED Run</h3>
+    <p className={complete ? 'status-ready' : 'status-unavailable'}>
+      {complete ? `${blocked.count}건` : 'UNAVAILABLE'}</p>
+    {complete ? <><p>원본 · {source}</p><p>관측 · {String(blocked.observedAt)}</p>
+      <ul>{blockedItems.map((item) => <li key={String(item.runId)}>
+        {String(item.runId)} · {String(item.phase)}</li>)}</ul></>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPeriod}:
     {value: ScopedView; onRefresh: () => void; onSelectPair: (key: string) => void;
       onSelectPeriod: (period: string) => void}) {
@@ -1126,6 +1166,9 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
               completeness={currentEvidence?.[name]} pair={pair}
               expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}
               eventTimeBasis="CURRENT_OBSERVATION" expectedObservedAt={null}/>)}
+          <ScopedBlockedRunCard blocked={current?.blocked} run={current?.run}
+            blockedEvidence={currentEvidence?.blocked} runEvidence={currentEvidence?.run}
+            pair={pair} observedAt={period.observedAt}/>
         </div>
       </section>
       <section aria-labelledby="scoped-occurrences-heading"><h3 id="scoped-occurrences-heading">기간 발생</h3>

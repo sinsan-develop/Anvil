@@ -5,6 +5,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from packages.api.scoped_dashboard import DashboardSourceUnavailable, read_scoped_dashboard
+from packages.execution.models import RunPhase, RunStatus
+from packages.persistence.operations_run_read import RunObservation, ScopedRunSource
 
 
 def _detected(alert_id, at, *, level="critical"):
@@ -41,6 +43,58 @@ class AuditOwner:
     def load_complete(self, project_id, environment_id):
         self.calls.append((project_id, environment_id))
         return self.events
+
+
+def _runs(observed, statuses=(RunStatus.BLOCKED, RunStatus.ACTIVE)):
+    rows = {f"run-{index}": RunObservation(f"run-{index}", "task-1",
+            RunPhase.IMPLEMENTING, status, 1) for index, status in enumerate(statuses)}
+    return ScopedRunSource(tuple(rows), observed, rows)
+
+
+def test_blocked_run_uses_only_complete_current_pair_source_and_preserves_metric_shape():
+    observed = datetime.now(timezone.utc)
+    source = _runs(observed + timedelta(seconds=5))
+    result = read_scoped_dashboard("project-a", "test", "1d", observed, AuditOwner(),
+                                   {"run": source})
+    assert result["current"]["blocked"] == {"status": "AVAILABLE", "count": 1,
+        "source": "scoped_run_owner", "observedAt": source.observed_at.isoformat(), "reason": None}
+    assert result["current"]["run"]["items"] == [
+        {"runId": "run-0", "status": "BLOCKED", "phase": "IMPLEMENTING"},
+        {"runId": "run-1", "status": "ACTIVE", "phase": "IMPLEMENTING"}]
+    assert result["sourceCompleteness"]["current"]["blocked"] == {
+        "source": "scoped_run_owner", "pair": {"projectId": "project-a", "environmentId": "test"},
+        "complete": True, "eventTimeBasis": "CURRENT_OBSERVATION",
+        "observedAt": source.observed_at.isoformat(), "reason": None}
+    empty = read_scoped_dashboard("project-a", "test", "1d", observed, AuditOwner(),
+                                  {"run": _runs(observed, ())})
+    assert empty["current"]["blocked"]["count"] == 0
+    assert empty["current"]["blocked"]["status"] == "AVAILABLE"
+    assert empty["occurrences"]["runStarted"]["count"] is None
+
+
+def test_blocked_run_rejects_missing_duplicate_forged_stale_and_truncated_sources():
+    observed = datetime.now(timezone.utc)
+    good = _runs(observed)
+    forged = _runs(observed)
+    forged._runs["run-0"] = RunObservation("run-0", "task-1", RunPhase.IMPLEMENTING,
+                                           "BLOCKED", 1)
+    forged_phase = _runs(observed)
+    forged_phase._runs["run-0"] = RunObservation("run-0", "task-1", "IMPLEMENTING",
+                                                 RunStatus.BLOCKED, 1)
+    bad_sources = (None,
+        ScopedRunSource(("run-0", "run-0"), observed, good._runs),
+        forged,
+        forged_phase,
+        ScopedRunSource(("run-0",), observed, good._runs),
+        _runs(observed - timedelta(seconds=6)),
+        _runs(observed + timedelta(seconds=6)),
+        _runs(observed, (RunStatus.BLOCKED,) * 101))
+    for source in bad_sources:
+        result = read_scoped_dashboard("project-a", "test", "1d", observed,
+                                       AuditOwner(), {"run": source})
+        assert result["current"]["blocked"]["status"] == "UNAVAILABLE"
+        assert result["current"]["blocked"]["count"] is None
+        assert result["sourceCompleteness"]["current"]["blocked"]["complete"] is False
 
 
 @pytest.mark.parametrize(("period_key", "observed_at", "start", "end"), [

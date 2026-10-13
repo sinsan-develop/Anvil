@@ -127,6 +127,40 @@ def test_exact_pair_route_can_return_real_task2_reader_without_fixed_fallback(ap
     assert data["current"]["health"]["database"]["status"] == "UNAVAILABLE"
 
 
+def test_exact_pair_route_returns_blocked_run_only_after_pair_authorization(api):
+    from packages.api.scoped_dashboard import read_scoped_dashboard
+    from packages.execution.models import RunPhase, RunStatus
+    from packages.persistence.operations_run_read import RunObservation, ScopedRunSource
+
+    _, client_for, repository, _ = api
+    calls = []
+
+    class EmptyAudit:
+        def load_complete(self, project_id, environment_id):
+            calls.append((project_id, environment_id))
+            return ()
+
+    def source(project, environment, period, observed):
+        rows = {"run-blocked": RunObservation("run-blocked", "task-1",
+                RunPhase.IMPLEMENTING, RunStatus.BLOCKED, 1)}
+        return read_scoped_dashboard(project, environment, period, observed, EmptyAudit(),
+            {"run": ScopedRunSource(("run-blocked",), observed, rows)})
+
+    with client_for(source=source) as client:
+        denied = _get(client, "/api/projects/project-b/environments/test/dashboard?period=1d")
+        _error(denied, 403, "AUTHORIZATION_SCOPE_MISMATCH")
+        assert calls == []
+        response = _get(client, PATH + "?period=1d")
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["current"]["blocked"]["count"] == 1
+        assert data["current"]["run"]["items"][0]["status"] == "BLOCKED"
+        assert calls == [("project-a", "test")]
+        repository.set_pair_grant("admin", "reader", "project-a", "test", "dashboard:read", False)
+        _error(_get(client, PATH + "?period=1d"), 403, "AUTHORIZATION_SCOPE_MISMATCH")
+        assert calls == [("project-a", "test")]
+
+
 def test_scoped_database_sql_signal_checks_exact_head_and_hides_failure_details():
     from apps.api.anvil_api.oidc_process import _checked_database_signal
 
