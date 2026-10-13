@@ -300,3 +300,74 @@ def test_qa_image_and_compose_keep_secrets_out_of_image_and_host_ports():
     assert service["environment"]["ANVIL_F19A_QA_SUBJECT"] == "${ANVIL_F19A_QA_SUBJECT-synthetic-subject-1}"
     assert all("ANVIL_F19A_QA_SUBJECT" not in item.get("environment", {})
                for name, item in overlay["services"].items() if name != "oidc-issuer")
+
+
+def test_development_issuer_private_origin_ttl_and_one_use(issuer_setup, monkeypatch):
+    base, now, public_key = issuer_setup
+    monkeypatch.setenv("ANVIL_U01_WSL_TEST_LOGIN", "1")
+    monkeypatch.setenv("ANVIL_RUNTIME_ENVIRONMENT", "WSL_SERVER_TEST_STAGING")
+    origin = "https://172.27.253.53:3770"
+    app = _issuer_module().create_qa_issuer(
+        base.state.qa_key_file, base.state.qa_secret_file,
+        qa_subject="f19a-qa-reader", issuer_url=origin + "/realms/anvil",
+        redirect_uri=origin + "/", token_ttl_seconds=900, wsl_development_only=True,
+        clock=lambda: now[0], code_factory=lambda: "development-code-" + "x" * 32)
+    app.state.qa_test_secret = base.state.qa_test_secret
+    response = asyncio.run(_call(app, "GET", "/realms/anvil/protocol/openid-connect/auth",
+        params=_auth_params(redirect_uri=origin + "/"), follow_redirects=False))
+    assert response.status_code == 302
+    location = urlsplit(response.headers["location"])
+    assert location._replace(query="").geturl() == origin + "/"
+    code = parse_qs(location.query)["code"][0]
+    token = _token(app, code, redirect_uri=origin + "/")
+    assert token.status_code == 200
+    claims = jwt.decode(token.json()["id_token"], public_key, algorithms=["RS256"],
+        audience="anvil-web", issuer=origin + "/realms/anvil")
+    assert claims == {"iss": origin + "/realms/anvil", "aud": "anvil-web",
+        "sub": "f19a-qa-reader", "nonce": "n" * 43, "iat": now[0], "exp": now[0] + 900}
+    assert _token(app, code, redirect_uri=origin + "/").status_code == 401
+    assert asyncio.run(_call(app, "GET", "/realms/anvil/protocol/openid-connect/auth",
+        params=_auth_params())).status_code == 400
+
+
+@pytest.mark.parametrize("changes", [
+    {"issuer_url": "https://8.8.8.8:3770/realms/anvil"},
+    {"issuer_url": "https://envil.sinsan.kr:3770/realms/anvil"},
+    {"issuer_url": "https://user@172.27.253.53:3770/realms/anvil"},
+    {"issuer_url": "https://172.27.253.53:3770/realms/anvil?x=1"},
+    {"issuer_url": "https://172.27.253.53:3770/realms/anvil#x"},
+    {"issuer_url": "http://172.27.253.53:3770/realms/anvil"},
+    {"issuer_url": "https://127.0.0.1:3770/realms/anvil"},
+    {"redirect_uri": "https://172.27.253.54:3770/"},
+    {"redirect_uri": "https://172.27.253.53:8444/"},
+    {"token_ttl_seconds": True}, {"token_ttl_seconds": 901},
+    {"token_ttl_seconds": "900"}, {"token_ttl_seconds": 60},
+    {"issuer_url": None}, {"wsl_development_only": 1},
+    {"qa_subject": "f19a-qa-other"}, {"wsl_development_only": False},
+])
+def test_development_issuer_rejects_scope_expansion(issuer_setup, monkeypatch, changes):
+    base, _, _ = issuer_setup
+    monkeypatch.setenv("ANVIL_U01_WSL_TEST_LOGIN", "1")
+    monkeypatch.setenv("ANVIL_RUNTIME_ENVIRONMENT", "WSL_SERVER_TEST_STAGING")
+    options = dict(issuer_url="https://172.27.253.53:3770/realms/anvil",
+        redirect_uri="https://172.27.253.53:3770/", token_ttl_seconds=900,
+        wsl_development_only=True, qa_subject="f19a-qa-reader")
+    options.update(changes)
+    with pytest.raises(ValueError, match="^QA_ISSUER_NOT_CONFIGURED$"):
+        _issuer_module().create_qa_issuer(base.state.qa_key_file, base.state.qa_secret_file, **options)
+
+
+@pytest.mark.parametrize("flag,environment", [(None, "WSL_SERVER_TEST_STAGING"),
+    ("0", "WSL_SERVER_TEST_STAGING"), ("1", "PRODUCTION"), ("1", None)])
+def test_development_issuer_requires_explicit_host_environment(issuer_setup, monkeypatch, flag, environment):
+    base, _, _ = issuer_setup
+    for name, value in (("ANVIL_U01_WSL_TEST_LOGIN", flag), ("ANVIL_RUNTIME_ENVIRONMENT", environment)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+    with pytest.raises(ValueError, match="^QA_ISSUER_NOT_CONFIGURED$"):
+        _issuer_module().create_qa_issuer(base.state.qa_key_file, base.state.qa_secret_file,
+            issuer_url="https://172.27.253.53:3770/realms/anvil",
+            redirect_uri="https://172.27.253.53:3770/", token_ttl_seconds=900,
+            wsl_development_only=True, qa_subject="f19a-qa-reader")

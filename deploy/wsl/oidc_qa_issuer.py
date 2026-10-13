@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,7 @@ import threading
 import time
 from hmac import compare_digest
 from typing import Callable
-from urllib.parse import parse_qs, urlencode
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 import jwt
 import uvicorn
@@ -86,9 +87,31 @@ def create_qa_issuer(
     clock: Callable[[], float] = time.time,
     code_factory: Callable[[], str] = lambda: secrets.token_urlsafe(32),
     qa_subject: str = "synthetic-subject-1",
+    issuer_url: str = ISSUER,
+    redirect_uri: str = REDIRECT_URI,
+    token_ttl_seconds: int = 60,
+    wsl_development_only: bool = False,
 ) -> FastAPI:
     """Build a bounded, file-backed issuer with in-memory one-use codes."""
     try:
+        if (type(issuer_url) is not str or type(redirect_uri) is not str
+                or type(token_ttl_seconds) is not int or type(wsl_development_only) is not bool
+                or len(issuer_url) > 256 or len(redirect_uri) > 256):
+            raise _reject()
+        if wsl_development_only:
+            parsed = urlsplit(issuer_url)
+            address = ipaddress.IPv4Address(parsed.hostname)
+            private = any(address in ipaddress.IPv4Network(network) for network in
+                          ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
+            origin = f"https://{address}:3770"
+            if (os.environ.get("ANVIL_U01_WSL_TEST_LOGIN") != "1"
+                    or os.environ.get("ANVIL_RUNTIME_ENVIRONMENT") != "WSL_SERVER_TEST_STAGING"
+                    or not private or issuer_url != origin + "/realms/anvil"
+                    or redirect_uri != origin + "/" or token_ttl_seconds != 900
+                    or type(qa_subject) is not str or qa_subject != "f19a-qa-reader"):
+                raise _reject()
+        elif (issuer_url != ISSUER or redirect_uri != REDIRECT_URI or token_ttl_seconds != 60):
+            raise _reject()
         key = serialization.load_pem_private_key(_read_regular(signing_key_file, 8192), password=None)
         secret = _read_regular(client_secret_file, 4096).decode("ascii")
         if (type(qa_subject) is not str
@@ -129,7 +152,7 @@ def create_qa_issuer(
                 fields.get("max_age") == "300" and json.loads(fields.get("claims", "")) == _STEP_UP
             ))
             if (fields["response_type"] != "code" or fields["scope"] != "openid"
-                    or fields["client_id"] != CLIENT_ID or fields["redirect_uri"] != REDIRECT_URI
+                    or fields["client_id"] != CLIENT_ID or fields["redirect_uri"] != redirect_uri
                     or fields["code_challenge_method"] != "S256" or not valid_claims
                     or _B64.fullmatch(fields["state"]) is None
                     or _B64.fullmatch(fields["nonce"]) is None
@@ -144,7 +167,7 @@ def create_qa_issuer(
                     raise ValueError()
                 pending[code] = (now + _CODE_TTL, fields["code_challenge"], fields["nonce"], stepped_up)
             return RedirectResponse(
-                REDIRECT_URI + "?" + urlencode({"code": code, "state": fields["state"]}),
+                redirect_uri + "?" + urlencode({"code": code, "state": fields["state"]}),
                 status_code=302,
             )
         except Exception:
@@ -172,7 +195,7 @@ def create_qa_issuer(
             if (entry is None or credentials is None or credentials[0] != CLIENT_ID
                     or not compare_digest(credentials[1], secret)
                     or fields["grant_type"] != "authorization_code"
-                    or fields["client_id"] != CLIENT_ID or fields["redirect_uri"] != REDIRECT_URI
+                    or fields["client_id"] != CLIENT_ID or fields["redirect_uri"] != redirect_uri
                     or not 43 <= len(fields["code_verifier"]) <= 128):
                 raise ValueError()
             expires, challenge, nonce, stepped_up = entry
@@ -181,8 +204,8 @@ def create_qa_issuer(
             actual = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
             if now >= expires or not compare_digest(actual, challenge):
                 raise ValueError()
-            claims = {"iss": ISSUER, "aud": CLIENT_ID, "sub": qa_subject,
-                      "nonce": nonce, "iat": now, "exp": now + _TOKEN_TTL}
+            claims = {"iss": issuer_url, "aud": CLIENT_ID, "sub": qa_subject,
+                      "nonce": nonce, "iat": now, "exp": now + token_ttl_seconds}
             if stepped_up:
                 claims.update(acr="urn:anvil:step-up", auth_time=now)
             return {"id_token": jwt.encode(claims, key, algorithm="RS256", headers={"kid": kid})}
@@ -193,9 +216,14 @@ def create_qa_issuer(
 
 
 if __name__ == "__main__":
+    development = os.environ.get("ANVIL_U01_WSL_TEST_LOGIN") == "1"
     app = create_qa_issuer(
         Path("/run/anvil-f18-oidc/signing.key"),
         Path("/run/anvil-f18-oidc/client-secret"),
         qa_subject=os.environ.get("ANVIL_F19A_QA_SUBJECT", "synthetic-subject-1"),
+        issuer_url=os.environ.get("ANVIL_OIDC_ISSUER", "") if development else ISSUER,
+        redirect_uri=os.environ.get("ANVIL_U01_REDIRECT_URI", "") if development else REDIRECT_URI,
+        token_ttl_seconds=900 if development else 60,
+        wsl_development_only=development,
     )
     uvicorn.run(app, host="0.0.0.0", port=8302, access_log=False)

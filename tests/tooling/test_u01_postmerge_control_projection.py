@@ -33,6 +33,259 @@ PATHS = (
 )
 
 
+class U01WslDevelopmentEpoch124Tests(unittest.TestCase):
+    A15 = "b2d0b14204909c7aaf2aee19408a2d6f10ec5f51"
+    C15, M15, B15, H15 = (char * 40 for char in "cdbf")
+
+    def issued(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A15}:{path}"],
+            cwd=ROOT) for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"] = json.loads(files[PATHS[0]])
+        bundle["events"] = json.loads(files[PATHS[1]])
+        bundle["handoff_text"] = files[PATHS[2]].decode()
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["detached_digest"] = json.loads(files[PATHS[3]])
+        return bundle, files
+
+    def test_a15_frozen_authority_dual_fencing_expiry_and_scope(self):
+        bundle, files = self.issued()
+        validate = getattr(checker, "_validate_u01_wsl_active", None)
+        self.assertIsNotNone(validate, "WSL 개발 strict route 미구현")
+        at = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validate(bundle, now=at, archived_files=files), [])
+        for change in (
+            lambda b: b["progress"]["worker_lease"].update(execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"]["path_scope"].append("apps/api/forged.py"),
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+            lambda b: b["detached_digest"]["progress"].update(file_sha256="0" * 64),
+        ):
+            value = deepcopy(bundle)
+            change(value)
+            self.assertEqual(validate(value, now=at, archived_files=files),
+                             ["U01_WSL_DEVELOPMENT_CONTROL_INVALID"])
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertEqual(validate(bundle, now=expires, archived_files=files),
+                         ["U01_WSL_DEVELOPMENT_CONTROL_INVALID"])
+
+    def test_unpublished_a15_and_dirty_work_are_not_c15_success(self):
+        bundle, _ = self.issued()
+        collect = getattr(checker, "_collect_u01_wsl_git", None)
+        self.assertIsNotNone(collect)
+        with patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha", return_value=self.A15):
+            self.assertEqual(collect(bundle), ["U01_WSL_DEVELOPMENT_GIT_INVALID"])
+
+    def manifest_raw(self):
+        value = json.loads((ROOT / "deploy/wsl/U01DevelopmentReleaseManifest.template.json").read_bytes())
+        value.update(source_commit="c" * 40,
+            source_files={p: "A" * 64 for p in checker._U01_WSL_CODE},
+            origin="https://172.27.253.53:3770", data_owner="MAIN_VERIFIED_EXISTING_ANVIL_OWNER",
+            images={role: "sha256:" + char * 64 for role, char in
+                    (("web", "a"), ("api", "b"), ("issuer", "c"))})
+        value["backup"].update(encrypted_sha256="B" * 64, restore_verified=True,
+            existing_data_preserved=True, fingerprint_before="C" * 64,
+            fingerprint_restored="C" * 64, old_columns_after_migration="C" * 64)
+        value["rollback"].update(container_id="d" * 64, image_id="sha256:" + "e" * 64,
+                                 config_sha256="D" * 64)
+        return (json.dumps(value, indent=2) + "\n").encode()
+
+    def checkpoint_b15(self):
+        bundle, files = self.issued()
+        progress = bundle["progress"]
+        action = "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY"
+        status = "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE"
+        progress["u01_wsl_development_runtime_binding"].update(a15_docs_checkpoint=self.A15,
+            control_checkpoint=self.C15, manifest_checkpoint=self.M15,
+            manifest_sha256=hashlib.sha256(self.manifest_raw()).hexdigest().upper(),
+            status=status, next_safe_action=action)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=self.M15, remote_head=self.M15,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-wsl-development-b15-seq2407")
+        bundle["handoff"].update(repository_head=self.M15, next_safe_action=action)
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def closed_h15(self):
+        bundle, files = self.checkpoint_b15()
+        progress, stream = bundle["progress"], bundle["events"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
+        for seq, kind, name, token in (
+            (2408, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2409, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = progress[name + "_lease"]
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": seq,
+                "event_id": f"evt_u01_{seq}_wsl_development_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE",
+                "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+            progress[f"completed_u01_wsl_development_runtime_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        stream.update(last_sequence=2409, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2407', '"last_sequence": 2409', 1)
+        rendered = rendered.replace('"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(files[PATHS[1]]).hexdigest().upper()
+        action = "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING"
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_wsl_development_runtime_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B15, event_sequence=2409)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2409,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-wsl-development-h15-seq2409")
+        progress["repository"].update(projection_mode=reason, head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2409, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2409
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def test_b15_requires_actual_manifest_and_exact_projection(self):
+        validator = getattr(checker, "_validate_u01_wsl_projection", None)
+        self.assertIsNotNone(validator)
+        bundle, files = self.checkpoint_b15()
+        at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with patch.object(checker, "_u01_wsl_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(bundle, now=at, archived_files=files), [])
+            for change in (
+                lambda b: b["progress"]["u01_wsl_development_runtime_binding"].update(active_projection_checkpoint=self.B15),
+                lambda b: b["progress"]["u01_wsl_development_runtime_binding"].update(manifest_sha256="0" * 64),
+                lambda b: b["progress"].update(runtime_next_action="ACCEPTED"),
+                lambda b: b["events"]["events"][-1].update(actor_id="forged"),
+            ):
+                bad = deepcopy(bundle)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=files),
+                                 ["U01_WSL_DEVELOPMENT_PROJECTION_INVALID"])
+
+    def test_h15_preserves_raw_prefix_and_revokes_exact_two_leases(self):
+        validator = getattr(checker, "_validate_u01_wsl_closed", None)
+        self.assertIsNotNone(validator)
+        b, bfiles = self.checkpoint_b15()
+        h, hfiles = self.closed_h15()
+        at = datetime.fromisoformat(h["progress"]["updated_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_wsl_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=at, archived_files=hfiles), [])
+            for change in (
+                lambda x: x["events"]["events"][-1].update(event_type="FORGED"),
+                lambda x: x["progress"]["completed_u01_wsl_development_runtime_write_lease"].update(write_fencing_token="forged"),
+                lambda x: x["progress"].update(active_agent="forged"),
+            ):
+                bad = deepcopy(h)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=hfiles),
+                                 ["U01_WSL_DEVELOPMENT_CLOSE_INVALID"])
+
+    def test_c15_m15_git_direct_children_and_source_hash_binding(self):
+        bundle, _ = self.issued()
+        original = subprocess.check_output
+        manifest_path = "deploy/wsl/U01DevelopmentReleaseManifest.json"
+        wi = "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261014-U01-WSL-DEVELOPMENT-RUNTIME-001.md"
+        w = "f942a949e37fb7b820c15e9fb5e643725c5b783f"
+        legs = {w: ("4b75c87f395ded6e48b0074b1d8c21f364061730",
+            {wi, inv, approval, "docs/DEVELOPMENT_ENVIRONMENT.md", "docs/WORK_STATUS.md"}, {wi, inv, approval}),
+            self.A15: (w, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            self.C15: (self.A15, checker._U01_WSL_CODE, checker._U01_WSL_NEW),
+            self.M15: (self.C15, {manifest_path, "docs/WORK_STATUS.md"}, {manifest_path}),
+            self.B15: (self.M15, set(PATHS) - {PATHS[1]} | {"docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"}, set()),
+            self.H15: (self.B15, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            "a" * 40: (self.H15, {"docs/04_test_reports/U-01_WSL_DEVELOPMENT_RUNTIME_RESULT.md", "docs/WORK_STATUS.md"},
+                       {"docs/04_test_reports/U-01_WSL_DEVELOPMENT_RUNTIME_RESULT.md"})}
+        active, _ = self.issued()
+        projected, _ = self.checkpoint_b15()
+        closed, _ = self.closed_h15()
+        for head in (self.C15, self.M15, self.B15, self.H15, "a" * 40):
+            bundle = active if head in (self.C15, self.M15) else projected if head == self.B15 else closed
+            for scenario in ("valid", "dirty", "remote", "extra", "merge", "manifest", "source_hash"):
+                with self.subTest(head=head, scenario=scenario):
+                    def output(command, **kwargs):
+                        args = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if args == ["rev-parse", "HEAD"] or args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return head.encode()
+                        if args == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M forged" if scenario == "dirty" else b""
+                        if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                            return (legs[args[3]][0] + (" " + "0" * 40 if scenario == "merge" else "")).encode()
+                        if args[:1] == ["rev-list"]:
+                            return b"1" if "--count" in args else b""
+                        if args[:1] == ["log"]:
+                            paths = legs[args[-1].split("..")[-1]][1]
+                            return "\n".join(sorted(paths)).encode()
+                        if args[:1] == ["diff"] and args[-1] in legs:
+                            paths, added = legs[args[-1]][1:]
+                            if scenario == "extra":
+                                paths = paths | {"apps/api/forged.py"}
+                            return "\n".join(("A\t" if p in added else "M\t") + p
+                                if "--name-status" in args else p for p in sorted(paths)).encode()
+                        if args == ["show", f"{self.M15}:{manifest_path}"]:
+                            return b"{}" if scenario == "manifest" else self.manifest_raw()
+                        return original(command, **kwargs)
+                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                            patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                return_value="0" * 40 if scenario == "remote" else head), \
+                            patch.object(checker, "_u01_wsl_source_hashes", return_value={p: ("B" if scenario == "source_hash" else "A") * 64 for p in checker._U01_WSL_CODE}):
+                        errors = checker._collect_u01_wsl_git(bundle)
+                    good = scenario == "valid" or (head == self.C15 and scenario in ("manifest", "source_hash"))
+                    self.assertEqual(errors, [] if good else ["U01_WSL_DEVELOPMENT_GIT_INVALID"])
+
+    def test_public_route_preserves_all_canonical_controls_and_rejects_tamper(self):
+        original_read = Path.read_bytes
+        active, afiles = self.issued()
+        projected, bfiles = self.checkpoint_b15()
+        closed, hfiles = self.closed_h15()
+        for bundle, files in ((active, afiles), (projected, bfiles), (closed, hfiles)):
+            current = {ROOT / path: raw for path, raw in files.items()}
+            def read_bytes(path):
+                return current[path] if path in current else original_read(path)
+            with patch.object(Path, "read_bytes", read_bytes), \
+                    patch.object(checker, "_u01_wsl_manifest_at", return_value=self.manifest_raw()), \
+                    patch.object(checker, "_u01_task4_report_archive", return_value=(projected, bfiles)), \
+                    patch.object(checker, "_collect_u01_wsl_git", return_value=[]):
+                self.assertEqual(checker.validate_bundle(bundle), [])
+                current[ROOT / PATHS[0]] = b"{}\n"
+                self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_h15_expiry_and_raw_prefix_tamper_are_not_masked_by_terminal_state(self):
+        b, bfiles = self.checkpoint_b15()
+        h, hfiles = self.closed_h15()
+        validator = checker._validate_u01_wsl_closed
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_wsl_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=expires + timedelta(seconds=1), archived_files=hfiles), [])
+            late = deepcopy(h)
+            late["progress"]["updated_at"] = expires.isoformat()
+            self.assertEqual(validator(late, now=expires, archived_files=hfiles),
+                             ["U01_WSL_DEVELOPMENT_CLOSE_INVALID"])
+            altered = dict(hfiles)
+            altered[PATHS[1]] = altered[PATHS[1]].replace(b'"sequence": 1,', b'"sequence":  1,', 1)
+            self.assertEqual(json.loads(altered[PATHS[1]]), h["events"])
+            self.assertEqual(validator(h, now=expires, archived_files=altered),
+                             ["U01_WSL_DEVELOPMENT_CLOSE_INVALID"])
+
+
 class U01DashboardActiveRunEpoch123Tests(unittest.TestCase):
     A14 = "5e1471ce2885640b30be7f190d50d0ede7a5435d"
     C14 = "c" * 40

@@ -84921,5 +84921,402 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_active_run(bundle)
 
 
+_U01_WSL_A15 = "b2d0b14204909c7aaf2aee19408a2d6f10ec5f51"
+_U01_WSL_W16 = "f942a949e37fb7b820c15e9fb5e643725c5b783f"
+_U01_WSL_BASE = "4b75c87f395ded6e48b0074b1d8c21f364061730"
+_U01_WSL_PATHS = _U01_ACTIVE_RUN_PATHS
+_U01_WSL_CODE = {
+    "deploy/wsl/compose.u01-development.yml", "deploy/wsl/nginx-u01-development.conf",
+    "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+    "tests/deploy/test_u01_wsl_development_contract.py", "tests/deploy/test_f18_oidc_qa_issuer.py",
+    "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py",
+}
+_U01_WSL_NEW = _U01_WSL_CODE - {
+    "deploy/wsl/oidc_qa_issuer.py", "tests/deploy/test_f18_oidc_qa_issuer.py",
+    "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"}
+_U01_WSL_BINDING = "u01_wsl_development_runtime_binding"
+_U01_WSL_MODE = "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE"
+_U01_WSL_CLOSE = "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
+_U01_WSL_MANIFEST = "deploy/wsl/U01DevelopmentReleaseManifest.json"
+_U01_WSL_APPROVAL = "171D1524C2B20CF774076C8278F766721BB21E45BBC7A34C599437B27C9E7145"
+
+
+def _u01_wsl_origin(value):
+    import ipaddress
+    from urllib.parse import urlsplit
+    if type(value) is not str or len(value) > 64:
+        return False
+    try:
+        address = ipaddress.IPv4Address(urlsplit(value).hostname)
+        return (value == f"https://{address}:3770" and any(
+            address in ipaddress.IPv4Network(network)
+            for network in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")))
+    except (ValueError, TypeError):
+        return False
+
+
+def validate_u01_wsl_development_manifest(value):
+    """Main의 실제 백업/이미지 자료만 허용; template은 실행 증거가 아니다."""
+    def digest(item, pattern=r"[0-9A-F]{64}"):
+        return type(item) is str and re.fullmatch(pattern, item) is not None
+    try:
+        if type(value) is not dict or set(value) != {
+            "schema_version", "environment", "purpose", "release", "acceptance", "source_commit",
+            "source_files", "images", "origin", "migration", "backup", "rollback", "qa_principal",
+            "data_owner", "approval_sha256", "unverified"}:
+            raise ValueError()
+        if (value["schema_version"] != "u01_wsl_development_manifest/v1"
+                or value["environment"] != "WSL_SERVER_TEST_STAGING"
+                or value["purpose"] != "WSL_DEVELOPMENT_ONLY"
+                or value["release"] != "NOT_RELEASE" or value["acceptance"] != "NOT_ACCEPTED"
+                or not digest(value["source_commit"], r"[0-9a-f]{40}")
+                or not _u01_wsl_origin(value["origin"])
+                or value["approval_sha256"] != _U01_WSL_APPROVAL
+                or value["migration"] != {"before": "0013", "after": "0020"}
+                or value["qa_principal"] != {
+                    "project": "anvil-wsl-development", "environment": "wsl-development",
+                    "principal": "anvil-wsl-development-reader", "subject": "f19a-qa-reader",
+                    "permissions": ["dashboard:read"]}
+                or value["data_owner"] != "MAIN_VERIFIED_EXISTING_ANVIL_OWNER"
+                or value["unverified"] != ["PRODUCTION", "EXTERNAL_SSO", "PROVIDER",
+                                           "FULL_U01_ACCEPTANCE", "PG18"]):
+            raise ValueError()
+        files, images, backup, rollback = (value[key] for key in
+                                           ("source_files", "images", "backup", "rollback"))
+        if (type(files) is not dict or set(files) != _U01_WSL_CODE
+                or not all(digest(item) for item in files.values())
+                or type(images) is not dict or set(images) != {"web", "api", "issuer"}
+                or not all(digest(item, r"sha256:[0-9a-f]{64}") for item in images.values())
+                or type(backup) is not dict or set(backup) != {
+                    "encrypted_sha256", "restore_verified", "existing_data_preserved",
+                    "original_tables", "fingerprint_before", "fingerprint_restored",
+                    "old_columns_after_migration"}
+                or backup["restore_verified"] is not True
+                or backup["existing_data_preserved"] is not True
+                or type(backup["original_tables"]) is not int or backup["original_tables"] != 50
+                or not all(digest(backup[key]) for key in ("encrypted_sha256", "fingerprint_before",
+                    "fingerprint_restored", "old_columns_after_migration"))
+                or not backup["fingerprint_before"] == backup["fingerprint_restored"]
+                       == backup["old_columns_after_migration"]
+                or type(rollback) is not dict or set(rollback) != {
+                    "container_id", "image_id", "config_sha256"}
+                or not digest(rollback["container_id"], r"[0-9a-f]{64}")
+                or not digest(rollback["image_id"], r"sha256:[0-9a-f]{64}")
+                or not digest(rollback["config_sha256"])):
+            raise ValueError()
+        return []
+    except (ValueError, TypeError, KeyError):
+        return ["U01_WSL_DEVELOPMENT_MANIFEST_INVALID"]
+
+
+def _u01_wsl_frozen(bundle):
+    return {path: subprocess.check_output(["git", "show", f"{_U01_WSL_A15}:{path}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL) for path in _U01_WSL_PATHS}
+
+
+def _validate_u01_wsl_active(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_wsl_frozen(bundle)
+        progress = json.loads(frozen[_U01_WSL_PATHS[0]])
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        binding = progress[_U01_WSL_BINDING]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (instant.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= instant
+                   < datetime.fromisoformat(worker["expires_at"])
+                or not datetime.fromisoformat(write["issued_at"]) <= instant
+                   < datetime.fromisoformat(write["expires_at"])
+                or worker["lease_epoch"] != 124 or write["write_epoch"] != 124
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["actor_id"] != "developer-primary-u01-wsl-development-runtime"
+                or write["actor_id"] != worker["actor_id"]
+                or write["worker_lease_id"] != worker["lease_id"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or write["write_fencing_token"] == worker["execution_fencing_token"]
+                or set(worker["path_scope"]) != _U01_WSL_CODE
+                or set(write["path_scope"]) != _U01_WSL_CODE or write["product_write_scope"] != []
+                or binding["predecessor_head"] != _U01_WSL_W16
+                or binding["predecessor_sequence"] != 2404
+                or binding["work_instruction_sha256"] !=
+                   "97A837280AD755895758638D475D07180BAA9803A2B8BFE367B68AB1A12B189B"
+                or binding["approval_sha256"] != _U01_WSL_APPROVAL
+                or any(binding[key] is not None for key in ("control_checkpoint",
+                    "a15_docs_checkpoint", "manifest_checkpoint", "active_projection_checkpoint"))
+                or progress["repository"]["projection_mode"] != _U01_WSL_MODE
+                or progress["event_sequence"] != 2407 or bundle["progress"] != progress
+                or bundle["events"] != json.loads(frozen[_U01_WSL_PATHS[1]])
+                or bundle["handoff_text"].encode() != frozen[_U01_WSL_PATHS[2]]
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])
+                or bundle["detached_digest"] != json.loads(frozen[_U01_WSL_PATHS[3]])
+                or any((archived_files[path] if archived_files and path in archived_files
+                        else (Path(bundle["_root"]) / path).read_bytes()) != raw
+                       for path, raw in frozen.items())):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_WSL_DEVELOPMENT_CONTROL_INVALID"]
+
+
+def _u01_wsl_manifest_at(bundle, sha):
+    if type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+        raise ValueError("U01_WSL_DEVELOPMENT_MANIFEST_INVALID")
+    return subprocess.check_output(["git", "show", f"{sha}:{_U01_WSL_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+
+
+def _u01_wsl_source_hashes(bundle, sha):
+    return {path: hashlib.sha256(subprocess.check_output(
+        ["git", "show", f"{sha}:{path}"], cwd=bundle["_root"],
+        stderr=subprocess.DEVNULL)).hexdigest().upper() for path in _U01_WSL_CODE}
+
+
+def _validate_u01_wsl_projection(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_wsl_frozen(bundle)
+        actual = _u01_active_run_actual(bundle, archived_files)
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[_U01_WSL_PATHS[0]])
+        binding = progress[_U01_WSL_BINDING]
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        if (any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in (csha, msha)) or len({csha, msha, _U01_WSL_A15, _U01_WSL_W16}) != 4
+                or binding["a15_docs_checkpoint"] != _U01_WSL_A15
+                or binding["active_projection_checkpoint"] is not None
+                or instant.tzinfo is None or updated.tzinfo is None
+                or not issued <= updated <= instant < expires
+                or actual[_U01_WSL_PATHS[1]] != frozen[_U01_WSL_PATHS[1]]
+                or stream != json.loads(actual[_U01_WSL_PATHS[1]])
+                or stream["last_sequence"] != 2407 or progress["event_sequence"] != 2407):
+            raise ValueError()
+        raw_manifest = _u01_wsl_manifest_at(bundle, msha)
+        manifest = json.loads(raw_manifest)
+        manifest_hash = hashlib.sha256(raw_manifest).hexdigest().upper()
+        if (validate_u01_wsl_development_manifest(manifest)
+                or manifest["source_commit"] != csha or binding["manifest_sha256"] != manifest_hash):
+            raise ValueError()
+        action = "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY"
+        expected[_U01_WSL_BINDING].update(a15_docs_checkpoint=_U01_WSL_A15,
+            control_checkpoint=csha, manifest_checkpoint=msha, manifest_sha256=manifest_hash,
+            status=_U01_WSL_MODE, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=_U01_WSL_MODE, package_status=_U01_WSL_MODE)
+        expected["repository"].update(local_head=msha, remote_head=msha,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": _U01_WSL_MODE},
+            snapshot_id="snapshot-u01-wsl-development-b15-seq2407")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = extract_handoff_summary(frozen[_U01_WSL_PATHS[2]].decode())
+        handoff.update(repository_head=msha, next_safe_action=action)
+        digest = _u01_active_run_digest(json.loads(frozen[_U01_WSL_PATHS[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff
+                or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_WSL_PATHS[0]]) != progress
+                or actual[_U01_WSL_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_WSL_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_WSL_DEVELOPMENT_PROJECTION_INVALID"]
+
+
+def _validate_u01_wsl_closed(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_WSL_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (type(publication) is not str or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_WSL_A15, binding["control_checkpoint"], binding["manifest_checkpoint"]}):
+            raise ValueError()
+        active, published = _u01_task4_report_archive(bundle, publication)
+        before = active["progress"]
+        before_at = datetime.fromisoformat(before["updated_at"])
+        if _validate_u01_wsl_projection(active, archived_files=published, now=before_at):
+            raise ValueError()
+        actual = _u01_active_run_actual(bundle, archived_files)
+        raw = actual[_U01_WSL_PATHS[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(before["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None or not before_at <= moment < expires
+                or moment > instant or progress["event_sequence"] != 2409
+                or raw_event_object_prefix_bytes(raw, 2407)
+                   != raw_event_object_prefix_bytes(published[_U01_WSL_PATHS[1]], 2407)
+                or stream != json.loads(raw) or stream["last_sequence"] != 2409
+                or len(stream["events"]) != 2409
+                or progress["last_event_id"] != stream["last_event_id"]
+                or {k: v for k, v in stream.items() if k not in {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in {"events", "last_sequence", "last_event_id"}}):
+            raise ValueError()
+        for sequence, kind, name, token in (
+            (2408, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2409, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = before[name + "_lease"]
+            previous = hashlib.sha256(canonical_json_bytes(stream["events"][sequence - 2])).hexdigest().upper()
+            if stream["events"][sequence - 1] != {
+                "sequence": sequence, "event_id": f"evt_u01_{sequence}_wsl_development_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE",
+                "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": _U01_WSL_CLOSE}}:
+                raise ValueError()
+        expected = copy.deepcopy(before)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_wsl_development_runtime_{name}_lease"] = {
+                **before[name + "_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["write_lease"] = expected["worker_lease"] = None
+        action = "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING"
+        expected[_U01_WSL_BINDING].update(status=_U01_WSL_CLOSE, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2409)
+        expected["active_work_instruction"].update(result_status=_U01_WSL_CLOSE, package_status=_U01_WSL_CLOSE)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2409,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": _U01_WSL_CLOSE},
+            snapshot_id="snapshot-u01-wsl-development-h15-seq2409")
+        expected["repository"].update(projection_mode=_U01_WSL_CLOSE, head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = {**active["handoff"], "event_sequence": 2409, "last_event_id": stream["last_event_id"],
+            "active_agent": None, "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        digest = copy.deepcopy(active["detached_digest"])
+        digest["event_sequence"] = 2409
+        digest = _u01_active_run_digest(digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_WSL_PATHS[0]]) != progress
+                or actual[_U01_WSL_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_WSL_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_WSL_DEVELOPMENT_CLOSE_INVALID"]
+
+
+def _collect_u01_wsl_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
+        def direct(left, right, paths, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                and git("rev-list", "--count", f"{left}..{right}") == "1"
+                and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                and set(git("log", "--format=", "--name-only", "--no-renames", f"{left}..{right}").splitlines()) == paths
+                and set(git("diff", "--name-only", "--no-renames", left, right).splitlines()) == paths
+                and set(git("diff", "--name-status", "--no-renames", left, right).splitlines())
+                    == {("A\t" if p in added else "M\t") + p for p in paths})
+        wi = "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261014-U01-WSL-DEVELOPMENT-RUNTIME-001.md"
+        status, environment = "docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development") != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or not direct(_U01_WSL_BASE, _U01_WSL_W16, {wi, inv, approval, status, environment}, {wi, inv, approval})
+                or not direct(_U01_WSL_W16, _U01_WSL_A15, set(_U01_WSL_PATHS) | {status})
+                or head == _U01_WSL_A15):
+            raise ValueError()
+        progress = bundle["progress"]
+        binding = progress[_U01_WSL_BINDING]
+        closed = progress["repository"]["projection_mode"] == _U01_WSL_CLOSE
+        projected = binding["control_checkpoint"] is not None
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        if not projected:
+            if closed or msha is not None or binding["active_projection_checkpoint"] is not None:
+                raise ValueError()
+            parent = git("show", "-s", "--format=%P", head)
+            csha, msha = (head, None) if parent == _U01_WSL_A15 else (parent, head)
+        if any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+               for sha in (csha,) + ((msha,) if msha is not None else ())):
+            raise ValueError()
+        changed = set(git("diff", "--name-only", "--no-renames", _U01_WSL_A15, csha).splitlines())
+        if not changed or not changed <= _U01_WSL_CODE or not direct(_U01_WSL_A15, csha, changed, changed & _U01_WSL_NEW):
+            raise ValueError()
+        if msha is not None:
+            if not direct(csha, msha, {_U01_WSL_MANIFEST, status}, {_U01_WSL_MANIFEST}):
+                raise ValueError()
+            manifest = json.loads(_u01_wsl_manifest_at(bundle, msha))
+            if (validate_u01_wsl_development_manifest(manifest) or manifest["source_commit"] != csha
+                    or manifest["source_files"] != _u01_wsl_source_hashes(bundle, csha)):
+                raise ValueError()
+        if projected:
+            if binding["a15_docs_checkpoint"] != _U01_WSL_A15 or msha is None:
+                raise ValueError()
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            if not direct(msha, bsha, set(_U01_WSL_PATHS) - {_U01_WSL_PATHS[1]} | {status, environment}):
+                raise ValueError()
+            if closed:
+                hsha = head
+                report = "docs/04_test_reports/U-01_WSL_DEVELOPMENT_RUNTIME_RESULT.md"
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if re.fullmatch(r"[0-9a-f]{40}", hsha) is None or not direct(hsha, head, {report, status}, {report}):
+                        raise ValueError()
+                if not direct(bsha, hsha, set(_U01_WSL_PATHS) | {status}):
+                    raise ValueError()
+        elif any(raw != (root / path).read_bytes() for path, raw in _u01_wsl_frozen(bundle).items()):
+            raise ValueError()
+        if subprocess.run(["git", "diff", "--check", "development/main...HEAD"], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_WSL_DEVELOPMENT_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_wsl_development = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode not in {_U01_WSL_MODE, _U01_WSL_CLOSE}:
+        return _validate_bundle_before_u01_wsl_development(bundle)
+    progress = bundle["progress"]
+    if mode == _U01_WSL_CLOSE:
+        errors = _validate_u01_wsl_closed(bundle)
+    elif progress.get(_U01_WSL_BINDING, {}).get("control_checkpoint") is not None:
+        errors = _validate_u01_wsl_projection(bundle)
+    else:
+        errors = _validate_u01_wsl_active(bundle)
+    root = Path(bundle["_root"])
+    for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract", "schema_catalog"):
+        try:
+            if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                errors.append("U01_WSL_DEVELOPMENT_CONTROL_INVALID")
+        except (OSError, ValueError, TypeError, KeyError):
+            errors.append("U01_WSL_DEVELOPMENT_CONTROL_INVALID")
+    if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+        errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+        errors.extend(_validate_failure_projection(bundle))
+        errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+        errors.extend(_validate_dir(bundle))
+        errors.extend(_validate_reporting(progress))
+        errors.extend(_validate_reporting_state(bundle))
+        errors.extend(_validate_registry_refs(bundle))
+        errors.extend(_validate_referenced_hashes(bundle))
+        errors.extend(validate_detached_progress_binding(bundle))
+    else:
+        errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+    errors.extend(_collect_u01_wsl_git(bundle))
+    return sorted(set(errors))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,0 +1,32 @@
+{
+  "schema_version": "u01_wsl_development_manifest/v1",
+  "environment": "WSL_SERVER_TEST_STAGING",
+  "purpose": "WSL_DEVELOPMENT_ONLY",
+  "release": "NOT_RELEASE",
+  "acceptance": "NOT_ACCEPTED",
+  "source_commit": null,
+  "source_files": {},
+  "images": {"web": null, "api": null, "issuer": null},
+  "origin": null,
+  "migration": {"before": "0013", "after": "0020"},
+  "backup": {
+    "encrypted_sha256": null,
+    "restore_verified": false,
+    "existing_data_preserved": false,
+    "original_tables": 50,
+    "fingerprint_before": null,
+    "fingerprint_restored": null,
+    "old_columns_after_migration": null
+  },
+  "rollback": {"container_id": null, "image_id": null, "config_sha256": null},
+  "qa_principal": {
+    "project": "anvil-wsl-development",
+    "environment": "wsl-development",
+    "principal": "anvil-wsl-development-reader",
+    "subject": "f19a-qa-reader",
+    "permissions": ["dashboard:read"]
+  },
+  "data_owner": null,
+  "approval_sha256": "171D1524C2B20CF774076C8278F766721BB21E45BBC7A34C599437B27C9E7145",
+  "unverified": ["PRODUCTION", "EXTERNAL_SSO", "PROVIDER", "FULL_U01_ACCEPTANCE", "PG18"]
+}
