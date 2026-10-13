@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2404,
+  "last_sequence": 2407,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108052,7 +108052,127 @@
       "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
       "reason": "U01_DASHBOARD_ACTIVE_RUN_CLOSED"
     }
+  },
+  {
+    "sequence": 2405,
+    "event_id": "evt_u01_2405_wsl_development_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_WSL_DEVELOPMENT_RUNTIME",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "occurred_at": "2026-10-14T06:38:30+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "1B144D158BC36F3F9272D7DAF4E98BB7C7452B5C3AAE4DCDD5FEABD4411E9677",
+    "details": {
+      "work_instruction_id": "WI-U01-WSL-DEVELOPMENT-RUNTIME-20261014-001",
+      "work_instruction_path": "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "97A837280AD755895758638D475D07180BAA9803A2B8BFE367B68AB1A12B189B",
+      "invocation_path": "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_INVOCATION.md",
+      "invocation_sha256": "EB21E91727F0B241964B290DCC5C4A3A9AD840D41378CF7DB05D10CCB4E93915",
+      "approval_path": "docs/approvals/APPROVAL-20261014-U01-WSL-DEVELOPMENT-RUNTIME-001.md",
+      "approval_sha256": "171D1524C2B20CF774076C8278F766721BB21E45BBC7A34C599437B27C9E7145",
+      "approval_classification": "HUMAN_APPROVED_SCOPED_WSL_DEVELOPMENT_RUNTIME",
+      "predecessor_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+      "predecessor_sequence": 2404,
+      "developer_exact_paths": [
+        "deploy/wsl/compose.u01-development.yml",
+        "deploy/wsl/nginx-u01-development.conf",
+        "deploy/wsl/oidc_qa_issuer.py",
+        "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+        "tests/deploy/test_u01_wsl_development_contract.py",
+        "tests/deploy/test_f18_oidc_qa_issuer.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "product_write_scope": []
+    }
+  },
+  {
+    "sequence": 2406,
+    "event_id": "evt_u01_2406_wsl_development_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_WSL_DEVELOPMENT_RUNTIME",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "occurred_at": "2026-10-14T06:38:30+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "59C456747CF9A78D3897E471AB288ADECAB91DCAE32712293DE7353C88FDA92C",
+    "details": {
+      "actor_id": "developer-primary-u01-wsl-development-runtime",
+      "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T06:38:30+09:00",
+      "expires_at": "2026-10-15T06:38:30+09:00",
+      "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+      "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+      "path_scope": [
+        "deploy/wsl/compose.u01-development.yml",
+        "deploy/wsl/nginx-u01-development.conf",
+        "deploy/wsl/oidc_qa_issuer.py",
+        "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+        "tests/deploy/test_u01_wsl_development_contract.py",
+        "tests/deploy/test_f18_oidc_qa_issuer.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "lease_epoch": 124,
+      "lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+      "fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+      "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582"
+    }
+  },
+  {
+    "sequence": 2407,
+    "event_id": "evt_u01_2407_wsl_development_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_WSL_DEVELOPMENT_RUNTIME",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "occurred_at": "2026-10-14T06:38:30+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "1031DF1BBF82202BF06A928754667661B7B048E2B0F8935FD85DB3C62A60B701",
+    "details": {
+      "actor_id": "developer-primary-u01-wsl-development-runtime",
+      "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T06:38:30+09:00",
+      "expires_at": "2026-10-15T06:38:30+09:00",
+      "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+      "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+      "path_scope": [
+        "deploy/wsl/compose.u01-development.yml",
+        "deploy/wsl/nginx-u01-development.conf",
+        "deploy/wsl/oidc_qa_issuer.py",
+        "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+        "tests/deploy/test_u01_wsl_development_contract.py",
+        "tests/deploy/test_f18_oidc_qa_issuer.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "write_epoch": 124,
+      "lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
+      "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+      "fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+      "write_fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+      "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+      "product_write_scope": []
+    }
   }
   ],
-  "last_event_id": "evt_u01_2404_dashboard_active_run_worker_lease_revoked"
+  "last_event_id": "evt_u01_2407_wsl_development_write_lease_issued"
 }

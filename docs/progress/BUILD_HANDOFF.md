@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 WSL 개발 A15 임대(Main, 2026-10-14T06:38:30+09:00): W16 f942a949e37fb7b820c15e9fb5e643725c5b783f private동일·activelease0·rawEvent1~2404원문보존 후2405WI→2406epoch124worker→2407write ACTIVE24시간·허용8/제품APIUI0. 신산님 직접승인 범위에서 테스트로그인/HTTPS/개발DB보존·갱신을 연결한다. 단일Primary 개발설정TDD, Main배포/백업복원검증. Oracle/Production/전체U01인수/Release/예약 아님. 새G05route전예상RED.
+
 U-01 ACTIVE Run H14: B14 `7f51aabb96922207bb2a417d86a7f95ac9bda2bf` 게시본seq2402PASS 후 frozen Event seq1~2402 객체원문보존·2403write→2404worker REVOKED·active0, 제품추가변경0. 핵심격리동작/QA정리0은C13한정이며U01전체NOT_ACCEPTED/DEFER·정식화면미반영.
 
 U-01 ACTIVE Run B14: C13 `6c71f45c5573fae3fa8ba65fcb5dd84065a5c266` exact4/독립C0I0M0/local-private clean G05seq2402PASS, 새빈PG15/0020·정상repository저장3Run→실행중1·fixture상태변경후0/BLOCKED2·OIDC/HTTPS/Chromium API/화면/7d갱신/otherpair403/철회제거 PASS. 기존API/DB불변, QAroot1/container3/port3 잔여0·정식service보존. epoch122ACTIVE; 전체R6/U01미수락·정식WSLUI미반영. H14회수후첫보고예정.
@@ -279,17 +281,64 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2404,
-  "last_event_id": "evt_u01_2404_dashboard_active_run_worker_lease_revoked",
+  "event_sequence": 2407,
+  "last_event_id": "evt_u01_2407_wsl_development_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-wsl-development-runtime",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-wsl-development-runtime",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T06:38:30+09:00",
+    "expires_at": "2026-10-15T06:38:30+09:00",
+    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "path_scope": [
+      "deploy/wsl/compose.u01-development.yml",
+      "deploy/wsl/nginx-u01-development.conf",
+      "deploy/wsl/oidc_qa_issuer.py",
+      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+      "tests/deploy/test_u01_wsl_development_contract.py",
+      "tests/deploy/test_f18_oidc_qa_issuer.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_epoch": 124,
+    "lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+    "fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-wsl-development-runtime",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T06:38:30+09:00",
+    "expires_at": "2026-10-15T06:38:30+09:00",
+    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "path_scope": [
+      "deploy/wsl/compose.u01-development.yml",
+      "deploy/wsl/nginx-u01-development.conf",
+      "deploy/wsl/oidc_qa_issuer.py",
+      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+      "tests/deploy/test_u01_wsl_development_contract.py",
+      "tests/deploy/test_f18_oidc_qa_issuer.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "write_epoch": 124,
+    "lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
+    "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+    "fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+    "write_fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+    "product_write_scope": []
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING",
-  "repository_head": "6c71f45c5573fae3fa8ba65fcb5dd84065a5c266",
+  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
+  "repository_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
