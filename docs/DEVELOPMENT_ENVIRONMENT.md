@@ -1,3 +1,20 @@
+# 2026-10-14 현재 정식 WSL 개발 화면
+
+- 단계: 로컬·WSL-server 기능 구현. Oracle/ysna/Production/외부 공개는 미실행이며 승인 범위 밖이다. 아래 과거 환경 기록은 당시 사실로 보존한다.
+- 화면: `https://172.27.253.53:3770/`. 개발 전용 self-signed 인증서(30일)이므로 브라우저 최초 경고는 이 개발 주소에 한해 확인한다. Windows 전역 CA 설치는 하지 않았다.
+- 사용: 화면 아래 `재인증` 버튼으로 개발 테스트 SSO 팝업을 연다. 팝업 허용 후 조합에서 `Anvil WSL 개발 / WSL 개발 환경`을 선택한다. 토큰은900초 개발 한정이며 재인증으로 다시 시작한다. 실제 외부 SSO·사람 인증·운영 계정이 아니다.
+- 권한: 고정 `anvil-wsl-development-reader`의 `dashboard:read`와 해당 한 조합만 허용한다. 등록 bootstrap actor에는 OIDC subject binding이 없다. 실제 Provider Secret은 복사하지 않았고 Telegram 설정은 비호출 합성 개발 자료다.
+- 실제 확인: Chromium151.0.7922.34/1920×1080에서 재인증 버튼의 실제 팝업 로그인, DB HEALTHY·source/관측시각, BLOCKED/실행 중 Run API→화면 건수 일치, reload 후 재조회, 다른 조합403·CSRF 없는 logout403·정상 API logout/정보 제거를 확인했다. 테스트 조합에 Run은 없어 실제0건이며 가짜 Task/Run을 만들지 않았다. UI logout 버튼은 아직 없으며 API 검증과 구분한다.
+- 보안 검증 범위: same-origin 전체 요청, Secure/HttpOnly/Strict cookie, DOM token 미노출, 인증 및 성공한 선택 기능 응답13개의 서버 비밀 미노출. 전체 background body/전체R6·외부SSO·전체U01 인수·PG18은 미검증/과거 실패 유지다.
+- Git source `87aa6c5e8edf1e2e890c3cb69a74bdf5f4b94a84`(C15), actual manifest Git `e8da726a949a2a47ee2423bfc1045319a921572b`(M15), blob SHA256 `2BB90C4AC7C29B23DD998B1538412BF77287D3423D88E83161B2DFE9921A148E`. 정식 서버 repo `/srv/anvil-wsl/repo`는 M15 detached/clean이며 제품 이미지는 C15이다. Windows source 복사·서버 제품 patch0.
+- 정식 이미지: Web `sha256:7a10d7e39c085e256c648899435ca09ba13515fbc394896e008a38e0410d9da6`, API `sha256:b0872180e6e72f06af00d7fc8f359fe2113fc5131a21fc6eba8d2c592e3d1f89`, issuer `sha256:cefb8b27a23bbb665e09a16bc3256e8db08e4f31e4c1fd0171273606a390f8f5`.
+- 정식 컨테이너: `anvil-web` ID5d6a1f82…, `anvil-u01-development-api-1` ID3c52b542…, `anvil-u01-development-oidc-issuer-1` IDe2667673…. Web만 privateIP3770 HTTPS 게시, API/issuer 외부 port0. Anvil internal망 `anvil-u01-development-runtime` ID9b1487ca…·172.30.94.0/24·Web172.30.94.10; 공유 `proxy-network` 설정은 불변이다.
+- 실행 도구: root는 Compose plugin 대신 기존 root0755 `/usr/local/bin/docker-compose` v5.1.1을 사용한다. source Compose `deploy/wsl/compose.u01-development.yml`, private env/인증자료 `/srv/anvil-wsl/runtime/u01-development-20261014` root0700·UID별0400 개별RO mount. 기존 `/srv/anvil-wsl/.env`와 SSH/Git/전역 인증 설정은 변경하지 않았다.
+- DB: 기존 `anvil`/PG15.18에 승인된0013→0020을 적용했다. 원본50테이블의 이전컬럼 값·행수 fingerprint `A64D6369CD4E7180466B0C83E1F98E09FFDC586639DC3C2AF484C1BAEDF16942`가 백업·실제 복원·복원본0020·원본0020 뒤 모두 동일하다. 새 QA 등록은 정상 repository와 명시적 fixed identity를 사용하며 기존행 overwrite·임의 backfill0이다.
+- 백업: `/srv/anvil-wsl/backups/u01-development-20261014-4b75c87f/attempt04` root0700/파일0600, 암호화 dump hash `F879160CD7357E08225FC569B5068DCF726715C30C895FD68AE15358B1061A08`; key/config 값은 문서·Git·로그에 없다. 앞선 실패 자료도 보호 상태로 보존한다. 복원용 PG15.18 image `sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f`는 복구 기간 유지한다.
+- 복구: 기존 ID `f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738`·image `sha256:c0254177b858d93457585d2c268f43b3386ca20c18a47e4af9460174320488e9`를 `anvil-u01-rollback-f0107aad-20261014`로 정지 보존했다. 새 컨테이너의 exact ID/image/project/service/port/mount를 확인한 뒤에만 회수하고, 원 DB 복구는 새 사용자 데이터 유무·기존컬럼 불변·검증된 백업을 먼저 대조한다. 옛 이미지를 새0020 DB에 무검증 재시작하거나 무조건 dump restore하지 않는다.
+- 일회성 restore PG/net/dbcheck/dump/material-check/browser 자원은 종료·정리됐다. 정식3서비스/Anvil internal망·private runtime/backup·old rollback은 목적이 있는 유지 자원이다. 전체 U-01/Release 완료를 뜻하지 않는다.
+
 # 2026-09-06 C-21 Provider Git-only 후보 결박 (seq530)
 
 - 현재 로컬 source는 a6dca0da5a37e64491e91813895268e78ecb78b2(exact107), parent는 e4cccf3ce99e29005103cea3bd76fa0eede36f28이며 후속 control은 single direct-child exact12 / 누적 exact109 계약이다.

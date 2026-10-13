@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-wsl-development-a15-seq2407",
+  "snapshot_id": "snapshot-u01-wsl-development-b15-seq2407",
   "event_sequence": 2407,
-  "updated_at": "2026-10-14T06:38:30+09:00",
+  "updated_at": "2026-10-14T08:30:35+09:00",
   "last_event_id": "evt_u01_2407_wsl_development_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -2636,7 +2636,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
+  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2747,13 +2747,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "local_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "remote_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
     "projection_mode": "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
+    "head_relation": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3187,7 +3187,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
+    "worktree_status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3967,8 +3967,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "FCFEFDD011B7060A294EA61C72D0A2AF2BDED5DA110F9D6069D27DEEC4DFEC4F",
-  "runtime_next_action": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
+  "snapshot_hash": "69CAF135B470AFCB60E692F0CAA0EFAD657C66F5185E366A0C6061B0E46A6488",
+  "runtime_next_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -30763,17 +30763,18 @@
     "upstream": "development/codex/u01-dashboard-r2",
     "w16_checkpoint": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
     "previous_result_checkpoint": "4b75c87f395ded6e48b0074b1d8c21f364061730",
-    "a15_docs_checkpoint": null,
-    "control_checkpoint": null,
-    "manifest_checkpoint": null,
+    "a15_docs_checkpoint": "b2d0b14204909c7aaf2aee19408a2d6f10ec5f51",
+    "control_checkpoint": "87aa6c5e8edf1e2e890c3cb69a74bdf5f4b94a84",
+    "manifest_checkpoint": "e8da726a949a2a47ee2423bfc1045319a921572b",
     "active_projection_checkpoint": null,
     "actor_id": "developer-primary-u01-wsl-development-runtime",
     "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
     "write_lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
     "event_sequence": 2407,
-    "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
+    "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
-    "production": "NOT_EXECUTED"
+    "production": "NOT_EXECUTED",
+    "manifest_sha256": "2BB90C4AC7C29B23DD998B1538412BF77287D3423D88E83161B2DFE9921A148E"
   }
 }

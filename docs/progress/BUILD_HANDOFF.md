@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 WSL 개발 B15: C15 source87aa6c5e / M15 `e8da726a949a2a47ee2423bfc1045319a921572b` actualmanifest·원본50table 기존컬럼data보존/0020·정식HTTPS3770 ready·실제재인증popup/정확readerpair/DB·BLOCKED·ACTIVE 카드/API일치·reload·otherpair403/CSRF403/APIlogout/old정보제거 PASS. 실제Run없어0건, 가짜Task/Run0. Chromium151/선택범위body13 비밀CLEAR·sameorigin/SecureHttpOnly, 전체R6/background모든body·UIlogout버튼·외부SSO/Provider/전체U01 미검증·NOT_ACCEPTED/DEFER. 일회성자원0, 정식3서비스/망·privatebackup·oldrollback정지보존. epoch124ACTIVE·H15회수예정.
+
 U-01 WSL 개발 A15 임대(Main, 2026-10-14T06:38:30+09:00): W16 f942a949e37fb7b820c15e9fb5e643725c5b783f private동일·activelease0·rawEvent1~2404원문보존 후2405WI→2406epoch124worker→2407write ACTIVE24시간·허용8/제품APIUI0. 신산님 직접승인 범위에서 테스트로그인/HTTPS/개발DB보존·갱신을 연결한다. 단일Primary 개발설정TDD, Main배포/백업복원검증. Oracle/Production/전체U01인수/Release/예약 아님. 새G05route전예상RED.
 
 U-01 ACTIVE Run H14: B14 `7f51aabb96922207bb2a417d86a7f95ac9bda2bf` 게시본seq2402PASS 후 frozen Event seq1~2402 객체원문보존·2403write→2404worker REVOKED·active0, 제품추가변경0. 핵심격리동작/QA정리0은C13한정이며U01전체NOT_ACCEPTED/DEFER·정식화면미반영.
@@ -337,8 +339,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_IMPLEMENTATION_ONLY",
-  "repository_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+  "repository_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
