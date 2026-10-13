@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-wsl-development-b15-seq2407",
-  "event_sequence": 2407,
-  "updated_at": "2026-10-14T08:30:35+09:00",
-  "last_event_id": "evt_u01_2407_wsl_development_write_lease_issued",
+  "snapshot_id": "snapshot-u01-wsl-development-h15-seq2409",
+  "event_sequence": 2409,
+  "updated_at": "2026-10-14T08:39:51+09:00",
+  "last_event_id": "evt_u01_2409_wsl_development_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-wsl-development-runtime",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,32 +387,7 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-wsl-development-runtime",
-    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T06:38:30+09:00",
-    "expires_at": "2026-10-15T06:38:30+09:00",
-    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "path_scope": [
-      "deploy/wsl/compose.u01-development.yml",
-      "deploy/wsl/nginx-u01-development.conf",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
-      "tests/deploy/test_u01_wsl_development_contract.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "write_epoch": 124,
-    "lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
-    "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
-    "fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
-    "write_fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
-    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
-    "product_write_scope": []
-  },
+  "write_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1565,29 +1540,7 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-wsl-development-runtime",
-    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T06:38:30+09:00",
-    "expires_at": "2026-10-15T06:38:30+09:00",
-    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "path_scope": [
-      "deploy/wsl/compose.u01-development.yml",
-      "deploy/wsl/nginx-u01-development.conf",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
-      "tests/deploy/test_u01_wsl_development_contract.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "lease_epoch": 124,
-    "lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
-    "fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
-    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582"
-  },
+  "worker_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2636,7 +2589,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2751,9 +2704,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
-    "projection_mode": "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE",
+    "projection_mode": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+    "head_relation": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3187,7 +3140,7 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [],
-    "worktree_status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+    "worktree_status": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3353,8 +3306,8 @@
     "path": "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_WORK_INSTRUCTION.md",
     "sha256": "97A837280AD755895758638D475D07180BAA9803A2B8BFE367B68AB1A12B189B",
     "revision": 1,
-    "result_status": "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE",
-    "package_status": "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE",
+    "result_status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
+    "package_status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
     "approval_ref": "docs/approvals/APPROVAL-20261014-U01-WSL-DEVELOPMENT-RUNTIME-001.md",
     "approval_classification": "HUMAN_APPROVED_SCOPED_WSL_DEVELOPMENT_RUNTIME"
   },
@@ -3570,12 +3523,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CC4798D932FE8773910975C0CE1ADEE539185DB0318AB1D8D16A8C08B4111477"
+      "sha256": "0A82BEB399F795397BC98DC6E61B5306B2508BEA38554A68C6D164A92A087D47"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE"
+    "status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3967,8 +3920,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "69CAF135B470AFCB60E692F0CAA0EFAD657C66F5185E366A0C6061B0E46A6488",
-  "runtime_next_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+  "snapshot_hash": "9EFBB5213E647D1A1E305B21BCA493E2835600EE62EB769E3D67E7AE0435B347",
+  "runtime_next_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -30757,7 +30710,7 @@
       "tests/tooling/test_u01_postmerge_control_projection.py"
     ],
     "product_write_scope": [],
-    "status": "U01_WSL_DEVELOPMENT_RUNTIME_ACTIVE",
+    "status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
     "package_id": "U-01",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
@@ -30766,15 +30719,66 @@
     "a15_docs_checkpoint": "b2d0b14204909c7aaf2aee19408a2d6f10ec5f51",
     "control_checkpoint": "87aa6c5e8edf1e2e890c3cb69a74bdf5f4b94a84",
     "manifest_checkpoint": "e8da726a949a2a47ee2423bfc1045319a921572b",
-    "active_projection_checkpoint": null,
+    "active_projection_checkpoint": "d8e37d1ed0c29bea8f06af2a5a341bf9dd70a7a4",
     "actor_id": "developer-primary-u01-wsl-development-runtime",
     "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
     "write_lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
-    "event_sequence": 2407,
-    "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+    "event_sequence": 2409,
+    "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
     "manifest_sha256": "2BB90C4AC7C29B23DD998B1538412BF77287D3423D88E83161B2DFE9921A148E"
+  },
+  "completed_u01_wsl_development_runtime_write_lease": {
+    "actor_id": "developer-primary-u01-wsl-development-runtime",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T06:38:30+09:00",
+    "expires_at": "2026-10-15T06:38:30+09:00",
+    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "path_scope": [
+      "deploy/wsl/compose.u01-development.yml",
+      "deploy/wsl/nginx-u01-development.conf",
+      "deploy/wsl/oidc_qa_issuer.py",
+      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+      "tests/deploy/test_u01_wsl_development_contract.py",
+      "tests/deploy/test_f18_oidc_qa_issuer.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "write_epoch": 124,
+    "lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
+    "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+    "fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+    "write_fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+    "product_write_scope": [],
+    "revoked_at": "2026-10-14T08:39:51+09:00"
+  },
+  "completed_u01_wsl_development_runtime_worker_lease": {
+    "actor_id": "developer-primary-u01-wsl-development-runtime",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T06:38:30+09:00",
+    "expires_at": "2026-10-15T06:38:30+09:00",
+    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
+    "path_scope": [
+      "deploy/wsl/compose.u01-development.yml",
+      "deploy/wsl/nginx-u01-development.conf",
+      "deploy/wsl/oidc_qa_issuer.py",
+      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
+      "tests/deploy/test_u01_wsl_development_contract.py",
+      "tests/deploy/test_f18_oidc_qa_issuer.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_epoch": 124,
+    "lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+    "fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+    "revoked_at": "2026-10-14T08:39:51+09:00"
   }
 }

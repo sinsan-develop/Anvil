@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 WSL 개발 H15: B15 `d8e37d1ed0c29bea8f06af2a5a341bf9dd70a7a4` private/actualG05seq2407PASS 뒤2408write→2409worker REVOKED·active0, Event1~2407 객체원문보존·추가제품변경0. 정식HTTPS/읽기테스트SSO/3card 실제동작과일회성정리0은C15+M15범위. 전체U01 NOT_ACCEPTED/DEFER·나머지미구현·외부/Cloud/Production 미확인유지. 첫결과보고예정.
+
 U-01 WSL 개발 B15: C15 source87aa6c5e / M15 `e8da726a949a2a47ee2423bfc1045319a921572b` actualmanifest·원본50table 기존컬럼data보존/0020·정식HTTPS3770 ready·실제재인증popup/정확readerpair/DB·BLOCKED·ACTIVE 카드/API일치·reload·otherpair403/CSRF403/APIlogout/old정보제거 PASS. 실제Run없어0건, 가짜Task/Run0. Chromium151/선택범위body13 비밀CLEAR·sameorigin/SecureHttpOnly, 전체R6/background모든body·UIlogout버튼·외부SSO/Provider/전체U01 미검증·NOT_ACCEPTED/DEFER. 일회성자원0, 정식3서비스/망·privatebackup·oldrollback정지보존. epoch124ACTIVE·H15회수예정.
 
 U-01 WSL 개발 A15 임대(Main, 2026-10-14T06:38:30+09:00): W16 f942a949e37fb7b820c15e9fb5e643725c5b783f private동일·activelease0·rawEvent1~2404원문보존 후2405WI→2406epoch124worker→2407write ACTIVE24시간·허용8/제품APIUI0. 신산님 직접승인 범위에서 테스트로그인/HTTPS/개발DB보존·갱신을 연결한다. 단일Primary 개발설정TDD, Main배포/백업복원검증. Oracle/Production/전체U01인수/Release/예약 아님. 새G05route전예상RED.
@@ -283,63 +285,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2407,
-  "last_event_id": "evt_u01_2407_wsl_development_write_lease_issued",
+  "event_sequence": 2409,
+  "last_event_id": "evt_u01_2409_wsl_development_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-wsl-development-runtime",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-wsl-development-runtime",
-    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T06:38:30+09:00",
-    "expires_at": "2026-10-15T06:38:30+09:00",
-    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "path_scope": [
-      "deploy/wsl/compose.u01-development.yml",
-      "deploy/wsl/nginx-u01-development.conf",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
-      "tests/deploy/test_u01_wsl_development_contract.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "lease_epoch": 124,
-    "lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
-    "fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
-    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-wsl-development-runtime",
-    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T06:38:30+09:00",
-    "expires_at": "2026-10-15T06:38:30+09:00",
-    "baseline_git_commit": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "dispatch_head": "f942a949e37fb7b820c15e9fb5e643725c5b783f",
-    "path_scope": [
-      "deploy/wsl/compose.u01-development.yml",
-      "deploy/wsl/nginx-u01-development.conf",
-      "deploy/wsl/oidc_qa_issuer.py",
-      "deploy/wsl/U01DevelopmentReleaseManifest.template.json",
-      "tests/deploy/test_u01_wsl_development_contract.py",
-      "tests/deploy/test_f18_oidc_qa_issuer.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "write_epoch": 124,
-    "lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
-    "worker_lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
-    "fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
-    "write_fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
-    "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
-    "product_write_scope": []
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE_READY",
+  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
   "repository_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

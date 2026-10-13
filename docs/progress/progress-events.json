@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2407,
+  "last_sequence": 2409,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108172,7 +108172,49 @@
       "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
       "product_write_scope": []
     }
+  },
+  {
+    "sequence": 2408,
+    "event_id": "evt_u01_2408_wsl_development_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "occurred_at": "2026-10-14T08:39:51+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "5BC4953C8C3DA08971E7711A464DB36C2B31327CDA31A2DD92C3C283A4ACE939",
+    "details": {
+      "lease_id": "write-lease-u01-wsl-development-5664b9e7643e4539a7ab32530fead777",
+      "write_fencing_token": "u01-wsl-development-write-fence-epoch-124-5664b9e7643e4539a7ab32530fead777",
+      "reason": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
+    }
+  },
+  {
+    "sequence": 2409,
+    "event_id": "evt_u01_2409_wsl_development_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSE",
+    "subject_ref": "U-01/WSL-DEVELOPMENT-RUNTIME",
+    "occurred_at": "2026-10-14T08:39:51+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "2E40BAFD8CAE58F0659A9BA5D6C75D649029EECD87635CE0A99B86155FCC4FC5",
+    "details": {
+      "lease_id": "worker-lease-u01-wsl-development-8839db25e3db4a7c9fc3cdc5758f2582",
+      "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
+      "reason": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2407_wsl_development_write_lease_issued"
+  "last_event_id": "evt_u01_2409_wsl_development_worker_lease_revoked"
 }
