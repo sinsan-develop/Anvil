@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 BLOCKED Run A13 임대(Main, 2026-10-13T11:21:39+09:00): 기존W14 `592d9fd679d4577667a8e030e71b479c0ba6660a`→비의미검증목록보정 `79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75`·private동일·activelease0을확인했다. Event seq1~2394 객체원문을보존하고2395 WI→2396 epoch122 worker→2397 write를24시간분리token/허용7코드·제품2에결박한다. WI/Invocation/부모승인hash일치이며새G05route전예상RED, PASS아니다. 단일기존Developer가실제ScopedRunSource→현재BLOCKED건수/화면을연결한다. DB카드격리핵심실측완료·정식화면미반영, U-01NOT_ACCEPTED/DEFER·새branch/PR/main/Oracle/ysna/Production제외.
+
 U-01 DB 건강 카드 H12 임대 회수(Main, 2026-10-13T08:15:29+09:00): B12 `ef3a32858f2f97ae6244bc5175c04f643b2a99be`은 D 직접 자식 정확4문서·local/private 동일·실제 G-05 seq2392 PASS다. Event seq1~2392 객체 원문을 보존하고 seq2393 write→2394 worker 순서로 epoch121 임대를 REVOKED, active null로 투영한다. 이 H12는 Event/progress/HANDOFF/digest/WORK_STATUS 정확5 후보이며 독립 검토·private 게시·게시본 G-05 전 PASS가 아니다. WSL PG15 실제 SELECT1/reader 국소 증거는 C SHA 한정, 인증 브라우저 UI/timer·전체 API는 미검증; U-01 NOT_ACCEPTED·Release DEFER, PR/main·새 branch·ysna/Production 제외.
 
 U-01 DB 건강 카드 B12 종료 준비(Main, 2026-10-13T08:09:00+09:00): 기존 branch/private 동일·tracked clean D `c1a558a278fab0e7aef75f3b2a39c13c7e053b11`은 QA 사실 기록 `4115ca21` 직접 자식 정확 검증기/통제시험 2파일이며 실제 G-05 seq2392 PASS다. 로컬 epoch121 집중 9 PASS, 독립 코드 검토 Critical0/Important0; 과거 epoch120 벽시계 만료 인접 2 FAIL은 별도 보존한다. C `eb1ab978`의 새 빈 WSL-server PG15 실제 SELECT1/0020 migration→정확 pair reader HEALTHY와 권한 국소 4 PASS는 당시 SHA에 한정되고 실제 인증 브라우저 UI/timer 및 전체 API 요청은 미검증이다. Event seq2392 원문, epoch121 dual lease ACTIVE·제품 scope를 보존한 채 B12는 progress/HANDOFF/digest/WORK_STATUS 정확4 투영 후보이며, 종료 전 현재 시각·lease·private SHA를 재확인한다. H12는 seq2393 write→2394 worker 회수 예정이고 그 전에는 회수 또는 U-01 수락을 주장하지 않는다. 다른 health 5개·운영 카드 미구현, W12 진단 미실행, U-01 NOT_ACCEPTED·Release DEFER, PR/main·새 branch·ysna/Production 제외.
@@ -267,17 +269,65 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2394,
-  "last_event_id": "evt_u01_2394_dashboard_database_health_worker_lease_revoked",
+  "event_sequence": 2397,
+  "last_event_id": "evt_u01_2397_dashboard_blocked_run_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-dashboard-blocked-run",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-blocked-run",
+    "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-13T11:21:39+09:00",
+    "expires_at": "2026-10-14T11:21:39+09:00",
+    "baseline_git_commit": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+    "dispatch_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 122,
+    "lease_id": "worker-lease-u01-dashboard-blocked-run-9cab26f047eb4b2caaa6a20704a266d6",
+    "fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6",
+    "execution_fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-blocked-run",
+    "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-13T11:21:39+09:00",
+    "expires_at": "2026-10-14T11:21:39+09:00",
+    "baseline_git_commit": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+    "dispatch_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 122,
+    "lease_id": "write-lease-u01-dashboard-blocked-run-369a6ed674454f51aba201f57e6bdbb8",
+    "worker_lease_id": "worker-lease-u01-dashboard-blocked-run-9cab26f047eb4b2caaa6a20704a266d6",
+    "fencing_token": "u01-dashboard-blocked-run-write-fence-epoch-122-369a6ed674454f51aba201f57e6bdbb8",
+    "write_fencing_token": "u01-dashboard-blocked-run-write-fence-epoch-122-369a6ed674454f51aba201f57e6bdbb8",
+    "execution_fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6",
+    "product_write_scope": [
+      "packages/api/scoped_dashboard.py",
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_DATABASE_HEALTH_RECORDED_U01_PENDING",
-  "repository_head": "c1a558a278fab0e7aef75f3b2a39c13c7e053b11",
+  "next_safe_action": "U01_DASHBOARD_BLOCKED_RUN_IMPLEMENTATION_ONLY",
+  "repository_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

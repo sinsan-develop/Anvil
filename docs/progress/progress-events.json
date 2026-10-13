@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2394,
+  "last_sequence": 2397,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107733,7 +107733,130 @@
       "execution_fencing_token": "u01-dashboard-database-health-execution-fence-epoch-121-ecc45000420f474da5a76c5a80569911",
       "reason": "U01_DASHBOARD_DATABASE_HEALTH_CLOSED"
     }
+  },
+  {
+    "sequence": 2395,
+    "event_id": "evt_u01_2395_dashboard_blocked_run_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_BLOCKED_RUN_CARD",
+    "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+    "occurred_at": "2026-10-13T11:21:39+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A212897D7621C8B6C627C865A6ED2234AEF451B432E63569C31B31C793D20A96",
+    "details": {
+      "work_instruction_id": "WI-U01-DASHBOARD-BLOCKED-RUN-CARD-20261013-001",
+      "work_instruction_path": "docs/work_orders/U-01_DASHBOARD_BLOCKED_RUN_CARD_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "7E99A57F74BEB20EF6C4CF4E0B315567DD21CF680A3CD87A551389FC0D55163E",
+      "invocation_path": "docs/work_orders/U-01_DASHBOARD_BLOCKED_RUN_CARD_INVOCATION.md",
+      "invocation_sha256": "DD1320746B0A0ACF67D7FA5864B669525A4F2C1A89F724EC0D251154612EE0A0",
+      "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+      "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "predecessor_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+      "predecessor_sequence": 2394,
+      "developer_exact_paths": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "packages/api/scoped_dashboard.py",
+        "apps/web/src/console/App.tsx",
+        "tests/api/test_u01_scoped_dashboard_reader.py",
+        "tests/api/test_u01_scoped_dashboard_api.py",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "product_write_scope": [
+        "packages/api/scoped_dashboard.py",
+        "apps/web/src/console/App.tsx"
+      ]
+    }
+  },
+  {
+    "sequence": 2396,
+    "event_id": "evt_u01_2396_dashboard_blocked_run_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_BLOCKED_RUN_CARD",
+    "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+    "occurred_at": "2026-10-13T11:21:39+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "34F7470D2E4C19C5962997A5B6378CE88AC4C0E17B23D7B5BD90CD9EED31D2F7",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-blocked-run",
+      "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-13T11:21:39+09:00",
+      "expires_at": "2026-10-14T11:21:39+09:00",
+      "baseline_git_commit": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+      "dispatch_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "packages/api/scoped_dashboard.py",
+        "apps/web/src/console/App.tsx",
+        "tests/api/test_u01_scoped_dashboard_reader.py",
+        "tests/api/test_u01_scoped_dashboard_api.py",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "lease_epoch": 122,
+      "lease_id": "worker-lease-u01-dashboard-blocked-run-9cab26f047eb4b2caaa6a20704a266d6",
+      "fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6",
+      "execution_fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6"
+    }
+  },
+  {
+    "sequence": 2397,
+    "event_id": "evt_u01_2397_dashboard_blocked_run_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_BLOCKED_RUN_CARD",
+    "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+    "occurred_at": "2026-10-13T11:21:39+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "501315F78668C21F26D8C8D5E6652FA947EE42B390B413198A731A5C59F2C8E3",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-blocked-run",
+      "subject_ref": "U-01/DASHBOARD-BLOCKED-RUN-CARD",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-13T11:21:39+09:00",
+      "expires_at": "2026-10-14T11:21:39+09:00",
+      "baseline_git_commit": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+      "dispatch_head": "79a1c0b37d7489e0a4fd2d1da76d08d5b4ba4b75",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "packages/api/scoped_dashboard.py",
+        "apps/web/src/console/App.tsx",
+        "tests/api/test_u01_scoped_dashboard_reader.py",
+        "tests/api/test_u01_scoped_dashboard_api.py",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "write_epoch": 122,
+      "lease_id": "write-lease-u01-dashboard-blocked-run-369a6ed674454f51aba201f57e6bdbb8",
+      "worker_lease_id": "worker-lease-u01-dashboard-blocked-run-9cab26f047eb4b2caaa6a20704a266d6",
+      "fencing_token": "u01-dashboard-blocked-run-write-fence-epoch-122-369a6ed674454f51aba201f57e6bdbb8",
+      "write_fencing_token": "u01-dashboard-blocked-run-write-fence-epoch-122-369a6ed674454f51aba201f57e6bdbb8",
+      "execution_fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6",
+      "product_write_scope": [
+        "packages/api/scoped_dashboard.py",
+        "apps/web/src/console/App.tsx"
+      ]
+    }
   }
   ],
-  "last_event_id": "evt_u01_2394_dashboard_database_health_worker_lease_revoked"
+  "last_event_id": "evt_u01_2397_dashboard_blocked_run_write_lease_issued"
 }
