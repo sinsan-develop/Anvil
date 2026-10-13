@@ -1,0 +1,60 @@
+{
+  "schema_version": "u01_wsl_development_manifest/v1",
+  "environment": "WSL_SERVER_TEST_STAGING",
+  "purpose": "WSL_DEVELOPMENT_ONLY",
+  "release": "NOT_RELEASE",
+  "acceptance": "NOT_ACCEPTED",
+  "source_commit": "87aa6c5e8edf1e2e890c3cb69a74bdf5f4b94a84",
+  "source_files": {
+    "deploy/wsl/U01DevelopmentReleaseManifest.template.json": "4B2B8AE5692CE49E364F9F3302B07221534467E8AEAEFC134F94A1CC952A8C9C",
+    "deploy/wsl/compose.u01-development.yml": "D48EC9D3C5815D4AEDCEA8B27C909B8C3C3BEC2D6BF2D9DFB106C76312268557",
+    "deploy/wsl/nginx-u01-development.conf": "683CD0FB23C0E18CD16297CD162F11FDDD1C2901D2AB6FFCB2AB3B5F6F278CD1",
+    "deploy/wsl/oidc_qa_issuer.py": "003A7BDCD16124B641274D1E454088DEE2FBB4E9CD9B8E4209A8A2133AED9924",
+    "scripts/check_project_progress.py": "83CC28224D780D727928FCA6A6F67FF46366F0C7D86DEEFED5A78928C57A3573",
+    "tests/deploy/test_f18_oidc_qa_issuer.py": "6D5CD6B2683E65DFBEEC092ACB8A2557455F080029BB2E52BDE62929BEAE3049",
+    "tests/deploy/test_u01_wsl_development_contract.py": "2F13622BCF4CBC544C14E62F6789112C32C835211B5476C628FDC77E7C3FF7A5",
+    "tests/tooling/test_u01_postmerge_control_projection.py": "78E25A2A7D10A6DA31B5A3BB93048216BE14A9E78951514036195C3FD9A8C1FA"
+  },
+  "images": {
+    "api": "sha256:b0872180e6e72f06af00d7fc8f359fe2113fc5131a21fc6eba8d2c592e3d1f89",
+    "issuer": "sha256:cefb8b27a23bbb665e09a16bc3256e8db08e4f31e4c1fd0171273606a390f8f5",
+    "web": "sha256:7a10d7e39c085e256c648899435ca09ba13515fbc394896e008a38e0410d9da6"
+  },
+  "origin": "https://172.27.253.53:3770",
+  "migration": {
+    "before": "0013",
+    "after": "0020"
+  },
+  "backup": {
+    "encrypted_sha256": "F879160CD7357E08225FC569B5068DCF726715C30C895FD68AE15358B1061A08",
+    "existing_data_preserved": true,
+    "fingerprint_before": "A64D6369CD4E7180466B0C83E1F98E09FFDC586639DC3C2AF484C1BAEDF16942",
+    "fingerprint_restored": "A64D6369CD4E7180466B0C83E1F98E09FFDC586639DC3C2AF484C1BAEDF16942",
+    "old_columns_after_migration": "A64D6369CD4E7180466B0C83E1F98E09FFDC586639DC3C2AF484C1BAEDF16942",
+    "original_tables": 50,
+    "restore_verified": true
+  },
+  "rollback": {
+    "config_sha256": "97B529C3F5D827E65F5862D5BA9AD7A8EF07865EA19ED1D9232DED049B97B57B",
+    "container_id": "f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738",
+    "image_id": "sha256:c0254177b858d93457585d2c268f43b3386ca20c18a47e4af9460174320488e9"
+  },
+  "qa_principal": {
+    "project": "anvil-wsl-development",
+    "environment": "wsl-development",
+    "principal": "anvil-wsl-development-reader",
+    "subject": "f19a-qa-reader",
+    "permissions": [
+      "dashboard:read"
+    ]
+  },
+  "data_owner": "MAIN_VERIFIED_EXISTING_ANVIL_OWNER",
+  "approval_sha256": "171D1524C2B20CF774076C8278F766721BB21E45BBC7A34C599437B27C9E7145",
+  "unverified": [
+    "PRODUCTION",
+    "EXTERNAL_SSO",
+    "PROVIDER",
+    "FULL_U01_ACCEPTANCE",
+    "PG18"
+  ]
+}
