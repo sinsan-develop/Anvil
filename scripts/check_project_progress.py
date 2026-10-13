@@ -84543,5 +84543,383 @@ def validate_bundle(bundle):
     return _validate_bundle_before_u01_blocked_run(bundle)
 
 
+_U01_ACTIVE_RUN_W15 = "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6"
+_U01_ACTIVE_RUN_A14 = "5e1471ce2885640b30be7f190d50d0ede7a5435d"
+_U01_ACTIVE_RUN_BASE = "b21d1ec24f67b8cc0c9a1f2827ae021de110e750"
+_U01_ACTIVE_RUN_PATHS = _U01_DB_HEALTH_PATHS
+_U01_ACTIVE_RUN_CODE = {
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_u01_postmerge_control_projection.py",
+    "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
+}
+_U01_ACTIVE_RUN_BINDING = "u01_dashboard_active_run_card_binding"
+_U01_ACTIVE_RUN_MODE = "U01_DASHBOARD_ACTIVE_RUN_ACTIVE"
+_U01_ACTIVE_RUN_CLOSE = "U01_DASHBOARD_ACTIVE_RUN_CLOSED"
+
+
+def _u01_active_run_frozen(bundle, sha=_U01_ACTIVE_RUN_A14):
+    root = Path(bundle["_root"])
+    return {path: subprocess.check_output(["git", "show", f"{sha}:{path}"],
+            cwd=root, stderr=subprocess.DEVNULL) for path in _U01_ACTIVE_RUN_PATHS}
+
+
+def _validate_u01_active_run_active(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        root = Path(bundle["_root"])
+        frozen = _u01_active_run_frozen(bundle)
+        progress = json.loads(frozen[_U01_ACTIVE_RUN_PATHS[0]])
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        binding = progress[_U01_ACTIVE_RUN_BINDING]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (instant.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= instant
+                   < datetime.fromisoformat(worker["expires_at"])
+                or not datetime.fromisoformat(write["issued_at"]) <= instant
+                   < datetime.fromisoformat(write["expires_at"])
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["lease_epoch"] != 123 or write["write_epoch"] != 123
+                or worker["actor_id"] != "developer-primary-u01-dashboard-active-run"
+                or write["actor_id"] != worker["actor_id"]
+                or write["worker_lease_id"] != worker["lease_id"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or write["write_fencing_token"] == worker["execution_fencing_token"]
+                or set(worker["path_scope"]) != _U01_ACTIVE_RUN_CODE
+                or set(write["path_scope"]) != _U01_ACTIVE_RUN_CODE
+                or set(write["product_write_scope"]) != {
+                    "apps/web/src/console/App.tsx"}
+                or binding["w15_checkpoint"] != _U01_ACTIVE_RUN_W15
+                or binding["predecessor_head"] != _U01_ACTIVE_RUN_W15
+                or binding["predecessor_sequence"] != 2399
+                or binding["work_instruction_sha256"] !=
+                   "90AB26200FD9881B4873316440F44B5316053DD6B85F621CC62136448F9450D3"
+                or binding["approval_sha256"] !=
+                   "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"
+                or binding["control_checkpoint"] is not None
+                or binding["active_projection_checkpoint"] is not None
+                or progress["repository"]["projection_mode"] != _U01_ACTIVE_RUN_MODE
+                or progress["event_sequence"] != 2402
+                or bundle["progress"] != progress
+                or bundle["events"] != json.loads(frozen[_U01_ACTIVE_RUN_PATHS[1]])
+                or bundle["handoff_text"].encode() != frozen[_U01_ACTIVE_RUN_PATHS[2]]
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])
+                or bundle["detached_digest"] != json.loads(frozen[_U01_ACTIVE_RUN_PATHS[3]])
+                or any((archived_files[path] if archived_files and path in archived_files
+                        else (root / path).read_bytes()) != raw
+                       for path, raw in frozen.items())):
+            return ["U01_DASHBOARD_ACTIVE_RUN_CONTROL_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError,
+            subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_ACTIVE_RUN_CONTROL_INVALID"]
+
+
+def _u01_active_run_actual(bundle, archived_files=None, event_raw=None):
+    root = Path(bundle["_root"])
+    source = archived_files or {}
+    actual = {path: source[path] if path in source else (root / path).read_bytes()
+              for path in _U01_ACTIVE_RUN_PATHS}
+    if event_raw is not None:
+        actual[_U01_ACTIVE_RUN_PATHS[1]] = event_raw
+    return actual
+
+
+def _u01_active_run_digest(expected, bundle, actual):
+    expected = copy.deepcopy(expected)
+    expected["progress"]["canonical_json_sha256"] = hashlib.sha256(
+        canonical_json_bytes(bundle["progress"])).hexdigest().upper()
+    expected["handoff"]["machine_summary_canonical_sha256"] = hashlib.sha256(
+        canonical_json_bytes(bundle["handoff"])).hexdigest().upper()
+    for section, path in (("progress", _U01_ACTIVE_RUN_PATHS[0]),
+                          ("handoff", _U01_ACTIVE_RUN_PATHS[2])):
+        expected[section].update(bytes=len(actual[path]),
+            file_sha256=hashlib.sha256(actual[path]).hexdigest().upper())
+    return expected
+
+
+def _validate_u01_active_run_projection(bundle, *, event_raw=None, now=None,
+                                         archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        paths = _U01_ACTIVE_RUN_PATHS
+        frozen = _u01_active_run_frozen(bundle)
+        actual = _u01_active_run_actual(bundle, archived_files, event_raw)
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[paths[0]])
+        binding = progress[_U01_ACTIVE_RUN_BINDING]
+        checkpoint = binding["control_checkpoint"]
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (not isinstance(checkpoint, str)
+                or re.fullmatch(r"[0-9a-f]{40}", checkpoint) is None
+                or checkpoint in {_U01_ACTIVE_RUN_W15, _U01_ACTIVE_RUN_A14}
+                or binding["a14_docs_checkpoint"] != _U01_ACTIVE_RUN_A14
+                or binding["active_projection_checkpoint"] is not None
+                or issued.tzinfo is None or updated.tzinfo is None
+                or instant.tzinfo is None or not issued <= updated <= instant < expires
+                or actual[paths[1]] != frozen[paths[1]]
+                or stream != json.loads(actual[paths[1]])
+                or stream["last_sequence"] != 2402
+                or progress["event_sequence"] != 2402
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])):
+            return ["U01_DASHBOARD_ACTIVE_RUN_PROJECTION_INVALID"]
+        status = _U01_ACTIVE_RUN_MODE
+        action = "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY"
+        expected[_U01_ACTIVE_RUN_BINDING].update(
+            a14_docs_checkpoint=_U01_ACTIVE_RUN_A14, control_checkpoint=checkpoint,
+            status=status, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=status,
+            package_status=status)
+        expected["repository"].update(local_head=checkpoint, remote_head=checkpoint,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01",
+            "status": status}, snapshot_id="snapshot-u01-dashboard-active-run-b14-seq2402")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        expected_handoff = extract_handoff_summary(frozen[paths[2]].decode())
+        expected_handoff.update(repository_head=checkpoint, next_safe_action=action)
+        expected_digest = _u01_active_run_digest(json.loads(frozen[paths[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != expected_handoff
+                or bundle["detached_digest"] != expected_digest
+                or json.loads(actual[paths[0]]) != progress
+                or actual[paths[2]].decode() != bundle["handoff_text"]
+                or json.loads(actual[paths[3]]) != bundle["detached_digest"]):
+            return ["U01_DASHBOARD_ACTIVE_RUN_PROJECTION_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_ACTIVE_RUN_PROJECTION_INVALID"]
+
+
+def _validate_u01_active_run_closed(bundle, *, event_raw=None, now=None,
+                                     archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        paths = _U01_ACTIVE_RUN_PATHS
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_ACTIVE_RUN_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (not isinstance(publication, str)
+                or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_ACTIVE_RUN_A14, binding["control_checkpoint"]}):
+            return ["U01_DASHBOARD_ACTIVE_RUN_CLOSE_INVALID"]
+        active, published = _u01_task4_report_archive(bundle, publication)
+        bprogress = active["progress"]
+        btime = datetime.fromisoformat(bprogress["updated_at"])
+        if (_validate_u01_active_run_projection(active,
+                event_raw=published[paths[1]], archived_files=published, now=btime)
+                or bprogress[_U01_ACTIVE_RUN_BINDING]["control_checkpoint"] !=
+                   binding["control_checkpoint"]):
+            return ["U01_DASHBOARD_ACTIVE_RUN_CLOSE_INVALID"]
+        actual = _u01_active_run_actual(bundle, archived_files, event_raw)
+        raw = actual[paths[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(bprogress["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None
+                or not btime <= moment < expires or moment > instant
+                or raw_event_object_prefix_bytes(raw, 2402)
+                   != raw_event_object_prefix_bytes(published[paths[1]], 2402)
+                or stream != json.loads(raw) or stream.get("last_sequence") != 2404
+                or len(stream.get("events", [])) != 2404
+                or progress.get("event_sequence") != 2404
+                or progress.get("last_event_id") != stream.get("last_event_id")
+                or {k: v for k, v in stream.items() if k not in
+                    {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in
+                    {"events", "last_sequence", "last_event_id"}}):
+            return ["U01_DASHBOARD_ACTIVE_RUN_CLOSE_INVALID"]
+        reason = _U01_ACTIVE_RUN_CLOSE
+        action = "U01_DASHBOARD_ACTIVE_RUN_RECORDED_U01_PENDING"
+        for offset, sequence, kind, event_id, lease, token in (
+            (0, 2403, "WRITE_LEASE_REVOKED",
+             "evt_u01_2403_dashboard_active_run_write_lease_revoked",
+             bprogress["write_lease"], "write_fencing_token"),
+            (1, 2404, "WORKER_LEASE_REVOKED",
+             "evt_u01_2404_dashboard_active_run_worker_lease_revoked",
+             bprogress["worker_lease"], "execution_fencing_token"),
+        ):
+            row = stream["events"][2402 + offset]
+            previous = hashlib.sha256(canonical_json_bytes(
+                stream["events"][2401 + offset])).hexdigest().upper()
+            if row != {"sequence": sequence, "event_id": event_id,
+                    "event_type": kind, "actor": "main-agent-eoul",
+                    "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+                    "project_id": "anvil", "work_package_id": "U-01", "run_id": None,
+                    "step_id": "U01_DASHBOARD_ACTIVE_RUN_CLOSE",
+                    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+                    "occurred_at": at,
+                    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                    "previous_event_sha256": previous,
+                    "details": {"lease_id": lease["lease_id"], token: lease[token],
+                                "reason": reason}}:
+                return ["U01_DASHBOARD_ACTIVE_RUN_CLOSE_INVALID"]
+        expected = copy.deepcopy(bprogress)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(
+            raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_dashboard_active_run_{name}_lease"] = {
+                **bprogress[f"{name}_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["worker_lease"] = expected["write_lease"] = None
+        expected[_U01_ACTIVE_RUN_BINDING].update(status=reason, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2404)
+        expected["active_work_instruction"].update(result_status=reason,
+            package_status=reason)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2404,
+            last_event_id=stream["last_event_id"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01",
+            "status": reason}, snapshot_id="snapshot-u01-dashboard-active-run-h14-seq2404")
+        expected["repository"].update(projection_mode=reason,
+            head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        expected_handoff = {**active["handoff"], "event_sequence": 2404,
+            "last_event_id": stream["last_event_id"], "active_agent": None,
+            "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        expected_digest = copy.deepcopy(active["detached_digest"])
+        expected_digest["event_sequence"] = 2404
+        expected_digest = _u01_active_run_digest(expected_digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != expected_handoff
+                or bundle["detached_digest"] != expected_digest
+                or json.loads(actual[paths[0]]) != progress
+                or actual[paths[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != bundle["handoff"]
+                or json.loads(actual[paths[3]]) != bundle["detached_digest"]):
+            return ["U01_DASHBOARD_ACTIVE_RUN_CLOSE_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError,
+            UnicodeDecodeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_ACTIVE_RUN_CLOSE_INVALID"]
+
+
+def _collect_u01_active_run_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root,
+                stderr=subprocess.DEVNULL).decode().strip()
+        def direct_leg(left, right, changed, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                    and git("rev-list", "--count", f"{left}..{right}") == "1"
+                    and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                    and set(git("log", "--format=", "--name-only", "--no-renames",
+                                f"{left}..{right}").splitlines()) == changed
+                    and set(git("diff", "--name-only", "--no-renames",
+                                left, right).splitlines()) == changed
+                    and set(git("diff", "--name-status", "--no-renames",
+                                left, right).splitlines()) ==
+                        {f"A\t{path}" if path in added else f"M\t{path}"
+                         for path in changed})
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}")
+                   != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development")
+                   != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or not direct_leg(_U01_ACTIVE_RUN_BASE, _U01_ACTIVE_RUN_W15, {
+                    "docs/WORK_STATUS.md",
+                    "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_INVOCATION.md",
+                    "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_WORK_INSTRUCTION.md"}, {
+                    "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_INVOCATION.md",
+                    "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_WORK_INSTRUCTION.md"})
+                or not direct_leg(_U01_ACTIVE_RUN_W15, _U01_ACTIVE_RUN_A14,
+                    set(_U01_ACTIVE_RUN_PATHS) | {"docs/WORK_STATUS.md"})):
+            return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+        if head == _U01_ACTIVE_RUN_A14:
+            return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+        progress = bundle["progress"]
+        binding = progress[_U01_ACTIVE_RUN_BINDING]
+        closed = progress["repository"]["projection_mode"] == _U01_ACTIVE_RUN_CLOSE
+        csha = binding["control_checkpoint"]
+        if not isinstance(csha, str) or re.fullmatch(r"[0-9a-f]{40}", csha) is None:
+            if closed or binding["active_projection_checkpoint"] is not None:
+                return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+            csha = head
+        changed = set(git("diff", "--name-only", "--no-renames",
+                          _U01_ACTIVE_RUN_A14, csha).splitlines())
+        if (changed != _U01_ACTIVE_RUN_CODE
+                or not direct_leg(_U01_ACTIVE_RUN_A14, csha, changed)):
+            return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+        if closed or binding["control_checkpoint"] is not None:
+            if binding["a14_docs_checkpoint"] != _U01_ACTIVE_RUN_A14:
+                return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            if (not isinstance(bsha, str) or re.fullmatch(r"[0-9a-f]{40}", bsha) is None
+                    or not direct_leg(csha, bsha, set(_U01_ACTIVE_RUN_PATHS) -
+                                      {"docs/progress/progress-events.json"} |
+                                      {"docs/WORK_STATUS.md"})):
+                return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+            if closed:
+                hsha = head
+                result = "docs/04_test_reports/U-01_DASHBOARD_ACTIVE_RUN_CARD_RESULT.md"
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if (re.fullmatch(r"[0-9a-f]{40}", hsha) is None
+                            or not direct_leg(hsha, head,
+                                              {result, "docs/WORK_STATUS.md"}, {result})):
+                        return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+                if not direct_leg(bsha, hsha, set(_U01_ACTIVE_RUN_PATHS) |
+                                  {"docs/WORK_STATUS.md"}):
+                    return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+        elif (binding["active_projection_checkpoint"] is not None
+              or any(subprocess.check_output(["git", "show", f"{_U01_ACTIVE_RUN_A14}:{path}"],
+                      cwd=root, stderr=subprocess.DEVNULL) != (root / path).read_bytes()
+                     for path in _U01_ACTIVE_RUN_PATHS)):
+            return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+        if subprocess.run(["git", "diff", "--check", "development/main...HEAD"],
+                          cwd=root, stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL).returncode:
+            return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError,
+            subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_ACTIVE_RUN_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_active_run = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode in {_U01_ACTIVE_RUN_MODE, _U01_ACTIVE_RUN_CLOSE}:
+        progress = bundle["progress"]
+        if mode == _U01_ACTIVE_RUN_CLOSE:
+            errors = _validate_u01_active_run_closed(bundle)
+        elif progress.get(_U01_ACTIVE_RUN_BINDING, {}).get("control_checkpoint") is not None:
+            errors = _validate_u01_active_run_projection(bundle)
+        else:
+            errors = _validate_u01_active_run_active(bundle)
+        root = Path(bundle["_root"])
+        for key in ("failure_ledger", "nonsemantic", "dir_registry",
+                    "event_contract", "schema_catalog"):
+            try:
+                if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                    errors.append("U01_DASHBOARD_ACTIVE_RUN_CONTROL_INVALID")
+            except (OSError, ValueError, TypeError, KeyError):
+                errors.append("U01_DASHBOARD_ACTIVE_RUN_CONTROL_INVALID")
+        if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry",
+                                         "event_contract")):
+            errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+            errors.extend(_validate_failure_projection(bundle))
+            errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+            errors.extend(_validate_dir(bundle))
+            errors.extend(_validate_reporting(progress))
+            errors.extend(_validate_reporting_state(bundle))
+            errors.extend(_validate_registry_refs(bundle))
+            errors.extend(_validate_referenced_hashes(bundle))
+            errors.extend(validate_detached_progress_binding(bundle))
+        else:
+            errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+        errors.extend(_collect_u01_active_run_git(bundle))
+        return sorted(set(errors))
+    return _validate_bundle_before_u01_active_run(bundle)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

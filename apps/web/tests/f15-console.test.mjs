@@ -1767,6 +1767,54 @@ const blockedRunData = () => {
   return data;
 };
 
+test('scoped active Run displays only complete exact-pair ACTIVE rows', () => {
+  const card = (data) => {
+    const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+      value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+        periodKey: '1d', readStatus: 'LOADED', data},
+      onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+    }));
+    const match = html.match(/<article class="status-card scoped-active-run">(.*?)<\/article>/s);
+    assert.ok(match, '실행 중 Run article must exist');
+    return match[1];
+  };
+  const mixed = blockedRunData();
+  mixed.current.run.items.push({runId: 'run-waiting', status: 'WAITING_APPROVAL', phase: 'APPROVAL_PENDING'});
+  mixed.current.run.count = 3;
+  assert.match(card(mixed), /실행 중 Run.*1건.*scoped_run_owner.*run-active.*VERIFYING/s);
+  assert.doesNotMatch(card(mixed), /run-blocked|run-waiting/);
+  const mixedHtml = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data: mixed},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  assert.match(mixedHtml.match(/<article class="status-card scoped-metric"><h3>run<\/h3>(.*?)<\/article>/s)?.[1] ?? '', />3</);
+  assert.match(mixedHtml.match(/<article class="status-card scoped-blocked-run">(.*?)<\/article>/s)?.[1] ?? '', /1건/);
+  const empty = blockedRunData();
+  empty.current.run = {...empty.current.run, count: 0, items: []};
+  assert.match(card(empty), /0건/);
+  for (const change of [
+    (data) => { data.current.run.status = 'UNAVAILABLE'; },
+    (data) => { data.current.run.source = 'other'; },
+    (data) => { data.current.run.reason = 'SOURCE_UNAVAILABLE'; },
+    (data) => { data.current.run.items[0].runId = 'run-active'; },
+    (data) => { data.current.run.items[0].status = 'UNKNOWN'; },
+    (data) => { data.current.run.items[0].phase = 'UNKNOWN'; },
+    (data) => { data.current.run.count = 1; },
+    (data) => { data.sourceCompleteness.current.run.complete = false; },
+    (data) => { data.sourceCompleteness.current.run.reason = 'SOURCE_UNAVAILABLE'; },
+    (data) => { data.sourceCompleteness.current.run.pair.environmentId = 'other'; },
+    (data) => { data.sourceCompleteness.current.run.eventTimeBasis = 'OTHER'; },
+    (data) => { data.current.run.observedAt = '2026-10-09T07:59:00+00:00'; },
+    (data) => { data.sourceCompleteness.current.run.observedAt = '2026-10-09T07:59:00+00:00'; },
+  ]) {
+    const data = blockedRunData();
+    change(data);
+    assert.match(card(data), /UNAVAILABLE/);
+    assert.doesNotMatch(card(data), /run-active|>0건<|>1건</);
+  }
+});
+
 test('scoped BLOCKED Run displays only matching current run rows and pair-bound evidence', () => {
   const render = (data) => renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
     value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),

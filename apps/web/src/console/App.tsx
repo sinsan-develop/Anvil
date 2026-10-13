@@ -1053,6 +1053,31 @@ function ScopedBlockedRunCard({blocked, run, blockedEvidence, runEvidence, pair,
       : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
 }
 
+function ScopedActiveRunCard({run, runEvidence, pair, observedAt}:
+    {run: unknown; runEvidence: unknown; pair: unknown; observedAt: unknown}) {
+  const source = 'scoped_run_owner';
+  const runItems = record(run) && Array.isArray(run.items) ? run.items : [];
+  const activeItems = runItems.filter((item) => record(item) && item.status === 'ACTIVE');
+  const complete = record(run) && validObservedAt(observedAt)
+    && run.status === 'AVAILABLE' && run.source === source && run.reason === null
+    && Number.isSafeInteger(run.count) && (run.count as number) >= 0
+    && validScopedOwnerItems('run', run)
+    && runItems.every((item) => record(item) && SCOPED_RUN_STATUSES.has(String(item.status))
+      && SCOPED_RUN_PHASES.has(String(item.phase)))
+    && validObservedAt(run.observedAt)
+    && Math.abs(Date.parse(run.observedAt as string) - Date.parse(observedAt as string)) <= 5000
+    && record(runEvidence) && runEvidence.reason === null
+    && validScopedEvidence(runEvidence, pair, source, 'CURRENT_OBSERVATION',
+      run.observedAt as string);
+  return <article className="status-card scoped-active-run"><h3>실행 중 Run</h3>
+    <p className={complete ? 'status-ready' : 'status-unavailable'}>
+      {complete ? `${activeItems.length}건` : 'UNAVAILABLE'}</p>
+    {complete ? <><p>원본 · {source}</p><p>관측 · {String(run.observedAt)}</p>
+      <ul>{activeItems.map((item) => <li key={String(item.runId)}>
+        {String(item.runId)} · {String(item.phase)}</li>)}</ul></>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPeriod}:
     {value: ScopedView; onRefresh: () => void; onSelectPair: (key: string) => void;
       onSelectPeriod: (period: string) => void}) {
@@ -1166,6 +1191,8 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
               completeness={currentEvidence?.[name]} pair={pair}
               expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}
               eventTimeBasis="CURRENT_OBSERVATION" expectedObservedAt={null}/>)}
+          <ScopedActiveRunCard run={current?.run} runEvidence={currentEvidence?.run}
+            pair={pair} observedAt={period.observedAt}/>
           <ScopedBlockedRunCard blocked={current?.blocked} run={current?.run}
             blockedEvidence={currentEvidence?.blocked} runEvidence={currentEvidence?.run}
             pair={pair} observedAt={period.observedAt}/>
