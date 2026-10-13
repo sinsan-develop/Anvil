@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 ACTIVE Run B14: C13 `6c71f45c5573fae3fa8ba65fcb5dd84065a5c266` exact4/독립C0I0M0/local-private clean G05seq2402PASS, 새빈PG15/0020·정상repository저장3Run→실행중1·fixture상태변경후0/BLOCKED2·OIDC/HTTPS/Chromium API/화면/7d갱신/otherpair403/철회제거 PASS. 기존API/DB불변, QAroot1/container3/port3 잔여0·정식service보존. epoch122ACTIVE; 전체R6/U01미수락·정식WSLUI미반영. H14회수후첫보고예정.
+
 U-01 실행 중 Run A14 임대(Main, 2026-10-13T20:20:43+09:00): W15 0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6 private동일·activelease0·rawEvent1~2399원문보존 후2400WI→2401epoch123worker→2402write ACTIVE24시간·허용4/제품UI1. 단일기존Primary가검증된current.run의ACTIVE건수/목록만UI에연결. 전체Run/API/DB/Database/BLOCKED보존·정식배포/전수R6/인수아님. 새로운G05route전예상RED.
 
 U-01 BLOCKED Run H13: B13 `38870888a200dfefe8d26c63f2ba88d6789e19fb` 게시본seq2397PASS 후 frozen Event seq1~2397 객체원문보존·2398write→2399worker REVOKED·active0, 제품추가변경0. 핵심격리동작/QA정리0은C13한정이며U01전체NOT_ACCEPTED/DEFER·정식화면미반영.
@@ -325,8 +327,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_IMPLEMENTATION_ONLY",
-  "repository_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+  "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_CLOSE_READY",
+  "repository_head": "6c71f45c5573fae3fa8ba65fcb5dd84065a5c266",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
