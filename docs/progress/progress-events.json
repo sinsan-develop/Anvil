@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2399,
+  "last_sequence": 2402,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -107898,7 +107898,119 @@
       "execution_fencing_token": "u01-dashboard-blocked-run-execution-fence-epoch-122-9cab26f047eb4b2caaa6a20704a266d6",
       "reason": "U01_DASHBOARD_BLOCKED_RUN_CLOSED"
     }
+  },
+  {
+    "sequence": 2400,
+    "event_id": "evt_u01_2400_dashboard_active_run_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_ACTIVE_RUN_CARD",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "occurred_at": "2026-10-13T20:20:43+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "E8421D421FFD04595F2BEC6D25A5B09F637A128F5960159CD3FFA53605DAF610",
+    "details": {
+      "work_instruction_id": "WI-U01-DASHBOARD-ACTIVE-RUN-CARD-20261013-001",
+      "work_instruction_path": "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "90AB26200FD9881B4873316440F44B5316053DD6B85F621CC62136448F9450D3",
+      "invocation_path": "docs/work_orders/U-01_DASHBOARD_ACTIVE_RUN_CARD_INVOCATION.md",
+      "invocation_sha256": "F7B70C2D9494BC3D4971B1DF0D3BD6596D616C07C12D57F25BCA3124629AA456",
+      "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+      "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "predecessor_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+      "predecessor_sequence": 2399,
+      "developer_exact_paths": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "product_write_scope": [
+        "apps/web/src/console/App.tsx"
+      ]
+    }
+  },
+  {
+    "sequence": 2401,
+    "event_id": "evt_u01_2401_dashboard_active_run_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_ACTIVE_RUN_CARD",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "occurred_at": "2026-10-13T20:20:43+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "8D849450B692928F4D1E89E4FD44442A53076328B2CDAB3054094FDEEECFB4DC",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-active-run",
+      "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-13T20:20:43+09:00",
+      "expires_at": "2026-10-14T20:20:43+09:00",
+      "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+      "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "lease_epoch": 123,
+      "lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+      "fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+      "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655"
+    }
+  },
+  {
+    "sequence": 2402,
+    "event_id": "evt_u01_2402_dashboard_active_run_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_ACTIVE_RUN_CARD",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "occurred_at": "2026-10-13T20:20:43+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "497F263CB29E17DD7DA1F6A65A7A48F263B43993771A1741718D62A202971CC5",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-active-run",
+      "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-13T20:20:43+09:00",
+      "expires_at": "2026-10-14T20:20:43+09:00",
+      "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+      "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "write_epoch": 123,
+      "lease_id": "write-lease-u01-dashboard-active-run-4ecfe8a798854e899cf2e838c0accf9d",
+      "worker_lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+      "fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+      "write_fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+      "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+      "product_write_scope": [
+        "apps/web/src/console/App.tsx"
+      ]
+    }
   }
   ],
-  "last_event_id": "evt_u01_2399_dashboard_blocked_run_worker_lease_revoked"
+  "last_event_id": "evt_u01_2402_dashboard_active_run_write_lease_issued"
 }

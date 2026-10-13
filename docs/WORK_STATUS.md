@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- 실행 중 Run A14 단일 writer 발행(Main, 2026-10-13): W15 `0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6` private동일·trackedclean·기존lease0 확인후 frozenEventseq1~2399객체원문보존, seq2400WI→2401epoch123worker→2402write ACTIVE24시간·서로다른token·허용4코드/제품App.tsx1을발행했다. WI90AB2620/InvocationF7B70C2D·부모승인hash를정본에결박, A14는정확Event/progress/HANDOFF/digest/WORK_STATUS5후독립검토/private게시예정이다. 새G05successor전genericRED는PASS아님. 단일Primary가current.run ACTIVE건수/목록UI RED→GREEN; Main동일4코드수정0, 기존DB/BLOCKED핵심실측·정리0보존. 전체U01/정식UI배포미완료·인수/PR/main/새branch/Oracle/ysna/Production/예약0.
+
 - 다음 미완성 실행 중 Run 착수(Main, 2026-10-13): BLOCKED결과tail `b21d1ec24f67b8cc0c9a1f2827ae021de110e750` private동일·trackedclean·actualG05seq2399PASS·lease0/QA0을확인했다. 일반run은전체관측Run수를표시하므로필수실행중카드가아니다. 기존실제exactpair current.run 상태목록에서ACTIVE만새카드로읽고전체count/API/DB/BLOCKED/Database는보존하는최소제품UI1·시험1·통제2 WI/Invocation을MAIN_RECONFIRMED_NON_SEMANTIC으로발행한다. W15정확3문서/새lease전코드write0, 신규successor전G05RED를PASS로승격하지않는다. 정식WSL화면미반영·다른미구현/인수미충족은별도유지, 다음A14 유효lease뒤단일Primary TDD/좁은WSL실측. 반복전수/구조개편/배포확장/예약0.
 
 - BLOCKED Run 첫 결과보고 tail(Main, 2026-10-13): H13 `c57935a17dfb7f7e8a715f3af0c3d82b975b3c35` local/private clean actualG05seq2399PASS·epoch122두leaseREVOKED/active0·독립C0/I0/M0. 신규 `docs/04_test_reports/U-01_DASHBOARD_BLOCKED_RUN_CARD_RESULT.md`와WORK_STATUS 정확2로 C13실제PG→인증API/UI BLOCKED1/목록·7d갱신·권한거부/철회·QA정리0, 국소시험범위·Windows미실행/인접fixture1FAIL·정식WSL화면미반영을구분한다. 카드개발핵심완료이나전체U01NOT_ACCEPTED/DEFER·R6FAIL·다른미구현유지. 다음은실제Run ACTIVE를읽는실행중UI카드. 이tail은게시후exactG05확인예정이며기존역사PASS를상속하지않는다.

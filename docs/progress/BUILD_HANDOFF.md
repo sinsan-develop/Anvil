@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 실행 중 Run A14 임대(Main, 2026-10-13T20:20:43+09:00): W15 0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6 private동일·activelease0·rawEvent1~2399원문보존 후2400WI→2401epoch123worker→2402write ACTIVE24시간·허용4/제품UI1. 단일기존Primary가검증된current.run의ACTIVE건수/목록만UI에연결. 전체Run/API/DB/Database/BLOCKED보존·정식배포/전수R6/인수아님. 새로운G05route전예상RED.
+
 U-01 BLOCKED Run H13: B13 `38870888a200dfefe8d26c63f2ba88d6789e19fb` 게시본seq2397PASS 후 frozen Event seq1~2397 객체원문보존·2398write→2399worker REVOKED·active0, 제품추가변경0. 핵심격리동작/QA정리0은C13한정이며U01전체NOT_ACCEPTED/DEFER·정식화면미반영.
 
 U-01 BLOCKED Run B13: C13 `9215621bf6eedfb02132b3f11c2198981791e548` exact7/独立C0I0M0/local-private clean G05seq2397PASS, 새빈PG15/0020·정상repository저장3Run→BLOCKED1·OIDC/HTTPS/Chromium API/화면/7d갱신/otherpair403/철회제거 PASS. 신규API1 PASS, OpenAPI paths101 A13동일, QAroot1/container3/port3 잔여0·정식service보존. epoch122ACTIVE; 전체R6/U01미수락·정식WSLUI미반영. H13회수후첫보고예정.
@@ -273,17 +275,58 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2399,
-  "last_event_id": "evt_u01_2399_dashboard_blocked_run_worker_lease_revoked",
+  "event_sequence": 2402,
+  "last_event_id": "evt_u01_2402_dashboard_active_run_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-dashboard-active-run",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-active-run",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-13T20:20:43+09:00",
+    "expires_at": "2026-10-14T20:20:43+09:00",
+    "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 123,
+    "lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+    "fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+    "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-active-run",
+    "subject_ref": "U-01/DASHBOARD-ACTIVE-RUN-CARD",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-13T20:20:43+09:00",
+    "expires_at": "2026-10-14T20:20:43+09:00",
+    "baseline_git_commit": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "dispatch_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 123,
+    "lease_id": "write-lease-u01-dashboard-active-run-4ecfe8a798854e899cf2e838c0accf9d",
+    "worker_lease_id": "worker-lease-u01-dashboard-active-run-7da80f34cbbb46298c7432783adff655",
+    "fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+    "write_fencing_token": "u01-dashboard-active-run-write-fence-epoch-123-4ecfe8a798854e899cf2e838c0accf9d",
+    "execution_fencing_token": "u01-dashboard-active-run-execution-fence-epoch-123-7da80f34cbbb46298c7432783adff655",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_BLOCKED_RUN_RECORDED_U01_PENDING",
-  "repository_head": "9215621bf6eedfb02132b3f11c2198981791e548",
+  "next_safe_action": "U01_DASHBOARD_ACTIVE_RUN_IMPLEMENTATION_ONLY",
+  "repository_head": "0ad3e1b31a2e061faa17451f6d7da34f9bcc40f6",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
