@@ -1,0 +1,72 @@
+{
+  "schema_version": "u01_approval_request_ledger_manifest/v1",
+  "environment": "WSL_SERVER_TEST_STAGING",
+  "acceptance": "NOT_ACCEPTED",
+  "release_decision": "DEFER",
+  "source_commit": "f03348ac680e624ee0ca41e2b97ca07b38aff677",
+  "source_files": {
+    "apps/api/anvil_api/asgi.py": "4CB6C5D50F4A29F376084D0160FD38C2E0BDCFD7DCAE84E65C4728030652C36B",
+    "apps/api/anvil_api/oidc_process.py": "4B4B95C0CEB61E981773A8A015F5EBE7D8ECC454E83726BDE0A97DA9A78D650F",
+    "apps/web/src/console/App.tsx": "3E42304CF27BFD3E77A148396B398A1D36478A8DC98DC5EB38D2707B0884F7FB",
+    "apps/web/tests/f15-console.test.mjs": "3CE379D0C97CB7ABB8A27C8FF28BE4B3EDE581B14E465CAE512A25C52A3A1DFB",
+    "migrations/versions/0021_approval_requests.py": "74880AD644592934AF311B834C3A4673955B691B3D6BA127FAF122C211ABEA7D",
+    "packages/api/scoped_dashboard.py": "A92AF49BA317C1EEDA3BED1A175ABDB02ED5F4DFED06D9347EB2CA7E4040A58E",
+    "packages/persistence/approval_request_repository.py": "CE2F0E60A7713127CFD81ED242D7737AA0F00E8AF17EB4CA2551F3D2E51123D2",
+    "packages/persistence/operations_approval_request_read.py": "88DC8094B84D45029E3CB2D6A8485E7667117C54398EEF6455C41AD55E92CB83",
+    "packages/planning/approval_requests.py": "B223C4C426B5C9412242BC36CC680785E40864E0A31828264EB72F6924F457B6",
+    "scripts/check_project_progress.py": "C4755FBE19BE547E8A67F2980FDDE67E231BC4A600C15C4E3AD08965ADE1C70C",
+    "tests/api/test_oidc_process.py": "F537B0649B9BCA138CF065E059D76996D001C8D7998ECED2D0050B3CFB7EDAE6",
+    "tests/api/test_u01_approval_request_reader.py": "BA9ECB213294F6A0F4785B390F3883858EE2DA0098C62289BF48BB33E29C2F77",
+    "tests/integration/test_u01_approval_request_pg15.py": "768E06DBB4506546FE386B4CB29C037BCCD89EF7D4CD1FAA4AF1809875CBEE2D",
+    "tests/persistence/test_approval_request_repository.py": "222E2E9723ED8B027079D5FC73C554DF55CCD350B845A17EA18EFB47365B17FA",
+    "tests/planning/test_approval_request_service.py": "B280116CA05FE02692C54B7E8C35B62944340A1EF2670F66D48B6445AE70498D",
+    "tests/tooling/test_u01_postmerge_control_projection.py": "08B99FE3338DC4EA453BD780A6C8D34354E875F164814AD71E279F2FFDA416E7"
+  },
+  "predecessor_manifest_commit": "639992c9e01de2bb151c639e91089c2c1aa31818",
+  "predecessor_manifest_sha256": "1D68A2A11D03B0DD415BCC16E535EF6810CED8C28225B3E78D0B4689837FB8FA",
+  "origin": "https://172.27.253.53:3770",
+  "images": {
+    "api": "sha256:9938508bcdff673ed1dcb47f2f7ccedb7c170e0f5cf73ada6ee1086130e7b9c5",
+    "issuer": "sha256:cefb8b27a23bbb665e09a16bc3256e8db08e4f31e4c1fd0171273606a390f8f5",
+    "web": "sha256:103252ad406f03e52ae2ad1799c9929e7e1ed2f5c96d50fe45ee4054c1069838"
+  },
+  "image_sources": {
+    "api": "f03348ac680e624ee0ca41e2b97ca07b38aff677",
+    "web": "f03348ac680e624ee0ca41e2b97ca07b38aff677",
+    "issuer": "87aa6c5e8edf1e2e890c3cb69a74bdf5f4b94a84"
+  },
+  "retained_source_files": {
+    "deploy/wsl/compose.u01-development.yml": "D48EC9D3C5815D4AEDCEA8B27C909B8C3C3BEC2D6BF2D9DFB106C76312268557",
+    "deploy/wsl/nginx-u01-development.conf": "683CD0FB23C0E18CD16297CD162F11FDDD1C2901D2AB6FFCB2AB3B5F6F278CD1",
+    "deploy/wsl/oidc_qa_issuer.py": "003A7BDCD16124B641274D1E454088DEE2FBB4E9CD9B8E4209A8A2133AED9924",
+    "deploy/wsl/U01DevelopmentReleaseManifest.template.json": "4B2B8AE5692CE49E364F9F3302B07221534467E8AEAEFC134F94A1CC952A8C9C"
+  },
+  "database": {
+    "previous_revision": "0020_f19a_pair_grants",
+    "target_revision": "0021_approval_requests",
+    "data_policy": "PRESERVE_EXISTING_AND_APPROVAL_AUDIT",
+    "backup_proof_sha256": "A1EE8F461C5BE814DA3B4AC86A48CFA57F3C7531D8A89F421D1591A980A8F177",
+    "restore_proof_sha256": "0C7E4D51BECC1AA0A5155134A4E050BCBB23F90C15FE12F27E39FD232A0F7ED7"
+  },
+  "rollback": {
+    "api": {
+      "container_id": "3c52b542ae951f0ab20c7d22ee5de43324cbe537a7e09193111001398f3a24dd",
+      "image_id": "sha256:b0872180e6e72f06af00d7fc8f359fe2113fc5131a21fc6eba8d2c592e3d1f89",
+      "source_commit": "87aa6c5e8edf1e2e890c3cb69a74bdf5f4b94a84"
+    },
+    "web": {
+      "container_id": "1497bbf9b76b319bd82233267f58aebb542e6f21b76685e908e759b0b12b7b41",
+      "image_id": "sha256:467066b6dce412f74766262e60ec9b59b39c660a28fa1b5b5c8d4dbc76b3939b",
+      "source_commit": "41f489253b6b4d02369b3db489bae755e02eeb18"
+    },
+    "database_policy": "NO_DOWNGRADE_PRESERVE_ROWS_DISABLE_FEATURE"
+  },
+  "unchanged": [
+    "ISSUER",
+    "READER_AUTH",
+    "CREDENTIALS",
+    "CERTIFICATE",
+    "NETWORK",
+    "RETAINED_ROLLBACKS"
+  ]
+}
