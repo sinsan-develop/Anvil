@@ -2833,6 +2833,104 @@ function approvalData() {
     pair: {projectId: 'project-a', environmentId: 'test'}, eventTimeBasis: 'CURRENT_OBSERVATION', observedAt: at, reason: null};
   return data;
 }
+
+function quarantineData(count = 1) {
+  const data = scopedData(scopedPairs[0]); const at = data.period.observedAt;
+  data.current.health = {};
+  data.current.queue = {status: 'AVAILABLE', count, source: 'scoped_queue_owner', observedAt: at, reason: null,
+    items: Array.from({length: count}, (_, i) => ({jobId: `job-${i}`, status: 'QUARANTINED'}))};
+  data.current.health.queue = {status: count ? 'LATE' : 'UNAVAILABLE', source: 'scoped_queue_quarantine',
+    observedAt: at, reason: count ? 'QUEUE_QUARANTINED' : 'NO_QUEUE_HEALTH_SIGNAL', quarantineCount: count,
+    items: Array.from({length: count}, (_, i) => ({jobId: `job-${i}`, attempts: 2, quarantinedAt: at}))};
+  for (const [name, source] of [['queue', 'scoped_queue_owner'], ['queueHealth', 'scoped_queue_quarantine']]) {
+    data.sourceCompleteness.current[name] = {source, complete: true,
+      pair: {projectId: 'project-a', environmentId: 'test'}, eventTimeBasis: 'CURRENT_OBSERVATION', observedAt: at, reason: null};
+  }
+  return data;
+}
+function quarantineHtml(data, readStatus = 'LOADED') {
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus, data}, onRefresh() {}, onSelectPair() {}, onSelectPeriod() {},
+  }));
+  return html.match(/<article[^>]*><h3>selected-queue<\/h3>[\s\S]*?<\/article>/)?.[0] ?? html;
+}
+test('scoped quarantine renders bounded observations without claiming healthy', (t) => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-09T08:00:00Z'));
+  for (const count of [0, 1, 2]) {
+    const html = quarantineHtml(quarantineData(count));
+    assert.match(html, /Queue 격리 이상/); assert.match(html, new RegExp(`관측된 격리 ${count}건`));
+    assert.doesNotMatch(html, /HEALTHY|href=/);
+    if (count) { assert.match(html, /LATE/); assert.match(html, /<details><summary>격리 작업 검토/); }
+    else assert.match(html, /관측된 격리 작업은 없지만 Queue 전체 건강도는 미확인입니다/);
+  }
+  const data = quarantineData();
+  data.current.queue.items[0].jobId = '<b>job</b>';
+  data.current.health.queue.items[0].jobId = '<b>job</b>';
+  assert.match(quarantineHtml(data), /&lt;b&gt;job&lt;\/b&gt;/);
+});
+test('scoped quarantine rejects mismatches and erases expired or revoked observations', (t) => {
+  let now = Date.parse('2026-10-09T08:00:00Z'); t.mock.method(Date, 'now', () => now);
+  const changes = [
+    d => { d.current.health.queue.quarantineCount = 2; },
+    d => { d.current.health.queue.items.push({...d.current.health.queue.items[0]}); d.current.health.queue.quarantineCount = 2; },
+    d => { d.current.health.queue.items[0].attempts = true; },
+    d => { d.current.health.queue.items[0].quarantinedAt = '2026-10-09T09:00:00Z'; },
+    d => { d.current.health.queue.items[0].reason = 'DO_NOT_RENDER'; },
+    d => { d.current.health.queue.status = 'HEALTHY'; },
+    d => { d.current.queue.items[0].status = 'PENDING'; },
+    d => { d.current.queue.count = 2; },
+    d => { d.current.health.queue.observedAt = '2026-10-09T07:00:00Z'; },
+    d => { d.sourceCompleteness.current.queueHealth.pair.projectId = 'other'; },
+    d => { d.sourceCompleteness.current.queueHealth.complete = false; },
+    d => { d.sourceCompleteness.current.queue.complete = false; },
+  ];
+  for (const change of changes) {
+    const data = quarantineData(); change(data); const html = quarantineHtml(data);
+    assert.match(html, /UNAVAILABLE/); assert.doesNotMatch(html, /job-0|관측된 격리 \d|DO_NOT_RENDER/);
+  }
+  now += 300001;
+  assert.doesNotMatch(quarantineHtml(quarantineData()), /job-0|관측된 격리 \d/);
+  assert.doesNotMatch(quarantineHtml(quarantineData(), 'BLOCKED'), /job-0|관측된 격리 \d/);
+});
+test('scoped quarantine rejects DEL and C1 controls without rendering identity', (t) => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-09T08:00:00Z'));
+  for (const control of ['\x7f', '\x80', '\x9f']) {
+    const data = quarantineData(); const jobId = `job${control}0`;
+    data.current.queue.items[0].jobId = jobId;
+    data.current.health.queue.items[0].jobId = jobId;
+    const html = quarantineHtml(data);
+    assert.match(html, /UNAVAILABLE/); assert.doesNotMatch(html, /관측된 격리 \d|격리 작업 검토/);
+    assert.equal(html.includes(jobId), false);
+  }
+});
+test('scoped quarantine rejects array and object queue statuses without coercion', (t) => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-09T08:00:00Z'));
+  let coercions = 0;
+  for (const status of [['PENDING'], {toString() { coercions += 1; return 'PENDING'; }}]) {
+    const data = quarantineData(0);
+    data.current.queue.count = 1; data.current.queue.items = [{jobId: 'pending-job', status}];
+    const html = quarantineHtml(data);
+    assert.match(html, /SOURCE_UNAVAILABLE/); assert.doesNotMatch(html, /관측된 격리 \d/);
+  }
+  assert.equal(coercions, 0);
+});
+test('scoped quarantine timer removes observations without another fetch and cancels obsolete expiry', (t) => {
+  t.mock.timers.enable({apis: ['Date', 'setTimeout'], now: Date.parse('2026-10-09T08:00:00Z')});
+  const data = quarantineData();
+  let html = quarantineHtml(data); let renders = 0;
+  const stop = consoleApp.scheduleQueueExpiry(data.current.health.queue.observedAt, () => {
+    renders += 1; html = quarantineHtml(data);
+  });
+  t.mock.timers.tick(300000);
+  assert.equal(renders, 0); assert.match(html, /관측된 격리 1건/);
+  t.mock.timers.tick(1);
+  assert.equal(renders, 1); assert.match(html, /UNAVAILABLE/);
+  assert.doesNotMatch(html, /job-0|관측된 격리 \d|격리 작업 검토/);
+  stop();
+  const cancel = consoleApp.scheduleQueueExpiry(new Date(Date.now()).toISOString(), () => { renders += 1; });
+  cancel(); t.mock.timers.tick(300001); assert.equal(renders, 1);
+});
 function approvalHtml(data) {
   const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
     value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),

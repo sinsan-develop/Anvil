@@ -333,6 +333,297 @@ class U01ApprovalRequestLedgerEpoch130Tests(unittest.TestCase):
                              ["U01_APPROVAL_REQUEST_LEDGER_CLOSE_INVALID"])
 
 
+class U01ScopedQueueQuarantineEpoch132Tests(unittest.TestCase):
+    A23 = "f864e0745b44a3cf3669b2cf6a4ec621e11431e8"
+
+    def issued(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A23}:{path}"], cwd=ROOT)
+                 for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle.update(progress=json.loads(files[PATHS[0]]), events=json.loads(files[PATHS[1]]),
+                      handoff_text=files[PATHS[2]].decode(), detached_digest=json.loads(files[PATHS[3]]))
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["_file_hashes"].update({p: hashlib.sha256(raw).hexdigest().upper() for p, raw in files.items()})
+        return bundle, files
+
+    def test_a23_exact_actor_tokens_product_scope_and_expiry(self):
+        validate = getattr(checker, "_validate_u01_scoped_queue_quarantine_active", None)
+        self.assertIsNotNone(validate, "waiting_approval_run strict route absent")
+        bundle, files = self.issued()
+        at = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validate(bundle, now=at, archived_files=files), [])
+        for mutate in (
+            lambda b: b["progress"]["u01_scoped_queue_quarantine_binding"].update(approval_sha256="0"*64),
+            lambda b: b["events"]["events"][2444].update(event_type="FORGED"),
+            lambda b: b["progress"]["worker_lease"].update(lease_epoch=131),
+            lambda b: b["progress"]["worker_lease"].update(actor_id="forged"),
+            lambda b: b["progress"]["worker_lease"].update(execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"]["product_write_scope"].append("apps/api/forged.py"),
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+        ):
+            bad = deepcopy(bundle); mutate(bad)
+            self.assertEqual(validate(bad, now=at, archived_files=files),
+                             ["U01_SCOPED_QUEUE_QUARANTINE_CONTROL_INVALID"])
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertEqual(validate(bundle, now=expires, archived_files=files),
+                         ["U01_SCOPED_QUEUE_QUARANTINE_CONTROL_INVALID"])
+
+    def test_m22_exact_retained_images_and_predecessor_binding(self):
+        validate = getattr(checker, "validate_u01_scoped_queue_quarantine_manifest", None)
+        self.assertIsNotNone(validate)
+        baseline = json.loads(subprocess.check_output(["git", "show",
+            "e92bc992ba7c0abd28ff027a52115f362aff09fa:deploy/wsl/U01PlanningSourceRegistrationReleaseManifest.json"], cwd=ROOT))
+        value = self.manifest(baseline)
+        self.assertEqual(validate(value, baseline), [])
+        for mutate in (
+            lambda v: v.update(extra=True), lambda v: v.update(schema_version=1),
+            lambda v: v["images"].update(issuer="sha256:" + "f" * 64),
+            lambda v: v["image_sources"].update(issuer="f" * 40),
+            lambda v: v["retained_source_files"].update({"deploy/wsl/compose.u01-development.yml": "F" * 64}),
+            lambda v: v.update(origin="https://other.invalid"),
+            lambda v: v.update(predecessor_manifest_sha256="F" * 64),
+            lambda v: v["source_files"].update({"apps/api/forged.py": "A" * 64}),
+            lambda v: v["rollback"].update(public_runtime_change=False),
+            lambda v: v["database"].update(registration_approval_sha256="0"*64),
+            lambda v: v["database"].update(revision="0020_f19a_pair_grants"),
+        ):
+            bad = deepcopy(value); mutate(bad)
+            self.assertEqual(validate(bad, baseline), ["U01_SCOPED_QUEUE_QUARANTINE_MANIFEST_INVALID"])
+
+    @staticmethod
+    def manifest(baseline):
+        return {"schema_version": "u01_scoped_queue_quarantine_manifest/v1",
+            "environment": "WSL_SERVER_TEST_STAGING", "acceptance": "NOT_ACCEPTED", "release_decision": "DEFER",
+            "source_commit": "c"*40, "source_files": {p: "A"*64 for p in checker._U01_SCOPED_QUEUE_QUARANTINE_CODE},
+            "predecessor_manifest_commit": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
+            "predecessor_manifest_sha256": "850D8472C88FD480312C64CBFEE2AFB31F63E8AFCD4CB7D72D901EF78001BF42",
+            "origin": baseline["origin"], "images": {**baseline["images"], "api": "sha256:"+"a"*64, "web": "sha256:"+"b"*64},
+            "image_sources": {**baseline["image_sources"], "api": "c"*40, "web": "c"*40},
+            "retained_source_files": {**baseline["retained_source_files"],
+                "deploy/wsl/U01PlanningSourceRegistrationReleaseManifest.json": "850D8472C88FD480312C64CBFEE2AFB31F63E8AFCD4CB7D72D901EF78001BF42"},
+            "database": deepcopy(baseline["database"]),
+            "rollback": {"policy": "PRESERVE_DB_ROWS_RESTORE_PREVIOUS_API_WEB", "public_runtime_change": True,
+                "current_runtime": {
+                    "api": {"container_id": "a773c348b7c7111cff7a8a9165c09fa122b09b4685337a34126da067112723aa",
+                        "image_id": baseline["images"]["api"], "source_commit": baseline["image_sources"]["api"]},
+                    "web": {"container_id": "ccaf91d5dc99729be1b0aa1709866a4af01d119dbb84d97f710b1afd96bb6e77",
+                        "image_id": baseline["images"]["web"], "source_commit": baseline["image_sources"]["web"]}}}}
+    C22, M22, B22, H22 = (char * 40 for char in "cdbf")
+
+    def manifest_raw(self):
+        baseline = json.loads(subprocess.check_output(["git", "show",
+            "e92bc992ba7c0abd28ff027a52115f362aff09fa:deploy/wsl/U01PlanningSourceRegistrationReleaseManifest.json"], cwd=ROOT))
+        return (json.dumps(self.manifest(baseline), indent=2) + "\n").encode()
+
+    def checkpoint_b22(self):
+        bundle, files = self.issued()
+        progress = bundle["progress"]
+        action = "U01_SCOPED_QUEUE_QUARANTINE_CLOSE_READY"
+        status = "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE"
+        progress["u01_scoped_queue_quarantine_binding"].update(a23_docs_checkpoint=self.A23,
+            control_checkpoint=self.C22, manifest_checkpoint=self.M22,
+            manifest_sha256=hashlib.sha256(self.manifest_raw()).hexdigest().upper(),
+            status=status, next_safe_action=action)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=self.M22, remote_head=self.M22,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-scoped-queue-quarantine-b22-seq2447")
+        bundle["handoff"].update(repository_head=self.M22, next_safe_action=action)
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def closed_h22(self):
+        bundle, files = self.checkpoint_b22()
+        progress, stream = bundle["progress"], bundle["events"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_SCOPED_QUEUE_QUARANTINE_CLOSED"
+        for seq, kind, name, token in (
+            (2448, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2449, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = progress[name + "_lease"]
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": seq,
+                "event_id": f"evt_u01_{seq}_scoped_queue_quarantine_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_SCOPED_QUEUE_QUARANTINE_CLOSE",
+                "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+            progress[f"completed_u01_scoped_queue_quarantine_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        stream.update(last_sequence=2449, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2447', '"last_sequence": 2449', 1)
+        rendered = rendered.replace('"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(files[PATHS[1]]).hexdigest().upper()
+        action = "U01_SCOPED_QUEUE_QUARANTINE_RECORDED_U01_PENDING"
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_scoped_queue_quarantine_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B22, event_sequence=2449)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2449,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-scoped-queue-quarantine-h22-seq2449")
+        progress["repository"].update(projection_mode=reason, head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2449, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2449
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def test_b22_requires_actual_manifest_and_exact_projection(self):
+        validator = getattr(checker, "_validate_u01_scoped_queue_quarantine_projection", None)
+        self.assertIsNotNone(validator)
+        bundle, files = self.checkpoint_b22()
+        at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with patch.object(checker, "_u01_scoped_queue_quarantine_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(bundle, now=at, archived_files=files), [])
+            for change in (
+                lambda b: b["progress"]["u01_scoped_queue_quarantine_binding"].update(active_projection_checkpoint=self.B22),
+                lambda b: b["progress"]["u01_scoped_queue_quarantine_binding"].update(manifest_sha256="0" * 64),
+                lambda b: b["progress"].update(runtime_next_action="ACCEPTED"),
+                lambda b: b["events"]["events"][-1].update(actor_id="forged"),
+            ):
+                bad = deepcopy(bundle)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=files),
+                                 ["U01_SCOPED_QUEUE_QUARANTINE_PROJECTION_INVALID"])
+
+    def test_h22_preserves_raw_prefix_and_revokes_exact_two_leases(self):
+        validator = getattr(checker, "_validate_u01_scoped_queue_quarantine_closed", None)
+        self.assertIsNotNone(validator)
+        b, bfiles = self.checkpoint_b22()
+        h, hfiles = self.closed_h22()
+        at = datetime.fromisoformat(h["progress"]["updated_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_scoped_queue_quarantine_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=at, archived_files=hfiles), [])
+            for change in (
+                lambda x: x["events"]["events"][-1].update(event_type="FORGED"),
+                lambda x: x["progress"]["completed_u01_scoped_queue_quarantine_write_lease"].update(write_fencing_token="forged"),
+                lambda x: x["progress"].update(active_agent="forged"),
+            ):
+                bad = deepcopy(h)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=hfiles),
+                                 ["U01_SCOPED_QUEUE_QUARANTINE_CLOSE_INVALID"])
+
+
+    def test_public_route_preserves_all_canonical_controls_and_rejects_tamper(self):
+        original_read = Path.read_bytes
+        active, afiles = self.issued()
+        projected, bfiles = self.checkpoint_b22()
+        closed, hfiles = self.closed_h22()
+        for bundle, files in ((active, afiles), (projected, bfiles), (closed, hfiles)):
+            current = {ROOT / path: raw for path, raw in files.items()}
+            def read_bytes(path):
+                return current[path] if path in current else original_read(path)
+            with patch.object(Path, "read_bytes", read_bytes), \
+                    patch.object(checker, "_u01_scoped_queue_quarantine_manifest_at", return_value=self.manifest_raw()), \
+                    patch.object(checker, "_u01_task4_report_archive", return_value=(projected, bfiles)), \
+                    patch.object(checker, "_collect_u01_scoped_queue_quarantine_git", return_value=[]):
+                self.assertEqual(checker.validate_bundle(bundle), [])
+                current[ROOT / PATHS[0]] = b"{}\n"
+                self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_h22_expiry_and_raw_prefix_tamper_are_not_masked_by_terminal_state(self):
+        b, bfiles = self.checkpoint_b22()
+        h, hfiles = self.closed_h22()
+        validator = checker._validate_u01_scoped_queue_quarantine_closed
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_scoped_queue_quarantine_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=expires + timedelta(seconds=1), archived_files=hfiles), [])
+            late = deepcopy(h)
+            late["progress"]["updated_at"] = expires.isoformat()
+            self.assertEqual(validator(late, now=expires, archived_files=hfiles),
+                             ["U01_SCOPED_QUEUE_QUARANTINE_CLOSE_INVALID"])
+            altered = dict(hfiles)
+            altered[PATHS[1]] = altered[PATHS[1]].replace(b'"sequence": 1,', b'"sequence":  1,', 1)
+            self.assertEqual(json.loads(altered[PATHS[1]]), h["events"])
+            self.assertEqual(validator(h, now=expires, archived_files=altered),
+                             ["U01_SCOPED_QUEUE_QUARANTINE_CLOSE_INVALID"])
+
+
+    def test_c22_m22_git_direct_children_source_hash_and_dc_append_binding(self):
+        bundle, _ = self.issued()
+        original = subprocess.check_output
+        manifest_path = "deploy/wsl/U01ScopedQueueQuarantineReleaseManifest.json"
+        wi = "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"
+        w = "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398"
+        legs = {w: ("ca76e5bc15bc8752a0826672c8143dd3e2ba316b",
+            {wi, inv, "docs/WORK_STATUS.md"},
+            {wi, inv}),
+            self.A23: (w, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            self.C22: (self.A23, checker._U01_SCOPED_QUEUE_QUARANTINE_CODE, checker._U01_SCOPED_QUEUE_QUARANTINE_ADDED),
+            self.M22: (self.C22, {manifest_path, "docs/WORK_STATUS.md"}, {manifest_path}),
+            self.B22: (self.M22, set(PATHS) - {PATHS[1]} | {"docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"}, set()),
+            self.H22: (self.B22, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            "a" * 40: (self.H22, {"docs/04_test_reports/U-01_SCOPED_QUEUE_QUARANTINE_RESULT.md", "docs/WORK_STATUS.md", "design_change.md"},
+                       {"docs/04_test_reports/U-01_SCOPED_QUEUE_QUARANTINE_RESULT.md"})}
+        active, _ = self.issued()
+        projected, _ = self.checkpoint_b22()
+        closed, _ = self.closed_h22()
+        for head in (self.C22, self.M22, self.B22, self.H22, "a" * 40):
+            bundle = active if head in (self.C22, self.M22) else projected if head == self.B22 else closed
+            for scenario in ("valid", "dirty", "remote", "extra", "merge", "manifest", "source_hash", "dc_prefix", "dc_changed"):
+                with self.subTest(head=head, scenario=scenario):
+                    def output(command, **kwargs):
+                        args = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if args == ["rev-parse", "HEAD"] or args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return head.encode()
+                        if args == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M forged" if scenario == "dirty" else b""
+                        if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                            return (legs[args[3]][0] + (" " + "0" * 40 if scenario == "merge" else "")).encode()
+                        if args[:1] == ["rev-list"]:
+                            return b"1" if "--count" in args else b""
+                        if args[:1] == ["log"]:
+                            paths = legs[args[-1].split("..")[-1]][1]
+                            return "\n".join(sorted(paths)).encode()
+                        if args[:1] == ["diff"] and args[-1] in legs:
+                            paths, added = legs[args[-1]][1:]
+                            if scenario == "extra":
+                                paths = paths | {"apps/api/forged.py"}
+                            return "\n".join(("A\t" if p in added else "M\t") + p
+                                if "--name-status" in args else p for p in sorted(paths)).encode()
+                        if args == ["show", f"{self.C22}:scripts/check_project_progress.py"]:
+                            return (ROOT / "scripts/check_project_progress.py").read_bytes()
+                        if args == ["show", f"{self.M22}:{manifest_path}"]:
+                            return b"{}" if scenario == "manifest" else self.manifest_raw()
+                        if args == ["show", f"{w}:design_change.md"]:
+                            raw = original(command, **kwargs)
+                            if scenario == "dc_prefix":
+                                return b"corrupted prior history" + raw
+                            if scenario == "dc_changed":
+                                return raw + b"unapproved append"
+                            return raw
+                        return original(command, **kwargs)
+                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                            patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                return_value="0" * 40 if scenario == "remote" else head), \
+                            patch.object(checker, "_u01_scoped_queue_quarantine_source_hashes", side_effect=lambda _b, _sha, paths: ({p: ("B" if scenario == "source_hash" else "A") * 64 for p in paths} if set(paths) == checker._U01_SCOPED_QUEUE_QUARANTINE_CODE else {p: self.manifest(checker._u01_scoped_queue_quarantine_baseline(_b))["retained_source_files"][p] for p in paths})):
+                        errors = checker._collect_u01_scoped_queue_quarantine_git(bundle)
+                    good = scenario == "valid" or (head == self.C22 and scenario in ("manifest", "source_hash"))
+                    self.assertEqual(errors, [] if good else ["U01_SCOPED_QUEUE_QUARANTINE_GIT_INVALID"])
+
+
 class U01PlanningSourceRegistrationEpoch131Tests(unittest.TestCase):
     A22 = "b8b36b29f1ea5c26a210f36860a28d62cd5a8a40"
 
@@ -524,7 +815,11 @@ class U01PlanningSourceRegistrationEpoch131Tests(unittest.TestCase):
 
 
     def test_c21_m21_git_direct_children_source_hash_and_dc_append_binding(self):
-        bundle, _ = self.issued()
+        bundle, frozen_files = self.issued()
+        original_read = Path.read_bytes
+        frozen_paths = {ROOT / path: raw for path, raw in frozen_files.items()}
+        def historical_read(path):
+            return frozen_paths[path] if path in frozen_paths else original_read(path)
         original = subprocess.check_output
         manifest_path = "deploy/wsl/U01PlanningSourceRegistrationReleaseManifest.json"
         wi = "docs/work_orders/U-01_PLANNING_SOURCE_REGISTRATION_WORK_INSTRUCTION.md"
@@ -581,7 +876,8 @@ class U01PlanningSourceRegistrationEpoch131Tests(unittest.TestCase):
                             patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
                                 return_value="0" * 40 if scenario == "remote" else head), \
                             patch.object(checker, "_u01_planning_source_registration_source_hashes", side_effect=lambda _b, _sha, paths: ({p: ("B" if scenario == "source_hash" else "A") * 64 for p in paths} if set(paths) == checker._U01_PLANNING_SOURCE_REGISTRATION_CODE else {p: self.manifest(checker._u01_planning_source_registration_baseline(_b))["retained_source_files"][p] for p in paths})):
-                        errors = checker._collect_u01_planning_source_registration_git(bundle)
+                        with patch.object(Path, "read_bytes", historical_read):
+                            errors = checker._collect_u01_planning_source_registration_git(bundle)
                     good = scenario == "valid" or (head == self.C21 and scenario in ("manifest", "source_hash"))
                     self.assertEqual(errors, [] if good else ["U01_PLANNING_SOURCE_REGISTRATION_GIT_INVALID"])
 

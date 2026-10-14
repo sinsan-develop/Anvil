@@ -87691,5 +87691,422 @@ def validate_bundle(bundle):
     return sorted(set(errors))
 
 
+_U01_SCOPED_QUEUE_QUARANTINE_A23 = "f864e0745b44a3cf3669b2cf6a4ec621e11431e8"
+_U01_SCOPED_QUEUE_QUARANTINE_W24 = "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398"
+_U01_SCOPED_QUEUE_QUARANTINE_BASE = "ca76e5bc15bc8752a0826672c8143dd3e2ba316b"
+_U01_SCOPED_QUEUE_QUARANTINE_M21 = "e92bc992ba7c0abd28ff027a52115f362aff09fa"
+_U01_SCOPED_QUEUE_QUARANTINE_M21_HASH = "850D8472C88FD480312C64CBFEE2AFB31F63E8AFCD4CB7D72D901EF78001BF42"
+_U01_SCOPED_QUEUE_QUARANTINE_PATHS = _U01_ACTIVE_RUN_PATHS
+_U01_SCOPED_QUEUE_QUARANTINE_ADDED = set()
+_U01_SCOPED_QUEUE_QUARANTINE_PRODUCT = {
+    "packages/api/scoped_dashboard.py", "apps/api/anvil_api/oidc_process.py", "apps/web/src/console/App.tsx"}
+_U01_SCOPED_QUEUE_QUARANTINE_CODE = _U01_SCOPED_QUEUE_QUARANTINE_PRODUCT | {
+    "tests/api/test_u01_scoped_dashboard_reader.py", "tests/api/test_u01_scoped_dashboard_api.py",
+    "tests/api/test_oidc_process.py", "apps/web/tests/f15-console.test.mjs",
+    "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"}
+_U01_SCOPED_QUEUE_QUARANTINE_RETAINED = _U01_PLANNING_SOURCE_REGISTRATION_RETAINED | {_U01_PLANNING_SOURCE_REGISTRATION_MANIFEST}
+_U01_SCOPED_QUEUE_QUARANTINE_BINDING = "u01_scoped_queue_quarantine_binding"
+_U01_SCOPED_QUEUE_QUARANTINE_MODE = "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE"
+_U01_SCOPED_QUEUE_QUARANTINE_CLOSE = "U01_SCOPED_QUEUE_QUARANTINE_CLOSED"
+_U01_SCOPED_QUEUE_QUARANTINE_MANIFEST = "deploy/wsl/U01ScopedQueueQuarantineReleaseManifest.json"
+_U01_SCOPED_QUEUE_QUARANTINE_APPROVAL = "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"
+
+
+def validate_u01_scoped_queue_quarantine_manifest(value, baseline):
+    def matches(item, pattern):
+        return type(item) is str and re.fullmatch(pattern, item) is not None
+    try:
+        if type(value) is not dict or set(value) != {
+            "schema_version", "environment", "acceptance", "release_decision", "source_commit", "source_files",
+            "predecessor_manifest_commit", "predecessor_manifest_sha256", "origin", "images", "image_sources",
+            "retained_source_files", "database", "rollback"}:
+            raise ValueError()
+        files, images, sources = (value[k] for k in ("source_files", "images", "image_sources"))
+        retained = {**baseline["retained_source_files"],
+            _U01_PLANNING_SOURCE_REGISTRATION_MANIFEST: _U01_SCOPED_QUEUE_QUARANTINE_M21_HASH}
+        if (value["schema_version"] != "u01_scoped_queue_quarantine_manifest/v1"
+                or value["environment"] != "WSL_SERVER_TEST_STAGING" or value["acceptance"] != "NOT_ACCEPTED"
+                or value["release_decision"] != "DEFER" or not matches(value["source_commit"], r"[0-9a-f]{40}")
+                or value["predecessor_manifest_commit"] != _U01_SCOPED_QUEUE_QUARANTINE_M21
+                or value["predecessor_manifest_sha256"] != _U01_SCOPED_QUEUE_QUARANTINE_M21_HASH
+                or value["origin"] != baseline["origin"] or value["origin"] != "https://172.27.253.53:3770"
+                or type(files) is not dict or not _U01_SCOPED_QUEUE_QUARANTINE_PRODUCT <= set(files) <= _U01_SCOPED_QUEUE_QUARANTINE_CODE
+                or not all(matches(x, r"[0-9A-F]{64}") for x in files.values())
+                or type(images) is not dict or set(images) != {"planning_host", "api", "web", "issuer"}
+                or not all(matches(x, r"sha256:[0-9a-f]{64}") for x in images.values())
+                or any(images[k] != baseline["images"][k] for k in ("planning_host", "issuer"))
+                or sources != {**baseline["image_sources"], "api": value["source_commit"], "web": value["source_commit"]}
+                or value["retained_source_files"] != retained
+                or value["database"] != baseline["database"]
+                or type(value["database"].get("schema_change")) is not bool
+                or value["rollback"] != {"policy": "PRESERVE_DB_ROWS_RESTORE_PREVIOUS_API_WEB",
+                    "public_runtime_change": True, "current_runtime": {
+                        "api": {"container_id": "a773c348b7c7111cff7a8a9165c09fa122b09b4685337a34126da067112723aa",
+                            "image_id": baseline["images"]["api"], "source_commit": baseline["image_sources"]["api"]},
+                        "web": {"container_id": "ccaf91d5dc99729be1b0aa1709866a4af01d119dbb84d97f710b1afd96bb6e77",
+                            "image_id": baseline["images"]["web"], "source_commit": baseline["image_sources"]["web"]}}}
+                or type(value["rollback"].get("public_runtime_change")) is not bool):
+            raise ValueError()
+        return []
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return ["U01_SCOPED_QUEUE_QUARANTINE_MANIFEST_INVALID"]
+
+
+def _u01_scoped_queue_quarantine_frozen(bundle):
+    def blob(sha, path):
+        return subprocess.check_output(["git", "show", f"{sha}:{path}"], cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+    frozen = {path: blob(_U01_SCOPED_QUEUE_QUARANTINE_A23, path)
+        for path in _U01_SCOPED_QUEUE_QUARANTINE_PATHS}
+    progress = json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[0]])
+    stream = json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]])
+    prior = blob(_U01_SCOPED_QUEUE_QUARANTINE_BASE, _U01_SCOPED_QUEUE_QUARANTINE_PATHS[1])
+    binding = progress[_U01_SCOPED_QUEUE_QUARANTINE_BINDING]
+    if (raw_event_object_prefix_bytes(prior, 2444) != raw_event_object_prefix_bytes(
+            frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]], 2444)
+            or len(stream["events"]) != 2447 or stream["last_sequence"] != 2447
+            or binding["w24_checkpoint"] != _U01_SCOPED_QUEUE_QUARANTINE_W24
+            or binding["previous_result_checkpoint"] != _U01_SCOPED_QUEUE_QUARANTINE_BASE
+            or binding["predecessor_head"] != _U01_SCOPED_QUEUE_QUARANTINE_W24
+            or binding["predecessor_sequence"] != 2444
+            or binding["work_instruction_sha256"] != "D325992DAF63D07ACA160A32727E6DF4F1935C70DC0468E9B5B87D100AD54EF0"
+            or binding["invocation_sha256"] != "139281AEA7397AF3395CCAB5DBD9F7D594B6096D6729BFBBECDB03690E656E33"
+            or binding["approval_sha256"] != _U01_SCOPED_QUEUE_QUARANTINE_APPROVAL):
+        raise ValueError("U01_SCOPED_QUEUE_QUARANTINE_HISTORY_INVALID")
+    for name in ("work_instruction", "invocation", "approval"):
+        if hashlib.sha256(blob(_U01_SCOPED_QUEUE_QUARANTINE_W24, binding[name+"_path"])).hexdigest().upper() != binding[name+"_sha256"]:
+            raise ValueError("U01_SCOPED_QUEUE_QUARANTINE_HISTORY_INVALID")
+    for seq, kind in ((2445, "WORK_INSTRUCTION_ISSUED"), (2446, "WORKER_LEASE_ISSUED"), (2447, "WRITE_LEASE_ISSUED")):
+        row = stream["events"][seq-1]
+        if (row["sequence"] != seq or row["event_type"] != kind or row["previous_event_sha256"] !=
+                hashlib.sha256(canonical_json_bytes(stream["events"][seq-2])).hexdigest().upper()):
+            raise ValueError("U01_SCOPED_QUEUE_QUARANTINE_HISTORY_INVALID")
+    if (stream["events"][2445]["details"] != progress["worker_lease"]
+            or stream["events"][2446]["details"] != progress["write_lease"]
+            or any(binding[k] != v for k, v in stream["events"][2444]["details"].items())):
+        raise ValueError("U01_SCOPED_QUEUE_QUARANTINE_HISTORY_INVALID")
+    return frozen
+
+
+def _validate_u01_scoped_queue_quarantine_active(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone, timedelta
+    try:
+        frozen = _u01_scoped_queue_quarantine_frozen(bundle)
+        progress = json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[0]])
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        binding = progress[_U01_SCOPED_QUEUE_QUARANTINE_BINDING]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued, expires = (datetime.fromisoformat(worker[k]) for k in ("issued_at", "expires_at"))
+        if (instant.tzinfo is None or not issued <= instant < expires or expires-issued != timedelta(hours=24)
+                or write["issued_at"] != worker["issued_at"] or write["expires_at"] != worker["expires_at"]
+                or worker["lease_epoch"] != 132 or write["write_epoch"] != 132
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["actor_id"] != "developer-primary-u01-scoped-queue-quarantine"
+                or write["actor_id"] != worker["actor_id"] or write["worker_lease_id"] != worker["lease_id"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or write["write_fencing_token"] == worker["execution_fencing_token"]
+                or set(worker["path_scope"]) != _U01_SCOPED_QUEUE_QUARANTINE_CODE
+                or set(write["path_scope"]) != _U01_SCOPED_QUEUE_QUARANTINE_CODE
+                or set(write["product_write_scope"]) != _U01_SCOPED_QUEUE_QUARANTINE_PRODUCT
+                or any(binding[k] is not None for k in ("control_checkpoint", "manifest_checkpoint",
+                    "a23_docs_checkpoint", "active_projection_checkpoint"))
+                or progress["repository"]["projection_mode"] != _U01_SCOPED_QUEUE_QUARANTINE_MODE
+                or progress["event_sequence"] != 2447 or bundle["progress"] != progress
+                or bundle["events"] != json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]])
+                or bundle["handoff_text"].encode() != frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[2]]
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])
+                or bundle["detached_digest"] != json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[3]])
+                or any((archived_files[path] if archived_files and path in archived_files else
+                    (Path(bundle["_root"])/path).read_bytes()) != raw for path, raw in frozen.items())):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_SCOPED_QUEUE_QUARANTINE_CONTROL_INVALID"]
+
+
+def _u01_scoped_queue_quarantine_baseline(bundle):
+    raw = subprocess.check_output(["git", "show", f"{_U01_SCOPED_QUEUE_QUARANTINE_M21}:{_U01_PLANNING_SOURCE_REGISTRATION_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+    if hashlib.sha256(raw).hexdigest().upper() != _U01_SCOPED_QUEUE_QUARANTINE_M21_HASH:
+        raise ValueError("U01_SCOPED_QUEUE_QUARANTINE_MANIFEST_INVALID")
+    return json.loads(raw)
+
+
+def _u01_scoped_queue_quarantine_manifest_at(bundle, sha):
+    if type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+        raise ValueError("U01_SCOPED_QUEUE_QUARANTINE_MANIFEST_INVALID")
+    return subprocess.check_output(["git", "show", f"{sha}:{_U01_SCOPED_QUEUE_QUARANTINE_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+
+
+def _u01_scoped_queue_quarantine_source_hashes(bundle, sha, paths):
+    return {path: hashlib.sha256(subprocess.check_output(
+        ["git", "show", f"{sha}:{path}"], cwd=bundle["_root"],
+        stderr=subprocess.DEVNULL)).hexdigest().upper() for path in paths}
+
+
+def _validate_u01_scoped_queue_quarantine_projection(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_scoped_queue_quarantine_frozen(bundle)
+        actual = _u01_active_run_actual(bundle, archived_files)
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[0]])
+        binding = progress[_U01_SCOPED_QUEUE_QUARANTINE_BINDING]
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        if (any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in (csha, msha)) or len({csha, msha, _U01_SCOPED_QUEUE_QUARANTINE_A23, _U01_SCOPED_QUEUE_QUARANTINE_W24}) != 4
+                or binding["a23_docs_checkpoint"] != _U01_SCOPED_QUEUE_QUARANTINE_A23
+                or binding["active_projection_checkpoint"] is not None
+                or instant.tzinfo is None or updated.tzinfo is None
+                or not issued <= updated <= instant < expires
+                or actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]] != frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]]
+                or stream != json.loads(actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]])
+                or stream["last_sequence"] != 2447 or progress["event_sequence"] != 2447):
+            raise ValueError()
+        raw_manifest = _u01_scoped_queue_quarantine_manifest_at(bundle, msha)
+        manifest = json.loads(raw_manifest)
+        manifest_hash = hashlib.sha256(raw_manifest).hexdigest().upper()
+        if (validate_u01_scoped_queue_quarantine_manifest(manifest, _u01_scoped_queue_quarantine_baseline(bundle))
+                or manifest["source_commit"] != csha or binding["manifest_sha256"] != manifest_hash):
+            raise ValueError()
+        action = "U01_SCOPED_QUEUE_QUARANTINE_CLOSE_READY"
+        expected[_U01_SCOPED_QUEUE_QUARANTINE_BINDING].update(a23_docs_checkpoint=_U01_SCOPED_QUEUE_QUARANTINE_A23,
+            control_checkpoint=csha, manifest_checkpoint=msha, manifest_sha256=manifest_hash,
+            status=_U01_SCOPED_QUEUE_QUARANTINE_MODE, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=_U01_SCOPED_QUEUE_QUARANTINE_MODE, package_status=_U01_SCOPED_QUEUE_QUARANTINE_MODE)
+        expected["repository"].update(local_head=msha, remote_head=msha,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": _U01_SCOPED_QUEUE_QUARANTINE_MODE},
+            snapshot_id="snapshot-u01-scoped-queue-quarantine-b22-seq2447")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = extract_handoff_summary(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[2]].decode())
+        handoff.update(repository_head=msha, next_safe_action=action)
+        digest = _u01_active_run_digest(json.loads(frozen[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff
+                or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[0]]) != progress
+                or actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_SCOPED_QUEUE_QUARANTINE_PROJECTION_INVALID"]
+
+
+def _validate_u01_scoped_queue_quarantine_closed(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_SCOPED_QUEUE_QUARANTINE_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (type(publication) is not str or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_SCOPED_QUEUE_QUARANTINE_A23, binding["control_checkpoint"], binding["manifest_checkpoint"]}):
+            raise ValueError()
+        active, published = _u01_task4_report_archive(bundle, publication)
+        before = active["progress"]
+        before_at = datetime.fromisoformat(before["updated_at"])
+        if _validate_u01_scoped_queue_quarantine_projection(active, archived_files=published, now=before_at):
+            raise ValueError()
+        actual = _u01_active_run_actual(bundle, archived_files)
+        raw = actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(before["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None or not before_at <= moment < expires
+                or moment > instant or progress["event_sequence"] != 2449
+                or raw_event_object_prefix_bytes(raw, 2447)
+                   != raw_event_object_prefix_bytes(published[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]], 2447)
+                or stream != json.loads(raw) or stream["last_sequence"] != 2449
+                or len(stream["events"]) != 2449
+                or progress["last_event_id"] != stream["last_event_id"]
+                or {k: v for k, v in stream.items() if k not in {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in {"events", "last_sequence", "last_event_id"}}):
+            raise ValueError()
+        for sequence, kind, name, token in (
+            (2448, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2449, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = before[name + "_lease"]
+            previous = hashlib.sha256(canonical_json_bytes(stream["events"][sequence - 2])).hexdigest().upper()
+            if stream["events"][sequence - 1] != {
+                "sequence": sequence, "event_id": f"evt_u01_{sequence}_scoped_queue_quarantine_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_SCOPED_QUEUE_QUARANTINE_CLOSE",
+                "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": _U01_SCOPED_QUEUE_QUARANTINE_CLOSE}}:
+                raise ValueError()
+        expected = copy.deepcopy(before)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_scoped_queue_quarantine_{name}_lease"] = {
+                **before[name + "_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["write_lease"] = expected["worker_lease"] = None
+        action = "U01_SCOPED_QUEUE_QUARANTINE_RECORDED_U01_PENDING"
+        expected[_U01_SCOPED_QUEUE_QUARANTINE_BINDING].update(status=_U01_SCOPED_QUEUE_QUARANTINE_CLOSE, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2449)
+        expected["active_work_instruction"].update(result_status=_U01_SCOPED_QUEUE_QUARANTINE_CLOSE, package_status=_U01_SCOPED_QUEUE_QUARANTINE_CLOSE)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2449,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": _U01_SCOPED_QUEUE_QUARANTINE_CLOSE},
+            snapshot_id="snapshot-u01-scoped-queue-quarantine-h22-seq2449")
+        expected["repository"].update(projection_mode=_U01_SCOPED_QUEUE_QUARANTINE_CLOSE, head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = {**active["handoff"], "event_sequence": 2449, "last_event_id": stream["last_event_id"],
+            "active_agent": None, "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        digest = copy.deepcopy(active["detached_digest"])
+        digest["event_sequence"] = 2449
+        digest = _u01_active_run_digest(digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[0]]) != progress
+                or actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_SCOPED_QUEUE_QUARANTINE_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_SCOPED_QUEUE_QUARANTINE_CLOSE_INVALID"]
+
+
+
+def _collect_u01_scoped_queue_quarantine_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
+        def direct(left, right, paths, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                and git("rev-list", "--count", f"{left}..{right}") == "1"
+                and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                and set(git("log", "--format=", "--name-only", "--no-renames", f"{left}..{right}").splitlines()) == paths
+                and set(git("diff", "--name-only", "--no-renames", left, right).splitlines()) == paths
+                and set(git("diff", "--name-status", "--no-renames", left, right).splitlines())
+                    == {("A\t" if p in added else "M\t") + p for p in paths})
+        wi = "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_INVOCATION.md"
+        status, environment = "docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development") != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or not direct(_U01_SCOPED_QUEUE_QUARANTINE_BASE, _U01_SCOPED_QUEUE_QUARANTINE_W24, {wi, inv, status}, {wi, inv})
+                or not direct(_U01_SCOPED_QUEUE_QUARANTINE_W24, _U01_SCOPED_QUEUE_QUARANTINE_A23,
+                    set(_U01_SCOPED_QUEUE_QUARANTINE_PATHS) | {status})
+                or head == _U01_SCOPED_QUEUE_QUARANTINE_A23):
+            raise ValueError()
+        old_dc = subprocess.check_output(["git", "show", f"{_U01_SCOPED_QUEUE_QUARANTINE_BASE}:design_change.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        new_dc = subprocess.check_output(["git", "show", f"{_U01_SCOPED_QUEUE_QUARANTINE_W24}:design_change.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        if new_dc != old_dc:
+            raise ValueError()
+        progress = bundle["progress"]
+        binding = progress[_U01_SCOPED_QUEUE_QUARANTINE_BINDING]
+        closed = progress["repository"]["projection_mode"] == _U01_SCOPED_QUEUE_QUARANTINE_CLOSE
+        projected = binding["control_checkpoint"] is not None
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        if not projected:
+            if closed or msha is not None or binding["active_projection_checkpoint"] is not None:
+                raise ValueError()
+            parent = git("show", "-s", "--format=%P", head)
+            csha, msha = (head, None) if parent == _U01_SCOPED_QUEUE_QUARANTINE_A23 else (parent, head)
+        if any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+               for sha in (csha,) + ((msha,) if msha is not None else ())):
+            raise ValueError()
+        changed = set(git("diff", "--name-only", "--no-renames", _U01_SCOPED_QUEUE_QUARANTINE_A23, csha).splitlines())
+        if not _U01_SCOPED_QUEUE_QUARANTINE_PRODUCT <= changed <= _U01_SCOPED_QUEUE_QUARANTINE_CODE or not direct(_U01_SCOPED_QUEUE_QUARANTINE_A23, csha, changed, changed & _U01_SCOPED_QUEUE_QUARANTINE_ADDED):
+            raise ValueError()
+        old_checker = subprocess.check_output(["git", "show",
+            f"{_U01_SCOPED_QUEUE_QUARANTINE_A23}:scripts/check_project_progress.py"], cwd=root, stderr=subprocess.DEVNULL)
+        new_checker = subprocess.check_output(["git", "show",
+            f"{csha}:scripts/check_project_progress.py"], cwd=root, stderr=subprocess.DEVNULL)
+        marker = b'\nif __name__ == "__main__":'
+        if (old_checker.count(marker) != 1 or new_checker.count(marker) != 1
+                or not new_checker.startswith(old_checker[:old_checker.index(marker)])
+                or not new_checker.endswith(old_checker[old_checker.index(marker):])):
+            raise ValueError()
+        if msha is not None:
+            if not direct(csha, msha, {_U01_SCOPED_QUEUE_QUARANTINE_MANIFEST, status}, {_U01_SCOPED_QUEUE_QUARANTINE_MANIFEST}):
+                raise ValueError()
+            manifest = json.loads(_u01_scoped_queue_quarantine_manifest_at(bundle, msha))
+            if (validate_u01_scoped_queue_quarantine_manifest(manifest, _u01_scoped_queue_quarantine_baseline(bundle)) or manifest["source_commit"] != csha
+                    or manifest["source_files"] != _u01_scoped_queue_quarantine_source_hashes(bundle, csha, changed)
+                    or manifest["retained_source_files"] != _u01_scoped_queue_quarantine_source_hashes(bundle, csha, _U01_SCOPED_QUEUE_QUARANTINE_RETAINED)):
+                raise ValueError()
+        if projected:
+            if binding["a23_docs_checkpoint"] != _U01_SCOPED_QUEUE_QUARANTINE_A23 or msha is None:
+                raise ValueError()
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            if not direct(msha, bsha, set(_U01_SCOPED_QUEUE_QUARANTINE_PATHS) - {_U01_SCOPED_QUEUE_QUARANTINE_PATHS[1]} | {status, environment}):
+                raise ValueError()
+            if closed:
+                hsha = head
+                report = "docs/04_test_reports/U-01_SCOPED_QUEUE_QUARANTINE_RESULT.md"
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if re.fullmatch(r"[0-9a-f]{40}", hsha) is None or not direct(hsha, head, {report, status, "design_change.md"}, {report}):
+                        raise ValueError()
+                if not direct(bsha, hsha, set(_U01_SCOPED_QUEUE_QUARANTINE_PATHS) | {status}):
+                    raise ValueError()
+        elif any(raw != (root / path).read_bytes() for path, raw in _u01_scoped_queue_quarantine_frozen(bundle).items()):
+            raise ValueError()
+        if subprocess.run(["git", "diff", "--check", "development/main...HEAD"], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_SCOPED_QUEUE_QUARANTINE_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_scoped_queue_quarantine = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode not in {_U01_SCOPED_QUEUE_QUARANTINE_MODE, _U01_SCOPED_QUEUE_QUARANTINE_CLOSE}:
+        return _validate_bundle_before_u01_scoped_queue_quarantine(bundle)
+    progress = bundle["progress"]
+    if mode == _U01_SCOPED_QUEUE_QUARANTINE_CLOSE:
+        errors = _validate_u01_scoped_queue_quarantine_closed(bundle)
+    elif progress.get(_U01_SCOPED_QUEUE_QUARANTINE_BINDING, {}).get("control_checkpoint") is not None:
+        errors = _validate_u01_scoped_queue_quarantine_projection(bundle)
+    else:
+        errors = _validate_u01_scoped_queue_quarantine_active(bundle)
+    root = Path(bundle["_root"])
+    for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract", "schema_catalog"):
+        try:
+            if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                errors.append("U01_SCOPED_QUEUE_QUARANTINE_CONTROL_INVALID")
+        except (OSError, ValueError, TypeError, KeyError):
+            errors.append("U01_SCOPED_QUEUE_QUARANTINE_CONTROL_INVALID")
+    if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+        errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+        errors.extend(_validate_failure_projection(bundle))
+        errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+        errors.extend(_validate_dir(bundle))
+        errors.extend(_validate_reporting(progress))
+        errors.extend(_validate_reporting_state(bundle))
+        errors.extend(_validate_registry_refs(bundle))
+        errors.extend(_validate_referenced_hashes(bundle))
+        errors.extend(validate_detached_progress_binding(bundle))
+    else:
+        errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+    errors.extend(_collect_u01_scoped_queue_quarantine_git(bundle))
+    return sorted(set(errors))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -91,6 +91,24 @@ def _error(response, status, code):
     assert set(response.json()["error"]) == {"code", "message", "request_id"}
 
 
+def test_scoped_queue_quarantine_get_preserves_authorization_and_safe_shape(api):
+    from tests.api.test_u01_scoped_dashboard_reader import _quarantine_source, AuditOwner
+    from packages.api.scoped_dashboard import read_scoped_dashboard
+    _, client_for, _, _ = api
+    calls = []
+    def source(project, environment, period, at):
+        calls.append((project, environment))
+        queue = _quarantine_source(at)
+        return read_scoped_dashboard(project, environment, period, at, AuditOwner(), {
+            "queue": queue, "queueHealth": {"source": queue, "projectId": project, "environmentId": environment}})
+    with client_for(source=source) as client:
+        response = _get(client, PATH + "?period=1d")
+        assert response.status_code == 200
+        assert response.json()["data"]["current"]["health"]["queue"]["status"] == "LATE"
+        assert "SYNTHETIC_ONLY" not in response.text
+        denied = _get(client, PATH + "?period=1d", actor="no-read")
+        assert denied.status_code == 403
+        assert calls == [("project-a", "test")]
 def test_scoped_dashboard_exact_pair_success_and_registry(api):
     client, _, _, calls = api
     endpoint = client.app.openapi()["paths"]["/api/projects/{projectId}/environments/{environmentId}/dashboard"]["get"]

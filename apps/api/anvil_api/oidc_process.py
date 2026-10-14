@@ -333,6 +333,9 @@ def create_oidc_process_app(
                                  ("approvalPending", load_scoped_approval_request_source)):
                 try:
                     current_sources[name] = loader(engine, project_id, environment_id)
+                    if name == "queue":
+                        current_sources["queueHealth"] = {"source": current_sources[name],
+                            "projectId": project_id, "environmentId": environment_id}
                 except Exception:
                     # Each optional card remains explicitly unavailable; the audit
                     # itself is mandatory and fails the entire read if incomplete.

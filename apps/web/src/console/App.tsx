@@ -1163,6 +1163,64 @@ function ScopedApprovalRequestCard({metric, evidence, pair, observedAt}:
       : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
 }
 
+function ScopedQueueHealthCard({health, metric, evidence, queueEvidence, pair, observedAt}:
+    {health: unknown; metric: unknown; evidence: unknown; queueEvidence: unknown; pair: unknown; observedAt: unknown}) {
+  const sourceAt = record(health) ? health.observedAt : null;
+  const [expiryTick, setExpiryTick] = useState(0);
+  useEffect(() => scheduleQueueExpiry(sourceAt, () => setExpiryTick(expiryTick + 1)),
+    [sourceAt, expiryTick]);
+  const exact = (value: Record<string, unknown>, keys: string[]) =>
+    Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
+  const id = (value: unknown): value is string => typeof value === 'string' && value.length > 0
+    && value === value.trim() && Array.from(value).length <= 128
+    && !Array.from(value).some(c => (c.codePointAt(0) ?? 0) < 32
+      || ((c.codePointAt(0) ?? 0) >= 127 && (c.codePointAt(0) ?? 0) <= 159)
+      || ((c.codePointAt(0) ?? 0) >= 0xd800 && (c.codePointAt(0) ?? 0) <= 0xdfff));
+  const items = record(health) && Array.isArray(health.items) ? health.items : [];
+  const jobs = record(metric) && Array.isArray(metric.items) ? metric.items : [];
+  const jobIds = new Set<string>(), seen = new Set<string>();
+  const now = Date.now();
+  const complete = record(health) && exact(health, ['status', 'source', 'observedAt', 'reason', 'quarantineCount', 'items'])
+    && health.source === 'scoped_queue_quarantine' && Array.isArray(health.items)
+    && Number.isSafeInteger(health.quarantineCount) && health.quarantineCount === items.length && items.length <= 100
+    && health.status === (items.length ? 'LATE' : 'UNAVAILABLE')
+    && health.reason === (items.length ? 'QUEUE_QUARANTINED' : 'NO_QUEUE_HEALTH_SIGNAL')
+    && validObservedAt(sourceAt) && validObservedAt(observedAt)
+    && Math.abs(Date.parse(sourceAt) - Date.parse(observedAt)) <= 5000
+    && now - Date.parse(sourceAt) <= 300000 && Date.parse(sourceAt) - now <= 5000
+    && validScopedEvidence(evidence, pair, 'scoped_queue_quarantine', 'CURRENT_OBSERVATION', sourceAt)
+    && record(evidence) && evidence.reason === null
+    && exact(evidence, ['source', 'pair', 'complete', 'eventTimeBasis', 'observedAt', 'reason'])
+    && record(metric) && exact(metric, ['status', 'count', 'source', 'observedAt', 'reason', 'items'])
+    && metric.status === 'AVAILABLE' && metric.source === 'scoped_queue_owner' && metric.reason === null
+    && Array.isArray(metric.items) && metric.count === jobs.length && jobs.length <= 100
+    && Number.isSafeInteger(metric.count) && metric.observedAt === sourceAt
+    && validScopedEvidence(queueEvidence, pair, 'scoped_queue_owner', 'CURRENT_OBSERVATION', sourceAt)
+    && record(queueEvidence) && queueEvidence.reason === null
+    && jobs.every(job => {
+      if (!record(job) || !exact(job, ['jobId', 'status']) || !id(job.jobId) || jobIds.has(job.jobId)
+          || typeof job.status !== 'string'
+          || !['PENDING', 'CLAIMED', 'SUCCEEDED', 'QUARANTINED'].includes(job.status)) return false;
+      jobIds.add(job.jobId); return true;
+    })
+    && items.every(item => {
+      if (!record(item) || !exact(item, ['jobId', 'attempts', 'quarantinedAt']) || !id(item.jobId)
+          || seen.has(item.jobId) || !Number.isSafeInteger(item.attempts) || (item.attempts as number) < 0
+          || !validObservedAt(item.quarantinedAt) || Date.parse(item.quarantinedAt) > Date.parse(sourceAt)
+          || !jobs.some(job => job.jobId === item.jobId && job.status === 'QUARANTINED')) return false;
+      seen.add(item.jobId); return true;
+    }) && jobs.filter(job => job.status === 'QUARANTINED').length === items.length;
+  return <article className="status-card"><h3>selected-queue</h3>
+    <p className="status-unavailable">{complete && items.length ? 'LATE' : 'UNAVAILABLE'}</p>
+    <p>Queue 격리 이상</p>
+    {complete ? <><p>관측된 격리 {items.length}건</p><p>원본 · scoped_queue_quarantine</p>
+      <p>현재 관측 · {String(sourceAt)}</p>
+      {items.length ? <details><summary>격리 작업 검토</summary><ul>{items.map(item =>
+        <li key={item.jobId}>{item.jobId} · 시도 {item.attempts} · 격리 시각 {item.quarantinedAt}</li>)}</ul></details>
+        : <p>관측된 격리 작업은 없지만 Queue 전체 건강도는 미확인입니다.</p>}</>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 function ScopedQueueCard({metric, evidence, pair, observedAt}:
     {metric: unknown; evidence: unknown; pair: unknown; observedAt: unknown}) {
   const sourceAt = record(metric) ? metric.observedAt : null;
@@ -1406,6 +1464,9 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
               : null)}</ul></article>
           {SCOPED_HEALTH_COMPONENTS.map((name) => {
             const health = record(current?.health) ? current.health[name] : null;
+            if (name === 'queue') return <ScopedQueueHealthCard key="selected-queue" health={health}
+              metric={current?.queue} evidence={currentEvidence?.queueHealth}
+              queueEvidence={currentEvidence?.queue} pair={pair} observedAt={period.observedAt}/>;
             const databaseEvidence = currentEvidence?.database;
             const verifiedDatabase = name === 'database' && record(health)
               && health.status === 'HEALTHY' && health.source === 'database_signal'

@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 from packages.persistence.operations_repository import _safe_event
 from packages.observability.models import HealthSignal
 from packages.observability.run_status_summary import summarize_scoped_runs
+from packages.persistence.operations_queue_read import ScopedQueueSource, QueueObservation
+from packages.queue.models import QueueStatus, QuarantinedJob
 
 
 class DashboardSourceUnavailable(ValueError):
@@ -26,6 +28,72 @@ def _metric(source: str, observed_at: str | None, *, count: int | None = None,
             reason: str | None = None) -> dict:
     return {"status": "AVAILABLE" if count is not None else "UNAVAILABLE", "count": count,
             "source": source, "observedAt": observed_at, "reason": reason}
+
+
+def _queue_quarantine(binding, metric, project_id, environment_id, observed_at):
+    """검증된 격리 관측만 반환한다. 빈 관측은 Queue 정상 판정이 아니다."""
+    def identity(value):
+        if (type(value) is not str or not value or value != value.strip()
+                or len(value) > 128 or any(ord(c) < 32 or 127 <= ord(c) <= 159 for c in value)):
+            raise ValueError("invalid queue identity")
+        value.encode("utf-8", errors="strict")
+
+    def instant(value):
+        if type(value) is not datetime or type(value.tzinfo) not in (timezone, ZoneInfo):
+            raise ValueError("invalid queue time")
+        return value.astimezone(timezone.utc)
+
+    if (type(binding) is not dict or set(binding) != {"source", "projectId", "environmentId"}
+            or type(binding["projectId"]) is not str or type(binding["environmentId"]) is not str
+            or (binding["projectId"], binding["environmentId"]) != (project_id, environment_id)):
+        raise ValueError("invalid queue binding")
+    source = binding["source"]
+    if (type(source) is not ScopedQueueSource or source.legacy_unscoped_present is not False
+            or type(source.job_ids) is not tuple or len(source.job_ids) > 100
+            or type(source._jobs) is not dict or type(source._quarantine) is not tuple
+            or len(source._quarantine) > 100):
+        raise ValueError("incomplete queue source")
+    at = instant(source.observed_at)
+    if (abs((at - observed_at).total_seconds()) > 5
+            or at > datetime.now(timezone.utc) + timedelta(seconds=5)):
+        raise ValueError("invalid queue observation")
+    for key in (*source.job_ids, *source._jobs):
+        identity(key)
+    if len(set(source.job_ids)) != len(source.job_ids) or set(source.job_ids) != set(source._jobs):
+        raise ValueError("queue identity mismatch")
+    expected_items, quarantined = [], set()
+    for key in source.job_ids:
+        job = source._jobs[key]
+        if type(job) is not QueueObservation:
+            raise ValueError("invalid queue job")
+        identity(job.job_id)
+        if (job.job_id != key or type(job.status) is not QueueStatus
+                or type(job.attempts) is not int or job.attempts < 0):
+            raise ValueError("invalid queue job")
+        expected_items.append({"jobId": key, "status": job.status.value})
+        if job.status is QueueStatus.QUARANTINED:
+            quarantined.add(key)
+    if (metric != {**_metric("scoped_queue_owner", _utc_string(at), count=len(expected_items)),
+                   "items": expected_items}):
+        raise ValueError("queue metric mismatch")
+    items, seen = [], set()
+    for row in source._quarantine:
+        if type(row) is not QuarantinedJob:
+            raise ValueError("invalid quarantine row")
+        identity(row.job_id)
+        if (row.job_id in seen or row.job_id not in quarantined or type(row.attempts) is not int
+                or row.attempts < 0 or row.attempts != source._jobs[row.job_id].attempts):
+            raise ValueError("quarantine mismatch")
+        row_at = instant(row.quarantined_at)
+        if row_at > at:
+            raise ValueError("future quarantine")
+        seen.add(row.job_id)
+        items.append({"jobId": row.job_id, "attempts": row.attempts, "quarantinedAt": _utc_string(row_at)})
+    if seen != quarantined:
+        raise ValueError("missing quarantine row")
+    return {"status": "LATE" if items else "UNAVAILABLE", "source": "scoped_queue_quarantine",
+            "observedAt": _utc_string(at), "reason": "QUEUE_QUARANTINED" if items else "NO_QUEUE_HEALTH_SIGNAL",
+            "quarantineCount": len(items), "items": items}
 
 
 def _complete_events(owner, project_id: str, environment_id: str) -> tuple[dict, ...]:
@@ -107,7 +175,7 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
     occurrences.update({name: _metric("NO_COMPLETE_PERIOD_SOURCE", None,
                                       reason="SOURCE_UNAVAILABLE") for name in unsupported})
     pair = {"projectId": project_id, "environmentId": environment_id}
-    current_gaps = ("health", "run", "queue", "agent", "provider", "approvalPending",
+    current_gaps = ("health", "queueHealth", "run", "queue", "agent", "provider", "approvalPending",
                     "blocked", "gate", "cost", "baseline")
     def completeness(source: str, complete: bool, reason: str | None) -> dict:
         return {"source": source, "pair": pair, "complete": complete,
@@ -164,6 +232,14 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
                                      "eventTimeBasis": "CURRENT_OBSERVATION"}
         except Exception:
             pass
+    queue_health = {"status": "UNAVAILABLE", "reason": "SOURCE_UNAVAILABLE"}
+    try:
+        queue_health = _queue_quarantine((current_sources or {}).get("queueHealth"),
+                                         source_cards.get("queue"), project_id, environment_id, observed_at)
+        source_evidence["queueHealth"] = {**completeness("scoped_queue_quarantine", True, None),
+            "observedAt": queue_health["observedAt"], "eventTimeBasis": "CURRENT_OBSERVATION"}
+    except (ValueError, TypeError, AttributeError, KeyError):
+        pass
     blocked = _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE")
     try:
         source = (current_sources or {}).get("run")
@@ -219,8 +295,8 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
     return {
         "period": {"key": period_key, "timeZone": "Asia/Seoul", "startUtc": _utc_string(start),
                    "endUtc": _utc_string(end), "observedAt": observed_text},
-        "current": {"health": {"database": database, **{name: {"status": "UNAVAILABLE",
-                    "reason": "SOURCE_UNAVAILABLE"} for name in ("queue", "worker", "provider",
+        "current": {"health": {"database": database, "queue": queue_health, **{name: {"status": "UNAVAILABLE",
+                    "reason": "SOURCE_UNAVAILABLE"} for name in ("worker", "provider",
                     "backend", "artifact_store")}},
                     "run": source_cards.get("run", _metric("NO_VERIFIED_CURRENT_SOURCE", None,
                                                             reason="SOURCE_UNAVAILABLE")),

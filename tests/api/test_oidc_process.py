@@ -301,6 +301,42 @@ def test_f19a_reader_creates_fresh_pair_owner_only_when_called(tmp_path, monkeyp
     engine.dispose()
 
 
+def test_scoped_queue_quarantine_host_binds_same_source_once_per_requested_pair(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from apps.api.anvil_api import oidc_process
+    from tests.api.test_u01_scoped_dashboard_reader import _quarantine_source
+    path, _, _ = _trust(tmp_path)
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    monkeypatch.setattr(oidc_process, "create_engine", lambda *a, **k: engine)
+    class Owner:
+        def __init__(self, *a): pass
+        def load_complete(self, *a): return ()
+        def load(self, *a): return ()
+        def append(self, *a): raise AssertionError("read only")
+    monkeypatch.setattr(oidc_process, "_F19ABoundedOperationsRepository", Owner)
+    monkeypatch.setattr(oidc_process, "_checked_database_signal", lambda *a: None)
+    at = datetime.now(timezone.utc)
+    calls, captured = [], {}
+    def queue(actual, project, environment):
+        assert actual is engine
+        calls.append((project, environment))
+        return _quarantine_source(at)
+    monkeypatch.setattr(oidc_process, "load_scoped_queue_source", queue)
+    def host(**kwargs):
+        captured.update(kwargs)
+        return FastAPI()
+    try:
+        oidc_process.create_oidc_process_app(_environment(path), host, f19a_enabled=True)
+        assert calls == []
+        result = captured["scoped_dashboard_reader"]("other-project", "test", "1d", at)
+        assert calls == [("other-project", "test")]
+        assert result["current"]["health"]["queue"]["quarantineCount"] == 1
+        assert result["sourceCompleteness"]["current"]["queueHealth"]["pair"] == {
+            "projectId": "other-project", "environmentId": "test"}
+    finally:
+        engine.dispose()
+
+
 def test_f19a_process_bounds_psycopg_engine_and_operations_connections(tmp_path, monkeypatch):
     from psycopg.conninfo import conninfo_to_dict
     from apps.api.anvil_api import oidc_process

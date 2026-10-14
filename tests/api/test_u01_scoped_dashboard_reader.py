@@ -7,6 +7,9 @@ import pytest
 from packages.api.scoped_dashboard import DashboardSourceUnavailable, read_scoped_dashboard
 from packages.execution.models import RunPhase, RunStatus
 from packages.persistence.operations_run_read import RunObservation, ScopedRunSource
+from packages.persistence.operations_queue_read import QueueObservation, ScopedQueueSource
+from packages.queue.models import QuarantinedJob, QueueStatus
+from dataclasses import replace
 
 
 def _detected(alert_id, at, *, level="critical"):
@@ -43,6 +46,79 @@ class AuditOwner:
     def load_complete(self, project_id, environment_id):
         self.calls.append((project_id, environment_id))
         return self.events
+
+
+def _quarantine_source(at, count=1):
+    jobs = {f"job-{i}": QueueObservation(f"job-{i}", "run-1", QueueStatus.QUARANTINED,
+            at, 2, 2, 1, None, (), (), True) for i in range(count)}
+    rows = tuple(QuarantinedJob(key, 2, "SYNTHETIC_ONLY", at) for key in jobs)
+    return ScopedQueueSource(tuple(jobs), at, False, jobs, rows)
+
+
+def _queue_health_read(source, at, **changes):
+    binding = {"source": source, "projectId": "project-a", "environmentId": "test"}
+    binding.update(changes)
+    return read_scoped_dashboard("project-a", "test", "1d", at, AuditOwner(),
+                                {"queue": source, "queueHealth": binding})
+
+
+@pytest.mark.parametrize("control", ["\x7f", "\x80", "\x9f"])
+def test_queue_quarantine_rejects_del_and_c1_identity_controls(control):
+    at = datetime.now(timezone.utc)
+    source = _quarantine_source(at)
+    key = f"job{control}0"
+    source = replace(source, job_ids=(key,),
+        _jobs={key: replace(source._jobs["job-0"], job_id=key)},
+        _quarantine=(replace(source._quarantine[0], job_id=key),))
+    result = _queue_health_read(source, at)
+    assert result["current"]["health"]["queue"] == {
+        "status": "UNAVAILABLE", "reason": "SOURCE_UNAVAILABLE"}
+    assert result["sourceCompleteness"]["current"]["queueHealth"]["complete"] is False
+
+
+@pytest.mark.parametrize("count", [0, 1, 2])
+def test_queue_quarantine_complete_observation_is_not_total_health(count):
+    at = datetime.now(timezone.utc)
+    result = _queue_health_read(_quarantine_source(at, count), at)
+    assert result["current"]["health"]["queue"] == {
+        "status": "LATE" if count else "UNAVAILABLE", "source": "scoped_queue_quarantine",
+        "observedAt": at.isoformat(),
+        "reason": "QUEUE_QUARANTINED" if count else "NO_QUEUE_HEALTH_SIGNAL",
+        "quarantineCount": count,
+        "items": [{"jobId": f"job-{i}", "attempts": 2, "quarantinedAt": at.isoformat()}
+                  for i in range(count)]}
+    assert result["sourceCompleteness"]["current"]["queueHealth"] == {
+        "source": "scoped_queue_quarantine", "pair": {"projectId": "project-a", "environmentId": "test"},
+        "complete": True, "eventTimeBasis": "CURRENT_OBSERVATION", "observedAt": at.isoformat(), "reason": None}
+    assert result["sourceCompleteness"]["current"]["health"]["complete"] is False
+
+
+@pytest.mark.parametrize("fault", ["pair", "legacy", "overflow", "duplicate_job", "duplicate_row",
+    "missing_row", "missing_job", "wrong_status", "attempts", "bool_attempts", "future_row",
+    "naive_row", "stale", "future_source", "id", "extra_job", "row_list"])
+def test_queue_quarantine_invalid_observation_is_not_partial_success(fault):
+    at = datetime.now(timezone.utc)
+    source = _quarantine_source(at)
+    row = source._quarantine[0]
+    if fault == "legacy": source = replace(source, legacy_unscoped_present=True)
+    if fault == "overflow": source = _quarantine_source(at, 101)
+    if fault == "duplicate_job": source = replace(source, job_ids=("job-0", "job-0"))
+    if fault == "duplicate_row": source = replace(source, _quarantine=(row, row))
+    if fault == "missing_row": source = replace(source, _quarantine=())
+    if fault == "missing_job": source = replace(source, _jobs={})
+    if fault == "wrong_status": source = replace(source, _jobs={"job-0": replace(source._jobs["job-0"], status=QueueStatus.PENDING)})
+    if fault in ("attempts", "bool_attempts"):
+        source = replace(source, _quarantine=(replace(row, attempts=True if fault == "bool_attempts" else 1),))
+    if fault == "future_row": source = replace(source, _quarantine=(replace(row, quarantined_at=at + timedelta(seconds=1)),))
+    if fault == "naive_row": source = replace(source, _quarantine=(replace(row, quarantined_at=at.replace(tzinfo=None)),))
+    if fault == "stale": source = replace(source, observed_at=at - timedelta(seconds=6))
+    if fault == "future_source": source = replace(source, observed_at=at + timedelta(seconds=6))
+    if fault == "id": source = replace(source, _quarantine=(replace(row, job_id="bad\n"),))
+    if fault == "extra_job": source = replace(source, _jobs={**source._jobs, "extra": source._jobs["job-0"]})
+    if fault == "row_list": source = replace(source, _quarantine=[row])
+    result = _queue_health_read(source, at, **({"projectId": "other"} if fault == "pair" else {}))
+    assert result["current"]["health"]["queue"] == {"status": "UNAVAILABLE", "reason": "SOURCE_UNAVAILABLE"}
+    assert result["sourceCompleteness"]["current"]["queueHealth"]["complete"] is False
 
 
 def _runs(observed, statuses=(RunStatus.BLOCKED, RunStatus.ACTIVE)):
