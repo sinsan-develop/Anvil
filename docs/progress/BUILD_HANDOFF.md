@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 승인 요청 원장 B20: M20 8586eaa8052cfb46ffbafead8084b424a0365b27의 C20 exact API/Web·0021을 반영하고 기존65 data/schema·issuer/권한/보호자료/망/rollback을 보존했다. 실제 빈 승인요청 API/화면·기간/권한/로그아웃과 격리 PG producer10P를 구분하며 정식 비영 producer·만료 이력 공개목록·전체R6/U01 인수는 미검증/미제공, NOT_ACCEPTED/DEFER 유지. epoch130 ACTIVE·H20 회수 예정.
+
 U-01 실제 승인 요청 A21 R2(Main, 2026-10-14T14:35:51+09:00): W22 367a9905351afc6c9d2d29ab5bc25c0892d0f630, Event1~2432원문보존→2433oldwrite/2434oldworker회수→2435R2WI/2436epoch130worker/2437write ACTIVE24시간분리token·16source/제품8. 기존14source hash인수·같은Primary단독·Main코드쓰기0, asgi0021준비상태연결1경로추가만. 사람범위/권위/검사기준불변·현재구현/WSL미완료.
 
 U-01 실제 승인 요청 A20(Main, 2026-10-14T14:08:24+09:00): W21 f53bfc6edc13871bf713ee2978ef99f2b09bda15, rawEvent1~2429보존→2430WI/2431epoch129worker/2432write ACTIVE24시간분리token·허용15source. 사람승인된Task별내부Main권위·계획확정→요청원장/감사→인가된조회/UI만구현. reader확대/사람결정/Run실행/자동재개/외부credential0. 단일PrimaryTDD/Main같은source쓰기0·새route전RED는PASS아님.
@@ -394,8 +396,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_APPROVAL_REQUEST_LEDGER_IMPLEMENTATION_ONLY",
-  "repository_head": "367a9905351afc6c9d2d29ab5bc25c0892d0f630",
+  "next_safe_action": "U01_APPROVAL_REQUEST_LEDGER_CLOSE_READY",
+  "repository_head": "8586eaa8052cfb46ffbafead8084b424a0365b27",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
