@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 Agent 소유권 B18: M18 fd552dd877151ccb1477700136a967ade66dbcd2의 Git source Web만 반영, 실제owner source/API/상태수·시험용비영목록/만료반례를분리. API/issuer/DB/권한/Secret/cert/망설정보존, 전체U01NOT_ACCEPTED·ReleaseDEFER/남은기능미진유지. epoch127ACTIVE·H18회수예정.
+
 U-01 Agent 소유권 상태 A18(Main, 2026-10-14T11:53:06+09:00): W19 b74b83fdf1e02b6d7d7d1531600d5c177ed5df6f, rawEvent1~2419보존→2420WI/2421epoch127worker/2422write ACTIVE24시간분리token·허용4/제품App1. 기존 API의owner관측수/상태요약만표시·동일session multiplicity보존, Health/DB/권한/Secret/기존기능변경0. 단일Primary TDD·Main코드write0, 새route전예상RED/전체U01인수아님.
 
 U-01 Queue 목록 H17: B17 cc87f21e1be0958493e4a65b0990b93b60f66eca 뒤2418write→2419worker REVOKED·active0, frozenEvent1~2417원문보존·제품추가0. Queue목록핵심동작과전체U01미인수/Health미연결을구분하고첫보고예정.
@@ -349,8 +351,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_AGENT_OWNER_STATUS_IMPLEMENTATION_ONLY",
-  "repository_head": "b74b83fdf1e02b6d7d7d1531600d5c177ed5df6f",
+  "next_safe_action": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_READY",
+  "repository_head": "fd552dd877151ccb1477700136a967ade66dbcd2",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
