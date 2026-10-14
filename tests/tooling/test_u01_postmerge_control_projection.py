@@ -33,6 +33,281 @@ PATHS = (
 )
 
 
+class U01DashboardAgentOwnerStatusEpoch127Tests(unittest.TestCase):
+    A18 = "2ec646792fc510f14359bdebf7e6a460470128c5"
+
+    def issued(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A18}:{path}"], cwd=ROOT)
+                 for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle.update(progress=json.loads(files[PATHS[0]]), events=json.loads(files[PATHS[1]]),
+                      handoff_text=files[PATHS[2]].decode(), detached_digest=json.loads(files[PATHS[3]]))
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["_file_hashes"].update({p: hashlib.sha256(raw).hexdigest().upper() for p, raw in files.items()})
+        return bundle, files
+
+    def test_a18_exact_actor_tokens_product_scope_and_expiry(self):
+        validate = getattr(checker, "_validate_u01_agent_owner_status_active", None)
+        self.assertIsNotNone(validate, "agent_owner_status strict route absent")
+        bundle, files = self.issued()
+        at = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validate(bundle, now=at, archived_files=files), [])
+        for mutate in (
+            lambda b: b["progress"]["worker_lease"].update(actor_id="forged"),
+            lambda b: b["progress"]["worker_lease"].update(execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"]["product_write_scope"].append("apps/api/forged.py"),
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+        ):
+            bad = deepcopy(bundle); mutate(bad)
+            self.assertEqual(validate(bad, now=at, archived_files=files),
+                             ["U01_DASHBOARD_AGENT_OWNER_STATUS_CONTROL_INVALID"])
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertEqual(validate(bundle, now=expires, archived_files=files),
+                         ["U01_DASHBOARD_AGENT_OWNER_STATUS_CONTROL_INVALID"])
+
+    def test_m18_exact_retained_images_and_predecessor_binding(self):
+        validate = getattr(checker, "validate_u01_agent_owner_status_manifest", None)
+        self.assertIsNotNone(validate)
+        baseline = json.loads(subprocess.check_output(["git", "show",
+            "2ab227a74cee181c607eaa115a4fb124288293dd:deploy/wsl/U01QueueItemsReleaseManifest.json"], cwd=ROOT))
+        value = self.manifest(baseline)
+        self.assertEqual(validate(value, baseline), [])
+        for mutate in (
+            lambda v: v.update(extra=True), lambda v: v.update(schema_version=1),
+            lambda v: v["images"].update(api="sha256:" + "f" * 64),
+            lambda v: v["image_sources"].update(issuer="f" * 40),
+            lambda v: v["retained_source_files"].update({"deploy/wsl/compose.u01-development.yml": "F" * 64}),
+            lambda v: v.update(origin="https://other.invalid"),
+            lambda v: v.update(predecessor_manifest_sha256="F" * 64),
+            lambda v: v["source_files"].update({"apps/api/forged.py": "A" * 64}),
+            lambda v: v["rollback"].update(image_id="sha256:" + "f" * 64),
+        ):
+            bad = deepcopy(value); mutate(bad)
+            self.assertEqual(validate(bad, baseline), ["U01_DASHBOARD_AGENT_OWNER_STATUS_MANIFEST_INVALID"])
+
+    @staticmethod
+    def manifest(baseline):
+        retained = ["deploy/wsl/compose.u01-development.yml", "deploy/wsl/nginx-u01-development.conf",
+                    "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/U01DevelopmentReleaseManifest.template.json"]
+        return {"schema_version": "u01_dashboard_agent_owner_status_manifest/v1",
+            "environment": "WSL_SERVER_TEST_STAGING", "acceptance": "NOT_ACCEPTED", "release_decision": "DEFER",
+            "source_commit": "c" * 40, "source_files": {p: "A" * 64 for p in (
+                "apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
+                "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py")},
+            "predecessor_manifest_commit": "2ab227a74cee181c607eaa115a4fb124288293dd",
+            "predecessor_manifest_sha256": "3E08DB4AFEE40F3C6D0355F1E1477C542639DB2E6229934D97C0F802E4D615C9",
+            "origin": baseline["origin"], "images": {**baseline["images"], "web": "sha256:" + "a" * 64},
+            "image_sources": {"web": "c" * 40, "api": baseline["image_sources"]["api"], "issuer": baseline["image_sources"]["issuer"]},
+            "retained_source_files": baseline["retained_source_files"],
+            "rollback": {"container_id": "38857059689f441dbe6a52a71bfb76d5d9e3620d17dc14b1d28bb6e883666f29", "image_id": baseline["images"]["web"]},
+            "unchanged": ["API", "ISSUER", "DATABASE", "CREDENTIALS", "CERTIFICATE", "NETWORK"]}
+
+
+    C18, M18, B18, H18 = (char * 40 for char in "cdbf")
+
+    def manifest_raw(self):
+        baseline = json.loads(subprocess.check_output(["git", "show",
+            "2ab227a74cee181c607eaa115a4fb124288293dd:deploy/wsl/U01QueueItemsReleaseManifest.json"], cwd=ROOT))
+        return (json.dumps(self.manifest(baseline), indent=2) + "\n").encode()
+
+    def checkpoint_b18(self):
+        bundle, files = self.issued()
+        progress = bundle["progress"]
+        action = "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_READY"
+        status = "U01_DASHBOARD_AGENT_OWNER_STATUS_ACTIVE"
+        progress["u01_dashboard_agent_owner_status_binding"].update(a18_docs_checkpoint=self.A18,
+            control_checkpoint=self.C18, manifest_checkpoint=self.M18,
+            manifest_sha256=hashlib.sha256(self.manifest_raw()).hexdigest().upper(),
+            status=status, next_safe_action=action)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=self.M18, remote_head=self.M18,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-dashboard-agent-owner-status-b18-seq2422")
+        bundle["handoff"].update(repository_head=self.M18, next_safe_action=action)
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def closed_h18(self):
+        bundle, files = self.checkpoint_b18()
+        progress, stream = bundle["progress"], bundle["events"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSED"
+        for seq, kind, name, token in (
+            (2423, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2424, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = progress[name + "_lease"]
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": seq,
+                "event_id": f"evt_u01_{seq}_dashboard_agent_owner_status_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE",
+                "subject_ref": "U-01/DASHBOARD-AGENT-OWNER-STATUS", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+            progress[f"completed_u01_dashboard_agent_owner_status_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        stream.update(last_sequence=2424, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2422', '"last_sequence": 2424', 1)
+        rendered = rendered.replace('"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(files[PATHS[1]]).hexdigest().upper()
+        action = "U01_DASHBOARD_AGENT_OWNER_STATUS_RECORDED_U01_PENDING"
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_dashboard_agent_owner_status_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B18, event_sequence=2424)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2424,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-dashboard-agent-owner-status-h18-seq2424")
+        progress["repository"].update(projection_mode=reason, head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2424, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2424
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def test_b18_requires_actual_manifest_and_exact_projection(self):
+        validator = getattr(checker, "_validate_u01_agent_owner_status_projection", None)
+        self.assertIsNotNone(validator)
+        bundle, files = self.checkpoint_b18()
+        at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with patch.object(checker, "_u01_agent_owner_status_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(bundle, now=at, archived_files=files), [])
+            for change in (
+                lambda b: b["progress"]["u01_dashboard_agent_owner_status_binding"].update(active_projection_checkpoint=self.B18),
+                lambda b: b["progress"]["u01_dashboard_agent_owner_status_binding"].update(manifest_sha256="0" * 64),
+                lambda b: b["progress"].update(runtime_next_action="ACCEPTED"),
+                lambda b: b["events"]["events"][-1].update(actor_id="forged"),
+            ):
+                bad = deepcopy(bundle)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=files),
+                                 ["U01_DASHBOARD_AGENT_OWNER_STATUS_PROJECTION_INVALID"])
+
+    def test_h18_preserves_raw_prefix_and_revokes_exact_two_leases(self):
+        validator = getattr(checker, "_validate_u01_agent_owner_status_closed", None)
+        self.assertIsNotNone(validator)
+        b, bfiles = self.checkpoint_b18()
+        h, hfiles = self.closed_h18()
+        at = datetime.fromisoformat(h["progress"]["updated_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_agent_owner_status_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=at, archived_files=hfiles), [])
+            for change in (
+                lambda x: x["events"]["events"][-1].update(event_type="FORGED"),
+                lambda x: x["progress"]["completed_u01_dashboard_agent_owner_status_write_lease"].update(write_fencing_token="forged"),
+                lambda x: x["progress"].update(active_agent="forged"),
+            ):
+                bad = deepcopy(h)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=hfiles),
+                                 ["U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_INVALID"])
+
+
+    def test_c18_m18_git_direct_children_and_source_hash_binding(self):
+        bundle, _ = self.issued()
+        original = subprocess.check_output
+        manifest_path = "deploy/wsl/U01AgentOwnerStatusReleaseManifest.json"
+        wi = "docs/work_orders/U-01_DASHBOARD_AGENT_OWNER_STATUS_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_DASHBOARD_AGENT_OWNER_STATUS_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"
+        w = "b74b83fdf1e02b6d7d7d1531600d5c177ed5df6f"
+        legs = {w: ("65983ef1551e20ef32e99395445c33e9ebd3a6c5",
+            {wi, inv, "docs/WORK_STATUS.md"}, {wi, inv}),
+            self.A18: (w, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            self.C18: (self.A18, checker._U01_AGENT_OWNER_STATUS_CODE, set()),
+            self.M18: (self.C18, {manifest_path, "docs/WORK_STATUS.md"}, {manifest_path}),
+            self.B18: (self.M18, set(PATHS) - {PATHS[1]} | {"docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"}, set()),
+            self.H18: (self.B18, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            "a" * 40: (self.H18, {"docs/04_test_reports/U-01_DASHBOARD_AGENT_OWNER_STATUS_RESULT.md", "docs/WORK_STATUS.md"},
+                       {"docs/04_test_reports/U-01_DASHBOARD_AGENT_OWNER_STATUS_RESULT.md"})}
+        active, _ = self.issued()
+        projected, _ = self.checkpoint_b18()
+        closed, _ = self.closed_h18()
+        for head in (self.C18, self.M18, self.B18, self.H18, "a" * 40):
+            bundle = active if head in (self.C18, self.M18) else projected if head == self.B18 else closed
+            for scenario in ("valid", "dirty", "remote", "extra", "merge", "manifest", "source_hash"):
+                with self.subTest(head=head, scenario=scenario):
+                    def output(command, **kwargs):
+                        args = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if args == ["rev-parse", "HEAD"] or args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return head.encode()
+                        if args == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M forged" if scenario == "dirty" else b""
+                        if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                            return (legs[args[3]][0] + (" " + "0" * 40 if scenario == "merge" else "")).encode()
+                        if args[:1] == ["rev-list"]:
+                            return b"1" if "--count" in args else b""
+                        if args[:1] == ["log"]:
+                            paths = legs[args[-1].split("..")[-1]][1]
+                            return "\n".join(sorted(paths)).encode()
+                        if args[:1] == ["diff"] and args[-1] in legs:
+                            paths, added = legs[args[-1]][1:]
+                            if scenario == "extra":
+                                paths = paths | {"apps/api/forged.py"}
+                            return "\n".join(("A\t" if p in added else "M\t") + p
+                                if "--name-status" in args else p for p in sorted(paths)).encode()
+                        if args == ["show", f"{self.M18}:{manifest_path}"]:
+                            return b"{}" if scenario == "manifest" else self.manifest_raw()
+                        return original(command, **kwargs)
+                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                            patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                return_value="0" * 40 if scenario == "remote" else head), \
+                            patch.object(checker, "_u01_agent_owner_status_source_hashes", side_effect=lambda _b, _sha, paths: ({p: ("B" if scenario == "source_hash" else "A") * 64 for p in paths} if set(paths) == checker._U01_AGENT_OWNER_STATUS_CODE else {p: checker._u01_agent_owner_status_baseline(_b)["retained_source_files"][p] for p in paths})):
+                        errors = checker._collect_u01_agent_owner_status_git(bundle)
+                    good = scenario == "valid" or (head == self.C18 and scenario in ("manifest", "source_hash"))
+                    self.assertEqual(errors, [] if good else ["U01_DASHBOARD_AGENT_OWNER_STATUS_GIT_INVALID"])
+
+    def test_public_route_preserves_all_canonical_controls_and_rejects_tamper(self):
+        original_read = Path.read_bytes
+        active, afiles = self.issued()
+        projected, bfiles = self.checkpoint_b18()
+        closed, hfiles = self.closed_h18()
+        for bundle, files in ((active, afiles), (projected, bfiles), (closed, hfiles)):
+            current = {ROOT / path: raw for path, raw in files.items()}
+            def read_bytes(path):
+                return current[path] if path in current else original_read(path)
+            with patch.object(Path, "read_bytes", read_bytes), \
+                    patch.object(checker, "_u01_agent_owner_status_manifest_at", return_value=self.manifest_raw()), \
+                    patch.object(checker, "_u01_task4_report_archive", return_value=(projected, bfiles)), \
+                    patch.object(checker, "_collect_u01_agent_owner_status_git", return_value=[]):
+                self.assertEqual(checker.validate_bundle(bundle), [])
+                current[ROOT / PATHS[0]] = b"{}\n"
+                self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_h18_expiry_and_raw_prefix_tamper_are_not_masked_by_terminal_state(self):
+        b, bfiles = self.checkpoint_b18()
+        h, hfiles = self.closed_h18()
+        validator = checker._validate_u01_agent_owner_status_closed
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_agent_owner_status_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=expires + timedelta(seconds=1), archived_files=hfiles), [])
+            late = deepcopy(h)
+            late["progress"]["updated_at"] = expires.isoformat()
+            self.assertEqual(validator(late, now=expires, archived_files=hfiles),
+                             ["U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_INVALID"])
+            altered = dict(hfiles)
+            altered[PATHS[1]] = altered[PATHS[1]].replace(b'"sequence": 1,', b'"sequence":  1,', 1)
+            self.assertEqual(json.loads(altered[PATHS[1]]), h["events"])
+            self.assertEqual(validator(h, now=expires, archived_files=altered),
+                             ["U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_INVALID"])
+
+
 class U01DashboardQueueItemsEpoch126Tests(unittest.TestCase):
     A17 = "fce0b98851b4603ef465a8896d4e570be3bc94c2"
 
@@ -219,7 +494,11 @@ class U01DashboardQueueItemsEpoch126Tests(unittest.TestCase):
 
 
     def test_c17_m17_git_direct_children_and_source_hash_binding(self):
-        bundle, _ = self.issued()
+        bundle, frozen_files = self.issued()
+        original_read = Path.read_bytes
+        checkpoint = {ROOT / path: raw for path, raw in frozen_files.items()}
+        def checkpoint_read(path):
+            return checkpoint[path] if path in checkpoint else original_read(path)
         original = subprocess.check_output
         manifest_path = "deploy/wsl/U01QueueItemsReleaseManifest.json"
         wi = "docs/work_orders/U-01_DASHBOARD_QUEUE_ITEMS_WORK_INSTRUCTION.md"
@@ -264,7 +543,8 @@ class U01DashboardQueueItemsEpoch126Tests(unittest.TestCase):
                         if args == ["show", f"{self.M17}:{manifest_path}"]:
                             return b"{}" if scenario == "manifest" else self.manifest_raw()
                         return original(command, **kwargs)
-                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                    with patch.object(Path, "read_bytes", checkpoint_read), \
+                            patch.object(checker.subprocess, "check_output", side_effect=output), \
                             patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
                                 return_value="0" * 40 if scenario == "remote" else head), \
                             patch.object(checker, "_u01_queue_items_source_hashes", side_effect=lambda _b, _sha, paths: ({p: ("B" if scenario == "source_hash" else "A") * 64 for p in paths} if set(paths) == checker._U01_QUEUE_ITEMS_CODE else {p: checker._u01_queue_items_baseline(_b)["retained_source_files"][p] for p in paths})):

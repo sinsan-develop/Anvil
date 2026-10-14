@@ -86066,5 +86066,378 @@ def validate_bundle(bundle):
     errors.extend(_collect_u01_queue_items_git(bundle))
     return sorted(set(errors))
 
+_U01_AGENT_OWNER_STATUS_A18 = "2ec646792fc510f14359bdebf7e6a460470128c5"
+_U01_AGENT_OWNER_STATUS_W19 = "b74b83fdf1e02b6d7d7d1531600d5c177ed5df6f"
+_U01_AGENT_OWNER_STATUS_BASE = "65983ef1551e20ef32e99395445c33e9ebd3a6c5"
+_U01_AGENT_OWNER_STATUS_M17 = "2ab227a74cee181c607eaa115a4fb124288293dd"
+_U01_AGENT_OWNER_STATUS_M17_HASH = "3E08DB4AFEE40F3C6D0355F1E1477C542639DB2E6229934D97C0F802E4D615C9"
+_U01_AGENT_OWNER_STATUS_PATHS = _U01_ACTIVE_RUN_PATHS
+_U01_AGENT_OWNER_STATUS_CODE = {"apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
+    "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"}
+_U01_AGENT_OWNER_STATUS_RETAINED = {"deploy/wsl/compose.u01-development.yml", "deploy/wsl/nginx-u01-development.conf",
+    "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/U01DevelopmentReleaseManifest.template.json"}
+_U01_AGENT_OWNER_STATUS_BINDING = "u01_dashboard_agent_owner_status_binding"
+_U01_AGENT_OWNER_STATUS_MODE = "U01_DASHBOARD_AGENT_OWNER_STATUS_ACTIVE"
+_U01_AGENT_OWNER_STATUS_CLOSE = "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSED"
+_U01_AGENT_OWNER_STATUS_MANIFEST = "deploy/wsl/U01AgentOwnerStatusReleaseManifest.json"
+_U01_AGENT_OWNER_STATUS_APPROVAL = "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"
+
+
+def validate_u01_agent_owner_status_manifest(value, baseline):
+    """M17 신원과 retained 자료를 대조하며 선언만으로 운영 불변을 주장하지 않는다."""
+    def digest(item, pattern=r"[0-9A-F]{64}"):
+        return type(item) is str and re.fullmatch(pattern, item) is not None
+    try:
+        if type(value) is not dict or set(value) != {
+            "schema_version", "environment", "acceptance", "release_decision", "source_commit",
+            "source_files", "predecessor_manifest_commit", "predecessor_manifest_sha256", "origin",
+            "images", "image_sources", "retained_source_files", "rollback", "unchanged"}:
+            raise ValueError()
+        files, images, sources, rollback = (value[k] for k in
+            ("source_files", "images", "image_sources", "rollback"))
+        if (value["schema_version"] != "u01_dashboard_agent_owner_status_manifest/v1"
+                or value["environment"] != "WSL_SERVER_TEST_STAGING"
+                or value["acceptance"] != "NOT_ACCEPTED" or value["release_decision"] != "DEFER"
+                or not digest(value["source_commit"], r"[0-9a-f]{40}")
+                or value["predecessor_manifest_commit"] != _U01_AGENT_OWNER_STATUS_M17
+                or value["predecessor_manifest_sha256"] != _U01_AGENT_OWNER_STATUS_M17_HASH
+                or value["origin"] != baseline["origin"]
+                or type(files) is not dict or not files or not set(files) <= _U01_AGENT_OWNER_STATUS_CODE
+                or not all(digest(x) for x in files.values())
+                or type(images) is not dict or set(images) != {"web", "api", "issuer"}
+                or not all(digest(x, r"sha256:[0-9a-f]{64}") for x in images.values())
+                or any(images[k] != baseline["images"][k] for k in ("api", "issuer"))
+                or sources != {"web": value["source_commit"], "api": baseline["image_sources"]["api"], "issuer": baseline["image_sources"]["issuer"]}
+                or value["retained_source_files"] != baseline["retained_source_files"]
+                or type(rollback) is not dict or set(rollback) != {"container_id", "image_id"}
+                or rollback["container_id"] != "38857059689f441dbe6a52a71bfb76d5d9e3620d17dc14b1d28bb6e883666f29"
+                or rollback["image_id"] != baseline["images"]["web"]
+                or value["unchanged"] != baseline["unchanged"]):
+            raise ValueError()
+        return []
+    except (ValueError, TypeError, KeyError):
+        return ["U01_DASHBOARD_AGENT_OWNER_STATUS_MANIFEST_INVALID"]
+
+
+def _u01_agent_owner_status_frozen(bundle):
+    return {path: subprocess.check_output(["git", "show", f"{_U01_AGENT_OWNER_STATUS_A18}:{path}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL) for path in _U01_AGENT_OWNER_STATUS_PATHS}
+
+
+def _validate_u01_agent_owner_status_active(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_agent_owner_status_frozen(bundle)
+        progress = json.loads(frozen[_U01_AGENT_OWNER_STATUS_PATHS[0]])
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        binding = progress[_U01_AGENT_OWNER_STATUS_BINDING]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (instant.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= instant
+                   < datetime.fromisoformat(worker["expires_at"])
+                or not datetime.fromisoformat(write["issued_at"]) <= instant
+                   < datetime.fromisoformat(write["expires_at"])
+                or worker["lease_epoch"] != 127 or write["write_epoch"] != 127
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["actor_id"] != "developer-primary-u01-dashboard-agent-owner-status"
+                or write["actor_id"] != worker["actor_id"]
+                or write["worker_lease_id"] != worker["lease_id"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or write["write_fencing_token"] == worker["execution_fencing_token"]
+                or set(worker["path_scope"]) != _U01_AGENT_OWNER_STATUS_CODE
+                or set(write["path_scope"]) != _U01_AGENT_OWNER_STATUS_CODE or write["product_write_scope"] != ["apps/web/src/console/App.tsx"]
+                or binding["predecessor_head"] != _U01_AGENT_OWNER_STATUS_W19
+                or binding["predecessor_sequence"] != 2419
+                or binding["work_instruction_sha256"] !=
+                   "6BEA2DE7A7DE53C825474687D597CF1F3171D724487E6599347C2C6D0BBB8099"
+                or binding["approval_sha256"] != _U01_AGENT_OWNER_STATUS_APPROVAL
+                or any(binding[key] is not None for key in ("control_checkpoint",
+                    "a18_docs_checkpoint", "manifest_checkpoint", "active_projection_checkpoint"))
+                or progress["repository"]["projection_mode"] != _U01_AGENT_OWNER_STATUS_MODE
+                or progress["event_sequence"] != 2422 or bundle["progress"] != progress
+                or bundle["events"] != json.loads(frozen[_U01_AGENT_OWNER_STATUS_PATHS[1]])
+                or bundle["handoff_text"].encode() != frozen[_U01_AGENT_OWNER_STATUS_PATHS[2]]
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])
+                or bundle["detached_digest"] != json.loads(frozen[_U01_AGENT_OWNER_STATUS_PATHS[3]])
+                or any((archived_files[path] if archived_files and path in archived_files
+                        else (Path(bundle["_root"]) / path).read_bytes()) != raw
+                       for path, raw in frozen.items())):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_AGENT_OWNER_STATUS_CONTROL_INVALID"]
+
+
+
+def _u01_agent_owner_status_baseline(bundle):
+    raw = subprocess.check_output(["git", "show", f"{_U01_AGENT_OWNER_STATUS_M17}:{_U01_QUEUE_ITEMS_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+    if hashlib.sha256(raw).hexdigest().upper() != _U01_AGENT_OWNER_STATUS_M17_HASH:
+        raise ValueError("U01_DASHBOARD_AGENT_OWNER_STATUS_MANIFEST_INVALID")
+    return json.loads(raw)
+
+
+def _u01_agent_owner_status_manifest_at(bundle, sha):
+    if type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+        raise ValueError("U01_DASHBOARD_AGENT_OWNER_STATUS_MANIFEST_INVALID")
+    return subprocess.check_output(["git", "show", f"{sha}:{_U01_AGENT_OWNER_STATUS_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+
+
+def _u01_agent_owner_status_source_hashes(bundle, sha, paths):
+    return {path: hashlib.sha256(subprocess.check_output(
+        ["git", "show", f"{sha}:{path}"], cwd=bundle["_root"],
+        stderr=subprocess.DEVNULL)).hexdigest().upper() for path in paths}
+
+
+def _validate_u01_agent_owner_status_projection(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_agent_owner_status_frozen(bundle)
+        actual = _u01_active_run_actual(bundle, archived_files)
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[_U01_AGENT_OWNER_STATUS_PATHS[0]])
+        binding = progress[_U01_AGENT_OWNER_STATUS_BINDING]
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        if (any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in (csha, msha)) or len({csha, msha, _U01_AGENT_OWNER_STATUS_A18, _U01_AGENT_OWNER_STATUS_W19}) != 4
+                or binding["a18_docs_checkpoint"] != _U01_AGENT_OWNER_STATUS_A18
+                or binding["active_projection_checkpoint"] is not None
+                or instant.tzinfo is None or updated.tzinfo is None
+                or not issued <= updated <= instant < expires
+                or actual[_U01_AGENT_OWNER_STATUS_PATHS[1]] != frozen[_U01_AGENT_OWNER_STATUS_PATHS[1]]
+                or stream != json.loads(actual[_U01_AGENT_OWNER_STATUS_PATHS[1]])
+                or stream["last_sequence"] != 2422 or progress["event_sequence"] != 2422):
+            raise ValueError()
+        raw_manifest = _u01_agent_owner_status_manifest_at(bundle, msha)
+        manifest = json.loads(raw_manifest)
+        manifest_hash = hashlib.sha256(raw_manifest).hexdigest().upper()
+        if (validate_u01_agent_owner_status_manifest(manifest, _u01_agent_owner_status_baseline(bundle))
+                or manifest["source_commit"] != csha or binding["manifest_sha256"] != manifest_hash):
+            raise ValueError()
+        action = "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_READY"
+        expected[_U01_AGENT_OWNER_STATUS_BINDING].update(a18_docs_checkpoint=_U01_AGENT_OWNER_STATUS_A18,
+            control_checkpoint=csha, manifest_checkpoint=msha, manifest_sha256=manifest_hash,
+            status=_U01_AGENT_OWNER_STATUS_MODE, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=_U01_AGENT_OWNER_STATUS_MODE, package_status=_U01_AGENT_OWNER_STATUS_MODE)
+        expected["repository"].update(local_head=msha, remote_head=msha,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": _U01_AGENT_OWNER_STATUS_MODE},
+            snapshot_id="snapshot-u01-dashboard-agent-owner-status-b18-seq2422")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = extract_handoff_summary(frozen[_U01_AGENT_OWNER_STATUS_PATHS[2]].decode())
+        handoff.update(repository_head=msha, next_safe_action=action)
+        digest = _u01_active_run_digest(json.loads(frozen[_U01_AGENT_OWNER_STATUS_PATHS[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff
+                or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_AGENT_OWNER_STATUS_PATHS[0]]) != progress
+                or actual[_U01_AGENT_OWNER_STATUS_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_AGENT_OWNER_STATUS_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_AGENT_OWNER_STATUS_PROJECTION_INVALID"]
+
+
+def _validate_u01_agent_owner_status_closed(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_AGENT_OWNER_STATUS_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (type(publication) is not str or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_AGENT_OWNER_STATUS_A18, binding["control_checkpoint"], binding["manifest_checkpoint"]}):
+            raise ValueError()
+        active, published = _u01_task4_report_archive(bundle, publication)
+        before = active["progress"]
+        before_at = datetime.fromisoformat(before["updated_at"])
+        if _validate_u01_agent_owner_status_projection(active, archived_files=published, now=before_at):
+            raise ValueError()
+        actual = _u01_active_run_actual(bundle, archived_files)
+        raw = actual[_U01_AGENT_OWNER_STATUS_PATHS[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(before["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None or not before_at <= moment < expires
+                or moment > instant or progress["event_sequence"] != 2424
+                or raw_event_object_prefix_bytes(raw, 2422)
+                   != raw_event_object_prefix_bytes(published[_U01_AGENT_OWNER_STATUS_PATHS[1]], 2422)
+                or stream != json.loads(raw) or stream["last_sequence"] != 2424
+                or len(stream["events"]) != 2424
+                or progress["last_event_id"] != stream["last_event_id"]
+                or {k: v for k, v in stream.items() if k not in {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in {"events", "last_sequence", "last_event_id"}}):
+            raise ValueError()
+        for sequence, kind, name, token in (
+            (2423, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2424, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = before[name + "_lease"]
+            previous = hashlib.sha256(canonical_json_bytes(stream["events"][sequence - 2])).hexdigest().upper()
+            if stream["events"][sequence - 1] != {
+                "sequence": sequence, "event_id": f"evt_u01_{sequence}_dashboard_agent_owner_status_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE",
+                "subject_ref": "U-01/DASHBOARD-AGENT-OWNER-STATUS", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": _U01_AGENT_OWNER_STATUS_CLOSE}}:
+                raise ValueError()
+        expected = copy.deepcopy(before)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_dashboard_agent_owner_status_{name}_lease"] = {
+                **before[name + "_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["write_lease"] = expected["worker_lease"] = None
+        action = "U01_DASHBOARD_AGENT_OWNER_STATUS_RECORDED_U01_PENDING"
+        expected[_U01_AGENT_OWNER_STATUS_BINDING].update(status=_U01_AGENT_OWNER_STATUS_CLOSE, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2424)
+        expected["active_work_instruction"].update(result_status=_U01_AGENT_OWNER_STATUS_CLOSE, package_status=_U01_AGENT_OWNER_STATUS_CLOSE)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2424,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": _U01_AGENT_OWNER_STATUS_CLOSE},
+            snapshot_id="snapshot-u01-dashboard-agent-owner-status-h18-seq2424")
+        expected["repository"].update(projection_mode=_U01_AGENT_OWNER_STATUS_CLOSE, head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = {**active["handoff"], "event_sequence": 2424, "last_event_id": stream["last_event_id"],
+            "active_agent": None, "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        digest = copy.deepcopy(active["detached_digest"])
+        digest["event_sequence"] = 2424
+        digest = _u01_active_run_digest(digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_AGENT_OWNER_STATUS_PATHS[0]]) != progress
+                or actual[_U01_AGENT_OWNER_STATUS_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_AGENT_OWNER_STATUS_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE_INVALID"]
+
+
+
+def _collect_u01_agent_owner_status_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
+        def direct(left, right, paths, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                and git("rev-list", "--count", f"{left}..{right}") == "1"
+                and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                and set(git("log", "--format=", "--name-only", "--no-renames", f"{left}..{right}").splitlines()) == paths
+                and set(git("diff", "--name-only", "--no-renames", left, right).splitlines()) == paths
+                and set(git("diff", "--name-status", "--no-renames", left, right).splitlines())
+                    == {("A\t" if p in added else "M\t") + p for p in paths})
+        wi = "docs/work_orders/U-01_DASHBOARD_AGENT_OWNER_STATUS_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_DASHBOARD_AGENT_OWNER_STATUS_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"
+        status, environment = "docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development") != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or not direct(_U01_AGENT_OWNER_STATUS_BASE, _U01_AGENT_OWNER_STATUS_W19, {wi, inv, status}, {wi, inv})
+                or not direct(_U01_AGENT_OWNER_STATUS_W19, _U01_AGENT_OWNER_STATUS_A18, set(_U01_AGENT_OWNER_STATUS_PATHS) | {status})
+                or head == _U01_AGENT_OWNER_STATUS_A18):
+            raise ValueError()
+        progress = bundle["progress"]
+        binding = progress[_U01_AGENT_OWNER_STATUS_BINDING]
+        closed = progress["repository"]["projection_mode"] == _U01_AGENT_OWNER_STATUS_CLOSE
+        projected = binding["control_checkpoint"] is not None
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        if not projected:
+            if closed or msha is not None or binding["active_projection_checkpoint"] is not None:
+                raise ValueError()
+            parent = git("show", "-s", "--format=%P", head)
+            csha, msha = (head, None) if parent == _U01_AGENT_OWNER_STATUS_A18 else (parent, head)
+        if any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+               for sha in (csha,) + ((msha,) if msha is not None else ())):
+            raise ValueError()
+        changed = set(git("diff", "--name-only", "--no-renames", _U01_AGENT_OWNER_STATUS_A18, csha).splitlines())
+        if not changed or not changed <= _U01_AGENT_OWNER_STATUS_CODE or not direct(_U01_AGENT_OWNER_STATUS_A18, csha, changed):
+            raise ValueError()
+        if msha is not None:
+            if not direct(csha, msha, {_U01_AGENT_OWNER_STATUS_MANIFEST, status}, {_U01_AGENT_OWNER_STATUS_MANIFEST}):
+                raise ValueError()
+            manifest = json.loads(_u01_agent_owner_status_manifest_at(bundle, msha))
+            if (validate_u01_agent_owner_status_manifest(manifest, _u01_agent_owner_status_baseline(bundle)) or manifest["source_commit"] != csha
+                    or manifest["source_files"] != _u01_agent_owner_status_source_hashes(bundle, csha, changed)
+                    or manifest["retained_source_files"] != _u01_agent_owner_status_source_hashes(bundle, csha, _U01_AGENT_OWNER_STATUS_RETAINED)):
+                raise ValueError()
+        if projected:
+            if binding["a18_docs_checkpoint"] != _U01_AGENT_OWNER_STATUS_A18 or msha is None:
+                raise ValueError()
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            if not direct(msha, bsha, set(_U01_AGENT_OWNER_STATUS_PATHS) - {_U01_AGENT_OWNER_STATUS_PATHS[1]} | {status, environment}):
+                raise ValueError()
+            if closed:
+                hsha = head
+                report = "docs/04_test_reports/U-01_DASHBOARD_AGENT_OWNER_STATUS_RESULT.md"
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if re.fullmatch(r"[0-9a-f]{40}", hsha) is None or not direct(hsha, head, {report, status}, {report}):
+                        raise ValueError()
+                if not direct(bsha, hsha, set(_U01_AGENT_OWNER_STATUS_PATHS) | {status}):
+                    raise ValueError()
+        elif any(raw != (root / path).read_bytes() for path, raw in _u01_agent_owner_status_frozen(bundle).items()):
+            raise ValueError()
+        if subprocess.run(["git", "diff", "--check", "development/main...HEAD"], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_AGENT_OWNER_STATUS_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_dashboard_agent_owner_status = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode not in {_U01_AGENT_OWNER_STATUS_MODE, _U01_AGENT_OWNER_STATUS_CLOSE}:
+        return _validate_bundle_before_u01_dashboard_agent_owner_status(bundle)
+    progress = bundle["progress"]
+    if mode == _U01_AGENT_OWNER_STATUS_CLOSE:
+        errors = _validate_u01_agent_owner_status_closed(bundle)
+    elif progress.get(_U01_AGENT_OWNER_STATUS_BINDING, {}).get("control_checkpoint") is not None:
+        errors = _validate_u01_agent_owner_status_projection(bundle)
+    else:
+        errors = _validate_u01_agent_owner_status_active(bundle)
+    root = Path(bundle["_root"])
+    for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract", "schema_catalog"):
+        try:
+            if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                errors.append("U01_DASHBOARD_AGENT_OWNER_STATUS_CONTROL_INVALID")
+        except (OSError, ValueError, TypeError, KeyError):
+            errors.append("U01_DASHBOARD_AGENT_OWNER_STATUS_CONTROL_INVALID")
+    if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+        errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+        errors.extend(_validate_failure_projection(bundle))
+        errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+        errors.extend(_validate_dir(bundle))
+        errors.extend(_validate_reporting(progress))
+        errors.extend(_validate_reporting_state(bundle))
+        errors.extend(_validate_registry_refs(bundle))
+        errors.extend(_validate_referenced_hashes(bundle))
+        errors.extend(validate_detached_progress_binding(bundle))
+    else:
+        errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+    errors.extend(_collect_u01_agent_owner_status_git(bundle))
+    return sorted(set(errors))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

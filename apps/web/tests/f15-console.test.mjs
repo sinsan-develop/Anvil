@@ -116,6 +116,128 @@ test('Queue items expiry invalidates without another request and cleanup cancels
 
 const {App, classifyReadiness} = consoleApp;
 
+function agentData(items = ['ACTIVE', 'EXPIRED', 'REVOKED']
+  .map((status) => ({sessionId: 'shared-session', status}))) {
+  const data = queueData([]);
+  data.current.agent = {status: 'AVAILABLE', count: items.length, items,
+    source: 'scoped_agent_owner', observedAt: '2026-10-14T02:15:00Z', reason: null};
+  data.sourceCompleteness.current.agent = {...data.sourceCompleteness.current.queue,
+    source: 'scoped_agent_owner'};
+  return data;
+}
+test('Agent owner status preserves shared-session owner multiplicity and is not Worker health', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  const html = renderQueue(agentData());
+  assert.match(html, /Agent 소유권 상태<\/h3>/);
+  assert.match(html, /전체 3건/);
+  for (const state of ['유효\\(ACTIVE\\)', '만료\\(EXPIRED\\)', '회수\\(REVOKED\\)'])
+    assert.match(html, new RegExp(`${state} 1건`));
+  assert.match(html, /관측 시점 기준/);
+  assert.match(html, /selected-worker<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  assert.doesNotMatch(html, /shared-session|assignmentId|Worker 정상|실행 Agent 3/);
+  const repeated = renderQueue(agentData(Array.from({length: 2}, () =>
+    ({sessionId: 'shared-session', status: 'ACTIVE'}))));
+  assert.match(repeated, /전체 2건/);
+  assert.match(repeated, /유효\(ACTIVE\) 2건/);
+});
+test('Agent owner status displays real empty and 100-owner snapshots without deduplication', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  assert.match(renderQueue(agentData([])), /등록된 Agent 소유권이 없습니다\./);
+  const data = agentData(Array.from({length:100}, () => ({sessionId:'same', status:'ACTIVE'})));
+  const html = renderQueue(data);
+  assert.match(html, /전체 100건/);
+  assert.match(html, /유효\(ACTIVE\) 100건/);
+  assert.match(html, /만료\(EXPIRED\) 0건/);
+  assert.match(html, /회수\(REVOKED\) 0건/);
+});
+test('Agent owner status fails closed on every identity, shape, scope and evidence boundary', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  for (const change of [
+    (d) => { d.current.agent.count = 101; d.current.agent.items = Array.from({length:101},
+      () => ({sessionId:'same', status:'ACTIVE'})); },
+    (d) => { d.current.agent.count = 0; },
+    (d) => { d.current.agent.count = 3.5; },
+    (d) => { d.current.agent.count = -1; },
+    (d) => { delete d.current.agent.items; },
+    ...['', ' x', 'x ', '\u0000x', 'x\u001f', '\ud800', '\udfff', '가'.repeat(43), 1].map((sessionId) =>
+      (d) => { d.current.agent.items[0].sessionId = sessionId; }),
+    ...['RUNNING', 'active', null].map((status) =>
+      (d) => { d.current.agent.items[0].status = status; }),
+    (d) => { d.current.agent.status = 'UNAVAILABLE'; },
+    (d) => { d.current.agent.source = 'worker'; },
+    (d) => { d.current.agent.reason = 'INCOMPLETE'; },
+    (d) => { d.sourceCompleteness.current.agent.reason = 'INCOMPLETE'; },
+    (d) => { d.sourceCompleteness.current.agent.complete = false; },
+    (d) => { d.sourceCompleteness.current.agent.pair = {projectId:'foreign', environmentId:'test'}; },
+    (d) => { d.sourceCompleteness.current.agent.eventTimeBasis = 'DETECTED.at'; },
+    (d) => { d.sourceCompleteness.current.agent.observedAt = '2026-10-14T02:15:01Z'; },
+    (d) => { d.current.agent.observedAt = null; },
+    (d) => { d.period.observedAt = '2026-10-14T02:15:06Z'; },
+  ]) {
+    const data = agentData(); change(data);
+    const html = renderQueue(data);
+    const card = html.match(/<article[^>]*><h3>Agent 소유권 상태<\/h3>[\s\S]*?<\/article>/)?.[0];
+    assert.ok(card);
+    assert.match(card, /UNAVAILABLE/);
+    assert.doesNotMatch(card, /전체 \d|ACTIVE\) \d|EXPIRED\) \d|REVOKED\) \d|shared-session/);
+  }
+});
+test('Agent owner status permits internal spaces and exact 128 UTF8 bytes without displaying identities', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  const html = renderQueue(agentData([
+    {sessionId:'has internal space', status:'ACTIVE'},
+    {sessionId:'가'.repeat(42)+'ab', status:'EXPIRED'},
+  ]));
+  assert.match(html, /전체 2건/);
+  assert.doesNotMatch(html, /has internal space|가가/);
+});
+test('Agent owner status reevaluates age and future clock boundaries without numeric fallback', (t) => {
+  let now = queueNow;
+  t.mock.method(Date, 'now', () => now);
+  for (const offset of [0, 300000, -5000]) {
+    now = queueNow + offset;
+    assert.match(renderQueue(agentData()), /유효\(ACTIVE\) 1건/);
+  }
+  for (const offset of [300001, -5001]) {
+    now = queueNow + offset;
+    const html = renderQueue(agentData());
+    assert.match(html, /Agent 소유권 상태<\/h3><p class="status-unavailable">UNAVAILABLE/);
+    assert.doesNotMatch(html, /ACTIVE\) \d|EXPIRED\) \d|REVOKED\) \d/);
+  }
+});
+
+test('Agent owner status matches source Unicode whitespace and valid astral identity boundaries', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  for (const sessionId of ['\u0085owner', 'owner\u0085', '\u2000owner', 'owner\u3000']) {
+    assert.match(renderQueue(agentData([{sessionId, status:'ACTIVE'}])),
+      /Agent 소유권 상태<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  }
+  for (const sessionId of ['\ufeffowner', '😀'.repeat(32)]) {
+    assert.match(renderQueue(agentData([{sessionId, status:'ACTIVE'}])), /유효\(ACTIVE\) 1건/);
+  }
+});
+
+test('Agent owner status expiry invalidates counts without fetch and cancels obsolete timer', (t) => {
+  t.mock.timers.enable({apis: ['Date', 'setTimeout'], now: queueNow});
+  let html = renderQueue(agentData());
+  let renders = 0;
+  const stop = consoleApp.scheduleQueueExpiry('2026-10-14T02:15:00Z', () => {
+    renders += 1; html = renderQueue(agentData());
+  });
+  t.mock.timers.tick(300000);
+  assert.equal(renders, 0);
+  assert.match(html, /유효\(ACTIVE\) 1건/);
+  t.mock.timers.tick(1);
+  assert.equal(renders, 1);
+  assert.match(html, /Agent 소유권 상태<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  assert.doesNotMatch(html, /ACTIVE\) \d|EXPIRED\) \d|REVOKED\) \d/);
+  stop();
+  const cancel = consoleApp.scheduleQueueExpiry(new Date(Date.now()).toISOString(), () => { renders += 1; });
+  cancel();
+  t.mock.timers.tick(300001);
+  assert.equal(renders, 1);
+});
+
 test('operational shell keeps canonical menu order with only the current Dashboard active', () => {
   const html = renderToStaticMarkup(React.createElement(App, {route: '/'}));
   for (const label of ['Dashboard', 'Workbench', 'Projects', 'Runs', 'Reviews', 'Quality',
@@ -2454,23 +2576,24 @@ test('scoped Dashboard current owner counts require matching item rows', (t) => 
       data.sourceCompleteness.current[name] = {complete: true, source: `scoped_${name}_owner`,
         pair: {projectId: 'project-a', environmentId: 'test'},
         eventTimeBasis: 'CURRENT_OBSERVATION', observedAt: '2026-10-09T07:00:00+00:00', reason: null};
-      if (name === 'queue') {
-        data.current.queue.observedAt = data.period.observedAt;
-        data.sourceCompleteness.current.queue.observedAt = data.period.observedAt;
+      if (name === 'queue' || name === 'agent') {
+        data.current[name].observedAt = data.period.observedAt;
+        data.sourceCompleteness.current[name].observedAt = data.period.observedAt;
       }
       const completeHtml = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
         value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
           periodKey: '1d', readStatus: 'LOADED', data},
         onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
       }));
-      assert.match(completeHtml, new RegExp(`<h3>${name === 'queue' ? 'Queue 작업' : name}<\\/h3><p class="status-ready">${name === 'queue' ? '전체 0건' : '0'}`));
+      const title = name === 'queue' ? 'Queue 작업' : name === 'agent' ? 'Agent 소유권 상태' : name;
+      assert.match(completeHtml, new RegExp(`<h3>${title}<\\/h3><p class="status-ready">${name === 'run' ? '0' : '전체 0건'}`));
       change(data.current[name]);
       const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
         value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
           periodKey: '1d', readStatus: 'LOADED', data},
         onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
       }));
-      assert.match(html, new RegExp(`<h3>${name === 'queue' ? 'Queue 작업' : name}<\\/h3><p class="status-unavailable">UNAVAILABLE`));
+      assert.match(html, new RegExp(`<h3>${title}<\\/h3><p class="status-unavailable">UNAVAILABLE`));
     }
   }
 });

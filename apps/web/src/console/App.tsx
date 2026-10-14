@@ -1134,6 +1134,42 @@ function ScopedQueueCard({metric, evidence, pair, observedAt}:
       : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
 }
 
+function ScopedAgentOwnerCard({metric, evidence, pair, observedAt}:
+    {metric: unknown; evidence: unknown; pair: unknown; observedAt: unknown}) {
+  const sourceAt = record(metric) ? metric.observedAt : null;
+  const [expiryTick, setExpiryTick] = useState(0);
+  useEffect(() => scheduleQueueExpiry(sourceAt, () => setExpiryTick(expiryTick + 1)),
+    [sourceAt, expiryTick]);
+  const now = Date.now();
+  const items = record(metric) && Array.isArray(metric.items) ? metric.items : [];
+  const complete = record(metric) && record(evidence) && metric.status === 'AVAILABLE'
+    && metric.source === 'scoped_agent_owner' && metric.reason === null && evidence.reason === null
+    && Number.isSafeInteger(metric.count) && (metric.count as number) >= 0
+    && (metric.count as number) <= 100 && items.length === metric.count
+    && Array.isArray(metric.items) && items.every((item) => record(item)
+      && typeof item.sessionId === 'string' && item.sessionId.length > 0
+      && !/^\p{White_Space}|\p{White_Space}$/u.test(item.sessionId)
+      && !Array.from(item.sessionId).some((character) => {
+        const point = character.codePointAt(0) ?? 0;
+        return point <= 31 || (point >= 0xd800 && point <= 0xdfff);
+      })
+      && new TextEncoder().encode(item.sessionId).length <= 128
+      && typeof item.status === 'string' && ['ACTIVE', 'EXPIRED', 'REVOKED'].includes(item.status))
+    && validObservedAt(sourceAt) && validObservedAt(observedAt)
+    && Math.abs(Date.parse(sourceAt) - Date.parse(observedAt)) <= 5000
+    && now - Date.parse(sourceAt) <= 300000 && Date.parse(sourceAt) - now <= 5000
+    && validScopedEvidence(evidence, pair, 'scoped_agent_owner', 'CURRENT_OBSERVATION', sourceAt);
+  return <article className="status-card scoped-agent-owner"><h3>Agent 소유권 상태</h3>
+    <p className={complete ? 'status-ready' : 'status-unavailable'}>
+      {complete ? `전체 ${items.length}건` : 'UNAVAILABLE'}</p>
+    {complete ? <><p>유효(ACTIVE) {items.filter((item) => item.status === 'ACTIVE').length}건</p>
+      <p>만료(EXPIRED) {items.filter((item) => item.status === 'EXPIRED').length}건</p>
+      <p>회수(REVOKED) {items.filter((item) => item.status === 'REVOKED').length}건</p>
+      <p>원본 · scoped_agent_owner</p><p>관측 시점 기준 · {String(sourceAt)}</p>
+      {items.length === 0 ? <p>등록된 Agent 소유권이 없습니다.</p> : null}</>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 function ScopedBlockedRunCard({blocked, run, blockedEvidence, runEvidence, pair, observedAt}:
     {blocked: unknown; run: unknown; blockedEvidence: unknown; runEvidence: unknown;
       pair: unknown; observedAt: unknown}) {
@@ -1304,6 +1340,9 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
           {SCOPED_CURRENT_METRICS.map((name) => name === 'queue'
             ? <ScopedQueueCard key={name} metric={current?.queue} evidence={currentEvidence?.queue}
                 pair={pair} observedAt={period.observedAt}/>
+            : name === 'agent'
+              ? <ScopedAgentOwnerCard key={name} metric={current?.agent} evidence={currentEvidence?.agent}
+                  pair={pair} observedAt={period.observedAt}/>
             : <ScopedMetric key={name} name={name} metric={current?.[name]}
               completeness={currentEvidence?.[name]} pair={pair}
               expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}
