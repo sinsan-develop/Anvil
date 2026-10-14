@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 승인 대기 Run H19: B19 5af570a8017e48b82ece4b6e7c7460d97c107f03 뒤2428write→2429worker REVOKED·active0, frozenEvent1~2427원문보존·제품추가0. 승인대기Run핵심동작과전체U01미인수/Health미연결을구분하고첫보고예정.
+
 U-01 승인 대기 Run B19: M19 639992c9e01de2bb151c639e91089c2c1aa31818의 Git source Web만 반영, 실제Run source/API/승인대기Run표시·시험용비영목록/만료반례를분리. API/issuer/DB/권한/Secret/cert/망설정보존, 전체U01NOT_ACCEPTED·ReleaseDEFER/남은기능미진유지. epoch128ACTIVE·H19회수예정.
 
 U-01 승인 대기 Run A19(Main, 2026-10-14T12:56:08+09:00): W20 83de257e270d7abccd4980e5404a49fb33ca4b1c, rawEvent1~2424보존→2425WI/2426epoch128worker/2427write ACTIVE24시간분리token·허용4/제품App1. 기존current.run WAITING_APPROVAL 수/ID/phase만별도표시·실승인객체approvalPending UNAVAILABLE유지. API/DB/권한/Secret/기존기능변경0, 단일PrimaryTDD/Main동일code쓰기0·successor전RED는PASS아님.
@@ -307,57 +309,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2427,
-  "last_event_id": "evt_u01_2427_dashboard_waiting_approval_run_write_lease_issued",
+  "event_sequence": 2429,
+  "last_event_id": "evt_u01_2429_dashboard_waiting_approval_run_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-dashboard-waiting-approval-run",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-dashboard-waiting-approval-run",
-    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T12:56:08+09:00",
-    "expires_at": "2026-10-15T12:56:08+09:00",
-    "baseline_git_commit": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
-    "dispatch_head": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "lease_epoch": 128,
-    "lease_id": "worker-lease-u01-dashboard-waiting-approval-run-5eb855bb63164e13885c912b42347713",
-    "fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713",
-    "execution_fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-dashboard-waiting-approval-run",
-    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T12:56:08+09:00",
-    "expires_at": "2026-10-15T12:56:08+09:00",
-    "baseline_git_commit": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
-    "dispatch_head": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "write_epoch": 128,
-    "lease_id": "write-lease-u01-dashboard-waiting-approval-run-4ad947957e614b609d1ecc5152813138",
-    "worker_lease_id": "worker-lease-u01-dashboard-waiting-approval-run-5eb855bb63164e13885c912b42347713",
-    "fencing_token": "u01-dashboard-waiting-approval-run-write-fence-epoch-128-4ad947957e614b609d1ecc5152813138",
-    "write_fencing_token": "u01-dashboard-waiting-approval-run-write-fence-epoch-128-4ad947957e614b609d1ecc5152813138",
-    "execution_fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713",
-    "product_write_scope": [
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSE_READY",
+  "next_safe_action": "U01_DASHBOARD_WAITING_APPROVAL_RUN_RECORDED_U01_PENDING",
   "repository_head": "639992c9e01de2bb151c639e91089c2c1aa31818",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

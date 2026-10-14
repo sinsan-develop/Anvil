@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2427,
+  "last_sequence": 2429,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108788,7 +108788,49 @@
         "apps/web/src/console/App.tsx"
       ]
     }
+  },
+  {
+    "sequence": 2428,
+    "event_id": "evt_u01_2428_dashboard_waiting_approval_run_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+    "occurred_at": "2026-10-14T13:18:09+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "91C89E859075F7B8724B9F8CA54A83F8BBD140CCBD9B63F21D26D9256283CE53",
+    "details": {
+      "lease_id": "write-lease-u01-dashboard-waiting-approval-run-4ad947957e614b609d1ecc5152813138",
+      "write_fencing_token": "u01-dashboard-waiting-approval-run-write-fence-epoch-128-4ad947957e614b609d1ecc5152813138",
+      "reason": "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSED"
+    }
+  },
+  {
+    "sequence": 2429,
+    "event_id": "evt_u01_2429_dashboard_waiting_approval_run_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+    "occurred_at": "2026-10-14T13:18:09+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "EA0626D066A64DEC4A689981C7FB17C21CD72E7E7700F2FD1B2ADB8E06C35A45",
+    "details": {
+      "lease_id": "worker-lease-u01-dashboard-waiting-approval-run-5eb855bb63164e13885c912b42347713",
+      "execution_fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713",
+      "reason": "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2427_dashboard_waiting_approval_run_write_lease_issued"
+  "last_event_id": "evt_u01_2429_dashboard_waiting_approval_run_worker_lease_revoked"
 }
