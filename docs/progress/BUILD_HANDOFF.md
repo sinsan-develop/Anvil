@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 계획원본등록 B21: M21 e92bc992ba7c0abd28ff027a52115f362aff09fa/C21의 실제정상source등록→별도Task→C20producer/요청감사1→인가API/화면1·기간/재조회/타조합403/logout401·선택본문8CLEAR를확인했다. 기존Task1Run1/사람approval0/공개APIWebC20/issuerC15/DB0021보존·sourcegrant회수·capability폐기·C20authority1h만료/DB미회수구분·QA잔여0. 최초환경/운영절차오류를보존하며전체U01NOT_ACCEPTED/DEFER, epoch131활성/H21회수예정.
+
 U-01 계획원본등록 A22(Main, 2026-10-14T18:46:40+09:00): W23 6221a17eff79831b222f8a2413e6cfd80383b7f4 private동일/active0에서Event1~2439원문보존→2440WI/2441epoch131worker/2442write ACTIVE24시간분리token·정확9제품3. 신산님명시등록승인·정확조합/검증Task한정·기존TaskRun보존·reader/사람승인/Run실행확대0. 단일PrimaryTDD/Main코드쓰기0·새route전RED는PASS아님.
 
 U-01 승인 요청 원장 H20: B20 714ff88fc6bf3bb03c1cbd2e23083af1831faa84 뒤2438 write→2439 worker REVOKED·active0, frozen Event1~2437 원문보존·제품추가0. 정식0021/API/Web 및 빈원장 핵심 확인과 정식비영 producer 미검증/전체U01 미인수를 구분하며 첫보고 예정.
@@ -381,8 +383,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
-  "repository_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
+  "repository_head": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

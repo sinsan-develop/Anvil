@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-planning-source-registration-a22-seq2442",
+  "snapshot_id": "snapshot-u01-planning-source-registration-b21-seq2442",
   "event_sequence": 2442,
-  "updated_at": "2026-10-14T18:46:40+09:00",
+  "updated_at": "2026-10-14T19:32:57+09:00",
   "last_event_id": "evt_u01_2442_planning_source_registration_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
@@ -2642,7 +2642,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
+  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2753,13 +2753,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "local_head": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "remote_head": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
     "projection_mode": "U01_PLANNING_SOURCE_REGISTRATION_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
+    "head_relation": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3197,7 +3197,7 @@
       "packages/persistence/planning_source_repository.py",
       "apps/api/anvil_api/oidc_process.py"
     ],
-    "worktree_status": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
+    "worktree_status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3977,8 +3977,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "BF5CAA68ED99931C4173E10C9D2D708324FAA00B2B93FCB5BC68161593C83BB3",
-  "runtime_next_action": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
+  "snapshot_hash": "5259483CE61120859710B4E6C9948C737F77C7E775AF612D2F4D5DCF8565ADA8",
+  "runtime_next_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -31509,17 +31509,18 @@
     "upstream": "development/codex/u01-dashboard-r2",
     "w23_checkpoint": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
     "previous_result_checkpoint": "5578ba27945ff994f4c363fb2173b5fa75c51da0",
-    "a22_docs_checkpoint": null,
-    "control_checkpoint": null,
-    "manifest_checkpoint": null,
+    "a22_docs_checkpoint": "b8b36b29f1ea5c26a210f36860a28d62cd5a8a40",
+    "control_checkpoint": "88a56c30ff9eebc726fa1bf390462ab94eb771b7",
+    "manifest_checkpoint": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
     "active_projection_checkpoint": null,
     "actor_id": "developer-primary-u01-planning-source-registration",
     "worker_lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
     "write_lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
     "event_sequence": 2442,
-    "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
+    "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
-    "production": "NOT_EXECUTED"
+    "production": "NOT_EXECUTED",
+    "manifest_sha256": "850D8472C88FD480312C64CBFEE2AFB31F63E8AFCD4CB7D72D901EF78001BF42"
   }
 }
