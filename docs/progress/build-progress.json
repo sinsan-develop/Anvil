@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-planning-source-registration-h21-seq2444",
-  "event_sequence": 2444,
-  "updated_at": "2026-10-14T19:37:00+09:00",
-  "last_event_id": "evt_u01_2444_planning_source_registration_worker_lease_revoked",
+  "snapshot_id": "snapshot-u01-scoped-queue-quarantine-a23-seq2447",
+  "event_sequence": 2447,
+  "updated_at": "2026-10-14T19:53:43+09:00",
+  "last_event_id": "evt_u01_2447_scoped_queue_quarantine_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": null,
+  "active_agent": "developer-primary-u01-scoped-queue-quarantine",
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,7 +387,37 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": null,
+  "write_lease": {
+    "actor_id": "developer-primary-u01-scoped-queue-quarantine",
+    "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T19:53:43+09:00",
+    "expires_at": "2026-10-15T19:53:43+09:00",
+    "baseline_git_commit": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "dispatch_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "path_scope": [
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "tests/api/test_oidc_process.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "write_epoch": 132,
+    "lease_id": "write-lease-u01-scoped-queue-quarantine-31d9350e3c394d3ca0215c99b6b15bf6",
+    "worker_lease_id": "worker-lease-u01-scoped-queue-quarantine-1e2bfa4bb4d04c44b30a732b1347c6ee",
+    "fencing_token": "u01-scoped-queue-quarantine-write-fence-epoch-132-31d9350e3c394d3ca0215c99b6b15bf6",
+    "write_fencing_token": "u01-scoped-queue-quarantine-write-fence-epoch-132-31d9350e3c394d3ca0215c99b6b15bf6",
+    "execution_fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee",
+    "product_write_scope": [
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1540,7 +1570,30 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-scoped-queue-quarantine",
+    "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T19:53:43+09:00",
+    "expires_at": "2026-10-15T19:53:43+09:00",
+    "baseline_git_commit": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "dispatch_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "path_scope": [
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "tests/api/test_oidc_process.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_epoch": 132,
+    "lease_id": "worker-lease-u01-scoped-queue-quarantine-1e2bfa4bb4d04c44b30a732b1347c6ee",
+    "fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee",
+    "execution_fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee"
+  },
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2589,7 +2642,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
+  "next_safe_action": "U01_SCOPED_QUEUE_QUARANTINE_IMPLEMENT",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2700,13 +2753,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
+    "local_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
-    "projection_mode": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
+    "remote_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "projection_mode": "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
+    "head_relation": "U01_SCOPED_QUEUE_QUARANTINE_IMPLEMENT",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3140,11 +3193,11 @@
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
     "product_write_scope": [
-      "packages/planning/source_registration.py",
-      "packages/persistence/planning_source_repository.py",
-      "apps/api/anvil_api/oidc_process.py"
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx"
     ],
-    "worktree_status": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
+    "worktree_status": "U01_SCOPED_QUEUE_QUARANTINE_IMPLEMENT",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3306,14 +3359,14 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-U01-PLANNING-SOURCE-REGISTRATION-20261014-001",
-    "path": "docs/work_orders/U-01_PLANNING_SOURCE_REGISTRATION_WORK_INSTRUCTION.md",
-    "sha256": "BD0E913B32AD3034DB215A4D7A8849B2E2CD327FFB18E544DC0F8860EE5ADEA6",
+    "artifact_id": "WI-U01-SCOPED-QUEUE-QUARANTINE-20261014-001",
+    "path": "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_WORK_INSTRUCTION.md",
+    "sha256": "D325992DAF63D07ACA160A32727E6DF4F1935C70DC0468E9B5B87D100AD54EF0",
     "revision": 1,
-    "result_status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
-    "package_status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
-    "approval_ref": "docs/approvals/APPROVAL-20261014-U01-PLANNING-SOURCE-REGISTRATION-001.md",
-    "approval_classification": "HUMAN_APPROVED_SCOPED_PLANNING_SOURCE_REGISTRATION"
+    "result_status": "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE",
+    "package_status": "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE",
+    "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+    "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
   "completed_u01_task4_epoch107_postclose_fixture_work_instruction": {
     "artifact_id": "WI-U01-TASK4-EPOCH107-POSTCLOSE-FIXTURE-20261010-001",
@@ -3527,12 +3580,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "5AF19B899A42D81C994977BD27A4011718DBFC929C97C0E405630F90BB325D3C"
+      "sha256": "80E5A83A802EDA85E22EFD8FB84CEE34951469E1BB46E81E69F97BE222C71B45"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED"
+    "status": "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3924,8 +3977,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "6FCF6E99029E6D83CAF2FA3E28B0C70706D99DEE90941EB4430A9D72931F3294",
-  "runtime_next_action": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
+  "snapshot_hash": "DECD67AD84296DF97645ABA0432818E1106943ED8E963F948D7DF8DE506B6182",
+  "runtime_next_action": "U01_SCOPED_QUEUE_QUARANTINE_IMPLEMENT",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -31526,5 +31579,51 @@
     "fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
     "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
     "revoked_at": "2026-10-14T19:37:00+09:00"
+  },
+  "u01_scoped_queue_quarantine_binding": {
+    "work_instruction_id": "WI-U01-SCOPED-QUEUE-QUARANTINE-20261014-001",
+    "work_instruction_path": "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_WORK_INSTRUCTION.md",
+    "work_instruction_sha256": "D325992DAF63D07ACA160A32727E6DF4F1935C70DC0468E9B5B87D100AD54EF0",
+    "invocation_path": "docs/work_orders/U-01_SCOPED_QUEUE_QUARANTINE_INVOCATION.md",
+    "invocation_sha256": "139281AEA7397AF3395CCAB5DBD9F7D594B6096D6729BFBBECDB03690E656E33",
+    "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+    "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+    "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "predecessor_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "predecessor_sequence": 2444,
+    "developer_exact_paths": [
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "tests/api/test_u01_scoped_dashboard_reader.py",
+      "tests/api/test_u01_scoped_dashboard_api.py",
+      "tests/api/test_oidc_process.py",
+      "apps/web/tests/f15-console.test.mjs",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "product_write_scope": [
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx"
+    ],
+    "status": "U01_SCOPED_QUEUE_QUARANTINE_ACTIVE",
+    "package_id": "U-01",
+    "branch": "codex/u01-dashboard-r2",
+    "upstream": "development/codex/u01-dashboard-r2",
+    "w24_checkpoint": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
+    "previous_result_checkpoint": "ca76e5bc15bc8752a0826672c8143dd3e2ba316b",
+    "a23_docs_checkpoint": null,
+    "control_checkpoint": null,
+    "manifest_checkpoint": null,
+    "active_projection_checkpoint": null,
+    "actor_id": "developer-primary-u01-scoped-queue-quarantine",
+    "worker_lease_id": "worker-lease-u01-scoped-queue-quarantine-1e2bfa4bb4d04c44b30a732b1347c6ee",
+    "write_lease_id": "write-lease-u01-scoped-queue-quarantine-31d9350e3c394d3ca0215c99b6b15bf6",
+    "event_sequence": 2447,
+    "next_safe_action": "U01_SCOPED_QUEUE_QUARANTINE_IMPLEMENT",
+    "vertical_acceptance": "NOT_ACCEPTED",
+    "release_decision": "DEFER",
+    "production": "NOT_EXECUTED"
   }
 }
