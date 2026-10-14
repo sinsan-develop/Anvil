@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- A19 승인 대기 Run 임대 후보(Main): W20 83de257e270d7abccd4980e5404a49fb33ca4b1c 독립C0/I0/M0/private게시·clean 뒤 Event1~2424원문을보존해2425WI→2426epoch128worker→2427write ACTIVE24시간분리token/exact4제품App1. Main동일source쓰기0, 단일기존Primary는A19검토/private게시·유효token뒤만TDD. 승인객체원장은NOT_AUTHORIZED/미구현으로UNAVAILABLE유지하고기존Run WAITING_APPROVAL를별도현재관측표시. 코드/WSL실행0·새successor전RED는PASS아님·전체U01NOT_ACCEPTED/DEFER/새권한·DB·Secret0.
+
 - 승인 대기 원본 대조/W20 후보(Main, 2026-10-14): f4efc3ec local/liveprivate동일·trackedclean·seq2424/active0, 실제WSL M18/sourceC18·서비스3/ready0020/보호hash·망·rollback4/oneuse0읽기재확인. 1단계합의기능우선: approval_records는승인된기록만있고대기요청원장/조합scope없음·approvalPending SOURCE_UNAVAILABLE를DC-U01-020에미구현으로기록. 기존Run WAITING_APPROVAL는독립현재상태이므로별도카드의수/ID/phase·관측·신선도를연결하는W20 WI/Invocation/STATUS/DC exact4를발행한다. 공개API/DB/권한/Secret·승인객체원장쓰기0/기존genericapprovalPending대체0·범위확장아님. 단일Primary허용4제품App1/유효epoch128임대발급뒤만TDD·아직code/lease0. 새계약이필요한실승인기능은별도결정경계로남기고다른기능은진행, 전체U01NOT_ACCEPTED/DEFER/역사R6FAIL/예약·타프로젝트변경0.
 
 - Agent 소유권 상태 첫 결과보고(Main): H18 35804d843561b4770c7849c764a76a5d66599433은B18직접자식exact5·문서M1보정/digest재계산후독립C0/I0/M0·local/private동일/clean actualG05seq2424PASS·epoch127회수/active0다. 신규 `docs/04_test_reports/U-01_DASHBOARD_AGENT_OWNER_STATUS_RESULT.md`+STATUS정확2로실제빈ownerAPI/3상태·기간/Queue/logout, client multiplicity/clock/음성·실DB비영/개별owner/Worker미검증/미구현, 선택본문10/정리0/보존·실패/오류를구분기록한다. 전체U01NOT_ACCEPTED/DEFER·역사R6FAIL/DC-U01-019유지, 다음승인대기원본NO_VERIFIED_CURRENT_SOURCE는미연결기능으로남긴다. 게시본actualG05는다음확인·신규사람결정필요0·예약/타프로젝트변경0.

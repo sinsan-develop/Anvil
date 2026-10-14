@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2424,
+  "last_sequence": 2427,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108676,7 +108676,119 @@
       "execution_fencing_token": "u01-dashboard-agent-owner-status-execution-fence-epoch-127-43160e6a107a434ea35959145b193267",
       "reason": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSED"
     }
+  },
+  {
+    "sequence": 2425,
+    "event_id": "evt_u01_2425_dashboard_waiting_approval_run_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_WAITING_APPROVAL_RUN",
+    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+    "occurred_at": "2026-10-14T12:56:08+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "F91DA66604D34BAF46B6F704FF5ACA6AA1EA69856EC93B950741BBBD0287BBA2",
+    "details": {
+      "work_instruction_id": "WI-U01-DASHBOARD-WAITING-APPROVAL-RUN-20261014-001",
+      "work_instruction_path": "docs/work_orders/U-01_DASHBOARD_WAITING_APPROVAL_RUN_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "A03AED3F30A7403472FF9FA000EB77D64CE9C0CF00EF5B909DF7FBBA4485B751",
+      "invocation_path": "docs/work_orders/U-01_DASHBOARD_WAITING_APPROVAL_RUN_INVOCATION.md",
+      "invocation_sha256": "FD9840F360061AB969BA5E7D107667FEFC6395E3FB0A3A4C5FF5ECCA0D4DC59C",
+      "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+      "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "predecessor_head": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
+      "predecessor_sequence": 2424,
+      "developer_exact_paths": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "product_write_scope": [
+        "apps/web/src/console/App.tsx"
+      ]
+    }
+  },
+  {
+    "sequence": 2426,
+    "event_id": "evt_u01_2426_dashboard_waiting_approval_run_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_WAITING_APPROVAL_RUN",
+    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+    "occurred_at": "2026-10-14T12:56:08+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "E20AE399F45728BBD09CEE45559706F88CB82ACE9406ABC36FCD87662E3B02AB",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-waiting-approval-run",
+      "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T12:56:08+09:00",
+      "expires_at": "2026-10-15T12:56:08+09:00",
+      "baseline_git_commit": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
+      "dispatch_head": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "lease_epoch": 128,
+      "lease_id": "worker-lease-u01-dashboard-waiting-approval-run-5eb855bb63164e13885c912b42347713",
+      "fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713",
+      "execution_fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713"
+    }
+  },
+  {
+    "sequence": 2427,
+    "event_id": "evt_u01_2427_dashboard_waiting_approval_run_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_WAITING_APPROVAL_RUN",
+    "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+    "occurred_at": "2026-10-14T12:56:08+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "7DAF0BE51CAD7A433D7E973238FD8FFCC6E63DA2496E93CED4F37AA8DCABF222",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-waiting-approval-run",
+      "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T12:56:08+09:00",
+      "expires_at": "2026-10-15T12:56:08+09:00",
+      "baseline_git_commit": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
+      "dispatch_head": "83de257e270d7abccd4980e5404a49fb33ca4b1c",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "write_epoch": 128,
+      "lease_id": "write-lease-u01-dashboard-waiting-approval-run-4ad947957e614b609d1ecc5152813138",
+      "worker_lease_id": "worker-lease-u01-dashboard-waiting-approval-run-5eb855bb63164e13885c912b42347713",
+      "fencing_token": "u01-dashboard-waiting-approval-run-write-fence-epoch-128-4ad947957e614b609d1ecc5152813138",
+      "write_fencing_token": "u01-dashboard-waiting-approval-run-write-fence-epoch-128-4ad947957e614b609d1ecc5152813138",
+      "execution_fencing_token": "u01-dashboard-waiting-approval-run-execution-fence-epoch-128-5eb855bb63164e13885c912b42347713",
+      "product_write_scope": [
+        "apps/web/src/console/App.tsx"
+      ]
+    }
   }
   ],
-  "last_event_id": "evt_u01_2424_dashboard_agent_owner_status_worker_lease_revoked"
+  "last_event_id": "evt_u01_2427_dashboard_waiting_approval_run_write_lease_issued"
 }
