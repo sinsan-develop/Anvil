@@ -35,7 +35,7 @@ test('Waiting approval Run counts only status and preserves phase without replac
   assert.match(card, /원본 · scoped_run_owner/);
   assert.match(card, /관측 시점 기준 · 2026-10-14T02:15:00Z/);
   assert.match(card, /승인 요청 객체 수가 아닌 Run 관측 상태입니다\./);
-  assert.match(renderQueue(data), /<h3>approvalPending<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  assert.match(renderQueue(data), /<h3>승인 요청 대기<\/h3><p class="status-unavailable">UNAVAILABLE/);
 });
 
 test('Waiting approval Run distinguishes observed zero from missing source and accepts 100 unique runs', (t) => {
@@ -2821,4 +2821,72 @@ test('scoped Dashboard period switch rejects a late earlier response and keeps 5
   assert.equal(flow.snapshot().readStatus, 'UNAVAILABLE');
   assert.equal(flow.snapshot().data, null);
   flow.dispose();
+});
+function approvalData() {
+  const data = scopedData(scopedPairs[0]);
+  const at = data.period.observedAt;
+  data.current.approvalPending = {status: 'AVAILABLE', count: 1, source: 'approval_request_ledger',
+    observedAt: at, reason: null, items: [{requestId: 'request-1', taskId: 'task-1', runId: null,
+      requestKind: 'EXECUTION_PLAN', planId: 'plan-1', planHash: `sha256:${'a'.repeat(64)}`,
+      requestedAt: at, expiresAt: new Date(Date.parse(at) + 3600000).toISOString()}]};
+  data.sourceCompleteness.current.approvalPending = {complete: true, source: 'approval_request_ledger',
+    pair: {projectId: 'project-a', environmentId: 'test'}, eventTimeBasis: 'CURRENT_OBSERVATION', observedAt: at, reason: null};
+  return data;
+}
+function approvalHtml(data) {
+  const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+  return html.match(/<article[^>]*class="[^"]*scoped-approval-request[^"]*"[\s\S]*?<\/article>/)?.[0] ?? html;
+}
+test('approval request ledger renders actual request not waiting Run and no actions', (t) => {
+  const data = approvalData();
+  t.mock.method(Date, 'now', () => Date.parse(data.period.observedAt));
+  const html = approvalHtml(data);
+  assert.match(html, /승인 요청 대기/); assert.match(html, /전체 1건/);
+  for (const text of ['task-1', 'plan-1', 'request-1', '요청', '만료']) assert.ok(html.includes(text));
+  assert.doesNotMatch(html, /<button|<form|WAITING_APPROVAL|HEALTHY/);
+  data.current.approvalPending.items = []; data.current.approvalPending.count = 0;
+  assert.match(approvalHtml(data), /대기 중인 승인 요청이 없습니다/);
+});
+test('approval request ledger rejects malformed scoped data without partial or secret rendering', (t) => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-09T08:00:00+00:00'));
+  const changes = [
+    d => { d.current.approvalPending.count = 2; },
+    d => { d.current.approvalPending.items = undefined; },
+    d => { d.current.approvalPending.items.push({...d.current.approvalPending.items[0]}); d.current.approvalPending.count = 2; },
+    d => { d.current.approvalPending.items = Array.from({length: 101}, (_, n) => ({...d.current.approvalPending.items[0], requestId: `r-${n}`})); d.current.approvalPending.count = 101; },
+    d => { d.current.approvalPending.items[0].taskId = '<script>BAD</script>'; },
+    d => { d.current.approvalPending.items[0].capability = 'DO_NOT_RENDER'; },
+    d => { d.current.approvalPending.items[0].planHash = 'bad'; },
+    d => { d.current.approvalPending.items[0].requestKind = 'RUN'; },
+    d => { d.current.approvalPending.items[0].runId = {}; },
+    d => { d.current.approvalPending.items[0].expiresAt = d.period.observedAt; },
+    d => { d.current.approvalPending.items[0].requestedAt = '2026-10-09T09:00:00Z'; },
+    d => { d.current.approvalPending.observedAt = '2026-10-09T07:00:00Z'; },
+    d => { d.current.approvalPending.source = 'current_snapshot'; },
+    d => { d.sourceCompleteness.current.approvalPending.pair.projectId = 'foreign'; },
+    d => { d.sourceCompleteness.current.approvalPending.complete = false; },
+  ];
+  for (const change of changes) {
+    const data = approvalData(); change(data);
+    const html = approvalHtml(data);
+    assert.match(html, /승인 요청 대기<\/h3><p class="status-unavailable">UNAVAILABLE/);
+    assert.doesNotMatch(html, /task-1|request-1|BAD|DO_NOT_RENDER|전체 0건/);
+  }
+});
+test('approval request ledger expires at earliest request or source boundary and cancels timer', (t) => {
+  const data = approvalData(); const now = Date.parse(data.period.observedAt);
+  t.mock.method(Date, 'now', () => now);
+  const timers = [], cleared = [];
+  t.mock.method(globalThis, 'setTimeout', (fn, delay) => { timers.push({fn, delay}); return 7; });
+  t.mock.method(globalThis, 'clearTimeout', id => cleared.push(id));
+  let invalidated = 0;
+  const item = data.current.approvalPending.items[0];
+  item.expiresAt = new Date(now + 1000).toISOString();
+  const cancel = consoleApp.scheduleApprovalExpiry(data.period.observedAt, [item], () => invalidated++);
+  assert.equal(timers[0].delay, 1000); timers[0].fn(); assert.equal(invalidated, 1);
+  cancel(); assert.deepEqual(cleared, [7]);
 });

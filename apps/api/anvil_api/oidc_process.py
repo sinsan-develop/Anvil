@@ -236,10 +236,11 @@ def load_oidc_process_inputs(environment: Mapping[str, str]) -> OidcProcessInput
 
 def create_oidc_process_app(
     environment: Mapping[str, str], host_factory: Callable[..., FastAPI],
-    *, f19a_enabled: bool = False,
+    *, f19a_enabled: bool = False, planning_host_control: Callable | None = None,
 ) -> FastAPI:
     """Bind one Engine and session factory to the existing OIDC ASGI host."""
-    if type(f19a_enabled) is not bool:
+    if type(f19a_enabled) is not bool or (planning_host_control is not None and
+            (not f19a_enabled or not callable(planning_host_control))):
         raise _reject()
     inputs = load_oidc_process_inputs(environment)
     engine = None
@@ -262,7 +263,7 @@ def create_oidc_process_app(
 
         snapshot_started_at: ContextVar[datetime | None] = ContextVar(
             "anvil_database_health_snapshot_started_at", default=None)
-        required_head = "0020_f19a_pair_grants" if f19a_enabled else "0019_oidc_sessions"
+        required_head = "0021_approval_requests" if f19a_enabled else "0019_oidc_sessions"
 
         def operations_clock() -> datetime:
             now = datetime.now(timezone.utc)
@@ -323,9 +324,11 @@ def create_oidc_process_app(
                 "signal": _checked_database_signal(engine, project_id, environment_id,
                                                    observed_at, required_head),
                 "projectId": project_id, "environmentId": environment_id}
+            from packages.persistence.operations_approval_request_read import load_scoped_approval_request_source
             for name, loader in (("run", load_scoped_run_source),
                                  ("queue", load_scoped_queue_source),
-                                 ("agent", load_scoped_agent_owner_source)):
+                                 ("agent", load_scoped_agent_owner_source),
+                                 ("approvalPending", load_scoped_approval_request_source)):
                 try:
                     current_sources[name] = loader(engine, project_id, environment_id)
                 except Exception:
@@ -335,7 +338,7 @@ def create_oidc_process_app(
             return read_scoped_dashboard(project_id, environment_id, period_key,
                                          observed_at, owner, current_sources)
 
-        return host_factory(
+        app = host_factory(
             environment=environment, engine=engine, session_factory=sessions,
             authorization_resolver=lambda _endpoint, _params: scope,
             principal_policy=inputs.principal_policy,
@@ -346,6 +349,14 @@ def create_oidc_process_app(
             **({"scoped_dashboard_reader": scoped_dashboard_reader} if f19a_enabled else {}),
             **({"f19a_enabled": True} if f19a_enabled else {}),
         )
+        # 신뢰 embedding host만 명시적으로 받는다. HTTP factory/app state와 공유하지
+        # 않으며 startup 자체는 권위나 요청을 발급하지 않는다.
+        if planning_host_control is not None:
+            from packages.persistence.approval_request_repository import ApprovalRequestRepository, TaskPlanningAuthorityRegistrar
+            from packages.planning.approval_requests import ApprovalRequestService
+            planning_host_control(TaskPlanningAuthorityRegistrar(engine),
+                                  ApprovalRequestService(ApprovalRequestRepository(engine)))
+        return app
     except Exception:
         if engine is not None:
             engine.dispose()

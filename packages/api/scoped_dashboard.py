@@ -187,6 +187,35 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
                                       "eventTimeBasis": "CURRENT_OBSERVATION"}
     except Exception:
         pass
+    approval = _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE")
+    try:
+        from packages.persistence.operations_approval_request_read import ScopedApprovalRequestSource, ApprovalRequestItem
+        from packages.planning.approval_requests import identity, checked_hash, utc
+        source = (current_sources or {}).get("approvalPending")
+        if type(source) is not ScopedApprovalRequestSource or (source.project_id, source.environment_id) != (project_id, environment_id):
+            raise ValueError("unverified approval scope")
+        source_at = utc(source.observed_at)
+        if not -timedelta(seconds=5) <= observed_at - source_at <= timedelta(minutes=5) or type(source.items) is not tuple or len(source.items) > 100:
+            raise ValueError("unverified approval observation")
+        items, seen = [], set()
+        for row in source.items:
+            if type(row) is not ApprovalRequestItem: raise ValueError("unverified approval item")
+            for value in (row.request_id, row.task_id, row.plan_id): identity(value)
+            if row.run_id is not None: identity(row.run_id)
+            checked_hash(row.plan_hash)
+            requested, expires = utc(row.requested_at), utc(row.expires_at)
+            if (row.request_id in seen or row.request_kind != "EXECUTION_PLAN" or requested > source_at
+                    or expires <= observed_at or expires - requested != timedelta(hours=1)):
+                raise ValueError("unverified approval lifetime")
+            seen.add(row.request_id)
+            items.append(dict(requestId=row.request_id, taskId=row.task_id, runId=row.run_id,
+                requestKind=row.request_kind, planId=row.plan_id, planHash=row.plan_hash,
+                requestedAt=_utc_string(requested), expiresAt=_utc_string(expires)))
+        approval = {**_metric("approval_request_ledger", _utc_string(source_at), count=len(items)), "items": items}
+        source_evidence["approvalPending"] = {**completeness("approval_request_ledger", True, None),
+            "observedAt": _utc_string(source_at), "eventTimeBasis": "CURRENT_OBSERVATION"}
+    except (ValueError, TypeError, AttributeError):
+        pass
     return {
         "period": {"key": period_key, "timeZone": "Asia/Seoul", "startUtc": _utc_string(start),
                    "endUtc": _utc_string(end), "observedAt": observed_text},
@@ -200,7 +229,7 @@ def read_scoped_dashboard(project_id: str, environment_id: str, period_key: str,
                     "agent": source_cards.get("agent", _metric("NO_VERIFIED_CURRENT_SOURCE", None,
                                                                 reason="SOURCE_UNAVAILABLE")),
                     "provider": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
-                    "approvalPending": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
+                    "approvalPending": approval,
                     "blocked": blocked,
                     "gate": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),
                     "cost": _metric("NO_VERIFIED_CURRENT_SOURCE", None, reason="SOURCE_UNAVAILABLE"),

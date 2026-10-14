@@ -24,6 +24,69 @@ ROOT = Path(__file__).resolve().parents[2]
 ISSUER = "https://issuer.example.test/realms/anvil"
 
 
+def test_approval_actual_asgi_readiness_requires_0021_and_preserves_off_0019(monkeypatch):
+    from tests.api.test_oidc_asgi_binding import host as host_fixture, _scope, HEADERS
+    from fastapi.testclient import TestClient
+    import httpx
+    fixture = host_fixture.__wrapped__(monkeypatch)
+    asgi, engine, sessions, _, config, environment = next(fixture)
+    environment.update(ANVIL_OIDC_ISSUER=ISSUER, ANVIL_OIDC_CLIENT_ID="anvil-web",
+                       ANVIL_OIDC_STEP_UP_ACR="urn:anvil:step-up")
+    try:
+        for enabled, expected in ((True, "0021_approval_requests"), (False, "0019_oidc_sessions")):
+            app = asgi.create_configured_oidc_asgi_app(environment=environment, engine=engine,
+                session_factory=sessions, authorization_resolver=_scope,
+                principal_policy=config.principal_policy, pinned_jwks_json=config.jwks_json,
+                client_secret=lambda: "synthetic-only", ca_bundle="synthetic-ca.pem", f19a_enabled=enabled,
+                transport=httpx.MockTransport(lambda request: pytest.fail("외부 호출 금지")))
+            with TestClient(app, base_url="https://anvil.example.test") as client:
+                for head in (expected, "0020_f19a_pair_grants", "wrong"):
+                    with engine.begin() as db:
+                        db.execute(sa.text("UPDATE alembic_version SET version_num=:head"), {"head": head})
+                    result = client.get("/health/ready", headers=HEADERS)
+                    assert result.status_code == (200 if head == expected else 503)
+                    assert result.json() == ({"status": "ready", "migration_head": expected} if head == expected
+                        else {"status": "not_ready", "reason": "migration_head_mismatch"})
+    finally:
+        with pytest.raises(StopIteration): next(fixture)
+
+
+def test_approval_host_separates_registrar_and_producer_and_loads_only_on_read(tmp_path, monkeypatch):
+    from datetime import datetime, timezone
+    from apps.api.anvil_api import oidc_process as host_module
+    from tests.persistence.test_approval_request_repository import setup_db, H
+    from packages.persistence.approval_request_repository import TaskPlanningAuthorityRegistrar
+    from packages.planning.approval_requests import ApprovalRequestService
+    engine, command, _, _, _ = setup_db()
+    path, _, _ = _trust(tmp_path)
+    monkeypatch.setattr(host_module, "create_engine", lambda *a, **k: engine)
+    class Owner:
+        def __init__(self, *a): pass
+        def load_complete(self, *a): return ()
+        def load(self, *a): return ()
+        def append(self, *a): raise AssertionError("읽기 원장 fixture")
+    monkeypatch.setattr(host_module, "_F19ABoundedOperationsRepository", Owner)
+    heads = []
+    monkeypatch.setattr(host_module, "_checked_database_signal", lambda *a: heads.append(a[-1]))
+    captured, internal = {}, []
+    def host(**kwargs):
+        captured.update(kwargs)
+        return FastAPI()
+    app = host_module.create_oidc_process_app(_environment(path), host, f19a_enabled=True,
+        planning_host_control=lambda registrar, producer: internal.extend((registrar, producer)))
+    assert type(internal[0]) is TaskPlanningAuthorityRegistrar and type(internal[1]) is ApprovalRequestService
+    assert "planning_host_control" not in captured and not hasattr(app.state, "planning_registrar")
+    with engine.connect() as c:
+        assert c.exec_driver_sql("SELECT count(*) FROM approval_requests").scalar_one() == 0
+        assert c.exec_driver_sql("SELECT count(*) FROM task_planning_authorities").scalar_one() == 1
+    authority = internal[0].issue(command, authority_event_hash=H)
+    receipt = internal[1].finalize_execution_plan(command, authority)
+    result = captured["scoped_dashboard_reader"]("project-1", "env-1", "1d", datetime.now(timezone.utc))
+    assert result["current"]["approvalPending"]["items"][0]["requestId"] == receipt.request_id
+    assert heads == ["0021_approval_requests"]
+    engine.dispose()
+
+
 def _environment(path):
     return {
         "ANVIL_AUTH_MODE": "OIDC",

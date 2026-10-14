@@ -163,7 +163,7 @@ def create_oidc_asgi_app(
     )
     return create_asgi_app(
         runtime, operational_shell=operational_shell, frontend_directory=frontend_directory,
-        required_migration_head=("0020_f19a_pair_grants" if f19a_enabled else "0019_oidc_sessions"),
+        required_migration_head=("0021_approval_requests" if f19a_enabled else "0019_oidc_sessions"),
     )
 
 def create_asgi_app(
@@ -176,7 +176,7 @@ def create_asgi_app(
         required_migration_head = (
             "0016_operations_recovery" if operational_shell else "0013_task_bootstrap_authority"
         )
-    if operational_shell or required_migration_head in {"0019_oidc_sessions", "0020_f19a_pair_grants"}:
+    if operational_shell or required_migration_head in {"0019_oidc_sessions", "0020_f19a_pair_grants", "0021_approval_requests"}:
         # Runtime's historical 0013 declaration is not the operational contract.
         # Readiness still checks the independent database alembic_version below.
         app.state.migration_head = required_migration_head

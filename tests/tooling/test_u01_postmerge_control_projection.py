@@ -33,6 +33,299 @@ PATHS = (
 )
 
 
+class U01ApprovalRequestLedgerEpoch130Tests(unittest.TestCase):
+    A21 = "c550c21422dd0ed93f32868b85d080199d43b1f9"
+
+    def issued(self):
+        files = {path: subprocess.check_output(["git", "show", f"{self.A21}:{path}"], cwd=ROOT)
+                 for path in PATHS}
+        bundle = deepcopy(checker.load_bundle(ROOT))
+        bundle.update(progress=json.loads(files[PATHS[0]]), events=json.loads(files[PATHS[1]]),
+                      handoff_text=files[PATHS[2]].decode(), detached_digest=json.loads(files[PATHS[3]]))
+        bundle["handoff"] = checker.extract_handoff_summary(bundle["handoff_text"])
+        bundle["_file_hashes"].update({p: hashlib.sha256(raw).hexdigest().upper() for p, raw in files.items()})
+        return bundle, files
+
+    def test_a21_exact_actor_tokens_product_scope_and_expiry(self):
+        validate = getattr(checker, "_validate_u01_approval_request_ledger_active", None)
+        self.assertIsNotNone(validate, "waiting_approval_run strict route absent")
+        bundle, files = self.issued()
+        at = datetime.fromisoformat(bundle["progress"]["worker_lease"]["issued_at"])
+        self.assertEqual(validate(bundle, now=at, archived_files=files), [])
+        for mutate in (
+            lambda b: b["progress"]["u01_approval_request_ledger_binding"]["inherited_source_sha256"].update({"apps/web/src/console/App.tsx": "0"*64}),
+            lambda b: b["progress"]["u01_approval_request_ledger_r1_binding"].update(approval_sha256="0"*64),
+            lambda b: b["progress"]["completed_u01_approval_request_ledger_r1_worker_lease"].update(status="ACTIVE"),
+            lambda b: b["events"]["events"][2432].update(event_type="FORGED"),
+            lambda b: b["progress"]["worker_lease"].update(lease_epoch=129),
+            lambda b: b["progress"]["worker_lease"].update(actor_id="forged"),
+            lambda b: b["progress"]["worker_lease"].update(execution_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"].update(write_fencing_token="forged"),
+            lambda b: b["progress"]["write_lease"]["product_write_scope"].append("apps/api/forged.py"),
+            lambda b: b["events"]["events"][-1].update(event_type="FORGED"),
+        ):
+            bad = deepcopy(bundle); mutate(bad)
+            self.assertEqual(validate(bad, now=at, archived_files=files),
+                             ["U01_APPROVAL_REQUEST_LEDGER_CONTROL_INVALID"])
+        expires = datetime.fromisoformat(bundle["progress"]["worker_lease"]["expires_at"])
+        self.assertEqual(validate(bundle, now=expires, archived_files=files),
+                         ["U01_APPROVAL_REQUEST_LEDGER_CONTROL_INVALID"])
+
+    def test_m20_exact_retained_images_and_predecessor_binding(self):
+        validate = getattr(checker, "validate_u01_approval_request_ledger_manifest", None)
+        self.assertIsNotNone(validate)
+        baseline = json.loads(subprocess.check_output(["git", "show",
+            "639992c9e01de2bb151c639e91089c2c1aa31818:deploy/wsl/U01WaitingApprovalRunReleaseManifest.json"], cwd=ROOT))
+        value = self.manifest(baseline)
+        self.assertEqual(validate(value, baseline), [])
+        for mutate in (
+            lambda v: v.update(extra=True), lambda v: v.update(schema_version=1),
+            lambda v: v["images"].update(issuer="sha256:" + "f" * 64),
+            lambda v: v["image_sources"].update(issuer="f" * 40),
+            lambda v: v["retained_source_files"].update({"deploy/wsl/compose.u01-development.yml": "F" * 64}),
+            lambda v: v.update(origin="https://other.invalid"),
+            lambda v: v.update(predecessor_manifest_sha256="F" * 64),
+            lambda v: v["source_files"].update({"apps/api/forged.py": "A" * 64}),
+            lambda v: v["rollback"]["api"].update(image_id="sha256:" + "f" * 64),
+            lambda v: v["database"].update(backup_proof_sha256=None),
+            lambda v: v["database"].update(target_revision="0020_f19a_pair_grants"),
+        ):
+            bad = deepcopy(value); mutate(bad)
+            self.assertEqual(validate(bad, baseline), ["U01_APPROVAL_REQUEST_LEDGER_MANIFEST_INVALID"])
+
+    @staticmethod
+    def manifest(baseline):
+        return {"schema_version": "u01_approval_request_ledger_manifest/v1",
+            "environment": "WSL_SERVER_TEST_STAGING", "acceptance": "NOT_ACCEPTED", "release_decision": "DEFER",
+            "source_commit": "c" * 40, "source_files": {p: "A" * 64 for p in checker._U01_APPROVAL_REQUEST_LEDGER_CODE},
+            "predecessor_manifest_commit": "639992c9e01de2bb151c639e91089c2c1aa31818",
+            "predecessor_manifest_sha256": "1D68A2A11D03B0DD415BCC16E535EF6810CED8C28225B3E78D0B4689837FB8FA",
+            "origin": baseline["origin"], "images": {**baseline["images"], "web": "sha256:" + "a"*64, "api": "sha256:" + "b"*64},
+            "image_sources": {"web": "c"*40, "api": "c"*40, "issuer": baseline["image_sources"]["issuer"]},
+            "retained_source_files": baseline["retained_source_files"],
+            "database": {"previous_revision": "0020_f19a_pair_grants", "target_revision": "0021_approval_requests",
+                "data_policy": "PRESERVE_EXISTING_AND_APPROVAL_AUDIT", "backup_proof_sha256": "A"*64, "restore_proof_sha256": "B"*64},
+            "rollback": {"api": {"container_id": "3c52b542ae951f0ab20c7d22ee5de43324cbe537a7e09193111001398f3a24dd",
+                "image_id": baseline["images"]["api"], "source_commit": baseline["image_sources"]["api"]},
+                "web": {"container_id": "1497bbf9b76b319bd82233267f58aebb542e6f21b76685e908e759b0b12b7b41",
+                "image_id": baseline["images"]["web"], "source_commit": baseline["image_sources"]["web"]},
+                "database_policy": "NO_DOWNGRADE_PRESERVE_ROWS_DISABLE_FEATURE"},
+            "unchanged": ["ISSUER","READER_AUTH","CREDENTIALS","CERTIFICATE","NETWORK","RETAINED_ROLLBACKS"]}
+
+
+    C20, M20, B20, H20 = (char * 40 for char in "cdbf")
+
+    def manifest_raw(self):
+        baseline = json.loads(subprocess.check_output(["git", "show",
+            "639992c9e01de2bb151c639e91089c2c1aa31818:deploy/wsl/U01WaitingApprovalRunReleaseManifest.json"], cwd=ROOT))
+        return (json.dumps(self.manifest(baseline), indent=2) + "\n").encode()
+
+    def checkpoint_b20(self):
+        bundle, files = self.issued()
+        progress = bundle["progress"]
+        action = "U01_APPROVAL_REQUEST_LEDGER_CLOSE_READY"
+        status = "U01_APPROVAL_REQUEST_LEDGER_ACTIVE"
+        progress["u01_approval_request_ledger_binding"].update(a21_docs_checkpoint=self.A21,
+            control_checkpoint=self.C20, manifest_checkpoint=self.M20,
+            manifest_sha256=hashlib.sha256(self.manifest_raw()).hexdigest().upper(),
+            status=status, next_safe_action=action)
+        progress["active_work_instruction"].update(result_status=status, package_status=status)
+        progress["repository"].update(local_head=self.M20, remote_head=self.M20,
+            head_relation=action, worktree_status=action)
+        progress.update(updated_at=(datetime.fromisoformat(progress["updated_at"])
+            + timedelta(minutes=1)).isoformat(), next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": status},
+            snapshot_id="snapshot-u01-approval-request-ledger-b20-seq2437")
+        bundle["handoff"].update(repository_head=self.M20, next_safe_action=action)
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def closed_h20(self):
+        bundle, files = self.checkpoint_b20()
+        progress, stream = bundle["progress"], bundle["events"]
+        at = (datetime.fromisoformat(progress["updated_at"]) + timedelta(minutes=1)).isoformat()
+        reason = "U01_APPROVAL_REQUEST_LEDGER_CLOSED"
+        for seq, kind, name, token in (
+            (2438, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2439, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = progress[name + "_lease"]
+            previous = hashlib.sha256(checker.canonical_json_bytes(stream["events"][-1])).hexdigest().upper()
+            stream["events"].append({"sequence": seq,
+                "event_id": f"evt_u01_{seq}_approval_request_ledger_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_APPROVAL_REQUEST_LEDGER_CLOSE",
+                "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": reason}})
+            progress[f"completed_u01_approval_request_ledger_{name}_lease"] = {
+                **lease, "status": "REVOKED", "revoked_at": at}
+        stream.update(last_sequence=2439, last_event_id=stream["events"][-1]["event_id"])
+        original = files[PATHS[1]].decode()
+        boundary = original.rfind("  ],\n")
+        appended = ",\n" + ",\n".join("\n".join("  " + line for line in
+            json.dumps(row, ensure_ascii=False, indent=2).splitlines())
+            for row in stream["events"][-2:]) + "\n"
+        rendered = original[:boundary].rstrip("\n") + appended + original[boundary:]
+        rendered = rendered.replace('"last_sequence": 2437', '"last_sequence": 2439', 1)
+        rendered = rendered.replace('"last_event_id": "' + json.loads(original)["last_event_id"] + '"',
+            '"last_event_id": "' + stream["last_event_id"] + '"', 1)
+        files[PATHS[1]] = rendered.encode()
+        assert json.loads(files[PATHS[1]]) == stream
+        progress["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(files[PATHS[1]]).hexdigest().upper()
+        action = "U01_APPROVAL_REQUEST_LEDGER_RECORDED_U01_PENDING"
+        progress["worker_lease"] = progress["write_lease"] = None
+        progress["u01_approval_request_ledger_binding"].update(status=reason,
+            next_safe_action=action, active_projection_checkpoint=self.B20, event_sequence=2439)
+        progress["active_work_instruction"].update(result_status=reason, package_status=reason)
+        progress.update(active_agent=None, updated_at=at, event_sequence=2439,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": reason},
+            snapshot_id="snapshot-u01-approval-request-ledger-h20-seq2439")
+        progress["repository"].update(projection_mode=reason, head_relation=action, worktree_status=action)
+        bundle["handoff"].update(event_sequence=2439, last_event_id=stream["last_event_id"],
+            active_agent=None, worker_lease=None, write_lease=None, next_safe_action=action)
+        bundle["detached_digest"]["event_sequence"] = 2439
+        return U01DatabaseHealthVerticalEpoch121Tests.materialize(bundle, files)
+
+    def test_b20_requires_actual_manifest_and_exact_projection(self):
+        validator = getattr(checker, "_validate_u01_approval_request_ledger_projection", None)
+        self.assertIsNotNone(validator)
+        bundle, files = self.checkpoint_b20()
+        at = datetime.fromisoformat(bundle["progress"]["updated_at"])
+        with patch.object(checker, "_u01_approval_request_ledger_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(bundle, now=at, archived_files=files), [])
+            for change in (
+                lambda b: b["progress"]["u01_approval_request_ledger_binding"].update(active_projection_checkpoint=self.B20),
+                lambda b: b["progress"]["u01_approval_request_ledger_binding"].update(manifest_sha256="0" * 64),
+                lambda b: b["progress"].update(runtime_next_action="ACCEPTED"),
+                lambda b: b["events"]["events"][-1].update(actor_id="forged"),
+            ):
+                bad = deepcopy(bundle)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=files),
+                                 ["U01_APPROVAL_REQUEST_LEDGER_PROJECTION_INVALID"])
+
+    def test_h20_preserves_raw_prefix_and_revokes_exact_two_leases(self):
+        validator = getattr(checker, "_validate_u01_approval_request_ledger_closed", None)
+        self.assertIsNotNone(validator)
+        b, bfiles = self.checkpoint_b20()
+        h, hfiles = self.closed_h20()
+        at = datetime.fromisoformat(h["progress"]["updated_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_approval_request_ledger_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=at, archived_files=hfiles), [])
+            for change in (
+                lambda x: x["events"]["events"][-1].update(event_type="FORGED"),
+                lambda x: x["progress"]["completed_u01_approval_request_ledger_write_lease"].update(write_fencing_token="forged"),
+                lambda x: x["progress"].update(active_agent="forged"),
+            ):
+                bad = deepcopy(h)
+                change(bad)
+                self.assertEqual(validator(bad, now=at, archived_files=hfiles),
+                                 ["U01_APPROVAL_REQUEST_LEDGER_CLOSE_INVALID"])
+
+
+    def test_c20_m20_git_direct_children_source_hash_and_dc_append_binding(self):
+        bundle, _ = self.issued()
+        original = subprocess.check_output
+        manifest_path = "deploy/wsl/U01ApprovalRequestLedgerReleaseManifest.json"
+        wi = "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"
+        w = "f53bfc6edc13871bf713ee2978ef99f2b09bda15"
+        legs = {w: ("3ee62694ab6508265dba5b79247909c32117d530",
+            {wi, inv, "docs/WORK_STATUS.md", "design_change.md", *checker._U01_APPROVAL_REQUEST_LEDGER_APPROVAL_FILES}, {wi, inv, *checker._U01_APPROVAL_REQUEST_LEDGER_APPROVAL_FILES}),
+            "1b0e34cc256ea8179d3021f96a9ef0eeaeae9539": (w, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            "367a9905351afc6c9d2d29ab5bc25c0892d0f630": ("1b0e34cc256ea8179d3021f96a9ef0eeaeae9539", {"docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_R2_WORK_INSTRUCTION.md", "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_R2_INVOCATION.md", "docs/WORK_STATUS.md"}, {"docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_R2_WORK_INSTRUCTION.md", "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_R2_INVOCATION.md"}),
+            self.A21: ("367a9905351afc6c9d2d29ab5bc25c0892d0f630", set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            self.C20: (self.A21, checker._U01_APPROVAL_REQUEST_LEDGER_CODE, checker._U01_APPROVAL_REQUEST_LEDGER_ADDED),
+            self.M20: (self.C20, {manifest_path, "docs/WORK_STATUS.md"}, {manifest_path}),
+            self.B20: (self.M20, set(PATHS) - {PATHS[1]} | {"docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"}, set()),
+            self.H20: (self.B20, set(PATHS) | {"docs/WORK_STATUS.md"}, set()),
+            "a" * 40: (self.H20, {"docs/04_test_reports/U-01_APPROVAL_REQUEST_LEDGER_RESULT.md", "docs/WORK_STATUS.md"},
+                       {"docs/04_test_reports/U-01_APPROVAL_REQUEST_LEDGER_RESULT.md"})}
+        active, _ = self.issued()
+        projected, _ = self.checkpoint_b20()
+        closed, _ = self.closed_h20()
+        for head in (self.C20, self.M20, self.B20, self.H20, "a" * 40):
+            bundle = active if head in (self.C20, self.M20) else projected if head == self.B20 else closed
+            for scenario in ("valid", "dirty", "remote", "extra", "merge", "manifest", "source_hash", "dc_prefix", "dc_no_append"):
+                with self.subTest(head=head, scenario=scenario):
+                    def output(command, **kwargs):
+                        args = command[5:] if command[:5] == ["git", "-c", "core.excludesFile=", "-c", "core.quotePath=false"] else command[1:]
+                        if args == ["rev-parse", "HEAD"] or args == ["rev-parse", "development/codex/u01-dashboard-r2"]:
+                            return head.encode()
+                        if args == ["status", "--porcelain=v1", "-uall"]:
+                            return b" M forged" if scenario == "dirty" else b""
+                        if args[:3] == ["show", "-s", "--format=%P"] and args[3] in legs:
+                            return (legs[args[3]][0] + (" " + "0" * 40 if scenario == "merge" else "")).encode()
+                        if args[:1] == ["rev-list"]:
+                            return b"1" if "--count" in args else b""
+                        if args[:1] == ["log"]:
+                            paths = legs[args[-1].split("..")[-1]][1]
+                            return "\n".join(sorted(paths)).encode()
+                        if args[:1] == ["diff"] and args[-1] in legs:
+                            paths, added = legs[args[-1]][1:]
+                            if scenario == "extra":
+                                paths = paths | {"apps/api/forged.py"}
+                            return "\n".join(("A\t" if p in added else "M\t") + p
+                                if "--name-status" in args else p for p in sorted(paths)).encode()
+                        if args == ["show", f"{self.M20}:{manifest_path}"]:
+                            return b"{}" if scenario == "manifest" else self.manifest_raw()
+                        if args == ["show", f"{w}:design_change.md"]:
+                            raw = original(command, **kwargs)
+                            if scenario == "dc_prefix":
+                                return b"corrupted prior history" + raw
+                            if scenario == "dc_no_append":
+                                return original(["git", "show", "3ee62694ab6508265dba5b79247909c32117d530:design_change.md"], **kwargs)
+                            return raw
+                        return original(command, **kwargs)
+                    with patch.object(checker.subprocess, "check_output", side_effect=output), \
+                            patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
+                                return_value="0" * 40 if scenario == "remote" else head), \
+                            patch.object(checker, "_u01_approval_request_ledger_source_hashes", side_effect=lambda _b, _sha, paths: ({p: ("B" if scenario == "source_hash" else "A") * 64 for p in paths} if set(paths) == checker._U01_APPROVAL_REQUEST_LEDGER_CODE else {p: checker._u01_approval_request_ledger_baseline(_b)["retained_source_files"][p] for p in paths})):
+                        errors = checker._collect_u01_approval_request_ledger_git(bundle)
+                    good = scenario == "valid" or (head == self.C20 and scenario in ("manifest", "source_hash"))
+                    self.assertEqual(errors, [] if good else ["U01_APPROVAL_REQUEST_LEDGER_GIT_INVALID"])
+
+    def test_public_route_preserves_all_canonical_controls_and_rejects_tamper(self):
+        original_read = Path.read_bytes
+        active, afiles = self.issued()
+        projected, bfiles = self.checkpoint_b20()
+        closed, hfiles = self.closed_h20()
+        for bundle, files in ((active, afiles), (projected, bfiles), (closed, hfiles)):
+            current = {ROOT / path: raw for path, raw in files.items()}
+            def read_bytes(path):
+                return current[path] if path in current else original_read(path)
+            with patch.object(Path, "read_bytes", read_bytes), \
+                    patch.object(checker, "_u01_approval_request_ledger_manifest_at", return_value=self.manifest_raw()), \
+                    patch.object(checker, "_u01_task4_report_archive", return_value=(projected, bfiles)), \
+                    patch.object(checker, "_collect_u01_approval_request_ledger_git", return_value=[]):
+                self.assertEqual(checker.validate_bundle(bundle), [])
+                current[ROOT / PATHS[0]] = b"{}\n"
+                self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_h20_expiry_and_raw_prefix_tamper_are_not_masked_by_terminal_state(self):
+        b, bfiles = self.checkpoint_b20()
+        h, hfiles = self.closed_h20()
+        validator = checker._validate_u01_approval_request_ledger_closed
+        expires = datetime.fromisoformat(b["progress"]["worker_lease"]["expires_at"])
+        with patch.object(checker, "_u01_task4_report_archive", return_value=(b, bfiles)), \
+                patch.object(checker, "_u01_approval_request_ledger_manifest_at", return_value=self.manifest_raw()):
+            self.assertEqual(validator(h, now=expires + timedelta(seconds=1), archived_files=hfiles), [])
+            late = deepcopy(h)
+            late["progress"]["updated_at"] = expires.isoformat()
+            self.assertEqual(validator(late, now=expires, archived_files=hfiles),
+                             ["U01_APPROVAL_REQUEST_LEDGER_CLOSE_INVALID"])
+            altered = dict(hfiles)
+            altered[PATHS[1]] = altered[PATHS[1]].replace(b'"sequence": 1,', b'"sequence":  1,', 1)
+            self.assertEqual(json.loads(altered[PATHS[1]]), h["events"])
+            self.assertEqual(validator(h, now=expires, archived_files=altered),
+                             ["U01_APPROVAL_REQUEST_LEDGER_CLOSE_INVALID"])
+
+
 class U01DashboardWaitingApprovalRunEpoch128Tests(unittest.TestCase):
     A19 = "16d00c2519498487b26d9997abf42478696fe913"
 
@@ -221,6 +514,8 @@ class U01DashboardWaitingApprovalRunEpoch128Tests(unittest.TestCase):
     def test_c19_m19_git_direct_children_source_hash_and_dc_append_binding(self):
         bundle, _ = self.issued()
         original = subprocess.check_output
+        original_read = Path.read_bytes
+        historical = {ROOT / path: original(["git", "show", f"{self.A19}:{path}"], cwd=ROOT) for path in PATHS}
         manifest_path = "deploy/wsl/U01WaitingApprovalRunReleaseManifest.json"
         wi = "docs/work_orders/U-01_DASHBOARD_WAITING_APPROVAL_RUN_WORK_INSTRUCTION.md"
         inv = "docs/work_orders/U-01_DASHBOARD_WAITING_APPROVAL_RUN_INVOCATION.md"
@@ -274,6 +569,7 @@ class U01DashboardWaitingApprovalRunEpoch128Tests(unittest.TestCase):
                     with patch.object(checker.subprocess, "check_output", side_effect=output), \
                             patch.object(checker, "_u01_task4_epoch106_g05_live_remote_sha",
                                 return_value="0" * 40 if scenario == "remote" else head), \
+                            patch.object(Path, "read_bytes", lambda path: historical[path] if path in historical else original_read(path)), \
                             patch.object(checker, "_u01_waiting_approval_run_source_hashes", side_effect=lambda _b, _sha, paths: ({p: ("B" if scenario == "source_hash" else "A") * 64 for p in paths} if set(paths) == checker._U01_WAITING_APPROVAL_RUN_CODE else {p: checker._u01_waiting_approval_run_baseline(_b)["retained_source_files"][p] for p in paths})):
                         errors = checker._collect_u01_waiting_approval_run_git(bundle)
                     good = scenario == "valid" or (head == self.C19 and scenario in ("manifest", "source_hash"))

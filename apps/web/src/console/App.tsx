@@ -1106,6 +1106,63 @@ export function scheduleQueueExpiry(observedAt: unknown, invalidate: () => void)
   return () => clearTimeout(timer);
 }
 
+export function scheduleApprovalExpiry(observedAt: unknown, items: unknown, invalidate: () => void) {
+  if (!validObservedAt(observedAt) || !Array.isArray(items) || items.length > 100) return () => {};
+  const deadlines = [Date.parse(observedAt) + 300001];
+  for (const item of items) {
+    if (!record(item) || !validObservedAt(item.expiresAt)) return () => {};
+    deadlines.push(Date.parse(item.expiresAt));
+  }
+  const remaining = Math.min(...deadlines) - Date.now();
+  if (remaining <= 0 || remaining > 305001) return () => {};
+  const timer = setTimeout(invalidate, remaining);
+  return () => clearTimeout(timer);
+}
+
+function ScopedApprovalRequestCard({metric, evidence, pair, observedAt}:
+    {metric: unknown; evidence: unknown; pair: unknown; observedAt: unknown}) {
+  const sourceAt = record(metric) ? metric.observedAt : null;
+  const rawItems = record(metric) ? metric.items : null;
+  const [expiryTick, setExpiryTick] = useState(0);
+  useEffect(() => scheduleApprovalExpiry(sourceAt, rawItems, () => setExpiryTick(expiryTick + 1)),
+    [sourceAt, rawItems, expiryTick]);
+  const items = Array.isArray(rawItems) ? rawItems : [];
+  const now = Date.now();
+  const ids = new Set<string>();
+  const validId = (id: unknown): id is string => typeof id === 'string'
+    && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(id);
+  const fields = ['requestId', 'taskId', 'runId', 'requestKind', 'planId', 'planHash', 'requestedAt', 'expiresAt'];
+  const complete = record(metric) && record(evidence) && metric.status === 'AVAILABLE'
+    && metric.source === 'approval_request_ledger' && metric.reason === null && evidence.reason === null
+    && Number.isSafeInteger(metric.count) && (metric.count as number) >= 0
+    && (metric.count as number) <= 100 && Array.isArray(rawItems) && items.length === metric.count
+    && validObservedAt(sourceAt) && validObservedAt(observedAt)
+    && Math.abs(Date.parse(sourceAt) - Date.parse(observedAt)) <= 5000
+    && now - Date.parse(sourceAt) <= 300000 && Date.parse(sourceAt) - now <= 5000
+    && validScopedEvidence(evidence, pair, 'approval_request_ledger', 'CURRENT_OBSERVATION', sourceAt)
+    && items.every((item) => {
+      if (!record(item) || Object.keys(item).length !== fields.length
+        || !fields.every(key => Object.hasOwn(item, key)) || !validId(item.requestId)
+        || !validId(item.taskId) || !validId(item.planId) || (item.runId !== null && !validId(item.runId))
+        || item.requestKind !== 'EXECUTION_PLAN' || typeof item.planHash !== 'string'
+        || !/^sha256:[0-9a-f]{64}$/.test(item.planHash) || ids.has(item.requestId)
+        || !validObservedAt(item.requestedAt) || !validObservedAt(item.expiresAt)
+        || Date.parse(item.requestedAt) > Date.parse(sourceAt)
+        || Date.parse(item.expiresAt) - Date.parse(item.requestedAt) !== 3600000
+        || Date.parse(item.expiresAt) <= now) return false;
+      ids.add(item.requestId); return true;
+    });
+  return <article className="status-card scoped-approval-request"><h3>승인 요청 대기</h3>
+    <p className={complete ? 'status-ready' : 'status-unavailable'}>
+      {complete ? `전체 ${items.length}건` : 'UNAVAILABLE'}</p>
+    {complete ? <><p>원본 · approval_request_ledger</p><p>현재 관측 · {String(sourceAt)}</p>
+      {items.length === 0 ? <p>대기 중인 승인 요청이 없습니다.</p>
+        : <details><summary>요청 목록</summary><ul>{items.map(item =>
+          <li key={item.requestId}>Task {item.taskId} · 계획 {item.planId} · 요청 {item.requestId}
+            <p>요청 시각 {item.requestedAt} · 만료 시각 {item.expiresAt}</p></li>)}</ul></details>}</>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 function ScopedQueueCard({metric, evidence, pair, observedAt}:
     {metric: unknown; evidence: unknown; pair: unknown; observedAt: unknown}) {
   const sourceAt = record(metric) ? metric.observedAt : null;
@@ -1378,6 +1435,9 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
             : name === 'agent'
               ? <ScopedAgentOwnerCard key={name} metric={current?.agent} evidence={currentEvidence?.agent}
                   pair={pair} observedAt={period.observedAt}/>
+            : name === 'approvalPending'
+              ? <ScopedApprovalRequestCard key={name} metric={current?.approvalPending}
+                  evidence={currentEvidence?.approvalPending} pair={pair} observedAt={period.observedAt}/>
             : <ScopedMetric key={name} name={name} metric={current?.[name]}
               completeness={currentEvidence?.[name]} pair={pair}
               expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}

@@ -86818,5 +86818,466 @@ def validate_bundle(bundle):
     return sorted(set(errors))
 
 
+_U01_APPROVAL_REQUEST_LEDGER_A21 = "c550c21422dd0ed93f32868b85d080199d43b1f9"
+_U01_APPROVAL_REQUEST_LEDGER_A20 = "1b0e34cc256ea8179d3021f96a9ef0eeaeae9539"
+_U01_APPROVAL_REQUEST_LEDGER_W22 = "367a9905351afc6c9d2d29ab5bc25c0892d0f630"
+_U01_APPROVAL_REQUEST_LEDGER_W21 = "f53bfc6edc13871bf713ee2978ef99f2b09bda15"
+_U01_APPROVAL_REQUEST_LEDGER_BASE = "3ee62694ab6508265dba5b79247909c32117d530"
+_U01_APPROVAL_REQUEST_LEDGER_M19 = "639992c9e01de2bb151c639e91089c2c1aa31818"
+_U01_APPROVAL_REQUEST_LEDGER_M19_HASH = "1D68A2A11D03B0DD415BCC16E535EF6810CED8C28225B3E78D0B4689837FB8FA"
+_U01_APPROVAL_REQUEST_LEDGER_PATHS = _U01_ACTIVE_RUN_PATHS
+_U01_APPROVAL_REQUEST_LEDGER_CODE = {"migrations/versions/0021_approval_requests.py",
+    "packages/planning/approval_requests.py",
+    "packages/persistence/approval_request_repository.py",
+    "packages/persistence/operations_approval_request_read.py",
+    "packages/api/scoped_dashboard.py",
+    "apps/api/anvil_api/asgi.py",
+    "apps/api/anvil_api/oidc_process.py",
+    "apps/web/src/console/App.tsx",
+    "apps/web/tests/f15-console.test.mjs",
+    "tests/planning/test_approval_request_service.py",
+    "tests/persistence/test_approval_request_repository.py",
+    "tests/api/test_u01_approval_request_reader.py",
+    "tests/integration/test_u01_approval_request_pg15.py",
+    "tests/api/test_oidc_process.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_u01_postmerge_control_projection.py"}
+_U01_APPROVAL_REQUEST_LEDGER_ADDED = {"migrations/versions/0021_approval_requests.py",
+    "packages/planning/approval_requests.py",
+    "packages/persistence/approval_request_repository.py",
+    "packages/persistence/operations_approval_request_read.py",
+    "tests/planning/test_approval_request_service.py",
+    "tests/persistence/test_approval_request_repository.py",
+    "tests/api/test_u01_approval_request_reader.py",
+    "tests/integration/test_u01_approval_request_pg15.py"}
+_U01_APPROVAL_REQUEST_LEDGER_APPROVAL_FILES = {"docs/approvals/APPROVAL-20261014-U01-TASK-PLANNING-AUTHORITY-001.md",
+    "docs/approvals/APPROVAL-20261014-U01-APPROVAL-REQUEST-LEDGER-001.md",
+    "docs/04_test_reports/U-01_APPROVAL_REQUEST_LEDGER_CONTRACT_PROPOSAL.md"}
+_U01_APPROVAL_REQUEST_LEDGER_RETAINED = {"deploy/wsl/compose.u01-development.yml", "deploy/wsl/nginx-u01-development.conf",
+    "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/U01DevelopmentReleaseManifest.template.json"}
+_U01_APPROVAL_REQUEST_LEDGER_BINDING = "u01_approval_request_ledger_binding"
+_U01_APPROVAL_REQUEST_LEDGER_MODE = "U01_APPROVAL_REQUEST_LEDGER_ACTIVE"
+_U01_APPROVAL_REQUEST_LEDGER_CLOSE = "U01_APPROVAL_REQUEST_LEDGER_CLOSED"
+_U01_APPROVAL_REQUEST_LEDGER_MANIFEST = "deploy/wsl/U01ApprovalRequestLedgerReleaseManifest.json"
+_U01_APPROVAL_REQUEST_LEDGER_APPROVAL = "F9966B488C7F0A088ED79EA0319E19726706A3FFA829CEE811ADD84F5FE9E06A"
+
+
+def validate_u01_approval_request_ledger_manifest(value, baseline):
+    def matches(item, pattern):
+        return type(item) is str and re.fullmatch(pattern, item) is not None
+    def seal(item): return matches(item, r"[0-9A-F]{64}")
+    try:
+        if type(value) is not dict or set(value) != {
+            "schema_version","environment","acceptance","release_decision","source_commit","source_files",
+            "predecessor_manifest_commit","predecessor_manifest_sha256","origin","images","image_sources",
+            "retained_source_files","database","rollback","unchanged"}: raise ValueError()
+        files, images, sources, db, rollback = (value[k] for k in ("source_files","images","image_sources","database","rollback"))
+        if (value["schema_version"] != "u01_approval_request_ledger_manifest/v1"
+            or value["environment"] != "WSL_SERVER_TEST_STAGING" or value["acceptance"] != "NOT_ACCEPTED"
+            or value["release_decision"] != "DEFER" or not matches(value["source_commit"], r"[0-9a-f]{40}")
+            or value["predecessor_manifest_commit"] != _U01_APPROVAL_REQUEST_LEDGER_M19
+            or value["predecessor_manifest_sha256"] != _U01_APPROVAL_REQUEST_LEDGER_M19_HASH
+            or value["origin"] != baseline["origin"] or value["origin"] != "https://172.27.253.53:3770"
+            or type(files) is not dict or not files or not set(files) <= _U01_APPROVAL_REQUEST_LEDGER_CODE
+            or not all(seal(v) for v in files.values())
+            or type(images) is not dict or set(images) != {"api","web","issuer"}
+            or not all(matches(v,r"sha256:[0-9a-f]{64}") for v in images.values())
+            or images["issuer"] != baseline["images"]["issuer"]
+            or type(sources) is not dict or sources != {"api":value["source_commit"],"web":value["source_commit"],"issuer":baseline["image_sources"]["issuer"]}
+            or value["retained_source_files"] != baseline["retained_source_files"]
+            or type(db) is not dict or set(db) != {"previous_revision","target_revision","data_policy","backup_proof_sha256","restore_proof_sha256"}
+            or db["previous_revision"] != "0020_f19a_pair_grants" or db["target_revision"] != "0021_approval_requests"
+            or db["data_policy"] != "PRESERVE_EXISTING_AND_APPROVAL_AUDIT"
+            or not seal(db["backup_proof_sha256"]) or not seal(db["restore_proof_sha256"])
+            or type(rollback) is not dict or set(rollback) != {"api","web","database_policy"}
+            or rollback["database_policy"] != "NO_DOWNGRADE_PRESERVE_ROWS_DISABLE_FEATURE"
+            or value["unchanged"] != ["ISSUER","READER_AUTH","CREDENTIALS","CERTIFICATE","NETWORK","RETAINED_ROLLBACKS"]):
+            raise ValueError()
+        for role, container in (("api","3c52b542ae951f0ab20c7d22ee5de43324cbe537a7e09193111001398f3a24dd"),
+                                ("web","1497bbf9b76b319bd82233267f58aebb542e6f21b76685e908e759b0b12b7b41")):
+            if type(rollback[role]) is not dict or rollback[role] != {
+                "container_id":container,"image_id":baseline["images"][role],"source_commit":baseline["image_sources"][role]}:
+                raise ValueError()
+        return []
+    except (ValueError, TypeError, KeyError):
+        return ["U01_APPROVAL_REQUEST_LEDGER_MANIFEST_INVALID"]
+
+
+def _u01_approval_request_ledger_frozen(bundle):
+    def blob(sha, path):
+        return subprocess.check_output(["git", "show", f"{sha}:{path}"],
+            cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+    frozen = {path: blob(_U01_APPROVAL_REQUEST_LEDGER_A21, path)
+        for path in _U01_APPROVAL_REQUEST_LEDGER_PATHS}
+    old = {path: blob(_U01_APPROVAL_REQUEST_LEDGER_A20, path)
+        for path in _U01_APPROVAL_REQUEST_LEDGER_PATHS}
+    p, e = (json.loads(frozen[path]) for path in _U01_APPROVAL_REQUEST_LEDGER_PATHS[:2])
+    prior = json.loads(old[_U01_APPROVAL_REQUEST_LEDGER_PATHS[0]])
+    binding = p[_U01_APPROVAL_REQUEST_LEDGER_BINDING]
+    if (raw_event_object_prefix_bytes(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]], 2432)
+            != raw_event_object_prefix_bytes(old[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]], 2432)
+            or p["u01_approval_request_ledger_r1_binding"] != prior[_U01_APPROVAL_REQUEST_LEDGER_BINDING]
+            or binding["a20_docs_checkpoint"] != _U01_APPROVAL_REQUEST_LEDGER_A20
+            or binding["r1_active_checkpoint"] != _U01_APPROVAL_REQUEST_LEDGER_A20
+            or binding["w21_checkpoint"] != _U01_APPROVAL_REQUEST_LEDGER_W21
+            or binding["w22_checkpoint"] != _U01_APPROVAL_REQUEST_LEDGER_W22
+            or binding["original_work_instruction_sha256"] != "935DD7F83D1153F7645ABAACCE1CC8810D84ADE5EEBDB1F8CC930E9219D57258"
+            or binding["invocation_sha256"] != "DB16830F8E5A31EB8CAA6C87B2A54C816C42629090FE1BEE0AD663161E8A07EC"
+            or binding["parent_approval_sha256"] != "E9C0B7A0927C104A4EC4D14B788C06C340179512CA7C9CB24887B879B2F6E4B6"
+            or hashlib.sha256(canonical_json_bytes(binding["inherited_source_sha256"])).hexdigest().upper()
+               != "672F68D1687B5235C9ECF105B146C33CAA4BB07356BFA97A42C85F1A2A3005F5"
+            or len(e["events"]) != 2437 or e["last_sequence"] != 2437):
+        raise ValueError("U01_APPROVAL_REQUEST_LEDGER_HISTORY_INVALID")
+    kinds = ("WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORK_INSTRUCTION_ISSUED",
+             "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED")
+    for seq, kind in enumerate(kinds, 2433):
+        row = e["events"][seq - 1]
+        if (row["sequence"] != seq or row["event_type"] != kind
+                or row["previous_event_sha256"] != hashlib.sha256(
+                    canonical_json_bytes(e["events"][seq - 2])).hexdigest().upper()):
+            raise ValueError("U01_APPROVAL_REQUEST_LEDGER_HISTORY_INVALID")
+    for name, seq in (("write", 2433), ("worker", 2434)):
+        retired = {**prior[name + "_lease"], "status": "REVOKED",
+            "revoked_at": p["worker_lease"]["issued_at"],
+            "revoke_reason": "INTERNAL_ASGI_READINESS_PATH_REVISION"}
+        if (p["completed_u01_approval_request_ledger_r1_" + name + "_lease"] != retired
+                or e["events"][seq - 1]["details"] != retired):
+            raise ValueError("U01_APPROVAL_REQUEST_LEDGER_HISTORY_INVALID")
+    if (e["events"][2435]["details"] != p["worker_lease"]
+            or e["events"][2436]["details"] != p["write_lease"]
+            or any(binding[k] != v for k, v in e["events"][2434]["details"].items())
+            or p["worker_lease"]["execution_fencing_token"] == prior["worker_lease"]["execution_fencing_token"]
+            or p["write_lease"]["write_fencing_token"] == prior["write_lease"]["write_fencing_token"]):
+        raise ValueError("U01_APPROVAL_REQUEST_LEDGER_HISTORY_INVALID")
+    return frozen
+
+
+def _validate_u01_approval_request_ledger_active(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_approval_request_ledger_frozen(bundle)
+        progress = json.loads(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[0]])
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        binding = progress[_U01_APPROVAL_REQUEST_LEDGER_BINDING]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (instant.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= instant
+                   < datetime.fromisoformat(worker["expires_at"])
+                or not datetime.fromisoformat(write["issued_at"]) <= instant
+                   < datetime.fromisoformat(write["expires_at"])
+                or worker["lease_epoch"] != 130 or write["write_epoch"] != 130
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["actor_id"] != "developer-primary-u01-approval-request-ledger"
+                or write["actor_id"] != worker["actor_id"]
+                or write["worker_lease_id"] != worker["lease_id"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or write["write_fencing_token"] == worker["execution_fencing_token"]
+                or set(worker["path_scope"]) != _U01_APPROVAL_REQUEST_LEDGER_CODE
+                or set(write["path_scope"]) != _U01_APPROVAL_REQUEST_LEDGER_CODE or set(write["product_write_scope"]) != {"migrations/versions/0021_approval_requests.py", "packages/planning/approval_requests.py", "packages/persistence/approval_request_repository.py", "packages/persistence/operations_approval_request_read.py", "packages/api/scoped_dashboard.py", "apps/api/anvil_api/oidc_process.py", "apps/web/src/console/App.tsx", "apps/api/anvil_api/asgi.py"}
+                or binding["predecessor_head"] != _U01_APPROVAL_REQUEST_LEDGER_W22
+                or binding["predecessor_sequence"] != 2432
+                or binding["work_instruction_sha256"] !=
+                   "CB62616F2055B295EF4F1BE499A7A5F1491B24C490402F0F2E4599DB2B54E172"
+                or binding["approval_sha256"] != _U01_APPROVAL_REQUEST_LEDGER_APPROVAL
+                or any(binding[key] is not None for key in ("control_checkpoint",
+                    "a21_docs_checkpoint", "manifest_checkpoint", "active_projection_checkpoint"))
+                or progress["repository"]["projection_mode"] != _U01_APPROVAL_REQUEST_LEDGER_MODE
+                or progress["event_sequence"] != 2437 or bundle["progress"] != progress
+                or bundle["events"] != json.loads(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]])
+                or bundle["handoff_text"].encode() != frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[2]]
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])
+                or bundle["detached_digest"] != json.loads(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[3]])
+                or any((archived_files[path] if archived_files and path in archived_files
+                        else (Path(bundle["_root"]) / path).read_bytes()) != raw
+                       for path, raw in frozen.items())):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_APPROVAL_REQUEST_LEDGER_CONTROL_INVALID"]
+
+
+
+def _u01_approval_request_ledger_baseline(bundle):
+    raw = subprocess.check_output(["git", "show", f"{_U01_APPROVAL_REQUEST_LEDGER_M19}:{_U01_WAITING_APPROVAL_RUN_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+    if hashlib.sha256(raw).hexdigest().upper() != _U01_APPROVAL_REQUEST_LEDGER_M19_HASH:
+        raise ValueError("U01_APPROVAL_REQUEST_LEDGER_MANIFEST_INVALID")
+    return json.loads(raw)
+
+
+def _u01_approval_request_ledger_manifest_at(bundle, sha):
+    if type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+        raise ValueError("U01_APPROVAL_REQUEST_LEDGER_MANIFEST_INVALID")
+    return subprocess.check_output(["git", "show", f"{sha}:{_U01_APPROVAL_REQUEST_LEDGER_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+
+
+def _u01_approval_request_ledger_source_hashes(bundle, sha, paths):
+    return {path: hashlib.sha256(subprocess.check_output(
+        ["git", "show", f"{sha}:{path}"], cwd=bundle["_root"],
+        stderr=subprocess.DEVNULL)).hexdigest().upper() for path in paths}
+
+
+def _validate_u01_approval_request_ledger_projection(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_approval_request_ledger_frozen(bundle)
+        actual = _u01_active_run_actual(bundle, archived_files)
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[0]])
+        binding = progress[_U01_APPROVAL_REQUEST_LEDGER_BINDING]
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        if (any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in (csha, msha)) or len({csha, msha, _U01_APPROVAL_REQUEST_LEDGER_A21, _U01_APPROVAL_REQUEST_LEDGER_W21}) != 4
+                or binding["a21_docs_checkpoint"] != _U01_APPROVAL_REQUEST_LEDGER_A21
+                or binding["active_projection_checkpoint"] is not None
+                or instant.tzinfo is None or updated.tzinfo is None
+                or not issued <= updated <= instant < expires
+                or actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]] != frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]]
+                or stream != json.loads(actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]])
+                or stream["last_sequence"] != 2437 or progress["event_sequence"] != 2437):
+            raise ValueError()
+        raw_manifest = _u01_approval_request_ledger_manifest_at(bundle, msha)
+        manifest = json.loads(raw_manifest)
+        manifest_hash = hashlib.sha256(raw_manifest).hexdigest().upper()
+        if (validate_u01_approval_request_ledger_manifest(manifest, _u01_approval_request_ledger_baseline(bundle))
+                or manifest["source_commit"] != csha or binding["manifest_sha256"] != manifest_hash):
+            raise ValueError()
+        action = "U01_APPROVAL_REQUEST_LEDGER_CLOSE_READY"
+        expected[_U01_APPROVAL_REQUEST_LEDGER_BINDING].update(a21_docs_checkpoint=_U01_APPROVAL_REQUEST_LEDGER_A21,
+            control_checkpoint=csha, manifest_checkpoint=msha, manifest_sha256=manifest_hash,
+            status=_U01_APPROVAL_REQUEST_LEDGER_MODE, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=_U01_APPROVAL_REQUEST_LEDGER_MODE, package_status=_U01_APPROVAL_REQUEST_LEDGER_MODE)
+        expected["repository"].update(local_head=msha, remote_head=msha,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": _U01_APPROVAL_REQUEST_LEDGER_MODE},
+            snapshot_id="snapshot-u01-approval-request-ledger-b20-seq2437")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = extract_handoff_summary(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[2]].decode())
+        handoff.update(repository_head=msha, next_safe_action=action)
+        digest = _u01_active_run_digest(json.loads(frozen[_U01_APPROVAL_REQUEST_LEDGER_PATHS[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff
+                or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[0]]) != progress
+                or actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_APPROVAL_REQUEST_LEDGER_PROJECTION_INVALID"]
+
+
+def _validate_u01_approval_request_ledger_closed(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_APPROVAL_REQUEST_LEDGER_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (type(publication) is not str or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_APPROVAL_REQUEST_LEDGER_A21, binding["control_checkpoint"], binding["manifest_checkpoint"]}):
+            raise ValueError()
+        active, published = _u01_task4_report_archive(bundle, publication)
+        before = active["progress"]
+        before_at = datetime.fromisoformat(before["updated_at"])
+        if _validate_u01_approval_request_ledger_projection(active, archived_files=published, now=before_at):
+            raise ValueError()
+        actual = _u01_active_run_actual(bundle, archived_files)
+        raw = actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(before["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None or not before_at <= moment < expires
+                or moment > instant or progress["event_sequence"] != 2439
+                or raw_event_object_prefix_bytes(raw, 2437)
+                   != raw_event_object_prefix_bytes(published[_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]], 2437)
+                or stream != json.loads(raw) or stream["last_sequence"] != 2439
+                or len(stream["events"]) != 2439
+                or progress["last_event_id"] != stream["last_event_id"]
+                or {k: v for k, v in stream.items() if k not in {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in {"events", "last_sequence", "last_event_id"}}):
+            raise ValueError()
+        for sequence, kind, name, token in (
+            (2438, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2439, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = before[name + "_lease"]
+            previous = hashlib.sha256(canonical_json_bytes(stream["events"][sequence - 2])).hexdigest().upper()
+            if stream["events"][sequence - 1] != {
+                "sequence": sequence, "event_id": f"evt_u01_{sequence}_approval_request_ledger_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_APPROVAL_REQUEST_LEDGER_CLOSE",
+                "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": _U01_APPROVAL_REQUEST_LEDGER_CLOSE}}:
+                raise ValueError()
+        expected = copy.deepcopy(before)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_approval_request_ledger_{name}_lease"] = {
+                **before[name + "_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["write_lease"] = expected["worker_lease"] = None
+        action = "U01_APPROVAL_REQUEST_LEDGER_RECORDED_U01_PENDING"
+        expected[_U01_APPROVAL_REQUEST_LEDGER_BINDING].update(status=_U01_APPROVAL_REQUEST_LEDGER_CLOSE, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2439)
+        expected["active_work_instruction"].update(result_status=_U01_APPROVAL_REQUEST_LEDGER_CLOSE, package_status=_U01_APPROVAL_REQUEST_LEDGER_CLOSE)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2439,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": _U01_APPROVAL_REQUEST_LEDGER_CLOSE},
+            snapshot_id="snapshot-u01-approval-request-ledger-h20-seq2439")
+        expected["repository"].update(projection_mode=_U01_APPROVAL_REQUEST_LEDGER_CLOSE, head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = {**active["handoff"], "event_sequence": 2439, "last_event_id": stream["last_event_id"],
+            "active_agent": None, "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        digest = copy.deepcopy(active["detached_digest"])
+        digest["event_sequence"] = 2439
+        digest = _u01_active_run_digest(digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[0]]) != progress
+                or actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_APPROVAL_REQUEST_LEDGER_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_APPROVAL_REQUEST_LEDGER_CLOSE_INVALID"]
+
+
+
+def _collect_u01_approval_request_ledger_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
+        def direct(left, right, paths, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                and git("rev-list", "--count", f"{left}..{right}") == "1"
+                and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                and set(git("log", "--format=", "--name-only", "--no-renames", f"{left}..{right}").splitlines()) == paths
+                and set(git("diff", "--name-only", "--no-renames", left, right).splitlines()) == paths
+                and set(git("diff", "--name-status", "--no-renames", left, right).splitlines())
+                    == {("A\t" if p in added else "M\t") + p for p in paths})
+        wi = "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_INVOCATION.md"
+        r2wi = "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_R2_WORK_INSTRUCTION.md"
+        r2inv = "docs/work_orders/U-01_APPROVAL_REQUEST_LEDGER_R2_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"
+        status, environment = "docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development") != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or not direct(_U01_APPROVAL_REQUEST_LEDGER_BASE, _U01_APPROVAL_REQUEST_LEDGER_W21, {wi, inv, status, "design_change.md", *_U01_APPROVAL_REQUEST_LEDGER_APPROVAL_FILES}, {wi, inv, *_U01_APPROVAL_REQUEST_LEDGER_APPROVAL_FILES})
+                or not direct(_U01_APPROVAL_REQUEST_LEDGER_W21, _U01_APPROVAL_REQUEST_LEDGER_A20, set(_U01_APPROVAL_REQUEST_LEDGER_PATHS) | {status})
+                or not direct(_U01_APPROVAL_REQUEST_LEDGER_A20, _U01_APPROVAL_REQUEST_LEDGER_W22,
+                    {r2wi, r2inv, status}, {r2wi, r2inv})
+                or not direct(_U01_APPROVAL_REQUEST_LEDGER_W22, _U01_APPROVAL_REQUEST_LEDGER_A21,
+                    set(_U01_APPROVAL_REQUEST_LEDGER_PATHS) | {status})
+                or head == _U01_APPROVAL_REQUEST_LEDGER_A21):
+            raise ValueError()
+        old_dc = subprocess.check_output(["git", "show", f"{_U01_APPROVAL_REQUEST_LEDGER_BASE}:design_change.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        new_dc = subprocess.check_output(["git", "show", f"{_U01_APPROVAL_REQUEST_LEDGER_W21}:design_change.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        if not new_dc.startswith(old_dc) or len(new_dc) <= len(old_dc):
+            raise ValueError()
+        progress = bundle["progress"]
+        binding = progress[_U01_APPROVAL_REQUEST_LEDGER_BINDING]
+        closed = progress["repository"]["projection_mode"] == _U01_APPROVAL_REQUEST_LEDGER_CLOSE
+        projected = binding["control_checkpoint"] is not None
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        if not projected:
+            if closed or msha is not None or binding["active_projection_checkpoint"] is not None:
+                raise ValueError()
+            parent = git("show", "-s", "--format=%P", head)
+            csha, msha = (head, None) if parent == _U01_APPROVAL_REQUEST_LEDGER_A21 else (parent, head)
+        if any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+               for sha in (csha,) + ((msha,) if msha is not None else ())):
+            raise ValueError()
+        changed = set(git("diff", "--name-only", "--no-renames", _U01_APPROVAL_REQUEST_LEDGER_A21, csha).splitlines())
+        if not changed or not changed <= _U01_APPROVAL_REQUEST_LEDGER_CODE or not direct(_U01_APPROVAL_REQUEST_LEDGER_A21, csha, changed, changed & _U01_APPROVAL_REQUEST_LEDGER_ADDED):
+            raise ValueError()
+        if msha is not None:
+            if not direct(csha, msha, {_U01_APPROVAL_REQUEST_LEDGER_MANIFEST, status}, {_U01_APPROVAL_REQUEST_LEDGER_MANIFEST}):
+                raise ValueError()
+            manifest = json.loads(_u01_approval_request_ledger_manifest_at(bundle, msha))
+            if (validate_u01_approval_request_ledger_manifest(manifest, _u01_approval_request_ledger_baseline(bundle)) or manifest["source_commit"] != csha
+                    or manifest["source_files"] != _u01_approval_request_ledger_source_hashes(bundle, csha, changed)
+                    or manifest["retained_source_files"] != _u01_approval_request_ledger_source_hashes(bundle, csha, _U01_APPROVAL_REQUEST_LEDGER_RETAINED)):
+                raise ValueError()
+        if projected:
+            if binding["a21_docs_checkpoint"] != _U01_APPROVAL_REQUEST_LEDGER_A21 or msha is None:
+                raise ValueError()
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            if not direct(msha, bsha, set(_U01_APPROVAL_REQUEST_LEDGER_PATHS) - {_U01_APPROVAL_REQUEST_LEDGER_PATHS[1]} | {status, environment}):
+                raise ValueError()
+            if closed:
+                hsha = head
+                report = "docs/04_test_reports/U-01_APPROVAL_REQUEST_LEDGER_RESULT.md"
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if re.fullmatch(r"[0-9a-f]{40}", hsha) is None or not direct(hsha, head, {report, status}, {report}):
+                        raise ValueError()
+                if not direct(bsha, hsha, set(_U01_APPROVAL_REQUEST_LEDGER_PATHS) | {status}):
+                    raise ValueError()
+        elif any(raw != (root / path).read_bytes() for path, raw in _u01_approval_request_ledger_frozen(bundle).items()):
+            raise ValueError()
+        if subprocess.run(["git", "diff", "--check", "development/main...HEAD"], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_APPROVAL_REQUEST_LEDGER_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_approval_request_ledger = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode not in {_U01_APPROVAL_REQUEST_LEDGER_MODE, _U01_APPROVAL_REQUEST_LEDGER_CLOSE}:
+        return _validate_bundle_before_u01_approval_request_ledger(bundle)
+    progress = bundle["progress"]
+    if mode == _U01_APPROVAL_REQUEST_LEDGER_CLOSE:
+        errors = _validate_u01_approval_request_ledger_closed(bundle)
+    elif progress.get(_U01_APPROVAL_REQUEST_LEDGER_BINDING, {}).get("control_checkpoint") is not None:
+        errors = _validate_u01_approval_request_ledger_projection(bundle)
+    else:
+        errors = _validate_u01_approval_request_ledger_active(bundle)
+    root = Path(bundle["_root"])
+    for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract", "schema_catalog"):
+        try:
+            if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                errors.append("U01_APPROVAL_REQUEST_LEDGER_CONTROL_INVALID")
+        except (OSError, ValueError, TypeError, KeyError):
+            errors.append("U01_APPROVAL_REQUEST_LEDGER_CONTROL_INVALID")
+    if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+        errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+        errors.extend(_validate_failure_projection(bundle))
+        errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+        errors.extend(_validate_dir(bundle))
+        errors.extend(_validate_reporting(progress))
+        errors.extend(_validate_reporting_state(bundle))
+        errors.extend(_validate_registry_refs(bundle))
+        errors.extend(_validate_referenced_hashes(bundle))
+        errors.extend(validate_detached_progress_binding(bundle))
+    else:
+        errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+    errors.extend(_collect_u01_approval_request_ledger_git(bundle))
+    return sorted(set(errors))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
