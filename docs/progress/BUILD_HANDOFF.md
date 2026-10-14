@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 계획원본등록 A22(Main, 2026-10-14T18:46:40+09:00): W23 6221a17eff79831b222f8a2413e6cfd80383b7f4 private동일/active0에서Event1~2439원문보존→2440WI/2441epoch131worker/2442write ACTIVE24시간분리token·정확9제품3. 신산님명시등록승인·정확조합/검증Task한정·기존TaskRun보존·reader/사람승인/Run실행확대0. 단일PrimaryTDD/Main코드쓰기0·새route전RED는PASS아님.
+
 U-01 승인 요청 원장 H20: B20 714ff88fc6bf3bb03c1cbd2e23083af1831faa84 뒤2438 write→2439 worker REVOKED·active0, frozen Event1~2437 원문보존·제품추가0. 정식0021/API/Web 및 빈원장 핵심 확인과 정식비영 producer 미검증/전체U01 미인수를 구분하며 첫보고 예정.
 
 U-01 승인 요청 원장 B20: M20 8586eaa8052cfb46ffbafead8084b424a0365b27의 C20 exact API/Web·0021을 반영하고 기존65 data/schema·issuer/권한/보호자료/망/rollback을 보존했다. 실제 빈 승인요청 API/화면·기간/권한/로그아웃과 격리 PG producer10P를 구분하며 정식 비영 producer·만료 이력 공개목록·전체R6/U01 인수는 미검증/미제공, NOT_ACCEPTED/DEFER 유지. epoch130 ACTIVE·H20 회수 예정.
@@ -317,17 +319,70 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2439,
-  "last_event_id": "evt_u01_2439_approval_request_ledger_worker_lease_revoked",
+  "event_sequence": 2442,
+  "last_event_id": "evt_u01_2442_planning_source_registration_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-planning-source-registration",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-planning-source-registration",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T18:46:40+09:00",
+    "expires_at": "2026-10-15T18:46:40+09:00",
+    "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "path_scope": [
+      "packages/planning/source_registration.py",
+      "packages/persistence/planning_source_repository.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "tests/planning/test_planning_source_registration.py",
+      "tests/persistence/test_planning_source_repository.py",
+      "tests/api/test_oidc_process.py",
+      "tests/integration/test_u01_planning_source_registration_pg15.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_epoch": 131,
+    "lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+    "fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+    "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-planning-source-registration",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T18:46:40+09:00",
+    "expires_at": "2026-10-15T18:46:40+09:00",
+    "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "path_scope": [
+      "packages/planning/source_registration.py",
+      "packages/persistence/planning_source_repository.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "tests/planning/test_planning_source_registration.py",
+      "tests/persistence/test_planning_source_repository.py",
+      "tests/api/test_oidc_process.py",
+      "tests/integration/test_u01_planning_source_registration_pg15.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "write_epoch": 131,
+    "lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
+    "worker_lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+    "fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+    "write_fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+    "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+    "product_write_scope": [
+      "packages/planning/source_registration.py",
+      "packages/persistence/planning_source_repository.py",
+      "apps/api/anvil_api/oidc_process.py"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_APPROVAL_REQUEST_LEDGER_RECORDED_U01_PENDING",
-  "repository_head": "8586eaa8052cfb46ffbafead8084b424a0365b27",
+  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_IMPLEMENT",
+  "repository_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }

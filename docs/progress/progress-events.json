@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2439,
+  "last_sequence": 2442,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -109326,7 +109326,140 @@
       "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-130-bf704866810247dc904f05ab3a5ff927",
       "reason": "U01_APPROVAL_REQUEST_LEDGER_CLOSED"
     }
+  },
+  {
+    "sequence": 2440,
+    "event_id": "evt_u01_2440_planning_source_registration_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_PLANNING_SOURCE_REGISTRATION",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "occurred_at": "2026-10-14T18:46:40+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "1651AFDD51AD8484108D3339F56665D596DB1852B63BE5C530609EB5319B79C4",
+    "details": {
+      "work_instruction_id": "WI-U01-PLANNING-SOURCE-REGISTRATION-20261014-001",
+      "work_instruction_path": "docs/work_orders/U-01_PLANNING_SOURCE_REGISTRATION_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "BD0E913B32AD3034DB215A4D7A8849B2E2CD327FFB18E544DC0F8860EE5ADEA6",
+      "invocation_path": "docs/work_orders/U-01_PLANNING_SOURCE_REGISTRATION_INVOCATION.md",
+      "invocation_sha256": "E4719CD7DB13C0ED8736CC1034E4AA2F4F400ABBC2F061EBAB8E9BD470F8C33B",
+      "approval_path": "docs/approvals/APPROVAL-20261014-U01-PLANNING-SOURCE-REGISTRATION-001.md",
+      "approval_sha256": "9E036B629FDAC21089CACFEA215BC489FA3C5A0C3E6A4D529F18F84ECA707A9E",
+      "approval_classification": "HUMAN_APPROVED_SCOPED_PLANNING_SOURCE_REGISTRATION",
+      "predecessor_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+      "predecessor_sequence": 2439,
+      "developer_exact_paths": [
+        "packages/planning/source_registration.py",
+        "packages/persistence/planning_source_repository.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/planning/test_planning_source_registration.py",
+        "tests/persistence/test_planning_source_repository.py",
+        "tests/api/test_oidc_process.py",
+        "tests/integration/test_u01_planning_source_registration_pg15.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "product_write_scope": [
+        "packages/planning/source_registration.py",
+        "packages/persistence/planning_source_repository.py",
+        "apps/api/anvil_api/oidc_process.py"
+      ],
+      "proposal_path": "docs/04_test_reports/U-01_PLANNING_SOURCE_REGISTRATION_CONTRACT_PROPOSAL.md",
+      "proposal_sha256": "69F648A29D3E0C32507D2272BB59C0616F5A74BCFF8C58F1F920AB9C9B464716"
+    }
+  },
+  {
+    "sequence": 2441,
+    "event_id": "evt_u01_2441_planning_source_registration_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_PLANNING_SOURCE_REGISTRATION",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "occurred_at": "2026-10-14T18:46:40+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4B39E5C647D394FE2E686DE7C52A1887630A0793B04583E911278BCB598BE799",
+    "details": {
+      "actor_id": "developer-primary-u01-planning-source-registration",
+      "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T18:46:40+09:00",
+      "expires_at": "2026-10-15T18:46:40+09:00",
+      "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+      "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+      "path_scope": [
+        "packages/planning/source_registration.py",
+        "packages/persistence/planning_source_repository.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/planning/test_planning_source_registration.py",
+        "tests/persistence/test_planning_source_repository.py",
+        "tests/api/test_oidc_process.py",
+        "tests/integration/test_u01_planning_source_registration_pg15.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "lease_epoch": 131,
+      "lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+      "fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+      "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841"
+    }
+  },
+  {
+    "sequence": 2442,
+    "event_id": "evt_u01_2442_planning_source_registration_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_PLANNING_SOURCE_REGISTRATION",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "occurred_at": "2026-10-14T18:46:40+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "81EDFA63825343E90BB36D87EE812C1D08FA696CF2B38BF7C2DFC1F3FACCD9C4",
+    "details": {
+      "actor_id": "developer-primary-u01-planning-source-registration",
+      "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T18:46:40+09:00",
+      "expires_at": "2026-10-15T18:46:40+09:00",
+      "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+      "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+      "path_scope": [
+        "packages/planning/source_registration.py",
+        "packages/persistence/planning_source_repository.py",
+        "apps/api/anvil_api/oidc_process.py",
+        "tests/planning/test_planning_source_registration.py",
+        "tests/persistence/test_planning_source_repository.py",
+        "tests/api/test_oidc_process.py",
+        "tests/integration/test_u01_planning_source_registration_pg15.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py"
+      ],
+      "write_epoch": 131,
+      "lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
+      "worker_lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+      "fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+      "write_fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+      "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+      "product_write_scope": [
+        "packages/planning/source_registration.py",
+        "packages/persistence/planning_source_repository.py",
+        "apps/api/anvil_api/oidc_process.py"
+      ]
+    }
   }
   ],
-  "last_event_id": "evt_u01_2439_approval_request_ledger_worker_lease_revoked"
+  "last_event_id": "evt_u01_2442_planning_source_registration_write_lease_issued"
 }
