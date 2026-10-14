@@ -579,3 +579,45 @@ def test_process_rejects_non_postgresql_operations_dsn_without_reflection(tmp_pa
     with pytest.raises(OidcRuntimeRejected, match="^OIDC_RUNTIME_NOT_CONFIGURED$") as error:
         create_oidc_process_app(environment, lambda **_kwargs: pytest.fail("host must not start"))
     assert error.value.__cause__ is None and error.value.__context__ is None
+
+
+def test_source_host_callback_precedes_existing_planning_hook_without_public_exposure(monkeypatch):
+    from types import SimpleNamespace
+    from datetime import timezone
+    from apps.api.anvil_api import oidc_process as module
+    from tests.persistence.test_planning_source_repository import setup, rows
+    from packages.planning.source_registration import PlanningSourceRegistrar, PlanningSourceRegistrationService
+    engine, policy, command, sources, _, _, _ = setup(monkeypatch)
+    observed, order = {}, []
+    scope = SimpleNamespace(project_id=policy.project_id, environment_id=policy.environment_id)
+    monkeypatch.setattr(module, "load_oidc_process_inputs", lambda env: SimpleNamespace(
+        authorization_scope=scope, principal_policy=object(), pinned_jwks_json="{}", client_secret=lambda: "synthetic", ca_bundle="synthetic"))
+    monkeypatch.setattr(module, "create_engine", lambda *a, **k: engine)
+    def host(**kwargs): observed.update(kwargs); return FastAPI()
+    def source(registrar, service):
+        assert type(registrar) is PlanningSourceRegistrar and type(service) is PlanningSourceRegistrationService
+        grant = registrar.issue(policy, command, sources)
+        service.register(policy, command, sources, grant)
+        order.append("source")
+    def planning(registrar, service):
+        assert len(rows(engine, "tasks")) == 1
+        order.append("planning")
+    try:
+        # 선택하지 않으면 source 등록/권위 발급 SQL0.
+        module.create_oidc_process_app({"ANVIL_DATABASE_URL": "postgresql://isolated.invalid/anvil"}, host, f19a_enabled=True)
+        assert rows(engine, "tasks") == [] and len(rows(engine, "design_artifacts")) == 1
+        app = module.create_oidc_process_app({"ANVIL_DATABASE_URL": "postgresql://isolated.invalid/anvil"}, host,
+            f19a_enabled=True, planning_source_host_control=source, planning_host_control=planning)
+        assert order == ["source", "planning"]
+        assert not any("planning" in key for key in observed)
+        assert not any("planning" in key for key in app.state._state)
+        assert not any("planning" in route.path for route in app.routes)
+    finally: engine.dispose()
+
+
+def test_source_host_callback_requires_f19a_and_valid_callable():
+    from apps.api.anvil_api.oidc_process import create_oidc_process_app
+    for enabled, callback in ((False, lambda a, b: None), (True, "untrusted")):
+        with pytest.raises(OidcRuntimeRejected, match="OIDC_RUNTIME_NOT_CONFIGURED"):
+            create_oidc_process_app({}, lambda **kw: pytest.fail("host0"),
+                f19a_enabled=enabled, planning_source_host_control=callback)

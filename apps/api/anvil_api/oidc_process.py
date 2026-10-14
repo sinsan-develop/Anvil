@@ -237,10 +237,12 @@ def load_oidc_process_inputs(environment: Mapping[str, str]) -> OidcProcessInput
 def create_oidc_process_app(
     environment: Mapping[str, str], host_factory: Callable[..., FastAPI],
     *, f19a_enabled: bool = False, planning_host_control: Callable | None = None,
+    planning_source_host_control: Callable | None = None,
 ) -> FastAPI:
     """Bind one Engine and session factory to the existing OIDC ASGI host."""
-    if type(f19a_enabled) is not bool or (planning_host_control is not None and
-            (not f19a_enabled or not callable(planning_host_control))):
+    if type(f19a_enabled) is not bool or any(callback is not None and
+            (not f19a_enabled or not callable(callback))
+            for callback in (planning_host_control, planning_source_host_control)):
         raise _reject()
     inputs = load_oidc_process_inputs(environment)
     engine = None
@@ -351,6 +353,14 @@ def create_oidc_process_app(
         )
         # 신뢰 embedding host만 명시적으로 받는다. HTTP factory/app state와 공유하지
         # 않으며 startup 자체는 권위나 요청을 발급하지 않는다.
+        # 명시 source 등록이 먼저 완료되어야 기존 producer가 실제 Task/계보를
+        # 해석할 수 있다. 두 callback의 권위는 별개이며 앱에는 보관하지 않는다.
+        if planning_source_host_control is not None:
+            from packages.persistence.planning_source_repository import PlanningSourceRepository
+            from packages.planning.source_registration import PlanningSourceRegistrar, PlanningSourceRegistrationService
+            source_repository = PlanningSourceRepository(engine)
+            planning_source_host_control(PlanningSourceRegistrar(source_repository),
+                                         PlanningSourceRegistrationService(source_repository))
         if planning_host_control is not None:
             from packages.persistence.approval_request_repository import ApprovalRequestRepository, TaskPlanningAuthorityRegistrar
             from packages.planning.approval_requests import ApprovalRequestService
