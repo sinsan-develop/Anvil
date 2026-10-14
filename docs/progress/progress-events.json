@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2437,
+  "last_sequence": 2439,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -109284,7 +109284,49 @@
         "apps/api/anvil_api/asgi.py"
       ]
     }
+  },
+  {
+    "sequence": 2438,
+    "event_id": "evt_u01_2438_approval_request_ledger_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_APPROVAL_REQUEST_LEDGER_CLOSE",
+    "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER",
+    "occurred_at": "2026-10-14T18:06:35+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "010AA7AE6C6B49C7D307465F24C357D016ADD6B38786FDFE63AFF7D657A2C9AA",
+    "details": {
+      "lease_id": "write-lease-u01-approval-request-ledger-50eded912e434ee0a2f0b9bb0b0e660d",
+      "write_fencing_token": "u01-approval-request-ledger-write-fence-epoch-130-50eded912e434ee0a2f0b9bb0b0e660d",
+      "reason": "U01_APPROVAL_REQUEST_LEDGER_CLOSED"
+    }
+  },
+  {
+    "sequence": 2439,
+    "event_id": "evt_u01_2439_approval_request_ledger_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_APPROVAL_REQUEST_LEDGER_CLOSE",
+    "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER",
+    "occurred_at": "2026-10-14T18:06:35+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "7927C1EEC821F4C6B2ECAE1F7B0CD9682904A00A1093ABB581998DFD02CD00AD",
+    "details": {
+      "lease_id": "worker-lease-u01-approval-request-ledger-bf704866810247dc904f05ab3a5ff927",
+      "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-130-bf704866810247dc904f05ab3a5ff927",
+      "reason": "U01_APPROVAL_REQUEST_LEDGER_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2437_approval_request_ledger_write_lease_issued"
+  "last_event_id": "evt_u01_2439_approval_request_ledger_worker_lease_revoked"
 }
