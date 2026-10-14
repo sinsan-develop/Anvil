@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- U-01 화면 로그아웃 착수(Main, 2026-10-14): 신산님 `계속하자`에 따라 직전 제안한 미구현 UI logout을 다음 최소 기능으로 분해한다. local/private1be966cb 동일·trackedclean·seq2409·lease0, 정식3서비스 running을 실제 읽기확인했다. 기존 POST logout/CSRF/세션정책·API·DB·Secret은 유지하며 제품UI1+test/checker/control 최대4만 예정한다. reload 뒤 csrf재취득 계약이 없으므로 재인증 필요 안내를 명시하고 무CSRF요청·storage우회·신규API0. WI/Invocation/본STATUS 정확3 W17 후보, 아직lease/코드write0. 기존사용3카드·backup/rollback보존, 전체R6/인수미진유지. Main 내부구현 재확정이며 반복전수검사/재승인요청 없이 단일Primary TDD→실제화면 종료로 이어간다.
+
 - WSL 개발 화면 반영 첫 결과보고(Main, 2026-10-14): H15 b93caed5ff4bce55b6330ae3fd9db4557742529b는 B15 직접자식 정확5·독립 C0/I0/M0·private 동일/clean actual G05 seq2409 PASS, epoch124 write/worker REVOKED·active0. 신규 `docs/04_test_reports/U-01_WSL_DEVELOPMENT_RUNTIME_RESULT.md`와 본 STATUS 정확2를 첫 보고로 기록한다. 실제 정식HTTPS/재인증 팝업/DB·BLOCKED·ACTIVE·권한/CSRF/APIlogout·데이터보존·임시정리 확인과 실패/미검증을 분리했다. UI로그아웃 버튼 및 다른 미구현을 남겨 전체 U-01 NOT_ACCEPTED/Release DEFER 유지, 다음 기능 구현 대상이다. 정식3서비스/backup/oldrollback은 유지하며 자동예약/Oracle/운영/PR/main0. 본 보고 게시본 G05는 다음 확인한다.
 
 - H15 임대 회수(Main, 2026-10-14): B15 d8e37d1e는 M15 직접자식 정확5문서·독립 C0/I0/M0·private 게시 actual G05 seq2407 PASS였다. Event seq1~2407 객체 원문을 보존하고 seq2408 write→2409 worker 순서로 epoch124 임대를 REVOKED, active worker/write/agent null로 회수했다. 정식 개발3서비스·보호 백업·정지 rollback은 유지하고 제품 추가변경0이다. H15 정확 Event/progress/HANDOFF/digest/WORK_STATUS5의 독립 검토·게시본 G05는 다음 확인하며, 이번 개발 화면 반영과 전체 U-01 NOT_ACCEPTED/Release DEFER를 구분한다. 첫 결과보고는 H15 직접자식 신규 report+WORK_STATUS 정확2로 기록한다.
