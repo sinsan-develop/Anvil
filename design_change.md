@@ -149,3 +149,11 @@
 - 판정·근거: 현재 `packages/api/scoped_dashboard.py`는 approvalPending을 NO_VERIFIED_CURRENT_SOURCE/UNAVAILABLE로반환한다. `0003_planning_approvals`·ApprovalRecord의영속approval_records는승인완료/무효/회수/대체기록이며project/environment·대기요청모집단이없다. ScopeApprovalRequest는in-memory계획출력으로실제조합별승인대기원장이아니다.
 - 영향: 실제승인요청수·대상조회는미구현이며UNAVAILABLE유지. Run WAITING_APPROVAL상태는승인객체수와동일하지않다. 새승인요청원장/인가·공개응답·지속데이터계약이필요하면별도승인판단대상이지현재UI보완으로묵시승인하지않는다.
 - 조치: 기존승인된current.run.items만소비하는별도`승인 대기 Run`카드를최소WI/duallease·단일Primary TDD로구현한다. genericapprovalPending를대체하지않고실제없는승인객체를0/PASS로표시하지않는다. 실DB비영미확인과전체R6/DC-U01-019·전체U01NOT_ACCEPTED/DEFER는보존한다.
+
+### DC-U01-021 — A안 승인 후 확인된 최초 계획 작성 권위 공급원 공백 / 2026-10-14
+
+- 판정: 실제 요청 원장 A안은 신산님의 직접 승인으로 허용됐다(`APPROVAL-20261014-U01-APPROVAL-REQUEST-LEDGER-001`, 제안 SHA256 `9BAF4FAEB4454EDC2ED1151C30F614ABAEB55E3AE5F10C34533B4FB1DC7A0010`). 다만 A안이 전제로 삼은 기존의 영속 Task 계획 작성 권위와 실제 producer는 제품에 연결돼 있지 않다. 이는 기능 구현 차단이며 클라우드 정밀 검증으로 넘길 단순 시험 실패가 아니다.
+- 근거: `packages/planning/service.py:71`의 MainAuthority는 host가 출처를 인증한다는 메모리 adapter다. 실제 record_observation 호출은 `packages/e2e/harness.py:293`의 시험 흐름이며, `packages/persistence/planning_repository.py:9`는 Protocol만 있다. `packages/api/runtime.py:424`의 기본 port 구성에는 계획 확정 producer가 없고 미연결 port는 `packages/api/fastapi_app.py:493`에서 501이다. `0008_queue_worker_leases`의 worker는 Run 필수 참조라 최초 요청에 쓸 수 없다. Task requested_by는 생성자 귀속이고 C30 owner는 session/assignment 복원 권위이며 둘 모두 Task별 계획 작성 위임이 아니다. Main 조사와 단일 Primary의 별도 읽기 조사 결과가 일치했다.
+- 영향·경계: 기존 Dashboard reader의 권한은 조회뿐이다. 이를 요청 생성자로 승격하거나 시험 host 관측을 실제 권위로 가장하지 않는다. A안은 신규 principal/permission/Secret 자동 생성·부여를 명시 제외했으므로 영속 Task별 계획 작성 위임 및 전용 내부 생성 주체의 새 권한 계약은 별도 결정이 필요하다. 기존 Run 카드·정상 조회 기능은 변경하지 않았다. 원장 기능 자체는 여전히 미구현이며 부분 파일/빈 원장만으로 완료 처리하지 않는다.
+- 조치: 승인 기록 독립 검토 C0/I0/M0, 원 제안 hash 보존. 새 WI/dual lease/제품 코드/DB/서버/권한 변경0, 정식 Developer 실패0. 권고는 reader와 분리된 전용 내부 Main에 정확 Task·Project·Environment와 plan/WI/mode hash·유효기간·회수 증거로 제한된 요청 생성 권위만 추가하는 것이다. 사람 승인·반려·Run 실행·자동 재개·새 공개 POST는 계속 제외한다. 새 계약 승인 전에는 임의 발급하지 않는다. 기존 문서 dirty는 Main 소유로 보존하고 현재 G05 PASS/원격 게시/구현 완료로 주장하지 않는다.
+- 후속 직접 승인: 신산님이 위 최소 Task별 내부 Main 권위 추가에 `승인`했다. `APPROVAL-20261014-U01-TASK-PLANNING-AUTHORITY-001`와 W21 WI에 위임 원장/감사·고정 내부 주체/permission·정확 Task/해시/기간/회수/fencing 및 실계획 producer를 결박했다. 기존 reader 권한이나 사람 승인·자동 실행·외부 credential은 확대하지 않는다. 공백 자체는 구현 전까지 미구현이며 승인 기록만으로 해소/PASS로 바꾸지 않는다.
