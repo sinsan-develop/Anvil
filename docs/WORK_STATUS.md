@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- A18 소유권 상태 임대 후보(Main, 2026-10-14): W19 b74b83fd 독립C0/I0/M0/private게시·clean·seq2419/lease0 뒤 Event1~2419원문을보존해2420WI→2421epoch127worker→2422write를24시간분리token·exact4제품App1로결박한다. Main동일source쓰기0, 독립검토/private게시뒤단일기존Primary TDD. 현재관측owner행수·세상태만연결·정상multiplicity보존/Worker건강·개별owner식별승격0·공개API/DB/권한/Secret변경0. 새route전G05예상RED는PASS아님, 실제WSL은C18actualG05뒤진행한다.
+
 - Agent 소유권 상태 착수(Main, 2026-10-14): 현재65983ef1 local/private동일·trackedclean/seq2419·lease0, 실제WSL GitM17clean·서비스3/ready0020·보호hash/망/rollback보존을읽기대조했다. 원본은session/assignment복합identity이며동일session복수assignment가정상인데기존agent UI는sessionunique가정으로UNAVAILABLE가능함을기존source/summary양성으로확인했다. API는sessionId/status만노출하므로이번은dedupe없는전체/ACTIVE/EXPIRED/REVOKED 소유권관측수UI연결만 MAIN_RECONFIRMED_NON_SEMANTIC/W19 WI·Invocation·STATUS exact3으로분해한다. 개별owner식별·Worker실행/Health는별도미구현·공개API추가0, 기존검사완화가아닌정상multiplicity모델정정이며count/source/pair/hash/음성/RunQueue unique기준보존이다. 단일Primary/허용4제품App1예정·아직lease/코드write0·정식DB합성owner0. 기존Queue/logout보존·전체U01NOT_ACCEPTED/DEFER/예약·타프로젝트변경0.
 
 - Queue 목록 첫 결과보고(Main, 2026-10-14): H17 97b027b72054ed6ded158679ba949002d412b766은B17직접자식exact5·독립C0/I0/M0·local/private동일/clean actualG05seq2419PASS·epoch126회수/active0다. 신규 `docs/04_test_reports/U-01_DASHBOARD_QUEUE_ITEMS_RESULT.md`+본STATUS정확2로실제빈Queue/API화면·기간/조회/logout과client4상태/clock/음성·비영실DB미확인·선택본문10/정리0·보존/오류를구분기록한다. 전체U01NOT_ACCEPTED·ReleaseDEFER·Health등기능누락/전체R6미진은유지하며이번목록핵심완료로승격하지않는다. 게시본actualG05는다음확인, 새위험/실제사용자조치요구0·예약/타프로젝트변경0.
