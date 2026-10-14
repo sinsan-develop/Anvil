@@ -1098,6 +1098,42 @@ function ScopedMetric({name, metric, completeness, pair, expectedSource, eventTi
     {reason ? <p>사유 · {reason}</p> : null}</article>;
 }
 
+export function scheduleQueueExpiry(observedAt: unknown, invalidate: () => void) {
+  if (!validObservedAt(observedAt)) return () => {};
+  const remaining = Date.parse(observedAt) + 300001 - Date.now();
+  if (remaining <= 0 || remaining > 305001) return () => {};
+  const timer = setTimeout(invalidate, remaining);
+  return () => clearTimeout(timer);
+}
+
+function ScopedQueueCard({metric, evidence, pair, observedAt}:
+    {metric: unknown; evidence: unknown; pair: unknown; observedAt: unknown}) {
+  const sourceAt = record(metric) ? metric.observedAt : null;
+  const [expiryTick, setExpiryTick] = useState(0);
+  useEffect(() => scheduleQueueExpiry(sourceAt, () => setExpiryTick(expiryTick + 1)),
+    [sourceAt, expiryTick]);
+  const now = Date.now();
+  const items = record(metric) && Array.isArray(metric.items) ? metric.items : [];
+  const complete = record(metric) && record(evidence) && metric.status === 'AVAILABLE'
+    && metric.source === 'scoped_queue_owner' && metric.reason === null && evidence.reason === null
+    && Number.isSafeInteger(metric.count) && (metric.count as number) >= 0
+    && (metric.count as number) <= 100 && validScopedOwnerItems('queue', metric)
+    && items.every((item) => record(item) && typeof item.jobId === 'string' && item.jobId.trim() !== ''
+      && ['PENDING', 'CLAIMED', 'SUCCEEDED', 'QUARANTINED'].includes(String(item.status)))
+    && validObservedAt(sourceAt) && validObservedAt(observedAt)
+    && Math.abs(Date.parse(sourceAt) - Date.parse(observedAt)) <= 5000
+    && now - Date.parse(sourceAt) <= 300000 && Date.parse(sourceAt) - now <= 5000
+    && validScopedEvidence(evidence, pair, 'scoped_queue_owner', 'CURRENT_OBSERVATION', sourceAt);
+  return <article className="status-card scoped-queue"><h3>Queue 작업</h3>
+    <p className={complete ? 'status-ready' : 'status-unavailable'}>
+      {complete ? `전체 ${items.length}건` : 'UNAVAILABLE'}</p>
+    {complete ? <><p>원본 · scoped_queue_owner</p><p>현재 관측 · {String(sourceAt)}</p>
+      {items.length === 0 ? <p>등록된 Queue 작업이 없습니다.</p>
+        : <details><summary>작업 목록</summary><ul>{items.map((item) =>
+          <li key={item.jobId}>{item.jobId} · {item.status}</li>)}</ul></details>}</>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 function ScopedBlockedRunCard({blocked, run, blockedEvidence, runEvidence, pair, observedAt}:
     {blocked: unknown; run: unknown; blockedEvidence: unknown; runEvidence: unknown;
       pair: unknown; observedAt: unknown}) {
@@ -1265,7 +1301,10 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
               <h3>selected-{name}</h3><p className="status-unavailable">UNAVAILABLE</p>
               <p>{scopedEvidence(currentEvidence?.health, pair)}</p><p>사유 · {reason}</p></article>;
           })}
-          {SCOPED_CURRENT_METRICS.map((name) => <ScopedMetric key={name} name={name} metric={current?.[name]}
+          {SCOPED_CURRENT_METRICS.map((name) => name === 'queue'
+            ? <ScopedQueueCard key={name} metric={current?.queue} evidence={currentEvidence?.queue}
+                pair={pair} observedAt={period.observedAt}/>
+            : <ScopedMetric key={name} name={name} metric={current?.[name]}
               completeness={currentEvidence?.[name]} pair={pair}
               expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}
               eventTimeBasis="CURRENT_OBSERVATION" expectedObservedAt={null}/>)}

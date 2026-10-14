@@ -5,6 +5,115 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import * as consoleApp from '../src/console/App.tsx';
 
+const queueNow = Date.parse('2026-10-14T02:15:00Z');
+function queueData(items = ['PENDING', 'CLAIMED', 'SUCCEEDED', 'QUARANTINED']
+  .map((status, i) => ({jobId: `queue-job-${i}`, status}))) {
+  const data = scopedData(scopedPairs[0]);
+  data.period = {...data.period, startUtc: '2026-10-13T15:00:00Z',
+    endUtc: '2026-10-14T15:00:00Z', observedAt: '2026-10-14T02:15:00Z'};
+  data.current.queue = {status: 'AVAILABLE', count: items.length, items,
+    source: 'scoped_queue_owner', observedAt: '2026-10-14T02:15:00Z', reason: null};
+  data.sourceCompleteness.current.queue = {complete: true, source: 'scoped_queue_owner',
+    pair: {projectId: 'project-a', environmentId: 'test'}, eventTimeBasis: 'CURRENT_OBSERVATION',
+    observedAt: '2026-10-14T02:15:00Z', reason: null};
+  return data;
+}
+function renderQueue(data) {
+  return renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
+    value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
+      periodKey: '1d', readStatus: 'LOADED', data},
+    onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
+  }));
+}
+test('Queue items renders the four owner statuses without claiming healthy or pending-only totals', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  const html = renderQueue(queueData());
+  assert.match(html, /Queue 작업<\/h3>/);
+  assert.match(html, /전체 4건/);
+  assert.match(html, /<details><summary>작업 목록/);
+  for (const [i, status] of ['PENDING', 'CLAIMED', 'SUCCEEDED', 'QUARANTINED'].entries())
+    assert.match(html, new RegExp(`queue-job-${i}.*${status}`));
+  assert.match(html, /selected-queue<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  assert.doesNotMatch(html, /대기 4건|queue-job-0<\/a>/);
+});
+test('Queue items observed empty snapshot is distinct from unavailable evidence', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  assert.match(renderQueue(queueData([])), /등록된 Queue 작업이 없습니다\./);
+  const data = queueData([]);
+  data.sourceCompleteness.current.queue.complete = false;
+  const html = renderQueue(data);
+  assert.match(html, /Queue 작업<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  assert.doesNotMatch(html, /등록된 Queue 작업이 없습니다\./);
+});
+test('Queue items rejects partial, forged, oversized and time-inconsistent snapshots without any row', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  for (const change of [
+    (d) => { d.current.queue.items[0].status = 'WAITING'; },
+    (d) => { d.current.queue.items[1].jobId = d.current.queue.items[0].jobId; },
+    (d) => { d.current.queue.items[0].jobId = '  '; },
+    (d) => { d.current.queue.count = 1; },
+    (d) => { d.current.queue.count = 4.5; },
+    (d) => { d.current.queue.count = -1; },
+    (d) => { d.current.queue.count = 101; d.current.queue.items = Array.from({length:101},
+      (_, i) => ({jobId:`queue-job-${i}`, status:'PENDING'})); },
+    (d) => { d.current.queue.source = 'current_snapshot'; },
+    (d) => { d.current.queue.reason = 'SOURCE_UNAVAILABLE'; },
+    (d) => { d.sourceCompleteness.current.queue.reason = 'SOURCE_UNAVAILABLE'; },
+    (d) => { d.sourceCompleteness.current.queue.pair.environmentId = 'foreign'; },
+    (d) => { d.sourceCompleteness.current.queue.complete = false; },
+    (d) => { d.sourceCompleteness.current.queue.eventTimeBasis = 'DETECTED.at'; },
+    (d) => { d.sourceCompleteness.current.queue.observedAt = '2026-10-14T02:14:59Z'; },
+    (d) => { delete d.current.queue.observedAt; },
+    (d) => { d.period.observedAt = '2026-10-14T02:15:06Z'; },
+  ]) {
+    const data = queueData(); change(data);
+    const html = renderQueue(data);
+    assert.match(html, /Queue 작업<\/h3><p class="status-unavailable">UNAVAILABLE/);
+    assert.doesNotMatch(html, /queue-job-|전체 \d+건|등록된 Queue 작업이 없습니다\./);
+  }
+});
+test('Queue items freshness boundaries and clock changes are evaluated on each render', (t) => {
+  let now = queueNow;
+  t.mock.method(Date, 'now', () => now);
+  for (const offset of [0, 300000, -5000]) {
+    now = queueNow + offset;
+    assert.match(renderQueue(queueData()), /전체 4건/);
+  }
+  for (const offset of [300001, -5001]) {
+    now = queueNow + offset;
+    const html = renderQueue(queueData());
+    assert.match(html, /Queue 작업<\/h3><p class="status-unavailable">UNAVAILABLE/);
+    assert.doesNotMatch(html, /queue-job-/);
+  }
+});
+test('Queue items IDs remain escaped text without links, payload or mutation controls', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  const html = renderQueue(queueData([{jobId: '<img src=x onerror=alert(1)>', status: 'PENDING'}]));
+  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.doesNotMatch(html, /<img|href=".*onerror|>claim<|>retry<|>cancel</);
+});
+
+test('Queue items expiry invalidates without another request and cleanup cancels the pending wakeup', (t) => {
+  t.mock.timers.enable({apis: ['Date', 'setTimeout'], now: queueNow});
+  let html = renderQueue(queueData());
+  let renders = 0;
+  const stop = consoleApp.scheduleQueueExpiry('2026-10-14T02:15:00Z', () => {
+    renders += 1; html = renderQueue(queueData());
+  });
+  t.mock.timers.tick(300000);
+  assert.equal(renders, 0);
+  assert.match(html, /전체 4건/);
+  t.mock.timers.tick(1);
+  assert.equal(renders, 1);
+  assert.match(html, /Queue 작업<\/h3><p class="status-unavailable">UNAVAILABLE/);
+  assert.doesNotMatch(html, /queue-job-/);
+  stop();
+  const cancel = consoleApp.scheduleQueueExpiry(new Date(Date.now()).toISOString(), () => { renders += 1; });
+  cancel();
+  t.mock.timers.tick(300001);
+  assert.equal(renders, 1);
+});
+
 const {App, classifyReadiness} = consoleApp;
 
 test('operational shell keeps canonical menu order with only the current Dashboard active', () => {
@@ -2327,7 +2436,8 @@ test('scoped Dashboard does not display an available current count without match
   }
 });
 
-test('scoped Dashboard current owner counts require matching item rows', () => {
+test('scoped Dashboard current owner counts require matching item rows', (t) => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-09T08:00:00+00:00'));
   for (const [name, row] of [
     ['run', {runId: 'run-1', status: 'RUNNING', phase: 'ACTIVE'}],
     ['queue', {jobId: 'job-1', status: 'WAITING'}],
@@ -2344,19 +2454,23 @@ test('scoped Dashboard current owner counts require matching item rows', () => {
       data.sourceCompleteness.current[name] = {complete: true, source: `scoped_${name}_owner`,
         pair: {projectId: 'project-a', environmentId: 'test'},
         eventTimeBasis: 'CURRENT_OBSERVATION', observedAt: '2026-10-09T07:00:00+00:00', reason: null};
+      if (name === 'queue') {
+        data.current.queue.observedAt = data.period.observedAt;
+        data.sourceCompleteness.current.queue.observedAt = data.period.observedAt;
+      }
       const completeHtml = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
         value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
           periodKey: '1d', readStatus: 'LOADED', data},
         onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
       }));
-      assert.match(completeHtml, new RegExp(`<h3>${name}<\\/h3><p class="status-ready">0`));
+      assert.match(completeHtml, new RegExp(`<h3>${name === 'queue' ? 'Queue 작업' : name}<\\/h3><p class="status-ready">${name === 'queue' ? '전체 0건' : '0'}`));
       change(data.current[name]);
       const html = renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel, {
         value: {listStatus: 'READY', pairs: scopedPairs, selectionKey: scopedKey(scopedPairs[0]),
           periodKey: '1d', readStatus: 'LOADED', data},
         onRefresh: () => {}, onSelectPair: () => {}, onSelectPeriod: () => {},
       }));
-      assert.match(html, new RegExp(`<h3>${name}<\\/h3><p class="status-unavailable">UNAVAILABLE`));
+      assert.match(html, new RegExp(`<h3>${name === 'queue' ? 'Queue 작업' : name}<\\/h3><p class="status-unavailable">UNAVAILABLE`));
     }
   }
 });
