@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 로그아웃 H16: B16 a2e5647340665cefbb071ce2a84a4b23e64ae2c9 뒤2413write→2414worker REVOKED·active0, frozenEvent1~2412원문보존·제품추가0. 개발핵심동작과전체U01미인수를구분하며첫보고예정.
+
 U-01 로그아웃 B16: M16 a1b4ccc85e90d0b1b0432bfd3174f993b82c4723의 실제 Web만 반영, API/issuer/DB/Secret/cert/network 보존. UI종료/정보제거/401/재로그인과 reload CSRF재인증 제약을 결과에 구분한다. 전체R6/U01 NOT_ACCEPTED·ReleaseDEFER, epoch125 ACTIVE·H16회수예정.
 
 U-01 Dashboard 로그아웃 A16(Main, 2026-10-14T10:24:48+09:00): W17 713ce91e59f76b0680a6020b54a1216ddcc77315, Event1~2409원문보존→2410WI/2411epoch125worker/2412write ACTIVE24시간분리token·허용4/제품UI1. 기존API/CSRF/권한/DB/Secret0, reload뒤CSRF없음은재인증안내. 단일Primary TDD·Main동일코드write0, 전체R6/U01인수아님.
@@ -289,57 +291,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2412,
-  "last_event_id": "evt_u01_2412_dashboard_logout_write_lease_issued",
+  "event_sequence": 2414,
+  "last_event_id": "evt_u01_2414_dashboard_logout_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-dashboard-logout",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-dashboard-logout",
-    "subject_ref": "U-01/DASHBOARD-LOGOUT",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T10:24:48+09:00",
-    "expires_at": "2026-10-15T10:24:48+09:00",
-    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "lease_epoch": 125,
-    "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
-    "fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
-    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-dashboard-logout",
-    "subject_ref": "U-01/DASHBOARD-LOGOUT",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T10:24:48+09:00",
-    "expires_at": "2026-10-15T10:24:48+09:00",
-    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "write_epoch": 125,
-    "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
-    "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
-    "fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
-    "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
-    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
-    "product_write_scope": [
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+  "next_safe_action": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
   "repository_head": "a1b4ccc85e90d0b1b0432bfd3174f993b82c4723",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

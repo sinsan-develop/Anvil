@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2412,
+  "last_sequence": 2414,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108326,7 +108326,49 @@
         "apps/web/src/console/App.tsx"
       ]
     }
+  },
+  {
+    "sequence": 2413,
+    "event_id": "evt_u01_2413_dashboard_logout_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_LOGOUT_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "occurred_at": "2026-10-14T10:56:42+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "4BADB5EF31FE8A44E3B9A8A9897198A6CD894DBEED013AAA63C709207E8B4CC2",
+    "details": {
+      "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
+      "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+      "reason": "U01_DASHBOARD_LOGOUT_CLOSED"
+    }
+  },
+  {
+    "sequence": 2414,
+    "event_id": "evt_u01_2414_dashboard_logout_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_LOGOUT_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "occurred_at": "2026-10-14T10:56:42+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "A1E422CCDDFCB1F82CAF2D395501BE20822218B4B3F4940B3070102129533F7B",
+    "details": {
+      "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+      "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+      "reason": "U01_DASHBOARD_LOGOUT_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2412_dashboard_logout_write_lease_issued"
+  "last_event_id": "evt_u01_2414_dashboard_logout_worker_lease_revoked"
 }

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-dashboard-logout-b16-seq2412",
-  "event_sequence": 2412,
-  "updated_at": "2026-10-14T10:54:42+09:00",
-  "last_event_id": "evt_u01_2412_dashboard_logout_write_lease_issued",
+  "snapshot_id": "snapshot-u01-dashboard-logout-h16-seq2414",
+  "event_sequence": 2414,
+  "updated_at": "2026-10-14T10:56:42+09:00",
+  "last_event_id": "evt_u01_2414_dashboard_logout_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-dashboard-logout",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,30 +387,7 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-dashboard-logout",
-    "subject_ref": "U-01/DASHBOARD-LOGOUT",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T10:24:48+09:00",
-    "expires_at": "2026-10-15T10:24:48+09:00",
-    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "write_epoch": 125,
-    "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
-    "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
-    "fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
-    "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
-    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
-    "product_write_scope": [
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "write_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1563,25 +1540,7 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-dashboard-logout",
-    "subject_ref": "U-01/DASHBOARD-LOGOUT",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T10:24:48+09:00",
-    "expires_at": "2026-10-15T10:24:48+09:00",
-    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "lease_epoch": 125,
-    "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
-    "fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
-    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef"
-  },
+  "worker_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2630,7 +2589,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+  "next_safe_action": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2745,9 +2704,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "a1b4ccc85e90d0b1b0432bfd3174f993b82c4723",
-    "projection_mode": "U01_DASHBOARD_LOGOUT_ACTIVE",
+    "projection_mode": "U01_DASHBOARD_LOGOUT_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+    "head_relation": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3183,7 +3142,7 @@
     "product_write_scope": [
       "apps/web/src/console/App.tsx"
     ],
-    "worktree_status": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+    "worktree_status": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3349,8 +3308,8 @@
     "path": "docs/work_orders/U-01_DASHBOARD_LOGOUT_WORK_INSTRUCTION.md",
     "sha256": "473CB1C9EA8600D9E7F784B280D2FAF817EBCED95215CE6E2B150AEFF9AA07A1",
     "revision": 1,
-    "result_status": "U01_DASHBOARD_LOGOUT_ACTIVE",
-    "package_status": "U01_DASHBOARD_LOGOUT_ACTIVE",
+    "result_status": "U01_DASHBOARD_LOGOUT_CLOSED",
+    "package_status": "U01_DASHBOARD_LOGOUT_CLOSED",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -3566,12 +3525,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "937E97216ABD053B70F6CDA9E804AAC343D58DE4EC665FEAE66645CFF0DE5AD4"
+      "sha256": "011BC44F72010349049F56581940057CBD9EBFE450C3CACEA19C775659D59E7F"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_DASHBOARD_LOGOUT_ACTIVE"
+    "status": "U01_DASHBOARD_LOGOUT_CLOSED"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3963,8 +3922,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "1CA1EF78138E8115D38BCA385144E5ACDE4B41BD16C4FC0CCDFC7C648A40E413",
-  "runtime_next_action": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+  "snapshot_hash": "5209C591AFC43F3D42CFCAF3F46889A1E571C086A35566FDC6F70D020BC3AA0E",
+  "runtime_next_action": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -30844,7 +30803,7 @@
     "product_write_scope": [
       "apps/web/src/console/App.tsx"
     ],
-    "status": "U01_DASHBOARD_LOGOUT_ACTIVE",
+    "status": "U01_DASHBOARD_LOGOUT_CLOSED",
     "package_id": "U-01",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
@@ -30853,15 +30812,60 @@
     "a16_docs_checkpoint": "5c0c33d71183b9ad4068f4fe2a797d028c8a91b7",
     "control_checkpoint": "d31d1225c297758fe702cedad6760c6748074d92",
     "manifest_checkpoint": "a1b4ccc85e90d0b1b0432bfd3174f993b82c4723",
-    "active_projection_checkpoint": null,
+    "active_projection_checkpoint": "a2e5647340665cefbb071ce2a84a4b23e64ae2c9",
     "actor_id": "developer-primary-u01-dashboard-logout",
     "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
     "write_lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
-    "event_sequence": 2412,
-    "next_safe_action": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+    "event_sequence": 2414,
+    "next_safe_action": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
     "manifest_sha256": "0EFC53C926CB10FC714490FFCD14CB12B2ED82F6762D29EE8E4295DFCDEEC61B"
+  },
+  "completed_u01_dashboard_logout_write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T10:24:48+09:00",
+    "expires_at": "2026-10-15T10:24:48+09:00",
+    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 125,
+    "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
+    "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+    "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ],
+    "revoked_at": "2026-10-14T10:56:42+09:00"
+  },
+  "completed_u01_dashboard_logout_worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T10:24:48+09:00",
+    "expires_at": "2026-10-15T10:24:48+09:00",
+    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 125,
+    "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "revoked_at": "2026-10-14T10:56:42+09:00"
   }
 }
