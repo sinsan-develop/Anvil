@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- A17 Queue 목록 임대(Main, 2026-10-14): W18 dcbe1580 독립C0/I0/M0·private게시·trackedclean·lease0/seq2414를기준으로rawEvent1~2414보존뒤2415WI→2416epoch126worker→2417write를24시간분리token·정확4경로/제품App1로발행한다. Main동일코드write0·Developer미dispatch, A17독립검토/private게시뒤TDD로진행한다. patch출력의Windows기본인코딩으로첫apply검증이실패했으나변경0, stdout UTF8로재생성적용했다. 새G05route전예상RED/전체U01NOT_ACCEPTED·DEFER유지, 서비스/DB/권한/Secret변경0.
+
 - Queue 작업 목록 착수(Main, 2026-10-14): 현재 local/private801a2d79 동일·trackedclean/seq2414·activelease0, WSL정식M16 Gitclean·서비스3/ready0020·보호파일/망설정/rollback보존을읽기재검증했다. 최초일반사용자Git조회dubiousownership은서비스변경0/설정변경0이며기존root읽기로확인했다. Queue owner/API는정확조합·read-only·최대100건의jobId/status를이미제공하지만UI는총수만노출한다. 새API/DB/권한없이해당목록/상태표시만W18 WI/Invocation/본STATUS정확3으로분해, MAIN_RECONFIRMED_NON_SEMANTIC·단일Primary/제품App1/허용4예정이다. Health Queue UNAVAILABLE/전체U01NOT_ACCEPTED·ReleaseDEFER·역사R6FAIL은유지한다. 아직lease/코드write0·정식DB가짜row0, 기능기준TDD/핵심검사후Web한정반영예정이며예약/타프로젝트변경0.
 
 - UI 로그아웃 첫 결과보고(Main, 2026-10-14): H16 44bdf98633b1329b9818f8f0de96f2824d3b1bd8는B16직접자식 exact5·독립C0/I0/M0·private동일/clean actualG05seq2414PASS·epoch125 회수/active0다. 신규 `docs/04_test_reports/U-01_DASHBOARD_LOGOUT_RESULT.md`+본STATUS 정확2를첫보고로기록한다. 실제UIlogout/cookie/sessionfalse/API401/정보제거/재로그인·reloadCSRF제약·client403구분·선택body25/정리0과최초실패/복구/미검증을분리했다. 정식Web C16/M16·API/issuer/DB/Secret/cert/망설정보존, 전체U01NOT_ACCEPTED/ReleaseDEFER/남은기능누락유지. 본게시본G05는다음확인하며Oracle/Production/PR/main/예약0.

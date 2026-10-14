@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 Queue 목록 A17(Main, 2026-10-14T11:13:34+09:00): W18 dcbe1580cbaa2edce320a28722638a4d80296f6b, rawEvent1~2414보존→2415WI/2416epoch126worker/2417write ACTIVE24시간분리token·허용4/제품App1. 기존 API의실제작업ID/상태목록만표시, Health/DB/권한/Secret/기존기능변경0. 단일Primary TDD·Main코드write0, 새route전예상RED/전체U01인수아님.
+
 U-01 로그아웃 H16: B16 a2e5647340665cefbb071ce2a84a4b23e64ae2c9 뒤2413write→2414worker REVOKED·active0, frozenEvent1~2412원문보존·제품추가0. 개발핵심동작과전체U01미인수를구분하며첫보고예정.
 
 U-01 로그아웃 B16: M16 a1b4ccc85e90d0b1b0432bfd3174f993b82c4723의 실제 Web만 반영, API/issuer/DB/Secret/cert/network 보존. UI종료/정보제거/401/재로그인과 reload CSRF재인증 제약을 결과에 구분한다. 전체R6/U01 NOT_ACCEPTED·ReleaseDEFER, epoch125 ACTIVE·H16회수예정.
@@ -291,17 +293,58 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2414,
-  "last_event_id": "evt_u01_2414_dashboard_logout_worker_lease_revoked",
+  "event_sequence": 2417,
+  "last_event_id": "evt_u01_2417_dashboard_queue_items_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-dashboard-queue-items",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-queue-items",
+    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T11:13:34+09:00",
+    "expires_at": "2026-10-15T11:13:34+09:00",
+    "baseline_git_commit": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "dispatch_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 126,
+    "lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
+    "fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
+    "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-queue-items",
+    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T11:13:34+09:00",
+    "expires_at": "2026-10-15T11:13:34+09:00",
+    "baseline_git_commit": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "dispatch_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 126,
+    "lease_id": "write-lease-u01-dashboard-queue-items-f4f799c38aa14af5901d13b5825a8f75",
+    "worker_lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
+    "fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
+    "write_fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
+    "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_LOGOUT_RECORDED_U01_PENDING",
-  "repository_head": "a1b4ccc85e90d0b1b0432bfd3174f993b82c4723",
+  "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_IMPLEMENTATION_ONLY",
+  "repository_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
