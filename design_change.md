@@ -157,3 +157,11 @@
 - 영향·경계: 기존 Dashboard reader의 권한은 조회뿐이다. 이를 요청 생성자로 승격하거나 시험 host 관측을 실제 권위로 가장하지 않는다. A안은 신규 principal/permission/Secret 자동 생성·부여를 명시 제외했으므로 영속 Task별 계획 작성 위임 및 전용 내부 생성 주체의 새 권한 계약은 별도 결정이 필요하다. 기존 Run 카드·정상 조회 기능은 변경하지 않았다. 원장 기능 자체는 여전히 미구현이며 부분 파일/빈 원장만으로 완료 처리하지 않는다.
 - 조치: 승인 기록 독립 검토 C0/I0/M0, 원 제안 hash 보존. 새 WI/dual lease/제품 코드/DB/서버/권한 변경0, 정식 Developer 실패0. 권고는 reader와 분리된 전용 내부 Main에 정확 Task·Project·Environment와 plan/WI/mode hash·유효기간·회수 증거로 제한된 요청 생성 권위만 추가하는 것이다. 사람 승인·반려·Run 실행·자동 재개·새 공개 POST는 계속 제외한다. 새 계약 승인 전에는 임의 발급하지 않는다. 기존 문서 dirty는 Main 소유로 보존하고 현재 G05 PASS/원격 게시/구현 완료로 주장하지 않는다.
 - 후속 직접 승인: 신산님이 위 최소 Task별 내부 Main 권위 추가에 `승인`했다. `APPROVAL-20261014-U01-TASK-PLANNING-AUTHORITY-001`와 W21 WI에 위임 원장/감사·고정 내부 주체/permission·정확 Task/해시/기간/회수/fencing 및 실계획 producer를 결박했다. 기존 reader 권한이나 사람 승인·자동 실행·외부 credential은 확대하지 않는다. 공백 자체는 구현 전까지 미구현이며 승인 기록만으로 해소/PASS로 바꾸지 않는다.
+
+### DC-U01-022 — 정식 승인 요청 생성의 선행 등록 경로 미구현
+
+- 판정: 실제 요청1건 생성 지시의 사전 읽기에서 정상 Task 생성의 repository mapping이 해석되지 않고 선택 조합 설계 기준선0/Task0임을 확인했다. 전역 Task1/Run1·정식 요청0은 보존했다. 이는 검증만 남은 상태가 아니라 선행 등록 기능이 빠진 **부분 구현**이다.
+- 근거: Task bootstrap repository는 active project_repositories를 요구한다. 프로젝트/환경 등록은 이 mapping을 만들지 않는다. design/planning 저장소는 Protocol만 있고 실제 승인 원본→기준선/WorkPlan/Iteration/WI의 영속 등록 adapter가 없다. C20은 기존 계보를 소비한다. Main/단일 Primary의 독립 읽기 조사가 일치했고 제품·DB 쓰기0이다.
+- 승인 경계: 기존 내부 Main의 Task 요청 생성 권위를 설계 원본 인정·상위 계보 등록 권위로 임의 확대하지 않는다. reader 권한 확대·fixture HUMAN 승인·직접 요청 INSERT·기존 Task/Run 변경은 하지 않는다.
+- 조치: `docs/04_test_reports/U-01_PLANNING_SOURCE_REGISTRATION_CONTRACT_PROPOSAL.md`에 현재 승인 설계/계획 hash와 실제 private repository를 원본으로 이번 조합/검증 Task에 한정된 내부 정상 등록 절편을 제안했다. 새 공개 API/사람 승인·Run 실행·외부 credential은 제외한다. 범위 결정 전 새 WI/lease/제품·서버/DB 변경0, 실제 요청 생성/화면1건 확인은 NOT_EXECUTED이며 전체 U01 미인수다.
+- 후속 직접 승인: 신산님이 `등록 권한과 기능 추가까지 승인`했다. 승인001과 대응 WI/Invocation에 내부 등록 권한·원본/조합/검증Task 한정·1시간 만료/회수·원자성/멱등/감사를 고정한다. 기존0021 schema·C20 공개API/Web·C15 issuer를 유지하고 신규 host-only image만 사용한다. 승인만으로 구현/실제 요청/PASS를 주장하지 않는다. 다음은 W23/A22와 단일 Primary TDD다.

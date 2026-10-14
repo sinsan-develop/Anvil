@@ -1,0 +1,3 @@
+# U-01 계획 원본 정상 등록 실행
+
+신산님 직접 승인 `등록 권한과 기능 추가까지 승인`을 근거로 대응 WI/원 제안/승인 원본을 읽고 정확 hash·현재 Git·epoch131 dual lease를 확인한다. 승인 기록 SHA256은 `9E036B629FDAC21089CACFEA215BC489FA3C5A0C3E6A4D529F18F84ECA707A9E`, 제안 SHA256은 `69F648A29D3E0C32507D2272BB59C0616F5A74BCFF8C58F1F920AB9C9B464716`이다. WI의 최종 hash는 A22 binding 및 Main dispatch에 고정한다. Main A22 독립 검토/private 게시·두 token 전달 뒤 기존 단일 Primary만 허용9/제품3 경로에서 TDD한다. Main 문서·scratch·Git mutation·서버·외부DB·새 agent 금지, commit은 Main이 단일 C21로 수행한다. 추가 경로/충돌은 쓰기 전 보고한다. 실제 source 등록·정상 Task bootstrap 원자성·기존 typed producer/인가조회·명시 host와 successor만 구현한다. reader 권한·사람 승인·Run·public POST·migration·Secret·공개 runtime 변경0. COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED와 exact diff·RED/GREEN·명령/exit·오류/미검증·정식실패를 대화로 반환한다. 기존 실패를 PASS로 소급하지 않는다.
