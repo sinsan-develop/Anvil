@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2422,
+  "last_sequence": 2424,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108634,7 +108634,49 @@
         "apps/web/src/console/App.tsx"
       ]
     }
+  },
+  {
+    "sequence": 2423,
+    "event_id": "evt_u01_2423_dashboard_agent_owner_status_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-AGENT-OWNER-STATUS",
+    "occurred_at": "2026-10-14T12:21:47+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "E82E2E840E4F627CCCEB85026D12A7F1389B80ECE3ECEB55155C5779548CDC7F",
+    "details": {
+      "lease_id": "write-lease-u01-dashboard-agent-owner-status-6edf45340c22472db32881975d9f1814",
+      "write_fencing_token": "u01-dashboard-agent-owner-status-write-fence-epoch-127-6edf45340c22472db32881975d9f1814",
+      "reason": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSED"
+    }
+  },
+  {
+    "sequence": 2424,
+    "event_id": "evt_u01_2424_dashboard_agent_owner_status_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-AGENT-OWNER-STATUS",
+    "occurred_at": "2026-10-14T12:21:47+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "D7AD69921B8A6E7716EEB6E9574386CA8C83ED30762877A9AC1E854DB2A9753A",
+    "details": {
+      "lease_id": "worker-lease-u01-dashboard-agent-owner-status-43160e6a107a434ea35959145b193267",
+      "execution_fencing_token": "u01-dashboard-agent-owner-status-execution-fence-epoch-127-43160e6a107a434ea35959145b193267",
+      "reason": "U01_DASHBOARD_AGENT_OWNER_STATUS_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2422_dashboard_agent_owner_status_write_lease_issued"
+  "last_event_id": "evt_u01_2424_dashboard_agent_owner_status_worker_lease_revoked"
 }
