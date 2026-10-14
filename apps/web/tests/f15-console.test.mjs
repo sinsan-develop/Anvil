@@ -351,6 +351,145 @@ test('Dashboard presents an explicit reauthentication action after memory token 
   assert.match(html, /<button[^>]*>재인증<\/button>/);
 });
 
+test('logout uses the existing same-origin endpoint and confirms the response contract', async () => {
+  const calls = [];
+  const result = await consoleApp.requestDashboardLogout('memory-csrf', async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse({authenticated: false});
+  });
+  assert.equal(result, 'ENDED');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], '/auth/oidc/logout');
+  assert.equal(calls[0][1].method, 'POST');
+  assert.equal(calls[0][1].credentials, 'same-origin');
+  assert.deepEqual(calls[0][1].headers, {'x-csrf-token': 'memory-csrf'});
+  assert.equal(calls[0][1].body, undefined);
+});
+
+test('logout after reload never posts without CSRF and requires explicit reauthentication', async () => {
+  const calls = [];
+  const result = await consoleApp.requestDashboardLogout(null, async (url, options) => {
+    calls.push([url, options]);
+    return jsonResponse({authenticated: true, mode: 'OIDC', actor_role: 'reader'});
+  });
+  assert.equal(result, 'REAUTHENTICATION_REQUIRED');
+  assert.deepEqual(calls.map(([url]) => url), ['/auth/session/status']);
+  assert.equal(calls[0][1].method, 'GET');
+  assert.equal(calls[0][1].credentials, 'same-origin');
+});
+
+for (const kind of ['403', '500', 'malformed', 'wrong-body', 'network']) {
+  test(`logout ${kind} cannot become a successful logout`, async () => {
+    const result = await consoleApp.requestDashboardLogout('memory-csrf', async () => {
+      if (kind === 'network') throw Error('private-detail');
+      if (kind === 'malformed') return new Response('not-json', {status: 200});
+      if (kind === 'wrong-body') return jsonResponse({authenticated: true});
+      return new Response('{}', {status: Number(kind)});
+    });
+    assert.equal(result, 'UNVERIFIED');
+  });
+}
+
+test('logout 401 requires an independent valid unauthenticated status response', async () => {
+  for (const authenticated of [true, false, 'false']) {
+    const calls = [];
+    const result = await consoleApp.requestDashboardLogout('memory-csrf', async (url) => {
+      calls.push(url);
+      return url.endsWith('/logout') ? new Response('{}', {status: 401})
+        : jsonResponse({authenticated, mode: 'OIDC', actor_role: authenticated === false ? null : 'reader'});
+    });
+    assert.equal(result, authenticated === false ? 'ALREADY_ENDED' : 'UNVERIFIED');
+    assert.deepEqual(calls, ['/auth/oidc/logout', '/auth/session/status']);
+  }
+});
+
+test('logout boundary serializes ACK/callback and clears before send, preventing delayed publication', async () => {
+  let release;
+  const updates = [];
+  let clears = 0;
+  let sends = 0;
+  const flow = consoleApp.createDashboardSessionFlow(value => updates.push(value), () => { clears++; },
+    async () => { sends++; return new Promise(resolve => { release = resolve; }); });
+  const callback = flow.begin();
+  flow.acceptToken(callback, 'memory-csrf');
+  assert.equal(await flow.logout(), false);
+  assert.equal(sends, 0);
+  flow.finish(callback);
+  const readEpoch = flow.snapshot().epoch;
+  const pending = flow.logout();
+  assert.equal(clears, 1);
+  assert.equal(sends, 1);
+  assert.equal(flow.current(readEpoch), false);
+  assert.equal(flow.begin(), null);
+  assert.equal(await flow.logout(), false);
+  flow.acceptToken(callback, 'stale-token');
+  assert.equal(flow.snapshot().csrfToken, null);
+  release(jsonResponse({authenticated: false}));
+  await pending;
+  assert.equal(flow.snapshot().message, '로그아웃되었습니다');
+  assert.equal(flow.snapshot().busy, false);
+  const html = renderToStaticMarkup(React.createElement(consoleApp.DashboardSessionActions,
+    {value: flow.snapshot(), onLogout() {}, onReauthenticate() {}}));
+  assert.match(html, /로그아웃되었습니다/);
+  assert.doesNotMatch(html, /memory-csrf|stale-token/);
+  const count = updates.length;
+  flow.dispose();
+  flow.acceptToken(callback, 'late');
+  assert.equal(updates.length, count);
+});
+
+test('logout serializes a real pending OIDC exchange and only the current token can end the session', async () => {
+  let release;
+  const calls = [];
+  const flow = consoleApp.createDashboardSessionFlow(() => {}, () => {}, async (url, options) => {
+    calls.push([url, options]); return jsonResponse({authenticated: false});
+  });
+  const ticket = flow.begin();
+  const popup = {};
+  const exchange = consoleApp.completeOidcPopupMessage({source: popup, origin: 'https://anvil.local',
+    data: {type: 'ANVIL_OIDC_CALLBACK', code: 'private-code', state: 'expected'}}, popup,
+    'https://anvil.local', 'expected', async () => new Promise(resolve => { release = resolve; }));
+  assert.equal(await flow.logout(), false);
+  assert.equal(calls.length, 0);
+  release(jsonResponse({data: {csrf_token: 'current-memory-token', expires_at: '2026-10-14T00:00:00Z', expires_in: 900}}));
+  flow.acceptToken(ticket, await exchange); flow.finish(ticket);
+  await flow.logout();
+  assert.equal(calls[0][1].headers['x-csrf-token'], 'current-memory-token');
+  assert.equal(flow.snapshot().csrfToken, null);
+});
+
+test('logout disposes a real pair read and late body cannot repopulate the removed selection', async () => {
+  let release;
+  const views = [];
+  const scoped = consoleApp.createScopedDashboardFlow(value => views.push(value),
+    async () => new Promise(resolve => { release = resolve; }));
+  const pending = scoped.refreshPairs();
+  const flow = consoleApp.createDashboardSessionFlow(() => {}, () => scoped.dispose(),
+    async () => jsonResponse({authenticated: false, mode: 'OIDC', actor_role: null}));
+  await flow.logout();
+  const before = views.length;
+  release(jsonResponse({data: {pairs: []}})); await pending;
+  assert.equal(views.length, before);
+  assert.equal(flow.snapshot().message, '이미 종료된 세션입니다');
+  const auth = flow.begin(); flow.acceptToken(auth, 'new-session-token'); flow.finish(auth);
+  assert.equal(flow.snapshot().blocked, false);
+  assert.equal(flow.snapshot().message, null);
+});
+
+test('logout pending result after unmount cannot publish and failures stay hidden without a token', async () => {
+  let release;
+  const updates = [];
+  const flow = consoleApp.createDashboardSessionFlow(value => updates.push(value), () => {},
+    async () => new Promise(resolve => { release = resolve; }));
+  const pending = flow.logout();
+  flow.dispose(); const count = updates.length;
+  release(jsonResponse({authenticated: false, mode: 'OIDC', actor_role: null}));
+  await pending;
+  assert.equal(updates.length, count);
+  assert.equal(flow.snapshot().csrfToken, null);
+  assert.equal(flow.snapshot().blocked, true);
+});
+
 test('Critical Alerts reads only stored same-origin records and renders active critical details as text', async () => {
   const calls = [];
   const controller = new AbortController();

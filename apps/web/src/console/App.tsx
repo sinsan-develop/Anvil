@@ -119,6 +119,84 @@ export function classifyOidcPopupMessage(message: Pick<MessageEvent, 'origin' | 
     && data.state === pending.browserState ? 'MATCH' : 'MISMATCH';
 }
 
+type LogoutResult = 'ENDED' | 'ALREADY_ENDED' | 'REAUTHENTICATION_REQUIRED' | 'UNVERIFIED';
+type DashboardSession = {csrfToken: string | null; busy: boolean; epoch: number;
+  blocked: boolean; message: string | null};
+const INITIAL_SESSION: DashboardSession = {csrfToken: null, busy: false, epoch: 0,
+  blocked: false, message: null};
+
+export async function requestDashboardLogout(csrf: string | null,
+  request: typeof fetch = fetch): Promise<LogoutResult> {
+  try {
+    if (csrf) {
+      const response = await request('/auth/oidc/logout', {method: 'POST',
+        credentials: 'same-origin', headers: {'x-csrf-token': csrf}});
+      if (response.status === 200) {
+        const body = await response.json();
+        return record(body) && exactFields(body, ['authenticated']) && body.authenticated === false
+          ? 'ENDED' : 'UNVERIFIED';
+      }
+      if (response.status !== 401) return 'UNVERIFIED';
+    }
+    const response = await request('/auth/session/status', {method: 'GET',
+      credentials: 'same-origin', cache: 'no-store'});
+    if (!response.ok) return 'UNVERIFIED';
+    const body = await response.json();
+    if (!record(body) || !exactFields(body, ['authenticated', 'mode', 'actor_role'])
+      || body.mode !== 'OIDC' || typeof body.authenticated !== 'boolean') return 'UNVERIFIED';
+    if (body.authenticated === false && body.actor_role === null) return 'ALREADY_ENDED';
+    return !csrf && body.authenticated === true && nonempty(body.actor_role)
+      ? 'REAUTHENTICATION_REQUIRED' : 'UNVERIFIED';
+  } catch { return 'UNVERIFIED'; }
+}
+
+// Shell-local memory only: one mutation at a time, and stale reads cannot revive a session.
+export function createDashboardSessionFlow(onChange: (value: DashboardSession) => void,
+  clearSensitive: () => void, request: typeof fetch = fetch) {
+  let state = {...INITIAL_SESSION};
+  let disposed = false;
+  const publish = () => { if (!disposed) onChange({...state}); };
+  const current = (epoch: number) => !disposed && state.epoch === epoch;
+  const begin = () => {
+    if (disposed || state.busy) return null;
+    state = {...state, busy: true}; publish(); return state.epoch;
+  };
+  return {
+    snapshot: () => ({...state}), current, begin,
+    finish: (epoch: number) => { if (current(epoch)) { state.busy = false; publish(); } },
+    acceptToken: (epoch: number, token: string | null) => {
+      if (current(epoch)) {
+        state = {...state, csrfToken: token, blocked: token ? false : state.blocked, message: null};
+        publish();
+      }
+    },
+    logout: async () => {
+      if (begin() === null) return false;
+      const token = state.csrfToken;
+      state = {...state, epoch: state.epoch + 1, csrfToken: null, blocked: true, message: '로그아웃 확인 중'};
+      const epoch = state.epoch;
+      clearSensitive(); publish();
+      const result = await requestDashboardLogout(token, request);
+      if (!current(epoch)) return false;
+      const messages = {ENDED: '로그아웃되었습니다', ALREADY_ENDED: '이미 종료된 세션입니다',
+        REAUTHENTICATION_REQUIRED: '로그아웃하려면 재인증이 필요합니다',
+        UNVERIFIED: '로그아웃 확인 불가 · 재인증 또는 재시도가 필요합니다'};
+      state = {...state, busy: false, message: messages[result]}; publish(); return true;
+    },
+    dispose: () => { disposed = true; state = {...INITIAL_SESSION, epoch: state.epoch + 1, blocked: true}; },
+  };
+}
+
+export function DashboardSessionActions({value, onLogout, onReauthenticate}: {
+  value: DashboardSession; onLogout: () => void; onReauthenticate: () => void}) {
+  return <section aria-label="세션 관리">
+    <button type="button" disabled={value.busy} onClick={onLogout}>로그아웃</button>
+    {value.csrfToken === null ? <button type="button" disabled={value.busy}
+      onClick={onReauthenticate}>재인증</button> : null}
+    {value.message ? <p role="status">{value.message}</p> : null}
+  </section>;
+}
+
 function validObservedAt(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.exec(value);
@@ -1219,7 +1297,10 @@ function Shell({route}: AppProps) {
   const [scopedDashboard, setScopedDashboard] = useState<ScopedView>(INITIAL_SCOPED_VIEW);
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlertsState>(ALERTS_LOADING);
   const [loadingOlderAlerts, setLoadingOlderAlerts] = useState(false);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const [session, setSession] = useState<DashboardSession>(INITIAL_SESSION);
+  const clearSession = useRef<() => void>(() => {});
+  const [sessionFlow] = useState(() => createDashboardSessionFlow(setSession, () => clearSession.current()));
+  const csrfToken = session.csrfToken;
   const [ackStatus, setAckStatus] = useState<string | null>(null);
   const [pendingAlertId, setPendingAlertId] = useState<string | null>(null);
   const authPending = useRef<{popup: Window; browserState: string} | null>(null);
@@ -1229,6 +1310,17 @@ function Shell({route}: AppProps) {
   const dashboardInFlight = useRef(false);
   const olderRequestInFlight = useRef(false);
   const currentRoute = route ?? (typeof window === 'undefined' ? '/' : window.location.pathname);
+  clearSession.current = () => {
+    authPending.current?.popup.close(); authPending.current = null;
+    alertsController.current?.abort(); alertsController.current = null;
+    dashboardController.current?.abort(); dashboardController.current = null;
+    dashboardInFlight.current = false; olderRequestInFlight.current = false;
+    scopedFlow.current?.dispose(); scopedFlow.current = null;
+    setScopedDashboard({...INITIAL_SCOPED_VIEW, listStatus: 'BLOCKED', readStatus: 'BLOCKED'});
+    setDashboardQueue(DASHBOARD_QUEUE_BLOCKED); setCriticalAlerts(ALERTS_BLOCKED);
+    setProviderRegistration(PROVIDER_UNAVAILABLE); setProjects(createProjectsState());
+    setPendingAlertId(null); setLoadingOlderAlerts(false); setAckStatus(null);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1237,16 +1329,20 @@ function Shell({route}: AppProps) {
       if (!pending) return;
       const classification = classifyOidcPopupMessage(event, pending, window.location.origin);
       if (classification === 'IGNORE') return;
+      const epoch = sessionFlow.begin();
+      if (epoch === null) return;
       authPending.current = null; // A duplicate callback never starts a second exchange.
       if (classification === 'MISMATCH') {
         pending.popup.close();
-        setCsrfToken(null);
+        sessionFlow.acceptToken(epoch, null); sessionFlow.finish(epoch);
         setAckStatus('state 불일치 · 재인증 필요');
         return;
       }
       void completeOidcPopupMessage(event, pending.popup, window.location.origin,
         pending.browserState).then((token) => {
-        setCsrfToken(token);
+        pending.popup.close();
+        if (!sessionFlow.current(epoch)) return;
+        sessionFlow.acceptToken(epoch, token); sessionFlow.finish(epoch);
         setAckStatus(token ? null : '재인증 실패 · 확인 차단');
       });
     };
@@ -1255,26 +1351,29 @@ function Shell({route}: AppProps) {
       const pending = authPending.current;
       if (pending?.popup.closed) {
         authPending.current = null;
-        setCsrfToken(null);
         setAckStatus('팝업 종료 · 재인증 필요');
       }
     }, 500);
     return () => { window.removeEventListener('message', onMessage);
-      window.clearInterval(closedCheck); authPending.current = null; };
-  }, []);
+      window.clearInterval(closedCheck); authPending.current?.popup.close();
+      authPending.current = null; sessionFlow.dispose(); };
+  }, [sessionFlow]);
 
   const reauthenticate = async () => {
     if (typeof window === 'undefined') return;
-    setCsrfToken(null);
+    const epoch = sessionFlow.begin();
+    if (epoch === null) return;
+    sessionFlow.acceptToken(epoch, null);
     setAckStatus('재인증 중');
     authPending.current?.popup.close();
     authPending.current = null;
     const popup = window.open('', '_blank', 'popup,width=520,height=650');
-    if (!popup) { setAckStatus('팝업 차단 · 재인증 필요'); return; }
+    if (!popup) { sessionFlow.finish(epoch); setAckStatus('팝업 차단 · 재인증 필요'); return; }
     try {
       const response = await fetch('/auth/oidc/authorization', {method: 'POST',
         credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, body: '{}'});
       const payload = response.ok ? await response.json() : null;
+      if (!sessionFlow.current(epoch)) { popup.close(); return; }
       const data = record(payload) && record(payload.data) ? payload.data : null;
       if (!data || !nonempty(data.browser_state) || !nonempty(data.authorization_url))
         throw new Error('OIDC_AUTH_UNAVAILABLE');
@@ -1285,17 +1384,21 @@ function Shell({route}: AppProps) {
       popup.location.href = url.href;
     } catch {
       popup.close();
+      if (!sessionFlow.current(epoch)) return;
       authPending.current = null;
       setAckStatus('재인증 실패 · 확인 차단');
-    }
+    } finally { sessionFlow.finish(epoch); }
   };
 
   const acknowledgeAlert = async (alert: CriticalAlert) => {
     if (!csrfToken || pendingAlertId !== null || typeof window === 'undefined'
       || !globalThis.crypto?.randomUUID) return;
+    const epoch = sessionFlow.begin();
+    if (epoch === null) return;
     setPendingAlertId(alert.alert_id);
     setAckStatus('확인 중');
     const result = await acknowledgeCriticalAlert(alert, csrfToken, crypto.randomUUID());
+    if (!sessionFlow.current(epoch)) return;
     if (result.status === 'CONFIRMED') {
       setAckStatus(`확인 완료 · audit sequence ${result.ackSequence}`);
       const controller = alertsController.current;
@@ -1304,7 +1407,7 @@ function Shell({route}: AppProps) {
         if (!controller.signal.aborted) setCriticalAlerts(refreshed);
       }
     } else {
-      setCsrfToken(null);
+      sessionFlow.acceptToken(epoch, null);
       setAckStatus('확인 미검증 · 경고 상태 재조회 후 재인증 필요');
       const controller = alertsController.current;
       if (controller && !controller.signal.aborted) {
@@ -1313,10 +1416,11 @@ function Shell({route}: AppProps) {
       }
     }
     setPendingAlertId(null);
+    sessionFlow.finish(epoch);
   };
 
   const refreshDashboard = useCallback((reconnect = false) => {
-    if (currentRoute !== '/' || dashboardInFlight.current) return;
+    if (currentRoute !== '/' || dashboardInFlight.current || sessionFlow.snapshot().blocked) return;
     const controller = new AbortController();
     dashboardController.current = controller;
     dashboardInFlight.current = true;
@@ -1331,7 +1435,7 @@ function Shell({route}: AppProps) {
         dashboardInFlight.current = false;
       }
     });
-  }, [currentRoute]);
+  }, [currentRoute, sessionFlow]);
 
   const cancelDashboard = () => {
     if (currentRoute !== '/' || !dashboardInFlight.current || !dashboardController.current) return;
@@ -1388,6 +1492,12 @@ function Shell({route}: AppProps) {
     alertsController.current?.abort();
     const controller = new AbortController();
     alertsController.current = controller;
+    void loadProviderRegistration(controller.signal).then(value => {
+      if (!controller.signal.aborted) setProviderRegistration(value);
+    });
+    scopedFlow.current?.dispose();
+    const flow = createScopedDashboardFlow(setScopedDashboard);
+    scopedFlow.current = flow; void flow.refreshPairs();
     setCriticalAlerts(ALERTS_LOADING);
     void loadCriticalAlerts(controller.signal).then((value) => {
       if (!controller.signal.aborted) setCriticalAlerts(value);
@@ -1396,7 +1506,8 @@ function Shell({route}: AppProps) {
     dashboardController.current = null;
     dashboardInFlight.current = false;
     refreshDashboard(true);
-    return () => controller.abort();
+    return () => { controller.abort(); flow.dispose();
+      if (scopedFlow.current === flow) scopedFlow.current = null; };
   }, [csrfToken, currentRoute, refreshDashboard]);
 
   const loadOlderAlerts = async () => {
@@ -1473,11 +1584,11 @@ function Shell({route}: AppProps) {
         <DashboardOperatingCards value={dashboardQueue}/>
         <NextActionsCard value={dashboardQueue}/>
         <CriticalAlertsCard value={criticalAlerts} onLoadOlder={() => { void loadOlderAlerts(); }}
-          loadingOlder={loadingOlderAlerts} canAcknowledge={csrfToken !== null}
+          loadingOlder={loadingOlderAlerts} canAcknowledge={csrfToken !== null && !session.busy}
           onAcknowledge={(alert) => { void acknowledgeAlert(alert); }}
           pendingAlertId={pendingAlertId} ackStatus={ackStatus}/>
-        {csrfToken === null ? <button type="button" onClick={() => { void reauthenticate(); }}>
-          재인증</button> : null}
+        <DashboardSessionActions value={session} onLogout={() => { void sessionFlow.logout(); }}
+          onReauthenticate={() => { void reauthenticate(); }}/>
       </main> : currentRoute === '/projects' ? <main className="dashboard">
         <div className="dashboard-heading"><div><p className="header-status">REPOSITORY ONBOARDING</p><h1>Projects</h1></div><p>읽기 전용 scan · {projects.status}</p></div>
         <section className="status-card" aria-labelledby="projects-status-heading"><h2 id="projects-status-heading">Repository 상태</h2><p className={projects.status === 'READY' ? 'status-ready' : 'status-unavailable'}>{projects.status}</p><p>{projects.reason}</p>{projects.repository && <dl className="status-metadata"><div><dt>Branch</dt><dd>{projects.repository.branch}</dd></div><div><dt>HEAD</dt><dd>{projects.repository.head}</dd></div><div><dt>Tracked dirty</dt><dd>{projects.repository.dirtyPaths}</dd></div><div><dt>Untracked</dt><dd>{projects.repository.untrackedPaths}</dd></div></dl>}</section>
