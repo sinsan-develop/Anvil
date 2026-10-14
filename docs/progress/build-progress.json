@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-planning-source-registration-b21-seq2442",
-  "event_sequence": 2442,
-  "updated_at": "2026-10-14T19:32:57+09:00",
-  "last_event_id": "evt_u01_2442_planning_source_registration_write_lease_issued",
+  "snapshot_id": "snapshot-u01-planning-source-registration-h21-seq2444",
+  "event_sequence": 2444,
+  "updated_at": "2026-10-14T19:37:00+09:00",
+  "last_event_id": "evt_u01_2444_planning_source_registration_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-planning-source-registration",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,37 +387,7 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-planning-source-registration",
-    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T18:46:40+09:00",
-    "expires_at": "2026-10-15T18:46:40+09:00",
-    "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
-    "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
-    "path_scope": [
-      "packages/planning/source_registration.py",
-      "packages/persistence/planning_source_repository.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "tests/planning/test_planning_source_registration.py",
-      "tests/persistence/test_planning_source_repository.py",
-      "tests/api/test_oidc_process.py",
-      "tests/integration/test_u01_planning_source_registration_pg15.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "write_epoch": 131,
-    "lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
-    "worker_lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
-    "fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
-    "write_fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
-    "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
-    "product_write_scope": [
-      "packages/planning/source_registration.py",
-      "packages/persistence/planning_source_repository.py",
-      "apps/api/anvil_api/oidc_process.py"
-    ]
-  },
+  "write_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1570,30 +1540,7 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-planning-source-registration",
-    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T18:46:40+09:00",
-    "expires_at": "2026-10-15T18:46:40+09:00",
-    "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
-    "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
-    "path_scope": [
-      "packages/planning/source_registration.py",
-      "packages/persistence/planning_source_repository.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "tests/planning/test_planning_source_registration.py",
-      "tests/persistence/test_planning_source_repository.py",
-      "tests/api/test_oidc_process.py",
-      "tests/integration/test_u01_planning_source_registration_pg15.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "lease_epoch": 131,
-    "lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
-    "fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
-    "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841"
-  },
+  "worker_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2642,7 +2589,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
+  "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2757,9 +2704,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
-    "projection_mode": "U01_PLANNING_SOURCE_REGISTRATION_ACTIVE",
+    "projection_mode": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
+    "head_relation": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3197,7 +3144,7 @@
       "packages/persistence/planning_source_repository.py",
       "apps/api/anvil_api/oidc_process.py"
     ],
-    "worktree_status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
+    "worktree_status": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3363,8 +3310,8 @@
     "path": "docs/work_orders/U-01_PLANNING_SOURCE_REGISTRATION_WORK_INSTRUCTION.md",
     "sha256": "BD0E913B32AD3034DB215A4D7A8849B2E2CD327FFB18E544DC0F8860EE5ADEA6",
     "revision": 1,
-    "result_status": "U01_PLANNING_SOURCE_REGISTRATION_ACTIVE",
-    "package_status": "U01_PLANNING_SOURCE_REGISTRATION_ACTIVE",
+    "result_status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
+    "package_status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
     "approval_ref": "docs/approvals/APPROVAL-20261014-U01-PLANNING-SOURCE-REGISTRATION-001.md",
     "approval_classification": "HUMAN_APPROVED_SCOPED_PLANNING_SOURCE_REGISTRATION"
   },
@@ -3580,12 +3527,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "6E02314A03F6B9889EC3C0847AEA7E2A03284FF495EC85C01F242525B3F64C46"
+      "sha256": "5AF19B899A42D81C994977BD27A4011718DBFC929C97C0E405630F90BB325D3C"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_PLANNING_SOURCE_REGISTRATION_ACTIVE"
+    "status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3977,8 +3924,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5259483CE61120859710B4E6C9948C737F77C7E775AF612D2F4D5DCF8565ADA8",
-  "runtime_next_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
+  "snapshot_hash": "6FCF6E99029E6D83CAF2FA3E28B0C70706D99DEE90941EB4430A9D72931F3294",
+  "runtime_next_action": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -31503,7 +31450,7 @@
     ],
     "proposal_path": "docs/04_test_reports/U-01_PLANNING_SOURCE_REGISTRATION_CONTRACT_PROPOSAL.md",
     "proposal_sha256": "69F648A29D3E0C32507D2272BB59C0616F5A74BCFF8C58F1F920AB9C9B464716",
-    "status": "U01_PLANNING_SOURCE_REGISTRATION_ACTIVE",
+    "status": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED",
     "package_id": "U-01",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
@@ -31512,15 +31459,72 @@
     "a22_docs_checkpoint": "b8b36b29f1ea5c26a210f36860a28d62cd5a8a40",
     "control_checkpoint": "88a56c30ff9eebc726fa1bf390462ab94eb771b7",
     "manifest_checkpoint": "e92bc992ba7c0abd28ff027a52115f362aff09fa",
-    "active_projection_checkpoint": null,
+    "active_projection_checkpoint": "dcba4819f8d51e7f1b9dbf733a35acaea5208cc6",
     "actor_id": "developer-primary-u01-planning-source-registration",
     "worker_lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
     "write_lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
-    "event_sequence": 2442,
-    "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE_READY",
+    "event_sequence": 2444,
+    "next_safe_action": "U01_PLANNING_SOURCE_REGISTRATION_RECORDED_U01_PENDING",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
     "manifest_sha256": "850D8472C88FD480312C64CBFEE2AFB31F63E8AFCD4CB7D72D901EF78001BF42"
+  },
+  "completed_u01_planning_source_registration_write_lease": {
+    "actor_id": "developer-primary-u01-planning-source-registration",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T18:46:40+09:00",
+    "expires_at": "2026-10-15T18:46:40+09:00",
+    "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "path_scope": [
+      "packages/planning/source_registration.py",
+      "packages/persistence/planning_source_repository.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "tests/planning/test_planning_source_registration.py",
+      "tests/persistence/test_planning_source_repository.py",
+      "tests/api/test_oidc_process.py",
+      "tests/integration/test_u01_planning_source_registration_pg15.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "write_epoch": 131,
+    "lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
+    "worker_lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+    "fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+    "write_fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+    "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+    "product_write_scope": [
+      "packages/planning/source_registration.py",
+      "packages/persistence/planning_source_repository.py",
+      "apps/api/anvil_api/oidc_process.py"
+    ],
+    "revoked_at": "2026-10-14T19:37:00+09:00"
+  },
+  "completed_u01_planning_source_registration_worker_lease": {
+    "actor_id": "developer-primary-u01-planning-source-registration",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T18:46:40+09:00",
+    "expires_at": "2026-10-15T18:46:40+09:00",
+    "baseline_git_commit": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "dispatch_head": "6221a17eff79831b222f8a2413e6cfd80383b7f4",
+    "path_scope": [
+      "packages/planning/source_registration.py",
+      "packages/persistence/planning_source_repository.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "tests/planning/test_planning_source_registration.py",
+      "tests/persistence/test_planning_source_repository.py",
+      "tests/api/test_oidc_process.py",
+      "tests/integration/test_u01_planning_source_registration_pg15.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py"
+    ],
+    "lease_epoch": 131,
+    "lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+    "fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+    "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+    "revoked_at": "2026-10-14T19:37:00+09:00"
   }
 }

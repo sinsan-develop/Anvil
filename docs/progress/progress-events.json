@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2442,
+  "last_sequence": 2444,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -109459,7 +109459,49 @@
         "apps/api/anvil_api/oidc_process.py"
       ]
     }
+  },
+  {
+    "sequence": 2443,
+    "event_id": "evt_u01_2443_planning_source_registration_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "occurred_at": "2026-10-14T19:37:00+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "2F8372ADBCA16B339C50357D4F3730684E0D83950D283D7767D6C6CD185855D7",
+    "details": {
+      "lease_id": "write-lease-u01-planning-source-registration-0c0d7a1b9d424206806cd7c68c23248d",
+      "write_fencing_token": "u01-planning-source-registration-write-fence-epoch-131-0c0d7a1b9d424206806cd7c68c23248d",
+      "reason": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED"
+    }
+  },
+  {
+    "sequence": 2444,
+    "event_id": "evt_u01_2444_planning_source_registration_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_PLANNING_SOURCE_REGISTRATION_CLOSE",
+    "subject_ref": "U-01/PLANNING-SOURCE-REGISTRATION",
+    "occurred_at": "2026-10-14T19:37:00+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "6E3E4D027C81B222673C76B730060A241D18BC1DC43B7D1F6E6BBAC75F960A23",
+    "details": {
+      "lease_id": "worker-lease-u01-planning-source-registration-f84217717dce4ab08c508e79bda67841",
+      "execution_fencing_token": "u01-planning-source-registration-execution-fence-epoch-131-f84217717dce4ab08c508e79bda67841",
+      "reason": "U01_PLANNING_SOURCE_REGISTRATION_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2442_planning_source_registration_write_lease_issued"
+  "last_event_id": "evt_u01_2444_planning_source_registration_worker_lease_revoked"
 }
