@@ -86439,5 +86439,384 @@ def validate_bundle(bundle):
     return sorted(set(errors))
 
 
+_U01_WAITING_APPROVAL_RUN_A19 = "16d00c2519498487b26d9997abf42478696fe913"
+_U01_WAITING_APPROVAL_RUN_W20 = "83de257e270d7abccd4980e5404a49fb33ca4b1c"
+_U01_WAITING_APPROVAL_RUN_BASE = "f4efc3ecb6e9462306072874ffdcd501e06553ed"
+_U01_WAITING_APPROVAL_RUN_M18 = "fd552dd877151ccb1477700136a967ade66dbcd2"
+_U01_WAITING_APPROVAL_RUN_M18_HASH = "D4FDAC97EC0AEA052302AFC3280449D95F85F36692F77E4EB6D0CE2CFEA3BC2A"
+_U01_WAITING_APPROVAL_RUN_PATHS = _U01_ACTIVE_RUN_PATHS
+_U01_WAITING_APPROVAL_RUN_CODE = {"apps/web/src/console/App.tsx", "apps/web/tests/f15-console.test.mjs",
+    "scripts/check_project_progress.py", "tests/tooling/test_u01_postmerge_control_projection.py"}
+_U01_WAITING_APPROVAL_RUN_RETAINED = {"deploy/wsl/compose.u01-development.yml", "deploy/wsl/nginx-u01-development.conf",
+    "deploy/wsl/oidc_qa_issuer.py", "deploy/wsl/U01DevelopmentReleaseManifest.template.json"}
+_U01_WAITING_APPROVAL_RUN_BINDING = "u01_dashboard_waiting_approval_run_binding"
+_U01_WAITING_APPROVAL_RUN_MODE = "U01_DASHBOARD_WAITING_APPROVAL_RUN_ACTIVE"
+_U01_WAITING_APPROVAL_RUN_CLOSE = "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSED"
+_U01_WAITING_APPROVAL_RUN_MANIFEST = "deploy/wsl/U01WaitingApprovalRunReleaseManifest.json"
+_U01_WAITING_APPROVAL_RUN_APPROVAL = "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39"
+
+
+def validate_u01_waiting_approval_run_manifest(value, baseline):
+    """M18 신원과 retained 자료를 대조하며 선언만으로 운영 불변을 주장하지 않는다."""
+    def digest(item, pattern=r"[0-9A-F]{64}"):
+        return type(item) is str and re.fullmatch(pattern, item) is not None
+    try:
+        if type(value) is not dict or set(value) != {
+            "schema_version", "environment", "acceptance", "release_decision", "source_commit",
+            "source_files", "predecessor_manifest_commit", "predecessor_manifest_sha256", "origin",
+            "images", "image_sources", "retained_source_files", "rollback", "unchanged"}:
+            raise ValueError()
+        files, images, sources, rollback = (value[k] for k in
+            ("source_files", "images", "image_sources", "rollback"))
+        if (value["schema_version"] != "u01_dashboard_waiting_approval_run_manifest/v1"
+                or value["environment"] != "WSL_SERVER_TEST_STAGING"
+                or value["acceptance"] != "NOT_ACCEPTED" or value["release_decision"] != "DEFER"
+                or not digest(value["source_commit"], r"[0-9a-f]{40}")
+                or value["predecessor_manifest_commit"] != _U01_WAITING_APPROVAL_RUN_M18
+                or value["predecessor_manifest_sha256"] != _U01_WAITING_APPROVAL_RUN_M18_HASH
+                or value["origin"] != baseline["origin"]
+                or type(files) is not dict or not files or not set(files) <= _U01_WAITING_APPROVAL_RUN_CODE
+                or not all(digest(x) for x in files.values())
+                or type(images) is not dict or set(images) != {"web", "api", "issuer"}
+                or not all(digest(x, r"sha256:[0-9a-f]{64}") for x in images.values())
+                or any(images[k] != baseline["images"][k] for k in ("api", "issuer"))
+                or sources != {"web": value["source_commit"], "api": baseline["image_sources"]["api"], "issuer": baseline["image_sources"]["issuer"]}
+                or value["retained_source_files"] != baseline["retained_source_files"]
+                or type(rollback) is not dict or set(rollback) != {"container_id", "image_id"}
+                or rollback["container_id"] != "988cb3591fc9c61c0476e09984f030e6acff1ce261203d7b15686d310083cd41"
+                or rollback["image_id"] != baseline["images"]["web"]
+                or value["unchanged"] != baseline["unchanged"]):
+            raise ValueError()
+        return []
+    except (ValueError, TypeError, KeyError):
+        return ["U01_DASHBOARD_WAITING_APPROVAL_RUN_MANIFEST_INVALID"]
+
+
+def _u01_waiting_approval_run_frozen(bundle):
+    return {path: subprocess.check_output(["git", "show", f"{_U01_WAITING_APPROVAL_RUN_A19}:{path}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL) for path in _U01_WAITING_APPROVAL_RUN_PATHS}
+
+
+def _validate_u01_waiting_approval_run_active(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_waiting_approval_run_frozen(bundle)
+        progress = json.loads(frozen[_U01_WAITING_APPROVAL_RUN_PATHS[0]])
+        worker, write = progress["worker_lease"], progress["write_lease"]
+        binding = progress[_U01_WAITING_APPROVAL_RUN_BINDING]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        if (instant.tzinfo is None
+                or not datetime.fromisoformat(worker["issued_at"]) <= instant
+                   < datetime.fromisoformat(worker["expires_at"])
+                or not datetime.fromisoformat(write["issued_at"]) <= instant
+                   < datetime.fromisoformat(write["expires_at"])
+                or worker["lease_epoch"] != 128 or write["write_epoch"] != 128
+                or worker["status"] != "ACTIVE" or write["status"] != "ACTIVE"
+                or worker["actor_id"] != "developer-primary-u01-dashboard-waiting-approval-run"
+                or write["actor_id"] != worker["actor_id"]
+                or write["worker_lease_id"] != worker["lease_id"]
+                or write["execution_fencing_token"] != worker["execution_fencing_token"]
+                or write["write_fencing_token"] == worker["execution_fencing_token"]
+                or set(worker["path_scope"]) != _U01_WAITING_APPROVAL_RUN_CODE
+                or set(write["path_scope"]) != _U01_WAITING_APPROVAL_RUN_CODE or write["product_write_scope"] != ["apps/web/src/console/App.tsx"]
+                or binding["predecessor_head"] != _U01_WAITING_APPROVAL_RUN_W20
+                or binding["predecessor_sequence"] != 2424
+                or binding["work_instruction_sha256"] !=
+                   "A03AED3F30A7403472FF9FA000EB77D64CE9C0CF00EF5B909DF7FBBA4485B751"
+                or binding["approval_sha256"] != _U01_WAITING_APPROVAL_RUN_APPROVAL
+                or any(binding[key] is not None for key in ("control_checkpoint",
+                    "a19_docs_checkpoint", "manifest_checkpoint", "active_projection_checkpoint"))
+                or progress["repository"]["projection_mode"] != _U01_WAITING_APPROVAL_RUN_MODE
+                or progress["event_sequence"] != 2427 or bundle["progress"] != progress
+                or bundle["events"] != json.loads(frozen[_U01_WAITING_APPROVAL_RUN_PATHS[1]])
+                or bundle["handoff_text"].encode() != frozen[_U01_WAITING_APPROVAL_RUN_PATHS[2]]
+                or bundle["handoff"] != extract_handoff_summary(bundle["handoff_text"])
+                or bundle["detached_digest"] != json.loads(frozen[_U01_WAITING_APPROVAL_RUN_PATHS[3]])
+                or any((archived_files[path] if archived_files and path in archived_files
+                        else (Path(bundle["_root"]) / path).read_bytes()) != raw
+                       for path, raw in frozen.items())):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_WAITING_APPROVAL_RUN_CONTROL_INVALID"]
+
+
+
+def _u01_waiting_approval_run_baseline(bundle):
+    raw = subprocess.check_output(["git", "show", f"{_U01_WAITING_APPROVAL_RUN_M18}:{_U01_AGENT_OWNER_STATUS_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+    if hashlib.sha256(raw).hexdigest().upper() != _U01_WAITING_APPROVAL_RUN_M18_HASH:
+        raise ValueError("U01_DASHBOARD_WAITING_APPROVAL_RUN_MANIFEST_INVALID")
+    return json.loads(raw)
+
+
+def _u01_waiting_approval_run_manifest_at(bundle, sha):
+    if type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+        raise ValueError("U01_DASHBOARD_WAITING_APPROVAL_RUN_MANIFEST_INVALID")
+    return subprocess.check_output(["git", "show", f"{sha}:{_U01_WAITING_APPROVAL_RUN_MANIFEST}"],
+        cwd=bundle["_root"], stderr=subprocess.DEVNULL)
+
+
+def _u01_waiting_approval_run_source_hashes(bundle, sha, paths):
+    return {path: hashlib.sha256(subprocess.check_output(
+        ["git", "show", f"{sha}:{path}"], cwd=bundle["_root"],
+        stderr=subprocess.DEVNULL)).hexdigest().upper() for path in paths}
+
+
+def _validate_u01_waiting_approval_run_projection(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        frozen = _u01_waiting_approval_run_frozen(bundle)
+        actual = _u01_active_run_actual(bundle, archived_files)
+        progress, stream = bundle["progress"], bundle["events"]
+        expected = json.loads(frozen[_U01_WAITING_APPROVAL_RUN_PATHS[0]])
+        binding = progress[_U01_WAITING_APPROVAL_RUN_BINDING]
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        instant = now if now is not None else datetime.now(timezone.utc)
+        issued = datetime.fromisoformat(expected["worker_lease"]["issued_at"])
+        expires = datetime.fromisoformat(expected["worker_lease"]["expires_at"])
+        updated = datetime.fromisoformat(progress["updated_at"])
+        if (any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+                for sha in (csha, msha)) or len({csha, msha, _U01_WAITING_APPROVAL_RUN_A19, _U01_WAITING_APPROVAL_RUN_W20}) != 4
+                or binding["a19_docs_checkpoint"] != _U01_WAITING_APPROVAL_RUN_A19
+                or binding["active_projection_checkpoint"] is not None
+                or instant.tzinfo is None or updated.tzinfo is None
+                or not issued <= updated <= instant < expires
+                or actual[_U01_WAITING_APPROVAL_RUN_PATHS[1]] != frozen[_U01_WAITING_APPROVAL_RUN_PATHS[1]]
+                or stream != json.loads(actual[_U01_WAITING_APPROVAL_RUN_PATHS[1]])
+                or stream["last_sequence"] != 2427 or progress["event_sequence"] != 2427):
+            raise ValueError()
+        raw_manifest = _u01_waiting_approval_run_manifest_at(bundle, msha)
+        manifest = json.loads(raw_manifest)
+        manifest_hash = hashlib.sha256(raw_manifest).hexdigest().upper()
+        if (validate_u01_waiting_approval_run_manifest(manifest, _u01_waiting_approval_run_baseline(bundle))
+                or manifest["source_commit"] != csha or binding["manifest_sha256"] != manifest_hash):
+            raise ValueError()
+        action = "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSE_READY"
+        expected[_U01_WAITING_APPROVAL_RUN_BINDING].update(a19_docs_checkpoint=_U01_WAITING_APPROVAL_RUN_A19,
+            control_checkpoint=csha, manifest_checkpoint=msha, manifest_sha256=manifest_hash,
+            status=_U01_WAITING_APPROVAL_RUN_MODE, next_safe_action=action)
+        expected["active_work_instruction"].update(result_status=_U01_WAITING_APPROVAL_RUN_MODE, package_status=_U01_WAITING_APPROVAL_RUN_MODE)
+        expected["repository"].update(local_head=msha, remote_head=msha,
+            head_relation=action, worktree_status=action)
+        expected.update(updated_at=progress["updated_at"], next_safe_action=action,
+            runtime_next_action=action, next_work_package={"package_id": "U-01", "status": _U01_WAITING_APPROVAL_RUN_MODE},
+            snapshot_id="snapshot-u01-dashboard-waiting-approval-run-b19-seq2427")
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = extract_handoff_summary(frozen[_U01_WAITING_APPROVAL_RUN_PATHS[2]].decode())
+        handoff.update(repository_head=msha, next_safe_action=action)
+        digest = _u01_active_run_digest(json.loads(frozen[_U01_WAITING_APPROVAL_RUN_PATHS[3]]), bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff
+                or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_WAITING_APPROVAL_RUN_PATHS[0]]) != progress
+                or actual[_U01_WAITING_APPROVAL_RUN_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_WAITING_APPROVAL_RUN_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_WAITING_APPROVAL_RUN_PROJECTION_INVALID"]
+
+
+def _validate_u01_waiting_approval_run_closed(bundle, *, now=None, archived_files=None):
+    from datetime import datetime, timezone
+    try:
+        progress, stream = bundle["progress"], bundle["events"]
+        binding = progress[_U01_WAITING_APPROVAL_RUN_BINDING]
+        publication = binding["active_projection_checkpoint"]
+        if (type(publication) is not str or re.fullmatch(r"[0-9a-f]{40}", publication) is None
+                or publication in {_U01_WAITING_APPROVAL_RUN_A19, binding["control_checkpoint"], binding["manifest_checkpoint"]}):
+            raise ValueError()
+        active, published = _u01_task4_report_archive(bundle, publication)
+        before = active["progress"]
+        before_at = datetime.fromisoformat(before["updated_at"])
+        if _validate_u01_waiting_approval_run_projection(active, archived_files=published, now=before_at):
+            raise ValueError()
+        actual = _u01_active_run_actual(bundle, archived_files)
+        raw = actual[_U01_WAITING_APPROVAL_RUN_PATHS[1]]
+        at = progress["updated_at"]
+        moment = datetime.fromisoformat(at)
+        instant = now if now is not None else datetime.now(timezone.utc)
+        expires = datetime.fromisoformat(before["worker_lease"]["expires_at"])
+        if (moment.tzinfo is None or instant.tzinfo is None or not before_at <= moment < expires
+                or moment > instant or progress["event_sequence"] != 2429
+                or raw_event_object_prefix_bytes(raw, 2427)
+                   != raw_event_object_prefix_bytes(published[_U01_WAITING_APPROVAL_RUN_PATHS[1]], 2427)
+                or stream != json.loads(raw) or stream["last_sequence"] != 2429
+                or len(stream["events"]) != 2429
+                or progress["last_event_id"] != stream["last_event_id"]
+                or {k: v for k, v in stream.items() if k not in {"events", "last_sequence", "last_event_id"}}
+                   != {k: v for k, v in active["events"].items() if k not in {"events", "last_sequence", "last_event_id"}}):
+            raise ValueError()
+        for sequence, kind, name, token in (
+            (2428, "WRITE_LEASE_REVOKED", "write", "write_fencing_token"),
+            (2429, "WORKER_LEASE_REVOKED", "worker", "execution_fencing_token"),
+        ):
+            lease = before[name + "_lease"]
+            previous = hashlib.sha256(canonical_json_bytes(stream["events"][sequence - 2])).hexdigest().upper()
+            if stream["events"][sequence - 1] != {
+                "sequence": sequence, "event_id": f"evt_u01_{sequence}_dashboard_waiting_approval_run_{name}_lease_revoked",
+                "event_type": kind, "actor": "main-agent-eoul", "actor_id": "main-agent-eoul",
+                "actor_type": "AGENT", "project_id": "anvil", "work_package_id": "U-01",
+                "run_id": None, "step_id": "U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSE",
+                "subject_ref": "U-01/DASHBOARD-WAITING-APPROVAL-RUN", "occurred_at": at,
+                "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                "previous_event_sha256": previous,
+                "details": {"lease_id": lease["lease_id"], token: lease[token], "reason": _U01_WAITING_APPROVAL_RUN_CLOSE}}:
+                raise ValueError()
+        expected = copy.deepcopy(before)
+        expected["registry_refs"]["progress_events"]["sha256"] = hashlib.sha256(raw).hexdigest().upper()
+        for name in ("write", "worker"):
+            expected[f"completed_u01_dashboard_waiting_approval_run_{name}_lease"] = {
+                **before[name + "_lease"], "status": "REVOKED", "revoked_at": at}
+        expected["write_lease"] = expected["worker_lease"] = None
+        action = "U01_DASHBOARD_WAITING_APPROVAL_RUN_RECORDED_U01_PENDING"
+        expected[_U01_WAITING_APPROVAL_RUN_BINDING].update(status=_U01_WAITING_APPROVAL_RUN_CLOSE, next_safe_action=action,
+            active_projection_checkpoint=publication, event_sequence=2429)
+        expected["active_work_instruction"].update(result_status=_U01_WAITING_APPROVAL_RUN_CLOSE, package_status=_U01_WAITING_APPROVAL_RUN_CLOSE)
+        expected.update(active_agent=None, updated_at=at, event_sequence=2429,
+            last_event_id=stream["last_event_id"], next_safe_action=action, runtime_next_action=action,
+            next_work_package={"package_id": "U-01", "status": _U01_WAITING_APPROVAL_RUN_CLOSE},
+            snapshot_id="snapshot-u01-dashboard-waiting-approval-run-h19-seq2429")
+        expected["repository"].update(projection_mode=_U01_WAITING_APPROVAL_RUN_CLOSE, head_relation=action, worktree_status=action)
+        expected["snapshot_hash"] = compute_snapshot_hash(expected)
+        handoff = {**active["handoff"], "event_sequence": 2429, "last_event_id": stream["last_event_id"],
+            "active_agent": None, "worker_lease": None, "write_lease": None, "next_safe_action": action}
+        digest = copy.deepcopy(active["detached_digest"])
+        digest["event_sequence"] = 2429
+        digest = _u01_active_run_digest(digest, bundle, actual)
+        if (progress != expected or bundle["handoff"] != handoff or bundle["detached_digest"] != digest
+                or json.loads(actual[_U01_WAITING_APPROVAL_RUN_PATHS[0]]) != progress
+                or actual[_U01_WAITING_APPROVAL_RUN_PATHS[2]].decode() != bundle["handoff_text"]
+                or extract_handoff_summary(bundle["handoff_text"]) != handoff
+                or json.loads(actual[_U01_WAITING_APPROVAL_RUN_PATHS[3]]) != digest):
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_WAITING_APPROVAL_RUN_CLOSE_INVALID"]
+
+
+
+def _collect_u01_waiting_approval_run_git(bundle):
+    root = Path(bundle["_root"])
+    try:
+        def git(*args):
+            return subprocess.check_output(["git", "-c", "core.excludesFile=", "-c",
+                "core.quotePath=false", *args], cwd=root, stderr=subprocess.DEVNULL).decode().strip()
+        def direct(left, right, paths, added=frozenset()):
+            return (git("show", "-s", "--format=%P", right) == left
+                and git("rev-list", "--count", f"{left}..{right}") == "1"
+                and not git("rev-list", "--min-parents=2", f"{left}..{right}")
+                and set(git("log", "--format=", "--name-only", "--no-renames", f"{left}..{right}").splitlines()) == paths
+                and set(git("diff", "--name-only", "--no-renames", left, right).splitlines()) == paths
+                and set(git("diff", "--name-status", "--no-renames", left, right).splitlines())
+                    == {("A\t" if p in added else "M\t") + p for p in paths})
+        wi = "docs/work_orders/U-01_DASHBOARD_WAITING_APPROVAL_RUN_WORK_INSTRUCTION.md"
+        inv = "docs/work_orders/U-01_DASHBOARD_WAITING_APPROVAL_RUN_INVOCATION.md"
+        approval = "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md"
+        status, environment = "docs/WORK_STATUS.md", "docs/DEVELOPMENT_ENVIRONMENT.md"
+        head = git("rev-parse", "HEAD")
+        if (git("branch", "--show-current") != "codex/u01-dashboard-r2"
+                or git("rev-parse", "--abbrev-ref", "@{upstream}") != "development/codex/u01-dashboard-r2"
+                or git("remote", "get-url", "development") != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+                or git("rev-parse", "development/codex/u01-dashboard-r2") != head
+                or _u01_task4_epoch106_g05_live_remote_sha(root) != head
+                or git("status", "--porcelain=v1", "-uall")
+                or not direct(_U01_WAITING_APPROVAL_RUN_BASE, _U01_WAITING_APPROVAL_RUN_W20, {wi, inv, status, "design_change.md"}, {wi, inv})
+                or not direct(_U01_WAITING_APPROVAL_RUN_W20, _U01_WAITING_APPROVAL_RUN_A19, set(_U01_WAITING_APPROVAL_RUN_PATHS) | {status})
+                or head == _U01_WAITING_APPROVAL_RUN_A19):
+            raise ValueError()
+        old_dc = subprocess.check_output(["git", "show", f"{_U01_WAITING_APPROVAL_RUN_BASE}:design_change.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        new_dc = subprocess.check_output(["git", "show", f"{_U01_WAITING_APPROVAL_RUN_W20}:design_change.md"],
+            cwd=root, stderr=subprocess.DEVNULL)
+        if not new_dc.startswith(old_dc) or len(new_dc) <= len(old_dc):
+            raise ValueError()
+        progress = bundle["progress"]
+        binding = progress[_U01_WAITING_APPROVAL_RUN_BINDING]
+        closed = progress["repository"]["projection_mode"] == _U01_WAITING_APPROVAL_RUN_CLOSE
+        projected = binding["control_checkpoint"] is not None
+        csha, msha = binding["control_checkpoint"], binding["manifest_checkpoint"]
+        if not projected:
+            if closed or msha is not None or binding["active_projection_checkpoint"] is not None:
+                raise ValueError()
+            parent = git("show", "-s", "--format=%P", head)
+            csha, msha = (head, None) if parent == _U01_WAITING_APPROVAL_RUN_A19 else (parent, head)
+        if any(type(sha) is not str or re.fullmatch(r"[0-9a-f]{40}", sha) is None
+               for sha in (csha,) + ((msha,) if msha is not None else ())):
+            raise ValueError()
+        changed = set(git("diff", "--name-only", "--no-renames", _U01_WAITING_APPROVAL_RUN_A19, csha).splitlines())
+        if not changed or not changed <= _U01_WAITING_APPROVAL_RUN_CODE or not direct(_U01_WAITING_APPROVAL_RUN_A19, csha, changed):
+            raise ValueError()
+        if msha is not None:
+            if not direct(csha, msha, {_U01_WAITING_APPROVAL_RUN_MANIFEST, status}, {_U01_WAITING_APPROVAL_RUN_MANIFEST}):
+                raise ValueError()
+            manifest = json.loads(_u01_waiting_approval_run_manifest_at(bundle, msha))
+            if (validate_u01_waiting_approval_run_manifest(manifest, _u01_waiting_approval_run_baseline(bundle)) or manifest["source_commit"] != csha
+                    or manifest["source_files"] != _u01_waiting_approval_run_source_hashes(bundle, csha, changed)
+                    or manifest["retained_source_files"] != _u01_waiting_approval_run_source_hashes(bundle, csha, _U01_WAITING_APPROVAL_RUN_RETAINED)):
+                raise ValueError()
+        if projected:
+            if binding["a19_docs_checkpoint"] != _U01_WAITING_APPROVAL_RUN_A19 or msha is None:
+                raise ValueError()
+            bsha = binding["active_projection_checkpoint"] if closed else head
+            if not direct(msha, bsha, set(_U01_WAITING_APPROVAL_RUN_PATHS) - {_U01_WAITING_APPROVAL_RUN_PATHS[1]} | {status, environment}):
+                raise ValueError()
+            if closed:
+                hsha = head
+                report = "docs/04_test_reports/U-01_DASHBOARD_WAITING_APPROVAL_RUN_RESULT.md"
+                if git("show", "-s", "--format=%P", head) != bsha:
+                    hsha = git("show", "-s", "--format=%P", head)
+                    if re.fullmatch(r"[0-9a-f]{40}", hsha) is None or not direct(hsha, head, {report, status}, {report}):
+                        raise ValueError()
+                if not direct(bsha, hsha, set(_U01_WAITING_APPROVAL_RUN_PATHS) | {status}):
+                    raise ValueError()
+        elif any(raw != (root / path).read_bytes() for path, raw in _u01_waiting_approval_run_frozen(bundle).items()):
+            raise ValueError()
+        if subprocess.run(["git", "diff", "--check", "development/main...HEAD"], cwd=root,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+            raise ValueError()
+        return []
+    except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.CalledProcessError):
+        return ["U01_DASHBOARD_WAITING_APPROVAL_RUN_GIT_INVALID"]
+
+
+_validate_bundle_before_u01_dashboard_waiting_approval_run = validate_bundle
+
+
+def validate_bundle(bundle):
+    mode = bundle.get("progress", {}).get("repository", {}).get("projection_mode")
+    if mode not in {_U01_WAITING_APPROVAL_RUN_MODE, _U01_WAITING_APPROVAL_RUN_CLOSE}:
+        return _validate_bundle_before_u01_dashboard_waiting_approval_run(bundle)
+    progress = bundle["progress"]
+    if mode == _U01_WAITING_APPROVAL_RUN_CLOSE:
+        errors = _validate_u01_waiting_approval_run_closed(bundle)
+    elif progress.get(_U01_WAITING_APPROVAL_RUN_BINDING, {}).get("control_checkpoint") is not None:
+        errors = _validate_u01_waiting_approval_run_projection(bundle)
+    else:
+        errors = _validate_u01_waiting_approval_run_active(bundle)
+    root = Path(bundle["_root"])
+    for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract", "schema_catalog"):
+        try:
+            if bundle[key] != _load_json(root / BUNDLE_PATHS[key]):
+                errors.append("U01_DASHBOARD_WAITING_APPROVAL_RUN_CONTROL_INVALID")
+        except (OSError, ValueError, TypeError, KeyError):
+            errors.append("U01_DASHBOARD_WAITING_APPROVAL_RUN_CONTROL_INVALID")
+    if all(key in bundle for key in ("failure_ledger", "nonsemantic", "dir_registry", "event_contract")):
+        errors.extend(_validate_failure_ledger(bundle["failure_ledger"], bundle["_root"]))
+        errors.extend(_validate_failure_projection(bundle))
+        errors.extend(_validate_nonsemantic(bundle["nonsemantic"], bundle["_root"]))
+        errors.extend(_validate_dir(bundle))
+        errors.extend(_validate_reporting(progress))
+        errors.extend(_validate_reporting_state(bundle))
+        errors.extend(_validate_registry_refs(bundle))
+        errors.extend(_validate_referenced_hashes(bundle))
+        errors.extend(validate_detached_progress_binding(bundle))
+    else:
+        errors.append("F20_REWORK_BUNDLE_INCOMPLETE")
+    errors.extend(_collect_u01_waiting_approval_run_git(bundle))
+    return sorted(set(errors))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

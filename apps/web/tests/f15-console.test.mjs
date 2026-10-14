@@ -5,6 +5,166 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import * as consoleApp from '../src/console/App.tsx';
 
+function waitingData(items = [
+  {runId:'waiting-one', status:'WAITING_APPROVAL', phase:'DRAFT'},
+  {runId:'waiting-two', status:'WAITING_APPROVAL', phase:'RESULT_REVIEW'},
+  {runId:'active-other', status:'ACTIVE', phase:'APPROVAL_PENDING'},
+]) {
+  const data = queueData([]);
+  data.current.run = {status:'AVAILABLE', count:items.length, items,
+    source:'scoped_run_owner', observedAt:'2026-10-14T02:15:00Z', reason:null};
+  data.sourceCompleteness.current.run = {...data.sourceCompleteness.current.queue,
+    source:'scoped_run_owner'};
+  return data;
+}
+function waitingCard(data) {
+  const html = renderQueue(data);
+  const card = html.match(/<article[^>]*><h3>승인 대기 Run<\/h3>[\s\S]*?<\/article>/)?.[0];
+  assert.ok(card, '승인 대기 Run 카드가 실제 렌더되어야 함');
+  return card;
+}
+
+test('Waiting approval Run counts only status and preserves phase without replacing approval objects', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  const data = waitingData();
+  const card = waitingCard(data);
+  assert.match(card, /class="status-ready">2건/);
+  assert.match(card, /waiting-one · DRAFT/);
+  assert.match(card, /waiting-two · RESULT_REVIEW/);
+  assert.doesNotMatch(card, /active-other|APPROVAL_PENDING|<a |<button/);
+  assert.match(card, /원본 · scoped_run_owner/);
+  assert.match(card, /관측 시점 기준 · 2026-10-14T02:15:00Z/);
+  assert.match(card, /승인 요청 객체 수가 아닌 Run 관측 상태입니다\./);
+  assert.match(renderQueue(data), /<h3>approvalPending<\/h3><p class="status-unavailable">UNAVAILABLE/);
+});
+
+test('Waiting approval Run distinguishes observed zero from missing source and accepts 100 unique runs', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  for (const items of [[], [{runId:'active', status:'ACTIVE', phase:'APPROVAL_PENDING'}]]) {
+    const card = waitingCard(waitingData(items));
+    assert.match(card, /class="status-ready">0건/);
+    assert.match(card, /승인 대기 상태의 Run이 없습니다\./);
+  }
+  const card = waitingCard(waitingData(Array.from({length:100}, (_,i) =>
+    ({runId:`waiting-${i}`, status:'WAITING_APPROVAL', phase:'ANALYZING'}))));
+  assert.match(card, /class="status-ready">100건/);
+  assert.equal((card.match(/<li>/g) ?? []).length, 100);
+});
+
+test('Waiting approval Run rejects malformed identity status phase scope and evidence without numeric fallback', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  for (const mutate of [
+    ...[null, true, -1, 3.5, 101, 2].map(count => d => {d.current.run.count=count;}),
+    d => {d.current.run.count=101; d.current.run.items=Array.from({length:101},(_,i)=>
+      ({runId:`overflow-${i}`,status:'WAITING_APPROVAL',phase:'DRAFT'}));},
+    d => {delete d.current.run.items;}, d => {d.current.run.items={};},
+    d => {d.current.run.items[1].runId='waiting-one';},
+    ...[null, true, '', ' x', 'x ', '\u0085x', 'x\n', 'x\u200b', 'x\u2028',
+      'x\u00a0', '\ud800', '\udfff', '😀'.repeat(129)].map(runId =>
+      d => {d.current.run.items[0].runId=runId;}),
+    ...[null, true, 'WAITING', 'waiting_approval'].map(status => d => {d.current.run.items[0].status=status;}),
+    ...[null, true, 'REVIEW', 'draft'].map(phase => d => {d.current.run.items[0].phase=phase;}),
+    d => {d.current.run.status='UNAVAILABLE';}, d => {d.current.run.source='forged';},
+    d => {d.current.run.reason='PARTIAL';}, d => {d.sourceCompleteness.current.run.reason='PARTIAL';},
+    d => {d.sourceCompleteness.current.run.complete=false;},
+    d => {d.sourceCompleteness.current.run.source='forged';},
+    d => {d.sourceCompleteness.current.run.pair={projectId:'foreign',environmentId:'test'};},
+    d => {d.sourceCompleteness.current.run.eventTimeBasis='DETECTED.at';},
+    d => {d.sourceCompleteness.current.run.observedAt='2026-10-14T02:15:01Z';},
+    d => {d.current.run.observedAt=null;},
+    d => {d.period.observedAt='2026-10-14T02:15:06Z';},
+  ]) {
+    const data=waitingData(); mutate(data);
+    const card=waitingCard(data);
+    assert.match(card, /UNAVAILABLE/);
+    assert.doesNotMatch(card, /\d건|<li>|waiting-one|waiting-two/);
+  }
+});
+
+test('Waiting approval Run uses codepoint length permits printable identity and escapes text', (t) => {
+  t.mock.method(Date, 'now', () => queueNow);
+  const card=waitingCard(waitingData([
+    {runId:'😀'.repeat(128), status:'WAITING_APPROVAL', phase:'VERIFYING'},
+    {runId:'internal space', status:'WAITING_APPROVAL', phase:'RESULT_REVIEW'},
+    {runId:'<img src=x onerror=alert(1)>', status:'WAITING_APPROVAL', phase:'DRAFT'},
+  ]));
+  assert.match(card,/class="status-ready">3건/);
+  assert.match(card,/internal space · RESULT_REVIEW/);
+  assert.match(card,/&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.doesNotMatch(card,/<img|<a |<button/);
+});
+
+test('Waiting approval Run time boundaries hide stale future and server-drift rows', (t) => {
+  let now=queueNow;
+  t.mock.method(Date,'now',()=>now);
+  for(const offset of [0,300000,-5000]) {
+    now=queueNow+offset;
+    assert.match(waitingCard(waitingData()),/class="status-ready">2건/);
+  }
+  for(const offset of [300001,-5001]) {
+    now=queueNow+offset;
+    const card=waitingCard(waitingData());
+    assert.match(card,/UNAVAILABLE/);
+    assert.doesNotMatch(card,/\d건|<li>/);
+  }
+  now=queueNow;
+  for(const offset of [-5000,5000]) {
+    const data=waitingData(); data.period.observedAt=new Date(now+offset).toISOString();
+    assert.match(waitingCard(data),/class="status-ready">2건/);
+  }
+});
+
+test('Waiting approval Run expires without fetch and cancellation prevents old timer publication', (t) => {
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:queueNow});
+  let card=waitingCard(waitingData()); let renders=0;
+  const stop=consoleApp.scheduleQueueExpiry('2026-10-14T02:15:00Z',()=>{
+    renders+=1; card=waitingCard(waitingData());
+  });
+  t.mock.timers.tick(300000); assert.equal(renders,0);
+  t.mock.timers.tick(1); assert.equal(renders,1);
+  assert.match(card,/UNAVAILABLE/); assert.doesNotMatch(card,/\d건|<li>/);
+  stop();
+  const cancel=consoleApp.scheduleQueueExpiry(new Date(Date.now()).toISOString(),()=>{renders+=1;});
+  cancel(); t.mock.timers.tick(300001); assert.equal(renders,1);
+});
+
+test('Waiting approval Run selection period and logout discard late protected rows', async (t) => {
+  t.mock.method(Date,'now',()=>queueNow);
+  const pending=[];
+  let initial=true;
+  const views=[];
+  const flow=consoleApp.createScopedDashboardFlow(value=>views.push(value),async (url, options)=>{
+    assert.ok(url.startsWith('/api/'));
+    assert.equal(options.credentials,'same-origin');
+    if(url==='/api/dashboard/project-environments')
+      return jsonResponse({items:scopedPairs,observedAt:'2026-10-14T02:15:00Z'});
+    if(initial) {initial=false; return jsonResponse({data:waitingData()});}
+    return new Promise(resolve=>pending.push(resolve));
+  });
+  const rendered=()=>renderToStaticMarkup(React.createElement(consoleApp.ScopedDashboardPanel,{
+    value:flow.snapshot(),onRefresh:()=>{},onSelectPair:()=>{},onSelectPeriod:()=>{},
+  }));
+  await flow.refreshPairs(); await flow.selectPair(scopedKey(scopedPairs[0]));
+  assert.match(rendered(),/waiting-one · DRAFT/);
+  const old=flow.selectPair(scopedKey(scopedPairs[0]));
+  assert.doesNotMatch(rendered(),/waiting-one|waiting-two/);
+  const current=flow.setPeriod('7d');
+  const data=waitingData([{runId:'current-waiting',status:'WAITING_APPROVAL',phase:'DRAFT'}]);
+  data.period.key='7d';
+  pending[1](jsonResponse({data})); await current;
+  pending[0](jsonResponse({data:waitingData()})); await old;
+  assert.match(rendered(),/current-waiting/);
+  assert.doesNotMatch(rendered(),/waiting-one|waiting-two/);
+  const late=flow.setPeriod('1d');
+  assert.doesNotMatch(rendered(),/current-waiting/);
+  const session=consoleApp.createDashboardSessionFlow(()=>{},()=>flow.dispose(),
+    async()=>jsonResponse({authenticated:false,mode:'OIDC',actor_role:null}));
+  await session.logout(); const publications=views.length;
+  pending[2](jsonResponse({data:waitingData()})); await late;
+  assert.equal(views.length,publications);
+  assert.doesNotMatch(rendered(),/waiting-one|waiting-two|current-waiting/);
+});
+
 const queueNow = Date.parse('2026-10-14T02:15:00Z');
 function queueData(items = ['PENDING', 'CLAIMED', 'SUCCEEDED', 'QUARANTINED']
   .map((status, i) => ({jobId: `queue-job-${i}`, status}))) {

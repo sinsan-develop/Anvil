@@ -1228,6 +1228,41 @@ function ScopedActiveRunCard({run, runEvidence, pair, observedAt}:
       : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
 }
 
+function ScopedWaitingApprovalRunCard({run, runEvidence, pair, observedAt}:
+    {run: unknown; runEvidence: unknown; pair: unknown; observedAt: unknown}) {
+  const sourceAt = record(run) ? run.observedAt : null;
+  const [expiryTick, setExpiryTick] = useState(0);
+  useEffect(() => scheduleQueueExpiry(sourceAt, () => setExpiryTick(expiryTick + 1)),
+    [sourceAt, expiryTick]);
+  const now = Date.now();
+  const items = record(run) && Array.isArray(run.items) ? run.items : [];
+  const waiting = items.filter((item) => record(item) && item.status === 'WAITING_APPROVAL');
+  const complete = record(run) && record(runEvidence) && run.status === 'AVAILABLE'
+    && run.source === 'scoped_run_owner' && run.reason === null && runEvidence.reason === null
+    && Number.isSafeInteger(run.count) && (run.count as number) >= 0
+    && (run.count as number) <= 100 && Array.isArray(run.items) && items.length === run.count
+    && items.every((item) => record(item) && typeof item.runId === 'string'
+      && /^[\p{L}\p{M}\p{N}\p{P}\p{S} ]+$/u.test(item.runId)
+      && !item.runId.startsWith(' ') && !item.runId.endsWith(' ')
+      && Array.from(item.runId).length <= 128
+      && typeof item.status === 'string' && SCOPED_RUN_STATUSES.has(item.status)
+      && typeof item.phase === 'string' && SCOPED_RUN_PHASES.has(item.phase))
+    && new Set(items.map((item) => item.runId)).size === items.length
+    && validObservedAt(sourceAt) && validObservedAt(observedAt)
+    && Math.abs(Date.parse(sourceAt) - Date.parse(observedAt)) <= 5000
+    && now - Date.parse(sourceAt) <= 300000 && Date.parse(sourceAt) - now <= 5000
+    && validScopedEvidence(runEvidence, pair, 'scoped_run_owner', 'CURRENT_OBSERVATION', sourceAt);
+  return <article className="status-card scoped-waiting-approval-run"><h3>승인 대기 Run</h3>
+    <p className={complete ? 'status-ready' : 'status-unavailable'}>
+      {complete ? `${waiting.length}건` : 'UNAVAILABLE'}</p>
+    {complete ? <><p>원본 · scoped_run_owner</p><p>관측 시점 기준 · {String(sourceAt)}</p>
+      <p>승인 요청 객체 수가 아닌 Run 관측 상태입니다.</p>
+      {waiting.length === 0 ? <p>승인 대기 상태의 Run이 없습니다.</p>
+        : <ul>{waiting.map((item) => <li key={String(item.runId)}>
+          {String(item.runId)} · {String(item.phase)}</li>)}</ul>}</>
+      : <p>사유 · SOURCE_UNAVAILABLE</p>}</article>;
+}
+
 export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPeriod}:
     {value: ScopedView; onRefresh: () => void; onSelectPair: (key: string) => void;
       onSelectPeriod: (period: string) => void}) {
@@ -1348,6 +1383,8 @@ export function ScopedDashboardPanel({value, onRefresh, onSelectPair, onSelectPe
               expectedSource={SCOPED_CURRENT_SOURCES[name] ?? null}
               eventTimeBasis="CURRENT_OBSERVATION" expectedObservedAt={null}/>)}
           <ScopedActiveRunCard run={current?.run} runEvidence={currentEvidence?.run}
+            pair={pair} observedAt={period.observedAt}/>
+          <ScopedWaitingApprovalRunCard run={current?.run} runEvidence={currentEvidence?.run}
             pair={pair} observedAt={period.observedAt}/>
           <ScopedBlockedRunCard blocked={current?.blocked} run={current?.run}
             blockedEvidence={currentEvidence?.blocked} runEvidence={currentEvidence?.run}
