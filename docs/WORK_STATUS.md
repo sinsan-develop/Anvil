@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- A16 로그아웃 단일 writer 임대(Main, 2026-10-14): 최종 W17 보완713ce91e private게시 뒤 activelease0/Event2409를 확인하고 Event1~2409 원문을 보존해2410WI→2411epoch125worker→2412write를24시간·분리token·허용4/제품App1로 발행한다. 실제시각/만료/토큰/새WIhash는 progress/Event 정본에 결박한다. Main동일4코드write0·Developer TDD대기, 독립검토/private게시 뒤에만 dispatch. 재인증뒤UI logout·reload CSRF안내/false success거부/늦은응답제거를 좁게 검증하며 API·DB·Secret·권한·기존3카드보존, 정식3서비스변경0. 새G05route전genericRED는PASS아님, C16clean/privateactualG05전서버QA금지.
+
 - W17 구현 전 계약 보완(Main): 독립1차 C0/I0/M0 뒤 Developer read-only readiness에서 M16 JSON 키/타입 미고정 제안을 확인했다. actual manifest exact schema·추가키거부·retained4파일 hash·혼합source/image·rollback 대조를 WI에 명시, API/DB/Secret 의미변경0이다. lease는 아직발행하지 않았고 첫 A16 patch출력만회수/미적용, 코드write0. 새 WI hash에만 후속 binding하고 이전hash는승계하지 않는다.
 
 - U-01 화면 로그아웃 착수(Main, 2026-10-14): 신산님 `계속하자`에 따라 직전 제안한 미구현 UI logout을 다음 최소 기능으로 분해한다. local/private1be966cb 동일·trackedclean·seq2409·lease0, 정식3서비스 running을 실제 읽기확인했다. 기존 POST logout/CSRF/세션정책·API·DB·Secret은 유지하며 제품UI1+test/checker/control 최대4만 예정한다. reload 뒤 csrf재취득 계약이 없으므로 재인증 필요 안내를 명시하고 무CSRF요청·storage우회·신규API0. WI/Invocation/본STATUS 정확3 W17 후보, 아직lease/코드write0. 기존사용3카드·backup/rollback보존, 전체R6/인수미진유지. Main 내부구현 재확정이며 반복전수검사/재승인요청 없이 단일Primary TDD→실제화면 종료로 이어간다.

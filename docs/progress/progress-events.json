@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2409,
+  "last_sequence": 2412,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108214,7 +108214,119 @@
       "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
       "reason": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
     }
+  },
+  {
+    "sequence": 2410,
+    "event_id": "evt_u01_2410_dashboard_logout_work_instruction_issued",
+    "event_type": "WORK_INSTRUCTION_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_LOGOUT",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "occurred_at": "2026-10-14T10:24:48+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "511F8551018BACA82E1BFA46100C27BBCA4776886918141D05D2671AB9B47EE1",
+    "details": {
+      "work_instruction_id": "WI-U01-DASHBOARD-LOGOUT-20261014-001",
+      "work_instruction_path": "docs/work_orders/U-01_DASHBOARD_LOGOUT_WORK_INSTRUCTION.md",
+      "work_instruction_sha256": "473CB1C9EA8600D9E7F784B280D2FAF817EBCED95215CE6E2B150AEFF9AA07A1",
+      "invocation_path": "docs/work_orders/U-01_DASHBOARD_LOGOUT_INVOCATION.md",
+      "invocation_sha256": "0ADD6C5A8A52550523B85BE72B4D65487A485B19763086FE8DB3AF990958E9A8",
+      "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+      "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+      "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "predecessor_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+      "predecessor_sequence": 2409,
+      "developer_exact_paths": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "product_write_scope": [
+        "apps/web/src/console/App.tsx"
+      ]
+    }
+  },
+  {
+    "sequence": 2411,
+    "event_id": "evt_u01_2411_dashboard_logout_worker_lease_issued",
+    "event_type": "WORKER_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_LOGOUT",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "occurred_at": "2026-10-14T10:24:48+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "7C9B9E3B769123953CEB404999FC93E50E8AA7D789618F60A83F6B838A0BE314",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-logout",
+      "subject_ref": "U-01/DASHBOARD-LOGOUT",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T10:24:48+09:00",
+      "expires_at": "2026-10-15T10:24:48+09:00",
+      "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+      "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "lease_epoch": 125,
+      "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+      "fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+      "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef"
+    }
+  },
+  {
+    "sequence": 2412,
+    "event_id": "evt_u01_2412_dashboard_logout_write_lease_issued",
+    "event_type": "WRITE_LEASE_ISSUED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_LOGOUT",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "occurred_at": "2026-10-14T10:24:48+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "E2B27411AE64B859B1E0B1F16FC2F56931B67B592054B46B694B0262C4067B3D",
+    "details": {
+      "actor_id": "developer-primary-u01-dashboard-logout",
+      "subject_ref": "U-01/DASHBOARD-LOGOUT",
+      "status": "ACTIVE",
+      "issued_at": "2026-10-14T10:24:48+09:00",
+      "expires_at": "2026-10-15T10:24:48+09:00",
+      "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+      "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+      "path_scope": [
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_u01_postmerge_control_projection.py",
+        "apps/web/src/console/App.tsx",
+        "apps/web/tests/f15-console.test.mjs"
+      ],
+      "write_epoch": 125,
+      "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
+      "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+      "fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+      "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+      "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+      "product_write_scope": [
+        "apps/web/src/console/App.tsx"
+      ]
+    }
   }
   ],
-  "last_event_id": "evt_u01_2409_wsl_development_worker_lease_revoked"
+  "last_event_id": "evt_u01_2412_dashboard_logout_write_lease_issued"
 }

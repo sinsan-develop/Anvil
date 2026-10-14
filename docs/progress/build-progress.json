@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-wsl-development-h15-seq2409",
-  "event_sequence": 2409,
-  "updated_at": "2026-10-14T08:39:51+09:00",
-  "last_event_id": "evt_u01_2409_wsl_development_worker_lease_revoked",
+  "snapshot_id": "snapshot-u01-dashboard-logout-a16-seq2412",
+  "event_sequence": 2412,
+  "updated_at": "2026-10-14T10:24:48+09:00",
+  "last_event_id": "evt_u01_2412_dashboard_logout_write_lease_issued",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": null,
+  "active_agent": "developer-primary-u01-dashboard-logout",
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,7 +387,30 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": null,
+  "write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T10:24:48+09:00",
+    "expires_at": "2026-10-15T10:24:48+09:00",
+    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 125,
+    "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
+    "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+    "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1540,7 +1563,25 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T10:24:48+09:00",
+    "expires_at": "2026-10-15T10:24:48+09:00",
+    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 125,
+    "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef"
+  },
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2589,7 +2630,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
+  "next_safe_action": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2700,13 +2741,13 @@
   },
   "repository": {
     "branch": "codex/u01-dashboard-r2",
-    "local_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
+    "local_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
-    "remote_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
-    "projection_mode": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
+    "remote_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "projection_mode": "U01_DASHBOARD_LOGOUT_ACTIVE",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
+    "head_relation": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3139,8 +3180,10 @@
       "tests/tooling/test_f18_wsl_ops_r9_close_overlay.py",
       "tests/tooling/test_f18_wsl_ops_r9_overlay.py"
     ],
-    "product_write_scope": [],
-    "worktree_status": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ],
+    "worktree_status": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3302,14 +3345,14 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-U01-WSL-DEVELOPMENT-RUNTIME-20261014-001",
-    "path": "docs/work_orders/U-01_WSL_DEVELOPMENT_RUNTIME_WORK_INSTRUCTION.md",
-    "sha256": "97A837280AD755895758638D475D07180BAA9803A2B8BFE367B68AB1A12B189B",
+    "artifact_id": "WI-U01-DASHBOARD-LOGOUT-20261014-001",
+    "path": "docs/work_orders/U-01_DASHBOARD_LOGOUT_WORK_INSTRUCTION.md",
+    "sha256": "473CB1C9EA8600D9E7F784B280D2FAF817EBCED95215CE6E2B150AEFF9AA07A1",
     "revision": 1,
-    "result_status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
-    "package_status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED",
-    "approval_ref": "docs/approvals/APPROVAL-20261014-U01-WSL-DEVELOPMENT-RUNTIME-001.md",
-    "approval_classification": "HUMAN_APPROVED_SCOPED_WSL_DEVELOPMENT_RUNTIME"
+    "result_status": "U01_DASHBOARD_LOGOUT_ACTIVE",
+    "package_status": "U01_DASHBOARD_LOGOUT_ACTIVE",
+    "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+    "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
   "completed_u01_task4_epoch107_postclose_fixture_work_instruction": {
     "artifact_id": "WI-U01-TASK4-EPOCH107-POSTCLOSE-FIXTURE-20261010-001",
@@ -3523,12 +3566,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "0A82BEB399F795397BC98DC6E61B5306B2508BEA38554A68C6D164A92A087D47"
+      "sha256": "937E97216ABD053B70F6CDA9E804AAC343D58DE4EC665FEAE66645CFF0DE5AD4"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_WSL_DEVELOPMENT_RUNTIME_CLOSED"
+    "status": "U01_DASHBOARD_LOGOUT_ACTIVE"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3920,8 +3963,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "9EFBB5213E647D1A1E305B21BCA493E2835600EE62EB769E3D67E7AE0435B347",
-  "runtime_next_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
+  "snapshot_hash": "0E722001522A0B9A4905C97F63EB6E35122FA59522A8552D40F7FC4A60D9AD9D",
+  "runtime_next_action": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -30780,5 +30823,44 @@
     "fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
     "execution_fencing_token": "u01-wsl-development-execution-fence-epoch-124-8839db25e3db4a7c9fc3cdc5758f2582",
     "revoked_at": "2026-10-14T08:39:51+09:00"
+  },
+  "u01_dashboard_logout_binding": {
+    "work_instruction_id": "WI-U01-DASHBOARD-LOGOUT-20261014-001",
+    "work_instruction_path": "docs/work_orders/U-01_DASHBOARD_LOGOUT_WORK_INSTRUCTION.md",
+    "work_instruction_sha256": "473CB1C9EA8600D9E7F784B280D2FAF817EBCED95215CE6E2B150AEFF9AA07A1",
+    "invocation_path": "docs/work_orders/U-01_DASHBOARD_LOGOUT_INVOCATION.md",
+    "invocation_sha256": "0ADD6C5A8A52550523B85BE72B4D65487A485B19763086FE8DB3AF990958E9A8",
+    "approval_path": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
+    "approval_sha256": "60167FF6B062CC208CF21BE4990A7132743D249824B9160BA830044E6885AD39",
+    "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "predecessor_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "predecessor_sequence": 2409,
+    "developer_exact_paths": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ],
+    "status": "U01_DASHBOARD_LOGOUT_ACTIVE",
+    "package_id": "U-01",
+    "branch": "codex/u01-dashboard-r2",
+    "upstream": "development/codex/u01-dashboard-r2",
+    "w17_checkpoint": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "previous_result_checkpoint": "1be966cb83c7e85f0e74e73c1e098106c41c4f6c",
+    "a16_docs_checkpoint": null,
+    "control_checkpoint": null,
+    "manifest_checkpoint": null,
+    "active_projection_checkpoint": null,
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "write_lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
+    "event_sequence": 2412,
+    "next_safe_action": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
+    "vertical_acceptance": "NOT_ACCEPTED",
+    "release_decision": "DEFER",
+    "production": "NOT_EXECUTED"
   }
 }

@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 Dashboard 로그아웃 A16(Main, 2026-10-14T10:24:48+09:00): W17 713ce91e59f76b0680a6020b54a1216ddcc77315, Event1~2409원문보존→2410WI/2411epoch125worker/2412write ACTIVE24시간분리token·허용4/제품UI1. 기존API/CSRF/권한/DB/Secret0, reload뒤CSRF없음은재인증안내. 단일Primary TDD·Main동일코드write0, 전체R6/U01인수아님.
+
 U-01 WSL 개발 H15: B15 `d8e37d1ed0c29bea8f06af2a5a341bf9dd70a7a4` private/actualG05seq2407PASS 뒤2408write→2409worker REVOKED·active0, Event1~2407 객체원문보존·추가제품변경0. 정식HTTPS/읽기테스트SSO/3card 실제동작과일회성정리0은C15+M15범위. 전체U01 NOT_ACCEPTED/DEFER·나머지미구현·외부/Cloud/Production 미확인유지. 첫결과보고예정.
 
 U-01 WSL 개발 B15: C15 source87aa6c5e / M15 `e8da726a949a2a47ee2423bfc1045319a921572b` actualmanifest·원본50table 기존컬럼data보존/0020·정식HTTPS3770 ready·실제재인증popup/정확readerpair/DB·BLOCKED·ACTIVE 카드/API일치·reload·otherpair403/CSRF403/APIlogout/old정보제거 PASS. 실제Run없어0건, 가짜Task/Run0. Chromium151/선택범위body13 비밀CLEAR·sameorigin/SecureHttpOnly, 전체R6/background모든body·UIlogout버튼·외부SSO/Provider/전체U01 미검증·NOT_ACCEPTED/DEFER. 일회성자원0, 정식3서비스/망·privatebackup·oldrollback정지보존. epoch124ACTIVE·H15회수예정.
@@ -285,17 +287,58 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2409,
-  "last_event_id": "evt_u01_2409_wsl_development_worker_lease_revoked",
+  "event_sequence": 2412,
+  "last_event_id": "evt_u01_2412_dashboard_logout_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-dashboard-logout",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T10:24:48+09:00",
+    "expires_at": "2026-10-15T10:24:48+09:00",
+    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 125,
+    "lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-logout",
+    "subject_ref": "U-01/DASHBOARD-LOGOUT",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T10:24:48+09:00",
+    "expires_at": "2026-10-15T10:24:48+09:00",
+    "baseline_git_commit": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "dispatch_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 125,
+    "lease_id": "write-lease-u01-dashboard-logout-27fa0f978fa44f9bb55d0f3db1daf417",
+    "worker_lease_id": "worker-lease-u01-dashboard-logout-32b043dd35dc4f04a99b044c7f9598ef",
+    "fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+    "write_fencing_token": "u01-dashboard-logout-write-fence-epoch-125-27fa0f978fa44f9bb55d0f3db1daf417",
+    "execution_fencing_token": "u01-dashboard-logout-execution-fence-epoch-125-32b043dd35dc4f04a99b044c7f9598ef",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_WSL_DEVELOPMENT_RUNTIME_RECORDED_U01_PENDING",
-  "repository_head": "e8da726a949a2a47ee2423bfc1045319a921572b",
+  "next_safe_action": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
+  "repository_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
