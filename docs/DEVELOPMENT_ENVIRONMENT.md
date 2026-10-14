@@ -1,5 +1,11 @@
 # 2026-10-14 현재 정식 WSL 개발 화면
 
+- 로그아웃 UI 갱신: source `d31d1225c297758fe702cedad6760c6748074d92`(C16), 실제 manifest Git `a1b4ccc85e90d0b1b0432bfd3174f993b82c4723`(M16), blob SHA256 `0EFC53C926CB10FC714490FFCD14CB12B2ED82F6762D29EE8E4295DFCDEEC61B`. 새 Web ID `c9f677874802c61a2d5fc74de1f17b9e11cd3489f04d37badb25fffe33b1bac4`, image `sha256:6be9d1a751bfa45a40f7e47c44402eb061923304be75c35f44fb002e199cfb4e`. API/issuer는 아래 C15 image·기존 ID 그대로이며 DB/권한·인증 자료·망 설정은 변경하지 않았다. 정식 repo는 M16 detached/clean이다.
+- 사용: 재인증 후 화면 `로그아웃` 버튼으로 현재 세션을 종료한다. 실제 버튼→cookie 삭제·session false·API401·이전 카드 제거·재로그인/조회까지 Chromium151에서 확인했다. 새로고침하면 메모리 CSRF가 없어 `로그아웃하려면 재인증이 필요합니다`를 안내한다. 이때 재인증 후 로그아웃을 다시 누른다. CSRF를 storage에 보관하거나 무CSRF 요청하지 않는다. 기존 API 로그아웃만 확인했던 아래 기록은 과거 사실로 보존한다.
+- 갱신·복구: 기존 Web5d6a1f82는 `anvil-u01-logout-rollback-20261014`로 정지·네트워크 연결 해제 상태로 보존했다. Compose가 동일 service label의 renamed old를 삭제하지 않도록 새 Web은 승인 Git profile의 동일 UID/RO/cap/IP/port/bind/env 키값 제약을 exact-ID Docker create로 반영했다. 기존 compose.env의 image를 그대로 사용해 전체 `compose up`하지 않는다. 후속 갱신은 최신 manifest/source·현재 Web ID를 대조해 Web만 갱신하며, rollback은 새 Web만 정확 회수→old 이름/기존2망 IP/alias 연결→start 순서다. API/issuer/DB 재생성·무조건 restore는 하지 않는다.
+- 보호 proof: 기존 runtime root0700의 `logout-web-rollback.private.json`(첫 실패 보존), `logout-web-rollback-attempt02.private.json`, `logout-web-config-comparison-attempt02.json`, `logout-deployment-proof.json`, `logout-browser-proof.json`은 root0600. 환경변수 원문 순서는 달라도 중복 없는 전체 키·값은 exact이며 bind/entrypoint/cmd와 보호파일 hash·기존 서비스 ID/망 설정을 비교했다. 첫 중단과 복귀는 최종 성공으로 소급하지 않는다.
+- 검증 범위: UI logout·reload CSRF 안내·재인증·client403 실패 안내·선택 body25 비밀보호·same-origin/SecureHttpOnly, 실제 서버 API401/종료·strictCA ready0020. client403은 브라우저 반례로 구분한다. 일회성 browser/configcheck 잔여0과 유지 서비스3/정지 rollback2를 독립 확인했다. 전체 R6·외부 SSO·전체 U01/Oracle/Production 미검증·과거 미진은 유지한다.
+
 - 단계: 로컬·WSL-server 기능 구현. Oracle/ysna/Production/외부 공개는 미실행이며 승인 범위 밖이다. 아래 과거 환경 기록은 당시 사실로 보존한다.
 - 화면: `https://172.27.253.53:3770/`. 개발 전용 self-signed 인증서(30일)이므로 브라우저 최초 경고는 이 개발 주소에 한해 확인한다. Windows 전역 CA 설치는 하지 않았다.
 - 사용: 화면 아래 `재인증` 버튼으로 개발 테스트 SSO 팝업을 연다. 팝업 허용 후 조합에서 `Anvil WSL 개발 / WSL 개발 환경`을 선택한다. 토큰은900초 개발 한정이며 재인증으로 다시 시작한다. 실제 외부 SSO·사람 인증·운영 계정이 아니다.

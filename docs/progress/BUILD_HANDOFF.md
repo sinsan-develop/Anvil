@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 로그아웃 B16: M16 a1b4ccc85e90d0b1b0432bfd3174f993b82c4723의 실제 Web만 반영, API/issuer/DB/Secret/cert/network 보존. UI종료/정보제거/401/재로그인과 reload CSRF재인증 제약을 결과에 구분한다. 전체R6/U01 NOT_ACCEPTED·ReleaseDEFER, epoch125 ACTIVE·H16회수예정.
+
 U-01 Dashboard 로그아웃 A16(Main, 2026-10-14T10:24:48+09:00): W17 713ce91e59f76b0680a6020b54a1216ddcc77315, Event1~2409원문보존→2410WI/2411epoch125worker/2412write ACTIVE24시간분리token·허용4/제품UI1. 기존API/CSRF/권한/DB/Secret0, reload뒤CSRF없음은재인증안내. 단일Primary TDD·Main동일코드write0, 전체R6/U01인수아님.
 
 U-01 WSL 개발 H15: B15 `d8e37d1ed0c29bea8f06af2a5a341bf9dd70a7a4` private/actualG05seq2407PASS 뒤2408write→2409worker REVOKED·active0, Event1~2407 객체원문보존·추가제품변경0. 정식HTTPS/읽기테스트SSO/3card 실제동작과일회성정리0은C15+M15범위. 전체U01 NOT_ACCEPTED/DEFER·나머지미구현·외부/Cloud/Production 미확인유지. 첫결과보고예정.
@@ -337,8 +339,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_LOGOUT_IMPLEMENTATION_ONLY",
-  "repository_head": "713ce91e59f76b0680a6020b54a1216ddcc77315",
+  "next_safe_action": "U01_DASHBOARD_LOGOUT_CLOSE_READY",
+  "repository_head": "a1b4ccc85e90d0b1b0432bfd3174f993b82c4723",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
