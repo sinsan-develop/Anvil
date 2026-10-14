@@ -1,5 +1,7 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- UI 로그아웃 첫 결과보고(Main, 2026-10-14): H16 44bdf98633b1329b9818f8f0de96f2824d3b1bd8는B16직접자식 exact5·독립C0/I0/M0·private동일/clean actualG05seq2414PASS·epoch125 회수/active0다. 신규 `docs/04_test_reports/U-01_DASHBOARD_LOGOUT_RESULT.md`+본STATUS 정확2를첫보고로기록한다. 실제UIlogout/cookie/sessionfalse/API401/정보제거/재로그인·reloadCSRF제약·client403구분·선택body25/정리0과최초실패/복구/미검증을분리했다. 정식Web C16/M16·API/issuer/DB/Secret/cert/망설정보존, 전체U01NOT_ACCEPTED/ReleaseDEFER/남은기능누락유지. 본게시본G05는다음확인하며Oracle/Production/PR/main/예약0.
+
 - H16 임대 회수(Main, 2026-10-14): B16 a2e56473는 M16 직접자식 exact5·독립C0/I0/M0·private동일/clean actualG05seq2412PASS였다. Event1~2412 객체원문을보존해2413write→2414worker 순서로epoch125를REVOKED·activeworker/write/agentnull로회수한다. H16은Event/progress/HANDOFF/digest/WORK_STATUS 정확5이며독립검토/게시본실제G05는다음확인한다. 제품추가write0·정식서비스3/보호자료/정지rollback2는유지, UIlogout핵심완료와reload재인증제약/전체U01NOT_ACCEPTED·ReleaseDEFER/나머지기능누락을분리한다. 첫보고는H16직접자식신규보고+STATUS정확2다.
 
 - B16 종료 준비(Main): 최종 독립 조회 exit0에서 서비스3 running/strictCA ready0020·기존API/issuer exactID·보호파일hash·망 설정불변·rollback정지·일회성browser/configcheck 부재를 확인했다. M16직접자식 progress/HANDOFF/digest/WORK_STATUS/DEVELOPMENT_ENVIRONMENT 정확5 후보, Event2412불변·C16/M16와manifesthash결박·active_projection_checkpoint=null. 내부 projection검사=[]/diffcheck0, 독립검토/private 게시 실제G05는다음확인한다. epoch125는H16에서2413write→2414worker회수예정이다. UI logout핵심완료와reload재인증제약/전체R6미실행/전체U01NOT_ACCEPTED·DEFER를분리한다.
