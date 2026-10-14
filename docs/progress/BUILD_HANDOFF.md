@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 실제 승인 요청 A21 R2(Main, 2026-10-14T14:35:51+09:00): W22 367a9905351afc6c9d2d29ab5bc25c0892d0f630, Event1~2432원문보존→2433oldwrite/2434oldworker회수→2435R2WI/2436epoch130worker/2437write ACTIVE24시간분리token·16source/제품8. 기존14source hash인수·같은Primary단독·Main코드쓰기0, asgi0021준비상태연결1경로추가만. 사람범위/권위/검사기준불변·현재구현/WSL미완료.
+
 U-01 실제 승인 요청 A20(Main, 2026-10-14T14:08:24+09:00): W21 f53bfc6edc13871bf713ee2978ef99f2b09bda15, rawEvent1~2429보존→2430WI/2431epoch129worker/2432write ACTIVE24시간분리token·허용15source. 사람승인된Task별내부Main권위·계획확정→요청원장/감사→인가된조회/UI만구현. reader확대/사람결정/Run실행/자동재개/외부credential0. 단일PrimaryTDD/Main같은source쓰기0·새route전RED는PASS아님.
 
 U-01 승인 대기 Run H19: B19 5af570a8017e48b82ece4b6e7c7460d97c107f03 뒤2428write→2429worker REVOKED·active0, frozenEvent1~2427원문보존·제품추가0. 승인대기Run핵심동작과전체U01미인수/Health미연결을구분하고첫보고예정.
@@ -311,8 +313,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2432,
-  "last_event_id": "evt_u01_2432_approval_request_ledger_write_lease_issued",
+  "event_sequence": 2437,
+  "last_event_id": "evt_u01_2437_approval_request_ledger_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
   "active_agent": "developer-primary-u01-approval-request-ledger",
@@ -320,10 +322,10 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
     "actor_id": "developer-primary-u01-approval-request-ledger",
     "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER",
     "status": "ACTIVE",
-    "issued_at": "2026-10-14T14:08:24+09:00",
-    "expires_at": "2026-10-15T14:08:24+09:00",
-    "baseline_git_commit": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
-    "dispatch_head": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+    "issued_at": "2026-10-14T14:35:51+09:00",
+    "expires_at": "2026-10-15T14:35:51+09:00",
+    "baseline_git_commit": "367a9905351afc6c9d2d29ab5bc25c0892d0f630",
+    "dispatch_head": "367a9905351afc6c9d2d29ab5bc25c0892d0f630",
     "path_scope": [
       "scripts/check_project_progress.py",
       "tests/tooling/test_u01_postmerge_control_projection.py",
@@ -339,21 +341,22 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
       "tests/persistence/test_approval_request_repository.py",
       "tests/api/test_u01_approval_request_reader.py",
       "tests/integration/test_u01_approval_request_pg15.py",
-      "tests/api/test_oidc_process.py"
+      "tests/api/test_oidc_process.py",
+      "apps/api/anvil_api/asgi.py"
     ],
-    "lease_epoch": 129,
-    "lease_id": "worker-lease-u01-approval-request-ledger-840253838f7e4069bf69897c688b22aa",
-    "fencing_token": "u01-approval-request-ledger-execution-fence-epoch-129-840253838f7e4069bf69897c688b22aa",
-    "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-129-840253838f7e4069bf69897c688b22aa"
+    "lease_epoch": 130,
+    "lease_id": "worker-lease-u01-approval-request-ledger-bf704866810247dc904f05ab3a5ff927",
+    "fencing_token": "u01-approval-request-ledger-execution-fence-epoch-130-bf704866810247dc904f05ab3a5ff927",
+    "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-130-bf704866810247dc904f05ab3a5ff927"
   },
   "write_lease": {
     "actor_id": "developer-primary-u01-approval-request-ledger",
     "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER",
     "status": "ACTIVE",
-    "issued_at": "2026-10-14T14:08:24+09:00",
-    "expires_at": "2026-10-15T14:08:24+09:00",
-    "baseline_git_commit": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
-    "dispatch_head": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+    "issued_at": "2026-10-14T14:35:51+09:00",
+    "expires_at": "2026-10-15T14:35:51+09:00",
+    "baseline_git_commit": "367a9905351afc6c9d2d29ab5bc25c0892d0f630",
+    "dispatch_head": "367a9905351afc6c9d2d29ab5bc25c0892d0f630",
     "path_scope": [
       "scripts/check_project_progress.py",
       "tests/tooling/test_u01_postmerge_control_projection.py",
@@ -369,14 +372,15 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
       "tests/persistence/test_approval_request_repository.py",
       "tests/api/test_u01_approval_request_reader.py",
       "tests/integration/test_u01_approval_request_pg15.py",
-      "tests/api/test_oidc_process.py"
+      "tests/api/test_oidc_process.py",
+      "apps/api/anvil_api/asgi.py"
     ],
-    "write_epoch": 129,
-    "lease_id": "write-lease-u01-approval-request-ledger-d9f2a2c8ca834ea4b0f6742f879b0346",
-    "worker_lease_id": "worker-lease-u01-approval-request-ledger-840253838f7e4069bf69897c688b22aa",
-    "fencing_token": "u01-approval-request-ledger-write-fence-epoch-129-d9f2a2c8ca834ea4b0f6742f879b0346",
-    "write_fencing_token": "u01-approval-request-ledger-write-fence-epoch-129-d9f2a2c8ca834ea4b0f6742f879b0346",
-    "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-129-840253838f7e4069bf69897c688b22aa",
+    "write_epoch": 130,
+    "lease_id": "write-lease-u01-approval-request-ledger-50eded912e434ee0a2f0b9bb0b0e660d",
+    "worker_lease_id": "worker-lease-u01-approval-request-ledger-bf704866810247dc904f05ab3a5ff927",
+    "fencing_token": "u01-approval-request-ledger-write-fence-epoch-130-50eded912e434ee0a2f0b9bb0b0e660d",
+    "write_fencing_token": "u01-approval-request-ledger-write-fence-epoch-130-50eded912e434ee0a2f0b9bb0b0e660d",
+    "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-130-bf704866810247dc904f05ab3a5ff927",
     "product_write_scope": [
       "migrations/versions/0021_approval_requests.py",
       "packages/planning/approval_requests.py",
@@ -384,13 +388,14 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
       "packages/persistence/operations_approval_request_read.py",
       "packages/api/scoped_dashboard.py",
       "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx"
+      "apps/web/src/console/App.tsx",
+      "apps/api/anvil_api/asgi.py"
     ]
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
   "next_safe_action": "U01_APPROVAL_REQUEST_LEDGER_IMPLEMENTATION_ONLY",
-  "repository_head": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+  "repository_head": "367a9905351afc6c9d2d29ab5bc25c0892d0f630",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
