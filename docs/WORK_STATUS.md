@@ -1,5 +1,9 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- 로컬 시각검토 자원 정리(Main): 등록된 `.codex_qa/scoped-queue-e132-evidence`의정확PNG3·각보고hash·root비링크/실경로·하위비링크를대조한뒤파일3과빈root만비재귀삭제,부재0확인했다. 보고hash/Git/빌드image/기존자료는보존,일회성복사본은원격QA와같이재생성가능한자료다. 남은active제품writer/QA자원0,서비스전환은승인답변전미실행이다.
+
+- 선택Queue격리 첫 부분결과(Main): H22 `46e3613b22754279b8d962c5289287a0f52fc095`는B22직접자식정확5·독립C0/I0/M0·privatecleanactualG05seq2449PASS·active0. `U-01_SCOPED_QUEUE_QUARANTINE_RESULT.md`에코드9/로컬/실제격리저장→API→화면/PNG/빌드/정리/최초실패·미검증을분리기록했다. 이후순수readonly서버조회exit0로현재APIa773c348…/Webccaf91d5…/issuere2667673… fullID/image/running불변·전환proof4/신규전환scope0를확인해거부된전환실행0을독립확인했다. 정식GitM22와실행C20을혼동하지않으며신산님화면의새기능은미반영·부분구현, 전체U01NOT_ACCEPTED/DEFER/DC019불변. report+STATUS+DC정확3을H22직접자식으로보존하고최신G05뒤명시서비스전환승인을기다린다. 임대회수후제품쓰기/전환재시도/새요청생성/예약변경0.
+
 - H22 회수 후보(Main): B22 `2162a30665a08c935ffd52c37e58e5c78f913f2f` 실제privateG05seq2447PASS뒤 Event1~2447 원문을보존해2448write→2449worker REVOKED, activeagent/worker/write null·제품쓰기0로회수했다. 같은B22를active_projection_checkpoint로결박하고snapshot/digest/HANDOFF정합내부closed[]/detached[]/diff0. 정식전환거부후우회/재시도0·추가개발write0. 첫patchemitter가10초뒤에도생성중이라초기호출은미적용임을확인했고완료patch만정상적용·중복Event추가0. 독립검토/privateG05/첫보고가남아있으며전체U01미수락을보존한다.
 - 다음 미구현 원본 읽기대조(Main): GateResult/release_gates는in-memory/hostevidence 계약이며정확pair의완전한현재Gate영속원장/조회가확인되지않았다. 기존ScopedBudgetSource는budget_ledgers+reservations의동일repeatable-read실제원본이지만 `new_action_allowed`는'예상비용초과'와동의어가아니고현재제공값만으로설계의비용초과인원수/발생을임의생성하지않는다. baselinehash가계획/Run계보에존재하는것과현재충돌모집단은별개다. Queue격리관측을전체Health로바꾸지않고미연결Health/Gate/cost/baseline/기간사건·필수ID는미구현/부분으로유지한다. 새원장/공개계약/권한의의미변경없이이어갈정확원본·소비계약을구분하는단계이며이번읽기로새기능완료·추가code승인을주장하지않는다. 없는보조models파일을추정조회한오류는실제파일목록으로정정·자료변경0.
 
