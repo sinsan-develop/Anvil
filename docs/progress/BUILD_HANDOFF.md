@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 Queue 목록 B17: M17 2ab227a74cee181c607eaa115a4fb124288293dd의 Git source Web만 반영, 실제Queue source/API/화면·시험용비영목록/만료반례를분리. API/issuer/DB/권한/Secret/cert/망설정보존, 전체U01NOT_ACCEPTED·ReleaseDEFER/남은기능미진유지. epoch126ACTIVE·H17회수예정.
+
 U-01 Queue 목록 A17(Main, 2026-10-14T11:13:34+09:00): W18 dcbe1580cbaa2edce320a28722638a4d80296f6b, rawEvent1~2414보존→2415WI/2416epoch126worker/2417write ACTIVE24시간분리token·허용4/제품App1. 기존 API의실제작업ID/상태목록만표시, Health/DB/권한/Secret/기존기능변경0. 단일Primary TDD·Main코드write0, 새route전예상RED/전체U01인수아님.
 
 U-01 로그아웃 H16: B16 a2e5647340665cefbb071ce2a84a4b23e64ae2c9 뒤2413write→2414worker REVOKED·active0, frozenEvent1~2412원문보존·제품추가0. 개발핵심동작과전체U01미인수를구분하며첫보고예정.
@@ -343,8 +345,8 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
   },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_IMPLEMENTATION_ONLY",
-  "repository_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+  "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE_READY",
+  "repository_head": "2ab227a74cee181c607eaa115a4fb124288293dd",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
