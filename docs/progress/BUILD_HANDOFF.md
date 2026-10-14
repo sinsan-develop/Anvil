@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 실제 승인 요청 A20(Main, 2026-10-14T14:08:24+09:00): W21 f53bfc6edc13871bf713ee2978ef99f2b09bda15, rawEvent1~2429보존→2430WI/2431epoch129worker/2432write ACTIVE24시간분리token·허용15source. 사람승인된Task별내부Main권위·계획확정→요청원장/감사→인가된조회/UI만구현. reader확대/사람결정/Run실행/자동재개/외부credential0. 단일PrimaryTDD/Main같은source쓰기0·새route전RED는PASS아님.
+
 U-01 승인 대기 Run H19: B19 5af570a8017e48b82ece4b6e7c7460d97c107f03 뒤2428write→2429worker REVOKED·active0, frozenEvent1~2427원문보존·제품추가0. 승인대기Run핵심동작과전체U01미인수/Health미연결을구분하고첫보고예정.
 
 U-01 승인 대기 Run B19: M19 639992c9e01de2bb151c639e91089c2c1aa31818의 Git source Web만 반영, 실제Run source/API/승인대기Run표시·시험용비영목록/만료반례를분리. API/issuer/DB/권한/Secret/cert/망설정보존, 전체U01NOT_ACCEPTED·ReleaseDEFER/남은기능미진유지. epoch128ACTIVE·H19회수예정.
@@ -309,17 +311,86 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2429,
-  "last_event_id": "evt_u01_2429_dashboard_waiting_approval_run_worker_lease_revoked",
+  "event_sequence": 2432,
+  "last_event_id": "evt_u01_2432_approval_request_ledger_write_lease_issued",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": "developer-primary-u01-approval-request-ledger",
+  "worker_lease": {
+    "actor_id": "developer-primary-u01-approval-request-ledger",
+    "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T14:08:24+09:00",
+    "expires_at": "2026-10-15T14:08:24+09:00",
+    "baseline_git_commit": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+    "dispatch_head": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "migrations/versions/0021_approval_requests.py",
+      "packages/planning/approval_requests.py",
+      "packages/persistence/approval_request_repository.py",
+      "packages/persistence/operations_approval_request_read.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/planning/test_approval_request_service.py",
+      "tests/persistence/test_approval_request_repository.py",
+      "tests/api/test_u01_approval_request_reader.py",
+      "tests/integration/test_u01_approval_request_pg15.py",
+      "tests/api/test_oidc_process.py"
+    ],
+    "lease_epoch": 129,
+    "lease_id": "worker-lease-u01-approval-request-ledger-840253838f7e4069bf69897c688b22aa",
+    "fencing_token": "u01-approval-request-ledger-execution-fence-epoch-129-840253838f7e4069bf69897c688b22aa",
+    "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-129-840253838f7e4069bf69897c688b22aa"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-u01-approval-request-ledger",
+    "subject_ref": "U-01/APPROVAL-REQUEST-LEDGER",
+    "status": "ACTIVE",
+    "issued_at": "2026-10-14T14:08:24+09:00",
+    "expires_at": "2026-10-15T14:08:24+09:00",
+    "baseline_git_commit": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+    "dispatch_head": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "migrations/versions/0021_approval_requests.py",
+      "packages/planning/approval_requests.py",
+      "packages/persistence/approval_request_repository.py",
+      "packages/persistence/operations_approval_request_read.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs",
+      "tests/planning/test_approval_request_service.py",
+      "tests/persistence/test_approval_request_repository.py",
+      "tests/api/test_u01_approval_request_reader.py",
+      "tests/integration/test_u01_approval_request_pg15.py",
+      "tests/api/test_oidc_process.py"
+    ],
+    "write_epoch": 129,
+    "lease_id": "write-lease-u01-approval-request-ledger-d9f2a2c8ca834ea4b0f6742f879b0346",
+    "worker_lease_id": "worker-lease-u01-approval-request-ledger-840253838f7e4069bf69897c688b22aa",
+    "fencing_token": "u01-approval-request-ledger-write-fence-epoch-129-d9f2a2c8ca834ea4b0f6742f879b0346",
+    "write_fencing_token": "u01-approval-request-ledger-write-fence-epoch-129-d9f2a2c8ca834ea4b0f6742f879b0346",
+    "execution_fencing_token": "u01-approval-request-ledger-execution-fence-epoch-129-840253838f7e4069bf69897c688b22aa",
+    "product_write_scope": [
+      "migrations/versions/0021_approval_requests.py",
+      "packages/planning/approval_requests.py",
+      "packages/persistence/approval_request_repository.py",
+      "packages/persistence/operations_approval_request_read.py",
+      "packages/api/scoped_dashboard.py",
+      "apps/api/anvil_api/oidc_process.py",
+      "apps/web/src/console/App.tsx"
+    ]
+  },
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_DASHBOARD_WAITING_APPROVAL_RUN_RECORDED_U01_PENDING",
-  "repository_head": "639992c9e01de2bb151c639e91089c2c1aa31818",
+  "next_safe_action": "U01_APPROVAL_REQUEST_LEDGER_IMPLEMENTATION_ONLY",
+  "repository_head": "f53bfc6edc13871bf713ee2978ef99f2b09bda15",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"
 }
