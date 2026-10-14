@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-u01-dashboard-queue-items-b17-seq2417",
-  "event_sequence": 2417,
-  "updated_at": "2026-10-14T11:34:27+09:00",
-  "last_event_id": "evt_u01_2417_dashboard_queue_items_write_lease_issued",
+  "snapshot_id": "snapshot-u01-dashboard-queue-items-h17-seq2419",
+  "event_sequence": 2419,
+  "updated_at": "2026-10-14T11:37:15+09:00",
+  "last_event_id": "evt_u01_2419_dashboard_queue_items_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -216,7 +216,7 @@
     "PHASE_U_GATE",
     "F-19A"
   ],
-  "active_agent": "developer-primary-u01-dashboard-queue-items",
+  "active_agent": null,
   "completed_f19a_integration_whitespace_gate_write_lease": {
     "lease_id": "write-lease-f19a-integration-whitespace-gate-bea73da9cb1a449f9fd134ce3231099a",
     "worker_lease_id": "worker-lease-f19a-integration-whitespace-gate-b24a7ec56b8c4613b464537dacf3419a",
@@ -387,30 +387,7 @@
     "write_epoch": 98,
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-dashboard-queue-items",
-    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T11:13:34+09:00",
-    "expires_at": "2026-10-15T11:13:34+09:00",
-    "baseline_git_commit": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
-    "dispatch_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "write_epoch": 126,
-    "lease_id": "write-lease-u01-dashboard-queue-items-f4f799c38aa14af5901d13b5825a8f75",
-    "worker_lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
-    "fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
-    "write_fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
-    "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
-    "product_write_scope": [
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "write_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_write_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -1563,25 +1540,7 @@
     ],
     "revoked_at": "2026-10-08T15:38:23+00:00"
   },
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-dashboard-queue-items",
-    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T11:13:34+09:00",
-    "expires_at": "2026-10-15T11:13:34+09:00",
-    "baseline_git_commit": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
-    "dispatch_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
-    "path_scope": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py",
-      "apps/web/src/console/App.tsx",
-      "apps/web/tests/f15-console.test.mjs"
-    ],
-    "lease_epoch": 126,
-    "lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
-    "fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
-    "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0"
-  },
+  "worker_lease": null,
   "completed_u01_task4_r6_pair_only_init_script_recovery_worker_lease": {
     "actor_id": "developer-primary-u01-task4-r6-pair-only-init-script-recovery",
     "subject_ref": "U-01/TASK4-R6-PAIR-ONLY-INIT-SCRIPT-RECOVERY",
@@ -2630,7 +2589,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE_READY",
+  "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_RECORDED_U01_PENDING",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001",
     "path": "docs/approvals/APPROVAL-20260925-LOCAL-WSL-OPERATIONS-SCOPE-001.md",
@@ -2745,9 +2704,9 @@
     "local_wsl_qa_head": "4543875bbc82545f6f0f25344273c7c47521f8bc",
     "upstream": "development/codex/u01-dashboard-r2",
     "remote_head": "2ab227a74cee181c607eaa115a4fb124288293dd",
-    "projection_mode": "U01_DASHBOARD_QUEUE_ITEMS_ACTIVE",
+    "projection_mode": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED",
     "validated_base_commit": "abeab9f4e71387dcd6fed97b7061d6f50a73bbce",
-    "head_relation": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE_READY",
+    "head_relation": "U01_DASHBOARD_QUEUE_ITEMS_RECORDED_U01_PENDING",
     "exact_allowed_paths": [
       "docs/04_test_reports/F-18_R43B2_WSL_RUNTIME_REPORT.md",
       "docs/04_test_reports/F-18_R43D_WSL_RUNTIME_REPORT.md",
@@ -3183,7 +3142,7 @@
     "product_write_scope": [
       "apps/web/src/console/App.tsx"
     ],
-    "worktree_status": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE_READY",
+    "worktree_status": "U01_DASHBOARD_QUEUE_ITEMS_RECORDED_U01_PENDING",
     "commit_status": "PENDING",
     "push_status": "PENDING",
     "control_qa_head": "0b8f76d28db8a3256e1a4ddc262506df009b85d9"
@@ -3349,8 +3308,8 @@
     "path": "docs/work_orders/U-01_DASHBOARD_QUEUE_ITEMS_WORK_INSTRUCTION.md",
     "sha256": "6F0C1A69BF6189C36832EAD6CDB575A74699081DE714A09BA6D2FEDD9BC92BF6",
     "revision": 1,
-    "result_status": "U01_DASHBOARD_QUEUE_ITEMS_ACTIVE",
-    "package_status": "U01_DASHBOARD_QUEUE_ITEMS_ACTIVE",
+    "result_status": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED",
+    "package_status": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED",
     "approval_ref": "docs/approvals/APPROVAL-20261009-U01-SCOPED-DASHBOARD-CONTRACT-001.md",
     "approval_classification": "MAIN_RECONFIRMED_NON_SEMANTIC"
   },
@@ -3566,12 +3525,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "BD9CC6C8EA4E6B8DB1158BF827AEDAE5C627FE200AF96ECF254A40F8B3D1A076"
+      "sha256": "AD93361882AE4A451CA6CD7E7C52C07F4506DE4F30582F38E6EC8936343A474C"
     }
   },
   "next_work_package": {
     "package_id": "U-01",
-    "status": "U01_DASHBOARD_QUEUE_ITEMS_ACTIVE"
+    "status": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED"
   },
   "next_successor_work_package": {
     "package_id": "U-02",
@@ -3963,8 +3922,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "73084B21094BA962D8808AF97E3817450ED9E445626DAFBF5A2094BFEC692179",
-  "runtime_next_action": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE_READY",
+  "snapshot_hash": "A2405E50990E15B72DAC89A1696C6946FE22AE90971BF3908FB6361C920BD1A4",
+  "runtime_next_action": "U01_DASHBOARD_QUEUE_ITEMS_RECORDED_U01_PENDING",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -30929,7 +30888,7 @@
     "product_write_scope": [
       "apps/web/src/console/App.tsx"
     ],
-    "status": "U01_DASHBOARD_QUEUE_ITEMS_ACTIVE",
+    "status": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED",
     "package_id": "U-01",
     "branch": "codex/u01-dashboard-r2",
     "upstream": "development/codex/u01-dashboard-r2",
@@ -30938,15 +30897,60 @@
     "a17_docs_checkpoint": "fce0b98851b4603ef465a8896d4e570be3bc94c2",
     "control_checkpoint": "17c17e59a016ef007fddc0e71fdcaeebc8251977",
     "manifest_checkpoint": "2ab227a74cee181c607eaa115a4fb124288293dd",
-    "active_projection_checkpoint": null,
+    "active_projection_checkpoint": "cc87f21e1be0958493e4a65b0990b93b60f66eca",
     "actor_id": "developer-primary-u01-dashboard-queue-items",
     "worker_lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
     "write_lease_id": "write-lease-u01-dashboard-queue-items-f4f799c38aa14af5901d13b5825a8f75",
-    "event_sequence": 2417,
-    "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE_READY",
+    "event_sequence": 2419,
+    "next_safe_action": "U01_DASHBOARD_QUEUE_ITEMS_RECORDED_U01_PENDING",
     "vertical_acceptance": "NOT_ACCEPTED",
     "release_decision": "DEFER",
     "production": "NOT_EXECUTED",
     "manifest_sha256": "3E08DB4AFEE40F3C6D0355F1E1477C542639DB2E6229934D97C0F802E4D615C9"
+  },
+  "completed_u01_dashboard_queue_items_write_lease": {
+    "actor_id": "developer-primary-u01-dashboard-queue-items",
+    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T11:13:34+09:00",
+    "expires_at": "2026-10-15T11:13:34+09:00",
+    "baseline_git_commit": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "dispatch_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "write_epoch": 126,
+    "lease_id": "write-lease-u01-dashboard-queue-items-f4f799c38aa14af5901d13b5825a8f75",
+    "worker_lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
+    "fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
+    "write_fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
+    "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
+    "product_write_scope": [
+      "apps/web/src/console/App.tsx"
+    ],
+    "revoked_at": "2026-10-14T11:37:15+09:00"
+  },
+  "completed_u01_dashboard_queue_items_worker_lease": {
+    "actor_id": "developer-primary-u01-dashboard-queue-items",
+    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
+    "status": "REVOKED",
+    "issued_at": "2026-10-14T11:13:34+09:00",
+    "expires_at": "2026-10-15T11:13:34+09:00",
+    "baseline_git_commit": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "dispatch_head": "dcbe1580cbaa2edce320a28722638a4d80296f6b",
+    "path_scope": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_u01_postmerge_control_projection.py",
+      "apps/web/src/console/App.tsx",
+      "apps/web/tests/f15-console.test.mjs"
+    ],
+    "lease_epoch": 126,
+    "lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
+    "fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
+    "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
+    "revoked_at": "2026-10-14T11:37:15+09:00"
   }
 }

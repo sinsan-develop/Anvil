@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2417,
+  "last_sequence": 2419,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -108480,7 +108480,49 @@
         "apps/web/src/console/App.tsx"
       ]
     }
+  },
+  {
+    "sequence": 2418,
+    "event_id": "evt_u01_2418_dashboard_queue_items_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
+    "occurred_at": "2026-10-14T11:37:15+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "9E4026B4E9F6665E00562235FF0474DFC293D6E362C942C3A70F0A5E15E377B3",
+    "details": {
+      "lease_id": "write-lease-u01-dashboard-queue-items-f4f799c38aa14af5901d13b5825a8f75",
+      "write_fencing_token": "u01-dashboard-queue-items-write-fence-epoch-126-f4f799c38aa14af5901d13b5825a8f75",
+      "reason": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED"
+    }
+  },
+  {
+    "sequence": 2419,
+    "event_id": "evt_u01_2419_dashboard_queue_items_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_DASHBOARD_QUEUE_ITEMS_CLOSE",
+    "subject_ref": "U-01/DASHBOARD-QUEUE-ITEMS",
+    "occurred_at": "2026-10-14T11:37:15+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "73EFEF72A4FC919580981E77C3474AF9A6B5231A323B21F1B5C9B39C89655E40",
+    "details": {
+      "lease_id": "worker-lease-u01-dashboard-queue-items-b124f4d4c8184f9ead624d9b1251eca0",
+      "execution_fencing_token": "u01-dashboard-queue-items-execution-fence-epoch-126-b124f4d4c8184f9ead624d9b1251eca0",
+      "reason": "U01_DASHBOARD_QUEUE_ITEMS_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2417_dashboard_queue_items_write_lease_issued"
+  "last_event_id": "evt_u01_2419_dashboard_queue_items_worker_lease_revoked"
 }
