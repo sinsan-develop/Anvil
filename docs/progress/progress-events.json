@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 2447,
+  "last_sequence": 2449,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -109632,7 +109632,49 @@
         "apps/web/src/console/App.tsx"
       ]
     }
+  },
+  {
+    "sequence": 2448,
+    "event_id": "evt_u01_2448_scoped_queue_quarantine_write_lease_revoked",
+    "event_type": "WRITE_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_QUEUE_QUARANTINE_CLOSE",
+    "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE",
+    "occurred_at": "2026-10-14T20:50:06+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "35E15C31D46A20E2B665D4F5F721CB4B7BDC8E502755B25371A0D0B940139A10",
+    "details": {
+      "lease_id": "write-lease-u01-scoped-queue-quarantine-31d9350e3c394d3ca0215c99b6b15bf6",
+      "write_fencing_token": "u01-scoped-queue-quarantine-write-fence-epoch-132-31d9350e3c394d3ca0215c99b6b15bf6",
+      "reason": "U01_SCOPED_QUEUE_QUARANTINE_CLOSED"
+    }
+  },
+  {
+    "sequence": 2449,
+    "event_id": "evt_u01_2449_scoped_queue_quarantine_worker_lease_revoked",
+    "event_type": "WORKER_LEASE_REVOKED",
+    "actor": "main-agent-eoul",
+    "actor_id": "main-agent-eoul",
+    "actor_type": "AGENT",
+    "project_id": "anvil",
+    "work_package_id": "U-01",
+    "run_id": null,
+    "step_id": "U01_SCOPED_QUEUE_QUARANTINE_CLOSE",
+    "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE",
+    "occurred_at": "2026-10-14T20:50:06+09:00",
+    "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+    "previous_event_sha256": "114BC2AC4061D9D34CE63A7EFD59E285F892FFB8BEBEB4A5CD31D54536145064",
+    "details": {
+      "lease_id": "worker-lease-u01-scoped-queue-quarantine-1e2bfa4bb4d04c44b30a732b1347c6ee",
+      "execution_fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee",
+      "reason": "U01_SCOPED_QUEUE_QUARANTINE_CLOSED"
+    }
   }
   ],
-  "last_event_id": "evt_u01_2447_scoped_queue_quarantine_write_lease_issued"
+  "last_event_id": "evt_u01_2449_scoped_queue_quarantine_worker_lease_revoked"
 }

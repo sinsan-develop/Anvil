@@ -1,5 +1,7 @@
 # U-01 승인된 scoped Dashboard successor handoff
 
+U-01 선택Queue격리 H22: B22 2162a30665a08c935ffd52c37e58e5c78f913f2f 뒤2448write→2449workerREVOKED/active0, Event1~2447원문보존·제품추가0. 격리실측/빌드검증과정식화면미반영차단을분리, 전체U01미수락/DEFER·신규승인답변전전환재시도0·첫보고예정.
+
 U-01 선택Queue격리 B22: M22 f3ccab1a8cb5f0422279acb2034a0d80d68ed193/C22의격리PG 정상저장1→인가API/Chromium LATE/기간/만료소거/철회와empty검증·PNG3·host비밀감사·QA독립잔여0를보존한다. 정식APIWeb image교체는실행안전심사명시승인부재로차단/미실행이며현재서비스C20·정식Git상태는별도실측, 전체U01NOT_ACCEPTED/DEFER다. DB0021/권한/Secret/issuer/망불변·epoch132/H22회수예정.
 
 U-01 선택 Queue 격리 A23(Main, 2026-10-14T19:53:43+09:00): W24 0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398/직전ca76 private동일·active0, Event1~2444원문보존→2445WI/2446epoch132worker/2447write ACTIVE24h분리token·허용9제품3. 기존완전원본의선택범위격리이상만연결·0건HEALTHY/전체Health수락/새공개API/DB/권한변경0. 단일PrimaryTDD/Main같은code쓰기0·새successor전RED는PASS아님.
@@ -327,69 +329,16 @@ Task 3 post-close fixture epoch81 통제 checkpoint(Main, 2026-10-07): exact2 `a
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 2447,
-  "last_event_id": "evt_u01_2447_scoped_queue_quarantine_write_lease_issued",
+  "event_sequence": 2449,
+  "last_event_id": "evt_u01_2449_scoped_queue_quarantine_worker_lease_revoked",
   "status": "ACTIVE",
   "current_work_package": "U-01",
-  "active_agent": "developer-primary-u01-scoped-queue-quarantine",
-  "worker_lease": {
-    "actor_id": "developer-primary-u01-scoped-queue-quarantine",
-    "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T19:53:43+09:00",
-    "expires_at": "2026-10-15T19:53:43+09:00",
-    "baseline_git_commit": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
-    "dispatch_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
-    "path_scope": [
-      "packages/api/scoped_dashboard.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "tests/api/test_u01_scoped_dashboard_reader.py",
-      "tests/api/test_u01_scoped_dashboard_api.py",
-      "tests/api/test_oidc_process.py",
-      "apps/web/tests/f15-console.test.mjs",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "lease_epoch": 132,
-    "lease_id": "worker-lease-u01-scoped-queue-quarantine-1e2bfa4bb4d04c44b30a732b1347c6ee",
-    "fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee",
-    "execution_fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-u01-scoped-queue-quarantine",
-    "subject_ref": "U-01/SCOPED-QUEUE-QUARANTINE",
-    "status": "ACTIVE",
-    "issued_at": "2026-10-14T19:53:43+09:00",
-    "expires_at": "2026-10-15T19:53:43+09:00",
-    "baseline_git_commit": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
-    "dispatch_head": "0118f5fa5d5b1ebc8cc923b8dbb0d6ee8fa3d398",
-    "path_scope": [
-      "packages/api/scoped_dashboard.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx",
-      "tests/api/test_u01_scoped_dashboard_reader.py",
-      "tests/api/test_u01_scoped_dashboard_api.py",
-      "tests/api/test_oidc_process.py",
-      "apps/web/tests/f15-console.test.mjs",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_u01_postmerge_control_projection.py"
-    ],
-    "write_epoch": 132,
-    "lease_id": "write-lease-u01-scoped-queue-quarantine-31d9350e3c394d3ca0215c99b6b15bf6",
-    "worker_lease_id": "worker-lease-u01-scoped-queue-quarantine-1e2bfa4bb4d04c44b30a732b1347c6ee",
-    "fencing_token": "u01-scoped-queue-quarantine-write-fence-epoch-132-31d9350e3c394d3ca0215c99b6b15bf6",
-    "write_fencing_token": "u01-scoped-queue-quarantine-write-fence-epoch-132-31d9350e3c394d3ca0215c99b6b15bf6",
-    "execution_fencing_token": "u01-scoped-queue-quarantine-execution-fence-epoch-132-1e2bfa4bb4d04c44b30a732b1347c6ee",
-    "product_write_scope": [
-      "packages/api/scoped_dashboard.py",
-      "apps/api/anvil_api/oidc_process.py",
-      "apps/web/src/console/App.tsx"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "incident_event_id": "evt_f20_1764_defect_recorded",
   "incident_blocking": false,
-  "next_safe_action": "U01_SCOPED_QUEUE_QUARANTINE_CLOSE_READY",
+  "next_safe_action": "U01_SCOPED_QUEUE_QUARANTINE_RECORDED_U01_PENDING",
   "repository_head": "f3ccab1a8cb5f0422279acb2034a0d80d68ed193",
   "repository_upstream": "development/codex/u01-dashboard-r2",
   "reporting_decision": "AUTO_CONTINUE"

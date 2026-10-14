@@ -1,5 +1,8 @@
 # F-20/U-01 작업현황 / 2026-10-04
 
+- H22 회수 후보(Main): B22 `2162a30665a08c935ffd52c37e58e5c78f913f2f` 실제privateG05seq2447PASS뒤 Event1~2447 원문을보존해2448write→2449worker REVOKED, activeagent/worker/write null·제품쓰기0로회수했다. 같은B22를active_projection_checkpoint로결박하고snapshot/digest/HANDOFF정합내부closed[]/detached[]/diff0. 정식전환거부후우회/재시도0·추가개발write0. 첫patchemitter가10초뒤에도생성중이라초기호출은미적용임을확인했고완료patch만정상적용·중복Event추가0. 독립검토/privateG05/첫보고가남아있으며전체U01미수락을보존한다.
+- 다음 미구현 원본 읽기대조(Main): GateResult/release_gates는in-memory/hostevidence 계약이며정확pair의완전한현재Gate영속원장/조회가확인되지않았다. 기존ScopedBudgetSource는budget_ledgers+reservations의동일repeatable-read실제원본이지만 `new_action_allowed`는'예상비용초과'와동의어가아니고현재제공값만으로설계의비용초과인원수/발생을임의생성하지않는다. baselinehash가계획/Run계보에존재하는것과현재충돌모집단은별개다. Queue격리관측을전체Health로바꾸지않고미연결Health/Gate/cost/baseline/기간사건·필수ID는미구현/부분으로유지한다. 새원장/공개계약/권한의의미변경없이이어갈정확원본·소비계약을구분하는단계이며이번읽기로새기능완료·추가code승인을주장하지않는다. 없는보조models파일을추정조회한오류는실제파일목록으로정정·자료변경0.
+
 - B22 게시 호출 오류(Main): 첫명령의detached digest 경로에서 `handoff`를빠뜨려git add가pathspec오류로거부됐다. staged0/commit0/push0이며실제diff목록으로정확경로를확인해수정한다. 제품/원장/ACL변경0·같은근본오류1회·통과소급0.
 
 - B22 후보(Main): 정식WSL Git의M21clean→M22 `f3ccab1a8cb5f0422279acb2034a0d80d68ed193` exact detached/clean을실제fetch/checkout결과exit0로확인했다. DB/서비스변경0·공개APIWeb는C20그대로다. B22는M22직접자식progress/HANDOFF/digest/STATUS/DEV_ENV정확5·Event2447불변·active_projection_checkpoint=null·epoch132ACTIVE로격리실측/빌드검증과정식전환BLOCKED를분리해결박한다. 첫Main검증호출의load_bundle에str을넘긴AttributeError는쓰기없는호출오류이며Path인자로정정해확인·checker기준완화0. 독립검토/privateactualG05뒤H22에서2448write→2449worker회수·첫보고로미반영경계를보존한다.
