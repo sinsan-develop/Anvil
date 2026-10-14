@@ -143,3 +143,9 @@
 - 판정: C5 `f7e6aa4e5c6c0edaf7d8eda4b48598f0883b7207`의 새 빈 WSL-server 격리 PG15/OIDC/HTTPS/Chromium Git exact-SHA R6 opt-in은 **exit1, 1 failed/2 warnings**다. `NETWORK_RESPONSE_FACTS`의 index4는 안전 marker 기준 `PAIR_LIST_API`, `capture_stage=BODY`, `status=404`, `reason=TIMEOUT`, `requestfinished=PENDING`, `response_finished=PENDING`, `page=BODY_DONE`이다. 요청 종류와 정체 단계만 확인했으며 404와 미완료의 원인·제품 영향은 미확정이다.
 - 근거·영향: C5 local/private 및 WSL G-05 seq2362 PASS, B5 `d5f7cfc7742d390fb61941e2562e2aa3dc79f2f7` G-05 seq2362 PASS, H5 `2818112ababaa47ac120d273d1cd58a969326e70` G-05 seq2364 PASS는 각 SHA의 비제품 통제 판정이다. 전용 QA 경로5·컨테이너3·loopback5545 잔여0은 정리 스크립트 최종 exit1과 구분하여 독립 읽기 전용 조회로 확인했다. 전체 R6 FAIL, E-NET/E-API/E-AUD·U-01 필수 ID 인수 미충족이다. DC-U01-018·017의 역사 실패는 보존한다.
 - 조치·재개 조건: 기존 단일 브랜치의 별도 최소 WI/유효 dual lease에서 PAIR_LIST_API의 404 발생 경로와 본문 완료 지연을 비밀 없이 재현·원인 분리한다. 404를 무조건 허용하거나 timeout을 늘려 숨기거나 body 감사·인증·권한·same-origin 계약을 건너뛰지 않는다. 안전한 보정은 RED→GREEN·독립 검토·local/private G-05 이후 새 빈 사전 등록 WSL-server Git exact-SHA 격리 R6로 재검증하고 정확히 정리한다. 이 기록은 미진 추적일 뿐 R6 PASS·gate 면제·PR/main 근거가 아니다. U-01 `NOT_ACCEPTED`, Release `DEFER`, Production `NOT_EXECUTED`, U-02 `BLOCKED`; 새 branch·ysna 제외다.
+
+### DC-U01-020 — 승인 대기 객체 원본 미구현 / 2026-10-14
+
+- 판정·근거: 현재 `packages/api/scoped_dashboard.py`는 approvalPending을 NO_VERIFIED_CURRENT_SOURCE/UNAVAILABLE로반환한다. `0003_planning_approvals`·ApprovalRecord의영속approval_records는승인완료/무효/회수/대체기록이며project/environment·대기요청모집단이없다. ScopeApprovalRequest는in-memory계획출력으로실제조합별승인대기원장이아니다.
+- 영향: 실제승인요청수·대상조회는미구현이며UNAVAILABLE유지. Run WAITING_APPROVAL상태는승인객체수와동일하지않다. 새승인요청원장/인가·공개응답·지속데이터계약이필요하면별도승인판단대상이지현재UI보완으로묵시승인하지않는다.
+- 조치: 기존승인된current.run.items만소비하는별도`승인 대기 Run`카드를최소WI/duallease·단일Primary TDD로구현한다. genericapprovalPending를대체하지않고실제없는승인객체를0/PASS로표시하지않는다. 실DB비영미확인과전체R6/DC-U01-019·전체U01NOT_ACCEPTED/DEFER는보존한다.
