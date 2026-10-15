@@ -4,6 +4,12 @@ $dataRoot = 'D:\Project\Anvil\.av3-data'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $runtime = Join-Path $dataRoot 'runtime'
 if (!(Test-Path -LiteralPath (Join-Path $dataRoot 'db-app.json')) -or (Test-Path -LiteralPath $runtime)) { throw 'DEVELOPMENT_RUNTIME_NOT_NEW_OR_DB_MISSING' }
+$ca = [Security.Cryptography.X509Certificates.X509Certificate2]::new((Join-Path $dataRoot 'dev-tls/ca.cer'))
+$caReceipt = Get-Content -LiteralPath (Join-Path $dataRoot 'dev-tls/receipt.json') -Raw | ConvertFrom-Json
+if ($ca.Thumbprint -ne $caReceipt.thumbprint -or $ca.NotAfter.ToUniversalTime() -le [DateTime]::UtcNow) { throw 'DEVELOPMENT_CA_INVALID' }
+$store = [Security.Cryptography.X509Certificates.X509Store]::new('Root','CurrentUser')
+$store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
+try { if ($store.Certificates.Find([Security.Cryptography.X509Certificates.X509FindType]::FindByThumbprint,$ca.Thumbprint,$false).Count -ne 1) { throw 'DEVELOPMENT_CA_NOT_TRUSTED' } } finally { $store.Close() }
 $listeners = [Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
 if (@($listeners | Where-Object Port -eq 3830).Count) { throw 'DEVELOPMENT_PORT_ALREADY_USED' }
 $hasDbListener = @($listeners | Where-Object Port -eq 5546).Count -gt 0
@@ -38,10 +44,9 @@ try {
   $healthy = $false
   for ($attempt = 0; $attempt -lt 20; $attempt++) {
     if (($null -ne $tunnel -and $tunnel.HasExited) -or $server.HasExited) { throw 'OWNED_DEVELOPMENT_PROCESS_EXITED' }
-    try {
-      $health = Invoke-RestMethod -Uri https://localhost:3830/api/v1/health -TimeoutSec 2
-      if ($health.status -eq 'ok' -and $health.scope -eq 'process') { $healthy = $true; break }
-    } catch {}
+    $probe = & $node (Join-Path $PSScriptRoot 'check-development-https.ts')
+    if ($LASTEXITCODE -eq 0) { $healthy = $true; break }
+    if ($LASTEXITCODE -ne 2) { throw 'DEVELOPMENT_TLS_OR_HEALTH_VALIDATION_FAILED' }
     Start-Sleep -Milliseconds 250
   }
   if (!$healthy) { throw 'DEVELOPMENT_HTTPS_NOT_READY' }

@@ -109,6 +109,8 @@
 
 ### 2026-10-16 P03 실행 범위 직접 승인·P02 종료 대조
 
+- HTTPS 준비 도구 실패 보존: 새 Node process는 READY를 출력했으나 PowerShell Invoke-RestMethod가 시간 초과여서 finally에서 정확 소유 process를 종료·3830잔여0/receipt없음을 확인했다. 그 뒤 브라우저1건은 연결 거절로 실패(준비 process가 이미 종료됨)이며 TLS/제품 실패로 소급 확정하지 않는다. 같은 cmdlet 반복은 중단했다.
+- 독립 전경 진단에서는 승인 CA 검증의 Node127/localhost와 Windows 기본 신뢰 HttpClient127이 모두 HTTPS200, 실제 Edge155.0.4283.45 브라우저1 PASS·Network3/off-origin0/pageerror0/TLS무시false였다. PowerShell cmdlet의 같은 localhost 읽기만 TaskCanceledException을 재현했다. 내부 직접 원인은 미확정이며 보안 기준을 낮추지 않고 CurrentUserRoot exact등록/기한 확인+동일 승인 CA의 Node2초 probe로 준비 확인을 결박한다. 인증서/설정·timeout 연장0이다.
 - 로컬 runtime 첫 시도는5546 점유로 process 생성 전 안전 중단1. 읽기 조회에서 `wslrelay` PID26052/정확 Microsoft WSL 실행 파일을 확인했고 종료/포트 변경0이다. 신규 app credential로 실제127.0.0.1:5546의 DB/role/서버·fixture와 저장/조회/DDL거절·probe정리0을 독립 확인해1 PASS. 기존 자동 relay를 쓰는 명시 선택을 준비해 불필요한 SSH tunnel을 만들지 않으며 공유 relay는 절대 회수 대상이 아니다. 보호 app 참조는 이미 생성됐으므로 복사를 반복하지 않는다.
 - 브라우저 일회성 자원 사전 등록: `D:\tmp\anvil-v3-stage-a\P03-browser`는 Playwright 임시 profile·검수 결과·실패 캡처만, Main/P03 소유·검수/근거 회수 후 정확 정리·잔여 확인. 기존 Windows Edge 사용·기존 사용자 profile/보안 설정/인증서 변경0, TLS 무시 OFF·Network same-origin/실제 JS 오류를 확인한다.
 - WSL 실제 준비 검증: exact `892ea1e1f3e65c408910ffa3ae5f8e9f807fb361`에서 PG15.18 신규 자원 생성·instance/ID/image/loopback5546 확인. container `e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba`, volume/network는 등록 이름. 보호 경로0700/app설정0600·daon 소유. lifecycle OFF 설치102·typecheck/Web14·단위13·생성 타입 일치 PASS. 0000 checksum `6ebbb9c580d54a50e0431806ee982244cbe134613354f8c3a8cd4f547e30178d` 적용/멱등 재적용·fixture7, 실제 비관리자 DB 저장→다른 연결 재조회·DDL거절·probe정리0 1건 PASS. 실제 제품 사용자/프로젝트 생성0·Agent 호출0. WSL Node24.21/npm11.19이며 로컬 버전과 다름을 보존한다.

@@ -19,6 +19,10 @@ P03 준비 문서다. 명령은 `codex/av3-stage-a`의 저장소 root에서 실�
 | WSL `ANVIL_DB_CONFIG=/home/daon/.local/share/anvil-v3-development/app.json npm run test:db` | 새 DB의 비관리자 저장→별도 연결 재조회→정확 QA행 삭제·DDL 거절. 연결/권한 미확인도 실패/미검증 표시 |
 | Windows `scripts/prepare-dev-https.ps1 -DataRoot D:\Project\Anvil\.av3-data` | 이번 승인 대상은 이미 생성한 CA1개. 기존 경로에서 재실행 불가·새 CA 임의 추가 금지. Root 신규 지문은 DEVELOPMENT_ENVIRONMENT 참조 |
 | `npm start` | ANVIL_TLS_KEY·ANVIL_TLS_CERT·ANVIL_DB_CONFIG 보호 경로 참조 필요. 공통3830·로컬127.0.0.1. 키/DSN/계정 원문 출력0. `/api/v1/health`는 process-only |
+| Windows `node scripts/link-development-db.ts` | 최초 새 보호 app 참조1개만. 이미 존재하면 복사를 반복하지 않음 |
+| Windows `scripts/start-development.ps1` | 새3830·필요시 소유 SSH5546. 현재 WSL relay는 실제 app DB 검증 후 `-UseVerifiedWslRelay`로 명시 사용하며 공유 relay 종료0. Root exact등록·기한/같은 승인 CA의 엄격 TLS2초 probe·health를 확인하고 실패 때 새 소유 process만 정리 |
+| `node scripts/check-development-https.ts` | 승인 CA·`rejectUnauthorized:true`·2초 한정, process-health200만. 새 cert/추가 Root·TLS무시·시간연장 없음 |
+| P03 `npm exec --no -- playwright test tests/browser/P03/environment.spec.ts` | 기존 Edge의 별도 profile에서 실제 JS·same-origin·TLS무시false. 준비 화면 검수이지 제품 기능 완료 아님 |
 | 화면 확인 | `https://localhost:3830/`는 P03 준비 화면만. 로그인·프로젝트·방법론·Agent가 완료된 것으로 해석하지 않음 |
 
 설치 출처: 공식 npm registry의 exact version·tarball integrity를 lock에 고정했다. Fastify5.12.7·pg8.23.1·React/DOM19.3.1·Ajv8.20.0, TypeScript7.0.2·Vite8.3.4·json-schema-to-typescript16.0.0·Playwright1.64.1. 공식 근거 [Node TS](https://nodejs.org/docs/latest-v24.x/api/typescript.html), [Fastify LTS](https://fastify.dev/docs/latest/Reference/LTS/), [Vite 시작](https://vite.dev/guide/), [React 버전](https://react.dev/versions). 실제 호환성은 실행 증거로 따로 확인한다. Windows의 기존 Edge를 별도 시험 프로필로 사용하고 기존 사용자 프로필/보안 설정은 바꾸지 않는다. 브라우저 binary의 자동 다운로드/전역 설치는 아직 하지 않았다.
