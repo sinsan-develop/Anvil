@@ -109,6 +109,7 @@
 
 ### 2026-10-16 UI02·FN01 프로젝트 초안 방법론 선택 연결 착수
 
+- actual RED exact `ece504dfc2c3db8c2627e81de22f0bac479ec45b`: 선택 미연결412≠201·skip0·고유 QA 정리. 앞선48e3 시험은 정리 코드가 authorization_receipts의 존재하지 않는 draft_id를 사용해42703으로 본래 실패를 가렸다. schema의 scope_kind/scope_id로 보정했고, 읽기 확인한 고유 QA `8ac11367-573b-4afd-b282-ca2df776a677` 한 명/소유 방법론·양식을 별도 정확 정리·사용자 잔여0 확인했다. 실제 사용자/공유 서비스 영향0. 정리 실패를 제품 실패/합격으로 바꾸지 않았다.
 - 직전 exact `28783de90e220eb993dc6a94f9b6b1792c9b22ff` WSL 방법론 추가 음성1 PASS/444ms/skip0: 위조·이전 버전·최신 REWORK·FORM 검토를 METHODOLOGY에 잘못 사용하는 시도를 거절하고 고유 QA 정리했다. 기존 SQL 재적용0.
 - 다음은 승인된 계획 UI02/FN01/02의 기존 input_json 저장에 방법론 선택을 연결한다. CONFIRMED_REFERENCE는 허가된 exact versionRef, NEW_PROJECT_DRAFT는 name/purpose/graph/sourceRefs/reviewRefs의 미완성 프로젝트 전용 초안이다. 자기 공통 확정 또는 승인된 기본본을 읽으며 타인/PROJECT 원본·잘못된 hash/위조 검토는 거절한다. 여기서 프로젝트 전용 확정·최종 생성·Agent 실행 권한을 만들지 않는다. 새 SQL/DB 권한 변경은 이번 연결에 필요하지 않다.
 - QA 사전등록: 기존 qa-method-review-UUID의 소유 초안2개/명령·감사만 추가하고 정확 owner/ID를 finally 정리한다. 실제 계정·Secret·서비스/port 변경0. 현재 미연결412 RED를 먼저 확인한다. 이 단계의 형식은 기존 §15.1 안의 VersionRef 명칭을 versionRef로 고정하는 상세화다.

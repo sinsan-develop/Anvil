@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { AuthenticatedIdentity } from '../access/repository.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
+import { selectDraftMethodology } from './draft-methodology.ts';
 
 export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY' | 'EXISTING'; methodologySelection?: unknown; artifactRefs?: unknown[]; sourceDeclaration?: unknown }
 export interface DraftCreate extends DraftInput { schemaVersion: 1; commandId: string; clientId: string; targetId: null; expectedVersion: 0 }
@@ -18,11 +19,11 @@ export class ProjectsRepository {
   #access: AccessRepository;
   #cursor: ProjectListCodec;
   constructor(access: AccessRepository) { this.#access = access; this.#cursor = new ProjectListCodec(value => access.signProjectCursor(value)); }
-  #draftInput(input: DraftInput) {
+  async #draftInput(db: PoolClient, owner: string, input: DraftInput) {
     if (input.sourceMode !== 'EMPTY' || input.sourceDeclaration !== undefined) throw new AuthFailure('SOURCE_DECLARATION_NOT_READY', 412);
-    if (input.methodologySelection !== undefined && input.methodologySelection !== null) throw new AuthFailure('METHODOLOGY_CONNECTION_PENDING', 412);
     if (input.artifactRefs !== undefined && (!Array.isArray(input.artifactRefs) || input.artifactRefs.length)) throw new AuthFailure('ARTIFACT_STORAGE_NOT_READY', 412);
-    return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode, methodologySelection: null, artifactRefs: [] };
+    const methodologySelection = await selectDraftMethodology(db, owner, input.methodologySelection);
+    return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode, methodologySelection, artifactRefs: [] };
   }
   #draftView(row: { id: string; version: string; step: number; input_json: unknown }) { return { draftId: row.id, version: integer(row.version), step: row.step, input: row.input_json }; }
   async #draftCommand(db: PoolClient, identity: AuthenticatedIdentity, draftId: string, operation: string, request: DraftCreate | DraftSave, result: unknown) {
@@ -44,7 +45,7 @@ export class ProjectsRepository {
         if (previous.request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
         return previous.result_ref;
       }
-      const input = this.#draftInput(request), id = randomUUID();
+      const input = await this.#draftInput(db, identity.actorId, request), id = randomUUID();
       const row = (await db.query('INSERT INTO anvil.project_drafts(id,owner_user_id,client_id,step,input_json) VALUES($1,$2,$3,1,$4) RETURNING *', [id, identity.actorId, identity.clientId, JSON.stringify(input)])).rows[0];
       return this.#draftCommand(db, identity, id, 'createProjectDraft', request, this.#draftView(row));
     });
@@ -68,7 +69,7 @@ export class ProjectsRepository {
       }
       if (row.consumed_project_id) throw new AuthFailure('DRAFT_ALREADY_CONSUMED', 412);
       if (integer(row.version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
-      const input = this.#draftInput(request.input);
+      const input = await this.#draftInput(db, identity.actorId, request.input);
       const updated = (await db.query('UPDATE anvil.project_drafts SET version=version+1,step=$2,input_json=$3,updated_at=now() WHERE id=$1 RETURNING *', [draftId, request.step, JSON.stringify(input)])).rows[0];
       return this.#draftCommand(db, identity, draftId, 'saveProjectDraft', request, this.#draftView(updated));
     });
