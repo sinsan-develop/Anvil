@@ -3,17 +3,17 @@ import { isVersionRef } from '../../../../contracts/references.ts';
 import type { FormDefinition } from './forms.ts';
 
 interface Issue { code: string; location: string; severity: 'ERROR'; message: string }
-const texts = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === 'string');
+const texts = (value: unknown): value is string[] => Array.isArray(value) && value.length <= 200 && value.every(item => typeof item === 'string');
 function object(value: unknown, keys: string[]): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 function shape(input: unknown): input is FormDefinition {
   if (!object(input, ['formCode', 'name', 'purpose', 'scope', 'authorRole', 'reviewerRole', 'confirmerRole', 'requiredInputs', 'items', 'authoringStandardRef'])
     || ['formCode', 'name', 'purpose', 'authorRole', 'reviewerRole', 'confirmerRole'].some(key => typeof input[key] !== 'string') || input.scope !== 'USER_COMMON'
-    || !texts(input.requiredInputs) || !isVersionRef(input.authoringStandardRef) || !Array.isArray(input.items)) return false;
+    || !texts(input.requiredInputs) || !isVersionRef(input.authoringStandardRef) || !Array.isArray(input.items) || input.items.length > 200) return false;
   return input.items.every(item => object(item, ['itemId', 'title', 'required', 'valueType', 'repeated', 'fields', 'authoringRules', 'reviewCriteria'])
     && typeof item.itemId === 'string' && typeof item.title === 'string' && typeof item.required === 'boolean' && ['TEXT', 'RECORDS'].includes(String(item.valueType))
-    && typeof item.repeated === 'boolean' && texts(item.authoringRules) && texts(item.reviewCriteria) && Array.isArray(item.fields)
+    && typeof item.repeated === 'boolean' && texts(item.authoringRules) && texts(item.reviewCriteria) && Array.isArray(item.fields) && item.fields.length <= 200
     && item.fields.every(field => object(field, ['fieldId', 'title', 'required', 'valueType']) && typeof field.fieldId === 'string' && typeof field.title === 'string' && typeof field.required === 'boolean' && field.valueType === 'TEXT'));
 }
 export function validateCustomForm(input: unknown): { issues: Issue[]; validForConfirmation: boolean } {

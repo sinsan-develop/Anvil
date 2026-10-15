@@ -4,13 +4,14 @@ import { FormsCatalog } from '../methodologies/FormsCatalog.tsx';
 import { getMethod, listMethods, type MethodPage, type MethodVersion } from './api.ts';
 import { CommonMethodEditor } from './CommonMethodEditor.tsx';
 import type { MethodBuffer } from './common-api.ts';
+import type { FormBuffer } from '../methodologies/form-editor-state.ts';
 
 const approvalLabels: Record<string, string> = {
   USER_REQUIREMENTS_CONFIRMATION: '사용자 요구사항 확인', USER_ITERATION_SCOPE_CONFIRMATION: '사용자 반복 범위 확인',
   USER_DESIGN_AND_SCREEN_CONFIRMATION: '사용자 설계·화면 확인', USER_WORK_AND_TEST_PLAN_CONFIRMATION: '사용자 작업·시험계획 확인',
   USER_INCREMENT_ACCEPTANCE: '사용자 증분 수용', USER_NEXT_ITERATION_OR_COMPLETION: '사용자 다음 반복·전체 완료 판단', USER_PROJECT_COMPLETION: '사용자 전체 완료 확인',
 };
-export function MethodologyEditorPage({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void }) {
+export function MethodologyEditorPage({ client, session, buffer, onChange, formBuffer, onFormChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; formBuffer: FormBuffer; onFormChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void }) {
   const [page, setPage] = useState<MethodPage | null>(null), [selectedId, setSelectedId] = useState(''), [nodeId, setNodeId] = useState('');
   const [version, setVersion] = useState<MethodVersion | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [listRetry, setListRetry] = useState(0), [retry, setRetry] = useState(0);
@@ -57,6 +58,6 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, onAut
       <CommonMethodEditor client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={() => setListRetry(value => value + 1)} />
       <p className="meta">공통본 복사·목적/좌표·완료조건의 개정 저장을 연결했습니다. 문서 연결/분기·합류의 전체 편집·내용검토·확정·프로젝트 적용은 아직 연결 전입니다. 화면 조회로 Agent를 시작하지 않습니다.</p>
     </section>
-    <FormsCatalog client={client} onAuthenticationLost={onAuthenticationLost} />
+    <FormsCatalog client={client} session={session} buffer={formBuffer} onChange={onFormChange} onAuthenticationLost={onAuthenticationLost} />
   </>;
 }

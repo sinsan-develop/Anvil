@@ -48,6 +48,12 @@ test('공식 양식은 보존하고 본인 공통 양식의 복사·개정·정�
     const bad = structuredClone(definition); bad.authoringStandardRef.contentHash = '0'.repeat(64);
     assert.equal((await send({ ...save, expectedVersion: 2, commandId: randomUUID(), payload: { definition: bad, reason: '변조 기준 QA' } })).statusCode, 422);
     assert.equal((await pool.query("SELECT count(*)::int AS count FROM anvil.commands WHERE scope_kind='USER_COMMON' AND scope_id=$1", [users[0]])).rows[0].count, 2);
+    const partial = { ...definition, name: '작성 중 양식', purpose: '', requiredInputs: [], items: [] };
+    const partialSave = await send({ ...save, commandId: randomUUID(), targetId: null, expectedVersion: 0, payload: { definition: partial, reason: '미완성 초안 보존' } });
+    assert.equal(partialSave.statusCode, 200, partialSave.body); assert.equal(partialSave.json().data.validation.validForConfirmation, false);
+    const restoredPartial = await get(partialSave.json().targetId, 1);
+    assert.equal(restoredPartial.statusCode, 200); assert.deepEqual(restoredPartial.json().definition.items, []);
+    assert.equal((await pool.query("SELECT count(*)::int AS count FROM anvil.commands WHERE scope_kind='USER_COMMON' AND scope_id=$1", [users[0]])).rows[0].count, 3);
     await assert.rejects(pool.query('UPDATE anvil.form_definitions SET head_version=1 WHERE id=$1', [source.ref.id]), (error: unknown) => (error as { code: string }).code === '42501');
   } finally {
     const db = await admin.connect();

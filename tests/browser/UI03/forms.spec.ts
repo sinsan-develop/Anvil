@@ -49,3 +49,31 @@ test('양식 화면 계약: 재조회 실패는 오래된 자료 표시, 다른 
   await expect(page.getByRole('heading', { name: 'AF02 설계서', exact: true })).toHaveCount(0);
   await expect(page.getByRole('alert')).toBeVisible();
 });
+
+test('양식 편집 계약: 공식본을 공통본으로 복사해 항목 제목을 개정·저장·재조회한다', async ({ page }) => {
+  const target = 'a6f30000-0000-4000-8000-000000000099';
+  let definition = { ...structuredClone(catalog.forms[0]!.definition), name: '내 문서 양식', scope: 'USER_COMMON' }, version = 1;
+  const writes: any[] = [];
+  await page.route(/\/api\/v1\/forms\/[^/]+\/versions\/[12]$/, route => {
+    const common = route.request().url().includes(target);
+    const form = catalog.forms.find(item => route.request().url().includes(item.ref.id)) ?? catalog.forms[0]!;
+    return route.fulfill({ json: { ref: common ? { id: target, version, contentHash: 'b'.repeat(64) } : form.ref, definition: common ? definition : form.definition,
+      authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } } });
+  });
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); writes.push(body);
+    if (body.operation === 'saveFormDraft') { definition = body.payload.definition; version = 2; }
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: catalog.forms[0]!.ref.id, operationId: 'a6f30000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version,
+      data: { ref: { id: target, version, contentHash: 'b'.repeat(64) }, status: 'DRAFT' }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await expect(page.getByRole('button', { name: '내 공통 양식으로 복사', exact: true })).toBeVisible({ timeout: 1000 });
+  await page.getByLabel('양식 복사본 이름', { exact: true }).fill('내 문서 양식');
+  await page.getByRole('button', { name: '내 공통 양식으로 복사', exact: true }).click();
+  await page.getByLabel('양식 항목 제목', { exact: true }).fill('요구사항 작성 목적');
+  await page.getByLabel('양식 개정 이유', { exact: true }).fill('항목 설명 구체화');
+  await page.getByRole('button', { name: '공통 양식 새 버전 저장', exact: true }).click();
+  await expect(page.getByText('양식 서버 저장·재조회 확인 · 버전 2', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(2); expect(writes[1].operation).toBe('saveFormDraft'); expect(writes[1].expectedVersion).toBe(1);
+  expect(writes[1].payload.definition.items[0].title).toBe('요구사항 작성 목적');
+});

@@ -10,6 +10,7 @@ import { ProjectCreatePage } from './features/project-create/ProjectCreatePage.t
 import { emptyDraft } from './features/project-create/api.ts';
 import { MethodologyEditorPage } from './features/methodology-editor/MethodologyEditorPage.tsx';
 import { emptyMethodBuffer } from './features/methodology-editor/common-api.ts';
+import { emptyFormBuffer } from './features/methodologies/form-editor-state.ts';
 
 const client = new ApiClient();
 interface Session { user: { id: string; displayName: string }; clientId: string; csrfToken: string }
@@ -27,17 +28,18 @@ export function App() {
   const [endingSession, setEndingSession] = useState(false);
   const [draftBuffer, setDraftBuffer] = useState(emptyDraft);
   const [methodBuffer, setMethodBuffer] = useState(emptyMethodBuffer);
+  const [formBuffer, setFormBuffer] = useState(emptyFormBuffer);
   function newProject() {
     if (draftBuffer.pendingCommand) { alert('앞선 저장 결과를 먼저 확인하세요. 입력과 명령을 유지했습니다.'); return false; }
     if (draftBuffer.dirty && !confirm('탭의 미저장 입력을 버리고 새 초안을 시작할까요?')) return false;
     setDraftBuffer(emptyDraft()); return true;
   }
   useEffect(() => {
-    if (!draftBuffer.dirty && !draftBuffer.pendingCommand && !methodBuffer.dirty && !methodBuffer.pending) return;
+    if (!draftBuffer.dirty && !draftBuffer.pendingCommand && !methodBuffer.dirty && !methodBuffer.pending && !formBuffer.dirty && !formBuffer.pending) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     addEventListener('beforeunload', warn);
     return () => removeEventListener('beforeunload', warn);
-  }, [draftBuffer.dirty, draftBuffer.pendingCommand, methodBuffer.dirty, methodBuffer.pending]);
+  }, [draftBuffer.dirty, draftBuffer.pendingCommand, methodBuffer.dirty, methodBuffer.pending, formBuffer.dirty, formBuffer.pending]);
   async function logout() {
     if (!session || endingSession) return;
     setEndingSession(true);
@@ -65,7 +67,7 @@ export function App() {
   }, [retry]);
   return <AppShell route={route} displayName={session?.user.displayName} onLogout={session ? () => { void logout(); } : undefined} endingSession={endingSession}>
     <StatusView loading={loading} error={error} onRetry={() => setRetry(v => v + 1)}>
-      {session && route.screen === 'create' ? <ProjectCreatePage client={client} session={session} buffer={draftBuffer} onChange={setDraftBuffer} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'projects' ? <ProjectsPage client={client} onNewProject={newProject} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'methodologies' && !route.projectId ? <MethodologyEditorPage client={client} session={session} buffer={methodBuffer} onChange={setMethodBuffer} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'settings' ? <AccountSecurity client={client} csrfToken={session.csrfToken} onSession={value => setSession(readSession(value))} onRevoked={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : <section className="status-card"><h2>아직 연결되지 않은 화면</h2><p>공통 탐색을 구현 중입니다. 이 화면의 실제 처리·저장·조회 기능은 아직 연결되지 않았습니다.</p></section>}
+      {session && route.screen === 'create' ? <ProjectCreatePage client={client} session={session} buffer={draftBuffer} onChange={setDraftBuffer} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'projects' ? <ProjectsPage client={client} onNewProject={newProject} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'methodologies' && !route.projectId ? <MethodologyEditorPage client={client} session={session} buffer={methodBuffer} onChange={setMethodBuffer} formBuffer={formBuffer} onFormChange={setFormBuffer} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'settings' ? <AccountSecurity client={client} csrfToken={session.csrfToken} onSession={value => setSession(readSession(value))} onRevoked={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : <section className="status-card"><h2>아직 연결되지 않은 화면</h2><p>공통 탐색을 구현 중입니다. 이 화면의 실제 처리·저장·조회 기능은 아직 연결되지 않았습니다.</p></section>}
     </StatusView>
     {!loading && error?.status === 401 ? <AuthForm client={client} onAuthenticated={value => { setSession(readSession(value)); setError(null); }} /> : null}
   </AppShell>;

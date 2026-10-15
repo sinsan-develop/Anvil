@@ -1,8 +1,10 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getForm, listForms, type FormsPage, type FormVersion } from './forms-api.ts';
+import { CommonFormEditor } from './CommonFormEditor.tsx';
+import type { FormBuffer } from './form-editor-state.ts';
 
-export function FormsCatalog({ client, onAuthenticationLost }: { client: ApiClient; onAuthenticationLost: () => void }) {
+export function FormsCatalog({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: FormBuffer; onChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void }) {
   const selectId = useId();
   const [page, setPage] = useState<FormsPage | null>(null), [selectedId, setSelectedId] = useState('');
   const [detail, setDetail] = useState<FormVersion | null>(null);
@@ -50,6 +52,7 @@ export function FormsCatalog({ client, onAuthenticationLost }: { client: ApiClie
       <details><summary>문서 작성 공통 기준 원문</summary><p className="meta">버전 {detail.authoringStandard.ref.version} · {detail.authoringStandard.ref.contentHash}</p><pre className="document-plain" role="region" aria-label="작성 기준 원문">{detail.authoringStandard.content}</pre></details>
       <p>문서 내용 검수·사용자 확정은 아직 수행하지 않았습니다.</p>
     </article> : null}
-    <p className="meta">양식 조회는 문서 작성·저장·확정이나 Agent 실행이 아닙니다. 방법론 단계 연결·사용자 양식 개정·산출물 편집은 아직 연결 전입니다.</p>
+    <CommonFormEditor client={client} session={session} source={!pending && !error ? detail : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={() => setListRetry(value => value + 1)} />
+    <p className="meta">양식 복사·항목 개정·초안 저장은 문서 작성·내용 검토·확정이나 Agent 실행이 아닙니다. 방법론 단계 연결과 산출물 편집·확정은 아직 연결 전입니다.</p>
   </section>;
 }

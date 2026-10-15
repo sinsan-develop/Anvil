@@ -16,7 +16,7 @@ function validRef(value: unknown): value is VersionRef {
     && Number.isSafeInteger(ref.version) && ref.version > 0 && /^[0-9a-f]{64}$/.test(ref.contentHash);
 }
 function sameRef(first: VersionRef, second: VersionRef) { return validRef(first) && validRef(second) && first.id === second.id && first.version === second.version && first.contentHash === second.contentHash; }
-function texts(value: unknown): value is string[] { return Array.isArray(value) && value.length > 0 && value.length <= 200 && value.every(item => typeof item === 'string' && item.length > 0); }
+function texts(value: unknown, draft = false): value is string[] { return Array.isArray(value) && (draft || value.length > 0) && value.length <= 200 && value.every(item => typeof item === 'string' && (draft || item.length > 0)); }
 export async function listForms(client: ApiClient): Promise<FormsPage> {
   const page = await client.get<FormsPage>('/api/v1/forms');
   if (!page || !Array.isArray(page.items) || page.items.length > 200 || page.hasMore !== false || page.nextCursor !== null || page.baselineVersion !== null || !Number.isFinite(Date.parse(page.observedAt))
@@ -28,11 +28,12 @@ export async function getForm(client: ApiClient, summary: FormSummary): Promise<
   if (!validRef(summary.ref)) throw new ApiError('CLIENT_PATH_INVALID');
   const data = await client.get<FormVersion>(`/api/v1/forms/${summary.ref.id}/versions/${summary.ref.version}`);
   const form = data?.definition;
+  const draft = summary.scope === 'USER_COMMON';
   if (!data || !sameRef(data.ref, summary.ref) || !form || form.name !== summary.name || form.formCode !== summary.formCode || form.scope !== summary.scope
-    || !texts(form.requiredInputs) || typeof form.purpose !== 'string' || !form.purpose || typeof form.authorRole !== 'string' || typeof form.reviewerRole !== 'string' || typeof form.confirmerRole !== 'string'
-    || !Array.isArray(form.items) || !form.items.length || form.items.length > 200 || new Set(form.items.map(item => item?.itemId)).size !== form.items.length
+    || !texts(form.requiredInputs, draft) || typeof form.purpose !== 'string' || !draft && !form.purpose || typeof form.authorRole !== 'string' || typeof form.reviewerRole !== 'string' || typeof form.confirmerRole !== 'string'
+    || !Array.isArray(form.items) || !draft && !form.items.length || form.items.length > 200 || new Set(form.items.map(item => item?.itemId)).size !== form.items.length
     || form.items.some(item => !item || typeof item.itemId !== 'string' || typeof item.title !== 'string' || typeof item.required !== 'boolean' || typeof item.repeated !== 'boolean'
-      || !['TEXT', 'RECORDS'].includes(item.valueType) || !texts(item.authoringRules) || !texts(item.reviewCriteria) || !Array.isArray(item.fields) || item.fields.length > 200
+      || !['TEXT', 'RECORDS'].includes(item.valueType) || !texts(item.authoringRules, draft) || !texts(item.reviewCriteria, draft) || !Array.isArray(item.fields) || item.fields.length > 200
       || item.fields.some(field => !field || typeof field.fieldId !== 'string' || typeof field.title !== 'string' || typeof field.required !== 'boolean' || field.valueType !== 'TEXT'))
     || !data.authoringStandard || !sameRef(form.authoringStandardRef, data.authoringStandard.ref) || typeof data.authoringStandard.content !== 'string' || data.authoringStandard.content.length > 2 * 1024 * 1024
     || data.validation?.formatOnly !== true || data.validation.contentReview !== 'NOT_PERFORMED' || data.validation.userAcceptance !== 'NOT_PERFORMED') throw new ApiError('RESPONSE_INVALID');

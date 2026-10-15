@@ -3,7 +3,7 @@ import type { MethodologyGraph } from '../../../../../contracts/methodologies.ts
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import type { MethodVersion } from './api.ts';
 
-export interface MethodCommand { schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft'; targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown> }
+export interface MethodCommand { schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft'; targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown> }
 export interface MethodBuffer {
   ownerUserId: string | null;
   targetId: string | null; version: number; name: string; purpose: string; reason: string;
