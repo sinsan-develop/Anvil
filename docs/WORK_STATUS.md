@@ -109,6 +109,8 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- 내부 선행 판정: FN01의 초안/프로젝트 명령은 FN11 command·draft 감사 저장을 소비하고 최종 생성은 FN02/03 확정본을 소비한다. DATA_MODEL §6.6/INTERFACES §15.3의 명시 DAG대로 이미 확인한 FN01 인증 기반 뒤 0011 저장 원시기능을 먼저 구현한다. 이는 FN01/FN11을 최종 수용하거나 선행을 삭제하는 변경이 아니며, 각각의 최종 연결 검수는 남긴다. 정확 신규 시험 `tests/integration/FN11/authorization-schema.test.ts`는 WSL Git 후보의 미존재 RED부터 확인한다. 새 schema는 지정 v3 DB/migration 승인 범위만, 적용 전 0000/0001 checksum·역할·현재 사용자0을 대조한다. 기존 migration/데이터/외부 서비스 삭제0. 미커밋 부모 디렉터리 생성 도구 제한1은 기존 자료 변경 없이 정확 새 시험 디렉터리만 준비했다.
+
 - 초대 API 실제 검수: WSL Git exact `3b8e029d539b5be587ff0c1b178641811a3c183e`/clean·typecheck·auth DB/HTTP1 PASS(1.83초). 소유자 재인증 초대→일회 비밀1회→일반 사용자 수락/자동로그인0→새 로그인·일반 사용자 초대403을 확인, 고유 두 QA 계정/초대/세션을 정리했다. 프로젝트 grant 집행과 소유자 초대 작성 UI는 아직 미완료다.
 - 초대 수락 UI00: 화면 부재 RED→등록/복구 비밀 가림·보관 확인/자동로그인0 계약 GREEN. 초대 화면 ‘로그인으로 돌아가기’가 복구로 가는 오류도 실제 RED→분기만 보정 GREEN. 현재 인증 보안 계약4·unit23·타입/Web24모듈 PASS, 실제 새 UI DB 브라우저는 relay 위험으로 미검증이다. fixtures 합격을 실제 사용자 초대 성공으로 보고하지 않는다.
 - 공식 문서 대조: 이전 소유 동기화본 불변인 WORK_STATUS/WORK_PLAN/DEVELOPMENT_ENVIRONMENT와 신규 UI00 RESULT4개만 공식 root로 hash 일치 동기화했다. 공식 FILE_MAP은 현재 Git 이력과 byte 동일본을 찾지 못해 보존했으며 덮어쓰지 않았다. 실제 업무 배정 파일은 게시 후보 FILE_MAP과 대조한다. 이 정본 경로 불일치를 몰래 일괄 복사로 덮지 않는다.

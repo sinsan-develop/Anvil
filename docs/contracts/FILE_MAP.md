@@ -116,6 +116,8 @@ IX01~IX08 각각 `tests/integration/<ID>/journey.test.ts`, `tests/browser/<ID>/j
 
 ## 7. P02 후속 코어 — 승인·계획/추적·원문/맥락
 
+FN01 초안/프로젝트가 소비하는 FN11 저장 기반의 정확 신규 검사 파일은 `tests/integration/FN11/authorization-schema.test.ts`다. 실제 0011 테이블·append 감사 DML 제한을 검수하며 schema 존재만으로 권한/승인 집행이나 전체 FN11 완료로 표시하지 않는다.
+
 INTERFACES §10·DATA_MODEL §7은 다음 기존 소유 모듈을 소비한다. FN04의 작업계획 저장/확정은 traceability 모듈의 `service.ts/repository.ts` 안의 별도 연산이고 범용 프로젝트 관리 subsystem을 새로 만들지 않는다. 추가된 공개 operation 명칭은 기존 요구의 누락 보완이며 실제 API 호환성 변경/배포가 아니다.
 
 | 소유 | 실제 schema·migration 참조 | 실제 구현 뒤 필요한 검수 |
