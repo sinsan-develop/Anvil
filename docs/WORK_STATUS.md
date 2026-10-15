@@ -109,6 +109,8 @@
 
 ### 2026-10-16 FN03 본인 공통 양식 쓰기 착수
 
+- 실제 RED: exact `13fac4f4cebcd5c9d19a56d3872a12ae5a841f18` WSL에서 copyForm 미등록400≠200, 사용자2/양식0 finally 정리·잔여0. 확정/검토·실제 문서 작성은 아직 구현0.
+- Ruling: 방법론/양식에 동일한 USER_COMMON receipt·scope digest·감사를 중복 구현하지 않고 기존 약20행을 access/common-command.ts의 내부 저장 함수로 옮겼다. 공개 범용 dispatch나 권한 엔진은 만들지 않고 기존 인증/client/멱등 검사와 transaction을 재사용하며 명시4연산만 허용한다. 변경으로 영향받는 기존 방법론 실제 시험도 함께 확인한다. 양식 정의/기준·기존 버전과 형식 검사를 성공·사람 확정으로 혼동하지 않는다.
 - Stage B Main 어울, 안전 checkpoint `bf6b0f4611ff25a01ddf36ee9efa3370e2674954`/local-private 동일·tracked clean·main f976ed5e 불변. 공식 양식 복사/개정도 앞선 본인 공통 자료 직접 승인 범위이며 다른 사용자/공식 원본 쓰기는 열지 않는다. 새로운 `0011_user_common_forms` forward migration만 준비하고 이미 적용된 SQL/버전은 보존한다.
 - 사전 등록: 기존 WSL checkout/exact 게시 SHA·전용 개발 DB/보호 app·migrator 참조만 사용. 고유 `qa-common-form-UUID` 합성 사용자2/본인 양식1·명령/감사2를 생성하고 finally 정확 owner/ID로 정리한다. 기존 공식8종/사용자/Secret/계정·컨테이너·port 변경0. Windows relay 접속0. 사용자 양식 검사 모듈 미존재 RED 후 제한 데이터/고유 항목·필드·반복 구조·확정 가능성 검사1 GREEN. 전체 기능 완료는 아니다.
 

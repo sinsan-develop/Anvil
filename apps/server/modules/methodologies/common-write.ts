@@ -5,11 +5,10 @@ import { AuthFailure, AccessRepository } from '../access/repository.ts';
 import { validateMethodologyGraph } from './service.ts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AccessRoutesOptions } from '../access/routes.ts';
+import { persistCommonReceipt, type UserCommonCommand } from '../access/common-command.ts';
+import { writeCommonForm } from '../documents/common-write.ts';
 
-interface CommonCommand {
-  schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft';
-  targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown>;
-}
+type CommonCommand = UserCommonCommand;
 function fields(value: Record<string, unknown>, keys: string[]) {
   if (Object.keys(value).length !== keys.length || !keys.every(key => Object.hasOwn(value, key))) throw new AuthFailure('INPUT_INVALID', 400);
 }
@@ -30,6 +29,7 @@ export class CommonMethodologyWriter {
         if (previous.request_hash !== requestHash) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
         return previous.result_ref;
       }
+      if (request.operation === 'copyForm' || request.operation === 'saveFormDraft') return writeCommonForm(db, actor, request);
       const payload = request.payload;
       if (payload.scope !== 'USER_COMMON') throw new AuthFailure('COMMON_SCOPE_REQUIRED', 403);
       let id = request.targetId, version: number, name: string, purpose: string, graph: unknown, origin: unknown;
@@ -62,20 +62,12 @@ export class CommonMethodologyWriter {
       const forms = (await db.query("SELECT v.definition_id AS id,v.version,v.content_hash FROM anvil.form_definitions d JOIN anvil.form_versions v ON v.definition_id=d.id WHERE d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$1", [actor.actorId])).rows.map(row => ({ id: row.id, version: Number(row.version), contentHash: row.content_hash }));
       const validation = validateMethodologyGraph(graph, forms);
       if (validation.issues.some(issue => issue.code === 'INPUT_INVALID')) throw new AuthFailure('GRAPH_INPUT_INVALID', 422);
-      const graphHash = contentHash(canonicalJson(graph)), commandId = randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
-      const receivedAt = (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString();
-      const result = { scopeKind: 'USER_COMMON', ownerUserId: actor.actorId, operationId, commandId: request.commandId,
-        status: 'APPLIED', targetId: id, version, data: { ref: { id, version, contentHash: graphHash }, validation, status: 'DRAFT' },
-        evidenceRefs: [], warnings: validation.issues.filter(issue => issue.severity === 'WARNING'), serverReceivedAt: receivedAt };
+      const graphHash = contentHash(canonicalJson(graph));
       await db.query("SELECT set_config('anvil.actor_id',$1,true)", [actor.actorId]);
       if (version === 1) await db.query("INSERT INTO anvil.methodology_definitions(id,scope,owner_user_id,name,purpose,head_version) VALUES($1,'USER_COMMON',$2,$3,$4,1)", [id, actor.actorId, name, purpose]);
       await db.query('INSERT INTO anvil.methodology_versions(definition_id,version,name,purpose,graph_json,content_hash,origin_ref_json,reason,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)', [id, version, name, purpose, JSON.stringify(graph), graphHash, JSON.stringify(origin), reason, actor.actorId]);
       if (version > 1) await db.query('UPDATE anvil.methodology_definitions SET head_version=$2 WHERE id=$1', [id, version]);
-      const scopeDigest = contentHash(canonicalJson({ scopeKind: 'USER_COMMON', ownerUserId: actor.actorId, clientId: actor.clientId, requestHash, targetRef: result.data.ref }));
-      await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,expected_version,result_ref,completed_at) VALUES($1,'USER_COMMON',$2,$2,$3,$4,$5,$6,$7,'APPLIED',$8,$9,$10,now())", [commandId, actor.actorId, actor.clientId, request.operation, request.commandId, requestHash, operationId, receiptId, request.expectedVersion, JSON.stringify(result)]);
-      await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,scope_digest) VALUES($1,'USER_COMMON',$2,$3,$4,$5)", [receiptId, actor.actorId, commandId, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), scopeDigest]);
-      await db.query("INSERT INTO anvil.user_common_audit_events(owner_user_id,server_sequence,event_id,client_id,command_id,operation_id,operation,target_ref,outcome,reason_code) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,'APPLIED','OWNED_USER_COMMON_ONLY' FROM anvil.user_common_audit_events WHERE owner_user_id=$1", [actor.actorId, randomUUID(), actor.clientId, commandId, operationId, request.operation, JSON.stringify(result.data.ref)]);
-      return result;
+      return persistCommonReceipt(db, actor, request, { id, version, contentHash: graphHash }, validation);
     });
   }
 }
@@ -90,7 +82,7 @@ export function registerCommonMethodologyWrites(app: FastifyInstance, options: A
     });
     routes.post<{ Body: CommonCommand }>('/api/v1/user-common/commands', { schema: { body: { type: 'object', additionalProperties: false,
       required: ['schemaVersion', 'commandId', 'operation', 'targetId', 'expectedVersion', 'clientId', 'payload'], properties: {
-        schemaVersion: { const: 1 }, commandId: id, operation: { enum: ['copyMethodology', 'saveMethodologyDraft'] }, targetId: { anyOf: [id, { type: 'null' }] },
+        schemaVersion: { const: 1 }, commandId: id, operation: { enum: ['copyMethodology', 'saveMethodologyDraft', 'copyForm', 'saveFormDraft'] }, targetId: { anyOf: [id, { type: 'null' }] },
         expectedVersion: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER }, clientId: id, payload: { type: 'object' },
       } } } }, request => writer.execute(sessionToken(request), csrfToken(request), request.body));
   });
