@@ -37,7 +37,7 @@
 
 신규 port·패키지·DB 스키마·인증 방식·배포 절차는 상세 설계와 새 계획 이후 확정한다. 과거 compose나 배포 도구를 새 환경에 그대로 실행하지 않는다.
 
-## P03 준비 범위 — 실행 승인·생성 전
+## P03 준비 범위 — 실행 승인·생성 전 관측 이력
 
 2026-10-16 P02 종료 대조와 다음 승인 경계를 준비한 읽기 결과다. 신산님은 질문 `call_f2cd20981cc64d83aceff512225037b5`에 **‘새 Stage A 기준선·private push 승인’ / ‘새 전용 개발 자원 준비 승인’ / ‘개발 인증서 생성·현재 사용자 신뢰 승인’**으로 아래 세 범위를 직접 승인했다. 승인은 실행 결과가 아니며 P02 검수 뒤 정확 대상·생성 직전 상태를 확인한다. 실제 유료 Agent 호출·기존 서비스 교체·Oracle는 제외한다.
 
@@ -78,3 +78,16 @@ CurrentUser Root 신뢰 저장소에 새 CA의 정확 thumbprint1개를 넣는 �
 - Node24.18.0-bookworm-slim 후보 ID `sha256:2f35c3d18013b7d65e31c40f0602e4c0a65a18efc65c16e2b98497f13f4da921`, digest `node@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d`를 관측했다. 실제 사용 시 exact image와 별도 결박한다.
 - 개발 CA subject `CN=Anvil v3 Development CA`, thumbprint `498348218A4015B341A90B10FF4FE176987D4424`, leaf `047CD961EB4B376350A1119C46185FB6D8721F14`; SAN localhost/127.0.0.1/172.27.253.53, 만료2026-10-23 03:29:02 KST. 신산님 OS 확인 뒤 허용된 실제 Root 조회에서 정확1개를 확인했다. sandbox 조회0과 실제 store 결과를 구별한다. 새 보호 root ACL 상속 차단·현 사용자/SYSTEM만, 키 파일은 그 제한을 상속한다. 기존 key/Root/LocalMachine 변경0, 아직 HTTPS 브라우저 PASS 아님.
 - 신규 개발 DB 역할은 `anvil_v3_bootstrap`(새 컨테이너 초기화만), `anvil_v3_migrator`(신규 schema migration), `anvil_v3_app`(비관리자 DML)로 한정한다. 보호 파일은 위 WSL 경로의 bootstrap-password/migrator.json/app.json이며 stdout/Git 원문0. 기본 생성은 기존 자원/경로 발견·조회 오류 때 중단하고 새 instance label/ID/image를 다시 검증한다.
+
+### P03 현재 실제 상태 — 2026-10-16
+
+위 생성 전 문장들은 당시 관측이며 현재 상태는 이 절과 [P03 결과](04_test_reports/AV3/P03/RESULT.md)가 우선한다.
+
+- branch `codex/av3-stage-a`의 코드0ec17f1a는 private 게시 완료, base main b4f9006e는 Stage A 통합 전이다. 초기51파일과89파일 checkpoint의 hash/상태는 당시 관측이다. 현재 내용은 BASELINE_MANIFEST, 실제 실행 commit은 RESULT를 구별해 조회한다.
+- WSL exact892ea1e1에서 신규 PG15.18/volume/network·DB/전용 역할 생성, migration0000·합성 fixture7 및 실제 비관리자 저장/다른 연결 조회·DDL거절·고유 probe 정리0 PASS. 기존 DB/공유 인증/운영 서비스에 대한 변경 명령0이다. 새 제품 로그인 사용자/프로젝트는 아직 없다.
+- 보호 WSL 설정0700/0600·daon 소유, 로컬 `.av3-data`는 현재 사용자/SYSTEM만. 새 app 설정 참조만 Windows에 전달했으며 값 출력/소스 포함0이다. 실제 PG ID/image/digest/instance·migration checksum은 RESULT에 기록했다. 정식 개발 DB/volume/참조는 다음 개발에도 보존한다.
+- 로컬은 검증된 기존 Microsoft WSL relay127.0.0.1:5546을 명시 재사용한다. 공유 PID26052는 종료/교체하지 않는다. 새 SSH tunnel0, `start-development.ps1 -UseVerifiedWslRelay`는 승인 DB/role를 실제 조회한 뒤만 사용한다. 기존 relay 자체 소유권을 Anvil로 주장하지 않는다.
+- 소유 Node52852·시작UTC2026-10-15T19:08:42.2263733Z·코드0ec17f1a의 준비 URL은 **https://localhost:3830/**. Root 정확 CA1·기한과 Node CA검증2초 HTTPS probe를 확인했다. Edge155/Playwright1.64.1 실제1 PASS, Network3/off-origin0/JS오류0/TLSignorefalse. 이것은 준비 화면만이며 UI00/로그인/프로젝트 구현 증거가 아니다.
+- 전환 시 `.av3-data/runtime/receipt.json`의 kind·commit·PID/start/exe·3830을 다시 대조해 해당 소유 Node만 중지한다. 다른 Node나 wslrelay를 일괄 종료하지 않는다. 인증서는 후속 HTTPS 개발 검수 동안만 유지하고 2026-10-23 03:29:02 KST 또는 검수 종료 때 지문498348218A4015B341A90B10FF4FE176987D4424의 CurrentUser Root1개만 회수한다.
+- 임시 Windows npm-cache/P03-browser·WSL 등록 npm-cache 정리/부재 확인0, QA Edge0·DB probe0. 새 개발 DB/volume/보호 설정·CA·현재 소유 개발 Node는 보존 대상이다. 기존 .pytest_cache ACL 문제는 별도 보존하며 재실행/권한 변경0이다.
+- 불변 소스의 기존 DB/브라우저 증거는 재사용한다. Stage A 통합 전 unit13·typecheck·Web14·schema 생성 일치·diff check를 fresh exit0 확인했다. 실제 Agent/제품 기능/Oracle·전체 회귀는 미실행이며 해당 UI/FN/IX에서 검증한다.

@@ -1,5 +1,7 @@
 {
-  "kind": "APPROVED_PRIVATE_STAGE_A_CHECKPOINT_PAYLOAD_NOT_PUSHED",
+  "kind": "INITIAL_STAGE_A_CHECKPOINT_PAYLOAD_OBSERVATION",
+  "recordedCheckpoint": "8f3af6565654af2649e2737933b243c3a969becd",
+  "hashScope": "files describe the initial pre-commit observation only; later approved plan-scoped changes are recorded by Git and current BASELINE_MANIFEST",
   "observedAt": "2026-10-16T03:50:06.3440454+09:00",
   "destination": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
   "branch": "codex/av3-stage-a",
