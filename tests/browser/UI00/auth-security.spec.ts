@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+const unexpected = new WeakMap<object, string[]>();
+test.beforeEach(async ({ page }) => { unexpected.set(page, []); await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); }); });
+test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); });
+
 const csrfBefore = 'A'.repeat(43), csrfAfter = 'B'.repeat(43);
 const user = { id: '32b5f276-13e6-4d8a-b93f-27a15d21c788', displayName: 'QA 사용자' };
 const initial = { user, clientId: user.id, csrfToken: csrfBefore };

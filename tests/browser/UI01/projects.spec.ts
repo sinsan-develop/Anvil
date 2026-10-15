@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+const unexpected = new WeakMap<object, string[]>();
+test.beforeEach(async ({ page }) => { unexpected.set(page, []); await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); }); });
+test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); });
+
 const one = { id: '32b5f276-13e6-4d8a-b93f-27a15d21c788', name: 'Anvil', purpose: '프로젝트 주도권 유지', version: 1, updatedAt: '2026-10-16T01:02:03.456789Z' };
 const two = { ...one, id: '51c0439f-791e-4bb5-8471-70938d6afaf1', name: '두 번째 프로젝트' };
 test('프로젝트 화면 계약: 목록/검색/다음 화면은 조회만 하고 뒤로 와도 검색을 유지한다', async ({ page }) => {

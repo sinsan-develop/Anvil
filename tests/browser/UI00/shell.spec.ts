@@ -1,8 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+const unexpected = new WeakMap<object, string[]>();
+test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); });
+
 // 탐색/오류 표시 계약의 상태를 고정한다. 실제 인증은 별도 DB/HTTPS 검수이며
 // relay 중단 중에는 양식의 자동 setup 조회까지 실제 DB로 전달하지 않는다.
 test.beforeEach(async ({ page }) => {
+  unexpected.set(page, []);
+  await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); });
   await page.route('**/api/v1/session', route => route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'NOT_FOUND', requestId: 'qa-ui00-not-found' }) }));
 });
 

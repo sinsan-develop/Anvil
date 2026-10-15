@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listProjects, type ProjectPage } from './api.ts';
 
-export function ProjectsPage({ client, onAuthenticationLost }: { client: ApiClient; onAuthenticationLost: () => void }) {
+export function ProjectsPage({ client, onAuthenticationLost, onNewProject }: { client: ApiClient; onAuthenticationLost: () => void; onNewProject: () => boolean }) {
   const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('projectQuery') ?? '');
   const [applied, setApplied] = useState(query);
   const [archived, setArchived] = useState(() => new URLSearchParams(location.search).get('projectArchived') === 'true');
@@ -11,6 +11,7 @@ export function ProjectsPage({ client, onAuthenticationLost }: { client: ApiClie
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const newUrl = new URL(location.href); newUrl.searchParams.delete('draftId'); newUrl.hash = '/projects/new';
   function filter(event?: FormEvent, nextArchived = archived) {
     event?.preventDefault();
     const url = new URL(location.href);
@@ -33,7 +34,7 @@ export function ProjectsPage({ client, onAuthenticationLost }: { client: ApiClie
     return () => { current = false; };
   }, [client, applied, archived, cursor, refresh]);
   return <section aria-label="프로젝트 목록">
-    <div className="project-toolbar"><form onSubmit={event => filter(event)}><label>프로젝트 검색<input value={query} onChange={event => setQuery(event.target.value)} maxLength={200} /></label><button disabled={pending}>검색</button></form><a className="button-link" href="#/projects/new">새 프로젝트</a><button disabled={pending} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>목록 새로고침</button></div>
+    <div className="project-toolbar"><form onSubmit={event => filter(event)}><label>프로젝트 검색<input value={query} onChange={event => setQuery(event.target.value)} maxLength={200} /></label><button disabled={pending}>검색</button></form><a className="button-link" href={newUrl.pathname + newUrl.search + newUrl.hash} onClick={event => { if (!onNewProject()) event.preventDefault(); }}>새 프로젝트</a><button disabled={pending} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>목록 새로고침</button></div>
     <div className="project-toolbar" role="group" aria-label="보관 필터"><button aria-pressed={!archived} onClick={() => filter(undefined, false)}>미보관</button><button aria-pressed={archived} onClick={() => filter(undefined, true)}>보관</button></div>
     <p className="meta">진행·완료 단계와 결정·최근 작업·다음 행동은 실행/계획 연결 전입니다. 이 목록을 여는 것만으로 Agent를 시작하지 않습니다.</p>
     {pending ? <p role="status">프로젝트를 조회하고 있습니다.</p> : null}

@@ -66,6 +66,8 @@ UI13 소비 UI04/UI08의 반응형 조정, UI14 소비 scheduler·backup API처�
 
 ## 3. 기능별 서버·계약·시험 파일
 
+UI02 초기 중간 저장은 기존 `features/project-create/{ProjectCreatePage.tsx,api.ts}`·`tests/browser/UI02/project-create.spec.ts`와 추가 `tests/unit/UI02/draft-api.test.ts`로 연결한다. App은 탭의 입력·미확인 command만 보존하고 실제 세션/권한은 서버에서 재확인한다. 완료된 UI00/01의 공유 App·새 프로젝트 진입·CSS 수정 이유는 중간 입력을 버리지 않고 같은 저장을 명시 재확인하기 위한 것이며 범위를 해당 소비부로 한정했다.
+
 아래 ‘서버 모듈’의 정확한 공통 파일은 `apps/server/modules/<명칭>/{routes.ts,service.ts,repository.ts}`다. 행당 지정한 모듈만 해당하며 사용하지 않는 빈 repository/빈 함수를 형식상 만들지 않는다. 쿼리·명령의 타입/필수값·응답/오류 원본은 `contracts/<명칭>.schema.json`이며 함수명/실제 연산은 INTERFACES에 연결한다.
 
 | 업무 | 서버 모듈·공통 schema 명칭 | 추가 정확 파일 | 소유 시험 파일 |

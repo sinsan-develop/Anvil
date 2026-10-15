@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 후속 관측: WSL Git exact5a88d5eb에서 auth/허가 프로젝트 조회·초안 저장을 실제 DB/HTTP로 확인했다. migration0000/0001/0011 적용, checksum은 WORK_STATUS. Windows 실제 DB relay timeout 누적3회로 그 경로를 중단했고 새 브라우저 검수는 모든 API fixture 격리다. Windows Node40744는 시작 당시000d008 backend를 계속 보유하며, 개발 Web dist는 후속 UI 빌드로 바뀌었다. 따라서 이를 현재 branch 전체 exact-SHA runtime/제품 ready라고 보고하지 않는다. 기존 초기화1/실제 사용자0·승인 key/CA는 보존, bootstrap은30분 기한이며 자동 재발급하지 않는다.
+
 2026-10-16 현재 사실 갱신: Stage A는 PR41/main `f976ed5e` 통합·smoke·정리 완료, Stage B `codex/av3-stage-b`에서 UI00/FN01을 구현 중이다. 아래 초기 설계/정리 기록은 당시 관측이며 현재 구현 상태를 대신하지 않는다. 전용 WSL checkout은 `/home/daon/deploy/anvil-v3`/Git exact `246007f2`, PG `anvil-v3-development-pg`의 DB `anvil_v3_development`와 app 역할·loopback5546을 사용한다. 0000/0001 적용, 이후 migration은 별도 계약/승인 대조 후 forward-only다.
 
 신규 인증 참조는 직접 승인 `call_74c28acfc6424f6fb3e31ef55262a333`로 `D:\Project\Anvil\.av3-data\auth.json`(서버 key/설치ID)·`bootstrap.json`(30분 일회 초기 등록 비밀)을 배타 생성했다. 파일/키 원문을 Git·로그·보고서에 넣지 않는다. root/파일은 current user/SYSTEM만 접근, 실제 소유자는 자동 생성하지 않았다. 최초 등록 기한은 KST 2026-10-16 05:51:14.749이며 만료를 자동 연장하지 않는다. 생성 도구는 기존 파일/계정/초기화행이 있으면 실패하고 `--check`는 읽기 전용이다. 정상 launcher는 auth.json을 선택적으로 서버에 전달한다. 현재 소유 Node3830은 실행 전이며 공유 wslrelay26052/5546은 변경·종료 금지다. 후속 실제 실행 때 receipt로 갱신한다.
