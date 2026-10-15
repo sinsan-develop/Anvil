@@ -15,6 +15,9 @@ test('인증 없는 조회·다른 Origin·추가 입력은 DB 인증 처리 전
     assert.equal(noLogin.statusCode, 401);
     assert.equal(noLogin.json().code, 'AUTH_REQUIRED');
     assert.equal(noLogin.headers['cache-control'], 'no-store');
+    for (const path of ['/api/v1/projects', '/api/v1/projects/' + randomUUID()]) {
+      assert.equal((await app.inject({ method: 'GET', url: path, headers: { host: 'localhost:3830' } })).statusCode, 401);
+    }
     const otherOrigin = await app.inject({ method: 'POST', url: '/api/v1/auth/login', headers: { host: 'localhost:3830', origin: 'https://other.invalid' }, payload: { loginName: 'someone', password: 'synthetic passphrase', clientLabel: 'QA' } });
     assert.equal(otherOrigin.statusCode, 403);
     const extraField = await app.inject({ method: 'POST', url: '/api/v1/auth/login', headers: { host: 'localhost:3830', origin: 'https://localhost:3830' }, payload: { loginName: 'someone', password: 'synthetic passphrase', clientLabel: 'QA', serverOwner: true } });

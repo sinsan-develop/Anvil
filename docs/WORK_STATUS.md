@@ -16,7 +16,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 0 / [2] 2 / [] 39 — 총44개**. P01/P02/P03 준비 수용, UI00/FN01은 Main 어울 순차 작업 중(동시 writer 아님). 준비 산출물은 제품 기능 구현이 아니다.
+- 현재 합계: **[0] 3 / [1] 0 / [2] 3 / [] 38 — 총44개**. P01/P02/P03 준비 수용, UI00/FN01/FN11 저장 기반을 Main 어울이 순차 작업 중(동시 writer 아님). 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -81,7 +81,7 @@
 | FN08 Windows 실행·회수·중복방지 | [] | 회수/스풀 논리 계약 | 실제 관측·ACK·재전송/중복부작용 차단 |
 | FN09 총괄·단계·하위 임무 | [] | 역할/위임 설계만 있음 | 필수맥락·임무·권한부분집합·단일writer |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
-| FN11 권한·일회 승인·통제 | [] | 일회 승인/정책 계약 | 서버 권한·동시/만료/구범위 승인 차단 |
+| FN11 권한·일회 승인·통제 | [2] | Main 어울. 0011 명령/정책·승인·감사 저장 및 범위 FK/감사 변경 거절 확인. 실제 변경 허가/승인 소비는 미구현 | 인증/제어·scope/현재정책·동시/만료/구세대·실제 도메인 원자 집행 |
 | FN12 결과·검증·이상 판정 | [] | 제출≠완료·분류 설계 | 실제 증거 대조·보완·원인미확인/미실행 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
@@ -108,6 +108,10 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
+
+- FN11 schema 실제 적용: WSL Git exact `939ff6e878cdd33359f9557a3abb69dd319c916c`/clean에서 0011 적용 exit0·schema/범위·감사1 PASS(0.19초). checksum `b5922fe31715076e7cdb1f6485f9ea5af4554c90fb957fb3b3a2c42ea22b9a21`, 0000/0001 불변. PROJECT scope NULL 우회23514·다른 command/scope receipt23503·감사 UPDATE/DELETE42501·모든 합성 transaction rollback/사용자/프로젝트잔여0. 새 테이블에만 DML 제약을 적용했다. runner는 실제 적용된 migration3개/checksum을 전부 출력하도록 receipt를 보완했고 존재를 실제 권한 집행 완료로 표시하지 않는다. 적용된0011은 이제 수정 금지, 후속은 forward migration이다.
+- FN01 조회 후보: 허가된 프로젝트 목록/직접ID·보관 필터·현재 membership/세션과 서명 cursor를 연결했다. 무인증404→401, filter기본값/다른주체·필터·limit/변조·기한·microsecond 보존 cursor RED→GREEN, boolean coercion 누락1도 RED→문자열만 허용 GREEN. 당시 단위24/typecheck PASS. 실제 교차 프로젝트/회수/페이지 손실 검사는 다음 게시 SHA의 WSL에서 실행 전이다. TypeScript 시험 callback implicit any1은 명시 id 타입만 보정했다.
+- 내부 상세 판정: 전역 프로젝트 목록에는 단일 프로젝트 기준선이 없으므로 `baselineVersion:null`로 미해당을 명시하며 가짜1/READY를 만들지 않는다. cursor 자체 format version1·주체/필터/limit·정확 DB microsecond·서버 서명·30분 유효 범위를 결박한다(TD-03 page50/최대200 유지). 방법론/기준선·정책 미연결은 readiness gap이며 상세 조회는 READ_PROJECT만 제공한다. 프로젝트 생성·제어 grant/쓰기 성공으로 오인하지 않는다.
 
 - FN11 저장 RED: WSL exactd1f76dcb에서 permission_policies 부재 false!=true를 확인했다. 이제 명시 `0011_authorization`으로 정책/version·명령·정확 승인 요청/결정/소비·receipt·별도 감사/사건/outbox/draft 감사11테이블을 전용 DB에 추가한다. 신산님 P03의 전용 v3 migration 승인 범위, 기존 0000/0001 checksum 불변. 새 감사·불변 version/결정/소비/receipt만 app UPDATE/DELETE 차단하고 기존 테이블/역할/Secret는 변경하지 않는다. command↔receipt는 같은 scope/command의 지연 FK로 결박, NULL scope 우회도 CHECK로 거절한다. 실제 적용은 지정 branch 게시→WSL exact SHA/migrator/transaction/checksum 뒤, 실패는 rollback·applied SQL 수정0. 합성 사용자/client/프로젝트2/명령2·감사1은 실제 검사 transaction rollback·잔여0, 실제 사용자 생성0. 이 단계는 schema 준비이며 기능 권한집행 PASS가 아니다.
 
