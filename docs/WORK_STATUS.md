@@ -109,6 +109,8 @@
 
 ### 2026-10-16 P03 실행 범위 직접 승인·P02 종료 대조
 
+- 로컬 runtime 첫 시도는5546 점유로 process 생성 전 안전 중단1. 읽기 조회에서 `wslrelay` PID26052/정확 Microsoft WSL 실행 파일을 확인했고 종료/포트 변경0이다. 신규 app credential로 실제127.0.0.1:5546의 DB/role/서버·fixture와 저장/조회/DDL거절·probe정리0을 독립 확인해1 PASS. 기존 자동 relay를 쓰는 명시 선택을 준비해 불필요한 SSH tunnel을 만들지 않으며 공유 relay는 절대 회수 대상이 아니다. 보호 app 참조는 이미 생성됐으므로 복사를 반복하지 않는다.
+- 브라우저 일회성 자원 사전 등록: `D:\tmp\anvil-v3-stage-a\P03-browser`는 Playwright 임시 profile·검수 결과·실패 캡처만, Main/P03 소유·검수/근거 회수 후 정확 정리·잔여 확인. 기존 Windows Edge 사용·기존 사용자 profile/보안 설정/인증서 변경0, TLS 무시 OFF·Network same-origin/실제 JS 오류를 확인한다.
 - WSL 실제 준비 검증: exact `892ea1e1f3e65c408910ffa3ae5f8e9f807fb361`에서 PG15.18 신규 자원 생성·instance/ID/image/loopback5546 확인. container `e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba`, volume/network는 등록 이름. 보호 경로0700/app설정0600·daon 소유. lifecycle OFF 설치102·typecheck/Web14·단위13·생성 타입 일치 PASS. 0000 checksum `6ebbb9c580d54a50e0431806ee982244cbe134613354f8c3a8cd4f547e30178d` 적용/멱등 재적용·fixture7, 실제 비관리자 DB 저장→다른 연결 재조회·DDL거절·probe정리0 1건 PASS. 실제 제품 사용자/프로젝트 생성0·Agent 호출0. WSL Node24.21/npm11.19이며 로컬 버전과 다름을 보존한다.
 - 로컬 후속 사전 등록: 신규 `.av3-data/db-app.json`에 방금 생성한 전용 app 역할 연결 참조만 보호 저장·값 출력0, migration/bootstrap credential은 복사하지 않는다. 신규 `.av3-data/runtime`의 소유 SSH tunnel loopback5546와 Node HTTPS3830·PID/시각 receipt/비밀 없는 로그를 생성한다. Main/P03·후속 개발용 수명, 새 프로세스만·기존 port 점유 시 중단. 실패 때 방금 시작한 PID/시각 일치 process만 종료, 정상 개발 종료/전환 때 같은 소유 확인으로 정리한다. 실제 시작은 아직 전이다.
 - 중간 기준선 게시: `codex/av3-stage-a` commit `8f3af6565654af2649e2737933b243c3a969becd` 정확89파일·local/private 동일·tracked clean, private main `b4f9006e30e5afcf98ef8ef1f39707ecc8954feb` 불변을 실제 조회했다. WSL 신규 Git도 exact8f3af656/clean이며 기존 자료를 복사 배포하지 않았다. 실제 DB 생성/저장·브라우저는 아직 미검증이다.
