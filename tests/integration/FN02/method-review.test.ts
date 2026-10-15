@@ -79,7 +79,7 @@ test('방법론은 같은 내용 검토와 양식 준비를 확인해 확정하�
       const drafts = (await db.query('SELECT id FROM anvil.project_drafts WHERE owner_user_id=$1', [user])).rows.map(row => row.id);
       await db.query('DELETE FROM anvil.draft_audit_events WHERE draft_id=ANY($1::uuid[])', [drafts]);
       await db.query('UPDATE anvil.commands SET authorization_receipt_id=NULL WHERE draft_id=ANY($1::uuid[])', [drafts]);
-      await db.query('DELETE FROM anvil.authorization_receipts WHERE draft_id=ANY($1::uuid[])', [drafts]);
+      await db.query("DELETE FROM anvil.authorization_receipts WHERE scope_kind='DRAFT' AND scope_id=ANY($1::uuid[])", [drafts]);
       await db.query('DELETE FROM anvil.commands WHERE draft_id=ANY($1::uuid[])', [drafts]);
       await db.query('DELETE FROM anvil.project_drafts WHERE id=ANY($1::uuid[])', [drafts]);
       await db.query('DELETE FROM anvil.methodology_reviews WHERE decided_by=$1', [user]); await db.query('DELETE FROM anvil.form_reviews WHERE decided_by=$1', [user]);
