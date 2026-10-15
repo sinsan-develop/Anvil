@@ -100,7 +100,7 @@ EXISTING 소스 root 등록/관측 테이블의 호스트/실경로·권한/정�
 | 테이블 / migration 소유 | 열·키·인덱스와 무결성 |
 |---|---|
 | `methodology_definitions` / 0002·FN02 | `id PK, scope SYSTEM/USER_COMMON/PROJECT, owner_user_id?,project_id?,system_code?,name,purpose,head_version,created_at`. scope에 맞는 소유자 조합 CHECK, SYSTEM은 SYS-M01~03 출처 식별·사용자 직접 쓰기 금지. 접근 가능한 소유 scope 내 목록 인덱스 |
-| `methodology_versions` / 0002·FN02 | `(definition_id,version) PK, graph_json,content_hash,origin_ref_json?,reason,created_by,created_at`. FK definition. 내용을 UPDATE하지 않음. origin은 읽기 권한/정확 버전·hash를 검증한 복사 출처이며 원본을 교체/삭제해도 보존 |
+| `methodology_versions` / 0002·FN02 | `(definition_id,version) PK, name,purpose,graph_json,content_hash,origin_ref_json?,reason,created_by,created_at`. 이름/목적도 해당 버전에 보존, definition 값은 현재 목록 projection. FK definition. 내용을 UPDATE하지 않음. origin은 읽기 권한/정확 버전·hash를 검증한 복사 출처이며 원본을 교체/삭제해도 보존. SYSTEM 생성은 실제 사용자/사람 확정을 날조하지 않으며 source 승인과 제품 인수 분리 |
 | `methodology_reviews` / 0002·FN02 | `id PK,definition_id,version,target_hash,validation_json,review_refs,decision,decided_by,decided_at`. 버전 FK. validation과 사용자 확정 사건을 구분. 같은 내용 hash의 확정 근거만 적용에 사용 |
 | `project_methodologies` / 0002·FN02 | `(project_id,id) UNIQUE, id PK, application_version, source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by,created_at`. `(project_id,application_version)` UNIQUE. 확정한 공통/전용본을 허가 확인 후 프로젝트에 고정 복사. 공통본 개정 시 pointer 자동 변경 금지 |
 

@@ -109,6 +109,8 @@
 
 ### 2026-10-16 FN02 내장 정의·그래프 검사 착수
 
+- 저장/조회 후보 사전 등록: 계획0002의 새 `methodology_definitions`·`methodology_versions`·`methodology_reviews`·`project_methodologies`만 기존 승인 DB/migrator에 추가, SYSTEM 정의/버전3개는 개발 기본 자료로 보존한다. 기존0000/0001/0011/0003 SQL 수정0, 실제 사용자/키/초기화/기존 프로젝트 변경0. 기본본은 원문 승인 출처만 보존하고 사람 검토/확정 사건을 자동 생성하지 않는다(`confirmation=null`·실행 준비 필요). 새 app 권한은 읽기만, 개정/확정/적용 집행 전 쓰기 개방0. 적용 실패 transaction 전체 rollback, 이후 문제는 별도 forward migration으로 수정.
+- 실제 WSL QA는 지정 Git exact 게시 SHA/기존 보호 app·migrator 참조만 사용하고 Windows DB 재접속0. `qa-methods-UUID` 일반 사용자2·USER_COMMON 정의/버전2를 고유 ID로 만들어 본인 목록/ID200·타인404·회수401·app UPDATE42501·내장 그래프/hash/양식 참조를 확인한 뒤 정확 QA ID/session/client/password만 정리한다. 실제 계정 생성/새 컨테이너/port/Secret0, 비밀 없는 auth 감사는 보존. API 인증 경계404≠401 RED→GREEN, 현재 단위36/typecheck/diff check PASS. 실제 DB 시험은 다음 exact SHA에서 진행 전이다.
 - Main 어울, 시작 `4dd4b56d215a3e538c731552e17ace78fe9b1691`(private 동일·clean/main f976ed5e 불변). REVIEW-01 승인 원문 hash `1373688f969e578da3a38c52f619b878d01fdf999b717fd516ebf638d8c897d1` 기반 내장3종 각각7단계·역할/목적/입출력·실제 공식 양식 ref·완료/기록/사람 확인·재작업을 구현했다. 실제 도구/환경/유한 정책이 결합되기 전 `PROJECT_BINDINGS_REQUIRED`, Agent/DB 변경0.
 - TDD: builtins0≠3 RED→GREEN, graph 초기6건 RED→GREEN. 명시 재작업 허용, 중복/참조/도달 불가/완료 누락/타 양식 hash/사람 역할 위반/조건 없는 분기·합류/코드·credential 필드 거절. AG07 정상 반복을 품질 실패로 인코딩한 원인을 원문 대조 후 `USER_CHOICE.NEXT_ITERATION`과 동일 실패 fingerprint3회 계수로 구분하는 회귀 RED→GREEN. 전체 시간/호출·비용 한도는 실제 프로젝트 정책 없이는 실행 불가다. 종료 뒤 정상 후속 작업을 추가 RED로 재현해 `TERMINAL_HAS_SUCCESSOR` 거절·유효 ALL 합류 허용까지 FN02 단위8 PASS/typecheck exit0.
 - Ruling: `contracts/methodologies.ts`의 REVIEW_DECISION/USER_CHOICE는 구조 편집용 제한 자료이며 실제 승인/실행 근거가 아니다. FN10의 최종 사전·실제 결과·현재 권한/유한 정책 소비 전 실행 불가. 상세화가 잘못되면 후속 버전/참조 변환 비용이 있으므로 새 버전으로 교정한다. JSON schema·API/DB 저장·화면·복사/직접 작성·확정/적용은 아직 미완료다.
