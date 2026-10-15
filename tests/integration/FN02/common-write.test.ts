@@ -63,12 +63,13 @@ test('본인 공통 방법론 복사·개정은 원자 저장되고 재전송·�
     await assert.rejects(pool.query("DELETE FROM anvil.user_common_audit_events WHERE owner_user_id=$1", [users[0]]), (e: unknown) => (e as { code: string }).code === '42501');
     await access.logout(own.token, own.csrfToken);
     assert.equal((await send(body)).statusCode, 401);
-  } finally {
+  } catch (error) { console.error('COMMON_WRITE_ASSERTION', error); throw error; } finally {
     const cleanup = await admin.connect();
     try {
       await cleanup.query('BEGIN');
       if ((await cleanup.query("SELECT to_regclass('anvil.user_common_audit_events') IS NOT NULL AS present")).rows[0].present) {
         await cleanup.query('DELETE FROM anvil.user_common_audit_events WHERE owner_user_id=ANY($1::uuid[])', [users]);
+        await cleanup.query("UPDATE anvil.commands SET authorization_receipt_id=NULL WHERE scope_kind='USER_COMMON' AND scope_id=ANY($1::uuid[])", [users]);
         await cleanup.query("DELETE FROM anvil.authorization_receipts WHERE scope_kind='USER_COMMON' AND scope_id=ANY($1::uuid[])", [users]);
         await cleanup.query("DELETE FROM anvil.commands WHERE scope_kind='USER_COMMON' AND scope_id=ANY($1::uuid[])", [users]);
       }
