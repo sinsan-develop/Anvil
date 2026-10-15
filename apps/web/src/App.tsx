@@ -5,6 +5,7 @@ import { StatusView } from './shell/StatusView.tsx';
 import { parseRoute } from './shell/routes.ts';
 import { AuthForm } from './shell/AuthForm.tsx';
 import { AccountSecurity } from './shell/AccountSecurity.tsx';
+import { ProjectsPage } from './features/projects/ProjectsPage.tsx';
 
 const client = new ApiClient();
 interface Session { user: { id: string; displayName: string }; clientId: string; csrfToken: string }
@@ -47,7 +48,7 @@ export function App() {
   }, [retry]);
   return <AppShell route={route} displayName={session?.user.displayName} onLogout={session ? () => { void logout(); } : undefined} endingSession={endingSession}>
     <StatusView loading={loading} error={error} onRetry={() => setRetry(v => v + 1)}>
-      {session && route.screen === 'settings' ? <AccountSecurity client={client} csrfToken={session.csrfToken} onSession={value => setSession(readSession(value))} onRevoked={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : <section className="status-card"><h2>아직 연결되지 않은 화면</h2><p>공통 탐색을 구현 중입니다. 이 화면의 실제 처리·저장·조회 기능은 아직 연결되지 않았습니다.</p></section>}
+      {session && route.screen === 'projects' ? <ProjectsPage client={client} onAuthenticationLost={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : session && route.screen === 'settings' ? <AccountSecurity client={client} csrfToken={session.csrfToken} onSession={value => setSession(readSession(value))} onRevoked={() => { setSession(null); setError(new ApiError('AUTH_REQUIRED', 401)); }} /> : <section className="status-card"><h2>아직 연결되지 않은 화면</h2><p>공통 탐색을 구현 중입니다. 이 화면의 실제 처리·저장·조회 기능은 아직 연결되지 않았습니다.</p></section>}
     </StatusView>
     {!loading && error?.status === 401 ? <AuthForm client={client} onAuthenticated={value => { setSession(readSession(value)); setError(null); }} /> : null}
   </AppShell>;

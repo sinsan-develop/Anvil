@@ -6,3 +6,4 @@
 .auth-form input[type=checkbox]{width:18px;height:18px}
 .primary{background:var(--blue)}
 button:disabled{opacity:.6;cursor:not-allowed}
+.project-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0}.project-toolbar form{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.project-toolbar label{display:block}.project-toolbar input{display:block;max-width:100%;min-height:38px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:5px}.button-link{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:8px 14px;text-decoration:none}.project-list{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,350px),1fr));gap:14px}.project-list .status-card{margin:0}.project-toolbar button[aria-pressed=true]{background:#23466c;border-color:#80aeda}

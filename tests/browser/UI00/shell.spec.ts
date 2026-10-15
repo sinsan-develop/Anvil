@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+// 탐색/오류 표시 계약의 상태를 고정한다. 실제 인증은 별도 DB/HTTPS 검수이며
+// relay 중단 중에는 양식의 자동 setup 조회까지 실제 DB로 전달하지 않는다.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/session', route => route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'NOT_FOUND', requestId: 'qa-ui00-not-found' }) }));
+});
+
 test('초기 등록의 화면 계약 fixture: 복구 비밀 보관 확인 뒤 로그인으로 이동하며 자동 로그인하지 않는다', async ({ page }) => {
   const failure = { code: 'AUTH_REQUIRED', message: '인증 필요', requestId: 'qa-auth', targetId: null, retryDisposition: 'not-retryable', details: {} };
   await page.route('**/api/v1/session', route => route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify(failure) }));
@@ -51,7 +57,7 @@ test('본문 바로가기는 화면 경로를 바꾸지 않고 키보드 초점�
   expect(new URL(page.url()).hash).not.toBe('#main-content');
 });
 
-test('첫 화면은 프로젝트이며 실패한 세션 조회를 빈 목록이나 로그인 성공으로 표시하지 않는다', async ({ page, baseURL }) => {
+test('404 화면 계약 fixture: 첫 화면은 프로젝트이며 실패한 세션 조회를 빈 목록이나 로그인 성공으로 표시하지 않는다', async ({ page, baseURL }) => {
   const requests: string[] = [];
   const errors: string[] = [];
   page.on('request', r => requests.push(r.url()));
