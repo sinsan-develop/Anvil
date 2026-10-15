@@ -109,6 +109,8 @@
 
 ### 2026-10-16 P03 실행 범위 직접 승인·P02 종료 대조
 
+- WSL 실제 준비 검증: exact `892ea1e1f3e65c408910ffa3ae5f8e9f807fb361`에서 PG15.18 신규 자원 생성·instance/ID/image/loopback5546 확인. container `e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba`, volume/network는 등록 이름. 보호 경로0700/app설정0600·daon 소유. lifecycle OFF 설치102·typecheck/Web14·단위13·생성 타입 일치 PASS. 0000 checksum `6ebbb9c580d54a50e0431806ee982244cbe134613354f8c3a8cd4f547e30178d` 적용/멱등 재적용·fixture7, 실제 비관리자 DB 저장→다른 연결 재조회·DDL거절·probe정리0 1건 PASS. 실제 제품 사용자/프로젝트 생성0·Agent 호출0. WSL Node24.21/npm11.19이며 로컬 버전과 다름을 보존한다.
+- 로컬 후속 사전 등록: 신규 `.av3-data/db-app.json`에 방금 생성한 전용 app 역할 연결 참조만 보호 저장·값 출력0, migration/bootstrap credential은 복사하지 않는다. 신규 `.av3-data/runtime`의 소유 SSH tunnel loopback5546와 Node HTTPS3830·PID/시각 receipt/비밀 없는 로그를 생성한다. Main/P03·후속 개발용 수명, 새 프로세스만·기존 port 점유 시 중단. 실패 때 방금 시작한 PID/시각 일치 process만 종료, 정상 개발 종료/전환 때 같은 소유 확인으로 정리한다. 실제 시작은 아직 전이다.
 - 중간 기준선 게시: `codex/av3-stage-a` commit `8f3af6565654af2649e2737933b243c3a969becd` 정확89파일·local/private 동일·tracked clean, private main `b4f9006e30e5afcf98ef8ef1f39707ecc8954feb` 불변을 실제 조회했다. WSL 신규 Git도 exact8f3af656/clean이며 기존 자료를 복사 배포하지 않았다. 실제 DB 생성/저장·브라우저는 아직 미검증이다.
 - 생성 직전 준비 판정 보완: 공식 docker-library/postgres entrypoint의 초기 socket-only 서버와 최종 TCP 서버를 구분했다. 초기 서버를 정상 완료로 오인하는 assertion RED를 확인한 뒤 readiness를127.0.0.1 TCP로 한정했다. 근거 https://raw.githubusercontent.com/docker-library/postgres/master/docker-entrypoint.sh . 이 변경은 같은 branch의 후속 exact commit/private 게시 뒤 WSL로 받아 사용하며 서버 소스 직접 patch0이다.
 - 첫 checkpoint은 exact89파일 stage 뒤 generated-types EOF 여백의 staged diff-check 실패1로 commit 전 중단했다. 기존 dirty/다른 파일은 stage하지 않았다. generator의 최종 개행을 단일화하고 .gitattributes/.gitignore LF를 고정해 재생성·exact hash/차이를 다시 대조한다. 이 중간 실패를 commit/push 완료로 표시하지 않는다.

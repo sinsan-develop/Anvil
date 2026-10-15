@@ -6,6 +6,8 @@
 
 자원 준비의 정확 소유 파일은 `scripts/{prepare-dev-https.ps1,provision-development.ts,development-resource-guards.ts,migrate-development.ts}`, `apps/server/storage/development-config.ts`, `db/migrations/0000_environment.sql`, `db/qa/fixtures.json`이다. 0000은 migration 이력·분리된 합성 QA 자료 저장만 하며 실제 사용자/프로젝트 schema를 대체하지 않는다. P03 setup/test와 FN01 실제 제품 저장을 혼동하지 않는다.
 
+Windows의 새 app DB 보호 참조·소유 runtime 준비는 `scripts/link-development-db.ts`와 `scripts/start-development.ps1`에 둔다. 기존 Secret/사용자 프로필/공유 process를 다루지 않고 새 app 역할·포트3830/5546만 소비한다. receipt와 키/연결 설정은 Git 제외 `.av3-data` 안에서만 관리한다.
+
 상태: **승인 A안의 상세 명세 / 제품 파일 미생성**. 2026-10-15 Main 어울. TD-01 승인 범위에서 TypeScript·React/Node/Fastify·Electron·PostgreSQL/파일의 책임을 고정한다. 이 문서는 파일 생성·설치·DB 변경·실제 Agent 호출 승인이 아니다. P03의 기준선/명령/환경 수용 후 해당 업무 시작 패킷에 정확한 파일을 열거한다.
 
 ## 1. 경로와 단일 writer
