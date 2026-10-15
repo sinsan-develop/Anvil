@@ -27,8 +27,8 @@ test('공통 양식 확정은 서버의 같은 내용 검토·현재 버전을 �
     const copied = await send('copyForm', null, 0, { sourceRef: original.ref, name: '검토할 공통 양식', scope: 'USER_COMMON', reason: '합성 검토 QA' });
     assert.equal(copied.statusCode, 200);
     const ref = copied.json().data.ref, detail = (await get(ref.id, 1)).json();
-    assert.deepEqual(detail.contentReviewCriteria.items.map((item: { criterionId: string }) => item.criterionId), ['FORM_PURPOSE', 'FORM_ROLES', 'FORM_STRUCTURE', 'FORM_AUTHORING', 'FORM_REVIEW']);
     assert.equal((await send('confirmForm', ref.id, 1, { versionRef: ref, reviewRefs: [] })).statusCode, 422);
+    assert.deepEqual(detail.contentReviewCriteria.items.map((item: { criterionId: string }) => item.criterionId), ['FORM_PURPOSE', 'FORM_ROLES', 'FORM_STRUCTURE', 'FORM_AUTHORING', 'FORM_REVIEW']);
     const items = ['FORM_PURPOSE', 'FORM_ROLES', 'FORM_STRUCTURE', 'FORM_AUTHORING', 'FORM_REVIEW'].map(criterionId => ({ criterionId, outcome: 'ACCEPTED', evidenceRefs: [], reason: '합성 자료를 직접 읽고 해당 기준을 확인함' }));
     const reviewPayload = { targetKind: 'FORM', targetRef: ref, criteriaVersion: 1, items, outcome: 'ACCEPTED', reason: '합성 사용자 직접 내용 검토 QA' };
     assert.equal((await send('recordContentReview', ref.id, 1, { ...reviewPayload, items: items.slice(1) })).statusCode, 422);
