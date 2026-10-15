@@ -124,3 +124,82 @@ test('저장 성공 뒤 재조회가 거절되어도 명령을 폐기해 중복 
   await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeDisabled();
   await expect(page.getByText('서버 저장·재조회 확인 · 버전 1', { exact: true })).toHaveCount(0);
 });
+
+test('빈 방법론에서 사람 단계2개·순서/판단 조건과 위치를 정의해 그대로 저장한다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099';
+  let stored: any = null;
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/[12]$/, route => route.fulfill({ json: route.request().url().includes(target)
+    ? { ref: { id: target, version: 1, contentHash: 'd'.repeat(64) }, name: '두 단계 방법론', purpose: '사용자 판단 순서 정의', scope: 'USER_COMMON', systemCode: null, graph: stored,
+      confirmation: null, validation: validateMethodologyGraph(stored, forms.forms.map(form => form.ref)), runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED' } : version(0) }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); stored = body.payload.graph;
+    expect(body.operation).toBe('saveMethodologyDraft'); expect(body.targetId).toBeNull(); expect(body.expectedVersion).toBe(0);
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: methods[0]!.id, operationId: 'a6f20000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version: 1,
+      data: { ref: { id: target, version: 1, contentHash: 'd'.repeat(64) }, status: 'DRAFT' }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await page.getByRole('button', { name: '새 방법론 작성', exact: true }).click();
+  await page.getByLabel('방법론 이름', { exact: true }).fill('두 단계 방법론'); await page.getByLabel('방법론 목적', { exact: true }).fill('사용자 판단 순서 정의');
+  await page.getByRole('button', { name: '단계 추가', exact: true }).click();
+  await expect(page.getByLabel('단계 유형', { exact: true })).toBeVisible({ timeout: 1000 });
+  for (const name of ['요구 확인', '최종 확인']) {
+    if (name === '최종 확인') await page.getByRole('button', { name: '단계 추가', exact: true }).click();
+    await page.getByLabel('단계 이름 편집', { exact: true }).fill(name); await page.getByLabel('단계 목적 편집', { exact: true }).fill(name + ' 판단');
+    await page.getByLabel('단계 유형', { exact: true }).selectOption('HUMAN');
+    await page.getByLabel('포함 작업', { exact: true }).fill('대상을 읽고 판단');
+    await page.getByLabel('완료·검수 조건 편집', { exact: true }).fill('판단과 이유 저장');
+    await page.getByLabel('작업 기록 요구 편집', { exact: true }).fill('현재 위치와 판단 이유');
+  }
+  await page.getByRole('button', { name: '선택 단계 오른쪽 이동', exact: true }).click();
+  await page.getByRole('group', { name: '방법론 공간형 흐름도', exact: true }).getByRole('button', { name: /: 최종 확인$/ }).press('ArrowDown');
+  await page.getByRole('button', { name: '단계 연결 추가', exact: true }).click();
+  await page.getByLabel('연결 출발 단계', { exact: true }).selectOption({ label: '요구 확인' });
+  await page.getByLabel('연결 도착 단계', { exact: true }).selectOption({ label: '최종 확인' });
+  await page.getByLabel('연결 이유', { exact: true }).fill('앞선 사용자 확인 이후 진행');
+  await page.getByLabel('연결 조건 형식', { exact: true }).selectOption('COMPARE');
+  await page.getByLabel('연결 조건 판단 필드', { exact: true }).selectOption('USER_DECISION');
+  await page.getByLabel('연결 조건 비교 값', { exact: true }).fill('CONTINUE');
+  await page.getByLabel('요구 확인 종료 단계', { exact: true }).uncheck(); await page.getByLabel('최종 확인 종료 단계', { exact: true }).check();
+  await page.getByLabel('개정 이유', { exact: true }).fill('최소 판단 절차 직접 작성');
+  await page.getByRole('button', { name: '공통본 새 버전 저장', exact: true }).click();
+  await expect(page.getByText('서버 저장·재조회 확인 · 버전 1', { exact: true })).toBeVisible();
+  expect(stored.nodes).toHaveLength(2); expect(stored.nodes[1].position.x).toBe(260); expect(stored.nodes[1].position.y).toBe(20); expect(stored.nodes.every((node: any) => node.kind === 'HUMAN' && node.role === 'USER')).toBe(true);
+  expect(stored.edges[0].condition).toEqual({ fieldRef: { nodeId: stored.nodes[0].nodeId, field: 'USER_DECISION' }, operator: 'EQ', value: 'CONTINUE' });
+  expect(validateMethodologyGraph(stored, forms.forms.map(form => form.ref)).validForConfirmation).toBe(true);
+  await expect(page.getByRole('group', { name: '방법론 공간형 흐름도', exact: true })).toBeVisible();
+  if (process.env.ANVIL_CAPTURE_UI === '1') await page.getByRole('group', { name: '방법론 공간형 흐름도', exact: true }).screenshot({ path: test.info().outputPath('method-graph-final.png') });
+});
+
+test('복합 판단·유한 재작업과 입력 양식의 정확 버전을 같은 방법론 개정에 보존한다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099'; let graph = structuredClone(methods[0]!.graph), savedVersion = 1;
+  await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: forms.forms.map(form => ({ ref: form.ref, formCode: form.definition.formCode, name: form.definition.name, scope: 'SYSTEM' })), observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
+  await page.route(/\/api\/v1\/forms\/[^/]+\/versions\/1$/, route => { const form = forms.forms.find(item => route.request().url().includes(item.ref.id))!; return route.fulfill({ json: { ...form, authoringStandard: { ref: forms.standard.ref, content: forms.standard.body.toString('utf8') }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } } }); });
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/[12]$/, route => route.fulfill({ json: route.request().url().includes(target)
+    ? { ...version(0), ref: { id: target, version: savedVersion, contentHash: 'e'.repeat(64) }, name: '복합 조건 방법론', scope: 'USER_COMMON', systemCode: null, graph, validation: validateMethodologyGraph(graph, forms.forms.map(form => form.ref)) } : version(0) }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); if (body.operation === 'saveMethodologyDraft') { graph = body.payload.graph; savedVersion = 2; }
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: methods[0]!.id, operationId: 'a6f20000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version: savedVersion,
+      data: { ref: { id: target, version: savedVersion, contentHash: 'e'.repeat(64) }, status: 'DRAFT' }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies'); await page.getByLabel('복사본 이름', { exact: true }).fill('복합 조건 방법론');
+  await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeEnabled(); await page.getByRole('button', { name: '내 공통본으로 복사', exact: true }).click();
+  await expect(page.getByRole('region', { name: '공통 방법론 편집' })).toBeVisible();
+  await page.getByText('단계의 입력·산출 문서 양식', { exact: true }).click();
+  await page.getByRole('button', { name: '입력 문서 추가', exact: true }).click();
+  await page.getByLabel('입력 1 양식', { exact: true }).selectOption({ label: 'AF08 개발환경 정의서 / v1' });
+  await page.getByLabel('입력 1 내용 검수 기준', { exact: true }).fill('개발환경 선행 조건 확인');
+  await page.getByRole('button', { name: '단계 연결 추가', exact: true }).click();
+  await page.getByLabel('연결 출발 단계', { exact: true }).selectOption({ label: '기능·데이터 분석' }); await page.getByLabel('연결 도착 단계', { exact: true }).selectOption({ label: '요구·현행 분석' });
+  await page.getByLabel('연결 유형', { exact: true }).selectOption('REWORK'); await page.getByLabel('연결 이유', { exact: true }).fill('보완 필요·진행 가능일 때 앞 단계 재작업');
+  await page.getByLabel('같은 실패의 최대 재작업 횟수', { exact: true }).fill('2');
+  await page.getByLabel('연결 조건 형식', { exact: true }).selectOption('ALL');
+  await page.getByLabel('연결 조건 1 판단 단계', { exact: true }).selectOption('ST02'); await page.getByLabel('연결 조건 1 비교 값', { exact: true }).selectOption('REWORK');
+  await page.getByRole('button', { name: '하위 조건 추가', exact: true }).click(); await page.getByLabel('연결 조건 2 형식', { exact: true }).selectOption('NOT');
+  await page.getByLabel('연결 조건 2 반대 대상 판단 단계', { exact: true }).selectOption('ST02'); await page.getByLabel('연결 조건 2 반대 대상 비교 값', { exact: true }).selectOption('BLOCKED');
+  await page.getByLabel('개정 이유', { exact: true }).fill('환경 문서와 제한된 보완 경로 정의'); await page.getByRole('button', { name: '공통본 새 버전 저장', exact: true }).click();
+  await expect(page.getByText('서버 저장·재조회 확인 · 버전 2', { exact: true })).toBeVisible();
+  expect(graph.nodes[0]!.inputs[0]!.formRef.id).toBe('a6f30000-0000-4000-8000-000000000008'); expect(graph.nodes[0]!.inputs[0]!.formRef.version).toBe(1);
+  expect(graph.edges.at(-1)!.retryPolicy?.maxAttempts).toBe(2);
+  expect(graph.edges.at(-1)!.condition).toEqual({ all: [{ fieldRef: { nodeId: 'ST02', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'REWORK' }, { not: { fieldRef: { nodeId: 'ST02', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'BLOCKED' } }] });
+  expect(validateMethodologyGraph(graph, forms.forms.map(form => form.ref)).validForConfirmation).toBe(true);
+});

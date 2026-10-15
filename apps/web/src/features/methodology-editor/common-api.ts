@@ -8,11 +8,12 @@ export interface MethodBuffer {
   ownerUserId: string | null;
   targetId: string | null; version: number; name: string; purpose: string; reason: string;
   graph: MethodologyGraph; nodeId: string; dirty: boolean;
+  validation: MethodVersion['validation'] | null;
   pending: { request: MethodCommand; name: string; purpose: string } | null;
 }
-export function emptyMethodBuffer(): MethodBuffer { return { ownerUserId: null, targetId: null, version: 0, name: '', purpose: '', reason: '', graph: { nodes: [], edges: [], entryNodeId: '', terminalNodeIds: [] }, nodeId: '', dirty: false, pending: null }; }
+export function emptyMethodBuffer(): MethodBuffer { return { ownerUserId: null, targetId: null, version: 0, name: '', purpose: '', reason: '', graph: { nodes: [], edges: [], entryNodeId: '', terminalNodeIds: [] }, nodeId: '', dirty: false, pending: null, validation: null }; }
 export function methodBuffer(value: MethodVersion, ownerUserId: string): MethodBuffer {
-  return { ownerUserId, targetId: value.ref.id, version: value.ref.version, name: value.name, purpose: value.purpose, reason: '', graph: structuredClone(value.graph), nodeId: value.graph.entryNodeId, dirty: false, pending: null };
+  return { ownerUserId, targetId: value.ref.id, version: value.ref.version, name: value.name, purpose: value.purpose, reason: '', graph: structuredClone(value.graph), nodeId: value.graph.entryNodeId, dirty: false, pending: null, validation: value.validation };
 }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 export interface CommonCommandReceipt { targetId: string; version: number; data: { ref: VersionRef; status: 'DRAFT' | 'REVIEW_RECORDED' | 'CONFIRMED'; reviewRef?: unknown; confirmationId?: string } }

@@ -59,6 +59,17 @@ test('본인 공통 방법론 복사·개정은 원자 저장되고 재전송·�
     const persisted = (await pool.query("SELECT count(*)::int AS count FROM anvil.commands WHERE scope_kind='USER_COMMON' AND scope_id=$1", [users[0]])).rows[0].count;
     assert.equal(persisted, 2);
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM anvil.user_common_audit_events WHERE owner_user_id=$1', [users[0]])).rows[0].count, 2);
+    const form = (await app.inject({ method: 'GET', url: '/api/v1/forms/a6f30000-0000-4000-8000-000000000001/versions/1', headers })).json().ref;
+    const humanNode = { nodeId: 'N-REQ', name: '요구 확인', purpose: '사용자가 요구와 이유를 확인', kind: 'HUMAN', role: 'USER', position: { x: -40, y: 60 }, inputs: [], outputs: [{ itemId: 'OUT-REQ', formRef: form, required: true, reviewCriteria: ['요구 출처 확인'] }], taskScope: { included: ['요구 검토'], excluded: ['실제 배포'] }, completionCriteria: ['판단과 이유 기록'], approvalBoundary: ['USER_REQUIREMENTS_CONFIRMATION'], mode: 'CASE_BY_CASE', limitPolicyRef: null, recordRequirements: ['현재 위치·판단 이유·남은 내용'] };
+    const authoredGraph = { nodes: [humanNode, { ...humanNode, nodeId: 'N-END', name: '마지막 확인', position: { x: 280, y: 100 }, inputs: [{ itemId: 'IN-REQ', formRef: form, required: true, sourceNodeId: 'N-REQ', reviewCriteria: ['앞선 판단과 동일 원본 대조'] }], outputs: [] }],
+      edges: [{ edgeId: 'E-NEXT', fromNodeId: 'N-REQ', toNodeId: 'N-END', kind: 'SEQUENCE', reason: '사용자 판단 뒤 진행', condition: { all: [{ fieldRef: { nodeId: 'N-REQ', field: 'USER_DECISION' }, operator: 'EQ', value: 'CONTINUE' }, { not: { fieldRef: { nodeId: 'N-REQ', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'BLOCKED' } }] } }], entryNodeId: 'N-REQ', terminalNodeIds: ['N-END'] };
+    const authored = await send({ schemaVersion: 1, commandId: randomUUID(), operation: 'saveMethodologyDraft', targetId: null, expectedVersion: 0, clientId: own.clientId,
+      payload: { name: '직접 작성한 두 단계', purpose: '직접 작성·조건·양식의 불변 보존 QA', scope: 'USER_COMMON', graph: authoredGraph, reason: '새 방법론 작성 QA' } });
+    assert.equal(authored.statusCode, 200, authored.body); assert.equal(authored.json().data.validation.validForConfirmation, true);
+    const restored = await app.inject({ method: 'GET', url: `/api/v1/methodologies/${authored.json().targetId}/versions/1`, headers });
+    assert.equal(restored.statusCode, 200); assert.deepEqual(restored.json().graph, authoredGraph);
+    assert.equal(restored.json().runtimeReadiness, 'PROJECT_BINDINGS_REQUIRED');
+    assert.equal((await pool.query("SELECT count(*)::int AS count FROM anvil.commands WHERE scope_kind='USER_COMMON' AND scope_id=$1", [users[0]])).rows[0].count, 3);
     await assert.rejects(pool.query("UPDATE anvil.methodology_definitions SET head_version=1 WHERE id=$1", [source.ref.id]), (e: unknown) => (e as { code: string }).code === '42501');
     await assert.rejects(pool.query("DELETE FROM anvil.user_common_audit_events WHERE owner_user_id=$1", [users[0]]), (e: unknown) => (e as { code: string }).code === '42501');
     await access.logout(own.token, own.csrfToken);

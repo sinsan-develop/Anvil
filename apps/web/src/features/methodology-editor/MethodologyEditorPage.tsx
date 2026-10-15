@@ -5,6 +5,7 @@ import { getMethod, listMethods, type MethodPage, type MethodVersion } from './a
 import { CommonMethodEditor } from './CommonMethodEditor.tsx';
 import type { MethodBuffer } from './common-api.ts';
 import type { FormBuffer } from '../methodologies/form-editor-state.ts';
+import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 
 const approvalLabels: Record<string, string> = {
   USER_REQUIREMENTS_CONFIRMATION: '사용자 요구사항 확인', USER_ITERATION_SCOPE_CONFIRMATION: '사용자 반복 범위 확인',
@@ -47,6 +48,7 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
       {version ? <section className="status-card" aria-label="선택 방법론 원본"><h3>{version.systemCode ?? '사용자 정의'} {version.name}</h3>
         <p className="meta">버전 {version.ref.version} · {version.ref.contentHash}</p>
         <p>실제 Agent·환경·한도 연결 전 · 실행 불가</p><p>{version.confirmation ? '이 버전의 사람 확정 이력 있음 · 프로젝트 적용은 별도' : 'Anvil 안의 사람 확정 이력 없음'}</p>
+        <MethodGraphCanvas graph={version.graph} selectedId={nodeId} onSelect={setNodeId} label="원본 방법론 공간형 흐름도" />
         <div className="methodology-flow" role="group" aria-label="개발 절차">{version.graph.nodes.map((stage, index) => <button key={stage.nodeId} aria-pressed={stage.nodeId === nodeId} onClick={() => setNodeId(stage.nodeId)}>{index + 1}. {stage.name}</button>)}</div>
         {node ? <section aria-label="선택 단계 상세" className="status-card"><h4>{node.nodeId} {node.name}</h4><p>{node.purpose}</p><p className="meta">{node.kind === 'HUMAN' ? '사용자 판단 단계' : node.kind === 'AGENT' ? 'Agent 역할 단계 · 연결 전' : node.kind === 'JOIN' ? '결과 합류' : '분기 판단'} · 위치 {node.position.x}, {node.position.y}</p>
           <div className="methodology-detail"><div><h4>완료·검수 조건</h4><ul>{node.completionCriteria.map((text, index) => <li key={index}>{text}</li>)}</ul><h4>사람 확인 지점</h4>{node.approvalBoundary.length ? <ul>{node.approvalBoundary.map(code => <li key={code}>{approvalLabels[code] ?? code}</li>)}</ul> : <p>이 단계에 별도 사용자 확인 지점 없음 · 권한 검사는 유지</p>}

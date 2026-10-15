@@ -107,6 +107,15 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 UI03 공간형 방법론 편집 착수
+
+- fresh 검수: 타입/단위41/diff check exit0·Web42모듈 build(JS311.03kB/gzip92.52/CSS7.09kB)·인접 Edge11 fixture PASS/10.4초. 빈 직접 작성2단계의 오른쪽20/방향키 아래20 이동이 저장 payload/재조회에 보존되고 합성 SVG 캡처에서 읽을 수 있는 두 단계/화살표를 확인했다. all+not/유한 재작업2회/AF08 버전1 입력 ref 편집도 fixture PASS/3초. 같은 양식 목록을 쓰는 기존 조회의 버전 GET fixture 누락1은 catch-all에서503으로 차단됐고, 해당 예상 GET만 명시 보완했다. 예상 밖 호출 허용/타임아웃 완화/actual DB 우회0.
+- 다음 actual은 기존 전용 WSL DB에서 같은 고유 qa-common 사용자2/방법론 정의의 기존 정리 절차로 직접 작성2단계·음수/양수 좌표·고정 문서 ref·all/not 조건 전체 roundtrip을 추가 확인한다. 새로운 DB/port/Secret/Agent 호출은 만들지 않는다. 실제 새 UI DB E2E·방법론 내용검토/확정·프로젝트 적용·실제 한도 정책 바인딩은 여전히 미검증/미완료다.
+- 브라우저 RED: 단계 유형 입력 없음→구현 후 빈 방법론2단계·사람 역할/순서·USER_DECISION 비교·종료점·좌표 이동이 payload와 재조회에 보존되는 fixture1 PASS/2.6초. Web42모듈 build/typecheck exit0, 아직 실제 신규 그래프 DB roundtrip과 복합 조건/문서 ref의 추가 화면 검수는 전이다.
+- 구현은 source SVG 원본/본인 편집을 구별하고 선택/확대·방향키20 이동, 노드 이름/목적/역할/범위/진행/기록·입출력 고정 양식, 시작/종료/연결 및 제한 데이터형의 all/any/not·판단 비교, 합류 규칙·유한 재작업을 제공한다. 이전 조건 계약은 자동 변환하지 않으며 미리보기 깊이/범위 제한이 저장 정의를 바꾸지 않는다. 입력 변경 시 이전 검사 결과를 지우고 저장한 exact graph의 서버 문제 위치를 표시한다. 실제 호출·정책 권한 부여0.
+- checkpoint `51c74aa17e3b028dd6a33bbe0eabc9d47075a356`/local-private 동일·tracked clean·main f976ed5e 불변에서 승인된 P01 S03/계획 UI03·FN02의 남은 공간형/전체 단계 편집을 이어간다. 기존 copy/save API·허가된 양식 GET만 사용하며 새 DB/권한/API/Agent 실행 변경0. 원본/구버전과 사용자 dirty는 유지한다.
+- 구현 순서: 코드형 SVG 배치/선택·확대/키보드 위치 이동→단계 역할/범위·문서 양식 ref·순서/분기/합류/재작업 조건 편집→초안 저장 후 서버 구조 오류 위치 확인. 조건은 fieldRef/operator/value와 all/any/not의 제한 자료이며 eval/스크립트/임의 URL/actual Agent binding을 넣지 않는다. 좌표 미리보기 제한은 원래 저장 좌표를 수정하지 않으며 아직 없는 실제 실행 검증을 통과로 보고하지 않는다. 새 빈 방법론2단계/판단 연결·위치의 브라우저 RED부터 확인한다.
+
 ### 2026-10-16 본인 공통 자료의 내용검토·확정 착수
 
 - 후속 음성 actual: exact `34805ebedd2781eb23119d6d79648b1ecc585e8f` WSL1 PASS/324ms/skip0. 종합 ACCEPTED/항목 REWORK 불일치422·미연결 임의 ArtifactRef412·최신 REWORK가 있으면 이전 ACCEPTED로 확정422·보완 후 새 검토에서만 확정·새 버전 미이월 확인. 기존 SQL 재적용0·고유 QA 정리.
