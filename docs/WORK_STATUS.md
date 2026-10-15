@@ -3,11 +3,11 @@
 ## 1. 현재 상태와 기록 기준
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
-- 단계: **전체44업무 목표 유지 / P01~P03 준비 산출 수용 / Stage A 통합 검수 중**. 새 전용 개발 DB·실제 저장/조회·승인 CA의 HTTPS와 Edge 준비 화면을 확인했다. 준비 화면은 제품 UI00/FN 완료가 아니며 제품 기능은 아직 미구현이다.
+- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00 착수**. 새 전용 개발 DB·실제 저장/조회·승인 CA의 HTTPS와 Edge 준비 화면을 확인했다. 준비 화면은 제품 UI00/FN 완료가 아니며 제품 기능은 아직 미구현이다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
 - 최근 실제 확인: Windows `0ec17f1a`의 HTTPS 준비 probe exit0, 승인 CA 정확1·소유 Node PID52852/시각·3830 일치. WSL `892ea1e1`의 PG15.18·migration0000·합성 fixture7·비관리자 저장/별도 연결 재조회·DDL거절과 정리0을 확인했다. 후속 Windows 전용 변경을 WSL 실행 SHA에 소급하지 않는다. 상세는 [P03 결과](04_test_reports/AV3/P03/RESULT.md).
-- 코드 기준: `codex/av3-stage-a`, 검증 코드 HEAD `0ec17f1a79c6bb5733ca0e6b41901e9e8f34e8fb` local/private 동일. private main `b4f9006e`는 아직 Stage A 미통합이다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·untracked는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: P03 종료 기록·Stage A PR/필수 검수·merged-main smoke·소유 자원 정리 뒤 Stage B UI00 공통 작업틀에 착수한다. P01/P02 조사와 불변 검사를 반복하지 않는다. 실제 Agent 호출·제품 로그인/프로젝트·Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 개발 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
+- 다음 업무: UI00 공통 작업틀·same-origin client/오류/입력 보존을 구현한다. FN01 실제 인증·프로젝트 계약 연결 전 UI00은 부분 구현으로 유지하고 FN01/FN11 선행으로 이어간다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 개발 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -16,7 +16,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 0 / [2] 0 / [] 41 — 총44개**. P01은 사용자 승인, P02는 상세 계약/독립 보완 대조, P03은 실제 준비 환경 재현으로 수용했다. Stage A Git 통합은 진행 중이다. 준비 산출물은 제품 기능 구현이 아니다.
+- 현재 합계: **[0] 3 / [1] 0 / [2] 2 / [] 39 — 총44개**. P01/P02/P03 준비 수용, UI00/FN01은 Main 어울 순차 작업 중(동시 writer 아님). 준비 산출물은 제품 기능 구현이 아니다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -25,8 +25,8 @@
 
 | Stage | 결과 목표 | 현재 상태·남은 일 |
 |---|---|---|
-| A | 설계·실행 준비 | [1] P01~P03 수용, Stage A PR/통합·smoke·정리 전 |
-| B | 프로젝트·방법론·문서·지식 원본 | [] 제품 저장/조회·화면 연결 미구현 |
+| A | 설계·실행 준비 | [0] P01~P03 수용·PR41/main f976ed5e·통합 smoke·소유 자원/branch 정리 |
+| B | 프로젝트·방법론·문서·지식 원본 | [2] UI00 공통 작업틀 착수, 제품 저장/조회 연결 미구현 |
 | C | 실제 기존 Agent 작업 제어 | [] 실제 연결·임무·승인·실행/결과 회수 미구현 |
 | D | 도구 교체·설계 변경 통제 | [] 최소 손실 인계·실제 다른 도구/총괄 교체 미구현 |
 | E | 사람/기기 제어·백업·설치형 | [] 기능 구현·핵심 확인 미착수 |
@@ -49,7 +49,7 @@
 
 | 업무·화면 | 상태 | 현재 요약 | 다음 수행·검수 |
 |---|---|---|---|
-| UI00 공통 작업틀·상태 표현 | [] | 공통 배치/상태 설계만 있음 | shell·라우팅·권한/오류·same-origin 기본 연결 |
+| UI00 공통 작업틀·상태 표현 | [2] | 2026-10-16 Main 어울 착수·P01/P02/P03 기준. 실제 FN01 인증/제어 연결 전 부분 구현으로 관리 | shell·라우팅·오류/입력보존·same-origin client→FN01/FN11 실제 연결 |
 | UI01 프로젝트 목록 | [] | S01 정적 시안 | 실제 목록/필터·상태/권한·주 작업 이동 |
 | UI02 프로젝트 생성·기준선 | [] | S02 정적 시안, 기본내장 선택 후속 상세 필요 | 생성/중간저장·내장/직접정의·기존 소스 기준선 연결 |
 | UI03 방법론 흐름도 | [] | S03 정적 시안 | 내장3종/사용자 방법론·노드/문서·검사/저장/적용 |
@@ -71,7 +71,7 @@
 
 | 업무 | 상태 | 현재 요약 | 다음 수행·검수 |
 |---|---|---|---|
-| FN01 프로젝트 원본·접근·기준선 | [] | 논리 계약만 있음 | 실제 영속·접근격리·생성 중복/재조회 |
+| FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울 착수. 실제 Node Argon2id·session 만료/회수3건 RED→GREEN. 저장/API·로그인 화면 미구현 | 전용 DB migration·접근 격리·중복 생성·실제 재조회 |
 | FN02 내장/사용자 방법론·그래프 | [] | 내장3종과 P01 상세 기준 승인, 제품 구현 미착수 | 승인 버전의 내장 정의·복사/직접작성·검사/실제 저장·적용 |
 | FN03 문서 가져오기·양식·확정 | [] | 작성 공통 기준 문서 있음, 제품 적용 없음 | 원문/양식·편집제안·버전·확정/재조회 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
@@ -106,6 +106,19 @@
 | IX08 Oracle 정밀 검증 | [] | 별도 이전/배포 미실행 | 승인된 exact후보/환경 뒤 정밀 시험·사용자 확인 |
 
 ## 7. 일자별 상세 이력 — 최신순
+
+### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
+
+- 후속 직접 승인 `call_b7ba48656c4b44d7a6ad68143308c93e`: ‘Stage B 지정 branch 게시 승인’. 같은 지정 저장소/codex/av3-stage-b·Stage B 신규 코드/시험/migration/실행·검수 기록만 게시/일반 Stage PR. Backup/legacy·실제 계정/Secret/인증서/DB 데이터/타 프로젝트 제외, 실제 Agent/Oracle/운영·main 직접 쓰기/force/rewrite 불가. 이 승인은 실제 시험 결과가 아니다.
+- UI00 부분 검수: API client3·route1 RED→GREEN, 기존 회귀 포함17 PASS·타입/Web22모듈 PASS·실제 Edge2 PASS. 프로젝트 첫 화면/404 실패≠빈목록·모바일키보드/뒤로/새로고침·same-origin/JS오류0. 실제 인증/제어·입력 보존·가독성 전체는 FN01 연결 후 검수하므로 UI00 [0] 아님. 실제 native fetch를 객체 receiver로 호출해 Illegal invocation이 난1건은 Edge window/object 비교로 직접 확인 후 `.call(globalThis)`만 보완·동일2건 GREEN. CSS side-effect 타입 선언 오류1은 vite/client 선언 추가로 해결했다.
+- FN01 시작: FILE_MAP access service와 auth.test에 비밀번호15~128/Unicode·공백/대소문자 보존·개별salt/Argon2id·기한/세대/회수의 RED3→GREEN3, 전체20 PASS/typecheck0. 실제 Windows Node24.18 native crypto.argon2 존재와 공식 Node24 문서를 대조해 새 암호 라이브러리 설치 없이 승인 최소19MiB/2/p1을 사용한다. 동시 hash2개로 유한 제한, 실제 서버/DB·공격 방지 PASS 아님. 근거 https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptoargon2algorithm-parameters-callback . 새 사용자·세션·키/DB 변경0.
+
+- Stage A PR41 head ff9481d0를 일반 merge해 private main f976ed5e에 포함했다. PR 실제 mergeable=true, CI discovery의 checks/status0(설정된 CI 없음)·local 필수 검수와 독립 검토로 판정했다. account 지정 CI 조회1회 ‘account changed’는 쓰기 없이 실패, 기본 discovery의 정확 head 조회는 성공했다. CI를 실행 PASS라고 표시하지 않는다.
+- merged-main source diff0, 단위13/생성타입 일치·실제 승인CA HTTPS probe exit0. merged main Node61812를 receipt/start/exe/인자 대조 후 종료·3830잔여0, 전용 로그/receipt3개 정리. 이전 Node52852 종료 guard1회는 PowerShell JSON 자동 시각 변환 때문이며 변경 전 중단. DateKind String으로 원래 시각을 보존해 같은 모든 조건으로 확인했다. 공유 relay26052/DB/보호 참조·CA는 보존.
+- Stage A 원격 branch 부재·로컬 정상 삭제·정리 확인 후 main에서 `codex/av3-stage-b` 시작, 단일 writer Main 어울. 기존 원래 branch/사용자 자료는 손대지 않았다. 이전 Stage 문서7개를 공식 root로 hash 일치 동기화했다.
+- UI00 목적: Dashboard 대신 프로젝트 첫 화면·내부 탐색·공통 역할/제어/오류/미전송·same-origin client. 파일은 FILE_MAP의 App/shell/api/styles와 정확 시험, 필요 SPA 진입은 server app 및 기존 P03 영향 시험만. FN01/FN11 전 인증/프로젝트를 가짜 성공으로 표시하지 않는다.
+- 신규 Stage B 임시 자원: `D:\tmp\anvil-v3-stage-b\npm-cache`는 정확 lock102 설치 cache, `browser`는 Edge 별도 QA profile/결과. Main/UI00·Stage B 검수용·각 사용 종료/실패 때 정확 경로/소유 process 확인 후 정리한다. 이번 cache 디렉터리 생성이 사전 commentary/기록보다 먼저 실행된 순서 오류를 남긴다. 이후 새 자원은 생성 전 등록한다. 기존 사용자 profile/Root/전역 npm 자동 업데이트0.
+- 시작 검증 오류1: fresh 설치 직후 기존 Web unit이503!=200 실패. ignored dist가 아직 build되지 않은 준비 순서이며 기능 RED가 아니다. build→기존13개 단위 확인 후 실제 UI00 RED를 시작한다. 기존 기대값/검사 기준은 변경하지 않는다.
 
 ### 2026-10-16 P03 준비 환경 수용·Stage A 통합 착수
 

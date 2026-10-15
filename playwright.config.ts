@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
 
-process.env.TEMP = 'D:\\tmp\\anvil-v3-stage-a\\P03-browser';
+process.env.TEMP = 'D:\\tmp\\anvil-v3-stage-b\\browser';
 process.env.TMP = process.env.TEMP;
 export default defineConfig({
   testDir: './tests/browser',
-  outputDir: 'D:/tmp/anvil-v3-stage-a/P03-browser/results',
+  outputDir: 'D:/tmp/anvil-v3-stage-b/browser/results',
   workers: 1,
   retries: 0,
   forbidOnly: true,

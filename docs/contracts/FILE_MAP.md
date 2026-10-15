@@ -12,6 +12,10 @@ Windows의 새 app DB 보호 참조·소유 runtime 준비는 `scripts/link-deve
 
 ## 1. 경로와 단일 writer
 
+2026-10-16 구현 관측: Stage A/P03 source는 main PR41로 통합했다. Stage B/UI00은 §1의 App/shell/api/styles·시험을 작성 중이며 `apps/web/src/vite-env.d.ts`는 Vite CSS 타입 진입점, `tests/unit/UI00/routes.test.ts`는 경로 거절/프로젝트 유지 검수로 추가한다. FN01 access `service.ts`는 native Node Argon2id/세션 판정을 먼저 구현하며 실제 routes/repository·DB 연결 전에는 부분 구현이다. 아래 ‘파일 미생성’의 초기 상태를 현재 전체 사실로 해석하지 않는다.
+
+동일 Stage B의 `scripts/start-development.ps1`은 실제 branch·LOCAL_UNCOMMITTED/COMMITTED_SOURCE를 receipt에 기록하도록 메타데이터를 보완한다. 기존 Stage A branch 상수는 Stage B 시작 시 틀린 값이 실제 출력됐고, 로컬 dirty Web build를 exact commit 검증으로 오인하지 않도록 하는 변경이다. 공통 port·CA·권한·DB 연결은 그대로다.
+
 공식 프로젝트 root는 `D:\Project\Anvil`이다. 아래는 그 상대 경로이며 경로 이동/변경은 영향 업무와 함께 기록한다. `{a,b}` 표기는 열거한 정확한 두 파일을 뜻하며 glob·하위 폴더 전체 권한이 아니다. 등록되지 않은 파일이 필요하면 Main이 이유/소유/소비자를 갱신한다. Backup·기존 자료·Secret·Git 메타데이터는 제품 writer 범위가 아니다.
 
 | 공통 파일 | 소유·소비 |

@@ -50,7 +50,10 @@ try {
     Start-Sleep -Milliseconds 250
   }
   if (!$healthy) { throw 'DEVELOPMENT_HTTPS_NOT_READY' }
-  $receipt = [ordered]@{ kind='ANVIL_V3_OWNED_DEVELOPMENT_RUNTIME'; branch='codex/av3-stage-a'; commit=(& git -C $projectRoot rev-parse HEAD).Trim(); url='https://localhost:3830/'; scope='process-only'; connectionMode=$(if($hasDbListener){'verified-wsl-relay'}else{'owned-ssh-tunnel'}); relayPid=$relayPid; tunnelPid=$(if($tunnel){$tunnel.Id}else{$null}); tunnelStartedAt=$(if($tunnel){$tunnel.StartTime.ToUniversalTime().ToString('o')}else{$null}); serverPid=$server.Id; serverStartedAt=$server.StartTime.ToUniversalTime().ToString('o'); lifetime='후속 개발 보존·프로젝트 사용 종료 때 정확 소유 process만 종료·공유 relay 종료 금지' }
+  $actualBranch = (& git -C $projectRoot branch --show-current).Trim()
+  if (!$actualBranch) { $actualBranch = 'DETACHED' }
+  $sourceChanges = @(& git -C $projectRoot status --porcelain --untracked-files=all -- apps contracts db scripts tests package.json package-lock.json tsconfig.base.json playwright.config.ts)
+  $receipt = [ordered]@{ kind='ANVIL_V3_OWNED_DEVELOPMENT_RUNTIME'; branch=$actualBranch; commit=(& git -C $projectRoot rev-parse HEAD).Trim(); sourceState=$(if($sourceChanges.Count){'LOCAL_UNCOMMITTED'}else{'COMMITTED_SOURCE'}); url='https://localhost:3830/'; scope='process-only'; connectionMode=$(if($hasDbListener){'verified-wsl-relay'}else{'owned-ssh-tunnel'}); relayPid=$relayPid; tunnelPid=$(if($tunnel){$tunnel.Id}else{$null}); tunnelStartedAt=$(if($tunnel){$tunnel.StartTime.ToUniversalTime().ToString('o')}else{$null}); serverPid=$server.Id; serverStartedAt=$server.StartTime.ToUniversalTime().ToString('o'); lifetime='후속 개발 보존·프로젝트 사용 종료 때 정확 소유 process만 종료·공유 relay 종료 금지' }
   [IO.File]::WriteAllText((Join-Path $runtime 'receipt.json'),($receipt|ConvertTo-Json -Depth 3))
   $ready = $true
   $receipt|ConvertTo-Json -Depth 3
