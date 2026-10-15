@@ -2,6 +2,13 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { AuthFailure } from '../access/repository.ts';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { ProjectsRepository } from './repository.ts';
+import type { DraftCreate, DraftSave } from './repository.ts';
+import { parseWireJson } from '../../../../contracts/canonical.ts';
+
+const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
+const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
+function object(properties: Record<string, unknown>, required = Object.keys(properties)) { return { type: 'object', properties, required, additionalProperties: false }; }
+function csrf(request: FastifyRequest) { const value = request.headers['x-anvil-csrf']; if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(value)) throw new AuthFailure('CSRF_INVALID', 403); return value; }
 
 function token(request: FastifyRequest): string {
   const cookies = (request.headers.cookie ?? '').split(';').map(value => value.trim()).filter(value => value.startsWith('__Host-anvil.sid='));
@@ -10,8 +17,15 @@ function token(request: FastifyRequest): string {
 export function registerProjectRoutes(app: FastifyInstance, options: AccessRoutesOptions) {
   const repository = new ProjectsRepository(options.repository), host = new URL(options.origin).host;
   app.register(async projects => {
-    projects.addHook('onRequest', async request => { if (request.headers.host !== host) throw new AuthFailure('ORIGIN_INVALID', 403); });
+    projects.removeContentTypeParser('application/json');
+    projects.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, raw, done) => { try { done(null, parseWireJson(String(raw))); } catch { done(Object.assign(Error('INPUT_INVALID'), { statusCode: 400 }), undefined); } });
+    projects.addHook('onRequest', async request => {
+      if (request.headers.host !== host || request.method !== 'GET' && (request.headers.origin !== options.origin || !/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? ''))) throw new AuthFailure('ORIGIN_INVALID', 403);
+    });
     projects.get<{ Querystring: Record<string, unknown> }>('/api/v1/projects', request => repository.list(token(request), request.query));
     projects.get<{ Params: { projectId: string } }>('/api/v1/projects/:projectId', { schema: { params: { type: 'object', properties: { projectId: { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' } }, required: ['projectId'], additionalProperties: false } } }, request => repository.detail(token(request), request.params.projectId));
+    projects.get<{ Params: { draftId: string } }>('/api/v1/project-drafts/:draftId', { schema: { params: object({ draftId: idSchema }) } }, request => repository.getDraft(token(request), request.params.draftId));
+    projects.post<{ Body: DraftCreate }>('/api/v1/project-drafts', { schema: { body: object({ schemaVersion: { const: 1 }, commandId: idSchema, clientId: idSchema, targetId: { type: 'null' }, expectedVersion: { const: 0 }, ...inputProperties }, ['schemaVersion', 'commandId', 'clientId', 'targetId', 'expectedVersion', 'name', 'purpose', 'desiredOutcome', 'sourceMode']) } }, async (request, reply) => reply.code(201).send(await repository.createDraft(token(request), csrf(request), request.body)));
+    projects.patch<{ Params: { draftId: string }; Body: DraftSave }>('/api/v1/project-drafts/:draftId', { schema: { params: object({ draftId: idSchema }), body: object({ schemaVersion: { const: 1 }, commandId: idSchema, clientId: idSchema, expectedVersion: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER }, step: { type: 'integer', minimum: 1, maximum: 4 }, input: object(inputProperties, ['name', 'purpose', 'desiredOutcome', 'sourceMode', 'methodologySelection', 'artifactRefs']) }) } }, request => repository.saveDraft(token(request), csrf(request), request.params.draftId, request.body));
   });
 }

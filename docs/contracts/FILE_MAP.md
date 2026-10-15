@@ -20,6 +20,8 @@ FN01 추가 관측: access `routes.ts/repository.ts/service.ts`와 0001의 실�
 
 FN01 조회 연결의 정확 파일은 `apps/server/modules/projects/{routes,repository,service}.ts`, `tests/unit/FN01/project-list.test.ts`, `tests/integration/FN01/project-read.test.ts`다. 공통 인증 gate는 access repository의 서버 내부 `authenticated`를 사용하고 raw credential을 내보내지 않는다. 목록 cursor는 같은 보호 key의 용도 구분 HMAC만 소비하며 키를 새로 만들지 않는다. FN01 생성/방법론·기준선 연결 완료를 대신하지 않는다.
 
+FN01 중간 저장의 실제 생성/중복·다른 client·stale·별도 연결 재조회 검사는 `tests/integration/FN01/draft-storage.test.ts`다. WSL의 기존 app 참조와 별도 기존 migrator 참조(`ANVIL_QA_CLEANUP_CONFIG`)를 읽되 비밀을 출력/복사하지 않는다. 이번 무작위 QA 소유자 삽입 성공을 추적한 뒤 그 초안/명령/감사만 정확 정리한다. 제품 app 감사 변경 금지와 실제 사용자/원본 보존은 유지한다.
+
 UI00 실제 인증 연결의 추가 정확 파일은 `apps/web/src/shell/AuthForm.tsx`, `tests/browser/FN01/auth-live.spec.ts`다. 같은 auth route/storage·승인 CA·전용 개발 DB를 소비하는 실제 초기 등록/로그인 브라우저 검수이며 예시 화면 fixture와 구분한다.
 
 공식 프로젝트 root는 `D:\Project\Anvil`이다. 아래는 그 상대 경로이며 경로 이동/변경은 영향 업무와 함께 기록한다. `{a,b}` 표기는 열거한 정확한 두 파일을 뜻하며 glob·하위 폴더 전체 권한이 아니다. 등록되지 않은 파일이 필요하면 Main이 이유/소유/소비자를 갱신한다. Backup·기존 자료·Secret·Git 메타데이터는 제품 writer 범위가 아니다.

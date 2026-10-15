@@ -109,6 +109,9 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- FN01 중간 저장 후보: 현재 인증/CSRF·초안 소유자/client 아래 POST/GET/PATCH를 추가, create/save command·DRAFT receipt·감사를 같은 transaction에 저장한다. 사용자 행 gate 아래 create command를 전체 본인 scope에서 먼저 대조하므로 동시 새 draftId를 중복 만들지 않는다. `schemaVersion=1,commandId,clientId`와 생성 targetId=null/expectedVersion0·저장 expectedVersion/step/input은 기존 §8~9.2의 wire 상세화다. 미완성 목적은 초안에 저장 가능, 최종 프로젝트가 아니며 미정 방법론/null·자료[]만 허용한다. EXISTING 소스/실제 자료/방법론 선택은 저장 선행 전412로 차단해 거짓 기준선/성공을 만들지 않는다. 무인증GET404→401·단위24/typecheck PASS, 실제 저장 검사는 다음 WSL 게시 후보 전이다.
+- 초안 실제 QA 사전 등록: Main/FN01, 기존 지정 v3 DB의 고유 `qa-draft-UUID` 일반 사용자2·초안/command/receipt/감사만 사용·실제 소유자/초기화/키0. 기존 WSL migrator 참조는 이번 삽입 성공을 추적한 QA 소유 초안 행만 정확 정리하는 별도 역할로 사용하고 Windows로 비밀 복사0·제품 코드에서 감사 우회0. 실제 사용자/프로젝트·auth 감사는 보존한다. 이 정리 권한을 제품 app의 감사 UPDATE/DELETE 허용으로 승격하지 않는다. 과거 계약 그대로 administrator 전체 변조 불가 보장은 하지 않는다.
+
 - FN01 프로젝트 읽기 actual: WSL exact `b11167dc2748d3aab347a3db24c05d1969767ddd`/clean에서 auth 인접1·project-read1=2 PASS(1.42초). 고유 QA 사용자2/프로젝트4만 사용하고 모두 정확 정리했다. 허가 목록/직접ID404·보관 분리·membership회수·로그아웃401·서명cursor 주체·microsecond 항목 손실0을 확인했다. 합성 SQL seed를 실제 프로젝트 생성 기능 성공으로 보고하지 않는다.
 - UI01 목록 partial: 기존 S01의 이름/목적·목록 검색/보관·cursor·S04이동·관측/오류 보존만 연결했다. 단계/완료 분류·담당/결정/다음 행동·생성은 연결 전임을 화면에 명시했고 진행/완료인 것처럼 꾸미지 않는다. 화면 부재2 RED→같은 fixture2 GREEN, 단위24·타입/Web26모듈 PASS. API 저장 검수와 fixture 화면을 합쳐 E2E PASS로 세지 않는다.
 - 영향 브라우저11에서10 PASS/1 FAIL: 예전 ‘실제 미구현 session404’ 조건은 현재 실제 인증401로 바뀌어 ‘찾을 수 없습니다’ assertion이 실패했다. 인증/세션 구현을404로 되돌리거나 기대값을 느슨하게 바꾸지 않고, 기존404 오류표시 계약에 명시 fixture를 고정했다. 이때 미고정 탐색 시험이 AuthForm의 자동 setup 조회를 실제 서버로 보낼 수 있던 격리 누락도 확인하고 공통 session fixture로 차단했다. 이후 동일 오류/빈목록 금지 기준의 UI00/01 영향11 PASS(6.3초), 단위24 PASS. 향후 Windows 실제 auth DB 경로 재시도 금지는 그대로 유지한다. 최초10/1 실패는 원래 사실로 보존한다.
