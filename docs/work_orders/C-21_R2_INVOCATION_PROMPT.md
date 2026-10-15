@@ -1,3 +1,0 @@
-# WI-C-21-OPS-R2 Invocation Prompt
-
-`docs/work_orders/WI-C-21-OPS-R2.md`를 유일한 실행 범위로 사용하라. 먼저 시작 증거와 secret-safe dry-run을 수집하고, credential 원문·Authorization header·내부 주소를 출력하지 마라. 승인 전에는 Telegram POST와 외부 Provider probe를 실행하지 말고, 승인 후에도 Telegram signed POST는 정확히 1회, Provider는 non-billing capability/health probe만 수행하라. 이후 승인된 identity로 인증 SSE를 연결하고 `Last-Event-ID` 재개·순서·중복을 확인하라. DB side effect는 기본 정리하되 보존 시 사람의 DecisionRecord를 요구하라. 배포·schema·Provider model/routing·webhook 설정은 변경하지 마라. 모든 명령/종료코드/HTTP receipt/DB event/SSE event를 동일 target의 EvidenceManifest와 C-21 R2 TestReport에 secret-safe로 기록하고, 미검증은 PASS로 표시하지 마라. 예상 밖 side effect, fail-open 보안, target 불일치, billing 가능성, credential 노출이 보이면 즉시 `BLOCKED`로 전환하라.
