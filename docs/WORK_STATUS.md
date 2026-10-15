@@ -109,6 +109,8 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- FN11 저장 RED: WSL exactd1f76dcb에서 permission_policies 부재 false!=true를 확인했다. 이제 명시 `0011_authorization`으로 정책/version·명령·정확 승인 요청/결정/소비·receipt·별도 감사/사건/outbox/draft 감사11테이블을 전용 DB에 추가한다. 신산님 P03의 전용 v3 migration 승인 범위, 기존 0000/0001 checksum 불변. 새 감사·불변 version/결정/소비/receipt만 app UPDATE/DELETE 차단하고 기존 테이블/역할/Secret는 변경하지 않는다. command↔receipt는 같은 scope/command의 지연 FK로 결박, NULL scope 우회도 CHECK로 거절한다. 실제 적용은 지정 branch 게시→WSL exact SHA/migrator/transaction/checksum 뒤, 실패는 rollback·applied SQL 수정0. 합성 사용자/client/프로젝트2/명령2·감사1은 실제 검사 transaction rollback·잔여0, 실제 사용자 생성0. 이 단계는 schema 준비이며 기능 권한집행 PASS가 아니다.
+
 - 내부 선행 판정: FN01의 초안/프로젝트 명령은 FN11 command·draft 감사 저장을 소비하고 최종 생성은 FN02/03 확정본을 소비한다. DATA_MODEL §6.6/INTERFACES §15.3의 명시 DAG대로 이미 확인한 FN01 인증 기반 뒤 0011 저장 원시기능을 먼저 구현한다. 이는 FN01/FN11을 최종 수용하거나 선행을 삭제하는 변경이 아니며, 각각의 최종 연결 검수는 남긴다. 정확 신규 시험 `tests/integration/FN11/authorization-schema.test.ts`는 WSL Git 후보의 미존재 RED부터 확인한다. 새 schema는 지정 v3 DB/migration 승인 범위만, 적용 전 0000/0001 checksum·역할·현재 사용자0을 대조한다. 기존 migration/데이터/외부 서비스 삭제0. 미커밋 부모 디렉터리 생성 도구 제한1은 기존 자료 변경 없이 정확 새 시험 디렉터리만 준비했다.
 
 - 초대 API 실제 검수: WSL Git exact `3b8e029d539b5be587ff0c1b178641811a3c183e`/clean·typecheck·auth DB/HTTP1 PASS(1.83초). 소유자 재인증 초대→일회 비밀1회→일반 사용자 수락/자동로그인0→새 로그인·일반 사용자 초대403을 확인, 고유 두 QA 계정/초대/세션을 정리했다. 프로젝트 grant 집행과 소유자 초대 작성 UI는 아직 미완료다.

@@ -9,6 +9,7 @@ const config = validateDevelopmentDbConfig(JSON.parse(await readFile(configFile,
 const client = new Client(config);
 const sql = await readFile(new URL('../db/migrations/0000_environment.sql', import.meta.url), 'utf8');
 const checksum = createHash('sha256').update(sql).digest('hex');
+const receipts = [{ migration: '0000_environment', checksum }];
 try {
   await client.connect();
   const identity = (await client.query('SELECT current_database() AS database,current_user AS username,inet_server_port() AS port')).rows[0];
@@ -24,7 +25,7 @@ try {
     if (applied.rows[0]?.checksum !== checksum) throw Error('MIGRATION_CHECKSUM_CONFLICT');
   }
   // 명시한 의존 순서만 실행한다. 파일 이름 정렬이나 임의 SQL 경로를 받지 않는다.
-  for (const id of ['0001_projects_access']) {
+  for (const id of ['0001_projects_access', '0011_authorization']) {
     const content = await readFile(new URL('../db/migrations/' + id + '.sql', import.meta.url), 'utf8');
     const expected = createHash('sha256').update(content).digest('hex');
     const row = await client.query('SELECT checksum FROM anvil.schema_migrations WHERE id=$1', [id]);
@@ -34,13 +35,14 @@ try {
       await client.query(content);
       await client.query('INSERT INTO anvil.schema_migrations(id,checksum) VALUES($1,$2)', [id, expected]);
     }
+    receipts.push({ migration: id, checksum: expected });
   }
   const fixtures = JSON.parse(await readFile(new URL('../db/qa/fixtures.json', import.meta.url), 'utf8'));
   for (const [name, value] of Object.entries(fixtures)) {
     await client.query('INSERT INTO anvil_qa.fixtures(name,payload) VALUES($1,$2) ON CONFLICT(name) DO UPDATE SET payload=EXCLUDED.payload', [name, JSON.stringify(value)]);
   }
   await client.query('COMMIT');
-  console.log(JSON.stringify({ migration: '0000_environment', checksum, fixtures: Object.keys(fixtures).length, realProductUsersCreated: 0, status: 'applied-and-seeded' }));
+  console.log(JSON.stringify({ migrations: receipts, fixtures: Object.keys(fixtures).length, realProductUsersCreated: 0, status: 'applied-and-seeded' }));
 } catch {
   await client.query('ROLLBACK').catch(() => {});
   console.error('DEVELOPMENT_MIGRATION_FAILED_NO_SECRET_OUTPUT');
