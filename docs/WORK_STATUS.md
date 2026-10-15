@@ -109,6 +109,8 @@
 
 ### 2026-10-16 P03 실행 범위 직접 승인·P02 종료 대조
 
+- 중간 기준선 게시: `codex/av3-stage-a` commit `8f3af6565654af2649e2737933b243c3a969becd` 정확89파일·local/private 동일·tracked clean, private main `b4f9006e30e5afcf98ef8ef1f39707ecc8954feb` 불변을 실제 조회했다. WSL 신규 Git도 exact8f3af656/clean이며 기존 자료를 복사 배포하지 않았다. 실제 DB 생성/저장·브라우저는 아직 미검증이다.
+- 생성 직전 준비 판정 보완: 공식 docker-library/postgres entrypoint의 초기 socket-only 서버와 최종 TCP 서버를 구분했다. 초기 서버를 정상 완료로 오인하는 assertion RED를 확인한 뒤 readiness를127.0.0.1 TCP로 한정했다. 근거 https://raw.githubusercontent.com/docker-library/postgres/master/docker-entrypoint.sh . 이 변경은 같은 branch의 후속 exact commit/private 게시 뒤 WSL로 받아 사용하며 서버 소스 직접 patch0이다.
 - 첫 checkpoint은 exact89파일 stage 뒤 generated-types EOF 여백의 staged diff-check 실패1로 commit 전 중단했다. 기존 dirty/다른 파일은 stage하지 않았다. generator의 최종 개행을 단일화하고 .gitattributes/.gitignore LF를 고정해 재생성·exact hash/차이를 다시 대조한다. 이 중간 실패를 commit/push 완료로 표시하지 않는다.
 - 다음 생성 사전 등록: WSL `/home/daon/deploy/anvil-v3`는 지정 private branch의 exact commit Git checkout용·후속 개발 보존, Git 원격 접근/부재/부모 realpath 확인 완료·생성 직전 재확인. `/home/daon/.local/share/anvil-v3-development`는 신규 DB 보호 설정만·UID1000/0700·파일0600. 신규 PG `anvil-v3-development-pg`/network `anvil-v3-development`/volume `anvil-v3-development-pgdata`는 Main/P03 소유·후속 개발 보존·기존 자원 채택0, 정확 image/digest·instance label/신규 ID/loopback5546을 검증한다. 실제 생성은 아직 전이다.
 - WSL npm cache는 `/home/daon/deploy/anvil-v3/.av3-data/npm-cache`로 한정·P03 설치 후 정확 제거, 전역 npm/cache/기존 node_modules는 변경하지 않는다. 합성 fixture7개는 P03 전용 anvil_qa 저장 자료이며 제품 로그인 사용자/프로젝트 생성이 아니다. 동적 저장 probe행은 고유 ID로 시험 후 정확 삭제/0확인한다.

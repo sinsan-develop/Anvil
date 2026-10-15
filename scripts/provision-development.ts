@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, writeFileSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { assertResourceAbsent, assertNewResourceLabels } from './development-resource-guards.ts';
+import { assertResourceAbsent, assertNewResourceLabels, checkPostgresReady } from './development-resource-guards.ts';
 
 const root = '/home/daon/.local/share/anvil-v3-development';
 const resource = {
@@ -53,7 +53,7 @@ if (args[0] === '--plan') {
   if (docker(['container', 'inspect', resource.container, '--format', '{{.Id}}|{{.Image}}']) !== containerId + '|' + resource.imageId) throw Error('NEW_CONTAINER_ID_MISMATCH');
   let ready = false;
   for (let n = 0; n < 30; n++) {
-    try { docker(['exec', resource.container, 'pg_isready', '-U', 'anvil_v3_bootstrap', '-d', resource.database]); ready = true; break; }
+    try { checkPostgresReady(docker, resource.container, resource.database); ready = true; break; }
     catch { await new Promise(resolve => setTimeout(resolve, 500)); }
   }
   if (!ready) throw Error('NEW_DEVELOPMENT_DB_NOT_READY_PRESERVED');
