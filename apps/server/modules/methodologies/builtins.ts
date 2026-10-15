@@ -48,19 +48,19 @@ export function buildBuiltinMethodologies(source: Buffer, forms: OfficialForm[])
     });
     const edges: MethodologyEdge[] = nodes.slice(0, -1).map((node, stage) => ({
       edgeId: `${prefix}.SEQ.${stage + 1}`, fromNodeId: node.nodeId, toNodeId: nodes[stage + 1]!.nodeId,
-      kind: 'SEQUENCE', condition: { kind: 'REVIEW_DECISION', nodeId: node.nodeId, outcome: 'ACCEPTED' }, reason: '정확 기준의 결과 검수와 필요한 사용자 확인 뒤 다음 단계로 진행한다.',
+      kind: 'SEQUENCE', condition: { fieldRef: { nodeId: node.nodeId, field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'ACCEPTED' }, reason: '정확 기준의 결과 검수와 필요한 사용자 확인 뒤 다음 단계로 진행한다.',
     }));
     const reworks = [[0, 0], [1, 0], [1, 1], [2, 2], [3, 2], [4, 4], [5, 4], [6, prefix === 'AG' ? 1 : 5]];
     reworks.forEach(([from, to], edgeIndex) => {
       const node = nodes[from!]!;
       const iteration = prefix === 'AG' && from === 6;
       edges.push({ edgeId: `${prefix}.REWORK.${edgeIndex + 1}`, fromNodeId: node.nodeId, toNodeId: nodes[to!]!.nodeId,
-        kind: 'REWORK', condition: iteration ? { kind: 'USER_CHOICE', nodeId: node.nodeId, choiceId: 'NEXT_ITERATION' } : { kind: 'REVIEW_DECISION', nodeId: node.nodeId, outcome: 'REWORK' },
+        kind: 'REWORK', condition: iteration ? { fieldRef: { nodeId: node.nodeId, field: 'USER_DECISION' }, operator: 'EQ', value: 'NEXT_ITERATION' } : { fieldRef: { nodeId: node.nodeId, field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'REWORK' },
         reason: stages[from!]![7]! + ' · 영향받은 미충족 범위만 보완, 의미/중요 위험 변경은 영향·승인·계획 개정 절차를 거친다.',
         retryPolicy: { maxAttempts: 3, onExhausted: 'USER_DECISION', counting: 'SAME_FAILURE_FINGERPRINT' } });
     });
     const graph = { nodes, edges, entryNodeId: nodes[0]!.nodeId, terminalNodeIds: [nodes[6]!.nodeId] };
-    return { id: `a6f20000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`, version: 1,
+    return { id: `a6f20000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`, version: 2,
       systemCode: `SYS-M0${index + 1}`, name: names[index]!, purpose: goals[index]!, graph,
       contentHash: contentHash(canonicalJson(graph)), sourceHash: builtinSourceHash, runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED' };
   });

@@ -31,7 +31,7 @@ test('내장 방법론3종의 실제 DB/HTTP 버전과 고정 양식·원문이 
     assert.equal(list.statusCode, 200); assert.equal(list.json().items.length, 3);
     assert.deepEqual(list.json().items.map((item: { systemCode: string }) => item.systemCode), ['SYS-M01', 'SYS-M02', 'SYS-M03']);
     for (const method of methods) {
-      const response = await app.inject({ method: 'GET', url: `/api/v1/methodologies/${method.id}/versions/1`, headers });
+      const response = await app.inject({ method: 'GET', url: `/api/v1/methodologies/${method.id}/versions/${method.version}`, headers });
       assert.equal(response.statusCode, 200);
       assert.equal(response.json().ref.contentHash, method.contentHash);
       assert.deepEqual(response.json().graph, method.graph);
@@ -40,6 +40,14 @@ test('내장 방법론3종의 실제 DB/HTTP 버전과 고정 양식·원문이 
       assert.equal(response.json().sourceApproval.productAcceptance, false);
       assert.equal(response.json().confirmation, null);
       await assert.rejects(pool.query("UPDATE anvil.methodology_versions SET reason='overwrite' WHERE definition_id=$1", [method.id]), (error: unknown) => (error as { code: string }).code === '42501');
+    }
+    const predecessors = ['320f57b45ad2a1ff5d5befa75131d4a7055406901f8f61cddb741bf29111afa6', '36e80925407e23332b814c00d4745ba8e28868cbf6832744c6d0541709e76f3f', 'e377320eeb6cd8f0d04d05552f7808df6f829ab478dcaa71581a27c87aa0a885'];
+    for (const [index, method] of methods.entries()) {
+      const legacy = (await pool.query('SELECT graph_json,content_hash FROM anvil.methodology_versions WHERE definition_id=$1 AND version=1', [method.id])).rows[0];
+      assert.equal(legacy.content_hash, predecessors[index]);
+      assert.equal(legacy.graph_json.edges[0].condition.kind, 'REVIEW_DECISION');
+      const old = await app.inject({ method: 'GET', url: `/api/v1/methodologies/${method.id}/versions/1`, headers });
+      assert.equal(old.statusCode, 200); assert.equal(old.json().validation.validForConfirmation, false);
     }
     await pool.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'FN02 타 소유 QA','ACTIVE')", [otherUser, 'qa-methods-' + otherUser]);
     const fixture = await admin.connect();

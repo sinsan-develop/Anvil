@@ -25,7 +25,7 @@ const version = (index: number) => {
 test('방법론 화면 계약: 내장3종의7단계·선택 단계 문서/사람확인/재작업을 읽으며 실행하지 않는다', async ({ page }) => {
   const writes: string[] = [];
   page.on('request', request => { if (request.method() !== 'GET') writes.push(request.url()); });
-  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/1$/, route => route.fulfill({ json: version(methods.findIndex(method => route.request().url().includes(method.id))) }));
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/2$/, route => route.fulfill({ json: version(methods.findIndex(method => route.request().url().includes(method.id))) }));
   await page.goto('/#/methodologies');
   await expect(page.getByRole('button', { name: '구조적 방법론 상세 보기', exact: true })).toBeVisible({ timeout: 1000 });
   await expect(page.getByRole('button', { name: '3. 상세 설계·화면', exact: true })).toBeVisible();
@@ -44,7 +44,7 @@ test('방법론 화면 계약: 내장3종의7단계·선택 단계 문서/사람
 
 test('방법론 화면 계약: 조회 권한 회수 뒤 이전 그래프를 재사용하지 않는다', async ({ page }) => {
   let calls = 0;
-  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/1$/, route => ++calls === 1 ? route.fulfill({ json: version(0) }) : route.fulfill({ status: 403, json: { code: 'FORBIDDEN' } }));
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/2$/, route => ++calls === 1 ? route.fulfill({ json: version(0) }) : route.fulfill({ status: 403, json: { code: 'FORBIDDEN' } }));
   await page.goto('/#/methodologies');
   await expect(page.getByRole('button', { name: '3. 상세 설계·화면', exact: true })).toBeVisible({ timeout: 1000 });
   await page.getByRole('button', { name: '방법론 다시 조회', exact: true }).click();

@@ -61,11 +61,22 @@ test('조건 실행 코드/추가 credential 필드·알 수 없는 연산자는
   assert.equal(validateMethodologyGraph({ nodes: [], edges: [], entryNodeId: '', terminalNodeIds: [] }, refs).validForConfirmation, false);
 });
 
+test('상세 계약15.3의 fieldRef/operator/value와 all/any/not을 사용하며 구형 kind 조건을 확정하지 않는다', () => {
+  const value = graph();
+  Object.assign(value.edges[0]!, { condition: { all: [
+    { fieldRef: { nodeId: 'ST01', field: 'REVIEW_OUTCOME' }, operator: 'IN', value: ['ACCEPTED'] },
+    { not: { fieldRef: { nodeId: 'ST01', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'BLOCKED' } },
+  ] } });
+  assert.equal(validateMethodologyGraph(value, refs).validForConfirmation, true);
+  Object.assign(value.edges[0]!, { condition: { kind: 'REVIEW_DECISION', nodeId: 'ST01', outcome: 'ACCEPTED' } });
+  assert.equal(validateMethodologyGraph(value, refs).validForConfirmation, false);
+});
+
 test('종료 뒤 정상 작업이 남으면 완료 경계로 확정하지 않고 유효한 ALL 합류는 허용한다', () => {
   const premature = graph(); premature.terminalNodeIds = ['ST03'];
   assert(validateMethodologyGraph(premature, refs).issues.some(issue => issue.code === 'TERMINAL_HAS_SUCCESSOR' && issue.location.includes('ST03')));
   const joined = graph();
   joined.nodes[5]!.kind = 'JOIN'; joined.nodes[5]!.joinRule = { mode: 'ALL' };
-  joined.edges.push({ edgeId: 'explicit-join', fromNodeId: 'ST04', toNodeId: 'ST06', kind: 'JOIN', condition: { kind: 'REVIEW_DECISION', nodeId: 'ST04', outcome: 'ACCEPTED' }, reason: '계획과 구현 결과가 모두 있어야 검수로 합류' });
+  joined.edges.push({ edgeId: 'explicit-join', fromNodeId: 'ST04', toNodeId: 'ST06', kind: 'JOIN', condition: { fieldRef: { nodeId: 'ST04', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'ACCEPTED' }, reason: '계획과 구현 결과가 모두 있어야 검수로 합류' });
   assert.equal(validateMethodologyGraph(joined, refs).validForConfirmation, true);
 });

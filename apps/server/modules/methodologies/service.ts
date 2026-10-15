@@ -11,9 +11,15 @@ function object(value: unknown, keys: string[], required = keys): value is Recor
 const texts = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === 'string');
 const nonempty = (value: string) => value.trim().length > 0;
 function condition(value: unknown): boolean {
-  if (!object(value, ['kind', 'nodeId', 'outcome', 'choiceId'], ['kind', 'nodeId']) || typeof value.nodeId !== 'string') return false;
-  return value.kind === 'REVIEW_DECISION' ? object(value, ['kind', 'nodeId', 'outcome']) && ['ACCEPTED', 'REWORK', 'BLOCKED'].includes(String(value.outcome))
-    : value.kind === 'USER_CHOICE' && object(value, ['kind', 'nodeId', 'choiceId']) && typeof value.choiceId === 'string' && nonempty(value.choiceId);
+  if (object(value, ['all'])) return Array.isArray(value.all) && value.all.length > 0 && value.all.every(condition);
+  if (object(value, ['any'])) return Array.isArray(value.any) && value.any.length > 0 && value.any.every(condition);
+  if (object(value, ['not'])) return condition(value.not);
+  if (!object(value, ['fieldRef', 'operator', 'value']) || !object(value.fieldRef, ['nodeId', 'field']) || typeof value.fieldRef.nodeId !== 'string' || !['REVIEW_OUTCOME', 'USER_DECISION'].includes(String(value.fieldRef.field))) return false;
+  const validValue = (item: unknown) => typeof item === 'string' && nonempty(item) && (value.fieldRef as RecordValue).field === 'USER_DECISION'
+    || typeof item === 'string' && ['ACCEPTED', 'REWORK', 'BLOCKED'].includes(item);
+  return value.operator === 'IS_PRESENT' ? value.value === null
+    : value.operator === 'IN' ? Array.isArray(value.value) && value.value.length > 0 && value.value.every(validValue)
+    : ['EQ', 'NE'].includes(String(value.operator)) && validValue(value.value);
 }
 function shape(input: unknown): input is MethodologyGraph {
   if (!object(input, ['nodes', 'edges', 'entryNodeId', 'terminalNodeIds']) || typeof input.entryNodeId !== 'string' || !texts(input.terminalNodeIds) || !Array.isArray(input.nodes) || !Array.isArray(input.edges)) return false;
@@ -54,9 +60,12 @@ export function validateMethodologyGraph(input: unknown, forms: readonly Version
   if (!graph.terminalNodeIds.length || new Set(graph.terminalNodeIds).size !== graph.terminalNodeIds.length || graph.terminalNodeIds.some(id => !nodes.has(id))) issue('TERMINAL_NODE_MISSING', 'terminalNodeIds', '종료 단계가 없거나 중복/잘못된 참조입니다.');
   const checkCondition = (value: GraphCondition | null | undefined, location: string) => {
     if (!value) return;
-    const referenced = nodes.get(value.nodeId);
+    if ('all' in value) { value.all.forEach((item, index) => checkCondition(item, `${location}.all.${index}`)); return; }
+    if ('any' in value) { value.any.forEach((item, index) => checkCondition(item, `${location}.any.${index}`)); return; }
+    if ('not' in value) { checkCondition(value.not, location + '.not'); return; }
+    const referenced = nodes.get(value.fieldRef.nodeId);
     if (!referenced) issue('CONDITION_REFERENCE_MISSING', location, '판단 대상 단계가 없습니다.');
-    else if (value.kind === 'USER_CHOICE' && (referenced.role !== 'USER' || !['HUMAN', 'DECISION'].includes(referenced.kind))) issue('HUMAN_DECISION_REQUIRED', location, '사용자 선택은 사람 판단 단계를 참조해야 합니다.');
+    else if (value.fieldRef.field === 'USER_DECISION' && (referenced.role !== 'USER' || !['HUMAN', 'DECISION'].includes(referenced.kind))) issue('HUMAN_DECISION_REQUIRED', location, '사용자 선택은 사람 판단 단계를 참조해야 합니다.');
   };
   for (const node of graph.nodes) {
     const location = `nodes.${node.nodeId}`;

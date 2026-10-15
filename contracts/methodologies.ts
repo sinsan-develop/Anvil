@@ -3,8 +3,11 @@ import type { VersionRef } from './generated-types.ts';
 export interface MethodologyDocumentItem {
   itemId: string; formRef: VersionRef; required: boolean; sourceNodeId?: string; reviewCriteria: string[];
 }
-export type GraphCondition = { kind: 'REVIEW_DECISION'; nodeId: string; outcome: 'ACCEPTED' | 'REWORK' | 'BLOCKED' }
-  | { kind: 'USER_CHOICE'; nodeId: string; choiceId: string };
+export interface ConditionFieldRef { nodeId: string; field: 'REVIEW_OUTCOME' | 'USER_DECISION' }
+export type GraphCondition = { fieldRef: ConditionFieldRef; operator: 'EQ' | 'NE'; value: string }
+  | { fieldRef: ConditionFieldRef; operator: 'IN'; value: string[] }
+  | { fieldRef: ConditionFieldRef; operator: 'IS_PRESENT'; value: null }
+  | { all: GraphCondition[] } | { any: GraphCondition[] } | { not: GraphCondition };
 export interface MethodologyNode {
   nodeId: string; name: string; purpose: string; kind: 'HUMAN' | 'AGENT' | 'DECISION' | 'JOIN';
   position: { x: number; y: number }; role: 'USER' | 'COORDINATOR' | 'STAGE_OWNER';

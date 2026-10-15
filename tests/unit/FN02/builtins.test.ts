@@ -12,6 +12,7 @@ test('내장3종은 승인7단계와 공식 양식 고정버전·사람 확인·
   assert.deepEqual(methods.map(method => method.systemCode), ['SYS-M01', 'SYS-M02', 'SYS-M03']);
   assert.deepEqual(methods.map(method => method.name), ['구조적 방법론', '객체지향 방법론', '애자일 방법론']);
   for (const [index, method] of methods.entries()) {
+    assert.equal(method.version, 2);
     assert.equal(method.graph.nodes.length, 7);
     assert.equal(method.graph.nodes[0]!.nodeId, ['ST01', 'OO01', 'AG01'][index]);
     assert.equal(method.graph.nodes[6]!.kind, 'HUMAN');
@@ -26,7 +27,7 @@ test('내장3종은 승인7단계와 공식 양식 고정버전·사람 확인·
   }
   assert(methods[2]!.graph.edges.some(edge => edge.kind === 'REWORK' && edge.fromNodeId === 'AG07' && edge.toNodeId === 'AG02'));
   const nextIteration = methods[2]!.graph.edges.find(edge => edge.fromNodeId === 'AG07' && edge.toNodeId === 'AG02')!;
-  assert.deepEqual(nextIteration.condition, { kind: 'USER_CHOICE', nodeId: 'AG07', choiceId: 'NEXT_ITERATION' });
+  assert.deepEqual(nextIteration.condition, { fieldRef: { nodeId: 'AG07', field: 'USER_DECISION' }, operator: 'EQ', value: 'NEXT_ITERATION' });
   assert.equal(nextIteration.retryPolicy!.counting, 'SAME_FAILURE_FINGERPRINT');
   assert.throws(() => buildBuiltinMethodologies(Buffer.concat([source, Buffer.from('\n미승인 변경')]), forms.forms), /BUILTIN_SOURCE_NOT_APPROVED/);
   assert.throws(() => buildBuiltinMethodologies(source, forms.forms.slice(0, 7)), /OFFICIAL_FORM_CATALOG_INCOMPLETE/);

@@ -107,6 +107,14 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 조건 계약 정정·공통 자료 보완 승인
+
+- 신산님 직접 응답 `call_07a966ef8b6d4eefac5fa279876ff3c0`: **‘본인 공통 자료용 계약·개발 DB 보완 승인’**. 대상은 현재 v3 개발 DB의 본인 USER_COMMON 명령/허가/검토·감사 범위와 현재 사용자/client·정확 버전·중복 방지의 forward migration이다. 다른 사용자/프로젝트 제어권·실제 계정·Secret·운영 DB 변경은 불포함. 이전 ‘승인 요청 중’ 기록은 당시 상태이며 지금은 해당 범위 승인됨. 공통 자료 쓰기 자체는 아직 구현/적용0.
+- 중요 오류: 추가 대조에서 앞선 FN02 조건 자료 `kind:REVIEW_DECISION/USER_CHOICE`가 같은 INTERFACES §15.3의 `fieldRef/operator/value`·all/any/not 계약과 다른 것을 확인했다. 앞 절의 잠정 설명보다 후속 상세 계약을 우선해야 했는데 놓쳤다. 실제 Agent 실행·프로젝트 적용·사람 확정 사건0이므로 외부 실행/운영 영향0, 그러나 v1 구조 검증을 계약 적합/인수 증거로 승격할 수 없다. 기존 v1/과거 시험 결과는 지우거나 PASS로 소급하지 않는다.
+- 회귀2 RED(버전1≠2·정식 조건의 잘못된 거절)→계약형 조건·EQ/NE/IN/IS_PRESENT·all/any/not·한정된 typed 결과/사용자 판단 필드로 정정 GREEN. 현재 단위37 PASS/typecheck/diff check exit0. 제한 자료이며 실행 평가기/실제 승인/새 권한은 아니다. 형식 충족을 실제 결과 존재·실행 준비로 해석하지 않는다.
+- 정정 사전 등록: `0002_builtin_condition_contract`는 이미 적용된0002 SQL을 변경하지 않고 기존 SYSTEM3개의 정확 v1 hash·head를 확인하고 v2 head/본문만 같은 transaction에 추가한다. v1 본문/검토/적용본 수정0·삭제0, 새 사용자/Secret/프로젝트/테이블0. 기존 v1 확정/적용본이 실제 있으면 영향 검토 전 실패·rollback, 예기치 않은 hash/head도 거절한다. 새 v2 역시 Anvil 사람 확정 사건을 날조하지 않고 source 승인 출처만 보존한다. 실제 적용/legacy 보존 시험은 exact 게시 SHA 후 진행 전이다.
+- 다음은 이 정정을 실제 WSL에서 확인한 뒤 승인된 본인 공통 자료 쓰기 계약과 DRAFT 편집을 이어가는 것이다. 전체 작업계획 완료/Stage B 수용/사용자 인수는 아니다.
+
 ### 2026-10-16 FN02 내장 정의·그래프 검사 착수
 
 - actual GREEN: WSL Git exact `7590d3584fb4971b67f1c4d6fd7aace749a37504`/clean. 적용 전 `anvil.methodology_definitions`42P01 RED(실제 fixture 생성0), 계획0002 checksum `0453854b9925f5ff2eeed15babfb5dda8446fbb751b3e7caf0378a98d6dbcd34` 적용 exit0 뒤 같은 실제 API/DB 시험1 PASS/skip0·608ms. 내장3종 그래프/정확 양식/원문지문·본인USER_COMMON 읽기200/타인404/회수401/app UPDATE42501 확인, QA 사용자2·양식 아닌 방법론2와 session/credential 정확 정리. 원문 source 승인과 사람 확정 사건은 분리(`confirmation=null`), 실제 소유자/실제 Agent 생성0. 기존 migration checksum 모두 유지.
