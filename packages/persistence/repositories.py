@@ -1,6 +1,0 @@
-"""Ports implemented by persistence adapters; domain has no adapter dependency."""
-from typing import Generic, Protocol, TypeVar
-T = TypeVar("T"); I = TypeVar("I")
-class Repository(Protocol, Generic[I, T]):
-    def get(self, identifier: I) -> T | None: ...
-    def save(self, entity: T) -> None: ...
