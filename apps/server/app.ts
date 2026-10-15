@@ -1,9 +1,11 @@
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import { readFile } from 'node:fs/promises';
 import type { ServerOptions as HttpsOptions } from 'node:https';
+import { registerAccessRoutes, type AccessRoutesOptions } from './modules/access/routes.ts';
+import { AuthFailure } from './modules/access/repository.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL) {
-  const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024 });
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions) {
+  const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onSend', async (_request, reply, payload) => {
     reply.header('cache-control', 'no-store');
     reply.header('x-content-type-options', 'nosniff');
@@ -11,6 +13,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     return payload;
   });
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
+  if (access) registerAccessRoutes(app, access);
   if (webRoot) {
     app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(await readFile(new URL('index.html', webRoot))));
     app.get<{ Params: { name: string } }>('/assets/:name', async (request, reply) => {
@@ -30,7 +33,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     const declared = typeof error === 'object' && error !== null && 'statusCode' in error ? Number(error.statusCode) : 0;
     const status = declared >= 400 && declared < 500 ? declared : 503;
     return reply.code(status).send({
-      code: status === 413 ? 'PAYLOAD_TOO_LARGE' : status >= 500 ? 'STORAGE_FAILED' : 'INPUT_INVALID',
+      code: error instanceof AuthFailure ? error.message : status === 413 ? 'PAYLOAD_TOO_LARGE' : status >= 500 ? 'STORAGE_FAILED' : 'INPUT_INVALID',
       message: '요청을 처리하지 못했습니다', requestId: request.id, targetId: null,
       retryDisposition: status >= 500 ? 'reconcile-first' : 'not-retryable', details: {},
     });

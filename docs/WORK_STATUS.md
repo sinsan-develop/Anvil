@@ -109,6 +109,10 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- FN01 DB 적용 결과: WSL-server Git exact04d268bd/clean에서 전용 DB0001 적용 exit0, 실제 원본/교차client FK/빈 목적 거절·rollback/잔여0 1 PASS. 0000 checksum 불변, 0001 checksum/멱등 상태는 다음 receipt에서 별도 조회한다. migration 출력이0000만 표시하는 현재 도구 한계를 0001 미적용으로 오인하지 않는다.
+- 인증 저장 core: 실제 전용 DB의 고유 합성 설치ID·초기owner→동일command재조회/본문충돌→잘못된 비밀번호→대문자명 로그인→digest만저장/session조회→logout/옛token거절 1 PASS. 실제 사용자/세션/설치·복구/시도 counter는 시험 소유 UUID만 정리하며 append-only 비밀 없는 감사는 사실 증거로 보존한다. 이 시험은 HTTP/UI 전체 PASS가 아니다. 타입추론 오류1은 transaction 결과형을 명시해 typecheck0, patch 다중동일파일 연산1은 적용 전 거부 뒤 Update 한 건으로 정정했다.
+- HTTP 연결 검수는 Windows relay 접속5초 timeout이 두 번째 발생해 기능 RED에서 제외했다. 같은 Windows DB 요청을 더 반복하지 않고, 새 코드의 WSL exact SHA에서 실제 HTTP/DB를 확인한다. 독립 사전 거절 시험은 DB가 없어도401/다른 Origin403/추가필드400이 나와야 한다는 실제 assertion RED404→GREEN, 전체21 PASS/typecheck0. cookie/CSRF·positive HTTP는 아직 미확인이다. shared relay 재시작/kill·timeout 확대0.
+
 - FN01 실제 schema 검수 사전 등록: 기존 신규 전용 PG/DB/역할만 사용, `0001_projects_access`가 사용자·client·credential/session/초기화/초대/복구/감사·프로젝트/초안/멤버/초기제어·선언/기준선 테이블을 추가한다. 기존 테이블/자료 삭제·이전 DB/권한 변경0. migration checksum/명시 순서/transaction을 적용하고 실패는 rollback, 적용 뒤 파일수정/down/drop0. 합성 QA ID는 시험에서 UUID로 생성·transaction rollback·잔여0 확인하며 실제 사용자 계정은 만들지 않는다.
 - 첫 Windows DB 시험은5초 timeout으로 데이터 변경 전 실패, 기능 RED에서 제외. WSL 동일 PG ID/running/loopback·직접 app SELECT/Windows TCP 성공을 읽기 확인한 뒤 같은 timeout의1회 재확인에서 정상 연결·새 anvil.users 부재42P01 RED를 얻었다. 첫 연결 시간 초과의 직접 원인은 미확정이고 timeout/relay/서비스를 바꾸지 않았다. 첫 PowerShell finally가 외부 시험 exit1을 shell exit0으로 숨긴 점을 기록하고 이후 exit를 명시 보존했다. 실제 SQL/사용자 추가0.
 

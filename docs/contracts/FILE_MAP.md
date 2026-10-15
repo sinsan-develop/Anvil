@@ -16,6 +16,8 @@ Windows의 새 app DB 보호 참조·소유 runtime 준비는 `scripts/link-deve
 
 동일 Stage B의 `scripts/start-development.ps1`은 실제 branch·LOCAL_UNCOMMITTED/COMMITTED_SOURCE를 receipt에 기록하도록 메타데이터를 보완한다. 기존 Stage A branch 상수는 Stage B 시작 시 틀린 값이 실제 출력됐고, 로컬 dirty Web build를 exact commit 검증으로 오인하지 않도록 하는 변경이다. 공통 port·CA·권한·DB 연결은 그대로다.
 
+FN01 추가 관측: access `routes.ts/repository.ts/service.ts`와 0001의 실제 인증 저장을 연결 중이다. `tests/unit/FN01/auth-http.test.ts`는 DB 이전 Origin/무인증/추가필드 거절, 기존 auth-postgres는 실제 저장·cookie/CSRF·회수를 대조한다. 초기 적용 migration은 수정하지 않으며 후속 변경은 새 migration으로 한다. 실제 운영 계정/기존 인증 서버는 제외한다.
+
 공식 프로젝트 root는 `D:\Project\Anvil`이다. 아래는 그 상대 경로이며 경로 이동/변경은 영향 업무와 함께 기록한다. `{a,b}` 표기는 열거한 정확한 두 파일을 뜻하며 glob·하위 폴더 전체 권한이 아니다. 등록되지 않은 파일이 필요하면 Main이 이유/소유/소비자를 갱신한다. Backup·기존 자료·Secret·Git 메타데이터는 제품 writer 범위가 아니다.
 
 | 공통 파일 | 소유·소비 |
