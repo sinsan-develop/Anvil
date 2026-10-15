@@ -107,6 +107,13 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 본인 공통 방법론 검토·확정 연결 착수
+
+- 직전 공간형 exact `7b22c5d935025d9d065e77db3a6ff256a73d8061` WSL actual1 PASS/405ms/skip0: 본인 복사·개정/타인·내장·멱등 차단에 더해 직접 작성2단계·양수/음수 좌표·고정 문서 ref·all/not 조건 전체 JSON roundtrip·구조검사/실행 미연결을 확인하고 정확 QA 정리했다. 현재 source/local-private 동일·tracked clean, 별도 실제 UI DB 여정은 미검증이다.
+- 다음은 기존 직접 승인한 USER_COMMON 범위에서 METHODOLOGY 내용검토/확정만 연결한다. 기존 양식 검토·원문·9개 적용 SQL은 보존하고 새 forward migration으로 기존 methodology_reviews에 현재 client/명령 결박을 더한다. SYSTEM/PROJECT 원본과 적용본은 변경/확정하지 않고 사용자 공통 exact ref만 다룬다. 사람 판단/구조 검사/양식 준비와 실제 프로젝트·도구 권한은 별개다.
+- 양식 준비 판정: P01 REVIEW-02에서 신산님이 승인한 공식8종의 고정 배포 원본은 원 출처/지문을 대조해 ‘승인된 기본 양식’으로 소비한다. USER_COMMON 양식은 별도 실제 확정 사건/최신 내용 판단이 필요하다. 공식 원본을 사용자 확정 사건이나 제품 인수로 위조하지 않으며 검증 근거 종류를 다르게 기록한다. 이는 기본 방법론을 그대로 쓰는 기존 요구를 만족하는 기술 상세화이며 실행 권한을 늘리지 않는다.
+- QA 사전 등록: 기존 지정 WSL 개발 DB/exact Git SHA에서 고유 `qa-method-review-UUID` 사용자1·본인 방법론1/버전2·본인 양식1/검토/확정·명령/감사를 만들고 정확 owner/ID 순서로 finally 정리한다. 실제 사용자/계정·Secret·다른 프로젝트/환경·Agent/port/컨테이너 변경0. 원래 미구현 confirmMethodology RED부터 확인한다.
+
 ### 2026-10-16 UI03 공간형 방법론 편집 착수
 
 - fresh 검수: 타입/단위41/diff check exit0·Web42모듈 build(JS311.03kB/gzip92.52/CSS7.09kB)·인접 Edge11 fixture PASS/10.4초. 빈 직접 작성2단계의 오른쪽20/방향키 아래20 이동이 저장 payload/재조회에 보존되고 합성 SVG 캡처에서 읽을 수 있는 두 단계/화살표를 확인했다. all+not/유한 재작업2회/AF08 버전1 입력 ref 편집도 fixture PASS/3초. 같은 양식 목록을 쓰는 기존 조회의 버전 GET fixture 누락1은 catch-all에서503으로 차단됐고, 해당 예상 GET만 명시 보완했다. 예상 밖 호출 허용/타임아웃 완화/actual DB 우회0.
