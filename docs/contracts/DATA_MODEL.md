@@ -289,6 +289,8 @@ project_drafts.input_json의 방법론 선택은 confirmed reference 또는 새 
 
 `content_reviews`는 FN11 0011의 공통 주체/감사 기반에 둔다. 필수 열은 `id PK,scope_kind:PROJECT/DRAFT,scope_id,target_kind,target_id,target_version,target_hash,criteria_version,items_json,outcome,reviewer_subject_ref,source_kind,reason,created_at`다. scope는 NOT NULL·존재/소유·대상별 exact version/hash를 검사한다. 다른 도메인 검토를 같은 ID로 바꿔 쓰지 않으며 domain service가 확정 시 그 기준/종류·현재 내용과 대조한다. 수행자의 result_reviews와 서로 대체하지 않는다.
 
+2026-10-16 본인 공통 자료 보완 직접 승인에 따라 `0011_user_common_control`은 commands/authorization_receipts의 USER_COMMON을 추가한다. scope_id=actor_id이며 project/draft/control/policy/approval consumption은 null이다. 사용자+command_id 유일성은 연산 간에도 적용한다. `user_common_audit_events`는 owner·현재 client·같은 scope command FK·소유자별 순서·정확 targetRef를 갖는 append-only 이력이다. 현재 METHOD 정의/버전 쓰기는 transaction-local 인증 actor와 owner를 SQL trigger로 대조하며 SYSTEM/PROJECT는 거절한다. 이전 버전 UPDATE/DELETE와 본인 외 owner 변경 권한은 열지 않는다. 양식 쓰기/content_reviews/확정 집행은 후속 migration·도메인 구현 전 미구현이다. 기존 적용0001/0011/0002/0003 SQL은 수정하지 않는다.
+
 승인 기본8종 catalog/저장 schema는 FN03 0003이 소유하고 방법론 저장 검증이 그 정확 버전을 소비한다. 실제 migration DAG는 0001/0011 공통 기반→0003 catalog/document storage→0002 방법론→0004 추적/계획, 0005 지식은 필요한 0003/0011 뒤라는 방향으로 P03에서 SQL 참조/seed와 함께 고정한다. 임무/실행·미검증 source 참조는 실제 자료가 생기기 전 성공 관계로 꾸미지 않는다. 이는 모듈을 번호순으로 개발하라는 뜻이 아니며 FN02/FN03의 기본/연결 검수는 각각 유지한다.
 
 ### 11.1 독립 검토 보완 — 최초 소스와 문서 링크 이력

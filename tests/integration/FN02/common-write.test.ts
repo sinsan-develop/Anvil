@@ -28,7 +28,7 @@ test('본인 공통 방법론 복사·개정은 원자 저장되고 재전송·�
     const source = (await app.inject({ method: 'GET', url: '/api/v1/methodologies/a6f20000-0000-4000-8000-000000000001/versions/2', headers })).json();
     const body = { schemaVersion: 1, commandId: randomUUID(), operation: 'copyMethodology', targetId: null, expectedVersion: 0, clientId: own.clientId,
       payload: { sourceRef: source.ref, name: '본인 공통 방법론', scope: 'USER_COMMON', reason: '정확 원본 복사 QA' } };
-    const send = (payload: unknown, requestHeaders = headers) => app.inject({ method: 'POST', url: '/api/v1/user-common/commands', headers: requestHeaders, payload });
+    const send = (payload: unknown, requestHeaders = headers) => app.inject({ method: 'POST', url: '/api/v1/user-common/commands', headers: { ...requestHeaders, 'content-type': 'application/json' }, payload: JSON.stringify(payload) });
     const created = await send(body);
     assert.equal(created.statusCode, 200, created.body);
     const receipt = created.json(); ids.push(receipt.targetId);
