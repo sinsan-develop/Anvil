@@ -10,3 +10,9 @@
 - 실제 Node30072(startUTC2026-10-15T19:26:50.5534635Z)는 새 branch의 준비 source로 시작했으나 구 script receipt branch 상수는 Stage A를 표시했다. 실제 Git과 불일치를 기록하고 이후 시작은 실제 branch·dirty상태를 담도록 보완한다. 기존 receipt를 조작해 소급 정정하지 않는다.
 - 등록 임시 경로는 D:\tmp\anvil-v3-stage-b\browser·npm-cache. 단위/브라우저 증거는 해당 코드 범위에만 재사용하며 전체 제품/Agent/WSL/Oracle PASS가 아니다. 정확 회수/정리 후 잔여를 WORK_STATUS에 기록한다. 개발 DB·CA/공유 relay 보존.
 - 다음: FN01 실제 DB/API/로그인 연결→UI00 남은 동작 검수→UI01/02 및 FN11. rollback은 해당 UI00 source 변경만 비교하며 자동 reset/자료삭제를 하지 않는다.
+
+## 후속 실제 인증 연결 — 2026-10-16
+
+- 새 AuthForm의 초기 등록/복구 비밀 보관·로그인 만료는 계약 fixture2 PASS, 탐색/skip-link3건을 합해5 PASS다. skip-link가 hash 경로를 바꾸는 RED→본문 focus만 이동 GREEN, 복구 input/checkbox 선택자1건은 exact 구분 후 같은 기준으로 확인했다.
+- 별도 **실제** FN01 auth-live는 같은 승인 CA/전용 PG·HTTP와 실제 Edge에서 등록→로그인→cookie→로그아웃1 PASS, Network same-origin·JS오류0·TLS무시false·Agent0. 처음은 로그아웃 버튼 부재 RED였고 표준 CSRF logout 연결 후 GREEN, 합격 기준/timeout 변경0이다. 이 test는 API interception/고정 모델 응답을 사용하지 않는다.
+- 합성 설치ID/owner·key/비밀은 해당 test 안에서만, 실제 계정으로 보존하지 않았다. QA 정리0·임시 server 종료, append-only 비밀 없는 감사는 회수 대상이 아닌 증거다. 신규 상시 개발 auth Secret/키 파일 생성0. 따라서 사용자용 상시 초기화/로그인 실행 경로는 아직 미완료이며 UI00 전체 수용/전체 제품 인수를 뜻하지 않는다.

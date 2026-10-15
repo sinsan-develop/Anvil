@@ -109,6 +109,12 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- 실제 인증 UI 중간 결과: 승인 CA·TLS무시false의 실제 HTTPS server/전용 PG/Edge에서 초기 등록→일회 복구 비밀 가림/보관 확인→로그인→Secure/HttpOnly/Lax cookie→화면 로그아웃/쿠키회수 1 PASS(2.8초). Network same-origin·JS오류0·Agent호출0. 최초 실행은 등록/로그인 뒤 로그아웃 버튼 부재에서 RED·QA정리0, 버튼/명시 CSRF 연결 뒤 동일 검사 GREEN. 실제 계정·token·설치ID·recovery/counter·worker server는 회수하고 비밀 없는 append 감사만 보존했다. 아직 제품 초기화 보호 참조/상시 개발 실행 연결·복구/초대/재인증·프로젝트 API/권한·기준선은 미구현이므로 FN01/UI00 완료 아님.
+- 정확 WSL HTTP/DB 검수: b380f687/clean에서 typecheck·auth-postgres1 PASS. Origin/추가필드 거절·실제login cookie/CSRF·logout/옛cookie401은 실제 저장·HTTP이며 브라우저 fixture 합격으로 대체하지 않았다. Windows relay의 간헐 첫 연결timeout2는 미확정 환경 위험으로 보존하며 세 번째 동일 실패 전까지 무작정 재시도하지 않는다. 실제 live시험에서는 연결과 전체여정이 성공했다.
+
+- UI00 후속: 로그인/최초 등록·복구 비밀 가림/보관확인·자동 로그인0의 화면을 추가했다. 계약 fixture2와 실제 탐색3을 포함 Edge5 PASS, build23/typecheck·unit21 PASS. fixture를 실제 인증 성공으로 세지 않는다. 본문 skip-link의 hash경로 변경 RED→preventDefault/본문focus GREEN. 복구 입력/checkbox 선택자 충돌1은 exact 구분 뒤 같은 기준 GREEN이다. 신규 AuthForm.tsx·postAuth는 UI00 로그인표시/FN01 계약 소비이며 공개 기능 추가 아님.
+- 다음 실제 HTTPS/DB/UI QA 사전 등록: Main/FN01, 기존 CA/leaf·DB만 사용. 현재 소유 Node30072(startUTC2026-10-15T19:26:50.5534635Z)를 receipt/PID/start/exe/경로로 대조한 뒤만 중지·등록 runtime 로그/receipt3개 정확 정리한다. Playwright worker의 임시 HTTPS server는 같은127.0.0.1:3830·등록 Stage B browser profile·합성 설치ID/소유자·메모리 key/비밀만 사용·테스트 후 server/Pool 종료, 생성한 계정/세션/초기화/복구/시도 counter만 정확 회수·잔여 확인한다. append-only 비밀 없는 QA 감사는 사실 증거로 보존. 실제 사용자 계정/새 CA·파일 Secret·공유 relay·기존 서비스 변경0. 실패도 cleanup하며 Windows 같은 DB 연결 timeout이 세 번째면 해당 재시도 중단/예외 보고한다.
+
 - FN01 DB 적용 결과: WSL-server Git exact04d268bd/clean에서 전용 DB0001 적용 exit0, 실제 원본/교차client FK/빈 목적 거절·rollback/잔여0 1 PASS. 0000 checksum 불변, 0001 checksum/멱등 상태는 다음 receipt에서 별도 조회한다. migration 출력이0000만 표시하는 현재 도구 한계를 0001 미적용으로 오인하지 않는다.
 - 인증 저장 core: 실제 전용 DB의 고유 합성 설치ID·초기owner→동일command재조회/본문충돌→잘못된 비밀번호→대문자명 로그인→digest만저장/session조회→logout/옛token거절 1 PASS. 실제 사용자/세션/설치·복구/시도 counter는 시험 소유 UUID만 정리하며 append-only 비밀 없는 감사는 사실 증거로 보존한다. 이 시험은 HTTP/UI 전체 PASS가 아니다. 타입추론 오류1은 transaction 결과형을 명시해 typecheck0, patch 다중동일파일 연산1은 적용 전 거부 뒤 Update 한 건으로 정정했다.
 - HTTP 연결 검수는 Windows relay 접속5초 timeout이 두 번째 발생해 기능 RED에서 제외했다. 같은 Windows DB 요청을 더 반복하지 않고, 새 코드의 WSL exact SHA에서 실제 HTTP/DB를 확인한다. 독립 사전 거절 시험은 DB가 없어도401/다른 Origin403/추가필드400이 나와야 한다는 실제 assertion RED404→GREEN, 전체21 PASS/typecheck0. cookie/CSRF·positive HTTP는 아직 미확인이다. shared relay 재시작/kill·timeout 확대0.
