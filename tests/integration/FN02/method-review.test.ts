@@ -60,10 +60,28 @@ test('방법론은 같은 내용 검토와 양식 준비를 확인해 확정하�
     assert.equal((await get(ref.id, 1)).json().confirmation.decision, 'CONFIRMED');
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM anvil.project_methodologies WHERE created_by=$1', [user])).rows[0].count, 0);
     await assert.rejects(pool.query('UPDATE anvil.methodology_reviews SET decision=$1 WHERE decided_by=$2', ['INVALID', user]), (error: unknown) => (error as { code: string }).code === '42501');
+    const draftBase = { schemaVersion: 1, commandId: randomUUID(), clientId: login.clientId, targetId: null, expectedVersion: 0, name: '방법론 선택 QA', purpose: '프로젝트 초안에 정확 방법론 보존', desiredOutcome: '새 연결에서 재조회', sourceMode: 'EMPTY' };
+    const selected = { kind: 'CONFIRMED_REFERENCE', versionRef: nextRef };
+    const draft = await app.inject({ method: 'POST', url: '/api/v1/project-drafts', headers, payload: { ...draftBase, methodologySelection: selected } });
+    assert.equal(draft.statusCode, 201, draft.body);
+    const loaded = await app.inject({ method: 'GET', url: '/api/v1/project-drafts/' + draft.json().draftId, headers });
+    assert.deepEqual(loaded.json().input.methodologySelection, selected);
+    const authored = { kind: 'NEW_PROJECT_DRAFT', name: '이 프로젝트 절차', purpose: '기본본을 초안에서 구체화', graph: original.graph, sourceRefs: [original.ref], reviewRefs: [] };
+    const directDraft = await app.inject({ method: 'POST', url: '/api/v1/project-drafts', headers, payload: { ...draftBase, commandId: randomUUID(), methodologySelection: authored } });
+    assert.equal(directDraft.statusCode, 201, directDraft.body);
+    assert.deepEqual(directDraft.json().input.methodologySelection, authored);
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/project-drafts', headers, payload: { ...draftBase, commandId: randomUUID(), methodologySelection: { ...selected, versionRef: { ...nextRef, contentHash: '0'.repeat(64) } } } })).statusCode, 409);
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM anvil.projects WHERE name=$1', [draftBase.name])).rows[0].count, 0);
   } finally {
     const db = await admin.connect();
     try {
       await db.query('BEGIN');
+      const drafts = (await db.query('SELECT id FROM anvil.project_drafts WHERE owner_user_id=$1', [user])).rows.map(row => row.id);
+      await db.query('DELETE FROM anvil.draft_audit_events WHERE draft_id=ANY($1::uuid[])', [drafts]);
+      await db.query('UPDATE anvil.commands SET authorization_receipt_id=NULL WHERE draft_id=ANY($1::uuid[])', [drafts]);
+      await db.query('DELETE FROM anvil.authorization_receipts WHERE draft_id=ANY($1::uuid[])', [drafts]);
+      await db.query('DELETE FROM anvil.commands WHERE draft_id=ANY($1::uuid[])', [drafts]);
+      await db.query('DELETE FROM anvil.project_drafts WHERE id=ANY($1::uuid[])', [drafts]);
       await db.query('DELETE FROM anvil.methodology_reviews WHERE decided_by=$1', [user]); await db.query('DELETE FROM anvil.form_reviews WHERE decided_by=$1', [user]);
       await db.query("DELETE FROM anvil.content_reviews WHERE scope_kind='USER_COMMON' AND scope_id=$1", [user]);
       await db.query('DELETE FROM anvil.user_common_audit_events WHERE owner_user_id=$1', [user]);

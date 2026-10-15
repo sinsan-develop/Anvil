@@ -107,6 +107,12 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 UI02·FN01 프로젝트 초안 방법론 선택 연결 착수
+
+- 직전 exact `28783de90e220eb993dc6a94f9b6b1792c9b22ff` WSL 방법론 추가 음성1 PASS/444ms/skip0: 위조·이전 버전·최신 REWORK·FORM 검토를 METHODOLOGY에 잘못 사용하는 시도를 거절하고 고유 QA 정리했다. 기존 SQL 재적용0.
+- 다음은 승인된 계획 UI02/FN01/02의 기존 input_json 저장에 방법론 선택을 연결한다. CONFIRMED_REFERENCE는 허가된 exact versionRef, NEW_PROJECT_DRAFT는 name/purpose/graph/sourceRefs/reviewRefs의 미완성 프로젝트 전용 초안이다. 자기 공통 확정 또는 승인된 기본본을 읽으며 타인/PROJECT 원본·잘못된 hash/위조 검토는 거절한다. 여기서 프로젝트 전용 확정·최종 생성·Agent 실행 권한을 만들지 않는다. 새 SQL/DB 권한 변경은 이번 연결에 필요하지 않다.
+- QA 사전등록: 기존 qa-method-review-UUID의 소유 초안2개/명령·감사만 추가하고 정확 owner/ID를 finally 정리한다. 실제 계정·Secret·서비스/port 변경0. 현재 미연결412 RED를 먼저 확인한다. 이 단계의 형식은 기존 §15.1 안의 VersionRef 명칭을 versionRef로 고정하는 상세화다.
+
 ### 2026-10-16 본인 공통 방법론 검토·확정 연결 착수
 
 - fresh 화면/인접 검수: 단위41 PASS/skip0, UI03 Edge12 fixture PASS/9.1초, 타입·diff check exit0. 문서 갱신 중 WORK_STATUS 전체 읽기가 도구 출력 한도를 넘겨 patch가 검증 단계에서 거절1·원본 손실0, 해당 행만 좁혀 보정했다. 임의 경로 조회의 파일 없음은 source/시험 실패가 아니며 실제 파일 목록으로 범위를 확인했다.
