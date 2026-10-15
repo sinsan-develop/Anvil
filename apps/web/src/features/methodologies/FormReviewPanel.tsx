@@ -49,7 +49,7 @@ export function FormReviewPanel({ client, session, source, buffer, onChange, onV
     void execute({ schemaVersion: 1, commandId: crypto.randomUUID(), operation: 'confirmForm', targetId: source.ref.id, expectedVersion: source.ref.version, clientId: session.clientId, payload: { versionRef: source.ref, reviewRefs: [latest.ref] } });
   }
   if (source.definition.scope !== 'USER_COMMON' || buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return null;
-  return <section className="status-card" aria-label="양식 내용 검토·확정"><h3>내용 검토와 사용자 확정</h3>
+  return <section className="status-card definition-editor" aria-label="양식 내용 검토·확정"><h3>내용 검토와 사용자 확정</h3>
     <p className="meta">버전 {source.ref.version} · {source.ref.contentHash}. 실제 내용을 직접 읽고 판단하세요. 시험 실행·파일 근거를 자동 확인하는 기능은 아닙니다.</p>
     <button disabled={!criteria || locked} onClick={start}>이 양식 내용 검토 시작</button>
     {work && !matches ? <p role="alert">다른 양식 버전의 검토 입력이 남아 있습니다. 현재 버전에 자동 적용하지 않습니다.</p> : null}

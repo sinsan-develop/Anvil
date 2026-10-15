@@ -48,7 +48,7 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
     change({ items: [...definition.items, next] }); onChange(previous => ({ ...previous, itemId }));
   }
   if (buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return <section><p role="alert">다른 로그인 사용자의 양식 편집은 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭의 이전 사용자 양식 편집만 버릴까요? 서버 자료는 유지합니다.')) onChange(emptyFormBuffer()); }}>탭의 이전 양식 편집 닫기</button></section>;
-  return <section className="status-card" aria-label="내 공통 양식 작업"><h3>내 양식 작성·개정</h3><p className="meta">공식 8종·구버전은 보존합니다. 초안 저장은 내용 검토·사용자 확정이 아닙니다.</p>
+  return <section className="status-card definition-editor" aria-label="내 공통 양식 작업"><h3>내 양식 작성·개정</h3><p className="meta">공식 8종·구버전은 보존합니다. 초안 저장은 내용 검토·사용자 확정이 아닙니다.</p>
     <fieldset disabled={locked}><label>양식 복사본 이름<input maxLength={200} value={copyName} onChange={event => setCopyName(event.target.value)} /></label><button disabled={!source || !copyName.trim()} onClick={copy}>내 공통 양식으로 복사</button>
       <button disabled={!source} onClick={() => { if (source && replaceAllowed()) { onChange({ ...emptyFormBuffer(), ownerUserId: session.user.id, dirty: true, definition: { formCode: 'USER01', name: '새 양식', purpose: '', scope: 'USER_COMMON', authorRole: '', reviewerRole: '', confirmerRole: '', requiredInputs: [], items: [], authoringStandardRef: source.authoringStandard.ref } }); setSaved(null); setError(null); } }}>새 양식 작성</button>
       {source?.definition.scope === 'USER_COMMON' ? <button onClick={() => { if (replaceAllowed()) { onChange(formBuffer(source, session.user.id)); setSaved(null); setError(null); } }}>이 공통 양식 편집</button> : null}

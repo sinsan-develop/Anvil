@@ -5,9 +5,9 @@
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
 - 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·FN01~03·FN11 부분 구현**. 인증·허가 프로젝트 조회/초안 저장·공식 양식·내장 방법론/본인 공통본 복사/개정의 실제 WSL API/DB를 확인했다. 최종 프로젝트 생성·전체 방법론 편집/확정·문서 작성/확정·실제 Agent 등은 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `0f072bb93f1a454432f8e97e3ca7a574eca1320b` 본인 공통본 복사/개정 실제 API·DB1 PASS/388ms/skip0, exact QA 정리 확인. 0011_user_common_control forward 적용·기존6개 checksum 불변. 내장 v1 보존/v2 계약 정정은02d579be 실제1 PASS다. Windows 단위37·타입/Web34모듈 통과. 화면 계약과 실제 API/DB는 별도 증거이며 새 전체 UI DB 여정 PASS가 아니다. Windows relay timeout3회 뒤 접속 재시도0·초기 등록 비밀 만료 유지/자동 연장0.
+- 최근 실제 확인: WSL exact `34805ebedd2781eb23119d6d79648b1ecc585e8f`에서 본인 양식의 exact 내용 검토·별도 확정/새 버전 분리·최신 REWORK/임의 증거 거절 실제1 PASS/324ms/skip0·정확 QA 정리. 본인 방법론/양식 복사·개정은 각 선행 actual PASS, 적용 migration9개의 이전 checksum 유지. Windows 단위41·타입/Web37모듈·UI03 인접 fixture9 통과. 화면 계약과 실제 API/DB는 별도 증거이며 새 전체 UI DB 여정 PASS가 아니다. Windows relay timeout3회 뒤 재접속0·초기 등록 비밀 만료 유지/자동 연장0.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: UI03 공통본 복사/개정 저장의 화면 검수 뒤 USER_COMMON 내용 검토/확정·양식 쓰기와 생성 초안 편집을 이어 FN01 최종 생성을 연결한다. FN11 실제 프로젝트 정책/승인 집행과 전체 방법론 편집은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: UI03의 공간형 방법론·노드/문서/조건 전체 편집→방법론 내용 검토/확정→생성 초안 연결·FN01 최종 생성. 양식의 복사/편집/내용검토/확정은 부분 연결했지만 문서 본문 작성/원본·제안·확정과 FN11 프로젝트 정책/일회 승인 집행은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -81,7 +81,7 @@
 | FN08 Windows 실행·회수·중복방지 | [] | 회수/스풀 논리 계약 | 실제 관측·ACK·재전송/중복부작용 차단 |
 | FN09 총괄·단계·하위 임무 | [] | 역할/위임 설계만 있음 | 필수맥락·임무·권한부분집합·단일writer |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
-| FN11 권한·일회 승인·통제 | [2] | Main 어울. 0011 명령/정책·승인·감사 저장 및 범위 FK/감사 변경 거절 확인. 실제 변경 허가/승인 소비는 미구현 | 인증/제어·scope/현재정책·동시/만료/구세대·실제 도메인 원자 집행 |
+| FN11 권한·일회 승인·통제 | [2] | Main 어울. 명령/범위 FK·공통 자료의 실제 owner/client·중복/버전/검토/감사 원자 집행 확인. PROJECT 현재 정책·일회 실행 승인 소비는 미구현 | 프로젝트 제어/정책·동시/만료/구세대·실제 도메인 승인 집행 |
 | FN12 결과·검증·이상 판정 | [] | 제출≠완료·분류 설계 | 실제 증거 대조·보완·원인미확인/미실행 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
@@ -109,6 +109,8 @@
 
 ### 2026-10-16 본인 공통 자료의 내용검토·확정 착수
 
+- 후속 음성 actual: exact `34805ebedd2781eb23119d6d79648b1ecc585e8f` WSL1 PASS/324ms/skip0. 종합 ACCEPTED/항목 REWORK 불일치422·미연결 임의 ArtifactRef412·최신 REWORK가 있으면 이전 ACCEPTED로 확정422·보완 후 새 검토에서만 확정·새 버전 미이월 확인. 기존 SQL 재적용0·고유 QA 정리.
+- 가독성 보정: 합성 최종 화면에서 판정/이유가 한 줄에 몰림을 실제 캡처로 확인하고 위치관계 RED(이유 y168.9 < 판정 하단219.5)→새 편집 영역3곳에만 grid/폭/label 배치 CSS 적용 GREEN·같은 기능/위치 기준1 PASS/2.6초. 보정 후 캡처에서 판정 아래 충분한 이유 입력 폭과 별도 확정 상태를 확인했다. 사용자 프로필/실제 자료가 아닌 기존 전용 tmp의 합성 QA이며 Stage B 종료 때 소유 자원으로 정리한다. Web37 build/typecheck exit0·JS289.37kB/gzip86.20/CSS6.32kB, 실제 소유 서버 backend는 교체하지 않았다.
 - actual GREEN: WSL Git exact `7b81c6e140308103b3f4a2c192801d9b113bd653`/tracked clean에서 `0011_user_common_content_reviews` checksum `0009cfe2c02b92a4e930d538ce5c0c5d67215c6d89aca6c1a4345868ccbc4f01` 적용·이전8개 불변. 실제 검토/확정1 PASS/592ms 및 영향받는 양식 저장1 PASS/632ms(총2/skip0). 기준 누락·주체 위조·가짜 ReviewRef 거절, 같은 본문 검토 뒤 별도 확정, 새 v2에 확정 미이월, v1 이력 보존·app 검토 UPDATE42501·정확 QA 정리 확인. 이는 합성 사용자 시험이며 신산님의 제품 인수/실제 Agent 실행은 아니다.
 - UI 검토/확정 연결: 버전/hash·서버 기준·미검토 기본값, 사람이 각 판정/이유를 직접 입력→검토 기록→별도 확정을 연결했다. 탭의 검토 입력/미확인 명령/owner를 보존하고 다른 사용자에게 숨긴다. 미존재 버튼 RED·select label 본문 혼입1·동일 주체 표시의 의미 단위 구분1을 보정, 같은 기대/시간 제한의 직접 검토/확정 fixture1 PASS/1.9초·Web37모듈 build/typecheck exit0. 전 과정 actual UI/DB E2E는 미검증이며 backend000d0088/relay hold/초기 비밀 만료를 그대로 보존한다. 다음은 최신 REWORK/증거 위조 음성과 인접 회귀 후 방법론 전체 편집/확정·생성 초안 연결이다.
 - fresh UI/인접 검수: unit41/typecheck/diff check exit0·UI03 Edge fixture9 PASS/6.1초. 조회 DTO는 서버의 정확 ReviewRef/확정자·시각/버전을 확인하며 `CONFIRMED` 문자열만 있고 확정 사건이 없으면 거절한다. 기존 SYSTEM 필수형식은 유지하고 작성 중 USER_COMMON의 빈 초안 허용과 확정 조건을 분리한다. 현재 브라우저 build37/JS289.32kB/gzip86.18, 실제 새 UI DB 전체 여정과 실제 소유자 등록/인수는 미검증이다.

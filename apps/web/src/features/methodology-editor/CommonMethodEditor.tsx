@@ -49,7 +49,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     onChange(previous => ({ ...previous, dirty: true, nodeId: id, graph: { ...previous.graph, nodes: [...previous.graph.nodes, next], entryNodeId: previous.graph.entryNodeId || id, terminalNodeIds: previous.graph.terminalNodeIds.length ? previous.graph.terminalNodeIds : [id] } }));
   }
   if (buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return <section className="status-card"><p role="alert">이 탭의 편집 자료는 다른 로그인 사용자의 자료입니다. 내용을 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭에 남은 다른 사용자의 편집 자료만 버릴까요? 서버 자료는 유지합니다.')) onChange(emptyMethodBuffer()); }}>탭의 이전 사용자 편집 닫기</button></section>;
-  return <section className="status-card" aria-label="공통 방법론 작업">
+  return <section className="status-card definition-editor" aria-label="공통 방법론 작업">
     <h3>내 방법론 작성·개정</h3><p className="meta">내장 원본은 보존합니다. 저장은 초안이며 사용자 확정·프로젝트 적용·Agent 실행이 아닙니다.</p>
     <fieldset disabled={locked}><label>복사본 이름<input value={copyName} onChange={event => setCopyName(event.target.value)} maxLength={200} /></label>
       <button disabled={!source || !copyName.trim()} onClick={copy}>내 공통본으로 복사</button>

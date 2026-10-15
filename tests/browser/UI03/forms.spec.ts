@@ -102,8 +102,13 @@ test('내용 검토와 사용자 확정은 각각 직접 조작하고 같은 버
   await page.getByLabel('내용 검토 종합 이유', { exact: true }).fill('직접 확인한 내용으로 기록한다');
   await page.getByRole('button', { name: '내용 검토 기록', exact: true }).click();
   await expect(page.getByText('서버 내용 검토 기록 확인', { exact: true })).toBeVisible(); expect(writes).toHaveLength(1);
+  const verdictBox = await page.getByLabel('FORM_PURPOSE 판정', { exact: true }).boundingBox();
+  const reasonBox = await page.getByLabel('FORM_PURPOSE 검토 이유', { exact: true }).boundingBox();
+  expect(verdictBox).not.toBeNull(); expect(reasonBox).not.toBeNull();
+  expect(reasonBox!.y).toBeGreaterThanOrEqual(verdictBox!.y + verdictBox!.height);
   await expect(page.getByText('작성 기록자와 같은 사용자 · 독립 검수 아님', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '이 양식 버전 확정', exact: true }).click();
   await expect(page.getByText('현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도', { exact: true })).toBeVisible();
   expect(writes).toHaveLength(2); expect(writes[1].payload.reviewRefs).toEqual([reviewRef]); expect(writes[1].expectedVersion).toBe(1);
+  if (process.env.ANVIL_CAPTURE_UI === '1') await page.screenshot({ path: test.info().outputPath('form-review-final.png'), fullPage: true });
 });
