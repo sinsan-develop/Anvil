@@ -565,6 +565,7 @@ Windows shell은 승인 서버/정확 origin만 표시하고 renderer의 Node �
 
 ### 15.1 프로젝트 생성 전 직접 방법론 정의
 
+초안 저장의 참조 선택은 `{kind:CONFIRMED_REFERENCE,versionRef}`로 고정한다. 저장 시 허가된 정확 SYSTEM 배포 원본 또는 본인 공통 확정/최신 ACCEPTED·그래프를 확인한다. 기본본 출처 승인과 Anvil 사용자 확정 사건은 다르며 이것은 선택 저장일 뿐 최종 생성/Agent 실행 승인이 아니다. NEW_PROJECT_DRAFT는 아래 name/purpose/graph/sourceRefs/reviewRefs를 보존하되 현재 reviewRefs=[]만 허용하고 DRAFT 검토/확정 연결 전 임의 refs는412로 거절한다. 초안의 서버 step·선택은 재조회로 유지하며 미저장 탭 버퍼의 owner가 현재 로그인과 다르면 표시/전송하지 않는다.
 UI02의 생성 중간본은 `methodologySelection`을 가진다. kind는 CONFIRMED_REFERENCE 또는 NEW_PROJECT_DRAFT다. 전자는 허가된 SYSTEM/USER_COMMON VersionRef, 후자는 `name,purpose,graph:MethodologyGraph,sourceRefs,reviewRefs`의 현재 초안 내용을 project_drafts.input_json에 보관한다. 아직 없는 projectId/제어 세대를 만들거나 다른 프로젝트 전용본을 권한 없이 선택하지 않는다.
 
 GET draft는 소유자에게 저장한 graph/좌표·원문·현재 단계/validation issues를 그대로 돌려준다. POST `/api/v1/project-drafts/:draftId/commands`의 명시 연산은 `importDocument`, `recordContentReview`, `confirmDraftMethodology`이며 DRAFT scope의 작성자/client·해당 자료/버전·초안 명령 중복만 허용한다. 이 경로로 프로젝트 실행/권한/임의 FN 명령을 dispatch할 수 없다. 파일 업로드의 원본/추출은 draft scope 참조로 보호한다.

@@ -177,3 +177,5 @@ INTERFACES §13~14·DATA_MODEL §10은 §3의 FN09~18 모듈·schema/migration/�
 독립 P02 검토의 최초 소스 선언은 FN01 projects service/repository·0001·projects.schema, 문서 링크/관측 선택·구버전 제목/출처 보존은 FN03 documents service/repository·0003·documents.schema가 소유한다. 추가 시험 파일은 `tests/unit/FN01/source-declaration.test.ts`와 `tests/integration/FN03/source-links.test.ts`다. 초안 소유/귀속·실관측 없는 VERIFIED 거절, 링크 stale/경로 이탈·타 project 거절, 서버 유지/제안 수집/별도 분리·기존 확정본 불변, 제목/출처 개정 후 구버전 내용/hash 유지를 검수한다. 실제 소스 관측은 FN08 실행기 결과를 사용하고 문서·저장 시험의 fixture를 실제 호스트 검증으로 승격하지 않는다.
 
 방법론 검토 구현: `apps/server/modules/methodologies/content-review.ts`, `db/migrations/0011_user_common_method_reviews.sql`, `apps/web/src/features/methodology-editor/MethodReviewPanel.tsx`, `tests/integration/FN02/method-review.test.ts`. 기존 FORM 보호의 forward 보완만 포함하며 기존 적용 migration 수정0.
+
+프로젝트 초안 선택: `contracts/project-drafts.ts`의 자료형, `apps/server/modules/projects/draft-methodology.ts`의 owner/출처·확정/버전 검사, `apps/web/src/features/project-create/MethodologySelection.tsx`의 고정 버전 선택을 기존 초안 writer와 연결한다. DRAFT 검토/확정·실제 프로젝트 생성은 아직 미연결이며 이 파일 목록을 구현 완료 근거로 쓰지 않는다.
