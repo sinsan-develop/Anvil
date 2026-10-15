@@ -4,6 +4,8 @@ import { parseWireJson } from '../../../../contracts/canonical.ts';
 
 export interface AccessRoutesOptions { repository: AccessRepository; origin: string }
 const text = (maxLength: number) => ({ type: 'string', minLength: 1, maxLength });
+const commandIdSchema = { ...text(36), pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
+const opaqueSecretSchema = { ...text(43), pattern: '^[A-Za-z0-9_-]{43}$' };
 function body(properties: Record<string, unknown>) { return { type: 'object', properties, required: Object.keys(properties), additionalProperties: false }; }
 function sessionToken(request: FastifyRequest) {
   const found = (request.headers.cookie ?? '').split(';').map(v => v.trim()).filter(v => v.startsWith('__Host-anvil.sid='));
@@ -50,6 +52,11 @@ export function registerAccessRoutes(app: FastifyInstance, options: AccessRoutes
     });
     auth.post<{ Body: { currentPassword: string; newPassword: string; commandId: string } }>('/api/v1/auth/password', { schema: { body: body({ currentPassword: text(128), newPassword: { ...text(128), minLength: 15 }, commandId: { ...text(36), pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' } }) } }, async (request, reply) => {
       await options.repository.changePassword(sessionToken(request), csrfToken(request), request.body, request.ip);
+      return reply.header('set-cookie', '__Host-anvil.sid=; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=0').code(204).send();
+    });
+    auth.post<{ Body: { commandId: string } }>('/api/v1/auth/recovery/rotate', { schema: { body: body({ commandId: commandIdSchema }) } }, request => options.repository.rotateRecovery(sessionToken(request), csrfToken(request), request.body.commandId));
+    auth.post<{ Body: { loginName: string; recoverySecret: string; newPassword: string; commandId: string } }>('/api/v1/auth/recovery', { schema: { body: body({ loginName: text(128), recoverySecret: opaqueSecretSchema, newPassword: { ...text(128), minLength: 15 }, commandId: commandIdSchema }) } }, async (request, reply) => {
+      await options.repository.recover(request.body, request.ip);
       return reply.header('set-cookie', '__Host-anvil.sid=; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=0').code(204).send();
     });
   });

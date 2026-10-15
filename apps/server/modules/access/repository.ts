@@ -175,6 +175,50 @@ export class AccessRepository {
       return { value: undefined };
     });
   }
+  async rotateRecovery(token: string, csrf: string, commandId: string): Promise<{ recoverySecret: string | null }> {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
+    return this.#transaction<{ recoverySecret: string | null }>(async db => {
+      const row = await this.#lockedSession(db, token);
+      if (!same(row.csrf_digest, digest(csrf))) return { failure: 'CSRF_INVALID', status: 403 };
+      if (!row.reauth_until || row.reauth_until.getTime() <= Date.now()) return { failure: 'REAUTHENTICATION_REQUIRED', status: 412 };
+      const fingerprint = this.#hmac(JSON.stringify(['rotate-recovery', row.uid, commandId]));
+      const previous = (await db.query("SELECT protected_fingerprint FROM anvil.auth_actions WHERE actor_scope=$1 AND operation='ROTATE_RECOVERY' AND command_id=$2", [row.uid, commandId])).rows[0];
+      if (previous) return same(previous.protected_fingerprint, fingerprint) ? { value: { recoverySecret: null } } : { failure: 'IDEMPOTENCY_CONFLICT', status: 409 };
+      const recoverySecret = randomBytes(32).toString('base64url');
+      await db.query('UPDATE anvil.recovery_credentials SET revoked_at=now() WHERE user_id=$1 AND consumed_at IS NULL AND revoked_at IS NULL', [row.uid]);
+      await db.query('INSERT INTO anvil.recovery_credentials(id,user_id,secret_digest) VALUES($1,$2,$3)', [randomUUID(), row.uid, digest(recoverySecret)]);
+      await db.query("INSERT INTO anvil.auth_actions(id,actor_scope,operation,command_id,protected_fingerprint,result_status,safe_result_ref) VALUES($1,$2,'ROTATE_RECOVERY',$3,$4,'APPLIED',$5)", [randomUUID(), row.uid, commandId, fingerprint, JSON.stringify({ userId: row.uid, secretDeliveredOnce: true })]);
+      await this.#audit(db, 'ROTATE_RECOVERY', 'APPLIED', 'PREVIOUS_SECRET_REVOKED', row.uid, row.client_id);
+      return { value: { recoverySecret } };
+    });
+  }
+  async recover(input: { loginName: string; recoverySecret: string; newPassword: string; commandId: string }, source: string): Promise<void> {
+    const normalized = normalizeName(input.loginName);
+    return this.#transaction<void>(async db => {
+      await db.query("SELECT pg_advisory_xact_lock(hashtext('anvil-auth-attempts'))");
+      const buckets = await this.#attempts(db, normalized, source);
+      if (!buckets) return { failure: 'AUTH_RATE_LIMITED', status: 429 };
+      const user = (await db.query('SELECT * FROM anvil.users WHERE normalized_login_name=$1 FOR UPDATE', [normalized])).rows[0];
+      const secret = (await db.query('SELECT * FROM anvil.recovery_credentials WHERE user_id=$1 AND secret_digest=$2 FOR UPDATE', [user?.id ?? null, digest(input.recoverySecret)])).rows[0];
+      const fingerprint = this.#hmac(JSON.stringify(['recover', normalized, input.commandId, input.recoverySecret, input.newPassword]));
+      if (user?.status === 'ACTIVE' && !user.revoked_at && secret && !secret.revoked_at) {
+        const previous = (await db.query("SELECT protected_fingerprint FROM anvil.auth_actions WHERE actor_scope=$1 AND operation='RECOVER' AND command_id=$2", [user.id, input.commandId])).rows[0];
+        if (previous) return same(previous.protected_fingerprint, fingerprint) ? { value: undefined } : { failure: 'IDEMPOTENCY_CONFLICT', status: 409 };
+        if (!secret.consumed_at) {
+          const phc = await hashPassword(input.newPassword);
+          await db.query('UPDATE anvil.users SET credential_generation=credential_generation+1,version=version+1 WHERE id=$1', [user.id]);
+          await db.query('UPDATE anvil.password_credentials SET argon2_phc=$2,credential_generation=credential_generation+1,changed_at=now() WHERE user_id=$1', [user.id, phc]);
+          await db.query('UPDATE anvil.auth_sessions SET revoked_at=COALESCE(revoked_at,now()) WHERE user_id=$1', [user.id]);
+          await db.query('UPDATE anvil.recovery_credentials SET consumed_at=now() WHERE id=$1', [secret.id]);
+          await db.query("INSERT INTO anvil.auth_actions(id,actor_scope,operation,command_id,protected_fingerprint,result_status,safe_result_ref) VALUES($1,$2,'RECOVER',$3,$4,'APPLIED',$5)", [randomUUID(), user.id, input.commandId, fingerprint, JSON.stringify({ userId: user.id, status: 'RELOGIN_REQUIRED' })]);
+          await this.#audit(db, 'RECOVER', 'APPLIED', 'RECOVERY_CONSUMED', user.id);
+          return { value: undefined };
+        }
+      }
+      await this.#failedAttempts(db, buckets); await this.#audit(db, 'RECOVER', 'DENIED', 'AUTH_REQUIRED');
+      return { failure: 'AUTH_REQUIRED', status: 401 };
+    });
+  }
   async logout(token: string, csrf: string): Promise<void> {
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return;
     return this.#transaction<void>(async db => {

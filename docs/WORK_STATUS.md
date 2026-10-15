@@ -109,6 +109,8 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- 복구 기능 구현 전 기준선 `25d2a2c9`를 지정 branch에 게시하고 WSL exact SHA에서 실제 rotate404!=200 RED를 확인했다. Windows relay 오류를 기능 RED로 대신하지 않았다. 이후 access repository/routes에 최근 재인증/CSRF 아래 일회 복구 비밀 재발급·이전 회수, 비밀 digest/시도 제한·일회 소비/세대 증가/전체session회수·동일command 결과만 확인을 구현했다. 로컬 unit23/typecheck/diff PASS, actual WSL GREEN은 다음 게시 SHA에서 검증 전이다. 복구 비밀/새 비밀번호 원문은 저장/출력하지 않는다.
+
 - 중요 환경 예외: 복구 후속 검사에서 Windows→WSL relay의 같은 connectionTimeout5000 실패가 누적3번째 발생했다(이번 본문 첫 DB 조회 전, finally 포함22.8초). 해당 Windows DB 실제 시험/재접속 경로를 중단하고 네 번째 재시도·timeout 확대·공유 relay 재시작/kill·ACL 변경은 하지 않는다. WSL 내부 동일 app/DB 조회는 exit0·active1/잠금대기0이었다. 기능 RED/PASS가 아닌 연결 환경 실패이며 직접 원인 미확정. 별도 변경 권한 없이 Windows relay 복구를 시도하지 않고 단위/로컬 구현·Git exact SHA WSL 검수는 계속한다. 정식 Node40744/초기화1은 보존하며 정상 상시 로그인 사용은 현재 미확인 위험이다.
 - 중간 게시 `000d0088bfab071115958211bd4426f88e77b531` local/private 동일·clean, main f976ed5e 불변. WSL exact000d008/clean·typecheck/auth DB/HTTP1 PASS(3.1초). 정상 launcher는 같은 commit·Node40744/startUTC2026-10-15T20:25:42.3705853Z·3830·기존relay26052로 시작했고 직후 실제 HTTPS setup200/true·session401을 확인했다. 이후 위 relay 재발을 정상 사용 PASS로 숨기지 않는다.
 
