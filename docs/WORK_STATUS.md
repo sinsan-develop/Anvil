@@ -109,6 +109,8 @@
 
 ### 2026-10-16 FN03 공식 양식 저장·조회 착수
 
+- Git exact `237899bcb318d641743068868ddc9ae8f2cab179`를 지정 branch/private와 WSL에서 일치·tracked clean 확인. WSL 실제 catalog 시험은 최초 DB 검사 `anvil.form_definitions` 부재/42P01 exit1로 RED, fixture 생성 전이며 skip0다. 이 RED를 제품 사용 성공으로 해석하지 않는다.
+- 생성 전 DB 대상: 기존 승인 DB·migrator, 계획 `0003_documents`의 `anvil.authoring_standard_versions`·`form_definitions`·`form_versions` 세 테이블/버전 FK·head FK·범위 check·인덱스만 새로 만든다. 공통 기준 원문1과 공식 양식8·버전8을 지속 개발 자료로 보존하며 실제 계정/키/프로젝트 자료0. app는 이 새 catalog에 SELECT만 가능, 기존 역할/기존 테이블 권한 변경0. 같은 seed 재실행은 같은 버전 검증만, 다른 hash·본문/소유에는 rollback/거절한다. 적용 실패 전체 transaction rollback, 적용 후 기존 SQL을 수정하지 않고 별도 forward-only 수정으로 복구한다. 문서 파일 저장소·Secret·컨테이너·port 추가0.
 - Main 어울, branch `codex/av3-stage-b`, 시작 `59c3444cc657812a90dc754c82f76406f66b9eda`. FN01 최종 생성이 소비할 FN03 catalog를 선행 연결한다. 공식 원문 SHA256 `622ffc6db4ccc26ae07c785c91b114467019b21571b728a71dea05d206816b13`/공통 기준 `85ec190976ce45af49b4f57fb5745d193b41640cfc62f5cbd19aa4711cb03f07`을 보존, 승인 자료 자체 수정0. 공식8종·각6목차·안정 항목/필드 ID·반복 행·작성 규칙·검수/사용자확정 분리를 구현했다.
 - `forms-import` 첫 실제 RED는0≠8, 구현 뒤 GREEN. 새 목록/버전 인증 시험404≠401 RED→공통 현재 세션 gate 연결 GREEN, 익명 오류는 기존 계약 `AUTH_REQUIRED`를 사용한다. 초기 시험의 SESSION_EXPIRED 예상은 소비자 코드와 대조해 인증 부재/만료를 구분하도록 바로잡았다. 선언되지 않은 scope는400, 다른Host403. 아직 실제 저장 검증 전이며 형식 합격을 내용검수/사용자 인수로 승격하지 않는다.
 - `npm test` sandbox에서는26 PASS/1 FAIL: 기존 auth-init `D:\tmp\anvil-v3-stage-b\auth-init\owned-XXXXXX` mkdtemp EPERM, 실제 인증 파일 변경0. 같은 승인 범위 elevated 전체 단위27 PASS/skip0, typecheck exit0. ACL 변경/제품 실패로 오인하지 않는다. 없는 `FN03.md`/`migrate.ts`/`environment.test.ts` 읽기는 경로 오류이며 실제 파일 등록부로 정정, 파일 변경0. 첫 forms.ts 패치는 같은 대상 delete/add가 도구에서 거절되어 적용0, 단일 update로 처리했다.

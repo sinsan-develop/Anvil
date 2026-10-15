@@ -9,6 +9,7 @@ import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { buildOfficialForms } from '../../../apps/server/modules/documents/forms.ts';
+import { seedOfficialForms } from '../../../apps/server/modules/documents/catalog-seed.ts';
 
 test('실제 저장된 공식8종·작성 기준은 버전 그대로 조회되며 사용자 공통본/회수 세션을 격리한다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -34,12 +35,19 @@ test('실제 저장된 공식8종·작성 기준은 버전 그대로 조회되�
     const db = await admin.connect();
     try {
       await db.query('BEGIN');
+      await seedOfficialForms(db, catalog);
       for (const [index, id] of forms.entries()) {
         const definition = { ...catalog.forms[0]!.definition, scope: 'USER_COMMON', name: 'FN03 소유 양식 QA' };
         await db.query("INSERT INTO anvil.form_definitions(id,scope,owner_user_id,form_code,name,head_version) VALUES($1,'USER_COMMON',$2,'AF01',$3,1)", [id, users[index], definition.name]);
-        await db.query('INSERT INTO anvil.form_versions(definition_id,version,definition_json,content_hash,authoring_standard_id,authoring_standard_version,authoring_standard_hash,created_by) VALUES($1,1,$2,$3,$4,1,$5,$6)', [id, JSON.stringify(definition), contentHash(canonicalJson(definition)), catalog.standard.ref.id, catalog.standard.ref.contentHash, users[index]]);
+        await db.query('INSERT INTO anvil.form_versions(definition_id,version,definition_json,content_hash,authoring_standard_id,authoring_standard_version,authoring_standard_hash,created_by,authoring_standard_ref) VALUES($1,1,$2,$3,$4,1,$5,$6,$7)', [id, JSON.stringify(definition), contentHash(canonicalJson(definition)), catalog.standard.ref.id, catalog.standard.ref.contentHash, users[index], canonicalJson(catalog.standard.ref)]);
       }
       await db.query('COMMIT');
+      await db.query('BEGIN');
+      const modified = structuredClone(catalog.forms[0]!);
+      modified.definition.purpose = '미승인 덮어쓰기';
+      modified.ref.contentHash = contentHash(canonicalJson(modified.definition));
+      await assert.rejects(seedOfficialForms(db, { ...catalog, forms: [modified, ...catalog.forms.slice(1)] }), /OFFICIAL_FORM_SEED_CONFLICT/);
+      await db.query('ROLLBACK');
     } catch (error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
     const login = await access.login('qa-forms-' + users[0], password, 'FN03 실제 조회 QA', 'qa-forms-' + users[0]);
     const headers = { host: 'localhost:3830', cookie: '__Host-anvil.sid=' + login.token };

@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { Client } from 'pg';
 import { validateDevelopmentDbConfig } from '../apps/server/storage/development-config.ts';
+import { buildOfficialForms } from '../apps/server/modules/documents/forms.ts';
+import { seedOfficialForms } from '../apps/server/modules/documents/catalog-seed.ts';
 
 const configFile = process.env.ANVIL_DB_CONFIG;
 if (!configFile) throw Error('PROTECTED_DB_CONFIG_REQUIRED');
@@ -25,7 +27,7 @@ try {
     if (applied.rows[0]?.checksum !== checksum) throw Error('MIGRATION_CHECKSUM_CONFLICT');
   }
   // 명시한 의존 순서만 실행한다. 파일 이름 정렬이나 임의 SQL 경로를 받지 않는다.
-  for (const id of ['0001_projects_access', '0011_authorization']) {
+  for (const id of ['0001_projects_access', '0011_authorization', '0003_documents']) {
     const content = await readFile(new URL('../db/migrations/' + id + '.sql', import.meta.url), 'utf8');
     const expected = createHash('sha256').update(content).digest('hex');
     const row = await client.query('SELECT checksum FROM anvil.schema_migrations WHERE id=$1', [id]);
@@ -37,6 +39,8 @@ try {
     }
     receipts.push({ migration: id, checksum: expected });
   }
+  const catalog = buildOfficialForms(await readFile(new URL('../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../docs/design/문서작성_공통기준.md', import.meta.url)));
+  await seedOfficialForms(client, catalog);
   const fixtures = JSON.parse(await readFile(new URL('../db/qa/fixtures.json', import.meta.url), 'utf8'));
   for (const [name, value] of Object.entries(fixtures)) {
     await client.query('INSERT INTO anvil_qa.fixtures(name,payload) VALUES($1,$2) ON CONFLICT(name) DO UPDATE SET payload=EXCLUDED.payload', [name, JSON.stringify(value)]);

@@ -75,7 +75,7 @@ UI02 초기 중간 저장은 기존 `features/project-create/{ProjectCreatePage.
 | FN01 | projects, access | `db/migrations/0001_projects_access.sql` | `tests/unit/FN01/projects.test.ts`, `tests/integration/FN01/projects-postgres.test.ts` |
 | FN02 | methodologies | `db/migrations/0002_methodologies.sql`, `apps/server/modules/methodologies/builtins.ts` | `tests/unit/FN02/graph.test.ts`, `tests/integration/FN02/versions.test.ts` |
 | FN03 | documents, imports | `db/migrations/0003_documents.sql`, `apps/server/modules/documents/forms.ts` | `tests/unit/FN03/forms-import.test.ts`, `tests/integration/FN03/documents.test.ts` |
-| FN03 초기 catalog 연결 | `apps/server/modules/documents/{repository.ts,routes.ts}`·기존 `apps/server/app.ts` | 승인 원문 기반8종/공통 작성 기준 고정 버전, 계획0003 catalog부터 forward-only 적용·후속 문서 저장은 별도 migration | `tests/unit/FN03/form-access.test.ts`, `tests/integration/FN03/forms-catalog.test.ts` |
+| FN03 초기 catalog 연결 | `apps/server/modules/documents/{repository.ts,routes.ts,catalog-seed.ts}`·기존 `apps/server/app.ts`/`scripts/migrate-development.ts` | 승인 원문 기반8종/공통 작성 기준 고정 버전, 계획0003 catalog부터 forward-only 적용·후속 문서 저장은 별도 migration | `tests/unit/FN03/form-access.test.ts`, `tests/integration/FN03/forms-catalog.test.ts` |
 | FN04 | traceability, design_changes | `db/migrations/0004_trace_changes.sql` | `tests/unit/FN04/impact.test.ts`, `tests/integration/FN04/trace.test.ts` |
 | FN05 | knowledge, constitution, context | `db/migrations/0005_knowledge.sql` | `tests/unit/FN05/context.test.ts`, `tests/integration/FN05/knowledge.test.ts` |
 | FN06 | connections, environments | `apps/connector/adapters/{adapter.ts,codex.ts}`, `db/migrations/0006_connections.sql` | `tests/unit/FN06/adapter.test.ts`, `tests/integration/FN06/codex-live.test.ts` |
