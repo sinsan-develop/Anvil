@@ -23,5 +23,5 @@ BEGIN
     ELSIF current_head<>2 THEN RAISE EXCEPTION 'BUILTIN_HEAD_UNEXPECTED';
     END IF;
   END LOOP;
-END
+END;
 $correction$;
