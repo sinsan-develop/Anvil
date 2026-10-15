@@ -35,11 +35,11 @@ export function App() {
     setDraftBuffer(emptyDraft()); return true;
   }
   useEffect(() => {
-    if (!draftBuffer.dirty && !draftBuffer.pendingCommand && !methodBuffer.dirty && !methodBuffer.pending && !formBuffer.dirty && !formBuffer.pending) return;
+    if (!draftBuffer.dirty && !draftBuffer.pendingCommand && !methodBuffer.dirty && !methodBuffer.pending && !formBuffer.dirty && !formBuffer.pending && !formBuffer.review?.dirty && !formBuffer.review?.pending) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     addEventListener('beforeunload', warn);
     return () => removeEventListener('beforeunload', warn);
-  }, [draftBuffer.dirty, draftBuffer.pendingCommand, methodBuffer.dirty, methodBuffer.pending, formBuffer.dirty, formBuffer.pending]);
+  }, [draftBuffer.dirty, draftBuffer.pendingCommand, methodBuffer.dirty, methodBuffer.pending, formBuffer.dirty, formBuffer.pending, formBuffer.review?.dirty, formBuffer.review?.pending]);
   async function logout() {
     if (!session || endingSession) return;
     setEndingSession(true);

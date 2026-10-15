@@ -7,8 +7,14 @@ export interface FormsPage { items: FormSummary[]; nextCursor: null; hasMore: fa
 export interface FormVersion {
   ref: VersionRef; definition: FormDefinition;
   authoringStandard: { ref: VersionRef; content: string };
-  validation: { formatOnly: true; contentReview: 'NOT_PERFORMED'; userAcceptance: 'NOT_PERFORMED' };
+  validation: { formatOnly: true; contentReview: 'NOT_PERFORMED' | 'RECORDED'; userAcceptance: 'NOT_PERFORMED' | 'CONFIRMED' };
+  contentReviewCriteria?: { criteriaVersion: number; items: { criterionId: string; title: string }[] };
+  contentReviews?: { ref: ContentReviewRef; items: { criterionId: string; outcome: ReviewOutcome; evidenceRefs: []; reason: string }[]; reviewer: { kind: 'HUMAN'; userId: string; sameAsTargetRecorder: boolean }; sourceKind: 'HUMAN_REVIEW'; reason: string; reviewedAt: string; serverSequence: number }[];
+  confirmation?: { id: string; decidedBy: string; decidedAt: string; reviewRefs: ContentReviewRef[] } | null;
 }
+export type ReviewOutcome = 'ACCEPTED' | 'REWORK' | 'BLOCKED' | 'NOT_EXECUTED';
+export interface ContentReviewRef { id: string; criteriaVersion: number; targetRef: VersionRef; outcome: ReviewOutcome }
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 function validRef(value: unknown): value is VersionRef {
   const ref = value as VersionRef;
   return !!ref && typeof ref === 'object' && Object.keys(ref).sort().join(',') === 'contentHash,id,version'
@@ -16,6 +22,10 @@ function validRef(value: unknown): value is VersionRef {
     && Number.isSafeInteger(ref.version) && ref.version > 0 && /^[0-9a-f]{64}$/.test(ref.contentHash);
 }
 function sameRef(first: VersionRef, second: VersionRef) { return validRef(first) && validRef(second) && first.id === second.id && first.version === second.version && first.contentHash === second.contentHash; }
+export function reviewRefFor(value: unknown, target: VersionRef): value is ContentReviewRef {
+  const ref = value as ContentReviewRef;
+  return !!ref && uuid.test(ref.id) && Number.isSafeInteger(ref.criteriaVersion) && ref.criteriaVersion > 0 && sameRef(ref.targetRef, target) && ['ACCEPTED', 'REWORK', 'BLOCKED', 'NOT_EXECUTED'].includes(ref.outcome);
+}
 function texts(value: unknown, draft = false): value is string[] { return Array.isArray(value) && (draft || value.length > 0) && value.length <= 200 && value.every(item => typeof item === 'string' && (draft || item.length > 0)); }
 export async function listForms(client: ApiClient): Promise<FormsPage> {
   const page = await client.get<FormsPage>('/api/v1/forms');
@@ -36,6 +46,13 @@ export async function getForm(client: ApiClient, summary: FormSummary): Promise<
       || !['TEXT', 'RECORDS'].includes(item.valueType) || !texts(item.authoringRules, draft) || !texts(item.reviewCriteria, draft) || !Array.isArray(item.fields) || item.fields.length > 200
       || item.fields.some(field => !field || typeof field.fieldId !== 'string' || typeof field.title !== 'string' || typeof field.required !== 'boolean' || field.valueType !== 'TEXT'))
     || !data.authoringStandard || !sameRef(form.authoringStandardRef, data.authoringStandard.ref) || typeof data.authoringStandard.content !== 'string' || data.authoringStandard.content.length > 2 * 1024 * 1024
-    || data.validation?.formatOnly !== true || data.validation.contentReview !== 'NOT_PERFORMED' || data.validation.userAcceptance !== 'NOT_PERFORMED') throw new ApiError('RESPONSE_INVALID');
+    || data.validation?.formatOnly !== true || !(draft ? ['NOT_PERFORMED', 'RECORDED'] : ['NOT_PERFORMED']).includes(data.validation.contentReview) || !(draft ? ['NOT_PERFORMED', 'CONFIRMED'] : ['NOT_PERFORMED']).includes(data.validation.userAcceptance)) throw new ApiError('RESPONSE_INVALID');
+  if (data.contentReviewCriteria !== undefined && (!Number.isSafeInteger(data.contentReviewCriteria.criteriaVersion) || data.contentReviewCriteria.criteriaVersion < 1 || !Array.isArray(data.contentReviewCriteria.items) || !data.contentReviewCriteria.items.length || data.contentReviewCriteria.items.length > 200
+    || new Set(data.contentReviewCriteria.items.map(item => item?.criterionId)).size !== data.contentReviewCriteria.items.length || data.contentReviewCriteria.items.some(item => !item || typeof item.criterionId !== 'string' || typeof item.title !== 'string'))) throw new ApiError('RESPONSE_INVALID');
+  if (data.contentReviews !== undefined && (!Array.isArray(data.contentReviews) || data.contentReviews.length > 200 || data.contentReviews.some(review => !review || !reviewRefFor(review.ref, data.ref) || !Array.isArray(review.items)
+    || !review.reviewer || review.reviewer.kind !== 'HUMAN' || !uuid.test(review.reviewer.userId) || typeof review.reviewer.sameAsTargetRecorder !== 'boolean' || review.sourceKind !== 'HUMAN_REVIEW' || typeof review.reason !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt)) || !Number.isSafeInteger(review.serverSequence) || review.serverSequence < 1))) throw new ApiError('RESPONSE_INVALID');
+  if (data.validation.userAcceptance === 'CONFIRMED' && (!data.confirmation || !uuid.test(data.confirmation.id) || !uuid.test(data.confirmation.decidedBy) || !Number.isFinite(Date.parse(data.confirmation.decidedAt)) || !Array.isArray(data.confirmation.reviewRefs) || !data.confirmation.reviewRefs.length
+    || data.confirmation.reviewRefs.some(ref => !reviewRefFor(ref, data.ref) || ref.outcome !== 'ACCEPTED'))) throw new ApiError('RESPONSE_INVALID');
+  if (data.validation.userAcceptance === 'NOT_PERFORMED' && data.confirmation != null) throw new ApiError('RESPONSE_INVALID');
   return data;
 }

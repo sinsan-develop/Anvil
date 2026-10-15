@@ -11,8 +11,8 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
 }) {
   const fieldId = useId();
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [saved, setSaved] = useState<number | null>(null);
-  const definition = buffer.definition, item = definition?.items.find(value => value.itemId === buffer.itemId), locked = pending || !!buffer.pending;
-  function replaceAllowed() { return !buffer.pending && (!buffer.dirty || confirm('미저장 양식 편집을 바꿀까요?')); }
+  const definition = buffer.definition, item = definition?.items.find(value => value.itemId === buffer.itemId), locked = pending || !!buffer.pending || !!buffer.review?.pending;
+  function replaceAllowed() { return !buffer.pending && !buffer.review?.pending && (!(buffer.dirty || buffer.review?.dirty) || confirm('미저장 양식 편집·내용 검토 입력을 바꿀까요?')); }
   function change(patch: Partial<FormDefinition>) { onChange(previous => previous.definition ? { ...previous, dirty: true, definition: { ...previous.definition, ...patch } } : previous); setSaved(null); }
   function changeItem(patch: Partial<FormItem>) { if (definition) change({ items: definition.items.map(value => value.itemId === buffer.itemId ? { ...value, ...patch } : value) }); }
   async function submit(request: MethodCommand, name: string, formCode: string) {
@@ -23,7 +23,7 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
     try {
       const ref = await writeCommonFormDraft(client, request, session.csrfToken, session.user.id); applied = true;
       const value = await getForm(client, { ref, name, formCode, scope: 'USER_COMMON' });
-      onChange(previous => previous.pending?.request.commandId === request.commandId ? formBuffer(value, session.user.id) : previous);
+      onChange(previous => previous.pending?.request.commandId === request.commandId ? { ...formBuffer(value, session.user.id), review: previous.review } : previous);
       setSaved(ref.version); onSaved();
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);

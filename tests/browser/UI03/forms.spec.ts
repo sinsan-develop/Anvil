@@ -77,3 +77,33 @@ test('양식 편집 계약: 공식본을 공통본으로 복사해 항목 제목
   expect(writes).toHaveLength(2); expect(writes[1].operation).toBe('saveFormDraft'); expect(writes[1].expectedVersion).toBe(1);
   expect(writes[1].payload.definition.items[0].title).toBe('요구사항 작성 목적');
 });
+
+test('내용 검토와 사용자 확정은 각각 직접 조작하고 같은 버전의 서버 기록을 다시 읽는다', async ({ page }) => {
+  const ref = { id: 'a6f30000-0000-4000-8000-000000000099', version: 1, contentHash: 'c'.repeat(64) };
+  const criteria = ['FORM_PURPOSE', 'FORM_ROLES', 'FORM_STRUCTURE', 'FORM_AUTHORING', 'FORM_REVIEW'].map(criterionId => ({ criterionId, title: criterionId + ' 확인' }));
+  const reviewRef = { id: 'a6f30000-0000-4000-8000-000000000088', criteriaVersion: 1, targetRef: ref, outcome: 'ACCEPTED' };
+  const writes: any[] = []; let reviews: any[] = [], confirmation: any = null;
+  const definition = { ...catalog.forms[0]!.definition, name: '검토할 내 양식', scope: 'USER_COMMON' };
+  await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: [{ ref, formCode: definition.formCode, name: definition.name, scope: 'USER_COMMON' }], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
+  await page.route('**/api/v1/forms/' + ref.id + '/versions/1', route => route.fulfill({ json: { ref, definition, authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') }, contentReviewCriteria: { criteriaVersion: 1, items: criteria }, contentReviews: reviews, confirmation,
+    validation: { formatOnly: true, contentReview: reviews.length ? 'RECORDED' : 'NOT_PERFORMED', userAcceptance: confirmation ? 'CONFIRMED' : 'NOT_PERFORMED' } } }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); writes.push(body);
+    if (body.operation === 'recordContentReview') reviews = [{ ref: reviewRef, items: body.payload.items, reviewer: { kind: 'HUMAN', userId: catalog.forms[0]!.ref.id, sameAsTargetRecorder: true }, sourceKind: 'HUMAN_REVIEW', reason: body.payload.reason, reviewedAt: new Date().toISOString(), serverSequence: 1 }];
+    else confirmation = { id: 'a6f30000-0000-4000-8000-000000000077', decidedBy: catalog.forms[0]!.ref.id, decidedAt: new Date().toISOString(), reviewRefs: [reviewRef] };
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: catalog.forms[0]!.ref.id, operationId: 'a6f30000-0000-4000-8000-000000000066', commandId: body.commandId, status: 'APPLIED', targetId: ref.id, version: 1,
+      data: { ref, status: body.operation === 'recordContentReview' ? 'REVIEW_RECORDED' : 'CONFIRMED', ...(body.operation === 'recordContentReview' ? { reviewRef } : { confirmationId: confirmation.id }) }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await expect(page.getByRole('button', { name: '이 양식 내용 검토 시작', exact: true })).toBeVisible({ timeout: 1000 });
+  await page.getByRole('button', { name: '이 양식 내용 검토 시작', exact: true }).click();
+  for (const criterion of criteria) { await page.getByLabel(criterion.criterionId + ' 판정', { exact: true }).selectOption('ACCEPTED'); await page.getByLabel(criterion.criterionId + ' 검토 이유', { exact: true }).fill('본문을 직접 읽고 기준을 확인함'); }
+  await page.getByLabel('내용 검토 종합 판정', { exact: true }).selectOption('ACCEPTED');
+  await page.getByLabel('내용 검토 종합 이유', { exact: true }).fill('직접 확인한 내용으로 기록한다');
+  await page.getByRole('button', { name: '내용 검토 기록', exact: true }).click();
+  await expect(page.getByText('서버 내용 검토 기록 확인', { exact: true })).toBeVisible(); expect(writes).toHaveLength(1);
+  await expect(page.getByText('작성 기록자와 같은 사용자 · 독립 검수 아님', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '이 양식 버전 확정', exact: true }).click();
+  await expect(page.getByText('현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(2); expect(writes[1].payload.reviewRefs).toEqual([reviewRef]); expect(writes[1].expectedVersion).toBe(1);
+});

@@ -3,6 +3,7 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { getForm, listForms, type FormsPage, type FormVersion } from './forms-api.ts';
 import { CommonFormEditor } from './CommonFormEditor.tsx';
 import type { FormBuffer } from './form-editor-state.ts';
+import { FormReviewPanel } from './FormReviewPanel.tsx';
 
 export function FormsCatalog({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: FormBuffer; onChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void }) {
   const selectId = useId();
@@ -50,9 +51,10 @@ export function FormsCatalog({ client, session, buffer, onChange, onAuthenticati
       </li>)}</ol>
       <details><summary>작성 역할·입력 자료</summary><p>작성 {detail.definition.authorRole} / 검토 {detail.definition.reviewerRole} / 확정 {detail.definition.confirmerRole}</p><ul>{detail.definition.requiredInputs.map((text, index) => <li key={index}>{text}</li>)}</ul></details>
       <details><summary>문서 작성 공통 기준 원문</summary><p className="meta">버전 {detail.authoringStandard.ref.version} · {detail.authoringStandard.ref.contentHash}</p><pre className="document-plain" role="region" aria-label="작성 기준 원문">{detail.authoringStandard.content}</pre></details>
-      <p>문서 내용 검수·사용자 확정은 아직 수행하지 않았습니다.</p>
+      {detail.definition.scope === 'SYSTEM' ? <p>문서 내용 검수·사용자 확정은 아직 수행하지 않았습니다.</p> : null}
     </article> : null}
     <CommonFormEditor client={client} session={session} source={!pending && !error ? detail : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={() => setListRetry(value => value + 1)} />
+    {detail && !pending && !error ? <FormReviewPanel client={client} session={session} source={detail} buffer={buffer} onChange={onChange} onVerified={setDetail} onAuthenticationLost={onAuthenticationLost} /> : null}
     <p className="meta">양식 복사·항목 개정·초안 저장은 문서 작성·내용 검토·확정이나 Agent 실행이 아닙니다. 방법론 단계 연결과 산출물 편집·확정은 아직 연결 전입니다.</p>
   </section>;
 }
