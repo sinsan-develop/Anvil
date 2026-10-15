@@ -109,6 +109,7 @@
 
 ### 2026-10-16 FN03 본인 공통 양식 쓰기 착수
 
+- 부분 초안 actual: exact `14cb5181ece54a108c8ac53e4ffb61e7e398efd5` WSL의 같은 시험1 PASS/453ms/skip0. 목적/목차가 빈 별도 본인 초안을 실제 저장·재조회했고 validForConfirmation=false, 원래 복사/개정2건과 새 초안1건 외 부작용 없음·생성 QA 사용자/양식 정확 정리. 이미 적용된 migration은 재실행하지 않았다.
 - actual GREEN: exact `eb3b79ab211b05d31bedf41c8b256790643e28f6`/WSL tracked clean, 신규 `0011_user_common_forms` checksum `b1bb3b65bd7f9616bb6f79e456c27c042da4a2dfdfc8f3a6167e4cd06480044a` 적용 exit0·기존7개 불변. 양식 복사/개정·정확 공통 기준·구버전/공식 원본 보존·멱등/구버전409·타인404·SYSTEM403/SQL42501·변조 기준422의 실제 시험1 PASS/445ms, 영향받는 방법론 실제1 PASS/483ms(총2/skip0). 각 합성 사용자·정의 정리 확인, 실제 사용자 생성0.
 - UI03 양식 복사/편집 연결: 복사 버튼 없음 RED→공통본 작성/역할·항목·반복 필드·작성/검토 기준 편집·새 버전/정확 재조회1 fixture GREEN/2.6초, 타입/Web36모듈 PASS. pending/owner 경계는 방법론과 같은 원칙으로 탭 메모리에 보존하고 receipt 적용 후 GET 실패에서는 새 명령을 만들지 않는다. 미완성 USER_COMMON 초안이 클라이언트의 SYSTEM 전용 필수내용 검사에 막히는 RED→USER_COMMON 초안 읽기만 분리 GREEN; SYSTEM 검사/실제 확정 기준 완화0. 내용 검토/사용자 확정·문서 본문 작성은 여전히 미완료다.
 - 현재 fresh 검수: unit41/typecheck/diff check exit0·UI03 인접 Edge fixture8 PASS/6.5초, Web36모듈 build exit0(JS280.78kB/gzip84.27). 실제 API·DB2 PASS와 fixture8을 새 UI/DB E2E로 합산하지 않는다. 후속 부분 초안 실제 보존을 같은 지정 DB에서 확인한 뒤 본인 공통 내용검토/확정으로 이어간다.
