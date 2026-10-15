@@ -9,6 +9,11 @@ function sessionToken(request: FastifyRequest) {
   const found = (request.headers.cookie ?? '').split(';').map(v => v.trim()).filter(v => v.startsWith('__Host-anvil.sid='));
   return found.length === 1 ? found[0]!.slice('__Host-anvil.sid='.length) : '';
 }
+function csrfToken(request: FastifyRequest) {
+  const csrf = request.headers['x-anvil-csrf'];
+  if (typeof csrf !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(csrf)) throw new AuthFailure('CSRF_INVALID', 403);
+  return csrf;
+}
 export function registerAccessRoutes(app: FastifyInstance, options: AccessRoutesOptions) {
   const allowed = new URL(options.origin);
   if (allowed.protocol !== 'https:' || allowed.origin !== options.origin) throw Error('AUTH_ORIGIN_INVALID');
@@ -33,9 +38,18 @@ export function registerAccessRoutes(app: FastifyInstance, options: AccessRoutes
       return result;
     });
     auth.post('/api/v1/auth/logout', { schema: { body: body({}) } }, async (request, reply) => {
-      const csrf = request.headers['x-anvil-csrf'];
-      if (typeof csrf !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(csrf)) throw new AuthFailure('CSRF_INVALID', 403);
+      const csrf = csrfToken(request);
       await options.repository.logout(sessionToken(request), csrf);
+      return reply.header('set-cookie', '__Host-anvil.sid=; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=0').code(204).send();
+    });
+    auth.post<{ Body: { password: string } }>('/api/v1/auth/reauthenticate', { schema: { body: body({ password: text(128) }) } }, async (request, reply) => {
+      const { token, ...result } = await options.repository.reauthenticate(sessionToken(request), csrfToken(request), request.body.password, request.ip);
+      const maxAge = Math.max(0, Math.floor((Date.parse(result.absoluteExpiresAt) - Date.now()) / 1000));
+      reply.header('set-cookie', `__Host-anvil.sid=${token}; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}`);
+      return result;
+    });
+    auth.post<{ Body: { currentPassword: string; newPassword: string; commandId: string } }>('/api/v1/auth/password', { schema: { body: body({ currentPassword: text(128), newPassword: { ...text(128), minLength: 15 }, commandId: { ...text(36), pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' } }) } }, async (request, reply) => {
+      await options.repository.changePassword(sessionToken(request), csrfToken(request), request.body, request.ip);
       return reply.header('set-cookie', '__Host-anvil.sid=; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=0').code(204).send();
     });
   });

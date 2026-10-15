@@ -2,6 +2,10 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 현재 사실 갱신: Stage A는 PR41/main `f976ed5e` 통합·smoke·정리 완료, Stage B `codex/av3-stage-b`에서 UI00/FN01을 구현 중이다. 아래 초기 설계/정리 기록은 당시 관측이며 현재 구현 상태를 대신하지 않는다. 전용 WSL checkout은 `/home/daon/deploy/anvil-v3`/Git exact `246007f2`, PG `anvil-v3-development-pg`의 DB `anvil_v3_development`와 app 역할·loopback5546을 사용한다. 0000/0001 적용, 이후 migration은 별도 계약/승인 대조 후 forward-only다.
+
+신규 인증 참조는 직접 승인 `call_74c28acfc6424f6fb3e31ef55262a333`로 `D:\Project\Anvil\.av3-data\auth.json`(서버 key/설치ID)·`bootstrap.json`(30분 일회 초기 등록 비밀)을 배타 생성했다. 파일/키 원문을 Git·로그·보고서에 넣지 않는다. root/파일은 current user/SYSTEM만 접근, 실제 소유자는 자동 생성하지 않았다. 최초 등록 기한은 KST 2026-10-16 05:51:14.749이며 만료를 자동 연장하지 않는다. 생성 도구는 기존 파일/계정/초기화행이 있으면 실패하고 `--check`는 읽기 전용이다. 정상 launcher는 auth.json을 선택적으로 서버에 전달한다. 현재 소유 Node3830은 실행 전이며 공유 wslrelay26052/5546은 변경·종료 금지다. 후속 실제 실행 때 receipt로 갱신한다.
+
 현재는 상세 설계 r8·작업계획 r7에 검토 보완을 본문 통합하고 P02 상세 계약을 작성하는 단계다. 작업계획 r3 승인·P01 시안/양식 승인·TD-01 A안·TD-02 Anvil 전용 로그인 설계 선택을 유지하되 P02/P03 선행과 실제 실행 승인 경계는 별도로 대조한다. TD-02는 설계 선택이며 실제 사용자·DB·Secret·인증서 변경이 아니다. 제품 구현과 신규 배포는 시작하지 않았다. 새 작업의 기준은 AGENTS.md, docs/design/Anvil_설계서_v3_초안.md, docs/design/Anvil_v3_인터뷰_합의사항.md, docs/design/문서작성_공통기준.md, docs/WORK_PLAN.md와 연결된 업무 카드, docs/WORK_STATUS.md다. 예전 개발환경 문서와 실행 도구는 Backup/Anvil/legacy-20261015-1420에 보관했다.
 
 ## 합의한 제품 배치

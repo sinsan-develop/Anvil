@@ -9,6 +9,7 @@ export class AuthFailure extends Error {
 interface SafeUser { id: string; displayName: string; serverOwner: boolean }
 interface SessionView { user: SafeUser; clientId: string; csrfToken: string; expiresAt: string; absoluteExpiresAt: string; reauthUntil: string | null }
 type Result<T> = { value: T } | { failure: string; status: number };
+interface AttemptBucket { kind: string; key: string; count: number; start: Date }
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const same = (one: string, two: string) => /^[0-9a-f]{64}$/.test(one) && /^[0-9a-f]{64}$/.test(two) && timingSafeEqual(Buffer.from(one, 'hex'), Buffer.from(two, 'hex'));
 const dummyPhc = '$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -37,6 +38,30 @@ export class AccessRepository {
   }
   async #audit(db: PoolClient, operation: string, outcome: string, reason: string, subject: string | null = null, client: string | null = null) {
     await db.query('INSERT INTO anvil.auth_audit_events(id,subject_ref,client_ref,operation,outcome,reason_code) VALUES($1,$2,$3,$4,$5,$6)', [randomUUID(), subject, client, operation, outcome, reason]);
+  }
+  async #attempts(db: PoolClient, normalized: string, source: string): Promise<AttemptBucket[] | null> {
+    const now = new Date(), buckets: AttemptBucket[] = [];
+    for (const [kind, value] of [['ACCOUNT', normalized], ['SOURCE', source]]) {
+      const key = this.#hmac(kind + ':' + value);
+      const row = (await db.query('SELECT * FROM anvil.auth_attempt_windows WHERE bucket_kind=$1 AND bucket_key=$2 ORDER BY updated_at DESC LIMIT 1 FOR UPDATE', [kind, key])).rows[0];
+      if (row?.blocked_until && row.blocked_until > now) return null;
+      if (!row && (await db.query('SELECT count(*)::int AS count FROM anvil.auth_attempt_windows')).rows[0].count >= 10000) return null;
+      const current = row && now.getTime() - row.window_start.getTime() < 15 * 60_000;
+      buckets.push({ kind: kind!, key, count: current ? row.attempt_count : 0, start: current ? row.window_start : now });
+    }
+    return buckets;
+  }
+  async #failedAttempts(db: PoolClient, buckets: AttemptBucket[]) {
+    for (const bucket of buckets) {
+      await db.query('DELETE FROM anvil.auth_attempt_windows WHERE bucket_kind=$1 AND bucket_key=$2', [bucket.kind, bucket.key]);
+      const count = bucket.count + 1;
+      await db.query('INSERT INTO anvil.auth_attempt_windows(bucket_kind,bucket_key,window_start,attempt_count,blocked_until) VALUES($1,$2,$3,$4,$5)', [bucket.kind, bucket.key, bucket.start, count, count >= 5 ? new Date(Date.now() + 15 * 60_000) : null]);
+    }
+  }
+  async #lockedSession(db: PoolClient, token: string) {
+    const row = (await db.query('SELECT s.*,u.id AS uid,u.display_name,u.normalized_login_name,u.server_owner,u.status AS user_status,u.revoked_at AS user_revoked_at,u.credential_generation AS current_generation,c.revoked_at AS client_revoked_at FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients c ON c.id=s.client_id AND c.user_id=s.user_id WHERE token_digest=$1 FOR UPDATE OF u,s,c', [digest(token)])).rows[0];
+    if (!row || row.user_status !== 'ACTIVE' || !sessionIsActive({ idleExpiresAt: row.idle_expires_at, absoluteExpiresAt: row.absolute_expires_at, revokedAt: row.revoked_at, userRevokedAt: row.user_revoked_at, clientRevokedAt: row.client_revoked_at, credentialGeneration: Number(row.credential_generation), currentCredentialGeneration: Number(row.current_generation) }, new Date())) throw new AuthFailure('AUTH_REQUIRED');
+    return row;
   }
   async setup(): Promise<{ setupRequired: boolean; policyVersion: number }> {
     const row = (await this.pool.query('SELECT consumed_at FROM anvil.installation_claims WHERE installation_id=$1', [this.installationId])).rows[0];
@@ -75,23 +100,12 @@ export class AccessRepository {
     return this.#transaction<SessionView & { token: string }>(async db => {
       await db.query("SELECT pg_advisory_xact_lock(hashtext('anvil-auth-attempts'))");
       const now = new Date();
-      const buckets: { kind: string; key: string; count: number; start: Date }[] = [];
-      for (const [kind, value] of [['ACCOUNT', normalized], ['SOURCE', source]]) {
-        const key = this.#hmac(kind + ':' + value);
-        const row = (await db.query('SELECT * FROM anvil.auth_attempt_windows WHERE bucket_kind=$1 AND bucket_key=$2 ORDER BY updated_at DESC LIMIT 1 FOR UPDATE', [kind, key])).rows[0];
-        if (row?.blocked_until && row.blocked_until > now) { await this.#audit(db, 'LOGIN', 'DENIED', 'AUTH_RATE_LIMITED'); return { failure: 'AUTH_RATE_LIMITED', status: 429 }; }
-        if (!row && (await db.query('SELECT count(*)::int AS count FROM anvil.auth_attempt_windows')).rows[0].count >= 10000) return { failure: 'AUTH_RATE_LIMITED', status: 429 };
-        const current = row && now.getTime() - row.window_start.getTime() < 15 * 60_000;
-        buckets.push({ kind: kind!, key, count: current ? row.attempt_count : 0, start: current ? row.window_start : now });
-      }
+      const buckets = await this.#attempts(db, normalized, source);
+      if (!buckets) { await this.#audit(db, 'LOGIN', 'DENIED', 'AUTH_RATE_LIMITED'); return { failure: 'AUTH_RATE_LIMITED', status: 429 }; }
       const row = (await db.query('SELECT u.*,p.argon2_phc,p.credential_generation AS password_generation FROM anvil.users u JOIN anvil.password_credentials p ON p.user_id=u.id WHERE normalized_login_name=$1 FOR UPDATE OF u', [normalized])).rows[0];
       const correct = await verifyPassword(password, row?.argon2_phc ?? dummyPhc);
       if (!row || row.status !== 'ACTIVE' || row.revoked_at || !correct || row.password_generation !== row.credential_generation) {
-        for (const bucket of buckets) {
-          await db.query('DELETE FROM anvil.auth_attempt_windows WHERE bucket_kind=$1 AND bucket_key=$2', [bucket.kind, bucket.key]);
-          const count = bucket.count + 1;
-          await db.query('INSERT INTO anvil.auth_attempt_windows(bucket_kind,bucket_key,window_start,attempt_count,blocked_until) VALUES($1,$2,$3,$4,$5)', [bucket.kind, bucket.key, bucket.start, count, count >= 5 ? new Date(now.getTime() + 15 * 60_000) : null]);
-        }
+        await this.#failedAttempts(db, buckets);
         await this.#audit(db, 'LOGIN', 'DENIED', 'AUTH_REQUIRED'); return { failure: 'AUTH_REQUIRED', status: 401 };
       }
       const token = randomBytes(32).toString('base64url'), csrfToken = this.#csrf(token), clientId = randomUUID();
@@ -105,12 +119,60 @@ export class AccessRepository {
   async session(token: string): Promise<SessionView> {
     if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
     return this.#transaction<SessionView>(async db => {
-      const row = (await db.query('SELECT s.*,u.id AS uid,u.display_name,u.server_owner,u.status AS user_status,u.revoked_at AS user_revoked_at,u.credential_generation AS current_generation,c.revoked_at AS client_revoked_at FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients c ON c.id=s.client_id AND c.user_id=s.user_id WHERE token_digest=$1 FOR UPDATE OF u,s,c', [digest(token)])).rows[0];
+      const row = await this.#lockedSession(db, token);
       const now = new Date();
-      if (!row || row.user_status !== 'ACTIVE' || !sessionIsActive({ idleExpiresAt: row.idle_expires_at, absoluteExpiresAt: row.absolute_expires_at, revokedAt: row.revoked_at, userRevokedAt: row.user_revoked_at, clientRevokedAt: row.client_revoked_at, credentialGeneration: Number(row.credential_generation), currentCredentialGeneration: Number(row.current_generation) }, now)) return { failure: 'AUTH_REQUIRED', status: 401 };
       const expiresAt = new Date(Math.min(row.absolute_expires_at.getTime(), now.getTime() + 30 * 60_000)).toISOString();
       await db.query('UPDATE anvil.auth_sessions SET last_seen_at=$2,idle_expires_at=$3 WHERE id=$1', [row.id, now, expiresAt]);
       return { value: { user: { id: row.uid, displayName: row.display_name, serverOwner: row.server_owner }, clientId: row.client_id, csrfToken: this.#csrf(token), expiresAt, absoluteExpiresAt: row.absolute_expires_at.toISOString(), reauthUntil: row.reauth_until?.toISOString() ?? null } };
+    });
+  }
+  async reauthenticate(token: string, csrf: string, password: string, source: string): Promise<SessionView & { token: string }> {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
+    return this.#transaction<SessionView & { token: string }>(async db => {
+      await db.query("SELECT pg_advisory_xact_lock(hashtext('anvil-auth-attempts'))");
+      const row = await this.#lockedSession(db, token);
+      if (!same(row.csrf_digest, digest(csrf))) return { failure: 'CSRF_INVALID', status: 403 };
+      const buckets = await this.#attempts(db, row.normalized_login_name, source);
+      if (!buckets) return { failure: 'AUTH_RATE_LIMITED', status: 429 };
+      const credential = (await db.query('SELECT argon2_phc,credential_generation FROM anvil.password_credentials WHERE user_id=$1', [row.uid])).rows[0];
+      if (!credential || credential.credential_generation !== row.current_generation || !await verifyPassword(password, credential.argon2_phc)) {
+        await this.#failedAttempts(db, buckets);
+        await this.#audit(db, 'REAUTHENTICATE', 'DENIED', 'AUTH_REQUIRED', row.uid, row.client_id);
+        return { failure: 'AUTH_REQUIRED', status: 401 };
+      }
+      const now = new Date(), nextToken = randomBytes(32).toString('base64url'), csrfToken = this.#csrf(nextToken);
+      const expiresAt = new Date(Math.min(row.absolute_expires_at.getTime(), now.getTime() + 30 * 60_000)).toISOString();
+      const reauthUntil = new Date(Math.min(row.absolute_expires_at.getTime(), now.getTime() + 5 * 60_000)).toISOString();
+      await db.query('UPDATE anvil.auth_sessions SET revoked_at=$2 WHERE id=$1', [row.id, now]);
+      await db.query('INSERT INTO anvil.auth_sessions(id,token_digest,user_id,client_id,credential_generation,csrf_digest,idle_expires_at,absolute_expires_at,reauth_until) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)', [randomUUID(), digest(nextToken), row.uid, row.client_id, row.current_generation, digest(csrfToken), expiresAt, row.absolute_expires_at, reauthUntil]);
+      await this.#audit(db, 'REAUTHENTICATE', 'APPLIED', 'SESSION_ROTATED', row.uid, row.client_id);
+      return { value: { user: { id: row.uid, displayName: row.display_name, serverOwner: row.server_owner }, clientId: row.client_id, token: nextToken, csrfToken, expiresAt, absoluteExpiresAt: row.absolute_expires_at.toISOString(), reauthUntil } };
+    });
+  }
+  async changePassword(token: string, csrf: string, input: { currentPassword: string; newPassword: string; commandId: string }, source: string): Promise<void> {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
+    return this.#transaction<void>(async db => {
+      await db.query("SELECT pg_advisory_xact_lock(hashtext('anvil-auth-attempts'))");
+      const row = await this.#lockedSession(db, token);
+      if (!same(row.csrf_digest, digest(csrf))) return { failure: 'CSRF_INVALID', status: 403 };
+      if (!row.reauth_until || row.reauth_until.getTime() <= Date.now()) return { failure: 'REAUTHENTICATION_REQUIRED', status: 412 };
+      const buckets = await this.#attempts(db, row.normalized_login_name, source);
+      if (!buckets) return { failure: 'AUTH_RATE_LIMITED', status: 429 };
+      const fingerprint = this.#hmac(JSON.stringify(['password', row.uid, input.commandId, input.currentPassword, input.newPassword]));
+      const previous = (await db.query("SELECT protected_fingerprint FROM anvil.auth_actions WHERE actor_scope=$1 AND operation='PASSWORD' AND command_id=$2", [row.uid, input.commandId])).rows[0];
+      if (previous) return same(previous.protected_fingerprint, fingerprint) ? { value: undefined } : { failure: 'IDEMPOTENCY_CONFLICT', status: 409 };
+      const credential = (await db.query('SELECT argon2_phc,credential_generation FROM anvil.password_credentials WHERE user_id=$1', [row.uid])).rows[0];
+      if (!credential || credential.credential_generation !== row.current_generation || !await verifyPassword(input.currentPassword, credential.argon2_phc)) {
+        await this.#failedAttempts(db, buckets); await this.#audit(db, 'PASSWORD', 'DENIED', 'AUTH_REQUIRED', row.uid, row.client_id);
+        return { failure: 'AUTH_REQUIRED', status: 401 };
+      }
+      const phc = await hashPassword(input.newPassword);
+      await db.query('UPDATE anvil.users SET credential_generation=credential_generation+1,version=version+1 WHERE id=$1', [row.uid]);
+      await db.query('UPDATE anvil.password_credentials SET argon2_phc=$2,credential_generation=credential_generation+1,changed_at=now() WHERE user_id=$1', [row.uid, phc]);
+      await db.query('UPDATE anvil.auth_sessions SET revoked_at=COALESCE(revoked_at,now()) WHERE user_id=$1', [row.uid]);
+      await db.query("INSERT INTO anvil.auth_actions(id,actor_scope,operation,command_id,protected_fingerprint,result_status,safe_result_ref) VALUES($1,$2,'PASSWORD',$3,$4,'APPLIED',$5)", [randomUUID(), row.uid, input.commandId, fingerprint, JSON.stringify({ userId: row.uid, status: 'RELOGIN_REQUIRED' })]);
+      await this.#audit(db, 'PASSWORD', 'APPLIED', 'CREDENTIAL_GENERATION_INCREASED', row.uid, row.client_id);
+      return { value: undefined };
     });
   }
   async logout(token: string, csrf: string): Promise<void> {

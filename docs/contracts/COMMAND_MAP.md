@@ -77,6 +77,8 @@ P03 준비 문서다. 명령은 `codex/av3-stage-a`의 저장소 root에서 실�
 
 ## 3. 증거와 자원 정리
 
+FN01 개발 초기화의 직접 승인된 실행은 `node scripts/initialize-development-auth.ts`이며 신규 auth.json/bootstrap.json 두 파일·전용 DB 초기화행1만 생성한다. `--check`는 ACL/DB/기존 초기화 부재의 읽기 전용 검사다. 기존 파일/초기화가 있으면 재실행하지 않고, 결과 불명확은 파일 보존·읽기 대조한다. 실제 소유자 생성은 사용자 화면의 일회 등록이며 자동 QA 계정 생성과 구별한다. 원문 비밀은 명령 인자·출력에 넣지 않는다.
+
 결과는 `docs/04_test_reports/AV3/<ID>/RESULT.md`, 실제 진행은 WORK_STATUS다. CI/fixture/health는 실제 저장/Agent/브라우저·인수와 구분한다. 원문 Secret은 결과에 남기지 않는다. 실패 시 해당 task의 test output·정확 권한/연결·자료 버전을 먼저 대조하고 같은 오류 반복3회면 같은 방법을 중단한다.
 
 P03 새 정식 DB/volume·신규 보호 파일은 후속 개발용으로 보존한다. 독립 저장 probe는 생성한 고유 `p03-probe-UUID`행만 finally 삭제하고 다시 0건을 확인한다. 일회성 npm/브라우저 cache·로그/process는 등록된 소유 경로/PID만 작업 끝에 정리하며 다른 서비스·프로세스·DB를 정리하지 않는다. 신뢰 CA는 검증 종료/만료 때 정확 지문1개만 회수하고 결과를 기록한다. 새 source/개발 DB를 임의 reset/drop/down-volume하지 않는다.

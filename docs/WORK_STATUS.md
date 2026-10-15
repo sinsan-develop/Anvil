@@ -3,9 +3,9 @@
 ## 1. 현재 상태와 기록 기준
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
-- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00 착수**. 새 전용 개발 DB·실제 저장/조회·승인 CA의 HTTPS와 Edge 준비 화면을 확인했다. 준비 화면은 제품 UI00/FN 완료가 아니며 제품 기능은 아직 미구현이다.
+- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00·FN01 부분 구현**. 실제 초기 등록/로그인/로그아웃과 재인증·비밀번호 교체의 저장/API를 확인했다. 프로젝트·방법론·문서 등 전체 제품 기능은 아직 미구현이다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: Windows `0ec17f1a`의 HTTPS 준비 probe exit0, 승인 CA 정확1·소유 Node PID52852/시각·3830 일치. WSL `892ea1e1`의 PG15.18·migration0000·합성 fixture7·비관리자 저장/별도 연결 재조회·DDL거절과 정리0을 확인했다. 후속 Windows 전용 변경을 WSL 실행 SHA에 소급하지 않는다. 상세는 [P03 결과](04_test_reports/AV3/P03/RESULT.md).
+- 최근 실제 확인: 게시 SHA `246007f2`의 실제 HTTPS/DB/Edge 초기 등록→로그인→로그아웃1 PASS와 UI00 계약/탐색5 PASS. 후속 로컬 후보에서 unit23/typecheck·실제 auth DB/HTTP1 PASS(재인증 후 구세션 차단·절대기한 보존·비밀번호 교체 전체세션 회수·시도제한 포함). 후속 후보는 아직 WSL 실행 전이다. WSL `246007f2`/clean·PG15.18·0000/0001이며 0001 checksum `353d28d657794d47b84db0c8a4d9481c8ebc9bf73278614578c6cf5cfd4c3643`를 확인했다. 신규 보호 초기화1건·사용자0은 제품 최초 등록 대기이고 합성 QA 성공/소유자 계정 생성과 구분한다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
 - 다음 업무: UI00 공통 작업틀·same-origin client/오류/입력 보존을 구현한다. FN01 실제 인증·프로젝트 계약 연결 전 UI00은 부분 구현으로 유지하고 FN01/FN11 선행으로 이어간다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 개발 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
@@ -71,7 +71,7 @@
 
 | 업무 | 상태 | 현재 요약 | 다음 수행·검수 |
 |---|---|---|---|
-| FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울 착수. 실제 Node Argon2id·session 만료/회수3건 RED→GREEN. 저장/API·로그인 화면 미구현 | 전용 DB migration·접근 격리·중복 생성·실제 재조회 |
+| FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 0001 적용·실제 등록/로그인/로그아웃 UI 및 재인증/비밀번호 교체 API·세션회수 확인. 신규 보호 키/초기화1 생성·실제 사용자0 | 복구/초대·프로젝트 원본/접근/기준선·UI 연결 미구현 |
 | FN02 내장/사용자 방법론·그래프 | [] | 내장3종과 P01 상세 기준 승인, 제품 구현 미착수 | 승인 버전의 내장 정의·복사/직접작성·검사/실제 저장·적용 |
 | FN03 문서 가져오기·양식·확정 | [] | 작성 공통 기준 문서 있음, 제품 적용 없음 | 원문/양식·편집제안·버전·확정/재조회 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
@@ -108,6 +108,14 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
+
+- 승인 초기화 실제 결과: 설치ID `fdd305cc-9b91-4a1f-b86f-94d2690c062e`, 두 신규 파일 배타 생성·DB행1·사용자0. 초기 등록 기한 `2026-10-15T20:51:14.749Z`(KST 2026-10-16 05:51:14.749). 독립 조회로 digest/기한 일치·미사용·소유자 없음·파일 link0·허용 SID=current user/SYSTEM만 확인했다. 비밀 원문 출력0. bootstrap 만료 후 자동 연장/파일 덮어쓰기 금지다.
+- 초기화 도구 최초 실행은 `PROTECTED_ACL` 이전 자료변경0에서 실패했다. Windows PowerShell5의 Microsoft.PowerShell.Security 모듈 자동 로드 실패를 ACL-only 재현으로 확인하고 기존 설치 PowerShell7의 같은 검사 GREEN 후 실행 경로만 보정했다. ACL 변경0. 진단 --check를 추가해 filesWritten0/rowsWritten0을 확인했다. diagnostic return의 최상위 TS1108 1건은 분기 구조만 보정했다.
+- 인증 후속 검수: 무인증 재인증/password404→401, 실제 최근 재인증 없는 password404→412 RED에서 구현 후 실제 DB/HTTP1 GREEN. 토큰/CSRF 교체·동일client·절대12시간 연장0·옛cookie401·비밀번호 변경 세대 증가/모든세션회수·옛비밀번호401·새비밀번호 로그인·동시 claim 멱등/시도제한을 확인했다. 보안 감사는 비밀 없이 보존, QA 사용자/세션/claim/복구/counter는 정확 회수하며 신규 영속 초기화행은 보존했다. unit23/typecheck PASS. sandbox의 D:\tmp mkdtemp EPERM1은 기능 실패가 아니며 동일 검사 elevated PASS·ACL 변경0이다.
+- 미확인: 재인증/password의 실제 화면 연결, 복구/초대, 프로젝트/권한/기준선, 정식 launcher의 신규 auth 참조 실행과 후속 WSL exact SHA는 남아 있다. 잘못된 읽기 경로 scripts/validate-app-config.ts·components/AuthForm.tsx·layout/AppShell.tsx는 파일 부재였고 기존 실제 storage/shell 경로로 대조했으며 제품 장애로 세지 않는다.
+
+- 후속 직접 승인 `call_74c28acfc6424f6fb3e31ef55262a333`: ‘신규 개발 인증 키·초기화 기록 생성 승인’. Main/FN01은 기존 보호 root `D:\Project\Anvil\.av3-data`의 신규 `auth.json`·`bootstrap.json`만 배타 생성하고 기존 전용 DB `anvil_v3_development`에 초기화 기록1건을 만든다. bootstrap30분·원문 Git/대화/로그0·실제 소유자 자동 생성0·기존 계정/키/CA/ACL 변경0. 두 파일/행 생성 전 기존 부재·root realpath/link·ACL·DB/role을 대조하며 재실행으로 덮어쓰지 않는다. 개발 키는 후속 개발용 보존, bootstrap은 기한으로 무효화한다. 준비 함수의 실제 파일 시험은 등록된 `D:\tmp\anvil-v3-stage-b\auth-init` 아래 새 일회 경로에서만 하고 시험 뒤 소유 파일/경로를 정확 정리한다.
+- 진행 중 보존: config 검증1 RED→GREEN(당시 unit22/typecheck PASS). 재인증/비밀번호 변경의 무인증401 검사는 현재 endpoint 부재404에서 예상 RED이며 구현 전 PASS 아님. 신규 동시 claim/세대회수/시도제한 DB 시험은 아직 실행 전이다. `apps/server/main.ts`·개발 launcher·access/config 및 관련 시험은 Main 소유 미커밋 변경으로 이어간다.
 
 - 실제 인증 UI 중간 결과: 승인 CA·TLS무시false의 실제 HTTPS server/전용 PG/Edge에서 초기 등록→일회 복구 비밀 가림/보관 확인→로그인→Secure/HttpOnly/Lax cookie→화면 로그아웃/쿠키회수 1 PASS(2.8초). Network same-origin·JS오류0·Agent호출0. 최초 실행은 등록/로그인 뒤 로그아웃 버튼 부재에서 RED·QA정리0, 버튼/명시 CSRF 연결 뒤 동일 검사 GREEN. 실제 계정·token·설치ID·recovery/counter·worker server는 회수하고 비밀 없는 append 감사만 보존했다. 아직 제품 초기화 보호 참조/상시 개발 실행 연결·복구/초대/재인증·프로젝트 API/권한·기준선은 미구현이므로 FN01/UI00 완료 아님.
 - 정확 WSL HTTP/DB 검수: b380f687/clean에서 typecheck·auth-postgres1 PASS. Origin/추가필드 거절·실제login cookie/CSRF·logout/옛cookie401은 실제 저장·HTTP이며 브라우저 fixture 합격으로 대체하지 않았다. Windows relay의 간헐 첫 연결timeout2는 미확정 환경 위험으로 보존하며 세 번째 동일 실패 전까지 무작정 재시도하지 않는다. 실제 live시험에서는 연결과 전체여정이 성공했다.

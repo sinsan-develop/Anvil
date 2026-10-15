@@ -32,6 +32,7 @@ $ready = $false
 $oldKey = $env:ANVIL_TLS_KEY
 $oldCert = $env:ANVIL_TLS_CERT
 $oldDb = $env:ANVIL_DB_CONFIG
+$oldAuth = $env:ANVIL_AUTH_CONFIG
 try {
   if (!$hasDbListener) {
     $tunnel = Start-Process -FilePath $ssh -ArgumentList @('-N','-L','127.0.0.1:5546:127.0.0.1:5546','-o','ExitOnForwardFailure=yes','-o','BatchMode=yes','-o','ControlMaster=no','-o','ControlPath=none','WSL-server') -WindowStyle Hidden -PassThru -RedirectStandardError (Join-Path $runtime 'tunnel.err.log')
@@ -39,6 +40,8 @@ try {
   $env:ANVIL_TLS_KEY = Join-Path $dataRoot 'dev-tls/server.key.pem'
   $env:ANVIL_TLS_CERT = Join-Path $dataRoot 'dev-tls/server.cert.pem'
   $env:ANVIL_DB_CONFIG = Join-Path $dataRoot 'db-app.json'
+  $authRef = Join-Path $dataRoot 'auth.json'
+  $env:ANVIL_AUTH_CONFIG = $(if(Test-Path -LiteralPath $authRef){$authRef}else{$null})
   $entry = '"' + (Join-Path $projectRoot 'apps/server/main.ts') + '"'
   $server = Start-Process -FilePath $node -ArgumentList $entry -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $runtime 'server.out.log') -RedirectStandardError (Join-Path $runtime 'server.err.log')
   $healthy = $false
@@ -61,6 +64,7 @@ try {
   $env:ANVIL_TLS_KEY = $oldKey
   $env:ANVIL_TLS_CERT = $oldCert
   $env:ANVIL_DB_CONFIG = $oldDb
+  $env:ANVIL_AUTH_CONFIG = $oldAuth
   if (!$ready) {
     foreach ($owned in @($server,$tunnel)) {
       if ($null -ne $owned -and !$owned.HasExited) {
