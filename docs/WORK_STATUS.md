@@ -109,6 +109,8 @@
 
 ### 2026-10-16 조건 계약 정정·공통 자료 보완 승인
 
+- 후속 실제 확인: Git exact `02d579be26b09d6b6825c981e8c27f59547d3702` WSL/clean에서 forward 정정 적용 exit0·FN02 실제 시험1 PASS/558ms/skip0. SYSTEM3의 v1 literal hash/본문 유지·v2 head/정식 조건·본인200/타인404/회수401·app UPDATE42501 확인. 원본 실패/조건 미적합 판정을 소급하지 않는다. 새 UI fixture2 PASS/2.7초는 실제 UI DB 여정이 아니다.
+- 본인 공통 쓰기 착수: 현재 사용자/client/CSRF·USER_COMMON owner=actor·command 재전송/충돌·정확 head·도메인 변경/receipt/append-only 감사의 단일 transaction을 기존0011 뒤 forward migration으로 추가한다. PROJECT/DRAFT 계약과 적용 SQL은 그대로 보존한다. 먼저 copyMethodology/saveMethodologyDraft를 연결하며 확정/내용검토·양식 쓰기는 후속 범위다. QA는 기존 지정 WSL 개발 DB에서 고유 `qa-common-UUID` 사용자2·방법론/명령/감사만 생성하고 정확 ID로 정리, 실제 사용자/Secret/다른 프로젝트/운영 변경0. 기존 Windows relay 재접속 금지 유지.
 - 신산님 직접 응답 `call_07a966ef8b6d4eefac5fa279876ff3c0`: **‘본인 공통 자료용 계약·개발 DB 보완 승인’**. 대상은 현재 v3 개발 DB의 본인 USER_COMMON 명령/허가/검토·감사 범위와 현재 사용자/client·정확 버전·중복 방지의 forward migration이다. 다른 사용자/프로젝트 제어권·실제 계정·Secret·운영 DB 변경은 불포함. 이전 ‘승인 요청 중’ 기록은 당시 상태이며 지금은 해당 범위 승인됨. 공통 자료 쓰기 자체는 아직 구현/적용0.
 - 중요 오류: 추가 대조에서 앞선 FN02 조건 자료 `kind:REVIEW_DECISION/USER_CHOICE`가 같은 INTERFACES §15.3의 `fieldRef/operator/value`·all/any/not 계약과 다른 것을 확인했다. 앞 절의 잠정 설명보다 후속 상세 계약을 우선해야 했는데 놓쳤다. 실제 Agent 실행·프로젝트 적용·사람 확정 사건0이므로 외부 실행/운영 영향0, 그러나 v1 구조 검증을 계약 적합/인수 증거로 승격할 수 없다. 기존 v1/과거 시험 결과는 지우거나 PASS로 소급하지 않는다.
 - 회귀2 RED(버전1≠2·정식 조건의 잘못된 거절)→계약형 조건·EQ/NE/IN/IS_PRESENT·all/any/not·한정된 typed 결과/사용자 판단 필드로 정정 GREEN. 현재 단위37 PASS/typecheck/diff check exit0. 제한 자료이며 실행 평가기/실제 승인/새 권한은 아니다. 형식 충족을 실제 결과 존재·실행 준비로 해석하지 않는다.
