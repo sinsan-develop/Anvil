@@ -109,6 +109,8 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- 복구 API는 WSL Git exact `551b7791e74b835ce7b08eb465b420e6d592e93c`/clean에서 실제 auth DB/HTTP1 PASS(0.93초)다. 이전/소비한 비밀 차단·동일command 결과·generation/세션 회수를 포함한다. 후속 UI00은 로그인의 복구 양식, 설정의 로그인 보안(재인증→새 CSRF로 비밀번호 교체·복구 비밀 재발급 동의/가림/보관), beforeunload 경고를 연결했다. 실제 화면 부재2 RED→계약 fixture2 GREEN, 추가 동의/가림 회귀1도 PASS, 단위23·타입/Web24 모듈·diff PASS. 브라우저3은 명시 fixture이며 실제 API/DB와 합쳐 E2E PASS로 세지 않는다. Windows relay 중단 때문에 새 UI의 실제 DB 브라우저 여정은 미검증, 초대/프로젝트·내부 탐색 미저장 보호 등도 남아 UI00/FN01 [2] 유지한다.
+
 - 복구 기능 구현 전 기준선 `25d2a2c9`를 지정 branch에 게시하고 WSL exact SHA에서 실제 rotate404!=200 RED를 확인했다. Windows relay 오류를 기능 RED로 대신하지 않았다. 이후 access repository/routes에 최근 재인증/CSRF 아래 일회 복구 비밀 재발급·이전 회수, 비밀 digest/시도 제한·일회 소비/세대 증가/전체session회수·동일command 결과만 확인을 구현했다. 로컬 unit23/typecheck/diff PASS, actual WSL GREEN은 다음 게시 SHA에서 검증 전이다. 복구 비밀/새 비밀번호 원문은 저장/출력하지 않는다.
 
 - 중요 환경 예외: 복구 후속 검사에서 Windows→WSL relay의 같은 connectionTimeout5000 실패가 누적3번째 발생했다(이번 본문 첫 DB 조회 전, finally 포함22.8초). 해당 Windows DB 실제 시험/재접속 경로를 중단하고 네 번째 재시도·timeout 확대·공유 relay 재시작/kill·ACL 변경은 하지 않는다. WSL 내부 동일 app/DB 조회는 exit0·active1/잠금대기0이었다. 기능 RED/PASS가 아닌 연결 환경 실패이며 직접 원인 미확정. 별도 변경 권한 없이 Windows relay 복구를 시도하지 않고 단위/로컬 구현·Git exact SHA WSL 검수는 계속한다. 정식 Node40744/초기화1은 보존하며 정상 상시 로그인 사용은 현재 미확인 위험이다.

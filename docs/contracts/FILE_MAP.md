@@ -130,6 +130,8 @@ INTERFACES §10·DATA_MODEL §7은 다음 기존 소유 모듈을 소비한다. 
 
 Stage B 정확 추가 파일: `apps/server/modules/access/config.ts`(실행 보호 참조 검증), `setup.ts`(독립 비밀·배타 파일 생성), `scripts/initialize-development-auth.ts`(직접 승인된 신규 개발 초기화만), `tests/unit/FN01/{auth-config,auth-initialization,auth-http}.test.ts`. 실제 초기화는 기존 보호 root·새 두 파일·초기화 행1을 대조하며 기존 자료 덮어쓰기·실제 소유자 자동 생성은 없다.
 
+UI00 인증 후속은 `apps/web/src/shell/AccountSecurity.tsx`·기존 `AuthForm.tsx/App.tsx/api/client.ts`와 `tests/browser/UI00/auth-security.spec.ts`다. 설정 화면의 로그인 보안만 연결하며 UI14의 백업/한도 기능 완료를 뜻하지 않는다.
+
 FN01의 기존 access 모듈 `routes.ts/service.ts/repository.ts`와 `contracts/access.schema.json`이 INTERFACES §11/DATA_MODEL §8을 소유한다. 암호/세션/CSRF·초기 claim 분리는 `apps/server/modules/access/{passwords.ts,sessions.ts,csrf.ts,setup.ts}`로 명시하며 범용 인증 서버를 추가하지 않는다. 공통 Context/authorize는 FN11과 단일 writer 순서로 결박한다. 실제 파일/라이브러리는 P03/업무 배정 뒤 생성한다.
 
 추가 정확 시험 파일은 `tests/unit/FN01/auth.test.ts`, `tests/integration/FN01/auth-postgres.test.ts`다. UI00의 로그인/만료/재인증 표시는 기존 shell/StatusView 경계를 소비하고 보호/복구·초대의 실제 화면 위치는 P01 기준에 맞춘 상태/양식으로 상세 배정한다. 별도 OIDC·외부 발송 서비스·비용·실제 계정/키를 이번 선택으로 생성하지 않는다.

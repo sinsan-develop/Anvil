@@ -13,6 +13,9 @@
 
 ## 후속 실제 인증 연결 — 2026-10-16
 
+- 후속 관측: 재인증·비밀번호 변경·복구 재발급/소비의 실제 DB/HTTP는 WSL exact551b779에서1 PASS. Web24모듈/타입·unit23 PASS, 로그인 복구·보안 설정의 화면 계약3 PASS(최초 기능 부재2 RED→GREEN, 동의/가림 회귀1). 이3건은 fixture이고 실제 DB 브라우저 여정이 아니다. Windows relay connection timeout 누적3회로 해당 경로를 중단했으며 새 전체 여정은 미검증이다.
+- 신규 상시 보호 auth/bootstrap 두 파일·초기화행1은 별도 직접 승인 후 생성했다. 사용자0·bootstrap30분/기한은 WORK_STATUS 참조. 소유 Node40744는000d008 시점의 backend이며 후속 소스를 읽었다고 가정하지 않는다. 기존 아래 ‘생성0/미구현’은 그 당시 기록이다.
+
 - 새 AuthForm의 초기 등록/복구 비밀 보관·로그인 만료는 계약 fixture2 PASS, 탐색/skip-link3건을 합해5 PASS다. skip-link가 hash 경로를 바꾸는 RED→본문 focus만 이동 GREEN, 복구 input/checkbox 선택자1건은 exact 구분 후 같은 기준으로 확인했다.
 - 별도 **실제** FN01 auth-live는 같은 승인 CA/전용 PG·HTTP와 실제 Edge에서 등록→로그인→cookie→로그아웃1 PASS, Network same-origin·JS오류0·TLS무시false·Agent0. 처음은 로그아웃 버튼 부재 RED였고 표준 CSRF logout 연결 후 GREEN, 합격 기준/timeout 변경0이다. 이 test는 API interception/고정 모델 응답을 사용하지 않는다.
 - 합성 설치ID/owner·key/비밀은 해당 test 안에서만, 실제 계정으로 보존하지 않았다. QA 정리0·임시 server 종료, append-only 비밀 없는 감사는 회수 대상이 아닌 증거다. 신규 상시 개발 auth Secret/키 파일 생성0. 따라서 사용자용 상시 초기화/로그인 실행 경로는 아직 미완료이며 UI00 전체 수용/전체 제품 인수를 뜻하지 않는다.

@@ -13,6 +13,9 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
   const [registered, setRegistered] = useState(false);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<ApiError | null>(null);
+  const [recovering, setRecovering] = useState(false);
+  const [recoveryInput, setRecoveryInput] = useState('');
+  const [notice, setNotice] = useState('');
   useEffect(() => {
     let current = true;
     client.get<{ setupRequired: boolean; policyVersion: number }>('/api/v1/auth/setup').then(value => {
@@ -21,12 +24,21 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
     }).catch((cause: unknown) => { if (current) setFailure(cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID')); });
     return () => { current = false; };
   }, [client]);
+  useEffect(() => {
+    if (!password && !bootstrap && !recoveryInput && (!recovery || savedRecovery)) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    addEventListener('beforeunload', warn);
+    return () => removeEventListener('beforeunload', warn);
+  }, [password, bootstrap, recoveryInput, recovery, savedRecovery]);
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (pending || setup === null) return;
     setPending(true); setFailure(null);
     try {
-      if (setup) {
+      if (recovering) {
+        await client.postAuth('recovery', { loginName, recoverySecret: recoveryInput, newPassword: password, commandId: crypto.randomUUID() });
+        setRecovering(false); setNotice('비밀번호를 변경했습니다. 다시 로그인하세요.');
+      } else if (setup) {
         const result = await client.postAuth<{ user: { id: string }; recoverySecret: string | null }>('setup/claim', { bootstrapSecret: bootstrap, loginName, displayName, password, commandId: crypto.randomUUID() });
         if (!result.user?.id || (result.recoverySecret !== null && !/^[A-Za-z0-9_-]{43}$/.test(result.recoverySecret))) throw new ApiError('RESPONSE_INVALID');
         setRecovery(result.recoverySecret); setRegistered(true);
@@ -35,7 +47,7 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
       }
     } catch (cause: unknown) {
       setFailure(cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'));
-    } finally { setPassword(''); setBootstrap(''); setPending(false); }
+    } finally { setPassword(''); setBootstrap(''); setRecoveryInput(''); setPending(false); }
   }
   if (registered) return <section className="status-card auth-form" aria-label="초기 등록 결과">
     <h2>초기 등록이 처리됐습니다</h2>
@@ -44,16 +56,19 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
     <button type="button" disabled={!!recovery && !savedRecovery} onClick={() => { setRecovery(null); setShowRecovery(false); setRegistered(false); setSetup(false); }}>로그인으로 이동</button>
   </section>;
   return <section className="status-card auth-form">
-    <h2>{setup ? 'Anvil 초기 소유자 등록' : 'Anvil 로그인'}</h2>
+    <h2>{recovering ? '비밀번호 복구' : setup ? 'Anvil 초기 소유자 등록' : 'Anvil 로그인'}</h2>
     {setup === null ? <p role="status">초기 등록 상태를 확인하고 있습니다.</p> : null}
     {failure ? <p role="alert">{failure.message}</p> : null}
+    {notice ? <p role="status">{notice}</p> : null}
     <form onSubmit={submit}>
       {setup ? <label>초기 등록 비밀<input type="password" value={bootstrap} onChange={e => setBootstrap(e.target.value)} required autoComplete="off" /></label> : null}
       <label>사용자명<input name="username" value={loginName} onChange={e => setLoginName(e.target.value)} required autoComplete="username" autoCapitalize="none" spellCheck={false} /></label>
       {setup ? <label>표시 이름<input value={displayName} onChange={e => setDisplayName(e.target.value)} required maxLength={120} /></label> : null}
-      <label>비밀번호<input name="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={setup ? 'new-password' : 'current-password'} /></label>
+      {recovering ? <label>일회 복구 비밀<input type="password" value={recoveryInput} onChange={e => setRecoveryInput(e.target.value)} required autoComplete="off" /></label> : null}
+      <label>{recovering ? '새 비밀번호' : '비밀번호'}<input name="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={setup || recovering ? 'new-password' : 'current-password'} /></label>
       {setup ? <p className="meta">비밀번호는15~128자입니다. 공백과 대소문자를 그대로 사용합니다.</p> : null}
-      <button className="primary" disabled={pending || setup === null} type="submit">{pending ? '처리 확인 중' : setup ? '초기 소유자 등록' : '로그인'}</button>
+      <button className="primary" disabled={pending || setup === null} type="submit">{pending ? '처리 확인 중' : recovering ? '복구 후 비밀번호 변경' : setup ? '초기 소유자 등록' : '로그인'}</button>
     </form>
+    {setup === false ? <button disabled={pending} onClick={() => { setRecovering(v => !v); setPassword(''); setRecoveryInput(''); setFailure(null); setNotice(''); }}>{recovering ? '로그인으로 돌아가기' : '비밀번호 복구'}</button> : null}
   </section>;
 }

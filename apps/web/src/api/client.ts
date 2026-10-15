@@ -3,9 +3,9 @@ export { ApiError } from './errors.ts';
 export class ApiClient {
   transport: typeof fetch;
   constructor(transport: typeof fetch = fetch) { this.transport = transport; }
-  async postAuth<T = unknown>(operation: 'login' | 'setup/claim' | 'logout' | 'reauthenticate' | 'password' | 'recovery/rotate', payload: unknown, csrfToken?: string): Promise<T> {
-    const open = operation === 'login' || operation === 'setup/claim';
-    if (!['login', 'setup/claim', 'logout', 'reauthenticate', 'password', 'recovery/rotate'].includes(operation)) throw new ApiError('CLIENT_PATH_INVALID');
+  async postAuth<T = unknown>(operation: 'login' | 'setup/claim' | 'logout' | 'reauthenticate' | 'password' | 'recovery' | 'recovery/rotate', payload: unknown, csrfToken?: string): Promise<T> {
+    const open = operation === 'login' || operation === 'setup/claim' || operation === 'recovery';
+    if (!['login', 'setup/claim', 'logout', 'reauthenticate', 'password', 'recovery', 'recovery/rotate'].includes(operation)) throw new ApiError('CLIENT_PATH_INVALID');
     if (!open && !/^[A-Za-z0-9_-]{43}$/.test(csrfToken ?? '')) throw new ApiError('AUTH_REQUIRED', 401);
     const headers: Record<string, string> = { Accept: 'application/json', 'Content-Type': 'application/json' };
     if (csrfToken) headers['X-Anvil-CSRF'] = csrfToken;
