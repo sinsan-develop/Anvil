@@ -109,6 +109,9 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- 중요 환경 예외: 복구 후속 검사에서 Windows→WSL relay의 같은 connectionTimeout5000 실패가 누적3번째 발생했다(이번 본문 첫 DB 조회 전, finally 포함22.8초). 해당 Windows DB 실제 시험/재접속 경로를 중단하고 네 번째 재시도·timeout 확대·공유 relay 재시작/kill·ACL 변경은 하지 않는다. WSL 내부 동일 app/DB 조회는 exit0·active1/잠금대기0이었다. 기능 RED/PASS가 아닌 연결 환경 실패이며 직접 원인 미확정. 별도 변경 권한 없이 Windows relay 복구를 시도하지 않고 단위/로컬 구현·Git exact SHA WSL 검수는 계속한다. 정식 Node40744/초기화1은 보존하며 정상 상시 로그인 사용은 현재 미확인 위험이다.
+- 중간 게시 `000d0088bfab071115958211bd4426f88e77b531` local/private 동일·clean, main f976ed5e 불변. WSL exact000d008/clean·typecheck/auth DB/HTTP1 PASS(3.1초). 정상 launcher는 같은 commit·Node40744/startUTC2026-10-15T20:25:42.3705853Z·3830·기존relay26052로 시작했고 직후 실제 HTTPS setup200/true·session401을 확인했다. 이후 위 relay 재발을 정상 사용 PASS로 숨기지 않는다.
+
 - 승인 초기화 실제 결과: 설치ID `fdd305cc-9b91-4a1f-b86f-94d2690c062e`, 두 신규 파일 배타 생성·DB행1·사용자0. 초기 등록 기한 `2026-10-15T20:51:14.749Z`(KST 2026-10-16 05:51:14.749). 독립 조회로 digest/기한 일치·미사용·소유자 없음·파일 link0·허용 SID=current user/SYSTEM만 확인했다. 비밀 원문 출력0. bootstrap 만료 후 자동 연장/파일 덮어쓰기 금지다.
 - 초기화 도구 최초 실행은 `PROTECTED_ACL` 이전 자료변경0에서 실패했다. Windows PowerShell5의 Microsoft.PowerShell.Security 모듈 자동 로드 실패를 ACL-only 재현으로 확인하고 기존 설치 PowerShell7의 같은 검사 GREEN 후 실행 경로만 보정했다. ACL 변경0. 진단 --check를 추가해 filesWritten0/rowsWritten0을 확인했다. diagnostic return의 최상위 TS1108 1건은 분기 구조만 보정했다.
 - 인증 후속 검수: 무인증 재인증/password404→401, 실제 최근 재인증 없는 password404→412 RED에서 구현 후 실제 DB/HTTP1 GREEN. 토큰/CSRF 교체·동일client·절대12시간 연장0·옛cookie401·비밀번호 변경 세대 증가/모든세션회수·옛비밀번호401·새비밀번호 로그인·동시 claim 멱등/시도제한을 확인했다. 보안 감사는 비밀 없이 보존, QA 사용자/세션/claim/복구/counter는 정확 회수하며 신규 영속 초기화행은 보존했다. unit23/typecheck PASS. sandbox의 D:\tmp mkdtemp EPERM1은 기능 실패가 아니며 동일 검사 elevated PASS·ACL 변경0이다.

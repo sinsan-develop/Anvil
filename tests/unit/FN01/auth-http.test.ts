@@ -22,6 +22,7 @@ test('인증 없는 조회·다른 Origin·추가 입력은 DB 인증 처리 전
     for (const [url, payload] of [
       ['/api/v1/auth/reauthenticate', { password: 'synthetic passphrase' }],
       ['/api/v1/auth/password', { currentPassword: 'synthetic passphrase', newPassword: 'synthetic new passphrase', commandId: randomUUID() }],
+      ['/api/v1/auth/recovery/rotate', { commandId: randomUUID() }],
     ]) {
       const response = await app.inject({ method: 'POST', url: String(url), headers: { host: 'localhost:3830', origin: 'https://localhost:3830', 'x-anvil-csrf': 'A'.repeat(43) }, payload });
       assert.equal(response.statusCode, 401);

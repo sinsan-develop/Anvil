@@ -86,8 +86,27 @@ test('실제 DB에서 초기 소유자 한 번 등록→로그인→session 조�
     const actions = JSON.stringify((await pool.query('SELECT * FROM anvil.auth_actions WHERE actor_scope=$1', [ownerId])).rows);
     assert(!actions.includes(password) && !actions.includes(nextPassword));
     const generationLogin = await repository.login(loginName, nextPassword, 'FN01-QA-generation', 'qa-source');
+    const rotatingReauth = await app.inject({ method: 'POST', url: '/api/v1/auth/reauthenticate', headers: { ...beforeHeaders, cookie: '__Host-anvil.sid=' + generationLogin.token, 'x-anvil-csrf': generationLogin.csrfToken }, payload: { password: nextPassword } });
+    assert.equal(rotatingReauth.statusCode, 200);
+    const rotateHeaders = { ...beforeHeaders, cookie: String(rotatingReauth.headers['set-cookie']).split(';')[0]!, 'x-anvil-csrf': rotatingReauth.json().csrfToken };
+    const rotateCommand = randomUUID();
+    const rotated = await app.inject({ method: 'POST', url: '/api/v1/auth/recovery/rotate', headers: rotateHeaders, payload: { commandId: rotateCommand } });
+    assert.equal(rotated.statusCode, 200);
+    const rotatedSecret = rotated.json().recoverySecret;
+    assert.match(rotatedSecret, /^[A-Za-z0-9_-]{43}$/);
+    assert.notEqual(rotatedSecret, claim.recoverySecret);
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/recovery/rotate', headers: rotateHeaders, payload: { commandId: rotateCommand } })).json().recoverySecret, null);
+    const recoveredPassword = randomBytes(32).toString('base64url');
+    const recoveryBody = { loginName, recoverySecret: rotatedSecret, newPassword: recoveredPassword, commandId: randomUUID() };
+    const publicHeaders = { host: 'localhost:3830', origin: 'https://localhost:3830' };
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/recovery', headers: publicHeaders, payload: { ...recoveryBody, recoverySecret: claim.recoverySecret } })).statusCode, 401, '회수된 복구 비밀 거절');
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/recovery', headers: publicHeaders, payload: recoveryBody })).statusCode, 204);
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/recovery', headers: publicHeaders, payload: recoveryBody })).statusCode, 204, '동일 요청 재전송은 세대 재증가 없이 결과만 확인');
+    assert.equal((await app.inject({ method: 'GET', url: '/api/v1/session', headers: { host: 'localhost:3830', cookie: rotateHeaders.cookie } })).statusCode, 401);
+    const recovered = await repository.login(loginName, recoveredPassword, 'FN01-QA-recovered', 'qa-source');
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/recovery', headers: publicHeaders, payload: { ...recoveryBody, commandId: randomUUID() } })).statusCode, 401, '소비한 비밀로 새 변경 금지');
     await pool.query('UPDATE anvil.users SET credential_generation=credential_generation+1 WHERE id=$1', [ownerId]);
-    await assert.rejects(repository.session(generationLogin.token), (e: unknown) => e instanceof Error && e.message === 'AUTH_REQUIRED');
+    await assert.rejects(repository.session(recovered.token), (e: unknown) => e instanceof Error && e.message === 'AUTH_REQUIRED');
     // 옛 generation은 복구하지 않는다. 임시 QA 사용자 전체를 아래에서 회수한다.
     for (let attempt = 0; attempt < 5; attempt++) await assert.rejects(repository.login(unknownName, password, 'FN01-QA-rate', 'qa-rate-source'), (e: unknown) => e instanceof Error && e.message === 'AUTH_REQUIRED');
     await assert.rejects(repository.login(unknownName, password, 'FN01-QA-rate', 'qa-rate-source'), (e: unknown) => e instanceof Error && e.message === 'AUTH_RATE_LIMITED');
