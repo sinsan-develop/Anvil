@@ -293,6 +293,8 @@ project_drafts.input_json의 방법론 선택은 confirmed reference 또는 새 
 
 후속 `0011_user_common_forms`는 같은 승인으로 USER_COMMON 양식의 INSERT·현재 head/name/code 개정만 허용하고 인증 actor/owner를 trigger에서 대조한다. SYSTEM·PROJECT·표준 원문·과거 version UPDATE/DELETE는 계속 금지한다. 양식 origin_ref_json에 COPY/REVISION 부모 exact ref와 변경 이유를 보존한다. 검토/확정 사건은 이 migration이 생성하지 않는다.
 
+후속 `0011_user_common_content_reviews`의 content_reviews는 계획된 scope/대상/기준/항목/결과에 실제 reviewer_user_id/client_id·기준 snapshot·source_kind·정확 scope command FK를 더한다. DB app의 INSERT guard는 현재 USER_COMMON/FORM/본인/HUMAN_REVIEW만 허용하며 PROJECT/DRAFT/다른 도메인은 후속 집행 전 사용할 수 없다. form_reviews는 정의/버전/hash triple FK·실제 확정자/client·confirmForm command FK·구조검사/ReviewRef 이력이다. 두 테이블 UPDATE/DELETE는 app에 금지하고 기존 SQL/기존 버전·사람 확정 사건을 변경하지 않는다.
+
 승인 기본8종 catalog/저장 schema는 FN03 0003이 소유하고 방법론 저장 검증이 그 정확 버전을 소비한다. 실제 migration DAG는 0001/0011 공통 기반→0003 catalog/document storage→0002 방법론→0004 추적/계획, 0005 지식은 필요한 0003/0011 뒤라는 방향으로 P03에서 SQL 참조/seed와 함께 고정한다. 임무/실행·미검증 source 참조는 실제 자료가 생기기 전 성공 관계로 꾸미지 않는다. 이는 모듈을 번호순으로 개발하라는 뜻이 아니며 FN02/FN03의 기본/연결 검수는 각각 유지한다.
 
 ### 11.1 독립 검토 보완 — 최초 소스와 문서 링크 이력

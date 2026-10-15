@@ -109,6 +109,7 @@
 
 ### 2026-10-16 본인 공통 자료의 내용검토·확정 착수
 
+- actual RED: exact `03006a4be89cfcdbaa7d8abd0be97bb7f4501938`/WSL의 미구현 confirmForm400≠422로 실패·합성 사용자/양식 정리. 새로운 content_reviews/form_reviews를 준비하고 검토 기준5개·서버의 owner/현재 version/hash·검토 종류/기준·위조 ref를 대조한다. 내용 검토 및 확정은 공통 receipt/append-only 감사와 같은 transaction이며 기존 migration 변경0. 서버 최신 판단 순서는 클라이언트 시각이나 UUID 대신 실제 audit server_sequence를 쓴다.
 - 기존 승인 범위의 다음 단계는 USER_COMMON 양식 exact version/hash의 사람 직접 검토 기록과 별도 확정이다. 보완 계약은 내용 판단과 형식 검사·프로젝트/Agent 실행 승인을 분리한다. 사람이 직접 읽고 기준별 이유를 기록하며 자료/시험 파일 저장 미연결 동안 evidenceRefs는 빈 배열만 허용하고 임의 증거 ID를 신뢰하지 않는다. 작성/검토 주체·원본과 같은 사용자 여부를 이력에 공개하며, Agent가 HUMAN_REVIEW source/주체를 payload로 선언하는 필드는 거절한다. 실제 Agent 자격/실행 호출은 아직 연결하지 않는다.
 - 고정 검토 기준 버전1은 양식의 목적/역할/항목·반복 구조/작성 규칙/내용 검토 규칙 5항목이다. 누락/중복/구버전·위조 ref로 확정하지 않고 새 양식 버전은 다시 검토해야 한다. `content_reviews`와 `form_reviews`는 불변 기록으로 새 forward migration에 둔다. SYSTEM/다른 사용자 양식·기존 SQL/계정·Secret 변경0. 공통 검토 범위는 직접 승인된 owner=actor와 현재 session/client/명령/감사에만 결박한다.
 - 실제 QA 사전 등록: 기존 지정 WSL 개발 DB/exact 게시 SHA, 고유 `qa-form-review-UUID` 합성 사용자1/공통 양식1·버전2·검토/확정/명령/감사를 생성하고 정확 owner/ID의 FK 순서로 finally 정리한다. 기존 원본/실제 사용자·서비스·컨테이너·port 변경0, Windows relay 재접속0. 아직 구현/적용/시험 결과는 아니다.

@@ -575,6 +575,8 @@ GET draft는 소유자에게 저장한 graph/좌표·원문·현재 단계/valid
 
 `recordContentReview`는 `targetKind:METHODOLOGY/FORM/DOCUMENT/WORK_PLAN/KNOWLEDGE/IMPACT/DRAFT_METHODOLOGY,targetRef,criteriaVersion,items:배열<{criterionId,outcome,evidenceRefs,reason}>,outcome,reason`을 받아 ReviewRef를 발급한다. 서버는 현재 주체의 검토 역할/소유·exact version/hash/양식 기준을 대조한다. 사람 직접 검토 또는 허가된 검토 임무의 근거를 기록하며 Agent가 자기 출력을 HUMAN_REVIEW로 위장할 수 없다. 이 기록은 내용 검토자의 판단이고 별도 사용자 확정/일회 실행 승인/실제 시험 PASS가 아니다. 각 도메인 모듈이 target별 조건을 검사하고 FN11 audit가 공통 주체/범위·이력을 기록한다.
 
+본인 공통 자료 승인 범위의 최초 연결은 FORM이다. 동일 POST `/api/v1/user-common/commands`의 recordContentReview/confirmForm은 targetId=versionRef.id·expectedVersion=현재 head를 요구하며, 각각 `data.status:REVIEW_RECORDED + reviewRef` / `CONFIRMED + confirmationId`를 반환한다. 새 본문 version을 만들지 않는다. criteriaVersion1은 FORM_PURPOSE/FORM_ROLES/FORM_STRUCTURE/FORM_AUTHORING/FORM_REVIEW 5개이며 기준 원문·작성/검토 책임과 의미 적합성을 사람이 직접 읽고 항목별 판단·이유를 기록한다. server sourceKind/주체는 현재 인증에서만 결정하고 같은 사용자가 대상 기록자이면 이를 공개한다(독립 검수로 주장하지 않음). 자료 저장 연결 전 evidenceRefs는 []만 허용하고 임의 파일/시험 근거는412로 거절한다. 전체 ACCEPTED는5개 모두 ACCEPTED여야 하고 서버가 만든 현재 exact ReviewRef와 저장본을 다시 검사한 뒤만 확정한다. 최신 검토는 audit server_sequence 기준이며 최신이 REWORK/BLOCKED이면 앞선 ACCEPTED를 골라 확정할 수 없다. 확정 이력은 유지하되 새 버전은 다시 검토/확정해야 한다. 다른 도메인/프로젝트/DRAFT·할당 Agent 검토는 연결 전412이며 확정이 실행 승인을 만들지 않는다.
+
 `saveProjectMembership`는 project 소유자의 최근 재인증·현재 제어/정확 정책 아래 `targetUserRef,participation:OWNER/VIEWER/HANDOFF_ELIGIBLE,reason,approvalRef?`를 받아 member 새 버전/감사를 만든다. VIEWER는 조회만, HANDOFF_ELIGIBLE은 조회/인수요청 후 실제 수락/단독 제어가 있어야 변경 가능하다. 마지막 유효 OWNER를 제거하는 변경·자기 임의 승격은 거절한다. 기존 Anvil 사용자 참여 허가와 새 사용자 초대를 구별하며 서버 사용자 목록은 별도 허가된 설치 관리 범위만 조회한다.
 
 ### 15.3 조건식·정규화·migration 경계
