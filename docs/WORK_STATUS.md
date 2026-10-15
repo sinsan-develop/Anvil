@@ -7,7 +7,7 @@
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
 - 최근 실제 확인: WSL exact `34805ebedd2781eb23119d6d79648b1ecc585e8f`에서 본인 양식의 exact 내용 검토·별도 확정/새 버전 분리·최신 REWORK/임의 증거 거절 실제1 PASS/324ms/skip0·정확 QA 정리. 본인 방법론/양식 복사·개정은 각 선행 actual PASS, 적용 migration9개의 이전 checksum 유지. Windows 단위41·타입/Web37모듈·UI03 인접 fixture9 통과. 화면 계약과 실제 API/DB는 별도 증거이며 새 전체 UI DB 여정 PASS가 아니다. Windows relay timeout3회 뒤 재접속0·초기 등록 비밀 만료 유지/자동 연장0.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: UI03의 공간형 방법론·노드/문서/조건 전체 편집→방법론 내용 검토/확정→생성 초안 연결·FN01 최종 생성. 양식의 복사/편집/내용검토/확정은 부분 연결했지만 문서 본문 작성/원본·제안·확정과 FN11 프로젝트 정책/일회 승인 집행은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: 연결된 UI03 공간형·단계/문서/조건 편집·방법론 검토/확정의 잔여 검수→생성 초안 연결·FN01 최종 생성. 양식의 복사/편집/내용검토/확정은 부분 연결했지만 문서 본문 작성/원본·제안·확정과 FN11 프로젝트 정책/일회 승인 집행은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -109,6 +109,9 @@
 
 ### 2026-10-16 본인 공통 방법론 검토·확정 연결 착수
 
+- fresh 화면/인접 검수: 단위41 PASS/skip0, UI03 Edge12 fixture PASS/9.1초, 타입·diff check exit0. 문서 갱신 중 WORK_STATUS 전체 읽기가 도구 출력 한도를 넘겨 patch가 검증 단계에서 거절1·원본 손실0, 해당 행만 좁혀 보정했다. 임의 경로 조회의 파일 없음은 source/시험 실패가 아니며 실제 파일 목록으로 범위를 확인했다.
+- actual GREEN: WSL exact `4799e2f058035358baa01b36d45c21616366a95f`/tracked clean에서 새 migration10번째 `0011_user_common_method_reviews` checksum `9e480e3bd4da152befdbb2bca8a2f5e1b3cdf0ed43336c5b210090f7ff02fea2` 적용·기존9개 checksum 불변. 방법론 확정/사용자 양식 미확정 차단·양식 확정 후 허용/새 개정 분리·프로젝트 실행 권한0과 영향받는 양식 검토 실제2 PASS/595ms/skip0·정확 고유 QA 정리. 현재 DB/지속 자원 보존, Windows relay 재접속/실제 계정/Secret 변경0이다.
+- 화면 TDD: 미존재 방법론 검토 시작 버튼 RED→본인 공통 exact version의 기준5개/사람 직접 판정·이유/검토 기록·별도 확정 연결 GREEN. 새 합성 Edge1 PASS/2초, 첫 기록 응답 단절 후 같은 명령 확인·작성자와 동일 주체 공개·확정이 실행 승인이 아님을 확인했다. 타입/Web43모듈 build exit0(JS318.68kB/gzip94.22). actual UI DB 전체 여정은 여전히 미검증이며 화면 fixture와 실제 API/DB를 합산하지 않는다.
 - exact `976f8f0b3708d792b7f3dd1deb1e1f29fcebf991` WSL actual RED1/skip0: confirmMethodology가 미구현400을 반환해 기대422와 달랐다. QA finally 정리 후 새 forward `0011_user_common_method_reviews`를 추가하고 현재 사용자/client/명령·버전/hash와 감사에 검토/확정을 결박했다. 기존9개 SQL은 수정하지 않았다. 로컬 타입·단위41·diff check exit0이며 새 SQL 적용/actual GREEN은 아직 전이다. 편집 patch 중복 대상 문법 오류1은 쓰기 전 거절되어 정상 update로 보정했고 소스 변경 손실0이다.
 - 직전 공간형 exact `7b22c5d935025d9d065e77db3a6ff256a73d8061` WSL actual1 PASS/405ms/skip0: 본인 복사·개정/타인·내장·멱등 차단에 더해 직접 작성2단계·양수/음수 좌표·고정 문서 ref·all/not 조건 전체 JSON roundtrip·구조검사/실행 미연결을 확인하고 정확 QA 정리했다. 현재 source/local-private 동일·tracked clean, 별도 실제 UI DB 여정은 미검증이다.
 - 다음은 기존 직접 승인한 USER_COMMON 범위에서 METHODOLOGY 내용검토/확정만 연결한다. 기존 양식 검토·원문·9개 적용 SQL은 보존하고 새 forward migration으로 기존 methodology_reviews에 현재 client/명령 결박을 더한다. SYSTEM/PROJECT 원본과 적용본은 변경/확정하지 않고 사용자 공통 exact ref만 다룬다. 사람 판단/구조 검사/양식 준비와 실제 프로젝트·도구 권한은 별개다.

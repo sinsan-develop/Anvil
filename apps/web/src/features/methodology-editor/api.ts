@@ -1,12 +1,15 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import type { MethodologyGraph } from '../../../../../contracts/methodologies.ts';
+import { reviewRefFor, type FormVersion, type ContentReviewRef } from '../methodologies/forms-api.ts';
 
 export interface MethodSummary { ref: VersionRef; name: string; purpose: string; scope: 'SYSTEM' | 'USER_COMMON'; systemCode: string | null; status: 'DRAFT' | 'CONFIRMED'; sourceAvailable: boolean }
 export interface MethodPage { items: MethodSummary[]; nextCursor: null; hasMore: false; observedAt: string; baselineVersion: null }
 export interface MethodVersion {
   ref: VersionRef; name: string; purpose: string; scope: string; systemCode: string | null; graph: MethodologyGraph;
-  confirmation: { id: string; decision: 'CONFIRMED'; decided_at: string } | null;
+  confirmation: { id: string; decision: 'CONFIRMED'; decided_at: string; decidedBy: string; reviewRefs: ContentReviewRef[] } | null;
+  contentReviewCriteria?: FormVersion['contentReviewCriteria'];
+  contentReviews?: FormVersion['contentReviews'];
   validation: { validForConfirmation: boolean; issues: { code: string; location: string; severity: 'ERROR' | 'WARNING'; message: string }[] };
   runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED';
 }
@@ -26,7 +29,12 @@ export async function getMethod(client: ApiClient, selected: MethodSummary): Pro
   if (!value || !validRef(value.ref) || value.ref.id !== selected.ref.id || value.ref.version !== selected.ref.version || value.ref.contentHash !== selected.ref.contentHash || value.name !== selected.name || value.purpose !== selected.purpose || value.scope !== selected.scope || value.systemCode !== selected.systemCode
     || value.runtimeReadiness !== 'PROJECT_BINDINGS_REQUIRED' || !value.validation || typeof value.validation.validForConfirmation !== 'boolean' || !Array.isArray(value.validation.issues)
     || value.validation.issues.some(issue => !issue || typeof issue.code !== 'string' || typeof issue.location !== 'string' || typeof issue.message !== 'string' || !['ERROR', 'WARNING'].includes(issue.severity))
-    || value.confirmation !== null && (!value.confirmation || !idPattern.test(value.confirmation.id) || value.confirmation.decision !== 'CONFIRMED' || !Number.isFinite(Date.parse(value.confirmation.decided_at)))) throw new ApiError('RESPONSE_INVALID');
+    || value.confirmation !== null && (!value.confirmation || !idPattern.test(value.confirmation.id) || value.confirmation.decision !== 'CONFIRMED' || !Number.isFinite(Date.parse(value.confirmation.decided_at))
+      || !idPattern.test(value.confirmation.decidedBy) || !Array.isArray(value.confirmation.reviewRefs) || !value.confirmation.reviewRefs.length || value.confirmation.reviewRefs.some(ref => !reviewRefFor(ref, value.ref) || ref.outcome !== 'ACCEPTED'))) throw new ApiError('RESPONSE_INVALID');
+  if (value.contentReviewCriteria !== undefined && (!value.contentReviewCriteria || !Number.isSafeInteger(value.contentReviewCriteria.criteriaVersion) || value.contentReviewCriteria.criteriaVersion < 1 || !Array.isArray(value.contentReviewCriteria.items) || !value.contentReviewCriteria.items.length || value.contentReviewCriteria.items.length > 200
+    || new Set(value.contentReviewCriteria.items.map(item => item?.criterionId)).size !== value.contentReviewCriteria.items.length || value.contentReviewCriteria.items.some(item => !item || typeof item.criterionId !== 'string' || typeof item.title !== 'string'))) throw new ApiError('RESPONSE_INVALID');
+  if (value.contentReviews !== undefined && (!Array.isArray(value.contentReviews) || value.contentReviews.length > 200 || value.contentReviews.some(review => !review || !reviewRefFor(review.ref, value.ref) || !Array.isArray(review.items)
+    || !review.reviewer || review.reviewer.kind !== 'HUMAN' || !idPattern.test(review.reviewer.userId) || typeof review.reviewer.sameAsTargetRecorder !== 'boolean' || review.sourceKind !== 'HUMAN_REVIEW' || typeof review.reason !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt)) || !Number.isSafeInteger(review.serverSequence) || review.serverSequence < 1))) throw new ApiError('RESPONSE_INVALID');
   const graph = value.graph;
   if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || typeof graph.entryNodeId !== 'string' || !texts(graph.terminalNodeIds)
     || new Set(graph.nodes.map(node => node?.nodeId)).size !== graph.nodes.length

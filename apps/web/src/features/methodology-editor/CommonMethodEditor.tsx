@@ -23,8 +23,8 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     listForms(client).then(value => { if (current) { setForms(value.items); setFormError(null); } }).catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setForms([]); setFormError(failure); if (failure.status === 401) onAuthenticationLost(); } });
     return () => { current = false; };
   }, [client, session.user.id, editing]);
-  const locked = pending || !!buffer.pending;
-  function replaceAllowed() { return !buffer.pending && (!buffer.dirty || confirm('저장하지 않은 편집을 바꿀까요?')); }
+  const locked = pending || !!buffer.pending || !!buffer.review?.pending;
+  function replaceAllowed() { return !buffer.pending && !buffer.review?.pending && (!(buffer.dirty || buffer.review?.dirty) || confirm('저장하지 않은 편집·내용 검토 입력을 바꿀까요?')); }
   function change(field: 'name' | 'purpose' | 'reason', value: string) { onChange(previous => ({ ...previous, [field]: value, dirty: true, validation: null })); setSavedVersion(null); }
   function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? { ...item, ...patch } : item) } })); setSavedVersion(null); }
   function changeGraph(graph: MethodologyGraph) { onChange(previous => ({ ...previous, graph, dirty: true, validation: null })); setSavedVersion(null); }

@@ -6,6 +6,7 @@ import { CommonMethodEditor } from './CommonMethodEditor.tsx';
 import type { MethodBuffer } from './common-api.ts';
 import type { FormBuffer } from '../methodologies/form-editor-state.ts';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
+import { MethodReviewPanel } from './MethodReviewPanel.tsx';
 
 const approvalLabels: Record<string, string> = {
   USER_REQUIREMENTS_CONFIRMATION: '사용자 요구사항 확인', USER_ITERATION_SCOPE_CONFIRMATION: '사용자 반복 범위 확인',
@@ -58,7 +59,8 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
         <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><p>{version.validation.validForConfirmation ? '구조 오류 없음' : '구조 보완 필요'}</p><ul>{version.validation.issues.map((issue, index) => <li key={index}>{issue.location}: {issue.message}</li>)}</ul></details>
       </section> : null}
       <CommonMethodEditor client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={() => setListRetry(value => value + 1)} />
-      <p className="meta">공통본 복사·목적/좌표·완료조건의 개정 저장을 연결했습니다. 문서 연결/분기·합류의 전체 편집·내용검토·확정·프로젝트 적용은 아직 연결 전입니다. 화면 조회로 Agent를 시작하지 않습니다.</p>
+      {version && !pending && !error ? <MethodReviewPanel client={client} session={session} source={version} buffer={buffer} onChange={onChange} onVerified={setVersion} onAuthenticationLost={onAuthenticationLost} /> : null}
+      <p className="meta">내 공통 방법론의 공간형·단계/문서/조건 편집과 내용 검토·별도 확정을 연결했습니다. 프로젝트 적용·실제 Agent·환경·한도 연결은 아직 미완료입니다. 화면 조회나 확정으로 Agent를 시작하지 않습니다.</p>
     </section>
     <FormsCatalog client={client} session={session} buffer={formBuffer} onChange={onFormChange} onAuthenticationLost={onAuthenticationLost} />
   </>;

@@ -22,6 +22,52 @@ const version = (index: number) => {
     validation: validateMethodologyGraph(method.graph, forms.forms.map(form => form.ref)), runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED' };
 };
 
+test('방법론 내용 검토를 기록하고 단절 때 같은 명령을 확인한 뒤 정확 버전을 별도 확정한다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099', owner = methods[0]!.id;
+  const ref = { id: target, version: 1, contentHash: 'e'.repeat(64) };
+  const criteria = ['METHOD_PURPOSE_SCOPE', 'METHOD_FLOW_CONTROL', 'METHOD_INPUT_OUTPUT', 'METHOD_COMPLETION_APPROVAL', 'METHOD_RECORD_LIMITS'];
+  const reviewRef = { id: 'a6f20000-0000-4000-8000-000000000055', criteriaVersion: 1, targetRef: ref, outcome: 'ACCEPTED' };
+  let reviews: any[] = [], confirmation: any = null;
+  const writes: any[] = [];
+  const summary = { ref, name: '검토할 개발 절차', purpose: methods[0]!.purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false };
+  await page.route('**/api/v1/methodologies', route => route.fulfill({ json: { items: [summary], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
+  await page.route(`**/api/v1/methodologies/${target}/versions/1`, route => route.fulfill({ json: { ...version(0), ...summary, confirmation,
+    contentReviewCriteria: { criteriaVersion: 1, items: criteria.map(criterionId => ({ criterionId, title: criterionId + ' 내용 확인' })) }, contentReviews: reviews } }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); writes.push(body);
+    expect(body.targetId).toBe(target); expect(body.expectedVersion).toBe(1); expect(body.clientId).toBe(owner);
+    expect(route.request().headers()['x-anvil-csrf']).toBe('A'.repeat(43));
+    if (body.operation === 'recordContentReview') {
+      expect(body.payload.targetKind).toBe('METHODOLOGY'); expect(body.payload.targetRef).toEqual(ref);
+      expect(body.payload.items.map((item: any) => item.criterionId)).toEqual(criteria);
+      reviews = [{ ref: reviewRef, items: body.payload.items, reviewer: { kind: 'HUMAN', userId: owner, sameAsTargetRecorder: true }, sourceKind: 'HUMAN_REVIEW', reason: body.payload.reason, reviewedAt: new Date().toISOString(), serverSequence: 1 }];
+      if (writes.length === 1) { await route.abort('failed'); return; }
+    } else {
+      expect(body.operation).toBe('confirmMethodology'); expect(body.payload).toEqual({ versionRef: ref, reviewRefs: [reviewRef] });
+      confirmation = { id: 'a6f20000-0000-4000-8000-000000000066', decision: 'CONFIRMED', decidedBy: owner, decided_at: new Date().toISOString(), reviewRefs: [reviewRef] };
+    }
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: owner, operationId: 'a6f20000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version: 1,
+      data: { ref, status: body.operation === 'recordContentReview' ? 'REVIEW_RECORDED' : 'CONFIRMED', ...(body.operation === 'recordContentReview' ? { reviewRef } : { confirmationId: confirmation.id }) }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await page.getByRole('button', { name: '이 방법론 내용 검토 시작', exact: true }).click();
+  const panel = page.getByRole('region', { name: '방법론 내용 검토·확정' });
+  await expect(panel.getByRole('button', { name: '이 방법론 버전 확정', exact: true })).toBeDisabled();
+  for (const criterionId of criteria) { await panel.getByLabel(criterionId + ' 판정', { exact: true }).selectOption('ACCEPTED'); await panel.getByLabel(criterionId + ' 검토 이유', { exact: true }).fill('원문과 절차를 확인함'); }
+  await panel.getByLabel('내용 검토 종합 판정', { exact: true }).selectOption('ACCEPTED');
+  await panel.getByLabel('내용 검토 종합 이유', { exact: true }).fill('이 절차로 진행할 기준을 확인함');
+  await panel.getByRole('button', { name: '내용 검토 기록', exact: true }).click();
+  await expect(panel.getByRole('button', { name: '같은 검토·확정 명령 결과 확인', exact: true })).toBeVisible();
+  expect(writes).toHaveLength(1);
+  await panel.getByRole('button', { name: '같은 검토·확정 명령 결과 확인', exact: true }).click();
+  await expect(panel.getByText('서버 내용 검토 기록 확인', { exact: true })).toBeVisible();
+  expect(writes[1]).toEqual(writes[0]);
+  await expect(panel.getByText('작성 기록자와 같은 사용자 · 독립 검수 아님', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: '이 방법론 버전 확정', exact: true }).click();
+  await expect(panel.getByText('현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(3);
+});
+
 test('방법론 화면 계약: 내장3종의7단계·선택 단계 문서/사람확인/재작업을 읽으며 실행하지 않는다', async ({ page }) => {
   const writes: string[] = [];
   page.on('request', request => { if (request.method() !== 'GET') writes.push(request.url()); });

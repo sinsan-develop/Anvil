@@ -34,7 +34,12 @@ test('방법론은 같은 내용 검토와 양식 준비를 확인해 확정하�
       assert.equal(response.statusCode, 200, response.body); return response.json().data.reviewRef;
     }
     const review1 = await review('METHODOLOGY', ref, criteria);
-    const confirmed = await send('confirmMethodology', ref.id, 1, { versionRef: ref, reviewRefs: [review1] });
+    assert.equal((await send('confirmMethodology', ref.id, 1, { versionRef: ref, reviewRefs: [{ ...review1, id: randomUUID() }] })).statusCode, 422);
+    const rework = await send('recordContentReview', ref.id, 1, { targetKind: 'METHODOLOGY', targetRef: ref, criteriaVersion: 1, items: criteria.map(criterionId => ({ criterionId, outcome: 'REWORK', evidenceRefs: [], reason: '추가 보완 필요 QA' })), outcome: 'REWORK', reason: '최신 판단 차단 QA' });
+    assert.equal(rework.statusCode, 200, rework.body);
+    assert.equal((await send('confirmMethodology', ref.id, 1, { versionRef: ref, reviewRefs: [review1] })).statusCode, 422);
+    const latestReview = await review('METHODOLOGY', ref, criteria);
+    const confirmed = await send('confirmMethodology', ref.id, 1, { versionRef: ref, reviewRefs: [latestReview] });
     assert.equal(confirmed.statusCode, 200, confirmed.body); assert.equal(confirmed.json().data.status, 'CONFIRMED');
     assert.equal((await get(ref.id, 1)).json().confirmation.decidedBy, user);
     assert.equal((await get(ref.id, 1)).json().runtimeReadiness, 'PROJECT_BINDINGS_REQUIRED');
@@ -46,8 +51,10 @@ test('방법론은 같은 내용 검토와 양식 준비를 확인해 확정하�
     assert.equal(saved.statusCode, 200); const nextRef = saved.json().data.ref;
     assert.equal((await get(ref.id, 2)).json().confirmation, null);
     const review2 = await review('METHODOLOGY', nextRef, criteria);
+    assert.equal((await send('confirmMethodology', ref.id, 2, { versionRef: nextRef, reviewRefs: [latestReview] })).statusCode, 422);
     assert.equal((await send('confirmMethodology', ref.id, 2, { versionRef: nextRef, reviewRefs: [review2] })).statusCode, 422);
     const formReview = await review('FORM', formRef, ['FORM_PURPOSE', 'FORM_ROLES', 'FORM_STRUCTURE', 'FORM_AUTHORING', 'FORM_REVIEW']);
+    assert.equal((await send('confirmMethodology', ref.id, 2, { versionRef: nextRef, reviewRefs: [formReview] })).statusCode, 422);
     const formConfirmed = await send('confirmForm', formRef.id, 1, { versionRef: formRef, reviewRefs: [formReview] }); assert.equal(formConfirmed.statusCode, 200, formConfirmed.body);
     const nowReady = await send('confirmMethodology', ref.id, 2, { versionRef: nextRef, reviewRefs: [review2] }); assert.equal(nowReady.statusCode, 200, nowReady.body);
     assert.equal((await get(ref.id, 1)).json().confirmation.decision, 'CONFIRMED');
