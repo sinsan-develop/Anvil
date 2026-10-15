@@ -109,6 +109,9 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- FN01 실제 schema 검수 사전 등록: 기존 신규 전용 PG/DB/역할만 사용, `0001_projects_access`가 사용자·client·credential/session/초기화/초대/복구/감사·프로젝트/초안/멤버/초기제어·선언/기준선 테이블을 추가한다. 기존 테이블/자료 삭제·이전 DB/권한 변경0. migration checksum/명시 순서/transaction을 적용하고 실패는 rollback, 적용 뒤 파일수정/down/drop0. 합성 QA ID는 시험에서 UUID로 생성·transaction rollback·잔여0 확인하며 실제 사용자 계정은 만들지 않는다.
+- 첫 Windows DB 시험은5초 timeout으로 데이터 변경 전 실패, 기능 RED에서 제외. WSL 동일 PG ID/running/loopback·직접 app SELECT/Windows TCP 성공을 읽기 확인한 뒤 같은 timeout의1회 재확인에서 정상 연결·새 anvil.users 부재42P01 RED를 얻었다. 첫 연결 시간 초과의 직접 원인은 미확정이고 timeout/relay/서비스를 바꾸지 않았다. 첫 PowerShell finally가 외부 시험 exit1을 shell exit0으로 숨긴 점을 기록하고 이후 exit를 명시 보존했다. 실제 SQL/사용자 추가0.
+
 - 후속 직접 승인 `call_b7ba48656c4b44d7a6ad68143308c93e`: ‘Stage B 지정 branch 게시 승인’. 같은 지정 저장소/codex/av3-stage-b·Stage B 신규 코드/시험/migration/실행·검수 기록만 게시/일반 Stage PR. Backup/legacy·실제 계정/Secret/인증서/DB 데이터/타 프로젝트 제외, 실제 Agent/Oracle/운영·main 직접 쓰기/force/rewrite 불가. 이 승인은 실제 시험 결과가 아니다.
 - UI00 부분 검수: API client3·route1 RED→GREEN, 기존 회귀 포함17 PASS·타입/Web22모듈 PASS·실제 Edge2 PASS. 프로젝트 첫 화면/404 실패≠빈목록·모바일키보드/뒤로/새로고침·same-origin/JS오류0. 실제 인증/제어·입력 보존·가독성 전체는 FN01 연결 후 검수하므로 UI00 [0] 아님. 실제 native fetch를 객체 receiver로 호출해 Illegal invocation이 난1건은 Edge window/object 비교로 직접 확인 후 `.call(globalThis)`만 보완·동일2건 GREEN. CSS side-effect 타입 선언 오류1은 vite/client 선언 추가로 해결했다.
 - FN01 시작: FILE_MAP access service와 auth.test에 비밀번호15~128/Unicode·공백/대소문자 보존·개별salt/Argon2id·기한/세대/회수의 RED3→GREEN3, 전체20 PASS/typecheck0. 실제 Windows Node24.18 native crypto.argon2 존재와 공식 Node24 문서를 대조해 새 암호 라이브러리 설치 없이 승인 최소19MiB/2/p1을 사용한다. 동시 hash2개로 유한 제한, 실제 서버/DB·공격 방지 PASS 아님. 근거 https://nodejs.org/docs/latest-v24.x/api/crypto.html#cryptoargon2algorithm-parameters-callback . 새 사용자·세션·키/DB 변경0.
