@@ -5,7 +5,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 
 export interface UserCommonCommand {
-  schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft' | 'recordContentReview' | 'confirmForm';
+  schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft' | 'recordContentReview' | 'confirmForm' | 'confirmMethodology';
   targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown>;
 }
 // 호출자는 현재 인증·client·중복 명령과 해당 도메인 소유권을 같은 transaction에서 먼저 검사한다.

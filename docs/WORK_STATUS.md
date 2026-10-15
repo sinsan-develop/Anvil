@@ -109,6 +109,7 @@
 
 ### 2026-10-16 본인 공통 방법론 검토·확정 연결 착수
 
+- exact `976f8f0b3708d792b7f3dd1deb1e1f29fcebf991` WSL actual RED1/skip0: confirmMethodology가 미구현400을 반환해 기대422와 달랐다. QA finally 정리 후 새 forward `0011_user_common_method_reviews`를 추가하고 현재 사용자/client/명령·버전/hash와 감사에 검토/확정을 결박했다. 기존9개 SQL은 수정하지 않았다. 로컬 타입·단위41·diff check exit0이며 새 SQL 적용/actual GREEN은 아직 전이다. 편집 patch 중복 대상 문법 오류1은 쓰기 전 거절되어 정상 update로 보정했고 소스 변경 손실0이다.
 - 직전 공간형 exact `7b22c5d935025d9d065e77db3a6ff256a73d8061` WSL actual1 PASS/405ms/skip0: 본인 복사·개정/타인·내장·멱등 차단에 더해 직접 작성2단계·양수/음수 좌표·고정 문서 ref·all/not 조건 전체 JSON roundtrip·구조검사/실행 미연결을 확인하고 정확 QA 정리했다. 현재 source/local-private 동일·tracked clean, 별도 실제 UI DB 여정은 미검증이다.
 - 다음은 기존 직접 승인한 USER_COMMON 범위에서 METHODOLOGY 내용검토/확정만 연결한다. 기존 양식 검토·원문·9개 적용 SQL은 보존하고 새 forward migration으로 기존 methodology_reviews에 현재 client/명령 결박을 더한다. SYSTEM/PROJECT 원본과 적용본은 변경/확정하지 않고 사용자 공통 exact ref만 다룬다. 사람 판단/구조 검사/양식 준비와 실제 프로젝트·도구 권한은 별개다.
 - 양식 준비 판정: P01 REVIEW-02에서 신산님이 승인한 공식8종의 고정 배포 원본은 원 출처/지문을 대조해 ‘승인된 기본 양식’으로 소비한다. USER_COMMON 양식은 별도 실제 확정 사건/최신 내용 판단이 필요하다. 공식 원본을 사용자 확정 사건이나 제품 인수로 위조하지 않으며 검증 근거 종류를 다르게 기록한다. 이는 기본 방법론을 그대로 쓰는 기존 요구를 만족하는 기술 상세화이며 실행 권한을 늘리지 않는다.

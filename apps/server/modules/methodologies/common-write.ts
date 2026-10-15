@@ -8,6 +8,7 @@ import type { AccessRoutesOptions } from '../access/routes.ts';
 import { persistCommonReceipt, type UserCommonCommand } from '../access/common-command.ts';
 import { writeCommonForm } from '../documents/common-write.ts';
 import { writeCommonFormReview } from '../documents/content-review.ts';
+import { writeCommonMethodReview } from './content-review.ts';
 
 type CommonCommand = UserCommonCommand;
 function fields(value: Record<string, unknown>, keys: string[]) {
@@ -31,6 +32,7 @@ export class CommonMethodologyWriter {
         return previous.result_ref;
       }
       if (request.operation === 'copyForm' || request.operation === 'saveFormDraft') return writeCommonForm(db, actor, request);
+      if (request.operation === 'confirmMethodology' || request.operation === 'recordContentReview' && request.payload.targetKind === 'METHODOLOGY') return writeCommonMethodReview(db, actor, request);
       if (request.operation === 'recordContentReview' || request.operation === 'confirmForm') return writeCommonFormReview(db, actor, request);
       const payload = request.payload;
       if (payload.scope !== 'USER_COMMON') throw new AuthFailure('COMMON_SCOPE_REQUIRED', 403);
@@ -84,7 +86,7 @@ export function registerCommonMethodologyWrites(app: FastifyInstance, options: A
     });
     routes.post<{ Body: CommonCommand }>('/api/v1/user-common/commands', { schema: { body: { type: 'object', additionalProperties: false,
       required: ['schemaVersion', 'commandId', 'operation', 'targetId', 'expectedVersion', 'clientId', 'payload'], properties: {
-        schemaVersion: { const: 1 }, commandId: id, operation: { enum: ['copyMethodology', 'saveMethodologyDraft', 'copyForm', 'saveFormDraft', 'recordContentReview', 'confirmForm'] }, targetId: { anyOf: [id, { type: 'null' }] },
+        schemaVersion: { const: 1 }, commandId: id, operation: { enum: ['copyMethodology', 'saveMethodologyDraft', 'copyForm', 'saveFormDraft', 'recordContentReview', 'confirmForm', 'confirmMethodology'] }, targetId: { anyOf: [id, { type: 'null' }] },
         expectedVersion: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER }, clientId: id, payload: { type: 'object' },
       } } } }, request => writer.execute(sessionToken(request), csrfToken(request), request.body));
   });
