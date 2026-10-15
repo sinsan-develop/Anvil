@@ -51,3 +51,76 @@ test('방법론 화면 계약: 조회 권한 회수 뒤 이전 그래프를 재�
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(page.getByRole('button', { name: '3. 상세 설계·화면', exact: true })).toHaveCount(0);
 });
+
+test('방법론 편집 계약: 내장본 복사 후 단계 목적·좌표를 저장하고 새 버전을 다시 읽는다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099';
+  let graph = structuredClone(methods[0]!.graph), currentVersion = 1;
+  const writes: Record<string, any>[] = [];
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/[12]$/, route => {
+    const common = route.request().url().includes(target);
+    return route.fulfill({ json: common ? { ...version(0), ref: { id: target, version: currentVersion, contentHash: 'b'.repeat(64) }, name: '내 개발 절차', purpose: methods[0]!.purpose, scope: 'USER_COMMON', systemCode: null, graph } : version(0) });
+  });
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); writes.push(body);
+    expect(route.request().headers()['x-anvil-csrf']).toBe('A'.repeat(43));
+    if (body.operation === 'saveMethodologyDraft') { graph = body.payload.graph; currentVersion = 2; }
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: methods[0]!.id, operationId: 'a6f20000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version: currentVersion,
+      data: { ref: { id: target, version: currentVersion, contentHash: 'b'.repeat(64) }, validation: validateMethodologyGraph(graph, forms.forms.map(form => form.ref)), status: 'DRAFT' }, evidenceRefs: [], warnings: [], serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeVisible({ timeout: 1000 });
+  await page.getByLabel('복사본 이름', { exact: true }).fill('내 개발 절차');
+  await page.getByRole('button', { name: '내 공통본으로 복사', exact: true }).click();
+  await expect(page.getByRole('region', { name: '공통 방법론 편집' })).toBeVisible();
+  await page.getByLabel('단계 목적 편집', { exact: true }).fill('요구사항의 이유를 확인한다');
+  await page.getByLabel('단계 X 위치', { exact: true }).fill('345');
+  await page.getByLabel('개정 이유', { exact: true }).fill('목적과 배치 구체화');
+  await page.getByRole('button', { name: '공통본 새 버전 저장', exact: true }).click();
+  await expect(page.getByText('서버 저장·재조회 확인 · 버전 2', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(2); expect(writes[0]!.operation).toBe('copyMethodology');
+  expect(writes[1]!.expectedVersion).toBe(1); expect(writes[1]!.targetId).toBe(target);
+  expect(writes[1]!.payload.graph.nodes[0].purpose).toBe('요구사항의 이유를 확인한다');
+  expect(writes[1]!.payload.graph.nodes[0].position.x).toBe(345);
+  await expect(page.getByLabel('단계 목적 편집', { exact: true })).toHaveValue('요구사항의 이유를 확인한다');
+});
+
+test('공통본 저장 응답 단절 시 새 명령 없이 같은 요청으로 결과를 확인한다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099';
+  const writes: unknown[] = [];
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/[12]$/, route => route.fulfill({ json: route.request().url().includes(target)
+    ? { ...version(0), ref: { id: target, version: 1, contentHash: 'b'.repeat(64) }, scope: 'USER_COMMON', systemCode: null, name: '응답 단절 복사본' } : version(0) }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); writes.push(body);
+    if (writes.length === 1) { await route.abort('failed'); return; }
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: methods[0]!.id, operationId: 'a6f20000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version: 1,
+      data: { ref: { id: target, version: 1, contentHash: 'b'.repeat(64) }, status: 'DRAFT' }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await page.getByLabel('복사본 이름', { exact: true }).fill('응답 단절 복사본');
+  await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '내 공통본으로 복사', exact: true }).click();
+  await expect(page.getByRole('button', { name: '같은 명령 결과 다시 확인', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeDisabled();
+  expect(writes).toHaveLength(1);
+  await page.getByRole('button', { name: '같은 명령 결과 다시 확인', exact: true }).click();
+  await expect(page.getByText('서버 저장·재조회 확인 · 버전 1', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]);
+});
+
+test('저장 성공 뒤 재조회가 거절되어도 명령을 폐기해 중복 복사하지 않는다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099';
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/[12]$/, route => route.request().url().includes(target)
+    ? route.fulfill({ status: 403, json: { code: 'FORBIDDEN' } }) : route.fulfill({ json: version(0) }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON();
+    await route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: methods[0]!.id, operationId: 'a6f20000-0000-4000-8000-000000000088', commandId: body.commandId, status: 'APPLIED', targetId: target, version: 1,
+      data: { ref: { id: target, version: 1, contentHash: 'b'.repeat(64) }, status: 'DRAFT' }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await page.getByLabel('복사본 이름', { exact: true }).fill('조회 거절 복사본');
+  await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '내 공통본으로 복사', exact: true }).click();
+  await expect(page.getByRole('button', { name: '같은 명령 결과 다시 확인', exact: true })).toBeVisible({ timeout: 1000 });
+  await expect(page.getByRole('button', { name: '내 공통본으로 복사', exact: true })).toBeDisabled();
+  await expect(page.getByText('서버 저장·재조회 확인 · 버전 1', { exact: true })).toHaveCount(0);
+});

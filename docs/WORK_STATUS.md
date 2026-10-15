@@ -3,11 +3,11 @@
 ## 1. 현재 상태와 기록 기준
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
-- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·FN01·FN03·FN11 부분 구현**. 인증·복구/초대, 허가 프로젝트 조회·초안 저장·공식 양식 catalog의 실제 WSL API/DB를 확인했고 화면 연결을 구현 중이다. 최종 프로젝트 생성·방법론·문서 작성/확정·실제 Agent 등 전체 기능 완료는 아니다.
+- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·FN01~03·FN11 부분 구현**. 인증·허가 프로젝트 조회/초안 저장·공식 양식·내장 방법론/본인 공통본 복사/개정의 실제 WSL API/DB를 확인했다. 최종 프로젝트 생성·전체 방법론 편집/확정·문서 작성/확정·실제 Agent 등은 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `148684772ca863cc99dee5c359148b4aa1f58669`/clean의 공식 양식 실제 API/DB1 PASS/0.45초. 0003 적용·기존0000/0001/0011 checksum 불변, 공식8/기준원문1·사용자 범위/회수·불변 seed 검증·QA 정리 확인. 이전5a88d5eb 초안1 및 b11167dc 인증/읽기2 PASS는 당시 범위 증거다. Windows 단위27·타입/Web30모듈·새 UI03 fixture2 PASS이며 실제 새 UI DB 여정 PASS가 아니다. Windows relay timeout3회 뒤 해당 실제 접속은 중단, 불변 증거를 새 전체 여정으로 승격하지 않는다.
+- 최근 실제 확인: WSL exact `0f072bb93f1a454432f8e97e3ca7a574eca1320b` 본인 공통본 복사/개정 실제 API·DB1 PASS/388ms/skip0, exact QA 정리 확인. 0011_user_common_control forward 적용·기존6개 checksum 불변. 내장 v1 보존/v2 계약 정정은02d579be 실제1 PASS다. Windows 단위37·타입/Web34모듈 통과. 화면 계약과 실제 API/DB는 별도 증거이며 새 전체 UI DB 여정 PASS가 아니다. Windows relay timeout3회 뒤 접속 재시도0·초기 등록 비밀 만료 유지/자동 연장0.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: 초안/공통 원본을 소비하는 공식8종 catalog/FN03 storage→내장3종 방법론/FN02를 명시 DAG로 연결해 FN01 최종 생성을 완성한다. FN11 저장만 있는 것을 실제 정책/정확 승인 집행 완료로 세지 않고 남은 집행을 순차 구현한다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: UI03 공통본 복사/개정 저장의 화면 검수 뒤 USER_COMMON 내용 검토/확정·양식 쓰기와 생성 초안 편집을 이어 FN01 최종 생성을 연결한다. FN11 실제 프로젝트 정책/승인 집행과 전체 방법론 편집은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -52,7 +52,7 @@
 | UI00 공통 작업틀·상태 표현 | [2] | 2026-10-16 Main 어울 착수·P01/P02/P03 기준. 실제 FN01 인증/제어 연결 전 부분 구현으로 관리 | shell·라우팅·오류/입력보존·same-origin client→FN01/FN11 실제 연결 |
 | UI01 프로젝트 목록 | [2] | Main 어울. 허가 목록 API·검색/보관·cursor·뒤로/오래된 자료 표시 연결, 계약2 PASS. 실제 새 UI DB 여정은 미검증 | 생성·단계/담당/완료·결정/다음 행동·실제 브라우저 검수 |
 | UI02 프로젝트 생성·기준선 | [2] | Main 어울. 목적/빈소스 초안 중간저장·재조회·단절/만료 입력 보존 연결, fixture3 PASS. 실제 새 UI DB 여정 미검증 | 방법론/자료·총괄/환경·기준선·최종 생성/기존 소스 연결 |
-| UI03 방법론 흐름도 | [2] | Main 어울. 공식8종/필수목차·반복필드·작성 기준 조회 UI 연결, fixture2 PASS. 방법론 편집/노드 연결 미구현 | 내장3종/사용자 방법론·노드/문서·검사/저장/적용·실제 브라우저/DB |
+| UI03 방법론 흐름도 | [2] | Main 어울. 공식 양식/내장·공통본 조회, 복사·목적/좌표/조건 개정 저장 연결. UI03 fixture7 PASS·실제 API/DB 별도1 PASS. 전체 UI DB 여정 미검증 | 전체 노드/문서·분기/합류 편집·내용검토/확정·프로젝트 적용 |
 | UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
 | UI06 문서·설계·계획 추적 | [] | S06 정적 시안 | 문서편집/버전·화면위치→작업/코드/시험 양방향 |
@@ -72,7 +72,7 @@
 | 업무 | 상태 | 현재 요약 | 다음 수행·검수 |
 |---|---|---|---|
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 0001 적용·실제 등록/로그인/로그아웃 UI 및 재인증/비밀번호 교체 API·세션회수 확인. 신규 보호 키/초기화1 생성·실제 사용자0 | 복구/초대·프로젝트 원본/접근/기준선·UI 연결 미구현 |
-| FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장3종/각7단계·양식 연결·구조 검사,0002 실제 저장/API1 PASS. UI 조회 fixture2 PASS. 복사/직접 작성/확정·적용 미완료 | 생성 초안 편집·정확 검수/원자 생성. 사용자 공통 쓰기 계약 보완은 별도 승인 요청 중 |
+| FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장3종/각7단계·양식 연결·구조 검사/불변 버전, 본인 공통본 복사/개정 실제 API·DB1 PASS. 전체 UI DB 여정/확정·적용 미완료 | 승인된 공통 쓰기→내용검토/확정·전체 편집·생성 초안/원자 생성 |
 | FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 0003 공식8종/48목차·기준 원문1 적용, 실제 양식 조회/사용자 격리·불변 seed·회수 세션 거절1 PASS. 문서 원본/제안/확정 미구현 | 방법론 고정 ref 소비→사용자 양식·문서 원본/제안/버전/확정 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [] | 핵심 보관/전달 계약만 있음 | 원문/이유·검색·선별/이해대조·기준 재사용 |
@@ -109,6 +109,11 @@
 
 ### 2026-10-16 조건 계약 정정·공통 자료 보완 승인
 
+- 공통 쓰기 actual: exact `0f072bb93f1a454432f8e97e3ca7a574eca1320b` WSL 시험1 PASS/388ms/skip0. copy/save·원본/과거 버전 불변·좌표345·같은 command 병렬2회 결과 동일/부작용 총2건·본문/연산 충돌409·타인404·내장403/SQL42501·CSRF/Origin403·회수401·감사 변경42501 확인. 새 migration checksum `ea3043a71f4d1557bf9620ac06f88274ed7227629fe2b1bfab00e7409d16563c`, 기존6개 불변·새 실제 사용자0.
+- 첫 actual은 QA 정리23503으로 실패했다. `ON DELETE RESTRICT`는 DEFERRABLE 표기만으로 receipt 순환 삭제를 미루지 않는 것을 확인했고, admin의 정확 QA 정리에서 commands.authorization_receipt_id를 null로 끊은 뒤 receipt→command 순으로 제거했다. 첫 실패 QA2의 사용자/명령/정의/감사 각각0 독립 조회, 동일 시험 재실행 GREEN·새 QA finally 정리. 제품 FK/불변 계약 완화0, 처음 실패를 PASS 소급0.
+- UI03 복사/편집/저장 착수: API는 same-origin/CSRF·명령/사용자/버전 receipt를 대조하고 저장 뒤 exact GET까지 확인한다. pending 요청/입력은 App 메모리에 보존·단절 시 같은 command만 재확인, 다른 로그인 사용자에게 앞선 편집 노출/전송 차단. 복사 버튼 없음 RED→구현 뒤 textarea label의 초기 본문 혼입으로 exact label 조회 실패1→명시적 htmlFor/id 보정·같은 기대/timeout으로 복사·편집1 GREEN/2초. 서버 API/DB actual과 브라우저 fixture는 합쳐 실제 새 UI DB E2E로 주장하지 않는다. 전체 문서 연결/분기·합류 편집·확정·Agent 실행은 미완료다.
+- 인접 검수: UI03 fixture4 PASS/3.4초(읽기·권한 회수·복사/개정·단절 동일 명령). 추가 ‘저장 성공→GET403’ 음성 RED→적용 성공과 재조회 실패를 분리해 pending 유지 GREEN/1.6초. null receipt TypeError RED→형식 거절로 보정, 현재 unit39/typecheck/diff check PASS. 저장 실패를 성공으로 올리지 않으며 현재 소유 서버 backend는000d0088으로 새 코드 미반영·Web dist만 신규다. 실제 새 UI DB 여정/소유자 등록은 미검증, 기존 초기 등록 비밀 만료를 연장하거나 relay 재접속하지 않았다.
+- 현재 checkpoint 검증: 최종 Web34모듈 build/typecheck exit0·JS272.48kB/gzip82.99/CSS5.44kB, UI03 인접7 fixture PASS/4.6초. 전체 Stage/실제 사용자 인수는 미완료이며 후속 내용검토/확정과 생성 초안 연결을 계속한다. 원본 root의5개 소유 문서는4dd4b56d 바이트와 일치하는지 확인한 뒤만 기계적 동기화하고 legacy dirty/Backup/다른 문서는 보존한다.
 - 후속 실제 확인: Git exact `02d579be26b09d6b6825c981e8c27f59547d3702` WSL/clean에서 forward 정정 적용 exit0·FN02 실제 시험1 PASS/558ms/skip0. SYSTEM3의 v1 literal hash/본문 유지·v2 head/정식 조건·본인200/타인404/회수401·app UPDATE42501 확인. 원본 실패/조건 미적합 판정을 소급하지 않는다. 새 UI fixture2 PASS/2.7초는 실제 UI DB 여정이 아니다.
 - 본인 공통 쓰기 착수: 현재 사용자/client/CSRF·USER_COMMON owner=actor·command 재전송/충돌·정확 head·도메인 변경/receipt/append-only 감사의 단일 transaction을 기존0011 뒤 forward migration으로 추가한다. PROJECT/DRAFT 계약과 적용 SQL은 그대로 보존한다. 먼저 copyMethodology/saveMethodologyDraft를 연결하며 확정/내용검토·양식 쓰기는 후속 범위다. QA는 기존 지정 WSL 개발 DB에서 고유 `qa-common-UUID` 사용자2·방법론/명령/감사만 생성하고 정확 ID로 정리, 실제 사용자/Secret/다른 프로젝트/운영 변경0. 기존 Windows relay 재접속 금지 유지.
 - RED 증거: 게시 exact `6a8817d9d6b3293162bf1c0e30d6f2d2fb3e2196`/WSL clean의 공통 쓰기 실제 HTTP/DB 시험은 첫 명령404≠200으로 실패했다(미구현 경로). 합성 사용자2/관련 자격은 finally 정리·잔여 사용자/정의0. Windows 무인증 명령404≠401도 RED 확인 후 새 경로에서 GREEN. 최초 타입검사의 테스트 payload unknown 오류는 JSON 직렬화로 보정. sandbox 전체 단위는 지정 tmp mkdtemp EPERM1(권한 변경0), 승인된 실행 환경에서 같은 시험을 재검증하며 제품/DB 실패로 계산하지 않는다.

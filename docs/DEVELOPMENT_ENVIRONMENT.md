@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 본인 공통 자료 최신 관측: 직접 승인 범위의 `0011_user_common_control`을 forward 적용(checksum `ea3043a71f4d1557bf9620ac06f88274ed7227629fe2b1bfab00e7409d16563c`), 기존6개 checksum 불변. WSL exact `0f072bb93f1a454432f8e97e3ca7a574eca1320b`의 실제 복사/개정·owner/client·멱등/감사1 PASS·합성 QA 정리. 기존 잘못된 정리 순환 FK 실패1은 정확 QA만 보정/정리했다. 코드/양식/방법론 v1 보존. Windows UI03 fixture7 PASS/4.6초·unit39·Web34모듈 통과, Node backend는000d0088 그대로이므로 actual UI/DB E2E 아님. Windows relay timeout3회 중단·초기 비밀 만료/자동 재발급0 유지. 실제 Agent/Oracle 미실행.
+
 2026-10-16 방법론 후속 관측: WSL exact `7590d3584fb4971b67f1c4d6fd7aace749a37504`/clean, 계획0002 적용·내장3종 실제 저장/조회·소유 격리1 PASS. checksum `0453854b9925f5ff2eeed15babfb5dda8446fbb751b3e7caf0378a98d6dbcd34`, 기존0000/0001/0011/0003 불변. Windows Web32·방법론/양식 fixture4 PASS, Node backend는 이전 소스이므로 새 실제 UI/DB 통합 PASS 아님. 사용자 공통 쓰기 계약 보완은 별도 승인 응답 전 적용0.
 
 2026-10-16 최신 catalog 관측: WSL Git exact `148684772ca863cc99dee5c359148b4aa1f58669`/clean에서0003 catalog를 적용하고 실제 API/DB1 PASS, app 읽기 전용·QA 사용자/양식 정리를 확인했다. 기존0000/0001/0011 SQL/checksum 불변. Windows Web은30모듈 신규 양식 조회 빌드·fixture Edge2 및 공통 탐색 포함7 PASS이나 Node40744 backend는000d008 당시 소스이며 전체 exact-SHA runtime이 아니다. 실제 Windows DB relay 접속/새 키/초기 비밀 재발급0.
