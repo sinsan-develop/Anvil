@@ -72,7 +72,7 @@
 | 업무 | 상태 | 현재 요약 | 다음 수행·검수 |
 |---|---|---|---|
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 0001 적용·실제 등록/로그인/로그아웃 UI 및 재인증/비밀번호 교체 API·세션회수 확인. 신규 보호 키/초기화1 생성·실제 사용자0 | 복구/초대·프로젝트 원본/접근/기준선·UI 연결 미구현 |
-| FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 승인 원문 기반 내장3종/각7단계·공식 양식 ref·사람 확인·유한 재작업·구조 검사 단위8 PASS. 저장/화면/실제 실행 연결 전 | 내장 버전 저장/조회→복사·직접작성·검수/확정/적용 |
+| FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장3종/각7단계·양식 연결·구조 검사,0002 실제 저장/API1 PASS. UI 조회 fixture2 PASS. 복사/직접 작성/확정·적용 미완료 | 생성 초안 편집·정확 검수/원자 생성. 사용자 공통 쓰기 계약 보완은 별도 승인 요청 중 |
 | FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 0003 공식8종/48목차·기준 원문1 적용, 실제 양식 조회/사용자 격리·불변 seed·회수 세션 거절1 PASS. 문서 원본/제안/확정 미구현 | 방법론 고정 ref 소비→사용자 양식·문서 원본/제안/버전/확정 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [] | 핵심 보관/전달 계약만 있음 | 원문/이유·검색·선별/이해대조·기준 재사용 |
@@ -109,6 +109,9 @@
 
 ### 2026-10-16 FN02 내장 정의·그래프 검사 착수
 
+- actual GREEN: WSL Git exact `7590d3584fb4971b67f1c4d6fd7aace749a37504`/clean. 적용 전 `anvil.methodology_definitions`42P01 RED(실제 fixture 생성0), 계획0002 checksum `0453854b9925f5ff2eeed15babfb5dda8446fbb751b3e7caf0378a98d6dbcd34` 적용 exit0 뒤 같은 실제 API/DB 시험1 PASS/skip0·608ms. 내장3종 그래프/정확 양식/원문지문·본인USER_COMMON 읽기200/타인404/회수401/app UPDATE42501 확인, QA 사용자2·양식 아닌 방법론2와 session/credential 정확 정리. 원문 source 승인과 사람 확정 사건은 분리(`confirmation=null`), 실제 소유자/실제 Agent 생성0. 기존 migration checksum 모두 유지.
+- UI03 `methodology-editor/{MethodologyEditorPage.tsx,api.ts}`는 내장3종·7단계 선택과 문서 고정 버전/목적·검수/사람확인/기록/재작업·검사 결과를 읽는다. 현재 절차는 읽기 전용이며 위치 편집·노드/연결 편집·복사/직접 작성/확정/적용은 미구현이다. 첫 요소 부재 RED→연결. 같은 기본본 재열기에서 version을 비운 뒤 effect 의존 값이 바뀌지 않아 본문이 사라지는 결함을 회귀 RED로 재현, 명시 재조회 세대를 갱신한 뒤 같은 기대값 GREEN. 방법론2+양식2 Edge fixture4 PASS/3.4초, 타입/Web32모듈 PASS. 기존 양식 fixture에 새 방법론 조회만 명시 추가했고 예상 밖 API 차단은 유지, 실제 Windows DB 요청0.
+- 새 승인 경계: 사용자 공통본 쓰기는 FN02/FN03 승인 기능에 있으나 현행0011 commands/check 및 content_reviews 상세 계약은 PROJECT/DRAFT만 지원한다. 가짜 project/draft ID나 인증 actions 우회로 공통 쓰기를 구현하지 않는다. 본인 USER_COMMON 자료의 현재 사용자/client·중복 명령·정확 버전/감사를 새 forward migration/계약으로 추가하는 보완을 신산님께 비동기1회 요청했다. 답변 전에는 해당 공통본 쓰기/DB 보완을 하지 않고 기존 DRAFT scope의 프로젝트 생성 초안 편집을 계속한다. 다른 프로젝트 권한·계정/키·운영은 범위 밖이다.
 - 저장/조회 후보 사전 등록: 계획0002의 새 `methodology_definitions`·`methodology_versions`·`methodology_reviews`·`project_methodologies`만 기존 승인 DB/migrator에 추가, SYSTEM 정의/버전3개는 개발 기본 자료로 보존한다. 기존0000/0001/0011/0003 SQL 수정0, 실제 사용자/키/초기화/기존 프로젝트 변경0. 기본본은 원문 승인 출처만 보존하고 사람 검토/확정 사건을 자동 생성하지 않는다(`confirmation=null`·실행 준비 필요). 새 app 권한은 읽기만, 개정/확정/적용 집행 전 쓰기 개방0. 적용 실패 transaction 전체 rollback, 이후 문제는 별도 forward migration으로 수정.
 - 실제 WSL QA는 지정 Git exact 게시 SHA/기존 보호 app·migrator 참조만 사용하고 Windows DB 재접속0. `qa-methods-UUID` 일반 사용자2·USER_COMMON 정의/버전2를 고유 ID로 만들어 본인 목록/ID200·타인404·회수401·app UPDATE42501·내장 그래프/hash/양식 참조를 확인한 뒤 정확 QA ID/session/client/password만 정리한다. 실제 계정 생성/새 컨테이너/port/Secret0, 비밀 없는 auth 감사는 보존. API 인증 경계404≠401 RED→GREEN, 현재 단위36/typecheck/diff check PASS. 실제 DB 시험은 다음 exact SHA에서 진행 전이다.
 - Main 어울, 시작 `4dd4b56d215a3e538c731552e17ace78fe9b1691`(private 동일·clean/main f976ed5e 불변). REVIEW-01 승인 원문 hash `1373688f969e578da3a38c52f619b878d01fdf999b717fd516ebf638d8c897d1` 기반 내장3종 각각7단계·역할/목적/입출력·실제 공식 양식 ref·완료/기록/사람 확인·재작업을 구현했다. 실제 도구/환경/유한 정책이 결합되기 전 `PROJECT_BINDINGS_REQUIRED`, Agent/DB 변경0.

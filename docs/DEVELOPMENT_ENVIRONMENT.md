@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 방법론 후속 관측: WSL exact `7590d3584fb4971b67f1c4d6fd7aace749a37504`/clean, 계획0002 적용·내장3종 실제 저장/조회·소유 격리1 PASS. checksum `0453854b9925f5ff2eeed15babfb5dda8446fbb751b3e7caf0378a98d6dbcd34`, 기존0000/0001/0011/0003 불변. Windows Web32·방법론/양식 fixture4 PASS, Node backend는 이전 소스이므로 새 실제 UI/DB 통합 PASS 아님. 사용자 공통 쓰기 계약 보완은 별도 승인 응답 전 적용0.
+
 2026-10-16 최신 catalog 관측: WSL Git exact `148684772ca863cc99dee5c359148b4aa1f58669`/clean에서0003 catalog를 적용하고 실제 API/DB1 PASS, app 읽기 전용·QA 사용자/양식 정리를 확인했다. 기존0000/0001/0011 SQL/checksum 불변. Windows Web은30모듈 신규 양식 조회 빌드·fixture Edge2 및 공통 탐색 포함7 PASS이나 Node40744 backend는000d008 당시 소스이며 전체 exact-SHA runtime이 아니다. 실제 Windows DB relay 접속/새 키/초기 비밀 재발급0.
 
 2026-10-16 후속 관측: WSL Git exact5a88d5eb에서 auth/허가 프로젝트 조회·초안 저장을 실제 DB/HTTP로 확인했다. migration0000/0001/0011 적용, checksum은 WORK_STATUS. Windows 실제 DB relay timeout 누적3회로 그 경로를 중단했고 새 브라우저 검수는 모든 API fixture 격리다. Windows Node40744는 시작 당시000d008 backend를 계속 보유하며, 개발 Web dist는 후속 UI 빌드로 바뀌었다. 따라서 이를 현재 branch 전체 exact-SHA runtime/제품 ready라고 보고하지 않는다. 기존 초기화1/실제 사용자0·승인 key/CA는 보존, bootstrap은30분 기한이며 자동 재발급하지 않는다.

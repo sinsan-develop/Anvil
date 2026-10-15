@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
   unexpected.set(page, []);
   await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); });
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id: catalog.forms[0]!.ref.id, displayName: '양식 조회 QA' }, clientId: catalog.forms[0]!.ref.id, csrfToken: 'A'.repeat(43) } }));
+  await page.route('**/api/v1/methodologies', route => route.fulfill({ json: { items: [], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
   await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: catalog.forms.map(form => ({ ref: form.ref, formCode: form.definition.formCode, name: form.definition.name, scope: 'SYSTEM' })), observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
 });
 test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); });
