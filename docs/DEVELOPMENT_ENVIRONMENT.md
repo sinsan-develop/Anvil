@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 최신 catalog 관측: WSL Git exact `148684772ca863cc99dee5c359148b4aa1f58669`/clean에서0003 catalog를 적용하고 실제 API/DB1 PASS, app 읽기 전용·QA 사용자/양식 정리를 확인했다. 기존0000/0001/0011 SQL/checksum 불변. Windows Web은30모듈 신규 양식 조회 빌드·fixture Edge2 및 공통 탐색 포함7 PASS이나 Node40744 backend는000d008 당시 소스이며 전체 exact-SHA runtime이 아니다. 실제 Windows DB relay 접속/새 키/초기 비밀 재발급0.
+
 2026-10-16 후속 관측: WSL Git exact5a88d5eb에서 auth/허가 프로젝트 조회·초안 저장을 실제 DB/HTTP로 확인했다. migration0000/0001/0011 적용, checksum은 WORK_STATUS. Windows 실제 DB relay timeout 누적3회로 그 경로를 중단했고 새 브라우저 검수는 모든 API fixture 격리다. Windows Node40744는 시작 당시000d008 backend를 계속 보유하며, 개발 Web dist는 후속 UI 빌드로 바뀌었다. 따라서 이를 현재 branch 전체 exact-SHA runtime/제품 ready라고 보고하지 않는다. 기존 초기화1/실제 사용자0·승인 key/CA는 보존, bootstrap은30분 기한이며 자동 재발급하지 않는다.
 
 2026-10-16 현재 사실 갱신: Stage A는 PR41/main `f976ed5e` 통합·smoke·정리 완료, Stage B `codex/av3-stage-b`에서 UI00/FN01을 구현 중이다. 아래 초기 설계/정리 기록은 당시 관측이며 현재 구현 상태를 대신하지 않는다. 전용 WSL checkout은 `/home/daon/deploy/anvil-v3`/Git exact `246007f2`, PG `anvil-v3-development-pg`의 DB `anvil_v3_development`와 app 역할·loopback5546을 사용한다. 0000/0001 적용, 이후 migration은 별도 계약/승인 대조 후 forward-only다.

@@ -76,6 +76,7 @@ UI02 초기 중간 저장은 기존 `features/project-create/{ProjectCreatePage.
 | FN02 | methodologies | `db/migrations/0002_methodologies.sql`, `apps/server/modules/methodologies/builtins.ts` | `tests/unit/FN02/graph.test.ts`, `tests/integration/FN02/versions.test.ts` |
 | FN03 | documents, imports | `db/migrations/0003_documents.sql`, `apps/server/modules/documents/forms.ts` | `tests/unit/FN03/forms-import.test.ts`, `tests/integration/FN03/documents.test.ts` |
 | FN03 초기 catalog 연결 | `apps/server/modules/documents/{repository.ts,routes.ts,catalog-seed.ts}`·기존 `apps/server/app.ts`/`scripts/migrate-development.ts` | 승인 원문 기반8종/공통 작성 기준 고정 버전, 계획0003 catalog부터 forward-only 적용·후속 문서 저장은 별도 migration | `tests/unit/FN03/form-access.test.ts`, `tests/integration/FN03/forms-catalog.test.ts` |
+| UI03 초기 catalog 연결 | `apps/web/src/features/methodologies/{FormsCatalog.tsx,forms-api.ts}`·기존 `App.tsx`/`styles/app.css` | 전역 방법론의 공식 양식 조회·원문/필수 항목·정확 ref 검증, 공유 변경은 경로 분기/읽기 스타일에 한정. 방법론/문서 작성 전체 완료 아님 | `tests/browser/UI03/forms.spec.ts` |
 | FN04 | traceability, design_changes | `db/migrations/0004_trace_changes.sql` | `tests/unit/FN04/impact.test.ts`, `tests/integration/FN04/trace.test.ts` |
 | FN05 | knowledge, constitution, context | `db/migrations/0005_knowledge.sql` | `tests/unit/FN05/context.test.ts`, `tests/integration/FN05/knowledge.test.ts` |
 | FN06 | connections, environments | `apps/connector/adapters/{adapter.ts,codex.ts}`, `db/migrations/0006_connections.sql` | `tests/unit/FN06/adapter.test.ts`, `tests/integration/FN06/codex-live.test.ts` |

@@ -110,6 +110,7 @@ EXISTING 소스 root 등록/관측 테이블의 호스트/실경로·권한/정�
 
 | 테이블 / migration 소유 | 열·키·인덱스와 무결성 |
 |---|---|
+| `authoring_standard_versions` / 0003·FN03 | 공식 양식이 실제로 소비하는 공통 작성 기준의 `(id,version) PK,content_hash,body_utf8,source_approval_json,created_at`; 정확 `(id,version,content_hash)` UNIQUE. source 승인 지문과 제품 문서 검수/사용자 확정은 분리하며 미래 지식 저장소의 가짜 참조를 만들지 않는다. app 읽기 전용. 첫0003은 catalog 저장에 한정, 문서 원본/본문/제안 표는 후속 forward-only migration으로 구현한다 |
 | `form_definitions` / 0003·FN03 | `id PK, scope,owner_user_id?,project_id?,form_code,name,head_version,created_at`. SYSTEM AF01~08·사용자 공통/전용 scope와 접근 분리. 공식코드/종류 매핑 불변 |
 | `form_versions` / 0003·FN03 | `(definition_id,version) PK, definition_json,content_hash,authoring_standard_ref,origin_ref_json?,created_by,created_at`. 필수 항목ID·작성/검수/확정 역할·출처를 저장. 문서/방법론에 사용한 버전은 덮지 않음 |
 | `artifacts` / 0003·FN03 | `id PK,project_id?,draft_id?,bytes bigint,content_hash,media_type,storage_key,state:STAGING/READY/QUARANTINED/FAILED,created_by,created_at`. 소유 project/draft 중 정확히 하나. `(project_id,id)`와 `(draft_id,id)` UNIQUE, bytes>=0. storage_key는 서버 생성값, 외부 입력 경로가 아님. 전역 hash만으로 읽기/존재 조회 금지 |
