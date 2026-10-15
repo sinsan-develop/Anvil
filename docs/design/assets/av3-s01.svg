@@ -1,0 +1,46 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' role='img' aria-labelledby='title desc'><title id='title'>S01 프로젝트</title><desc id='desc'>첫 진입 · 진행 프로젝트에서 작업 이어가기 상세 설계 검토용 정적 시안. 예시 자료이며 실제 기능 실행이 아닙니다.</desc><g font-family='Pretendard, Noto Sans KR, Malgun Gothic, Segoe UI, sans-serif'>
+<rect x='0' y='0' width='1440' height='900' rx='0' fill='#071321' stroke='#071321'/>
+<rect x='0' y='0' width='188' height='900' rx='0' fill='#0a1727' stroke='#304761'/>
+<text x='22' y='43' font-size='20' fill='#f4f8ff' font-weight='700'>A N V I L</text>
+<text x='22' y='65' font-size='10' fill='#a7c7eb' font-weight='400'>프로젝트는 남고, 도구는 바뀐다</text>
+<text x='24' y='130' font-size='14' fill='#dce8f6' font-weight='400'>프로젝트</text>
+<text x='24' y='176' font-size='14' fill='#dce8f6' font-weight='400'>방법론</text>
+<text x='24' y='222' font-size='14' fill='#dce8f6' font-weight='400'>문서·설계 추적</text>
+<text x='24' y='268' font-size='14' fill='#dce8f6' font-weight='400'>헌법·지식</text>
+<text x='24' y='314' font-size='14' fill='#dce8f6' font-weight='400'>도구·환경</text>
+<text x='24' y='360' font-size='14' fill='#dce8f6' font-weight='400'>승인 요청</text>
+<text x='24' y='406' font-size='14' fill='#dce8f6' font-weight='400'>설정</text>
+<text x='24' y='452' font-size='14' fill='#dce8f6' font-weight='400'>보조 Dashboard</text>
+<text x='22' y='844' font-size='10' fill='#a7c7eb' font-weight='400'>상세 설계 · 정적 시안</text>
+<text x='22' y='867' font-size='10' fill='#ffc36c' font-weight='400'>실제 실행·저장 없음</text>
+<rect x='188' y='0' width='1252' height='72' rx='0' fill='#0c1b2c' stroke='#304761'/>
+<text x='216' y='31' font-size='12' fill='#dce8f6' font-weight='400'>신산님 / 개인 공간</text>
+<text x='216' y='52' font-size='10' fill='#a7c7eb' font-weight='400'>첫 진입 · 진행 프로젝트에서 작업 이어가기</text>
+<text x='1170' y='35' font-size='12' fill='#90d9bb' font-weight='400'>내 작업 권한 · PC</text>
+<text x='216' y='111' font-size='16' fill='#f4f8ff' font-weight='600'>S01  프로젝트</text>
+<text x='216' y='136' font-size='10' fill='#ffc36c' font-weight='400'>검토용 예시 · 표시 상태는 실제 제품의 구현 결과가 아닙니다</text>
+<rect x='1190' y='91' width='210' height='34' rx='6' fill='#2369b6' stroke='#54799e'/>
+<text x='1202' y='113' font-size='12' fill='#f4f8ff' font-weight='600'>+ 새 프로젝트</text>
+<rect x='216' y='163' width='110' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='228' y='185' font-size='12' fill='#f4f8ff' font-weight='600'>진행 중</text>
+<rect x='338' y='163' width='110' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='350' y='185' font-size='12' fill='#f4f8ff' font-weight='600'>완료</text>
+<rect x='460' y='163' width='110' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='472' y='185' font-size='12' fill='#f4f8ff' font-weight='600'>보관</text>
+<text x='216' y='235' font-size='12' fill='#9cb8d7' font-weight='400'>검색 / 상태</text>
+<rect x='216' y='247' width='1184' height='38' rx='5' fill='#0b1929' stroke='#527596'/>
+<text x='228' y='271' font-size='12' fill='#dce8f6' font-weight='400'>프로젝트 이름 또는 목적 검색                       전체 상태 ▾</text>
+<rect x='216' y='312' width='1184' height='184' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='340' font-size='14' fill='#f4f8ff' font-weight='600'>예시 프로젝트 · 사용자 소유 업무 도구</text>
+<text x='234' y='367' font-size='12' fill='#dce8f6' font-weight='400'>목적  |  정해진 절차에 따라 기존 코딩 Agent와 개발하기</text>
+<text x='234' y='392' font-size='12' fill='#dce8f6' font-weight='400'>현재  |  구현 / 승인 기능 연결 · 개발 중 · 실행기 관측 12초 전</text>
+<text x='234' y='417' font-size='12' fill='#dce8f6' font-weight='400'>결정  |  작업 범위 변경 승인 1건 · 최근: 권한 검사의 핵심 시험 확인</text>
+<text x='234' y='442' font-size='12' fill='#dce8f6' font-weight='400'>다음  |  저장·조회 화면 연결 · 담당: 신산님</text>
+<rect x='1170' y='514' width='230' height='34' rx='6' fill='#2369b6' stroke='#54799e'/>
+<text x='1182' y='536' font-size='12' fill='#f4f8ff' font-weight='600'>프로젝트 열기 →</text>
+<rect x='216' y='578' width='1184' height='150' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='606' font-size='14' fill='#f4f8ff' font-weight='600'>예시 프로젝트 · 개인 문서 관리</text>
+<text x='234' y='633' font-size='12' fill='#dce8f6' font-weight='400'>현재  |  설계 검토 · 사용자 확인 대기</text>
+<text x='234' y='658' font-size='12' fill='#dce8f6' font-weight='400'>최근  |  상세 화면 개정안 제출 / 다음: 설계 차이 확인</text>
+<text x='234' y='683' font-size='12' fill='#dce8f6' font-weight='400'>담당  |  참여자 조회 가능 · 작업 인수 요청 가능</text>
+</g></svg>

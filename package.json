@@ -1,0 +1,32 @@
+{
+  "name": "anvil-v3",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.18.0 <25", "npm": ">=11.12.1 <12" },
+  "scripts": {
+    "test": "node --test tests/unit/**/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.base.json",
+    "build": "npm run typecheck && vite build --config apps/web/vite.config.ts",
+    "start": "node apps/server/main.ts",
+    "contracts:generate": "node scripts/generate-contract-types.ts",
+    "test:db": "node --test tests/integration/P03/*.test.ts"
+  },
+  "dependencies": {
+    "fastify": "5.12.7",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "ajv": "8.20.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "json-schema-to-typescript": "16.0.0"
+  }
+}

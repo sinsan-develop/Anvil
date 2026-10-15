@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anvil · 개발 방법과 작업 공간 검토</title>
+<style>
+:root{color-scheme:dark;--bg:#071321;--panel:#0e1e31;--line:#34516e;--text:#e4edf8;--muted:#a8bfd8;--blue:#2f79c7;--warn:#ffd08a}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:12px/1.65 "Malgun Gothic","Segoe UI",sans-serif}h1{font-size:16px;margin:0 0 8px}h2{font-size:14px;margin:0 0 10px}h3{font-size:12px}p{margin:6px 0 12px}button,input,select,textarea{font:inherit;color:inherit}button{min-height:34px;padding:7px 13px;border:1px solid #54799e;border-radius:6px;background:#152c45;cursor:pointer}button:hover{background:#23466c}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #95caff;outline-offset:3px}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:#2469b3}.pill{display:inline-block;border:1px solid var(--line);padding:3px 10px;border-radius:20px;color:var(--muted)}.muted{color:var(--muted)}.warn{color:var(--warn)}.brand{font-size:20px;font-weight:bold;letter-spacing:3px}.app{display:grid;grid-template-columns:188px 1fr;min-height:100vh}aside{border-right:1px solid var(--line);padding:24px 12px;background:#091827}aside button{display:block;text-align:left;width:100%;border:0;background:none;margin:8px 0;font-size:14px}aside button.active{background:#163451;border:1px solid #5487b9}.top{padding:15px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:12px}.review{padding:10px 24px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap;color:var(--warn)}main{padding:24px;max-width:1800px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.workspace{display:grid;grid-template-columns:210px minmax(300px,1fr) 320px;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:18px;margin:14px 0}.grid .card{margin:0}.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.node{min-width:150px;max-width:220px;text-align:left}.node.selected{border:2px solid #9bc9fa}.field{display:block;margin:16px 0}.field input,.field select,.field textarea{display:block;width:100%;margin-top:5px;padding:9px 12px;background:#0a192a;border:1px solid #547596;border-radius:5px;min-height:38px}textarea{min-height:90px}table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border-bottom:1px solid var(--line);text-align:left;vertical-align:top;padding:10px}th{color:var(--muted)}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.message{border-left:3px solid var(--blue);padding:12px 16px;background:#11243a;margin:14px 0}.side-item{display:block;width:100%;margin:8px 0;text-align:left}.notice{border:1px solid #8d693a;padding:12px;border-radius:6px;margin:14px 0}.toast{position:fixed;bottom:20px;right:20px;max-width:430px;padding:14px 20px;background:#23466c;border:1px solid #8cb9e3;border-radius:8px;z-index:5}.mobile-tabs{display:none}details{margin:10px 0}summary{cursor:pointer;color:#a9cdf2}a{color:#a9cdf2}@media(max-width:1000px){.workspace{grid-template-columns:180px 1fr}.workspace>.materials{grid-column:1/-1}.grid{grid-template-columns:1fr}.two{grid-template-columns:1fr}}@media(max-width:650px){.app{display:block}aside{padding:12px;border:0}aside nav{display:flex;overflow:auto}aside button{white-space:nowrap;font-size:12px;margin:2px}.brand{font-size:16px}main{padding:14px}.top,.review{padding:12px}.workspace{display:block}.workspace>.steps,.workspace>.materials{display:none}.workspace.show-docs>.materials,.workspace.show-steps>.steps{display:block}.workspace.show-docs>.session,.workspace.show-steps>.session{display:none}button{min-height:44px}input,select,textarea{font-size:16px!important}.mobile-tabs{display:flex;gap:5px;position:sticky;bottom:0;background:#0e1e31;padding:8px}.mobile-tabs button{flex:1}table{font-size:12px}.review select{max-width:150px}}
+</style></head><body>
+<div class="app"><aside><div class="brand">ANVIL</div><p class="muted">프로젝트는 남고, 도구는 바뀐다</p><nav id="nav"></nav><p class="muted">설계 검토용 · P01</p></aside><section><header class="top"><span id="crumb">프로젝트</span><span>신산님 · <span id="owner">내 작업 권한</span></span></header><div class="review"><strong>클릭형 시안 · 모든 자료는 예시</strong><span>실제 저장·Agent·DB·승인 실행 없음</span><label>상태 검토 <select id="scenario"><option value="normal">정상</option><option value="empty">빈 상태</option><option value="error">조회 오류</option><option value="viewer">조회 권한만</option><option value="offline">연결 단절</option><option value="expired">로그인 만료</option><option value="loading">로딩 중</option><option value="conflict">버전 충돌</option></select></label><button id="reset">시안 초기화</button></div><main id="main"></main><div class="mobile-tabs"><button data-mobile="chat">대화</button><button data-mobile="steps">절차</button><button data-mobile="docs">문서·결과</button><button data-go="approval">승인</button></div></section></div><div id="toast" role="status" hidden></div>
+<script>
+'use strict';
+const methods=[
+ {id:'SYS-M01',name:'구조적 방법론',focus:'기능·처리·데이터 흐름 중심',steps:['요구·현행 분석','기능·데이터 분석','상세 설계·화면','개발·시험계획','구현','검토·통합 시험','준비·사용자 확인'],docs:['요구사항·범위','기능 분해·처리/데이터 흐름','데이터 정의·상세 설계·화면','화면/기능/연결 작업계획·테스트계획','작업현황·변경·검수·인계'],checks:['요구와 처리·데이터 흐름 연결','설계·화면 사용자 확인 후 계획','실제 처리·저장·조회와 중요 실패 검증']},
+ {id:'SYS-M02',name:'객체지향 방법론',focus:'사용 시나리오·객체 책임·협력 중심',steps:['목적·사용 시나리오','객체·책임 분석','협력·상세 설계·화면','개발·시험계획','구현','협력·통합 검수','준비·사용자 확인'],docs:['요구·사용 시나리오','객체·책임·관계','상호작용·상태·상세 화면','화면/기능/연결 작업계획·테스트계획','환경·현황·검수·변경·인계'],checks:['시나리오와 객체 책임 연결','상태·협력·권한·영속 검증','패턴/그림 수가 아니라 실제 사용자 흐름 검수']},
+ {id:'SYS-M03',name:'애자일 방법론',focus:'목표·우선순위에 따른 반복·증분 중심',steps:['제품 방향·요구 목록','이번 반복 선택','필요한 상세 설계·화면','반복 작업·시험계획','구현·관련 시험','증분 검토','개선·다음 반복/전체 확인'],docs:['제품 목적·우선순위 요구 목록','반복 목표·선택/제외 범위','해당 상세 설계·화면','화면/기능/연결 작업·시험계획','현황·증분 결과·피드백·개선·인계'],checks:['이번 반복과 전체 미구현 범위 구분','설계·시험·권한 생략 아님','증분 수용 뒤 다음 범위 결정 / 전체 완료와 분리']}
+];
+const routes={projects:'S01 프로젝트',create:'S02 프로젝트 만들기',methods:'S03 방법론',work:'S04 프로젝트 작업',session:'S05 단계책임자',trace:'S06 문서·설계 추적',change:'S07 설계 변경',approval:'S08 승인·문제',transfer:'S09 도구 이전',knowledge:'S10 헌법·지식',tools:'S11 도구·환경',control:'S12 작업 권한 인계',mobile:'S13 모바일 흐름',settings:'S14 설정·보조 조회'};
+const initial=()=>({method:0,custom:false,node:0,project:'개인 업무 도구 · 예시',created:false,role:'총괄',mode:'건별',sent:[],decision:'미결',stopped:false,understood:false,transferred:false,scenario:'normal',nodeNote:'',draft:false});let state=initial();
+const main=document.getElementById('main');const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const button=(t,act,p=false,disabled=false)=>`<button ${act} class="${p?'primary':''}" ${disabled?'disabled':''}>${esc(t)}</button>`;const go=(t,r)=>button(t,`data-go="${r}"`);const card=(t,s)=>`<section class="card"><h2>${t}</h2>${s}</section>`;const field=(label,id,value='')=>`<label class="field">${label}<input id="${id}" value="${esc(value)}"></label>`;const blocked=()=>(['viewer','offline','expired','error','loading','conflict'].includes(state.scenario)||(state.controlOwner==='다음 담당'&&state.controlClient!=='new'));
+function notify(s){const el=document.getElementById('toast');el.textContent=s;el.hidden=false;setTimeout(()=>el.hidden=true,5000)}
+function navigate(r){location.hash=r;if(location.hash.slice(1)===r)render()}
+function methodView(){const m=methods[state.method];return `<div class="row between"><div><h1>방법론을 고르고 절차·문서·검수 기준을 확인하세요</h1><p class="muted">기본 3종은 확정 · 아래 상세 구성은 검토 제안</p></div>${go('프로젝트 만들기','create')}</div><div class="grid">${methods.map((x,i)=>card(x.name,`<span class="pill">시스템 제공 · v1 제안</span><p>${x.focus}</p>${button('상세 보기',`data-method="${i}"`,i===state.method)}`)).join('')}</div>${card(`${m.id} ${m.name} ${state.custom?'· 사용자 복사본 초안':''}`,`<div class="flow">${m.steps.map((s,i)=>`${button(`${i+1}. ${s}`,`data-node="${i}"`)}${i<m.steps.length-1?'<span>→</span>':''}`).join('')}</div><p class="warn">검토 실패 → 해당 단계 보완 · 설계 변경은 영향/승인/계획 개정</p><div class="two"><div><h3>선택 단계: ${m.steps[state.node]}</h3><p>책임: ${state.node===6?'총괄·사용자':'해당 단계책임자'}</p><p>입력: 프로젝트 목적·헌법·최신 지시와 선행 확정 결과</p><label class="field">단계 임무·완료 조건 메모<textarea id="node-note">${esc(state.nodeNote||'이 단계의 결과와 근거를 작성하고, 사람 확인 지점에서는 기다립니다.')}</textarea></label>${button('복사본 초안에 반영','data-action="save-node"',false,blocked())}</div><div><h3>포함 문서</h3><ul>${m.docs.map(x=>`<li>${x}</li>`).join('')}</ul><h3>검수 기준</h3><ul>${m.checks.map(x=>`<li>${x}</li>`).join('')}</ul><p>공통: 헌법·환경·권한·상세현황·변경·교체/인계</p></div></div><div class="row">${button('이 기본 방법론 사용','data-action="use-method"',true,blocked())}${button('복사·수정하기','data-action="clone"',false,blocked())}${button('직접 정의하기','data-action="custom"',false,blocked())}</div>`)}`}
+function workspace(){return `<div class="row between"><h1>${esc(state.project)}</h1><div class="row"><label>진행 방식 <select id="mode"><option ${state.mode==='건별'?'selected':''}>건별</option><option ${state.mode==='자동'?'selected':''}>자동</option></select></label>${button('준비 확인 · 시안 시작','data-action="start"',true,blocked())}${button('중지 범위 보기','data-action="stop-dialog"',false,blocked())}</div></div><div class="workspace"><section class="card steps"><h2>개발 절차</h2>${methods[state.method].steps.map((s,i)=>button(`${i+1}. ${s}`,`data-stage="${i}"`)).join('<br>')}<p>구현 책임자<br>└ 하위 Agent · 시험 임무 예시</p></section><section class="card session"><div class="tabs">${['총괄','설계 책임자','구현 책임자'].map(x=>button(x,`data-role="${x}"`,state.role===x)).join('')}</div><h2>${esc(state.role)} 대화</h2><div class="message"><strong>총괄 · 시안 예시</strong><p>프로젝트의 지식과 기준은 Anvil에 남습니다. 선택한 방법론에 따라 임무를 배정하고 실제 결과와 근거로 판정합니다.</p></div><div class="message"><strong>현재 위치</strong><p>구현 · 승인 저장 연결 / 기능은 부분 구현인 예시</p><p>${state.mode==='건별'?'선택 단계 수행·판정 후 다음 단계 전 대기':'허가 범위 내 진행, 지정 사용자 승인에서 대기'}</p></div>${state.sent.map(x=>`<div class="message"><strong>사용자 → ${esc(x.role)}</strong><p>${esc(x.text)}</p><small>시안 전달 표시 · 실제 Agent 수신 아님</small></div>`).join('')}<label class="field">지시 종류<select id="instruction-kind"><option>추가 지시</option><option>현재 작업 중단 후 지시</option></select></label><label class="field">${esc(state.role)}에게 할 지시<textarea id="instruction" placeholder="검토용 지시를 입력하세요"></textarea></label>${button('시안 지시 전송','data-action="send"',true,blocked())} ${go('책임자 상세','session')}</section><section class="card materials"><h2>현재 기준·자료</h2><p>헌법 v2 · 최신 지시 · 목적</p><p>${methods[state.method].name} · ${state.custom?'사용자 수정본':'시스템 v1 적용본'}</p><p>설계 → 화면/기능/연결 작업 → 코드/시험</p>${go('문서·설계 추적','trace')}<h3>확인할 판단</h3><p>제출 ≠ 검수 합격 ≠ 사용자 완료</p>${go('승인 요청 1건','approval')} ${go('새 세션·다른 도구','transfer')}</section></div>`}
+const renderers={
+ projects:()=>`<div class="row between"><h1>프로젝트</h1>${go('+ 새 프로젝트','create')}</div><p class="muted">진행 중 · 완료/보관은 별도 조회</p>${card(esc(state.project),`<p>목적: 내 개발 절차와 지식을 소유하고 기존 코딩 Agent에게 일시키기</p><p>현재 단계: 구현 · 예시 / 필요한 결정: 승인 요청 1건</p><p>최근: 작업 기준 확인 / 다음: 실제 저장·조회 연결 확인</p>${go('프로젝트 열기','work')} ${go('승인 요청','approval')}`)}`,
+ create:()=>`<h1>프로젝트 만들기</h1><div class="two">${card('1 목적·소스',`${field('프로젝트 이름 *','project-name',state.project)}${field('왜 만드는가 *','purpose','사용자가 개발을 통제하고 지식을 보존하기')}<label class="field">소스 시작<select><option>새 빈 프로젝트</option><option>기존 소스 읽기 조사 후 기준선</option></select></label><p>기존 자료의 구현/부분/미구현/미확인은 사용자 확인 후 기준선</p>`)}${card('2 방법론·3 도구/환경',`<p>선택: ${methods[state.method].name} / ${state.custom?'사용자 수정본':'시스템 기본'}</p>${go('기본3종·직접 정의 선택','methods')}<p>총괄: 아직 배정하지 않음<br>실행: Windows / 대상: 프로젝트 환경 설정 필요</p><p class="warn">프로젝트 생성은 Agent 작업 시작이 아닙니다.</p>${button('시안 프로젝트 생성','data-action="create"',true,blocked())}`)}</div>`,
+ methods:methodView,work:workspace,mobile:workspace,
+ session:()=>`<h1>구현 책임자 · 실행 상세</h1>${card('임무·범위',`<p>설계 D-승인-01 / 계획 T-연결-03</p><p>직접 구현 + 하위 시험 임무 / 같은 파일 writer 1명</p>${go('새 세션으로 이어가기','transfer')}`)}${card('대화 / 현황 / 변경 / 검증',`<p>Agent 보고: 결과 준비 중 · 실제 관측 예시: 파일2건, 핵심 저장·재조회 미확인</p><details><summary>명령·결과·원문 펼치기</summary><p>10:04 요청 수신 → 10:08 파일 변경 → 10:09 관련 시험 결과. 모두 시안 예시이며 실측이 아닙니다.</p></details><p>작업현황: 완료/진행/남은 작업·오류·파일·다음 행동</p>${button('부족 근거 보완 요청','data-action="rework"',false,blocked())}`)}`,
+ trace:()=>`<h1>문서·설계·작업 추적</h1><div class="two">${card('D-승인-01 · 문서/시안 위치',`<p>입력 → 권한 → 저장 → 목록 재조회</p><p>화면 작업: 제출 / 기능 작업: 개발 중 / 연결: 미확인</p><p class="warn">기능 상태: 부분 구현 · 화면만으로 완료 아님</p>${go('변경 영향·이력','change')}`)}${card('작업·코드·시험',`<p>T-UI-01 ↔ D-승인-01 ↔ T-FN-02 ↔ T-LINK-03</p><details><summary>증거와 미확인</summary><p>코드/명령/시험은 실제 구현 후 연결됩니다. 시안에는 실제 증거가 없습니다.</p></details>${go('원문·결정 이유','knowledge')}`)}</div>`,
+ change:()=>`<h1>설계 변경</h1>${card('요청·전후·영향',`<p>요청 이유: 저장 결과를 확인한 뒤 목록으로 이동</p><p>화면/연결 작업: 영향 있음 · 데이터 계약: 영향 미확인</p><p>이전 완료 근거는 보존 · 무관한 작업 계속</p><p class="warn">사용자 변경 승인 → 계획 개정 → 영향 작업 재개</p>${go('정확 범위 승인 확인','approval')} ${go('설계/계획으로 돌아가기','trace')}`)}`,
+ approval:()=>`<h1>승인·중요 문제</h1>${card('요청 AP-01 · '+state.decision,`<p>대상: 예시 프로젝트 / 개발 환경 / 지정 소스의 승인 저장 연결</p><p>이유: 확정한 기능의 화면→저장·조회 연결</p><p>영향: 기존 조회/권한 유지 확인 · 실제 배포/운영 DB 변경 없음</p><p>복구: 변경 전 기준과 비교해 해당 변경만 복구 · 요청 버전 v1</p><details><summary>근거·범위 상세</summary><p>실행 전 정확 경로/파일/데이터 영향이 제시돼야 합니다. 이 카드는 실제 실행 요청이 아닙니다.</p></details>${['이번만 승인','거절','수정 지시'].map(x=>button(x,`data-decision="${x}"`,x==='이번만 승인',blocked()||state.decision!=='미결')).join(' ')}`)}${card('원인 미확인',`<p>확인된 지점: 요청 수신 / 실제 수행 근거 미수신</p><p>거부/내부 오류인지 추측하지 않습니다.</p>${go('다른 도구로 이전','transfer')}`)}`,
+ transfer:()=>`<h1>총괄·단계책임자 이전</h1><p>1 기록/안전 → 2 인계내용 → 3 대상 → 4 이해 대조·재개</p><div class="two">${card('기록과 실제 상태',`<p>목적·헌법·최신 지시 / 확정 결정·이유·원문</p><p>완료/미완료·실제 파일차이·오류/시험·현재 위치</p><p class="warn">회수 공백: 마지막2분 · 내용을 숨기지 않음</p><label class="field">기존 실행 정지 확인<select id="stop-state"><option value="unknown">미확인 — 읽기 인계 준비만 가능</option><option value="confirmed" ${state.stopped?'selected':''}>실제 중지·쓰기 회수 확인 (시안)</option></select></label>`)}${card('대상과 이해 대조',`<label class="field">대상<select><option>같은 Agent 새 세션</option><option>다른 코딩 Agent</option><option>총괄 도구/세션 교체 — 사용자 확인 필요</option></select></label><p>새 도구 이해: 왜/헌법/결정/현재위치/다음/불명확</p><label><input type="checkbox" id="understood" ${state.understood?'checked':''}> 이해·실제 상태 대조 확인 (시안)</label><p>총괄은 사용자, 단계책임자는 총괄 확인</p>${button('조건 확인 후 시안 재개','data-action="resume"',true,blocked()||!state.stopped||!state.understood)}<p role="status">${state.transferred?'시안 인계 완료 · 실제 도구 실행 없음':'미확인 상태에서 새 writer를 시작하지 않습니다.'}</p>` )}</div>`,
+ knowledge:()=>`<h1>헌법·지식·결정 이유</h1>${card('최상위 목적',`<p>프로젝트와 지식은 사용자 소유의 Anvil에 남고 총괄 포함 Agent는 도구로 교체한다.</p><p>이유: 세션·계정·한도·미수행으로 프로젝트가 묶이지 않게 하기 위해</p><details><summary>원문·변경 이력·적용 범위</summary><p>사용자 결정 → 설계/계획 → 현재 작업의 근거. 원문과 구조화 지식은 함께 보존합니다.</p></details>${button('정정/사용 제외 검토','data-action="knowledge"',false,blocked())}`)}`,
+ tools:()=>`<h1>도구·환경</h1>${card('사용자 제공 설치 정보',`<table><tr><th>도구</th><th>위치</th><th>Anvil 연결</th></tr><tr><td>Codex / Claude Code</td><td>Windows PC · 사용 가능 확인</td><td>미검증</td></tr><tr><td>Hermes</td><td>ysna-server</td><td>미검증</td></tr><tr><td>OpenCode</td><td>WSL · 정확 대상 확인 전</td><td>미검증</td></tr></table><p>설치/사용 가능 ≠ Anvil 실제 연동. 안전 중지/결과/승인 등 필수 지원 확인 전 배정 불가.</p><p>이 화면에서는 로그인·설치·원격 접속을 하지 않습니다.</p>`)}`,
+ control:()=>`<h1>작업 사용자·클라이언트 인계</h1>${card('현재 권한과 인수',`<p>신산님 · PC 제어 / 모바일·참여자 조회 가능</p><p>요청 → 안전 대기 → 진행/미결 요약 → 다음 담당 수락 → 이전 권한 회수</p>${button('시안에서 제어권 인수 흐름 보기','data-action="control"',false,blocked())}<p>단순 인수 요청만으로 작업 권한을 주지 않습니다.</p>`)}`,
+ settings:()=>`<h1>설정·백업·보조 조회</h1>${card('원본 보관과 복구',`<p>백업 위치/주기/보관/암호화 참조는 사용자 설정</p><p>검증 복원 → 포함/제외·무결성 → 현재 영향 → 사용자 확인</p>${button('복구 영향 시안 보기','data-action="backup"',false,blocked())}<p>실제 백업/복원·설정 저장 없음</p>`)}${card('보조 Dashboard',`<p>현재 단계 / 필요한 결정 / 확인된 문제 / 다음 행동</p>${go('실제 주 작업 공간으로','work')} ${go('승인 요청','approval')}`)}`
+};
+function render(){const route=Object.hasOwn(routes,location.hash.slice(1))?location.hash.slice(1):'projects';document.getElementById('crumb').textContent=routes[route];document.getElementById('owner').textContent=(state.scenario==='viewer'||(state.controlOwner==='다음 담당'&&state.controlClient!=='new'))?'조회 권한만':'내 작업 권한 · 시안';document.getElementById('nav').innerHTML=Object.entries(routes).filter(([k])=>!['create','session','change','mobile'].includes(k)).map(([k,v])=>`<button data-go="${k}" class="${k===route?'active':''}">${esc(v.replace(/^S\d+ /,''))}</button>`).join('');let hint='';if(state.scenario!=='normal')hint=`<div class="notice" role="alert">${{loading:'조회 중 · 표시 예시는 최신 조회 결과가 아니며 변경/실행은 대기합니다.',conflict:'버전 충돌 · 현재 입력과 이전 기준 유지. 자동 덮어쓰기하지 않습니다.',empty:'빈 상태: 실제 자료 없음 · 새 작성/연결 경로로 이동하세요.',error:'조회 오류 예시 · 이전 자료를 현재 정보로 표시하지 않습니다.',viewer:'조회 전용 · 지시/승인/편집은 제어권 인수 후 가능합니다.',offline:'연결 단절 · 미전송 지시를 수신/완료로 표시하지 않습니다.',expired:'로그인 만료 · 입력을 보존하고 재인증 후 상태를 대조합니다.'}[state.scenario]}</div>`;main.innerHTML=hint+(state.scenario==='empty'&&!['create','methods'].includes(route)?card('아직 자료가 없습니다',go('새 프로젝트','create')+' '+go('방법론 정의','methods')):renderers[route]());}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.go){navigate(b.dataset.go);return}if(b.dataset.method!==undefined){state.method=+b.dataset.method;state.node=0;state.nodeNote='';render();return}if(b.dataset.node!==undefined){state.node=+b.dataset.node;render();return}if(b.dataset.stage!==undefined){state.node=+b.dataset.stage;state.role=methods[state.method].steps[state.node]+' 책임자';render();return}if(b.dataset.role){state.role=b.dataset.role;render();return}if(b.dataset.mobile){const w=document.querySelector('.workspace');if(w)w.className='workspace '+(b.dataset.mobile==='chat'?'':'show-'+b.dataset.mobile);return}if(blocked()){notify('현재 검토 상태에서는 변경/지시할 수 없습니다.');return}if(b.dataset.decision){if(state.decision!=='미결')return;state.decision=b.dataset.decision+' · 시안';notify('시안 요청1건만 결정했습니다. 실제 승인이 아닙니다.');render();return}switch(b.dataset.action){case 'clone':state.custom=true;notify('시스템 원본 유지 · 사용자 복사본 초안으로 전환');render();break;case 'custom':state.custom=true;state.nodeNote='사용자가 직접 정의할 목적·입력·임무·문서·결과·검수 조건';notify('직접 정의의 필드/검증 구조를 검토하는 시안입니다. 완전한 그래프 편집기는 아직 없습니다.');render();break;case 'save-node':state.nodeNote=document.getElementById('node-note').value;state.custom=true;state.draft=true;notify('현재 탭 메모리에만 초안 반영 · 실제 저장/확정 아님');render();break;case 'use-method':navigate('create');break;case 'create':{const name=document.getElementById('project-name').value.trim(),purpose=document.getElementById('purpose').value.trim();if(!name||!purpose){notify('프로젝트 이름과 목적을 입력하세요.');return}state.project=name;state.created=true;notify('시안 프로젝트 생성 · Agent 작업 시작 안 함');navigate('work');break}case 'send':{const el=document.getElementById('instruction'),text=el.value.trim();if(!text){notify('지시를 입력하세요.');return}state.sent.push({role:state.role,text});render();notify('시안 대화 표시만 추가 · 실제 전달 없음');break}case 'start':notify('준비 검사: 실제 Agent 연결/환경/검수 기준 확인 필요. 시안에서는 실행하지 않습니다.');break;case 'stop-dialog':notify('중지 범위: 현재 세션 / 단계와 하위 Agent / 프로젝트 전체. 요청과 실제 중지는 별도 확인합니다.');break;case 'resume':if(canResumeTransfer()){state.transferred=true;notify('시안에서 인계 조건을 충족했습니다. 실제 작업은 실행하지 않습니다.');render()}break;case 'rework':notify('부족 근거만 원래 임무에 연결해 보완 요청하는 흐름 · 실제 요청 없음');break;case 'control':notify('인계 요약·안전 상태와 다음 담당 수락이 필요합니다. 이 버튼만으로 제어권 변경 안 함');break;case 'knowledge':notify('정정 전후·이유·사용 제외를 기록하는 설계 · 원문은 유지');break;case 'backup':notify('검증용 복원과 현재 자료 영향 확인이 선행. 실제 원본 복원 없음');break;}});
+document.addEventListener('change',e=>{if(e.target.id==='scenario'){state.scenario=e.target.value;render()}if(e.target.id==='stop-state'){state.stopped=e.target.value==='confirmed';render()}if(e.target.id==='understood'){state.understood=e.target.checked;render()}if(e.target.id==='mode'){state.mode=e.target.value;render()}});document.getElementById('reset').onclick=()=>{state=initial();document.getElementById('scenario').value='normal';navigate('projects');notify('시안 초기화 · 실제 자료 영향 없음')};window.addEventListener('hashchange',render);render();
+</script>
+<script>
+// P01 2차 보완: 탭 안의 설계 데이터만 편집. 제품 API·영속 저장 없음.
+function buildMethodDraft(index,empty=false){
+ const source=methods[index];
+ const nodes=empty?[]:source.steps.map((name,i)=>({id:'N'+(i+1),name,role:i===6?'human':'agent',kind:'task',purpose:name+'의 사용자 결과를 만든다',input:i?'선행 확정 문서·결과':'프로젝트 목적·헌법·요구사항',output:name+' 산출물과 근거',documents:source.docs.join('\n'),criteria:'입력·범위·실제 결과와 증거를 대조하고 확인할 사람의 결정을 받는다',joinPolicy:'all'}));
+ const defaults=[['AF01'],['AF01','AF02','AF08'],['AF02','AF03'],['AF04','AF05'],['AF07'],['AF06'],['AF06','AF07']];
+ nodes.forEach((n,i)=>n.formIds=[...defaults[i]]);
+ return {name:empty?'내 방법론':source.name+' · 사용자 복사본',sourceId:empty?null:source.id,sourceVersion:empty?null:'v1 제안',version:1,nodes,edges:nodes.slice(1).map((n,i)=>({id:'E'+(i+1),from:nodes[i].id,to:n.id,kind:'next',condition:''})),start:nodes[0]?.id||'',finish:nodes.at(-1)?.id||''};
+}
+function validateMethodDraft(d){
+ const issues=[],add=(code,message,target='')=>issues.push({code,message,target});
+ if(!d.name.trim())add('NAME','방법론 이름이 필요합니다.');
+ if(!d.nodes.length){add('EMPTY','노드를 추가하고 시작·종료를 정하세요.');return issues;}
+ const ids=new Set(d.nodes.map(n=>n.id));
+ if(ids.size!==d.nodes.length)add('DUPLICATE','노드 ID가 중복됩니다.');
+ for(const n of d.nodes){for(const key of ['name','purpose','input','output','criteria'])if(!n[key]?.trim())add('NODE_FIELD',n.id+'의 '+({name:'이름',purpose:'목적',input:'입력',output:'산출물',criteria:'완료 조건'}[key])+'이 필요합니다.',n.id);if(n.kind==='join'&&!['all','defined'].includes(n.joinPolicy))add('JOIN','합류 조건을 정하세요.',n.id);}
+ if(!ids.has(d.start))add('START','시작 노드를 선택하세요.');if(!ids.has(d.finish))add('FINISH','종료 노드를 선택하세요.');
+ const edgeKeys=new Set();for(const e of d.edges){if(!ids.has(e.from)||!ids.has(e.to))add('EDGE_TARGET','없는 노드와 연결됐습니다.',e.id);if(['branch','rework'].includes(e.kind)&&!e.condition.trim())add('BRANCH_CONDITION','분기/재작업의 조건을 적으세요.',e.id);const key=[e.from,e.to,e.kind].join(':');if(edgeKeys.has(key))add('DUPLICATE_EDGE','같은 종류의 연결이 중복됩니다.',e.id);edgeKeys.add(key);}
+ for(const n of d.nodes){const out=d.edges.filter(e=>e.from===n.id&&e.kind!=='rework'),incoming=d.edges.filter(e=>e.to===n.id&&e.kind!=='rework');if(n.kind==='branch'&&(out.length<2||out.some(e=>e.kind!=='branch'||!e.condition.trim())))add('NODE_BRANCH','분기 노드에는 조건이 있는 출구가 둘 이상 필요합니다.',n.id);if(n.kind==='join'&&incoming.length<2)add('JOIN_INPUTS','합류 노드에는 선행 연결이 둘 이상 필요합니다.',n.id);}
+ const visited=new Set(),stack=new Set();let cycle=false;
+ function visit(id){if(stack.has(id)){cycle=true;return}if(visited.has(id))return;visited.add(id);stack.add(id);for(const e of d.edges.filter(x=>x.from===id&&x.kind!=='rework'&&ids.has(x.to)))visit(e.to);stack.delete(id)}
+ for(const n of d.nodes)visit(n.id);if(cycle)add('CYCLE','의도한 재작업 연결 이외의 순환이 있습니다.');
+ const reachable=new Set();function walk(id){if(reachable.has(id))return;reachable.add(id);for(const e of d.edges.filter(x=>x.from===id&&ids.has(x.to)))walk(e.to)}if(ids.has(d.start))walk(d.start);
+ for(const n of d.nodes)if(!reachable.has(n.id))add('UNREACHABLE',n.name+'에 시작점에서 도달하지 못합니다.',n.id);
+ if(ids.has(d.finish)){const ends=new Set();function back(id){if(ends.has(id))return;ends.add(id);for(const e of d.edges.filter(x=>x.to===id&&ids.has(x.from)))back(e.from)}back(d.finish);for(const n of d.nodes)if(!ends.has(n.id))add('NO_FINISH',n.name+'에서 종료점으로 이어지지 않습니다.',n.id);}
+ return issues;
+}
+function draftSelect(id,label,options,value){return `<label class="field">${label}<select id="${id}">${options.map(([v,t])=>`<option value="${esc(v)}" ${v===value?'selected':''}>${esc(t)}</option>`).join('')}</select></label>`}
+function ea(title,action,disabled=false){return button(title,`data-editor="${action}"`,false,disabled||blocked())}
+// 입력 중에도 탭 초안에 보존한다. 서버 저장/확정과는 별개다.
+function retainEditorInput(e){
+ if(blocked()||!state.methodDraft)return;
+ const d=state.methodDraft,n=d.nodes.find(x=>x.id===state.editorSelected)||d.nodes[0];
+ const fields={'ed-name':'name','ed-role':'role','ed-kind':'kind','ed-purpose':'purpose','ed-input':'input','ed-output':'output','ed-docs':'documents','ed-criteria':'criteria','ed-join':'joinPolicy'};
+ const key=fields[e.target.id];
+ if(key&&n)n[key]=e.target.value;
+ else if(e.target.id==='ed-method-name')d.name=e.target.value;
+ else if(e.target.id==='ed-start')d.start=e.target.value;
+ else if(e.target.id==='ed-finish')d.finish=e.target.value;
+ else return;
+ state.editorChecked=false;state.editorIssues=[];state.restorePending=false;state.replacePending=null;
+}
+document.addEventListener('input',retainEditorInput);
+document.addEventListener('change',retainEditorInput);
+window.addEventListener('beforeunload',e=>{if(hasUnpersistedInputs()){e.preventDefault();e.returnValue=''}});
+function graphPosition(n,i){return n.position||{x:20+(i%3)*280,y:30+Math.floor(i/3)*180}}
+function moveGraphNode(direction){
+ if(blocked()||!state.methodDraft)return;
+ const d=state.methodDraft,i=d.nodes.findIndex(n=>n.id===state.editorSelected);if(i<0)return;
+ const p=graphPosition(d.nodes[i],i),delta={left:[-40,0],right:[40,0],up:[0,-40],down:[0,40]}[direction];if(!delta)return;
+ d.nodes[i].position={x:Math.max(0,p.x+delta[0]),y:Math.max(0,p.y+delta[1])};
+}
+function methodGraph(d,selected){
+ const positions=new Map(d.nodes.map((n,i)=>[n.id,graphPosition(n,i)]));
+ const width=Math.max(840,...[...positions.values()].map(p=>p.x+250)),height=Math.max(240,...[...positions.values()].map(p=>p.y+150)),zoom=state.graphZoom||1;
+ const links=d.edges.map(e=>{const a=positions.get(e.from),b=positions.get(e.to);if(!a||!b)return '';return `<g><path d="M${a.x+210},${a.y+45} C${a.x+250},${a.y+45} ${b.x-40},${b.y+45} ${b.x},${b.y+45}" fill="none" stroke="${e.kind==='rework'?'#ffd08a':'#79b8ff'}" stroke-width="2" ${e.kind==='rework'?'stroke-dasharray="7 4"':''} marker-end="url(#flow-arrow)"/><text x="${(a.x+b.x+210)/2}" y="${(a.y+b.y)/2+32}" fill="#bcd6ef" font-size="11">${esc(e.kind==='rework'?'재작업':e.kind==='branch'?e.condition:'완료')}</text></g>`}).join('');
+ return `<div style="width:100%;min-width:0"><div class="row">${button('축소','data-graph="zoom-out"')}${button('확대','data-graph="zoom-in"')}<span>배율 ${Math.round(zoom*100)}% · 선은 실행 순서, 위치 이동은 표시만 변경</span></div><div role="region" aria-label="방법론 공간형 흐름도" tabindex="0" style="overflow:auto;border:1px solid var(--line);max-height:570px;margin-top:12px"><div style="width:${width*zoom}px;height:${height*zoom}px"><div style="position:relative;width:${width}px;height:${height}px;transform:scale(${zoom});transform-origin:0 0"><svg aria-hidden="true" width="${width}" height="${height}" style="position:absolute;inset:0"><defs><marker id="flow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#79b8ff"/></marker></defs>${links}</svg>${d.nodes.map((n,i)=>{const p=graphPosition(n,i);return `<button class="node ${selected?.id===n.id?'selected':''}" data-editor-node="${esc(n.id)}" style="position:absolute;left:${p.x}px;top:${p.y}px;width:210px;height:90px"><strong>${esc(n.id+' '+n.name)}</strong><br>${esc(n.role==='human'?'사람':'Agent')} · ${esc({task:'작업',branch:'분기',join:'합류'}[n.kind])}</button>`}).join('')}</div></div></div><div class="row" style="margin-top:10px">선택 노드 위치 ${['left','right','up','down'].map((x,i)=>button(['← 왼쪽','→ 오른쪽','↑ 위','↓ 아래'][i],`data-graph="${x}"`,false,!state.methodDraft||blocked())).join('')}<span class="muted">버튼을 키보드로 선택·이동 가능. 자유 드래그는 미제공.</span></div></div>`;
+}
+document.addEventListener('click',e=>{const b=e.target.closest('button'),a=b?.dataset.graph;if(!a||b.disabled)return;if(a==='zoom-in'||a==='zoom-out')state.graphZoom=Math.max(.5,Math.min(1.5,(state.graphZoom||1)+(a==='zoom-in'?.1:-.1)));else moveGraphNode(a);render()});
+function editorView(){
+ const base=methods[state.method],d=state.methodDraft||buildMethodDraft(state.method),editing=!!state.methodDraft;if(!editing)d.name=base.name;
+ const selected=d.nodes.find(n=>n.id===state.editorSelected)||d.nodes[0];
+ const options=d.nodes.map(n=>[n.id,n.id+' '+n.name]);
+ const issues=state.editorIssues||[];
+ const form=selected?`${field('노드 이름 *','ed-name',selected.name)}${draftSelect('ed-role','수행 주체',[['agent','Agent 단계책임자'],['human','사람']],selected.role)}${draftSelect('ed-kind','노드 종류',[['task','작업'],['branch','분기'],['join','합류']],selected.kind)}${field('목적 *','ed-purpose',selected.purpose)}${field('입력 *','ed-input',selected.input)}${field('산출물 *','ed-output',selected.output)}<label class="field">입력/산출 문서 양식<textarea id="ed-docs">${esc(selected.documents)}</textarea></label><label class="field">완료·검수 조건 *<textarea id="ed-criteria">${esc(selected.criteria)}</textarea></label>${selected.kind==='join'?draftSelect('ed-join','합류 기준',[['all','모든 선행 완료'],['defined','지정 조건 · 상세 조건은 완료 조건에 기록']],selected.joinPolicy):''}<div class="row">${ea('선택 노드 반영','save',!editing)}${ea('노드 삭제 영향 확인','delete',!editing)}</div>`:'<p>빈 사용자 정의입니다. + 노드로 첫 단계를 만드세요.</p>';
+ const graph=(state.savedDraft?ea('보관한 탭 초안 복원','restore-draft'):'')+methodGraph(d,selected);
+ const links=d.edges.map(e=>`<tr><td>${esc(e.from+' → '+e.to)}</td><td>${esc({next:'순차/병렬 연결',branch:'조건 분기',rework:'재작업'}[e.kind])}</td><td>${esc(e.condition||'선행 완료')}</td><td>${ea('제거','edge-remove:'+e.id,!editing)}</td></tr>`).join('');
+ return `<h1>방법론 · 기본본과 내 절차</h1><p class="muted">승인한 3종의 상세안과 화면 방향 유지 · 현재 보완본의 편집 동작 검토</p><div class="grid">${methods.map((m,i)=>card(m.name,`<p>${m.focus}</p>${button('시스템 원본 보기',`data-editor-method="${i}"`,i===state.method)}`)).join('')}</div>${card(esc(d.name),`<p>출처: ${editing?(d.sourceId?esc(d.sourceId+' '+d.sourceVersion):'사용자 직접 정의'):'시스템 제공 원본 · 읽기 전용'} <span class="pill">${editing?'수정 초안':'v1 제안'}</span></p><div class="row">${ea('기본본 복사·수정','clone')}${ea('빈 방법론 직접 정의','new')}${ea('+ 노드','add',!editing)}${ea('연결 검사','validate')}${ea('현재 탭에 초안 저장','save-draft',!editing)}${ea('검사 후 프로젝트에 선택','apply')}</div><p class="warn">현재 탭 메모리에서만 편집·보관합니다. 새로고침하면 초기화되며 실제 프로젝트/서버에는 적용하지 않습니다.</p>${editing?field('내 방법론 이름','ed-method-name',d.name):''}${editing?ea('이름 반영','rename'):''}<div class="flow" style="margin-top:18px">${graph||'<p>노드 없음 · 직접 작성 시작</p>'}</div>${state.deletePending?`<div class="notice">삭제 대상 ${esc(state.deletePending)}와 연결 ${d.edges.filter(e=>e.from===state.deletePending||e.to===state.deletePending).length}건을 제거합니다. 시작/종료도 다시 확인해야 합니다. ${ea('확인 후 노드 삭제','delete-confirm')}${ea('삭제 취소','delete-cancel')}</div>`:''}<div class="two"><section class="card"><h2>선택 단계 속성</h2>${form}</section><section class="card"><h2>시작·종료와 연결</h2>${draftSelect('ed-start','시작 노드', [['','선택'],...options],d.start)}${draftSelect('ed-finish','종료 노드',[['','선택'],...options],d.finish)}${ea('시작·종료 반영','endpoints',!editing)}<table><thead><tr><th>연결</th><th>종류</th><th>조건</th><th>편집</th></tr></thead><tbody>${links}</tbody></table>${draftSelect('ed-from','연결 출발',[['','선택'],...options],selected?.id||'')}${draftSelect('ed-to','연결 도착',[['','선택'],...options],'')}${draftSelect('ed-edge-kind','연결 종류',[['next','순차/병렬'],['branch','조건 분기'],['rework','재작업']],'next')}${field('분기·재작업 조건','ed-condition','')}${ea('+ 연결 추가','edge-add',!editing)}<h3>검사 결과</h3>${state.editorChecked?(issues.length?`<ul>${issues.map(x=>`<li class="warn">${esc(x.message)}</li>`).join('')}</ul>`:'<p>필수 필드·참조·조건·도달·순환 검사 통과 (시안)</p>'):'<p class="muted">아직 검사하지 않았습니다.</p>'}<h3>기본 문서·검수 기준</h3><p>${base.docs.map(esc).join(' / ')}</p><p>${base.checks.map(esc).join(' / ')}</p></section></div>`)}`;
+}
+const baselineWorkspace=renderers.work;
+renderers.methods=editorView;
+renderers.work=renderers.mobile=function(){
+ if(!state.appliedMethod)return baselineWorkspace();
+ const d=state.appliedMethod;
+ return `<div class="row between"><h1>${esc(state.project)}</h1><span class="pill">선택한 방법론: ${esc(d.name)}</span></div><div class="workspace"><section class="card steps"><h2>내 개발 절차</h2>${d.nodes.map(n=>button(n.name,`data-editor-stage="${esc(n.id)}"`)).join('<br>')}<p>${esc(d.sourceId||'사용자 직접 정의')} · 시안 선택 버전${d.version}</p></section><section class="card session"><div class="tabs">${['총괄','설계 책임자','구현 책임자'].map(x=>button(x,`data-role="${x}"`,state.role===x)).join('')}</div><h2>${esc(state.role)}</h2><div class="message">프로젝트 원본과 결정은 Anvil에 유지합니다. 지금 화면은 선택한 사용자 절차로 이어지는 시안입니다.</div>${state.sent.map(x=>`<div class="message"><strong>${esc(x.role)}</strong><p>${esc(x.text)}</p></div>`).join('')}<label class="field">지시 종류<select id="instruction-kind"><option>추가 지시</option><option>현재 작업 중단 후 지시</option></select></label><label class="field">책임자에게 할 지시<textarea id="instruction"></textarea></label>${button('시안 지시 전송','data-action="send"',true,blocked())}${button('중지 범위 보기','data-action="stop-dialog"',false,blocked())}</section><section class="card materials"><h2>선택한 단계의 입력·결과</h2>${(()=>{const n=d.nodes.find(x=>x.id===state.activeEditorStage)||d.nodes[0];return `<h3>${esc(n.name)}</h3><p>목적: ${esc(n.purpose)}</p><p>입력: ${esc(n.input)}</p><p>산출: ${esc(n.output)}</p><p>완료: ${esc(n.criteria)}</p>`})()}${go('문서·설계 추적','trace')} ${go('승인 요청','approval')} ${go('도구 이전','transfer')}</section></div>`;
+};
+const baselineCreate=renderers.create;
+const baselineTrace=renderers.trace;
+renderers.control=()=>`<h1>작업 사용자·클라이언트 인계</h1>`+card('단일 제어권 · 시안',`
+ ${draftSelect('control-client','살펴볼 클라이언트 상태',[['old','이전 PC 화면'],['new','다음 담당 화면']],state.controlClient||'old')}
+ <p>이 선택은 설계 시안의 상태 보기입니다. 실제 인증·서버 제어권 변경 기능이 아닙니다.</p>
+ <p>현재 제어: ${esc(state.controlOwner||'PC')} / 다른 참여자는 조회만 가능</p>
+ <p>인수 상태: ${state.controlOwner?'다음 담당 수락·이전 제어권 회수 (시안)':state.controlSafe?'안전 요약 확인 · 다음 담당 수락 대기':state.controlRequested?'인수 요청 · 안전 상태 미확인':'인수 요청 전'}</p>
+ <p>전달 요약: 현재 단계·미결 승인·미전송 지시·진행 중 작업과 정지 여부. 안전 상태가 불명확하면 새 writer를 열지 않습니다.</p>
+ ${button('인수 요청 예시','data-handoff="request"',false,blocked()||!!state.controlRequested)}
+ ${button('기존 담당의 안전 요약 확인 예시','data-handoff="safe"',false,blocked()||!state.controlRequested||!!state.controlOwner)}
+ ${button('다음 담당으로 수락','data-handoff="accept"',true,blocked()||!state.controlSafe||!!state.controlOwner)}
+ <p class="warn">실제 사용자·권한·Agent 실행에는 영향이 없습니다. 실제 제품에서는 서버의 원자적 제어권 이전으로 검증해야 합니다.</p>`);
+const baselineSettings=renderers.settings;
+renderers.settings=()=>baselineSettings()+card('검증용 복원 → 영향 확인 시안',`
+ ${draftSelect('backup-check','백업 검증 상황',[['valid','무결성 확인 가능 예시'],['corrupt','손상된 백업 예시'],['missing','원문 일부 누락 예시']],state.backupChoice||'valid')}
+ ${button('격리 복원 검증 예시','data-restore="verify"',false,blocked())}
+ <p>${state.backupVerified===true?'검증 예시 통과 · 현재 자료에는 적용하지 않음':state.backupVerified===false?'검증 실패 · 현재 자료 복원 차단':'아직 검증하지 않음'}</p>
+ <p>포함: 문서·원문·결정·작업현황. 제외: 현재 Agent 프로세스·기존 계정 인증·작업 재개. 현재 문서와 차이를 검토한 후 별도 승인합니다.</p>
+ ${button('현재 자료에 미칠 영향 확인','data-restore="preview"',false,blocked()||state.backupVerified!==true)}
+ ${state.restorePreview?'<div class="notice">영향 예시: 문서 기준 버전이 바뀔 수 있으므로 최신 지시·현황과 대조 필요. 자동 적용·자동 작업 재개 없음. 실제 복원은 이 시안에서 실행하지 않습니다.</div>':''}`);
+document.addEventListener('change',e=>{if(e.target.id==='control-client'){state.controlClient=e.target.value;render()}if(e.target.id==='backup-check'){state.backupChoice=e.target.value;state.backupVerified=null;state.restorePreview=false;render()}});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b||b.disabled||blocked())return;
+ if(b.dataset.handoff){
+  if(b.dataset.handoff==='request')state.controlRequested=true;
+  if(b.dataset.handoff==='safe'&&state.controlRequested)state.controlSafe=true;
+  if(b.dataset.handoff==='accept'&&state.controlRequested&&state.controlSafe)state.controlOwner='다음 담당';
+  render();
+ }
+ if(b.dataset.restore){
+  if(b.dataset.restore==='verify'){state.backupChoice=document.getElementById('backup-check').value;state.backupVerified=state.backupChoice==='valid';state.restorePreview=false}
+  if(b.dataset.restore==='preview'&&state.backupVerified===true)state.restorePreview=true;
+  render();
+ }
+});
+const exampleDocument='프로젝트 목적과 사용자 요구\n설계 확정 후 작업계획 작성';
+function lineDiff(before,after){
+ const a=before.split(/\r?\n/),b=after.split(/\r?\n/),rows=[];let i=0,j=0;
+ while(i<a.length||j<b.length){
+  if(i<a.length&&j<b.length&&a[i]===b[j]){rows.push({kind:'same',before:a[i],after:b[j],old:i+1,next:j+1});i++;j++}
+  else if(j>=b.length||(i+1<a.length&&a[i+1]===b[j])){rows.push({kind:'removed',before:a[i],old:i+1});i++}
+  else if(i>=a.length||(j+1<b.length&&a[i]===b[j+1])){rows.push({kind:'added',after:b[j],next:j+1});j++}
+  else{rows.push({kind:'changed',before:a[i],after:b[j],old:i+1,next:j+1});i++;j++}
+ }
+ return rows;
+}
+function renderLineDiff(before,after){
+ const rows=lineDiff(before,after),shown=state.showAllDiff?rows:rows.slice(0,200);
+ return `<h3>줄별 비교 · 총 ${rows.length}행</h3><p>동일/추가/삭제/변경을 문자와 색으로 구분합니다. 복잡한 재배열의 최소 편집 거리를 계산하는 엔진은 아닙니다.</p><div style="overflow:auto"><table><thead><tr><th>상태</th><th>이전 줄</th><th>이전 내용</th><th>제안 줄</th><th>제안 내용</th></tr></thead><tbody>${shown.map(r=>`<tr><td>${esc({same:'동일',added:'+ 추가',removed:'− 삭제',changed:'~ 변경'}[r.kind])}</td><td>${r.old||''}</td><td style="white-space:pre-wrap;overflow-wrap:anywhere;color:${r.kind==='removed'||r.kind==='changed'?'#ffd08a':'inherit'}">${esc(r.before??'')}</td><td>${r.next||''}</td><td style="white-space:pre-wrap;overflow-wrap:anywhere;color:${r.kind==='added'||r.kind==='changed'?'#a9e8b1':'inherit'}">${esc(r.after??'')}</td></tr>`).join('')}</tbody></table></div>${shown.length<rows.length?button(`나머지 ${rows.length-shown.length}행 모두 표시`,'data-document-action="diff-all"'):''}`;
+}
+async function inspectImport(file){
+ if(!file||! /\.(md|txt)$/i.test(file.name))return {error:'이 시안은 .md/.txt 파일만 읽습니다. 원문·입력은 유지합니다.'};
+ if(file.size>1048576)return {error:'시안의 안전 제한 1MiB를 넘습니다. 제품 지원 크기는 P02에서 별도 확정합니다.'};
+ try{const body=await file.text();if(!body.trim())return {error:'빈 파일입니다. 원문·입력은 유지합니다.'};return {source:file.name,body}}
+ catch{return {error:'선택 파일을 읽지 못했습니다. 기존 문서·입력은 유지합니다.'}}
+}
+document.addEventListener('change',async e=>{
+ if(e.target.id!=='doc-file'||blocked())return;const active=state,seq=state.importSeq=(state.importSeq||0)+1,file=e.target.files?.[0];if(!file)return;
+ const candidate=await inspectImport(file);if(state!==active||state.importSeq!==seq||blocked())return;
+ if(candidate.error)state.documentError=candidate.error;
+ else{state.documentSource=candidate.source;state.documentInput=candidate.body;state.documentError='';state.documentProposal=null;notify('파일을 탭에 읽었습니다. 현재 문서는 미변경 · 비교 후 별도 반영하세요.')}
+ render();
+});
+renderers.trace=()=>baselineTrace()+card('문서 가져오기·변경 비교 시안',`
+ <p class="warn">선택한 .md/.txt를 이 탭에서만 읽습니다. 서버 업로드·문서 속 지시 실행 없음. 시안 읽기 제한 1MiB이며 제품 지원 계약이 아닙니다.</p>
+ <label class="field">로컬 문서 선택<input id="doc-file" type="file" accept=".md,.txt,text/plain,text/markdown" ${blocked()?'disabled':''}></label>
+ ${field('자료 이름 (.md / .txt)','doc-source',state.documentSource||'요구사항.md')}
+ <label class="field">가져올 문서 내용<textarea id="doc-body">${esc(state.documentInput||'')}</textarea></label>
+ <p>문서 속 명령은 자료일 뿐 Agent 실행 지시가 아닙니다. 가져오기가 작업 시작·설계 승인으로 이어지지 않습니다.</p>
+ ${button('현재 문서와 비교','data-document-action="compare"',false,blocked())}
+ ${state.documentError?`<p role="alert" class="warn">${esc(state.documentError)}</p>`:''}
+ <div class="two"><section><h3>현재 v${state.documentRevision||1}</h3><pre style="white-space:pre-wrap">${esc(state.documentBody??exampleDocument)}</pre></section><section><h3>제안 · 미확정</h3><pre style="white-space:pre-wrap">${esc(state.documentProposal?.body||'비교한 제안 없음')}</pre></section></div>
+ ${state.documentProposal?renderLineDiff(state.documentBody??exampleDocument,state.documentProposal.body):''}
+ ${state.documentProposal?`<p>출처 ${esc(state.documentProposal.source)} / 비교 기준 v${state.documentProposal.base}. 차이는 좌우 전체 본문으로 대조합니다.</p>${button('비교한 제안을 탭 문서에 반영','data-document-action="adopt"',false,blocked())}${button('버전 충돌 상황 보기','data-document-action="conflict"',false,blocked())}`:''}
+ <h3>이전 버전 · 삭제하지 않음</h3>${(state.documentHistory||[]).map(x=>`<details><summary>v${x.version} · 가져오기 전 원문</summary><pre style="white-space:pre-wrap">${esc(x.body)}</pre></details>`).join('')||'<p>이력 없음</p>'}
+ <p>이 시안 반영은 사용자 설계 확정이나 실제 저장이 아닙니다. 설계 변경 승인·영향 작업·계획 개정은 별도 절차입니다.</p>`);
+document.addEventListener('input',e=>{if(blocked())return;if(e.target.id==='doc-body'||e.target.id==='doc-source'){state[e.target.id==='doc-body'?'documentInput':'documentSource']=e.target.value;state.documentProposal=null;state.importSeq=(state.importSeq||0)+1}});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button'),action=b?.dataset.documentAction;if(!action||b.disabled||blocked())return;
+ state.documentError='';
+ if(action==='diff-all')state.showAllDiff=true;
+ if(action==='compare'){
+  const source=document.getElementById('doc-source').value.trim(),body=document.getElementById('doc-body').value;
+  state.documentSource=source;state.documentInput=body;
+  if(!/\.(md|txt)$/i.test(source)||!body.trim()){state.documentError='자료 이름은 .md/.txt이고 내용이 있어야 합니다. 원문은 바뀌지 않았습니다.';state.documentProposal=null}
+  else state.documentProposal={source,body,base:state.documentRevision||1};
+ }
+ if(action==='conflict')state.documentConflict=true;
+ if(action==='adopt'&&state.documentProposal){
+  const p=state.documentProposal;
+  if(state.documentConflict||p.base!==(state.documentRevision||1)){state.documentError='버전 충돌 · 자동 덮어쓰기하지 않습니다. 최신 문서를 확인하고 다시 비교하세요.';state.documentProposal=null;state.documentConflict=false}
+  else{(state.documentHistory??=[]).push({version:state.documentRevision||1,body:state.documentBody??exampleDocument});state.documentBody=p.body;state.documentRevision=(state.documentRevision||1)+1;state.documentProposal=null;notify('탭 문서 버전만 반영 · 실제 저장/실행/승인 없음')}
+ }
+ render();
+});
+function wizardData(){return state.wizard??={name:state.project,purpose:'',source:'new',environment:'unverified',coordinator:'unassigned'}}
+function sourceBaselinePanel(){return `${field('기존 소스 경로·허용 범위','wizard-source-path',state.wizardSourcePath||'')}${draftSelect('wizard-source-case','읽기 조사 상태 예시',[['not-run','아직 조사하지 않음'],['denied','경로 접근 불가'],['report','읽기 조사 보고서 예시 준비']],state.wizardSourceCase||'not-run')}<p>경로를 입력해도 소스를 열거나 실행·수정하지 않습니다. 실제 조사 전에는 기준선 미확인입니다.</p>${state.wizardSourceCase==='denied'?'<p class="warn">접근 불가 예시 · 현재 입력 유지, 권한 변경/다른 경로 우회 없음</p>':''}${state.wizardSourceCase==='report'?'<table><tr><th>기능 예시</th><th>구현 상태</th><th>근거</th></tr><tr><td>목록 조회</td><td>구현·핵심 확인 예시</td><td>실측 아님</td></tr><tr><td>등록</td><td>부분 구현 예시</td><td>저장 미연결 예시</td></tr><tr><td>이전</td><td>미구현 예시</td><td>코드 없음 예시</td></tr><tr><td>외부 연결</td><td>동작 미확인 예시</td><td>권한·연결 미검증</td></tr></table><p>보고서 예시를 읽는 것으로 실제 기준선을 승인하지 않습니다. 실제 조사·변경차이·사용자 기준선 확인은 FN01/UI02에서 구현합니다.</p>':''}`}
+document.addEventListener('input',e=>{if(e.target.id==='wizard-source-path'&&!blocked())state.wizardSourcePath=e.target.value});
+document.addEventListener('change',e=>{if(e.target.id==='wizard-source-case'&&!blocked()){state.wizardSourceCase=e.target.value;render()}if(e.target.id==='wiz-source'&&!blocked()){wizardData().source=e.target.value;render()}});
+renderers.create=()=>{
+ const d=wizardData(),step=state.wizardStep||1,name=state.appliedMethod?.name||methods[state.method].name;
+ const panels=[
+  `${field('프로젝트 이름 *','wiz-name',d.name)}${field('만드는 이유·기대 결과 *','wiz-purpose',d.purpose)}${draftSelect('wiz-source','소스 시작',[['new','새 빈 프로젝트'],['existing','기존 소스 읽기 조사부터']],d.source)}<p>기존 소스는 읽기 조사·기능별 4상태 확인 후 기준선을 정합니다. 이 시안은 소스를 읽거나 수정하지 않습니다.</p>`,
+  `<p>적용할 방법론: <strong>${esc(name)}</strong> / 버전 고정</p>${go('방법론 선택·수정','methods')}<p>공식 산출물 양식은 방법론의 각 단계에 연결됩니다. 양식·작성 규칙·검수 기준을 작성 임무에 함께 전달합니다.</p>${go('산출물 양식·문서 보기','trace')}`,
+  `${draftSelect('wiz-environment','개발환경',[['unverified','미확인 · 준비 필요'],['user-defined','사용자 정의 예정 · 검증 전']],d.environment)}${draftSelect('wiz-coordinator','총괄 판단 도구',[['unassigned','미배정'],['codex','Codex · 연결 검증 전'],['claude','Claude Code · 연결 검증 전']],d.coordinator)}<p>총괄 기록은 Anvil에 유지합니다. 도구를 고르는 것이 Agent 실행이나 권한 부여는 아닙니다. 환경·연결은 실제 검증 후 실행 가능으로 표시합니다.</p>`,
+  `<dl><dt>이름·목적</dt><dd>${esc(d.name)} / ${esc(d.purpose)}</dd><dt>소스</dt><dd>${d.source==='existing'?'기존 소스 조사 미실행':'새 빈 프로젝트'}</dd><dt>방법론</dt><dd>${esc(name)}</dd><dt>환경·총괄</dt><dd>${esc(d.environment)} / ${esc(d.coordinator)} · 모두 실제 연결 미확인</dd></dl><p class="warn">생성 상태: 준비 필요. 실제 저장·Agent 작업 시작·기준선 승인 없음.</p>${button('시안 프로젝트 생성','data-wizard="create"',true,blocked())}`
+ ];
+ return `<h1>프로젝트 만들기 · ${step}/4</h1><div class="flow">${['목적·소스','방법론·자료','도구·환경','시작 기준 확인'].map((x,i)=>`<span class="pill">${i+1}. ${x}${step===i+1?' ◀':''}</span>`).join('')}</div>${state.wizardError?`<p role="alert" class="warn">${esc(state.wizardError)}</p>`:''}${card('단계별 준비',panels[step-1]+(step===1&&d.source==='existing'?sourceBaselinePanel():''))}<div class="row">${button('이전','data-wizard="back"',false,step===1)}${step<4?button('다음','data-wizard="next"',true,blocked()):''}${button('현재 탭에 생성 초안 보관','data-wizard="save"',false,blocked())}${state.savedWizard?button('보관한 생성 초안 불러오기','data-wizard="load"',false,blocked()):''}${go('목록으로 · 입력은 탭에 유지','projects')}</div><p class="muted">이 시안에서는 새로고침·탭 종료 뒤 초안이 유지되지 않습니다.</p>`;
+};
+document.addEventListener('input',e=>{if(blocked())return;const key={'wiz-name':'name','wiz-purpose':'purpose'}[e.target.id];if(key)wizardData()[key]=e.target.value});
+document.addEventListener('change',e=>{if(blocked())return;const key={'wiz-source':'source','wiz-environment':'environment','wiz-coordinator':'coordinator'}[e.target.id];if(key)wizardData()[key]=e.target.value});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button'),a=b?.dataset.wizard;if(!a||b.disabled||blocked())return;const d=wizardData(),step=state.wizardStep||1;state.wizardError='';
+ if(a==='next'||a==='create'){if(!d.name.trim()||!d.purpose.trim()){state.wizardError='프로젝트 이름과 만드는 이유를 먼저 입력하세요.';state.wizardStep=1;render();return}}
+ if(a==='next')state.wizardStep=Math.min(4,step+1);
+ if(a==='back')state.wizardStep=Math.max(1,step-1);
+ if(a==='save'){state.savedWizard={data:JSON.parse(JSON.stringify(d)),step};notify('탭에 생성 초안 보관 · 서버 저장 아님')}
+ if(a==='load'){if(!state.savedWizard)return;state.wizard=JSON.parse(JSON.stringify(state.savedWizard.data));state.wizardStep=state.savedWizard.step}
+ if(a==='create'&&step===4){state.project=d.name;state.created=true;state.projectPreparation=true;if(state.scenario==='empty'){state.scenario='normal';document.getElementById('scenario').value='normal'}notify('시안 프로젝트 생성 · 준비 필요 / Agent 작업 시작 없음');navigate('work');return}
+ render();
+});
+const preparedWorkspace=renderers.work;
+renderers.work=renderers.mobile=()=>`${state.projectPreparation?'<div class="notice">생성한 프로젝트는 준비 필요 상태의 예시입니다. 아래 대화·작업은 동작 검토용 예시이며 실제 실행 기록이 아닙니다.</div>':''}${preparedWorkspace()}`;
+// 공식 산출물 양식의 검토 초안. 실제 작성·내용 검수 엔진이 아니다.
+const artifactForms=[
+ {id:'AF01',name:'요구사항정의서',stage:'요구 분석',sections:['목적·배경','사용자·권한','요구사항 목록','사용 흐름·예외','범위·제외','인수 기준·미확정'],rule:'요구 ID, 출처·이유, 우선순위와 실제 사용자 결과를 기록한다. 미확정을 추측으로 채우지 않는다.'},
+ {id:'AF02',name:'설계서',stage:'상세 설계',sections:['설계 기준·범위','기능별 처리·저장·조회','화면·상태·이동','데이터·권한·연동','변경·복구','추적·완료 기준'],rule:'각 설계 ID를 요구사항과 연결하고 정상/실패·권한·데이터 경계를 상세히 작성한다. 상세 화면시안을 반드시 연결한다.'},
+ {id:'AF03',name:'화면시안',stage:'화면 설계',sections:['화면 ID·목적','상세 배치·렌더 자료','필드·버튼·동작','진입·이탈·상태','연결 설계·작업','검토 의견·판정'],rule:'사용자가 렌더된 화면을 검토할 수 있도록 HTML/SVG/이미지와 위치별 행동을 연결한다. 화면 이름 목록만 제출하지 않는다.'},
+ {id:'AF04',name:'작업계획서',stage:'개발 계획',sections:['목표·기준·단계','화면 단위 업무','기능 단위 업무','연결·통합 업무','의존·위임·검수','상태·변경·인계'],rule:'구분·위임·독립 검수 가능한 업무로 나눈다. 각 카드에 입력/출력·범위·수행·완료/검증·안전·인계를 쓴다.'},
+ {id:'AF05',name:'테스트계획서',stage:'시험 계획',sections:['대상·기준·범위','환경·자료·권한','정상·중요 실패 사례','절차·기대 결과','증거·판정','정리·미실행 처리'],rule:'설계/작업/시험 ID, 선행 조건·명령·기대 결과와 증거를 정의한다. 보안·데이터 위험은 초기 단계에서 검증한다.'},
+ {id:'AF06',name:'테스트 결과서',stage:'시험·검수',sections:['실행 대상·버전','실제 환경·시각','사례별 실행·관측','명령·종료·증거','실패·미실행·영향','판정·잔여·재시험'],rule:'실제 명령/exit와 관측값을 기록한다. 예상과 실제를 구분하고 FAIL/SKIP/BLOCKED를 PASS로 바꾸지 않는다.'},
+ {id:'AF07',name:'작업진행상황',stage:'전 단계 지속',sections:['현재 기준·담당','단계별 요약','업무별 현재 상태','일자별 수행·오류','미검증·위험','다음·안전 재개'],rule:'단계·세션·파일·시험·오류 횟수/원인/조치와 다음 위치를 지속 기록한다. 제출/검수/사용자 완료를 구별한다.'},
+ {id:'AF08',name:'개발환경 정의서',stage:'환경 준비',sections:['환경 역할·소유','소스·실행·배포 위치','도구·실행 명령','허용·금지·승인','비밀 참조·보호','시험 자료·정리·복구'],rule:'실제 환경 확인 근거와 미확인을 구분한다. Secret 원문이 아니라 보호 참조를 쓴다. 환경 변경은 별도 권한 범위를 대조한다.'}
+].map(x=>({...x,version:'초안1'}));
+function artifactPrompt(form,node){return `작성 임무 · 전달 전 시안\n프로젝트: ${state.project}\n왜: ${state.wizard?.purpose||'사용자 목적 확인 필요'}\n방법론: ${state.appliedMethod?.name||methods[state.method].name}\n단계: ${node} / ${form.stage}\n공식 양식: ${form.id} ${form.name}\n양식 버전: ${form.version}\n입력: 프로젝트 헌법·최신 지시·합의 원문·선행 확정 산출물(실제 참조는 작성 전 결박)\n필수 항목: ${form.sections.join(' / ')}\n작성 규칙: ${form.rule}\n모르는 항목은 미확인과 필요한 조치를 적고, 필수 항목을 생략하거나 예시를 실제 사실로 만들지 않는다.\n결과: 양식 ID/버전·단계·입력 출처·작성 세션/도구·본문·연결 자료를 포함한 초안.\n검수: 필수항목/참조 확인 후 내용·근거 대조. 제출은 승인·완료가 아니다.\n문서 작성만 수행하며 구현·명령 실행·자동 확정은 하지 않는다.`}
+function validateArtifact(form,body,metadata){
+ const issues=[];
+ for(const key of ['node','source','author'])if(!metadata[key]?.trim())issues.push(({node:'작성 단계',source:'입력 출처',author:'작성 주체'}[key])+'가 필요합니다.');
+ const lines=body.split(/\r?\n/);
+ for(const title of form.sections){const start=lines.findIndex(x=>x.trim()==='## '+title);let end=start+1;while(end<lines.length&&!lines[end].startsWith('## '))end++;const content=start<0?'':lines.slice(start+1,end).join('\n').trim();if(!content||/^(\[작성 필요\]|TODO|TBD)$/i.test(content))issues.push(title+'의 실제 작성 내용이 필요합니다.');}
+ return issues;
+}
+function artifactPanel(){
+ const form=artifactForms.find(x=>x.id===state.artifactForm)||artifactForms[0],d=state.methodDraft||state.appliedMethod||buildMethodDraft(state.method),node=d.nodes.find(n=>n.id===state.editorSelected)||d.nodes[0];
+ return card('공식 산출물 양식 · 작성·조회',`
+ <p>방법론은 절차와 함께 양식·필수 항목·작성 규칙·검수 기준을 정의합니다. 아래 8종은 상세 검토 초안입니다.</p>
+ ${draftSelect('artifact-form','공식 산출물 양식',artifactForms.map(x=>[x.id,x.name]),form.id)}
+ <p><strong>${esc(form.id+' '+form.name+' / '+form.version)}</strong> · 기본 책임 단계 ${esc(form.stage)}</p><ol>${form.sections.map(s=>`<li>${esc(s)}</li>`).join('')}</ol><p>${esc(form.rule)}</p>
+ <p>선택 노드: ${esc(node?node.id+' '+node.name:'방법론에서 단계 선택 필요')} / 연결 양식: ${esc(node?.formIds?.join(', ')||'미지정')}</p>
+ ${button('선택 단계의 필수 양식으로 연결','data-artifact="bind"',false,blocked()||!state.methodDraft||!node)}
+ ${button('LLM 작성 임무 보기','data-artifact="instruction"',false,blocked())}
+ ${state.artifactInstruction?`<details open><summary>작성 임무 · 실제 전송하지 않음</summary><pre style="white-space:pre-wrap">${esc(artifactPrompt(form,node?.id||'미지정'))}</pre></details>`:''}
+ ${field('작성 단계 ID','artifact-node',state.artifactMeta?.node||node?.id||'')}${field('입력 출처·버전','artifact-source',state.artifactMeta?.source||'')}${field('작성 주체·세션/도구','artifact-author',state.artifactMeta?.author||'')}
+ ${button('양식으로 빈 초안 열기','data-artifact="scaffold"',false,blocked())}
+ <label class="field">산출물 본문 · LLM/사용자 작성 결과<textarea id="artifact-body" style="min-height:220px">${esc(state.artifactBody||'')}</textarea></label>
+ ${button('필수 항목 검사','data-artifact="validate"',false,blocked())}${button('탭에 산출물 보관 · 검토 대기','data-artifact="save"',false,blocked())}
+ ${state.artifactIssues?`<div class="notice">${state.artifactIssues.length?state.artifactIssues.map(esc).join('<br>'):'필수 항목 형식만 확인됨. 사실성·내용·첨부는 미검수이며 승인/완료가 아닙니다.'}</div>`:''}
+ <h3>프로젝트 산출물 조회 · 탭 메모리</h3>${(state.artifacts||[]).map((x,i)=>`<details><summary>${esc(x.formName)} · ${esc(x.node)} · ${esc(x.status)} · ${esc(x.formVersion)}</summary><p>출처: ${esc(x.source)} / 작성: ${esc(x.author)}</p><pre style="white-space:pre-wrap">${esc(x.body)}</pre></details>`).join('')||'<p>작성·보관한 산출물 없음</p>'}
+ <p class="warn">LLM 미연결·실제 저장 없음. 양식 본문 검토, 실제 작성 임무/산출물 회수·저장·조회는 UI03/UI06·FN03/FN09·IX01/02에서 구현·검수합니다.</p>`);
+}
+const flowEditor=renderers.methods,documentTrace=renderers.trace;
+renderers.methods=()=>flowEditor()+artifactPanel();renderers.trace=()=>artifactPanel()+documentTrace();
+document.addEventListener('input',e=>{if(blocked())return;if(e.target.id==='artifact-body'){state.artifactBody=e.target.value;state.artifactScaffoldPending=null}const key={'artifact-node':'node','artifact-source':'source','artifact-author':'author'}[e.target.id];if(key)(state.artifactMeta??={})[key]=e.target.value;if(key||e.target.id==='artifact-body')state.artifactIssues=null});
+document.addEventListener('change',e=>{if(e.target.id==='artifact-form'){(state.artifactDrafts??={})[state.artifactForm||'AF01']=state.artifactBody||'';state.artifactForm=e.target.value;state.artifactBody=state.artifactDrafts[e.target.value]||'';state.artifactIssues=null;state.artifactInstruction=null;state.artifactReplace=false;render()}});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button'),a=b?.dataset.artifact;if(!a||b.disabled||blocked())return;
+ const f=artifactForms.find(x=>x.id===state.artifactForm)||artifactForms[0],d=state.methodDraft||state.appliedMethod||buildMethodDraft(state.method),node=d.nodes.find(n=>n.id===state.editorSelected)||d.nodes[0];
+ if(a==='bind'&&state.methodDraft&&node)node.formIds=[...new Set([...(node.formIds||[]),f.id])];
+ if(a==='instruction')state.artifactInstruction=artifactPrompt(f,node?.id||'미지정');
+ if(a==='scaffold'){if(state.artifactBody?.trim()&&state.artifactScaffoldPending!==f.id){state.artifactScaffoldPending=f.id;notify('기존 본문을 빈 양식으로 교체합니다. 같은 버튼을 다시 눌러 확인하세요.');return}state.artifactScaffoldPending=null;state.artifactBody=f.sections.map(x=>'## '+x+'\n[작성 필요]').join('\n\n')}
+ if(a==='validate'||a==='save'){
+  const meta={node:document.getElementById('artifact-node').value,source:document.getElementById('artifact-source').value,author:document.getElementById('artifact-author').value},body=document.getElementById('artifact-body').value;
+  state.artifactMeta=meta;state.artifactBody=body;state.artifactIssues=validateArtifact(f,body,meta);
+  if(a==='save'&&!state.artifactIssues.length)(state.artifacts??=[]).push({...meta,body,formId:f.id,formName:f.name,formVersion:f.version,status:'검토 대기 · 시안'});
+ }
+ render();
+});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b||b.disabled)return;
+ if(b.dataset.editorMethod!==undefined){if(state.methodDraft&&state.discardPending!==+b.dataset.editorMethod){state.discardPending=+b.dataset.editorMethod;notify('현재 편집본이 있습니다. 같은 원본 버튼을 다시 누르면 편집본을 버리고 전환합니다. 탭에 저장한 초안 스냅샷은 유지합니다.');return}state.method=+b.dataset.editorMethod;state.methodDraft=null;state.editorIssues=[];state.editorChecked=false;state.editorSelected=null;state.discardPending=null;render();return;}
+ if(b.dataset.editorNode){state.editorSelected=b.dataset.editorNode;render();return}
+ if(b.dataset.editorStage){state.activeEditorStage=b.dataset.editorStage;const n=state.appliedMethod.nodes.find(x=>x.id===b.dataset.editorStage);state.role=n.role==='human'?'사람 확인 단계':n.name+' 책임자';render();return}
+ const action=b.dataset.editor;if(!action)return;if(blocked()){notify('현재 조회/연결 상태에서는 편집할 수 없습니다.');return}
+ if(['clone','new'].includes(action)&&state.methodDraft){if(state.replacePending!==action){state.replacePending=action;notify('현재 편집본을 교체합니다. 초안 보관이 필요하면 먼저 저장하세요. 같은 버튼을 다시 누르면 전환합니다.');return}state.replacePending=null}
+ if(action==='restore-draft'){
+  if(!state.savedDraft)return;
+  if(state.methodDraft&&!state.restorePending){state.restorePending=true;notify('현재 편집본을 보관한 초안으로 바꿉니다. 같은 복원 버튼을 다시 눌러 확인하세요.');return}
+  state.methodDraft=JSON.parse(JSON.stringify(state.savedDraft));state.editorSelected=state.methodDraft.nodes[0]?.id;state.restorePending=false;state.editorChecked=false;state.editorIssues=[];render();return;
+ }
+ if(action==='clone'||action==='new'){state.methodDraft=buildMethodDraft(state.method,action==='new');state.custom=true;state.editorSelected=state.methodDraft.nodes[0]?.id;state.editorChecked=false;state.editorIssues=[];render();return}
+ if(action==='validate'||action==='apply'){const d=state.methodDraft||buildMethodDraft(state.method);if(!state.methodDraft)d.name=methods[state.method].name;state.editorIssues=validateMethodDraft(d);state.editorChecked=true;if(action==='apply'&&!state.editorIssues.length){state.appliedMethod=JSON.parse(JSON.stringify(d));state.activeEditorStage=d.start;notify('시안에서 선택했습니다. 실제 저장·실행 없음');navigate('create')}else{render();notify(state.editorIssues.length?'부족한 필드/연결을 보완하세요.':'시안 연결 검사 통과')}return}
+ const d=state.methodDraft;if(!d)return;const value=id=>document.getElementById(id)?.value||'';
+ const selected=d.nodes.find(n=>n.id===state.editorSelected)||d.nodes[0];
+ if(action==='rename')d.name=value('ed-method-name');
+ if(action==='save'&&selected){Object.assign(selected,{name:value('ed-name'),role:value('ed-role'),kind:value('ed-kind'),purpose:value('ed-purpose'),input:value('ed-input'),output:value('ed-output'),documents:value('ed-docs'),criteria:value('ed-criteria'),joinPolicy:value('ed-join')||'all'});}
+ if(action==='add'){const number=Math.max(0,...d.nodes.map(n=>+n.id.slice(1)))+1,id='N'+number;d.nodes.push({id,name:'새 단계',role:'agent',kind:'task',purpose:'',input:'',output:'',criteria:'',documents:'',joinPolicy:'all'});state.editorSelected=id;if(!d.start)d.start=id;d.finish=id;}
+ if(action==='endpoints'){d.start=value('ed-start');d.finish=value('ed-finish')}
+ if(action==='edge-add'){const from=value('ed-from'),to=value('ed-to');if(!from||!to){notify('연결 출발과 도착을 선택하세요.');return}d.edges.push({id:'E'+(Math.max(0,...d.edges.map(x=>+x.id.slice(1)))+1),from,to,kind:value('ed-edge-kind'),condition:value('ed-condition')});}
+ if(action.startsWith('edge-remove:'))d.edges=d.edges.filter(x=>x.id!==action.split(':')[1]);
+ if(action==='delete'){state.deletePending=selected?.id;render();return}
+ if(action==='delete-cancel'){state.deletePending=null;render();return}
+ if(action==='delete-confirm'){const id=state.deletePending;d.nodes=d.nodes.filter(n=>n.id!==id);d.edges=d.edges.filter(x=>x.from!==id&&x.to!==id);if(d.start===id)d.start='';if(d.finish===id)d.finish='';state.deletePending=null;state.editorSelected=d.nodes[0]?.id;}
+ if(action==='save-draft'){state.savedDraft=JSON.parse(JSON.stringify(d));notify('현재 탭의 초안 스냅샷 보관. 새로고침 후 보존되지 않습니다.');}
+ state.editorChecked=false;state.editorIssues=[];render();
+});
+function canResumeTransfer(){return !!(state.stopped&&state.understood&&state.transferSupport==='supported'&&state.transferRecordsChecked&&(state.transferEvidence==='complete'||state.transferGapAccepted)&&state.transferAuthority)}
+renderers.transfer=()=>`<h1>총괄·단계책임자 이전 · 조건 대조</h1><p>1 기록/안전 → 2 인계내용 → 3 대상 → 4 이해 대조·재개</p><div class="two">${card('1·2 기록과 실제 상태',`
+ <p>프로젝트: ${esc(state.project)}. 목적·헌법·최신 지시·확정 결정과 이유·원문은 Anvil 기준으로 회수합니다. 기존 Agent 마지막 요약만을 신뢰하지 않습니다.</p>
+ <p>인계 예시: 완료/미완료·실제 변경·실패/시험·현재 위치·다음 행동. 실제 코드/로그가 없는 시안이므로 내용 확인 예시입니다.</p>
+ ${draftSelect('stop-state','기존 실행 정지 확인',[['unknown','미확인 · 새 쓰기 금지'],['confirmed','실제 중지·쓰기 회수 확인 예시']],state.stopped?'confirmed':'unknown')}
+ ${draftSelect('transfer-evidence','축적 기록 상황',[['gap','마지막2분 회수 공백 예시'],['complete','회수 공백 없음 예시']],state.transferEvidence||'gap')}
+ <label class="field"><input id="transfer-records" type="checkbox" ${state.transferRecordsChecked?'checked':''}> 원문·결정·현재 변경·남은 작업을 대조함 (시안)</label>
+ ${(state.transferEvidence||'gap')==='gap'?`<label class="field"><input id="transfer-gap" type="checkbox" ${state.transferGapAccepted?'checked':''}> 회수 공백과 최소 손실을 확인하고 진행 (시안)</label>`:''}
+ <p class="warn">정지 미확인 상태에서는 읽기 인계 준비만 가능하며 새 writer는 시작하지 않습니다.</p>`)}${card('3·4 대상·이해·확인 주체',`
+ ${draftSelect('transfer-target','교체 대상',[['same','같은 Agent 새 세션'],['other','다른 코딩 Agent'],['coordinator','총괄 도구/세션']],state.transferTarget||'same')}
+ ${draftSelect('transfer-support','대상 필수 기능 대조',[['unknown','미확인'],['unsupported','필수 기록/안전중지 기능 부족 예시'],['supported','필수 기능 대조 충족 예시']],state.transferSupport||'unknown')}
+ <p>실제 지원 여부를 검증하지 않았습니다. 위 선택은 화면 상태 검토용이며 도구 등록/연결을 하지 않습니다.</p>
+ ${draftSelect('transfer-understanding','이해 대조 상황',[['pending','대조 전'],['mismatch','목적/최신지시 이해 불일치 예시'],['matched','원문·실제 상태와 대조한 예시']],state.transferUnderstanding||'pending')}
+ <label class="field"><input id="understood" type="checkbox" ${state.understood?'checked':''} ${state.transferUnderstanding!=='matched'?'disabled':''}> 이해·실제 상태 대조 확인 (시안)</label>
+ <label class="field"><input id="transfer-authority" type="checkbox" ${state.transferAuthority?'checked':''}> ${state.transferTarget==='coordinator'?'사용자':'총괄'}의 교체·재개 확인 (시안)</label>
+ ${button('조건 확인 후 시안 재개','data-action="resume"',true,blocked()||!canResumeTransfer())}
+ <p role="status">${state.transferred?'시안 조건 충족 · 실제 Agent 재개 없음':'정지·기록/공백·필수 기능·이해·확인 주체가 모두 충족돼야 합니다.'}</p>${go('부족한 원문·이유 대조','knowledge')} ${go('작업으로 돌아가기','work')}`)}</div>`;
+document.addEventListener('change',e=>{
+ const keys={'transfer-target':'transferTarget','transfer-support':'transferSupport','transfer-evidence':'transferEvidence','transfer-understanding':'transferUnderstanding','transfer-records':'transferRecordsChecked','transfer-gap':'transferGapAccepted','transfer-authority':'transferAuthority'};
+ if(!keys[e.target.id])return;state[keys[e.target.id]]=e.target.type==='checkbox'?e.target.checked:e.target.value;state.transferred=false;
+ if(['transfer-target','transfer-support'].includes(e.target.id)){state.understood=false;state.transferAuthority=false}
+ if(e.target.id==='transfer-understanding')state.understood=false;
+ render();
+});
+function canResumeChangedWork(){return !!(state.changeApproved&&state.changePlanRevised&&state.changeImpact==='reviewed')}
+renderers.change=()=>`<h1>설계 변경·영향·이력</h1>${card('요청·전후·영향',`
+ ${field('변경 이유 *','change-reason',state.changeReason||'저장 결과 확인 뒤 목록으로 이동')}
+ <div class="two"><p>이전 예시: 입력 후 목록 이동</p><p>제안 예시: 저장·재조회 성공 확인 후 목록 이동</p></div>
+ <table><tr><th>연결 대상</th><th>영향</th><th>근거</th></tr><tr><td>D-승인-01 / 화면·기능·연결 업무</td><td>있음</td><td>저장 결과 확인 흐름</td></tr><tr><td>데이터·권한/완료 결과</td><td>미확인</td><td>현재 계약·시험과 대조 필요</td></tr></table>
+ ${draftSelect('change-impact','영향 검토 상태',[['unknown','미확인 · 자동 무영향 아님'],['reviewed','영향/안전·권한을 대조한 예시']],state.changeImpact||'unknown')}
+ ${button('변경 제안 제출 예시','data-change="propose"',false,blocked())}
+ ${button('이 변경만 승인 예시','data-change="approve"',false,blocked()||!state.changeSubmitted||state.changeImpact!=='reviewed')}
+ ${button('거절 예시 · 원기준 유지','data-change="reject"',false,blocked()||!state.changeSubmitted)}
+ <p>상태: ${state.changeRejected?'거절 · 원문/기준 유지':state.changeApproved?(state.changePlanRevised?'변경 승인 · 계획 개정 확인 예시':'변경 승인 예시 · 계획 개정 필요'):state.changeSubmitted?'검토 대기 · 기준 미변경':'초안'}</p>
+ ${button('영향 작업계획 개정 확인 예시','data-change="revise"',false,blocked()||!state.changeApproved)}
+ ${button('영향 업무 시안 재개','data-change="resume"',true,blocked()||!canResumeChangedWork())}
+ <p class="warn">계획 개정 전 영향 업무는 재개하지 않습니다. 무관한 업무는 계속 가능하며 이전 완료 근거는 보존합니다. 실제 기준/계획 변경·Agent 재개 없음.</p>
+ <details><summary>변경 역사 · 예시</summary><p>원문/원결정→제안→영향 검토→사용자 결정→계획 개정→영향 업무 재개를 버전과 이유로 연결합니다.</p></details>${go('원설계·계획 조회','trace')}`)}`;
+document.addEventListener('input',e=>{if(e.target.id==='change-reason'&&!blocked())state.changeReason=e.target.value});
+document.addEventListener('change',e=>{if(e.target.id==='change-impact'){state.changeImpact=e.target.value;state.changeApproved=false;state.changePlanRevised=false;render()}});
+document.addEventListener('click',e=>{const b=e.target.closest('button'),a=b?.dataset.change;if(!a||b.disabled||blocked())return;
+ if(a==='propose'){const reason=document.getElementById('change-reason').value.trim();if(!reason){notify('변경 이유가 필요합니다.');return}state.changeReason=reason;state.changeSubmitted=true;state.changeRejected=false}
+ if(a==='approve'&&state.changeSubmitted&&state.changeImpact==='reviewed')state.changeApproved=true;
+ if(a==='reject'){state.changeRejected=true;state.changeApproved=false;state.changePlanRevised=false}
+ if(a==='revise'&&state.changeApproved)state.changePlanRevised=true;
+ if(a==='resume'&&canResumeChangedWork())notify('영향 업무의 재개 조건 예시 충족 · 실제 실행 없음');render();
+});
+function executionPanel(){return card('실행 관측과 중지 · 전부 시안 예시',`
+ ${draftSelect('execution-case','관측 사례',[['prepared','준비만 됨 · 미전송'],['received','도구 수신 확인 예시'],['running','실제 수행 관측 예시'],['submitted','결과 제출 · 검수 전'],['refused','명시적 거부 응답 예시'],['error','도구 오류 응답 예시'],['unknown','원인 미확인 · 관측 공백']],state.executionCase||'prepared')}
+ <p>요청/수신/실제 수행/제출/검수는 서로 다릅니다. ${state.executionCase==='unknown'?'마지막 수신 이후 기록이 부족합니다. 거부/내부 오류라고 단정하지 않습니다.':state.executionCase==='submitted'?'제출된 결과를 실제 diff·시험·저장/조회 증거와 대조해야 합니다. 완료가 아닙니다.':'선택한 관측 경계만 예시로 표시합니다. 실제 도구는 연결하지 않았습니다.'}</p>
+ ${draftSelect('stop-scope','중지 범위',[['session','현재 세션'],['stage','단계와 하위 Agent'],['project','프로젝트 전체']],state.stopScope||'session')}
+ ${button('선택 범위 중지 요청 예시','data-execution="stop"',false,blocked())}
+ <p>${state.stopRequested?'중지 요청됨 · 실제 중지/쓰기 회수 미확인':'중지 요청 전'}</p>
+ ${button('실제 중지·쓰기 회수 확인 예시','data-execution="confirm-stop"',false,blocked()||!state.stopRequested)}
+ ${go('같은 세션 보완·다른 도구 이전','transfer')}<p>실제 프로세스/도구 호출은 없습니다. 알림/보고만을 근거로 완료 처리하지 않습니다.</p>`)}
+const executionWork=renderers.work,executionSession=renderers.session;
+renderers.work=renderers.mobile=()=>executionWork()+executionPanel();renderers.session=()=>executionSession()+executionPanel();
+document.addEventListener('change',e=>{if(e.target.id==='execution-case')state.executionCase=e.target.value;if(e.target.id==='stop-scope')state.stopScope=e.target.value;if(['execution-case','stop-scope'].includes(e.target.id))render()});
+document.addEventListener('click',e=>{const b=e.target.closest('button'),a=b?.dataset.execution;if(!a||b.disabled||blocked())return;if(a==='stop')state.stopRequested=true;if(a==='confirm-stop'&&state.stopRequested){state.stopped=true;notify('실제 중지 대조를 마친 예시 · 실제 도구 제어 없음')}render()});
+function stageToolConfiguration(name,environment){if(blocked()||!name.trim()||!environment.trim())return false;state.toolConfiguration={name,environment,status:'연결 미확인 · 설정 초안'};return true}
+const inventoryTools=renderers.tools;
+renderers.tools=()=>inventoryTools()+card('등록·환경·권한의 구분 · 설계용 탭 초안',`
+ <div class="tabs">${['도구','환경','권한'].map(x=>button(x,`data-tool-tab="${x}"`,(state.toolTab||'도구')===x)).join('')}</div>
+ ${(state.toolTab||'도구')==='도구'?`${field('연결 설정 이름 *','tool-name',state.toolName||'')}${field('실행 위치·환경 *','tool-environment',state.toolEnvironment||'Windows PC')}<table><tr><th>공식 지원 대조 항목</th><th>현재</th></tr>${['지시/수신','실제 수행·결과/원문','안전 중지·쓰기 회수','승인·재개','세션 유지/교체','모델·사용 한도'].map(x=>`<tr><td>${x}</td><td>미확인 · P02/FN06에서 실제 검증</td></tr>`).join('')}</table><p>등록→읽기 연결 확인→작은 실제 검증→배정 가능 판정을 구분합니다.</p>`:
+ state.toolTab==='환경'?`${draftSelect('tool-purpose','대상 환경 역할',[['development','개발'],['validation','검증'],['deployment','배포']],state.toolPurpose||'development')}${field('소스·허용 경로 참조','tool-path',state.toolPath||'')}<p>실행기는 Windows, 실제 대상 환경·허용 소스는 따로 확인합니다. 이 시안에서 경로 접근·설치·SSH·DB·배포를 하지 않습니다.</p>`:
+ `${draftSelect('tool-permission','허용 범위 검토',[['unconfirmed','미확인 · 배정 불가'],['read','읽기만 검토'],['scoped','정확 경로·작업 제한 쓰기 검토']],state.toolPermission||'unconfirmed')}<p>자동/승인/금지의 대상·유효 범위를 서버에서 검증해야 합니다. 설정 저장만으로 진행 중 임무에 권한을 넓히지 않습니다. Secret 값은 입력하지 않으며 실제 제품의 보호 참조를 사용합니다.</p>`}
+ ${button('설정 초안 보관 · 연결/배정 아님','data-tool="stage"',false,blocked())}${button('읽기 연결 확인의 선행 조건 보기','data-tool="preflight"',false,blocked())}
+ ${state.toolConfiguration?`<p>탭 설정: ${esc(state.toolConfiguration.name)} / ${esc(state.toolConfiguration.environment)} / ${esc(state.toolConfiguration.status)}</p>`:''}
+ ${state.toolPreflight?'<div class="notice">정확 도구/버전·공식 인터페이스·인증 참조·실행 위치·허용 범위를 확인한 뒤 읽기 연결을 검사합니다. 파일을 바꾸는 실제 검증은 대상·영향·승인 경계를 먼저 확인합니다. 이 버튼은 실제 연결을 시도하지 않습니다.</div>':''}`);
+document.addEventListener('input',e=>{if(blocked())return;const key={'tool-name':'toolName','tool-environment':'toolEnvironment','tool-path':'toolPath'}[e.target.id];if(key)state[key]=e.target.value});
+document.addEventListener('change',e=>{if(blocked())return;const key={'tool-purpose':'toolPurpose','tool-permission':'toolPermission'}[e.target.id];if(key)state[key]=e.target.value});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.toolTab){state.toolTab=b.dataset.toolTab;render();return}const a=b.dataset.tool;if(!a||blocked())return;if(a==='stage'&&!stageToolConfiguration(state.toolName||'',state.toolEnvironment||'Windows PC')){notify('연결 이름과 실행 환경이 필요합니다.');return}if(a==='preflight')state.toolPreflight=true;render()});
+const projectList=renderers.projects;
+renderers.projects=()=>`${field('프로젝트 검색','project-query',state.projectQuery||'')}${draftSelect('project-filter','프로젝트 목록',[['active','진행/준비'],['archived','완료·보관']],state.projectFilter||'active')}${button('목록 검색','data-project-search="yes"')}${state.projectFilter==='archived'||(state.projectQuery&&!state.project.includes(state.projectQuery))?card('일치하는 프로젝트 없음',go('새 프로젝트 만들기','create')):projectList()}`;
+document.addEventListener('input',e=>{if(e.target.id==='project-query')state.projectQuery=e.target.value});
+document.addEventListener('change',e=>{if(e.target.id==='project-filter'){state.projectFilter=e.target.value;render()}});
+document.addEventListener('click',e=>{if(e.target.closest('button')?.dataset.projectSearch)render()});
+function knowledgeData(){return state.knowledgeRecords??=[
+ {id:'K1',kind:'목적·헌법',title:'사용자 소유의 프로젝트 지식',body:'프로젝트·헌법·원문과 결정은 Anvil에 남기고 도구를 교체한다.',reason:'계정·세션·토큰과 프로젝트 원본을 분리하기 위해',fact:'합의 사실 예시',raw:'사용자 원문 예시: 프로젝트 지식은 사용자 소유',history:[]},
+ {id:'K2',kind:'결정',title:'방법론과 공식 산출물 양식',body:'각 단계의 양식 버전·작성 임무·검수 조건을 연결한다.',reason:'어떤 LLM으로 바꿔도 같은 작성 계약을 적용하기 위해',fact:'결정 예시',raw:'사용자 원문 예시: 양식대로 LLM 작성·시스템 조회',history:[]},
+ {id:'K3',kind:'실패·해결',title:'원인 미확인 실행 공백',body:'수신 뒤 수행 증거가 없으면 거부·오류로 추측하지 않는다.',reason:'불명확한 중단에서 근거 기반 재개',fact:'관측 예시',raw:'시안 원문 예시: 마지막 수신 이후 실제 수행 미확인',history:[]},
+ {id:'K4',kind:'가설',title:'도구 교체 후보',body:'다른 도구의 지원으로 재개 가능할 수 있으나 실제 검증 전이다.',reason:'공식 지원과 환경 확인 필요',fact:'가설 · 미확정',raw:'시안 가설 예시: 후보 제안은 지원 검증이 아님',history:[]}
+ ]}
+function correctKnowledge(id,body,reason){if(blocked()||!body.trim()||!reason.trim())return false;const row=knowledgeData().find(x=>x.id===id);if(!row)return false;row.history.push({body:row.body,reason});row.body=body;return true}
+renderers.knowledge=()=>{
+ const rows=knowledgeData(),query=state.knowledgeQuery||'',visible=rows.filter(x=>(x.title+x.body+x.kind).includes(query)),selected=rows.find(x=>x.id===state.knowledgeSelected)||rows[0],draft=state.knowledgeDrafts?.[selected.id]||{};
+ return `<h1>헌법·지식·원문·결정 이유</h1><p class="warn">전부 설계용 예시. 실제 사용자 대화를 복사한 데이터베이스가 아닙니다.</p>${field('지식 검색','knowledge-query',query)}${button('허용 프로젝트 안에서 검색','data-knowledge="search"')}<div class="two">${card('목록·사실/가설',visible.map(x=>button(x.kind+' · '+x.title,`data-knowledge-select="${x.id}"`,x.id===selected.id)).join('<br>')||'<p>일치하는 지식 없음 · 검색어를 바꾸세요.</p>')}${card(esc(selected.title),`
+ <p>${esc(selected.fact)} / ${selected.excluded?'다음 임무에서 사용 제외 · 역사 유지':'현재 유효 예시'}</p><p>${esc(selected.body)}</p><h3>왜 결정했는가</h3><p>${esc(selected.reason)}</p><details><summary>원문·출처</summary><p>${esc(selected.raw)}</p></details><p>연결: D-지식 / 계획-맥락 / 현재 적용 헌법 버전 예시. 실제 세션 전달/이해 대조는 미실행입니다.</p>
+ ${field('정정 내용','knowledge-body',draft.body||'')}${field('정정·사용 제외 이유 *','knowledge-reason',draft.reason||'')}
+ ${button('정정 제안 반영 · 탭 예시','data-knowledge="correct"',false,blocked())}${button('다음 임무에서 사용 제외 예시','data-knowledge="exclude"',false,blocked())}
+ <details><summary>정정 이전 내용과 이유 ${selected.history.length}건</summary>${selected.history.map(x=>`<p>${esc(x.body)} / 정정 이유: ${esc(x.reason)}</p>`).join('')||'<p>이력 없음</p>'}</details>
+ ${field('공유 대상·범위 검토','knowledge-recipient',state.knowledgeRecipient||'')}${button('공유 전 내용·범위 확인','data-knowledge="share"',false,blocked())}
+ ${state.knowledgeShare?`<div class="notice">공유 검토 대상: ${esc(state.knowledgeShare)} / 내용 ${esc(selected.body)}. 실제 전송/외부 공개 없음. 사용자 별도 승인 전 공유하지 않습니다.</div>`:''}`)}</div>`;
+};
+document.addEventListener('input',e=>{if(blocked())return;if(e.target.id==='knowledge-query')state.knowledgeQuery=e.target.value;if(e.target.id==='knowledge-recipient')state.knowledgeRecipient=e.target.value;const key={'knowledge-body':'body','knowledge-reason':'reason'}[e.target.id];if(key){const id=state.knowledgeSelected||'K1';((state.knowledgeDrafts??={})[id]??={})[key]=e.target.value}});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.knowledgeSelect){state.knowledgeSelected=b.dataset.knowledgeSelect;state.knowledgeShare=null;render();return}const a=b.dataset.knowledge;if(!a)return;if(a==='search'){render();return}if(blocked())return;const id=state.knowledgeSelected||'K1',draft=state.knowledgeDrafts?.[id]||{};
+ if(a==='correct'&&!correctKnowledge(id,draft.body||'',draft.reason||'')){notify('정정할 내용과 이유가 필요합니다. 원문은 유지합니다.');return}
+ if(a==='exclude'){if(!draft.reason?.trim()){notify('사용 제외 이유가 필요합니다.');return}const row=knowledgeData().find(x=>x.id===id);row.excluded=true;row.exclusionReason=draft.reason}
+ if(a==='share'){if(!state.knowledgeRecipient?.trim()){notify('공유 대상과 범위를 먼저 적으세요.');return}state.knowledgeShare=state.knowledgeRecipient}render();
+});
+function hasUnpersistedInputs(){return !!(state.methodDraft||state.documentInput||state.artifactBody||state.wizard?.purpose||state.wizardSourcePath||state.toolName||state.toolPath||state.changeReason||state.knowledgeRecipient||Object.values(state.artifactMeta||{}).some(Boolean)||Object.values(state.unsent||{}).some(Boolean)||Object.keys(state.knowledgeDrafts||{}).length)}
+const workWithDraft=renderers.work;
+renderers.work=renderers.mobile=()=>workWithDraft().replace(/(<textarea id="instruction"[^>]*>)[\s\S]*?(<\/textarea>)/,(_,open,close)=>open+esc(state.unsent?.[state.role]||'')+close);
+document.addEventListener('input',e=>{state.resetPending=false;if(e.target.id==='instruction'&&!blocked())(state.unsent??={})[state.role]=e.target.value});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(b?.dataset.action==='send'&&!blocked()&&state.unsent?.[state.role]&&state.sent.at(-1)?.text===state.unsent[state.role]){state.unsent[state.role]='';render()}});
+const resetWithoutGuard=document.getElementById('reset').onclick;
+document.getElementById('reset').onclick=()=>{if(hasUnpersistedInputs()&&!state.resetPending){state.resetPending=true;notify('탭의 미보관 입력이 사라집니다. 같은 초기화 버튼을 다시 누르면 폐기합니다.');return}resetWithoutGuard()};
+window.addEventListener('hashchange',()=>{state.resetPending=false;state.artifactScaffoldPending=null});
+render();
+</script></body></html>

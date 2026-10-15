@@ -1,0 +1,12 @@
+node_modules/
+apps/web/dist/
+.av3-data/
+.env
+.env.*
+!.env.example
+Backup/
+coverage/
+test-results/
+playwright-report/
+*.log
+*.tsbuildinfo

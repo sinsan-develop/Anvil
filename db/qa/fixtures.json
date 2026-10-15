@@ -1,0 +1,9 @@
+{
+  "owner": { "userId": "10000000-0000-4000-8000-000000000001", "loginName": "qa-owner", "participation": "OWNER" },
+  "viewer": { "userId": "10000000-0000-4000-8000-000000000002", "loginName": "qa-viewer", "participation": "VIEWER" },
+  "handoff": { "userId": "10000000-0000-4000-8000-000000000003", "loginName": "qa-handoff", "participation": "HANDOFF_ELIGIBLE" },
+  "project-a": { "projectId": "20000000-0000-4000-8000-000000000001", "name": "AV3 QA A", "purpose": "기본 저장과 정상 흐름 확인" },
+  "project-b": { "projectId": "20000000-0000-4000-8000-000000000002", "name": "AV3 QA B", "purpose": "교차 프로젝트 접근 거절 확인" },
+  "invalid-document": { "title": "필수 항목 없는 작업계획", "body": "시험용 미완성 문서", "expected": "DRAFT_ONLY" },
+  "valid-document": { "title": "QA 목적", "body": "사용자 지식을 Anvil에 보관하고 기존 Agent를 교체 가능한 도구로 사용한다.", "mediaType": "text/markdown" }
+}
