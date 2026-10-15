@@ -107,6 +107,11 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN03 본인 공통 양식 쓰기 착수
+
+- Stage B Main 어울, 안전 checkpoint `bf6b0f4611ff25a01ddf36ee9efa3370e2674954`/local-private 동일·tracked clean·main f976ed5e 불변. 공식 양식 복사/개정도 앞선 본인 공통 자료 직접 승인 범위이며 다른 사용자/공식 원본 쓰기는 열지 않는다. 새로운 `0011_user_common_forms` forward migration만 준비하고 이미 적용된 SQL/버전은 보존한다.
+- 사전 등록: 기존 WSL checkout/exact 게시 SHA·전용 개발 DB/보호 app·migrator 참조만 사용. 고유 `qa-common-form-UUID` 합성 사용자2/본인 양식1·명령/감사2를 생성하고 finally 정확 owner/ID로 정리한다. 기존 공식8종/사용자/Secret/계정·컨테이너·port 변경0. Windows relay 접속0. 사용자 양식 검사 모듈 미존재 RED 후 제한 데이터/고유 항목·필드·반복 구조·확정 가능성 검사1 GREEN. 전체 기능 완료는 아니다.
+
 ### 2026-10-16 조건 계약 정정·공통 자료 보완 승인
 
 - 공통 쓰기 actual: exact `0f072bb93f1a454432f8e97e3ca7a574eca1320b` WSL 시험1 PASS/388ms/skip0. copy/save·원본/과거 버전 불변·좌표345·같은 command 병렬2회 결과 동일/부작용 총2건·본문/연산 충돌409·타인404·내장403/SQL42501·CSRF/Origin403·회수401·감사 변경42501 확인. 새 migration checksum `ea3043a71f4d1557bf9620ac06f88274ed7227629fe2b1bfab00e7409d16563c`, 기존6개 불변·새 실제 사용자0.
