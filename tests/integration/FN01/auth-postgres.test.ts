@@ -17,6 +17,8 @@ test('실제 DB에서 초기 소유자 한 번 등록→로그인→session 조�
   const repository = new AccessRepository(pool, { installationId, key });
   const app = Reflect.apply(buildApp, undefined, [{}, undefined, { repository, origin: 'https://localhost:3830' }]) as ReturnType<typeof buildApp>;
   let ownerId: string | undefined;
+  let invitedId: string | undefined, invitationId: string | undefined;
+  const invitedLoginName = 'qa-invited-' + randomUUID();
   try {
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM anvil.users WHERE server_owner')).rows[0].count, 0, '초기화 시험은 실제 소유자가 없는 새 개발 DB에서만 수행');
     await pool.query('INSERT INTO anvil.installation_claims(installation_id,bootstrap_digest,expires_at) VALUES($1,$2,now()+interval \'30 minutes\')', [installationId, createHash('sha256').update(bootstrap).digest('hex')]);
@@ -96,6 +98,24 @@ test('실제 DB에서 초기 소유자 한 번 등록→로그인→session 조�
     assert.match(rotatedSecret, /^[A-Za-z0-9_-]{43}$/);
     assert.notEqual(rotatedSecret, claim.recoverySecret);
     assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/recovery/rotate', headers: rotateHeaders, payload: { commandId: rotateCommand } })).json().recoverySecret, null);
+    const inviteCommand = randomUUID(), invitedPassword = randomBytes(32).toString('base64url');
+    const invitationBody = { loginName: invitedLoginName, displayName: 'FN01 초대 QA', projectGrants: [], expiresAt: new Date(Date.now() + 3600000).toISOString(), commandId: inviteCommand };
+    const invitation = await app.inject({ method: 'POST', url: '/api/v1/auth/invitations', headers: rotateHeaders, payload: invitationBody });
+    assert.equal(invitation.statusCode, 201);
+    invitationId = invitation.json().invitationId;
+    assert.match(invitation.json().invitationSecret, /^[A-Za-z0-9_-]{43}$/);
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/invitations', headers: rotateHeaders, payload: invitationBody })).json().invitationSecret, null);
+    const acceptBody = { invitationId, invitationSecret: invitation.json().invitationSecret, password: invitedPassword, commandId: randomUUID() };
+    const accepted = await app.inject({ method: 'POST', url: '/api/v1/auth/invitations/accept', headers: { host: 'localhost:3830', origin: 'https://localhost:3830' }, payload: acceptBody });
+    assert.equal(accepted.statusCode, 201);
+    invitedId = accepted.json().user.id;
+    assert.equal(accepted.json().user.serverOwner, false);
+    assert.equal(accepted.headers['set-cookie'], undefined);
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/invitations/accept', headers: { host: 'localhost:3830', origin: 'https://localhost:3830' }, payload: { ...acceptBody, commandId: randomUUID() } })).statusCode, 409);
+    const invited = await repository.login(invitedLoginName, invitedPassword, 'FN01-QA-invited', 'qa-invited-source');
+    assert.equal(invited.user.serverOwner, false);
+    const invitedReauth = await repository.reauthenticate(invited.token, invited.csrfToken, invitedPassword, 'qa-invited-source');
+    assert.equal((await app.inject({ method: 'POST', url: '/api/v1/auth/invitations', headers: { ...beforeHeaders, cookie: '__Host-anvil.sid=' + invitedReauth.token, 'x-anvil-csrf': invitedReauth.csrfToken }, payload: { ...invitationBody, commandId: randomUUID() } })).statusCode, 403);
     const recoveredPassword = randomBytes(32).toString('base64url');
     const recoveryBody = { loginName, recoverySecret: rotatedSecret, newPassword: recoveredPassword, commandId: randomUUID() };
     const publicHeaders = { host: 'localhost:3830', origin: 'https://localhost:3830' };
@@ -118,10 +138,19 @@ test('실제 DB에서 초기 소유자 한 번 등록→로그인→session 조�
       await pool.query('DELETE FROM anvil.recovery_credentials WHERE user_id=$1', [ownerId]);
       await pool.query('DELETE FROM anvil.password_credentials WHERE user_id=$1', [ownerId]);
     }
+    if (invitedId) {
+      await pool.query('DELETE FROM anvil.auth_sessions WHERE user_id=$1', [invitedId]);
+      await pool.query('DELETE FROM anvil.clients WHERE user_id=$1', [invitedId]);
+      await pool.query('DELETE FROM anvil.recovery_credentials WHERE user_id=$1', [invitedId]);
+      await pool.query('DELETE FROM anvil.password_credentials WHERE user_id=$1', [invitedId]);
+    }
+    if (invitationId) await pool.query('DELETE FROM anvil.auth_actions WHERE actor_scope=$1', [invitationId]);
+    if (ownerId) await pool.query('DELETE FROM anvil.user_invitations WHERE created_by=$1', [ownerId]);
     await pool.query('DELETE FROM anvil.auth_actions WHERE actor_scope=$1 OR actor_scope=$2', [installationId, ownerId ?? installationId]);
     await pool.query('DELETE FROM anvil.installation_claims WHERE installation_id=$1', [installationId]);
     if (ownerId) await pool.query('DELETE FROM anvil.users WHERE id=$1', [ownerId]);
-    for (const [kind, value] of [['ACCOUNT', loginName], ['ACCOUNT', unknownName], ['SOURCE', 'qa-source'], ['SOURCE', 'qa-rate-source'], ['SOURCE', '127.0.0.1']]) {
+    if (invitedId) await pool.query('DELETE FROM anvil.users WHERE id=$1', [invitedId]);
+    for (const [kind, value] of [['ACCOUNT', loginName], ['ACCOUNT', invitedLoginName], ['ACCOUNT', unknownName], ['SOURCE', 'qa-source'], ['SOURCE', 'qa-rate-source'], ['SOURCE', 'qa-invited-source'], ['SOURCE', '127.0.0.1']]) {
       const bucket = createHmac('sha256', key).update(kind + ':' + value).digest('hex');
       await pool.query('DELETE FROM anvil.auth_attempt_windows WHERE bucket_kind=$1 AND bucket_key=$2', [kind, bucket]);
     }

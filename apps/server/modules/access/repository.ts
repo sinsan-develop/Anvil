@@ -219,6 +219,57 @@ export class AccessRepository {
       return { failure: 'AUTH_REQUIRED', status: 401 };
     });
   }
+  async createInvitation(token: string, csrf: string, input: { loginName: string; displayName: string; projectGrants: { projectId: string; participation: string }[]; expiresAt: string; commandId: string }): Promise<{ invitationId: string; invitationSecret: string | null; expiresAt: string }> {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
+    const normalized = normalizeName(input.loginName), expires = Date.parse(input.expiresAt);
+    if (!input.displayName.trim() || !Number.isFinite(expires) || expires <= Date.now() || expires > Date.now() + 24 * 3600000) throw new AuthFailure('INPUT_INVALID', 400);
+    return this.#transaction(async db => {
+      const actor = await this.#lockedSession(db, token);
+      if (!same(actor.csrf_digest, digest(csrf))) return { failure: 'CSRF_INVALID', status: 403 };
+      if (!actor.server_owner) return { failure: 'ACCESS_DENIED', status: 403 };
+      if (!actor.reauth_until || actor.reauth_until.getTime() <= Date.now()) return { failure: 'REAUTHENTICATION_REQUIRED', status: 412 };
+      // 계정 초대와 프로젝트 변경 권한은 별개다. FN11 집행 전 프로젝트 grant는 열지 않는다.
+      if (input.projectGrants.length) return { failure: 'PROJECT_AUTHORIZATION_NOT_READY', status: 412 };
+      const fingerprint = this.#hmac(JSON.stringify(['invitation', actor.uid, input]));
+      const previous = (await db.query("SELECT protected_fingerprint,safe_result_ref FROM anvil.auth_actions WHERE actor_scope=$1 AND operation='INVITE' AND command_id=$2", [actor.uid, input.commandId])).rows[0];
+      if (previous) return same(previous.protected_fingerprint, fingerprint) ? { value: { ...previous.safe_result_ref, invitationSecret: null } } : { failure: 'IDEMPOTENCY_CONFLICT', status: 409 };
+      if ((await db.query('SELECT 1 FROM anvil.users WHERE normalized_login_name=$1', [normalized])).rowCount) return { failure: 'INVITATION_UNAVAILABLE', status: 409 };
+      const invitationId = randomUUID(), invitationSecret = randomBytes(32).toString('base64url');
+      const safeResult = { invitationId, expiresAt: new Date(expires).toISOString() };
+      await db.query('INSERT INTO anvil.user_invitations(id,normalized_login_name,display_name,secret_digest,project_grants_json,expires_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)', [invitationId, normalized, input.displayName, digest(invitationSecret), JSON.stringify(input.projectGrants), safeResult.expiresAt, actor.uid]);
+      await db.query("INSERT INTO anvil.auth_actions(id,actor_scope,operation,command_id,protected_fingerprint,result_status,safe_result_ref) VALUES($1,$2,'INVITE',$3,$4,'APPLIED',$5)", [randomUUID(), actor.uid, input.commandId, fingerprint, JSON.stringify(safeResult)]);
+      await this.#audit(db, 'INVITE', 'APPLIED', 'INVITATION_CREATED', actor.uid, actor.client_id);
+      return { value: { ...safeResult, invitationSecret } };
+    });
+  }
+  async acceptInvitation(input: { invitationId: string; invitationSecret: string; password: string; commandId: string }, source: string): Promise<{ user: SafeUser; recoverySecret: string | null }> {
+    return this.#transaction<{ user: SafeUser; recoverySecret: string | null }>(async db => {
+      await db.query("SELECT pg_advisory_xact_lock(hashtext('anvil-auth-attempts'))");
+      const buckets = await this.#attempts(db, 'invitation:' + input.invitationId, source);
+      if (!buckets) return { failure: 'AUTH_RATE_LIMITED', status: 429 };
+      const ref = (await db.query('SELECT created_by FROM anvil.user_invitations WHERE id=$1', [input.invitationId])).rows[0];
+      const creator = (await db.query('SELECT status,server_owner,revoked_at FROM anvil.users WHERE id=$1 FOR UPDATE', [ref?.created_by ?? null])).rows[0];
+      const invite = (await db.query('SELECT * FROM anvil.user_invitations WHERE id=$1 FOR UPDATE', [input.invitationId])).rows[0];
+      if (!creator || creator.status !== 'ACTIVE' || !creator.server_owner || creator.revoked_at || !invite || invite.revoked_at || invite.expires_at.getTime() <= Date.now() || !same(invite.secret_digest, digest(input.invitationSecret))) {
+        await this.#failedAttempts(db, buckets); await this.#audit(db, 'ACCEPT_INVITATION', 'DENIED', 'INVITATION_UNAVAILABLE');
+        return { failure: 'INVITATION_UNAVAILABLE', status: 403 };
+      }
+      const fingerprint = this.#hmac(JSON.stringify(['accept-invitation', input]));
+      const previous = (await db.query("SELECT protected_fingerprint,safe_result_ref FROM anvil.auth_actions WHERE actor_scope=$1 AND operation='ACCEPT_INVITATION' AND command_id=$2", [input.invitationId, input.commandId])).rows[0];
+      if (previous) return same(previous.protected_fingerprint, fingerprint) ? { value: { user: previous.safe_result_ref, recoverySecret: null } } : { failure: 'IDEMPOTENCY_CONFLICT', status: 409 };
+      if (invite.consumed_at || (await db.query('SELECT 1 FROM anvil.users WHERE normalized_login_name=$1', [invite.normalized_login_name])).rowCount) return { failure: 'INVITATION_UNAVAILABLE', status: 409 };
+      if (!Array.isArray(invite.project_grants_json) || invite.project_grants_json.length) return { failure: 'PROJECT_AUTHORIZATION_NOT_READY', status: 412 };
+      const phc = await hashPassword(input.password), recoverySecret = randomBytes(32).toString('base64url');
+      const user = { id: randomUUID(), displayName: invite.display_name as string, serverOwner: false };
+      await db.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status,server_owner) VALUES($1,$2,$2,$3,'ACTIVE',false)", [user.id, invite.normalized_login_name, user.displayName]);
+      await db.query('INSERT INTO anvil.password_credentials(user_id,argon2_phc,credential_generation) VALUES($1,$2,1)', [user.id, phc]);
+      await db.query('INSERT INTO anvil.recovery_credentials(id,user_id,secret_digest) VALUES($1,$2,$3)', [randomUUID(), user.id, digest(recoverySecret)]);
+      await db.query('UPDATE anvil.user_invitations SET consumed_at=now(),consumed_by=$2 WHERE id=$1', [invite.id, user.id]);
+      await db.query("INSERT INTO anvil.auth_actions(id,actor_scope,operation,command_id,protected_fingerprint,result_status,safe_result_ref) VALUES($1,$2,'ACCEPT_INVITATION',$3,$4,'APPLIED',$5)", [randomUUID(), invite.id, input.commandId, fingerprint, JSON.stringify(user)]);
+      await this.#audit(db, 'ACCEPT_INVITATION', 'APPLIED', 'INVITATION_CONSUMED', user.id);
+      return { value: { user, recoverySecret } };
+    });
+  }
   async logout(token: string, csrf: string): Promise<void> {
     if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return;
     return this.#transaction<void>(async db => {

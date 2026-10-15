@@ -109,6 +109,8 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- FN01 초대 기반 후속: 명시 소유자/최근 재인증/CSRF·24시간 상한·일회 비밀·일반 사용자 수락/자동로그인0 API를 추가했다. 무인증 초대404→401 RED/GREEN, 로컬 unit23/typecheck/diff PASS. 실제 저장/동시·회수/역할 검수는 다음 WSL exact 후보에서 진행 전이다. 프로젝트 grant는 FN11 실제 권한/제어 집행 전 `PROJECT_AUTHORIZATION_NOT_READY`412로 차단하며 빈 projectGrants 계정 초대만 준비했다. 이를 프로젝트 권한 초대 완료라고 표시하지 않는다. 새 계약을 임의로 완화하거나 실제 사용자 계정을 생성하지 않았다.
+
 - 복구 API는 WSL Git exact `551b7791e74b835ce7b08eb465b420e6d592e93c`/clean에서 실제 auth DB/HTTP1 PASS(0.93초)다. 이전/소비한 비밀 차단·동일command 결과·generation/세션 회수를 포함한다. 후속 UI00은 로그인의 복구 양식, 설정의 로그인 보안(재인증→새 CSRF로 비밀번호 교체·복구 비밀 재발급 동의/가림/보관), beforeunload 경고를 연결했다. 실제 화면 부재2 RED→계약 fixture2 GREEN, 추가 동의/가림 회귀1도 PASS, 단위23·타입/Web24 모듈·diff PASS. 브라우저3은 명시 fixture이며 실제 API/DB와 합쳐 E2E PASS로 세지 않는다. Windows relay 중단 때문에 새 UI의 실제 DB 브라우저 여정은 미검증, 초대/프로젝트·내부 탐색 미저장 보호 등도 남아 UI00/FN01 [2] 유지한다.
 
 - 복구 기능 구현 전 기준선 `25d2a2c9`를 지정 branch에 게시하고 WSL exact SHA에서 실제 rotate404!=200 RED를 확인했다. Windows relay 오류를 기능 RED로 대신하지 않았다. 이후 access repository/routes에 최근 재인증/CSRF 아래 일회 복구 비밀 재발급·이전 회수, 비밀 digest/시도 제한·일회 소비/세대 증가/전체session회수·동일command 결과만 확인을 구현했다. 로컬 unit23/typecheck/diff PASS, actual WSL GREEN은 다음 게시 SHA에서 검증 전이다. 복구 비밀/새 비밀번호 원문은 저장/출력하지 않는다.

@@ -59,5 +59,7 @@ export function registerAccessRoutes(app: FastifyInstance, options: AccessRoutes
       await options.repository.recover(request.body, request.ip);
       return reply.header('set-cookie', '__Host-anvil.sid=; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=0').code(204).send();
     });
+    auth.post<{ Body: { loginName: string; displayName: string; projectGrants: { projectId: string; participation: string }[]; expiresAt: string; commandId: string } }>('/api/v1/auth/invitations', { schema: { body: body({ loginName: text(128), displayName: text(120), projectGrants: { type: 'array', maxItems: 200, items: body({ projectId: commandIdSchema, participation: { enum: ['OWNER', 'VIEWER', 'HANDOFF_ELIGIBLE'] } }) }, expiresAt: { ...text(40), format: 'date-time' }, commandId: commandIdSchema }) } }, async (request, reply) => reply.code(201).send(await options.repository.createInvitation(sessionToken(request), csrfToken(request), request.body)));
+    auth.post<{ Body: { invitationId: string; invitationSecret: string; password: string; commandId: string } }>('/api/v1/auth/invitations/accept', { schema: { body: body({ invitationId: commandIdSchema, invitationSecret: opaqueSecretSchema, password: { ...text(128), minLength: 15 }, commandId: commandIdSchema }) } }, async (request, reply) => reply.code(201).send(await options.repository.acceptInvitation(request.body, request.ip)));
   });
 }
