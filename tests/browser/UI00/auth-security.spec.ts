@@ -79,3 +79,31 @@ test('인증 화면 계약: 재발급은 회수 동의·재인증 후 한 번만
   await page.getByLabel('새 복구 비밀을 안전한 곳에 보관했습니다').check();
   expect(rotateCalls).toBe(1);
 });
+
+test('인증 화면 계약: 초대를 수락해도 자동 로그인하지 않고 복구 비밀 보관을 요구한다', async ({ page }) => {
+  await page.route('**/api/v1/session', route => route.fulfill({ status: 401, json: { code: 'AUTH_REQUIRED' } }));
+  await page.route('**/api/v1/auth/setup', route => route.fulfill({ json: { setupRequired: false, policyVersion: 1 } }));
+  let calls = 0;
+  await page.route('**/api/v1/auth/invitations/accept', route => {
+    calls++;
+    expect(route.request().postDataJSON().invitationSecret).toBe('I'.repeat(43));
+    expect(route.request().headers()['x-anvil-csrf']).toBeUndefined();
+    return route.fulfill({ status: 201, json: { user: { ...user, serverOwner: false }, recoverySecret: 'R'.repeat(43) } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: '초대 수락', exact: true }).click({ timeout: 1000 });
+  await page.getByRole('button', { name: '로그인으로 돌아가기', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Anvil 로그인' })).toBeVisible({ timeout: 1000 });
+  await page.getByRole('button', { name: '초대 수락', exact: true }).click();
+  await page.getByLabel('사용자명', { exact: true }).fill('qa-invited');
+  await page.getByLabel('초대 ID', { exact: true }).fill(user.id);
+  await page.getByLabel('초대 비밀', { exact: true }).fill('I'.repeat(43));
+  await page.getByLabel('새 비밀번호', { exact: true }).fill('synthetic invited passphrase');
+  await page.getByRole('button', { name: '초대 수락 후 계정 등록', exact: true }).click();
+  await expect(page.getByLabel('복구 비밀', { exact: true })).toHaveAttribute('type', 'password');
+  await expect(page.getByRole('button', { name: '로그인으로 이동' })).toBeDisabled();
+  await page.getByLabel('복구 비밀을 안전한 곳에 보관했습니다').check();
+  await page.getByRole('button', { name: '로그인으로 이동' }).click();
+  await expect(page.getByRole('heading', { name: 'Anvil 로그인' })).toBeVisible();
+  expect(calls).toBe(1);
+});

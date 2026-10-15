@@ -109,6 +109,10 @@
 
 ### 2026-10-16 Stage A 통합 종료·Stage B UI00 시작
 
+- 초대 API 실제 검수: WSL Git exact `3b8e029d539b5be587ff0c1b178641811a3c183e`/clean·typecheck·auth DB/HTTP1 PASS(1.83초). 소유자 재인증 초대→일회 비밀1회→일반 사용자 수락/자동로그인0→새 로그인·일반 사용자 초대403을 확인, 고유 두 QA 계정/초대/세션을 정리했다. 프로젝트 grant 집행과 소유자 초대 작성 UI는 아직 미완료다.
+- 초대 수락 UI00: 화면 부재 RED→등록/복구 비밀 가림·보관 확인/자동로그인0 계약 GREEN. 초대 화면 ‘로그인으로 돌아가기’가 복구로 가는 오류도 실제 RED→분기만 보정 GREEN. 현재 인증 보안 계약4·unit23·타입/Web24모듈 PASS, 실제 새 UI DB 브라우저는 relay 위험으로 미검증이다. fixtures 합격을 실제 사용자 초대 성공으로 보고하지 않는다.
+- 공식 문서 대조: 이전 소유 동기화본 불변인 WORK_STATUS/WORK_PLAN/DEVELOPMENT_ENVIRONMENT와 신규 UI00 RESULT4개만 공식 root로 hash 일치 동기화했다. 공식 FILE_MAP은 현재 Git 이력과 byte 동일본을 찾지 못해 보존했으며 덮어쓰지 않았다. 실제 업무 배정 파일은 게시 후보 FILE_MAP과 대조한다. 이 정본 경로 불일치를 몰래 일괄 복사로 덮지 않는다.
+
 - FN01 초대 기반 후속: 명시 소유자/최근 재인증/CSRF·24시간 상한·일회 비밀·일반 사용자 수락/자동로그인0 API를 추가했다. 무인증 초대404→401 RED/GREEN, 로컬 unit23/typecheck/diff PASS. 실제 저장/동시·회수/역할 검수는 다음 WSL exact 후보에서 진행 전이다. 프로젝트 grant는 FN11 실제 권한/제어 집행 전 `PROJECT_AUTHORIZATION_NOT_READY`412로 차단하며 빈 projectGrants 계정 초대만 준비했다. 이를 프로젝트 권한 초대 완료라고 표시하지 않는다. 새 계약을 임의로 완화하거나 실제 사용자 계정을 생성하지 않았다.
 
 - 복구 API는 WSL Git exact `551b7791e74b835ce7b08eb465b420e6d592e93c`/clean에서 실제 auth DB/HTTP1 PASS(0.93초)다. 이전/소비한 비밀 차단·동일command 결과·generation/세션 회수를 포함한다. 후속 UI00은 로그인의 복구 양식, 설정의 로그인 보안(재인증→새 CSRF로 비밀번호 교체·복구 비밀 재발급 동의/가림/보관), beforeunload 경고를 연결했다. 실제 화면 부재2 RED→계약 fixture2 GREEN, 추가 동의/가림 회귀1도 PASS, 단위23·타입/Web24 모듈·diff PASS. 브라우저3은 명시 fixture이며 실제 API/DB와 합쳐 E2E PASS로 세지 않는다. Windows relay 중단 때문에 새 UI의 실제 DB 브라우저 여정은 미검증, 초대/프로젝트·내부 탐색 미저장 보호 등도 남아 UI00/FN01 [2] 유지한다.
