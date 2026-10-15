@@ -1,0 +1,60 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' role='img' aria-labelledby='title desc'><title id='title'>S05 단계책임자와 실행 상세</title><desc id='desc'>Agent 보고와 실제 관측을 분리하고 결과의 근거 확인 상세 설계 검토용 정적 시안. 예시 자료이며 실제 기능 실행이 아닙니다.</desc><g font-family='Pretendard, Noto Sans KR, Malgun Gothic, Segoe UI, sans-serif'>
+<rect x='0' y='0' width='1440' height='900' rx='0' fill='#071321' stroke='#071321'/>
+<rect x='0' y='0' width='188' height='900' rx='0' fill='#0a1727' stroke='#304761'/>
+<text x='22' y='43' font-size='20' fill='#f4f8ff' font-weight='700'>A N V I L</text>
+<text x='22' y='65' font-size='10' fill='#a7c7eb' font-weight='400'>프로젝트는 남고, 도구는 바뀐다</text>
+<text x='24' y='130' font-size='14' fill='#dce8f6' font-weight='400'>프로젝트</text>
+<text x='24' y='176' font-size='14' fill='#dce8f6' font-weight='400'>방법론</text>
+<text x='24' y='222' font-size='14' fill='#dce8f6' font-weight='400'>문서·설계 추적</text>
+<text x='24' y='268' font-size='14' fill='#dce8f6' font-weight='400'>헌법·지식</text>
+<text x='24' y='314' font-size='14' fill='#dce8f6' font-weight='400'>도구·환경</text>
+<text x='24' y='360' font-size='14' fill='#dce8f6' font-weight='400'>승인 요청</text>
+<text x='24' y='406' font-size='14' fill='#dce8f6' font-weight='400'>설정</text>
+<text x='24' y='452' font-size='14' fill='#dce8f6' font-weight='400'>보조 Dashboard</text>
+<text x='22' y='844' font-size='10' fill='#a7c7eb' font-weight='400'>상세 설계 · 정적 시안</text>
+<text x='22' y='867' font-size='10' fill='#ffc36c' font-weight='400'>실제 실행·저장 없음</text>
+<rect x='188' y='0' width='1252' height='72' rx='0' fill='#0c1b2c' stroke='#304761'/>
+<text x='216' y='31' font-size='12' fill='#dce8f6' font-weight='400'>신산님 / 개인 공간</text>
+<text x='216' y='52' font-size='10' fill='#a7c7eb' font-weight='400'>Agent 보고와 실제 관측을 분리하고 결과의 근거 확인</text>
+<text x='1170' y='35' font-size='12' fill='#90d9bb' font-weight='400'>내 작업 권한 · PC</text>
+<text x='216' y='111' font-size='16' fill='#f4f8ff' font-weight='600'>S05  단계책임자와 실행 상세</text>
+<text x='216' y='136' font-size='10' fill='#ffc36c' font-weight='400'>검토용 예시 · 표시 상태는 실제 제품의 구현 결과가 아닙니다</text>
+<rect x='216' y='168' width='1184' height='120' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='196' font-size='14' fill='#f4f8ff' font-weight='600'>구현 책임자 · 기존 코딩 Agent / Anvil 관리 세션</text>
+<text x='234' y='223' font-size='12' fill='#dce8f6' font-weight='400'>임무: 승인 저장·조회 연결 / 기준: 설계 v2·작업계획 v1</text>
+<text x='234' y='248' font-size='12' fill='#dce8f6' font-weight='400'>허용: 지정 소스 수정·관련 시험 / 금지: 운영 DB·무승인 배포</text>
+<rect x='216' y='308' width='150' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='228' y='330' font-size='12' fill='#f4f8ff' font-weight='600'>대화</text>
+<rect x='380' y='308' width='170' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='392' y='330' font-size='12' fill='#f4f8ff' font-weight='600'>작업현황 파일</text>
+<rect x='564' y='308' width='150' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='576' y='330' font-size='12' fill='#f4f8ff' font-weight='600'>변경</text>
+<rect x='728' y='308' width='150' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='740' y='330' font-size='12' fill='#f4f8ff' font-weight='600'>검증</text>
+<rect x='1030' y='308' width='370' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='1042' y='330' font-size='12' fill='#f4f8ff' font-weight='600'>새 세션 / 다른 도구로 이전 →</text>
+<rect x='216' y='366' width='740' height='286' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='394' font-size='14' fill='#f4f8ff' font-weight='600'>시간순 실제 수행</text>
+<text x='234' y='421' font-size='12' fill='#dce8f6' font-weight='400'>10:02 시작 요청 → 10:02 도구 수신 확인</text>
+<text x='234' y='446' font-size='12' fill='#dce8f6' font-weight='400'>10:03 목적·헌법·범위 이해 대조</text>
+<text x='234' y='471' font-size='12' fill='#dce8f6' font-weight='400'>10:04 책임자 작업 방법: 직접 연결 + 하위 시험 임무</text>
+<text x='234' y='496' font-size='12' fill='#dce8f6' font-weight='400'>10:08 실행기: 파일 변경 2건 관측</text>
+<text x='234' y='521' font-size='12' fill='#dce8f6' font-weight='400'>10:09 시험 종료 0 / 핵심 저장·조회는 다음 확인</text>
+<text x='234' y='546' font-size='12' fill='#dce8f6' font-weight='400'>10:10 Agent: 결과 제출 준비 중</text>
+<text x='234' y='571' font-size='12' fill='#dce8f6' font-weight='400'>명령·파일 diff·전체 출력은 항목별 펼치기</text>
+<rect x='976' y='366' width='424' height='178' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='994' y='394' font-size='14' fill='#f4f8ff' font-weight='600'>하위 Agent</text>
+<text x='994' y='421' font-size='12' fill='#dce8f6' font-weight='400'>임무: 중요한 실패 조건 시험</text>
+<text x='994' y='446' font-size='12' fill='#dce8f6' font-weight='400'>권한: 관련 시험 파일만</text>
+<text x='994' y='471' font-size='12' fill='#dce8f6' font-weight='400'>상태: 수행 중 / 마지막 관측 8초 전</text>
+<text x='994' y='496' font-size='12' fill='#dce8f6' font-weight='400'>결과는 구현 책임자에게 전달</text>
+<rect x='976' y='560' width='424' height='154' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='994' y='588' font-size='14' fill='#f4f8ff' font-weight='600'>복구 기록</text>
+<text x='994' y='615' font-size='12' fill='#dce8f6' font-weight='400'>서버 수신: 10:10</text>
+<text x='994' y='640' font-size='12' fill='#dce8f6' font-weight='400'>진행 중/남은 작업/미전송 보기</text>
+<text x='994' y='665' font-size='12' fill='#dce8f6' font-weight='400'>완료 확인 없이 단계 완료 처리 안 함</text>
+<rect x='216' y='742' width='180' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='228' y='764' font-size='12' fill='#f4f8ff' font-weight='600'>부족 항목 보완 요청</text>
+<rect x='416' y='742' width='200' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='428' y='764' font-size='12' fill='#f4f8ff' font-weight='600'>중지 범위 선택</text>
+</g></svg>

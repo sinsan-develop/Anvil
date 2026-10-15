@@ -1,0 +1,81 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' role='img' aria-labelledby='title desc'><title id='title'>S04 프로젝트 작업</title><desc id='desc'>사용자가 정의한 절차에 따라 도구에 일을 시키는 주 작업 공간 상세 설계 검토용 정적 시안. 예시 자료이며 실제 기능 실행이 아닙니다.</desc><g font-family='Pretendard, Noto Sans KR, Malgun Gothic, Segoe UI, sans-serif'>
+<rect x='0' y='0' width='1440' height='900' rx='0' fill='#071321' stroke='#071321'/>
+<rect x='0' y='0' width='188' height='900' rx='0' fill='#0a1727' stroke='#304761'/>
+<text x='22' y='43' font-size='20' fill='#f4f8ff' font-weight='700'>A N V I L</text>
+<text x='22' y='65' font-size='10' fill='#a7c7eb' font-weight='400'>프로젝트는 남고, 도구는 바뀐다</text>
+<text x='24' y='130' font-size='14' fill='#dce8f6' font-weight='400'>프로젝트</text>
+<text x='24' y='176' font-size='14' fill='#dce8f6' font-weight='400'>방법론</text>
+<text x='24' y='222' font-size='14' fill='#dce8f6' font-weight='400'>문서·설계 추적</text>
+<text x='24' y='268' font-size='14' fill='#dce8f6' font-weight='400'>헌법·지식</text>
+<text x='24' y='314' font-size='14' fill='#dce8f6' font-weight='400'>도구·환경</text>
+<text x='24' y='360' font-size='14' fill='#dce8f6' font-weight='400'>승인 요청</text>
+<text x='24' y='406' font-size='14' fill='#dce8f6' font-weight='400'>설정</text>
+<text x='24' y='452' font-size='14' fill='#dce8f6' font-weight='400'>보조 Dashboard</text>
+<text x='22' y='844' font-size='10' fill='#a7c7eb' font-weight='400'>상세 설계 · 정적 시안</text>
+<text x='22' y='867' font-size='10' fill='#ffc36c' font-weight='400'>실제 실행·저장 없음</text>
+<rect x='188' y='0' width='1252' height='72' rx='0' fill='#0c1b2c' stroke='#304761'/>
+<text x='216' y='31' font-size='12' fill='#dce8f6' font-weight='400'>신산님 / 개인 공간</text>
+<text x='216' y='52' font-size='10' fill='#a7c7eb' font-weight='400'>사용자가 정의한 절차에 따라 도구에 일을 시키는 주 작업 공간</text>
+<text x='1170' y='35' font-size='12' fill='#90d9bb' font-weight='400'>내 작업 권한 · PC</text>
+<text x='216' y='111' font-size='16' fill='#f4f8ff' font-weight='600'>S04  프로젝트 작업</text>
+<text x='216' y='136' font-size='10' fill='#ffc36c' font-weight='400'>검토용 예시 · 표시 상태는 실제 제품의 구현 결과가 아닙니다</text>
+<rect x='216' y='160' width='230' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='228' y='182' font-size='12' fill='#f4f8ff' font-weight='600'>건별 · 선택 단계 1개</text>
+<rect x='1040' y='160' width='170' height='34' rx='6' fill='#2369b6' stroke='#54799e'/>
+<text x='1052' y='182' font-size='12' fill='#f4f8ff' font-weight='600'>준비 확인·시작</text>
+<rect x='1224' y='160' width='176' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='1236' y='182' font-size='12' fill='#f4f8ff' font-weight='600'>일시정지 ▾</text>
+<rect x='216' y='216' width='236' height='618' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='248' font-size='14' fill='#f4f8ff' font-weight='600'>개발 절차</text>
+<text x='234' y='290' font-size='12' fill='#dce8f6' font-weight='400'>요구사항 · 완료</text>
+<text x='234' y='333' font-size='12' fill='#dce8f6' font-weight='400'>설계·화면 · 완료</text>
+<text x='234' y='376' font-size='12' fill='#dce8f6' font-weight='400'>개발계획 · 완료</text>
+<text x='234' y='419' font-size='12' fill='#dce8f6' font-weight='400'>구현 · 개발 중</text>
+<text x='234' y='462' font-size='12' fill='#dce8f6' font-weight='400'>  승인 저장 연결 · 수행 중</text>
+<text x='234' y='505' font-size='12' fill='#dce8f6' font-weight='400'>  하위 Agent · 시험 보완</text>
+<text x='234' y='548' font-size='12' fill='#dce8f6' font-weight='400'>검토·테스트 · 시작 전</text>
+<text x='234' y='591' font-size='12' fill='#dce8f6' font-weight='400'>사용자 확인 · 시작 전</text>
+<rect x='468' y='216' width='536' height='618' rx='8' fill='#101f32' stroke='#304761'/>
+<rect x='484' y='232' width='130' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='496' y='254' font-size='12' fill='#f4f8ff' font-weight='600'>총괄</text>
+<rect x='626' y='232' width='170' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='638' y='254' font-size='12' fill='#f4f8ff' font-weight='600'>구현 책임자</text>
+<rect x='808' y='232' width='176' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='820' y='254' font-size='12' fill='#f4f8ff' font-weight='600'>세션 상세</text>
+<rect x='484' y='286' width='504' height='100' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='502' y='314' font-size='14' fill='#f4f8ff' font-weight='600'>사용자 → 총괄</text>
+<text x='502' y='341' font-size='12' fill='#dce8f6' font-weight='400'>승인 저장 기능을 기존 설계에 맞춰 연결해 주세요.</text>
+<text x='502' y='366' font-size='12' fill='#dce8f6' font-weight='400'>추가 지시 · 수신 확인됨</text>
+<rect x='484' y='402' width='504' height='128' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='502' y='430' font-size='14' fill='#f4f8ff' font-weight='600'>총괄 · 작업 이유와 기준</text>
+<text x='502' y='457' font-size='12' fill='#dce8f6' font-weight='400'>설계 D-승인-01 / 계획 T-연결-03을 적용합니다.</text>
+<text x='502' y='482' font-size='12' fill='#dce8f6' font-weight='400'>이미 확인한 조회 기능은 유지합니다.</text>
+<text x='502' y='507' font-size='12' fill='#dce8f6' font-weight='400'>현재 책임자의 실제 파일·시험 근거를 받겠습니다.</text>
+<rect x='484' y='546' width='504' height='128' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='502' y='574' font-size='14' fill='#f4f8ff' font-weight='600'>실행기 관측 · 예시</text>
+<text x='502' y='601' font-size='12' fill='#dce8f6' font-weight='400'>파일 변경 2건 / 관련 시험 결과 수신</text>
+<text x='502' y='626' font-size='12' fill='#dce8f6' font-weight='400'>Agent 완료 주장 아님 · 검토 전</text>
+<text x='502' y='651' font-size='12' fill='#dce8f6' font-weight='400'>명령·원문·종료 코드 펼치기 →</text>
+<text x='484' y='714' font-size='12' fill='#9cb8d7' font-weight='400'>받는 대상: 총괄 / ● 추가 지시  ○ 중단 후 지시</text>
+<rect x='484' y='726' width='504' height='38' rx='5' fill='#0b1929' stroke='#527596'/>
+<text x='496' y='750' font-size='12' fill='#dce8f6' font-weight='400'>이번 작업에서 유지할 기존 동작을 입력…</text>
+<rect x='834' y='782' width='154' height='34' rx='6' fill='#2369b6' stroke='#54799e'/>
+<text x='846' y='804' font-size='12' fill='#f4f8ff' font-weight='600'>지시 전송</text>
+<rect x='1020' y='216' width='380' height='172' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='1038' y='244' font-size='14' fill='#f4f8ff' font-weight='600'>현재 기준·자료</text>
+<text x='1038' y='271' font-size='12' fill='#dce8f6' font-weight='400'>헌법 v2 · 전달/이해 대조 확인</text>
+<text x='1038' y='296' font-size='12' fill='#dce8f6' font-weight='400'>목적 / 최신 지시 / 확정 결정 이유</text>
+<text x='1038' y='321' font-size='12' fill='#dce8f6' font-weight='400'>설계 · 작업계획 · 테스트계획</text>
+<text x='1038' y='346' font-size='12' fill='#dce8f6' font-weight='400'>각 자료의 실제 버전 보기 →</text>
+<rect x='1020' y='404' width='380' height='220' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='1038' y='432' font-size='14' fill='#f4f8ff' font-weight='600'>연결 작업·결과</text>
+<text x='1038' y='459' font-size='12' fill='#dce8f6' font-weight='400'>D-승인-01 → T-연결-03</text>
+<text x='1038' y='484' font-size='12' fill='#dce8f6' font-weight='400'>기능: 부분 구현</text>
+<text x='1038' y='509' font-size='12' fill='#dce8f6' font-weight='400'>작업: 개발 중</text>
+<text x='1038' y='534' font-size='12' fill='#dce8f6' font-weight='400'>핵심 동작: 저장 후 재조회 미확인</text>
+<text x='1038' y='559' font-size='12' fill='#dce8f6' font-weight='400'>코드 변경 / 시험 / 미완료 보기 →</text>
+<rect x='1020' y='640' width='380' height='130' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='1038' y='668' font-size='14' fill='#f4f8ff' font-weight='600'>다음 행동</text>
+<text x='1038' y='695' font-size='12' fill='#dce8f6' font-weight='400'>저장·조회 연결 확인 후 총괄 판정</text>
+<text x='1038' y='720' font-size='12' fill='#dce8f6' font-weight='400'>다음 단계는 사용자 지시 전 대기</text>
+</g></svg>

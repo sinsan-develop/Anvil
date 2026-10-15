@@ -1,0 +1,61 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' role='img' aria-labelledby='title desc'><title id='title'>S10 헌법·지식·결정 이유</title><desc id='desc'>원문과 구조화 지식을 함께 보존 · 공유와 규칙 변경은 사람 결정 상세 설계 검토용 정적 시안. 예시 자료이며 실제 기능 실행이 아닙니다.</desc><g font-family='Pretendard, Noto Sans KR, Malgun Gothic, Segoe UI, sans-serif'>
+<rect x='0' y='0' width='1440' height='900' rx='0' fill='#071321' stroke='#071321'/>
+<rect x='0' y='0' width='188' height='900' rx='0' fill='#0a1727' stroke='#304761'/>
+<text x='22' y='43' font-size='20' fill='#f4f8ff' font-weight='700'>A N V I L</text>
+<text x='22' y='65' font-size='10' fill='#a7c7eb' font-weight='400'>프로젝트는 남고, 도구는 바뀐다</text>
+<text x='24' y='130' font-size='14' fill='#dce8f6' font-weight='400'>프로젝트</text>
+<text x='24' y='176' font-size='14' fill='#dce8f6' font-weight='400'>방법론</text>
+<text x='24' y='222' font-size='14' fill='#dce8f6' font-weight='400'>문서·설계 추적</text>
+<text x='24' y='268' font-size='14' fill='#dce8f6' font-weight='400'>헌법·지식</text>
+<text x='24' y='314' font-size='14' fill='#dce8f6' font-weight='400'>도구·환경</text>
+<text x='24' y='360' font-size='14' fill='#dce8f6' font-weight='400'>승인 요청</text>
+<text x='24' y='406' font-size='14' fill='#dce8f6' font-weight='400'>설정</text>
+<text x='24' y='452' font-size='14' fill='#dce8f6' font-weight='400'>보조 Dashboard</text>
+<text x='22' y='844' font-size='10' fill='#a7c7eb' font-weight='400'>상세 설계 · 정적 시안</text>
+<text x='22' y='867' font-size='10' fill='#ffc36c' font-weight='400'>실제 실행·저장 없음</text>
+<rect x='188' y='0' width='1252' height='72' rx='0' fill='#0c1b2c' stroke='#304761'/>
+<text x='216' y='31' font-size='12' fill='#dce8f6' font-weight='400'>신산님 / 개인 공간</text>
+<text x='216' y='52' font-size='10' fill='#a7c7eb' font-weight='400'>원문과 구조화 지식을 함께 보존 · 공유와 규칙 변경은 사람 결정</text>
+<text x='1170' y='35' font-size='12' fill='#90d9bb' font-weight='400'>내 작업 권한 · PC</text>
+<text x='216' y='111' font-size='16' fill='#f4f8ff' font-weight='600'>S10  헌법·지식·결정 이유</text>
+<text x='216' y='136' font-size='10' fill='#ffc36c' font-weight='400'>검토용 예시 · 표시 상태는 실제 제품의 구현 결과가 아닙니다</text>
+<rect x='216' y='164' width='140' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='228' y='186' font-size='12' fill='#f4f8ff' font-weight='600'>헌법·목적</text>
+<rect x='370' y='164' width='140' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='382' y='186' font-size='12' fill='#f4f8ff' font-weight='600'>최신 지시</text>
+<rect x='524' y='164' width='140' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='536' y='186' font-size='12' fill='#f4f8ff' font-weight='600'>결정</text>
+<rect x='678' y='164' width='160' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='690' y='186' font-size='12' fill='#f4f8ff' font-weight='600'>실패·해결</text>
+<rect x='852' y='164' width='150' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='864' y='186' font-size='12' fill='#f4f8ff' font-weight='600'>대화 원문</text>
+<text x='216' y='246' font-size='12' fill='#9cb8d7' font-weight='400'>프로젝트 지식 검색</text>
+<rect x='216' y='258' width='1184' height='38' rx='5' fill='#0b1929' stroke='#527596'/>
+<text x='228' y='282' font-size='12' fill='#dce8f6' font-weight='400'>내용·결정 이유·관련 설계 ID 검색</text>
+<rect x='216' y='320' width='380' height='260' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='348' font-size='14' fill='#f4f8ff' font-weight='600'>지식 목록</text>
+<text x='234' y='375' font-size='12' fill='#dce8f6' font-weight='400'>헌법 v2 · 현재 실행 기준</text>
+<text x='234' y='400' font-size='12' fill='#dce8f6' font-weight='400'>결정: Dashboard는 보조 화면</text>
+<text x='234' y='425' font-size='12' fill='#dce8f6' font-weight='400'>결정: 기존 코딩 Agent 사용</text>
+<text x='234' y='450' font-size='12' fill='#dce8f6' font-weight='400'>사실: 확인된 시험 결과</text>
+<text x='234' y='475' font-size='12' fill='#dce8f6' font-weight='400'>가설: 미수행 원인 후보</text>
+<text x='234' y='500' font-size='12' fill='#dce8f6' font-weight='400'>사용 제외·대체 이력 포함 조회</text>
+<rect x='614' y='320' width='786' height='260' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='632' y='348' font-size='14' fill='#f4f8ff' font-weight='600'>선택: 프로젝트의 주도권은 사용자에게</text>
+<text x='632' y='375' font-size='12' fill='#dce8f6' font-weight='400'>종류: 확정 결정 / 적용: 프로젝트 전체 / 유효</text>
+<text x='632' y='400' font-size='12' fill='#dce8f6' font-weight='400'>내용: 프로젝트 원본은 Anvil에, Agent는 교체 가능한 도구</text>
+<text x='632' y='425' font-size='12' fill='#dce8f6' font-weight='400'>이유: 계정·세션·한도로 인계가 막히는 문제를 줄이기 위해</text>
+<text x='632' y='450' font-size='12' fill='#dce8f6' font-weight='400'>출처: 사용자의 확인 발언 원문 →</text>
+<text x='632' y='475' font-size='12' fill='#dce8f6' font-weight='400'>관련: 목적·헌법 / 도구 이전 설계 / 실제 인계 시험</text>
+<text x='632' y='500' font-size='12' fill='#dce8f6' font-weight='400'>이력: 최초 기록·수정 이유·대체 관계 →</text>
+<rect x='614' y='610' width='160' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='626' y='632' font-size='12' fill='#f4f8ff' font-weight='600'>정정 제안</text>
+<rect x='790' y='610' width='160' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='802' y='632' font-size='12' fill='#f4f8ff' font-weight='600'>사용 제외</text>
+<rect x='966' y='610' width='190' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='978' y='632' font-size='12' fill='#f4f8ff' font-weight='600'>공유 범위 확인</text>
+<rect x='216' y='692' width='1184' height='118' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='720' font-size='14' fill='#f4f8ff' font-weight='600'>헌법 적용 조회</text>
+<text x='234' y='747' font-size='12' fill='#dce8f6' font-weight='400'>어느 세션에 어떤 버전을 전달했는가 → 이해 대조 → 실제 행동과 불일치 여부</text>
+<text x='234' y='772' font-size='12' fill='#dce8f6' font-weight='400'>읽음 선언만으로 준수 처리하지 않음 · 원문은 요약 수정으로 덮어쓰지 않음</text>
+</g></svg>

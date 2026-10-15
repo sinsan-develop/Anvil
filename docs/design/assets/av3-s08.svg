@@ -1,0 +1,50 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' role='img' aria-labelledby='title desc'><title id='title'>S08 승인 요청·중요 문제</title><desc id='desc'>알림 클릭은 승인이 아닙니다 · 정확한 대상·범위를 확인 상세 설계 검토용 정적 시안. 예시 자료이며 실제 기능 실행이 아닙니다.</desc><g font-family='Pretendard, Noto Sans KR, Malgun Gothic, Segoe UI, sans-serif'>
+<rect x='0' y='0' width='1440' height='900' rx='0' fill='#071321' stroke='#071321'/>
+<rect x='0' y='0' width='188' height='900' rx='0' fill='#0a1727' stroke='#304761'/>
+<text x='22' y='43' font-size='20' fill='#f4f8ff' font-weight='700'>A N V I L</text>
+<text x='22' y='65' font-size='10' fill='#a7c7eb' font-weight='400'>프로젝트는 남고, 도구는 바뀐다</text>
+<text x='24' y='130' font-size='14' fill='#dce8f6' font-weight='400'>프로젝트</text>
+<text x='24' y='176' font-size='14' fill='#dce8f6' font-weight='400'>방법론</text>
+<text x='24' y='222' font-size='14' fill='#dce8f6' font-weight='400'>문서·설계 추적</text>
+<text x='24' y='268' font-size='14' fill='#dce8f6' font-weight='400'>헌법·지식</text>
+<text x='24' y='314' font-size='14' fill='#dce8f6' font-weight='400'>도구·환경</text>
+<text x='24' y='360' font-size='14' fill='#dce8f6' font-weight='400'>승인 요청</text>
+<text x='24' y='406' font-size='14' fill='#dce8f6' font-weight='400'>설정</text>
+<text x='24' y='452' font-size='14' fill='#dce8f6' font-weight='400'>보조 Dashboard</text>
+<text x='22' y='844' font-size='10' fill='#a7c7eb' font-weight='400'>상세 설계 · 정적 시안</text>
+<text x='22' y='867' font-size='10' fill='#ffc36c' font-weight='400'>실제 실행·저장 없음</text>
+<rect x='188' y='0' width='1252' height='72' rx='0' fill='#0c1b2c' stroke='#304761'/>
+<text x='216' y='31' font-size='12' fill='#dce8f6' font-weight='400'>신산님 / 개인 공간</text>
+<text x='216' y='52' font-size='10' fill='#a7c7eb' font-weight='400'>알림 클릭은 승인이 아닙니다 · 정확한 대상·범위를 확인</text>
+<text x='1170' y='35' font-size='12' fill='#90d9bb' font-weight='400'>내 작업 권한 · PC</text>
+<text x='216' y='111' font-size='16' fill='#f4f8ff' font-weight='600'>S08  승인 요청·중요 문제</text>
+<text x='216' y='136' font-size='10' fill='#ffc36c' font-weight='400'>검토용 예시 · 표시 상태는 실제 제품의 구현 결과가 아닙니다</text>
+<rect x='216' y='168' width='1184' height='156' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='196' font-size='14' fill='#f4f8ff' font-weight='600'>실행 전 승인 요청 · 예시 요청 AP-01 · 미결</text>
+<text x='234' y='223' font-size='12' fill='#dce8f6' font-weight='400'>프로젝트: 개인 업무 도구 / 단계: 구현 / 요청자: 구현 책임자</text>
+<text x='234' y='248' font-size='12' fill='#dce8f6' font-weight='400'>대상: 개발 환경의 지정 파일 변경 / 범위: 승인 저장 기능</text>
+<text x='234' y='273' font-size='12' fill='#dce8f6' font-weight='400'>이유: 사용자가 확정한 기능 연결 / 운영 환경 변경 없음</text>
+<rect x='216' y='342' width='574' height='192' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='370' font-size='14' fill='#f4f8ff' font-weight='600'>영향·복구·기준</text>
+<text x='234' y='397' font-size='12' fill='#dce8f6' font-weight='400'>데이터 영향: 기존 자료 유지 여부 확인</text>
+<text x='234' y='422' font-size='12' fill='#dce8f6' font-weight='400'>보안 영향: 권한 검사 유지</text>
+<text x='234' y='447' font-size='12' fill='#dce8f6' font-weight='400'>복구: 변경 전 기준으로 되돌릴 범위 표시</text>
+<text x='234' y='472' font-size='12' fill='#dce8f6' font-weight='400'>사용 기준: 설계 v2 / 요청 만료 여부 확인</text>
+<rect x='808' y='342' width='592' height='192' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='826' y='370' font-size='14' fill='#f4f8ff' font-weight='600'>판단 근거</text>
+<text x='826' y='397' font-size='12' fill='#dce8f6' font-weight='400'>변경 파일 / 실제 대상 / 예상 영향 펼치기</text>
+<text x='826' y='422' font-size='12' fill='#dce8f6' font-weight='400'>요청 범위가 바뀌면 새 요청 필요</text>
+<text x='826' y='447' font-size='12' fill='#dce8f6' font-weight='400'>다른 PC·모바일에서도 같은 요청으로 표시</text>
+<text x='826' y='472' font-size='12' fill='#dce8f6' font-weight='400'>이번 결정은 다른 작업 승인으로 재사용 안 함</text>
+<rect x='760' y='558' width='180' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='772' y='580' font-size='12' fill='#f4f8ff' font-weight='600'>수정 지시</text>
+<rect x='956' y='558' width='150' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='968' y='580' font-size='12' fill='#f4f8ff' font-weight='600'>거절</text>
+<rect x='1122' y='558' width='278' height='34' rx='6' fill='#2369b6' stroke='#54799e'/>
+<text x='1134' y='580' font-size='12' fill='#f4f8ff' font-weight='600'>이번 요청만 승인</text>
+<rect x='216' y='634' width='1184' height='150' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='662' font-size='14' fill='#f4f8ff' font-weight='600'>별도 문제 · 원인 미확인</text>
+<text x='234' y='689' font-size='12' fill='#dce8f6' font-weight='400'>마지막 확인: 요청 수신 / 실제 수행 증거 미수신</text>
+<text x='234' y='714' font-size='12' fill='#dce8f6' font-weight='400'>Agent 거부·내부 오류 여부는 확인되지 않음</text>
+<text x='234' y='739' font-size='12' fill='#dce8f6' font-weight='400'>확인된 원문 보기 / 읽기 상태 확인 / 다른 도구로 이전</text>
+</g></svg>

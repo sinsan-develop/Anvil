@@ -1,0 +1,57 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='1440' height='900' viewBox='0 0 1440 900' role='img' aria-labelledby='title desc'><title id='title'>S09 새 세션·다른 도구로 이전</title><desc id='desc'>총괄도 교체 가능한 도구 · 프로젝트·헌법·지식은 Anvil에 유지 상세 설계 검토용 정적 시안. 예시 자료이며 실제 기능 실행이 아닙니다.</desc><g font-family='Pretendard, Noto Sans KR, Malgun Gothic, Segoe UI, sans-serif'>
+<rect x='0' y='0' width='1440' height='900' rx='0' fill='#071321' stroke='#071321'/>
+<rect x='0' y='0' width='188' height='900' rx='0' fill='#0a1727' stroke='#304761'/>
+<text x='22' y='43' font-size='20' fill='#f4f8ff' font-weight='700'>A N V I L</text>
+<text x='22' y='65' font-size='10' fill='#a7c7eb' font-weight='400'>프로젝트는 남고, 도구는 바뀐다</text>
+<text x='24' y='130' font-size='14' fill='#dce8f6' font-weight='400'>프로젝트</text>
+<text x='24' y='176' font-size='14' fill='#dce8f6' font-weight='400'>방법론</text>
+<text x='24' y='222' font-size='14' fill='#dce8f6' font-weight='400'>문서·설계 추적</text>
+<text x='24' y='268' font-size='14' fill='#dce8f6' font-weight='400'>헌법·지식</text>
+<text x='24' y='314' font-size='14' fill='#dce8f6' font-weight='400'>도구·환경</text>
+<text x='24' y='360' font-size='14' fill='#dce8f6' font-weight='400'>승인 요청</text>
+<text x='24' y='406' font-size='14' fill='#dce8f6' font-weight='400'>설정</text>
+<text x='24' y='452' font-size='14' fill='#dce8f6' font-weight='400'>보조 Dashboard</text>
+<text x='22' y='844' font-size='10' fill='#a7c7eb' font-weight='400'>상세 설계 · 정적 시안</text>
+<text x='22' y='867' font-size='10' fill='#ffc36c' font-weight='400'>실제 실행·저장 없음</text>
+<rect x='188' y='0' width='1252' height='72' rx='0' fill='#0c1b2c' stroke='#304761'/>
+<text x='216' y='31' font-size='12' fill='#dce8f6' font-weight='400'>신산님 / 개인 공간</text>
+<text x='216' y='52' font-size='10' fill='#a7c7eb' font-weight='400'>총괄도 교체 가능한 도구 · 프로젝트·헌법·지식은 Anvil에 유지</text>
+<text x='1170' y='35' font-size='12' fill='#90d9bb' font-weight='400'>내 작업 권한 · PC</text>
+<text x='216' y='111' font-size='16' fill='#f4f8ff' font-weight='600'>S09  새 세션·다른 도구로 이전</text>
+<text x='216' y='136' font-size='10' fill='#ffc36c' font-weight='400'>검토용 예시 · 표시 상태는 실제 제품의 구현 결과가 아닙니다</text>
+<rect x='216' y='168' width='1184' height='94' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='196' font-size='14' fill='#f4f8ff' font-weight='600'>1 기록·안전 상태  →  2 인계 내용  →  3 대상 선택  →  4 이해 대조·재개</text>
+<text x='234' y='223' font-size='12' fill='#dce8f6' font-weight='400'>기존 도구의 마지막 응답이 없어도 축적 기록을 사용합니다.</text>
+<rect x='216' y='280' width='574' height='242' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='308' font-size='14' fill='#f4f8ff' font-weight='600'>인계할 프로젝트 지식</text>
+<text x='234' y='335' font-size='12' fill='#dce8f6' font-weight='400'>목적·헌법·최신 지시  ✓</text>
+<text x='234' y='360' font-size='12' fill='#dce8f6' font-weight='400'>확정 결정과 이유·원문  ✓</text>
+<text x='234' y='385' font-size='12' fill='#dce8f6' font-weight='400'>설계·계획·완료 근거  ✓</text>
+<text x='234' y='410' font-size='12' fill='#dce8f6' font-weight='400'>현재 작업 위치·남은 작업  ✓</text>
+<text x='234' y='435' font-size='12' fill='#dce8f6' font-weight='400'>실패·조치·미해결·실제 파일 차이  ✓</text>
+<text x='234' y='460' font-size='12' fill='#dce8f6' font-weight='400'>회수 공백: 마지막 2분 / 내용 확인 필요</text>
+<rect x='808' y='280' width='592' height='190' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='826' y='308' font-size='14' fill='#f4f8ff' font-weight='600'>기존 실행·쓰기 상태</text>
+<text x='826' y='335' font-size='12' fill='#dce8f6' font-weight='400'>중지 요청: 접수됨</text>
+<text x='826' y='360' font-size='12' fill='#dce8f6' font-weight='400'>실제 정지: 확인 필요</text>
+<text x='826' y='385' font-size='12' fill='#dce8f6' font-weight='400'>읽기 인계 준비는 가능</text>
+<text x='826' y='410' font-size='12' fill='#dce8f6' font-weight='400'>정지/쓰기 회수 확인 전 새 writer 시작 불가</text>
+<text x='808' y='516' font-size='12' fill='#9cb8d7' font-weight='400'>이전 대상 / 검증된 기능</text>
+<rect x='808' y='528' width='592' height='38' rx='5' fill='#0b1929' stroke='#527596'/>
+<text x='820' y='552' font-size='12' fill='#dce8f6' font-weight='400'>같은 도구 새 세션 ▾ / 다른 도구 선택 가능</text>
+<rect x='216' y='544' width='574' height='192' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='234' y='572' font-size='14' fill='#f4f8ff' font-weight='600'>새 세션 이해 대조</text>
+<text x='234' y='599' font-size='12' fill='#dce8f6' font-weight='400'>왜 하는가 / 지켜야 할 규칙</text>
+<text x='234' y='624' font-size='12' fill='#dce8f6' font-weight='400'>번복하지 않을 결정 / 완료한 작업</text>
+<text x='234' y='649' font-size='12' fill='#dce8f6' font-weight='400'>현재 위치 / 다음 행동 / 모르는 부분</text>
+<text x='234' y='674' font-size='12' fill='#dce8f6' font-weight='400'>총괄 교체: 사용자 확인 · 단계 교체: 총괄 확인</text>
+<rect x='808' y='604' width='592' height='132' rx='8' fill='#101f32' stroke='#304761'/>
+<text x='826' y='632' font-size='14' fill='#f4f8ff' font-weight='600'>재개 조건</text>
+<text x='826' y='659' font-size='12' fill='#dce8f6' font-weight='400'>실제 상태 대조 · 필수 기능 · 이해 일치</text>
+<text x='826' y='684' font-size='12' fill='#dce8f6' font-weight='400'>미확인 범위는 숨기지 않음</text>
+<text x='826' y='709' font-size='12' fill='#dce8f6' font-weight='400'>조건 미충족 · 지금은 재개 불가</text>
+<rect x='1000' y='766' width='174' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='1012' y='788' font-size='12' fill='#f4f8ff' font-weight='600'>인계 자료 확인</text>
+<rect x='1190' y='766' width='210' height='34' rx='6' fill='#152b43' stroke='#54799e'/>
+<text x='1202' y='788' font-size='12' fill='#f4f8ff' font-weight='600'>조건 확인 후 재개</text>
+</g></svg>

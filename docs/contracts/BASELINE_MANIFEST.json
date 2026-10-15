@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "kind": "CONTENT_OBSERVATION_NOT_RETROACTIVE_APPROVAL",
+  "observedAt": "2026-10-16T03:48:25.8813935+09:00",
+  "git": {
+    "branch": "codex/av3-stage-a",
+    "headAtObservation": "b4f9006e30e5afcf98ef8ef1f39707ecc8954feb",
+    "observationPhase": "before-initial-checkpoint",
+    "newDesignCommitted": false,
+    "newDesignPushed": false
+  },
+  "baseline": {
+    "design": "r8 canonical body; selective Word-review clarifications within existing requirements",
+    "plan": "r7 derived from user-approved r3 and selective-feedback instructions",
+    "productImplementationVerified": false,
+    "sourceOfCurrentProgress": "docs/WORK_STATUS.md",
+    "p02ContractAccepted": true,
+    "p02Result": "docs/04_test_reports/AV3/P02/RESULT.md",
+    "p03": "IN_PROGRESS; actual DB/HTTPS/browser pending"
+  },
+  "approvals": [
+    {
+      "id": "PLAN-R3",
+      "statement": "작업 계획서는 일단 승인해",
+      "scope": "작업계획 r3·연결 업무 카드",
+      "approvalTimeFileHashesCaptured": false,
+      "note": "현재 r7 계획 hash는 현재 관측값이지 r3 승인 당시 바이트의 소급 증명이 아니다."
+    },
+    {
+      "id": "P01-REVIEW-01",
+      "record": "docs/04_test_reports/AV3/P01/REVIEW-01.md",
+      "scope": "1차 시안 방향·내장3종 상세안",
+      "htmlSha256": "125F35518E90A8E828FE9EA2AA1232F110B709D9D2CC7C36569C1871F572CC14",
+      "methodologySha256": "1373688F969E578DA3A38C52F619B878D01FDF999B717FD516EBF638D8C897D1"
+    },
+    {
+      "id": "P01-REVIEW-02",
+      "record": "docs/04_test_reports/AV3/P01/REVIEW-02.md",
+      "statement": "P01 시안·양식 승인",
+      "htmlSha256": "8B76BDE3EC24FBF37EBD53CF459D454C820098E1097171E60789C1AAC47A51D4",
+      "formsSha256": "622FFC6DB4CCC26AE07C785C91B114467019B21571B728A71DEA05D206816B13",
+      "scope": "후속 구현의 상세 화면/양식 기준만"
+    },
+    {
+      "id": "TD-01",
+      "record": "docs/contracts/TECH_DECISIONS.md",
+      "questionCallId": "call_40a3fa97fcbc4300bc88198939f443a0",
+      "statement": "A안으로 설계 확정",
+      "scope": "React/TypeScript·Node 서버/실행기·Electron Windows 앱·PostgreSQL/파일의 상세 계약 작성",
+      "excluded": [
+        "실제 Agent 호출",
+        "DB 생성/변경",
+        "권한/인증정보 변경",
+        "배포"
+      ]
+    },
+    {
+      "id": "EXTERNAL-REVIEW-FOLLOWUP",
+      "scope": "타당한 지적의 기존 요구 내 책임/선행·검수 상세 보완",
+      "statement": "이 의견이 맟다는게 아니야? 하지만 제3자의 시각이니까 검토하고 맞다고 생각되는 부분은 보완을 하자",
+      "doesNotAuthorize": [
+        "기능 범위 축소",
+        "모바일 승인 전용 위임",
+        "자동 강제 종료",
+        "원격 업로드",
+        "새로운 실행 권한"
+      ]
+    },
+    {
+      "id": "CANONICAL-REVIEW-INTEGRATION",
+      "statement": "반영을 설계서와 작업계획서를 수정해야지",
+      "scope": "기존 요구 안의 검토 보완을 설계 r6·계획 r5·업무 카드 본문에 직접 통합",
+      "doesNotAuthorize": [
+        "기능 범위 변경",
+        "미결정 TD-02 선택",
+        "실제 Agent 호출",
+        "DB/권한/Secret 변경",
+        "배포/원격 업로드"
+      ]
+    },
+    {
+      "id": "REREVIEW-NECESSARY-FOLLOWUP",
+      "statement": "필요한 내용만 반영해",
+      "scope": "기존 요구 내 IX01 조기 보안·P02 후보별 능력표·글자 용도·위협/검수·현재 승인 출처 상세화",
+      "input": "docs/AV3_설계서_작업계획서_재검토_20261016.md",
+      "inputSha256": "AE0E1492B528792A34E5DE630439440D1B6581F9C57B306A7B3FF1CD177BDF79",
+      "doesNotAuthorize": [
+        "새 전체 구현 승인으로 소급",
+        "미결정 TD-02 선택",
+        "Stage별 사용자 의무 승인 대기",
+        "새 branch/commit/push",
+        "실제 Agent/DB/권한/Secret/설치/배포 변경"
+      ]
+    },
+    {
+      "id": "WORD-REVIEW-SELECTIVE-FOLLOWUP",
+      "statement": "필요한 부분만 설계서와 작업계획서에 반영해",
+      "scope": "기존 요구 안에서 경로 기준·FN06 선행 검증·안전한 변경 보존과 복구·실제 접근 가능한 맥락 전달·UI 착수/완료 선행 분리·공식 8종·민감 자료 사후 격리 상세화",
+      "input": "docs/Anvil v3 설계서 및 작업계획서 검토 보고서 (문제점 및 개선 사항).docx",
+      "inputSha256": "B8F29FFAC886DEEEC844C9CBE63D04A18E36DDCCB9C032253788303304829F90",
+      "doesNotAuthorize": [
+        "기능 범위 확대 또는 기존 완료 기준 완화",
+        "포괄 승인 생략",
+        "실제 변경 복원·스풀/백업 삭제",
+        "실제 Agent/DB/권한/Secret/서비스 변경",
+        "새 branch/commit/push"
+      ]
+    },
+    {
+      "id": "TD-02",
+      "record": "docs/contracts/TECH_DECISIONS.md",
+      "questionCallId": "call_99470fca48514e588fa272e66665be52",
+      "statement": "Anvil 전용 로그인으로 설계",
+      "scope": "Anvil 전용 사용자명/비밀번호·서버 세션의 상세 설계 선택",
+      "excluded": [
+        "실제 계정/DB/권한/Secret/인증서/서비스 변경",
+        "인증 수치 profile의 사용자 승인으로 소급",
+        "실제 Agent 호출/외부 비용/배포"
+      ]
+    },
+    {
+      "id": "TD-03",
+      "record": "docs/contracts/TECH_DECISIONS.md",
+      "questionCallId": "call_dca9f14d6c23489b9baa952bb9600508",
+      "statement": "P02 기본 정책안으로 설계 확정",
+      "scope": "TECH_DECISIONS §12 유한 정책·측정 기본안의 상세 설계",
+      "excluded": [
+        "실제 계정/DB/Secret/서비스 변경",
+        "실제 Agent 호출/비용/배포"
+      ]
+    },
+    {
+      "id": "P03-GIT",
+      "record": "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "questionCallId": "call_f2cd20981cc64d83aceff512225037b5",
+      "statement": "새 Stage A 기준선·private push 승인",
+      "scope": "기존 branch/미커밋/삭제 보존·최신 지정 private main에서 codex/av3-stage-a 생성 예외·manifest의51파일 및 계획 범위 신규 v3 코드/테스트/실행 문서 commit/push",
+      "destination": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "branch": "codex/av3-stage-a",
+      "excluded": [
+        "Backup/legacy 제품 소스/다른 프로젝트/Secret",
+        "main 직접 쓰기/force push/history rewrite"
+      ]
+    },
+    {
+      "id": "P03-RESOURCES",
+      "record": "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "questionCallId": "call_f2cd20981cc64d83aceff512225037b5",
+      "statement": "새 전용 개발 자원 준비 승인",
+      "scope": "공통3830·WSL 신규 /home/daon/deploy/anvil-v3·전용 anvil-v3-development-pg/network/volume/DB/역할·v3 migration/합성 QA·loopback5546·신규 .av3-data/v3-development backup. 개발 DB 보존·일회성 QA 정확 정리",
+      "excluded": [
+        "기존 DB/사용자/컨테이너/인증/proxy/운영/Oracle 변경",
+        "실제 유료 Agent 호출"
+      ]
+    },
+    {
+      "id": "P03-HTTPS",
+      "record": "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "questionCallId": "call_f2cd20981cc64d83aceff512225037b5",
+      "statement": "개발 인증서 생성·현재 사용자 신뢰 승인",
+      "scope": "신규 전용 CA/leaf7일·subject/SAN/thumbprint/키 보호 확인·새 CA 정확1개 Windows CurrentUser Root 추가·검증 종료/만료 때 정확 회수",
+      "risk": "다른 HTTPS 신뢰에도 영향 가능",
+      "excluded": [
+        "기존 인증서/LocalMachine/공유 proxy 변경",
+        "키 Git/로그 원문"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "255C7C8A94D6A5D92A8C815370E8647D994C50A4941CE81B56F765EA3CC3A9C9",
+      "bytes": 17702
+    },
+    {
+      "path": "docs/design/Anvil_설계서_v3_초안.md",
+      "sha256": "63FD6C2E43689668345BC529F925C1BEF823833E88D59EA99310C301D1854BD3",
+      "bytes": 101958
+    },
+    {
+      "path": "docs/design/Anvil_v3_실행안전_보완.md",
+      "sha256": "D679C62795AD09343937B80E0772D0EF3BBBFD8BD6092C7A736D9B4875C89686",
+      "bytes": 10170
+    },
+    {
+      "path": "docs/WORK_PLAN.md",
+      "sha256": "D63BDC750C97FF2EA65A6563C511344F2015B176DE8DF0FA21403BF323BBB5AB",
+      "bytes": 39206
+    },
+    {
+      "path": "docs/work_packages/SCREEN_WORK.md",
+      "sha256": "EA279DF68FBB1CDB0BAB51165B01062F020AB7BEAE9902C164F96A23271D69C6",
+      "bytes": 23674
+    },
+    {
+      "path": "docs/work_packages/FUNCTION_WORK.md",
+      "sha256": "906D53CA0EC8724C20C54E01D39B38E82D5677D32461957F5FCF081880C290A9",
+      "bytes": 43017
+    },
+    {
+      "path": "docs/work_packages/INTEGRATION_WORK.md",
+      "sha256": "AAA44DE68F726F5C2B3FC75F5E3BB798AC0D673D90FDB0C10CFC8319F291D377",
+      "bytes": 21822
+    },
+    {
+      "path": "docs/work_packages/ASSIGNMENT_REVIEW.md",
+      "sha256": "64771A83630B3FEADA1EF2004A88EF9A14EEACFD490BCBABC72AB15A4ADE61A8",
+      "bytes": 8002
+    },
+    {
+      "path": "docs/design/Anvil_v3_인터뷰_합의사항.md",
+      "sha256": "728ECD4BA3B9049C8574F2A95DEDE4329FA537E4A1565F197415FDD5AC24A56F",
+      "bytes": 22392
+    },
+    {
+      "path": "docs/design/문서작성_공통기준.md",
+      "sha256": "85EC190976CE45AF49B4F57FB5745D193B41640CFC62F5CBD19AA4711CB03F07",
+      "bytes": 9067
+    },
+    {
+      "path": "docs/design/공식산출물_양식정의.md",
+      "sha256": "622FFC6DB4CCC26AE07C785C91B114467019B21571B728A71DEA05D206816B13",
+      "bytes": 11130
+    },
+    {
+      "path": "docs/design/기본방법론_상세검토안.md",
+      "sha256": "1373688F969E578DA3A38C52F619B878D01FDF999B717FD516EBF638D8C897D1",
+      "bytes": 8533
+    },
+    {
+      "path": "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "sha256": "FF501D070DBE6D6CE183A3D81E1D10276F07EA94B181EBF5345BDE23F021C1CE",
+      "bytes": 12482
+    },
+    {
+      "path": "docs/contracts/TECH_DECISIONS.md",
+      "sha256": "069BBC0137F1B5584368B5EEE66C6BF944ADBA7A2B41CFF0D39E33027DA9C3B8",
+      "bytes": 25240
+    },
+    {
+      "path": "docs/contracts/FILE_MAP.md",
+      "sha256": "401771827F16B04C9FE1E074A462ED8F232F9718B5171538C3556C31615298B0",
+      "bytes": 22846
+    },
+    {
+      "path": "docs/contracts/INTERFACES.md",
+      "sha256": "158A718566FFC76B9998127A81090D20936A75D006135E7F5425643B7828AEE7",
+      "bytes": 109294
+    },
+    {
+      "path": "docs/contracts/DATA_MODEL.md",
+      "sha256": "5C112879337D8321CFEAA1616395106EF5C72B382078B92391600E7C31D2B2EB",
+      "bytes": 58156
+    },
+    {
+      "path": "docs/contracts/CAPABILITIES.md",
+      "sha256": "024752233B608AA6A7AC407AAC73C3BE3B9D8EEE575F59735A3875EAE44586C0",
+      "bytes": 11227
+    },
+    {
+      "path": "docs/contracts/THREAT_MODEL.md",
+      "sha256": "F4FAEA098F4096FA02732C0671A941CFDA5FF1DD7BE64107E741F2279523837C",
+      "bytes": 8443
+    },
+    {
+      "path": "docs/contracts/TRACEABILITY.md",
+      "sha256": "8EE035360DF5008340C1284289A1EE8ED2D9462F0FB2D6F6FDD175D2BEE90C5B",
+      "bytes": 2223
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P01/REVIEW-01.md",
+      "sha256": "E0D40F80FA57236104E570573690E09F4BBADFB8287BEDDCF72AE63176437631",
+      "bytes": 1321
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P01/REVIEW-02.md",
+      "sha256": "EAD8C1B69F394F2E1AF4ACB620CCDCC35F429115A3322EBA99AA92B105EE7A13",
+      "bytes": 7029
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P02/EXTERNAL_REVIEW.md",
+      "sha256": "90CCE317597177D5C8FD528FE6900CE1B574DFA948AA6EDA1AF58375E4F64B90",
+      "bytes": 18614
+    },
+    {
+      "path": "docs/design/prototypes/core-workflow/index.html",
+      "sha256": "8B76BDE3EC24FBF37EBD53CF459D454C820098E1097171E60789C1AAC47A51D4",
+      "bytes": 94804
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P01/approved-v1/index.html",
+      "sha256": "125F35518E90A8E828FE9EA2AA1232F110B709D9D2CC7C36569C1871F572CC14",
+      "bytes": 26551
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P01/approved-v1/기본방법론_상세안.md",
+      "sha256": "1373688F969E578DA3A38C52F619B878D01FDF999B717FD516EBF638D8C897D1",
+      "bytes": 8533
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P01/approved-v1/문서작성_공통기준.md",
+      "sha256": "BBEB4C3EA2B08EF4B221DC8D5A79FF584C0A5CA665E9A1B5B928516BC7D1111F",
+      "bytes": 687
+    },
+    {
+      "path": "docs/design/history/Anvil_설계서_v3_r5_20261016.md",
+      "sha256": "9EF5FF5AC5E130B654F9044B35CB02BFADA554F72E7939488CC7D967B3F818E8",
+      "bytes": 71060
+    },
+    {
+      "path": "docs/work_packages/history/pre-integration-20261016/WORK_PLAN_r4.md",
+      "sha256": "F3BF69194A37C14DC11CC14518BB9AA4113874092EC54F5BD03D3E6F9E04C8B8",
+      "bytes": 24593
+    },
+    {
+      "path": "docs/design/history/Anvil_설계서_v3_r6_20261016.md",
+      "sha256": "49F353055ABD8DAA1C72741E2DFA1B020957F04284D45CD93300444BC66C8780",
+      "bytes": 90665
+    },
+    {
+      "path": "docs/work_packages/history/pre-rereview-20261016/WORK_PLAN_r5.md",
+      "sha256": "E812036204F074E91A5486DBC8CEDCB4603753A7874BA22CF7E7E5F69EE758F8",
+      "bytes": 32119
+    },
+    {
+      "path": "docs/AV3_설계서_작업계획서_재검토_20261016.md",
+      "sha256": "AE0E1492B528792A34E5DE630439440D1B6581F9C57B306A7B3FF1CD177BDF79",
+      "bytes": 12364
+    },
+    {
+      "path": "docs/design/history/Anvil_설계서_v3_r7_20261016.md",
+      "sha256": "2C9E688BC85ACC506A62B753673BC1B91CCE588610972B5FE3999DB723E73F6A",
+      "bytes": 94151
+    },
+    {
+      "path": "docs/work_packages/history/pre-word-review-20261016/WORK_PLAN_r6.md",
+      "sha256": "A822D0FDF8C034F4BF268CFF559098D8107982836BF1A632D92A1F41429C4B2A",
+      "bytes": 34209
+    },
+    {
+      "path": "docs/Anvil v3 설계서 및 작업계획서 검토 보고서 (문제점 및 개선 사항).docx",
+      "sha256": "B8F29FFAC886DEEEC844C9CBE63D04A18E36DDCCB9C032253788303304829F90",
+      "bytes": 6407575
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P02/RESULT.md",
+      "sha256": "9E752E02A79D2188FC6C29B585157013AAF3C1EFA61C874A49F4227EC9338C6A",
+      "bytes": 4937
+    },
+    {
+      "path": "docs/contracts/COMMAND_MAP.md",
+      "sha256": "D8A23C15784DC366958A7E1E5DE28747768CA50C0A2E4B41F9C1496CB762F0C8",
+      "bytes": 12424
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P03/REVIEW-01.md",
+      "sha256": "3E550E5CF51956694074F41B0FE6A678562C5923391B311F27CC434CB58B7BC3",
+      "bytes": 1286
+    }
+  ],
+  "limitations": [
+    "이 파일 자체와 동적으로 갱신하는 WORK_STATUS는 hash 목록에서 제외했다.",
+    "P02/FN/IX의 제품·보안·연동 시험 통과를 뜻하지 않는다.",
+    "Git 기준선 확정·새 환경/실제 실행·정책 결정은 남아 있다."
+  ]
+}
