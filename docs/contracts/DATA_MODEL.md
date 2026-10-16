@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN06 새 forward41 `0006_connection_candidates`는 완성형 연결/환경 테이블을 대신 만들지 않고 connection_candidates(project/id/kind/head_version)와 connection_candidate_versions(project/candidate/version/kind/snapshot/hash/actor/client/command/기한)의 후보 전용 원본·불변 버전을 추가한다. head FK는 지연 검사하고 app의 head 변경은 exact receipt/이전 ref·현재 제어/최근 재인증·현 정책/필요 일회 소비로 보호한다. version UPDATE/DELETE·identity DELETE는 app에 허용하지 않는다. snapshot의 NOT_READY/executionAuthorized=false·6능력 UNVERIFIED는 서버/DB에서 강제한다. 기존 업로드의 승인 guard 조건은 유지한 새 함수 정의로 후보 두 연산의 일회 소비만 추가한다. connector 신뢰/credential/grant/실행 schema를 활성화하지 않는다. 기존40 SQL은 불변이며 적용 여부/체크섬은 WORK_STATUS를 따른다.
+
 FN03 단계 연결(직접 승인 call_1553fd04d9e64a098d20ba83a7e7525c): forward40 `0003_document_stage_bindings`는 기존 nullable stage_ref_json을 `{applicationId,nodeId}` 정확 참조로 보호한다. generated stage_application_id와 (project_id,stage_application_id) 복합 FK로 다른 프로젝트 적용본을 차단하고, 새 불변 버전 INSERT는 현재 명령/receipt·최신 고정 적용 snapshot·노드의 입력/산출 양식 exact ref를 대조한다. 문서 canonical hash에 단계 참조를 포함한다. 과거 조회는 당시 고정 적용본을 읽으며 현재 적용 전환으로 과거 문서를 바꾸지 않는다. 제안 선택도 기준 문서의 단계 참조를 보존한다. checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1 적용 이후 이 SQL은 불변이다. 실제 검증과 남은 사용자 브라우저 인수는 WORK_STATUS로 구분한다.
 
 실제 FN11 검증: forward34~36은 eb4f1d97 exact actual2 PASS/13084ms에서 원문 업로드의 요청/3종 결정/일회 소비·동시 명령/내용 위장·실제 만료/회수·감사/불변 이력을 확인했다. 기존31종 QA/시험원문 root의 독립 잔여0·migrations36이며 실제 사용자 자료/서비스는 변경하지 않았다. 적용34/35/36을 이후 수정하지 않고 필요하면 새 forward로 보완한다. UI08/다른 연산의 실제 승인 소비와 전체 인수는 후속이다.

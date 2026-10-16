@@ -39,6 +39,7 @@ export class ProjectConnectionCandidates {
           return previous;
         }
         const now = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at as Date;
+        if (!Object.hasOwn(request.payload, 'kind')) throw new AuthFailure('COMPLETE_CONNECTION_DEFINITION_NOT_READY', 412);
         const input = readCandidateInput(request.operation, request.payload, { now, policyExpiresAt: new Date(policy.validUntil) });
         if (!same(input.policyRef, policy.ref)) throw new AuthFailure('CANDIDATE_POLICY_CHANGED', 409);
         rejectUnconnectedReferences(input);

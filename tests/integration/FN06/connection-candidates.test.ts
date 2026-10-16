@@ -11,6 +11,7 @@ import { ProjectConnectionCandidates } from '../../../apps/server/modules/connec
 import { ProjectApprovals } from '../../../apps/server/modules/approvals/project-approvals.ts';
 import { ProjectListCodec } from '../../../apps/server/modules/projects/service.ts';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
+import { buildApp } from '../../../apps/server/app.ts';
 
 // 실측/신뢰가 없는 후보의 위장 활성화, 승인 재사용·교차 범위·이력 손실을 검출한다.
 test('연결·환경 후보는 실제 현재 허가/일회 승인 아래 불변 저장되며 실행·신뢰로 승격되지 않는다', async () => {
@@ -20,6 +21,7 @@ test('연결·환경 후보는 실제 현재 허가/일회 승인 아래 불변 
   const users = [randomUUID(), randomUUID()], projects = [randomUUID(), randomUUID()], ownedUsers: string[] = [], ownedProjects: string[] = [];
   const access = new AccessRepository(pool, { installationId: randomUUID(), key: randomBytes(32) }), candidates = new ProjectConnectionCandidates(access), policies = new ProjectPolicyRepository(access), approvals = new ProjectApprovals();
   const codec = new ProjectListCodec(value => access.signProjectCursor('CONNECTION_CANDIDATES:' + value));
+  const app = buildApp({}, undefined, { repository: access, origin: 'https://localhost:3830' });
   try {
     const password = randomBytes(32).toString('base64url'), phc = await hashPassword(password);
     for (const id of users) { await pool.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'연결 후보 합성 QA','ACTIVE')", [id, 'qa-connection-candidate-' + id]); ownedUsers.push(id); await pool.query('INSERT INTO anvil.password_credentials(user_id,argon2_phc,credential_generation) VALUES($1,$2,1)', [id, phc]); }
@@ -68,6 +70,19 @@ test('연결·환경 후보는 실제 현재 허가/일회 승인 아래 불변 
     await admin.query('UPDATE anvil.connection_candidate_versions SET content_hash=$3 WHERE project_id=$1 AND candidate_id=$2 AND version=1', [pid, ref.id, ref.contentHash]);
     await assert.rejects(pool.query('DELETE FROM anvil.connection_candidate_versions WHERE project_id=$1', [pid]), (e: any) => e.code === '42501');
     await assert.rejects(pool.query('UPDATE anvil.connection_candidates SET head_version=head_version+1 WHERE project_id=$1', [pid]), (e: any) => e.code === '42501');
+    const headers = (session = own) => ({ host: 'localhost:3830', origin: 'https://localhost:3830', cookie: '__Host-anvil.sid=' + session.token, 'x-anvil-csrf': session.csrfToken });
+    const listUrl = '/api/v1/projects/' + pid + '/connection-candidates';
+    assert.equal((await app.inject({ method: 'GET', url: listUrl, headers: headers() })).statusCode, 200);
+    assert.equal((await app.inject({ method: 'GET', url: listUrl, headers: { host: 'localhost:3830' } })).statusCode, 401);
+    assert.equal((await app.inject({ method: 'GET', url: listUrl, headers: headers(other) })).statusCode, 404);
+    assert.equal((await app.inject({ method: 'GET', url: listUrl, headers: { ...headers(), host: 'wrong.invalid' } })).statusCode, 403);
+    const historical = await app.inject({ method: 'GET', url: listUrl + '/' + envRef.id + '/versions/1', headers: headers() }); assert.equal(historical.statusCode, 200, historical.body); assert.equal(historical.json().ref.version, 1);
+    const httpCommand = envelope('registerConnection', payload('CONNECTION_CANDIDATE', { label: 'HTTP 원 명령 재확인' }));
+    const httpSend = (body: any) => app.inject({ method: 'POST', url: '/api/v1/projects/' + pid + '/commands', headers: { ...headers(), 'idempotency-key': body.commandId }, payload: body });
+    const responseBeforeDrop = await httpSend(httpCommand); assert.equal(responseBeforeDrop.statusCode, 200, responseBeforeDrop.body);
+    const recovered = await httpSend(httpCommand); assert.deepEqual(recovered.json(), responseBeforeDrop.json(), '응답을 잃은 클라이언트도 원 명령으로 동일 영속 결과를 받는다');
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.commands WHERE project_id=$1 AND command_id=$2', [pid, httpCommand.commandId])).rows[0].n, 1);
+    assert.equal((await httpSend(envelope('registerConnection', { definition: { label: '미완성 연결 승격' } }))).statusCode, 412);
     policy = await policies.command(own.token, own.csrfToken, envelope('savePermissionPolicy', { rules: rules('REQUIRE_APPROVAL'), reason: '후보 승인 필요', reviewRefs: [] }, policyRef.id, policyRef.version)) as any; policyRef = policy.data.ref;
     const approvedCandidate = envelope('registerConnection', payload('CONNECTION_CANDIDATE', { label: '사람 승인 후보', toolProduct: 'Codex', toolVersion: 'USER_DECLARED' }));
     await assert.rejects(candidates.command(own.token, own.csrfToken, approvedCandidate), (e: any) => e.message === 'APPROVAL_REQUIRED');
@@ -84,6 +99,7 @@ test('연결·환경 후보는 실제 현재 허가/일회 승인 아래 불변 
     await assert.rejects(candidates.command(own.token, own.csrfToken, approved), (e: any) => e.statusCode === 409);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=ANY($1::uuid[])', [ownedProjects])).rows[0].n, 0);
   } finally {
+    await app.close();
     const db = await admin.connect();
     try { await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
       await db.query('UPDATE anvil.authorization_receipts SET approval_decision_ref=NULL WHERE scope_id=ANY($1::uuid[])', [ownedProjects]);

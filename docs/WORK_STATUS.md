@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- PMO가 AV3-PMO-FN06-CANDIDATE-API-01 승인을 전달했다. PMO가 사용자 위임·10분 기한/최신 답변을 직접 대조한 판단이며, 이 담당자가 임의 무응답 승인을 만들지 않았다. 기존 명령 registerConnection/saveEnvironment의 kind별 후보 payload와 후보 GET 목록/불변 버전2개만 연결한다. 완성형 필수 참조·신뢰·실제 실행은 열지 않는다. 최근 재인증·현재 제어/명시 정책·후보 exact 이전 ref/CAS·현재 policyRef·유한 기한/필요 일회 소비·감사를 내부 저장 transaction에서 확인한다. 형식상 적합해도 아직 없는 완성형 host/environment/source/Secret ref는412, 후보 ID를 가짜 실체로 쓰지 않는다.
+- 후보 HTTP 분기·승인 소비의 좁은 연산 목록을 연결한 로컬 후보: unit150 PASS/2835ms·type/diff0. 실제 시험에 내부 PG와 별도 HTTP 인증/Origin/타 프로젝트·원 명령 응답 유실 재확인·불완전 정의 승격412를 구분해 추가했다. 새41은 아직 미적용이며 다음 exact 게시본으로 기존40 checksum/DB 신원을 재확인한 뒤 적용한다. 실제 기능 GREEN·HTTP PASS로 선승격하지 않는다.
+
 - FN06 04b49e9c exact private/WSL clean actual RED1/1161ms(기능909ms)/skip0: 후보 목록 내부 함수가 새 테이블 부재42P01로 실패했다. finally 후 독립 users/projects/documents/artifacts/commands/policy/승인 count0·후보2테이블 NOT_PRESENT·임시root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40 확인. 새 forward41 초안을 runner의 마지막 명시 순서에 연결했으며 적용 전이다. 공개 API/operation 분기는 PMO의 별도 승인 확인 전 미연결이고 실제 저장 GREEN·사용자 HTTP/browser는 미검증이다. 기존40 SQL 불변·서비스/Secret·실제 Agent 변경0이다.
 
 - PMO 실행 지시 수신: 기존 branch/단일 Main writer로 FN06 후보 저장·조회/환경/6능력 기록만 진행한다. local main ref0443043251d25aa77c17d23165b7c9299c8dbeb8과 사설 remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210은 구분하며 보정/reset/새 branch를 하지 않는다. 미연결 후보는 완성형 ConnectionDefinition/EnvironmentVersion과 별도 내부 저장·NOT_READY로 분리하며 필수 참조를 nullable로 완화하지 않는다. 실제 host/참조 저장이 아직 없으면 가짜 FK/실측을 만들지 않고 제공된 연결 ref는412로 거절한다. 후보 자신의 개정 ref와 현재 policy ref는 실제 project/id/version/hash를 대조한다.
