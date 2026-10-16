@@ -180,6 +180,8 @@ INTERFACES §13~14·DATA_MODEL §10은 §3의 FN09~18 모듈·schema/migration/�
 
 방법론 읽기 페이지의 순수 필터/cursor는 `apps/server/modules/methodologies/list-page.ts`, 단위 증거는 `tests/unit/FN02/list-page.test.ts`, 실제 순회/격리는 기존 `tests/integration/FN02/versions.test.ts`에 둔다. 변경은 기존 목록 repository/routes와 UI03/생성 선택의 명시 읽기에 한정하며 schema/권한·새 도메인을 만들지 않는다.
 
-프로젝트 초안 선택: `contracts/project-drafts.ts`의 자료형, `apps/server/modules/projects/draft-methodology.ts`의 owner/출처·확정/버전 검사, `apps/web/src/features/project-create/MethodologySelection.tsx`의 고정 버전 선택을 기존 초안 writer와 연결한다. DRAFT 검토/확정·실제 프로젝트 생성은 아직 미연결이며 이 파일 목록을 구현 완료 근거로 쓰지 않는다.
+프로젝트 초안 선택: `contracts/project-drafts.ts`의 자료형, `apps/server/modules/projects/draft-methodology.ts`의 owner/출처·확정/버전 검사, `apps/web/src/features/project-create/MethodologySelection.tsx`의 고정 버전 선택을 기존 초안 writer와 연결한다. 생성/초안 검토·확정은 아래 후속 연결을 따르며 파일 존재만을 전체 완료 근거로 쓰지 않는다.
 
 프로젝트 전용 방법론 입력은 `apps/web/src/features/project-create/DraftMethodEditor.tsx`가 기존 UI03의 그래프/단계·입출력/조건 편집 부품을 소비하고 기존 초안 저장으로 보존한다. 공통본 writer를 호출하지 않는다. GET 기반 원본 복사는 같은 디렉터리 MethodologySelection이 정확 sourceRef를 남기며 명시 저장 전에는 서버를 쓰지 않는다.
+
+2026-10-16 직접 승인 후속: `apps/server/modules/projects/draft-review.ts`가 현재 owner/client·exact draft ref의 recordContentReview/confirmDraftMethodology를, 기존 repository/routes가 최초 createProject를 처리한다. `db/migrations/0011_project_creation.sql`→`0011_draft_method_reviews.sql`은 기존10개 뒤의 forward DAG다. 첫 PROJECT 원본/고정 snapshot·owner/control1·명령/receipt/audit는 같은 transaction, 후속 PROJECT 개정·실행 허가는 별도다. UI는 `features/project-create/DraftReviewPanel.tsx`·기존 page/api·root buffer이며 `tests/integration/FN01/draft-create.test.ts`, `tests/browser/UI02/project-finalize.spec.ts`, `tests/unit/UI02/finalize-api.test.ts`가 실제/합성 경계를 나눠 확인한다. 문서 import/기존 소스/실제 UI DB/Agent는 이 연결의 완료 범위가 아니다.
