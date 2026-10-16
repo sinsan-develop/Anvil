@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 대화 UI 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` local/private·WSL exact/clean actual1 PASS/5561ms/skip0. 같은 Web new/prepare/sendConversation·지시 정정/순번4·read/list/멱등을 실제 원문/DB에서 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재적용0. 전체 FN05/Stage B·실제 사용자 browser DB는 미완료이며 다음은 지식 정정/제외·확정이다.
+
 - 대화 출처 후속 `2710f1d1182fd56a92f872017e17fa75e66575c9` local/private·WSL exact/clean actual1 PASS/5399ms/skip0: 보존된 사용자 원문/지시·정정 순번→지식 source→같은 Web 조회, 일반 발언 지시 위장422/가짜ID404/hash409·구원문 불변을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재적용0·전체 FN05/사용자 browser DB 인수는 미완료다. 다음은 대화 목록/원문 작성 화면이다.
 
 - UI10 후속 `579ce2dc2da4a05f8031bded1ff00e00037696bd` local/private·WSL exact/clean actual1 PASS/5569ms/skip0: 같은 Web new/prepare/send/read/searchKnowledge가 실제 보호 원문/DB·정확 hash·동일 명령 재확인을 통과했다. 독립 DB23종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 아래 ‘게시 전/실제 client 미검증’은 해당 시점 이력이며 실제 사용자 browser DB·전체 FN05/Stage B는 여전히 미완료다. 다음은 원문 대화와 지식 정정/제외·확정의 저장 경계다.
@@ -130,6 +132,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
+
+- UI 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` private/WSL exact/clean actual1 PASS/5561ms/skip0. 같은 Web 원문 업로드→기존 대화 지시 정정/순번4→정확 SourceRef/hash/본문·목록 읽기→같은 명령 재확인에서 중복0을 확인했다. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL24/서비스·실제 사용자/정책/Secret/Agent는 변경0. API/실제 DB+FS와 합성 Edge fixture8은 각각의 증거이며 실제 사용자 browser DB/인수를 대신하지 않는다.
 
 - 목록 서버 `27f8a4611c90d04fa9ad8f1d9a0b687ddcdf4a30` private/WSL exact/clean actual1 PASS/5952ms/skip0: 대화2개/발언3개·서버 순번/유한 다음 페이지·서명 변조400·교차 사용자404·본문 비포함 목록을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL24 재실행0.
 - 대화 Web client 부재 RED2→별도 원문 업로드/append·현재 사람/제어·정확 source snapshot/hash·서버 순번·STORED만 수용 GREEN. 시험 fake가 업로드에도 없는 message를 해시하던 오류1은 업로드/발언 응답 생성을 분리해 보정했다. 테스트 SourceRef.kind 문자열 타입1은 literal 표기로 고쳤다. 손상 목록/순번/cursor는 명시 거절한다.

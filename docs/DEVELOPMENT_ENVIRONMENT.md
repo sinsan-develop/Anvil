@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+대화 UI 동일 Web client 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` exact private/WSL clean actual1 PASS/5561ms/skip0·독립 DB25종/시험root0·지속원문 보호/empty. 기존24 SQL 재적용0·사용자용 backend/relay/초기 비밀·CA/서비스 변경0. 실제 사용자 browser DB와 전체 기능 검수는 미완료다.
+
 대화 원문→지식 출처 후속 `2710f1d1182fd56a92f872017e17fa75e66575c9` exact private/WSL clean actual1 PASS/5399ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL24 재적용0, 사용자용 runtime/relay HOLD/만료 bootstrap·CA/Secret/서비스는 불변이다.
 
 FN05 대화 서버 `13a6fad444ba0ec2ad767a1bb6ba1f7acc0b8ad9` private/WSL exact/clean에서 승인 forward24 `0005_conversations` checksum8241d4e6321d8798ecc8e78d83eae1147a3c8ff7110cdd86370cab3b73be98dc만 적용·기존23 불변. actual2 PASS/5465ms/skip0·독립 DB25종/시험root 잔류0·지속 원문 보호/empty. 저장은 STORED이고 Agent전달/실행0·사용자용 서비스/Secret 변경0이다.
