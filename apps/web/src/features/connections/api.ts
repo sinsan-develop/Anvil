@@ -7,7 +7,7 @@ export type Ref={id:string;version:number;contentHash:string};
 export const capabilityNames={INSTRUCTION_SESSION:'지시·세션',STATE_ORIGINAL:'상태·원문',RESULT_EVIDENCE:'결과·근거',TOOL_APPROVAL:'도구 승인',STOP_RECLAIM:'중지·회수',PATH_WRITE_CONTROL:'경로·쓰기 통제'};
 export type CandidateSnapshot={kind:CandidateKind;input:CandidateInput;readiness:{state:'NOT_READY';executionAuthorized:false;missingRequirements:{field:string;reason:string}[]};capabilities:{code:keyof typeof capabilityNames;documentation:null|{code:string;source:string;observedAt:string;versionCompatibility:string;sourceKind:'USER_REPORTED'};measurement:{state:'UNVERIFIED';toolVersion:unknown;environmentRef:unknown;executionRef:null;evidenceRefs:[]};controlLevel:'UNVERIFIED';limitations:string[]}[]};
 export interface CandidateView{ref:Ref;candidate:CandidateSnapshot;expired:boolean;createdAt:string;recordedBy:string;executionAuthorized:false;observedAt:string}
-export interface CandidateBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;kind:CandidateKind;draft:{candidate:Record<string,unknown>&{label:string};candidateRef:Ref|null;expiresAt:string;reason:string};input:CandidateInput|null;pending:ProjectCommand|null;result:Ref|null;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
+export interface CandidateBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;kind:CandidateKind;draft:{candidate:Record<string,unknown>&{label:string};candidateRef:Ref|null;expiresAt:string;reason:string};approvalCommandHash?:string;input:CandidateInput|null;pending:ProjectCommand|null;result:Ref|null;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,hash=/^[0-9a-f]{64}$/;
 export const validRef=(v:any):v is Ref=>!!v&&Object.keys(v).sort().join(',')==='contentHash,id,version'&&uuid.test(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&hash.test(v.contentHash);
 function normalize(v:any):any{return Array.isArray(v)?v.map(normalize):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalize(v[k])])):v;}
@@ -30,15 +30,16 @@ function inputValid(v:CandidateInput|null):v is CandidateInput{
 }
 function binding(b:CandidateBuffer,s:DocumentSession){if(!uuid.test(b.projectId)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid.test(s.clientId)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken))throw new ApiError('CANDIDATE_BINDING_INVALID');}
 export function newCandidate(projectId:string,s:DocumentSession,controlGeneration:number,kind:CandidateKind):CandidateBuffer{const b:CandidateBuffer={projectId,ownerUserId:s.user.id,ownerClientId:s.clientId,controlGeneration,kind,draft:{candidate:{label:''},candidateRef:null,expiresAt:'',reason:''},input:null,pending:null,result:null,dirty:false,uncertain:false,failure:null};binding(b,s);return b;}
-export async function candidateAccess(client:ApiClient,pid:string,s:DocumentSession,kind:CandidateKind){
+export async function candidateAccess(client:ApiClient,pid:string,s:DocumentSession,kind:CandidateKind,inspectApproval=false){
  const[generation,value]=await Promise.all([documentControl(client,pid,s),client.get<{configured:boolean;policy:null|{ref:Ref;rules:MaterialRule[]}}>(`/api/v1/projects/${pid}/permission-policy`)]);
  if(!value?.configured||!value.policy)throw new ApiError('PROJECT_POLICY_REQUIRED',412);
  if(!validRef(value.policy.ref)||!Array.isArray(value.policy.rules))throw new ApiError('RESPONSE_INVALID');
  const op=kind==='CONNECTION_CANDIDATE'?'registerConnection':'saveEnvironment',matching=value.policy.rules.filter(r=>r.subjectRef?.kind==='HUMAN'&&r.subjectRef.userId===s.user.id&&r.operations?.includes(op)&&r.targetScopes?.some(t=>t.kind==='PROJECT'&&t.projectId===pid)&&instant(r.expiresAt)&&Date.parse(r.expiresAt)>Date.now());
  if(matching.some(r=>r.disposition==='DENY')||!matching.length)throw new ApiError('PROJECT_OPERATION_DENIED',403);
  // 승인 필요 정책을 AUTO 규칙과 합쳐 우회하지 않는다. 후보 화면은 승인을 자체 생성하지 않는다.
- if(matching.some(r=>r.disposition==='REQUIRE_APPROVAL')||!matching.some(r=>r.disposition==='AUTO'))throw new ApiError('APPROVAL_REQUIRED',412);
- return{generation,policyRef:value.policy.ref,validUntil:new Date(Math.min(...matching.map(r=>Date.parse(r.expiresAt)))).toISOString()};
+ const approvalRequired=matching.some(r=>r.disposition==='REQUIRE_APPROVAL');
+ if(approvalRequired&&!inspectApproval||!approvalRequired&&!matching.some(r=>r.disposition==='AUTO'))throw new ApiError('APPROVAL_REQUIRED',412);
+ return{generation,policyRef:value.policy.ref,approvalRequired,validUntil:new Date(Math.min(...matching.map(r=>Date.parse(r.expiresAt)))).toISOString()};
 }
 export async function prepareCandidate(b:CandidateBuffer,s:DocumentSession):Promise<ProjectCommand>{binding(b,s);if(b.pending||b.result||!inputValid(b.input)||b.kind!==b.input.kind||Date.parse(b.input.expiresAt)<=Date.now())throw new ApiError('CANDIDATE_INPUT_INVALID');const ref=b.input.candidateRef;return{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:s.clientId,controlGeneration:b.controlGeneration,operation:b.kind==='CONNECTION_CANDIDATE'?'registerConnection':'saveEnvironment',targetId:ref?.id??null,expectedVersion:ref?.version??0,baselineRefs:[],approvalRef:null,payload:structuredClone(b.input) as unknown as Record<string,unknown>};}
 async function validateSnapshot(candidate:CandidateSnapshot,ref:Ref){
@@ -46,7 +47,9 @@ async function validateSnapshot(candidate:CandidateSnapshot,ref:Ref){
 }
 export async function sendCandidate(client:ApiClient,b:CandidateBuffer,s:DocumentSession){
  binding(b,s);const c=b.pending;
- if(!c||c.schemaVersion!==1||c.projectId!==b.projectId||c.clientId!==s.clientId||c.controlGeneration!==b.controlGeneration||!uuid.test(c.commandId)||!inputValid(b.input)||!same(c.payload,b.input)||c.operation!==(b.kind==='CONNECTION_CANDIDATE'?'registerConnection':'saveEnvironment')||c.targetId!==(b.input.candidateRef?.id??null)||c.expectedVersion!==(b.input.candidateRef?.version??0)||c.baselineRefs.length||c.approvalRef!==null)throw new ApiError('CANDIDATE_PENDING_CHANGED');
+ const a=c?.approvalRef as {requestId?:unknown;decisionId?:unknown;scopeDigest?:unknown}|null|undefined;
+ const approvalValid=a===null?b.approvalCommandHash===undefined:!!a&&Object.keys(a).sort().join(',')==='decisionId,requestId,scopeDigest'&&typeof a.requestId==='string'&&uuid.test(a.requestId)&&typeof a.decisionId==='string'&&uuid.test(a.decisionId)&&typeof a.scopeDigest==='string'&&hash.test(a.scopeDigest)&&b.approvalCommandHash===await digest(c);
+ if(!c||c.schemaVersion!==1||c.projectId!==b.projectId||c.clientId!==s.clientId||c.controlGeneration!==b.controlGeneration||!uuid.test(c.commandId)||!inputValid(b.input)||!same(c.payload,b.input)||c.operation!==(b.kind==='CONNECTION_CANDIDATE'?'registerConnection':'saveEnvironment')||c.targetId!==(b.input.candidateRef?.id??null)||c.expectedVersion!==(b.input.candidateRef?.version??0)||c.baselineRefs.length||!approvalValid)throw new ApiError('CANDIDATE_PENDING_CHANGED');
  let response:Response;try{response=await client.transport.call(globalThis,`/api/v1/projects/${b.projectId}/commands`,{method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':s.csrfToken,'Idempotency-Key':c.commandId},body:JSON.stringify(c)});}catch{throw new ApiError('CONNECTION_LOST');}
  let v:any;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();v=await response.json();}catch{throw new ApiError('RESPONSE_INVALID',response.status);}
  if(!response.ok)throw new ApiError(typeof v?.code==='string'&&/^[A-Z_]{1,64}$/.test(v.code)?v.code:'REQUEST_FAILED',response.status);

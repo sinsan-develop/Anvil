@@ -86,7 +86,7 @@
 | UI05 | 단계책임자·실행 상세 | C | UI00 | UI00,FN09,FN12,FN13 | 시작 전 |
 | UI06 | 문서·설계·계획 추적 | B | UI00 | UI00,FN03,FN04 | 작업 중 — 후보/제안·충돌/검토 재개와 고정 단계 선택·보존/조회 연결. 6cdb21cb same-client 단계 actual1 PASS. 소스/추적 잔여·실제 사용자 UI DB 여정 미완료 |
 | UI07 | 설계 변경·영향·이력 | D | UI00 | UI06,FN04,FN11 | 시작 전 |
-| UI08 | 승인·원인 미확인 문제 | C | UI00 | UI00,FN11,FN12 | 시작 전 |
+| UI08 | 승인·원인 미확인 문제 | C | UI00 | UI00,FN11,FN12 | 작업 중·FN11 승인 목록/상세·3종 결정·이동/단절 명령 보존의 fixture/client 확인. 후보 요청→재결박 전체/실제 소비 검증 전, FN12 문제 분류 미연결 |
 | UI09 | 새 세션·다른 도구 이전 | D | UI00 | UI04,FN14 | 시작 전 |
 | UI10 | 헌법·지식·결정 이유 | B | UI00 | UI00,FN05 | 작업 중·원문/지식·대화/정정/제외·검토/확정·별도 헌법 적용/이력의 화면/same-client actual7cf8c005 확인. 공유·임무별 선별/전달·사용자 browser DB 미완료 |
 | UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보 작성/목록/불변 조회/개정·명령 보존, 747c6f37 같은 Web 함수/API/PG actual1 PASS·QA잔여0 및 fixture/배치 확인. 실제 host/Agent·정책 생성/승인 결정·사용자 browser 인수 미연결/미확인 |
@@ -98,7 +98,7 @@
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
 | FN04 | 설계 추적·계획·변경 영향 | B | FN02,FN03,FN11 | FN02,FN03,FN11 | 작업 중 — D/S·업무 카드/두 선행·불변 계획/개정·화면 검토 선택·trace edge·계획 검토/확정의 화면/same-client actual. 요청4종 출처·사람 영향 이력/미확인 보존 actual df2f81ff·forward33 확인. 변경 적용/UI07·실제 browser DB 여정 미완료 |
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |
-| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·미연결 후보 저장/조회·41/42 적용, 350b2e30 내부/HTTP·인접 actual3 PASS·QA 잔여0. 실제 host/Agent·UI11·전체 연결 미구현/미검증, 다음 PMO 지시 수신 |
+| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·미연결 후보41/42 내부/HTTP·인접 actual350b2e30 및 UI11 same-client747c6f37 확인·QA 잔여0. UI11 후보 부분 연결, 실제 host/Agent·전체 연결 미구현/미검증 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 시작 전 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 시작 전 |

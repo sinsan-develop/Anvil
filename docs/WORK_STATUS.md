@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI08 첫 화면 checkpoint 준비: 목록/상세 부재 RED1→UI08 기본7 PASS/5.1초. 보존 결정 입력을 다음 독립 요청 전에 명시 종료하는 행동 부재 RED1→GREEN1/1.9초이며 서버 이력은 삭제하지 않는다. 최종 unit164 PASS/2451.8264ms·type/build0(98modules·CSS9.55kB/gzip2.56·JS647.56kB/gzip167.90·기존 chunk 경고)·UI08 8/직접 영향 UI11 12 합계20 PASS/14.7초이다. 확인한 것은 조회만으로 결정 안 함·정확 범위/3종 결정·유실/이동 동일 결정·타기기409현재조회·만료 차단·원 입력 보존의 합성 화면과 client 시험이다. **승인 요청 작성→결정→원 후보 재결박의 전체 fixture, 실제 같은 Web 함수/API·PG 소비max1·QA 정리는 아직 미실행**이며 이 checkpoint를 업무 완료로 올리지 않는다. 다음은 이 남은 동일 범위의 통합/실제 검증이다. backend/API/DB·실제 사용자/키·Agent·runtime/relay/Secret 변경0이다.
+
+- UI08 현재 로컬: 승인 client 부재 RED1→기본5 GREEN, 서버 재대조 ref를 원 후보에 결박하는 기존 null-only 전송 경계 RED1·승인 준비 조회의 엄격 차단 RED1을 최소 보완해 UI08/UI11 직접14 PASS/175.3376ms·type0이다. 기존 기본 REQUIRE_APPROVAL 차단은 유지하며 명시 요청 준비에만 현재 policyRef/approvalRequired를 반환한다. 서버로 다시 읽은 APPROVE·정확 command/payload/scope hash·주체/client·정책/기한만 원 후보에 결박하고 저장/소비를 자동 실행하지 않는다. 첫 시험 fixture literal 타입만 typecheck1회 실패해 실제 상수 구조는 보존하고 fixture 반환 annotation으로 정정했다. 현재 신규 client·시험은 로컬 미게시이며 UI08 화면/actual·전체 업무 완료는 아직 미검증이다.
+
+- UI08 착수: PMO가90475b33 후보 부분을 수용하고 기존 FN11의 승인 요청/조회/3종 결정→원 후보의 정확 일회 ref 결박을 지시했다. Main 어울 단일 writer로 decisions feature·기존 App의 주체/client/project별 상태·UI11 최소 이동/결박·직접 unit/browser/same-client actual·정본만 작업한다. backend/API/DB/정책 schema 변경0, FN12 실행 문제 분류/회수/교체·실제 host/키·Agent/비용·서비스/runtime 교체·main 변경은 제외한다. 후보 명령·payload/hash/정확 대상/정책·기한을 고정한 별도 요청/결정이며 화면 열기나 승인만으로 저장/소비하지 않는다. 순서는 신규 행동 RED→기존 계약 typed 소비→fixture/영향 타입·빌드→exact private WSL same-client·QA exact 정리→PMO 제출이다.
+
 - UI11 후보 부분 실제 checkpoint **747c6f37cb1de34436f63b3eb4fa7cc0f4e1ff72**: local/private/WSL exact·tracked clean에서 새 `tests/integration/UI11/candidate-client.test.ts` **1 PASS/865.862153ms(기능603.046575ms)/FAIL0/SKIP0**. 같은 Web `candidateAccess/prepareCandidate/sendCandidate/readCandidate/listCandidates`가 실제 인증 API/PG의 저장→합성 응답 유실→원 command 재확인/효과1→목록/정확 불변 재조회→환경 v1/v2/CAS409·EMPTY/NOT_PROVIDED 구분→타 프로젝트404→재인증 만료412·권한 회수403·outbox0을 확인했다. 최초 SSH here-string의 마지막 CR이 파일명에 붙은 호출 오류1은 시험 시작 전 실패이며 동일 exact SHA의 단일 명령으로만 정정했다. 독립 QA DB41종 각0·migrations42·시험root[]·지속원문 uid1000/0700/nonlink/실경로 동일/entries[]이다.
 - 같은 checkpoint 뒤 Web API/client·backend/DB·same-client 시험은 변경하지 않았다. 1920 캡처에서 native 기본 입력148px·라벨 접합을 발견해 폭>320 layout RED1→UI11 feature 전용 CSS로만 보정했다. type/build exit0(96modules·CSS9.55kB/gzip2.56·JS623.43kB/gzip162.76, 기존 chunk 경고)·layout1 GREEN/2.0초·추가 kind/cursor/입력 보존·430px 가로 유실2 PASS/2.5초. 임시 browser 결과가 다음 실행에 교체되므로 좁은 캡처1 PASS/2.1초로 보존한 [합성 후보 화면](04_test_reports/AV3/UI11/CANDIDATE_FIXTURE_1920.png) SHA256 F3BA3E093E28493CF60E9D7A4E052B00D94591CD6C573FDC053246FF8DC61882를 남겼다. 사용자 실데이터/로그인·DB 브라우저 인수 증거가 아니다. 최종 타입/diff를 확인하고 불변 DB검증을 반복하지 않는다.
 - 판정: **후보 작성·저장·목록/페이지·정확 버전 조회·명시 개정의 부분 구현/핵심 동작 확인**이다. 모든 후보는 NOT_READY·6능력 UNVERIFIED/역할 배정 불가이고 실제 host 신뢰·credential·Agent 시험/실행/해제·정책 생성/승인 결정 화면은 미구현으로 표시/차단한다. 현재 AUTO 명시 정책만 소비하며 혼합 REQUIRE_APPROVAL도 차단한다. Windows old backend/relay HOLD/만료 bootstrap·실제 사용자/권한·Secret은 불변이다. 전체 UI11/FN06·Stage B/C·44업무 완료가 아니며 PMO에 결과와 정확 다음 미구현 경계를 제출한다.
@@ -244,7 +250,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 0 / [2] 14 / [] 27 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/UI10/UI11/FN01/FN02/FN03/FN04/FN05/FN06/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). FN06/UI11은 조기 후보 저장·표시의 부분 구현이며 실제 Agent 연결 완료가 아니다. 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
+- 현재 합계: **[0] 3 / [1] 0 / [2] 15 / [] 26 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/UI08/UI10/UI11/FN01/FN02/FN03/FN04/FN05/FN06/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). FN06/UI11 후보와 UI08 승인 화면은 부분 구현이며 실제 Agent 연결 완료가 아니다. 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -285,7 +291,7 @@
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
-| UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
+| UI08 승인·중요 문제 | [2] | Main 어울. 기존 FN11 승인 목록/상세·3종 결정·원 명령/입력 보존의 화면/client 검증 | 후보 요청→결정→재결박 전체 fixture/actual 소비·FN12 문제 분류 미검증/미연결 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/출처·지식 작성/정정/제외·검토/확정·헌법 별도 적용/이력 same-client actual7cf8c005, fixture13 | 공유·임무별 선별/이해 대조·현재 사용자 browser DB |
 | UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존, same-client actual747c6f37 1 PASS·QA41종 잔여0·fixture/배치 확인 | 실제 host/credential/Agent·정책 생성/승인 결정 UI 및 실제 사용자 로그인 browser 인수 미연결/미확인 |
