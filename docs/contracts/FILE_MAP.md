@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN11 유한 목록은 835b9a50 exact actual1 PASS/12553ms에서 만료/소비/회수·필터/서명 페이지·타인 격리를 확인했다. 단위131·type/diff0 및 DB31종/QA 경로 잔여0, 실제 UI08/다른 행위의 승인 소비와 구분한다.
+
 FN11 승인 목록은 approvals/approval-input.ts의 유한 query 검사와 ProjectApprovals.list, routes의 APPROVALS 전용 서명 cursor를 소비한다. 현재 회원 검사 뒤 metadata만 읽고 현재 관측 시각에 기한/정책·제어·소유자 유효성을 표시한다. 본문/완전 이력 검사는 기존 상세 read가 소유한다. SQL36/자료·정책 쓰기와 분리된 GET이며 실제 증거는 WORK_STATUS를 따른다.
 
 FN11 요청/결정/원문 업로드 소비는 eb4f1d97 exact actual2 PASS/13084ms로 확인했다. 기존 프로젝트 정책 실제 회귀와 소비2건/멱등·만료·회수·감사 및 QA31종/원문 정리0은 WORK_STATUS에 분리한다. 코드는 생성됐으나 미실행인 UI08/다른 연산/Agent 승인이나 전체44업무 완료로 승격하지 않는다.
