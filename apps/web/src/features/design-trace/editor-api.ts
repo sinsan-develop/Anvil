@@ -22,6 +22,7 @@ reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocum
   designIndexState?:DesignIndexBuffer|null;
   workPlanState?:WorkPlanBuffer|null;
   stageNodeRef?: StageNodeRef | null;
+  baseStageNodeRef?: StageNodeRef | null;
 }
 export interface DocumentSession { user: { id: string }; clientId: string; csrfToken: string }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
@@ -46,7 +47,7 @@ export async function documentControl(client: ApiClient, projectId: string, sess
 export function editDocument(projectId: string, value: { document: DocumentVersion; body: string }, ownerUserId: string, controlGeneration: number): DocumentBuffer {
   const d = value.document;
   if (!nullableStageRef(d.stageNodeRef) || d.stageNodeRef !== null && !validStageBinding(d.stageBinding!, d.stageNodeRef) || d.content.sourceRefs.length) throw new ApiError('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
-  return { ownerUserId, projectId, stageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), documentId: d.id, baseVersion: d.version, baseHash: d.contentHash, baseTitle: d.title, formRef: { ...d.formRef }, title: d.title, body: value.body, mediaType: d.content.body.mediaType, content: { attachments: structuredClone(d.content.attachments), sections: structuredClone(d.content.sections), sourceRefs: [] }, criteria: structuredClone(d.contentReviewCriteria.items), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
+  return { ownerUserId, projectId, stageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), documentId: d.id, baseVersion: d.version, baseHash: d.contentHash, baseTitle: d.title, baseStageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), formRef: { ...d.formRef }, title: d.title, body: value.body, mediaType: d.content.body.mediaType, content: { attachments: structuredClone(d.content.attachments), sections: structuredClone(d.content.sections), sourceRefs: [] }, criteria: structuredClone(d.contentReviewCriteria.items), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
 }
 export function newDocument(projectId: string, form: FormVersion, ownerUserId: string, controlGeneration: number): DocumentBuffer {
   return { ownerUserId, projectId, stageNodeRef: null, documentId: null, baseVersion: 0, formRef: { ...form.ref }, title: '', body: '', mediaType: 'text/markdown;charset=utf-8', content: { attachments: [], sections: [], sourceRefs: [] }, criteria: form.definition.items.map(item => ({ criterionId: item.itemId, title: item.title, reviewCriteria: [...item.reviewCriteria] })), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };

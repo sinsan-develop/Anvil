@@ -74,6 +74,7 @@ test('고정 단계 선택은 단절·화면 이동 뒤에도 유지되고 문�
   await page.getByRole('button', { name: '현재 적용본 단계 조회', exact: true }).click();
   await page.getByLabel('연결할 방법론 단계', { exact: true }).selectOption('REQUIREMENTS');
   await page.getByLabel('문서 변경 이유', { exact: true }).fill('고정 단계와 문서를 연결');
+  await expect(page.getByRole('button', { name: '수정 제안으로 저장', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
   await page.getByRole('link', { name: '프로젝트 작업', exact: true }).click(); await page.getByRole('link', { name: '문서·설계 추적', exact: true }).click();
   await page.getByRole('button', { name: '같은 저장 명령 결과 확인', exact: true }).click(); await expect(page.getByText('초안 버전 3 저장 확인', { exact: true })).toBeVisible();
@@ -81,6 +82,9 @@ test('고정 단계 선택은 단절·화면 이동 뒤에도 유지되고 문�
   await expect(page.getByRole('region', { name: '문서 단계 연결', exact: true })).toContainText('요구사항 정의');
   await page.getByRole('button', { name: '이 버전에서 편집', exact: true }).click();
   await expect(page.getByRole('region', { name: '문서 단계 선택', exact: true })).toContainText('REQUIREMENTS');
+  await page.getByLabel('문서 본문 편집', { exact: true }).fill(initial + '새 본문 제안');
+  await page.getByLabel('문서 변경 이유', { exact: true }).fill('단계는 보존하고 본문만 개정');
+  await expect(page.getByRole('button', { name: '수정 제안으로 저장', exact: true })).toBeEnabled();
 });
 
 test('편집 입력은 화면 이동·업로드 응답 단절에도 보존되고 같은 명령으로 새 불변 버전을 저장한다', async ({ page }) => {

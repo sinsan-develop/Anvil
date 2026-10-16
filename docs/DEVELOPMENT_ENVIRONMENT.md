@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN03 고정 방법론 단계 연결 forward40 `0003_document_stage_bindings` checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1는 직접 승인 아래 기존 개발 DB에 적용됐다. 6cdb21cb exact WSL actual 단계1 PASS/1199ms(기능952ms)/skip0·기존 문서 인접1 PASS/14585ms(기능14288ms)/skip0, 독립 DB39종 count0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40이다. 기존39 SQL·서비스/relay·실제 사용자/권한·Secret은 변경하지 않았다. 실제 같은 Web 함수/API/PG 검증이며 현재 Windows old backend/만료 bootstrap/relay HOLD를 교체한 사용자 browser↔DB 인수는 아니다.
+
 FN02 프로젝트 전용 개정/사람 검토/확정 forward39 `0002_project_methodology_revisions` checksumf816147a1454b428af090b0feb93e496b60cb4eaba7f5979fccdf919fc353e68가 직접 승인 아래 기존 개발 DB에 적용됐다. 이전38 SQL 불변·fixtures7·실제 사용자 생성0, 19ce2bb7 exact WSL의 FN02 same-client/최초 생성 actual2 PASS/1485ms/skip0·독립 DB39종/시험root 잔여0·지속원문 보호/empty. 새 개정/확정만 구현했으며 적용 전환은 실행 상태/영향 근거 부재로412다. Windows backend/relay/만료 bootstrap·CA·Secret은 교체하지 않았고 실제 사용자 browser↔DB/Agent 인수는 미확인이다.
 
 FN01 기존 소스 사용자 선언은 직접 승인 아래 forward38 `0001_source_declarations` checksum246fd20284f998ac8d1c1cbea1570372f7d6a204dad885ea41112eeda5b3c025를 적용했다. 초기0001의 source_declarations identity와 원37 SQL은 보존하고 새 source_declaration_versions/project_source_declarations만 연결한다. 0ba2fd49 actual2 PASS/1178ms·UI02 same-client d8128157 actual1 PASS/1184ms/skip0, 독립 DB39종/등록 시험경로 잔여0. 입력 pathHint를 실제 경로로 읽거나 허가하지 않았고 새 서비스·실제 사용자/Secret·실제 소스 파일 변경0이다. 사용자용 mixed runtime/만료 bootstrap/relay HOLD는 그대로이므로 실제 browser↔DB 인수는 미확인이다.

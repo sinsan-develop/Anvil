@@ -29,7 +29,7 @@ function subject(state: DocumentProposalBuffer, session: DocumentSession) {
 function context(state: DocumentProposalBuffer) { return state.snapshot ? { ...state.snapshot.upload, reason: state.snapshot.reason } : { ...state.restored!, reason: state.restored!.reason }; }
 function validProposal(p: Proposal, base: Ref, body: Artifact) { return p && uuid.test(p.id) && validRef(p.baseRef) && sameRef(p.baseRef, base) && sameArtifact(p.proposedContentRef, body) && validArtifact(p.diffRef) && p.diffRef.mediaType === 'application/json;charset=utf-8' && p.status === 'PENDING'; }
 export async function prepareDocumentProposal(buffer: DocumentBuffer, session: DocumentSession): Promise<DocumentProposalBuffer> {
-  if (!buffer.documentId || !buffer.baseHash || !hash.test(buffer.baseHash) || buffer.title !== buffer.baseTitle || buffer.proposalState) throw new ApiError('PROPOSAL_BASE_REQUIRED');
+  if (!buffer.documentId || !buffer.baseHash || !hash.test(buffer.baseHash) || buffer.title !== buffer.baseTitle || !sameStageRef(buffer.stageNodeRef ?? null, buffer.baseStageNodeRef ?? null) || buffer.proposalState) throw new ApiError('PROPOSAL_BASE_REQUIRED');
   const snapshot = await prepareDocumentSave(buffer, session);
   return { ownerUserId: buffer.ownerUserId, bindingId: snapshot.upload.commandId, baseRef: { id: buffer.documentId, version: buffer.baseVersion, contentHash: buffer.baseHash }, snapshot, command: null, proposal: null, comparison: null, applyCommand: null, savedRef: null, uncertain: false, failure: null };
 }

@@ -18,6 +18,8 @@ test('수정 제안 선택은 원 문서의 고정 단계를 보존하고 단계
   const session = { user: { id }, clientId: id, csrfToken: 'C'.repeat(43) }, stageNodeRef = { applicationId: project, nodeId: 'REQUIREMENTS' };
   const formRef = { id, version: 1, contentHash: 'b'.repeat(64) }, body = { artifactId: id, bytes: 3, contentHash: 'c'.repeat(64), mediaType: 'text/plain;charset=utf-8' }, content = { body, attachments: [], sections: [], sourceRefs: [] };
   const buffer: DocumentBuffer = { ownerUserId: id, projectId: project, documentId: id, baseVersion: 2, baseHash: 'a'.repeat(64), baseTitle: '원본', title: '원본', formRef, body: '변경', mediaType: body.mediaType, content: { attachments: [], sections: [], sourceRefs: [] }, criteria: [], reason: '별도 제안', controlGeneration: 1, dirty: true, pending: null, savedRef: null, failure: null, stageNodeRef };
+  Object.assign(buffer, { baseStageNodeRef: stageNodeRef });
+  await assert.rejects(prepareDocumentProposal({ ...buffer, stageNodeRef: null }, session), (e: unknown) => (e as { code: string }).code === 'PROPOSAL_BASE_REQUIRED');
   const state = await prepareDocumentProposal(buffer, session);
   state.proposal = { id: project, baseRef: state.baseRef, proposedContentRef: body, diffRef: { ...body, mediaType: 'application/json;charset=utf-8' }, status: 'PENDING' };
   state.comparison = { proposal: { ...state.proposal, proposedContent: content, selections: [], reason: buffer.reason, createdAt: '2026-10-17T00:00:00Z', proposedBy: id }, base: { document: { title: buffer.title, formRef, stageNodeRef }, body: '원문' }, proposedBody: buffer.body } as any;

@@ -6,6 +6,7 @@ import { continueDocumentSave, prepareDocumentSave, type DocumentBuffer, type Do
 import { adoptDocumentConflict, canCompareDocumentConflict, canPrepareManualConflict, compareDocumentConflict, type DocumentConflictComparison } from './conflict-api.ts';
 import { DocumentImport } from './DocumentImport.tsx';
 import { DocumentStageSelector } from './DocumentStageSelector.tsx';
+import { sameStageRef, type StageNodeRef } from './stage-api.ts';
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, type DocumentProposalBuffer } from './proposal-api.ts';
 
 export function DocumentEditor({ client, session, buffer, onChange, onSaved, onAuthenticationLost }: { client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
@@ -24,7 +25,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
       if (!pending) { pending = await prepareDocumentSave(buffer, session); const prepared = pending; onChange(previous => previous?.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
       const command = pending.upload.commandId;
       const ref = await continueDocumentSave(client, pending, session, value => onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), () => mounted.current);
-      onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, pending: null, dirty: false, savedRef: ref, failure: null } : previous);
+      onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, dirty: false, savedRef: ref, failure: null } : previous);
       if (mounted.current) onSaved(ref.id, ref.version, buffer.title);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
@@ -73,7 +74,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
       else state = { ...state, failure: null };
       proposalCheckpoint(state);
       const ref = await applyDocumentProposal(client, state, session, () => mounted.current), completed = { ...state, savedRef: ref, uncertain: false, failure: null }, content = state.comparison!.proposal.proposedContent;
-      onChange(b => b?.proposalState?.bindingId === completed.bindingId ? { ...b, proposalState: completed, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: state!.comparison!.base.document.title, body: state!.comparison!.proposedBody, mediaType: content.body.mediaType, content: { attachments: structuredClone(content.attachments), sections: structuredClone(content.sections), sourceRefs: [] }, dirty: false, savedRef: ref } : b);
+      onChange(b => b?.proposalState?.bindingId === completed.bindingId ? { ...b, proposalState: completed, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: state!.comparison!.base.document.title, baseStageNodeRef: structuredClone(state!.comparison!.base.document.stageNodeRef as StageNodeRef | null), body: state!.comparison!.proposedBody, mediaType: content.body.mediaType, content: { attachments: structuredClone(content.attachments), sections: structuredClone(content.sections), sourceRefs: [] }, dirty: false, savedRef: ref } : b);
       if (mounted.current) onSaved(ref.id, ref.version, buffer.title);
     } catch (cause) { proposalFailure(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
   }
@@ -109,7 +110,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
     <fieldset disabled={locked}><legend>양식 항목의 원문 위치</legend>{buffer.criteria.map(item => <label key={item.criterionId}>{item.title} 시작 줄<input type="number" min="1" value={buffer.content.sections.find(section => section.itemId === item.criterionId)?.anchor.slice(5) ?? ''} onChange={event => { const kept = buffer.content.sections.filter(section => section.itemId !== item.criterionId); change({ content: { ...buffer.content, sections: event.target.value ? [...kept, { itemId: item.criterionId, anchor: 'line:' + event.target.value }] : kept } }); }} /></label>)}</fieldset>
     <label htmlFor={'document-reason-' + buffer.documentId}>문서 변경 이유</label><textarea id={'document-reason-' + buffer.documentId} value={buffer.reason} rows={2} maxLength={20_000} readOnly={locked} onChange={event => change({ reason: event.target.value })} />
     <div className="project-toolbar"><button disabled={busy || !!buffer.proposalState || !!buffer.importState || !!buffer.importPreparationId || !buffer.pending && (!buffer.dirty || !buffer.title.trim() || !buffer.reason.trim())} onClick={() => { void save(); }}>{buffer.pending ? '같은 저장 명령 결과 확인' : '새 초안 버전 저장'}</button>
-      {buffer.documentId && !proposal ? <button disabled={locked || !buffer.dirty || !buffer.reason.trim() || buffer.title !== buffer.baseTitle} onClick={() => { void propose(); }}>수정 제안으로 저장</button> : null}
+      {buffer.documentId && !proposal ? <button disabled={locked || !buffer.dirty || !buffer.reason.trim() || buffer.title !== buffer.baseTitle || !sameStageRef(buffer.stageNodeRef ?? null, buffer.baseStageNodeRef ?? null)} onClick={() => { void propose(); }}>수정 제안으로 저장</button> : null}
       <button disabled={locked} onClick={() => { if (!buffer.dirty || confirm('이 문서의 미저장 편집 입력을 버릴까요?')) onChange(previous => previous === buffer ? null : previous); }}>편집 닫기</button></div>
   </section>;
 }

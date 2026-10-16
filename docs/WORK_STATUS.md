@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN03/UI06 6cdb21cb exact private/WSL clean actual 단계1 PASS/1199ms(기능952ms)/skip0·공유 제안 서버의 인접 기존 문서1 PASS/14585ms(기능14288ms)/skip0. 동일 Web 단계 조회/선택→업로드1/저장 후 합성 응답 단절→같은 명령 재확인/같은 ref→원문/단계재조회→제안 diff/명시 선택·새 버전 보존을 확인했다. 제안 선택의 단계 null 위장409·다른 적용/과거 이력 검사도 포함한다. 독립39종 count0·시험root[]·지속원문 보호/empty·migrations40, 기존 SQL 재실행0. 현재 마지막 Web 후속은 단계만 바꾼 입력을 본문 제안으로 조용히 유실하지 않도록 `baseStageNodeRef`를 분리했다(신규 거절 RED1→GREEN2/150ms). 최초 새 문서 저장의 오래된 buffer.pending 참조로 화면 갱신 실패1을 기존 정상 시험에서 확인→현재 updater의 pending으로 보정, 편집8 PASS/8.2초·단위146 PASS/2249ms·type/build0(Web93/604.60kB/gzip156.95·기존 경고 유지). 최종 Web same-client actual은 다음 exact 게시본에서 확인하며 사용자용 old backend/relay·만료 bootstrap·Secret/실제 정책은 불변이다. 전체 FN03·Stage B·44업무 완료로 승격하지 않는다.
+
 - FN03/UI06 20e18f45b8a3c34fa0af7bdc944a2044c0c78340 exact private/WSL clean actual RED1/851ms(기능604ms)/skip0: 같은 Web 단계 선택·업로드1/저장 뒤 합성 응답 단절·동일 명령 재확인·단계/원문 재조회는 도달했으나 기존 제안 서버가 non-null 단계를 `DOCUMENT_REFERENCE_CONNECTION_PENDING`412로 차단했다. 원인은 기존 null-only 경계이며 신규 승인된 단계 연결을 실제 snapshot/양식으로 확인하도록 좁혔다. 제안 선택도 원 문서의 stage_ref_json과 정확히 일치해야 하며 몰래 해제/변경은409를 유지한다. 새 schema/SQL 변경0·원문/확정본 불변. unit146 PASS/1938ms·type/diff0, 후보 실제 GREEN은 다음 exact 게시본에서 확인한다. 실패 후 독립39종 count0·임시root[]·지속원문 보호/empty·migrations40, 사용자용 runtime/Secret/정책 변경0이다.
 
 - FN03 단계 서버 f231218eec876911ffccc1d46f2001e8777c6054 exact private/WSL clean에서 forward40 `0003_document_stage_bindings` checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1 적용·기존39 SQL 불변, 실제1 PASS/775ms(기능527ms)/skip0. 교차 프로젝트404·없는 노드/맞지 않는 양식422·같은 명령 동시2/버전1·현재 적용 교체409·과거 단계 보존·명시 해제 새 버전·변조503/복원·직접 수정42501을 확인했다. 독립39종 count0·QA root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40이다. 방법론 적용 전환·Agent/실제 사용자·서비스/Secret 변경0.
@@ -243,7 +245,7 @@
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
-| UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서 원본/개정·검토/확정·가져오기/제안 재개·충돌/대상 교체·D/S 위치·작업계획 초안 작성/저장 일부 연결. 같은 client actual API/DB와 fixture34 구별 | 보관 계획/개정 재개·검토/확정·trace/변경·실제 화면 DB 여정 |
+| UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
@@ -261,7 +263,7 @@
 |---|---|---|---|
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 인증 기반과 빈 초안→원자 생성/owner·client 제어1/receipt·감사·snapshot·재조회/중복/격리/DB 실패 rollback 확인. 실제 사용자/지속 QA 프로젝트0 | 기존 소스/기준선·복구/초대·실제 UI DB 여정 |
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
-| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·검토/확정/충돌 조정·가져오기 후보/명시 선택 actual 확인, 새 forward18/합성 잔여0. UI06 fixture15는 별도 | 제안/서버 diff·후보 목록 재개·복합 충돌/대상 교체·소스 연계 |
+| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 버전·검토/확정·제안/후보 재개·충돌/대상 교체·고정 적용 단계/정확 양식 연결 actual6cdb21cb·forward40·QA 잔여0 | 소스 실관측/드리프트·실제 사용자 화면 DB 여정 |
 | FN04 설계 추적·계획·변경 영향 | [2] | Main 어울. 정확 AF02/AF03 원문 위치 등록·조회 actual 확인, 선행 분석 일부 구현 | AF04 작업계획/업무/선행·trace edge·3상태축·영향/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [2] | Main 어울. 원문/지식·이유/이력·검색/정정/제외·검토/확정·헌법 적용/교체/무효 이력 actual7cf8c005·SQL37 | 공유·맥락 선별/전달/이해(FN09/IX04 선행) |
 | FN06 첫 코딩 Agent·환경 | [] | 실제 제품/버전별 연동 미확인 | 공식 지원과 실제 세션/지시/결과·권한 확인 |
