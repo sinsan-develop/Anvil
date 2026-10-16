@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+실제 저장 보정은 새 forward31(포함 비교식 괄호)/33(출처 kind 변수명)만 소유하며 적용30/32는 수정하지 않는다. 현재 요청4종 출처·사람 영향/이력 보호 actual df2f81ff 1 PASS/9215ms와 독립 QA 정리0은 WORK_STATUS에 있다. UI07/기준 적용/업무 재개는 이 함수·파일 존재만으로 구현 완료로 보지 않는다.
+
 FN04 출처 후속: traceability/design-change-sources.ts는 기존4종 SourceRef의 유한 형식을, design-changes.ts는 실제 프로젝트·문서/보호 원문·대화 종류/hash를 저장/조회 양쪽에서 대조한다. 새 forward32 design_change_sources는 기존 요청 guard의 빈 배열 제한만 정확 출처 metadata 검사로 바꾸며 나머지 authorization/확정 설계/미선택 제안/receipt 조건은 보존한다. SQL29~31·기존 자료를 고치지 않으며 기준 적용/Agent 전달은 없다.
 
 사람 영향 검토: traceability/impact-review.ts는 모든 대상/공백·명시 근거 형식/이유를 검사한다. design-changes.ts는 근거 문서의 실제 프로젝트/원문 hash·부모/최신 버전과 현재 주체를 확인하고 새 불변 검토 버전을 기록하며 유한 이력을 조회한다. forward30은 부모 composite FK·사람 검토 전용 guard만 추가하고 SQL29를 수정하지 않는다. 형식/실제 참조 확인과 의미 판단 정답·설계 적용을 구분한다.

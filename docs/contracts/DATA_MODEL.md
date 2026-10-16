@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+후속 실제 적용: 사람 검토v2/v3·출처4종은 df2f81ff exact actual1 PASS/9215ms로 확인했다. forward31은 SQL30의 JSON 포함 비교식 양쪽 괄호만, forward33은 SQL32의 kind 변수명만 교정한다. 적용 SQL30/32를 덮어쓰지 않았고 현재33개 지문을 보존한다. 오류가 있었던 최초 실행은 별도 FAIL 이력으로 남긴다. 출처/사람 판단 확인과 의미적 정답·기준 활성화·사용자 인수는 서로 다른 사실이다.
+
 FN04 출처 forward32 후보는 design_changes.change_json.sourceRefs의 기존 구조 안에서만 기존4종을 보존한다. 새 표/기준 pointer/사용자 권한을 추가하지 않고 현재 요청 guard의 [] 전용 조건을 같은 프로젝트 문서 버전/hash·READY 텍스트 원본·실제 대화/지시 metadata 검사로 교체한다. 서버는 보호 파일 바이트까지 재검사한다. 기존 요청/영향 snapshot/hash와 SQL29~31은 불변, 과거 지시는 출처 이력이지 현재 적용 지시가 아니다.
 
 FN04 forward30 후보는 기존 design_change_impacts의 v1/MECHANICAL-only CHECK를 새 명시 조건으로 확장하되 기존 행은 그대로 보존한다. HUMAN_REVIEW v>1은 base_version=v-1/base_hash와 동일 id/project/version/hash composite FK로 부모를 고정하고, 새 command/receipt·현재 정책/control/OWNER·최신 base·HUMAN 작성자·대상/공백 보존·UNAFFECTED의 실제 같은 프로젝트 문서 근거 guard를 요구한다. UPDATE/DELETE 권한은 추가하지 않고 현재 설계·계획 pointer를 수정하지 않는다. 적용 SQL29와 기존 이력은 불변이며 적용 여부는 WORK_STATUS를 따른다.
