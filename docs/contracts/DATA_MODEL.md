@@ -2,6 +2,8 @@
 
 ## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
 
+UI06 내용검토 작성 연결도 현재16개 schema를 유지한다. 기존 PROJECT/DOCUMENT/HUMAN_REVIEW를 현재 OWNER/client/제어 세대·명시 정책·exact head/hash/기준에 결박하고 같은 command replay는 실제 row1을 반환한다. 이번 actual1에서 새 클라이언트로 검토 저장·재조회/실제 사용자·동일 작성자 여부·confirmed=false·실행 outbox0을 확인했다. 화면 fixture10/단위48은 별도 증거다. 새 confirmed pointer/행위는 아직 연결하지 않았으며 단순 section anchor 존재를 필수 내용/반복 필드 검수 합격으로 승격하지 않는다.
+
 UI06 작성/편집 연결은 새 schema를 만들지 않는다. 현재16개 그대로 기존 PROJECT 명시 uploadArtifact/saveDocumentDraft·원문과 불변 버전/감사를 소비한다. 새 문서는 targetId=null/expectedVersion0, 개정은 정확 documentId/head 기준이며 오래된 입력은409로 보존한다. 응답 단절의 각 upload/save command는 탭 상위 버퍼로 보존하고 확인된 업로드 후 JSON 저장 재확인은 새 파일을 만들지 않는다. 성공은 서버 exact ref/hash·새 버전 재조회로 확인하며 사용자 확정/내용검토·실행 사건으로 변경하지 않는다.
 
 후속16 `0003_project_document_reviews`는 기존 append-only content_reviews의 PROJECT/DOCUMENT 경로만 현재 OWNER/client/control·정책 head·APPLIED recordContentReview/receipt exact ref·문서 head/hash·고정 양식 ref에 결박한다. criteria_snapshot_json은 그 양식 버전의 itemId/title/reviewCriteria, reviewer_subject_ref는 서버에서 결정한 HUMAN/동일 작성자 여부다. DRAFT/USER_COMMON 분기는 유지하고 과거 review UPDATE/DELETE는 금지다. 실제3 PASS/skip0을 확인했지만 document confirmed pointer/실행 권한은 바꾸지 않았다.

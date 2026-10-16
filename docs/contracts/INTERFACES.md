@@ -2,6 +2,8 @@
 
 ## 2026-10-16 현재 구현된 FN11/FN03·UI06 연결
 
+UI06 내용검토 작성 후속: 고정 문서/version/hash·양식 criteria1의 항목별 outcome/evidenceRefs[]/reason와 종합 outcome/reason을 기존 recordContentReview에 전달한다. 서버 exact 응답의 command/project/target/version/reviewRef/판단을 대조하며 검토는 confirmed/실행 상태를 바꾸지 않는다. 미저장/미확인 상태는 탭 상위로 보존하고 다른 로그인 사용자에게 숨긴다. 단절/409는 동일 명령만 명시 확인하며 자동 재요청/새 명령·정책 설정0이다. 검토 작성기를 닫기 전 신규/개정 편집 진입도 분리한다. 같은 클라이언트 actual WSL1·unit48·UI06 fixture10 증거는 구분하며 아래의 검토 작성 미연결 문구는 이전 관측이다. 현재 confirmDocument·충돌 비교/조정·추적 및 실제 browser↔DB는 미완료다.
+
 UI06 작성/개정 후속: 현재 form 목록/고정 버전과 project detail의 current control을 조회한 뒤 명시 uploadArtifact→saveDocumentDraft를 호출한다. 신규는 targetId=null/expected0·선택 양식 ref, 개정은 기존 exact 문서/버전·양식·첨부/목차를 보존한다. 본문은 UTF-8≤2MiB이며 기존 일반 텍스트/Markdown 형식을 유지하고 새 작성 기본은 Markdown이다. 업로드와 저장의 commandId/receipt·project/target/version/hash를 각각 대조, 요청은 same-origin/no-store/redirect error/CSRF다. 중단·인증 만료·충돌의 입력과 미확인 명령은 보존하며 자동 새 명령/후속 저장/정책 설정·Agent 시작은 없다. 새 기준 비교/충돌 조정·검토 작성/confirmDocument·추적과 실제 browser↔DB는 아직 미완료다.
 
 후속 PROJECT commands의 `recordContentReview`는 §15.2 입력으로 DOCUMENT만 지원한다. 명시 정책·현재 제어/문서 head/hash·원문 무결성·고정 form의 실제 항목/기준1을 검사하고 HUMAN 검토·receipt/audit를 원자 저장한다. evidenceRefs는 연결 전[]만, 임의 actor/Agent/다른 target은 거절한다. document GET의 contentReviewCriteria `{criteriaVersion,formRef,items:{criterionId,title,reviewCriteria}[]}`와 contentReviews `{ref,items,reviewer,sourceKind,reason,reviewedAt,serverSequence}[]`/reviewRefs를 반환하며 confirmed는 변경하지 않는다. UI06은 이를 조회하되 검토 작성 화면·별도 confirmDocument는 아직 미구현이다. 아래의 이전 reviewRefs=[] 관측은 후속 연결 전 이력이며 현재는 실제 기록된 정확 버전의 review ref만 반환한다.

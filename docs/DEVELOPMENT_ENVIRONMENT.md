@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 UI06 내용 검토 작성/저장 연결: 최종 코드 `6ca25abf30f4595d37aebd9fc8d2c62fac14c387` local/private 동일·WSL exact/clean, actual FN03 1 PASS/860ms/skip0. 같은 클라이언트의 현재 정책/제어·고정 문서/hash→사람 검토 기록/replay·실제 1건/재조회·미확정 유지·outbox0을 확인했다. 독립 users/projects/documents/versions/reviews/artifacts/policies0·임시 root[]·원문 root uid1000/0700/link0/empty, migration16 불변. Windows unit48·UI06 fixture10/8.6초·타입/Web53 PASS는 별도이며 실제 browser↔DB는 미검증이다. 기존 Node40744의 backend000d0088/새 Web 혼재·relay26052 HOLD·만료 bootstrap·CA·계정·Secret·서비스 설정은 변경하지 않았다. 최신 사용자용 exact-SHA runtime은 아직 준비 전이며 검토/별도 확정·Agent 실행은 구분한다.
+
 2026-10-16 UI06 신규/편집 저장 연결: WSL exact `05da735cf241f09376b094819ea5e6b003183bd7`/clean의 actual FN03 1 PASS/1024ms/skip0. 화면과 같은 클라이언트로 신규v1·개정v3/재조회·원문 BOM/CRLF·원래 텍스트 형식·같은 저장 replay를 확인했지만 실제 브라우저↔DB 통합은 아니다. migration16 불변·DB/파일 합성 잔여0/지속 원문 root0700/empty를 독립 확인했다. Windows 단위46/UI06 fixture6·Web51(JS371.33kB/gzip105.67)/타입 PASS. 현재 원래 Node40744 backend000d0088·새 Web 혼재·relay26052 HOLD·만료 초기 등록 비밀·CA는 변경하지 않았다. 계정/키·서비스 설정·신규 migration·Agent/Oracle 변경0, 사용자용 최신 exact-SHA runtime 준비는 미완료다.
 
 2026-10-16 후속 문서 내용검토: exact `7a7841a12c6f20f7c4a991be0d34be8d469eae54`에서 actual3 PASS/skip0(FN03·FN11·인접 공통 METHOD). 새 forward16 `0003_project_document_reviews` checksum `f1ba53b79b95a02867822743748ead6f6dafff039a506651a26368d7b922de75`만 추가, 이전15개 불변. 현재 개발 DB 총16개다. 새 역할/계정·Secret/서비스 설정·원문 root·relay/CA 변경0이며 검토 기록을 확정/제품 인수로 세지 않는다.

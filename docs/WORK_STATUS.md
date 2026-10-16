@@ -3,11 +3,11 @@
 ## 1. 현재 상태와 기록 기준
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
-- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규 작성/기존 문서 편집·새 불변 버전 저장/조회·실패 입력 보존을 연결했다. 화면 fixture와 같은 저장 클라이언트의 실제 WSL API/DB 증거는 구분한다. 전체 실제 UI DB 여정·검토 작성/확정·충돌 조정·기존 소스·실제 Agent는 미완료다.
+- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규 작성/기존 문서 편집·새 불변 버전 저장/조회·고정 버전 내용검토 작성/저장·실패 입력 보존을 연결했다. 화면 fixture와 같은 클라이언트의 실제 WSL API/DB 증거는 구분한다. 전체 실제 UI DB 여정·별도 확정·충돌 조정·기존 소스·실제 Agent는 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `05da735cf241f09376b094819ea5e6b003183bd7`/clean의 FN03 actual1 PASS/1024ms/skip0. UI 저장 클라이언트→현재 정책/제어→새 문서v1·기존 개정v3/재조회·같은 저장 replay·구버전 BOM/CRLF/원래 텍스트 형식을 확인했다. 독립 합성 사용자/프로젝트/문서/검토/원본/정책·시험 root0, migration16 불변. Windows unit46·UI06 fixture6/5.0초·Web51/타입 PASS는 별도이며 실제 browser↔DB/제품 인수는 미검증이다.
+- 최근 실제 확인: WSL exact `6ca25abf30f4595d37aebd9fc8d2c62fac14c387`/clean의 FN03 actual1 PASS/860ms/skip0. 동일 저장·검토 클라이언트→현재 정책/제어→신규v1·개정v3와 내용검토/replay/실제 기록1/재조회·confirmed=false·outbox0을 확인했다. 독립 합성 사용자/프로젝트/문서/검토/원본/정책·시험 root0, migration16 불변. Windows unit48·UI06 fixture10/8.6초·Web53/타입 PASS는 별도이며 실제 browser↔DB/제품 인수는 미검증이다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: UI06 검토 작성/별도 확정·버전 충돌의 비교/새 기준 조정, 기존 소스 선언/기준선·FN04/FN05를 계속한다. 자료 정책은 명시 현재 HUMAN/프로젝트만 구현했고 일회 승인 소비·Agent 허가·정책 편집 화면은 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: UI06 별도 확정(실제 필수 본문/반복 필드 검사·정확 최신 검토·고정 양식의 준비/권한·원문 재검증)과 버전 충돌 비교/새 기준 조정, 기존 소스 선언/기준선·FN04/FN05다. 자료 정책은 명시 현재 HUMAN/프로젝트만 구현했고 일회 승인 소비·Agent 허가·정책 편집 화면은 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -55,7 +55,7 @@
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
-| UI06 문서·설계·계획 추적 | [2] | Main 어울. 양식 선택/새 작성·기존 편집/불변 버전 저장·입력/인증 경계 fixture6 PASS. 동일 클라이언트 actual API/DB1 PASS는 별도 | 검토 작성/확정·충돌 비교/조정·추적/변경·실제 화면 DB 여정 |
+| UI06 문서·설계·계획 추적 | [2] | Main 어울. 양식 선택/신규·개정 저장·내용검토 작성/저장·실패 입력/주체 분리 fixture10 PASS. 동일 클라이언트 actual API/DB1 PASS는 별도 | 별도 확정·충돌 비교/조정·추적/변경·실제 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
@@ -73,7 +73,7 @@
 |---|---|---|---|
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 인증 기반과 빈 초안→원자 생성/owner·client 제어1/receipt·감사·snapshot·재조회/중복/격리/DB 실패 rollback 확인. 실제 사용자/지속 QA 프로젝트0 | 기존 소스/기준선·복구/초대·실제 UI DB 여정 |
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
-| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·양식별 사람 검토 기록과 UI06 신규/개정 저장 클라이언트 actual 확인. UI06 fixture6 PASS는 별도 | 검토 작성/확정·충돌 조정·상세 파서/제안·소스 연계 |
+| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·양식별 사람 검토와 UI06 신규/개정·검토 클라이언트 actual 확인. UI06 fixture10 PASS는 별도 | 별도 확정·충돌 조정·상세 파서/제안·소스 연계 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [] | 핵심 보관/전달 계약만 있음 | 원문/이유·검색·선별/이해대조·기준 재사용 |
 | FN06 첫 코딩 Agent·환경 | [] | 실제 제품/버전별 연동 미확인 | 공식 지원과 실제 세션/지시/결과·권한 확인 |
@@ -114,6 +114,8 @@
 - TDD: 작성 버튼 부재 RED1→작성/저장 GREEN3. 앞서 열린 초안 편집기가 검토 중에도 남는 RED1→원인인 독립 렌더 조건을 검토 작성기와 배타적으로 분리, 입력 자체는 보존했다. 단절/409의 동일 명령 재확인, 화면 이동 입력 보존, 인증 만료 뒤 다른 사용자 숨김/자동 요청0, 동시 편집 방지까지 UI06 전체10 PASS/7.8초.
 - Windows `npm run build`/타입 exit0·Web53(JS381.19kB/gzip107.36·CSS7.61kB/gzip2.25), `npm test`48 PASS/skip0, diff check0. NO_COLOR/FORCE_COLOR 환경 경고 보존. 브라우저 시험은 모든 API 차단/대체 fixture이며 실제 DB 여정이 아니다. 같은 클라이언트 actual API/DB 후속 시험은 이 checkpoint 게시 뒤 실행하고 실제 결과를 추가한다.
 - `254d84d70f1ce55bdb4e7c6875b3bac3bed7a266` local/private 동일·WSL exact/clean actual FN03 1 PASS/880ms/skip0. 같은 검토 클라이언트의 실제 HUMAN/현재 정책/제어→검토 저장/replay→DB 기록1/재조회·동일 작성자·confirmed=false·outbox0을 확인했다. 후속 화면 진입 점검에서 검토 중 편집 진입 버튼만 살아 있는 RED1을 좁게 보정해, 검토 작성기 종료 전 신규/개정 편집 진입도 차단한다. 최종 Windows build/타입0·unit48·UI06 fixture10/8.6초 PASS, Web53(JS381.22kB/gzip107.37), diff0. 이전 실패는 이력으로 보존한다.
+- 최종 코드 `6ca25abf30f4595d37aebd9fc8d2c62fac14c387` local/private 동일·tracked clean/WSL exact clean의 actual1 PASS/860ms/skip0. 독립 읽기에서 users/projects/documents/document_versions/content_reviews/artifacts/permission_policies=각0, migrations16, 임시 시험 root[]·지속 원문 root uid1000/0700/link0/정확 realpath/empty를 확인했다. WSL 서비스·Windows Node40744/relay26052/만료 bootstrap·CA·기존 데이터는 변경하지 않았다.
+- 확정 후속 읽기 대조: 현재 save 검사는 필수 item의 line anchor 존재 여부까지만 확인한다. 이 값을 실제 필수 본문/RECORDS 필드 내용 합격으로 승격하지 않는다. 기존 draft guard는 confirmed pointer가 있으면 후속 초안도 거절하는 구조라, 별도 확정과 이후 개정 보존은 승인 범위의 새 forward migration·정확 검토/권한 guard·음성 시험으로 연결해야 한다. 미구현 confirm route를 미리 성공 처리하지 않는다.
 - 미완료: 별도 confirmDocument, 형식/필수 본문의 엄격 확정 검사, 버전 충돌 비교/새 기준 조정, 실제 browser↔DB·FN04/FN05. 전체44와 UI06/FN03 부분 구현 상태는 유지한다. rollback은 앞선 게시본 5abfbeeb이며 기존 원본/SQL/서비스를 변경하지 않았다.
 
 ### 2026-10-16 UI06 문서 편집·새 초안 버전 저장 착수 — Main 어울
