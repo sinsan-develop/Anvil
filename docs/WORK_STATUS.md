@@ -139,6 +139,15 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN05 지식 내용 검토·별도 확정 착수 — Main 어울
+
+- 내용 검토 입력 부재 RED2→엄격5항목/판단 이유/부분합격·증거/주체 위조·알려진 비밀 차단 GREEN2. 별도 확정 상태 부재 RED1→born→CONFIRMED→선택 EXCLUDED와 과거 대체를 구별하는 상태 판정 GREEN. actual에는 confirmKnowledge의 별도 정책·검토 없음 거절·최신 REWORK 이후 옛 ACCEPTED 거절·별도 확정/이후 재검토 표시를 추가했다.
+- Ruling: 확정 사건은 지우지 않되 후속 최신 검토가 바뀌면 currentConfirmationValid=false로 공개한다. 같은 버전의 암묵 재확정/재사용 대신 새 정정 버전에서 별도 검토/확정한다. 확정은 헌법 적용/Agent 실행 허가가 아니며 잘못된 경우 비용은 명시 재확정 흐름 추가이고 원문/기존 확정 기록은 보존한다.
+
+- 기준96213036 clean/적용25 보존. INTERFACES §15.2의 기존 recordContentReview(targetKind=KNOWLEDGE), §10.3 confirmKnowledge(versionRef/reviewRefs/reason)를 소비한다. 새 공개 연산을 임의 추가하거나 내용을 읽었다는 표시를 이해/실행/헌법 적용으로 바꾸지 않는다.
+- Ruling: 지식 기준1은 목적/종류·원문/관측/가설·이유/이력·범위/민감·미확인/한계의5항목을 사람이 판단하고, 전체 ACCEPTED는 모두 ACCEPTED일 때만 저장한다. 검토와 별도 확정은 분리하며 같은 작성자의 판단은 sameAsTargetRecorder로 공개하고 독립 검수라고 주장하지 않는다. 잘못된 경우 비용은 기준의 새 버전/재검토이며 원문·과거 판단을 보존한다.
+- 정확 최신 버전/실제 원문·출처·명시 정책·현재 HUMAN/control·latest 검토를 확인한다. 허가된 실제 Agent 검토·시험 증거는 아직 연결하지 않고 신규 forward26으로 기존 PROJECT/DOCUMENT 보호를 보존하면서 KNOWLEDGE만 추가한다. 합성 QA는 기존 고유 UUID/프로젝트/root·정확 정리 조건이며 실제 사용자 정책/Secret/서비스·외부 전달/공유/학습 변경0이다.
+
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
 
 - 정정 UI `c2b1b75cad5c895c4f1e0c324936865b728237c9` exact private/WSL clean actual1 PASS/5951ms/skip0: 실제 USER_INSTRUCTION 출처 지식에 같은 Web으로 새 본문/현재 판단 이유/별도 정정 사유→불변2 저장·앞1 SUPERSEDED/원문/이유/지시 source 보존·2 재조회·동일 명령 replay 중복0. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0·실제 사용자/서비스·Secret/Agent·공유 변경0. Git fetch의 자동 background 묶음 안내는 정보이며 수동 정리/설정 변경을 하지 않았다.

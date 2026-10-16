@@ -1,8 +1,8 @@
 import{AuthFailure}from'../access/repository.ts';
 import{canonicalJson}from'../../../../contracts/canonical.ts';
-export function knowledgeState(version:number,head:number,kinds:string[]):'PROPOSED'|'SUPERSEDED'|'EXCLUDED'{
- if(!Number.isSafeInteger(version)||version<1||!Number.isSafeInteger(head)||head<version||!Array.isArray(kinds)||kinds.length<1||kinds.length>2||kinds[0]!==(version===1?'PROPOSED':'CORRECTED')||kinds.length===2&&kinds[1]!=='EXCLUDED')throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);
- return kinds.includes('EXCLUDED')?'EXCLUDED':version<head?'SUPERSEDED':'PROPOSED';
+export function knowledgeState(version:number,head:number,kinds:string[]):'PROPOSED'|'CONFIRMED'|'SUPERSEDED'|'EXCLUDED'{
+ if(!Number.isSafeInteger(version)||version<1||!Number.isSafeInteger(head)||head<version||!Array.isArray(kinds)||kinds.length<1||kinds.length>3||kinds[0]!==(version===1?'PROPOSED':'CORRECTED')||!['','CONFIRMED','EXCLUDED','CONFIRMED,EXCLUDED'].includes(kinds.slice(1).join(',')))throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);
+ return kinds.includes('EXCLUDED')?'EXCLUDED':version<head?'SUPERSEDED':kinds.includes('CONFIRMED')?'CONFIRMED':'PROPOSED';
 }
 export function assertKnowledgeHistory(events:any[],ref:{id:string;version:number;contentHash:string},entry:any){
  const same=(a:unknown,b:unknown)=>a!==undefined&&b!==undefined&&canonicalJson(a)===canonicalJson(b);
