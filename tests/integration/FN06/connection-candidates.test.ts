@@ -65,6 +65,10 @@ test('연결·환경 후보는 실제 현재 허가/일회 승인 아래 불변 
     await assert.rejects(candidates.command(own.token, own.csrfToken, envelope('saveEnvironment', { ...payload('ENVIRONMENT_CANDIDATE'), candidateRef: { ...revised.data.ref, contentHash: 'f'.repeat(64) } }, envRef.id, 2)), (e: any) => e.statusCode === 409);
     const page = await list(own.token, { limit: '1' }); assert.equal(page.hasMore, true);
     assert.ok(page.nextCursor); await assert.rejects(list(own.token, { kind: 'ENVIRONMENT_CANDIDATE', limit: '1', cursor: page.nextCursor }), (e: any) => e.statusCode === 400);
+    await assert.rejects(list(own.token, { kind: ['CONNECTION_CANDIDATE'] }), (e: any) => e.statusCode === 400);
+    await assert.rejects(candidates.command(own.token, own.csrfToken, envelope('registerConnection', { ...payload(), expiresAt: new Date(Date.now() - 1).toISOString() })), (e: any) => e.statusCode === 422);
+    await assert.rejects(candidates.command(own.token, own.csrfToken, envelope('registerConnection', { ...payload(), policyRef: { ...policyRef, contentHash: 'f'.repeat(64) } })), (e: any) => e.statusCode === 409);
+    await assert.rejects(candidates.command(other.token, other.csrfToken, { ...command, commandId: randomUUID(), clientId: other.clientId }), (e: any) => e.statusCode === 404);
     await admin.query("UPDATE anvil.connection_candidate_versions SET content_hash=$3 WHERE project_id=$1 AND candidate_id=$2 AND version=1", [pid, ref.id, 'f'.repeat(64)]);
     await assert.rejects(read(ref), (e: any) => e.statusCode === 503);
     await admin.query('UPDATE anvil.connection_candidate_versions SET content_hash=$3 WHERE project_id=$1 AND candidate_id=$2 AND version=1', [pid, ref.id, ref.contentHash]);
@@ -95,6 +99,16 @@ test('연결·환경 후보는 실제 현재 허가/일회 승인 아래 불변 
     const applied = await Promise.all([candidates.command(own.token, own.csrfToken, approved), candidates.command(own.token, own.csrfToken, approved)]); assert.deepEqual(applied[0], applied[1]);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.approval_consumptions WHERE project_id=$1', [pid])).rows[0].n, 1);
     await assert.rejects(candidates.command(own.token, own.csrfToken, { ...approved, commandId: randomUUID() }), (e: any) => e.statusCode >= 400 && e.statusCode < 500);
+    const expiryCandidate = envelope('registerConnection', payload()), expiringDetails = { ...details, candidateCommandId: expiryCandidate.commandId, expiresAt: new Date(Date.now() + 2000).toISOString(), actionScope: { ...details.actionScope, payloadHash: contentHash(canonicalJson(expiryCandidate.payload)) } };
+    const expiryRequest = envelope('requestApproval', { details: expiringDetails });
+    const expiryRequested = await policies.command(own.token, own.csrfToken, expiryRequest, (db, actor, p) => approvals.request(db, actor, expiryRequest, p)) as any;
+    const er = expiryRequested.data.request, expiryDecision = envelope('decideApproval', { requestId: er.id, expectedVersion: 1, scopeDigest: er.scopeDigest, decision: 'APPROVE', reason: '실제 만료 거절 검사' }, er.id, 1);
+    const expiryDecided = await policies.command(own.token, own.csrfToken, expiryDecision, (db, actor, p) => approvals.decide(db, actor, expiryDecision, p)) as any;
+    await new Promise(resolve => setTimeout(resolve, Math.max(0, Date.parse(expiringDetails.expiresAt) - Date.now()) + 25));
+    await assert.rejects(candidates.command(own.token, own.csrfToken, { ...expiryCandidate, approvalRef: { requestId: er.id, decisionId: expiryDecided.data.decision.id, scopeDigest: er.scopeDigest } }), (e: any) => e.statusCode === 412);
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.approval_consumptions WHERE project_id=$1', [pid])).rows[0].n, 1, '만료된 승인은 후보·소비를 추가하지 않는다');
+    policy = await policies.command(own.token, own.csrfToken, envelope('savePermissionPolicy', { rules: rules('DENY'), reason: '후보 저장 권한 회수', reviewRefs: [] }, policyRef.id, policyRef.version)) as any; policyRef = policy.data.ref;
+    await assert.rejects(candidates.command(own.token, own.csrfToken, approved), (e: any) => e.statusCode === 403);
     await admin.query('UPDATE anvil.project_control SET generation=2 WHERE project_id=$1', [pid]);
     await assert.rejects(candidates.command(own.token, own.csrfToken, approved), (e: any) => e.statusCode === 409);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=ANY($1::uuid[])', [ownedProjects])).rows[0].n, 0);

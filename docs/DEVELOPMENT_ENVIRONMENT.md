@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN06 내부 후보 저장에 사용자/PMO 승인으로 forward41 `0006_connection_candidates` checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d, 개정 guard alias 보정42 `0006_connection_candidate_guard_alias_fix` checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0 적용 exit0·이전40/41 불변·fixtures7·실제 사용자0. d6f24ab3 exact WSL 내부+신규 HTTP actual1 PASS/1259ms/skip0이며 후보 원본2테이블만 사용한다. 실제 host/grant/credential/Agent·서비스/relay/Secret·사용자 browser DB 인수는 미변경/미검증이다. 이후 이 두 적용 SQL은 수정하지 않고 추가 보완은 새 forward를 사용한다.
+
 FN03 고정 방법론 단계 연결 forward40 `0003_document_stage_bindings` checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1는 직접 승인 아래 기존 개발 DB에 적용됐다. 6cdb21cb exact WSL actual 단계1 PASS/1199ms(기능952ms)/skip0·기존 문서 인접1 PASS/14585ms(기능14288ms)/skip0, 독립 DB39종 count0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40이다. 기존39 SQL·서비스/relay·실제 사용자/권한·Secret은 변경하지 않았다. 실제 같은 Web 함수/API/PG 검증이며 현재 Windows old backend/만료 bootstrap/relay HOLD를 교체한 사용자 browser↔DB 인수는 아니다.
 
 FN02 프로젝트 전용 개정/사람 검토/확정 forward39 `0002_project_methodology_revisions` checksumf816147a1454b428af090b0feb93e496b60cb4eaba7f5979fccdf919fc353e68가 직접 승인 아래 기존 개발 DB에 적용됐다. 이전38 SQL 불변·fixtures7·실제 사용자 생성0, 19ce2bb7 exact WSL의 FN02 same-client/최초 생성 actual2 PASS/1485ms/skip0·독립 DB39종/시험root 잔여0·지속원문 보호/empty. 새 개정/확정만 구현했으며 적용 전환은 실행 상태/영향 근거 부재로412다. Windows backend/relay/만료 bootstrap·CA·Secret은 교체하지 않았고 실제 사용자 browser↔DB/Agent 인수는 미확인이다.

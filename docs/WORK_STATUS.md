@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN06 d6f24ab3 exact private/WSL clean: 새 corrective42 checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0 적용 exit0·이전41/40 checksum 불변·fixtures7·실제 사용자 생성0. 내부+HTTP actual1 PASS/1259ms(기능1033ms)/skip0으로 환경 개정42702를 해소했다. 후보/환경 생성·불변 v1/v2·동일 명령 동시2/버전1·정확 이전 ref/hash·현재 정책/재인증·교차 조회·직접 DB 변조42501·후보 일회 소비1·HTTP Origin/인증/타인/동일 명령 복구·미완성 승격412·outbox0 확인이다. 독립 후보2/승인/사용자/프로젝트/명령 count0·임시root[]·지속원문 보호/empty·migrations42를 확인한다. 추가 엄격 kind 타입·실제 승인 만료·권한 회수·교차 프로젝트 쓰기의 보강 시험은 새 exact 게시본에서 실행 전이며 현재 PASS에 포함하지 않는다. 실제 Agent/신뢰/credential·사용자 browser 인수·FN06 전체 완료 아님이다.
+
 - FN06 9c5ff577 exact private/WSL clean에서 새41 checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d 적용 exit0·기존40 checksum 불변·fixtures7·실제 사용자 생성0. 후속 actual1 FAIL/958ms(기능636ms)/skip0: 최초 후보/중복/재조회·재인증/격리·위장 거절을 지나 환경 v2의 DB trigger SELECT alias old와 PL/pgSQL OLD 충돌42702로 실패했다(동일 root1회). 적용41은 수정하지 않고 alias만 prior_version으로 고치는 corrective42 `0006_connection_candidate_guard_alias_fix` checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0를 작성·아직 미적용이다. 실패 후 독립 후보2/승인/사용자/프로젝트/명령 count0·임시root[]·지속원문 보호/empty·migrations41 확인. PMO에 원인/영향/새 forward 보정을 보고했으며 실제 GREEN으로 승격하지 않는다.
 
 - PMO가 AV3-PMO-FN06-CANDIDATE-API-01 승인을 전달했다. PMO가 사용자 위임·10분 기한/최신 답변을 직접 대조한 판단이며, 이 담당자가 임의 무응답 승인을 만들지 않았다. 기존 명령 registerConnection/saveEnvironment의 kind별 후보 payload와 후보 GET 목록/불변 버전2개만 연결한다. 완성형 필수 참조·신뢰·실제 실행은 열지 않는다. 최근 재인증·현재 제어/명시 정책·후보 exact 이전 ref/CAS·현재 policyRef·유한 기한/필요 일회 소비·감사를 내부 저장 transaction에서 확인한다. 형식상 적합해도 아직 없는 완성형 host/environment/source/Secret ref는412, 후보 ID를 가짜 실체로 쓰지 않는다.
