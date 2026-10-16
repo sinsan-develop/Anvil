@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN04 화면 검토 선택 `ec2692212b5d4ad93d6ab5a27cd28105916840cf` local/private·WSL exact/clean actual1 PASS/7739ms/skip0. 같은 Web이 실제 AF03 원문/양식·미검토/최신 검토를 조회→명시 선택→기존 계획 저장/멱등/재조회·최신 REWORK 뒤 선택 차단·옛 선택 보존을 확인했다. 전체 계획은 DRAFT이고 설계 미확정 문제는 유지한다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·SQL27 재적용0. 새 API/DB·실제 사용자 권한/서비스 변경0.
+- 다음 FN04 계획 내용검토·별도 확정은 `call_16ea05f2ca814a53bd83dc2b9945b898`의 ‘계획 검토·별도 확정 계약·개발 DB 보완 승인’으로 승인됐다. 현재 로그인/단독 제어·별도 정책·정확 계획/설계/AF04/최신 화면 검토·업무/선행/검수 조건 재검사와 불변 검토/확정 이력·guarded confirmed_version을 새 forward로 추가한다. 기존 SQL/원문/선택/확정 보존, 자동 기준 활성화·업무 실행/Agent·실제 사용자 권한·Secret/서비스/운영 변경0. 합성 UUID/root 수명과 정확 정리 조건은 동일하다. 현재 소유 변경은 이 후속이며 일반 원문 격리 전체 완료/Stage B 완료는 아니다.
+
 - FN04 화면 검토 선택 후보: 기존 readDocument/고정 AF03 양식/원문 hash·연결 화면 exact version·실제 HUMAN 검토의 감사 순서/항목을 확인하고 최신 ACCEPTED만 명시 선택한다. 선택 전 쓰기0·자동 합격/계획 확정0, 옛 적합 뒤 최신 REWORK는 선택 불가이며 기존 선택 기록은 자동 삭제하지 않는다. 새 helper 단위 RED2→GREEN2, 화면 버튼 부재 browser RED1→작업계획 fixture5 PASS/6.1초·전체 unit113 PASS/1503ms·type/build0(Web84), 기존 경고 유지. 실제 같은 client의 선택 저장은 다음 exact 게시본에서 검증한다. 기존 UUID 합성 사용자/프로젝트/root와 정리 조건만 재사용하며 새 DB/schema/Secret/서비스 변경0. 현재 FN04/Stage B는 부분 구현이다.
 
 - 격리 UI `391a1d6c7ec8d6e5550df48f54421fb946899a6d` local/private·WSL exact/clean actual1 PASS/6753ms/skip0. 같은 Web에서 실제 업로드 저장 뒤 합성 응답 단절→같은 명령 재확인→검증된 격리 ID·후속 saveKnowledge command0·보관 원문 상태를 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL27 재적용0. 사용자 browser↔DB/완전 비밀 탐지/기존 전 자료 재분류·백업/스풀 사후 격리·해제는 미검증/미구현이다. FN05/Stage B 완료로 승격하지 않는다.
