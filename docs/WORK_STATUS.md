@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN02/UI03 과거 조회 후속e1ff6d1d43a4b42cffd3024468c62e1371ef75d5 local/private·WSL exact/clean actual1 PASS/1369ms(기능1112ms)/skip0: 같은 Web reader로 v1 확정 이력과 v2 미확정 분리를 다시 열었다. 독립 DB39종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations39. 마지막 단위140 PASS/2113ms·type/diff0, 최신 UI fixture1/3.0초·기존 공통 UI 직접 영향10 PASS를 구분한다. 현재 Windows backend/relay/만료 bootstrap·Secret은 불변이며 사용자 browser↔DB 인수·방법론 적용 전환/FN02 전체는 미완료다. 다음은 현재 고정 적용본과 개정 후보의 화면 구분을 기존 프로젝트 조회 계약으로 연결하고, FN03/후속 실행 연결의 남은 선행을 계획 순서로 대조한다.
+
 - FN02/UI03 19ce2bb7858807e3993cb0b8b02c0c0cbd96b04d local/private·WSL exact/clean actual2 PASS/1485ms(방법론1142·최초 생성1130ms)/skip0. 같은 Web prepare/write/read를 실제 API·PG에 연결해 직접 전용본 작성→저장 후 합성 receipt 단절→원 명령/같은 ref 재확인→내용 검토→별도 확정·원문 변조503/복원200을 확인했다. 최초 생성의 전용 snapshot 조회도 유지했다. 독립 DB39종 각0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations39, SQL39 재실행0·실제 사용자/Agent·서비스/Secret 변경0. 적용 전환은 FN08/FN09 실행 상태 근거와 FN04 영향 연결 부재로 미구현/fail-closed, 전체 FN02/Stage B/44업무 완료 아님이다.
 - UI03 과거 버전 열기 부재 RED1→GREEN1/3.0초: 새 v2 개정이 v1 확정 사건을 승계하지 않고 이전/다음 조회로 원문/확정 이력을 다시 연다. Web91/597.37kB/gzip155.27·type/build0, 기존 경고 유지. 추가 실제 같은 Web의 과거 버전 조회는 다음 exact 게시본 검증 예정이다. 기존 조건/합격 기준·확정본/적용본을 바꾸지 않는다.
 
