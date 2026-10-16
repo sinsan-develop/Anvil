@@ -1,7 +1,8 @@
+import{QuarantinedOriginalNotice}from'../design-trace/QuarantinedOriginalNotice.tsx';
 import{useEffect,useRef,useState}from'react';
 import{ApiClient,ApiError}from'../../api/client.ts';
 import{documentControl,type DocumentSession}from'../design-trace/editor-api.ts';
-import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';
+import{isKnownDocumentRejection,isConfirmedArtifactQuarantine,documentFailure}from'../design-trace/mutation-result.ts';
 import{knowledgeKinds,newKnowledge,newKnowledgeFromConversation,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge,type KnowledgeBuffer,type KnowledgeView,type KnowledgeHit}from'./api.ts';
 import{ConversationPanel}from'./ConversationPanel.tsx';
 import type{ConversationBuffer,ConversationView}from'./conversation-api.ts';
@@ -39,7 +40,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
       if(!current.pending){current={...current,pending:await prepareKnowledge(current,session)};onChange(current);}
       const ref=await sendKnowledge(client,current,session,p=>{current={...current,pending:p};onChange(current);},()=>alive.current);
       current={...current,resultRef:ref,pending:null,failure:null,uncertain:false,dirty:false};onChange(current);if(alive.current)void list();
-    }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');const uncertain=current.uncertain||a.code!=='KNOWLEDGE_CONTINUATION_PAUSED'&&!isKnownDocumentRejection(a);current={...current,failure:{code:a.code,status:a.status},uncertain};onChange(current);if(alive.current)failed(a);}
+    }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');const uncertain=isConfirmedArtifactQuarantine(a)?false:current.uncertain||a.code!=='KNOWLEDGE_CONTINUATION_PAUSED'&&!isKnownDocumentRejection(a);current={...current,failure:documentFailure(a),uncertain};onChange(current);if(alive.current)failed(a);}
     finally{locked.current=false;if(alive.current)setWorking(false);}
   }
   function close(){if(!work||working||work.uncertain||work.pending&&!isKnownDocumentRejection(work.failure))return;if((work.dirty||work.pending)&&!confirm('작성 중 입력과 명확히 거절된 명령을 닫을까요? 저장된 원문은 삭제하지 않습니다.'))return;onChange(null);}
@@ -56,7 +57,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
       <label>지식 원문<textarea aria-label="지식 원문" rows={10} value={work.body} onChange={e=>edit({body:e.target.value})}/></label>
       <label>지식 작성 이유<textarea aria-label="지식 작성 이유" rows={3} maxLength={20000} value={work.reason} onChange={e=>edit({reason:e.target.value})}/></label>
     </fieldset><button type="button" disabled={working||!!work.resultRef||!work.title.trim()||!work.reason.trim()} onClick={()=>void save()}>{work.pending?'같은 지식 명령 결과 확인':'지식 초안 저장'}</button><button type="button" disabled={working||work.uncertain||!!work.pending&&!isKnownDocumentRejection(work.failure)} onClick={close}>작성 닫기</button>
-    {work.resultRef?<p role="status">지식 초안 저장 확인 · v{work.resultRef.version} · 별도 확정 전</p>:null}{work.failure?<p role="alert">{work.failure.code}{work.uncertain?' · 결과 미확인: 같은 명령으로 확인하세요.':''}</p>:null}</section>:null}
+    {work.resultRef?<p role="status">지식 초안 저장 확인 · v{work.resultRef.version} · 별도 확정 전</p>:null}<QuarantinedOriginalNotice failure={work.failure}/>{work.failure?<p role="alert">{work.failure.code}{work.uncertain?' · 결과 미확인: 같은 명령으로 확인하세요.':''}</p>:null}</section>:null}
     {error&&!work?.failure?<p role="alert">{error.code}</p>:null}
     <form onSubmit={e=>{e.preventDefault();void list();}}><label>지식 검색<input aria-label="지식 검색" value={query} maxLength={200} onChange={e=>setQuery(e.target.value)}/></label><label>종류 필터<select aria-label="종류 필터" value={kind} onChange={e=>setKind(e.target.value)}><option value="">전체</option>{knowledgeKinds.map(k=><option key={k} value={k}>{knowledgeLabels[k]}</option>)}</select></label><label>지식 상태 필터<select aria-label="지식 상태 필터" value={status} onChange={e=>setStatus(e.target.value as typeof status)}><option value="ACTIVE">제외하지 않은 최신 버전</option><option value="PROPOSED">제안 상태</option><option value="CONFIRMED">확정 이력 있음</option><option value="EXCLUDED">사용 제외 · 명시 조회</option></select></label><button disabled={loading} type="submit">제목·이유 검색</button></form>
     {loading?<p aria-live="polite">지식 확인 중</p>:null}

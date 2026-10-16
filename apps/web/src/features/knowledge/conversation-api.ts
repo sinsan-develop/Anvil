@@ -4,7 +4,7 @@ import type{ConversationInput,MessageRef}from'../../../../server/modules/knowled
 type Snapshot={body:string;kind:'USER_MESSAGE'|'USER_INSTRUCTION';conversationId:string|null;headSequence:number;supersedesInstructionRef:MessageRef|null};
 export interface ConversationPending{upload:DocumentWrite;append:DocumentWrite|null;appendId:string;snapshot:Snapshot}
 export interface ConversationResult{conversationId:string;serverSequence:number;sourceRef:MessageRef}
-export interface ConversationBuffer extends Snapshot{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;pending:ConversationPending|null;result:ConversationResult|null;failure:{code:string;status:number}|null;uncertain:boolean;dirty:boolean}
+export interface ConversationBuffer extends Snapshot{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;pending:ConversationPending|null;result:ConversationResult|null;failure:{code:string;status:number;quarantinedArtifactId?:string}|null;uncertain:boolean;dirty:boolean}
 export interface ConversationView extends ConversationResult{authorRef:{kind:'HUMAN';userId:string};message:ConversationInput['message'];body:string;deliveryState:'STORED';redactionState:'NOT_REDACTED';sensitiveInspection:'KNOWN_PATTERNS_ONLY';recordedAt:string}
 export interface ConversationSummary{id:string;headSequence:number;targetRoleRef:null;updatedAt:string;integrity:'NOT_RECHECKED'}
 export interface MessageSummary{sourceRef:MessageRef;serverSequence:number;authorRef:{kind:'HUMAN';userId:string};kind:'USER_MESSAGE'|'USER_INSTRUCTION';replyTo:MessageRef|null;supersedesInstructionRef:MessageRef|null;recordedAt:string;deliveryState:'STORED'}

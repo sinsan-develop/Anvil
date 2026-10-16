@@ -1,7 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { postDocumentCommand, type DocumentBuffer, type DocumentSession, type DocumentWrite } from './editor-api.ts';
 import type { ImportCandidate } from '../../../../server/modules/documents/project-imports.ts';
-export interface DocumentImportBuffer { ownerUserId: string; name: string; bytes: Uint8Array<ArrayBuffer>; upload: DocumentWrite; record: DocumentWrite | null; recordCommandId: string; attempted: boolean; uncertain: boolean; candidate: ImportCandidate | null; failure: { code: string; status: number } | null }
+export interface DocumentImportBuffer { ownerUserId: string; name: string; bytes: Uint8Array<ArrayBuffer>; upload: DocumentWrite; record: DocumentWrite | null; recordCommandId: string; attempted: boolean; uncertain: boolean; candidate: ImportCandidate | null; failure: { code: string; status: number; quarantinedArtifactId?:string } | null }
 export function rejectedDocumentImport(state: DocumentImportBuffer): boolean {
   // 유효한 JSON 거절을 받은 경우만 명시 해제할 수 있다. 단절/HTML/5xx는 결과 미확인이다.
   return !state.uncertain && !!state.failure && [400,401,403,404,409,412,413,415,422].includes(state.failure.status) && state.failure.code !== 'RESPONSE_INVALID';

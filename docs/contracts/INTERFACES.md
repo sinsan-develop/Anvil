@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+격리 receipt UI 후속: postDocumentCommand가 현재 업로드 명령/metadata·artifactRef·검사 형식 전체를 대조한 응답에만 terminal 격리 ID를 전달한다. 단순 HTTP412 오류에는 이 ID를 전달하지 않는다. 새 domain 저장은 실행하지 않으며 원문 ID/입력 보존 뒤 명시 닫기가 가능하다. 자동 해제·삭제·재저장·미검증을 성공 처리하는 동작은 추가하지 않는다.
+
 원문 격리 보완 직접 승인(call_4b87f841c5d64bea971a63fdd129f632): 새 uploadArtifact는 바이트/허가 검증 후 보호 원문을 그대로 보존하고 data.status=ARTIFACT_READY 또는 ARTIFACT_QUARANTINED와 artifactRef/inspection을 반환한다. 외부 APPLIED는 보관 명령의 완료이며 사용 가능이라는 뜻이 아니다. inspection은 policyVersion1,method=KNOWN_PATTERNS_RAW_BYTES,complete=false,state=SUSPECTED/NO_KNOWN_MARKER,reasonCodes(정해진3종)뿐이다. 압축·암호화·OCR·표현 변형의 전체 비밀 탐지는 하지 않는다. 같은 명령 재확인은 같은 artifact/status를 반환하며 일반 GET/문서·지식 소비는 격리412, 비회원404다. 이전 미검사 READY도 소비할 때 알려진 표식을 확인하며 발견하면 값 없는412로 차단하되 원문/상태를 자동 변경하지 않는다. 자동 해제·삭제·Agent 전달0, 사용자 원문이 오류 본문/감사에 포함되지 않는다. 현재 Web는 정확 격리 receipt를412로 구별해 후속 쓰기를 중단하며 단절 후 최종 상태/원문 ID 표시 보완은 후속이다.
 
 FN05 검토/확정 후속은 기존 recordContentReview(targetKind=KNOWLEDGE)·confirmKnowledge(versionRef,reviewRefs,reason)를 사용한다. 현재 head/hash·현재 별도 정책·최신 ACCEPTED 내용 검토가 필수이고 검토만으로 확정하지 않는다. 조회의 contentReviewCriteria/contentReviews/confirmation/currentConfirmationValid는 실제 기록과 명령 receipt를 대조한다. CONFIRMED는 헌법 적용/Agent 전달이 아니며, 이후 보완 검토가 생기면 확정 이력은 보존하고 현재 유효성만 false다. 검색 status는 ACTIVE(기본: 제외되지 않은 현재 head)/PROPOSED/CONFIRMED/EXCLUDED이며 ACTIVE는 실행 활성화를 뜻하지 않는다. 서명 cursor의 조건 변경은400이다. UI10 연결은 후속 검증 전 미완료다.

@@ -1,3 +1,5 @@
+import{QuarantinedOriginalNotice}from'./QuarantinedOriginalNotice.tsx';
+import{isConfirmedArtifactQuarantine,documentFailure}from'./mutation-result.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
@@ -24,7 +26,7 @@ export function DocumentImport({ client, session, buffer, onChange, onAuthentica
     if (!state || disabled || state.candidate || running.current) return;
     running.current = true; setBusy(true); setError(null); const pending = { ...state, attempted: true, failure: null }; update(pending);
     try { update(await continueDocumentImport(client, pending, buffer.formRef, session, update, () => mounted.current)); }
-    catch (cause) { const e = failed(cause); onChange(b => b?.importState?.upload.commandId === state.upload.commandId ? { ...b, importState: { ...b.importState, uncertain: b.importState.uncertain || e.code === 'RESPONSE_INVALID' || e.status >= 500 || e.status === 0 && e.code !== 'SAVE_CONTINUATION_PAUSED', failure: { code: e.code, status: e.status } } } : b); }
+    catch (cause) { const e = failed(cause); onChange(b => b?.importState?.upload.commandId === state.upload.commandId ? { ...b, importState: { ...b.importState, uncertain: isConfirmedArtifactQuarantine(e)?false:b.importState.uncertain || e.code === 'RESPONSE_INVALID' || e.status >= 500 || e.status === 0 && e.code !== 'SAVE_CONTINUATION_PAUSED', failure: documentFailure(e) } } : b); }
     finally { running.current = false; if (mounted.current) setBusy(false); }
   }
   async function adopt() {
@@ -49,6 +51,6 @@ export function DocumentImport({ client, session, buffer, onChange, onAuthentica
       {rejectedDocumentImport(state) ? <p>서버가 현재 명령을 거절했습니다. 가져오기만 닫아 기존 편집 입력으로 돌아갈 수 있습니다. 이미 보관된 원본은 삭제하지 않으며 다음 작업은 현재 권한/제어를 다시 확인해야 합니다.</p> : null}
       {!state.attempted || state.candidate || rejectedDocumentImport(state) ? <button disabled={busy} onClick={() => onChange(b => b?.importState?.upload.commandId === state.upload.commandId ? { ...b, importState: null } : b)}>후보 선택 닫기</button> : null}
     </>}
-    {error || state?.failure ? <p role="alert">{error?.code ?? state?.failure?.code} · 원문과 기존 입력·명령을 보존했습니다.</p> : null}
+    <QuarantinedOriginalNotice failure={state?.failure}/>{error || state?.failure ? <p role="alert">{error?.code ?? state?.failure?.code} · 원문과 기존 입력·명령을 보존했습니다.</p> : null}
   </section>;
 }

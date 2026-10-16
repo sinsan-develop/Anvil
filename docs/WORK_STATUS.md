@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 격리 UI 직접 영향 확인: UI06 문서 편집/가져오기·제안 fixture8 PASS/8.0초/skip0, UI10 fixture11 PASS/9.8초·unit111/type/build0. 단순 HTTP412에 UUID를 붙이지 않고 검증한 upload receipt에만 원문 ID를 전달한다. 이전 단절 미확인은 이 terminal receipt에서만 해소하며 후속 domain command는 만들지 않는다. 비밀 없는 ID·입력/명령은 닫기 전 보존한다. 검사되지 않은 옛 Windows backend의 업로드는 새 DB guard가 검사 metadata 누락으로 거절하므로 현재 mixed runtime을 사용자용 완료라고 하지 않는다. 서비스 재시작/Secret 갱신0, 같은 client 실제 단절 재확인은 다음 게시본에서 확인한다.
+
+- 원문 격리 서버 `891cfd3135e5f0bcb4baab7b17c4615bbbe58e52` local/private·WSL exact/clean에서 보정된 새27만 적용·기존26 지문 불변, 실제 FN03확장+FN11 2 PASS/6327ms/skip0. 적용27 최종 SHA256 `27480EC2D09BC14BF88196E7D45104BFAC107F7FA362760246D0B49EAF043AD5`다. 초기 미적용2BB05.../SQLSTATE42601 후보는 실패 이력이며 PASS로 소급하지 않는다. 의심 원문 바이트 보존·격리 receipt/감사·같은 명령·일반 다운로드/문서/지식 차단·비회원404·app 해제42501 확인. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자/Secret/서비스 변경0.
+- 격리 UI 후속 후보: 검증한 격리 receipt에만 원문 ID를 보존하고 이전 단절 미확인을 해소하며 후속 저장은 진행하지 않는다. 단순 HTTP412/거절 문구만으로 앞선 미확인을 지우지 않는다. 원문/입력은 남고 명시 닫기만 가능하다. 신규 단위/브라우저 RED 각1→단위111 PASS/1350ms·UI10 fixture11 PASS/9.8초·type/build0(Web83). 기존 bundle/색상 경고 유지. 같은 client 실제 단절→격리 재확인은 다음 exact SHA에서 확인한다. 문서·가져오기·제안은 공통 업로드 변경의 직접 영향으로 제한 회귀한다.
+
 - forward27 첫 적용 `a9896122458d70f519a77a95cf3da6add9b53ce9`는 SQLSTATE42601/position1561로 실패했다. 독립 진단에서 적용26/inspection열0을 확인했고 동일27 SQL의 BEGIN/advisory lock/항상 ROLLBACK 진단으로 같은 위치를 재현했다. 위치는 PL/pgSQL IF의 괄호 없는 CASE WHEN ... THEN ... END 비교식이다. 단일 비교식 CASE를 괄호로 묶는 보정만 수행한다. 적용된 SQL은 아니므로 미적용27 후보만 정정하며 기존26·데이터/권한/Secret/서비스 변경0. 명시 runner 밖 영속 적용0, 실제 QA 미실행을 PASS로 표시하지 않는다.
 
 - 일반 원문 격리 후보: 게시 RED `b22fe3227cbc67a7441d4eab8a561efd71fd5dd3` WSL actual1 FAIL/6875ms/skip0은 합성 비밀 표식이 ARTIFACT_READY로 반환된 기대 신규 실패다. 새 storage/sensitive-inspection은 원시 바이트의 알려진3표식·비밀 없는 이유/한계만 생성한다. 새 업로드는 바이트 보존+QUARANTINED receipt/감사, 일반 파일 GET과 문서/지식 소비 차단, 같은 업로드 재확인을 제공한다. 옛 READY 원문도 읽는 순간 표식을 다시 확인하되 기존 행/원문을 자동 재분류·수정하지 않는다.

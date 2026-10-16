@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+격리 UI 후속: mutation-result의 documentFailure/isConfirmedArtifactQuarantine과 `QuarantinedOriginalNotice.tsx`가 검증된 upload receipt의 원문 ID만 버퍼/화면에 보존한다. 지식/대화/정정·문서/가져오기/제안 writer는 후속 쓰기 전에 중단하며, 단절 뒤 검증된 격리 응답만 현재 불확실성을 해소한다. 일반 거절/형식 오류는 원래 불확실성을 지우지 않는다. UI10 fixture11·UI06 직접 영향8·단위111, 실제 DB 여정은 WORK_STATUS를 따른다.
+
 승인된 원문 격리: `apps/server/storage/sensitive-inspection.ts`가 원시 바이트의 알려진 표식/검사 한계를 소유하고 project-files는 새 업로드 보존/격리 receipt·일반 다운로드 차단·재확인을, project-documents의 공통 artifact resolver는 문서/가져오기/지식 원문 소비 차단을 적용한다. 기존 제안 diff guard를 보존한 새 `0005_artifact_quarantine.sql`/명시 runner만 변경하며 postDocumentCommand는 격리 receipt를 사용 가능으로 승격하지 않는다. 기존 실제 SQL26 불변, 합성/실제·UI 최종 표시는 WORK_STATUS로 구별한다.
 
 UI10 원문 재개/선택: KnowledgePage는 기존 readKnowledge의 정확 supersedesRef를 명시로만 열고 과거 버전 쓰기를 비활성화한다. ConversationPanel의 명시 선택→`newKnowledgeFromConversation`은 기존 readConversationMessage로 물리 원문/hash를 다시 확인해 사용자 발언/지시 SourceRef를 작성 초안에 보존한다. KnowledgePending은 sourceRefs까지 고정해 단절 뒤 변경/누락 전송을 거절한다. 새 API/schema·자동 판단/저장/전달0. 단위107·UI10 fixture10과 실제 같은 client 검증은 WORK_STATUS를 따른다.

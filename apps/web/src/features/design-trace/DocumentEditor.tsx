@@ -1,3 +1,5 @@
+import{QuarantinedOriginalNotice}from'./QuarantinedOriginalNotice.tsx';
+import{isConfirmedArtifactQuarantine,documentFailure}from'./mutation-result.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { continueDocumentSave, prepareDocumentSave, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
@@ -25,7 +27,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
       if (mounted.current) onSaved(ref.id, ref.version, buffer.title);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
-      onChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, failure: { code: error.code, status: error.status } } : previous);
+      onChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, failure: documentFailure(error) } : previous);
       if (mounted.current && error.status === 401) onAuthenticationLost();
     } finally { running.current = false; if (mounted.current) setBusy(false); }
   }
@@ -43,7 +45,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
   function proposalCheckpoint(value: DocumentProposalBuffer) { onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.proposalState?.bindingId === value.bindingId && !b.pending && !b.importState && !b.importPreparationId ? { ...b, proposalState: value } : b); }
   function proposalFailure(cause: unknown, mutation = true) {
     const e = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
-    onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId ? { ...b, ...(b.proposalState ? { proposalState: { ...b.proposalState, uncertain: b.proposalState.uncertain || mutation && (e.code === 'RESPONSE_INVALID' || e.status >= 500 || e.status === 0 && e.code !== 'SAVE_CONTINUATION_PAUSED'), failure: { code: e.code, status: e.status } } } : { failure: { code: e.code, status: e.status } }) } : b);
+    onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId ? { ...b, ...(b.proposalState ? { proposalState: { ...b.proposalState, uncertain: isConfirmedArtifactQuarantine(e)?false:b.proposalState.uncertain || mutation && (e.code === 'RESPONSE_INVALID' || e.status >= 500 || e.status === 0 && e.code !== 'SAVE_CONTINUATION_PAUSED'), failure: documentFailure(e) } } : { failure: documentFailure(e) }) } : b);
     if (mounted.current && e.status === 401) onAuthenticationLost();
   }
   async function propose() {
@@ -80,10 +82,10 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
     {buffer.documentId === null && !buffer.importCandidateRef ? <DocumentImport client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} disabled={busy} /> : null}
     {buffer.importCandidateRef ? <p className="meta">가져오기 후보 {buffer.importCandidateRef} · 원본을 첨부로 보존합니다. 아직 별도 저장/확정 전이면 다음 동작을 직접 선택하세요.</p> : null}
     {buffer.savedRef ? <p role="status">초안 버전 {buffer.savedRef.version} 저장 확인</p> : null}
-    {buffer.failure ? <p role="alert">{new ApiError(buffer.failure.code, buffer.failure.status).message} · {buffer.failure.code} · 입력과 기존 명령을 보존했습니다.</p> : null}
+    <QuarantinedOriginalNotice failure={buffer.failure}/>{buffer.failure ? <p role="alert">{new ApiError(buffer.failure.code, buffer.failure.status).message} · {buffer.failure.code} · 입력과 기존 명령을 보존했습니다.</p> : null}
     {buffer.pending ? <p>저장 결과 확인 전에는 입력을 바꾸거나 새 명령을 만들지 않습니다. 자동 재전송하지 않습니다.</p> : null}
     {proposal ? <section className="status-card" aria-label="문서 수정 제안"><h3>별도 수정 제안</h3><p>이 기록만으로 현재 문서나 확정본은 바뀌지 않습니다.</p>
-      {proposal.failure ? <p role="alert">{proposal.failure.code} · 입력과 같은 명령을 보존했습니다.</p> : null}
+      <QuarantinedOriginalNotice failure={proposal.failure}/>{proposal.failure ? <p role="alert">{proposal.failure.code} · 입력과 같은 명령을 보존했습니다.</p> : null}
       {!proposal.proposal ? <button disabled={busy} onClick={() => { void propose(); }}>같은 제안 명령 결과 확인</button> : <><p role="status">수정 제안 저장 확인 · {proposal.proposal.id}</p><button disabled={busy || !!proposal.applyCommand} onClick={() => { void compareProposal(); }}>제안 차이 비교</button></>}
       {proposal.comparison ? <><p>기준 버전 {proposal.baseRef.version} · 변경 시작 줄 {proposal.comparison.diff.startLine}</p><pre className="document-original" aria-label="제안 기준 원문">{proposal.comparison.base.body}</pre><pre className="document-original" aria-label="제안 새 원문">{proposal.comparison.proposedBody}</pre><pre aria-label="서버 생성 변경 구간">{JSON.stringify(proposal.comparison.diff, null, 2)}</pre><pre aria-label="제안 첨부와 항목 비교">{JSON.stringify({ before: { attachments: proposal.comparison.base.document.content.attachments, sections: proposal.comparison.base.document.content.sections }, after: { attachments: proposal.comparison.proposal.proposedContent.attachments, sections: proposal.comparison.proposal.proposedContent.sections } }, null, 2)}</pre>
         {!proposal.savedRef ? <><label><input type="checkbox" disabled={busy || !!proposal.applyCommand} checked={proposalAcknowledged} onChange={e => setProposalAcknowledged(e.target.checked)} />원문·첨부·항목 차이를 확인했고 이 제안을 새 초안으로 반영하겠습니다</label><button disabled={busy || !proposal.applyCommand && !proposalAcknowledged || !!proposal.comparison.proposal.selections.length} onClick={() => { void applyProposal(); }}>{proposal.applyCommand ? '같은 제안 반영 명령 결과 확인' : '이 제안으로 새 초안 저장'}</button></> : <p role="status">제안 반영 버전 {proposal.savedRef.version} 저장 확인 · 별도 확정 전</p>}

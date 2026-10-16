@@ -5,7 +5,7 @@ import type{KnowledgeEntry,TextArtifactRef}from'../../../../server/modules/knowl
 type Ref=KnowledgeView['ref'];
 interface CorrectionInput{targetRef:Ref;title:string;body:string;reason:string;changeReason:string}
 export interface KnowledgeCorrectionPending{upload:DocumentWrite;correct:DocumentWrite|null;commandId:string;input:CorrectionInput}
-export interface KnowledgeCorrectionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;target:KnowledgeView;title:string;body:string;reason:string;changeReason:string;pending:KnowledgeCorrectionPending|null;savedRef:Ref|null;failure:{code:string;status:number}|null;uncertain:boolean;dirty:boolean}
+export interface KnowledgeCorrectionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;target:KnowledgeView;title:string;body:string;reason:string;changeReason:string;pending:KnowledgeCorrectionPending|null;savedRef:Ref|null;failure:{code:string;status:number;quarantinedArtifactId?:string}|null;uncertain:boolean;dirty:boolean}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const normalize=(v:any):any=>Array.isArray(v)?v.map(normalize):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalize(v[k])])):v,canonical=(v:any)=>JSON.stringify(normalize(v));
 async function digest(bytes:Uint8Array<ArrayBuffer>){return[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
