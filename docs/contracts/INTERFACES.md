@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+UI08 소비 검증36fa3e51: 요청/결정/후보 commandId는 서로 다르고 각 응답 유실의 재확인은 해당 원 command 그대로다. 현재 서버 APPROVE·basisCurrent·정확 scope/payload/hash/정책·대상/기기/제어·기한을 대조해 ref만 결박하며 별도 저장 전 소비하지 않는다. 이미 소비한 원 command 재확인은 정확 requestHash를 요구하고 다른 내용·명령에 재사용하지 않는다. UI08에서 실제 확인한 소비max1·outbox0과 아직 미구현 FN12/실제 Agent를 구별한다. 새 공개 API/지원 연산/정책 허가는 추가하지 않았다.
+
 UI08은 기존 approvals 목록/상세 GET과 requestApproval/decideApproval 명령만 소비한다. 브라우저 요청 초안은 후보 commandId·payload hash/정확 targetRef·현재 policyRef/주체/client/세대·기한·위험5종/복구를 고정한다. 서버 조회의 APPROVE와 정확 요청이 일치한 때만 원 후보 command의 approvalRef를 결박하고, 별도 사용자 후보 저장 전 소비/실행하지 않는다. 요청/결정 응답 유실에는 원 명령을 그대로 재확인한다. 공개 계약·지원 연산·데이터 schema의 추가/완화는 없으며 UI08 전체 연결은 후속 실제 검증 전이다.
 
 UI11 Web 소비는 승인된 후보 명령/GET만 사용한다. 작성 input과 pending commandId·현재 client/제어·정책·기한·이전 ref는 이동/프로젝트 전환·응답 유실 후에도 보존하고 같은 명령만 재확인한다. 현재 정책 조회·최근 재인증은 서버의 최종 판정을 대체하지 않으며 AUTO/REQUIRE_APPROVAL 혼합은 우회하지 않는다. 문서-only/표시 변경과 실제 client/API·PG 검증 SHA747c6f37을 구분한다. 목록의 무결성 미재확인·후보 기한/누락·6미확인·현재 NOT_READY를 표시하며 저장으로 실행 범위를 확대하지 않는다.

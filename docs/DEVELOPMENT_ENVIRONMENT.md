@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI08 FN11 승인 소비의 실제 검증은36fa3e511c01282ca647ab8882de4a0d044d3d00 private/WSL exact clean에서 same-client1 PASS/3208.980059ms/skip0이다. 독립 QA41종 잔여0·migration42·시험root[]·원문0700/nonlink/실경로 동일/empty. Web 함수/HTTP 주입/정식 PG를 확인했으며 실제 사용자 로그인 브라우저·Agent·배포 인수는 아니다. 이후 차이는 화면 내부 목록 sequence·시험/캡처·문서뿐이고 승인/후보 API client·서버/DB 시험은 불변이다. Windows old backend/relay HOLD/만료 bootstrap·Secret·실제 사용자/권한·운영은 그대로다.
+
 UI08 최초 화면/client 구현은 로컬 unit164·UI08/UI11 fixture20/type/build로만 확인했고 아직 UI08 same-client 실제 API/PG 소비·실제 사용자 브라우저 인수는 미실행이다. 기존 FN11/후보 DB·migration42/서비스/relay/Secret은 변경하지 않는다. 실제 검증 전 생성 자원은 별도 사전등록과 exact SHA 게시/WSL Git 대조를 거친다.
 
 UI11 후보 same-client 실제 검증은747c6f37cb1de34436f63b3eb4fa7cc0f4e1ff72 private/WSL exact clean에서 새 UI11 시험1 PASS/865.862153ms/skip0이다. Web 함수→Fastify HTTP 주입→기존 정식 PG를 사용하며 실제 로그인 브라우저/네트워크 배포 인수는 아니다. QA41종/시험root 각0·원문 보관소 보호/empty·migration42·새 SQL/실제 사용자/서비스/Secret 변경0이다. 이후 변경은 UI11 scoped CSS·class/import·화면시험/캡처·문서이며 같은 Web API client/서버/DB 시험 내용은 불변이다. 현재 Windows old backend/relay/만료 bootstrap은 그대로라 사용자에게 전체 사용 가능으로 안내하지 않는다.

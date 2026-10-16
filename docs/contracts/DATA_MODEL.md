@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+UI08은 기존 FN11 승인 요청/결정/소비 및 후보41/42를 그대로 소비했다. 실제36fa3e51에서 서로 다른 요청의 APPROVE/REJECT/REQUEST_CHANGE·경합효과1·실제 만료·원 후보 소비max1/단절 재확인·회수를 확인했고 신규 migration/SQL 수정0이다. 원 요청/결정 이력과 불변 후보 버전은 UI 입력을 명시 닫아도 삭제하지 않는다. QA는 소유 UUID만 정리·독립 잔여0이며 실제 사용자 자료/정책은 변경하지 않았다.
+
 UI11은 기존 후보41/42의 저장·불변 버전을 소비했으며 새 migration/table/완성형 연결은 만들지 않았다. 환경 후보 개정에서 미제공과 명시 빈 목록을 실제 보존하고 과거 버전/정확 ref·명령 재확인 효과1을747c6f37 same-client actual로 검증했다. 브라우저 입력 상태는 서버의 실행 허가·host 신뢰 저장소가 아니며 실제 계정/키 발급을 대신하지 않는다.
 
 후보41 적용 후 환경 개정 guard의 SELECT alias `old`가 PL/pgSQL OLD와 충돌한42702는 새 forward42 `0006_connection_candidate_guard_alias_fix`에서 `prior_version`으로만 보정했다. 적용41 checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d와42 checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0는 고정하며 이미 적용한 SQL을 고치지 않는다. 코드350b2e30의 실제 v1/v2·불변/현재 권한/일회 소비·인접 업로드 검증은 WORK_STATUS를 따른다. 이 후보 테이블을 완성형 connector/환경/실측으로 승격하지 않는다.

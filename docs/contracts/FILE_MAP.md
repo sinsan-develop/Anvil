@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI08 실제 후속은 `tests/browser/UI08/candidate-approval.spec.ts`(요청/결정/결박/별도 소비·변경 scope·유실)와 `tests/integration/UI08/approval-client.test.ts`(같은 Web 함수/API·PG 실제 소비/경합·만료·회수/정리)다. 검증 코드36fa3e51 이후 조회 listSequence만 화면 내부에서 보정하고 client/서버/DB 경계는 유지했다. 합성 캡처는 docs/04_test_reports/AV3/UI08/APPROVAL_FIXTURE_1920.png다. 기존 아래 착수/미실행 문구는 당시 이력이며 최신 결과는 WORK_STATUS를 따른다.
+
 UI08 승인 소비 착수: `apps/web/src/features/decisions/api.ts`는 기존 요청/결정·목록/상세·정확 scope/ref/hash·현재 서버 APPROVE 재조회/원 후보 결박을 담당하고, `ApprovalsPage.tsx`와 기존 App은 주체/client/project별 요청/결정 입력·원 command를 보존한다. UI11의 `candidateAccess`는 기본 승인 차단을 유지하면서 명시 요청 준비용 관측만 구별하고, 검증된 approvalCommandHash의 일회 ref를 동일 후보 명령에 추가한다. 시험은 tests/unit/UI08/approval-api.test.ts 및 tests/browser/UI08/approvals.spec.ts; 전체 요청→후보 소비/same-client actual은 WORK_STATUS의 미실행 범위다. backend·정책/DB/실제 Agent는 변경하지 않았다.
 
 UI11 후보 소비: `apps/web/src/features/connections/api.ts`는 같은 후보 명령/입력 snapshot·사용자/client/project/제어 세대·정확 정책/버전 hash·NOT_READY/6UNVERIFIED의 검사/단절 재확인/조회만 소유한다. `ConnectionsPage.tsx`와 `connections.css`는 후보 작성/목록/정확 버전/개정·미구현 차단/반응형을, 기존 App은 사용자/client/project별 버퍼를 보존한다. 시험은 `tests/unit/UI11/candidate-api.test.ts`, `tests/browser/UI11/candidates.spec.ts`, `tests/integration/UI11/candidate-client.test.ts`; 합성 캡처는 docs/04_test_reports/AV3/UI11에 둔다. backend 공개 계약/schema 변경은 없고 실제 연결·신뢰 발급·정책 생성/승인 결정 UI는 포함하지 않는다.

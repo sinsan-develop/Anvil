@@ -14,11 +14,12 @@ const risks={data:'데이터 위험',security:'보안 위험',cost:'비용 위�
 export function ApprovalsPage({client,projectId,session,buffer,onChange,candidate,onCandidateChange,onAuthenticationLost}:Props){
  const[items,setItems]=useState<ApprovalHit[]>([]),[status,setStatus]=useState(''),[cursor,setCursor]=useState<string|null>(null),[view,setView]=useState<ApprovalView|null>(null),[error,setError]=useState<ApiError|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false);
  const alive=useRef(true),lock=useRef(false),sequence=useRef(0);
+ const listSequence=useRef(0);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
  const state=buffer?.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
  function update(patch:Partial<ApprovalPageBuffer>){onChange(previous=>({...previous??{projectId,ownerUserId:session.user.id,ownerClientId:session.clientId,selectedId:null,request:null,decision:null},...patch}));}
  function fail(e:unknown){const a=errorOf(e);setError(a);if(a.status===401)onAuthenticationLost();}
- async function list(next:string|null=null){setLoading(true);try{const v=await listApprovals(client,projectId,status,next);if(alive.current){setItems(v.items);setCursor(v.nextCursor);}}catch(e){if(alive.current){setItems([]);setCursor(null);fail(e);}}finally{if(alive.current)setLoading(false);}}
+ async function list(next:string|null=null){const seq=++listSequence.current;setLoading(true);try{const v=await listApprovals(client,projectId,status,next);if(alive.current&&seq===listSequence.current){setItems(v.items);setCursor(v.nextCursor);}}catch(e){if(alive.current&&seq===listSequence.current){setItems([]);setCursor(null);fail(e);}}finally{if(alive.current&&seq===listSequence.current)setLoading(false);}}
  async function load(id:string){const seq=++sequence.current;try{const v=await readApproval(client,projectId,id);if(alive.current&&seq===sequence.current){setView(v);onChange(previous=>{const old=previous??{projectId,ownerUserId:session.user.id,ownerClientId:session.clientId,selectedId:id,request:null,decision:null};const d=old.decision;return{...old,selectedId:id,decision:d&&(d.requestId===id||d.pending||d.uncertain||!!d.reason)?d:{requestId:id,reason:'',acknowledged:false,pending:null,resultId:null,failure:null,uncertain:false}};});}return v;}catch(e){if(alive.current&&seq===sequence.current){setView(null);fail(e);}throw e;}}
  useEffect(()=>{void list();},[projectId,status]);
  useEffect(()=>{if(state?.selectedId)void load(state.selectedId).catch(()=>{});},[state?.selectedId]);

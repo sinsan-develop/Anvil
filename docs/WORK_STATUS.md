@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI08 FN11 독립 경로 실제 checkpoint **36fa3e511c01282ca647ab8882de4a0d044d3d00**: local/private/WSL exact clean에서 새 UI08 same-client actual **1 PASS/3208.980059ms(기능2933.45855ms)/FAIL0/SKIP0**. 같은 Web 함수/API·정식 PG로 요청/결정/후보 각각 적용 후 응답 유실→원 명령 복구·3종 서로 다른 요청·정확 scope/ref/hash 재조회/결박과 자동 후보 저장0·별도 후보 소비max1·동시 결정효과1/다른409·실제 만료·타 프로젝트404·다른 client 준비 거절·현재 DENY/회수403·outbox0을 확인했다. 독립 DB41종 QA 각0·migrations42·시험root[]·원문 uid1000/0700/nonlink/실경로 동일/entries[]이다. 신규 SQL/실제 사용자/키·Agent·서비스/relay/Secret 변경0이다.
+- 실제 checkpoint 뒤 조회 필터의 늦은 옛 응답이 현재 목록을 덮는 RED1을 확인해 화면 내부 목록 sequence만 보정했다. API client/서버/DB/same-client 시험은 불변 diff로 확인했으므로 같은 실제 PG 검증을 반복하지 않는다. 최종 type/build0(98modules·JS647.64kB/gzip167.91·CSS9.55kB/gzip2.56·기존 chunk 경고), 조회만으로 승인하지 않음/필터경합2 PASS/3.2초. [합성 승인 화면](04_test_reports/AV3/UI08/APPROVAL_FIXTURE_1920.png) SHA256 8010CD0DE9405248AF3FFC76A8BE36C71DEA258F994442747D5762185A2D18FA를 보존/육안 확인했다. 이는 UI08 fixture이며 실제 사용자 브라우저·Agent/Oracle 인수가 아니다.
+- 판정: 이번 PMO 지시의 FN11 승인 요청/목록/상세·3종 결정→현재 서버 범위 대조→원 후보에 일회 ref 결박→별도 저장/소비의 부분 핵심을 확인했다. 단위164/직접 UI08·UI11 fixture20 및 전체 요청/소비 fixture2의 이전 결과와 후속 조회 보정2를 구분한다. UI08 전체의 FN12 실행 문제 분류/회수/교체, 실제 host/credential/Agent, 정책 생성 UI 및 실제 사용자 로그인 browser↔DB는 여전히 미연결/미확인이다. 전체44/Stage C 완료로 승격하지 않고 정본 동기화·안전 checkpoint 후 PMO에 다음 정확 미완료 지시를 요청한다.
+
 - UI08 후속 전체 화면 fixture2 PASS/4.5초·type/diff0: UI11 준비→별도 요청 작성/위험5종·복구→원 요청 응답 유실/동일 명령→명시 결정→서버 현재 APPROVE 재조회·결박→자동 저장0→원 후보 별도 저장/응답 유실·동일 명령을 확인했다. 후보 입력을 명시 수정하면 이전 승인 scope 결박을 거절하고 새 요청은 자동 생성하지 않는다. 신규 UI08 same-client 시험은 작성·타입만 확인했으며 actual GREEN으로 표시하지 않는다.
 - UI08 actual 사전등록: 기존 qa-connection-candidate-<UUID> 합성 사용자2·소유 UUID 프로젝트2·현재 client·정책·별도 승인 요청5종/결정/후보·명령/감사를 한 시험 수명으로 생성한다. 원문 Secret/실제 사용자·키·Agent·새 schema/migration·컨테이너·포트·서비스 변경0이다. 요청/결정/후보 응답 유실을 DB 적용 후 합성하고 원 명령으로만 확인하며 소비max1·3종 독립 결정·동시 결정/만료·다른 기기/프로젝트·권한 회수를 실제 API/PG에서 확인한다. finally 소유 UUID만 참조 분리·정리하고 독립41종/임시root/보호 보관소 잔여를 확인한다. 실행은 private exact 게시 후 정식 WSL Git 경로에서만 한다.
 
@@ -294,7 +298,7 @@
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
-| UI08 승인·중요 문제 | [2] | Main 어울. 기존 FN11 승인 목록/상세·3종 결정·원 명령/입력 보존의 화면/client 검증 | 후보 요청→결정→재결박 전체 fixture/actual 소비·FN12 문제 분류 미검증/미연결 |
+| UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/출처·지식 작성/정정/제외·검토/확정·헌법 별도 적용/이력 same-client actual7cf8c005, fixture13 | 공유·임무별 선별/이해 대조·현재 사용자 browser DB |
 | UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존, same-client actual747c6f37 1 PASS·QA41종 잔여0·fixture/배치 확인 | 실제 host/credential/Agent·정책 생성/승인 결정 UI 및 실제 사용자 로그인 browser 인수 미연결/미확인 |
