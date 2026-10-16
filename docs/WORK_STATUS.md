@@ -5,9 +5,9 @@
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
 - 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. 최초 프로젝트와 명시 자료 정책·문서 원본/불변 초안 버전의 실제 WSL API/DB, UI06의 목록/구버전/안전 원문 조회 fixture를 확인했다. 전체 실제 UI DB 여정·문서 편집 화면/내용검토·확정·기존 소스·실제 Agent는 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `dc42b29c4d24d24dc4f6f8f1737ac289023ae09c`/clean에서 FN03 원문/불변 버전/목록·페이지/격리와 FN11 정책·구세대 replay actual2 PASS/skip0. migration15개·기존 적용 SQL 불변. 독립 조회에서 합성 사용자/프로젝트/문서/원본/정책·시험 폴더 잔여0, 승인 지속 원문 root는 daon0700/link0/entries0. Windows unit43·UI06 fixture2·Web48/타입 통과는 별도 증거이며 actual UI DB·제품 인수는 미검증이다.
+- 최근 실제 확인: WSL exact `7a7841a12c6f20f7c4a991be0d34be8d469eae54`에서 FN03 원문/불변 버전/목록·양식 기준의 사람 검토, FN11 정책·구세대 replay와 인접 공통 방법론 검토 actual3 PASS/skip0. migration16개·기존 적용 SQL 불변. 선행 독립 잔여 조회는0이며 최종 정리 조회를 아래 이력에 누적한다. Windows unit43·UI06 검토 이력/원문 fixture2·Web48/타입 통과는 별도 증거이며 actual UI DB·제품 인수는 미검증이다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: FN03 문서 내용검토/별도 확정과 UI06 편집·저장 연결, 기존 소스 선언/기준선·FN04/FN05를 계속한다. 자료 정책은 명시 현재 HUMAN/프로젝트만 구현했고 일회 승인 소비·Agent 허가·정책 편집 화면은 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: FN03 문서 별도 확정과 UI06 편집·저장/검토 작성 연결, 기존 소스 선언/기준선·FN04/FN05를 계속한다. 자료 정책은 명시 현재 HUMAN/프로젝트만 구현했고 일회 승인 소비·Agent 허가·정책 편집 화면은 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -55,7 +55,7 @@
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
-| UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서 목록/페이지·정확 버전/구버전·hash 검증 후 원문 텍스트 조회 fixture2 PASS. actual API/DB는 별도2 PASS | 편집/내용검토·확정·추적/변경·실제 화면 DB 여정 |
+| UI06 문서·설계·계획 추적 | [2] | Main 어울. 목록/버전/원문 hash·고정 양식 검토 기준/사람 검토 이력 조회 fixture2 PASS. actual API/DB는 별도3 PASS | 편집/검토 작성·확정·추적/변경·실제 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
@@ -106,6 +106,16 @@
 | IX08 Oracle 정밀 검증 | [] | 별도 이전/배포 미실행 | 승인된 exact후보/환경 뒤 정밀 시험·사용자 확인 |
 
 ## 7. 일자별 상세 이력 — 최신순
+
+### 2026-10-16 FN03 고정 양식의 사람 내용검토 기록·조회 — Main 어울
+
+- RED `aecf675c92eb20edefc0b35053db6f87bf040166` actual400≠403 후 `7a7841a12c6f20f7c4a991be0d34be8d469eae54` actual FN03/FN11/인접 공통 METHOD3 PASS/1200ms/skip0. 새 forward16 `0003_project_document_reviews` SHA256 `f1ba53b79b95a02867822743748ead6f6dafff039a506651a26368d7b922de75`, 기존15개 불변. 이전 PROJECT 거절을 없애지 않고 DRAFT trigger 대상만 DRAFT로 명시한 뒤 PROJECT DOCUMENT 전용 guard를 추가했다.
+- 명시 policy의 recordContentReview가 없으면403, 현재 owner/client/control·문서 head/hash·물리 원문을 다시 대조한다. 항목/기준은 문서에 고정된 form exact version/hash와 itemId/reviewCriteria에서 생성·snapshot으로 보존한다. 항목별 판정·이유 누락/중복·위조 hash/옛 버전·보완 항목이 남은 ACCEPTED를 거절, evidence 연결 전 비어 있지 않은 참조는412다. 실제 reviewer는 세션의 HUMAN이고 같은 작성자임을 공개한다. Agent REVIEW 위장·실행·자동 확정0.
+- 내용 검토/command/receipt/audit를 한 transaction으로 append하며 같은 명령은 현재 권한 확인 후 같은 ref로 재조회한다. 기록 후 confirmed=false·불변 문서 버전/hash 유지. sourceKind/작성자 동일 여부/판정/이유·서버 감사 순서를 GET에 제공한다. 검토자가 ACCEPTED라고 적는 것과 자동 형식 검증/사용자 별도 확정·실제 시험 합격은 다른 상태다.
+- UI06 검토 이력 조회 RED1(보완 판단 미표시)→현재 소스의 fixture2 PASS/2.4초, unit43/타입/Web48 PASS(JS354.91kB/gzip101.53·CSS7.61kB). 실제 원문 텍스트/위조 바이트 차단·같은 작성자 경고·구버전도 유지한다. 화면 검토 작성·편집/확정은 미연결, 새 실제 browser↔DB와 전체 제품 인수는 미검증이다.
+- Ruling: 검토 기준은 임의 공통 5항목이 아니라 고정 양식의 실제 항목/검토규칙을 사용한다. 현재 HUMAN/본인 프로젝트·명시 자료 정책 범위만 지원하며 다른 검토 역할/Agent·근거 참조·확정 연산은 후속 연결 전 성공으로 처리하지 않는다. 잘못되면 기존 검토 snapshot을 보존한 새 기준/새 검토로 교정하며 과거 판단을 덮지 않는다.
+- 다음 미완료: 문서 별도 확정 조건·UI06 편집/저장/검토 작성, FN04/FN05. 전체44의 상태는 [0]3/[2]9/[]32 그대로이고 완료 업무를 다시 실행하지 않는다.
+- 최종 독립 조회 exit0: WSL HEAD `7a7841a12c6f20f7c4a991be0d34be8d469eae54`/tracked clean, users/projects/documents/document_versions/content_reviews/artifacts/permission_policies 각각0·migration16·QA 임시 root0. 지속 artifact root 실경로/uid1000/0700/link0/entries0. private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변, Node40744 시작UTC2026-10-15T20:25:42.3705853Z·relay26052 시작UTC2026-10-15T12:28:17.5262971Z 동일. 공식6문서는 이전 소유 baseline d7ad35cc hash와 모두 일치하여 제 변경만 동기화한다. PR/main 병합·실제 Agent/서비스·Secret 변경0.
 
 ### 2026-10-16 FN03 원문·불변 버전·UI06 안전 조회 연결 — Main 어울
 

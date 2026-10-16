@@ -2,6 +2,8 @@
 
 ## 2026-10-16 현재 구현된 FN11/FN03·UI06 연결
 
+후속 PROJECT commands의 `recordContentReview`는 §15.2 입력으로 DOCUMENT만 지원한다. 명시 정책·현재 제어/문서 head/hash·원문 무결성·고정 form의 실제 항목/기준1을 검사하고 HUMAN 검토·receipt/audit를 원자 저장한다. evidenceRefs는 연결 전[]만, 임의 actor/Agent/다른 target은 거절한다. document GET의 contentReviewCriteria `{criteriaVersion,formRef,items:{criterionId,title,reviewCriteria}[]}`와 contentReviews `{ref,items,reviewer,sourceKind,reason,reviewedAt,serverSequence}[]`/reviewRefs를 반환하며 confirmed는 변경하지 않는다. UI06은 이를 조회하되 검토 작성 화면·별도 confirmDocument는 아직 미구현이다. 아래의 이전 reviewRefs=[] 관측은 후속 연결 전 이력이며 현재는 실제 기록된 정확 버전의 review ref만 반환한다.
+
 아래의 넓은 계획 endpoint/연산은 구현 목록이 아니다. 현재 추가 연결은 다음에 한정되며 전체 FN03/FN11·UI06 완료를 뜻하지 않는다.
 
 - GET `projects/:projectId/permission-policy`는 자동 생성 없이 configured/policy를 반환한다. PROJECT commands의 savePermissionPolicy는 current OWNER/client/controlGeneration·최근 재인증·정확 head와 명시 규칙을 요구한다. 본인 HUMAN/동일 PROJECT 자료 연산만, 없거나 DENY면 거절·REQUIRE_APPROVAL은 아직 소비 연결 전412다.

@@ -2,6 +2,8 @@
 
 ## 2026-10-16 FN11·FN03/UI06 실제 연결 범위
 
+후속 `apps/server/modules/documents/project-content-review.ts`는 고정 양식 기준의 사람 recordContentReview·검토 이력 조회를 처리한다. `0003_project_document_reviews.sql`은16번째 forward, 기존 DRAFT/공통 보호를 유지하고 PROJECT DOCUMENT만 현재 권한/명령/receipt에 결박한다. 같은 FN03 integration 시험에 명시 권한·옛 버전/위조·판정 음성과 미확정 유지가 추가됐으며 UI06은 검토 이력/같은 작성자 표시를 조회한다. 편집/검토 작성 화면·사용자 별도 확정은 여전히 후속이다.
+
 - `apps/server/modules/access/project-command.ts`: 현재 OWNER/client/control 세대·명시 자료 정책/불변 개정·거절 감사·replay 전 재허가. `0011_project_policy_control.sql`은13번째 forward다.
 - `apps/server/storage/artifact-store.ts`, `modules/documents/project-files.ts`: 승인 root의 프로젝트별 원문 byte/hash·20MiB 상한·10GiB 프로젝트 용량·exact 파일 응답. `0003_project_artifacts.sql`14번째, 자동 GC·실제 서비스 설정 변경 없음.
 - `apps/server/modules/documents/project-documents.ts`: 원문+양식 exact ref의 불변 초안 버전·구버전·현재 목록/서명 cursor. `0003_project_documents.sql`15번째. 내용검토/확정·파서/제안/소스 연결은 후속 미구현이다.

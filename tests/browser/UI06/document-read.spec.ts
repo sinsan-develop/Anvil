@@ -14,7 +14,9 @@ test.beforeEach(async ({ page }) => {
   await page.route(`**/api/v1/projects/${project}/documents?*`, route => route.fulfill({ json: { items: [{ id, title: '요구사항 원본', headVersion: 2, confirmedVersion: null, updatedAt: '2026-10-16T04:00:00.000Z' }], nextCursor: null, hasMore: false, observedAt: '2026-10-16T04:00:00.000Z' } }));
   await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/*`, route => {
     const version = Number(new URL(route.request().url()).pathname.split('/').pop());
-    return route.fulfill({ json: { id, version, title: version === 1 ? '이전 요구사항' : '요구사항 원본', formRef: { id: artifactId, version: 1, contentHash: 'a'.repeat(64) }, contentHash: 'b'.repeat(64), confirmed: false, content: { body: ref, attachments: [], sections: [], sourceRefs: [] }, validation: { validForConfirmation: false, issues: [{ code: 'REQUIRED_SECTION_MISSING', location: 'sections.REQ', message: '필수 항목 미연결', severity: 'ERROR' }] }, statusHistory: [{ kind: 'DRAFT_SAVED', reason: '사람이 저장한 원문', at: '2026-10-16T04:00:00.000Z' }], reviewRefs: [] } });
+    const targetRef = { id, version, contentHash: 'b'.repeat(64) }, formRef = { id: artifactId, version: 1, contentHash: 'a'.repeat(64) };
+    const review = { ref: { id: artifactId, criteriaVersion: 1, targetRef, outcome: 'REWORK' }, items: [{ criterionId: 'REQ', outcome: 'REWORK', evidenceRefs: [], reason: '요구 출처를 더 적어야 합니다' }], reviewer: { kind: 'HUMAN', userId: id, sameAsTargetRecorder: true }, sourceKind: 'HUMAN_REVIEW', reason: '원문 대조 후 보완 요청', reviewedAt: '2026-10-16T04:00:01.000Z', serverSequence: 7 };
+    return route.fulfill({ json: { id, version, title: version === 1 ? '이전 요구사항' : '요구사항 원본', formRef, contentHash: targetRef.contentHash, confirmed: false, content: { body: ref, attachments: [], sections: [], sourceRefs: [] }, validation: { validForConfirmation: false, issues: [{ code: 'REQUIRED_SECTION_MISSING', location: 'sections.REQ', message: '필수 항목 미연결', severity: 'ERROR' }] }, statusHistory: [{ kind: 'DRAFT_SAVED', reason: '사람이 저장한 원문', at: '2026-10-16T04:00:00.000Z' }], contentReviewCriteria: { criteriaVersion: 1, formRef, items: [{ criterionId: 'REQ', title: '요구 출처', reviewCriteria: ['원문과 비교'] }] }, contentReviews: [review], reviewRefs: [review.ref], proposalRefs: [], sourceLinks: [] } });
   });
   await page.route(`**/api/v1/projects/${project}/files/${artifactId}`, route => route.fulfill({ contentType: 'application/octet-stream', body: bytes }));
 });
@@ -26,6 +28,8 @@ test('문서 목록에서 정확 버전과 원문을 열고 구버전을 조회�
   await expect(page.getByText('필수 항목 미연결', { exact: true })).toBeVisible();
   await expect(page.getByText('초안 · 내용 검토/사용자 확정과 별개', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => (window as any).DOCUMENT_EXECUTED)).toBeUndefined();
+  await expect(page.getByText('원문 대조 후 보완 요청', { exact: true })).toBeVisible();
+  await expect(page.getByText('작성 기록자와 같은 사용자 · 독립 검수 아님', { exact: true })).toBeVisible();
   await page.getByLabel('조회 버전', { exact: true }).fill('1');
   await page.getByRole('button', { name: '지정 버전 조회', exact: true }).click();
   await expect(page.getByRole('heading', { name: '이전 요구사항', exact: true })).toBeVisible();
