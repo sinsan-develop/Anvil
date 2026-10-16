@@ -68,7 +68,7 @@ export async function writeCommonMethodReview(db: PoolClient, actor: Authenticat
 }
 
 
-async function requirePreparedForms(db: PoolClient, owner: string, graph: MethodologyGraph) {
+export async function requirePreparedForms(db: PoolClient, owner: string, graph: MethodologyGraph) {
   const refs = new Map<string, VersionRef>();
   for (const node of graph.nodes) for (const item of [...node.inputs, ...node.outputs]) refs.set(canonicalJson(item.formRef), item.formRef);
   for (const ref of refs.values()) {

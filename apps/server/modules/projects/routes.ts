@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { AuthFailure } from '../access/repository.ts';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { ProjectsRepository } from './repository.ts';
-import type { DraftCreate, DraftSave } from './repository.ts';
+import type { DraftCreate, DraftSave, ProjectCreate } from './repository.ts';
 import { parseWireJson } from '../../../../contracts/canonical.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
@@ -23,6 +23,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
       if (request.headers.host !== host || request.method !== 'GET' && (request.headers.origin !== options.origin || !/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? ''))) throw new AuthFailure('ORIGIN_INVALID', 403);
     });
     projects.get<{ Querystring: Record<string, unknown> }>('/api/v1/projects', request => repository.list(token(request), request.query));
+    projects.post<{ Body: ProjectCreate }>('/api/v1/projects', { schema: { body: object({ schemaVersion: { const: 1 }, commandId: idSchema, clientId: idSchema, draftId: idSchema, draftVersion: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER } }) } }, async (request, reply) => reply.code(201).send(await repository.createProject(token(request), csrf(request), request.body)));
     projects.get<{ Params: { projectId: string } }>('/api/v1/projects/:projectId', { schema: { params: { type: 'object', properties: { projectId: { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' } }, required: ['projectId'], additionalProperties: false } } }, request => repository.detail(token(request), request.params.projectId));
     projects.get<{ Params: { draftId: string } }>('/api/v1/project-drafts/:draftId', { schema: { params: object({ draftId: idSchema }) } }, request => repository.getDraft(token(request), request.params.draftId));
     projects.post<{ Body: DraftCreate }>('/api/v1/project-drafts', { schema: { body: object({ schemaVersion: { const: 1 }, commandId: idSchema, clientId: idSchema, targetId: { type: 'null' }, expectedVersion: { const: 0 }, ...inputProperties }, ['schemaVersion', 'commandId', 'clientId', 'targetId', 'expectedVersion', 'name', 'purpose', 'desiredOutcome', 'sourceMode']) } }, async (request, reply) => reply.code(201).send(await repository.createDraft(token(request), csrf(request), request.body)));
