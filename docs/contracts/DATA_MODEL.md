@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN05 forward26 후보 `0005_knowledge_confirmation`은 기존 content_reviews의 PROJECT/KNOWLEDGE만 현재 명령/정책·제어·exact 버전/hash·HUMAN 작성자로 보호하고, knowledge_events의 CONFIRMED에 review_refs를 추가한다. 버전별 확정1개·최신 ACCEPTED 검토 포함을 강제하며 이전 사건/원문/적용25 SQL은 보존한다. 이후 검토가 보완 필요면 과거 확정은 남고 현재 유효성은 false다. 지식 확정은 헌법 적용 pointer나 Agent 실행 허가가 아니다. 승인/실제 적용은 WORK_STATUS로 구분한다.
+
 ## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
 
 복합 충돌·검토/확정 대상 교체는 SQL 추가 없이 기존 불변 version/review/confirmation과 현재 head/hash gate를 소비한다. 브라우저의 거절 snapshot/명령 이력은 사용자·프로젝트별 App 버퍼이며 영속 checkpoint나 서버 완료 기록이 아니다. 새 대상의 판단/확인·명령은 새로 만들고 옛 서버 문서/확정 사건은 그대로 재조회한다(actual ae2c3fd5 1/3017ms). 자동 완료·기준 적용·실제 Agent dispatch0이다.

@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN05 검토·확정 후속: 기존 `knowledge/knowledge-reviews.ts`가 KNOWLEDGE의 고정5항목 검토 입력/실제 HUMAN 기록·receipt 대조를, `knowledge.ts`/`knowledge-state.ts`가 최신 검토·별도 확정·과거 사건/현재 유효성·상태 검색을 소유한다. 기존 프로젝트 recordContentReview와 예약된 confirmKnowledge에만 연결하며 새 forward26 `0005_knowledge_confirmation.sql`은 기존 다른 대상 guard를 보존한다. 사용자 UI10 검토/확정 연결은 아직 후속이며 실제 적용/시험은 WORK_STATUS를 따른다.
+
 지식 정정 쓰기 UI: `features/knowledge/correction-api.ts`/`KnowledgeCorrectionForm.tsx`와 App의 별도 주체/프로젝트별 버퍼는 정확 최신 PROPOSED 버전의 원문/이유·새 입력·별도 정정 사유를 결박한다. 기존 원문 source와 실제 지시/문서 출처를 보존한 새 artifact/불변 버전만 요청하며 중단/미확인 command를 유지한다. 단위97·UI10 fixture7과 같은 Web actual은 WORK_STATUS로 구분한다. 종류 변경/제외본 복원·별도 확정/헌법·Agent 전달을 합치지 않는다.
 
 지식 제외 쓰기 UI: `features/knowledge/exclusion-api.ts`/`KnowledgeExclusionForm.tsx`와 App의 별도 소유자/프로젝트별 요청 버퍼가 조회한 원문/버전·사유·단절/거절 명령을 보존한다. 기존 validateKnowledgeView를 순수 검증 경로로 재사용하고 same-origin excludeKnowledge만 전송한다. UI10 fixture6·단위95와 같은 Web actual은 WORK_STATUS로 대조하며 정정 쓰기/확정/헌법은 미완료다.

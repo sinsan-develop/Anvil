@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN05 내용 검토·별도 확정 후속: 게시 RED `a01a37fc529f3244764c7dd0cfd2ba820299de6d`의 WSL actual1 FAIL/6505ms/skip0은 confirmKnowledge 미연결로 정책 거절403 대신 입력400을 반환한 신규 선행 실패다. 현재 후보는 기존 recordContentReview의 KNOWLEDGE 대상·최신 실제 ACCEPTED 검토와 별도 confirmKnowledge를 결박한다. 새 forward26 `0005_knowledge_confirmation.sql` SHA256 `35BD5B9A3F6109881F0F22B1A06957114EA714556E03700678C7E1BA3D353766`, 기존25 SQL 불변·아직 미적용. 단위100 PASS/1503ms/skip0·typecheck0·diff check0. 조회 명령의 PowerShell brace 경로 문법 오류1과 문서 patch 제목 불일치1은 변경0 후 실제 경로/제목 확인으로 보정했다. 실제 DB/화면 확정은 미검증이다.
+- Ruling: 한 버전의 확정 사건은 한 번만 보존한다. 확정 뒤 새 보완 검토가 있으면 과거 확정을 삭제하지 않고 currentConfirmationValid=false로 표시한다. 다시 확정하려면 정정된 새 불변 버전·새 검토가 필요하다. 판단이 틀리면 사용자가 새 버전을 만들어야 하는 비용이 있지만 옛 합격을 골라 현재 유효성으로 위장하는 것을 막는다. CONFIRMED는 헌법 적용·Agent 전달·자동 공유가 아니다.
+- 이 후보 WSL QA는 기존 승인 DB의 합성 qa-document-storage-UUID 사용자/프로젝트·/tmp/anvil-v3-document-qa-UUID(0700)를 테스트 1회 수명으로 사용한다. finally에서 정확 대상만 정리하고 독립 DB25종·시험 경로·보호 원문 root 잔여를 재확인한다. 실제 사용자/Secret/서비스 변경0. 다음은 exact 게시본 forward26 적용·집중/인접 실제 검증 뒤 UI10 검토·확정 연결이다.
+
 - 정정 UI 후속 `c2b1b75cad5c895c4f1e0c324936865b728237c9` local/private·WSL exact/clean actual1 PASS/5951ms/skip0. 같은 Web의 실제 지시 출처 지식→새 원문·정정2→앞1/이유/지시 source 보존·현재2 재조회·동일 명령 중복0을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0. 다음은 별도 내용 검토/지식 확정·헌법 상태이며 전체 FN05/Stage B/사용자 browser DB 인수는 미완료다.
 
 - 사용 제외 UI 후속 `9a9526255cb108a6c62d07633384826ea310a4bf` private/WSL exact/clean actual1 PASS/7346ms/skip0: 같은 Web의 exact 대상/사유·제외 사건·replay·기본 검색 배제·artifact 개수 불변을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0. 다음 정정 쓰기 UI는 신규 unit RED2를 작성 중이며 전체 FN05/사용자 browser DB·확정/헌법·Agent/Stage B는 미완료다.

@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+FN05 검토/확정 후속은 기존 recordContentReview(targetKind=KNOWLEDGE)·confirmKnowledge(versionRef,reviewRefs,reason)를 사용한다. 현재 head/hash·현재 별도 정책·최신 ACCEPTED 내용 검토가 필수이고 검토만으로 확정하지 않는다. 조회의 contentReviewCriteria/contentReviews/confirmation/currentConfirmationValid는 실제 기록과 명령 receipt를 대조한다. CONFIRMED는 헌법 적용/Agent 전달이 아니며, 이후 보완 검토가 생기면 확정 이력은 보존하고 현재 유효성만 false다. 검색 status는 ACTIVE(기본: 제외되지 않은 현재 head)/PROPOSED/CONFIRMED/EXCLUDED이며 ACTIVE는 실행 활성화를 뜻하지 않는다. 서명 cursor의 조건 변경은400이다. UI10 연결은 후속 검증 전 미완료다.
+
 ## 2026-10-16 현재 구현된 FN11/FN03·UI06 연결
 
 후속 PROJECT `confirmDocument`를 §9.4 그대로 `versionRef,formRef,reviewRefs`로 연결했다. 현재 OWNER/client/제어·명시 정책 뒤 현재 head/hash·원문/첨부 무결성·고정 양식 준비·실제 필수 내용/반복 필드·같은 exact 문서 최신 ACCEPTED를 검사한다. 응답은 기존 APPLIED receipt의 `data:{ref,status:'CONFIRMED',confirmationId}`이며 명령 replay는 새 확정 row를 만들지 않는다. GET version/statusHistory는 별도 CONFIRMED를 반환하고 후속 초안은 기존 확정 버전/원문을 보존한다. UI는 명시 checkbox/확정 요청을 분리하고 결과를 추측하거나 자동 Agent/작업을 실행하지 않는다.
