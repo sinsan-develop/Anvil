@@ -46,6 +46,10 @@ export async function sendKnowledge(client:ApiClient,b:KnowledgeBuffer,s:Documen
 export async function readKnowledge(client:ApiClient,pid:string,ref:Ref):Promise<KnowledgeView>{
   if(!uuid.test(pid)||!isRef(ref))throw new ApiError('CLIENT_PATH_INVALID');
   const v=await client.get<KnowledgeView>(`/api/v1/projects/${pid}/knowledge/${ref.id}/versions/${ref.version}`);
+  return validateKnowledgeView(v,pid,ref);
+}
+export async function validateKnowledgeView(v:KnowledgeView,pid:string,ref:Ref):Promise<KnowledgeView>{
+  if(!uuid.test(pid)||!isRef(ref))throw new ApiError('CLIENT_PATH_INVALID');
   if(!v||canonical(v.ref)!==canonical(ref)||!validEntry(v.entry,pid)||typeof v.body!=='string'||!v.body.isWellFormed()||!Number.isSafeInteger(v.headVersion)||v.headVersion<ref.version||v.appliedAsConstitution!==false||v.redactionState!=='NOT_REDACTED'||v.sensitiveInspection!=='KNOWN_PATTERNS_ONLY'||v.agentDelivery!=='NOT_CONNECTED'||!Array.isArray(v.history)||v.history.length<1||v.history.length>2||v.history.some((e,n)=>!e||!uuid.test(e.id)||e.kind!==(n===0?(ref.version===1?'PROPOSED':'CORRECTED'):'EXCLUDED')||typeof e.reason!=='string'||!e.reason.trim()||e.reason.length>20000||e.kind==='PROPOSED'&&e.reason!==v.entry.reason||e.actorRef?.kind!=='HUMAN'||!uuid.test(e.actorRef.userId)||!Number.isFinite(Date.parse(e.recordedAt))||e.kind==='CORRECTED'&&(!Array.isArray(e.sourceRefs)||!validEntry({...v.entry,sourceRefs:e.sourceRefs},pid)||canonical(e.baseRef)!==canonical(v.supersedesRef))||e.kind!=='CORRECTED'&&(e.baseRef!=null||e.sourceRefs!=null))||await entryHash(v.entry)!==ref.contentHash)throw new ApiError('RESPONSE_INVALID');
   if(ref.version===1?v.supersedesRef!==null:!isRef(v.supersedesRef!)||v.supersedesRef!.id!==ref.id||v.supersedesRef!.version!==ref.version-1)throw new ApiError('RESPONSE_INVALID');
   const expectedState=v.history.length===2?'EXCLUDED':v.headVersion>ref.version?'SUPERSEDED':'PROPOSED';if(v.state!==expectedState)throw new ApiError('RESPONSE_INVALID');

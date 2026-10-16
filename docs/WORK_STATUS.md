@@ -137,6 +137,11 @@
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
 
+- 제외 화면 fresh UI10 fixture6 PASS/5.3초·type/diff0. 단절 뒤 화면 이동에도 정확 대상/사유/command를 보존했고 원문 삭제·업로드·버전 생성 없이 제외 사건만 요청했다. 같은 Web actual에는 별도 미제외 지식1개를 exact 버전으로 제외·replay·기본 목록 배제·artifact 개수 불변을 확인하도록 추가했다. 게시 전에는 실제 제외 UI client PASS를 주장하지 않는다.
+
+- 제외 Web 연결 부재 RED2→조회한 exact 원문/entry/hash·현재 actor/client/control·사유를 묶는 별도 excludeKnowledge 준비/전송 GREEN. 기존 readKnowledge의 암호학적 검증을 validateKnowledgeView로 재사용해 전송 전 대상 snapshot 변조를 거절한다. 원문 업로드/삭제·새 지식 버전을 만들지 않는다.
+- 제외 요청 화면 부재 RED1→KnowledgeExclusionForm/App root의 소유자/프로젝트별 요청 보존·명시 사유·정확 원문 확인·단절/이동 뒤 동일 command만 재확인·닫기/새 작성 금지로 연결했다. 현재95 단위 PASS/1309ms·type/build0(Web77/JS531.65kB/gzip140.47)·UI10 fixture6 결과는 아래 후속으로 기록하며 같은 Web actual은 아직 게시 전 미검증이다. 정정 쓰기 UI·별도 검토/확정·헌법 적용·전체 격리·Agent는 미완료다. 기존 SQL25 불변이다.
+
 - 상태/이력 `eda65c855695ebb80dff5e7f6958bf455f0d16b8` exact private/WSL clean actual1 PASS/5775ms/skip0. 같은 Web이 SUPERSEDED/EXCLUDED·명시 제외 목록을 검증하고 합성 correction event1개 이유 변조를 원 명령 receipt 대비503으로 차단한 뒤 finally에서 복원했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25/지속 서비스·Secret·실제 사용자/Agent/공유 변경0. 다음은 지식 제외/정정의 사용자 쓰기 화면이며 검수/확정·헌법 적용·전체 격리는 미완료다.
 
 - `4ce865e800be2591c5ab6b2e5121bba0155e04d1` private/WSL exact/clean forward25 `0005_knowledge_changes` checksum03dc6518...만 적용·기존24 checksum 불변·fixture7·실제 사용자0. actual2 PASS/6012ms/skip0: 별도 정정 policy403→명시 합성 허가·새 불변2/이유/출처/앞1 보존·replay·stale409·EXCLUDED 사건/기본 검색 제외/명시 제외 조회·제외본 암묵 복원412·인접 권한을 확인했다. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 적용 SQL25를 수정하지 않는다.

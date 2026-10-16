@@ -25,6 +25,7 @@ import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan
 import {readTrace,newTaskTrace,prepareTaskTrace,sendTaskTrace}from'../../../apps/web/src/features/design-trace/trace-api.ts';
 import {newKnowledge,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge}from'../../../apps/web/src/features/knowledge/api.ts';
 import {newConversation,prepareConversation,sendConversation,readConversationMessage,listConversations,listConversationMessages}from'../../../apps/web/src/features/knowledge/conversation-api.ts';
+import {newKnowledgeExclusion,prepareKnowledgeExclusion,sendKnowledgeExclusion}from'../../../apps/web/src/features/knowledge/exclusion-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -531,6 +532,10 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     try{assert.equal((await app.inject({method:'GET',url:currentKnowledgeUrl,headers})).statusCode,503,'정정 이유가 원 명령 영수증과 다르면 조회 성공으로 내보내지 않는다');}
     finally{await admin.query('UPDATE anvil.knowledge_events SET reason=$3 WHERE project_id=$1 AND id=$2',[project,correctionEvent,knowledgeCorrection.payload.reason]);}
     assert.equal((await docSend({...knowledgeCorrection,commandId:randomUUID(),expectedVersion:2,payload:{...knowledgeCorrection.payload,baseRef:correctedKnowledgeRef}})).statusCode,412,'제외된 지식을 정정으로 몰래 복원하지 않는다');
+    const exclusionWork=newKnowledgeExclusion(project,await readKnowledge(client,project,uiKnowledge),knowledgeSession,1);exclusionWork.reason='동일 Web에서 정확 사용자 지식 버전만 사용 제외';exclusionWork.pending=await prepareKnowledgeExclusion(exclusionWork,knowledgeSession);
+    const beforeExclusionArtifacts=(await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1',[project])).rows[0].n;
+    const uiExcluded=await sendKnowledgeExclusion(client,exclusionWork,knowledgeSession,()=>true);assert.equal(uiExcluded.ref.id,uiKnowledge.id);assert.deepEqual(await sendKnowledgeExclusion(client,exclusionWork,knowledgeSession,()=>true),uiExcluded);
+    assert.equal((await readKnowledge(client,project,uiKnowledge)).state,'EXCLUDED');assert.equal((await searchKnowledge(client,project,'사용자 지식','FACT')).items.some(i=>i.versionRef.id===uiKnowledge.id),false);assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1',[project])).rows[0].n,beforeExclusionArtifacts,'사용 제외는 원문을 새 업로드/삭제하지 않는다');
     await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
