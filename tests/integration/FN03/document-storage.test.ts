@@ -207,6 +207,8 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const adopted = adoptDocumentConflict(stale, comparison, session, true); assert.equal(adopted.body, stale.body); assert.equal(adopted.baseVersion, 2);
     const reconciled = await continueDocumentSave(client, await prepareDocumentSave(adopted, session), session, () => {}, () => true);
     assert.equal(reconciled.version, 3); assert.equal((await readDocument(client, project, readyRef.id, 3)).body, stale.body); assert.equal((await readDocument(client, project, readyRef.id, 2)).body, later.body); assert.equal((await readDocument(client, project, readyRef.id, 1)).document.confirmed, true);
+    const importCommand = { ...context, commandId: randomUUID(), operation: 'importDocument', payload: { fileRef: artifact, intendedFormRef: form.ref, sourceRefs: [] } };
+    assert.equal((await docSend(importCommand)).statusCode, 403, '기존 문서 저장/확정 허가는 가져오기 후보 생성 허가가 아니다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

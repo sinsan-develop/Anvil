@@ -107,6 +107,12 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN03 원문 가져오기 후보·선택 연결 착수 — Main 어울
+
+- 시작 `b69c201522fae123b72598380002a1b975feafed` local/private 동일·지정 Stage B tracked clean, main f976ed5e 불변. 이전 확정/충돌 조정·SQL17을 다시 만들지 않는다. 신산님 `call_e9907e2ffeca40bf966c6037d1e9025d` 직접 응답 ‘FN03 가져오기·제안 계약·개발 DB 보완 승인’을 확인했다. 기존 개발 DB의 새 forward로 후보/제안/선택 이력과 현재 권한/감사를 연결할 수 있으며 실제 사용자 정책 부여·원본/기존 SQL 삭제·Secret/서비스/운영 변경은 제외한다.
+- 이번 연결은 먼저 UTF-8 텍스트/Markdown의 원본 그대로인 가져오기 후보→원문 확인→명시 새 초안 선택이다. 지원불가/추출 실패도 원본을 유지하고 성공/확정/실행으로 바꾸지 않는다. 수정 제안은 같은 승인 범위의 후속이며 자동 반영하지 않는다.
+- QA는 기존 전용 WSL DB `anvil_v3_development`/PG15와 Git checkout `/home/daon/deploy/anvil-v3`, 기존 보호 설정만 소비한다. 합성 사용자/프로젝트 `qa-document-storage-<UUID>`·파일 root `/tmp/anvil-v3-document-qa-<UUID>` uid1000/0700, 수명 시험1회·finally 정확 UUID 정리·독립 잔여0을 확인한다. 지속 artifacts root·Windows Node/relay·CA/bootstrap은 보존한다.
+
 ### 2026-10-16 FN03 별도 문서 확정 착수 — Main 어울
 
 - 시작 `ea2041e881be5f21a56fa17accf8cbd1eda6452a` local/private 동일·지정 Stage B tracked clean. 승인된 FN11/FN03 forward 보완 범위에서 confirmDocument를 검토 저장과 별도 처리한다. 필수 본문/RECORDS 필드·정확 최신 ACCEPTED 검토·양식 준비·현재 제어/명시 권한·원문을 검사하고 확정 이력을 보존한다. 새 초안은 기존 확정 포인터/구버전을 지우지 않는다.
