@@ -121,6 +121,11 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- 추적 연결 초기 RED `4f171714fa4b69a88a044284cc57c3aeae59dff0` WSL exact/clean actual1 FAIL/4640ms: 신규 linkTrace 연산 schema가 없어 기대403 대신400. 앞선 계획 저장 PASS를 취소하거나 신규 추적을 PASS로 승격하지 않는다. 고유 합성 QA/finally는 유지한다.
+- 후보 forward22 `0004_trace_links.sql` SHA256 `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c`는 승인된 개발 DB anvil_v3_development에 불변 trace_edges/명시 policy·현재 command/receipt guard만 추가한다. 기존21 SQL/원문/확정 pointer/서비스/Secret 변경0. 테이블은 후속 개발용 보존, 합성 trace 행은 기존 고유 project UUID의 finally에서 plan/document보다 먼저 정확 정리한다. 게시 exact SHA 적용/양성·음성 실제 결과는 아직 미검증이다.
+- Ruling: 초기 실제 resolver는 DESIGN_ITEM/SCREEN_REGION/PLAN_TASK/DOCUMENT_VERSION의 project/id/version/hash·원문을 대조한다. 계획 업무 id는 plan id와 정확 versionRef/필수 localCode로 식별한다. REQUIREMENT/ARTIFACT/EXECUTION/TEST_EVIDENCE는 미연결412로 거절하고 VERIFIES 근거를 만들지 않는다. 지원 관계는 계획 업무→설계/화면 IMPLEMENTS, 화면→설계/설계→문서/문서→문서 REFINES, 동일 종류의 업무/설계 DEPENDS_ON이다. 상대 조회는 같은 불변 edge의 traversal 방향만 바꾸며 복제 저장하지 않는다. 잘못되면 additive resolver/관계 계약 보완이 필요하며 허위 완료/실제 실행은 허가하지 않는다.
+- GET traces는 actor/설계 버전/방향/limit에 결박된 cursor·정확 원문/관계 재확인·설계에 계획 연결 없음/실행·시험 출처 미연결·baselineRef=null을 구분한다. local 단위77 PASS/1218ms·타입/diff0. 관계 unknown을 문자열로 가정한 타입1은 명시 type 검사로 보정했다. 읽기 경로 오타(traceability.schema 계획 파일)는 실제 존재하지 않아 변경 없이 확인 불가로 남겼고 기존 정본의 상세 계약을 소비했다. 문서 diff 검사 .NET의 Han 정규식 미지원1은 rg의 실제 지원 문법으로 바꾸어 신규 혼입0을 확인했다.
+
 - 보관 계획 `c4694579` 게시 exact SHA actual1 PASS/3683ms/skip0. 같은 Web list/read/prepareStoredWorkPlan→pending 없는 과거 자료 재개→새 명령으로 기존 계획 v2 저장·구버전1보존과 유한 목록2개·필터/cursor 변조/교차 사용자 음성을 통과했다. 독립 DB19종 각0·임시 원문root[]·지속root uid1000/0700/link0/실경로 동일/empty. fresh 단위77 PASS/1308ms·plan fixture3/3.9초·type/build(Web68/JS480.53kB/gzip128.84)·diff0. SQL21·서비스/Secret/실제 계정 변경0. 이제 보관 계획 목록/개정 재개는 위 이전 미완료 문구를 대체하지만 화면 검토 선택/확정/trace/변경 영향과 actual browser DB·전체 FN04/Stage B는 미완료다.
 
 - 보관 계획 목록 actual RED `454a9e49825fc54cf7c5c9cacf201e0153135c0d` WSL exact/clean 1 FAIL/4435ms: 목록 GET404로 기대200에 도달하지 못했다. 후속은 같은 membership·유한 limit/actor/project/document 필터·서명 cursor를 사용하고 목록을 NOT_RECHECKED로 구분한다. Web list/read/prepareStoredWorkPlan·WorkPlanLibrary는 읽기만 수행하다 사용자 확인 후 실제 원문/양식/설계와 현재 제어를 재대조해 같은 planRef의 새 개정 버퍼를 준비한다. 과거 명령은 합성하지 않고 pending=null에서 새 명령을 만든다.
