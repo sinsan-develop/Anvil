@@ -39,7 +39,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const headers = { host: 'localhost:3830', origin: 'https://localhost:3830', cookie: '__Host-anvil.sid=' + login.token, 'x-anvil-csrf': login.csrfToken };
     const bytes = Buffer.from('\uFEFF# 요구사항\r\n\r\n사용자의 원본  \r\n<script>window.QA_SHOULD_NOT_RUN=1</script>\r\n', 'utf8');
     const hash = createHash('sha256').update(bytes).digest('hex');
-    const context = { schemaVersion: 1, projectId: project, commandId: randomUUID(), clientId: login.clientId, controlGeneration: 1, operation: 'uploadArtifact', targetId: null, expectedVersion: 0, baselineRefs: [], approvalRef: null, payload: { mediaType: 'text/markdown;charset=utf-8', bytes: bytes.length, contentHash: hash } };
+    const context = { schemaVersion: 1, projectId: project, commandId: randomUUID(), clientId: login.clientId, controlGeneration: 1, operation: 'uploadArtifact', targetId: null, expectedVersion: 0, baselineRefs: [], approvalRef: null, payload: { mediaType: 'text/plain;charset=utf-8', bytes: bytes.length, contentHash: hash } };
     const send = (body = context, payload = bytes) => app.inject({ method: 'POST', url: `/api/v1/projects/${project}/files`, headers: { ...headers, 'content-type': 'application/octet-stream', 'x-anvil-command': JSON.stringify(body) }, payload });
     assert.equal((await send()).statusCode, 412, '프로젝트 제어권만으로 파일 저장을 허가하지 않는다');
     assert.equal((await pool.query("SELECT count(*)::int n FROM anvil.audit_events WHERE project_id=$1 AND outcome='DENIED' AND reason_code='PERMISSION_POLICY_UNCONFIGURED'", [project])).rows[0].n, 1, '허가 거절은 본문 저장과 분리된 감사로 남긴다');
@@ -128,6 +128,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal(fromClient.id, currentRef.id); assert.equal(fromClient.version, 3);
     const clientRead = await readDocument(client, project, currentRef.id, 3);
     assert.equal(clientRead.body, work.body); assert.equal(clientRead.document.title, work.title); assert.equal(clientRead.document.confirmed, false);
+    assert.equal(clientRead.document.content.body.mediaType, 'text/plain;charset=utf-8', '일반 텍스트 원본의 개정도 동일 형식을 보존');
     assert.deepEqual(clientRead.document.content.sections, work.content.sections);
     assert.deepEqual(await continueDocumentSave(client, checkpoint, session, () => {}, () => true), fromClient);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1', [project])).rows[0].n, 2, '확인된 업로드 뒤 같은 저장 명령 재확인은 파일을 다시 만들지 않는다');
@@ -137,7 +138,8 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const freshPending = await prepareDocumentSave(fresh, session);
     const freshRef = await continueDocumentSave(client, freshPending, session, () => {}, () => true);
     assert.equal(freshRef.version, 1); assert.notEqual(freshRef.id, currentRef.id);
-    assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body);
+    const freshRead = await readDocument(client, project, freshRef.id, 1);
+    assert.equal(freshRead.body, fresh.body); assert.equal(freshRead.document.content.body.mediaType, 'text/markdown;charset=utf-8');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

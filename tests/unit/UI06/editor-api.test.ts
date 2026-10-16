@@ -6,7 +6,7 @@ import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { continueDocumentSave, documentDraftHash, prepareDocumentSave, type DocumentBuffer } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 const id = '32b5f276-13e6-4d8a-b93f-27a15d21c788', project = '51c0439f-791e-4bb5-8471-70938d6afaf1';
 const session = { user: { id }, clientId: id, csrfToken: 'C'.repeat(43) };
-function buffer(): DocumentBuffer { return { ownerUserId: id, projectId: project, documentId: id, baseVersion: 2, formRef: { id, version: 1, contentHash: 'a'.repeat(64) }, title: '불변 원문', body: '\uFEFF# 원문\r\n', content: { attachments: [], sections: [{ itemId: 'REQ', anchor: 'line:1' }], sourceRefs: [] }, criteria: [], reason: '명시 개정', controlGeneration: 4, dirty: true, pending: null, savedRef: null, failure: null }; }
+function buffer(): DocumentBuffer { return { ownerUserId: id, projectId: project, documentId: id, baseVersion: 2, formRef: { id, version: 1, contentHash: 'a'.repeat(64) }, title: '불변 원문', body: '\uFEFF# 원문\r\n', mediaType: 'text/markdown;charset=utf-8', content: { attachments: [], sections: [{ itemId: 'REQ', anchor: 'line:1' }], sourceRefs: [] }, criteria: [], reason: '명시 개정', controlGeneration: 4, dirty: true, pending: null, savedRef: null, failure: null }; }
 test('중단된 화면의 저장은 업로드도 시작하지 않고 새 요청을 자동으로 만들지 않는다', async () => {
   const pending = await prepareDocumentSave(buffer(), session); let calls = 0;
   const client = new ApiClient(async () => { calls++; const ref = { artifactId: id, ...pending.upload.payload }; return new Response(JSON.stringify({ operationId: id, commandId: pending.upload.commandId, projectId: project, status: 'APPLIED', targetId: id, version: null, data: { artifactRef: ref, status: 'ARTIFACT_READY' }, serverReceivedAt: '2026-10-16T05:00:00.000Z' }), { headers: { 'content-type': 'application/json' } }); });
@@ -24,4 +24,9 @@ test('저장 클라이언트의 제한된 문서 hash는 서버 canonical 계약
   await assert.rejects(continueDocumentSave(client, { ...pending, upload: { ...pending.upload, operation: 'executeAgent' as any } }, session, () => {}, () => true), ApiError);
   await assert.rejects(continueDocumentSave(client, { ...pending, upload: { ...pending.upload, clientId: project } }, session, () => {}, () => true), ApiError);
   assert.equal(calls, 0);
+});
+test('기존 일반 텍스트 문서를 편집해도 원문 형식을 Markdown으로 암묵 변경하지 않는다', async () => {
+  const work = Object.assign(buffer(), { mediaType: 'text/plain;charset=utf-8' });
+  const pending = await prepareDocumentSave(work, session);
+  assert.equal(pending.upload.payload.mediaType, 'text/plain;charset=utf-8');
 });
