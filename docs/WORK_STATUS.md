@@ -139,6 +139,12 @@
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
 
+- 정정 화면 fresh UI10 fixture7 PASS/6.8초·type/diff0. 옛 원문/판단 이유를 그대로 보이고 새로운 판단 이유와 정정 사유를 분리했다. 단절 후 이동해도 원래 기준/명령을 유지하며 raw 업로드1회·정정 command 동일2회이고 새2 본문/옛 출처를 재조회했다. 합성 fixture를 실제 DB로 승격하지 않으며 이번 게시본에서 같은 Web actual을 확인한다. 기존97 단위/Web79 build 증거와 제외/정정·원문/확정 경계는 유지한다.
+
+- 정정 화면 부재 RED1→KnowledgeCorrectionForm/App root의 exact 기준·구원문/옛 판단 이유·새 제목/본문/판단 이유·별도 정정 사유를 연결했다. 단절/이동 뒤 동일 command를 유지하고 제목/본문/출처를 몰래 교체하거나 새 원문을 중복 업로드하지 않는다. 현재 단위97 PASS/1483ms·type/build0(Web79/JS540.78kB/gzip141.79)이며 UI10 fixture7 결과는 후속 기록으로 수집한다. 같은 Web actual에 실제 지시 출처 지식의 새 원문/정정2·앞1 보존/replay를 추가했다. 별도 내용 검토/확정·헌법 적용·전체 격리·Agent/공유는 미완료다.
+
+- 정정 Web 부재 RED2→validateKnowledgeView의 exact current head/원문/hash·소유자/기기/제어를 소비하고 새 원문/기존 출처/기존 원문 source를 합친 correctKnowledge 별도 명령으로 연결, 집중2 PASS/171ms·typecheck0. 종류 변경/제외·과거본의 암묵 복원·중단/변조 입력은 전송0이다. root의 별도 정정 버퍼·편집 폼을 작성 중이며 화면/실제 같은 Web은 아직 미검증이다. 기존 raw/version/SQL25는 보존한다.
+
 - 제외 UI `9a9526255cb108a6c62d07633384826ea310a4bf` private/WSL exact/clean actual1 PASS/7346ms/skip0. 같은 Web new/prepare/sendKnowledgeExclusion에서 원문/정확 버전/사유→EXCLUDED·replay·기본 목록 배제·artifact 개수 불변 확인. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 새 SQL/실제 사용자·서비스/Secret/Agent 변경0.
 - 다음 정정 쓰기 UI: `tests/unit/FN05/knowledge-correction.test.ts` 신규 RED2는 client 부재다. 현재 이 파일은 단독 writer 소유 untracked 작성 중이며 기존 게시본 검사/초기 준비를 반복하지 않고 정정 client/화면을 이어간다. 제출/완료가 아니며 테스트 RED를 성공으로 바꾸지 않는다.
 

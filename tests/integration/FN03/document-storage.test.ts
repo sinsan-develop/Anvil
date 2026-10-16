@@ -26,6 +26,7 @@ import {readTrace,newTaskTrace,prepareTaskTrace,sendTaskTrace}from'../../../apps
 import {newKnowledge,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge}from'../../../apps/web/src/features/knowledge/api.ts';
 import {newConversation,prepareConversation,sendConversation,readConversationMessage,listConversations,listConversationMessages}from'../../../apps/web/src/features/knowledge/conversation-api.ts';
 import {newKnowledgeExclusion,prepareKnowledgeExclusion,sendKnowledgeExclusion}from'../../../apps/web/src/features/knowledge/exclusion-api.ts';
+import {newKnowledgeCorrection,prepareKnowledgeCorrection,sendKnowledgeCorrection}from'../../../apps/web/src/features/knowledge/correction-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -536,6 +537,9 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const beforeExclusionArtifacts=(await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1',[project])).rows[0].n;
     const uiExcluded=await sendKnowledgeExclusion(client,exclusionWork,knowledgeSession,()=>true);assert.equal(uiExcluded.ref.id,uiKnowledge.id);assert.deepEqual(await sendKnowledgeExclusion(client,exclusionWork,knowledgeSession,()=>true),uiExcluded);
     assert.equal((await readKnowledge(client,project,uiKnowledge)).state,'EXCLUDED');assert.equal((await searchKnowledge(client,project,'사용자 지식','FACT')).items.some(i=>i.versionRef.id===uiKnowledge.id),false);assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1',[project])).rows[0].n,beforeExclusionArtifacts,'사용 제외는 원문을 새 업로드/삭제하지 않는다');
+    const instructionKnowledgeRef=fromInstruction.json().data.ref,knowledgeCorrectionWork=newKnowledgeCorrection(project,await readKnowledge(client,project,instructionKnowledgeRef),knowledgeSession,1);
+    Object.assign(knowledgeCorrectionWork,{title:'Web 정정 지식',body:'최신 관측으로 세부 내용을 정정한다.',reason:'관측과 추측을 분리한다.',changeReason:'원문과 옛 판단 이유를 유지하며 상세화'});knowledgeCorrectionWork.pending=await prepareKnowledgeCorrection(knowledgeCorrectionWork,knowledgeSession);
+    const uiCorrected=await sendKnowledgeCorrection(client,knowledgeCorrectionWork,knowledgeSession,p=>knowledgeCorrectionWork.pending=p,()=>true);assert.equal(uiCorrected.id,instructionKnowledgeRef.id);assert.equal(uiCorrected.version,2);const correctedView=await readKnowledge(client,project,uiCorrected);assert.equal(correctedView.body,knowledgeCorrectionWork.body);assert.equal(correctedView.entry.sourceRefs.some(r=>r.id===messageRef.id),true);assert.equal((await readKnowledge(client,project,instructionKnowledgeRef)).state,'SUPERSEDED');assert.deepEqual(await sendKnowledgeCorrection(client,knowledgeCorrectionWork,knowledgeSession,p=>knowledgeCorrectionWork.pending=p,()=>true),uiCorrected);
     await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);

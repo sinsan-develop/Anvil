@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+지식 정정 쓰기 UI: `features/knowledge/correction-api.ts`/`KnowledgeCorrectionForm.tsx`와 App의 별도 주체/프로젝트별 버퍼는 정확 최신 PROPOSED 버전의 원문/이유·새 입력·별도 정정 사유를 결박한다. 기존 원문 source와 실제 지시/문서 출처를 보존한 새 artifact/불변 버전만 요청하며 중단/미확인 command를 유지한다. 단위97·UI10 fixture7과 같은 Web actual은 WORK_STATUS로 구분한다. 종류 변경/제외본 복원·별도 확정/헌법·Agent 전달을 합치지 않는다.
+
 지식 제외 쓰기 UI: `features/knowledge/exclusion-api.ts`/`KnowledgeExclusionForm.tsx`와 App의 별도 소유자/프로젝트별 요청 버퍼가 조회한 원문/버전·사유·단절/거절 명령을 보존한다. 기존 validateKnowledgeView를 순수 검증 경로로 재사용하고 same-origin excludeKnowledge만 전송한다. UI10 fixture6·단위95와 같은 Web actual은 WORK_STATUS로 대조하며 정정 쓰기/확정/헌법은 미완료다.
 
 지식 변경: `knowledge/knowledge-state.ts`는 실제 버전/head·사건열과 원 명령 receipt의 이유/주체/출처/버전을 대조한다. `knowledge.ts`의 correct/exclude/read/search·exact routes와 승인 forward25가 대응한다. Web knowledge/api·KnowledgePage는 제안/과거/제외를 구분하고 명시 제외 목록만 조회한다. 정정/제외 쓰기 UI·확정/헌법 적용은 후속이다. 실제 서버2 PASS/6012ms와 Web 상태/변조 실제 후속은 WORK_STATUS로 구별한다.
