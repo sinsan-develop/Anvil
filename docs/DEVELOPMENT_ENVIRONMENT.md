@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+현재 코드 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` local/private·WSL exact clean actual FN03 1 PASS/3017ms/skip0. 복합 충돌 조정·검토/확정 거절 보관/명시 새 대상까지 동일 Web client와 실제 API/DB/FS로 확인했다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty, SQL19·계정·권한/Secret·서비스 불변. 단위65/UI06 fixture27·Web62/type/build는 별도이며 Windows backend 혼재/relay HOLD/만료 bootstrap·CA 경계·실제 browser DB 여정 미검증은 유지한다.
+
 보관 자료 재개 후속 코드 `4997e732f6bebfca92812cc6d7a5680dcbb71664` 지정 private/WSL exact clean의 같은 Web client FN03 actual1 PASS/2712ms/skip0. 새 schema/실제 계정/권한·Secret·서비스 변경0, SQL19 불변이다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser DB 여정이 아니다. 기존 혼재 backend/relay HOLD/만료 bootstrap/CA 경계는 유지하며 아래 이전 목록 재개 미완료 문구만 후속 전 이력으로 본다.
 
 제안 후속 `d05c3df31f7112f0cd761ea3e771d3830d42b94c` local/private·WSL exact/clean의 동일 Web client FN03 actual1 PASS/2756ms/skip0, 서버/권한 인접은 직전9198a9bc actual2/2343ms. 새 forward19 `0003_document_proposals` checksum `93cb063a0214f2197afca309ed3d4482a0ea8bac765b9e72f42b110bdb6f542a`만 적용(기존18 불변), 제안/명시 반영/서버 diff·구버전 보존을 확인했다. Windows unit61/UI06 fixture16/13.8초·Web59/type PASS는 실제 사용자용 runtime 전환과 다르다. 기존 Node/relay·CA/bootstrap·실제 계정/Secret/서비스 변경0, 목록 재개·actual browser↔DB·Agent/Oracle는 여전히 남는다.

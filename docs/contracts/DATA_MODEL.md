@@ -2,6 +2,8 @@
 
 ## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
 
+복합 충돌·검토/확정 대상 교체는 SQL 추가 없이 기존 불변 version/review/confirmation과 현재 head/hash gate를 소비한다. 브라우저의 거절 snapshot/명령 이력은 사용자·프로젝트별 App 버퍼이며 영속 checkpoint나 서버 완료 기록이 아니다. 새 대상의 판단/확인·명령은 새로 만들고 옛 서버 문서/확정 사건은 그대로 재조회한다(actual ae2c3fd5 1/3017ms). 자동 완료·기준 적용·실제 Agent dispatch0이다.
+
 보관 자료 목록/재개 후속은 새 SQL 없이 기존 imports/proposals/선택을 소비한다. 목록 integrity=NOT_RECHECKED는 저장 metadata 검사만 의미하고 상세 선택 시 실제 원문을 재검증한다. 후보 재개는 기존 candidate/original link를 새 문서에 보존하고 후보를 재생성하지 않는다. 저장 제안 재개는 과거 명령이 아닌 읽기 binding이며 명시 save만 새 선택/version을 만든다. actual exact4997e732 1 PASS/2712ms와 독립 합성 잔여0을 확인했다. 아래 이전 목록 재개 미구현 문구는 후속 전 이력이며 source/draft-scope/전체 browser DB 미완료는 유지한다.
 
 forward19 `document_proposals`는 exact base document/version/hash·업로드한 proposed body·서버 diff artifact·전체 proposedContent·reason·실제 주체/client/command를 불변 저장한다. `document_proposal_selections`는 사용자 명시 saveDocumentDraft의 새 version과 같은 프로젝트 proposal을 한 번 결박하며 현재 제어/정책/receipt·정확 content를 검사한다. 생성 상태 PENDING은 불변 원 기록이고 GET selections가 실제 반영 여부/문서 version/주체/시각 이력이다. 제안만으로 head/확정 변경0, 본문과 무관한 제목/양식 변경을 제안 반영으로 위장하면409다. 기존 artifacts.command_id UNIQUE와 원 업로드 guard는 유지하고 같은 propose 명령에서 서버 diff JSON1개만 정확 receipt metadata로 INSERT를 허용한다. 과거18 SQL·원문·확정본은 보존하며 자동 삭제/DB·FS 완전 원자성은 주장하지 않는다.

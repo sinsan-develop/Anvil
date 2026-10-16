@@ -261,6 +261,8 @@ Page는 `items`, `nextCursor`, `hasMore`, `observedAt`, `baselineVersion`을 갖
 
 ### 9.4 FN03 — UI03/06의 양식·본문·원본·제안
 
+2026-10-16 충돌/대상 교체 UI 후속: 명확한 저장 VERSION_CONFLICT에서 기존 KEEP_INPUT 호환 검사는 유지한다. 별도 LATEST_METADATA 선택은 최신 양식/첨부/형식을 유지하고 내 제목/본문·이유와 원 거절 snapshot을 보존한 미저장 조정 초안만 만든다. 항목 anchor는 다시 지정하며 stage/source 미연결 경계는 유지한다. 검토/확정은 명확한 JSON4xx 첫 거절만 명시 보관 가능하고, 단절/손상/5xx/불명확4xx의 uncertain은 뒤 거절로 해소하지 않는다. 새 대상은 새 판단·정확 최신 검토·별도 확인/명령을 요구하며 기존 API·서버 권한/버전 검사를 느슨하게 하지 않는다.
+
 2026-10-16 보관 목록/재개 연결: `GET projects/:projectId/imports`는 limit(기본50/최대200), status(READY/FAILED/UNSUPPORTED), formId, cursor를, `/proposals`는 status(PENDING/SELECTED), documentId와 같은 페이지 계약을 받는다. 응답은 items/hasMore/nextCursor/observedAt이고 summary integrity=NOT_RECHECKED다. cursor는 actor/project/kind/filter/limit·30분 기한에 결박하며 혼용/위조400·비회원404다. 상세 GET이 원본/hash·선택 이력을 재검사한다. Web 조회는 제어권 없이 가능하고 명시 준비/반영 때 현재 control을 검사한다. 후보 재개는 원본을 첨부한 새 초안만, 저장 제안 재개는 snapshot=null의 읽기 binding과 새 saveDocumentDraft(proposalRef)만 만들며 과거 import/upload/propose를 합성하지 않는다. 아래 이전 목록 미연결 문구는 후속 전 이력이다.
 
 2026-10-16 PROJECT 제안 연결: `proposeDocumentChange` envelope targetId/expectedVersion은 payload.baseRef의 id/version과 같아야 한다. 현재 head/hash·프로젝트 소유 READY body/attachments·UTF-8/목차를 확인한 뒤 `data.status:PROPOSAL_RECORDED,ref:baseRef,proposal:{id,baseRef,proposedContentRef:본문ArtifactRef,diffRef:서버ArtifactRef,status:PENDING}`를 반환한다. 문서 head/확정본은 변경하지 않는다. diff는 `ANVIL_TEXT_DIFF_1,startLine,before/after:원문 줄 배열,unchangedBefore/After,baseRef,baseBodyRef,proposedBodyRef,beforeContent,afterContent` JSON 원본이며 patch 실행 입력이 아니다. 무변경 content422, stale/hash409, diff 상한20MiB413·기존 quota/원문 보호를 유지한다.

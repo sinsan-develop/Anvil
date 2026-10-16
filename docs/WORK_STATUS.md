@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 현재 후속 코드 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` local/private·WSL exact/clean actual FN03 1 PASS/3017ms/skip0. 보관 자료 재개·복합 충돌 수동 조정·검토/확정 거절 보관/명시 새 대상·새 판단/새 확인·옛 원문/확정 사건 보존까지 확인했다. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/link0/empty. 단위65·UI06 fixture25+추가 음성2·Web62/type/build와 실제 browser↔DB/사용자 인수는 구별한다. 아래 앞선 ‘재개/복합 충돌/대상 교체 미완료’ 문구는 이전 시점 이력이다. 소스/단계 연계·실제 runtime·전체 FN03/Stage B는 여전히 미완료다.
+
 - 최신 후속: `4997e732f6bebfca92812cc6d7a5680dcbb71664` local/private·WSL exact/clean actual FN03 1 PASS/2712ms/skip0. 보관 목록→원문/hash·고정 양식→후보 재생성 없이 새 초안, 저장 제안→과거 명령 합성 없이 별도 반영/replay·구버전 보존 확인. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser↔DB/사용자 인수와 구별한다. 아래 이전 후보/제안 재개 미완료 문구는 이 후속 전 이력이며, 다음은 복합 충돌/대상 교체·소스/추적이다. 전체44업무 상태 합계는 유지한다.
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
@@ -110,6 +112,9 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN03 검토·확정의 거절 보관과 대상 교체 — Main 어울
+
+- 후속 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` 지정 private/WSL exact clean actual1 PASS/3017ms/skip0. 서버409의 옛 검토/확정 명령을 보관하고 현재 v3의 검토 항목을 미확인부터 새로 작성→새 적합 검토→새 확인/새 확정 명령을 실행했다. 옛 v1 원문 hash/확정 사건·새 정확 검토 ID·outbox0 유지. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/실경로 동일/link0/empty. SQL19/권한/Secret/서비스 불변이다.
+- 다음 FN04의 추적/작업계획 초기 저장은 새 forward migration 승인 질문을 1회 보냈다. 승인 전 actual DB/migration 실행0, 자동 기준 활성화·사용자 정책 부여·실제 Agent0을 유지하며 기존 승인 계획의 순수 검증/화면·계약 작업은 계속한다. FN03의 소스/단계·실제 runtime 의존 잔여를 완료 처리하지 않는다.
 
 - 직전 ba4f6caf의 실제 복합 충돌/잔여0 증거는 유지한다. 다음 미완료 검토·확정 대상 교체는 기존 recordContentReview/confirmDocument만 소비하고 SQL/권한/Secret/서비스 변경0이다.
 - 원인: 기존 UI는 명확한 JSON4xx 거절 뒤에도 pending을 유지한 채 대상 교체가 영구 차단됐다. 문서 저장/import의 확인된 거절/미확인 구분과 서버 head/hash 거절을 대조했다. Ruling: 명확한 첫 거절에서만 사용자가 원래 명령·판단/대상을 보관하고 입력을 다시 열며, 새 대상의 검토 판단/확정 확인은 승계하지 않는다. 단절/손상/5xx/불명확4xx 또는 과거 uncertain은 뒤 거절로 해소하지 않고 같은 명령만 확인한다. 보관은 현재 사용자/프로젝트의 App 버퍼이며 서버 영속 인계/체크포인트로 주장하지 않는다. 잘못되면 중복 명령/옛 판단 승계 위험이 있으므로 exact receipt와 새 명시 확인·기존 서버 gate를 유지한다.
