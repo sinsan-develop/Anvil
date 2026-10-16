@@ -22,6 +22,7 @@ import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '..
 import { newDesignIndex,prepareDesignIndex,readDesignIndex,sendDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
 import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan,listWorkPlans,prepareStoredWorkPlan} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
+import {readTrace}from'../../../apps/web/src/features/design-trace/trace-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -451,6 +452,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const graph=await app.inject({method:'GET',url:traceUrl,headers});assert.equal(graph.statusCode,200,graph.body);assert.equal(graph.json().edges.length,1);assert.equal(graph.json().hasMore,true);assert.equal(graph.json().missingLinks.length,0);assert.equal(graph.json().unknownEvidence.length,2);assert.equal(graph.json().baselineRef,null);
     const graph2=await app.inject({method:'GET',url:traceUrl+'&cursor='+encodeURIComponent(graph.json().nextCursor),headers});assert.equal(graph2.statusCode,200,graph2.body);assert.equal(graph2.json().hasMore,false);assert.notEqual(graph2.json().edges[0].id,graph.json().edges[0].id);
     const reverse=await app.inject({method:'GET',url:traceUrl.replace('FORWARD','REVERSE'),headers});assert.equal(reverse.statusCode,200,reverse.body);assert.equal(reverse.json().edges[0].id,graph.json().edges[0].id);assert.deepEqual(reverse.json().traversal[0].from,reverse.json().edges[0].to);
+    const clientGraph=await readTrace(client,project,designRef,'FORWARD',null),clientReverse=await readTrace(client,project,designRef,'REVERSE',null);assert.equal(clientGraph.edges.length,2);assert.equal(clientReverse.traversal.length,2);assert.deepEqual(clientGraph.edges,clientReverse.edges);assert.deepEqual(clientReverse.traversal[0]!.from,clientReverse.edges[0]!.to);assert.equal(clientGraph.unknownEvidence.length,2);
     assert.equal((await app.inject({method:'GET',url:traceUrl.replace('FORWARD','REVERSE')+'&cursor='+encodeURIComponent(graph.json().nextCursor),headers})).statusCode,400);
     assert.equal((await app.inject({method:'GET',url:traceUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     await assert.rejects(pool.query("UPDATE anvil.trace_edges SET reason='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');

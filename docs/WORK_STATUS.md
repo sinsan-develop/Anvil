@@ -123,6 +123,9 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- 추적 조회 client 부재 RED1→readTrace의 정확 설계/방향·ref/edge payload hash·제한 wire·노드/연결/반대 traversal·미연결 증거 검증 GREEN. 조회 화면 진입점 부재 RED1→DesignIndexViewer의 명시 업무 연결 조회·TraceViewer를 연결했다. GET만 수행하고 같은 edge의 정방향/역방향·유한 다음 페이지·설계 업무 연결 누락·기준 미활성/실행·시험 미연결을 표시한다. 변조 시 앞선 노드를 지운다. 새 기능과 모순된 예전 ‘등록/계획 조회 미구현’ 안내와 해당 UI 문구 기대만 바꾸고 무결성/미검증 기준은 유지했다.
+- fresh 단위78 PASS/1139ms·type/build0(Web70/JS488.13kB/gzip130.53)·직접 영향 UI06 조회/계획/위치 등록12 PASS/9.2초·diff0. actual 시험의 역방향 첫 항목 possibly undefined 타입1은 개수2 검증/명시 접근으로 보정했다. same Web readTrace의 actual 양방향/동일 edge/hash 검증은 게시 후 실행 전까지 미검증이다. 아직 화면에서 새 trace link 쓰기·화면 검토 선택/계획 확정·변경 영향은 미연결이다.
+
 - `cca08990` exact 게시본에서 승인된 forward22 `0004_trace_links` checksum `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c` 적용·기존21 지문 불변·fixture7·실제 사용자 생성0. actual FN03/FN04+FN11 2 PASS/4532ms/skip0: 별도403→합성 명시 policy→빈 연결/미연결 근거→실제 plan task/설계·화면 링크·replay·새 중복409/자기422/가짜ID404/hash409/가짜시험412→양방향 같은edge·분리 traversal·서명 cursor/방향 변조400·교차 사용자404·app 직접UPDATE42501. 독립 DB20종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty와 적용22 지문을 조회했다. SQL22는 이제 적용본이며 수정하지 않는다. 추적 Web 화면/client는 아직 미구현으로 남긴다.
 
 - 추적 연결 초기 RED `4f171714fa4b69a88a044284cc57c3aeae59dff0` WSL exact/clean actual1 FAIL/4640ms: 신규 linkTrace 연산 schema가 없어 기대403 대신400. 앞선 계획 저장 PASS를 취소하거나 신규 추적을 PASS로 승격하지 않는다. 고유 합성 QA/finally는 유지한다.
