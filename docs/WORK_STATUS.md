@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI11 게시 전 최종 로컬: unit157 PASS/3190.089ms·type/build0(95modules·JS623.42kB/gzip162.77·CSS7.61kB/gzip2.25, 기존 chunk 경고 유지). 표식 보완 후 직접 Secret browser1 PASS/4.0초, 나머지 UI11/UI10 15개는 동작 코드 불변인 앞선16 PASS에서 구분하며 중복 반복하지 않았다. `git diff --check`0·WSL 사전 HEAD350b2e30 clean. 신규 UI11 실제 시험은 소유 자원 범위를 등록했으나 아직 미실행이다. 초기 새 폴더3개의 sandbox 권한 거절·부재 부모 patch 거절1, App 문맥 patch 거절1은 기존 내용 변경 없이 정확 폴더/elevated 및 실제 문맥으로 해소했다. 잘못 추정한 project-policy.ts 읽기1은 실제 project-command.ts로 정정했으며 ACL 변경0이다.
+
+- UI11 로컬 후보: 신규 Web client 부재 RED1→직접 행동7 PASS/149ms, 새 후보 화면 버튼 부재 RED1→집중 UI11 10/직접 App 인접 UI10 6 합계16 PASS/11.0초. 로컬 unit156 PASS/2235.7103ms·type/build0(95modules·JS623.38kB/gzip162.74·기존 chunk 경고) 이후 self-review에서 passwd/access_token의 사전 차단 누락 RED1을 추가해 서버와 같은 알려진 표식으로 보정·직접7 GREEN을 확인했다. 최종 전체unit/빌드·해당 입력 browser는 새 코드 기준으로 확인한다. 후보 화면은 서버 현재 제어·정책 조회 후 원 input/정확 ref/CAS를 묶고 결과 유실·이동·타 프로젝트에서 원 command를 유지한다. REQUIRES_APPROVAL 정책은 UI08 연결 부재를 명시해 차단하며 자체 승인/정책 생성0이다. same-client actual은 아직 미실행이며 PASS로 승격하지 않는다.
+
+- UI11 same-client actual 사전등록: 기존 FN06 QA 규칙의 qa-connection-candidate-<UUID> 합성 사용자2·소유 UUID 프로젝트2·현재 client/정책/후보·버전/명령/감사만 한 시험 수명으로 생성한다. 새 UI11 시험은 Web client 함수→Fastify HTTP 주입→정식 개발 PG의 실제 저장/재조회/환경 개정·응답 유실/같은 명령·구버전 충돌·타 프로젝트·재인증/권한 회수를 확인한다. finally에서 소유 UUID만 참조 분리 후 정확 정리하고 독립 잔여를 확인한다. 별도 파일/폴더·컨테이너·포트·실제 사용자/키·Agent 생성0, 신규 migration/서비스 변경0이다. 실행 전 private exact SHA를 게시하고 WSL Git으로만 반영한다. 실제 사용자 로그인 browser 인수는 이 시험과 다르다.
+
+- UI11 착수: PMO가1d64a422의 FN06 후보 부분을 수용하고 기존 후보 API만 소비하는 화면을 지시했다. Main 어울 단일 writer로 connections feature·기존 App의 사용자/client/project별 버퍼·UI11 unit/browser/same-client actual·직접 정본만 변경한다. 순서는 응답 유실/동일 명령/격리 RED→typed client→후보 작성/목록/불변 조회/개정 화면→영향 unit/type/build/focused fixture→exact private WSL의 같은 Web 함수/API/PG·QA 정리다. 기존 backend/적용41·42/공개 계약 변경0, old runtime/relay/Secret·실제 host/키/Agent는 제외한다. 정책·완성형 참조 미연결은 실패로 표시하고 입력을 보존한다. 확인 없는 실제 연결/전체 UI11 완료로 승격하지 않는다.
+
 - FN06 후보 저장·조회 최신 코드 checkpoint **350b2e3017012ea1774dab28209643066c6db7a3**는 local/private/WSL exact·tracked clean이다. strict kind 배열 입력 RED를 문자열 타입 검사로만 보정했고, 실제 승인 만료·권한 회수·교차 프로젝트 쓰기까지 포함한 후보 내부/신규 HTTP와 기존 문서·업로드 승인 및 정책/제어 인접 actual **3 PASS/15530.534987ms/FAIL0/SKIP0**을 확인했다(후보3251.082215ms, 기존 문서15085.148726ms, 정책716.924896ms). 로컬 unit150 PASS/2227.3413ms·typecheck/diff exit0이다. 새42 적용 이후 SQL 재실행 없이 검증했으며 아래 이전 RED와 첫 GREEN은 당시 사실로 보존한다.
 - 독립 잔여 확인: 후보2종을 포함한 등록 DB41종 모두0·migrations42·`/tmp/anvil-v3-document-qa-*` []·지속 원문 root uid1000/0700/link=false/실경로 동일/entries[]이다. QA 소유 행만 정리했고 실제 사용자/키·Agent·컨테이너·포트·서비스/relay/Secret 생성·교체0이다. 최근 재인증/현재 제어·정확 정책/CAS·동일 명령 동시2/효과1·변조503·직접 DB 변경42501·Origin/타인 차단·후보 일회 소비/실제 만료/회수·완성형 승격412·outbox0을 실행 범위에서 확인했다.
 - 후속은 이 코드의 증거를 정본6과 문서-only checkpoint로 동기화해 PMO에 제출하고 다음 정확 범위를 지시받는다. 문서만 변경된 뒤 같은 actual을 반복하지 않으며 증거 SHA350b2e30과 문서 checkpoint를 구별한다. 후보는 NOT_READY·6능력 UNVERIFIED이고 실제 host/credential/Agent·UI11·사용자 로그인 browser↔DB 인수는 미구현/미확인이다. FN06/Stage B·C/전체44 완료가 아니다. Windows old backend·만료 bootstrap·relay HOLD는 변경하지 않았다. 복구는 후보 코드 checkpoint를 기준으로 하되 적용41/42와 원본을 자동 downgrade/삭제하지 않고 필요하면 새 forward만 사용한다.
@@ -232,7 +240,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 0 / [2] 13 / [] 28 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/UI10/FN01/FN02/FN03/FN04/FN05/FN06/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). FN06은 조기 후보 저장 일부의 내부/HTTP 핵심 동작 확인이며 실제 Agent 연결 완료가 아니다. 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
+- 현재 합계: **[0] 3 / [1] 0 / [2] 14 / [] 27 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/UI10/UI11/FN01/FN02/FN03/FN04/FN05/FN06/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). FN06/UI11은 조기 후보 저장·표시의 부분 구현이며 실제 Agent 연결 완료가 아니다. 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -276,7 +284,7 @@
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/출처·지식 작성/정정/제외·검토/확정·헌법 별도 적용/이력 same-client actual7cf8c005, fixture13 | 공유·임무별 선별/이해 대조·현재 사용자 browser DB |
-| UI11 Agent·환경·권한 | [] | S11 정적 시안 | 실제 지원/연결/시험·환경/허용범위 설정 |
+| UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성·목록·불변 조회/개정·단절 동일 명령/프로젝트별 입력 보존·fixture 확인 | 같은 Web 함수 실제 API/PG 검증 전. 실제 host/Agent·정책 생성·승인 결정 화면 미연결 |
 | UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
 | UI14 설정·백업·보조 조회 | [] | S14 정적 시안 | 백업/영향·한도/알림·원화면과 같은 상태 조회 |
