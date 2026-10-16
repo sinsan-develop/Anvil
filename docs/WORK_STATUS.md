@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN05/UI10 7cf8c005fbae320b62b8d1e89186896dfabe546c local/private·WSL exact/clean actual1 PASS/15068ms(기능14756ms)/skip0. 실제 같은 Web prepare/send/read로 적용 세대2 교체·저장 후 합성 응답 단절→원 명령 재확인/동일 결과·과거 적용 페이지·현재 원문 proof·옛 적용 비선택·정정 SUPERSEDED/제외 EXCLUDED 뒤 이력 보존·변조503·적용 이력2건을 확인했다. SQL37 재실행0·독립 DB33종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations37. UI10 직접 영향 fixture12 PASS/11.0초, 추가 헌법 APPLY 단절/이동/뒤403 sticky 보존1 PASS/2.7초·이전 명령3회 동일/새 적용 생성0. 전체 unit134 PASS/2066ms·type/diff0; 최신 Web89/583.53kB/gzip151.71와 bundle/색상 경고를 유지한다. 현재 사용자용 Windows backend/relay·만료 bootstrap/Secret은 변경하지 않았으므로 사용자 browser↔DB 인수는 미검증이다. FN05의 공유/임무별 맥락 선별·전달·이해 대조(FN09/IX04 선행), Stage B의 나머지 기존 프로젝트 기준/방법론 개정·FN11 다른 행위·IX01은 미완료이며 전체44 상태 합계는 불변이다.
+
 - FN05 적용 서버 045d699624084c8dc9ed49537a60df94501cd891 exact private/WSL clean: 새 승인 forward37 `0005_project_constitutions` checksum71f4674b279ffea063e3291c392ac822ab4367a0393834079b79caeea29dd765 적용·기존36 불변/fixtures7/실제 사용자 생성0. 실제 FN03+FN11 2 PASS/14708ms(기능14354ms·정책580ms)/skip0: 별도 적용 권한403·확정/정확 hash409·확인 누락422·동일 명령 동시2/적용1·현재 조회/타인404·유한 입력400·재검토 뒤 이력 보존/사용 불가·app 이력 삭제/pointer 위장42501. 독립 DB33종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations37. actual source/API 검증이지 사용자 browser↔DB 인수는 아니다.
 - UI10 후속: React 스킬의 명시 event mutation/기존 root 판단 버퍼를 사용해 별도 APPLY와 조회 panel을 연결했다. UI 명령 단위 RED1→GREEN6/185ms·버튼 부재 browser RED1→지식 판단/조회/적용 fixture3 PASS/4.2초, 전체unit134 PASS/1830ms·type/build0(Web89/583.53kB/gzip151.71; 기존 bundle/색상 경고 보존). source 확인과 적용 proof/snapshot/hash를 재대조하며 기존 가짜 applied=true 거절을 유지한다. 실제 같은 Web의 세대2 교체/응답 단절 재확인·유한 과거 이력/정정·제외·변조503은 추가 시험 작성 후 다음 exact 게시본 실행 예정/미검증이다. 테스트 historyPage 지역 변수 중복1은 constitutionHistoryPage로 정정, SQL/검사 기준 변경0. 현재 Windows runtime/relay/Secret·실제 사용자 권한은 변경하지 않았다.
 
@@ -199,7 +201,7 @@
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
-| UI10 헌법·지식·결정 이유 | [2] | Main 어울. 지식 초안 작성·원문/이유·검색/본문·root 입력/명령 보존 연결, fixture3/인접4 PASS | 실제 같은 Web 저장 확인·대화/출처 선택·정정/제외·헌법 적용버전 |
+| UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/출처·지식 작성/정정/제외·검토/확정·헌법 별도 적용/이력 same-client actual7cf8c005, fixture13 | 공유·임무별 선별/이해 대조·현재 사용자 browser DB |
 | UI11 Agent·환경·권한 | [] | S11 정적 시안 | 실제 지원/연결/시험·환경/허용범위 설정 |
 | UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
@@ -215,7 +217,7 @@
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
 | FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·검토/확정/충돌 조정·가져오기 후보/명시 선택 actual 확인, 새 forward18/합성 잔여0. UI06 fixture15는 별도 | 제안/서버 diff·후보 목록 재개·복합 충돌/대상 교체·소스 연계 |
 | FN04 설계 추적·계획·변경 영향 | [2] | Main 어울. 정확 AF02/AF03 원문 위치 등록·조회 actual 확인, 선행 분석 일부 구현 | AF04 작업계획/업무/선행·trace edge·3상태축·영향/계획개정 |
-| FN05 헌법·지식·원문·맥락 | [2] | Main 어울. 직접 승인 아래 원문 출처와 구조화 지식의 별도 저장 착수 | 초안·원문/이유·검색·정정/제외·헌법·선별/이해대조 |
+| FN05 헌법·지식·원문·맥락 | [2] | Main 어울. 원문/지식·이유/이력·검색/정정/제외·검토/확정·헌법 적용/교체/무효 이력 actual7cf8c005·SQL37 | 공유·맥락 선별/전달/이해(FN09/IX04 선행) |
 | FN06 첫 코딩 Agent·환경 | [] | 실제 제품/버전별 연동 미확인 | 공식 지원과 실제 세션/지시/결과·권한 확인 |
 | FN07 두 번째 Agent·계정 교체 | [] | 실제 두 번째 연결 미확인 | 공통계약으로 타도구·계정교체·원본유지 |
 | FN08 Windows 실행·회수·중복방지 | [] | 회수/스풀 논리 계약 | 실제 관측·ACK·재전송/중복부작용 차단 |

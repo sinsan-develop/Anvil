@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN05 헌법 적용/이력 forward37 `0005_project_constitutions` checksum71f4674b279ffea063e3291c392ac822ab4367a0393834079b79caeea29dd765가 직접 승인 아래 기존 개발 DB에 적용됐다. 기존36 SQL 불변·fixtures7·실제 사용자 생성0. 서버045d6996 actual2 PASS/14708ms와 UI10 same-client7cf8c005 actual1 PASS/15068ms/skip0, 독립 DB33종 각0·등록 시험root[]·지속root 보호/empty. 헌법 pointer는 프로젝트별 정확 적용 세대로만 전환하며 기존 원문/지식·확정 이력을 보존한다. Windows 서비스/relay/만료 bootstrap·CA·Secret은 교체하지 않았고 실제 사용자 browser↔DB 인수·Agent 전달/준수 판정은 미확인이다.
+
 FN11 목록 후속 `835b9a50a7cf08855a183ec868305f57437d351d` exact private/WSL clean actual1 PASS/12553ms/skip0, SQL36 재실행0·새 DB/schema/권한/자원 생성0. 독립 DB31종 각0·시험root[]·지속root 보호/empty·migrations36 확인. 현재 Windows 실행본/relay·Secret은 그대로 보존하며 이 API 실측을 실제 사용자 브라우저 인수로 승격하지 않는다.
 
 FN11 최신 저장 검증 `eb4f1d97c9b914a9dbd17a71d6c2e5f705d74e18` exact private/WSL clean: 같은 직접 승인 범위의 forward34/35/36으로 요청·사람 결정·원문 업로드 후보의 일회 소비를 연결했다. migration36 checksum9eab1fcba2586bf87f202cefc39f300e152e1415c8339692438074b3b800b29d, 이전 SQL 불변·fixtures7·실제 사용자 생성0. actual2 PASS/13084ms/skip0·독립 DB31종 각0/시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자/정책·Secret·서비스/Agent·설계 기준 변경0이며 기존 Node40744/receipt commit000d0088·relay26052는 보존했다. 새 UI browser↔DB/인수는 미검증이다.
