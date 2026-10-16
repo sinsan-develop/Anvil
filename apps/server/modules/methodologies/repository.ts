@@ -3,17 +3,22 @@ import { AuthFailure } from '../access/repository.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { validateMethodologyGraph } from './service.ts';
 import { methodContentReviewCriteria } from './content-review.ts';
+import { methodListFilter, MethodListCodec } from './list-page.ts';
 
 export class MethodologiesRepository {
   access: AccessRepository;
-  constructor(access: AccessRepository) { this.access = access; }
-  async list(token: string, filters: { scope?: string; name?: string; status?: string }) {
+  #cursor: MethodListCodec;
+  constructor(access: AccessRepository) { this.access = access; this.#cursor = new MethodListCodec(value => access.signMethodCursor(value)); }
+  async list(token: string, raw: Record<string, unknown>) {
     return this.access.authenticated(token, null, async (db, actor) => {
-      const rows = (await db.query("SELECT d.id,d.scope,d.system_code,v.name,v.purpose,v.version,v.content_hash,EXISTS(SELECT 1 FROM anvil.methodology_reviews r JOIN anvil.commands c ON c.id=r.command_id WHERE r.definition_id=d.id AND r.version=v.version AND r.target_hash=v.content_hash AND r.decision='CONFIRMED' AND c.scope_kind='USER_COMMON' AND c.scope_id=$1) AS confirmed FROM anvil.methodology_definitions d JOIN anvil.methodology_versions v ON v.definition_id=d.id AND v.version=d.head_version WHERE (d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$1) AND ($2::text IS NULL OR d.scope=$2) AND ($3::text IS NULL OR v.name ILIKE $3 ESCAPE '!') ORDER BY d.system_code NULLS LAST,d.id LIMIT 201", [actor.actorId, filters.scope ?? null, filters.name ? '%' + filters.name.replace(/[!%_]/g, char => '!' + char) + '%' : null])).rows;
-      if (rows.length > 200) throw new AuthFailure('METHODOLOGY_PAGINATION_NOT_READY', 412);
-      const items = rows.map(row => ({ ref: { id: row.id, version: Number(row.version), contentHash: row.content_hash }, name: row.name, purpose: row.purpose, scope: row.scope, systemCode: row.system_code,
+      let filters: ReturnType<typeof methodListFilter>, last: { key: string; id: string } | undefined;
+      try { filters = methodListFilter(raw); if (raw.cursor) last = this.#cursor.read(String(raw.cursor), actor.actorId, filters); }
+      catch { throw new AuthFailure('CURSOR_OR_FILTER_INVALID', 400); }
+      const rows = (await db.query("WITH visible AS (SELECT d.id,d.scope,d.system_code,COALESCE(d.system_code,'~') AS sort_key,v.name,v.purpose,v.version,v.content_hash,EXISTS(SELECT 1 FROM anvil.methodology_reviews r JOIN anvil.commands c ON c.id=r.command_id WHERE r.definition_id=d.id AND r.version=v.version AND r.target_hash=v.content_hash AND r.decision='CONFIRMED' AND c.scope_kind='USER_COMMON' AND c.scope_id=$1) AS confirmed FROM anvil.methodology_definitions d JOIN anvil.methodology_versions v ON v.definition_id=d.id AND v.version=d.head_version WHERE (d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$1) AND ($2::text IS NULL OR d.scope=$2) AND ($3::text IS NULL OR v.name ILIKE $3 ESCAPE '!')) SELECT * FROM visible WHERE ($4::text IS NULL OR CASE WHEN confirmed THEN 'CONFIRMED' ELSE 'DRAFT' END=$4) AND ($5::text IS NULL OR (sort_key COLLATE \"C\",id)>($5::text COLLATE \"C\",$6::uuid)) ORDER BY sort_key COLLATE \"C\",id LIMIT $7", [actor.actorId, filters.scope, filters.name ? '%' + filters.name.replace(/[!%_]/g, char => '!' + char) + '%' : null, filters.status, last?.key ?? null, last?.id ?? null, filters.limit + 1])).rows;
+      const hasMore = rows.length > filters.limit, page = rows.slice(0, filters.limit), tail = page.at(-1);
+      const items = page.map(row => ({ ref: { id: row.id, version: Number(row.version), contentHash: row.content_hash }, name: row.name, purpose: row.purpose, scope: row.scope, systemCode: row.system_code,
         status: row.confirmed ? 'CONFIRMED' : 'DRAFT', sourceAvailable: row.scope === 'SYSTEM' }));
-      return { items: filters.status ? items.filter(item => item.status === filters.status) : items, nextCursor: null, hasMore: false, observedAt: new Date().toISOString(), baselineVersion: null };
+      return { items, nextCursor: hasMore && tail ? this.#cursor.create(actor.actorId, filters, { key: tail.sort_key, id: tail.id }) : null, hasMore, observedAt: new Date().toISOString(), baselineVersion: null };
     });
   }
   async version(token: string, id: string, version: number) {
