@@ -67,6 +67,11 @@ export class ProjectDocuments {
     if (row.storage_key !== `blobs/${projectId}/${ref.artifactId}`) throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED', 503);
     return this.#store.read(projectId, ref.artifactId, ref);
   }
+  async originalText(db:PoolClient,projectId:string,ref:ArtifactRef) {
+    if(!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ref.mediaType)||ref.bytes>2*1024*1024) throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED',412);
+    const bytes=await this.#artifact(db,projectId,ref);
+    try {return new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);} catch {throw new AuthFailure('DOCUMENT_UTF8_INVALID',422);}
+  }
   async save(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     const p = request.payload;
     if (!(exact(p, ['title', 'formRef', 'stageNodeRef', 'content', 'importCandidateRef', 'reason']) || exact(p, ['title', 'formRef', 'stageNodeRef', 'content', 'importCandidateRef', 'reason', 'proposalRef'])) || typeof p.title !== 'string' || !p.title.trim() || p.title.length > 200 || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !isVersionRef(p.formRef)

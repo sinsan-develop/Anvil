@@ -376,6 +376,16 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const screenRef=await continueDocumentSave(client,await prepareDocumentSave(screenWork,session),session,()=>{},()=>true);
     const indexCommand={...context,commandId:randomUUID(),operation:'indexDesignDocument',targetId:designRef.id,expectedVersion:designRef.version,payload:{documentRef:designRef,items:[{localCode:'D01',title:'사용자 지식 보존',anchor:'line:1'}],screens:[{designLocalCode:'D01',screenCode:'S06',documentRef:screenRef,anchor:'line:1'}],reason:'실제 원문 위치만 추적 인덱스로 기록'}};
     assert.equal((await docSend(indexCommand)).statusCode,403,'문서 작성 허가만으로 설계 추적 인덱스를 쓰지 않는다');
+    const indexPolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:6,payload:{rules:[{ruleId:'INDEX_OWN_DESIGN',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','importDocument','proposeDocumentChange','indexDesignDocument'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 설계 추적 인덱스 명시 허가',reviewRefs:[]}}); assert.equal(indexPolicy.statusCode,200,indexPolicy.body);
+    assert.equal((await docSend({...indexCommand,commandId:randomUUID(),payload:{...indexCommand.payload,documentRef:{...designRef,contentHash:'0'.repeat(64)}}})).statusCode,409);
+    assert.equal((await docSend({...indexCommand,commandId:randomUUID(),payload:{...indexCommand.payload,items:[{localCode:'D99',title:'존재하지 않는 항목',anchor:'line:1'}]}})).statusCode,422,'원문에 없는 설계 항목을 추적 사실로 만들지 않는다');
+    const indexed=await docSend(indexCommand); assert.equal(indexed.statusCode,200,indexed.body); assert.equal(indexed.json().data.status,'DESIGN_INDEXED'); assert.equal(indexed.json().data.designItems.length,1); assert.equal(indexed.json().data.screenRegions.length,1);
+    assert.deepEqual((await docSend(indexCommand)).json(),indexed.json()); assert.equal((await docSend({...indexCommand,commandId:randomUUID()})).statusCode,409);
+    const indexPath=`/api/v1/projects/${project}/design-index?documentId=${designRef.id}&version=1`;
+    const indexRead=await app.inject({method:'GET',url:indexPath,headers}); assert.equal(indexRead.statusCode,200,indexRead.body); assert.deepEqual(indexRead.json().items,indexed.json().data.designItems); assert.deepEqual(indexRead.json().screenRegions,indexed.json().data.screenRegions);
+    assert.equal((await app.inject({method:'GET',url:indexPath,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    await assert.rejects(pool.query("UPDATE anvil.design_items SET title='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as {code:string}).code==='42501');
+    assert.equal((await readDocument(client,project,designRef.id,1)).body,designWork.body); assert.equal((await readDocument(client,project,screenRef.id,1)).body,screenWork.body);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

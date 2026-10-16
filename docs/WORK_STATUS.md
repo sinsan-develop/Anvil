@@ -113,6 +113,10 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- 초기 actual RED `8e74722ef3c0f49ab01acebb07a1bdd39182e580` WSL exact/clean 1 FAIL/2912ms: 새 index 연산이 아직 schema 미등록400으로 별도 허가 거절403에 도달하지 못했다. 기존 FN03 실패를 만든 것으로 오인하지 않고 후속 연결의 예상 RED로 보존한다.
+- forward20 후보 `0004_design_index.sql` SHA256 `D0D6EF9221A46C96C4E6F033D6A14E22CC07B26A8BCB1949D67DBB8E574AEA6A`: 불변 design_items/screen_regions의 같은 프로젝트·실제 문서/version/hash·원문 artifact FK와 현재 actor/client/control/명시 policy/정확 receipt guard·app UPDATE/DELETE 불허를 추가한다. 기존19 SQL 변경0. 현재 미적용이다.
+- ProjectDesignIndex·기존 docs의 보호 원문 읽기·projects route/명시 연산 policy whitelist·runner20을 연결했다. AF02 D코드/제목/실제 줄 및 AF03 S코드/실제 줄에만 등록하며 원문/확정 pointer 변경0이다. 현재 한 문서 버전당 각 최대200 항목/위치, line anchor만 지원하고 이미지 내부 영역/사용자 정의 양식 유형·배정/완료 근거는 미연결이다. same command는 replay, 새 명령의 중복 인덱스409·현재 head/hash409·원문 없는 코드/위치422·교차 사용자404를 actual에 추가했다. fresh 타입/diff0·unit69/1050ms PASS. 게시 exact SHA·승인된 runner20 적용·actual/독립 잔여 확인 전에는 저장 성공으로 세지 않는다.
+
 - Ruling: 계획의 design_items/screen_regions 쓰기 경로가 기존 연산 표에 빠져 있으므로 승인된 FN04 계약 보완 범위에서 additive indexDesignDocument를 연결한다. 현재 소유 프로젝트의 정확 AF02 원문 버전·D 코드/제목/줄, AF03 원문 버전·S 코드/줄만 인덱싱하며 원문을 바꾸거나 그림 렌더/완료를 주장하지 않는다. 기존 문서 저장 허가로 자동 허가하지 않고 별도 명시 연산 정책을 요구한다. 잘못된 위치/종류/hash·교차 프로젝트를 거절하고 인덱스는 해당 문서 버전에 불변 보존한다. 이미지 내부 좌표/실제 시험·실행 근거는 아직 연결 전이다.
 - FN03 actual의 같은 합성 setup/finally에 FN04 실제 원문 준비·명시 허가 누락403 사례를 추가했다. 고유 QA 사용자/프로젝트·임시 원문 root와 정리 범위는 유지하고 신규 design_items/screen_regions가 생긴 후에만 해당 프로젝트 행을 먼저 정확 정리한다. 단독 writer·기존 서비스/계정/Secret 불변이다. 게시 후 초기 actual RED를 확인하며 이 준비를 기능 완료로 세지 않는다.
 
