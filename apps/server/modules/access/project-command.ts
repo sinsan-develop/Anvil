@@ -1,0 +1,100 @@
+import { randomUUID } from 'node:crypto';
+import type { PoolClient } from 'pg';
+import { AccessRepository, AuthFailure, type AuthenticatedIdentity } from './repository.ts';
+import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
+import type { VersionRef } from '../../../../contracts/generated-types.ts';
+
+export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
+export const documentOperations = ['saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument'] as const;
+export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
+function exact(value: unknown, keys: string[]): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(','); }
+export function materialRules(value: unknown, projectId: string, actorId: string, now = new Date()): MaterialRule[] {
+  if (!Array.isArray(value) || value.length > 200) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
+  const seen = new Set<string>();
+  for (const rule of value) {
+    if (!exact(rule, ['ruleId', 'subjectRef', 'operations', 'targetScopes', 'disposition', 'limitPolicyRef', 'expiresAt']) || typeof rule.ruleId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(rule.ruleId) || seen.has(rule.ruleId)
+      || !exact(rule.subjectRef, ['kind', 'userId']) || rule.subjectRef.kind !== 'HUMAN' || rule.subjectRef.userId !== actorId
+      || !Array.isArray(rule.targetScopes) || rule.targetScopes.length !== 1 || !exact(rule.targetScopes[0], ['kind', 'projectId']) || rule.targetScopes[0].kind !== 'PROJECT' || rule.targetScopes[0].projectId !== projectId
+      || !Array.isArray(rule.operations) || !rule.operations.length || rule.operations.length > 200 || rule.operations.some(item => typeof item !== 'string') || new Set(rule.operations).size !== rule.operations.length
+      || !['AUTO', 'REQUIRE_APPROVAL', 'DENY'].includes(String(rule.disposition)) || typeof rule.expiresAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(rule.expiresAt) || !Number.isFinite(Date.parse(rule.expiresAt)) || Date.parse(rule.expiresAt) <= now.getTime()) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
+    if (rule.operations.some(item => !documentOperations.includes(item as typeof documentOperations[number])) || rule.limitPolicyRef !== null) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+    seen.add(rule.ruleId);
+  }
+  return value as MaterialRule[];
+}
+export async function projectMember(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, lock = false) {
+  const row = (await db.query(`SELECT p.id,p.archived_at,m.participation FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id WHERE p.id=$1 AND m.user_id=$2 AND m.revoked_at IS NULL ${lock ? 'FOR UPDATE OF p,m' : ''}`, [projectId, actor.actorId])).rows[0];
+  if (!row) throw new AuthFailure('NOT_FOUND', 404);
+  return row;
+}
+export async function currentProjectController(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
+  const member = await projectMember(db, actor, request.projectId, true);
+  if (member.archived_at) throw new AuthFailure('PROJECT_ARCHIVED', 412);
+  if (member.participation !== 'OWNER' || request.clientId !== actor.clientId) throw new AuthFailure('PROJECT_WRITE_DENIED', 403);
+  const control = (await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE', [request.projectId])).rows[0];
+  if (!control || control.revoked_at || control.actor_id !== actor.actorId || control.client_id !== actor.clientId) throw new AuthFailure('PROJECT_CONTROL_REQUIRED', 403);
+  if (Number(control.generation) !== request.controlGeneration) throw new AuthFailure('CONTROL_GENERATION_CONFLICT', 409);
+  return control;
+}
+export async function currentPolicy(db: PoolClient, projectId: string) {
+  const row = (await db.query('SELECT p.id,p.head_version,v.rules_json,v.content_hash,v.reason,v.review_refs,v.created_at FROM anvil.permission_policies p JOIN anvil.permission_policy_versions v ON v.policy_id=p.id AND v.project_id=p.project_id AND v.version=p.head_version WHERE p.project_id=$1 FOR SHARE OF p', [projectId])).rows[0];
+  if (!row) return null;
+  if (contentHash(canonicalJson({ rules: row.rules_json, reason: row.reason, reviewRefs: row.review_refs })) !== row.content_hash) throw new AuthFailure('POLICY_INTEGRITY_FAILED', 503);
+  return { ref: { id: row.id, version: Number(row.head_version), contentHash: row.content_hash }, rules: row.rules_json as MaterialRule[], reason: row.reason, reviewRefs: row.review_refs, createdAt: row.created_at.toISOString() };
+}
+export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
+  const rows = (await db.query("SELECT operation,request_hash,result_ref FROM anvil.commands WHERE scope_kind='PROJECT' AND project_id=$1 AND actor_id=$2 AND command_id=$3", [request.projectId, actor.actorId, request.commandId])).rows;
+  if (!rows.length) return undefined;
+  if (rows.length !== 1 || rows[0].operation !== request.operation || rows[0].request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
+  return rows[0].result_ref;
+}
+export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string) {
+  const id = randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
+  const result = { operationId, commandId: request.commandId, projectId: request.projectId, status: 'APPLIED', targetId: ref.id, version: ref.version, data: { ref, ...data }, evidenceRefs: [], warnings: [], serverReceivedAt: (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString() };
+  const scopeDigest = contentHash(canonicalJson({ projectId: request.projectId, actorId: actor.actorId, clientId: actor.clientId, controlGeneration: request.controlGeneration, requestHash: contentHash(canonicalJson(request)), policyRef, targetRef: ref }));
+  await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,expected_version,control_generation,policy_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, JSON.stringify(result)]);
+  await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest) VALUES($1,'PROJECT',$2,$3,$4,$5,$6)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest]);
+  await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, reasonCode, scopeDigest]);
+  await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
+  return { result, id };
+}
+export class ProjectPolicyRepository {
+  #access: AccessRepository;
+  constructor(access: AccessRepository) { this.#access = access; }
+  async read(token: string, projectId: string) {
+    return this.#access.authenticated(token, null, async (db, actor) => { await projectMember(db, actor, projectId); const policy = await currentPolicy(db, projectId); return { configured: !!policy, policy }; });
+  }
+  async command(token: string, csrf: string, request: ProjectCommand) {
+    try {
+      return await this.#access.authenticated(token, csrf, async (db, actor) => {
+        await currentProjectController(db, actor, request);
+        if (request.operation !== 'savePermissionPolicy') throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
+        if (!actor.reauthUntil || actor.reauthUntil.getTime() <= Date.now()) throw new AuthFailure('REAUTHENTICATION_REQUIRED', 412);
+        const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;
+        if (request.baselineRefs.length || request.approvalRef !== null) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
+        const p = request.payload;
+        if (!exact(p, ['rules', 'reason', 'reviewRefs']) || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !Array.isArray(p.reviewRefs)) throw new AuthFailure('INPUT_INVALID', 422);
+        if (p.reviewRefs.length) throw new AuthFailure('REVIEW_ARTIFACT_STORAGE_NOT_READY', 412);
+        const rules = materialRules(p.rules, request.projectId, actor.actorId), current = await currentPolicy(db, request.projectId);
+        if (current ? request.targetId !== current.ref.id || request.expectedVersion !== current.ref.version : request.targetId !== null || request.expectedVersion !== 0) throw new AuthFailure('VERSION_CONFLICT', 409);
+        const version = request.expectedVersion + 1, id = current?.ref.id ?? randomUUID();
+        if (!Number.isSafeInteger(version)) throw new AuthFailure('VERSION_CONFLICT', 409);
+        const ref = { id, version, contentHash: contentHash(canonicalJson({ rules, reason: p.reason, reviewRefs: [] })) };
+        const receipt = await persistProjectReceipt(db, actor, request, ref, { status: 'POLICY_SAVED' }, current?.ref ?? null, current ? 'EXPLICIT_POLICY_REVISION' : 'OWNER_REAUTHENTICATED_INITIAL_POLICY');
+        if (!current) await db.query('INSERT INTO anvil.permission_policies(id,project_id,head_version,created_by) VALUES($1,$2,1,$3)', [id, request.projectId, actor.actorId]);
+        else await db.query('UPDATE anvil.permission_policies SET head_version=$2 WHERE id=$1', [id, version]);
+        await db.query('INSERT INTO anvil.permission_policy_versions(project_id,policy_id,version,rules_json,content_hash,reason,review_refs,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)', [request.projectId, id, version, JSON.stringify(rules), ref.contentHash, p.reason, '[]', actor.actorId, actor.clientId, receipt.id]);
+        return receipt.result;
+      });
+    } catch (error) {
+      // 보이는 프로젝트의 거절만 별도 transaction에 남긴다. 도메인 rollback과 분리한다.
+      if (error instanceof AuthFailure && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 404 && error.statusCode !== 401) {
+        await this.#access.authenticated(token, null, async (db, actor) => {
+          await projectMember(db, actor, request.projectId, true);
+          await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,target_ref,outcome,reason_code,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,'DENIED',$6,'SERVER_DENIAL' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, JSON.stringify({ id: request.projectId }), error.message]);
+        });
+      }
+      throw error;
+    }
+  }
+}

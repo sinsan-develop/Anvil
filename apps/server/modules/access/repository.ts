@@ -10,7 +10,7 @@ interface SafeUser { id: string; displayName: string; serverOwner: boolean }
 interface SessionView { user: SafeUser; clientId: string; csrfToken: string; expiresAt: string; absoluteExpiresAt: string; reauthUntil: string | null }
 type Result<T> = { value: T } | { failure: string; status: number };
 interface AttemptBucket { kind: string; key: string; count: number; start: Date }
-export interface AuthenticatedIdentity { actorId: string; clientId: string; serverOwner: boolean; credentialGeneration: number }
+export interface AuthenticatedIdentity { actorId: string; clientId: string; serverOwner: boolean; credentialGeneration: number; reauthUntil: Date | null }
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const same = (one: string, two: string) => /^[0-9a-f]{64}$/.test(one) && /^[0-9a-f]{64}$/.test(two) && timingSafeEqual(Buffer.from(one, 'hex'), Buffer.from(two, 'hex'));
 const dummyPhc = '$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -35,7 +35,7 @@ export class AccessRepository {
     return this.#transaction<T>(async db => {
       const row = await this.#lockedSession(db, token);
       if (csrf !== null && !same(row.csrf_digest, digest(csrf))) return { failure: 'CSRF_INVALID', status: 403 };
-      return { value: await operation(db, Object.freeze({ actorId: row.uid, clientId: row.client_id, serverOwner: row.server_owner, credentialGeneration: Number(row.current_generation) })) };
+      return { value: await operation(db, Object.freeze({ actorId: row.uid, clientId: row.client_id, serverOwner: row.server_owner, credentialGeneration: Number(row.current_generation), reauthUntil: row.reauth_until })) };
     });
   }
   async #transaction<T>(body: (db: PoolClient) => Promise<Result<T>>): Promise<T> {
