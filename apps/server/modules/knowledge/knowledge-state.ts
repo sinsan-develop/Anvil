@@ -1,5 +1,16 @@
 import{AuthFailure}from'../access/repository.ts';
 import{canonicalJson}from'../../../../contracts/canonical.ts';
+import{isVersionRef}from'../../../../contracts/references.ts';
+import{exact,assertKnowledgeTextSafe}from'./knowledge-entry.ts';
+import type{VersionRef}from'../../../../contracts/generated-types.ts';
+export function constitutionEligibility(view:{entry:{kind:string};state:string;headVersion:number;ref:VersionRef;confirmation:unknown;currentConfirmationValid:boolean}){
+ const reason=view.entry.kind!=='CONSTITUTION'?'NOT_CONSTITUTION':view.state==='EXCLUDED'?'EXCLUDED':view.headVersion!==view.ref.version?'SUPERSEDED':!view.confirmation?'NOT_CONFIRMED':!view.currentConfirmationValid?'REVIEW_NOT_CURRENT':null;
+ return{usable:reason===null,reasons:reason?[reason]:[]};
+}
+export function readConstitutionApplication(value:unknown):{versionRef:VersionRef;confirmationId:string;reason:string;acknowledged:true}{
+ if(!exact(value,['versionRef','confirmationId','reason','acknowledged'])||!isVersionRef(value.versionRef)||typeof value.confirmationId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.confirmationId)||typeof value.reason!=='string'||!value.reason.trim()||value.reason.length>20000||!value.reason.isWellFormed()||value.acknowledged!==true)throw new AuthFailure('CONSTITUTION_INPUT_INVALID',422);
+ assertKnowledgeTextSafe(value.reason);return structuredClone(value)as unknown as{versionRef:VersionRef;confirmationId:string;reason:string;acknowledged:true};
+}
 export function knowledgeState(version:number,head:number,kinds:string[]):'PROPOSED'|'CONFIRMED'|'SUPERSEDED'|'EXCLUDED'{
  if(!Number.isSafeInteger(version)||version<1||!Number.isSafeInteger(head)||head<version||!Array.isArray(kinds)||kinds.length<1||kinds.length>3||kinds[0]!==(version===1?'PROPOSED':'CORRECTED')||!['','CONFIRMED','EXCLUDED','CONFIRMED,EXCLUDED'].includes(kinds.slice(1).join(',')))throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);
  return kinds.includes('EXCLUDED')?'EXCLUDED':version<head?'SUPERSEDED':kinds.includes('CONFIRMED')?'CONFIRMED':'PROPOSED';

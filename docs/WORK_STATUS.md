@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN05 헌법 적용 후속 직접 승인 `call_1eab183042804ae495957c14227599ec` ‘헌법 적용·이력 계약·개발 DB 보완 승인’을 확인했다. Main 어울 단일 writer, 기준 3bd2347e/clean에서 이어간다. Ruling: 프로젝트 단일 적용 상태는 projectId/적용 세대 CAS로 별도 관리하고, 정확 CONSTITUTION 버전·확정 사건·최신 적합 검토와 사용자 명시 확인을 저장 직전 재대조한다. 적용 이력은 append-only이며 정정/제외/재검토 뒤에도 과거 적용을 지우지 않고 현재 사용 가능 상태만 분리한다. 같은 명령 재확인은 기존 결과만 반환한다. 새 forward37만 작성/적용하고 이전36 SQL은 불변이다. 기존 UUID 문서 QA 사용자2/프로젝트1·/tmp/anvil-v3-document-qa-<UUID>(0700)·한 시험 수명/finally exact 정리 계약을 재사용하며 지속 artifacts root 보호를 유지한다. 실제 사용자 정책 부여·Agent 전달/자동 준수·설계 기준 적용·업무 재개·Secret/서비스/운영 변경0. 다음은 순수 입력/현재 유효성 RED→GREEN→actual 별도 정책/저장/이력/회귀→UI10이며 아직 구현/DB37 적용0이다.
+
 - FN11 목록 `835b9a50a7cf08855a183ec868305f57437d351d` local/private·WSL exact/clean actual1 PASS/12553ms(기능12311ms)/skip0: 같은 프로젝트 승인 metadata 목록·두 페이지 중복 없음·status/targetId 필터·변조/조건 다른 cursor400·EXPIRED1/CONSUMED2·타인404·정책 회수 뒤 PENDING0/REVOKED1 및 상세 basisCurrent=false를 확인했다. SQL36 재실행0·독립 DB31종 각0·시험root[]·지속root 보호/empty·migrations36. 승인 목록은 actual 확인됐으나 다른 command/환경/Agent의 소비·UI08/실제 사용자 browser↔DB는 미완료다.
 - 다음 Stage B 핵심 미완료 FN05의 헌법 적용/이력을 정본(DATA_MODEL §7.3 project_constitutions·INTERFACES 헌법 GET)과 대조했다. 기존 지식 확정은 적용 pointer가 아니며 현재 코드는 appliedAsConstitution=false만 반환한다. 별도 applyConstitution의 현재 로그인/단독 제어·별도 정책·확정/최신 적합 원문·명시 확인·불변 적용 이력/현재 사용 가능 상태와 UI10 연결을 신산님께 비동기1건 요청했다. 답변 전 해당 schema/연산·pointer 쓰기는 하지 않고 현재 자료/양식/화면 소비 경계를 읽기 전용으로 준비한다. 실제 사용자 정책 자동 부여·Agent 전달/자동 준수 판정·설계 기준 적용/업무 재개·Secret/서비스/운영 변경은 제외한다. 전체44업무 상태 합계는 그대로다.
 
