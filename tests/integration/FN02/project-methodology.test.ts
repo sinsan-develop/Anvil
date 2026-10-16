@@ -8,7 +8,7 @@ import { AccessRepository } from '../../../apps/server/modules/access/repository
 import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
-import { prepareProjectMethod, writeProjectMethod, readProjectMethod } from '../../../apps/web/src/features/methodology-editor/project-api.ts';
+import { prepareProjectMethod, writeProjectMethod, readProjectMethod, readProjectMethodAtVersion } from '../../../apps/web/src/features/methodology-editor/project-api.ts';
 
 // 결함 검출: 별도 정책·정확 버전 없이 개정/확정, 다른 프로젝트/기기 접근, 확정 후 자동 적용.
 test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고 실행 상태 미확인 적용을 거절한다', async () => {
@@ -82,6 +82,8 @@ test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고
     const lostClient = new ApiClient(async (url, init) => { const response = await webClient.transport.call(globalThis, url, init); if (dropReceipt && init?.method === 'POST') { dropReceipt = false; throw Error('synthetic-method-receipt-lost'); } return response; });
     await assert.rejects(writeProjectMethod(lostClient, webRequest, own.csrfToken), (e: unknown) => e instanceof ApiError && e.code === 'CONNECTION_LOST');
     const webSaved = await writeProjectMethod(webClient, webRequest, own.csrfToken); assert.deepEqual(await writeProjectMethod(webClient, webRequest, own.csrfToken), webSaved);
+    assert.equal((await readProjectMethodAtVersion(webClient, projects[0]!, ref.id, 1)).confirmation!.id, confirmed.json().data.confirmationId);
+    assert.equal((await readProjectMethodAtVersion(webClient, projects[0]!, ref.id, 2)).confirmation, null);
     const webRef = webSaved.data.ref;
     assert.deepEqual((await readProjectMethod(webClient, projects[0]!, webRef)).graph, original.graph);
     const webReview = await prepareProjectMethod(webClient, projects[0]!, session, { schemaVersion: 1, commandId: randomUUID(), clientId: own.clientId, operation: 'recordContentReview', targetId: webRef.id, expectedVersion: 1, payload: { ...review.payload, targetRef: webRef } });

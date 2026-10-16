@@ -140,6 +140,7 @@ JSON schema는 제품 개발자가 검토한 신뢰 계약만 등록한다. 사�
 | UI01 | `apps/web/src/features/projects/{ProjectsPage.tsx,api.ts}` | `tests/browser/UI01/projects.spec.ts` |
 | UI02 | `apps/web/src/features/project-create/{ProjectCreatePage.tsx,api.ts}` | `tests/browser/UI02/project-create.spec.ts` |
 | UI03 | `apps/web/src/features/methodology-editor/{MethodologyEditorPage.tsx,api.ts}` | `tests/browser/UI03/methodology-editor.spec.ts` |
+| UI03 프로젝트 전용 후속 | 기존 디렉터리 `ProjectMethodologyPage.tsx`, `project-api.ts`·CommonMethodEditor/MethodReviewPanel의 명시 gateway·App 프로젝트별 버퍼 | `tests/browser/UI03/project-methodology.spec.ts`, `tests/unit/FN02/project-method-web.test.ts`·실제 연결은 FN02 project-methodology.test.ts. 확정/개정·과거 원문 조회와 실제 적용 전환 미완료를 분리 |
 | UI04 | `apps/web/src/features/workspace/{WorkspacePage.tsx,api.ts}` | `tests/browser/UI04/workspace.spec.ts` |
 | UI05 | `apps/web/src/features/session-detail/{SessionDetailPage.tsx,api.ts}` | `tests/browser/UI05/session-detail.spec.ts` |
 | UI06 | `apps/web/src/features/design-trace/{DesignTracePage.tsx,api.ts}` | `tests/browser/UI06/design-trace.spec.ts` |
@@ -164,6 +165,7 @@ UI02 초기 중간 저장은 기존 `features/project-create/{ProjectCreatePage.
 |---|---|---|---|
 | FN01 | projects, access | `db/migrations/0001_projects_access.sql` | `tests/unit/FN01/projects.test.ts`, `tests/integration/FN01/projects-postgres.test.ts` |
 | FN02 | methodologies | `db/migrations/0002_methodologies.sql`, `apps/server/modules/methodologies/builtins.ts` | `tests/unit/FN02/graph.test.ts`, `tests/integration/FN02/versions.test.ts` |
+| FN02 PROJECT 개정·검토·확정 | `apps/server/modules/methodologies/{project-input.ts,project-methodologies.ts}`, 기존 project-command/routes·새 forward `0002_project_methodology_revisions.sql`/명시 runner | `tests/unit/FN02/project-method-input.test.ts`, `tests/integration/FN02/project-methodology.test.ts`·기존 FN01 draft-create 회귀. USER_COMMON/초기 생성/적용 guard 보존·적용은 실행 상태 미확인412 |
 | FN02 내장·구조 검사 | `contracts/methodologies.ts`·기존 `apps/server/modules/methodologies/service.ts` | 승인 원문·공식 양식 ref로7단계·사람 확인·자료형 조건·유한 동일 실패 재작업 제공. 실제 실행/승인 binding·JSON schema/DB/API 미완료 | `tests/unit/FN02/builtins.test.ts`, 기존 graph.test.ts |
 | FN02 내장 저장/조회 | 기존 methodologies `repository.ts`/`routes.ts`·추가 `catalog-seed.ts`·`app.ts`/`scripts/migrate-development.ts` | 계획0002 버전/범위 분리, 공식 원문 출처만 seed·사람 검토/확정 자동 생성0. 직접 쓰기 API/적용·cursor 미완료 | `tests/unit/FN02/api-access.test.ts`, `tests/integration/FN02/versions.test.ts` |
 | FN02/FN11 본인 공통 쓰기 | `apps/server/modules/methodologies/common-write.ts`, `db/migrations/0011_user_common_control.sql`·기존 app/runner | 직접 승인한 USER_COMMON 명령·receipt·감사·소유자 guard, 내장본 복사/좌표 포함 불변 개정. 확정·양식 쓰기는 아직 미구현 | `tests/integration/FN02/common-write.test.ts`, 기존 api-access.test.ts |

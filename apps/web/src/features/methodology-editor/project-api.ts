@@ -36,7 +36,12 @@ export async function listProjectMethods(client: ApiClient, pid: string, afterId
 }
 export async function readProjectMethod(client: ApiClient, pid: string, ref: VersionRef, name?: string, purpose?: string): Promise<MethodVersion> {
   if (!uuid.test(pid) || !validRef(ref)) throw new ApiError('CLIENT_PATH_INVALID');
-  const value = await client.get<MethodVersion & { projectId: string; headVersion: number; applicationTransition: string }>(`/api/v1/projects/${pid}/methodologies/${ref.id}/versions/${ref.version}`);
-  if (!value || value.projectId !== pid || value.scope !== 'PROJECT' || value.applicationTransition !== 'EXECUTION_STATE_UNVERIFIED' || !Number.isSafeInteger(value.headVersion) || value.headVersion < ref.version || await graphHash(value.graph) !== ref.contentHash) throw new ApiError('RESPONSE_INVALID');
+  const value = await readProjectMethodAtVersion(client, pid, ref.id, ref.version);
   return validateMethodVersion(value, { ref, name: name ?? value.name, purpose: purpose ?? value.purpose, scope: 'PROJECT', systemCode: null });
+}
+export async function readProjectMethodAtVersion(client: ApiClient, pid: string, id: string, version: number): Promise<MethodVersion> {
+  if (!uuid.test(pid) || !uuid.test(id) || !Number.isSafeInteger(version) || version < 1) throw new ApiError('CLIENT_PATH_INVALID');
+  const value = await client.get<MethodVersion & { projectId: string; headVersion: number; applicationTransition: string }>(`/api/v1/projects/${pid}/methodologies/${id}/versions/${version}`);
+  if (!value || value.projectId !== pid || !validRef(value.ref) || value.ref.id !== id || value.ref.version !== version || value.scope !== 'PROJECT' || value.applicationTransition !== 'EXECUTION_STATE_UNVERIFIED' || !Number.isSafeInteger(value.headVersion) || value.headVersion < version || await graphHash(value.graph) !== value.ref.contentHash) throw new ApiError('RESPONSE_INVALID');
+  return validateMethodVersion(value, { ref: value.ref, name: value.name, purpose: value.purpose, scope: 'PROJECT', systemCode: null });
 }

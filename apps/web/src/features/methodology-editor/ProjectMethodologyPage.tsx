@@ -1,7 +1,7 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, listMethods, type MethodPage, type MethodVersion } from './api.ts';
-import { listProjectMethods, readProjectMethod, prepareProjectMethod, writeProjectMethod, type ProjectMethodPage } from './project-api.ts';
+import { listProjectMethods, readProjectMethod, readProjectMethodAtVersion, prepareProjectMethod, writeProjectMethod, type ProjectMethodPage } from './project-api.ts';
 import { CommonMethodEditor } from './CommonMethodEditor.tsx';
 import { MethodReviewPanel } from './MethodReviewPanel.tsx';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
@@ -14,6 +14,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
   const [page, setPage] = useState<ProjectMethodPage | null>(null), [catalog, setCatalog] = useState<MethodPage | null>(null), [source, setSource] = useState<MethodVersion | null>(null);
   const [error, setError] = useState<ApiError | null>(null), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   const [afterId, setAfterId] = useState<string | null>(null), [catalogCursor, setCatalogCursor] = useState<string | null>(null);
+  const [nodeId, setNodeId] = useState('');
   function failed(cause: unknown) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if ([401, 403, 404].includes(failure.status)) { setSource(null); setPage(null); setCatalog(null); if (failure.status === 401) onAuthenticationLost(); } }
   useEffect(() => {
     let current = true; setLoading(true); setError(null);
@@ -21,6 +22,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     return () => { current = false; };
   }, [client, projectId, revision, afterId, catalogCursor]);
   const gateway: MethodGateway = { prepare: request => prepareProjectMethod(client, projectId, session, request), write: request => writeProjectMethod(client, request, session.csrfToken), read: (ref, name, purpose) => readProjectMethod(client, projectId, ref, name, purpose) };
+  const headVersion = source && 'headVersion' in source ? Number(source.headVersion) : null;
   async function select(load: () => Promise<MethodVersion>) { if (loading) return; setLoading(true); setError(null); setSource(null); try { setSource(await load()); } catch (cause) { failed(cause); } finally { setLoading(false); } }
   return <>
     <section aria-label="프로젝트 전용 방법론 조회"><h2>프로젝트 전용 방법론</h2>
@@ -32,7 +34,9 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
       <button disabled={loading || !catalog?.hasMore} onClick={() => { if (catalog?.nextCursor) setCatalogCursor(catalog.nextCursor); }}>복사 원본 다음 목록</button>
       {loading ? <p role="status">방법론 원본 조회 중</p> : null}{error ? <p role="alert">{error.message} 이전 목록은 현재 자료로 간주하지 않습니다.</p> : null}
     </section>
-    {source ? <section aria-label="선택한 전용 원본" className="status-card"><h3>{source.name} · 버전 {source.ref.version}</h3><p>{source.purpose}</p><p className="meta">{source.scope === 'PROJECT' ? '프로젝트 전용' : source.scope === 'SYSTEM' ? '시스템 원본' : '내 공통 원본'} · {source.ref.contentHash}</p><MethodGraphCanvas graph={source.graph} selectedId={source.graph.entryNodeId} onSelect={() => {}} label="프로젝트 방법론 원본 흐름" />
+    {source ? <section aria-label="선택한 전용 원본" className="status-card"><h3>{source.name} · 버전 {source.ref.version}</h3><p>{source.purpose}</p><p className="meta">{source.scope === 'PROJECT' ? '프로젝트 전용' : source.scope === 'SYSTEM' ? '시스템 원본' : '내 공통 원본'} · {source.ref.contentHash}</p>
+      {source.scope === 'PROJECT' ? <div><button disabled={loading || source.ref.version <= 1} onClick={() => { void select(() => readProjectMethodAtVersion(client, projectId, source.ref.id, source.ref.version - 1)); }}>이전 방법론 버전</button><button disabled={loading || !headVersion || source.ref.version >= headVersion} onClick={() => { void select(() => readProjectMethodAtVersion(client, projectId, source.ref.id, source.ref.version + 1)); }}>다음 방법론 버전</button><p className="meta">현재 조회 {source.ref.version} / 최신 {headVersion} · 과거 원문과 확정 이력 보존</p></div> : null}
+      <MethodGraphCanvas graph={source.graph} selectedId={source.graph.nodes.some(node => node.nodeId === nodeId) ? nodeId : source.graph.entryNodeId} onSelect={setNodeId} label="프로젝트 방법론 원본 흐름" />
       <details><summary>절차 원문과 구조 검사</summary>{source.graph.nodes.map(node => <div key={node.nodeId}><h4>{node.name}</h4><p>{node.purpose}</p><ul>{node.completionCriteria.map((value, index) => <li key={index}>{value}</li>)}</ul></div>)}<ul>{source.validation.issues.map((issue, index) => <li key={index}>{issue.location}: {issue.message}</li>)}</ul></details>
       <p>{source.confirmation ? '이 버전의 확정 이력 있음 · 적용 여부와 별도' : '이 버전의 별도 확정 이력 없음'}</p></section> : null}
     <CommonMethodEditor client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => { setAfterId(null); setRevision(value => value + 1); }} />

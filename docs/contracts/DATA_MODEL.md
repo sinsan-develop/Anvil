@@ -146,6 +146,8 @@ EXISTING 소스 root 등록/관측 테이블의 호스트/실경로·권한/정�
 
 ### 6.3 FN02 — 공통 원본과 프로젝트 적용본
 
+2026-10-17 승인 후속 실제39: `methodology_reviews.project_id`(nullable/FK projects)를 추가해 프로젝트 확정 사건을 공통본과 분리한다. PROJECT 개정은 기존 methodology_definitions/versions에 새 불변 버전으로만 저장하고 정확 command receipt에 이름/목적/graph/출처/이유 snapshot을 결박한다. 읽기에서 graph hash·snapshot/receipt를 대조하며 v1 최초 생성은 기존 고정 적용 snapshot을 대조한다. PROJECT METHODOLOGY 사람 내용 검토는 기존 content_reviews에 METHOD5/정확 ref·판정/이유를 append-only로 저장하며 확정 직전 현재 head·최신 ACCEPTED 검토·준비된 양식 버전을 다시 확인한다. 초기 생성/USER_COMMON guard는 유지한다. `project_methodologies` 적용 INSERT guard/이력은 변경하지 않았으며 신규 적용 전환은 실행 상태/영향 근거가 없어 아직 열지 않는다.
+
 | 테이블 / migration 소유 | 열·키·인덱스와 무결성 |
 |---|---|
 | `methodology_definitions` / 0002·FN02 | `id PK, scope SYSTEM/USER_COMMON/PROJECT, owner_user_id?,project_id?,system_code?,name,purpose,head_version,created_at`. scope에 맞는 소유자 조합 CHECK, SYSTEM은 SYS-M01~03 출처 식별·사용자 직접 쓰기 금지. 접근 가능한 소유 scope 내 목록 인덱스 |

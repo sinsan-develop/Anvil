@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN02/UI03 19ce2bb7858807e3993cb0b8b02c0c0cbd96b04d local/private·WSL exact/clean actual2 PASS/1485ms(방법론1142·최초 생성1130ms)/skip0. 같은 Web prepare/write/read를 실제 API·PG에 연결해 직접 전용본 작성→저장 후 합성 receipt 단절→원 명령/같은 ref 재확인→내용 검토→별도 확정·원문 변조503/복원200을 확인했다. 최초 생성의 전용 snapshot 조회도 유지했다. 독립 DB39종 각0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations39, SQL39 재실행0·실제 사용자/Agent·서비스/Secret 변경0. 적용 전환은 FN08/FN09 실행 상태 근거와 FN04 영향 연결 부재로 미구현/fail-closed, 전체 FN02/Stage B/44업무 완료 아님이다.
+- UI03 과거 버전 열기 부재 RED1→GREEN1/3.0초: 새 v2 개정이 v1 확정 사건을 승계하지 않고 이전/다음 조회로 원문/확정 이력을 다시 연다. Web91/597.37kB/gzip155.27·type/build0, 기존 경고 유지. 추가 실제 같은 Web의 과거 버전 조회는 다음 exact 게시본 검증 예정이다. 기존 조건/합격 기준·확정본/적용본을 바꾸지 않는다.
+
 - FN02 서버635e3ad16073eb9a9878dba1e26ca720ee38da02 exact private/WSL clean에서 승인 forward39 `0002_project_methodology_revisions` checksumf816147a1454b428af090b0feb93e496b60cb4eaba7f5979fccdf919fc353e68 적용·이전38 불변·fixtures7·실제 사용자 생성0. 실제 FN02/FN11 2 PASS/1547ms(방법론1131·정책771ms)/skip0: 별도 정책/현재 기기·다른 사용자·동일 명령 동시2/버전1·copy/개정·METHOD5·최신 REWORK/확정·옛 사건 보존·공통본 불변·자동 적용0·옛 제어409/직접변조42501. 독립 DB39종 각0·시험root[]·지속root 보호/empty·migrations39다. 최초 private push의 remote commit_refs 오류1은 read-only로 원격c43b68d9/main불변 확인 뒤 동일 non-force push1회로 해소했고 우회/다른 대상 변경0이다.
 - UI03 후속: React 명시 event mutation/functional 상태 갱신 스킬로 기존 공통 편집·검토를 보존하며 전용 gateway와 프로젝트별 root 버퍼를 연결했다. 명령 검사 RED1→GREEN1/158ms, 화면 부재 browser RED1→copy/내용검토/확정·응답 단절/화면 이동/뒤403의 원 명령 보존 focused1 PASS/2.8초. 직접 영향 공통 UI03은10 PASS(전용 fixture의 오류 code 대신 기존 한국어 오류를 기대해야 하는 실패1은 소비 계약대로 정정, 제품/기준 변경0). unit140 PASS/1872ms·type/build0(Web91/596.51kB/gzip155.08·기존 bundle/색상 경고 보존). 새 API same-client 실제 저장·검토·확정/오염503 및 기존 최초 생성 회귀는 다음 exact 게시본에 추가했으나 아직 실행 전이며 사용자용 backend/relay/Secret·실제 사용자 UI DB 인수는 미변경/미검증이다.
 
