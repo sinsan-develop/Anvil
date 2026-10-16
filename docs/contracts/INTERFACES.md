@@ -2,6 +2,10 @@
 
 ## 2026-10-16 현재 구현된 FN11/FN03·UI06 연결
 
+후속 PROJECT `confirmDocument`를 §9.4 그대로 `versionRef,formRef,reviewRefs`로 연결했다. 현재 OWNER/client/제어·명시 정책 뒤 현재 head/hash·원문/첨부 무결성·고정 양식 준비·실제 필수 내용/반복 필드·같은 exact 문서 최신 ACCEPTED를 검사한다. 응답은 기존 APPLIED receipt의 `data:{ref,status:'CONFIRMED',confirmationId}`이며 명령 replay는 새 확정 row를 만들지 않는다. GET version/statusHistory는 별도 CONFIRMED를 반환하고 후속 초안은 기존 확정 버전/원문을 보존한다. UI는 명시 checkbox/확정 요청을 분리하고 결과를 추측하거나 자동 Agent/작업을 실행하지 않는다.
+
+저장 충돌 비교는 기존 list/current project control/getDocumentVersion/file GET만 사용한다. 확실한 saveDocumentDraft VERSION_CONFLICT409·같은 사용자/이전 명령에서만 최대4×50건 최신 목록을 읽고 정확 원문/hash와 대조한다. 양식/첨부/원문 형식·연결 자료가 같을 때만 사용자 선택으로 내 입력의 새 기준 초안을 준비한다. 새 save는 별도 사용자 동작이고 서버가 최신 expectedVersion을 다시 검사한다. 응답 미확인·제어 세대 충돌을 새 명령으로 우회하지 않으며, 복합 변경 수동 합치기·검토/확정 요청 자체의 대상 갱신은 미연결이다. 같은 UI 클라이언트 actual FN03/FN11 2 PASS와 화면 fixture14는 구분한다. 아래 confirmDocument 미연결 문구는 이전 관측이며 실제 browser↔DB·가져오기/제안/추적은 여전히 미완료다.
+
 UI06 내용검토 작성 후속: 고정 문서/version/hash·양식 criteria1의 항목별 outcome/evidenceRefs[]/reason와 종합 outcome/reason을 기존 recordContentReview에 전달한다. 서버 exact 응답의 command/project/target/version/reviewRef/판단을 대조하며 검토는 confirmed/실행 상태를 바꾸지 않는다. 미저장/미확인 상태는 탭 상위로 보존하고 다른 로그인 사용자에게 숨긴다. 단절/409는 동일 명령만 명시 확인하며 자동 재요청/새 명령·정책 설정0이다. 검토 작성기를 닫기 전 신규/개정 편집 진입도 분리한다. 같은 클라이언트 actual WSL1·unit48·UI06 fixture10 증거는 구분하며 아래의 검토 작성 미연결 문구는 이전 관측이다. 현재 confirmDocument·충돌 비교/조정·추적 및 실제 browser↔DB는 미완료다.
 
 UI06 작성/개정 후속: 현재 form 목록/고정 버전과 project detail의 current control을 조회한 뒤 명시 uploadArtifact→saveDocumentDraft를 호출한다. 신규는 targetId=null/expected0·선택 양식 ref, 개정은 기존 exact 문서/버전·양식·첨부/목차를 보존한다. 본문은 UTF-8≤2MiB이며 기존 일반 텍스트/Markdown 형식을 유지하고 새 작성 기본은 Markdown이다. 업로드와 저장의 commandId/receipt·project/target/version/hash를 각각 대조, 요청은 same-origin/no-store/redirect error/CSRF다. 중단·인증 만료·충돌의 입력과 미확인 명령은 보존하며 자동 새 명령/후속 저장/정책 설정·Agent 시작은 없다. 새 기준 비교/충돌 조정·검토 작성/confirmDocument·추적과 실제 browser↔DB는 아직 미완료다.

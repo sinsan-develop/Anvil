@@ -3,11 +3,11 @@
 ## 1. 현재 상태와 기록 기준
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
-- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규 작성/기존 문서 편집·새 불변 버전 저장/조회·고정 버전 내용검토 작성/저장·실패 입력 보존을 연결했다. 화면 fixture와 같은 클라이언트의 실제 WSL API/DB 증거는 구분한다. 전체 실제 UI DB 여정·별도 확정·충돌 조정·기존 소스·실제 Agent는 미완료다.
+- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규/개정 저장·고정 버전 내용검토·별도 문서 확정과 명확한 저장 VERSION_CONFLICT의 비교/명시 선택을 연결했다. 화면 fixture와 같은 클라이언트의 실제 WSL API/DB 증거는 구분한다. 전체 실제 UI DB 여정·상세 가져오기/제안·복합 충돌/추적·기존 소스·실제 Agent는 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `6ca25abf30f4595d37aebd9fc8d2c62fac14c387`/clean의 FN03 actual1 PASS/860ms/skip0. 동일 저장·검토 클라이언트→현재 정책/제어→신규v1·개정v3와 내용검토/replay/실제 기록1/재조회·confirmed=false·outbox0을 확인했다. 독립 합성 사용자/프로젝트/문서/검토/원본/정책·시험 root0, migration16 불변. Windows unit48·UI06 fixture10/8.6초·Web53/타입 PASS는 별도이며 실제 browser↔DB/제품 인수는 미검증이다.
+- 최근 실제 확인: WSL exact `3f4601b8a39839240aa94884d898ead1ef8d0168`/clean의 FN03/FN11 actual2 PASS/1714ms/skip0. 동일 저장/검토/확정/충돌 비교 클라이언트→실제 정책/제어·최신 검토→별도 확정/replay·새 초안/충돌 조정 뒤 구버전·구확정 보존·outbox0. 독립 합성 사용자/프로젝트/문서/확정/검토/원본/정책·시험 root0, migration17(기존16 불변). Windows unit56·UI06 fixture14/10.8초·최종 build/타입/Web56 PASS는 별도이며 실제 browser↔DB/제품 인수는 미검증이다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: UI06 별도 확정(실제 필수 본문/반복 필드 검사·정확 최신 검토·고정 양식의 준비/권한·원문 재검증)과 버전 충돌 비교/새 기준 조정, 기존 소스 선언/기준선·FN04/FN05다. 자료 정책은 명시 현재 HUMAN/프로젝트만 구현했고 일회 승인 소비·Agent 허가·정책 편집 화면은 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: FN03 텍스트/Markdown 가져오기 후보·제안/비교, UI06 양식/첨부 동시 변경 수동 조정·검토/확정 대상 교체, 기존 소스 선언/기준선·FN04/FN05다. 최신 사용자용 실행환경과 만료 초기 등록/relay 경계는 별도이며 실제 화면 DB 통합을 성공으로 세지 않는다. 자료 정책의 일회 승인 소비·Agent 허가·정책 편집 화면도 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -55,7 +55,7 @@
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
-| UI06 문서·설계·계획 추적 | [2] | Main 어울. 양식 선택/신규·개정 저장·내용검토 작성/저장·실패 입력/주체 분리 fixture10 PASS. 동일 클라이언트 actual API/DB1 PASS는 별도 | 별도 확정·충돌 비교/조정·추적/변경·실제 화면 DB 여정 |
+| UI06 문서·설계·계획 추적 | [2] | Main 어울. 신규/개정·검토·별도 확정·저장 충돌 비교/명시 선택 fixture14 PASS. 동일 클라이언트 actual API/DB·FN11 2 PASS는 별도 | 가져오기/제안·복합 충돌/대상 교체·추적/변경·실제 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
@@ -73,7 +73,7 @@
 |---|---|---|---|
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 인증 기반과 빈 초안→원자 생성/owner·client 제어1/receipt·감사·snapshot·재조회/중복/격리/DB 실패 rollback 확인. 실제 사용자/지속 QA 프로젝트0 | 기존 소스/기준선·복구/초대·실제 UI DB 여정 |
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
-| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·양식별 사람 검토와 UI06 신규/개정·검토 클라이언트 actual 확인. UI06 fixture10 PASS는 별도 | 별도 확정·충돌 조정·상세 파서/제안·소스 연계 |
+| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·필수 본문/반복 필드·사람 검토/별도 확정·저장 충돌 비교·현재 제어/명시 권한 actual 확인. UI06 fixture14는 별도 | 상세 가져오기/제안·복합 충돌/대상 교체·소스 연계 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [] | 핵심 보관/전달 계약만 있음 | 원문/이유·검색·선별/이해대조·기준 재사용 |
 | FN06 첫 코딩 Agent·환경 | [] | 실제 제품/버전별 연동 미확인 | 공식 지원과 실제 세션/지시/결과·권한 확인 |
@@ -120,6 +120,9 @@
 - `3ea44e32c28f66f6732c5229326cd9023136d0cb` local/private/WSL exact clean에서 같은 확정 클라이언트와 인접 FN11 실제2 PASS/1684ms/skip0. 별도 확인 전 요청 거절, 새 UI payload/ref/receipt·latest review·확정/replay·과거 보존을 확인했다. 독립 users/projects/documents/versions/confirmations/reviews/artifacts/policies0, migrations17/동일 checksum, 임시 root[]·지속 root uid1000/0700/link0/empty. 실제 browser↔DB는 별도 미검증이다.
 - 이어서 명확한 save VERSION_CONFLICT409만 최신본과 비교하는 UI06 후속에 착수했다. 입력/이전 명령을 보존한 채 현재 제어·최대4페이지/200건 목록→정확 최신 버전/원문을 읽는다. 양식/첨부/원문 형식·연결 자료가 다르면 채택을 막고, 사용자의 별도 선택 후에만 내 제목/본문/위치로 새 기준 초안을 준비한다. 자동 합치기·저장·미확인 요청 우회0, 기존 실패 upload 원본/서버 구버전 보존. 비교 조정 메타는 탭 버퍼이며 FN04의 영구 추적 기능을 대신하지 않는다.
 - 충돌 비교 버튼 부재 RED1→선택 뒤 별도 저장 GREEN1, unknown/다른 주체/제어 충돌과 유한 조회 단위2 추가. 현재 unit56/타입·Web56(JS392.98kB/gzip109.59)·UI06 fixture14 PASS, 최종 실제 클라이언트의 충돌 조정은 후속 exact 게시본에서 시험한다. 검토/확정 요청 자체의 버전 교체·양식/첨부 동시 변경 수동 합치기는 아직 미구현으로 분리한다.
+- 최종 코드 `3f4601b8a39839240aa94884d898ead1ef8d0168` local/private 동일·WSL exact clean, 동일 클라이언트 FN03와 직접 인접 FN11 actual2 PASS/1714ms/skip0. 실제 stale1 저장409→최신2/양쪽 원문 읽기→명시 선택→새3 저장, 서버2 본문/구확정1 그대로·outbox0을 확인했다. 최종 표시 문구 정리 뒤 build/타입0·Web56(JS393.07kB/gzip109.63)·충돌 fixture1/2.7초 PASS, 앞선 전체 UI06 fixture14/10.8초·unit56과 구별한다.
+- 독립 최종 조회: users/projects/documents/document_versions/document_confirmations/content_reviews/artifacts/permission_policies 각0, migrations17·원문 root uid1000/0700/link0/realpath 일치/empty, 시험 root[]다. Windows Node40744(2026-10-16 05:25:42)·relay26052(2026-10-15 21:28:17) 같은 PID/시작 시각을 읽기 확인, 서비스 교체/재접속·bootstrap/CA 변경0. 이전16 SQL/적용17 checksum 불변, private main f976ed5e 불변·Stage B branch-only·PR/merge0이다.
+- 인계/rollback: 확정 전 검증 코드 ea2041e에서 기능 코드를 되돌릴 수 있지만 이미 적용한 SQL17/원본·확정 이력은 자동 downgrade/삭제하지 않는다. 인수/배포 주장은 없고 전체44 [0]3/[2]9/[]32를 유지한다. 다음은 FN03 가져오기/제안과 FN04/FN05·미연결 UI/실제 여정이며 기존 정상 기능·완료 작업은 반복하지 않는다.
 
 ### 2026-10-16 UI06 고정 버전의 내용 검토 작성·저장 연결 — Main 어울
 

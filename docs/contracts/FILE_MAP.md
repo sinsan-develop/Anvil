@@ -2,6 +2,8 @@
 
 ## 2026-10-16 FN11·FN03/UI06 실제 연결 범위
 
+확정 후속: server `document-validation.ts`(실제 필수 본문/반복 필드 검사)·`project-confirmation.ts`(정확 head/hash/양식 준비/최신 검토·별도 허가)·`project-documents.ts`/projects routes와 forward17 `0003_document_confirmations.sql`/명시 migration runner를 연결한다. Web `confirmation-api.ts`/`DocumentConfirmation.tsx`와 App 상위 요청 버퍼는 사용자 별도 확인·정확 receipt·단절/인증 경계를 담당한다. `conflict-api.ts`/DocumentEditor는 명확한 저장409만 유한 최신본 읽기→비교→별도 선택으로 새 초안을 준비한다. 양식/첨부/형식 변화·미확인 명령을 자동 대체하지 않는다. unit FN03/UI06·UI06 fixture14·동일 클라이언트 actual FN03/FN11 2 PASS가 대응하며 전체 browser↔DB·FN04/FN05는 미검증/미구현이다. 아래 미연결 문구는 이전 checkpoint의 이력이다.
+
 UI06 내용검토 작성 후속: `features/design-trace/DocumentReviewEditor.tsx`/`review-api.ts`와 App 상위 검토 버퍼는 실제 양식별 기준/판단/근거·종합 판단을 exact 문서 version/hash에 결박하고 기존 PROJECT recordContentReview를 소비한다. 다른 사용자 입력 숨김, 단절/409의 동일 명령만 명시 재확인, 중단 화면 요청0, 편집/검토 진입 분리를 구현했다. `tests/unit/UI06/review-api.test.ts`·`tests/browser/UI06/document-review.spec.ts`와 FN03 actual의 동일 클라이언트 검토/replay/기록1·미확정 유지가 대응한다. 새 SQL/서버 연산/실행 권한은 추가하지 않았다. 아래의 이전 검토 작성 미연결 문구는 후속 전 이력이고 현재 별도 confirmDocument·충돌 조정/추적은 여전히 미구현이다.
 
 UI06 후속: `features/design-trace/DocumentEditor.tsx`/`editor-api.ts`는 기존 문서의 제목/본문/목차 위치·이유를 새 불변 초안으로 저장하며 원래 텍스트 형식/첨부·고정 양식 ref를 유지한다. `NewDocumentForm.tsx`는 현재 공식/본인 양식의 exact version을 선택해 빈 새 문서 초안을 연다. App 상위 버퍼가 사용자/프로젝트별 입력과 미확인 upload/save 명령을 탭 안에 보존하고 다른 로그인 사용자에게 숨긴다. 기존 API/DB/SQL16만 소비, 새 server write route/권한 없음. `tests/unit/UI06/editor-api.test.ts`, `tests/browser/UI06/document-edit.spec.ts`, 기존 FN03 actual 시험이 각각 중단/hash/형식·화면/인증 경계·동일 클라이언트 실제 저장을 나눠 검증한다. 충돌 조정·확정/추적은 남아 있다.

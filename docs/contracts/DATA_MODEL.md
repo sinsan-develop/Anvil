@@ -2,6 +2,10 @@
 
 ## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
 
+후속17 `0003_document_confirmations`는 project/document/version/hash의 불변 확정과 formRef/reviewRefs/형식 검사·실제 HUMAN/client/command를 저장한다. 현재 OWNER/제어 세대·정책 head·APPLIED confirmDocument/receipt·최신 ACCEPTED가 있어야 INSERT/pointer UPDATE가 된다. 과거 version/link/draft-event guard는 유지하고 document head는 새 초안 때 confirmed pointer를 보존한다. 과거 SQL16/행을 고치지 않았으며 app의 확정 row UPDATE/DELETE는 금지다. 최신 actual2에서 직접 pointer 쓰기42501·확정/replay1·후속 초안/충돌 조정 뒤 구확정 보존과 독립 합성 잔여0을 확인했다.
+
+본문 확정 검사는 현재 파일의 고정 form과 필수 TEXT/RECORDS 범위를 재검사한다. TEXT 목차/빈값/TODO, 중복 위치, 반복 표 필수 열/행/빈 셀과 코드 속 가짜 표는 확정 불가이며 선택 항목을 필수로 바꾸지 않는다. 반복 자료의 현재 지원 표현은 Markdown 표(고정 필드 ID 또는 명칭)이며 임의 코드/문서 명령을 실행하지 않는다. 이는 사실·독립 검수·사용자 인수/Agent 실행 합격이 아니다. 읽기 응답은 새 검사를 제공하지만 기존 저장 시점 validation snapshot은 불변이다.
+
 UI06 내용검토 작성 연결도 현재16개 schema를 유지한다. 기존 PROJECT/DOCUMENT/HUMAN_REVIEW를 현재 OWNER/client/제어 세대·명시 정책·exact head/hash/기준에 결박하고 같은 command replay는 실제 row1을 반환한다. 이번 actual1에서 새 클라이언트로 검토 저장·재조회/실제 사용자·동일 작성자 여부·confirmed=false·실행 outbox0을 확인했다. 화면 fixture10/단위48은 별도 증거다. 새 confirmed pointer/행위는 아직 연결하지 않았으며 단순 section anchor 존재를 필수 내용/반복 필드 검수 합격으로 승격하지 않는다.
 
 UI06 작성/편집 연결은 새 schema를 만들지 않는다. 현재16개 그대로 기존 PROJECT 명시 uploadArtifact/saveDocumentDraft·원문과 불변 버전/감사를 소비한다. 새 문서는 targetId=null/expectedVersion0, 개정은 정확 documentId/head 기준이며 오래된 입력은409로 보존한다. 응답 단절의 각 upload/save command는 탭 상위 버퍼로 보존하고 확인된 업로드 후 JSON 저장 재확인은 새 파일을 만들지 않는다. 성공은 서버 exact ref/hash·새 버전 재조회로 확인하며 사용자 확정/내용검토·실행 사건으로 변경하지 않는다.
