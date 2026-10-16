@@ -234,6 +234,8 @@ FN05 첫 forward23 후보 `0005_knowledge_drafts`는 knowledge_entries/knowledge
 
 후속 forward24 후보 `0005_conversations`: conversations에 head_sequence/created_by/last_client_id/last_command_id/updated_at을 두고 현재 exact 허가 아래 1씩만 전진한다. conversation_messages는 불변 message_json/content_hash·현재 author/client/receipt·같은 프로젝트 보호 artifact와 같은 대화 reply/정정 복합 FK를 결박한다. app SELECT/INSERT와 guarded head 관련 열 UPDATE만 허용하고 발언 UPDATE/DELETE·Agent 주체 위조는 거절한다. 기존23 SQL/원문을 수정하지 않는다.
 
+정정/제외 forward25 후보 `0005_knowledge_changes`: knowledge_events에 base_ref/change_sources를 추가하고 버전별 EXCLUDED1개만 허용한다. 기존 guard를 forward로 보완해 새 정정 버전/출처/원문·사건과 exact 현재 명령/허가·원 base/hash를 결박하고 guarded head_version 증가만 추가 허용한다. 기존 원문·불변 version/event UPDATE/DELETE와 확정/공유 사건은 계속 차단한다. 적용 SQL23/24 자체를 수정하거나 자동 downgrade하지 않는다.
+
 검색은 원문/지식의 project·접근·사용 제외/대체 상태를 먼저 제한한다. 인덱스/랭킹 구현은 FN05가 자료량에 맞는 PostgreSQL/파일 계약 안에서 선택하며 별도 외부 벡터 서비스·학습 엔진을 자동 추가하지 않는다. 임무 자동 선택에서 제외된 지식도 허가된 과거 조회로는 확인 가능하다. 민감 의심으로 격리된 artifact는 검색 snippet·context 전달에서도 차단한다.
 
 ### 7.4 참조·시험·migration 배정

@@ -133,6 +133,11 @@
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
 
+- 게시할 forward25 `0005_knowledge_changes` SHA256 `03dc6518781e35af3a06c28d7ee18d05936b2ebc9e513cbc0b100495b36c24fe`. 기존24 지문과 current policy/control/원문 보호·고유 시험 자원 조건을 유지한 exact Git QA로 확인한다. 실제 사용자 권한 부여/서비스/Secret·운영 변경0.
+
+- 상태 판정 부재 RED1→PROPOSED/SUPERSEDED/EXCLUDED·잘못된 사건열 거절 GREEN1. 실제 RED `e1d9aaf807901ef1440ebe5f27686bce2a929937` WSL exact/clean1 FAIL/5344ms는 correctKnowledge route enum 부재로 기대403 대신400. 후속은 exact 현재 base·같은 kind·새 불변 버전/정정 이유·출처·앞 버전 보존, exact 제외 사건/기본 검색 제외·명시 제외 필터다.
+- 새 forward25 후보의 현재 권한/receipt guard와 head 증가만 보완하며 적용23/24 불변이다. Windows fresh 단위91 PASS/1628ms·type/diff0, 실제 적용/상태 전환은 아직 미검증이다. SQL CASE 조건은 기존 검증된 괄호 패턴으로 작성하고 apply 전 지문을 재계산한다. sandbox Git read가 작업공간 없음으로 실패한2출력은 기존 sandbox 제한이며 Git 복구/초기화는 하지 않는다.
+
 - 기준fabb5e63 clean/적용24 보존. 직접 승인된 FN05 정정/제외 이력 범위다. 기존 지식/원문을 덮거나 확정·헌법 적용·공유로 승격하지 않고 새 불변 버전/사건을 저장한다. 시험은 기존 고유 qa-document-storage UUID/프로젝트/원문root·별도 합성 정책이며 종료 후 지식 사건/버전·대화를 먼저 정확 정리한다.
 - Ruling: 정정은 현재 exact head/hash·같은 kind를 요구하고 새 버전은 PROPOSED, 앞 버전은 SUPERSEDED로 구별한다. 제외 사건은 삭제가 아니고 기본 검색에서 제외한다. 제외된 head의 정정으로 암묵 복원하지 않는다. 현재 미구현 복원/과거 버전 목록은 별도이며 잘못된 경우 비용은 명시 복원 흐름 추가이고 원문/이력은 보존한다.
 - 새 forward25에서 정정 출처/baseRef와 기존 지식 head/INSERT guard만 보완하고 적용23/24 SQL은 수정하지 않는다. 실제 사용자 권한·Secret/서비스·Agent 전달/공유/학습 변경0. 상태 판정/actual RED를 먼저 확인한다.

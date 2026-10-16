@@ -383,6 +383,8 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 대화 조회 후속: GET conversations?limit/cursor는 `id,headSequence,targetRoleRef,updatedAt,integrity:NOT_RECHECKED`의 유한 목록이다. GET conversations/:id/messages?limit/cursor는 서버 순번 내림차순으로 `sourceRef,serverSequence,authorRef,kind,replyTo,supersedesInstructionRef,recordedAt,deliveryState:STORED`를 반환하고 본문은 별도 명시 GET에서만 연다. 현재 회원 검사가 먼저이며 cursor는 actor/project/종류/대화/limit에 결박한다. 메시지 목록은 읽은 원문의 무결성을 재검사하되 저장/전달/수행을 합치지 않는다. 관측 시점 head를 반환하며 동시 신규 발언을 포함하는 고정 전체 snapshot이라고 주장하지 않는다.
 
+지식 변경 경로: correctKnowledge는 exact baseRef=targetId/expectedVersion·현재 head/hash·같은 kind와 원문/변경 출처를 검사하고 새 PROPOSED 버전/CORRECTED 사건만 만든다. 앞 버전은 SUPERSEDED, 새 버전은 supersedesRef와 headVersion을 반환한다. excludeKnowledge는 exact versionRef=targetId/expectedVersion의 별도 EXCLUDED 사건이며 기본 제목/이유 검색에서 제외한다. `status=EXCLUDED`는 현 head의 제외본을 명시 조회한다. 과거 특정 버전 GET은 보존하되 과거 버전 목록/자동 복원은 아직 미연결이다. 제외된 head를 정정으로 몰래 되살리지 않고412로 거절한다. 확정·헌법 적용·공유/전달을 만들지 않는다.
+
 ### 10.4 맥락 준비·전달·6항목 이해 대조
 
 `ContextItem`은 `itemId,category,required,sourceRef,sourceHash,reason,includedState:INCLUDED/MISSING/REDACTED/EXCLUDED,deliveryParts:배열`이다. `ContextBundle`은 `id,version,assignmentRef,baselineRefs,purposeRef,constitutionRef,latestInstructionRefs,currentPositionRef,items,missingRequired,excluded,deliveryPlan,budgetRef,contentHash`다. 필수 목적/헌법/최신 관련 지시/현재 위치·완료/미완료/원문 이유를 1-hop/예산 때문에 조용히 생략하지 않는다.
