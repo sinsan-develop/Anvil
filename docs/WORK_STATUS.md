@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 최신 FN04 `dc01cae2b8d0f9e93aff279fa7e4f1b4425c1334` local/private·WSL exact/clean actual1 PASS/4228ms/skip0. 같은 Web client의 설계/화면 위치 등록·정확 receipt/재조회 hash·동일 명령 재확인을 실제 WSL DB에서 확인했다. 독립 DB15종 각0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty. SQL20 재적용0. UI06 fixture32/단위72와 실제 browser↔DB·사용자 인수는 별개이며, 다음은 승인된 AF04 작업계획/업무/선행 저장이다. 아래 과거 미완료 서술은 해당 시점 이력이다.
+
 - 현재 후속 코드 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` local/private·WSL exact/clean actual FN03 1 PASS/3017ms/skip0. 보관 자료 재개·복합 충돌 수동 조정·검토/확정 거절 보관/명시 새 대상·새 판단/새 확인·옛 원문/확정 사건 보존까지 확인했다. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/link0/empty. 단위65·UI06 fixture25+추가 음성2·Web62/type/build와 실제 browser↔DB/사용자 인수는 구별한다. 아래 앞선 ‘재개/복합 충돌/대상 교체 미완료’ 문구는 이전 시점 이력이다. 소스/단계 연계·실제 runtime·전체 FN03/Stage B는 여전히 미완료다.
 
 - 최신 후속: `4997e732f6bebfca92812cc6d7a5680dcbb71664` local/private·WSL exact/clean actual FN03 1 PASS/2712ms/skip0. 보관 목록→원문/hash·고정 양식→후보 재생성 없이 새 초안, 저장 제안→과거 명령 합성 없이 별도 반영/replay·구버전 보존 확인. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser↔DB/사용자 인수와 구별한다. 아래 이전 후보/제안 재개 미완료 문구는 이 후속 전 이력이며, 다음은 복합 충돌/대상 교체·소스/추적이다. 전체44업무 상태 합계는 유지한다.
@@ -78,7 +80,7 @@
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 인증 기반과 빈 초안→원자 생성/owner·client 제어1/receipt·감사·snapshot·재조회/중복/격리/DB 실패 rollback 확인. 실제 사용자/지속 QA 프로젝트0 | 기존 소스/기준선·복구/초대·실제 UI DB 여정 |
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
 | FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·검토/확정/충돌 조정·가져오기 후보/명시 선택 actual 확인, 새 forward18/합성 잔여0. UI06 fixture15는 별도 | 제안/서버 diff·후보 목록 재개·복합 충돌/대상 교체·소스 연계 |
-| FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
+| FN04 설계 추적·계획·변경 영향 | [2] | Main 어울. 정확 AF02/AF03 원문 위치 등록·조회 actual 확인, 선행 분석 일부 구현 | AF04 작업계획/업무/선행·trace edge·3상태축·영향/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [] | 핵심 보관/전달 계약만 있음 | 원문/이유·검색·선별/이해대조·기준 재사용 |
 | FN06 첫 코딩 Agent·환경 | [] | 실제 제품/버전별 연동 미확인 | 공식 지원과 실제 세션/지시/결과·권한 확인 |
 | FN07 두 번째 Agent·계정 교체 | [] | 실제 두 번째 연결 미확인 | 공통계약으로 타도구·계정교체·원본유지 |
@@ -112,6 +114,9 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
+
+- `dc01cae2` 게시 exact SHA actual1 PASS/4228ms/skip0. 같은 prepare/sendDesignIndex의 화면 중단 요청0→등록/receipt·GET hash 확인과 replay/권한·원문 보존을 실제 DB에서 확인했다. 이후 독립 read-only로 DB15종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty 확인. default sandbox의 git status는 ‘this operation must be run in a work tree’1, 프로세스 조회는 무출력이라 성공/종료로 판단하지 않고 elevated 읽기에서 clean·Node40744/relay26052의 기존 시작 시각을 재확인했다. relay 재시도/서비스 변경0.
+- 다음 승인된 작업: AF04 원문과 정확 AF02/AF03 추적 ID를 업무 카드에 결박한 초안 저장/불변 버전/착수·검수 선행 별도 보존. 원문/기존 SQL은 보존하고, 불충분한 설계 확정/화면 검토/참조는 issues로 남기며 계획 작성이 실행/완료/기준 활성화가 되지 않도록 한다. 실제 Agent/사용자 권한/Secret/서비스 변경은 없다.
 
 - 등록 UI 후속: 진입점 부재 RED1→DesignIndexEditor·상위 DocumentBuffer의 designIndexState·new/prepare/sendDesignIndex를 연결했다. AF02 exact 원문에서 D코드/제목/줄, 실제 재조회한 AF03 버전의 S코드/줄을 선택하고 별도 index 명령만 보낸다. 기존 편집/import/proposal/review/confirm과 writer를 겹치지 않으며 미확인 입력/명령은 화면 이동 후 같은 App 버퍼로 유지한다. 입력/등록 metadata를 원문 변경/확정/업무 완료로 표시하지 않는다.
 - 오류: actual 시험의 UUID template 추론/일반 문자열 대입 타입1은 생성 UUID의 문자열 타입만 명시해 보정했고 검증 기준은 유지했다. 새 select의 중첩 label이 options 텍스트까지 label 탐색에 포함되는 UI 오류1(동일2case)은 실제 error-context/접근성 tree 대조 후 htmlFor/id로 명시 연결, 같은 시험/15초 한도 그대로 GREEN2/2.8초. 단절 뒤403은 uncertain을 지우지 않는 추가1도 통과했다. fresh 단위72 PASS/1246ms·타입/build(Web65/JS454.69kB/gzip123.35)·UI06 fixture32 PASS/24.5초·diff0. NO_COLOR 경고1 보존, SQL20 checksum 불변이다.

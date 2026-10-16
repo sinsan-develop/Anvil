@@ -391,12 +391,26 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const clientIndexRead=await readDesignIndex(client,project,designRef);assert.deepEqual(clientIndexRead.items,indexed.json().data.designItems);assert.deepEqual(clientIndexRead.screenRegions,indexed.json().data.screenRegions);
     assert.equal((await app.inject({method:'GET',url:indexPath,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     await assert.rejects(pool.query("UPDATE anvil.design_items SET title='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as {code:string}).code==='42501');
+    const planForm=(await app.inject({method:'GET',url:'/api/v1/forms/a6f30000-0000-4000-8000-000000000004/versions/1',headers})).json();
+    const planWork=newDocument(project,planForm,user,1);planWork.title='실제 추적 작업계획';planWork.body='# UI01 문서 조회\n# FN01 원문 저장\n착수 선행과 연결 검수 선행은 별도이며 기존 원문을 보존한다.';planWork.reason='합성 작업계획 초안';planWork.dirty=true;
+    const planDocumentRef=await continueDocumentSave(client,await prepareDocumentSave(planWork,session),session,()=>{},()=>true);
+    const designItem=clientIndexRead.items[0]!,screenRegion=clientIndexRead.screenRegions[0]!;
+    const task={taskCode:'UI01',type:'SCREEN',title:'문서 조회',purpose:'원문과 현재 위치 확인',designRefs:[{kind:'DESIGN_ITEM',id:designItem.id,versionRef:designRef,localCode:designItem.localCode,anchor:designItem.anchor}],screenRefs:[{kind:'SCREEN_REGION',id:screenRegion.id,versionRef:screenRef,localCode:screenRegion.screenCode,anchor:screenRegion.anchor}],ownerRole:'단계 책임자',inputs:['설계·화면 원문'],outputs:['실제 조회 화면'],included:['문서 조회'],excluded:['Agent 실행'],allowedFileRefs:['apps/web/src/documents.tsx'],startPrerequisites:[],acceptancePrerequisites:['FN01'],steps:['실제 원문과 화면을 연결'],testCases:[{id:'TC01',kind:'NORMAL',steps:['문서 열기'],expected:'원문 일치',environment:'WSL 개발'},{id:'TC02',kind:'IMPORTANT_FAILURE',steps:['권한 없는 문서 열기'],expected:'본문 노출 없음',environment:'WSL 개발'},{id:'TC03',kind:'DIRECT_IMPACT',steps:['기존 목록 열기'],expected:'기존 목록 유지',environment:'WSL 개발'}],acceptanceCriteria:['실제 처리·조회 일치'],evidenceRequirements:['정확 버전·실제 시험 결과'],rollback:'이전 검증 commit 복구',recoveryNotes:'미완료 지점 보존'};
+    const planPayload={documentRef:planDocumentRef,designRef,screenReviewRefs:[],tasks:[task,{...structuredClone(task),taskCode:'FN01',type:'FUNCTION',title:'원문 저장',screenRefs:[],startPrerequisites:['UI01'],acceptancePrerequisites:[]}],reason:'정확 문서/설계 위치와 착수·검수 선행을 분리 저장'};
+    const planCommand={...context,commandId:randomUUID(),operation:'saveWorkPlanDraft',payload:planPayload};
+    assert.equal((await docSend(planCommand)).statusCode,403,'설계 인덱스 허가가 작업계획 작성 허가는 아니다');
     assert.equal((await readDocument(client,project,designRef.id,1)).body,designWork.body); assert.equal((await readDocument(client,project,screenRef.id,1)).body,screenWork.body);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if((await db.query("SELECT to_regclass('anvil.work_plans') present")).rows[0].present) {
+        await db.query('DELETE FROM anvil.plan_dependencies WHERE project_id=$1',[project]);
+        await db.query('DELETE FROM anvil.plan_tasks WHERE project_id=$1',[project]);
+        await db.query('DELETE FROM anvil.work_plan_versions WHERE project_id=$1',[project]);
+        await db.query('DELETE FROM anvil.work_plans WHERE project_id=$1',[project]);
+      }
       if((await db.query("SELECT to_regclass('anvil.screen_regions') present")).rows[0].present) await db.query('DELETE FROM anvil.screen_regions WHERE project_id=$1',[project]);
       if((await db.query("SELECT to_regclass('anvil.design_items') present")).rows[0].present) await db.query('DELETE FROM anvil.design_items WHERE project_id=$1',[project]);
       if ((await db.query("SELECT to_regclass('anvil.document_proposals') present")).rows[0].present) {
