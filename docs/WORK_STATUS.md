@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI10 원문 재개/선택 후속 후보: 정확 supersedesRef를 따라 앞 버전 원문을 열고 현재 head와 과거/제외/확정을 구분한다. 새 API/DB0·자동 복원0. 보관 대화의 명시 선택은 원문/hash를 다시 읽고 실제 발언/지시 종류·SourceRef를 작성 버퍼에 고정한다. 사용자 판단 이유는 빈 채로 두며 명시 저장 전 쓰기0, sourceRefs 변경 뒤 재전송 거절. 신규 browser RED(버전 표시1/원문 선택1)→UI10 fixture10 PASS/9.2초, 출처 누락/factory 부재 unit RED2→전체107 PASS/1392ms, type/build0(Web82). 첫 출처 RED의 transport 내부 assert는 직접 생성 명령 비교로 보정해 실제 누락을 확인했다. 버튼 patch의 넓은 검색 조건 불일치1은 변경0 후 정확 tail로 보정했다. 기존 경고/인수 미검증 유지, 다음 exact SHA 실제 같은 client의 원문 선택→지식 저장을 확인한다.
+
 - UI10 검토·확정 `6e9da43c320737479516f142d6d268b1b724db87` local/private·WSL exact/clean actual1 PASS/6638ms/skip0: 같은 Web에서 항목별 검토/멱등→명시 확인/별도 확정/멱등→확정 상태 검색·본문/현재 유효성→새 정정 버전과 옛 확정 보존·명시 제외까지 실제 DB/원문으로 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL26 재적용0. 단위105/UI10 fixture9와 실제 사용자 browser↔DB는 구분한다. 전체 FN05/Stage B·헌법 적용·보호 원문 격리·실제 Agent는 미완료다. 다음은 보존된 지식 버전의 목록/원문 재개와 출처 선택을 연결한다.
 
 - FN05 검토·확정 서버 `498d1a6fa4442a5843307108aea8de4ef2c1e513` local/private·WSL exact/clean에서 새 forward26만 적용·기존25 지문 불변, actual FN03확장+FN11 2 PASS/6283ms/skip0. 최신 보완 검토 뒤 옛 합격 선택422·별도 확정/동일 명령·뒤 재검토의 현재 유효성 false·상태 검색/cursor를 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자·서비스/Secret 변경0.

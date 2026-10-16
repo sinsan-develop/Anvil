@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI10 원문 재개/선택: KnowledgePage는 기존 readKnowledge의 정확 supersedesRef를 명시로만 열고 과거 버전 쓰기를 비활성화한다. ConversationPanel의 명시 선택→`newKnowledgeFromConversation`은 기존 readConversationMessage로 물리 원문/hash를 다시 확인해 사용자 발언/지시 SourceRef를 작성 초안에 보존한다. KnowledgePending은 sourceRefs까지 고정해 단절 뒤 변경/누락 전송을 거절한다. 새 API/schema·자동 판단/저장/전달0. 단위107·UI10 fixture10과 실제 같은 client 검증은 WORK_STATUS를 따른다.
+
 UI10 검토·확정: `features/knowledge/review-view.ts`가 사건/최신 검토·현재 유효성 응답을 검증하고 `decision-api.ts`/`KnowledgeDecisionForm.tsx`가 원문/항목별 근거·별도 확인/정확 명령을 유지한다. App의 프로젝트/현재 주체별 판단 버퍼는 이동/단절/뒤403에서 명령을 버리지 않는다. 확정 후 correction/exclusion은 기존 버퍼를 쓰며 새 버전·별도 사건만 요청한다. 단위105·UI10 fixture9와 실제 같은 Web 검증은 WORK_STATUS를 대조한다.
 
 FN05 검토·확정 후속: 기존 `knowledge/knowledge-reviews.ts`가 KNOWLEDGE의 고정5항목 검토 입력/실제 HUMAN 기록·receipt 대조를, `knowledge.ts`/`knowledge-state.ts`가 최신 검토·별도 확정·과거 사건/현재 유효성·상태 검색을 소유한다. 기존 프로젝트 recordContentReview와 예약된 confirmKnowledge에만 연결하며 새 forward26 `0005_knowledge_confirmation.sql`은 기존 다른 대상 guard를 보존한다. 사용자 UI10 검토/확정 연결은 아직 후속이며 실제 적용/시험은 WORK_STATUS를 따른다.
