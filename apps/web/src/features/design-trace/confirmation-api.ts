@@ -1,6 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DocumentVersion } from './api.ts';
 import type { DocumentSession } from './editor-api.ts';
+import { isKnownDocumentRejection } from './mutation-result.ts';
 type VersionRef = { id: string; version: number; contentHash: string };
 type ReviewRef = { id: string; criteriaVersion: number; targetRef: VersionRef; outcome: string };
 export interface DocumentConfirmationCommand {
@@ -11,6 +12,7 @@ export interface DocumentConfirmationCommand {
 export interface DocumentConfirmationBuffer {
   ownerUserId: string; projectId: string; title: string; ref: VersionRef; formRef: VersionRef; reviewRefs: ReviewRef[];
   controlGeneration: number; acknowledged: boolean; pending: DocumentConfirmationCommand | null; saved: boolean; failure: { code: string; status: number } | null;
+  uncertain?: boolean; rejectedAttempts?: { title: string; command: DocumentConfirmationCommand; failure: { code: string; status: number } }[];
 }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const exact = (value: unknown, keys: string[]): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
@@ -34,6 +36,11 @@ function validate(b: DocumentConfirmationBuffer, session: DocumentSession) {
 export function prepareDocumentConfirmation(b: DocumentConfirmationBuffer, session: DocumentSession): DocumentConfirmationCommand {
   validate(b, session);
   return { schemaVersion: 1, projectId: b.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: b.controlGeneration, operation: 'confirmDocument', targetId: b.ref.id, expectedVersion: b.ref.version, baselineRefs: [], approvalRef: null, payload: { versionRef: { ...b.ref }, formRef: { ...b.formRef }, reviewRefs: structuredClone(b.reviewRefs) } };
+}
+export function retireRejectedDocumentConfirmation(b: DocumentConfirmationBuffer, session: DocumentSession): DocumentConfirmationBuffer {
+  validate(b,session); const c=b.pending;
+  if (b.uncertain || b.saved || !c || !isKnownDocumentRejection(b.failure) || c.projectId !== b.projectId || c.clientId !== session.clientId || c.operation !== 'confirmDocument' || c.targetId !== b.ref.id || !sameRef(c.payload.versionRef,b.ref) || c.expectedVersion !== b.ref.version) throw new ApiError('CONFIRMATION_REJECTION_NOT_CONFIRMED');
+  return { ...b, pending:null, acknowledged:false, saved:false, failure:null, uncertain:false, rejectedAttempts:[...(b.rejectedAttempts ?? []),{title:b.title,command:structuredClone(c),failure:{...b.failure!}}] };
 }
 export async function sendDocumentConfirmation(client: ApiClient, b: DocumentConfirmationBuffer, session: DocumentSession, active: () => boolean) {
   validate(b, session); const c = b.pending;

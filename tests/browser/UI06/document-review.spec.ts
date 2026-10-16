@@ -13,9 +13,9 @@ test.beforeEach(async ({ page }) => {
   await page.route(`**/api/v1/projects/${project}/files/${file}`, route => route.fulfill({ contentType: 'application/octet-stream', body }));
 });
 test.afterEach(async ({ page }) => { expect(unknown.get(page)).toEqual([]); });
-async function document(page: Page, reviews: any[] = [], state = { validForConfirmation: false, confirmed: false }) {
-  await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/2`, route => route.fulfill({ json: {
-    ...ref, title: '검토 대상', confirmed: state.confirmed, formRef, stageNodeRef: null,
+async function document(page: Page, reviews: any[] = [], state = { validForConfirmation: false, confirmed: false }, version = 2) {
+  await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/${version}`, route => route.fulfill({ json: {
+    ...ref, version, title: '검토 대상', confirmed: state.confirmed, formRef, stageNodeRef: null,
     content: { body: { artifactId: file, bytes: Buffer.byteLength(body), contentHash: createHash('sha256').update(body).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, attachments: [], sections: [], sourceRefs: [] },
     validation: { validForConfirmation: state.validForConfirmation, issues: [] }, statusHistory: [],
     contentReviewCriteria: { criteriaVersion: 1, formRef, items: [{ criterionId: 'REQ', title: '요구 내용', reviewCriteria: ['실제 원문과 대조'] }, { criterionId: 'SCOPE', title: '범위', reviewCriteria: ['누락 구분'] }] }, contentReviews: reviews,
@@ -78,6 +78,19 @@ test('일부 항목 재작업을 종합 합격으로 제출하지 않고 충돌 
   await page.getByRole('button', { name: '같은 검토 명령 결과 확인', exact: true }).click();
   expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]);
 });
+
+test('명확히 거절된 검토는 원래 명령을 보관한 뒤에만 새 대상의 판단을 다시 작성한다', async ({ page }) => {
+  await document(page); await document(page,[],{ validForConfirmation:false,confirmed:false },3); const writes: any[] = [];
+  await page.route(`**/api/v1/projects/${project}/documents?*`, r => r.fulfill({json:{items:[{id,title:'검토 대상',headVersion:writes.length ? 3 : 2,confirmedVersion:null,updatedAt:'2026-10-16T05:00:00Z'}],hasMore:false,nextCursor:null,observedAt:'2026-10-16T05:00:00Z'}}));
+  await page.route(`**/api/v1/projects/${project}/commands`, r => { const c = r.request().postDataJSON(); writes.push(c); return writes.length === 1 ? r.fulfill({status:409,json:{code:'VERSION_CONFLICT'}}) : r.fulfill({json:{operationId:file,commandId:c.commandId,projectId:project,status:'APPLIED',targetId:id,version:3,data:{status:'REVIEW_RECORDED',reviewRef:{id:file,criteriaVersion:1,targetRef:{...ref,version:3},outcome:'REWORK'}},serverReceivedAt:'2026-10-16T05:00:00Z'}}); });
+  await start(page); await fill(page); await page.getByRole('button',{name:'내용 검토 기록 저장',exact:true}).click(); await expect(page.getByRole('alert')).toContainText('VERSION_CONFLICT');
+  await page.getByRole('button',{name:'거절된 검토 명령 보관하고 입력 다시 열기',exact:true}).click();
+  await page.getByRole('button',{name:'문서 목록 새로고침',exact:true}).click(); await page.getByRole('button',{name:'검토 대상 열기',exact:true}).click();
+  page.once('dialog', d => d.accept()); await page.getByRole('button',{name:'이 버전 내용 검토 작성',exact:true}).click();
+  await expect(page.getByLabel('내용 검토 종합 판단',{exact:true})).toHaveValue('NOT_EXECUTED'); await expect(page.getByLabel('내용 검토 종합 이유',{exact:true})).toHaveValue('');
+  await expect(page.getByLabel('거절된 검토 명령 이력',{exact:true})).toContainText(writes[0].commandId); expect(writes).toHaveLength(1);
+  await fill(page); await page.getByRole('button',{name:'내용 검토 기록 저장',exact:true}).click(); await expect(page.getByText('내용 검토 저장 확인 · 문서 확정 아님',{exact:true})).toBeVisible(); expect(writes[1].commandId).not.toBe(writes[0].commandId); expect(writes[1].expectedVersion).toBe(3);
+});
 test('인증 만료 후 다른 사용자는 이전 검토 입력을 볼 수 없고 자동 재전송도 없다', async ({ page }) => {
   await document(page); let writes = 0;
   await page.route('**/api/v1/auth/setup', route => route.fulfill({ json: { setupRequired: false, policyVersion: 1 } }));
@@ -106,6 +119,28 @@ test('내용 검토 작성 중에는 앞서 열었던 초안 편집기로 다른
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue(body);
 });
 function acceptedReview(sequence = 8, outcome = 'ACCEPTED') { return { ref: { id: file, criteriaVersion: 1, targetRef: ref, outcome }, items: ['REQ','SCOPE'].map(criterionId => ({ criterionId, outcome, evidenceRefs: [], reason: '실제 원문 확인' })), reviewer: { kind: 'HUMAN', userId: id, sameAsTargetRecorder: true }, sourceKind: 'HUMAN_REVIEW', reason: '사람의 내용 대조', reviewedAt: '2026-10-16T05:00:00Z', serverSequence: sequence }; }
+
+test('명확히 거절된 확정만 보관 후 새 버전·검토를 선택하고 별도 확인을 다시 받는다', async ({ page }) => {
+  const accepted = acceptedReview(), nextRef = { ...ref, version:3 }, nextReview = { ...accepted,ref:{ ...accepted.ref,targetRef:nextRef } }, writes: any[] = [];
+  await document(page,[accepted],{validForConfirmation:true,confirmed:false}); await document(page,[nextReview],{validForConfirmation:true,confirmed:false},3);
+  await page.route(`**/api/v1/projects/${project}/documents?*`, r => r.fulfill({json:{items:[{id,title:'검토 대상',headVersion:writes.length ? 3 : 2,confirmedVersion:null,updatedAt:'2026-10-16T05:00:00Z'}],hasMore:false,nextCursor:null,observedAt:'2026-10-16T05:00:00Z'}}));
+  await page.route(`**/api/v1/projects/${project}/commands`, r => { const c=r.request().postDataJSON(); writes.push(c); return writes.length===1 ? r.fulfill({status:409,json:{code:'VERSION_CONFLICT'}}) : r.fulfill({json:{operationId:file,commandId:c.commandId,projectId:project,targetId:id,version:3,status:'APPLIED',data:{ref:nextRef,status:'CONFIRMED',confirmationId:file},serverReceivedAt:'2026-10-16T05:00:00Z'}}); });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button',{name:'검토 대상 열기',exact:true}).click(); await page.getByRole('button',{name:'이 버전 확정 준비',exact:true}).click(); await page.getByLabel('이 문서 버전과 검토 결과를 확인했습니다',{exact:true}).check(); await page.getByRole('button',{name:'문서 버전 확정',exact:true}).click();
+  await expect(page.getByRole('alert')).toContainText('VERSION_CONFLICT'); await page.getByRole('button',{name:'거절된 확정 명령 보관하고 대상 다시 선택',exact:true}).click();
+  await page.getByRole('button',{name:'문서 목록 새로고침',exact:true}).click(); await page.getByRole('button',{name:'검토 대상 열기',exact:true}).click(); await page.getByRole('button',{name:'열어 둔 버전으로 확정 대상 변경',exact:true}).click();
+  await expect(page.getByLabel('이 문서 버전과 검토 결과를 확인했습니다',{exact:true})).not.toBeChecked(); await expect(page.getByRole('button',{name:'문서 버전 확정',exact:true})).toBeDisabled(); await expect(page.getByLabel('거절된 확정 명령 이력',{exact:true})).toContainText(writes[0].commandId); expect(writes).toHaveLength(1);
+  await page.getByLabel('이 문서 버전과 검토 결과를 확인했습니다',{exact:true}).check(); await page.getByRole('button',{name:'문서 버전 확정',exact:true}).click(); await expect(page.getByText('문서 확정 저장 확인 · Agent 실행 아님',{exact:true})).toBeVisible(); expect(writes[1].commandId).not.toBe(writes[0].commandId); expect(writes[1].payload.reviewRefs).toEqual([nextReview.ref]);
+});
+
+for (const kind of ['검토','확정'] as const) test(`${kind} 응답 단절 뒤 권한 거절이 와도 이전 결과 미확인을 지우거나 대상 교체를 열지 않는다`, async ({ page }) => {
+  const writes: any[]=[]; await document(page,kind==='확정' ? [acceptedReview()] : [],{validForConfirmation:kind==='확정',confirmed:false});
+  await page.route(`**/api/v1/projects/${project}/commands`,r=>{ writes.push(r.request().postDataJSON()); return writes.length===1 ? r.abort('connectionreset') : r.fulfill({status:403,json:{code:'PERMISSION_DENIED'}}); });
+  if(kind==='검토') { await start(page); await fill(page); await page.getByRole('button',{name:'내용 검토 기록 저장',exact:true}).click(); }
+  else { await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button',{name:'검토 대상 열기',exact:true}).click(); await page.getByRole('button',{name:'이 버전 확정 준비',exact:true}).click(); await page.getByLabel('이 문서 버전과 검토 결과를 확인했습니다',{exact:true}).check(); await page.getByRole('button',{name:'문서 버전 확정',exact:true}).click(); }
+  await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
+  await page.getByRole('button',{name:`같은 ${kind} 명령 결과 확인`,exact:true}).click(); await expect(page.getByRole('alert')).toContainText('PERMISSION_DENIED'); expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]);
+  await expect(page.getByRole('button',{name:kind==='검토' ? '거절된 검토 명령 보관하고 입력 다시 열기' : '거절된 확정 명령 보관하고 대상 다시 선택',exact:true})).toHaveCount(0);
+});
 test('문서 확정은 별도 확인 뒤 명시 요청하고 단절/화면 이동에도 같은 명령으로 결과를 확인한다', async ({ page }) => {
   const accepted = acceptedReview(), state = { validForConfirmation: true, confirmed: false }, writes: any[] = []; await document(page, [accepted], state);
   await page.route(`**/api/v1/projects/${project}/commands`, route => {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
-import { prepareDocumentConfirmation, sendDocumentConfirmation, type DocumentConfirmationBuffer } from '../../../apps/web/src/features/design-trace/confirmation-api.ts';
+import { prepareDocumentConfirmation, retireRejectedDocumentConfirmation, sendDocumentConfirmation, type DocumentConfirmationBuffer } from '../../../apps/web/src/features/design-trace/confirmation-api.ts';
 const id = '32b5f276-13e6-4d8a-b93f-27a15d21c788', project = '51c0439f-791e-4bb5-8471-70938d6afaf1', ref = { id, version: 2, contentHash: 'a'.repeat(64) };
 const session = { user: { id }, clientId: id, csrfToken: 'C'.repeat(43) };
 function buffer(): DocumentConfirmationBuffer { return { ownerUserId: id, projectId: project, title: '명시 확정', ref, formRef: ref, reviewRefs: [{ id, criteriaVersion: 1, targetRef: ref, outcome: 'ACCEPTED' }], controlGeneration: 4, acknowledged: true, pending: null, saved: false, failure: null }; }
@@ -17,4 +17,11 @@ test('확정 성공 응답도 다른 문서/hash/명령이면 실제 저장 확�
   const valid = { operationId: id, commandId: b.pending.commandId, projectId: project, targetId: id, version: 2, status: 'APPLIED', data: { status: 'CONFIRMED', ref, confirmationId: id }, serverReceivedAt: '2026-10-16T05:00:00Z' };
   for (const v of [{ ...valid, commandId: project }, { ...valid, targetId: project }, { ...valid, data: { ...valid.data, ref: { ...ref, contentHash: 'b'.repeat(64) } } }, { ...valid, data: { ...valid.data, status: 'REVIEW_RECORDED' } }]) await assert.rejects(sendDocumentConfirmation(new ApiClient(async () => new Response(JSON.stringify(v), { headers: { 'content-type': 'application/json' } })), b, session, () => true), (e: unknown) => e instanceof ApiError && e.code === 'RESPONSE_INVALID');
   assert.deepEqual(await sendDocumentConfirmation(new ApiClient(async () => new Response(JSON.stringify(valid), { headers: { 'content-type': 'application/json' } })), b, session, () => true), { ref, confirmationId: id });
+});
+
+test('확정의 명확한 거절 보관은 옛 대상/검토를 보존하고 별도 확인을 새로 요구한다', () => {
+  const b=buffer(); b.pending=prepareDocumentConfirmation(b,session); b.failure={code:'VERSION_CONFLICT',status:409};
+  const next=retireRejectedDocumentConfirmation(b,session); assert.equal(next.pending,null); assert.equal(next.acknowledged,false); assert.deepEqual(next.rejectedAttempts?.[0]?.command,b.pending); assert.equal(b.acknowledged,true);
+  assert.throws(()=>prepareDocumentConfirmation(next,session),ApiError);
+  for(const bad of [{...b,uncertain:true},{...b,failure:{code:'REQUEST_FAILED',status:403}},{...b,ownerUserId:project},{...b,pending:{...b.pending,clientId:project}}]) assert.throws(()=>retireRejectedDocumentConfirmation(bad,session),ApiError);
 });

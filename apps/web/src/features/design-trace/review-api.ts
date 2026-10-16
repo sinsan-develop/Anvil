@@ -1,6 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DocumentVersion } from './api.ts';
 import type { DocumentSession } from './editor-api.ts';
+import { isKnownDocumentRejection } from './mutation-result.ts';
 
 type VersionRef = { id: string; version: number; contentHash: string };
 type Outcome = 'ACCEPTED' | 'REWORK' | 'BLOCKED' | 'NOT_EXECUTED';
@@ -14,6 +15,7 @@ export interface DocumentReviewBuffer {
   ownerUserId: string; projectId: string; title: string; ref: VersionRef; controlGeneration: number;
   criteria: DocumentVersion['contentReviewCriteria']['items']; items: Item[]; outcome: Outcome; reason: string;
   dirty: boolean; pending: DocumentReviewCommand | null; saved: boolean; failure: { code: string; status: number } | null;
+  uncertain?: boolean; rejectedAttempts?: { title: string; command: DocumentReviewCommand; failure: { code: string; status: number } }[];
 }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const outcomes = ['ACCEPTED', 'REWORK', 'BLOCKED', 'NOT_EXECUTED'];
@@ -34,6 +36,11 @@ export function prepareDocumentReview(buffer: DocumentReviewBuffer, session: Doc
   const command: DocumentReviewCommand = { schemaVersion: 1, projectId: buffer.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: buffer.controlGeneration, operation: 'recordContentReview', targetId: buffer.ref.id, expectedVersion: buffer.ref.version, baselineRefs: [], approvalRef: null, payload: { targetKind: 'DOCUMENT', targetRef: { ...buffer.ref }, criteriaVersion: 1, items: structuredClone(buffer.items), outcome: buffer.outcome, reason: buffer.reason } };
   if (new TextEncoder().encode(JSON.stringify(command)).length > 2 * 1024 * 1024) throw new ApiError('REVIEW_INPUT_TOO_LARGE');
   return command;
+}
+export function retireRejectedDocumentReview(buffer: DocumentReviewBuffer, session: DocumentSession): DocumentReviewBuffer {
+  validate(buffer, session); const c = buffer.pending;
+  if (buffer.uncertain || buffer.saved || !c || !isKnownDocumentRejection(buffer.failure) || c.projectId !== buffer.projectId || c.clientId !== session.clientId || c.operation !== 'recordContentReview' || c.targetId !== buffer.ref.id || c.payload.targetRef.contentHash !== buffer.ref.contentHash || c.expectedVersion !== buffer.ref.version) throw new ApiError('REVIEW_REJECTION_NOT_CONFIRMED');
+  return { ...buffer, pending: null, dirty: true, saved: false, failure: null, uncertain: false, rejectedAttempts: [...(buffer.rejectedAttempts ?? []), { title: buffer.title, command: structuredClone(c), failure: { ...buffer.failure! } }] };
 }
 export async function sendDocumentReview(client: ApiClient, buffer: DocumentReviewBuffer, session: DocumentSession, active: () => boolean) {
   validate(buffer, session); const c = buffer.pending;

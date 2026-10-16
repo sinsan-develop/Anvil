@@ -61,6 +61,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       const control = await documentControl(client, projectId, session);
       if (current !== generation.current) return;
       const next = newDocumentReview(projectId, opened.document, session.user.id, control);
+      if (review?.ownerUserId === session.user.id && review.projectId === projectId && review.rejectedAttempts) next.rejectedAttempts = structuredClone(review.rejectedAttempts);
       onReviewChange(previous => previous?.pending || previous && previous.ownerUserId !== session.user.id ? previous : next);
     } catch (cause) { if (current === generation.current) { const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setEditingError(error); if (error.status === 401) onAuthenticationLost(); } }
     finally { setStarting(false); }
@@ -74,6 +75,16 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       const next = newDocumentConfirmation(projectId, opened.document, session.user.id, control);
       onConfirmationChange(previous => previous ?? next);
     } catch (cause) { if (current === generation.current) { const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setEditingError(error); if (error.status === 401) onAuthenticationLost(); } }
+    finally { setStarting(false); }
+  }
+  async function replaceConfirmation() {
+    if (!opened || !confirmation || !confirming || confirmation.pending || confirmation.saved || confirmation.uncertain || !confirmation.rejectedAttempts?.length || starting || reading || choosingForm) return;
+    const current=generation.current; setStarting(true); setEditingError(null);
+    try {
+      const control=await documentControl(client,projectId,session); if(current !== generation.current) return;
+      const next=newDocumentConfirmation(projectId,opened.document,session.user.id,control); next.rejectedAttempts=structuredClone(confirmation.rejectedAttempts);
+      onConfirmationChange(previous => previous === confirmation ? next : previous);
+    } catch(cause) { if(current === generation.current) { const error=cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setEditingError(error); if(error.status===401) onAuthenticationLost(); } }
     finally { setStarting(false); }
   }
   return <section aria-label="프로젝트 문서 조회" className="document-workspace">
@@ -95,6 +106,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!review?.pending || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { void beginEdit(); }}>이 버전에서 편집</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || !!buffer?.dirty || !!buffer?.pending || !!review?.pending || !!review && review.ownerUserId !== session.user.id} onClick={() => { void beginReview(); }}>이 버전 내용 검토 작성</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!buffer?.dirty || !!buffer?.pending || !!review?.pending || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void beginConfirmation(); }}>이 버전 확정 준비</button>
+        {confirming && confirmation && !confirmation.pending && !confirmation.saved && !confirmation.uncertain && confirmation.rejectedAttempts?.length ? <button disabled={starting || reading || choosingForm || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void replaceConfirmation(); }}>열어 둔 버전으로 확정 대상 변경</button> : null}
         {!opened.document.confirmed && !latestAcceptedDocumentReview(opened.document) ? <p className="meta">확정하려면 필수 본문/반복 항목 검사와 정확한 최신 적합 검토가 필요합니다.</p> : null}
         <pre aria-label="문서 원문" className="document-original">{opened.body}</pre>
         <h3>형식 검사</h3>{opened.document.validation.issues.length ? <ul>{opened.document.validation.issues.map((issue, index) => <li key={index}><span>{issue.message}</span><span className="meta"> · {issue.code} · {issue.location}</span></li>)}</ul> : <p>기록된 형식 문제 없음 · 내용 검토 합격을 의미하지 않습니다.</p>}
