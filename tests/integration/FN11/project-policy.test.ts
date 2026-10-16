@@ -67,6 +67,8 @@ test('프로젝트 자료 정책은 현재 OWNER/client/세대·최근 재인증
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
       await db.query('DELETE FROM anvil.audit_events WHERE project_id=ANY($1::uuid[])', [projects]);
+      // ON DELETE RESTRICT는 DEFERRABLE여도 즉시 검사한다. 이 QA transaction에서만 head 순환을 먼저 끊는다.
+      await db.query('UPDATE anvil.permission_policies SET head_version=head_version+1 WHERE project_id=ANY($1::uuid[])', [projects]);
       await db.query('DELETE FROM anvil.permission_policy_versions WHERE project_id=ANY($1::uuid[])', [projects]);
       await db.query('DELETE FROM anvil.permission_policies WHERE project_id=ANY($1::uuid[])', [projects]);
       await db.query('UPDATE anvil.commands SET authorization_receipt_id=NULL WHERE project_id=ANY($1::uuid[])', [projects]);
