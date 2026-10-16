@@ -131,6 +131,8 @@
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
 
+- 대화/발언 목록 실제 RED `d3645f20402b4ba0ea350d713a43ed5e29747c7e` WSL exact/clean1 FAIL/4947ms: GET conversations 미구현404(기대200). 후속은 현재 회원·프로젝트/사용자/collection별 서명 cursor, 발언 서버순번 내림차순·본문 비포함 요약/명시 원문 GET이다. 새 SQL/지속 자원0·기존24 불변. fresh 단위87 PASS/1395ms·타입/diff0, 실제 목록 성공은 게시 후 확인한다.
+
 - 다음 대화 목록/발언 목록·화면 연결을 착수한다. 기준4768671d clean/적용24 보존. 목록은 현 프로젝트 회원·유한 서명 cursor와 서버 순번으로 읽고 원문/지시 작성은 별도 명령만 사용한다. 기존 고유 합성 QA만 쓰며 새 DB schema/서비스/Secret 변경0. 목록 부재 실제 RED와 후속 화면 검증을 분리한다.
 
 - 출처 소비 `2710f1d1182fd56a92f872017e17fa75e66575c9` local/private·WSL exact/clean actual1 PASS/5399ms/skip0. 실제 사용자 지시 원문/hash를 지식의 별도 source로 보존하고 같은 Web에서 재조회, 일반 USER_MESSAGE를 지시로 위장422/가짜 messageID404/hash409·직접 원문 UPDATE42501을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재실행0, 현재 사용자/Agent 실행·서비스/Secret 변경0. 다음은 프로젝트 대화 목록/원문 화면이며 기존 지식 초안 테스트를 무변경 반복하지 않는다.

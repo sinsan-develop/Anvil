@@ -381,6 +381,8 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 대화 저장 후속: KnowledgeEntry.sourceRefs의 CONVERSATION/USER_INSTRUCTION(kind/id/contentHash)은 이제 같은 프로젝트 conversation_messages의 실제 불변 snapshot·원문/hash를 대조한다. USER_INSTRUCTION은 실제 저장 kind도 그 값이어야 하며 USER_MESSAGE/Agent를 지시로 승격하지 않는다. 원문 보존용 출처이지 정정된 옛 지시의 현재 임무 적용 승인이나 전달이 아니다. 위 앞선 미연결412 문구는 해당 이전 구현 시점의 이력이다.
 
+대화 조회 후속: GET conversations?limit/cursor는 `id,headSequence,targetRoleRef,updatedAt,integrity:NOT_RECHECKED`의 유한 목록이다. GET conversations/:id/messages?limit/cursor는 서버 순번 내림차순으로 `sourceRef,serverSequence,authorRef,kind,replyTo,supersedesInstructionRef,recordedAt,deliveryState:STORED`를 반환하고 본문은 별도 명시 GET에서만 연다. 현재 회원 검사가 먼저이며 cursor는 actor/project/종류/대화/limit에 결박한다. 메시지 목록은 읽은 원문의 무결성을 재검사하되 저장/전달/수행을 합치지 않는다. 관측 시점 head를 반환하며 동시 신규 발언을 포함하는 고정 전체 snapshot이라고 주장하지 않는다.
+
 ### 10.4 맥락 준비·전달·6항목 이해 대조
 
 `ContextItem`은 `itemId,category,required,sourceRef,sourceHash,reason,includedState:INCLUDED/MISSING/REDACTED/EXCLUDED,deliveryParts:배열`이다. `ContextBundle`은 `id,version,assignmentRef,baselineRefs,purposeRef,constitutionRef,latestInstructionRefs,currentPositionRef,items,missingRequired,excluded,deliveryPlan,budgetRef,contentHash`다. 필수 목적/헌법/최신 관련 지시/현재 위치·완료/미완료/원문 이유를 1-hop/예산 때문에 조용히 생략하지 않는다.

@@ -7,6 +7,11 @@ import type{VersionRef}from'../../../../contracts/generated-types.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 import{assertKnowledgeTextSafe}from'./knowledge-entry.ts';
 import{readConversationInput,type MessageRef}from'./conversation-input.ts';
+import type{ProjectListCodec}from'../projects/service.ts';
+function pageInput(q:Record<string,unknown>){
+ if(Object.keys(q).some(k=>!['limit','cursor'].includes(k))||q.limit!==undefined&&(typeof q.limit!=='string'||!/^[1-9][0-9]{0,2}$/.test(q.limit)||Number(q.limit)>200)||q.cursor!==undefined&&(typeof q.cursor!=='string'||q.cursor.length>4096))throw new AuthFailure('INPUT_INVALID',400);
+ return{limit:q.limit===undefined?50:Number(q.limit),cursor:q.cursor as string|undefined};
+}
 export class ProjectConversations{
  #documents:ProjectDocuments;
  constructor(documents:ProjectDocuments){this.#documents=documents;}
@@ -41,5 +46,26 @@ export class ProjectConversations{
   if(s.conversationId!==conversationId||s.serverSequence!==Number(r.sequence)||canonicalJson(s.authorRef)!==canonicalJson(r.author_ref)||s.authorRef?.kind!=='HUMAN'||p.message.kind!==r.kind||p.message.bodyRef.artifactId!==r.body_artifact_id||p.message.replyTo?.id!==(r.reply_to??undefined)||p.message.supersedesInstructionRef?.id!==(r.supersedes_instruction_id??undefined)||canonicalJson(p.message.effectiveScope)!==canonicalJson(r.effective_scope)||canonicalJson(p.sourceRefs)!==canonicalJson(r.source_refs)||contentHash(canonicalJson(s))!==r.content_hash||r.redaction_state!=='NOT_REDACTED')throw new AuthFailure('CONVERSATION_INTEGRITY_FAILED',503);
   const body=await this.#documents.originalText(db,pid,p.message.bodyRef);assertKnowledgeTextSafe(body);
   return{sourceRef:{kind:'CONVERSATION' as const,id,contentHash:r.content_hash},conversationId,serverSequence:Number(r.sequence),authorRef:s.authorRef,message:p.message,body,deliveryState:'STORED',redactionState:r.redaction_state,sensitiveInspection:'KNOWN_PATTERNS_ONLY',recordedAt:r.recorded_at.toISOString()};
+ }
+ async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
+  await projectMember(db,actor,pid);const{limit,cursor}=pageInput(q),filter={query:pid,archived:false,limit};
+  let pos:{at:string;id:string}|null=null;if(cursor!==undefined){try{pos=codec.read(cursor,actor.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}}
+  const rows=(await db.query("SELECT id,head_sequence,target_role_ref,updated_at,to_char(updated_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') cursor_at FROM anvil.conversations WHERE project_id=$1 AND ($2::timestamptz IS NULL OR (updated_at,id)<($2::timestamptz,$3::uuid)) ORDER BY updated_at DESC,id DESC LIMIT $4",[pid,pos?.at??null,pos?.id??null,limit+1])).rows;
+  const hasMore=rows.length>limit,last=rows.slice(0,limit).at(-1);
+  return{items:rows.slice(0,limit).map(r=>({id:r.id,headSequence:Number(r.head_sequence),targetRoleRef:r.target_role_ref,updatedAt:r.updated_at.toISOString(),integrity:'NOT_RECHECKED'})),hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,observedAt:new Date().toISOString()};
+ }
+ async messages(db:PoolClient,actor:AuthenticatedIdentity,pid:string,cid:string,q:Record<string,unknown>,codec:ProjectListCodec){
+  await projectMember(db,actor,pid);const{limit,cursor}=pageInput(q),filter={query:canonicalJson({projectId:pid,conversationId:cid}),archived:false,limit};
+  const conversation=(await db.query('SELECT head_sequence FROM anvil.conversations WHERE project_id=$1 AND id=$2',[pid,cid])).rows[0];if(!conversation)throw new AuthFailure('NOT_FOUND',404);
+  let before:number|null=null;if(cursor!==undefined){
+   let pos:{at:string;id:string};try{pos=codec.read(cursor,actor.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}
+   const row=(await db.query('SELECT sequence FROM anvil.conversation_messages WHERE project_id=$1 AND conversation_id=$2 AND id=$3 AND recorded_at=$4::timestamptz',[pid,cid,pos.id,pos.at])).rows[0];if(!row)throw new AuthFailure('CURSOR_INVALID',400);before=Number(row.sequence);
+  }
+  const rows=(await db.query("SELECT id,sequence,to_char(recorded_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') cursor_at FROM anvil.conversation_messages WHERE project_id=$1 AND conversation_id=$2 AND ($3::bigint IS NULL OR sequence<$3) ORDER BY sequence DESC LIMIT $4",[pid,cid,before,limit+1])).rows;
+  const items=[];for(const row of rows.slice(0,limit)){
+   const m=await this.readMessage(db,actor,pid,cid,row.id);items.push({sourceRef:m.sourceRef,serverSequence:m.serverSequence,authorRef:m.authorRef,kind:m.message.kind,replyTo:m.message.replyTo,supersedesInstructionRef:m.message.supersedesInstructionRef,recordedAt:m.recordedAt,deliveryState:m.deliveryState});
+  }
+  const hasMore=rows.length>limit,last=rows.slice(0,limit).at(-1);
+  return{conversationId:cid,observedHeadSequence:Number(conversation.head_sequence),items,hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,observedAt:new Date().toISOString()};
  }
 }
