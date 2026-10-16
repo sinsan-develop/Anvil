@@ -112,6 +112,8 @@
 - 시작 `ea2041e881be5f21a56fa17accf8cbd1eda6452a` local/private 동일·지정 Stage B tracked clean. 승인된 FN11/FN03 forward 보완 범위에서 confirmDocument를 검토 저장과 별도 처리한다. 필수 본문/RECORDS 필드·정확 최신 ACCEPTED 검토·양식 준비·현재 제어/명시 권한·원문을 검사하고 확정 이력을 보존한다. 새 초안은 기존 확정 포인터/구버전을 지우지 않는다.
 - 실행 자원: 기존 전용 WSL `anvil_v3_development`/PG15, Git checkout `/home/daon/deploy/anvil-v3`, 보호된 app/migrator 설정만 사용. 기존 합성 `qa-document-storage-<UUID>` 사용자/프로젝트·`/tmp/anvil-v3-document-qa-<UUID>` uid1000/0700·수명 시험1회·finally 정확 UUID 정리를 재사용한다. 지속 artifacts root·실제 사용자·Secret·서비스·CA/relay는 변경하지 않는다. 최종 exact SHA만 시험하고 미수행은 PASS로 세지 않는다.
 - 현재 형식 검사와 SQL16은 그대로 이력이며 새 확정 기능의 완료 근거가 아니다. RED는 검토 허가만으로 확정을 요청하면403이어야 하나 현재 미연결 연산400인 경계를 먼저 확인한다.
+- RED exact `01bdf487a78c0451569b6767e9b331515f8a7f49` actual1 FAIL/838ms(400≠403), 정리 finally 수행. 형식 검사 첫 시험은 모듈 부재의 로딩 오류1로 분리하고 현재 목차 수준 검사에서 본문/필드/코드 속 표의 행동 RED3을 확인한 뒤 강화했다. 후속 unit51 PASS·타입 시험 자료의 추론 누락1회(4진단)는 명시 타입으로 보정, build/타입0·Web53·diff0.
+- 새 forward17 `0003_document_confirmations` SHA256 `58ebdd39cddb67cbbf4fa2f21bea42848dfa7e0851297bd7592f8b3ce36e9fd5`는 확정 불변 이력과 현재 command/receipt/policy/control·OWNER/최신 ACCEPTED를 결박한다. 기존16 SQL·version/link/draft-event guard는 유지하고 head만 별도 확정/개정 보존으로 분리한다. Markdown/텍스트 본문의 필수 범위와 반복 표(필드 ID/명칭·필수 셀·행)를 확인하되 사실/내용 검수 합격을 자동 선언하지 않는다. 미완성 초안 저장은 계속 허용한다.
 
 ### 2026-10-16 UI06 고정 버전의 내용 검토 작성·저장 연결 — Main 어울
 

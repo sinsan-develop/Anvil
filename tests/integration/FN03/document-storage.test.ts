@@ -11,7 +11,8 @@ import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { ApiClient } from '../../../apps/web/src/api/client.ts';
 import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts';
-import { newDocumentReview, prepareDocumentReview, sendDocumentReview } from '../../../apps/web/src/features/design-trace/review-api.ts';
+import { newDocumentReview, prepareDocumentReview, sendDocumentReview, type DocumentReviewBuffer } from '../../../apps/web/src/features/design-trace/review-api.ts';
+import type { FormDefinition } from '../../../apps/server/modules/documents/forms.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
@@ -156,12 +157,49 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.content_reviews WHERE project_id=$1 AND target_id=$2 AND target_version=3', [project, currentRef.id])).rows[0].n, 1);
     const confirmCommand = { ...documentCommand, commandId: randomUUID(), operation: 'confirmDocument', targetId: fromClient.id, expectedVersion: 3, payload: { versionRef: fromClient, formRef: form.ref, reviewRefs: [reviewFromClient] } };
     assert.equal((await docSend(confirmCommand)).statusCode, 403, '검토 저장 허가는 별도 문서 확정 허가가 아니다');
+    const confirmPolicy = await docSend({ ...context, commandId: randomUUID(), operation: 'savePermissionPolicy', targetId: policyRef.id, expectedVersion: 3, payload: { rules: [{ ruleId: 'CONFIRM_OWN_DOCUMENTS', subjectRef: { kind: 'HUMAN', userId: user }, targetScopes: [{ kind: 'PROJECT', projectId: project }], operations: ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument'], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 문서 별도 확정 명시 허가', reviewRefs: [] } });
+    assert.equal(confirmPolicy.statusCode, 200, confirmPolicy.body);
+    assert.equal((await docSend({ ...confirmCommand, commandId: randomUUID() })).statusCode, 422, '미완성/재작업 문서는 확정 불가');
+    const complete = newDocument(project, form, user, 1), lines: string[] = [];
+    for (const item of (form.definition as FormDefinition).items) {
+      complete.content.sections.push({ itemId: item.itemId, anchor: 'line:' + (lines.length + 1) }); lines.push('## ' + item.title);
+      if (item.valueType === 'TEXT') lines.push('합성 시험에서 원문 근거와 범위를 직접 작성했다.');
+      else { lines.push('| ' + item.fields.map(field => field.fieldId).join(' | ') + ' |', '| ' + item.fields.map(() => '---').join(' | ') + ' |', '| ' + item.fields.map((field, i) => '합성값' + (i + 1)).join(' | ') + ' |'); }
+    }
+    complete.title = '필수 항목을 작성한 확정 검수 문서'; complete.body = lines.join('\n'); complete.reason = '별도 확정 검수'; complete.dirty = true;
+    const readyRef = await continueDocumentSave(client, await prepareDocumentSave(complete, session), session, () => {}, () => true);
+    const readyRead = await readDocument(client, project, readyRef.id, 1);
+    const confirmReady = { ...confirmCommand, commandId: randomUUID(), targetId: readyRef.id, expectedVersion: 1, payload: { versionRef: readyRef, formRef: form.ref, reviewRefs: [] as any[] } };
+    assert.equal((await docSend(confirmReady)).statusCode, 422, '형식 합격만으로 확정할 수 없다');
+    const accepted = newDocumentReview(project, readyRead.document, user, 1);
+    accepted.items = accepted.items.map(item => ({ ...item, outcome: 'ACCEPTED', reason: '합성 원문과 필수 내용 대조' })); accepted.outcome = 'ACCEPTED'; accepted.reason = '합성 검토 적합 판단'; accepted.pending = prepareDocumentReview(accepted, session);
+    const acceptedRef = await sendDocumentReview(client, accepted, session, () => true);
+    const acceptedConfirm = { ...confirmReady, commandId: randomUUID(), payload: { ...confirmReady.payload, reviewRefs: [acceptedRef] } };
+    assert.equal((await docSend({ ...acceptedConfirm, commandId: randomUUID(), payload: { ...acceptedConfirm.payload, versionRef: { ...readyRef, contentHash: '0'.repeat(64) } } })).statusCode, 409);
+    assert.equal((await docSend({ ...acceptedConfirm, commandId: randomUUID(), payload: { ...acceptedConfirm.payload, formRef: { ...form.ref, contentHash: '0'.repeat(64) } } })).statusCode, 422);
+    assert.equal((await docSend({ ...acceptedConfirm, commandId: randomUUID(), payload: { ...acceptedConfirm.payload, reviewRefs: [{ ...acceptedRef, id: randomUUID() }] } })).statusCode, 422);
+    const rework: DocumentReviewBuffer = { ...accepted, items: accepted.items.map(item => ({ ...item, outcome: 'REWORK' as const })), outcome: 'REWORK', reason: '새 보완 판단', pending: null };
+    rework.pending = prepareDocumentReview(rework, session); await sendDocumentReview(client, rework, session, () => true);
+    assert.equal((await docSend({ ...acceptedConfirm, commandId: randomUUID() })).statusCode, 422, '나중 재작업 뒤 옛 적합을 재사용할 수 없다');
+    accepted.pending = prepareDocumentReview(accepted, session); const latestAccepted = await sendDocumentReview(client, accepted, session, () => true);
+    const finalConfirm = { ...acceptedConfirm, commandId: randomUUID(), payload: { ...acceptedConfirm.payload, reviewRefs: [latestAccepted] } };
+    const confirmed = await docSend(finalConfirm); assert.equal(confirmed.statusCode, 200, confirmed.body); assert.equal(confirmed.json().data.status, 'CONFIRMED');
+    assert.deepEqual((await docSend(finalConfirm)).json(), confirmed.json(), '동일 확정 명령은 이력 중복 없이 재확인');
+    const confirmedRead = await readDocument(client, project, readyRef.id, 1); assert.equal(confirmedRead.document.confirmed, true); assert.equal(confirmedRead.document.contentHash, readyRef.contentHash);
+    assert.ok(confirmedRead.document.statusHistory.some(event => event.kind === 'CONFIRMED'));
+    const later = editDocument(project, confirmedRead, user, 1); later.body += '\n추가 개정 내용'; later.reason = '확정 후 새 초안'; later.dirty = true;
+    const laterRef = await continueDocumentSave(client, await prepareDocumentSave(later, session), session, () => {}, () => true);
+    assert.equal(laterRef.version, 2); assert.equal((await readDocument(client, project, readyRef.id, 1)).document.confirmed, true); assert.equal((await readDocument(client, project, readyRef.id, 2)).document.confirmed, false);
+    assert.equal((await docSend({ ...finalConfirm, commandId: randomUUID() })).statusCode, 409);
+    await assert.rejects(pool.query('UPDATE anvil.documents SET confirmed_version=2 WHERE project_id=$1 AND id=$2', [project, readyRef.id]), (e: unknown) => (e as { code: string }).code === '42501');
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.document_confirmations WHERE project_id=$1', [project])).rows[0].n, 1);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
       if ((await db.query("SELECT to_regclass('anvil.documents') present")).rows[0].present) {
+        if ((await db.query("SELECT to_regclass('anvil.document_confirmations') present")).rows[0].present) await db.query('DELETE FROM anvil.document_confirmations WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.content_reviews WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_version_events WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_artifact_links WHERE project_id=$1', [project]);

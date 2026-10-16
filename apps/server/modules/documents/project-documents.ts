@@ -11,6 +11,8 @@ import type { FormDefinition } from './forms.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import { ProjectListCodec } from '../projects/service.ts';
 import { documentReviewCriteria, documentReviews, writeDocumentReview } from './project-content-review.ts';
+import { validateDocumentConfirmation } from './document-validation.ts';
+import { confirmProjectDocument } from './project-confirmation.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -19,6 +21,12 @@ function artifactRef(value: unknown): value is ArtifactRef { return exact(value,
 export class ProjectDocuments {
   #store: ArtifactStore | null;
   constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
+  async confirm(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
+    if (!request.targetId) throw new AuthFailure('DOCUMENT_CONFIRMATION_INPUT_INVALID', 422);
+    const document = await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion);
+    for (const ref of document.content.attachments) await this.#artifact(db, request.projectId, ref);
+    return confirmProjectDocument(db, actor, request, policyRef, document);
+  }
   async review(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     if (!request.targetId) throw new AuthFailure('REVIEW_INPUT_INVALID', 422);
     // 검토를 기록하기 직전에도 원본 파일과 불변 버전 무결성을 검사한다.
@@ -87,12 +95,13 @@ export class ProjectDocuments {
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
     const formRef = { id: row.form_definition_id, version: Number(row.form_version), contentHash: row.form_hash }, content = row.content_json as DocumentContent;
     if (contentHash(canonicalJson({ title: row.title, formRef, stageNodeRef: row.stage_ref_json, content })) !== row.content_hash) throw new AuthFailure('DOCUMENT_INTEGRITY_FAILED', 503);
-    await this.#artifact(db, projectId, content.body);
+    const raw = await this.#artifact(db, projectId, content.body);
+    let body: string; try { body = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(raw); } catch { throw new AuthFailure('DOCUMENT_UTF8_INVALID', 422); }
     const form = (await db.query('SELECT definition_json FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3', [formRef.id, formRef.version, formRef.contentHash])).rows[0];
     if (!form || contentHash(canonicalJson(form.definition_json)) !== formRef.contentHash) throw new AuthFailure('FORM_INTEGRITY_FAILED', 503);
     const reviews = await documentReviews(db, projectId, { id, version, contentHash: row.content_hash });
-    const events = (await db.query('SELECT event_kind,actor_ref,reason,created_at FROM anvil.document_version_events WHERE project_id=$1 AND document_id=$2 AND version=$3 ORDER BY created_at,id', [projectId, id, version])).rows;
-    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: row.validation_json, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: [], sourceLinks: [] };
+    const events = (await db.query("SELECT event_kind,actor_ref,reason,created_at,id FROM anvil.document_version_events WHERE project_id=$1 AND document_id=$2 AND version=$3 UNION ALL SELECT 'CONFIRMED',jsonb_build_object('kind','HUMAN','userId',confirmed_by),'별도 명시 확정',created_at,id FROM anvil.document_confirmations WHERE project_id=$1 AND document_id=$2 AND version=$3 ORDER BY created_at,id", [projectId, id, version])).rows;
+    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: { ...row.validation_json, ...validateDocumentConfirmation(body, content.sections, form.definition_json) }, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: [], sourceLinks: [] };
   }
 }
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {
