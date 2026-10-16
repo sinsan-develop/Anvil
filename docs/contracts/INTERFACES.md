@@ -261,6 +261,12 @@ Page는 `items`, `nextCursor`, `hasMore`, `observedAt`, `baselineVersion`을 갖
 
 ### 9.4 FN03 — UI03/06의 양식·본문·원본·제안
 
+2026-10-16 최초 PROJECT 가져오기 연결은 기존 command envelope의 `importDocument`(targetId=null/expectedVersion0)→`data.status:IMPORT_CANDIDATE,candidate`이며 receipt의 artifactRef/targetId는 보존한 실제 원본을 가리킨다. candidate는 표의 필드와 nullable intendedFormRef를 가진다. UTF8_IDENTITY_1은 유효 .txt/.md≤2MiB를 바이트 무변환 READY로 추출하고 extractedContentRef=originalRef다. 원본≤20MiB는 보존하지만 파서 실패 FAILED/기타 형식 UNSUPPORTED는 본문 추출 성공이 아니다. sourceRefs는 실제 연결 전 []만 허용하고 nonempty는412다. `GET projects/:projectId/imports/:id`는 현재 회원의 원본/candidate hash를 재검증하고 선택 문서/version/사용자/시각 이력을 돌려준다(교차 소유404). 후보 목록·DRAFT import·제안/diff는 아직 미연결이다.
+
+`saveDocumentDraft(importCandidateRef)`는 실제 READY candidate·같은 고정 양식(지정한 경우)과 원본을 body/attachments 중 하나로 반드시 보존해야 한다. 저장은 별도 명시 명령이며 선택 이력/문서 version/receipt/감사를 한 DB transaction에 기록하고 GET version의 `importCandidateRefs:Id[]`로 재조회한다. Web에서는 원본 첨부와 편집 본문을 분리해 저장하며 단순 업로드/후보 생성만으로 확정하지 않는다. 미확인 upload/import/save는 캡처한 같은 ID/입력으로만 명시 재확인, 자동 재전송0이다. 현재 읽기/검토/확정의 기존 계약과 실패 기준은 유지한다.
+
+파일 읽기/해시 준비부터 공유 버퍼의 준비 예약으로 편집 저장·교체와 상호 배제하며 같은 예약/주체/프로젝트·pending 유무를 재검사한다. 서버의 최초 명확한 JSON4xx 거절은 사용자가 가져오기만 닫아 기존 입력으로 돌아갈 수 있지만, 단절/invalid/5xx의 미확인 이력은 이후4xx만으로 미적용으로 바뀌지 않는다. 같은 단계의 정확 정상 receipt에서만 미확인을 해소하고, 재시도 시작은 과거 거절 표시의 효력을 지우되 uncertain은 유지한다. 후보/원본을 자동 삭제하거나 새 명령으로 바꾸지 않는다.
+
 `FormDefinition` 필수: `formCode:AF01~AF08 또는 사용자 정의 코드, name,purpose,scope,authorRole,reviewerRole,confirmerRole,requiredInputs:배열,items:배열<{itemId,title,required,valueType,repeated,fields,authoringRules,reviewCriteria}>,authoringStandardRef:VersionRef`. itemId는 개정 후 추적 가능한 안정 ID다. 사용자 입력 양식은 제한된 데이터이며 JSON Schema/스크립트 실행 원본이 아니다. 공식 AF01~08의 코드/이름 매핑은 승인 양식 정의 그대로 고정한다.
 
 | 연산 | payload→응답·조건 |

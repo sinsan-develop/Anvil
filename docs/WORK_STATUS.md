@@ -3,11 +3,11 @@
 ## 1. 현재 상태와 기록 기준
 
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
-- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규/개정 저장·고정 버전 내용검토·별도 문서 확정과 명확한 저장 VERSION_CONFLICT의 비교/명시 선택을 연결했다. 화면 fixture와 같은 클라이언트의 실제 WSL API/DB 증거는 구분한다. 전체 실제 UI DB 여정·상세 가져오기/제안·복합 충돌/추적·기존 소스·실제 Agent는 미완료다.
+- 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규/개정 저장·고정 버전 내용검토·별도 확정·명확한 저장 충돌 비교/선택에 이어 텍스트/Markdown 원본 보존→가져오기 후보→명시 초안 선택을 연결했다. 화면 fixture와 동일 클라이언트의 실제 WSL API/DB 증거는 구분한다. 실제 UI DB 여정·수정 제안/후보 목록 재개·복합 충돌/추적·기존 소스·실제 Agent는 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `3f4601b8a39839240aa94884d898ead1ef8d0168`/clean의 FN03/FN11 actual2 PASS/1714ms/skip0. 동일 저장/검토/확정/충돌 비교 클라이언트→실제 정책/제어·최신 검토→별도 확정/replay·새 초안/충돌 조정 뒤 구버전·구확정 보존·outbox0. 독립 합성 사용자/프로젝트/문서/확정/검토/원본/정책·시험 root0, migration17(기존16 불변). Windows unit56·UI06 fixture14/10.8초·최종 build/타입/Web56 PASS는 별도이며 실제 browser↔DB/제품 인수는 미검증이다.
+- 최근 실제 확인: 최종 코드 `73373f08ac5306e12c5f87fa84226ebd636abfb2` local/private 동일·WSL exact/clean의 FN03 actual1 PASS/2443ms/skip0. 불변 서버/SQL의 FN11 인접 증거는 직전6a7a3c26의 actual2 PASS/1963ms에 포함되며 반복하지 않았다. 원본·후보/replay·명시 선택→불변 초안/재조회·권한 거절·outbox0, 별도 조회에서 DB/FS 합성 잔여0·migration18/기존17 불변. Windows 단위59·UI06 fixture15/11.4초·마지막 재진입 경계 집중1/3.3초·build/타입/Web58 PASS, scoped 독립 검토 Important2 보정 후 해당 잔여0은 실제 browser↔DB/사용자 인수와 구별한다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
-- 다음 업무: FN03 텍스트/Markdown 가져오기 후보·제안/비교, UI06 양식/첨부 동시 변경 수동 조정·검토/확정 대상 교체, 기존 소스 선언/기준선·FN04/FN05다. 최신 사용자용 실행환경과 만료 초기 등록/relay 경계는 별도이며 실제 화면 DB 통합을 성공으로 세지 않는다. 자료 정책의 일회 승인 소비·Agent 허가·정책 편집 화면도 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
+- 다음 업무: 같은 직접 승인 아래 FN03 수정 제안/서버 차이 비교·명시 반영과 후보 목록 재개, UI06 양식/첨부 동시 변경 수동 조정·검토/확정 대상 교체, 기존 소스 선언/기준선·FN04/FN05다. 최신 사용자용 실행환경과 만료 초기 등록/relay 경계는 별도이며 실제 화면 DB 통합을 성공으로 세지 않는다. 자료 정책의 일회 승인 소비·Agent 허가·정책 편집 화면도 미완료다. P01/P02·완료 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
 신산님이 지정한 `D:\Project\Daon2\docs\WORK_STATUS.md`의 **업무별 현재 요약 + 일자별 상세 이력** 형식을 참고했다. Daon2 문서는 읽기만 했으며 내용/상태를 Anvil로 이월하지 않았다.
 
@@ -55,7 +55,7 @@
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
-| UI06 문서·설계·계획 추적 | [2] | Main 어울. 신규/개정·검토·별도 확정·저장 충돌 비교/명시 선택 fixture14 PASS. 동일 클라이언트 actual API/DB·FN11 2 PASS는 별도 | 가져오기/제안·복합 충돌/대상 교체·추적/변경·실제 화면 DB 여정 |
+| UI06 문서·설계·계획 추적 | [2] | Main 어울. 신규/개정·검토·확정·충돌 조정·원본 가져오기 후보/명시 선택 fixture15 PASS. 동일 클라이언트 actual API/DB·FN11 2 PASS는 별도 | 제안/후보 목록 재개·복합 충돌/대상 교체·추적/변경·실제 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
@@ -73,7 +73,7 @@
 |---|---|---|---|
 | FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 인증 기반과 빈 초안→원자 생성/owner·client 제어1/receipt·감사·snapshot·재조회/중복/격리/DB 실패 rollback 확인. 실제 사용자/지속 QA 프로젝트0 | 기존 소스/기준선·복구/초대·실제 UI DB 여정 |
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
-| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·필수 본문/반복 필드·사람 검토/별도 확정·저장 충돌 비교·현재 제어/명시 권한 actual 확인. UI06 fixture14는 별도 | 상세 가져오기/제안·복합 충돌/대상 교체·소스 연계 |
+| FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 초안·검토/확정/충돌 조정·가져오기 후보/명시 선택 actual 확인, 새 forward18/합성 잔여0. UI06 fixture15는 별도 | 제안/서버 diff·후보 목록 재개·복합 충돌/대상 교체·소스 연계 |
 | FN04 설계 추적·계획·변경 영향 | [] | 추적/변경 논리 설계 | ID연결·3상태축·영향·승인/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [] | 핵심 보관/전달 계약만 있음 | 원문/이유·검색·선별/이해대조·기준 재사용 |
 | FN06 첫 코딩 Agent·환경 | [] | 실제 제품/버전별 연동 미확인 | 공식 지원과 실제 세션/지시/결과·권한 확인 |
@@ -115,6 +115,11 @@
 - RED `df7c74591c1cf0d3414f937992bac785b7c43ca1` WSL exact/clean actual FN03 1 FAIL/2639ms: 가져오기 허가 부재403 대신 미연결 연산400. 후보 파서는 모듈 부재 로딩 오류1과 행동 RED2를 구분했다. 화면 시험의 기존 버튼 이름 오기1을 정정한 뒤 실제 파일 입력 부재 RED1을 확인했다. 기존 합격 기준을 낮추지 않았다.
 - 새 forward18 `0003_document_imports` SHA256 `e143f10ee61fb78d174070cc1e0e5ab2eb55b8d35f74ec07a4c82f88594dfe57`: immutable 후보·same-project 원본/양식 FK·현재 receipt/권한/제어·명시 초안 선택 이력. 기존17 SQL 수정0. 최초 텍스트 파서는 `UTF8_IDENTITY_1`로 원본 바이트를 그대로 참조하며 별도 추출 파일을 생성한 것처럼 주장하지 않는다. UTF-8 오류/본문 2MiB 초과는 FAILED, 다른 형식은 UNSUPPORTED로 원본만 유지한다. 자동 반영/확정/Agent 실행0이다.
 - 로컬 unit58 PASS/skip0, UI06 fixture15 PASS/11.6초(새 가져오기1 포함), type/build exit0·Web58(JS402.91kB/gzip111.94·CSS7.61kB), diff0. UI는 파일 선택만으로 전송0→원본 업로드/후보 명시 생성→단절 시 같은 명령 재확인·알려진 업로드 재생성0→원문 표시/명시 선택→원본 첨부를 보존한 별도 초안 저장을 확인했다. 실제 개발 DB forward18 적용/최종 코드 시험은 게시 후 진행하며 현재 미실행이다. 수정 제안/차이 비교·후보 목록 재개·소스 연계·최신 제품 실제 브라우저 DB 여정은 미완료다.
+- 최초 게시 `eae43125`의 forward18 적용1회는 CASE 식 괄호 누락42601/position4148로 전체 rollback됐고 적용 수17/QA 생성0이었다. 별도 rollback-only 검사에서 같은42601을 확인→CASE 괄호 한 쌍만 보완한 SQL 정상/rollback→로컬 변경·게시 순서를 지켰다. 최종18 checksum은 `c9ffa0c09d8597e410a9b85ead5b1aad3413df82e7f6efa2169ad514fa001afb`이며 앞의 e143 값은 미적용 실패본 이력이다. 기존 적용 SQL 변경0/서버 소스 patch0/임의 우회0이다.
+- 최종 코드 `6a7a3c262bbd189448a07558066d12f5390f814f` local/private·WSL exact/clean, forward18 적용 exit0·기존17 checksum 불변. actual FN03/FN11 2 PASS/1963ms/skip0. 원본 metadata/실파일 검증·후보 명령 replay1·문서 자동 생성0·외부 사용자404·현재 별도 허가403·원본 참조 누락422·미지원 선택412·직접 candidate UPDATE/가짜 selection42501, 동일 Web client의 후보 생성/GET 재확인→명시 선택→별도 초안 저장/재조회·BOM/CRLF/첨부 원본·미확정 유지·outbox0을 확인했다.
+- 시험과 분리한 독립 조회 exit0: users/projects/documents/versions/confirmations/imports/selections/reviews/artifacts/policies/commands 각0, 임시 root[], 지속 artifacts uid1000/0700/link0/realpath 일치/empty. app candidate UPDATE=false/selection DELETE=false. 기존 PG full ID/image 불변, Windows Node40744/relay26052 같은 시작 시각 보존. 추가 실제 계정·Secret/CA·서비스 교체/relay 재접속·Agent/Oracle 변경0. 전체 기능 완료/인수/PR·main 병합으로 승격하지 않는다.
+- 요청 코드 검토 스킬에 따른 별도 read-only reviewer는 최초 Critical0/Important2/Minor0: 파일 준비와 저장의 양방향 경합, 확정 거절 뒤 취소 경로 부재를 지적했다. Main이 실제 코드와 맞춰 공유 파일 준비 예약·동일 버퍼 재검사·부모 busy 전파, 확정4xx의 명시 닫기를 보정했다. 후속 동일 근원인 단절→4xx에서 미확인 유실, 재시도 중 이전4xx 표시 잔류는 각각 행동 RED→GREEN으로 좁혀 uncertain 보존/같은 단계 정상 receipt 때만 해소·재시도 시작 failure=null로 보정했다. 같은 reviewer가 지정 지적의 잔여0을 확인했다. 전체 Stage 독립 검수/병합 적합성 판정은 아니다.
+- 최종 `73373f08ac5306e12c5f87fa84226ebd636abfb2` actual FN03 1 PASS/2443ms/skip0; 새 migration 재실행0/불변 FN11 반복0. Windows unit59/1051ms·UI06 fixture15/11.4초, 마지막 한 줄 재시도 보정 뒤 해당 집중1/3.3초·type/build0(Web58·JS404.34kB/gzip112.32·CSS7.61kB)·diff0. 최종 시험 뒤 독립 DB11종 각0·임시root[]·지속원문 uid1000/0700/link0/empty·migration18, private main f976ed5e 불변이다. 이전 검증 코드를 기능상 되돌릴 필요가 생기면 Git의 검증 checkpoint를 선택해 재검증하되 이번 실행에서 runtime 전환/DB downgrade/원본 삭제는 하지 않았다. 다음은 같은 승인 범위의 수정 제안/서버 diff·명시 반영과 후보 목록 재개다.
 
 ### 2026-10-16 FN03 별도 문서 확정 착수 — Main 어울
 
