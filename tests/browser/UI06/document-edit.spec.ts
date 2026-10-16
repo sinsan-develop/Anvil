@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
+import { readFile } from 'node:fs/promises';
+import { buildOfficialForms } from '../../../apps/server/modules/documents/forms.ts';
 
 const project = '51c0439f-791e-4bb5-8471-70938d6afaf1', id = '32b5f276-13e6-4d8a-b93f-27a15d21c788', artifactId = 'a6f30000-0000-4000-8000-000000000099';
 const formRef = { id: artifactId, version: 1, contentHash: 'a'.repeat(64) }, csrf = 'C'.repeat(43), initial = '\uFEFF# 원본\r\n이전 내용\r\n';
@@ -100,4 +102,32 @@ test('저장 중 인증이 만료돼도 입력을 보존하고 다른 로그인 
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveCount(0);
   await expect(page.getByText('이전 사용자의 미저장 내용', { exact: true })).toHaveCount(0);
   expect(writes).toBe(1);
+});
+
+test('빈 프로젝트에서 공식 양식을 선택하고 새 문서를 초안으로 저장한다', async ({ page }) => {
+  const catalog = buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../../../docs/design/문서작성_공통기준.md', import.meta.url)));
+  const form = catalog.forms[0]!; let created = false, bytes = Buffer.alloc(0), uploaded: any, saved: any;
+  await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: catalog.forms.map(value => ({ ref: value.ref, name: value.definition.name, formCode: value.definition.formCode, scope: 'SYSTEM' })), observedAt: '2026-10-16T05:00:00.000Z', hasMore: false, nextCursor: null, baselineVersion: null } }));
+  await page.route(`**/api/v1/forms/${form.ref.id}/versions/1`, route => route.fulfill({ json: { ...form, authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } } }));
+  await page.route(`**/api/v1/projects/${project}/documents?*`, route => route.fulfill({ json: { items: created ? [{ id, title: saved.payload.title, headVersion: 1, confirmedVersion: null, updatedAt: '2026-10-16T05:00:00.000Z' }] : [], hasMore: false, nextCursor: null, observedAt: '2026-10-16T05:00:00.000Z' } }));
+  await page.route(`**/api/v1/projects/${project}/files`, route => {
+    const command = JSON.parse(route.request().headers()['x-anvil-command']!); bytes = Buffer.from(route.request().postDataBuffer()!); uploaded = { artifactId, ...command.payload };
+    return route.fulfill({ status: 201, json: receipt(command, { artifactRef: uploaded, status: 'ARTIFACT_READY' }, null, artifactId) });
+  });
+  await page.route(`**/api/v1/projects/${project}/commands`, route => {
+    saved = route.request().postDataJSON(); expect(saved.targetId).toBeNull(); expect(saved.expectedVersion).toBe(0); expect(saved.payload.formRef).toEqual(form.ref);
+    created = true; return route.fulfill({ json: receipt(saved, { ref: { id, version: 1, contentHash: contentHash(canonicalJson({ title: saved.payload.title, formRef: form.ref, stageNodeRef: null, content: saved.payload.content })) }, status: 'DRAFT' }, 1, id) });
+  });
+  await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/1`, route => route.fulfill({ json: { id, version: 1, title: saved.payload.title, formRef: form.ref, stageNodeRef: null, contentHash: 'b'.repeat(64), confirmed: false, content: saved.payload.content, validation: { validForConfirmation: false, issues: [] }, statusHistory: [], contentReviewCriteria: { criteriaVersion: 1, formRef: form.ref, items: form.definition.items.map(item => ({ criterionId: item.itemId, title: item.title, reviewCriteria: item.reviewCriteria })) }, contentReviews: [], reviewRefs: [] } }));
+  await page.route(`**/api/v1/projects/${project}/files/${artifactId}`, route => route.fulfill({ contentType: 'application/octet-stream', body: bytes }));
+  await page.goto(`/#/projects/${project}/documents`);
+  await page.getByRole('button', { name: '새 문서 작성', exact: true }).click();
+  await page.getByLabel('새 문서 양식', { exact: true }).selectOption(form.ref.id);
+  await page.getByRole('button', { name: '선택 양식으로 작성', exact: true }).click();
+  await page.getByLabel('문서 제목', { exact: true }).fill('처음 작성한 요구사항');
+  await page.getByLabel('문서 본문 편집', { exact: true }).fill('# 목적\n프로젝트의 요구 원문');
+  await page.getByLabel('문서 변경 이유', { exact: true }).fill('새 요구사항 작성');
+  await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click();
+  await expect(page.getByText('초안 버전 1 저장 확인', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('문서 원문', { exact: true })).toHaveText('# 목적\n프로젝트의 요구 원문');
 });

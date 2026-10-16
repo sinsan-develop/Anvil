@@ -113,6 +113,9 @@
 - 기존 승인 UI06/FN03 계약 안에서 제목/본문/원문 항목 위치·변경 이유 편집→원문 새 artifact→동일 document 새 불변 버전 저장을 연결한다. 사용자/프로젝트별 입력을 탭 상위 상태로 보존하고 응답 단절 때 같은 upload/save command만 명시 재확인한다. 형식 검사를 내용검토/사용자 확정으로 바꾸지 않는다.
 - 사전 대조: FN11 현재 owner/client/controlGeneration·명시 uploadArtifact/saveDocumentDraft 정책을 서버가 다시 집행한다. 화면에서 정책/권한을 자동 생성하지 않으며 실제 계정·Secret·CA·서비스/relay·Agent 변경0. 기존 Windows relay HOLD/새 실제 화면 DB 미확인은 유지하고 우선 API 대체 화면 시험, 게시 exact SHA의 WSL 직접 실제 API/DB로 연결을 확인한다.
 - RED/GREEN 대상은 화면 이동/실패/충돌 입력 보존·같은 명령/원문 바이트·정확 version/receipt·same-origin·별도 사용자 비노출이다. 기존 시험 root/합성 UUID 계약으로 시험 후 정확 정리, 새 지속 자원 없음. 다음의 검사 통과 전에는 편집 연결을 완료라 기록하지 않는다.
+- 첫 구현 `2b98b720a3e5311b026cfc98a42a4f6d09b315b4` 게시 후 WSL exact actual FN03 1 PASS/1113ms/skip0. UI와 같은 클라이언트의 원문 바이트·canonical hash·현재 제어/명시 정책→새 버전3→재조회/같은 저장 replay/원본 v2 BOM·CRLF 유지·artifact 추가1을 실제 API/DB로 확인했다. Windows 단위45/타입·Web50·UI06 fixture5 PASS는 별도다. 실제 브라우저↔DB 여정으로 승격하지 않는다.
+- 빈 프로젝트의 신규 작성은 기존 승인 공식 양식 선택→정확 버전/작성 기준 조회→빈 입력→명시 upload/save(target null/expected0)로 연결한다. 예시 본문 자동 삽입/자동 저장·확정/권한 부여0. 신규 화면 RED1(작성 버튼 없음)·label 안 select 옵션 문자열 혼입 실패1→명시 label 연결 뒤 GREEN1, 최신 전체 UI06 결과는 후속 기록한다. 새 server contract/schema/역할·지속 자원 변경0이다.
+- 오류/원인: 기존 본문 textarea의 중첩 label에 원문 텍스트가 섞여 label 조회0/실제 textbox1임을 합성 DOM으로 확인했다. 명시 label/htmlFor로 분리해 같은 기대값 GREEN, 원래 실패 기록을 덮지 않았다. 중단 경계 단위 RED1은 업로드1≠0→쓰기 시작 전 active 확인을 추가, 이후 파일 수거 뒤 JSON 후속 저장 전에도 다시 확인한다. 자동 timeout 연장·새 정책/서비스 우회0.
 
 ### 2026-10-16 FN03 고정 양식의 사람 내용검토 기록·조회 — Main 어울
 

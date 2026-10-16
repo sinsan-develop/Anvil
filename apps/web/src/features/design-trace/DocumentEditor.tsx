@@ -15,7 +15,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
       if (!pending) { pending = await prepareDocumentSave(buffer, session); const prepared = pending; onChange(previous => previous?.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId ? { ...previous, pending: prepared, failure: null } : previous); }
       const command = pending.upload.commandId;
       const ref = await continueDocumentSave(client, pending, session, value => onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), () => mounted.current);
-      onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, baseVersion: ref.version, pending: null, dirty: false, savedRef: ref, failure: null } : previous);
+      onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, pending: null, dirty: false, savedRef: ref, failure: null } : previous);
       if (mounted.current) onSaved(ref.id, ref.version, buffer.title);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');

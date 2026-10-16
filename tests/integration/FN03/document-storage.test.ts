@@ -11,7 +11,7 @@ import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { ApiClient } from '../../../apps/web/src/api/client.ts';
 import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts';
-import { continueDocumentSave, documentControl, editDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
+import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -132,6 +132,13 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.deepEqual(await continueDocumentSave(client, checkpoint, session, () => {}, () => true), fromClient);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1', [project])).rows[0].n, 2, '확인된 업로드 뒤 같은 저장 명령 재확인은 파일을 다시 만들지 않는다');
     assert.equal((await readDocument(client, project, currentRef.id, 2)).body, bytes.toString('utf8'), '새 클라이언트 저장 뒤에도 원본 버전의 BOM/CRLF 바이트를 유지');
+    const fresh = newDocument(project, form, user, await documentControl(client, project, session));
+    fresh.title = '양식으로 처음 작성한 문서'; fresh.body = '# 목적\n사람이 새로 작성한 실제 원문'; fresh.reason = '빈 문서의 명시 작성'; fresh.dirty = true;
+    const freshPending = await prepareDocumentSave(fresh, session);
+    const freshRef = await continueDocumentSave(client, freshPending, session, () => {}, () => true);
+    assert.equal(freshRef.version, 1); assert.notEqual(freshRef.id, currentRef.id);
+    assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body);
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
