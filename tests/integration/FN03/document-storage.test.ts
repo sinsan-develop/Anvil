@@ -95,11 +95,28 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const secondPage = (await app.inject({ method: 'GET', url: listPath + '&cursor=' + encodeURIComponent(firstPage.nextCursor), headers })).json();
     assert.equal(secondPage.items[0].id, documentRef.id); assert.equal(secondPage.hasMore, false);
     assert.equal((await app.inject({ method: 'GET', url: listPath + '&cursor=' + encodeURIComponent(firstPage.nextCursor + 'x'), headers })).statusCode, 400);
+    const currentRef = next.json().data.ref;
+    const reviewCommand = { ...documentCommand, commandId: randomUUID(), operation: 'recordContentReview', targetId: currentRef.id, expectedVersion: 2, payload: { targetKind: 'DOCUMENT', targetRef: currentRef, criteriaVersion: 1, items: ['AF01-01','AF01-02','AF01-03','AF01-04','AF01-05','AF01-06'].map(criterionId => ({ criterionId, outcome: 'REWORK', evidenceRefs: [], reason: '합성 원문에서 필수 내용의 보완을 확인' })), outcome: 'REWORK', reason: '형식 검사와 별도로 사람이 원문을 대조한 보완 판단' } };
+    assert.equal((await docSend(reviewCommand)).statusCode, 403, '문서 저장 허가가 내용 검토 기록 허가는 아니다');
+    const reviewPolicy = await docSend({ ...context, commandId: randomUUID(), operation: 'savePermissionPolicy', targetId: policyRef.id, expectedVersion: 2, payload: { rules: [{ ruleId: 'REVIEW_OWN_DOCUMENTS', subjectRef: { kind: 'HUMAN', userId: user }, targetScopes: [{ kind: 'PROJECT', projectId: project }], operations: ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview'], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 문서 내용검토 명시 허가', reviewRefs: [] } });
+    assert.equal(reviewPolicy.statusCode, 200, reviewPolicy.body);
+    const reviewed = await docSend(reviewCommand); assert.equal(reviewed.statusCode, 200, reviewed.body);
+    assert.equal(reviewed.json().data.status, 'REVIEW_RECORDED'); assert.equal(reviewed.json().data.reviewRef.outcome, 'REWORK');
+    assert.deepEqual((await docSend(reviewCommand)).json(), reviewed.json());
+    const afterReview = (await app.inject({ method: 'GET', url: docPath.replace('/versions/1', '/versions/2'), headers })).json();
+    assert.deepEqual(afterReview.contentReviews[0].ref, reviewed.json().data.reviewRef);
+    assert.equal(afterReview.contentReviews[0].reviewer.userId, user); assert.equal(afterReview.contentReviews[0].reviewer.sameAsTargetRecorder, true);
+    assert.deepEqual(afterReview.contentReviewCriteria.items.map((item: { criterionId: string }) => item.criterionId), ['AF01-01','AF01-02','AF01-03','AF01-04','AF01-05','AF01-06']);
+    assert.equal(afterReview.confirmed, false, '검토 기록은 사용자 확정이 아니다');
+    assert.equal((await docSend({ ...reviewCommand, commandId: randomUUID(), payload: { ...reviewCommand.payload, outcome: 'ACCEPTED' } })).statusCode, 422, '보완 항목이 남은 ACCEPTED는 거절');
+    assert.equal((await docSend({ ...reviewCommand, commandId: randomUUID(), payload: { ...reviewCommand.payload, targetRef: { ...currentRef, contentHash: '0'.repeat(64) } } })).statusCode, 409);
+    assert.equal((await docSend({ ...reviewCommand, commandId: randomUUID(), expectedVersion: 1, payload: { ...reviewCommand.payload, targetRef: documentRef } })).statusCode, 409);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
       if ((await db.query("SELECT to_regclass('anvil.documents') present")).rows[0].present) {
+        await db.query('DELETE FROM anvil.content_reviews WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_version_events WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_artifact_links WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_versions WHERE project_id=$1', [project]);
