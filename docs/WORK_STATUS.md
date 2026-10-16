@@ -131,6 +131,12 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
+
+- 기준fabb5e63 clean/적용24 보존. 직접 승인된 FN05 정정/제외 이력 범위다. 기존 지식/원문을 덮거나 확정·헌법 적용·공유로 승격하지 않고 새 불변 버전/사건을 저장한다. 시험은 기존 고유 qa-document-storage UUID/프로젝트/원문root·별도 합성 정책이며 종료 후 지식 사건/버전·대화를 먼저 정확 정리한다.
+- Ruling: 정정은 현재 exact head/hash·같은 kind를 요구하고 새 버전은 PROPOSED, 앞 버전은 SUPERSEDED로 구별한다. 제외 사건은 삭제가 아니고 기본 검색에서 제외한다. 제외된 head의 정정으로 암묵 복원하지 않는다. 현재 미구현 복원/과거 버전 목록은 별도이며 잘못된 경우 비용은 명시 복원 흐름 추가이고 원문/이력은 보존한다.
+- 새 forward25에서 정정 출처/baseRef와 기존 지식 head/INSERT guard만 보완하고 적용23/24 SQL은 수정하지 않는다. 실제 사용자 권한·Secret/서비스·Agent 전달/공유/학습 변경0. 상태 판정/actual RED를 먼저 확인한다.
+
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
 
 - UI 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` private/WSL exact/clean actual1 PASS/5561ms/skip0. 같은 Web 원문 업로드→기존 대화 지시 정정/순번4→정확 SourceRef/hash/본문·목록 읽기→같은 명령 재확인에서 중복0을 확인했다. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL24/서비스·실제 사용자/정책/Secret/Agent는 변경0. API/실제 DB+FS와 합성 Edge fixture8은 각각의 증거이며 실제 사용자 browser DB/인수를 대신하지 않는다.
