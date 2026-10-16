@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 중복 잠금 보정 `c1b831976205ff975389f1ff73a7b5180f5d1d80` exact/clean actual1 FAIL/8867ms/skip0. 이전 조회 root는 해결돼 공백 삭제422·근거 없는 영향 없음422까지 통과했고, 다음 실제 새 검토 저장에서 별도 STORAGE_FAILED503이 발생했다(새 저장 root1, 아직 원인 미확정). 적용30/권한은 바꾸지 않고 같은 합성 명령/동일 인증·정책 경로에서 whitelist 오류 code/messageCode/constraint/routine만 드러내는 시험 진단을 추가한다. 오류 원문/SQL detail/Secret은 출력하지 않고 원래 HTTP 실패 판정은 보존하며 finally 정확 정리를 유지한다.
+
 - 사람 영향 검토503 원인 확인: `7fe95c8a0820d35e21484083512082e83035d52b` actual1 FAIL/8620ms/skip0에서 STORAGE_FAILED를 확인했고, 빈 결과 독립 probe에서 app SELECT=true/UPDATE=false·일반 SELECT OK·FOR UPDATE=42501·변경0을 재현했다. 같은 root 실제 실패2회이며 추가 권한 부여/SQL 변경 없이 중복 설계 이력 FOR UPDATE 한 줄만 제거했다. 모든 변경은 기존 ProjectPolicyRepository/currentProjectController의 project_control FOR UPDATE를 먼저 통과하고 최신 영향 CAS·unique/FK/DB guard는 그대로다. 변경 전: 불변 이력에 UPDATE 잠금 요구→42501, 변경 후: 기존 프로젝트 제어 직렬화 아래 정확 이력 조회/새 버전 저장. 적용 SQL30 불변·권한/원문/기준/서비스/Secret 변경0. 다음 exact 게시본에서 실제 GREEN을 확인한다.
 
 - 사람 영향 검토 후보 `4ff5465cc0eb27e49e2de9e6a815893da5ef1db8` exact/clean WSL에서 승인 forward30 checksume99067f14f8fa1d5ba775c3c6e4096ecf4a20483651d0e777776a74e4589275c 적용(이전29 불변). actual2 중 FN11 PASS·FN03 FAIL1/8713ms: 새 검토 정책 거절/정책 추가 뒤 ‘미확인 공백 삭제422’ 시도에서503, 원인 아직 미확정. 합격으로 승격하지 않고 비밀 없는 구조화 오류 code를 다음 시험에 노출해 원인을 좁힌다. 독립 DB28종 각0·시험root[]·지속root 보호/empty·migrations30 확인, 실제 사용자/서비스/Secret·기준 변경0. SQL30은 적용본이므로 수정하지 않는다.
