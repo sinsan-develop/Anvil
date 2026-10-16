@@ -107,6 +107,13 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN11·FN03 프로젝트 정책·문서 저장 보완 착수
+
+- 신산님 직접 응답 `call_2d1f4f3f38a445e2afcadeacc8bab034`: **‘FN11·FN03 계약·개발 DB 보완 승인’**. 기존 `anvil_v3_development`의 프로젝트 문서 원본/불변 버전/내용검토·확정과 명시적 프로젝트 권한 정책/명령·허가·감사를 새 forward migration으로 연결한다. 현재 인증·소유·단일 client 제어 세대·정확 버전/명시 허가를 검사하며 정책 없으면 거절한다. 실제 사용자에게 정책 자동 부여0, 기존 SQL·타 사용자/프로젝트·계정·Secret·인증서·서비스·실제 Agent·운영/Oracle 변경0이다. 직전 DRAFT 승인을 넓혀 해석하지 않고 별도로 받은 직접 승인이다.
+- 담당 Main 어울/단일 writer, 시작 `d7ad35cc663ad49a3be1dc83c3718854b37778ea`/지정 Stage B. 우선 FN11의 현재 owner/client/세대 gate·사람의 명시 자료용 정책 저장/불변 개정·기본 DENY·권한 확인 후 같은 command 재조회·명령/receipt/허용·거절 감사의 정상/음성부터 연결한다. Agent 실행·비용·외부 환경 변경을 자료 정책에 끼워 넣지 않는다. 이후 FN03 본문 원본/양식/버전 저장→검토·확정→UI06 순이다.
+- Ruling: 최초 정책 관리는 현재 프로젝트 OWNER·활성 client/control 세대·최근 재인증5분의 사람 명령만 허용하며 정책 미설정을 자동 AUTO로 채우지 않는다. 최초 연결은 명시 HUMAN·해당 프로젝트 자료 연산만 수용하고 Agent/실행·다른 프로젝트/사용자·검증 없는 limit/evidence 참조는 거절한다. 검토/한도/일회 승인·실제 실행 범위는 후속 gate로 남긴다. 이 좁은 실제 지원 범위를 전체 FN11 완료로 세지 않으며 잘못되면 명시 정책 새 버전으로 교정하고 옛 감사/버전은 보존한다.
+- QA 사전등록: 기존 전용 개발 DB의 `qa-project-policy-<난수 UUID>` 합성 사용자/2 client·로그인/재인증 세션/정확 QA 프로젝트·정책/명령/receipt/감사만, Main 소유·각 test try/finally 수명. 이번 고유 UUID로 소유/참조를 대조한 migrator 역순 정리·독립 잔여 조회, 기존 DB/서비스/포트·실제 사용자/Secret 보존. 파일 원본 저장의 보호 위치/수명·정리는 구현 전 별도로 등록한다. 실제 도구 호출0.
+
 ### 2026-10-16 FN01·FN02 생성 초안 검토/확정·최초 프로젝트 생성 재개
 
 - 게시/실측: `b93e4b0695e5b6ea7b7e245bbab4a6efac06d4ba`에서 최초 생성 route404≠403 RED→`c32d218960c8e424b06ed422ecc6fdc2143fcbdc` fixed reference 원자 생성 actual1 PASS/504ms. `00cca14e77794a1ae9dfc1a80ef805ee38ade5a4`의 DRAFT commands404≠200 RED→`04a0b2500c7b476baac3eba42fb8a283933fbe1d` 생성/공통 method·form 검토 actual3 PASS/skip0. 마지막 `ef88dfd965cedc97ee42e0545d0a79f40009b2c8`/WSL tracked clean에서 `node --test tests/integration/FN01/{draft-create,draft-storage,project-read}.test.ts tests/integration/FN02/method-review.test.ts` actual4 PASS/skip0/2.10초. 최종 GET 새 연결·동시 동일 요청1회·다른 command409·다른 사용자404/client403·CSRF403·빈 목적422·stale/미확정/위조/최신 REWORK·변경 후 옛 확정 미승계·append 보호42501을 확인했다. 실제 PG 감사 쓰기 오류를 좁게 주입해503 및 프로젝트/소유/제어/snapshot/명령/receipt rollback·초안 보존을 실제 DB로 확인했다. 제품 실패가 아니라 의도한 실패 조건 시험이며 실제 Agent/outbox0이다.
