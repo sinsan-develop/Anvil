@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+`WorkPlanLibrary.tsx`는 저장 snapshot(DRAFT)과 별도 검토/확정 이력·현재 유효성을 읽기 전용 조회로 분리한다. 상태 조회는 제어권/쓰기 준비를 요구하지 않으며 GET decision 검증·멤버 권한은 서버에서 확인한다. 검토/확정 작성은 기존 WorkPlanEditor의 별도 버퍼에서만 준비한다.
+
+UI06 계획 결정 연결: `work-plan-decision-api.ts`는 실제 계획 decision GET 검증·현재 사용자/client/세대/대상·별도 확인·같은 명령만 전송한다. `WorkPlanDecisionEditor.tsx`는 원문/카드 검토5기준의 개별 판단과 별도 사용자 확정을 분리하고 root WorkPlanBuffer.decision에 입력/명령/실패·미확인을 보존한다. 추적 writer와 동시 준비하지 않으며 단절 후 뒤늦은 거절도 새 명령/자동 닫기로 바꾸지 않는다. 화면 fixture와 실제 DB 증거는 WORK_STATUS에서 구분한다.
+
 FN04 계획 결정: `apps/server/modules/traceability/work-plan-reviews.ts`는 계획 전용5기준·exact 검토/영수증·최신 선택을, `work-plans.ts`는 원문·카드의 현재 준비상태 재검사/별도 확정·결정 조회를 소유한다. forward28 `db/migrations/0004_work_plan_confirmation.sql`은 append-only 확정과 confirmed pointer만 허가한다. 이전 초안/원문/검토 계약은 유지하며 실행/기준 활성화는 없다. 실제 결과와 미연결 화면은 WORK_STATUS를 따른다.
 
 FN04 화면 검토 선택: `features/design-trace/work-plan-screen-reviews.ts`가 연결된 화면의 정확 AF03 원문/양식/최신 검토를 읽고 기존 screenReviewRefs의 명시 선택/해제만 준비한다. WorkPlanEditor가 검토 목록·적합/미적합·현재 선택을 표시하며 자동 선택/확정을 만들지 않는다. 새 SQL/API0, 실제 저장은 기존 saveWorkPlanDraft/guard를 소비한다. 최신 검토와 과거 계획의 불변 선택 이력은 구분한다. unit113·계획 fixture5·실제 결과는 WORK_STATUS를 따른다.

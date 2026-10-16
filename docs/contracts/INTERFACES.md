@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+UI06 계획 결정 화면은 저장한 planRef·검사된 현재 decision view를 고정한다. REVIEW는 5항목/종합 판단과 이유를 사람이 입력하며 미실행 기본값을 자동 적합으로 바꾸지 않는다. CONFIRM은 최신 적합/현재 준비조건 충족/별도 checkbox 확인 뒤 기존 confirmWorkPlan payload만 전송한다. 단절·형식 오류 뒤 같은 명령만 재확인하며 뒤늦은403으로 이전 미확인을 지우지 않는다. 응답의 ref/명령/검토·확정 ID와 activatedAsBaseline=false를 대조한다. 작성/검토/별도 확정/실행은 각각 다른 사실이며 실제 UI DB 인수는 별도다.
+
 FN04 승인 보완(call_16ea05f2ca814a53bd83dc2b9945b898): `recordContentReview` targetKind=WORK_PLAN·targetRef·criteriaVersion1·5개 items(PLAN_SCOPE/PLAN_TRACE/PLAN_DEPENDENCIES/PLAN_TESTS/PLAN_RECOVERY)·outcome/reason을 별도 저장한다. 항목별 reason/evidenceRefs=[]와 정확 target/expected를 요구하며 AF04 문서 검토와 구분한다. `confirmWorkPlan`의 기존 payload `{planRef,reviewRefs}`를 유지하고 별도 명시 연산 정책·현재 OWNER/client/control·exact 현재 head/hash·최신 적합 계획 검토·현재 확정 AF02/AF04·최신 화면 적합 선택·업무/선행/검수 누락0을 다시 확인한다. receipt는 status CONFIRMED/confirmationId/reviewRefs/validation/activatedAsBaseline=false다. GET `projects/:projectId/work-plans/:id/versions/:version/decision`은 planRef/headVersion/confirmedVersion/criteria/contentReviews/confirmation/현재 validation/currentConfirmationValid/activatedAsBaseline=false/observedAt을 반환한다. 기존 버전 GET의 불변 DRAFT snapshot과 hash는 유지한다. 확정 이력은 사후 재검토/새 head에도 보존하고 현재 유효성과 분리한다. 별도 확정은 업무 실행이나 기준 활성화를 하지 않는다. 실제 적용/검증과 화면 연결 완료 여부는 WORK_STATUS로 구분한다.
 
 격리 receipt UI 후속: postDocumentCommand가 현재 업로드 명령/metadata·artifactRef·검사 형식 전체를 대조한 응답에만 terminal 격리 ID를 전달한다. 단순 HTTP412 오류에는 이 ID를 전달하지 않는다. 새 domain 저장은 실행하지 않으며 원문 ID/입력 보존 뒤 명시 닫기가 가능하다. 자동 해제·삭제·재저장·미검증을 성공 처리하는 동작은 추가하지 않는다.
