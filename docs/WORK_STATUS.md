@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN03 단계 입력/양식 exact ref RED2→GREEN2/128ms. 실제 검증은 별도 `document-stages.test.ts`에서 기존 QA 명명법의 qa-document-storage-<UUID> 사용자2·UUID 프로젝트2·현재 client/명시 문서 정책·실제 내장 v2의 합성 고정 snapshot을 사용한다. 두 프로젝트로 교차 적용 참조를 검사하며 /tmp/anvil-v3-document-qa-<UUID> uid1000/0700·한 시험 수명·finally 소유 UUID/실경로/링크 확인 후 정확 정리한다. 이는 실제 방법론 적용 전환을 구현/통과한 증거가 아니라 승인된 테스트 seed다. 신규40 작성/적용·단계 저장 GREEN/UI06 미검증, 지속 root/기존 SQL/서비스·Secret 변경0.
+
+- 2026-10-17 FN03 후속 직접 승인 `call_1553fd04d9e64a098d20ba83a7e7525c` ‘문서·방법론 단계 연결 계약·개발 DB 보완 승인’을 확인했다. 기준def4a0ae clean/private·정본6 동기화에서 Main 어울 단일 writer로 documents module·UI06/기존 문서 client 소비·신규 forward40/runner·직접 시험·관련 정본만 작업한다. 현재 stage_ref_json 열은 있으나 저장은412·Web hash는null만 지원하므로 nullable 기존 동작을 보존하면서 실제 고정 적용 snapshot/노드·양식 exact ref를 검사한다. 새 저장은 현재 적용본과 결박하고 과거 문서 조회는 당시 고정 적용본/원문을 유지한다. 변경 전38+39 SQL·원문·확정 이력은 보존하며 적용 전환·실행·자동 확정·실제 사용자 정책/Agent·Secret/서비스/운영은 제외한다. 기존 qa-document-storage UUID 사용자2/프로젝트1·/tmp/anvil-v3-document-qa-<UUID> uid1000/0700·한 시험 수명/finally exact 정리를 재사용하고 새 자원 범위를 늘리지 않는다. 새 code/schema/40 적용은 아직0이다.
+
 - FN02/UI03 현재 적용 구분866ea25f039d3de671136ac595d349a0e0b96234 local/private·WSL exact/clean actual1 PASS/1250ms(기능968ms)/skip0. 같은 Web reader가 개정·확정 뒤에도 고정 적용 ref와 별개임을 실제 API/PG에서 확인했다. SQL39 재적용0·독립 DB39종 각0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations39. 최신 단위141 PASS/1972ms·type/build0·UI03 fixture1/3.3초, Windows backend/relay/초기 비밀·실제 사용자 정책·Agent/서비스 변경0. 완료된 범위는 다시 구현하지 않으며 FN02 적용 전환/전체 기능·사용자 browser DB 인수는 여전히 미완료다.
 - 다음 Stage B FN03의 stageNodeRef는 현재 저장에서412·Web에서는 null로만 처리된다. 정본 계약은 `{applicationId,nodeId}`이며 실제 적용 snapshot/노드·양식 exact ref와 문서 불변 버전을 연결해야 한다. 이 계약/새 forward 보호·UI06 연결에 대해 신산님께 비동기 승인1건을 요청했다. 승인 전 해당 DB/저장 연산은 변경하지 않고 기존 입력·조회/소비 경계만 대조한다. 기존 원문·확정본·SQL·적용 이력을 보존하고 방법론 적용 전환·업무 실행·자동 확정·실제 사용자 정책/Agent·Secret/서비스/운영은 제외한다.
 
