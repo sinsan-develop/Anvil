@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN01 0ba2fd49617e7c21c0a3413f3d80610859ff7076 exact private/WSL clean actual2 PASS/1178ms(생성922·중간저장406ms)/skip0: 기존 빈 생성 보존·EXISTING 선언 저장/replay/재조회·선언 새 버전/옛 내용 보존·현재 버전만 원자 귀속·동시 생성1·타인404·source 미확인/baseline null·delivery0·위장 UPDATE/삭제42501을 확인했다. SQL38 재실행0, 기존 실패는 PASS로 소급하지 않는다.
+- UI02 기존 소스 입력/선언 proof 신규 unit RED1→GREEN2/146ms·입력란 부재 browser RED1→UI02 직접 영향10 PASS/7.7초, 전체 unit137 PASS/1918ms·type/build0(Web89/587.77kB/gzip152.72·기존 bundle/색상 경고 보존). 소스 방식을 바꿔 탭 선언을 비울 때만 명시 확인을 받으며 서버 과거 이력은 보존한다. source 선언을 VERIFIED/실제 root 권한으로 표시하지 않는다. 동일 Web 함수 실제 저장 후 합성 응답 단절→원 명령 재확인·재조회·생성 시험은 추가 작성 후 다음 exact 게시본 실행 예정/미검증이다. 서비스/relay/Secret·실제 사용자 권한·실제 소스 파일 접근0.
+
 - FN01 3d21841bdab2c69a1066e43c73dcd436fc556c0d exact WSL에서 보정38 checksum246fd202…3c025 적용/이전37 불변·fixtures7·실제 사용자 생성0으로 42P07 원인은 해소됐다. actual2 FAIL/1241ms: 생성 시험은 선언 저장/재조회·새 버전/옛 원문 보존·동시 생성/현재 귀속/타인404·Agent0까지 통과했으나 마지막 음성 SQL이 readiness 없는 identity 테이블을 참조해42703≠42501이었다. 시험 대상만 실제 버전 테이블로 교정하며 적용 SQL38/기대42501 불변이다. 인접 draft-storage는 ANVIL_QA_CLEANUP_CONFIG 미전달로 생성 전 중단했다. 해당 기존 보호 migrator 파일 참조를 실행에 추가하며 키/Secret 변경0이다. 아직 전체 actual GREEN 미검증, 다음 exact 게시본에서 같은 좁은 시험을 확인한다.
 
 - FN01 forward38 첫 적용4b3f63bc는 generic migration 실패로 실제 QA 실행0이다. 독립 롤백 전용 probe에서 37개 적용·기존 source_declarations 존재, 동일 SQL42P07을 확인했다(같은 root2회). 원0001 SQL/실제 열·제약·권한·행0을 읽기 전용 대조했으며 기존 준비 테이블을 새로 만들려 한 충돌이 원인이다. Ruling: 기존 선언 identity 테이블/원37 SQL·자료는 보존하고 별도 source_declaration_versions에 append-only snapshot을 연결한다. root identity는 최초 선언 metadata/보호 payload 참조만 보존하고 현재 내용은 exact 버전이 소유한다. 기존 app UPDATE/DELETE는 새38에서 회수·새 INSERT는 현재 owned draft command guard로 보호한다. 미적용38 후보만 보정했으며 checksum246fd20284f998ac8d1c1cbea1570372f7d6a204dad885ea41112eeda5b3c025다. 실제 GREEN은 미검증·3회 같은 root면 추가 재시도 없이 예외 보고한다. 삭제/기존 자료 변환·Secret/서비스 변경0.

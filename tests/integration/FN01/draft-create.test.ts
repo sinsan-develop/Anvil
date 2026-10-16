@@ -7,6 +7,8 @@ import { validateDevelopmentDbConfig } from '../../../apps/server/storage/develo
 import { AccessRepository } from '../../../apps/server/modules/access/repository.ts';
 import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
+import{ApiClient,ApiError}from'../../../apps/web/src/api/client.ts';
+import{writeProjectDraft,readProjectDraft,runDraftAction}from'../../../apps/web/src/features/project-create/api.ts';
 
 // 결함 검출 대상: 초안 생성의 중복 소비·현재 client/소유권 누락·snapshot 누락·실행 권한 생성.
 test('최초 프로젝트는 저장 초안을 한 번만 원자 소비하고 소유자/client 제어와 고정 방법론을 재조회한다', async () => {
@@ -156,6 +158,10 @@ test('최초 프로젝트는 저장 초안을 한 번만 원자 소비하고 소
     const sourceProjectView=await app.inject({method:'GET',url:'/api/v1/projects/'+sourceProject.id,headers});assert.equal(sourceProjectView.statusCode,200,sourceProjectView.body);assert.deepEqual(sourceProjectView.json().sourceDeclaration,sourceProject.sourceDeclaration);assert.equal((await app.inject({method:'GET',url:'/api/v1/projects/'+sourceProject.id,headers:otherHeaders})).statusCode,404);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.project_source_declarations WHERE project_id=$1',[sourceProject.id])).rows[0].n,1);assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1',[sourceProject.id])).rows[0].n,0);
     await assert.rejects(pool.query("UPDATE anvil.source_declaration_versions SET readiness='VERIFIED' WHERE draft_id=$1",[sourceDraftId]),(e:unknown)=>(e as{code:string}).code==='42501');await assert.rejects(pool.query('DELETE FROM anvil.project_source_declarations WHERE project_id=$1',[sourceProject.id]),(e:unknown)=>(e as{code:string}).code==='42501');
+    const sourceClient=new ApiClient(async(url,init)=>{const supplied=Object.fromEntries(new Headers(init?.headers).entries()),response=await app.inject({method:(init?.method??'GET')as'GET'|'POST'|'PATCH',url:String(url),headers:{...headers,...supplied},...(init?.body?{payload:String(init.body)}:{})});return new Response(response.body,{status:response.statusCode,headers:{'content-type':String(response.headers['content-type']??'')}});});
+    const webDeclarationRequest={...sourceDraftCommand,commandId:randomUUID()};let dropDeclarationReceipt=true;const lostDeclarationClient=new ApiClient(async(url,init)=>{const response=await sourceClient.transport.call(globalThis,url,init);if(dropDeclarationReceipt&&init?.method==='POST'){dropDeclarationReceipt=false;throw Error('synthetic-declaration-receipt-lost');}return response;});
+    await assert.rejects(writeProjectDraft(lostDeclarationClient,null,webDeclarationRequest,login.csrfToken),(e:unknown)=>e instanceof ApiError&&e.code==='CONNECTION_LOST');const webDeclarationDraft=await writeProjectDraft(sourceClient,null,webDeclarationRequest,login.csrfToken);assert.deepEqual(await writeProjectDraft(sourceClient,null,webDeclarationRequest,login.csrfToken),webDeclarationDraft);assert.deepEqual((await readProjectDraft(sourceClient,webDeclarationDraft.draftId)).sourceDeclaration,webDeclarationDraft.sourceDeclaration);
+    const webCreated=await runDraftAction(sourceClient,{kind:'create',draftId:webDeclarationDraft.draftId,body:{schemaVersion:1,commandId:randomUUID(),clientId:login.clientId,draftId:webDeclarationDraft.draftId,draftVersion:1}},login.csrfToken,users[0]!);assert.equal(webCreated!.sourceMode,'EXISTING');assert.deepEqual(webCreated!.sourceDeclaration?.declaration,sourceDeclaration);assert.equal(webCreated!.baselineRef,null);
   } finally {
     await app.close(); const db = await admin.connect();
     try {

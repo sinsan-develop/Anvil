@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import{canonicalJson,contentHash}from'../../../contracts/canonical.ts';
 
 const unexpected = new WeakMap<object, string[]>();
 test.beforeEach(async ({ page }) => {
@@ -9,6 +10,11 @@ test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); }
 
 const id = '32b5f276-13e6-4d8a-b93f-27a15d21c788', csrf = 'C'.repeat(43);
 const input = { name: '내 프로젝트', purpose: '개발 주도권', desiredOutcome: '원본 유지', sourceMode: 'EMPTY', methodologySelection: null, artifactRefs: [] };
+test('기존 소스 위치 설명은 미확인 선언으로 저장·재조회되고 실제 파일 접근을 요청하지 않는다',async({page})=>{
+ let draft:any=null;const writes:any[]=[];await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id,displayName:'QA'},clientId:id,csrfToken:csrf}}));
+ await page.route('**/api/v1/project-drafts',r=>{const c=r.request().postDataJSON();writes.push(c);const {name,purpose,desiredOutcome,sourceMode,sourceDeclaration,methodologySelection,artifactRefs}=c;draft={draftId:id,version:1,step:1,input:{name,purpose,desiredOutcome,sourceMode,sourceDeclaration,methodologySelection,artifactRefs},sourceDeclaration:{ref:{id,version:1,contentHash:contentHash(canonicalJson(sourceDeclaration))},authority:'USER_DECLARED',readiness:'UNVERIFIED',declaration:sourceDeclaration}};return r.fulfill({status:201,json:draft});});
+ await page.route('**/api/v1/project-drafts/'+id,r=>r.fulfill({json:{...draft,editable:true,consumedProjectId:null}}));await page.goto('/#/projects/new');await page.getByLabel('프로젝트 이름',{exact:true}).fill(input.name);await page.getByLabel('왜 만드는가',{exact:true}).fill(input.purpose);await page.getByLabel('기대 결과',{exact:true}).fill(input.desiredOutcome);await page.getByLabel('프로젝트 소스 방식',{exact:true}).selectOption('EXISTING');await page.getByLabel('소스가 있는 기기',{exact:true}).fill('내 Windows PC');await page.getByLabel('소스 표시 이름',{exact:true}).fill('내 기존 소스');await page.getByLabel('소스 위치 설명',{exact:true}).fill('D:\\Synthetic\\NotOpened');await page.getByLabel('소스 선언 이유',{exact:true}).fill('파일을 열지 않은 설명');await page.getByRole('button',{name:'중간 저장',exact:true}).click();await expect(page.getByRole('status').last()).toContainText('초안 버전 1');await page.reload();await expect(page.getByLabel('소스 위치 설명',{exact:true})).toHaveValue('D:\\Synthetic\\NotOpened');await expect(page.getByText('기존 소스 사용자 선언 · 미확인',{exact:true})).toBeVisible();expect(writes).toHaveLength(1);expect(writes[0].sourceMode).toBe('EXISTING');
+});
 test('프로젝트 초안 안에 두 단계 방법론을 직접 작성하고 명시 저장 뒤 재조회한다', async ({ page }) => {
   let draft: any = null; const writes: any[] = [];
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id, displayName: 'QA' }, clientId: id, csrfToken: csrf } }));

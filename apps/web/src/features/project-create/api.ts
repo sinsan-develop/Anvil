@@ -2,13 +2,15 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DraftMethodSelection } from '../../../../../contracts/project-drafts.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { reviewRefFor, type ContentReviewRef, type ReviewOutcome } from '../methodologies/forms-api.ts';
+import type{SourceDeclaration}from'../../../../server/modules/projects/source-declaration.ts';
+export interface SourceDeclarationView{ref:VersionRef;authority:'USER_DECLARED';readiness:'UNVERIFIED';declaration:SourceDeclaration}
 
-export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY'; methodologySelection: DraftMethodSelection | null; artifactRefs: [] }
+export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY'|'EXISTING';sourceDeclaration?:SourceDeclaration; methodologySelection: DraftMethodSelection | null; artifactRefs: [] }
 export interface DraftMethodState { ref: VersionRef; validation: { validForConfirmation: boolean; issues: { code: string; severity: string }[] }; contentReviewCriteria: { criteriaVersion: number; items: { criterionId: string; title: string }[] }; contentReviews: { reviewRef: ContentReviewRef; reason: string; reviewerSubjectRef: { kind: 'HUMAN'; userId: string; sameAsTargetRecorder: boolean }; sourceKind: 'HUMAN_REVIEW'; reviewedAt: string }[]; confirmation: { id: string; decidedBy: string; decidedAt: string; reviewRefs: ContentReviewRef[] } | null }
-export interface DraftResult { draftId: string; version: number; step: number; input: DraftInput; editable?: boolean; consumedProjectId?: string | null; methodologyState?: DraftMethodState | null }
+export interface DraftResult { draftId: string; version: number; step: number; input: DraftInput; sourceDeclaration?:SourceDeclarationView;editable?: boolean; consumedProjectId?: string | null; methodologyState?: DraftMethodState | null }
 export interface DraftReviewInput { ref: VersionRef; criteriaVersion: number; items: { criterionId: string; outcome: ReviewOutcome; evidenceRefs: []; reason: string }[]; outcome: ReviewOutcome; reason: string; dirty: boolean }
 export interface DraftAction { kind: 'review' | 'create'; body: Record<string, unknown>; draftId: string }
-export interface CreatedProject { id: string; name: string; purpose: string; desiredOutcome: string; version: number; currentMethodologyRef: VersionRef; baselineRef: null; readinessIssues: { code: string }[]; participation: 'OWNER'; controlState: { actorId: string; clientId: string; generation: number; status: 'HELD' } }
+export interface CreatedProject { id: string; name: string; purpose: string; desiredOutcome: string; version: number; currentMethodologyRef: VersionRef; baselineRef: null;sourceMode?:'EMPTY'|'EXISTING';sourceDeclaration?:SourceDeclarationView|null; readinessIssues: { code: string }[]; participation: 'OWNER'; controlState: { actorId: string; clientId: string; generation: number; status: 'HELD' } }
 export interface PendingDraftCommand { draftId: string | null; fingerprint: string; body: Record<string, unknown> }
 export interface DraftEditorState { ownerUserId: string | null; input: DraftInput; draftId: string | null; version: number; dirty: boolean; pendingCommand: PendingDraftCommand | null; methodologyState?: DraftMethodState | null; review?: DraftReviewInput | null; pendingAction?: DraftAction | null; createdProject?: CreatedProject | null }
 export function emptyDraft(): DraftEditorState { return { ownerUserId: null, input: { name: '', purpose: '', desiredOutcome: '', sourceMode: 'EMPTY', methodologySelection: null, artifactRefs: [] }, draftId: null, version: 0, dirty: false, pendingCommand: null }; }
@@ -22,11 +24,17 @@ function validSelection(selection: DraftMethodSelection | null) {
     && !!selection.graph && Array.isArray(selection.graph.nodes) && Array.isArray(selection.graph.edges) && typeof selection.graph.entryNodeId === 'string' && Array.isArray(selection.graph.terminalNodeIds)
     && Array.isArray(selection.sourceRefs) && selection.sourceRefs.length <= 200 && selection.sourceRefs.every(ref) && Array.isArray(selection.reviewRefs) && !selection.reviewRefs.length;
 }
-function draftResult(value: unknown): DraftResult {
+function validSourceDeclaration(v:SourceDeclaration|undefined):v is SourceDeclaration{return!!v&&Object.keys(v).sort().join(',')==='displayName,hostLabel,pathHint,reason'&&(['hostLabel','displayName','pathHint','reason']as const).every(k=>typeof v[k]==='string'&&!!v[k].trim()&&v[k].isWellFormed()&&v[k].length<=(k==='reason'?20000:k==='pathHint'?4096:200)&&(k==='reason'||!/[\u0000-\u001f\u007f]/.test(v[k])));}
+async function validSourceView(value:SourceDeclarationView|undefined|null,draftId:string,version:number){
+ if(!value||value.authority!=='USER_DECLARED'||value.readiness!=='UNVERIFIED'||!validSourceDeclaration(value.declaration)||!value.ref||value.ref.id!==draftId||value.ref.version!==version||!/^[0-9a-f]{64}$/.test(value.ref.contentHash))throw new ApiError('RESPONSE_INVALID');
+ const d=value.declaration,bytes=new TextEncoder().encode(JSON.stringify({displayName:d.displayName,hostLabel:d.hostLabel,pathHint:d.pathHint,reason:d.reason})),hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');if(hash!==value.ref.contentHash)throw new ApiError('RESPONSE_INVALID');return value;
+}
+async function draftResult(value: unknown):Promise<DraftResult> {
   const result = value as DraftResult;
   if (!result || !uuid.test(result.draftId) || !Number.isSafeInteger(result.version) || result.version < 1 || !Number.isInteger(result.step) || result.step < 1 || result.step > 4
     || !result.input || typeof result.input.name !== 'string' || typeof result.input.purpose !== 'string' || typeof result.input.desiredOutcome !== 'string'
-    || result.input.sourceMode !== 'EMPTY' || !validSelection(result.input.methodologySelection) || !Array.isArray(result.input.artifactRefs) || result.input.artifactRefs.length) throw new ApiError('RESPONSE_INVALID');
+    || !['EMPTY','EXISTING'].includes(result.input.sourceMode) || !validSelection(result.input.methodologySelection) || !Array.isArray(result.input.artifactRefs) || result.input.artifactRefs.length) throw new ApiError('RESPONSE_INVALID');
+  if(result.input.sourceMode==='EXISTING'){const source=await validSourceView(result.sourceDeclaration,result.draftId,result.version),input=result.input.sourceDeclaration;if(!validSourceDeclaration(input)||(['hostLabel','displayName','pathHint','reason']as const).some(k=>source.declaration[k]!==input[k]))throw new ApiError('RESPONSE_INVALID');}else if(result.input.sourceDeclaration!==undefined||result.sourceDeclaration!=null)throw new ApiError('RESPONSE_INVALID');
   const state = result.methodologyState;
   if (state != null && (!state.ref || state.ref.id !== result.draftId || state.ref.version !== result.version || !/^[0-9a-f]{64}$/.test(state.ref.contentHash)
     || typeof state.validation?.validForConfirmation !== 'boolean' || !Array.isArray(state.validation.issues)
@@ -38,7 +46,7 @@ function draftResult(value: unknown): DraftResult {
 }
 export async function readProjectDraft(client: ApiClient, draftId: string): Promise<DraftResult> {
   if (!uuid.test(draftId)) throw new ApiError('CLIENT_PATH_INVALID');
-  const result = draftResult(await client.get('/api/v1/project-drafts/' + draftId));
+  const result = await draftResult(await client.get('/api/v1/project-drafts/' + draftId));
   if (result.draftId !== draftId || typeof result.editable !== 'boolean') throw new ApiError('RESPONSE_INVALID');
   return result;
 }
@@ -81,6 +89,7 @@ export async function runDraftAction(client: ApiClient, action: DraftAction, csr
       || !value.currentMethodologyRef || !uuid.test(value.currentMethodologyRef.id) || value.currentMethodologyRef.version !== 1 || !/^[0-9a-f]{64}$/.test(value.currentMethodologyRef.contentHash) || value.baselineRef !== null
       || !Array.isArray(value.readinessIssues) || value.readinessIssues.some((issue: { code: string }) => typeof issue?.code !== 'string')
       || value.controlState?.actorId !== actorId || value.controlState?.clientId !== action.body.clientId || value.controlState?.generation !== 1 || value.controlState?.status !== 'HELD') throw new ApiError('RESPONSE_INVALID');
+    if(value.sourceMode==='EXISTING'){await validSourceView(value.sourceDeclaration,action.draftId,Number(action.body.draftVersion));if(!value.readinessIssues.some((i:{code:string})=>i.code==='SOURCE_DECLARATION_UNVERIFIED'))throw new ApiError('RESPONSE_INVALID');}else if(value.sourceMode!==undefined&&value.sourceMode!=='EMPTY'||value.sourceDeclaration!=null)throw new ApiError('RESPONSE_INVALID');
     return value;
   }
   const payload = action.body.payload as Record<string, unknown>, ref = action.body.operation === 'recordContentReview' ? payload.targetRef as VersionRef : { id: action.draftId, version: action.body.expectedVersion as number, contentHash: payload.graphHash as string };
