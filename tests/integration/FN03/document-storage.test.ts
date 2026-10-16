@@ -422,6 +422,12 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),targetId:planRef.id,expectedVersion:1})).statusCode,409);
     assert.deepEqual((await app.inject({method:'GET',url:planPath,headers})).json().tasks,planValue.tasks,'개정 뒤에도 구버전 계획 보존');
     const ambiguous=await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[task,structuredClone(task)]}});assert.equal(ambiguous.statusCode,200,ambiguous.body);assert.equal(ambiguous.json().data.workPlan.relationalProjection,'ISSUES_ONLY');assert.ok(ambiguous.json().data.workPlan.issues.some((i:any)=>i.code==='DUPLICATE_TASK_CODE'));
+    const planListUrl=`/api/v1/projects/${project}/work-plans?limit=1&documentId=${planDocumentRef.id}`;
+    const planList=await app.inject({method:'GET',url:planListUrl,headers});assert.equal(planList.statusCode,200,planList.body);assert.equal(planList.json().items.length,1);assert.equal(planList.json().hasMore,true);assert.equal(planList.json().items[0].integrity,'NOT_RECHECKED');
+    const nextPlans=await app.inject({method:'GET',url:planListUrl+'&cursor='+encodeURIComponent(planList.json().nextCursor),headers});assert.equal(nextPlans.statusCode,200,nextPlans.body);assert.equal(nextPlans.json().hasMore,false);assert.notEqual(nextPlans.json().items[0].ref.id,planList.json().items[0].ref.id);
+    assert.equal((await app.inject({method:'GET',url:planListUrl+'&cursor='+encodeURIComponent(planList.json().nextCursor+'x'),headers})).statusCode,400);
+    assert.equal((await app.inject({method:'GET',url:planListUrl.replace(planDocumentRef.id,designRef.id)+'&cursor='+encodeURIComponent(planList.json().nextCursor),headers})).statusCode,400);
+    assert.equal((await app.inject({method:'GET',url:planListUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.plan_tasks WHERE project_id=$1 AND plan_id=$2 AND plan_version=1',[project,planRef.id])).rows[0].n,2);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.plan_dependencies WHERE project_id=$1 AND plan_id=$2 AND plan_version=1',[project,planRef.id])).rows[0].n,2);
     await assert.rejects(pool.query('UPDATE anvil.work_plan_versions SET version=99 WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
