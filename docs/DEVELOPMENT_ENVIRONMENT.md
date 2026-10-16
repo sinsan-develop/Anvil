@@ -2,6 +2,7 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 프로젝트 전용 초안 후속 관측: WSL Git exact `72cd43affe6a738a342df3a3ca0e2e79b2e5c7de`/clean에서 기존10개 SQL/DB 권한 그대로 실제1 PASS/486ms/skip0, 직접 작성2단계·음수/양수 좌표·조건/원본 ref 저장·GET 재조회 및 잘못된 실행 속성422·고유 QA 정리 확인. Windows Web45모듈(JS330.19kB/gzip95.49)·타입/단위41·UI02 합성7 PASS는 별도 증거다. backend000d0088·relay hold·인증서/초기 비밀 경계 불변, actual 새 UI DB 통합은 미검증. DRAFT/PROJECT 새 권한 보완은 승인 응답 전0.
 2026-10-16 방법론 검토/초안 선택 최신 관측: WSL exact `29d70cf0795d8593b8f6e7951e43bf7eab4e2424` actual1 PASS/455ms·정확 합성 QA 정리. 새 `0011_user_common_method_reviews` checksum `9e480e3bd4da152befdbb2bca8a2f5e1b3cdf0ed43336c5b210090f7ff02fea2`를 포함해 적용10개이며 이전9개 불변. Windows44모듈 Web build/단위41·UI03 fixture12/UI02 fixture5와 실제 API/DB는 분리한다. 소유 Node40744의 원래 시작UTC2026-10-15T20:25:42.3705853Z·backend000d0088은 교체하지 않았고 Web만 새 빌드다. 전체 exact-SHA runtime/actual UI DB 여정은 미검증. 초기 비밀 만료·CA7일·relay26052 hold 유지, 재접속/실제 사용자/Secret/Agent/Oracle 변경0. 다음 DRAFT/PROJECT 권한 보완은 USER_COMMON 승인과 별도 경계로 기록했다.
 2026-10-16 본인 공통 검토 최신 관측: WSL exact `34805ebedd2781eb23119d6d79648b1ecc585e8f` 실제 양식 검토/확정/새 개정·최신 보완/위조 증거 거절1 PASS·정확 QA 정리. 추가 migration `0011_user_common_content_reviews` checksum `0009cfe2c02b92a4e930d538ce5c0c5d67215c6d89aca6c1a4345868ccbc4f01`, 이전8개 SQL/checksum 불변. Windows Web37/단위41·인접 UI03 fixture9 증거와 실제 API/DB는 분리한다. Node40744 backend000d0088·relay26052/5546·bootstrap 만료·CA7일 경계는 변경하지 않았고 새 사용자 인수/실제 UI DB 여정/Agent/Oracle는 미검증이다.
 
