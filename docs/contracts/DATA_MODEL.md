@@ -1,5 +1,14 @@
 # P02 데이터 관계·보존 계약 초안
 
+## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
+
+아래 초기 P02 미실행 문구는 작성 시점 이력이다. 신산님 FN11/FN03 직접 승인 후 새 forward13~15를 개발 DB에 적용했고 WSL exact `dc42b29c4d24d24dc4f6f8f1737ac289023ae09c`의 actual2 PASS로 현재 좁은 연결을 확인했다. 전체 표의 계획 기능/미구현 테이블까지 적용됐다는 뜻은 아니다.
+
+- 정책13: 현재 owner/client/control·최근 재인증의 명시 저장, 정책/version/command/receipt/audit exact 결박·불변 과거 버전. 현재 HUMAN 본인/해당 PROJECT/자료 연산·유한 기한만 지원한다. 자동 정책·Agent grant·일회 승인 소비는 없다.
+- 원본14: project/draft 소유 정확히 하나, 현재 app INSERT는 PROJECT READY만 현재 uploadArtifact 명령·receipt·정책/control/hash/크기에 결박. UPDATE/DELETE 금지. 원본을 파일로 독립 보존하며 전역 hash 또는 임의 storage 경로로 접근하지 않는다. 파일 성공/DB 실패의 orphan은 보존·복구 대상으로 분리하며 DB/FS 완전 원자성은 주장하지 않는다.
+- 문서15: `documents` head와 nullable confirmed pointer, 정확 form version/hash·같은 project artifact FK의 `document_versions`, BODY/ATTACHMENT links·DRAFT_SAVED events. 현재 saveDocumentDraft만 허용하며 title/content/source/author/validation은 해당 버전에 불변 저장한다. 새 버전이 구버전 제목/본문을 바꾸지 않는다. 정책/권한·명령/receipt/audit와 같은 DB transaction, app UPDATE/DELETE로 과거 version/event 수정 불가.
+- 현재 텍스트 본문≤2MiB·필수 양식 항목의 `line:N` 원문 위치 연결만 형식 검사. 빈 필수항목/미연결은 초안 저장 가능하지만 사용자 확정/내용검수로 승격하지 않는다. stage/import/source/proposal·내용검토/확정과 더 넓은 parser는 미연결이며 요청 시 fail-closed다. 원본 자체 업로드는≤20MiB지만 이 사실이 모든 형식 추출 지원을 의미하지 않는다.
+
 상태: **P02 논리·물리 저장 책임 상세화 / SQL·DB 실행 미검증**. 2026-10-16 Main 어울. 설계 r8 §4~10, 계획 r7, 승인 공식 산출물 양식·UI/FN 업무 카드를 기준으로 한다. TD-01 PostgreSQL/파일 선택은 유지한다. 표는 저장 책임/관계 제안이며 DB 생성·migration·실데이터 변경 지시가 아니다. 특정 테이블/타입/인덱스/암호화 구현과 P02 합격을 선언하지 않는다.
 
 ## 1. 공통 규칙

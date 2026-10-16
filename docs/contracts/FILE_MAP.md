@@ -1,5 +1,13 @@
 # P02 A안 파일 책임·검증 지도
 
+## 2026-10-16 FN11·FN03/UI06 실제 연결 범위
+
+- `apps/server/modules/access/project-command.ts`: 현재 OWNER/client/control 세대·명시 자료 정책/불변 개정·거절 감사·replay 전 재허가. `0011_project_policy_control.sql`은13번째 forward다.
+- `apps/server/storage/artifact-store.ts`, `modules/documents/project-files.ts`: 승인 root의 프로젝트별 원문 byte/hash·20MiB 상한·10GiB 프로젝트 용량·exact 파일 응답. `0003_project_artifacts.sql`14번째, 자동 GC·실제 서비스 설정 변경 없음.
+- `apps/server/modules/documents/project-documents.ts`: 원문+양식 exact ref의 불변 초안 버전·구버전·현재 목록/서명 cursor. `0003_project_documents.sql`15번째. 내용검토/확정·파서/제안/소스 연결은 후속 미구현이다.
+- `apps/web/src/features/design-trace/api.ts`/`DocumentsPage.tsx`: UI06 문서/버전 목록과 bounded bytes/hash 검증 후 escaped 텍스트·검사/이력 조회. App은 사용자/프로젝트 변경 시 component key로 조회 상태를 분리한다. 실제 편집·작성/확정/추적 화면은 남아 있다.
+- 검증: `tests/integration/FN03/document-storage.test.ts`, `tests/integration/FN11/project-policy.test.ts`는 WSL actual, `tests/browser/UI06/document-read.spec.ts`는 모든 API를 차단·대체하는 화면 fixture다. 전자는 API/DB/파일, 후자는 클릭/구버전/스크립트 비실행·변조 차단만 증명한다.
+
 ## P03 초기 실제 생성 범위
 
 공통 단일 package/lock와 `.gitattributes`로 시작한다. 별도 app별 dependency 복제를 만들지 않으며 서버 `config.ts`·`main.ts/app.ts`, 웹 index/main·vite/tsconfig, 공통 `canonical/catalog/generated-types/references`·refs schema와 타입 생성 script를 먼저 구현했다. 로그인·업무 UI/Agent는 해당 FN/UI에서 추가한다. 시험은 `tests/unit/P03/{config,database-config,health,web,resource-guards}.test.ts`·기존 공통 계약 시험·`tests/integration/P03/storage.test.ts`다.

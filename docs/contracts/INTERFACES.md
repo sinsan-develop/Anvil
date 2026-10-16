@@ -1,5 +1,15 @@
 # P02 공통 명령·관측 계약 초안
 
+## 2026-10-16 현재 구현된 FN11/FN03·UI06 연결
+
+아래의 넓은 계획 endpoint/연산은 구현 목록이 아니다. 현재 추가 연결은 다음에 한정되며 전체 FN03/FN11·UI06 완료를 뜻하지 않는다.
+
+- GET `projects/:projectId/permission-policy`는 자동 생성 없이 configured/policy를 반환한다. PROJECT commands의 savePermissionPolicy는 current OWNER/client/controlGeneration·최근 재인증·정확 head와 명시 규칙을 요구한다. 본인 HUMAN/동일 PROJECT 자료 연산만, 없거나 DENY면 거절·REQUIRE_APPROVAL은 아직 소비 연결 전412다.
+- POST `projects/:projectId/files`: `application/octet-stream` 원문과 `x-anvil-command`의 엄격한 PROJECT envelope(operation uploadArtifact,targetId null,expectedVersion0,payload `{mediaType,bytes,contentHash}`)를 받는다. 현재 인증/제어/명시 정책은 body 수집 전과 실제 쓰기 전에 확인한다. 실제 bytes/hash 일치·보호 경로 저장 후 data.artifactRef, 동일 명령은 현재 권한/실파일을 다시 확인한다. GET files/:id는 attachment/octet-stream·CSP/no-sniff·정확 바이트/hash 검증, 다운로드를 문서 실행/추출로 해석하지 않는다.
+- PROJECT commands saveDocumentDraft는 §9.4 계약의 title/formRef/content/reason과 정확 target/expectedVersion을 받되 현재 stageNodeRef/importCandidateRef는 null, sourceRefs는[]만 지원한다. content.body·attachments는 같은 프로젝트 READY 원본, sections는 `{itemId,anchor:'line:N'}`. body UTF-8 텍스트/Markdown≤2MiB, 불변 버전/검사 결과를 data.ref로 응답한다. 내용 검토/확정·제안/소스 연결 전 참조는412다.
+- GET `projects/:projectId/documents?limit&cursor`: 기본50/최대200, updated_at/id 내림차순 keyset. items `{id,title,headVersion,confirmedVersion,updatedAt}`·nextCursor/hasMore/observedAt. cursor는 문서 도메인·현재 사용자/프로젝트/limit·30분에 서명 결박하고 페이지마다 인증/프로젝트 참여를 재검사한다. 종류·단계·상태 검색은 아직 미구현이며 알 수 없는 query는400이다. 동일시각 전체 snapshot은 주장하지 않는다.
+- GET `projects/:projectId/documents/:id/versions/:version`: 불변 title/formRef/content/hash/author/validation/statusHistory·현재 버전의 confirmed 여부. 현재 reviewRefs/proposalRefs/sourceLinks는 실제 연결이 없으므로[]이다. UI06은 원문 재수신 시 bounded 크기/해시를 검증하고 escaped 텍스트로만 표시한다. 원문/구버전 조회와 편집/내용검토·확정/추적은 구별한다.
+
 상태: **P02 상세 계약 종료 대조 중 / 제품 실행 미검증**. 2026-10-16 Main 어울. 설계 r8 §9~10·계획 r7와 승인 P01 동작을 상세화한다. Node/Fastify·TD-02 전용 로그인·TD-03 정책을 §8~15에 상세화했다. 초기 작성의 후속 항목은 아래 상세 절을 함께 대조한다. P03의 코드 schema/정확 버전·명령/환경 실측과 각 FN 구현/실제 검수는 남아 있으며 문서만으로 제품 실행을 증명하지 않는다.
 
 ## 1. 소유권과 신뢰 경계
