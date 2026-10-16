@@ -82,6 +82,19 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await app.inject({ method: 'GET', url: docPath, headers })).json().title, '보존할 요구사항 원본', '개정해도 구버전 제목/원문은 유지');
     assert.equal((await app.inject({ method: 'GET', url: docPath.replace('/versions/1', '/versions/2'), headers })).json().title, '개정한 요구사항 제목');
     assert.deepEqual(await readFile(path), bytes);
+    const listPath = `/api/v1/projects/${project}/documents?limit=1`;
+    const list = await app.inject({ method: 'GET', url: listPath, headers });
+    assert.equal(list.statusCode, 200, list.body);
+    assert.equal(list.json().items.length, 1); assert.equal(list.json().items[0].id, documentRef.id);
+    assert.equal(list.json().items[0].headVersion, 2); assert.equal(list.json().items[0].confirmedVersion, null);
+    assert.equal((await app.inject({ method: 'GET', url: listPath, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
+    const second = await docSend({ ...documentCommand, commandId: randomUUID(), payload: { ...documentCommand.payload, title: '두 번째 원본' } });
+    assert.equal(second.statusCode, 200, second.body);
+    const firstPage = (await app.inject({ method: 'GET', url: listPath, headers })).json();
+    assert.equal(firstPage.items[0].id, second.json().data.ref.id); assert.equal(firstPage.hasMore, true);
+    const secondPage = (await app.inject({ method: 'GET', url: listPath + '&cursor=' + encodeURIComponent(firstPage.nextCursor), headers })).json();
+    assert.equal(secondPage.items[0].id, documentRef.id); assert.equal(secondPage.hasMore, false);
+    assert.equal((await app.inject({ method: 'GET', url: listPath + '&cursor=' + encodeURIComponent(firstPage.nextCursor + 'x'), headers })).statusCode, 400);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
