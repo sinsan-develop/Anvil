@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { FormsCatalog } from '../methodologies/FormsCatalog.tsx';
 import { getMethod, listMethods, type MethodPage, type MethodVersion } from './api.ts';
@@ -14,9 +14,13 @@ const approvalLabels: Record<string, string> = {
   USER_INCREMENT_ACCEPTANCE: '사용자 증분 수용', USER_NEXT_ITERATION_OR_COMPLETION: '사용자 다음 반복·전체 완료 판단', USER_PROJECT_COMPLETION: '사용자 전체 완료 확인',
 };
 export function MethodologyEditorPage({ client, session, buffer, onChange, formBuffer, onFormChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; formBuffer: FormBuffer; onFormChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void }) {
+  const filterId = useId();
   const [page, setPage] = useState<MethodPage | null>(null), [selectedId, setSelectedId] = useState(''), [nodeId, setNodeId] = useState('');
   const [version, setVersion] = useState<MethodVersion | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [listRetry, setListRetry] = useState(0), [retry, setRetry] = useState(0);
+  const [cursor, setCursor] = useState<string | null>(null), [pageHistory, setPageHistory] = useState<(string | null)[]>([]);
+  const [filterInput, setFilterInput] = useState({ scope: '', name: '', status: '' }), [filters, setFilters] = useState({ scope: '', name: '', status: '' });
+  function resetList() { setCursor(null); setPageHistory([]); setVersion(null); setListRetry(value => value + 1); }
   const selected = page?.items.find(item => item.ref.id === selectedId);
   function failed(cause: unknown) {
     const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
@@ -26,10 +30,10 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
   useEffect(() => {
     let current = true;
     setPending(true); setError(null);
-    listMethods(client).then(data => { if (current) { setPage(data); setSelectedId(id => data.items.some(item => item.ref.id === id) ? id : data.items[0]?.ref.id ?? ''); } })
+    listMethods(client, { ...(cursor ? { cursor } : {}), ...(filters.name ? { name: filters.name } : {}), ...(filters.scope ? { scope: filters.scope as 'SYSTEM' | 'USER_COMMON' } : {}), ...(filters.status ? { status: filters.status as 'DRAFT' | 'CONFIRMED' } : {}) }).then(data => { if (current) { setPage(data); setSelectedId(id => data.items.some(item => item.ref.id === id) ? id : data.items[0]?.ref.id ?? ''); } })
       .catch((cause: unknown) => { if (current) failed(cause); }).finally(() => { if (current) setPending(false); });
     return () => { current = false; };
-  }, [client, listRetry]);
+  }, [client, listRetry, cursor, filters.name, filters.scope, filters.status]);
   useEffect(() => {
     if (!selected) return;
     let current = true;
@@ -41,6 +45,12 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
   const node = version?.graph.nodes.find(item => item.nodeId === nodeId);
   return <>
     <section aria-label="방법론 원본 조회"><h2>절차·문서·검수 기준</h2>
+      <form className="definition-editor" onSubmit={event => { event.preventDefault(); setFilters(filterInput); resetList(); }}><label htmlFor={filterId + '-name'}>방법론 이름 검색</label><input id={filterId + '-name'} maxLength={200} value={filterInput.name} onChange={event => setFilterInput(previous => ({ ...previous, name: event.target.value }))} />
+        <label htmlFor={filterId + '-scope'}>방법론 범위</label><select id={filterId + '-scope'} value={filterInput.scope} onChange={event => setFilterInput(previous => ({ ...previous, scope: event.target.value }))}><option value="">전체 허가 범위</option><option value="SYSTEM">시스템 기본본</option><option value="USER_COMMON">내 공통본</option></select>
+        <label htmlFor={filterId + '-status'}>방법론 확정 상태</label><select id={filterId + '-status'} value={filterInput.status} onChange={event => setFilterInput(previous => ({ ...previous, status: event.target.value }))}><option value="">전체 상태</option><option value="DRAFT">초안·미확정</option><option value="CONFIRMED">확정</option></select><button disabled={pending} type="submit">방법론 검색 적용</button></form>
+      <div className="methodology-flow"><button disabled={pending || !pageHistory.length} onClick={() => { setVersion(null); setCursor(pageHistory.at(-1) ?? null); setPageHistory(previous => previous.slice(0, -1)); }}>방법론 이전 페이지</button>
+        <button disabled={pending || !page?.hasMore || !!error} onClick={() => { if (page?.nextCursor) { setVersion(null); setPageHistory(previous => [...previous, cursor]); setCursor(page.nextCursor); } }}>방법론 다음 페이지</button>
+        <button disabled={pending} onClick={resetList}>방법론 목록 처음부터 갱신</button><button disabled={pending} onClick={() => setListRetry(value => value + 1)}>현재 목록 다시 조회</button></div>
       <ul className="project-list">{page?.items.map(item => <li className="status-card" key={item.ref.id}><h3>{item.name}</h3><p>{item.purpose}</p><p className="meta">{item.scope === 'SYSTEM' ? '시스템 기본본' : '내 공통본'} · 버전 {item.ref.version}</p><button aria-pressed={selectedId === item.ref.id} onClick={() => { setSelectedId(item.ref.id); setVersion(null); setNodeId(''); setRetry(value => value + 1); }} aria-label={`${item.name} 상세 보기`}>상세 보기</button></li>)}</ul>
       <button disabled={pending} onClick={() => selected ? setRetry(value => value + 1) : setListRetry(value => value + 1)}>방법론 다시 조회</button>
       {pending ? <p role="status">방법론을 조회하고 있습니다.</p> : null}
@@ -58,7 +68,7 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
         </section> : null}
         <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><p>{version.validation.validForConfirmation ? '구조 오류 없음' : '구조 보완 필요'}</p><ul>{version.validation.issues.map((issue, index) => <li key={index}>{issue.location}: {issue.message}</li>)}</ul></details>
       </section> : null}
-      <CommonMethodEditor client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={() => setListRetry(value => value + 1)} />
+      <CommonMethodEditor client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={resetList} />
       {version && !pending && !error ? <MethodReviewPanel client={client} session={session} source={version} buffer={buffer} onChange={onChange} onVerified={setVersion} onAuthenticationLost={onAuthenticationLost} /> : null}
       <p className="meta">내 공통 방법론의 공간형·단계/문서/조건 편집과 내용 검토·별도 확정을 연결했습니다. 프로젝트 적용·실제 Agent·환경·한도 연결은 아직 미완료입니다. 화면 조회나 확정으로 Agent를 시작하지 않습니다.</p>
     </section>

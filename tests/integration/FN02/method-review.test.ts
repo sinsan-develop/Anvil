@@ -57,6 +57,8 @@ test('방법론은 같은 내용 검토와 양식 준비를 확인해 확정하�
     assert.equal((await send('confirmMethodology', ref.id, 2, { versionRef: nextRef, reviewRefs: [formReview] })).statusCode, 422);
     const formConfirmed = await send('confirmForm', formRef.id, 1, { versionRef: formRef, reviewRefs: [formReview] }); assert.equal(formConfirmed.statusCode, 200, formConfirmed.body);
     const nowReady = await send('confirmMethodology', ref.id, 2, { versionRef: nextRef, reviewRefs: [review2] }); assert.equal(nowReady.statusCode, 200, nowReady.body);
+    const confirmedList = await app.inject({ method: 'GET', url: '/api/v1/methodologies?scope=USER_COMMON&status=CONFIRMED&limit=1', headers });
+    assert.equal(confirmedList.statusCode, 200, confirmedList.body); assert.deepEqual(confirmedList.json().items.map((item: { ref: unknown }) => item.ref), [nextRef]); assert.equal(confirmedList.json().hasMore, false);
     assert.equal((await get(ref.id, 1)).json().confirmation.decision, 'CONFIRMED');
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM anvil.project_methodologies WHERE created_by=$1', [user])).rows[0].count, 0);
     await assert.rejects(pool.query('UPDATE anvil.methodology_reviews SET decision=$1 WHERE decided_by=$2', ['INVALID', user]), (error: unknown) => (error as { code: string }).code === '42501');

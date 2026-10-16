@@ -22,6 +22,45 @@ const version = (index: number) => {
     validation: validateMethodologyGraph(method.graph, forms.forms.map(form => form.ref)), runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED' };
 };
 
+test('이름·범위·확정 상태 검색은 정확 필터를 보내고 이전 선택을 재사용하지 않는다', async ({ page }) => {
+  const target = 'a6f20000-0000-4000-8000-000000000099', ref = { id: target, version: 1, contentHash: 'b'.repeat(64) };
+  const own = { ...version(0), ref, scope: 'USER_COMMON', systemCode: null, name: '내 개발 절차' };
+  const queries: Record<string, string>[] = [];
+  await page.route(/\/api\/v1\/methodologies(?:\?.*)?$/, route => {
+    const query = Object.fromEntries(new URL(route.request().url()).searchParams); queries.push(query);
+    const selected = query.name ? [own] : [version(0)];
+    return route.fulfill({ json: { items: selected.map(item => ({ ...item, status: 'DRAFT', sourceAvailable: item.scope === 'SYSTEM' })), observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } });
+  });
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/[12]$/, route => route.fulfill({ json: route.request().url().includes(target) ? own : version(0) }));
+  await page.goto('/#/methodologies'); await expect(page.getByRole('button', { name: '구조적 방법론 상세 보기', exact: true })).toBeVisible();
+  await page.getByLabel('방법론 이름 검색', { exact: true }).fill('내 개발'); await page.getByLabel('방법론 범위', { exact: true }).selectOption('USER_COMMON'); await page.getByLabel('방법론 확정 상태', { exact: true }).selectOption('DRAFT');
+  await page.getByRole('button', { name: '방법론 검색 적용', exact: true }).click();
+  await expect(page.getByRole('button', { name: '내 개발 절차 상세 보기', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '구조적 방법론 상세 보기', exact: true })).toHaveCount(0);
+  expect(queries).toEqual([{}, { name: '내 개발', scope: 'USER_COMMON', status: 'DRAFT' }]);
+});
+
+test('방법론 다음 페이지와 이전 페이지를 읽고 목록 갱신은 첫 페이지에서 다시 시작한다', async ({ page }) => {
+  const calls: string[] = [];
+  await page.route(/\/api\/v1\/methodologies(?:\?.*)?$/, route => {
+    const query = new URL(route.request().url()).searchParams; calls.push(query.get('cursor') ?? 'first');
+    const indices = query.get('cursor') === 'second-page' ? [2] : [0, 1];
+    return route.fulfill({ json: { items: indices.map(index => { const v = version(index); return { ...v, status: 'DRAFT', sourceAvailable: true }; }), observedAt: new Date().toISOString(), nextCursor: indices[0] === 2 ? null : 'second-page', hasMore: indices[0] !== 2, baselineVersion: null } });
+  });
+  await page.route(/\/api\/v1\/methodologies\/[^/]+\/versions\/2$/, route => route.fulfill({ json: version(methods.findIndex(method => route.request().url().includes(method.id))) }));
+  await page.goto('/#/methodologies');
+  await expect(page.getByRole('button', { name: '구조적 방법론 상세 보기', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '애자일 방법론 상세 보기', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '방법론 다음 페이지', exact: true }).click();
+  await expect(page.getByRole('button', { name: '애자일 방법론 상세 보기', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '방법론 다음 페이지', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: '방법론 이전 페이지', exact: true }).click();
+  await expect(page.getByRole('button', { name: '구조적 방법론 상세 보기', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '방법론 목록 처음부터 갱신', exact: true }).click();
+  await expect(page.getByRole('button', { name: '방법론 이전 페이지', exact: true })).toBeDisabled();
+  expect(calls).toEqual(['first', 'second-page', 'first', 'first']);
+});
+
 test('방법론 내용 검토를 기록하고 단절 때 같은 명령을 확인한 뒤 정확 버전을 별도 확정한다', async ({ page }) => {
   const target = 'a6f20000-0000-4000-8000-000000000099', owner = methods[0]!.id;
   const ref = { id: target, version: 1, contentHash: 'e'.repeat(64) };

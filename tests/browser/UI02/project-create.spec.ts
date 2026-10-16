@@ -70,7 +70,10 @@ test('저장한 목적에서 내 확정 방법론을 선택해 초안2단계에 
   const summary = { ref, name: '검토한 내 개발 절차', purpose: '개발 기준을 유지', scope: 'USER_COMMON', systemCode: null, status: 'CONFIRMED', sourceAvailable: false };
   let draft: any = null; const writes: any[] = [];
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id, displayName: 'QA' }, clientId: id, csrfToken: csrf } }));
-  await page.route('**/api/v1/methodologies', route => route.fulfill({ json: { items: [summary], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
+  await page.route(/\/api\/v1\/methodologies(?:\?.*)?$/, route => {
+    const next = new URL(route.request().url()).searchParams.get('cursor') === 'picker-next';
+    return route.fulfill({ json: { items: next ? [summary] : [{ ...summary, ref: { ...ref, id: 'a6f20000-0000-4000-8000-000000000001' }, scope: 'SYSTEM', systemCode: 'SYS-M01', status: 'DRAFT', name: '기본 방법론', sourceAvailable: true }], observedAt: new Date().toISOString(), nextCursor: next ? null : 'picker-next', hasMore: !next, baselineVersion: null } });
+  });
   await page.route('**/api/v1/project-drafts', route => {
     writes.push(route.request().postDataJSON()); draft = { draftId: id, version: 1, step: 1, input };
     return route.fulfill({ status: 201, json: draft });
@@ -84,6 +87,8 @@ test('저장한 목적에서 내 확정 방법론을 선택해 초안2단계에 
   await page.getByRole('button', { name: '중간 저장', exact: true }).click();
   await expect(page.getByRole('status').last()).toContainText('초안 버전 1');
   await page.getByRole('button', { name: '방법론·자료로 다음', exact: true }).click();
+  await page.getByRole('button', { name: '방법론 선택 목록 더 보기', exact: true }).click();
+  await expect(page.getByLabel('사용할 방법론', { exact: true }).getByRole('option')).toHaveCount(3);
   await page.getByLabel('사용할 방법론', { exact: true }).selectOption(ref.id);
   await page.getByRole('button', { name: '선택한 방법론 연결', exact: true }).click();
   await page.getByRole('button', { name: '중간 저장', exact: true }).click();

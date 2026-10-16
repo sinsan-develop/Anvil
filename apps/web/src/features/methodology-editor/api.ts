@@ -4,7 +4,8 @@ import type { MethodologyGraph } from '../../../../../contracts/methodologies.ts
 import { reviewRefFor, type FormVersion, type ContentReviewRef } from '../methodologies/forms-api.ts';
 
 export interface MethodSummary { ref: VersionRef; name: string; purpose: string; scope: 'SYSTEM' | 'USER_COMMON'; systemCode: string | null; status: 'DRAFT' | 'CONFIRMED'; sourceAvailable: boolean }
-export interface MethodPage { items: MethodSummary[]; nextCursor: null; hasMore: false; observedAt: string; baselineVersion: null }
+export interface MethodPage { items: MethodSummary[]; nextCursor: string | null; hasMore: boolean; observedAt: string; baselineVersion: null }
+export interface MethodListOptions { scope?: 'SYSTEM' | 'USER_COMMON'; name?: string; status?: 'DRAFT' | 'CONFIRMED'; cursor?: string; limit?: number }
 export interface MethodVersion {
   ref: VersionRef; name: string; purpose: string; scope: string; systemCode: string | null; graph: MethodologyGraph;
   confirmation: { id: string; decision: 'CONFIRMED'; decided_at: string; decidedBy: string; reviewRefs: ContentReviewRef[] } | null;
@@ -16,9 +17,14 @@ export interface MethodVersion {
 const idPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const validRef = (ref: VersionRef) => !!ref && typeof ref === 'object' && idPattern.test(ref.id) && Number.isSafeInteger(ref.version) && ref.version > 0 && /^[0-9a-f]{64}$/.test(ref.contentHash);
 const texts = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === 'string');
-export async function listMethods(client: ApiClient): Promise<MethodPage> {
-  const page = await client.get<MethodPage>('/api/v1/methodologies');
-  if (!page || !Array.isArray(page.items) || page.items.length > 200 || page.nextCursor !== null || page.hasMore !== false || page.baselineVersion !== null || !Number.isFinite(Date.parse(page.observedAt))
+export async function listMethods(client: ApiClient, options: MethodListOptions = {}): Promise<MethodPage> {
+  if (Object.keys(options).some(key => !['scope', 'name', 'status', 'cursor', 'limit'].includes(key)) || options.scope !== undefined && !['SYSTEM', 'USER_COMMON'].includes(options.scope)
+    || options.status !== undefined && !['DRAFT', 'CONFIRMED'].includes(options.status) || options.name !== undefined && (typeof options.name !== 'string' || options.name.length > 200)
+    || options.cursor !== undefined && (typeof options.cursor !== 'string' || !options.cursor.length || options.cursor.length > 4096)
+    || options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 200)) throw new ApiError('CLIENT_PATH_INVALID');
+  const query = new URLSearchParams(); for (const [key, value] of Object.entries(options)) if (value !== undefined) query.set(key, String(value));
+  const page = await client.get<MethodPage>('/api/v1/methodologies' + (query.size ? '?' + query.toString() : ''));
+  if (!page || !Array.isArray(page.items) || page.items.length > (options.limit ?? 50) || typeof page.hasMore !== 'boolean' || page.hasMore !== (page.nextCursor !== null) || page.hasMore && (!page.items.length || typeof page.nextCursor !== 'string' || !page.nextCursor.length || page.nextCursor.length > 4096 || page.nextCursor === options.cursor) || page.baselineVersion !== null || !Number.isFinite(Date.parse(page.observedAt))
     || new Set(page.items.map(item => item?.ref?.id)).size !== page.items.length
     || page.items.some(item => !item || !validRef(item.ref) || typeof item.name !== 'string' || typeof item.purpose !== 'string' || !['SYSTEM', 'USER_COMMON'].includes(item.scope) || !['DRAFT', 'CONFIRMED'].includes(item.status) || typeof item.sourceAvailable !== 'boolean' || item.systemCode !== null && typeof item.systemCode !== 'string')) throw new ApiError('RESPONSE_INVALID');
   return page;

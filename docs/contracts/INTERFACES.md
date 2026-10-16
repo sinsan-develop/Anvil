@@ -187,6 +187,7 @@ Page는 `items`, `nextCursor`, `hasMore`, `observedAt`, `baselineVersion`을 갖
 
 ### 9.1 공통 자료형·검사 순서
 
+방법론 카탈로그의 페이지 상세: GET `/api/v1/methodologies`는 선택 query `scope:SYSTEM/USER_COMMON,name,status:DRAFT/CONFIRMED,limit:1~200(기본50),cursor`를 사용한다. 서버는 현재 인증/owner를 매 페이지 검사하고 이름/scope/status를 LIMIT 전에 적용한다. 정렬은 SYSTEM 코드(미지정 공통본은 뒤)·고유 ID의 고정 keyset이며 cursor는 사용자/정확 필터·limit/30분 기한·전용 HMAC namespace에 결박한다. 변조/다른 사용자·필터/기한 오류400, 세션 만료401이고 끝은 hasMore=false/nextCursor=null이다. observedAt은 각 페이지 관측 시점이며 전체 카탈로그의 동결 snapshot을 의미하지 않는다. UI03은 검색/다음/이전/처음 갱신을 명시 실행하고 UI02는 더 보기로 허가된 선택을 누적한다. 목록 조회가 확정/실행 권한을 만들지 않는다.
 `Id`는 서버가 발급한 UUID의 문자열, `Version`은 1부터 증가하는 정수, `Hash`는 SHA256 64자리 소문자 16진수, `Instant`는 UTC 시각 문자열이다. 문서의 원문 바이트는 재인코딩/줄바꿈 변환하지 않고 hash한다. 구조화 요청은 계약 버전의 고정 JSON 정규화(객체 키 정렬·배열 순서 유지·지원 숫자/문자 검증)로 requestHash를 계산한다. 클라이언트 계산값만 믿지 않으며 이 codec의 정확 규칙·상호 운용 테스트는 P03에서 고정한다. ArtifactRef의 contentHash는 원문 바이트, VersionRef의 contentHash는 종류별 불변 버전 내용(본문/첨부의 검증된 hash·제목/양식/출처 등 기준 필드 포함)의 정규화 hash다. 변경 가능한 상태/현재 pointer·조회 시각은 버전 내용 hash에 넣지 않는다. 요청 requestHash는 또 다른 값이며 셋을 교환하지 않는다.
 
 | 모델 | 필수 필드·규칙 |

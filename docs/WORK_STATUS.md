@@ -109,6 +109,9 @@
 
 ### 2026-10-16 FN02·UI03 방법론 목록 페이지 조회
 
+- 검색 라벨 RED의 근본 원인은 implicit label 내부 select option이 접근 이름에 합쳐지는 것이었다. input/select의 htmlFor/id를 명시해 같은 기대값의 검색/페이지 핵심2 PASS/2.6초를 확인했다. 실제 이름/범위/상태 query와 이전 목록 미재사용을 검증했으며 Web45(JS333.32kB/gzip96.34)·타입/diff check exit0이다. 전체 회귀·실제 사용자/운영 브라우저 시험으로 승격하지 않는다.
+- 로컬 fresh 단위42 PASS/skip0·UI02/03 인접20 fixture PASS/15.8초·타입/build/diff check exit0. 생성 선택은 두 번째 페이지의 내 확정본을 불러오면서 앞의 기본본도 보존·exact ref 저장/새로고침을 확인했다. 새 검색 경로는 select의 implicit label에 option 문구가 섞여 exact label 선택 RED1을 확인했으며 htmlFor/id로 실제 접근 이름을 분리해 보정한다. 검사 이름/시간/기대값은 낮추지 않는다.
+- WSL exact `7eda0b69f80f2f39b25f921de47fcc6e944669ab`/clean actual1 PASS/339ms/skip0: 내장3종의 limit2 순회/정렬·끝 cursor null, 필터 변경/변조400·CONFIRMED 필터 빈 결과·타 owner 원본404·버전 불변을 확인하고 정확 QA 정리했다. 새 SQL/권한 변경0. UI03의 기존 client가 hasMore를 거절하는 RED→명시 다음/이전·처음 갱신 GREEN1/2.1초. 이름/scope/status 적용은 첫 페이지부터, 생성 선택은 명시 더 보기로 누적하며 과거 선택을 자동 교체하지 않는다. 타입/Web45 build exit0(JS333.21kB/gzip96.30)이며 전체 actual UI DB 여정은 미검증이다.
 - actual RED exact `4e2656e394e712228d0c5365d506a9dba7994c2a`: 기존 route가 limit를 거절해400≠200·skip0·고유 QA 정리. 읽기 전용 keyset/cursor를 구현했고 타입·신규 cursor 단위1/변조·다른 사용자/필터/기한 차단·diff check exit0이다. 실제 DB GREEN과 화면 연결은 아직 전이다. 실제 인증 key/계정·권한·migration은 변경하지 않는다.
 - DB 권한 응답 전에도 가능한 미완료를 계획/정본/코드로 대조했다. INTERFACES §9의 이름·scope·상태/cursor 조회가 현재 201행 조회 후412로 미완성이므로 기존 인증된 SYSTEM/본인 공통 읽기만 페이지화한다. 새 도메인/권한·SQL·지속 자료/Agent 변경0이며 DRAFT/PROJECT 승인은 여전히 대기다.
 - 계약 상세화: 기본50/최대200·고정 정렬 keyset, cursor는 현재 사용자·정확 이름/scope/status/limit·30분 기한에 결박한다. 페이지마다 현재 인증/소유를 다시 검사하고 전체 목록을 동일시각 snapshot이라 주장하지 않는다. 검색/필터는 LIMIT 전에 검사한다. 화면/생성 선택에서 다음 페이지를 명시 조회하고 요청 실패는 빈 성공으로 숨기지 않는다.

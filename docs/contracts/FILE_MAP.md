@@ -178,6 +178,8 @@ INTERFACES §13~14·DATA_MODEL §10은 §3의 FN09~18 모듈·schema/migration/�
 
 방법론 검토 구현: `apps/server/modules/methodologies/content-review.ts`, `db/migrations/0011_user_common_method_reviews.sql`, `apps/web/src/features/methodology-editor/MethodReviewPanel.tsx`, `tests/integration/FN02/method-review.test.ts`. 기존 FORM 보호의 forward 보완만 포함하며 기존 적용 migration 수정0.
 
+방법론 읽기 페이지의 순수 필터/cursor는 `apps/server/modules/methodologies/list-page.ts`, 단위 증거는 `tests/unit/FN02/list-page.test.ts`, 실제 순회/격리는 기존 `tests/integration/FN02/versions.test.ts`에 둔다. 변경은 기존 목록 repository/routes와 UI03/생성 선택의 명시 읽기에 한정하며 schema/권한·새 도메인을 만들지 않는다.
+
 프로젝트 초안 선택: `contracts/project-drafts.ts`의 자료형, `apps/server/modules/projects/draft-methodology.ts`의 owner/출처·확정/버전 검사, `apps/web/src/features/project-create/MethodologySelection.tsx`의 고정 버전 선택을 기존 초안 writer와 연결한다. DRAFT 검토/확정·실제 프로젝트 생성은 아직 미연결이며 이 파일 목록을 구현 완료 근거로 쓰지 않는다.
 
 프로젝트 전용 방법론 입력은 `apps/web/src/features/project-create/DraftMethodEditor.tsx`가 기존 UI03의 그래프/단계·입출력/조건 편집 부품을 소비하고 기존 초안 저장으로 보존한다. 공통본 writer를 호출하지 않는다. GET 기반 원본 복사는 같은 디렉터리 MethodologySelection이 정확 sourceRef를 남기며 명시 저장 전에는 서버를 쓰지 않는다.

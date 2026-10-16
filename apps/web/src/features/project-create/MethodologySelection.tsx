@@ -11,13 +11,14 @@ export function MethodologySelection({ client, value, disabled, onChange, onAuth
   const [items, setItems] = useState<MethodSummary[]>([]), [selected, setSelected] = useState(''), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0), [error, setError] = useState<ApiError | null>(null);
   const active = useRef(true), copying = useRef(false);
   const [copyPending, setCopyPending] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null), [nextCursor, setNextCursor] = useState<string | null>(null);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEffect(() => {
     let current = true; setLoading(true); setError(null);
-    listMethods(client).then(page => { if (current) { const available = page.items.filter(item => item.scope === 'SYSTEM' || item.status === 'CONFIRMED'); setItems(available); setSelected(id => available.some(item => item.ref.id === id) ? id : available[0]?.ref.id ?? ''); } })
-      .catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); setItems([]); if (failure.status === 401) onAuthenticationLost(); } }).finally(() => { if (current) setLoading(false); });
+    listMethods(client, cursor ? { cursor } : {}).then(page => { if (current) { const available = page.items.filter(item => item.scope === 'SYSTEM' || item.status === 'CONFIRMED'); setItems(previous => cursor ? [...previous, ...available.filter(item => !previous.some(old => old.ref.id === item.ref.id))] : available); setNextCursor(page.nextCursor); setSelected(id => cursor && id ? id : available.some(item => item.ref.id === id) ? id : available[0]?.ref.id ?? ''); } })
+      .catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (!cursor || failure.status === 401 || failure.status === 403) setItems([]); if (failure.status === 401) onAuthenticationLost(); } }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [client, retry]);
+  }, [client, retry, cursor]);
   const chosen = items.find(item => item.ref.id === selected);
   const locked = disabled || copyPending;
   function replaceAllowed() { return !value || confirm('현재 초안의 방법론 선택·입력을 바꿀까요? 원본·서버 저장본은 유지합니다.'); }
@@ -37,7 +38,8 @@ export function MethodologySelection({ client, value, disabled, onChange, onAuth
     <button type="button" disabled={locked || loading || !!error || !chosen} onClick={() => { if (chosen && replaceAllowed()) onChange({ kind: 'CONFIRMED_REFERENCE', versionRef: chosen.ref }); }}>선택한 방법론 연결</button>
     <button type="button" disabled={locked || loading || !!error || !chosen} onClick={() => { void copy(); }}>선택 방법론을 이 프로젝트 초안으로 복사</button>
     <button type="button" disabled={locked} onClick={() => { if (replaceAllowed()) onChange({ kind: 'NEW_PROJECT_DRAFT', name: '', purpose: '', graph: { nodes: [], edges: [], entryNodeId: '', terminalNodeIds: [] }, sourceRefs: [], reviewRefs: [] }); }}>이 프로젝트 방법론 직접 작성</button>
-    <button type="button" disabled={locked || loading} onClick={() => setRetry(value => value + 1)}>선택 목록 다시 조회</button>
+    <button type="button" disabled={locked || loading} onClick={() => { setCursor(null); setRetry(value => value + 1); }}>선택 목록 다시 조회</button>
+    <button type="button" disabled={locked || loading || !nextCursor} onClick={() => { setCursor(nextCursor); setRetry(value => value + 1); }}>방법론 선택 목록 더 보기</button>
     {copyPending ? <p role="status">원본의 정확 버전을 읽고 있습니다. 조회가 끝날 때까지 저장하지 않습니다.</p> : null}
     {loading ? <p role="status">선택 가능한 방법론을 조회하고 있습니다.</p> : null}
     {error ? <p role="alert">{error.message} 초안에 저장한 선택은 변경하지 않았습니다.</p> : null}
