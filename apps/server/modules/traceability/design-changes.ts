@@ -7,6 +7,9 @@ import{ProjectDesignIndex}from'./design-index.ts';
 import{ProjectWorkPlans}from'./work-plans.ts';
 import{calculateDesignImpact,type ImpactTarget,type ImpactTargetRef}from'./design-impact.ts';
 import{readImpactReview}from'./impact-review.ts';
+import{readDesignChangeSources}from'./design-change-sources.ts';
+import{ProjectConversations}from'../knowledge/conversations.ts';
+import type{SourceRef}from'../knowledge/knowledge-entry.ts';
 import{exactKeys,planText}from'./work-plan-card.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
@@ -15,6 +18,21 @@ const uuid=(id:unknown):id is string=>isVersionRef({id,version:1,contentHash:'0'
 export class ProjectDesignChanges{
  #documents:ProjectDocuments;#index:ProjectDesignIndex;#plans:ProjectWorkPlans;
  constructor(documents:ProjectDocuments){this.#documents=documents;this.#index=new ProjectDesignIndex(documents);this.#plans=new ProjectWorkPlans(documents);}
+ async #sources(db:PoolClient,actor:AuthenticatedIdentity,pid:string,value:unknown){
+  const refs:SourceRef[]=readDesignChangeSources(value);
+  for(const r of refs){
+   if(r.kind==='DOCUMENT_VERSION'){
+    const document=await this.#documents.version(db,actor,pid,r.id,r.version);if(document.contentHash!==r.contentHash)throw new AuthFailure('VERSION_CONFLICT',409);
+   }else if(r.kind==='ARTIFACT'){
+    const row=(await db.query('SELECT bytes,media_type,content_hash FROM anvil.artifacts WHERE project_id=$1 AND id=$2',[pid,r.id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);if(row.content_hash!==r.contentHash)throw new AuthFailure('VERSION_CONFLICT',409);
+    await this.#documents.originalText(db,pid,{artifactId:r.id,bytes:Number(row.bytes),contentHash:row.content_hash,mediaType:row.media_type});
+   }else{
+    const row=(await db.query('SELECT conversation_id FROM anvil.conversation_messages WHERE project_id=$1 AND id=$2',[pid,r.id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
+    const message=await new ProjectConversations(this.#documents).readMessage(db,actor,pid,row.conversation_id,r.id);if(message.sourceRef.contentHash!==r.contentHash)throw new AuthFailure('VERSION_CONFLICT',409);if(r.kind==='USER_INSTRUCTION'&&message.message.kind!=='USER_INSTRUCTION')throw new AuthFailure('DESIGN_CHANGE_SOURCE_KIND_MISMATCH',422);
+   }
+  }
+  return refs;
+ }
  async #source(db:PoolClient,actor:AuthenticatedIdentity,pid:string,ref:VersionRef,proposalId:string,current:boolean){
   const source=await this.#documents.version(db,actor,pid,ref.id,ref.version);if(source.contentHash!==ref.contentHash)throw new AuthFailure('VERSION_CONFLICT',409);
   const code=(await db.query("SELECT definition_json->>'formCode' code FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3",[source.formRef.id,source.formRef.version,source.formRef.contentHash])).rows[0];if(code?.code!=='AF02')throw new AuthFailure('DESIGN_CHANGE_SOURCE_KIND_INVALID',422);
@@ -32,7 +50,7 @@ export class ProjectDesignChanges{
   const ref={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(snapshot))};return{ref,...snapshot,observedAt:(await db.query('SELECT transaction_timestamp() at')).rows[0].at.toISOString()};
  }
  async propose(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
-  const p=c.payload;if(c.targetId!==null||c.expectedVersion!==0||!exactKeys(p,['beforeRef','afterProposalRef','reason','sourceRefs'])||!isVersionRef(p.beforeRef)||!uuid(p.afterProposalRef)||!planText(p.reason)||!p.reason.trim()||!Array.isArray(p.sourceRefs))throw new AuthFailure('DESIGN_CHANGE_INPUT_INVALID',422);if(p.sourceRefs.length)throw new AuthFailure('DESIGN_CHANGE_SOURCE_CONNECTION_PENDING',412);
+  const p=c.payload;if(c.targetId!==null||c.expectedVersion!==0||!exactKeys(p,['beforeRef','afterProposalRef','reason','sourceRefs'])||!isVersionRef(p.beforeRef)||!uuid(p.afterProposalRef)||!planText(p.reason)||!p.reason.trim()||!Array.isArray(p.sourceRefs))throw new AuthFailure('DESIGN_CHANGE_INPUT_INVALID',422);await this.#sources(db,actor,c.projectId,p.sourceRefs);
   await this.#source(db,actor,c.projectId,p.beforeRef,p.afterProposalRef,true);
   if((await db.query('SELECT 1 FROM anvil.design_changes WHERE project_id=$1 AND proposal_id=$2',[c.projectId,p.afterProposalRef])).rowCount)throw new AuthFailure('DESIGN_CHANGE_ALREADY_EXISTS',409);
   const snapshot={beforeRef:p.beforeRef,afterProposalRef:p.afterProposalRef,reason:p.reason,sourceRefs:p.sourceRefs},ref={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(snapshot))},change={ref,status:'PROPOSED',...snapshot,requestedBy:{kind:'HUMAN',userId:actor.actorId},createdAt:(await db.query('SELECT transaction_timestamp() at')).rows[0].at.toISOString()},impact=await this.#impact(db,actor,c.projectId,p.beforeRef,ref);
@@ -56,6 +74,7 @@ export class ProjectDesignChanges{
   const change=row.change_json,{ref,status,requestedBy,createdAt,...snapshot}=change;
   if(status!=='PROPOSED'||!isVersionRef(ref)||ref.id!==id||ref.version!==Number(row.version)||ref.contentHash!==row.content_hash||contentHash(canonicalJson(snapshot))!==row.content_hash||canonicalJson(snapshot.beforeRef)!==canonicalJson({id:row.before_id,version:Number(row.before_version),contentHash:row.before_hash})||snapshot.afterProposalRef!==row.proposal_id||row.operation!=='proposeDesignChange'||row.result_ref?.status!=='APPLIED'||row.result_ref.data?.status!=='DESIGN_CHANGE_PROPOSED'||canonicalJson(row.result_ref.data?.change)!==canonicalJson(change)||canonicalJson(row.result_ref.data?.ref)!==canonicalJson(ref)||requestedBy?.kind!=='HUMAN'||requestedBy.userId!==row.created_by||row.actor_id!==row.created_by||row.command_client!==row.client_id||createdAt!==row.created_at.toISOString())throw new AuthFailure('DESIGN_CHANGE_INTEGRITY_FAILED',503);
   await this.#source(db,actor,pid,snapshot.beforeRef,snapshot.afterProposalRef,false);
+  await this.#sources(db,actor,pid,snapshot.sourceRefs);
   const impacts=(await db.query('SELECT i.*,c.result_ref,c.operation,c.expected_version,c.actor_id,c.client_id command_client,b.content_hash base_content_hash,b.impact_json base_impact FROM anvil.design_change_impacts i JOIN anvil.commands c ON c.project_id=i.project_id AND c.id=i.command_id LEFT JOIN anvil.design_change_impacts b ON b.project_id=i.project_id AND b.id=i.id AND b.version=i.base_version AND b.content_hash=i.base_hash WHERE i.project_id=$1 AND i.change_id=$2 AND ($3::bigint IS NULL OR i.version<$3) ORDER BY i.version DESC LIMIT $4',[pid,id,query.beforeVersion??null,limit+1])).rows,latest=(await db.query('SELECT id,version,content_hash FROM anvil.design_change_impacts WHERE project_id=$1 AND change_id=$2 ORDER BY version DESC LIMIT 1',[pid,id])).rows[0];const impactVersions=[];
   for(const i of impacts.slice(0,limit)){const impact=i.impact_json,{ref:impactRef,observedAt,...value}=impact,d=i.result_ref?.data;if(!isVersionRef(impactRef)||impactRef.id!==i.id||impactRef.version!==Number(i.version)||impactRef.contentHash!==i.content_hash||contentHash(canonicalJson(value))!==i.content_hash||canonicalJson(value.changeRef)!==canonicalJson(ref)||value.sourceKind!==i.source_kind||i.change_hash!==ref.contentHash||observedAt!==i.created_at.toISOString()||i.result_ref?.status!=='APPLIED'||i.actor_id!==i.created_by||i.command_client!==i.client_id||d?.activatedAsBaseline!==false||canonicalJson(d?.impact)!==canonicalJson(impact))throw new AuthFailure('DESIGN_IMPACT_INTEGRITY_FAILED',503);
    if(i.source_kind==='MECHANICAL_TRACE'){if(impactRef.version!==1||i.base_version!==null||i.base_hash!==null||i.command_id!==row.command_id||i.operation!=='proposeDesignChange'||d.status!=='DESIGN_CHANGE_PROPOSED')throw new AuthFailure('DESIGN_IMPACT_INTEGRITY_FAILED',503);}
