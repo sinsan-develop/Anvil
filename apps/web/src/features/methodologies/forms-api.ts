@@ -37,6 +37,15 @@ export async function listForms(client: ApiClient): Promise<FormsPage> {
 export async function getForm(client: ApiClient, summary: FormSummary): Promise<FormVersion> {
   if (!validRef(summary.ref)) throw new ApiError('CLIENT_PATH_INVALID');
   const data = await client.get<FormVersion>(`/api/v1/forms/${summary.ref.id}/versions/${summary.ref.version}`);
+  return readFormVersion(data, summary);
+}
+export async function getPinnedForm(client: ApiClient, ref: VersionRef): Promise<FormVersion> {
+  if (!validRef(ref)) throw new ApiError('CLIENT_PATH_INVALID');
+  const data = await client.get<FormVersion>(`/api/v1/forms/${ref.id}/versions/${ref.version}`);
+  if (!data?.definition || !['SYSTEM','USER_COMMON'].includes(data.definition.scope) || typeof data.definition.name !== 'string' || !data.definition.name.trim() || typeof data.definition.formCode !== 'string' || !data.definition.formCode.trim()) throw new ApiError('RESPONSE_INVALID');
+  return readFormVersion(data, { ref, name: data.definition.name, formCode: data.definition.formCode, scope: data.definition.scope as FormSummary['scope'] });
+}
+function readFormVersion(data: FormVersion, summary: FormSummary): FormVersion {
   const form = data?.definition;
   const draft = summary.scope === 'USER_COMMON';
   if (!data || !sameRef(data.ref, summary.ref) || !form || form.name !== summary.name || form.formCode !== summary.formCode || form.scope !== summary.scope

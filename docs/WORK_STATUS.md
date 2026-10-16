@@ -112,6 +112,9 @@
 - 시작 `bf83b06530028d36c868be6e00333063767abc1b` local/private 동일·지정 branch clean, 현재 WSL 검증코드 d05c3df3·SQL19 유지. 직전 실제 시험 뒤 독립 DB13종 각0·임시root[]·지속root uid1000/0700/link0/empty 확인. 완료된 제안/SQL19·단위/화면 검사는 불변이면 반복하지 않는다.
 - 승인 INTERFACES §9.4의 imports/제안 목록·조회와 새 화면 재개의 미완료를 잇는다. 기존 table만 사용하고 새 DB schema/권한/사용자/Secret·서비스 변경0이다. actor/project·유한 페이지/상태/대상 filter·서명 cursor와 exact 저장 원문을 사용한다. QA는 바로 위 제안 작업과 같은 전용 DB/고유 합성 UUID/finally 정확 정리이며 실제 사용자 자료는 만들지 않는다.
 - RED `f3dc5fc8d4aa8208329da2e97014c5b4d3d6196e` WSL exact/clean actual1 FAIL/2438ms: 보관 후보 GET 목록404≠200. 새 읽기 helper/경로만 추가했고 SQL19/권한/데이터 계약의 기존 저장 필드는 불변이다. limit기본50/최대200·상태/대상 조건과 actor/프로젝트/목록 종류를 서명 cursor에 결박한다. 목록은 저장 metadata hash만 검사하며 실파일 재검사와 혼동하지 않도록 integrity=NOT_RECHECKED를 반환, 상세 선택 직전 원본 검사는 기존 GET을 소비한다. 타입/diff0이며 최종 actual·화면 연결은 다음 단계다.
+- 목록 GREEN `0772de45d8fed307497ec440b02ccecf9211a880` private/WSL exact·clean actual1 PASS/2238ms/skip0. 정상 페이지·상태 필터·cursor 위조/조건 변경/목록 종류 혼용400·타 사용자404를 확인했다. SQL19 불변이며 전체 FN03 완료 판정은 아니다.
+- 화면 진입 버튼 부재 RED1을 확인하고 MaterialLibrary·materials-api·고정 양식 조회·기존 proposal-api/DocumentEditor의 저장 자료 재개를 연결했다. Ruling: 기존 저장 완료 제안은 과거 업로드/제안 명령을 합성하지 않고 snapshot=null의 읽기 binding으로 구분한다. 새 반영 명령만 현재 client/control·확인에 결박한다. 잘못되면 과거 명령 이력을 위장할 위험이 있으므로 실제 시험에서 과거 명령0·새 반영1·구버전 보존을 직접 확인한다.
+- fresh local 단위61 PASS/1204ms, 타입/build exit0(Web61/JS431.64kB/gzip118.54), 인접 UI06 fixture20 PASS/16.2초. 추가 보관 자료 hash 손상/조회자 재개 거절 포함 fixture5 PASS/4.4초(앞20과 정상3 중복 포함). 조회만으로 제어권 읽기/쓰기0, 명시 후보 준비 후 신규 초안 저장, 제안 별도 반영, 원문 escaped 표시를 확인했다. NO_COLOR/FORCE_COLOR 경고1만 보존했다. 실제 Web client→WSL API/DB/FS의 저장 자료 재개 시험을 추가했고 아직 게시 전이므로 그 결과는 미검증이다. 사용자용 Windows backend는 구버전이며 실제 browser↔DB/인수로 승격하지 않는다.
 
 ### 2026-10-16 FN03 수정 제안·서버 차이 비교 연결 착수 — Main 어울
 

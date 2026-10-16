@@ -17,7 +17,8 @@ import { newDocumentConfirmation, prepareDocumentConfirmation, sendDocumentConfi
 import { adoptDocumentConflict, compareDocumentConflict } from '../../../apps/web/src/features/design-trace/conflict-api.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } from '../../../apps/web/src/features/design-trace/import-api.ts';
-import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
+import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, readStoredProposal, resumeStoredProposal } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
+import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '../../../apps/web/src/features/design-trace/materials-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -304,6 +305,35 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const proposalList = await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/proposals?documentId=${freshRef.id}&status=SELECTED&limit=1`, headers }); assert.equal(proposalList.statusCode, 200, proposalList.body); assert.equal(proposalList.json().items.length, 1); assert.equal(proposalList.json().items[0].status, 'SELECTED'); assert.equal(proposalList.json().hasMore, true);
     assert.equal((await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/proposals?cursor=${encodeURIComponent(importCursor)}&limit=1`, headers })).statusCode, 400, '후보 cursor를 제안 목록에 재사용할 수 없다');
     assert.equal((await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/proposals`, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
+    const libraryImports = await listDocumentMaterials(client, project, 'imports', null, 'READY');
+    assert.ok(libraryImports.items.some(item => item.id === candidate.id));
+    const importCount = Number((await pool.query('SELECT count(*) n FROM anvil.document_imports WHERE project_id=$1', [project])).rows[0].n);
+    const storedImport = await readStoredImport(client, project, candidate.id);
+    const resumedImport = await prepareStoredImport(client, project, storedImport, session, null);
+    resumedImport.reason = '보관 목록의 원본 확인 후 별도 신규 초안 저장';
+    const resumedImportRef = await continueDocumentSave(client, await prepareDocumentSave(resumedImport, session), session, () => {}, () => true);
+    const resumedImportRead = await readDocument(client, project, resumedImportRef.id, resumedImportRef.version);
+    assert.equal(resumedImportRead.body, bytes.toString('utf8')); assert.equal(resumedImportRead.document.confirmed, false);
+    assert.deepEqual(resumedImportRead.document.content.attachments, [candidate.originalRef]);
+    assert.equal(Number((await pool.query('SELECT count(*) n FROM anvil.document_imports WHERE project_id=$1', [project])).rows[0].n), importCount, '기존 후보 재개는 가져오기 명령을 새로 만들지 않는다');
+    const nextProposalWork = editDocument(project, finalProposalRead, user, await documentControl(client, project, session));
+    nextProposalWork.body = '# 보관 제안 재개\r\n새 세션에서 원본과 비교하고 별도 반영\r\n'; nextProposalWork.reason = '보관한 수정 제안의 실제 재개'; nextProposalWork.dirty = true;
+    let nextProposal = await prepareDocumentProposal(nextProposalWork, session);
+    nextProposal = await continueDocumentProposal(client, nextProposal, session, () => {}, () => true);
+    assert.ok((await listDocumentMaterials(client, project, 'proposals', null, 'PENDING')).items.some(item => item.id === nextProposal.proposal!.id));
+    const storedComparison = await readStoredProposal(client, project, nextProposal.proposal!.id);
+    assert.equal(storedComparison.base.body, proposalWork.body); assert.equal(storedComparison.proposedBody, nextProposalWork.body);
+    const restored = await resumeStoredProposal(client, project, nextProposal.proposal!.id, session), restoredState = restored.proposalState!;
+    assert.equal(restoredState.snapshot, null, '과거 명령을 새 업로드/제안 명령으로 위장하지 않는다');
+    assert.equal(restoredState.command, null); assert.equal(restoredState.restored?.proposalId, nextProposal.proposal!.id);
+    await assert.rejects(prepareProposalApplication(client, restoredState, session, false), (e: unknown) => (e as { code: string }).code === 'PROPOSAL_SELECTION_REQUIRED');
+    assert.equal((await readDocument(client, project, freshRef.id, 3)).body, proposalWork.body);
+    restoredState.applyCommand = await prepareProposalApplication(client, restoredState, session, true);
+    const restoredRef = await applyDocumentProposal(client, restoredState, session, () => true);
+    assert.equal(restoredRef.version, 4); assert.deepEqual(await applyDocumentProposal(client, restoredState, session, () => true), restoredRef);
+    assert.equal((await readDocument(client, project, freshRef.id, 4)).body, nextProposalWork.body);
+    assert.equal((await readDocument(client, project, freshRef.id, 3)).body, proposalWork.body);
+    assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

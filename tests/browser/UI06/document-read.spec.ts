@@ -1,4 +1,9 @@
 import { expect, test } from '@playwright/test';
+
+test('문서 화면에서 보관한 가져오기 후보와 제안을 다시 조회할 수 있다', async ({ page }) => {
+  await page.goto('/#/projects/51c0439f-791e-4bb5-8471-70938d6afaf1/documents');
+  await expect(page.getByRole('button', { name: '보관한 후보·제안 조회', exact: true })).toBeVisible();
+});
 import { createHash } from 'node:crypto';
 
 const project = '51c0439f-791e-4bb5-8471-70938d6afaf1', id = '32b5f276-13e6-4d8a-b93f-27a15d21c788';
