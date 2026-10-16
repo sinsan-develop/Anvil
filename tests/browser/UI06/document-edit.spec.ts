@@ -7,6 +7,38 @@ import { buildOfficialForms } from '../../../apps/server/modules/documents/forms
 const project = '51c0439f-791e-4bb5-8471-70938d6afaf1', id = '32b5f276-13e6-4d8a-b93f-27a15d21c788', artifactId = 'a6f30000-0000-4000-8000-000000000099';
 const formRef = { id: artifactId, version: 1, contentHash: 'a'.repeat(64) }, csrf = 'C'.repeat(43), initial = '\uFEFF# 원본\r\n이전 내용\r\n';
 const unknown = new WeakMap<object, string[]>();
+test('문서 편집은 직접 저장과 별도 수정 제안 저장을 구분한다', async ({ page }) => {
+  const state = await documents(page), uploads: any[] = [], proposals: any[] = [], applications: any[] = []; let uploaded: any, proposal: any, diffBytes = Buffer.alloc(0), text = '';
+  const original = { artifactId, bytes: Buffer.byteLength(initial), contentHash: createHash('sha256').update(initial).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, beforeContent = { body: original, attachments: [], sections: [{ itemId: 'REQ', anchor: 'line:1' }], sourceRefs: [] };
+  await page.route(`**/api/v1/projects/${project}/files`, route => {
+    const c = JSON.parse(route.request().headers()['x-anvil-command']!); uploads.push(c); text = route.request().postDataBuffer()!.toString('utf8'); uploaded = { artifactId: crypto.randomUUID(), ...c.payload };
+    return route.fulfill({ status: 201, json: receipt(c, { status: 'ARTIFACT_READY', artifactRef: uploaded }, null, uploaded.artifactId) });
+  });
+  await page.route(`**/api/v1/projects/${project}/commands`, route => {
+    const c = route.request().postDataJSON();
+    if (c.operation === 'proposeDocumentChange') {
+      proposals.push(c); expect(c.expectedVersion).toBe(2); expect(c.payload.proposedContent.body).toEqual(uploaded);
+      if (!proposal) { diffBytes = Buffer.from(JSON.stringify({ format: 'ANVIL_TEXT_DIFF_1', startLine: 1, unchangedBefore: 0, unchangedAfter: 0, before: [initial], after: [text], baseRef: c.payload.baseRef, baseBodyRef: original, proposedBodyRef: uploaded, beforeContent, afterContent: c.payload.proposedContent })); proposal = { id: crypto.randomUUID(), baseRef: c.payload.baseRef, proposedContentRef: uploaded, diffRef: { artifactId: crypto.randomUUID(), bytes: diffBytes.length, contentHash: createHash('sha256').update(diffBytes).digest('hex'), mediaType: 'application/json;charset=utf-8' }, status: 'PENDING' }; }
+      return proposals.length === 1 ? route.abort('connectionreset') : route.fulfill({ json: receipt(c, { status: 'PROPOSAL_RECORDED', ref: proposal.baseRef, proposal }, 2, id) });
+    }
+    applications.push(c); expect(c.operation).toBe('saveDocumentDraft'); expect(c.payload.proposalRef).toBe(proposal.id); expect(c.expectedVersion).toBe(2); state.apply(c, uploaded, text);
+    const ref = { id, version: 3, contentHash: contentHash(canonicalJson({ title: c.payload.title, formRef, stageNodeRef: null, content: c.payload.content })) };
+    return applications.length === 1 ? route.abort('connectionreset') : route.fulfill({ json: receipt(c, { status: 'DRAFT', proposalRef: proposal.id, ref }, 3, id) });
+  });
+  await page.route(`**/api/v1/projects/${project}/proposals/*`, route => route.fulfill({ json: { ...proposal, proposedContent: proposals[0].payload.proposedContent, reason: proposals[0].payload.reason, createdAt: '2026-10-16T05:00:00Z', proposedBy: id, selections: [] } }));
+  await page.route(`**/api/v1/projects/${project}/files/*`, route => { const target = new URL(route.request().url()).pathname.split('/').pop(); return route.fulfill({ contentType: 'application/octet-stream', body: target === artifactId ? Buffer.from(initial) : target === proposal?.diffRef.artifactId ? diffBytes : Buffer.from(text) }); });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button', { name: '원본 문서 열기', exact: true }).click(); await page.getByRole('button', { name: '이 버전에서 편집', exact: true }).click();
+  await page.getByLabel('문서 본문 편집', { exact: true }).fill('# 제안\n별도로 검토할 변경'); await page.getByLabel('문서 변경 이유', { exact: true }).fill('원본을 바꾸지 않는 제안');
+  await expect(page.getByRole('button', { name: '수정 제안으로 저장', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '수정 제안으로 저장', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
+  await page.getByRole('link', { name: '프로젝트 작업', exact: true }).click(); await page.getByRole('link', { name: '문서·설계 추적', exact: true }).click();
+  await expect(page.getByRole('button', { name: '새 문서 작성', exact: true })).toBeDisabled(); await page.getByRole('button', { name: '같은 제안 명령 결과 확인', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('수정 제안 저장 확인'); expect(uploads).toHaveLength(1); expect(proposals).toHaveLength(2); expect(proposals[1]).toEqual(proposals[0]); expect(applications).toHaveLength(0);
+  await page.getByRole('button', { name: '제안 차이 비교', exact: true }).click(); await expect(page.getByLabel('제안 기준 원문', { exact: true })).toContainText('이전 내용'); await expect(page.getByLabel('제안 새 원문', { exact: true })).toHaveText('# 제안\n별도로 검토할 변경');
+  await expect(page.getByRole('button', { name: '이 제안으로 새 초안 저장', exact: true })).toBeDisabled(); await page.getByLabel('원문·첨부·항목 차이를 확인했고 이 제안을 새 초안으로 반영하겠습니다', { exact: true }).check(); await page.getByRole('button', { name: '이 제안으로 새 초안 저장', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST'); await page.getByRole('link', { name: '프로젝트 작업', exact: true }).click(); await page.getByRole('link', { name: '문서·설계 추적', exact: true }).click(); await page.getByRole('button', { name: '같은 제안 반영 명령 결과 확인', exact: true }).click();
+  await expect(page.getByText('제안 반영 버전 3 저장 확인 · 별도 확정 전', { exact: true })).toBeVisible(); expect(applications).toHaveLength(2); expect(applications[1]).toEqual(applications[0]); expect(uploads).toHaveLength(1);
+});
 test.beforeEach(async ({ page }) => {
   unknown.set(page, []);
   await page.route('**/api/v1/**', route => { unknown.get(page)!.push(route.request().method() + ' ' + new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); });

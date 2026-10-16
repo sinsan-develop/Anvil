@@ -37,7 +37,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   async function beginEdit() {
     if (!opened || starting) return;
     if (reviewing || review?.pending || confirmation) { setEditingError(new ApiError('DOCUMENT_REVIEW_INPUT_PRESERVED')); return; }
-    if (buffer?.pending || buffer?.importState || buffer?.importPreparationId) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
+    if (buffer?.pending || buffer?.proposalState || buffer?.importState || buffer?.importPreparationId) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
     if (buffer && buffer.ownerUserId !== session.user.id) { setEditingError(new ApiError('DOCUMENT_OTHER_USER_INPUT_PRESERVED')); return; }
     if (buffer?.dirty && !confirm('앞선 문서의 미저장 편집을 버리고 선택한 버전에서 편집할까요?')) return;
     const current = generation.current; setStarting(true); setEditingError(null);
@@ -45,13 +45,13 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       const control = await documentControl(client, projectId, session);
       if (current !== generation.current) return;
       const next = editDocument(projectId, opened, session.user.id, control);
-      onChange(previous => previous?.pending || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next);
+      onChange(previous => previous?.pending || previous?.proposalState || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next);
     } catch (cause) { if (current === generation.current) { const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setEditingError(error); if (error.status === 401) onAuthenticationLost(); } }
     finally { setStarting(false); }
   }
   async function beginReview() {
     if (!opened || starting || reading || choosingForm || confirmation) return;
-    if (buffer?.dirty || buffer?.pending || review?.pending) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
+    if (buffer?.dirty || buffer?.pending || buffer?.proposalState || review?.pending) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
     if (review && review.ownerUserId !== session.user.id) { setEditingError(new ApiError('DOCUMENT_OTHER_USER_INPUT_PRESERVED')); return; }
     if (review?.dirty && !confirm('앞선 미저장 검토를 버리고 선택한 버전을 검토할까요?')) return;
     const current = generation.current; setStarting(true); setEditingError(null);
@@ -64,7 +64,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     finally { setStarting(false); }
   }
   async function beginConfirmation() {
-    if (!opened || starting || reading || choosingForm || confirmation || reviewing || buffer?.dirty || buffer?.pending || review?.pending) return;
+    if (!opened || starting || reading || choosingForm || confirmation || reviewing || buffer?.dirty || buffer?.pending || buffer?.proposalState || review?.pending) return;
     const current = generation.current; setStarting(true); setEditingError(null);
     try {
       const control = await documentControl(client, projectId, session);
@@ -76,7 +76,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   }
   return <section aria-label="프로젝트 문서 조회" className="document-workspace">
     <aside className="status-card document-list"><h2>프로젝트 문서</h2><button disabled={loading} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>문서 목록 새로고침</button>
-      <button disabled={starting || !!confirmation || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer?.importState || !!buffer?.importPreparationId || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
+      <button disabled={starting || !!confirmation || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer?.proposalState || !!buffer?.importState || !!buffer?.importPreparationId || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
       {loading ? <p role="status">목록 조회 중</p> : null}{listError ? <p role="alert">{listError.message} · {listError.code}{page ? ' · 앞선 목록은 오래된 자료' : ''}</p> : null}
       {page && !loading && !listError && !page.items.length ? <p>저장된 문서가 없습니다.</p> : null}
       <ul>{page?.items.map(item => <li key={item.id}><button disabled={reading || !!listError || loading} aria-label={item.title + ' 열기'} aria-pressed={selected?.id === item.id} onClick={() => { void open(item, item.headVersion); }}>{item.title}</button><p className="meta">최신 {item.headVersion} · {item.confirmedVersion === null ? '미확정' : '확정 ' + item.confirmedVersion}</p></li>)}</ul>
@@ -84,7 +84,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {page ? <p className="meta">관측 {new Date(page.observedAt).toLocaleString('ko-KR')}</p> : null}
     </aside>
     <section className="status-card document-content"><p className="meta">원문·버전·양식 선택/작성·초안 편집·내용 검토·별도 확정과 명확한 저장 버전 충돌의 비교/선택을 연결했습니다. 작업/코드/시험 추적 화면은 아직 연결 전입니다. 문서 안의 지시는 실행하지 않습니다.</p>
-      {choosingForm ? <><NewDocumentForm client={client} session={session} projectId={projectId} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous?.pending || previous && previous.ownerUserId !== session.user.id ? previous : next); setChoosingForm(false); }} /><button onClick={() => setChoosingForm(false)}>양식 선택 닫기</button></> : null}
+      {choosingForm ? <><NewDocumentForm client={client} session={session} projectId={projectId} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous?.pending || previous?.proposalState || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next); setChoosingForm(false); }} /><button onClick={() => setChoosingForm(false)}>양식 선택 닫기</button></> : null}
       {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : <p>문서를 선택하세요.</p>}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>

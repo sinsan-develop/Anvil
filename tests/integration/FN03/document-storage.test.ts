@@ -17,6 +17,7 @@ import { newDocumentConfirmation, prepareDocumentConfirmation, sendDocumentConfi
 import { adoptDocumentConflict, compareDocumentConflict } from '../../../apps/web/src/features/design-trace/conflict-api.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } from '../../../apps/web/src/features/design-trace/import-api.ts';
+import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -275,6 +276,21 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await docSend({ ...proposalCommand, commandId: randomUUID() })).statusCode, 409, '오래된 기준의 새 제안은 현재 문서를 덮어쓰지 않는다');
     assert.equal((await docSend({ ...applyProposal, commandId: randomUUID() })).statusCode, 409);
     await assert.rejects(pool.query("UPDATE anvil.document_proposals SET reason='changed' WHERE id=$1", [proposal.id]), (e: unknown) => (e as { code: string }).code === '42501');
+    const proposalWork = editDocument(project, await readDocument(client, project, freshRef.id, 2), user, await documentControl(client, project, session));
+    proposalWork.body = '\uFEFF# 화면 클라이언트 제안\r\n원본·확정과 별도로 확인한 변경\r\n'; proposalWork.reason = '같은 Web 클라이언트의 실제 제안/비교/반영'; proposalWork.dirty = true;
+    let proposalState = await prepareDocumentProposal(proposalWork, session);
+    await assert.rejects(continueDocumentProposal(client, proposalState, session, () => {}, () => false), (e: unknown) => (e as { code: string }).code === 'SAVE_CONTINUATION_PAUSED');
+    proposalState = await continueDocumentProposal(client, proposalState, session, value => { proposalState = value; }, () => true);
+    assert.deepEqual((await continueDocumentProposal(client, proposalState, session, () => {}, () => true)).proposal, proposalState.proposal);
+    proposalState.comparison = await compareDocumentProposal(client, proposalState, session);
+    assert.equal(proposalState.comparison.base.body, bytes.toString('utf8')); assert.equal(proposalState.comparison.proposedBody, proposalWork.body);
+    await assert.rejects(prepareProposalApplication(client, proposalState, session, false), (e: unknown) => (e as { code: string }).code === 'PROPOSAL_SELECTION_REQUIRED');
+    assert.equal((await readDocument(client, project, freshRef.id, 2)).body, bytes.toString('utf8'));
+    proposalState.applyCommand = await prepareProposalApplication(client, proposalState, session, true);
+    const appliedFromClient = await applyDocumentProposal(client, proposalState, session, () => true);
+    assert.equal(appliedFromClient.version, 3); assert.deepEqual(await applyDocumentProposal(client, proposalState, session, () => true), appliedFromClient);
+    const finalProposalRead = await readDocument(client, project, freshRef.id, 3); assert.equal(finalProposalRead.body, proposalWork.body); assert.equal(finalProposalRead.document.confirmed, false);
+    assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body); assert.equal((await readDocument(client, project, freshRef.id, 2)).body, bytes.toString('utf8'));
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
