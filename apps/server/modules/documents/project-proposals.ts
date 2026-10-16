@@ -7,6 +7,7 @@ import { isVersionRef } from '../../../../contracts/references.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isImportArtifact, importUuid, type ImportArtifact } from './project-imports.ts';
 import { documentTextDiff } from './document-diff.ts';
+import { documentStageBinding } from './document-stage.ts';
 interface Content { body: ImportArtifact; attachments: ImportArtifact[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
 interface BaseDocument { id: string; version: number; contentHash: string; title: string; formRef: VersionRef; stageNodeRef: unknown; content: Content; contentReviewCriteria: { items: { criterionId: string }[] } }
 export interface DocumentProposal { id: string; baseRef: VersionRef; proposedContentRef: ImportArtifact; diffRef: ImportArtifact; status: 'PENDING' }
@@ -17,7 +18,8 @@ const text = (bytes: Buffer) => { try { return new TextDecoder('utf-8', { fatal:
 export async function createDocumentProposal(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef, base: BaseDocument, read: Read, put: Put) {
   const p = request.payload;
   if (!exact(p, ['baseRef','proposedContent','reason','sourceRefs']) || !isVersionRef(p.baseRef) || p.baseRef.id !== request.targetId || p.baseRef.version !== request.expectedVersion || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !Array.isArray(p.sourceRefs) || !exact(p.proposedContent, ['body','attachments','sections','sourceRefs']) || !isImportArtifact(p.proposedContent.body) || !Array.isArray(p.proposedContent.attachments) || p.proposedContent.attachments.length > 200 || !p.proposedContent.attachments.every(isImportArtifact) || !Array.isArray(p.proposedContent.sections) || p.proposedContent.sections.length > 200 || !Array.isArray(p.proposedContent.sourceRefs)) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
-  if (base.stageNodeRef !== null || p.sourceRefs.length || p.proposedContent.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
+  if (p.sourceRefs.length || p.proposedContent.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
+  await documentStageBinding(db, request.projectId, base.stageNodeRef, base.formRef, false);
   const current = (await db.query('SELECT head_version FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR SHARE', [request.projectId, base.id])).rows[0];
   if (!current || Number(current.head_version) !== base.version || base.contentHash !== p.baseRef.contentHash) throw new AuthFailure('VERSION_CONFLICT', 409);
   const content = p.proposedContent as unknown as Content;
@@ -57,6 +59,6 @@ export async function checkProposalSelection(db: PoolClient, actor: Authenticate
   if (typeof p.proposalRef !== 'string' || !importUuid.test(p.proposalRef) || !request.targetId) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
   const proposal = await readDocumentProposal(db, actor, request.projectId, p.proposalRef, read);
   if (proposal.baseRef.id !== request.targetId || proposal.baseRef.version !== request.expectedVersion || proposal.selections.length) throw new AuthFailure('VERSION_CONFLICT', 409);
-  const base = (await db.query('SELECT title,form_definition_id,form_version,form_hash,content_hash FROM anvil.document_versions WHERE project_id=$1 AND document_id=$2 AND version=$3', [request.projectId, request.targetId, request.expectedVersion])).rows[0];
-  if (!base || base.content_hash !== proposal.baseRef.contentHash || base.title !== p.title || canonicalJson(p.formRef) !== canonicalJson({ id: base.form_definition_id, version: Number(base.form_version), contentHash: base.form_hash }) || canonicalJson(p.content) !== canonicalJson(proposal.proposedContent)) throw new AuthFailure('PROPOSAL_SELECTION_MISMATCH', 409);
+  const base = (await db.query('SELECT title,form_definition_id,form_version,form_hash,content_hash,stage_ref_json FROM anvil.document_versions WHERE project_id=$1 AND document_id=$2 AND version=$3', [request.projectId, request.targetId, request.expectedVersion])).rows[0];
+  if (!base || base.content_hash !== proposal.baseRef.contentHash || base.title !== p.title || canonicalJson(p.stageNodeRef) !== canonicalJson(base.stage_ref_json) || canonicalJson(p.formRef) !== canonicalJson({ id: base.form_definition_id, version: Number(base.form_version), contentHash: base.form_hash }) || canonicalJson(p.content) !== canonicalJson(proposal.proposedContent)) throw new AuthFailure('PROPOSAL_SELECTION_MISMATCH', 409);
 }
