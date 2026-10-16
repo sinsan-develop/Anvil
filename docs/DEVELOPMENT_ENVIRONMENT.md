@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+2026-10-16 추적 서버 후속: private/WSL exact `cca0899053859ba8184535eac6645bea236e5284` clean에서 승인 forward22 `0004_trace_links`(SHA256 `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c`) 적용·기존21 지문 불변. 실제 FN03/FN04+FN11 2 PASS/4532ms/skip0·독립 DB20종/임시 경로 잔여0·지속 원문 보호/empty. 사용자용 Node/relay·초기 비밀·CA·실제 계정/정책은 변경0이며 실제 browser↔DB·전체 exact runtime은 여전히 미검증이다.
+
 2026-10-16 UI06 계획 client 후속: private/WSL Git exact `cefa3fb9dd85caad2ac07adad7f33abac4443834` clean의 prepare/send/readWorkPlan actual1 PASS/4151ms/skip0·독립 DB19종/시험root 잔여0. 기존21 SQL 재적용0·사용자용 Node/relay·Secret 변경0. Windows Web67(JS473.43kB/gzip127.38)/단위76/UI06 fixture34 증거와 실제 browser↔DB·사용자 인수는 구분한다.
 
 2026-10-16 FN04 후속: 지정 private Git exact `b43b26671f7b0bc5aa87d1353b4edeaf0c5ca55b` WSL clean에서 forward21 `0004_work_plan_drafts`(SHA256 `9ea544780d61cf7b5914b9db597eadba2291fb487f42a373d695f053b8e8610e`) 적용·기존20 checksum 불변. 실제 FN03/FN04+FN11 2 PASS/3818ms/skip0, 독립 DB19종·시험 경로 잔여0·지속 원문 uid1000/0700/link0/실경로 동일/empty. Node40744/relay26052·만료 bootstrap·Secret·서비스는 변경하지 않았고 actual browser DB/전체 exact runtime은 미검증이다.

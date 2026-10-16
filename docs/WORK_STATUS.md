@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 추적 서버 최신 `cca0899053859ba8184535eac6645bea236e5284` 지정 private/WSL exact/clean에서 승인 forward22만 적용·기존21 불변, actual FN03/FN04+FN11 2 PASS/4532ms/skip0. 실제 설계/화면/업무 원문에 대한 명시 링크·멱등/중복/잘못된 ID/hash/관계·양방향 동일 edge·cursor·격리·직접 변경 차단 확인. 독립 DB20종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 아직 추적 link/view Web UI·화면 검토 선택/계획 확정·변경 영향/실제 실행 출처는 미완료이며, 다음은 조회/연결 화면이다.
+
 - 최신 후속 `c4694579547d1ad7997ca3e6021eb30c9a59f96e` local/private·WSL exact/clean actual1 PASS/3683ms/skip0: 보관 계획의 목록/문서 필터·서명 cursor 변조/조건 변경·격리·같은 Web 원문 재확인/개정 준비→새 명령/버전2 저장·과거1보존 확인. 독립 DB19종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 단위77·계획 fixture3·Web68/type/build는 실제 browser DB/사용자 인수와 구분한다. 다음은 실제 화면 검토 선택/계획 확정·trace edge/변경 영향이다.
 
 - 최신 코드 `cefa3fb9dd85caad2ac07adad7f33abac4443834` local/private·WSL exact/clean에서 같은 Web 작업계획 prepare/send/read actual1 PASS/4151ms/skip0. 고정 원문/설계/D/S와 업무 카드·두 선행 저장/재조회, 미확정·미검토 문제 보존과 권한/구버전/멱등을 확인했다. 독립 DB19종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 단위76·UI06 fixture34·type/build PASS와 실제 browser↔DB/사용자 인수는 구분한다. 다음 미완료는 보관 계획 목록/개정 재개·화면 검토 선택·계획 확정·trace edge/변경 영향이며 전체 FN04/Stage B는 미완료다.
@@ -120,6 +122,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
+
+- `cca08990` exact 게시본에서 승인된 forward22 `0004_trace_links` checksum `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c` 적용·기존21 지문 불변·fixture7·실제 사용자 생성0. actual FN03/FN04+FN11 2 PASS/4532ms/skip0: 별도403→합성 명시 policy→빈 연결/미연결 근거→실제 plan task/설계·화면 링크·replay·새 중복409/자기422/가짜ID404/hash409/가짜시험412→양방향 같은edge·분리 traversal·서명 cursor/방향 변조400·교차 사용자404·app 직접UPDATE42501. 독립 DB20종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty와 적용22 지문을 조회했다. SQL22는 이제 적용본이며 수정하지 않는다. 추적 Web 화면/client는 아직 미구현으로 남긴다.
 
 - 추적 연결 초기 RED `4f171714fa4b69a88a044284cc57c3aeae59dff0` WSL exact/clean actual1 FAIL/4640ms: 신규 linkTrace 연산 schema가 없어 기대403 대신400. 앞선 계획 저장 PASS를 취소하거나 신규 추적을 PASS로 승격하지 않는다. 고유 합성 QA/finally는 유지한다.
 - 후보 forward22 `0004_trace_links.sql` SHA256 `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c`는 승인된 개발 DB anvil_v3_development에 불변 trace_edges/명시 policy·현재 command/receipt guard만 추가한다. 기존21 SQL/원문/확정 pointer/서비스/Secret 변경0. 테이블은 후속 개발용 보존, 합성 trace 행은 기존 고유 project UUID의 finally에서 plan/document보다 먼저 정확 정리한다. 게시 exact SHA 적용/양성·음성 실제 결과는 아직 미검증이다.
