@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN04 저장 최신 `b43b26671f7b0bc5aa87d1353b4edeaf0c5ca55b` 지정 private/WSL exact/clean에서 승인된 forward21만 적용하고 FN03/FN04+FN11 실제2 PASS/3818ms/skip0. 계획 원문·설계/화면 연결·초안 저장/멱등/개정·옛 버전·문제/두 선행·권한/교차 사용자/직접 확정 변경 차단을 확인했다. 독립 DB19종 각0·시험root[]·지속root 보호/empty. 저장 API와 사용자 화면 작성·실제 browser DB 여정은 구분하며 현재 UI 작성 연결 중이다.
+
 - 최신 FN04 `dc01cae2b8d0f9e93aff279fa7e4f1b4425c1334` local/private·WSL exact/clean actual1 PASS/4228ms/skip0. 같은 Web client의 설계/화면 위치 등록·정확 receipt/재조회 hash·동일 명령 재확인을 실제 WSL DB에서 확인했다. 독립 DB15종 각0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty. SQL20 재적용0. UI06 fixture32/단위72와 실제 browser↔DB·사용자 인수는 별개이며, 다음은 승인된 AF04 작업계획/업무/선행 저장이다. 아래 과거 미완료 서술은 해당 시점 이력이다.
 
 - 현재 후속 코드 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` local/private·WSL exact/clean actual FN03 1 PASS/3017ms/skip0. 보관 자료 재개·복합 충돌 수동 조정·검토/확정 거절 보관/명시 새 대상·새 판단/새 확인·옛 원문/확정 사건 보존까지 확인했다. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/link0/empty. 단위65·UI06 fixture25+추가 음성2·Web62/type/build와 실제 browser↔DB/사용자 인수는 구별한다. 아래 앞선 ‘재개/복합 충돌/대상 교체 미완료’ 문구는 이전 시점 이력이다. 소스/단계 연계·실제 runtime·전체 FN03/Stage B는 여전히 미완료다.
@@ -114,6 +116,13 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
+
+- UI06 후속은 WorkPlanEditor·상위 workPlanState·new/prepare/send/readWorkPlan이다. AF04 정확 원문에서 화면/기능/연결/준비 업무·각 입력/출력/범위/파일 선언·별도 착수/검수 선행·수행/시험/검수/증거/복구를 작성하고 실제 확인한 설계/화면 위치를 선택한다. 미확인 POST는 같은 App 버퍼/명령으로 보존하며 기존 문서/import/proposal/review/confirm writer를 막는다. 단절→다음 거절도 uncertain을 해소하지 않는다. 실제 정책 부여·확정/배정/기준 활성화는 하지 않는다.
+- UI 시험 첫 실행2case는 label에 보조 설명이 합쳐져 `업무 1 입력 한 줄에 한 항목`으로 노출된 오류1이었다. 실제 접근성 tree를 읽고 label/htmlFor와 aria-describedby 설명으로 분리한 뒤 같은 기준·15초 그대로 GREEN2/3.2초. hash만 맞춘 가짜 COMPLETED 카드를 채택하던 직접 음성 RED1→정확 wire 필드/카드·선행 검증 GREEN. fresh 단위76 PASS/1234ms·타입/build exit0(Web67/JS473.43kB/gzip127.38)·UI06 fixture34 PASS/25.7초·diff0. NO_COLOR 경고 유지. 같은 Web prepare/send/read actual 연결을 추가했으며 게시 후 검증 전까지 실제 결과는 미검증이다.
+- 현재 화면은 새 작업계획 초안 작성/저장한 버전의 즉시 재조회까지이며, 이미 저장한 계획 목록·개정 재개·화면 검토 선택·계획 확정·trace edge/변경 영향·실제 실행 증거는 미완료다. 메모리 버퍼 보존을 FN13 영속 체크포인트 완료로 보고하지 않는다. 다음은 이 UI client의 exact SHA actual 확인 후 보관 계획 재개와 추적 연결이다.
+
+- 실제 `b43b2667`에서 forward21 `0004_work_plan_drafts` checksum `9ea544780d61cf7b5914b9db597eadba2291fb487f42a373d695f053b8e8610e` 추가·기존20 불변·fixture7·실제 사용자 생성0. actual2 PASS/3818ms/skip0: plan 별도403→합성 명시 policy→AF04/AF02/D/S·미확정/미검토 issues·두 선행 저장/재조회·same command replay·개정2/옛1보존·hash409/가짜ID404/가짜COMPLETED422/잘못된 양식422·중복 코드 ISSUES_ONLY·app 직접UPDATE/확정 pointer42501·원문/outbox0. 독립 DB19종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty 확인. SQL21은 적용본이므로 이제 수정하지 않는다.
+- Web client 부재 RED2→new/prepare/send/readWorkPlan 연결 중. 타입 오류1(명시 payload index signature)은 객체 펼침으로 보정·타입0. 브라우저 진입점 부재 RED1/15초를 확인하고 작성 UI를 연결한다. docs patch1은 개발환경 머리글 불일치로 적용 전 거부돼 실제 머리글을 확인했다. 기존 검사 기준·서비스/Secret은 바꾸지 않는다.
 
 - 업무 카드 분석 구현 부재 RED2→착수/검수 선행 분리·입출력/범위/검수/복구·D/S 참조·정상/중요 실패/직접 영향 시험을 검사하는 분석기 GREEN2, 새 상태/완료 필드·절대/상위 경로는 거절한다. 단위74 PASS/1331ms·타입0. `f69bc27f1d9ec6c00cdd27867459c36caba21f18` 지정 private/WSL exact/clean actual1 FAIL/2957ms: 아직 신규 연산 schema가 없어 기대403 대신400, 초기 미구현 RED로 보존했다. 실제 저장 성공 아님.
 - 후속은 saveWorkPlanDraft와 고정 버전 GET·새 forward21 후보 `0004_work_plan_drafts.sql`이다. 적용된20 SQL은 보존한다. 실제 AF04/AF02·등록 D/S·screen review를 대조하고 새 계획/개정 head CAS·불변 version/card·START/ACCEPTANCE·명시 policy/receipt·감사로 연결한다. 초안은 DRAFT만 반환하며 설계/계획 미확정·화면 미검토·카드 누락/순환/중복 문제는 숨기지 않는다. 실제 DB 적용·양성/음성 검증은 게시 후 수행 전까지 미검증이다.

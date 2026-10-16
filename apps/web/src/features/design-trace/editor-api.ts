@@ -4,11 +4,12 @@ import type { FormVersion } from '../methodologies/forms-api.ts';
 import type { DocumentImportBuffer } from './import-api.ts';
 import type { DocumentProposalBuffer } from './proposal-api.ts';
 import type { DesignIndexBuffer } from './design-index-api.ts';
+import type { WorkPlanBuffer } from './work-plan-api.ts';
 
 type VersionRef = { id: string; version: number; contentHash: string };
 type ArtifactRef = { artifactId: string; bytes: number; contentHash: string; mediaType: string };
 export interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
-export interface DocumentWrite { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: 'uploadArtifact' | 'saveDocumentDraft' | 'importDocument' | 'proposeDocumentChange' | 'indexDesignDocument'; targetId: string | null; expectedVersion: number; baselineRefs: []; approvalRef: null; payload: Record<string, unknown> }
+export interface DocumentWrite { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: 'uploadArtifact' | 'saveDocumentDraft' | 'importDocument' | 'proposeDocumentChange' | 'indexDesignDocument' | 'saveWorkPlanDraft'; targetId: string | null; expectedVersion: number; baselineRefs: []; approvalRef: null; payload: Record<string, unknown> }
 export interface PendingDocumentSave { body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null }
 export interface DocumentBuffer {
   ownerUserId: string; projectId: string; documentId: string | null; baseVersion: number; formRef: VersionRef;
@@ -18,6 +19,7 @@ export interface DocumentBuffer {
   importState?: DocumentImportBuffer | null; importCandidateRef?: string | null; importPreparationId?: string | null;
   baseHash?: string; baseTitle?: string; proposalState?: DocumentProposalBuffer | null;
   designIndexState?:DesignIndexBuffer|null;
+  workPlanState?:WorkPlanBuffer|null;
 }
 export interface DocumentSession { user: { id: string }; clientId: string; csrfToken: string }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
@@ -46,7 +48,7 @@ export function newDocument(projectId: string, form: FormVersion, ownerUserId: s
   return { ownerUserId, projectId, documentId: null, baseVersion: 0, formRef: { ...form.ref }, title: '', body: '', mediaType: 'text/markdown;charset=utf-8', content: { attachments: [], sections: [], sourceRefs: [] }, criteria: form.definition.items.map(item => ({ criterionId: item.itemId, title: item.title, reviewCriteria: [...item.reviewCriteria] })), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
 }
 export async function prepareDocumentSave(buffer: DocumentBuffer, session: DocumentSession): Promise<PendingDocumentSave> {
-  if(buffer.designIndexState) throw new ApiError('DESIGN_INDEX_PENDING_RESULT');
+  if(buffer.designIndexState||buffer.workPlanState) throw new ApiError('DOCUMENT_PENDING_RESULT');
   if (buffer.proposalState) throw new ApiError('PROPOSAL_PENDING_RESULT');
   if (buffer.importPreparationId || buffer.importState || buffer.importCandidateRef != null && !uuid.test(buffer.importCandidateRef)) throw new ApiError('IMPORT_SELECTION_REQUIRED');
   if (buffer.ownerUserId !== session.user.id || !uuid.test(buffer.projectId) || buffer.documentId !== null && !uuid.test(buffer.documentId) || buffer.documentId === null && buffer.baseVersion !== 0 || buffer.documentId !== null && buffer.baseVersion < 1 || !uuid.test(session.clientId) || !versionRef(buffer.formRef) || !Number.isSafeInteger(buffer.baseVersion) || !Number.isSafeInteger(buffer.baseVersion + 1) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1) throw new ApiError('CLIENT_PATH_INVALID');

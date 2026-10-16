@@ -20,6 +20,8 @@ import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } fr
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, readStoredProposal, resumeStoredProposal } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '../../../apps/web/src/features/design-trace/materials-api.ts';
 import { newDesignIndex,prepareDesignIndex,readDesignIndex,sendDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
+import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
+import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -397,9 +399,12 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const designItem=clientIndexRead.items[0]!,screenRegion=clientIndexRead.screenRegions[0]!;
     const task={taskCode:'UI01',type:'SCREEN',title:'문서 조회',purpose:'원문과 현재 위치 확인',designRefs:[{kind:'DESIGN_ITEM',id:designItem.id,versionRef:designRef,localCode:designItem.localCode,anchor:designItem.anchor}],screenRefs:[{kind:'SCREEN_REGION',id:screenRegion.id,versionRef:screenRef,localCode:screenRegion.screenCode,anchor:screenRegion.anchor}],ownerRole:'단계 책임자',inputs:['설계·화면 원문'],outputs:['실제 조회 화면'],included:['문서 조회'],excluded:['Agent 실행'],allowedFileRefs:['apps/web/src/documents.tsx'],startPrerequisites:[],acceptancePrerequisites:['FN01'],steps:['실제 원문과 화면을 연결'],testCases:[{id:'TC01',kind:'NORMAL',steps:['문서 열기'],expected:'원문 일치',environment:'WSL 개발'},{id:'TC02',kind:'IMPORTANT_FAILURE',steps:['권한 없는 문서 열기'],expected:'본문 노출 없음',environment:'WSL 개발'},{id:'TC03',kind:'DIRECT_IMPACT',steps:['기존 목록 열기'],expected:'기존 목록 유지',environment:'WSL 개발'}],acceptanceCriteria:['실제 처리·조회 일치'],evidenceRequirements:['정확 버전·실제 시험 결과'],rollback:'이전 검증 commit 복구',recoveryNotes:'미완료 지점 보존'};
     const planPayload={documentRef:planDocumentRef,designRef,screenReviewRefs:[],tasks:[task,{...structuredClone(task),taskCode:'FN01',type:'FUNCTION',title:'원문 저장',screenRefs:[],startPrerequisites:['UI01'],acceptancePrerequisites:[]}],reason:'정확 문서/설계 위치와 착수·검수 선행을 분리 저장'};
-    const planCommand={...context,commandId:randomUUID(),operation:'saveWorkPlanDraft',payload:planPayload};
+    const planCommand={...context,commandId:String(randomUUID()),operation:'saveWorkPlanDraft',payload:planPayload};
     assert.equal((await docSend(planCommand)).statusCode,403,'설계 인덱스 허가가 작업계획 작성 허가는 아니다');
     const planPolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:7,payload:{rules:[{ruleId:'PLAN_OWN_PROJECT',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','indexDesignDocument','saveWorkPlanDraft'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 작업계획 초안 저장 명시 허가',reviewRefs:[]}});assert.equal(planPolicy.statusCode,200,planPolicy.body);
+    const planClientWork=editDocument(project,await readDocument(client,project,planDocumentRef.id,1),user,1);planClientWork.workPlanState=newWorkPlan(planClientWork);planClientWork.workPlanState.input={...structuredClone(planPayload),tasks:structuredClone(planPayload.tasks)as TaskCard[]};planClientWork.workPlanState.pending=prepareWorkPlan(planClientWork,session);
+    await assert.rejects(sendWorkPlan(client,planClientWork,session,()=>false),(e:unknown)=>(e as{code:string}).code==='WORK_PLAN_CONTINUATION_PAUSED');
+    const planClientResult=await sendWorkPlan(client,planClientWork,session,()=>true);assert.equal(planClientResult.status,'DRAFT');planCommand.commandId=planClientWork.workPlanState.pending.commandId;
     const savedPlan=await docSend(planCommand);assert.equal(savedPlan.statusCode,200,savedPlan.body);
     const planRef=savedPlan.json().data.ref,planValue=savedPlan.json().data.workPlan;
     assert.equal(planValue.status,'DRAFT');assert.equal(planValue.tasks.length,2);assert.deepEqual(planValue.dependencies,[{taskCode:'UI01',dependencyTaskCode:'FN01',phase:'ACCEPTANCE'},{taskCode:'FN01',dependencyTaskCode:'UI01',phase:'START'}]);
@@ -407,6 +412,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.deepEqual((await docSend(planCommand)).json(),savedPlan.json(),'같은 저장 명령은 같은 불변 계획 버전');
     const planPath=`/api/v1/projects/${project}/work-plans/${planRef.id}/versions/1`;
     const readPlan=await app.inject({method:'GET',url:planPath,headers});assert.equal(readPlan.statusCode,200,readPlan.body);assert.equal(readPlan.json().executionEvidence,'NOT_CONNECTED');assert.deepEqual(readPlan.json().tasks,planValue.tasks);
+    assert.deepEqual((await readWorkPlan(client,project,planRef)).tasks,planValue.tasks);
     assert.equal((await app.inject({method:'GET',url:planPath,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,designRef:{...designRef,contentHash:'0'.repeat(64)}}})).statusCode,409);
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[{...task,designRefs:[{...task.designRefs[0],id:randomUUID()}]}]}})).statusCode,404,'가짜 설계 ID는 실제 참조가 아니다');

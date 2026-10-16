@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+2026-10-16 FN04 후속: 지정 private Git exact `b43b26671f7b0bc5aa87d1353b4edeaf0c5ca55b` WSL clean에서 forward21 `0004_work_plan_drafts`(SHA256 `9ea544780d61cf7b5914b9db597eadba2291fb487f42a373d695f053b8e8610e`) 적용·기존20 checksum 불변. 실제 FN03/FN04+FN11 2 PASS/3818ms/skip0, 독립 DB19종·시험 경로 잔여0·지속 원문 uid1000/0700/link0/실경로 동일/empty. Node40744/relay26052·만료 bootstrap·Secret·서비스는 변경하지 않았고 actual browser DB/전체 exact runtime은 미검증이다.
+
 ## 현재 단계와 정본
 
 FN04 저장 첫 후속 `98b3504dcf6bc2387f317a0acfcb9eb642657044` 지정 private/WSL exact clean actual FN03/FN11 2 PASS/3368ms/skip0. 승인된 forward20 `0004_design_index` checksum `d0d6ef9221a46c96c4e6f033d6a14e22cc07b26a8bcb1949d67dbb8e574aea6a` 적용·기존19 불변, fixture7/실제 사용자0. 독립 design_items/screen_regions 포함15표 각0·시험root[]·지속원문 uid1000/0700/link0/empty. 설계 추적 조회 UI는 현재 local 단위71/fixture29·Web64/type/build이며 최신 actual Web client 검수는 게시 후다. 사용자용 runtime·relay/초기 등록·CA/Secret/서비스는 변경하지 않았다.
