@@ -359,6 +359,10 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 ### 10.3 FN05 — 원문·헌법·지식·검색
 
+2026-10-16 첫 구현 경로: `saveKnowledge`는 targetId=null/expectedVersion=0으로 새 PROPOSED만 저장한다. `GET knowledge/:id/versions/:version`은 `ref,entry,body,state,history,appliedAsConstitution:false,redactionState:NOT_REDACTED,sensitiveInspection:KNOWN_PATTERNS_ONLY,agentDelivery:NOT_CONNECTED`를 반환한다. SourceRef는 실제 동일 프로젝트 DOCUMENT_VERSION(id/version/contentHash)·ARTIFACT(id/contentHash)의 UTF-8 원문/물리 hash를 대조하며, 아직 미연결 USER_INSTRUCTION/CONVERSATION·단계/업무 scope·relatedRefs는412다. 헌법 kind의 저장은 적용이 아니다.
+
+초기 검색은 제목/이유의 리터럴 부분 일치(`searchScope:TITLE_REASON`), kind/PROPOSED 필터와 유한 서명 cursor만 지원하며 본문을 snippet으로 반환하지 않는다. 모든 검색/본문 조회 앞 회원·실제 원문/hash를 검사한다. 알려진 private-key/Bearer/비밀 대입 표식은 값 없는412 `KNOWLEDGE_SENSITIVE_CONTENT_SUSPECTED`로 지식 저장/조회·검색 노출을 차단하며 원문을 자동 삭제하지 않는다. 완전한 탐지·기존 FN03 원문 격리나 공유/확정/정정/제외·Agent 이해 기능 완료를 뜻하지 않는다. 의심 자료의 전체 보관/격리는 후속 보안 경계로 남긴다.
+
 `KnowledgeEntry` 필수는 `kind:PURPOSE/CONSTITUTION/DECISION/FACT/HYPOTHESIS/FAILURE_SOLUTION/CAUTION,title,contentRef:ArtifactRef,sourceRefs:SourceRef[],reason,scope:{projectId,stageRefs,taskRefs},relatedRefs:TraceRef[]`다. 가설/제안/사용자 확정의 출처를 따로 보관하고 총괄이 임의로 사람 확정 사건을 만들지 않는다. 원문은 비밀 제거 여부·누락/추출 손실을 표시하며 별도 ID로 보존한다.
 
 | 연산 | payload→응답·보호 조건 |

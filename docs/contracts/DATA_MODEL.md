@@ -230,6 +230,8 @@ audit와 UI event의 수신순번은 각각 프로젝트별 카운터/직렬화�
 | `context_deliveries` | `(project_id,id) UNIQUE,id PK,bundle_ref,connection_ref,external_session_ref,instruction_id,part_manifest_json,receipt_refs,state,created_at`. 수신/실패/미확인과 마지막 순번 보존, 실제 어댑터 수신 근거 전 DONE 금지 |
 | `understanding_reviews` | `(project_id,id) UNIQUE,id PK,bundle_ref,response_source_ref,subject_binding_ref,reviewer_ref,items_json,outcome,created_at`. 6항목 각각 기준/응답/판정/근거 저장. 총괄/단계 교체의 최종 확인 주체를 FN09/14가 검증 |
 
+FN05 첫 forward23 후보 `0005_knowledge_drafts`는 knowledge_entries/knowledge_versions/knowledge_events의 새 PROPOSED만 허용한다. entry_json과 정규 열·동일 프로젝트 artifact·정확 현재 command/client/control/명시 policy·receipt를 결박하며 head FK는 transaction 끝에 검사한다. app SELECT/INSERT만 부여하고 UPDATE/DELETE·확정/공유 사건은 차단한다. 기존22 SQL·원문·확정 pointer를 수정하지 않으며 정정/제외 등은 후속 새 forward로 보완한다. 적용 여부·checksum은 WORK_STATUS 실측을 따른다.
+
 검색은 원문/지식의 project·접근·사용 제외/대체 상태를 먼저 제한한다. 인덱스/랭킹 구현은 FN05가 자료량에 맞는 PostgreSQL/파일 계약 안에서 선택하며 별도 외부 벡터 서비스·학습 엔진을 자동 추가하지 않는다. 임무 자동 선택에서 제외된 지식도 허가된 과거 조회로는 확인 가능하다. 민감 의심으로 격리된 artifact는 검색 snippet·context 전달에서도 차단한다.
 
 ### 7.4 참조·시험·migration 배정

@@ -29,7 +29,7 @@ try {
     if (applied.rows[0]?.checksum !== checksum) throw Error('MIGRATION_CHECKSUM_CONFLICT');
   }
   // 명시한 의존 순서만 실행한다. 파일 이름 정렬이나 임의 SQL 경로를 받지 않는다.
-  for (const id of ['0001_projects_access', '0011_authorization', '0003_documents', '0002_methodologies', '0002_builtin_condition_contract', '0011_user_common_control', '0011_user_common_forms', '0011_user_common_content_reviews', '0011_user_common_method_reviews', '0011_project_creation', '0011_draft_method_reviews', '0011_project_policy_control', '0003_project_artifacts', '0003_project_documents', '0003_project_document_reviews', '0003_document_confirmations', '0003_document_imports', '0003_document_proposals', '0004_design_index', '0004_work_plan_drafts', '0004_trace_links']) {
+  for (const id of ['0001_projects_access', '0011_authorization', '0003_documents', '0002_methodologies', '0002_builtin_condition_contract', '0011_user_common_control', '0011_user_common_forms', '0011_user_common_content_reviews', '0011_user_common_method_reviews', '0011_project_creation', '0011_draft_method_reviews', '0011_project_policy_control', '0003_project_artifacts', '0003_project_documents', '0003_project_document_reviews', '0003_document_confirmations', '0003_document_imports', '0003_document_proposals', '0004_design_index', '0004_work_plan_drafts', '0004_trace_links', '0005_knowledge_drafts']) {
     const content = await readFile(new URL('../db/migrations/' + id + '.sql', import.meta.url), 'utf8');
     const expected = createHash('sha256').update(content).digest('hex');
     const row = await client.query('SELECT checksum FROM anvil.schema_migrations WHERE id=$1', [id]);

@@ -125,6 +125,10 @@
 
 ### 2026-10-16 FN05 지식 원문·초안 착수 — Main 어울
 
+- 실제 RED `6019cd77ea9fbd834506ea96e826d9e9bb268a62` private/WSL exact/clean FN03확장1 FAIL/4591ms: saveKnowledge route enum 부재로 기대 정책거절403 대신400. 기존 원문/추적 검증을 신규 지식 PASS로 바꾸지 않았다.
+- 후속 후보는 별도 saveKnowledge 정책·현재 제어/receipt, 실제 DOCUMENT_VERSION/ARTIFACT 물리 원문/hash·PROPOSED 불변 저장/조회, 제목/이유 검색·서명 cursor·타사용자404다. 새 forward23 `0005_knowledge_drafts` checksum `42efe15b4ebe3a860364ef85d92631fcf85c71f7143738026155e5814893153a`, 기존22 불변. Windows unit82 PASS/1294ms·type/build0(Web71)·diff0. 실제 적용/성공은 아직 미검증이다.
+- 오류/조치: 문서 버전의 body 직접 접근 타입1→기존 content.body의 보호 originalText 사용. 문서 patch hunk 불일치1은 적용 전 전부 거절 후 정확 헤더로 적용했다. 보조 rg의 PowerShell wildcard 경로1은 오류 후 디렉터리 대상 검색으로 정정했다. 파일 read 경로 오지정은 발견한 project-files.ts를 사용하고 추측 경로 재시도 금지. 비밀 의심 차단은 FN05 신규 노출 경로에 한정하며 FN03 기존 원문 전체 격리는 미완료로 남긴다.
+
 - 지식 입력 구현 부재 RED2→출처/가설/이유·프로젝트/미지원 참조 검증 GREEN2, 비밀 표식 차단 부재 RED1→GREEN3/184ms·typecheck0·diff0. 탐지는 알려진 키/토큰 표식의 보수적 거절일 뿐 모든 비밀 탐지/원문 격리 완료가 아니다. 실제 저장/API/검색은 아직 미구현이며 이번 실제 DB 시험은 그 경계의 RED 확인이다.
 - 게시 범위는 승인된 Stage B 신규 FN05 코드/테스트·계획/현황뿐이며 목적지는 기존 git@github-sinsan-develop:sinsan-develop/Anvil.git의 codex/av3-stage-b다. Git 이력에 보존하고 Backup/원문 데이터/계정/Secret/인증서·다른 프로젝트는 전송하지 않는다. 실 DB QA는 위 고유 합성 자원만 생성/정리한다.
 

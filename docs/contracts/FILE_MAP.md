@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN05 초기 구현 후보: `knowledge/knowledge-entry.ts`는 엄격 입력·출처 형식/미지원·알려진 비밀 표식 차단, `knowledge/knowledge.ts`는 보호 원문 resolver·PROPOSED 저장/GET·현재 회원의 제목/이유 검색을 소유한다. 기존 project-command/routes와 exact runner의 새 `0005_knowledge_drafts.sql`이 대응한다. FN05 단위·기존 FN03 actual의 신규 지식 경로로 확인하며 사용자 UI·전체 격리/정정/헌법 적용·Agent 전달은 미완료다.
+
 추적 서버 후속: `traceability/traces.ts`는 실제 원문/고정 plan/task의 종류별 resolver·명시 linkTrace·양방향 같은 edge 조회/별도 traversal·누락/미연결을 담당한다. 적용 forward22 `db/migrations/0004_trace_links.sql`의 receipt/현재 권한 guard·불변 관계가 대응하며 기존21 SQL 불변이다. 실제 `cca08990` FN03/FN04+FN11 2 PASS/4532ms·독립 DB20종 정리 확인. Web link/view는 다음 구현이며 전체 FN04 완료가 아니다.
 
 보관 계획 후속: server work-plans.list는 기존 ProjectListCodec의 별도 WORK_PLANS 서명과 membership·문서 필터·유한 페이지를 소비한다. Web WorkPlanLibrary/listWorkPlans/readWorkPlan/prepareStoredWorkPlan은 조회와 사용자 명시 개정 준비를 분리하고 과거 명령을 재생성하지 않는다. 같은 client 실제 원문/기준/제어 재확인→새 버전 저장은 `c4694579` actual1 PASS/3683ms, plan fixture3/단위77은 별도다. 기존21 SQL 변경0.
