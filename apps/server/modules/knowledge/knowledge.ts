@@ -11,6 +11,7 @@ import{ProjectConversations}from'./conversations.ts';
 import{knowledgeState,assertKnowledgeHistory}from'./knowledge-state.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
 import{knowledgeReviewCriteria,knowledgeReviews,writeKnowledgeReview,acceptedKnowledgeReviews}from'./knowledge-reviews.ts';
+import{currentConstitutionRecord}from'./constitution-records.ts';
 
 export class ProjectKnowledge{
   #documents:ProjectDocuments;
@@ -61,7 +62,8 @@ export class ProjectKnowledge{
     if(version>1)await this.#verify(db,actor,pid,readKnowledgeEntry({...entry,sourceRefs:events[0].change_sources},pid));
     const ref={id,version,contentHash:row.content_hash},reviews=await knowledgeReviews(db,pid,ref,entry.kind,row.created_by),confirmationEvent=events.find(e=>e.kind==='CONFIRMED');let confirmation:null|{eventId:string;reviewRefs:unknown[];reason:string;actorRef:unknown;recordedAt:string}=null,currentConfirmationValid=false;
     if(confirmationEvent){const refs=confirmationEvent.review_refs;if(!Array.isArray(refs)||!refs.length||refs.length>200)throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);const stored=refs.every(r=>reviews.some(review=>review.ref.id===r?.id))?reviews:await knowledgeReviews(db,pid,ref,entry.kind,row.created_by,refs.map(r=>r?.id));const verified=acceptedKnowledgeReviews(ref,refs,stored,false);confirmation={eventId:confirmationEvent.id,reviewRefs:verified,reason:confirmationEvent.reason,actorRef:confirmationEvent.actor_ref,recordedAt:confirmationEvent.recorded_at.toISOString()};currentConfirmationValid=state==='CONFIRMED'&&reviews[0]?.ref.outcome==='ACCEPTED'&&verified.some(r=>r.id===reviews[0]!.ref.id);}
-    return{ref,entry,body,state,headVersion:Number(row.head_version),supersedesRef,confirmation,currentConfirmationValid,contentReviewCriteria:knowledgeReviewCriteria(entry.kind),contentReviews:reviews,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',history:events.map(e=>({id:e.id,kind:e.kind,reason:e.reason,actorRef:e.actor_ref,baseRef:e.base_ref,sourceRefs:e.change_sources,reviewRefs:e.review_refs,recordedAt:e.recorded_at.toISOString()})),agentDelivery:'NOT_CONNECTED'};
+    const applied=await currentConstitutionRecord(db,pid),application=applied&&canonicalJson(applied.application.versionRef)===canonicalJson(ref)?applied:null;
+    return{ref,entry,body,state,headVersion:Number(row.head_version),supersedesRef,confirmation,currentConfirmationValid,contentReviewCriteria:knowledgeReviewCriteria(entry.kind),contentReviews:reviews,appliedAsConstitution:application!==null,...(application?{constitutionApplication:application}:{}),redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',history:events.map(e=>({id:e.id,kind:e.kind,reason:e.reason,actorRef:e.actor_ref,baseRef:e.base_ref,sourceRefs:e.change_sources,reviewRefs:e.review_refs,recordedAt:e.recorded_at.toISOString()})),agentDelivery:'NOT_CONNECTED'};
   }
   async review(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
     const p=c.payload;if(p.targetKind!=='KNOWLEDGE'||!isVersionRef(p.targetRef)||c.targetId!==p.targetRef.id||c.expectedVersion!==p.targetRef.version)throw new AuthFailure('KNOWLEDGE_REVIEW_INPUT_INVALID',422);

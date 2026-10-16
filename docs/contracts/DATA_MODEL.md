@@ -237,6 +237,8 @@ audit와 UI event의 수신순번은 각각 프로젝트별 카운터/직렬화�
 
 ### 7.3 FN05 원문·헌법·지식·맥락
 
+승인된 forward37 후보 `0005_project_constitutions`는 constitution_applications(projectId/적용 세대 PK·정확 지식/확정·snapshot/hash·이전 적용 ref·주체/client/command/time)의 append-only 이력과 project_constitutions의 guarded 현재 pointer만 추가한다. 현재 정책/제어·명령 receipt·최신 적합 검토/원문 버전을 결박하며 app 이력 UPDATE/DELETE·pointer DELETE는 불허한다. 기존 knowledge 원문/확정과36개 적용 SQL은 수정하지 않는다. 실제 checksum/적용/검증은 WORK_STATUS로 분리한다.
+
 2026-10-16 FN04 적용 후보 `0004_work_plan_drafts`(forward21): work_plans/head와 불변 work_plan_versions·plan_tasks·plan_dependencies를 추가한다. 정확 AF04/AF02 문서 버전/hash·현재 actor/client/control·명시 policy/receipt 및 task/dependency snapshot을 결박한다. app은 SELECT/INSERT와 guarded head/updated_at 변경만 가능하고 confirmed_version·불변 버전/카드의 UPDATE/DELETE는 허용하지 않는다. 관계 모호성이 있는 초안은 version_json에 원 카드/문제 전체를 보존하되 관계 테이블에는 투영하지 않는 ISSUES_ONLY다. 기존20 SQL·원문/확정 pointer는 변경하지 않는다. 실제 적용 결과는 WORK_STATUS에 별도 기록한다.
 
 | 테이블 | 필수 열·참조·고유 조건 |

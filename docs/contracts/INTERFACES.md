@@ -383,6 +383,8 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 ### 10.3 FN05 — 원문·헌법·지식·검색
 
+2026-10-16 헌법 적용 직접 승인 후속: `applyConstitution`은 targetId=projectId/expectedVersion=현재 적용 세대(없으면0), payload={versionRef,confirmationId,reason,acknowledged:true}이다. 별도 명시 정책·현재 로그인/단독 제어·정확한 현재 CONSTITUTION/확정 사건·그 확정에 포함된 최신 ACCEPTED 검토·보호 원문/hash를 저장 직전 대조한다. 새 적용 ref의 id는 projectId, version은 적용 세대이며 지식 버전과 혼동하지 않는다. 기존 적용과 같은 지식 버전의 새 중복은409, 같은 명령은 기존 receipt만 반환한다. GET constitution?limit(기본10/최대20)&beforeVersion은 단일 current와 불변 history, 유한 페이지를 반환한다. 정정/제외/재검토 뒤 과거 적용/원문은 남고 eligibility만 false다. 적용은 Agent 전달/준수나 업무 실행을 뜻하지 않는다. knowledge 조회의 appliedAsConstitution=true는 별도 constitutionApplication ref/snapshot/hash 증거와 함께만 반환한다. 실제 적용/검증 여부는 WORK_STATUS를 따른다.
+
 2026-10-16 첫 구현 경로: `saveKnowledge`는 targetId=null/expectedVersion=0으로 새 PROPOSED만 저장한다. `GET knowledge/:id/versions/:version`은 `ref,entry,body,state,history,appliedAsConstitution:false,redactionState:NOT_REDACTED,sensitiveInspection:KNOWN_PATTERNS_ONLY,agentDelivery:NOT_CONNECTED`를 반환한다. SourceRef는 실제 동일 프로젝트 DOCUMENT_VERSION(id/version/contentHash)·ARTIFACT(id/contentHash)의 UTF-8 원문/물리 hash를 대조하며, 아직 미연결 USER_INSTRUCTION/CONVERSATION·단계/업무 scope·relatedRefs는412다. 헌법 kind의 저장은 적용이 아니다.
 
 초기 검색은 제목/이유의 리터럴 부분 일치(`searchScope:TITLE_REASON`), kind/PROPOSED 필터와 유한 서명 cursor만 지원하며 본문을 snippet으로 반환하지 않는다. 모든 검색/본문 조회 앞 회원·실제 원문/hash를 검사한다. 알려진 private-key/Bearer/비밀 대입 표식은 값 없는412 `KNOWLEDGE_SENSITIVE_CONTENT_SUSPECTED`로 지식 저장/조회·검색 노출을 차단하며 원문을 자동 삭제하지 않는다. 완전한 탐지·기존 FN03 원문 격리나 공유/확정/정정/제외·Agent 이해 기능 완료를 뜻하지 않는다. 의심 자료의 전체 보관/격리는 후속 보안 경계로 남긴다.

@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN05 순수 적용 검사 RED2→GREEN2/214ms, 기존 UUID QA의 exact 98665202494984cb9cc436b3e28ed4e3a56dff77 실제 RED1/12612ms/skip0: 헌법 GET 미등록404(인증401 필요). 신규 기능 미구현 실패이며 이전 FN11 성공을 소급 변경하지 않는다. source/current eligibility와 별도 acknowledged 입력을 분리했고 신규 단위 포함133 PASS/1797ms·type/diff0. references의 없는 isUuid export/잘못 추측한 읽기 경로는 실제 references.ts/UUID 규칙으로 정정(권한 변경0). 후속 현재 적용 세대 CAS·별도 정책/확정/최신 검토·불변 이력/guarded pointer 후보를 작성했다. 새 forward37만 작성·아직 미적용, 실제 GREEN/UI10은 미검증이다. 동일 기존 합성 QA/정리 계약을 유지하고 사용자 정책/Secret/서비스/Agent 변경0.
+
 - FN05 헌법 적용 후속 직접 승인 `call_1eab183042804ae495957c14227599ec` ‘헌법 적용·이력 계약·개발 DB 보완 승인’을 확인했다. Main 어울 단일 writer, 기준 3bd2347e/clean에서 이어간다. Ruling: 프로젝트 단일 적용 상태는 projectId/적용 세대 CAS로 별도 관리하고, 정확 CONSTITUTION 버전·확정 사건·최신 적합 검토와 사용자 명시 확인을 저장 직전 재대조한다. 적용 이력은 append-only이며 정정/제외/재검토 뒤에도 과거 적용을 지우지 않고 현재 사용 가능 상태만 분리한다. 같은 명령 재확인은 기존 결과만 반환한다. 새 forward37만 작성/적용하고 이전36 SQL은 불변이다. 기존 UUID 문서 QA 사용자2/프로젝트1·/tmp/anvil-v3-document-qa-<UUID>(0700)·한 시험 수명/finally exact 정리 계약을 재사용하며 지속 artifacts root 보호를 유지한다. 실제 사용자 정책 부여·Agent 전달/자동 준수·설계 기준 적용·업무 재개·Secret/서비스/운영 변경0. 다음은 순수 입력/현재 유효성 RED→GREEN→actual 별도 정책/저장/이력/회귀→UI10이며 아직 구현/DB37 적용0이다.
 
 - FN11 목록 `835b9a50a7cf08855a183ec868305f57437d351d` local/private·WSL exact/clean actual1 PASS/12553ms(기능12311ms)/skip0: 같은 프로젝트 승인 metadata 목록·두 페이지 중복 없음·status/targetId 필터·변조/조건 다른 cursor400·EXPIRED1/CONSUMED2·타인404·정책 회수 뒤 PENDING0/REVOKED1 및 상세 basisCurrent=false를 확인했다. SQL36 재실행0·독립 DB31종 각0·시험root[]·지속root 보호/empty·migrations36. 승인 목록은 actual 확인됐으나 다른 command/환경/Agent의 소비·UI08/실제 사용자 browser↔DB는 미완료다.
