@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 지식 상태/이력 후속 `eda65c855695ebb80dff5e7f6958bf455f0d16b8` local/private·WSL exact/clean actual1 PASS/5775ms/skip0: 같은 Web의 구버전/EXCLUDED 상태·명시 제외 검색과 정확 합성 정정사유 변조503→finally복원·옛 원문 보존 확인. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0, 다음은 사용자 정정/제외 쓰기 화면이며 별도 확정/헌법·Agent/전체 인수는 미완료다.
+
 - 지식 변경 서버 `4ce865e800be2591c5ab6b2e5121bba0155e04d1` local/private·WSL exact/clean에서 승인된 새 forward25만 적용·기존24 지문 불변, actual FN03확장+FN11 2 PASS/6012ms/skip0. 정정 버전2/앞 버전 보존·구버전/제외 상태·별도 정책·중복/구기준·기본 검색 제외·명시 조회/암묵 복원412를 확인했고 독립 DB25종/시험root0·지속root 보호/empty다. 사용자용 변경 UI/별도 확정·헌법 적용은 아직 미완료다.
 
 - 대화 UI 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` local/private·WSL exact/clean actual1 PASS/5561ms/skip0. 같은 Web new/prepare/sendConversation·지시 정정/순번4·read/list/멱등을 실제 원문/DB에서 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재적용0. 전체 FN05/Stage B·실제 사용자 browser DB는 미완료이며 다음은 지식 정정/제외·확정이다.
@@ -134,6 +136,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
+
+- 상태/이력 `eda65c855695ebb80dff5e7f6958bf455f0d16b8` exact private/WSL clean actual1 PASS/5775ms/skip0. 같은 Web이 SUPERSEDED/EXCLUDED·명시 제외 목록을 검증하고 합성 correction event1개 이유 변조를 원 명령 receipt 대비503으로 차단한 뒤 finally에서 복원했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25/지속 서비스·Secret·실제 사용자/Agent/공유 변경0. 다음은 지식 제외/정정의 사용자 쓰기 화면이며 검수/확정·헌법 적용·전체 격리는 미완료다.
 
 - `4ce865e800be2591c5ab6b2e5121bba0155e04d1` private/WSL exact/clean forward25 `0005_knowledge_changes` checksum03dc6518...만 적용·기존24 checksum 불변·fixture7·실제 사용자0. actual2 PASS/6012ms/skip0: 별도 정정 policy403→명시 합성 허가·새 불변2/이유/출처/앞1 보존·replay·stale409·EXCLUDED 사건/기본 검색 제외/명시 제외 조회·제외본 암묵 복원412·인접 권한을 확인했다. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 적용 SQL25를 수정하지 않는다.
 - 후속 Web 상태 부재 RED1→정확 headVersion/supersedesRef·원문/hash·PROPOSED/CORRECTED/EXCLUDED 사건과 맞는 제안/과거/제외만 수용 GREEN. 상태 필터 화면 부재 RED1→명시 EXCLUDED 검색·과거/제외 구분 표시, UI10 fixture5 PASS/5.2초·build0(Web75/JS526.27kB/gzip139.32). 미검증/가짜 확정 기준은 유지했고 v1 fixture에 서버 새 head/ref 필드만 추가했다. 테스트 배열 index 타입1은 실제 존재하는 요소를 명시했다.
