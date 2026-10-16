@@ -9,6 +9,9 @@ import { validateDevelopmentDbConfig } from '../../../apps/server/storage/develo
 import { AccessRepository } from '../../../apps/server/modules/access/repository.ts';
 import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
+import { ApiClient } from '../../../apps/web/src/api/client.ts';
+import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts';
+import { continueDocumentSave, documentControl, editDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -111,6 +114,24 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await docSend({ ...reviewCommand, commandId: randomUUID(), payload: { ...reviewCommand.payload, outcome: 'ACCEPTED' } })).statusCode, 422, '보완 항목이 남은 ACCEPTED는 거절');
     assert.equal((await docSend({ ...reviewCommand, commandId: randomUUID(), payload: { ...reviewCommand.payload, targetRef: { ...currentRef, contentHash: '0'.repeat(64) } } })).statusCode, 409);
     assert.equal((await docSend({ ...reviewCommand, commandId: randomUUID(), expectedVersion: 1, payload: { ...reviewCommand.payload, targetRef: documentRef } })).statusCode, 409);
+    const client = new ApiClient(async (input, init) => {
+      assert.equal(typeof input, 'string'); assert.match(String(input), /^\/api\/v1\//);
+      const requestHeaders = Object.fromEntries(new Headers(init?.headers).entries());
+      const response = await app.inject({ method: init?.method as 'GET' | 'POST', url: String(input), headers: { ...headers, ...requestHeaders }, payload: init?.body instanceof Uint8Array ? Buffer.from(init.body) : typeof init?.body === 'string' ? init.body : undefined });
+      return new Response(new Uint8Array(response.rawPayload), { status: response.statusCode, headers: { 'content-type': String(response.headers['content-type'] ?? '') } });
+    });
+    const session = { user: { id: user }, clientId: login.clientId, csrfToken: login.csrfToken };
+    const work = editDocument(project, await readDocument(client, project, currentRef.id, 2), user, await documentControl(client, project, session));
+    work.title = '화면 클라이언트로 저장한 개정'; work.body = '\uFEFF# 개정\r\n사용자 입력으로 실제 새 버전 저장\r\n'; work.reason = 'UI06 실제 저장 계약 검수'; work.dirty = true;
+    let checkpoint = await prepareDocumentSave(work, session);
+    const fromClient = await continueDocumentSave(client, checkpoint, session, value => { checkpoint = value; }, () => true);
+    assert.equal(fromClient.id, currentRef.id); assert.equal(fromClient.version, 3);
+    const clientRead = await readDocument(client, project, currentRef.id, 3);
+    assert.equal(clientRead.body, work.body); assert.equal(clientRead.document.title, work.title); assert.equal(clientRead.document.confirmed, false);
+    assert.deepEqual(clientRead.document.content.sections, work.content.sections);
+    assert.deepEqual(await continueDocumentSave(client, checkpoint, session, () => {}, () => true), fromClient);
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1', [project])).rows[0].n, 2, '확인된 업로드 뒤 같은 저장 명령 재확인은 파일을 다시 만들지 않는다');
+    assert.equal((await readDocument(client, project, currentRef.id, 2)).body, bytes.toString('utf8'), '새 클라이언트 저장 뒤에도 원본 버전의 BOM/CRLF 바이트를 유지');
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {

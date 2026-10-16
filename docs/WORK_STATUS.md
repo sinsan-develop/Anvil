@@ -107,6 +107,13 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 UI06 문서 편집·새 초안 버전 저장 착수 — Main 어울
+
+- 시작 local/private `1c326deaf62051a90aa1b76b9f751bf18ed07fd0`/지정 Stage B·tracked clean, private main f976ed5e 불변. 완료된 원문/버전·검토·정책/SQL16은 다시 구현하거나 migration을 반복하지 않는다.
+- 기존 승인 UI06/FN03 계약 안에서 제목/본문/원문 항목 위치·변경 이유 편집→원문 새 artifact→동일 document 새 불변 버전 저장을 연결한다. 사용자/프로젝트별 입력을 탭 상위 상태로 보존하고 응답 단절 때 같은 upload/save command만 명시 재확인한다. 형식 검사를 내용검토/사용자 확정으로 바꾸지 않는다.
+- 사전 대조: FN11 현재 owner/client/controlGeneration·명시 uploadArtifact/saveDocumentDraft 정책을 서버가 다시 집행한다. 화면에서 정책/권한을 자동 생성하지 않으며 실제 계정·Secret·CA·서비스/relay·Agent 변경0. 기존 Windows relay HOLD/새 실제 화면 DB 미확인은 유지하고 우선 API 대체 화면 시험, 게시 exact SHA의 WSL 직접 실제 API/DB로 연결을 확인한다.
+- RED/GREEN 대상은 화면 이동/실패/충돌 입력 보존·같은 명령/원문 바이트·정확 version/receipt·same-origin·별도 사용자 비노출이다. 기존 시험 root/합성 UUID 계약으로 시험 후 정확 정리, 새 지속 자원 없음. 다음의 검사 통과 전에는 편집 연결을 완료라 기록하지 않는다.
+
 ### 2026-10-16 FN03 고정 양식의 사람 내용검토 기록·조회 — Main 어울
 
 - RED `aecf675c92eb20edefc0b35053db6f87bf040166` actual400≠403 후 `7a7841a12c6f20f7c4a991be0d34be8d469eae54` actual FN03/FN11/인접 공통 METHOD3 PASS/1200ms/skip0. 새 forward16 `0003_project_document_reviews` SHA256 `f1ba53b79b95a02867822743748ead6f6dafff039a506651a26368d7b922de75`, 기존15개 불변. 이전 PROJECT 거절을 없애지 않고 DRAFT trigger 대상만 DRAFT로 명시한 뒤 PROJECT DOCUMENT 전용 guard를 추가했다.
