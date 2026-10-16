@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN01 소스 선언 입력 RED2→GREEN2/139ms: 정확4필드·원문 복제·유한 길이·위장 권한/검증·알려진 비밀 거절, 경로 해석/파일 접근0. actual RED용 기존 `tests/integration/FN01/draft-create.test.ts`에 EXISTING 선언 저장/미확인 표지를 추가했다. 시험 자원은 기존 qa-project-create-<UUID> 사용자2·UUID 소유 초안/프로젝트·합성 로그인/현재 client이며 파일/소스 root 생성0, 한 시험 수명·기존 exact finally 정리다. 아직 DB38 작성/적용0·기존 소스 생성 GREEN/UI02는 미검증이다.
+
+- FN01 기존 소스 선언 후속 직접 승인 `call_8c65f3d7a56d42fb9386472b6cfc739b` ‘기존 소스 선언·프로젝트 생성 계약·개발 DB 보완 승인’을 확인했다. Main 어울 단일 writer, 기준 c8b869e0 clean/정본6 동기화에서 이어간다. sourceDeclaration(hostLabel/displayName/pathHint/reason)은 사용자 선언만 저장하고 USER_DECLARED/UNVERIFIED를 유지하며 pathHint 실행/파일 접근·실제 소스 수집·Agent/기준선 VERIFIED·Secret/서비스/운영 변경은 제외한다. 순수 입력 신규 RED2/109ms 뒤 최소 검사부터 연결하며 아직 DB38/생성/UI02 미구현이다. 등록 합성 QA만 사용·한 시험 수명/exact finally 정리하고 실제 사용자 자료/기존36+37 SQL은 보존한다. 최근 잘못 추측한 읽기 경로/PowerShell wildcard는 실제 repository/파일 목록으로 정정했고 ACL·자료 변경0이다.
+
 - FN05/UI10 7cf8c005fbae320b62b8d1e89186896dfabe546c local/private·WSL exact/clean actual1 PASS/15068ms(기능14756ms)/skip0. 실제 같은 Web prepare/send/read로 적용 세대2 교체·저장 후 합성 응답 단절→원 명령 재확인/동일 결과·과거 적용 페이지·현재 원문 proof·옛 적용 비선택·정정 SUPERSEDED/제외 EXCLUDED 뒤 이력 보존·변조503·적용 이력2건을 확인했다. SQL37 재실행0·독립 DB33종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations37. UI10 직접 영향 fixture12 PASS/11.0초, 추가 헌법 APPLY 단절/이동/뒤403 sticky 보존1 PASS/2.7초·이전 명령3회 동일/새 적용 생성0. 전체 unit134 PASS/2066ms·type/diff0; 최신 Web89/583.53kB/gzip151.71와 bundle/색상 경고를 유지한다. 현재 사용자용 Windows backend/relay·만료 bootstrap/Secret은 변경하지 않았으므로 사용자 browser↔DB 인수는 미검증이다. FN05의 공유/임무별 맥락 선별·전달·이해 대조(FN09/IX04 선행), Stage B의 나머지 기존 프로젝트 기준/방법론 개정·FN11 다른 행위·IX01은 미완료이며 전체44 상태 합계는 불변이다.
 
 - FN05 적용 서버 045d699624084c8dc9ed49537a60df94501cd891 exact private/WSL clean: 새 승인 forward37 `0005_project_constitutions` checksum71f4674b279ffea063e3291c392ac822ab4367a0393834079b79caeea29dd765 적용·기존36 불변/fixtures7/실제 사용자 생성0. 실제 FN03+FN11 2 PASS/14708ms(기능14354ms·정책580ms)/skip0: 별도 적용 권한403·확정/정확 hash409·확인 누락422·동일 명령 동시2/적용1·현재 조회/타인404·유한 입력400·재검토 뒤 이력 보존/사용 불가·app 이력 삭제/pointer 위장42501. 독립 DB33종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations37. actual source/API 검증이지 사용자 browser↔DB 인수는 아니다.

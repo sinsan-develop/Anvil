@@ -144,6 +144,9 @@ test('최초 프로젝트는 저장 초안을 한 번만 원자 소비하고 소
     assert.equal((await pool.query('SELECT consumed_project_id FROM anvil.project_drafts WHERE id=$1', [blank.draftId])).rows[0].consumed_project_id, null);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.project_members WHERE user_id=$1', [users[0]])).rows[0].n, 2);
     await assert.rejects(pool.query('UPDATE anvil.project_methodologies SET snapshot_hash=$2 WHERE project_id=$1', [project.id, '0'.repeat(64)]), (error: unknown) => (error as { code: string }).code === '42501');
+    const sourceDeclaration={hostLabel:'합성 Windows PC',displayName:'기존 소스 선언',pathHint:'D:\\Synthetic\\NotOpened',reason:'실제 폴더 접근 없는 사용자 선언'};
+    const sourceDraftCommand={schemaVersion:1,commandId:randomUUID(),clientId:login.clientId,targetId:null,expectedVersion:0,...input,sourceMode:'EXISTING',sourceDeclaration};
+    const sourceDraft=await app.inject({method:'POST',url:'/api/v1/project-drafts',headers,payload:sourceDraftCommand});assert.equal(sourceDraft.statusCode,201,sourceDraft.body);assert.equal(sourceDraft.json().sourceDeclaration.authority,'USER_DECLARED');assert.equal(sourceDraft.json().sourceDeclaration.readiness,'UNVERIFIED');assert.deepEqual(sourceDraft.json().sourceDeclaration.declaration,sourceDeclaration);
   } finally {
     await app.close(); const db = await admin.connect();
     try {
