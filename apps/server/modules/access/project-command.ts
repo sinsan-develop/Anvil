@@ -5,7 +5,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
-export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'requestApproval'] as const;
+export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'requestApproval', 'decideApproval'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
 function exact(value: unknown, keys: string[]): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(','); }
 export function materialRules(value: unknown, projectId: string, actorId: string, now = new Date()): MaterialRule[] {
@@ -18,7 +18,7 @@ export function materialRules(value: unknown, projectId: string, actorId: string
       || !Array.isArray(rule.operations) || !rule.operations.length || rule.operations.length > 200 || rule.operations.some(item => typeof item !== 'string') || new Set(rule.operations).size !== rule.operations.length
       || !['AUTO', 'REQUIRE_APPROVAL', 'DENY'].includes(String(rule.disposition)) || typeof rule.expiresAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(rule.expiresAt) || !Number.isFinite(Date.parse(rule.expiresAt)) || Date.parse(rule.expiresAt) <= now.getTime()) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
     if (rule.operations.some(item => !documentOperations.includes(item as typeof documentOperations[number])) || rule.limitPolicyRef !== null) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
-    if(rule.disposition==='REQUIRE_APPROVAL'&&rule.operations.includes('requestApproval'))throw new AuthFailure('APPROVAL_POLICY_RECURSION_INVALID',422);
+    if(rule.disposition==='REQUIRE_APPROVAL'&&rule.operations.some(op=>['requestApproval','decideApproval'].includes(op)))throw new AuthFailure('APPROVAL_POLICY_RECURSION_INVALID',422);
     seen.add(rule.ruleId);
   }
   return value as MaterialRule[];
