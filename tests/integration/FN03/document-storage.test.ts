@@ -482,12 +482,29 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await readKnowledge(client,project,uiKnowledge)).body,knowledgeWork.body);
     assert.equal((await searchKnowledge(client,project,'사용자 지식','FACT')).items[0]?.versionRef.id,uiKnowledge.id);
     assert.deepEqual(await sendKnowledge(client,knowledgeWork,knowledgeSession,p=>knowledgeWork.pending=p,()=>true),uiKnowledge,'같은 Web 명령 재확인으로 버전 중복0');
+    const message={kind:'USER_INSTRUCTION',bodyRef:artifact,attachmentRefs:[],replyTo:null,supersedesInstructionRef:null,effectiveScope:{projectId:project,stageRefs:[],taskRefs:[]}},conversationCommand={...context,commandId:String(randomUUID()),operation:'appendConversation',payload:{conversationId:null,targetRoleRef:null,message,sourceRefs:[]}};
+    assert.equal((await docSend(conversationCommand)).statusCode,403,'지식 정책은 대화 쓰기 허가가 아니다');
+    const conversationPolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:10,payload:{rules:[{ruleId:'CONVERSATION_OWN_PROJECT',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','indexDesignDocument','saveWorkPlanDraft','linkTrace','saveKnowledge','appendConversation'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 사용자 원문 대화 별도 명시 허가',reviewRefs:[]}});assert.equal(conversationPolicy.statusCode,200,conversationPolicy.body);
+    const conversationSaved=await docSend(conversationCommand);assert.equal(conversationSaved.statusCode,200,conversationSaved.body);assert.equal(conversationSaved.json().data.deliveryState,'STORED');assert.equal(conversationSaved.json().data.serverSequence,1);
+    const conversationId=conversationSaved.json().data.conversationId,messageRef=conversationSaved.json().data.sourceRef;
+    assert.deepEqual((await docSend(conversationCommand)).json(),conversationSaved.json(),'같은 발언 command는 같은 원문/순번');
+    const messageUrl=`/api/v1/projects/${project}/conversations/${conversationId}/messages/${messageRef.id}`,messageView=await app.inject({method:'GET',url:messageUrl,headers});assert.equal(messageView.statusCode,200,messageView.body);assert.equal(messageView.json().body,bytes.toString('utf8'));assert.deepEqual(messageView.json().authorRef,{kind:'HUMAN',userId:user});assert.equal(messageView.json().deliveryState,'STORED');
+    const correction={...conversationCommand,commandId:randomUUID(),targetId:conversationId,expectedVersion:1,payload:{conversationId,targetRoleRef:null,message:{...message,supersedesInstructionRef:messageRef},sourceRefs:[]}};
+    const corrected=await docSend(correction);assert.equal(corrected.statusCode,200,corrected.body);assert.equal(corrected.json().data.serverSequence,2);assert.deepEqual((await app.inject({method:'GET',url:messageUrl,headers})).json().sourceRef,messageRef);
+    assert.equal((await docSend({...correction,commandId:randomUUID()})).statusCode,409);
+    assert.equal((await docSend({...conversationCommand,commandId:randomUUID(),payload:{...conversationCommand.payload,message:{...message,kind:'AGENT_OUTPUT'}}})).statusCode,412);
+    assert.equal((await app.inject({method:'GET',url:messageUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if((await db.query("SELECT to_regclass('anvil.conversations') present")).rows[0].present){
+        await db.query('DELETE FROM anvil.conversation_messages WHERE project_id=$1',[project]);
+        await db.query('DELETE FROM anvil.conversations WHERE project_id=$1',[project]);
+      }
       if((await db.query("SELECT to_regclass('anvil.knowledge_entries') present")).rows[0].present){
         await db.query('DELETE FROM anvil.knowledge_events WHERE project_id=$1',[project]);
         await db.query('DELETE FROM anvil.knowledge_versions WHERE project_id=$1',[project]);

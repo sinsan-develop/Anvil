@@ -127,6 +127,12 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
+
+- 기준2b4f73ef clean, SQL23 적용/원문 보호 증거는 직전 기록을 소비한다. 새 발언은 현재 사람의 USER_MESSAGE/USER_INSTRUCTION만 수용하고 Agent/도구 발언·단계책임자 연결을 위장하지 않는다. 저장 상태는 STORED이며 배정/전달/실행은 만들지 않는다. 기존 원문을 덮는 대신 새 순번·별도 정정 참조를 쓴다.
+- Ruling: FN09 역할 binding 전에는 targetRoleRef=null인 프로젝트 공통 대화만 저장하고, 현재 head_sequence와 expectedVersion으로 동시/구발언을 검사한다. 미연결 역할·첨부/일반 출처·단계 scope는412로 남긴다. 잘못된 경우 비용은 역할/참조 소비 확장이고 원문/정정 이력은 보존한다.
+- 신규 forward24 후보의 정확 대화/발언 테이블·현재 주체/제어/정책/receipt를 추가한다. 고유 qa-document-storage UUID/프로젝트·시험root와 합성 정책만 사용하며 대화/발언을 먼저 정확 정리한다. 실제 사용자/Agent/Secret·서비스/운영은 변경하지 않는다.
+
 ### 2026-10-16 FN05 지식 원문·초안 착수 — Main 어울
 
 - UI10 `579ce2dc2da4a05f8031bded1ff00e00037696bd` local/private·WSL exact/clean actual1 PASS/5569ms/skip0, 동일 Web의 신규 원문 업로드→정확 PROPOSED 저장·본문/hash 재조회·제목/종류 검색·같은 명령 멱등을 확인했다. 기존23 SQL 재적용0. 독립 DB23종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 지정 main f976ed5e 불변과 private branch 같은 SHA를 조회했다. 새로운 실제 사용자/정책·서비스·Secret 생성/변경0이다. 사용자용 backend 혼재/relay HOLD/만료 bootstrap 경계는 그대로다.
