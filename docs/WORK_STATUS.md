@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN02 프로젝트 입력/METHOD5 신규 미구현 RED2→GREEN2/225ms, unit139 PASS/2122ms·type/diff0. 실제 실패용 시험은 `qa-project-method-<UUID>` 사용자2·UUID 프로젝트2·현재 합성 client와 명시 정책만 한 시험 수명으로 생성하며 소유 UUID만 finally transaction 정리한다. 파일/폴더/컨테이너 생성0, 실제 사용자 정책 부여0. 아직 forward39/프로젝트 변경 GREEN/UI03는 미구현·미검증이다. 이 등록 계약으로 같은 시험의 수정/정리까지 진행하며 새로운 자원 범위는 추가하지 않는다.
+
+- 2026-10-17 FN02 후속 직접 승인 `call_351372d7d53d43ecae8e25c5c78ef9b2` ‘프로젝트 방법론 개정·확정·별도 적용 계약·개발 DB 보완 승인’을 확인했다. 기준31ff8dd6 local/private 동일·clean, Main 어울 단일 writer로 방법론 module·project command/route·UI03·직접 시험·새 forward39/runner 및 관련 정본만 수정한다. 기존38 SQL·공통/시스템 원본·고정 적용 이력은 보존한다. Pre-flight: 현재 project 명령/명시 정책·METHOD5/양식 준비 계약을 소비하고 저장→검토→확정→적용을 분리한다. Ruling: 실행 상태를 증명할 FN08/FN09 원본이 아직 없으므로 부재를 IDLE로 추정하지 않고 적용 전환은 EXECUTION_STATE_UNVERIFIED로 거절한다. 개정·검토·확정과 조회는 먼저 구현하며 적용 기능은 선행 미충족으로 남긴다(판단 오류 비용: 조기 적용 사용 불가, 기존 적용본/작업은 불변). 실제 사용자 정책·Agent/업무 재개·Secret/서비스/운영 변경0. 새 DB 변경 전 실제 schema/guard를 확인하며 이전 잘못 추측한 읽기 경로는 목록 조회로 정정하고 ACL 변경0이다.
+
 - FN01/UI02 same-client d8128157d35f2734eee5c0910c46762f609acf10 local/private·WSL exact/clean actual1 PASS/1184ms(기능937ms)/skip0: 실제 writeProjectDraft의 선언 저장 뒤 합성 receipt 단절→원 명령 재확인/동일 선언 ref·readProjectDraft 대조→runDraftAction으로 기존 소스 프로젝트 생성·UNVERIFIED/baseline null을 확인했다. 독립 DB39종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations38. UI02 fixture10/단위137·type/build PASS는 실제 사용자 browser↔DB 인수와 분리한다. 사용자가 저장 초안을 다시 열면 위치 설명·이유가 유지되며 생성 결과에도 선언/미확인을 표시한다. 프로젝트 작업 화면(UI04)은 아직 Stage C 미구현으로 소스 실관측/실행 권한·기준선 검증은 미연결이다. 전체44 합계와 Stage B 완료 판정은 불변이며 Windows runtime/relay/Secret은 변경하지 않았다.
 
 - FN01 0ba2fd49617e7c21c0a3413f3d80610859ff7076 exact private/WSL clean actual2 PASS/1178ms(생성922·중간저장406ms)/skip0: 기존 빈 생성 보존·EXISTING 선언 저장/replay/재조회·선언 새 버전/옛 내용 보존·현재 버전만 원자 귀속·동시 생성1·타인404·source 미확인/baseline null·delivery0·위장 UPDATE/삭제42501을 확인했다. SQL38 재실행0, 기존 실패는 PASS로 소급하지 않는다.
