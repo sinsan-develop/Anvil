@@ -115,6 +115,11 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- 업무 카드 분석 구현 부재 RED2→착수/검수 선행 분리·입출력/범위/검수/복구·D/S 참조·정상/중요 실패/직접 영향 시험을 검사하는 분석기 GREEN2, 새 상태/완료 필드·절대/상위 경로는 거절한다. 단위74 PASS/1331ms·타입0. `f69bc27f1d9ec6c00cdd27867459c36caba21f18` 지정 private/WSL exact/clean actual1 FAIL/2957ms: 아직 신규 연산 schema가 없어 기대403 대신400, 초기 미구현 RED로 보존했다. 실제 저장 성공 아님.
+- 후속은 saveWorkPlanDraft와 고정 버전 GET·새 forward21 후보 `0004_work_plan_drafts.sql`이다. 적용된20 SQL은 보존한다. 실제 AF04/AF02·등록 D/S·screen review를 대조하고 새 계획/개정 head CAS·불변 version/card·START/ACCEPTANCE·명시 policy/receipt·감사로 연결한다. 초안은 DRAFT만 반환하며 설계/계획 미확정·화면 미검토·카드 누락/순환/중복 문제는 숨기지 않는다. 실제 DB 적용·양성/음성 검증은 게시 후 수행 전까지 미검증이다.
+- Ruling: TaskCard 세부 내부 형식의 미정 부분은 기존 계약의 뜻을 바꾸지 않고 문자열 목록/명시 testCases·실제 D/S TraceRef로 상세화했다(INTERFACES §10.2). 상대 파일 경로는 계획 선언이며 실제 파일 권한이 아니다. 중복 코드/순환으로 관계 테이블의 유효 연결을 만들 수 없으면 원 카드와 issues를 불변 snapshot에 모두 남기고 ISSUES_ONLY로 투영을 보류한다. 잘못되면 카드 상세 계약/초안 투영의 forward 보완이 필요하며 기존 확정/실행 권한은 확대하지 않는다.
+- 오류: 신규 서버에서 문서 review 필드명을 reviews로 잘못 참조해 타입 오류1. 실제 ProjectDocuments.version 반환 contentReviews와 대조해 바로잡고 타입/단위74 통과. 읽기 경로 오타2(apps/contracts,features/documents)는 파일 변경 없이 거부됐으며 실제 traceability/design-trace/루트 contracts 경로로 확인했다. 새로운 relay 시도/서비스/Secret 변경0.
+
 - `dc01cae2` 게시 exact SHA actual1 PASS/4228ms/skip0. 같은 prepare/sendDesignIndex의 화면 중단 요청0→등록/receipt·GET hash 확인과 replay/권한·원문 보존을 실제 DB에서 확인했다. 이후 독립 read-only로 DB15종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty 확인. default sandbox의 git status는 ‘this operation must be run in a work tree’1, 프로세스 조회는 무출력이라 성공/종료로 판단하지 않고 elevated 읽기에서 clean·Node40744/relay26052의 기존 시작 시각을 재확인했다. relay 재시도/서비스 변경0.
 - 다음 승인된 작업: AF04 원문과 정확 AF02/AF03 추적 ID를 업무 카드에 결박한 초안 저장/불변 버전/착수·검수 선행 별도 보존. 원문/기존 SQL은 보존하고, 불충분한 설계 확정/화면 검토/참조는 issues로 남기며 계획 작성이 실행/완료/기준 활성화가 되지 않도록 한다. 실제 Agent/사용자 권한/Secret/서비스 변경은 없다.
 

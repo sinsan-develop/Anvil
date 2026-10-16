@@ -399,6 +399,28 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const planPayload={documentRef:planDocumentRef,designRef,screenReviewRefs:[],tasks:[task,{...structuredClone(task),taskCode:'FN01',type:'FUNCTION',title:'원문 저장',screenRefs:[],startPrerequisites:['UI01'],acceptancePrerequisites:[]}],reason:'정확 문서/설계 위치와 착수·검수 선행을 분리 저장'};
     const planCommand={...context,commandId:randomUUID(),operation:'saveWorkPlanDraft',payload:planPayload};
     assert.equal((await docSend(planCommand)).statusCode,403,'설계 인덱스 허가가 작업계획 작성 허가는 아니다');
+    const planPolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:7,payload:{rules:[{ruleId:'PLAN_OWN_PROJECT',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','indexDesignDocument','saveWorkPlanDraft'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 작업계획 초안 저장 명시 허가',reviewRefs:[]}});assert.equal(planPolicy.statusCode,200,planPolicy.body);
+    const savedPlan=await docSend(planCommand);assert.equal(savedPlan.statusCode,200,savedPlan.body);
+    const planRef=savedPlan.json().data.ref,planValue=savedPlan.json().data.workPlan;
+    assert.equal(planValue.status,'DRAFT');assert.equal(planValue.tasks.length,2);assert.deepEqual(planValue.dependencies,[{taskCode:'UI01',dependencyTaskCode:'FN01',phase:'ACCEPTANCE'},{taskCode:'FN01',dependencyTaskCode:'UI01',phase:'START'}]);
+    for(const code of ['PLAN_DOCUMENT_NOT_CONFIRMED','DESIGN_NOT_CONFIRMED','SCREEN_REVIEW_MISSING']) assert.ok(planValue.issues.some((i:any)=>i.code===code),code);
+    assert.deepEqual((await docSend(planCommand)).json(),savedPlan.json(),'같은 저장 명령은 같은 불변 계획 버전');
+    const planPath=`/api/v1/projects/${project}/work-plans/${planRef.id}/versions/1`;
+    const readPlan=await app.inject({method:'GET',url:planPath,headers});assert.equal(readPlan.statusCode,200,readPlan.body);assert.equal(readPlan.json().executionEvidence,'NOT_CONNECTED');assert.deepEqual(readPlan.json().tasks,planValue.tasks);
+    assert.equal((await app.inject({method:'GET',url:planPath,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,designRef:{...designRef,contentHash:'0'.repeat(64)}}})).statusCode,409);
+    assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[{...task,designRefs:[{...task.designRefs[0],id:randomUUID()}]}]}})).statusCode,404,'가짜 설계 ID는 실제 참조가 아니다');
+    assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[{...task,status:'COMPLETED'}]}})).statusCode,422);
+    assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,documentRef:designRef}})).statusCode,422);
+    const revisedPlan=await docSend({...planCommand,commandId:randomUUID(),targetId:planRef.id,expectedVersion:1,payload:{...planPayload,reason:'업무 초안 새 개정 이유'}});assert.equal(revisedPlan.statusCode,200,revisedPlan.body);assert.equal(revisedPlan.json().data.ref.version,2);
+    assert.equal((await docSend({...planCommand,commandId:randomUUID(),targetId:planRef.id,expectedVersion:1})).statusCode,409);
+    assert.deepEqual((await app.inject({method:'GET',url:planPath,headers})).json().tasks,planValue.tasks,'개정 뒤에도 구버전 계획 보존');
+    const ambiguous=await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[task,structuredClone(task)]}});assert.equal(ambiguous.statusCode,200,ambiguous.body);assert.equal(ambiguous.json().data.workPlan.relationalProjection,'ISSUES_ONLY');assert.ok(ambiguous.json().data.workPlan.issues.some((i:any)=>i.code==='DUPLICATE_TASK_CODE'));
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.plan_tasks WHERE project_id=$1 AND plan_id=$2 AND plan_version=1',[project,planRef.id])).rows[0].n,2);
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.plan_dependencies WHERE project_id=$1 AND plan_id=$2 AND plan_version=1',[project,planRef.id])).rows[0].n,2);
+    await assert.rejects(pool.query('UPDATE anvil.work_plan_versions SET version=99 WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
+    await assert.rejects(pool.query('UPDATE anvil.work_plans SET confirmed_version=head_version WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
+    assert.equal((await readDocument(client,project,planDocumentRef.id,1)).body,planWork.body);
     assert.equal((await readDocument(client,project,designRef.id,1)).body,designWork.body); assert.equal((await readDocument(client,project,screenRef.id,1)).body,screenWork.body);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
