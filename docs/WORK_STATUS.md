@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI08 후속 전체 화면 fixture2 PASS/4.5초·type/diff0: UI11 준비→별도 요청 작성/위험5종·복구→원 요청 응답 유실/동일 명령→명시 결정→서버 현재 APPROVE 재조회·결박→자동 저장0→원 후보 별도 저장/응답 유실·동일 명령을 확인했다. 후보 입력을 명시 수정하면 이전 승인 scope 결박을 거절하고 새 요청은 자동 생성하지 않는다. 신규 UI08 same-client 시험은 작성·타입만 확인했으며 actual GREEN으로 표시하지 않는다.
+- UI08 actual 사전등록: 기존 qa-connection-candidate-<UUID> 합성 사용자2·소유 UUID 프로젝트2·현재 client·정책·별도 승인 요청5종/결정/후보·명령/감사를 한 시험 수명으로 생성한다. 원문 Secret/실제 사용자·키·Agent·새 schema/migration·컨테이너·포트·서비스 변경0이다. 요청/결정/후보 응답 유실을 DB 적용 후 합성하고 원 명령으로만 확인하며 소비max1·3종 독립 결정·동시 결정/만료·다른 기기/프로젝트·권한 회수를 실제 API/PG에서 확인한다. finally 소유 UUID만 참조 분리·정리하고 독립41종/임시root/보호 보관소 잔여를 확인한다. 실행은 private exact 게시 후 정식 WSL Git 경로에서만 한다.
+
 - UI08 첫 화면 checkpoint 준비: 목록/상세 부재 RED1→UI08 기본7 PASS/5.1초. 보존 결정 입력을 다음 독립 요청 전에 명시 종료하는 행동 부재 RED1→GREEN1/1.9초이며 서버 이력은 삭제하지 않는다. 최종 unit164 PASS/2451.8264ms·type/build0(98modules·CSS9.55kB/gzip2.56·JS647.56kB/gzip167.90·기존 chunk 경고)·UI08 8/직접 영향 UI11 12 합계20 PASS/14.7초이다. 확인한 것은 조회만으로 결정 안 함·정확 범위/3종 결정·유실/이동 동일 결정·타기기409현재조회·만료 차단·원 입력 보존의 합성 화면과 client 시험이다. **승인 요청 작성→결정→원 후보 재결박의 전체 fixture, 실제 같은 Web 함수/API·PG 소비max1·QA 정리는 아직 미실행**이며 이 checkpoint를 업무 완료로 올리지 않는다. 다음은 이 남은 동일 범위의 통합/실제 검증이다. backend/API/DB·실제 사용자/키·Agent·runtime/relay/Secret 변경0이다.
 
 - UI08 현재 로컬: 승인 client 부재 RED1→기본5 GREEN, 서버 재대조 ref를 원 후보에 결박하는 기존 null-only 전송 경계 RED1·승인 준비 조회의 엄격 차단 RED1을 최소 보완해 UI08/UI11 직접14 PASS/175.3376ms·type0이다. 기존 기본 REQUIRE_APPROVAL 차단은 유지하며 명시 요청 준비에만 현재 policyRef/approvalRequired를 반환한다. 서버로 다시 읽은 APPROVE·정확 command/payload/scope hash·주체/client·정책/기한만 원 후보에 결박하고 저장/소비를 자동 실행하지 않는다. 첫 시험 fixture literal 타입만 typecheck1회 실패해 실제 상수 구조는 보존하고 fixture 반환 annotation으로 정정했다. 현재 신규 client·시험은 로컬 미게시이며 UI08 화면/actual·전체 업무 완료는 아직 미검증이다.
