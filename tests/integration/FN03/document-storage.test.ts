@@ -294,6 +294,16 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const importsListPath = `/api/v1/projects/${project}/imports?limit=1`;
     const importsList = await app.inject({ method: 'GET', url: importsListPath, headers });
     assert.equal(importsList.statusCode, 200, '보관한 후보는 새 화면에서 목록으로 다시 찾을 수 있어야 한다');
+    assert.equal(importsList.json().items.length, 1); assert.equal(importsList.json().hasMore, true); assert.equal(importsList.json().items[0].integrity, 'NOT_RECHECKED');
+    const importCursor = importsList.json().nextCursor;
+    const importNext = await app.inject({ method: 'GET', url: importsListPath + '&cursor=' + encodeURIComponent(importCursor), headers }); assert.equal(importNext.statusCode, 200, importNext.body); assert.notEqual(importNext.json().items[0].id, importsList.json().items[0].id);
+    assert.equal((await app.inject({ method: 'GET', url: importsListPath + '&cursor=' + encodeURIComponent(importCursor + 'x'), headers })).statusCode, 400);
+    assert.equal((await app.inject({ method: 'GET', url: importsListPath + '&status=READY&cursor=' + encodeURIComponent(importCursor), headers })).statusCode, 400, 'cursor는 상태 조건에도 결박');
+    assert.equal((await app.inject({ method: 'GET', url: importsListPath, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
+    const unsupportedList = await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/imports?status=UNSUPPORTED`, headers }); assert.equal(unsupportedList.statusCode, 200, unsupportedList.body); assert.equal(unsupportedList.json().items.length, 1);
+    const proposalList = await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/proposals?documentId=${freshRef.id}&status=SELECTED&limit=1`, headers }); assert.equal(proposalList.statusCode, 200, proposalList.body); assert.equal(proposalList.json().items.length, 1); assert.equal(proposalList.json().items[0].status, 'SELECTED'); assert.equal(proposalList.json().hasMore, true);
+    assert.equal((await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/proposals?cursor=${encodeURIComponent(importCursor)}&limit=1`, headers })).statusCode, 400, '후보 cursor를 제안 목록에 재사용할 수 없다');
+    assert.equal((await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/proposals`, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

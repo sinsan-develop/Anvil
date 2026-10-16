@@ -15,6 +15,7 @@ import { validateDocumentConfirmation } from './document-validation.ts';
 import { confirmProjectDocument } from './project-confirmation.ts';
 import { createDocumentImport, readDocumentImport, checkImportSelection } from './project-imports.ts';
 import { createDocumentProposal, readDocumentProposal, checkProposalSelection } from './project-proposals.ts';
+import { listDocumentMaterials } from './material-list.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -135,6 +136,10 @@ export function registerProjectDocumentReads(app: FastifyInstance, options: Acce
     return cookies.length === 1 ? cookies[0]!.slice('__Host-anvil.sid='.length) : '';
   }
   app.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/documents', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId'], properties: { projectId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documents.list(db, actor, request.params.projectId, request.query, codec)));
+  for (const [kind, path] of [['IMPORTS','imports'], ['PROPOSALS','proposals']] as const) {
+    const materialCodec = new ProjectListCodec(value => options.repository.signProjectCursor(kind + ':' + value));
+    app.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>(`/api/v1/projects/:projectId/${path}`, { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId'], properties: { projectId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => listDocumentMaterials(db, actor, request.params.projectId, kind, request.query, materialCodec)));
+  }
   app.get<{ Params: { projectId: string; importId: string } }>('/api/v1/projects/:projectId/imports/:importId', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId','importId'], properties: { projectId: idSchema, importId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documents.imported(db, actor, request.params.projectId, request.params.importId)));
   app.get<{ Params: { projectId: string; proposalId: string } }>('/api/v1/projects/:projectId/proposals/:proposalId', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId','proposalId'], properties: { projectId: idSchema, proposalId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documents.proposal(db, actor, request.params.projectId, request.params.proposalId)));
   app.get<{ Params: { projectId: string; documentId: string; version: string } }>('/api/v1/projects/:projectId/documents/:documentId/versions/:version', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId', 'documentId', 'version'], properties: { projectId: idSchema, documentId: idSchema, version: { type: 'string', pattern: '^[1-9][0-9]{0,14}$' } } } } }, request => {
