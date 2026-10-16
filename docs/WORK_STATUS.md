@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN02/UI03 현재 적용 구분866ea25f039d3de671136ac595d349a0e0b96234 local/private·WSL exact/clean actual1 PASS/1250ms(기능968ms)/skip0. 같은 Web reader가 개정·확정 뒤에도 고정 적용 ref와 별개임을 실제 API/PG에서 확인했다. SQL39 재적용0·독립 DB39종 각0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations39. 최신 단위141 PASS/1972ms·type/build0·UI03 fixture1/3.3초, Windows backend/relay/초기 비밀·실제 사용자 정책·Agent/서비스 변경0. 완료된 범위는 다시 구현하지 않으며 FN02 적용 전환/전체 기능·사용자 browser DB 인수는 여전히 미완료다.
+- 다음 Stage B FN03의 stageNodeRef는 현재 저장에서412·Web에서는 null로만 처리된다. 정본 계약은 `{applicationId,nodeId}`이며 실제 적용 snapshot/노드·양식 exact ref와 문서 불변 버전을 연결해야 한다. 이 계약/새 forward 보호·UI06 연결에 대해 신산님께 비동기 승인1건을 요청했다. 승인 전 해당 DB/저장 연산은 변경하지 않고 기존 입력·조회/소비 경계만 대조한다. 기존 원문·확정본·SQL·적용 이력을 보존하고 방법론 적용 전환·업무 실행·자동 확정·실제 사용자 정책/Agent·Secret/서비스/운영은 제외한다.
+
 - UI03 현재 적용본 표시 후속은 기존 GET project.currentMethodologyRef 계약만 소비하며 새 API/schema/적용 쓰기를 추가하지 않았다. 적용 snapshot ref/세대를 편집·확정 후보와 별도 표시하고 필드 누락을 미적용으로 간주하지 않는다. 신규 단위 RED1→GREEN2/144ms·fixture1 PASS/3.3초·type/build0(Web91/598.26kB/gzip155.41, 기존 경고 불변). 실제 같은 Web reader의 현재 적용 없음 대조는 다음 exact 게시본에서 확인 예정이다. 기존 고정 적용본/서비스/실제 사용자·Secret 변경0.
 
 - FN02/UI03 과거 조회 후속e1ff6d1d43a4b42cffd3024468c62e1371ef75d5 local/private·WSL exact/clean actual1 PASS/1369ms(기능1112ms)/skip0: 같은 Web reader로 v1 확정 이력과 v2 미확정 분리를 다시 열었다. 독립 DB39종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations39. 마지막 단위140 PASS/2113ms·type/diff0, 최신 UI fixture1/3.0초·기존 공통 UI 직접 영향10 PASS를 구분한다. 현재 Windows backend/relay/만료 bootstrap·Secret은 불변이며 사용자 browser↔DB 인수·방법론 적용 전환/FN02 전체는 미완료다. 다음은 현재 고정 적용본과 개정 후보의 화면 구분을 기존 프로젝트 조회 계약으로 연결하고, FN03/후속 실행 연결의 남은 선행을 계획 순서로 대조한다.
