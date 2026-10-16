@@ -502,6 +502,13 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const userMessageRef=userMessage.json().data.sourceRef;
     assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry:{...knowledgeEntry,sourceRefs:[{...userMessageRef,kind:'USER_INSTRUCTION'}]}}})).statusCode,422,'일반 사용자 발언을 지시로 승격하지 않는다');
     assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry:{...knowledgeEntry,sourceRefs:[{...userMessageRef,id:outsider}]}}})).statusCode,404);
+    const secondConversation=await docSend({...conversationCommand,commandId:randomUUID()});assert.equal(secondConversation.statusCode,200,secondConversation.body);
+    const conversationsUrl=`/api/v1/projects/${project}/conversations?limit=1`,conversationList=await app.inject({method:'GET',url:conversationsUrl,headers});assert.equal(conversationList.statusCode,200,conversationList.body);assert.equal(conversationList.json().hasMore,true);assert.equal(conversationList.json().items[0].id,secondConversation.json().data.conversationId);
+    const conversationNext=await app.inject({method:'GET',url:conversationsUrl+'&cursor='+encodeURIComponent(conversationList.json().nextCursor),headers});assert.equal(conversationNext.statusCode,200,conversationNext.body);assert.equal(conversationNext.json().items[0].headSequence,3);assert.equal(conversationNext.json().items[0].id,conversationId);
+    const messagesUrl=`/api/v1/projects/${project}/conversations/${conversationId}/messages?limit=2`,messages=await app.inject({method:'GET',url:messagesUrl,headers});assert.equal(messages.statusCode,200,messages.body);assert.deepEqual(messages.json().items.map((i:any)=>i.serverSequence),[3,2]);assert.equal('body' in messages.json().items[0],false);
+    const moreMessages=await app.inject({method:'GET',url:messagesUrl+'&cursor='+encodeURIComponent(messages.json().nextCursor),headers});assert.equal(moreMessages.statusCode,200,moreMessages.body);assert.deepEqual(moreMessages.json().items.map((i:any)=>i.serverSequence),[1]);
+    assert.equal((await app.inject({method:'GET',url:messagesUrl+'&cursor='+encodeURIComponent(messages.json().nextCursor+'x'),headers})).statusCode,400);
+    assert.equal((await app.inject({method:'GET',url:conversationsUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);

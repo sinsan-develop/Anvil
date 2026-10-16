@@ -131,6 +131,8 @@
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
 
+- 다음 대화 목록/발언 목록·화면 연결을 착수한다. 기준4768671d clean/적용24 보존. 목록은 현 프로젝트 회원·유한 서명 cursor와 서버 순번으로 읽고 원문/지시 작성은 별도 명령만 사용한다. 기존 고유 합성 QA만 쓰며 새 DB schema/서비스/Secret 변경0. 목록 부재 실제 RED와 후속 화면 검증을 분리한다.
+
 - 출처 소비 `2710f1d1182fd56a92f872017e17fa75e66575c9` local/private·WSL exact/clean actual1 PASS/5399ms/skip0. 실제 사용자 지시 원문/hash를 지식의 별도 source로 보존하고 같은 Web에서 재조회, 일반 USER_MESSAGE를 지시로 위장422/가짜 messageID404/hash409·직접 원문 UPDATE42501을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재실행0, 현재 사용자/Agent 실행·서비스/Secret 변경0. 다음은 프로젝트 대화 목록/원문 화면이며 기존 지식 초안 테스트를 무변경 반복하지 않는다.
 
 - 저장 서버 `13a6fad444ba0ec2ad767a1bb6ba1f7acc0b8ad9` private/WSL exact/clean에 새 forward24만 적용·기존23 checksum 불변·fixture7·실제 사용자0. actual FN03확장+FN11 2 PASS/5465ms/skip0: 사람 발언/불변 원문·명시 별도 policy·순번1→2·같은 명령 replay·앞 USER_INSTRUCTION 정정·구발언 보존·stale409·Agent 위조412·타사용자404·app 직접 UPDATE42501. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL24는 적용본이며 수정하지 않는다.
