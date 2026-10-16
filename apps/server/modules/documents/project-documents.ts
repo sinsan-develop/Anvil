@@ -9,6 +9,7 @@ import { isVersionRef } from '../../../../contracts/references.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import type { FormDefinition } from './forms.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
+import { ProjectListCodec } from '../projects/service.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -17,6 +18,16 @@ function artifactRef(value: unknown): value is ArtifactRef { return exact(value,
 export class ProjectDocuments {
   #store: ArtifactStore | null;
   constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
+  async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>, codec: ProjectListCodec) {
+    await projectMember(db, actor, projectId);
+    if (Object.keys(query).some(key => !['limit', 'cursor'].includes(key)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);
+    const limit = query.limit === undefined ? 50 : Number(query.limit), filter = { query: projectId, archived: false, limit };
+    let position: { at: string; id: string } | null = null;
+    if (query.cursor !== undefined) { try { position = codec.read(String(query.cursor), actor.actorId, filter); } catch { throw new AuthFailure('CURSOR_INVALID', 400); } }
+    const rows = (await db.query("SELECT id,title,head_version,confirmed_version,updated_at,to_char(updated_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') cursor_at FROM anvil.documents WHERE project_id=$1 AND ($2::timestamptz IS NULL OR (updated_at,id)<($2::timestamptz,$3::uuid)) ORDER BY updated_at DESC,id DESC LIMIT $4", [projectId, position?.at ?? null, position?.id ?? null, limit + 1])).rows;
+    const hasMore = rows.length > limit, visible = rows.slice(0, limit), last = visible.at(-1);
+    return { items: visible.map(row => ({ id: row.id, title: row.title, headVersion: Number(row.head_version), confirmedVersion: row.confirmed_version === null ? null : Number(row.confirmed_version), updatedAt: row.updated_at.toISOString() })), hasMore, nextCursor: hasMore ? codec.create(actor.actorId, filter, { at: last!.cursor_at, id: last!.id }) : null, observedAt: new Date().toISOString() };
+  }
   async #artifact(db: PoolClient, projectId: string, ref: ArtifactRef) {
     const row = (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND state='READY' AND content_hash=$3 AND bytes=$4 AND media_type=$5", [ref.artifactId, projectId, ref.contentHash, ref.bytes, ref.mediaType])).rows[0];
     if (!row) throw new AuthFailure('ARTIFACT_NOT_READY', 422);
@@ -76,10 +87,14 @@ export class ProjectDocuments {
 }
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {
   const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
-  app.get<{ Params: { projectId: string; documentId: string; version: string } }>('/api/v1/projects/:projectId/documents/:documentId/versions/:version', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId', 'documentId', 'version'], properties: { projectId: idSchema, documentId: idSchema, version: { type: 'string', pattern: '^[1-9][0-9]{0,14}$' } } } } }, request => {
+  const codec = new ProjectListCodec(value => options.repository.signProjectCursor('DOCUMENTS:' + value));
+  function readToken(request: FastifyRequest) {
     if (request.headers.host !== new URL(options.origin).host) throw new AuthFailure('ORIGIN_INVALID', 403);
     const cookies = (request.headers.cookie ?? '').split(';').map(item => item.trim()).filter(item => item.startsWith('__Host-anvil.sid='));
-    const token = cookies.length === 1 ? cookies[0]!.slice('__Host-anvil.sid='.length) : '';
-    return options.repository.authenticated(token, null, (db, actor) => documents.version(db, actor, request.params.projectId, request.params.documentId, Number(request.params.version)));
+    return cookies.length === 1 ? cookies[0]!.slice('__Host-anvil.sid='.length) : '';
+  }
+  app.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/documents', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId'], properties: { projectId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documents.list(db, actor, request.params.projectId, request.query, codec)));
+  app.get<{ Params: { projectId: string; documentId: string; version: string } }>('/api/v1/projects/:projectId/documents/:documentId/versions/:version', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId', 'documentId', 'version'], properties: { projectId: idSchema, documentId: idSchema, version: { type: 'string', pattern: '^[1-9][0-9]{0,14}$' } } } } }, request => {
+    return options.repository.authenticated(readToken(request), null, (db, actor) => documents.version(db, actor, request.params.projectId, request.params.documentId, Number(request.params.version)));
   });
 }
