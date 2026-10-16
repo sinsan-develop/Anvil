@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 같은 FN04 영향 이력 승인 후속: 사람 검토 입력 검사 unit RED2→GREEN2/243ms(정확 대상 전체/미확인 공백 보존·UNAFFECTED는 문서 근거 필수·미지원 실행 증거412), callback 타입1은 unknown으로 명시했다. 순수 검사이며 근거 문서의 실제 프로젝트/원문 hash는 저장 경로가 별도 확인해야 한다. reviewChangeImpact 명시 정책403 실제 음성 시험을 추가했고 다음 exact 게시본에서 미구현 RED 확인 예정. 아직 forward30 작성/적용0·사람 검토 실제 저장 미구현. 자동 기준 활성화/재개·실제 사용자 권한/Secret/서비스 변경0.
+
 - FN04 초기 변경 요청 `d672450d004af3b9cda723557cb64be271f24eb9` local/private·WSL exact/clean, 승인 forward29 checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 적용/이전28 불변·fixtures7·실제 사용자 생성0. actual FN03+FN11 2 PASS/8830ms(기능8553ms)/skip0: 기존 실제 수정 제안→별도 요청 정책403/허가→불변 요청/기계 영향 저장·같은 명령 replay/새 중복409·조회/교차 사용자404·정확 hash409·기존 설계 head/confirmed v1 유지·직접 삭제/영향 위장 UPDATE42501. 독립 DB28종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations29 확인. sourceRefs 추가 출처·사람 영향 검토 버전·UI07·기준 적용/재개는 미구현이며 FN04 전체 완료가 아니다. 다음은 같은 저장 승인 범위 안의 사람 영향 검토 새 버전/근거·미확인 보존 검사이며 현재 기준·실제 사용자·서비스·Secret은 변경하지 않는다.
 
 - 설계 변경 요청 미구현 actual RED `26fc178e40ab6014df3bb9eb251e2ac358d9bf20` WSL exact/clean 1FAIL/9398ms/skip0: 새 연산 미등록400(별도 정책 거절403이 필요). 후속은 기존 실제 PENDING 수정 제안·현재 확정 AF02/최신 적합 검토·새 요청 정책을 재검사하고 변경 요청/초기 기계 영향 v1을 append-only 저장한다. 선택 출처 sourceRefs는 현재 []만 지원하며 추가 출처는412로 명시 미연결, 승인/기준 적용/업무 재개0·사람 영향 검토 버전은 후속 미구현이다. 현재 설계 인덱스와 최대8개 현재 계획(각200업무)·최대2000대상만 계산하고 잘림/모호한 계획/실행·시험 미연결은 coverageGaps로 보존한다. unit120 PASS/4516ms·타입 unknown→UUID predicate 좁힘1 교정·실제 GREEN 미검증. 새 승인 forward29 `0004_design_change_proposals` checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 작성, 아직 적용0·이전28 SQL 불변. 같은 등록 QA 수명/정리 조건으로 exact 게시본에서 확인한다.
