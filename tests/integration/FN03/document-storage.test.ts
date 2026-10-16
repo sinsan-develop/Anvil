@@ -436,12 +436,15 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     await assert.rejects(pool.query('UPDATE anvil.work_plan_versions SET version=99 WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
     await assert.rejects(pool.query('UPDATE anvil.work_plans SET confirmed_version=head_version WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
     assert.equal((await readDocument(client,project,planDocumentRef.id,1)).body,planWork.body);
+    const traceCommand={...context,commandId:randomUUID(),operation:'linkTrace',payload:{from:{kind:'PLAN_TASK',id:planRef.id,versionRef:clientRevision.ref,localCode:'UI01'},to:{kind:'DESIGN_ITEM',id:designItem.id,versionRef:designRef,localCode:designItem.localCode,anchor:designItem.anchor},relation:'IMPLEMENTS',reason:'화면 업무와 정확 설계 원문을 명시 연결'}};
+    assert.equal((await docSend(traceCommand)).statusCode,403,'계획 저장 허가만으로 추적 링크를 만들지 않는다');
     assert.equal((await readDocument(client,project,designRef.id,1)).body,designWork.body); assert.equal((await readDocument(client,project,screenRef.id,1)).body,screenWork.body);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if((await db.query("SELECT to_regclass('anvil.trace_edges') present")).rows[0].present) await db.query('DELETE FROM anvil.trace_edges WHERE project_id=$1',[project]);
       if((await db.query("SELECT to_regclass('anvil.work_plans') present")).rows[0].present) {
         await db.query('DELETE FROM anvil.plan_dependencies WHERE project_id=$1',[project]);
         await db.query('DELETE FROM anvil.plan_tasks WHERE project_id=$1',[project]);
