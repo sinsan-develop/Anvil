@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN04 승인 후속 Main 어울: 계획 전용5기준/정확 버전/누락·옛 적합 우회·중복 선택 unit RED2→GREEN2(218ms), typecheck0. 실제 WSL 시험에 WORK_PLAN 검토 저장·별도 확정 정책403을 추가했으며 아직 실행 전/미검증이다. 사용 자원은 기존 승인된 DB anvil_v3_development·UUID 합성 사용자/프로젝트·/tmp/anvil-v3-document-qa-<UUID>(0700), 시험1회 수명·finally exact 정리이며 기존 지속 자료/서비스 변경0. forward28은 아직 작성/적용0. 읽기 경로 오기2건은 실제 파일 목록으로 정정했고 자료·권한 변경0. 다음은 게시 exact SHA의 예상 RED를 확인한 뒤 저장 구현이다.
+
 - FN04 화면 검토 선택 `ec2692212b5d4ad93d6ab5a27cd28105916840cf` local/private·WSL exact/clean actual1 PASS/7739ms/skip0. 같은 Web이 실제 AF03 원문/양식·미검토/최신 검토를 조회→명시 선택→기존 계획 저장/멱등/재조회·최신 REWORK 뒤 선택 차단·옛 선택 보존을 확인했다. 전체 계획은 DRAFT이고 설계 미확정 문제는 유지한다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·SQL27 재적용0. 새 API/DB·실제 사용자 권한/서비스 변경0.
 - 다음 FN04 계획 내용검토·별도 확정은 `call_16ea05f2ca814a53bd83dc2b9945b898`의 ‘계획 검토·별도 확정 계약·개발 DB 보완 승인’으로 승인됐다. 현재 로그인/단독 제어·별도 정책·정확 계획/설계/AF04/최신 화면 검토·업무/선행/검수 조건 재검사와 불변 검토/확정 이력·guarded confirmed_version을 새 forward로 추가한다. 기존 SQL/원문/선택/확정 보존, 자동 기준 활성화·업무 실행/Agent·실제 사용자 권한·Secret/서비스/운영 변경0. 합성 UUID/root 수명과 정확 정리 조건은 동일하다. 현재 소유 변경은 이 후속이며 일반 원문 격리 전체 완료/Stage B 완료는 아니다.
 
