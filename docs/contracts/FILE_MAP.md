@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI11 후보 소비: `apps/web/src/features/connections/api.ts`는 같은 후보 명령/입력 snapshot·사용자/client/project/제어 세대·정확 정책/버전 hash·NOT_READY/6UNVERIFIED의 검사/단절 재확인/조회만 소유한다. `ConnectionsPage.tsx`와 `connections.css`는 후보 작성/목록/정확 버전/개정·미구현 차단/반응형을, 기존 App은 사용자/client/project별 버퍼를 보존한다. 시험은 `tests/unit/UI11/candidate-api.test.ts`, `tests/browser/UI11/candidates.spec.ts`, `tests/integration/UI11/candidate-client.test.ts`; 합성 캡처는 docs/04_test_reports/AV3/UI11에 둔다. backend 공개 계약/schema 변경은 없고 실제 연결·신뢰 발급·정책 생성/승인 결정 UI는 포함하지 않는다.
+
 FN06 승인 후 후보 구현: `connections/candidate-input.ts`가 kind별 입력/누락·빈 값/6능력 UNVERIFIED를, `connections/project-candidates.ts`가 현재 권한·정확 버전/정책/CAS·영속/불변 조회를 담당한다. 기존 `projects/routes.ts`, `access/project-command.ts`, `approvals/project-approvals.ts`의 승인된 후보2연산/조회만 연결했다. 새 SQL `db/migrations/0006_connection_candidates.sql`(41), `0006_connection_candidate_guard_alias_fix.sql`(42)와 명시 runner를 사용한다. 시험은 `tests/unit/FN06/{registration-input,candidate-input}.test.ts`, `tests/integration/FN06/connection-candidates.test.ts` 및 기존 FN03 문서/FN11 정책 인접이다. 350b2e30의 내부·신규 HTTP actual과 사용자 browser/실제 연결 미검증을 구분한다. 아래 승인 전 문구는 당시 준비 이력이다.
 
 FN06 승인 전 입력 준비: `apps/server/modules/connections/registration-input.ts`와 `tests/unit/FN06/registration-input.test.ts`는 등록 후보의 구조·정확 참조·유한 기한·의심 비밀 거절/복제만 담당한다. API/DB/신뢰/host 증명·credential/Agent 호출에는 아직 연결하지 않는다. 실제 저장 계약·forward41은 사용자 승인 전 미구현이다. 입력 검사 통과를 실제 연결/배정 준비로 해석하지 않는다.

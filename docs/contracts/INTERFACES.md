@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+UI11 Web 소비는 승인된 후보 명령/GET만 사용한다. 작성 input과 pending commandId·현재 client/제어·정책·기한·이전 ref는 이동/프로젝트 전환·응답 유실 후에도 보존하고 같은 명령만 재확인한다. 현재 정책 조회·최근 재인증은 서버의 최종 판정을 대체하지 않으며 AUTO/REQUIRE_APPROVAL 혼합은 우회하지 않는다. 문서-only/표시 변경과 실제 client/API·PG 검증 SHA747c6f37을 구분한다. 목록의 무결성 미재확인·후보 기한/누락·6미확인·현재 NOT_READY를 표시하며 저장으로 실행 범위를 확대하지 않는다.
+
 FN06 후보 필터 kind는 정확 문자열 enum만 허용한다(배열·객체 coercion 거절400). 후보/정책 exact ref와 달리 아직 연결되지 않은 완성형 host/environment/source/Secret ref는 제공하면412로 거절하며 비어 있음을 가짜 ID로 채우지 않는다. 코드350b2e30의 실제 내부/HTTP·만료/회수·응답 단절 동일 명령 재확인 증거는 WORK_STATUS에 기록한다. UI11/실제 Agent 등록·키 발급·사용자 browser 인수는 이 계약/검증에 포함하지 않는다.
 
 FN06 후보 전용 상세(AV3-PMO-FN06-CANDIDATE-API-01): 기존 PROJECT command의 registerConnection/saveEnvironment는 이번 구현에서 `{kind:CONNECTION_CANDIDATE|ENVIRONMENT_CANDIDATE,candidate:{label,...제공한 필드만},candidateRef:null|이전 정확 VersionRef,policyRef:현재 정확 VersionRef,expiresAt,reason}` 분기만 지원한다. 입력 누락과 명시한 빈 문자열/[]는 input에 그대로 보존한다. data.status=CANDIDATE_STORED는 후보 영속만 의미하며 data.candidate의 readiness는 항상 NOT_READY/executionAuthorized=false, 6능력의 measurement/controlLevel은 UNVERIFIED다. 문서 출처는 USER_REPORTED로 구분하고 실제 Agent 미실행을 숨기지 않는다. 완성형 ConnectionDefinition/EnvironmentVersion으로 반환/소비하지 않는다. 아직 연결하지 않은 실제 host/환경/source/Secret 참조는412이며 candidateRef와 현재 policyRef만 실제 후보/정책 버전에 결박한다.

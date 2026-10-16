@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI11 후보 same-client 실제 검증은747c6f37cb1de34436f63b3eb4fa7cc0f4e1ff72 private/WSL exact clean에서 새 UI11 시험1 PASS/865.862153ms/skip0이다. Web 함수→Fastify HTTP 주입→기존 정식 PG를 사용하며 실제 로그인 브라우저/네트워크 배포 인수는 아니다. QA41종/시험root 각0·원문 보관소 보호/empty·migration42·새 SQL/실제 사용자/서비스/Secret 변경0이다. 이후 변경은 UI11 scoped CSS·class/import·화면시험/캡처·문서이며 같은 Web API client/서버/DB 시험 내용은 불변이다. 현재 Windows old backend/relay/만료 bootstrap은 그대로라 사용자에게 전체 사용 가능으로 안내하지 않는다.
+
 최신 FN06 검증 코드는350b2e3017012ea1774dab28209643066c6db7a3이다. 기존 WSL 정식 checkout에서 동일 private SHA·clean을 확인한 뒤 후보 내부/HTTP·기존 문서 업로드 승인·현 정책/제어 actual3 PASS/15530.534987ms/skip0을 실행했다. 이후 문서-only 기록은 이 실제 코드 SHA와 구분한다. 독립 DB41종 QA 각0·migrations42·시험root[]·원문 root uid1000/0700/nonlink/실경로 동일/empty이다. 실제 host/credential/Agent·서비스/relay/Secret 변경0이며 UI11/실제 사용자 로그인 browser 인수가 아니다. 로컬 unit150/typecheck/diff 통과는 해당 실행 범위만 증명한다.
 
 FN06 내부 후보 저장에 사용자/PMO 승인으로 forward41 `0006_connection_candidates` checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d, 개정 guard alias 보정42 `0006_connection_candidate_guard_alias_fix` checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0 적용 exit0·이전40/41 불변·fixtures7·실제 사용자0. d6f24ab3 exact WSL 내부+신규 HTTP actual1 PASS/1259ms/skip0이며 후보 원본2테이블만 사용한다. 실제 host/grant/credential/Agent·서비스/relay/Secret·사용자 browser DB 인수는 미변경/미검증이다. 이후 이 두 적용 SQL은 수정하지 않고 추가 보완은 새 forward를 사용한다.

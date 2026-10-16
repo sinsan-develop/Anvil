@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import './connections.css';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {candidateAccess,capabilityNames,listCandidates,newCandidate,prepareCandidate,readCandidate,sendCandidate,type CandidateBuffer,type CandidateHit,type CandidateKind,type CandidateView,type Ref} from './api.ts';
@@ -23,7 +24,7 @@ export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuth
  }catch(e){const a=asError(e);current={...current,failure:{code:a.code,status:a.status},uncertain:current.uncertain||!!current.pending&&!rejection(a)};onChange(current);if(alive.current)fail(a);}finally{lock.current=false;if(alive.current)setWorking(false);}}
  async function inspect(ref:Ref){const seq=++request.current;setLoading(true);setView(null);setError(null);try{const v=await readCandidate(client,projectId,ref);if(alive.current&&seq===request.current)setView(v);}catch(e){if(alive.current&&seq===request.current)fail(e);}finally{if(alive.current&&seq===request.current)setLoading(false);}}
  const frozen=working||!!work?.pending||!!work?.result;
- return <section className="editor-page"><header><h2>도구·환경·권한</h2><span title="후보 저장은 신뢰 등록이나 연결 완료가 아닙니다. 실제 Agent를 실행하지 않습니다.">ⓘ</span></header>
+ return <section className="editor-page connections-page"><header><h2>도구·환경·권한</h2><span title="후보 저장은 신뢰 등록이나 연결 완료가 아닙니다. 실제 Agent를 실행하지 않습니다.">ⓘ</span></header>
   <p>미연결 후보 · NOT_READY · 실제 Agent 미검증</p><p>Windows 로컬 실행기와 WSL 시험·배포 대상은 서로 다릅니다. 이 화면은 어느 쪽에도 연결하지 않습니다.</p>
   <button disabled={!!work||working} onClick={()=>void start('CONNECTION_CANDIDATE')}>새 도구 후보</button><button disabled={!!work||working} onClick={()=>void start('ENVIRONMENT_CANDIDATE')}>새 환경 후보</button>
   {work?<section aria-label="후보 작성"><h3>{work.kind==='CONNECTION_CANDIDATE'?'도구 후보':'환경 후보'} {work.draft.candidateRef?`v${work.draft.candidateRef.version}에서 명시 개정`:'새 작성'}</h3><fieldset disabled={frozen}>

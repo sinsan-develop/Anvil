@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI11 후보 부분 실제 checkpoint **747c6f37cb1de34436f63b3eb4fa7cc0f4e1ff72**: local/private/WSL exact·tracked clean에서 새 `tests/integration/UI11/candidate-client.test.ts` **1 PASS/865.862153ms(기능603.046575ms)/FAIL0/SKIP0**. 같은 Web `candidateAccess/prepareCandidate/sendCandidate/readCandidate/listCandidates`가 실제 인증 API/PG의 저장→합성 응답 유실→원 command 재확인/효과1→목록/정확 불변 재조회→환경 v1/v2/CAS409·EMPTY/NOT_PROVIDED 구분→타 프로젝트404→재인증 만료412·권한 회수403·outbox0을 확인했다. 최초 SSH here-string의 마지막 CR이 파일명에 붙은 호출 오류1은 시험 시작 전 실패이며 동일 exact SHA의 단일 명령으로만 정정했다. 독립 QA DB41종 각0·migrations42·시험root[]·지속원문 uid1000/0700/nonlink/실경로 동일/entries[]이다.
+- 같은 checkpoint 뒤 Web API/client·backend/DB·same-client 시험은 변경하지 않았다. 1920 캡처에서 native 기본 입력148px·라벨 접합을 발견해 폭>320 layout RED1→UI11 feature 전용 CSS로만 보정했다. type/build exit0(96modules·CSS9.55kB/gzip2.56·JS623.43kB/gzip162.76, 기존 chunk 경고)·layout1 GREEN/2.0초·추가 kind/cursor/입력 보존·430px 가로 유실2 PASS/2.5초. 임시 browser 결과가 다음 실행에 교체되므로 좁은 캡처1 PASS/2.1초로 보존한 [합성 후보 화면](04_test_reports/AV3/UI11/CANDIDATE_FIXTURE_1920.png) SHA256 F3BA3E093E28493CF60E9D7A4E052B00D94591CD6C573FDC053246FF8DC61882를 남겼다. 사용자 실데이터/로그인·DB 브라우저 인수 증거가 아니다. 최종 타입/diff를 확인하고 불변 DB검증을 반복하지 않는다.
+- 판정: **후보 작성·저장·목록/페이지·정확 버전 조회·명시 개정의 부분 구현/핵심 동작 확인**이다. 모든 후보는 NOT_READY·6능력 UNVERIFIED/역할 배정 불가이고 실제 host 신뢰·credential·Agent 시험/실행/해제·정책 생성/승인 결정 화면은 미구현으로 표시/차단한다. 현재 AUTO 명시 정책만 소비하며 혼합 REQUIRE_APPROVAL도 차단한다. Windows old backend/relay HOLD/만료 bootstrap·실제 사용자/권한·Secret은 불변이다. 전체 UI11/FN06·Stage B/C·44업무 완료가 아니며 PMO에 결과와 정확 다음 미구현 경계를 제출한다.
+
 - UI11 게시 전 최종 로컬: unit157 PASS/3190.089ms·type/build0(95modules·JS623.42kB/gzip162.77·CSS7.61kB/gzip2.25, 기존 chunk 경고 유지). 표식 보완 후 직접 Secret browser1 PASS/4.0초, 나머지 UI11/UI10 15개는 동작 코드 불변인 앞선16 PASS에서 구분하며 중복 반복하지 않았다. `git diff --check`0·WSL 사전 HEAD350b2e30 clean. 신규 UI11 실제 시험은 소유 자원 범위를 등록했으나 아직 미실행이다. 초기 새 폴더3개의 sandbox 권한 거절·부재 부모 patch 거절1, App 문맥 patch 거절1은 기존 내용 변경 없이 정확 폴더/elevated 및 실제 문맥으로 해소했다. 잘못 추정한 project-policy.ts 읽기1은 실제 project-command.ts로 정정했으며 ACL 변경0이다.
 
 - UI11 로컬 후보: 신규 Web client 부재 RED1→직접 행동7 PASS/149ms, 새 후보 화면 버튼 부재 RED1→집중 UI11 10/직접 App 인접 UI10 6 합계16 PASS/11.0초. 로컬 unit156 PASS/2235.7103ms·type/build0(95modules·JS623.38kB/gzip162.74·기존 chunk 경고) 이후 self-review에서 passwd/access_token의 사전 차단 누락 RED1을 추가해 서버와 같은 알려진 표식으로 보정·직접7 GREEN을 확인했다. 최종 전체unit/빌드·해당 입력 browser는 새 코드 기준으로 확인한다. 후보 화면은 서버 현재 제어·정책 조회 후 원 input/정확 ref/CAS를 묶고 결과 유실·이동·타 프로젝트에서 원 command를 유지한다. REQUIRES_APPROVAL 정책은 UI08 연결 부재를 명시해 차단하며 자체 승인/정책 생성0이다. same-client actual은 아직 미실행이며 PASS로 승격하지 않는다.
@@ -284,7 +288,7 @@
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/출처·지식 작성/정정/제외·검토/확정·헌법 별도 적용/이력 same-client actual7cf8c005, fixture13 | 공유·임무별 선별/이해 대조·현재 사용자 browser DB |
-| UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성·목록·불변 조회/개정·단절 동일 명령/프로젝트별 입력 보존·fixture 확인 | 같은 Web 함수 실제 API/PG 검증 전. 실제 host/Agent·정책 생성·승인 결정 화면 미연결 |
+| UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존, same-client actual747c6f37 1 PASS·QA41종 잔여0·fixture/배치 확인 | 실제 host/credential/Agent·정책 생성/승인 결정 UI 및 실제 사용자 로그인 browser 인수 미연결/미확인 |
 | UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
 | UI14 설정·백업·보조 조회 | [] | S14 정적 시안 | 백업/영향·한도/알림·원화면과 같은 상태 조회 |

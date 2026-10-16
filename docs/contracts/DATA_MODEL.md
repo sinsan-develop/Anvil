@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+UI11은 기존 후보41/42의 저장·불변 버전을 소비했으며 새 migration/table/완성형 연결은 만들지 않았다. 환경 후보 개정에서 미제공과 명시 빈 목록을 실제 보존하고 과거 버전/정확 ref·명령 재확인 효과1을747c6f37 same-client actual로 검증했다. 브라우저 입력 상태는 서버의 실행 허가·host 신뢰 저장소가 아니며 실제 계정/키 발급을 대신하지 않는다.
+
 후보41 적용 후 환경 개정 guard의 SELECT alias `old`가 PL/pgSQL OLD와 충돌한42702는 새 forward42 `0006_connection_candidate_guard_alias_fix`에서 `prior_version`으로만 보정했다. 적용41 checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d와42 checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0는 고정하며 이미 적용한 SQL을 고치지 않는다. 코드350b2e30의 실제 v1/v2·불변/현재 권한/일회 소비·인접 업로드 검증은 WORK_STATUS를 따른다. 이 후보 테이블을 완성형 connector/환경/실측으로 승격하지 않는다.
 
 FN06 새 forward41 `0006_connection_candidates`는 완성형 연결/환경 테이블을 대신 만들지 않고 connection_candidates(project/id/kind/head_version)와 connection_candidate_versions(project/candidate/version/kind/snapshot/hash/actor/client/command/기한)의 후보 전용 원본·불변 버전을 추가한다. head FK는 지연 검사하고 app의 head 변경은 exact receipt/이전 ref·현재 제어/최근 재인증·현 정책/필요 일회 소비로 보호한다. version UPDATE/DELETE·identity DELETE는 app에 허용하지 않는다. snapshot의 NOT_READY/executionAuthorized=false·6능력 UNVERIFIED는 서버/DB에서 강제한다. 기존 업로드의 승인 guard 조건은 유지한 새 함수 정의로 후보 두 연산의 일회 소비만 추가한다. connector 신뢰/credential/grant/실행 schema를 활성화하지 않는다. 기존40 SQL은 불변이며 적용 여부/체크섬은 WORK_STATUS를 따른다.
