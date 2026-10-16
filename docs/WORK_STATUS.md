@@ -112,6 +112,9 @@
 - 시작 `b69c201522fae123b72598380002a1b975feafed` local/private 동일·지정 Stage B tracked clean, main f976ed5e 불변. 이전 확정/충돌 조정·SQL17을 다시 만들지 않는다. 신산님 `call_e9907e2ffeca40bf966c6037d1e9025d` 직접 응답 ‘FN03 가져오기·제안 계약·개발 DB 보완 승인’을 확인했다. 기존 개발 DB의 새 forward로 후보/제안/선택 이력과 현재 권한/감사를 연결할 수 있으며 실제 사용자 정책 부여·원본/기존 SQL 삭제·Secret/서비스/운영 변경은 제외한다.
 - 이번 연결은 먼저 UTF-8 텍스트/Markdown의 원본 그대로인 가져오기 후보→원문 확인→명시 새 초안 선택이다. 지원불가/추출 실패도 원본을 유지하고 성공/확정/실행으로 바꾸지 않는다. 수정 제안은 같은 승인 범위의 후속이며 자동 반영하지 않는다.
 - QA는 기존 전용 WSL DB `anvil_v3_development`/PG15와 Git checkout `/home/daon/deploy/anvil-v3`, 기존 보호 설정만 소비한다. 합성 사용자/프로젝트 `qa-document-storage-<UUID>`·파일 root `/tmp/anvil-v3-document-qa-<UUID>` uid1000/0700, 수명 시험1회·finally 정확 UUID 정리·독립 잔여0을 확인한다. 지속 artifacts root·Windows Node/relay·CA/bootstrap은 보존한다.
+- RED `df7c74591c1cf0d3414f937992bac785b7c43ca1` WSL exact/clean actual FN03 1 FAIL/2639ms: 가져오기 허가 부재403 대신 미연결 연산400. 후보 파서는 모듈 부재 로딩 오류1과 행동 RED2를 구분했다. 화면 시험의 기존 버튼 이름 오기1을 정정한 뒤 실제 파일 입력 부재 RED1을 확인했다. 기존 합격 기준을 낮추지 않았다.
+- 새 forward18 `0003_document_imports` SHA256 `e143f10ee61fb78d174070cc1e0e5ab2eb55b8d35f74ec07a4c82f88594dfe57`: immutable 후보·same-project 원본/양식 FK·현재 receipt/권한/제어·명시 초안 선택 이력. 기존17 SQL 수정0. 최초 텍스트 파서는 `UTF8_IDENTITY_1`로 원본 바이트를 그대로 참조하며 별도 추출 파일을 생성한 것처럼 주장하지 않는다. UTF-8 오류/본문 2MiB 초과는 FAILED, 다른 형식은 UNSUPPORTED로 원본만 유지한다. 자동 반영/확정/Agent 실행0이다.
+- 로컬 unit58 PASS/skip0, UI06 fixture15 PASS/11.6초(새 가져오기1 포함), type/build exit0·Web58(JS402.91kB/gzip111.94·CSS7.61kB), diff0. UI는 파일 선택만으로 전송0→원본 업로드/후보 명시 생성→단절 시 같은 명령 재확인·알려진 업로드 재생성0→원문 표시/명시 선택→원본 첨부를 보존한 별도 초안 저장을 확인했다. 실제 개발 DB forward18 적용/최종 코드 시험은 게시 후 진행하며 현재 미실행이다. 수정 제안/차이 비교·후보 목록 재개·소스 연계·최신 제품 실제 브라우저 DB 여정은 미완료다.
 
 ### 2026-10-16 FN03 별도 문서 확정 착수 — Main 어울
 

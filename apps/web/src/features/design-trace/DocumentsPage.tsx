@@ -37,7 +37,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   async function beginEdit() {
     if (!opened || starting) return;
     if (reviewing || review?.pending || confirmation) { setEditingError(new ApiError('DOCUMENT_REVIEW_INPUT_PRESERVED')); return; }
-    if (buffer?.pending) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
+    if (buffer?.pending || buffer?.importState) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
     if (buffer && buffer.ownerUserId !== session.user.id) { setEditingError(new ApiError('DOCUMENT_OTHER_USER_INPUT_PRESERVED')); return; }
     if (buffer?.dirty && !confirm('앞선 문서의 미저장 편집을 버리고 선택한 버전에서 편집할까요?')) return;
     const current = generation.current; setStarting(true); setEditingError(null);
@@ -45,7 +45,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       const control = await documentControl(client, projectId, session);
       if (current !== generation.current) return;
       const next = editDocument(projectId, opened, session.user.id, control);
-      onChange(previous => previous?.pending || previous && previous.ownerUserId !== session.user.id ? previous : next);
+      onChange(previous => previous?.pending || previous?.importState || previous && previous.ownerUserId !== session.user.id ? previous : next);
     } catch (cause) { if (current === generation.current) { const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setEditingError(error); if (error.status === 401) onAuthenticationLost(); } }
     finally { setStarting(false); }
   }
@@ -76,7 +76,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   }
   return <section aria-label="프로젝트 문서 조회" className="document-workspace">
     <aside className="status-card document-list"><h2>프로젝트 문서</h2><button disabled={loading} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>문서 목록 새로고침</button>
-      <button disabled={starting || !!confirmation || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
+      <button disabled={starting || !!confirmation || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer?.importState || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
       {loading ? <p role="status">목록 조회 중</p> : null}{listError ? <p role="alert">{listError.message} · {listError.code}{page ? ' · 앞선 목록은 오래된 자료' : ''}</p> : null}
       {page && !loading && !listError && !page.items.length ? <p>저장된 문서가 없습니다.</p> : null}
       <ul>{page?.items.map(item => <li key={item.id}><button disabled={reading || !!listError || loading} aria-label={item.title + ' 열기'} aria-pressed={selected?.id === item.id} onClick={() => { void open(item, item.headVersion); }}>{item.title}</button><p className="meta">최신 {item.headVersion} · {item.confirmedVersion === null ? '미확정' : '확정 ' + item.confirmedVersion}</p></li>)}</ul>

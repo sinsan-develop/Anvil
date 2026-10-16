@@ -16,6 +16,7 @@ import type { FormDefinition } from '../../../apps/server/modules/documents/form
 import { newDocumentConfirmation, prepareDocumentConfirmation, sendDocumentConfirmation } from '../../../apps/web/src/features/design-trace/confirmation-api.ts';
 import { adoptDocumentConflict, compareDocumentConflict } from '../../../apps/web/src/features/design-trace/conflict-api.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
+import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } from '../../../apps/web/src/features/design-trace/import-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -209,11 +210,54 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal(reconciled.version, 3); assert.equal((await readDocument(client, project, readyRef.id, 3)).body, stale.body); assert.equal((await readDocument(client, project, readyRef.id, 2)).body, later.body); assert.equal((await readDocument(client, project, readyRef.id, 1)).document.confirmed, true);
     const importCommand = { ...context, commandId: randomUUID(), operation: 'importDocument', payload: { fileRef: artifact, intendedFormRef: form.ref, sourceRefs: [] } };
     assert.equal((await docSend(importCommand)).statusCode, 403, '기존 문서 저장/확정 허가는 가져오기 후보 생성 허가가 아니다');
+    const importPolicy = await docSend({ ...context, commandId: randomUUID(), operation: 'savePermissionPolicy', targetId: policyRef.id, expectedVersion: 4, payload: { rules: [{ ruleId: 'IMPORT_OWN_DOCUMENTS', subjectRef: { kind: 'HUMAN', userId: user }, targetScopes: [{ kind: 'PROJECT', projectId: project }], operations: ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'importDocument'], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 가져오기 후보 명시 허가', reviewRefs: [] } });
+    assert.equal(importPolicy.statusCode, 200, importPolicy.body);
+    const documentCount = Number((await pool.query('SELECT count(*) n FROM anvil.documents WHERE project_id=$1', [project])).rows[0].n);
+    const imported = await docSend(importCommand); assert.equal(imported.statusCode, 200, imported.body);
+    const candidate = imported.json().data.candidate;
+    assert.equal(candidate.status, 'READY'); assert.equal(candidate.parserVersion, 'UTF8_IDENTITY_1');
+    assert.deepEqual(candidate.originalRef, artifact); assert.deepEqual(candidate.extractedContentRef, artifact); assert.deepEqual(candidate.losses, []);
+    assert.deepEqual((await docSend(importCommand)).json(), imported.json(), '후보 생성 명령 재확인은 중복 후보를 만들지 않는다');
+    assert.equal(Number((await pool.query('SELECT count(*) n FROM anvil.documents WHERE project_id=$1', [project])).rows[0].n), documentCount, '가져오기 후보 생성은 문서 저장이 아니다');
+    const importPath = `/api/v1/projects/${project}/imports/${candidate.id}`;
+    assert.equal((await app.inject({ method: 'GET', url: importPath, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
+    const importedRead = await app.inject({ method: 'GET', url: importPath, headers }); assert.equal(importedRead.statusCode, 200, importedRead.body); assert.deepEqual(importedRead.json().selections, []);
+    const importedSave = { ...documentCommand, commandId: randomUUID(), payload: { ...documentCommand.payload, title: '가져오기 원문으로 명시 저장', importCandidateRef: candidate.id } };
+    assert.equal((await docSend({ ...importedSave, commandId: randomUUID(), payload: { ...importedSave.payload, content: freshRead.document.content } })).statusCode, 422, '원본 참조를 버린 가져오기 선택은 거절');
+    const selected = await docSend(importedSave); assert.equal(selected.statusCode, 200, selected.body);
+    assert.deepEqual((await docSend(importedSave)).json(), selected.json());
+    const selectedRef = selected.json().data.ref;
+    assert.equal((await readDocument(client, project, selectedRef.id, 1)).body, bytes.toString('utf8'));
+    assert.deepEqual((await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/documents/${selectedRef.id}/versions/1`, headers })).json().importCandidateRefs, [candidate.id]);
+    assert.equal((await app.inject({ method: 'GET', url: importPath, headers })).json().selections.length, 1);
+    await assert.rejects(pool.query("UPDATE anvil.document_imports SET candidate_json='{}' WHERE id=$1", [candidate.id]), (e: unknown) => (e as { code: string }).code === '42501');
+    await assert.rejects(pool.query('INSERT INTO anvil.document_import_selections(id,project_id,import_id,document_id,version,created_by,client_id,command_id) SELECT $1,project_id,import_id,document_id,version,created_by,client_id,command_id FROM anvil.document_import_selections WHERE project_id=$2 LIMIT 1', [randomUUID(), project]), (e: unknown) => (e as { code: string }).code === '42501');
+    const unsupportedBytes = Buffer.from('<script>window.QA_SHOULD_NOT_RUN=1</script>'), unsupportedUpload = { ...context, commandId: randomUUID(), payload: { mediaType: 'application/octet-stream', bytes: unsupportedBytes.length, contentHash: createHash('sha256').update(unsupportedBytes).digest('hex') } };
+    const rawUnsupported = await send(unsupportedUpload, unsupportedBytes); assert.equal(rawUnsupported.statusCode, 201, rawUnsupported.body);
+    const unsupported = await docSend({ ...importCommand, commandId: randomUUID(), payload: { ...importCommand.payload, fileRef: rawUnsupported.json().data.artifactRef } });
+    assert.equal(unsupported.statusCode, 200, unsupported.body); assert.equal(unsupported.json().data.candidate.status, 'UNSUPPORTED'); assert.equal(unsupported.json().data.candidate.extractedContentRef, null);
+    assert.equal((await docSend({ ...importedSave, commandId: randomUUID(), payload: { ...importedSave.payload, importCandidateRef: unsupported.json().data.candidate.id } })).statusCode, 412);
+    assert.deepEqual((await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/files/${rawUnsupported.json().data.artifactRef.artifactId}`, headers })).rawPayload, unsupportedBytes, '미지원 자료도 원본 바이트를 보존');
+    let importWork = newDocument(project, form, user, await documentControl(client, project, session));
+    let importPending = await prepareDocumentImport(importWork, session, { name: '원문.txt', bytes: new Uint8Array(bytes) });
+    await assert.rejects(continueDocumentImport(client, importPending, form.ref, session, () => {}, () => false), (e: unknown) => (e as { code: string }).code === 'SAVE_CONTINUATION_PAUSED');
+    importPending = await continueDocumentImport(client, importPending, form.ref, session, v => { importPending = v; }, () => true);
+    importWork = { ...importWork, importState: importPending };
+    await assert.rejects(prepareDocumentSave(importWork, session), (e: unknown) => (e as { code: string }).code === 'IMPORT_SELECTION_REQUIRED');
+    importWork = await adoptDocumentImport(client, importWork, session); importWork.reason = '실제 화면 클라이언트로 후보 확인 후 별도 저장';
+    assert.equal(importWork.body, bytes.toString('utf8')); assert.equal(importWork.mediaType, 'text/plain;charset=utf-8');
+    const importRef = await continueDocumentSave(client, await prepareDocumentSave(importWork, session), session, () => {}, () => true);
+    const importedDocument = await readDocument(client, project, importRef.id, 1);
+    assert.equal(importedDocument.body, bytes.toString('utf8')); assert.equal(importedDocument.document.confirmed, false); assert.deepEqual(importedDocument.document.content.attachments, [importPending.candidate!.originalRef]);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if ((await db.query("SELECT to_regclass('anvil.document_imports') present")).rows[0].present) {
+        await db.query('DELETE FROM anvil.document_import_selections WHERE project_id=$1', [project]);
+        await db.query('DELETE FROM anvil.document_imports WHERE project_id=$1', [project]);
+      }
       if ((await db.query("SELECT to_regclass('anvil.documents') present")).rows[0].present) {
         if ((await db.query("SELECT to_regclass('anvil.document_confirmations') present")).rows[0].present) await db.query('DELETE FROM anvil.document_confirmations WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.content_reviews WHERE project_id=$1', [project]);

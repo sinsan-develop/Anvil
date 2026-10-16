@@ -13,6 +13,7 @@ import { ProjectListCodec } from '../projects/service.ts';
 import { documentReviewCriteria, documentReviews, writeDocumentReview } from './project-content-review.ts';
 import { validateDocumentConfirmation } from './document-validation.ts';
 import { confirmProjectDocument } from './project-confirmation.ts';
+import { createDocumentImport, readDocumentImport, checkImportSelection } from './project-imports.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -21,6 +22,12 @@ function artifactRef(value: unknown): value is ArtifactRef { return exact(value,
 export class ProjectDocuments {
   #store: ArtifactStore | null;
   constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
+  async import(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
+    return createDocumentImport(db, actor, request, policyRef, (client, projectId, ref) => this.#artifact(client, projectId, ref));
+  }
+  async imported(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
+    return readDocumentImport(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
+  }
   async confirm(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     if (!request.targetId) throw new AuthFailure('DOCUMENT_CONFIRMATION_INPUT_INVALID', 422);
     const document = await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion);
@@ -54,7 +61,7 @@ export class ProjectDocuments {
     const p = request.payload;
     if (!exact(p, ['title', 'formRef', 'stageNodeRef', 'content', 'importCandidateRef', 'reason']) || typeof p.title !== 'string' || !p.title.trim() || p.title.length > 200 || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !isVersionRef(p.formRef)
       || !exact(p.content, ['body', 'attachments', 'sections', 'sourceRefs']) || !artifactRef(p.content.body) || !Array.isArray(p.content.attachments) || p.content.attachments.length > 200 || !p.content.attachments.every(artifactRef) || !Array.isArray(p.content.sections) || p.content.sections.length > 200 || !Array.isArray(p.content.sourceRefs)) throw new AuthFailure('INPUT_INVALID', 422);
-    if (p.stageNodeRef !== null || p.importCandidateRef !== null || p.content.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
+    if (p.stageNodeRef !== null || p.content.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
     const content = p.content as unknown as DocumentContent;
     if (!['text/plain;charset=utf-8', 'text/markdown;charset=utf-8'].includes(content.body.mediaType) || content.body.bytes > 2 * 1024 * 1024) throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED', 412);
     const form = (await db.query("SELECT v.definition_json,v.content_hash FROM anvil.form_definitions d JOIN anvil.form_versions v ON v.definition_id=d.id AND v.version=$2 WHERE d.id=$1 AND (d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$3) FOR SHARE OF d", [p.formRef.id, p.formRef.version, actor.actorId])).rows[0];
@@ -65,6 +72,7 @@ export class ProjectDocuments {
     try { body = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); } catch { throw new AuthFailure('DOCUMENT_UTF8_INVALID', 422); }
     const refs = new Set([content.body.artifactId]);
     for (const attachment of content.attachments) { if (refs.has(attachment.artifactId)) throw new AuthFailure('DUPLICATE_ARTIFACT', 422); refs.add(attachment.artifactId); await this.#artifact(db, request.projectId, attachment); }
+    if (p.importCandidateRef !== null) await checkImportSelection(db, actor, request.projectId, p.importCandidateRef, p.formRef, [content.body, ...content.attachments], (client, pid, ref) => this.#artifact(client, pid, ref));
     const lines = body.split(/\r\n|\n|\r/), sections = new Set<string>();
     for (const section of content.sections) {
       if (!exact(section, ['itemId', 'anchor']) || typeof section.itemId !== 'string' || typeof section.anchor !== 'string' || !/^line:[1-9][0-9]{0,7}$/.test(section.anchor) || Number(section.anchor.slice(5)) > lines.length || sections.has(section.itemId) || !definition.items.some(item => item.itemId === section.itemId)) throw new AuthFailure('DOCUMENT_SECTION_INVALID', 422);
@@ -81,11 +89,12 @@ export class ProjectDocuments {
       version = request.expectedVersion + 1; if (!Number.isSafeInteger(version)) throw new AuthFailure('VERSION_CONFLICT', 409);
     }
     const authorRef = { kind: 'HUMAN', userId: actor.actorId }, ref = { id, version, contentHash: contentHash(canonicalJson({ title: p.title, formRef: p.formRef, stageNodeRef: null, content })) };
-    const receipt = await persistProjectReceipt(db, actor, request, ref, { status: 'DRAFT', validation }, policyRef, 'EXPLICIT_DOCUMENT_DRAFT');
+    const receipt = await persistProjectReceipt(db, actor, request, ref, { status: 'DRAFT', validation, importCandidateRef: p.importCandidateRef }, policyRef, 'EXPLICIT_DOCUMENT_DRAFT');
     if (request.targetId === null) await db.query('INSERT INTO anvil.documents(id,project_id,title,head_version,created_by) VALUES($1,$2,$3,1,$4)', [id, request.projectId, p.title, actor.actorId]);
     else await db.query('UPDATE anvil.documents SET title=$2,head_version=$3,updated_at=now() WHERE id=$1', [id, p.title, version]);
     await db.query('INSERT INTO anvil.document_versions(project_id,document_id,version,form_definition_id,form_version,form_hash,body_artifact_id,title,source_refs_json,content_json,content_hash,sections_json,author_ref_json,validation_json,reason,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)', [request.projectId, id, version, p.formRef.id, p.formRef.version, p.formRef.contentHash, content.body.artifactId, p.title, '[]', JSON.stringify(content), ref.contentHash, JSON.stringify(content.sections), JSON.stringify(authorRef), JSON.stringify(validation), p.reason, actor.clientId, receipt.id]);
     for (const [kind, artifact] of [['BODY', content.body], ...content.attachments.map(ref => ['ATTACHMENT', ref])] as ['BODY' | 'ATTACHMENT', ArtifactRef][]) await db.query('INSERT INTO anvil.document_artifact_links(project_id,document_id,version,artifact_id,kind) VALUES($1,$2,$3,$4,$5)', [request.projectId, id, version, artifact.artifactId, kind]);
+    if (p.importCandidateRef !== null) await db.query('INSERT INTO anvil.document_import_selections(id,project_id,import_id,document_id,version,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)', [randomUUID(), request.projectId, p.importCandidateRef, id, version, actor.actorId, actor.clientId, receipt.id]);
     await db.query("INSERT INTO anvil.document_version_events(id,project_id,document_id,version,event_kind,actor_ref,reason,command_id) VALUES($1,$2,$3,$4,'DRAFT_SAVED',$5,$6,$7)", [randomUUID(), request.projectId, id, version, JSON.stringify(authorRef), p.reason, receipt.id]);
     return receipt.result;
   }
@@ -101,7 +110,8 @@ export class ProjectDocuments {
     if (!form || contentHash(canonicalJson(form.definition_json)) !== formRef.contentHash) throw new AuthFailure('FORM_INTEGRITY_FAILED', 503);
     const reviews = await documentReviews(db, projectId, { id, version, contentHash: row.content_hash });
     const events = (await db.query("SELECT event_kind,actor_ref,reason,created_at,id FROM anvil.document_version_events WHERE project_id=$1 AND document_id=$2 AND version=$3 UNION ALL SELECT 'CONFIRMED',jsonb_build_object('kind','HUMAN','userId',confirmed_by),'별도 명시 확정',created_at,id FROM anvil.document_confirmations WHERE project_id=$1 AND document_id=$2 AND version=$3 ORDER BY created_at,id", [projectId, id, version])).rows;
-    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: { ...row.validation_json, ...validateDocumentConfirmation(body, content.sections, form.definition_json) }, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: [], sourceLinks: [] };
+    const imports = (await db.query('SELECT import_id FROM anvil.document_import_selections WHERE project_id=$1 AND document_id=$2 AND version=$3', [projectId, id, version])).rows.map(value => value.import_id as string);
+    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: { ...row.validation_json, ...validateDocumentConfirmation(body, content.sections, form.definition_json) }, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: [], sourceLinks: [], importCandidateRefs: imports };
   }
 }
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {
@@ -113,6 +123,7 @@ export function registerProjectDocumentReads(app: FastifyInstance, options: Acce
     return cookies.length === 1 ? cookies[0]!.slice('__Host-anvil.sid='.length) : '';
   }
   app.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/documents', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId'], properties: { projectId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documents.list(db, actor, request.params.projectId, request.query, codec)));
+  app.get<{ Params: { projectId: string; importId: string } }>('/api/v1/projects/:projectId/imports/:importId', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId','importId'], properties: { projectId: idSchema, importId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documents.imported(db, actor, request.params.projectId, request.params.importId)));
   app.get<{ Params: { projectId: string; documentId: string; version: string } }>('/api/v1/projects/:projectId/documents/:documentId/versions/:version', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId', 'documentId', 'version'], properties: { projectId: idSchema, documentId: idSchema, version: { type: 'string', pattern: '^[1-9][0-9]{0,14}$' } } } } }, request => {
     return options.repository.authenticated(readToken(request), null, (db, actor) => documents.version(db, actor, request.params.projectId, request.params.documentId, Number(request.params.version)));
   });
