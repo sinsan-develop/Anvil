@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI10 검토·확정 `6e9da43c320737479516f142d6d268b1b724db87` local/private·WSL exact/clean actual1 PASS/6638ms/skip0: 같은 Web에서 항목별 검토/멱등→명시 확인/별도 확정/멱등→확정 상태 검색·본문/현재 유효성→새 정정 버전과 옛 확정 보존·명시 제외까지 실제 DB/원문으로 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL26 재적용0. 단위105/UI10 fixture9와 실제 사용자 browser↔DB는 구분한다. 전체 FN05/Stage B·헌법 적용·보호 원문 격리·실제 Agent는 미완료다. 다음은 보존된 지식 버전의 목록/원문 재개와 출처 선택을 연결한다.
+
 - FN05 검토·확정 서버 `498d1a6fa4442a5843307108aea8de4ef2c1e513` local/private·WSL exact/clean에서 새 forward26만 적용·기존25 지문 불변, actual FN03확장+FN11 2 PASS/6283ms/skip0. 최신 보완 검토 뒤 옛 합격 선택422·별도 확정/동일 명령·뒤 재검토의 현재 유효성 false·상태 검색/cursor를 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자·서비스/Secret 변경0.
 - UI10 검토/확정 후보: 신규 단위 RED3→GREEN3, 확정 후 정정/제외 신규 RED2→GREEN2, 전체 단위105 PASS/1369ms/skip0. 새 검토 버튼 부재 browser RED1 후 UI10 fixture9 PASS/8.8초, 타입/빌드0(Web82). 기존 bundle500kB/NO_COLOR 경고를 유지한다. 상태 union 확장 중 화면 label 누락 타입 오류1은 CONFIRMED 표시/필터 연결로 보정했다. 경로 추측 조회 오류3은 파일 목록으로 바로잡았고 파일/권한 변경0. 같은 Web의 실제 판단/확정 저장 연결은 다음 exact 게시본에서 확인한다. 사용자 browser↔DB/헌법 적용·Agent 전달·전체 FN05는 아직 미완료다.
 

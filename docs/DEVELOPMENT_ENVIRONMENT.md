@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI10 동일 Web 판단 client `6e9da43c320737479516f142d6d268b1b724db87` exact private/WSL clean actual1 PASS/6638ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. 적용26 재실행0, 실제 사용자/Secret·서비스·Agent 변경0. 기존 Windows backend와 새 Web dist의 mixed runtime이므로 사용자용 exact-SHA 통합/인수 완료로 표시하지 않는다.
+
 FN05 검토·확정 서버 `498d1a6fa4442a5843307108aea8de4ef2c1e513` exact private/WSL clean에서 승인 forward26 `0005_knowledge_confirmation` checksum35bd5b9a3f6109881f0f22b1a06957114ea714556e03700678c7e1ba3d353766 적용·기존25 불변. actual2 PASS/6283ms/skip0·독립 DB25종/시험root 잔여0·지속원문 보호/empty. 실제 사용자 정책·Secret·CA·서비스·초기 등록/relay는 변경하지 않았다. UI10 후보의 actual은 후속이며 mixed runtime/미검증 경계는 유지한다.
 
 정정 UI 동일 Web client `c2b1b75cad5c895c4f1e0c324936865b728237c9` exact private/WSL clean actual1 PASS/5951ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·원문/지시/이유·앞1 보존과 새2/멱등을 확인했고 사용자용 서비스/Secret·실제 사용자/Agent는 변경하지 않았다.
