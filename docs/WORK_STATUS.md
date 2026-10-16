@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 사람 영향 검토 후보 `4ff5465cc0eb27e49e2de9e6a815893da5ef1db8` exact/clean WSL에서 승인 forward30 checksume99067f14f8fa1d5ba775c3c6e4096ecf4a20483651d0e777776a74e4589275c 적용(이전29 불변). actual2 중 FN11 PASS·FN03 FAIL1/8713ms: 새 검토 정책 거절/정책 추가 뒤 ‘미확인 공백 삭제422’ 시도에서503, 원인 아직 미확정. 합격으로 승격하지 않고 비밀 없는 구조화 오류 code를 다음 시험에 노출해 원인을 좁힌다. 독립 DB28종 각0·시험root[]·지속root 보호/empty·migrations30 확인, 실제 사용자/서비스/Secret·기준 변경0. SQL30은 적용본이므로 수정하지 않는다.
+
 - FN04 사람 영향 검토 미구현 actual RED `23d3dfa8ac435499eec7bc6639c6c3ffb7f0edcc` WSL exact/clean 1FAIL/8865ms/skip0: 새 reviewChangeImpact 미등록400(별도 정책403이 필요). 같은 승인 범위 후속에서 exact change/baseImpact와 현재 정책·최신 버전 CAS, 모든 대상/미확인 공백 보존·UNAFFECTED 문서 근거의 실제 프로젝트/hash를 검증해 HUMAN_REVIEW 새 버전만 저장하도록 구현했다. 기존 기계/사람 이력·SQL29 불변·기준 적용0. 조회는 기본10/최대20개 영향 버전과 beforeVersion으로 유한하게 읽고 최신 ref/더 있음/다음 위치를 분리한다. unit122 PASS/1730ms·type/diff0, 실제 GREEN 미검증. 새 forward30 `0004_design_impact_reviews` checksume99067f14f8fa1d5ba775c3c6e4096ecf4a20483651d0e777776a74e4589275c 작성, 현재 미적용이다. 다음 exact 게시본에서 별도 정책·미확인 삭제/근거 없는 영향 없음/구버전·실제 근거/이전 이력 보존·페이지 경계를 검증한다. 기존 UUID QA/수명/정리 계약 그대로이며 실제 사용자/Secret/서비스 변경0.
 
 - 같은 FN04 영향 이력 승인 후속: 사람 검토 입력 검사 unit RED2→GREEN2/243ms(정확 대상 전체/미확인 공백 보존·UNAFFECTED는 문서 근거 필수·미지원 실행 증거412), callback 타입1은 unknown으로 명시했다. 순수 검사이며 근거 문서의 실제 프로젝트/원문 hash는 저장 경로가 별도 확인해야 한다. reviewChangeImpact 명시 정책403 실제 음성 시험을 추가했고 다음 exact 게시본에서 미구현 RED 확인 예정. 아직 forward30 작성/적용0·사람 검토 실제 저장 미구현. 자동 기준 활성화/재개·실제 사용자 권한/Secret/서비스 변경0.
