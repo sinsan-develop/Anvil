@@ -9,6 +9,7 @@ import { ProjectDocuments, registerProjectDocumentReads } from '../documents/pro
 import { parseWireJson } from '../../../../contracts/canonical.ts';
 import { ProjectDesignIndex } from '../traceability/design-index.ts';
 import { ProjectWorkPlans } from '../traceability/work-plans.ts';
+import { ProjectListCodec } from './service.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
 const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
@@ -23,6 +24,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const repository = new ProjectsRepository(options.repository), policies = new ProjectPolicyRepository(options.repository), documents = new ProjectDocuments(options.artifactRoot), host = new URL(options.origin).host;
   const designIndex=new ProjectDesignIndex(documents);
   const workPlans=new ProjectWorkPlans(documents);
+  const planCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('WORK_PLANS:'+value));
   registerProjectDocumentReads(app, options, documents);
   app.register(async projects => {
     projects.removeContentTypeParser('application/json');
@@ -32,6 +34,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
     });
     projects.get<{ Querystring: Record<string, unknown> }>('/api/v1/projects', request => repository.list(token(request), request.query));
     projects.get<{ Params: { projectId: string } }>('/api/v1/projects/:projectId/permission-policy', { schema: { params: object({ projectId: idSchema }) } }, request => policies.read(token(request), request.params.projectId));
+    projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/work-plans',{schema:{params:object({projectId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>workPlans.list(db,actor,request.params.projectId,request.query,planCodec)));
     projects.get<{Params:{projectId:string;id:string;version:string}}>('/api/v1/projects/:projectId/work-plans/:id/versions/:version',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>workPlans.read(db,actor,request.params.projectId,request.params.id,Number(request.params.version))));
     projects.get<{Params:{projectId:string};Querystring:{documentId:string;version:string}}>('/api/v1/projects/:projectId/design-index',{schema:{params:object({projectId:idSchema}),querystring:object({documentId:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>designIndex.read(db,actor,request.params.projectId,request.query.documentId,Number(request.query.version))));
     projects.post<{ Params: { projectId: string }; Body: ProjectCommand }>('/api/v1/projects/:projectId/commands', { schema: { params: object({ projectId: idSchema }), body: object({ schemaVersion: { const: 1 }, projectId: idSchema, commandId: idSchema, clientId: idSchema, controlGeneration: { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER }, operation: { enum: ['savePermissionPolicy', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'importDocument', 'proposeDocumentChange', 'indexDesignDocument', 'saveWorkPlanDraft'] }, targetId: { anyOf: [idSchema, { type: 'null' }] }, expectedVersion: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER }, baselineRefs: { type: 'array', maxItems: 200 }, approvalRef: { type: ['object', 'null'] }, payload: { type: 'object' } }) } }, request => {

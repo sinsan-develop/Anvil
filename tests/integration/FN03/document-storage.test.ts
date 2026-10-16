@@ -20,7 +20,7 @@ import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } fr
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, readStoredProposal, resumeStoredProposal } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '../../../apps/web/src/features/design-trace/materials-api.ts';
 import { newDesignIndex,prepareDesignIndex,readDesignIndex,sendDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
-import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
+import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan,listWorkPlans,prepareStoredWorkPlan} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
@@ -418,7 +418,9 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[{...task,designRefs:[{...task.designRefs[0],id:randomUUID()}]}]}})).statusCode,404,'가짜 설계 ID는 실제 참조가 아니다');
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[{...task,status:'COMPLETED'}]}})).statusCode,422);
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,documentRef:designRef}})).statusCode,422);
-    const revisedPlan=await docSend({...planCommand,commandId:randomUUID(),targetId:planRef.id,expectedVersion:1,payload:{...planPayload,reason:'업무 초안 새 개정 이유'}});assert.equal(revisedPlan.statusCode,200,revisedPlan.body);assert.equal(revisedPlan.json().data.ref.version,2);
+    const restoredPlan=await prepareStoredWorkPlan(client,project,planRef,session);assert.equal(restoredPlan.workPlanState?.pending,null);assert.deepEqual(restoredPlan.workPlanState?.planRef,planRef);assert.deepEqual(restoredPlan.workPlanState?.input.tasks,planValue.tasks);
+    restoredPlan.workPlanState!.input.reason='업무 초안 새 개정 이유';restoredPlan.workPlanState!.pending=prepareWorkPlan(restoredPlan,session);const clientRevision=await sendWorkPlan(client,restoredPlan,session,()=>true);assert.equal(clientRevision.ref.version,2);
+    const revisedPlan=await docSend({...planCommand,commandId:restoredPlan.workPlanState!.pending.commandId,targetId:planRef.id,expectedVersion:1,payload:{...planPayload,reason:'업무 초안 새 개정 이유'}});assert.equal(revisedPlan.statusCode,200,revisedPlan.body);assert.equal(revisedPlan.json().data.ref.version,2);
     assert.equal((await docSend({...planCommand,commandId:randomUUID(),targetId:planRef.id,expectedVersion:1})).statusCode,409);
     assert.deepEqual((await app.inject({method:'GET',url:planPath,headers})).json().tasks,planValue.tasks,'개정 뒤에도 구버전 계획 보존');
     const ambiguous=await docSend({...planCommand,commandId:randomUUID(),payload:{...planPayload,tasks:[task,structuredClone(task)]}});assert.equal(ambiguous.statusCode,200,ambiguous.body);assert.equal(ambiguous.json().data.workPlan.relationalProjection,'ISSUES_ONLY');assert.ok(ambiguous.json().data.workPlan.issues.some((i:any)=>i.code==='DUPLICATE_TASK_CODE'));
@@ -428,6 +430,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await app.inject({method:'GET',url:planListUrl+'&cursor='+encodeURIComponent(planList.json().nextCursor+'x'),headers})).statusCode,400);
     assert.equal((await app.inject({method:'GET',url:planListUrl.replace(planDocumentRef.id,designRef.id)+'&cursor='+encodeURIComponent(planList.json().nextCursor),headers})).statusCode,400);
     assert.equal((await app.inject({method:'GET',url:planListUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    const clientPlanList=await listWorkPlans(client,project,null,planDocumentRef.id);assert.equal(clientPlanList.items.length,2);assert.ok(clientPlanList.items.some(p=>p.ref.id===planRef.id&&p.ref.version===2));
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.plan_tasks WHERE project_id=$1 AND plan_id=$2 AND plan_version=1',[project,planRef.id])).rows[0].n,2);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.plan_dependencies WHERE project_id=$1 AND plan_id=$2 AND plan_version=1',[project,planRef.id])).rows[0].n,2);
     await assert.rejects(pool.query('UPDATE anvil.work_plan_versions SET version=99 WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');

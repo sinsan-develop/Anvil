@@ -119,6 +119,9 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- 보관 계획 목록 actual RED `454a9e49825fc54cf7c5c9cacf201e0153135c0d` WSL exact/clean 1 FAIL/4435ms: 목록 GET404로 기대200에 도달하지 못했다. 후속은 같은 membership·유한 limit/actor/project/document 필터·서명 cursor를 사용하고 목록을 NOT_RECHECKED로 구분한다. Web list/read/prepareStoredWorkPlan·WorkPlanLibrary는 읽기만 수행하다 사용자 확인 후 실제 원문/양식/설계와 현재 제어를 재대조해 같은 planRef의 새 개정 버퍼를 준비한다. 과거 명령은 합성하지 않고 pending=null에서 새 명령을 만든다.
+- Web 목록 부재 RED1→단위3 GREEN, 보관 화면 진입점 부재 RED1→UI 작성/단절/보관 조회·개정 준비3 PASS/3.9초·Web68(JS480.53kB/gzip128.84)/타입/build0. 실제 read/prepare/send 새 개정과 목록 클라이언트를 actual에 추가했으며 게시 전 결과는 미검증이다. 기존21 SQL은 그대로다. 읽기 파일명 오타1(material-reads)은 생성/변경 없이 거절됐고 실제 material-list/service의 기존 cursor 계약을 확인했다.
+
 - `cefa3fb9` 지정 local/private·WSL exact/clean의 같은 Web prepare/send/readWorkPlan actual1 PASS/4151ms/skip0. 중단 화면의 POST0·실제 초안 저장/receipt/hash·고정 버전 재조회 확인을 기존 원문/권한/개정 시험과 함께 통과했다. 기존21 SQL은 재실행하지 않았다. 독립 DB19종 각0·임시 원문root[]·지속root uid1000/0700/link0/실경로 동일/empty 확인. P01/P02/무관 browser/전수 검사는 반복하지 않았다. 실제 사용자용 Node/relay·초기 비밀·CA는 변경0, actual browser DB·Oracle/Agent 미검증.
 
 - UI06 후속은 WorkPlanEditor·상위 workPlanState·new/prepare/send/readWorkPlan이다. AF04 정확 원문에서 화면/기능/연결/준비 업무·각 입력/출력/범위/파일 선언·별도 착수/검수 선행·수행/시험/검수/증거/복구를 작성하고 실제 확인한 설계/화면 위치를 선택한다. 미확인 POST는 같은 App 버퍼/명령으로 보존하며 기존 문서/import/proposal/review/confirm writer를 막는다. 단절→다음 거절도 uncertain을 해소하지 않는다. 실제 정책 부여·확정/배정/기준 활성화는 하지 않는다.

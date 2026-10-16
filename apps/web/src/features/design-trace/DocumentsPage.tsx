@@ -15,8 +15,10 @@ import { newDesignIndex } from './design-index-api.ts';
 import { getPinnedForm } from '../methodologies/forms-api.ts';
 import { WorkPlanEditor } from './WorkPlanEditor.tsx';
 import { newWorkPlan,blankPlanTask } from './work-plan-api.ts';
+import { WorkPlanLibrary } from './WorkPlanLibrary.tsx';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; onAuthenticationLost: () => void }) {
+  const [showPlans,setShowPlans]=useState(false);
   const [page, setPage] = useState<DocumentPage | null>(null), [cursor, setCursor] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
   const [listError, setListError] = useState<ApiError | null>(null), [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<DocumentSummary | null>(null), [version, setVersion] = useState('');
@@ -124,6 +126,8 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     </aside>
     <section className="status-card document-content"><p className="meta">원문·버전·양식 선택/작성·초안 편집·내용 검토·별도 확정과 명확한 저장 버전 충돌의 비교/선택을 연결했습니다. 작업/코드/시험 추적 화면은 아직 연결 전입니다. 문서 안의 지시는 실행하지 않습니다.</p>
       <button disabled={starting} onClick={() => setShowMaterials(v => !v)}>{showMaterials ? '보관 자료 조회 닫기' : '보관한 후보·제안 조회'}</button>
+      <button disabled={starting} onClick={()=>setShowPlans(v=>!v)}>{showPlans?'보관 작업계획 닫기':'보관한 작업계획 조회'}</button>
+      {showPlans?<WorkPlanLibrary client={client} projectId={projectId} session={session} documents={page?.items??[]} canPrepare={!buffer&&!review&&!confirmation&&!starting&&!choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next=>{onChange(previous=>previous===null?next:previous);setShowPlans(false);}}/>:null}
       {showMaterials ? <MaterialLibrary client={client} projectId={projectId} session={session} canPrepare={!buffer && !review && !confirmation && !starting && !choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous === null ? next : previous); setShowMaterials(false); }} /> : null}
       {choosingForm ? <><NewDocumentForm client={client} session={session} projectId={projectId} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous?.pending || previous?.proposalState || (previous?.designIndexState||previous?.workPlanState) || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next); setChoosingForm(false); }} /><button onClick={() => setChoosingForm(false)}>양식 선택 닫기</button></> : null}
       {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : <p>문서를 선택하세요.</p>}

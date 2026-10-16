@@ -3,8 +3,9 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
+import {blankPlanTask} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 const project='51c0439f-791e-4bb5-8471-70938d6afaf1',user='32b5f276-13e6-4d8a-b93f-27a15d21c788',designId='a6f30000-0000-4000-8000-000000000090',planId='a6f30000-0000-4000-8000-000000000091',itemId='a6f30000-0000-4000-8000-000000000092',savedId='a6f30000-0000-4000-8000-000000000093';
-async function fixture(page:Page,deny=false){
+async function fixture(page:Page,deny=false,stored=false){
   const catalog=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url))),at='2026-10-16T05:00:00Z',documents=new Map<string,any>(),bodies=new Map<string,string>(),writes:any[]=[],unknown:string[]=[];
   for(const [id,title,body,form]of [[designId,'설계 원문','# D01 원문 보존',catalog.forms[1]!],[planId,'작업계획 원문','# FN01 문서 저장',catalog.forms[3]!]]as const){
     const artifactId=crypto.randomUUID(),bytes=Buffer.from(body),content={body:{artifactId,bytes:bytes.length,contentHash:createHash('sha256').update(bytes).digest('hex'),mediaType:'text/markdown;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]};bodies.set(artifactId,body);
@@ -19,7 +20,9 @@ async function fixture(page:Page,deny=false){
   await page.route(`**/api/v1/projects/${project}/files/*`,r=>r.fulfill({contentType:'application/octet-stream',body:bodies.get(new URL(r.request().url()).pathname.split('/').pop()!)!}));
   const d=documents.get(designId),documentRef={id:designId,version:1,contentHash:d.contentHash},data={documentRef,localCode:'D01',title:'원문 보존',anchor:'line:1'},item={id:itemId,...data,itemHash:contentHash(canonicalJson(data))};
   await page.route(`**/api/v1/projects/${project}/design-index?*`,r=>r.fulfill({json:{documentRef,items:[item],screenRegions:[],status:'INDEXED',observedAt:at}}));
-  let result:any=null;
+  const planDocument=documents.get(planId),seedSnapshot={documentRef:{id:planId,version:1,contentHash:planDocument.contentHash},designRef:documentRef,screenReviewRefs:[],tasks:[{...blankPlanTask(),taskCode:'FN01',title:'문서 저장',purpose:'보관 계획 목적',designRefs:[{kind:'DESIGN_ITEM',id:itemId,versionRef:documentRef,localCode:'D01',anchor:'line:1'}]}],reason:'보관 초안',dependencies:[],issues:[],relationalProjection:'STORED'};
+  let result:any=stored?{ref:{id:savedId,version:1,contentHash:contentHash(canonicalJson(seedSnapshot))},status:'DRAFT',...seedSnapshot}:null;
+  await page.route(`**/api/v1/projects/${project}/work-plans?*`,r=>r.fulfill({json:{items:result?[{ref:result.ref,status:'DRAFT',title:'작업계획 원문',documentRef:result.documentRef,designRef:result.designRef,issueCount:result.issues.length,updatedAt:at,integrity:'NOT_RECHECKED'}]:[],hasMore:false,nextCursor:null,observedAt:at}}));
   await page.route(`**/api/v1/projects/${project}/commands`,r=>{const c=r.request().postDataJSON();writes.push(c);expect(c.operation).toBe('saveWorkPlanDraft');expect(c.targetId).toBeNull();expect(c.expectedVersion).toBe(0);if(deny&&writes.length>1)return r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}});if(writes.length===1)return r.abort('connectionreset');const snapshot={...c.payload,dependencies:[],issues:[{code:'DESIGN_NOT_CONFIRMED',location:'designRef',message:'설계가 미확정입니다.'}],relationalProjection:'STORED'},ref={id:savedId,version:1,contentHash:contentHash(canonicalJson(snapshot))};result={ref,status:'DRAFT',...snapshot};return r.fulfill({json:{operationId:itemId,commandId:c.commandId,projectId:project,status:'APPLIED',targetId:savedId,version:1,data:{ref,status:'WORK_PLAN_DRAFT_SAVED',workPlan:result},serverReceivedAt:at}});});
   await page.route(`**/api/v1/projects/${project}/work-plans/${savedId}/versions/1`,r=>r.fulfill({json:{...result,executionEvidence:'NOT_CONNECTED',observedAt:at}}));
   return {writes,unknown};
@@ -36,4 +39,8 @@ test('작업계획 작성은 원문·설계와 연결하고 단절/화면 이동
 });
 test('작업계획 결과 미확인은 나중 거절로 지우거나 다른 문서 쓰기로 교체하지 않는다',async({page})=>{
   const s=await fixture(page,true);await fill(page);await page.getByRole('button',{name:'작업계획 초안 저장',exact:true}).click();await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await page.getByRole('button',{name:'같은 작업계획 명령 결과 확인',exact:true}).click();await expect(page.getByRole('alert')).toContainText('PROJECT_OPERATION_DENIED');await expect(page.getByRole('button',{name:'작업계획 작성 닫기',exact:true})).toBeDisabled();expect(s.writes[0]).toEqual(s.writes[1]);expect(s.unknown).toEqual([]);
+});
+test('보관 계획은 읽기만으로 열고 별도 확인 뒤 같은 계획의 새 개정 초안으로 준비한다',async({page})=>{
+  const s=await fixture(page,false,true);await page.goto(`/#/projects/${project}/documents`);await page.getByRole('button',{name:'보관한 작업계획 조회',exact:true}).click();await page.getByRole('button',{name:'보관 계획 '+savedId+' 열기',exact:true}).click();await expect(page.getByText('실제 실행/시험 증거: 미연결',{exact:true})).toBeVisible();expect(s.writes).toHaveLength(0);
+  await page.getByLabel('이 계획을 새 개정 초안으로 준비하겠습니다',{exact:true}).check();await page.getByRole('button',{name:'이 계획에서 개정 준비',exact:true}).click();await expect(page.getByLabel('업무 1 목적',{exact:true})).toHaveValue('보관 계획 목적');await expect(page.getByText('같은 계획의 새 개정 · 기준 v1',{exact:true})).toBeVisible();expect(s.writes).toHaveLength(0);expect(s.unknown).toEqual([]);
 });

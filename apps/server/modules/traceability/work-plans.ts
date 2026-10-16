@@ -8,6 +8,7 @@ import {analyzeWorkPlanCards,exactKeys,planText,type PlanTraceRef} from './work-
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
+import type {ProjectListCodec} from '../projects/service.ts';
 
 export class ProjectWorkPlans {
   #documents:ProjectDocuments;#index:ProjectDesignIndex;
@@ -88,5 +89,14 @@ export class ProjectWorkPlans {
       if(cards.length!==v.tasks.length||cards.some(c=>contentHash(canonicalJson(c.card_json))!==c.card_hash||!v.tasks.some((t:any)=>t.taskCode===c.task_code&&canonicalJson(t)===canonicalJson(c.card_json)))||canonicalJson(deps.map(c=>canonicalJson(c)).sort())!==canonicalJson(v.dependencies.map((c:any)=>canonicalJson(c)).sort())) throw new AuthFailure('WORK_PLAN_INTEGRITY_FAILED',503);
     }else if(v.relationalProjection!=='ISSUES_ONLY'||cards.length||deps.length) throw new AuthFailure('WORK_PLAN_INTEGRITY_FAILED',503);
     return {...v,executionEvidence:'NOT_CONNECTED',observedAt:new Date().toISOString()};
+  }
+  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,query:Record<string,unknown>,codec:ProjectListCodec){
+    await projectMember(db,actor,pid);
+    if(Object.keys(query).some(k=>!['limit','cursor','documentId'].includes(k))||query.limit!==undefined&&(typeof query.limit!=='string'||!/^[1-9][0-9]{0,2}$/.test(query.limit)||Number(query.limit)>200)||query.cursor!==undefined&&(typeof query.cursor!=='string'||query.cursor.length>4096)||query.documentId!==undefined&&!isVersionRef({id:query.documentId,version:1,contentHash:'0'.repeat(64)}))throw new AuthFailure('INPUT_INVALID',400);
+    const limit=query.limit===undefined?50:Number(query.limit),filter={query:canonicalJson({projectId:pid,kind:'WORK_PLANS',documentId:query.documentId??null}),archived:false,limit};
+    let position:{at:string;id:string}|null=null;if(query.cursor!==undefined){try{position=codec.read(String(query.cursor),actor.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}}
+    const rows=(await db.query('SELECT w.id,w.head_version,w.updated_at,v.version_json,v.content_hash,d.title,to_char(w.updated_at AT TIME ZONE \'UTC\',\'YYYY-MM-DD"T"HH24:MI:SS.US"Z"\') cursor_at FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=w.head_version JOIN anvil.document_versions d ON d.project_id=v.project_id AND d.document_id=v.document_id AND d.version=v.document_version WHERE w.project_id=$1 AND ($2::uuid IS NULL OR v.document_id=$2) AND ($3::timestamptz IS NULL OR (w.updated_at,w.id)<($3::timestamptz,$4::uuid)) ORDER BY w.updated_at DESC,w.id DESC LIMIT $5',[pid,query.documentId??null,position?.at??null,position?.id??null,limit+1])).rows;
+    const visible=rows.slice(0,limit),hasMore=rows.length>limit,last=visible.at(-1),items=visible.map(row=>{const{ref,status,...snapshot}=row.version_json;if(status!=='DRAFT'||ref.id!==row.id||ref.version!==Number(row.head_version)||ref.contentHash!==row.content_hash||contentHash(canonicalJson(snapshot))!==row.content_hash)throw new AuthFailure('WORK_PLAN_INTEGRITY_FAILED',503);return{ref,status,title:row.title,documentRef:snapshot.documentRef,designRef:snapshot.designRef,issueCount:snapshot.issues.length,updatedAt:row.updated_at.toISOString(),integrity:'NOT_RECHECKED'};});
+    return{items,hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,observedAt:new Date().toISOString()};
   }
 }

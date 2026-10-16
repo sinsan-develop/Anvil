@@ -20,3 +20,7 @@ test('작업계획 쓰기는 다른 주체·중단 화면·변조 명령을 전�
   let calls=0;const client=new ApiClient(async()=>{calls++;throw Error('전송 금지');});
   await assert.rejects(module.sendWorkPlan(client,b,session,()=>false));assert.equal(calls,0);b.workPlanState.pending.operation='confirmDocument';await assert.rejects(module.sendWorkPlan(client,b,session,()=>true));assert.equal(calls,0);
 });
+test('보관 계획 목록은 읽기만 수행하고 cursor/문서 조건을 보존한다',async()=>{
+  const module=await import('../../../apps/web/src/features/design-trace/work-plan-api.ts');let path='';const client=new ApiClient(async(p:any)=>{path=String(p);return new Response(JSON.stringify({items:[],hasMore:false,nextCursor:null,observedAt:'2026-10-16T05:00:00Z'}),{headers:{'content-type':'application/json'}});});
+  assert.equal(typeof module.listWorkPlans,'function','보관 계획의 Web 목록 경로가 필요하다');await module.listWorkPlans(client,pid,'cursor_value',id);assert.match(path,/cursor=cursor_value/);assert.match(path,new RegExp('documentId='+id));
+});
