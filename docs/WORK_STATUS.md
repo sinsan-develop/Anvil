@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 대화 출처 후속 `2710f1d1182fd56a92f872017e17fa75e66575c9` local/private·WSL exact/clean actual1 PASS/5399ms/skip0: 보존된 사용자 원문/지시·정정 순번→지식 source→같은 Web 조회, 일반 발언 지시 위장422/가짜ID404/hash409·구원문 불변을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재적용0·전체 FN05/사용자 browser DB 인수는 미완료다. 다음은 대화 목록/원문 작성 화면이다.
+
 - UI10 후속 `579ce2dc2da4a05f8031bded1ff00e00037696bd` local/private·WSL exact/clean actual1 PASS/5569ms/skip0: 같은 Web new/prepare/send/read/searchKnowledge가 실제 보호 원문/DB·정확 hash·동일 명령 재확인을 통과했다. 독립 DB23종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 아래 ‘게시 전/실제 client 미검증’은 해당 시점 이력이며 실제 사용자 browser DB·전체 FN05/Stage B는 여전히 미완료다. 다음은 원문 대화와 지식 정정/제외·확정의 저장 경계다.
 
 - FN05 저장 서버 `2b8a24227c57aa06394f21dc983de2c7849f59a1` private/WSL exact/clean에서 새 forward23만 적용·기존22 checksum 불변, 실제 FN03/FN04/FN05+FN11 2 PASS/5631ms/skip0. 원문/출처 hash·가설/제안·별도 정책·검색·교차 사용자·직접 변경 차단, 독립 DB23종 각0·시험root[]·지속root 보호/empty를 확인했다. UI10 신규 연결은 아래 후속이며 실제 사용자 browser DB/원문 대화·확정/정정/제외·전체 격리는 아직 미완료다.
@@ -128,6 +130,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
+
+- 출처 소비 `2710f1d1182fd56a92f872017e17fa75e66575c9` local/private·WSL exact/clean actual1 PASS/5399ms/skip0. 실제 사용자 지시 원문/hash를 지식의 별도 source로 보존하고 같은 Web에서 재조회, 일반 USER_MESSAGE를 지시로 위장422/가짜 messageID404/hash409·직접 원문 UPDATE42501을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재실행0, 현재 사용자/Agent 실행·서비스/Secret 변경0. 다음은 프로젝트 대화 목록/원문 화면이며 기존 지식 초안 테스트를 무변경 반복하지 않는다.
 
 - 저장 서버 `13a6fad444ba0ec2ad767a1bb6ba1f7acc0b8ad9` private/WSL exact/clean에 새 forward24만 적용·기존23 checksum 불변·fixture7·실제 사용자0. actual FN03확장+FN11 2 PASS/5465ms/skip0: 사람 발언/불변 원문·명시 별도 policy·순번1→2·같은 명령 replay·앞 USER_INSTRUCTION 정정·구발언 보존·stale409·Agent 위조412·타사용자404·app 직접 UPDATE42501. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL24는 적용본이며 수정하지 않는다.
 - 후속 출처 후보: CONVERSATION/USER_INSTRUCTION 입력412 RED1→실제 같은 프로젝트 저장 발언/원문/hash resolver와 USER_INSTRUCTION 실제 kind 검사 연결. 기존 형식상 미연결 거절 사례는 실제 출처를 새로 지원하므로 대체했고, 위조 ID/hash/일반 발언 지시 승격의 actual 음성은 추가해 기준을 유지한다. 단위87 PASS/1299ms·type/build0(Web73/JS509.49kB/gzip136.11)·diff0. actual 지식의 대화 출처 소비는 아직 게시 전 미검증이다. 원문 대화 목록/작성 화면·지식 정정/제외/확정·전체 격리·Agent 전달은 미완료다.
