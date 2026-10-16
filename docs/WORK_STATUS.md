@@ -113,6 +113,7 @@
 - 변경: App 상위 검토 버퍼, DocumentReviewEditor/review-api, DocumentsPage와 unit/browser/actual FN03 시험. 양식의 실제 기준별 판단·근거와 종합 판단을 명시 저장하고 원문 버전/hash·현재 제어·명령/CSRF·응답 ref를 대조한다. 일부 재작업의 종합 ACCEPTED 거절, 검토는 확정/시험 합격/Agent 실행 아님을 유지한다.
 - TDD: 작성 버튼 부재 RED1→작성/저장 GREEN3. 앞서 열린 초안 편집기가 검토 중에도 남는 RED1→원인인 독립 렌더 조건을 검토 작성기와 배타적으로 분리, 입력 자체는 보존했다. 단절/409의 동일 명령 재확인, 화면 이동 입력 보존, 인증 만료 뒤 다른 사용자 숨김/자동 요청0, 동시 편집 방지까지 UI06 전체10 PASS/7.8초.
 - Windows `npm run build`/타입 exit0·Web53(JS381.19kB/gzip107.36·CSS7.61kB/gzip2.25), `npm test`48 PASS/skip0, diff check0. NO_COLOR/FORCE_COLOR 환경 경고 보존. 브라우저 시험은 모든 API 차단/대체 fixture이며 실제 DB 여정이 아니다. 같은 클라이언트 actual API/DB 후속 시험은 이 checkpoint 게시 뒤 실행하고 실제 결과를 추가한다.
+- `254d84d70f1ce55bdb4e7c6875b3bac3bed7a266` local/private 동일·WSL exact/clean actual FN03 1 PASS/880ms/skip0. 같은 검토 클라이언트의 실제 HUMAN/현재 정책/제어→검토 저장/replay→DB 기록1/재조회·동일 작성자·confirmed=false·outbox0을 확인했다. 후속 화면 진입 점검에서 검토 중 편집 진입 버튼만 살아 있는 RED1을 좁게 보정해, 검토 작성기 종료 전 신규/개정 편집 진입도 차단한다. 최종 Windows build/타입0·unit48·UI06 fixture10/8.6초 PASS, Web53(JS381.22kB/gzip107.37), diff0. 이전 실패는 이력으로 보존한다.
 - 미완료: 별도 confirmDocument, 형식/필수 본문의 엄격 확정 검사, 버전 충돌 비교/새 기준 조정, 실제 browser↔DB·FN04/FN05. 전체44와 UI06/FN03 부분 구현 상태는 유지한다. rollback은 앞선 게시본 5abfbeeb이며 기존 원본/SQL/서비스를 변경하지 않았다.
 
 ### 2026-10-16 UI06 문서 편집·새 초안 버전 저장 착수 — Main 어울

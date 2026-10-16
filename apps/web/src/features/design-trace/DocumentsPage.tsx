@@ -15,6 +15,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const generation = useRef(0);
   const [editingError, setEditingError] = useState<ApiError | null>(null), [starting, setStarting] = useState(false);
   const [choosingForm, setChoosingForm] = useState(false);
+  const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   useEffect(() => () => { generation.current++; }, []);
   useEffect(() => {
     let current = true; setLoading(true); setListError(null);
@@ -32,7 +33,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   }
   async function beginEdit() {
     if (!opened || starting) return;
-    if (review?.dirty || review?.pending) { setEditingError(new ApiError('DOCUMENT_REVIEW_INPUT_PRESERVED')); return; }
+    if (reviewing || review?.pending) { setEditingError(new ApiError('DOCUMENT_REVIEW_INPUT_PRESERVED')); return; }
     if (buffer?.pending) { setEditingError(new ApiError('DOCUMENT_PENDING_RESULT')); return; }
     if (buffer && buffer.ownerUserId !== session.user.id) { setEditingError(new ApiError('DOCUMENT_OTHER_USER_INPUT_PRESERVED')); return; }
     if (buffer?.dirty && !confirm('앞선 문서의 미저장 편집을 버리고 선택한 버전에서 편집할까요?')) return;
@@ -61,7 +62,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   }
   return <section aria-label="프로젝트 문서 조회" className="document-workspace">
     <aside className="status-card document-list"><h2>프로젝트 문서</h2><button disabled={loading} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>문서 목록 새로고침</button>
-      <button disabled={starting || !!review?.dirty || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
+      <button disabled={starting || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
       {loading ? <p role="status">목록 조회 중</p> : null}{listError ? <p role="alert">{listError.message} · {listError.code}{page ? ' · 앞선 목록은 오래된 자료' : ''}</p> : null}
       {page && !loading && !listError && !page.items.length ? <p>저장된 문서가 없습니다.</p> : null}
       <ul>{page?.items.map(item => <li key={item.id}><button disabled={reading || !!listError || loading} aria-label={item.title + ' 열기'} aria-pressed={selected?.id === item.id} onClick={() => { void open(item, item.headVersion); }}>{item.title}</button><p className="meta">최신 {item.headVersion} · {item.confirmedVersion === null ? '미확정' : '확정 ' + item.confirmedVersion}</p></li>)}</ul>
@@ -73,7 +74,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : <p>문서를 선택하세요.</p>}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
-        <button disabled={starting || reading || choosingForm || !!review?.dirty || !!review?.pending || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { void beginEdit(); }}>이 버전에서 편집</button>
+        <button disabled={starting || reading || choosingForm || reviewing || !!review?.pending || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { void beginEdit(); }}>이 버전에서 편집</button>
         <button disabled={starting || reading || choosingForm || !!buffer?.dirty || !!buffer?.pending || !!review?.pending || !!review && review.ownerUserId !== session.user.id} onClick={() => { void beginReview(); }}>이 버전 내용 검토 작성</button>
         <pre aria-label="문서 원문" className="document-original">{opened.body}</pre>
         <h3>형식 검사</h3>{opened.document.validation.issues.length ? <ul>{opened.document.validation.issues.map((issue, index) => <li key={index}><span>{issue.message}</span><span className="meta"> · {issue.code} · {issue.location}</span></li>)}</ul> : <p>기록된 형식 문제 없음 · 내용 검토 합격을 의미하지 않습니다.</p>}

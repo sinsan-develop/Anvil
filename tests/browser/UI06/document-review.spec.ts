@@ -100,6 +100,8 @@ test('내용 검토 작성 중에는 앞서 열었던 초안 편집기로 다른
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '이 버전 내용 검토 작성', exact: true }).click();
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '이 버전에서 편집', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '새 문서 작성', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '검토 작성 닫기', exact: true }).click();
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue(body);
 });
