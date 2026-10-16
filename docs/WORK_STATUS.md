@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN06 중요 실패 보강 0827ac0b exact WSL actual RED1/857ms(기능599ms)/skip0: kind에 단일 원소 배열을 넣어도 String 강제 변환으로 정상 후보 필터처럼 처리됐다. 명시 문자열 타입 검사로만 보정하며 기존 후보/권한·SQL42/합격 기준은 유지한다. 실제 승인 만료·권한 회수 보강은 이 실패 뒤 아직 미도달이므로 다음 exact 게시본에서 확인한다. 이 목록 입력 실패는 환경 개정42702와 다른 원인1회다.
+
 - FN06 d6f24ab3 exact private/WSL clean: 새 corrective42 checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0 적용 exit0·이전41/40 checksum 불변·fixtures7·실제 사용자 생성0. 내부+HTTP actual1 PASS/1259ms(기능1033ms)/skip0으로 환경 개정42702를 해소했다. 후보/환경 생성·불변 v1/v2·동일 명령 동시2/버전1·정확 이전 ref/hash·현재 정책/재인증·교차 조회·직접 DB 변조42501·후보 일회 소비1·HTTP Origin/인증/타인/동일 명령 복구·미완성 승격412·outbox0 확인이다. 독립 후보2/승인/사용자/프로젝트/명령 count0·임시root[]·지속원문 보호/empty·migrations42를 확인한다. 추가 엄격 kind 타입·실제 승인 만료·권한 회수·교차 프로젝트 쓰기의 보강 시험은 새 exact 게시본에서 실행 전이며 현재 PASS에 포함하지 않는다. 실제 Agent/신뢰/credential·사용자 browser 인수·FN06 전체 완료 아님이다.
 
 - FN06 9c5ff577 exact private/WSL clean에서 새41 checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d 적용 exit0·기존40 checksum 불변·fixtures7·실제 사용자 생성0. 후속 actual1 FAIL/958ms(기능636ms)/skip0: 최초 후보/중복/재조회·재인증/격리·위장 거절을 지나 환경 v2의 DB trigger SELECT alias old와 PL/pgSQL OLD 충돌42702로 실패했다(동일 root1회). 적용41은 수정하지 않고 alias만 prior_version으로 고치는 corrective42 `0006_connection_candidate_guard_alias_fix` checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0를 작성·아직 미적용이다. 실패 후 독립 후보2/승인/사용자/프로젝트/명령 count0·임시root[]·지속원문 보호/empty·migrations41 확인. PMO에 원인/영향/새 forward 보정을 보고했으며 실제 GREEN으로 승격하지 않는다.

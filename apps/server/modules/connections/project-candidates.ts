@@ -82,7 +82,7 @@ export class ProjectConnectionCandidates {
   }
   async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>, codec: ProjectListCodec) {
     await projectMember(db, actor, projectId);
-    if (Object.keys(query).some(k => !['kind', 'limit', 'cursor'].includes(k)) || query.kind !== undefined && !['CONNECTION_CANDIDATE', 'ENVIRONMENT_CANDIDATE'].includes(String(query.kind)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);
+    if (Object.keys(query).some(k => !['kind', 'limit', 'cursor'].includes(k)) || query.kind !== undefined && (typeof query.kind !== 'string' || !['CONNECTION_CANDIDATE', 'ENVIRONMENT_CANDIDATE'].includes(query.kind)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);
     const kind = query.kind ?? null, limit = query.limit === undefined ? 50 : Number(query.limit), filter = { query: canonicalJson({ projectId, kind }), archived: false, limit };
     let position: { at: string; id: string } | null = null;
     if (query.cursor !== undefined) { try { position = codec.read(query.cursor, actor.actorId, filter); } catch { throw new AuthFailure('CURSOR_INVALID', 400); } }
