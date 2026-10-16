@@ -4,8 +4,8 @@ import { getMethod, listMethods, type MethodSummary } from '../methodology-edito
 import type { DraftMethodSelection } from '../../../../../contracts/project-drafts.ts';
 import { DraftMethodEditor } from './DraftMethodEditor.tsx';
 
-export function MethodologySelection({ client, value, disabled, onChange, onAuthenticationLost, onBusyChange }: {
-  client: ApiClient; value: DraftMethodSelection | null; disabled: boolean; onChange: (selection: DraftMethodSelection | null) => void; onAuthenticationLost: () => void; onBusyChange: (busy: boolean) => void;
+export function MethodologySelection({ client, value, disabled, confirmed = false, onChange, onAuthenticationLost, onBusyChange }: {
+  client: ApiClient; value: DraftMethodSelection | null; disabled: boolean; confirmed?: boolean; onChange: (selection: DraftMethodSelection | null) => void; onAuthenticationLost: () => void; onBusyChange: (busy: boolean) => void;
 }) {
   const fieldId = useId();
   const [items, setItems] = useState<MethodSummary[]>([]), [selected, setSelected] = useState(''), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0), [error, setError] = useState<ApiError | null>(null);
@@ -43,9 +43,9 @@ export function MethodologySelection({ client, value, disabled, onChange, onAuth
     {copyPending ? <p role="status">원본의 정확 버전을 읽고 있습니다. 조회가 끝날 때까지 저장하지 않습니다.</p> : null}
     {loading ? <p role="status">선택 가능한 방법론을 조회하고 있습니다.</p> : null}
     {error ? <p role="alert">{error.message} 초안에 저장한 선택은 변경하지 않았습니다.</p> : null}
-    {value?.kind === 'CONFIRMED_REFERENCE' ? <div><p>선택한 고정 방법론 · 버전 {value.versionRef.version}</p><p className="meta">{value.versionRef.id} · {value.versionRef.contentHash}</p><p>기본본의 원 출처 승인과 사용자 확정 기록을 구분하며 최종 생성 때 다시 검사합니다.</p></div> : value ? <p>프로젝트 전용 방법론 초안 · {value.name} · 내용 검토·확정 전</p> : <p>방법론 선택 전</p>}
+    {value?.kind === 'CONFIRMED_REFERENCE' ? <div><p>선택한 고정 방법론 · 버전 {value.versionRef.version}</p><p className="meta">{value.versionRef.id} · {value.versionRef.contentHash}</p><p>기본본의 원 출처 승인과 사용자 확정 기록을 구분하며 최종 생성 때 다시 검사합니다.</p></div> : value ? <p>프로젝트 전용 방법론 초안 · {value.name} · {confirmed ? '현재 버전 확정 기록 있음' : '내용 검토·확정 전'}</p> : <p>방법론 선택 전</p>}
     {value ? <button type="button" disabled={locked} onClick={() => { if (confirm('이 생성 초안의 방법론 선택만 해제할까요? 원본은 유지합니다.')) onChange(null); }}>초안의 방법론 선택 해제</button> : null}
     {value?.kind === 'NEW_PROJECT_DRAFT' ? <DraftMethodEditor client={client} value={value} disabled={locked} onChange={onChange} onAuthenticationLost={onAuthenticationLost} /> : null}
-    <p className="meta">문서 가져오기·프로젝트 전용 내용 검토/확정은 후속 연결 대상입니다. 필수 자료를 완료한 것으로 처리하지 않습니다.</p>
+    <p className="meta">문서 가져오기는 후속 연결 대상입니다. 전용 초안의 검토·확정은 저장한 현재 버전에만 적용합니다.</p>
   </section>;
 }

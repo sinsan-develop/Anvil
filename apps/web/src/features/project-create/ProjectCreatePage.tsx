@@ -1,7 +1,8 @@
 import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { emptyDraft, readProjectDraft, writeProjectDraft, type DraftEditorState, type PendingDraftCommand } from './api.ts';
+import { emptyDraft, readProjectDraft, writeProjectDraft, runDraftAction, type DraftAction, type DraftEditorState, type PendingDraftCommand } from './api.ts';
 import { MethodologySelection } from './MethodologySelection.tsx';
+import { DraftReviewPanel } from './DraftReviewPanel.tsx';
 
 export function ProjectCreatePage({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: DraftEditorState; onChange: Dispatch<SetStateAction<DraftEditorState>>; onAuthenticationLost: () => void }) {
   const fieldId = useId();
@@ -21,13 +22,13 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       if (!current) return;
       setEditable(result.editable === true);
       if (!buffer.dirty && !buffer.pendingCommand) setStep(result.step);
-      onChange(previous => previous.dirty || previous.pendingCommand ? previous : { ownerUserId: session.user.id, input: result.input, draftId: result.draftId, version: result.version, dirty: false, pendingCommand: null });
+      onChange(previous => previous.dirty || previous.pendingCommand || previous.pendingAction ? previous : { ...previous, ownerUserId: session.user.id, input: result.input, draftId: result.draftId, version: result.version, dirty: false, pendingCommand: null, methodologyState: result.methodologyState });
     }).catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); setEditable(false); } })
       .finally(() => { if (current) setPending(false); });
     return () => { current = false; };
   }, [client, session.clientId, session.user.id, requestedId, reload, wrongOwner]);
   async function save() {
-    if (pending || selectionBusy || !editable || wrongOwner) return;
+    if (pending || selectionBusy || !editable || wrongOwner || buffer.pendingAction) return;
     const fingerprint = JSON.stringify({ draftId: buffer.draftId, version: buffer.version, input: buffer.input, step });
     if (buffer.pendingCommand && buffer.pendingCommand.fingerprint !== fingerprint) { setError(new ApiError('DRAFT_RECONCILIATION_REQUIRED')); return; }
     const command: PendingDraftCommand = buffer.pendingCommand ?? {
@@ -41,7 +42,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     try {
       const result = await writeProjectDraft(client, command.draftId, command.body, session.csrfToken);
       if (command.draftId && result.draftId !== command.draftId || result.version !== Number(command.body.expectedVersion) + 1) throw new ApiError('RESPONSE_INVALID');
-      onChange(previous => previous.pendingCommand?.body.commandId === command.body.commandId ? { ownerUserId: session.user.id, input: result.input, draftId: result.draftId, version: result.version, dirty: false, pendingCommand: null } : previous);
+      onChange(previous => previous.pendingCommand?.body.commandId === command.body.commandId ? { ...previous, ownerUserId: session.user.id, input: result.input, draftId: result.draftId, version: result.version, dirty: false, pendingCommand: null, methodologyState: result.methodologyState } : previous);
       if (location.hash === '#/projects/new') { const url = new URL(location.href); url.searchParams.set('draftId', result.draftId); history.replaceState(history.state, '', url); }
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
@@ -53,12 +54,32 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   }
   function change(field: 'name' | 'purpose' | 'desiredOutcome', value: string) { if (!wrongOwner) onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, [field]: value }, dirty: true })); }
   function restore() {
-    if (!buffer.draftId || pending || selectionBusy || wrongOwner) return;
+    if (!buffer.draftId || pending || selectionBusy || wrongOwner || buffer.pendingAction) return;
     if ((buffer.dirty || buffer.pendingCommand) && !confirm('현재 미저장 입력을 서버 저장본으로 바꿀까요?')) return;
     onChange(previous => ({ ...previous, dirty: false, pendingCommand: null }));
     setRequestedId(buffer.draftId); setReload(value => value + 1); setError(null);
   }
+  async function action(command: DraftAction) {
+    if (pending || selectionBusy || wrongOwner || command.body.clientId !== session.clientId || command.draftId !== buffer.draftId) return;
+    if (!buffer.pendingAction && (!editable || buffer.dirty || buffer.pendingCommand)) return;
+    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingAction: command }));
+    setPending(true); setError(null); let applied = false;
+    try {
+      const created = await runDraftAction(client, command, session.csrfToken, session.user.id); applied = true;
+      const result = created ? null : await readProjectDraft(client, command.draftId);
+      if (result && result.version !== buffer.version) throw new ApiError('VERSION_CONFLICT', 409);
+      onChange(previous => previous.ownerUserId === session.user.id && previous.pendingAction?.body.commandId === command.body.commandId ? { ...previous, pendingAction: null, createdProject: created, methodologyState: result?.methodologyState ?? previous.methodologyState, review: previous.review ? { ...previous.review, dirty: false } : null } : previous);
+      if (created) setEditable(false);
+    } catch (cause: unknown) {
+      const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
+      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pendingAction: null }));
+      if (failure.status === 401) onAuthenticationLost();
+    } finally { setPending(false); }
+  }
   if (wrongOwner) return <section className="status-card"><p role="alert">이 탭의 초안은 다른 로그인 사용자의 자료입니다. 내용을 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭에 남은 이전 사용자 초안만 닫을까요? 서버 자료는 유지합니다.')) { onChange(emptyDraft()); setRequestedId(null); setStep(1); setError(null); const url = new URL(location.href); url.searchParams.delete('draftId'); history.replaceState(history.state, '', url); } }}>탭의 이전 사용자 초안 닫기</button></section>;
+  if (buffer.createdProject) return <section className="status-card" aria-label="생성된 프로젝트 원본"><h2>프로젝트 원본 생성 확인</h2><h3>{buffer.createdProject.name}</h3><p>{buffer.createdProject.purpose}</p><p>프로젝트 ID {buffer.createdProject.id}</p><p>소유 참여 · 현재 기기 제어 세대 {buffer.createdProject.controlState.generation} · 방법론 고정 버전 {buffer.createdProject.currentMethodologyRef.version}</p><p>Agent는 실행하지 않았습니다.</p><p>추가 준비가 필요한 항목</p><ul>{buffer.createdProject.readinessIssues.map(issue => <li key={issue.code}>{issue.code}</li>)}</ul><a href="#/projects">프로젝트 목록에서 확인</a></section>;
+  const locked = pending || selectionBusy || !editable || !!buffer.pendingAction || !!buffer.pendingCommand;
+  const confirmedSelection = buffer.input.methodologySelection?.kind === 'CONFIRMED_REFERENCE' || !!buffer.methodologyState?.confirmation && buffer.methodologyState.ref.version === buffer.version && !buffer.review?.dirty;
   return <section className="status-card auth-form create-draft-form" aria-label="프로젝트 생성 중간본">
     <ol className="wizard-steps"><li aria-current={step === 1 ? 'step' : undefined}>목적·소스</li><li aria-current={step === 2 ? 'step' : undefined}>방법론·자료</li><li>총괄·환경 — 연결 전</li><li>시작 기준 — 연결 전</li></ol>
     <h2>목적·소스</h2>
@@ -66,18 +87,21 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     {error ? <p role="alert">{error.message}{buffer.pendingCommand ? ' 자동으로 새 명령을 발행하지 않습니다. 같은 저장 요청의 결과를 다시 확인하세요.' : ''}</p> : null}
     {!editable ? <p role="alert">이 초안의 현재 작업 기기/로그인 소유를 확인할 수 없어 변경할 수 없습니다. 입력은 유지합니다.</p> : null}
     <form onSubmit={event => { event.preventDefault(); void save(); }}>
-      <label htmlFor={fieldId + '-name'}>프로젝트 이름</label><input id={fieldId + '-name'} value={buffer.input.name} readOnly={!editable || !!buffer.pendingCommand} disabled={pending} onChange={event => change('name', event.target.value)} />
-      <label htmlFor={fieldId + '-purpose'}>왜 만드는가</label><textarea id={fieldId + '-purpose'} value={buffer.input.purpose} readOnly={!editable || !!buffer.pendingCommand} disabled={pending} onChange={event => change('purpose', event.target.value)} rows={4} />
-      <label htmlFor={fieldId + '-outcome'}>기대 결과</label><textarea id={fieldId + '-outcome'} value={buffer.input.desiredOutcome} readOnly={!editable || !!buffer.pendingCommand} disabled={pending} onChange={event => change('desiredOutcome', event.target.value)} rows={3} />
+      <label htmlFor={fieldId + '-name'}>프로젝트 이름</label><input id={fieldId + '-name'} value={buffer.input.name} readOnly={locked} onChange={event => change('name', event.target.value)} />
+      <label htmlFor={fieldId + '-purpose'}>왜 만드는가</label><textarea id={fieldId + '-purpose'} value={buffer.input.purpose} readOnly={locked} onChange={event => change('purpose', event.target.value)} rows={4} />
+      <label htmlFor={fieldId + '-outcome'}>기대 결과</label><textarea id={fieldId + '-outcome'} value={buffer.input.desiredOutcome} readOnly={locked} onChange={event => change('desiredOutcome', event.target.value)} rows={3} />
       <p>소스: 새 빈 프로젝트 · 기존 소스의 보호 경로/읽기 관측은 아직 연결 전입니다.</p>
-      <button disabled={pending || selectionBusy || !editable} type="submit">{pending ? '처리 확인 중' : buffer.pendingCommand ? '저장 결과 다시 확인' : '중간 저장'}</button>
-      <button disabled={pending || selectionBusy || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
+      <button disabled={pending || selectionBusy || !editable || !!buffer.pendingAction} type="submit">{pending ? '처리 확인 중' : buffer.pendingCommand ? '저장 결과 다시 확인' : '중간 저장'}</button>
+      <button disabled={pending || selectionBusy || !!buffer.pendingAction || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
     </form>
-    {step === 2 ? <MethodologySelection client={client} value={buffer.input.methodologySelection} disabled={pending || !editable || !!buffer.pendingCommand} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
+    {step === 2 ? <MethodologySelection client={client} value={buffer.input.methodologySelection} confirmed={!buffer.dirty && !!buffer.methodologyState?.confirmation} disabled={locked} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
+    {step === 2 ? <DraftReviewPanel buffer={buffer} session={session} disabled={locked} onChange={onChange} onExecute={command => { void action(command); }} /> : null}
     {buffer.draftId ? <p role="status">초안 버전 {buffer.version} · {buffer.draftId}{buffer.dirty ? ' · 미저장 입력 있음' : ''}</p> : null}
     <p className="meta">입력은 화면 이동·로그인 만료 중 이 탭에 보존됩니다. 서버 저장 전 탭 종료/새로고침에는 확인이 필요합니다.</p>
     {step === 1 ? <button disabled={pending || selectionBusy || !editable || !buffer.draftId || buffer.dirty || !!buffer.pendingCommand} onClick={() => setStep(2)}>방법론·자료로 다음</button> : <button disabled={pending || selectionBusy || !!buffer.pendingCommand} onClick={() => setStep(1)}>목적·소스로 이전</button>}
-    <button disabled>프로젝트 생성 — 필수 기준 연결 전</button>
+    <p className="meta">총괄·도구·환경 및 권한 정책은 준비 필요 상태로 남깁니다. 원본 생성이 실제 작업 시작은 아닙니다.</p>
+    <button disabled={locked || buffer.dirty || !buffer.draftId || !confirmedSelection || ![buffer.input.name, buffer.input.purpose, buffer.input.desiredOutcome].every(value => !!value.trim())} onClick={() => { void action({ kind: 'create', draftId: buffer.draftId!, body: { schemaVersion: 1, commandId: crypto.randomUUID(), clientId: session.clientId, draftId: buffer.draftId!, draftVersion: buffer.version } }); }}>저장 초안으로 프로젝트 생성</button>
+    {buffer.pendingAction && !pending ? <><p role="alert">검토·생성 결과 미확인 · 입력과 같은 명령을 유지했습니다. 자동 재전송하지 않습니다.</p><button disabled={buffer.pendingAction.body.clientId !== session.clientId} onClick={() => { void action(buffer.pendingAction!); }}>{buffer.pendingAction.kind === 'create' ? '같은 생성 명령 결과 확인' : '같은 초안 검토·확정 명령 결과 확인'}</button></> : null}
     <p><a href="#/projects">프로젝트 목록으로 · 입력은 탭에 유지</a></p>
   </section>;
 }

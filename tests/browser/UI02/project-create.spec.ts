@@ -96,7 +96,10 @@ test('저장한 목적에서 내 확정 방법론을 선택해 초안2단계에 
   expect(draft.input.methodologySelection).toEqual({ kind: 'CONFIRMED_REFERENCE', versionRef: ref });
   await page.reload();
   await expect(page.getByText('선택한 고정 방법론 · 버전 2', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '프로젝트 생성 — 필수 기준 연결 전', exact: true })).toBeDisabled();
+  // 승인된 최초 생성 연결 후에는 저장한 확정 선택에서만 활성화한다. 자동 생성0은 catch-all API로 검사한다.
+  await expect(page.getByRole('button', { name: '저장 초안으로 프로젝트 생성', exact: true })).toBeEnabled();
+  await page.getByLabel('왜 만드는가', { exact: true }).fill('아직 저장하지 않은 목적 변경');
+  await expect(page.getByRole('button', { name: '저장 초안으로 프로젝트 생성', exact: true })).toBeDisabled();
   expect(writes).toHaveLength(2);
 });
 test('초안 화면 계약: 중간 저장/재조회는 최종 생성이나 Agent 실행이 아니며 새로고침 뒤 저장본이 유지된다', async ({ page }) => {

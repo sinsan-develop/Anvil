@@ -30,16 +30,16 @@ export function App() {
   const [methodBuffer, setMethodBuffer] = useState(emptyMethodBuffer);
   const [formBuffer, setFormBuffer] = useState(emptyFormBuffer);
   function newProject() {
-    if (draftBuffer.pendingCommand) { alert('앞선 저장 결과를 먼저 확인하세요. 입력과 명령을 유지했습니다.'); return false; }
-    if (draftBuffer.dirty && !confirm('탭의 미저장 입력을 버리고 새 초안을 시작할까요?')) return false;
+    if (draftBuffer.pendingCommand || draftBuffer.pendingAction) { alert('앞선 저장 결과를 먼저 확인하세요. 입력과 명령을 유지했습니다.'); return false; }
+    if ((draftBuffer.dirty || draftBuffer.review?.dirty) && !confirm('탭의 미저장 입력을 버리고 새 초안을 시작할까요?')) return false;
     setDraftBuffer(emptyDraft()); return true;
   }
   useEffect(() => {
-    if (!draftBuffer.dirty && !draftBuffer.pendingCommand && !methodBuffer.dirty && !methodBuffer.pending && !methodBuffer.review?.dirty && !methodBuffer.review?.pending && !formBuffer.dirty && !formBuffer.pending && !formBuffer.review?.dirty && !formBuffer.review?.pending) return;
+    if (!draftBuffer.dirty && !draftBuffer.pendingCommand && !draftBuffer.pendingAction && !draftBuffer.review?.dirty && !methodBuffer.dirty && !methodBuffer.pending && !methodBuffer.review?.dirty && !methodBuffer.review?.pending && !formBuffer.dirty && !formBuffer.pending && !formBuffer.review?.dirty && !formBuffer.review?.pending) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     addEventListener('beforeunload', warn);
     return () => removeEventListener('beforeunload', warn);
-  }, [draftBuffer.dirty, draftBuffer.pendingCommand, methodBuffer.dirty, methodBuffer.pending, methodBuffer.review?.dirty, methodBuffer.review?.pending, formBuffer.dirty, formBuffer.pending, formBuffer.review?.dirty, formBuffer.review?.pending]);
+  }, [draftBuffer.dirty, draftBuffer.pendingCommand, draftBuffer.pendingAction, draftBuffer.review?.dirty, methodBuffer.dirty, methodBuffer.pending, methodBuffer.review?.dirty, methodBuffer.review?.pending, formBuffer.dirty, formBuffer.pending, formBuffer.review?.dirty, formBuffer.review?.pending]);
   async function logout() {
     if (!session || endingSession) return;
     setEndingSession(true);

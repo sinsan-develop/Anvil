@@ -118,6 +118,27 @@ test('최초 프로젝트는 저장 초안을 한 번만 원자 소비하고 소
     const dedicated = (await pool.query('SELECT d.scope,d.project_id,v.graph_json FROM anvil.project_methodologies p JOIN anvil.methodology_definitions d ON d.id=p.source_definition_id JOIN anvil.methodology_versions v ON v.definition_id=d.id AND v.version=p.source_version WHERE p.project_id=$1', [directProject.json().id])).rows[0];
     assert.equal(dedicated.scope, 'PROJECT'); assert.equal(dedicated.project_id, directProject.json().id); assert.deepEqual(dedicated.graph_json, original.graph);
     assert.equal((await draftSend(command('recordContentReview', { ...reviewPayload, targetRef: nextTarget }, 2))).statusCode, 412, '소비 초안은 더 이상 개정/검토하지 않는다');
+    const rollbackDraft = await draft();
+    const faultPool = new Pool(config);
+    // 실제 PG transaction 중 감사 INSERT 지점에 DB 오류를 주입한다. 결과는 실제 DB 원본으로 검사한다.
+    const faultAccess = new AccessRepository(new Proxy(faultPool, { get(target, property) {
+      if (property === 'connect') return async () => {
+        const connection = await target.connect();
+        return new Proxy(connection, { get(db, key) {
+          if (key === 'query') return (sql: string, values?: unknown[]) => sql.startsWith('INSERT INTO anvil.audit_events') ? db.query('SELECT 1/0') : db.query(sql, values);
+          const value = Reflect.get(db, key); return typeof value === 'function' ? value.bind(db) : value;
+        } });
+      };
+      const value = Reflect.get(target, property); return typeof value === 'function' ? value.bind(target) : value;
+    } }), { installationId: randomUUID(), key });
+    const faultApp = buildApp({}, undefined, { repository: faultAccess, origin: 'https://localhost:3830' });
+    try {
+      const failed = await faultApp.inject({ method: 'POST', url: '/api/v1/projects', headers, payload: { ...body, commandId: randomUUID(), draftId: rollbackDraft.draftId } });
+      assert.equal(failed.statusCode, 503); assert.equal(failed.json().code, 'STORAGE_FAILED');
+      assert.equal((await pool.query('SELECT consumed_project_id FROM anvil.project_drafts WHERE id=$1', [rollbackDraft.draftId])).rows[0].consumed_project_id, null);
+      assert.equal((await pool.query("SELECT count(*)::int n FROM anvil.commands WHERE draft_id=$1 AND operation='createProject'", [rollbackDraft.draftId])).rows[0].n, 0);
+      assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.project_members WHERE user_id=$1', [users[0]])).rows[0].n, 2, '프로젝트/멤버/제어/snapshot/명령/receipt가 모두 rollback되어 추가 원본이 없다');
+    } finally { await faultApp.close(); await faultPool.end(); }
     const blank = await draft('');
     assert.equal((await send({ ...body, commandId: randomUUID(), draftId: blank.draftId })).statusCode, 422);
     assert.equal((await pool.query('SELECT consumed_project_id FROM anvil.project_drafts WHERE id=$1', [blank.draftId])).rows[0].consumed_project_id, null);

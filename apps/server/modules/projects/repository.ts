@@ -50,7 +50,7 @@ export class ProjectsRepository {
       }
       const input = await this.#draftInput(db, identity.actorId, request), id = randomUUID();
       const row = (await db.query('INSERT INTO anvil.project_drafts(id,owner_user_id,client_id,step,input_json) VALUES($1,$2,$3,1,$4) RETURNING *', [id, identity.actorId, identity.clientId, JSON.stringify(input)])).rows[0];
-      return this.#draftCommand(db, identity, id, 'createProjectDraft', request, this.#draftView(row));
+      return this.#draftCommand(db, identity, id, 'createProjectDraft', request, { ...this.#draftView(row), methodologyState: await draftMethodologyState(db, row) });
     });
   }
   async getDraft(token: string, draftId: string) {
@@ -74,7 +74,7 @@ export class ProjectsRepository {
       if (integer(row.version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
       const input = await this.#draftInput(db, identity.actorId, request.input);
       const updated = (await db.query('UPDATE anvil.project_drafts SET version=version+1,step=$2,input_json=$3,updated_at=now() WHERE id=$1 RETURNING *', [draftId, request.step, JSON.stringify(input)])).rows[0];
-      return this.#draftCommand(db, identity, draftId, 'saveProjectDraft', request, this.#draftView(updated));
+      return this.#draftCommand(db, identity, draftId, 'saveProjectDraft', request, { ...this.#draftView(updated), methodologyState: await draftMethodologyState(db, updated) });
     });
   }
   async draftOperation(token: string, csrf: string, draftId: string, request: DraftOperation) {
