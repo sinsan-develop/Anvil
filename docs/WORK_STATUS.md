@@ -131,6 +131,11 @@
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
 
+- 목록 서버 `27f8a4611c90d04fa9ad8f1d9a0b687ddcdf4a30` private/WSL exact/clean actual1 PASS/5952ms/skip0: 대화2개/발언3개·서버 순번/유한 다음 페이지·서명 변조400·교차 사용자404·본문 비포함 목록을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL24 재실행0.
+- 대화 Web client 부재 RED2→별도 원문 업로드/append·현재 사람/제어·정확 source snapshot/hash·서버 순번·STORED만 수용 GREEN. 시험 fake가 업로드에도 없는 message를 해시하던 오류1은 업로드/발언 응답 생성을 분리해 보정했다. 테스트 SourceRef.kind 문자열 타입1은 literal 표기로 고쳤다. 손상 목록/순번/cursor는 명시 거절한다.
+- 화면 부재 RED1→UI10 ConversationPanel·App의 프로젝트별/주체별 root 버퍼로 새 대화/기존 발언·앞 지시 정정·목록/발언 원문을 연결했다. 단절/이동 후 같은 명령 유지, 닫기/중복 발행 금지이며 저장을 Agent 전달로 표시하지 않는다. 기존 지식 fixture에는 새 명시 대화 GET만 추가하고 미정의 API503 차단은 유지한다.
+- fresh unit90 PASS/1396ms·type/build0(Web75/JS525.01kB/gzip138.93)·UI10 지식/대화4+직접 영향 UI06계획4=8 PASS/7.8초·diff0. >500kB·NO_COLOR 경고는 기존대로 보존한다. 같은 대화 Web prepare/send/read/list의 actual 검증은 이번 후속에 추가했으나 게시 전 미검증이다. 전체 FN05/실제 사용자 browser DB·지식 정정/제외/확정·헌법 적용·전체 격리/Agent 전달은 미완료다.
+
 - 대화/발언 목록 실제 RED `d3645f20402b4ba0ea350d713a43ed5e29747c7e` WSL exact/clean1 FAIL/4947ms: GET conversations 미구현404(기대200). 후속은 현재 회원·프로젝트/사용자/collection별 서명 cursor, 발언 서버순번 내림차순·본문 비포함 요약/명시 원문 GET이다. 새 SQL/지속 자원0·기존24 불변. fresh 단위87 PASS/1395ms·타입/diff0, 실제 목록 성공은 게시 후 확인한다.
 
 - 다음 대화 목록/발언 목록·화면 연결을 착수한다. 기준4768671d clean/적용24 보존. 목록은 현 프로젝트 회원·유한 서명 cursor와 서버 순번으로 읽고 원문/지시 작성은 별도 명령만 사용한다. 기존 고유 합성 QA만 쓰며 새 DB schema/서비스/Secret 변경0. 목록 부재 실제 RED와 후속 화면 검증을 분리한다.

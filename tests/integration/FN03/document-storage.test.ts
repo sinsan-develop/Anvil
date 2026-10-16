@@ -24,6 +24,7 @@ import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan,listWorkPlans,prep
 import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 import {readTrace,newTaskTrace,prepareTaskTrace,sendTaskTrace}from'../../../apps/web/src/features/design-trace/trace-api.ts';
 import {newKnowledge,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge}from'../../../apps/web/src/features/knowledge/api.ts';
+import {newConversation,prepareConversation,sendConversation,readConversationMessage,listConversations,listConversationMessages}from'../../../apps/web/src/features/knowledge/conversation-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -509,6 +510,11 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const moreMessages=await app.inject({method:'GET',url:messagesUrl+'&cursor='+encodeURIComponent(messages.json().nextCursor),headers});assert.equal(moreMessages.statusCode,200,moreMessages.body);assert.deepEqual(moreMessages.json().items.map((i:any)=>i.serverSequence),[1]);
     assert.equal((await app.inject({method:'GET',url:messagesUrl+'&cursor='+encodeURIComponent(messages.json().nextCursor+'x'),headers})).statusCode,400);
     assert.equal((await app.inject({method:'GET',url:conversationsUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    const conversationWork=newConversation(project,knowledgeSession,1,conversationId,3);conversationWork.kind='USER_INSTRUCTION';conversationWork.body='단계별 검증 사실과 미확인을 구분하여 보존한다';conversationWork.supersedesInstructionRef=messageRef;conversationWork.pending=await prepareConversation(conversationWork,knowledgeSession);
+    const uiConversation=await sendConversation(client,conversationWork,knowledgeSession,p=>conversationWork.pending=p,()=>true);assert.equal(uiConversation.serverSequence,4);
+    assert.equal((await readConversationMessage(client,project,conversationId,uiConversation.sourceRef)).body,conversationWork.body);
+    assert.equal((await listConversations(client,project)).items.length,2);assert.equal((await listConversationMessages(client,project,conversationId)).items[0]?.serverSequence,4);
+    assert.deepEqual(await sendConversation(client,conversationWork,knowledgeSession,p=>conversationWork.pending=p,()=>true),uiConversation);
     await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);

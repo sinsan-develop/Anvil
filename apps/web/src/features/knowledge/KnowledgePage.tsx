@@ -3,8 +3,10 @@ import{ApiClient,ApiError}from'../../api/client.ts';
 import{documentControl,type DocumentSession}from'../design-trace/editor-api.ts';
 import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';
 import{knowledgeKinds,newKnowledge,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge,type KnowledgeBuffer,type KnowledgeView,type KnowledgeHit}from'./api.ts';
+import{ConversationPanel}from'./ConversationPanel.tsx';
+import type{ConversationBuffer}from'./conversation-api.ts';
 export const knowledgeLabels={PURPOSE:'목적',CONSTITUTION:'헌법',DECISION:'결정',FACT:'사실',HYPOTHESIS:'가설',FAILURE_SOLUTION:'실패·해결',CAUTION:'주의 사항'};
-export function KnowledgePage({client,projectId,session,buffer,onChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;onAuthenticationLost:()=>void}){
+export function KnowledgePage({client,projectId,session,buffer,onChange,conversationBuffer,onConversationChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;conversationBuffer:ConversationBuffer|null;onConversationChange:(b:ConversationBuffer|null)=>void;onAuthenticationLost:()=>void}){
   const[query,setQuery]=useState(''),[kind,setKind]=useState(''),[items,setItems]=useState<KnowledgeHit[]>([]),[next,setNext]=useState<string|null>(null),[loading,setLoading]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState<ApiError|null>(null),[view,setView]=useState<KnowledgeView|null>(null);
   const alive=useRef(true),locked=useRef(false),requestId=useRef(0);
   const work=buffer?.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
@@ -31,6 +33,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,onAuthen
   function close(){if(!work||working||work.uncertain||work.pending&&!isKnownDocumentRejection(work.failure))return;if((work.dirty||work.pending)&&!confirm('작성 중 입력과 명확히 거절된 명령을 닫을까요? 저장된 원문은 삭제하지 않습니다.'))return;onChange(null);}
   async function inspect(item:KnowledgeHit){if(locked.current)return;setView(null);setError(null);setLoading(true);const id=++requestId.current;try{const v=await readKnowledge(client,projectId,item.versionRef);if(alive.current&&id===requestId.current)setView(v);}catch(e){if(alive.current&&id===requestId.current)failed(e);}finally{if(alive.current&&id===requestId.current)setLoading(false);}}
   return<section className="editor-page"><header><h2>헌법·지식·결정 이유</h2><button type="button" onClick={()=>void start()} disabled={!!buffer||working}>새 지식 작성</button><span title="현재는 지식 초안과 원문 저장/조회입니다. 별도 확정·헌법 적용·정정/제외·Agent 전달은 아직 연결하지 않았습니다."> ⓘ</span></header>
+    <ConversationPanel client={client} projectId={projectId} session={session} buffer={conversationBuffer} onChange={onConversationChange} onAuthenticationLost={onAuthenticationLost}/>
     {ownedElsewhere?<p role="alert">다른 사용자·기기의 작성 자료는 이 세션에서 열거나 전송하지 않습니다.</p>:null}
     {work?<section aria-label="지식 작성"><h3>지식 초안 작성</h3><fieldset disabled={working||!!work.pending||!!work.resultRef}>
       <label>지식 종류<select aria-label="지식 종류" value={work.kind} onChange={e=>edit({kind:e.target.value as KnowledgeBuffer['kind']})}>{knowledgeKinds.map(k=><option key={k} value={k}>{knowledgeLabels[k]}</option>)}</select></label>

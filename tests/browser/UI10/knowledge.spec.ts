@@ -6,6 +6,7 @@ async function fixture(page:Page,lost=false,denyAfterLost=false){
   const unknown:string[]=[],writes:any[]=[];let body='',entry:any=null,ref:any=null;
   await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
   await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:uid,displayName:'지식 QA'},clientId:uid,csrfToken:'C'.repeat(43)}}));
+  await page.route(`**/api/v1/projects/${pid}/conversations?*`,r=>r.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:at}}));
   await page.route(`**/api/v1/projects/${pid}`,r=>r.fulfill({json:{id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:uid,generation:1}}}));
   await page.route(`**/api/v1/projects/${pid}/knowledge?*`,r=>r.fulfill({json:{items:ref?[{versionRef:ref,title:entry.title,kind:entry.kind,sourceRefs:entry.sourceRefs,reasonSnippet:entry.reason,state:'PROPOSED'}]:[],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:at}}));
   await page.route(`**/api/v1/projects/${pid}/files`,r=>{

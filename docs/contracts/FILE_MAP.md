@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI10 대화 후속: `features/knowledge/conversation-api.ts`/`ConversationPanel.tsx`와 App의 project/owner/client별 버퍼는 원문 업로드→명시 append·정확 source/순번/hash 확인·불변 발언 조회/목록·앞 지시 정정을 소비한다. KnowledgePage에서 원문 대화와 구조화 지식의 두 저장 경로를 구분한다. 단위90·UI10/인접8 fixture와 실제 같은 Web 저장 결과는 WORK_STATUS로 나눈다. Agent 전달/실행·자동 승인·공유0, SQL24 불변이다.
+
 FN05 대화 후속 후보 `knowledge/conversation-input.ts`/`conversations.ts`는 현재 HUMAN의 공통 프로젝트 발언·실제 원문·독립 순번/정정 참조·GET을 소유한다. exact project-command/routes와 새 forward24 `0005_conversations.sql`·runner에만 연결하며 이전 SQL23 불변이다. 별도 역할/Agent·첨부/일반 sourceRefs·목록/화면/전달은 아직 미구현으로 남긴다.
 
 UI10 exact579ce2dc의 동일 Web new/prepare/send/read/search는 실제 FN03 확장1 PASS/5569ms·독립 DB23종/시험root0으로 확인했다. fixture3·인접4 PASS와 별도 증거이며 실제 사용자 browser↔DB·헌법/대화/정정/확정/제외/Agent 미완료는 유지한다.
