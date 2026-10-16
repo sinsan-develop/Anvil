@@ -18,7 +18,7 @@ try {
     const auth = validateAuthConfig(JSON.parse(await readFile(process.env.ANVIL_AUTH_CONFIG, 'utf8')));
     pool = new Pool(dbConfig);
     pool.on('error', () => console.error('ANVIL_DATABASE_CONNECTION_UNAVAILABLE'));
-    access = { repository: new AccessRepository(pool, auth), origin: auth.origin };
+    access = { repository: new AccessRepository(pool, auth), origin: auth.origin, artifactRoot: process.env.ANVIL_ARTIFACT_ROOT };
   }
   const app = buildApp({ https: { key, cert } }, new URL('../web/dist/', import.meta.url), access);
   app.addHook('onClose', async () => { await pool?.end(); });

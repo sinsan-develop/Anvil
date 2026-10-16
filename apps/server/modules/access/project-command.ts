@@ -5,7 +5,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
-export const documentOperations = ['saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument'] as const;
+export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
 function exact(value: unknown, keys: string[]): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(','); }
 export function materialRules(value: unknown, projectId: string, actorId: string, now = new Date()): MaterialRule[] {
@@ -42,21 +42,37 @@ export async function currentPolicy(db: PoolClient, projectId: string) {
   if (contentHash(canonicalJson({ rules: row.rules_json, reason: row.reason, reviewRefs: row.review_refs })) !== row.content_hash) throw new AuthFailure('POLICY_INTEGRITY_FAILED', 503);
   return { ref: { id: row.id, version: Number(row.head_version), contentHash: row.content_hash }, rules: row.rules_json as MaterialRule[], reason: row.reason, reviewRefs: row.review_refs, createdAt: row.created_at.toISOString() };
 }
+export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
+  const policy = await currentPolicy(db, request.projectId);
+  if (!policy) throw new AuthFailure('PERMISSION_POLICY_UNCONFIGURED', 412);
+  if (!documentOperations.includes(request.operation as typeof documentOperations[number])) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
+  const matched = policy.rules.filter(rule => rule.subjectRef.kind === 'HUMAN' && rule.subjectRef.userId === actor.actorId && rule.targetScopes.some(scope => scope.kind === 'PROJECT' && scope.projectId === request.projectId) && rule.operations.includes(request.operation) && Date.parse(rule.expiresAt) > Date.now());
+  if (!matched.length || matched.some(rule => rule.disposition === 'DENY')) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
+  if (matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL')) throw new AuthFailure('APPROVAL_REQUIRED', 412);
+  return policy;
+}
 export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
   const rows = (await db.query("SELECT operation,request_hash,result_ref FROM anvil.commands WHERE scope_kind='PROJECT' AND project_id=$1 AND actor_id=$2 AND command_id=$3", [request.projectId, actor.actorId, request.commandId])).rows;
   if (!rows.length) return undefined;
   if (rows.length !== 1 || rows[0].operation !== request.operation || rows[0].request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
   return rows[0].result_ref;
 }
-export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string) {
+export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string) {
   const id = randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
-  const result = { operationId, commandId: request.commandId, projectId: request.projectId, status: 'APPLIED', targetId: ref.id, version: ref.version, data: { ref, ...data }, evidenceRefs: [], warnings: [], serverReceivedAt: (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString() };
+  const result = { operationId, commandId: request.commandId, projectId: request.projectId, status: 'APPLIED', targetId: 'id' in ref ? ref.id : ref.artifactId, version: 'version' in ref ? ref.version : null, data: { ...('id' in ref ? { ref } : { artifactRef: ref }), ...data }, evidenceRefs: [], warnings: [], serverReceivedAt: (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString() };
   const scopeDigest = contentHash(canonicalJson({ projectId: request.projectId, actorId: actor.actorId, clientId: actor.clientId, controlGeneration: request.controlGeneration, requestHash: contentHash(canonicalJson(request)), policyRef, targetRef: ref }));
   await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,expected_version,control_generation,policy_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, JSON.stringify(result)]);
   await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest) VALUES($1,'PROJECT',$2,$3,$4,$5,$6)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest]);
   await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, reasonCode, scopeDigest]);
   await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
   return { result, id };
+}
+export async function recordProjectDenial(access: AccessRepository, token: string, projectId: string, error: unknown) {
+  if (!(error instanceof AuthFailure) || error.statusCode < 400 || error.statusCode >= 500 || error.statusCode === 404 || error.statusCode === 401) return;
+  await access.authenticated(token, null, async (db, actor) => {
+    await projectMember(db, actor, projectId, true);
+    await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,target_ref,outcome,reason_code,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,'DENIED',$6,'SERVER_DENIAL' FROM anvil.audit_events WHERE project_id=$1", [projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, JSON.stringify({ id: projectId }), error.message]);
+  });
 }
 export class ProjectPolicyRepository {
   #access: AccessRepository;
@@ -88,12 +104,7 @@ export class ProjectPolicyRepository {
       });
     } catch (error) {
       // 보이는 프로젝트의 거절만 별도 transaction에 남긴다. 도메인 rollback과 분리한다.
-      if (error instanceof AuthFailure && error.statusCode >= 400 && error.statusCode < 500 && error.statusCode !== 404 && error.statusCode !== 401) {
-        await this.#access.authenticated(token, null, async (db, actor) => {
-          await projectMember(db, actor, request.projectId, true);
-          await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,target_ref,outcome,reason_code,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,'DENIED',$6,'SERVER_DENIAL' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, JSON.stringify({ id: request.projectId }), error.message]);
-        });
-      }
+      await recordProjectDenial(this.#access, token, request.projectId, error);
       throw error;
     }
   }
