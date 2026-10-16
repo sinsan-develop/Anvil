@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 최신 후속: `4997e732f6bebfca92812cc6d7a5680dcbb71664` local/private·WSL exact/clean actual FN03 1 PASS/2712ms/skip0. 보관 목록→원문/hash·고정 양식→후보 재생성 없이 새 초안, 저장 제안→과거 명령 합성 없이 별도 반영/replay·구버전 보존 확인. 독립 DB13종 각0·시험root[]·지속root uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser↔DB/사용자 인수와 구별한다. 아래 이전 후보/제안 재개 미완료 문구는 이 후속 전 이력이며, 다음은 복합 충돌/대상 교체·소스/추적이다. 전체44업무 상태 합계는 유지한다.
+
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
 - 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·UI06·FN01~03·FN11 부분 구현**. UI06의 양식 기반 신규/개정 저장·고정 버전 내용검토·별도 확정·명확한 저장 충돌 비교/선택에 이어 텍스트/Markdown 원본 보존→가져오기 후보→명시 초안 선택을 연결했다. 화면 fixture와 동일 클라이언트의 실제 WSL API/DB 증거는 구분한다. 실제 UI DB 여정·수정 제안/후보 목록 재개·복합 충돌/추적·기존 소스·실제 Agent는 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
@@ -108,6 +110,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN03 보관 후보·제안 목록 재조회/재개 — Main 어울
+
+- 후속 실제 결과: `4997e732f6bebfca92812cc6d7a5680dcbb71664` 지정 private/WSL exact clean actual1 PASS/2712ms/skip0. 동일 Web client로 저장 자료 목록/상세·고정 양식·후보 재개 후 신규 문서/원본 첨부·제안 재개/확인 전 쓰기0→별도 새 v4/replay·v1/v3 보존·미확정/outbox0을 확인했다. 독립 잔여 조회 exit0: users/projects/documents/versions/confirmations/proposals/proposal_selections/imports/import_selections/reviews/artifacts/policies/commands 각0, 시험 root[]·지속 원문 root uid1000/0700/실경로 동일/link0/empty. 실제 runtime/계정/Secret 변경0. 후보·제안 재개 부분은 핵심 동작 확인이며 복합 충돌/소스 연결·전체 FN03/실제 browser DB 여정은 미완료다. 문서 patch 제목 불일치1은 적용 전 거절·원문 변경0→정확 제목으로 보정했고 제품 실패와 분리한다.
 
 - 시작 `bf83b06530028d36c868be6e00333063767abc1b` local/private 동일·지정 branch clean, 현재 WSL 검증코드 d05c3df3·SQL19 유지. 직전 실제 시험 뒤 독립 DB13종 각0·임시root[]·지속root uid1000/0700/link0/empty 확인. 완료된 제안/SQL19·단위/화면 검사는 불변이면 반복하지 않는다.
 - 승인 INTERFACES §9.4의 imports/제안 목록·조회와 새 화면 재개의 미완료를 잇는다. 기존 table만 사용하고 새 DB schema/권한/사용자/Secret·서비스 변경0이다. actor/project·유한 페이지/상태/대상 filter·서명 cursor와 exact 저장 원문을 사용한다. QA는 바로 위 제안 작업과 같은 전용 DB/고유 합성 UUID/finally 정확 정리이며 실제 사용자 자료는 만들지 않는다.

@@ -261,6 +261,8 @@ Page는 `items`, `nextCursor`, `hasMore`, `observedAt`, `baselineVersion`을 갖
 
 ### 9.4 FN03 — UI03/06의 양식·본문·원본·제안
 
+2026-10-16 보관 목록/재개 연결: `GET projects/:projectId/imports`는 limit(기본50/최대200), status(READY/FAILED/UNSUPPORTED), formId, cursor를, `/proposals`는 status(PENDING/SELECTED), documentId와 같은 페이지 계약을 받는다. 응답은 items/hasMore/nextCursor/observedAt이고 summary integrity=NOT_RECHECKED다. cursor는 actor/project/kind/filter/limit·30분 기한에 결박하며 혼용/위조400·비회원404다. 상세 GET이 원본/hash·선택 이력을 재검사한다. Web 조회는 제어권 없이 가능하고 명시 준비/반영 때 현재 control을 검사한다. 후보 재개는 원본을 첨부한 새 초안만, 저장 제안 재개는 snapshot=null의 읽기 binding과 새 saveDocumentDraft(proposalRef)만 만들며 과거 import/upload/propose를 합성하지 않는다. 아래 이전 목록 미연결 문구는 후속 전 이력이다.
+
 2026-10-16 PROJECT 제안 연결: `proposeDocumentChange` envelope targetId/expectedVersion은 payload.baseRef의 id/version과 같아야 한다. 현재 head/hash·프로젝트 소유 READY body/attachments·UTF-8/목차를 확인한 뒤 `data.status:PROPOSAL_RECORDED,ref:baseRef,proposal:{id,baseRef,proposedContentRef:본문ArtifactRef,diffRef:서버ArtifactRef,status:PENDING}`를 반환한다. 문서 head/확정본은 변경하지 않는다. diff는 `ANVIL_TEXT_DIFF_1,startLine,before/after:원문 줄 배열,unchangedBefore/After,baseRef,baseBodyRef,proposedBodyRef,beforeContent,afterContent` JSON 원본이며 patch 실행 입력이 아니다. 무변경 content422, stale/hash409, diff 상한20MiB413·기존 quota/원문 보호를 유지한다.
 
 `GET projects/:projectId/proposals/:id`는 같은 프로젝트 권한/파일 무결성을 확인하고 proposal+proposedContent/reason/생성 주체/시각·selections를 반환한다. `saveDocumentDraft`의 optional proposalRef는 실제 제안의 base/current hash·제목/양식·전체 content가 정확히 일치해야 하고 stale/재선택/다른 내용409다. 새 초안과 선택 사건을 같은 transaction에 기록하며 별도 확정은 기존 contract대로다. GET document version의 proposalRefs는 실제 관련 proposal ID 배열이다. 현재 sourceRefs는[]만 연결했으며 제안/가져오기 목록·DRAFT/소스 연계는 후속이다.

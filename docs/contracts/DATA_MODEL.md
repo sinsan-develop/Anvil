@@ -2,6 +2,8 @@
 
 ## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
 
+보관 자료 목록/재개 후속은 새 SQL 없이 기존 imports/proposals/선택을 소비한다. 목록 integrity=NOT_RECHECKED는 저장 metadata 검사만 의미하고 상세 선택 시 실제 원문을 재검증한다. 후보 재개는 기존 candidate/original link를 새 문서에 보존하고 후보를 재생성하지 않는다. 저장 제안 재개는 과거 명령이 아닌 읽기 binding이며 명시 save만 새 선택/version을 만든다. actual exact4997e732 1 PASS/2712ms와 독립 합성 잔여0을 확인했다. 아래 이전 목록 재개 미구현 문구는 후속 전 이력이며 source/draft-scope/전체 browser DB 미완료는 유지한다.
+
 forward19 `document_proposals`는 exact base document/version/hash·업로드한 proposed body·서버 diff artifact·전체 proposedContent·reason·실제 주체/client/command를 불변 저장한다. `document_proposal_selections`는 사용자 명시 saveDocumentDraft의 새 version과 같은 프로젝트 proposal을 한 번 결박하며 현재 제어/정책/receipt·정확 content를 검사한다. 생성 상태 PENDING은 불변 원 기록이고 GET selections가 실제 반영 여부/문서 version/주체/시각 이력이다. 제안만으로 head/확정 변경0, 본문과 무관한 제목/양식 변경을 제안 반영으로 위장하면409다. 기존 artifacts.command_id UNIQUE와 원 업로드 guard는 유지하고 같은 propose 명령에서 서버 diff JSON1개만 정확 receipt metadata로 INSERT를 허용한다. 과거18 SQL·원문·확정본은 보존하며 자동 삭제/DB·FS 완전 원자성은 주장하지 않는다.
 
 새 forward18 `0003_document_imports`는 직접 승인된 범위에서 적용했다. `document_imports`는 PROJECT 원본 artifact/nullable 고정 양식·parser/status/losses/issues·candidate canonical hash·실제 사용자/client/command를 불변으로 저장한다. `document_import_selections`는 같은 프로젝트 candidate→실제 문서 version·선택 사용자/client/command를 append-only로 보존하며 현재 APPLIED save receipt의 candidate ID/문서 version·원본 link가 있어야 한다. candidate 생성은 문서/head/확정본을 만들거나 바꾸지 않는다. 성공 파서 UTF8_IDENTITY_1은 원본과 같은 artifact의 무변환 참조이며 별도 추출 파일 생성으로 주장하지 않는다. 본문 상한/유효 UTF-8 실패나 미지원도 원본 artifact를 유지한다. 실제 FN03/FN11 2 PASS와 독립 후보/선택 포함 합성 잔여0, app 직접 UPDATE/DELETE 불허를 확인했다. 제안/diff·draft-scope import·소스 연결/후보 목록 재개는 미구현이다. 기존17 SQL/과거 이력은 유지한다.

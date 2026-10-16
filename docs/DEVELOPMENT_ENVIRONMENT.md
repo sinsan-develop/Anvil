@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+보관 자료 재개 후속 코드 `4997e732f6bebfca92812cc6d7a5680dcbb71664` 지정 private/WSL exact clean의 같은 Web client FN03 actual1 PASS/2712ms/skip0. 새 schema/실제 계정/권한·Secret·서비스 변경0, SQL19 불변이다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser DB 여정이 아니다. 기존 혼재 backend/relay HOLD/만료 bootstrap/CA 경계는 유지하며 아래 이전 목록 재개 미완료 문구만 후속 전 이력으로 본다.
+
 제안 후속 `d05c3df31f7112f0cd761ea3e771d3830d42b94c` local/private·WSL exact/clean의 동일 Web client FN03 actual1 PASS/2756ms/skip0, 서버/권한 인접은 직전9198a9bc actual2/2343ms. 새 forward19 `0003_document_proposals` checksum `93cb063a0214f2197afca309ed3d4482a0ea8bac765b9e72f42b110bdb6f542a`만 적용(기존18 불변), 제안/명시 반영/서버 diff·구버전 보존을 확인했다. Windows unit61/UI06 fixture16/13.8초·Web59/type PASS는 실제 사용자용 runtime 전환과 다르다. 기존 Node/relay·CA/bootstrap·실제 계정/Secret/서비스 변경0, 목록 재개·actual browser↔DB·Agent/Oracle는 여전히 남는다.
 
 최종 화면 경계 보정 `73373f08ac5306e12c5f87fa84226ebd636abfb2` local/private·WSL exact/clean의 실제 FN03 1 PASS/2443ms/skip0. 기존 FN11·서버/SQL18은 바로 아래6a7a3c26 actual2 증거가 유지되므로 재적용/반복하지 않았다. 파일 준비 경합·확정 거절/결과 미확인 구분·재시도 화면 재진입은 같은 범위 독립 검토 후 보정, Windows unit59/UI06 fixture15/11.4초·최종 집중1/3.3초·Web58/type PASS. 최종 실제 시험 뒤 독립 DB11종0·시험 root[]·지속 artifacts uid1000/0700/link0/empty·migration18. 실제 사용자용 runtime 교체는 여전히0이며 아래 backend 혼재/relay HOLD/bootstrap·CA 경계는 그대로다.

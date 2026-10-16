@@ -2,6 +2,8 @@
 
 ## 2026-10-16 FN11·FN03/UI06 실제 연결 범위
 
+보관 목록/재개 후속: server `documents/material-list.ts`와 projects routes가 현재 회원·상태/대상·유한 cursor 목록을 제공한다. Web `MaterialLibrary.tsx`/`materials-api.ts`와 `forms-api.getPinnedForm`, `proposal-api.readStoredProposal/resumeStoredProposal`이 상세 원문 재검증·명시 준비를 연결한다. 기존 후보는 재생성하지 않고 원본 첨부와 새 초안 명령만 만든다. 저장 제안은 과거 upload/propose를 합성하지 않는 읽기 binding과 새 apply 명령으로 구분한다. fixture22개(20+추가2), 동일 Web client actual1/2712ms는 아래 이전 미연결 기록을 대체한다. 소스 드리프트·전체 browser DB 여정은 미완료다.
+
 제안 후속: server `documents/document-diff.ts`가 손실 없는 앞/뒤 동일 줄을 제외한 유한 변경 구간을 만들고 `project-proposals.ts`/기존 project-documents/routes가 제안/GET/명시 새 초안 선택을 집행한다. `0003_document_proposals.sql`은 forward19로 불변 제안/선택과 기존 artifact의 서버 diff1개만 추가 허용하며 기존18은 수정하지 않는다. Web `proposal-api.ts`·기존 DocumentEditor/상위 DocumentBuffer는 upload/propose와 apply를 별도 명령으로 보존하고 기준/제안/diff의 바이트/hash와 첨부·목차를 비교한다. `tests/unit/document-diff.test.ts`, `tests/unit/UI06/proposal-api.test.ts`, 기존 document-edit fixture와 actual FN03이 대응한다. 저장한 후보/제안 목록 재개·소스 드리프트·전체 browser↔DB는 미완료다.
 
 가져오기 후속: server `documents/project-imports.ts`는 후보 저장/GET·선택 조건, `text-import.ts`는 유한 UTF-8 무변환 파서, 기존 project-documents/routes는 importDocument와 saveDocumentDraft(importCandidateRef)를 소비한다. 새 `db/migrations/0003_document_imports.sql`은 명시 runner의18번째이며 기존17 수정0. Web `features/design-trace/import-api.ts`/`DocumentImport.tsx`는 App 상위 DocumentBuffer에 원본/동일 명령을 보존하고 명시 후보 생성→원문 확인→선택→기존 편집기의 별도 초안 저장을 연결한다. 기존 editor-api의 같은 제한된 명령 전송 함수를 공유하되 import/초안 연산의 각 입력 검사는 유지한다. `tests/unit/document-import.test.ts`, `tests/browser/UI06/document-import.spec.ts`, 기존 FN03 actual 시험이 각각 파서 실패·화면/단절·현재 권한/실제 DB/FS와 선택 이력을 검증한다. 수정 제안·서버 diff·후보 목록 재개·실제 browser↔DB 여정은 아직 미완료다.
