@@ -107,6 +107,12 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN03 별도 문서 확정 착수 — Main 어울
+
+- 시작 `ea2041e881be5f21a56fa17accf8cbd1eda6452a` local/private 동일·지정 Stage B tracked clean. 승인된 FN11/FN03 forward 보완 범위에서 confirmDocument를 검토 저장과 별도 처리한다. 필수 본문/RECORDS 필드·정확 최신 ACCEPTED 검토·양식 준비·현재 제어/명시 권한·원문을 검사하고 확정 이력을 보존한다. 새 초안은 기존 확정 포인터/구버전을 지우지 않는다.
+- 실행 자원: 기존 전용 WSL `anvil_v3_development`/PG15, Git checkout `/home/daon/deploy/anvil-v3`, 보호된 app/migrator 설정만 사용. 기존 합성 `qa-document-storage-<UUID>` 사용자/프로젝트·`/tmp/anvil-v3-document-qa-<UUID>` uid1000/0700·수명 시험1회·finally 정확 UUID 정리를 재사용한다. 지속 artifacts root·실제 사용자·Secret·서비스·CA/relay는 변경하지 않는다. 최종 exact SHA만 시험하고 미수행은 PASS로 세지 않는다.
+- 현재 형식 검사와 SQL16은 그대로 이력이며 새 확정 기능의 완료 근거가 아니다. RED는 검토 허가만으로 확정을 요청하면403이어야 하나 현재 미연결 연산400인 경계를 먼저 확인한다.
+
 ### 2026-10-16 UI06 고정 버전의 내용 검토 작성·저장 연결 — Main 어울
 
 - 시작 `5abfbeeb276b50cc4d0179aea3be55b2040b9f8b` local/private 동일·Stage B tracked clean. 기존 SQL16/검토 서버 API·문서 저장을 다시 만들지 않고 recordContentReview의 사람 입력 화면과 동일 클라이언트를 연결한다. 새 DB/계정/Secret/서비스 변경0이다.

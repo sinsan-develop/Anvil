@@ -154,6 +154,8 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal(reviewedFromClient.document.contentReviews[0]!.reviewer.userId, user);
     assert.equal(reviewedFromClient.document.contentReviews[0]!.reviewer.sameAsTargetRecorder, true);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.content_reviews WHERE project_id=$1 AND target_id=$2 AND target_version=3', [project, currentRef.id])).rows[0].n, 1);
+    const confirmCommand = { ...documentCommand, commandId: randomUUID(), operation: 'confirmDocument', targetId: fromClient.id, expectedVersion: 3, payload: { versionRef: fromClient, formRef: form.ref, reviewRefs: [reviewFromClient] } };
+    assert.equal((await docSend(confirmCommand)).statusCode, 403, '검토 저장 허가는 별도 문서 확정 허가가 아니다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
