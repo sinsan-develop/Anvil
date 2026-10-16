@@ -261,6 +261,10 @@ Page는 `items`, `nextCursor`, `hasMore`, `observedAt`, `baselineVersion`을 갖
 
 ### 9.4 FN03 — UI03/06의 양식·본문·원본·제안
 
+2026-10-16 PROJECT 제안 연결: `proposeDocumentChange` envelope targetId/expectedVersion은 payload.baseRef의 id/version과 같아야 한다. 현재 head/hash·프로젝트 소유 READY body/attachments·UTF-8/목차를 확인한 뒤 `data.status:PROPOSAL_RECORDED,ref:baseRef,proposal:{id,baseRef,proposedContentRef:본문ArtifactRef,diffRef:서버ArtifactRef,status:PENDING}`를 반환한다. 문서 head/확정본은 변경하지 않는다. diff는 `ANVIL_TEXT_DIFF_1,startLine,before/after:원문 줄 배열,unchangedBefore/After,baseRef,baseBodyRef,proposedBodyRef,beforeContent,afterContent` JSON 원본이며 patch 실행 입력이 아니다. 무변경 content422, stale/hash409, diff 상한20MiB413·기존 quota/원문 보호를 유지한다.
+
+`GET projects/:projectId/proposals/:id`는 같은 프로젝트 권한/파일 무결성을 확인하고 proposal+proposedContent/reason/생성 주체/시각·selections를 반환한다. `saveDocumentDraft`의 optional proposalRef는 실제 제안의 base/current hash·제목/양식·전체 content가 정확히 일치해야 하고 stale/재선택/다른 내용409다. 새 초안과 선택 사건을 같은 transaction에 기록하며 별도 확정은 기존 contract대로다. GET document version의 proposalRefs는 실제 관련 proposal ID 배열이다. 현재 sourceRefs는[]만 연결했으며 제안/가져오기 목록·DRAFT/소스 연계는 후속이다.
+
 2026-10-16 최초 PROJECT 가져오기 연결은 기존 command envelope의 `importDocument`(targetId=null/expectedVersion0)→`data.status:IMPORT_CANDIDATE,candidate`이며 receipt의 artifactRef/targetId는 보존한 실제 원본을 가리킨다. candidate는 표의 필드와 nullable intendedFormRef를 가진다. UTF8_IDENTITY_1은 유효 .txt/.md≤2MiB를 바이트 무변환 READY로 추출하고 extractedContentRef=originalRef다. 원본≤20MiB는 보존하지만 파서 실패 FAILED/기타 형식 UNSUPPORTED는 본문 추출 성공이 아니다. sourceRefs는 실제 연결 전 []만 허용하고 nonempty는412다. `GET projects/:projectId/imports/:id`는 현재 회원의 원본/candidate hash를 재검증하고 선택 문서/version/사용자/시각 이력을 돌려준다(교차 소유404). 후보 목록·DRAFT import·제안/diff는 아직 미연결이다.
 
 `saveDocumentDraft(importCandidateRef)`는 실제 READY candidate·같은 고정 양식(지정한 경우)과 원본을 body/attachments 중 하나로 반드시 보존해야 한다. 저장은 별도 명시 명령이며 선택 이력/문서 version/receipt/감사를 한 DB transaction에 기록하고 GET version의 `importCandidateRefs:Id[]`로 재조회한다. Web에서는 원본 첨부와 편집 본문을 분리해 저장하며 단순 업로드/후보 생성만으로 확정하지 않는다. 미확인 upload/import/save는 캡처한 같은 ID/입력으로만 명시 재확인, 자동 재전송0이다. 현재 읽기/검토/확정의 기존 계약과 실패 기준은 유지한다.

@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+제안 후속 `d05c3df31f7112f0cd761ea3e771d3830d42b94c` local/private·WSL exact/clean의 동일 Web client FN03 actual1 PASS/2756ms/skip0, 서버/권한 인접은 직전9198a9bc actual2/2343ms. 새 forward19 `0003_document_proposals` checksum `93cb063a0214f2197afca309ed3d4482a0ea8bac765b9e72f42b110bdb6f542a`만 적용(기존18 불변), 제안/명시 반영/서버 diff·구버전 보존을 확인했다. Windows unit61/UI06 fixture16/13.8초·Web59/type PASS는 실제 사용자용 runtime 전환과 다르다. 기존 Node/relay·CA/bootstrap·실제 계정/Secret/서비스 변경0, 목록 재개·actual browser↔DB·Agent/Oracle는 여전히 남는다.
+
 최종 화면 경계 보정 `73373f08ac5306e12c5f87fa84226ebd636abfb2` local/private·WSL exact/clean의 실제 FN03 1 PASS/2443ms/skip0. 기존 FN11·서버/SQL18은 바로 아래6a7a3c26 actual2 증거가 유지되므로 재적용/반복하지 않았다. 파일 준비 경합·확정 거절/결과 미확인 구분·재시도 화면 재진입은 같은 범위 독립 검토 후 보정, Windows unit59/UI06 fixture15/11.4초·최종 집중1/3.3초·Web58/type PASS. 최종 실제 시험 뒤 독립 DB11종0·시험 root[]·지속 artifacts uid1000/0700/link0/empty·migration18. 실제 사용자용 runtime 교체는 여전히0이며 아래 backend 혼재/relay HOLD/bootstrap·CA 경계는 그대로다.
 
 2026-10-16 가져오기 후보·명시 선택 후속: 코드 `6a7a3c262bbd189448a07558066d12f5390f814f` local/private·WSL exact/clean에서 actual FN03/FN11 2 PASS/1963ms/skip0. 직접 승인된 새 forward18 `0003_document_imports` checksum `c9ffa0c09d8597e410a9b85ead5b1aad3413df82e7f6efa2169ad514fa001afb`만 추가했고 기존17 불변이다. 최초 미적용18의 CASE 문법 오류1은 전부 rollback된 별도 실패 이력이며 소급 PASS 아님. 독립 DB 사용자/프로젝트/문서/확정/후보/선택/검토/원본/정책/명령0·시험 root[]·지속 artifacts uid1000/0700/link0/empty. Windows unit58/UI06 fixture15/11.6초·Web58/타입은 별도다. Node40744/relay26052 같은 시작 시각을 확인했고 기존 backend000d0088/새 Web 혼재·relay HOLD·만료 bootstrap·CA/실제 계정/Secret/서비스는 변경하지 않았다. 최신 실제 사용자용 exact-SHA runtime·browser↔DB 여정·제안/서버 diff·후보 목록 재개·Agent/Oracle는 미완료다. forward18 자동 downgrade/삭제는 하지 않는다.

@@ -2,6 +2,8 @@
 
 ## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
 
+forward19 `document_proposals`는 exact base document/version/hash·업로드한 proposed body·서버 diff artifact·전체 proposedContent·reason·실제 주체/client/command를 불변 저장한다. `document_proposal_selections`는 사용자 명시 saveDocumentDraft의 새 version과 같은 프로젝트 proposal을 한 번 결박하며 현재 제어/정책/receipt·정확 content를 검사한다. 생성 상태 PENDING은 불변 원 기록이고 GET selections가 실제 반영 여부/문서 version/주체/시각 이력이다. 제안만으로 head/확정 변경0, 본문과 무관한 제목/양식 변경을 제안 반영으로 위장하면409다. 기존 artifacts.command_id UNIQUE와 원 업로드 guard는 유지하고 같은 propose 명령에서 서버 diff JSON1개만 정확 receipt metadata로 INSERT를 허용한다. 과거18 SQL·원문·확정본은 보존하며 자동 삭제/DB·FS 완전 원자성은 주장하지 않는다.
+
 새 forward18 `0003_document_imports`는 직접 승인된 범위에서 적용했다. `document_imports`는 PROJECT 원본 artifact/nullable 고정 양식·parser/status/losses/issues·candidate canonical hash·실제 사용자/client/command를 불변으로 저장한다. `document_import_selections`는 같은 프로젝트 candidate→실제 문서 version·선택 사용자/client/command를 append-only로 보존하며 현재 APPLIED save receipt의 candidate ID/문서 version·원본 link가 있어야 한다. candidate 생성은 문서/head/확정본을 만들거나 바꾸지 않는다. 성공 파서 UTF8_IDENTITY_1은 원본과 같은 artifact의 무변환 참조이며 별도 추출 파일 생성으로 주장하지 않는다. 본문 상한/유효 UTF-8 실패나 미지원도 원본 artifact를 유지한다. 실제 FN03/FN11 2 PASS와 독립 후보/선택 포함 합성 잔여0, app 직접 UPDATE/DELETE 불허를 확인했다. 제안/diff·draft-scope import·소스 연결/후보 목록 재개는 미구현이다. 기존17 SQL/과거 이력은 유지한다.
 
 후속17 `0003_document_confirmations`는 project/document/version/hash의 불변 확정과 formRef/reviewRefs/형식 검사·실제 HUMAN/client/command를 저장한다. 현재 OWNER/제어 세대·정책 head·APPLIED confirmDocument/receipt·최신 ACCEPTED가 있어야 INSERT/pointer UPDATE가 된다. 과거 version/link/draft-event guard는 유지하고 document head는 새 초안 때 confirmed pointer를 보존한다. 과거 SQL16/행을 고치지 않았으며 app의 확정 row UPDATE/DELETE는 금지다. 최신 actual2에서 직접 pointer 쓰기42501·확정/replay1·후속 초안/충돌 조정 뒤 구확정 보존과 독립 합성 잔여0을 확인했다.
