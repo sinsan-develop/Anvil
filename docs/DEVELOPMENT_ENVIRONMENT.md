@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+정정 UI 동일 Web client `c2b1b75cad5c895c4f1e0c324936865b728237c9` exact private/WSL clean actual1 PASS/5951ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·원문/지시/이유·앞1 보존과 새2/멱등을 확인했고 사용자용 서비스/Secret·실제 사용자/Agent는 변경하지 않았다.
+
 사용 제외 UI 동일 Web client `9a9526255cb108a6c62d07633384826ea310a4bf` exact private/WSL clean actual1 PASS/7346ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·원문 artifact 개수 불변·서비스/Secret/실제 사용자/Agent 변경0. 전체 기능/실제 사용자 browser DB 검수는 미완료다.
 
 지식 상태/이력 동일 Web client `eda65c855695ebb80dff5e7f6958bf455f0d16b8` exact private/WSL clean actual1 PASS/5775ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·합성 event 정정사유 변조는 finally에서 복원했고 실제 사용자 데이터/서비스/Secret는 변경하지 않았다.

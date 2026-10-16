@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 정정 UI 후속 `c2b1b75cad5c895c4f1e0c324936865b728237c9` local/private·WSL exact/clean actual1 PASS/5951ms/skip0. 같은 Web의 실제 지시 출처 지식→새 원문·정정2→앞1/이유/지시 source 보존·현재2 재조회·동일 명령 중복0을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0. 다음은 별도 내용 검토/지식 확정·헌법 상태이며 전체 FN05/Stage B/사용자 browser DB 인수는 미완료다.
+
 - 사용 제외 UI 후속 `9a9526255cb108a6c62d07633384826ea310a4bf` private/WSL exact/clean actual1 PASS/7346ms/skip0: 같은 Web의 exact 대상/사유·제외 사건·replay·기본 검색 배제·artifact 개수 불변을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0. 다음 정정 쓰기 UI는 신규 unit RED2를 작성 중이며 전체 FN05/사용자 browser DB·확정/헌법·Agent/Stage B는 미완료다.
 
 - 지식 상태/이력 후속 `eda65c855695ebb80dff5e7f6958bf455f0d16b8` local/private·WSL exact/clean actual1 PASS/5775ms/skip0: 같은 Web의 구버전/EXCLUDED 상태·명시 제외 검색과 정확 합성 정정사유 변조503→finally복원·옛 원문 보존 확인. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0, 다음은 사용자 정정/제외 쓰기 화면이며 별도 확정/헌법·Agent/전체 인수는 미완료다.
@@ -138,6 +140,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
+
+- 정정 UI `c2b1b75cad5c895c4f1e0c324936865b728237c9` exact private/WSL clean actual1 PASS/5951ms/skip0: 실제 USER_INSTRUCTION 출처 지식에 같은 Web으로 새 본문/현재 판단 이유/별도 정정 사유→불변2 저장·앞1 SUPERSEDED/원문/이유/지시 source 보존·2 재조회·동일 명령 replay 중복0. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0·실제 사용자/서비스·Secret/Agent·공유 변경0. Git fetch의 자동 background 묶음 안내는 정보이며 수동 정리/설정 변경을 하지 않았다.
 
 - 정정 화면 fresh UI10 fixture7 PASS/6.8초·type/diff0. 옛 원문/판단 이유를 그대로 보이고 새로운 판단 이유와 정정 사유를 분리했다. 단절 후 이동해도 원래 기준/명령을 유지하며 raw 업로드1회·정정 command 동일2회이고 새2 본문/옛 출처를 재조회했다. 합성 fixture를 실제 DB로 승격하지 않으며 이번 게시본에서 같은 Web actual을 확인한다. 기존97 단위/Web79 build 증거와 제외/정정·원문/확정 경계는 유지한다.
 
