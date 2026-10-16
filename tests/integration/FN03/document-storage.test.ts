@@ -19,7 +19,7 @@ import { continueDocumentSave, documentControl, editDocument, newDocument, prepa
 import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } from '../../../apps/web/src/features/design-trace/import-api.ts';
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, readStoredProposal, resumeStoredProposal } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '../../../apps/web/src/features/design-trace/materials-api.ts';
-import { readDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
+import { newDesignIndex,prepareDesignIndex,readDesignIndex,sendDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -375,11 +375,15 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const screenFormResponse=await app.inject({method:'GET',url:'/api/v1/forms/a6f30000-0000-4000-8000-000000000003/versions/1',headers}); assert.equal(screenFormResponse.statusCode,200,screenFormResponse.body);
     const screenWork=newDocument(project,screenFormResponse.json(),user,1); screenWork.title='추적 화면 위치 원문'; screenWork.body='# S06 문서 상세 영역\n원문·버전과 연결 업무를 조회한다.'; screenWork.reason='합성 화면 위치 추적'; screenWork.dirty=true;
     const screenRef=await continueDocumentSave(client,await prepareDocumentSave(screenWork,session),session,()=>{},()=>true);
-    const indexCommand={...context,commandId:randomUUID(),operation:'indexDesignDocument',targetId:designRef.id,expectedVersion:designRef.version,payload:{documentRef:designRef,items:[{localCode:'D01',title:'사용자 지식 보존',anchor:'line:1'}],screens:[{designLocalCode:'D01',screenCode:'S06',documentRef:screenRef,anchor:'line:1'}],reason:'실제 원문 위치만 추적 인덱스로 기록'}};
+    const indexCommand={...context,commandId:String(randomUUID()),operation:'indexDesignDocument',targetId:designRef.id,expectedVersion:designRef.version,payload:{documentRef:designRef,items:[{localCode:'D01',title:'사용자 지식 보존',anchor:'line:1'}],screens:[{designLocalCode:'D01',screenCode:'S06',documentRef:screenRef,anchor:'line:1'}],reason:'실제 원문 위치만 추적 인덱스로 기록'}};
     assert.equal((await docSend(indexCommand)).statusCode,403,'문서 작성 허가만으로 설계 추적 인덱스를 쓰지 않는다');
     const indexPolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:6,payload:{rules:[{ruleId:'INDEX_OWN_DESIGN',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','importDocument','proposeDocumentChange','indexDesignDocument'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 설계 추적 인덱스 명시 허가',reviewRefs:[]}}); assert.equal(indexPolicy.statusCode,200,indexPolicy.body);
     assert.equal((await docSend({...indexCommand,commandId:randomUUID(),payload:{...indexCommand.payload,documentRef:{...designRef,contentHash:'0'.repeat(64)}}})).statusCode,409);
     assert.equal((await docSend({...indexCommand,commandId:randomUUID(),payload:{...indexCommand.payload,items:[{localCode:'D99',title:'존재하지 않는 항목',anchor:'line:1'}]}})).statusCode,422,'원문에 없는 설계 항목을 추적 사실로 만들지 않는다');
+    const clientIndexWork=editDocument(project,await readDocument(client,project,designRef.id,1),user,1);clientIndexWork.designIndexState=newDesignIndex(clientIndexWork);
+    clientIndexWork.designIndexState.input={items:structuredClone(indexCommand.payload.items),screens:structuredClone(indexCommand.payload.screens),reason:indexCommand.payload.reason};clientIndexWork.designIndexState.pending=prepareDesignIndex(clientIndexWork,session);
+    await assert.rejects(sendDesignIndex(client,clientIndexWork,session,()=>false),(e:unknown)=>(e as {code:string}).code==='DESIGN_INDEX_CONTINUATION_PAUSED');
+    const clientIndexResult=await sendDesignIndex(client,clientIndexWork,session,()=>true);assert.equal(clientIndexResult.items.length,1);assert.equal(clientIndexResult.screenRegions.length,1);indexCommand.commandId=clientIndexWork.designIndexState.pending.commandId;
     const indexed=await docSend(indexCommand); assert.equal(indexed.statusCode,200,indexed.body); assert.equal(indexed.json().data.status,'DESIGN_INDEXED'); assert.equal(indexed.json().data.designItems.length,1); assert.equal(indexed.json().data.screenRegions.length,1);
     assert.deepEqual((await docSend(indexCommand)).json(),indexed.json()); assert.equal((await docSend({...indexCommand,commandId:randomUUID()})).statusCode,409);
     const indexPath=`/api/v1/projects/${project}/design-index?documentId=${designRef.id}&version=1`;

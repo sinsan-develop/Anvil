@@ -44,6 +44,7 @@ test('문서 목록에서 정확 버전과 원문을 열고 구버전을 조회�
 test('선택한 문서 버전에서 설계 항목·화면 위치 추적 조회를 열 수 있다', async ({ page }) => {
   await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button',{name:'요구사항 원본 열기',exact:true}).click();
   await expect(page.getByRole('button',{name:'이 버전 설계 추적 조회',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'이 버전 설계 위치 등록',exact:true})).toBeVisible();
 });
 
 test('설계 추적은 별도 GET에서 정확 버전 항목을 보이고 변조/미구현을 완료로 숨기지 않는다', async ({ page }) => {

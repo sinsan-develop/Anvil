@@ -113,6 +113,12 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- 등록 UI 후속: 진입점 부재 RED1→DesignIndexEditor·상위 DocumentBuffer의 designIndexState·new/prepare/sendDesignIndex를 연결했다. AF02 exact 원문에서 D코드/제목/줄, 실제 재조회한 AF03 버전의 S코드/줄을 선택하고 별도 index 명령만 보낸다. 기존 편집/import/proposal/review/confirm과 writer를 겹치지 않으며 미확인 입력/명령은 화면 이동 후 같은 App 버퍼로 유지한다. 입력/등록 metadata를 원문 변경/확정/업무 완료로 표시하지 않는다.
+- 오류: actual 시험의 UUID template 추론/일반 문자열 대입 타입1은 생성 UUID의 문자열 타입만 명시해 보정했고 검증 기준은 유지했다. 새 select의 중첩 label이 options 텍스트까지 label 탐색에 포함되는 UI 오류1(동일2case)은 실제 error-context/접근성 tree 대조 후 htmlFor/id로 명시 연결, 같은 시험/15초 한도 그대로 GREEN2/2.8초. 단절 뒤403은 uncertain을 지우지 않는 추가1도 통과했다. fresh 단위72 PASS/1246ms·타입/build(Web65/JS454.69kB/gzip123.35)·UI06 fixture32 PASS/24.5초·diff0. NO_COLOR 경고1 보존, SQL20 checksum 불변이다.
+- 실제 시험에 같은 prepare/sendDesignIndex로 중단 화면 요청0→등록/정확 receipt·GET hash 확인을 추가했으며 게시 전 실제 결과는 미검증이다. 기존 원문/SQL20·실제 계정/정책/Secret/서비스 변경0, 고유 합성 QA/finally만 소비한다. 다음은 게시 exact SHA actual·정리 확인 후 AF04 작업계획/업무와 추적 edge 저장이다.
+
+- 읽기 client 후속 `67e84b8138f74247f2ef2e85880f1efeb966c112` local/private·WSL exact/clean actual1 PASS/13968ms/skip0: 같은 Web readDesignIndex가 실제 index GET의 정확 문서/항목/화면 metadata hash를 검증했다. 기존20 SQL은 재적용하지 않았다. 이번 실행 시간1개를 성능 합격/퇴행으로 판정하지 않는다. 등록 UI·plan/task/trace 연결은 미완료로 유지하고 다음 화면 등록을 같은 App 사용자/프로젝트 버퍼·동일 명령/미확인 보존에 연결한다.
+
 - UI06 설계 추적 읽기 진입점 부재 RED1→DesignIndexViewer/design-index-api·DocumentsPage의 명시 GET 연결. 화면은 정확 문서 버전/원문 위치/실제 저장 ID를 표시하고 항목/영역 metadata hash를 확인한다. 조회만으로 제어권/쓰기0, 변조 때 이전 항목 제거·오류, 미연결 작업/시험은 미구현으로 표시한다. fresh unit71 PASS/1175ms·type/build exit0(Web64/JS442.29kB/gzip120.81)·UI06 fixture29 PASS/21.2초·diff0. 이 화면 검증은 fixture이며 같은 Web client의 actual index GET 검증은 게시 후 확인한다. 등록 화면·작업계획/trace edge는 아직 미연결이다.
 
 - 후속 `98b3504dcf6bc2387f317a0acfcb9eb642657044` 지정 private/WSL exact clean에서 직접 승인된 forward20만 추가 적용했다. checksum `d0d6ef9221a46c96c4e6f033d6a14e22cc07b26a8bcb1949d67dbb8e574aea6a`, 기존19 불변·fixture7·realProductUsersCreated0. 실제 FN03+FN11 인접2 PASS/3368ms/skip0: 새 index의 별도403→합성 명시 policy→정확 source/hash·실제 줄 확인/원문 없는 코드422→저장/replay/새 중복409→GET/타 사용자404·app 직접UPDATE42501·기존 원문 불변. 독립 DB15종 각0(design_items/screen_regions 포함)·시험root[]·지속원문 uid1000/0700/실경로 동일/link0/empty와 적용20 checksum을 재확인했다. SQL20은 이제 적용본으로 수정하지 않는다. 인덱스 UI/작업계획/trace edge·실제 browser DB 여정은 아직 미연결이다.
