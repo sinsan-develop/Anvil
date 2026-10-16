@@ -22,3 +22,7 @@ test('코드 블록 속 가짜 표를 반복 자료로 세지 않고 파이프 �
   assert.equal(validateDocumentConfirmation('## 목적\n실제 설명\n## 요구\n' + table, sections, definition).validForConfirmation, true);
   assert.equal(validateDocumentConfirmation('## 목적\n실제 설명\n## 요구\n```\n' + table + '\n```', sections, definition).validForConfirmation, false);
 });
+test('사용자 양식의 선택 항목이 비어 있어도 필수 항목으로 암묵 승격하지 않는다', () => {
+  const form = { ...definition, items: [definition.items[0]!, { ...definition.items[0]!, itemId: 'OPTIONAL', title: '참고', required: false }] };
+  assert.equal(validateDocumentConfirmation('## 목적\n실제 목적\n## 참고', [{ itemId: 'PURPOSE', anchor: 'line:1' }, { itemId: 'OPTIONAL', anchor: 'line:3' }], form).validForConfirmation, true);
+});

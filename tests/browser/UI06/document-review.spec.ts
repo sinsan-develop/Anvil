@@ -13,11 +13,11 @@ test.beforeEach(async ({ page }) => {
   await page.route(`**/api/v1/projects/${project}/files/${file}`, route => route.fulfill({ contentType: 'application/octet-stream', body }));
 });
 test.afterEach(async ({ page }) => { expect(unknown.get(page)).toEqual([]); });
-async function document(page: Page, reviews: any[] = []) {
+async function document(page: Page, reviews: any[] = [], state = { validForConfirmation: false, confirmed: false }) {
   await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/2`, route => route.fulfill({ json: {
-    ...ref, title: '검토 대상', confirmed: false, formRef, stageNodeRef: null,
+    ...ref, title: '검토 대상', confirmed: state.confirmed, formRef, stageNodeRef: null,
     content: { body: { artifactId: file, bytes: Buffer.byteLength(body), contentHash: createHash('sha256').update(body).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, attachments: [], sections: [], sourceRefs: [] },
-    validation: { validForConfirmation: false, issues: [] }, statusHistory: [],
+    validation: { validForConfirmation: state.validForConfirmation, issues: [] }, statusHistory: [],
     contentReviewCriteria: { criteriaVersion: 1, formRef, items: [{ criterionId: 'REQ', title: '요구 내용', reviewCriteria: ['실제 원문과 대조'] }, { criterionId: 'SCOPE', title: '범위', reviewCriteria: ['누락 구분'] }] }, contentReviews: reviews,
   } }));
 }
@@ -104,4 +104,47 @@ test('내용 검토 작성 중에는 앞서 열었던 초안 편집기로 다른
   await expect(page.getByRole('button', { name: '새 문서 작성', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: '검토 작성 닫기', exact: true }).click();
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue(body);
+});
+function acceptedReview(sequence = 8, outcome = 'ACCEPTED') { return { ref: { id: file, criteriaVersion: 1, targetRef: ref, outcome }, items: ['REQ','SCOPE'].map(criterionId => ({ criterionId, outcome, evidenceRefs: [], reason: '실제 원문 확인' })), reviewer: { kind: 'HUMAN', userId: id, sameAsTargetRecorder: true }, sourceKind: 'HUMAN_REVIEW', reason: '사람의 내용 대조', reviewedAt: '2026-10-16T05:00:00Z', serverSequence: sequence }; }
+test('문서 확정은 별도 확인 뒤 명시 요청하고 단절/화면 이동에도 같은 명령으로 결과를 확인한다', async ({ page }) => {
+  const accepted = acceptedReview(), state = { validForConfirmation: true, confirmed: false }, writes: any[] = []; await document(page, [accepted], state);
+  await page.route(`**/api/v1/projects/${project}/commands`, route => {
+    const c = route.request().postDataJSON(); writes.push(c); expect(c.operation).toBe('confirmDocument'); expect(c.targetId).toBe(id); expect(c.expectedVersion).toBe(2);
+    expect(c.payload).toEqual({ versionRef: ref, formRef, reviewRefs: [accepted.ref] }); expect(route.request().headers()['x-anvil-csrf']).toBe(csrf);
+    state.confirmed = true;
+    return writes.length === 1 ? route.abort('connectionreset') : route.fulfill({ json: { operationId: file, commandId: c.commandId, projectId: project, targetId: id, version: 2, status: 'APPLIED', data: { ref, status: 'CONFIRMED', confirmationId: file }, serverReceivedAt: '2026-10-16T05:00:00Z' } });
+  });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button', { name: '검토 대상 열기', exact: true }).click();
+  await page.getByRole('button', { name: '이 버전 확정 준비', exact: true }).click();
+  await expect(page.getByRole('button', { name: '문서 버전 확정', exact: true })).toBeDisabled(); expect(writes).toHaveLength(0);
+  await page.getByLabel('이 문서 버전과 검토 결과를 확인했습니다', { exact: true }).check();
+  await page.getByRole('button', { name: '문서 버전 확정', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
+  await page.evaluate(() => { location.hash = '#/runs'; }); await page.getByRole('heading', { name: '아직 연결되지 않은 화면', exact: true }).waitFor();
+  await page.evaluate(p => { location.hash = '#/projects/' + p + '/documents'; }, project); expect(writes).toHaveLength(1);
+  await page.getByRole('button', { name: '같은 확정 명령 결과 확인', exact: true }).click();
+  await expect(page.getByText('문서 확정 저장 확인 · Agent 실행 아님', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]);
+  await page.getByRole('button', { name: '검토 대상 열기', exact: true }).click(); await expect(page.getByText('확정된 버전', { exact: true })).toBeVisible();
+});
+test('형식 미완성 또는 최신 재작업 검토는 옛 적합 기록이 있어도 확정 준비를 허용하지 않는다', async ({ page }) => {
+  const state = { validForConfirmation: false, confirmed: false }, reviews = [acceptedReview()]; await document(page, reviews, state);
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button', { name: '검토 대상 열기', exact: true }).click();
+  await expect(page.getByRole('button', { name: '이 버전 확정 준비', exact: true })).toBeDisabled();
+  state.validForConfirmation = true; reviews.push(acceptedReview(9, 'REWORK'));
+  await page.getByRole('button', { name: '검토 대상 열기', exact: true }).click();
+  await expect(page.getByRole('button', { name: '이 버전 확정 준비', exact: true })).toBeDisabled();
+});
+test('확정 요청의 인증 만료 후 다른 사용자는 이전 대상이나 미확인 명령을 보지 못한다', async ({ page }) => {
+  await document(page, [acceptedReview()], { validForConfirmation: true, confirmed: false }); let writes = 0;
+  await page.route('**/api/v1/auth/setup', route => route.fulfill({ json: { setupRequired: false, policyVersion: 1 } }));
+  await page.route('**/api/v1/auth/login', route => route.fulfill({ json: { user: { id: file, displayName: '다른 사용자' }, clientId: file, csrfToken: csrf } }));
+  await page.route(`**/api/v1/projects/${project}/commands`, route => { writes++; return route.fulfill({ status: 401, json: { code: 'AUTH_REQUIRED' } }); });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button', { name: '검토 대상 열기', exact: true }).click();
+  await page.getByRole('button', { name: '이 버전 확정 준비', exact: true }).click();
+  await page.getByLabel('이 문서 버전과 검토 결과를 확인했습니다', { exact: true }).check(); await page.getByRole('button', { name: '문서 버전 확정', exact: true }).click();
+  await page.getByRole('heading', { name: 'Anvil 로그인', exact: true }).waitFor();
+  await page.getByLabel('사용자명', { exact: true }).fill('synthetic-confirm-other'); await page.getByLabel('비밀번호', { exact: true }).fill('QA-only-not-real-password'); await page.getByRole('button', { name: '로그인', exact: true }).click();
+  await expect(page.getByText('다른 사용자 또는 프로젝트의 확정 요청은 숨겨 보존했습니다.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '문서 별도 확정', exact: true })).toHaveCount(0); expect(writes).toBe(1);
 });

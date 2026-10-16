@@ -114,6 +114,9 @@
 - 현재 형식 검사와 SQL16은 그대로 이력이며 새 확정 기능의 완료 근거가 아니다. RED는 검토 허가만으로 확정을 요청하면403이어야 하나 현재 미연결 연산400인 경계를 먼저 확인한다.
 - RED exact `01bdf487a78c0451569b6767e9b331515f8a7f49` actual1 FAIL/838ms(400≠403), 정리 finally 수행. 형식 검사 첫 시험은 모듈 부재의 로딩 오류1로 분리하고 현재 목차 수준 검사에서 본문/필드/코드 속 표의 행동 RED3을 확인한 뒤 강화했다. 후속 unit51 PASS·타입 시험 자료의 추론 누락1회(4진단)는 명시 타입으로 보정, build/타입0·Web53·diff0.
 - 새 forward17 `0003_document_confirmations` SHA256 `58ebdd39cddb67cbbf4fa2f21bea42848dfa7e0851297bd7592f8b3ce36e9fd5`는 확정 불변 이력과 현재 command/receipt/policy/control·OWNER/최신 ACCEPTED를 결박한다. 기존16 SQL·version/link/draft-event guard는 유지하고 head만 별도 확정/개정 보존으로 분리한다. Markdown/텍스트 본문의 필수 범위와 반복 표(필드 ID/명칭·필수 셀·행)를 확인하되 사실/내용 검수 합격을 자동 선언하지 않는다. 미완성 초안 저장은 계속 허용한다.
+- `a149119af41ec0d3b1cdc9602be3c7e5a52253bf` local/private·WSL exact/clean에서 forward17 적용 exit0·기존16 checksum 불변, actual FN03 1 PASS/1311ms/skip0. 별도 권한403/형식·검토 누락422/위조와 최신 재작업/옛 버전 차단·확정/replay·새 초안 뒤 구확정 유지·직접 pointer 쓰기42501·확정 이력1/실행 outbox0을 확인했다.
+- UI 확정 준비 버튼 부재 RED1→App 상위 대상/검토/명령 버퍼·별도 확인 checkbox·명시 confirmDocument 클라이언트 연결. 단절/화면 이동 동일 명령, 최신 REWORK/형식 누락 차단, 인증 만료 뒤 다른 사용자 숨김/자동 전송0까지 UI06 fixture13 PASS/10.1초. 사용자 양식의 선택 항목을 필수로 취급하는 RED1은 비어 있는 선택 범위를 허용하도록 좁게 보정, 최종 unit54/타입·build0·Web55(JS388.81kB/gzip108.52·CSS7.61kB)/diff0. 실제 화면 DB 통합/전체 인수는 아직 미검증이다.
+- 변경 파일: server document-validation/project-confirmation/project-documents·projects routes, 새 SQL17/migration runner, App·DocumentsPage·DocumentConfirmation/confirmation-api와 관련 unit/browser/FN03 actual. 새 UI 클라이언트의 실제 API/DB 시험은 후속 exact 게시본에서 실행하며, 새 schema/서비스 재생성·인증자료 갱신은 반복하지 않는다.
 
 ### 2026-10-16 UI06 고정 버전의 내용 검토 작성·저장 연결 — Main 어울
 

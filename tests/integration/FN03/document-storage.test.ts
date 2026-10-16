@@ -13,6 +13,7 @@ import { ApiClient } from '../../../apps/web/src/api/client.ts';
 import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts';
 import { newDocumentReview, prepareDocumentReview, sendDocumentReview, type DocumentReviewBuffer } from '../../../apps/web/src/features/design-trace/review-api.ts';
 import type { FormDefinition } from '../../../apps/server/modules/documents/forms.ts';
+import { newDocumentConfirmation, prepareDocumentConfirmation, sendDocumentConfirmation } from '../../../apps/web/src/features/design-trace/confirmation-api.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
@@ -182,9 +183,13 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     rework.pending = prepareDocumentReview(rework, session); await sendDocumentReview(client, rework, session, () => true);
     assert.equal((await docSend({ ...acceptedConfirm, commandId: randomUUID() })).statusCode, 422, '나중 재작업 뒤 옛 적합을 재사용할 수 없다');
     accepted.pending = prepareDocumentReview(accepted, session); const latestAccepted = await sendDocumentReview(client, accepted, session, () => true);
-    const finalConfirm = { ...acceptedConfirm, commandId: randomUUID(), payload: { ...acceptedConfirm.payload, reviewRefs: [latestAccepted] } };
-    const confirmed = await docSend(finalConfirm); assert.equal(confirmed.statusCode, 200, confirmed.body); assert.equal(confirmed.json().data.status, 'CONFIRMED');
-    assert.deepEqual((await docSend(finalConfirm)).json(), confirmed.json(), '동일 확정 명령은 이력 중복 없이 재확인');
+    const confirmInput = newDocumentConfirmation(project, (await readDocument(client, project, readyRef.id, 1)).document, user, 1);
+    assert.deepEqual(confirmInput.reviewRefs, [latestAccepted]);
+    assert.throws(() => prepareDocumentConfirmation(confirmInput, session), '별도 화면 확인 전 확정 요청을 만들지 않는다');
+    confirmInput.acknowledged = true; confirmInput.pending = prepareDocumentConfirmation(confirmInput, session);
+    const finalConfirm = confirmInput.pending;
+    const confirmed = await sendDocumentConfirmation(client, confirmInput, session, () => true); assert.deepEqual(confirmed.ref, readyRef);
+    assert.deepEqual(await sendDocumentConfirmation(client, confirmInput, session, () => true), confirmed, '동일 확정 명령은 이력 중복 없이 재확인');
     const confirmedRead = await readDocument(client, project, readyRef.id, 1); assert.equal(confirmedRead.document.confirmed, true); assert.equal(confirmedRead.document.contentHash, readyRef.contentHash);
     assert.ok(confirmedRead.document.statusHistory.some(event => event.kind === 'CONFIRMED'));
     const later = editDocument(project, confirmedRead, user, 1); later.body += '\n추가 개정 내용'; later.reason = '확정 후 새 초안'; later.dirty = true;

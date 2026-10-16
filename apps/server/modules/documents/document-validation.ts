@@ -22,8 +22,10 @@ export function validateDocumentConfirmation(body: string, sections: { itemId: s
     const index = located.findIndex(s => s.itemId === item.itemId);
     if (index < 0) { if (item.required) issue('REQUIRED_SECTION_MISSING', item.itemId, '필수 항목을 원문에 연결하세요.'); continue; }
     const text = visible.slice(located[index]!.start, located[index + 1]?.start ?? lines.length);
+    const hasContent = text.some(line => !/^\s{0,3}#{1,6}(?:\s|$)/.test(line) && meaningful(line));
+    if (!item.required && !hasContent) continue;
     if (item.valueType === 'TEXT') {
-      if (!text.some(line => !/^\s{0,3}#{1,6}(?:\s|$)/.test(line) && meaningful(line))) issue('REQUIRED_CONTENT_MISSING', item.itemId, '목차나 미작성 표식이 아닌 실제 본문을 작성하세요.');
+      if (!hasContent) issue('REQUIRED_CONTENT_MISSING', item.itemId, '목차나 미작성 표식이 아닌 실제 본문을 작성하세요.');
       continue;
     }
     const fields = item.fields.filter(field => field.required);
