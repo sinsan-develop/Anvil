@@ -113,6 +113,7 @@
 - Ruling: 승인 INTERFACES §9.4의 proposeDocumentChange(baseRef/proposedContent/reason/sourceRefs)→PENDING proposal·서버 diff artifact→사용자 saveDocumentDraft(proposalRef)의 명시 새 버전을 구현한다. diff는 기존 파일 저장의 원본 바이트/해시·프로젝트 quota를 소비하며 서버가 생성한다. 계획이 최소 diff 알고리즘을 요구하지 않으므로 동일 앞/뒤 줄을 제외한 손실 없는 유한 변경 구간으로 비교한다. 잘못 판단하면 비교 표시만 더 길어질 수 있지만 본문 patch/자동 반영/확정은 하지 않는다. sourceRefs/실제 Agent 연결 전에는 []만 허용한다.
 - 기존 artifacts의 command당1개 제약은 유지한다. 제안 본문은 명시 업로드한 실제 artifact를 참조하고 제안 명령의 서버 diff1개만 새로 생성한다. 새 forward19로 같은 프로젝트 proposal/선택 FK·명령/receipt/허가/감사와 diff 생성 행위를 결박하며 기존18 SQL을 수정하지 않는다. 새로운 사용자 정책/계정·Secret·서비스·실제 Agent·Oracle 변경0이다.
 - QA 자원은 기존 전용 WSL DB `anvil_v3_development`/PG15·Git checkout `/home/daon/deploy/anvil-v3`/보호 app·migrator 설정, 합성 `qa-document-storage-<UUID>` 사용자/프로젝트·`/tmp/anvil-v3-document-qa-<UUID>` uid1000/0700·시험1회 수명·finally 정확 UUID 정리·독립 잔여 확인이다. 지속 artifacts root와 Windows Node/relay/CA는 보존한다.
+- RED `e09e97763577b3adc67ca03e6e1d4591c2517413` WSL exact/clean actual1 FAIL/1840ms: 별도 제안 권한403 대신 미연결 연산400. 서버 diff의 BOM/CRLF/빈값/변경 구간은 행동 RED1→GREEN1, unit60/1088ms·타입0·diff0. 새 forward19 `0003_document_proposals` checksum `93cb063a0214f2197afca309ed3d4482a0ea8bac765b9e72f42b110bdb6f542a`는 현재 미적용이며 기존18 수정0. 정상·replay·권한/교차 사용자·stale·제안만으로 본문 변경0·명시 반영/구버전 보존·직접 UPDATE 거절의 actual은 게시 후 확인한다. 현재 화면의 제안 작성/비교/반영은 아직 미연결이다.
 
 ### 2026-10-16 FN03 원문 가져오기 후보·선택 연결 착수 — Main 어울
 

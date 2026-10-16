@@ -251,11 +251,39 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal(importedDocument.body, bytes.toString('utf8')); assert.equal(importedDocument.document.confirmed, false); assert.deepEqual(importedDocument.document.content.attachments, [importPending.candidate!.originalRef]);
     const proposalCommand = { ...context, commandId: randomUUID(), operation: 'proposeDocumentChange', targetId: freshRef.id, expectedVersion: freshRef.version, payload: { baseRef: freshRef, proposedContent: { ...freshRead.document.content, body: artifact }, reason: '기존 문서를 바꾸지 않는 별도 수정 제안', sourceRefs: [] } };
     assert.equal((await docSend(proposalCommand)).statusCode, 403, '초안/가져오기 허가는 수정 제안 허가가 아니다');
+    const proposalPolicy = await docSend({ ...context, commandId: randomUUID(), operation: 'savePermissionPolicy', targetId: policyRef.id, expectedVersion: 5, payload: { rules: [{ ruleId: 'PROPOSE_OWN_DOCUMENTS', subjectRef: { kind: 'HUMAN', userId: user }, targetScopes: [{ kind: 'PROJECT', projectId: project }], operations: ['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','importDocument','proposeDocumentChange'], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 수정 제안 명시 허가', reviewRefs: [] } });
+    assert.equal(proposalPolicy.statusCode, 200, proposalPolicy.body);
+    assert.equal((await docSend({ ...proposalCommand, commandId: randomUUID(), payload: { ...proposalCommand.payload, baseRef: { ...freshRef, contentHash: '0'.repeat(64) } } })).statusCode, 409);
+    const proposed = await docSend(proposalCommand); assert.equal(proposed.statusCode, 200, proposed.body);
+    const proposal = proposed.json().data.proposal;
+    assert.equal(proposal.status, 'PENDING'); assert.deepEqual(proposal.baseRef, freshRef); assert.deepEqual(proposal.proposedContentRef, artifact);
+    assert.deepEqual((await docSend(proposalCommand)).json(), proposed.json(), '같은 제안 명령은 diff/제안1개');
+    const proposalPath = `/api/v1/projects/${project}/proposals/${proposal.id}`;
+    assert.equal((await app.inject({ method: 'GET', url: proposalPath, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
+    const proposalRead = await app.inject({ method: 'GET', url: proposalPath, headers }); assert.equal(proposalRead.statusCode, 200, proposalRead.body); assert.deepEqual(proposalRead.json().proposedContent, proposalCommand.payload.proposedContent); assert.deepEqual(proposalRead.json().selections, []);
+    const diff = await app.inject({ method: 'GET', url: `/api/v1/projects/${project}/files/${proposal.diffRef.artifactId}`, headers }); assert.equal(diff.statusCode, 200, diff.body);
+    assert.equal(createHash('sha256').update(diff.rawPayload).digest('hex'), proposal.diffRef.contentHash); assert.equal(diff.rawPayload.length, proposal.diffRef.bytes);
+    const actualDiff = JSON.parse(diff.rawPayload.toString('utf8')); assert.equal(actualDiff.format, 'ANVIL_TEXT_DIFF_1'); assert.deepEqual(actualDiff.baseRef, freshRef); assert.equal(actualDiff.before.join(''), fresh.body); assert.equal(actualDiff.after.join(''), bytes.toString('utf8'));
+    assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body, '제안만 기록해서 기존 원문을 바꾸지 않는다');
+    assert.equal(Number((await pool.query('SELECT head_version FROM anvil.documents WHERE project_id=$1 AND id=$2', [project, freshRef.id])).rows[0].head_version), 1);
+    const applyProposal = { ...documentCommand, commandId: randomUUID(), targetId: freshRef.id, expectedVersion: 1, payload: { ...documentCommand.payload, title: fresh.title, content: proposalCommand.payload.proposedContent, proposalRef: proposal.id, reason: '차이를 확인한 뒤 제안 내용으로 새 초안 저장' } };
+    assert.equal((await docSend({ ...applyProposal, commandId: randomUUID(), payload: { ...applyProposal.payload, content: freshRead.document.content } })).statusCode, 409, '제안과 다른 본문을 제안 반영으로 위장할 수 없다');
+    const selectedProposal = await docSend(applyProposal); assert.equal(selectedProposal.statusCode, 200, selectedProposal.body); assert.equal(selectedProposal.json().data.ref.version, 2);
+    assert.deepEqual((await docSend(applyProposal)).json(), selectedProposal.json());
+    assert.equal((await readDocument(client, project, freshRef.id, 2)).body, bytes.toString('utf8')); assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body);
+    assert.equal((await app.inject({ method: 'GET', url: proposalPath, headers })).json().selections.length, 1);
+    assert.equal((await docSend({ ...proposalCommand, commandId: randomUUID() })).statusCode, 409, '오래된 기준의 새 제안은 현재 문서를 덮어쓰지 않는다');
+    assert.equal((await docSend({ ...applyProposal, commandId: randomUUID() })).statusCode, 409);
+    await assert.rejects(pool.query("UPDATE anvil.document_proposals SET reason='changed' WHERE id=$1", [proposal.id]), (e: unknown) => (e as { code: string }).code === '42501');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if ((await db.query("SELECT to_regclass('anvil.document_proposals') present")).rows[0].present) {
+        await db.query('DELETE FROM anvil.document_proposal_selections WHERE project_id=$1', [project]);
+        await db.query('DELETE FROM anvil.document_proposals WHERE project_id=$1', [project]);
+      }
       if ((await db.query("SELECT to_regclass('anvil.document_imports') present")).rows[0].present) {
         await db.query('DELETE FROM anvil.document_import_selections WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_imports WHERE project_id=$1', [project]);
