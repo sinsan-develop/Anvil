@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN04 forward29 후보: design_changes는 exact before 문서 composite FK·실제 proposal FK·project/제안 유일성·초기 요청 v1 JSON/hash·사람/client/command를 append-only 저장한다. design_change_impacts는 해당 change hash/FK와 초기 MECHANICAL_TRACE v1 snapshot/hash·확인 시점·제한된 입력 계획 ref/공백을 보존한다. app UPDATE/DELETE 권한0·현재 control/policy/receipt와 원문 확정/최신 검토·미선택 proposal를 DB guard에서 결박한다. 기존 설계/계획 pointer·원문/선택·적용28 SQL은 변경하지 않는다. 사람 검토 버전/기준 적용은 후속 미구현이며 이 초기 저장 구조를 실행 허가로 쓰지 않는다.
+
 FN04 forward28 후보: `work_plan_confirmations`는 project/plan/version/hash·선택 review_refs·현재 검증 snapshot·사람/client/command를 append-only 보존하며 버전당1건이다. 기존 version_json/DRAFT/hash는 변경하지 않고 work_plans.confirmed_version만 정확 receipt·현재 control/policy/head/원문/최신 검토와 결박해 변경한다. 직접 pointer 변경·확정 삭제는 거절한다. 이후 최신 REWORK/원문 미준비/새 head는 과거 확정을 지우지 않고 현재 유효성을 false로 표시한다. 확정은 기준 활성화/실행이 아니다.
 
 원문 격리 forward27은 artifacts의 기존 QUARANTINED 상태에 nullable inspection_json을 추가한다. 기존 행은 null(미검사)로 보존하며 안전 판정을 소급하지 않는다. 새 업로드는 policyVersion1/method KNOWN_PATTERNS_RAW_BYTES/complete=false/state SUSPECTED 또는 NO_KNOWN_MARKER/reasonCodes를 정확 업로드 receipt와 결박한다. 의심 원문 파일/hash는 불변, 비밀값/일치 구간 저장0·자동 삭제/해제0. 기존 제안의 서버 diff는 기존 정확 guard/READY 경로를 유지한다. 사용자 권한 확대·이전 SQL 변경은 하지 않는다.

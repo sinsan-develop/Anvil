@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN04 변경 초기 저장: traceability/design-impact.ts가 exact 참조/의존 전파·UNKNOWN/공백의 순수 계산을, design-changes.ts가 실제 확정 원문/수정 제안·현재 계획/인덱스 조회·초기 요청/영향 저장·불변 조회를 소유한다. forward29는 새 append-only 두 테이블/정확 guard만 추가한다. UI07·사람 영향 검토 버전·기준 활성화는 아직 미구현이며 이 파일 존재를 전체 기능 완료로 판정하지 않는다.
+
 `WorkPlanLibrary.tsx`는 저장 snapshot(DRAFT)과 별도 검토/확정 이력·현재 유효성을 읽기 전용 조회로 분리한다. 상태 조회는 제어권/쓰기 준비를 요구하지 않으며 GET decision 검증·멤버 권한은 서버에서 확인한다. 검토/확정 작성은 기존 WorkPlanEditor의 별도 버퍼에서만 준비한다.
 
 UI06 계획 결정 연결: `work-plan-decision-api.ts`는 실제 계획 decision GET 검증·현재 사용자/client/세대/대상·별도 확인·같은 명령만 전송한다. `WorkPlanDecisionEditor.tsx`는 원문/카드 검토5기준의 개별 판단과 별도 사용자 확정을 분리하고 root WorkPlanBuffer.decision에 입력/명령/실패·미확인을 보존한다. 추적 writer와 동시 준비하지 않으며 단절 후 뒤늦은 거절도 새 명령/자동 닫기로 바꾸지 않는다. 화면 fixture와 실제 DB 증거는 WORK_STATUS에서 구분한다.

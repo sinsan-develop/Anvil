@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 설계 변경 요청 미구현 actual RED `26fc178e40ab6014df3bb9eb251e2ac358d9bf20` WSL exact/clean 1FAIL/9398ms/skip0: 새 연산 미등록400(별도 정책 거절403이 필요). 후속은 기존 실제 PENDING 수정 제안·현재 확정 AF02/최신 적합 검토·새 요청 정책을 재검사하고 변경 요청/초기 기계 영향 v1을 append-only 저장한다. 선택 출처 sourceRefs는 현재 []만 지원하며 추가 출처는412로 명시 미연결, 승인/기준 적용/업무 재개0·사람 영향 검토 버전은 후속 미구현이다. 현재 설계 인덱스와 최대8개 현재 계획(각200업무)·최대2000대상만 계산하고 잘림/모호한 계획/실행·시험 미연결은 coverageGaps로 보존한다. unit120 PASS/4516ms·타입 unknown→UUID predicate 좁힘1 교정·실제 GREEN 미검증. 새 승인 forward29 `0004_design_change_proposals` checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 작성, 아직 적용0·이전28 SQL 불변. 같은 등록 QA 수명/정리 조건으로 exact 게시본에서 확인한다.
+
 - FN04 다음 저장 범위 직접 승인 확인: `call_d824c2536d1d42d89cbfe3ed0f38b8e3` ‘설계 변경·영향 이력 계약·개발 DB 보완 승인’. 기존 anvil_v3_development의 새 forward·현재 로그인/단독 제어·별도 정책/감사로 정확 확정 AF02/실제 수정 제안·이유/출처·영향 이력을 보존하며 기존 SQL/원문/확정·현재 기준 불변이다. 기준 적용·업무 재개·실제 사용자 권한/Agent·Secret/서비스/운영 변경은 제외한다. 현재 `design-impact.ts`의 exact 설계/의존 방향 전파·UNKNOWN/누락·범위 잘림·중복/위장 상태 거절 unit RED2→GREEN2/229ms, 상태 literal 음성 비교의 타입 경고1은 String 비교로 시험 의도를 유지해 교정했다. 원문 참조 문서명 추측 읽기1은 실제 contracts/references.ts로 정정, 자료/권한 변경0. 아직 DB29 작성/적용0. 실제 별도 변경 요청 정책403 시험을 추가했고 다음 exact 게시본에서 미구현 RED 확인 예정. 임시 자원은 기존 승인 UUID 사용자/프로젝트·/tmp/anvil-v3-document-qa-<UUID>/한 시험 수명·exact finally 정리 계약을 재사용한다.
 
 - UI06/FN04 동일 Web `827f812ff1299f692830423cc6091e5405ba9877` local/private·WSL exact/clean actual1 PASS/8168ms/skip0. 실제 원문/카드 조회→계획 검토 저장/replay→현재 조건 재조회→별도 checkbox 필요→확정 실제 저장 뒤 합성 응답 단절→같은 명령 재확인/동일 확정 ID·DB pointer/조회·사후 REWORK 이력 보존을 확인했다. 독립 DB26종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations28, SQL 재실행0·실제 사용자/Secret/서비스 변경0. unit118/계획 fixture8·type/build PASS는 실제 사용자 browser↔DB 인수와 구분한다. FN04/Stage B/전체44업무는 미완료다.
