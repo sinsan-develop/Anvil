@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN02 c43b68d9 exact private/WSL clean actual RED1/592ms(기능332ms)/skip0: copyMethodology가 프로젝트 명령에 미등록400(명시 정책 미설정412 필요). 후속은 별도 project 명령/정책·현재 제어·CAS·receipt와 전용 버전 원문/검토/확정을 연결한다. 새 forward39 `0002_project_methodology_revisions` 후보만 작성했으며 기존38 SQL/자료는 불변·아직39 미적용/실제 GREEN/UI03 미검증이다. 기존 공통·생성 guard는 유지하고 project 분기는 실제 receipt/OWNER/client/현재 정책으로만 허용한다. 확정은 적용이 아니며 실행 상태 미확인 적용은412다. unit139 PASS/1919ms·type/diff0, 등록 UUID QA의 같은 수명/exact 정리만 재사용하고 새 서비스/실제 사용자·Secret/Agent 변경0.
+
 - FN02 프로젝트 입력/METHOD5 신규 미구현 RED2→GREEN2/225ms, unit139 PASS/2122ms·type/diff0. 실제 실패용 시험은 `qa-project-method-<UUID>` 사용자2·UUID 프로젝트2·현재 합성 client와 명시 정책만 한 시험 수명으로 생성하며 소유 UUID만 finally transaction 정리한다. 파일/폴더/컨테이너 생성0, 실제 사용자 정책 부여0. 아직 forward39/프로젝트 변경 GREEN/UI03는 미구현·미검증이다. 이 등록 계약으로 같은 시험의 수정/정리까지 진행하며 새로운 자원 범위는 추가하지 않는다.
 
 - 2026-10-17 FN02 후속 직접 승인 `call_351372d7d53d43ecae8e25c5c78ef9b2` ‘프로젝트 방법론 개정·확정·별도 적용 계약·개발 DB 보완 승인’을 확인했다. 기준31ff8dd6 local/private 동일·clean, Main 어울 단일 writer로 방법론 module·project command/route·UI03·직접 시험·새 forward39/runner 및 관련 정본만 수정한다. 기존38 SQL·공통/시스템 원본·고정 적용 이력은 보존한다. Pre-flight: 현재 project 명령/명시 정책·METHOD5/양식 준비 계약을 소비하고 저장→검토→확정→적용을 분리한다. Ruling: 실행 상태를 증명할 FN08/FN09 원본이 아직 없으므로 부재를 IDLE로 추정하지 않고 적용 전환은 EXECUTION_STATE_UNVERIFIED로 거절한다. 개정·검토·확정과 조회는 먼저 구현하며 적용 기능은 선행 미충족으로 남긴다(판단 오류 비용: 조기 적용 사용 불가, 기존 적용본/작업은 불변). 실제 사용자 정책·Agent/업무 재개·Secret/서비스/운영 변경0. 새 DB 변경 전 실제 schema/guard를 확인하며 이전 잘못 추측한 읽기 경로는 목록 조회로 정정하고 ACL 변경0이다.
