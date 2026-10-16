@@ -66,10 +66,16 @@ test('방법론은 같은 내용 검토와 양식 준비를 확인해 확정하�
     assert.equal(draft.statusCode, 201, draft.body);
     const loaded = await app.inject({ method: 'GET', url: '/api/v1/project-drafts/' + draft.json().draftId, headers });
     assert.deepEqual(loaded.json().input.methodologySelection, selected);
-    const authored = { kind: 'NEW_PROJECT_DRAFT', name: '이 프로젝트 절차', purpose: '기본본을 초안에서 구체화', graph: original.graph, sourceRefs: [original.ref], reviewRefs: [] };
+    const draftGraph = { nodes: ['CHECK', 'ACCEPT'].map((nodeId, index) => ({ nodeId, name: index ? '결과 확인' : '요구 확인', purpose: '직접 판단', kind: 'HUMAN', role: 'USER', mode: 'CASE_BY_CASE', position: { x: index ? 260 : -10, y: index ? 20 : 0 }, inputs: [], outputs: [], taskScope: { included: ['내용 대조'], excluded: [] }, completionCriteria: ['판단 기록'], approvalBoundary: [], limitPolicyRef: null, recordRequirements: ['이유와 위치 보존'] })),
+      edges: [{ edgeId: 'CONTINUE', fromNodeId: 'CHECK', toNodeId: 'ACCEPT', kind: 'SEQUENCE', condition: { fieldRef: { nodeId: 'CHECK', field: 'USER_DECISION' }, operator: 'EQ', value: 'CONTINUE' }, reason: '사용자 확인 뒤 진행' }], entryNodeId: 'CHECK', terminalNodeIds: ['ACCEPT'] };
+    const authored = { kind: 'NEW_PROJECT_DRAFT', name: '이 프로젝트 절차', purpose: '기본본을 초안에서 구체화', graph: draftGraph, sourceRefs: [original.ref], reviewRefs: [] };
     const directDraft = await app.inject({ method: 'POST', url: '/api/v1/project-drafts', headers, payload: { ...draftBase, commandId: randomUUID(), methodologySelection: authored } });
     assert.equal(directDraft.statusCode, 201, directDraft.body);
     assert.deepEqual(directDraft.json().input.methodologySelection, authored);
+    const reread = await app.inject({ method: 'GET', url: '/api/v1/project-drafts/' + directDraft.json().draftId, headers });
+    assert.equal(reread.statusCode, 200); assert.deepEqual(reread.json().input.methodologySelection, authored);
+    const invalid = await app.inject({ method: 'PATCH', url: '/api/v1/project-drafts/' + directDraft.json().draftId, headers, payload: { schemaVersion: 1, commandId: randomUUID(), clientId: login.clientId, expectedVersion: 1, step: 2, input: { ...draftBase, schemaVersion: undefined, commandId: undefined, clientId: undefined, targetId: undefined, expectedVersion: undefined, methodologySelection: { ...authored, graph: { ...draftGraph, executionCode: 'not-allowed' } }, artifactRefs: [] } } });
+    assert.equal(invalid.statusCode, 422);
     assert.equal((await app.inject({ method: 'POST', url: '/api/v1/project-drafts', headers, payload: { ...draftBase, commandId: randomUUID(), methodologySelection: { ...selected, versionRef: { ...nextRef, contentHash: '0'.repeat(64) } } } })).statusCode, 409);
     assert.equal((await pool.query('SELECT count(*)::int AS count FROM anvil.projects WHERE name=$1', [draftBase.name])).rows[0].count, 0);
   } finally {

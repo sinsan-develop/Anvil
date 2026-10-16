@@ -9,6 +9,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   const [reload, setReload] = useState(0);
   const [step, setStep] = useState(1);
   const [pending, setPending] = useState(false);
+  const [selectionBusy, setSelectionBusy] = useState(false);
   const [editable, setEditable] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
   const wrongOwner = !!buffer.ownerUserId && buffer.ownerUserId !== session.user.id;
@@ -26,7 +27,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     return () => { current = false; };
   }, [client, session.clientId, session.user.id, requestedId, reload, wrongOwner]);
   async function save() {
-    if (pending || !editable || wrongOwner) return;
+    if (pending || selectionBusy || !editable || wrongOwner) return;
     const fingerprint = JSON.stringify({ draftId: buffer.draftId, version: buffer.version, input: buffer.input, step });
     if (buffer.pendingCommand && buffer.pendingCommand.fingerprint !== fingerprint) { setError(new ApiError('DRAFT_RECONCILIATION_REQUIRED')); return; }
     const command: PendingDraftCommand = buffer.pendingCommand ?? {
@@ -52,7 +53,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   }
   function change(field: 'name' | 'purpose' | 'desiredOutcome', value: string) { if (!wrongOwner) onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, [field]: value }, dirty: true })); }
   function restore() {
-    if (!buffer.draftId || pending || wrongOwner) return;
+    if (!buffer.draftId || pending || selectionBusy || wrongOwner) return;
     if ((buffer.dirty || buffer.pendingCommand) && !confirm('현재 미저장 입력을 서버 저장본으로 바꿀까요?')) return;
     onChange(previous => ({ ...previous, dirty: false, pendingCommand: null }));
     setRequestedId(buffer.draftId); setReload(value => value + 1); setError(null);
@@ -69,13 +70,13 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       <label htmlFor={fieldId + '-purpose'}>왜 만드는가</label><textarea id={fieldId + '-purpose'} value={buffer.input.purpose} readOnly={!editable || !!buffer.pendingCommand} disabled={pending} onChange={event => change('purpose', event.target.value)} rows={4} />
       <label htmlFor={fieldId + '-outcome'}>기대 결과</label><textarea id={fieldId + '-outcome'} value={buffer.input.desiredOutcome} readOnly={!editable || !!buffer.pendingCommand} disabled={pending} onChange={event => change('desiredOutcome', event.target.value)} rows={3} />
       <p>소스: 새 빈 프로젝트 · 기존 소스의 보호 경로/읽기 관측은 아직 연결 전입니다.</p>
-      {step === 2 ? <MethodologySelection client={client} value={buffer.input.methodologySelection} disabled={pending || !editable || !!buffer.pendingCommand} onChange={methodologySelection => onChange(previous => ({ ...previous, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} /> : null}
-      <button disabled={pending || !editable} type="submit">{pending ? '처리 확인 중' : buffer.pendingCommand ? '저장 결과 다시 확인' : '중간 저장'}</button>
-      <button disabled={pending || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
+      <button disabled={pending || selectionBusy || !editable} type="submit">{pending ? '처리 확인 중' : buffer.pendingCommand ? '저장 결과 다시 확인' : '중간 저장'}</button>
+      <button disabled={pending || selectionBusy || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
     </form>
+    {step === 2 ? <MethodologySelection client={client} value={buffer.input.methodologySelection} disabled={pending || !editable || !!buffer.pendingCommand} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
     {buffer.draftId ? <p role="status">초안 버전 {buffer.version} · {buffer.draftId}{buffer.dirty ? ' · 미저장 입력 있음' : ''}</p> : null}
     <p className="meta">입력은 화면 이동·로그인 만료 중 이 탭에 보존됩니다. 서버 저장 전 탭 종료/새로고침에는 확인이 필요합니다.</p>
-    {step === 1 ? <button disabled={pending || !editable || !buffer.draftId || buffer.dirty || !!buffer.pendingCommand} onClick={() => setStep(2)}>방법론·자료로 다음</button> : <button disabled={pending || !!buffer.pendingCommand} onClick={() => setStep(1)}>목적·소스로 이전</button>}
+    {step === 1 ? <button disabled={pending || selectionBusy || !editable || !buffer.draftId || buffer.dirty || !!buffer.pendingCommand} onClick={() => setStep(2)}>방법론·자료로 다음</button> : <button disabled={pending || selectionBusy || !!buffer.pendingCommand} onClick={() => setStep(1)}>목적·소스로 이전</button>}
     <button disabled>프로젝트 생성 — 필수 기준 연결 전</button>
     <p><a href="#/projects">프로젝트 목록으로 · 입력은 탭에 유지</a></p>
   </section>;
