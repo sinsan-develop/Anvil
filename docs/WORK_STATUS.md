@@ -5,7 +5,7 @@
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
 - 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·FN01~03·FN11 부분 구현**. 인증·허가 프로젝트 조회/초안 저장·공식 양식·내장 방법론/본인 공통본 복사/개정의 실제 WSL API/DB를 확인했다. 최종 프로젝트 생성·전체 방법론 편집/확정·문서 작성/확정·실제 Agent 등은 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `b7d64b894a49876c77f30ff88729bfcd5169e85d`의 본인 확정 방법론 필터·검토/확정·초안 보존 actual1 PASS/465ms, 선행7eda0b69의 페이지 순회/필터·변조/격리1 PASS/339ms·각 skip0/고유 QA 정리. Windows unit42·UI02/03 fixture20+검색/페이지 핵심2·Web45 통과, DB migration10개/권한 불변. 전체 actual UI DB 여정/최종 프로젝트 생성/실제 Agent·인수는 미검증·미완료. DRAFT/PROJECT 보완 승인 응답 전 적용0이며 목표는 이 승인 경계에서 blocked다.
+- 최근 실제 확인: WSL exact `b7d64b894a49876c77f30ff88729bfcd5169e85d`의 본인 확정 방법론 필터·검토/확정·초안 보존 actual1 PASS/465ms, 선행7eda0b69의 페이지 순회/필터·변조/격리1 PASS/339ms·각 skip0/고유 QA 정리. Windows unit42·UI02/03 fixture20+검색/페이지 핵심2·Web45 통과, DB migration10개. 전체 actual UI DB 여정/최종 프로젝트 생성/실제 Agent·인수는 미검증·미완료. 최신 직접 ‘승인해 계속하자’로 DRAFT/PROJECT 보완 경계가 해소되어 같은 미완료에서 재개한다. 승인과 실제 적용/검증은 구분한다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
 - 다음 업무: 연결된 UI03 공간형·단계/문서/조건 편집·방법론 검토/확정의 잔여 검수→생성 초안 연결·FN01 최종 생성. 양식의 복사/편집/내용검토/확정은 부분 연결했지만 문서 본문 작성/원본·제안·확정과 FN11 프로젝트 정책/일회 승인 집행은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
@@ -106,6 +106,13 @@
 | IX08 Oracle 정밀 검증 | [] | 별도 이전/배포 미실행 | 승인된 exact후보/환경 뒤 정밀 시험·사용자 확인 |
 
 ## 7. 일자별 상세 이력 — 최신순
+
+### 2026-10-16 FN01·FN02 생성 초안 검토/확정·최초 프로젝트 생성 재개
+
+- 신산님 직접 ‘승인해 계속하자’는 앞선 정확 승인 요청의 DRAFT/PROJECT 개발 DB 보완에 적용한다. 기존 v3 개발 DB에 forward migration으로 본인 초안의 검토/확정과 최초 프로젝트/소유 참여/단일 client 제어/고정 방법론 snapshot/명령/receipt·감사를 원자 결박한다. 기존 적용10 SQL과 다른 사용자·프로젝트·실제 계정·Secret·인증서·서비스·운영/Oracle·실제 Agent 호출은 제외한다. 과거 blocked 기록은 당시 사실이며 새 승인 후 같은 지점에서 재개한다. 전체44업무·Stage B partial 유지, 완료 선언0.
+- 시작 기준: `67316225cc0fe9168fd0139814a009a3ce7adee2`, `codex/av3-stage-b`, tracked clean. 초기 sandbox Git 읽기1회는 work tree 접근 오류였고 같은 위치의 elevated read에서 HEAD/branch/clean을 확인했다. Git 설정/권한 변경0, 제품 실패로 분류하지 않는다. Windows DB 재접속 hold·기존 expired bootstrap/혼합 source HTTPS 프로세스도 유지한다.
+- 이번 범위: projects의 생성/초안 명령 handler, DRAFT 검토·확정 계약, 새 `0011_draft_project_creation.sql`, 명시 runner, FN01 실제 통합 시험, UI02 연결 및 관련 계약/현황. 원본 FORM/공통 방법론 검토 기준과 기록은 보존한다. API/DB 정상·중복/다른 client·소유자/stale/미확정·rollback을 먼저 확인하고 UI를 연결한다. 영향 없는 완료 검사는 반복하지 않는다.
+- QA 사전등록: WSL 전용 기존 개발 DB에서 이번 시험이 난수 UUID로 생성한 `qa-project-create-<UUID>` 합성 사용자/현재 client·세션/초안/프로젝트와 그 종속 명령·검토·receipt·감사·snapshot만 사용한다. 담당 Main 어울, 수명은 각 test try/finally, migrator로 exact 소유 UUID를 대조하여 참조 역순 정리·독립 잔여0 확인. 기존 사용자/프로젝트·DB/container/volume/network/포트·인증 자료는 보존하며 외부 Agent 실행0. 실패도 같은 정리/오류 기록을 적용한다.
 
 ### 2026-10-16 FN02·UI03 방법론 목록 페이지 조회
 
