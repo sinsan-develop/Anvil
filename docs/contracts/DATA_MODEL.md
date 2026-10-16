@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN11 forward36 후보는 기존 소비 표의 미연결 INSERT guard를 현재 명령/정책·기한·APPROVE 결정·주체/기기/세대·정확 후보/hash로 교체하고 요청 UPDATE는 APPROVED/version2→CONSUMED/version3·같은 소비 사건일 때만 허용한다. 기존 request/decision JSON·SQL34/35는 보존한다. commands.approval_consumption_id·payload_ref의 비밀 없는 범위/hash, authorization_receipts.approval_decision_ref, audit.approval_ref를 같은 transaction에서 연결한다. 소비의 command_id는 서버 행 ID이고 후보 commandId는 commands.command_id로 별도 대조한다. 현재 uploadArtifact만 지원하며 파일과 DB의 완전한 분산 원자성을 새로 보장하지 않는다(보호 파일 보존/고아 정리 계약은 별도). exact QA 파일은 기존 전용 root의 finally 정리 대상이다.
+
 FN11 forward35 후보는 기존 approval_decisions에 nullable command_id/content_hash/decision_json을 추가하고 현재 명령/정책·HUMAN/기기/세대·pending exact 요청/서버 기한/범위와 불변 receipt를 결박한다. 기존 요청의 UPDATE guard는 동일 metadata 유지·새 결정 사건과 같은 명령일 때만 status/version1→2를 허용한다. 초기 request_json·옛 SQL34를 수정하지 않는다. 소비 표의 fail-closed guard는 유지하며 승인 결정이 업무 실행이나 범위 확대를 허가하지 않는다.
 
 FN11 forward34 후보: 기존 approval_requests에 nullable client_id/command_id/policy_ref/content_hash/request_json을 추가하고 app 신규 요청만 정확 원자 영수증·현재 OWNER/control·AUTO 요청/REQUIRE_APPROVAL 후보 정책과 결박한다. 기존 행을 자동 검증 완료로 분류하지 않는다. 신규 metadata가 있는 후보는 project/candidate_command_id 유일하다. 요청 payload/현재 기준·원문은 바꾸지 않고 초기 요청 snapshot/version1·확정 해석과 현재 상태/만료/회수를 분리한다. 아직 미연결 결정/소비 표의 app INSERT와 요청 status/version 직접 갱신은 fail-closed guard로 막으며 후속 검증 전 실행 권한으로 쓰지 않는다. 기존33 SQL·실제 사용자 정책/Secret은 보존한다.

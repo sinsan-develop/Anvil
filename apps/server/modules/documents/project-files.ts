@@ -6,6 +6,7 @@ import { authorizeMaterial, currentProjectController, persistProjectReceipt, pro
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import { parseWireJson,canonicalJson } from '../../../../contracts/canonical.ts';
 import{inspectArtifact,assertStoredArtifactReadable}from'../../storage/sensitive-inspection.ts';
+import{isApprovalRef}from'../approvals/approval-input.ts';
 
 const uuid = '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', validId = new RegExp(uuid);
 const mediaTypes = ['text/plain;charset=utf-8', 'text/markdown;charset=utf-8', 'application/octet-stream', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/html;charset=utf-8', 'image/svg+xml', 'image/png', 'image/jpeg'];
@@ -17,7 +18,7 @@ function uploadContext(raw: unknown, projectId: string): ProjectCommand {
   try { if (typeof raw !== 'string' || raw.length > 8000) throw Error(); value = parseWireJson(raw); } catch { throw new AuthFailure('INPUT_INVALID', 400); }
   if (!object(value, ['schemaVersion', 'projectId', 'commandId', 'clientId', 'controlGeneration', 'operation', 'targetId', 'expectedVersion', 'baselineRefs', 'approvalRef', 'payload']) || value.schemaVersion !== 1 || value.projectId !== projectId
     || typeof value.commandId !== 'string' || !validId.test(value.commandId) || typeof value.clientId !== 'string' || !validId.test(value.clientId) || !Number.isSafeInteger(value.controlGeneration) || Number(value.controlGeneration) < 1
-    || value.operation !== 'uploadArtifact' || value.targetId !== null || value.expectedVersion !== 0 || !Array.isArray(value.baselineRefs) || value.baselineRefs.length || value.approvalRef !== null
+    || value.operation !== 'uploadArtifact' || value.targetId !== null || value.expectedVersion !== 0 || !Array.isArray(value.baselineRefs) || value.baselineRefs.length || !(value.approvalRef===null||isApprovalRef(value.approvalRef))
     || !object(value.payload, ['mediaType', 'bytes', 'contentHash']) || !mediaTypes.includes(String(value.payload.mediaType)) || !Number.isSafeInteger(value.payload.bytes) || Number(value.payload.bytes) < 0 || Number(value.payload.bytes) > 20 * 1024 * 1024 || typeof value.payload.contentHash !== 'string' || !/^[0-9a-f]{64}$/.test(value.payload.contentHash)) throw new AuthFailure('INPUT_INVALID', 400);
   return value as unknown as ProjectCommand;
 }

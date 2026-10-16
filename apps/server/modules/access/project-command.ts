@@ -3,6 +3,8 @@ import type { PoolClient } from 'pg';
 import { AccessRepository, AuthFailure, type AuthenticatedIdentity } from './repository.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
+import{ProjectApprovals}from'../approvals/project-approvals.ts';
+import{readApprovalRef}from'../approvals/approval-input.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
 export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'requestApproval', 'decideApproval'] as const;
@@ -50,7 +52,10 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   const matched = policy.rules.filter(rule => rule.subjectRef.kind === 'HUMAN' && rule.subjectRef.userId === actor.actorId && rule.targetScopes.some(scope => scope.kind === 'PROJECT' && scope.projectId === request.projectId) && rule.operations.includes(request.operation) && Date.parse(rule.expiresAt) > Date.now());
   if (!matched.length || matched.some(rule => rule.disposition === 'DENY')) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
   const approvalRequired=matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL');
-  if (approvalRequired&&!inspectPending) throw new AuthFailure('APPROVAL_REQUIRED', 412);
+  if(!inspectPending){
+    if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals().authorize(db,actor,request,policy.ref);}
+    else if(request.approvalRef!==null)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
+  }
   return {...policy,approvalRequired,validUntil:Math.min(...matched.map(rule=>Date.parse(rule.expiresAt)))};
 }
 export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
@@ -61,12 +66,14 @@ export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity
 }
 export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string) {
   const id = randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
+  const approval=request.approvalRef===null?null:readApprovalRef(request.approvalRef),consumptionId=approval?randomUUID():null,payloadRef=approval?{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(request.payload)),scopeDigest:approval.scopeDigest}:null;
   const result = { operationId, commandId: request.commandId, projectId: request.projectId, status: 'APPLIED', targetId: 'id' in ref ? ref.id : ref.artifactId, version: 'version' in ref ? ref.version : null, data: { ...('id' in ref ? { ref } : { artifactRef: ref }), ...data }, evidenceRefs: [], warnings: [], serverReceivedAt: (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString() };
   const scopeDigest = contentHash(canonicalJson({ projectId: request.projectId, actorId: actor.actorId, clientId: actor.clientId, controlGeneration: request.controlGeneration, requestHash: contentHash(canonicalJson(request)), policyRef, targetRef: ref }));
-  await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,expected_version,control_generation,policy_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, JSON.stringify(result)]);
-  await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest) VALUES($1,'PROJECT',$2,$3,$4,$5,$6)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest]);
-  await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, reasonCode, scopeDigest]);
+  await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,$14,$15,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, consumptionId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, payloadRef?JSON.stringify(payloadRef):null, JSON.stringify(result)]);
+  await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref) VALUES($1,'PROJECT',$2,$3,$4,$5,$6,$7)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest,approval?.decisionId??null]);
+  await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,$9,'APPLIED',$10,$11,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, approval?JSON.stringify(approval):null,reasonCode, scopeDigest]);
   await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
+  if(approval&&consumptionId){if(!policyRef)throw new AuthFailure('APPROVAL_POLICY_REQUIRED',412);await new ProjectApprovals().consume(db,actor,request,policyRef,id,consumptionId);}
   return { result, id };
 }
 export async function recordProjectDenial(access: AccessRepository, token: string, projectId: string, error: unknown) {
@@ -89,7 +96,7 @@ export class ProjectPolicyRepository {
         if (request.operation !== 'savePermissionPolicy') {
           const policy = await authorizeMaterial(db, actor, request);
           const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;
-          if (request.baselineRefs.length || request.approvalRef !== null) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
+          if (request.baselineRefs.length) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
           return material(db, actor, policy.ref);
         }
