@@ -1,7 +1,8 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, listMethods, type MethodPage, type MethodVersion } from './api.ts';
-import { listProjectMethods, readProjectMethod, readProjectMethodAtVersion, prepareProjectMethod, writeProjectMethod, type ProjectMethodPage } from './project-api.ts';
+import { listProjectMethods, readProjectMethod, readProjectMethodAtVersion, readMethodApplicationRef, prepareProjectMethod, writeProjectMethod, type ProjectMethodPage } from './project-api.ts';
+import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { CommonMethodEditor } from './CommonMethodEditor.tsx';
 import { MethodReviewPanel } from './MethodReviewPanel.tsx';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
@@ -15,10 +16,11 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
   const [error, setError] = useState<ApiError | null>(null), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   const [afterId, setAfterId] = useState<string | null>(null), [catalogCursor, setCatalogCursor] = useState<string | null>(null);
   const [nodeId, setNodeId] = useState('');
+  const [appliedRef, setAppliedRef] = useState<VersionRef | null | undefined>(undefined);
   function failed(cause: unknown) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if ([401, 403, 404].includes(failure.status)) { setSource(null); setPage(null); setCatalog(null); if (failure.status === 401) onAuthenticationLost(); } }
   useEffect(() => {
     let current = true; setLoading(true); setError(null);
-    Promise.all([listProjectMethods(client, projectId, afterId), listMethods(client, { ...(catalogCursor ? { cursor: catalogCursor } : {}) })]).then(([own, common]) => { if (current) { setPage(own); setCatalog(common); } }).catch(cause => { if (current) failed(cause); }).finally(() => { if (current) setLoading(false); });
+    Promise.all([listProjectMethods(client, projectId, afterId), listMethods(client, { ...(catalogCursor ? { cursor: catalogCursor } : {}) }), readMethodApplicationRef(client, projectId)]).then(([own, common, applied]) => { if (current) { setPage(own); setCatalog(common); setAppliedRef(applied); } }).catch(cause => { if (current) { setAppliedRef(undefined); failed(cause); } }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [client, projectId, revision, afterId, catalogCursor]);
   const gateway: MethodGateway = { prepare: request => prepareProjectMethod(client, projectId, session, request), write: request => writeProjectMethod(client, request, session.csrfToken), read: (ref, name, purpose) => readProjectMethod(client, projectId, ref, name, purpose) };
@@ -27,6 +29,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
   return <>
     <section aria-label="프로젝트 전용 방법론 조회"><h2>프로젝트 전용 방법론</h2>
       <p className="meta">공통 원본과 기존 적용본은 유지됩니다. 저장·내용 검토·확정은 적용 전환이나 Agent 실행이 아닙니다.</p>
+      <section aria-label="고정 적용본 조회" className="status-card"><h3>현재 고정 적용본</h3>{appliedRef === undefined ? <p>적용본 조회 미확인</p> : appliedRef === null ? <p>확인된 적용본 없음</p> : <><p>적용 세대 {appliedRef.version}</p><p className="meta">{appliedRef.id} · {appliedRef.contentHash}</p><p className="meta">아래 편집·확정 후보와 별개인 적용 snapshot 참조입니다.</p></>}</section>
       <button disabled={loading} onClick={() => { setAfterId(null); setCatalogCursor(null); setRevision(value => value + 1); }}>전용 방법론 목록 갱신</button>
       {page?.items.map(item => <button disabled={loading} key={item.ref.id} onClick={() => { void select(() => readProjectMethod(client, projectId, item.ref, item.name, item.purpose)); }}>{item.name} v{item.ref.version} 열기</button>)}
       <button disabled={loading || !page?.hasMore} onClick={() => { if (page?.nextAfterId) setAfterId(page.nextAfterId); }}>전용 방법론 다음 목록</button>

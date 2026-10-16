@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
-import { prepareProjectMethod, writeProjectMethod } from '../../../apps/web/src/features/methodology-editor/project-api.ts';
+import { prepareProjectMethod, writeProjectMethod, readMethodApplicationRef } from '../../../apps/web/src/features/methodology-editor/project-api.ts';
 const pid = 'a6f20000-0000-4000-8000-000000000010', user = 'a6f20000-0000-4000-8000-000000000011', cid = 'a6f20000-0000-4000-8000-000000000012';
 const session = { user: { id: user }, clientId: cid, csrfToken: 'A'.repeat(43) };
 const command = { schemaVersion: 1 as const, commandId: 'a6f20000-0000-4000-8000-000000000013', clientId: cid, operation: 'copyMethodology' as const, targetId: null, expectedVersion: 0, payload: { sourceRef: { id: 'a6f20000-0000-4000-8000-000000000001', version: 2, contentHash: 'b'.repeat(64) }, name: '전용본', scope: 'PROJECT', reason: '원본 보존' } };
@@ -21,4 +21,13 @@ test('전용 방법론 명령은 현재 제어를 고정하고 유실 뒤 동일
   assert.deepEqual(requests[0], requests[1]);
   const wrong = new ApiClient(async () => Response.json({ status: 'APPLIED', projectId: cid }));
   await assert.rejects(writeProjectMethod(wrong, prepared, session.csrfToken));
+});
+
+test('고정 적용 ref 조회는 개정 원본과 별개이며 없는 응답을 미적용으로 위조하지 않는다', async () => {
+  const currentMethodologyRef = { id: cid, version: 3, contentHash: 'c'.repeat(64) };
+  const client = new ApiClient(async url => { assert.equal(url, '/api/v1/projects/' + pid); return Response.json({ id: pid, currentMethodologyRef }); });
+  assert.deepEqual(await readMethodApplicationRef(client, pid), currentMethodologyRef);
+  await assert.rejects(readMethodApplicationRef(new ApiClient(async () => Response.json({ id: pid })), pid));
+  await assert.rejects(readMethodApplicationRef(new ApiClient(async () => Response.json({ id: cid, currentMethodologyRef })), pid));
+  assert.equal(await readMethodApplicationRef(new ApiClient(async () => Response.json({ id: pid, currentMethodologyRef: null })), pid), null);
 });

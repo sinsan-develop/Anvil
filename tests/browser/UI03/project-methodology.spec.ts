@@ -20,7 +20,7 @@ test('프로젝트 전용 복사·개정은 공통본과 분리되고 미확인 
   await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: [], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
   await page.route(/\/api\/v1\/methodologies(?:\?.*)?$/, route => route.fulfill({ json: { items: [{ ...original, status: 'DRAFT', sourceAvailable: true }], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
   await page.route('**/api/v1/methodologies/' + source.id + '/versions/' + source.version, route => route.fulfill({ json: original }));
-  await page.route('**/api/v1/projects/' + pid, route => route.fulfill({ json: { id: pid, participation: 'OWNER', controlState: { actorId: uid, clientId: cid, generation: 3, status: 'HELD' } } }));
+  await page.route('**/api/v1/projects/' + pid, route => route.fulfill({ json: { id: pid, currentMethodologyRef: { id: 'a6f20000-0000-4000-8000-000000000087', version: 1, contentHash: 'a'.repeat(64) }, participation: 'OWNER', controlState: { actorId: uid, clientId: cid, generation: 3, status: 'HELD' } } }));
   await page.route(/\/api\/v1\/projects\/[^/]+\/methodologies\?limit=20$/, route => route.fulfill({ json: { projectId: pid, items: copied ? [{ ref: own.ref, name: own.name, purpose: own.purpose, scope: 'PROJECT' }] : [], hasMore: false, nextAfterId: null, observedAt: new Date().toISOString(), applicationTransition: 'EXECUTION_STATE_UNVERIFIED' } }));
   await page.route(new RegExp('/api/v1/projects/' + pid + '/methodologies/' + mid + '/versions/[12]$'), route => { const version = Number(new URL(route.request().url()).pathname.split('/').at(-1)); return route.fulfill({ json: { ...(history[version] ?? own), headVersion: own.headVersion } }); });
   await page.route('**/api/v1/projects/' + pid + '/commands', async route => {
@@ -44,6 +44,7 @@ test('프로젝트 전용 복사·개정은 공통본과 분리되고 미확인 
   });
   await page.goto('/#/projects/' + pid + '/methodologies');
   await expect(page.getByRole('heading', { name: '프로젝트 전용 방법론', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '고정 적용본 조회', exact: true }).getByText('적용 세대 1', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: source.name + ' 전용 복사 원본', exact: true }).click();
   await page.getByLabel('복사본 이름', { exact: true }).fill(own.name);
   await page.getByRole('button', { name: '프로젝트 전용으로 복사', exact: true }).click();
@@ -74,6 +75,7 @@ test('프로젝트 전용 복사·개정은 공통본과 분리되고 미확인 
   await page.getByRole('button', { name: '개정 전용 절차 v2 열기', exact: true }).click();
   await page.getByRole('button', { name: '이전 방법론 버전', exact: true }).click();
   await expect(page.getByText('이 버전의 확정 이력 있음 · 적용 여부와 별도', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: '고정 적용본 조회', exact: true }).getByText('적용 세대 1', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '프로젝트 적용 전환', exact: true })).toBeDisabled();
   await expect(page.getByText('실행 상태 미확인 · 적용 전환 불가', { exact: true })).toBeVisible();
   expect(unexpected).toEqual([]);

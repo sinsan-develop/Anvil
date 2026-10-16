@@ -5,6 +5,12 @@ import { validateMethodVersion, type MethodVersion } from './api.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { ordered } from '../knowledge/review-view.ts';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+export async function readMethodApplicationRef(client: ApiClient, pid: string): Promise<VersionRef | null> {
+  if (!uuid.test(pid)) throw new ApiError('CLIENT_PATH_INVALID');
+  const project = await client.get<{ id: string; currentMethodologyRef: VersionRef | null }>(`/api/v1/projects/${pid}`);
+  if (!project || project.id !== pid || project.currentMethodologyRef !== null && !validRef(project.currentMethodologyRef)) throw new ApiError('RESPONSE_INVALID');
+  return project.currentMethodologyRef;
+}
 const validRef = (ref: VersionRef) => !!ref && uuid.test(ref.id) && Number.isSafeInteger(ref.version) && ref.version > 0 && /^[0-9a-f]{64}$/.test(ref.contentHash);
 async function graphHash(graph: unknown) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ordered(graph))))].map(value => value.toString(16).padStart(2, '0')).join(''); }
 export async function prepareProjectMethod(client: ApiClient, pid: string, session: DocumentSession, request: MethodCommand): Promise<MethodCommand> {
