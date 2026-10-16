@@ -6,3 +6,9 @@ test('사람 영향 검토는 모든 대상과 공백을 보존하고 근거 없
 test('영향 검토는 대상/버전 위장·중복·미지원 실행 증거·빈 이유를 거절한다',async()=>{
  const m=await import('../../../apps/server/modules/traceability/impact-review.ts').catch(()=>null);assert.ok(m,'영향 검토 참조 검사 필요');const item={targetRef:target,state:'AFFECTED',reason:'보수적으로 재확인',evidenceRefs:[]},p={items:[item],coverageGaps:base.coverageGaps,reason:'사람 판단을 별도 기록'};assert.deepEqual(m.readImpactReview(p,base),p);for(const invalid of [{...p,items:[item,item]},{...p,items:[{...item,targetRef:{...target,versionRef:{...plan,version:2}}}]},{...p,items:[{...item,evidenceRefs:[{kind:'EXECUTION',id:doc.id,versionRef:doc}]}]},{...p,reason:''},{...p,items:[{...item,state:'COMPLETED'}]}])assert.throws(()=>m.readImpactReview(invalid,base));
 });
+test('잘못된 근거 참조422와 유효하지만 미지원인 근거412를 구분한다',async()=>{
+ const {readImpactReview}=await import('../../../apps/server/modules/traceability/impact-review.ts');
+ const payload=(ref:unknown)=>({items:[{targetRef:target,state:'UNAFFECTED',reason:'정확 근거만 허용',evidenceRefs:[ref]}],coverageGaps:base.coverageGaps,reason:'근거 식별 오류와 연결 불가를 구분'});
+ assert.throws(()=>readImpactReview(payload({kind:'DOCUMENT_VERSION',id:plan.id,versionRef:doc}),base),(e:unknown)=>(e as{statusCode:number}).statusCode===422);
+ assert.throws(()=>readImpactReview(payload({kind:'EXECUTION',id:doc.id,versionRef:doc}),base),(e:unknown)=>(e as{statusCode:number}).statusCode===412);
+});

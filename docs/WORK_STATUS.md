@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- `e7e1030341787aa6d0bd877998ca78b145a7af66` exact/clean WSL에서 forward31 checksumc3d5cb62…002b 적용·기존30 checksum 불변·fixtures7·실제 사용자 생성0. actual1 FAIL/8780ms/skip0: 이전42883 저장 root는 해소되어 사람 검토v2 저장/동일 명령 replay·stale409까지 통과했고, 다음 잘못된 근거 ID/versionRef의 음성에서 기대422/실제412로 실패했다. 원인은 입력 형식 오류와 미지원 kind를 한 분기로 분류한 것으로 확인했다(별도 root1). 순수 분류 시험 RED1→GREEN·unit123 PASS/4333ms·type/diff0: 잘못된 참조422, 유효한 미지원 EXECUTION412로만 분리하며 기존 actual 기대값/거절 기준은 유지한다. 독립 DB28종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations31 확인. 사람 근거v3·전체 이력 페이지의 실제 GREEN은 아직 미검증이며 다음 exact 게시본에서 확인한다. 현재 기준 적용/실제 사용자 권한/서비스/Secret 변경0.
+
 - 저장503 진단 `c1175ce5cd8dcf7e9ad8db1aed4f6e46b33be7ea` actual1 FAIL/8923ms/skip0: whitelist code42883/routine op_error, 이전 미확인 삭제422·근거 없는 판단422까지 통과했다. SQL30의 `snapshot->coverageGaps @> prior.impact_json->coverageGaps` 연산 결합이 원인임을 빈 JSON probe 원식42883/양쪽 괄호 보정식false·변경0으로 확인했다. 새 저장 root 실제 실패2회이며 SQL30 checksume99067f1…9275c는 불변으로 보존한다. 새 forward31 `0004_design_impact_review_operator_fix` checksumc3d5cb62a7f5615db0325f9008031f61c6d16a225bc2ef241defcadbc75c002b는 같은 guard 정의에서 포함 비교 양쪽 괄호만 명시한다. 권한/자료/의미 조건·현재 기준 확대0, 현재 미적용·실제 GREEN 미검증이다. 다음 exact 게시본으로 검증하며 동일 root가 다시 재현되면 3회 규칙에 따라 추가 시도하지 않고 예외 보고한다.
 
 - 중복 잠금 보정 `c1b831976205ff975389f1ff73a7b5180f5d1d80` exact/clean actual1 FAIL/8867ms/skip0. 이전 조회 root는 해결돼 공백 삭제422·근거 없는 영향 없음422까지 통과했고, 다음 실제 새 검토 저장에서 별도 STORAGE_FAILED503이 발생했다(새 저장 root1, 아직 원인 미확정). 적용30/권한은 바꾸지 않고 같은 합성 명령/동일 인증·정책 경로에서 whitelist 오류 code/messageCode/constraint/routine만 드러내는 시험 진단을 추가한다. 오류 원문/SQL detail/Secret은 출력하지 않고 원래 HTTP 실패 판정은 보존하며 finally 정확 정리를 유지한다.
