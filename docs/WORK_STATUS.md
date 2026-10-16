@@ -107,6 +107,14 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 UI06 고정 버전의 내용 검토 작성·저장 연결 — Main 어울
+
+- 시작 `5abfbeeb276b50cc4d0179aea3be55b2040b9f8b` local/private 동일·Stage B tracked clean. 기존 SQL16/검토 서버 API·문서 저장을 다시 만들지 않고 recordContentReview의 사람 입력 화면과 동일 클라이언트를 연결한다. 새 DB/계정/Secret/서비스 변경0이다.
+- 변경: App 상위 검토 버퍼, DocumentReviewEditor/review-api, DocumentsPage와 unit/browser/actual FN03 시험. 양식의 실제 기준별 판단·근거와 종합 판단을 명시 저장하고 원문 버전/hash·현재 제어·명령/CSRF·응답 ref를 대조한다. 일부 재작업의 종합 ACCEPTED 거절, 검토는 확정/시험 합격/Agent 실행 아님을 유지한다.
+- TDD: 작성 버튼 부재 RED1→작성/저장 GREEN3. 앞서 열린 초안 편집기가 검토 중에도 남는 RED1→원인인 독립 렌더 조건을 검토 작성기와 배타적으로 분리, 입력 자체는 보존했다. 단절/409의 동일 명령 재확인, 화면 이동 입력 보존, 인증 만료 뒤 다른 사용자 숨김/자동 요청0, 동시 편집 방지까지 UI06 전체10 PASS/7.8초.
+- Windows `npm run build`/타입 exit0·Web53(JS381.19kB/gzip107.36·CSS7.61kB/gzip2.25), `npm test`48 PASS/skip0, diff check0. NO_COLOR/FORCE_COLOR 환경 경고 보존. 브라우저 시험은 모든 API 차단/대체 fixture이며 실제 DB 여정이 아니다. 같은 클라이언트 actual API/DB 후속 시험은 이 checkpoint 게시 뒤 실행하고 실제 결과를 추가한다.
+- 미완료: 별도 confirmDocument, 형식/필수 본문의 엄격 확정 검사, 버전 충돌 비교/새 기준 조정, 실제 browser↔DB·FN04/FN05. 전체44와 UI06/FN03 부분 구현 상태는 유지한다. rollback은 앞선 게시본 5abfbeeb이며 기존 원본/SQL/서비스를 변경하지 않았다.
+
 ### 2026-10-16 UI06 문서 편집·새 초안 버전 저장 착수 — Main 어울
 
 - 시작 local/private `1c326deaf62051a90aa1b76b9f751bf18ed07fd0`/지정 Stage B·tracked clean, private main f976ed5e 불변. 완료된 원문/버전·검토·정책/SQL16은 다시 구현하거나 migration을 반복하지 않는다.

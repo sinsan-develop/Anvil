@@ -11,6 +11,7 @@ import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { ApiClient } from '../../../apps/web/src/api/client.ts';
 import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts';
+import { newDocumentReview, prepareDocumentReview, sendDocumentReview } from '../../../apps/web/src/features/design-trace/review-api.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
@@ -140,6 +141,19 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal(freshRef.version, 1); assert.notEqual(freshRef.id, currentRef.id);
     const freshRead = await readDocument(client, project, freshRef.id, 1);
     assert.equal(freshRead.body, fresh.body); assert.equal(freshRead.document.content.body.mediaType, 'text/markdown;charset=utf-8');
+    const reviewInput = newDocumentReview(project, clientRead.document, user, await documentControl(client, project, session));
+    reviewInput.items = reviewInput.items.map(item => ({ ...item, outcome: 'REWORK', reason: '화면 클라이언트의 항목별 실제 원문 대조' }));
+    reviewInput.outcome = 'REWORK'; reviewInput.reason = '명시적 검토 기록이며 확정이나 실행 아님'; reviewInput.dirty = true;
+    reviewInput.pending = prepareDocumentReview(reviewInput, session);
+    const reviewFromClient = await sendDocumentReview(client, reviewInput, session, () => true);
+    assert.deepEqual(await sendDocumentReview(client, reviewInput, session, () => true), reviewFromClient, '같은 검토 명령은 같은 실제 기록을 반환');
+    const reviewedFromClient = await readDocument(client, project, currentRef.id, 3);
+    assert.equal(reviewedFromClient.document.confirmed, false);
+    assert.equal(reviewedFromClient.document.contentReviews.length, 1, '반복 확인은 검토 중복 생성 아님');
+    assert.deepEqual(reviewedFromClient.document.contentReviews[0]!.ref, reviewFromClient);
+    assert.equal(reviewedFromClient.document.contentReviews[0]!.reviewer.userId, user);
+    assert.equal(reviewedFromClient.document.contentReviews[0]!.reviewer.sameAsTargetRecorder, true);
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.content_reviews WHERE project_id=$1 AND target_id=$2 AND target_version=3', [project, currentRef.id])).rows[0].n, 1);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
