@@ -36,6 +36,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const conversations=new ProjectConversations(documents);
   const designChanges=new ProjectDesignChanges(documents);
   const approvals=new ProjectApprovals();
+  const approvalCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('APPROVALS:'+value));
   const conversationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('CONVERSATIONS:'+value)),messageCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('CONVERSATION_MESSAGES:'+value));
   registerProjectDocumentReads(app, options, documents);
   app.register(async projects => {
@@ -45,6 +46,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
       if (request.headers.host !== host || request.method !== 'GET' && (request.headers.origin !== options.origin || !/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? ''))) throw new AuthFailure('ORIGIN_INVALID', 403);
     });
     projects.get<{ Querystring: Record<string, unknown> }>('/api/v1/projects', request => repository.list(token(request), request.query));
+    projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/approvals',{schema:{params:object({projectId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>approvals.list(db,actor,request.params.projectId,request.query,approvalCodec)));
     projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/conversations',{schema:{params:object({projectId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>conversations.list(db,actor,request.params.projectId,request.query,conversationCodec)));
     projects.get<{Params:{projectId:string;conversationId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/conversations/:conversationId/messages',{schema:{params:object({projectId:idSchema,conversationId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>conversations.messages(db,actor,request.params.projectId,request.params.conversationId,request.query,messageCodec)));
     projects.get<{Params:{projectId:string;conversationId:string;messageId:string}}>('/api/v1/projects/:projectId/conversations/:conversationId/messages/:messageId',{schema:{params:object({projectId:idSchema,conversationId:idSchema,messageId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>conversations.readMessage(db,actor,request.params.projectId,request.params.conversationId,request.params.messageId)));

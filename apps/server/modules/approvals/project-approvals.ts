@@ -2,11 +2,24 @@ import{randomUUID}from'node:crypto';
 import type{PoolClient}from'pg';
 import{AuthFailure,type AuthenticatedIdentity}from'../access/repository.ts';
 import{authorizeMaterial,currentPolicy,persistProjectReceipt,projectMember,type ProjectCommand}from'../access/project-command.ts';
-import{readApprovalDetails,readApprovalDecision,readApprovalRef,assertApprovalCandidate}from'./approval-input.ts';
+import{readApprovalDetails,readApprovalDecision,readApprovalRef,assertApprovalCandidate,readApprovalListQuery}from'./approval-input.ts';
+import type{ProjectListCodec}from'../projects/service.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
 import type{VersionRef}from'../../../../contracts/generated-types.ts';
 export class ProjectApprovals{
+ async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
+  await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};
+  let pos:{at:string;id:string}|null=null;if(input.cursor!==undefined){try{pos=codec.read(input.cursor,actor.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}}
+  const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date;
+  const rows=(await db.query(`WITH visible AS(SELECT r.id,r.version,r.status,r.scope_digest,r.action_scope_json,r.expires_at,r.created_at,
+   CASE WHEN r.status IN('PENDING','APPROVED') AND r.expires_at<=$7::timestamptz THEN 'EXPIRED'
+   WHEN r.status IN('PENDING','APPROVED') AND (r.policy_ref IS NULL OR pp.id IS NULL OR pv.content_hash IS DISTINCT FROM r.policy_ref->>'contentHash' OR pp.id::text IS DISTINCT FROM r.policy_ref->>'id' OR pp.head_version::text IS DISTINCT FROM r.policy_ref->>'version' OR pc.project_id IS NULL OR pc.revoked_at IS NOT NULL OR pc.actor_id IS DISTINCT FROM r.created_by OR pc.client_id IS DISTINCT FROM r.client_id OR pc.generation::text IS DISTINCT FROM r.request_json->>'controlGeneration' OR pm.user_id IS NULL OR u.id IS NULL) THEN 'REVOKED' ELSE r.status END effective_state
+   FROM anvil.approval_requests r LEFT JOIN anvil.permission_policies pp ON pp.project_id=r.project_id LEFT JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version LEFT JOIN anvil.project_control pc ON pc.project_id=r.project_id LEFT JOIN anvil.project_members pm ON pm.project_id=r.project_id AND pm.user_id=r.created_by AND pm.participation='OWNER' AND pm.revoked_at IS NULL LEFT JOIN anvil.users u ON u.id=r.created_by AND u.status='ACTIVE' WHERE r.project_id=$1)
+   SELECT *,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at FROM visible WHERE ($2::text IS NULL OR effective_state=$2) AND ($3::text IS NULL OR action_scope_json->'targetRef'->>'id'=$3) AND ($4::timestamptz IS NULL OR (created_at,id)<($4::timestamptz,$5::uuid)) ORDER BY created_at DESC,id DESC LIMIT $6`,[pid,input.status,input.targetId,pos?.at??null,pos?.id??null,input.limit+1,now.toISOString()])).rows;
+  const hasMore=rows.length>input.limit,last=rows.slice(0,input.limit).at(-1);
+  return{items:rows.slice(0,input.limit).map(r=>({id:r.id,currentVersion:Number(r.version),storedStatus:r.status,effectiveState:r.effective_state,operation:r.action_scope_json?.operation??null,targetRef:r.action_scope_json?.targetRef??null,scopeDigest:r.scope_digest,expiresAt:r.expires_at.toISOString(),createdAt:r.created_at.toISOString(),integrity:'NOT_RECHECKED'})),hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,observedAt:now.toISOString()};
+ }
  async authorize(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef):Promise<{requestId:string;decisionId:string;scopeDigest:string;replay:boolean}>{
   const approval=readApprovalRef(c.approvalRef),view=await this.read(db,actor,c.projectId,approval.requestId),r=view.request;
   assertApprovalCandidate(r.details,c,actor.actorId,c.projectId);

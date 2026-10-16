@@ -32,3 +32,7 @@ export function readApprovalDecision(value:unknown):ApprovalDecisionInput{
 }
 export function isApprovalRef(value:unknown):value is ApprovalRef{return exact(value,['requestId','decisionId','scopeDigest'])&&uuid(value.requestId)&&uuid(value.decisionId)&&hash(value.scopeDigest);}
 export function readApprovalRef(value:unknown):ApprovalRef{if(!isApprovalRef(value))throw new AuthFailure('APPROVAL_REFERENCE_INVALID',422);return structuredClone(value);}
+export function readApprovalListQuery(q:Record<string,unknown>){
+ if(Object.keys(q).some(k=>!['status','targetId','limit','cursor'].includes(k))||q.status!==undefined&&(typeof q.status!=='string'||!['PENDING','APPROVED','REJECTED','CHANGE_REQUESTED','EXPIRED','REVOKED','CONSUMED'].includes(q.status))||q.targetId!==undefined&&!uuid(q.targetId)||q.limit!==undefined&&(typeof q.limit!=='string'||!/^[1-9][0-9]{0,2}$/.test(q.limit)||Number(q.limit)>200)||q.cursor!==undefined&&(typeof q.cursor!=='string'||q.cursor.length>4096))throw new AuthFailure('INPUT_INVALID',400);
+ return{status:q.status as string??null,targetId:q.targetId as string??null,limit:q.limit===undefined?50:Number(q.limit),cursor:q.cursor as string|undefined};
+}
