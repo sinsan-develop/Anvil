@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN04 초기 변경 요청 `d672450d004af3b9cda723557cb64be271f24eb9` exact private/WSL clean, 승인 forward29 `0004_design_change_proposals` checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 적용/이전28 불변. actual2 PASS/8830ms/skip0·독립 DB28종 각0/시험root0·지속root 보호/empty. 변경 요청·초기 기계 영향 저장이며 원문/확정 기준·서비스/계정/Secret·실제 Agent 변경0. SQL29는 이후 수정하지 않고 같은 승인 범위의 후속 저장 보완도 새 forward만 사용한다.
+
 UI06/FN04 `827f812ff1299f692830423cc6091e5405ba9877` same Web exact private/WSL clean actual1 PASS/8168ms/skip0·DB26종/시험root0·지속root 보호/empty·migrations28 불변. 현재 사용자용 Windows service는 교체하지 않았고 DB/화면 fixture·same-client 실측을 실제 browser↔DB 로그인/사용자 인수로 승격하지 않는다. 다음 설계 변경/영향 저장 DB 보완은 별도 질문 중이며 아직 미승인/미적용이다.
 
 FN04 확정 저장 `a7d6851f28433ab9756d68431ffb09d2c4d88103` exact private/WSL clean actual1 PASS/8110ms/skip0. 승인 forward28 `0004_work_plan_confirmation` checksum8c899de2c7c5e673a8915fd2ebd83e78b32e0d87d4828b50cd76dd499b03a249 적용, 이전27 불변. 독립 DB26종/시험root0·지속root uid1000/0700/link0/실경로 동일/empty. 사용자용 Windows backend는 이전 버전·Web build만 갱신된 mixed runtime이며 로그인/실제 browser DB 인수를 주장하지 않는다. 기존 서비스·계정·Secret·CA·relay 재시작/갱신0. 화면 연결은 별도 후속이며 아래 이전 ‘미작성/미적용’은 과거 시점 이력이다.
