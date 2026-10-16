@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 최신 후속 `c4694579547d1ad7997ca3e6021eb30c9a59f96e` local/private·WSL exact/clean actual1 PASS/3683ms/skip0: 보관 계획의 목록/문서 필터·서명 cursor 변조/조건 변경·격리·같은 Web 원문 재확인/개정 준비→새 명령/버전2 저장·과거1보존 확인. 독립 DB19종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 단위77·계획 fixture3·Web68/type/build는 실제 browser DB/사용자 인수와 구분한다. 다음은 실제 화면 검토 선택/계획 확정·trace edge/변경 영향이다.
+
 - 최신 코드 `cefa3fb9dd85caad2ac07adad7f33abac4443834` local/private·WSL exact/clean에서 같은 Web 작업계획 prepare/send/read actual1 PASS/4151ms/skip0. 고정 원문/설계/D/S와 업무 카드·두 선행 저장/재조회, 미확정·미검토 문제 보존과 권한/구버전/멱등을 확인했다. 독립 DB19종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 단위76·UI06 fixture34·type/build PASS와 실제 browser↔DB/사용자 인수는 구분한다. 다음 미완료는 보관 계획 목록/개정 재개·화면 검토 선택·계획 확정·trace edge/변경 영향이며 전체 FN04/Stage B는 미완료다.
 
 - FN04 저장 최신 `b43b26671f7b0bc5aa87d1353b4edeaf0c5ca55b` 지정 private/WSL exact/clean에서 승인된 forward21만 적용하고 FN03/FN04+FN11 실제2 PASS/3818ms/skip0. 계획 원문·설계/화면 연결·초안 저장/멱등/개정·옛 버전·문제/두 선행·권한/교차 사용자/직접 확정 변경 차단을 확인했다. 독립 DB19종 각0·시험root[]·지속root 보호/empty. 저장 API와 사용자 화면 작성·실제 browser DB 여정은 구분하며 현재 UI 작성 연결 중이다.
@@ -118,6 +120,8 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
+
+- 보관 계획 `c4694579` 게시 exact SHA actual1 PASS/3683ms/skip0. 같은 Web list/read/prepareStoredWorkPlan→pending 없는 과거 자료 재개→새 명령으로 기존 계획 v2 저장·구버전1보존과 유한 목록2개·필터/cursor 변조/교차 사용자 음성을 통과했다. 독립 DB19종 각0·임시 원문root[]·지속root uid1000/0700/link0/실경로 동일/empty. fresh 단위77 PASS/1308ms·plan fixture3/3.9초·type/build(Web68/JS480.53kB/gzip128.84)·diff0. SQL21·서비스/Secret/실제 계정 변경0. 이제 보관 계획 목록/개정 재개는 위 이전 미완료 문구를 대체하지만 화면 검토 선택/확정/trace/변경 영향과 actual browser DB·전체 FN04/Stage B는 미완료다.
 
 - 보관 계획 목록 actual RED `454a9e49825fc54cf7c5c9cacf201e0153135c0d` WSL exact/clean 1 FAIL/4435ms: 목록 GET404로 기대200에 도달하지 못했다. 후속은 같은 membership·유한 limit/actor/project/document 필터·서명 cursor를 사용하고 목록을 NOT_RECHECKED로 구분한다. Web list/read/prepareStoredWorkPlan·WorkPlanLibrary는 읽기만 수행하다 사용자 확인 후 실제 원문/양식/설계와 현재 제어를 재대조해 같은 planRef의 새 개정 버퍼를 준비한다. 과거 명령은 합성하지 않고 pending=null에서 새 명령을 만든다.
 - Web 목록 부재 RED1→단위3 GREEN, 보관 화면 진입점 부재 RED1→UI 작성/단절/보관 조회·개정 준비3 PASS/3.9초·Web68(JS480.53kB/gzip128.84)/타입/build0. 실제 read/prepare/send 새 개정과 목록 클라이언트를 actual에 추가했으며 게시 전 결과는 미검증이다. 기존21 SQL은 그대로다. 읽기 파일명 오타1(material-reads)은 생성/변경 없이 거절됐고 실제 material-list/service의 기존 cursor 계약을 확인했다.

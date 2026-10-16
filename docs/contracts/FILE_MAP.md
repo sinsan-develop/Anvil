@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+보관 계획 후속: server work-plans.list는 기존 ProjectListCodec의 별도 WORK_PLANS 서명과 membership·문서 필터·유한 페이지를 소비한다. Web WorkPlanLibrary/listWorkPlans/readWorkPlan/prepareStoredWorkPlan은 조회와 사용자 명시 개정 준비를 분리하고 과거 명령을 재생성하지 않는다. 같은 client 실제 원문/기준/제어 재확인→새 버전 저장은 `c4694579` actual1 PASS/3683ms, plan fixture3/단위77은 별도다. 기존21 SQL 변경0.
+
 UI06 계획 작성 후속: `features/design-trace/work-plan-api.ts`는 현재 사용자/문서/제어·동일 명령·정확 payload/receipt/snapshot hash와 제한된 DRAFT wire 계약을 담당한다. `WorkPlanEditor.tsx`·DocumentsPage·상위 DocumentBuffer.workPlanState는 업무별 화면/기능/연결/준비·범위/시험/두 선행/복구와 실제 D/S 선택을 담당한다. 미확인 명령/입력을 보존하고 다른 문서 writer를 막는다. 단위76·UI06 fixture34와 exact `cefa3fb9`의 동일 client actual1 PASS는 별개 증거다. 보관 계획 목록/개정·화면 검토 선택/확정·trace 변경·actual browser DB는 남아 있다.
 
 FN04 작업계획 후속: `traceability/work-plan-card.ts`는 상세 업무/두 선행 분석, `work-plans.ts`는 정확 AF04/AF02/D/S·명시 정책·초안 버전/관계 저장과 GET을 담당한다. 적용 forward21 `db/migrations/0004_work_plan_drafts.sql`은 기존20 SQL을 보존한다. 실제 API/DB2 PASS·독립 DB19종 정리는 WORK_STATUS에 기록했다. `features/design-trace/work-plan-api.ts`와 작성 화면은 후속 연결 중이다. 확정/trace edge/변경·실행 증거는 미완료다.
