@@ -459,11 +459,32 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await app.inject({method:'GET',url:traceUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     await assert.rejects(pool.query("UPDATE anvil.trace_edges SET reason='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.equal((await readDocument(client,project,designRef.id,1)).body,designWork.body); assert.equal((await readDocument(client,project,screenRef.id,1)).body,screenWork.body);
+    const knowledgeEntry={kind:'HYPOTHESIS',title:'본문 소비와 완료 경계 가설',contentRef:artifact,sourceRefs:[{kind:'DOCUMENT_VERSION',...documentRef},{kind:'ARTIFACT',id:artifact.artifactId,contentHash:artifact.contentHash}],reason:'관측과 직접 원인 확정을 구분한다',scope:{projectId:project,stageRefs:[],taskRefs:[]},relatedRefs:[]};
+    const knowledgeCommand={...context,commandId:String(randomUUID()),operation:'saveKnowledge',payload:{entry:knowledgeEntry}};
+    assert.equal((await docSend(knowledgeCommand)).statusCode,403,'문서/추적 정책은 지식 저장 허가가 아니다');
+    const knowledgePolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:9,payload:{rules:[{ruleId:'KNOWLEDGE_OWN_PROJECT',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','indexDesignDocument','saveWorkPlanDraft','linkTrace','saveKnowledge'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 지식 초안 별도 명시 허가',reviewRefs:[]}});assert.equal(knowledgePolicy.statusCode,200,knowledgePolicy.body);
+    const knowledgeSaved=await docSend(knowledgeCommand);assert.equal(knowledgeSaved.statusCode,200,knowledgeSaved.body);
+    const knowledgeRef=knowledgeSaved.json().data.ref;assert.equal(knowledgeSaved.json().data.status,'PROPOSED');
+    assert.deepEqual((await docSend(knowledgeCommand)).json(),knowledgeSaved.json(),'같은 명령은 같은 지식 버전');
+    const knowledgeUrl=`/api/v1/projects/${project}/knowledge/${knowledgeRef.id}/versions/1`;
+    const knowledgeRead=await app.inject({method:'GET',url:knowledgeUrl,headers});assert.equal(knowledgeRead.statusCode,200,knowledgeRead.body);
+    assert.deepEqual(knowledgeRead.json().entry,knowledgeEntry);assert.equal(knowledgeRead.json().body,bytes.toString('utf8'));assert.equal(knowledgeRead.json().state,'PROPOSED');assert.equal(knowledgeRead.json().appliedAsConstitution,false);
+    assert.equal((await app.inject({method:'GET',url:knowledgeUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    const knowledgeList=await app.inject({method:'GET',url:`/api/v1/projects/${project}/knowledge?query=${encodeURIComponent('완료 경계')}&kind=HYPOTHESIS&limit=1`,headers});assert.equal(knowledgeList.statusCode,200,knowledgeList.body);assert.deepEqual(knowledgeList.json().items.map((i:any)=>i.versionRef),[knowledgeRef]);assert.equal('body' in knowledgeList.json().items[0],false);
+    assert.equal((await app.inject({method:'GET',url:`/api/v1/projects/${project}/knowledge?query=none`,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    for(const [entry,status] of [[{...knowledgeEntry,sourceRefs:[{kind:'DOCUMENT_VERSION',...documentRef,contentHash:'0'.repeat(64)}]},409],[{...knowledgeEntry,scope:{projectId:outsider,stageRefs:[],taskRefs:[]}},422],[{...knowledgeEntry,title:'token=synthetic-not-a-real-token'},412]] as const)assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry}})).statusCode,status);
+    await assert.rejects(pool.query("UPDATE anvil.knowledge_versions SET reason='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
+    assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if((await db.query("SELECT to_regclass('anvil.knowledge_entries') present")).rows[0].present){
+        await db.query('DELETE FROM anvil.knowledge_events WHERE project_id=$1',[project]);
+        await db.query('DELETE FROM anvil.knowledge_versions WHERE project_id=$1',[project]);
+        await db.query('DELETE FROM anvil.knowledge_entries WHERE project_id=$1',[project]);
+      }
       if((await db.query("SELECT to_regclass('anvil.trace_edges') present")).rows[0].present) await db.query('DELETE FROM anvil.trace_edges WHERE project_id=$1',[project]);
       if((await db.query("SELECT to_regclass('anvil.work_plans') present")).rows[0].present) {
         await db.query('DELETE FROM anvil.plan_dependencies WHERE project_id=$1',[project]);
