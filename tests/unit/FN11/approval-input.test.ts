@@ -14,3 +14,7 @@ test('승인 결정은 정확 요청/버전/범위와 명시 판단·이유만 �
  const m=await import('../../../apps/server/modules/approvals/approval-input.ts');assert.equal(typeof m.readApprovalDecision,'function','사람 결정 입력 검사 필요');const p={requestId:candidateId,expectedVersion:1,scopeDigest:'2'.repeat(64),decision:'APPROVE',reason:'한 후보의 정확 내용을 사람이 확인했다'};
  assert.deepEqual(m.readApprovalDecision(p),p);for(const invalid of [{...p,decision:'ALLOW_ALL'},{...p,scopeDigest:'x'},{...p,expectedVersion:0},{...p,reason:''},{...p,decidedBy:user}])assert.throws(()=>m.readApprovalDecision(invalid));
 });
+test('소비 참조는 정확 요청·결정·범위 hash만 받고 승인=true나 추가 권한을 거절한다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts');assert.equal(typeof m.readApprovalRef,'function','일회 소비 참조 검사 필요');const ref={requestId:candidateId,decisionId:project,scopeDigest:'3'.repeat(64)};assert.deepEqual(m.readApprovalRef(ref),ref);
+ for(const invalid of [null,true,{approved:true},{...ref,scopeDigest:'x'},{...ref,allow:true},{...ref,requestId:'wrong'}])assert.throws(()=>m.readApprovalRef(invalid));
+});

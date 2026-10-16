@@ -8,6 +8,7 @@ export interface ApprovalScope{operation:string;targetRef:VersionRef|null;expect
 export interface ApprovalDetails{reason:string;risks:{data:string;security:string;cost:string;interruption:string;unverified:string};rollback:{method:string;limitations:string;evidenceRefs:never[]};expiresAt:string;actionScope:ApprovalScope;candidateCommandId:string}
 export interface ApprovalInputContext{actorId:string;clientId:string;controlGeneration:number;allowedOperations:readonly string[];now:Date}
 export interface ApprovalDecisionInput{requestId:string;expectedVersion:number;scopeDigest:string;decision:'APPROVE'|'REJECT'|'REQUEST_CHANGE';reason:string}
+export interface ApprovalRef{requestId:string;decisionId:string;scopeDigest:string}
 const exact=(v:unknown,keys:string[]):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const text=(v:unknown)=>typeof v==='string'&&v.isWellFormed()&&!!v.trim()&&v.length<=20_000;
 const uuid=(id:unknown)=>isVersionRef({id,version:1,contentHash:'0'.repeat(64)});
@@ -29,3 +30,5 @@ export function readApprovalDecision(value:unknown):ApprovalDecisionInput{
  if(!exact(value,['requestId','expectedVersion','scopeDigest','decision','reason'])||!uuid(value.requestId)||!Number.isSafeInteger(value.expectedVersion)||value.expectedVersion<1||!hash(value.scopeDigest)||!['APPROVE','REJECT','REQUEST_CHANGE'].includes(value.decision)||!text(value.reason))throw new AuthFailure('APPROVAL_DECISION_INPUT_INVALID',422);
  return structuredClone(value)as ApprovalDecisionInput;
 }
+export function isApprovalRef(value:unknown):value is ApprovalRef{return exact(value,['requestId','decisionId','scopeDigest'])&&uuid(value.requestId)&&uuid(value.decisionId)&&hash(value.scopeDigest);}
+export function readApprovalRef(value:unknown):ApprovalRef{if(!isApprovalRef(value))throw new AuthFailure('APPROVAL_REFERENCE_INVALID',422);return structuredClone(value);}

@@ -64,7 +64,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const bytes = Buffer.from('\uFEFF# 요구사항\r\n\r\n사용자의 원본  \r\n<script>window.QA_SHOULD_NOT_RUN=1</script>\r\n', 'utf8');
     const hash = createHash('sha256').update(bytes).digest('hex');
     const context = { schemaVersion: 1, projectId: project, commandId: randomUUID(), clientId: login.clientId, controlGeneration: 1, operation: 'uploadArtifact', targetId: null, expectedVersion: 0, baselineRefs: [], approvalRef: null, payload: { mediaType: 'text/plain;charset=utf-8', bytes: bytes.length, contentHash: hash } };
-    const send = (body = context, payload = bytes) => app.inject({ method: 'POST', url: `/api/v1/projects/${project}/files`, headers: { ...headers, 'content-type': 'application/octet-stream', 'x-anvil-command': JSON.stringify(body) }, payload });
+    const send = (body:Record<string,unknown> = context, payload = bytes) => app.inject({ method: 'POST', url: `/api/v1/projects/${project}/files`, headers: { ...headers, 'content-type': 'application/octet-stream', 'x-anvil-command': JSON.stringify(body) }, payload });
     assert.equal((await send()).statusCode, 412, '프로젝트 제어권만으로 파일 저장을 허가하지 않는다');
     assert.equal((await pool.query("SELECT count(*)::int n FROM anvil.audit_events WHERE project_id=$1 AND outcome='DENIED' AND reason_code='PERMISSION_POLICY_UNCONFIGURED'", [project])).rows[0].n, 1, '허가 거절은 본문 저장과 분리된 감사로 남긴다');
     const policy = await app.inject({ method: 'POST', url: `/api/v1/projects/${project}/commands`, headers, payload: { ...context, commandId: randomUUID(), operation: 'savePermissionPolicy', payload: { rules: [{ ruleId: 'WRITE_OWN_FILES', subjectRef: { kind: 'HUMAN', userId: user }, targetScopes: [{ kind: 'PROJECT', projectId: project }], operations: ['uploadArtifact'], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 파일 저장의 명시 허가', reviewRefs: [] } } });
@@ -650,6 +650,8 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await send({...context,commandId:approvalCandidateId})).statusCode,412,'승인 결정 뒤에도 소비 연결 전에는 파일을 변경하지 않는다');
     for(const outcome of ['REJECT','REQUEST_CHANGE']){const requested=await docSend({...approvalRequestCommand,commandId:randomUUID(),payload:{details:{...approvalDetails,candidateCommandId:randomUUID()}}});assert.equal(requested.statusCode,200,requested.body);const req=requested.json().data.request,decided=await docSend({...approvalDecisionCommand,commandId:randomUUID(),targetId:req.id,payload:{...approvalDecisionCommand.payload,requestId:req.id,scopeDigest:req.scopeDigest,decision:outcome}});assert.equal(decided.statusCode,200,decided.body);const view=await app.inject({method:'GET',url:`/api/v1/projects/${project}/approvals/${req.id}`,headers});assert.equal(view.json().effectiveState,outcome==='REJECT'?'REJECTED':'CHANGE_REQUESTED');}
     await assert.rejects(pool.query('DELETE FROM anvil.approval_decisions WHERE project_id=$1',[project]),(e:unknown)=>(e as{code:string}).code==='42501');
+    const approvedUpload={...context,commandId:approvalCandidateId,approvalRef:{requestId:storedApproval.id,decisionId:savedDecision.id,scopeDigest:storedApproval.scopeDigest}},consumedUpload=await send(approvedUpload);assert.equal(consumedUpload.statusCode,201,consumedUpload.body);assert.deepEqual((await send(approvedUpload)).json(),consumedUpload.json(),'같은 소비 명령은 업로드를 다시 만들지 않는다');
+    const consumedApproval=await app.inject({method:'GET',url:approvalPath,headers});assert.equal(consumedApproval.statusCode,200,consumedApproval.body);assert.equal(consumedApproval.json().storedStatus,'CONSUMED');assert.equal(consumedApproval.json().currentVersion,3);assert.equal(consumedApproval.json().consumption.commandId,approvalCandidateId);assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.approval_consumptions WHERE project_id=$1',[project])).rows[0].n,1);
     await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
@@ -695,6 +697,9 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
       }
       if ((await db.query("SELECT to_regclass('anvil.artifacts') present")).rows[0].present) await db.query('DELETE FROM anvil.artifacts WHERE project_id=$1', [project]);
       await db.query('DELETE FROM anvil.audit_events WHERE project_id=$1', [project]);
+      await db.query('UPDATE anvil.commands SET authorization_receipt_id=NULL,approval_consumption_id=NULL WHERE project_id=$1',[project]);
+      await db.query("DELETE FROM anvil.authorization_receipts WHERE scope_kind='PROJECT' AND scope_id=$1",[project]);
+      await db.query('DELETE FROM anvil.approval_consumptions WHERE project_id=$1',[project]);
       await db.query('DELETE FROM anvil.approval_decisions WHERE project_id=$1',[project]);
       await db.query('DELETE FROM anvil.approval_requests WHERE project_id=$1',[project]);
       await db.query('UPDATE anvil.permission_policies SET head_version=head_version+1 WHERE project_id=$1', [project]);
