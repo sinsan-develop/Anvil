@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 사용 제외 UI 후속 `9a9526255cb108a6c62d07633384826ea310a4bf` private/WSL exact/clean actual1 PASS/7346ms/skip0: 같은 Web의 exact 대상/사유·제외 사건·replay·기본 검색 배제·artifact 개수 불변을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0. 다음 정정 쓰기 UI는 신규 unit RED2를 작성 중이며 전체 FN05/사용자 browser DB·확정/헌법·Agent/Stage B는 미완료다.
+
 - 지식 상태/이력 후속 `eda65c855695ebb80dff5e7f6958bf455f0d16b8` local/private·WSL exact/clean actual1 PASS/5775ms/skip0: 같은 Web의 구버전/EXCLUDED 상태·명시 제외 검색과 정확 합성 정정사유 변조503→finally복원·옛 원문 보존 확인. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL25 재적용0, 다음은 사용자 정정/제외 쓰기 화면이며 별도 확정/헌법·Agent/전체 인수는 미완료다.
 
 - 지식 변경 서버 `4ce865e800be2591c5ab6b2e5121bba0155e04d1` local/private·WSL exact/clean에서 승인된 새 forward25만 적용·기존24 지문 불변, actual FN03확장+FN11 2 PASS/6012ms/skip0. 정정 버전2/앞 버전 보존·구버전/제외 상태·별도 정책·중복/구기준·기본 검색 제외·명시 조회/암묵 복원412를 확인했고 독립 DB25종/시험root0·지속root 보호/empty다. 사용자용 변경 UI/별도 확정·헌법 적용은 아직 미완료다.
@@ -136,6 +138,9 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
+
+- 제외 UI `9a9526255cb108a6c62d07633384826ea310a4bf` private/WSL exact/clean actual1 PASS/7346ms/skip0. 같은 Web new/prepare/sendKnowledgeExclusion에서 원문/정확 버전/사유→EXCLUDED·replay·기본 목록 배제·artifact 개수 불변 확인. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 새 SQL/실제 사용자·서비스/Secret/Agent 변경0.
+- 다음 정정 쓰기 UI: `tests/unit/FN05/knowledge-correction.test.ts` 신규 RED2는 client 부재다. 현재 이 파일은 단독 writer 소유 untracked 작성 중이며 기존 게시본 검사/초기 준비를 반복하지 않고 정정 client/화면을 이어간다. 제출/완료가 아니며 테스트 RED를 성공으로 바꾸지 않는다.
 
 - 제외 화면 fresh UI10 fixture6 PASS/5.3초·type/diff0. 단절 뒤 화면 이동에도 정확 대상/사유/command를 보존했고 원문 삭제·업로드·버전 생성 없이 제외 사건만 요청했다. 같은 Web actual에는 별도 미제외 지식1개를 exact 버전으로 제외·replay·기본 목록 배제·artifact 개수 불변을 확인하도록 추가했다. 게시 전에는 실제 제외 UI client PASS를 주장하지 않는다.
 
