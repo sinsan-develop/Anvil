@@ -5,7 +5,7 @@
 - 기준일: **2026-10-16 / Asia/Seoul**. 기록 담당: Main 어울.
 - 단계: **전체44업무 목표 유지 / Stage A 통합·smoke·정리 완료 / Stage B UI00~03·FN01~03·FN11 부분 구현**. 인증·허가 프로젝트 조회/초안 저장·공식 양식·내장 방법론/본인 공통본 복사/개정의 실제 WSL API/DB를 확인했다. 최종 프로젝트 생성·전체 방법론 편집/확정·문서 작성/확정·실제 Agent 등은 미완료다.
 - 정본: [설계 r8](design/Anvil_설계서_v3_초안.md), [계획 r7](WORK_PLAN.md)(r3 직접 승인 유지·필요한 전달/복구·선행 상세화), [개발환경](DEVELOPMENT_ENVIRONMENT.md), [작성 공통 기준](design/문서작성_공통기준.md). 이전 실행안전 보완은 이력이며 추가 현행 권위 문서가 아니다.
-- 최근 실제 확인: WSL exact `72cd43affe6a738a342df3a3ca0e2e79b2e5c7de`에서 본인 방법론 검토/확정·양식 준비/위조·최신 보완 거절·초안 직접 작성2단계/조건·좌표 저장/GET 재조회 actual1 PASS/486ms/skip0·정확 QA 정리. migration10개/DB 권한 불변, Windows 단위41·Web45·UI03 인접12 및 UI02 인접7 fixture PASS. 전체 actual UI DB 여정은 미검증이다. Windows relay 재접속0·초기 비밀 만료/자동 연장0·DRAFT/PROJECT 새 권한 적용0 유지.
+- 최근 실제 확인: WSL exact `b7d64b894a49876c77f30ff88729bfcd5169e85d`의 본인 확정 방법론 필터·검토/확정·초안 보존 actual1 PASS/465ms, 선행7eda0b69의 페이지 순회/필터·변조/격리1 PASS/339ms·각 skip0/고유 QA 정리. Windows unit42·UI02/03 fixture20+검색/페이지 핵심2·Web45 통과, DB migration10개/권한 불변. 전체 actual UI DB 여정/최종 프로젝트 생성/실제 Agent·인수는 미검증·미완료. DRAFT/PROJECT 보완 승인 응답 전 적용0이며 목표는 이 승인 경계에서 blocked다.
 - 코드 기준: `codex/av3-stage-b`, base private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`(PR41 merged). Stage A branch 원격 부재/로컬 삭제·통합 smoke와 소유 Node 종료/3830잔여0을 확인했다. 원래 `codex/anvil-public-ui-preview`의 HEAD `ef80f61c`와 기존 삭제/dirty·미추적 자료는 보존하며 신규 코드와 합산하지 않는다.
 - 다음 업무: 연결된 UI03 공간형·단계/문서/조건 편집·방법론 검토/확정의 잔여 검수→생성 초안 연결·FN01 최종 생성. 양식의 복사/편집/내용검토/확정은 부분 연결했지만 문서 본문 작성/원본·제안·확정과 FN11 프로젝트 정책/일회 승인 집행은 미완료다. P01/P02 조사와 불변 검사는 반복하지 않는다. 실제 Agent/Oracle는 미실행이다. 인증서 신뢰는 후속 HTTPS 검수 동안만 유지하며 2026-10-23 03:29:02 KST 만료 또는 검수 종료 때 정확 CA1개를 회수한다.
 
@@ -109,6 +109,9 @@
 
 ### 2026-10-16 FN02·UI03 방법론 목록 페이지 조회
 
+- 게시본 actual 추가: WSL exact `b7d64b894a49876c77f30ff88729bfcd5169e85d`/tracked clean에서 본인 공통 확정 상태/범위 필터가 현재 정확 v2 ref만 반환함을 확인했다. 기존 방법론 검토/확정·초안 선택/직접 저장 경로와 합쳐 actual1 PASS/465ms/skip0, 고유 QA finally 정리. SQL 재적용/권한 변경0, 새로운 실제 사용자·프로젝트/Agent 생성0이다.
+- 승인 경계 감사: 처음 DRAFT/PROJECT 보완 승인 요청 이후 직접 작성/복사, 이번 읽기 페이지까지 승인 비의존 작업은 추가 진행했다. 직전 goal turn은 코드·actual 증거가 늘어난 진전이며 실행 handle을 기다린 verified wait가 아니다. 현재 다음 핵심 업무는 전용 초안 검토/확정→최초 프로젝트 원자 생성/소유·제어권 결박이고 FN03/FN04/FN05/IX01의 실제 저장·적용도 그 범위를 소비한다. 현재10번째 SQL guard는 USER_COMMON/FORM·METHODOLOGY만 허용하며 임의 DRAFT/PROJECT 확장은 금지된다. 같은 경계가 최초 요청/직접 작성 후/목록 페이지 후의3 goal turn에 반복됐고 승인 응답은 없다. 목표는 완료가 아니며 정확 새 승인 전 해당 DB·권한 작업을 수행하지 않는 blocked로 전환한다.
+- 필요한 직접 승인 범위: 기존 Anvil v3 개발 DB에 forward migration만 추가해 본인 DRAFT의 검토/확정과 그 초안에서의 최초 PROJECT 생성/초기 소유·단일 client 제어·method snapshot/명령/허가·감사를 원자 결박한다. 기존 적용 SQL/다른 사용자·프로젝트·실제 계정·Secret·인증서·서비스·운영/Oracle·실제 Agent 호출은 변경하지 않는다. 기존 자료는 보존하고 실제 검증에는 소유가 확인된 합성 QA만 사용한다. 전체44업무·Stage B partial/기존 검사 기준을 유지하며 새 승인 후 이 지점에서 재개한다.
 - 검색 라벨 RED의 근본 원인은 implicit label 내부 select option이 접근 이름에 합쳐지는 것이었다. input/select의 htmlFor/id를 명시해 같은 기대값의 검색/페이지 핵심2 PASS/2.6초를 확인했다. 실제 이름/범위/상태 query와 이전 목록 미재사용을 검증했으며 Web45(JS333.32kB/gzip96.34)·타입/diff check exit0이다. 전체 회귀·실제 사용자/운영 브라우저 시험으로 승격하지 않는다.
 - 로컬 fresh 단위42 PASS/skip0·UI02/03 인접20 fixture PASS/15.8초·타입/build/diff check exit0. 생성 선택은 두 번째 페이지의 내 확정본을 불러오면서 앞의 기본본도 보존·exact ref 저장/새로고침을 확인했다. 새 검색 경로는 select의 implicit label에 option 문구가 섞여 exact label 선택 RED1을 확인했으며 htmlFor/id로 실제 접근 이름을 분리해 보정한다. 검사 이름/시간/기대값은 낮추지 않는다.
 - WSL exact `7eda0b69f80f2f39b25f921de47fcc6e944669ab`/clean actual1 PASS/339ms/skip0: 내장3종의 limit2 순회/정렬·끝 cursor null, 필터 변경/변조400·CONFIRMED 필터 빈 결과·타 owner 원본404·버전 불변을 확인하고 정확 QA 정리했다. 새 SQL/권한 변경0. UI03의 기존 client가 hasMore를 거절하는 RED→명시 다음/이전·처음 갱신 GREEN1/2.1초. 이름/scope/status 적용은 첫 페이지부터, 생성 선택은 명시 더 보기로 누적하며 과거 선택을 자동 교체하지 않는다. 타입/Web45 build exit0(JS333.21kB/gzip96.30)이며 전체 actual UI DB 여정은 미검증이다.
