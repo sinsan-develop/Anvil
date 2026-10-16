@@ -38,7 +38,7 @@ BEGIN
       OR NEW.candidate_json->>'id' IS DISTINCT FROM NEW.id::text
       OR NOT EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.project_id=NEW.project_id AND a.id=NEW.original_artifact_id AND a.state='READY'
         AND NEW.candidate_json->'originalRef'=jsonb_build_object('artifactId',a.id,'bytes',a.bytes,'contentHash',a.content_hash,'mediaType',a.media_type))
-      OR NEW.candidate_json->'intendedFormRef' IS DISTINCT FROM CASE WHEN NEW.form_definition_id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash) END
+      OR NEW.candidate_json->'intendedFormRef' IS DISTINCT FROM (CASE WHEN NEW.form_definition_id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash) END)
       THEN RAISE EXCEPTION 'IMPORT_CANDIDATE_REQUIRED' USING ERRCODE='42501'; END IF;
   ELSE
     SELECT * INTO candidate FROM anvil.document_imports WHERE project_id=NEW.project_id AND id=NEW.import_id;
