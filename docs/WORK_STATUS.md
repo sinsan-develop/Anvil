@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN05 검토·확정 서버 `498d1a6fa4442a5843307108aea8de4ef2c1e513` local/private·WSL exact/clean에서 새 forward26만 적용·기존25 지문 불변, actual FN03확장+FN11 2 PASS/6283ms/skip0. 최신 보완 검토 뒤 옛 합격 선택422·별도 확정/동일 명령·뒤 재검토의 현재 유효성 false·상태 검색/cursor를 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자·서비스/Secret 변경0.
+- UI10 검토/확정 후보: 신규 단위 RED3→GREEN3, 확정 후 정정/제외 신규 RED2→GREEN2, 전체 단위105 PASS/1369ms/skip0. 새 검토 버튼 부재 browser RED1 후 UI10 fixture9 PASS/8.8초, 타입/빌드0(Web82). 기존 bundle500kB/NO_COLOR 경고를 유지한다. 상태 union 확장 중 화면 label 누락 타입 오류1은 CONFIRMED 표시/필터 연결로 보정했다. 경로 추측 조회 오류3은 파일 목록으로 바로잡았고 파일/권한 변경0. 같은 Web의 실제 판단/확정 저장 연결은 다음 exact 게시본에서 확인한다. 사용자 browser↔DB/헌법 적용·Agent 전달·전체 FN05는 아직 미완료다.
+
 - FN05 내용 검토·별도 확정 후속: 게시 RED `a01a37fc529f3244764c7dd0cfd2ba820299de6d`의 WSL actual1 FAIL/6505ms/skip0은 confirmKnowledge 미연결로 정책 거절403 대신 입력400을 반환한 신규 선행 실패다. 현재 후보는 기존 recordContentReview의 KNOWLEDGE 대상·최신 실제 ACCEPTED 검토와 별도 confirmKnowledge를 결박한다. 새 forward26 `0005_knowledge_confirmation.sql` SHA256 `35BD5B9A3F6109881F0F22B1A06957114EA714556E03700678C7E1BA3D353766`, 기존25 SQL 불변·아직 미적용. 단위100 PASS/1503ms/skip0·typecheck0·diff check0. 조회 명령의 PowerShell brace 경로 문법 오류1과 문서 patch 제목 불일치1은 변경0 후 실제 경로/제목 확인으로 보정했다. 실제 DB/화면 확정은 미검증이다.
 - Ruling: 한 버전의 확정 사건은 한 번만 보존한다. 확정 뒤 새 보완 검토가 있으면 과거 확정을 삭제하지 않고 currentConfirmationValid=false로 표시한다. 다시 확정하려면 정정된 새 불변 버전·새 검토가 필요하다. 판단이 틀리면 사용자가 새 버전을 만들어야 하는 비용이 있지만 옛 합격을 골라 현재 유효성으로 위장하는 것을 막는다. CONFIRMED는 헌법 적용·Agent 전달·자동 공유가 아니다.
 - 이 후보 WSL QA는 기존 승인 DB의 합성 qa-document-storage-UUID 사용자/프로젝트·/tmp/anvil-v3-document-qa-UUID(0700)를 테스트 1회 수명으로 사용한다. finally에서 정확 대상만 정리하고 독립 DB25종·시험 경로·보호 원문 root 잔여를 재확인한다. 실제 사용자/Secret/서비스 변경0. 다음은 exact 게시본 forward26 적용·집중/인접 실제 검증 뒤 UI10 검토·확정 연결이다.

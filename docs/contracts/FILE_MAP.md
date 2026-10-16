@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI10 검토·확정: `features/knowledge/review-view.ts`가 사건/최신 검토·현재 유효성 응답을 검증하고 `decision-api.ts`/`KnowledgeDecisionForm.tsx`가 원문/항목별 근거·별도 확인/정확 명령을 유지한다. App의 프로젝트/현재 주체별 판단 버퍼는 이동/단절/뒤403에서 명령을 버리지 않는다. 확정 후 correction/exclusion은 기존 버퍼를 쓰며 새 버전·별도 사건만 요청한다. 단위105·UI10 fixture9와 실제 같은 Web 검증은 WORK_STATUS를 대조한다.
+
 FN05 검토·확정 후속: 기존 `knowledge/knowledge-reviews.ts`가 KNOWLEDGE의 고정5항목 검토 입력/실제 HUMAN 기록·receipt 대조를, `knowledge.ts`/`knowledge-state.ts`가 최신 검토·별도 확정·과거 사건/현재 유효성·상태 검색을 소유한다. 기존 프로젝트 recordContentReview와 예약된 confirmKnowledge에만 연결하며 새 forward26 `0005_knowledge_confirmation.sql`은 기존 다른 대상 guard를 보존한다. 사용자 UI10 검토/확정 연결은 아직 후속이며 실제 적용/시험은 WORK_STATUS를 따른다.
 
 지식 정정 쓰기 UI: `features/knowledge/correction-api.ts`/`KnowledgeCorrectionForm.tsx`와 App의 별도 주체/프로젝트별 버퍼는 정확 최신 PROPOSED 버전의 원문/이유·새 입력·별도 정정 사유를 결박한다. 기존 원문 source와 실제 지시/문서 출처를 보존한 새 artifact/불변 버전만 요청하며 중단/미확인 command를 유지한다. 단위97·UI10 fixture7과 같은 Web actual은 WORK_STATUS로 구분한다. 종류 변경/제외본 복원·별도 확정/헌법·Agent 전달을 합치지 않는다.
