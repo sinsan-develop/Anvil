@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI10 exact579ce2dc의 동일 Web new/prepare/send/read/search는 실제 FN03 확장1 PASS/5569ms·독립 DB23종/시험root0으로 확인했다. fixture3·인접4 PASS와 별도 증거이며 실제 사용자 browser↔DB·헌법/대화/정정/확정/제외/Agent 미완료는 유지한다.
+
 UI10 후속 `features/knowledge/api.ts`/`KnowledgePage.tsx`와 App의 프로젝트별 root 버퍼는 별도 지식 원문 업로드/PROPOSED 쓰기·목록/본문/이유·출처 조회, 단절/정책 거절 뒤 동일 명령 보존을 담당한다. DocumentWrite의 연산 union만 추가하고 기존 문서 쓰기 동작/서버 권한을 바꾸지 않는다. 단위85·화면 fixture3/인접4, 같은 client의 실제 DB 증거는 WORK_STATUS로 구분한다. 새 작업 생성·Agent 호출/자동 확정·헌법 적용0.
 
 FN05 초기 구현 후보: `knowledge/knowledge-entry.ts`는 엄격 입력·출처 형식/미지원·알려진 비밀 표식 차단, `knowledge/knowledge.ts`는 보호 원문 resolver·PROPOSED 저장/GET·현재 회원의 제목/이유 검색을 소유한다. 기존 project-command/routes와 exact runner의 새 `0005_knowledge_drafts.sql`이 대응한다. FN05 단위·기존 FN03 actual의 신규 지식 경로로 확인하며 사용자 UI·전체 격리/정정/헌법 적용·Agent 전달은 미완료다.

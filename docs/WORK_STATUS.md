@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI10 후속 `579ce2dc2da4a05f8031bded1ff00e00037696bd` local/private·WSL exact/clean actual1 PASS/5569ms/skip0: 같은 Web new/prepare/send/read/searchKnowledge가 실제 보호 원문/DB·정확 hash·동일 명령 재확인을 통과했다. 독립 DB23종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 아래 ‘게시 전/실제 client 미검증’은 해당 시점 이력이며 실제 사용자 browser DB·전체 FN05/Stage B는 여전히 미완료다. 다음은 원문 대화와 지식 정정/제외·확정의 저장 경계다.
+
 - FN05 저장 서버 `2b8a24227c57aa06394f21dc983de2c7849f59a1` private/WSL exact/clean에서 새 forward23만 적용·기존22 checksum 불변, 실제 FN03/FN04/FN05+FN11 2 PASS/5631ms/skip0. 원문/출처 hash·가설/제안·별도 정책·검색·교차 사용자·직접 변경 차단, 독립 DB23종 각0·시험root[]·지속root 보호/empty를 확인했다. UI10 신규 연결은 아래 후속이며 실제 사용자 browser DB/원문 대화·확정/정정/제외·전체 격리는 아직 미완료다.
 
 - 최신 FN04 `dbd768a74184bed231963d3e31b3dfc0fd6699f3` local/private·WSL exact/clean actual1 PASS/4930ms/skip0. 같은 Web의 보관 계획 TRACE 준비·업무 선택·명시 linkTrace·receipt/hash·양방향 조회를 실제 DB에서 확인했다. 독립 DB20종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 전체 FN04/Stage B 완료나 실제 browser DB 인수는 아니다. 다음 승인된 FN05 원문·지식 초안 저장을 시작한다.
@@ -126,6 +128,9 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 지식 원문·초안 착수 — Main 어울
+
+- UI10 `579ce2dc2da4a05f8031bded1ff00e00037696bd` local/private·WSL exact/clean actual1 PASS/5569ms/skip0, 동일 Web의 신규 원문 업로드→정확 PROPOSED 저장·본문/hash 재조회·제목/종류 검색·같은 명령 멱등을 확인했다. 기존23 SQL 재적용0. 독립 DB23종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 지정 main f976ed5e 불변과 private branch 같은 SHA를 조회했다. 새로운 실제 사용자/정책·서비스·Secret 생성/변경0이다. 사용자용 backend 혼재/relay HOLD/만료 bootstrap 경계는 그대로다.
+- 남은 FN05 기능: 프로젝트 대화의 불변 원문/정정 지시·실제 출처, 지식 개정/정정/제외·별도 내용 검토/확정·헌법 적용/이해 상태, 전체 노출 의심 자료 격리, 정확 scope/추적, 맥락 선별/후속 전달. 외부 Agent 전달·공유·학습은 승인 범위에 추가하지 않는다. 이번 원문·지식 초안 저장 결과를 전체 기능 완료로 승격하지 않는다.
 
 - `2b8a2422` exact에서 forward23 checksum42efe15b...만 적용·기존22 checksum 불변·fixture7·실제 사용자 생성0. actual2 PASS/5631ms/skip0이며 FN03/FN04/FN05 정상/중요 실패와 인접 FN11 정책을 확인했다. 독립 DB23종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty다. SQL23은 적용본으로 더 수정하지 않는다.
 - UI10 지식 작성 API 부재 RED2→원문 업로드/새 PROPOSED 저장·같은 command 재확인·정확 버전/hash·다른 주체/중단 전송0 GREEN. 검색 손상 응답 음성에서 TypeError1(조건식 삼항 우선순위)→묶음 조건으로 RESPONSE_INVALID 거절 GREEN. type-only 참조 상대경로1은 실제 경로로 보정했다. 새 화면 부재 RED1→KnowledgePage/root 프로젝트별 버퍼/현재 actor·client·제어·명시 저장/제목·이유 검색·원문/출처 이력 조회 연결. 단절→거절도 uncertain과 command를 유지하고 닫기/중복 작성 금지다.

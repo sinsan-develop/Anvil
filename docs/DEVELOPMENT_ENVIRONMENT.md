@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI10 동일 Web client 실제 연결 후속 `579ce2dc2da4a05f8031bded1ff00e00037696bd` private/WSL exact/clean actual1 PASS/5569ms/skip0·독립 DB23종/시험root 잔류0·지속root uid1000/0700/link0/실경로 동일/empty. SQL23 재적용0·기존 runtime/relay/Secret 불변. 실제 사용자 browser DB·전체 후보 사용 준비와 구별한다.
+
 2026-10-16 FN05 `2b8a24227c57aa06394f21dc983de2c7849f59a1` private/WSL exact/clean에 승인된 새 forward23 `0005_knowledge_drafts` checksum42efe15b4ebe3a860364ef85d92631fcf85c71f7143738026155e5814893153a 적용·기존22 불변. actual FN03/FN04/FN05+FN11 2 PASS/5631ms·독립 DB23종/시험root 잔여0·지속root 보호/empty. UI10후속 Web73/fixture3·단위85와 실제 browser DB 여정은 별개이며 사용자용 backend/relay/초기 비밀·CA/서비스는 변경0이다.
 
 2026-10-16 추적 서버 후속: private/WSL exact `cca0899053859ba8184535eac6645bea236e5284` clean에서 승인 forward22 `0004_trace_links`(SHA256 `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c`) 적용·기존21 지문 불변. 실제 FN03/FN04+FN11 2 PASS/4532ms/skip0·독립 DB20종/임시 경로 잔여0·지속 원문 보호/empty. 사용자용 Node/relay·초기 비밀·CA·실제 계정/정책은 변경0이며 실제 browser↔DB·전체 exact runtime은 여전히 미검증이다.
