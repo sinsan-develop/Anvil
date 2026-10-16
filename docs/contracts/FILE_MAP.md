@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN01 기존 소스 선언은 projects/source-declaration.ts가 정확 입력/유한 길이·알려진 비밀 검사를, source-declaration-records.ts가 선언 ref/hash·버전/command receipt 불변 대조를, repository.ts가 owned draft 원자 저장·정확 생성 귀속/소유 범위 조회를 소유한다. forward38은 기존 identity를 보존하고 불변 버전/귀속과 현재 owned command guard를 추가한다. UI02 api.ts가 USER_DECLARED/UNVERIFIED·정확 draft/version/hash를 확인하고 기존 root 생성 버퍼로 입력/동일 명령을 보존한다. pathHint는 보호 DB 자료일 뿐 파일 접근/실관측·기준선 VERIFIED가 아니다. 실제/fixture와 미검증 증거는 WORK_STATUS를 따른다.
+
 FN05 헌법 적용은 knowledge-state.ts의 명시 입력/현재 사용 가능 판정, constitution-records.ts의 현재 pointer·불변 snapshot/명령 receipt/hash 대조, project-constitutions.ts의 별도 정책/정확 확정·최신 검토/CAS 적용·유한 이력 GET이 소유한다. forward37은 기존36 불변 아래 append-only 적용 이력과 guarded pointer만 추가한다. UI10은 constitution-proof/api.ts로 적용 proof/현재 상태를 대조하고 ProjectConstitutionPanel의 명시 조회, 기존 root KnowledgeDecisionBuffer의 APPLY로 입력·확인·동일 명령/단절 상태를 보존한다. same-client actual7cf8c005·fixture13 결과와 실제 사용자 runtime 미교체/Agent 미연결은 WORK_STATUS에 구분한다.
 
 FN11 유한 목록은 835b9a50 exact actual1 PASS/12553ms에서 만료/소비/회수·필터/서명 페이지·타인 격리를 확인했다. 단위131·type/diff0 및 DB31종/QA 경로 잔여0, 실제 UI08/다른 행위의 승인 소비와 구분한다.

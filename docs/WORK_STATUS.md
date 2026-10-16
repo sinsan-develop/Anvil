@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN01/UI02 same-client d8128157d35f2734eee5c0910c46762f609acf10 local/private·WSL exact/clean actual1 PASS/1184ms(기능937ms)/skip0: 실제 writeProjectDraft의 선언 저장 뒤 합성 receipt 단절→원 명령 재확인/동일 선언 ref·readProjectDraft 대조→runDraftAction으로 기존 소스 프로젝트 생성·UNVERIFIED/baseline null을 확인했다. 독립 DB39종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations38. UI02 fixture10/단위137·type/build PASS는 실제 사용자 browser↔DB 인수와 분리한다. 사용자가 저장 초안을 다시 열면 위치 설명·이유가 유지되며 생성 결과에도 선언/미확인을 표시한다. 프로젝트 작업 화면(UI04)은 아직 Stage C 미구현으로 소스 실관측/실행 권한·기준선 검증은 미연결이다. 전체44 합계와 Stage B 완료 판정은 불변이며 Windows runtime/relay/Secret은 변경하지 않았다.
+
 - FN01 0ba2fd49617e7c21c0a3413f3d80610859ff7076 exact private/WSL clean actual2 PASS/1178ms(생성922·중간저장406ms)/skip0: 기존 빈 생성 보존·EXISTING 선언 저장/replay/재조회·선언 새 버전/옛 내용 보존·현재 버전만 원자 귀속·동시 생성1·타인404·source 미확인/baseline null·delivery0·위장 UPDATE/삭제42501을 확인했다. SQL38 재실행0, 기존 실패는 PASS로 소급하지 않는다.
 - UI02 기존 소스 입력/선언 proof 신규 unit RED1→GREEN2/146ms·입력란 부재 browser RED1→UI02 직접 영향10 PASS/7.7초, 전체 unit137 PASS/1918ms·type/build0(Web89/587.77kB/gzip152.72·기존 bundle/색상 경고 보존). 소스 방식을 바꿔 탭 선언을 비울 때만 명시 확인을 받으며 서버 과거 이력은 보존한다. source 선언을 VERIFIED/실제 root 권한으로 표시하지 않는다. 동일 Web 함수 실제 저장 후 합성 응답 단절→원 명령 재확인·재조회·생성 시험은 추가 작성 후 다음 exact 게시본 실행 예정/미검증이다. 서비스/relay/Secret·실제 사용자 권한·실제 소스 파일 접근0.
 

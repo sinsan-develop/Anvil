@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN01 기존 소스 사용자 선언은 직접 승인 아래 forward38 `0001_source_declarations` checksum246fd20284f998ac8d1c1cbea1570372f7d6a204dad885ea41112eeda5b3c025를 적용했다. 초기0001의 source_declarations identity와 원37 SQL은 보존하고 새 source_declaration_versions/project_source_declarations만 연결한다. 0ba2fd49 actual2 PASS/1178ms·UI02 same-client d8128157 actual1 PASS/1184ms/skip0, 독립 DB39종/등록 시험경로 잔여0. 입력 pathHint를 실제 경로로 읽거나 허가하지 않았고 새 서비스·실제 사용자/Secret·실제 소스 파일 변경0이다. 사용자용 mixed runtime/만료 bootstrap/relay HOLD는 그대로이므로 실제 browser↔DB 인수는 미확인이다.
+
 FN05 헌법 적용/이력 forward37 `0005_project_constitutions` checksum71f4674b279ffea063e3291c392ac822ab4367a0393834079b79caeea29dd765가 직접 승인 아래 기존 개발 DB에 적용됐다. 기존36 SQL 불변·fixtures7·실제 사용자 생성0. 서버045d6996 actual2 PASS/14708ms와 UI10 same-client7cf8c005 actual1 PASS/15068ms/skip0, 독립 DB33종 각0·등록 시험root[]·지속root 보호/empty. 헌법 pointer는 프로젝트별 정확 적용 세대로만 전환하며 기존 원문/지식·확정 이력을 보존한다. Windows 서비스/relay/만료 bootstrap·CA·Secret은 교체하지 않았고 실제 사용자 browser↔DB 인수·Agent 전달/준수 판정은 미확인이다.
 
 FN11 목록 후속 `835b9a50a7cf08855a183ec868305f57437d351d` exact private/WSL clean actual1 PASS/12553ms/skip0, SQL36 재실행0·새 DB/schema/권한/자원 생성0. 독립 DB31종 각0·시험root[]·지속root 보호/empty·migrations36 확인. 현재 Windows 실행본/relay·Secret은 그대로 보존하며 이 API 실측을 실제 사용자 브라우저 인수로 승격하지 않는다.
