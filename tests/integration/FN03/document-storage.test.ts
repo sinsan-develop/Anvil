@@ -334,6 +334,25 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await readDocument(client, project, freshRef.id, 4)).body, nextProposalWork.body);
     assert.equal((await readDocument(client, project, freshRef.id, 3)).body, proposalWork.body);
     assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body);
+    const manualBase = await readDocument(client, project, freshRef.id, 4);
+    const manualOwn = editDocument(project, manualBase, user, 1);
+    manualOwn.body = '# 복합 충돌의 내 원문\r\n명시 조정 뒤 별도 저장\r\n'; manualOwn.reason = '최신 양식·첨부와 내 입력 수동 조정'; manualOwn.dirty = true;
+    manualOwn.pending = await prepareDocumentSave(manualOwn, session);
+    const secondFormResponse = await app.inject({ method: 'GET', url: '/api/v1/forms/a6f30000-0000-4000-8000-000000000002/versions/1', headers }); assert.equal(secondFormResponse.statusCode, 200, secondFormResponse.body);
+    const secondForm = secondFormResponse.json();
+    const newer = editDocument(project, manualBase, user, 1);
+    newer.body = '# 서버 메타데이터 개정\n새 양식과 원본 첨부'; newer.formRef = secondForm.ref; newer.content = { attachments: [artifact], sections: [], sourceRefs: [] }; newer.mediaType = 'text/plain;charset=utf-8'; newer.reason = '합성 양식·첨부 동시 개정'; newer.dirty = true;
+    const newerRef = await continueDocumentSave(client, await prepareDocumentSave(newer, session), session, () => {}, () => true); assert.equal(newerRef.version, 5);
+    await assert.rejects(continueDocumentSave(client, manualOwn.pending, session, value => { manualOwn.pending = value; }, () => true), (e: unknown) => e instanceof Error && (e as any).code === 'VERSION_CONFLICT' && (e as any).status === 409);
+    manualOwn.failure = { code: 'VERSION_CONFLICT', status: 409 };
+    const manualComparison = await compareDocumentConflict(client, manualOwn, session); assert.equal(manualComparison.compatible, false); assert.equal(manualComparison.latest.document.version, 5);
+    assert.throws(() => adoptDocumentConflict(manualOwn, manualComparison, session, true));
+    const manualResolved = adoptDocumentConflict(manualOwn, manualComparison, session, true, 'LATEST_METADATA');
+    assert.deepEqual(manualResolved.formRef, secondForm.ref); assert.deepEqual(manualResolved.content.attachments, [artifact]); assert.deepEqual(manualResolved.content.sections, []);
+    assert.equal(manualResolved.reconciliation?.rejectedSnapshot?.body, manualOwn.body);
+    const resolvedRef = await continueDocumentSave(client, await prepareDocumentSave(manualResolved, session), session, () => {}, () => true); assert.equal(resolvedRef.version, 6);
+    const resolvedRead = await readDocument(client, project, freshRef.id, 6); assert.equal(resolvedRead.body, manualOwn.body); assert.deepEqual(resolvedRead.document.formRef, secondForm.ref); assert.deepEqual(resolvedRead.document.content.attachments, [artifact]); assert.equal(resolvedRead.document.confirmed, false);
+    assert.equal((await readDocument(client, project, freshRef.id, 5)).body, newer.body); assert.equal((await readDocument(client, project, freshRef.id, 4)).body, nextProposalWork.body);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

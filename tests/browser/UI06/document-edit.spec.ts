@@ -47,14 +47,15 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(unknown.get(page)).toEqual([]); });
 
-async function documents(page: any) {
+async function documents(page: any, changedMetadata?: { formRef: typeof formRef; attachments: any[] }) {
   let head = 2, title = '원본 문서', body = initial;
   const original = { artifactId, bytes: Buffer.byteLength(initial), contentHash: createHash('sha256').update(initial).digest('hex'), mediaType: 'text/markdown;charset=utf-8' };
   let artifact = original;
   await page.route(`**/api/v1/projects/${project}/documents?*`, (route: any) => route.fulfill({ json: { items: [{ id, title, headVersion: head, confirmedVersion: null, updatedAt: '2026-10-16T05:00:00.000Z' }], nextCursor: null, hasMore: false, observedAt: '2026-10-16T05:00:00.000Z' } }));
   await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/*`, (route: any) => {
-    const version = Number(new URL(route.request().url()).pathname.split('/').pop()), content = { body: version < 3 ? original : artifact, attachments: [], sections: [{ itemId: 'REQ', anchor: 'line:1' }], sourceRefs: [] };
+    const version = Number(new URL(route.request().url()).pathname.split('/').pop()), content = { body: version < 3 ? original : artifact, attachments: version >= 3 ? changedMetadata?.attachments ?? [] : [], sections: [{ itemId: 'REQ', anchor: 'line:1' }], sourceRefs: [] };
     const versionTitle = version < 3 ? '원본 문서' : title;
+    const formRef = version >= 3 && changedMetadata ? changedMetadata.formRef : { id: artifactId, version: 1, contentHash: 'a'.repeat(64) };
     return route.fulfill({ json: { id, version, title: versionTitle, formRef, stageNodeRef: null, contentHash: contentHash(canonicalJson({ title: versionTitle, formRef, stageNodeRef: null, content })), confirmed: false, content, sourceRefs: [], authorRef: { kind: 'HUMAN', userId: id }, createdAt: '2026-10-16T05:00:00.000Z', validation: { validForConfirmation: true, issues: [], formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' }, statusHistory: [{ kind: 'DRAFT_SAVED', actorRef: { kind: 'HUMAN', userId: id }, reason: '원본 보관', at: '2026-10-16T05:00:00.000Z' }], contentReviewCriteria: { criteriaVersion: 1, formRef, items: [{ criterionId: 'REQ', title: '요구 내용', reviewCriteria: ['원문 대조'] }] }, contentReviews: [], reviewRefs: [], proposalRefs: [], sourceLinks: [] } });
   });
   await page.route(`**/api/v1/projects/${project}/files/*`, (route: any) => route.request().method() === 'GET' ? route.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(new URL(route.request().url()).pathname.endsWith(artifactId) ? initial : body) }) : route.fallback());
@@ -164,6 +165,26 @@ test('저장 중 인증이 만료돼도 입력을 보존하고 다른 로그인 
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveCount(0);
   await expect(page.getByText('이전 사용자의 미저장 내용', { exact: true })).toHaveCount(0);
   expect(writes).toBe(1);
+});
+
+test('양식과 첨부가 달라진 충돌은 비교·명시 수동 조정 후에만 새 버전으로 저장한다', async ({ page }) => {
+  const changedForm = { id: project, version: 2, contentHash: 'd'.repeat(64) }, attachment = { artifactId: project, bytes: 4, contentHash: 'e'.repeat(64), mediaType: 'application/octet-stream' };
+  const state = await documents(page, { formRef: changedForm, attachments: [attachment] }), writes: any[] = [], uploads: any[] = [];
+  let uploaded: any, text = ''; const own = '# 수동 조정할 원문\n내 입력은 유지';
+  await page.route(`**/api/v1/projects/${project}/files`, r => { const c = JSON.parse(r.request().headers()['x-anvil-command']!); uploads.push(c); text = r.request().postDataBuffer()!.toString('utf8'); uploaded = { artifactId: crypto.randomUUID(), ...c.payload }; return r.fulfill({ status: 201, json: receipt(c,{ status: 'ARTIFACT_READY', artifactRef: uploaded },null,uploaded.artifactId) }); });
+  await page.route(`**/api/v1/projects/${project}/commands`, r => {
+    const c = r.request().postDataJSON(); writes.push(c);
+    if (writes.length === 1) { const body = '# 서버 개정\n새 양식과 첨부'; state.apply({ expectedVersion: 2, payload: { title: '서버 개정' } }, { artifactId: 'a6f30000-0000-4000-8000-000000000098', bytes: Buffer.byteLength(body), contentHash: createHash('sha256').update(body).digest('hex'), mediaType: 'text/plain;charset=utf-8' }, body); return r.fulfill({ status: 409, json: { code: 'VERSION_CONFLICT' } }); }
+    expect(c.expectedVersion).toBe(3); expect(c.commandId).not.toBe(writes[0].commandId); expect(c.payload.formRef).toEqual(changedForm); expect(c.payload.content.attachments).toEqual([attachment]); expect(c.payload.content.sections).toEqual([]); expect(c.payload.content.body.mediaType).toBe('text/plain;charset=utf-8');
+    state.apply(c,uploaded,text); return r.fulfill({ json: receipt(c,{ status:'DRAFT', ref:{ id,version:4,contentHash:contentHash(canonicalJson({title:c.payload.title,formRef:changedForm,stageNodeRef:null,content:c.payload.content})) } },4,id) });
+  });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button',{ name:'원본 문서 열기',exact:true }).click(); await page.getByRole('button',{ name:'이 버전에서 편집',exact:true }).click(); await page.getByLabel('문서 본문 편집',{exact:true}).fill(own); await page.getByLabel('문서 변경 이유',{exact:true}).fill('최신 양식·첨부 유지 후 수동 조정');
+  await page.getByRole('button',{name:'새 초안 버전 저장',exact:true}).click(); await page.getByRole('button',{name:'최신 버전과 비교',exact:true}).click();
+  await expect(page.getByRole('button',{name:'내 입력으로 새 기준 초안 준비',exact:true})).toBeDisabled();
+  const prepare = page.getByRole('button',{name:'최신 양식·첨부로 수동 조정 초안 준비',exact:true}); await expect(prepare).toBeDisabled();
+  await page.getByLabel('최신 양식·첨부·형식을 유지하고 내 원문을 조정하며 항목 위치를 다시 지정하겠습니다',{exact:true}).check(); await prepare.click();
+  await expect(page.getByLabel('문서 본문 편집',{exact:true})).toHaveValue(own); await expect(page.getByLabel('거절된 원래 저장 입력',{exact:true})).toContainText('수동 조정할 원문'); expect(writes).toHaveLength(1); expect(uploads).toHaveLength(1);
+  await page.getByRole('button',{name:'새 초안 버전 저장',exact:true}).click(); await expect(page.getByText('초안 버전 4 저장 확인',{exact:true})).toBeVisible(); expect(writes).toHaveLength(2);
 });
 
 test('빈 프로젝트에서 공식 양식을 선택하고 새 문서를 초안으로 저장한다', async ({ page }) => {

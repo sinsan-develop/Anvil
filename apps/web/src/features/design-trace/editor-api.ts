@@ -13,7 +13,7 @@ export interface DocumentBuffer {
   ownerUserId: string; projectId: string; documentId: string | null; baseVersion: number; formRef: VersionRef;
   title: string; body: string; mediaType: string; content: Omit<DocumentContent, 'body'>; criteria: DocumentVersion['contentReviewCriteria']['items'];
   reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocumentSave | null; savedRef: VersionRef | null; failure: { code: string; status: number } | null;
-  reconciliation?: { rejectedCommandId: string; fromVersion: number; toVersion: number };
+  reconciliation?: { rejectedCommandId: string; fromVersion: number; toVersion: number; resolution?: 'KEEP_INPUT' | 'LATEST_METADATA'; rejectedSnapshot?: PendingDocumentSave };
   importState?: DocumentImportBuffer | null; importCandidateRef?: string | null; importPreparationId?: string | null;
   baseHash?: string; baseTitle?: string; proposalState?: DocumentProposalBuffer | null;
 }

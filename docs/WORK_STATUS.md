@@ -109,6 +109,13 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN03 복합 충돌의 명시 수동 조정 — Main 어울
+
+- 시작 b7309eb0 local/private 동일·clean. 동시 writer1, 기존 승인 설계 §4.3/§11.7·FN03/UI06 카드의 충돌 비교/사용자 선택을 진행한다. DB/공개 연산·권한/Secret·서비스/적용 SQL 변경0, 기존 저장·고정 양식/첨부 검사를 그대로 소비한다.
+- Ruling: 양식/첨부/형식이 다른 경우 기존 ‘내 입력 그대로 새 기준’은 계속 거절한다. 별도 확인에서만 최신 양식·첨부·형식을 유지한 수동 편집 초안을 열고 내 제목/본문·이유는 유지한다. 달라진 원문에 이전 항목 위치를 자동 승계하지 않고 다시 지정하며 원래 거절 snapshot/command는 버퍼에 보관한다. 잘못되면 필수 항목이 미연결인 초안만 생길 수 있으므로 별도 저장/형식 검사/검토/확정 gate를 그대로 유지한다. 아직 실제 단계/source 연결 자료는412 경계를 넘기지 않는다.
+- RED: unit 새 사례1이 DOCUMENT_CONFLICT_COMPARISON_NOT_READY로 실패, UI 새 사례1은 수동 조정 버튼 부재로 실패. 좁은 helper/UI 연결 뒤 집중 unit3 PASS/137ms·화면1 PASS/2.2초. fresh 단위62 PASS/1038ms, 타입/build exit0(Web61/JS433.92kB/gzip119.05), UI06 fixture23 PASS/16.9초·diff check0. hash 손상/조회자 쓰기 거절·원래 단절/검토/확정 회귀는 유지했다. NO_COLOR 경고1은 변경하지 않는다.
+- 실제 시험은 새 고정 양식·원본 첨부/형식이 있는 v5와 거절된 내 입력을 비교→명시 수동 준비→새 v6·v4/v5 보존·outbox0의 같은 Web client→WSL API/DB/FS 검증을 추가했다. 게시 exact SHA 전이므로 현재 실제 결과는 미검증이다. 합성 QA/정리는 직전 FN03과 같은 고유 UUID·전용 root/finally이며 실제 사용자/지속 원문 root/서비스는 불변이다. 읽기 탐색의 없는 glob os123 1회는 대상 code 실행/수정0이며 이미 확인된 정본 경로로 좁혔다.
+
 ### 2026-10-16 FN03 보관 후보·제안 목록 재조회/재개 — Main 어울
 
 - 후속 실제 결과: `4997e732f6bebfca92812cc6d7a5680dcbb71664` 지정 private/WSL exact clean actual1 PASS/2712ms/skip0. 동일 Web client로 저장 자료 목록/상세·고정 양식·후보 재개 후 신규 문서/원본 첨부·제안 재개/확인 전 쓰기0→별도 새 v4/replay·v1/v3 보존·미확정/outbox0을 확인했다. 독립 잔여 조회 exit0: users/projects/documents/versions/confirmations/proposals/proposal_selections/imports/import_selections/reviews/artifacts/policies/commands 각0, 시험 root[]·지속 원문 root uid1000/0700/실경로 동일/link0/empty. 실제 runtime/계정/Secret 변경0. 후보·제안 재개 부분은 핵심 동작 확인이며 복합 충돌/소스 연결·전체 FN03/실제 browser DB 여정은 미완료다. 문서 patch 제목 불일치1은 적용 전 거절·원문 변경0→정확 제목으로 보정했고 제품 실패와 분리한다.

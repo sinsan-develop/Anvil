@@ -28,3 +28,19 @@ test('비교 읽기는 최대4페이지에서 멈추고 찾지 못한 문서의 
   });
   await assert.rejects(compareDocumentConflict(client, b, session), (e: unknown) => e instanceof ApiError && e.code === 'DOCUMENT_COMPARISON_WINDOW_EXCEEDED'); assert.equal(pages, 4); assert.equal(b.baseVersion, 2);
 });
+
+test('양식·첨부가 달라진 충돌은 별도 확인으로 최신 메타데이터와 내 원문을 수동 조정 초안에 보존한다', async () => {
+  const b = await conflicted(), rejected = structuredClone(b.pending);
+  const form = { id: project, version: 2, contentHash: 'b'.repeat(64) }, attachment = { artifactId: project, bytes: 3, contentHash: 'c'.repeat(64), mediaType: 'application/octet-stream' };
+  const latest = { document: { id, version: 3, contentHash: 'd'.repeat(64), formRef: form, title: '서버', content: { body: { mediaType: 'text/plain;charset=utf-8' }, attachments: [attachment], sections: [{ itemId: 'LATEST', anchor: 'line:1' }], sourceRefs: [] }, stageNodeRef: null, contentReviewCriteria: { items: [{ criterionId: 'LATEST', title: '새 양식 항목', reviewCriteria: [] }] } }, body: '서버 본문' } as any;
+  const comparison = { ownerUserId: id, projectId: project, rejectedCommandId: b.pending!.saveCommandId, baseVersion: 2, latest, controlGeneration: 4, compatible: false };
+  assert.throws(() => (adoptDocumentConflict as any)(b, comparison, session, false, 'LATEST_METADATA'), ApiError);
+  const adjusted = (adoptDocumentConflict as any)(b, comparison, session, true, 'LATEST_METADATA') as DocumentBuffer;
+  assert.equal(adjusted.body, b.body); assert.equal(adjusted.title, b.title); assert.deepEqual(adjusted.formRef, form); assert.deepEqual(adjusted.content.attachments, [attachment]);
+  assert.equal(adjusted.mediaType, 'text/plain;charset=utf-8'); assert.deepEqual(adjusted.content.sections, [], '원문이 달라진 항목 위치를 자동 승계하지 않는다'); assert.equal(adjusted.criteria[0]?.criterionId, 'LATEST');
+  assert.equal(adjusted.pending, null); assert.equal(adjusted.baseVersion, 3); assert.equal(adjusted.dirty, true);
+  assert.deepEqual((adjusted.reconciliation as any).rejectedSnapshot, rejected); assert.deepEqual(b.pending, rejected, '기존 거절 명령·입력은 변형하지 않는다');
+  const newSave = await prepareDocumentSave(adjusted, session); assert.equal(newSave.baseVersion, 3); assert.notEqual(newSave.saveCommandId, b.pending!.saveCommandId);
+  assert.throws(() => (adoptDocumentConflict as any)(b, { ...comparison, latest: { ...latest, document: { ...latest.document, stageNodeRef: { applicationId: project, nodeId: 'pending' } } } }, session, true, 'LATEST_METADATA'), ApiError);
+  assert.throws(() => (adoptDocumentConflict as any)({ ...b, failure: { status: 0, code: 'CONNECTION_LOST' } }, comparison, session, true, 'LATEST_METADATA'), ApiError);
+});
