@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN06 04b49e9c exact private/WSL clean actual RED1/1161ms(기능909ms)/skip0: 후보 목록 내부 함수가 새 테이블 부재42P01로 실패했다. finally 후 독립 users/projects/documents/artifacts/commands/policy/승인 count0·후보2테이블 NOT_PRESENT·임시root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40 확인. 새 forward41 초안을 runner의 마지막 명시 순서에 연결했으며 적용 전이다. 공개 API/operation 분기는 PMO의 별도 승인 확인 전 미연결이고 실제 저장 GREEN·사용자 HTTP/browser는 미검증이다. 기존40 SQL 불변·서비스/Secret·실제 Agent 변경0이다.
+
 - PMO 실행 지시 수신: 기존 branch/단일 Main writer로 FN06 후보 저장·조회/환경/6능력 기록만 진행한다. local main ref0443043251d25aa77c17d23165b7c9299c8dbeb8과 사설 remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210은 구분하며 보정/reset/새 branch를 하지 않는다. 미연결 후보는 완성형 ConnectionDefinition/EnvironmentVersion과 별도 내부 저장·NOT_READY로 분리하며 필수 참조를 nullable로 완화하지 않는다. 실제 host/참조 저장이 아직 없으면 가짜 FK/실측을 만들지 않고 제공된 연결 ref는412로 거절한다. 후보 자신의 개정 ref와 현재 policy ref는 실제 project/id/version/hash를 대조한다.
 - 후보 전용 공개 조회2개·기존 명령 payload의 kind 분기는 PMO가 권장안 AV3-PMO-FN06-CANDIDATE-API-01로 신산님 승인 절차를 담당한다. 승인 확인 전 route/공개 소비는 연결하지 않는다. 내부 입력 신규 부재 RED1→2 PASS/443ms·type0, 내부 저장/조회와 새 forward41 `0006_connection_candidates` 초안/실제 실패 시험만 작성했다. 기존40 SQL은 수정하지 않았고 새 SQL/DB 적용·실제 저장 GREEN은 아직 미실행이다.
 - FN06 actual QA 자원 사전등록: 기존 개발 DB anvil_v3_development의 qa-connection-candidate-<UUID> 합성 사용자2·UUID 프로젝트2·현재 합성 client·후보/불변 버전/정책/승인·명령/감사만 한 시험 수명으로 생성한다. owner UUID 배열 외 자료는 건드리지 않으며 finally transaction에서 참조를 정확히 분리하고 해당 UUID 행만 정리·독립 잔여를 확인한다. 시험 파일/폴더·컨테이너·포트·실제 credential/키·Agent·서비스 생성0, 보호 config 원문 출력0이다. 기존 정책/일회 승인 helper를 읽으며 잘못 추측한 파일 읽기2회는 실제 파일 목록/기존 소유 파일로 정정했고 ACL·자료 변경0이다.
