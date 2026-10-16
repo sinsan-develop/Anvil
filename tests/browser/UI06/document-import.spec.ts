@@ -19,9 +19,10 @@ test('새 문서 작성에서 원본 가져오기는 후보 확인·명시 선�
   await page.getByRole('button', { name: '선택 양식으로 작성', exact: true }).click();
   await expect(page.getByLabel('가져올 원본 파일', { exact: true })).toBeVisible();
   const original = Buffer.from('\uFEFF# 원본\r\n<script>window.IMPORT_SHOULD_NOT_RUN=1</script>  \r\n');
-  const uploads: any[] = [], commands: any[] = [], files = new Map<string, Buffer>(); let candidate: any, saved: any;
+  const uploads: any[] = [], commands: any[] = [], files = new Map<string, Buffer>(); let candidate: any, saved: any, rejectedUploads = 0, releaseRejected: (() => void) | undefined;
   const receipt = (c: any, data: any, targetId: string, version: number | null) => ({ operationId: user, commandId: c.commandId, projectId: project, status: 'APPLIED', targetId, version, data, serverReceivedAt: '2026-10-16T05:00:00Z' });
-  await page.route(`**/api/v1/projects/${project}/files`, r => {
+  await page.route(`**/api/v1/projects/${project}/files`, async r => {
+    if (rejectedUploads < 2) { rejectedUploads++; if (rejectedUploads === 2) await new Promise<void>(resolve => { releaseRejected = resolve; }); return r.fulfill({ status: 409, json: { code: 'CONTROL_GENERATION_CONFLICT' } }); }
     const c = JSON.parse(r.request().headers()['x-anvil-command']!), bytes = r.request().postDataBuffer()!, ref = { artifactId: crypto.randomUUID(), ...c.payload };
     uploads.push(c); files.set(ref.artifactId, bytes);
     return r.fulfill({ status: 201, json: receipt(c, { status: 'ARTIFACT_READY', artifactRef: ref }, ref.artifactId, null) });
@@ -30,7 +31,7 @@ test('새 문서 작성에서 원본 가져오기는 후보 확인·명시 선�
     const c = r.request().postDataJSON(); commands.push(c);
     if (c.operation === 'importDocument') {
       candidate ??= { id: crypto.randomUUID(), originalRef: c.payload.fileRef, extractedContentRef: c.payload.fileRef, intendedFormRef: c.payload.intendedFormRef, parserVersion: 'UTF8_IDENTITY_1', status: 'READY', losses: [], issues: [] };
-      return commands.length === 1 ? r.abort('connectionreset') : r.fulfill({ json: receipt(c, { status: 'IMPORT_CANDIDATE', artifactRef: candidate.originalRef, candidate }, candidate.originalRef.artifactId, null) });
+      return commands.length === 1 ? r.abort('connectionreset') : commands.length === 2 ? r.fulfill({ status: 409, json: { code: 'CONTROL_GENERATION_CONFLICT' } }) : r.fulfill({ json: receipt(c, { status: 'IMPORT_CANDIDATE', artifactRef: candidate.originalRef, candidate }, candidate.originalRef.artifactId, null) });
     }
     expect(c.operation).toBe('saveDocumentDraft'); expect(c.payload.importCandidateRef).toBe(candidate.id); expect(c.payload.content.attachments).toEqual([candidate.originalRef]);
     saved = c;
@@ -41,21 +42,40 @@ test('새 문서 작성에서 원본 가져오기는 후보 확인·명시 선�
   await page.route(`**/api/v1/projects/${project}/files/*`, r => r.fulfill({ contentType: 'application/octet-stream', body: files.get(new URL(r.request().url()).pathname.split('/').pop()!)! }));
   await page.route(`**/api/v1/projects/${project}/documents/${user}/versions/1`, r => r.fulfill({ json: { id: user, version: 1, title: saved.payload.title, formRef: form.ref, stageNodeRef: null, content: saved.payload.content, contentHash: contentHash(canonicalJson({ title: saved.payload.title, formRef: form.ref, stageNodeRef: null, content: saved.payload.content })), confirmed: false, validation: { validForConfirmation: false, issues: [] }, statusHistory: [], contentReviewCriteria: { criteriaVersion: 1, formRef: form.ref, items: form.definition.items.map(i => ({ criterionId: i.itemId, title: i.title, reviewCriteria: i.reviewCriteria })) }, contentReviews: [] } }));
   await page.getByLabel('문서 본문 편집', { exact: true }).fill('기존 미저장 입력');
+  await page.evaluate(() => { const read = File.prototype.arrayBuffer; File.prototype.arrayBuffer = function() { const file = this; File.prototype.arrayBuffer = read; return new Promise(resolve => { (window as any).releaseImportFile = () => { void read.call(file).then(resolve); }; }); }; });
   await page.getByLabel('가져올 원본 파일', { exact: true }).setInputFiles({ name: '보존할 원문.md', mimeType: 'text/markdown', buffer: original });
+  await expect(page.getByRole('button', { name: '편집 닫기', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '새 문서 작성', exact: true })).toBeDisabled();
+  await page.evaluate(() => (window as any).releaseImportFile());
   await expect(page.getByRole('button', { name: '원본 보관·가져오기 후보 만들기', exact: true })).toBeVisible(); expect(uploads).toHaveLength(0);
+  await page.getByRole('button', { name: '원본 보관·가져오기 후보 만들기', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('CONTROL_GENERATION_CONFLICT');
+  await page.getByRole('button', { name: '같은 가져오기 명령 결과 확인', exact: true }).click();
+  await page.getByRole('link', { name: '프로젝트 작업', exact: true }).click(); await page.getByRole('link', { name: '문서·설계 추적', exact: true }).click();
+  await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue('기존 미저장 입력');
+  await expect(page.getByRole('button', { name: '후보 선택 닫기', exact: true })).toHaveCount(0);
+  expect(releaseRejected).toBeDefined(); releaseRejected!();
+  await expect(page.getByRole('alert')).toContainText('CONTROL_GENERATION_CONFLICT');
+  await page.getByRole('button', { name: '후보 선택 닫기', exact: true }).click();
+  await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue('기존 미저장 입력'); expect(uploads).toHaveLength(0); expect(commands).toHaveLength(0);
+  await page.getByLabel('가져올 원본 파일', { exact: true }).setInputFiles({ name: '보존할 원문.md', mimeType: 'text/markdown', buffer: original });
+  await expect(page.getByRole('button', { name: '원본 보관·가져오기 후보 만들기', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '원본 보관·가져오기 후보 만들기', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST'); expect(uploads).toHaveLength(1); expect(commands).toHaveLength(1);
   await page.getByRole('link', { name: '프로젝트 작업', exact: true }).click(); await page.getByRole('link', { name: '문서·설계 추적', exact: true }).click();
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue('기존 미저장 입력');
   await page.getByRole('button', { name: '같은 가져오기 명령 결과 확인', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('CONTROL_GENERATION_CONFLICT');
+  await expect(page.getByRole('button', { name: '후보 선택 닫기', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '같은 가져오기 명령 결과 확인', exact: true }).click();
   await expect(page.getByLabel('가져오기 후보 원문', { exact: true })).toContainText('<script>');
-  expect(uploads).toHaveLength(1); expect(commands).toHaveLength(2); expect(commands[1]).toEqual(commands[0]);
+  expect(uploads).toHaveLength(1); expect(commands).toHaveLength(3); expect(commands[1]).toEqual(commands[0]); expect(commands[2]).toEqual(commands[0]);
   await expect(page.getByRole('button', { name: '이 후보로 초안 준비', exact: true })).toBeDisabled();
   await page.getByLabel('원문을 확인했고 현재 편집 본문을 이 후보로 바꾸겠습니다', { exact: true }).check(); await page.getByRole('button', { name: '이 후보로 초안 준비', exact: true }).click();
   await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue(original.toString('utf8').replace(/\r\n/g, '\n'));
-  expect(commands).toHaveLength(2); expect(await page.evaluate(() => (window as any).IMPORT_SHOULD_NOT_RUN)).toBeUndefined();
+  expect(commands).toHaveLength(3); expect(await page.evaluate(() => (window as any).IMPORT_SHOULD_NOT_RUN)).toBeUndefined();
   await page.getByLabel('문서 변경 이유', { exact: true }).fill('가져온 원문을 명시적으로 새 초안에 반영'); await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click();
-  await expect(page.getByText('초안 버전 1 저장 확인', { exact: true })).toBeVisible(); expect(uploads).toHaveLength(2); expect(commands).toHaveLength(3);
+  await expect(page.getByText('초안 버전 1 저장 확인', { exact: true })).toBeVisible(); expect(uploads).toHaveLength(2); expect(commands).toHaveLength(4);
   expect(files.get(candidate.originalRef.artifactId)).toEqual(original); expect(files.get(saved.payload.content.body.artifactId)).toEqual(original);
   expect(unknown).toEqual([]);
 });

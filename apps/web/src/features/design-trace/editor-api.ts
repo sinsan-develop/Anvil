@@ -13,7 +13,7 @@ export interface DocumentBuffer {
   title: string; body: string; mediaType: string; content: Omit<DocumentContent, 'body'>; criteria: DocumentVersion['contentReviewCriteria']['items'];
   reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocumentSave | null; savedRef: VersionRef | null; failure: { code: string; status: number } | null;
   reconciliation?: { rejectedCommandId: string; fromVersion: number; toVersion: number };
-  importState?: DocumentImportBuffer | null; importCandidateRef?: string | null;
+  importState?: DocumentImportBuffer | null; importCandidateRef?: string | null; importPreparationId?: string | null;
 }
 export interface DocumentSession { user: { id: string }; clientId: string; csrfToken: string }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
@@ -42,7 +42,7 @@ export function newDocument(projectId: string, form: FormVersion, ownerUserId: s
   return { ownerUserId, projectId, documentId: null, baseVersion: 0, formRef: { ...form.ref }, title: '', body: '', mediaType: 'text/markdown;charset=utf-8', content: { attachments: [], sections: [], sourceRefs: [] }, criteria: form.definition.items.map(item => ({ criterionId: item.itemId, title: item.title, reviewCriteria: [...item.reviewCriteria] })), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
 }
 export async function prepareDocumentSave(buffer: DocumentBuffer, session: DocumentSession): Promise<PendingDocumentSave> {
-  if (buffer.importState || buffer.importCandidateRef != null && !uuid.test(buffer.importCandidateRef)) throw new ApiError('IMPORT_SELECTION_REQUIRED');
+  if (buffer.importPreparationId || buffer.importState || buffer.importCandidateRef != null && !uuid.test(buffer.importCandidateRef)) throw new ApiError('IMPORT_SELECTION_REQUIRED');
   if (buffer.ownerUserId !== session.user.id || !uuid.test(buffer.projectId) || buffer.documentId !== null && !uuid.test(buffer.documentId) || buffer.documentId === null && buffer.baseVersion !== 0 || buffer.documentId !== null && buffer.baseVersion < 1 || !uuid.test(session.clientId) || !versionRef(buffer.formRef) || !Number.isSafeInteger(buffer.baseVersion) || !Number.isSafeInteger(buffer.baseVersion + 1) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1) throw new ApiError('CLIENT_PATH_INVALID');
   if (!buffer.title.trim() || buffer.title.length > 200 || !buffer.title.isWellFormed() || !buffer.body.isWellFormed() || !buffer.reason.trim() || buffer.reason.length > 20_000 || !['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(buffer.mediaType)) throw new ApiError('DOCUMENT_INPUT_INVALID');
   if (buffer.content.sourceRefs.length || !Array.isArray(buffer.content.attachments) || buffer.content.attachments.length > 200 || !buffer.content.attachments.every(artifact) || !Array.isArray(buffer.content.sections) || buffer.content.sections.length > 200 || new Set(buffer.content.sections.map(item => item.itemId)).size !== buffer.content.sections.length || buffer.content.sections.some(item => !exact(item, ['itemId','anchor']) || typeof item.itemId !== 'string' || typeof item.anchor !== 'string' || !/^line:[1-9][0-9]{0,7}$/.test(item.anchor))) throw new ApiError('DOCUMENT_INPUT_INVALID');
