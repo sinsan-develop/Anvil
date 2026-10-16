@@ -10,3 +10,7 @@ test('승인 범위는 후보 명령/본문/대상/기기/세대가 정확할 �
  const m=await import('../../../apps/server/modules/approvals/approval-input.ts').catch(()=>null);assert.ok(m,'승인 후보 대조 필요');const checked=m.readApprovalDetails(details,context),c={schemaVersion:1 as const,projectId:project,commandId:candidateId,clientId:client,controlGeneration:1,operation:'saveDocumentDraft',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload};assert.doesNotThrow(()=>m.assertApprovalCandidate(checked,c,user,project));
  for(const bad of [{...c,commandId:user},{...c,projectId:user},{...c,clientId:user},{...c,controlGeneration:2},{...c,expectedVersion:1},{...c,payload:{...payload,title:'승인 뒤 다른 내용'}}])assert.throws(()=>m.assertApprovalCandidate(checked,bad,user,project));
 });
+test('승인 결정은 정확 요청/버전/범위와 명시 판단·이유만 받고 승인권 위장을 거절한다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts');assert.equal(typeof m.readApprovalDecision,'function','사람 결정 입력 검사 필요');const p={requestId:candidateId,expectedVersion:1,scopeDigest:'2'.repeat(64),decision:'APPROVE',reason:'한 후보의 정확 내용을 사람이 확인했다'};
+ assert.deepEqual(m.readApprovalDecision(p),p);for(const invalid of [{...p,decision:'ALLOW_ALL'},{...p,scopeDigest:'x'},{...p,expectedVersion:0},{...p,reason:''},{...p,decidedBy:user}])assert.throws(()=>m.readApprovalDecision(invalid));
+});

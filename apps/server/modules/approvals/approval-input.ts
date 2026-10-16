@@ -7,6 +7,7 @@ import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 export interface ApprovalScope{operation:string;targetRef:VersionRef|null;expectedVersion:number;payloadHash:string;baselineRefs:never[];environmentRef:null;sourceScopes:never[];limitsRef:null;requestedSubjectRef:{kind:'HUMAN';userId:string;clientId:string};controlGeneration:number}
 export interface ApprovalDetails{reason:string;risks:{data:string;security:string;cost:string;interruption:string;unverified:string};rollback:{method:string;limitations:string;evidenceRefs:never[]};expiresAt:string;actionScope:ApprovalScope;candidateCommandId:string}
 export interface ApprovalInputContext{actorId:string;clientId:string;controlGeneration:number;allowedOperations:readonly string[];now:Date}
+export interface ApprovalDecisionInput{requestId:string;expectedVersion:number;scopeDigest:string;decision:'APPROVE'|'REJECT'|'REQUEST_CHANGE';reason:string}
 const exact=(v:unknown,keys:string[]):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const text=(v:unknown)=>typeof v==='string'&&v.isWellFormed()&&!!v.trim()&&v.length<=20_000;
 const uuid=(id:unknown)=>isVersionRef({id,version:1,contentHash:'0'.repeat(64)});
@@ -23,4 +24,8 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
 export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand,actorId:string,projectId:string){
  const s=details.actionScope;
  if(c.projectId!==projectId||c.commandId!==details.candidateCommandId||s.requestedSubjectRef.kind!=='HUMAN'||s.requestedSubjectRef.userId!==actorId||s.requestedSubjectRef.clientId!==c.clientId||s.controlGeneration!==c.controlGeneration||s.operation!==c.operation||s.expectedVersion!==c.expectedVersion||(s.targetRef?.id??null)!==c.targetId||canonicalJson(s.baselineRefs)!==canonicalJson(c.baselineRefs)||s.payloadHash!==contentHash(canonicalJson(c.payload)))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+}
+export function readApprovalDecision(value:unknown):ApprovalDecisionInput{
+ if(!exact(value,['requestId','expectedVersion','scopeDigest','decision','reason'])||!uuid(value.requestId)||!Number.isSafeInteger(value.expectedVersion)||value.expectedVersion<1||!hash(value.scopeDigest)||!['APPROVE','REJECT','REQUEST_CHANGE'].includes(value.decision)||!text(value.reason))throw new AuthFailure('APPROVAL_DECISION_INPUT_INVALID',422);
+ return structuredClone(value)as ApprovalDecisionInput;
 }

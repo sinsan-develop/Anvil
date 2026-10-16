@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN11 요청 저장 `92cb9c3a934ab18bf4d977eafd3c9dd6a9e816e6` local/private·WSL exact/clean actual1 PASS/9883ms(기능9548ms)/skip0. 별도 요청 정책403·REQUIRE_APPROVAL 후보의 실제 업로드412·요청 PENDING 저장/멱등·정확 요청/서버 지정 OWNER 조회·타인404·같은 후보 새 요청409·요청만으로 실행 거절·직접 상태 UPDATE42501을 확인했다. 독립 DB31종(기존28+승인3) 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations34 확인. SQL34 재실행0·실제 사용자 정책/서비스/Secret·설계 기준/업무 재개0. 요청 실제 GREEN은 결정/소비 구현 완료가 아니다. 다음은 같은 call_0a529c010d3e4c04be861bafa31071f9 승인 안에서 정확 요청·현재 정책/제어·지정 HUMAN/기한·별도 결정 정책과 APPROVE/REJECT/REQUEST_CHANGE 하나만 저장하는 후속이다.
+
 - 요청 저장 진단 `af0b06add124c5e952e038f8d72947900347a775` actual1 FAIL/8970ms/skip0: whitelist42501/APPROVAL_REQUEST_EXACT_CURRENT_SCOPE_REQUIRED(같은 root 실제 실패2회). 독립 BEGIN READ ONLY probe에서 DB transaction_timestamp와 서버 Date ISO의 정밀도 비교 mismatch=true, 서버 milliseconds 비교=false·변경0을 확인했다. guard의 정확 시간 조건을 완화하지 않고 request_json.createdAt과 같은 서버 유래 ISO를 INSERT.created_at에도 명시한다(변경 전 DEFAULT microseconds≠서버 milliseconds, 변경 후 같은 서버 값 exact). 새 SQL/권한 변경0·적용34 불변, 다음 exact 게시본에서 GREEN을 확인하며 같은 root 3회면 추가 재시도 없이 예외 보고한다.
 
 - FN11 요청 후보 `205ab4c13be1ac619cc2bb3aa0c0e5c90662fcc0` WSL exact/clean에서 승인 forward34 checksumbe0c422f…1b5c 적용/기존33 불변. actual2 중 FN11 정책 PASS·FN03 승인 요청 FAIL1/9606ms/skip0: 별도 정책403·새 정책 저장/요청 전 업로드412까지 통과했으나 requestApproval 정상 저장503(새 root1/원인 미확정). 독립 기존 DB28종 각0·시험root[]·지속root 보호/empty·migrations34 확인. app 승인3표의 SELECT/INSERT=true·table UPDATE=false를 읽기 전용 확인했으며 권한 변경0이다. 같은 합성 명령의 현재 인증/정책 경로로만 whitelist code/messageCode/constraint/routine 진단을 추가하고 오류 원문/SQL detail/Secret은 출력하지 않는다. 원래 HTTP 실패 보존, 적용34 SQL 수정0·아직 요청 실제 GREEN 아님.
