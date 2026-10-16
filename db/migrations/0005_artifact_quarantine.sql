@@ -17,7 +17,7 @@ BEGIN
   OR (SELECT count(*) FROM jsonb_object_keys(NEW.inspection_json))<>5
   OR NEW.inspection_json->'policyVersion' IS DISTINCT FROM '1'::jsonb
   OR NEW.inspection_json->>'method' IS DISTINCT FROM 'KNOWN_PATTERNS_RAW_BYTES' OR NEW.inspection_json->'complete' IS DISTINCT FROM 'false'::jsonb
-  OR NEW.inspection_json->>'state' IS DISTINCT FROM CASE WHEN NEW.state='QUARANTINED' THEN 'SUSPECTED' ELSE 'NO_KNOWN_MARKER' END
+  OR NEW.inspection_json->>'state' IS DISTINCT FROM (CASE WHEN NEW.state='QUARANTINED' THEN 'SUSPECTED' ELSE 'NO_KNOWN_MARKER' END)
   OR jsonb_typeof(NEW.inspection_json->'reasonCodes') IS DISTINCT FROM 'array'
   OR jsonb_array_length(NEW.inspection_json->'reasonCodes')>3
   OR (NEW.state='QUARANTINED') IS DISTINCT FROM (jsonb_array_length(NEW.inspection_json->'reasonCodes')>0)

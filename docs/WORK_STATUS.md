@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- forward27 첫 적용 `a9896122458d70f519a77a95cf3da6add9b53ce9`는 SQLSTATE42601/position1561로 실패했다. 독립 진단에서 적용26/inspection열0을 확인했고 동일27 SQL의 BEGIN/advisory lock/항상 ROLLBACK 진단으로 같은 위치를 재현했다. 위치는 PL/pgSQL IF의 괄호 없는 CASE WHEN ... THEN ... END 비교식이다. 단일 비교식 CASE를 괄호로 묶는 보정만 수행한다. 적용된 SQL은 아니므로 미적용27 후보만 정정하며 기존26·데이터/권한/Secret/서비스 변경0. 명시 runner 밖 영속 적용0, 실제 QA 미실행을 PASS로 표시하지 않는다.
+
 - 일반 원문 격리 후보: 게시 RED `b22fe3227cbc67a7441d4eab8a561efd71fd5dd3` WSL actual1 FAIL/6875ms/skip0은 합성 비밀 표식이 ARTIFACT_READY로 반환된 기대 신규 실패다. 새 storage/sensitive-inspection은 원시 바이트의 알려진3표식·비밀 없는 이유/한계만 생성한다. 새 업로드는 바이트 보존+QUARANTINED receipt/감사, 일반 파일 GET과 문서/지식 소비 차단, 같은 업로드 재확인을 제공한다. 옛 READY 원문도 읽는 순간 표식을 다시 확인하되 기존 행/원문을 자동 재분류·수정하지 않는다.
 - 새 forward27 `0005_artifact_quarantine.sql` SHA256 `2BB05C6C3C34008ED1E3A193BEBF5F533CFB7C48571F948F65C004BEA85AC3B2`, 기존26 SQL/제안 diff guard 보존·아직 미적용. 검사 메타데이터는 현재 명령/OWNER/client/control·정확 허가/receipt와 결박하고 app UPDATE/DELETE·자동 해제는 계속 금지한다. unit 신규 RED3→전체110 PASS/1556ms/skip0·typecheck0·diff0. 실제 격리 저장/정리와 사용자용 격리 표시·단절 후 최종 상태 해소는 후속 미검증이다. 실제 사용자/Secret·CA·서비스·Agent/운영 변경0.
 
