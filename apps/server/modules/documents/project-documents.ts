@@ -10,6 +10,7 @@ import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import type { FormDefinition } from './forms.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import { ProjectListCodec } from '../projects/service.ts';
+import { documentReviewCriteria, documentReviews, writeDocumentReview } from './project-content-review.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -18,6 +19,12 @@ function artifactRef(value: unknown): value is ArtifactRef { return exact(value,
 export class ProjectDocuments {
   #store: ArtifactStore | null;
   constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
+  async review(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
+    if (!request.targetId) throw new AuthFailure('REVIEW_INPUT_INVALID', 422);
+    // 검토를 기록하기 직전에도 원본 파일과 불변 버전 무결성을 검사한다.
+    await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion);
+    return writeDocumentReview(db, actor, request, policyRef);
+  }
   async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>, codec: ProjectListCodec) {
     await projectMember(db, actor, projectId);
     if (Object.keys(query).some(key => !['limit', 'cursor'].includes(key)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);
@@ -81,8 +88,11 @@ export class ProjectDocuments {
     const formRef = { id: row.form_definition_id, version: Number(row.form_version), contentHash: row.form_hash }, content = row.content_json as DocumentContent;
     if (contentHash(canonicalJson({ title: row.title, formRef, stageNodeRef: row.stage_ref_json, content })) !== row.content_hash) throw new AuthFailure('DOCUMENT_INTEGRITY_FAILED', 503);
     await this.#artifact(db, projectId, content.body);
+    const form = (await db.query('SELECT definition_json FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3', [formRef.id, formRef.version, formRef.contentHash])).rows[0];
+    if (!form || contentHash(canonicalJson(form.definition_json)) !== formRef.contentHash) throw new AuthFailure('FORM_INTEGRITY_FAILED', 503);
+    const reviews = await documentReviews(db, projectId, { id, version, contentHash: row.content_hash });
     const events = (await db.query('SELECT event_kind,actor_ref,reason,created_at FROM anvil.document_version_events WHERE project_id=$1 AND document_id=$2 AND version=$3 ORDER BY created_at,id', [projectId, id, version])).rows;
-    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: row.validation_json, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), reviewRefs: [], proposalRefs: [], sourceLinks: [] };
+    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: row.validation_json, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: [], sourceLinks: [] };
   }
 }
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {
