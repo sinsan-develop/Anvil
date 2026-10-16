@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+FN06 후보 필터 kind는 정확 문자열 enum만 허용한다(배열·객체 coercion 거절400). 후보/정책 exact ref와 달리 아직 연결되지 않은 완성형 host/environment/source/Secret ref는 제공하면412로 거절하며 비어 있음을 가짜 ID로 채우지 않는다. 코드350b2e30의 실제 내부/HTTP·만료/회수·응답 단절 동일 명령 재확인 증거는 WORK_STATUS에 기록한다. UI11/실제 Agent 등록·키 발급·사용자 browser 인수는 이 계약/검증에 포함하지 않는다.
+
 FN06 후보 전용 상세(AV3-PMO-FN06-CANDIDATE-API-01): 기존 PROJECT command의 registerConnection/saveEnvironment는 이번 구현에서 `{kind:CONNECTION_CANDIDATE|ENVIRONMENT_CANDIDATE,candidate:{label,...제공한 필드만},candidateRef:null|이전 정확 VersionRef,policyRef:현재 정확 VersionRef,expiresAt,reason}` 분기만 지원한다. 입력 누락과 명시한 빈 문자열/[]는 input에 그대로 보존한다. data.status=CANDIDATE_STORED는 후보 영속만 의미하며 data.candidate의 readiness는 항상 NOT_READY/executionAuthorized=false, 6능력의 measurement/controlLevel은 UNVERIFIED다. 문서 출처는 USER_REPORTED로 구분하고 실제 Agent 미실행을 숨기지 않는다. 완성형 ConnectionDefinition/EnvironmentVersion으로 반환/소비하지 않는다. 아직 연결하지 않은 실제 host/환경/source/Secret 참조는412이며 candidateRef와 현재 policyRef만 실제 후보/정책 버전에 결박한다.
 
 후보 GET `/api/v1/projects/:projectId/connection-candidates?kind&limit&cursor`는 현재 회원만 사용하며 기본50/최대200·kind/actor/project/정렬/기한 signed cursor로 제한한다. 목록은 CANDIDATES_ONLY/NOT_RECHECKED·exact ref/label/kind/기한을 제공한다. GET 같은 prefix `/:id/versions/:version`은 후보 hash/원 명령 snapshot/서버 파생 상태를 대조해 불변 구버전을 조회하며 현재 기한 경과를 별도 표시한다. 새 실행 허가가 아니고 완성형 목록과 구별한다. 새 저장은 최근 재인증·현재 단독 제어·명시 AUTO/REQUIRE_APPROVAL 정책과 후보 CAS를 검사한다. 일회 승인은 기존 업로드 분기를 유지하며 이 두 후보 저장 연산만 추가 소비한다. 실제 host 등록/enroll/credential/Agent/서비스는 제외다.

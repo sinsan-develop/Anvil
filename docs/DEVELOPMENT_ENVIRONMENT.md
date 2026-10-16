@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+최신 FN06 검증 코드는350b2e3017012ea1774dab28209643066c6db7a3이다. 기존 WSL 정식 checkout에서 동일 private SHA·clean을 확인한 뒤 후보 내부/HTTP·기존 문서 업로드 승인·현 정책/제어 actual3 PASS/15530.534987ms/skip0을 실행했다. 이후 문서-only 기록은 이 실제 코드 SHA와 구분한다. 독립 DB41종 QA 각0·migrations42·시험root[]·원문 root uid1000/0700/nonlink/실경로 동일/empty이다. 실제 host/credential/Agent·서비스/relay/Secret 변경0이며 UI11/실제 사용자 로그인 browser 인수가 아니다. 로컬 unit150/typecheck/diff 통과는 해당 실행 범위만 증명한다.
+
 FN06 내부 후보 저장에 사용자/PMO 승인으로 forward41 `0006_connection_candidates` checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d, 개정 guard alias 보정42 `0006_connection_candidate_guard_alias_fix` checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0 적용 exit0·이전40/41 불변·fixtures7·실제 사용자0. d6f24ab3 exact WSL 내부+신규 HTTP actual1 PASS/1259ms/skip0이며 후보 원본2테이블만 사용한다. 실제 host/grant/credential/Agent·서비스/relay/Secret·사용자 browser DB 인수는 미변경/미검증이다. 이후 이 두 적용 SQL은 수정하지 않고 추가 보완은 새 forward를 사용한다.
 
 FN03 고정 방법론 단계 연결 forward40 `0003_document_stage_bindings` checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1는 직접 승인 아래 기존 개발 DB에 적용됐다. 6cdb21cb exact WSL actual 단계1 PASS/1199ms(기능952ms)/skip0·기존 문서 인접1 PASS/14585ms(기능14288ms)/skip0, 독립 DB39종 count0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40이다. 기존39 SQL·서비스/relay·실제 사용자/권한·Secret은 변경하지 않았다. 실제 같은 Web 함수/API/PG 검증이며 현재 Windows old backend/만료 bootstrap/relay HOLD를 교체한 사용자 browser↔DB 인수는 아니다.
