@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN11 최신 저장 검증 `eb4f1d97c9b914a9dbd17a71d6c2e5f705d74e18` exact private/WSL clean: 같은 직접 승인 범위의 forward34/35/36으로 요청·사람 결정·원문 업로드 후보의 일회 소비를 연결했다. migration36 checksum9eab1fcba2586bf87f202cefc39f300e152e1415c8339692438074b3b800b29d, 이전 SQL 불변·fixtures7·실제 사용자 생성0. actual2 PASS/13084ms/skip0·독립 DB31종 각0/시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자/정책·Secret·서비스/Agent·설계 기준 변경0이며 기존 Node40744/receipt commit000d0088·relay26052는 보존했다. 새 UI browser↔DB/인수는 미검증이다.
+
 FN04 최신 저장 검증 `df2f81ff28c0a2832dff24b87dd7dc0646a57c7c` exact private/WSL clean: 동일 승인 범위 forward30~33으로 사람 영향 버전·요청4종 출처를 추가했다. migration33 checksum1ec0d32d45a770998be2da36d2eab7cd557f16314ee41618676bcefea704b95a, 이전 SQL checksum 불변. actual1 PASS/9215ms/skip0·독립 DB28종 각0/시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 현재 기준·실제 계정·권한·Secret·서비스 변경0. Windows backend000d0088/Web 혼합 runtime·만료 bootstrap·relay HOLD는 그대로이며 실제 사용자 브라우저↔DB 인수가 아니다. 아래 초기29/이전 검증 문장은 해당 시점 이력이다.
 
 FN04 초기 변경 요청 `d672450d004af3b9cda723557cb64be271f24eb9` exact private/WSL clean, 승인 forward29 `0004_design_change_proposals` checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 적용/이전28 불변. actual2 PASS/8830ms/skip0·독립 DB28종 각0/시험root0·지속root 보호/empty. 변경 요청·초기 기계 영향 저장이며 원문/확정 기준·서비스/계정/Secret·실제 Agent 변경0. SQL29는 이후 수정하지 않고 같은 승인 범위의 후속 저장 보완도 새 forward만 사용한다.

@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+실제 FN11 검증: forward34~36은 eb4f1d97 exact actual2 PASS/13084ms에서 원문 업로드의 요청/3종 결정/일회 소비·동시 명령/내용 위장·실제 만료/회수·감사/불변 이력을 확인했다. 기존31종 QA/시험원문 root의 독립 잔여0·migrations36이며 실제 사용자 자료/서비스는 변경하지 않았다. 적용34/35/36을 이후 수정하지 않고 필요하면 새 forward로 보완한다. UI08/다른 연산의 실제 승인 소비와 전체 인수는 후속이다.
+
 FN11 forward36 후보는 기존 소비 표의 미연결 INSERT guard를 현재 명령/정책·기한·APPROVE 결정·주체/기기/세대·정확 후보/hash로 교체하고 요청 UPDATE는 APPROVED/version2→CONSUMED/version3·같은 소비 사건일 때만 허용한다. 기존 request/decision JSON·SQL34/35는 보존한다. commands.approval_consumption_id·payload_ref의 비밀 없는 범위/hash, authorization_receipts.approval_decision_ref, audit.approval_ref를 같은 transaction에서 연결한다. 소비의 command_id는 서버 행 ID이고 후보 commandId는 commands.command_id로 별도 대조한다. 현재 uploadArtifact만 지원하며 파일과 DB의 완전한 분산 원자성을 새로 보장하지 않는다(보호 파일 보존/고아 정리 계약은 별도). exact QA 파일은 기존 전용 root의 finally 정리 대상이다.
 
 FN11 forward35 후보는 기존 approval_decisions에 nullable command_id/content_hash/decision_json을 추가하고 현재 명령/정책·HUMAN/기기/세대·pending exact 요청/서버 기한/범위와 불변 receipt를 결박한다. 기존 요청의 UPDATE guard는 동일 metadata 유지·새 결정 사건과 같은 명령일 때만 status/version1→2를 허용한다. 초기 request_json·옛 SQL34를 수정하지 않는다. 소비 표의 fail-closed guard는 유지하며 승인 결정이 업무 실행이나 범위 확대를 허가하지 않는다.

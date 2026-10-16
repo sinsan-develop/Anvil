@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN11 요청/결정/원문 업로드 소비는 eb4f1d97 exact actual2 PASS/13084ms로 확인했다. 기존 프로젝트 정책 실제 회귀와 소비2건/멱등·만료·회수·감사 및 QA31종/원문 정리0은 WORK_STATUS에 분리한다. 코드는 생성됐으나 미실행인 UI08/다른 연산/Agent 승인이나 전체44업무 완료로 승격하지 않는다.
+
 FN11 소비 후속: ProjectApprovals.authorize/consume/read가 정확 후보·이력/현재 정책·기한·멱등 소비 대조를, project-command의 공통 receipt가 실제 command/승인 소비/감사를, project-files가 수신 전/저장 전 같은 허가와 실제 바이트 검사를 소유한다. approve input은 정확3필드 참조만 받는다. forward36은 기존 요청/결정 보호를 보존한 현재 소비 guard·상태 전이를 소유한다. 기존 AUTO/null 승인 경로는 보존하며 UI08/다른 연산/Agent/기준 적용은 후속이다.
 
 FN11 승인 요청: approvals/approval-input.ts는 상세 범위·위험/복구·정확 후보/주체 검사, project-approvals.ts는 서버 시계/현재 후보 정책·기한·요청 불변 저장/무결성 재조회·실효 상태를 소유한다. project-command의 inspectPending은 요청 준비에서 현재 후보가 승인 필요인지 확인하는 내부 읽기 옵션일 뿐 실행 허가가 아니다(기본 false 유지). routes의 명시 requestApproval/GET만 연결하고 forward34는 현재 명령/정책/control/OWNER/영수증 guard와 아직 미연결 결정·소비 INSERT 거절을 소유한다. 최초 실제 지원은 uploadArtifact 후보 한 건이며 Agent 실행/정책 자동 부여0이다.
