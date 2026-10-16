@@ -23,7 +23,7 @@ test('지식 저장은 원문 업로드 뒤 명시 초안만 쓰고 단절 뒤 �
 test('지식 조회는 정확 버전·원문 hash를 대조하고 가짜 확정/변조 본문을 노출하지 않는다',async()=>{
   const m=await load();assert.ok(m,'지식 조회 연결이 필요하다');const body='가설 원문';
   const entry={kind:'HYPOTHESIS',title:'가설',contentRef:{artifactId:aid,bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/plain;charset=utf-8'},sourceRefs:[],reason:'미확정',scope:{projectId:pid,stageRefs:[],taskRefs:[]},relatedRefs:[]};
-  const ref={id:kid,version:1,contentHash:contentHash(canonicalJson(entry))},view={ref,entry,body,state:'PROPOSED',appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',history:[{id:aid,kind:'PROPOSED',reason:'미확정',actorRef:{kind:'HUMAN',userId:uid},recordedAt:'2026-10-16T05:00:00Z'}]};
+  const ref={id:kid,version:1,contentHash:contentHash(canonicalJson(entry))},view={ref,entry,body,state:'PROPOSED',headVersion:1,supersedesRef:null,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',history:[{id:aid,kind:'PROPOSED',reason:'미확정',actorRef:{kind:'HUMAN',userId:uid},recordedAt:'2026-10-16T05:00:00Z'}]};
   const client=(v:unknown)=>new ApiClient(async()=>new Response(JSON.stringify(v),{headers:{'content-type':'application/json'}}));
   assert.equal((await m.readKnowledge(client(view),pid,ref)).body,body);
   for(const bad of [{...view,body:'changed'},{...view,state:'CONFIRMED'},{...view,appliedAsConstitution:true},{...view,ref:{...ref,version:2}}])await assert.rejects(m.readKnowledge(client(bad),pid,ref),ApiError);
@@ -33,4 +33,11 @@ test('지식 검색은 빈 결과와 잘못된 목록/다음 페이지를 구분
   const page={items:[],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:'2026-10-16T05:00:00Z'},client=(v:unknown)=>new ApiClient(async()=>new Response(JSON.stringify(v),{headers:{'content-type':'application/json'}}));
   assert.deepEqual((await m.searchKnowledge(client(page),pid)).items,[]);
   for(const bad of [{...page,items:null,nextCursor:'fake'},{...page,hasMore:true,nextCursor:null},{...page,searchScope:'ALL_PROJECTS',nextCursor:'fake'}])await assert.rejects(m.searchKnowledge(client(bad),pid),ApiError);
+});
+test('구버전/정정/제외 조회는 head와 사건 이력에 맞는 상태만 수용한다',async()=>{
+ const m=await load();assert.ok(m);const body='보존된 원문',entry={kind:'FACT',title:'관측',contentRef:{artifactId:aid,bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/plain;charset=utf-8'},sourceRefs:[],reason:'당시 근거',scope:{projectId:pid,stageRefs:[],taskRefs:[]},relatedRefs:[]},h=contentHash(canonicalJson(entry)),old={id:kid,version:1,contentHash:h},current={id:kid,version:2,contentHash:h};
+ const event={id:aid,kind:'PROPOSED',reason:entry.reason,actorRef:{kind:'HUMAN',userId:uid},baseRef:null,sourceRefs:null,recordedAt:'2026-10-16T05:00:00Z'},base={entry,body,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',headVersion:2};
+ const views=[{...base,ref:old,state:'SUPERSEDED',supersedesRef:null,history:[event]},{...base,ref:current,state:'PROPOSED',supersedesRef:old,history:[{...event,kind:'CORRECTED',reason:'원문을 보존한 정정',baseRef:old,sourceRefs:[]}]},{...base,ref:old,state:'EXCLUDED',supersedesRef:null,history:[event,{...event,id:pid,kind:'EXCLUDED',reason:'사용 제외'}]}];
+ const client=(v:unknown)=>new ApiClient(async()=>new Response(JSON.stringify(v),{headers:{'content-type':'application/json'}}));for(const view of views)assert.equal((await m.readKnowledge(client(view),pid,view.ref)).state,view.state);
+ for(const bad of [{...views[0]!,headVersion:1},{...views[0]!,state:'EXCLUDED'},{...views[1]!,supersedesRef:{...old,version:2}}])await assert.rejects(m.readKnowledge(client(bad),pid,bad.ref),ApiError);
 });

@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 지식 변경 서버 `4ce865e800be2591c5ab6b2e5121bba0155e04d1` local/private·WSL exact/clean에서 승인된 새 forward25만 적용·기존24 지문 불변, actual FN03확장+FN11 2 PASS/6012ms/skip0. 정정 버전2/앞 버전 보존·구버전/제외 상태·별도 정책·중복/구기준·기본 검색 제외·명시 조회/암묵 복원412를 확인했고 독립 DB25종/시험root0·지속root 보호/empty다. 사용자용 변경 UI/별도 확정·헌법 적용은 아직 미완료다.
+
 - 대화 UI 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` local/private·WSL exact/clean actual1 PASS/5561ms/skip0. 같은 Web new/prepare/sendConversation·지시 정정/순번4·read/list/멱등을 실제 원문/DB에서 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재적용0. 전체 FN05/Stage B·실제 사용자 browser DB는 미완료이며 다음은 지식 정정/제외·확정이다.
 
 - 대화 출처 후속 `2710f1d1182fd56a92f872017e17fa75e66575c9` local/private·WSL exact/clean actual1 PASS/5399ms/skip0: 보존된 사용자 원문/지시·정정 순번→지식 source→같은 Web 조회, 일반 발언 지시 위장422/가짜ID404/hash409·구원문 불변을 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 기존24 SQL 재적용0·전체 FN05/사용자 browser DB 인수는 미완료다. 다음은 대화 목록/원문 작성 화면이다.
@@ -132,6 +134,10 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 지식 정정·사용 제외 착수 — Main 어울
+
+- `4ce865e800be2591c5ab6b2e5121bba0155e04d1` private/WSL exact/clean forward25 `0005_knowledge_changes` checksum03dc6518...만 적용·기존24 checksum 불변·fixture7·실제 사용자0. actual2 PASS/6012ms/skip0: 별도 정정 policy403→명시 합성 허가·새 불변2/이유/출처/앞1 보존·replay·stale409·EXCLUDED 사건/기본 검색 제외/명시 제외 조회·제외본 암묵 복원412·인접 권한을 확인했다. 독립 DB25종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty. 적용 SQL25를 수정하지 않는다.
+- 후속 Web 상태 부재 RED1→정확 headVersion/supersedesRef·원문/hash·PROPOSED/CORRECTED/EXCLUDED 사건과 맞는 제안/과거/제외만 수용 GREEN. 상태 필터 화면 부재 RED1→명시 EXCLUDED 검색·과거/제외 구분 표시, UI10 fixture5 PASS/5.2초·build0(Web75/JS526.27kB/gzip139.32). 미검증/가짜 확정 기준은 유지했고 v1 fixture에 서버 새 head/ref 필드만 추가했다. 테스트 배열 index 타입1은 실제 존재하는 요소를 명시했다.
+- 이력/원 명령 대조 부재 RED1→actor/버전/ref·정정 이유/변경 출처/사건ID를 불변 명령 receipt와 대조하고 정정 출처 원문을 재검사한다. fresh unit93 PASS/1347ms·type/diff0. 실제 같은 Web의 과거/제외 상태와 명령 대비 변조 거절은 이번 후속 actual에서 확인한다. 변조 시험은 고유 합성 프로젝트의 정확 correction event1개만 admin으로 임시 변경하고 finally에서 즉시 복원하며 실제 사용자 데이터는 대상이 아니다.
 
 - 게시할 forward25 `0005_knowledge_changes` SHA256 `03dc6518781e35af3a06c28d7ee18d05936b2ebc9e513cbc0b100495b36c24fe`. 기존24 지문과 current policy/control/원문 보호·고유 시험 자원 조건을 유지한 exact Git QA로 확인한다. 실제 사용자 권한 부여/서비스/Secret·운영 변경0.
 

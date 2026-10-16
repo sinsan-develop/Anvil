@@ -6,15 +6,17 @@ import{knowledgeKinds,newKnowledge,prepareKnowledge,sendKnowledge,readKnowledge,
 import{ConversationPanel}from'./ConversationPanel.tsx';
 import type{ConversationBuffer}from'./conversation-api.ts';
 export const knowledgeLabels={PURPOSE:'목적',CONSTITUTION:'헌법',DECISION:'결정',FACT:'사실',HYPOTHESIS:'가설',FAILURE_SOLUTION:'실패·해결',CAUTION:'주의 사항'};
+const stateLabels={PROPOSED:'제안 상태',SUPERSEDED:'대체된 과거 버전',EXCLUDED:'사용 제외'};
 export function KnowledgePage({client,projectId,session,buffer,onChange,conversationBuffer,onConversationChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;conversationBuffer:ConversationBuffer|null;onConversationChange:(b:ConversationBuffer|null)=>void;onAuthenticationLost:()=>void}){
   const[query,setQuery]=useState(''),[kind,setKind]=useState(''),[items,setItems]=useState<KnowledgeHit[]>([]),[next,setNext]=useState<string|null>(null),[loading,setLoading]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState<ApiError|null>(null),[view,setView]=useState<KnowledgeView|null>(null);
   const alive=useRef(true),locked=useRef(false),requestId=useRef(0);
+  const[status,setStatus]=useState<'PROPOSED'|'EXCLUDED'>('PROPOSED');
   const work=buffer?.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
   const ownedElsewhere=!!buffer&&!work;
   function failed(e:unknown){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');setError(a);if(a.status===401)onAuthenticationLost();return a;}
   async function list(cursor:string|null=null){
     const id=++requestId.current;setLoading(true);setError(null);setView(null);if(!cursor)setItems([]);
-    try{const v=await searchKnowledge(client,projectId,query,kind,cursor);if(!alive.current||id!==requestId.current)return;setItems(previous=>cursor?[...new Map([...previous,...v.items].map(i=>[i.versionRef.id,i])).values()]:v.items);setNext(v.nextCursor);}
+    try{const v=await searchKnowledge(client,projectId,query,kind,cursor,status);if(!alive.current||id!==requestId.current)return;setItems(previous=>cursor?[...new Map([...previous,...v.items].map(i=>[i.versionRef.id,i])).values()]:v.items);setNext(v.nextCursor);}
     catch(e){if(alive.current&&id===requestId.current){setItems([]);setNext(null);failed(e);}}
     finally{if(alive.current&&id===requestId.current)setLoading(false);}
   }
@@ -43,10 +45,10 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
     </fieldset><button type="button" disabled={working||!!work.resultRef||!work.title.trim()||!work.reason.trim()} onClick={()=>void save()}>{work.pending?'같은 지식 명령 결과 확인':'지식 초안 저장'}</button><button type="button" disabled={working||work.uncertain||!!work.pending&&!isKnownDocumentRejection(work.failure)} onClick={close}>작성 닫기</button>
     {work.resultRef?<p role="status">지식 초안 저장 확인 · v{work.resultRef.version} · 별도 확정 전</p>:null}{work.failure?<p role="alert">{work.failure.code}{work.uncertain?' · 결과 미확인: 같은 명령으로 확인하세요.':''}</p>:null}</section>:null}
     {error&&!work?.failure?<p role="alert">{error.code}</p>:null}
-    <form onSubmit={e=>{e.preventDefault();void list();}}><label>지식 검색<input aria-label="지식 검색" value={query} maxLength={200} onChange={e=>setQuery(e.target.value)}/></label><label>종류 필터<select aria-label="종류 필터" value={kind} onChange={e=>setKind(e.target.value)}><option value="">전체</option>{knowledgeKinds.map(k=><option key={k} value={k}>{knowledgeLabels[k]}</option>)}</select></label><button disabled={loading} type="submit">제목·이유 검색</button></form>
+    <form onSubmit={e=>{e.preventDefault();void list();}}><label>지식 검색<input aria-label="지식 검색" value={query} maxLength={200} onChange={e=>setQuery(e.target.value)}/></label><label>종류 필터<select aria-label="종류 필터" value={kind} onChange={e=>setKind(e.target.value)}><option value="">전체</option>{knowledgeKinds.map(k=><option key={k} value={k}>{knowledgeLabels[k]}</option>)}</select></label><label>지식 상태 필터<select aria-label="지식 상태 필터" value={status} onChange={e=>setStatus(e.target.value as 'PROPOSED'|'EXCLUDED')}><option value="PROPOSED">제안 · 제외하지 않은 최신 버전</option><option value="EXCLUDED">사용 제외 · 명시 조회</option></select></label><button disabled={loading} type="submit">제목·이유 검색</button></form>
     {loading?<p aria-live="polite">지식 확인 중</p>:null}
-    <ul>{items.map(i=><li key={i.versionRef.id}><strong>{i.title}</strong> · {knowledgeLabels[i.kind]} · 제안 · v{i.versionRef.version}<p>{i.reasonSnippet}</p><button type="button" disabled={loading} onClick={()=>void inspect(i)}>지식 원문 보기</button></li>)}</ul>
+    <ul>{items.map(i=><li key={i.versionRef.id}><strong>{i.title}</strong> · {knowledgeLabels[i.kind]} · {stateLabels[i.state]} · v{i.versionRef.version}<p>{i.reasonSnippet}</p><button type="button" disabled={loading} onClick={()=>void inspect(i)}>지식 원문 보기</button></li>)}</ul>
     {!loading&&!items.length?<p>조회된 지식이 없습니다.</p>:null}{next?<button type="button" disabled={loading} onClick={()=>void list(next)}>지식 다음 목록</button>:null}
-    {view?<section aria-label="보관 지식"><h3>{view.entry.title}</h3><p>{knowledgeLabels[view.entry.kind]} · 제안 상태 · 헌법 미적용</p><pre aria-label="보관 지식 원문">{view.body}</pre><p>이유: {view.entry.reason}</p><details><summary>원문 출처·이력</summary><pre>{JSON.stringify({ref:view.ref,sourceRefs:view.entry.sourceRefs,history:view.history},null,2)}</pre></details><p>Agent 전달 미연결 · 비밀 검사: 알려진 표식만 확인</p></section>:null}
+    {view?<section aria-label="보관 지식"><h3>{view.entry.title}</h3><p>{knowledgeLabels[view.entry.kind]} · {stateLabels[view.state]} · 헌법 미적용</p><pre aria-label="보관 지식 원문">{view.body}</pre><p>이유: {view.entry.reason}</p><details><summary>원문 출처·이력</summary><pre>{JSON.stringify({ref:view.ref,headVersion:view.headVersion,supersedesRef:view.supersedesRef,sourceRefs:view.entry.sourceRefs,history:view.history},null,2)}</pre></details><p>Agent 전달 미연결 · 비밀 검사: 알려진 표식만 확인</p></section>:null}
   </section>;
 }

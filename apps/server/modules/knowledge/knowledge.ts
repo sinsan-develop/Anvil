@@ -8,7 +8,7 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
 import {readKnowledgeEntry,exact,assertKnowledgeTextSafe,type KnowledgeEntry} from './knowledge-entry.ts';
 import{ProjectConversations}from'./conversations.ts';
-import{knowledgeState}from'./knowledge-state.ts';
+import{knowledgeState,assertKnowledgeHistory}from'./knowledge-state.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
 
 export class ProjectKnowledge{
@@ -51,11 +51,13 @@ export class ProjectKnowledge{
     if(!row)throw new AuthFailure('NOT_FOUND',404);
     const entry=readKnowledgeEntry(row.entry_json,pid);
     if(contentHash(canonicalJson(entry))!==row.content_hash||entry.kind!==row.kind||entry.title!==row.title||entry.reason!==row.reason||entry.contentRef.artifactId!==row.content_artifact_id||canonicalJson(entry.sourceRefs)!==canonicalJson(row.source_refs)||canonicalJson(entry.scope)!==canonicalJson(row.scope_json)||canonicalJson(entry.relatedRefs)!==canonicalJson(row.related_refs))throw new AuthFailure('KNOWLEDGE_INTEGRITY_FAILED',503);
-    const events=(await db.query("SELECT id,kind,reason,actor_ref,recorded_at,base_ref,change_sources FROM anvil.knowledge_events WHERE project_id=$1 AND entry_id=$2 AND version=$3 ORDER BY CASE WHEN kind IN ('PROPOSED','CORRECTED') THEN 0 ELSE 1 END,recorded_at,id",[pid,id,version])).rows;
+    const events=(await db.query("SELECT e.id,e.kind,e.reason,e.actor_ref,e.recorded_at,e.base_ref,e.change_sources,c.actor_id command_actor_id,c.operation command_operation,c.result_ref command_result FROM anvil.knowledge_events e JOIN anvil.commands c ON c.id=e.command_id AND c.project_id=e.project_id WHERE e.project_id=$1 AND e.entry_id=$2 AND e.version=$3 ORDER BY CASE WHEN e.kind IN ('PROPOSED','CORRECTED') THEN 0 ELSE 1 END,e.recorded_at,e.id",[pid,id,version])).rows;
     const state=knowledgeState(version,Number(row.head_version),events.map(e=>e.kind));
+    assertKnowledgeHistory(events,{id,version,contentHash:row.content_hash},entry);for(const e of events)assertKnowledgeTextSafe(e.reason);
     let supersedesRef:VersionRef|null=null;
     if(version>1){const previous=(await db.query('SELECT content_hash FROM anvil.knowledge_versions WHERE project_id=$1 AND entry_id=$2 AND version=$3',[pid,id,version-1])).rows[0];if(Number(row.supersedes_version)!==version-1||!previous)throw new AuthFailure('KNOWLEDGE_INTEGRITY_FAILED',503);supersedesRef={id,version:version-1,contentHash:previous.content_hash};if(canonicalJson(events[0].base_ref)!==canonicalJson(supersedesRef))throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);}
     const body=await this.#verify(db,actor,pid,entry);
+    if(version>1)await this.#verify(db,actor,pid,readKnowledgeEntry({...entry,sourceRefs:events[0].change_sources},pid));
     return{ref:{id,version,contentHash:row.content_hash},entry,body,state,headVersion:Number(row.head_version),supersedesRef,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',history:events.map(e=>({id:e.id,kind:e.kind,reason:e.reason,actorRef:e.actor_ref,baseRef:e.base_ref,sourceRefs:e.change_sources,recordedAt:e.recorded_at.toISOString()})),agentDelivery:'NOT_CONNECTED'};
   }
   async correct(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){

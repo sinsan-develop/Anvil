@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+지식 변경: `knowledge/knowledge-state.ts`는 실제 버전/head·사건열과 원 명령 receipt의 이유/주체/출처/버전을 대조한다. `knowledge.ts`의 correct/exclude/read/search·exact routes와 승인 forward25가 대응한다. Web knowledge/api·KnowledgePage는 제안/과거/제외를 구분하고 명시 제외 목록만 조회한다. 정정/제외 쓰기 UI·확정/헌법 적용은 후속이다. 실제 서버2 PASS/6012ms와 Web 상태/변조 실제 후속은 WORK_STATUS로 구별한다.
+
 UI10 대화 후속: `features/knowledge/conversation-api.ts`/`ConversationPanel.tsx`와 App의 project/owner/client별 버퍼는 원문 업로드→명시 append·정확 source/순번/hash 확인·불변 발언 조회/목록·앞 지시 정정을 소비한다. KnowledgePage에서 원문 대화와 구조화 지식의 두 저장 경로를 구분한다. 단위90·UI10/인접8 fixture와 실제 같은 Web 저장 결과는 WORK_STATUS로 나눈다. Agent 전달/실행·자동 승인·공유0, SQL24 불변이다.
 
 FN05 대화 후속 후보 `knowledge/conversation-input.ts`/`conversations.ts`는 현재 HUMAN의 공통 프로젝트 발언·실제 원문·독립 순번/정정 참조·GET을 소유한다. exact project-command/routes와 새 forward24 `0005_conversations.sql`·runner에만 연결하며 이전 SQL23 불변이다. 별도 역할/Agent·첨부/일반 sourceRefs·목록/화면/전달은 아직 미구현으로 남긴다.
