@@ -5,7 +5,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
-export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge'] as const;
+export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'requestApproval'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
 function exact(value: unknown, keys: string[]): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(','); }
 export function materialRules(value: unknown, projectId: string, actorId: string, now = new Date()): MaterialRule[] {
@@ -18,6 +18,7 @@ export function materialRules(value: unknown, projectId: string, actorId: string
       || !Array.isArray(rule.operations) || !rule.operations.length || rule.operations.length > 200 || rule.operations.some(item => typeof item !== 'string') || new Set(rule.operations).size !== rule.operations.length
       || !['AUTO', 'REQUIRE_APPROVAL', 'DENY'].includes(String(rule.disposition)) || typeof rule.expiresAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(rule.expiresAt) || !Number.isFinite(Date.parse(rule.expiresAt)) || Date.parse(rule.expiresAt) <= now.getTime()) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
     if (rule.operations.some(item => !documentOperations.includes(item as typeof documentOperations[number])) || rule.limitPolicyRef !== null) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+    if(rule.disposition==='REQUIRE_APPROVAL'&&rule.operations.includes('requestApproval'))throw new AuthFailure('APPROVAL_POLICY_RECURSION_INVALID',422);
     seen.add(rule.ruleId);
   }
   return value as MaterialRule[];
@@ -42,14 +43,15 @@ export async function currentPolicy(db: PoolClient, projectId: string) {
   if (contentHash(canonicalJson({ rules: row.rules_json, reason: row.reason, reviewRefs: row.review_refs })) !== row.content_hash) throw new AuthFailure('POLICY_INTEGRITY_FAILED', 503);
   return { ref: { id: row.id, version: Number(row.head_version), contentHash: row.content_hash }, rules: row.rules_json as MaterialRule[], reason: row.reason, reviewRefs: row.review_refs, createdAt: row.created_at.toISOString() };
 }
-export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
+export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, inspectPending=false) {
   const policy = await currentPolicy(db, request.projectId);
   if (!policy) throw new AuthFailure('PERMISSION_POLICY_UNCONFIGURED', 412);
   if (!documentOperations.includes(request.operation as typeof documentOperations[number])) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
   const matched = policy.rules.filter(rule => rule.subjectRef.kind === 'HUMAN' && rule.subjectRef.userId === actor.actorId && rule.targetScopes.some(scope => scope.kind === 'PROJECT' && scope.projectId === request.projectId) && rule.operations.includes(request.operation) && Date.parse(rule.expiresAt) > Date.now());
   if (!matched.length || matched.some(rule => rule.disposition === 'DENY')) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
-  if (matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL')) throw new AuthFailure('APPROVAL_REQUIRED', 412);
-  return policy;
+  const approvalRequired=matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL');
+  if (approvalRequired&&!inspectPending) throw new AuthFailure('APPROVAL_REQUIRED', 412);
+  return {...policy,approvalRequired,validUntil:Math.min(...matched.map(rule=>Date.parse(rule.expiresAt)))};
 }
 export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand) {
   const rows = (await db.query("SELECT operation,request_hash,result_ref FROM anvil.commands WHERE scope_kind='PROJECT' AND project_id=$1 AND actor_id=$2 AND command_id=$3", [request.projectId, actor.actorId, request.commandId])).rows;
