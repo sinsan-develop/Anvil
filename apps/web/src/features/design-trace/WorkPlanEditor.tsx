@@ -7,6 +7,8 @@ import {readDesignIndex} from './design-index-api.ts';
 import {blankPlanTask,prepareWorkPlan,sendWorkPlan,readWorkPlan,type WorkPlanBuffer} from './work-plan-api.ts';
 import {documentMutationUncertain,isKnownDocumentRejection} from './mutation-result.ts';
 import type {TaskCard,PlanTraceRef} from '../../../../server/modules/traceability/work-plan-card.ts';
+import{newTaskTrace}from'./trace-api.ts';
+import{TaskTraceEditor}from'./TaskTraceEditor.tsx';
 
 const listFields=[['inputs','입력'],['outputs','출력'],['included','포함 범위'],['excluded','제외 범위'],['allowedFileRefs','허용 파일'],['startPrerequisites','착수 선행'],['acceptancePrerequisites','검수 선행'],['steps','수행 절차'],['acceptanceCriteria','검수 조건'],['evidenceRequirements','증거 요구']]as const;
 const lines=(s:string)=>s===''?[]:s.split('\n');
@@ -37,9 +39,9 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
     const link:PlanTraceRef={kind,id,versionRef:item.documentRef,localCode:kind==='DESIGN_ITEM'?'localCode'in item?item.localCode:'':'screenCode'in item?item.screenCode:'',anchor:item.anchor},field=kind==='DESIGN_ITEM'?'designRefs':'screenRefs',t=s.input.tasks[n]!;
     task(n,{[field]:checked?[...t[field],link]:t[field].filter(i=>i.id!==id)});
   }
-  const canClose=!s.uncertain&&(!s.pending||!!s.result||isKnownDocumentRejection(s.failure));
+  const traceLinkWork=s.traceLink,canClose=!s.uncertain&&(!s.pending||!!s.result||isKnownDocumentRejection(s.failure))&&(!traceLinkWork||!traceLinkWork.uncertain&&(!traceLinkWork.pending||!!traceLinkWork.result||isKnownDocumentRejection(traceLinkWork.failure)));
   return <section className="status-card definition-editor" aria-label="작업계획 작성"><h2>작업계획 작성</h2><p>{buffer.title} · 원문 v{s.input.documentRef.version}</p><p className="meta">원문은 바꾸지 않습니다. 화면·기능·연결·준비 업무를 구분하고 착수 선행과 검수 선행을 따로 작성합니다. 계획 저장은 확정·실행·완료가 아닙니다. 허용 파일은 계획 선언이며 실제 접근 권한이 아닙니다.</p><pre aria-label="계획 기준 원문" className="document-original">{buffer.body}</pre>
-    {s.planRef?<p>같은 계획의 새 개정 · 기준 v{s.planRef.version}</p>:null}
+    {s.planRef&&!s.result?<p>같은 계획의 새 개정 · 기준 v{s.planRef.version}</p>:s.planRef&&s.result?<p>보관된 계획의 업무 연결 · v{s.result.ref.version}</p>:null}
     {s.failure?<p role="alert">{new ApiError(s.failure.code,s.failure.status).message} · {s.failure.code} · 입력/명령 보존, 조회 실패 시 앞선 결과는 과거 자료입니다.</p>:null}
     <fieldset disabled={locked}><legend>설계 기준</legend><label htmlFor="plan-design-document">기준 설계 문서</label><select id="plan-design-document" value={s.designDocumentId} onChange={e=>{const d=documents.find(i=>i.id===e.target.value);update(v=>({...v,designDocumentId:e.target.value,designVersion:String(d?.headVersion??1)}));}}><option value="">문서 선택</option>{documents.map(d=><option key={d.id} value={d.id}>{d.title} · v{d.headVersion}</option>)}</select><label>기준 설계 버전<input type="number" min="1" value={s.designVersion} onChange={e=>update(v=>({...v,designVersion:e.target.value}))}/></label><button onClick={()=>{void loadDesign();}}>기준 설계 항목 확인</button>{s.input.designRef?<p>고정 설계 {s.input.designRef.id} · v{s.input.designRef.version} · SHA256 {s.input.designRef.contentHash}</p>:null}<p className="meta">다른 설계 기준으로 교체하려면 기존 D/S 선택을 먼저 명시 해제하세요. 화면 검토 선택·계획 확정/배정은 아직 미연결이며 부족 조건은 초안 문제로 남습니다.</p></fieldset>
     {s.input.tasks.map((t,n)=><fieldset key={n} disabled={locked}><legend>업무 {n+1}</legend>
@@ -51,6 +53,7 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
       <label>업무 {n+1} 복구 방법<textarea value={t.rollback} maxLength={20_000} onChange={e=>task(n,{rollback:e.target.value})}/></label><label>업무 {n+1} 재개 유의사항<textarea value={t.recoveryNotes} maxLength={20_000} onChange={e=>task(n,{recoveryNotes:e.target.value})}/></label><button onClick={()=>input(v=>({...v,tasks:v.tasks.filter((_,k)=>k!==n)}))}>업무 {n+1} 제거</button>
     </fieldset>)}<button disabled={locked||s.input.tasks.length>=200} onClick={()=>input(v=>({...v,tasks:[...v.tasks,blankPlanTask()]}))}>업무 추가</button>
     <label>작업계획 저장 이유<textarea value={s.input.reason} readOnly={locked} maxLength={20_000} onChange={e=>input(v=>({...v,reason:e.target.value}))}/></label><button disabled={busy||!!s.result} onClick={()=>{void save();}}>{s.pending?'같은 작업계획 명령 결과 확인':'작업계획 초안 저장'}</button><button disabled={busy||!canClose} onClick={()=>{if(!buffer.dirty||confirm('미저장 작업계획 입력을 버리고 닫을까요?'))onChange(b=>b?.workPlanState?.bindingId===s.bindingId?null:b);}}>작업계획 작성 닫기</button>
-    {s.result?<section aria-label="저장한 작업계획"><p role="status">작업계획 초안 저장 확인 · 실행/완료 아님</p><p>계획 {s.result.ref.id} v{s.result.ref.version} · SHA256 {s.result.ref.contentHash}</p><button disabled={busy} onClick={()=>{void reload();}}>저장한 작업계획 재조회</button>{reread?<p>저장한 버전 재조회 확인</p>:null}<ul>{s.result.issues.map((i,n)=><li key={n}>{i.message} · {i.code} · {i.location}</li>)}</ul><p>실제 실행/시험 증거: 미연결</p></section>:null}
+    {s.result?<section aria-label="저장한 작업계획"><p role="status">작업계획 초안 저장 확인 · 실행/완료 아님</p><p>계획 {s.result.ref.id} v{s.result.ref.version} · SHA256 {s.result.ref.contentHash}</p><button disabled={busy} onClick={()=>{void reload();}}>저장한 작업계획 재조회</button>{reread?<p>저장한 버전 재조회 확인</p>:null}<ul>{s.result.issues.map((i,n)=><li key={n}>{i.message} · {i.code} · {i.location}</li>)}</ul><p>실제 실행/시험 증거: 미연결</p>{!s.traceLink&&s.result.relationalProjection==='STORED'?s.result.tasks.map(t=><button key={t.taskCode} disabled={busy||!t.designRefs.length&&!t.screenRefs.length} onClick={()=>{try{const traceLink=newTaskTrace(buffer,t.taskCode);update(v=>({...v,traceLink}));}catch(e){failure(e);}}}>업무 {t.taskCode} 추적 연결 준비</button>):null}</section>:null}
+    {s.traceLink?<TaskTraceEditor key={s.traceLink.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
   </section>;
 }

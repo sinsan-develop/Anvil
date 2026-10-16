@@ -22,7 +22,7 @@ import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '..
 import { newDesignIndex,prepareDesignIndex,readDesignIndex,sendDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
 import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan,listWorkPlans,prepareStoredWorkPlan} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
-import {readTrace}from'../../../apps/web/src/features/design-trace/trace-api.ts';
+import {readTrace,newTaskTrace,prepareTaskTrace,sendTaskTrace}from'../../../apps/web/src/features/design-trace/trace-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -437,11 +437,13 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     await assert.rejects(pool.query('UPDATE anvil.work_plan_versions SET version=99 WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
     await assert.rejects(pool.query('UPDATE anvil.work_plans SET confirmed_version=head_version WHERE project_id=$1',[project]),(e:unknown)=>(e as {code:string}).code==='42501');
     assert.equal((await readDocument(client,project,planDocumentRef.id,1)).body,planWork.body);
-    const traceCommand={...context,commandId:randomUUID(),operation:'linkTrace',payload:{from:{kind:'PLAN_TASK',id:planRef.id,versionRef:clientRevision.ref,localCode:'UI01'},to:{kind:'DESIGN_ITEM',id:designItem.id,versionRef:designRef,localCode:designItem.localCode,anchor:designItem.anchor},relation:'IMPLEMENTS',reason:'화면 업무와 정확 설계 원문을 명시 연결'}};
+    const traceCommand={...context,commandId:String(randomUUID()),operation:'linkTrace',payload:{from:{kind:'PLAN_TASK',id:planRef.id,versionRef:clientRevision.ref,localCode:'UI01'},to:{kind:'DESIGN_ITEM',id:designItem.id,versionRef:designRef,localCode:designItem.localCode,anchor:designItem.anchor},relation:'IMPLEMENTS',reason:'화면 업무와 정확 설계 원문을 명시 연결'}};
     assert.equal((await docSend(traceCommand)).statusCode,403,'계획 저장 허가만으로 추적 링크를 만들지 않는다');
     const traceUrl=`/api/v1/projects/${project}/traces?designId=${designRef.id}&version=1&direction=FORWARD&limit=1`;
     const emptyTrace=await app.inject({method:'GET',url:traceUrl,headers});assert.equal(emptyTrace.statusCode,200,emptyTrace.body);assert.equal(emptyTrace.json().edges.length,0);assert.equal(emptyTrace.json().missingLinks.length,1);assert.equal(emptyTrace.json().baselineRef,null);
     const tracePolicy=await docSend({...context,commandId:randomUUID(),operation:'savePermissionPolicy',targetId:policyRef.id,expectedVersion:8,payload:{rules:[{ruleId:'TRACE_OWN_PROJECT',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations:['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','indexDesignDocument','saveWorkPlanDraft','linkTrace'],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3_600_000).toISOString()}],reason:'합성 추적 연결 별도 명시 허가',reviewRefs:[]}});assert.equal(tracePolicy.statusCode,200,tracePolicy.body);
+    const traceClientWork=await prepareStoredWorkPlan(client,project,clientRevision.ref,session,'TRACE');assert.equal(traceClientWork.workPlanState!.pending,null);assert.deepEqual(traceClientWork.workPlanState!.result!.ref,clientRevision.ref);traceClientWork.workPlanState!.traceLink=newTaskTrace(traceClientWork,'UI01');traceClientWork.workPlanState!.traceLink.input.to=traceClientWork.workPlanState!.result!.tasks.find(t=>t.taskCode==='UI01')!.designRefs[0]!;traceClientWork.workPlanState!.traceLink.input.reason=traceCommand.payload.reason;traceClientWork.workPlanState!.traceLink.pending=prepareTaskTrace(traceClientWork,session);
+    await assert.rejects(sendTaskTrace(client,traceClientWork,session,()=>false),(e:unknown)=>(e as{code:string}).code==='TRACE_LINK_CONTINUATION_PAUSED');const traceClientResult=await sendTaskTrace(client,traceClientWork,session,()=>true);assert.equal(traceClientResult.relation,'IMPLEMENTS');traceCommand.commandId=traceClientWork.workPlanState!.traceLink.pending.commandId;
     const trace=await docSend(traceCommand);assert.equal(trace.statusCode,200,trace.body);assert.equal(trace.json().data.status,'TRACE_LINKED');assert.deepEqual((await docSend(traceCommand)).json(),trace.json());
     assert.equal((await docSend({...traceCommand,commandId:randomUUID()})).statusCode,409);
     assert.equal((await docSend({...traceCommand,commandId:randomUUID(),payload:{...traceCommand.payload,to:traceCommand.payload.from}})).statusCode,422);

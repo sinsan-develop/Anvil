@@ -121,7 +121,16 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN05 원문·헌법·지식 저장 보완 직접 승인
+
+- 신산님 응답 `call_e1335118cbae4ec08c2018f427e10d52`: ‘FN05 원문·헌법·지식 계약·개발 DB 보완 승인’. 기존 WSL anvil_v3_development에 새 forward migration으로 프로젝트 대화 원문·헌법/지식 불변 버전·확정/정정/제외 이력·검색 참조를 추가한다. 기존 보호 원문 보관소와 현재 로그인·단독 제어·명시 정책·정확 버전·감사를 연결한다.
+- 기존 원문/SQL/확정 기록은 보존하고 외부 Agent 전달·자동 공유·모델 학습·실제 사용자 권한 부여·Secret/서비스/운영 변경은 제외한다. 합성 시험 자료만 정확 정리한다. 현재 단독 writer가 FN04 추적 연결 UI를 마무리/기록한 뒤 순서대로 착수하며, 승인 자체를 구현/적용/검증 완료로 표시하지 않는다.
+
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
+
+- 읽기 client `aa184edd3665133fd909456d39cbb53162ae5bff` 지정 private/WSL exact/clean actual1 PASS/4667ms/skip0: 같은 readTrace가 실제 양방향 edge/ref/hash·역 traversal·미연결 출처를 검사했다. 기존22 SQL 재실행0. 아래 후보는 이 후속 쓰기 화면이며 actual 결과는 게시 후 별도 확인한다.
+- trace 쓰기 준비 부재 RED1→new/prepare/sendTaskTrace, 상위 workPlanState.traceLink·TaskTraceEditor를 연결했다. 새 저장 계획 또는 보관 계획을 현재 제어 아래 읽기 전용 TRACE 모드로 준비하고, 해당 업무 카드에 선언된 정확 D/S만 명시 연결한다. 과거 계획 저장 command를 합성하지 않고 linkTrace의 별도 명령/정책/receipt를 소비한다. root 버퍼·보류 명령/입력·미확인 상태는 화면 이동 뒤에도 유지하고, 미확인 link가 있으면 내부/상위 닫기로 버리지 못한다. 첫 명확한 거절만 별도 버림 확인을 허용하고 단절 뒤 거절은 uncertain을 지우지 않는다.
+- 화면 진입점 부재 RED1→보관 계획 준비/새 작성·단절·조회·추적 단절→거절→같은 명령 재확인4 PASS/4.6초. 새 닫기 지역변수 link가 기존 연결 함수와 겹친 타입1은 traceLinkWork로 구분했다. fresh 단위79 PASS/1267ms·타입/build0(Web71/JS495.52kB/gzip132.17)·diff0. 동일 Web TRACE 준비/쓰기 actual은 게시 전 미검증이다. 전체 기능 완료/실제 browser DB·배정/계획 확정/변경 영향·Agent 수행은 주장하지 않는다. 다음 FN05 DB 보완은 위 직접 승인을 소비해 순차 착수한다.
 
 - 추적 조회 client 부재 RED1→readTrace의 정확 설계/방향·ref/edge payload hash·제한 wire·노드/연결/반대 traversal·미연결 증거 검증 GREEN. 조회 화면 진입점 부재 RED1→DesignIndexViewer의 명시 업무 연결 조회·TraceViewer를 연결했다. GET만 수행하고 같은 edge의 정방향/역방향·유한 다음 페이지·설계 업무 연결 누락·기준 미활성/실행·시험 미연결을 표시한다. 변조 시 앞선 노드를 지운다. 새 기능과 모순된 예전 ‘등록/계획 조회 미구현’ 안내와 해당 UI 문구 기대만 바꾸고 무결성/미검증 기준은 유지했다.
 - fresh 단위78 PASS/1139ms·type/build0(Web70/JS488.13kB/gzip130.53)·직접 영향 UI06 조회/계획/위치 등록12 PASS/9.2초·diff0. actual 시험의 역방향 첫 항목 possibly undefined 타입1은 개수2 검증/명시 접근으로 보정했다. same Web readTrace의 actual 양방향/동일 edge/hash 검증은 게시 후 실행 전까지 미검증이다. 아직 화면에서 새 trace link 쓰기·화면 검토 선택/계획 확정·변경 영향은 미연결이다.

@@ -8,7 +8,7 @@ import {readDesignIndex} from './design-index-api.ts';
 export type PlanRef={id:string;version:number;contentHash:string};
 export interface WorkPlanInput{documentRef:PlanRef;designRef:PlanRef|null;screenReviewRefs:unknown[];tasks:TaskCard[];reason:string}
 export interface WorkPlanView{ref:PlanRef;status:'DRAFT';documentRef:PlanRef;designRef:PlanRef;screenReviewRefs:unknown[];tasks:TaskCard[];dependencies:{taskCode:string;dependencyTaskCode:string;phase:'START'|'ACCEPTANCE'}[];reason:string;issues:{code:string;location:string;message:string}[];relationalProjection:'STORED'|'ISSUES_ONLY';executionEvidence:'NOT_CONNECTED';observedAt:string}
-export interface WorkPlanBuffer{bindingId:string;input:WorkPlanInput;planRef:PlanRef|null;pending:DocumentWrite|null;result:WorkPlanView|null;uncertain:boolean;failure:{code:string;status:number}|null;designDocumentId:string;designVersion:string;designIndex:import('./design-index-api.ts').DesignIndexView|null}
+export interface WorkPlanBuffer{bindingId:string;input:WorkPlanInput;planRef:PlanRef|null;pending:DocumentWrite|null;result:WorkPlanView|null;uncertain:boolean;failure:{code:string;status:number}|null;designDocumentId:string;designVersion:string;designIndex:import('./design-index-api.ts').DesignIndexView|null;traceLink?:import('./trace-api.ts').TaskTraceBuffer|null}
 export interface WorkPlanSummary{ref:PlanRef;status:'DRAFT';title:string;documentRef:PlanRef;designRef:PlanRef;issueCount:number;updatedAt:string;integrity:'NOT_RECHECKED'}
 export interface WorkPlanPage{items:WorkPlanSummary[];hasMore:boolean;nextCursor:string|null;observedAt:string}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,hash=/^[0-9a-f]{64}$/;
@@ -40,13 +40,13 @@ export async function listWorkPlans(client:ApiClient,projectId:string,cursor:str
   const v=await client.get<WorkPlanPage>(`/api/v1/projects/${projectId}/work-plans?${query}`);
   if(!v||!Array.isArray(v.items)||v.items.length>50||typeof v.hasMore!=='boolean'||v.hasMore!==(typeof v.nextCursor==='string'&&v.nextCursor.length>0&&v.nextCursor.length<=4096)||!v.hasMore&&v.nextCursor!==null||!Number.isFinite(Date.parse(v.observedAt))||new Set(v.items.map(i=>i.ref?.id)).size!==v.items.length||v.items.some(i=>!i||!ref(i.ref)||i.status!=='DRAFT'||typeof i.title!=='string'||!ref(i.documentRef)||!ref(i.designRef)||!Number.isSafeInteger(i.issueCount)||i.issueCount<0||!Number.isFinite(Date.parse(i.updatedAt))||i.integrity!=='NOT_RECHECKED'||documentId!==null&&i.documentRef.id!==documentId))throw new ApiError('RESPONSE_INVALID');return v;
 }
-export async function prepareStoredWorkPlan(client:ApiClient,projectId:string,planRef:PlanRef,session:DocumentSession):Promise<DocumentBuffer>{
+export async function prepareStoredWorkPlan(client:ApiClient,projectId:string,planRef:PlanRef,session:DocumentSession,mode:'REVISION'|'TRACE'='REVISION'):Promise<DocumentBuffer>{
   const view=await readWorkPlan(client,projectId,planRef),document=await readDocument(client,projectId,view.documentRef.id,view.documentRef.version);
   if(document.document.contentHash!==view.documentRef.contentHash)throw new ApiError('WORK_PLAN_INTEGRITY_FAILED');
   const [form,control,index]=await Promise.all([getPinnedForm(client,document.document.formRef),documentControl(client,projectId,session),readDesignIndex(client,projectId,view.designRef)]);
   if(form.definition.formCode!=='AF04')throw new ApiError('WORK_PLAN_DOCUMENT_KIND_INVALID');
   const buffer=editDocument(projectId,document,session.user.id,control),state=newWorkPlan(buffer);
-  state.planRef={...view.ref};state.input=structuredClone({documentRef:view.documentRef,designRef:view.designRef,screenReviewRefs:view.screenReviewRefs,tasks:view.tasks,reason:view.reason});state.designDocumentId=view.designRef.id;state.designVersion=String(view.designRef.version);state.designIndex=index;buffer.workPlanState=state;return buffer;
+  state.planRef={...view.ref};state.input=structuredClone({documentRef:view.documentRef,designRef:view.designRef,screenReviewRefs:view.screenReviewRefs,tasks:view.tasks,reason:view.reason});state.designDocumentId=view.designRef.id;state.designVersion=String(view.designRef.version);state.designIndex=index;if(mode==='TRACE')state.result=view;buffer.workPlanState=state;return buffer;
 }
 export function newWorkPlan(buffer:DocumentBuffer):WorkPlanBuffer{
   const documentRef={id:buffer.documentId,version:buffer.baseVersion,contentHash:buffer.baseHash};if(!ref(documentRef)) throw new ApiError('WORK_PLAN_INPUT_INVALID');
