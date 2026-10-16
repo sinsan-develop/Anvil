@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI06/FN04 동일 Web `827f812ff1299f692830423cc6091e5405ba9877` local/private·WSL exact/clean actual1 PASS/8168ms/skip0. 실제 원문/카드 조회→계획 검토 저장/replay→현재 조건 재조회→별도 checkbox 필요→확정 실제 저장 뒤 합성 응답 단절→같은 명령 재확인/동일 확정 ID·DB pointer/조회·사후 REWORK 이력 보존을 확인했다. 독립 DB26종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations28, SQL 재실행0·실제 사용자/Secret/서비스 변경0. unit118/계획 fixture8·type/build PASS는 실제 사용자 browser↔DB 인수와 구분한다. FN04/Stage B/전체44업무는 미완료다.
+- 다음 계획 범위는 FN04 설계 변경 요청·영향 이력이다. 기존 확정 AF02·실제 document_proposals/trace_edges/계획 버전을 대조했고 저장에는 새 forward/명시 연산 계약이 필요하다. 신산님께 별도 질문1건을 보냈으며 승인 전 DB/schema/연산 등록/서비스 변경은 하지 않는다. 기존 원문·확정·적용 기준 불변, 연결 없는 영향을 UNKNOWN으로 보존하는 순수 계산/테스트를 먼저 진행한다. 실제 기준 적용/업무 재개·권한 부여·Agent 호출은 이번 저장 승인 요청의 제외 범위다.
+
 - UI06 계획 검토/확정 후보 검증: unit118 PASS/1709ms·type/build0(Web86/575.75kB/gzip149.82, 기존 bundle/NO_COLOR 경고 유지), 계획 화면 fixture8 PASS/8.5초/skip0. 읽기 전용 보관함의 검토/확정 조회는 버튼 부재 RED1→GET만/미확정·미검토 표시 GREEN, 현재 주체/정확 버전/별도 확인·단절 후 같은 명령·나중403/화면 이동 보존·실행 활성화 거절 확인. `WorkPlanLibrary`에서도 제어권 쓰기 준비 없이 상태/이력 조회 가능하다. 실제 같은 client prepare/send/read·확정 저장 뒤 합성 receipt 단절/멱등 확인을 실제 시험에 연결했으며 다음 exact 게시본 실행 전/미검증이다. 현재 제품 runtime 교체/로그인 Secret 변경은 하지 않았다.
 
 - FN04 backend `a7d6851f28433ab9756d68431ffb09d2c4d88103` local/private·WSL exact/clean actual1 PASS/8110ms/skip0. 계획5기준 별도 검토·정확/최신 검토·정책403·원문 미확정422·정상 확정/멱등/조회·최신 REWORK 뒤 유효성 false·직접 pointer/이력 삭제42501·기존 초안 snapshot 보존 확인. 독립 DB26종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations28 확인. SQL28 checksum8c899de2…a249 불변. 실제 사용자/Agent·기준 활성화·서비스/Secret 변경0.

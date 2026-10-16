@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI06/FN04 `827f812ff1299f692830423cc6091e5405ba9877` same Web exact private/WSL clean actual1 PASS/8168ms/skip0·DB26종/시험root0·지속root 보호/empty·migrations28 불변. 현재 사용자용 Windows service는 교체하지 않았고 DB/화면 fixture·same-client 실측을 실제 browser↔DB 로그인/사용자 인수로 승격하지 않는다. 다음 설계 변경/영향 저장 DB 보완은 별도 질문 중이며 아직 미승인/미적용이다.
+
 FN04 확정 저장 `a7d6851f28433ab9756d68431ffb09d2c4d88103` exact private/WSL clean actual1 PASS/8110ms/skip0. 승인 forward28 `0004_work_plan_confirmation` checksum8c899de2c7c5e673a8915fd2ebd83e78b32e0d87d4828b50cd76dd499b03a249 적용, 이전27 불변. 독립 DB26종/시험root0·지속root uid1000/0700/link0/실경로 동일/empty. 사용자용 Windows backend는 이전 버전·Web build만 갱신된 mixed runtime이며 로그인/실제 browser DB 인수를 주장하지 않는다. 기존 서비스·계정·Secret·CA·relay 재시작/갱신0. 화면 연결은 별도 후속이며 아래 이전 ‘미작성/미적용’은 과거 시점 이력이다.
 
 FN04 화면 검토 선택 `ec2692212b5d4ad93d6ab5a27cd28105916840cf` exact private/WSL clean actual1 PASS/7739ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL27 재적용0·새 DB/schema/서비스/실제 사용자·Secret 변경0. 다음 계획 검토/확정 forward는 승인됐으나 아직 미작성/미적용이다.
