@@ -30,3 +30,22 @@ test('기존 일반 텍스트 문서를 편집해도 원문 형식을 Markdown�
   const pending = await prepareDocumentSave(work, session);
   assert.equal(pending.upload.payload.mediaType, 'text/plain;charset=utf-8');
 });
+
+test('단계에 연결된 문서 저장은 선택 참조를 pending·본문 hash·재확인 명령에 고정한다', async () => {
+  const stageNodeRef = { applicationId: project, nodeId: 'ANALYSIS-01' }, work = Object.assign(buffer(), { stageNodeRef });
+  let pending = await prepareDocumentSave(work, session);
+  assert.deepEqual((pending as any).stageNodeRef, stageNodeRef);
+  const bytes = Buffer.from(work.body), artifact = { artifactId: id, bytes: bytes.length, contentHash: createHash('sha256').update(bytes).digest('hex'), mediaType: work.mediaType };
+  const content = { body: artifact, ...work.content }, expectedHash = contentHash(canonicalJson({ title: work.title, formRef: work.formRef, stageNodeRef, content }));
+  const commands: any[] = []; let lost = true;
+  const client = new ApiClient(async (_url, init) => {
+    if (init?.headers && new Headers(init.headers).get('content-type') === 'application/octet-stream') return Response.json({ operationId: id, commandId: pending.upload.commandId, projectId: project, status: 'APPLIED', targetId: id, version: null, data: { artifactRef: artifact, status: 'ARTIFACT_READY' }, serverReceivedAt: '2026-10-17T00:00:00.000Z' });
+    const command = JSON.parse(String(init?.body)); commands.push(command);
+    if (lost) { lost = false; throw Error('synthetic-stage-receipt-lost'); }
+    return Response.json({ operationId: id, commandId: command.commandId, projectId: project, status: 'APPLIED', targetId: id, version: 3, data: { ref: { id, version: 3, contentHash: expectedHash }, status: 'DRAFT' }, serverReceivedAt: '2026-10-17T00:00:00.000Z' });
+  });
+  await assert.rejects(continueDocumentSave(client, pending, session, value => { pending = value; }, () => true), (e: unknown) => e instanceof ApiError && e.code === 'CONNECTION_LOST');
+  const result = await continueDocumentSave(client, pending, session, () => {}, () => true);
+  assert.equal(result.contentHash, expectedHash); assert.deepEqual(commands[0], commands[1]); assert.deepEqual(commands[0].payload.stageNodeRef, stageNodeRef);
+  assert.notEqual(await documentDraftHash(work.title, work.formRef, content), expectedHash, '미연결 hash와 연결 hash를 혼동하지 않는다');
+});

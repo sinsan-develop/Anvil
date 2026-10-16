@@ -48,6 +48,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }) => { expect(unknown.get(page)).toEqual([]); });
 
 async function documents(page: any, changedMetadata?: { formRef: typeof formRef; attachments: any[] }) {
+  let stageNodeRef: any = null;
   let head = 2, title = '원본 문서', body = initial;
   const original = { artifactId, bytes: Buffer.byteLength(initial), contentHash: createHash('sha256').update(initial).digest('hex'), mediaType: 'text/markdown;charset=utf-8' };
   let artifact = original;
@@ -56,12 +57,31 @@ async function documents(page: any, changedMetadata?: { formRef: typeof formRef;
     const version = Number(new URL(route.request().url()).pathname.split('/').pop()), content = { body: version < 3 ? original : artifact, attachments: version >= 3 ? changedMetadata?.attachments ?? [] : [], sections: [{ itemId: 'REQ', anchor: 'line:1' }], sourceRefs: [] };
     const versionTitle = version < 3 ? '원본 문서' : title;
     const formRef = version >= 3 && changedMetadata ? changedMetadata.formRef : { id: artifactId, version: 1, contentHash: 'a'.repeat(64) };
-    return route.fulfill({ json: { id, version, title: versionTitle, formRef, stageNodeRef: null, contentHash: contentHash(canonicalJson({ title: versionTitle, formRef, stageNodeRef: null, content })), confirmed: false, content, sourceRefs: [], authorRef: { kind: 'HUMAN', userId: id }, createdAt: '2026-10-16T05:00:00.000Z', validation: { validForConfirmation: true, issues: [], formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' }, statusHistory: [{ kind: 'DRAFT_SAVED', actorRef: { kind: 'HUMAN', userId: id }, reason: '원본 보관', at: '2026-10-16T05:00:00.000Z' }], contentReviewCriteria: { criteriaVersion: 1, formRef, items: [{ criterionId: 'REQ', title: '요구 내용', reviewCriteria: ['원문 대조'] }] }, contentReviews: [], reviewRefs: [], proposalRefs: [], sourceLinks: [] } });
+    return route.fulfill({ json: { id, version, title: versionTitle, formRef, stageNodeRef: version < 3 ? null : stageNodeRef, stageBinding: version >= 3 && stageNodeRef ? { applicationRef: { id: stageNodeRef.applicationId, version: 1, contentHash: 'c'.repeat(64) }, methodologyName: '합성 방법론', nodeId: stageNodeRef.nodeId, nodeName: '요구사항 정의', uses: ['OUTPUT'] } : null, contentHash: contentHash(canonicalJson({ title: versionTitle, formRef, stageNodeRef: version < 3 ? null : stageNodeRef, content })), confirmed: false, content, sourceRefs: [], authorRef: { kind: 'HUMAN', userId: id }, createdAt: '2026-10-16T05:00:00.000Z', validation: { validForConfirmation: true, issues: [], formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' }, statusHistory: [{ kind: 'DRAFT_SAVED', actorRef: { kind: 'HUMAN', userId: id }, reason: '원본 보관', at: '2026-10-16T05:00:00.000Z' }], contentReviewCriteria: { criteriaVersion: 1, formRef, items: [{ criterionId: 'REQ', title: '요구 내용', reviewCriteria: ['원문 대조'] }] }, contentReviews: [], reviewRefs: [], proposalRefs: [], sourceLinks: [] } });
   });
   await page.route(`**/api/v1/projects/${project}/files/*`, (route: any) => route.request().method() === 'GET' ? route.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(new URL(route.request().url()).pathname.endsWith(artifactId) ? initial : body) }) : route.fallback());
-  return { apply(request: any, uploaded: typeof original, text: string) { artifact = uploaded; body = text; title = request.payload.title; head = request.expectedVersion + 1; } };
+  return { apply(request: any, uploaded: typeof original, text: string) { stageNodeRef = request.payload.stageNodeRef ?? null; artifact = uploaded; body = text; title = request.payload.title; head = request.expectedVersion + 1; } };
 }
 function receipt(command: any, data: any, version: number | null, targetId: string) { return { operationId: artifactId, commandId: command.commandId, projectId: project, status: 'APPLIED', targetId, version, data, evidenceRefs: [], warnings: [], serverReceivedAt: '2026-10-16T05:00:00.000Z' }; }
+
+test('고정 단계 선택은 단절·화면 이동 뒤에도 유지되고 문서 버전에 저장·재조회된다', async ({ page }) => {
+  const state = await documents(page), saves: any[] = [], uploads: any[] = [];
+  const stageNodeRef = { applicationId: 'a6f30000-0000-4000-8000-000000000091', nodeId: 'REQUIREMENTS' }; let uploaded: any, text = '', savedRef: any;
+  await page.route(`**/api/v1/projects/${project}/documents/stage-options?*`, route => route.fulfill({ json: { projectId: project, formRef, applicationRef: { id: stageNodeRef.applicationId, version: 1, contentHash: 'c'.repeat(64) }, methodologyName: '합성 방법론', items: [{ stageNodeRef, nodeName: '요구사항 정의', nodeKind: 'HUMAN', uses: ['OUTPUT'] }], status: 'READY', observedAt: '2026-10-17T00:00:00.000Z' } }));
+  await page.route(`**/api/v1/projects/${project}/files`, route => { const c = JSON.parse(route.request().headers()['x-anvil-command']!); uploads.push(c); text = route.request().postDataBuffer()!.toString('utf8'); uploaded = { artifactId: 'a6f30000-0000-4000-8000-000000000092', ...c.payload }; return route.fulfill({ status: 201, json: receipt(c, { status: 'ARTIFACT_READY', artifactRef: uploaded }, null, uploaded.artifactId) }); });
+  await page.route(`**/api/v1/projects/${project}/commands`, route => { const c = route.request().postDataJSON(); saves.push(c); expect(c.payload.stageNodeRef).toEqual(stageNodeRef); state.apply(c, uploaded, text); savedRef = { id, version: 3, contentHash: contentHash(canonicalJson({ title: c.payload.title, formRef, stageNodeRef, content: c.payload.content })) }; return saves.length === 1 ? route.abort('connectionreset') : route.fulfill({ json: receipt(c, { status: 'DRAFT', ref: savedRef }, 3, id) }); });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button', { name: '원본 문서 열기', exact: true }).click(); await page.getByRole('button', { name: '이 버전에서 편집', exact: true }).click();
+  await page.getByRole('button', { name: '현재 적용본 단계 조회', exact: true }).click();
+  await page.getByLabel('연결할 방법론 단계', { exact: true }).selectOption('REQUIREMENTS');
+  await page.getByLabel('문서 변경 이유', { exact: true }).fill('고정 단계와 문서를 연결');
+  await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
+  await page.getByRole('link', { name: '프로젝트 작업', exact: true }).click(); await page.getByRole('link', { name: '문서·설계 추적', exact: true }).click();
+  await page.getByRole('button', { name: '같은 저장 명령 결과 확인', exact: true }).click(); await expect(page.getByText('초안 버전 3 저장 확인', { exact: true })).toBeVisible();
+  expect(uploads).toHaveLength(1); expect(saves).toHaveLength(2); expect(saves[0]).toEqual(saves[1]);
+  await expect(page.getByRole('region', { name: '문서 단계 연결', exact: true })).toContainText('요구사항 정의');
+  await page.getByRole('button', { name: '이 버전에서 편집', exact: true }).click();
+  await expect(page.getByRole('region', { name: '문서 단계 선택', exact: true })).toContainText('REQUIREMENTS');
+});
 
 test('편집 입력은 화면 이동·업로드 응답 단절에도 보존되고 같은 명령으로 새 불변 버전을 저장한다', async ({ page }) => {
   const state = await documents(page), uploads: any[] = [], saves: any[] = []; let uploaded: any, text = '';

@@ -10,6 +10,12 @@ import { AccessRepository } from '../../../apps/server/modules/access/repository
 import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
+import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
+import { getPinnedForm } from '../../../apps/web/src/features/methodologies/forms-api.ts';
+import { readDocumentStageOptions } from '../../../apps/web/src/features/design-trace/stage-api.ts';
+import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts';
+import { newDocument, prepareDocumentSave, continueDocumentSave, editDocument } from '../../../apps/web/src/features/design-trace/editor-api.ts';
+import { prepareDocumentProposal, continueDocumentProposal, compareDocumentProposal, prepareProposalApplication, applyDocumentProposal } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
 
 // 결함 검출: 단계/양식/프로젝트 혼동, 현재 적용본의 자동 교체와 과거 문서 연결 손실.
 test('문서는 실제 고정 적용 단계·정확 양식에만 연결되고 과거 버전과 미연결 초안을 보존한다', async () => {
@@ -45,7 +51,7 @@ test('문서는 실제 고정 적용 단계·정확 양식에만 연결되고 �
     await assert.rejects(lstat(root), (e: unknown) => (e as { code: string }).code === 'ENOENT'); await mkdir(root, { mode: 0o700 }); rootCreated = true;
     const command = (operation: string, payload: Record<string, unknown>, targetId: string | null = null, expectedVersion = 0) => ({ schemaVersion: 1, projectId: projects[0], commandId: randomUUID(), clientId: own.clientId, controlGeneration: 1, operation, targetId, expectedVersion, baselineRefs: [], approvalRef: null, payload });
     const send = (payload: Record<string, unknown>) => app.inject({ method: 'POST', url: path + '/commands', headers: headers(), payload });
-    const permission = await send(command('savePermissionPolicy', { rules: [{ ruleId: 'DOC_STAGE_QA', subjectRef: { kind: 'HUMAN', userId: users[0] }, operations: ['uploadArtifact', 'saveDocumentDraft'], targetScopes: [{ kind: 'PROJECT', projectId: projects[0] }], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 문서 단계 저장 허가', reviewRefs: [] }));
+    const permission = await send(command('savePermissionPolicy', { rules: [{ ruleId: 'DOC_STAGE_QA', subjectRef: { kind: 'HUMAN', userId: users[0] }, operations: ['uploadArtifact', 'saveDocumentDraft', 'proposeDocumentChange'], targetScopes: [{ kind: 'PROJECT', projectId: projects[0] }], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 문서 단계 저장 허가', reviewRefs: [] }));
     assert.equal(permission.statusCode, 200, permission.body);
     const definition = (await admin.query('SELECT definition_json FROM anvil.form_versions WHERE definition_id=$1 AND version=$2', [formRef.id, formRef.version])).rows[0].definition_json;
     const bytes = Buffer.from(definition.items.map((item: any) => item.title + '\n합성 원문 내용').join('\n'), 'utf8'), uploadCommand = command('uploadArtifact', { mediaType: 'text/plain;charset=utf-8', bytes: bytes.length, contentHash: createHash('sha256').update(bytes).digest('hex') });
@@ -59,6 +65,34 @@ test('문서는 실제 고정 적용 단계·정확 양식에만 연결되고 �
     assert.deepEqual(savedResponses[0]!.json(), savedResponses[1]!.json());
     const ref = savedResponses[0]!.json().data.ref, versionPath = path + '/documents/' + ref.id + '/versions/1';
     let read = await app.inject({ method: 'GET', url: versionPath, headers: headers() }); assert.equal(read.statusCode, 200, read.body); assert.deepEqual(read.json().stageNodeRef, stageNodeRef); assert.equal(read.json().stageBinding.nodeName, node.name); assert.equal(read.json().confirmed, false);
+    let uploads = 0, dropSaveReceipt = true;
+    const client = new ApiClient(async (input, init) => {
+      if (init?.method === 'POST' && String(input).endsWith('/files')) uploads++;
+      const response = await app.inject({ method: (init?.method ?? 'GET') as 'GET' | 'POST', url: String(input), headers: { ...headers(), ...Object.fromEntries(new Headers(init?.headers).entries()) }, payload: init?.body instanceof Uint8Array ? Buffer.from(init.body) : typeof init?.body === 'string' ? init.body : undefined });
+      return new Response(new Uint8Array(response.rawPayload), { status: response.statusCode, headers: { 'content-type': String(response.headers['content-type'] ?? '') } });
+    });
+    const session = { user: { id: users[0]! }, clientId: own.clientId, csrfToken: own.csrfToken };
+    const choices = await readDocumentStageOptions(client, projects[0]!, formRef);
+    assert.ok(choices.items.some(item => item.stageNodeRef.nodeId === node.nodeId));
+    const work = newDocument(projects[0]!, await getPinnedForm(client, formRef), users[0]!, 1);
+    Object.assign(work, { title: '화면 함수 단계 문서', body: bytes.toString('utf8'), mediaType: 'text/plain;charset=utf-8', reason: '실제 저장과 응답 단절 확인', stageNodeRef, content: { attachments: [], sections: content.sections, sourceRefs: [] } });
+    let pending = await prepareDocumentSave(work, session);
+    const lost = new ApiClient(async (input, init) => { const response = await client.transport.call(globalThis, input, init); if (dropSaveReceipt && init?.method === 'POST' && String(input).endsWith('/commands')) { dropSaveReceipt = false; throw Error('synthetic-document-stage-receipt-lost'); } return response; });
+    await assert.rejects(continueDocumentSave(lost, pending, session, p => pending = p, () => true), (e: unknown) => e instanceof ApiError && e.code === 'CONNECTION_LOST');
+    const webRef = await continueDocumentSave(client, pending, session, p => pending = p, () => true);
+    assert.equal(uploads, 1); assert.deepEqual(await continueDocumentSave(client, pending, session, p => pending = p, () => true), webRef);
+    const webRead = await readDocument(client, projects[0]!, webRef.id, webRef.version);
+    assert.deepEqual(webRead.document.stageNodeRef, stageNodeRef); assert.equal(webRead.document.stageBinding!.nodeName, node.name);
+    const edit = editDocument(projects[0]!, webRead, users[0]!, 1); edit.body += '\n사람이 선택할 수정 제안'; edit.reason = '단계 연결을 유지하는 제안';
+    let proposed = await prepareDocumentProposal(edit, session);
+    proposed = await continueDocumentProposal(client, proposed, session, p => proposed = p, () => true);
+    proposed.comparison = await compareDocumentProposal(client, proposed, session);
+    proposed.applyCommand = await prepareProposalApplication(client, proposed, session, true);
+    assert.deepEqual(proposed.applyCommand.payload.stageNodeRef, stageNodeRef);
+    const stagedCommand = proposed.applyCommand;
+    assert.equal((await send({ ...stagedCommand, commandId: randomUUID(), payload: { ...stagedCommand.payload, stageNodeRef: null } })).statusCode, 409, '제안의 기준 단계를 몰래 해제할 수 없다');
+    const selected = await applyDocumentProposal(client, proposed, session, () => true);
+    assert.deepEqual((await readDocument(client, projects[0]!, selected.id, selected.version)).document.stageNodeRef, stageNodeRef);
     const mismatchedForm = (await admin.query('SELECT definition_id AS id,version,content_hash AS "contentHash" FROM anvil.form_versions WHERE definition_id<>$1 ORDER BY definition_id,version DESC LIMIT 1', [formRef.id])).rows[0];
     assert.equal((await send(command('saveDocumentDraft', { ...payload, formRef: { ...mismatchedForm, version: Number(mismatchedForm.version) } }))).statusCode, 422, '노드의 정확 양식이어야 한다');
     const newApplication = randomUUID(); await admin.query('INSERT INTO anvil.project_methodologies(id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by) VALUES($1,$2,2,$3,2,$4,$5,$6,$7)', [newApplication, projects[0], sourceRef.id, sourceRef.contentHash, JSON.stringify(snapshot), snapshotHash, users[0]]);
@@ -75,7 +109,7 @@ test('문서는 실제 고정 적용 단계·정확 양식에만 연결되고 �
     await app.close(); const db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
-      for (const table of ['document_version_events', 'document_artifact_links', 'document_versions', 'documents', 'artifacts', 'project_methodologies', 'audit_events']) await db.query('DELETE FROM anvil.' + table + ' WHERE project_id=ANY($1::uuid[])', [ownedProjects]);
+      for (const table of ['document_proposal_selections', 'document_proposals', 'document_version_events', 'document_artifact_links', 'document_versions', 'documents', 'artifacts', 'project_methodologies', 'audit_events']) await db.query('DELETE FROM anvil.' + table + ' WHERE project_id=ANY($1::uuid[])', [ownedProjects]);
       await db.query('UPDATE anvil.permission_policies SET head_version=head_version+1 WHERE project_id=ANY($1::uuid[])', [ownedProjects]);
       for (const table of ['permission_policy_versions', 'permission_policies']) await db.query('DELETE FROM anvil.' + table + ' WHERE project_id=ANY($1::uuid[])', [ownedProjects]);
       await db.query('UPDATE anvil.commands SET authorization_receipt_id=NULL WHERE project_id=ANY($1::uuid[])', [ownedProjects]);

@@ -5,6 +5,7 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { continueDocumentSave, prepareDocumentSave, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
 import { adoptDocumentConflict, canCompareDocumentConflict, canPrepareManualConflict, compareDocumentConflict, type DocumentConflictComparison } from './conflict-api.ts';
 import { DocumentImport } from './DocumentImport.tsx';
+import { DocumentStageSelector } from './DocumentStageSelector.tsx';
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, type DocumentProposalBuffer } from './proposal-api.ts';
 
 export function DocumentEditor({ client, session, buffer, onChange, onSaved, onAuthenticationLost }: { client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
@@ -79,6 +80,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
   const proposal = buffer.proposalState, proposalCanClose = proposal && !proposal.uncertain && (proposal.savedRef || !proposal.applyCommand && proposal.proposal || proposal.failure && [400,401,403,404,409,412,413,415,422].includes(proposal.failure.status));
   return <section className="status-card definition-editor" aria-label="문서 초안 편집">
     <h2>문서 초안 편집</h2><p className="meta">기준 버전 {buffer.baseVersion} · 원본/구버전은 보존됩니다. 이 저장은 사용자 확정이나 Agent 실행이 아닙니다.</p>
+    <DocumentStageSelector key={buffer.projectId + ':' + buffer.formRef.id + ':' + buffer.formRef.version + ':' + buffer.formRef.contentHash} client={client} projectId={buffer.projectId} formRef={buffer.formRef} value={buffer.stageNodeRef ?? null} disabled={locked} onChange={value => change({ stageNodeRef: value })} onAuthenticationLost={onAuthenticationLost} />
     {buffer.documentId === null && !buffer.importCandidateRef ? <DocumentImport client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} disabled={busy} /> : null}
     {buffer.importCandidateRef ? <p className="meta">가져오기 후보 {buffer.importCandidateRef} · 원본을 첨부로 보존합니다. 아직 별도 저장/확정 전이면 다음 동작을 직접 선택하세요.</p> : null}
     {buffer.savedRef ? <p role="status">초안 버전 {buffer.savedRef.version} 저장 확인</p> : null}

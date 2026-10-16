@@ -1,6 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listDocuments, readDocument } from './api.ts';
 import { documentControl, editDocument, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
+import { nullableStageRef, sameStageRef, validStageBinding } from './stage-api.ts';
 
 export interface DocumentConflictComparison {
   ownerUserId: string; projectId: string; rejectedCommandId: string; baseVersion: number;
@@ -18,12 +19,12 @@ export async function compareDocumentConflict(client: ApiClient, b: DocumentBuff
   if (!found) throw new ApiError('DOCUMENT_COMPARISON_WINDOW_EXCEEDED');
   if (found.headVersion <= b.baseVersion) throw new ApiError('DOCUMENT_CONFLICT_NOT_ADVANCED');
   const latest = await readDocument(client, b.projectId, found.id, found.headVersion), d = latest.document;
-  const compatible = d.stageNodeRef === null && !d.content.sourceRefs.length && d.formRef.id === b.formRef.id && d.formRef.version === b.formRef.version && d.formRef.contentHash === b.formRef.contentHash && d.content.body.mediaType === b.mediaType && JSON.stringify(d.content.attachments) === JSON.stringify(b.content.attachments);
+  const compatible = nullableStageRef(d.stageNodeRef) && sameStageRef(d.stageNodeRef, b.stageNodeRef ?? null) && (d.stageNodeRef === null || validStageBinding(d.stageBinding!, d.stageNodeRef)) && !d.content.sourceRefs.length && d.formRef.id === b.formRef.id && d.formRef.version === b.formRef.version && d.formRef.contentHash === b.formRef.contentHash && d.content.body.mediaType === b.mediaType && JSON.stringify(d.content.attachments) === JSON.stringify(b.content.attachments);
   return { ownerUserId: session.user.id, projectId: b.projectId, rejectedCommandId: b.pending!.saveCommandId, baseVersion: b.baseVersion, latest, controlGeneration: generation, compatible };
 }
 export function canPrepareManualConflict(comparison: DocumentConflictComparison): boolean {
   const d = comparison.latest.document;
-  return d.stageNodeRef === null && !d.content.sourceRefs.length && ['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(d.content.body.mediaType);
+  return nullableStageRef(d.stageNodeRef) && (d.stageNodeRef === null || validStageBinding(d.stageBinding!, d.stageNodeRef)) && !d.content.sourceRefs.length && ['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(d.content.body.mediaType);
 }
 export function adoptDocumentConflict(b: DocumentBuffer, comparison: DocumentConflictComparison, session: DocumentSession, acknowledged: boolean, resolution: 'KEEP_INPUT' | 'LATEST_METADATA' = 'KEEP_INPUT'): DocumentBuffer {
   if (!acknowledged || b.ownerUserId !== session.user.id || !canCompareDocumentConflict(b) || !(resolution === 'KEEP_INPUT' && comparison.compatible || resolution === 'LATEST_METADATA' && canPrepareManualConflict(comparison)) || comparison.ownerUserId !== session.user.id || comparison.projectId !== b.projectId || comparison.rejectedCommandId !== b.pending!.saveCommandId || comparison.baseVersion !== b.baseVersion || comparison.latest.document.id !== b.documentId || comparison.latest.document.version <= b.baseVersion) throw new ApiError('DOCUMENT_CONFLICT_COMPARISON_NOT_READY');
