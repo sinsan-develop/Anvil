@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN06 승인 전 입력 준비: `apps/server/modules/connections/registration-input.ts`와 `tests/unit/FN06/registration-input.test.ts`는 등록 후보의 구조·정확 참조·유한 기한·의심 비밀 거절/복제만 담당한다. API/DB/신뢰/host 증명·credential/Agent 호출에는 아직 연결하지 않는다. 실제 저장 계약·forward41은 사용자 승인 전 미구현이다. 입력 검사 통과를 실제 연결/배정 준비로 해석하지 않는다.
+
 FN03 단계 연결: 서버 `modules/documents/document-stage.ts`가 실제 적용 snapshot/graph hash·노드·정확 양식을 검증하고 project-documents.ts/routes.ts가 저장·과거 조회·stage-options 읽기를 연결한다. forward40 `db/migrations/0003_document_stage_bindings.sql`과 기존 runner만 추가했으며 적용 SQL/원문 이력은 보존한다. UI06 DocumentStageSelector.tsx/stage-api.ts가 수동 단계 조회/선택을, editor-api/api/conflict-api/proposal-api와 기존 편집/조회 화면이 pending·hash·재조회·제안/충돌에서 참조 보존을 담당한다. 직접 시험은 unit/FN03/document-stage.test.ts·unit/UI06/editor-api/conflict-api/proposal-api·browser/UI06/document-edit.spec.ts·integration/FN03/document-stages.test.ts다. 실제 사용자 브라우저 DB 인수와 합성 화면/실제 API·PG 증거는 WORK_STATUS에서 구분한다.
 
 FN01 기존 소스 선언은 projects/source-declaration.ts가 정확 입력/유한 길이·알려진 비밀 검사를, source-declaration-records.ts가 선언 ref/hash·버전/command receipt 불변 대조를, repository.ts가 owned draft 원자 저장·정확 생성 귀속/소유 범위 조회를 소유한다. forward38은 기존 identity를 보존하고 불변 버전/귀속과 현재 owned command guard를 추가한다. UI02 api.ts가 USER_DECLARED/UNVERIFIED·정확 draft/version/hash를 확인하고 기존 root 생성 버퍼로 입력/동일 명령을 보존한다. pathHint는 보호 DB 자료일 뿐 파일 접근/실관측·기준선 VERIFIED가 아니다. 실제/fixture와 미검증 증거는 WORK_STATUS를 따른다.
