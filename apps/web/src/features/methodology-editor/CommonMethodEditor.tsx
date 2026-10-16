@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, type MethodVersion } from './api.ts';
-import { emptyMethodBuffer, methodBuffer, writeCommonMethod, type MethodBuffer, type MethodCommand } from './common-api.ts';
+import { emptyMethodBuffer, methodBuffer, writeCommonMethod, type MethodBuffer, type MethodCommand, type MethodGateway } from './common-api.ts';
 import type { MethodologyGraph, MethodologyNode } from '../../../../../contracts/methodologies.ts';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 import { NodeDefinitionFields } from './NodeDefinitionFields.tsx';
@@ -9,9 +9,9 @@ import { GraphRelationsEditor } from './GraphRelationsEditor.tsx';
 import { NodeDocumentFields } from './NodeDocumentFields.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 
-export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved }: {
+export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void;
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;
 }) {
   const fieldId = useId();
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [savedVersion, setSavedVersion] = useState<number | null>(null);
@@ -31,30 +31,31 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   function moveNode(id: string, dx: number, dy: number) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === id ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) } })); setSavedVersion(null); }
   async function submit(command: MethodCommand, name: string, purpose: string) {
     if (pending || command.clientId !== session.clientId) return;
-    const work = { request: command, name, purpose };
-    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pending: work })); setPending(true); setError(null); setSavedVersion(null);
+    setPending(true); setError(null); setSavedVersion(null);
     let applied = false;
     try {
-      const ref = await writeCommonMethod(client, command, session.csrfToken, session.user.id);
+      command = gateway ? await gateway.prepare(command) : command;
+      onChange(previous => ({ ...previous, ownerUserId: session.user.id, pending: { request: command, name, purpose } }));
+      const ref = gateway ? (await gateway.write(command)).data.ref : await writeCommonMethod(client, command, session.csrfToken, session.user.id);
       applied = true;
-      const value = await getMethod(client, { ref, name, purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false });
+      const value = gateway ? await gateway.read(ref, name, purpose) : await getMethod(client, { ref, name, purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false });
       onChange(previous => previous.pending?.request.commandId === command.commandId ? methodBuffer(value, session.user.id) : previous);
       setSavedVersion(ref.version); onSaved();
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
+      if (!applied && !(gateway && buffer.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
   }
   function copy() {
     if (!source || locked || !copyName.trim() || !replaceAllowed()) return;
     void submit({ schemaVersion: 1, commandId: crypto.randomUUID(), operation: 'copyMethodology', targetId: null, expectedVersion: 0, clientId: session.clientId,
-      payload: { sourceRef: source.ref, name: copyName, scope: 'USER_COMMON', reason: '선택한 원본을 내 공통본으로 복사' } }, copyName, source.purpose);
+      payload: { sourceRef: source.ref, name: copyName, scope: gateway ? 'PROJECT' : 'USER_COMMON', reason: gateway ? '선택한 원본을 프로젝트 전용으로 복사' : '선택한 원본을 내 공통본으로 복사' } }, copyName, source.purpose);
   }
   function save() {
     if (locked || !buffer.name.trim() || !buffer.purpose.trim() || !buffer.reason.trim()) return;
     void submit({ schemaVersion: 1, commandId: crypto.randomUUID(), operation: 'saveMethodologyDraft', targetId: buffer.targetId, expectedVersion: buffer.version, clientId: session.clientId,
-      payload: { name: buffer.name, purpose: buffer.purpose, scope: 'USER_COMMON', graph: buffer.graph, reason: buffer.reason } }, buffer.name, buffer.purpose);
+      payload: { name: buffer.name, purpose: buffer.purpose, scope: gateway ? 'PROJECT' : 'USER_COMMON', graph: buffer.graph, reason: buffer.reason } }, buffer.name, buffer.purpose);
   }
   function addNode() {
     const id = 'N-' + crypto.randomUUID().slice(0, 8);
@@ -63,14 +64,14 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     onChange(previous => ({ ...previous, dirty: true, validation: null, nodeId: id, graph: { ...previous.graph, nodes: [...previous.graph.nodes, next], entryNodeId: previous.graph.entryNodeId || id, terminalNodeIds: previous.graph.terminalNodeIds.length ? previous.graph.terminalNodeIds : [id] } })); setSavedVersion(null);
   }
   if (buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return <section className="status-card"><p role="alert">이 탭의 편집 자료는 다른 로그인 사용자의 자료입니다. 내용을 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭에 남은 다른 사용자의 편집 자료만 버릴까요? 서버 자료는 유지합니다.')) onChange(emptyMethodBuffer()); }}>탭의 이전 사용자 편집 닫기</button></section>;
-  return <section className="status-card definition-editor" aria-label="공통 방법론 작업">
-    <h3>내 방법론 작성·개정</h3><p className="meta">내장 원본은 보존합니다. 저장은 초안이며 사용자 확정·프로젝트 적용·Agent 실행이 아닙니다.</p>
+  return <section className="status-card definition-editor" aria-label={gateway ? '프로젝트 방법론 작업' : '공통 방법론 작업'}>
+    <h3>{gateway ? '전용 방법론 작성·개정' : '내 방법론 작성·개정'}</h3><p className="meta">내장 원본은 보존합니다. 저장은 초안이며 사용자 확정·프로젝트 적용·Agent 실행이 아닙니다.</p>
     <fieldset disabled={locked}><label>복사본 이름<input value={copyName} onChange={event => setCopyName(event.target.value)} maxLength={200} /></label>
-      <button disabled={!source || !copyName.trim()} onClick={copy}>내 공통본으로 복사</button>
+      <button disabled={!source || !copyName.trim()} onClick={copy}>{gateway ? '프로젝트 전용으로 복사' : '내 공통본으로 복사'}</button>
       <button onClick={() => { if (replaceAllowed()) { onChange({ ...emptyMethodBuffer(), ownerUserId: session.user.id, dirty: true }); setError(null); setSavedVersion(null); } }}>새 방법론 작성</button>
-      {source?.scope === 'USER_COMMON' ? <button onClick={() => { if (replaceAllowed()) { onChange(methodBuffer(source, session.user.id)); setError(null); setSavedVersion(null); } }}>이 공통본 편집</button> : null}
+      {source?.scope === (gateway ? 'PROJECT' : 'USER_COMMON') ? <button onClick={() => { if (replaceAllowed()) { onChange(methodBuffer(source, session.user.id)); setError(null); setSavedVersion(null); } }}>{gateway ? '이 전용본 편집' : '이 공통본 편집'}</button> : null}
     </fieldset>
-    {editing ? <section aria-label="공통 방법론 편집"><p className="meta">{buffer.targetId ? `저장 기준 버전 ${buffer.version}` : '새 공통본 · 아직 저장 전'}{buffer.dirty ? ' · 미저장 변경 있음' : ''}</p>
+    {editing ? <section aria-label={gateway ? '프로젝트 방법론 편집' : '공통 방법론 편집'}><p className="meta">{buffer.targetId ? `저장 기준 버전 ${buffer.version}` : gateway ? '새 전용본 · 아직 저장 전' : '새 공통본 · 아직 저장 전'}{buffer.dirty ? ' · 미저장 변경 있음' : ''}</p>
       <fieldset disabled={locked}><label>방법론 이름<input value={buffer.name} onChange={event => change('name', event.target.value)} maxLength={200} /></label>
         <label htmlFor={fieldId + '-purpose'}>방법론 목적</label><textarea id={fieldId + '-purpose'} value={buffer.purpose} onChange={event => change('purpose', event.target.value)} maxLength={20000} />
         <MethodGraphCanvas graph={buffer.graph} selectedId={buffer.nodeId} onSelect={nodeId => onChange(previous => ({ ...previous, nodeId }))} onMove={locked ? undefined : moveNode} />
@@ -88,7 +89,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
         </div> : <p>단계를 추가해 절차를 작성하세요. 빈 초안도 저장할 수 있지만 확정할 수 없습니다.</p>}
         <GraphRelationsEditor graph={buffer.graph} onChange={changeGraph} />
         <label htmlFor={fieldId + '-reason'}>개정 이유</label><textarea id={fieldId + '-reason'} value={buffer.reason} onChange={event => change('reason', event.target.value)} maxLength={20000} />
-        <button disabled={!buffer.dirty || !buffer.name.trim() || !buffer.purpose.trim() || !buffer.reason.trim()} onClick={save}>공통본 새 버전 저장</button>
+        <button disabled={!buffer.dirty || !buffer.name.trim() || !buffer.purpose.trim() || !buffer.reason.trim()} onClick={save}>{gateway ? '전용본 새 버전 저장' : '공통본 새 버전 저장'}</button>
       </fieldset>
       {buffer.validation ? <div aria-label="저장한 그래프 구조 검사"><p>{buffer.validation.validForConfirmation ? '저장본 구조 오류 없음 · 내용 검토/양식 확정/실행 연결은 별도' : '저장본 구조 보완 필요'}</p><ul>{buffer.validation.issues.map((issue, index) => { const target = buffer.graph.nodes.find(node => issue.location === `nodes.${node.nodeId}` || issue.location.startsWith(`nodes.${node.nodeId}.`)); return <li key={index}>{issue.location}: {issue.message}{target ? <button onClick={() => onChange(previous => ({ ...previous, nodeId: target.nodeId }))}>문제 단계 선택 {target.name}</button> : null}</li>; })}</ul></div> : <p className="meta">현재 입력은 검사 전입니다. 초안 저장 후 서버의 구조 검사 결과와 오류 위치를 확인하세요.</p>}
     </section> : null}

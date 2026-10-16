@@ -7,6 +7,8 @@ import { validateDevelopmentDbConfig } from '../../../apps/server/storage/develo
 import { AccessRepository } from '../../../apps/server/modules/access/repository.ts';
 import { hashPassword } from '../../../apps/server/modules/access/service.ts';
 import { buildApp } from '../../../apps/server/app.ts';
+import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
+import { prepareProjectMethod, writeProjectMethod, readProjectMethod } from '../../../apps/web/src/features/methodology-editor/project-api.ts';
 
 // 결함 검출: 별도 정책·정확 버전 없이 개정/확정, 다른 프로젝트/기기 접근, 확정 후 자동 적용.
 test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고 실행 상태 미확인 적용을 거절한다', async () => {
@@ -70,6 +72,28 @@ test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고
     await assert.rejects(pool.query('UPDATE anvil.methodology_versions SET reason=$2 WHERE definition_id=$1', [ref.id, '위장']), (e: unknown) => (e as { code: string }).code === '42501');
     await assert.rejects(pool.query('DELETE FROM anvil.methodology_reviews WHERE definition_id=$1', [ref.id]), (e: unknown) => (e as { code: string }).code === '42501');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=ANY($1::uuid[])', [projects])).rows[0].n, 0);
+    const webClient = new ApiClient(async (url, init) => {
+      const response = await app.inject({ method: (init?.method ?? 'GET') as 'GET' | 'POST', url: String(url), headers: { ...headers(), ...Object.fromEntries(new Headers(init?.headers).entries()) }, ...(init?.body ? { payload: String(init.body) } : {}) });
+      return new Response(response.body, { status: response.statusCode, headers: { 'content-type': String(response.headers['content-type'] ?? '') } });
+    });
+    const session = { user: { id: users[0]! }, clientId: own.clientId, csrfToken: own.csrfToken };
+    const webRequest = await prepareProjectMethod(webClient, projects[0]!, session, { schemaVersion: 1, commandId: randomUUID(), clientId: own.clientId, operation: 'saveMethodologyDraft', targetId: null, expectedVersion: 0, payload: { name: '직접 작성 Web 절차', purpose: 'Web 함수와 실제 DB 대조', scope: 'PROJECT', graph: original.graph, reason: '실제 저장 확인' } });
+    let dropReceipt = true;
+    const lostClient = new ApiClient(async (url, init) => { const response = await webClient.transport.call(globalThis, url, init); if (dropReceipt && init?.method === 'POST') { dropReceipt = false; throw Error('synthetic-method-receipt-lost'); } return response; });
+    await assert.rejects(writeProjectMethod(lostClient, webRequest, own.csrfToken), (e: unknown) => e instanceof ApiError && e.code === 'CONNECTION_LOST');
+    const webSaved = await writeProjectMethod(webClient, webRequest, own.csrfToken); assert.deepEqual(await writeProjectMethod(webClient, webRequest, own.csrfToken), webSaved);
+    const webRef = webSaved.data.ref;
+    assert.deepEqual((await readProjectMethod(webClient, projects[0]!, webRef)).graph, original.graph);
+    const webReview = await prepareProjectMethod(webClient, projects[0]!, session, { schemaVersion: 1, commandId: randomUUID(), clientId: own.clientId, operation: 'recordContentReview', targetId: webRef.id, expectedVersion: 1, payload: { ...review.payload, targetRef: webRef } });
+    const webReviewed = await writeProjectMethod(webClient, webReview, own.csrfToken);
+    const webConfirm = await prepareProjectMethod(webClient, projects[0]!, session, { schemaVersion: 1, commandId: randomUUID(), clientId: own.clientId, operation: 'confirmMethodology', targetId: webRef.id, expectedVersion: 1, payload: { versionRef: webRef, reviewRefs: [webReviewed.data.reviewRef] } });
+    const webConfirmed = await writeProjectMethod(webClient, webConfirm, own.csrfToken);
+    assert.equal((await readProjectMethod(webClient, projects[0]!, webRef)).confirmation!.id, webConfirmed.data.confirmationId);
+    await admin.query('UPDATE anvil.methodology_versions SET reason=$2 WHERE definition_id=$1', [webRef.id, '합성 무결성 음성']);
+    assert.equal((await get(path + '/methodologies/' + webRef.id + '/versions/1')).statusCode, 503, '실제 원문/receipt 불일치 거절');
+    await admin.query('UPDATE anvil.methodology_versions SET reason=$2 WHERE definition_id=$1', [webRef.id, '실제 저장 확인']);
+    assert.equal((await get(path + '/methodologies/' + webRef.id + '/versions/1')).statusCode, 200);
+    assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.project_methodologies WHERE project_id=$1', [projects[0]])).rows[0].n, 0);
     await admin.query('UPDATE anvil.project_control SET generation=2 WHERE project_id=$1', [projects[0]]);
     assert.equal((await send(copy)).statusCode, 409, '옛 세대 replay 차단');
   } finally {

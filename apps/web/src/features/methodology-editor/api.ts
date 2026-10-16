@@ -32,6 +32,9 @@ export async function listMethods(client: ApiClient, options: MethodListOptions 
 export async function getMethod(client: ApiClient, selected: MethodSummary): Promise<MethodVersion> {
   if (!validRef(selected.ref)) throw new ApiError('CLIENT_PATH_INVALID');
   const value = await client.get<MethodVersion>(`/api/v1/methodologies/${selected.ref.id}/versions/${selected.ref.version}`);
+  return validateMethodVersion(value, selected);
+}
+export function validateMethodVersion(value: MethodVersion, selected: Pick<MethodVersion, 'ref' | 'name' | 'purpose' | 'scope' | 'systemCode'>): MethodVersion {
   if (!value || !validRef(value.ref) || value.ref.id !== selected.ref.id || value.ref.version !== selected.ref.version || value.ref.contentHash !== selected.ref.contentHash || value.name !== selected.name || value.purpose !== selected.purpose || value.scope !== selected.scope || value.systemCode !== selected.systemCode
     || value.runtimeReadiness !== 'PROJECT_BINDINGS_REQUIRED' || !value.validation || typeof value.validation.validForConfirmation !== 'boolean' || !Array.isArray(value.validation.issues)
     || value.validation.issues.some(issue => !issue || typeof issue.code !== 'string' || typeof issue.location !== 'string' || typeof issue.message !== 'string' || !['ERROR', 'WARNING'].includes(issue.severity))

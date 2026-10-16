@@ -119,6 +119,9 @@ test('최초 프로젝트는 저장 초안을 한 번만 원자 소비하고 소
     assert.equal(directProject.statusCode, 201, directProject.body);
     const dedicated = (await pool.query('SELECT d.scope,d.project_id,v.graph_json FROM anvil.project_methodologies p JOIN anvil.methodology_definitions d ON d.id=p.source_definition_id JOIN anvil.methodology_versions v ON v.definition_id=d.id AND v.version=p.source_version WHERE p.project_id=$1', [directProject.json().id])).rows[0];
     assert.equal(dedicated.scope, 'PROJECT'); assert.equal(dedicated.project_id, directProject.json().id); assert.deepEqual(dedicated.graph_json, original.graph);
+    const dedicatedSource = (await pool.query('SELECT source_definition_id FROM anvil.project_methodologies WHERE project_id=$1', [directProject.json().id])).rows[0].source_definition_id;
+    const dedicatedRead = await app.inject({ method: 'GET', url: '/api/v1/projects/' + directProject.json().id + '/methodologies/' + dedicatedSource + '/versions/1', headers });
+    assert.equal(dedicatedRead.statusCode, 200, dedicatedRead.body); assert.deepEqual(dedicatedRead.json().graph, original.graph);
     assert.equal((await draftSend(command('recordContentReview', { ...reviewPayload, targetRef: nextTarget }, 2))).statusCode, 412, '소비 초안은 더 이상 개정/검토하지 않는다');
     const rollbackDraft = await draft();
     const faultPool = new Pool(config);

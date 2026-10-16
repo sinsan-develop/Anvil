@@ -1,15 +1,15 @@
 import { useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { writeCommonCommand, type MethodCommand } from './common-api.ts';
+import { writeCommonCommand, type MethodCommand, type MethodGateway } from './common-api.ts';
 import { getMethod, type MethodVersion } from './api.ts';
 import { reviewRefFor, type ReviewOutcome } from '../methodologies/forms-api.ts';
 import type { MethodBuffer } from './common-api.ts';
 import type { FormReviewWork } from '../methodologies/form-editor-state.ts';
 
 const labels: Record<ReviewOutcome, string> = { ACCEPTED: '적합', REWORK: '보완 필요', BLOCKED: '판단 보류', NOT_EXECUTED: '미검토' };
-export function MethodReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost }: {
+export function MethodReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost, gateway }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void;
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void; gateway?: MethodGateway;
 }) {
   const fieldId = useId();
   const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState(false);
@@ -26,18 +26,19 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
   }
   async function execute(request: MethodCommand) {
     if (pending || request.clientId !== session.clientId || !matches) return;
-    onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: request } } : previous);
     setPending(true); setError(null); let applied = false;
     try {
-      const receipt = await writeCommonCommand(client, request, session.csrfToken, session.user.id); applied = true;
+      request = gateway ? await gateway.prepare(request) : request;
+      onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: request } } : previous);
+      const receipt = gateway ? await gateway.write(request) : await writeCommonCommand(client, request, session.csrfToken, session.user.id); applied = true;
       if (receipt.data.ref.contentHash !== source.ref.contentHash || request.operation === 'recordContentReview' && (!reviewRefFor(receipt.data.reviewRef, source.ref) || receipt.data.reviewRef.outcome !== request.payload.outcome)
         || request.operation === 'confirmMethodology' && !/^[0-9a-f-]{36}$/.test(receipt.data.confirmationId ?? '')) throw new ApiError('RESPONSE_INVALID');
-      const value = await getMethod(client, { ref: source.ref, name: source.name, purpose: source.purpose, systemCode: null, status: 'DRAFT', sourceAvailable: false, scope: 'USER_COMMON' });
+      const value = gateway ? await gateway.read(source.ref, source.name, source.purpose) : await getMethod(client, { ref: source.ref, name: source.name, purpose: source.purpose, systemCode: null, status: 'DRAFT', sourceAvailable: false, scope: 'USER_COMMON' });
       onChange(previous => previous.review?.pending?.commandId === request.commandId ? { ...previous, review: { ...previous.review, dirty: false, pending: null } } : previous);
       onVerified(value); setRecorded(request.operation === 'recordContentReview');
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: null } } : previous);
+      if (!applied && !(gateway && work?.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: null } } : previous);
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
   }
@@ -50,7 +51,7 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
     if (!work || !matches || locked || work.dirty || latest?.ref.outcome !== 'ACCEPTED') return;
     void execute({ schemaVersion: 1, commandId: crypto.randomUUID(), operation: 'confirmMethodology', targetId: source.ref.id, expectedVersion: source.ref.version, clientId: session.clientId, payload: { versionRef: source.ref, reviewRefs: [latest.ref] } });
   }
-  if (source.scope !== 'USER_COMMON' || buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return null;
+  if (source.scope !== (gateway ? 'PROJECT' : 'USER_COMMON') || buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return null;
   return <section className="status-card definition-editor" aria-label="방법론 내용 검토·확정"><h3>내용 검토와 사용자 확정</h3>
     <p className="meta">버전 {source.ref.version} · {source.ref.contentHash}. 실제 내용을 직접 읽고 판단하세요. 시험 실행·파일 근거를 자동 확인하는 기능은 아닙니다.</p>
     <button disabled={!criteria || locked} onClick={start}>이 방법론 내용 검토 시작</button>

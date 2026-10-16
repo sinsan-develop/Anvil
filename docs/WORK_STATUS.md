@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN02 서버635e3ad16073eb9a9878dba1e26ca720ee38da02 exact private/WSL clean에서 승인 forward39 `0002_project_methodology_revisions` checksumf816147a1454b428af090b0feb93e496b60cb4eaba7f5979fccdf919fc353e68 적용·이전38 불변·fixtures7·실제 사용자 생성0. 실제 FN02/FN11 2 PASS/1547ms(방법론1131·정책771ms)/skip0: 별도 정책/현재 기기·다른 사용자·동일 명령 동시2/버전1·copy/개정·METHOD5·최신 REWORK/확정·옛 사건 보존·공통본 불변·자동 적용0·옛 제어409/직접변조42501. 독립 DB39종 각0·시험root[]·지속root 보호/empty·migrations39다. 최초 private push의 remote commit_refs 오류1은 read-only로 원격c43b68d9/main불변 확인 뒤 동일 non-force push1회로 해소했고 우회/다른 대상 변경0이다.
+- UI03 후속: React 명시 event mutation/functional 상태 갱신 스킬로 기존 공통 편집·검토를 보존하며 전용 gateway와 프로젝트별 root 버퍼를 연결했다. 명령 검사 RED1→GREEN1/158ms, 화면 부재 browser RED1→copy/내용검토/확정·응답 단절/화면 이동/뒤403의 원 명령 보존 focused1 PASS/2.8초. 직접 영향 공통 UI03은10 PASS(전용 fixture의 오류 code 대신 기존 한국어 오류를 기대해야 하는 실패1은 소비 계약대로 정정, 제품/기준 변경0). unit140 PASS/1872ms·type/build0(Web91/596.51kB/gzip155.08·기존 bundle/색상 경고 보존). 새 API same-client 실제 저장·검토·확정/오염503 및 기존 최초 생성 회귀는 다음 exact 게시본에 추가했으나 아직 실행 전이며 사용자용 backend/relay/Secret·실제 사용자 UI DB 인수는 미변경/미검증이다.
+
 - FN02 c43b68d9 exact private/WSL clean actual RED1/592ms(기능332ms)/skip0: copyMethodology가 프로젝트 명령에 미등록400(명시 정책 미설정412 필요). 후속은 별도 project 명령/정책·현재 제어·CAS·receipt와 전용 버전 원문/검토/확정을 연결한다. 새 forward39 `0002_project_methodology_revisions` 후보만 작성했으며 기존38 SQL/자료는 불변·아직39 미적용/실제 GREEN/UI03 미검증이다. 기존 공통·생성 guard는 유지하고 project 분기는 실제 receipt/OWNER/client/현재 정책으로만 허용한다. 확정은 적용이 아니며 실행 상태 미확인 적용은412다. unit139 PASS/1919ms·type/diff0, 등록 UUID QA의 같은 수명/exact 정리만 재사용하고 새 서비스/실제 사용자·Secret/Agent 변경0.
 
 - FN02 프로젝트 입력/METHOD5 신규 미구현 RED2→GREEN2/225ms, unit139 PASS/2122ms·type/diff0. 실제 실패용 시험은 `qa-project-method-<UUID>` 사용자2·UUID 프로젝트2·현재 합성 client와 명시 정책만 한 시험 수명으로 생성하며 소유 UUID만 finally transaction 정리한다. 파일/폴더/컨테이너 생성0, 실제 사용자 정책 부여0. 아직 forward39/프로젝트 변경 GREEN/UI03는 미구현·미검증이다. 이 등록 계약으로 같은 시험의 수정/정리까지 진행하며 새로운 자원 범위는 추가하지 않는다.
