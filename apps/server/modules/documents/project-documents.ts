@@ -9,6 +9,7 @@ import { isVersionRef } from '../../../../contracts/references.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import type { FormDefinition } from './forms.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
+import{assertStoredArtifactReadable}from'../../storage/sensitive-inspection.ts';
 import { ProjectListCodec } from '../projects/service.ts';
 import { documentReviewCriteria, documentReviews, writeDocumentReview } from './project-content-review.ts';
 import { validateDocumentConfirmation } from './document-validation.ts';
@@ -61,11 +62,12 @@ export class ProjectDocuments {
     return { items: visible.map(row => ({ id: row.id, title: row.title, headVersion: Number(row.head_version), confirmedVersion: row.confirmed_version === null ? null : Number(row.confirmed_version), updatedAt: row.updated_at.toISOString() })), hasMore, nextCursor: hasMore ? codec.create(actor.actorId, filter, { at: last!.cursor_at, id: last!.id }) : null, observedAt: new Date().toISOString() };
   }
   async #artifact(db: PoolClient, projectId: string, ref: ArtifactRef) {
-    const row = (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND state='READY' AND content_hash=$3 AND bytes=$4 AND media_type=$5", [ref.artifactId, projectId, ref.contentHash, ref.bytes, ref.mediaType])).rows[0];
+    const row = (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND content_hash=$3 AND bytes=$4 AND media_type=$5", [ref.artifactId, projectId, ref.contentHash, ref.bytes, ref.mediaType])).rows[0];
     if (!row) throw new AuthFailure('ARTIFACT_NOT_READY', 422);
+    if(row.state==='QUARANTINED')throw new AuthFailure('ARTIFACT_QUARANTINED',412);
     if (!this.#store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
     if (row.storage_key !== `blobs/${projectId}/${ref.artifactId}`) throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED', 503);
-    return this.#store.read(projectId, ref.artifactId, ref);
+    const bytes=await this.#store.read(projectId, ref.artifactId, ref);assertStoredArtifactReadable(row,bytes);return bytes;
   }
   async originalText(db:PoolClient,projectId:string,ref:ArtifactRef) {
     if(!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ref.mediaType)||ref.bytes>2*1024*1024) throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED',412);

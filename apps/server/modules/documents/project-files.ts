@@ -4,7 +4,8 @@ import type { AccessRoutesOptions } from '../access/routes.ts';
 import { AuthFailure } from '../access/repository.ts';
 import { authorizeMaterial, currentProjectController, persistProjectReceipt, projectMember, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
-import { parseWireJson } from '../../../../contracts/canonical.ts';
+import { parseWireJson,canonicalJson } from '../../../../contracts/canonical.ts';
+import{inspectArtifact,assertStoredArtifactReadable}from'../../storage/sensitive-inspection.ts';
 
 const uuid = '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', validId = new RegExp(uuid);
 const mediaTypes = ['text/plain;charset=utf-8', 'text/markdown;charset=utf-8', 'application/octet-stream', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/html;charset=utf-8', 'image/svg+xml', 'image/png', 'image/jpeg'];
@@ -47,14 +48,19 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
         if (!store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
         if (previous !== undefined) {
           const ref = previous?.data?.artifactRef;
-          const row = ref ? (await db.query("SELECT 1 FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND state='READY' AND content_hash=$3 AND bytes=$4", [ref.artifactId, context.projectId, ref.contentHash, ref.bytes])).rows[0] : null;
+          const row = ref ? (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND content_hash=$3 AND bytes=$4 AND media_type=$5", [ref.artifactId, context.projectId, ref.contentHash, ref.bytes,ref.mediaType])).rows[0] : null;
           if (!row) throw new AuthFailure('ARTIFACT_RECEIPT_INVALID', 503);
-          await store.read(context.projectId, ref.artifactId, ref); return previous;
+          if(row.storage_key!==`blobs/${context.projectId}/${ref.artifactId}`)throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED',503);
+          const raw=await store.read(context.projectId,ref.artifactId,ref);
+          if(row.state==='QUARANTINED'){if(previous.data.status!=='ARTIFACT_QUARANTINED'||canonicalJson(previous.data.inspection??null)!==canonicalJson(row.inspection_json)||canonicalJson(inspectArtifact(raw))!==canonicalJson(row.inspection_json))throw new AuthFailure('ARTIFACT_RECEIPT_INVALID',503);}
+          else{assertStoredArtifactReadable(row,raw);if(previous.data.status!=='ARTIFACT_READY'||row.inspection_json!=null&&canonicalJson(previous.data.inspection??null)!==canonicalJson(row.inspection_json))throw new AuthFailure('ARTIFACT_RECEIPT_INVALID',503);}
+          return previous;
         }
         const artifactId = randomUUID(), storageKey = await store.put(context.projectId, artifactId, request.body);
         const ref = { artifactId, contentHash: context.payload.contentHash as string, bytes: request.body.length, mediaType: context.payload.mediaType as string };
-        const receipt = await persistProjectReceipt(db, actor, context, ref, { status: 'ARTIFACT_READY' }, policy.ref, 'EXPLICIT_PROJECT_FILE_UPLOAD');
-        await db.query("INSERT INTO anvil.artifacts(id,project_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,'READY',$7,$8,$9)", [artifactId, context.projectId, ref.bytes, ref.contentHash, ref.mediaType, storageKey, actor.actorId, actor.clientId, receipt.id]);
+        const inspection=inspectArtifact(request.body),state=inspection.state==='SUSPECTED'?'QUARANTINED':'READY';
+        const receipt = await persistProjectReceipt(db, actor, context, ref, { status: state==='QUARANTINED'?'ARTIFACT_QUARANTINED':'ARTIFACT_READY',inspection }, policy.ref, state==='QUARANTINED'?'SENSITIVE_ARTIFACT_QUARANTINED':'EXPLICIT_PROJECT_FILE_UPLOAD');
+        await db.query("INSERT INTO anvil.artifacts(id,project_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id,inspection_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)", [artifactId, context.projectId, ref.bytes, ref.contentHash, ref.mediaType, storageKey,state,actor.actorId, actor.clientId, receipt.id,JSON.stringify(inspection)]);
         return receipt.result;
       });
       return reply.code(201).send(result);
@@ -62,11 +68,12 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
     files.get<{ Params: { projectId: string; artifactId: string } }>('/api/v1/projects/:projectId/files/:artifactId', { schema: { params: { type: 'object', required: ['projectId', 'artifactId'], additionalProperties: false, properties: { projectId: { type: 'string', pattern: uuid }, artifactId: { type: 'string', pattern: uuid } } } } }, async (request, reply) => {
       const result = await options.repository.authenticated(token(request), null, async (db, actor) => {
         await projectMember(db, actor, request.params.projectId);
-        const row = (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND state='READY'", [request.params.artifactId, request.params.projectId])).rows[0];
+        const row = (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2", [request.params.artifactId, request.params.projectId])).rows[0];
         if (!row) throw new AuthFailure('NOT_FOUND', 404);
+        if(row.state==='QUARANTINED')throw new AuthFailure('ARTIFACT_QUARANTINED',412);
         if (!store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
         if (row.storage_key !== `blobs/${request.params.projectId}/${request.params.artifactId}`) throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED', 503);
-        return store.read(request.params.projectId, request.params.artifactId, { bytes: Number(row.bytes), contentHash: row.content_hash });
+        const bytes=await store.read(request.params.projectId, request.params.artifactId, { bytes: Number(row.bytes), contentHash: row.content_hash });assertStoredArtifactReadable(row,bytes);return bytes;
       });
       return reply.header('content-disposition', `attachment; filename="artifact-${request.params.artifactId}.bin"`).type('application/octet-stream').send(result);
     });

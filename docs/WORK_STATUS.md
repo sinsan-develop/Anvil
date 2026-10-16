@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 일반 원문 격리 후보: 게시 RED `b22fe3227cbc67a7441d4eab8a561efd71fd5dd3` WSL actual1 FAIL/6875ms/skip0은 합성 비밀 표식이 ARTIFACT_READY로 반환된 기대 신규 실패다. 새 storage/sensitive-inspection은 원시 바이트의 알려진3표식·비밀 없는 이유/한계만 생성한다. 새 업로드는 바이트 보존+QUARANTINED receipt/감사, 일반 파일 GET과 문서/지식 소비 차단, 같은 업로드 재확인을 제공한다. 옛 READY 원문도 읽는 순간 표식을 다시 확인하되 기존 행/원문을 자동 재분류·수정하지 않는다.
+- 새 forward27 `0005_artifact_quarantine.sql` SHA256 `2BB05C6C3C34008ED1E3A193BEBF5F533CFB7C48571F948F65C004BEA85AC3B2`, 기존26 SQL/제안 diff guard 보존·아직 미적용. 검사 메타데이터는 현재 명령/OWNER/client/control·정확 허가/receipt와 결박하고 app UPDATE/DELETE·자동 해제는 계속 금지한다. unit 신규 RED3→전체110 PASS/1556ms/skip0·typecheck0·diff0. 실제 격리 저장/정리와 사용자용 격리 표시·단절 후 최종 상태 해소는 후속 미검증이다. 실제 사용자/Secret·CA·서비스·Agent/운영 변경0.
+
 - 원문 선택/과거 조회 `0f63c11f7389ea7dd2f0608e335ea18e37a565fd` local/private·WSL exact/clean actual1 PASS/13612ms/skip0. 같은 Web에서 실제 지시 원문 재대조→작성 초안→명시 지식 저장/멱등·지시 source 보존·원 발언 불변 확인. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL26 재적용0. 과거 버전 열기는 UI10 fixture에서 기존 exact GET으로 확인했다.
 - 일반 원문 격리 보완은 `call_4b87f841c5d64bea971a63fdd129f632`의 ‘일반 원문 격리 계약·개발 DB 보완 승인’으로 현재 승인됐다. 새 업로드의 원문 바이트 보존·격리 상태/비밀 없는 사유/감사, 일반 다운로드·문서/지식 소비 차단과 새 forward만 허용한다. 기존 SQL/실제 사용자 권한·Secret/서비스/운영 변경0, 자동 삭제·격리 해제0. 알려진 raw byte 표식 검사이며 압축/암호화/표현 변형 등 완전 탐지나 기존 전 자료 재분류를 뜻하지 않는다. 합성 QA 수명/정리 조건은 앞선 UUID 사용자/프로젝트·시험 root와 같다.
 

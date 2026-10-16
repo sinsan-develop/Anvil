@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+승인된 원문 격리: `apps/server/storage/sensitive-inspection.ts`가 원시 바이트의 알려진 표식/검사 한계를 소유하고 project-files는 새 업로드 보존/격리 receipt·일반 다운로드 차단·재확인을, project-documents의 공통 artifact resolver는 문서/가져오기/지식 원문 소비 차단을 적용한다. 기존 제안 diff guard를 보존한 새 `0005_artifact_quarantine.sql`/명시 runner만 변경하며 postDocumentCommand는 격리 receipt를 사용 가능으로 승격하지 않는다. 기존 실제 SQL26 불변, 합성/실제·UI 최종 표시는 WORK_STATUS로 구별한다.
+
 UI10 원문 재개/선택: KnowledgePage는 기존 readKnowledge의 정확 supersedesRef를 명시로만 열고 과거 버전 쓰기를 비활성화한다. ConversationPanel의 명시 선택→`newKnowledgeFromConversation`은 기존 readConversationMessage로 물리 원문/hash를 다시 확인해 사용자 발언/지시 SourceRef를 작성 초안에 보존한다. KnowledgePending은 sourceRefs까지 고정해 단절 뒤 변경/누락 전송을 거절한다. 새 API/schema·자동 판단/저장/전달0. 단위107·UI10 fixture10과 실제 같은 client 검증은 WORK_STATUS를 따른다.
 
 UI10 검토·확정: `features/knowledge/review-view.ts`가 사건/최신 검토·현재 유효성 응답을 검증하고 `decision-api.ts`/`KnowledgeDecisionForm.tsx`가 원문/항목별 근거·별도 확인/정확 명령을 유지한다. App의 프로젝트/현재 주체별 판단 버퍼는 이동/단절/뒤403에서 명령을 버리지 않는다. 확정 후 correction/exclusion은 기존 버퍼를 쓰며 새 버전·별도 사건만 요청한다. 단위105·UI10 fixture9와 실제 같은 Web 검증은 WORK_STATUS를 대조한다.

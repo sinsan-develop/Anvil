@@ -65,6 +65,11 @@ export async function postDocumentCommand(client: ApiClient, command: DocumentWr
   let value: any; try { if (!/^application\/json\b/i.test(response.headers.get('content-type') ?? '')) throw Error(); value = await response.json(); } catch { throw new ApiError('RESPONSE_INVALID', response.status); }
   if (!response.ok) throw new ApiError(typeof value?.code === 'string' && /^[A-Z_]{1,64}$/.test(value.code) ? value.code : 'REQUEST_FAILED', response.status);
   if (!value || value.commandId !== command.commandId || value.projectId !== command.projectId || value.status !== 'APPLIED' || !uuid.test(value.operationId) || !Number.isFinite(Date.parse(value.serverReceivedAt))) throw new ApiError('RESPONSE_INVALID');
+  if(bytes&&value.data?.status==='ARTIFACT_QUARANTINED'){
+    const r=value.data.artifactRef,i=value.data.inspection,allowed=['PRIVATE_KEY_MARKER','BEARER_TOKEN_MARKER','SECRET_ASSIGNMENT_MARKER'];
+    if(command.operation!=='uploadArtifact'||!artifact(r)||r.bytes!==command.payload.bytes||r.contentHash!==command.payload.contentHash||r.mediaType!==command.payload.mediaType||value.targetId!==r.artifactId||value.version!==null||!i||i.policyVersion!==1||i.method!=='KNOWN_PATTERNS_RAW_BYTES'||i.complete!==false||i.state!=='SUSPECTED'||!Array.isArray(i.reasonCodes)||!i.reasonCodes.length||i.reasonCodes.length>3||new Set(i.reasonCodes).size!==i.reasonCodes.length||i.reasonCodes.some((reason:unknown)=>typeof reason!=='string'||!allowed.includes(reason)))throw new ApiError('RESPONSE_INVALID');
+    throw new ApiError('ARTIFACT_QUARANTINED',412,r.artifactId);
+  }
   return value;
 }
 export async function continueDocumentSave(client: ApiClient, pending: PendingDocumentSave, session: DocumentSession, checkpoint: (value: PendingDocumentSave) => void, active: () => boolean): Promise<VersionRef> {
