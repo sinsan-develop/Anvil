@@ -30,6 +30,13 @@ test('내장 방법론3종의 실제 DB/HTTP 버전과 고정 양식·원문이 
     const list = await app.inject({ method: 'GET', url: '/api/v1/methodologies', headers });
     assert.equal(list.statusCode, 200); assert.equal(list.json().items.length, 3);
     assert.deepEqual(list.json().items.map((item: { systemCode: string }) => item.systemCode), ['SYS-M01', 'SYS-M02', 'SYS-M03']);
+    const first = await app.inject({ method: 'GET', url: '/api/v1/methodologies?limit=2', headers });
+    assert.equal(first.statusCode, 200, first.body); assert.deepEqual(first.json().items.map((item: { systemCode: string }) => item.systemCode), ['SYS-M01', 'SYS-M02']);
+    assert.equal(first.json().hasMore, true); const cursor = first.json().nextCursor; assert.equal(typeof cursor, 'string');
+    const second = await app.inject({ method: 'GET', url: '/api/v1/methodologies?limit=2&cursor=' + encodeURIComponent(cursor), headers });
+    assert.equal(second.statusCode, 200, second.body); assert.deepEqual(second.json().items.map((item: { systemCode: string }) => item.systemCode), ['SYS-M03']); assert.equal(second.json().hasMore, false); assert.equal(second.json().nextCursor, null);
+    for (const suffix of ['&status=DRAFT', '&name=other', '&scope=SYSTEM', 'x']) assert.equal((await app.inject({ method: 'GET', url: '/api/v1/methodologies?limit=2&cursor=' + encodeURIComponent(cursor) + suffix, headers })).statusCode, 400);
+    assert.equal((await app.inject({ method: 'GET', url: '/api/v1/methodologies?scope=SYSTEM&status=CONFIRMED&limit=1', headers })).json().items.length, 0);
     for (const method of methods) {
       const response = await app.inject({ method: 'GET', url: `/api/v1/methodologies/${method.id}/versions/${method.version}`, headers });
       assert.equal(response.statusCode, 200);

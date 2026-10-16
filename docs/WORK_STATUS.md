@@ -107,6 +107,12 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN02·UI03 방법론 목록 페이지 조회
+
+- DB 권한 응답 전에도 가능한 미완료를 계획/정본/코드로 대조했다. INTERFACES §9의 이름·scope·상태/cursor 조회가 현재 201행 조회 후412로 미완성이므로 기존 인증된 SYSTEM/본인 공통 읽기만 페이지화한다. 새 도메인/권한·SQL·지속 자료/Agent 변경0이며 DRAFT/PROJECT 승인은 여전히 대기다.
+- 계약 상세화: 기본50/최대200·고정 정렬 keyset, cursor는 현재 사용자·정확 이름/scope/status/limit·30분 기한에 결박한다. 페이지마다 현재 인증/소유를 다시 검사하고 전체 목록을 동일시각 snapshot이라 주장하지 않는다. 검색/필터는 LIMIT 전에 검사한다. 화면/생성 선택에서 다음 페이지를 명시 조회하고 요청 실패는 빈 성공으로 숨기지 않는다.
+- 실제 QA는 기존 versions.test의 qa-methods-UUID 사용자2/소유 방법론2/정리 계약 그대로이며, 내장3종을 limit2로 나눠 읽어 더 많은 fixture를 만들지 않는다. 새 SQL/자원 생성 없이 limit 미연결 RED부터 확인한다.
+
 ### 2026-10-16 UI02 프로젝트 전용 방법론 직접 작성·복사
 
 - checkpoint actual: WSL Git exact `72cd43affe6a738a342df3a3ca0e2e79b2e5c7de`/tracked clean, 기존 개발 DB/SQL 그대로 방법론 검토·전용 초안2 단계/조건·좌표 GET 재조회와 임의 실행 속성422를 확인, actual1 PASS/486ms/skip0·고유 QA finally 정리했다. 새 migration 적용/DB 권한/실제 프로젝트 생성0이다. 화면 UI02 인접7 PASS/6초·unit41 PASS/skip0·타입/build/diff check exit0. 전체 actual UI↔DB 여정과 제품 인수는 미검증이며 기능별 partial 상태를 유지한다.
