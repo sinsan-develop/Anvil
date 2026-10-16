@@ -113,6 +113,9 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- Ruling: 계획의 design_items/screen_regions 쓰기 경로가 기존 연산 표에 빠져 있으므로 승인된 FN04 계약 보완 범위에서 additive indexDesignDocument를 연결한다. 현재 소유 프로젝트의 정확 AF02 원문 버전·D 코드/제목/줄, AF03 원문 버전·S 코드/줄만 인덱싱하며 원문을 바꾸거나 그림 렌더/완료를 주장하지 않는다. 기존 문서 저장 허가로 자동 허가하지 않고 별도 명시 연산 정책을 요구한다. 잘못된 위치/종류/hash·교차 프로젝트를 거절하고 인덱스는 해당 문서 버전에 불변 보존한다. 이미지 내부 좌표/실제 시험·실행 근거는 아직 연결 전이다.
+- FN03 actual의 같은 합성 setup/finally에 FN04 실제 원문 준비·명시 허가 누락403 사례를 추가했다. 고유 QA 사용자/프로젝트·임시 원문 root와 정리 범위는 유지하고 신규 design_items/screen_regions가 생긴 후에만 해당 프로젝트 행을 먼저 정확 정리한다. 단독 writer·기존 서비스/계정/Secret 불변이다. 게시 후 초기 actual RED를 확인하며 이 준비를 기능 완료로 세지 않는다.
+
 - 직접 응답 `call_11d1758230c84e00a54432ba1c926988`: ‘FN04 추적·작업계획 계약·개발 DB 보완 승인’. 대상은 기존 WSL anvil_v3_development의 새 forward migration/설계 항목·화면 위치·계획 버전/업무/선행·추적 링크다. 기존 SQL/원문/확정본 유지, 현재 로그인/제어·명시 정책/정확 버전/감사, 합성 QA만 정확 정리, 자동 완료/기준 활성화·실제 사용자 권한/Agent/Secret/서비스/운영 변경0을 유지한다.
 - 시작 2b964c66 local/private 동일·clean, DB19 불변. FN03의 실제 소스/단계 연결은 DATA_MODEL §15의 FN08 실관측 선행을 따르며 미완료로 보존한다. 기본 문서/버전/검토/명시 선택의 실제 API/DB 증거를 다음 FN04의 선행 자료로 사용하며 source 미확인을 완료로 올리지 않는다. UI10/FN05는 아직 미착수다.
 - 승인 전 작성한 DB 비의존 `traceability/plan-dependencies.ts`와 FN04 단위4는 DATA_MODEL §7.2 plan_dependencies의 START/ACCEPTANCE 분리만 검사한다. 최초 모듈 부재는 테스트 로드 실패로 구분했고 골격 후 중복/순환·알 수 없는 phase/상태 위장 2건의 실제 행동 RED를 확인→GREEN4/123ms. fresh 전체 단위69 PASS/1158ms·타입/diff0. 2000개 순차 업무를 재귀 없이 확인하고 입력은 복사하며 actual 권한/참조·배정 준비 PASS를 반환하지 않는다. 아직 API/UI·DB 저장에 연결 전이다.

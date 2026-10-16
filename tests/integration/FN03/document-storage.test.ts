@@ -369,11 +369,20 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     newConfirmation.acknowledged=true; newConfirmation.pending=prepareDocumentConfirmation(newConfirmation,session);
     const newConfirmed=await sendDocumentConfirmation(client,newConfirmation,session,()=>true); assert.equal(newConfirmed.ref.version,3); assert.notEqual(newConfirmation.pending.commandId,oldConfirmation.pending.commandId);
     const retainedConfirmed=await readDocument(client,project,readyRef.id,1); assert.equal(retainedConfirmed.document.contentHash,readyRef.contentHash); assert.ok(retainedConfirmed.document.statusHistory.some(e=>e.kind==='CONFIRMED'));
+    const designWork=newDocument(project,secondForm,user,1); designWork.title='추적 설계 원문'; designWork.body='# D01 사용자 지식 보존\n구현·저장·조회까지 연결한다.'; designWork.reason='합성 설계 항목 추적'; designWork.dirty=true;
+    const designRef=await continueDocumentSave(client,await prepareDocumentSave(designWork,session),session,()=>{},()=>true);
+    const screenFormResponse=await app.inject({method:'GET',url:'/api/v1/forms/a6f30000-0000-4000-8000-000000000003/versions/1',headers}); assert.equal(screenFormResponse.statusCode,200,screenFormResponse.body);
+    const screenWork=newDocument(project,screenFormResponse.json(),user,1); screenWork.title='추적 화면 위치 원문'; screenWork.body='# S06 문서 상세 영역\n원문·버전과 연결 업무를 조회한다.'; screenWork.reason='합성 화면 위치 추적'; screenWork.dirty=true;
+    const screenRef=await continueDocumentSave(client,await prepareDocumentSave(screenWork,session),session,()=>{},()=>true);
+    const indexCommand={...context,commandId:randomUUID(),operation:'indexDesignDocument',targetId:designRef.id,expectedVersion:designRef.version,payload:{documentRef:designRef,items:[{localCode:'D01',title:'사용자 지식 보존',anchor:'line:1'}],screens:[{designLocalCode:'D01',screenCode:'S06',documentRef:screenRef,anchor:'line:1'}],reason:'실제 원문 위치만 추적 인덱스로 기록'}};
+    assert.equal((await docSend(indexCommand)).statusCode,403,'문서 작성 허가만으로 설계 추적 인덱스를 쓰지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if((await db.query("SELECT to_regclass('anvil.screen_regions') present")).rows[0].present) await db.query('DELETE FROM anvil.screen_regions WHERE project_id=$1',[project]);
+      if((await db.query("SELECT to_regclass('anvil.design_items') present")).rows[0].present) await db.query('DELETE FROM anvil.design_items WHERE project_id=$1',[project]);
       if ((await db.query("SELECT to_regclass('anvil.document_proposals') present")).rows[0].present) {
         await db.query('DELETE FROM anvil.document_proposal_selections WHERE project_id=$1', [project]);
         await db.query('DELETE FROM anvil.document_proposals WHERE project_id=$1', [project]);
