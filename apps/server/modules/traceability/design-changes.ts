@@ -42,7 +42,7 @@ export class ProjectDesignChanges{
  }
  async review(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
   const p=c.payload;if(!exactKeys(p,['changeRef','baseImpactRef','items','coverageGaps','reason'])||!isVersionRef(p.changeRef)||!isVersionRef(p.baseImpactRef)||c.targetId!==p.baseImpactRef.id||c.expectedVersion!==p.baseImpactRef.version||!Number.isSafeInteger(c.expectedVersion+1))throw new AuthFailure('IMPACT_REVIEW_INPUT_INVALID',422);
-  await db.query('SELECT id FROM anvil.design_changes WHERE project_id=$1 AND id=$2 FOR UPDATE',[c.projectId,p.changeRef.id]);
+  // ProjectPolicyRepository가 현재 project_control을 이미 잠갔다. 불변 이력에는 UPDATE 권한/잠금을 요구하지 않는다.
   const record=await this.read(db,actor,c.projectId,p.changeRef.id,{limit:'1'}),base=record.impactVersions[0];if(canonicalJson(record.change.ref)!==canonicalJson(p.changeRef)||!base||canonicalJson(record.latestImpactRef)!==canonicalJson(p.baseImpactRef)||canonicalJson(base.ref)!==canonicalJson(p.baseImpactRef))throw new AuthFailure('VERSION_CONFLICT',409);
   const review=readImpactReview({items:p.items,coverageGaps:p.coverageGaps,reason:p.reason},base),seen=new Set<string>();
   for(const item of review.items)for(const evidence of item.evidenceRefs){const key=canonicalJson(evidence);if(seen.has(key))continue;seen.add(key);const document=await this.#documents.version(db,actor,c.projectId,evidence.id,evidence.versionRef.version);if(document.contentHash!==evidence.versionRef.contentHash)throw new AuthFailure('VERSION_CONFLICT',409);}
