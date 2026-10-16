@@ -291,6 +291,9 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal(appliedFromClient.version, 3); assert.deepEqual(await applyDocumentProposal(client, proposalState, session, () => true), appliedFromClient);
     const finalProposalRead = await readDocument(client, project, freshRef.id, 3); assert.equal(finalProposalRead.body, proposalWork.body); assert.equal(finalProposalRead.document.confirmed, false);
     assert.equal((await readDocument(client, project, freshRef.id, 1)).body, fresh.body); assert.equal((await readDocument(client, project, freshRef.id, 2)).body, bytes.toString('utf8'));
+    const importsListPath = `/api/v1/projects/${project}/imports?limit=1`;
+    const importsList = await app.inject({ method: 'GET', url: importsListPath, headers });
+    assert.equal(importsList.statusCode, 200, '보관한 후보는 새 화면에서 목록으로 다시 찾을 수 있어야 한다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

@@ -107,6 +107,11 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN03 보관 후보·제안 목록 재조회/재개 — Main 어울
+
+- 시작 `bf83b06530028d36c868be6e00333063767abc1b` local/private 동일·지정 branch clean, 현재 WSL 검증코드 d05c3df3·SQL19 유지. 직전 실제 시험 뒤 독립 DB13종 각0·임시root[]·지속root uid1000/0700/link0/empty 확인. 완료된 제안/SQL19·단위/화면 검사는 불변이면 반복하지 않는다.
+- 승인 INTERFACES §9.4의 imports/제안 목록·조회와 새 화면 재개의 미완료를 잇는다. 기존 table만 사용하고 새 DB schema/권한/사용자/Secret·서비스 변경0이다. actor/project·유한 페이지/상태/대상 filter·서명 cursor와 exact 저장 원문을 사용한다. QA는 바로 위 제안 작업과 같은 전용 DB/고유 합성 UUID/finally 정확 정리이며 실제 사용자 자료는 만들지 않는다.
+
 ### 2026-10-16 FN03 수정 제안·서버 차이 비교 연결 착수 — Main 어울
 
 - 직전 goal turn은 실제 code/forward18/검증 증거가 남은 progress다. 시작 `ab085b154efafd3190406eafb33bf241961de8d7` local/private 동일·지정 branch clean, main f976ed5e 불변. 완료된 가져오기/SQL18을 다시 만들지 않고 같은 직접 승인 `call_e9907e2ffeca40bf966c6037d1e9025d`의 수정 제안/선택 계약을 이어간다. 단일 writer Main, inline 계획 실행·TDD, WORK_STATUS를 기존 ledger로 사용한다.
