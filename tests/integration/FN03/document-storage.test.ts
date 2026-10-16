@@ -23,6 +23,7 @@ import { newDesignIndex,prepareDesignIndex,readDesignIndex,sendDesignIndex } fro
 import {newWorkPlan,prepareWorkPlan,sendWorkPlan,readWorkPlan,listWorkPlans,prepareStoredWorkPlan} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 import {readTrace,newTaskTrace,prepareTaskTrace,sendTaskTrace}from'../../../apps/web/src/features/design-trace/trace-api.ts';
+import {newKnowledge,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge}from'../../../apps/web/src/features/knowledge/api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -474,6 +475,13 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await app.inject({method:'GET',url:`/api/v1/projects/${project}/knowledge?query=none`,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     for(const [entry,status] of [[{...knowledgeEntry,sourceRefs:[{kind:'DOCUMENT_VERSION',...documentRef,contentHash:'0'.repeat(64)}]},409],[{...knowledgeEntry,scope:{projectId:outsider,stageRefs:[],taskRefs:[]}},422],[{...knowledgeEntry,title:'token=synthetic-not-a-real-token'},412]] as const)assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry}})).statusCode,status);
     await assert.rejects(pool.query("UPDATE anvil.knowledge_versions SET reason='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
+    const knowledgeWork=newKnowledge(project,{user:{id:user},clientId:login.clientId,csrfToken:login.csrfToken},1);
+    Object.assign(knowledgeWork,{kind:'FACT',title:'사용자 지식 보존',body:'도구와 무관하게 원문과 이유를 보존한다',reason:'사용자가 프로젝트 지식을 소유한다'});
+    const knowledgeSession={user:{id:user},clientId:login.clientId,csrfToken:login.csrfToken};knowledgeWork.pending=await prepareKnowledge(knowledgeWork,knowledgeSession);
+    const uiKnowledge=await sendKnowledge(client,knowledgeWork,knowledgeSession,p=>knowledgeWork.pending=p,()=>true);
+    assert.equal((await readKnowledge(client,project,uiKnowledge)).body,knowledgeWork.body);
+    assert.equal((await searchKnowledge(client,project,'사용자 지식','FACT')).items[0]?.versionRef.id,uiKnowledge.id);
+    assert.deepEqual(await sendKnowledge(client,knowledgeWork,knowledgeSession,p=>knowledgeWork.pending=p,()=>true),uiKnowledge,'같은 Web 명령 재확인으로 버전 중복0');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {

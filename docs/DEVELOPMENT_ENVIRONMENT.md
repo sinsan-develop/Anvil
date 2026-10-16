@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+2026-10-16 FN05 `2b8a24227c57aa06394f21dc983de2c7849f59a1` private/WSL exact/clean에 승인된 새 forward23 `0005_knowledge_drafts` checksum42efe15b4ebe3a860364ef85d92631fcf85c71f7143738026155e5814893153a 적용·기존22 불변. actual FN03/FN04/FN05+FN11 2 PASS/5631ms·독립 DB23종/시험root 잔여0·지속root 보호/empty. UI10후속 Web73/fixture3·단위85와 실제 browser DB 여정은 별개이며 사용자용 backend/relay/초기 비밀·CA/서비스는 변경0이다.
+
 2026-10-16 추적 서버 후속: private/WSL exact `cca0899053859ba8184535eac6645bea236e5284` clean에서 승인 forward22 `0004_trace_links`(SHA256 `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c`) 적용·기존21 지문 불변. 실제 FN03/FN04+FN11 2 PASS/4532ms/skip0·독립 DB20종/임시 경로 잔여0·지속 원문 보호/empty. 사용자용 Node/relay·초기 비밀·CA·실제 계정/정책은 변경0이며 실제 browser↔DB·전체 exact runtime은 여전히 미검증이다.
 
 2026-10-16 UI06 계획 client 후속: private/WSL Git exact `cefa3fb9dd85caad2ac07adad7f33abac4443834` clean의 prepare/send/readWorkPlan actual1 PASS/4151ms/skip0·독립 DB19종/시험root 잔여0. 기존21 SQL 재적용0·사용자용 Node/relay·Secret 변경0. Windows Web67(JS473.43kB/gzip127.38)/단위76/UI06 fixture34 증거와 실제 browser↔DB·사용자 인수는 구분한다.

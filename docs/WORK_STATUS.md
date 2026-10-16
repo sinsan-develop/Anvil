@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN05 저장 서버 `2b8a24227c57aa06394f21dc983de2c7849f59a1` private/WSL exact/clean에서 새 forward23만 적용·기존22 checksum 불변, 실제 FN03/FN04/FN05+FN11 2 PASS/5631ms/skip0. 원문/출처 hash·가설/제안·별도 정책·검색·교차 사용자·직접 변경 차단, 독립 DB23종 각0·시험root[]·지속root 보호/empty를 확인했다. UI10 신규 연결은 아래 후속이며 실제 사용자 browser DB/원문 대화·확정/정정/제외·전체 격리는 아직 미완료다.
+
 - 최신 FN04 `dbd768a74184bed231963d3e31b3dfc0fd6699f3` local/private·WSL exact/clean actual1 PASS/4930ms/skip0. 같은 Web의 보관 계획 TRACE 준비·업무 선택·명시 linkTrace·receipt/hash·양방향 조회를 실제 DB에서 확인했다. 독립 DB20종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 전체 FN04/Stage B 완료나 실제 browser DB 인수는 아니다. 다음 승인된 FN05 원문·지식 초안 저장을 시작한다.
 
 - 추적 서버 최신 `cca0899053859ba8184535eac6645bea236e5284` 지정 private/WSL exact/clean에서 승인 forward22만 적용·기존21 불변, actual FN03/FN04+FN11 2 PASS/4532ms/skip0. 실제 설계/화면/업무 원문에 대한 명시 링크·멱등/중복/잘못된 ID/hash/관계·양방향 동일 edge·cursor·격리·직접 변경 차단 확인. 독립 DB20종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 아직 추적 link/view Web UI·화면 검토 선택/계획 확정·변경 영향/실제 실행 출처는 미완료이며, 다음은 조회/연결 화면이다.
@@ -32,7 +34,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 0 / [2] 11 / [] 30 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/FN01/FN02/FN03/FN04/FN05/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
+- 현재 합계: **[0] 3 / [1] 0 / [2] 12 / [] 29 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/UI10/FN01/FN02/FN03/FN04/FN05/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -75,7 +77,7 @@
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [] | S08 정적 시안 | 정확 범위 승인/거절/수정·원인미확인 표시 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
-| UI10 헌법·지식·결정 이유 | [] | S10 정적 시안 | 원문/이유·검색·정정/제외·헌법 적용버전 조회 |
+| UI10 헌법·지식·결정 이유 | [2] | Main 어울. 지식 초안 작성·원문/이유·검색/본문·root 입력/명령 보존 연결, fixture3/인접4 PASS | 실제 같은 Web 저장 확인·대화/출처 선택·정정/제외·헌법 적용버전 |
 | UI11 Agent·환경·권한 | [] | S11 정적 시안 | 실제 지원/연결/시험·환경/허용범위 설정 |
 | UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
@@ -124,6 +126,11 @@
 ## 7. 일자별 상세 이력 — 최신순
 
 ### 2026-10-16 FN05 지식 원문·초안 착수 — Main 어울
+
+- `2b8a2422` exact에서 forward23 checksum42efe15b...만 적용·기존22 checksum 불변·fixture7·실제 사용자 생성0. actual2 PASS/5631ms/skip0이며 FN03/FN04/FN05 정상/중요 실패와 인접 FN11 정책을 확인했다. 독립 DB23종 각0·임시root[]·지속root uid1000/0700/link0/실경로 동일/empty다. SQL23은 적용본으로 더 수정하지 않는다.
+- UI10 지식 작성 API 부재 RED2→원문 업로드/새 PROPOSED 저장·같은 command 재확인·정확 버전/hash·다른 주체/중단 전송0 GREEN. 검색 손상 응답 음성에서 TypeError1(조건식 삼항 우선순위)→묶음 조건으로 RESPONSE_INVALID 거절 GREEN. type-only 참조 상대경로1은 실제 경로로 보정했다. 새 화면 부재 RED1→KnowledgePage/root 프로젝트별 버퍼/현재 actor·client·제어·명시 저장/제목·이유 검색·원문/출처 이력 조회 연결. 단절→거절도 uncertain과 command를 유지하고 닫기/중복 작성 금지다.
+- fresh unit85 PASS/1242ms·type/build0(Web73/JS509.44kB/gzip136.09)·UI10 fixture3+직접 영향 UI06계획4=7 PASS/6.8초·diff0. 브라우저 API는 전부 합성 intercept/미정의503이며 실제 DB 유출0, 실제 browser↔DB 검수는 아니다. 같은 Web prepare/send/read/search의 실제 DB 시험을 이번 후속에 추가했다.
+- minor (deferred): 새 build의 >500kB chunk 경고1과 기존 NO_COLOR 경고를 보존한다. 합격 기준/상한을 바꾸거나 무관한 분할 최적화는 하지 않는다. 실제 UX 성능을 측정한 것이 아니다. 공유/Agent 전달/자동 확정·지속 서비스/Secret 변경0.
 
 - 실제 RED `6019cd77ea9fbd834506ea96e826d9e9bb268a62` private/WSL exact/clean FN03확장1 FAIL/4591ms: saveKnowledge route enum 부재로 기대 정책거절403 대신400. 기존 원문/추적 검증을 신규 지식 PASS로 바꾸지 않았다.
 - 후속 후보는 별도 saveKnowledge 정책·현재 제어/receipt, 실제 DOCUMENT_VERSION/ARTIFACT 물리 원문/hash·PROPOSED 불변 저장/조회, 제목/이유 검색·서명 cursor·타사용자404다. 새 forward23 `0005_knowledge_drafts` checksum `42efe15b4ebe3a860364ef85d92631fcf85c71f7143738026155e5814893153a`, 기존22 불변. Windows unit82 PASS/1294ms·type/build0(Web71)·diff0. 실제 적용/성공은 아직 미검증이다.
