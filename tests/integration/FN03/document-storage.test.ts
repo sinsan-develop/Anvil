@@ -60,10 +60,38 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     finally { await rename(path + '.qa-preserved', path); }
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.artifacts WHERE project_id=$1', [project])).rows[0].n, 1);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
+    const form = (await app.inject({ method: 'GET', url: '/api/v1/forms/a6f30000-0000-4000-8000-000000000001/versions/1', headers })).json();
+    const documentCommand = { ...context, commandId: randomUUID(), operation: 'saveDocumentDraft', payload: { title: '보존할 요구사항 원본', formRef: form.ref, stageNodeRef: null, content: { body: artifact, attachments: [], sections: [], sourceRefs: [] }, importCandidateRef: null, reason: '원문과 공식 양식으로 새 문서 작성' } };
+    const docSend = (body: Record<string, unknown>) => app.inject({ method: 'POST', url: `/api/v1/projects/${project}/commands`, headers, payload: body });
+    assert.equal((await docSend(documentCommand)).statusCode, 403, '업로드 허가가 문서 쓰기 허가는 아니다');
+    const policyRef = policy.json().data.ref;
+    const revisedPolicy = await docSend({ ...context, commandId: randomUUID(), operation: 'savePermissionPolicy', targetId: policyRef.id, expectedVersion: 1, payload: { rules: [{ ruleId: 'WRITE_OWN_DOCUMENTS', subjectRef: { kind: 'HUMAN', userId: user }, targetScopes: [{ kind: 'PROJECT', projectId: project }], operations: ['uploadArtifact', 'saveDocumentDraft'], disposition: 'AUTO', limitPolicyRef: null, expiresAt: new Date(Date.now() + 3_600_000).toISOString() }], reason: '합성 문서 작성 명시 허가 추가', reviewRefs: [] } });
+    assert.equal(revisedPolicy.statusCode, 200, revisedPolicy.body);
+    const savedDoc = await docSend(documentCommand); assert.equal(savedDoc.statusCode, 200, savedDoc.body);
+    const documentRef = savedDoc.json().data.ref;
+    assert.equal(documentRef.version, 1); assert.deepEqual((await docSend(documentCommand)).json(), savedDoc.json());
+    const docPath = `/api/v1/projects/${project}/documents/${documentRef.id}/versions/1`;
+    const detail = await app.inject({ method: 'GET', url: docPath, headers });
+    assert.equal(detail.statusCode, 200, detail.body); assert.equal(detail.json().title, '보존할 요구사항 원본'); assert.deepEqual(detail.json().content.body, artifact);
+    assert.equal(detail.json().authorRef.kind, 'HUMAN'); assert.equal(detail.json().authorRef.userId, user);
+    assert.equal(detail.json().confirmed, false); assert.ok(detail.json().validation.issues.some((issue: { code: string }) => issue.code === 'REQUIRED_SECTION_MISSING'));
+    assert.equal((await app.inject({ method: 'GET', url: docPath, headers: { ...headers, cookie: '__Host-anvil.sid=' + other.token } })).statusCode, 404);
+    assert.equal((await docSend({ ...documentCommand, commandId: randomUUID(), targetId: documentRef.id })).statusCode, 409);
+    const next = await docSend({ ...documentCommand, commandId: randomUUID(), targetId: documentRef.id, expectedVersion: 1, payload: { ...documentCommand.payload, title: '개정한 요구사항 제목' } });
+    assert.equal(next.statusCode, 200, next.body); assert.equal(next.json().data.ref.version, 2);
+    assert.equal((await app.inject({ method: 'GET', url: docPath, headers })).json().title, '보존할 요구사항 원본', '개정해도 구버전 제목/원문은 유지');
+    assert.equal((await app.inject({ method: 'GET', url: docPath.replace('/versions/1', '/versions/2'), headers })).json().title, '개정한 요구사항 제목');
+    assert.deepEqual(await readFile(path), bytes);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();
     try {
       await db.query('BEGIN'); await db.query('SET CONSTRAINTS ALL DEFERRED');
+      if ((await db.query("SELECT to_regclass('anvil.documents') present")).rows[0].present) {
+        await db.query('DELETE FROM anvil.document_version_events WHERE project_id=$1', [project]);
+        await db.query('DELETE FROM anvil.document_artifact_links WHERE project_id=$1', [project]);
+        await db.query('DELETE FROM anvil.document_versions WHERE project_id=$1', [project]);
+        await db.query('DELETE FROM anvil.documents WHERE project_id=$1', [project]);
+      }
       if ((await db.query("SELECT to_regclass('anvil.artifacts') present")).rows[0].present) await db.query('DELETE FROM anvil.artifacts WHERE project_id=$1', [project]);
       await db.query('DELETE FROM anvil.audit_events WHERE project_id=$1', [project]);
       await db.query('UPDATE anvil.permission_policies SET head_version=head_version+1 WHERE project_id=$1', [project]);
