@@ -2,6 +2,8 @@
 
 ## 2026-10-16 FN11·FN03/UI06 실제 연결 범위
 
+UI06 후속: `features/design-trace/DocumentEditor.tsx`/`editor-api.ts`는 기존 문서의 제목/본문/목차 위치·이유를 새 불변 초안으로 저장하며 원래 텍스트 형식/첨부·고정 양식 ref를 유지한다. `NewDocumentForm.tsx`는 현재 공식/본인 양식의 exact version을 선택해 빈 새 문서 초안을 연다. App 상위 버퍼가 사용자/프로젝트별 입력과 미확인 upload/save 명령을 탭 안에 보존하고 다른 로그인 사용자에게 숨긴다. 기존 API/DB/SQL16만 소비, 새 server write route/권한 없음. `tests/unit/UI06/editor-api.test.ts`, `tests/browser/UI06/document-edit.spec.ts`, 기존 FN03 actual 시험이 각각 중단/hash/형식·화면/인증 경계·동일 클라이언트 실제 저장을 나눠 검증한다. 충돌 조정·확정/추적은 남아 있다.
+
 후속 `apps/server/modules/documents/project-content-review.ts`는 고정 양식 기준의 사람 recordContentReview·검토 이력 조회를 처리한다. `0003_project_document_reviews.sql`은16번째 forward, 기존 DRAFT/공통 보호를 유지하고 PROJECT DOCUMENT만 현재 권한/명령/receipt에 결박한다. 같은 FN03 integration 시험에 명시 권한·옛 버전/위조·판정 음성과 미확정 유지가 추가됐으며 UI06은 검토 이력/같은 작성자 표시를 조회한다. 편집/검토 작성 화면·사용자 별도 확정은 여전히 후속이다.
 
 - `apps/server/modules/access/project-command.ts`: 현재 OWNER/client/control 세대·명시 자료 정책/불변 개정·거절 감사·replay 전 재허가. `0011_project_policy_control.sql`은13번째 forward다.

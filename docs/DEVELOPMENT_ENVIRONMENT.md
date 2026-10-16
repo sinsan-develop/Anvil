@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+2026-10-16 UI06 신규/편집 저장 연결: WSL exact `05da735cf241f09376b094819ea5e6b003183bd7`/clean의 actual FN03 1 PASS/1024ms/skip0. 화면과 같은 클라이언트로 신규v1·개정v3/재조회·원문 BOM/CRLF·원래 텍스트 형식·같은 저장 replay를 확인했지만 실제 브라우저↔DB 통합은 아니다. migration16 불변·DB/파일 합성 잔여0/지속 원문 root0700/empty를 독립 확인했다. Windows 단위46/UI06 fixture6·Web51(JS371.33kB/gzip105.67)/타입 PASS. 현재 원래 Node40744 backend000d0088·새 Web 혼재·relay26052 HOLD·만료 초기 등록 비밀·CA는 변경하지 않았다. 계정/키·서비스 설정·신규 migration·Agent/Oracle 변경0, 사용자용 최신 exact-SHA runtime 준비는 미완료다.
+
 2026-10-16 후속 문서 내용검토: exact `7a7841a12c6f20f7c4a991be0d34be8d469eae54`에서 actual3 PASS/skip0(FN03·FN11·인접 공통 METHOD). 새 forward16 `0003_project_document_reviews` checksum `f1ba53b79b95a02867822743748ead6f6dafff039a506651a26368d7b922de75`만 추가, 이전15개 불변. 현재 개발 DB 총16개다. 새 역할/계정·Secret/서비스 설정·원문 root·relay/CA 변경0이며 검토 기록을 확정/제품 인수로 세지 않는다.
 
 2026-10-16 FN11·FN03 직접 보완 승인과 신규 원문 위치 승인을 적용했다. WSL exact `dc42b29c4d24d24dc4f6f8f1737ac289023ae09c`/clean의 자료 정책·원문 보존/불변 문서 버전·목록 actual2 PASS/skip0. migration15개(정책13·원문14·문서15), 기존 SQL 불변. 원문14 checksum `78a0457fda6c394605ca46a7b6aec761aec6de0a84f47450b9cda326dac9ccd8`, 문서15 `748e8f07ffa2b1093e1141504e8a5134332518a9bf56ec04584e59e84e7a4292`. 독립 DB 조회에서 합성 프로젝트/문서/원본/정책·해당 사용자0, 임시 시험 root0. 새 지속 `/home/daon/.local/share/anvil-v3-development/artifacts`는 daon(uid1000)0700/link0/empty로 만들고 보존한다. 서버가 소비하는 선택 설정은 `ANVIL_ARTIFACT_ROOT`이며 실제 서비스 설정/재시작은 아직 하지 않았다. Windows Web48·unit43·UI06 fixture2는 실제 화면 DB 연동과 구분한다. 기존 Node40744의 backend000d0088·relay26052/재접속 HOLD·만료 bootstrap·CA·계정·Secret·기존 서비스는 변경하지 않았다. 사용자용 새 런타임 준비나 전체 기능 완료가 아니다. 아래 과거 관측은 삭제하지 않고 이력으로 유지한다.
