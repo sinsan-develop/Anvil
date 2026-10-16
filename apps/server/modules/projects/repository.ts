@@ -6,6 +6,7 @@ import type { AuthenticatedIdentity } from '../access/repository.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { selectDraftMethodology } from './draft-methodology.ts';
 import { requirePreparedForms } from '../methodologies/content-review.ts';
+import { draftMethodologyState, requireDraftConfirmation, writeDraftReview, type DraftOperation } from './draft-review.ts';
 
 export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY' | 'EXISTING'; methodologySelection?: unknown; artifactRefs?: unknown[]; sourceDeclaration?: unknown }
 export interface DraftCreate extends DraftInput { schemaVersion: 1; commandId: string; clientId: string; targetId: null; expectedVersion: 0 }
@@ -28,7 +29,7 @@ export class ProjectsRepository {
     return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode, methodologySelection, artifactRefs: [] };
   }
   #draftView(row: { id: string; version: string; step: number; input_json: unknown }) { return { draftId: row.id, version: integer(row.version), step: row.step, input: row.input_json }; }
-  async #draftCommand(db: PoolClient, identity: AuthenticatedIdentity, draftId: string, operation: string, request: DraftCreate | DraftSave | ProjectCreate, result: unknown) {
+  async #draftCommand(db: PoolClient, identity: AuthenticatedIdentity, draftId: string, operation: string, request: DraftCreate | DraftSave | ProjectCreate | DraftOperation, result: unknown) {
     const id = randomUUID(), receiptId = randomUUID(), operationId = randomUUID();
     const requestHash = contentHash(canonicalJson(request));
     const scopeDigest = contentHash(canonicalJson({ kind: 'DRAFT', draftId, operation, actorId: identity.actorId, clientId: identity.clientId, requestHash }));
@@ -56,7 +57,7 @@ export class ProjectsRepository {
     return this.#access.authenticated(token, null, async (db, identity) => {
       const row = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2', [draftId, identity.actorId])).rows[0];
       if (!row) throw new AuthFailure('NOT_FOUND', 404);
-      return { ...this.#draftView(row), editable: row.client_id === identity.clientId && !row.consumed_project_id, consumedProjectId: row.consumed_project_id };
+      return { ...this.#draftView(row), editable: row.client_id === identity.clientId && !row.consumed_project_id, consumedProjectId: row.consumed_project_id, methodologyState: await draftMethodologyState(db, row) };
     });
   }
   async saveDraft(token: string, csrf: string, draftId: string, request: DraftSave) {
@@ -76,6 +77,22 @@ export class ProjectsRepository {
       return this.#draftCommand(db, identity, draftId, 'saveProjectDraft', request, this.#draftView(updated));
     });
   }
+  async draftOperation(token: string, csrf: string, draftId: string, request: DraftOperation) {
+    return this.#access.authenticated(token, csrf, async (db, identity) => {
+      const draft = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [draftId, identity.actorId])).rows[0];
+      if (!draft) throw new AuthFailure('NOT_FOUND', 404);
+      if (request.clientId !== identity.clientId || draft.client_id !== identity.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
+      if (request.targetId !== draftId) throw new AuthFailure('INPUT_INVALID', 400);
+      const previous = (await db.query('SELECT operation,request_hash,result_ref FROM anvil.commands WHERE draft_id=$1 AND actor_id=$2 AND command_id=$3', [draftId, identity.actorId, request.commandId])).rows;
+      if (previous.length) {
+        if (previous.length !== 1 || previous[0].operation !== request.operation || previous[0].request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
+        return previous[0].result_ref;
+      }
+      if (draft.consumed_project_id) throw new AuthFailure('DRAFT_ALREADY_CONSUMED', 412);
+      if (Number(draft.version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
+      return writeDraftReview(db, identity, draft, request, result => this.#draftCommand(db, identity, draftId, request.operation, request, result));
+    });
+  }
   async createProject(token: string, csrf: string, request: ProjectCreate) {
     return this.#access.authenticated(token, csrf, async (db, identity) => {
       const draft = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [request.draftId, identity.actorId])).rows[0];
@@ -91,13 +108,14 @@ export class ProjectsRepository {
       const input = await this.#draftInput(db, identity.actorId, draft.input_json);
       if (![input.name, input.purpose, input.desiredOutcome].every(value => typeof value === 'string' && !!value.trim())) throw new AuthFailure('PROJECT_PURPOSE_REQUIRED', 422);
       const selected = input.methodologySelection;
-      if (selected?.kind !== 'CONFIRMED_REFERENCE') throw new AuthFailure('METHODOLOGY_CONFIRMATION_REQUIRED', 422);
-      const ref = selected.versionRef;
-      const method = (await db.query('SELECT name,purpose,graph_json FROM anvil.methodology_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3', [ref.id, ref.version, ref.contentHash])).rows[0];
+      if (!selected) throw new AuthFailure('METHODOLOGY_CONFIRMATION_REQUIRED', 422);
+      const dedicated = selected.kind === 'NEW_PROJECT_DRAFT' ? await requireDraftConfirmation(db, draft) : null;
+      const ref = selected.kind === 'CONFIRMED_REFERENCE' ? selected.versionRef : { id: randomUUID(), version: 1, contentHash: dedicated!.ref.contentHash };
+      const method = selected.kind === 'NEW_PROJECT_DRAFT' ? { name: selected.name, purpose: selected.purpose, graph_json: selected.graph } : (await db.query('SELECT name,purpose,graph_json FROM anvil.methodology_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3', [ref.id, ref.version, ref.contentHash])).rows[0];
       if (!method) throw new AuthFailure('METHODOLOGY_SOURCE_NOT_READY', 422);
       await requirePreparedForms(db, identity.actorId, method.graph_json);
       const projectId = randomUUID(), applicationId = randomUUID(), commandId = randomUUID(), receiptId = randomUUID(), operationId = randomUUID();
-      const snapshot = { name: method.name, purpose: method.purpose, graph: method.graph_json, sourceRef: ref };
+      const snapshot = { name: method.name, purpose: method.purpose, graph: method.graph_json, sourceRef: ref, ...(dedicated ? { draftConfirmationRef: { draftRef: dedicated.ref, confirmationId: dedicated.confirmation!.id } } : {}) };
       const snapshotHash = contentHash(canonicalJson(snapshot));
       await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.creation_draft_id',$2,true)", [identity.actorId, draft.id]);
       await db.query('INSERT INTO anvil.projects(id,name,purpose,desired_outcome) VALUES($1,$2,$3,$4)', [projectId, input.name, input.purpose, input.desiredOutcome]);
@@ -106,6 +124,10 @@ export class ProjectsRepository {
       const targetRef = { id: projectId, version: 1 }, scopeDigest = contentHash(canonicalJson({ operation: 'createProject', draftId: draft.id, draftVersion: request.draftVersion, projectId, actorId: identity.actorId, clientId: identity.clientId, requestHash: contentHash(canonicalJson(request)) }));
       await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,expected_version,control_generation,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,'createProject',$5,$6,$7,'APPLIED',$8,0,1,now())", [commandId, projectId, identity.actorId, identity.clientId, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId]);
       await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,scope_digest) VALUES($1,'PROJECT',$2,$3,$4,$5)", [receiptId, projectId, commandId, JSON.stringify({ kind: 'HUMAN', userId: identity.actorId, clientId: identity.clientId }), scopeDigest]);
+      if (dedicated && selected.kind === 'NEW_PROJECT_DRAFT') {
+        await db.query("INSERT INTO anvil.methodology_definitions(id,scope,project_id,name,purpose,head_version) VALUES($1,'PROJECT',$2,$3,$4,1)", [ref.id, projectId, method.name, method.purpose]);
+        await db.query('INSERT INTO anvil.methodology_versions(definition_id,version,name,purpose,graph_json,content_hash,origin_ref_json,reason,created_by) VALUES($1,1,$2,$3,$4,$5,$6,$7,$8)', [ref.id, method.name, method.purpose, JSON.stringify(method.graph_json), ref.contentHash, JSON.stringify({ kind: 'DRAFT_CONFIRMED_SOURCE', draftRef: dedicated.ref, confirmationId: dedicated.confirmation!.id, sourceRefs: selected.sourceRefs }), '확정한 생성 초안의 프로젝트 전용 원본', identity.actorId]);
+      }
       await db.query('INSERT INTO anvil.project_methodologies(id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by) VALUES($1,$2,1,$3,$4,$5,$6,$7,$8)', [applicationId, projectId, ref.id, ref.version, ref.contentHash, JSON.stringify(snapshot), snapshotHash, identity.actorId]);
       await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,outcome,reason_code,scope_digest,source_kind) VALUES($1,1,$2,$3,$4,$5,$6,$7,'APPLIED','FIRST_PROJECT_FROM_OWNED_DRAFT',$8,'HUMAN_COMMAND')", [projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: identity.actorId }), identity.clientId, commandId, operationId, JSON.stringify(targetRef), scopeDigest]);
       await db.query('UPDATE anvil.project_drafts SET consumed_project_id=$2,updated_at=now() WHERE id=$1', [draft.id, projectId]);
