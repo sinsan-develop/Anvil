@@ -2,6 +2,8 @@
 
 ## 현재 단계와 정본
 
+FN04 저장 첫 후속 `98b3504dcf6bc2387f317a0acfcb9eb642657044` 지정 private/WSL exact clean actual FN03/FN11 2 PASS/3368ms/skip0. 승인된 forward20 `0004_design_index` checksum `d0d6ef9221a46c96c4e6f033d6a14e22cc07b26a8bcb1949d67dbb8e574aea6a` 적용·기존19 불변, fixture7/실제 사용자0. 독립 design_items/screen_regions 포함15표 각0·시험root[]·지속원문 uid1000/0700/link0/empty. 설계 추적 조회 UI는 현재 local 단위71/fixture29·Web64/type/build이며 최신 actual Web client 검수는 게시 후다. 사용자용 runtime·relay/초기 등록·CA/Secret/서비스는 변경하지 않았다.
+
 현재 코드 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` local/private·WSL exact clean actual FN03 1 PASS/3017ms/skip0. 복합 충돌 조정·검토/확정 거절 보관/명시 새 대상까지 동일 Web client와 실제 API/DB/FS로 확인했다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty, SQL19·계정·권한/Secret·서비스 불변. 단위65/UI06 fixture27·Web62/type/build는 별도이며 Windows backend 혼재/relay HOLD/만료 bootstrap·CA 경계·실제 browser DB 여정 미검증은 유지한다.
 
 보관 자료 재개 후속 코드 `4997e732f6bebfca92812cc6d7a5680dcbb71664` 지정 private/WSL exact clean의 같은 Web client FN03 actual1 PASS/2712ms/skip0. 새 schema/실제 계정/권한·Secret·서비스 변경0, SQL19 불변이다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser DB 여정이 아니다. 기존 혼재 backend/relay HOLD/만료 bootstrap/CA 경계는 유지하며 아래 이전 목록 재개 미완료 문구만 후속 전 이력으로 본다.

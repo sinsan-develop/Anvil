@@ -113,6 +113,10 @@
 
 ### 2026-10-16 FN04 추적·작업계획 저장 착수 — Main 어울
 
+- UI06 설계 추적 읽기 진입점 부재 RED1→DesignIndexViewer/design-index-api·DocumentsPage의 명시 GET 연결. 화면은 정확 문서 버전/원문 위치/실제 저장 ID를 표시하고 항목/영역 metadata hash를 확인한다. 조회만으로 제어권/쓰기0, 변조 때 이전 항목 제거·오류, 미연결 작업/시험은 미구현으로 표시한다. fresh unit71 PASS/1175ms·type/build exit0(Web64/JS442.29kB/gzip120.81)·UI06 fixture29 PASS/21.2초·diff0. 이 화면 검증은 fixture이며 같은 Web client의 actual index GET 검증은 게시 후 확인한다. 등록 화면·작업계획/trace edge는 아직 미연결이다.
+
+- 후속 `98b3504dcf6bc2387f317a0acfcb9eb642657044` 지정 private/WSL exact clean에서 직접 승인된 forward20만 추가 적용했다. checksum `d0d6ef9221a46c96c4e6f033d6a14e22cc07b26a8bcb1949d67dbb8e574aea6a`, 기존19 불변·fixture7·realProductUsersCreated0. 실제 FN03+FN11 인접2 PASS/3368ms/skip0: 새 index의 별도403→합성 명시 policy→정확 source/hash·실제 줄 확인/원문 없는 코드422→저장/replay/새 중복409→GET/타 사용자404·app 직접UPDATE42501·기존 원문 불변. 독립 DB15종 각0(design_items/screen_regions 포함)·시험root[]·지속원문 uid1000/0700/실경로 동일/link0/empty와 적용20 checksum을 재확인했다. SQL20은 이제 적용본으로 수정하지 않는다. 인덱스 UI/작업계획/trace edge·실제 browser DB 여정은 아직 미연결이다.
+
 - 초기 actual RED `8e74722ef3c0f49ab01acebb07a1bdd39182e580` WSL exact/clean 1 FAIL/2912ms: 새 index 연산이 아직 schema 미등록400으로 별도 허가 거절403에 도달하지 못했다. 기존 FN03 실패를 만든 것으로 오인하지 않고 후속 연결의 예상 RED로 보존한다.
 - forward20 후보 `0004_design_index.sql` SHA256 `D0D6EF9221A46C96C4E6F033D6A14E22CC07B26A8BCB1949D67DBB8E574AEA6A`: 불변 design_items/screen_regions의 같은 프로젝트·실제 문서/version/hash·원문 artifact FK와 현재 actor/client/control/명시 policy/정확 receipt guard·app UPDATE/DELETE 불허를 추가한다. 기존19 SQL 변경0. 현재 미적용이다.
 - ProjectDesignIndex·기존 docs의 보호 원문 읽기·projects route/명시 연산 policy whitelist·runner20을 연결했다. AF02 D코드/제목/실제 줄 및 AF03 S코드/실제 줄에만 등록하며 원문/확정 pointer 변경0이다. 현재 한 문서 버전당 각 최대200 항목/위치, line anchor만 지원하고 이미지 내부 영역/사용자 정의 양식 유형·배정/완료 근거는 미연결이다. same command는 replay, 새 명령의 중복 인덱스409·현재 head/hash409·원문 없는 코드/위치422·교차 사용자404를 actual에 추가했다. fresh 타입/diff0·unit69/1050ms PASS. 게시 exact SHA·승인된 runner20 적용·actual/독립 잔여 확인 전에는 저장 성공으로 세지 않는다.

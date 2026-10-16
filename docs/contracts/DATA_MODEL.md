@@ -196,6 +196,8 @@ audit와 UI event의 수신순번은 각각 프로젝트별 카운터/직렬화�
 
 ### 7.2 FN04 설계·계획·추적·변경
 
+2026-10-16 forward20 `0004_design_index`만 실제 적용: design_items는 AF02 exact document id/version/hash·localCode/title/line anchor·item_json/item_hash·현재 actor/client/command를, screen_regions는 같은 프로젝트 design_item과 AF03 exact source version/hash/body artifact·screenCode/anchor·region_json/hash를 불변 저장한다. 현재 제어/명시 policy/APPLIED exact receipt guard와 app SELECT/INSERT만 허용하고 UPDATE/DELETE는 불허한다. 기존19 SQL 불변, actual FN03/FN11 2 PASS/3368ms·독립 두 신규 표 포함15종 QA 잔여0이다. 아래 work_plan/trace/change 표는 아직 미구현이며 schema 정의를 실제 완료로 세지 않는다.
+
 | 테이블 | 필수 열·참조·고유 조건 |
 |---|---|
 | `design_items` | `(project_id,id) UNIQUE,id PK,design_document_id,document_version,local_code,title,anchor,item_hash`. document version 복합 FK, `(project_id,design_document_id,document_version,local_code)` UNIQUE. 같은 코드의 과거 버전 보존 |

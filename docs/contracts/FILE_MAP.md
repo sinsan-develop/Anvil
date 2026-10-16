@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN04 최초 후속: `apps/server/modules/traceability/plan-dependencies.ts`는 START/ACCEPTANCE 형식 분리·순환 검사, `design-index.ts`는 exact AF02/AF03 원문 위치 등록/GET을 소유한다. 기존 documents/project-documents의 보호 originalText·projects/routes·access/project-command를 소비한다. 적용 forward20 `db/migrations/0004_design_index.sql`과 runner20은 기존 SQL을 수정하지 않는다. `features/design-trace/design-index-api.ts`/`DesignIndexViewer.tsx`·DocumentsPage의 명시 읽기가 대응하며 FN04 단위4/조회 단위2·UI06 fixture29·actual은 WORK_STATUS와 대조한다. 등록 UI·작업계획/trace edge는 아직 미연결이다.
+
 ## 2026-10-16 FN11·FN03/UI06 실제 연결 범위
 
 복합 충돌/대상 교체 후속: 기존 conflict-api/DocumentEditor는 명시 LATEST_METADATA 수동 초안과 거절 snapshot을 보존한다. review-api/confirmation-api·대응 편집기·DocumentsPage 및 작은 mutation-result helper는 명확한 거절의 명시 보관과 새 대상 초기화를 담당한다. 단절/손상 뒤의 4xx는 uncertain을 해소하지 않는다. unit65/UI06 fixture27, actual exactae2c3fd5 1 PASS/3017ms가 대응하며 SQL19 불변이다. 과거 미연결 문구는 이력이며 실제 source/단계·browser DB/체크포인트 영속 보관은 후속이다.

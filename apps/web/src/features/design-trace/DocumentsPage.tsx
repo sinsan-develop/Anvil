@@ -9,6 +9,7 @@ import { DocumentReviewEditor } from './DocumentReviewEditor.tsx';
 import { latestAcceptedDocumentReview, newDocumentConfirmation, type DocumentConfirmationBuffer } from './confirmation-api.ts';
 import { DocumentConfirmation } from './DocumentConfirmation.tsx';
 import { MaterialLibrary } from './MaterialLibrary.tsx';
+import { DesignIndexViewer } from './DesignIndexViewer.tsx';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; onAuthenticationLost: () => void }) {
   const [page, setPage] = useState<DocumentPage | null>(null), [cursor, setCursor] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
@@ -19,6 +20,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [editingError, setEditingError] = useState<ApiError | null>(null), [starting, setStarting] = useState(false);
   const [choosingForm, setChoosingForm] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
+  const [showDesignIndex,setShowDesignIndex]=useState(false);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   const confirming = confirmation?.ownerUserId === session.user.id && confirmation.projectId === projectId;
   useEffect(() => () => { generation.current++; }, []);
@@ -31,7 +33,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     return () => { current = false; };
   }, [client, projectId, cursor, refresh]);
   async function open(item: DocumentSummary, requested: number) {
-    const request = ++generation.current; setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true);
+    const request = ++generation.current; setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) setOpened(value); }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
@@ -106,6 +108,8 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!review?.pending || !!buffer?.pending || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { void beginEdit(); }}>이 버전에서 편집</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || !!buffer?.dirty || !!buffer?.pending || !!review?.pending || !!review && review.ownerUserId !== session.user.id} onClick={() => { void beginReview(); }}>이 버전 내용 검토 작성</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!buffer?.dirty || !!buffer?.pending || !!review?.pending || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void beginConfirmation(); }}>이 버전 확정 준비</button>
+        <button disabled={reading} onClick={()=>setShowDesignIndex(v=>!v)}>{showDesignIndex?'설계 추적 조회 닫기':'이 버전 설계 추적 조회'}</button>
+        {showDesignIndex?<DesignIndexViewer key={opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} onAuthenticationLost={onAuthenticationLost}/>:null}
         {confirming && confirmation && !confirmation.pending && !confirmation.saved && !confirmation.uncertain && confirmation.rejectedAttempts?.length ? <button disabled={starting || reading || choosingForm || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void replaceConfirmation(); }}>열어 둔 버전으로 확정 대상 변경</button> : null}
         {!opened.document.confirmed && !latestAcceptedDocumentReview(opened.document) ? <p className="meta">확정하려면 필수 본문/반복 항목 검사와 정확한 최신 적합 검토가 필요합니다.</p> : null}
         <pre aria-label="문서 원문" className="document-original">{opened.body}</pre>

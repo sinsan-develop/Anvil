@@ -328,6 +328,8 @@ sourceLinks는 `{sourceRootId,relativePath,sourceSnapshotRef,blobHash,documentRe
 
 ### 10.2 FN04 — 추적·업무계획·설계 변경
 
+2026-10-16 승인된 FN04 저장 계약 보완: additive `indexDesignDocument`의 envelope target/expected는 `documentRef:VersionRef(AF02)`와 같다. payload는 `documentRef,items:[{localCode,title,anchor:line:n}],screens:[{designLocalCode,screenCode,documentRef:VersionRef(AF03),anchor:line:n}],reason`이다. 각 배열 최대200·현재 head/hash·실제 원문 코드/제목/줄·같은 프로젝트를 검증하고 별도 명시 연산 정책을 요구한다. 원문 변경 없이 `{status:DESIGN_INDEXED,ref:documentRef,designItems,screenRegions}`를 반환한다. 동일 command replay·새 중복409·잘못된 위치/종류422·비회원404이며 기존 API 호환성을 변경하지 않는다. GET `projects/:projectId/design-index?documentId&version`은 `{documentRef,items,screenRegions,status:INDEXED/NOT_INDEXED,observedAt}`이며 정확 원문과 metadata hash를 다시 검사한다. item은 `{id,documentRef,localCode,title,anchor,itemHash}`, region은 `{id,designItemId,screenCode,documentRef,artifactRef,anchor,regionHash}`다. 이미지 내부 좌표/등록 UI·실제 task/시험 증거 연결은 아직 미구현이다.
+
 `TraceRef`는 `kind:REQUIREMENT/DESIGN_ITEM/SCREEN_REGION/PLAN_TASK/DOCUMENT_VERSION/EXECUTION/ARTIFACT/TEST_EVIDENCE, id, versionRef, localCode?,anchor?`를 갖는다. kind별 실제 서버 자료와 프로젝트/버전이 존재해야 한다. 파일명/Agent 주장만으로 TEST_EVIDENCE/EXECUTION을 만들지 않는다. 양방향 조회는 같은 edge의 반대 탐색이며 복제 edge로 별도 진실을 만들지 않는다.
 
 `TaskCard` 필수는 `taskCode,type:SCREEN/FUNCTION/INTEGRATION/PREPARATION,title,purpose,designRefs,screenRefs,ownerRole,inputs,outputs,included,excluded,allowedFileRefs,startPrerequisites,acceptancePrerequisites,steps,testCases,acceptanceCriteria,evidenceRequirements,rollback,recoveryNotes`다. testCases는 정상/중요 실패·직접 영향·기대 결과·검증 환경을 포함한다. 두 선행 필드는 독립이며 기존 완료 조건을 뷰 착수 조건으로 축소하지 않는다. 상태/실제 담당·코드/시험 결과는 후속 실행 기록으로 연결하고 계획 작성자가 `COMPLETED/PASS`를 직접 부여하지 않는다.

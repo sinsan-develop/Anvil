@@ -5,6 +5,7 @@ test('문서 화면에서 보관한 가져오기 후보와 제안을 다시 조�
   await expect(page.getByRole('button', { name: '보관한 후보·제안 조회', exact: true })).toBeVisible();
 });
 import { createHash } from 'node:crypto';
+import { canonicalJson,contentHash } from '../../../contracts/canonical.ts';
 
 const project = '51c0439f-791e-4bb5-8471-70938d6afaf1', id = '32b5f276-13e6-4d8a-b93f-27a15d21c788';
 const artifactId = 'a6f30000-0000-4000-8000-000000000099';
@@ -38,6 +39,19 @@ test('문서 목록에서 정확 버전과 원문을 열고 구버전을 조회�
   await page.getByLabel('조회 버전', { exact: true }).fill('1');
   await page.getByRole('button', { name: '지정 버전 조회', exact: true }).click();
   await expect(page.getByRole('heading', { name: '이전 요구사항', exact: true })).toBeVisible();
+});
+
+test('선택한 문서 버전에서 설계 항목·화면 위치 추적 조회를 열 수 있다', async ({ page }) => {
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button',{name:'요구사항 원본 열기',exact:true}).click();
+  await expect(page.getByRole('button',{name:'이 버전 설계 추적 조회',exact:true})).toBeVisible();
+});
+
+test('설계 추적은 별도 GET에서 정확 버전 항목을 보이고 변조/미구현을 완료로 숨기지 않는다', async ({ page }) => {
+  const documentRef={id,version:2,contentHash:'b'.repeat(64)},data={documentRef,localCode:'D01',title:'원문 위치 조회',anchor:'line:1'};let reads=0,broken=false;
+  await page.route(`**/api/v1/projects/${project}/design-index?*`,r=>{reads++;expect(r.request().method()).toBe('GET');expect(new URL(r.request().url()).searchParams.get('version')).toBe('2');return r.fulfill({json:{documentRef,items:[{id:artifactId,...data,itemHash:broken?'0'.repeat(64):contentHash(canonicalJson(data))}],screenRegions:[],status:'INDEXED',observedAt:'2026-10-16T05:00:00Z'}});});
+  await page.goto(`/#/projects/${project}/documents`);await page.getByRole('button',{name:'요구사항 원본 열기',exact:true}).click();expect(reads).toBe(0);
+  await page.getByRole('button',{name:'이 버전 설계 추적 조회',exact:true}).click();const panel=page.getByRole('region',{name:'설계 항목·화면 위치 추적',exact:true});await expect(panel.getByText('D01 · 원문 위치 조회',{exact:true})).toBeVisible();await expect(panel).toContainText('작업계획·구현/시험 증거 연결은 아직 미구현');
+  broken=true;await panel.getByRole('button',{name:'설계 추적 새로고침',exact:true}).click();await expect(panel.getByRole('alert')).toContainText('DESIGN_INDEX_INTEGRITY_FAILED');await expect(panel.getByText('D01 · 원문 위치 조회',{exact:true})).toHaveCount(0);expect(reads).toBe(2);
 });
 test('원문 바이트가 hash와 다르면 문서를 표시하지 않고 명확히 실패한다', async ({ page }) => {
   await page.route(`**/api/v1/projects/${project}/files/${artifactId}`, route => route.fulfill({ contentType: 'application/octet-stream', body: Buffer.from('다른 파일') }));

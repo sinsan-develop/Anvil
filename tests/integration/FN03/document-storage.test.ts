@@ -19,6 +19,7 @@ import { continueDocumentSave, documentControl, editDocument, newDocument, prepa
 import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport } from '../../../apps/web/src/features/design-trace/import-api.ts';
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, readStoredProposal, resumeStoredProposal } from '../../../apps/web/src/features/design-trace/proposal-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readStoredImport } from '../../../apps/web/src/features/design-trace/materials-api.ts';
+import { readDesignIndex } from '../../../apps/web/src/features/design-trace/design-index-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
@@ -383,6 +384,7 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.deepEqual((await docSend(indexCommand)).json(),indexed.json()); assert.equal((await docSend({...indexCommand,commandId:randomUUID()})).statusCode,409);
     const indexPath=`/api/v1/projects/${project}/design-index?documentId=${designRef.id}&version=1`;
     const indexRead=await app.inject({method:'GET',url:indexPath,headers}); assert.equal(indexRead.statusCode,200,indexRead.body); assert.deepEqual(indexRead.json().items,indexed.json().data.designItems); assert.deepEqual(indexRead.json().screenRegions,indexed.json().data.screenRegions);
+    const clientIndexRead=await readDesignIndex(client,project,designRef);assert.deepEqual(clientIndexRead.items,indexed.json().data.designItems);assert.deepEqual(clientIndexRead.screenRegions,indexed.json().data.screenRegions);
     assert.equal((await app.inject({method:'GET',url:indexPath,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
     await assert.rejects(pool.query("UPDATE anvil.design_items SET title='changed' WHERE project_id=$1",[project]),(e:unknown)=>(e as {code:string}).code==='42501');
     assert.equal((await readDocument(client,project,designRef.id,1)).body,designWork.body); assert.equal((await readDocument(client,project,screenRef.id,1)).body,screenWork.body);
