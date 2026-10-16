@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 저장503 진단 `c1175ce5cd8dcf7e9ad8db1aed4f6e46b33be7ea` actual1 FAIL/8923ms/skip0: whitelist code42883/routine op_error, 이전 미확인 삭제422·근거 없는 판단422까지 통과했다. SQL30의 `snapshot->coverageGaps @> prior.impact_json->coverageGaps` 연산 결합이 원인임을 빈 JSON probe 원식42883/양쪽 괄호 보정식false·변경0으로 확인했다. 새 저장 root 실제 실패2회이며 SQL30 checksume99067f1…9275c는 불변으로 보존한다. 새 forward31 `0004_design_impact_review_operator_fix` checksumc3d5cb62a7f5615db0325f9008031f61c6d16a225bc2ef241defcadbc75c002b는 같은 guard 정의에서 포함 비교 양쪽 괄호만 명시한다. 권한/자료/의미 조건·현재 기준 확대0, 현재 미적용·실제 GREEN 미검증이다. 다음 exact 게시본으로 검증하며 동일 root가 다시 재현되면 3회 규칙에 따라 추가 시도하지 않고 예외 보고한다.
+
 - 중복 잠금 보정 `c1b831976205ff975389f1ff73a7b5180f5d1d80` exact/clean actual1 FAIL/8867ms/skip0. 이전 조회 root는 해결돼 공백 삭제422·근거 없는 영향 없음422까지 통과했고, 다음 실제 새 검토 저장에서 별도 STORAGE_FAILED503이 발생했다(새 저장 root1, 아직 원인 미확정). 적용30/권한은 바꾸지 않고 같은 합성 명령/동일 인증·정책 경로에서 whitelist 오류 code/messageCode/constraint/routine만 드러내는 시험 진단을 추가한다. 오류 원문/SQL detail/Secret은 출력하지 않고 원래 HTTP 실패 판정은 보존하며 finally 정확 정리를 유지한다.
 
 - 사람 영향 검토503 원인 확인: `7fe95c8a0820d35e21484083512082e83035d52b` actual1 FAIL/8620ms/skip0에서 STORAGE_FAILED를 확인했고, 빈 결과 독립 probe에서 app SELECT=true/UPDATE=false·일반 SELECT OK·FOR UPDATE=42501·변경0을 재현했다. 같은 root 실제 실패2회이며 추가 권한 부여/SQL 변경 없이 중복 설계 이력 FOR UPDATE 한 줄만 제거했다. 모든 변경은 기존 ProjectPolicyRepository/currentProjectController의 project_control FOR UPDATE를 먼저 통과하고 최신 영향 CAS·unique/FK/DB guard는 그대로다. 변경 전: 불변 이력에 UPDATE 잠금 요구→42501, 변경 후: 기존 프로젝트 제어 직렬화 아래 정확 이력 조회/새 버전 저장. 적용 SQL30 불변·권한/원문/기준/서비스/Secret 변경0. 다음 exact 게시본에서 실제 GREEN을 확인한다.
