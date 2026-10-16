@@ -14,6 +14,7 @@ import { readDocument } from '../../../apps/web/src/features/design-trace/api.ts
 import { newDocumentReview, prepareDocumentReview, sendDocumentReview, type DocumentReviewBuffer } from '../../../apps/web/src/features/design-trace/review-api.ts';
 import type { FormDefinition } from '../../../apps/server/modules/documents/forms.ts';
 import { newDocumentConfirmation, prepareDocumentConfirmation, sendDocumentConfirmation } from '../../../apps/web/src/features/design-trace/confirmation-api.ts';
+import { adoptDocumentConflict, compareDocumentConflict } from '../../../apps/web/src/features/design-trace/conflict-api.ts';
 import { continueDocumentSave, documentControl, editDocument, newDocument, prepareDocumentSave } from '../../../apps/web/src/features/design-trace/editor-api.ts';
 
 test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그대로 저장·재조회되고 격리·단절·변조를 성공으로 숨기지 않는다', async () => {
@@ -198,6 +199,14 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await docSend({ ...finalConfirm, commandId: randomUUID() })).statusCode, 409);
     await assert.rejects(pool.query('UPDATE anvil.documents SET confirmed_version=2 WHERE project_id=$1 AND id=$2', [project, readyRef.id]), (e: unknown) => (e as { code: string }).code === '42501');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.document_confirmations WHERE project_id=$1', [project])).rows[0].n, 1);
+    const stale = editDocument(project, confirmedRead, user, 1); stale.body += '\n내 충돌 입력을 보존'; stale.reason = '서버 최신본과 비교 후 명시 개정'; stale.dirty = true;
+    let rejected = await prepareDocumentSave(stale, session);
+    await assert.rejects(continueDocumentSave(client, rejected, session, value => { rejected = value; }, () => true), (e: unknown) => e instanceof Error && (e as { status?: number }).status === 409 && (e as { code?: string }).code === 'VERSION_CONFLICT');
+    stale.pending = rejected; stale.failure = { code: 'VERSION_CONFLICT', status: 409 };
+    const comparison = await compareDocumentConflict(client, stale, session); assert.equal(comparison.latest.document.version, 2); assert.equal(comparison.latest.body, later.body); assert.equal(comparison.compatible, true);
+    const adopted = adoptDocumentConflict(stale, comparison, session, true); assert.equal(adopted.body, stale.body); assert.equal(adopted.baseVersion, 2);
+    const reconciled = await continueDocumentSave(client, await prepareDocumentSave(adopted, session), session, () => {}, () => true);
+    assert.equal(reconciled.version, 3); assert.equal((await readDocument(client, project, readyRef.id, 3)).body, stale.body); assert.equal((await readDocument(client, project, readyRef.id, 2)).body, later.body); assert.equal((await readDocument(client, project, readyRef.id, 1)).document.confirmed, true);
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

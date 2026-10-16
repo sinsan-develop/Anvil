@@ -11,6 +11,7 @@ export interface DocumentBuffer {
   ownerUserId: string; projectId: string; documentId: string | null; baseVersion: number; formRef: VersionRef;
   title: string; body: string; mediaType: string; content: Omit<DocumentContent, 'body'>; criteria: DocumentVersion['contentReviewCriteria']['items'];
   reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocumentSave | null; savedRef: VersionRef | null; failure: { code: string; status: number } | null;
+  reconciliation?: { rejectedCommandId: string; fromVersion: number; toVersion: number };
 }
 export interface DocumentSession { user: { id: string }; clientId: string; csrfToken: string }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;

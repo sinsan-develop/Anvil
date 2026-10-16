@@ -117,6 +117,9 @@
 - `a149119af41ec0d3b1cdc9602be3c7e5a52253bf` local/private·WSL exact/clean에서 forward17 적용 exit0·기존16 checksum 불변, actual FN03 1 PASS/1311ms/skip0. 별도 권한403/형식·검토 누락422/위조와 최신 재작업/옛 버전 차단·확정/replay·새 초안 뒤 구확정 유지·직접 pointer 쓰기42501·확정 이력1/실행 outbox0을 확인했다.
 - UI 확정 준비 버튼 부재 RED1→App 상위 대상/검토/명령 버퍼·별도 확인 checkbox·명시 confirmDocument 클라이언트 연결. 단절/화면 이동 동일 명령, 최신 REWORK/형식 누락 차단, 인증 만료 뒤 다른 사용자 숨김/자동 전송0까지 UI06 fixture13 PASS/10.1초. 사용자 양식의 선택 항목을 필수로 취급하는 RED1은 비어 있는 선택 범위를 허용하도록 좁게 보정, 최종 unit54/타입·build0·Web55(JS388.81kB/gzip108.52·CSS7.61kB)/diff0. 실제 화면 DB 통합/전체 인수는 아직 미검증이다.
 - 변경 파일: server document-validation/project-confirmation/project-documents·projects routes, 새 SQL17/migration runner, App·DocumentsPage·DocumentConfirmation/confirmation-api와 관련 unit/browser/FN03 actual. 새 UI 클라이언트의 실제 API/DB 시험은 후속 exact 게시본에서 실행하며, 새 schema/서비스 재생성·인증자료 갱신은 반복하지 않는다.
+- `3ea44e32c28f66f6732c5229326cd9023136d0cb` local/private/WSL exact clean에서 같은 확정 클라이언트와 인접 FN11 실제2 PASS/1684ms/skip0. 별도 확인 전 요청 거절, 새 UI payload/ref/receipt·latest review·확정/replay·과거 보존을 확인했다. 독립 users/projects/documents/versions/confirmations/reviews/artifacts/policies0, migrations17/동일 checksum, 임시 root[]·지속 root uid1000/0700/link0/empty. 실제 browser↔DB는 별도 미검증이다.
+- 이어서 명확한 save VERSION_CONFLICT409만 최신본과 비교하는 UI06 후속에 착수했다. 입력/이전 명령을 보존한 채 현재 제어·최대4페이지/200건 목록→정확 최신 버전/원문을 읽는다. 양식/첨부/원문 형식·연결 자료가 다르면 채택을 막고, 사용자의 별도 선택 후에만 내 제목/본문/위치로 새 기준 초안을 준비한다. 자동 합치기·저장·미확인 요청 우회0, 기존 실패 upload 원본/서버 구버전 보존. 비교 조정 메타는 탭 버퍼이며 FN04의 영구 추적 기능을 대신하지 않는다.
+- 충돌 비교 버튼 부재 RED1→선택 뒤 별도 저장 GREEN1, unknown/다른 주체/제어 충돌과 유한 조회 단위2 추가. 현재 unit56/타입·Web56(JS392.98kB/gzip109.59)·UI06 fixture14 PASS, 최종 실제 클라이언트의 충돌 조정은 후속 exact 게시본에서 시험한다. 검토/확정 요청 자체의 버전 교체·양식/첨부 동시 변경 수동 합치기는 아직 미구현으로 분리한다.
 
 ### 2026-10-16 UI06 고정 버전의 내용 검토 작성·저장 연결 — Main 어울
 

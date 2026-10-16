@@ -29,7 +29,7 @@ export function DocumentReviewEditor({ client, session, buffer, onChange, onReco
     <h2>문서 내용 검토 작성</h2><p>{buffer.title} · 버전 {buffer.ref.version}</p><p className="meta">SHA256 {buffer.ref.contentHash} · 사람의 검토 판단만 기록합니다. 문서 확정·시험 합격·Agent 실행 승인이 아닙니다.</p>
     {buffer.saved ? <p role="status">내용 검토 저장 확인 · 문서 확정 아님</p> : null}
     {buffer.failure ? <p role="alert">{new ApiError(buffer.failure.code, buffer.failure.status).message} · {buffer.failure.code} · 입력과 기존 명령을 보존했습니다.</p> : null}
-    {buffer.pending ? <p>결과 확인 전 입력/대상 버전을 바꾸지 않습니다. 자동 재전송하지 않습니다. 충돌 조정은 아직 연결 전입니다.</p> : null}
+    {buffer.pending ? <p>결과 확인 전 입력/대상 버전을 바꾸지 않습니다. 자동 재전송하지 않습니다. 검토 대상 버전 변경은 아직 연결 전이며 문서 저장 충돌의 비교와 구분합니다.</p> : null}
     <fieldset disabled={locked}><legend>고정 양식 항목별 검토</legend>{buffer.criteria.map((criterion, index) => <section key={criterion.criterionId}>
       <h3>{criterion.title}</h3><ul>{criterion.reviewCriteria.map((text, i) => <li key={i}>{text}</li>)}</ul>
       <label htmlFor={'review-outcome-' + index}>{criterion.title} 판단</label><select id={'review-outcome-' + index} value={buffer.items[index]!.outcome} onChange={event => change({ items: buffer.items.map((item, i) => i === index ? { ...item, outcome: event.target.value as typeof item.outcome } : item) })}>{options}</select>

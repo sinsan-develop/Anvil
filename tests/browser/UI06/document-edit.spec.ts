@@ -59,6 +59,7 @@ test('편집 입력은 화면 이동·업로드 응답 단절에도 보존되고
   expect(uploads).toHaveLength(0);
   await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click();
   await expect(page.getByRole('button', { name: '같은 저장 명령 결과 확인', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '최신 버전과 비교', exact: true })).toHaveCount(0);
   expect(uploads).toHaveLength(1); expect(saves).toHaveLength(0);
   await page.getByRole('button', { name: '같은 저장 명령 결과 확인', exact: true }).click();
   await expect(page.getByText('초안 버전 3 저장 확인', { exact: true })).toBeVisible();
@@ -81,6 +82,35 @@ test('버전 충돌은 본문과 기존 저장 명령을 보존하고 자동 덮
   expect(writes).toHaveLength(1);
   await page.getByRole('button', { name: '같은 저장 명령 결과 확인', exact: true }).click();
   expect(writes).toHaveLength(2); expect(writes[1]).toEqual(writes[0]);
+});
+test('확정된 버전 충돌은 최신 원문과 내 입력을 비교한 뒤 명시 선택으로만 새 기준 초안을 만든다', async ({ page }) => {
+  const state = await documents(page), writes: any[] = [], uploads: any[] = []; let uploaded: any, text = '';
+  const own = '# 내 편집\n보존할 내용', serverBody = '# 다른 사용자의 개정\n서버 원문도 보존';
+  await page.route(`**/api/v1/projects/${project}/files`, route => {
+    const c = JSON.parse(route.request().headers()['x-anvil-command']!); uploads.push(c); text = route.request().postDataBuffer()!.toString('utf8'); uploaded = { artifactId: crypto.randomUUID(), ...c.payload };
+    return route.fulfill({ status: 201, json: receipt(c, { artifactRef: uploaded, status: 'ARTIFACT_READY' }, null, uploaded.artifactId) });
+  });
+  await page.route(`**/api/v1/projects/${project}/commands`, route => {
+    const c = route.request().postDataJSON(); writes.push(c);
+    if (writes.length === 1) {
+      state.apply({ expectedVersion: 2, payload: { title: '다른 사용자의 개정' } }, { artifactId: 'a6f30000-0000-4000-8000-000000000097', bytes: Buffer.byteLength(serverBody), contentHash: createHash('sha256').update(serverBody).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, serverBody);
+      return route.fulfill({ status: 409, json: { code: 'VERSION_CONFLICT' } });
+    }
+    expect(c.expectedVersion).toBe(3); expect(c.commandId).not.toBe(writes[0].commandId); state.apply(c, uploaded, text);
+    return route.fulfill({ json: receipt(c, { ref: { id, version: 4, contentHash: contentHash(canonicalJson({ title: c.payload.title, formRef, stageNodeRef: null, content: c.payload.content })) }, status: 'DRAFT' }, 4, id) });
+  });
+  await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button', { name: '원본 문서 열기', exact: true }).click(); await page.getByRole('button', { name: '이 버전에서 편집', exact: true }).click();
+  await page.getByLabel('문서 본문 편집', { exact: true }).fill(own); await page.getByLabel('문서 변경 이유', { exact: true }).fill('충돌 비교 후 명시 개정'); await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('VERSION_CONFLICT');
+  await page.getByRole('button', { name: '최신 버전과 비교', exact: true }).click();
+  await expect(page.getByLabel('서버 최신 원문', { exact: true })).toHaveText(serverBody); await expect(page.getByLabel('내 미저장 원문', { exact: true })).toHaveText(own);
+  expect(writes).toHaveLength(1); expect(uploads).toHaveLength(1);
+  await expect(page.getByRole('button', { name: '내 입력으로 새 기준 초안 준비', exact: true })).toBeDisabled();
+  await page.getByLabel('양쪽 내용을 비교했고 내 입력을 새 초안으로 저장하겠습니다', { exact: true }).check();
+  await page.getByRole('button', { name: '내 입력으로 새 기준 초안 준비', exact: true }).click();
+  await expect(page.getByLabel('문서 본문 편집', { exact: true })).toHaveValue(own); expect(writes).toHaveLength(1);
+  await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click(); await expect(page.getByText('초안 버전 4 저장 확인', { exact: true })).toBeVisible();
+  expect(writes).toHaveLength(2); await expect(page.getByLabel('문서 원문', { exact: true })).toHaveText(own);
 });
 
 test('저장 중 인증이 만료돼도 입력을 보존하고 다른 로그인 사용자에게 편집 내용을 노출하지 않는다', async ({ page }) => {
