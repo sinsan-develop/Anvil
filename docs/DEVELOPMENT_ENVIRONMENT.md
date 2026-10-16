@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+격리 UI 동일 Web `391a1d6c7ec8d6e5550df48f54421fb946899a6d` exact private/WSL clean actual1 PASS/6753ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL27 재적용0, 실제 사용자/Secret·CA·서비스 변경0. 원문 격리는 실제 보관 성공과 사용 차단이며 사용자용 mixed runtime/실제 browser DB 인수 완료가 아니다.
+
 원문 격리 `891cfd3135e5f0bcb4baab7b17c4615bbbe58e52` exact private/WSL clean에서 새 forward27 `0005_artifact_quarantine` checksum27480ec2d09bc14bf88196e7d45104bfac107f7fa362760246d0b49eaf043ad5 적용·기존26 불변. actual2 PASS/6327ms/skip0·독립 DB25종/시험root 잔여0·지속root 보호/empty. 첫27 후보는 구문 오류로 전체 롤백/열0을 확인했고 원문/기존 적용본을 수정하지 않았다. 실제 사용자·Secret·CA·서비스 변경0이다.
 
 UI10 동일 Web 판단 client `6e9da43c320737479516f142d6d268b1b724db87` exact private/WSL clean actual1 PASS/6638ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. 적용26 재실행0, 실제 사용자/Secret·서비스·Agent 변경0. 기존 Windows backend와 새 Web dist의 mixed runtime이므로 사용자용 exact-SHA 통합/인수 완료로 표시하지 않는다.
