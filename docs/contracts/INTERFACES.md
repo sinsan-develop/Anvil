@@ -377,6 +377,8 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 헌법은 kind CONSTITUTION의 지식 버전으로 저장하고 별도 원문 복제를 만들지 않는다. GET constitution은 현재 프로젝트에 적용된 versionRef·본문/원문·대체 이력·임무별 적용/이해 상태를 반환한다. 그 표시는 ‘Agent가 준수했다’는 무조건 보증이 아니다. 원문/지식 본문은 UI10에서, 작성된 공식 산출물은 UI06에서 열며 서로의 저장소/종류를 혼동하지 않는다.
 
+초기 사용자 대화 경로는 targetRoleRef=null인 프로젝트 공통 대화다. 신규 conversationId=null/targetId=null/expectedVersion=0, 기존은 conversationId=targetId와 expectedVersion=head serverSequence를 요구한다. message의 kind는 현재 인증 HUMAN의 USER_MESSAGE/USER_INSTRUCTION만 수용하고, attachmentRefs/sourceRefs/stageRefs/taskRefs는 아직 빈 배열만 허용한다. replyTo/supersedesInstructionRef는 동일 대화의 실제 CONVERSATION SourceRef(kind/id/contentHash)이고 지시 정정은 앞 USER_INSTRUCTION을 보존한 새 순번이다. `GET conversations/:conversationId/messages/:messageId`는 정확 SourceRef/서버 순번·사람 출처·body·STORED/원문 검사 범위를 반환한다. Agent/도구 발언·역할 연결·실제 전달·자동 실행은 미연결412, 원문 덮기/삭제0이다.
+
 ### 10.4 맥락 준비·전달·6항목 이해 대조
 
 `ContextItem`은 `itemId,category,required,sourceRef,sourceHash,reason,includedState:INCLUDED/MISSING/REDACTED/EXCLUDED,deliveryParts:배열`이다. `ContextBundle`은 `id,version,assignmentRef,baselineRefs,purposeRef,constitutionRef,latestInstructionRefs,currentPositionRef,items,missingRequired,excluded,deliveryPlan,budgetRef,contentHash`다. 필수 목적/헌법/최신 관련 지시/현재 위치·완료/미완료/원문 이유를 1-hop/예산 때문에 조용히 생략하지 않는다.

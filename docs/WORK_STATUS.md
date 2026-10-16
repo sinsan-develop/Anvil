@@ -129,6 +129,9 @@
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
 
+- 입력 부재 RED1→현재 사람 발언/원문/범위·주체 위조 거절 GREEN1. 실제 RED `cc78f6fc264e17a8dc3db78dcf2a93090b2d5e0b` WSL exact/clean1 FAIL/5127ms는 appendConversation route enum 부재로 기대403 대신400이며 신규 저장 성공이 아니다.
+- 후속 후보는 새 forward24 `0005_conversations` checksum `8241d4e6321d8798ecc8e78d83eae1147a3c8ff7110cdd86370cab3b73be98dc`, 불변 발언/현재 사람 출처·현재 권한/별도 정책·head 순번·정확 원문/hash·앞 지시 정정 연결/멱등/GET이다. Windows 단위86 PASS/1400ms·typecheck0·diff0. 실제 적용·정상/실패 확인은 게시 후이며 기존23 SQL 불변이다.
+
 - 기준2b4f73ef clean, SQL23 적용/원문 보호 증거는 직전 기록을 소비한다. 새 발언은 현재 사람의 USER_MESSAGE/USER_INSTRUCTION만 수용하고 Agent/도구 발언·단계책임자 연결을 위장하지 않는다. 저장 상태는 STORED이며 배정/전달/실행은 만들지 않는다. 기존 원문을 덮는 대신 새 순번·별도 정정 참조를 쓴다.
 - Ruling: FN09 역할 binding 전에는 targetRoleRef=null인 프로젝트 공통 대화만 저장하고, 현재 head_sequence와 expectedVersion으로 동시/구발언을 검사한다. 미연결 역할·첨부/일반 출처·단계 scope는412로 남긴다. 잘못된 경우 비용은 역할/참조 소비 확장이고 원문/정정 이력은 보존한다.
 - 신규 forward24 후보의 정확 대화/발언 테이블·현재 주체/제어/정책/receipt를 추가한다. 고유 qa-document-storage UUID/프로젝트·시험root와 합성 정책만 사용하며 대화/발언을 먼저 정확 정리한다. 실제 사용자/Agent/Secret·서비스/운영은 변경하지 않는다.
