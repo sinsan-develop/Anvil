@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN04 화면 검토 선택 후보: 기존 readDocument/고정 AF03 양식/원문 hash·연결 화면 exact version·실제 HUMAN 검토의 감사 순서/항목을 확인하고 최신 ACCEPTED만 명시 선택한다. 선택 전 쓰기0·자동 합격/계획 확정0, 옛 적합 뒤 최신 REWORK는 선택 불가이며 기존 선택 기록은 자동 삭제하지 않는다. 새 helper 단위 RED2→GREEN2, 화면 버튼 부재 browser RED1→작업계획 fixture5 PASS/6.1초·전체 unit113 PASS/1503ms·type/build0(Web84), 기존 경고 유지. 실제 같은 client의 선택 저장은 다음 exact 게시본에서 검증한다. 기존 UUID 합성 사용자/프로젝트/root와 정리 조건만 재사용하며 새 DB/schema/Secret/서비스 변경0. 현재 FN04/Stage B는 부분 구현이다.
+
 - 격리 UI `391a1d6c7ec8d6e5550df48f54421fb946899a6d` local/private·WSL exact/clean actual1 PASS/6753ms/skip0. 같은 Web에서 실제 업로드 저장 뒤 합성 응답 단절→같은 명령 재확인→검증된 격리 ID·후속 saveKnowledge command0·보관 원문 상태를 확인했다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty, SQL27 재적용0. 사용자 browser↔DB/완전 비밀 탐지/기존 전 자료 재분류·백업/스풀 사후 격리·해제는 미검증/미구현이다. FN05/Stage B 완료로 승격하지 않는다.
 - 다음 독립 미완료: FN04의 작업계획 화면 검토 선택을 기존 문서 원문·최신 내용검토 API와 연결한다. 새 SQL/기준 활성화/Agent 호출 없이, 사용자가 연결된 실제 화면 버전의 최신 적합 검토를 명시 선택해 기존 screenReviewRefs로 저장하도록 한다. 이전 계획 원문/저장 관계는 보존하고 옛 합격을 자동 선택하지 않는다. 헌법 적용/임무 맥락 실제 전달의 별도 계약은 아직 미완료다.
 
