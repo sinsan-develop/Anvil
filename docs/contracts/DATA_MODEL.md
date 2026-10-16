@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN04 forward28 후보: `work_plan_confirmations`는 project/plan/version/hash·선택 review_refs·현재 검증 snapshot·사람/client/command를 append-only 보존하며 버전당1건이다. 기존 version_json/DRAFT/hash는 변경하지 않고 work_plans.confirmed_version만 정확 receipt·현재 control/policy/head/원문/최신 검토와 결박해 변경한다. 직접 pointer 변경·확정 삭제는 거절한다. 이후 최신 REWORK/원문 미준비/새 head는 과거 확정을 지우지 않고 현재 유효성을 false로 표시한다. 확정은 기준 활성화/실행이 아니다.
+
 원문 격리 forward27은 artifacts의 기존 QUARANTINED 상태에 nullable inspection_json을 추가한다. 기존 행은 null(미검사)로 보존하며 안전 판정을 소급하지 않는다. 새 업로드는 policyVersion1/method KNOWN_PATTERNS_RAW_BYTES/complete=false/state SUSPECTED 또는 NO_KNOWN_MARKER/reasonCodes를 정확 업로드 receipt와 결박한다. 의심 원문 파일/hash는 불변, 비밀값/일치 구간 저장0·자동 삭제/해제0. 기존 제안의 서버 diff는 기존 정확 guard/READY 경로를 유지한다. 사용자 권한 확대·이전 SQL 변경은 하지 않는다.
 
 FN05 forward26 후보 `0005_knowledge_confirmation`은 기존 content_reviews의 PROJECT/KNOWLEDGE만 현재 명령/정책·제어·exact 버전/hash·HUMAN 작성자로 보호하고, knowledge_events의 CONFIRMED에 review_refs를 추가한다. 버전별 확정1개·최신 ACCEPTED 검토 포함을 강제하며 이전 사건/원문/적용25 SQL은 보존한다. 이후 검토가 보완 필요면 과거 확정은 남고 현재 유효성은 false다. 지식 확정은 헌법 적용 pointer나 Agent 실행 허가가 아니다. 승인/실제 적용은 WORK_STATUS로 구분한다.

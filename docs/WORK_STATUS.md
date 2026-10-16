@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN04 계획 검토/확정 후보: exact `506c7deb399341f4780d702d8cbc35703ebca661` WSL actual RED1/6502ms/skip0(계획 검토가 기존 DOCUMENT 경로로 들어가404). 계획 전용 검토/5기준·별도 confirmWorkPlan 정책·확정 직전 현재 원문/최신 검토/카드 재검사·불변 확정 이력/보호 포인터를 추가했다. unit115 PASS/1481ms·typecheck/diff0, 실제 GREEN 미검증. 승인된 forward28 `0004_work_plan_confirmation` SHA256 8C899DE2C7C5E673A8915FD2EBD83E78B32E0D87D4828B50CD76DD499B03A249 작성, 기존27 SQL 불변·아직 적용0. 허용 DB/합성 UUID/root/수명·정리 범위는 직전 등록 그대로이며 새 지속 자료는 확정 이력 구조뿐이다. 패치 문맥 순서1·줄바꿈 출력1 오류는 모두 atomic 무변경 후 원문/순서로 교정했다. 다음 exact 게시본에서 적용28·정상/미확정/권한/최신 재작업·직접 pointer/삭제 차단을 실제 확인한다. 화면 연결·현재 사용자용 runtime·전체 Stage B 미완료.
+
 - FN04 승인 후속 Main 어울: 계획 전용5기준/정확 버전/누락·옛 적합 우회·중복 선택 unit RED2→GREEN2(218ms), typecheck0. 실제 WSL 시험에 WORK_PLAN 검토 저장·별도 확정 정책403을 추가했으며 아직 실행 전/미검증이다. 사용 자원은 기존 승인된 DB anvil_v3_development·UUID 합성 사용자/프로젝트·/tmp/anvil-v3-document-qa-<UUID>(0700), 시험1회 수명·finally exact 정리이며 기존 지속 자료/서비스 변경0. forward28은 아직 작성/적용0. 읽기 경로 오기2건은 실제 파일 목록으로 정정했고 자료·권한 변경0. 다음은 게시 exact SHA의 예상 RED를 확인한 뒤 저장 구현이다.
 
 - FN04 화면 검토 선택 `ec2692212b5d4ad93d6ab5a27cd28105916840cf` local/private·WSL exact/clean actual1 PASS/7739ms/skip0. 같은 Web이 실제 AF03 원문/양식·미검토/최신 검토를 조회→명시 선택→기존 계획 저장/멱등/재조회·최신 REWORK 뒤 선택 차단·옛 선택 보존을 확인했다. 전체 계획은 DRAFT이고 설계 미확정 문제는 유지한다. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·SQL27 재적용0. 새 API/DB·실제 사용자 권한/서비스 변경0.

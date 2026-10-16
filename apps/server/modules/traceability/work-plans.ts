@@ -9,6 +9,7 @@ import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
 import type {ProjectListCodec} from '../projects/service.ts';
+import{acceptedWorkPlanReviews,workPlanReviewCriteria,workPlanReviews,writeWorkPlanReview}from'./work-plan-reviews.ts';
 
 export class ProjectWorkPlans {
   #documents:ProjectDocuments;#index:ProjectDesignIndex;
@@ -75,6 +76,43 @@ export class ProjectWorkPlans {
       for(const d of analysis.dependencies) await db.query('INSERT INTO anvil.plan_dependencies(project_id,plan_id,plan_version,task_code,dependency_task_code,phase) VALUES($1,$2,$3,$4,$5,$6)',[request.projectId,id,version,d.taskCode,d.dependencyTaskCode,d.phase]);
     }
     return receipt.result;
+  }
+  async #current(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,ref:VersionRef){
+    const row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2 FOR UPDATE OF w',[c.projectId,ref.id,ref.version])).rows[0];
+    if(!row)throw new AuthFailure('NOT_FOUND',404);if(Number(row.head_version)!==ref.version)throw new AuthFailure('VERSION_CONFLICT',409);
+    const view=await this.read(db,actor,c.projectId,ref.id,ref.version);if(canonicalJson(view.ref)!==canonicalJson(ref))throw new AuthFailure('VERSION_CONFLICT',409);return{row,view};
+  }
+  async review(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
+    const ref=c.payload.targetRef;if(!isVersionRef(ref)||c.targetId!==ref.id||c.expectedVersion!==ref.version)throw new AuthFailure('WORK_PLAN_REVIEW_INPUT_INVALID',422);
+    const{row,view}=await this.#current(db,actor,c,ref);return writeWorkPlanReview(db,actor,c,policyRef,view.ref,row.created_by);
+  }
+  async #readiness(db:PoolClient,actor:AuthenticatedIdentity,pid:string,view:Record<string,any>){
+    const sources=await this.#references(db,actor,pid,view),analysis=analyzeWorkPlanCards(view.tasks),issues=[...analysis.issues];
+    const issue=(code:string,location:string,message:string)=>issues.push({code,location,message});
+    for(const[k,document,ref]of[['PLAN_DOCUMENT',sources.document,view.documentRef],['DESIGN',sources.design,view.designRef]]as const){
+      const head=(await db.query('SELECT head_version,confirmed_version FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR SHARE',[pid,ref.id])).rows[0];
+      if(!document.confirmed||Number(head?.head_version)!==ref.version||Number(head?.confirmed_version)!==ref.version||!document.validation.validForConfirmation||document.contentReviews[0]?.ref.outcome!=='ACCEPTED')issue(k+'_NOT_READY',k==='DESIGN'?'designRef':'documentRef','정확한 현재 원문의 형식·내용검토·별도 확정이 필요합니다.');
+    }
+    for(const[key]of sources.screens)if(!sources.reviewed.has(key))issue('SCREEN_REVIEW_MISSING','screenReviewRefs','연결 화면의 최신 적합 검토를 정확히 선택해야 합니다.');
+    const body=await this.#documents.originalText(db,pid,sources.document.content.body);
+    for(const[n,t]of analysis.tasks.entries())if(!body.split(/\r\n|\r|\n/).some(line=>new RegExp('(?<![A-Za-z0-9_-])'+t.taskCode+'(?![A-Za-z0-9_-])').test(line)&&line.includes(t.title)))issue('PLAN_SOURCE_TASK_MISSING',`tasks[${n}]`,'AF04 원문에서 업무 코드와 제목을 확인하지 못했습니다.');
+    if(view.relationalProjection!=='STORED')issue('WORK_PLAN_PROJECTION_NOT_READY','tasks','모호한 관계 투영을 확정할 수 없습니다.');
+    return{validForConfirmation:issues.length===0,issues,sourceRefs:[view.documentRef,view.designRef],screenReviewRefs:view.screenReviewRefs};
+  }
+  async confirm(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
+    const p=c.payload;if(!exactKeys(p,['planRef','reviewRefs'])||!isVersionRef(p.planRef)||c.targetId!==p.planRef.id||c.expectedVersion!==p.planRef.version)throw new AuthFailure('WORK_PLAN_CONFIRMATION_INPUT_INVALID',422);
+    const{row,view}=await this.#current(db,actor,c,p.planRef);if(Number(row.confirmed_version)===view.ref.version)throw new AuthFailure('WORK_PLAN_ALREADY_CONFIRMED',409);
+    const reviewRefs=acceptedWorkPlanReviews(view.ref,p.reviewRefs,await workPlanReviews(db,c.projectId,view.ref,row.created_by)),validation=await this.#readiness(db,actor,c.projectId,view);
+    if(!validation.validForConfirmation)throw new AuthFailure('WORK_PLAN_NOT_READY',422);
+    const id=randomUUID(),receipt=await persistProjectReceipt(db,actor,c,view.ref,{status:'CONFIRMED',confirmationId:id,reviewRefs,validation,activatedAsBaseline:false},policyRef,'EXPLICIT_WORK_PLAN_CONFIRMATION');
+    await db.query('INSERT INTO anvil.work_plan_confirmations(id,project_id,plan_id,version,target_hash,review_refs,validation_json,confirmed_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[id,c.projectId,view.ref.id,view.ref.version,view.ref.contentHash,JSON.stringify(reviewRefs),JSON.stringify(validation),actor.actorId,actor.clientId,receipt.id]);
+    await db.query('UPDATE anvil.work_plans SET confirmed_version=$3,updated_at=now() WHERE project_id=$1 AND id=$2',[c.projectId,view.ref.id,view.ref.version]);return receipt.result;
+  }
+  async decision(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){
+    const view=await this.read(db,actor,pid,id,version),row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2',[pid,id,version])).rows[0],reviews=await workPlanReviews(db,pid,view.ref,row.created_by),validation=await this.#readiness(db,actor,pid,view);
+    const stored=(await db.query("SELECT f.*,c.result_ref,c.actor_id,c.client_id command_client,c.operation FROM anvil.work_plan_confirmations f JOIN anvil.commands c ON c.id=f.command_id AND c.project_id=f.project_id WHERE f.project_id=$1 AND f.plan_id=$2 AND f.version=$3",[pid,id,version])).rows[0];let confirmation=null;
+    if(stored){const d=stored.result_ref?.data;if(stored.operation!=='confirmWorkPlan'||stored.actor_id!==stored.confirmed_by||stored.command_client!==stored.client_id||stored.result_ref?.status!=='APPLIED'||d?.status!=='CONFIRMED'||d.confirmationId!==stored.id||canonicalJson(d.ref)!==canonicalJson(view.ref)||stored.target_hash!==view.ref.contentHash||canonicalJson(d.reviewRefs)!==canonicalJson(stored.review_refs)||canonicalJson(d.validation)!==canonicalJson(stored.validation_json)||d.activatedAsBaseline!==false)throw new AuthFailure('WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',503);confirmation={id:stored.id,planRef:view.ref,reviewRefs:stored.review_refs,validation:stored.validation_json,confirmedBy:{kind:'HUMAN',userId:stored.confirmed_by},confirmedAt:stored.created_at.toISOString()};}
+    return{planRef:view.ref,headVersion:Number(row.head_version),confirmedVersion:row.confirmed_version===null?null:Number(row.confirmed_version),criteria:workPlanReviewCriteria,contentReviews:reviews,confirmation,validation,currentConfirmationValid:!!confirmation&&Number(row.head_version)===version&&Number(row.confirmed_version)===version&&reviews[0]?.ref.outcome==='ACCEPTED'&&validation.validForConfirmation,activatedAsBaseline:false,observedAt:new Date().toISOString()};
   }
   async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){
     await projectMember(db,actor,pid);

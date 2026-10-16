@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN04 계획 결정: `apps/server/modules/traceability/work-plan-reviews.ts`는 계획 전용5기준·exact 검토/영수증·최신 선택을, `work-plans.ts`는 원문·카드의 현재 준비상태 재검사/별도 확정·결정 조회를 소유한다. forward28 `db/migrations/0004_work_plan_confirmation.sql`은 append-only 확정과 confirmed pointer만 허가한다. 이전 초안/원문/검토 계약은 유지하며 실행/기준 활성화는 없다. 실제 결과와 미연결 화면은 WORK_STATUS를 따른다.
+
 FN04 화면 검토 선택: `features/design-trace/work-plan-screen-reviews.ts`가 연결된 화면의 정확 AF03 원문/양식/최신 검토를 읽고 기존 screenReviewRefs의 명시 선택/해제만 준비한다. WorkPlanEditor가 검토 목록·적합/미적합·현재 선택을 표시하며 자동 선택/확정을 만들지 않는다. 새 SQL/API0, 실제 저장은 기존 saveWorkPlanDraft/guard를 소비한다. 최신 검토와 과거 계획의 불변 선택 이력은 구분한다. unit113·계획 fixture5·실제 결과는 WORK_STATUS를 따른다.
 
 격리 UI 후속: mutation-result의 documentFailure/isConfirmedArtifactQuarantine과 `QuarantinedOriginalNotice.tsx`가 검증된 upload receipt의 원문 ID만 버퍼/화면에 보존한다. 지식/대화/정정·문서/가져오기/제안 writer는 후속 쓰기 전에 중단하며, 단절 뒤 검증된 격리 응답만 현재 불확실성을 해소한다. 일반 거절/형식 오류는 원래 불확실성을 지우지 않는다. UI10 fixture11·UI06 직접 영향8·단위111, 실제 DB 여정은 WORK_STATUS를 따른다.
