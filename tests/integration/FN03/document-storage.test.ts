@@ -249,6 +249,8 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     const importRef = await continueDocumentSave(client, await prepareDocumentSave(importWork, session), session, () => {}, () => true);
     const importedDocument = await readDocument(client, project, importRef.id, 1);
     assert.equal(importedDocument.body, bytes.toString('utf8')); assert.equal(importedDocument.document.confirmed, false); assert.deepEqual(importedDocument.document.content.attachments, [importPending.candidate!.originalRef]);
+    const proposalCommand = { ...context, commandId: randomUUID(), operation: 'proposeDocumentChange', targetId: freshRef.id, expectedVersion: freshRef.version, payload: { baseRef: freshRef, proposedContent: { ...freshRead.document.content, body: artifact }, reason: '기존 문서를 바꾸지 않는 별도 수정 제안', sourceRefs: [] } };
+    assert.equal((await docSend(proposalCommand)).statusCode, 403, '초안/가져오기 허가는 수정 제안 허가가 아니다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);
   } finally {
     await app.close(); const owned = [...(userCreated ? [user] : []), ...(outsiderCreated ? [outsider] : [])], db = await admin.connect();

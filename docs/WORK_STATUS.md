@@ -107,6 +107,13 @@
 
 ## 7. 일자별 상세 이력 — 최신순
 
+### 2026-10-16 FN03 수정 제안·서버 차이 비교 연결 착수 — Main 어울
+
+- 직전 goal turn은 실제 code/forward18/검증 증거가 남은 progress다. 시작 `ab085b154efafd3190406eafb33bf241961de8d7` local/private 동일·지정 branch clean, main f976ed5e 불변. 완료된 가져오기/SQL18을 다시 만들지 않고 같은 직접 승인 `call_e9907e2ffeca40bf966c6037d1e9025d`의 수정 제안/선택 계약을 이어간다. 단일 writer Main, inline 계획 실행·TDD, WORK_STATUS를 기존 ledger로 사용한다.
+- Ruling: 승인 INTERFACES §9.4의 proposeDocumentChange(baseRef/proposedContent/reason/sourceRefs)→PENDING proposal·서버 diff artifact→사용자 saveDocumentDraft(proposalRef)의 명시 새 버전을 구현한다. diff는 기존 파일 저장의 원본 바이트/해시·프로젝트 quota를 소비하며 서버가 생성한다. 계획이 최소 diff 알고리즘을 요구하지 않으므로 동일 앞/뒤 줄을 제외한 손실 없는 유한 변경 구간으로 비교한다. 잘못 판단하면 비교 표시만 더 길어질 수 있지만 본문 patch/자동 반영/확정은 하지 않는다. sourceRefs/실제 Agent 연결 전에는 []만 허용한다.
+- 기존 artifacts의 command당1개 제약은 유지한다. 제안 본문은 명시 업로드한 실제 artifact를 참조하고 제안 명령의 서버 diff1개만 새로 생성한다. 새 forward19로 같은 프로젝트 proposal/선택 FK·명령/receipt/허가/감사와 diff 생성 행위를 결박하며 기존18 SQL을 수정하지 않는다. 새로운 사용자 정책/계정·Secret·서비스·실제 Agent·Oracle 변경0이다.
+- QA 자원은 기존 전용 WSL DB `anvil_v3_development`/PG15·Git checkout `/home/daon/deploy/anvil-v3`/보호 app·migrator 설정, 합성 `qa-document-storage-<UUID>` 사용자/프로젝트·`/tmp/anvil-v3-document-qa-<UUID>` uid1000/0700·시험1회 수명·finally 정확 UUID 정리·독립 잔여 확인이다. 지속 artifacts root와 Windows Node/relay/CA는 보존한다.
+
 ### 2026-10-16 FN03 원문 가져오기 후보·선택 연결 착수 — Main 어울
 
 - 시작 `b69c201522fae123b72598380002a1b975feafed` local/private 동일·지정 Stage B tracked clean, main f976ed5e 불변. 이전 확정/충돌 조정·SQL17을 다시 만들지 않는다. 신산님 `call_e9907e2ffeca40bf966c6037d1e9025d` 직접 응답 ‘FN03 가져오기·제안 계약·개발 DB 보완 승인’을 확인했다. 기존 개발 DB의 새 forward로 후보/제안/선택 이력과 현재 권한/감사를 연결할 수 있으며 실제 사용자 정책 부여·원본/기존 SQL 삭제·Secret/서비스/운영 변경은 제외한다.
