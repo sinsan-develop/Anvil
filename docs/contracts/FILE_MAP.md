@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+사람 영향 검토: traceability/impact-review.ts는 모든 대상/공백·명시 근거 형식/이유를 검사한다. design-changes.ts는 근거 문서의 실제 프로젝트/원문 hash·부모/최신 버전과 현재 주체를 확인하고 새 불변 검토 버전을 기록하며 유한 이력을 조회한다. forward30은 부모 composite FK·사람 검토 전용 guard만 추가하고 SQL29를 수정하지 않는다. 형식/실제 참조 확인과 의미 판단 정답·설계 적용을 구분한다.
+
 FN04 변경 초기 저장: traceability/design-impact.ts가 exact 참조/의존 전파·UNKNOWN/공백의 순수 계산을, design-changes.ts가 실제 확정 원문/수정 제안·현재 계획/인덱스 조회·초기 요청/영향 저장·불변 조회를 소유한다. forward29는 새 append-only 두 테이블/정확 guard만 추가한다. UI07·사람 영향 검토 버전·기준 활성화는 아직 미구현이며 이 파일 존재를 전체 기능 완료로 판정하지 않는다.
 
 `WorkPlanLibrary.tsx`는 저장 snapshot(DRAFT)과 별도 검토/확정 이력·현재 유효성을 읽기 전용 조회로 분리한다. 상태 조회는 제어권/쓰기 준비를 요구하지 않으며 GET decision 검증·멤버 권한은 서버에서 확인한다. 검토/확정 작성은 기존 WorkPlanEditor의 별도 버퍼에서만 준비한다.

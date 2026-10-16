@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN04 forward30 후보는 기존 design_change_impacts의 v1/MECHANICAL-only CHECK를 새 명시 조건으로 확장하되 기존 행은 그대로 보존한다. HUMAN_REVIEW v>1은 base_version=v-1/base_hash와 동일 id/project/version/hash composite FK로 부모를 고정하고, 새 command/receipt·현재 정책/control/OWNER·최신 base·HUMAN 작성자·대상/공백 보존·UNAFFECTED의 실제 같은 프로젝트 문서 근거 guard를 요구한다. UPDATE/DELETE 권한은 추가하지 않고 현재 설계·계획 pointer를 수정하지 않는다. 적용 SQL29와 기존 이력은 불변이며 적용 여부는 WORK_STATUS를 따른다.
+
 FN04 forward29 후보: design_changes는 exact before 문서 composite FK·실제 proposal FK·project/제안 유일성·초기 요청 v1 JSON/hash·사람/client/command를 append-only 저장한다. design_change_impacts는 해당 change hash/FK와 초기 MECHANICAL_TRACE v1 snapshot/hash·확인 시점·제한된 입력 계획 ref/공백을 보존한다. app UPDATE/DELETE 권한0·현재 control/policy/receipt와 원문 확정/최신 검토·미선택 proposal를 DB guard에서 결박한다. 기존 설계/계획 pointer·원문/선택·적용28 SQL은 변경하지 않는다. 사람 검토 버전/기준 적용은 후속 미구현이며 이 초기 저장 구조를 실행 허가로 쓰지 않는다.
 
 FN04 forward28 후보: `work_plan_confirmations`는 project/plan/version/hash·선택 review_refs·현재 검증 snapshot·사람/client/command를 append-only 보존하며 버전당1건이다. 기존 version_json/DRAFT/hash는 변경하지 않고 work_plans.confirmed_version만 정확 receipt·현재 control/policy/head/원문/최신 검토와 결박해 변경한다. 직접 pointer 변경·확정 삭제는 거절한다. 이후 최신 REWORK/원문 미준비/새 head는 과거 확정을 지우지 않고 현재 유효성을 false로 표시한다. 확정은 기준 활성화/실행이 아니다.

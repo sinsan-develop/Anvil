@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN04 사람 영향 검토 미구현 actual RED `23d3dfa8ac435499eec7bc6639c6c3ffb7f0edcc` WSL exact/clean 1FAIL/8865ms/skip0: 새 reviewChangeImpact 미등록400(별도 정책403이 필요). 같은 승인 범위 후속에서 exact change/baseImpact와 현재 정책·최신 버전 CAS, 모든 대상/미확인 공백 보존·UNAFFECTED 문서 근거의 실제 프로젝트/hash를 검증해 HUMAN_REVIEW 새 버전만 저장하도록 구현했다. 기존 기계/사람 이력·SQL29 불변·기준 적용0. 조회는 기본10/최대20개 영향 버전과 beforeVersion으로 유한하게 읽고 최신 ref/더 있음/다음 위치를 분리한다. unit122 PASS/1730ms·type/diff0, 실제 GREEN 미검증. 새 forward30 `0004_design_impact_reviews` checksume99067f14f8fa1d5ba775c3c6e4096ecf4a20483651d0e777776a74e4589275c 작성, 현재 미적용이다. 다음 exact 게시본에서 별도 정책·미확인 삭제/근거 없는 영향 없음/구버전·실제 근거/이전 이력 보존·페이지 경계를 검증한다. 기존 UUID QA/수명/정리 계약 그대로이며 실제 사용자/Secret/서비스 변경0.
+
 - 같은 FN04 영향 이력 승인 후속: 사람 검토 입력 검사 unit RED2→GREEN2/243ms(정확 대상 전체/미확인 공백 보존·UNAFFECTED는 문서 근거 필수·미지원 실행 증거412), callback 타입1은 unknown으로 명시했다. 순수 검사이며 근거 문서의 실제 프로젝트/원문 hash는 저장 경로가 별도 확인해야 한다. reviewChangeImpact 명시 정책403 실제 음성 시험을 추가했고 다음 exact 게시본에서 미구현 RED 확인 예정. 아직 forward30 작성/적용0·사람 검토 실제 저장 미구현. 자동 기준 활성화/재개·실제 사용자 권한/Secret/서비스 변경0.
 
 - FN04 초기 변경 요청 `d672450d004af3b9cda723557cb64be271f24eb9` local/private·WSL exact/clean, 승인 forward29 checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 적용/이전28 불변·fixtures7·실제 사용자 생성0. actual FN03+FN11 2 PASS/8830ms(기능8553ms)/skip0: 기존 실제 수정 제안→별도 요청 정책403/허가→불변 요청/기계 영향 저장·같은 명령 replay/새 중복409·조회/교차 사용자404·정확 hash409·기존 설계 head/confirmed v1 유지·직접 삭제/영향 위장 UPDATE42501. 독립 DB28종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty·migrations29 확인. sourceRefs 추가 출처·사람 영향 검토 버전·UI07·기준 적용/재개는 미구현이며 FN04 전체 완료가 아니다. 다음은 같은 저장 승인 범위 안의 사람 영향 검토 새 버전/근거·미확인 보존 검사이며 현재 기준·실제 사용자·서비스·Secret은 변경하지 않는다.
