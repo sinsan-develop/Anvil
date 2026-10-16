@@ -13,7 +13,11 @@ test('지식 초안은 원문 출처·가설·이유를 바꾸지 않고 임의 
 });
 test('미연결 단계·실행 출처와 중복·잘못된 출처를 검증된 지식으로 저장하지 않는다',async()=>{
   const module=await load();assert.ok(module,'지식 입력 검증 구현이 필요하다');
-  for(const input of [{...entry(),scope:{projectId:pid,stageRefs:[{id}],taskRefs:[]}},{...entry(),relatedRefs:[{kind:'EXECUTION',id}]},{...entry(),sourceRefs:[{kind:'USER_INSTRUCTION',id,contentHash:'a'.repeat(64)}]},{...entry(),sourceRefs:[entry().sourceRefs[0],entry().sourceRefs[0]]},{...entry(),contentRef:{...artifact,bytes:-1}}])assert.throws(()=>module.readKnowledgeEntry(input,pid));
+  for(const input of [{...entry(),scope:{projectId:pid,stageRefs:[{id}],taskRefs:[]}},{...entry(),relatedRefs:[{kind:'EXECUTION',id}]},{...entry(),sourceRefs:[entry().sourceRefs[0],entry().sourceRefs[0]]},{...entry(),contentRef:{...artifact,bytes:-1}}])assert.throws(()=>module.readKnowledgeEntry(input,pid));
+});
+test('저장된 대화/사용자 지시를 정확한 ID·hash 출처로 구분하여 보존한다',async()=>{
+  const module=await load();assert.ok(module,'지식 출처 계약이 필요하다');
+  for(const kind of ['CONVERSATION','USER_INSTRUCTION']){const input={...entry(),sourceRefs:[{kind,id,contentHash:'a'.repeat(64)}]};assert.deepEqual(module.readKnowledgeEntry(input,pid),input);}
 });
 test('알려진 비밀 의심 문구는 검색/본문 노출 경로에서 값을 포함하지 않는 거절로 멈춘다',async()=>{
   const module=await load();assert.ok(module&&typeof module.assertKnowledgeTextSafe==='function','비밀 의심 노출 차단이 필요하다');

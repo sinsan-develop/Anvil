@@ -379,6 +379,8 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 초기 사용자 대화 경로는 targetRoleRef=null인 프로젝트 공통 대화다. 신규 conversationId=null/targetId=null/expectedVersion=0, 기존은 conversationId=targetId와 expectedVersion=head serverSequence를 요구한다. message의 kind는 현재 인증 HUMAN의 USER_MESSAGE/USER_INSTRUCTION만 수용하고, attachmentRefs/sourceRefs/stageRefs/taskRefs는 아직 빈 배열만 허용한다. replyTo/supersedesInstructionRef는 동일 대화의 실제 CONVERSATION SourceRef(kind/id/contentHash)이고 지시 정정은 앞 USER_INSTRUCTION을 보존한 새 순번이다. `GET conversations/:conversationId/messages/:messageId`는 정확 SourceRef/서버 순번·사람 출처·body·STORED/원문 검사 범위를 반환한다. Agent/도구 발언·역할 연결·실제 전달·자동 실행은 미연결412, 원문 덮기/삭제0이다.
 
+대화 저장 후속: KnowledgeEntry.sourceRefs의 CONVERSATION/USER_INSTRUCTION(kind/id/contentHash)은 이제 같은 프로젝트 conversation_messages의 실제 불변 snapshot·원문/hash를 대조한다. USER_INSTRUCTION은 실제 저장 kind도 그 값이어야 하며 USER_MESSAGE/Agent를 지시로 승격하지 않는다. 원문 보존용 출처이지 정정된 옛 지시의 현재 임무 적용 승인이나 전달이 아니다. 위 앞선 미연결412 문구는 해당 이전 구현 시점의 이력이다.
+
 ### 10.4 맥락 준비·전달·6항목 이해 대조
 
 `ContextItem`은 `itemId,category,required,sourceRef,sourceHash,reason,includedState:INCLUDED/MISSING/REDACTED/EXCLUDED,deliveryParts:배열`이다. `ContextBundle`은 `id,version,assignmentRef,baselineRefs,purposeRef,constitutionRef,latestInstructionRefs,currentPositionRef,items,missingRequired,excluded,deliveryPlan,budgetRef,contentHash`다. 필수 목적/헌법/최신 관련 지시/현재 위치·완료/미완료/원문 이유를 1-hop/예산 때문에 조용히 생략하지 않는다.

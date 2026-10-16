@@ -494,6 +494,14 @@ test('문서 원문 파일은 명시 정책/현재 제어 아래 바이트 그�
     assert.equal((await docSend({...correction,commandId:randomUUID()})).statusCode,409);
     assert.equal((await docSend({...conversationCommand,commandId:randomUUID(),payload:{...conversationCommand.payload,message:{...message,kind:'AGENT_OUTPUT'}}})).statusCode,412);
     assert.equal((await app.inject({method:'GET',url:messageUrl,headers:{...headers,cookie:'__Host-anvil.sid='+other.token}})).statusCode,404);
+    const originalInstructionEntry={...knowledgeEntry,sourceRefs:[{...messageRef,kind:'USER_INSTRUCTION'}],reason:'원래 지시와 정정 이력을 별도로 확인할 수 있게 보존한다'};
+    const fromInstruction=await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry:originalInstructionEntry}});assert.equal(fromInstruction.statusCode,200,fromInstruction.body);
+    assert.deepEqual((await readKnowledge(client,project,fromInstruction.json().data.ref)).entry.sourceRefs,originalInstructionEntry.sourceRefs);
+    assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry:{...originalInstructionEntry,sourceRefs:[{...messageRef,contentHash:'0'.repeat(64)}]}}})).statusCode,409);
+    const userMessage=await docSend({...correction,commandId:randomUUID(),expectedVersion:2,payload:{...correction.payload,message:{...message,kind:'USER_MESSAGE'}}});assert.equal(userMessage.statusCode,200,userMessage.body);
+    const userMessageRef=userMessage.json().data.sourceRef;
+    assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry:{...knowledgeEntry,sourceRefs:[{...userMessageRef,kind:'USER_INSTRUCTION'}]}}})).statusCode,422,'일반 사용자 발언을 지시로 승격하지 않는다');
+    assert.equal((await docSend({...knowledgeCommand,commandId:randomUUID(),payload:{entry:{...knowledgeEntry,sourceRefs:[{...userMessageRef,id:outsider}]}}})).statusCode,404);
     await assert.rejects(pool.query("UPDATE anvil.conversation_messages SET kind='AGENT_OUTPUT' WHERE project_id=$1",[project]),(e:unknown)=>(e as{code:string}).code==='42501');
     assert.deepEqual(await readFile(path),bytes,'지식 저장이 원문을 바꾸지 않는다');
     assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=$1', [project])).rows[0].n, 0);

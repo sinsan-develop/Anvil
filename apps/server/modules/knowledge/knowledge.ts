@@ -7,6 +7,7 @@ import type {ProjectListCodec} from '../projects/service.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
 import {readKnowledgeEntry,exact,assertKnowledgeTextSafe,type KnowledgeEntry} from './knowledge-entry.ts';
+import{ProjectConversations}from'./conversations.ts';
 
 export class ProjectKnowledge{
   #documents:ProjectDocuments;
@@ -18,11 +19,16 @@ export class ProjectKnowledge{
       if(r.kind==='DOCUMENT_VERSION'){
         const doc=await this.#documents.version(db,actor,pid,r.id,r.version);if(doc.contentHash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
         assertKnowledgeTextSafe(await this.#documents.originalText(db,pid,doc.content.body));
-      }else{
+      }else if(r.kind==='ARTIFACT'){
         const row=(await db.query("SELECT bytes,media_type,content_hash FROM anvil.artifacts WHERE project_id=$1 AND id=$2 AND state='READY'",[pid,r.id])).rows[0];
         if(!row)throw new AuthFailure('NOT_FOUND',404);if(row.content_hash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
         // 이 초기 경로는 실제 UTF-8 원문을 검증할 수 있는 출처만 수용한다.
         assertKnowledgeTextSafe(await this.#documents.originalText(db,pid,{artifactId:r.id,bytes:Number(row.bytes),contentHash:row.content_hash,mediaType:row.media_type}));
+      }else{
+        const row=(await db.query('SELECT conversation_id FROM anvil.conversation_messages WHERE project_id=$1 AND id=$2',[pid,r.id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
+        const message=await new ProjectConversations(this.#documents).readMessage(db,actor,pid,row.conversation_id,r.id);
+        if(message.sourceRef.contentHash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
+        if(r.kind==='USER_INSTRUCTION'&&message.message.kind!=='USER_INSTRUCTION')throw new AuthFailure('KNOWLEDGE_SOURCE_KIND_MISMATCH',422);
       }
     }
     return body;

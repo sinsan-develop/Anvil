@@ -129,6 +129,9 @@
 
 ### 2026-10-16 FN05 프로젝트 사용자 원문 대화 착수 — Main 어울
 
+- 저장 서버 `13a6fad444ba0ec2ad767a1bb6ba1f7acc0b8ad9` private/WSL exact/clean에 새 forward24만 적용·기존23 checksum 불변·fixture7·실제 사용자0. actual FN03확장+FN11 2 PASS/5465ms/skip0: 사람 발언/불변 원문·명시 별도 policy·순번1→2·같은 명령 replay·앞 USER_INSTRUCTION 정정·구발언 보존·stale409·Agent 위조412·타사용자404·app 직접 UPDATE42501. 독립 DB25종 각0·시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. SQL24는 적용본이며 수정하지 않는다.
+- 후속 출처 후보: CONVERSATION/USER_INSTRUCTION 입력412 RED1→실제 같은 프로젝트 저장 발언/원문/hash resolver와 USER_INSTRUCTION 실제 kind 검사 연결. 기존 형식상 미연결 거절 사례는 실제 출처를 새로 지원하므로 대체했고, 위조 ID/hash/일반 발언 지시 승격의 actual 음성은 추가해 기준을 유지한다. 단위87 PASS/1299ms·type/build0(Web73/JS509.49kB/gzip136.11)·diff0. actual 지식의 대화 출처 소비는 아직 게시 전 미검증이다. 원문 대화 목록/작성 화면·지식 정정/제외/확정·전체 격리·Agent 전달은 미완료다.
+
 - 입력 부재 RED1→현재 사람 발언/원문/범위·주체 위조 거절 GREEN1. 실제 RED `cc78f6fc264e17a8dc3db78dcf2a93090b2d5e0b` WSL exact/clean1 FAIL/5127ms는 appendConversation route enum 부재로 기대403 대신400이며 신규 저장 성공이 아니다.
 - 후속 후보는 새 forward24 `0005_conversations` checksum `8241d4e6321d8798ecc8e78d83eae1147a3c8ff7110cdd86370cab3b73be98dc`, 불변 발언/현재 사람 출처·현재 권한/별도 정책·head 순번·정확 원문/hash·앞 지시 정정 연결/멱등/GET이다. Windows 단위86 PASS/1400ms·typecheck0·diff0. 실제 적용·정상/실패 확인은 게시 후이며 기존23 SQL 불변이다.
 
