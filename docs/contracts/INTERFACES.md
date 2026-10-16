@@ -677,6 +677,8 @@ wire 정수는 JavaScript 안전 정수 범위 안의 유한 정수, 자료 크�
 
 ### 15.4 기존 소스의 최초 선언·문서 연결과 드리프트 선택
 
+2026-10-16 직접 승인 후속 후보: sourceDeclaration은 정확4필드(hostLabel/displayName 각1~200자·pathHint 1~4096자·reason 1~20000자)의 비어 있지 않은 유효 Unicode이며 표시/경로 설명의 제어 문자·위장 권한/관측 필드·알려진 비밀 표식은 거절한다. 경로는 입력 그대로 보존하고 해석·파일 접근하지 않는다. create/save/getDraft의 top-level sourceDeclaration={ref,authority:USER_DECLARED,readiness:UNVERIFIED,declaration}은 정확한 초안 ID/버전의 별도 선언 ref다. EMPTY에는 선언이 없어야 하며 EXISTING에는 필수다. 기존 sourceRootRef 선택·실제 관측은 미연결이다. 생성은 해당 초안 선언만 귀속하고 프로젝트 상세의 OWNER에게 같은 선언을 반환한다. VIEWER에게 경로 원문을 노출하지 않는다. sourceMode=EXISTING과 SOURCE_DECLARATION_UNVERIFIED·baselineRef=null을 유지하며 Agent 실행/실제 경로 허가가 아니다. 실제 적용과 검증은 WORK_STATUS로 구분한다.
+
 EXISTING 초안의 `sourceDeclaration`은 `hostLabel,displayName,pathHint,reason`이며 pathHint는 사용자 입력 선언이지 서버 파일 읽기 경로가 아니다. FN01은 create/saveProjectDraft에서 작성자/초안 소유의 source declaration ID·버전과 `authority:USER_DECLARED,readiness:UNVERIFIED`를 발급/재조회한다. sourceRootRef를 고르면 현재 주체가 허가된 실제 root인지 검사하고 참조 선언만 복사하며 다른 프로젝트 root의 권한/관측을 복제하지 않는다. 프로젝트 생성 transaction에서 정확 draft version의 선언을 해당 프로젝트로 귀속한다. 실제 root/host/realpath·링크/쓰기 범위 검증 전에는 실행·VERIFIED 기준선·관측 snapshot을 만들 수 없다. FN06/08 등록 뒤 실제 관측과 사용자 확인을 결박하되 프로젝트/문서 원본 저장 자체는 미확인으로 계속 가능하다.
 
 | FN03 연산 | 필수 입력·결과/실패 경계 |

@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN01 exact ca8f54f03833e6feafe5b8a842226db4b8e00a24 WSL actual RED1/1068ms/skip0: 기존 SOURCE_DECLARATION_NOT_READY412(선언 초안 저장201 필요). 후속 후보는 작성자/client·초안 exact version의 선언 ref를 command receipt와 불변 저장하고 생성 transaction에서 그 선언만 프로젝트 귀속한다. 원문 pathHint는 보호 DB의 기존 소유 초안 input/새 선언 snapshot에서만 보존·소유 범위 API가 조회하며 경로 해석/파일 접근0이다. 단계 변경도 새 선언 버전을 보존하고 이전 버전·현재 USER_DECLARED/UNVERIFIED를 변경하지 않는다. 새 forward38 `0001_source_declarations` checksum5fccb763d32e0809d2cdf72541b30f83eb3ff6c1b0bd524c4ef254cf06d643de 작성·아직 미적용/실제 GREEN/UI02 미검증. unit136 PASS/2546ms·type/diff0, 기존37 SQL 불변·등록 qa-project-create UUID2/초안·프로젝트/finally exact 정리 재사용·실제 사용자/Secret/서비스 변경0.
+
 - FN01 소스 선언 입력 RED2→GREEN2/139ms: 정확4필드·원문 복제·유한 길이·위장 권한/검증·알려진 비밀 거절, 경로 해석/파일 접근0. actual RED용 기존 `tests/integration/FN01/draft-create.test.ts`에 EXISTING 선언 저장/미확인 표지를 추가했다. 시험 자원은 기존 qa-project-create-<UUID> 사용자2·UUID 소유 초안/프로젝트·합성 로그인/현재 client이며 파일/소스 root 생성0, 한 시험 수명·기존 exact finally 정리다. 아직 DB38 작성/적용0·기존 소스 생성 GREEN/UI02는 미검증이다.
 
 - FN01 기존 소스 선언 후속 직접 승인 `call_8c65f3d7a56d42fb9386472b6cfc739b` ‘기존 소스 선언·프로젝트 생성 계약·개발 DB 보완 승인’을 확인했다. Main 어울 단일 writer, 기준 c8b869e0 clean/정본6 동기화에서 이어간다. sourceDeclaration(hostLabel/displayName/pathHint/reason)은 사용자 선언만 저장하고 USER_DECLARED/UNVERIFIED를 유지하며 pathHint 실행/파일 접근·실제 소스 수집·Agent/기준선 VERIFIED·Secret/서비스/운영 변경은 제외한다. 순수 입력 신규 RED2/109ms 뒤 최소 검사부터 연결하며 아직 DB38/생성/UI02 미구현이다. 등록 합성 QA만 사용·한 시험 수명/exact finally 정리하고 실제 사용자 자료/기존36+37 SQL은 보존한다. 최근 잘못 추측한 읽기 경로/PowerShell wildcard는 실제 repository/파일 목록으로 정정했고 ACL·자료 변경0이다.
