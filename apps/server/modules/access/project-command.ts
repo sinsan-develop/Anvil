@@ -80,11 +80,17 @@ export class ProjectPolicyRepository {
   async read(token: string, projectId: string) {
     return this.#access.authenticated(token, null, async (db, actor) => { await projectMember(db, actor, projectId); const policy = await currentPolicy(db, projectId); return { configured: !!policy, policy }; });
   }
-  async command(token: string, csrf: string, request: ProjectCommand) {
+  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef) => Promise<unknown>) {
     try {
       return await this.#access.authenticated(token, csrf, async (db, actor) => {
         await currentProjectController(db, actor, request);
-        if (request.operation !== 'savePermissionPolicy') throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
+        if (request.operation !== 'savePermissionPolicy') {
+          const policy = await authorizeMaterial(db, actor, request);
+          const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;
+          if (request.baselineRefs.length || request.approvalRef !== null) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
+          if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
+          return material(db, actor, policy.ref);
+        }
         if (!actor.reauthUntil || actor.reauthUntil.getTime() <= Date.now()) throw new AuthFailure('REAUTHENTICATION_REQUIRED', 412);
         const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;
         if (request.baselineRefs.length || request.approvalRef !== null) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
