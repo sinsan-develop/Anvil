@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN01 forward38 첫 적용4b3f63bc는 generic migration 실패로 실제 QA 실행0이다. 독립 롤백 전용 probe에서 37개 적용·기존 source_declarations 존재, 동일 SQL42P07을 확인했다(같은 root2회). 원0001 SQL/실제 열·제약·권한·행0을 읽기 전용 대조했으며 기존 준비 테이블을 새로 만들려 한 충돌이 원인이다. Ruling: 기존 선언 identity 테이블/원37 SQL·자료는 보존하고 별도 source_declaration_versions에 append-only snapshot을 연결한다. root identity는 최초 선언 metadata/보호 payload 참조만 보존하고 현재 내용은 exact 버전이 소유한다. 기존 app UPDATE/DELETE는 새38에서 회수·새 INSERT는 현재 owned draft command guard로 보호한다. 미적용38 후보만 보정했으며 checksum246fd20284f998ac8d1c1cbea1570372f7d6a204dad885ea41112eeda5b3c025다. 실제 GREEN은 미검증·3회 같은 root면 추가 재시도 없이 예외 보고한다. 삭제/기존 자료 변환·Secret/서비스 변경0.
+
 - FN01 exact ca8f54f03833e6feafe5b8a842226db4b8e00a24 WSL actual RED1/1068ms/skip0: 기존 SOURCE_DECLARATION_NOT_READY412(선언 초안 저장201 필요). 후속 후보는 작성자/client·초안 exact version의 선언 ref를 command receipt와 불변 저장하고 생성 transaction에서 그 선언만 프로젝트 귀속한다. 원문 pathHint는 보호 DB의 기존 소유 초안 input/새 선언 snapshot에서만 보존·소유 범위 API가 조회하며 경로 해석/파일 접근0이다. 단계 변경도 새 선언 버전을 보존하고 이전 버전·현재 USER_DECLARED/UNVERIFIED를 변경하지 않는다. 새 forward38 `0001_source_declarations` checksum5fccb763d32e0809d2cdf72541b30f83eb3ff6c1b0bd524c4ef254cf06d643de 작성·아직 미적용/실제 GREEN/UI02 미검증. unit136 PASS/2546ms·type/diff0, 기존37 SQL 불변·등록 qa-project-create UUID2/초안·프로젝트/finally exact 정리 재사용·실제 사용자/Secret/서비스 변경0.
 
 - FN01 소스 선언 입력 RED2→GREEN2/139ms: 정확4필드·원문 복제·유한 길이·위장 권한/검증·알려진 비밀 거절, 경로 해석/파일 접근0. actual RED용 기존 `tests/integration/FN01/draft-create.test.ts`에 EXISTING 선언 저장/미확인 표지를 추가했다. 시험 자원은 기존 qa-project-create-<UUID> 사용자2·UUID 소유 초안/프로젝트·합성 로그인/현재 client이며 파일/소스 root 생성0, 한 시험 수명·기존 exact finally 정리다. 아직 DB38 작성/적용0·기존 소스 생성 GREEN/UI02는 미검증이다.
