@@ -110,6 +110,35 @@ test('trust-only 실제 등록은 host 서명/HUMAN exact 확인/새 nonce·일�
   assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.delivery_outbox WHERE project_id=ANY($1::uuid[])',[projects])).rows[0].n,0);
   policy=await policies.command(own.token,own.csrfToken,envelope('savePermissionPolicy',{rules:rules('DENY'),reason:'합성 권한 회수',reviewRefs:[]},policy.data.ref.id,policy.data.ref.version));
   assert.equal((await human({...register,commandId:randomUUID()})).statusCode,403);
+  // 별도 수명/회수 경계. QA의 정확 행만 시간을 주입하며 실제 2분/15분 대기라 주장하지 않는다.
+  policy=await policies.command(own.token,own.csrfToken,envelope('savePermissionPolicy',{rules:rules('AUTO'),reason:'수명/회수의 독립 QA',reviewRefs:[]},policy.data.ref.id,policy.data.ref.version));
+  const issueFor=async(request:any)=>{
+   const made=await human(request);assert.equal(made.statusCode,200);const data=made.json().data,ch=await enrolledFor(data),prefix='/api/v1/connectors/registrations/'+data.registrationRef.id;
+   const proof=await post(prefix+'/proof',{challengeId:ch.id,payload:ch.payload,signature:signature(ch.payload)});assert.equal(proof.statusCode,200);const body=proof.json();
+   const confirmed=await human(envelope('confirmConnectorRegistration',{registrationId:data.registrationRef.id,observedHostFingerprint:fingerprint,scopeDigest:body.scopeDigest,decision:'APPROVE',reason:'수명 확인용 정확 비교'},data.registrationRef.id,body.registrationRef.version));assert.equal(confirmed.statusCode,200);
+   const preflight={...ch.payload,clientNonce:randomBytes(32).toString('base64url'),expiresAt:request.payload.expiresAt},next=await post(prefix+'/exchange',{kind:'CHALLENGE',payload:preflight,signature:signature(preflight)});assert.equal(next.statusCode,200);const fresh=next.json().challenge;
+   const result=await post(prefix+'/exchange',{kind:'ISSUE',challengeId:fresh.id,payload:fresh.payload,signature:signature(fresh.payload)});assert.equal(result.statusCode,200);
+   return{created:data,issued:result.json()};
+  };
+  const life=await issueFor(registerRequest()),lifeHeaders={host:'localhost:3830',authorization:'Bearer '+life.issued.credential},lifeUrl='/api/v1/connectors/'+life.created.connectorRef.id+'/registration-status',lifeStatus=()=>app.inject({method:'GET',url:lifeUrl,headers:lifeHeaders});assert.equal((await lifeStatus()).statusCode,200);
+  const sessionRow=(await admin.query('SELECT id,reauth_until FROM anvil.auth_sessions WHERE token_digest=$1',[createHash('sha256').update(own.token).digest('hex')])).rows[0];
+  await admin.query("UPDATE anvil.auth_sessions SET reauth_until=clock_timestamp()-interval '1 second' WHERE id=$1",[sessionRow.id]);assert.equal((await human(registerRequest())).statusCode,412);assert.equal((await lifeStatus()).statusCode,200,'조회 전용 token은 HUMAN 쓰기 재인증을 대체하지 않는다');await admin.query('UPDATE anvil.auth_sessions SET reauth_until=$2 WHERE id=$1',[sessionRow.id,sessionRow.reauth_until]);
+  await admin.query('UPDATE anvil.auth_sessions SET revoked_at=clock_timestamp() WHERE id=$1',[sessionRow.id]);assert.equal((await lifeStatus()).statusCode,401);await admin.query('UPDATE anvil.auth_sessions SET revoked_at=NULL WHERE id=$1',[sessionRow.id]);
+  await admin.query('UPDATE anvil.users SET credential_generation=credential_generation+1 WHERE id=$1',[users[0]]);assert.equal((await lifeStatus()).statusCode,401);await admin.query('UPDATE anvil.users SET credential_generation=credential_generation-1 WHERE id=$1',[users[0]]);
+  await admin.query('UPDATE anvil.project_control SET generation=2 WHERE project_id=$1',[pid]);assert.equal((await lifeStatus()).statusCode,401);await admin.query('UPDATE anvil.project_control SET generation=1 WHERE project_id=$1',[pid]);
+  const challengeResponse=await human(registerRequest());assert.equal(challengeResponse.statusCode,200);const challengeData=challengeResponse.json().data,ch=await enrolledFor(challengeData);
+  await new Promise(resolve=>setTimeout(resolve,1100));const past=new Date(Date.now()-25).toISOString();
+  await admin.query("UPDATE anvil.connector_registration_challenges SET expires_at=$2::timestamptz,payload_json=jsonb_set(payload_json,'{expiresAt}',to_jsonb($2::text)) WHERE id=$1 AND registration_id=$3",[ch.id,past,challengeData.registrationRef.id]);
+  const expiredPayload={...ch.payload,expiresAt:past},expiredChallenge=await post('/api/v1/connectors/registrations/'+challengeData.registrationRef.id+'/proof',{challengeId:ch.id,payload:expiredPayload,signature:signature(expiredPayload)});assert.equal(expiredChallenge.statusCode,412);assert.equal(expiredChallenge.json().code,'HOST_PROOF_INVALID');
+  assert.equal((await human(envelope('revokeConnector',{connectorRef:challengeData.connectorRef,reason:'만료 challenge QA 회수'},challengeData.connectorRef.id,1))).statusCode,200);
+  await admin.query("UPDATE anvil.connector_credentials SET expires_at=clock_timestamp()-interval '25 milliseconds' WHERE connector_id=$1",[life.created.connectorRef.id]);assert.equal((await lifeStatus()).statusCode,401);
+  assert.equal((await human(envelope('revokeConnector',{connectorRef:life.created.connectorRef,reason:'만료 credential QA 회수'},life.created.connectorRef.id,1))).statusCode,200);
+  // 정책은 짧게 선언한 실제 기한까지 유효하다. credential 역시 그 상한을 넘지 않는다.
+  const shortRules=rules('AUTO'),policyDeadline=new Date(Date.now()+8000).toISOString();shortRules[0]!.expiresAt=policyDeadline;
+  policy=await policies.command(own.token,own.csrfToken,envelope('savePermissionPolicy',{rules:shortRules,reason:'실제 정책기한 경과 QA',reviewRefs:[]},policy.data.ref.id,policy.data.ref.version));
+  const short=registerRequest();short.payload.expiresAt=policyDeadline;const policyLife=await issueFor(short),policyHeaders={host:'localhost:3830',authorization:'Bearer '+policyLife.issued.credential},policyUrl='/api/v1/connectors/'+policyLife.created.connectorRef.id+'/registration-status';assert.ok(Date.parse(policyLife.issued.expiresAt)<=Date.parse(policyDeadline));assert.equal((await app.inject({method:'GET',url:policyUrl,headers:policyHeaders})).statusCode,200);
+  await new Promise(resolve=>setTimeout(resolve,Math.max(0,Date.parse(policyDeadline)-Date.now())+25));assert.equal((await app.inject({method:'GET',url:policyUrl,headers:policyHeaders})).statusCode,401);
+  policy=await policies.command(own.token,own.csrfToken,envelope('savePermissionPolicy',{rules:rules('AUTO'),reason:'만료 후 정확 QA 회수',reviewRefs:[]},policy.data.ref.id,policy.data.ref.version));assert.equal((await human(envelope('revokeConnector',{connectorRef:policyLife.created.connectorRef,reason:'만료 정책 QA 회수'},policyLife.created.connectorRef.id,1))).statusCode,200);
  }finally{
   await app.close();const db=await admin.connect();try{
    await db.query('BEGIN');await db.query('SET CONSTRAINTS ALL DEFERRED');

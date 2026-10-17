@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN06 **d8ec41e609edde5ed13df40a363ee3e30af93b7b** local/private/WSL exact clean 추가 actual **1 PASS/6629.196944ms(기능6335.526922)/FAIL0/SKIP0**이다. 5회 실패 COMMIT/6번째 올바른 서명 거절·짧은 등록기한 실제 경과·URL/body400/타 프로젝트·타인404/옛 제어409·신뢰3연산 각각 독립 HUMAN 요청/결정/소비3건·다른 명령 재사용409·outbox0을 실행했다. 독립45표 각0·migrations43·시험root[]·원문0700/nonlink/실경로 동일/empty, 제품/적용43 checksum 불변이다. 아래 첫 GREEN과 이 보강을 구분하며 새 잠재 위험/새 계약은 없었다.
+- FN06 다음 추가 시험은 같은 소유 QA 내 challenge/credential의 기한만 주입(실제2분/15분 경과라고 주장하지 않음), 현재 session 회수/사용자 자격세대·제어세대 변경 거절/최근 재인증 만료의 HUMAN 쓰기 차단, 실제8초 정책기한과 credential 상한을 검수한다. 주입한 QA 상태는 복원/정확 회수하며 finally 소유 행만 삭제한다. 타입/diff0이나 아직 추가 actual은 미실행이다. 공유 승인 guard의 기존 후보/문서 업로드·정책 인접 회귀도 같은 exact 게시본에서 시행한다.
+
 - FN06 **8a7cb98580d09071aaa0f3701f25fa48ae0afa71** local/private/WSL exact clean에서 이전42 checksum/신뢰4표 부재를 확인한 새43 BEGIN/ROLLBACK 검수는 PASS(중간4표/rollback뒤0)였다. 동일43 checksum3027636015d284462a4f974ad792175851ef28f05c73117fd4a813853e329020을 정식 개발 DB에 적용 exit0·fixtures7·실제 사용자0, 이전42 불변이다. 첫 실제 신뢰 등록 **1 PASS/2266.835288ms(기능2032.559011)/FAIL0/SKIP0**: 서명/HUMAN exact 비교·새 nonce·동시 ISSUE2중1/다른409·원 status만/기존API403·code/token 평문 비영속·명시 회수·정책DENY·outbox0을 확인했다. 독립 DB45종 각0·migrations43·시험root[]·보호 원문0700/nonlink/실경로 동일/empty다. 기존6377 RED는 소급 변경하지 않는다. 이 결과는 HTTP 주입/PG 부분이고 Windows→WSL HTTPS/실제 Agent/영구 PC/전체 업무 완료가 아니다.
 - FN06 추가 실제 검수 작성: 새43/제품 코드는 그대로 두고 같은 QA 수명의 시도5회 COMMIT/6번째 올바른 증명 거절·짧은 선언 등록기한 실제 경과·교차 URL/프로젝트/현재 제어·HUMAN3연산 각각 별도 승인/결정·정확 ref 소비3건과 다른 명령 재사용 거절을 보강했다. URL/body 불일치는 기존 route의400, 실제 타 프로젝트는404로 구별했다. 현재 이 보강은 type/diff만 확인했고 다음 exact 게시본에서 실행한다. 실제 만료 credential/challenge 주입·정책/세션 회수·인접 기존 소비 회귀는 후속이며 첫 GREEN에 포함하지 않는다.
 
