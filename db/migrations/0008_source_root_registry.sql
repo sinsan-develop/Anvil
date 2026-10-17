@@ -55,6 +55,10 @@ DECLARE cmd anvil.commands%ROWTYPE;data jsonb;snapshot jsonb;decl jsonb;rid uuid
 BEGIN
  IF TG_OP='DELETE' OR TG_TABLE_NAME='source_root_versions' AND TG_OP='UPDATE' THEN RAISE EXCEPTION 'SOURCE_ROOT_IMMUTABLE' USING ERRCODE='42501';END IF;
  SELECT * INTO cmd FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true);data=cmd.result_ref->'data';snapshot=data->'snapshot';decl=snapshot->'declaration';
+ IF jsonb_typeof(snapshot) IS DISTINCT FROM 'object' OR jsonb_typeof(decl) IS DISTINCT FROM 'object'
+  OR jsonb_typeof(snapshot->'reason') IS DISTINCT FROM 'string'
+  OR snapshot IS DISTINCT FROM jsonb_build_object('declaration',decl,'status',snapshot->>'status','authority','USER_DECLARED','readiness','UNVERIFIED','reason',snapshot->>'reason')
+  THEN RAISE EXCEPTION 'SOURCE_ROOT_EXACT_SNAPSHOT_REQUIRED' USING ERRCODE='42501';END IF;
  IF TG_TABLE_NAME='source_roots' THEN
   rid=NEW.id;v=NEW.head_version;
   IF TG_OP='INSERT' THEN

@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **A-2R 원 Important1 실제 RED→Main 최소보완**:10019809의 새 빈 PG는 기존44+새0008 구문 적용/COMMIT을 통과한 뒤 QA_ACTUAL_API_PG에서 SQL_SNAPSHOT_EXTRA_KEY_HTTP_200으로 실패했다. 정상 로그인/재인증/AUTO·명령/감사를 유지하고 SQL receipt snapshot에 추가키만 넣은 음성에서503 대신200을 실제 관측하여 exact-snapshot 누락을 재현했다. suffix PERMISSION_POLICY_UNCONFIGURED는 앞선 의도된 무정책 거절의 진단잔상이며 이 요청이 무정책이었다는 뜻이 아니다. 원containerf378cf16…b794/network9ccd5fe2…b87c는 finally정리했고 정식DB0이다. 새0008에 객체·reason string·정확5필드 재구성 JSONB 동일성 검사만 추가했다. 직접·인접unit23PASS4751.2165ms·타입/diff0, 신규SQL SHA D9D27D2C92E31E6C5E50BF18762786D2CAD2B47A28905BC8F0F15FA2CEC72403. 실제 수정후PG GREEN은 다음 새 빈 exact 후보에서 확인하며 아직 완료로 표시하지 않는다.
+
 - **A-2R SQL 준비 원인 확정**:1c0ebf04의 새 빈 QA는 새0008 적용에서 SQLSTATE42601/위치9956을 남겼다. 기존44 SQL은 통과했고 새 guard의 IF 안 CASE 표현식(철회 상태 비교)에 괄호가 없어 PL/pgSQL 구문이 모호한 지점과 일치한다. 이 신규SQL 한 표현식만 괄호로 보정한다. 실제 schema RED가 선행했고 아직 수정후 실제 GREEN/원 Important의 음성RED는 미실행이다. 원container5ff5f8b2…b3a2/networked9ff193…fd17은 finally정리 완료, 정식DB0·서비스0이며 후속 새 빈 PG에서 보정효과만 대조한다.
 
 - **A-2R 격리 QA 두 번째 준비결과**:84ddebd0 exact 새 빈 PG는 tmpfs gate를 통과했으나 QA_SCHEMA에서 FAIL(QA_STEP_FAILED), SQL 음성/제품경로는 미도달이다. finally 소유 container8ab245e7…0e41/network08586090…f0/instancea0952e23…d0e8을 제거했고 별도5547/이름 조회 잔여0을 확인했다. 원본 SQL/detail/비밀을 출력하지 않고 실패 migration ID·SQLSTATE/숫자위치만 남기는 진단을 추가, 신규1RED→unit3GREEN199.3816ms·타입0이다. 이번은 SQL 준비오류 최초1회이며 정상기능 PASS로 소급하지 않는다. 다음은 이 진단으로 정확한 SQL 원인만 확인·보정하며 정식적용0 유지.
