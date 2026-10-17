@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI11 최종 같은client actual: 4508e15d71b1cbaf62ad083229550818097d48b7 local/private/WSL exact·clean에서1 PASS/8095.240855ms(기능7823.974251)/SKIP0, 직후 독립 QA45표0·44 checksum 전부 일치·제외5표 부재·PG15.18/비관리자2·시험root[]/원문0700·empty다. 합성 브라우저27 PASS와 실제 Fastify 주입/정식 PG는 서로 다른 증거이며 실제 사용자 browser↔DB·Windows↔WSL HTTPS·영구 PC/Agent·배포 인수는 아니다. DB/서비스/키 변경0이다.
+
 UI11 제한 검수 보완(2026-10-17): 2f94636c exact의 같은 Web 함수/API·정식 PG actual1 PASS/9645.392576ms·QA45표0·44 checksum 일치, 독립 읽기 C0/I0/M0이다. Main은 별도 지연 POST 음성 RED로 새 입력 덮어쓰기 Important1을 발견해 주체/원 명령/승인 대기 CAS로 보완했다. 보완 후 unit180/타입·build100/신뢰13+인접14 합성 browser27 PASS, 기존 chunk 경고 유지다. 첫 browser 재검사는 새 build 누락으로 이전 산출물 FAIL1→정상 build 뒤 음성 GREEN이며 성공으로 소급하지 않는다. 서비스·DB schema/권한·키·실제 PC/Agent 변경0, 실제 사용자 browser↔DB/Windows↔WSL HTTPS·전체 연결은 여전히 미완료다. 이 보완의 exact 게시본 actual/정리 결과는 WORK_STATUS에 후속 기록한다.
 
 UI11 HUMAN 신뢰관리 부분: 기존 정식 PG/44를 변경하지 않고 GET2·현재상태/지문·기존3명령·각 별도승인(UI08)을 같은 Web 함수/API·PG에서 b4af490b actual1 PASS/5927.605ms·QA45표0으로 확인했다. 최종 로컬 unit179/타입·Web100 build(JS675.38kB/gzip173.35,CSS9.63kB/gzip2.60)/새 신뢰 합성browser12/직접인접14 PASS·기존chunk경고다. 1920 합성 화면은 code/token 없는 상태로만 보존/육안 확인했다. 기존 localhost3830의 backend/Web 혼재·만료bootstrap/relay·실사용자/Secret·CA·서비스는 교체/수정하지 않았고 실제 사용자browser↔DB/Windows↔WSL HTTPS/영구PC/Agent/Oracle 인수는 미완료다. 마지막 exact actual 보강·독립 부분검수는 WORK_STATUS에서 구분한다.
