@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI11 추가 actual **bfe492346f3316c1cd1a6e1071de8a37422468e9**는 현재 register/revoke만 허용된 새 proof에서 confirmation.allowed=true로 표시해1 FAIL/2715.382242ms(기능2416.759857)/SKIP0이었다. 실제 확인 쓰기의403 차단은 기존 서버에 남아 있으나 화면 가능 상태가 잘못되는 오류로 분류했다. 원인: read 공통권한의 trust 합집합과 개별 confirm 권한을 분리하지 않았다. 현재 유효 규칙에 confirmConnectorRegistration이 없으면 CONFIRMATION_POLICY_DENIED로 확인 불가를 반환하는 한 조건만 보완했다. 새권한/정책/SQL/write계약 확대0. 동일 추가 actual은 다음 exact 게시본에서 다시 확인하며 아직 GREEN으로 올리지 않는다.
+
 - UI11 HUMAN GET 첫 GREEN **8b979e3fbfe532cd07b68a877f5af032b8c921e8** exact private/WSL clean actual1 PASS/2292.724598ms(기능1962.986107)/SKIP0·독립45표0/44 checksum 일치/범위밖5표 부재/원문root empty. CREATED snapshot과 proof 이후 현재ref/observed지문·명시확인/ISSUED/회수 재조회, GET domain footprint 불변·원code/token/금지필드 미노출·다른client404/인증401·한정query/page/cursor변조·옛제어세대·제어회수403·scope변조503을 확인했다. 남은 타인/실제 교차project·서명된 만료cursor·정책변경/DENY/실제1100ms 기한과 확인허가 부재를 같은 시험에 추가한다. Ruling: 읽기 허가만 있고 confirmConnectorRegistration 정책이 없는 경우 proof/basis가 현재여도 확인 가능으로 표시하지 않아야 한다. 이를 새 음성RED로 먼저 확인한다. QA는 같은 prefix 사용자2/주프로젝트1·즉시 정리 교차project1·등록3의 합성 소유만이고 새schema/키보관/서비스0. 첫 UI08 경로 추정 읽기는 없음 오류였고 실제 파일 목록의 features/decisions/api.ts·ApprovalsPage.tsx로 바로잡았다. 미실행을 PASS로 올리지 않는다.
 
 - UI11 첫 actual **71c6131a456a9e2959a686a57d8b73601de1a778** private/WSL exact clean은 GET 미구현404≠200으로1 FAIL/650.913585ms(기능374.194415)/SKIP0이었다. finally 뒤 독립45표0/적용44 checksum 전부 일치·제외5표 부재·시험/원문root empty를 확인했다. 이후 로컬 HUMAN read module/GET2를 연결했고 순수query/projection2 PASS/264.9489ms·type/diff0이나 실제 GREEN은 아직 미실행이다. 현재상태는 원scope/생성 receipt·DB관계/hash 검수 후 최소projection만 제공하고 proof/기한/회수·현재정책/제어 불가사유를 분리한다. 기존 인증 authenticated는 세션 확인/lock만 하며 도메인 쓰기는 하지 않는 것을 실제 코드로 대조했다. 새SQL/기존write/Windows/서비스 변경0이다.
