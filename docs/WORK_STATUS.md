@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **A-2R 격리 QA 두 번째 준비결과**:84ddebd0 exact 새 빈 PG는 tmpfs gate를 통과했으나 QA_SCHEMA에서 FAIL(QA_STEP_FAILED), SQL 음성/제품경로는 미도달이다. finally 소유 container8ab245e7…0e41/network08586090…f0/instancea0952e23…d0e8을 제거했고 별도5547/이름 조회 잔여0을 확인했다. 원본 SQL/detail/비밀을 출력하지 않고 실패 migration ID·SQLSTATE/숫자위치만 남기는 진단을 추가, 신규1RED→unit3GREEN199.3816ms·타입0이다. 이번은 SQL 준비오류 최초1회이며 정상기능 PASS로 소급하지 않는다. 다음은 이 진단으로 정확한 SQL 원인만 확인·보정하며 정식적용0 유지.
+
 - **A-2R 격리 QA 선행오류1·정리복구**: checkpoint39d78882921520571738b0ee257bb406fbb5abcf는 private/WSL exact·clean, main불변이었다. 실제 --run은 CREATE_ISOLATED_PG에서 실패했고 SQL/API시험은 미도달이다. Docker --tmpfs가 Mounts=[]/HostConfig.Tmpfs에 기록되는데 runner가 Mounts[0]만 요구한 원인이다. cleanup도 같은 오판정으로 실패했다. 소유 container dd2df94a…555b/network80f1eb01…8abb·instanceef0e4725…67e의 fullID/labels/image·실제 /proc/mounts tmpfs·port를 대조해 해당2개만 정확폐기, 별도 조회 container/network/5547 잔여0이다. 기존DB/서비스 변경0. 원 Minor1은 이번 실제 실패의 최초원인 소실로 복구진단에 영향을 주어 Important로 재분류했다. 실측 tmpfs·변조음성과 본체/정리 독립보존 unit2RED→GREEN2/132.0207ms·타입/diff0, runner metadata/actualmount 확인과 최초failure·cleanupFailure 분리를 보완했다. 원SQL Important1은 아직 미해결이며 다음 새 빈 PG에서 음성RED 재현만 진행한다. PMO에는 예외사실만 공유했고 다음배정을 기다리지 않는다.
 
 - **A-2R 독립 검수 C0/I1/M1 및 Main 후속**: SQL guard가 snapshot 전체의 정확 키·reason JSON 타입을 검사하지 않는 Important1을 코드로 대조했다. 정상HTTP 우회 확인은 아니며 현재 명령/권한이 갖춰진 SQL 경계의 보장 차이다. 실제 명령 INSERT의 receipt snapshot만 변조하는 격리PG 음성2건을 추가했고 아직 실제 실행0이다. 먼저 미검증 후보를 안전한 Git checkpoint로 보존·private/WSL exact로 가져와 새 빈 격리PG에서 RED 재현→새 forward commit의 최소 guard 보완→새 빈 PG GREEN을 수행한다. 미해결 후보를 정식DB에 적용하지 않는다. QA 정리 실패가 본체 failure를 덮는 Minor1은 이번 fix pass에서 이월하며 실제 정리 실패 시 원 도구 출력/단계·별도 관측을 함께 보존한다. 전체검사 재실행·PMO 다음업무 배정대기0. 신규 음성 추가 뒤 최초 tsc --noEmit은 프로젝트 지정 누락으로 도움말만 출력했으므로 타입PASS가 아니며 기존 package의 -p tsconfig.base.json으로 확인한다.

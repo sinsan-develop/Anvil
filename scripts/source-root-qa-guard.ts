@@ -8,3 +8,7 @@ export function assertSourceRootQaTmpfs(item:any,imageId:string,actualMounts:str
 export function sourceRootQaOutcome(primaryFailure:string|null,cleanupFailure:string|null){
  return{status:primaryFailure||cleanupFailure?'FAIL':'PASS',failure:primaryFailure,cleanupFailure,cleanup:cleanupFailure?'UNVERIFIED':'OWN_CONTAINER_NETWORK_ABSENT'};
 }
+export function sourceRootQaError(error:unknown){
+ const e=error as {message?:unknown;code?:unknown;position?:unknown}|null;
+ return{failure:typeof e?.message==='string'&&/^[A-Z][A-Z0-9_]{0,95}$/.test(e.message)?e.message:'QA_STEP_FAILED',pgCode:typeof e?.code==='string'&&/^[0-9A-Z]{5}$/.test(e.code)?e.code:null,sqlPosition:typeof e?.position==='string'&&/^\d+$/.test(e.position)?e.position:null};
+}
