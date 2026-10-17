@@ -2,6 +2,8 @@
 
 ## A-3 최신 후보 책임 — 실제 미연동
 
+2026-10-18 한정 actual: exact86bae1e7의 새 빈 internal PG/psql은46schema COMMIT·별도appREADONLY full46checksum/동일26벡터/새4표0행 PASS·exact정리/독립잔여0이다(A3_PSQL_SQL_QA_01_RESULT). 제품의 실제API/credential·보고원자성/rollback·Nodepg/served/TLS/OS·전체기능연동은 여전히 미완료이며 아래 과거미실행문구를 이한정결과나전체기능PASS로혼용하지않는다.
+
 SQL 후속 준비: qa-source-read-psql.ts/source-read-psql-guard.ts/source-read-psql-batches.ts는 새 internal network·host publish0·컨테이너 내부 TCP psql에서 고정46 SQL과 공통26벡터를 검증하는 후보만 담당한다. 기존 source-read-sql-vectors.ts의 입력·기대값26개는 Node/psql이 공유하며 원커밋과 메모리 EXACT 대조했다. 새 실제 실행은 별도 결정 전0이다. 원 qa-source-read-sql.ts actual FAIL/정리0·단1회소진은 FN08/A3_SQL_QA_01_RESULT.md에 보존, 새 준비 검사를 원FAIL/실PG/전체기능 PASS로 승격하지 않는다.
 
 N2의 source-read-protocol.ts·source-read-routes.ts는 별도 교환/permit/보고·HUMAN 조회만, source-read-records.ts는 검증된 nullable snapshotRef와 보관 OWNER/VIEWER projection을 담당한다. SQL0008_source_read_observation은 신규4표/guard/고정 Unicode17 매핑 초안이며 source-read-migration.ts는 독립 격리 준비 helper로만 분리했다. 기존45 SQL/정식 runner 변경0이다. tests/integration/FN08/source-read-sql-vectors.ts는 준비됐으나 실제PG 미실행·전체 API/COMMIT/실패 rollback 시험 경로는 미완료다. N3 SourceReadGrantsPanel.tsx/source-read-api.ts·SourceRootsPanel/App은 사용자/client/project별 보존 입력과 명시 요청/회수·보관 조회를 연결한다. 작성자 로컬/합성 browser와 한정 독립 읽기 검수만 확인됐으며 Minor hostLabel 표시/실PG·served·native·OS·실source·Agent는 남아 있다. 아래 '예정/아직 없음' 문구는 이전 단계 기록이고 최신 상태는 이 문단·WORK_STATUS를 따른다.
