@@ -1,5 +1,13 @@
 # P02 데이터 관계·보존 계약 초안
 
+## A-2R 원본·버전 관계 — forward 0008 후보
+- 신규 source_roots: (project_id,id)PK/head_version/created_by/client_id/created_at, project·멤버·사용자client FK, head→정확version deferred FK. 신규 source_root_versions: (project_id,root_id,version)PK/content_hash/declaration_json/status/authority/readiness/reason/actor/client/command/nullableconnector/time, 같은project root/command/connector FK·user/client FK·project+command 고유.
+- 기존44 SQL/자료는 수정/이동/재분류하지 않음. 불변version UPDATE/DELETE 및root DELETE0; head는 current command/auth/session/policy/control/audit·정확result와 이전ref 아래1 증가만. 선택connector는 같은project 현재TRUSTED 등록 확인이며 파일 권한이 아니다.
+- 서버와 SQL은 고정키 canonical snapshot SHA256을 대조한다. root 철회는 이전decl을 새REVOKED버전에 복사하며 과거ref/원문/actor 이력을 삭제하지 않는다. 보호참조는 자신의id/version에만 결박된다.
+- 정식 적용은 SOURCE_ROOT_REGISTRY_ONLY로 기존44checksum 대조 후 새SQL1/새checksum1행만, seed0/실사용자·QA행0·신규2표0행. 기존logical schema/행수·서버내 자료fingerprint를 전후 확인한다. 승인새FK의 엔진 내부RI trigger는 참조 추가의 필연 효과이며 기존사용자trigger/열/허가변경과 구분한다.
+- QA는 별도 새PG15의 실제COMMIT 후 전체소유 tmpfs container/network 폐기, 불변행의 관리자DELETE/trigger해제/외부rollback 은폐0. 실제적용/PASS는 WORK_STATUS 증거 전까지 주장하지 않는다.
+
+
 ## FN08-CONTRACT-A1의 로컬 비권위 수신 기록
 
 2026-10-17 직접 승인 A-1은 정식DB table/SQL 추가·수정·적용0이다. 기존44 migration·delivery_outbox/사용자·자료/권한은 그대로다. §9의 source_roots/source_snapshots/executions/receipts/observations/ACK/writer_claims는 후속 A-2의 데이터 모델이며 이번 구현 테이블이라고 표시하지 않는다. 새 mapping/baseline/명령의 table 분해·정확 FK/migration 파일명은 미정이다.

@@ -1,5 +1,13 @@
 # P02 기술 선택 — TD-01·TD-02·TD-03 승인·상세 계약
 
+## A-2R 한정 실행·미확인 경계
+- PMO11:57:30Z의 정확 권장안 결정과 Main 선정 실행계획 A2R_SOURCE_REGISTRY.md를 따른다. caller의local SHA/환경binding은 실행 승인 원문 자체가 아니며 플랫폼 직접승인 요구/거절을 우회하지 않는다.
+- source root는 USER_DECLARED/UNVERIFIED 위치선언으로만 취급한다. 현재root 실제읽기/쓰기·관측/baseline/grant·Agent/비용/외부전송/OS helper·제품service/Oracle/main은 별도 경계다.
+- 정식data보존을 위해 기존 migrate-development의 noarg catalog/fixture 동작과 고정 schema-only 모드를 분리한다. 임의SQL경로/과거SQL개정/재시드0. commit전 실패ROLLBACK, commit후 문제는 신규자료보존·기능닫기/forward보정; 자동DROP/reset0.
+- QA-only 비밀은 메모리·자식환경/SQL stdin 범위이며 원문로그/Git0, 기존Credential/CA/권한파일 재사용/변경0. 별도 PG15 container tmpfs 한곳만, 실제HTTP socket 대신 Fastify.inject와 실제PG 각 transaction COMMIT으로 한정한다. actualSocketHttp/servedBrowser는 UNVERIFIED로 유지.
+- SQL hash 상호운용(Unicode/따옴표/backslash/CRLF), 실제rollback/멱등/CAS·구권한/VIEWER·철회이력·정확QA정리/정식oldfingerprint는 해당실행 전까지 미검증이다. unit/build만으로 소급PASS하지 않는다.
+
+
 ## FN08-CONTRACT-A1 한정 결정 — 2026-10-17
 
 신산님 직접 승인 A-1은 참조 전용 SourceScope/dispatch envelope·receipt와 비권위 수신함 코드·격리 합성시험이다. 기존1GiB spool/2시간 자동 범위 상한 안에서 첫 수신함은 명시 maxBytes≤1GiB·maxEntries≤1024·record≤4096bytes, scope 전체 targets≤200·경로UTF-8≤1024bytes로 유한화한다. 상한을 높이거나 실제 Agent를 실행하는 권한이 아니다. 새로운 의존성/설치/서비스·실제 source/정식DB/ACL/키/계정/CS1504 nativehelper 변경0이다.

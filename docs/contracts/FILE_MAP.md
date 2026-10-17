@@ -1,5 +1,13 @@
 # P02 A안 파일 책임·검증 지도
 
+## A-2R 소스 위치 등록부 진입점
+- 서버: connections/source-root-input.ts(정확입력/snapshot), project-source-roots.ts(3명령·원본/메타조회), projects/routes.ts·access/project-command.ts의새op 연결. 기존승인소비 whitelist는 늘리지 않는다.
+- DB: db/migrations/0008_source_root_registry.sql의새2표/해시/가드만. scripts/source-root-migration.ts 고정44manifest+새1; migrate-development.ts SOURCE_ROOT_REGISTRY_ONLY 모드, apply-source-root-development.ts의 --plan/--apply-schema-only는exactcommit/기한/hash·보호migrator 경로와old/newbaseline 대조다.
+- QA: qa-source-root-registry.ts --plan/--run, integration/FN08/source-root-registry.ts는새전용PG actualCOMMIT/GET·거절/rollback/immutable guards. exact소유container/net/tmpfs만폐기;기존데이터행삭제/guard해제0.
+- UI: connections/source-roots-api.ts·SourceRootsPanel.tsx·App.tsx의 주체/client/project별buffer. 정확명령/hash를확인하고결과불명·화면이동후동일명령재확인, 조회와명시개정/철회분리·자동실행0.
+- 직접unit tests/unit/FN08/source-root-input.test.ts/source-root-routes.test.ts/source-root-migration.test.ts/source-roots-web.test.ts, 후보browser tests/browser/UI11/source-roots.spec.ts(ANVIL_A2R_WEB_DIST 필수). 후보/격리PG/정식schema/servedbrowser/Agent 검증을분리하며 결과/오류·자원정리는WORK_STATUS에기록한다.
+
+
 ## FN08-CONTRACT-A1 정확 코드·검증 진입점
 
 - 계약: contracts/runtime/validation-v1.ts(공통 strict shape/순수 ref), source-scope-v1.ts(유한 상대경로 문법), dispatch-envelope-v1.ts(3연산·ref·hash·시각), dispatch-receipt-v1.ts(정확 key/hash·고정 실행false). 기존 common VersionRef/canonical 규칙을 유지한다.

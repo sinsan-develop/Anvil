@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## A-2R 소스 등록부 계약 — 위치 선언만
+- 새 project command saveSourceRoot/reviseSourceRoot/revokeSourceRoot. 등록/개정 payload={declaration,baseRef,reason}, 철회={baseRef,reason}; 등록baseRef=null/target=null/expected0, 나머지는 정확 ref와target/expected 일치. declaration은 hostLabel/displayName/pathHint/reason/connectorId(null|UUID)이며 원문 경로의 실행/정규화0.
+- 현재 로그인·OWNER/client/control세대·최근재인증·명시AUTO 정책·DENY우선·기한·동일명령/hash·CAS/감사를 검사한다. REQUIRE_APPROVAL은 소스op 소비 미연결412, 기존 승인을 몰래AUTO로 바꾸거나 승인참조를 수용하지 않는다. 실제사용자 정책 자동부여0.
+- GET /api/v1/projects/:pid/source-roots?limit/cursor, /source-roots/:id/versions/:n. 현재멤버십을 매번 확인; OWNER만 snapshot/기록·보호참조, VIEWER는 ref/displayName/status/authority/readiness/headVersion/rawAllowed=false/executionAuthorized=false만. 조회기한/권한 실패는 원문으로 대체하지 않음.
+- snapshot={declaration,status:DECLARED|REVOKED,authority:USER_DECLARED,readiness:UNVERIFIED,reason}, ref.contentHash는 canonical SHA256. 응답 receipt는 status=SOURCE_ROOT_VERSION_STORED·snapshot/previousRef/protectedRef=db-source-root-version:<id>:<version>을 결박. 철회는 새 버전으로 이전선언 보존, 철회 뒤 기존root 개정 거절.
+- 등록/조회는 파일 grant·신뢰/관측·검증baseline·Agent 실행/전송·기존환경 자동확장 아님. 실제DB/served 검증 여부는 WORK_STATUS exact증거를 따른다.
+
+
 ## FN08-CONTRACT-A1 v1 — 2026-10-17 직접 승인 범위
 
 신산님 직접 승인(11:20:10Z, PMO 전달)은 아래 계약·코드·격리 합성 검증만이다. 정식DB/실source/Agent·OShelper/서비스 변경은 제외한다. 구현은 contracts/runtime/*-v1.ts와 apps/connector/runtime/receipt-inbox.ts다. 기존 inspectDispatchPreconditions의 false 차단/기존 reason은 신규 v1과 아직 미연결인 구 소비자의 결과이며 해제하지 않는다.
