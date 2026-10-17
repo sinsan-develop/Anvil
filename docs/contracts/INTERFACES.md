@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+FN09 내부 준비 비교(공개 계약/권한 변경 아님): inspectSourceScopeContainment(parent,child)는 기존 SourceScopeV1 FILE 유한 구조를 검사하고 root/mapping/observation/baseline ref 및 상대경로/READ·WRITE의 정확 일치 부분집합만 보고한다. WRITE의 READ 포함·경로 대소문자 동등성을 추정하지 않는다. scopeContained=true도 executionAuthorized=false이며 실제 위임·현재권한/project/세대·기한/예산/sibling writer/OS 경로검사를 대신하지 않는다. 부모/자식 입력오류와 ref/target 불일치는 고정 code만 반환해 원문/비밀을 반사하지 않는다. 실제 소스·실행·저장·API 연결은 없다.
+
 ## UI04 선택 단계 문서 목록 — 2026-10-18 직접 승인
 
 신산님 직접 ‘승인’/PMO AV3-PMO-UI04-STAGE-DOCUMENT-READ A에 따라 기존 GET `/api/v1/projects/:projectId/documents`에 optional `applicationId`+`nodeId`를 반드시 쌍으로 허용한다. UUID/기존 StageNodeRef 규칙·limit/cursor를 검사하고 현재 로그인/회원·프로젝트 격리/no-store와 무필터 DocumentPage/동작을 유지한다. 회원·현재 적용본(snapshot/source/graph hash 포함)·문서 최신head의 저장 stageRef는 단일 SQL 읽기 snapshot에서 대조하며 다른 적용본 문서를 섞어 반환하지 않는다. cursor는 actor/project/application/node/limit에 결박하여 다른 단계/프로젝트/무필터 혼용을400으로 거절한다. 잘못된 입력400·비회원/없는node404·옛적용409 METHODOLOGY_APPLICATION_CHANGED·적용무결성503이고 기존거절은 약화하지 않는다. 목록은 관측시점 최신 문서의 연결metadata이지 원문 검수·확정·실제현재단계/실행준비 증거가 아니다. UI의 고정 원문은 기존 readDocument/bytehash를 거치고 선택단계와 다른 문서는 표시하지 않는다. 선택단계/적용전환·조회오류는 앞선 목록/원문을 제거하며 자동무필터 fallback·자동전체pagination0이다. 새schema/migration·지속domain쓰기·실사용자정책/Secret·서비스·Agent/비용·추가compiler는 승인에 없다.

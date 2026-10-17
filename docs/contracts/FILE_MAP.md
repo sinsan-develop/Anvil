@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN09 하위 범위 내부 비교 — 2026-10-18
+
+apps/server/modules/assignments/source-scope-containment.ts와 tests/unit/FN09/source-scope-containment.test.ts는 기존 SourceScopeV1의 exact ref/path/access 부분집합 비교만 소유한다. 새로운 API/저장/위임·실행허가가 아니며 항상 executionAuthorized=false다. project/현재권한·기한/예산/sibling writer/OS실경로 검증과 FN09 실제 연결은 후속이며 이 비교로 대체하지 않는다.
+
 ## UI04 원본 조회 연결 후보 — 2026-10-18
 
 선택단계 문서 후속은 server/documents/project-documents.ts의 단일MVCC 필터/현재회원·적용·head검수/cursor와 methodologies/application-snapshot.ts의 기존무결성공유가 소유한다. web/design-trace/api.ts는기존listDocuments의optional StageNodeRef만소비, workspace/Page·Methodology·Documents와api의로컬선택형은stage/ref key·명시query/cursor·다른stage원문거절을소유한다. 직접unit/FN03/document-list-stage.test.ts·unit/UI04/stage-documents.test.ts·browser/UI04 새3, 정식PG준비 integration/FN03/stage-document-list.test.ts가대응하며단계실행/문서쓰기/새schema는없다.
