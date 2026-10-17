@@ -6,6 +6,7 @@ import {createInterface} from 'node:readline';
 import {randomBytes,randomUUID,createHash,X509Certificate} from 'node:crypto';
 import {request} from 'node:https';
 import {rootCertificates} from 'node:tls';
+import {tmpdir} from 'node:os';
 import {join,resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium,type Browser,type Page} from '@playwright/test';
@@ -30,9 +31,10 @@ test('승인 Windows native·실제 TLS·WSL PG와 UI11은 동일 후보에서 �
  let phase='PRECHECK',rpc:QaRpc|undefined,browser:Browser|undefined,cleaned=false;const runId=randomUUID(),projectId=randomUUID(),sourceSha=process.env.ANVIL_FN06_HTTPS_SOURCE;
  check(process.platform==='win32'&&sourceSha&&/^[0-9a-f]{40}$/.test(sourceSha),'APPROVED_WINDOWS_HTTPS_QA_REQUIRED_NOT_SKIP');check(execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim()===sourceSha,'QA_SOURCE_CHANGED');
  const originals=protectedProcesses(),password=randomBytes(32).toString('base64url'),createdAt=new Date().toISOString(),lease={runId,projectId,sourceSha,createdAt,expiresAt:'2026-10-17T03:29:30.227Z'};const originalHashes:Record<string,string>={};const resources=new WindowsHttpsQaResources(lease);
+ const originalTemp=process.env.TEMP,originalTmp=process.env.TMP;
  console.log(JSON.stringify({kind:'QA_RESOURCE_START',...lease,windowsRoot:root,wslRoot:'/home/daon/.local/share/anvil-v3-development/https-qa-r1',initialResourceStartedAt:'2026-10-17T02:29:30.227Z',maximumDeadline:lease.expiresAt}));
  try{
-  await resources.create();phase='ROOT_ACL';await resources.protect();phase='ROOT_DIRS';await resources.initialize();
+  await resources.create();phase='ROOT_ACL';await resources.protect();phase='ROOT_DIRS';await resources.initialize();process.env.TEMP=join(root,'results');process.env.TMP=process.env.TEMP;check(resolve(tmpdir())===join(root,'results'),'QA_TEMP_ROOT_MISMATCH');
   phase='BUILD_NATIVE';execFileSync(shell,['-NoProfile','-NonInteractive','-File',join(repo,'scripts/build-windows-helper.ps1'),'-OutputRoot',root],{windowsHide:true,stdio:'pipe'});
   const files:Record<string,string>={};for(const n of ['server.cert.pem','server.key.pem','ca.cert.pem']){const path=join(tlsRoot,n),s=await lstat(path);check(s.isFile()&&!s.isSymbolicLink(),'TLS_SOURCE_LINK_DENIED');const bytes=await readFile(path);originalHashes[n]=createHash('sha256').update(bytes).digest('hex');files[n]=bytes.toString('base64');bytes.fill(0);}
   const ca=await readFile(join(tlsRoot,'ca.cert.pem'),'utf8'),cert=new X509Certificate(await readFile(join(tlsRoot,'server.cert.pem')));check(cert.checkIP('172.27.253.53')==='172.27.253.53'&&Date.parse(cert.validTo)>Date.now(),'TLS_SOURCE_CHANGED');
@@ -60,6 +62,7 @@ test('승인 Windows native·실제 TLS·WSL PG와 UI11은 동일 후보에서 �
   check(offOrigin===0,'QA_BROWSER_OFF_ORIGIN');await writeFile(join(root,'results','safe-result.json'),JSON.stringify({sourceSha,runId,projectId,flows:summary,offOrigin,realAuthFormClick:false}),{flag:'wx'});console.log(JSON.stringify({kind:'HTTPS_NATIVE_BROWSER_CHECKED',sourceSha,flows:summary,offOrigin,realAuthFormClick:false}));
  }catch(e){console.log(JSON.stringify(qaFailureSummary(phase,e)));throw Error('HTTPS_NATIVE_BROWSER_QA_FAILED_PHASE_'+phase);}finally{
   let cleanupFailure=false;try{await browser?.close();}catch{cleanupFailure=true;}
+  if(originalTemp===undefined)delete process.env.TEMP;else process.env.TEMP=originalTemp;if(originalTmp===undefined)delete process.env.TMP;else process.env.TMP=originalTmp;
   if(rpc){try{if(rpc.closed)throw Error();rpc.send({kind:'STOP'});const result=await rpc.wait('CLEANED',20000);check(result.runId===runId,'QA_CLEANUP_OWNER_MISMATCH');cleanupFailure ||= result.revokeFailures!==0;cleaned=true;rpc.child.stdin.end();}catch{rpc.child.stdin.end();try{execFileSync('ssh.exe',['-T','WSL-server',`cd /home/daon/deploy/anvil-v3 && node tests/support/fn06-https-qa-server.ts --cleanup ${runId}`],{windowsHide:true,stdio:'pipe',timeout:20000});cleaned=true;}catch{cleanupFailure=true;}}}
   try{for(const n of Object.keys(originalHashes))check(createHash('sha256').update(await readFile(join(tlsRoot,n))).digest('hex')===originalHashes[n],'TLS_ORIGINAL_CHANGED');check(JSON.stringify(protectedProcesses())===JSON.stringify(originals),'ORIGINAL_PROCESS_CHANGED');}catch{cleanupFailure=true;}
   try{await resources.cleanup();}catch{cleanupFailure=true;}if(cleanupFailure)console.log(JSON.stringify(qaFailureSummary('CLEANUP',Error('UNVERIFIED'))));check((!rpc||cleaned)&&!cleanupFailure,'QA_CLEANUP_OR_ORIGINAL_STATE_UNVERIFIED');
