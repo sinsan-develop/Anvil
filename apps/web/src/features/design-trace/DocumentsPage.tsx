@@ -16,6 +16,8 @@ import { getPinnedForm } from '../methodologies/forms-api.ts';
 import { WorkPlanEditor } from './WorkPlanEditor.tsx';
 import { newWorkPlan,blankPlanTask } from './work-plan-api.ts';
 import { WorkPlanLibrary } from './WorkPlanLibrary.tsx';
+import {DesignAnchorOriginal}from'./DesignAnchorOriginal.tsx';
+import type{DesignAnchorSelection}from'./design-anchor.ts';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
@@ -28,6 +30,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [choosingForm, setChoosingForm] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
   const [showDesignIndex,setShowDesignIndex]=useState(false);
+  const [anchorSelection,setAnchorSelection]=useState<DesignAnchorSelection|null>(null);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   const confirming = confirmation?.ownerUserId === session.user.id && confirmation.projectId === projectId;
   useEffect(() => () => { generation.current++; }, []);
@@ -40,7 +43,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     return () => { current = false; };
   }, [client, projectId, cursor, refresh]);
   async function open(item: DocumentSummary, requested: number) {
-    const request = ++generation.current; setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
+    const request = ++generation.current; setAnchorSelection(null); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) setOpened(value); }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
@@ -137,13 +140,13 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!review?.pending || !!buffer?.pending || !!(buffer?.designIndexState||buffer?.workPlanState) || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { void beginEdit(); }}>이 버전에서 편집</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || !!buffer?.dirty || !!buffer?.pending || !!(buffer?.designIndexState||buffer?.workPlanState) || !!review?.pending || !!review && review.ownerUserId !== session.user.id} onClick={() => { void beginReview(); }}>이 버전 내용 검토 작성</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!buffer?.dirty || !!buffer?.pending || !!(buffer?.designIndexState||buffer?.workPlanState) || !!review?.pending || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void beginConfirmation(); }}>이 버전 확정 준비</button>
-        <button disabled={reading} onClick={()=>setShowDesignIndex(v=>!v)}>{showDesignIndex?'설계 추적 조회 닫기':'이 버전 설계 추적 조회'}</button>
+        <button disabled={reading} onClick={()=>{setAnchorSelection(null);setShowDesignIndex(v=>!v);}}>{showDesignIndex?'설계 추적 조회 닫기':'이 버전 설계 추적 조회'}</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!(buffer?.designIndexState||buffer?.workPlanState)||!!buffer?.workPlanState||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginWorkPlan();}}>이 버전에서 작업계획 작성</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!(buffer?.designIndexState||buffer?.workPlanState)||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginDesignIndex();}}>이 버전 설계 위치 등록</button>
-        {showDesignIndex?<DesignIndexViewer key={opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} onAuthenticationLost={onAuthenticationLost}/>:null}
+        {showDesignIndex?<DesignIndexViewer key={opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} bodyHash={opened.document.content.body.contentHash} onAnchorSelect={setAnchorSelection} onAuthenticationLost={onAuthenticationLost}/>:null}
         {confirming && confirmation && !confirmation.pending && !confirmation.saved && !confirmation.uncertain && confirmation.rejectedAttempts?.length ? <button disabled={starting || reading || choosingForm || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void replaceConfirmation(); }}>열어 둔 버전으로 확정 대상 변경</button> : null}
         {!opened.document.confirmed && !latestAcceptedDocumentReview(opened.document) ? <p className="meta">확정하려면 필수 본문/반복 항목 검사와 정확한 최신 적합 검토가 필요합니다.</p> : null}
-        <pre aria-label="문서 원문" className="document-original">{opened.body}</pre>
+        <DesignAnchorOriginal body={opened.body} context={{projectId,documentRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash},bodyHash:opened.document.content.body.contentHash}} selection={anchorSelection} onClear={()=>setAnchorSelection(null)}/>
         <h3>형식 검사</h3>{opened.document.validation.issues.length ? <ul>{opened.document.validation.issues.map((issue, index) => <li key={index}><span>{issue.message}</span><span className="meta"> · {issue.code} · {issue.location}</span></li>)}</ul> : <p>기록된 형식 문제 없음 · 내용 검토 합격을 의미하지 않습니다.</p>}
         <h3>저장 이력</h3><ul>{opened.document.statusHistory.map((event, index) => <li key={index}>{event.kind} · {event.reason} · {new Date(event.at).toLocaleString('ko-KR')}</li>)}</ul></> : null}
       {opened ? <><h3>양식의 내용 검토 기준</h3><ul>{opened.document.contentReviewCriteria.items.map(item => <li key={item.criterionId}>{item.title}<ul>{item.reviewCriteria.map((criterion, index) => <li key={index}>{criterion}</li>)}</ul></li>)}</ul>

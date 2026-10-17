@@ -1,4 +1,12 @@
 import { expect, test } from '@playwright/test';
+import {readFile}from'node:fs/promises';
+import{pathToFileURL}from'node:url';
+const anchorCandidate=process.env.ANVIL_UI06_FIXTURE_DIST;
+if(anchorCandidate){process.env.TEMP='D:/tmp/anvil-v3-stage-b/browser/ui06-design-anchor-nav-01/browser-temp';process.env.TMP=process.env.TEMP;}
+test.beforeEach(async({page})=>{
+ if(!anchorCandidate)return;const dist=pathToFileURL(anchorCandidate+'/');
+ await page.route('https://localhost:3830/**',async r=>{const u=new URL(r.request().url());if(u.pathname.startsWith('/api/'))return r.fallback();if(r.request().method()!=='GET'||u.pathname!=='/'&&!/^\/assets\/[A-Za-z0-9_.-]+$/.test(u.pathname))return r.abort('blockedbyclient');const p=u.pathname==='/'?'index.html':u.pathname.slice(1);return r.fulfill({body:await readFile(new URL(p,dist)),contentType:p.endsWith('.html')?'text/html':p.endsWith('.css')?'text/css':'application/javascript'});});
+});
 
 test('문서 화면에서 보관한 가져오기 후보와 제안을 다시 조회할 수 있다', async ({ page }) => {
   await page.goto('/#/projects/51c0439f-791e-4bb5-8471-70938d6afaf1/documents');
