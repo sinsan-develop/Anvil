@@ -2,6 +2,8 @@
 
 ## FN09 임무 초안 UI 후보 — 2026-10-18
 
+scripts/assignment-draft-sql-qa.ts·qa-assignment-draft-sql.ts는 새빈 격리47 SQL 경계검증만 소유한다. scripts/assignment-draft-development-guard.ts·apply-assignment-draft-development.ts는 별도 결정 후 정식46→47 schema-only의 exact binding/기존자료 보존·실패분리 준비 후보이며 현재 정식 적용0이다. 두 실행 경로와 실제 임무저장/served 기능을 혼동하지 않는다. 직접 준비시험은 tests/unit/FN09/assignment-{sql-qa,development}.test.ts, 실제SQL 결과는 docs/04_test_reports/AV3/FN09/ASSIGNMENT_DRAFT_SQL_BOUNDARY_RESULT.md이다.
+
 workspace/assignment-api.ts는 사용자/client·명령/정확 ref·snapshot hash·실행불가 응답을, WorkspaceAssignments.tsx는 업무 선택·초안 작성/목록/고정조회/개정 준비와 거절·미확인 명령 보존을 소유한다. WorkspacePage/App의 사용자-client-project별 buffer와 기존 design-trace/editor-api.ts의 same-origin 명령 helper를 소비한다. tests/unit/FN09/assignment-web.test.ts와 tests/browser/UI04/assignment-drafts.spec.ts는 직접 함수 및 합성 UI 범위이며 정식 PG/서비스/실제 Agent 검증이 아니다. 후보 전체 독립 검수·격리 SQL 실제 검증·별도 정식 적용 결정은 남아 있다.
 
 ## FN09 임무 초안 서버/DDL 후보 — 2026-10-18
