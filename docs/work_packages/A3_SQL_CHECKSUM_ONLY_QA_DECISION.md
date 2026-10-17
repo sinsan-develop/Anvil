@@ -1,5 +1,7 @@
 # A-3 app checksum 누락 항목 한정 QA 결정 자료
 
+최신 결과(2026-10-18 02:49 KST): AV3-PMO-A3-SQL-CHECKSUM-ONLY-QA-RECOVERY로 별도 승인된 exact ef19390c788cbf764ef5b5849540833222c1db07 단1회가 exit0·QA_SQL_CHECKSUM_ONLY_DONE·failure/cleanupFailure:null로 종료했다. schema46 COMMIT 뒤 Node app READ ONLY 정확46 ID/checksum·26벡터·새4표0행, service:null/credential:false와 exact정리/독립잔여0을 확인했다. 원 f7 생성 FAIL/자동 cleanupFailure 및 423 checksum 미실행은 다른 실행 이력으로 보존한다. 이번 결정은 소진했으며 남은 창의 재실행·기존 서비스8범주 반복·정식DB 변경을 허가하지 않는다. 생성응답유실 recovery branch 실제 검증·원 생성 실패 원인 확정·정식 DB/API/TLS/OS/전체 인수는 미충족이다. 상세: docs/04_test_reports/AV3/FN08/A3_SQL_CHECKSUM_RECOVERY_QA_RESULT.md.
+
 최신 실행 상태(2026-10-18): exactf7bafbcb의 PMO17:19Z 단1회는 CREATE_ISOLATED_PG/QA_DOCKER_STEP_FAILED·자동cleanupFailure로 exit1·검사미도달이었다. 독립조회로이번fullID/label/instance/image/tmpfs/port/network를확정후수동exact정리·별도잔여0을확인했으며 원FAIL/cleanupFailure는보존한다. 이번권한도소진·같은창/marker재실행0이며 아래 생성전미승인문장은당시이력이다. 원문은 docs/04_test_reports/AV3/FN08/A3_SQL_CHECKSUM_ONLY_QA_01_RESULT.md.
 
 ## 판정·필요 결정
