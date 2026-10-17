@@ -18,7 +18,10 @@ internal static class OwnedWorker {
   string root=a[0],generation=a[2],mode=a[3],role=a[4],exe=root+@"\bin\OwnedWorker.exe";var end=DateTime.UtcNow.AddSeconds(15);
   if(role=="parent"){
    if(mode=="BREAKAWAY"){var si=new SI{cb=Marshal.SizeOf(typeof(SI))};PI pi;bool escaped=CreateProcessW(exe,new StringBuilder("\""+exe+"\" \""+root+"\" "+a[1]+" "+generation+" COOPERATIVE child"),IntPtr.Zero,IntPtr.Zero,false,0x01000000|0x08000000,IntPtr.Zero,root+@"\source",ref si,out pi);int error=escaped?0:Marshal.GetLastWin32Error();if(escaped){TerminateProcess(pi.p,125);CloseHandle(pi.t);CloseHandle(pi.p);}File.WriteAllText(root+@"\results\"+generation+"-breakaway.json","{\"escaped\":"+(escaped?"true":"false")+",\"error\":"+error+"}");}
-   var child=Process.Start(new ProcessStartInfo(exe,"\""+root+"\" "+a[1]+" "+generation+" "+mode+" child"){UseShellExecute=false,CreateNoWindow=true,WorkingDirectory=root+@"\source"});child.Dispose();
+   // 합성 child만 고정 인자로 DETACHED_PROCESS. Job 상속은 유지하고 breakaway를 요청하지 않는다.
+   var startup=new SI{cb=Marshal.SizeOf(typeof(SI))};PI child;
+   if(!CreateProcessW(exe,new StringBuilder("\""+exe+"\" \""+root+"\" "+a[1]+" "+generation+" "+mode+" child"),IntPtr.Zero,IntPtr.Zero,false,0x8,IntPtr.Zero,root+@"\source",ref startup,out child))return 3;
+   CloseHandle(child.t);CloseHandle(child.p);
   }
   int count=0;while(DateTime.UtcNow<end){if(mode!="STUBBORN"&&File.Exists(root+@"\source\"+generation+".stop"))break;File.WriteAllText(root+@"\results\"+generation+"-"+role+".tick",(++count).ToString());Thread.Sleep(50);}return 0;
  }

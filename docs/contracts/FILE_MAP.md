@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN08 승인A 후보: `apps/connector/native/OwnershipHost.cs`는 고정 합성worker 프로필·suspended/Job attach·정확ref/PID/시각/구성원·협력/명시불응합성회수·UNKNOWN 진단만 담당하며 `runtime/windows-host.ts`의 기존 보호저장 호출과 별도 typed 소유 IPC를 사용한다. `tests/fixtures/FN08/OwnedWorker.cs`와 `tests/unit/FN08/windows-host.test.ts`/`tests/integration/FN08/windows-ownership.test.ts`가 직접검수, 기존build script는 exact 신규FN08root만 추가한다. 원3FAIL/conhost진단·DETACHED합성전용 보정·추가actual/exporter미실행/보존UNVERIFIED는 WORK_STATUS와 구별한다. vendor schema/실제Agent adapter·grant/서버실행·DB/계정 변경0이며 파일 존재는 지원PASS가 아니다.
+
 HTTPS-QA 단일 독립검수 C0/I2/M0 뒤 Main 보완은 `fn06-https-qa-server.ts`/`https-qa-lease.test.ts` 두 파일뿐이다. server active 시작에 최초global deadline을 고정하고 stage전 종료 lifecycle·메모리 소유 부분정리를 연결했다. 순수집중7/전체unit190/typecheck PASS와 이전 e073 실제1PASS를 구분하며 수정 후 actual·OS 종료/부분쓰기 실패 재현·독립 재검수는 미실행이다. 제품 native transport/Windows cleanup·Web/API/DB44는 불변이다.
 
 FN06 HTTPS-QA 제한 연결: `apps/connector/runtime/trust-https.ts`는 기존 enroll/proof/exchange/status 고정 경로·명시 CA/hostname TLS·Origin/무redirect/16KiB·10초/무retry·유한 비밀없는 오류만 담당한다. `tests/support/fn06-https-qa-server.ts`는 한시 SSH stdin stage/기존 API HTTPS·본인 합성 UUID·회수/정리, `fn06-windows-qa-resources.ts`는 exact r1 owner/nonlink/lease·실소유Edge PID세대·정확 보조파일/Hidden한정 정상삭제를 담당한다. 직접 시험은 `tests/integration/FN06/windows-https-{registration,resources}.test.ts`와 `tests/unit/FN06/{trust-https,https-qa-lease,windows-qa-auxiliary}.test.ts`; helper build는 exact 새QAroot만 추가 허용한다. e07312d3 실제1PASS·정리0/앞선2FAIL과 순수·합성 집중 검수는 WORK_STATUS에 구별하며 제품 launcher/서버 계약·SQL44·C# source 변경0이다.

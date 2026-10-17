@@ -71,7 +71,8 @@ internal static class OwnershipHost {
   Phase="CREATE_JOB";JobId=Guid.NewGuid().ToString("D");Job=CreateJobObject(IntPtr.Zero,null);Require(Job!=IntPtr.Zero,"OWNERSHIP_HOST_FAILED");
   // 새 job의 limit 기본값0을 유지하며 BREAKAWAY/SILENT_BREAKAWAY/KILL_ON_JOB_CLOSE를 설정하지 않는다.
   var si=new STARTUPINFO {cb=Marshal.SizeOf(typeof(STARTUPINFO))};var args=new StringBuilder("\""+worker+"\" \""+Root+"\" "+Run+" "+Generation+" "+Mode+" parent");
-  Phase="CREATE_SUSPENDED";Require(CreateProcessW(worker,args,IntPtr.Zero,IntPtr.Zero,false,0x4|0x08000000,IntPtr.Zero,Root+@"\source",ref si,out ProcessInfo),"OWNERSHIP_HOST_FAILED");
+  // 콘솔 I/O가 없는 합성 worker 한정 DETACHED_PROCESS. 실제 Agent/stdin-out 실행 profile은 아직 없다.
+  Phase="CREATE_SUSPENDED";Require(CreateProcessW(worker,args,IntPtr.Zero,IntPtr.Zero,false,0x4|0x8,IntPtr.Zero,Root+@"\source",ref si,out ProcessInfo),"OWNERSHIP_HOST_FAILED");
   Phase="ATTACH_JOB";bool assigned=AssignProcessToJobObject(Mode=="ATTACH_DENIED"?IntPtr.Zero:Job,ProcessInfo.process);
   if(!assigned){TerminateProcess(ProcessInfo.process,125);WaitForSingleObject(ProcessInfo.process,2000);throw Fail("OWNERSHIP_ATTACH_DENIED");}
   Phase="PREPARED_FACTS";Ref=new Dictionary<string,object>{{"runId",Run},{"generation",Generation},{"jobId",JobId},{"pid",(int)ProcessInfo.pid},{"startTicks",Started(ProcessInfo.process).ToString(CultureInfo.InvariantCulture)},{"executableHash",Hash}};
@@ -83,7 +84,7 @@ internal static class OwnershipHost {
   Exact(request,op=="FORCE"?"id,operation,processRef,authorization":"id,operation,processRef");Match(Map(request,"processRef"));Require(DateTime.UtcNow<Expires,"OWNERSHIP_SPEC_INVALID");
   if(op=="RESUME"){Phase="RESUME";Require(!Resumed,"OWNERSHIP_ALREADY_STARTED");Require(ResumeThread(ProcessInfo.thread)==1,"OWNERSHIP_HOST_FAILED");Resumed=true;}
   else if(op=="STOP")Graceful();
-  else if(op=="FORCE"){Require(Mode=="STUBBORN"&&Text(request,"authorization")=="SYNTHETIC_OWNED_JOB_ONLY","OWNERSHIP_FORCE_DENIED");Facts();Require(TerminateJobObject(Job,124),"OWNERSHIP_HOST_FAILED");WaitForSingleObject(ProcessInfo.process,2000);}
+  else if(op=="FORCE"){Require(Mode=="STUBBORN"&&Text(request,"authorization")=="SYNTHETIC_OWNED_JOB_ONLY","OWNERSHIP_FORCE_DENIED");Facts();Require(TerminateJobObject(Job,124),"OWNERSHIP_HOST_FAILED");WaitForSingleObject(ProcessInfo.process,2000);var end=DateTime.UtcNow.AddSeconds(2);while(Pids().Length>0&&DateTime.UtcNow<end)Thread.Sleep(10);Require(Pids().Length==0,"OWNERSHIP_OBSERVATION_UNKNOWN");}
   else Require(op=="OBSERVE","OWNERSHIP_SPEC_INVALID");return Facts();
  }
  static int Main(string[] args){
