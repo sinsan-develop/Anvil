@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## A3 connector observer 준비 후보 — 2026-10-18
+
+신규 runtime/source-read-https.ts는 별도 source-read endpoint의 strict TLS/크기·10초/단1흐름·exact scope/grant·메모리 credential/UNKNOWN·close 취소를, observers/source-read-observer.ts는 permit 원 경로·단조30초·불변 보고·미지원/실제 종료 미확인을 소유한다. 직접 tests/unit/FN08/source-read-https.test.ts·source-read-observer.test.ts와 기존 strict codec/proof가 대응한다. native/SourceReadObserver.cs는 Windows NTFS·지정 FILE 메타데이터·held directory handle/relative FILE_OPEN·최소 read attributes/traverse·reparse/alias/volume/identity 검사 소스 후보이며 entry/IPC/키/프로세스 실행은 없다. 기본 native adapter/실보호 signer·컴파일/OS/네트워크/DB/서비스/Agent 연결은 미검증·미허용이다. 기존 TrustHttpsClient/ProtectedStore/OwnershipHost·SQL/server/web/launcher는 수정하지 않는다. 범위·기준·검증은 work_packages/A3_CONNECTOR_OBSERVER_IMPLEMENTATION_DECISION.md를 따른다.
+
 ## A-3 최신 후보 책임 — 한정 실측·잔여 분리
 
 정식반영 최신(2026-10-18): exact dbbdf049의별도 AV3-PMO-A3-FORMAL-SCHEMA-ONLY 단1회는exit0·기존45/77표보존·새46/4표0/seed0, 별도READONLY후검사·기존PG/Windows서비스·보호hash불변이다. 상세FN08/A3_FORMAL_SCHEMA_01_RESULT.md. formal45/미적용 문구는이전시점이며기존서비스/UI/OS/Agent·전체인수미완료는유지한다.
