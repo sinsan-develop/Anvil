@@ -1,5 +1,12 @@
 # P02 기술 선택 — TD-01·TD-02·TD-03 승인·상세 계약
 
+## FN08-CONTRACT-A1 한정 결정 — 2026-10-17
+
+신산님 직접 승인 A-1은 참조 전용 SourceScope/dispatch envelope·receipt와 비권위 수신함 코드·격리 합성시험이다. 기존1GiB spool/2시간 자동 범위 상한 안에서 첫 수신함은 명시 maxBytes≤1GiB·maxEntries≤1024·record≤4096bytes, scope 전체 targets≤200·경로UTF-8≤1024bytes로 유한화한다. 상한을 높이거나 실제 Agent를 실행하는 권한이 아니다. 새로운 의존성/설치/서비스·실제 source/정식DB/ACL/키/계정/CS1504 nativehelper 변경0이다.
+
+단일 수신 lock+wx 불변 파일·file.sync를 선택했다. 프로세스 재시작 재수신의 중복 기록은 막지만 전원손실 directory metadata·악의적 같은 사용자·OS 경로교체/보호·다중기기/서버ACK·전체 exactly-once를 보장하지 않는다. 미확인 lock/부분 파일은 UNKNOWN으로 보존하며 자동복구/새 부작용0이다. 실제 보호 journal의 저장 위치/ACL·키는 이번 결정에서 미정이며 합성 시험root로 대체하지 않는다. 기존 runtime·서비스·실패근거를 보존한다. rollback은 신규 코드의 일반 revert이며 SQL/사용자자료 reset이나 자동kill은 없다.
+
+
 상태: **TD-01 A안·TD-02 Anvil 전용 로그인·TD-03 유한 기본 정책 설계 승인 / P02 종료 대조**. 2026-10-16 Main 어울. 상위 계약은 설계 r8, 작업계획 r7 P02(r3 승인 유지), 승인 P01 REVIEW-02다. 설계 선택 승인은 실제 환경 변경 승인이 아니다. 미확정 정책/자원/Agent 사용권을 임의 확정하지 않는다.
 
 ## 1. 선택 기준

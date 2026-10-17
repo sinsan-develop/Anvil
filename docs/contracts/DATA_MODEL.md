@@ -1,5 +1,12 @@
 # P02 데이터 관계·보존 계약 초안
 
+## FN08-CONTRACT-A1의 로컬 비권위 수신 기록
+
+2026-10-17 직접 승인 A-1은 정식DB table/SQL 추가·수정·적용0이다. 기존44 migration·delivery_outbox/사용자·자료/권한은 그대로다. §9의 source_roots/source_snapshots/executions/receipts/observations/ACK/writer_claims는 후속 A-2의 데이터 모델이며 이번 구현 테이블이라고 표시하지 않는다. 새 mapping/baseline/명령의 table 분해·정확 FK/migration 파일명은 미정이다.
+
+A-1 파일은 INTERFACES의 DispatchReceiptV1 중 RECORDED/duplicate=false/두 실행false 값의 canonical JSON+LF만 보관한다. key SHA256 파일명, 수신시각·key·봉투hash만 포함하며 외부 원문·실경로·명령·credential을 보관하지 않는다. 별도 실행기 원본/암호화된 제품 journal의 대체가 아니다. 실제 보호 root/ACL·키 결박은 미정/미생성이다. 부분기록/기존 불명 lock은 보존/UNKNOWN이며 자동 덮기·초기화·stale lock 삭제0, 정상 완료의 자신이 연 lock만 파일정체성 대조 후 제거한다. 명령 receipt 자동삭제0·quota 소진 시 새 수신 거절, 합성 QA 정리는 Main이 등록된 시험 root에서만 한다.
+
+
 최신 FN06: PMO 허용 최소 corrective44 `0006_host_trust_challenge_protocol_fix.sql`은 challenge 함수의 protocolVersion 조건만 JSONB `IS DISTINCT FROM '1'::jsonb`로 교정했다. dba582b6 exact WSL 적용·checksum a57c5432f0eff9152889b4dd7e23409e8dbc1cadd8b34426e0a6b3b012b15f3c/기존43 전부 불변·새 표/권한0이다. 실제 app 역할·유효 ENROLLED 컨텍스트에서 음성6종은42501 거절/숫자1 INSERT 정상 후 rollback, HTTP 정상 핵심/회수1 PASS·QA45표0을 확인했다. 독립 원Minor1과 ba5c96fd RED를 지우지 않으며 아래 미수정 기록은 교정 전 이력이다.
 
 FN06 독립 검수 Minor1(미수정): 적용43 challenge guard의 `payload_json->>'protocolVersion'<>'1'`은 null/누락에 SQL NULL, 문자열1에 false여서 DB 숫자1 계약을 완전히 강제하지 못한다. 현재 공개 HTTP는 정확8필드·숫자1을 선검사하며 공개 API 우회는 확인되지 않았다. 실제 PG SELECT 비교만 확인했고 guard INSERT 재현은 미실행이다. 적용43을 고치지 않으며 후속 승인된 forward에서 `payload_json->'protocolVersion' IS DISTINCT FROM '1'::jsonb`와 null/누락/문자열 DB 거절을 보완할 후보로 남긴다. 신규44 작성/적용0, 최종 부분 수용은 PMO 판단이다.

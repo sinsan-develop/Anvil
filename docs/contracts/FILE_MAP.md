@@ -1,5 +1,13 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN08-CONTRACT-A1 정확 코드·검증 진입점
+
+- 계약: contracts/runtime/validation-v1.ts(공통 strict shape/순수 ref), source-scope-v1.ts(유한 상대경로 문법), dispatch-envelope-v1.ts(3연산·ref·hash·시각), dispatch-receipt-v1.ts(정확 key/hash·고정 실행false). 기존 common VersionRef/canonical 규칙을 유지한다.
+- runtime: apps/connector/runtime/receipt-inbox.ts의 receiveUnverifiedEnvelope. 파일 수신기록만이며 dispatch.ts·adapter/서버·nativehelper에는 연결하지 않는다. 실제 실행 entry/계정·서비스·DB/migration 파일은 이번에 추가하지 않는다.
+- 직접 시험: tests/unit/FN08/runtime-contracts.test.ts, tests/integration/FN08/receipt-inbox.test.ts. 후자는 기본 unit glob과 분리하고 사전등록한 **빈** D:\tmp\anvil-v3-stage-b\fn08-scope-journal-01을 ANVIL_FN08_QA_ROOT로 명시한 단일 시험 실행만 사용한다. normal/duplicate/tamper/quota/partial/concurrent/restart/failure/sync-failure 합성 하위와 windowsHide Node 자식만, 재실행 전 Main이 소유/목록/부재를 확인해 시험root를 정확 정리·재생성해야 한다. 기존 root 자료를 시험이 자동 초기화하지 않는다.
+- 검증: node --test tests/unit/FN08/runtime-contracts.test.ts; env 지정 후 node --test tests/integration/FN08/receipt-inbox.test.ts; 직접 인접 FN08 dispatch/기존 canonical·reference unit; tsc --noEmit -p tsconfig.base.json. UI/서버 소비 변경이 없어 실제 browser/PG/Agent/compiler 재검증을 대신 실행하지 않는다. 실제 결과·실패·정리·미검증은 WORK_STATUS에 기록한다. sync 실패는 FileHandle.sync 의존성 EIO 합성 주입이며 실제 디스크 고장을 일으키지 않는다. 완전 JSON이 남아도 불명 lock·UNKNOWN을 보존한다.
+
+
 9fb5fe19 compile-only1회는 csc PID54156/status1/118ms에서 실패했고 stdout153byte digest와 stderr0·정규화진단0의 safe receipt만 반환했다. 신규root binding/result2파일·3dir를 정확정리/독립잔여0, 코드3파일/C#source39111ada/compiler46809206 불변이다. 이번 결과기록은 직접4문서만 추가하고 compiler 실패 이유를 추측수정하지 않는다.
 
 FN06 compile 진단 준비의 변경은 기존 handshake-qa.ts(own data 유한 receipt/checkCompileOnlyRunBinding/CompileOnlyAttempt), 직접 unit(기존11+신규5), 기존 integration의 별도 compile-only 분기와 원 compile catch, 직접4문서뿐이다. C# source39111ada/기존 codec/vendor/의존성/서비스는 불변이다. compile-only는 신규 등록root의 compile1 결과만 기록·정리하고 성공해도 원 handshake 분기로 복귀하지 않는다. 준비 중 통합/컴파일 실행0이며 직접16 순수 PASS·타입0와 구분한다.
