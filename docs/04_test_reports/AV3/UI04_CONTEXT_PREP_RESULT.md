@@ -53,6 +53,8 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 
 ## 2026-10-18 후속 — 고정 적용 절차·단계 정의 조회
 
+- 안전 checkpoint: 683ec95065ce46110b47f2a5609c6f849c7d1168, 부모5a488f8f·정확14경로·private branch 동일/clean·main f976ed5e 불변. 이후 제품수정/완료검사 반복 없이 실제 PG 핵심조회용 직접 integration1건을 준비한다. WORK_STATUS에 등록한 고정 QA 사용자2/프로젝트3/적용본3·연결자료8표만 사용/정리하며, 새 서비스/파일/권한·schema/Secret0이다. 타입 검사는0이고 actual은 아직 미실행이다.
+
 - 기준5a488f8f9f8287195c96a604d33de413bd99537d·Main 단일 writer. 별도 PMO 결정 AV3-PMO-UI04-METHODOLOGY-APPLICATION-READ A(사용자게시20:59:26Z→21:11:46Z/12분20초·최신5turn 새중지/답변없음 확인)에 따라 INTERFACES의 새 읽기 GET을 구현했다. 현재 로그인/회원·격리·no-store와 기존 거절을 유지하고 기존 project_methodologies 최신1행의 row/source/snapshot/graph hash·고정 그래프 구조만 읽는다. 새 SQL/도메인쓰기·적용 전환·권한/Secret·서비스/Agent 실행은 없다.
 - 적용ref와 원 정의ref를 구분하고 기존 project GET 참조와 정확 일치할 때만 UI04 왼쪽에 단계·연결/분기 조건·입출력 양식참조·완료/승인/상황기록 정의를 표시한다. 로컬 단계 선택과 실제 실행/세션/현재 진행 상태를 분리한다. 불일치·변조·거절은 앞선 절차를 치우고 실패/프로젝트 재조회를 요구하며 편집 정의 fallback/자동 적용0이다. 양식 참조의 고정 구조 검수는 현재 원문 접근·확정/실행 준비를 증명하지 않는다.
 - 변경 제품: server methodologies/project-methodologies.ts 새readApplication·projects/routes.ts 새route, web workspace/api.ts 새readWorkspaceMethodology·WorkspaceMethodology.tsx·WorkspacePage.tsx 연결. 직접 새서버/클라이언트 시험과 browser/UI04 새4건·QA03 선택만 보완했다. 기존 문서/소스 선언·서버 변경 명령은 수정하지 않았다.
