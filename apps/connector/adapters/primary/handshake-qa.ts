@@ -8,46 +8,65 @@ const compilePolicy='AV3-PMO-FN06-COMPILE-RECEIPT-01';
 const fixedHostHash='39111ada9ff079143507db5c2986e1f42d3f0679519ba524a82775dddc26cbac';
 const fixedCompilerHash='46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00';
 const compileSource='apps/connector/native/CodexHandshakeHost.cs';
+function compileOwn(error:unknown,key:string):unknown{
+ try{if(!error||typeof error!=='object'||types.isProxy(error))return undefined;const d=Object.getOwnPropertyDescriptor(error,key);return d&&'value'in d?d.value:undefined;}catch{return undefined;}
+}
+function compileBytes(value:unknown,limit:number):{total:number;prefix:Uint8Array}|undefined{
+ try{
+  if(!value||typeof value!=='object'||types.isProxy(value)||!ArrayBuffer.isView(value)||Object.getPrototypeOf(value)!==Buffer.prototype)return;
+  const typed=Object.getPrototypeOf(Uint8Array.prototype),total=Object.getOwnPropertyDescriptor(typed,'byteLength')!.get!.call(value) as number;
+  const buffer=Object.getOwnPropertyDescriptor(typed,'buffer')!.get!.call(value) as ArrayBuffer;
+  if(types.isSharedArrayBuffer(buffer))return;
+  const offset=Object.getOwnPropertyDescriptor(typed,'byteOffset')!.get!.call(value) as number;
+  const prefix=new Uint8Array(Math.min(total,limit));prefix.set(new Uint8Array(buffer,offset,prefix.length));return {total,prefix};
+ }catch{return;}
+}
+function compileCapture(error:unknown){
+ const out=compileBytes(compileOwn(error,'stdout'),32752),err=compileBytes(compileOwn(error,'stderr'),32752-(out?.prefix.length??0));
+ const stdoutCapturedBytes=out?.prefix.length??0,stderrCapturedBytes=err?.prefix.length??0;
+ const bytes=Buffer.alloc(16+stdoutCapturedBytes+stderrCapturedBytes);bytes.write('AV3CRAW1',0,'ascii');bytes.writeUInt32LE(stdoutCapturedBytes,8);bytes.writeUInt32LE(stderrCapturedBytes,12);
+ if(out){bytes.set(out.prefix,16);out.prefix.fill(0);}if(err){bytes.set(err.prefix,16+stdoutCapturedBytes);err.prefix.fill(0);}
+ const payload=bytes.subarray(16),ascii=payload.toString('latin1');let encoding:'ASCII'|'UTF8_VALID'|'UTF16_BOM'|'DECODE_UNKNOWN'='DECODE_UNKNOWN';
+ if(payload.every(b=>b<128))encoding='ASCII';
+ else if(payload[0]===0xff&&payload[1]===0xfe||payload[0]===0xfe&&payload[1]===0xff)encoding='UTF16_BOM';
+ else try{new TextDecoder('utf-8',{fatal:true}).decode(payload);encoding='UTF8_VALID';}catch{}
+ return {bytes,summary:{framing:'AV3CRAW1' as const,bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),stdoutBytes:out?.total??'UNKNOWN',stderrBytes:err?.total??'UNKNOWN',stdoutCapturedBytes,stderrCapturedBytes,truncated:!out||!err?'UNKNOWN':out.total>stdoutCapturedBytes||err.total>stderrCapturedBytes},inspection:{encoding,contentClass:/CS[0-9]{4}/.test(ascii)?'CS_LAYOUT_UNKNOWN' as const:'NO_CS_DIAGNOSTIC' as const}};
+}
 /** 자체 실행 권한 발급이 아닌 새 compile-only 후보/창의 순수 대조. */
 export function checkCompileOnlyRunBinding(value:unknown,currentSha:string,hostHash:string,compilerHash:string,nowMs:number):boolean{
  try{
   if(!value||typeof value!=='object'||types.isProxy(value)||Object.getPrototypeOf(value)!==Object.prototype||Object.getOwnPropertySymbols(value).length)return false;
   const keys=['policy','runId','sourceSha','hostSourceHash','compilerHash','issuedAt','expiresAt'],d=Object.getOwnPropertyDescriptors(value);
   if(Object.keys(d).length!==keys.length||keys.some(k=>!d[k]||!('value'in d[k]!)||typeof d[k]!.value!=='string'||d[k]!.value.length>128))return false;
-  if(d.policy!.value!==compilePolicy||d.runId!.value==='56d83f93-1f39-4cac-874f-22df04596dae'||d.compilerHash!.value!==fixedCompilerHash||compilerHash!==fixedCompilerHash||hostHash!==fixedHostHash)return false;
+  if(d.policy!.value!==compilePolicy||['56d83f93-1f39-4cac-874f-22df04596dae','abbe0980-d51c-46b3-ae63-b84ccf14a865'].includes(d.runId!.value)||d.compilerHash!.value!==fixedCompilerHash||compilerHash!==fixedCompilerHash||hostHash!==fixedHostHash)return false;
   const original={policy:'AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01',runId:d.runId!.value,sourceSha:d.sourceSha!.value,hostSourceHash:d.hostSourceHash!.value,issuedAt:d.issuedAt!.value,expiresAt:d.expiresAt!.value};
   return checkHandshakeRunBinding(original,currentSha,hostHash,nowMs);
  }catch{return false;}
 }
 /** 예외는 인증된 증거가 아니다. own data만 유한 정규화하고 원문/메시지/stack은 반환하지 않는다. */
 export function compileFailureReceipt(error:unknown,elapsedMs:number,sourceAbsolute?:string){
- const own=(key:string):unknown=>{try{if(!error||typeof error!=='object'||types.isProxy(error))return undefined;const d=Object.getOwnPropertyDescriptor(error,key);return d&&'value'in d?d.value:undefined;}catch{return undefined;}};
+ const own=(key:string)=>compileOwn(error,key);
  const numeric=(v:unknown,min:number,max=2147483647)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max?v:'UNKNOWN' as const;
  const status=numeric(own('status'),-2147483648,4294967295),pid=numeric(own('pid'),1),rawSignal=own('signal'),rawCode=own('code');
  const signal=rawSignal===null?null:typeof rawSignal==='string'&&['SIGTERM','SIGKILL','SIGINT','SIGABRT','SIGSEGV','SIGBREAK'].includes(rawSignal)?rawSignal:'UNKNOWN';
  const code=typeof rawCode==='string'&&['ETIMEDOUT','EACCES','EPERM','ENOENT','ENOEXEC','E2BIG','ENOMEM','ENOBUFS','ERR_CHILD_PROCESS_STDIO_MAXBUFFER'].includes(rawCode)?rawCode:'UNKNOWN';
- const diagnostics:{code:string;severity:'error'|'warning';source:string;line:number;column:number}[]=[];
+ const diagnostics:{code:string;severity:'error'|'warning';source:string;line:number|'UNKNOWN';column:number|'UNKNOWN'}[]=[];
  function stream(value:unknown){
   try{
-   if(!value||typeof value!=='object'||types.isProxy(value)||!ArrayBuffer.isView(value)||Object.getPrototypeOf(value)!==Buffer.prototype)return {bytes:'UNKNOWN' as const,sha256:'UNKNOWN',hashedBytes:0,truncated:'UNKNOWN' as const};
-   const getLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')!.get!;
-   const bytes=getLength.call(value) as number,hashedBytes=Math.min(bytes,131072);
-   const typed=Object.getPrototypeOf(Uint8Array.prototype);
-   const buffer=Object.getOwnPropertyDescriptor(typed,'buffer')!.get!.call(value) as ArrayBuffer;
-   if(types.isSharedArrayBuffer(buffer))throw Error('SHARED_BUFFER');
-   const offset=Object.getOwnPropertyDescriptor(typed,'byteOffset')!.get!.call(value) as number;
-   // No species/constructor/subarray or caller getter; cap the copy before decoding.
-   const prefix=new Uint8Array(hashedBytes);prefix.set(new Uint8Array(buffer,offset,hashedBytes));
+   const copied=compileBytes(value,131072);if(!copied)throw Error('UNKNOWN_BUFFER');
+   const bytes=copied.total,prefix=copied.prefix,hashedBytes=prefix.length;
    const sha256=createHash('sha256').update(prefix).digest('hex');
-   let text='';try{text=new TextDecoder('utf-8',{fatal:true}).decode(prefix);}catch{/* byte facts remain known, diagnostics unavailable */}
+   // 코드/분류는 ASCII 문법만 읽는다. 비UTF8 본문 때문에 전체 진단을 버리지 않는다.
+   const text=Buffer.from(prefix).toString('latin1').replace(/^\xEF\xBB\xBF/,'');
    for(const row of text.split(/\r?\n/)){
     if(diagnostics.length>=32)break;
-    const m=/^(.+)\(([0-9]{1,7}),([0-9]{1,7})\): (error|warning) (CS[0-9]{4}):/.exec(row);
-    if(!m)continue;
-    const path=m[1]!.replaceAll('\\','/');
-    if(path!==compileSource&&(typeof sourceAbsolute!=='string'||path!==sourceAbsolute.replaceAll('\\','/')))continue;
-    const line=Number(m[2]),column=Number(m[3]);if(line<1||column<1)continue;
-    diagnostics.push({code:m[5]!,severity:m[4] as 'error'|'warning',source:compileSource,line,column});
+    const global=/^\s*(?:CSC\s*:\s*)?(?:fatal\s+)?(error|warning)\s+(CS[0-9]{4})\s*:/i.exec(row);
+    if(global){diagnostics.push({code:global[2]!.toUpperCase(),severity:global[1]!.toLowerCase() as 'error'|'warning',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'});continue;}
+    const m=/^\s*(.+?\.cs)(?:\(([0-9]{1,7})(?:,([0-9]{1,7}))?\))?\s*:\s*(?:fatal\s+)?(error|warning)\s+(CS[0-9]{4})\s*:/i.exec(row);
+    if(!m)continue;const path=m[1]!.replaceAll('\\','/');
+    const allowed=path===compileSource||typeof sourceAbsolute==='string'&&path===sourceAbsolute.replaceAll('\\','/');
+    const line=allowed&&m[2]&&Number(m[2])>0?Number(m[2]):'UNKNOWN',column=allowed&&m[3]&&Number(m[3])>0?Number(m[3]):'UNKNOWN';
+    diagnostics.push({code:m[5]!.toUpperCase(),severity:m[4]!.toLowerCase() as 'error'|'warning',source:allowed?compileSource:'UNKNOWN',line,column});
    }
    prefix.fill(0);return {bytes,sha256,hashedBytes,truncated:bytes>hashedBytes};
   }catch{return {bytes:'UNKNOWN' as const,sha256:'UNKNOWN',hashedBytes:0,truncated:'UNKNOWN' as const};}
@@ -58,12 +77,14 @@ export function compileFailureReceipt(error:unknown,elapsedMs:number,sourceAbsol
 /** compile 콜백만 소비하는 단일 시도. native 실행 함수를 받지 않으며 성공 후에도 종료한다. */
 export class CompileOnlyAttempt{
  #used=false;
+ #capture:ReturnType<typeof compileCapture>|undefined;
+ takeCapture(){const result=this.#capture;this.#capture=undefined;return result;}
  run(authorized:boolean,compile:()=>Uint8Array,clock:()=>number,sourceAbsolute?:string){
   if(this.#used)throw Error('QA_COMPILE_ONLY_ALREADY_USED');this.#used=true;
   if(!authorized)throw Error('QA_COMPILE_ONLY_NOT_AUTHORIZED');
   const start=clock();
   try{const stdout=compile();return {outcome:'COMPILED_NOT_EXECUTED' as const,nativeStarted:false as const,receipt:compileFailureReceipt({status:0,stdout},Math.floor(clock()-start),sourceAbsolute)};}
-  catch(error){return {outcome:'COMPILE_FAILED' as const,nativeStarted:false as const,receipt:compileFailureReceipt(error,Math.floor(clock()-start),sourceAbsolute)};}
+  catch(error){const receipt=compileFailureReceipt(error,Math.floor(clock()-start),sourceAbsolute);if(receipt.diagnostics.length===0)this.#capture=compileCapture(error);return {outcome:'COMPILE_FAILED' as const,nativeStarted:false as const,receipt};}
  }
 }
 export class HandshakeHostFrames{

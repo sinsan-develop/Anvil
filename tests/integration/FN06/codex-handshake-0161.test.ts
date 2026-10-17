@@ -49,8 +49,23 @@ async function compileOnlyQa(){
   await mkdir(join(root,'bin'));await mkdir(join(root,'diagnostics'));await writeFile(join(root,'diagnostics','binding.json'),JSON.stringify(binding),{flag:'wx'});
   const helper=join(root,'bin','CodexHandshakeHost.exe');
   need(await hash(source)===hostHash&&await hash(csc)===compilerHash,'QA_SOURCE_CHANGED');runtime();
-  const result=new CompileOnlyAttempt().run(valid(),()=>execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072}),()=>performance.now(),win32.resolve(source));
-  const safe={kind:'FN06_COMPILE_ONLY_RECEIPT',sourceSha:current,hostSourceHash:hostHash,compilerHash,runId:binding.runId,...result,helperStarted:false,jobStarted:false,handshakeStarted:false};
+  const attempt=new CompileOnlyAttempt();
+  const result=attempt.run(valid(),()=>execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072}),()=>performance.now(),win32.resolve(source));
+  const capture=attempt.takeCapture();let rawDiagnosticRecord;
+  if(capture){
+   try{
+    need(result.outcome==='COMPILE_FAILED'&&result.receipt.diagnostics.length===0&&Date.now()<Date.parse(binding.expiresAt!),'QA_RAW_CAPTURE_NOT_ALLOWED');
+    const diagnosticRoot=join(root,'diagnostics'),rawFile=join(diagnosticRoot,'compiler-output.bin');await pathCheck(diagnosticRoot);
+    // 새 보호 root/diagnostics에만 평문을 둔다. 원 계정/프로젝트 설정은 읽지 않는다.
+    powershell(`$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;foreach($p in @('${root}','${diagnosticRoot}')){$i=Get-Item -LiteralPath $p;$a=Get-Acl -LiteralPath $p;if(($i.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $a.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $me){throw 'QA_RAW_PROTECTION'};foreach($r in $a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){if($r.IdentityReference.Value -notin @($me,'S-1-5-18')){throw 'QA_RAW_PROTECTION'}}}`);
+    need(capture.bytes.byteLength<=32768,'QA_RAW_CAPTURE_LIMIT');await writeFile(rawFile,capture.bytes,{flag:'wx',mode:0o600});await pathCheck(rawFile);
+    powershell(`$p='${rawFile}';$a=Get-Acl -LiteralPath $p;$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;if($a.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $me){throw 'QA_RAW_PROTECTION'};foreach($r in $a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])){if($r.IdentityReference.Value -notin @($me,'S-1-5-18')){throw 'QA_RAW_PROTECTION'}}`);
+    const saved=await readFile(rawFile);const same=saved.length<=32768&&digest(saved)===capture.summary.sha256;saved.fill(0);need(same,'QA_RAW_CAPTURE_CHANGED');
+    // 검토는 유한 memory의 비CS/encoding enum만이며 원문을 반환·출력하지 않는다.
+    rawDiagnosticRecord={...capture.summary,inspection:capture.inspection,reviewed:true,retained:false};await unlink(rawFile);need(await absent(rawFile),'QA_RAW_CAPTURE_REMAINS');
+   }finally{capture.bytes.fill(0);}
+  }
+  const safe={kind:'FN06_COMPILE_ONLY_RECEIPT',sourceSha:current,hostSourceHash:hostHash,compilerHash,runId:binding.runId,...result,rawDiagnosticRecord,helperStarted:false,jobStarted:false,handshakeStarted:false};
   await writeFile(join(root,'diagnostics','result.json'),JSON.stringify(safe),{flag:'wx'});console.log(JSON.stringify(safe));
   need(await hash(source)===hostHash&&await hash(csc)===compilerHash,'QA_SOURCE_CHANGED');runtime();
   // 컴파일러 종료를 확인 못한 실패는 정리를 강행하지 않고 원인과 잔여를 보존한다.

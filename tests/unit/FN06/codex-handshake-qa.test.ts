@@ -93,9 +93,37 @@ test('컴파일 실패의 유한 사실과 허용 CS 위치만 남기고 원문�
  assert.equal(typeof summarize,'function');
  const r=summarize({status:1,signal:null,pid:1234,stdout:Buffer.from('apps/connector/native/CodexHandshakeHost.cs(12,3): error CS1002: PRIVATE_TOKEN\nC:\\private\\x.cs(1,2): error CS9999: secret'),stderr:Buffer.alloc(0),message:'PRIVATE_TOKEN'},23,'C:\\repo\\apps\\connector\\native\\CodexHandshakeHost.cs');
  assert.equal(r.classification,'NONZERO');assert.equal(r.status,1);assert.equal(r.pid,1234);assert.equal(r.elapsedMs,23);
- assert.deepEqual(r.diagnostics,[{code:'CS1002',severity:'error',source:'apps/connector/native/CodexHandshakeHost.cs',line:12,column:3}]);
+ assert.deepEqual(r.diagnostics,[{code:'CS1002',severity:'error',source:'apps/connector/native/CodexHandshakeHost.cs',line:12,column:3},{code:'CS9999',severity:'error',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'}]);
  assert.equal(r.stdout.bytes,121);assert.equal(r.stdout.truncated,false);assert.equal(r.stdout.sha256.length,64);
  assert.equal(JSON.stringify(r).includes('PRIVATE_TOKEN'),false);assert.equal(JSON.stringify(r).includes('private'),false);
+});
+// 위치 없는 정상 compiler 진단을 버리거나 낯선 origin을 경로로 내보내면 실패한다.
+test('전역·CSC·fatal·위치없는 허용source는 CS번호만 남기고 낯선위치는 UNKNOWN이다',()=>{
+ const r=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from('error CS0006: SECRET\nCSC : warning CS2008: SECRET\nfatal error CS2001: SECRET\napps/connector/native/CodexHandshakeHost.cs: error CS1002: SECRET\nC:\\SECRET\\x.cs(7,8): error CS0016: SECRET\n')},1);
+ assert.deepEqual(r.diagnostics,[
+  {code:'CS0006',severity:'error',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'},
+  {code:'CS2008',severity:'warning',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'},
+  {code:'CS2001',severity:'error',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'},
+  {code:'CS1002',severity:'error',source:'apps/connector/native/CodexHandshakeHost.cs',line:'UNKNOWN',column:'UNKNOWN'},
+  {code:'CS0016',severity:'error',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'},
+ ]);assert.equal(JSON.stringify(r).includes('SECRET'),false);
+});
+test('비UTF8 message가 있어도 ASCII CS분류는 보존하고 임의메시지내 흉내는 진단이 아니다',()=>{
+ const bytes=Buffer.concat([Buffer.from('error CS0006: '),Buffer.from([0xff,0xfe]),Buffer.from('\nmessage contains error CS9999: SECRET\n'+('CSC : warning CS2008: SECRET\n'.repeat(40)))]);
+ const r=compileQa.compileFailureReceipt({status:1,stdout:bytes},1);
+ assert.equal(r.diagnostics.length,32);assert.equal(r.diagnostics[0]!.code,'CS0006');assert.equal(r.diagnostics.some(d=>d.code==='CS9999'),false);assert.equal(r.stdout.bytes,bytes.length);assert.equal(JSON.stringify(r).includes('SECRET'),false);
+});
+test('진단없는 실패에서만 최대32KiB raw를 유한framing하고 stdout/stderr를 외부결과에 포함하지 않는다',()=>{
+ const gate=new compileQa.CompileOnlyAttempt();assert.equal(typeof (gate as any).takeCapture,'function');
+ const r=gate.run(true,()=>{throw {status:1,stdout:Buffer.alloc(40000,65),stderr:Buffer.from('PRIVATE_SECRET')};},()=>1);
+ const capture=(gate as any).takeCapture();assert.equal(capture.bytes.byteLength,32768);assert.equal(capture.summary.stdoutCapturedBytes,32752);assert.equal(capture.summary.stderrCapturedBytes,0);assert.equal(capture.summary.truncated,true);assert.equal(capture.summary.framing,'AV3CRAW1');assert.equal(capture.inspection.contentClass,'NO_CS_DIAGNOSTIC');assert.equal((gate as any).takeCapture(),undefined);
+ assert.equal(JSON.stringify(r).includes('PRIVATE_SECRET'),false);assert.equal(JSON.stringify(r).includes('raw'),false);
+ const known=new compileQa.CompileOnlyAttempt();known.run(true,()=>{throw {status:1,stdout:Buffer.from('error CS0006: SECRET')};},()=>1);assert.equal((known as any).takeCapture(),undefined);
+ const ok=new compileQa.CompileOnlyAttempt();ok.run(true,()=>Buffer.from('no diagnostic'),()=>1);assert.equal((ok as any).takeCapture(),undefined);
+ let reads=0;const hostile=Object.defineProperty({status:1},'stdout',{get(){reads++;throw Error('SECRET');}});const bad=new compileQa.CompileOnlyAttempt();bad.run(true,()=>{throw hostile;},()=>1);assert.equal(reads,0);assert.equal((bad as any).takeCapture().summary.stdoutBytes,'UNKNOWN');
+ const channels=new compileQa.CompileOnlyAttempt();channels.run(true,()=>{throw {status:1,stdout:Buffer.from('AB'),stderr:Buffer.from([0xff,0xfe,0x41,0])};},()=>1);
+ const two=(channels as any).takeCapture();assert.equal(two.bytes.readUInt32LE(8),2);assert.equal(two.bytes.readUInt32LE(12),4);assert.equal(two.summary.truncated,false);assert.deepEqual([...two.bytes.subarray(16)],[65,66,255,254,65,0]);
+ const untouched=Buffer.from('AB');const separate=new compileQa.CompileOnlyAttempt();separate.run(true,()=>{throw {status:1,stdout:untouched,stderr:Buffer.alloc(0)};},()=>1);const independent=(separate as any).takeCapture();independent.bytes.fill(0);assert.equal(untouched.toString(),'AB');
 });
 test('컴파일 timeout·spawn 오류는 실제 code만 분류하고 getter·proxy·위조 buffer는 실행하지 않는다',()=>{
  const summarize=(compileQa as any).compileFailureReceipt;assert.equal(typeof summarize,'function');
@@ -124,6 +152,7 @@ test('compile-only는 별도 policy·compiler hash·정확 후보·유한 창으
  for(const bad of [{...v,policy:'AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01'},{...v,compilerHash:'0'.repeat(64)},{...v,sourceSha:'b'.repeat(40)},{...v,hostSourceHash:'0'.repeat(64)},{...v,expiresAt:'2026-10-17T08:00:00.000Z'}])assert.equal(check(bad,sha,host,compiler,now),false);
  assert.equal(check(v,sha,host,compiler,Date.parse(v.expiresAt)),false);
  assert.equal(check({...v,runId:'56d83f93-1f39-4cac-874f-22df04596dae'},sha,host,compiler,now),false);
+ assert.equal(check({...v,runId:'abbe0980-d51c-46b3-ae63-b84ccf14a865'},sha,host,compiler,now),false);
 });
 test('compile-only dispatcher는 성공·실패 모두 compile콜백1회로 끝나고 같은 gate 재호출을 거절한다',()=>{
  const Gate=(compileQa as any).CompileOnlyAttempt;assert.equal(typeof Gate,'function');
