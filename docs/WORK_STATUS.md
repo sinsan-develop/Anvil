@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **Codec 보정 게시 확인**: 코드/시험 checkpoint `80a07c3a2a1fd3bc33de2b0976980f6a5e3899f3`까지 지정 development의 codex/av3-stage-b와 local exact SHA·tracked clean을 push 뒤 조회했다. c475344b 이후 payload는 허용3코드/시험+직접4문서의 정확7경로이며 vendor·의존성·공개 계약/DB/Secret 변경0이다. private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변, 기존 Node19960/relay26052의 정확 시작UTC/exe와 127.0.0.1:3830 소유19960도 조회했다(서비스 교체0). 이 문서는 이후의 기록 tail이며 실제 집중23건/타입 검증 코드 SHA는 80a07c3이다. 다음 실제 handshake는 별도 범위를 PMO에 제출하며 이 기록만으로 실행하지 않는다.
+
 - **FN06-CODEX-CODEC-01 한정 검토·보정(2026-10-17 / Main 어울)**: 기존 private c475344b에서 정확 신규3코드/시험+직접4문서만 로컬 d702e02edc44112c742acd2b4355fcb664c21958에 보존하고 읽기 전용 검토1회를 받았다. 결과 C0/I2/M1은 신규 thread 응답 후 결박 누락/응답 순서 가정(I1), 완료 id 재사용 때 옛 reply 혼입(I2), 전체 송신 복제 뒤 상한 검사(M1)였다. 마지막은 명시 메모리 요구에 영향이 있어 Main Important로 재분류했다. 추가 독립 리뷰·writer 투입 없이 한 차례 보정했다. 보정 후 C0/I0 재리뷰를 받았다고 주장하지 않는다.
 - I1: 확정 thread/turn과 임시 미결박 식별을 별도 유한 Map으로 유지한다(각 maxPending 이하). 아직 pending start/resume으로 설명 가능한 선도착 통지는 CONTEXT_PENDING·digest만 보고하고 원문/승인/완료로 승격하지 않으며 새 요청을 보류한다. 정확 응답과 대조 후 식별 보류를 해제하되 과거 통지 payload를 저장/재생하지 않는다. 실패·불일치·소진/미대응은 UNKNOWN이다. 응답 뒤 thread/started·복수 pending의 응답 역전도 순수 합성으로 확인했으며 실제 Codex 도착 순서 지원 실측은 아니다.
 - I2: 성공적으로 wire를 준비한 request id의 canonical digest를 인스턴스 수명 동안 최대1024개 보존한다(initialize 포함). 완료 뒤 재사용도 DUPLICATE_REQUEST_ID, 숫자/문자열은 구분하며 축출/자동 재설정하지 않는다. 예산 소진은 REQUEST_ID_BUDGET_EXHAUSTED 후 UNKNOWN으로 닫는다. 이 메모리 정책은 서버 내구 중복/정확1회·재시작 복구를 보장하지 않는다.
