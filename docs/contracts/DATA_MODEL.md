@@ -1,5 +1,7 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN06 `AV3-PMO-FN06-TRUST-QA-01`의 다음 물리 보완은 신규 forward43에서 `connectors,connector_registrations,connector_registration_challenges,connector_credentials` 네 테이블만 대상으로 한다. `connector_grants`/환경/Agent/실행 테이블은 생성하지 않는다. 등록·challenge·credential의 정확 scope/공개키 지문·정책/현재 HUMAN 제어·세대·버전·기한·nonce/proof digest·소비/실패 횟수·회수와 비밀 없는 감사/명령 receipt를 결박한다. code/token은 digest만 저장하고 private key는 서버에 저장하지 않는다. 등록 목적은 상태조회 전용이고 grants[]이며 완료된 7필드 계약/기존42 SQL은 불변이다. Windows CurrentUser DPAPI·공개 서명 실측은 WORK_STATUS의 부분 증거이며 새43 작성/적용·실제 서버 등록 성공은 아직0이다.
+
 UI08은 기존 FN11 승인 요청/결정/소비 및 후보41/42를 그대로 소비했다. 실제36fa3e51에서 서로 다른 요청의 APPROVE/REJECT/REQUEST_CHANGE·경합효과1·실제 만료·원 후보 소비max1/단절 재확인·회수를 확인했고 신규 migration/SQL 수정0이다. 원 요청/결정 이력과 불변 후보 버전은 UI 입력을 명시 닫아도 삭제하지 않는다. QA는 소유 UUID만 정리·독립 잔여0이며 실제 사용자 자료/정책은 변경하지 않았다.
 
 UI11은 기존 후보41/42의 저장·불변 버전을 소비했으며 새 migration/table/완성형 연결은 만들지 않았다. 환경 후보 개정에서 미제공과 명시 빈 목록을 실제 보존하고 과거 버전/정확 ref·명령 재확인 효과1을747c6f37 same-client actual로 검증했다. 브라우저 입력 상태는 서버의 실행 허가·host 신뢰 저장소가 아니며 실제 계정/키 발급을 대신하지 않는다.

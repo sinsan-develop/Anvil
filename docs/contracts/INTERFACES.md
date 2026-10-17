@@ -1,5 +1,15 @@
 # P02 공통 명령·관측 계약 초안
 
+## 2026-10-17 FN06 제한 신뢰 등록 — 승인된 구현 프로필
+
+PMO `AV3-PMO-FN06-TRUST-QA-01`은 아래 §12.2의 완성형 등록을 열지 않고 별도 `kind:HOST_TRUST_REGISTRATION` 분기만 허용한다. 입력은 `kind,hostLabel,expectedHostFingerprint,policyRef,expiresAt,reason`이며 기존 7필드 parser는 불변이다. 등록은 최대10분, challenge 최대2분, 증명 실패 최대5회, credential 최대15분/현재 정책 기한 이내이고 자동 갱신0이다. credential 목적은 `REGISTRATION_STATUS_ONLY`, 프로젝트/환경/자료/파일/실행 grants0이다. fingerprint 문자열만으로 host 증명/Agent 준비 완료를 주장하지 않는다.
+
+암호 계약은 P-256/SHA256·SPKI DER base64url·공개키 SHA256 지문·IEEE-P1363 64byte 서명이다. 서명 대상은 정확 `protocolVersion,installationId,registrationId,scopeDigest,publicKeyFingerprint,serverNonce,clientNonce,expiresAt` 8필드의 canonical UTF-8이며 두 nonce는 각각 CSPRNG32byte다. 다른 설치/범위/nonce·만료/재사용/형식 변조는 거절한다. Windows helper는 CurrentUser DPAPI만 쓰고 private/token은 stdin/프로세스 내부에서 처리하며 stdout/argv/로그/Git·평문 fallback0이다.
+
+서버 후속 구현 범위는 기존 프로젝트 명령 `registerConnector/confirmConnectorRegistration/revokeConnector`의 현재 HUMAN 재인증/단독 제어/명시 정책/정확 버전·기한·감사/필요 일회 승인 소비, POST `/api/v1/connectors/enroll`(공개키 포함), POST `/api/v1/connectors/registrations/:id/proof`, POST 같은 prefix `/exchange`의 CHALLENGE/ISSUE, GET `/api/v1/connectors/:id/registration-status`뿐이다. 최초 key proof 뒤 HUMAN exact 지문/범위/버전 확인, 새 nonce proof 뒤 일회 발급한다. 발급 응답 유실은 `ALREADY_ISSUED_RECONCILE`; 두 번째 token/평문 조회/자동 새 키·등록0이며 정확 HUMAN 회수·새 등록 또는 만료로만 정리한다. 기존 자료/명령 API는 이 credential을 거절해야 한다. §12.2의 commands/receipts/observations/heartbeat와 실제 Agent/OS 소유 실행은 이번에 활성화하지 않는다.
+
+현재 구현 증거는 순수 입력/서명 검증과 Windows 보호저장 상호운용 부분뿐이다(WORK_STATUS). 서버 등록·forward43·WSL 실제·Windows→WSL HTTPS/영구 설치·실제 Agent는 아직 미검증이다.
+
 UI08 소비 검증36fa3e51: 요청/결정/후보 commandId는 서로 다르고 각 응답 유실의 재확인은 해당 원 command 그대로다. 현재 서버 APPROVE·basisCurrent·정확 scope/payload/hash/정책·대상/기기/제어·기한을 대조해 ref만 결박하며 별도 저장 전 소비하지 않는다. 이미 소비한 원 command 재확인은 정확 requestHash를 요구하고 다른 내용·명령에 재사용하지 않는다. UI08에서 실제 확인한 소비max1·outbox0과 아직 미구현 FN12/실제 Agent를 구별한다. 새 공개 API/지원 연산/정책 허가는 추가하지 않았다.
 
 UI08은 기존 approvals 목록/상세 GET과 requestApproval/decideApproval 명령만 소비한다. 브라우저 요청 초안은 후보 commandId·payload hash/정확 targetRef·현재 policyRef/주체/client/세대·기한·위험5종/복구를 고정한다. 서버 조회의 APPROVE와 정확 요청이 일치한 때만 원 후보 command의 approvalRef를 결박하고, 별도 사용자 후보 저장 전 소비/실행하지 않는다. 요청/결정 응답 유실에는 원 명령을 그대로 재확인한다. 공개 계약·지원 연산·데이터 schema의 추가/완화는 없으며 UI08 전체 연결은 후속 실제 검증 전이다.
