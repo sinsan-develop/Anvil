@@ -29,9 +29,11 @@
 - [x] source-read-contracts 정상/초과/추가키·경로·현재기한·projection·보고상태/time/hash/uint64 음성부터 작성, `node --test tests/unit/FN08/source-read-contracts.test.ts` 부재RED 확인.
 - [x] 최소 순수 validator 구현→동일GREEN. exact snapshot/권한 확인은 서버 소비 책임임을 명시.
 - [x] 합성 메모리 P-256 정상과 타purpose/key/DER/서명/nonce/기한 음성 RED→GREEN, 기존 runtime-contracts/host proof 인접·타입0.
-- [ ] 안전 checkpoint·WORK_STATUS 증거/미검증 기록. 자료형만으로 기능 전체 완료라고 하지 않음.
+- [x] 안전 checkpoint 1adbfb7e·WORK_STATUS 증거/미검증 기록. 자료형만으로 기능 전체 완료라고 하지 않음.
 
 ## N2. 현재 권한·불변 저장·보호 protocol 후보
+
+부분 진행: input/records·HUMAN 요청/회수/같은명령 재확인과 새op2 whitelist 후보, 직접·인접24PASS/type0만 확인했다. 기존 callback/SQL 호출의 합성검증이며 실제 인증/SQL/COMMIT 증거가 아니다. 아직 보호 protocol·4표/basis함수·routes·실PG 경로가 없으므로 아래 N2 완료 체크는 유지한다. PMO 다음 배정 대기 없이 Main이 남은 연결을 진행한다.
 
 파일: source-read-input.ts/project-source-read-grants.ts/source-read-protocol.ts/source-read-records.ts, 기존 projects/routes.ts·access/project-command.ts 최소 연결, db/migrations/0008_source_read_observation.sql 초안1. 허용 HUMAN op 2개/GET·별도 connector exchange/permit/reports만 추가.
 소비: N1 strict codec·기존 AccessRepository/currentProjectController/currentPolicy/projectReplay/persistProjectReceipt·source_roots/connector_basis_current.

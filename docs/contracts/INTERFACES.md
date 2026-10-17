@@ -1,6 +1,8 @@
 # P02 공통 명령·관측 계약 초안
 
-## A-3 상세 설계 연결 — 현재 미구현
+## A-3 상세 설계 연결 — 후보 부분 구현·실제 연동 미완료
+
+N2 HUMAN 서비스 후보는 명시 AUTO/DENY·REQUIRE_APPROVAL412, exact source/registration·원 session 기한에서 scope를 파생하고 기존 command/receipt 호출과 새 grant INSERT를 같은 authenticated callback 안에 둔다. 회수는 exact grant와 별도 revoke정책으로 고정scope를 보존하며 새 source_read credential만 막는다. 동일 command/hash는 현재 HUMAN 권한 확인 후 원 저장 receipt와 대조해 재발급/기한연장 없이 반환한다. source-read-records는 OWNER 원문과 VIEWER metadata를 분리한다. 아직 route·SQL/basis함수·보호 exchange/permit/report·UI가 연결되지 않아 실제 원자성/저장/권한/사용가능 완료는 아니다. 후속 제한 코드 작성 승인은 AV3-PMO-A3-LOCAL-IMPLEMENTATION이며 아래 최초 DESIGN_ONLY 문구를 actual 허가로 사용하지 않는다.
 
 N1 순수 codec/서명 verifier만 후보 작성됐다. readSourceReadRequestV1/readSourceReadScopeV1/readSourceReadPermitV1·readSourceReadReportV1와 별도 purpose verify는 자료형/hash/서명 일치만 검사하며 서버 현재권한/실OS/Agent 허가가 아니다. 아직 HUMAN/connector routes·credential/SQL·UI11 소비는 미구현이다. r2 hash는 그대로 보존하고 AV3-PMO-A3-LOCAL-IMPLEMENTATION의 제한 작성 범위만 적용한다.
 
