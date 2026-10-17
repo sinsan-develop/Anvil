@@ -4,9 +4,9 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {candidateAccess,capabilityNames,listCandidates,newCandidate,prepareCandidate,readCandidate,sendCandidate,type CandidateBuffer,type CandidateHit,type CandidateKind,type CandidateView,type Ref} from './api.ts';
 import {TrustPanel} from './TrustPanel.tsx';
-import type {TrustBuffer} from './trust-api.ts';
+import type {TrustBuffer,TrustBufferChange} from './trust-api.ts';
 
-interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:CandidateBuffer|null;onChange:(value:CandidateBuffer|null)=>void;onAuthenticationLost:()=>void;trustBuffer:TrustBuffer|null;onTrustChange:(value:TrustBuffer|null)=>void}
+interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:CandidateBuffer|null;onChange:(value:CandidateBuffer|null)=>void;onAuthenticationLost:()=>void;trustBuffer:TrustBuffer|null;onTrustChange:(value:TrustBufferChange)=>void}
 const asError=(e:unknown)=>e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');
 const rejection=(e:{status:number})=>[400,403,404,409,412,422].includes(e.status);
 export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuthenticationLost,trustBuffer,onTrustChange}:Props){

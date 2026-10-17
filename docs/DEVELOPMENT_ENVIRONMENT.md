@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+UI11 제한 검수 보완(2026-10-17): 2f94636c exact의 같은 Web 함수/API·정식 PG actual1 PASS/9645.392576ms·QA45표0·44 checksum 일치, 독립 읽기 C0/I0/M0이다. Main은 별도 지연 POST 음성 RED로 새 입력 덮어쓰기 Important1을 발견해 주체/원 명령/승인 대기 CAS로 보완했다. 보완 후 unit180/타입·build100/신뢰13+인접14 합성 browser27 PASS, 기존 chunk 경고 유지다. 첫 browser 재검사는 새 build 누락으로 이전 산출물 FAIL1→정상 build 뒤 음성 GREEN이며 성공으로 소급하지 않는다. 서비스·DB schema/권한·키·실제 PC/Agent 변경0, 실제 사용자 browser↔DB/Windows↔WSL HTTPS·전체 연결은 여전히 미완료다. 이 보완의 exact 게시본 actual/정리 결과는 WORK_STATUS에 후속 기록한다.
+
 UI11 HUMAN 신뢰관리 부분: 기존 정식 PG/44를 변경하지 않고 GET2·현재상태/지문·기존3명령·각 별도승인(UI08)을 같은 Web 함수/API·PG에서 b4af490b actual1 PASS/5927.605ms·QA45표0으로 확인했다. 최종 로컬 unit179/타입·Web100 build(JS675.38kB/gzip173.35,CSS9.63kB/gzip2.60)/새 신뢰 합성browser12/직접인접14 PASS·기존chunk경고다. 1920 합성 화면은 code/token 없는 상태로만 보존/육안 확인했다. 기존 localhost3830의 backend/Web 혼재·만료bootstrap/relay·실사용자/Secret·CA·서비스는 교체/수정하지 않았고 실제 사용자browser↔DB/Windows↔WSL HTTPS/영구PC/Agent/Oracle 인수는 미완료다. 마지막 exact actual 보강·독립 부분검수는 WORK_STATUS에서 구분한다.
 
 최신 FN06 제한 검수: dba582b62d645d14777e6e954aa5a1a24bfb81a3 exact WSL에서 PMO 허용 corrective44 `0006_host_trust_challenge_protocol_fix`(a57c5432f0eff9152889b4dd7e23409e8dbc1cadd8b34426e0a6b3b012b15f3c) 적용 exit0, 직접 app DB 음성6/숫자1 정상·등록/일회 발급·상태조회/회수1 PASS/2132.299ms·skip0이다. 독립45표0·44 checksum 일치·제외5표 부재·기존 PG15.18/비관리자2·시험root[]/보호원문 empty·Windows QAroot없음. 독립 원C0/I0/M1의 finding은 Main 보완/실행 근거로 연결했고 새 독립 재검수로 주장하지 않는다. 기존43/Windows/인접3 불변으로 반복0,서비스/키/실제 사용자/Agent 변경0이다. 아래44 미승인/미수정은 추가 PMO 지시 전 이력이다.

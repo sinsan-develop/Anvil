@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
-import {readHumanRegistration,listHumanRegistrations,newTrustBuffer,prepareTrustRegistration,freezeTrustCommand,sendTrustCommand,trustAccess,prepareTrustApproval} from '../../../apps/web/src/features/connections/trust-api.ts';
+import {readHumanRegistration,listHumanRegistrations,newTrustBuffer,prepareTrustRegistration,freezeTrustCommand,sendTrustCommand,trustAccess,prepareTrustApproval,settleTrustBuffer} from '../../../apps/web/src/features/connections/trust-api.ts';
 import {sendApprovalCommand} from '../../../apps/web/src/features/decisions/api.ts';
 const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',id='33333333-3333-4333-8333-333333333333';
 const session={user:{id:uid},clientId:uid,csrfToken:'C'.repeat(43)},ref={id,version:1,contentHash:'a'.repeat(64)};
+
+test('지연 신뢰 결과는 같은 주체·명령·승인 대기에만 반영하고 새 입력·결박·복구 결과를 보존한다',async()=>{
+ const expected=newTrustBuffer(pid,session,1);expected.draft={hostLabel:'원 입력',expectedHostFingerprint:'b'.repeat(64),expiresAt:new Date(Date.now()+300000).toISOString(),reason:'원 명령'};await freezeTrustCommand(expected,session,await prepareTrustRegistration(expected,session,ref),null,ref,expected.draft.expiresAt);
+ const completed={...expected,pending:null,pendingHash:null,resultRegistrationId:id},fresh=structuredClone(expected);
+ assert.deepEqual(settleTrustBuffer(fresh,expected,completed),completed);
+ const draft=newTrustBuffer(pid,session,1);draft.draft.hostLabel='후속 입력';assert.equal(settleTrustBuffer(draft,expected,completed),draft);
+ assert.equal(settleTrustBuffer(null,expected,completed),null);
+ for(const change of [{projectId:id},{ownerUserId:id},{ownerClientId:id},{controlGeneration:2},{pending:{...expected.pending!,commandId:uid}},{pendingHash:'c'.repeat(64)},{approvalWork:{details:{} as any,pending:null,requestId:id,uncertain:false}}]){const newer={...fresh,...change};assert.equal(settleTrustBuffer(newer,expected,completed),newer);}
+ expected.approvalWork={details:{} as any,pending:{...expected.pending!,commandId:uid},requestId:null,uncertain:false};const replayed={...expected,approvalWork:{...expected.approvalWork,pending:null,requestId:id}};
+ assert.equal(settleTrustBuffer(replayed,expected,completed),replayed);
+});
 test('HUMAN 목록은 same-origin GET만 사용하고 state·cursor·비밀 승격 응답을 거절한다',async()=>{
  const hit={registrationRef:ref,connectorRef:ref,hostLabel:'합성 host',state:'CREATED',derivedExpired:false,expiresAt:new Date(Date.now()+600000).toISOString(),proofedAt:null,revokedAt:null};
  const value={view:'HOST_TRUST_REGISTRATIONS_ONLY',items:[hit],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()};
