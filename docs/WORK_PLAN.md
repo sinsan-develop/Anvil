@@ -84,7 +84,7 @@
 | UI01 | 프로젝트 목록 | B | UI00 | UI00,FN01 | 작업 중 · 허가 목록/검색/관측·오류 보존 partial·WORK_STATUS. 생성/단계 메타·실제 새 UI DB 여정 미완료 |
 | UI02 | 프로젝트 생성·기존 소스 기준선 | B | UI00 | UI00,FN01,FN02,FN03 | 작업 중·생성 초안/방법론 선택·검토/확정·빈/기존 소스 선언 입력/조회·생성 same-client actual d8128157, fixture10 확인. 실제 관측/기준선·문서/환경/총괄·사용자 UI DB 미완료 |
 | UI03 | 방법론 흐름도 편집 | B | UI00 | UI00,FN02,FN03 | 작업 중·공통/초안 및 전용본 개정·내용검토/별도 확정·미확인 명령 보존·과거 버전 조회 연결, same-client actual19ce2bb7. 적용 전환·실제 사용자 UI DB 여정 미완료 |
-| UI04 | 프로젝트 주 작업 화면 | C | UI00 | UI00,FN08,FN09,FN10,FN11,FN13 | 부분 구현·원본/선언·문서고정버전·고정적용절차/단계정의 조회 후보. 새GET 서버/인접10·client5·합성browser14/build/type/diff와 정식WSL exact8c539c7 Fastify.inject→PG/회원·만료/옛credential·무결성/두GET경합10조건1PASS·QA8표잔여0. 한정독립C0/I0/M1·두digest 완료 증명 Minor는 이월. 실제served/browser·RLS전체/양식현재유효성·책임세션/실제단계상태/단계문서필터·Agent/시작/중지 미연결·UI04_CONTEXT_PREP_RESULT |
+| UI04 | 프로젝트 주 작업 화면 | C | UI00 | UI00,FN08,FN09,FN10,FN11,FN13 | 부분 구현·원본/선언·문서고정버전·고정적용절차/단계정의·고정양식조회 후보. 새GET server10/client5 및정식WSL exact8c539c7 PG10조건1PASS·QA8표0. 후속양식연결 UI04 17PASS/type/build·QA0·한정독립C0/I0/신규M0, 이전두digest Minor이월. 실제served/browser·RLS전체/양식현재유효성·책임세션/실제단계상태/단계문서필터·Agent/시작/중지 미연결·UI04_CONTEXT_PREP_RESULT |
 | UI05 | 단계책임자·실행 상세 | C | UI00 | UI00,FN09,FN12,FN13 | 시작 전 |
 | UI06 | 문서·설계·계획 추적 | B | UI00 | UI00,FN03,FN04 | 작업 중 — 후보/제안·충돌/검토 재개와 고정 단계 선택·보존/조회 연결. 6cdb21cb same-client 단계 actual1 PASS. 소스/추적 잔여·실제 사용자 UI DB 여정 미완료 |
 | UI07 | 설계 변경·영향·이력 | D | UI00 | UI06,FN04,FN11 | 시작 전 |

@@ -53,6 +53,15 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 
 ## 2026-10-18 후속 — 고정 적용 절차·단계 정의 조회
 
+### 선택한 단계의 고정 양식 원본 연결 후보
+
+- 한정 독립결과 C0/I0/신규M0: 검수자는 새양식읽기 경계의 코드/직접시험을 읽었고 제품/시험/자원 변경0이다. Main은 이 범위만 채택한다. 실제served/API·DB권한, 원문hash재계산 무결성, 실제 지연 양식요청/사용자-client교체, 전체UI04/Agent 수용을 미검증·후속실연결 대상으로 남긴다. key/current 정적 방어·현재합성시험이 이를 전부 증명하지 않으며 기존 두digest Minor는 유지한다.
+
+- Main 선정 UI04 입력/출력 양식 원본 읽기다. 새 WorkspaceForm.tsx는 기존 getPinnedForm/GET만 명시 클릭으로 소비해 정확 ref의 항목/필수·반복 필드·작성/검수 규칙·작성 역할/선행 자료·공통 기준을 텍스트로 표시한다. WorkspaceMethodology의 단계·입출력·item/ref key로 이전 양식 화면을 분리하고 재조회 시작/거절/다른 버전이면 이전 본문을 치운다. API/DB/권한·서비스·문서작성/확정·Agent 변경0이다.
+- 직접 browser/UI04 새3범주(정상 고정 원문/단계전환 제거,403,다른버전)를 추가했다. 구현 전 정상1건은 양식버튼 부재로 기존15초상한에서 RED, 연결 후 영향범위 **17PASS/18.7s/FAIL0/SKIP0/exit0**·type/diff0·build127module428ms다. 다른 새2건의 구현 전 별도 RED나 실제DB/served 증거는 주장하지 않는다. 기존실제PG/컴파일러·전체Stage 검사 반복0,500kB/NO_COLOR경고는 유지했다.
+- 합성API/Edge만이며 실제 사용자 세션/양식 원문 접근·서비스 반영은 미확인이다. 기존 getPinnedForm은 정확 ref/표시구조 대조이지 클라이언트의 원문bytes hash재계산 증거가 아니다. UI도 조회를 단계 산출물 확정/현재 실행준비로 승격하지 않는다. 독립검수는 기존검수자에게 이 새읽기 경계만 의뢰했으며 현재 제품동결/판정대기다. 기존 두digest Minor는 고치거나 새PASS로 덮지 않았다.
+- 등록 D:\tmp\anvil-v3-stage-b\ui04-forms-01의 최종5파일/5폴더(owner SINSAN\cyhuh/nonlink/관련process0) 대조 후 정확개별정리·별도부재 확인0이다. index B3D274A6EEFF9272F279986F02FFA21A4A547FB35B68EE1DD31E49C92810C775 / JS A4F3FA23D95C649C397D6CD6D7FA2A628A2AA37AA5D84B46C11E48B5CAF2EB72 / CSS1FFC9B57199672473A5E3D572A73E4F36AECF4413E97F49C44C19D8C1E342D11. 시험결과 metadata와cv_debug.log만 함께제거, 기능소스/기존실패동결/서비스/보호자료보존이다. rollback은이번UI/직접시험의일반후속revert며DB/서비스rollback없음.
+
 ### 정식 WSL PostgreSQL 핵심 확인 (후속)
 
 - 정확 후보8c539c7a206bc5be1bf221d55f44ede3b5adb5b7(제품은683ec950과 동일), 시험 SHA256 d46a177ffe5a9c90be0f006ee0afed378e7b3662d51e260b70c6e491526e6b98. 정식 /home/daon/deploy/anvil-v3 clean·Git origin 승인URL·Node24.21.0·package/lock/migration 집합 불변을 확인했다. 초기 development remote 추정은 fetch 전 중단→실제origin을 읽어 정정했으며 설정 변경0이다.

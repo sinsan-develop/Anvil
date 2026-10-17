@@ -38,6 +38,39 @@ async function applicationSetup(page: Page) {
   return facts;
 }
 
+const pinnedForm = { ref: document.formRef, definition: { formCode: 'AF01', name: '고정 요구사항 양식', purpose: '단계에서 작성할 문서의 기준', scope: 'SYSTEM', authorRole: '단계 책임자', reviewerRole: '검토자', confirmerRole: '사용자', requiredInputs: ['원본 요구'],
+  items: [{ itemId: 'R1', title: '요구 목록', required: true, repeated: true, valueType: 'RECORDS', fields: [{ fieldId: 'R-ID', title: '요구 ID', required: true, valueType: 'TEXT' }], authoringRules: ['근거와 이유를 기록'], reviewCriteria: ['누락 요구 확인'] }],
+  authoringStandardRef: { id: other, version: 1, contentHash: 'd'.repeat(64) } }, authoringStandard: { ref: { id: other, version: 1, contentHash: 'd'.repeat(64) }, content: '<script>window.WORKSPACE_FORM_EXECUTED=1</script>\n원본 기준' }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } };
+
+// 결함 검출: 참조 대신 최신양식 사용, 조회거절 뒤 오래된본문 잔류, 단계변경 뒤 앞선 양식 혼동.
+test('단계 양식의 고정 버전 항목·작성·검수 기준을 읽고 단계 전환 시 앞선 원본을 치운다', async ({ page }) => {
+  const facts = await applicationSetup(page), versions: string[] = [];
+  await page.route(`**/api/v1/forms/${artifactId}/versions/1`, route => { versions.push(new URL(route.request().url()).pathname); return route.fulfill({ json: pinnedForm }); });
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  await page.getByRole('button', { name: '양식 원본: 요구사항 정의서', exact: true }).click();
+  const form = page.getByRole('region', { name: '단계 양식 원본: 요구사항 정의서', exact: true });
+  await expect(form.getByRole('heading', { name: 'AF01 고정 요구사항 양식', exact: true })).toBeVisible();
+  for (const text of ['요구 목록', '요구 ID', '근거와 이유를 기록', '누락 요구 확인', '현재 원문 조회는 단계 수행 준비·문서 확정을 뜻하지 않습니다.']) await expect(form).toContainText(text);
+  await form.getByText('문서 작성 공통 기준', { exact: true }).click(); await expect(form.getByLabel('단계 양식 작성 기준', { exact: true })).toHaveText(pinnedForm.authoringStandard.content);
+  expect(await page.evaluate(() => (window as any).WORKSPACE_FORM_EXECUTED)).toBeUndefined();
+  await page.getByRole('button', { name: '절차 정의: 기능 구현', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'AF01 고정 요구사항 양식', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '양식 원본: 확정 요구', exact: true })).toBeVisible();
+  expect(versions).toEqual([`/api/v1/forms/${artifactId}/versions/1`]); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+for (const negative of ['조회 거절', '다른 버전'] as const) test(`단계 양식 ${negative} 시 앞선 본문을 제거하고 다른 양식으로 대체하지 않는다`, async ({ page }) => {
+  const facts = await applicationSetup(page);
+  await page.route(`**/api/v1/forms/${artifactId}/versions/1`, route => route.fulfill({ json: pinnedForm }));
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  const button = page.getByRole('button', { name: '양식 원본: 요구사항 정의서', exact: true }); await button.click();
+  const form = page.getByRole('region', { name: '단계 양식 원본: 요구사항 정의서', exact: true });
+  await expect(form.getByRole('heading', { name: 'AF01 고정 요구사항 양식', exact: true })).toBeVisible();
+  await page.route(`**/api/v1/forms/${artifactId}/versions/1`, route => negative === '조회 거절' ? route.fulfill({ status: 403, json: { code: 'ACCESS_DENIED' } }) : route.fulfill({ json: { ...pinnedForm, ref: { ...pinnedForm.ref, version: 2 } } }));
+  await button.click(); await expect(form.getByRole('alert')).toContainText(negative === '조회 거절' ? 'ACCESS_DENIED' : 'RESPONSE_INVALID');
+  await expect(form.getByRole('heading', { name: 'AF01 고정 요구사항 양식', exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
 test('적용 절차 정의를 선택해 단계·연결·필수 산출과 완료조건을 읽되 실행으로 표시하지 않는다', async ({ page }) => {
   const facts = await applicationSetup(page);
   await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
