@@ -1,5 +1,7 @@
 # P02 기존 코딩 Agent 지원 대조
 
+FN06-HANDSHAKE-0161-01 부분 준비: 신규 순수 gate/unit만 기존 codec으로 고정 initialize→정확 결과→initialized 2메시지·상한·시각/EOF 입력을 비교한다. 직접8건은 모의 입력에 대한 메모리 동작이며 실제 native/stdio/Job·계정·모델/6능력 증거가 아니다. actualExecutionVerified=false/ownership UNVERIFIED/workAccepted=false를 유지한다. native host/integration은 아직 미작성, root/컴파일/실제 실행0이다. 자동 Job 종료는 별도 PMO 승인 경계이며 공개 지원표의 실제 연결 등급을 올리지 않는다.
+
 상태: **조사 중 / 실제 연동 미검증**. 2026-10-16 Main 어울. 상위: 설계 r8 §9·12·13, 계획 r7 P02·FN06/FN07·IX02/04. 기존 조사 증거는 유지하고 상위 개정 참조만 맞췄다. 이 문서는 기술 선택이나 외부 API 비용/인증 변경 승인서가 아니다.
 
 ## 1. 확인 등급
