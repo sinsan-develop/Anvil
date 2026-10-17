@@ -50,6 +50,8 @@ test('FN08 실제 Windows job 소유·회수: attach 전 쓰기0·자식/이탈�
   await writeFile(join(root,'lease.json'),JSON.stringify({runId,sourceSha:source,createdAt:created,expiresAt:expires}),{flag:'wx'});for(const d of ['bin','source','results'])await mkdir(join(root,d));
   execFileSync(ps,['-NoProfile','-File','scripts/build-windows-helper.ps1','-OutputRoot',root],{windowsHide:true,stdio:'pipe'});
   const workerHash=await hash(join(root,'bin','OwnedWorker.exe')),helperHash=await hash(join(root,'bin','AnvilOwnershipHost.exe'));
+  console.log(JSON.stringify({kind:'FN08_QA02_HELPER_SHA256',source,runId,sha256:helperHash}));
+  console.log(JSON.stringify({kind:'FN08_QA02_WORKER_SHA256',source,runId,sha256:workerHash}));
   const launch=async(mode:OwnershipQaSpec['mode'],generation:number)=>{validateOwnershipQaApproval({runId,sourceSha:source,createdAt:created,expiresAt:expires});validateOwnershipOriginalRuntime(originalRuntime());const h=await openOwnershipQaHost({root,executablePath:join(root,'bin','AnvilOwnershipHost.exe'),expectedExecutableHash:helperHash},{runId:runId!,generation,expiresAt:expires!,profile:'SYNTHETIC_WORKER',mode,executableHash:workerHash});hosts.push(h);refs.push(h.processRef);return h;};
   if(process.env.ANVIL_FN08_DIAGNOSTIC==='1'){
    const diagnosticHost=await launch('COOPERATIVE',2);let diagnostic:any=null;
