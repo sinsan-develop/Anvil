@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN09 임무 초안 UI 후보 — 2026-10-18
+
+workspace/assignment-api.ts는 사용자/client·명령/정확 ref·snapshot hash·실행불가 응답을, WorkspaceAssignments.tsx는 업무 선택·초안 작성/목록/고정조회/개정 준비와 거절·미확인 명령 보존을 소유한다. WorkspacePage/App의 사용자-client-project별 buffer와 기존 design-trace/editor-api.ts의 same-origin 명령 helper를 소비한다. tests/unit/FN09/assignment-web.test.ts와 tests/browser/UI04/assignment-drafts.spec.ts는 직접 함수 및 합성 UI 범위이며 정식 PG/서비스/실제 Agent 검증이 아니다. 후보 전체 독립 검수·격리 SQL 실제 검증·별도 정식 적용 결정은 남아 있다.
+
 ## FN09 임무 초안 서버/DDL 후보 — 2026-10-18
 
 assignments/assignment-input.ts는 §13.1 입력·부족/의심비밀을, project-assignment-drafts.ts는 현재 확정계획/설계·적용node/카드 근거·base CAS/불변snapshot과 회원목록/고정버전 검수를 소유한다. access/project-command.ts의 명시 prepareAssignment 정책 등록과 projects/routes.ts의 기존 HUMAN 명령/읽기를 소비한다. 신규 db/migrations/0012_assignment_drafts.sql은 새2표 및 새함수/guard만의 미실행 후보이며 정식46SQL/DB를 바꾸지 않았다. tests/unit/FN09/assignment-{input,store,routes,policy}.test.ts는 합성 transport/순수·route 경계이며 실제 SQL/브라우저 저장 증거가 아니다. UI04 작성기/실PG·격리시험/독립검수는 다음 단계로 남는다.

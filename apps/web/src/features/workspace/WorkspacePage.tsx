@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { routeHref } from '../../shell/routes.ts';
 import { readWorkspaceProject, type WorkspaceProject, type WorkspaceStageSelection } from './api.ts';
 import { WorkspaceDocuments } from './WorkspaceDocuments.tsx';
 import { WorkspaceMethodology } from './WorkspaceMethodology.tsx';
+import { WorkspaceAssignments } from './WorkspaceAssignments.tsx';
+import type { AssignmentBuffer } from './assignment-api.ts';
+import type { DocumentSession } from '../design-trace/editor-api.ts';
 
-export function WorkspacePage({ client, projectId, onAuthenticationLost }: { client: ApiClient; projectId: string; onAuthenticationLost: () => void }) {
+export function WorkspacePage({ client, projectId, session, assignmentBuffer, onAssignmentChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
@@ -29,6 +32,7 @@ export function WorkspacePage({ client, projectId, onAuthenticationLost }: { cli
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
         <section className="status-card" aria-label="총괄 작업"><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
+          <WorkspaceAssignments key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} project={project} session={session} stage={selectedStage} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
           <p>총괄·단계책임자 세션과 지시 전달은 미연결입니다.</p><p className="meta">이 화면을 열거나 자료를 조회해도 Agent를 호출하거나 작업을 시작하지 않습니다.</p>
           <button disabled>지시 전송 · 미연결</button>
           <h4>준비 상태</h4>{project.readinessIssues.length ? <ul>{project.readinessIssues.map((item, index) => <li key={index}>{issueLabel(item.code)}</li>)}</ul> : <p>프로젝트 조회에서 보고된 준비 부족 없음 · 실행 준비 완료 판정은 아닙니다.</p>}
