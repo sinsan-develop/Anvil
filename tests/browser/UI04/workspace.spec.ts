@@ -6,6 +6,14 @@ const data = (id = pid) => ({ id, name: id === pid ? 'Anvil 원본' : '다른 �
   createdAt: '2026-10-16T01:02:03Z', updatedAt: '2026-10-17T01:02:03Z', currentMethodologyRef: { id: other, version: 1, contentHash: 'a'.repeat(64) }, baselineRef: null,
   sourceMode: 'EMPTY', sourceDeclaration: null, readinessIssues: [{ code: 'PERMISSION_POLICY_UNCONFIGURED' }], viewerPermissions: ['READ_PROJECT'], participation: 'OWNER',
   controlState: { actorId: other, clientId: pid, generation: 1, status: 'HELD' } });
+const documentId = 'a6f30000-0000-4000-8000-000000000098', artifactId = 'a6f30000-0000-4000-8000-000000000099';
+const documentBody = '# 요구 원문\r\n<script>window.WORKSPACE_DOCUMENT_EXECUTED=1</script>\r\n', documentBytes = Buffer.from(documentBody);
+const document = { id: documentId, version: 2, title: '원문을 보존하는 요구사항', confirmed: false, contentHash: 'b'.repeat(64),
+  formRef: { id: artifactId, version: 1, contentHash: 'a'.repeat(64) }, stageNodeRef: null, stageBinding: null,
+  content: { body: { artifactId, bytes: documentBytes.length, contentHash: createHash('sha256').update(documentBytes).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, attachments: [], sections: [], sourceRefs: [] },
+  validation: { validForConfirmation: false, issues: [] }, statusHistory: [],
+  contentReviewCriteria: { criteriaVersion: 1, formRef: { id: artifactId, version: 1, contentHash: 'a'.repeat(64) }, items: [] }, contentReviews: [] };
+const documents = { items: [{ id: documentId, title: document.title, headVersion: 2, confirmedVersion: null, updatedAt: '2026-10-17T01:02:03Z' }], hasMore: false, nextCursor: null, observedAt: '2026-10-17T01:02:03Z' };
 async function setup(page: Page) {
   const unexpected: string[] = [], writes: string[] = [], errors: string[] = [];
   await page.route('**/api/v1/**', route => { unexpected.push(route.request().url()); return route.abort(); });
@@ -14,6 +22,93 @@ async function setup(page: Page) {
   page.on('request', request => { if (request.method() !== 'GET') writes.push(request.method()); if (new URL(request.url()).origin !== 'https://localhost:3830') unexpected.push(request.url()); }); page.on('pageerror', error => errors.push(error.message));
   return { unexpected, writes, errors };
 }
+
+async function documentSetup(page: Page) {
+  const facts = await setup(page);
+  await page.route('**/api/v1/projects/' + pid, route => route.fulfill({ json: data() }));
+  await page.route(`**/api/v1/projects/${pid}/documents?*`, route => route.fulfill({ json: documents }));
+  await page.route(`**/api/v1/projects/${pid}/documents/${documentId}/versions/2`, route => route.fulfill({ json: document }));
+  await page.route(`**/api/v1/projects/${pid}/files/${artifactId}`, route => route.fulfill({ body: documentBytes, contentType: 'application/octet-stream' }));
+  await page.goto(`/#/projects/${pid}/workspace`);
+  return facts;
+}
+
+test('주 작업에서 문서 목록과 선택한 고정 버전 원문을 읽고 문서 안 지시는 실행하지 않는다', async ({ page }) => {
+  const facts = await documentSetup(page);
+  await page.getByRole('button', { name: '프로젝트 문서 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click();
+  await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveText(documentBody);
+  await expect(panel).toContainText('저장 버전 2'); await expect(panel).toContainText('단계별 필터·실행 결과는 미연결');
+  expect(await page.evaluate(() => (window as any).WORKSPACE_DOCUMENT_EXECUTED)).toBeUndefined();
+  expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('주 작업 문서 목록 조회가 거절되면 앞선 목록과 원문을 남기지 않는다', async ({ page }) => {
+  const facts = await documentSetup(page);
+  await page.getByRole('button', { name: '프로젝트 문서 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click();
+  await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toBeVisible();
+  await page.route(`**/api/v1/projects/${pid}/documents?*`, route => route.fulfill({ status: 403, json: { code: 'ACCESS_DENIED' } }));
+  await panel.getByRole('button', { name: '문서 목록 새로고침', exact: true }).click();
+  await expect(panel.getByRole('alert')).toBeVisible(); await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true })).toHaveCount(0);
+  expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('주 작업에서 문서 원문 해시 불일치를 빈 성공으로 표시하지 않는다', async ({ page }) => {
+  const facts = await documentSetup(page);
+  await page.route(`**/api/v1/projects/${pid}/files/${artifactId}`, route => route.fulfill({ body: Buffer.from('다른 원문'), contentType: 'application/octet-stream' }));
+  await page.getByRole('button', { name: '프로젝트 문서 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText('ARTIFACT_INTEGRITY_FAILED');
+  await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('주 작업 문서 다음 목록은 서버 cursor로 조회하고 앞선 목록을 현재 목록으로 남기지 않는다', async ({ page }) => {
+  const facts = await documentSetup(page), cursors: (string | null)[] = [];
+  await page.route(`**/api/v1/projects/${pid}/documents?*`, route => {
+    const cursor = new URL(route.request().url()).searchParams.get('cursor'); cursors.push(cursor);
+    return route.fulfill({ json: cursor === null ? { ...documents, hasMore: true, nextCursor: 'synthetic-next-page' } : { ...documents, items: [{ ...documents.items[0], id: other, title: '다음 문서' }] } });
+  });
+  await page.getByRole('button', { name: '프로젝트 문서 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await panel.getByRole('button', { name: '문서 다음 목록', exact: true }).click();
+  await expect(panel.getByRole('button', { name: '문서: 다음 문서 v2 조회', exact: true })).toBeVisible();
+  await expect(panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true })).toHaveCount(0);
+  expect(cursors).toEqual([null, 'synthetic-next-page']); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('다른 프로젝트로 이동한 뒤 완료된 옛 문서 원문은 주 작업에 섞이지 않는다', async ({ page }) => {
+  await page.addInitScript(({ expectedHash }) => {
+    const original = crypto.subtle.digest.bind(crypto.subtle);
+    crypto.subtle.digest = async (algorithm, bytes) => {
+      const digest = await original(algorithm, bytes);
+      if ([...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('') === expectedHash) {
+        const boundary = globalThis as typeof globalThis & { ui04DocumentReady?: boolean; ui04ReleaseDocument?: () => void; ui04DocumentReturned?: boolean };
+        boundary.ui04DocumentReady = true;
+        await new Promise<void>(resolve => { boundary.ui04ReleaseDocument = resolve; });
+        setTimeout(() => { boundary.ui04DocumentReturned = true; }, 0);
+      }
+      return digest;
+    };
+  }, { expectedHash: document.content.body.contentHash });
+  const facts = await documentSetup(page);
+  await page.route('**/api/v1/projects/' + other, route => route.fulfill({ json: data(other) }));
+  await page.getByRole('button', { name: '프로젝트 문서 조회', exact: true }).click();
+  await page.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click();
+  await page.waitForFunction(() => (globalThis as any).ui04DocumentReady === true);
+  await page.evaluate(value => { location.hash = `/projects/${value}/workspace`; }, other);
+  await expect(page.getByRole('heading', { name: '다른 프로젝트', exact: true })).toBeVisible();
+  await page.evaluate(() => { (globalThis as any).ui04ReleaseDocument(); });
+  await page.waitForFunction(() => (globalThis as any).ui04DocumentReturned === true);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect(page.getByLabel('주 작업 문서 원문', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: document.title, exact: true })).toHaveCount(0);
+  expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
 
 test('기존 소스 선언은 실제 관측과 구분하고 소유자에게 저장된 원문을 표시한다', async ({ page }) => {
   const facts = await setup(page);

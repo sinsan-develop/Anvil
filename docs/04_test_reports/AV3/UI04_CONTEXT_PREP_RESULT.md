@@ -41,3 +41,12 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 - 변경: workspace/api.ts·WorkspacePage.tsx, 직접 unit/UI04/context-api.test.ts·browser/UI04/workspace.spec.ts, 계획·현황·이 결과. 서버와 실제 인증/권한·DB·파일 관측은 변경/검증하지 않았다. 새부분은 Main 직접 검증이며 독립 재검수 완료로 쓰지 않는다.
 - 전용 QA root의 모든 owner/nonlink·QAprocess0·5파일/5폴더 목록/hash를 대조해 정확 제거했고 별도 Test-Path false를 확인했다. 빌드 index C1FC8DFB48C23C16FCB04C22B94DE5FEBB1047E44E9360FE78B87C6CEB699E80 / JS3992D7DC7452A3159E95FE80300EE3AF53576A685AAFB887BD8DCF99D4D691E8 / CSS1FFC9B57199672473A5E3D572A73E4F36AECF4413E97F49C44C19D8C1E342D11. 재생성 가능한 임시 build/합성결과만 제거했고 기능 소스·실패동결자료·기존 서비스는 보존했다.
 - 실제 served 반영·실계정/DB 여정·시각적 검수와 전체 UI04/Stage 완료는 미확인이다. 향후 해당 후보 반영 후 허용 프로젝트의 workspace→프로젝트 자료→‘기존 소스 사용자 선언’을 펼쳐 확인한다. 이번 후보를 현재 서비스에서 사용 가능하다고 보고하지 않는다. rollback은 이번 국소 소스 변경의 일반 후속 revert이며 DB/서비스 변경이 없어 해당 rollback은 없다.
+
+## 2026-10-18 후속 — 주 작업 문서 조회 연결
+
+- 기준50b03864·Main 단일 writer. 기존 listDocuments/readDocument와 file GET을 그대로 소비하는 WorkspaceDocuments.tsx를 추가하고 WorkspacePage.tsx의 자료 영역에 연결했다. 새 API/SQL/권한·서비스·Agent 실행은 없다. 적용 방법론 snapshot을 조회하는 API는 실제 없으므로 편집 정의를 적용본으로 대체하지 않고 별도 계약 결정에 남겼다.
+- 명시 문서 조회→서버 cursor 다음 목록→선택한 조회 당시 head의 고정 버전→바이트 수·SHA256 검사→원문 텍스트 표시다. 문서 속 script/지시는 실행하지 않고 최신 실행/검증 상태로 승격하지 않는다. 새 목록부터 이전 목록/본문을 제거하고 거절·변조를 명확히 표시한다. unmount/선택 변경 뒤의 옛 응답은 무시하고 세션/user/client/project의 기존 Root key를 유지한다. 이 문서 버전에 저장된 단계 연결과 미연결을 구분하며 단계별 필터는 미구현이다.
+- 새 UI3는 버튼 부재로3RED, 보완 후 변경영향 UI04 8PASS/8.0s·fail/skip0·새build125module/316ms·type/diff0. 제품/빌드가 같은 상태에서 cursor 다음 목록과 실제 digest 완료를 보류·해제한 옛 문서 지연 응답의 타프로젝트 무혼입만 추가2PASS/4.5s·type/diff0. 기대값 완화/기존 시험 삭제0이며 해당 최종2건 때 앞선8건은 반복하지 않았다. 합성 auth/API/원문 bytes만 사용해 실제 로그인·권한/DB/파일저장소 증거로 부르지 않는다.
+- 직접 수정 시험은 UI04/workspace.spec.ts와 명시 QA root02 허용의 bundle.ts다. React 지침은 기존 API 직접 import와 좁은 조회 의존성/응답 폐기 경계에만 적용했고 의존성·최적화·구조 개편은 추가하지 않았다. >500kB·NO_COLOR 경고는 유지한다. 새 부분은 Main 자체 검증이며 독립 검수 완료 주장이 아니다.
+- QA02 최종5파일/5폴더의 owner/nonlink·실경로/hash·관련process0을 확인해 정확 제거하고 별도 root 부재를 확인했다. index7FB04109C90DA67E9966F67EC90460BBC6C8E541F8A07F014F997284F9CE078A / JSA14FF1D5584AF9E3888867E2B7109D353870FE7F99BAAB129C57C4B09D522C1B / CSS1FFC9B57199672473A5E3D572A73E4F36AECF4413E97F49C44C19D8C1E342D11. 재생성 가능한 임시자료만 제거했고 원 실패 동결자료/기능 소스/기존 Node·relay·보호자료는 보존한다.
+- 실제 served 반영·실제 자료 저장소/DB·로그인 여정·시각 검수/전체 UI04·Stage는 미확인/미완료다. 실제 서비스의 원문 보관소 설정 공백을 이 합성 시험으로 해소했다고 주장하지 않는다. 이후 반영된 후보의 workspace→프로젝트 자료→프로젝트 문서 조회→목록의 특정 버전으로 확인한다. 되돌리기는 이번 국소 UI/시험의 일반 후속 revert이며 DB/서비스 변경은 없다.

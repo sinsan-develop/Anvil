@@ -1,11 +1,12 @@
 import { readFile, readdir } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
-if (process.env.ANVIL_UI04_QA_DIST === 'D:/tmp/anvil-v3-stage-b/ui04-context-01/dist') {
-  process.env.TEMP = 'D:\\tmp\\anvil-v3-stage-b\\ui04-context-01\\temp'; process.env.TMP = process.env.TEMP;
+const allowed = new Set(['D:/tmp/anvil-v3-stage-b/ui04-context-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-context-02/dist']);
+if (allowed.has(process.env.ANVIL_UI04_QA_DIST ?? '')) {
+  process.env.TEMP = process.env.ANVIL_UI04_QA_DIST!.replace(/\/dist$/, '/temp'); process.env.TMP = process.env.TEMP;
 }
 
 export async function installWorkspaceBundle(page: Page) {
-  if (process.env.ANVIL_UI04_QA_DIST !== 'D:/tmp/anvil-v3-stage-b/ui04-context-01/dist') return;
+  if (!allowed.has(process.env.ANVIL_UI04_QA_DIST ?? '')) return;
   const root = process.env.ANVIL_UI04_QA_DIST, files = new Map<string, { body: Buffer; contentType: string }>();
   files.set('/', { body: await readFile(root + '/index.html'), contentType: 'text/html' });
   for (const name of await readdir(root + '/assets')) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { routeHref } from '../../shell/routes.ts';
 import { readWorkspaceProject, type WorkspaceProject } from './api.ts';
+import { WorkspaceDocuments } from './WorkspaceDocuments.tsx';
 
 export function WorkspacePage({ client, projectId, onAuthenticationLost }: { client: ApiClient; projectId: string; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
@@ -41,7 +42,8 @@ export function WorkspacePage({ client, projectId, onAuthenticationLost }: { cli
             <p className="meta">선언 버전 {project.sourceDeclaration.ref.version} · {project.sourceDeclaration.ref.id}<br />{project.sourceDeclaration.ref.contentHash}</p>
             <p className="meta">사용자가 저장한 위치 설명이며 파일 접근·검증·실행 권한이 아닙니다.</p>
           </details> : <p>기존 소스 사용자 선언 있음 · 원문은 소유자에게만 표시됩니다.</p> : <p className="meta">빈 프로젝트로 생성됨 · 기존 소스 선언 없음</p>}
-          <p className="meta">저장된 자료는 각 화면에서 별도로 조회합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
+          <WorkspaceDocuments key={projectId} client={client} projectId={projectId} onAuthenticationLost={onAuthenticationLost} />
+          <p className="meta">상세 작성·검토는 자료 화면에서 진행합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
       </div>
     </> : null}
   </section>;
