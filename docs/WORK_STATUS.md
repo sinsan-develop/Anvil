@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI10-DOCUMENT-ATTACH-01 한정 판정/정리**: 읽기 독립 검수 C0/I0/M1·재실행0. Minor1(저장성공 뒤 신규 패널의 ‘지식 저장 전’ 안내 잔류)은 표시 혼동이며 저장/자료손실 결함이 아니고 경미 이월로 기록한다. 실제served/PG/권한·사용자인수/전체UI10·Stage는 미검증/미완료 유지, 원검수와 Main 증거를 구분한다. 등록 QA6파일/5dir·허용하위 dist/results/temp/config.mjs·소유 SINSAN\cyhuh/nonlink/process0 대조 후 exactroot제거, 별도 부재/process0 확인했다. 원실패01·23836/3830·runtime01 receipt FDC1467E…16D7 보존이다. 원서버파일명 추정 읽기1/glob123 1오류는 실제 knowledge.ts 대조로 전환·ACL변경0이다. 다음 Main 선정은 결정된 A-2R 계약/원본등록→TDD→격리 committed PG→정식schema-only이며 실제source/서비스는 제외한다.
+
+- **UI10-DOCUMENT-ATTACH-01 후보 검증(2026-10-17 / Main 어울)**: 문서 목록→명시 버전 metadata/bytes/hash 조회→DOCUMENT_VERSION만 현재 지식 초안에 추가→기존 prepare/sendKnowledge 업로드/저장·재조회 연결이다. 본문/제목/이유/기존참조 보존·자동저장0, 동일id/version 중복/다른hash·199상한·주체/project/pending/result/uncertain 보호, 닫기/프로젝트교체 늦은응답 차단이다. 신규unit4RED→GREEN4/273.932ms, 후보browser버튼부재RED1→6PASS/10.1초·직접인접unit14PASS345.1142ms·FAIL/SKIP0, typecheck0/build115/diff0. 후보index98B4E1C50F231B9045119E2F014A9C819124C06F613D23852B72B81B943F025C, JS index-B_mu92ch.js/7D841C1ACE3DC1E750C8EFB783A025319145C27C9DAA578F68710C625C12B487, CSS03443550…5E9A56다. chunk500k/NO_COLOR 기존경고 유지, 한정독립검수/QA정리 진행 중. 실제served/PG/사용자인수·전체UI10/Stage 미검증/미완료다.
+- **A-2R 결정 접수**: PMO11:57:30Z는 게시11:46:35Z·10분55초/새답변·중지 부재를 대조한 기존 사용자 무응답 위임의 정확 권장안 적용을 전달했다. 신규source_roots/source_root_versions2표·0008_source_root_registry1건·격리PG실commit시험 후 임시stack폐기→정식schema-only/seed0/신규표0행·기존불변 조건이다. 실제source접근/관측·baseline/grant·Agent/비용/전송·키/ACL/helper/서비스23836/3830/Oracle/main 제외, 플랫폼실행승인거절 대체0. SQL/QA/DB생성·적용은 아직0이며 현재 UI10 체크포인트 뒤 Main 순서로 구현한다.
+
+- **UI10-DOCUMENT-ATTACH-01 착수(2026-10-17 / Main 어울)**: 조회17b5af47b2ecffe70a00decf98c9def0305cc2ff는 private exact·clean/main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변, WSL Git exact/clean/typecheck0만 확인했다. 완료된 조회 시험은 반복하지 않는다. 다음은 기존 지식 초안에 같은 프로젝트 문서 목록→명시 버전/본문hash 조회→출처만 붙이기→기존 저장 연결이다. 본문/제목/이유 보존·자동저장0·중복/199건한도·현재 주체/제어세대·pending/result/uncertain 보호·늦은응답/닫기/이동을 검증한다. 새API/DB/권한/실서비스 변경0, 실제served/PG는 미검증이다. 범위는 KnowledgePage/신규 선택helper/component·직접unit/browser/현황이다.
+- QA 사전등록 D:\tmp\anvil-v3-stage-b\browser\ui10-document-attach-01/{dist,results,temp}: 신규부재·부모소유/nonlink 확인 뒤 생성, 합성후보만 검증하고 owner/link/process·생성목록 대조 후 exactroot제거/독립0이다. 기존23836/3830·보호자료·원실패01 변경0. 추정파일명 읽기3실패는 import/rg의 실제api.ts/루트playwright설정으로 전환했으며 ACL변경0이다. Main은 PMO 다음배정 없이 이 독립 업무를 이어간다.
+
 - **UI10-DOCUMENT-SOURCE-01 후보 구현·집중 검증(2026-10-17 / Main 어울)**: 저장 지식의 DOCUMENT_VERSION 참조를 정확 지식버전/hash·같은project 귀속으로 다시 확인하고 문서 정확version/hash·본문을 기존 GET으로 조회하는 독립 원문 패널을 연결했다. React text로만 표시하고 기존 지식/정정/제외/확정/헌법·dirty/pending은 무변경이다. CONVERSATION/USER_INSTRUCTION/ARTIFACT 직접열기는 미연결로 표시·기존 참조 보존하며 전체출처지원/전체UI10 완료가 아니다.
 - 직접unit4RED→GREEN4/340.4127ms, 후보browser 버튼부재 RED1→5PASS/5.5초, dirty/pending보존 추가1PASS/4.2초다(한 번의6건 실행으로 표현하지 않음). 인접 knowledge API/정정diff 포함 unit15PASS/539.7365ms·FAIL/SKIP0, 타입0·후보113modules build0·diff0. 독립 지정5파일/필요 직접소비 읽기 C0/I0/M0이며 시험은 작성자 증거·재실행0이다. 새지식에 DOCUMENT_VERSION 출처를 사용자가 선택해 붙이는 UI는 아직 없으므로 이번은 이미 저장된 정확 참조의 조회 경로이며, 직접문서출처 선택/저장 연결은 다음 독립 업무로 남긴다. 대화출처 기존작성 기능을 그 기능 완료로 바꾸지 않는다.
 - 후보 JS index-HAx_pHK5.js SHA BDA4233EC8037567C18BF83B9CB7598B6040759189C4D6B52A179D8FB693A7AF, index 8D08A54D24CE96552FD6F49BF1189078C21D966291447FBD6617E52FE0B65E4C·CSS03443550…5E9A56다. chunk500k/NO_COLOR 기존 경고 유지. 등록 QA77파일/8dir owner SINSAN\\cyhuh·nonlink·등록3하위·관련process0 확인 뒤 정확제거, 별도 root부재/process0이다. 원23836/3830·runtime01 receipt FDC1467E0CB838071F4B1AA547552D6A61ED76BEBCC79347BCFFA2E2C57E16D7 보존·실제서비스/PG/사용자/Agent 변경0이다. 보호 원 실패01은 삭제하지 않았다.
@@ -701,7 +709,7 @@
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
-| UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/출처·지식 작성/정정/제외·검토/확정·헌법 별도 적용/이력 same-client actual7cf8c005, fixture13 | 공유·임무별 선별/이해 대조·현재 사용자 browser DB |
+| UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/지식 정정·헌법 이력 actual7cf8c005는 과거 근거. 고정 문서출처 조회17b5af47 게시, 문서 명시선택→기존저장·재조회 후보browser6/unit14 핵심 확인 | 새후보 실제served/PG·다른종류 출처 직접열기·공유·임무 선별/이해 대조 |
 | UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존, same-client actual747c6f37 1 PASS·QA41종 잔여0·fixture/배치 확인 | 실제 host/credential/Agent·정책 생성/승인 결정 UI 및 실제 사용자 로그인 browser 인수 미연결/미확인 |
 | UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
