@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **A-2R SQL 준비 원인 확정**:1c0ebf04의 새 빈 QA는 새0008 적용에서 SQLSTATE42601/위치9956을 남겼다. 기존44 SQL은 통과했고 새 guard의 IF 안 CASE 표현식(철회 상태 비교)에 괄호가 없어 PL/pgSQL 구문이 모호한 지점과 일치한다. 이 신규SQL 한 표현식만 괄호로 보정한다. 실제 schema RED가 선행했고 아직 수정후 실제 GREEN/원 Important의 음성RED는 미실행이다. 원container5ff5f8b2…b3a2/networked9ff193…fd17은 finally정리 완료, 정식DB0·서비스0이며 후속 새 빈 PG에서 보정효과만 대조한다.
+
 - **A-2R 격리 QA 두 번째 준비결과**:84ddebd0 exact 새 빈 PG는 tmpfs gate를 통과했으나 QA_SCHEMA에서 FAIL(QA_STEP_FAILED), SQL 음성/제품경로는 미도달이다. finally 소유 container8ab245e7…0e41/network08586090…f0/instancea0952e23…d0e8을 제거했고 별도5547/이름 조회 잔여0을 확인했다. 원본 SQL/detail/비밀을 출력하지 않고 실패 migration ID·SQLSTATE/숫자위치만 남기는 진단을 추가, 신규1RED→unit3GREEN199.3816ms·타입0이다. 이번은 SQL 준비오류 최초1회이며 정상기능 PASS로 소급하지 않는다. 다음은 이 진단으로 정확한 SQL 원인만 확인·보정하며 정식적용0 유지.
 
 - **A-2R 격리 QA 선행오류1·정리복구**: checkpoint39d78882921520571738b0ee257bb406fbb5abcf는 private/WSL exact·clean, main불변이었다. 실제 --run은 CREATE_ISOLATED_PG에서 실패했고 SQL/API시험은 미도달이다. Docker --tmpfs가 Mounts=[]/HostConfig.Tmpfs에 기록되는데 runner가 Mounts[0]만 요구한 원인이다. cleanup도 같은 오판정으로 실패했다. 소유 container dd2df94a…555b/network80f1eb01…8abb·instanceef0e4725…67e의 fullID/labels/image·실제 /proc/mounts tmpfs·port를 대조해 해당2개만 정확폐기, 별도 조회 container/network/5547 잔여0이다. 기존DB/서비스 변경0. 원 Minor1은 이번 실제 실패의 최초원인 소실로 복구진단에 영향을 주어 Important로 재분류했다. 실측 tmpfs·변조음성과 본체/정리 독립보존 unit2RED→GREEN2/132.0207ms·타입/diff0, runner metadata/actualmount 확인과 최초failure·cleanupFailure 분리를 보완했다. 원SQL Important1은 아직 미해결이며 다음 새 빈 PG에서 음성RED 재현만 진행한다. PMO에는 예외사실만 공유했고 다음배정을 기다리지 않는다.

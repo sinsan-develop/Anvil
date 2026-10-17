@@ -87,7 +87,7 @@ BEGIN
  ELSE
   SELECT * INTO oldv FROM anvil.source_root_versions WHERE project_id=NEW.project_id AND root_id=rid AND version=v-1;
   IF oldv.root_id IS NULL OR oldv.status<>'DECLARED' OR cmd.operation NOT IN('reviseSourceRoot','revokeSourceRoot') OR data->'previousRef' IS DISTINCT FROM jsonb_build_object('id',rid,'version',oldv.version,'contentHash',oldv.content_hash)
-   OR snapshot->>'status' IS DISTINCT FROM CASE WHEN cmd.operation='revokeSourceRoot' THEN 'REVOKED' ELSE 'DECLARED' END
+   OR snapshot->>'status' IS DISTINCT FROM (CASE WHEN cmd.operation='revokeSourceRoot' THEN 'REVOKED' ELSE 'DECLARED' END)
    OR cmd.operation='revokeSourceRoot' AND decl IS DISTINCT FROM oldv.declaration_json THEN RAISE EXCEPTION 'SOURCE_ROOT_BASE_REQUIRED' USING ERRCODE='42501';END IF;
  END IF;
  IF cmd.operation<>'revokeSourceRoot' AND decl->>'connectorId' IS NOT NULL AND NOT EXISTS(SELECT 1 FROM anvil.connectors c JOIN anvil.connector_registrations r ON r.project_id=c.project_id AND r.connector_id=c.id WHERE c.project_id=NEW.project_id AND c.id=(decl->>'connectorId')::uuid AND c.status='TRUSTED' AND c.revoked_at IS NULL AND anvil.connector_basis_current(r.id,false)) THEN RAISE EXCEPTION 'SOURCE_ROOT_CONNECTOR_UNAVAILABLE' USING ERRCODE='42501';END IF;
