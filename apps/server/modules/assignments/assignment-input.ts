@@ -32,7 +32,7 @@ export function readAssignmentDraftInput(value: unknown) {
   try { const serialized = canonicalJson(value); if (Buffer.byteLength(serialized, 'utf8') > 2 * 1024 * 1024) return invalid(); parsed = JSON.parse(serialized); } catch { return invalid(); }
   if (!exact(parsed, ['baseRef', 'definition', 'reason']) || parsed.baseRef !== null && !isVersionRef(parsed.baseRef) || !text(parsed.reason) || !parsed.reason.trim() || !exact(parsed.definition, definitionFields)) return invalid();
   const d = parsed.definition, task = d.taskRef;
-  if (!exact(task, ['planRef', 'taskCode', 'applicationRef', 'nodeId']) || !isVersionRef(task.planRef) || !isVersionRef(task.applicationRef) || !code(task.taskCode) || !code(task.nodeId)) return invalid();
+  if (!exact(task, ['planRef', 'taskCode', 'applicationRef', 'nodeId']) || !isVersionRef(task.planRef) || !isVersionRef(task.applicationRef) || !code(task.taskCode) || typeof task.nodeId !== 'string' || !task.nodeId.trim() || !task.nodeId.isWellFormed()) return invalid();
   if (!textFields.every(field => text(d[field], field === 'ownerRole' ? 200 : 20000)) || !listFields.every(field => Array.isArray(d[field]) && d[field].length <= 200 && d[field].every((item: unknown) => text(item)))
     || !Array.isArray(d.baselineRefs) || d.baselineRefs.length > 200 || !d.baselineRefs.every(isVersionRef) || !nullableRefs.every(field => d[field] === null || isVersionRef(d[field])) || !Array.isArray(d.allowedScopes)) return invalid();
   if (new Set(d.baselineRefs.map((ref: VersionRef) => canonicalJson(ref))).size !== d.baselineRefs.length) return invalid();

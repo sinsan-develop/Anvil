@@ -15,7 +15,7 @@ const reference = (v: any): v is PlanRef => exact(v, ['id', 'version', 'contentH
 const text = (v: unknown, max = 20000): v is string => typeof v === 'string' && v.isWellFormed() && v.length <= max;
 const strings = (v: any) => Array.isArray(v) && v.length <= 200 && v.every((s: unknown) => text(s));
 const same = (a: unknown, b: unknown) => ordered(a) === ordered(b);
-const task = (v: any) => exact(v, ['planRef', 'taskCode', 'applicationRef', 'nodeId']) && reference(v.planRef) && reference(v.applicationRef) && [v.taskCode, v.nodeId].every(s => typeof s === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(s));
+const task = (v: any) => exact(v, ['planRef', 'taskCode', 'applicationRef', 'nodeId']) && reference(v.planRef) && reference(v.applicationRef) && typeof v.taskCode === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(v.taskCode) && text(v.nodeId, 2 * 1024 * 1024) && !!v.nodeId.trim();
 const textFields = ['purpose', 'goal', 'ownerRole', 'integrationResponsibility'];
 const listFields = ['inputs', 'outputs', 'acceptanceCriteria', 'verificationRequirements', 'included', 'excluded', 'requiredCapabilities'];
 function definition(v: any) {

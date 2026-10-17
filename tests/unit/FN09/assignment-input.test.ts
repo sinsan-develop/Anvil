@@ -16,6 +16,9 @@ test('임무 초안은 목적·기준·완료조건을 보존하지만 입력참
   assert.equal(result.ready, false); assert.equal(result.executionAuthorized, false); assert.equal(result.dispatchPerformed, false);
   for (const code of ['CONTEXT_NOT_REVIEWED', 'EXECUTION_NOT_CONNECTED', 'BUDGET_UNVERIFIED', 'ENVIRONMENT_UNVERIFIED']) assert(result.readinessIssues.some((issue: any) => issue.code === code));
 });
+test('이미 유효한 적용 단계 ID의 한글·숫자 시작·UUID·긴 문자열을 바꾸지 않고 소비한다', () => {
+  for (const nodeId of ['요구검토', '1', id, '단계'.repeat(101)]) { const value = sample(); value.definition.taskRef.nodeId = nodeId; assert.equal(read(value).input.definition.taskRef.nodeId, nodeId); }
+});
 test('빈 의미내용은 버리지 않고 위치별 부족으로 남기며 초안도 READY가 아니다', () => {
   const value = sample(); value.definition.purpose = ''; value.definition.outputs = []; value.definition.acceptanceCriteria = []; value.definition.integrationResponsibility = '';
   const result = read(value); for (const field of ['purpose', 'outputs', 'acceptanceCriteria', 'integrationResponsibility', 'allowedScopes']) assert(result.readinessIssues.some((issue: any) => issue.location === field), field);

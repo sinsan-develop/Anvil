@@ -31,6 +31,8 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
   async function save() {
     if (!buffer || !bound || !owner || !sameStage) return;
     const binding = buffer.bindingId;
+    // 재확인 시점의 제어/정책 거절은 앞선 전송의 미적용을 증명하지 않는다.
+    const previouslyUncertain = !!buffer.pending && buffer.uncertain;
     try {
       const generation = await documentControl(client, project.id, session); if (!alive.current) return;
       if (generation !== buffer.controlGeneration) throw new ApiError('CONTROL_GENERATION_CONFLICT', 409);
@@ -40,7 +42,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
       onChange(current => current?.bindingId === binding ? { ...current, ref: result.ref, pending: null, result, uncertain: false, failure: null, dirty: false } : current); setOpened(undefined); setReread(false);
     } catch (cause) {
       if (!alive.current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
-      onChange(current => current?.bindingId === binding ? { ...current, failure: { code: failure.code, status: failure.status }, uncertain: failure.status === 0 || failure.status >= 500 || failure.code === 'RESPONSE_INVALID' } : current);
+      onChange(current => current?.bindingId === binding ? { ...current, failure: { code: failure.code, status: failure.status }, uncertain: previouslyUncertain || failure.status === 0 || failure.status >= 500 || failure.code === 'RESPONSE_INVALID' } : current);
       throw failure;
     }
   }

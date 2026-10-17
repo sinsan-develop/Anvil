@@ -20,6 +20,9 @@ test('임무 초안 명령은 사용자/client·제어세대에 묶이고 입력
   const prepare = fn('prepareAssignmentWrite'); assert.throws(() => prepare(buffer(), { ...session, clientId: pid }), error => error instanceof ApiError && error.code === 'ASSIGNMENT_BINDING_INVALID');
   const retry = buffer(); retry.pending = pending; assert.equal(prepare(retry, session).commandId, pending.commandId);
 });
+test('Web 임무 준비도 기존 적용 단계 ID의 한글·숫자·UUID·긴 문자열을 그대로 쓴다', () => {
+  for (const nodeId of ['요구검토', '1', pid, '단계'.repeat(101)]) { const b = fn('newAssignmentDraft')(pid, session, 1, plan, 'FN01', application, nodeId); b.input.reason = '기존 단계 사용'; assert.equal(fn('prepareAssignmentWrite')(b, session).payload.definition.taskRef.nodeId, nodeId); }
+});
 test('저장은 same-origin·같은 명령으로만 보내고 정확 snapshot hash/거짓READY를 거절한다', async () => {
   const b = buffer(), command = fn('prepareAssignmentWrite')(b, session), send = fn('sendAssignmentDraft'); let captured: RequestInit | undefined;
   const client = new ApiClient(async (path, init) => { assert.equal(path, `/api/v1/projects/${pid}/commands`); captured = init; return Response.json(reply(command)); });

@@ -2,6 +2,8 @@
 
 ## FN09 임무 초안 저장 후보 — 2026-10-18 제한 A
 
+호환 보완: taskRef.taskCode는 기존 작업계획 업무 코드 문법을 사용하지만 nodeId는 기존 적용 그래프의 비어 있지 않은 well-formed 문자열을 원문 그대로 사용한다. 새 ASCII·영문 시작·64자 제한/정규화는 적용하지 않으며 전체 canonical 2MiB·실제 적용본의 정확 node 존재를 검사한다. 응답유실 등 이미 pending/uncertain인 명령은 후속 인증·제어·정책 거절만으로 미적용 확정하지 않고 원입력/원명령/불확실성을 유지한다.
+
 AV3-FN09-ASSIGNMENT-DRAFT의 후보작성/격리검수만 허용하며 정식DB 적용·실제 배정은 별도다. 기존 project command operation=prepareAssignment, payload={baseRef,definition,reason}로 신규(target=null/expected0/baseRef=null)와 동일 초안 개정(target/baseRef.id·expected/baseRef.version·hash 정확일치)을 구분한다. definition은 §13.1의 명시 필드 전부를 사용하며 taskRef={planRef,taskCode,applicationRef,nodeId}, baselineRefs=VersionRef[], inputs/outputs/acceptanceCriteria/verificationRequirements/included/excluded/requiredCapabilities=문자열배열, allowedScopes=기존 SourceScopeV1 FILE 배열(빈 경우 부족), environmentRef/budgetRef/recordingPolicyRef=VersionRef|null, parentAssignmentRef=null(부모 실임무 미연결), purpose/goal/ownerRole/integrationResponsibility=문자열이다. 각 배열≤200·텍스트≤20000 UTF16(ownerRole≤200), 전체 canonical UTF8≤2MiB, getter/unknown필드/가짜완료·준비 플래그는거절한다. 불완전 의미내용은 readinessIssues로 보존하되 문법/의심비밀·없는/다른프로젝트/변조참조는차단한다. 원본정책·예산/환경/OS/필수맥락/이해·실행을 caller ref나 저장성공으로검증하지않고 ready=false/executionAuthorized=false/dispatchPerformed=false다.
 
 기존HUMAN OWNER·같은client/현재단독제어세대·명시prepareAssignment정책/DENY우선·기한·동일명령/hash/감사·CAS를사용한다. taskRef의현재적용node와정확현재확정작업계획/설계·업무카드를서버에서대조한다. 기존확정본수정/자동재지시0. 신규표2개는 불변 version_json/content_hash·이전ref/작성actor-client/command와receipt·정확프로젝트FK·head CAS/불변이력보호를소유한다. 목록/정확버전GET은현재회원·project격리/no-store·유한cursor·무결성을검사하고원문은명시선택으로만연다. 실제contract/code/검증상태는WORK_STATUS를따른다.

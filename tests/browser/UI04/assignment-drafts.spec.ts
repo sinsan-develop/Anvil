@@ -49,6 +49,15 @@ test('임무 응답 유실은 원입력과 같은 명령을 보존하고 새 임
   await page.getByRole('button', { name: '같은 임무 명령 결과 확인', exact: true }).click(); await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');
   expect(facts.commands).toHaveLength(2); expect(facts.commands[1]).toEqual(facts.commands[0]); expect(facts.unexpected).toEqual([]); expect(facts.errors).toEqual([]);
 });
+test('이미 저장됐을 수 있는 임무는 재확인 제어권409로 원 명령 거절이 확정되지 않는다', async ({ page }) => {
+  const facts = await setup(page, true); await prepare(page); await page.getByRole('button', { name: '임무 초안 저장', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
+  await page.route(`**/api/v1/projects/${pid}`, route => route.fulfill({ json: { ...project, controlState: { ...project.controlState, generation: 2 } } }));
+  await page.getByRole('button', { name: '같은 임무 명령 결과 확인', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('CONTROL_GENERATION_CONFLICT');
+  await expect(page.getByRole('button', { name: '거절 명령 확인 후 입력 수정', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '같은 임무 명령 결과 확인', exact: true })).toBeVisible(); await expect(page.getByRole('textbox', { name: '임무 목표', exact: true })).toHaveValue('사용 가능한 실제 기능');
+  expect(facts.commands).toHaveLength(1); expect(facts.unexpected).toEqual([]); expect(facts.errors).toEqual([]);
+});
 test('임무 미저장 입력은 화면 이동 후 같은 주체에게 보존되고 자동 전송되지 않는다', async ({ page }) => {
   const facts = await setup(page); await prepare(page);
   await page.evaluate(value => { location.hash = `/projects/${value}/session`; }, pid); await expect(page.getByRole('heading', { name: '아직 연결되지 않은 화면', exact: true })).toBeVisible();
