@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI11 같은 Web GET actual **ed14f60267d29783a550c966190175b7219c9c73** exact clean1 PASS/3814.399427ms(기능3547.410671)/SKIP0·독립45표0/44 checksum 일치·원문root empty다. 최종 로컬unit176 PASS/2881.8608ms는 이 지점의 근거다. 후속 신뢰 고정명령/같은ID 재확인·현재권한/직전상태 검사·최초코드 별도 반환은 부재RED→직접5 GREEN/166.079ms, 신뢰 별도 승인 준비 부재RED→기존UI08 포함12 GREEN/203.3642ms·type0이다. UI08 Web 검증의 과거3연산 목록에 승인된 신뢰3만 추가했고 기존 후보 요청/결정·서버write/SQL은 불변이다. 신뢰용 approval scope는 현재 frozen targetRef/payload hash/원command/정책/기한에 정확 결박하고 승인 결정 재조회·결박과 원명령 전송을 분리한다. 새 actual은 같은 QA 소유 내 등록1 추가·각각 승인/결정/소비3건 및 회수 응답유실→같은명령 효과1을 작성했고 아직 미실행이다. 새 source/키/서비스/DDL0, UI11 화면은 아직 연결 전이다.
+
 - UI11 추가권한 GREEN **e79ffa24538b1982d75dddb707af2651e7639b49** local/private/WSL exact clean actual1 PASS/5353.169431ms(기능4857.074759)/SKIP0: confirm 정책이 없는 현재 proof는 확인불가, 타인/실존 교차project404·서명된 만료cursor/정책변경cursor400·현재DENY403·실제1100ms 허가경과403을 추가 확인했다. 독립45표0/적용44 checksum일치/범위밖5표 부재·시험/원문root empty다. 이후 새 Web 신뢰 읽기/메모리 버퍼 부재 RED1→집중3 GREEN/155.6469ms·type0을 확인했다. 시험의 GET method 추정undefined/기대 literal 정렬 오류2는 실제 공통ApiClient의 명시GET과 손정렬로 정정했으며 제품/합격 기준을 느슨하게 바꾸지 않았다. 새같은 Web 함수/API·PG 검수는 작성했고 다음 exact 게시본에서 실행한다. 실제 UI11 화면·HUMAN명령/일회승인 연결·유실/이동/재인증/브라우저는 여전히 미구현/미검증이다.
 
 - UI11 추가 actual **bfe492346f3316c1cd1a6e1071de8a37422468e9**는 현재 register/revoke만 허용된 새 proof에서 confirmation.allowed=true로 표시해1 FAIL/2715.382242ms(기능2416.759857)/SKIP0이었다. 실제 확인 쓰기의403 차단은 기존 서버에 남아 있으나 화면 가능 상태가 잘못되는 오류로 분류했다. 원인: read 공통권한의 trust 합집합과 개별 confirm 권한을 분리하지 않았다. 현재 유효 규칙에 confirmConnectorRegistration이 없으면 CONFIRMATION_POLICY_DENIED로 확인 불가를 반환하는 한 조건만 보완했다. 새권한/정책/SQL/write계약 확대0. 동일 추가 actual은 다음 exact 게시본에서 다시 확인하며 아직 GREEN으로 올리지 않는다.
