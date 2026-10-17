@@ -1,5 +1,9 @@
 # Anvil 재설계 개발환경
 
+FN06 독립 검수는C0/I0/M1·제한 scope 수용 가능, 최종 부분 수용은 PMO 판단이다. Minor1은 적용43 protocolVersion의 SQL NULL/문자열1 방어층 누락이며 실제 PG SELECT 비교만 확인했다(자료 변경0/INSERT 재현 아님). 공개 HTTP 정확8필드·숫자1 거절은 유지된다. 적용43/43종 checksum을 수정하거나 미승인 forward44를 추가하지 않았고 후속 보완 후보로 기록했다. 제품/시험 불변에 대한 기존 실행 근거를 유지하며 새 테스트·서비스/권한 변경으로 포장하지 않는다.
+
+FN06 최종 후보 검수:4ecb2e39 WSL exact의 신뢰+기존 문서/후보/정책 actual4 PASS/18684.758ms,0282713e의 추가 purpose/첫 발급 본문 미사용 검수 포함 신뢰 actual1 PASS/18831.163ms·skip0이다. 제품/43은8a7cb985 이후 불변, native/서명은13ecba26 이후 불변이다. 독립45표0/43 checksum 전부 일치/범위 밖5표 부재·임시root[]/보호원문 empty·Windows QAroot없음을 확인했다. 실제 Windows→WSL HTTPS/영구 등록·Agent/유료호출·서비스 교체·UI11 신뢰 화면은 이번 한정 검수와 구별한다. PMO 최종 부분 수용 대조 중이다.
+
 FN06 최신 실제 상태: 새43 `0006_host_trust_registrations` checksum3027636015d284462a4f974ad792175851ef28f05c73117fd4a813853e329020을8a7cb985 exact WSL에서 적용했다(이전42 불변·fixtures7·실제사용자0). 첫 actual1 PASS/2266.835ms, d8ec41e6 exact의 시도5회/등록 실제 만료·격리/제어·HUMAN3연산 별도 승인 소비 보강1 PASS/6629.197ms·skip0, 독립45표0/시험root[]·보호원문 empty이다. 아래 ‘미적용/미실행’은 당시 이력이다. Windows→WSL HTTPS·영구 PC/Agent·사용자 browser 인수/기존 서비스 변경은 미검증/미변경이다.
 
 FN06 서버 실제 RED는6377a8fb private/WSL exact clean에서1 FAIL/953.892ms·skip0(POLICY_SCOPE_NOT_READY412, 등록 미도달)이다. finally 뒤 독립41표0·신뢰4표 NOT_PRESENT·migrations42·임시root[]/보호원문 empty를 확인했다. 이후 서버/forward43 후보는 로컬 작성 중이며 아직 DB 미적용이다. 다음 적용 전 private exact/WSL Git·이전42 checksum·자원 정리를 다시 대조한다. 신규 QA는 qa-connector-trust-UUID의 합성 자료/메모리 키만이고 서비스/포트·실제 사용자/CA/relay 변경0이다.

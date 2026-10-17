@@ -1,5 +1,9 @@
 # P02 데이터 관계·보존 계약 초안
 
+FN06 독립 검수 Minor1(미수정): 적용43 challenge guard의 `payload_json->>'protocolVersion'<>'1'`은 null/누락에 SQL NULL, 문자열1에 false여서 DB 숫자1 계약을 완전히 강제하지 못한다. 현재 공개 HTTP는 정확8필드·숫자1을 선검사하며 공개 API 우회는 확인되지 않았다. 실제 PG SELECT 비교만 확인했고 guard INSERT 재현은 미실행이다. 적용43을 고치지 않으며 후속 승인된 forward에서 `payload_json->'protocolVersion' IS DISTINCT FROM '1'::jsonb`와 null/누락/문자열 DB 거절을 보완할 후보로 남긴다. 신규44 작성/적용0, 최종 부분 수용은 PMO 판단이다.
+
+FN06 적용43은8a7cb985 이후 불변이며4ecb2e39/0282713e 실제 신뢰/필요 일회 승인 소비/만료·회수/재발급 금지와 기존 자료·후보 소비의 인접을 확인했다. 실제 사용자 자료0·종료 QA45표0, 범위 밖 grant/Agent 등5표는 미생성이다. SQL 현재 제어·이력 guard와 Node 서명/Windows DPAPI 증거를 구분하며 독립 OS attestation/실제 Agent 연결을 주장하지 않는다.
+
 FN06 `AV3-PMO-FN06-TRUST-QA-01`의 forward43 `0006_host_trust_registrations.sql`은 `connectors,connector_registrations,connector_registration_challenges,connector_credentials` 네 테이블만 추가했다. 8a7cb985 exact WSL에서 checksum3027636015d284462a4f974ad792175851ef28f05c73117fd4a813853e329020 적용·이전42 불변이다. `connector_grants`/환경/Agent/실행 테이블은 생성하지 않는다. 등록·challenge·credential의 정확 scope/공개키 지문·정책/현재 HUMAN session ID·제어·세대·버전·기한·nonce/proof digest·소비/실패 횟수·회수와 비밀 없는 감사/명령 receipt를 결박한다. code/token은 digest만 저장하고 private key는 서버에 저장하지 않는다. 등록 목적은 상태조회 전용이고 grants[]이며 완료된 7필드 계약은 불변이다. 실제 부분8a7cb985/d8ec41e6과 QA45표0은 WORK_STATUS에서 구분한다. SQL은 현재 허가/receipt·상태 전이/감사를 검사하고 P-256 서명 자체는 Node가 검사한다. DB guard를 독립 암호/OS 증명으로 주장하지 않는다.
 
 UI08은 기존 FN11 승인 요청/결정/소비 및 후보41/42를 그대로 소비했다. 실제36fa3e51에서 서로 다른 요청의 APPROVE/REJECT/REQUEST_CHANGE·경합효과1·실제 만료·원 후보 소비max1/단절 재확인·회수를 확인했고 신규 migration/SQL 수정0이다. 원 요청/결정 이력과 불변 후보 버전은 UI 입력을 명시 닫아도 삭제하지 않는다. QA는 소유 UUID만 정리·독립 잔여0이며 실제 사용자 자료/정책은 변경하지 않았다.

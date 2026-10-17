@@ -2,13 +2,15 @@
 
 ## 2026-10-17 FN06 제한 신뢰 등록 — 승인된 구현 프로필
 
+마지막 독립 검수는C0/I0/M1이다. Minor1은 적용43의 DB protocolVersion NULL/문자열1 방어층이며 HTTP 계약은 정확8필드·숫자1을 유지한다. 공개 API 우회·추가 발급·권한 확대는 확인되지 않았고 SQL SELECT 비교만 검증했다. 미수정 사항은 WORK_STATUS에 공개했으며 적용 SQL 변경/후속44 작성·적용0, 이번 제한 기능의 최종 부분 수용은 PMO에 남긴다.
+
 PMO `AV3-PMO-FN06-TRUST-QA-01`은 아래 §12.2의 완성형 등록을 열지 않고 별도 `kind:HOST_TRUST_REGISTRATION` 분기만 허용한다. 입력은 `kind,hostLabel,expectedHostFingerprint,policyRef,expiresAt,reason`이며 기존 7필드 parser는 불변이다. 등록은 최대10분, challenge 최대2분, 증명 실패 최대5회, credential 최대15분/현재 정책 기한 이내이고 자동 갱신0이다. credential 목적은 `REGISTRATION_STATUS_ONLY`, 프로젝트/환경/자료/파일/실행 grants0이다. fingerprint 문자열만으로 host 증명/Agent 준비 완료를 주장하지 않는다.
 
 암호 계약은 P-256/SHA256·SPKI DER base64url·공개키 SHA256 지문·IEEE-P1363 64byte 서명이다. 서명 대상은 정확 `protocolVersion,installationId,registrationId,scopeDigest,publicKeyFingerprint,serverNonce,clientNonce,expiresAt` 8필드의 canonical UTF-8이며 두 nonce는 각각 CSPRNG32byte다. 다른 설치/범위/nonce·만료/재사용/형식 변조는 거절한다. Windows helper는 CurrentUser DPAPI만 쓰고 private/token은 stdin/프로세스 내부에서 처리하며 stdout/argv/로그/Git·평문 fallback0이다.
 
 서버 후속 구현 범위는 기존 프로젝트 명령 `registerConnector/confirmConnectorRegistration/revokeConnector`의 현재 HUMAN 재인증/단독 제어/명시 정책/정확 버전·기한·감사/필요 일회 승인 소비, POST `/api/v1/connectors/enroll`(공개키 포함), POST `/api/v1/connectors/registrations/:id/proof`, POST 같은 prefix `/exchange`의 CHALLENGE/ISSUE, GET `/api/v1/connectors/:id/registration-status`뿐이다. 최초 key proof 뒤 HUMAN exact 지문/범위/버전 확인, 새 nonce proof 뒤 일회 발급한다. 발급 응답 유실은 `ALREADY_ISSUED_RECONCILE`; 두 번째 token/평문 조회/자동 새 키·등록0이며 정확 HUMAN 회수·새 등록 또는 만료로만 정리한다. 기존 자료/명령 API는 이 credential을 거절해야 한다. §12.2의 commands/receipts/observations/heartbeat와 실제 Agent/OS 소유 실행은 이번에 활성화하지 않는다.
 
-현재 순수 입력/서명·Windows 보호저장 상호운용과8a7cb985/d8ec41e6의 WSL HTTP 주입/정식 PG 신뢰 등록 부분을 확인했다(WORK_STATUS). 새43 적용·시도5회/등록 만료·HUMAN3연산 각각 별도 승인 소비와 정리45표0은 실제 실행 범위다. Windows→WSL HTTPS/영구 설치·실제 Agent 및 남은 정밀 조건은 미검증이며 전체 연결/배정 준비로 승격하지 않는다.
+현재 순수 입력/서명·Windows 보호저장 상호운용과8a7cb985/d8ec41e6/4ecb2e39/0282713e의 WSL HTTP 주입/정식 PG 신뢰 등록 부분을 확인했다(WORK_STATUS). 새43 적용·시도5회/등록 만료·HUMAN3연산 각각 별도 승인 소비, 현재 세션/정책·자격/제어 세대·만료·purpose·첫 발급 본문 미사용 재확인과 정리45표0은 실제 실행 범위다. Windows→WSL HTTPS/영구 설치·실제 Agent 및 클라우드 정밀 조건은 미검증이며 전체 연결/배정 준비로 승격하지 않는다.
 
 후속 교환의 내부 상세: CHALLENGE 요청도 최초 HOST_PROOF serverNonce·같은 등록/설치/범위/지문에 새 clientNonce와 원 등록 expiresAt를 결박한 정확8필드 서명을 먼저 검사한다. 최초 clientNonce 재사용/서명 불일치는 새 challenge를 만들지 않는다. 동일 유효 preflight는 동일 미소비 challenge만 재조회하며 임의 clientNonce로 먼저 교환 상태를 잠그지 못한다. ISSUE는 별도로 새 serverNonce와 그 clientNonce에 결박한 최대2분 challenge만 소비한다. 이는 기존 승인된 fresh-nonce 절차의 위조/선점 방지 구현 상세이며 새 자료/실행 권한을 추가하지 않는다. 실제 구현/검증은 후속이다.
 

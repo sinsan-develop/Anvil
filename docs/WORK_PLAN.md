@@ -98,7 +98,7 @@
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
 | FN04 | 설계 추적·계획·변경 영향 | B | FN02,FN03,FN11 | FN02,FN03,FN11 | 작업 중 — D/S·업무 카드/두 선행·불변 계획/개정·화면 검토 선택·trace edge·계획 검토/확정의 화면/same-client actual. 요청4종 출처·사람 영향 이력/미확인 보존 actual df2f81ff·forward33 확인. 변경 적용/UI07·실제 browser DB 여정 미완료 |
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |
-| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·후보/UI11 및 Windows DPAPI/CNG 부분 확인. 서버 신뢰43 적용/8a7cb985·d8ec41e6 실제 부분 GREEN·QA45표0. 남은 수명/현재 세션·정책/인접 검수 중. Windows→WSL HTTPS·영구 PC/실제 Agent·전체 연결 미완료 |
+| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·후보/UI11·Windows DPAPI/CNG·상태조회전용 서버 신뢰43의 실제 부분 확인(4ecb2e39 인접4/0282713e 신뢰1 PASS·QA45표0), 독립 C0/I0/M1·제한 수용은 PMO 판단. Minor1 DB protocolVersion 방어층 보완은 후속 승인 forward 후보로 공개. UI11 신뢰 관리·Windows→WSL HTTPS·영구 PC/실제 Agent·전체 연결 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 시작 전 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 시작 전 |

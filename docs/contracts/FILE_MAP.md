@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+FN06 마지막 독립 읽기 전용 검수(daf88829..0282713e)는C0/I0/M1·제한 scope 수용 가능이다. Minor1의 정확 위치는 `db/migrations/0006_host_trust_registrations.sql:170`이며 적용본은 불변으로 보존한다. 공개 HTTP `registration-proof.ts`의 정확8필드/숫자1 검사와 구별한 DB 방어층 보완 후보이며 후속 forward는 PMO의 정확 지시 전 작성하지 않는다. 실제 PG SELECT 비교 이외 새 시험/제품 수정0이고 전체 FN06/Stage 검수 완료가 아니다.
+
+FN06 한정 신뢰 검수의 마지막 실행은0282713e 신뢰 actual1/18831ms와4ecb2e39 신뢰·기존3개 인접 actual4/18685ms다. 제품/43·native/서명 불변을 확인해 같은 성공 검사를 반복하지 않았다. 실제 코드/계약은 read-only 독립 검수 대상이며 미구현 UI11 신뢰 관리/실제 Agent·Windows→WSL HTTPS는 여전히 별도다.
+
 FN06 서버 부분은8a7cb985의 신규43 적용/등록 actual과 d8ec41e6 시도5회·등록 실제 만료·HUMAN3연산 별도 일회 승인 소비 actual을 확인했다. 후속 실제 시험만 보강 중이며 제품/43은 불변이다. 아래 착수/미적용 문구는 당시 이력으로 WORK_STATUS의 최신 증거/미검증을 따른다. 실제 Agent/영구 PC/Windows→WSL HTTPS 완료가 아니다.
 
 FN06 서버 후속 후보: `connections/project-registrations.ts`는 현재 HUMAN 등록/정확 비교/회수·동일 command/단독 제어/정책·기한/receipt를, `registration-protocol.ts`는 host proof·유한 challenge/실패 횟수·새 nonce·상태조회전용 일회 발급/회수·COMMIT 뒤 실패 반환을, `registration-routes.ts`와 `http/connector-auth.ts`는 제한된 HTTP/Origin/strict JSON·기존 API credential 차단을 소유한다. `contracts/connector.schema.json`·직접 catalog/생성 타입, 신규43 `db/migrations/0006_host_trust_registrations.sql`·명시 runner와 기존 승인 소비3연산의 정확 대상/ref 확장만 연결한다. 직접 실제 시험 `tests/integration/FN06/trust-registration.test.ts`의 첫6377a8fb RED와 이후 후보/미적용43을 구별한다. 아직 실제 등록 GREEN/전체 Agent 실행 완료가 아니다.
