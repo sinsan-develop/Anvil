@@ -1,5 +1,7 @@
 # P02 기존 코딩 Agent 지원 대조
 
+compile-only 새1회9fb5fe19/runabbe0980 결과 FAIL/exit1, csc54156/status1/signalnull/118ms·NONZERO만 확인했다. 허용source CS진단0이라 직접 이유는 UNKNOWN이다. helper/native/Job/handshake0, 등록root독립부재·보호7hash/runtime 불변. 원 Codex smoke FAIL/6능력 미검증을 유지하고 재시도0이며 순수16 PASS와 혼동하지 않는다.
+
 FN06 compile 진단보존 준비: 최초 실제 QA_COMPILE_FAILED는 FAIL/직접원인 UNKNOWN으로 보존한다. 직접16 순수 PASS/타입0은 예외 정규화와 별도 compile-only 입력/단1회 dispatcher만 증명한다. 실제 compile/도구/handshake/OS·6능력은 이번 준비에서 실행0이다. helper/native/Job 실행으로 진행하지 않는 compile-only 별도7값 정책/새 후보 검증은 실제 시작조건을 PMO가 전달한 뒤만 실행한다. 기존 지원등급은 올리지 않는다.
 
 A 제한 실제1회(source629fb70c/run56d83f93)는1 FAIL/exit1 QA_COMPILE_FAILED다(시험21211.9689ms). csc 호출시도1에서 중단되어 helper/native/Job/stdio·두메시지0, handshake/6능력/OS통제는 미실행·미검증이다. 실제compiler exit/timeout/진단은 wrapper에서 보존되지 않아 직접원인 미확정이다. 등록root독립부재·보호7hash/원runtime 불변을 확인했고 추가시도0이다. 순수11/타입·정적검수와 이 실제실패를 구분한다.

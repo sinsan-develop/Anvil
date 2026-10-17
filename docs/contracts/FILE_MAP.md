@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+9fb5fe19 compile-only1회는 csc PID54156/status1/118ms에서 실패했고 stdout153byte digest와 stderr0·정규화진단0의 safe receipt만 반환했다. 신규root binding/result2파일·3dir를 정확정리/독립잔여0, 코드3파일/C#source39111ada/compiler46809206 불변이다. 이번 결과기록은 직접4문서만 추가하고 compiler 실패 이유를 추측수정하지 않는다.
+
 FN06 compile 진단 준비의 변경은 기존 handshake-qa.ts(own data 유한 receipt/checkCompileOnlyRunBinding/CompileOnlyAttempt), 직접 unit(기존11+신규5), 기존 integration의 별도 compile-only 분기와 원 compile catch, 직접4문서뿐이다. C# source39111ada/기존 codec/vendor/의존성/서비스는 불변이다. compile-only는 신규 등록root의 compile1 결과만 기록·정리하고 성공해도 원 handshake 분기로 복귀하지 않는다. 준비 중 통합/컴파일 실행0이며 직접16 순수 PASS·타입0와 구분한다.
 
 A 최초 integration1회는 compile 호출 단계 QA_COMPILE_FAILED로 끝났다. 현 harness의 compile catch가 원예외의 exit/signal/timeout/진단을 버려 직접원인은 미확정이다. 소스/harness는 변경하지 않았고 새 실제실행0; 승인된root/binding만 정리했다. 오류기록 보완은 후속 PMO지시 대상이며 이번한번의 실패를 뒤의 성공으로 소급하지 않는다.
