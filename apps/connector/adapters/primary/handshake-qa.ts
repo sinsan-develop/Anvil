@@ -2,6 +2,21 @@ import {createHash} from 'node:crypto';
 import {parseWireJson} from '../../../../contracts/canonical.ts';
 import {Codex0161Codec} from './codec.ts';
 
+export interface HandshakeRunBinding {policy:string;runId:string;sourceSha:string;hostSourceHash:string;issuedAt:string;expiresAt:string}
+/** 로컬 한시 harness 입력 대조일 뿐 사용자/PMO 권한의 암호학적 증명이 아니다. */
+export function checkHandshakeRunBinding(value:unknown,currentSha:string,hostHash:string,nowMs:number):value is HandshakeRunBinding{
+ try{
+  if(!value||typeof value!=='object'||Array.isArray(value)||Object.getPrototypeOf(value)!==Object.prototype||Object.getOwnPropertySymbols(value).length)return false;
+  const d=Object.getOwnPropertyDescriptors(value),keys=['policy','runId','sourceSha','hostSourceHash','issuedAt','expiresAt'];
+  if(Object.keys(d).length!==keys.length||keys.some(k=>!d[k]||!('value'in d[k]!)||typeof d[k]!.value!=='string'||d[k]!.value.length>128))return false;
+  const v=value as HandshakeRunBinding;
+  if(v.policy!=='AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01'||!/^[-0-9a-f]{36}$/.test(v.runId)||!/^\w{8}-\w{4}-4\w{3}-[89ab]\w{3}-\w{12}$/.test(v.runId))return false;
+  if(!/^[a-f0-9]{40}$/.test(v.sourceSha)||! /^[a-f0-9]{64}$/.test(v.hostSourceHash)||v.sourceSha!==currentSha||v.hostSourceHash!==hostHash)return false;
+  const from=Date.parse(v.issuedAt),to=Date.parse(v.expiresAt);
+  return Number.isSafeInteger(nowMs)&&Number.isFinite(from)&&Number.isFinite(to)&&new Date(from).toISOString()===v.issuedAt&&new Date(to).toISOString()===v.expiresAt&&from<=nowMs&&to>from&&to-from<=1800000&&to-nowMs>=20000;
+ }catch{return false;}
+}
+
 const home='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa\\home';
 type Phase='NEW'|'WAIT_RESULT'|'WAIT_EXIT'|'PROTOCOL_COMPLETE'|'UNKNOWN';
 type Failure='CLOCK_INVALID'|'ALREADY_STARTED'|'NOT_STARTED'|'HANDSHAKE_TIMEOUT'|'EXIT_TIMEOUT'|'STDOUT_LIMIT'|'STDERR_LIMIT'|'FRAME_INVALID'|'RESULT_INVALID'|'UNEXPECTED_OUTPUT'|'INITIALIZE_NOT_COMPLETE'|'PROCESS_EXIT_INVALID';

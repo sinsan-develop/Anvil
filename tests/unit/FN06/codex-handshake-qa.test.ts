@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {createHash} from 'node:crypto';
-import {CodexHandshakeQa} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
+import {CodexHandshakeQa,checkHandshakeRunBinding} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
 
 const home='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa\\home';
 const response=(patch:Record<string,unknown>={})=>Buffer.from(JSON.stringify({id:'anvil-fn06-init-01',result:{codexHome:home,platformFamily:'windows',platformOs:'windows',userAgent:'synthetic-only',...patch}})+'\n');
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex').toUpperCase();
+const binding={policy:'AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01',runId:'1f26792e-ef0c-4d79-859c-476f2f2da5b1',sourceSha:'a'.repeat(40),hostSourceHash:'b'.repeat(64),issuedAt:'2026-10-17T06:30:00.000Z',expiresAt:'2026-10-17T07:00:00.000Z'};
+// 이 검사는 실행 권한을 발급하지 않는다. 한시 실행 소비자의 정확 후보/창 입력이 어긋나면 막는다.
+test('한시 실행 입력은 정확 정책·commit·hosthash·run과 최대30분 창에만 맞는다',()=>{
+ const now=Date.parse('2026-10-17T06:40:00.000Z');assert.equal(checkHandshakeRunBinding(binding,'a'.repeat(40),'b'.repeat(64),now),true);
+ for(const changed of [{...binding,policy:'OTHER'},{...binding,sourceSha:'c'.repeat(40)},{...binding,hostSourceHash:'c'.repeat(64)},{...binding,runId:'bad'},{...binding,extra:true},{...binding,expiresAt:'2026-10-17T07:00:00.001Z'}])assert.equal(checkHandshakeRunBinding(changed,'a'.repeat(40),'b'.repeat(64),now),false);
+ assert.equal(checkHandshakeRunBinding(binding,'a'.repeat(40),'b'.repeat(64),Date.parse(binding.issuedAt)-1),false);assert.equal(checkHandshakeRunBinding(binding,'a'.repeat(40),'b'.repeat(64),Date.parse(binding.expiresAt)-19_999),false);assert.equal(checkHandshakeRunBinding(binding,'a'.repeat(40),'b'.repeat(64),NaN),false);
+});
 function started(){const c=new CodexHandshakeQa();const actions=c.start(0);assert.equal(actions.length,1);assert.equal(actions[0]?.kind,'WRITE_STDIN');return c;}
 
 // 같은 codec의 유효 initialize 결과 이전에 두 번째 wire를 발행하거나 ACK/OS 성공을 꾸미면 실패한다.

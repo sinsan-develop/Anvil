@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+A 남은2파일 준비: `apps/connector/native/CodexHandshakeHost.cs`는 고정 native/hash·private Job/stdio3·초기 JOB_LIST/비상속·raw소유/단1회 종료 관측을 담당한다. `tests/integration/FN06/codex-handshake-0161.test.ts`는 exact SHA/sourcehash와 PMO 한시 입력·보존 선검사→새 QA root/csc1→host/native1→gate→관측/정리용이며 아직 실행하지 않았다. 새 모듈의 checkHandshakeRunBinding은 로컬 후보/창 입력 대조이지 PMO 권한 자체의 증명이 아니다. 준비 전용 검증은 직접 순수unit/type/diff와 C# 정적검수에 한정한다.
+
 FN06-HANDSHAKE-0161-01 부분 준비의 실제2파일: `apps/connector/adapters/primary/handshake-qa.ts`는 고정 QA2메시지와 기존 codec/유한 입력·단계시각·EOF/exit 입력을 순수 메모리 action으로 비교한다. `tests/unit/FN06/codex-handshake-qa.test.ts`는 직접8건이며 OS/stdio를 모의한다. normal adapter·권한 verifier/launcher에 연결하지 않았다. 승인된 CodexHandshakeHost.cs와 tests/integration/FN06/codex-handshake-0161.test.ts는 아직 작성 전이며 root·C# compile·Job/native 실행0이다. 기존 codec/vendor/OwnershipHost·Windows-host/서버/DB·패키지는 변경하지 않는다.
 
 UI10 정정 표시 비교: `features/knowledge/correction-diff.ts`가 기존 순수 documentTextDiff를 변경 없이 소비하며 본문65,536 UTF-16 단위/2,000줄 초과는 상세 제한으로 구분한다. `KnowledgeCorrectionDiff.tsx`는 현재 props의 제목/판단 이유/본문을 text로 비교하고 기존 KnowledgeCorrectionForm의 저장/주체 guard를 변경하지 않는다. 직접 단위는 `tests/unit/FN05/knowledge-correction-diff.test.ts`, 합성 브라우저는 기존 `tests/browser/UI10/knowledge-correction.spec.ts`다. 후자는 ANVIL_UI10_FIXTURE_DIST 지정 시 그 후보 asset만 응답하고 기본값은 기존 apps/web/dist이며 모든 API는 fixture로 차단한다. live dist를 덮지 않는 후보 build는 `vite build --config apps/web/vite.config.ts --outDir <사전등록 QA 경로>/dist`로 실행한다. API/DB 계약·원문/출처·pending 명령과 기존 저장 경로는 불변이다.
