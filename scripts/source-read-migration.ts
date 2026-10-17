@@ -1,6 +1,7 @@
-import{readFile}from'node:fs/promises';import{createHash}from'node:crypto';import type{Client}from'pg';
+import{readFile,realpath}from'node:fs/promises';import{createHash}from'node:crypto';import{join}from'node:path';import type{Client}from'pg';
 import{legacyMigrationIds,sourceRootMigrationId,sourceRootMigrationManifest}from'./source-root-migration.ts';
 export const sourceReadMigrationId='0008_source_read_observation';
+export async function sourceReadMigrationRoot(){const root=await realpath(new URL('..',import.meta.url));if(await realpath(new URL('./source-root-migration.ts',import.meta.url))!==join(root,'scripts','source-root-migration.ts'))throw Error('SOURCE_READ_MODULE_ROOT_MISMATCH');for(const id of [...legacyMigrationIds,sourceRootMigrationId,sourceReadMigrationId])if(await realpath(new URL('../db/migrations/'+id+'.sql',import.meta.url))!==join(root,'db','migrations',id+'.sql'))throw Error('SOURCE_READ_SQL_ROOT_MISMATCH');return root;}
 /** 독립 격리 검수 준비 전용. 기존 정식 migration runner/서버 시작에는 연결하지 않는다. */
 export async function sourceReadMigrationManifest(){const previous=await sourceRootMigrationManifest(),expected=new Map(previous.expected);expected.set(sourceRootMigrationId,previous.checksum);const sql=await readFile(new URL('../db/migrations/'+sourceReadMigrationId+'.sql',import.meta.url),'utf8');return{expected,sql,checksum:createHash('sha256').update(sql).digest('hex')};}
 /** 호출자가 승인된 격리 대상·BEGIN·advisory lock을 확인해야 한다. 자체 접속/COMMIT은 없다. */
