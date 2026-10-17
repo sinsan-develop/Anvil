@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN08 단일 검수 C0/I3/M2 REWORK 뒤 Main 안전 코드 보완: 미resume 본인 합성 retained handle의 정확 취소·종결 확인, 원 PID/시각/3830 실제 존재 gate, 최초 run/절대 기한·정리 여유120초·부모/자식 같은 종료점, sticky UNKNOWN 후 새 writer 차단을 추가했다. M2는 Main Important로 재분류했고 M1 누적 line buffer 상한은 잔여다. 순수7/unit197/typecheck/syntax만 확인했으며 C# 컴파일·OS 실제 검수·schema-export는 미실행이다. 원 Node 부재·QA root/process0과 추가 실행 금지는 유지하며 새 Windows runtime은 PMO 별도 승인 판정 전 변경하지 않는다. 이 한시 QA를 새 run/상대기한으로 다시 열지 않는다.
+
 2026-10-17 FN08 A 한정 QA: run2897e501-cbe9-491c-bd72-28b996f0499b·12:31:53~13:01:53KST 고정30분의 `D:\tmp\anvil-v3-fn08-ownership-qa/{bin,source,results,schema}`만 사용했다. 기존compiler build/합성소유 actual3FAIL·conhost 진단59575e32 exit1/DIAGNOSTIC_ONLY_NOT_ACCEPTANCE, 정확root/합성process는0이다. DETACHED 합성후보는 순수3/unit193/typecheck만 확인했고 actual/schema-export·실제Agent/계정조회·DB/TLS/서비스 변경0이다. 원Node40744·Windows3830은12:40부재/소실시각·원인미확정, relay26052는존재·2026-10-15T12:28:17.5262970Z 시작이다. 과거11:59 Node관측 이후전체기간불변주장은취소·보존UNVERIFIED다. PMO는 필수보존gate를 완화하지 않고 추가actual미실행 부분제출을 지시했다. 새Windowsruntime 전환안은 후속 read-only 제안이며 옛40744 exact복원이 아니다.
 
 동일 HTTPS-QA의 독립검수는0d9c1dec..e07312d3 C0/I2/M0이고 Main은 최초deadline을 server active 시작에도 고정·만료후 본인정리 보존, TLS stage전 타이머/신호·직렬 중단/메모리 소유 부분정리를 보완했다. 보완 뒤 순수집중7 PASS·전체unit190 PASS/2808.8414ms·typecheck0이며 **실제 OS 신호/부분파일 실패·HTTPS actual 재실행은 없다**. e07312d3의 실제 PASS와 수정 후 순수 근거를 구분하고 제한수용은 PMO 판정에 남긴다. 새 자원/복제·DB/서비스 변경0이다.

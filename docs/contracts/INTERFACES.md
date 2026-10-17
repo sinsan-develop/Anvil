@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+FN08 한시 QA 보완 계약: 최초 승인 run2897e501-cbe9-491c-bd72-28b996f0499b와 2026-10-17T03:31:53.000Z~04:01:53.000Z를 고정하고 최소120초 남지 않으면 새 준비를 거절한다. 원 Node40744/relay26052의 고정 시작시각·실제 존재와 3830 소유를 확인하지 못하면 생성/launch 불가다. `CANCEL_PREPARED(exactRef)`는 미resume retained handle·이미지/hash·생성시각·job/gen을 다시 확인한 본인 합성 준비에만 허용하며, 실제 종결·빈 job 전 PREPARATION_CANCELLED가 아니다. EOF/만료/Ref 이전 생성도 같은 안전 조건이다. UNKNOWN은 client/native에 sticky하며 새 PREPARE/세대·RESUME/일반 FORCE를 막고 정확 소유 준비취소만 별도 정리 경로로 남긴다. 이를 정상 관측·새 승인으로 자동 해제하지 않는다. 원 독립 C0/I3/M2 REWORK와 M2 Main Important 재분류, M1 line buffer 상한 잔여, 보완 후 native 컴파일/OS 실제 미실행을 구별한다. 제품 API·grant/DDL 변경은 없다.
+
 FN08 승인A의 내부 QA 소유IPC 후보는 `PREPARE(spec)`→현재run/gen/hash/job/PID/시작시각의PREPARED→별도RESUME→OBSERVE/STOP와 명시불응합성전용FORCE다. 고정 `SYNTHETIC_WORKER`만 허용·임의shell/경로/Agent0, kill-on-closeOFF·Job은파일sandbox아님, 오류/관측공백은UNKNOWN이며 진단은별도타입·전체경로/commandline/환경0이다. 최초30분run만소비하며 public API/DDL·grant변경0이다. 실제3FAIL/conhost진단을보존하고 DETACHED 보정은콘솔I/O없는합성전용·actual미실행이므로 일반Agent/stdio 지원이나최종소유/회수PASS가아니다. 원Node보존UNVERIFIED로 추가실행gate는열지않았다.
 
 ## 2026-10-17 FN06 제한 신뢰 등록 — 승인된 구현 프로필

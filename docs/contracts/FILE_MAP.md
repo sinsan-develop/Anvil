@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN08 단일 검수 C0/I3/M2 REWORK 후 동일5코드 경로만 Main 보완: runtime의 원 프로세스/승인 gate·취소결과/sticky UNKNOWN 순수 정책, harness의 생성 전/각 launch 전/종료 후 실제 원 Node/relay·3830 확인, native의 Ref 이전 생성 소유·미resume 취소/종결 확인, fixture의 최초 절대기한·자식 종료점 상속. M2 Main Important 재분류, M1 line buffer 상한 잔여. 순수7/unit197/type0은 native 컴파일/OS/Agent 지원 증거가 아니다. 보완후 실제 검수·schema-export는 미실행이며 ProtectedStore/기존 HTTPS/DB·Web은 변경하지 않았다.
+
 FN08 승인A 후보: `apps/connector/native/OwnershipHost.cs`는 고정 합성worker 프로필·suspended/Job attach·정확ref/PID/시각/구성원·협력/명시불응합성회수·UNKNOWN 진단만 담당하며 `runtime/windows-host.ts`의 기존 보호저장 호출과 별도 typed 소유 IPC를 사용한다. `tests/fixtures/FN08/OwnedWorker.cs`와 `tests/unit/FN08/windows-host.test.ts`/`tests/integration/FN08/windows-ownership.test.ts`가 직접검수, 기존build script는 exact 신규FN08root만 추가한다. 원3FAIL/conhost진단·DETACHED합성전용 보정·추가actual/exporter미실행/보존UNVERIFIED는 WORK_STATUS와 구별한다. vendor schema/실제Agent adapter·grant/서버실행·DB/계정 변경0이며 파일 존재는 지원PASS가 아니다.
 
 HTTPS-QA 단일 독립검수 C0/I2/M0 뒤 Main 보완은 `fn06-https-qa-server.ts`/`https-qa-lease.test.ts` 두 파일뿐이다. server active 시작에 최초global deadline을 고정하고 stage전 종료 lifecycle·메모리 소유 부분정리를 연결했다. 순수집중7/전체unit190/typecheck PASS와 이전 e073 실제1PASS를 구분하며 수정 후 actual·OS 종료/부분쓰기 실패 재현·독립 재검수는 미실행이다. 제품 native transport/Windows cleanup·Web/API/DB44는 불변이다.

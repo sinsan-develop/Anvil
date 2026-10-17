@@ -100,7 +100,7 @@
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |
 | FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·기존 DPAPI/CNG/상태전용 신뢰·44교정 제한수용 유지. e07312d3 native→strict TLS/WSL PG→UI11 정상/본문유실2건1 PASS/36923ms·정리0. 단일독립 C0/I2/M0의 QA수명/초기종료 Main 보완·순수7/unit190/type0·보완후actual/독립재검수0, PMO 수용 전. SQL44불변/QA45표0, 영구 PC/실제 Agent·능력실측·전체연결 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
-| FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 작업 중·승인A 한정 소유helper/typed IPC/합성worker 후보. 순수3/unit193/type0, native 실제3FAIL·conhost 별도UNKNOWN진단. DETACHED 보완actual·schema-export는 원Node40744부재/필수보존UNVERIFIED로 미실행·자원0. 전체실행/ACK/spool·Agent 연결 미구현/미검증 |
+| FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·승인A 합성 소유 후보. 독립 C0/I3/M2 REWORK 보존, Main I1~I3 및 M2 Important 재분류 보완·순수7/unit197/type0. native 실제3FAIL·별도conhost UNKNOWN, 보완후 컴파일/OS/DETACHED/취소·schema-export 미실행. 원Node40744 부재/보존UNVERIFIED·자원0, M1 buffer 상한 잔여. 전체 실행/ACK/spool·Agent 연결 미구현/미검증 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 시작 전 |
 | FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 시작 전 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |
