@@ -2,6 +2,8 @@
 
 ## 2026-10-17 FN06 제한 신뢰 등록 — 승인된 구현 프로필
 
+후속 PMO 허용44로 DB protocolVersion 숫자1 방어층을 교정했다(공개 API 계약 확대0). dba582b6 exact 실제 app DB6종 거절/숫자1 정상과 HTTP 등록·서명/HUMAN 비교/새 nonce/일회 발급·상태조회/재발급409/회수1 PASS, 이전43 불변·QA45표0이다. 독립 원C0/I0/M1에 Main 수정/검증을 연결했으며 아래 미수정·후속44 없음은 이전 시점 기록이다. 실제 Windows→WSL HTTPS·Agent/영구 등록·UI11 신뢰 화면은 미확인/미완료이고 제한 수용은 PMO 판단이다.
+
 마지막 독립 검수는C0/I0/M1이다. Minor1은 적용43의 DB protocolVersion NULL/문자열1 방어층이며 HTTP 계약은 정확8필드·숫자1을 유지한다. 공개 API 우회·추가 발급·권한 확대는 확인되지 않았고 SQL SELECT 비교만 검증했다. 미수정 사항은 WORK_STATUS에 공개했으며 적용 SQL 변경/후속44 작성·적용0, 이번 제한 기능의 최종 부분 수용은 PMO에 남긴다.
 
 PMO `AV3-PMO-FN06-TRUST-QA-01`은 아래 §12.2의 완성형 등록을 열지 않고 별도 `kind:HOST_TRUST_REGISTRATION` 분기만 허용한다. 입력은 `kind,hostLabel,expectedHostFingerprint,policyRef,expiresAt,reason`이며 기존 7필드 parser는 불변이다. 등록은 최대10분, challenge 최대2분, 증명 실패 최대5회, credential 최대15분/현재 정책 기한 이내이고 자동 갱신0이다. credential 목적은 `REGISTRATION_STATUS_ONLY`, 프로젝트/환경/자료/파일/실행 grants0이다. fingerprint 문자열만으로 host 증명/Agent 준비 완료를 주장하지 않는다.

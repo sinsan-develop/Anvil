@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+최신 FN06 제한 검수: dba582b62d645d14777e6e954aa5a1a24bfb81a3 exact WSL에서 PMO 허용 corrective44 `0006_host_trust_challenge_protocol_fix`(a57c5432f0eff9152889b4dd7e23409e8dbc1cadd8b34426e0a6b3b012b15f3c) 적용 exit0, 직접 app DB 음성6/숫자1 정상·등록/일회 발급·상태조회/회수1 PASS/2132.299ms·skip0이다. 독립45표0·44 checksum 일치·제외5표 부재·기존 PG15.18/비관리자2·시험root[]/보호원문 empty·Windows QAroot없음. 독립 원C0/I0/M1의 finding은 Main 보완/실행 근거로 연결했고 새 독립 재검수로 주장하지 않는다. 기존43/Windows/인접3 불변으로 반복0,서비스/키/실제 사용자/Agent 변경0이다. 아래44 미승인/미수정은 추가 PMO 지시 전 이력이다.
+
 FN06 독립 검수는C0/I0/M1·제한 scope 수용 가능, 최종 부분 수용은 PMO 판단이다. Minor1은 적용43 protocolVersion의 SQL NULL/문자열1 방어층 누락이며 실제 PG SELECT 비교만 확인했다(자료 변경0/INSERT 재현 아님). 공개 HTTP 정확8필드·숫자1 거절은 유지된다. 적용43/43종 checksum을 수정하거나 미승인 forward44를 추가하지 않았고 후속 보완 후보로 기록했다. 제품/시험 불변에 대한 기존 실행 근거를 유지하며 새 테스트·서비스/권한 변경으로 포장하지 않는다.
 
 FN06 최종 후보 검수:4ecb2e39 WSL exact의 신뢰+기존 문서/후보/정책 actual4 PASS/18684.758ms,0282713e의 추가 purpose/첫 발급 본문 미사용 검수 포함 신뢰 actual1 PASS/18831.163ms·skip0이다. 제품/43은8a7cb985 이후 불변, native/서명은13ecba26 이후 불변이다. 독립45표0/43 checksum 전부 일치/범위 밖5표 부재·임시root[]/보호원문 empty·Windows QAroot없음을 확인했다. 실제 Windows→WSL HTTPS/영구 등록·Agent/유료호출·서비스 교체·UI11 신뢰 화면은 이번 한정 검수와 구별한다. PMO 최종 부분 수용 대조 중이다.
