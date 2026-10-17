@@ -1,0 +1,79 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {readFile} from 'node:fs/promises';
+import {randomUUID,randomBytes,generateKeyPairSync,sign} from 'node:crypto';
+import {Pool} from 'pg';
+import {validateDevelopmentDbConfig} from '../../../apps/server/storage/development-config.ts';
+import {AccessRepository} from '../../../apps/server/modules/access/repository.ts';
+import {hashPassword} from '../../../apps/server/modules/access/service.ts';
+import {ProjectPolicyRepository} from '../../../apps/server/modules/access/project-command.ts';
+import {proofBytes,publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
+import {buildApp} from '../../../apps/server/app.ts';
+
+// HUMAN GET이 옛 receipt를 반환하거나 다른 주체/Secret을 노출하면 실패한다.
+test('HUMAN 신뢰 조회는 현재 ref·지문·격리·기한·cursor·GET 무부작용에 결박된다',async()=>{
+ if(!process.env.ANVIL_DB_CONFIG||!process.env.ANVIL_MIGRATOR_CONFIG)throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
+ const pool=new Pool(validateDevelopmentDbConfig(JSON.parse(await readFile(process.env.ANVIL_DB_CONFIG,'utf8')),'app'));
+ const admin=new Pool(validateDevelopmentDbConfig(JSON.parse(await readFile(process.env.ANVIL_MIGRATOR_CONFIG,'utf8')),'migrator'));
+ const uid=randomUUID(),pid=randomUUID();let userCreated=false,projectCreated=false;
+ const access=new AccessRepository(pool,{installationId:randomUUID(),key:randomBytes(32)}),policies=new ProjectPolicyRepository(access),app=buildApp({},undefined,{repository:access,origin:'https://localhost:3830'});
+ try{
+  const password=randomBytes(32).toString('base64url'),phc=await hashPassword(password);
+  await pool.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'challenge 숫자 계약 QA','ACTIVE')",[uid,'qa-connector-trust-'+uid]);userCreated=true;
+  await pool.query('INSERT INTO anvil.password_credentials(user_id,argon2_phc,credential_generation) VALUES($1,$2,1)',[uid,phc]);
+  let own=await access.login('qa-connector-trust-'+uid,password,'challenge QA','qa-connector-trust-'+uid);own=await access.reauthenticate(own.token,own.csrfToken,password,'qa-connector-trust-'+uid);
+  await admin.query("INSERT INTO anvil.projects(id,name,purpose,desired_outcome) VALUES($1,'challenge 계약 QA','숫자1만 허용','상태 조회만')",[pid]);projectCreated=true;
+  await admin.query("INSERT INTO anvil.project_members(project_id,user_id,participation) VALUES($1,$2,'OWNER')",[pid,uid]);await admin.query('INSERT INTO anvil.project_control(project_id,actor_id,client_id,generation) VALUES($1,$2,$3,1)',[pid,uid,own.clientId]);
+  const envelope=(operation:string,payload:Record<string,unknown>,targetId:string|null=null,expectedVersion=0)=>({schemaVersion:1 as const,projectId:pid,commandId:randomUUID(),clientId:own.clientId,controlGeneration:1,operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload});
+  const policy:any=await policies.command(own.token,own.csrfToken,envelope('savePermissionPolicy',{rules:[{ruleId:'TRUST',subjectRef:{kind:'HUMAN',userId:uid},operations:['registerConnector','confirmConnectorRegistration','revokeConnector'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+3600000).toISOString()}],reason:'DB 숫자 계약 합성 QA',reviewRefs:[]}));
+  const human=(c:any)=>app.inject({method:'POST',url:'/api/v1/projects/'+pid+'/commands',headers:{host:'localhost:3830',origin:'https://localhost:3830',cookie:'__Host-anvil.sid='+own.token,'x-anvil-csrf':own.csrfToken,'idempotency-key':c.commandId},payload:c});
+  const post=(url:string,payload:Record<string,unknown>)=>app.inject({method:'POST',url,headers:{host:'localhost:3830',origin:'https://localhost:3830'},payload});
+  const host=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=host.publicKey.export({type:'spki',format:'der'}).toString('base64url'),fingerprint=publicKeyFingerprint(spki),deadline=new Date(Date.now()+600000).toISOString();
+  const made=await human(envelope('registerConnector',{kind:'HOST_TRUST_REGISTRATION',hostLabel:'숫자 계약 QA',expectedHostFingerprint:fingerprint,policyRef:policy.data.ref,expiresAt:deadline,reason:'guard만 직접 검수'}));assert.equal(made.statusCode,200);const created=made.json().data,rid=created.registrationRef.id;
+  const path='/api/v1/projects/'+pid+'/connector-registrations',headers={host:'localhost:3830',cookie:'__Host-anvil.sid='+own.token};
+  const get=(suffix='',extra:Record<string,string>={})=>app.inject({method:'GET',url:path+suffix,headers:{...headers,...extra}});
+  const footprint=async()=>{const result:Record<string,number>={};for(const table of ['commands','audit_events','connector_registration_challenges','connector_credentials'])result[table]=(await admin.query('SELECT count(*)::int n FROM anvil.'+table+' WHERE project_id=$1',[pid])).rows[0].n;return result;};
+  const before=await footprint(),first=await get('/'+rid);assert.equal(first.statusCode,200);assert.equal(first.headers['cache-control'],'no-store');const initial=first.json();assert.equal(initial.state,'CREATED');assert.equal(initial.registrationRef.version,1);assert.equal(initial.basis.current,true);assert.equal(initial.confirmation.allowed,false);assert.equal(initial.expectedHostFingerprint,fingerprint);assert.deepEqual(initial.grants,[]);
+  const safeKeys=(v:any)=>{for(const[k,x]of Object.entries(v)){assert.equal(/^(oneTimeCode|code_digest|token|credentialId|token_digest|privateKey|publicKeySpki|proof_signature|serverNonce|clientNonce|challenge|session_id)$/.test(k),false,'forbidden field '+k);if(x&&typeof x==='object')safeKeys(x);}};
+  safeKeys(initial);assert.equal(JSON.stringify(initial).includes(created.oneTimeCode),false);assert.deepEqual(await footprint(),before);
+  for(const q of ['?limit=201','?limit=1&limit=2','?cursor=','?cursor=bad','?state=CREATED'])assert.equal((await get(q)).statusCode,400);
+  assert.equal((await app.inject({method:'GET',url:path+'/'+rid,headers:{host:'localhost:3830'}})).statusCode,401);
+  assert.equal((await get('/'+randomUUID())).statusCode,404);assert.equal((await get('/'+rid+'?unexpected=1')).statusCode,400);
+  const other=await access.login('qa-connector-trust-'+uid,password,'다른 client','qa-other-'+uid);
+  assert.equal((await get('/'+rid,{cookie:'__Host-anvil.sid='+other.token})).statusCode,404);
+  const secondResponse=await human(envelope('registerConnector',{kind:'HOST_TRUST_REGISTRATION',hostLabel:'페이지 다음 QA',expectedHostFingerprint:fingerprint,policyRef:policy.data.ref,expiresAt:deadline,reason:'cursor 대조'}));assert.equal(secondResponse.statusCode,200);
+  const page=await get('?limit=1');assert.equal(page.statusCode,200);assert.equal(page.json().items.length,1);assert.equal(page.json().hasMore,true);const cursor=page.json().nextCursor;
+  assert.equal((await get('?limit=1&cursor='+encodeURIComponent(cursor))).json().items.length,1);
+  assert.equal((await get('?limit=2&cursor='+encodeURIComponent(cursor))).statusCode,400);
+  assert.equal((await get('?limit=1&cursor='+encodeURIComponent(cursor+'x'))).statusCode,400);
+  const enrolled=await post('/api/v1/connectors/enroll',{registrationId:rid,oneTimeCode:created.oneTimeCode,observedHostFingerprint:fingerprint,clientNonce:randomBytes(32).toString('base64url'),connectorVersion:'synthetic-qa-1',publicKeySpki:spki});assert.equal(enrolled.statusCode,200);const ch=enrolled.json().challenge;
+  const signature=(value:any)=>sign('sha256',proofBytes(value),{key:host.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url'),prefix='/api/v1/connectors/registrations/'+rid;
+  const proved=await post(prefix+'/proof',{challengeId:ch.id,payload:ch.payload,signature:signature(ch.payload)});assert.equal(proved.statusCode,200);const proof=proved.json();
+  const proofRead=await get('/'+rid);assert.equal(proofRead.statusCode,200);assert.equal(proofRead.json().state,'PROVED_WAITING_CONFIRMATION');assert.equal(proofRead.json().registrationRef.version,proof.registrationRef.version);assert.equal(proofRead.json().observedHostFingerprint,fingerprint);assert.equal(proofRead.json().confirmation.allowed,true);safeKeys(proofRead.json());
+  assert.equal((await human(envelope('confirmConnectorRegistration',{registrationId:rid,observedHostFingerprint:fingerprint,scopeDigest:proof.scopeDigest,decision:'APPROVE',reason:'정확 숫자1 정상 경로'},rid,proof.registrationRef.version))).statusCode,200);
+  const preflight={...ch.payload,clientNonce:randomBytes(32).toString('base64url'),expiresAt:deadline},exchange=await post(prefix+'/exchange',{kind:'CHALLENGE',payload:preflight,signature:signature(preflight)});assert.equal(exchange.statusCode,200);const fresh=exchange.json().challenge;
+  const issue={kind:'ISSUE',challengeId:fresh.id,payload:fresh.payload,signature:signature(fresh.payload)},issued=await post(prefix+'/exchange',issue);assert.equal(issued.statusCode,200);assert.deepEqual(issued.json().grants,[]);
+  assert.equal((await post(prefix+'/exchange',issue)).statusCode,409);const status=await app.inject({method:'GET',url:'/api/v1/connectors/'+created.connectorRef.id+'/registration-status',headers:{host:'localhost:3830',authorization:'Bearer '+issued.json().credential}});assert.equal(status.statusCode,200);assert.equal(status.json().executionAuthorized,false);
+  const issuedRead=await get('/'+rid);assert.equal(issuedRead.statusCode,200);assert.equal(issuedRead.json().state,'ISSUED');assert.equal(issuedRead.json().credential.issued,true);safeKeys(issuedRead.json());assert.equal(JSON.stringify(issuedRead.json()).includes(issued.json().credential),false);
+  assert.equal((await human(envelope('revokeConnector',{connectorRef:created.connectorRef,reason:'숫자 계약 QA 회수'},created.connectorRef.id,1))).statusCode,200);
+  assert.equal((await get('/'+rid)).json().state,'REVOKED');assert.equal((await get('/'+rid)).json().confirmation.allowed,false);
+  await admin.query('UPDATE anvil.project_control SET generation=2 WHERE project_id=$1',[pid]);const stale=await get('/'+rid);assert.equal(stale.statusCode,200);assert.equal(stale.json().basis.current,false);await admin.query('UPDATE anvil.project_control SET generation=1 WHERE project_id=$1',[pid]);
+  await admin.query('UPDATE anvil.project_control SET revoked_at=clock_timestamp() WHERE project_id=$1',[pid]);assert.equal((await get('/'+rid)).statusCode,403);await admin.query('UPDATE anvil.project_control SET revoked_at=NULL WHERE project_id=$1',[pid]);
+  const secondId=secondResponse.json().data.registrationRef.id,deadlinePast=new Date(Date.now()-25);
+  const oldScope=(await admin.query('SELECT scope_json FROM anvil.connector_registrations WHERE id=$1',[rid])).rows[0].scope_json;
+  await admin.query("UPDATE anvil.connector_registrations SET scope_json=jsonb_set(scope_json,'{hostLabel}','\"tampered\"'::jsonb) WHERE id=$1",[rid]);assert.equal((await get('/'+rid)).statusCode,503);await admin.query('UPDATE anvil.connector_registrations SET scope_json=$2 WHERE id=$1',[rid,JSON.stringify(oldScope)]);
+
+ }finally{
+  await app.close();const db=await admin.connect();try{
+   await db.query('BEGIN');await db.query('SET CONSTRAINTS ALL DEFERRED');
+   if(projectCreated){
+    await db.query('UPDATE anvil.authorization_receipts SET approval_decision_ref=NULL WHERE scope_id=$1',[pid]);await db.query('UPDATE anvil.commands SET authorization_receipt_id=NULL,approval_consumption_id=NULL WHERE project_id=$1',[pid]);
+    for(const table of ['connector_credentials','connector_registration_challenges','connector_registrations','connectors','audit_events','approval_consumptions','approval_decisions','approval_requests'])await db.query('DELETE FROM anvil.'+table+' WHERE project_id=$1',[pid]);
+    await db.query('UPDATE anvil.permission_policies SET head_version=head_version+1 WHERE project_id=$1',[pid]);for(const table of ['permission_policy_versions','permission_policies'])await db.query('DELETE FROM anvil.'+table+' WHERE project_id=$1',[pid]);
+    await db.query('DELETE FROM anvil.authorization_receipts WHERE scope_id=$1',[pid]);for(const table of ['commands','project_control','project_members'])await db.query('DELETE FROM anvil.'+table+' WHERE project_id=$1',[pid]);await db.query('DELETE FROM anvil.projects WHERE id=$1',[pid]);
+   }
+   if(userCreated){await db.query('DELETE FROM anvil.auth_audit_events WHERE subject_ref=$1',[uid]);for(const table of ['auth_sessions','clients','password_credentials'])await db.query('DELETE FROM anvil.'+table+' WHERE user_id=$1',[uid]);await db.query('DELETE FROM anvil.users WHERE id=$1',[uid]);}
+   await db.query('COMMIT');
+  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();await pool.end();await admin.end();}
+ }
+});
