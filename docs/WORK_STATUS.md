@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **게시/WSL 정적대조**: UI06 원문 왕복 후보5b189f3dbd1153f2c4b253637a0dcd467a0ec4e3은 local/private exact·main f976불변이었다. 정식 WSL clean013bdc에서 승인 origin의 동일5b189f3으로 Git fetch/detached checkout 후 typecheck exit0·clean을 확인했다. 실제 DB/서비스/Agent 재시험은 하지 않았다. 후속 지원 준비 기록은 문서-only이며 제품/시험/후보 asset 바이트는 변경하지 않는다.
+
+- **최소 atomic 원인 보정 실증(10:26Z)**: 등록한 합성3파일에서 원 `$null` 인자는 ArgumentException RED이며 대상hash·stage보존을 확인했다. `[NullString]::Value`를 사용한 실제 File.Replace 게시 hash와 원본복원 hash 모두 GREEN, 제품파일/서비스전환/actual재시도0이다. stage/original은 시험 교체 과정에서 소비됐고 잔여 target1파일/빈root는 owner/nonlink·정확목록 확인 뒤 제거, 별도 rootRemaining=false다. 첫 fixture patch는 부모 생성권한에서 중단·파일0, 사전등록 빈 부모만 elevated 생성 후 진행했다. 이것을 전체 OS서비스 rollback PASS로 확대하지 않는다.
+- **SERVED-02 준비 사전등록 / Main 어울**: PMO는 새후보/새run 실제전환은 별도결정이며 격리filesystem·새지원 준비/읽기검토는 일반개발검증으로 진행 가능하다고 확인했다. 신규 `D:\tmp\anvil-v3-stage-b\browser\ui06-served-02/{dist,results,temp,profile}`를11:10:00Z까지 준비 보존한다(실제실행창 아님). temp support.ps1/support.test.ps1/served-journey.mts 정확3코드·후보dist3asset·results 준비/실패요약만, profile은 실제창 전 생성0. 신규 `.av3-data/runtime-ui06-served-02`는 후속 실제 승인 전 생성0이며 원23836 회수/정식dist·PG/계정·UNC쓰기0이다. 생성전 새root/runtime부재·부모 SINSAN\cyhuh/nonlink를 확인했다. 제품5b189f3/WSL exact·원served3hash/원6환경·원23836/exe/CIM·relay·보호7+현재runtime01 receipt hash FDC1467E0CB838071F4B1AA547552D6A61ED76BEBCC79347BCFFA2E2C57E16D7를 결박할 준비다.
+- 기존 SERVED-01 지원3코드·runtime01/원실패·수동복구 기록·미참조JS는 exception-preserve로 유지한다. 10:30Z 준비보존시각만으로 지우지 않는다. 보존목적은 원실패/복구경위·현재원서비스로그 대조이며, 원서비스참조/자원소유·목록/hash·안전한 보존사본과 정확정리 결정이 갖춰질 때만 회수한다. SERVED-02 준비도 종료/거절/만료 시 등록owner/link/생성목록·process를 대조해 지원QA만 정리하되 실패근거 보존 예외는 분리한다.
+
 - **UI06-TRACE-ANCHOR-01 구현·한정 검수(2026-10-17 / Main 어울)**: 기존 TraceViewer/DesignIndexViewer와 새 순수 선택 함수만 연결했다. readTrace가 대조한 DESIGN_ITEM의 문서 id/version/hash와 현재 bodyHash/anchor가 맞을 때만 기존 원문 선택으로 이동한다. 다른 문서/버전/종류는 현재 원문으로 대체0, 없는줄/상한은 기존 미확인이며 저장/확정/buffer/pending/서버/API/DB/서비스 변경0이다.
 - 새 unit2 RED→2 PASS/115.9ms, browser 버튼부재 RED1→직접5 PASS/4.7s·typecheck0·build109 exit0다. 관련 unit11 PASS/229.5ms, 직접 영향 시안편집/검토·확정 browser7 PASS/7.7s를 별도 실행했다(같은후보 직접5 재반복0). 정방향/역방향·변조/다른버전거절·없는줄/지연응답·본문문자열/쓰기0을 확인했고 기존500k/NO_COLOR경고는 보존한다.
 - 독립1회 읽기 검수 Critical0/Important0/Minor0이다. 실제 제공화면/DB/사용자 인수·서버 연결의 업무적 타당성과 다른종류/다른문서 자동이동은 미검증/제외이며 전체 UI06/Stage 완료가 아니다. 앞선 버전비교 CR Minor1은 별도 미해결로 보존한다.
