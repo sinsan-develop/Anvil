@@ -570,6 +570,8 @@ Windows 실행기가 정식 HTTPS 서버에 outbound 연결을 시작한다. 브
 
 ### 12.3 정규화 어댑터 함수와 결과
 
+**FN06-CODEX-CODEC-01 내부 구현 범위:** primary/schemas.ts·codec.ts는 위 함수의 실제 세션/전달 구현이 아니라 고정0.161 JSON을 소비하는 순수 wire/사실 codec이다. 필수 인스턴스 예산 maxFrameBytes(1~2097152)/maxPending(1~1024), chunk당 maxFrameBytes+2로 메모리를 제한하고 LF/CRLF·분할 UTF8을 검사한다. pending/최근 맥락은 메모리 상관일 뿐 서버 허가·내구 receipt/중복방지·통신 준비 증명이 아니다. initialize 응답과 initialized 바이트 준비를 구별하며 실제 전송은 없다. 잘못된 프레임/응답/맥락은 UNKNOWN·후속 wire 차단, 정상 빈 EOF는 CLOSED다. 외부 사실은 고정 enum/코드/digest만, tool completed/interrupt 응답은 업무합격/소유회수가 아니다. 승인 결정 소비는 미연결로 응답 wire0/UNVERIFIED이며 새 공개/권한 계약을 정의하지 않는다.
+
 모든 함수는 `AdapterContext{projectId,assignmentId,executionId,executionGeneration,connectionRef,environmentRef,authorizationReceiptRef,capabilityRef,budgetRef,sourceScopes}`를 받으며 외부 session/thread/turn은 별도 외부 핸들이다.
 
 1. `probeCapabilities(context)`→CapabilityReport. 정적/읽기 조사와 실제 임무 증거를 분리한다. 도구가 없는 경우 설치를 자동 수행하지 않는다.

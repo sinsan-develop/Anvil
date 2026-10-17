@@ -2,6 +2,17 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN06-CODEX-CODEC-01 작성자 검증(독립 검토 전)**: 새 3파일만 구현했다. 고정 ClientRequest/ServerRequest/ServerNotification 분기와 method별 응답, InitializeResponse 필수 codexHome/platformFamily/platformOs/userAgent, 승인 startedAtMs 등을 기존 Ajv strict로 대조한다. 숫자 format은 명시·JS 안전정수 범위, 기본값 주입/형변환/필드삭제·미지원 keyword 무시·외부 ref fetch0이다. 공개 schema 자산 읽기 외 실제 소스 파일 처리/쓰기·transport/spawn·Agent/DB/API/spool·인증/서비스 연결은 없다.
+- TDD: 선언만 있는 새 codec의 **assertion RED14/154.1353ms→집중14 PASS/388.984ms**. 작성자 경계 검토에서 잘못된 Unicode request id가 canonicalJson 호출 전에 걸러지지 않아 예외로 빠지는 원인을 확인, 별도 **RED1/224.8933ms** 후 id well-formed 검사 한 줄로 보완했다. 최종 **집중15 PASS/365.107ms·FAIL0/SKIP0·typecheck0**이다. invalid/missing/중복 id·정수/params, UTF8/LF/CRLF·빈/초과/부분EOF, 응답 schema·thread/turn 불일치·비밀 비반사·미지원 event·승인 wire 차단을 순수 합성으로 확인했다. 기존 전체 검사/실제 exporter·native·Agent는 반복하지 않았다.
+- codec 내부 상한: 필수 maxFrameBytes 1~2,097,152 및 maxPending 1~1024 안전정수, chunk당 maxFrameBytes+2 바이트·동일 상한의 최근 맥락만 유지한다. 전송기는 후속 구현에서 이 chunk 계약에 맞춰야 하며 이것을 실제 stdio/서버·권한 정책으로 소급하지 않는다. 정상 빈 EOF는 CLOSED, 부분/미응답 EOF·오류/잘못 프레임·미대응/중복 reply·미지원 이벤트/맥락은 UNKNOWN·새 wire 차단이다. 응답/출력 원문·임의 식별은 보고에 내보내지 않고 enum/고정 코드/digest만 반환한다.
+- 미연결: wire는 메모리 산출뿐 전송/수신 receipt·실제 초기화가 아니다. pending/맥락은 유한 메모리 비교이며 내구 중복/서버 인증이 아니다. 승인 요청의 item은 원 요청·맥락 digest에 포함되나 별도 서버 결정 검증/소비·실제 승인 응답은 미구현으로 wire0/UNVERIFIED다. caller trusted=true도 거절한다. completed/interrupt 응답은 업무합격/RECLAIMED로 승격하지 않는다. 임의 입력에 대한 완전 비밀 탐지·실제 OS/계정/파일 통제·6능력은 미검증이다.
+- 도구 오류: 내용 변경 없는 잘못된 patch hunk 호출1이 응답하지 않아 해당 도구 호출만 취소하고 실제 파일 보존을 확인했다. 코드/프로세스 강제 종료나 검사 우회가 아니며 이후 정확 hunk만 적용했다. 다음은 동일 범위의 신선한 읽기 전용 코드 검토·중요 finding 보완 후 안전 private checkpoint·PMO 제출이다.
+
+- **FN06-CODEX-CODEC-01 착수 / 내부 설계(2026-10-17, Main 어울)**: PMO가 c475344b 기준 3코드/시험파일과 직접4문서만 승인했다. apps/connector/adapters/primary/{schemas.ts,codec.ts}, tests/unit/FN06/codex-codec.test.ts에 고정0.161 vendor의 schema 검증·메모리 wire/응답 상관·유한 프레임/관측을 구현한다. 현재 Ajv strict:true/allowUnionTypes 및 명시 정수/실수 format으로 대상16분기의 draft7/local refs를 완화 없이 컴파일 확인했다. 최신 문서/추측 필드·vendor 변경·추가 패키지/외부 fetch0이다.
+- 입력/상태: 인스턴스마다 필수 양의 안전정수 maxFrameBytes/maxPending를 명시하고 내부 메모리 상한을 검사한다(새 서버/공개 전송 정책 아님). LF/CRLF·분할 UTF8·기존 parseWireJson의 중복/escape key 거절, 정확 id 타입·기대 응답 schema·thread/turn/item 원 식별을 내부 결박한다. malformed/빈/초과/불일치/부분EOF·미대응/중복 reply는 sticky UNKNOWN·후속 요청 차단, 정상 빈 EOF는 CLOSED, 오류 단절은 UNKNOWN으로 구분한다. 메모리 pending은 durable receipt/중복보장이 아니다.
+- 출력/제한: 요청 wire는 내부 메모리 산출물이고 전송/허가/실행이 아니다. 외부 관측에는 알려진 enum·고정 이유·원문/식별 digest만 내보내며 delta/error message/data·임의 method·경로/원문 비반사다. completed는 도구 상태, interrupt 응답은 요청 응답일 뿐 업무합격/RECLAIMED0. tool approval은 실제 id/thread/turn/item·내용을 결박해 관측하되 서버 결정 검증/소비 계약이 없어 응답 wire0/UNVERIFIED 고정이다. caller trusted/snapshot을 허가로 보지 않는다.
+- 수행 순서: 집중 시험을 먼저 작성해 assertion RED→GREEN, 변경 집중·typecheck/diff 검사, 사실·미연결/미검증·다음 handshake 승인 경계와 private checkpoint를 제출한다. 기존 전체 검사/실제 native·exporter·Agent/OS spawn·stdio연결·DB/API/spool·권한/키/서비스 실행0을 유지한다. 준비 읽기에서 tsconfig.json·독립 InitializeParams.json 부재2는 실제 tsconfig.base.json·ClientRequest.definitions로 바로 대조했으며 파일을 만들어 우회하지 않았다.
+
 - 결과 기록 tail 준비 중 PowerShell foreach 결과를 괄호 없이 pipe한 구문오류1은 실행 전 거절되어 commit/push0이었다. 배열 식으로만 정정하며 exporter·보존·검사 기준을 바꾸거나 다시 실행하지 않는다.
 
 - **Schema 고정본 게시 확인**: e08291eb115167e0fd380aba413bd43ce7f9884e는 ee7b1ea4의 직접 자식·공개 vendor319+최소 기록2의 정확321파일 checkpoint다. 지정 development의 codex/av3-stage-b와 local exact SHA 일치·tracked clean, private main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 실제 push 후 조회했다. 아래 ‘게시 전/다음 checkpoint’는 해당 시점의 이력이다. 단1회 exporter·보존/정리는 끝났으며 실제 Agent/handshake·6능력과 전체 FN06은 미완료다.
