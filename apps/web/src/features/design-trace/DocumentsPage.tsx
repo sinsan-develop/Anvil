@@ -61,6 +61,18 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     }catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if([401,403,404].includes(error.status)){setOpened(null);setSelected(null);setRegisteredView(null);setAnchorSelection(null);setShowDesignIndex(false);if(error.status===401)onAuthenticationLost();}}
     finally{if(request===generation.current)setReading(false);}
   }
+  async function refreshOpened(ref:ScreenRegion['documentRef']){
+    if(!opened||opened.document.id!==ref.id||opened.document.version!==ref.version||opened.document.contentHash!==ref.contentHash)return;
+    if(selected){await open(selected,ref.version);return;}
+    const before=opened.document,request=++generation.current;setReading(true);setReadError(null);
+    try{
+      const value=await readDocument(client,projectId,ref.id,ref.version);if(request!==generation.current)return;
+      const body=value.document.content.body,prior=before.content.body,form=value.document.formRef;
+      if(value.document.contentHash!==ref.contentHash||body.artifactId!==prior.artifactId||body.bytes!==prior.bytes||body.contentHash!==prior.contentHash||body.mediaType!==prior.mediaType||form.id!==before.formRef.id||form.version!==before.formRef.version||form.contentHash!==before.formRef.contentHash)throw new ApiError('SCREEN_REGION_REFERENCE_CHANGED');
+      setOpened(value);
+    }catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if([401,403,404].includes(error.status)){setOpened(null);setRegisteredView(null);setAnchorSelection(null);if(error.status===401)onAuthenticationLost();}}
+    finally{if(request===generation.current)setReading(false);}
+  }
   async function beginEdit() {
     if (!opened || starting) return;
     if (reviewing || review?.pending || confirmation) { setEditingError(new ApiError('DOCUMENT_REVIEW_INPUT_PRESERVED')); return; }
@@ -166,9 +178,9 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
         <h3>기록된 내용 검토</h3>{!opened.document.contentReviews.length ? <p>아직 내용 검토가 기록되지 않았습니다.</p> : opened.document.contentReviews.map(review => <section className="status-card" key={review.ref.id}><p>{review.ref.outcome} · {new Date(review.reviewedAt).toLocaleString('ko-KR')}</p><p>{review.reason}</p><p className="meta">검토자 {review.reviewer.userId}</p>{review.reviewer.sameAsTargetRecorder ? <p>작성 기록자와 같은 사용자 · 독립 검수 아님</p> : null}<ul>{review.items.map(item => <li key={item.criterionId}>{item.criterionId} · {item.outcome} · {item.reason}</li>)}</ul><p className="meta">내용 검토자의 판단이며 사용자 확정/실제 시험 합격/Agent 실행 승인이 아닙니다.</p></section>)}</> : null}
       {editingError ? <p role="alert">{editingError.message} · {editingError.code}</p> : null}
       {confirmation && !confirming ? <p>다른 사용자 또는 프로젝트의 확정 요청은 숨겨 보존했습니다.</p> : null}
-      {confirming && confirmation ? <DocumentConfirmation key={confirmation.ref.id + ':' + confirmation.ref.version} client={client} session={session} buffer={confirmation} onChange={onConfirmationChange} onAuthenticationLost={onAuthenticationLost} onConfirmed={() => { setRefresh(value => value + 1); if (selected && opened?.document.id === confirmation.ref.id && opened.document.version === confirmation.ref.version) void open(selected, confirmation.ref.version); }} /> : null}
+      {confirming && confirmation ? <DocumentConfirmation key={confirmation.ref.id + ':' + confirmation.ref.version} client={client} session={session} buffer={confirmation} onChange={onConfirmationChange} onAuthenticationLost={onAuthenticationLost} onConfirmed={() => { setRefresh(value => value + 1); void refreshOpened(confirmation.ref); }} /> : null}
       {review && (review.ownerUserId !== session.user.id || review.projectId !== projectId) ? <p>다른 사용자 또는 프로젝트의 검토 입력은 숨겨 보존했습니다.</p> : null}
-      {review?.ownerUserId === session.user.id && review.projectId === projectId ? <DocumentReviewEditor key={review.ref.id + ':' + review.ref.version + ':' + review.ref.contentHash} client={client} session={session} buffer={review} onChange={onReviewChange} onAuthenticationLost={onAuthenticationLost} onRecorded={() => { setRefresh(value => value + 1); if (selected && opened?.document.id === review.ref.id && opened.document.version === review.ref.version) void open(selected, review.ref.version); }} /> : null}
+      {review?.ownerUserId === session.user.id && review.projectId === projectId ? <DocumentReviewEditor key={review.ref.id + ':' + review.ref.version + ':' + review.ref.contentHash} client={client} session={session} buffer={review} onChange={onReviewChange} onAuthenticationLost={onAuthenticationLost} onRecorded={() => { setRefresh(value => value + 1); void refreshOpened(review.ref); }} /> : null}
       {buffer && (buffer.ownerUserId !== session.user.id || buffer.projectId !== projectId) ? <p>다른 사용자 또는 프로젝트의 편집 입력은 숨겨 보존했습니다. 이 화면에서 자동 교체하지 않습니다.</p> : null}
       {!choosingForm&&!confirming&&!reviewing&&buffer?.ownerUserId===session.user.id&&buffer.projectId===projectId&&buffer.workPlanState?<WorkPlanEditor key={buffer.workPlanState.bindingId} client={client} session={session} buffer={buffer} documents={page?.items??[]} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
       {!choosingForm&&!confirming&&!reviewing&&buffer?.ownerUserId===session.user.id&&buffer.projectId===projectId&&buffer.designIndexState?<DesignIndexEditor key={buffer.designIndexState.bindingId} client={client} session={session} buffer={buffer} documents={page?.items??[]} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
