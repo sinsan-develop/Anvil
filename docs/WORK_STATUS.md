@@ -2,6 +2,18 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI04 원독립 finding 보완·최종 후보 / Main 어울**: 원C0/I1/M0의헤더도착만대기를실제소비흐름과대조해수용, 시험만단1회 bodyfinished/실JSON보류·해제/이후eventloop·2renderframe barrier로보완했다. 최종UI04 3/UI01 2=5PASS6.6s·type/diff0/제품불변124module255ms·경고보존, QA5파일/빈5폴더·process0 exact정리/독립부재다. 원C0I1/Main보완을구별·새독립C0I0승격0, 실제user/client인증교체/DB/served/EXISTING세부/시각/Agent전체미검증이다. 문서patch2회는과거요약행문맥불일치로적용전거절돼기존이력은보존하고최신증거를누적한다. 다음Main미완료는고정OS3파일compile한정결정재결박이며PMO다음업무배정대기0이다.
+
+- **UI04 독립 C0/I1/M0·시험 단1회 보완 / Main 어울**: 검수자는제품오노출을확인한것이아니라지연응답시험의waitForResponse가헤더도착만기다려본문/JSON처리전이미참인부재검사를통과할수있음을지적했다. Main은Client.get의json→동기검증→effect처리와대조하여타당하다고판정, 제품불변·시험에서원응답bodyfinished/실제JSON보류·명시해제/이후eventloop·2renderframe barrier 뒤원프로젝트부재+현재프로젝트유지를확인하도록한번보완한다. 수정시험만최종확인하려고동일등록QAroot부재후번들을재생성·browser5/type/diff검사/정확정리한다. 새독립C0I0로승격하지않고원C0I1·Main보완을구별한다. 실제user/client인증교체·EXISTING선언상세·served/시각/Agent는미검증으로유지한다.
+
+- **UI04 원본 조회 연결 후보 검증 / Main 어울(2026-10-18)**: 기존GET 프로젝트 원본·고정적용참조·원본제어/부족상태·문서/지식/방법론/승인/도구 탐색을3영역에 연결했다. 세션/graph·지시/Agent·실행은미연결/전송disabled·새API/DB/서비스변경0. 최초module부재RED1은7case미도달로분리, 직접7/인접1=8PASS335.0044ms/type/diff0·새124modulebuild262ms·Edge합성UI04 3/UI01 2=5PASS4.1s·예상밖API/비GET/offorigin/pageerror0이다. harnessENV없는static차단을시험만보정해5건재확인, 전용5파일/빈5폴더·QAprocess0 exact정리/별도root부재다. 500k경고/NO_COLOR경고는보존·최적화확장0. UI04부분구현/실제served·DB/Agent전체미완료·독립읽기검수중을 UI04_CONTEXT_PREP_RESULT.md/계획에연결한다. PMO다음업무대기·기존35검사반복0이다.
+
+- **UI04 시험 harness 독립 실행 보완 / Main 어울**: 초기 browser5PASS/전용root정리0 뒤, 전용 번들 ENV가 없으면 UI04의 전체요청 차단이 일반 served 검사를 막는 점을 자체 확인했다. API 예상밖 차단·off-origin 감시는 유지하고 static은 기존 served 또는 명시 전용번들 중 실제 실행방식에 맞게 제공하도록 시험 harness만 보완했다. 제품 불변이지만 시험코드가 달라졌으므로 위 동일 root 부재/owner/nonlink를 재대조하여 동일 등록5파일/폴더를 재생성·browser5만 재확인/정리한다. 완료 시험 무조건 반복·제품/서비스 재전환은 아니다.
+
+- **UI04 격리 번들 browser 검증 사전등록 / Main 어울**: 위 ui04-context-01의 dist/index·JS/CSS3파일은124module/286ms로 생성했다. 같은 새 root의 temp/results만 Edge 일회성 profile·Playwright 결과용으로 추가 등록한다. 새 번들을 route.fulfill로 제공하고 기존 GET 응답 fixture로 UI04/UI01만 확인하며 실제 API/DB·로그인/Agent/서비스 교체는0이다. worker child TMP/TEMP만 전용temp, 출력은전용results·현재소유/부모nonlink·수명이번검증까지, browser 종료·정확프로세스/목록/owner/link 검사후 성공산출만정리·독립root부재, 실패증거는별도기록후보존/판정한다. 실제 served PASS로승격0이다.
+
+- **UI04 프로젝트 열기 조회 연결 착수 / Main 어울(2026-10-18)**: 승인된 S04/UI04 카드의 주 작업 화면을 Main이 다음 독립 미완료로 선정했다. 목록의 workspace 링크는 현재 미연결 안내로 끝난다. 기존 GET /api/v1/projects/:id만 소비해 실제 프로젝트 목적/결과·적용 방법론 참조·준비 부족/읽기 전용 상태와 문서/방법론/지식/도구 탐색을 3영역에 연결한다. 적용 graph·단계 세션/Agent/전송/실행은 기존 읽기 계약이 없어 추측 생성하지 않고 미연결로 남긴다. 새API/SQL·정책/서비스/키0·기존 승인 P01/계획 UI00 착수 선행을 소비하는 부분 구현이며 완료선행은 유지한다. writerMain1, 제품 workspace/api.ts·WorkspacePage.tsx/App.tsx·app.css와 직접UI04시험/필요UI01 인접만, RED→GREEN·type/격리build를 수행한다. 새 D:\tmp\anvil-v3-stage-b\ui04-context-01/dist는 Main/currentuser 소유·부모nonlink/부재 확인 후 1회 build 산출용/이번 검증 종료까지·정확목록/소유/링크/사용process0 후 정리·별도부재로 등록한다. 실제 served dist/runtime는 수정하지 않는다. 컴파일 예외 미결정과 독립이며 PMO 다음업무 배정대기0이다.
+
 - **A3 compile-01 사전 검사 차단 / Main 어울(2026-10-18)**: exact67ec6ed4 clean/private의 단1회 입구는 A3_COMPILE_LINK_DENIED/exec1·started:false로 끝났다. compiler PID/DLL/QA root0·별도 root부재·compile 미실행이며 C# 실패/PASS로 판정하지 않는다. 고정 OS csc/mscorlib/System 세 leaf만 HardLink/Archive/Targetnull/Reparsefalse/TrustedInstaller·fullhash불변, source/부모는 nonlink다. sandbox PID 미발견은 별도 elevated에서 Node54212/relay26052·단일3830·receipt50459C…74F92 유지로 구별했으며 서비스 변경0이다. 결과 A3_NATIVE_COMPILE_01_RESULT.md, 필요한 정확3파일 예외·새 root02/새창 단1회는 A3_NATIVE_COMPILE_HARDLINK_DECISION.md의 미승인 권장A로 분리한다. 과거 창 재사용/자동retry·OS/ACL수정·compiler복사0. 코드 불변35PASS는 반복하지 않고 Main이 독립된 다음 미완료도 선정한다.
 
 - **A3 connector 준비 지정검수·단1회 보완 / Main 어울**: 원독립C0/I2/M0(credential잔여기한의timer/nativebudget누락, provider오류정규식반사/close원실패덮기)을Main이사실대조했다. 신규pending10ms·임의접두사/close오류3건RED→짧은단조deadline/timer·동일budget/대기취소, 정확allowlist·generic·primary보존/cleanupFailure로좁게보완했다. 최종직접17/기존codec13·proof5합계35PASS305.2509ms·fail/skip0/type/diff0이며보완후독립C0I0로승격하지않는다. 원finding/declined·Main검증·초기오류/새폴더/미검증은 A3_CONNECTOR_OBSERVER_PREP_RESULT.md. 신규C#는entry없는library소스/compile0·실OS/handle/강제중지/보호host·키/TLS/DB/서비스/Agent연결은미검증이고현재서비스6781703a를재반영하지않는다. 다음Main선정은고정compiler/source의새일회성library compile-only 필요결정이며실행전새정확창/소유자원·정리만PMO에요청한다. 기존API/SQL/UI/N4완료시험반복0이다.
@@ -846,7 +858,7 @@
 | UI01 프로젝트 목록 | [2] | Main 어울. 허가 목록 API·검색/보관·cursor·뒤로/오래된 자료 표시 연결, 계약2 PASS. 실제 새 UI DB 여정은 미검증 | 생성·단계/담당/완료·결정/다음 행동·실제 브라우저 검수 |
 | UI02 프로젝트 생성·기준선 | [2] | Main 어울. 빈소스 초안/고정 선택·직접 정의·내용 검토/별도 확정→명시 생성/단절 시 동일 명령 재확인 연결. UI02/03 fixture23, actual API/DB는 별도4 PASS | 기존 소스/문서·자료/총괄·환경·실제 UI DB 여정 |
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
-| UI04 프로젝트 주 작업 | [] | S04 정적 시안 | 절차·총괄/책임자 대화·자료·지시/시작/중지 연결 |
+| UI04 프로젝트 주 작업 | [1] | 기존GET 원본/적용참조·3영역/자료탐색 후보, unit8/browser5·원C0I1/Main시험보완·UI04_CONTEXT_PREP_RESULT | 실제served·DB·단계/세션·지시/Agent·시작/중지 미연결 |
 | UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |

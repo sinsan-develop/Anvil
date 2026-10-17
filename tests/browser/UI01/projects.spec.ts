@@ -1,4 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { installWorkspaceBundle } from '../UI04/bundle.ts';
+
+test.beforeEach(async ({ page }) => { await installWorkspaceBundle(page); });
 
 const unexpected = new WeakMap<object, string[]>();
 test.beforeEach(async ({ page }) => { unexpected.set(page, []); await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); }); });
@@ -9,6 +12,7 @@ const two = { ...one, id: '51c0439f-791e-4bb5-8471-70938d6afaf1', name: '두 번
 test('프로젝트 화면 계약: 목록/검색/다음 화면은 조회만 하고 뒤로 와도 검색을 유지한다', async ({ page }) => {
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id: one.id, displayName: 'QA 사용자' }, clientId: one.id, csrfToken: 'A'.repeat(43) } }));
   const commands: string[] = [];
+  await page.route('**/api/v1/projects/' + one.id, route => route.fulfill({ json: { ...one, desiredOutcome: '프로젝트 자료 유지', createdAt: one.updatedAt, currentMethodologyRef: null, baselineRef: null, sourceMode: 'EMPTY', sourceDeclaration: null, readinessIssues: [{ code: 'METHODOLOGY_CONNECTION_PENDING' }], viewerPermissions: ['READ_PROJECT'], participation: 'VIEWER', controlState: { actorId: null, clientId: null, generation: null, status: 'UNASSIGNED' } } }));
   page.on('request', request => { if (request.method() !== 'GET') commands.push(request.url()); });
   await page.route(/\/api\/v1\/projects(?:\?|$)/, route => route.fulfill({ json: { items: new URL(route.request().url()).searchParams.get('query') === 'Anvil' ? [one] : [one, two], nextCursor: null, hasMore: false, observedAt: new Date().toISOString(), baselineVersion: null } }));
   await page.goto('/');

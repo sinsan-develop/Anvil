@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## UI04 원본 조회 연결 후보 — 2026-10-18
+
+apps/web/src/features/workspace/api.ts·WorkspacePage.tsx는 기존 프로젝트 detail GET의 검증·원본/고정적용참조·편집제어/준비부족·문서/방법론/지식/승인/도구 탐색만 소비한다. App.tsx는workspace단일분기·사용자/client/project키, styles/app.css는국소3영역을소유한다. 직접tests/unit/UI04/context-api.test.ts와tests/browser/UI04/{bundle.ts,workspace.spec.ts}, 기존UI01/projects.spec.ts의detailfixture/명시전용bundle선택이 대응한다. 새API/SQL·정책/Agent·세션/실행권한0, 적용graph/단계·지시/Agent·실제served/DB여정은미연결/미검증이다. 근거04_test_reports/AV3/UI04_CONTEXT_PREP_RESULT.md이며UI04전체완료가아니다.
+
 ## A3 connector observer 준비 후보 — 2026-10-18
 
 신규 runtime/source-read-https.ts는 별도 source-read endpoint의 strict TLS/크기·10초/단1흐름·exact scope/grant·메모리 credential/UNKNOWN·close 취소를, observers/source-read-observer.ts는 permit 원 경로·단조30초·불변 보고·미지원/실제 종료 미확인을 소유한다. 직접 tests/unit/FN08/source-read-https.test.ts·source-read-observer.test.ts와 기존 strict codec/proof가 대응한다. native/SourceReadObserver.cs는 Windows NTFS·지정 FILE 메타데이터·held directory handle/relative FILE_OPEN·최소 read attributes/traverse·reparse/alias/volume/identity 검사 소스 후보이며 entry/IPC/키/프로세스 실행은 없다. 기본 native adapter/실보호 signer·컴파일/OS/네트워크/DB/서비스/Agent 연결은 미검증·미허용이다. 기존 TrustHttpsClient/ProtectedStore/OwnershipHost·SQL/server/web/launcher는 수정하지 않는다. 범위·기준·검증은 work_packages/A3_CONNECTOR_OBSERVER_IMPLEMENTATION_DECISION.md를 따른다.
