@@ -1,6 +1,21 @@
 # A-3 app checksum 누락 항목 한정 QA 결정 자료
 
+최신 실행 상태(2026-10-18): exactf7bafbcb의 PMO17:19Z 단1회는 CREATE_ISOLATED_PG/QA_DOCKER_STEP_FAILED·자동cleanupFailure로 exit1·검사미도달이었다. 독립조회로이번fullID/label/instance/image/tmpfs/port/network를확정후수동exact정리·별도잔여0을확인했으며 원FAIL/cleanupFailure는보존한다. 이번권한도소진·같은창/marker재실행0이며 아래 생성전미승인문장은당시이력이다. 원문은 docs/04_test_reports/AV3/FN08/A3_SQL_CHECKSUM_ONLY_QA_01_RESULT.md.
+
 ## 판정·필요 결정
+
+## 후속 로컬 보완·새 결정 요청안 — 아직 미승인
+
+원f7bafbcb 실패 뒤 원인 분류/정리 누락만 좁게 보완했다. **생성 실패 자체의 직접원인은 불명**이며 timeout연장·성공8범주 재실행을 하지 않는다. 이 보완은 기존1회/남은창을 재사용하는 근거가 아니다.
+
+- runner SHA256 C1703B4EA5E75518AD515C4E21EE8BD57FAD9CCC78DF7718C82792DDEEB39AF7 / guard D50B8C0E3B6E5BAE234D57B4B812258B00F7BEA8A1C8D51047171E17059A576D.
+- vector F5B0BFDB2FAE7407DDAD83792F6F8603D3FC0C33C66436AC6515814FB9147F7F / SQL26A7B7828481689D7017836C1ECE2FC5E9F644CB9B8200122EE013E7F52DB185 불변·제품/서비스 변경0.
+- 부재RED4→직접/인접14PASS2147.0956ms·타입/diff0, 지정읽기독립C0/I0/M1. 경미이월: pg_isready가회복돼도 그이전Docker진단이뒤SQL오류와함께남을수있음. 원인판정시phase/고정오류와함께해석하며 완전한원인분류라고주장0.
+- 회수는 fixed이름→이번exact fullID/난수/owner/project/이름만 채택한 뒤 image/실tmpfs/요청port/network를 다시검사한다. 이름만으로삭제·다른instance/ID교체·불명자원삭제0. 생성응답유실이면그대로실험을다시실행하지않고정리만시도한다. 원primary와cleanupFailure는분리한다.
+- 새 요청식별자 **AV3-PMO-A3-SQL-CHECKSUM-ONLY-QA-RECOVERY**. 새 exact commit/절대창/단1회와 아래동일literal자원·보완정리를 새로결정해야 한다. 프로그램식별 env marker는 여전히 AV3-PMO-A3-SQL-CHECKSUM-ONLY-QA이며 **이문자열은승인증거가아니다**. 과거PMO결정/창/commit의재사용을허용하지 않는다.
+- 권장A: 위보완의새정확후보/새창에서 checksum-only1회만 검증·정리. 기존8범주 반복0, 실제원생성실패가해결됐다고미리주장0.
+- 대안B: 새실행을보류하고appchecksum/생성원인미확정을유지, 이후승인된통합후보에서검사한다. 불필요한환경재생성은줄지만현검수미충족은남는다.
+- 정식DB/기존daemon·network/서비스/Secret·OS변경으로우회하는안은범위밖이다. 모든실행/보호/정리·제외는아래같은정확자원계약을유지한다.
 
 **새 실행 미승인/미실행**. 기존423032bc 단1회는 서비스8범주·26벡터/정리0을 확인했으나 app full46checksum 비교는 코드누락으로 미실행이다. 원JSON PASS와 검수미충족은 A3_PROTOCOL_QA_01_RESULT.md에 보존한다. 원1회는 소진했고 새 요청이 그 기록을 덮거나 소급PASS시키지 않는다.
 
