@@ -1,5 +1,9 @@
 # P02 공통 명령·관측 계약 초안
 
+## UI04 선택 단계 문서 목록 — 2026-10-18 직접 승인
+
+신산님 직접 ‘승인’/PMO AV3-PMO-UI04-STAGE-DOCUMENT-READ A에 따라 기존 GET `/api/v1/projects/:projectId/documents`에 optional `applicationId`+`nodeId`를 반드시 쌍으로 허용한다. UUID/기존 StageNodeRef 규칙·limit/cursor를 검사하고 현재 로그인/회원·프로젝트 격리/no-store와 무필터 DocumentPage/동작을 유지한다. 회원·현재 적용본(snapshot/source/graph hash 포함)·문서 최신head의 저장 stageRef는 단일 SQL 읽기 snapshot에서 대조하며 다른 적용본 문서를 섞어 반환하지 않는다. cursor는 actor/project/application/node/limit에 결박하여 다른 단계/프로젝트/무필터 혼용을400으로 거절한다. 잘못된 입력400·비회원/없는node404·옛적용409 METHODOLOGY_APPLICATION_CHANGED·적용무결성503이고 기존거절은 약화하지 않는다. 목록은 관측시점 최신 문서의 연결metadata이지 원문 검수·확정·실제현재단계/실행준비 증거가 아니다. UI의 고정 원문은 기존 readDocument/bytehash를 거치고 선택단계와 다른 문서는 표시하지 않는다. 선택단계/적용전환·조회오류는 앞선 목록/원문을 제거하며 자동무필터 fallback·자동전체pagination0이다. 새schema/migration·지속domain쓰기·실사용자정책/Secret·서비스·Agent/비용·추가compiler는 승인에 없다.
+
 ## UI04 고정 적용 방법론 조회 — 2026-10-18 승인 계약
 
 신산님 10분 위임을 PMO가 사용자 실제 게시20:59:26Z→21:11:46Z/12분20초·최신5turn 새답변/중지/거절없음으로 확인한 AV3-PMO-UI04-METHODOLOGY-APPLICATION-READ A다. 구현·적용 실제 상태는 WORK_STATUS를 따른다.

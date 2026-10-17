@@ -71,6 +71,42 @@ for (const negative of ['조회 거절', '다른 버전'] as const) test(`단계
   await expect(form.getByRole('heading', { name: 'AF01 고정 요구사항 양식', exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
 });
 
+const stageDocument = { ...document, stageNodeRef: { applicationId: application.applicationRef.id, nodeId: 'N1' }, stageBinding: { applicationRef: application.applicationRef, methodologyName: appliedSnapshot.name, nodeId: 'N1', nodeName: '요구 검토', uses: ['OUTPUT'] } };
+async function stageDocumentSetup(page: Page) {
+  const facts = await applicationSetup(page), queries: Record<string, string>[] = [];
+  await page.route(`**/api/v1/projects/${pid}/documents?*`, route => {
+    const query = Object.fromEntries(new URL(route.request().url()).searchParams); queries.push(query);
+    return route.fulfill({ json: query.nodeId === 'N1' && !query.cursor ? { ...documents, hasMore: true, nextCursor: 'stage-N1-next' } : { ...documents, items: [{ ...documents.items[0], id: other, title: query.nodeId === 'N2' ? '구현 단계 문서' : '요구 단계 다음 문서' }] } });
+  });
+  await page.route(`**/api/v1/projects/${pid}/documents/${documentId}/versions/2`, route => route.fulfill({ json: stageDocument }));
+  await page.route(`**/api/v1/projects/${pid}/files/${artifactId}`, route => route.fulfill({ body: documentBytes, contentType: 'application/octet-stream' }));
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  return { facts, queries };
+}
+
+test('선택 단계 문서는 서버 필터·cursor로 조회하고 단계 변경 시 원문과 목록을 바꾼다', async ({ page }) => {
+  const { facts, queries } = await stageDocumentSetup(page), panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await panel.getByRole('button', { name: '선택 단계 문서 조회', exact: true }).click();
+  await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click(); await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveText(documentBody);
+  await panel.getByRole('button', { name: '문서 다음 목록', exact: true }).click(); await expect(panel.getByRole('button', { name: '문서: 요구 단계 다음 문서 v2 조회', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '절차 정의: 기능 구현', exact: true }).click();
+  await expect(panel.getByRole('button', { name: '문서: 요구 단계 다음 문서 v2 조회', exact: true })).toHaveCount(0); await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveCount(0);
+  await panel.getByRole('button', { name: '선택 단계 문서 조회', exact: true }).click(); await expect(panel.getByRole('button', { name: '문서: 구현 단계 문서 v2 조회', exact: true })).toBeVisible();
+  expect(queries).toEqual([{ limit: '50', applicationId: application.applicationRef.id, nodeId: 'N1' }, { limit: '50', cursor: 'stage-N1-next', applicationId: application.applicationRef.id, nodeId: 'N1' }, { limit: '50', applicationId: application.applicationRef.id, nodeId: 'N2' }]); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+test('단계 문서 목록의 옛 적용 거절은 앞선 목록·원문을 지우며 무필터로 재시도하지 않는다', async ({ page }) => {
+  const { facts, queries } = await stageDocumentSetup(page), panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await panel.getByRole('button', { name: '선택 단계 문서 조회', exact: true }).click(); await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click(); await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toBeVisible();
+  await page.route(`**/api/v1/projects/${pid}/documents?*`, route => route.fulfill({ status: 409, json: { code: 'METHODOLOGY_APPLICATION_CHANGED' } }));
+  await panel.getByRole('button', { name: '문서 목록 새로고침', exact: true }).click(); await expect(panel.getByRole('alert')).toContainText('METHODOLOGY_APPLICATION_CHANGED');
+  await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveCount(0); await expect(panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true })).toHaveCount(0); expect(queries.length).toBe(1); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+test('선택 단계 목록에서 연 고정 문서가 다른 단계면 원문을 표시하지 않는다', async ({ page }) => {
+  const { facts } = await stageDocumentSetup(page), panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
+  await page.route(`**/api/v1/projects/${pid}/documents/${documentId}/versions/2`, route => route.fulfill({ json: { ...stageDocument, stageNodeRef: { ...stageDocument.stageNodeRef, nodeId: 'N2' }, stageBinding: { ...stageDocument.stageBinding, nodeId: 'N2', nodeName: '기능 구현', uses: ['INPUT'] } } }));
+  await panel.getByRole('button', { name: '선택 단계 문서 조회', exact: true }).click(); await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click(); await expect(panel.getByRole('alert')).toContainText('DOCUMENT_STAGE_CHANGED'); await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
 test('적용 절차 정의를 선택해 단계·연결·필수 산출과 완료조건을 읽되 실행으로 표시하지 않는다', async ({ page }) => {
   const facts = await applicationSetup(page);
   await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
@@ -143,7 +179,7 @@ test('주 작업에서 문서 목록과 선택한 고정 버전 원문을 읽고
   const panel = page.getByRole('region', { name: '주 작업 문서 조회', exact: true });
   await panel.getByRole('button', { name: '문서: 원문을 보존하는 요구사항 v2 조회', exact: true }).click();
   await expect(panel.getByLabel('주 작업 문서 원문', { exact: true })).toHaveText(documentBody);
-  await expect(panel).toContainText('저장 버전 2'); await expect(panel).toContainText('단계별 필터·실행 결과는 미연결');
+  await expect(panel).toContainText('저장 버전 2'); await expect(panel).toContainText('실제 실행 결과는 미연결');
   expect(await page.evaluate(() => (window as any).WORKSPACE_DOCUMENT_EXECUTED)).toBeUndefined();
   expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
 });

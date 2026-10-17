@@ -2,6 +2,8 @@
 
 ## UI04 원본 조회 연결 후보 — 2026-10-18
 
+선택단계 문서 후속은 server/documents/project-documents.ts의 단일MVCC 필터/현재회원·적용·head검수/cursor와 methodologies/application-snapshot.ts의 기존무결성공유가 소유한다. web/design-trace/api.ts는기존listDocuments의optional StageNodeRef만소비, workspace/Page·Methodology·Documents와api의로컬선택형은stage/ref key·명시query/cursor·다른stage원문거절을소유한다. 직접unit/FN03/document-list-stage.test.ts·unit/UI04/stage-documents.test.ts·browser/UI04 새3, 정식PG준비 integration/FN03/stage-document-list.test.ts가대응하며단계실행/문서쓰기/새schema는없다.
+
 WorkspaceForm.tsx는 WorkspaceMethodology.tsx의 선택단계 입력/출력에서 기존 methodologies/forms-api.ts의 getPinnedForm만 소비하는 고정 양식 조회를 소유한다. 항목/작성·검수·역할/공통 기준 텍스트·명시 재조회/거절시 제거·단계/ref key가 범위이며 새API·작성/확정·실행준비/Agent권한을 추가하지 않는다. 직접 browser/UI04 새3범주가 대응하며 기존API의 ref/구조 대조를 원문bytes hash재계산으로 부르지 않는다. 별도 integration/FN02/application-read.test.ts는 정식PG의 적용본조회·회원/만료/변조/두GET경합·정확QA8표정리를 소유하고 실제브라우저/TLS/전체RLS를 증명하지 않는다.
 
 적용본 조회 후속은 server/modules/methodologies/project-methodologies.ts의 readApplication과 projects/routes.ts의 명시 GET가 현재 회원·고정 row/snapshot/source/graph 무결성을 소유한다. web/features/workspace/api.ts의 readWorkspaceMethodology는 프로젝트 참조와 응답 exact 일치·두 canonical hash·표시 필드를 검사하고 WorkspaceMethodology.tsx가 정의 조회/로컬 단계 선택만 소유한다. 실제 세션/진행/실행·단계 문서 필터는 아직 미연결이다. 새 SQL/도메인쓰기/권한·서비스 변경은 없다. 직접 tests/unit/FN02/application-read.test.ts·tests/unit/UI04/methodology-application.test.ts와 browser/UI04의 정의/경합/변조/옛 digest 음성이 대응한다.

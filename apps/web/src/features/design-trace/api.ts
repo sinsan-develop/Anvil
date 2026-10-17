@@ -1,5 +1,5 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { stageRef, validStageBinding, type StageBinding } from './stage-api.ts';
+import { stageRef, validStageBinding, type StageBinding, type StageNodeRef } from './stage-api.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
 const integer = (value: number) => Number.isSafeInteger(value) && value > 0;
@@ -20,8 +20,9 @@ export interface DocumentVersion {
   contentReviews: ContentReview[];
 }
 function projectPath(projectId: string) { if (!uuid.test(projectId)) throw new ApiError('CLIENT_PATH_INVALID'); return '/api/v1/projects/' + projectId; }
-export async function listDocuments(client: ApiClient, projectId: string, cursor: string | null): Promise<DocumentPage> {
+export async function listDocuments(client: ApiClient, projectId: string, cursor: string | null, selectedStage?: StageNodeRef): Promise<DocumentPage> {
   const params = new URLSearchParams({ limit: '50' });
+  if (selectedStage !== undefined) { if (!stageRef(selectedStage)) throw new ApiError('CLIENT_PATH_INVALID'); params.set('applicationId', selectedStage.applicationId); params.set('nodeId', selectedStage.nodeId); }
   if (cursor !== null) { if (!cursor || cursor.length > 4096) throw new ApiError('CLIENT_PATH_INVALID'); params.set('cursor', cursor); }
   const value = await client.get<DocumentPage>(projectPath(projectId) + '/documents?' + params);
   if (!value || !Array.isArray(value.items) || value.items.length > 50 || typeof value.hasMore !== 'boolean' || value.hasMore !== (typeof value.nextCursor === 'string' && value.nextCursor.length > 0 && value.nextCursor.length <= 4096) || !value.hasMore && value.nextCursor !== null || !Number.isFinite(Date.parse(value.observedAt)) || new Set(value.items.map(item => item?.id)).size !== value.items.length || value.items.some(item => !item || !uuid.test(item.id) || typeof item.title !== 'string' || !integer(item.headVersion) || item.confirmedVersion !== null && (!integer(item.confirmedVersion) || item.confirmedVersion > item.headVersion) || !Number.isFinite(Date.parse(item.updatedAt)))) throw new ApiError('RESPONSE_INVALID');

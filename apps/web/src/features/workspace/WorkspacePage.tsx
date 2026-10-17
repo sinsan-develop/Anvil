@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { routeHref } from '../../shell/routes.ts';
-import { readWorkspaceProject, type WorkspaceProject } from './api.ts';
+import { readWorkspaceProject, type WorkspaceProject, type WorkspaceStageSelection } from './api.ts';
 import { WorkspaceDocuments } from './WorkspaceDocuments.tsx';
 import { WorkspaceMethodology } from './WorkspaceMethodology.tsx';
 
 export function WorkspacePage({ client, projectId, onAuthenticationLost }: { client: ApiClient; projectId: string; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
+  const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
   useEffect(() => {
-    let current = true; setPending(true); setError(null); setProject(null);
+    let current = true; setPending(true); setError(null); setProject(null); setSelectedStage(null);
     readWorkspaceProject(client, projectId).then(value => { if (current) setProject(value); }).catch((cause: unknown) => {
       if (!current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
       if (failure.status === 401) onAuthenticationLost();
@@ -24,7 +25,7 @@ export function WorkspacePage({ client, projectId, onAuthenticationLost }: { cli
       <div className="project-workspace">
         <section className="status-card" aria-label="개발 절차"><h3>개발 절차</h3>
           {project.currentMethodologyRef ? <><p>고정 적용 참조 · 세대 {project.currentMethodologyRef.version}</p><p className="meta">{project.currentMethodologyRef.id}<br />{project.currentMethodologyRef.contentHash}</p></> : <p>확인된 방법론 적용본 없음</p>}
-          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} />
+          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} onStageChange={setSelectedStage} />
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
         <section className="status-card" aria-label="총괄 작업"><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
@@ -44,7 +45,7 @@ export function WorkspacePage({ client, projectId, onAuthenticationLost }: { cli
             <p className="meta">선언 버전 {project.sourceDeclaration.ref.version} · {project.sourceDeclaration.ref.id}<br />{project.sourceDeclaration.ref.contentHash}</p>
             <p className="meta">사용자가 저장한 위치 설명이며 파일 접근·검증·실행 권한이 아닙니다.</p>
           </details> : <p>기존 소스 사용자 선언 있음 · 원문은 소유자에게만 표시됩니다.</p> : <p className="meta">빈 프로젝트로 생성됨 · 기존 소스 선언 없음</p>}
-          <WorkspaceDocuments key={projectId} client={client} projectId={projectId} onAuthenticationLost={onAuthenticationLost} />
+          <WorkspaceDocuments key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} projectId={projectId} selectedStage={selectedStage} onAuthenticationLost={onAuthenticationLost} />
           <p className="meta">상세 작성·검토는 자료 화면에서 진행합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
       </div>
     </> : null}

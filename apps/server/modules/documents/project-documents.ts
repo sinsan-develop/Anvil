@@ -18,6 +18,7 @@ import { confirmProjectDocument } from './project-confirmation.ts';
 import { createDocumentImport, readDocumentImport, checkImportSelection } from './project-imports.ts';
 import { createDocumentProposal, readDocumentProposal, checkProposalSelection } from './project-proposals.ts';
 import { listDocumentMaterials } from './material-list.ts';
+import { readApplicationSnapshot } from '../methodologies/application-snapshot.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -54,11 +55,37 @@ export class ProjectDocuments {
   }
   async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>, codec: ProjectListCodec) {
     await projectMember(db, actor, projectId);
-    if (Object.keys(query).some(key => !['limit', 'cursor'].includes(key)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);
-    const limit = query.limit === undefined ? 50 : Number(query.limit), filter = { query: projectId, archived: false, limit };
+    if (Object.keys(query).some(key => !['limit', 'cursor', 'applicationId', 'nodeId'].includes(key)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);
+    let stage: ReturnType<typeof readStageNodeRef> = null;
+    if (query.applicationId !== undefined || query.nodeId !== undefined) {
+      try { stage = readStageNodeRef({ applicationId: query.applicationId, nodeId: query.nodeId }); } catch { throw new AuthFailure('INPUT_INVALID', 400); }
+    }
+    const limit = query.limit === undefined ? 50 : Number(query.limit), filter = { query: stage ? canonicalJson({ projectId, ...stage }) : projectId, archived: false, limit };
     let position: { at: string; id: string } | null = null;
     if (query.cursor !== undefined) { try { position = codec.read(String(query.cursor), actor.actorId, filter); } catch { throw new AuthFailure('CURSOR_INVALID', 400); } }
-    const rows = (await db.query("SELECT id,title,head_version,confirmed_version,updated_at,to_char(updated_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') cursor_at FROM anvil.documents WHERE project_id=$1 AND ($2::timestamptz IS NULL OR (updated_at,id)<($2::timestamptz,$3::uuid)) ORDER BY updated_at DESC,id DESC LIMIT $4", [projectId, position?.at ?? null, position?.id ?? null, limit + 1])).rows;
+    const params = [projectId, position?.at ?? null, position?.id ?? null, limit + 1];
+    let rows;
+    if (stage) {
+      // 회원·현재 적용·문서 head를 한 문장의 MVCC snapshot으로 읽는다. 확인 뒤 별도 목록 SELECT를 하지 않는다.
+      const atomic = (await db.query(`WITH member_scope AS (
+        SELECT p.id FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id WHERE p.id=$1 AND m.user_id=$7 AND m.revoked_at IS NULL
+      ), current_application AS (
+        SELECT a.* FROM anvil.project_methodologies a WHERE a.project_id IN (SELECT id FROM member_scope) ORDER BY a.application_version DESC LIMIT 1
+      ) SELECT membership.is_member,row_to_json(a) AS application,d.*
+        FROM (SELECT EXISTS(SELECT 1 FROM member_scope) AS is_member) membership LEFT JOIN current_application a ON true
+        LEFT JOIN LATERAL (
+          SELECT d.id,d.title,d.head_version,d.confirmed_version,d.updated_at,to_char(d.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at
+          FROM anvil.documents d JOIN anvil.document_versions v ON v.project_id=d.project_id AND v.document_id=d.id AND v.version=d.head_version
+          WHERE d.project_id=$1 AND v.stage_ref_json=jsonb_build_object('applicationId',$5::text,'nodeId',$6::text)
+            AND ($2::timestamptz IS NULL OR (d.updated_at,d.id)<($2::timestamptz,$3::uuid))
+          ORDER BY d.updated_at DESC,d.id DESC LIMIT $4
+        ) d ON membership.is_member AND a.id=$5::uuid ORDER BY d.updated_at DESC,d.id DESC`, [...params, stage.applicationId, stage.nodeId, actor.actorId])).rows;
+      if (!atomic[0]?.is_member) throw new AuthFailure('NOT_FOUND', 404);
+      const current = readApplicationSnapshot(projectId, atomic[0].application ? [atomic[0].application] : []);
+      if (!current.applicationRef || current.applicationRef.id !== stage.applicationId) throw new AuthFailure('METHODOLOGY_APPLICATION_CHANGED', 409);
+      if (!(current.snapshot.graph as { nodes: { nodeId: string }[] }).nodes.some(node => node.nodeId === stage.nodeId)) throw new AuthFailure('NOT_FOUND', 404);
+      rows = atomic.filter(row => row.id !== null);
+    } else rows = (await db.query("SELECT id,title,head_version,confirmed_version,updated_at,to_char(updated_at AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') cursor_at FROM anvil.documents WHERE project_id=$1 AND ($2::timestamptz IS NULL OR (updated_at,id)<($2::timestamptz,$3::uuid)) ORDER BY updated_at DESC,id DESC LIMIT $4", params)).rows;
     const hasMore = rows.length > limit, visible = rows.slice(0, limit), last = visible.at(-1);
     return { items: visible.map(row => ({ id: row.id, title: row.title, headVersion: Number(row.head_version), confirmedVersion: row.confirmed_version === null ? null : Number(row.confirmed_version), updatedAt: row.updated_at.toISOString() })), hasMore, nextCursor: hasMore ? codec.create(actor.actorId, filter, { at: last!.cursor_at, id: last!.id }) : null, observedAt: new Date().toISOString() };
   }

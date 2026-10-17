@@ -53,6 +53,14 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 
 ## 2026-10-18 후속 — 고정 적용 절차·단계 정의 조회
 
+### 직접 승인 선택단계 문서 연결 후보 (최신)
+
+- PMO AV3-PMO-UI04-STAGE-DOCUMENT-READ A는 신산님 실제 직접 ‘승인’이며 무응답 위임이 아니다. 기존 documents GET의 applicationId/nodeId 쌍 필터만 추가, actor/project/application/node/limit cursor결박·무필터응답/동작·회원/로그인/no-store를 유지했다. 현재회원·적용snapshot·문서head는 단일 CTE/LATERAL MVCC snapshot에서 읽고 반환전 기존과같은 snapshot/source/graph 검수·현재적용/정확node 대조를 거친다. 이 동일 검수 본문만 application-snapshot.ts로 추출해 기존 적용GET과 공유했으며 새SQL schema/도메인쓰기/권한은 없다.
+- 화면의 로컬 정의 선택을 자료영역으로 전달하고 프로젝트/적용ref/선택node key로 목록·원문을 초기화한다. 명시 조회/다음cursor만 요청, 오류시 이전값제거·자동무필터/전체pagination없음, 기존 readDocument/bytehash 뒤 다른stage면 DOCUMENT_STAGE_CHANGED로 표시를거절한다. 문서누락은단계완료/안전판정아니며실제현재실행·세션/Agent는미연결이다.
+- 새단위7범주중 미구현5RED/기존거절·무필터2PASS→최종직접/인접15PASS1656.2603ms·fail/skip0/type/diff0. 정상UI1건 버튼부재RED(기존15초)→신규3을포함한영향UI04 **20PASS19.3s/FAIL0/SKIP0/exit0**, build127module347ms다. 기존필터미연결 문구의기대1줄은승인구현전후에맞게갱신했으며기준완화/기존시험삭제·timeout연장0이다. 실제PG는아직미실행이며같은자료를반복시험하지않는다.
+- 한정독립C0/I0/신규M1·정적후보한정채택가능. M1은409handler가query를기록하지않아이전handler의길이1만으로추가무필터재시도가없음을증명하지못하는시험관측공백이다. 실제제품fallback결함은발견되지않았고Main은Minor이월/제품·시험추가수정0으로판정했다. 기존두digestMinor도유지한다. Main판단유보는실PG문법/타입/MVCC·회원회수/RLS/성능, 실제로그인/served·지연요청/client교체, 전체UI04/Agent/사용자인수이며후속직접실행범위밖은미검증으로유지한다.
+- 등록 ui04-stage-documents-01 최종5파일/5폴더·owner SINSAN\cyhuh/nonlink/관련process0 대조후정확제거·별도root부재0. index5A1F83EAB602C97004103D6F80A1AE721288B1DE31B83205A312A2CABCB7A77B/JS C6EEC7A1E22E6493B50C54356B2AB00C201A8701A3FFE7C96C1E087FCCFFF21F/CSS1FFC9B57199672473A5E3D572A73E4F36AECF4413E97F49C44C19D8C1E342D11. 기존실패자료/소스/서비스·DB/보호자료보존이다. 실제PG metadata합성시험12표의이름·수명/정확정리는WORK_STATUS에사전등록했으며검수/clean/private뒤실행한다. rollback은국소API/UI/시험의후속revert, schema/서비스변경없음이다.
+
 ### 선택한 단계의 고정 양식 원본 연결 후보
 
 - 한정 독립결과 C0/I0/신규M0: 검수자는 새양식읽기 경계의 코드/직접시험을 읽었고 제품/시험/자원 변경0이다. Main은 이 범위만 채택한다. 실제served/API·DB권한, 원문hash재계산 무결성, 실제 지연 양식요청/사용자-client교체, 전체UI04/Agent 수용을 미검증·후속실연결 대상으로 남긴다. key/current 정적 방어·현재합성시험이 이를 전부 증명하지 않으며 기존 두digest Minor는 유지한다.
