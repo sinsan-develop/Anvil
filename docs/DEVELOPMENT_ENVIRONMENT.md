@@ -2,6 +2,8 @@
 
 ## UI06 실제 화면 반영 준비 — AV3-PMO-UI06-SERVED-PREP-01
 
+준비 검수 후속: 독립 원 C0/I1/M1의 수집 회귀는 PMO 허용 UI00·기존 UI06 두 시험의 후보 env 검사를 실행 시점으로만 이동해 Main 보완했다. 수집 RED→기존 인증4건 --list GREEN, env 미설정 실제2건은 명확 FAIL/skip0·fallback0, 동일 후보 기존 로그인6+UI06기존7 PASS와 만료 CLAIM 음성1 PASS를 확인했다. 만료 음성 최초 selector/문구 기대 오류1은 WORK_STATUS에 보존한다. 실제 auth/CLAIM/PG/서비스/UNC 변경0, 준비 QA60파일/14dir는 정확 제거·독립 잔여0이다. 원 검수와 Main 보완을 구분하며 새 독립 C0/I0·실서비스 반영 완료로 승격하지 않는다.
+
 2026-10-17 PMO 권장 A는 **기존계정 로그인 진입 UI·후속 전환 절차 준비**만 허용한다. 정식 bundle 게시·PID 종료/재시작·실제 로그인/계정/PG QA·UNC 쓰기·CLAIM/Secret/TLS 변경은 실행하지 않았다. 준비 후보의 정확 SHA는 Git/WORK_STATUS와 PMO 최종 패킷에서 대조하며, 아래 비활성 manifest를 실제 실행 승인으로 쓰지 않는다.
 
 ### 최소안과 실행 불가 경계
