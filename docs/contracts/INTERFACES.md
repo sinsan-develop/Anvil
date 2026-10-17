@@ -2,6 +2,12 @@
 
 ## 2026-10-17 FN06 제한 신뢰 등록 — 승인된 구현 프로필
 
+### HUMAN 현재 신뢰 조회 — AV3-PMO-UI11-TRUST-READ-01
+
+승인된 GET은 `/api/v1/projects/:projectId/connector-registrations?limit&cursor`(기본50/최대200·그 외 query/배열 거절)와 같은 prefix `/:registrationId`(query 없음)이다. 현재 HUMAN session·프로젝트 OWNER/본인 requested_by/같은 client/현재 단독제어·유효 trust정책과 DENY우선을 검사한다. 현재 읽기가 확인/회수 쓰기 권한을 뜻하지 않으며 확인 가능은 별도 confirmConnectorRegistration 유효 규칙·최근 재인증/proof/current basis·기한을 모두 필요로 한다. GET은 원 명령 snapshot을 현재 상태로 대체하지 않고 기존43 등록/host·원 생성 receipt/scope/hash·SPKI 지문 무결성을 검수한다. no-store이며 도메인 명령/승인/감사/nonce/credential 쓰기0이다.
+
+목록은 view `HOST_TRUST_REGISTRATIONS_ONLY`·items `{registrationRef,connectorRef,hostLabel,state,derivedExpired,expiresAt,proofedAt,revokedAt}`·hasMore/nextCursor/observedAt, 상세는 이 항목+projectId/connectorState/expectedHostFingerprint/observedHostFingerprint/scopeDigest/고정scope projection/현재 policyRef/createdAt/issuedAt/failedAttempts/credential `{issued,expiresAt,revokedAt,status}`/basis `{current,reasons}`/confirmation `{allowed,reasons}`/grants[]/executionAuthorized:false/observedAt만이다. 상세 ref/hash와 고정scope도 Web에서 대조한다. code/token/digest/credential ID·private/SPKI/nonce/서명/challenge/DSN은 응답에 없다. 현재 허가가 있으면 과거 정책·세대/기한/회수 사실을 불가사유로 표시하지만 권한을 복구하지 않는다. cursor는 기존 서명 codec·created_at/id keyset과 actor/client/project/정렬/limit/현재정책ref·기한/제어세대·최대30분 및 정책기한 상한에 결박한다. 새schema/SQL/기존write 계약 변경0. UI11 화면/일회 코드 메모리·명령 유실/이동/승인 연결의 실제 검수는 후속이며 GET 부분 검수와 구분한다.
+
 후속 PMO 허용44로 DB protocolVersion 숫자1 방어층을 교정했다(공개 API 계약 확대0). dba582b6 exact 실제 app DB6종 거절/숫자1 정상과 HTTP 등록·서명/HUMAN 비교/새 nonce/일회 발급·상태조회/재발급409/회수1 PASS, 이전43 불변·QA45표0이다. 독립 원C0/I0/M1에 Main 수정/검증을 연결했으며 아래 미수정·후속44 없음은 이전 시점 기록이다. 실제 Windows→WSL HTTPS·Agent/영구 등록·UI11 신뢰 화면은 미확인/미완료이고 제한 수용은 PMO 판단이다.
 
 마지막 독립 검수는C0/I0/M1이다. Minor1은 적용43의 DB protocolVersion NULL/문자열1 방어층이며 HTTP 계약은 정확8필드·숫자1을 유지한다. 공개 API 우회·추가 발급·권한 확대는 확인되지 않았고 SQL SELECT 비교만 검증했다. 미수정 사항은 WORK_STATUS에 공개했으며 적용 SQL 변경/후속44 작성·적용0, 이번 제한 기능의 최종 부분 수용은 PMO에 남긴다.
