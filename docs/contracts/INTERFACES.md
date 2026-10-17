@@ -10,6 +10,8 @@ PMO `AV3-PMO-FN06-TRUST-QA-01`은 아래 §12.2의 완성형 등록을 열지 �
 
 현재 구현 증거는 순수 입력/서명 검증과 Windows 보호저장 상호운용 부분뿐이다(WORK_STATUS). 서버 등록·forward43·WSL 실제·Windows→WSL HTTPS/영구 설치·실제 Agent는 아직 미검증이다.
 
+후속 교환의 내부 상세: CHALLENGE 요청도 최초 HOST_PROOF serverNonce·같은 등록/설치/범위/지문에 새 clientNonce와 원 등록 expiresAt를 결박한 정확8필드 서명을 먼저 검사한다. 최초 clientNonce 재사용/서명 불일치는 새 challenge를 만들지 않는다. 동일 유효 preflight는 동일 미소비 challenge만 재조회하며 임의 clientNonce로 먼저 교환 상태를 잠그지 못한다. ISSUE는 별도로 새 serverNonce와 그 clientNonce에 결박한 최대2분 challenge만 소비한다. 이는 기존 승인된 fresh-nonce 절차의 위조/선점 방지 구현 상세이며 새 자료/실행 권한을 추가하지 않는다. 실제 구현/검증은 후속이다.
+
 UI08 소비 검증36fa3e51: 요청/결정/후보 commandId는 서로 다르고 각 응답 유실의 재확인은 해당 원 command 그대로다. 현재 서버 APPROVE·basisCurrent·정확 scope/payload/hash/정책·대상/기기/제어·기한을 대조해 ref만 결박하며 별도 저장 전 소비하지 않는다. 이미 소비한 원 command 재확인은 정확 requestHash를 요구하고 다른 내용·명령에 재사용하지 않는다. UI08에서 실제 확인한 소비max1·outbox0과 아직 미구현 FN12/실제 Agent를 구별한다. 새 공개 API/지원 연산/정책 허가는 추가하지 않았다.
 
 UI08은 기존 approvals 목록/상세 GET과 requestApproval/decideApproval 명령만 소비한다. 브라우저 요청 초안은 후보 commandId·payload hash/정확 targetRef·현재 policyRef/주체/client/세대·기한·위험5종/복구를 고정한다. 서버 조회의 APPROVE와 정확 요청이 일치한 때만 원 후보 command의 approvalRef를 결박하고, 별도 사용자 후보 저장 전 소비/실행하지 않는다. 요청/결정 응답 유실에는 원 명령을 그대로 재확인한다. 공개 계약·지원 연산·데이터 schema의 추가/완화는 없으며 UI08 전체 연결은 후속 실제 검증 전이다.

@@ -8,9 +8,11 @@ import { registerDocumentRoutes } from './modules/documents/routes.ts';
 import { registerMethodologyRoutes } from './modules/methodologies/routes.ts';
 import { registerCommonMethodologyWrites } from './modules/methodologies/common-write.ts';
 import { registerProjectFileRoutes } from './modules/documents/project-files.ts';
+import { enforceConnectorCredentialScope } from './http/connector-auth.ts';
 
 export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
+  app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
     reply.header('cache-control', 'no-store');
     reply.header('x-content-type-options', 'nosniff');

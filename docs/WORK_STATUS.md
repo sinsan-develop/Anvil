@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN06 서버 후속 착수: 부분 checkpoint13ecba26254a19cfe58b05861e334c8d30c5e7f4는 local/private 동일·clean·main f976ed5e 불변, 공식 정본6은 이전 blob 일치 확인 후 동기화했다. credential/HUMAN cookie 혼합으로 기존 API 접근을 막는 새 HTTP 경계 RED1(health200≠403)→GREEN1/573ms·type/diff0을 확인했다. 아직 credential 발급/등록 status API는 미연결이다.
+- FN06 actual 자원 사전등록: 기존 정식 WSL PG/보호 app·migrator 설정을 소비하며 `qa-connector-trust-<UUID>` 합성 사용자2·client/세션·UUID 프로젝트2·정책/명령/승인/감사·신규43 네 테이블의 그 소유 등록/공개 proof/credential digest만 한 시험 수명으로 생성한다. 새 DB/계정 권한·컨테이너/포트·파일root/실제 사용자·CA/relay/서비스는 생성·변경하지 않는다. Node 시험 키/code/token은 메모리만 사용하고 원문 출력/argv/Git/DB 평문0이다. finally에서는 저장한 소유 UUID만 참조 분리/정확 삭제하고 기존42 checksum/4표 포함 QA·보호 파일root 잔여를 독립 대조한다. 공개 서명 injection+PG 시험은 Windows→WSL HTTPS가 아니다.
+- FN06 서버 actual RED용 시험을 작성했다. 아직 실행 전이며 등록 성공으로 표시하지 않는다. CHALLENGE 선점/옛 proof 재사용을 막기 위해 같은 원 HOST_PROOF serverNonce+새 clientNonce/원 등록기한의 서명 preflight를 요구하고, 그 뒤 새 serverNonce challenge의 ISSUE만 받는 내부 상세를 기록했다(새 grant0). 최초 시험 post helper의 payload:unknown이 Fastify overload와 맞지 않아 타입 실패1회였으며 실제 JSON 객체 계약인 Record<string,unknown>로 정정했다. 기대값/합격 기준은 불변이다. credential 전역 차단 포함 전체 unit170 PASS/2556ms, 최종 타입은 정정 뒤 재검사한다.
+
 - FN06 로컬 부분 checkpoint 준비: 새 trust-only 입력 부재 RED1/176ms→등록/확인2 GREEN, 기존 FN06 후보·완성형/서명 포함9 PASS/263ms, 최종 전체 unit **169 PASS/2229.779ms/FAIL0/SKIP0**·type/diff0이다. 기존7필드 parser/42 SQL·제품 HTTP/routes·DB·서비스는 불변이다. 검증 전완료 원칙 스킬에 따라 Windows 실측/로컬 단위를 서버 등록/WSL 검증과 분리하고, 이 부분만 안전 checkpoint한 뒤 새 등록 저장/HTTP 실제 RED와43을 이어간다. 44업무/Stage/FN06 전체 완료 판정은 바꾸지 않는다.
 
 - FN06 AV3-PMO-FN06-TRUST-QA-01 착수(2026-10-17): PMO가 실제 게시08:41:50 KST→08:53:27 KST의 10분 경과/새 답변·반대·중지 부재를 대조해 권장 A를 승인·지시했다. 기준 daf88829 clean/기존 codex/av3-stage-b, Main 어울 단일 writer다. trust-only 별도 입력/등록·challenge/고정 P-256 서명·HUMAN exact 비교·상태조회전용 credential 일회 발급/회수와 신규43 네 테이블만 구현한다. 기존42 SQL/완성형7필드 parser/후보·기존 승인 조건은 보존한다. PMO는 필요한 승인3연산의 기존 project-approvals.ts/approval-input.ts 직접 소비도 별도 확인해 허용했다. agent/자료/환경/파일/execution grant0·기존 자료API credential 거절을 강제하며 실제 PC영구등록/Agent/유료호출·서비스/relay/bootstrap/CA/기존 ACL 변경은 제외다.
