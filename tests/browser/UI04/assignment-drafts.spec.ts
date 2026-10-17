@@ -30,7 +30,7 @@ async function setup(page: Page, lost = false) {
   });
   page.on('pageerror', error => errors.push(error.message)); page.on('request', request => { if (new URL(request.url()).origin !== 'https://localhost:3830') unexpected.push(request.url()); });
   await page.goto(`/#/projects/${pid}/workspace`); await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
-  return { commands, unexpected, errors };
+  return { commands, unexpected, errors, get stored() { return stored; } };
 }
 async function prepare(page: Page) {
   await page.getByRole('button', { name: '계획 목록 조회', exact: true }).click(); await page.getByRole('button', { name: '계획 열기: 합의한 계획', exact: true }).click();
@@ -70,4 +70,24 @@ test('임무 고정 원문 조회 거절은 앞선 저장 원문을 현재 조�
   await page.route(`**/api/v1/projects/${pid}/assignment-drafts/${draftId}/versions/1`, route => route.fulfill({ status: 403, json: { code: 'PROJECT_READ_DENIED' } }));
   await page.getByRole('button', { name: '저장 버전 재조회', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('PROJECT_READ_DENIED');
   await expect(page.getByRole('region', { name: '저장한 임무 초안', exact: true })).toHaveCount(0); expect(facts.commands).toHaveLength(1); expect(facts.unexpected).toEqual([]); expect(facts.errors).toEqual([]);
+});
+
+for (const kind of ['계획', '임무'] as const) for (const next of [false, true]) test(`${kind} 목록 ${next ? '다음 쪽' : '재조회'} 대기·거절 시 앞선 요약을 치우고 원입력·미확인 명령을 보존한다`, async ({ page }) => {
+  const facts = await setup(page, kind === '임무'); await prepare(page);
+  if (kind === '임무') { await page.getByRole('button', { name: '임무 초안 저장', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST'); }
+  const path = kind === '계획' ? 'work-plans' : 'assignment-drafts', label = kind === '계획' ? '계획 목록 조회' : '임무 초안 목록 조회';
+  const item = kind === '계획' ? { ref: planRef, status: 'DRAFT', title: '합의한 계획', documentRef: plan.documentRef, designRef: plan.designRef, issueCount: 0, updatedAt: at, integrity: 'NOT_RECHECKED' } : { ref: facts.stored.ref, status: 'DRAFT', goal: facts.stored.snapshot.definition.goal, taskRef: facts.stored.snapshot.definition.taskRef, issueCount: 1, updatedAt: at, ready: false, executionAuthorized: false };
+  const row = page.getByRole('button', { name: kind === '계획' ? '계획 열기: 합의한 계획' : '임무 버전 열기: 1', exact: true });
+  await page.route(`**/api/v1/projects/${pid}/${path}?*`, route => route.fulfill({ json: { items: [item], hasMore: true, nextCursor: 'next-page', observedAt: at } }));
+  await page.getByRole('button', { name: label, exact: true }).click(); await expect(row).toHaveCount(1);
+  let release!: () => void; const responseReady = new Promise<void>(resolve => { release = resolve; }), queries: string[] = [];
+  await page.route(`**/api/v1/projects/${pid}/${path}?*`, async route => { queries.push(route.request().url()); await responseReady; return route.fulfill({ status: 403, json: { code: 'PROJECT_READ_DENIED' } }); });
+  await page.getByRole('button', { name: next ? `${kind} 다음 목록` : label, exact: true }).click();
+  try { await expect(row).toHaveCount(0); } finally { release(); }
+  await expect(page.getByRole('alert')).toContainText('PROJECT_READ_DENIED'); await expect(row).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: '임무 목표', exact: true })).toHaveValue('사용 가능한 실제 기능');
+  expect(queries).toHaveLength(1); expect(new URL(queries[0]!).searchParams.get('cursor')).toBe(next ? 'next-page' : null);
+  expect(facts.commands).toHaveLength(kind === '임무' ? 1 : 0);
+  if (kind === '임무') await expect(page.getByRole('button', { name: '같은 임무 명령 결과 확인', exact: true })).toBeVisible();
+  expect(facts.unexpected).toEqual([]); expect(facts.errors).toEqual([]);
 });

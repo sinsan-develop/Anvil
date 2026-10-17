@@ -86,7 +86,7 @@
 | UI01 | 프로젝트 목록 | B | UI00 | UI00,FN01 | 작업 중 · 허가 목록/검색/관측·오류 보존 partial·WORK_STATUS. 생성/단계 메타·실제 새 UI DB 여정 미완료 |
 | UI02 | 프로젝트 생성·기존 소스 기준선 | B | UI00 | UI00,FN01,FN02,FN03 | 작업 중·생성 초안/방법론 선택·검토/확정·빈/기존 소스 선언 입력/조회·생성 same-client actual d8128157, fixture10 확인. 실제 관측/기준선·문서/환경/총괄·사용자 UI DB 미완료 |
 | UI03 | 방법론 흐름도 편집 | B | UI00 | UI00,FN02,FN03 | 작업 중·공통/초안 및 전용본 개정·내용검토/별도 확정·미확인 명령 보존·과거 버전 조회 연결, same-client actual19ce2bb7. 적용 전환·실제 사용자 UI DB 여정 미완료 |
-| UI04 | 프로젝트 주 작업 화면 | C | UI00 | UI00,FN08,FN09,FN10,FN11,FN13 | 부분 구현·원본/선언·문서고정버전·절차/양식·선택단계문서. 단계목록 실제PG746bd89 1PASS/QA0, 임무초안 작성·고정조회/보존 후보9e42149 직접10/합성UI5·한정C0/I0/목록M1이월. 이전 두digest/409관측Minor유지. 실제served/browser·임무정식DB쓰기/책임세션/실제단계상태/Agent/시작/중지 미연결·UI04_CONTEXT_PREP_RESULT |
+| UI04 | 프로젝트 주 작업 화면 | C | UI00 | UI00,FN08,FN09,FN10,FN11,FN13 | 부분 구현·원본/선언·문서고정버전·절차/양식·선택단계문서. 단계목록 실제PG746bd89 1PASS/QA0, 임무초안 작성·고정조회/보존 후보9e42149 직접10/합성UI5·한정C0/I0·목록M1은후속4handler보정/합성UI9PASS/scopedC0/I0으로해소. 이전 두digest/409관측Minor유지. 실제served/browser·임무정식DB쓰기/책임세션/실제단계상태/Agent/시작/중지 미연결·UI04_CONTEXT_PREP_RESULT |
 | UI05 | 단계책임자·실행 상세 | C | UI00 | UI00,FN09,FN12,FN13 | 시작 전 |
 | UI06 | 문서·설계·계획 추적 | B | UI00 | UI00,FN03,FN04 | 작업 중 — 후보/제안·충돌/검토 재개와 고정 단계 선택·보존/조회 연결. 6cdb21cb same-client 단계 actual1 PASS. 소스/추적 잔여·실제 사용자 UI DB 여정 미완료 |
 | UI07 | 설계 변경·영향·이력 | D | UI00 | UI06,FN04,FN11 | 시작 전 |
@@ -105,7 +105,7 @@
 | FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·기존 DPAPI/CNG/상태전용 신뢰·44교정 제한수용 유지. e07312d3 native→strict TLS/WSL PG→UI11 정상/본문유실2건1 PASS/36923ms·정리0. 단일독립 C0/I2/M0의 QA수명/초기종료 Main 보완·순수7/unit190/type0·보완후actual/독립재검수0, PMO 수용 전. SQL44불변/QA45표0, 영구 PC/실제 Agent·능력실측·전체연결 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·QA-02 bbb239dd 합성 실제1 PASS/71523.4163ms·정리0/19960·relay 보존은 유지. 별도 내부precondition2파일 집중4 PASS/type0·항상실행불가이며 사용자기능진도 아님. sourceScopes/envelope/durable 결과형 미정·verifier/실제dispatch·ACK/spool/Agent 연결 미구현. 원QA-01 REWORK/40744미확정·잔여OS미검증·전체인수와 구분 |
-| FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 부분 구현·FILE비교 한정수용 유지. 초안 서버/API·UI04 작성/개정준비·정확조회/원입력·같은명령 보존 후보9e42149. 원I2개 RED보완·scoped C0/I0/목록M1이월·직접10/UI5·목록cursor2 확인. 격리47SQL COMMIT/hash/권한·무명령거절PASS·QA0, 정식46/새2표미적용. 별도정식 schema-only 준비5PASS·scopedC0/I0/새M0·결정요청·실제저장/API/서비스·배정/Agent·전체완료 미확인 |
+| FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 부분 구현·FILE비교 한정수용 유지. 초안 서버/API·UI04 작성/개정준비·정확조회/원입력·같은명령 보존 후보9e42149. 원I2개 RED보완·scoped C0/I0·직접10/UI5·목록cursor2 확인. 목록M1은후속4handler보정/합성UI9PASS/scopedC0/I0으로해소. 격리47SQL COMMIT/hash/권한·무명령거절PASS·QA0, 정식46/새2표미적용. 별도정식 schema-only 준비5PASS·scopedC0/I0/새M0·플랫폼실행전거절/적용0·실제저장/API/서비스·배정/Agent·전체완료 미확인 |
 | FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 시작 전 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |
 | FN12 | 결과·검증·이상 판정 | C | FN04,FN08,FN09 | FN04,FN08,FN09 | 시작 전 |
