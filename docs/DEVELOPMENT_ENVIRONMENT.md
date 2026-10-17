@@ -1,5 +1,10 @@
 # Anvil 재설계 개발환경
 
+## UI04 적용본 조회 정식 PG 핵심 확인 — 2026-10-18
+
+- 정식 WSL Git /home/daon/deploy/anvil-v3는 private exact8c539c7a206bc5be1bf221d55f44ede3b5adb5b7·detached clean으로 옮겨 신규조회 Fastify.inject→정식PG/실Web함수의 직접1건10조건 PASS를 확인했다. 새서비스 배포나 실제 servedBrowser 증거가 아니다. 기존 Windows Node54212의 source6781703a·exe/start·단일3830/relay26052는 그대로다.
+- 기존 PG fullID/image/StartedAt/restart0·migration46/전체 ID-checksum과 보호app/migrator설정hash를 보존, 사전등록 합성QA8표를 정확정리하고 별도 READ ONLY 조회에서 잔여0을 확인했다. 새migration·실사용자/권한·Secret/certificate·Agent·추가compiler0, 실제 서비스 반영/로그인 브라우저 여정·RLS전체/전체UI04는 미확인이다. 명령·시각·조건·한계는 UI04_CONTEXT_PREP_RESULT와 WORK_STATUS를 따른다.
+
 ## 최신 실제 개발 서비스 — 2026-10-18 N4 직접 승인 전환
 
 - 실제 실행 source **6781703a8fd7d258aa7f972bb5f81acaf5c3d388**, Windows Node **54212** / C:\Program Files\nodejs\node.exe / 시작 UTC2026-10-17T19:08:16.5819440Z / 단일127.0.0.1:3830이다. 직접 서비스 교체 승인 아래 원23836을 종료해 새 API·Web을 반영했고 아래23836은 과거 시점이다.

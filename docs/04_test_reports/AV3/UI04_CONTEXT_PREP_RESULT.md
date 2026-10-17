@@ -53,6 +53,14 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 
 ## 2026-10-18 후속 — 고정 적용 절차·단계 정의 조회
 
+### 정식 WSL PostgreSQL 핵심 확인 (후속)
+
+- 정확 후보8c539c7a206bc5be1bf221d55f44ede3b5adb5b7(제품은683ec950과 동일), 시험 SHA256 d46a177ffe5a9c90be0f006ee0afed378e7b3662d51e260b70c6e491526e6b98. 정식 /home/daon/deploy/anvil-v3 clean·Git origin 승인URL·Node24.21.0·package/lock/migration 집합 불변을 확인했다. 초기 development remote 추정은 fetch 전 중단→실제origin을 읽어 정정했으며 설정 변경0이다.
+- 실제 명령: 보호 app/migrator 참조와 APPLICATION_READ_01·등록기한을 지정한 `node --test --test-reporter=spec tests/integration/FN02/application-read.test.ts`. **1PASS/FAIL0/SKIP0/exit0, case1767.749362ms·전체2410.818229ms**. 10조건은 OWNER/VIEWER 고정본/no-store, 미적용null쌍, 타project/없는/회수회원404, query400, 실제 Web조회함수↔PG ref, 최신행/두GET경합과 재조회, snapshot변조503, 만료401, 옛credential401, domain명령·control·dispatch쓰기0이다. 비관리자/rolsuper=false/rolbypassrls=false를 확인했지만 RLS 정책 전체 검증으로 부르지 않는다.
+- 합성 seed는 고정 사용자2/프로젝트3/적용본3과 연결자료만 사용했다. 실제 applyMethodology 전환·사용자 UI 여정이 아니며 제품 변경/강제 RED 복원/기존검사 반복0이다. 시험 finally 정확8표 정리 후 독립 **BEGIN READ ONLY** 조회도 각0·migration46, 전체 migration ID/checksum 전후 동일. auth audit identity 순번은 reset하지 않았다. 새 OS 파일/서비스/port/권한/Secret파일·Agent·추가compiler0이다.
+- 전용 PG ID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f/StartedAt2026-10-15T18:53:33.435483583Z/restart0 불변. WSL app.json hash56af9676…17299/migrator.json a78daab0…6497 전후 동일, Windows auth/db-app/N4receipt3hash 기대값일치·Node54212/relay26052 exe/start/단일127.0.0.1:3830 불변이다. 최초 PowerShell 혼합표의 누락표시는 구조화출력과 기대값검사로만 보완했으며 DB 시험은 반복하지 않았다.
+- **미검증/판정:** 실제 PG 회원·인증거절/조회무결성은 이 범위에서 확인했다. 실제 socket HTTP/TLS·브라우저/현재서비스 반영·RLS전체·양식 현재 접근/확정·실제 세션/단계 수행/Agent·전체UI04/Stage 완료는 아니다. 기존 두digest 시험증명 Minor는 유지하며 실제 혼입결함으로 단정하지 않는다. rollback은 source 국소 후속 revert, 이번 합성자료는 정리됐고 기존 서비스/DB schema는 그대로다.
+
 - 안전 checkpoint: 683ec95065ce46110b47f2a5609c6f849c7d1168, 부모5a488f8f·정확14경로·private branch 동일/clean·main f976ed5e 불변. 이후 제품수정/완료검사 반복 없이 실제 PG 핵심조회용 직접 integration1건을 준비한다. WORK_STATUS에 등록한 고정 QA 사용자2/프로젝트3/적용본3·연결자료8표만 사용/정리하며, 새 서비스/파일/권한·schema/Secret0이다. 타입 검사는0이고 actual은 아직 미실행이다.
 
 - 기준5a488f8f9f8287195c96a604d33de413bd99537d·Main 단일 writer. 별도 PMO 결정 AV3-PMO-UI04-METHODOLOGY-APPLICATION-READ A(사용자게시20:59:26Z→21:11:46Z/12분20초·최신5turn 새중지/답변없음 확인)에 따라 INTERFACES의 새 읽기 GET을 구현했다. 현재 로그인/회원·격리·no-store와 기존 거절을 유지하고 기존 project_methodologies 최신1행의 row/source/snapshot/graph hash·고정 그래프 구조만 읽는다. 새 SQL/도메인쓰기·적용 전환·권한/Secret·서비스/Agent 실행은 없다.
