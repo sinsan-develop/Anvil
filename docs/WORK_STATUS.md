@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **A-3 r2 scoped 문서 검수 종료**: 원 I1/M1의 보정만 읽은 재확인은 C0/I0/M0·두 원 지적 문서상 해소다. 전체 A-3/연결문서·실제 permit/TLS/hash/SQL/동시성/native·로그/메모리·시험 PASS 판정은 포함하지 않는다. r2 SHA256 095B5FEFDBB2F903415AE404CC97D50FB585D1696FA6468CBFC91E805464D035, 새 문서/연결5+기존 결정자료/현황의 정확7경로만 변경했다. diff check0·현황 외6문서 정본/게시후보 hash일치를 확인했다. WORK_STATUS는 이전에 보존한 서로 다른 누적 원문이 있으므로 전체 교체·기록삭제/byte동일 주장0, 이번 A-3 신규 기록만 양쪽에 남긴다. 이전 현황 전체교체 거절을 우회하지 않는다. 다음은 문서 checkpoint와 제한된 신규 코드/SQL 작성·합성 QA 결정 요청이며 actual 실행은 제외한다. 완료된 제품 시험은 재실행하지 않았다.
+
+- **A-3 문서 검수 인수·r2 보정 / Main 어울**: 기존 검수 최종 C0/I1/M1이 도착했다. I1은 exact sourceRootRef에서 실제 root 경로를 connector에 전달할 인증된 계약 누락, M1은 observedAt/finishedAt의 순서·서버 수신/오차 미정이다. 기존 source-root-input의 snapshot/declaration과 registration-proof/protocol을 읽어 확인한 뒤 문서만 보정했다. 새 token 전용 보호 /permit·서버 exact snapshot 검증/파생 pathHintHash·scopeHash/pathHash 검증과 단일 native root입력·로그/VIEWER/receipt 비노출, 보고 시각30초 오차/관측 창·수신기한 무관용을 r2/연결문서에 반영했다. 동일 full review/시험을 반복하지 않고 원 두 지적의 scoped 문서 확인만 요청했다. 실제 OS/DB/암호교환 PASS·전체 기능 완료로 승격0이다. 다음 새 코드/신규SQL 작성+합성 QA만의 권장 A와 대안/영향/복구를 기존 결정자료에 구체화했다. 구현/DDL파일·실DB/키/ACL/native/실source·Agent/서비스 변경0이다. PMO 다음 배정 대기는 없고 필요한 변경 결정만 요청한다.
+- 이번 읽기 조사 오류: sandbox git status의 ‘must be run in a work tree’ 1회는 같은 경로 elevated 읽기에서 실제 branch ff385ace·문서7경로만 확인했다. 설계 문서 경로의 잘못된 한자 표기 읽기1회는 찾을 수 없음이며 실제 정본 경로로 바로잡는다. ACL/권한·Git metadata 변경/이전 실패 재실행0이다.
+
+- **A-3 상세 계약 문서 작성 / 코드·실행0**: PMO13:07:30Z의 상세설계 기준A를 접수하고 SOURCE_READ_OBSERVATION_A3.md r1에 HUMAN 요청/회수·현재권한/정확scope·별도P-256 purpose/nonce/token교환·READ_ATTRIBUTES 메타보고/불변4표 제안·46번째migration·보호/화면/검증/복구를 구체화했다. 기존 REGISTRATION_STATUS_ONLY/grants=[]·45SQL/정식DB/키/ACL/native/실소스/Agent·서비스는 변경0이다. 신고형 보고를 CONNECTOR_REPORTED/OS UNVERIFIED로 고정하며 본문/diff/Git·기준선 확정/dispatch를 자동추가하지 않는다. 기존 등록의 정확policyRef가 바뀌면 자동rebind하지 않고 명시 정책/재등록 필요를 표시하도록 대조했다. Main 자체대조에서 proofbytes정확화·root실패보고/고정이유·익명 무효서명으로5회잠금 소진 방지·SQLcanonical 상호운용을 보완했다. 서명/현재성은 실OS/내용진실성·경합보호를 증명하지 않으며 첫 native 지원은 Windows-local NTFS metadata 별도actual에 한정, WSL mapping/Git/내용은 계획의 남은 기능이다. 현재 문서 한정 독립검토를 진행하고 구현/DDL파일/자원생성·검증PASS로 승격하지 않는다.
+
 - **UI10-CONVERSATION-ATTACH-01 검수·정리 종료**: 지정5코드/시험·필요직접소비의 독립 읽기 C0/I0/M0(재실행0)이다. 초안 참조만 추가·기존원문/저장/주체/잠금·USER_INSTRUCTION 보존을 확인했고 필수보완0이다. 긍정 경계198→199/다수기존출처·세부오류코드/준비중클릭경합·실제 user/client교체의 추가시험은 향후보강이며 수행했다고 주장하지 않는다. Main은 작성자17unit/5후보browser·type/build 증거만 한정 채택한다. 실제served/API·PG/권한탈취·다른탭/프로세스 경합/네트워크 복구·helper검증경로밖 메모리변조·원문진실성/포괄비밀탐지·전체기존정정/확정/헌법회귀·A3/A2R/Stage/인수는 이번수용 밖이다. 이 미검증을 실제 보안/저장 완료로 올리지 않는다. 이전 문서첨부 안내 Minor1도 여전히 이월이며 이번 C0/I0/M0로 소급해소하지 않는다.
 - 등록 UI10 QA13파일/9dir는 owner SINSAN\cyhuh/nonlink/등록4하위/process0 대조 후 exact제거·별도 root부재/process0, 원 실패01보존·23836/CIM/3830 불변이다. 재생성가능 합성자료만 폐기했으며 코드/시험/Git으로 재현한다. 정본 현황·계획의 UI10행에 후보 출처연결과 실제반영미완료를 기록한다. 신규A3 결정자료1파일은 별도51c084a1a2ac4e92a08b46b4ead5a9535a9396d0으로 보존했고 승인/실행으로 승격0이다. 다음은 Main이 A3의 결정결과·실제 권한 경계를 대조해 상세 계약을 이어가되 PMO 작업배정대기는 만들지 않는다.
 
@@ -753,7 +760,7 @@
 | FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 버전·검토/확정·제안/후보 재개·충돌/대상 교체·고정 적용 단계/정확 양식 연결 actual6cdb21cb·forward40·QA 잔여0 | 소스 실관측/드리프트·실제 사용자 화면 DB 여정 |
 | FN04 설계 추적·계획·변경 영향 | [2] | Main 어울. 정확 AF02/AF03 원문 위치 등록·조회 actual 확인, 선행 분석 일부 구현 | AF04 작업계획/업무/선행·trace edge·3상태축·영향/계획개정 |
 | FN05 헌법·지식·원문·맥락 | [2] | Main 어울. 원문/지식·이유/이력·검색/정정/제외·검토/확정·헌법 적용/교체/무효 이력 actual7cf8c005·SQL37 | 공유·맥락 선별/전달/이해(FN09/IX04 선행) |
-| FN06 첫 코딩 Agent·환경 | [2] | Main 어울. 후보/환경/6능력 기록·41/42 적용, 350b2e30 내부/HTTP·인접 actual3 PASS·독립 잔여0. 완성형·실측/실제 Agent·UI11 미연결 | 후보 부분 증거를 PMO에 제출하고 다음 정확 범위 지시 수신. 전체 연결/사용자 browser 완료 주장 금지 |
+| FN06 첫 코딩 Agent·환경 | [2] | Main 어울. 후보/환경/6능력 기록·41/42 적용, 350b2e30 내부/HTTP·인접 actual3 PASS·독립 잔여0. 완성형·실측/실제 Agent·UI11 미연결 | Main이 다음 미완료/선행을 선정·진행하고 필요한 실행/권한 결정만 PMO 요청. 전체 연결/사용자 browser 완료 주장 금지 |
 | FN07 두 번째 Agent·계정 교체 | [] | 실제 두 번째 연결 미확인 | 공통계약으로 타도구·계정교체·원본유지 |
 | FN08 Windows 실행·회수·중복방지 | [] | 회수/스풀 논리 계약 | 실제 관측·ACK·재전송/중복부작용 차단 |
 | FN09 총괄·단계·하위 임무 | [] | 역할/위임 설계만 있음 | 필수맥락·임무·권한부분집합·단일writer |

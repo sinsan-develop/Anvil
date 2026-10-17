@@ -1,5 +1,11 @@
 # P02 기술 선택 — TD-01·TD-02·TD-03 승인·상세 계약
 
+## A-3 설계 기준 결정 — 실행 승인 아님
+
+독립 문서검수 최초 C0/I1/M1을 접수했다. exact root의 인증 전달 누락(I1)은 상태token/OWNER 조회를 넓히지 않는 별도 보호 permit과 서버 snapshot→scope pathHintHash→connector 단일입력으로 보정했다. 시각 관계 미정(M1)은 주장 시각/서버 수신 분리·오차30초·순서/구간 검사·서버 기한 무관용으로 명시했다. 이 보정은 문서 범위이며 실제 OS 경로 안전·키/보고 실행·DB 검증을 뜻하지 않는다. 보정 scoped 검토 결과는 WORK_STATUS의 실제 수신 기록으로만 판정한다.
+
+PMO AV3-PMO-A3-READ-OBSERVATION-DESIGN 2026-10-17T13:07:30Z는 원 요청12:56:17Z 이후11분13초·후속 중지/거절 부재를 대조한 정확 권장A 적용 결정이다. 승인 범위는 문서 상세설계뿐이며 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md)에 payload/endpoint·별도 P-256 purpose/nonce 교환·신규4표 제안·보호/검증/복구를 기록한다. 정책 변경으로 기존 등록 기준이 달라지면 옛 binding을 자동 재확정하지 않는다. 등록token 확대·SQL/키/ACL/native/파일·Agent·서비스 실행0이다. 실제 code/SQL hash와 유한 자원은 후속 승인에서 대조한다.
+
 ## A-2R 한정 실행·미확인 경계
 - PMO11:57:30Z의 정확 권장안 결정과 Main 선정 실행계획 A2R_SOURCE_REGISTRY.md를 따른다. caller의local SHA/환경binding은 실행 승인 원문 자체가 아니며 플랫폼 직접승인 요구/거절을 우회하지 않는다.
 - source root는 USER_DECLARED/UNVERIFIED 위치선언으로만 취급한다. 현재root 실제읽기/쓰기·관측/baseline/grant·Agent/비용/외부전송/OS helper·제품service/Oracle/main은 별도 경계다.

@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## A-3 상세 설계 연결 — 현재 미구현
+
+상세 r2는 sourceRootRef의 전체 snapshot hash를 서버가 확인하고 원 pathHint UTF-8 hash를 scope에 결박한다. 새 관측 token만 받는 별도 /permit이 정확 경로를 전달하며 기존 OWNER API/상태조회 권한은 넓히지 않는다. connector는 scope/path hash·현재 결박을 검증해 단일 root 입력으로만 소비한다. 보고 주장 시각의 순서·30초 오차/관측 창과 서버 receivedAt·기한 무관용을 분리한다. 이 추가 endpoint/시각 규칙도 문서 설계이며 구현/실행 승인 아님.
+
+별도 SOURCE_OBSERVE_READ_ONLY의 HUMAN 요청/회수·host proof 교환·불변 report/조회는 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md)를 따른다. 2026-10-17 PMO 결정은 상세설계 기준만이며 새 endpoint/op/credential·SQL·native/실소스/Agent 실행 승인이 아니다. 기존 REGISTRATION_STATUS_ONLY·grants=[]·A-1 SourceScope/dispatch false와 A-2R USER_DECLARED/UNVERIFIED는 유지한다. 첫 관측은 별도 READ_ATTRIBUTES/nonrecursive FILE 계약으로 구분하고 보고 수신만으로 실OS/기준선을 승격하지 않는다.
+
 ## A-2R 소스 등록부 계약 — 위치 선언만
 - 새 project command saveSourceRoot/reviseSourceRoot/revokeSourceRoot. 등록/개정 payload={declaration,baseRef,reason}, 철회={baseRef,reason}; 등록baseRef=null/target=null/expected0, 나머지는 정확 ref와target/expected 일치. declaration은 hostLabel/displayName/pathHint/reason/connectorId(null|UUID)이며 원문 경로의 실행/정규화0.
 - 현재 로그인·OWNER/client/control세대·최근재인증·명시AUTO 정책·DENY우선·기한·동일명령/hash·CAS/감사를 검사한다. REQUIRE_APPROVAL은 소스op 소비 미연결412, 기존 승인을 몰래AUTO로 바꾸거나 승인참조를 수용하지 않는다. 실제사용자 정책 자동부여0.

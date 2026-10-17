@@ -1,5 +1,17 @@
 # P02 A안 파일 책임·검증 지도
 
+## A-3 문서 설계와 후속 구현 예정 책임
+
+별도 source-read-protocol/proof 소비자는 r2 /permit 보호 전달과 정확 scope/path hash, source-read-records는 주장/서버 시각 관계도 책임진다. 이는 기존 OWNER source-root 조회·HostProofPayload·상태token parser의 권한 확장이 아니다. 후속 작업 승인 전 아래 예정 파일·SQL/native는 생성하지 않는다.
+
+현재 산출물은 docs/contracts/SOURCE_READ_OBSERVATION_A3.md와 연결 문서뿐이다. 아래는 미생성·미구현 예정 경로이며 파일이 존재/완료한다는 목록이 아니다.
+- contracts/runtime/source-read-observation-v1.ts: 별도 READ_ATTRIBUTES scope/report 자료형·정확 wire. 기존 source-scope-v1.ts/HostProofPayload를 확장하지 않음.
+- apps/server/modules/connections/{source-read-input.ts,project-source-read-grants.ts,source-read-protocol.ts,source-read-proof.ts,source-read-records.ts}: HUMAN 요청·정확현재성/별도교환·보고검증/조회. 기존 projects/routes.ts·project-command.ts 최소연결은 후속 승인 대상.
+- db/migrations/0008_source_read_observation.sql·scripts/{source-read-migration.ts,qa-source-read-observation.ts,apply-source-read-development.ts}: 제안46번째·기존45manifest/신규4표·격리COMMIT/정식schema-only 분리. 현재 생성/적용0.
+- apps/web/src/features/connections/SourceReadGrantsPanel.tsx: 별도 명시 요청/회수·원문/metadata 분리·미확인 상태. 기존 선언 폼을 실제 접근 허가처럼 재명명하지 않음.
+- apps/connector/runtime/{source-read-https.ts,source-read-observer.ts}와 native/SourceReadObserver.cs: 예정 별도 소비자/metadata native. 실제 native·키·실경로는 추가승인/실측 전 사용0.
+- tests/unit/FN08/source-read-*.test.ts, tests/integration/FN08/source-read-observation.ts, tests/browser/UI11/source-read-grants.spec.ts: 후속 정상/음성·실제PG/합성UI/native 구별. 현재 PASS 증거가 아님.
+
 ## A-2R 소스 위치 등록부 진입점
 - QA의 실측 Docker tmpfs/최초오류·정리오류 분리·비밀 없는 SQLSTATE 진단은 scripts/source-root-qa-guard.ts, 직접 회귀는 tests/unit/FN08/source-root-qa-guard.test.ts가 소유한다. 제품 실행기나 범용 자원관리 계층이 아니며 등록 QA runner만 소비한다.
 - 서버: connections/source-root-input.ts(정확입력/snapshot), project-source-roots.ts(3명령·원본/메타조회), projects/routes.ts·access/project-command.ts의새op 연결. 기존승인소비 whitelist는 늘리지 않는다.

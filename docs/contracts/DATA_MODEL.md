@@ -1,5 +1,11 @@
 # P02 데이터 관계·보존 계약 초안
 
+## A-3 제안 저장 계약 — 미생성·미적용
+
+상세 r2의 scope_json에는 exact source snapshot에서 서버가 파생한 pathHintHash를 포함한다. permit은 원 snapshot·고정 scope의 보호 projection으로 만들고 별도 경로 원문 표를 추가하지 않는다. source_snapshots의 observed_at/finished_at은 connector 주장, received_at은 서버 값이며 §5의 시각 관계를 SQL/Node 양쪽에서 검사할 예정이다. 신규4표/46번째 SQL의 코드·DDL 생성/적용은 아직 승인되지 않았다.
+
+상세설계는 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md) §6이다. 제안46번째0008_source_read_observation은 새 source_read_grants/source_read_challenges/source_read_credentials/source_snapshots 4표의 권한/정확 scope·기한·서명 보고/불변 이력 책임을 구분한다. 현재는45migration이며 이 표는 존재/적용/허가된 credential로 표시하지 않는다. 기존 source_roots 선언·connector_credentials의 REGISTRATION_STATUS_ONLY CHECK와45SQL은 보존한다. source_snapshots의 r2 수신 등급은 CONNECTOR_REPORTED/OS UNVERIFIED·baseline/dispatch false다.
+
 ## A-2R 원본·버전 관계 — forward 0008 후보
 - 신규 source_roots: (project_id,id)PK/head_version/created_by/client_id/created_at, project·멤버·사용자client FK, head→정확version deferred FK. 신규 source_root_versions: (project_id,root_id,version)PK/content_hash/declaration_json/status/authority/readiness/reason/actor/client/command/nullableconnector/time, 같은project root/command/connector FK·user/client FK·project+command 고유.
 - 기존44 SQL/자료는 수정/이동/재분류하지 않음. 불변version UPDATE/DELETE 및root DELETE0; head는 current command/auth/session/policy/control/audit·정확result와 이전ref 아래1 증가만. 선택connector는 같은project 현재TRUSTED 등록 확인이며 파일 권한이 아니다.
