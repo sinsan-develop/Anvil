@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+QA-02 실행 source bbb239dd는 같은 범위의 native/worker compile·fixed IPC/harness에서 합성 소유/명시회수·PREPARED취소/EOF/idle/sticky UNKNOWN 실제1 PASS/71523.4163ms를 확인했다. source/native/binary fullhash·exact ref·정리0과 미검증은 WORK_STATUS의 한정 결과를 참조한다. 코드 파일 존재/단일 합성시험을 전체 FN08 실행기·spool/ACK·Agent adapter 완료로 읽지 않는다. ProtectedStore/서버/Web/DB/TLS/runtime 변경0·schema-export 미실행이다.
+
 QA-02 준비의 동일6코드 경로: windows-host.ts는 고정16KiB UTF8 codec/응답검사·새 run/서비스 binding, OwnershipHost.cs는 bounded byte input/output·정상EOF/부분프레임 구분·중복 QA key와 sticky 상태, OwnedWorker.cs는 새 절대창 상속, 기존 build script는 r2 exact root만, tooling unit과 integration은 순수/실제용 시나리오를 각각 담당한다. QA 전용 transport는 tests/integration/FN08 안에만 두며 제품 API·Agent에 fault 명령을 추가하지 않는다. actual 승인 전 compile/helper/root0이고 Ref 이전 주입은 미구현이다. 기존 FN06/ProtectedStore·DB/서버/Web 불변.
 
 FN08 단일 검수 C0/I3/M2 REWORK 후 동일5코드 경로만 Main 보완: runtime의 원 프로세스/승인 gate·취소결과/sticky UNKNOWN 순수 정책, harness의 생성 전/각 launch 전/종료 후 실제 원 Node/relay·3830 확인, native의 Ref 이전 생성 소유·미resume 취소/종결 확인, fixture의 최초 절대기한·자식 종료점 상속. M2 Main Important 재분류, M1 line buffer 상한 잔여. 순수7/unit197/type0은 native 컴파일/OS/Agent 지원 증거가 아니다. 보완후 실제 검수·schema-export는 미실행이며 ProtectedStore/기존 HTTPS/DB·Web은 변경하지 않았다.

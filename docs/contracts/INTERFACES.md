@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+QA-02에서 실제 확인한 것은 고정 synthetic PREPARE/RESUME/OBSERVE/STOP/FORCE와 미resume CANCEL_PREPARED·정상EOF/idle·native UNKNOWN 뒤 RESUME/새세대거절의 한정 경로다(bbb239dd·actual1 PASS). 잘못된 reference 거절과 불응합성만 명시 FORCE, 정확취소/종료·원runtime/relay 보존을 확인했으며 실제 Agent grant·공개 API/DB 변경은 없다. 16KiB 초과/부분EOF native 실제 음성·Ref 이전 fault·실제 만료와 EOF 뒤 독립 Job0은 미검증이며 순수검사로 OS PASS를 대신하지 않는다. QA-01 C0/I3/M2 및40744 보존미확정은 소급 해소하지 않는다.
+
 QA-02 준비 계약은 QA-01과 별개로 run8c10a7c8-bfa8-458c-a24b-1f0578119407·04:25~04:55Z·현재19960/26052·127.0.0.1:3830 소유19960을 고정한다. 공개 API·DB grant 변경이 아니라 고정 합성 helper IPC 준비다. UTF8 payload 최대16384바이트(구분자 LF/CRLF 별도), 누적 초과/잘못된 UTF8/중복 key·잘못된 응답 상태는 sticky UNKNOWN이다. 정상 빈 EOF는 미resume exact 취소/실제 종결로 이어질 수 있으며 부분프레임 EOF·소유 미확인은 완료가 아니다. Node decoder/serializer는 순수검사, native byte/키 검사 및 EOF/idle/UNKNOWN 실제 경로는 아직 미실행이다. Ref 이전 fault는 일반 명령 입력으로 열지 않는다. 원 QA-01 REWORK/기한종료/보존UNVERIFIED는 유지하며 새 창도 actual 승인 전 실행할 수 없다.
 
 FN08 한시 QA 보완 계약: 최초 승인 run2897e501-cbe9-491c-bd72-28b996f0499b와 2026-10-17T03:31:53.000Z~04:01:53.000Z를 고정하고 최소120초 남지 않으면 새 준비를 거절한다. 원 Node40744/relay26052의 고정 시작시각·실제 존재와 3830 소유를 확인하지 못하면 생성/launch 불가다. `CANCEL_PREPARED(exactRef)`는 미resume retained handle·이미지/hash·생성시각·job/gen을 다시 확인한 본인 합성 준비에만 허용하며, 실제 종결·빈 job 전 PREPARATION_CANCELLED가 아니다. EOF/만료/Ref 이전 생성도 같은 안전 조건이다. UNKNOWN은 client/native에 sticky하며 새 PREPARE/세대·RESUME/일반 FORCE를 막고 정확 소유 준비취소만 별도 정리 경로로 남긴다. 이를 정상 관측·새 승인으로 자동 해제하지 않는다. 원 독립 C0/I3/M2 REWORK와 M2 Main Important 재분류, M1 line buffer 상한 잔여, 보완 후 native 컴파일/OS 실제 미실행을 구별한다. 제품 API·grant/DDL 변경은 없다.
