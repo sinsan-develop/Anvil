@@ -2,7 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
-- UI11 新 HUMAN 조회의 strict scalar query/고정scope projection 부재 RED1→순수2 GREEN/193.3987ms·type0이다. 실제 GET은 아직 미구현/미실행이다. QA 사전등록: 기존 정식 WSL PG/보호 app·migrator 설정 아래 `qa-connector-trust-<UUID>` 합성 사용자1·프로젝트1·현재client/정책·등록2/명령/감사·신뢰4표의 소유행만 한 시험 수명, 신규DB/서비스/port/Windows 키 저장0. 합성 host proof는 메모리 키/API주입만 사용하고 명시회수·finally 소유 UUID만 정리/독립45표·임시root0을 확인한다. 최초 actual은 새GET404 RED를 확인한 뒤 read module/route2만 구현한다. source/SQL44·기존 성공검사 불변이다.
+- UI11 첫 actual **71c6131a456a9e2959a686a57d8b73601de1a778** private/WSL exact clean은 GET 미구현404≠200으로1 FAIL/650.913585ms(기능374.194415)/SKIP0이었다. finally 뒤 독립45표0/적용44 checksum 전부 일치·제외5표 부재·시험/원문root empty를 확인했다. 이후 로컬 HUMAN read module/GET2를 연결했고 순수query/projection2 PASS/264.9489ms·type/diff0이나 실제 GREEN은 아직 미실행이다. 현재상태는 원scope/생성 receipt·DB관계/hash 검수 후 최소projection만 제공하고 proof/기한/회수·현재정책/제어 불가사유를 분리한다. 기존 인증 authenticated는 세션 확인/lock만 하며 도메인 쓰기는 하지 않는 것을 실제 코드로 대조했다. 새SQL/기존write/Windows/서비스 변경0이다.
+
+- UI11 신규 HUMAN 조회의 strict scalar query/고정scope projection 부재 RED1→순수2 GREEN/193.3987ms·type0이다. 실제 GET은 아직 미구현/미실행이다. QA 사전등록: 기존 정식 WSL PG/보호 app·migrator 설정 아래 `qa-connector-trust-<UUID>` 합성 사용자1·프로젝트1·현재client/정책·등록2/명령/감사·신뢰4표의 소유행만 한 시험 수명, 신규DB/서비스/port/Windows 키 저장0. 합성 host proof는 메모리 키/API주입만 사용하고 명시회수·finally 소유 UUID만 정리/독립45표·임시root0을 확인한다. 최초 actual은 새GET404 RED를 확인한 뒤 read module/route2만 구현한다. source/SQL44·기존 성공검사 불변이다.
 
 - **AV3-PMO-UI11-TRUST-READ-01 착수**: PMO가10:02:03 KST 승인 요청→10:13:28 KST 실제10분 경과·새 반대/중지 부재를 확인해 권장A를 승인했다. 기준b62edcde·같은 Stage B branch/Main 단일writer이며 HUMAN GET2·최소projection/현재 허가·UI11 기존3명령 연결만 수행한다. 새DDL/프로토콜/기존write계약·실제PC/Agent/서비스/Secret 변경0이다. Ruling: 새 GET은 기존 세션 인증 확인을 재사용하되 명령/승인/nonce/credential/감사 도메인 쓰기는 하지 않는다. 현재권한은 OWNER/본인/같은client·현재제어·유효trust규칙/정책hash를 재검사하고 cursor는 그 정책/기한/제어 세대·정렬/limit에도 결박한다. 원scope와 실제DB의 ref/hash·관계를 검수한 뒤 고정projection만 반환한다. 선행관계는 server GET→같은client actual→UI11 현재상태 재조회/명시명령이며 snapshot receipt를 GET 대체로 사용하지 않는다. WORK_STATUS를 실행 ledger로 유지하고 별도 임시 계획/중복 문서는 만들지 않는다.
 

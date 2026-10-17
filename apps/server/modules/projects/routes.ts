@@ -20,6 +20,7 @@ import { ProjectMethodologies } from '../methodologies/project-methodologies.ts'
 import { ProjectConnectionCandidates } from '../connections/project-candidates.ts';
 import { ProjectConnectorRegistrations } from '../connections/project-registrations.ts';
 import { trustRegistrationOperations } from '../connections/trust-registration-input.ts';
+import {ProjectRegistrationReads} from '../connections/project-registration-reads.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
 const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
@@ -43,6 +44,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const projectMethods = new ProjectMethodologies();
   const connectionCandidates = new ProjectConnectionCandidates(options.repository);
   const connectorRegistrations = new ProjectConnectorRegistrations(options.repository);
+  const registrationReads=new ProjectRegistrationReads(options.repository.installationId),registrationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('HOST_TRUST_REGISTRATIONS:'+value));
   const connectionCandidateCodec = new ProjectListCodec(value => options.repository.signProjectCursor('CONNECTION_CANDIDATES:' + value));
   const designChanges=new ProjectDesignChanges(documents);
   const approvals=new ProjectApprovals();
@@ -56,6 +58,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
       if (request.headers.host !== host || request.method !== 'GET' && (request.headers.origin !== options.origin || !/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? ''))) throw new AuthFailure('ORIGIN_INVALID', 403);
     });
     projects.get<{ Querystring: Record<string, unknown> }>('/api/v1/projects', request => repository.list(token(request), request.query));
+    projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/connector-registrations',{schema:{params:object({projectId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>registrationReads.list(db,actor,request.params.projectId,request.query,registrationCodec)));
+    projects.get<{Params:{projectId:string;registrationId:string}}>('/api/v1/projects/:projectId/connector-registrations/:registrationId',{schema:{params:object({projectId:idSchema,registrationId:idSchema})}},request=>{if(Object.keys(request.query as object).length)throw new AuthFailure('INPUT_INVALID',400);return options.repository.authenticated(token(request),null,(db,actor)=>registrationReads.read(db,actor,request.params.projectId,request.params.registrationId));});
     projects.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/connection-candidates', { schema: { params: object({ projectId: idSchema }) } }, request => options.repository.authenticated(token(request), null, (db, actor) => connectionCandidates.list(db, actor, request.params.projectId, request.query, connectionCandidateCodec)));
     projects.get<{ Params: { projectId: string; id: string; version: string } }>('/api/v1/projects/:projectId/connection-candidates/:id/versions/:version', { schema: { params: object({ projectId: idSchema, id: idSchema, version: { type: 'string', pattern: '^[1-9][0-9]{0,14}$' } }) } }, request => options.repository.authenticated(token(request), null, (db, actor) => connectionCandidates.read(db, actor, request.params.projectId, request.params.id, Number(request.params.version))));
     projects.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/methodologies', { schema: { params: object({ projectId: idSchema }) } }, request => options.repository.authenticated(token(request), null, (db, actor) => projectMethods.list(db, actor, request.params.projectId, request.query)));
