@@ -1,5 +1,7 @@
 # A-3 서비스·실PG protocol 격리 QA 결정 자료
 
+최신 실행 상태(2026-10-18): exact423032bc의 PMO16:52:53Z 결정에 따른 단1회는 서비스/실PG8범주·26벡터 PASS/정리·독립잔여0으로 종료됐지만 app full46checksum 비교가 미실행이라 결정 검수 전체는 미충족이다. 실행후 코드대조에서 누락을 확인했으며 원JSON PASS와 별도로 기록한다. 아래 미승인/생성전 문장은 당시이력이고 이번1회도소진·같은창/marker재실행0이다. 원문·제외·정리는 docs/04_test_reports/AV3/FN08/A3_PROTOCOL_QA_01_RESULT.md를 따른다. 후속 로컬 checksum 보완은 원 실행의 소급PASS나 새actual권한이 아니다.
+
 ## 판정·필요 결정
 
 ACTUAL_NOT_AUTHORIZED. 원8c SQL QA FAIL, 후속86 psql 한정SQL PASS·정리0는 별도 이력이며 각 단1회 권한은 소진됐다. 이번 새 권한을 대신하지 않는다. Main이 선정한 다음 미완료는 실제 현재권한·새 허가/보고의 COMMIT·실패 rollback이며, 준비된 direct service→PG8범주만 새 빈 QA에서 확인한다.

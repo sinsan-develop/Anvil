@@ -1,6 +1,8 @@
 # P02 A안 파일 책임·검증 지도
 
-## A-3 최신 후보 책임 — 실제 미연동
+## A-3 최신 후보 책임 — 한정 실측·잔여 분리
+
+2026-10-18 최신 대조: exact423032bc protocol 단1회는 서비스↔실PG8범주·26벡터/새4표0과 exact정리·독립잔여0을 확인했다(A3_PROTOCOL_QA_01_RESULT). 하지만 app full46checksum 비교는 ID만조회하는 코드누락으로 미실행이므로 승인검수전체PASS가 아니다. 아래 이전미실행/준비 문장은 당시이력으로 보존한다. source-read-sql-vectors.ts는이후 SELECT id,checksum/정확46map/중복거절·검증수marker로보완했고신규source-read-sql-manifest.test.ts가해당음성을검사한다. qa-source-read-protocol.ts의새SQL-checksum-only모드는서비스8범주를반복하지않고새별도결정전actual0이며 A3_SQL_CHECKSUM_ONLY_QA_DECISION을따른다. 정식DB·HTTP/TLS/browser·OS/Agent·전체수용은미완료다.
 
 서비스후속준비: qa-source-read-protocol.ts/source-read-protocol-qa-guard.ts는별도새bridge·loopback5548의46schema/26벡터→source-read-protocol-flow8범주를호출하는미승인후보이다. flow의정확snapshotINSERT후fault·횟수1/유효재서명409·미소비회수는시험책임이며제품코드/권한계약을바꾸지않는다. source-read-flow-fault/unit·protocol-qa-entry/guard는합성만확인했고실DB/8범주PASS는없다. 네트워크/합성인증/유한1회자원결정은 A3_ISOLATED_PROTOCOL_QA_DECISION을따른다.
 

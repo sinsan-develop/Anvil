@@ -33,7 +33,7 @@
 
 ## N2. 현재 권한·불변 저장·보호 protocol 후보
 
-후속현재사실(2026-10-18): exact86bae1e7의별도새internalPG/psql은46schema COMMIT·appREADONLY fullchecksum/동일26벡터/새4표0행PASS/정리0다. 원8cFAIL은보존한다. 실제서비스8범주·원자보고/실패rollback은별도protocol QA후보를준비중이며새정확결정전미실행이다. 아래실제전체검수체크를이SQL한정PASS만으로완료하지않는다.
+후속현재사실(2026-10-18): exact86bae1e7의별도새internalPG/psql은46schema COMMIT·appREADONLY fullchecksum/동일26벡터/새4표0행PASS/정리0다. 이후별도exact423032bc의새protocol단1회는서비스8범주·26벡터/새4표0을실확인·정리0이지만app full46checksum은ID검사만있는코드누락으로미실행이다. 원8cFAIL/두별도실행결과·권한소진을보존하며runnerPASS를전체검수PASS로승격하지않는다. 다음은이누락만로컬TDD보완/새정확결정분리이며정식DB/HTTP/TLS/OS·전체수용은미완료다.
 
 최신 부분 진행(2026-10-18): 보호 protocol/routes·보고/HUMAN조회·4표/guard SQL초안·독립 migration manifest와 SQL vector 준비 함수를 작성했다. 직접47PASS·인접5PASS/CAS·기존credential5PASS·타입0, 첫 C0/I3/M1 보완 후 지정 재검토 C0/I0/M0다. SQL parsing·함수·guard·현재권한/실제COMMIT/rollback/API 전체시험·새 격리 runner는 아직 미실행/미완료이며 실제 저장/권한 PASS가 아니다. 기존45 SQL·정식 runner 변경0이다.
 
