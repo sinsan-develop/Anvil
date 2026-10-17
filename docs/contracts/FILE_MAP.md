@@ -1,6 +1,10 @@
 # P02 A안 파일 책임·검증 지도
 
-## A-3 문서 설계와 후속 구현 예정 책임
+## A-3 최신 후보 책임 — 실제 미연동
+
+N2의 source-read-protocol.ts·source-read-routes.ts는 별도 교환/permit/보고·HUMAN 조회만, source-read-records.ts는 검증된 nullable snapshotRef와 보관 OWNER/VIEWER projection을 담당한다. SQL0008_source_read_observation은 신규4표/guard/고정 Unicode17 매핑 초안이며 source-read-migration.ts는 독립 격리 준비 helper로만 분리했다. 기존45 SQL/정식 runner 변경0이다. tests/integration/FN08/source-read-sql-vectors.ts는 준비됐으나 실제PG 미실행·전체 API/COMMIT/실패 rollback 시험 경로는 미완료다. N3 SourceReadGrantsPanel.tsx/source-read-api.ts·SourceRootsPanel/App은 사용자/client/project별 보존 입력과 명시 요청/회수·보관 조회를 연결한다. 작성자 로컬/합성 browser와 한정 독립 읽기 검수만 확인됐으며 Minor hostLabel 표시/실PG·served·native·OS·실source·Agent는 남아 있다. 아래 '예정/아직 없음' 문구는 이전 단계 기록이고 최신 상태는 이 문단·WORK_STATUS를 따른다.
+
+### 이전 후보 작성 이력
 
 N2 부분 작성: connections/source-read-input.ts(별도 op/엄격 이유·한정query), source-read-records.ts(고정scope/receipt·원 선언 hash 무결성/OWNER·VIEWER 조회), project-source-read-grants.ts(현재 HUMAN 정책/소스/등록·명시 요청/회수/같은명령 재확인)와 tests/unit/FN08/source-read-{input,records,grants}.test.ts다. access/project-command.ts에는 승인된 새2op whitelist만 추가했다. route/SQL4표·basis함수/교환·permit·보고/UI 연결은 아직 없으며 실제 저장·권한/OS·기능 사용가능 증거가 아니다. AV3-PMO-A3-LOCAL-IMPLEMENTATION의 제한 코드/SQL초안·로컬합성 검증 승인만 적용하며 기존45SQL·정식DB/실credential/서비스는 불변이다.
 

@@ -33,17 +33,19 @@
 
 ## N2. 현재 권한·불변 저장·보호 protocol 후보
 
-부분 진행: input/records·HUMAN 요청/회수/같은명령 재확인과 새op2 whitelist 후보, 직접·인접24PASS/type0만 확인했다. 기존 callback/SQL 호출의 합성검증이며 실제 인증/SQL/COMMIT 증거가 아니다. 아직 보호 protocol·4표/basis함수·routes·실PG 경로가 없으므로 아래 N2 완료 체크는 유지한다. PMO 다음 배정 대기 없이 Main이 남은 연결을 진행한다.
+최신 부분 진행(2026-10-18): 보호 protocol/routes·보고/HUMAN조회·4표/guard SQL초안·독립 migration manifest와 SQL vector 준비 함수를 작성했다. 직접47PASS·인접5PASS/CAS·기존credential5PASS·타입0, 첫 C0/I3/M1 보완 후 지정 재검토 C0/I0/M0다. SQL parsing·함수·guard·현재권한/실제COMMIT/rollback/API 전체시험·새 격리 runner는 아직 미실행/미완료이며 실제 저장/권한 PASS가 아니다. 기존45 SQL·정식 runner 변경0이다.
 
 파일: source-read-input.ts/project-source-read-grants.ts/source-read-protocol.ts/source-read-records.ts, 기존 projects/routes.ts·access/project-command.ts 최소 연결, db/migrations/0008_source_read_observation.sql 초안1. 허용 HUMAN op 2개/GET·별도 connector exchange/permit/reports만 추가.
 소비: N1 strict codec·기존 AccessRepository/currentProjectController/currentPolicy/projectReplay/persistProjectReceipt·source_roots/connector_basis_current.
 산출: HUMAN 요청/회수·OWNER/VIEWER projection/서명cursor·별도 challenge/tokenhash/permit·보고1건·불변ref/상태. 현재성은 매 소비 transaction에서 재검증·현재권한 확인 전 replay0.
-- [ ] 정상/타주체·프로젝트/회수/옛세대/기한·동일/상이명령·응답유실/무효서명부작용0의 서비스 경계 RED→GREEN.
-- [ ] 원자receipt/audit와4표·exact JSON/canonical·상태 UPDATE/불변 guard/현재basis 초안 작성. 기존45 SQL 수정0·생성전후 byte/hash 대조.
+- [x] 정상/타주체·프로젝트/회수/옛세대/기한·동일/상이명령·응답유실/무효서명부작용0의 서비스 경계 RED→GREEN. 합성 서비스 경계만 확인했다.
+- [x] 원자receipt/audit와4표·exact JSON/canonical·상태 UPDATE/불변 guard/현재basis 초안 작성. 기존45 SQL 수정0·tracked diff0. 실제PG 불변식은 미검증이다.
 - [ ] 실제PG용 직접 음성/실패rollback·canonical 벡터 경로를 준비하되 실행0. 로컬synthetic으로 실제 SQL/COMMIT/권한PASS 주장0.
 - [ ] 코드·SQL hash/원 finding/미검증을 checkpoint로 기록. 정식migration runner 자동 연결·catalog/QAseed·DB적용0.
 
 ## N3. UI11 명시 요청·조회·회수
+
+최신 부분 진행: 화면/별도 Web helper·주체별 보존을 연결, 합성 browser 버튼부재RED→4PASS6.1초·최신 의미 보완 후 새build/4PASS7.6초다. 한정 독립 C0/I0/M1의 보존초안 hostLabel 표시 누락은 경미 이월한다. 지연 중 주체/project 교체·교차응답 순서 actual browser와 실제PG/served는 아직 미검증이다. QA623파일/32dir 정확정리·독립 root/process0. 이 부분 결과를 아래 전체 검수 완료로 대체하지 않는다.
 
 파일: apps/web/src/features/connections/SourceReadGrantsPanel.tsx·source-read-api.ts, 기존 SourceRootsPanel/App의 주체별 보존 연결 최소 수정, tests/unit/FN08/source-read-web.test.ts·tests/browser/UI11/source-read-grants.spec.ts.
 소비: N2 HUMAN op/ref/보호projection. 산출: source/host/file·경로/이번이유 전달 preview→명시 요청/결과재확인/회수·보고 OS미확인 상태. connector token은 브라우저로 전달0.

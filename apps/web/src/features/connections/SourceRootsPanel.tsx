@@ -1,8 +1,10 @@
 import {useEffect,useRef,useState} from 'react';import {ApiClient,ApiError} from '../../api/client.ts';import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {newSourceRootBuffer,prepareSourceRootCommand,sendSourceRootCommand,readSourceRoot,listSourceRoots,rootDigest,settleRootBuffer,type RootBuffer,type RootBufferChange,type RootView,type RootHit} from './source-roots-api.ts';
 import type {SourceRootOperation} from '../../../../server/modules/connections/source-root-input.ts';
+import {SourceReadGrantsPanel} from './SourceReadGrantsPanel.tsx';
+import type {SourceReadBuffer,SourceReadBufferChange} from './source-read-api.ts';
 const rejected=(e:{status:number})=>[400,403,404,409,412,422].includes(e.status),asError=(e:unknown)=>e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');
-export function SourceRootsPanel({client,projectId,session,buffer,onChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:RootBuffer|null;onChange:(value:RootBufferChange)=>void;onAuthenticationLost:()=>void}){
+export function SourceRootsPanel({client,projectId,session,buffer,onChange,readBuffer,onReadChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:RootBuffer|null;onChange:(value:RootBufferChange)=>void;readBuffer:SourceReadBuffer|null;onReadChange:(value:SourceReadBufferChange)=>void;onAuthenticationLost:()=>void}){
  const[items,setItems]=useState<RootHit[]>([]),[cursor,setCursor]=useState<string|null>(null),[view,setView]=useState<RootView|null>(null),[version,setVersion]=useState(''),[loading,setLoading]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState<ApiError|null>(null);const alive=useRef(true),lock=useRef(false),request=useRef(0);
  const work=buffer?.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
  function fail(e:unknown){const a=asError(e);setError(a);if(a.status===401)onAuthenticationLost();}
@@ -17,7 +19,7 @@ export function SourceRootsPanel({client,projectId,session,buffer,onChange,onAut
  }
  async function inspect(id:string,n:number){const seq=++request.current;setLoading(true);setError(null);setView(null);try{const v=await readSourceRoot(client,projectId,id,n);if(alive.current&&seq===request.current){setView(v);setVersion(String(n));}}catch(e){if(alive.current&&seq===request.current)fail(e);}finally{if(alive.current&&seq===request.current)setLoading(false);}}
  const frozen=working||!!work?.pending||!!work?.resultRef||!!work?.uncertain;
- return<section className="editor-page" aria-label="소스 위치 등록부"><header><h3>소스 위치 · 사용자 선언</h3><span title="소스 등록은 위치 선언의 보관입니다. 실제 경로 접근·관측·파일 권한·Agent 실행은 하지 않습니다.">ⓘ</span></header><p>USER_DECLARED · UNVERIFIED · 파일 접근 권한 없음</p><button type="button" disabled={!!buffer||working} onClick={()=>void start('saveSourceRoot')}>소스 위치 새 등록</button>
+ return<><section className="editor-page" aria-label="소스 위치 등록부"><header><h3>소스 위치 · 사용자 선언</h3><span title="소스 등록은 위치 선언의 보관입니다. 실제 경로 접근·관측·파일 권한·Agent 실행은 하지 않습니다.">ⓘ</span></header><p>USER_DECLARED · UNVERIFIED · 파일 접근 권한 없음</p><button type="button" disabled={!!buffer||working} onClick={()=>void start('saveSourceRoot')}>소스 위치 새 등록</button>
   {work?<section aria-label="소스 위치 작성"><h4>{work.operation==='saveSourceRoot'?'신규 등록':work.operation==='reviseSourceRoot'?`v${work.baseRef?.version}에서 개정`:`v${work.baseRef?.version} 위치 등록 철회`}</h4><fieldset disabled={frozen||work.operation==='revokeSourceRoot'}>
    {(['hostLabel','displayName','pathHint','reason']as const).map((key,i)=><label key={key}>{['소스 호스트 표시명','소스 표시명','소스 위치 선언','소스 선언 이유'][i]}<textarea aria-label={['소스 호스트 표시명','소스 표시명','소스 위치 선언','소스 선언 이유'][i]} rows={key==='reason'?2:1} maxLength={key==='pathHint'?4096:key==='reason'?20000:200} value={work.declaration[key]} onChange={e=>edit({declaration:{...work.declaration,[key]:e.target.value}})}/></label>)}
    <label>선택 Connector ID<input aria-label="선택 Connector ID" value={work.declaration.connectorId??''} onChange={e=>edit({declaration:{...work.declaration,connectorId:e.target.value||null}})}/></label><p>비워도 됩니다. 지정 시 같은 프로젝트의 현재 등록 상태만 대조하며 파일 권한을 부여하지 않습니다.</p></fieldset>
@@ -34,5 +36,5 @@ export function SourceRootsPanel({client,projectId,session,buffer,onChange,onAut
    {view.rawAllowed?<><p>호스트: {view.snapshot.declaration.hostLabel}</p><pre aria-label="소스 위치 원문">{view.snapshot.declaration.pathHint}</pre><p>선언 이유: {view.snapshot.declaration.reason}</p><p>변경 이유: {view.snapshot.reason}</p><p>Connector: {view.snapshot.declaration.connectorId??'미지정'}</p><p>기록 {view.recordedAt} · {view.protectedRef}</p></>:<p>조회 전용 · 위치 원문은 OWNER에게만 표시합니다.</p>}
    <button type="button" disabled={!!buffer||working||!view.rawAllowed||view.status!=='DECLARED'||view.ref.version!==view.headVersion} onClick={()=>void start('reviseSourceRoot',view)}>이 버전에서 소스 개정</button><button type="button" disabled={!!buffer||working||!view.rawAllowed||view.status!=='DECLARED'||view.ref.version!==view.headVersion} onClick={()=>void start('revokeSourceRoot',view)}>소스 위치 철회 작성</button>
   </section>:null}
- </section>;
+ </section><SourceReadGrantsPanel client={client} projectId={projectId} session={session} selectedRoot={view} buffer={readBuffer} onChange={onReadChange} onAuthenticationLost={onAuthenticationLost}/></>;
 }

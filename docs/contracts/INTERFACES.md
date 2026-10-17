@@ -1,6 +1,10 @@
 # P02 공통 명령·관측 계약 초안
 
-## A-3 상세 설계 연결 — 후보 부분 구현·실제 연동 미완료
+## A-3 최신 후보 연결 — 실제 저장·권한 검증 아님
+
+새 source-read routes/ops와 별도 scope/token·HUMAN 조회를 제한 후보로 연결했다. connector 경로는 실제 암호화 socket 필수이며 trustProxy/forwarded만으로 대체하지 않는다. grant 상세/목록은 nullable snapshotRef를 반환하고 snapshot 버전1 GET의 OWNER 원문/VIEWER 집계로 연결한다. Web는 정확 refs/본문 hash/주장·수신시각/보고 집계·비실행 flags를 대조한다. credential raw는 브라우저/HUMAN 조회에 전달하지 않으며 기존 상태조회 token/grants=[]는 불변이다. SQL작성·합성검증은 실제 인증/COMMIT/SQL guard/TLS/OS 증명이 아니다. 최신 검증·한계는 WORK_STATUS, 아래 미연결 표기는 이전 단계 이력이다.
+
+### 이전 후보 작성 이력
 
 N2 HUMAN 서비스 후보는 명시 AUTO/DENY·REQUIRE_APPROVAL412, exact source/registration·원 session 기한에서 scope를 파생하고 기존 command/receipt 호출과 새 grant INSERT를 같은 authenticated callback 안에 둔다. 회수는 exact grant와 별도 revoke정책으로 고정scope를 보존하며 새 source_read credential만 막는다. 동일 command/hash는 현재 HUMAN 권한 확인 후 원 저장 receipt와 대조해 재발급/기한연장 없이 반환한다. source-read-records는 OWNER 원문과 VIEWER metadata를 분리한다. 아직 route·SQL/basis함수·보호 exchange/permit/report·UI가 연결되지 않아 실제 원자성/저장/권한/사용가능 완료는 아니다. 후속 제한 코드 작성 승인은 AV3-PMO-A3-LOCAL-IMPLEMENTATION이며 아래 최초 DESIGN_ONLY 문구를 actual 허가로 사용하지 않는다.
 
