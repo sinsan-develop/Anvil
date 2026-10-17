@@ -1,6 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {lstat} from 'node:fs/promises';
+import {lstat,mkdir,writeFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {WindowsHttpsQaResources} from '../../support/fn06-windows-qa-resources.ts';
 import {qaFailureSummary} from '../../support/fn06-https-qa-server.ts';
@@ -8,3 +10,4 @@ const deadline='2026-10-17T03:29:30.227Z';
 function resources(){if(process.platform!=='win32')throw Error('WINDOWS_FOCUSED_QA_REQUIRED_NOT_SKIP');return new WindowsHttpsQaResources({runId:randomUUID(),projectId:randomUUID(),sourceSha:process.env.ANVIL_FN06_HTTPS_SOURCE!,createdAt:new Date().toISOString(),expiresAt:deadline});}
 test('lease 전 빈 본인 root의 준비 실패도 추가자료 없이 정확 정리한다',{timeout:30000},async()=>{const r=resources();try{await r.create();}finally{await r.cleanup();}await assert.rejects(lstat(r.root),{code:'ENOENT'});});
 test('본인 root만 DACL 최소보호·owner 불변 검증 후 lease를 쓰고 준비 실패와 정리 결과를 분리한다',{timeout:30000},async()=>{const r=resources();let primary:any;try{await r.create();await r.protect();await r.initialize();primary=qaFailureSummary('ROOT_DIRS',Error('CONTROLLED_PRE_TLS_FAILURE'));}finally{await r.cleanup();}assert.equal(primary.phase,'ROOT_DIRS');await assert.rejects(lstat(r.root),{code:'ENOENT'});console.log(JSON.stringify({kind:'ROOT_FOCUSED_FAILURE_CHECKED',primary,cleanupRemaining:0,tlsTransfers:0,listenerCreated:0,localHelperCandidate:true,expiresAt:deadline}));});
+test('합성 Edge 보조물의 옛child timestamp·Hidden만 처리하고 개별삭제/빈폴더 비재귀로 잔여0이다',{timeout:30000},async()=>{const r=resources();try{await r.create();await r.protect();await r.initialize();r.recordBrowserProcesses([{pid:process.pid,startMs:Date.parse(r.lease.createdAt)}]);const dir=join(r.root,'results',`msedgeedge_BITS_${process.pid}_123`),path=join(dir,'BIT4800.tmp');await mkdir(dir);await writeFile(path,Buffer.alloc(20795));await writeFile(join(r.root,'results','cv_debug.log'),Buffer.alloc(123));execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-NonInteractive','-Command',`[IO.File]::SetCreationTimeUtc('${path}',[datetime]'2026-09-18T23:13:39Z');[IO.File]::SetLastWriteTimeUtc('${path}',[datetime]'2026-09-18T23:13:39Z');[IO.File]::SetAttributes('${path}',([IO.FileAttributes]::Hidden -bor [IO.FileAttributes]::Archive))`],{windowsHide:true,stdio:'pipe'});}finally{await r.cleanup();}await assert.rejects(lstat(r.root),{code:'ENOENT'});console.log(JSON.stringify({kind:'SYNTHETIC_EDGE_AUX_CLEANUP_CHECKED',syntheticPidMetadata:true,tlsTransfers:0,listenerCreated:0,remaining:0}));});

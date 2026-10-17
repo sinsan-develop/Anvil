@@ -1,12 +1,22 @@
-import {lstat,realpath,mkdir,readFile,writeFile,readdir,rm,rmdir} from 'node:fs/promises';
+import {lstat,realpath,mkdir,readFile,writeFile,readdir,rmdir} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {join} from 'node:path';
 import {validateHttpsQaLease,qaCleanupTopNames,type HttpsQaLease} from './fn06-https-qa-server.ts';
 const root='D:\\tmp\\anvil-v3-fn06-https-qa-r1';
-function check(v:unknown){if(!v)throw Error('WINDOWS_QA_RESOURCE_UNSAFE');}
+function check(v:unknown):asserts v{if(!v)throw Error('WINDOWS_QA_RESOURCE_UNSAFE');}
 function ps(script:string){return execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-NonInteractive','-Command',"$ErrorActionPreference='Stop';"+script],{windowsHide:true,stdio:'pipe',encoding:'utf8'});}
+interface EdgeProcess{pid:number;startMs:number}
+interface AuxMeta{directory:boolean;size:number;attributes:number;ownerCurrent:boolean;nonlink:boolean;samePath:boolean;createdMs:number;parentCreatedMs:number}
+export function qaEdgeAuxiliary(path:string,m:AuxMeta,lease:Pick<HttpsQaLease,'createdAt'|'expiresAt'>,processes:readonly EdgeProcess[]){
+ const start=Date.parse(lease.createdAt),end=Date.parse(lease.expiresAt);check(m.ownerCurrent&&m.nonlink&&m.samePath&&!(m.attributes&(1|4|1024))&&m.parentCreatedMs>=start&&m.parentCreatedMs<=end);
+ if(path==='results/cv_debug.log'){check(!m.directory&&m.size===123&&m.attributes===32&&m.createdMs>=start&&m.createdMs<=end);return{hiddenAllowed:false};}
+ const match=/^results\/msedgeedge_BITS_(\d+)_(\d+)(?:\/(BIT[0-9A-F]{4}\.tmp))?$/.exec(path);check(match);const process=processes.find(p=>p.pid===Number(match[1]));check(process&&process.startMs>=start&&process.startMs<=(match[3]?m.parentCreatedMs:m.createdMs));
+ if(match[3]){check(!m.directory&&m.size===20795&&[32,34].includes(m.attributes));return{hiddenAllowed:m.attributes===34};}
+ check(m.directory&&[16,48].includes(m.attributes)&&m.createdMs>=start&&m.createdMs<=end);return{hiddenAllowed:false};
+}
+export function readOwnedEdgeProcesses():EdgeProcess[]{const value=JSON.parse(ps(`$all=@(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'");$ids=@($all|Where-Object {$_.CommandLine -and $_.CommandLine.IndexOf('${root}'+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -ge 0}|ForEach-Object {$_.ProcessId});do{$before=$ids.Count;$ids=@($ids)+@($all|Where-Object {$_.ParentProcessId -in $ids -and $_.ProcessId -notin $ids}|ForEach-Object {$_.ProcessId})}while($ids.Count -ne $before);$items=@($all|Where-Object {$_.ProcessId -in $ids}|ForEach-Object {[pscustomobject]@{pid=$_.ProcessId;startMs=([DateTimeOffset]$_.CreationDate).ToUnixTimeMilliseconds()}});ConvertTo-Json -InputObject $items -Compress`));check(Array.isArray(value));return value;}
 export class WindowsHttpsQaResources{
- readonly root=root;readonly lease:HttpsQaLease;#owned=false;
+ readonly root=root;readonly lease:HttpsQaLease;#owned=false;readonly #browserProcesses=new Map<number,EdgeProcess>();
  constructor(lease:HttpsQaLease){check(process.platform==='win32');this.lease=validateHttpsQaLease(lease);}
  async #directory(path:string){const s=await lstat(path);check(s.isDirectory()&&!s.isSymbolicLink()&&(await realpath(path)).toLowerCase()===path.toLowerCase());}
  #owner(){ps(`$a=Get-Acl -LiteralPath '${root}';if($a.Owner -ne [Security.Principal.WindowsIdentity]::GetCurrent().Name){throw 'QA_OWNER_MISMATCH'}`);}
@@ -14,8 +24,16 @@ export class WindowsHttpsQaResources{
  async protect(){check(this.#owned);await this.#directory(root);ps(`$r='${root}';$me=[Security.Principal.WindowsIdentity]::GetCurrent();$a=Get-Acl -LiteralPath $r;if($a.Owner -ne $me.Name){throw 'QA_OWNER_MISMATCH'};$a.SetAccessRuleProtection($true,$false);foreach($old in @($a.Access)){$a.RemoveAccessRuleSpecific($old)};foreach($sid in @($me.User,[Security.Principal.SecurityIdentifier]::new('S-1-5-18'))){$a.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow'))};Set-Acl -LiteralPath $r -AclObject $a`);await this.verifyProtection();}
  async verifyProtection(){await this.#directory(root);ps(`$a=Get-Acl -LiteralPath '${root}';$me=[Security.Principal.WindowsIdentity]::GetCurrent();if($a.Owner -ne $me.Name -or !$a.AreAccessRulesProtected -or @($a.Access).Count -ne 2){throw 'QA_DACL_INVALID'};foreach($rule in $a.Access){$sid=$rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value;if($sid -notin @($me.User.Value,'S-1-5-18') -or $rule.AccessControlType -ne 'Allow' -or $rule.FileSystemRights -ne 'FullControl' -or $rule.IsInherited){throw 'QA_DACL_INVALID'}}`);}
  async initialize(){check(this.#owned);await this.verifyProtection();await writeFile(join(root,'lease.json'),JSON.stringify(this.lease),{flag:'wx'});for(const n of ['bin','protected','results'])await mkdir(join(root,n));}
+ recordBrowserProcesses(records:EdgeProcess[]){for(const p of records){check(Number.isSafeInteger(p.pid)&&p.pid>0&&Number.isSafeInteger(p.startMs)&&p.startMs>=Date.parse(this.lease.createdAt)&&p.startMs<=Date.parse(this.lease.expiresAt));const previous=this.#browserProcesses.get(p.pid);check(!previous||previous.startMs===p.startMs);this.#browserProcesses.set(p.pid,p);}}
+ get ownedEdgeProcessCount(){return this.#browserProcesses.size;}
+ async #meta(path:string,parent:string):Promise<AuxMeta>{const s=await lstat(path),p=await lstat(parent);const v=JSON.parse(ps(`$i=Get-Item -LiteralPath '${path}' -Force;$a=Get-Acl -LiteralPath '${path}';[pscustomobject]@{ownerCurrent=$a.Owner -eq [Security.Principal.WindowsIdentity]::GetCurrent().Name;attributes=[int]$i.Attributes}|ConvertTo-Json -Compress`));return{directory:s.isDirectory(),size:s.size,attributes:v.attributes,ownerCurrent:v.ownerCurrent,nonlink:!s.isSymbolicLink(),samePath:(await realpath(path)).toLowerCase()===path.toLowerCase(),createdMs:s.birthtimeMs,parentCreatedMs:p.birthtimeMs};}
+ #removeFile(path:string,hiddenAllowed:boolean){ps(`$p='${path}';$i=Get-Item -LiteralPath $p -Force;$old=$i.Attributes;if($old -band ([IO.FileAttributes]::System -bor [IO.FileAttributes]::ReadOnly -bor [IO.FileAttributes]::ReparsePoint)){throw 'QA_FILE_ATTRIBUTES_DENIED'};if($old -band [IO.FileAttributes]::Hidden){if(!${hiddenAllowed?'$true':'$false'}){throw 'QA_HIDDEN_FILE_UNAPPROVED'};[IO.File]::SetAttributes($p,($old -band (-bnot [IO.FileAttributes]::Hidden)))};try{Remove-Item -LiteralPath $p -ErrorAction Stop}catch{if(Test-Path -LiteralPath $p){[IO.File]::SetAttributes($p,$old)};throw}`);}
  async cleanup(){if(!this.#owned)return;await this.#directory(root);this.#owner();const names=await readdir(root);if(!names.length){await rmdir(root);this.#owned=false;return;}qaCleanupTopNames(names);const lease=JSON.parse(await readFile(join(root,'lease.json'),'utf8'));check(lease.runId===this.lease.runId&&lease.sourceSha===this.lease.sourceSha);await this.verifyProtection();
-  for(const dir of ['bin','protected','results'])if(names.includes(dir)){await this.#directory(join(root,dir));for(const n of await readdir(join(root,dir))){check(dir==='bin'?n==='AnvilProtectedStore.exe':dir==='protected'?/^[0-9a-f-]{36}\.(key|credential)$/.test(n):n==='safe-result.json');const path=join(root,dir,n),s=await lstat(path);check(s.isFile()&&!s.isSymbolicLink()&&(await realpath(path)).toLowerCase()===path.toLowerCase());}}
-  await rm(root,{recursive:true});this.#owned=false;
+  const files:{path:string;hidden:boolean}[]=[],folders:string[]=[];
+  for(const dir of ['bin','protected','results'])if(names.includes(dir)){await this.#directory(join(root,dir));for(const n of await readdir(join(root,dir))){const path=join(root,dir,n),meta=await this.#meta(path,join(root,dir));if(dir==='results'&&n!=='safe-result.json'){
+    const permission=qaEdgeAuxiliary('results/'+n,meta,this.lease,[...this.#browserProcesses.values()]);if(meta.directory){await this.#directory(path);for(const child of await readdir(path)){const cp=join(path,child),cm=await this.#meta(cp,path),allowed=qaEdgeAuxiliary('results/'+n+'/'+child,cm,this.lease,[...this.#browserProcesses.values()]);files.push({path:cp,hidden:allowed.hiddenAllowed});}folders.push(path);}else files.push({path,hidden:permission.hiddenAllowed});
+   }else{check(dir==='bin'?n==='AnvilProtectedStore.exe':dir==='protected'?/^[0-9a-f-]{36}\.(key|credential)$/.test(n):n==='safe-result.json');check(!meta.directory&&meta.nonlink&&meta.samePath&&meta.ownerCurrent&&!(meta.attributes&(1|2|4|1024)));files.push({path,hidden:false});}}
+   folders.push(join(root,dir));}
+  for(const f of files)this.#removeFile(f.path,f.hidden);this.#removeFile(join(root,'lease.json'),false);for(const folder of folders)await rmdir(folder);await rmdir(root);this.#owned=false;
  }
 }
