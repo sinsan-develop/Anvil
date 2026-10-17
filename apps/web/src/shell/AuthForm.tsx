@@ -3,6 +3,7 @@ import { ApiClient, ApiError } from '../api/client.ts';
 
 export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAuthenticated: (value: unknown) => void }) {
   const [setup, setSetup] = useState<boolean | null>(null);
+  const [existingLogin, setExistingLogin] = useState(false);
   const [loginName, setLoginName] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -19,6 +20,11 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
   const [accepting, setAccepting] = useState(false);
   const [invitationId, setInvitationId] = useState('');
   const [invitationSecret, setInvitationSecret] = useState('');
+  const registering = setup === true && !existingLogin;
+  function switchEntry() {
+    if (pending || setup !== true) return;
+    setExistingLogin(value => !value); setPassword(''); setBootstrap(''); setRecoveryInput(''); setInvitationSecret(''); setRecovering(false); setAccepting(false); setFailure(null); setNotice('');
+  }
   useEffect(() => {
     let current = true;
     client.get<{ setupRequired: boolean; policyVersion: number }>('/api/v1/auth/setup').then(value => {
@@ -45,7 +51,7 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
       } else if (recovering) {
         await client.postAuth('recovery', { loginName, recoverySecret: recoveryInput, newPassword: password, commandId: crypto.randomUUID() });
         setRecovering(false); setNotice('비밀번호를 변경했습니다. 다시 로그인하세요.');
-      } else if (setup) {
+      } else if (registering) {
         const result = await client.postAuth<{ user: { id: string }; recoverySecret: string | null }>('setup/claim', { bootstrapSecret: bootstrap, loginName, displayName, password, commandId: crypto.randomUUID() });
         if (!result.user?.id || (result.recoverySecret !== null && !/^[A-Za-z0-9_-]{43}$/.test(result.recoverySecret))) throw new ApiError('RESPONSE_INVALID');
         setRecovery(result.recoverySecret); setRegistered(true);
@@ -63,20 +69,22 @@ export function AuthForm({ client, onAuthenticated }: { client: ApiClient; onAut
     <button type="button" disabled={!!recovery && !savedRecovery} onClick={() => { setRecovery(null); setShowRecovery(false); setRegistered(false); setSetup(false); setAccepting(false); }}>로그인으로 이동</button>
   </section>;
   return <section className="status-card auth-form">
-    <h2>{accepting ? 'Anvil 초대 수락' : recovering ? '비밀번호 복구' : setup ? 'Anvil 초기 소유자 등록' : 'Anvil 로그인'}</h2>
+    <h2>{accepting ? 'Anvil 초대 수락' : recovering ? '비밀번호 복구' : registering ? 'Anvil 초기 소유자 등록' : 'Anvil 로그인'}</h2>
     {setup === null ? <p role="status">초기 등록 상태를 확인하고 있습니다.</p> : null}
+    {setup === true && existingLogin ? <p className="meta">서버 초기 등록은 아직 필요합니다. 기존 계정 로그인은 초기 등록을 완료하거나 계정을 만들지 않습니다.</p> : null}
     {failure ? <p role="alert">{failure.message}</p> : null}
     {notice ? <p role="status">{notice}</p> : null}
     <form onSubmit={submit}>
-      {setup ? <label>초기 등록 비밀<input type="password" value={bootstrap} onChange={e => setBootstrap(e.target.value)} required autoComplete="off" /></label> : null}
+      {registering ? <label>초기 등록 비밀<input type="password" value={bootstrap} onChange={e => setBootstrap(e.target.value)} required autoComplete="off" /></label> : null}
       <label>사용자명<input name="username" value={loginName} onChange={e => setLoginName(e.target.value)} required autoComplete="username" autoCapitalize="none" spellCheck={false} /></label>
-      {setup ? <label>표시 이름<input value={displayName} onChange={e => setDisplayName(e.target.value)} required maxLength={120} /></label> : null}
+      {registering ? <label>표시 이름<input value={displayName} onChange={e => setDisplayName(e.target.value)} required maxLength={120} /></label> : null}
       {recovering ? <label>일회 복구 비밀<input type="password" value={recoveryInput} onChange={e => setRecoveryInput(e.target.value)} required autoComplete="off" /></label> : null}
       {accepting ? <><p>초대에서 안내받은 사용자명과 아래 비밀을 입력하세요. 프로젝트 참여·제어권은 계정 등록과 별개입니다.</p><label>초대 ID<input value={invitationId} onChange={e => setInvitationId(e.target.value)} required maxLength={36} autoComplete="off" /></label><label>초대 비밀<input type="password" value={invitationSecret} onChange={e => setInvitationSecret(e.target.value)} required autoComplete="off" /></label></> : null}
-      <label>{recovering || accepting ? '새 비밀번호' : '비밀번호'}<input name="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={setup || recovering || accepting ? 'new-password' : 'current-password'} /></label>
-      {setup ? <p className="meta">비밀번호는15~128자입니다. 공백과 대소문자를 그대로 사용합니다.</p> : null}
-      <button className="primary" disabled={pending || setup === null} type="submit">{pending ? '처리 확인 중' : accepting ? '초대 수락 후 계정 등록' : recovering ? '복구 후 비밀번호 변경' : setup ? '초기 소유자 등록' : '로그인'}</button>
+      <label>{recovering || accepting ? '새 비밀번호' : '비밀번호'}<input name="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete={registering || recovering || accepting ? 'new-password' : 'current-password'} /></label>
+      {registering ? <p className="meta">비밀번호는15~128자입니다. 공백과 대소문자를 그대로 사용합니다.</p> : null}
+      <button className="primary" disabled={pending || setup === null} type="submit">{pending ? '처리 확인 중' : accepting ? '초대 수락 후 계정 등록' : recovering ? '복구 후 비밀번호 변경' : registering ? '초기 소유자 등록' : '로그인'}</button>
     </form>
+    {setup === true ? <button type="button" disabled={pending} onClick={switchEntry}>{existingLogin ? '초기 등록으로 돌아가기' : '기존 계정 로그인'}</button> : null}
     {setup === false ? <><button disabled={pending} onClick={() => { setRecovering(accepting ? false : !recovering); setAccepting(false); setPassword(''); setRecoveryInput(''); setInvitationSecret(''); setFailure(null); setNotice(''); }}>{recovering || accepting ? '로그인으로 돌아가기' : '비밀번호 복구'}</button>{!recovering && !accepting ? <button disabled={pending} onClick={() => { setAccepting(true); setPassword(''); setFailure(null); setNotice(''); }}>초대 수락</button> : null}</> : null}
   </section>;
 }

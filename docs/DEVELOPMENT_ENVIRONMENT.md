@@ -1,5 +1,56 @@
 # Anvil 재설계 개발환경
 
+## UI06 실제 화면 반영 준비 — AV3-PMO-UI06-SERVED-PREP-01
+
+2026-10-17 PMO 권장 A는 **기존계정 로그인 진입 UI·후속 전환 절차 준비**만 허용한다. 정식 bundle 게시·PID 종료/재시작·실제 로그인/계정/PG QA·UNC 쓰기·CLAIM/Secret/TLS 변경은 실행하지 않았다. 준비 후보의 정확 SHA는 Git/WORK_STATUS와 PMO 최종 패킷에서 대조하며, 아래 비활성 manifest를 실제 실행 승인으로 쓰지 않는다.
+
+### 최소안과 실행 불가 경계
+
+- AuthForm의 `setupRequired`는 서버 사실이며 그대로 둔다. 초기등록 화면의 ‘기존 계정 로그인’은 보기 모드만 변경해 기존 login API를 소비한다. 기본 초기등록·setup=false 복구/초대·pending/비밀 정리는 유지한다. 존재하지 않는 계정·만료 CLAIM은 성공으로 꾸미지 않는다.
+- 현재 Windows API는 9bade63e3d3959a16f015ff89bc0c6a0baddaa1b에서 시작했으며 이후 서버/DB/package/launcher·비vendor 계약의 소비 코드는 같다. static handler는 매 요청 `readFile`/`no-store`이므로 UI만은 정적 게시 가능하지만 launcher가 원문 root를 전달하지 않는 상태에서는 원문 기능을 사용 가능으로 판정할 수 없다. 실제 upload412를 이번 준비에서 실행하지 않았다.
+- **절차만 준비:** 기존 `scripts/start-development.ps1`/Fn08 guard는 변경하지 않는다. 현재 고정 runtime이 존재하고 Fn08는 artifactRoot 설정을 금지하므로 그 명령에 임의 옵션/환경을 주입해 재실행하지 않는다. 새 UI06 실행 entry나 승인 parser도 이번에 만들지 않는다. 따라서 아래 승인이 비어 있으면 수행할 실행 명령 자체가 없다. 이는 후속 승인용 운영 절차이며 기계적 실행 gate를 구현·검증한 것이 아니다.
+
+### 잠정 비활성 전환 manifest
+
+| 필드 | 고정/미확정 값 |
+|---|---|
+| kind / state | ANVIL_V3_UI06_SERVED_RUNTIME / PREPARED_NOT_AUTHORIZED |
+| candidateCommit / authorizationRef / issuedAt / expiresAt | **모두 null**. PMO가 실제 exact SHA·승인 원문·유한 창을 고정하기 전 실행 금지 |
+| source | 현재19960 명령/receipt로 대조한 실행 source의 승인 Git commit만. 자료/소스 복사 배포0 |
+| originalProcess | PID19960 · C:\Program Files\nodejs\node.exe · CIM UTC2026-10-17T04:02:09.6293870Z · SHA256 9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE |
+| originalReceipt | D:\Project\Anvil\.av3-data\runtime-fn08-20261017\receipt.json · SHA256 38DFAB5AE73B92B9770AAE82B132810999B985008B06425C890E8C2F77ACD701. 원본/기존 로그 보존 |
+| relay / listener | PID26052 · C:\Program Files\WSL\wslrelay.exe · CIM UTC2026-10-15T12:28:17.5262970Z · 127.0.0.1:3830 현재소유19960. relay 종료/교체0 |
+| proposed runtime | D:\Project\Anvil\.av3-data\runtime-ui06-served-01의 신규 receipt.json/server.out.log/server.err.log만. 현재 생성0 |
+| approved raw root / tentative native ref | /home/daon/.local/share/anvil-v3-development/artifacts / \\wsl.localhost\Ubuntu\home\daon\.local\share\anvil-v3-development\artifacts. 기존 동일 inode3913339·Linux uid1000/0700·Windows realpath/nonlink/empty 읽기만 확인. **쓰기/owner·mode 호환 미검증** |
+| proposed served QA | D:\tmp\anvil-v3-stage-b\browser\ui06-served-01/{dist,results,temp,profile} 및 qa-ui06-served-<승인 새runId> 사용자1/프로젝트1. 현재 생성0 |
+| preserved references | 기존 auth.json/db-app.json/dev-tls key·cert·CA/옛 runtime receipt 등 보호7hash를 직전 증거와 대조. 키/설정 원문은 기록하지 않음 |
+
+### 후속 승인 뒤의 순서·중단·복구 (현재 미실행)
+
+1. PMO가 candidateCommit/승인 원문/유한30분 창·새runId·정확 manifest를 채우고 private/WSL Git exact·clean·44 migration checksum·QA/새runtime 부재·보호7hash/원PID exe·CIM·listener·owner/nonlink를 재대조한다. 일치하지 않으면 실행하지 않는다. 마지막120초 새 시험·자동 연장·묵시 승계0이다.
+2. 등록 QA dist에만 exact 후보 build/hash를 준비한다. 원 제품 `apps/web/dist/index.html`과 hashed asset을 복구 원본으로 보존한다. 신규 hash asset만 추가하고 동일 이름은 동일 hash일 때만 재사용한다. 검증한 새 index를 같은 volume의 staged 파일에서 원본 backup을 남기는 atomic 방식으로 게시한다. 정식 dist 게시/백업 생성 자체도 별도 실행 승인 대상이다.
+3. 현재19960의 정확 소유/시각/exe/3830을 확인한 뒤 그 Node 하나만 교체한다. 기존 TLS/auth/db 참조·host127.0.0.1/3830을 유지하고 후속 명시 절차에서만 기존 WSL 원문 root의 UNC 참조를 child env로 지정한다. 기존 Fn08 명령/guard는 우회하거나 완화하지 않는다. 새 Node는 Hidden·새 runtime의 별도 로그/receipt를 사용하며 원 receipt/log를 덮지 않는다. 기존 로그 공유잠금은 강제로 열지 않고 정확 종료 후에만 필요한 hash를 읽는다.
+4. 최초 쓰기는 허용된 본인 합성 QA에만 한다. SSH에서 실제 WSL uid1000·dir0700/file0600·내용 hash와 동일 원문 저장소를 확인한다. UNC/소유·mode가 다르면 새 저장소/권한 수리/chmod/복사 우회 없이 실패로 보고하고 새 Node만 정확 회수·원상 복구한다. 이 gate 전 실제 사용자 자료 저장 가능으로 승격0이다.
+5. 실패 복구는 새 PID/start/exe/receipt를 검증해 해당 새 Node만 종료하고 원 index/원 hashed asset·원6개환경참조(artifactRoot 미설정)로 같은 API byte hash의 실행을 새 PID로 복원·strict TLS health/old bundle hash를 확인한다. 옛 PID가 부활하거나 과거 Git 전체를 reset한 것으로 보고하지 않는다. source mismatch면 추정 실행하지 않는다. 기존 원문/DB/CLAIM/7보호파일/relay는 그대로 남긴다.
+6. 성공한 새 runtime은 후속 개발용으로 보존하고 rollback 원본/기존 receipt/log는 다음 정상 checkpoint 확정까지 유지한다. 최초 정상 QA1회·자동재시도0이며 오류/새계약은 PMO에 정확 보고한다. 현재 준비 승인으로 이 순서를 실행하지 않는다.
+
+### 후속 실제 servedbrowser→PG/원문 여정 (현재 미실행)
+
+- 계정1/프로젝트1은 식별 가능한 합성 비server_owner만, 암호는 메모리/격리 profile에만 둔다. 기존 CLAIM·bootstrap·실사용자·server_owner 권한은 변경하지 않는다. 새 실제 소유자 onboarding/만료 초기등록 갱신은 별도 결정이다.
+- 전용 Edge profile/기존 CA·TLS검사 유지, route interception/APImock/trace/video/비밀 screenshot0. 실제 AuthForm→기존login cookie/CSRF→본인 재인증→해당 QA client의 제어 세대1·정책3연산(uploadArtifact/saveDocumentDraft/indexDesignDocument), 한 project·30분으로 결박한다.
+- QA 준비는 기존 same-origin API로 AF02/AF03/Sxx 정확 index를 저장하고 receipt id/version/hash를 메모리에 보관한다. 본 시험은 화면에서 정확 AF02→Sxx→AF03 원문/명시편집/이유/새 버전→v2·과거v1·indexv1 재조회다. Network의 origin/status/비밀 없는 ref·hash 및 JS오류만 기록하고 사용자 비밀/자동 확정/Agent 호출0이다.
+- finally는 소유 manifest UUID의 문서/원문·정책/명령/세션/계정/감사만 기존 공식 FK순서로 정리한다. 원문 root 전체삭제0. logout/세션회수·소유 profile/browser/temp 정리 뒤 독립74표의 기존8표 행수/66표0·44 checksum·보호원문 empty/보호7hash/runtime·listener를 확인한다. fixture/후보 browser와 이 실제 여정을 혼동하지 않는다.
+
+### 원 bundle의 정확 복구 목록 (읽기 관측)
+
+| 제품 상대 파일 | bytes / SHA256 |
+|---|---|
+| apps/web/dist/index.html | SHA256 39BD2923BF898FA1D23AAC96385CDC890EA7C55167D5AB864FB897BF455BC9F5 |
+| apps/web/dist/assets/index-DCxasc0L.js | 675995 / 150B3D211B349A4464126DD079E9071FB11A2CEFA7C0F9AD82E5680D2ACF1C69 |
+| apps/web/dist/assets/index-C3a7Hrx0.css | 9631 / 034435504A3650CD6024E9AF5C9BE6797EFBB4CAA2C3587CC287F778DB5E9A56 |
+
+현재 후보 asset/검증 결과는 WORK_STATUS·Git의 준비 checkpoint로 남긴다. 이번 문서가 실제 bundle 배포·Node 교체·로그인/PG QA·CLAIM 변경 승인을 대신하지 않는다.
+
 FN08-DISPATCH-PRECONDITION-01은 내부 순수 보고2파일·집중4 PASS/typecheck만 추가했으며 실제 spawn/Agent/native/DB/API·파일자료쓰기/스풀·서비스/Windows runtime/보호자료 변경0이다. 항상 executionAuthorized:false이며 caller snapshot/참조가 실제 서버·현재 제어·소유·실경로/예산 검증을 대신하지 않는다. sourceScopes/envelope/durable 중복 결과의 미정 계약을 확정하거나 source 경로를 조회하지 않았다. 기존202/QA-02 실제 검수는 반복하지 않고 그 증거와 현재 준비 코드를 구별한다.
 
 QA-02 실제 한정 결과: bbb239dd4573a08d81066f428adfcc3f3c707d00·run8c10a7c8-bfa8-458c-a24b-1f0578119407의 승인 단1회가 **1 PASS/71523.4163ms·FAIL0/SKIP0·exit0**이었다. 04:26:19Z gate 이후 새 r2 root/고정 compiler·helper1f9a3d03/worker1cdcd954의 launch 전 fullhash marker를 기록하고 정상4세대·PREPARED취소/EOF/idle/최종UNKNOWN 거절·정확취소를 확인했다. finally 정확 파일/빈폴더 정리 후04:28:10Z 독립 r2 root/합성exe0·현재19960/relay26052·단일loopback3830·보호7파일hash 불변 확인. 원 Node40744 복원이나 전체 FN08/Agent 지원 증거가 아니다. 최초 외부 UTC cast 읽기 오류1은 actual0에서 PMO 지시 DateTimeOffset 정정했으며 기한 연장/추가actual0이다. Ref 이전 fault/native 초과·부분EOF/실제만료·EOF뒤 독립Job0 등 미검증은 WORK_STATUS에 남겼다.
