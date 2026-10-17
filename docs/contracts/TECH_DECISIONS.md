@@ -2,6 +2,8 @@
 
 ## A-3 설계 기준 결정 — 실행 승인 아님
 
+후속 PMO AV3-PMO-A3-LOCAL-IMPLEMENTATION 13:47:32Z는13:34:33Z 요청완료 후12분59초·후속답변/중지 부재를 대조한 정확 권장A 적용이다. 기존 r2 hash095B5FEF…4D035로 code/새SQL1초안/명시UI11·로컬합성 QA까지만 작성한다. 실제PG/정식DB·실credential/키/native파일/OS·source/Agent/서비스/Oracle/main은 제외다. 내부 구현 순서는 A3_SOURCE_READ_IMPLEMENTATION.md에서 Main이 관리하며 별도 PMO 다음배정을 기다리지 않는다. N1 순수 codec/서명 후보만 검증됐으며 기존45SQL/상태token/등록parser는 변경하지 않았다.
+
 독립 문서검수 최초 C0/I1/M1을 접수했다. exact root의 인증 전달 누락(I1)은 상태token/OWNER 조회를 넓히지 않는 별도 보호 permit과 서버 snapshot→scope pathHintHash→connector 단일입력으로 보정했다. 시각 관계 미정(M1)은 주장 시각/서버 수신 분리·오차30초·순서/구간 검사·서버 기한 무관용으로 명시했다. 이 보정은 문서 범위이며 실제 OS 경로 안전·키/보고 실행·DB 검증을 뜻하지 않는다. 보정 scoped 검토 결과는 WORK_STATUS의 실제 수신 기록으로만 판정한다.
 
 PMO AV3-PMO-A3-READ-OBSERVATION-DESIGN 2026-10-17T13:07:30Z는 원 요청12:56:17Z 이후11분13초·후속 중지/거절 부재를 대조한 정확 권장A 적용 결정이다. 승인 범위는 문서 상세설계뿐이며 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md)에 payload/endpoint·별도 P-256 purpose/nonce 교환·신규4표 제안·보호/검증/복구를 기록한다. 정책 변경으로 기존 등록 기준이 달라지면 옛 binding을 자동 재확정하지 않는다. 등록token 확대·SQL/키/ACL/native/파일·Agent·서비스 실행0이다. 실제 code/SQL hash와 유한 자원은 후속 승인에서 대조한다.

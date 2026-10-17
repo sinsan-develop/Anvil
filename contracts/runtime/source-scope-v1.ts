@@ -4,6 +4,8 @@ function relativeFile(v:unknown):v is string{
  if(typeof v!=='string'||!v.isWellFormed()||v!==v.normalize('NFC')||!v.length||Buffer.byteLength(v,'utf8')>1024||/[\x00-\x1f\x7f\\:%?*"<>|]/.test(v))return false;
  return v.split('/').every(s=>!!s&&s.length<=255&&s!=='.'&&s!=='..'&&!/[. ]$/.test(s)&&!/^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\.|$)/i.test(s));
 }
+// 관측은 같은 경로 문법만 공유하며 READ/WRITE scope나 실행 권한으로 변환하지 않는다.
+export {relativeFile as isRelativeSourceFileV1};
 /** 문법/동일 범위 검사뿐이다. 실경로·link/OS 권한·현재 root 관측은 별도 미연결이다. */
 export function readSourceScopesV1(value:unknown):SourceScopeV1[]{
  const fail=():never=>{throw Error('SOURCE_SCOPE_INVALID');};

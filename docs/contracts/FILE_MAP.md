@@ -2,6 +2,8 @@
 
 ## A-3 문서 설계와 후속 구현 예정 책임
 
+N1 작성 범위: contracts/runtime/source-read-observation-v1.ts(요청/scope/permit·bounded wire/별도 proof payload), source-read-report-v1.ts(report·시각/uint64/서명bytes), apps/server/modules/connections/source-read-proof.ts(새 purpose의 public-key 검증)와 tests/unit/FN08/source-read-{fixtures,contracts.test,proof.test}.ts다. source-scope-v1.ts의 export alias만 공유하며 기존 parser 의미는 불변이다. 이 파일들은 작성자 단위/타입·한정 읽기 검수만 받았으며 아래 서버/SQL/UI/native 경로 전체가 구현됐다는 뜻이 아니다. 실제 경계/증거는 WORK_STATUS를 따른다.
+
 별도 source-read-protocol/proof 소비자는 r2 /permit 보호 전달과 정확 scope/path hash, source-read-records는 주장/서버 시각 관계도 책임진다. 이는 기존 OWNER source-root 조회·HostProofPayload·상태token parser의 권한 확장이 아니다. 후속 작업 승인 전 아래 예정 파일·SQL/native는 생성하지 않는다.
 
 현재 산출물은 docs/contracts/SOURCE_READ_OBSERVATION_A3.md와 연결 문서뿐이다. 아래는 미생성·미구현 예정 경로이며 파일이 존재/완료한다는 목록이 아니다.

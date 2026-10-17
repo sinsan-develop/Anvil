@@ -2,6 +2,8 @@
 
 ## A-3 상세 설계 연결 — 현재 미구현
 
+N1 순수 codec/서명 verifier만 후보 작성됐다. readSourceReadRequestV1/readSourceReadScopeV1/readSourceReadPermitV1·readSourceReadReportV1와 별도 purpose verify는 자료형/hash/서명 일치만 검사하며 서버 현재권한/실OS/Agent 허가가 아니다. 아직 HUMAN/connector routes·credential/SQL·UI11 소비는 미구현이다. r2 hash는 그대로 보존하고 AV3-PMO-A3-LOCAL-IMPLEMENTATION의 제한 작성 범위만 적용한다.
+
 상세 r2는 sourceRootRef의 전체 snapshot hash를 서버가 확인하고 원 pathHint UTF-8 hash를 scope에 결박한다. 새 관측 token만 받는 별도 /permit이 정확 경로를 전달하며 기존 OWNER API/상태조회 권한은 넓히지 않는다. connector는 scope/path hash·현재 결박을 검증해 단일 root 입력으로만 소비한다. 보고 주장 시각의 순서·30초 오차/관측 창과 서버 receivedAt·기한 무관용을 분리한다. 이 추가 endpoint/시각 규칙도 문서 설계이며 구현/실행 승인 아님.
 
 별도 SOURCE_OBSERVE_READ_ONLY의 HUMAN 요청/회수·host proof 교환·불변 report/조회는 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md)를 따른다. 2026-10-17 PMO 결정은 상세설계 기준만이며 새 endpoint/op/credential·SQL·native/실소스/Agent 실행 승인이 아니다. 기존 REGISTRATION_STATUS_ONLY·grants=[]·A-1 SourceScope/dispatch false와 A-2R USER_DECLARED/UNVERIFIED는 유지한다. 첫 관측은 별도 READ_ATTRIBUTES/nonrecursive FILE 계약으로 구분하고 보고 수신만으로 실OS/기준선을 승격하지 않는다.
