@@ -5,6 +5,7 @@ const codes=['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPR
 async function fixture(page:Page,options:{lost?:boolean;status?:number;code?:string;noPolicy?:boolean}={}){
  const writes:any[]=[],unknown:string[]=[];let saved:any=null,ref:any=null;
  await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
+ await page.route('**/api/v1/projects/*/connector-registrations?*',r=>r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}}));
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:uid,displayName:'후보 화면 QA'},clientId:uid,csrfToken:'C'.repeat(43)}}));
  await page.route(`**/api/v1/projects/${pid}`,r=>r.fulfill({json:{id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:uid,generation:1}}}));
  await page.route(`**/api/v1/projects/${pid}/permission-policy`,r=>r.fulfill({json:options.noPolicy?{configured:false,policy:null}:{configured:true,policy:{ref:{id,version:1,contentHash:'a'.repeat(64)},rules:[{subjectRef:{kind:'HUMAN',userId:uid},operations:['registerConnection','saveEnvironment'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',expiresAt:new Date(Date.now()+3600000).toISOString()}]}}}));

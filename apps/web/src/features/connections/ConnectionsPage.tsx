@@ -3,11 +3,13 @@ import './connections.css';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {candidateAccess,capabilityNames,listCandidates,newCandidate,prepareCandidate,readCandidate,sendCandidate,type CandidateBuffer,type CandidateHit,type CandidateKind,type CandidateView,type Ref} from './api.ts';
+import {TrustPanel} from './TrustPanel.tsx';
+import type {TrustBuffer} from './trust-api.ts';
 
-interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:CandidateBuffer|null;onChange:(value:CandidateBuffer|null)=>void;onAuthenticationLost:()=>void}
+interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:CandidateBuffer|null;onChange:(value:CandidateBuffer|null)=>void;onAuthenticationLost:()=>void;trustBuffer:TrustBuffer|null;onTrustChange:(value:TrustBuffer|null)=>void}
 const asError=(e:unknown)=>e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');
 const rejection=(e:{status:number})=>[400,403,404,409,412,422].includes(e.status);
-export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuthenticationLost}:Props){
+export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuthenticationLost,trustBuffer,onTrustChange}:Props){
  const[kind,setKind]=useState<CandidateKind|''>(''),[items,setItems]=useState<CandidateHit[]>([]),[cursor,setCursor]=useState<string|null>(null),[view,setView]=useState<CandidateView|null>(null),[loading,setLoading]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState<ApiError|null>(null);
  const alive=useRef(true),lock=useRef(false),request=useRef(0);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;request.current++;};},[]);
@@ -25,6 +27,7 @@ export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuth
  async function inspect(ref:Ref){const seq=++request.current;setLoading(true);setView(null);setError(null);try{const v=await readCandidate(client,projectId,ref);if(alive.current&&seq===request.current)setView(v);}catch(e){if(alive.current&&seq===request.current)fail(e);}finally{if(alive.current&&seq===request.current)setLoading(false);}}
  const frozen=working||!!work?.pending||!!work?.result;
  return <section className="editor-page connections-page"><header><h2>도구·환경·권한</h2><span title="후보 저장은 신뢰 등록이나 연결 완료가 아닙니다. 실제 Agent를 실행하지 않습니다.">ⓘ</span></header>
+  <TrustPanel client={client} projectId={projectId} session={session} buffer={trustBuffer} onChange={onTrustChange} onAuthenticationLost={onAuthenticationLost}/>
   <p>미연결 후보 · NOT_READY · 실제 Agent 미검증</p><p>Windows 로컬 실행기와 WSL 시험·배포 대상은 서로 다릅니다. 이 화면은 어느 쪽에도 연결하지 않습니다.</p>
   <button disabled={!!work||working} onClick={()=>void start('CONNECTION_CANDIDATE')}>새 도구 후보</button><button disabled={!!work||working} onClick={()=>void start('ENVIRONMENT_CANDIDATE')}>새 환경 후보</button>
   {work?<section aria-label="후보 작성"><h3>{work.kind==='CONNECTION_CANDIDATE'?'도구 후보':'환경 후보'} {work.draft.candidateRef?`v${work.draft.candidateRef.version}에서 명시 개정`:'새 작성'}</h3><fieldset disabled={frozen}>
@@ -43,6 +46,6 @@ export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuth
   <label>후보 종류 필터<select aria-label="후보 종류 필터" value={kind} onChange={e=>setKind(e.target.value as CandidateKind|'')}><option value="">전체 후보</option><option value="CONNECTION_CANDIDATE">도구 후보</option><option value="ENVIRONMENT_CANDIDATE">환경 후보</option></select></label><button disabled={loading} onClick={()=>void list()}>후보 목록 새로고침</button>
   {loading?<p aria-live="polite">후보 확인 중</p>:null}<ul>{items.map(i=><li key={i.ref.id}>{i.label} · {i.kind==='CONNECTION_CANDIDATE'?'도구':'환경'} · v{i.ref.version} · NOT_READY · 무결성 미재확인 · 만료 {i.expiresAt}<button disabled={loading} onClick={()=>void inspect(i.ref)}>정확 후보 버전 보기</button></li>)}</ul>{!loading&&!error&&!items.length?<p>조회된 후보가 없습니다.</p>:null}{cursor?<button disabled={loading} onClick={()=>void list(cursor)}>후보 다음 목록</button>:null}
   {view?<section aria-label="보관 후보"><h3>{view.candidate.input.candidate.label} · v{view.ref.version}</h3><p>NOT_READY · {view.expired?'기한 경과':'조회 시 기한 이내'} · 실행 허가 없음</p><p>기한 {view.candidate.input.expiresAt} · 이유 {view.candidate.input.reason}</p><details><summary>정확 버전·정책 참조·보관 입력</summary><pre>{JSON.stringify({ref:view.ref,input:view.candidate.input},null,2)}</pre></details><ul>{view.candidate.readiness.missingRequirements.map((r,i)=><li key={i}>{r.field}: {r.reason}</li>)}</ul><table aria-label="능력 확인"><thead><tr><th>필수 능력</th><th>문서 출처</th><th>실측·통제</th></tr></thead><tbody>{view.candidate.capabilities.map(c=><tr key={c.code}><td>{capabilityNames[c.code]}</td><td>{c.documentation?'사용자 보고 · '+c.documentation.versionCompatibility:'문서 근거 없음'}</td><td>미확인 · UNVERIFIED · 역할 배정 불가</td></tr>)}</tbody></table><button disabled={!!work||working} onClick={()=>void start(view.candidate.kind,view)}>이 버전에서 후보 개정</button></section>:null}
-  <section aria-label="미구현 연결 기능"><p>후보 저장은 진행 중 실행의 허가 범위를 확대하지 않습니다.</p><button disabled>실제 Agent 시험</button><button disabled>역할 배정</button><button disabled>신뢰 등록·연결 해제</button><p>실제 host·credential·Agent 검사는 아직 미구현입니다. 정책 생성·일회 승인 결정 화면도 이 후보 화면에서 대체하거나 우회하지 않습니다. 재인증은 설정 화면의 기존 기능을 사용하고 입력은 이 화면에 보존합니다.</p></section>
+<section aria-label="미구현 연결 기능"><p>후보 저장은 진행 중 실행의 허가 범위를 확대하지 않습니다.</p><button disabled>실제 Agent 시험</button><button disabled>역할 배정</button><button disabled>영구 PC·Agent 연결</button><p>위 신뢰 관리는 등록 상태조회 전용입니다. 실제 Windows↔WSL 연결·영구 PC·Agent 검사는 아직 미완료이며, 정책 생성·일회 승인 결정을 후보 저장으로 대체하거나 우회하지 않습니다. 재인증은 설정 화면의 기존 기능을 사용하고 입력은 이 화면에 보존합니다.</p></section>
  </section>;
 }

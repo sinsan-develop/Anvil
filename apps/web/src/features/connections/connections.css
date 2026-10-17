@@ -10,4 +10,5 @@
 .connections-page>ul{padding-left:20px}.connections-page>ul>li{padding:8px 0;border-bottom:1px solid var(--line)}
 .connections-page table{border-collapse:collapse;width:100%;margin:14px 0}.connections-page th,.connections-page td{text-align:left;padding:8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
 .connections-page pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto}.connections-page [role=alert]{color:var(--warn)}
+.connections-page section[aria-label="신뢰 관리"]{overflow-wrap:anywhere}
 @media(max-width:700px){.connections-page fieldset{grid-template-columns:minmax(0,1fr)}.connections-page input:not([type=checkbox]),.connections-page select{min-height:44px}.connections-page td,.connections-page th{padding:6px 4px}.connections-page>section{padding:12px}}

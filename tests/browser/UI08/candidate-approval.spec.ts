@@ -5,6 +5,7 @@ async function fixture(page:Page,lost=false){
  const writes:any[]=[],unknown:string[]=[];let view:any=null,candidate:any=null,ref:any=null,requested:any=null,requestReceipt:any=null;
  const base=(c:any,data:any,targetId:string,version:number)=>({operationId:id,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId,version,serverReceivedAt:new Date().toISOString(),data});
  await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
+ await page.route('**/api/v1/projects/*/connector-registrations?*',r=>r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}}));
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:uid,displayName:'후보 승인 합성 QA'},clientId:uid,csrfToken:'C'.repeat(43)}}));
  await page.route(`**/api/v1/projects/${pid}`,r=>r.fulfill({json:{id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:uid,generation:1}}}));
  await page.route(`**/api/v1/projects/${pid}/permission-policy`,r=>r.fulfill({json:{configured:true,policy:{ref:policyRef,rules:[{subjectRef:{kind:'HUMAN',userId:uid},operations:['registerConnection'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'REQUIRE_APPROVAL',expiresAt:new Date(Date.now()+3600000).toISOString()}]}}}));
