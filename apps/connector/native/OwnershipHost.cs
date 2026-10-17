@@ -17,7 +17,7 @@ internal static class OwnershipHost {
  const string ApprovedRoot=@"D:\tmp\anvil-v3-fn08-ownership-qa";
  static readonly JavaScriptSerializer Json=new JavaScriptSerializer {MaxJsonLength=16384,RecursionLimit=8};
  static string Root,Run,Mode,Hash,JobId; static int Generation; static DateTime Expires; static IntPtr Job=IntPtr.Zero;
- static PROCESS_INFORMATION ProcessInfo; static Dictionary<string,object> Ref; static bool Resumed;
+ static PROCESS_INFORMATION ProcessInfo; static Dictionary<string,object> Ref; static bool Resumed; static string Phase="INPUT";
  [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)] struct STARTUPINFO {public int cb;public string reserved,desktop,title;public uint x,y,xs,ys,xc,yc,fill,flags;public ushort show,reserved2;public IntPtr reservedPtr,input,output,error;}
  [StructLayout(LayoutKind.Sequential)] struct PROCESS_INFORMATION {public IntPtr process,thread;public uint pid,tid;}
  [StructLayout(LayoutKind.Sequential)] struct FT {public uint low,high;public long Value {get{return ((long)high<<32)|low;}}}
@@ -58,22 +58,23 @@ internal static class OwnershipHost {
  }
  static void Match(Dictionary<string,object> expected){Exact(expected,"runId,generation,jobId,pid,startTicks,executableHash");Require(Ref!=null&&Ref.All(x=>expected.ContainsKey(x.Key)&&Convert.ToString(expected[x.Key],CultureInfo.InvariantCulture)==Convert.ToString(x.Value,CultureInfo.InvariantCulture)),"OWNERSHIP_REF_MISMATCH");Require(Started(ProcessInfo.process)==long.Parse((string)Ref["startTicks"],CultureInfo.InvariantCulture),"OWNERSHIP_REF_MISMATCH");}
  static void Prepare(Dictionary<string,object> spec){
+  Phase="VALIDATE_SPEC";
   Require(Job==IntPtr.Zero,"OWNERSHIP_ALREADY_STARTED");Exact(spec,"runId,generation,expiresAt,profile,mode,executableHash");Run=Uuid(Text(spec,"runId"));Generation=Number(spec,"generation");Mode=Text(spec,"mode");Hash=Text(spec,"executableHash");Expires=Time(Text(spec,"expiresAt"));
   Require(Generation>=1&&Generation<=20&&Text(spec,"profile")=="SYNTHETIC_WORKER"&&new[]{"COOPERATIVE","STUBBORN","ATTACH_DENIED","BREAKAWAY"}.Contains(Mode)&&System.Text.RegularExpressions.Regex.IsMatch(Hash,"^[a-f0-9]{64}$"),"OWNERSHIP_SPEC_INVALID");
   var lease=Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(Root+@"\lease.json"));Exact(lease,"runId,sourceSha,createdAt,expiresAt");DateTime start=Time(Text(lease,"createdAt")),end=Time(Text(lease,"expiresAt"));Require(Text(lease,"runId")==Run&&end-start==TimeSpan.FromMinutes(30)&&Expires==end&&start<=DateTime.UtcNow&&DateTime.UtcNow<end,"OWNERSHIP_SPEC_INVALID");
   PathCheck(Root+@"\source",true);PathCheck(Root+@"\results",true);string worker=Root+@"\bin\OwnedWorker.exe";PathCheck(worker,false);Require(Digest(worker)==Hash&&!File.Exists(Root+@"\results\"+Generation+"-parent.tick")&&!File.Exists(Root+@"\source\"+Generation+".stop"),"OWNERSHIP_SPEC_INVALID");
-  JobId=Guid.NewGuid().ToString("D");Job=CreateJobObject(IntPtr.Zero,null);Require(Job!=IntPtr.Zero,"OWNERSHIP_HOST_FAILED");
+  Phase="CREATE_JOB";JobId=Guid.NewGuid().ToString("D");Job=CreateJobObject(IntPtr.Zero,null);Require(Job!=IntPtr.Zero,"OWNERSHIP_HOST_FAILED");
   // 새 job의 limit 기본값0을 유지하며 BREAKAWAY/SILENT_BREAKAWAY/KILL_ON_JOB_CLOSE를 설정하지 않는다.
   var si=new STARTUPINFO {cb=Marshal.SizeOf(typeof(STARTUPINFO))};var args=new StringBuilder("\""+worker+"\" \""+Root+"\" "+Run+" "+Generation+" "+Mode+" parent");
-  Require(CreateProcessW(worker,args,IntPtr.Zero,IntPtr.Zero,false,0x4|0x08000000,IntPtr.Zero,Root+@"\source",ref si,out ProcessInfo),"OWNERSHIP_HOST_FAILED");
-  bool assigned=AssignProcessToJobObject(Mode=="ATTACH_DENIED"?IntPtr.Zero:Job,ProcessInfo.process);
+  Phase="CREATE_SUSPENDED";Require(CreateProcessW(worker,args,IntPtr.Zero,IntPtr.Zero,false,0x4|0x08000000,IntPtr.Zero,Root+@"\source",ref si,out ProcessInfo),"OWNERSHIP_HOST_FAILED");
+  Phase="ATTACH_JOB";bool assigned=AssignProcessToJobObject(Mode=="ATTACH_DENIED"?IntPtr.Zero:Job,ProcessInfo.process);
   if(!assigned){TerminateProcess(ProcessInfo.process,125);WaitForSingleObject(ProcessInfo.process,2000);throw Fail("OWNERSHIP_ATTACH_DENIED");}
-  Ref=new Dictionary<string,object>{{"runId",Run},{"generation",Generation},{"jobId",JobId},{"pid",(int)ProcessInfo.pid},{"startTicks",Started(ProcessInfo.process).ToString(CultureInfo.InvariantCulture)},{"executableHash",Hash}};
+  Phase="PREPARED_FACTS";Ref=new Dictionary<string,object>{{"runId",Run},{"generation",Generation},{"jobId",JobId},{"pid",(int)ProcessInfo.pid},{"startTicks",Started(ProcessInfo.process).ToString(CultureInfo.InvariantCulture)},{"executableHash",Hash}};
  }
  static string StopPath {get{return Root+@"\source\"+Generation+".stop";}}
  static void Graceful(){if(Ref==null)return;PathCheck(Root+@"\source",true);if(!File.Exists(StopPath))using(var f=new FileStream(StopPath,FileMode.CreateNew,FileAccess.Write,FileShare.Read)){byte[] bytes=Encoding.UTF8.GetBytes(Run);f.Write(bytes,0,bytes.Length);}}
  static object Dispatch(Dictionary<string,object> request){
-  string op=Text(request,"operation");if(op=="PREPARE"){Exact(request,"id,operation,spec");Prepare(Map(request,"spec"));return Facts();}
+  string op=Text(request,"operation");Phase="INPUT";if(op=="PREPARE"){Exact(request,"id,operation,spec");Prepare(Map(request,"spec"));return Facts();}Phase="BOUND_OPERATION";
   Exact(request,op=="FORCE"?"id,operation,processRef,authorization":"id,operation,processRef");Match(Map(request,"processRef"));Require(DateTime.UtcNow<Expires,"OWNERSHIP_SPEC_INVALID");
   if(op=="RESUME"){Require(!Resumed,"OWNERSHIP_ALREADY_STARTED");Require(ResumeThread(ProcessInfo.thread)==1,"OWNERSHIP_HOST_FAILED");Resumed=true;}
   else if(op=="STOP")Graceful();
@@ -82,7 +83,7 @@ internal static class OwnershipHost {
  }
  static int Main(string[] args){
   try{Require(args.Length==1&&args[0]==ApprovedRoot,"OWNERSHIP_PATH_INVALID");Root=ApprovedRoot;PathCheck(Root,true);Require(Directory.GetAccessControl(Root).GetOwner(typeof(SecurityIdentifier)).Value==WindowsIdentity.GetCurrent().User.Value,"OWNERSHIP_PATH_INVALID");
-   while(true){var read=Task.Factory.StartNew(()=>Console.ReadLine());if(!read.Wait(Ref==null?5000:Math.Max(1,Math.Min(30000,(int)(Expires-DateTime.UtcNow).TotalMilliseconds))))break;string line=read.Result;if(line==null)break;int id=0;try{Require(line.Length<=16384,"OWNERSHIP_SPEC_INVALID");var request=Json.Deserialize<Dictionary<string,object>>(line);id=Number(request,"id");var value=Dispatch(request);Console.WriteLine(Json.Serialize(new {id=id,ok=true,data=value}));}catch(Exception error){string code=error.Message;var allowed=new[]{"OWNERSHIP_REF_MISMATCH","OWNERSHIP_ATTACH_DENIED","OWNERSHIP_SPEC_INVALID","OWNERSHIP_FORCE_DENIED","OWNERSHIP_ALREADY_STARTED","OWNERSHIP_OBSERVATION_UNKNOWN"};Console.WriteLine(Json.Serialize(new {id=id,ok=false,error=allowed.Contains(code)?code:"OWNERSHIP_HOST_FAILED"}));if(Ref==null)break;}}
+   while(true){var read=Task.Factory.StartNew(()=>Console.ReadLine());if(!read.Wait(Ref==null?5000:Math.Max(1,Math.Min(30000,(int)(Expires-DateTime.UtcNow).TotalMilliseconds))))break;string line=read.Result;if(line==null)break;int id=0;try{Require(line.Length<=16384,"OWNERSHIP_SPEC_INVALID");var request=Json.Deserialize<Dictionary<string,object>>(line);id=Number(request,"id");var value=Dispatch(request);Console.WriteLine(Json.Serialize(new {id=id,ok=true,data=value}));}catch(Exception error){string code=error.Message;var allowed=new[]{"OWNERSHIP_REF_MISMATCH","OWNERSHIP_ATTACH_DENIED","OWNERSHIP_SPEC_INVALID","OWNERSHIP_FORCE_DENIED","OWNERSHIP_ALREADY_STARTED","OWNERSHIP_OBSERVATION_UNKNOWN"};Console.WriteLine(Json.Serialize(new {id=id,ok=false,error=allowed.Contains(code)?code:"OWNERSHIP_HOST_FAILED",phase=Phase,nativeError=Marshal.GetLastWin32Error()}));if(Ref==null)break;}}
    return 0;
   }catch{return 1;}finally{
    // 비상 단절은 회수 완료가 아니다. 자기 합성 worker는 stop 또는 자체15초 만료로 끝난다.
