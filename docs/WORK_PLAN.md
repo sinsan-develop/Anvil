@@ -4,6 +4,8 @@
 
 ## 1. 계획 상태·목표·기준
 
+진행 기록(2026-10-18): UI04 선택단계 문서 목록은 exact746bd892의 실제 PG 한정1PASS/5조건묶음·정확QA12표/독립조회0을 확인했다. 원54b9b7a 시험 자기잠금 timeout/cancelled/exit1은 별도 실패로 보존하고 제품 결함·소급PASS로 바꾸지 않는다. UI04는 여전히 부분 구현이며 실제served·세션/실행·Agent·전체RLS/인수 및 두Minor는 미완료다. 상세는 WORK_STATUS/UI04_CONTEXT_PREP_RESULT를 따른다.
+
 진행 기록(2026-10-18, 계획 범위/선행 변경 아님): N4 한정 서비스 전환은 exact6781703a의 실제 단1회로 새 API/Web3830·strict TLS·익명 기본 페이지/새 API401·DB46/81표 무변경/임시자원0을 확인했다([결과](04_test_reports/AV3/FN08/UI11_N4_SERVICE_TRANSITION_RESULT.md)). FN06/FN08/UI11은 여전히 부분 구현이고 실제 로그인/관측·Agent·전체 Stage 완료는 아니다. Main이 다음 미완료를 주도 선정하며 PMO에는 새 위험/결정/지원만 요청한다.
 
 | 항목 | 내용 |
