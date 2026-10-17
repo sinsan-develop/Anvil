@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN09 임무 초안 저장 후보 — 2026-10-18 제한 A
+
+AV3-FN09-ASSIGNMENT-DRAFT의 후보작성/격리검수만 허용하며 정식DB 적용·실제 배정은 별도다. 기존 project command operation=prepareAssignment, payload={baseRef,definition,reason}로 신규(target=null/expected0/baseRef=null)와 동일 초안 개정(target/baseRef.id·expected/baseRef.version·hash 정확일치)을 구분한다. definition은 §13.1의 명시 필드 전부를 사용하며 taskRef={planRef,taskCode,applicationRef,nodeId}, baselineRefs=VersionRef[], inputs/outputs/acceptanceCriteria/verificationRequirements/included/excluded/requiredCapabilities=문자열배열, allowedScopes=기존 SourceScopeV1 FILE 배열(빈 경우 부족), environmentRef/budgetRef/recordingPolicyRef=VersionRef|null, parentAssignmentRef=null(부모 실임무 미연결), purpose/goal/ownerRole/integrationResponsibility=문자열이다. 각 배열≤200·텍스트≤20000 UTF16(ownerRole≤200), 전체 canonical UTF8≤2MiB, getter/unknown필드/가짜완료·준비 플래그는거절한다. 불완전 의미내용은 readinessIssues로 보존하되 문법/의심비밀·없는/다른프로젝트/변조참조는차단한다. 원본정책·예산/환경/OS/필수맥락/이해·실행을 caller ref나 저장성공으로검증하지않고 ready=false/executionAuthorized=false/dispatchPerformed=false다.
+
+기존HUMAN OWNER·같은client/현재단독제어세대·명시prepareAssignment정책/DENY우선·기한·동일명령/hash/감사·CAS를사용한다. taskRef의현재적용node와정확현재확정작업계획/설계·업무카드를서버에서대조한다. 기존확정본수정/자동재지시0. 신규표2개는 불변 version_json/content_hash·이전ref/작성actor-client/command와receipt·정확프로젝트FK·head CAS/불변이력보호를소유한다. 목록/정확버전GET은현재회원·project격리/no-store·유한cursor·무결성을검사하고원문은명시선택으로만연다. 실제contract/code/검증상태는WORK_STATUS를따른다.
+
 FN09 내부 준비 비교(공개 계약/권한 변경 아님): inspectSourceScopeContainment(parent,child)는 기존 SourceScopeV1 FILE 유한 구조를 검사하고 root/mapping/observation/baseline ref 및 상대경로/READ·WRITE의 정확 일치 부분집합만 보고한다. WRITE의 READ 포함·경로 대소문자 동등성을 추정하지 않는다. scopeContained=true도 executionAuthorized=false이며 실제 위임·현재권한/project/세대·기한/예산/sibling writer/OS 경로검사를 대신하지 않는다. 부모/자식 입력오류와 ref/target 불일치는 고정 code만 반환해 원문/비밀을 반사하지 않는다. 실제 소스·실행·저장·API 연결은 없다.
 
 ## UI04 선택 단계 문서 목록 — 2026-10-18 직접 승인

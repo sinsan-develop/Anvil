@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN09 임무 초안 서버/DDL 후보 — 2026-10-18
+
+assignments/assignment-input.ts는 §13.1 입력·부족/의심비밀을, project-assignment-drafts.ts는 현재 확정계획/설계·적용node/카드 근거·base CAS/불변snapshot과 회원목록/고정버전 검수를 소유한다. access/project-command.ts의 명시 prepareAssignment 정책 등록과 projects/routes.ts의 기존 HUMAN 명령/읽기를 소비한다. 신규 db/migrations/0012_assignment_drafts.sql은 새2표 및 새함수/guard만의 미실행 후보이며 정식46SQL/DB를 바꾸지 않았다. tests/unit/FN09/assignment-{input,store,routes,policy}.test.ts는 합성 transport/순수·route 경계이며 실제 SQL/브라우저 저장 증거가 아니다. UI04 작성기/실PG·격리시험/독립검수는 다음 단계로 남는다.
+
 ## FN09 하위 범위 내부 비교 — 2026-10-18
 
 apps/server/modules/assignments/source-scope-containment.ts와 tests/unit/FN09/source-scope-containment.test.ts는 기존 SourceScopeV1의 exact ref/path/access 부분집합 비교만 소유한다. 새로운 API/저장/위임·실행허가가 아니며 항상 executionAuthorized=false다. project/현재권한·기한/예산/sibling writer/OS실경로 검증과 FN09 실제 연결은 후속이며 이 비교로 대체하지 않는다.

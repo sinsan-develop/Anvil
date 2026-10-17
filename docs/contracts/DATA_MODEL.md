@@ -1,5 +1,9 @@
 # P02 데이터 관계·보존 계약 초안
 
+## FN09 임무 초안 후보 — 미적용
+
+AV3-FN09-ASSIGNMENT-DRAFT의 새 assignment_drafts(project/id·head·최초actor/client·생성/수정시각)와 assignment_draft_versions(project/draft/version·snapshot JSON/hash·actor/client/command·생성시각) 2표 forward0012 후보를 작성했다. head FK는deferred, 명령/project·client FK·정확base/불변이력·명시AUTO/DENY우선·현재세대/활성세션/정확현재확정계획·설계/적용node를 receipt/감사와 결박하는 guard 후보다. DRAFT/ready=false/executionAuthorized=false/dispatchPerformed=false만 허용하며 확정/실행 상태나 outbox를 만들지 않는다. 기존46 SQL·정식DB표/권한 적용0, 실제문법/COMMIT/거절/동시성·hash 동등성은 아직 미검증이고 후보 검수/격리시험 뒤 별도정식적용결정이 필요하다.
+
 ## A-3 제안 저장 계약 — 미생성·미적용
 
 상세 r2의 scope_json에는 exact source snapshot에서 서버가 파생한 pathHintHash를 포함한다. permit은 원 snapshot·고정 scope의 보호 projection으로 만들고 별도 경로 원문 표를 추가하지 않는다. source_snapshots의 observed_at/finished_at은 connector 주장, received_at은 서버 값이며 §5의 시각 관계를 SQL/Node 양쪽에서 검사할 예정이다. 신규4표/46번째 SQL의 코드·DDL 생성/적용은 아직 승인되지 않았다.
