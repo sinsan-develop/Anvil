@@ -16,8 +16,8 @@ internal static class OwnedWorker {
  [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
  static int Main(string[] a){
   long deadline;
-  if(a.Length!=6||a[0]!=@"D:\tmp\anvil-v3-fn08-ownership-qa"||a[1]!="2897e501-cbe9-491c-bd72-28b996f0499b"||!System.Text.RegularExpressions.Regex.IsMatch(a[2],"^[1-9][0-9]?$")||!new[]{"COOPERATIVE","STUBBORN","BREAKAWAY"}.Contains(a[3])||!(a[4]=="parent"||a[4]=="child")||!long.TryParse(a[5],NumberStyles.None,CultureInfo.InvariantCulture,out deadline))return 2;
-  var approvedStart=DateTime.ParseExact("2026-10-17T03:31:53.000Z","yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal|DateTimeStyles.AdjustToUniversal);var approvedEnd=approvedStart.AddMinutes(30);
+  if(a.Length!=6||a[0]!=@"D:\tmp\anvil-v3-fn08-ownership-qa-r2"||a[1]!="8c10a7c8-bfa8-458c-a24b-1f0578119407"||!System.Text.RegularExpressions.Regex.IsMatch(a[2],"^[1-9][0-9]?$")||!new[]{"COOPERATIVE","STUBBORN","BREAKAWAY"}.Contains(a[3])||!(a[4]=="parent"||a[4]=="child")||!long.TryParse(a[5],NumberStyles.None,CultureInfo.InvariantCulture,out deadline))return 2;
+  var approvedStart=DateTime.ParseExact("2026-10-17T04:25:00.000Z","yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal|DateTimeStyles.AdjustToUniversal);var approvedEnd=approvedStart.AddMinutes(30);
   if(deadline<=approvedStart.ToFileTimeUtc()||deadline>approvedEnd.ToFileTimeUtc()||DateTime.UtcNow<approvedStart||DateTime.UtcNow.ToFileTimeUtc()>=deadline)return 2;
   string root=a[0],generation=a[2],mode=a[3],role=a[4],exe=root+@"\bin\OwnedWorker.exe";var bound=DateTime.FromFileTimeUtc(deadline);var relative=DateTime.UtcNow.AddSeconds(15);var end=relative<bound?relative:bound;
   // 자식에게도 부모의 남은 절대 종료점을 전달한다. 새 15초로 lease를 연장하지 않는다.

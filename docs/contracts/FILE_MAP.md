@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+QA-02 준비의 동일6코드 경로: windows-host.ts는 고정16KiB UTF8 codec/응답검사·새 run/서비스 binding, OwnershipHost.cs는 bounded byte input/output·정상EOF/부분프레임 구분·중복 QA key와 sticky 상태, OwnedWorker.cs는 새 절대창 상속, 기존 build script는 r2 exact root만, tooling unit과 integration은 순수/실제용 시나리오를 각각 담당한다. QA 전용 transport는 tests/integration/FN08 안에만 두며 제품 API·Agent에 fault 명령을 추가하지 않는다. actual 승인 전 compile/helper/root0이고 Ref 이전 주입은 미구현이다. 기존 FN06/ProtectedStore·DB/서버/Web 불변.
+
 FN08 단일 검수 C0/I3/M2 REWORK 후 동일5코드 경로만 Main 보완: runtime의 원 프로세스/승인 gate·취소결과/sticky UNKNOWN 순수 정책, harness의 생성 전/각 launch 전/종료 후 실제 원 Node/relay·3830 확인, native의 Ref 이전 생성 소유·미resume 취소/종결 확인, fixture의 최초 절대기한·자식 종료점 상속. M2 Main Important 재분류, M1 line buffer 상한 잔여. 순수7/unit197/type0은 native 컴파일/OS/Agent 지원 증거가 아니다. 보완후 실제 검수·schema-export는 미실행이며 ProtectedStore/기존 HTTPS/DB·Web은 변경하지 않았다.
 
 FN08 승인A 후보: `apps/connector/native/OwnershipHost.cs`는 고정 합성worker 프로필·suspended/Job attach·정확ref/PID/시각/구성원·협력/명시불응합성회수·UNKNOWN 진단만 담당하며 `runtime/windows-host.ts`의 기존 보호저장 호출과 별도 typed 소유 IPC를 사용한다. `tests/fixtures/FN08/OwnedWorker.cs`와 `tests/unit/FN08/windows-host.test.ts`/`tests/integration/FN08/windows-ownership.test.ts`가 직접검수, 기존build script는 exact 신규FN08root만 추가한다. 원3FAIL/conhost진단·DETACHED합성전용 보정·추가actual/exporter미실행/보존UNVERIFIED는 WORK_STATUS와 구별한다. vendor schema/실제Agent adapter·grant/서버실행·DB/계정 변경0이며 파일 존재는 지원PASS가 아니다.

@@ -14,8 +14,9 @@ using System.Web.Script.Serialization;
 
 // FN08 한시 OS 소유 제공자 QA. Agent/shell·서버 실행 grant를 받지 않는다.
 internal static class OwnershipHost {
- const string ApprovedRoot=@"D:\tmp\anvil-v3-fn08-ownership-qa";
- const string ApprovedRun="2897e501-cbe9-491c-bd72-28b996f0499b",ApprovedStart="2026-10-17T03:31:53.000Z",ApprovedEnd="2026-10-17T04:01:53.000Z";
+ const string ApprovedRoot=@"D:\tmp\anvil-v3-fn08-ownership-qa-r2";
+ const string ApprovedRun="8c10a7c8-bfa8-458c-a24b-1f0578119407",ApprovedStart="2026-10-17T04:25:00.000Z",ApprovedEnd="2026-10-17T04:55:00.000Z";
+ static readonly Stream Input=Console.OpenStandardInput();static readonly Encoding WireUtf8=new UTF8Encoding(false,true);
  static readonly JavaScriptSerializer Json=new JavaScriptSerializer {MaxJsonLength=16384,RecursionLimit=8};
  static string Root,Run,Mode,Hash,JobId; static int Generation; static DateTime Expires; static IntPtr Job=IntPtr.Zero;
  static PROCESS_INFORMATION ProcessInfo; static Dictionary<string,object> Ref; static bool Resumed; static string Phase="INPUT";static object Diagnostic;
@@ -43,6 +44,21 @@ internal static class OwnershipHost {
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool CreateProcessW(string application,StringBuilder command,IntPtr processAttributes,IntPtr threadAttributes,bool inherit,uint flags,IntPtr environment,string cwd,ref STARTUPINFO startup,out PROCESS_INFORMATION process);
  static Exception Fail(string code){return new InvalidOperationException(code);}
  static void Require(bool v,string code){if(!v)throw Fail(code);}
+ static string ReadBoundedLine(){
+  var bytes=new byte[16384];int count=0;bool delimiterCr=false;
+  while(true){int value=Input.ReadByte();if(value<0){Require(count==0&&!delimiterCr,"OWNERSHIP_OBSERVATION_UNKNOWN");return null;}
+   if(value==10){if(!delimiterCr&&count>0&&bytes[count-1]==13)count--;return WireUtf8.GetString(bytes,0,count);}
+   Require(!delimiterCr,"OWNERSHIP_OBSERVATION_UNKNOWN");if(count==16384){Require(value==13,"OWNERSHIP_OBSERVATION_UNKNOWN");delimiterCr=true;}else bytes[count++]=(byte)value;
+  }
+ }
+ static void WriteBounded(object value){string json=Json.Serialize(value);Require(WireUtf8.GetByteCount(json)<=16384,"OWNERSHIP_OBSERVATION_UNKNOWN");Console.WriteLine(json);}
+ static void ValidateRequestKeys(string line){
+  // 고정 QA 요청은 중첩을 포함해 같은 key를 재사용하지 않는다. escape 키도 JSON으로 복호화해 중복을 거절한다.
+  var keys=new HashSet<string>(StringComparer.Ordinal);
+  foreach(System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(line,@"""(?:\\.|[^""\\])*""\s*:")){
+   string token=match.Value.Substring(0,match.Value.LastIndexOf(':')).TrimEnd();Require(keys.Add(Json.Deserialize<string>(token)),"OWNERSHIP_OBSERVATION_UNKNOWN");
+  }
+ }
  static void PathCheck(string path,bool directory){
   Require(Path.GetFullPath(path)==path,"OWNERSHIP_PATH_INVALID");string p=path;
   while(p!=null){Require((File.GetAttributes(p)&FileAttributes.ReparsePoint)==0,"OWNERSHIP_PATH_INVALID");p=Path.GetDirectoryName(p);}
@@ -97,7 +113,7 @@ internal static class OwnershipHost {
  static string StopPath {get{return Root+@"\source\"+Generation+".stop";}}
  static void Graceful(){if(Ref==null)return;PathCheck(Root+@"\source",true);if(!File.Exists(StopPath))using(var f=new FileStream(StopPath,FileMode.CreateNew,FileAccess.Write,FileShare.Read)){byte[] bytes=Encoding.UTF8.GetBytes(Run);f.Write(bytes,0,bytes.Length);}}
  static object Dispatch(Dictionary<string,object> request){
-  string op=Text(request,"operation");Phase="INPUT";Require(!Unknown||op=="CANCEL_PREPARED","OWNERSHIP_OBSERVATION_UNKNOWN");if(op=="PREPARE"){Exact(request,"id,operation,spec");Prepare(Map(request,"spec"));return Facts();}Phase="BOUND_OPERATION";
+  string op=Text(request,"operation");Phase="INPUT";Require(new[]{"PREPARE","RESUME","OBSERVE","STOP","FORCE","CANCEL_PREPARED"}.Contains(op)&&(!Unknown||op=="CANCEL_PREPARED"),"OWNERSHIP_OBSERVATION_UNKNOWN");if(op=="PREPARE"){Exact(request,"id,operation,spec");Prepare(Map(request,"spec"));return Facts();}Phase="BOUND_OPERATION";
   Exact(request,op=="FORCE"?"id,operation,processRef,authorization":"id,operation,processRef");Match(Map(request,"processRef"));if(op=="CANCEL_PREPARED")return CancelPreparation();Require(DateTime.UtcNow<Expires&&!Cancelled,"OWNERSHIP_SPEC_INVALID");
   if(op=="RESUME"){Phase="RESUME";Require(!Resumed,"OWNERSHIP_ALREADY_STARTED");Require(Expires-DateTime.UtcNow>=TimeSpan.FromSeconds(20),"OWNERSHIP_SPEC_INVALID");Resumed=true;Require(ResumeThread(ProcessInfo.thread)==1,"OWNERSHIP_HOST_FAILED");}
   else if(op=="STOP")Graceful();
@@ -107,10 +123,10 @@ internal static class OwnershipHost {
  static int Main(string[] args){
   int exit=0;
   try{Require(args.Length==1&&args[0]==ApprovedRoot,"OWNERSHIP_PATH_INVALID");Root=ApprovedRoot;PathCheck(Root,true);Require(Directory.GetAccessControl(Root).GetOwner(typeof(SecurityIdentifier)).Value==WindowsIdentity.GetCurrent().User.Value,"OWNERSHIP_PATH_INVALID");
-   while(true){var read=Task.Factory.StartNew(()=>Console.ReadLine());if(!read.Wait(Ref==null?5000:Math.Max(1,Math.Min(30000,(int)(Expires-DateTime.UtcNow).TotalMilliseconds))))break;string line=read.Result;if(line==null)break;int id=0;try{Require(line.Length<=16384,"OWNERSHIP_SPEC_INVALID");var request=Json.Deserialize<Dictionary<string,object>>(line);id=Number(request,"id");var value=Dispatch(request);Console.WriteLine(Json.Serialize(new {id=id,ok=true,data=value}));}catch(Exception error){string code=error.Message;var allowed=new[]{"OWNERSHIP_REF_MISMATCH","OWNERSHIP_ATTACH_DENIED","OWNERSHIP_SPEC_INVALID","OWNERSHIP_FORCE_DENIED","OWNERSHIP_ALREADY_STARTED","OWNERSHIP_OBSERVATION_UNKNOWN"};if(code=="OWNERSHIP_OBSERVATION_UNKNOWN"||!allowed.Contains(code))Unknown=true;Console.WriteLine(Json.Serialize(new {id=id,ok=false,error=allowed.Contains(code)?code:"OWNERSHIP_HOST_FAILED",phase=Phase,nativeError=Marshal.GetLastWin32Error(),exceptionType=error.GetType().Name,diagnostic=Diagnostic}));if(Ref==null)break;}}
+   while(true){var read=Task.Factory.StartNew(()=>ReadBoundedLine());if(!read.Wait(Ref==null?5000:Math.Max(1,Math.Min(30000,(int)(Expires-DateTime.UtcNow).TotalMilliseconds))))break;string line=read.Result;if(line==null)break;int id=0;try{Phase="INPUT";ValidateRequestKeys(line);var request=Json.Deserialize<Dictionary<string,object>>(line);id=Number(request,"id");var value=Dispatch(request);WriteBounded(new {id=id,ok=true,data=value});}catch(Exception error){string code=error.Message;var allowed=new[]{"OWNERSHIP_REF_MISMATCH","OWNERSHIP_ATTACH_DENIED","OWNERSHIP_SPEC_INVALID","OWNERSHIP_FORCE_DENIED","OWNERSHIP_ALREADY_STARTED","OWNERSHIP_OBSERVATION_UNKNOWN"};if(code=="OWNERSHIP_OBSERVATION_UNKNOWN"||!allowed.Contains(code)||Phase=="INPUT")Unknown=true;WriteBounded(new {id=id,ok=false,error=allowed.Contains(code)?code:"OWNERSHIP_HOST_FAILED",phase=Phase,nativeError=Marshal.GetLastWin32Error(),exceptionType=error.GetType().Name,diagnostic=Diagnostic});if(Ref==null)break;}}
   }catch{exit=1;}finally{
    // 미시작 합성 준비만 exact retained handle로 취소한다. 실행 중에는 자동 kill 하지 않는다.
-   if(Created&&!Resumed){try{CancelPreparation();}catch{exit=1;try{Console.WriteLine(Json.Serialize(new {id=0,ok=false,error="OWNERSHIP_OBSERVATION_UNKNOWN",phase="CANCEL_PREPARED"}));}catch{}}}
+   if(Created&&!Resumed){try{CancelPreparation();}catch{exit=1;try{WriteBounded(new {id=0,ok=false,error="OWNERSHIP_OBSERVATION_UNKNOWN",phase="CANCEL_PREPARED"});}catch{}}}
    else if(Ref!=null){try{Graceful();if(WaitForSingleObject(ProcessInfo.process,16000)!=0)exit=1;}catch{exit=1;}}
    if(ProcessInfo.thread!=IntPtr.Zero)CloseHandle(ProcessInfo.thread);if(ProcessInfo.process!=IntPtr.Zero)CloseHandle(ProcessInfo.process);if(Job!=IntPtr.Zero)CloseHandle(Job);
   }

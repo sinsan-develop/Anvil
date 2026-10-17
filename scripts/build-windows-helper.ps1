@@ -1,6 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$OutputRoot)
 $ErrorActionPreference='Stop'
-$approvedRoots=@('D:\tmp\anvil-v3-fn06-registration-qa','D:\tmp\anvil-v3-fn06-https-qa-r1','D:\tmp\anvil-v3-fn08-ownership-qa')
+$approvedRoots=@('D:\tmp\anvil-v3-fn06-registration-qa','D:\tmp\anvil-v3-fn06-https-qa-r1','D:\tmp\anvil-v3-fn08-ownership-qa-r2')
 if ([IO.Path]::GetFullPath($OutputRoot) -cnotin $approvedRoots) { throw 'APPROVED_QA_ROOT_REQUIRED' }
 $approvedRoot=$OutputRoot
 $rootItem=Get-Item -LiteralPath $approvedRoot
@@ -8,7 +8,7 @@ if ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'QA_RO
 $binPath=Join-Path $approvedRoot 'bin'
 $binItem=Get-Item -LiteralPath $binPath
 if ($binItem.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'QA_BIN_LINK_DENIED' }
-if ($approvedRoot -ceq 'D:\tmp\anvil-v3-fn08-ownership-qa') {
+if ($approvedRoot -ceq 'D:\tmp\anvil-v3-fn08-ownership-qa-r2') {
   $compiler='C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
   $sources=@{'AnvilOwnershipHost.exe'='..\apps\connector\native\OwnershipHost.cs';'OwnedWorker.exe'='..\tests\fixtures\FN08\OwnedWorker.cs'}
   foreach($name in $sources.Keys){
