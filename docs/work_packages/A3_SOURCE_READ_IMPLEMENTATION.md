@@ -47,7 +47,7 @@
 
 ## N3. UI11 명시 요청·조회·회수
 
-최신 부분 진행: 화면/별도 Web helper·주체별 보존을 연결, 합성 browser 버튼부재RED→4PASS6.1초·최신 의미 보완 후 새build/4PASS7.6초다. 한정 독립 C0/I0/M1의 보존초안 hostLabel 표시 누락은 경미 이월한다. 지연 중 주체/project 교체·교차응답 순서 actual browser와 실제PG/served는 아직 미검증이다. QA623파일/32dir 정확정리·독립 root/process0. 이 부분 결과를 아래 전체 검수 완료로 대체하지 않는다.
+최신 부분 진행(2026-10-18): 화면/별도 Web helper·주체별 보존을 연결, 원 합성 browser 버튼부재RED→4PASS6.1초·의미 보완 후 새build/4PASS7.6초는 과거 완료 증거로 재사용한다. 추가 project/detail선택 지연2PASS6.3초는 최종 digest 완료 barrier를 보강한 결과이며 원 검수C0/I1/보정과 분리한다. 사용자/client 교체 지연 신규2PASS7.6초·지정 읽기 독립C0/I0/M0는595349bebce760c73e3d7a30f1a01f946c4e3f31에 보존했다. QA02/03/04는 각 exact정리·독립부재 확인이며 다시 생성하지 않는다. 모든 asset/auth/API는 합성이므로 실제 인증·세션폐기/PG·served/TLS·OS 인수는 여전히 미검증이다. 보존초안 hostLabel 표시 누락 Minor1은 이월한다. 이 부분 결과를 아래 전체 검수 완료로 대체하지 않는다.
 
 파일: apps/web/src/features/connections/SourceReadGrantsPanel.tsx·source-read-api.ts, 기존 SourceRootsPanel/App의 주체별 보존 연결 최소 수정, tests/unit/FN08/source-read-web.test.ts·tests/browser/UI11/source-read-grants.spec.ts.
 소비: N2 HUMAN op/ref/보호projection. 산출: source/host/file·경로/이번이유 전달 preview→명시 요청/결과재확인/회수·보고 OS미확인 상태. connector token은 브라우저로 전달0.
