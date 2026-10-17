@@ -47,7 +47,7 @@ test('등록 화면의 정확 v1 조회·명시 편집/저장·v2 재조회 및 
   const edited=editDocument(pid,opened,uid,1);edited.body='# S01 화면시안\n명시 편집 v2';edited.reason='사용자가 선택한 새 초안';edited.dirty=true;
   const saved=await continueDocumentSave(client,await prepareDocumentSave(edited,session),session,()=>{},()=>true);assert.equal(saved.id,screen.id);assert.equal(saved.version,2);
   assert.equal((await readDocument(client,pid,saved.id,2)).body,edited.body);assert.equal((await readDocument(client,pid,screen.id,1)).body,opened.body);
-  const reread=await readDesignIndex(client,pid,source);assert.deepEqual(reread,index);assert.deepEqual((await readRegisteredScreen(client,context,selection,()=>true)).document.content.body,opened.document.content.body);
+  const reread=await readDesignIndex(client,pid,source);assert.deepEqual(reread.documentRef,index.documentRef);assert.deepEqual(reread.items,index.items);assert.deepEqual(reread.screenRegions,index.screenRegions);assert.equal(reread.status,'INDEXED');assert.ok(Number.isFinite(Date.parse(reread.observedAt)));assert.deepEqual((await readRegisteredScreen(client,context,selection,()=>true)).document.content.body,opened.document.content.body);
   const conflict=editDocument(pid,opened,uid,1);conflict.body='# S01 구버전 편집';conflict.reason='구버전 CAS 차단';conflict.dirty=true;
   await assert.rejects(continueDocumentSave(client,await prepareDocumentSave(conflict,session),session,()=>{},()=>true),(e:any)=>e instanceof ApiError&&e.code==='VERSION_CONFLICT'&&e.status===409);
   assert.equal((await readDocument(client,pid,screen.id,2)).body,edited.body);

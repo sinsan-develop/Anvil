@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI06 실제 PG 1차/시험 보정**: `7daae7a8f27bdf5aadb129ab7081781586f92000` local/private clean·main f976ed5e 불변을 확인하고 정식WSL Git에 반영했다. 첫 stdin CRLF는 마지막 test경로를 바꿔 실행0이며 직접 SSH로 보정했다. 실제1회는 v1 조회/명시편집/기존저장/v2·과거본문 재조회까지 도달한 뒤 index observedAt까지 불변으로 비교한 시험 가정 오류로 **1 FAIL/3601.190397ms(기능2559.970078ms)/SKIP0**다. ref/items/screenRegions 동일·관측시각만 0.518초 차이였다. 해당 내용/버전/hash 불변 검사는 유지하고 observedAt은 유효시각만 대조하도록 시험1줄 보정, 타입/diff0이다. finally rawroot 제거 뒤 독립 주요10표0·등록root부재를 확인했다. 독립 조회 첫 inline quoting 오류1은 실행 전 차단·DB변경0이며 stdin JS로 보정했다. 같은08:10~08:40창의 보정 후보 실제PG·최종 읽기 검수/정리는 아직 진행 중이고 실패를 PASS로 소급하지 않는다.
+
 - **UI06 후보 구현/로컬 핵심 검증**: helper의 정확 source/index/AF03/body/anchor 대조를 화면 선택에 연결했다. 목록 밖 고정 버전은 최신 head 미확인으로 표시하고 기존 편집/CAS만 소비한다. 신규 직접unit RED4→GREEN4(325.1143ms), 인접 anchor/index/editor 포함14 PASS/439.6251ms·FAIL/SKIP0, typecheck0·후보 Web106 modules build0, 합성 browser 버튼 부재 RED1→연결 후4PASS/1FAIL(재조회 완료 전 원문을 읽은 test race)→완료 heading 대기 보정 후 **5 PASS/9.5초**다. pending/dirty input 보존·버전 불일치/지연/타프로젝트·CAS 거절과 v1/v2·indexv1 유지, same-origin/off-origin0/JS오류0를 확인했다. chunk500k/NO_COLOR 경고는 보존하며 한도를 변경하지 않았다.
 - QA 오류/범위: 첫 생성 guard는 DateTime Z/local 비교로 생성 전 차단1·자원0, DateTimeOffset UTC로 같은 기한 비교만 보정했다. Windows rg glob123/없는 migrator.ts1·현황 patch 문맥1(미적용)은 도구 오류이며 제품·ACL 오류가 아니다. WSL clean detached e07312d3의44 적용/파일 checksum set `5668a0eba1d67ecf00c5a980a4b58f7c633fec9f2a4dac8b5f7ca0520f8ee5ec` 일치, 새root부재·보호원문 daon/0700/nonlink/empty, 제품·QA표0/기존 auth_audit243·installation_claim1·공식catalog 보존을 확인했다. 다음은 기존private exact 안전 후보→정식WSL Git candidate에서 신규 한정 PG/원문 왕복(미실행), 독립 읽기 최종 검수1회·C/I 보완·정리/checkpoint다. fixture/browser는 실제 PG/served browser/사용자인수와 별개이며 UI06/Stage 완료가 아니다.
 
