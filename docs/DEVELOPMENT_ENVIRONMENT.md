@@ -1,5 +1,11 @@
 # Anvil 재설계 개발환경
 
+## 최신 실제 개발 서비스 — 2026-10-18 N4 직접 승인 전환
+
+- 실제 실행 source **6781703a8fd7d258aa7f972bb5f81acaf5c3d388**, Windows Node **54212** / C:\Program Files\nodejs\node.exe / 시작 UTC2026-10-17T19:08:16.5819440Z / 단일127.0.0.1:3830이다. 직접 서비스 교체 승인 아래 원23836을 종료해 새 API·Web을 반영했고 아래23836은 과거 시점이다.
+- 기존 CA 엄격TLS·새 index/JS/CSS 해시·health200/새보호API익명401·익명Edge기본페이지를 확인했다. DB46/81표 전후 READ ONLY fingerprint동일·보호10hash/relay26052/PGmetadata 불변이다. 원6환경/ANVIL_ARTIFACT_ROOT 미설정은 유지해 원문 저장 가능/실제Agent·로그인업무 완료로 승격하지 않는다.
+- 새 .av3-data/runtime-ui11-n4-01의 receipt/server.out.log/server.err.log와 성공개발PID·구indexbackup/원asset은 복구용 보존. 일회성 candidate-02/profile은 정확정리·별도부재0. 실제 명령/동결단1회·원JSON/후검사·미검증은 04_test_reports/AV3/FN08/UI11_N4_SERVICE_TRANSITION_RESULT.md다.
+
 ## A-3 정식 개발 schema-only 반영 — 2026-10-18
 
 - 현재 정식 WSL 개발 DB는 **46 migrations**다. exact dbbdf0493e40ae74e713926ec1f0148355100fe5의 0008_source_read_observation.sql(SHA256 26A7B7828481689D7017836C1ECE2FC5E9F644CB9B8200122EE013E7F52DB185)만 별도 승인된 단1회로 적용했고 기존45 SQL/77표 논리구조·권한·행수·지문을 보존했다. 새4표는0행·seed/계정생성0이며 개발용으로 보존한다. 새함수/guard·기존app역할의새표한정권한은승인된효과다.
