@@ -1,6 +1,18 @@
 # N4 새 API·UI11 개발 서비스 연결 — 범위 결정안
 
-필요결정 ID: AV3-PMO-N4-SERVICE-TRANSITION-SCOPE. 현재 미승인/실행0. 지정 문서 검토 C0/I0/M0는 제안의 모순·경계 누락만 확인했으며 실제 상태·향후 코드·atomic 교체/ACL/TLS/무쓰기·rollback 성공을 검증하지 않았다.
+필요결정 ID: AV3-PMO-N4-SERVICE-TRANSITION-SCOPE. **2026-10-17T18:36:50Z 신산님 직접 ‘서비스 교체 승인해’를 PMO가 수신·전달했다. 권장A와 known 9bade63e 일반 detached 복구 범위 승인이다.** 무응답 위임이 아니며 같은 범위의 중복 승인·PMO 다음 업무 배정은 기다리지 않는다. 아래 제안 당시 문구는 이력이다. Main이 준비 코드·집중 TDD·독립 검토·안전 checkpoint/private exact SHA·script/flow/probe/asset fullhash·새 고정 UTC 창·단1회 바인딩을 기록/PMO 전달한 뒤 같은 승인 범위에서 실행한다. 현재 실제 서비스 전환은 미실행이며 검토 PASS를 실제 성공으로 확대하지 않는다.
+
+## 직접 승인 후 준비·검수와 자원 계약
+
+- 신규 scripts/transition-ui11-development.ps1, ui11-runtime-flow.ps1, ui11-runtime-probe.mjs와 직접 시험5파일만 추가한다. 기존 launcher·실패 helper·제품 동작·DB SQL·보호 파일은 수정하지 않는다.
+- 로컬 순수 흐름14건 PASS, Node entry3+probe4건 PASS(5205.3672ms), PowerShell5문법/Node문법/typecheck/diff exit0. 최초 독립 C0/I3의 receipt 실패가 복구를 막는 문제·rollback 신원/포트 검증 누락·GUID 검증 지연을 RED→GREEN 보정하고 scoped 재검토 C0/I0이다. 실제 서비스/ACL/TLS/DB/브라우저 성공은 이 검수로 주장하지 않는다.
+- 새 공개 텍스트 atomic fixture와 새 Hidden Node 환경 canary fixture는 각 정상 시험 후 등록 파일/빈 폴더를 정확 제거·별도 부재 확인했다. 실제 served/계정/DB/Secret 변경0이며 불변 시험을 반복하지 않는다.
+- 새 후보 D:\tmp\anvil-v3-stage-b\candidate-ui11-n4-02는 현재 부재에서 final exact SHA의 index.html·assets/index-Csxr80L5.js·assets/index-C3a7Hrx0.css만 생성한다. Main/현재 사용자 소유·부모 nonlink/부재/정확3hash를 대조한다. 수명 이번 전환 종료/최대2시간, 새 파일3/빈 폴더2만 소유·링크·실경로·목록/사용 process0을 대조해 제거하고 독립 부재를 확인한다.
+- 새 D:\tmp\anvil-v3-stage-b\browser\ui11-n4-served-01/profile은 익명 Edge 1회용이다. Main/현재 사용자 소유, 생성 전 부모 nonlink/부재 확인, 로그인·변경 요청·인증 cookie/Agent0. context 종료 후 해당 profile 참조 process0·정확 경로/owner/link/목록을 재대조하여 이번 profile/root만 정리·독립 부재를 확인한다. browser 종료/소유 불명은 삭제하지 않고 보존·보고한다.
+- 새 runtime-ui11-n4-01은 receipt.json/receipt.staged.json·server.out.log/server.err.log, 실패시 rollback.out.log/rollback.err.log만 쓴다. rollback도 같은 receipt의 별도 process proof/상태를 보존한다. 현재 사용자/SYSTEM ACL은 이 새 폴더에만 설정하며 성공한 개발 process/로그·원본 backup은 후속 복구용 보존이다. receipt 쓰기 실패는 최종 receiptFailure에 드러내고 소유권 gate를 건너뛰지 않는다.
+- 같은 정적 dir의 index.ui11-n4-original.html·index.ui11-n4-staged.html·실패시 index.ui11-n4-failed.html만 이번 소유 파일로 관리한다. 원 asset은 보존, 새 JS만 추가하며 동명 CSS는 같은 hash만 재사용한다. 성공 backup/필요 실패 증거는 보존하고 임의 전체 dist 정리0이다.
+- 기존 보호10 hash·6환경/NO_ARTIFACT_ROOT·relay/PG·DB46/81표 READ ONLY 전후 fingerprint를 유지한다. 브라우저는 index/asset/API 오류와 pageerror·off-origin·nonGET을 실패로 판정하고 favicon 등 기타 비API HTTP 오류는 별도 수치로 공개한다. 익명 기본 페이지 확인은 실제 로그인/자료 저장/새 grant 업무·Agent 확인이 아니다.
+- 최종 실행은 exact SHA/3script hash/asset/UUIDv4/issuedAt/expiresAt(최대2시간)·한 번만, 원 종료 직전 최소300초 여유를 요구한다. 실패/미실행은 그대로 기록하며 자동 재시도·창 연장·다른 포트·SERVED02 재포장0이다. 새 위험이나 플랫폼 거절은 PMO에 정확 요청하고 영향 없는 계획 작업은 Main이 계속한다.
 
 ## Main 선정·현재 사실
 
