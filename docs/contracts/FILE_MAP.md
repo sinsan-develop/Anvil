@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+UI11 신뢰관리의 새 `apps/server/modules/connections/project-registration-reads.ts`/기존 projects/routes는 현재 HUMAN 허가·원 생성receipt/DB scope/ref/hash 무결성·고정projection/기한결박 cursor만 읽는다. Web `features/connections/trust-api.ts`/`TrustPanel.tsx`와 App 주체별버퍼는 현재상태 재조회/명시3명령·원command/별도승인·최초code local state를 담당한다. 기존 decisions/api.ts는 승인된3연산만 추가 검증하며 과거 후보 흐름/서버write/SQL은 보존한다. 직접 검수는 unit/FN06/trust-read·unit/UI11/trust-api, integration/UI11/trust-read, browser/UI11/trust이고 code 없는 증거는 docs/04_test_reports/AV3/UI11/TRUST_FIXTURE_1920.png다. 후보/UI08 인접14 외 무관한 성공검사는 반복하지 않았으며 아직 마지막 제한 독립검수 전이다.
+
 FN06 Minor1 보완: `db/migrations/0006_host_trust_challenge_protocol_fix.sql`(44)과 기존 `scripts/migrate-development.ts` 명시 순서만 교정했다. 적용43 함수와 선언/숫자1 조건1개 외 동일성을 대조했다. 직접 회귀 `tests/integration/FN06/challenge-payload.test.ts`는 ba5c96fd actual RED→dba582b6/44 actual GREEN1(2132ms), 입력6종/app DB6종 거절·숫자1 정상과 최소 등록/일회 발급/회수를 확인한다. 기존 Windows/native/서명/인접3 diff0으로 재검사0. 원 독립C0/I0/M1은 보존하고 Main 수정 검증을 연결한다. 이하 미승인44/미수정은 후속 PMO 허용 전 이력이다.
 
 FN06 마지막 독립 읽기 전용 검수(daf88829..0282713e)는C0/I0/M1·제한 scope 수용 가능이다. Minor1의 정확 위치는 `db/migrations/0006_host_trust_registrations.sql:170`이며 적용본은 불변으로 보존한다. 공개 HTTP `registration-proof.ts`의 정확8필드/숫자1 검사와 구별한 DB 방어층 보완 후보이며 후속 forward는 PMO의 정확 지시 전 작성하지 않는다. 실제 PG SELECT 비교 이외 새 시험/제품 수정0이고 전체 FN06/Stage 검수 완료가 아니다.

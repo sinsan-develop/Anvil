@@ -89,7 +89,7 @@
 | UI08 | 승인·원인 미확인 문제 | C | UI00 | UI00,FN11,FN12 | 작업 중·FN11 요청/조회·3종 결정→정확 후보 재결박/별도 소비·원 명령 보존,36fa3e51 same-client actual1 PASS·QA잔여0. FN12 문제 분류·실제 사용자/Agent 인수 미연결/미확인 |
 | UI09 | 새 세션·다른 도구 이전 | D | UI00 | UI04,FN14 | 시작 전 |
 | UI10 | 헌법·지식·결정 이유 | B | UI00 | UI00,FN05 | 작업 중·원문/지식·대화/정정/제외·검토/확정·별도 헌법 적용/이력의 화면/same-client actual7cf8c005 확인. 공유·임무별 선별/전달·사용자 browser DB 미완료 |
-| UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보 작성/목록/불변 조회/개정·명령 보존, 747c6f37 같은 Web 함수/API/PG actual1 PASS·QA잔여0 및 fixture/배치 확인. 실제 host/Agent·정책 생성/승인 결정·사용자 browser 인수 미연결/미확인 |
+| UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보/환경 및 HUMAN 현재신뢰 GET2·등록/지문확인·거절/회수·별도 일회승인(UI08)/명령 보존 연결. b4af490b 같은 Web 함수/API/PG actual1 PASS/QA45표0·신뢰fixture12/인접14 PASS·마지막 제한독립검수 중. 실제 Windows↔WSL·영구host/Agent·정책 생성·사용자 browser 인수 미완료 |
 | UI12 | 작업 사용자·클라이언트 인계 | E | UI00 | UI00,FN15 | 시작 전 |
 | UI13 | 모바일 대화·지시·승인 | E | UI00 | UI04,UI08,FN15,FN17 | 시작 전 |
 | UI14 | 백업·한도·알림·보조 조회 | E | UI00 | UI00,FN10,FN16,FN17 | 시작 전 |
@@ -98,7 +98,7 @@
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
 | FN04 | 설계 추적·계획·변경 영향 | B | FN02,FN03,FN11 | FN02,FN03,FN11 | 작업 중 — D/S·업무 카드/두 선행·불변 계획/개정·화면 검토 선택·trace edge·계획 검토/확정의 화면/same-client actual. 요청4종 출처·사람 영향 이력/미확인 보존 actual df2f81ff·forward33 확인. 변경 적용/UI07·실제 browser DB 여정 미완료 |
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |
-| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·후보/UI11·Windows DPAPI/CNG·상태조회전용 서버 신뢰 부분 확인(4ecb2e39 인접4/0282713e 신뢰1 PASS), 독립 원결과C0/I0/M1→PMO 허용 최소44로 Main 보완·직접 DB6종 거절/정상 등록 핵심1 PASS(dba582b6·QA45표0/44 checksum 일치). 제한 수용은 PMO 판단. UI11 신뢰 관리·Windows→WSL HTTPS·영구 PC/실제 Agent·전체 연결 미완료 |
+| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·Windows DPAPI/CNG·상태조회전용 서버 신뢰와44 교정은 PMO 제한수용(05f59cea), UI11 HUMAN 신뢰관리/같은 Web 함수 실제 부분을 연결해 제한독립검수 중. 기존44 checksum 불변/QA45표0, Windows→WSL HTTPS·영구 PC/실제 Agent·전체 연결은 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 시작 전 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 시작 전 |
