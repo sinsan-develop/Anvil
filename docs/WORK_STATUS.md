@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **이전 실제 경계/현재 보존 정합**: SERVED-02 exact30ba 실제 Invoke는 exec CreateProcess 전 플랫폼 실행심사에서 직접 사용자 실행승인 부족으로 거절됐고 actual/새 process·PG/UNC쓰기0이다. 같은10분위임 재제출/우회0, 현 제품 후보에 옛 exactSHA 실행권한 확대0. 원API23836/3830·복구runtime01 receipt SHA FDC1467E0CB838071F4B1AA547552D6A61ED76BEBCC79347BCFFA2E2C57E16D7·원served3hash는 보존한다. 이전01 actual FAIL/자동복구FAIL/수동복구 이력은 소급 PASS가 아니다.
+- 사용 종료한 옛 `D:\tmp\anvil-v3-stage-b\browser\ui06-served-02`는52파일/7dir owner/link/process0·고정3hash·actual runtime/profile부재를 확인 후 11:10Z 준비수명 전에 정확 제거하고 별도 부재를 확인했다. 원 실패01 root/현재 runtime01은 예외 보존한다. 상세 승인/거절·정리/신규 착수 이력은 canonical현황에 누적하며, 이 추가 기록은 그동안의 원문을 삭제하거나 두 현황 파일의 byte동일을 주장하지 않는다.
+
+- **UI06-PLAN-REFERENCE-01 후보 구현·최소 검증(2026-10-17 / Main 어울)**: 보관 업무의 설계/시안 참조를 기존 plan/hash→task 귀속→design-index ID/버전/hash/anchor·시안 부모→정확 문서/본문/AF02·03로 재대조해 별도 읽기 전용 패널에 연결했다. 이전 편집·저장/확정·DB/API/권한·서비스 코드는 수정0이다. 없는 줄은 원문 보존/미확인, 불일치 채택0, 선택/닫기/필터/프로젝트·주체 변경은 과거 요청 폐기다.
+- 직접 unit5 구현부재 RED→GREEN5/296.6936ms, 후보 browser 버튼부재 RED1→GREEN5/4.6초, 추가3/3.6초(선택교체·프로젝트이동·dirty/pending보존)와 인증만료1/2.8초 PASS다(한 번의9건 실행으로 표현하지 않음). 직접 소비 API 인접 포함 unit15 PASS/283.6767ms·FAIL/SKIP0, 타입 exit0·후보111modules build0·diff check0. 기존 chunk500k/NO_COLOR 경고는 보존했다. 후보 JS index-CphFrNU8.js SHA D46924647FA8A693AC0BBB37778CB15489CC7540463DB80974A43ED4A481E8FB, index 8CD8B0D65D5EBDA73FCCF31FC0E14E97727BF8284A5E1F46D66F1FDA1826B137, CSS03443550…5E9A56다.
+- 단1회 독립 지정5파일 읽기 검수 C0/I0/M0이며 시험은 작성자 증거/독립재실행0이다. 소비 API 내부는 대상 밖이나 직접 인접 unit으로 확인했고, 부모의 기존 비동기 동작/이전 CR Minor는 이번 결과에 합치지 않았다. 실제 served/API·DB·사용자인수와 전체UI06/Stage는 미검증·미완료다. 확인방법은 승인된 후보 반영 후 문서→보관한 작업계획→정확 계획 열기→업무별 D/S 고정 원문 보기이며 현재 기존 서비스에 반영됐다는 뜻이 아니다.
+- 등록 합성 QA root ui06-plan-reference-01의74파일/7dir는 owner SINSAN\\cyhuh·nonlink·관련process0/등록3하위 확인 후 정확 제거, 별도 root부재/process0 확인이다. 제품·시험소스/비밀없는 결과/hash는 보존해 재빌드 가능하다. 기존 served3hash·원23836/3830 보존, 실제PG/Agent/compiler/UNC·runtime변경0. 조사 sandbox git worktree인식 오류1은 elevated 읽기로 구분했고 제품/ACL 변경0이다. Main은 PMO의 다음 작업 배정을 기다리지 않고 승인 계획의 다음 독립 미완료를 선정한다. 새 후보에 옛30ba actual 승인/manifest를 적용하지 않는다.
+
 - **게시/WSL 정적대조**: UI06 원문 왕복 후보5b189f3dbd1153f2c4b253637a0dcd467a0ec4e3은 local/private exact·main f976불변이었다. 정식 WSL clean013bdc에서 승인 origin의 동일5b189f3으로 Git fetch/detached checkout 후 typecheck exit0·clean을 확인했다. 실제 DB/서비스/Agent 재시험은 하지 않았다. 후속 지원 준비 기록은 문서-only이며 제품/시험/후보 asset 바이트는 변경하지 않는다.
 
 - **최소 atomic 원인 보정 실증(10:26Z)**: 등록한 합성3파일에서 원 `$null` 인자는 ArgumentException RED이며 대상hash·stage보존을 확인했다. `[NullString]::Value`를 사용한 실제 File.Replace 게시 hash와 원본복원 hash 모두 GREEN, 제품파일/서비스전환/actual재시도0이다. stage/original은 시험 교체 과정에서 소비됐고 잔여 target1파일/빈root는 owner/nonlink·정확목록 확인 뒤 제거, 별도 rootRemaining=false다. 첫 fixture patch는 부모 생성권한에서 중단·파일0, 사전등록 빈 부모만 elevated 생성 후 진행했다. 이것을 전체 OS서비스 rollback PASS로 확대하지 않는다.
