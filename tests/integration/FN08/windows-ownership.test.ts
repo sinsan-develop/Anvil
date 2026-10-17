@@ -22,6 +22,13 @@ test('FN08 실제 Windows job 소유·회수: attach 전 쓰기0·자식/이탈�
   execFileSync(ps,['-NoProfile','-File','scripts/build-windows-helper.ps1','-OutputRoot',root],{windowsHide:true,stdio:'pipe'});
   const workerHash=await hash(join(root,'bin','OwnedWorker.exe')),helperHash=await hash(join(root,'bin','AnvilOwnershipHost.exe'));
   const launch=async(mode:OwnershipQaSpec['mode'],generation:number)=>{const h=await openOwnershipQaHost({root,executablePath:join(root,'bin','AnvilOwnershipHost.exe'),expectedExecutableHash:helperHash},{runId:runId!,generation,expiresAt:expires!,profile:'SYNTHETIC_WORKER',mode,executableHash:workerHash});hosts.push(h);refs.push(h.processRef);return h;};
+  if(process.env.ANVIL_FN08_DIAGNOSTIC==='1'){
+   const diagnosticHost=await launch('COOPERATIVE',2);let diagnostic:any=null;
+   try{await diagnosticHost.resume();await until(()=>diagnosticHost.observe(),()=>false,2500);}catch(e:any){diagnostic=e.diagnostic;}
+   assert.equal(diagnostic?.kind,'OWNERSHIP_DIAGNOSTIC');assert.equal(diagnostic?.state,'UNKNOWN');
+   console.log(JSON.stringify({kind:'FN08_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE',source,runId,mainRef:diagnosticHost.processRef,diagnostic}));
+   throw Error('OWNERSHIP_DIAGNOSTIC_ONLY_NOT_ACCEPTANCE');
+  }
   await assert.rejects(launch('ATTACH_DENIED',1),{message:'OWNERSHIP_ATTACH_DENIED'});assert.equal(await absent(join(root,'results','1-parent.tick')),true);
   const normal=await launch('COOPERATIVE',2);assert.equal(await absent(join(root,'results','2-parent.tick')),true);assert.equal((await normal.observe()).state,'PREPARED');
   console.log('FN08_PHASE WRONG_GENERATION');await assert.rejects(normal.observe({...normal.processRef,generation:1}),{message:'OWNERSHIP_REF_MISMATCH'});console.log('FN08_PHASE WRONG_PID');await assert.rejects(normal.force({...normal.processRef,pid:40744}),{message:'OWNERSHIP_REF_MISMATCH'});
