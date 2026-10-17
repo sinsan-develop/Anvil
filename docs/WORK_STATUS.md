@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- UI11 HUMAN GET 첫 GREEN **8b979e3fbfe532cd07b68a877f5af032b8c921e8** exact private/WSL clean actual1 PASS/2292.724598ms(기능1962.986107)/SKIP0·독립45표0/44 checksum 일치/범위밖5표 부재/원문root empty. CREATED snapshot과 proof 이후 현재ref/observed지문·명시확인/ISSUED/회수 재조회, GET domain footprint 불변·원code/token/금지필드 미노출·다른client404/인증401·한정query/page/cursor변조·옛제어세대·제어회수403·scope변조503을 확인했다. 남은 타인/실제 교차project·서명된 만료cursor·정책변경/DENY/실제1100ms 기한과 확인허가 부재를 같은 시험에 추가한다. Ruling: 읽기 허가만 있고 confirmConnectorRegistration 정책이 없는 경우 proof/basis가 현재여도 확인 가능으로 표시하지 않아야 한다. 이를 새 음성RED로 먼저 확인한다. QA는 같은 prefix 사용자2/주프로젝트1·즉시 정리 교차project1·등록3의 합성 소유만이고 새schema/키보관/서비스0. 첫 UI08 경로 추정 읽기는 없음 오류였고 실제 파일 목록의 features/decisions/api.ts·ApprovalsPage.tsx로 바로잡았다. 미실행을 PASS로 올리지 않는다.
+
 - UI11 첫 actual **71c6131a456a9e2959a686a57d8b73601de1a778** private/WSL exact clean은 GET 미구현404≠200으로1 FAIL/650.913585ms(기능374.194415)/SKIP0이었다. finally 뒤 독립45표0/적용44 checksum 전부 일치·제외5표 부재·시험/원문root empty를 확인했다. 이후 로컬 HUMAN read module/GET2를 연결했고 순수query/projection2 PASS/264.9489ms·type/diff0이나 실제 GREEN은 아직 미실행이다. 현재상태는 원scope/생성 receipt·DB관계/hash 검수 후 최소projection만 제공하고 proof/기한/회수·현재정책/제어 불가사유를 분리한다. 기존 인증 authenticated는 세션 확인/lock만 하며 도메인 쓰기는 하지 않는 것을 실제 코드로 대조했다. 새SQL/기존write/Windows/서비스 변경0이다.
 
 - UI11 신규 HUMAN 조회의 strict scalar query/고정scope projection 부재 RED1→순수2 GREEN/193.3987ms·type0이다. 실제 GET은 아직 미구현/미실행이다. QA 사전등록: 기존 정식 WSL PG/보호 app·migrator 설정 아래 `qa-connector-trust-<UUID>` 합성 사용자1·프로젝트1·현재client/정책·등록2/명령/감사·신뢰4표의 소유행만 한 시험 수명, 신규DB/서비스/port/Windows 키 저장0. 합성 host proof는 메모리 키/API주입만 사용하고 명시회수·finally 소유 UUID만 정리/독립45표·임시root0을 확인한다. 최초 actual은 새GET404 RED를 확인한 뒤 read module/route2만 구현한다. source/SQL44·기존 성공검사 불변이다.
