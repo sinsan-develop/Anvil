@@ -8,6 +8,42 @@ const compilePolicy='AV3-PMO-FN06-COMPILE-RECEIPT-01';
 const fixedHostHash='39111ada9ff079143507db5c2986e1f42d3f0679519ba524a82775dddc26cbac';
 const fixedCompilerHash='46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00';
 const compileSource='apps/connector/native/CodexHandshakeHost.cs';
+type SourceOpenDetail={fileRole:'SOURCE_ARG'|'OTHER_SOURCE'|'UNKNOWN';osReason:'ACCESS_DENIED'|'SHARING_VIOLATION'|'NOT_FOUND'|'OTHER_OS_REASON'|'UNKNOWN'};
+const unknownSourceOpen=():SourceOpenDetail=>({fileRole:'UNKNOWN',osReason:'UNKNOWN'});
+// CS1504의 명시된 두 필드만 읽는다. 임의 경로/문구는 결과로 반환하지 않고 파일 접근도 하지 않는다.
+function sourceOpenDetail(message:string,sourceAbsolute?:string,osMessages?:unknown):SourceOpenDetail{
+ if(/[\x00-\x08\x0a-\x1f\x7f]/.test(message))return unknownSourceOpen();
+ const english=/^[ \t]*Source file '([^'\r\n]+)' could not be opened (?:-- '([^'\r\n]*)'|\('([^'\r\n]*)'\))[ \t]*$/.exec(message);
+ // 지역화된 외형은 source/reason의 정확한 두 인용 필드와 비ASCII 설명만 허용한다.
+ const localized=!english?/^([^']*)'([^']+)'([^']*)'([^']*)'([ \t().]*)$/.exec(message):null;
+ if(!english&&(!localized||!/[\x80-\xff]/.test(localized[1]!+localized[3]!)))return unknownSourceOpen();
+ const file=english?english[1]!:localized![2]!,reason=english?(english[2]??english[3])!:localized![4]!,path=file.replaceAll('\\','/');
+ const absolute=typeof sourceAbsolute==='string'?sourceAbsolute.replaceAll('\\','/'):undefined;
+ const same=path===compileSource||path===absolute;
+ const alias=path.split('/').some(p=>p==='.'||p==='..')||!same&&(path.toLowerCase()===compileSource.toLowerCase()||absolute!==undefined&&path.toLowerCase()===absolute.toLowerCase());
+ const pathForm=/^(?:[a-z]:[\\/])?[a-z0-9_. -]+(?:[\\/][a-z0-9_. -]+)*\.cs$/i.test(file);
+ const fileRole:SourceOpenDetail['fileRole']=same?'SOURCE_ARG':pathForm&&!alias?'OTHER_SOURCE':'UNKNOWN';
+ // 기존 csc 출력의 OS reason만 좁혀 읽는다. 미지원 지역화/추가 문구/미지 코드는 UNKNOWN이다.
+ let osReason:SourceOpenDetail['osReason']='UNKNOWN';
+ switch(reason){
+  case 'Access is denied.':osReason='ACCESS_DENIED';break;
+  case 'The process cannot access the file because it is being used by another process.':osReason='SHARING_VIOLATION';break;
+  case 'The system cannot find the file specified.':case 'The system cannot find the path specified.':osReason='NOT_FOUND';break;
+  case 'The filename, directory name, or volume label syntax is incorrect.':osReason='OTHER_OS_REASON';break;
+ }
+ const numeric=/^Win32 error (2|3|5|32|33|123)$/.exec(reason),hresult=/^0x800700(02|03|05|20|21|7b)$/i.exec(reason);
+ const code=numeric?Number(numeric[1]):hresult?Number.parseInt(hresult[1]!,16):undefined;
+ if(code!==undefined)osReason=code===5?'ACCESS_DENIED':code===32||code===33?'SHARING_VIOLATION':code===2||code===3?'NOT_FOUND':'OTHER_OS_REASON';
+ const matches=new Set<SourceOpenDetail['osReason']>();if(osReason!=='UNKNOWN')matches.add(osReason);
+ // catalog은 호출자가 현재 OS에서 메모리에만 읽어 온 고정 code의 UTF8/ANSI bytes다. getter/Proxy는 소비하지 않는다.
+ for(const code of [2,3,5,32,33])for(const encoding of ['utf8','ansi']){
+  const entry=compileOwn(osMessages,String(code)),copy=compileBytes(compileOwn(entry,encoding),4096);
+  if(!copy)continue;
+  try{if(copy.total===copy.prefix.length&&copy.total>0&&Buffer.from(copy.prefix).toString('latin1')===reason)matches.add(code===5?'ACCESS_DENIED':code===32||code===33?'SHARING_VIOLATION':'NOT_FOUND');}finally{copy.prefix.fill(0);}
+ }
+ osReason=matches.size===1?matches.values().next().value!:'UNKNOWN';
+ return {fileRole,osReason};
+}
 function compileOwn(error:unknown,key:string):unknown{
  try{if(!error||typeof error!=='object'||types.isProxy(error))return undefined;const d=Object.getOwnPropertyDescriptor(error,key);return d&&'value'in d?d.value:undefined;}catch{return undefined;}
 }
@@ -44,13 +80,15 @@ export function checkCompileOnlyRunBinding(value:unknown,currentSha:string,hostH
  }catch{return false;}
 }
 /** 예외는 인증된 증거가 아니다. own data만 유한 정규화하고 원문/메시지/stack은 반환하지 않는다. */
-export function compileFailureReceipt(error:unknown,elapsedMs:number,sourceAbsolute?:string){
+export function compileFailureReceipt(error:unknown,elapsedMs:number,sourceAbsolute?:string,osMessages?:unknown){
  const own=(key:string)=>compileOwn(error,key);
  const numeric=(v:unknown,min:number,max=2147483647)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max?v:'UNKNOWN' as const;
  const status=numeric(own('status'),-2147483648,4294967295),pid=numeric(own('pid'),1),rawSignal=own('signal'),rawCode=own('code');
  const signal=rawSignal===null?null:typeof rawSignal==='string'&&['SIGTERM','SIGKILL','SIGINT','SIGABRT','SIGSEGV','SIGBREAK'].includes(rawSignal)?rawSignal:'UNKNOWN';
  const code=typeof rawCode==='string'&&['ETIMEDOUT','EACCES','EPERM','ENOENT','ENOEXEC','E2BIG','ENOMEM','ENOBUFS','ERR_CHILD_PROCESS_STDIO_MAXBUFFER'].includes(rawCode)?rawCode:'UNKNOWN';
  const diagnostics:{code:string;severity:'error'|'warning';source:string;line:number|'UNKNOWN';column:number|'UNKNOWN'}[]=[];
+ const sourceOpenCandidates:SourceOpenDetail[]=[];
+ const detail=(code:string,severity:string,message:string)=>{if(code.toUpperCase()==='CS1504'&&severity.toLowerCase()==='error')sourceOpenCandidates.push(sourceOpenDetail(message,sourceAbsolute,osMessages));};
  function stream(value:unknown){
   try{
    const copied=compileBytes(value,131072);if(!copied)throw Error('UNKNOWN_BUFFER');
@@ -61,30 +99,34 @@ export function compileFailureReceipt(error:unknown,elapsedMs:number,sourceAbsol
    for(const row of text.split(/\r?\n/)){
     if(diagnostics.length>=32)break;
     const global=/^\s*(?:CSC\s*:\s*)?(?:fatal\s+)?(error|warning)\s+(CS[0-9]{4})\s*:/i.exec(row);
-    if(global){diagnostics.push({code:global[2]!.toUpperCase(),severity:global[1]!.toLowerCase() as 'error'|'warning',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'});continue;}
+    if(global){diagnostics.push({code:global[2]!.toUpperCase(),severity:global[1]!.toLowerCase() as 'error'|'warning',source:'UNKNOWN',line:'UNKNOWN',column:'UNKNOWN'});detail(global[2]!,global[1]!,row.slice(global[0].length));continue;}
     const m=/^\s*(.+?\.cs)(?:\(([0-9]{1,7})(?:,([0-9]{1,7}))?\))?\s*:\s*(?:fatal\s+)?(error|warning)\s+(CS[0-9]{4})\s*:/i.exec(row);
     if(!m)continue;const path=m[1]!.replaceAll('\\','/');
     const allowed=path===compileSource||typeof sourceAbsolute==='string'&&path===sourceAbsolute.replaceAll('\\','/');
     const line=allowed&&m[2]&&Number(m[2])>0?Number(m[2]):'UNKNOWN',column=allowed&&m[3]&&Number(m[3])>0?Number(m[3]):'UNKNOWN';
     diagnostics.push({code:m[5]!.toUpperCase(),severity:m[4]!.toLowerCase() as 'error'|'warning',source:allowed?compileSource:'UNKNOWN',line,column});
+    detail(m[5]!,m[4]!,row.slice(m[0].length));
    }
    prefix.fill(0);return {bytes,sha256,hashedBytes,truncated:bytes>hashedBytes};
   }catch{return {bytes:'UNKNOWN' as const,sha256:'UNKNOWN',hashedBytes:0,truncated:'UNKNOWN' as const};}
  }
  const stdout=stream(own('stdout')),stderr=stream(own('stderr'));
- return {classification:code==='ETIMEDOUT'?'TIMEOUT':status!=='UNKNOWN'&&status!==0?'NONZERO':['EACCES','EPERM','ENOENT','ENOEXEC','E2BIG','ENOMEM'].includes(code)?'SPAWN_ERROR':'UNKNOWN',status,signal,code,pid,elapsedMs:numeric(elapsedMs,0),stdout,stderr,diagnostics};
+ const classification=code==='ETIMEDOUT'?'TIMEOUT':status!=='UNKNOWN'&&status!==0?'NONZERO':['EACCES','EPERM','ENOENT','ENOEXEC','E2BIG','ENOMEM'].includes(code)?'SPAWN_ERROR':'UNKNOWN';
+ const failed=classification!=='UNKNOWN'&&status!==0;
+ const sourceOpenFailure=failed&&sourceOpenCandidates.length?sourceOpenCandidates.length===1&&stdout.truncated===false&&stderr.truncated===false&&diagnostics.length<32?sourceOpenCandidates[0]!:unknownSourceOpen():undefined;
+ return {classification,status,signal,code,pid,elapsedMs:numeric(elapsedMs,0),stdout,stderr,diagnostics,...(sourceOpenFailure?{sourceOpenFailure}:{})};
 }
 /** compile 콜백만 소비하는 단일 시도. native 실행 함수를 받지 않으며 성공 후에도 종료한다. */
 export class CompileOnlyAttempt{
  #used=false;
  #capture:ReturnType<typeof compileCapture>|undefined;
  takeCapture(){const result=this.#capture;this.#capture=undefined;return result;}
- run(authorized:boolean,compile:()=>Uint8Array,clock:()=>number,sourceAbsolute?:string){
+ run(authorized:boolean,compile:()=>Uint8Array,clock:()=>number,sourceAbsolute?:string,osMessages?:unknown){
   if(this.#used)throw Error('QA_COMPILE_ONLY_ALREADY_USED');this.#used=true;
   if(!authorized)throw Error('QA_COMPILE_ONLY_NOT_AUTHORIZED');
   const start=clock();
   try{const stdout=compile();return {outcome:'COMPILED_NOT_EXECUTED' as const,nativeStarted:false as const,receipt:compileFailureReceipt({status:0,stdout},Math.floor(clock()-start),sourceAbsolute)};}
-  catch(error){const receipt=compileFailureReceipt(error,Math.floor(clock()-start),sourceAbsolute);if(receipt.diagnostics.length===0)this.#capture=compileCapture(error);return {outcome:'COMPILE_FAILED' as const,nativeStarted:false as const,receipt};}
+  catch(error){const receipt=compileFailureReceipt(error,Math.floor(clock()-start),sourceAbsolute,osMessages);if(receipt.diagnostics.length===0)this.#capture=compileCapture(error);return {outcome:'COMPILE_FAILED' as const,nativeStarted:false as const,receipt};}
  }
 }
 export class HandshakeHostFrames{

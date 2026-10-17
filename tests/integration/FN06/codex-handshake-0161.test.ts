@@ -17,6 +17,18 @@ const digest=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex'
 const hash=async(path:string)=>digest(await readFile(path));
 async function absent(path:string){try{await lstat(path);return false;}catch(e:any){if(e.code==='ENOENT')return true;throw Error('QA_PATH_UNKNOWN');}}
 function powershell(script:string){try{return execFileSync(ps,['-NoProfile','-Command',"$ErrorActionPreference='Stop';"+script],{encoding:'utf8',windowsHide:true,stdio:'pipe',timeout:10000,maxBuffer:131072});}catch{throw Error('QA_READ_OR_PROTECTION_FAILED');}}
+// OS 표준 문구는 이 process 메모리에만 두고 원문/bytes를 receipt·파일·로그로 반환하지 않는다.
+function compileOsMessages(){
+ const value=JSON.parse(powershell("[Text.Encoding]::RegisterProvider([Text.CodePagesEncodingProvider]::Instance);$cp=[Globalization.CultureInfo]::CurrentCulture.TextInfo.ANSICodePage;$ansi=[Text.Encoding]::GetEncoding($cp);$utf8=[Text.UTF8Encoding]::new($false,$true);$entries=@{};foreach($code in @(2,3,5,32,33)){$msg=[ComponentModel.Win32Exception]::new($code).Message;$a=$ansi.GetBytes($msg);$entries[[string]$code]=@{utf8=[Convert]::ToBase64String($utf8.GetBytes($msg));ansi=if($ansi.GetString($a) -ceq $msg){[Convert]::ToBase64String($a)}else{''}}};@{ansiCodePage=$cp;entries=$entries}|ConvertTo-Json -Depth 4 -Compress"));
+ need(Number.isSafeInteger(value.ansiCodePage)&&value.ansiCodePage>0&&value.ansiCodePage<=65535&&value.entries,'QA_OS_CATALOG_INVALID');
+ const messages:Record<string,{utf8:Buffer;ansi:Buffer}>={};
+ for(const code of [2,3,5,32,33]){
+  const entry=value.entries[String(code)];need(entry&&typeof entry.utf8==='string'&&typeof entry.ansi==='string','QA_OS_CATALOG_INVALID');
+  const utf8=Buffer.from(entry.utf8,'base64'),ansi=Buffer.from(entry.ansi,'base64');
+  need(utf8.length>0&&utf8.length<=4096&&ansi.length<=4096&&utf8.toString('base64')===entry.utf8&&ansi.toString('base64')===entry.ansi,'QA_OS_CATALOG_INVALID');messages[String(code)]={utf8,ansi};
+ }
+ return {messages,summary:{source:'CURRENT_OS_WIN32EXCEPTION' as const,ansiCodePage:value.ansiCodePage as number,codes:[2,3,5,32,33]}};
+}
 function runtime(){
  const value=JSON.parse(powershell("$p=@(Get-CimInstance Win32_Process -Filter 'ProcessId=19960 OR ProcessId=26052'|ForEach-Object{@{pid=[int]$_.ProcessId;exe=$_.ExecutablePath;start=$_.CreationDate.ToUniversalTime().ToString('o')}});$l=@(Get-NetTCPConnection -State Listen -LocalPort 3830|ForEach-Object{@{pid=[int]$_.OwningProcess;address=$_.LocalAddress}});@{p=$p;l=$l}|ConvertTo-Json -Depth 4 -Compress"));
  need(value.p?.length===2&&value.l?.length===1&&value.l[0].pid===19960&&value.l[0].address==='127.0.0.1','QA_RUNTIME_CHANGED');
@@ -49,8 +61,10 @@ async function compileOnlyQa(){
   await mkdir(join(root,'bin'));await mkdir(join(root,'diagnostics'));await writeFile(join(root,'diagnostics','binding.json'),JSON.stringify(binding),{flag:'wx'});
   const helper=join(root,'bin','CodexHandshakeHost.exe');
   need(await hash(source)===hostHash&&await hash(csc)===compilerHash,'QA_SOURCE_CHANGED');runtime();
-  const attempt=new CompileOnlyAttempt();
-  const result=attempt.run(valid(),()=>execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072}),()=>performance.now(),win32.resolve(source));
+  const attempt=new CompileOnlyAttempt(),osCatalog=compileOsMessages();
+  let result:ReturnType<CompileOnlyAttempt['run']>;
+  try{result=attempt.run(valid(),()=>execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072}),()=>performance.now(),win32.resolve(source),osCatalog.messages);}
+  finally{for(const entry of Object.values(osCatalog.messages)){entry.utf8.fill(0);entry.ansi.fill(0);}}
   const capture=attempt.takeCapture();let rawDiagnosticRecord;
   if(capture){
    try{
@@ -65,7 +79,7 @@ async function compileOnlyQa(){
     rawDiagnosticRecord={...capture.summary,inspection:capture.inspection,reviewed:true,retained:false};await unlink(rawFile);need(await absent(rawFile),'QA_RAW_CAPTURE_REMAINS');
    }finally{capture.bytes.fill(0);}
   }
-  const safe={kind:'FN06_COMPILE_ONLY_RECEIPT',sourceSha:current,hostSourceHash:hostHash,compilerHash,runId:binding.runId,...result,rawDiagnosticRecord,helperStarted:false,jobStarted:false,handshakeStarted:false};
+  const safe={kind:'FN06_COMPILE_ONLY_RECEIPT',sourceSha:current,hostSourceHash:hostHash,compilerHash,runId:binding.runId,...result,osReasonCatalog:osCatalog.summary,rawDiagnosticRecord,helperStarted:false,jobStarted:false,handshakeStarted:false};
   await writeFile(join(root,'diagnostics','result.json'),JSON.stringify(safe),{flag:'wx'});console.log(JSON.stringify(safe));
   need(await hash(source)===hostHash&&await hash(csc)===compilerHash,'QA_SOURCE_CHANGED');runtime();
   // 컴파일러 종료를 확인 못한 실패는 정리를 강행하지 않고 원인과 잔여를 보존한다.

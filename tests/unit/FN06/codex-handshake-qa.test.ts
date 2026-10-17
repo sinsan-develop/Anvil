@@ -154,6 +154,89 @@ test('compile-only는 별도 policy·compiler hash·정확 후보·유한 창으
  assert.equal(check({...v,runId:'56d83f93-1f39-4cac-874f-22df04596dae'},sha,host,compiler,now),false);
  assert.equal(check({...v,runId:'abbe0980-d51c-46b3-ae63-b84ccf14a865'},sha,host,compiler,now),false);
 });
+// 새 상세를 잃거나 임의 문구/경로를 근거로 known으로 승격하는 회귀를 잡는다. OS/컴파일러 실행은 없다.
+test('실패 CS1504의 정확한 source 역할과 허용 OS 문구·코드만 enum으로 남긴다',()=>{
+ const source='apps/connector/native/CodexHandshakeHost.cs',absolute='C:\\repo\\apps\\connector\\native\\CodexHandshakeHost.cs';
+ const cases=[
+  [source,'Access is denied.','SOURCE_ARG','ACCESS_DENIED'],
+  [absolute,'The process cannot access the file because it is being used by another process.','SOURCE_ARG','SHARING_VIOLATION'],
+  ['C:\\PRIVATE_TOKEN\\other.cs','The system cannot find the file specified.','OTHER_SOURCE','NOT_FOUND'],
+  [source,'The system cannot find the path specified.','SOURCE_ARG','NOT_FOUND'],
+  [source,'The filename, directory name, or volume label syntax is incorrect.','SOURCE_ARG','OTHER_OS_REASON'],
+  [source,'Win32 error 5','SOURCE_ARG','ACCESS_DENIED'],
+  [source,'Win32 error 32','SOURCE_ARG','SHARING_VIOLATION'],
+  [source,'0x80070002','SOURCE_ARG','NOT_FOUND'],
+  [source,'0x80070003','SOURCE_ARG','NOT_FOUND'],
+  [source,'0x8007007B','SOURCE_ARG','OTHER_OS_REASON'],
+  [source,'PRIVATE_TOKEN','SOURCE_ARG','UNKNOWN'],
+ ] as const;
+ for(const [file,reason,fileRole,osReason]of cases){
+  const r=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(`error CS1504: Source file '${file}' could not be opened -- '${reason}'\r\n`),stderr:Buffer.alloc(0)},1,absolute) as any;
+  assert.deepEqual(r.sourceOpenFailure,{fileRole,osReason});assert.equal(JSON.stringify(r).includes('PRIVATE_TOKEN'),false);assert.equal(JSON.stringify(r).includes(absolute),false);
+ }
+});
+test('공식 CS1504 괄호 형식과 CSC·파일 origin에서도 정확 필드만 읽는다',()=>{
+ for(const prefix of ['error CS1504:','CSC : error CS1504:','apps/connector/native/CodexHandshakeHost.cs: error CS1504:']){
+  const r=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(`${prefix} Source file 'apps\\connector\\native\\CodexHandshakeHost.cs' could not be opened ('Access is denied.')\n`),stderr:Buffer.alloc(0)},1) as any;
+  assert.deepEqual(r.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'ACCESS_DENIED'});
+ }
+});
+test('상세는 비0 실패와 정규화 error CS1504에만 생기고 출력 공백·잘림·한도는 UNKNOWN이다',()=>{
+ const row="error CS1504: Source file 'apps/connector/native/CodexHandshakeHost.cs' could not be opened -- 'Access is denied.'\n";
+ for(const error of [{status:0,stdout:Buffer.from(row),stderr:Buffer.alloc(0)},{stdout:Buffer.from(row),stderr:Buffer.alloc(0)},{status:1,stdout:Buffer.from(row.replace('error','warning')),stderr:Buffer.alloc(0)},{status:1,stdout:Buffer.from(row.replace('CS1504','CS1503')),stderr:Buffer.alloc(0)},{status:1,stdout:Buffer.from('message contains '+row),stderr:Buffer.alloc(0)}])assert.equal((compileQa.compileFailureReceipt(error,1) as any).sourceOpenFailure,undefined);
+ for(const error of [{status:1,stdout:Buffer.from(row)},{status:1,stdout:Buffer.from(row+'A'.repeat(131072)),stderr:Buffer.alloc(0)},{status:1,stdout:Buffer.from(row+'warning CS2008: X\n'.repeat(32)),stderr:Buffer.alloc(0)}])assert.deepEqual((compileQa.compileFailureReceipt(error,1) as any).sourceOpenFailure,{fileRole:'UNKNOWN',osReason:'UNKNOWN'});
+});
+test('복수 CS1504·지역화·비ASCII/손상·문구추가·경로흉내는 상세 known으로 추측하지 않는다',()=>{
+ const row="error CS1504: Source file 'apps/connector/native/CodexHandshakeHost.cs' could not be opened -- 'Access is denied.'";
+ for(const stdout of [row+'\n'+row,row.replace('Access is denied.',"Access is denied.' or 'Win32 error 2"),row.replace('Source file','Source file PRIVATE_TOKEN'),row.replace('Access is denied.','Access is denied.\nWin32 error 2'),row.replace('CodexHandshakeHost.cs',"Codex'HandshakeHost.cs"),Buffer.concat([Buffer.from(row),Buffer.from([0xff])])]){
+  const r=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(stdout),stderr:Buffer.alloc(0)},1) as any;
+  assert.deepEqual(r.sourceOpenFailure,{fileRole:'UNKNOWN',osReason:'UNKNOWN'});assert.equal(JSON.stringify(r).includes('PRIVATE_TOKEN'),false);
+ }
+ const mixed=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(row),stderr:Buffer.from(row.replace('Access is denied.','Win32 error 2'))},1) as any;assert.deepEqual(mixed.sourceOpenFailure,{fileRole:'UNKNOWN',osReason:'UNKNOWN'});
+ const fakePath=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(row.replace('apps/connector/native/CodexHandshakeHost.cs','PRIVATE_TOKEN')),stderr:Buffer.alloc(0)},1) as any;assert.deepEqual(fakePath.sourceOpenFailure,{fileRole:'UNKNOWN',osReason:'ACCESS_DENIED'});
+ const extra=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(row.replace('Access is denied.','Access is denied. PRIVATE_TOKEN')),stderr:Buffer.alloc(0)},1) as any;assert.deepEqual(extra.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'UNKNOWN'});
+ // PMO 후속 계약: 비ASCII reason은 source의 정확 일치와 별도로 판정한다. 임의 지역화는 이유 UNKNOWN.
+ const localized=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(row.replace('Access is denied.','고정되지 않은 문구')),stderr:Buffer.alloc(0)},1) as any;assert.deepEqual(localized.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'UNKNOWN'});
+});
+test('PMO 지역화 계약: 허용 OS catalog의 UTF8·ANSI bytes만 대조하고 source는 독립 정확 일치다',()=>{
+ // fixture는 실제 OS 문구/설치 locale 판정이 아니다. 실제 catalog 읽기는 별도 읽기 대조한다.
+ const messages={2:{utf8:Buffer.from('정해진 파일 없음'),ansi:Buffer.from([0x81,0x41])},3:{utf8:Buffer.from('정해진 경로 없음'),ansi:Buffer.from([0x81,0x42])},5:{utf8:Buffer.from('정해진 접근 거절'),ansi:Buffer.from([0x81,0x43])},32:{utf8:Buffer.from('정해진 공유 위반'),ansi:Buffer.from([0x81,0x44])},33:{utf8:Buffer.from('정해진 잠금 위반'),ansi:Buffer.from([0x81,0x45])}};
+ const source='apps/connector/native/CodexHandshakeHost.cs';
+ for(const [code,want]of [[2,'NOT_FOUND'],[3,'NOT_FOUND'],[5,'ACCESS_DENIED'],[32,'SHARING_VIOLATION'],[33,'SHARING_VIOLATION']] as const){
+  for(const bytes of [messages[code].utf8,messages[code].ansi]){
+   const stdout=Buffer.concat([Buffer.from(`error CS1504: '${source}' 원본을 열 수 없습니다 ('`),bytes,Buffer.from("')\n")]);
+   const r=(compileQa.compileFailureReceipt as any)({status:1,stdout,stderr:Buffer.alloc(0)},1,undefined,messages);
+   assert.deepEqual(r.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:want});assert.equal(JSON.stringify(r).includes('정해진'),false);
+  }
+ }
+ const row=`error CS1504: Source file '${source}' could not be opened -- 'Access is denied.'\n`;
+ for(const bad of ['./'+source,'apps/connector/../connector/native/CodexHandshakeHost.cs',source.toUpperCase()]){
+  const r=compileQa.compileFailureReceipt({status:1,stdout:Buffer.from(row.replace(source,bad)),stderr:Buffer.alloc(0)},1) as any;assert.deepEqual(r.sourceOpenFailure,{fileRole:'UNKNOWN',osReason:'ACCESS_DENIED'});
+ }
+ let reads=0;const hostile=Object.defineProperty({},'5',{get(){reads++;throw Error('PRIVATE_TOKEN');}});
+ const bytes=Buffer.concat([Buffer.from(`error CS1504: Source file '${source}' could not be opened -- '`),messages[5].utf8,Buffer.from("'\n")]);
+ for(const catalog of [undefined,hostile,new Proxy({},{getOwnPropertyDescriptor(){reads++;throw Error('PRIVATE_TOKEN');}}),{...messages,2:messages[5]}]){
+  const r=(compileQa.compileFailureReceipt as any)({status:1,stdout:bytes,stderr:Buffer.alloc(0)},1,undefined,catalog);assert.deepEqual(r.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'UNKNOWN'});
+ }
+ assert.equal(reads,0);
+});
+test('CS1504 상세는 getter·Proxy·가짜 buffer와 message의 비밀을 읽지 않는다',()=>{
+ const row="error CS1504: Source file 'apps/connector/native/CodexHandshakeHost.cs' could not be opened -- 'Win32 error 5'\n";
+ let reads=0;const secret=()=>{reads++;throw Error('PRIVATE_TOKEN');};
+ const hostile=Object.defineProperty({status:1,stdout:Buffer.from(row),stderr:Buffer.alloc(0)},'message',{get:secret});
+ const r=compileQa.compileFailureReceipt(hostile,1) as any;assert.deepEqual(r.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'ACCESS_DENIED'});
+ for(const value of [new Proxy({},{getOwnPropertyDescriptor:secret}),Object.defineProperty({status:1},'stdout',{get:secret}),{status:1,stdout:new Proxy(Buffer.from(row),{get:secret}),stderr:Buffer.alloc(0)},{status:1,stdout:Object.create(Buffer.prototype),stderr:Buffer.alloc(0)}])assert.equal((compileQa.compileFailureReceipt(value,1) as any).sourceOpenFailure,undefined);
+ assert.equal(reads,0);assert.equal(JSON.stringify(r).includes('PRIVATE_TOKEN'),false);
+});
+test('CS1504 dispatcher 상세가 safe receipt에 이어지고 기존 raw 허용조건은 넓어지지 않는다',()=>{
+ const row="error CS1504: Source file 'apps/connector/native/CodexHandshakeHost.cs' could not be opened -- 'Win32 error 32'\n";
+ const gate=new compileQa.CompileOnlyAttempt();const r=gate.run(true,()=>{throw {status:1,stdout:Buffer.from(row),stderr:Buffer.alloc(0)};},()=>1);
+ assert.equal(r.outcome,'COMPILE_FAILED');assert.deepEqual((r.receipt as any).sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'SHARING_VIOLATION'});assert.equal(gate.takeCapture(),undefined);assert.equal(r.nativeStarted,false);
+ const ok=new compileQa.CompileOnlyAttempt();const success=ok.run(true,()=>Buffer.from(row),()=>1);assert.equal((success.receipt as any).sourceOpenFailure,undefined);assert.equal(ok.takeCapture(),undefined);
+ const catalog={5:{utf8:Buffer.from('순수 접근 거절'),ansi:Buffer.alloc(0)}};const localized=new compileQa.CompileOnlyAttempt();
+ const lr=localized.run(true,()=>{throw {status:1,stdout:Buffer.from("error CS1504: Source file 'apps/connector/native/CodexHandshakeHost.cs' could not be opened ('순수 접근 거절')\n"),stderr:Buffer.alloc(0)};},()=>1,undefined,catalog);
+ assert.deepEqual(lr.receipt.sourceOpenFailure,{fileRole:'SOURCE_ARG',osReason:'ACCESS_DENIED'});assert.equal(localized.takeCapture(),undefined);assert.equal(JSON.stringify(lr).includes('순수 접근 거절'),false);
+});
 test('compile-only dispatcher는 성공·실패 모두 compile콜백1회로 끝나고 같은 gate 재호출을 거절한다',()=>{
  const Gate=(compileQa as any).CompileOnlyAttempt;assert.equal(typeof Gate,'function');
  let calls=0;const success=new Gate();
