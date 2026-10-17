@@ -1,8 +1,8 @@
 import{test,expect,type Page}from'@playwright/test';import{readFile}from'node:fs/promises';import{pathToFileURL}from'node:url';import{canonicalJson,contentHash}from'../../../contracts/canonical.ts';import{protocolFixture}from'../../unit/FN08/source-read-protocol-fixtures.ts';import{a3Id,rehashReport,sourceReadFixture}from'../../unit/FN08/source-read-fixtures.ts';import{ProjectRegistrationReads}from'../../../apps/server/modules/connections/project-registration-reads.ts';
-async function fixture(page:Page,options:{viewer?:boolean;lost?:boolean;bad?:boolean}={}){
+async function fixture(page:Page,options:{viewer?:boolean;lost?:boolean;bad?:boolean;stored?:boolean}={}){
  const dist=process.env.ANVIL_A3_WEB_DIST;if(!dist)throw Error('REGISTERED_CANDIDATE_DIST_REQUIRED');const f=protocolFixture(),pid=f.scope.projectId,s={user:{id:f.scope.userId,displayName:'관측 합성 QA'},clientId:f.scope.clientId,csrfToken:'C'.repeat(43)},db=await f.access.pool.connect(),registration=await new ProjectRegistrationReads(f.scope.installationId).read(db,{actorId:s.user.id,clientId:s.clientId,credentialGeneration:2,reauthUntil:f.at(60000),serverOwner:false},pid,f.scope.registrationRef.id),snapshot={declaration:f.grant.source_declaration_json,status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',reason:f.grant.source_reason},root={projectId:pid,ref:f.scope.sourceRootRef,headVersion:1,displayName:snapshot.declaration.displayName,status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',executionAuthorized:false,rawAllowed:!options.viewer,...(!options.viewer?{snapshot,recordedBy:s.user.id,recordedAt:f.scope.requestedAt,protectedRef:`db-source-root-version:${f.scope.sourceRootRef.id}:1`}:{})},flags={executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false},writes:any[]=[],unknown:string[]=[],errors:string[]=[],offOrigin:string[]=[],receipts=new Map<string,any>();let grant:any=null,report:any=null,lost=!!options.lost;
  function stored(scope:any){const ref={id:a3Id(70),version:1,contentHash:contentHash(canonicalJson(scope))},base=sourceReadFixture().report,raw=rehashReport({...base,grantRef:ref,scopeDigest:ref.contentHash,connectorRef:scope.connectorRef,hostFingerprint:scope.hostFingerprint,root:{...base.root,facts:{...base.root.facts,declaredRootRef:scope.sourceRootRef}}}),sr={id:a3Id(75),version:1,contentHash:raw.contentHash};grant={projectId:pid,grantRef:ref,snapshotRef:sr,scopeDigest:ref.contentHash,displayName:root.displayName,targetCount:1,storedState:'REPORT_STORED',effectiveState:'REPORTED_OS_UNVERIFIED',invalidReasons:[],expiresAt:scope.expiresAt,observedAt:f.at(3000).toISOString(),...flags,rawAllowed:!options.viewer,...(!options.viewer?{scope,declaredPathHint:snapshot.declaration.pathHint}:{})};report={projectId:pid,snapshotRef:sr,grantRef:ref,sourceRootRef:scope.sourceRootRef,connectorRef:scope.connectorRef,observedSummary:{rootState:'OBSERVED',total:1,observed:1,missing:0,denied:0,changed:0,unverified:0},observedAt:raw.observedAt,finishedAt:raw.finishedAt,receivedAt:sourceReadFixture().context.receivedAt,evidenceClass:'CONNECTOR_REPORTED',osVerification:'UNVERIFIED',...flags,rawAllowed:!options.viewer,...(!options.viewer?{report:raw}:{})};}
- if(options.viewer||options.bad)stored(f.scope);page.on('pageerror',e=>errors.push(e.name));page.on('request',r=>{if(new URL(r.url()).origin!=='https://localhost:3830')offOrigin.push(new URL(r.url()).origin);});await page.route('**/*',r=>new URL(r.request().url()).origin==='https://localhost:3830'?r.fallback():r.abort('blockedbyclient'));
+ if(options.viewer||options.bad||options.stored)stored(f.scope);page.on('pageerror',e=>errors.push(e.name));page.on('request',r=>{if(new URL(r.url()).origin!=='https://localhost:3830')offOrigin.push(new URL(r.url()).origin);});await page.route('**/*',r=>new URL(r.request().url()).origin==='https://localhost:3830'?r.fallback():r.abort('blockedbyclient'));
  await page.route('https://localhost:3830/**',async r=>{const p=new URL(r.request().url()).pathname;if(p.startsWith('/api/'))return r.fallback();if(p!=='/'&&!/^\/assets\/[A-Za-z0-9_.-]+$/.test(p))return r.abort('blockedbyclient');const n=p==='/'?'index.html':p.slice(1);return r.fulfill({body:await readFile(new URL(n,pathToFileURL(dist+'/'))),contentType:n.endsWith('.html')?'text/html':n.endsWith('.css')?'text/css':'application/javascript'});});
  await page.route('**/api/v1/**',async r=>{const u=new URL(r.request().url()),p=u.pathname;let v:any;
   if(p==='/api/v1/session')v=s;else if(p==='/api/v1/auth/setup')v={setupRequired:false,policyVersion:1};else if(p===`/api/v1/projects/${pid}`)v={id:pid,participation:options.viewer?'VIEWER':'OWNER',controlState:{actorId:s.user.id,clientId:s.clientId,generation:3,status:'HELD'}};
@@ -14,8 +14,62 @@ async function fixture(page:Page,options:{viewer?:boolean;lost?:boolean;bad?:boo
   else{unknown.push(r.request().method()+' '+p);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});}return r.fulfill({json:v});});return{pid,root,writes,unknown,errors,offOrigin};
 }
 const panel=(p:Page)=>p.getByRole('region',{name:'읽기 관측 요청',exact:true});
+async function otherProject(page:Page,pid:string){
+ const f=protocolFixture(),base='/api/v1/projects/'+pid;
+ await page.route(url=>url.pathname===base||url.pathname.startsWith(base+'/'),r=>{const path=new URL(r.request().url()).pathname;let value:any;
+  if(path===base)value={id:pid,participation:'OWNER',controlState:{actorId:f.scope.userId,clientId:f.scope.clientId,generation:3,status:'HELD'}};
+  else if(path.endsWith('/connection-candidates'))value={view:'CANDIDATES_ONLY',items:[],hasMore:false,nextCursor:null,observedAt:f.scope.requestedAt};
+  else if(path.endsWith('/source-roots'))value={view:'SOURCE_ROOT_DECLARATIONS',items:[],hasMore:false,nextCursor:null,observedAt:f.scope.requestedAt};
+  else if(path.endsWith('/source-read-grants'))value={view:'SOURCE_READ_GRANTS',items:[],hasMore:false,nextCursor:null,observedAt:f.scope.requestedAt};
+  else if(path.endsWith('/connector-registrations'))return r.fulfill({status:412,json:{code:'PERMISSION_POLICY_UNCONFIGURED'}});
+  else return r.fallback();return r.fulfill({json:value});
+ });
+}
+async function switchProject(page:Page,pid:string){await page.evaluate(id=>{location.hash='#/projects/'+id+'/connections';},pid);await expect(panel(page)).toBeVisible();}
+/** 합성 시험 전용. 마지막 검증 digest의 결과는 바꾸지 않고 완료를 제어·관찰한다. 원문은 보관하지 않는다. */
+async function processingBarrier(page:Page,kind:'scope'|'report'){
+ await page.addInitScript(selected=>{
+  const native=crypto.subtle.digest.bind(crypto.subtle);let release!:()=>void;const gate=new Promise<void>(r=>release=r),state={started:0,completed:0,release};
+  (window as any).__anvilA3Processing=state;
+  crypto.subtle.digest=async(...args:Parameters<SubtleCrypto['digest']>)=>{
+   let matches=false;try{const input=args[1],bytes=ArrayBuffer.isView(input)?new Uint8Array(input.buffer,input.byteOffset,input.byteLength):new Uint8Array(input as ArrayBuffer),value=JSON.parse(new TextDecoder().decode(bytes));matches=selected==='scope'?value?.purpose==='SOURCE_READ_OBSERVATION':Array.isArray(value?.files)&&!!value?.localEvidence;}catch{}
+   const result=await native(...args);if(matches){state.started++;await gate;state.completed++;}return result;
+  };
+ },kind);
+}
+async function finishProcessing(page:Page){
+ await expect.poll(()=>page.evaluate(()=>(window as any).__anvilA3Processing.started)).toBeGreaterThan(0);
+ expect(await page.evaluate(()=>(window as any).__anvilA3Processing.completed)).toBe(0);
+ await page.evaluate(()=>(window as any).__anvilA3Processing.release());
+ await expect.poll(()=>page.evaluate(()=>(window as any).__anvilA3Processing.completed)).toBeGreaterThan(0);
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+}
 async function begin(page:Page,pid:string){await page.goto(`/#/projects/${pid}/connections`);await page.getByRole('button',{name:'소스 정확 버전 보기',exact:true}).click();await page.getByLabel('관측 신뢰 등록 ID',{exact:true}).fill(a3Id(3));await page.getByRole('button',{name:'이 소스 읽기 관측 작성',exact:true}).click();await page.getByLabel('관측 상대 파일 목록',{exact:true}).fill('src/main.ts');await page.getByLabel('관측 이유',{exact:true}).fill('지정 파일 메타데이터 확인');await page.getByLabel('선언 경로·파일·이번 이유를 지정 Connector에 전달함을 확인했습니다',{exact:true}).check();}
 function clean(s:Awaited<ReturnType<typeof fixture>>){expect(s.unknown).toEqual([]);expect(s.errors).toEqual([]);expect(s.offOrigin).toEqual([]);}
+
+test('교차 프로젝트 전환 중 늦은 관측 저장은 원 프로젝트 buffer에만 정착한다',async({page})=>{
+ await processingBarrier(page,'scope');const s=await fixture(page),other=a3Id(94);await otherProject(page,other);
+ let release!:()=>void,arrived!:()=>void;const gate=new Promise<void>(r=>release=r),entered=new Promise<void>(r=>arrived=r);
+ await page.route('**/api/v1/projects/'+s.pid+'/commands',async r=>{arrived();await gate;await r.fallback();});
+ try{await begin(page,s.pid);await page.getByRole('button',{name:'읽기 관측 요청 저장',exact:true}).click();await entered;
+  await switchProject(page,other);await expect(page.getByLabel('관측 상대 파일 목록',{exact:true})).toHaveCount(0);await expect(panel(page).getByText('허가 저장 확인 · 관측 실행 여부 미확인',{exact:true})).toHaveCount(0);
+  const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/v1/projects/'+s.pid+'/commands');release();await (await response).finished();await finishProcessing(page);
+  expect(await page.evaluate(()=>location.hash)).toBe('#/projects/'+other+'/connections');await expect(page.getByLabel('관측 상대 파일 목록',{exact:true})).toHaveCount(0);await expect(panel(page).getByText('허가 저장 확인 · 관측 실행 여부 미확인',{exact:true})).toHaveCount(0);
+  await switchProject(page,s.pid);await expect(panel(page).getByText('허가 저장 확인 · 관측 실행 여부 미확인',{exact:true})).toBeVisible();await expect(page.getByLabel('관측 상대 파일 목록',{exact:true})).toHaveValue('src/main.ts');
+  await switchProject(page,other);await expect(page.getByLabel('관측 상대 파일 목록',{exact:true})).toHaveCount(0);await expect(panel(page).getByText('허가 저장 확인 · 관측 실행 여부 미확인',{exact:true})).toHaveCount(0);expect(s.writes).toHaveLength(1);clean(s);
+ }finally{release();}
+});
+test('늦은 보관 보고는 같은 프로젝트의 새 상세 선택을 덮지 않는다',async({page})=>{
+ await processingBarrier(page,'report');const s=await fixture(page,{stored:true});let release!:()=>void,arrived!:()=>void;const gate=new Promise<void>(r=>release=r),entered=new Promise<void>(r=>arrived=r);
+ await page.route('**/api/v1/projects/'+s.pid+'/source-snapshots/**',async r=>{arrived();await gate;await r.fallback();});
+ try{await page.goto('/#/projects/'+s.pid+'/connections');await page.getByRole('button',{name:'관측 허가 상세',exact:true}).click();await page.getByRole('button',{name:'보관 관측 보고 보기',exact:true}).click();await entered;
+  await page.getByRole('button',{name:'관측 허가 상세',exact:true}).click();await expect(page.getByRole('region',{name:'관측 허가 상세',exact:true})).toBeVisible();
+  const response=page.waitForResponse(r=>new URL(r.url()).pathname.includes('/source-snapshots/'));release();await (await response).finished();
+  // 응답 body와 최종 hash 검증 완료를 기다리되 이후 선택을 다시 눌러 결과를 지우지 않는다.
+  await finishProcessing(page);
+  await expect(page.getByRole('button',{name:'보관 관측 보고 보기',exact:true})).toBeVisible();await expect(page.getByRole('region',{name:'보관 관측 보고',exact:true})).toHaveCount(0);expect(s.writes).toEqual([]);clean(s);
+ }finally{release();}
+});
 test('명시 관측 요청·보관 보고 조회·회수가 화면으로 연결되며 OS 확인으로 승격하지 않는다',async({page})=>{const s=await fixture(page);await begin(page,s.pid);expect(s.writes).toEqual([]);await expect(panel(page).getByLabel('관측 전달 경로')).toHaveText(s.root.snapshot!.declaration.pathHint);await page.getByRole('button',{name:'읽기 관측 요청 저장',exact:true}).click();await expect(panel(page).getByText('허가 저장 확인 · 관측 실행 여부 미확인',{exact:true})).toBeVisible();await page.getByRole('button',{name:'관측 작성 닫기',exact:true}).click();await page.getByRole('button',{name:'관측 허가 상세',exact:true}).click();await page.getByRole('button',{name:'보관 관측 보고 보기',exact:true}).click();await expect(page.getByRole('region',{name:'보관 관측 보고'})).toContainText('CONNECTOR_REPORTED · OS UNVERIFIED');await page.getByRole('button',{name:'관측 회수 작성',exact:true}).click();await page.getByLabel('관측 이유',{exact:true}).fill('불필요한 허가 회수');await page.getByLabel('선언 경로·파일·이번 이유를 지정 Connector에 전달함을 확인했습니다',{exact:true}).check();await page.getByRole('button',{name:'읽기 관측 회수 저장',exact:true}).click();await expect(panel(page).getByText('허가 회수 확인 · 열린 OS handle 종료를 의미하지 않음',{exact:true})).toBeVisible();expect(s.writes.map(c=>c.operation)).toEqual(['requestSourceReadObservation','revokeSourceReadObservation']);clean(s);});
 test('응답 유실·화면이동 뒤 보존된 동일 관측 명령만 재확인한다',async({page})=>{const s=await fixture(page,{lost:true});await begin(page,s.pid);await page.getByRole('button',{name:'읽기 관측 요청 저장',exact:true}).click();await expect(panel(page).getByRole('alert')).toContainText('CONNECTION_LOST');await page.getByRole('link',{name:'프로젝트 작업',exact:true}).click();await page.getByRole('link',{name:'도구·환경',exact:true}).click();await expect(page.getByLabel('관측 상대 파일 목록',{exact:true})).toHaveValue('src/main.ts');await expect(page.getByLabel('관측 상대 파일 목록',{exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'관측 작성 닫기',exact:true})).toBeDisabled();await page.getByRole('button',{name:'같은 관측 명령 결과 확인',exact:true}).click();await expect(panel(page).getByText('허가 저장 확인 · 관측 실행 여부 미확인',{exact:true})).toBeVisible();expect(s.writes).toHaveLength(2);expect(s.writes[0]).toEqual(s.writes[1]);clean(s);});
 test('VIEWER는 보고 집계만 조회하고 원문·요청·회수는 열지 못한다',async({page})=>{const s=await fixture(page,{viewer:true});await page.goto(`/#/projects/${s.pid}/connections`);await page.getByRole('button',{name:'소스 정확 버전 보기',exact:true}).click();await expect(page.getByRole('button',{name:'이 소스 읽기 관측 작성',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'관측 허가 상세',exact:true}).click();await expect(page.getByRole('button',{name:'관측 회수 작성',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'보관 관측 보고 보기',exact:true}).click();await expect(page.getByRole('region',{name:'보관 관측 보고'})).toContainText('원문은 OWNER에게만');await expect(page.getByLabel('관측 전달 경로')).toHaveCount(0);await expect(page.getByLabel('관측 보고 원문')).toHaveCount(0);expect(s.writes).toEqual([]);clean(s);});

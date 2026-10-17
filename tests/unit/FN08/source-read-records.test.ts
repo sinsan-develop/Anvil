@@ -20,3 +20,17 @@ test('보고 없음은 snapshotRef=null, 보관 후에는 OWNER/VIEWER 상세·�
  for(const viewer of [false,true])for(const revoked of [false,true]){const f=fixture({viewer,revoked,snapshotHash:'d'.repeat(64)}),s=service(f.f.scope.installationId),ref={id:a3Id(40),version:1,contentHash:'d'.repeat(64)},v=await s.read(f.db,f.actor,f.f.scope.projectId,f.f.grantRef.id);assert.deepEqual(v.snapshotRef,ref);assert.equal(v.storedState,revoked?'REVOKED':'REPORT_STORED');const list=await s.list(f.db,f.actor,f.f.scope.projectId,{},new ProjectListCodec(v=>contentHash(v)));assert.deepEqual(list.items[0].snapshotRef,ref);for(const key of ['scope','declaredPathHint','report','reason','userId','clientId'])assert.equal(Object.hasOwn(list.items[0],key),false);if(viewer)for(const key of ['scope','declaredPathHint','report'])assert.equal(Object.hasOwn(v,key),false);assert.equal(f.writes(),0);}
 });
 test('보관 보고 참조의 손상된 hash는 일반 조회에 내보내지 않고503으로 닫는다',async()=>{const f=fixture({snapshotHash:'not-a-hash'});await assert.rejects(service(f.f.scope.installationId).read(f.db,f.actor,f.f.scope.projectId,f.f.grantRef.id),(e:any)=>e.statusCode===503&&e.message==='SOURCE_READ_INTEGRITY_FAILED');});
+
+test('관측 목록의 다음 cursor는 마지막 반환 위치·원 limit을 고정하고 중복 첫 페이지를 조회하지 않는다',async()=>{
+ const f=fixture(),s=service(f.f.scope.installationId),codec=new ProjectListCodec(v=>contentHash('SYNTHETIC_QA:'+v)),query=f.db.query.bind(f.db),calls:any[][]=[];
+ const at=new Date(a3Now).toISOString();f.db.query=async(sql:string,args:any[]=[])=>{if(sql.includes('FROM anvil.source_read_grants WHERE')){calls.push(args);return{rows:calls.length===1?[{id:f.f.grantRef.id,cursor_at:at},{id:a3Id(97),cursor_at:new Date(a3Now-1).toISOString()}]:[]};}return query(sql,args);};
+ const first=await s.list(f.db,f.actor,f.f.scope.projectId,{limit:'1'},codec);assert.equal(first.items.length,1);assert.equal(first.hasMore,true);assert.equal(typeof first.nextCursor,'string');assert.deepEqual(calls[0],[f.f.scope.projectId,null,null,2]);const next=await s.list(f.db,f.actor,f.f.scope.projectId,{limit:'1',cursor:first.nextCursor},codec);assert.deepEqual(calls[1],[f.f.scope.projectId,at,f.f.grantRef.id,2]);assert.deepEqual(next.items,[]);assert.equal(next.hasMore,false);assert.equal(next.nextCursor,null);assert.equal(f.writes(),0);
+});
+test('타 사용자/project/역할/limit·만료/서명변조 cursor는 허가행 조회 전에400으로 닫는다',async()=>{
+ for(const variant of ['actor','project','role','limit','expired','signature']){
+  const f=fixture({viewer:variant==='role'}),s=service(f.f.scope.installationId),codec=new ProjectListCodec(v=>contentHash('SYNTHETIC_QA:'+v)),query=f.db.query.bind(f.db);let grants=0;f.db.query=async(sql:string,args:any[]=[])=>{if(sql.includes('FROM anvil.source_read_grants'))grants++;return query(sql,args);};
+  const filter={query:canonicalJson({view:'SOURCE_READ_GRANTS',projectId:variant==='project'?a3Id(98):f.f.scope.projectId,participation:'OWNER'}),archived:false,limit:variant==='limit'?2:1};
+  let cursor=codec.create(variant==='actor'?a3Id(99):f.actor.actorId,filter,{at:new Date(a3Now).toISOString(),id:f.f.grantRef.id},variant==='expired'?new Date(Date.now()-1800001):new Date());if(variant==='signature')cursor=cursor.slice(0,-1)+(cursor.endsWith('0')?'1':'0');
+  await assert.rejects(s.list(f.db,f.actor,f.f.scope.projectId,{limit:'1',cursor},codec),(e:any)=>e.message==='CURSOR_INVALID'&&e.statusCode===400,variant);assert.equal(grants,0,variant);assert.equal(f.writes(),0);
+ }
+});
