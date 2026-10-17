@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- 결과 기록 tail 준비 중 PowerShell foreach 결과를 괄호 없이 pipe한 구문오류1은 실행 전 거절되어 commit/push0이었다. 배열 식으로만 정정하며 exporter·보존·검사 기준을 바꾸거나 다시 실행하지 않는다.
+
+- **Schema 고정본 게시 확인**: e08291eb115167e0fd380aba413bd43ce7f9884e는 ee7b1ea4의 직접 자식·공개 vendor319+최소 기록2의 정확321파일 checkpoint다. 지정 development의 codex/av3-stage-b와 local exact SHA 일치·tracked clean, private main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 실제 push 후 조회했다. 아래 ‘게시 전/다음 checkpoint’는 해당 시점의 이력이다. 단1회 exporter·보존/정리는 끝났으며 실제 Agent/handshake·6능력과 전체 FN06은 미완료다.
+
 - 게시 전 독립 대조: 보존본/vendor 각319파일(공개 schema315+metadata4)의 SHA256·정확 목록 일치, 두 정본 기록 일치, Git index 원바이트319 blob의 SHA256 일치·staged321파일 허용 범위·diff --check0을 확인했다. LICENSE/NOTICE의 향후 LF→CRLF 안내2는 별도이며 현재 index/보존 hash는 일치한다. 기존 전체 테스트는 제품 코드 변경0이므로 반복하지 않았다.
 
 - **AV3-PMO-FN06-SCHEMA-0161-01 한정 결과(2026-10-17 14:10KST / Main 어울)**: 승인된 native exporter를 정확 1회 실행했다. PID62220·UTC05:06:38.7164424Z→05:06:39.2792012Z·566ms·exit0·stdout/stderr 합계0바이트·timeout/강제종료0·정확 exe/hash 확인이다. 실제 argv는 app-server generate-json-schema --out D:\tmp\anvil-v3-fn06-schema-0161-qa\schema이며 추가 help/version/export/Agent 호출0이다.
