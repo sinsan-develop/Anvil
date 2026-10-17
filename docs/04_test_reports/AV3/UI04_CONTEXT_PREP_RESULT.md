@@ -4,6 +4,8 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 
 ## 의도·범위·변경
 
+- **UI04 정식 단계목록 원시험 실패·시험 한정 보정 / Main 어울(2026-10-18)**: exact54b9b7a의 실제 시험은 60005.177739ms 시간초과·tests1/pass0/fail0/cancelled1/skip0·전체126394.011203ms/exit1이다. 최종 CHECKED 출력이 없어 전체 조건 PASS로 보지 않는다. 인증의 FOR UPDATE OF u,s,c와 교체 주입 INSERT의 created_by=같은 QA 사용자101 FK가 자기 대기를 만들었다. migrator PID11000(backend22:09:00.124516Z/query22:09:02.256762Z)이 app11001에 막힘을 확인, 최초 ms guard 불일치 cancel0 후 정확 microsecond/DB/role/app/query종류/blocker guard로 해당 쿼리만 취소했다(backend/service 종료0). finally12표0 및 별도 READ ONLY12표/관련backend0·migration46/PG·보호WSL설정 불변을 확인했다. 원실패를 제품 필터 결함이나 PASS로 소급하지 않는다. 보정은 integration/FN03/stage-document-list.test.ts의 helper creator 인자와 교체 주입의 다른 기존 합성사용자102 지정 두 줄뿐이며 실제 VIEWER 적용권한 성공 시험이 아니다. 제품·schema·권한·timeout/기준 변경0, typecheck/diff0. 새 exact 후보의 동일 단1건을 기존 UTC22:26:27Z 만료/60000ms 안에서만 실행하며 결과는 아직 미확인이다. 앞선 ‘미실행’은 사전등록 당시 상태이며 현재는 위 실패로 정정한다. 두 Minor·실served/전체RLS/Agent/전체UI04 미완료는 유지한다.
+
 - 승인 S04/WORK_PLAN UI04·SCREEN_WORK UI04의 착수 선행 UI00/P01과 기존 프로젝트 detail GET을 소비했다. 프로젝트 목록의 workspace 링크가 미연결 안내로 끝나는 공백을 Main이 다음 미완료로 선정했다. PMO 다음 업무 배정을 기다리지 않았다.
 - 기준 branch codex/av3-stage-b / local-private1707cd49035fcc34e4a1900ac0437632e2917076. 단일 writer Main, 실제 runtime은6781703a/N4이고 이 후보를 재시작·반영하지 않았다.
 - 제품4: `apps/web/src/features/workspace/api.ts`(기존 GET의 ID·원본·적용 참조·읽기 권한/제어·준비 부족 검증), `WorkspacePage.tsx`(절차 참조/총괄 미연결/자료의 3영역), 기존 `apps/web/src/App.tsx`의 import·workspace 분기, `styles/app.css`의 국소 반응형 레이아웃이다. 다른 기존 화면·server/SQL/권한/설정·native는 불변이다.
