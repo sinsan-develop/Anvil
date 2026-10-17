@@ -56,6 +56,7 @@ test('trust-only 실제 등록은 host 서명/HUMAN exact 확인/새 nonce·일�
   const proofUrl='/api/v1/connectors/registrations/'+registrationId+'/proof',proof={challengeId:challenge.id,payload:challenge.payload,signature:signature(challenge.payload)};
   const bad=await post(proofUrl,{...proof,payload:{...proof.payload,scopeDigest:'f'.repeat(64)}});assert.equal(bad.statusCode,412);
   const proved=await post(proofUrl,proof);assert.equal(proved.statusCode,200);const p=proved.json();assert.equal(p.status,'PROVED_WAITING_CONFIRMATION');
+  assert.equal((await post(proofUrl,proof)).statusCode,412,'소비한 HOST_PROOF를 다시 소비하지 않는다');
   const exchangeUrl='/api/v1/connectors/registrations/'+registrationId+'/exchange',freshClientNonce=randomBytes(32).toString('base64url');
   const preflight={...challenge.payload,clientNonce:freshClientNonce,expiresAt:register.payload.expiresAt};
   const exchangeRequest={kind:'CHALLENGE',payload:preflight,signature:signature(preflight)};
@@ -63,6 +64,7 @@ test('trust-only 실제 등록은 host 서명/HUMAN exact 확인/새 nonce·일�
   const confirm=envelope('confirmConnectorRegistration',{registrationId,observedHostFingerprint:fingerprint,scopeDigest:p.scopeDigest,decision:'APPROVE',reason:'정확 공개키/범위/버전 확인'},registrationId,p.registrationRef.version);
   const mismatch=await human({...confirm,commandId:randomUUID(),payload:{...confirm.payload,scopeDigest:'0'.repeat(64)}});assert.equal(mismatch.statusCode,409);
   const confirmed=await human(confirm);assert.equal(confirmed.statusCode,200);
+  assert.equal((await post(exchangeUrl,{kind:'ISSUE',...proof})).statusCode,412,'HOST_PROOF challenge를 EXCHANGE로 위장하지 않는다');
   const fresh=await post(exchangeUrl,exchangeRequest);assert.equal(fresh.statusCode,200);const exchangeChallenge=fresh.json().challenge;assert.notEqual(exchangeChallenge.payload.serverNonce,challenge.payload.serverNonce);assert.notEqual(exchangeChallenge.payload.clientNonce,challenge.payload.clientNonce);
   const issue={kind:'ISSUE',challengeId:exchangeChallenge.id,payload:exchangeChallenge.payload,signature:signature(exchangeChallenge.payload)};
   const concurrent=await Promise.all([post(exchangeUrl,issue),post(exchangeUrl,issue)]);assert.deepEqual(concurrent.map(x=>x.statusCode).sort(),[200,409]);
@@ -112,14 +114,16 @@ test('trust-only 실제 등록은 host 서명/HUMAN exact 확인/새 nonce·일�
   assert.equal((await human({...register,commandId:randomUUID()})).statusCode,403);
   // 별도 수명/회수 경계. QA의 정확 행만 시간을 주입하며 실제 2분/15분 대기라 주장하지 않는다.
   policy=await policies.command(own.token,own.csrfToken,envelope('savePermissionPolicy',{rules:rules('AUTO'),reason:'수명/회수의 독립 QA',reviewRefs:[]},policy.data.ref.id,policy.data.ref.version));
-  const issueFor=async(request:any)=>{
+  const issueFor=async(request:any,dropIssuance=false)=>{
    const made=await human(request);assert.equal(made.statusCode,200);const data=made.json().data,ch=await enrolledFor(data),prefix='/api/v1/connectors/registrations/'+data.registrationRef.id;
    const proof=await post(prefix+'/proof',{challengeId:ch.id,payload:ch.payload,signature:signature(ch.payload)});assert.equal(proof.statusCode,200);const body=proof.json();
    const confirmed=await human(envelope('confirmConnectorRegistration',{registrationId:data.registrationRef.id,observedHostFingerprint:fingerprint,scopeDigest:body.scopeDigest,decision:'APPROVE',reason:'수명 확인용 정확 비교'},data.registrationRef.id,body.registrationRef.version));assert.equal(confirmed.statusCode,200);
    const preflight={...ch.payload,clientNonce:randomBytes(32).toString('base64url'),expiresAt:request.payload.expiresAt},next=await post(prefix+'/exchange',{kind:'CHALLENGE',payload:preflight,signature:signature(preflight)});assert.equal(next.statusCode,200);const fresh=next.json().challenge;
-   const result=await post(prefix+'/exchange',{kind:'ISSUE',challengeId:fresh.id,payload:fresh.payload,signature:signature(fresh.payload)});assert.equal(result.statusCode,200);
+   const issue={kind:'ISSUE',challengeId:fresh.id,payload:fresh.payload,signature:signature(fresh.payload)},result=await post(prefix+'/exchange',issue);assert.equal(result.statusCode,200);
+   if(dropIssuance){const reconciled=await post(prefix+'/exchange',issue);assert.equal(reconciled.statusCode,409);assert.equal(reconciled.json().code,'ALREADY_ISSUED_RECONCILE');assert.equal(reconciled.json().credential,undefined);assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.connector_credentials WHERE registration_id=$1',[data.registrationRef.id])).rows[0].n,1);return{created:data,issued:null};}
    return{created:data,issued:result.json()};
   };
+  const lost=await issueFor(registerRequest(),true);assert.equal((await human(envelope('revokeConnector',{connectorRef:lost.created.connectorRef,reason:'발급 응답 미사용 후 명시 회수'},lost.created.connectorRef.id,1))).statusCode,200);
   const life=await issueFor(registerRequest()),lifeHeaders={host:'localhost:3830',authorization:'Bearer '+life.issued.credential},lifeUrl='/api/v1/connectors/'+life.created.connectorRef.id+'/registration-status',lifeStatus=()=>app.inject({method:'GET',url:lifeUrl,headers:lifeHeaders});assert.equal((await lifeStatus()).statusCode,200);
   const sessionRow=(await admin.query('SELECT id,reauth_until FROM anvil.auth_sessions WHERE token_digest=$1',[createHash('sha256').update(own.token).digest('hex')])).rows[0];
   await admin.query("UPDATE anvil.auth_sessions SET reauth_until=clock_timestamp()-interval '1 second' WHERE id=$1",[sessionRow.id]);assert.equal((await human(registerRequest())).statusCode,412);assert.equal((await lifeStatus()).statusCode,200,'조회 전용 token은 HUMAN 쓰기 재인증을 대체하지 않는다');await admin.query('UPDATE anvil.auth_sessions SET reauth_until=$2 WHERE id=$1',[sessionRow.id,sessionRow.reauth_until]);

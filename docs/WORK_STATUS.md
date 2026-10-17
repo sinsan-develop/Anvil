@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- FN06 **4ecb2e39039ff2f4ae0edb64743962adf22635f5** exact WSL 실제·직접 인접 **4 PASS/18684.757970ms/FAIL0/SKIP0**: trust18274.914504ms·기존 문서/업로드 승인15398.005591ms·후보3611.127663ms·정책995.481318ms이다. 신뢰 실패5회/등록 실제 만료/각각 일회 소비에 더해 challenge·credential의 QA 만료 주입 거절, 실제8초 정책기한/credential 상한, 최근 재인증 만료의 HUMAN 쓰기 거절과 조회권 비확대, session 회수/자격세대·제어세대 불일치401을 확인했다. 주입 상태는 정확 QA 복원/회수했고 실제2분/15분 대기라 주장하지 않는다.
+- 독립 종료 대조: DB45종 각0·적용43 전체 checksum와 Git SQL 일치·범위 밖 grant/Agent/능력/환경/source5표 부재·PG15.18/이미지594290e9…/app·migrator 두 역할super/createdb/createrole=false·시험root[]·원문uid1000/0700/nonlink/실경로 동일/empty·Windows QAroot없음이다. native/보호저장/서명 source는13ecba26과 diff0이므로 성공한 Windows 암호 검증을 불필요하게 반복하지 않는다.
+- 마지막 추가 음성 검수는 제품/43 불변에서 소비한 HOST_PROOF 재사용·다른 purpose ISSUE 거절과 HTTP 적용 뒤 최초 발급 본문을 소비하지 않고 원 ISSUE 재호출→ALREADY_ISSUED_RECONCILE/새 credential0→정확 HUMAN 회수를 명시 확인한다. 아직 이 새 시험은 미실행이며 실제 네트워크 단절/Windows→WSL HTTPS로 포장하지 않는다. 공유 기존3개 인접은4ecb2e39 결과를 유지하고 새 신뢰 시험만 다음 exact 게시본에서 실행한다.
+
+- FN06 인접 실제 검수 자원 재확인:4ecb2e39 exact에서 새 신뢰 시험과 기존 FN06 후보/FN03 document-storage/FN11 project-policy를 함께 확인한다. 기존 각 시험의 qa-connector-trust/qa-connection-candidate/문서·정책 UUID 소유 사용자·프로젝트/명령/감사·일회 승인·`/tmp/anvil-v3-document-qa-*`(WSL daon/0700)만 한 실행 수명으로 사용한다. 기존 finally 소유 UUID/정확 root만 정리·실패 후 독립45표/임시root·지속보관소 empty를 확인하며 새 schema/Secret/실제사용자·서비스/포트 변경0이다. 현재 source/43은8a7cb985와 불변이고 이 사전등록은 Main 소유 WORK_STATUS 후속 기록이다.
+
 - FN06 **d8ec41e609edde5ed13df40a363ee3e30af93b7b** local/private/WSL exact clean 추가 actual **1 PASS/6629.196944ms(기능6335.526922)/FAIL0/SKIP0**이다. 5회 실패 COMMIT/6번째 올바른 서명 거절·짧은 등록기한 실제 경과·URL/body400/타 프로젝트·타인404/옛 제어409·신뢰3연산 각각 독립 HUMAN 요청/결정/소비3건·다른 명령 재사용409·outbox0을 실행했다. 독립45표 각0·migrations43·시험root[]·원문0700/nonlink/실경로 동일/empty, 제품/적용43 checksum 불변이다. 아래 첫 GREEN과 이 보강을 구분하며 새 잠재 위험/새 계약은 없었다.
 - FN06 다음 추가 시험은 같은 소유 QA 내 challenge/credential의 기한만 주입(실제2분/15분 경과라고 주장하지 않음), 현재 session 회수/사용자 자격세대·제어세대 변경 거절/최근 재인증 만료의 HUMAN 쓰기 차단, 실제8초 정책기한과 credential 상한을 검수한다. 주입한 QA 상태는 복원/정확 회수하며 finally 소유 행만 삭제한다. 타입/diff0이나 아직 추가 actual은 미실행이다. 공유 승인 guard의 기존 후보/문서 업로드·정책 인접 회귀도 같은 exact 게시본에서 시행한다.
 
