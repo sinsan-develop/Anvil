@@ -11,7 +11,8 @@ import { DocumentConfirmation } from './DocumentConfirmation.tsx';
 import { MaterialLibrary } from './MaterialLibrary.tsx';
 import { DesignIndexViewer } from './DesignIndexViewer.tsx';
 import { DesignIndexEditor } from './DesignIndexEditor.tsx';
-import { newDesignIndex } from './design-index-api.ts';
+import { newDesignIndex,type ScreenRegion } from './design-index-api.ts';
+import {readRegisteredScreen,type ScreenRegionContext} from './screen-region-navigation.ts';
 import { getPinnedForm } from '../methodologies/forms-api.ts';
 import { WorkPlanEditor } from './WorkPlanEditor.tsx';
 import { newWorkPlan,blankPlanTask } from './work-plan-api.ts';
@@ -31,6 +32,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [showMaterials, setShowMaterials] = useState(false);
   const [showDesignIndex,setShowDesignIndex]=useState(false);
   const [anchorSelection,setAnchorSelection]=useState<DesignAnchorSelection|null>(null);
+  const [registeredView,setRegisteredView]=useState<string|null>(null);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   const confirming = confirmation?.ownerUserId === session.user.id && confirmation.projectId === projectId;
   useEffect(() => () => { generation.current++; }, []);
@@ -38,15 +40,26 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     let current = true; setLoading(true); setListError(null);
     listDocuments(client, projectId, cursor).then(value => { if (current) setPage(previous => cursor && previous ? { ...value, items: [...new Map([...previous.items, ...value.items].map(item => [item.id, item])).values()] } : value); }).catch((cause: unknown) => {
       if (!current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setListError(error);
-      if ([401, 403, 404].includes(error.status)) { generation.current++; setReading(false); setPage(null); setSelected(null); setOpened(null); if (error.status === 401) onAuthenticationLost(); }
+      if ([401, 403, 404].includes(error.status)) { generation.current++; setReading(false); setPage(null); setSelected(null); setOpened(null); setRegisteredView(null); setAnchorSelection(null); if (error.status === 401) onAuthenticationLost(); }
     }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [client, projectId, cursor, refresh]);
   async function open(item: DocumentSummary, requested: number) {
-    const request = ++generation.current; setAnchorSelection(null); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
+    const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) setOpened(value); }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
+  }
+  async function openScreen(sourceRef:ScreenRegion['documentRef'],region:ScreenRegion){
+    if(!opened||reading||starting||opened.document.id!==sourceRef.id||opened.document.version!==sourceRef.version||opened.document.contentHash!==sourceRef.contentHash)return;
+    const context:ScreenRegionContext={projectId,userId:session.user.id,clientId:session.clientId,sourceRef:{...sourceRef}},request=++generation.current;
+    setReadError(null);setReading(true);
+    try{
+      const value=await readRegisteredScreen(client,context,{...context,region},()=>request===generation.current);
+      if(request!==generation.current)return;
+      setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setShowDesignIndex(false);setRegisteredView(region.screenCode);setAnchorSelection(value.anchorSelection);
+    }catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if([401,403,404].includes(error.status)){setOpened(null);setSelected(null);setRegisteredView(null);setAnchorSelection(null);setShowDesignIndex(false);if(error.status===401)onAuthenticationLost();}}
+    finally{if(request===generation.current)setReading(false);}
   }
   async function beginEdit() {
     if (!opened || starting) return;
@@ -133,7 +146,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {showPlans?<WorkPlanLibrary client={client} projectId={projectId} session={session} documents={page?.items??[]} canPrepare={!buffer&&!review&&!confirmation&&!starting&&!choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next=>{onChange(previous=>previous===null?next:previous);setShowPlans(false);}}/>:null}
       {showMaterials ? <MaterialLibrary client={client} projectId={projectId} session={session} canPrepare={!buffer && !review && !confirmation && !starting && !choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous === null ? next : previous); setShowMaterials(false); }} /> : null}
       {choosingForm ? <><NewDocumentForm client={client} session={session} projectId={projectId} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous?.pending || previous?.proposalState || (previous?.designIndexState||previous?.workPlanState) || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next); setChoosingForm(false); }} /><button onClick={() => setChoosingForm(false)}>양식 선택 닫기</button></> : null}
-      {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : <p>문서를 선택하세요.</p>}
+      {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView} 고정 시안 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
         <section aria-label="문서 단계 연결" className="status-card"><h3>연결된 개발 단계</h3>{opened.document.stageBinding ? <><p>{opened.document.stageBinding.methodologyName} · {opened.document.stageBinding.nodeName}</p><p className="meta">적용 세대 {opened.document.stageBinding.applicationRef.version} · {opened.document.stageBinding.nodeId} · {opened.document.stageBinding.applicationRef.contentHash}</p></> : <p>{opened.document.stageNodeRef === null ? '방법론 단계 미연결' : '단계 연결 미확인'}</p>}</section>
@@ -143,7 +156,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
         <button disabled={reading} onClick={()=>{setAnchorSelection(null);setShowDesignIndex(v=>!v);}}>{showDesignIndex?'설계 추적 조회 닫기':'이 버전 설계 추적 조회'}</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!(buffer?.designIndexState||buffer?.workPlanState)||!!buffer?.workPlanState||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginWorkPlan();}}>이 버전에서 작업계획 작성</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!(buffer?.designIndexState||buffer?.workPlanState)||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginDesignIndex();}}>이 버전 설계 위치 등록</button>
-        {showDesignIndex?<DesignIndexViewer key={opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} bodyHash={opened.document.content.body.contentHash} onAnchorSelect={setAnchorSelection} onAuthenticationLost={onAuthenticationLost}/>:null}
+        {showDesignIndex?<DesignIndexViewer key={opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} bodyHash={opened.document.content.body.contentHash} onAnchorSelect={setAnchorSelection} onScreenOpen={reading||starting?undefined:(sourceRef,region)=>{void openScreen(sourceRef,region);}} onAuthenticationLost={onAuthenticationLost}/>:null}
         {confirming && confirmation && !confirmation.pending && !confirmation.saved && !confirmation.uncertain && confirmation.rejectedAttempts?.length ? <button disabled={starting || reading || choosingForm || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void replaceConfirmation(); }}>열어 둔 버전으로 확정 대상 변경</button> : null}
         {!opened.document.confirmed && !latestAcceptedDocumentReview(opened.document) ? <p className="meta">확정하려면 필수 본문/반복 항목 검사와 정확한 최신 적합 검토가 필요합니다.</p> : null}
         <DesignAnchorOriginal body={opened.body} context={{projectId,documentRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash},bodyHash:opened.document.content.body.contentHash}} selection={anchorSelection} onClear={()=>setAnchorSelection(null)}/>
