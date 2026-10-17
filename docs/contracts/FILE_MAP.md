@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN08 내부 준비2파일: `apps/connector/runtime/dispatch.ts`의 inspectDispatchPreconditions는 기존 AdapterContext/VersionRef의 구조·기대 snapshot 불일치와 미연결 차단만 보고한다. `tests/unit/FN08/dispatch.test.ts` 집중4건이 위장/누락/비밀비반사·실행불가를 확인한다. 실제 dispatch 함수/영속 중복/서버검증/소스경로·spool/Agent는 아직 없으며 새 wire/API/DB 파일을 생성하지 않는다. 소유/등록·native helper 검증과 별개의 내부 준비 코드다.
+
 QA-02 실행 source bbb239dd는 같은 범위의 native/worker compile·fixed IPC/harness에서 합성 소유/명시회수·PREPARED취소/EOF/idle/sticky UNKNOWN 실제1 PASS/71523.4163ms를 확인했다. source/native/binary fullhash·exact ref·정리0과 미검증은 WORK_STATUS의 한정 결과를 참조한다. 코드 파일 존재/단일 합성시험을 전체 FN08 실행기·spool/ACK·Agent adapter 완료로 읽지 않는다. ProtectedStore/서버/Web/DB/TLS/runtime 변경0·schema-export 미실행이다.
 
 QA-02 준비의 동일6코드 경로: windows-host.ts는 고정16KiB UTF8 codec/응답검사·새 run/서비스 binding, OwnershipHost.cs는 bounded byte input/output·정상EOF/부분프레임 구분·중복 QA key와 sticky 상태, OwnedWorker.cs는 새 절대창 상속, 기존 build script는 r2 exact root만, tooling unit과 integration은 순수/실제용 시나리오를 각각 담당한다. QA 전용 transport는 tests/integration/FN08 안에만 두며 제품 API·Agent에 fault 명령을 추가하지 않는다. actual 승인 전 compile/helper/root0이고 Ref 이전 주입은 미구현이다. 기존 FN06/ProtectedStore·DB/서버/Web 불변.

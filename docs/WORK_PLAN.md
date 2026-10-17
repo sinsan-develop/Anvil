@@ -100,7 +100,7 @@
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |
 | FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·기존 DPAPI/CNG/상태전용 신뢰·44교정 제한수용 유지. e07312d3 native→strict TLS/WSL PG→UI11 정상/본문유실2건1 PASS/36923ms·정리0. 단일독립 C0/I2/M0의 QA수명/초기종료 Main 보완·순수7/unit190/type0·보완후actual/독립재검수0, PMO 수용 전. SQL44불변/QA45표0, 영구 PC/실제 Agent·능력실측·전체연결 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
-| FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·QA-02 exact bbb239dd 합성 소유/취소·EOF/idle/최종 UNKNOWN 실제1 PASS/71523.4163ms·root/process0·19960/relay 보존, 순수202 PASS. 원 QA-01 C0/I3/M2 REWORK/40744보존UNVERIFIED 소급변경0. Ref 이전 fault/native 초과·부분EOF/실제만료·EOF뒤 독립Job0 미검증, 전체 실행·ACK/spool/Agent 연결 미구현. schema-export/Agent/FN08 전체 인수는 별개 |
+| FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·QA-02 bbb239dd 합성 실제1 PASS/71523.4163ms·정리0/19960·relay 보존은 유지. 별도 내부precondition2파일 집중4 PASS/type0·항상실행불가이며 사용자기능진도 아님. sourceScopes/envelope/durable 결과형 미정·verifier/실제dispatch·ACK/spool/Agent 연결 미구현. 원QA-01 REWORK/40744미확정·잔여OS미검증·전체인수와 구분 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 시작 전 |
 | FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 시작 전 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |

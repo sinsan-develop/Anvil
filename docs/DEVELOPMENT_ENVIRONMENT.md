@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN08-DISPATCH-PRECONDITION-01은 내부 순수 보고2파일·집중4 PASS/typecheck만 추가했으며 실제 spawn/Agent/native/DB/API·파일자료쓰기/스풀·서비스/Windows runtime/보호자료 변경0이다. 항상 executionAuthorized:false이며 caller snapshot/참조가 실제 서버·현재 제어·소유·실경로/예산 검증을 대신하지 않는다. sourceScopes/envelope/durable 중복 결과의 미정 계약을 확정하거나 source 경로를 조회하지 않았다. 기존202/QA-02 실제 검수는 반복하지 않고 그 증거와 현재 준비 코드를 구별한다.
+
 QA-02 실제 한정 결과: bbb239dd4573a08d81066f428adfcc3f3c707d00·run8c10a7c8-bfa8-458c-a24b-1f0578119407의 승인 단1회가 **1 PASS/71523.4163ms·FAIL0/SKIP0·exit0**이었다. 04:26:19Z gate 이후 새 r2 root/고정 compiler·helper1f9a3d03/worker1cdcd954의 launch 전 fullhash marker를 기록하고 정상4세대·PREPARED취소/EOF/idle/최종UNKNOWN 거절·정확취소를 확인했다. finally 정확 파일/빈폴더 정리 후04:28:10Z 독립 r2 root/합성exe0·현재19960/relay26052·단일loopback3830·보호7파일hash 불변 확인. 원 Node40744 복원이나 전체 FN08/Agent 지원 증거가 아니다. 최초 외부 UTC cast 읽기 오류1은 actual0에서 PMO 지시 DateTimeOffset 정정했으며 기한 연장/추가actual0이다. Ref 이전 fault/native 초과·부분EOF/실제만료·EOF뒤 독립Job0 등 미검증은 WORK_STATUS에 남겼다.
 
 QA-02 준비 전용: run8c10a7c8-bfa8-458c-a24b-1f0578119407·2026-10-17 13:25~13:55KST·새 `D:\tmp\anvil-v3-fn08-ownership-qa-r2/{bin,source,results}`/lease만 코드에 결박했다. actual 승인 전 compile/root/helper/FORCE 실행0이며 schema-export/DB/Agent/TLS/runtime 변경은 제외한다. 보존 대상은 현재 Node19960/CIM04:02:09.6293870Z·relay26052/CIM2026-10-15T12:28:17.5262970Z·127.0.0.1:3830 소유19960 하나다. 최초 종료5분 전부터 새 전체시험 금지·각 준비120초 여유·정리 여유를 유지하고 자동 연장0이다. IPC16KiB/정상EOF·부분EOF·sticky 준비는 순수11/unit202/typecheck만 확인했으며 실제 native/Ref 이전 주입 검증은 미실행이다. QA-01 실패/보존미확정은 별도 이력이다.
