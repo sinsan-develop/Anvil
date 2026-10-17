@@ -19,6 +19,7 @@ import { newWorkPlan,blankPlanTask } from './work-plan-api.ts';
 import { WorkPlanLibrary } from './WorkPlanLibrary.tsx';
 import {DesignAnchorOriginal}from'./DesignAnchorOriginal.tsx';
 import type{DesignAnchorSelection}from'./design-anchor.ts';
+import { DocumentVersionComparison } from './DocumentVersionComparison.tsx';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
@@ -33,6 +34,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [showDesignIndex,setShowDesignIndex]=useState(false);
   const [anchorSelection,setAnchorSelection]=useState<DesignAnchorSelection|null>(null);
   const [registeredView,setRegisteredView]=useState<string|null>(null);
+  const [showComparison, setShowComparison] = useState(false);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   const confirming = confirmation?.ownerUserId === session.user.id && confirmation.projectId === projectId;
   useEffect(() => () => { generation.current++; }, []);
@@ -45,7 +47,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     return () => { current = false; };
   }, [client, projectId, cursor, refresh]);
   async function open(item: DocumentSummary, requested: number) {
-    const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
+    const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) setOpened(value); }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
@@ -53,7 +55,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   async function openScreen(sourceRef:ScreenRegion['documentRef'],region:ScreenRegion){
     if(!opened||reading||starting||opened.document.id!==sourceRef.id||opened.document.version!==sourceRef.version||opened.document.contentHash!==sourceRef.contentHash)return;
     const context:ScreenRegionContext={projectId,userId:session.user.id,clientId:session.clientId,sourceRef:{...sourceRef}},request=++generation.current;
-    setReadError(null);setReading(true);
+    setReadError(null);setReading(true);setShowComparison(false);
     try{
       const value=await readRegisteredScreen(client,context,{...context,region},()=>request===generation.current);
       if(request!==generation.current)return;
@@ -161,6 +163,8 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView} 고정 시안 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
+        <button disabled={reading} onClick={() => setShowComparison(value => !value)}>{showComparison ? '저장 버전 비교 닫기' : '저장 버전 비교 열기'}</button>
+        {showComparison && !reading ? <DocumentVersionComparison key={projectId+':'+session.user.id+':'+session.clientId+':'+opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} base={opened} maxVersion={selected?.headVersion ?? opened.document.version} onAuthenticationLost={onAuthenticationLost} /> : null}
         <section aria-label="문서 단계 연결" className="status-card"><h3>연결된 개발 단계</h3>{opened.document.stageBinding ? <><p>{opened.document.stageBinding.methodologyName} · {opened.document.stageBinding.nodeName}</p><p className="meta">적용 세대 {opened.document.stageBinding.applicationRef.version} · {opened.document.stageBinding.nodeId} · {opened.document.stageBinding.applicationRef.contentHash}</p></> : <p>{opened.document.stageNodeRef === null ? '방법론 단계 미연결' : '단계 연결 미확인'}</p>}</section>
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!review?.pending || !!buffer?.pending || !!(buffer?.designIndexState||buffer?.workPlanState) || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { void beginEdit(); }}>이 버전에서 편집</button>
         <button disabled={starting || reading || choosingForm || !!confirmation || !!buffer?.dirty || !!buffer?.pending || !!(buffer?.designIndexState||buffer?.workPlanState) || !!review?.pending || !!review && review.ownerUserId !== session.user.id} onClick={() => { void beginReview(); }}>이 버전 내용 검토 작성</button>

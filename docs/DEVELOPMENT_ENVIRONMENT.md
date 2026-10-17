@@ -1,5 +1,12 @@
 # Anvil 재설계 개발환경
 
+## 최신 실제 runtime — 2026-10-17 10:02~10:05 UTC
+
+- UI06 actual run4d321f60-64f3-4f41-95c6-41ec95cd9eab는 보조 script 파일 교체 인자 오류로 FAIL, 자동 rollback도 동일 경계에서 FAIL이다. 아래 PREPARED/null manifest는 당시 준비 이력이며 현재 실제 상태가 아니다. 새 UI06 실제 로그인/DB/browser/UNC 여정은 시작하지 않았다.
+- 원 정식 index/JS/CSS 3hash가 보존되어 파일 재교체 없이 원6환경·동일 API를 새 Node **23836**, executable `C:\Program Files\nodejs\node.exe`, CIM UTC **2026-10-17T10:02:29.4487470Z**, listener **127.0.0.1:3830**으로 복구했다. `ANVIL_ARTIFACT_ROOT` 없는 원 상태이며 원문 저장 가능으로 판정하지 않는다. strict TLS health exit0와 listener 소유를 별도 확인했다.
+- 기존 relay26052/보호7hash는 불변, 원19960은 종료됐고 원 runtime receipt/log는 보존한다. 신규 `.av3-data/runtime-ui06-served-01/receipt.json`은 원 실패·자동복구 실패·새 process identity·manualRecoveryConfirmed를 함께 기록한다. 해당 server.out/err.log는 복구 process 로그이며 삭제하지 않는다.
+- 실패 지원 root `D:\tmp\anvil-v3-stage-b\browser\ui06-served-01`과 미참조 후보 JS는 근거 보존 중이다. profile/임시 staged index/QA browser는0, 독립 읽기에서 DB74표/66표0·기존8표/44파일checksum·raw empty/inode3913339/uid1000/0700 불변을 확인했다. QA root 전체 정리0 또는 UI06 실제 검증 PASS로 표현하지 않는다. 동결 코드·기존 run의 actual 재시도/연장은 하지 않는다.
+
 ## UI06 실제 화면 반영 준비 — AV3-PMO-UI06-SERVED-PREP-01
 
 준비 검수 후속: 독립 원 C0/I1/M1의 수집 회귀는 PMO 허용 UI00·기존 UI06 두 시험의 후보 env 검사를 실행 시점으로만 이동해 Main 보완했다. 수집 RED→기존 인증4건 --list GREEN, env 미설정 실제2건은 명확 FAIL/skip0·fallback0, 동일 후보 기존 로그인6+UI06기존7 PASS와 만료 CLAIM 음성1 PASS를 확인했다. 만료 음성 최초 selector/문구 기대 오류1은 WORK_STATUS에 보존한다. 실제 auth/CLAIM/PG/서비스/UNC 변경0, 준비 QA60파일/14dir는 정확 제거·독립 잔여0이다. 원 검수와 Main 보완을 구분하며 새 독립 C0/I0·실서비스 반영 완료로 승격하지 않는다.
