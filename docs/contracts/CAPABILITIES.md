@@ -24,6 +24,8 @@ Codex는 버전/도움말 조회 중 자신의 임시 arg0/PATH alias 정리·�
 
 ## 3. Codex 후보 — App Server
 
+2026-10-17 AV3-PMO-FN06-SCHEMA-0161-01에서 설치된 정확0.161.0 native exporter 단1회(566ms/exit0)로 stable JSON315개를 고정했다. [공개 schema 지문](../../contracts/vendor/codex/0.161.0/schema-manifest.json)에 버전·exe SHA256·upstream tag/commit·파일별 hash·license와 한계를 기록했다. JSON 파싱/로컬 ref 대조·지정 민감표식 검사만 수행했으며 실제 handshake·세션/turn·파일 변경·승인·중지/회수·6능력, 네트워크 관측과 binary 재현 일치는 여전히 미검증이다. 정의의 존재를 실제 연동 확인으로 올리지 않는다.
+
 근거: [공식 App Server 문서](https://learn.chatgpt.com/docs/app-server). 로컬 도움말에서도 `codex app-server`와 기본 `stdio://` transport를 확인했다.
 
 | 필요한 경계 | 공식 인터페이스 후보 | Anvil의 처리 원칙 |
