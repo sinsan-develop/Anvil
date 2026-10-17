@@ -86,3 +86,52 @@ test('실패 exit도 종료 관측이며 stderr EOF 뒤 추가 출력만 UNKNOWN
  const late=started();late.stdout(response(),1);late.stderrEnded(2);late.stderr(Buffer.from('late'),3);assert.equal(late.report().phase,'UNKNOWN');
  const early=started();early.stderrEnded(1);early.stdout(response(),2);early.stdoutEnded(3);early.processExited(0,4);assert.equal(early.report().phase,'PROTOCOL_COMPLETE');
 });
+// 진단 소실/원문 반사·getter 실행과 compile-only의 실제 실행 분기 혼입을 검출한다.
+import * as compileQa from '../../../apps/connector/adapters/primary/handshake-qa.ts';
+test('컴파일 실패의 유한 사실과 허용 CS 위치만 남기고 원문은 버린다',()=>{
+ const summarize=(compileQa as any).compileFailureReceipt;
+ assert.equal(typeof summarize,'function');
+ const r=summarize({status:1,signal:null,pid:1234,stdout:Buffer.from('apps/connector/native/CodexHandshakeHost.cs(12,3): error CS1002: PRIVATE_TOKEN\nC:\\private\\x.cs(1,2): error CS9999: secret'),stderr:Buffer.alloc(0),message:'PRIVATE_TOKEN'},23,'C:\\repo\\apps\\connector\\native\\CodexHandshakeHost.cs');
+ assert.equal(r.classification,'NONZERO');assert.equal(r.status,1);assert.equal(r.pid,1234);assert.equal(r.elapsedMs,23);
+ assert.deepEqual(r.diagnostics,[{code:'CS1002',severity:'error',source:'apps/connector/native/CodexHandshakeHost.cs',line:12,column:3}]);
+ assert.equal(r.stdout.bytes,121);assert.equal(r.stdout.truncated,false);assert.equal(r.stdout.sha256.length,64);
+ assert.equal(JSON.stringify(r).includes('PRIVATE_TOKEN'),false);assert.equal(JSON.stringify(r).includes('private'),false);
+});
+test('컴파일 timeout·spawn 오류는 실제 code만 분류하고 getter·proxy·위조 buffer는 실행하지 않는다',()=>{
+ const summarize=(compileQa as any).compileFailureReceipt;assert.equal(typeof summarize,'function');
+ assert.equal(summarize({code:'ETIMEDOUT'},15001).classification,'TIMEOUT');
+ assert.equal(summarize({code:'EACCES'},1).classification,'SPAWN_ERROR');
+ assert.equal(summarize({status:-1073741515},1).status,-1073741515);
+ assert.equal(summarize({status:4294967295},1).classification,'NONZERO');
+ assert.equal(summarize({message:'timeout',status:null},21000).classification,'UNKNOWN');
+ let reads=0;const hostile=Object.defineProperty({},'status',{get(){reads++;throw Error('SECRET');}});
+ const a=summarize(hostile,NaN),b=summarize(new Proxy({},{getOwnPropertyDescriptor(){reads++;throw Error('SECRET');}}),0),c=summarize({stdout:Object.create(Buffer.prototype)},0);
+ assert.equal(reads,0);assert.equal(a.status,'UNKNOWN');assert.equal(a.elapsedMs,'UNKNOWN');assert.equal(b.classification,'UNKNOWN');assert.equal(c.stdout.bytes,'UNKNOWN');
+ const bytes=Buffer.from('ok');Object.defineProperty(bytes,'constructor',{get(){reads++;throw Error('SECRET');}});
+ const d=summarize({stdout:bytes},0);assert.equal(reads,0);assert.equal(d.stdout.bytes,2);
+});
+test('과대 컴파일 출력은 prefix hash로 명시하고 진단32개를 넘기지 않는다',()=>{
+ const summarize=(compileQa as any).compileFailureReceipt;assert.equal(typeof summarize,'function');
+ const line='apps/connector/native/CodexHandshakeHost.cs(1,2): warning CS1234: SECRET\n';
+ const r=summarize({stdout:Buffer.from(line.repeat(3000)),stderr:Buffer.alloc(0),status:1},1);
+ assert.equal(r.diagnostics.length,32);assert.equal(r.stdout.truncated,true);assert.equal(r.stdout.hashedBytes,131072);assert.equal(r.stdout.bytes,Buffer.byteLength(line)*3000);assert.equal(JSON.stringify(r).includes('SECRET'),false);
+});
+test('compile-only는 별도 policy·compiler hash·정확 후보·유한 창으로만 통과한다',()=>{
+ const check=(compileQa as any).checkCompileOnlyRunBinding;assert.equal(typeof check,'function');
+ const sha='a'.repeat(40),host='39111ada9ff079143507db5c2986e1f42d3f0679519ba524a82775dddc26cbac',compiler='46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00';
+ const v={policy:'AV3-PMO-FN06-COMPILE-RECEIPT-01',runId:'56d83f93-1f39-4cac-874f-22df04596dad',sourceSha:sha,hostSourceHash:host,compilerHash:compiler,issuedAt:'2026-10-17T07:00:00.000Z',expiresAt:'2026-10-17T07:30:00.000Z'};
+ const now=Date.parse('2026-10-17T07:01:00.000Z');assert.equal(check(v,sha,host,compiler,now),true);
+ for(const bad of [{...v,policy:'AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01'},{...v,compilerHash:'0'.repeat(64)},{...v,sourceSha:'b'.repeat(40)},{...v,hostSourceHash:'0'.repeat(64)},{...v,expiresAt:'2026-10-17T08:00:00.000Z'}])assert.equal(check(bad,sha,host,compiler,now),false);
+ assert.equal(check(v,sha,host,compiler,Date.parse(v.expiresAt)),false);
+ assert.equal(check({...v,runId:'56d83f93-1f39-4cac-874f-22df04596dae'},sha,host,compiler,now),false);
+});
+test('compile-only dispatcher는 성공·실패 모두 compile콜백1회로 끝나고 같은 gate 재호출을 거절한다',()=>{
+ const Gate=(compileQa as any).CompileOnlyAttempt;assert.equal(typeof Gate,'function');
+ let calls=0;const success=new Gate();
+ const ok=success.run(true,()=>{calls++;return Buffer.alloc(0);},()=>10);
+ assert.equal(ok.outcome,'COMPILED_NOT_EXECUTED');assert.equal(ok.nativeStarted,false);assert.equal(calls,1);
+ assert.throws(()=>success.run(true,()=>{calls++;},()=>10),/QA_COMPILE_ONLY_ALREADY_USED/);assert.equal(calls,1);
+ const failed=new Gate().run(true,()=>{calls++;throw {status:1,stderr:Buffer.from('SECRET')};},()=>20);
+ assert.equal(failed.outcome,'COMPILE_FAILED');assert.equal(failed.receipt.classification,'NONZERO');assert.equal(failed.nativeStarted,false);assert.equal(calls,2);
+ assert.throws(()=>new Gate().run(false,()=>{calls++;},()=>0),/QA_COMPILE_ONLY_NOT_AUTHORIZED/);assert.equal(calls,2);
+});

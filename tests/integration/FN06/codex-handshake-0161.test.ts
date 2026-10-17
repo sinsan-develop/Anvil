@@ -4,7 +4,7 @@ import {mkdir,lstat,realpath,readdir,readFile,writeFile,unlink,rmdir} from 'node
 import {createHash} from 'node:crypto';
 import {dirname,join,win32} from 'node:path';
 import {performance} from 'node:perf_hooks';
-import {CodexHandshakeQa,checkHandshakeRunBinding,HandshakeHostFrames,type HandshakeQaAction} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
+import {CodexHandshakeQa,checkHandshakeRunBinding,HandshakeHostFrames,compileFailureReceipt,checkCompileOnlyRunBinding,CompileOnlyAttempt,type HandshakeQaAction} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
 
 const root='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa';
 const ps='C:\\Program Files\\PowerShell\\7\\pwsh.exe';
@@ -25,7 +25,7 @@ function runtime(){
 async function pathCheck(path:string){
  for(let at=path;;at=dirname(at)){const st=await lstat(at);need(!st.isSymbolicLink(),'QA_LINK');need((await realpath(at)).toLowerCase()===win32.resolve(at).toLowerCase(),'QA_REALPATH');if(dirname(at)===at)break;}
 }
-async function tree(){
+async function tree(root='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa'){
  const files:{path:string;bytes:number}[]=[],dirs:string[]=[];let count=0,total=0;
  async function visit(path:string,depth:number){need(depth<=8,'QA_DEPTH_LIMIT');const st=await lstat(path);need(!st.isSymbolicLink()&&(await realpath(path)).toLowerCase()===path.toLowerCase(),'QA_LINK');need(path===root||path.startsWith(root+'\\'),'QA_OUTSIDE_ROOT');
   if(st.isDirectory()){dirs.push(path);for(const name of await readdir(path)){need(++count<=1024,'QA_FILE_COUNT_LIMIT');await visit(join(path,name),depth+1);}}
@@ -34,9 +34,42 @@ async function tree(){
  await visit(root,0);return{files,dirs,total};
 }
 
+// 별도 정책/7값으로만 들어오는 compile-only. 성공/실패 어느 경우도 실제 handshake 분기로 돌아가지 않는다.
+async function compileOnlyQa(){
+ const root='D:\\tmp\\anvil-v3-fn06-compile-receipt-01';let owned=false;
+ const binding={policy:process.env.ANVIL_COMPILE_POLICY,runId:process.env.ANVIL_COMPILE_RUN,sourceSha:process.env.ANVIL_COMPILE_SOURCE,hostSourceHash:process.env.ANVIL_COMPILE_HOST_HASH,compilerHash:process.env.ANVIL_COMPILE_COMPILER_HASH,issuedAt:process.env.ANVIL_COMPILE_ISSUED,expiresAt:process.env.ANVIL_COMPILE_EXPIRES};
+ need(process.platform==='win32'&&['POLICY','RUN','SOURCE','HOST_HASH','ISSUED','EXPIRES'].every(k=>process.env['ANVIL_HANDSHAKE_'+k]===undefined),'QA_COMPILE_ONLY_NOT_AUTHORIZED');
+ const current=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),hostHash=await hash(source),compilerHash=await hash(csc);
+ const valid=()=>checkCompileOnlyRunBinding(binding,current,hostHash,compilerHash,Date.now());
+ need(valid(),'QA_COMPILE_ONLY_CANDIDATE_OR_WINDOW_INVALID');need(!execFileSync('git',['status','--porcelain','--untracked-files=no'],{encoding:'utf8'}).trim(),'QA_DIRTY');
+ need(await absent(root),'QA_ROOT_EXISTS');await pathCheck(dirname(root));await pathCheck(csc);runtime();
+ try{
+  await mkdir(root);owned=true;
+  powershell(`$p='${root}';$a=Get-Acl -LiteralPath $p;$me=[Security.Principal.WindowsIdentity]::GetCurrent();if($a.Owner -ne $me.Name){throw 'OWNER'};$a.SetAccessRuleProtection($true,$false);foreach($r in @($a.Access)){$a.RemoveAccessRuleSpecific($r)};foreach($s in @($me.User,[Security.Principal.SecurityIdentifier]::new('S-1-5-18'))){$a.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($s,'FullControl','ContainerInherit,ObjectInherit','None','Allow'))};Set-Acl -LiteralPath $p -AclObject $a`);
+  await mkdir(join(root,'bin'));await mkdir(join(root,'diagnostics'));await writeFile(join(root,'diagnostics','binding.json'),JSON.stringify(binding),{flag:'wx'});
+  const helper=join(root,'bin','CodexHandshakeHost.exe');
+  need(await hash(source)===hostHash&&await hash(csc)===compilerHash,'QA_SOURCE_CHANGED');runtime();
+  const result=new CompileOnlyAttempt().run(valid(),()=>execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072}),()=>performance.now(),win32.resolve(source));
+  const safe={kind:'FN06_COMPILE_ONLY_RECEIPT',sourceSha:current,hostSourceHash:hostHash,compilerHash,runId:binding.runId,...result,helperStarted:false,jobStarted:false,handshakeStarted:false};
+  await writeFile(join(root,'diagnostics','result.json'),JSON.stringify(safe),{flag:'wx'});console.log(JSON.stringify(safe));
+  need(await hash(source)===hostHash&&await hash(csc)===compilerHash,'QA_SOURCE_CHANGED');runtime();
+  // 컴파일러 종료를 확인 못한 실패는 정리를 강행하지 않고 원인과 잔여를 보존한다.
+  need(result.outcome==='COMPILED_NOT_EXECUTED','QA_COMPILE_FAILED');
+ }finally{
+  if(owned){
+   // 소유/link와 정확 compiler 잔여0이 확인된 생성 목록만 삭제한다. 다른 process 종료0.
+   powershell(`$p=@(Get-CimInstance Win32_Process -Filter "Name='csc.exe'"|Where-Object{(-not $_.ExecutablePath) -or $_.ExecutablePath -eq '${csc}'});if($p.Count -ne 0){throw 'QA_COMPILER_EXIT_UNVERIFIED'};$root='${root}';$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;foreach($i in @((Get-Item -LiteralPath $root))+@(Get-ChildItem -LiteralPath $root -Force -Recurse)){if(($i.Attributes -band [IO.FileAttributes]::ReparsePoint) -or (Get-Acl -LiteralPath $i.FullName).GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $me){throw 'QA_OWNER_OR_LINK'}}`);
+   const manifest=await tree(root);for(const f of manifest.files)await unlink(f.path);for(const d of manifest.dirs.sort((a,b)=>b.length-a.length))await rmdir(d);
+   need(await absent(root),'QA_ROOT_REMAINS');runtime();console.log(JSON.stringify({kind:'FN06_COMPILE_ONLY_CLEANUP',rootRemaining:false,files:manifest.files.length,dirs:manifest.dirs.length}));
+  }
+ }
+}
+
 // 준비 turn에서는 이 파일을 실행하지 않는다. 아래 latch는 사람/PMO의 실행 권한을 스스로 발급하지 않는다.
 // PMO가 exact 후보/시간창/단1회 시작조건을 전달한 뒤 그 값으로만 실행한다. 재시도 루프는 없다.
-test('FN06 고정 Codex0.161 단1회 handshake·exact Job/종결·정리',{timeout:120000},async()=>{
+const compileOnlySelected=['POLICY','RUN','SOURCE','HOST_HASH','COMPILER_HASH','ISSUED','EXPIRES'].some(k=>process.env['ANVIL_COMPILE_'+k]!==undefined);
+test(compileOnlySelected?'FN06 compile-only 단1회·native 실행0·정리':'FN06 고정 Codex0.161 단1회 handshake·exact Job/종결·정리',{timeout:120000},async()=>{
+ if(compileOnlySelected)return compileOnlyQa();
  let owned=false,helperStarted=false,helperClosed=false,final:any,ready:any,failure=false;let helperExit:number|null|undefined,helperSignal:NodeJS.Signals|null|undefined;
  let child:ReturnType<typeof spawn>|undefined;let manifest:{files:{path:string;bytes:number}[];dirs:string[];total:number}|undefined;
  const binding={policy:process.env.ANVIL_HANDSHAKE_POLICY,runId:process.env.ANVIL_HANDSHAKE_RUN,sourceSha:process.env.ANVIL_HANDSHAKE_SOURCE,hostSourceHash:process.env.ANVIL_HANDSHAKE_HOST_HASH,issuedAt:process.env.ANVIL_HANDSHAKE_ISSUED,expiresAt:process.env.ANVIL_HANDSHAKE_EXPIRES};
@@ -53,7 +86,8 @@ test('FN06 고정 Codex0.161 단1회 handshake·exact Job/종결·정리',{timeo
   await writeFile(join(root,'diagnostics','binding.json'),JSON.stringify(binding),{flag:'wx'});
   const helper=join(root,'bin','CodexHandshakeHost.exe');
   need(checkHandshakeRunBinding(binding,current,hostHash,Date.now()),'QA_WINDOW_EXPIRED');runtime();
-  try{execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072});}catch{throw Error('QA_COMPILE_FAILED');}
+  const compileStarted=performance.now();
+  try{execFileSync(csc,['/nologo','/target:exe','/platform:x64','/optimize+','/r:System.Web.Extensions.dll','/out:'+helper,source],{windowsHide:true,stdio:'pipe',timeout:15000,maxBuffer:131072});}catch(error){console.log(JSON.stringify({kind:'FN06_COMPILE_FAILURE',receipt:compileFailureReceipt(error,Math.floor(performance.now()-compileStarted),win32.resolve(source))}));throw Error('QA_COMPILE_FAILED');}
   const helperHash=await hash(helper);need(await hash(source)===hostHash&&await hash(native)===nativeHash,'QA_SOURCE_CHANGED');
   need(checkHandshakeRunBinding(binding,current,hostHash,Date.now()),'QA_WINDOW_EXPIRED');runtime();
   const env:NodeJS.ProcessEnv={SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows',SystemDrive:'C:',ComSpec:'C:\\Windows\\System32\\cmd.exe',PATH:'C:\\Windows\\System32;C:\\Windows',HOME:join(root,'home'),USERPROFILE:join(root,'profile'),APPDATA:join(root,'profile/AppData/Roaming'),LOCALAPPDATA:join(root,'profile/AppData/Local'),CODEX_HOME:join(root,'home'),TEMP:join(root,'temp'),TMP:join(root,'temp'),NO_COLOR:'1'};

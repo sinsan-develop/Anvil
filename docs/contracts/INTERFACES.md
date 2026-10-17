@@ -1,5 +1,7 @@
 # P02 공통 명령·관측 계약 초안
 
+FN06 내부 QA 진단 준비(공개 API 변경 아님): receipt는 유한 own data status/signal/code/pid/elapsed·출력별 byte/prefix SHA256/hashedBytes/truncated, 허용source CS번호/severity/line/column 최대32만 보존한다. 누락/비정형·Proxy/접근자는 UNKNOWN, 원문/message/stack/개인경로0이다. 반환되지 않은 성공 stderr/pid/signal은 UNKNOWN이며 진단 위조/내용의 진정성이나 실행권한은 보장하지 않는다. 별도 ANVIL_COMPILE 7값·AV3-PMO-FN06-COMPILE-RECEIPT-01/exact SHA/고정host39111ada·compiler46809206/유한 새 창은 compile1만 허용하는 로컬 입력 대조이고 PMO 실행 권한 자체가 아니다. 기존 handshake6값/소진 run 혼용은 거절하며 compiler argv/timeout/buffer는 불변, 성공/실패 모두 helper/native/Job0으로 종료한다. 실제 시작은 별도 PMO 지시 전0이다.
+
 A 최초실행의 관측 경계: QA_COMPILE_FAILED는 csc 호출 실패만 알려주고 원래 compiler 상태/timeout/정제진단 receipt는 현 소스에 없다. 이번 원인을 특정한 오류코드로 꾸미거나 compile/handshake/OS PASS로 올리지 않는다. helper/native/Job/stdio가 시작되지 않아 실행 뒤 종결/Job0 gate는 NOT_EXECUTED이고 등록 파일정리·보호범위 불변만 별도 확인했다. 추가 실제시도/진단계약 보완은 다음 PMO 지시 전 수행하지 않는다.
 
 A 관측 실패 계약 보완: helper NDJSON은 pipe data 이벤트 경계와 무관하게 완성된 frame별8192바이트로 수집하고 전체512KiB/256개를 넘으면 sticky 실패한다. Job 조회 예외는 raw process cleanup 시도를 막지 않으며 rawCleanupAttempted/Failed·jobObservationFailed를 분리한다. strict 성공은 helper exit0/양쪽EOF·native exit0/실제Job0·raw cleanup 실패없음/관측실패없음·두메시지/기한 및 gate를 모두 만족해야 한다. 이 조건은 후보 소스에만 있고 compile/OS PASS가 아니며 마지막 Jobhandle 자동종료만으로 cleanup 확인을 대체하지 않는다.

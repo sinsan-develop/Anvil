@@ -1,8 +1,71 @@
 import {createHash} from 'node:crypto';
+import {types} from 'node:util';
 import {parseWireJson} from '../../../../contracts/canonical.ts';
 import {Codex0161Codec} from './codec.ts';
 
 export interface HandshakeRunBinding {policy:string;runId:string;sourceSha:string;hostSourceHash:string;issuedAt:string;expiresAt:string}
+const compilePolicy='AV3-PMO-FN06-COMPILE-RECEIPT-01';
+const fixedHostHash='39111ada9ff079143507db5c2986e1f42d3f0679519ba524a82775dddc26cbac';
+const fixedCompilerHash='46809206887326d2d24db1eff1f3064de972c3451abe766b49111450a5e08e00';
+const compileSource='apps/connector/native/CodexHandshakeHost.cs';
+/** 자체 실행 권한 발급이 아닌 새 compile-only 후보/창의 순수 대조. */
+export function checkCompileOnlyRunBinding(value:unknown,currentSha:string,hostHash:string,compilerHash:string,nowMs:number):boolean{
+ try{
+  if(!value||typeof value!=='object'||types.isProxy(value)||Object.getPrototypeOf(value)!==Object.prototype||Object.getOwnPropertySymbols(value).length)return false;
+  const keys=['policy','runId','sourceSha','hostSourceHash','compilerHash','issuedAt','expiresAt'],d=Object.getOwnPropertyDescriptors(value);
+  if(Object.keys(d).length!==keys.length||keys.some(k=>!d[k]||!('value'in d[k]!)||typeof d[k]!.value!=='string'||d[k]!.value.length>128))return false;
+  if(d.policy!.value!==compilePolicy||d.runId!.value==='56d83f93-1f39-4cac-874f-22df04596dae'||d.compilerHash!.value!==fixedCompilerHash||compilerHash!==fixedCompilerHash||hostHash!==fixedHostHash)return false;
+  const original={policy:'AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01',runId:d.runId!.value,sourceSha:d.sourceSha!.value,hostSourceHash:d.hostSourceHash!.value,issuedAt:d.issuedAt!.value,expiresAt:d.expiresAt!.value};
+  return checkHandshakeRunBinding(original,currentSha,hostHash,nowMs);
+ }catch{return false;}
+}
+/** 예외는 인증된 증거가 아니다. own data만 유한 정규화하고 원문/메시지/stack은 반환하지 않는다. */
+export function compileFailureReceipt(error:unknown,elapsedMs:number,sourceAbsolute?:string){
+ const own=(key:string):unknown=>{try{if(!error||typeof error!=='object'||types.isProxy(error))return undefined;const d=Object.getOwnPropertyDescriptor(error,key);return d&&'value'in d?d.value:undefined;}catch{return undefined;}};
+ const numeric=(v:unknown,min:number,max=2147483647)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max?v:'UNKNOWN' as const;
+ const status=numeric(own('status'),-2147483648,4294967295),pid=numeric(own('pid'),1),rawSignal=own('signal'),rawCode=own('code');
+ const signal=rawSignal===null?null:typeof rawSignal==='string'&&['SIGTERM','SIGKILL','SIGINT','SIGABRT','SIGSEGV','SIGBREAK'].includes(rawSignal)?rawSignal:'UNKNOWN';
+ const code=typeof rawCode==='string'&&['ETIMEDOUT','EACCES','EPERM','ENOENT','ENOEXEC','E2BIG','ENOMEM','ENOBUFS','ERR_CHILD_PROCESS_STDIO_MAXBUFFER'].includes(rawCode)?rawCode:'UNKNOWN';
+ const diagnostics:{code:string;severity:'error'|'warning';source:string;line:number;column:number}[]=[];
+ function stream(value:unknown){
+  try{
+   if(!value||typeof value!=='object'||types.isProxy(value)||!ArrayBuffer.isView(value)||Object.getPrototypeOf(value)!==Buffer.prototype)return {bytes:'UNKNOWN' as const,sha256:'UNKNOWN',hashedBytes:0,truncated:'UNKNOWN' as const};
+   const getLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')!.get!;
+   const bytes=getLength.call(value) as number,hashedBytes=Math.min(bytes,131072);
+   const typed=Object.getPrototypeOf(Uint8Array.prototype);
+   const buffer=Object.getOwnPropertyDescriptor(typed,'buffer')!.get!.call(value) as ArrayBuffer;
+   if(types.isSharedArrayBuffer(buffer))throw Error('SHARED_BUFFER');
+   const offset=Object.getOwnPropertyDescriptor(typed,'byteOffset')!.get!.call(value) as number;
+   // No species/constructor/subarray or caller getter; cap the copy before decoding.
+   const prefix=new Uint8Array(hashedBytes);prefix.set(new Uint8Array(buffer,offset,hashedBytes));
+   const sha256=createHash('sha256').update(prefix).digest('hex');
+   let text='';try{text=new TextDecoder('utf-8',{fatal:true}).decode(prefix);}catch{/* byte facts remain known, diagnostics unavailable */}
+   for(const row of text.split(/\r?\n/)){
+    if(diagnostics.length>=32)break;
+    const m=/^(.+)\(([0-9]{1,7}),([0-9]{1,7})\): (error|warning) (CS[0-9]{4}):/.exec(row);
+    if(!m)continue;
+    const path=m[1]!.replaceAll('\\','/');
+    if(path!==compileSource&&(typeof sourceAbsolute!=='string'||path!==sourceAbsolute.replaceAll('\\','/')))continue;
+    const line=Number(m[2]),column=Number(m[3]);if(line<1||column<1)continue;
+    diagnostics.push({code:m[5]!,severity:m[4] as 'error'|'warning',source:compileSource,line,column});
+   }
+   prefix.fill(0);return {bytes,sha256,hashedBytes,truncated:bytes>hashedBytes};
+  }catch{return {bytes:'UNKNOWN' as const,sha256:'UNKNOWN',hashedBytes:0,truncated:'UNKNOWN' as const};}
+ }
+ const stdout=stream(own('stdout')),stderr=stream(own('stderr'));
+ return {classification:code==='ETIMEDOUT'?'TIMEOUT':status!=='UNKNOWN'&&status!==0?'NONZERO':['EACCES','EPERM','ENOENT','ENOEXEC','E2BIG','ENOMEM'].includes(code)?'SPAWN_ERROR':'UNKNOWN',status,signal,code,pid,elapsedMs:numeric(elapsedMs,0),stdout,stderr,diagnostics};
+}
+/** compile 콜백만 소비하는 단일 시도. native 실행 함수를 받지 않으며 성공 후에도 종료한다. */
+export class CompileOnlyAttempt{
+ #used=false;
+ run(authorized:boolean,compile:()=>Uint8Array,clock:()=>number,sourceAbsolute?:string){
+  if(this.#used)throw Error('QA_COMPILE_ONLY_ALREADY_USED');this.#used=true;
+  if(!authorized)throw Error('QA_COMPILE_ONLY_NOT_AUTHORIZED');
+  const start=clock();
+  try{const stdout=compile();return {outcome:'COMPILED_NOT_EXECUTED' as const,nativeStarted:false as const,receipt:compileFailureReceipt({status:0,stdout},Math.floor(clock()-start),sourceAbsolute)};}
+  catch(error){return {outcome:'COMPILE_FAILED' as const,nativeStarted:false as const,receipt:compileFailureReceipt(error,Math.floor(clock()-start),sourceAbsolute)};}
+ }
+}
 export class HandshakeHostFrames{
  readonly #buffer=new Uint8Array(8193);#length=0;#total=0;#frames=0;#unusable=false;
  #invalid():never{this.#unusable=true;this.#buffer.fill(0);this.#length=0;throw Error('QA_HOST_FRAME_INVALID');}

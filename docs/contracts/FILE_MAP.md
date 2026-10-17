@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+FN06 compile 진단 준비의 변경은 기존 handshake-qa.ts(own data 유한 receipt/checkCompileOnlyRunBinding/CompileOnlyAttempt), 직접 unit(기존11+신규5), 기존 integration의 별도 compile-only 분기와 원 compile catch, 직접4문서뿐이다. C# source39111ada/기존 codec/vendor/의존성/서비스는 불변이다. compile-only는 신규 등록root의 compile1 결과만 기록·정리하고 성공해도 원 handshake 분기로 복귀하지 않는다. 준비 중 통합/컴파일 실행0이며 직접16 순수 PASS·타입0와 구분한다.
+
 A 최초 integration1회는 compile 호출 단계 QA_COMPILE_FAILED로 끝났다. 현 harness의 compile catch가 원예외의 exit/signal/timeout/진단을 버려 직접원인은 미확정이다. 소스/harness는 변경하지 않았고 새 실제실행0; 승인된root/binding만 정리했다. 오류기록 보완은 후속 PMO지시 대상이며 이번한번의 실패를 뒤의 성공으로 소급하지 않는다.
 
 A 한정 보정의 HandshakeHostFrames는 handshake-qa.ts 안에서 helper NDJSON의 transport 병합/분할과 개별8192·총512KiB/256프레임·부분EOF를 소비한다. integration은 이 직접 검증된 framer를 사용한다. C# finally는 raw StopExact를 Job조회와 독립 보호블록으로 두며 rawCleanupAttempted/Failed/jobObservationFailed와 최신 Job0을 별도 보고한다. 실제 OS 검증은 아직0이다. 소스4+직접문서4 외 기존파일은 변경하지 않았다.
