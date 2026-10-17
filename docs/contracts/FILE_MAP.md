@@ -1,6 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
 ## A-2R 소스 위치 등록부 진입점
+- QA의 실측 Docker tmpfs/최초오류·정리오류 분리·비밀 없는 SQLSTATE 진단은 scripts/source-root-qa-guard.ts, 직접 회귀는 tests/unit/FN08/source-root-qa-guard.test.ts가 소유한다. 제품 실행기나 범용 자원관리 계층이 아니며 등록 QA runner만 소비한다.
 - 서버: connections/source-root-input.ts(정확입력/snapshot), project-source-roots.ts(3명령·원본/메타조회), projects/routes.ts·access/project-command.ts의새op 연결. 기존승인소비 whitelist는 늘리지 않는다.
 - DB: db/migrations/0008_source_root_registry.sql의새2표/해시/가드만. scripts/source-root-migration.ts 고정44manifest+새1; migrate-development.ts SOURCE_ROOT_REGISTRY_ONLY 모드, apply-source-root-development.ts의 --plan/--apply-schema-only는exactcommit/기한/hash·보호migrator 경로와old/newbaseline 대조다.
 - QA: qa-source-root-registry.ts --plan/--run, integration/FN08/source-root-registry.ts는새전용PG actualCOMMIT/GET·거절/rollback/immutable guards. exact소유container/net/tmpfs만폐기;기존데이터행삭제/guard해제0.

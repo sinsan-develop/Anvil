@@ -1,5 +1,11 @@
 # Anvil 재설계 개발환경
 
+## A-2R 소스 선언 registry DB 반영 — 2026-10-17
+
+- Git exact b5c3c74debae4b2e09d51e7b3916428dfe13cc96의 신규0008_source_root_registry.sql(SHA256 d9d27d2c92e31e6c5e50bf18762786d2cad2b47a28905bc8f0f15fa2cec72403)만 정식 개발 DB에 schema-only 적용했다. 기존44 migration 보존·현재45개, 신규 source_roots/source_root_versions 각0행·seed0이다. 기존75표의 논리구조/권한·행수·fingerprint를 적용 전후 대조했으며 실제 계정/권한·정책·서비스는 변경하지 않았다.
+- 같은 SQL의 새 빈 PG15 격리 QA에서 11범주 정상/거절·실제COMMIT/rollback을 확인했으나 transport는 Fastify.inject→PG다. 실제 socketHTTP/servedBrowser·정식 사용자 여정·Agent/파일관측은 미검증이다. QA container/network/tmpfs/5547와 Windows a2r-registry-01의9파일/7dir는 정확정리·별도잔여0, 원실패 ui06-served-01은 보존한다.
+- 기존 Windows Node23836/CIM2026-10-17T10:02:29.448747Z/127.0.0.1:3830·보호8hash는 적용 후 불변이다. 현재 서비스에 새 SourceRootsPanel을 게시/재시작한 것은 아니다. DB 반영 성공만으로 사용자 기능 전체 완료로 판정하지 않는다.
+
 ## 최신 실제 runtime — 2026-10-17 10:02~10:05 UTC
 
 - UI06 actual run4d321f60-64f3-4f41-95c6-41ec95cd9eab는 보조 script 파일 교체 인자 오류로 FAIL, 자동 rollback도 동일 경계에서 FAIL이다. 아래 PREPARED/null manifest는 당시 준비 이력이며 현재 실제 상태가 아니다. 새 UI06 실제 로그인/DB/browser/UNC 여정은 시작하지 않았다.
