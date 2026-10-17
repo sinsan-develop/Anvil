@@ -3,6 +3,24 @@ import {parseWireJson} from '../../../../contracts/canonical.ts';
 import {Codex0161Codec} from './codec.ts';
 
 export interface HandshakeRunBinding {policy:string;runId:string;sourceSha:string;hostSourceHash:string;issuedAt:string;expiresAt:string}
+export class HandshakeHostFrames{
+ readonly #buffer=new Uint8Array(8193);#length=0;#total=0;#frames=0;#unusable=false;
+ #invalid():never{this.#unusable=true;this.#buffer.fill(0);this.#length=0;throw Error('QA_HOST_FRAME_INVALID');}
+ push(chunk:Uint8Array):unknown[]{
+  if(this.#unusable||!(chunk instanceof Uint8Array)||chunk.byteLength>524288-this.#total)return this.#invalid();
+  this.#total+=chunk.byteLength;const out:unknown[]=[];
+  for(const b of chunk){
+   if(b===10){
+    const length=this.#length-(this.#buffer[this.#length-1]===13?1:0);
+    if(length>8192||++this.#frames>256)return this.#invalid();
+    try{out.push(parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(this.#buffer.subarray(0,length))));}catch{return this.#invalid();}
+    this.#buffer.fill(0,0,this.#length);this.#length=0;
+   }else{if(this.#length===this.#buffer.length)return this.#invalid();this.#buffer[this.#length++]=b;}
+  }
+  return out;
+ }
+ finish():void{if(this.#unusable||this.#length)return this.#invalid();this.#unusable=true;}
+}
 /** 로컬 한시 harness 입력 대조일 뿐 사용자/PMO 권한의 암호학적 증명이 아니다. */
 export function checkHandshakeRunBinding(value:unknown,currentSha:string,hostHash:string,nowMs:number):value is HandshakeRunBinding{
  try{

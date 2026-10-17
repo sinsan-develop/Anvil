@@ -4,8 +4,7 @@ import {mkdir,lstat,realpath,readdir,readFile,writeFile,unlink,rmdir} from 'node
 import {createHash} from 'node:crypto';
 import {dirname,join,win32} from 'node:path';
 import {performance} from 'node:perf_hooks';
-import {parseWireJson} from '../../../contracts/canonical.ts';
-import {CodexHandshakeQa,checkHandshakeRunBinding,type HandshakeQaAction} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
+import {CodexHandshakeQa,checkHandshakeRunBinding,HandshakeHostFrames,type HandshakeQaAction} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
 
 const root='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa';
 const ps='C:\\Program Files\\PowerShell\\7\\pwsh.exe';
@@ -58,7 +57,7 @@ test('FN06 고정 Codex0.161 단1회 handshake·exact Job/종결·정리',{timeo
   const helperHash=await hash(helper);need(await hash(source)===hostHash&&await hash(native)===nativeHash,'QA_SOURCE_CHANGED');
   need(checkHandshakeRunBinding(binding,current,hostHash,Date.now()),'QA_WINDOW_EXPIRED');runtime();
   const env:NodeJS.ProcessEnv={SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows',SystemDrive:'C:',ComSpec:'C:\\Windows\\System32\\cmd.exe',PATH:'C:\\Windows\\System32;C:\\Windows',HOME:join(root,'home'),USERPROFILE:join(root,'profile'),APPDATA:join(root,'profile/AppData/Roaming'),LOCALAPPDATA:join(root,'profile/AppData/Local'),CODEX_HOME:join(root,'home'),TEMP:join(root,'temp'),TMP:join(root,'temp'),NO_COLOR:'1'};
-  const gate=new CodexHandshakeQa();let startedAt=performance.now(),timer:ReturnType<typeof setInterval>|undefined,wireMessages=0,hostBytes=0,hostErrors=0,buffer='';
+  const gate=new CodexHandshakeQa(),frames=new HandshakeHostFrames();let startedAt=performance.now(),timer:ReturnType<typeof setInterval>|undefined,wireMessages=0,hostErrors=0;
   const execute=(actions:HandshakeQaAction[])=>{for(const action of actions){if(action.kind==='WRITE_STDIN'){need(wireMessages<2,'QA_EXTRA_WIRE');const expected=wireMessages===0?'6a3a06be869354e0440c50163ee6cd5034367b45bee452284fd9ae101b8e10fe':'a7a46480650892067559ec67217b69dce68c1eef6b65ec48662dddf6ccEf0893'.toLowerCase();need(digest(action.wire)===expected,'QA_WIRE_CHANGED');child!.stdin!.write(wireMessages++===0?'INIT\n':'INITIALIZED\n');}else if(action.kind==='CLOSE_STDIN')child!.stdin!.write('EOF\n');else child!.stdin!.write('STOP\n');}};
   const time=()=>Math.max(0,Math.floor(performance.now()-startedAt));
   const fail=()=>{failure=true;try{child?.stdin?.end();}catch{}};
@@ -66,8 +65,7 @@ test('FN06 고정 Codex0.161 단1회 handshake·exact Job/종결·정리',{timeo
   const closed=new Promise<void>(resolve=>{child!.once('close',(code,signal)=>{helperExit=code;helperSignal=signal;helperClosed=true;clearInterval(timer);resolve();});});
   child.on('error',fail);child.stdin!.on('error',fail);child.stderr!.on('data',(b:Buffer)=>{hostErrors+=b.length;fail();});
   child.stdout!.on('data',(part:Buffer)=>{try{
-   hostBytes+=part.length;need(hostBytes<=524288,'QA_HOST_OUTPUT_LIMIT');buffer+=new TextDecoder('utf-8',{fatal:true}).decode(part);need(buffer.length<=16384,'QA_HOST_FRAME_LIMIT');
-   let at:number;while((at=buffer.indexOf('\n'))>=0){const raw=buffer.slice(0,at);buffer=buffer.slice(at+1);need(Buffer.byteLength(raw)<=8192,'QA_HOST_FRAME_LIMIT');const v=parseWireJson(raw) as any;
+   for(const value of frames.push(part)){const v=value as any;
     if(v.kind==='READY'){need(!ready&&!final&&Number.isSafeInteger(v.pid)&&v.pid>0&&v.pid!==19960&&v.pid!==26052&&/^\d{15,20}$/.test(v.startTicks)&&v.executableHash===nativeHash.toUpperCase()&&v.active===1&&Number.isSafeInteger(v.elapsedMs)&&v.elapsedMs>=0&&v.elapsedMs<15000,'QA_IDENTITY_INVALID');ready=v;startedAt=performance.now()-v.elapsedMs;execute(gate.start(0));timer=setInterval(()=>{try{execute(gate.tick(time()));}catch{fail();}},10);}
     else if(v.kind==='STDOUT'||v.kind==='STDERR'){need(ready&&!final&&typeof v.bytes==='string'&&v.bytes.length<=2732,'QA_HOST_STREAM_INVALID');const bytes=Buffer.from(v.bytes,'base64');need(bytes.toString('base64')===v.bytes,'QA_HOST_STREAM_INVALID');execute(v.kind==='STDOUT'?gate.stdout(bytes,time()):gate.stderr(bytes,time()));}
     else if(v.kind==='STDOUT_EOF'||v.kind==='STDERR_EOF'){need(ready&&!final,'QA_EOF_INVALID');execute(v.kind==='STDOUT_EOF'?gate.stdoutEnded(time()):gate.stderrEnded(time()));}
@@ -77,11 +75,11 @@ test('FN06 고정 Codex0.161 단1회 handshake·exact Job/종결·정리',{timeo
   }catch{fail();}});
   let watchdog:ReturnType<typeof setTimeout>|undefined;
   try{await Promise.race([closed,new Promise<never>((_,reject)=>{watchdog=setTimeout(()=>{fail();reject(Error('QA_HELPER_TERMINATION_UNVERIFIED'));},25000);})]);}finally{clearTimeout(watchdog);clearInterval(timer);}
-  need(!failure&&helperExit===0&&helperSignal===null&&hostErrors===0&&buffer.trim()===''&&final&&ready,'QA_PROTOCOL_UNKNOWN');
-  need(final.ok===true&&final.created===true&&final.resumed===true&&final.terminationObserved===true&&final.jobZeroObserved===true&&final.exitCode===0&&final.forced===false&&final.stdinMessages===2&&final.elapsedMs<20000,'QA_NATIVE_OBSERVATION_FAILED');
+  frames.finish();need(!failure&&helperExit===0&&helperSignal===null&&hostErrors===0&&final&&ready,'QA_PROTOCOL_UNKNOWN');
+  need(final.ok===true&&final.created===true&&final.resumed===true&&final.terminationObserved===true&&final.jobZeroObserved===true&&final.rawCleanupAttempted===true&&final.rawCleanupFailed===false&&final.jobObservationFailed===false&&final.exitCode===0&&final.forced===false&&final.stdinMessages===2&&final.elapsedMs<20000,'QA_NATIVE_OBSERVATION_FAILED');
   need(gate.report().phase==='PROTOCOL_COMPLETE'&&wireMessages===2,'QA_PROTOCOL_NOT_COMPLETE');
   runtime();manifest=await tree();
-  const safe={kind:'FN06_HANDSHAKE_QA_ONLY',sourceSha:current,hostSourceHash:hostHash,helperHash,nativeHash,runId:binding.runId,protocol:gate.report(),native:{pid:final.pid,startTicks:final.startTicks,terminationObserved:true,jobZeroObserved:true,elapsedMs:final.elapsedMs,forced:false,stdinMessages:final.stdinMessages,stdoutBytes:final.stdoutBytes,stderrBytes:final.stderrBytes},fileSandboxVerified:false,agentCapabilitiesVerified:false,workAccepted:false};
+  const safe={kind:'FN06_HANDSHAKE_QA_ONLY',sourceSha:current,hostSourceHash:hostHash,helperHash,nativeHash,runId:binding.runId,protocol:gate.report(),native:{pid:final.pid,startTicks:final.startTicks,terminationObserved:true,jobZeroObserved:true,rawCleanupAttempted:final.rawCleanupAttempted,rawCleanupFailed:final.rawCleanupFailed,jobObservationFailed:final.jobObservationFailed,elapsedMs:final.elapsedMs,forced:false,stdinMessages:final.stdinMessages,stdoutBytes:final.stdoutBytes,stderrBytes:final.stderrBytes},fileSandboxVerified:false,agentCapabilitiesVerified:false,workAccepted:false};
   await writeFile(join(root,'diagnostics','result.json'),JSON.stringify(safe),{flag:'wx'});console.log(JSON.stringify(safe));
  }finally{
   try{child?.stdin?.end();}catch{}

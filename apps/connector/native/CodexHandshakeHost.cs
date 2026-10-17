@@ -25,7 +25,7 @@ internal static class CodexHandshakeHost {
  static readonly Stopwatch Clock=new Stopwatch();
  static IntPtr Job,Attributes,HandleList,JobList,EnvironmentBlock;
  static PROCESS_INFORMATION Child;
- static bool Created,Resumed,Forced,TerminationObserved,JobZero,InputClosed,AttributesInitialized;
+ static bool Created,Resumed,Forced,TerminationObserved,JobZero,InputClosed,AttributesInitialized,RawCleanupAttempted,RawCleanupFailed,JobObservationFailed;
  static volatile bool Fault;static string Phase="PREFLIGHT";
  static FileStream ChildInput,ChildOutput,ChildError,ExeLock;
  static int MessageCount,OutBytes,ErrBytes;static long StartTicks;static uint ExitCode=259;
@@ -77,7 +77,7 @@ internal static class CodexHandshakeHost {
  static int Members(){
   IntPtr p=Marshal.AllocHGlobal(8+IntPtr.Size*2);try{uint returned;Need(QueryInformationJobObject(Job,3,p,(uint)(8+IntPtr.Size*2),out returned));int assigned=Marshal.ReadInt32(p),count=Marshal.ReadInt32(p,4);Need(assigned==count&&count>=0&&count<=1);if(count==1)Need((uint)Marshal.ReadIntPtr(p,8).ToInt64()==Child.pid);return count;}finally{Marshal.FreeHGlobal(p);}
  }
- static void ObserveExit(){if(Created&&WaitForSingleObject(Child.process,0)==0){Need(GetExitCodeProcess(Child.process,out ExitCode));TerminationObserved=true;}if(Job!=IntPtr.Zero)JobZero=Members()==0;}
+ static void ObserveExit(){if(Created&&WaitForSingleObject(Child.process,0)==0){Need(GetExitCodeProcess(Child.process,out ExitCode));TerminationObserved=true;}if(Job!=IntPtr.Zero)try{JobZero=Members()==0;}catch{JobZero=false;JobObservationFailed=true;throw;}}
  static void StopExact(){if(!Created||TerminationObserved)return;Need(Child.process!=IntPtr.Zero);if(WaitForSingleObject(Child.process,0)!=0){Forced=true;Need(TerminateProcess(Child.process,124));}if(WaitForSingleObject(Child.process,500)==0){Need(GetExitCodeProcess(Child.process,out ExitCode));TerminationObserved=true;}}
  static string Quote(string value){var b=new StringBuilder("\"");int slashes=0;foreach(char c in value){if(c=='\\'){slashes++;continue;}b.Append('\\',c=='"'?slashes*2+1:slashes);b.Append(c);slashes=0;}b.Append('\\',slashes*2);return b.Append('"').ToString();}
  static IntPtr BuildEnvironment(){
@@ -138,7 +138,12 @@ internal static class CodexHandshakeHost {
    ObserveExit();clean=clean&&TerminationObserved&&JobZero;result=clean?0:1;
   }catch{Fault=true;}finally{
    // ref 관측 실패도 이번 CreateProcess의 raw handle만 사용해 정리한다.
-   try{CloseInput();if(Created){ObserveExit();if(!TerminationObserved)StopExact();ObserveExit();}}catch{Fault=true;clean=false;result=1;}
+   try{CloseInput();}catch{Fault=true;clean=false;result=1;}
+   if(Created){
+    // Job 조회 예외와 무관하게 raw process handle 정리를 독립적으로 시도한다.
+    RawCleanupAttempted=true;try{StopExact();}catch{RawCleanupFailed=true;Fault=true;clean=false;result=1;}
+    try{ObserveExit();}catch{Fault=true;clean=false;result=1;}
+   }
    foreach(var stream in new[]{ChildInput,ChildOutput,ChildError,ExeLock})if(stream!=null)try{stream.Dispose();}catch{}
    if(Child.thread!=IntPtr.Zero)CloseHandle(Child.thread);if(Child.process!=IntPtr.Zero)CloseHandle(Child.process);
    // 전용 마지막 handle만 닫는다. 자동종료는 사전 승인한 이 Job 회원에만 적용된다.
@@ -146,7 +151,7 @@ internal static class CodexHandshakeHost {
    if(Attributes!=IntPtr.Zero){if(AttributesInitialized)DeleteProcThreadAttributeList(Attributes);Marshal.FreeHGlobal(Attributes);}if(HandleList!=IntPtr.Zero)Marshal.FreeHGlobal(HandleList);if(JobList!=IntPtr.Zero)Marshal.FreeHGlobal(JobList);if(EnvironmentBlock!=IntPtr.Zero)Marshal.FreeHGlobal(EnvironmentBlock);foreach(var h in DirectoryLocks)h.Dispose();
   }
   // raw 응답은 transport 중계뿐이며 최종 기록에는 고정 상태/수치/지문만 있다.
-  try{Emit(new{kind="FINAL",ok=clean&&!Fault,phase=Phase,created=Created,resumed=Resumed,pid=Child.pid,startTicks=StartTicks.ToString(CultureInfo.InvariantCulture),terminationObserved=TerminationObserved,jobZeroObserved=JobZero,forced=Forced,exitCode=ExitCode,elapsedMs=Clock.ElapsedMilliseconds,stdinMessages=MessageCount,stdoutBytes=OutBytes,stderrBytes=ErrBytes,killOnJobClose=true,fileSandboxVerified=false});}catch{return 1;}
+  try{Emit(new{kind="FINAL",ok=clean&&!Fault,phase=Phase,created=Created,resumed=Resumed,pid=Child.pid,startTicks=StartTicks.ToString(CultureInfo.InvariantCulture),terminationObserved=TerminationObserved,jobZeroObserved=JobZero,rawCleanupAttempted=RawCleanupAttempted,rawCleanupFailed=RawCleanupFailed,jobObservationFailed=JobObservationFailed,forced=Forced,exitCode=ExitCode,elapsedMs=Clock.ElapsedMilliseconds,stdinMessages=MessageCount,stdoutBytes=OutBytes,stderrBytes=ErrBytes,killOnJobClose=true,fileSandboxVerified=false});}catch{return 1;}
   return Fault?1:result;
  }
 }

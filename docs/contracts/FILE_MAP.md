@@ -1,5 +1,7 @@
 # P02 A안 파일 책임·검증 지도
 
+A 한정 보정의 HandshakeHostFrames는 handshake-qa.ts 안에서 helper NDJSON의 transport 병합/분할과 개별8192·총512KiB/256프레임·부분EOF를 소비한다. integration은 이 직접 검증된 framer를 사용한다. C# finally는 raw StopExact를 Job조회와 독립 보호블록으로 두며 rawCleanupAttempted/Failed/jobObservationFailed와 최신 Job0을 별도 보고한다. 실제 OS 검증은 아직0이다. 소스4+직접문서4 외 기존파일은 변경하지 않았다.
+
 A 남은2파일 준비: `apps/connector/native/CodexHandshakeHost.cs`는 고정 native/hash·private Job/stdio3·초기 JOB_LIST/비상속·raw소유/단1회 종료 관측을 담당한다. `tests/integration/FN06/codex-handshake-0161.test.ts`는 exact SHA/sourcehash와 PMO 한시 입력·보존 선검사→새 QA root/csc1→host/native1→gate→관측/정리용이며 아직 실행하지 않았다. 새 모듈의 checkHandshakeRunBinding은 로컬 후보/창 입력 대조이지 PMO 권한 자체의 증명이 아니다. 준비 전용 검증은 직접 순수unit/type/diff와 C# 정적검수에 한정한다.
 
 FN06-HANDSHAKE-0161-01 부분 준비의 실제2파일: `apps/connector/adapters/primary/handshake-qa.ts`는 고정 QA2메시지와 기존 codec/유한 입력·단계시각·EOF/exit 입력을 순수 메모리 action으로 비교한다. `tests/unit/FN06/codex-handshake-qa.test.ts`는 직접8건이며 OS/stdio를 모의한다. normal adapter·권한 verifier/launcher에 연결하지 않았다. 승인된 CodexHandshakeHost.cs와 tests/integration/FN06/codex-handshake-0161.test.ts는 아직 작성 전이며 root·C# compile·Job/native 실행0이다. 기존 codec/vendor/OwnershipHost·Windows-host/서버/DB·패키지는 변경하지 않는다.

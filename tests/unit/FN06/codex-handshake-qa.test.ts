@@ -1,12 +1,23 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {createHash} from 'node:crypto';
-import {CodexHandshakeQa,checkHandshakeRunBinding} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
+import {CodexHandshakeQa,checkHandshakeRunBinding,HandshakeHostFrames} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
 
 const home='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa\\home';
 const response=(patch:Record<string,unknown>={})=>Buffer.from(JSON.stringify({id:'anvil-fn06-init-01',result:{codexHome:home,platformFamily:'windows',platformOs:'windows',userAgent:'synthetic-only',...patch}})+'\n');
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex').toUpperCase();
 const binding={policy:'AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01',runId:'1f26792e-ef0c-4d79-859c-476f2f2da5b1',sourceSha:'a'.repeat(40),hostSourceHash:'b'.repeat(64),issuedAt:'2026-10-17T06:30:00.000Z',expiresAt:'2026-10-17T07:00:00.000Z'};
+// 유효한 helper 프레임 여러 개가 한 pipe chunk로 묶여도 개별 한도로 판정해야 한다.
+test('helper frame은 같은 바이트열의 16KiB 초과 병합·분할에서 같은 결과를 낸다',()=>{
+ const event={kind:'STDOUT',bytes:Buffer.alloc(2048,65).toString('base64')},bytes=Buffer.from((JSON.stringify(event)+'\r\n').repeat(8));assert.ok(bytes.length>16384);
+ const merged=new HandshakeHostFrames(),split=new HandshakeHostFrames(),mergedOut=merged.push(bytes);assert.equal(mergedOut.length,8);for(const v of mergedOut)assert.deepEqual(v,event);
+ assert.deepEqual(split.push(bytes.subarray(0,19)),[]);const splitOut=split.push(bytes.subarray(19));assert.equal(splitOut.length,8);for(const v of splitOut)assert.deepEqual(v,event);merged.finish();split.finish();
+});
+// 미완성/잘못된/초과 입력을 허용하거나 오류 뒤 새 프레임으로 복구하면 실패한다.
+test('helper frame은 개별8192·총512KiB·256개·UTF8/중복key/부분EOF를 거절한다',()=>{
+ for(const bytes of [Buffer.alloc(8194,65),Buffer.alloc(524289,65),Buffer.from('{}\n'.repeat(257)),Buffer.from('{"kind":1,"kind":2}\n'),Buffer.from([0xff,10])]){const f=new HandshakeHostFrames();assert.throws(()=>f.push(bytes),/QA_HOST_FRAME_INVALID/);assert.throws(()=>f.push(Buffer.from('{}\n')),/QA_HOST_FRAME_INVALID/);}
+ const partial=new HandshakeHostFrames();partial.push(Buffer.from('{'));assert.throws(()=>partial.finish(),/QA_HOST_FRAME_INVALID/);
+});
 // 이 검사는 실행 권한을 발급하지 않는다. 한시 실행 소비자의 정확 후보/창 입력이 어긋나면 막는다.
 test('한시 실행 입력은 정확 정책·commit·hosthash·run과 최대30분 창에만 맞는다',()=>{
  const now=Date.parse('2026-10-17T06:40:00.000Z');assert.equal(checkHandshakeRunBinding(binding,'a'.repeat(40),'b'.repeat(64),now),true);
