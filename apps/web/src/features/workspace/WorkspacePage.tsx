@@ -33,7 +33,15 @@ export function WorkspacePage({ client, projectId, onAuthenticationLost }: { cli
         <section className="status-card" aria-label="프로젝트 자료"><h3>프로젝트 자료</h3><ul>
           <li><a href={routeHref('documents', projectId)}>문서·설계·작업계획 열기</a></li><li><a href={routeHref('knowledge', projectId)}>헌법·지식·결정 이유 열기</a></li>
           <li><a href={routeHref('approvals', projectId)}>승인 요청·결정 열기</a></li><li><a href={routeHref('connections', projectId)}>도구·환경·소스 선언 열기</a></li>
-        </ul><p className="meta">저장된 자료는 각 화면에서 별도로 조회합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
+        </ul>
+          {project.sourceMode === 'EXISTING' ? project.sourceDeclaration ? <details aria-label="기존 소스 사용자 선언 · 실제 관측 미확인">
+            <summary>기존 소스 사용자 선언 · 실제 관측 미확인</summary>
+            <p>{project.sourceDeclaration.declaration.displayName} · {project.sourceDeclaration.declaration.hostLabel}</p>
+            <pre>{project.sourceDeclaration.declaration.pathHint}</pre><p>{project.sourceDeclaration.declaration.reason}</p>
+            <p className="meta">선언 버전 {project.sourceDeclaration.ref.version} · {project.sourceDeclaration.ref.id}<br />{project.sourceDeclaration.ref.contentHash}</p>
+            <p className="meta">사용자가 저장한 위치 설명이며 파일 접근·검증·실행 권한이 아닙니다.</p>
+          </details> : <p>기존 소스 사용자 선언 있음 · 원문은 소유자에게만 표시됩니다.</p> : <p className="meta">빈 프로젝트로 생성됨 · 기존 소스 선언 없음</p>}
+          <p className="meta">저장된 자료는 각 화면에서 별도로 조회합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
       </div>
     </> : null}
   </section>;

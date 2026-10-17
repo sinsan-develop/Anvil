@@ -1,9 +1,10 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
+import type { SourceDeclarationView } from '../project-create/api.ts';
 
 export interface WorkspaceProject {
   id: string; name: string; purpose: string; desiredOutcome: string; version: number; createdAt: string; updatedAt: string;
-  currentMethodologyRef: VersionRef | null; baselineRef: null; sourceMode: 'EMPTY' | 'EXISTING'; sourceDeclaration: unknown;
+  currentMethodologyRef: VersionRef | null; baselineRef: null; sourceMode: 'EMPTY' | 'EXISTING'; sourceDeclaration: SourceDeclarationView | null;
   readinessIssues: { code: string }[]; viewerPermissions: ['READ_PROJECT']; participation: 'OWNER' | 'VIEWER' | 'HANDOFF_ELIGIBLE';
   controlState: { actorId: string | null; clientId: string | null; generation: number | null; status: 'HELD' | 'OTHER_CLIENT' | 'UNASSIGNED' };
 }
@@ -21,5 +22,17 @@ export async function readWorkspaceProject(client: ApiClient, projectId: string)
     || !control || !['HELD', 'OTHER_CLIENT', 'UNASSIGNED'].includes(control.status) || control.actorId !== null && !uuid(control.actorId) || control.clientId !== null && !uuid(control.clientId)
     || control.generation !== null && !positive(control.generation) || control.status !== 'UNASSIGNED' && (!control.actorId || !control.clientId || !positive(control.generation))
     || !Array.isArray(value.readinessIssues) || value.readinessIssues.length > 200 || value.readinessIssues.some(item => !item || typeof item.code !== 'string' || !/^[A-Z][A-Z0-9_]{0,63}$/.test(item.code))) throw new ApiError('RESPONSE_INVALID');
+  const source = value.sourceDeclaration;
+  if (value.sourceMode === 'EMPTY' || value.participation !== 'OWNER') {
+    if (source !== null) throw new ApiError('RESPONSE_INVALID');
+  } else {
+    const declaration = source?.declaration, ref = source?.ref;
+    if (!source || source.authority !== 'USER_DECLARED' || source.readiness !== 'UNVERIFIED' || !ref || !uuid(ref.id) || !positive(ref.version) || !/^[0-9a-f]{64}$/.test(ref.contentHash)
+      || !declaration || Object.keys(declaration).sort().join(',') !== 'displayName,hostLabel,pathHint,reason'
+      || (['hostLabel', 'displayName', 'pathHint', 'reason'] as const).some(key => !text(declaration[key]) || !declaration[key].trim() || declaration[key].length > (key === 'reason' ? 20000 : key === 'pathHint' ? 4096 : 200) || key !== 'reason' && /[\u0000-\u001f\u007f]/.test(declaration[key]))) throw new ApiError('RESPONSE_INVALID');
+    const bytes = new TextEncoder().encode(JSON.stringify({ displayName: declaration.displayName, hostLabel: declaration.hostLabel, pathHint: declaration.pathHint, reason: declaration.reason }));
+    const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    if (hash !== ref.contentHash) throw new ApiError('RESPONSE_INVALID');
+  }
   return value;
 }

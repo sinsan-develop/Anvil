@@ -84,7 +84,7 @@
 | UI01 | 프로젝트 목록 | B | UI00 | UI00,FN01 | 작업 중 · 허가 목록/검색/관측·오류 보존 partial·WORK_STATUS. 생성/단계 메타·실제 새 UI DB 여정 미완료 |
 | UI02 | 프로젝트 생성·기존 소스 기준선 | B | UI00 | UI00,FN01,FN02,FN03 | 작업 중·생성 초안/방법론 선택·검토/확정·빈/기존 소스 선언 입력/조회·생성 same-client actual d8128157, fixture10 확인. 실제 관측/기준선·문서/환경/총괄·사용자 UI DB 미완료 |
 | UI03 | 방법론 흐름도 편집 | B | UI00 | UI00,FN02,FN03 | 작업 중·공통/초안 및 전용본 개정·내용검토/별도 확정·미확인 명령 보존·과거 버전 조회 연결, same-client actual19ce2bb7. 적용 전환·실제 사용자 UI DB 여정 미완료 |
-| UI04 | 프로젝트 주 작업 화면 | C | UI00 | UI00,FN08,FN09,FN10,FN11,FN13 | 작업 중·기존GET 원본/고정적용참조·3영역/자료탐색 후보 unit8/browser5·원독립C0I1/Main시험보완 확인. 실제served/DB·단계/세션·지시/Agent/시작/중지 미연결·UI04_CONTEXT_PREP_RESULT |
+| UI04 | 프로젝트 주 작업 화면 | C | UI00 | UI00,FN08,FN09,FN10,FN11,FN13 | 부분 구현·기존GET 원본/고정적용참조·3영역/자료탐색·OWNER 기존소스선언/해시·조회자 원문비노출 후보. 선언연결 후 unit10/browser5·build/type/diff PASS. 원독립C0I1/Main시험보완과 새부분 자체검증을 구분. 실제served/DB·단계/세션·지시/Agent/시작/중지 미연결·UI04_CONTEXT_PREP_RESULT |
 | UI05 | 단계책임자·실행 상세 | C | UI00 | UI00,FN09,FN12,FN13 | 시작 전 |
 | UI06 | 문서·설계·계획 추적 | B | UI00 | UI00,FN03,FN04 | 작업 중 — 후보/제안·충돌/검토 재개와 고정 단계 선택·보존/조회 연결. 6cdb21cb same-client 단계 actual1 PASS. 소스/추적 잔여·실제 사용자 UI DB 여정 미완료 |
 | UI07 | 설계 변경·영향·이력 | D | UI00 | UI06,FN04,FN11 | 시작 전 |

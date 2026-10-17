@@ -32,3 +32,12 @@ Main 어울, 2026-10-18. **부분 구현·새 번들/합성 API의 핵심 조회
 - 판단 유보별 Main 분류: 실제 user/client 인증 교체·실API/DB는 후속 고위험 연결 검증에서 확인하고 key/cleanup 코드 검토를 actual 증거로 부르지 않는다. EXISTING 소스 상세는 현재 표시하지 않는 선언이며 실제 경로 접근을 추론하지 않는다. served 반영·시각적 배치·단계/세션/Agent·전체 UI04는 미완료/미검증으로 유지한다. 이번 최종 검사 후에도 정확5파일/빈5폴더·QA process0 정리/독립 root부재를 확인했다.
 - 실제 served/사용자DB·graph/단계 선택/대화·임무/FN09·시작/중지/FN08~13·전달/실제 Agent·IX02/Stage/사용자 인수는 미완료다. 경로는 향후 해당 후보 반영 뒤 `#/projects/<허용 프로젝트 ID>/workspace`, 목록의 ‘프로젝트 열기’다. 현재 서비스에서 이 새 화면을 사용할 수 있다고 보고하지 않는다.
 - Main은 독립 finding을 대조하고 필요한 한정 보정/최소 검증·안전 checkpoint를 진행한다. 그 사이 native compile-01은 PRECHECK_BLOCKED, 고정3 OS HardLink 예외/new compile-only 결정은 별도이며 UI04로 덮거나 재시도하지 않는다. rollback은 이 후보만 정상 후속 commit에서 되돌리는 방식이며 DB/서비스 rollback은 필요 없다.
+
+## 2026-10-18 후속 — 기존 소스 사용자 선언 연결
+
+- Main 선정 UI04 미완료를 기존 승인 설계/계획과 기존 GET 계약 안에서 보완했다. 서버는 OWNER에게만 선언을 반환하고 VIEWER/HANDOFF_ELIGIBLE에게 null을 반환한다. 새 API/SQL/권한·서비스 변경은 없다. 현재 runtime678은 그대로다.
+- 제품 변경 전: sourceDeclaration을 unknown으로 두고 표시/검증하지 않았다. 변경 후: 선언 필드·길이·불변 참조·USER_DECLARED/UNVERIFIED·정확 canonical SHA256와 모드/참여자 경계를 검사한 뒤 OWNER에게 접힌 상세 원문/버전을 표시한다. 다른 참여자는 원문 비노출 설명만 표시한다. 위치는 링크/실행 명령으로 사용하지 않고 실제 관측/쓰기·실행 권한이 아니라고 구분한다.
+- unit 새3범주 중 정상1PASS/거절누락2RED→보완 후 같은 파일10PASS/271.4624ms·fail/skip0. 새 UI2는 요소 미구현으로2RED→화면 연결 뒤 UI04 직접5PASS/6.8s·fail/skip0, build124module/408ms·type/diff0. 기존 UI01/A3 검사 전수는 반복하지 않았다. >500kB·NO_COLOR 경고는 유지했다.
+- 변경: workspace/api.ts·WorkspacePage.tsx, 직접 unit/UI04/context-api.test.ts·browser/UI04/workspace.spec.ts, 계획·현황·이 결과. 서버와 실제 인증/권한·DB·파일 관측은 변경/검증하지 않았다. 새부분은 Main 직접 검증이며 독립 재검수 완료로 쓰지 않는다.
+- 전용 QA root의 모든 owner/nonlink·QAprocess0·5파일/5폴더 목록/hash를 대조해 정확 제거했고 별도 Test-Path false를 확인했다. 빌드 index C1FC8DFB48C23C16FCB04C22B94DE5FEBB1047E44E9360FE78B87C6CEB699E80 / JS3992D7DC7452A3159E95FE80300EE3AF53576A685AAFB887BD8DCF99D4D691E8 / CSS1FFC9B57199672473A5E3D572A73E4F36AECF4413E97F49C44C19D8C1E342D11. 재생성 가능한 임시 build/합성결과만 제거했고 기능 소스·실패동결자료·기존 서비스는 보존했다.
+- 실제 served 반영·실계정/DB 여정·시각적 검수와 전체 UI04/Stage 완료는 미확인이다. 향후 해당 후보 반영 후 허용 프로젝트의 workspace→프로젝트 자료→‘기존 소스 사용자 선언’을 펼쳐 확인한다. 이번 후보를 현재 서비스에서 사용 가능하다고 보고하지 않는다. rollback은 이번 국소 소스 변경의 일반 후속 revert이며 DB/서비스 변경이 없어 해당 rollback은 없다.
