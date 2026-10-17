@@ -10,6 +10,28 @@ const fixedCompilerHash='46809206887326d2d24db1eff1f3064de972c3451abe766b4911145
 const compileSource='apps/connector/native/CodexHandshakeHost.cs';
 type SourceOpenDetail={fileRole:'SOURCE_ARG'|'OTHER_SOURCE'|'UNKNOWN';osReason:'ACCESS_DENIED'|'SHARING_VIOLATION'|'NOT_FOUND'|'OTHER_OS_REASON'|'UNKNOWN'};
 const unknownSourceOpen=():SourceOpenDetail=>({fileRole:'UNKNOWN',osReason:'UNKNOWN'});
+/** OS catalog 입력의 원래 parse/validation 예외는 버리고 소유한 부분 bytes도 실패 시 비운다. */
+export function parseCompileOsMessages(raw:unknown){
+ const allocated:Buffer[]=[];
+ const valid=(condition:unknown):void=>{if(!condition)throw Error('QA_OS_CATALOG_INVALID');};
+ try{
+  valid(typeof raw==='string'&&raw.length<=65536);
+  const value=JSON.parse(raw as string),codes=[2,3,5,32,33];
+  valid(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')==='ansiCodePage,entries');
+  valid(Number.isSafeInteger(value.ansiCodePage)&&value.ansiCodePage>0&&value.ansiCodePage<=65535);
+  valid(value.entries&&typeof value.entries==='object'&&!Array.isArray(value.entries)&&Object.keys(value.entries).sort().join(',')==='2,3,32,33,5');
+  const messages:Record<string,{utf8:Buffer;ansi:Buffer}>={};
+  for(const code of codes){
+   const entry=value.entries[String(code)];
+   valid(entry&&typeof entry==='object'&&!Array.isArray(entry)&&Object.keys(entry).sort().join(',')==='ansi,utf8');
+   valid(typeof entry.utf8==='string'&&entry.utf8.length<=5464&&typeof entry.ansi==='string'&&entry.ansi.length<=5464);
+   const utf8=Buffer.from(entry.utf8,'base64');allocated.push(utf8);const ansi=Buffer.from(entry.ansi,'base64');allocated.push(ansi);
+   valid(utf8.length>0&&utf8.length<=4096&&ansi.length<=4096&&utf8.toString('base64')===entry.utf8&&ansi.toString('base64')===entry.ansi);
+   messages[String(code)]={utf8,ansi};
+  }
+  return {messages,summary:{source:'CURRENT_OS_WIN32EXCEPTION' as const,ansiCodePage:value.ansiCodePage as number,codes}};
+ }catch{for(const bytes of allocated)bytes.fill(0);throw Error('QA_OS_CATALOG_INVALID');}
+}
 // CS1504의 명시된 두 필드만 읽는다. 임의 경로/문구는 결과로 반환하지 않고 파일 접근도 하지 않는다.
 function sourceOpenDetail(message:string,sourceAbsolute?:string,osMessages?:unknown):SourceOpenDetail{
  if(/[\x00-\x08\x0a-\x1f\x7f]/.test(message))return unknownSourceOpen();

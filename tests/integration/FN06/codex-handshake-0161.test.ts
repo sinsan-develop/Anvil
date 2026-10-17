@@ -4,7 +4,7 @@ import {mkdir,lstat,realpath,readdir,readFile,writeFile,unlink,rmdir} from 'node
 import {createHash} from 'node:crypto';
 import {dirname,join,win32} from 'node:path';
 import {performance} from 'node:perf_hooks';
-import {CodexHandshakeQa,checkHandshakeRunBinding,HandshakeHostFrames,compileFailureReceipt,checkCompileOnlyRunBinding,CompileOnlyAttempt,type HandshakeQaAction} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
+import {CodexHandshakeQa,checkHandshakeRunBinding,HandshakeHostFrames,compileFailureReceipt,checkCompileOnlyRunBinding,CompileOnlyAttempt,parseCompileOsMessages,type HandshakeQaAction} from '../../../apps/connector/adapters/primary/handshake-qa.ts';
 
 const root='D:\\tmp\\anvil-v3-fn06-handshake-0161-qa';
 const ps='C:\\Program Files\\PowerShell\\7\\pwsh.exe';
@@ -18,17 +18,7 @@ const hash=async(path:string)=>digest(await readFile(path));
 async function absent(path:string){try{await lstat(path);return false;}catch(e:any){if(e.code==='ENOENT')return true;throw Error('QA_PATH_UNKNOWN');}}
 function powershell(script:string){try{return execFileSync(ps,['-NoProfile','-Command',"$ErrorActionPreference='Stop';"+script],{encoding:'utf8',windowsHide:true,stdio:'pipe',timeout:10000,maxBuffer:131072});}catch{throw Error('QA_READ_OR_PROTECTION_FAILED');}}
 // OS 표준 문구는 이 process 메모리에만 두고 원문/bytes를 receipt·파일·로그로 반환하지 않는다.
-function compileOsMessages(){
- const value=JSON.parse(powershell("[Text.Encoding]::RegisterProvider([Text.CodePagesEncodingProvider]::Instance);$cp=[Globalization.CultureInfo]::CurrentCulture.TextInfo.ANSICodePage;$ansi=[Text.Encoding]::GetEncoding($cp);$utf8=[Text.UTF8Encoding]::new($false,$true);$entries=@{};foreach($code in @(2,3,5,32,33)){$msg=[ComponentModel.Win32Exception]::new($code).Message;$a=$ansi.GetBytes($msg);$entries[[string]$code]=@{utf8=[Convert]::ToBase64String($utf8.GetBytes($msg));ansi=if($ansi.GetString($a) -ceq $msg){[Convert]::ToBase64String($a)}else{''}}};@{ansiCodePage=$cp;entries=$entries}|ConvertTo-Json -Depth 4 -Compress"));
- need(Number.isSafeInteger(value.ansiCodePage)&&value.ansiCodePage>0&&value.ansiCodePage<=65535&&value.entries,'QA_OS_CATALOG_INVALID');
- const messages:Record<string,{utf8:Buffer;ansi:Buffer}>={};
- for(const code of [2,3,5,32,33]){
-  const entry=value.entries[String(code)];need(entry&&typeof entry.utf8==='string'&&typeof entry.ansi==='string','QA_OS_CATALOG_INVALID');
-  const utf8=Buffer.from(entry.utf8,'base64'),ansi=Buffer.from(entry.ansi,'base64');
-  need(utf8.length>0&&utf8.length<=4096&&ansi.length<=4096&&utf8.toString('base64')===entry.utf8&&ansi.toString('base64')===entry.ansi,'QA_OS_CATALOG_INVALID');messages[String(code)]={utf8,ansi};
- }
- return {messages,summary:{source:'CURRENT_OS_WIN32EXCEPTION' as const,ansiCodePage:value.ansiCodePage as number,codes:[2,3,5,32,33]}};
-}
+function compileOsMessages(){return parseCompileOsMessages(powershell("[Text.Encoding]::RegisterProvider([Text.CodePagesEncodingProvider]::Instance);$cp=[Globalization.CultureInfo]::CurrentCulture.TextInfo.ANSICodePage;$ansi=[Text.Encoding]::GetEncoding($cp);$utf8=[Text.UTF8Encoding]::new($false,$true);$entries=@{};foreach($code in @(2,3,5,32,33)){$msg=[ComponentModel.Win32Exception]::new($code).Message;$a=$ansi.GetBytes($msg);$entries[[string]$code]=@{utf8=[Convert]::ToBase64String($utf8.GetBytes($msg));ansi=if($ansi.GetString($a) -ceq $msg){[Convert]::ToBase64String($a)}else{''}}};@{ansiCodePage=$cp;entries=$entries}|ConvertTo-Json -Depth 4 -Compress"));}
 function runtime(){
  const value=JSON.parse(powershell("$p=@(Get-CimInstance Win32_Process -Filter 'ProcessId=19960 OR ProcessId=26052'|ForEach-Object{@{pid=[int]$_.ProcessId;exe=$_.ExecutablePath;start=$_.CreationDate.ToUniversalTime().ToString('o')}});$l=@(Get-NetTCPConnection -State Listen -LocalPort 3830|ForEach-Object{@{pid=[int]$_.OwningProcess;address=$_.LocalAddress}});@{p=$p;l=$l}|ConvertTo-Json -Depth 4 -Compress"));
  need(value.p?.length===2&&value.l?.length===1&&value.l[0].pid===19960&&value.l[0].address==='127.0.0.1','QA_RUNTIME_CHANGED');

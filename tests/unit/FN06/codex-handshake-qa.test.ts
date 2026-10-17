@@ -220,6 +220,21 @@ test('PMO 지역화 계약: 허용 OS catalog의 UTF8·ANSI bytes만 대조하�
  }
  assert.equal(reads,0);
 });
+test('OS catalog 파싱 실패는 원문·cause를 반사하지 않고 부분 bytes도 비운다',()=>{
+ const parse=(compileQa as any).parseCompileOsMessages;assert.equal(typeof parse,'function');
+ const entries=Object.fromEntries([2,3,5,32,33].map(code=>[String(code),{utf8:Buffer.from('PUBLIC_'+code).toString('base64'),ansi:''}]));
+ const valid=JSON.stringify({ansiCodePage:949,entries});const result=parse(valid);
+ assert.deepEqual(result.summary,{source:'CURRENT_OS_WIN32EXCEPTION',ansiCodePage:949,codes:[2,3,5,32,33]});assert.equal(result.messages['5'].utf8.toString(),'PUBLIC_5');
+ let reads=0;const hostile=new Proxy({},{get(){reads++;throw Error('PRIVATE_TOKEN');}});
+ const malformed=JSON.stringify({ansiCodePage:949,entries:{...entries,5:{utf8:'PRIVATE_TOKEN!',ansi:''}}});
+ for(const input of ['{"PRIVATE_TOKEN',malformed,JSON.stringify({ansiCodePage:0,entries}),valid+'PRIVATE_TOKEN','X'.repeat(65537),hostile])assert.throws(()=>parse(input),(error:any)=>error instanceof Error&&error.message==='QA_OS_CATALOG_INVALID'&&error.cause===undefined&&!String(error.stack).includes('PRIVATE_TOKEN'));
+ assert.equal(reads,0);
+ const from=Buffer.from,copies:Buffer[]=[];
+ try{Buffer.from=((...args:any[])=>{const b=Reflect.apply(from,Buffer,args);if(args[1]==='base64')copies.push(b);return b;}) as typeof Buffer.from;assert.throws(()=>parse(malformed),/QA_OS_CATALOG_INVALID/);}
+ finally{Buffer.from=from;}
+ assert.ok(copies.some(b=>b.length>0));assert.equal(copies.every(b=>b.every(byte=>byte===0)),true);
+ for(const entry of Object.values(result.messages) as {utf8:Buffer;ansi:Buffer}[]){entry.utf8.fill(0);entry.ansi.fill(0);}
+});
 test('CS1504 상세는 getter·Proxy·가짜 buffer와 message의 비밀을 읽지 않는다',()=>{
  const row="error CS1504: Source file 'apps/connector/native/CodexHandshakeHost.cs' could not be opened -- 'Win32 error 5'\n";
  let reads=0;const secret=()=>{reads++;throw Error('PRIVATE_TOKEN');};
