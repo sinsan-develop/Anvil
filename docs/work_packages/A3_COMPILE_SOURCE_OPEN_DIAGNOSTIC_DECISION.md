@@ -38,3 +38,8 @@ Main 어울, 2026-10-18. **실제 측정은 미승인·미실행**. 기존 실�
 8. DLL load/실행/reflection/Add-Type/PInvoke·실 source OS 관측·링크 fixture·키/DPAPI·계정/권한/Secret·실 token/등록/정책·DB/서비스·Agent/외부 비용·Oracle/main 변경0. compile 성공도 관측/ABI/flag/Agent/제품 완료가 아니다. 실제 source 열기/읽기 원인이 나와도 해당 수리는 자동 허용하지 않는다.
 
 필요한 정확 결정은 **검수/clean exact binding 뒤 A의 새 byte 진단·표준 OS 문구 메모리 대조를 포함한 library compiler1회**다. Main이 업무/순서를 소유하고 PMO에는 이 필요한 경계 판단만 요청한다.
+
+## 2026-10-18 A 단1회 종료 — 이 계약 재사용 금지
+
+- PMO의 새exact38157ad4·21:06:55Z~21:36:55Z 결정으로21:09:21.2444013Z csc73148을 실제1회 실행,126.7833ms/exit1·CS1504 error1·stdout153bytes/완전EOF/상한미도달·stderr0이었다. 역할 SOURCE_BASENAME_ELSEWHERE/이유UNKNOWN은다른유효경로문자열+같은basename 분류이지실제다른파일·직접원인확정이아니다. output receipt:null/무load·정확QA정리·별도21:10:34Z보호11/Node·relay/단일3830/Git·source/helper불변을확인했다. 새승인도소진·잔여창재시도0이다.
+- 정확 원JSON/조건/한계/표현 정정은 docs/04_test_reports/AV3/FN08/A3_SOURCE_OPEN_BYTE_DIAGNOSTIC_01_RESULT.md다. 이 관측으로 ACL/복사/환경 수리나 source 인자 변경을 승인하지 않는다. 필요시 절대 source만 바꾸는 별도 단일 변수 계약을 Main이 제안하며 새 결정 전 실행하지 않는다.
