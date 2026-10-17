@@ -2,6 +2,8 @@
 
 ## A-3 최신 후보 책임 — 실제 미연동
 
+서비스후속준비: qa-source-read-protocol.ts/source-read-protocol-qa-guard.ts는별도새bridge·loopback5548의46schema/26벡터→source-read-protocol-flow8범주를호출하는미승인후보이다. flow의정확snapshotINSERT후fault·횟수1/유효재서명409·미소비회수는시험책임이며제품코드/권한계약을바꾸지않는다. source-read-flow-fault/unit·protocol-qa-entry/guard는합성만확인했고실DB/8범주PASS는없다. 네트워크/합성인증/유한1회자원결정은 A3_ISOLATED_PROTOCOL_QA_DECISION을따른다.
+
 2026-10-18 한정 actual: exact86bae1e7의 새 빈 internal PG/psql은46schema COMMIT·별도appREADONLY full46checksum/동일26벡터/새4표0행 PASS·exact정리/독립잔여0이다(A3_PSQL_SQL_QA_01_RESULT). 제품의 실제API/credential·보고원자성/rollback·Nodepg/served/TLS/OS·전체기능연동은 여전히 미완료이며 아래 과거미실행문구를 이한정결과나전체기능PASS로혼용하지않는다.
 
 SQL 후속 준비: qa-source-read-psql.ts/source-read-psql-guard.ts/source-read-psql-batches.ts는 새 internal network·host publish0·컨테이너 내부 TCP psql에서 고정46 SQL과 공통26벡터를 검증하는 후보만 담당한다. 기존 source-read-sql-vectors.ts의 입력·기대값26개는 Node/psql이 공유하며 원커밋과 메모리 EXACT 대조했다. 새 실제 실행은 별도 결정 전0이다. 원 qa-source-read-sql.ts actual FAIL/정리0·단1회소진은 FN08/A3_SQL_QA_01_RESULT.md에 보존, 새 준비 검사를 원FAIL/실PG/전체기능 PASS로 승격하지 않는다.
