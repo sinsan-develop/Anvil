@@ -2,6 +2,8 @@
 
 ## UI04 원본 조회 연결 후보 — 2026-10-18
 
+적용본 조회 후속은 server/modules/methodologies/project-methodologies.ts의 readApplication과 projects/routes.ts의 명시 GET가 현재 회원·고정 row/snapshot/source/graph 무결성을 소유한다. web/features/workspace/api.ts의 readWorkspaceMethodology는 프로젝트 참조와 응답 exact 일치·두 canonical hash·표시 필드를 검사하고 WorkspaceMethodology.tsx가 정의 조회/로컬 단계 선택만 소유한다. 실제 세션/진행/실행·단계 문서 필터는 아직 미연결이다. 새 SQL/도메인쓰기/권한·서비스 변경은 없다. 직접 tests/unit/FN02/application-read.test.ts·tests/unit/UI04/methodology-application.test.ts와 browser/UI04의 정의/경합/변조/옛 digest 음성이 대응한다.
+
 후속 UI04의 WorkspaceDocuments.tsx는 기존 design-trace/api.ts의 listDocuments/readDocument를 직접 재사용하는 명시 조회 전용이다. 문서 목록/cursor·고정 버전 원문/byte해시·거절시 제거·폐기된 화면의 지연응답 무시를 소유하며 작성/확정·단계필터·Agent/명령을 추가하지 않는다. 별도 서버/API/SQL 소유권 변경0이다. 기존 선언 연결은 workspace/api.ts의 OWNER/모드·필드/해시 검증과 WorkspacePage.tsx의 접힌 상세가 소유한다.
 
 apps/web/src/features/workspace/api.ts·WorkspacePage.tsx는 기존 프로젝트 detail GET의 검증·원본/고정적용참조·편집제어/준비부족·문서/방법론/지식/승인/도구 탐색만 소비한다. App.tsx는workspace단일분기·사용자/client/project키, styles/app.css는국소3영역을소유한다. 직접tests/unit/UI04/context-api.test.ts와tests/browser/UI04/{bundle.ts,workspace.spec.ts}, 기존UI01/projects.spec.ts의detailfixture/명시전용bundle선택이 대응한다. 새API/SQL·정책/Agent·세션/실행권한0, 적용graph/단계·지시/Agent·실제served/DB여정은미연결/미검증이다. 근거04_test_reports/AV3/UI04_CONTEXT_PREP_RESULT.md이며UI04전체완료가아니다.
@@ -260,7 +262,7 @@ JSON schema는 제품 개발자가 검토한 신뢰 계약만 등록한다. 사�
 | UI02 | `apps/web/src/features/project-create/{ProjectCreatePage.tsx,api.ts}` | `tests/browser/UI02/project-create.spec.ts` |
 | UI03 | `apps/web/src/features/methodology-editor/{MethodologyEditorPage.tsx,api.ts}` | `tests/browser/UI03/methodology-editor.spec.ts` |
 | UI03 프로젝트 전용 후속 | 기존 디렉터리 `ProjectMethodologyPage.tsx`, `project-api.ts`·CommonMethodEditor/MethodReviewPanel의 명시 gateway·App 프로젝트별 버퍼 | `tests/browser/UI03/project-methodology.spec.ts`, `tests/unit/FN02/project-method-web.test.ts`·실제 연결은 FN02 project-methodology.test.ts. 확정/개정·과거 원문 조회와 실제 적용 전환 미완료를 분리 |
-| UI04 | `apps/web/src/features/workspace/{WorkspacePage.tsx,WorkspaceDocuments.tsx,api.ts}` | `tests/browser/UI04/workspace.spec.ts` |
+| UI04 | `apps/web/src/features/workspace/{WorkspacePage.tsx,WorkspaceDocuments.tsx,WorkspaceMethodology.tsx,api.ts}` | `tests/browser/UI04/workspace.spec.ts` |
 | UI05 | `apps/web/src/features/session-detail/{SessionDetailPage.tsx,api.ts}` | `tests/browser/UI05/session-detail.spec.ts` |
 | UI06 | `apps/web/src/features/design-trace/{DesignTracePage.tsx,api.ts}` | `tests/browser/UI06/design-trace.spec.ts` |
 | UI07 | `apps/web/src/features/design-change/{DesignChangePage.tsx,api.ts}` | `tests/browser/UI07/design-change.spec.ts` |

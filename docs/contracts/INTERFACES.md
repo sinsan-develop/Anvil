@@ -1,5 +1,15 @@
 # P02 공통 명령·관측 계약 초안
 
+## UI04 고정 적용 방법론 조회 — 2026-10-18 승인 계약
+
+신산님 10분 위임을 PMO가 사용자 실제 게시20:59:26Z→21:11:46Z/12분20초·최신5turn 새답변/중지/거절없음으로 확인한 AV3-PMO-UI04-METHODOLOGY-APPLICATION-READ A다. 구현·적용 실제 상태는 WORK_STATUS를 따른다.
+
+`GET /api/v1/projects/:projectId/methodology-application`은 query 없이 기존 Anvil HUMAN 로그인·현재 프로젝트 회원·프로젝트 격리를 검사하고 no-store로 읽는다. 기존 project_methodologies의 최신 application_version 한 행에 대해 applicationRef={id,version,contentHash:snapshot_hash}, snapshot={name,purpose,graph,sourceRef,draftConfirmationRef?}를 반환한다. row.project_id/source_definition_id/source_version/source_hash와 sourceRef·graph SHA256, snapshot 전체 canonical SHA256 및 고정 그래프 구조·연결을 대조한다. draftConfirmationRef는 {draftRef:VersionRef,confirmationId}이며 graph hash와 일치해야 한다. 응답은 {projectId,applicationRef,snapshot,observedAt,executionState:'NOT_CONNECTED'} 정확5필드다. 미적용은 applicationRef:null/snapshot:null을 함께 반환하며 편집 정의/공통본으로 대체하지 않는다.
+
+형식/query400·없는 회원/교차 프로젝트404·무결성503·만료401·기존Host/credential거절을 유지한다. 현재 양식 원문 접근/확정·실제 실행 준비 검증이 아니라, 고정 그래프에 선언된 양식 참조를 사용한 구조 검수다. 새 schema/migration/도메인쓰기·적용 전환/정책/계정/권한/Secret·서비스·Agent 실행0이다.
+
+UI04는 별도 project GET의 currentMethodologyRef와 새 응답의 적용 ID/세대/hash가 정확히 일치할 때만 정의를 표시한다. 두 조회 사이 적용·미적용 전환/불일치는 client METHODOLOGY_APPLICATION_CHANGED로 이전 내용을 제거하고 프로젝트 원본 재조회를 요구한다(서버가 실제409를 반환했다는 뜻은 아니다). 정의의 단계 선택·입출력 양식/완료·승인·기록조건·연결 조회와 실제 실행/세션·단계별 진행 상태를 구분한다. 지시·시작/중지·자동모드 권한을 만들지 않는다.
+
 ## A-3 최신 후보 연결 — 실제 저장·권한 검증 아님
 
 새 source-read routes/ops와 별도 scope/token·HUMAN 조회를 제한 후보로 연결했다. connector 경로는 실제 암호화 socket 필수이며 trustProxy/forwarded만으로 대체하지 않는다. grant 상세/목록은 nullable snapshotRef를 반환하고 snapshot 버전1 GET의 OWNER 원문/VIEWER 집계로 연결한다. Web는 정확 refs/본문 hash/주장·수신시각/보고 집계·비실행 flags를 대조한다. credential raw는 브라우저/HUMAN 조회에 전달하지 않으며 기존 상태조회 token/grants=[]는 불변이다. SQL작성·합성검증은 실제 인증/COMMIT/SQL guard/TLS/OS 증명이 아니다. 최신 검증·한계는 WORK_STATUS, 아래 미연결 표기는 이전 단계 이력이다.

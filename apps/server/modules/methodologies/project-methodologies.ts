@@ -14,6 +14,30 @@ async function formsFor(db: PoolClient, actorId: string) {
   return (await db.query("SELECT v.definition_id AS id,v.version,v.content_hash FROM anvil.form_definitions d JOIN anvil.form_versions v ON v.definition_id=d.id WHERE d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$1", [actorId])).rows.map(r => ({ id: r.id, version: Number(r.version), contentHash: r.content_hash }));
 }
 export class ProjectMethodologies {
+  async readApplication(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, raw: Record<string, unknown> = {}) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.keys(raw).length) throw new AuthFailure('INPUT_INVALID', 400);
+    await projectMember(db, actor, projectId);
+    const rows = (await db.query('SELECT id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash FROM anvil.project_methodologies WHERE project_id=$1 ORDER BY application_version DESC LIMIT 1', [projectId])).rows;
+    const base = { projectId, observedAt: new Date().toISOString(), executionState: 'NOT_CONNECTED' as const };
+    if (!rows.length) return { ...base, applicationRef: null, snapshot: null };
+    try {
+      const row = rows[0]!, snapshot = row.snapshot_json;
+      const applicationRef = { id: row.id, version: Number(row.application_version), contentHash: row.snapshot_hash };
+      const keys = ['name', 'purpose', 'graph', 'sourceRef', ...(snapshot?.draftConfirmationRef !== undefined ? ['draftConfirmationRef'] : [])];
+      if (rows.length !== 1 || row.project_id !== projectId || !isVersionRef(applicationRef) || !exactMethodObject(snapshot, keys)
+        || typeof snapshot.name !== 'string' || snapshot.name.length > 200 || !snapshot.name.isWellFormed() || typeof snapshot.purpose !== 'string' || snapshot.purpose.length > 20000 || !snapshot.purpose.isWellFormed()
+        || !isVersionRef(snapshot.sourceRef) || snapshot.sourceRef.id !== row.source_definition_id || snapshot.sourceRef.version !== Number(row.source_version) || snapshot.sourceRef.contentHash !== row.source_hash
+        || contentHash(canonicalJson(snapshot)) !== row.snapshot_hash || contentHash(canonicalJson(snapshot.graph)) !== row.source_hash) throw Error('invalid');
+      const draft = snapshot.draftConfirmationRef;
+      if (draft !== undefined && (!exactMethodObject(draft, ['draftRef', 'confirmationId']) || !isVersionRef(draft.draftRef) || draft.draftRef.contentHash !== row.source_hash || !isVersionRef({ id: draft.confirmationId, version: 1, contentHash: row.source_hash }))) throw Error('invalid');
+      if (validateMethodologyGraph(snapshot.graph, []).issues.some(issue => issue.code === 'INPUT_INVALID')) throw Error('invalid');
+      const graph = snapshot.graph as MethodologyGraph;
+      // 고정본 자체의 구조/참조만 검수한다. 현재 양식 원본의 접근 가능·확정/실행 준비 판정이 아니다.
+      const declaredForms = graph.nodes.flatMap(node => [...node.inputs, ...node.outputs].map(item => item.formRef));
+      if (!validateMethodologyGraph(graph, declaredForms).validForConfirmation) throw Error('invalid');
+      return { ...base, applicationRef, snapshot };
+    } catch { throw new AuthFailure('METHODOLOGY_APPLICATION_INTEGRITY_FAILED', 503); }
+  }
   async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, raw: Record<string, unknown>) {
     await projectMember(db, actor, projectId);
     if (Object.keys(raw).some(key => !['limit', 'afterId'].includes(key)) || raw.limit !== undefined && (typeof raw.limit !== 'string' || !/^[1-9][0-9]?$/.test(raw.limit)) || raw.afterId !== undefined && (typeof raw.afterId !== 'string' || !/^[0-9a-f-]{36}$/.test(raw.afterId))) throw new AuthFailure('INPUT_INVALID', 400);

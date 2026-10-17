@@ -3,6 +3,7 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { routeHref } from '../../shell/routes.ts';
 import { readWorkspaceProject, type WorkspaceProject } from './api.ts';
 import { WorkspaceDocuments } from './WorkspaceDocuments.tsx';
+import { WorkspaceMethodology } from './WorkspaceMethodology.tsx';
 
 export function WorkspacePage({ client, projectId, onAuthenticationLost }: { client: ApiClient; projectId: string; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
@@ -23,7 +24,8 @@ export function WorkspacePage({ client, projectId, onAuthenticationLost }: { cli
       <div className="project-workspace">
         <section className="status-card" aria-label="개발 절차"><h3>개발 절차</h3>
           {project.currentMethodologyRef ? <><p>고정 적용 참조 · 세대 {project.currentMethodologyRef.version}</p><p className="meta">{project.currentMethodologyRef.id}<br />{project.currentMethodologyRef.contentHash}</p></> : <p>확인된 방법론 적용본 없음</p>}
-          <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">단계별 절차·실행 순서와 책임 세션은 이 화면에 아직 연결되지 않았습니다.</p>
+          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} />
+          <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
         <section className="status-card" aria-label="총괄 작업"><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
           <p>총괄·단계책임자 세션과 지시 전달은 미연결입니다.</p><p className="meta">이 화면을 열거나 자료를 조회해도 Agent를 호출하거나 작업을 시작하지 않습니다.</p>

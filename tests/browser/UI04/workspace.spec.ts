@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { installWorkspaceBundle } from './bundle.ts';
 import { createHash } from 'node:crypto';
+import { canonicalJson } from '../../../contracts/canonical.ts';
 const pid = '32b5f276-13e6-4d8a-b93f-27a15d21c788', other = '51c0439f-791e-4bb5-8471-70938d6afaf1';
 const data = (id = pid) => ({ id, name: id === pid ? 'Anvil 원본' : '다른 프로젝트', purpose: '개발 절차를 내가 관리', desiredOutcome: '도구를 바꿔도 지식 유지', version: 2,
   createdAt: '2026-10-16T01:02:03Z', updatedAt: '2026-10-17T01:02:03Z', currentMethodologyRef: { id: other, version: 1, contentHash: 'a'.repeat(64) }, baselineRef: null,
@@ -14,6 +15,12 @@ const document = { id: documentId, version: 2, title: '원문을 보존하는 �
   validation: { validForConfirmation: false, issues: [] }, statusHistory: [],
   contentReviewCriteria: { criteriaVersion: 1, formRef: { id: artifactId, version: 1, contentHash: 'a'.repeat(64) }, items: [] }, contentReviews: [] };
 const documents = { items: [{ id: documentId, title: document.title, headVersion: 2, confirmedVersion: null, updatedAt: '2026-10-17T01:02:03Z' }], hasMore: false, nextCursor: null, observedAt: '2026-10-17T01:02:03Z' };
+const graph = { nodes: [
+  { nodeId: 'N1', name: '요구 검토', purpose: '무엇을 만들지 확인', kind: 'HUMAN', position: { x: 0, y: 0 }, role: 'USER', inputs: [], outputs: [{ itemId: '요구사항 정의서', formRef: document.formRef, required: true, reviewCriteria: ['원문 대조'] }], taskScope: { included: ['요구 확인'], excluded: ['코딩'] }, completionCriteria: ['요구 검토 기록'], approvalBoundary: ['요구 확정'], mode: 'CASE_BY_CASE', limitPolicyRef: null, recordRequirements: ['검토 이력'] },
+  { nodeId: 'N2', name: '기능 구현', purpose: '합의한 기능 개발', kind: 'AGENT', position: { x: 300, y: 0 }, role: 'STAGE_OWNER', inputs: [{ itemId: '확정 요구', formRef: document.formRef, required: true, sourceNodeId: 'N1', reviewCriteria: ['확정 확인'] }], outputs: [], taskScope: { included: ['구현'], excluded: ['운영 배포'] }, completionCriteria: ['핵심 동작 확인'], approvalBoundary: ['범위 변경 승인'], mode: 'CASE_BY_CASE', limitPolicyRef: null, recordRequirements: ['작업 상황'], requirements: { capabilities: ['파일 수정'], environment: ['Windows'] } },
+], edges: [{ edgeId: 'E1', fromNodeId: 'N1', toNodeId: 'N2', kind: 'SEQUENCE', condition: null, reason: '합의 후 개발' }], entryNodeId: 'N1', terminalNodeIds: ['N2'] };
+const appliedSnapshot = { name: '프로젝트 고정 개발 절차', purpose: '정의한 순서에 따라 개발', graph, sourceRef: { id: other, version: 3, contentHash: createHash('sha256').update(canonicalJson(graph)).digest('hex') } };
+const application = { projectId: pid, applicationRef: { id: artifactId, version: 2, contentHash: createHash('sha256').update(canonicalJson(appliedSnapshot)).digest('hex') }, snapshot: appliedSnapshot, observedAt: '2026-10-17T21:11:46Z', executionState: 'NOT_CONNECTED' };
 async function setup(page: Page) {
   const unexpected: string[] = [], writes: string[] = [], errors: string[] = [];
   await page.route('**/api/v1/**', route => { unexpected.push(route.request().url()); return route.abort(); });
@@ -22,6 +29,70 @@ async function setup(page: Page) {
   page.on('request', request => { if (request.method() !== 'GET') writes.push(request.method()); if (new URL(request.url()).origin !== 'https://localhost:3830') unexpected.push(request.url()); }); page.on('pageerror', error => errors.push(error.message));
   return { unexpected, writes, errors };
 }
+
+async function applicationSetup(page: Page) {
+  const facts = await setup(page);
+  await page.route('**/api/v1/projects/' + pid, route => route.fulfill({ json: { ...data(), currentMethodologyRef: application.applicationRef } }));
+  await page.route(`**/api/v1/projects/${pid}/methodology-application`, route => route.fulfill({ json: application }));
+  await page.goto(`/#/projects/${pid}/workspace`);
+  return facts;
+}
+
+test('적용 절차 정의를 선택해 단계·연결·필수 산출과 완료조건을 읽되 실행으로 표시하지 않는다', async ({ page }) => {
+  const facts = await applicationSetup(page);
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '적용된 개발 절차', exact: true });
+  await expect(panel).toContainText('프로젝트 고정 개발 절차'); await expect(panel).toContainText('정의 조회 · 실제 실행 상태 미연결');
+  await expect(panel).toContainText('요구사항 정의서'); await expect(panel).toContainText('요구 검토 기록');
+  await panel.getByRole('button', { name: '절차 정의: 기능 구현', exact: true }).click();
+  await expect(panel.getByRole('button', { name: '절차 정의: 기능 구현', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(panel).toContainText('합의한 기능 개발'); await expect(panel).toContainText('핵심 동작 확인'); await expect(panel).toContainText('범위 변경 승인'); await expect(panel).toContainText('합의 후 개발');
+  await expect(page.getByRole('button', { name: '지시 전송 · 미연결' })).toBeDisabled(); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('적용본이 프로젝트 조회 뒤 변경되면 앞선 절차를 치우고 재조회를 요구한다', async ({ page }) => {
+  const facts = await applicationSetup(page);
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '적용된 개발 절차', exact: true }); await expect(panel).toContainText(appliedSnapshot.name);
+  await page.route(`**/api/v1/projects/${pid}/methodology-application`, route => route.fulfill({ json: { ...application, applicationRef: { ...application.applicationRef, version: 3 } } }));
+  await panel.getByRole('button', { name: '적용 절차 새로고침', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText('METHODOLOGY_APPLICATION_CHANGED');
+  await expect(panel.getByRole('heading', { name: appliedSnapshot.name, exact: true })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: '절차 정의: 기능 구현', exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('변조된 적용 snapshot을 편집 정의로 대체하거나 정상 절차로 표시하지 않는다', async ({ page }) => {
+  const facts = await applicationSetup(page);
+  await page.route(`**/api/v1/projects/${pid}/methodology-application`, route => route.fulfill({ json: { ...application, snapshot: { ...appliedSnapshot, purpose: '해시와 다른 내용' } } }));
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  const panel = page.getByRole('region', { name: '적용된 개발 절차', exact: true });
+  await expect(panel.getByRole('alert')).toContainText('METHODOLOGY_APPLICATION_INTEGRITY_FAILED'); await expect(panel.getByRole('button', { name: '절차 정의: 요구 검토', exact: true })).toHaveCount(0);
+  expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
+
+test('다른 프로젝트로 이동한 뒤 완료된 옛 적용본의 실제 digest 결과는 표시하지 않는다', async ({ page }) => {
+  await page.addInitScript(({ expectedHash }) => {
+    const original = crypto.subtle.digest.bind(crypto.subtle);
+    crypto.subtle.digest = async (algorithm, bytes) => {
+      const digest = await original(algorithm, bytes);
+      if ([...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('') === expectedHash) {
+        const boundary = globalThis as any; boundary.ui04ApplicationReady = true;
+        await new Promise<void>(resolve => { boundary.ui04ReleaseApplication = resolve; });
+        setTimeout(() => { boundary.ui04ApplicationReturned = true; }, 0);
+      }
+      return digest;
+    };
+  }, { expectedHash: application.applicationRef.contentHash });
+  const facts = await applicationSetup(page);
+  await page.route('**/api/v1/projects/' + other, route => route.fulfill({ json: data(other) }));
+  await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  await page.waitForFunction(() => (globalThis as any).ui04ApplicationReady === true);
+  await page.evaluate(value => { location.hash = `/projects/${value}/workspace`; }, other); await expect(page.getByRole('heading', { name: '다른 프로젝트', exact: true })).toBeVisible();
+  await page.evaluate(() => { (globalThis as any).ui04ReleaseApplication(); });
+  await page.waitForFunction(() => (globalThis as any).ui04ApplicationReturned === true);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect(page.getByRole('heading', { name: appliedSnapshot.name, exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
+});
 
 async function documentSetup(page: Page) {
   const facts = await setup(page);
