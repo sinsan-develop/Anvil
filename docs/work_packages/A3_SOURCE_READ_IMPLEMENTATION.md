@@ -69,6 +69,8 @@
 
 ## N4 다음 실행 준비 — 정식 개발 schema46 연결
 
+최신실측: 위 준비는 exact dbbdf049의별도단1회결정으로정식DB46/새4표0에반영됐고기존45/77표보존·독립후검사·서비스/보호불변을확인했다(A3_FORMAL_SCHEMA_01_RESULT.md). 아래는실행전필요결정제안·정확효과의기록이며이결정은소진했다. 서비스/UI/HUMAN grant/보고/OS·Agent 연결·전체인수는미완료다.
+
 Main 선정 근거: 423의 서비스8범주와 ef19390c의 checksum 한정 실측을 반복하지 않고, 이미 작성된 읽기 관측 요청·불변 보고 저장/조회가 정식 개발 DB45에서 빠진 새4표 때문에 아직 사용 불가인 선행을 해결한다. 실제 OS 관측·Agent 실행이나 VERIFIED 기준선으로 범위를 확대하지 않는다.
 
 - 로컬 준비 대상: 새 scripts/apply-source-read-development.ts·scripts/source-read-development-guard.ts와 tests/unit/FN08/source-read-development.test.ts만. 기존45 SQL·기존 정식 runner·서버 시작 migration 자동 연결은 바꾸지 않는다. --plan은 접속/Secret 읽기0, --apply-schema-only는 별도 정확 실행결정 없으면 접속 전에 거절한다.

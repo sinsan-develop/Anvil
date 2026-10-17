@@ -2,6 +2,8 @@
 
 ## A-3 최신 후보 책임 — 한정 실측·잔여 분리
 
+정식반영 최신(2026-10-18): exact dbbdf049의별도 AV3-PMO-A3-FORMAL-SCHEMA-ONLY 단1회는exit0·기존45/77표보존·새46/4표0/seed0, 별도READONLY후검사·기존PG/Windows서비스·보호hash불변이다. 상세FN08/A3_FORMAL_SCHEMA_01_RESULT.md. formal45/미적용 문구는이전시점이며기존서비스/UI/OS/Agent·전체인수미완료는유지한다.
+
 N4 준비: 새 scripts/apply-source-read-development.ts는 기존 runner/서버 시작과 분리된 plan·명시 schema-only 후보이며 scripts/source-read-development-guard.ts가 formal 별도marker/정확Git·경로/유한기한·45→46 manifest/옛표보존·새4표0을 검사한다. tests/unit/FN08/source-read-development.test.ts의 순수검사/CLI거절과 인접9PASS·type0는 로컬 준비 증거만이다. 실제 DB/Secret 읽기·transaction·정식schema46 반영·서비스변경은 아직0/미검증이며 실행전 새 정확결정이 필요하다. Main은 이 준비를 주도하고 PMO에 다음업무배정을 요청하지 않는다.
 
 최신 결과(2026-10-18 02:49 KST): AV3-PMO-A3-SQL-CHECKSUM-ONLY-QA-RECOVERY로 별도 승인된 exact ef19390c788cbf764ef5b5849540833222c1db07 단1회가 exit0·QA_SQL_CHECKSUM_ONLY_DONE·failure/cleanupFailure:null로 종료했다. schema46 COMMIT 뒤 Node app READ ONLY 정확46 ID/checksum·26벡터·새4표0행, service:null/credential:false와 exact정리/독립잔여0을 확인했다. 원 f7 생성 FAIL/자동 cleanupFailure 및 423 checksum 미실행은 다른 실행 이력으로 보존한다. 이번 결정은 소진했으며 남은 창의 재실행·기존 서비스8범주 반복·정식DB 변경을 허가하지 않는다. 생성응답유실 recovery branch 실제 검증·원 생성 실패 원인 확정·정식 DB/API/TLS/OS/전체 인수는 미충족이다. 상세: docs/04_test_reports/AV3/FN08/A3_SQL_CHECKSUM_RECOVERY_QA_RESULT.md.

@@ -1,5 +1,12 @@
 # Anvil 재설계 개발환경
 
+## A-3 정식 개발 schema-only 반영 — 2026-10-18
+
+- 현재 정식 WSL 개발 DB는 **46 migrations**다. exact dbbdf0493e40ae74e713926ec1f0148355100fe5의 0008_source_read_observation.sql(SHA256 26A7B7828481689D7017836C1ECE2FC5E9F644CB9B8200122EE013E7F52DB185)만 별도 승인된 단1회로 적용했고 기존45 SQL/77표 논리구조·권한·행수·지문을 보존했다. 새4표는0행·seed/계정생성0이며 개발용으로 보존한다. 새함수/guard·기존app역할의새표한정권한은승인된효과다.
+- 별도 READ ONLY 후검사46/새checksum·4표0행, 기존PG fullID/image/StartedAt/restart·migrator보호hash·Git exact clean 및 Windows보호10hash/Node23836/relay26052/loopback3830 불변을 확인했다. 명령·원JSON·실행창/단1회소진·미검증은 FN08/A3_FORMAL_SCHEMA_01_RESULT.md에 있다.
+- 기존 API·Web bundle/프로세스는 교체하지 않았다. 새 API/실제 served 화면·HUMAN grant/보고·OS/Agent 연결·사용자 인수는 미완료다. 아래 A-2R의45개 상태는 당시 이력이며 현재46을 대신하지 않는다.
+- 보존 검사의 데이터 예외: schema_migrations는 새1행 증가를 허용하므로 전체 row fingerprint 불변 검사에서 제외했다. 정확45 기존 ID/checksum·전체46 대조 및 옛77표 구조/권한·나머지76표 행수/지문 동일을 확인한 것이며 과거 적용시각 열의 개별 실측 불변까지 주장하지 않는다.
+
 ## A-2R 소스 선언 registry DB 반영 — 2026-10-17
 
 - Git exact b5c3c74debae4b2e09d51e7b3916428dfe13cc96의 신규0008_source_root_registry.sql(SHA256 d9d27d2c92e31e6c5e50bf18762786d2cad2b47a28905bc8f0f15fa2cec72403)만 정식 개발 DB에 schema-only 적용했다. 기존44 migration 보존·현재45개, 신규 source_roots/source_root_versions 각0행·seed0이다. 기존75표의 논리구조/권한·행수·fingerprint를 적용 전후 대조했으며 실제 계정/권한·정책·서비스는 변경하지 않았다.
