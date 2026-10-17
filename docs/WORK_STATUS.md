@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI06-TRACE-ANCHOR-01 구현·한정 검수(2026-10-17 / Main 어울)**: 기존 TraceViewer/DesignIndexViewer와 새 순수 선택 함수만 연결했다. readTrace가 대조한 DESIGN_ITEM의 문서 id/version/hash와 현재 bodyHash/anchor가 맞을 때만 기존 원문 선택으로 이동한다. 다른 문서/버전/종류는 현재 원문으로 대체0, 없는줄/상한은 기존 미확인이며 저장/확정/buffer/pending/서버/API/DB/서비스 변경0이다.
+- 새 unit2 RED→2 PASS/115.9ms, browser 버튼부재 RED1→직접5 PASS/4.7s·typecheck0·build109 exit0다. 관련 unit11 PASS/229.5ms, 직접 영향 시안편집/검토·확정 browser7 PASS/7.7s를 별도 실행했다(같은후보 직접5 재반복0). 정방향/역방향·변조/다른버전거절·없는줄/지연응답·본문문자열/쓰기0을 확인했고 기존500k/NO_COLOR경고는 보존한다.
+- 독립1회 읽기 검수 Critical0/Important0/Minor0이다. 실제 제공화면/DB/사용자 인수·서버 연결의 업무적 타당성과 다른종류/다른문서 자동이동은 미검증/제외이며 전체 UI06/Stage 완료가 아니다. 앞선 버전비교 CR Minor1은 별도 미해결로 보존한다.
+- 후보 index SHA256 FF1353270A2B2BA3EE64D16AC7A0C094F7B405C323384D71AF22DBC464F28500·JS index-63QKqQlD.js SHA256 BD394F50EF6092790EA657321AF631705D94DAA24F13FA8EA747CC878F1C9984·CSS03443550…5E9A56. 일회 QA43파일/7폴더를 정확 target/parent nonlink·owner/생성 allowlist·process0 확인 뒤 제거(rootRemaining=false exit0), 제품/시험 소스로 재빌드 가능하다. 실패actual 동결자료·복구API23836은 대상 제외다.
+
 - **UI06-VERSION-COMPARE-01 독립 검수/정리 마감**: 원1회 읽기 검수는 Critical0/Important0/Minor1이다. Minor는 단독 CR 줄바꿈을 LF 기반 분리/줄 수 계산에서 세지 않아 4000줄 제한·공통줄 제외가 적용되지 않는 경계다. 본문 바이트·저장 손실은 없고131072 UTF16상한은 유지된다. 미해결 Minor로 남기며 모든 줄바꿈 형태의 검증을 주장하지 않는다. reviewer는 실제 서비스/DB/사용자 인수·최신head 탐색/첨부 비교/최소diff를 판정하지 않았다.
 - 일회QA43파일/7폴더(루트 포함)의 정확 절대대상·생성 allowlist·전체owner SINSAN\\cyhuh/nonlink·관련process0을 확인해 등록root만 제거했고 rootRemaining=false exit0다. 후보 bundle은 폐기했지만 제품/시험 소스·해시로 재빌드 가능하다. 실패 actual 동결 root/미참조 asset·복구 API23836은 정리 대상에서 제외했다. 실제 PG/정식 served 화면·사용자 인수는 미검증이며 UI06/FN03/Stage 전체 완료가 아니다.
 - **기록 보존/동기화 예외**: source 현황 전체 prefix를 바꾸는 patch는 auto-review가 누적 이력 삭제 위험으로 거절했다. 해당 교체는 적용하지 않았으며 우회 재실행0이다. 더 안전한 대안으로 기존 기록을 그대로 보존하고 이 마감 세 문단만 추가한다. 따라서 정본/source 현황은 같은 사실을 보유하지만 바이트 동일이라고 주장하지 않는다. 다음 미완료 기능 선정은 Main이 계속하며 PMO 다음 지시 대기로 전환하지 않는다.

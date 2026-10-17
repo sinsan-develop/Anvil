@@ -1,0 +1,36 @@
+import { expect, test, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
+const project='51c0439f-791e-4bb5-8471-70938d6afaf1', other='51c0439f-791e-4bb5-8471-70938d6afaf2', id='32b5f276-13e6-4d8a-b93f-27a15d21c788', item='a6f30000-0000-4000-8000-000000000090', artifact='a6f30000-0000-4000-8000-000000000091', plan='a6f30000-0000-4000-8000-000000000092', edgeId='a6f30000-0000-4000-8000-000000000093';
+const ref={id,version:2,contentHash:'b'.repeat(64)},formRef={id:artifact,version:1,contentHash:'a'.repeat(64)},at='2026-10-17T10:00:00Z',body='\uFEFF# 설계 원문\r\n<script>window.TRACE_EXECUTED=1</script>\r\n끝';
+async function fixture(page:Page,options:{foreign?:boolean;badHash?:boolean;missingLine?:boolean;delayed?:boolean}={}){
+ const dist=process.env.ANVIL_UI06_TRACE_DIST;if(!dist)throw Error('REGISTERED_CANDIDATE_DIST_REQUIRED');
+ const unknown:string[]=[],writes:string[]=[],errors:string[]=[],offOrigin:string[]=[];let release=()=>{},seen=()=>{};
+ const pending=new Promise<void>(r=>release=r),requested=new Promise<void>(r=>seen=r);
+ page.on('pageerror',e=>errors.push(e.name));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method());if(new URL(r.url()).origin!=='https://localhost:3830')offOrigin.push(new URL(r.url()).origin);});
+ await page.route('**/*',r=>new URL(r.request().url()).origin==='https://localhost:3830'?r.fallback():r.abort('blockedbyclient'));
+ await page.route('https://localhost:3830/**',async r=>{const p=new URL(r.request().url()).pathname;if(p.startsWith('/api/'))return r.fallback();if(r.request().method()!=='GET'||p!=='/'&&!/^\/assets\/[A-Za-z0-9_.-]+$/.test(p))return r.abort('blockedbyclient');const n=p==='/'?'index.html':p.slice(1);return r.fulfill({body:await readFile(new URL(n,pathToFileURL(dist+'/'))),contentType:n.endsWith('.html')?'text/html':n.endsWith('.css')?'text/css':'application/javascript'});});
+ await page.route('**/api/v1/**',r=>{unknown.push(new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
+ await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id,displayName:'왕복 추적 QA'},clientId:id,csrfToken:'C'.repeat(43)}}));
+ for(const p of [project,other])await page.route(`**/api/v1/projects/${p}/documents?*`,r=>r.fulfill({json:{items:[{id,title:'설계',headVersion:2,confirmedVersion:null,updatedAt:at}],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route(`**/api/v1/projects/${project}/documents/${id}/versions/2`,r=>r.fulfill({json:{...ref,title:'설계',confirmed:false,formRef,stageNodeRef:null,content:{body:{artifactId:artifact,bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/markdown;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]},validation:{validForConfirmation:false,issues:[]},statusHistory:[],contentReviewCriteria:{criteriaVersion:1,formRef,items:[]},contentReviews:[]}}));
+ await page.route(`**/api/v1/projects/${project}/files/${artifact}`,r=>r.fulfill({contentType:'application/octet-stream',body:Buffer.from(body)}));
+ await page.route(`**/api/v1/projects/${project}/design-index?*`,r=>r.fulfill({json:{documentRef:ref,items:[],screenRegions:[],status:'NOT_INDEXED',observedAt:at}}));
+ await page.route(`**/api/v1/projects/${project}/traces?*`,async r=>{
+  seen();if(options.delayed)await pending;
+  const direction=new URL(r.request().url()).searchParams.get('direction'),from={kind:'PLAN_TASK',id:plan,versionRef:{id:plan,version:1,contentHash:'c'.repeat(64)},localCode:'FN01'},to={kind:'DESIGN_ITEM',id:item,versionRef:options.foreign?{...ref,version:1}:ref,localCode:'D01',anchor:options.missingLine?'line:99':'line:2'},data={from,to,relation:'IMPLEMENTS',reason:'설계로 돌아가기',designRefs:[ref]},edge={id:edgeId,...data,edgeHash:options.badHash?'0'.repeat(64):contentHash(canonicalJson(data)),createdAt:at};
+  return r.fulfill({json:{designRef:ref,direction,nodes:[{ref:from,title:'계획 업무',designRefs:[ref]},{ref:to,title:'설계 원문 위치',designRefs:[ref]}],edges:[edge],traversal:[{edgeId,from:direction==='REVERSE'?to:from,to:direction==='REVERSE'?from:to}],missingLinks:[],unknownEvidence:[{code:'EXECUTION_SOURCE_NOT_CONNECTED'},{code:'TEST_EVIDENCE_SOURCE_NOT_CONNECTED'}],baselineRef:null,hasMore:false,nextCursor:null,observedAt:at}});
+ });return{unknown,writes,errors,offOrigin,release,requested};
+}
+async function open(page:Page){await page.goto(`/#/projects/${project}/documents`);await page.getByRole('button',{name:'설계 열기',exact:true}).click();await page.getByRole('button',{name:'이 버전 설계 추적 조회',exact:true}).click();await page.getByRole('button',{name:'업무 연결 조회',exact:true}).click();}
+function clean(s:Awaited<ReturnType<typeof fixture>>){expect(s.unknown).toEqual([]);expect(s.writes).toEqual([]);expect(s.errors).toEqual([]);expect(s.offOrigin).toEqual([]);}
+const link=(page:Page)=>page.getByRole('button',{name:'D01 연결 설계 원문 보기',exact:true});
+test('정방향·역방향 업무 연결에서 같은 정확 설계 원문 줄로 돌아가고 본문은 실행하지 않는다',async({page})=>{
+ const s=await fixture(page);await open(page);await link(page).click();const selected=page.getByLabel('선택한 설계 원문 줄',{exact:true});await expect(selected).toHaveText('<script>window.TRACE_EXECUTED=1</script>');expect(await page.getByLabel('문서 원문',{exact:true}).textContent()).toBe(body);await expect(selected).toBeFocused();
+ await page.getByRole('button',{name:'원문 위치 선택 해제',exact:true}).click();await page.getByLabel('추적 방향',{exact:true}).selectOption('REVERSE');await expect(page.getByText('역방향 · 같은 저장 연결',{exact:true})).toBeVisible();await link(page).click();await expect(selected).toHaveText('<script>window.TRACE_EXECUTED=1</script>');expect(await page.evaluate(()=>(window as any).TRACE_EXECUTED)).toBeUndefined();await expect(page.getByLabel('문서 원문',{exact:true}).locator('script')).toHaveCount(0);clean(s);
+});
+test('다른 설계 버전 endpoint는 현재 본문 위치 버튼으로 대체하지 않는다',async({page})=>{const s=await fixture(page,{foreign:true});await open(page);await expect(page.getByText('설계로 돌아가기',{exact:true})).toBeVisible();await expect(link(page)).toHaveCount(0);await expect(page.getByLabel('선택한 설계 원문 줄',{exact:true})).toHaveCount(0);clean(s);});
+test('변조 edge는 원문 이동으로 채택하지 않는다',async({page})=>{const s=await fixture(page,{badHash:true});await open(page);await expect(page.getByRole('alert')).toContainText('TRACE_INTEGRITY_FAILED');await expect(link(page)).toHaveCount(0);clean(s);});
+test('없는 원문 줄은 미확인이고 다른 줄이나 문서로 이동하지 않는다',async({page})=>{const s=await fixture(page,{missingLine:true});await open(page);await link(page).click();await expect(page.getByText('원문 위치 미확인',{exact:false})).toBeVisible();await expect(page.getByLabel('선택한 설계 원문 줄',{exact:true})).toHaveCount(0);expect(await page.getByLabel('문서 원문',{exact:true}).textContent()).toBe(body);clean(s);});
+test('프로젝트 이동 뒤 늦은 추적 응답은 과거 원문 이동을 되살리지 않는다',async({page})=>{const s=await fixture(page,{delayed:true});await open(page);await s.requested;await page.evaluate(p=>{location.hash='#/projects/'+p+'/documents';},other);const late=page.waitForResponse(r=>r.url().includes('/traces?'));s.release();await(await late).finished();await expect(link(page)).toHaveCount(0);await expect(page.getByLabel('문서 원문',{exact:true})).toHaveCount(0);clean(s);});
