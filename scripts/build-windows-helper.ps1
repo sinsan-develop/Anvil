@@ -1,7 +1,8 @@
 param([Parameter(Mandatory=$true)][string]$OutputRoot)
 $ErrorActionPreference='Stop'
-$approvedRoot='D:\tmp\anvil-v3-fn06-registration-qa'
-if ([IO.Path]::GetFullPath($OutputRoot) -cne $approvedRoot) { throw 'APPROVED_QA_ROOT_REQUIRED' }
+$approvedRoots=@('D:\tmp\anvil-v3-fn06-registration-qa','D:\tmp\anvil-v3-fn06-https-qa-r1')
+if ([IO.Path]::GetFullPath($OutputRoot) -cnotin $approvedRoots) { throw 'APPROVED_QA_ROOT_REQUIRED' }
+$approvedRoot=$OutputRoot
 $rootItem=Get-Item -LiteralPath $approvedRoot
 if ($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'QA_ROOT_LINK_DENIED' }
 $binPath=Join-Path $approvedRoot 'bin'
