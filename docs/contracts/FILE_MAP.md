@@ -1,6 +1,6 @@
 # P02 A안 파일 책임·검증 지도
 
-FN06-CODEX-CODEC-01 오프라인 실제 파일: `apps/connector/adapters/primary/schemas.ts`는 고정 vendor JSON의 필요한 분기/응답을 기존 Ajv strict/local refs로 검증하고, `codec.ts`는 유한 UTF8 프레임·메모리 요청/응답 상관·안전 digest 관측만 담당한다. `tests/unit/FN06/codex-codec.test.ts`는 입력/한도/중복·맥락/EOF·비밀 비반사/승인 wire0의 순수 집중시험이다. transport/실제 Agent adapter 세션·서버허가/영속receipt·spool/OS/파일 통제는 미구현이며 vendor 원본은 수정하지 않는다.
+FN06-CODEX-CODEC-01 오프라인 실제 파일: `apps/connector/adapters/primary/schemas.ts`는 고정 vendor JSON의 필요한 분기/응답을 기존 Ajv strict/local refs로 검증하고, `codec.ts`는 유한 UTF8 프레임·송신 복제 전 바이트 선검사·메모리 응답/선도착 미결박 상관·수명 id 재사용 금지·안전 digest 관측만 담당한다. `tests/unit/FN06/codex-codec.test.ts`는 입력/한도/중복·맥락/EOF·비밀 비반사/승인 wire0의 순수 집중23건이다. transport/실제 Agent adapter 세션·서버허가/영속receipt·spool/OS/파일 통제는 미구현이며 vendor 원본은 수정하지 않는다.
 
 FN08 내부 준비2파일: `apps/connector/runtime/dispatch.ts`의 inspectDispatchPreconditions는 기존 AdapterContext/VersionRef의 구조·기대 snapshot 불일치와 미연결 차단만 보고한다. `tests/unit/FN08/dispatch.test.ts` 집중4건이 위장/누락/비밀비반사·실행불가를 확인한다. 실제 dispatch 함수/영속 중복/서버검증/소스경로·spool/Agent는 아직 없으며 새 wire/API/DB 파일을 생성하지 않는다. 소유/등록·native helper 검증과 별개의 내부 준비 코드다.
 

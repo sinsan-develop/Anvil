@@ -2,7 +2,7 @@ import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/can
 import {requestMethods,approvalMethods,notificationMethods,validateRequest,validateInbound,validateResult,validateError,validateInitialized} from './schemas.ts';
 import type {CodexMethod,InboundMethod} from './schemas.ts';
 
-type Code='CODEC_UNUSABLE'|'INPUT_INVALID'|'UNSUPPORTED_METHOD'|'SCHEMA_INVALID'|'INITIALIZATION_WIRE_NOT_READY'|'INITIALIZE_RESPONSE_REQUIRED'|'INITIALIZE_ALREADY_PREPARED'|'INITIALIZED_ALREADY_PREPARED'|'DUPLICATE_REQUEST_ID'|'PENDING_LIMIT'|'FRAME_TOO_LARGE'|'CHUNK_TOO_LARGE'|'EMPTY_FRAME'|'MALFORMED_FRAME'|'UNMATCHED_RESPONSE'|'CONTEXT_MISMATCH'|'PARTIAL_FRAME_EOF'|'PENDING_RESPONSE_EOF'|'TRANSPORT_ERROR'|'REMOTE_RPC_ERROR'|'SERVER_DECISION_VERIFIER_NOT_CONNECTED';
+type Code='CODEC_UNUSABLE'|'INPUT_INVALID'|'UNSUPPORTED_METHOD'|'SCHEMA_INVALID'|'INITIALIZATION_WIRE_NOT_READY'|'INITIALIZE_RESPONSE_REQUIRED'|'INITIALIZE_ALREADY_PREPARED'|'INITIALIZED_ALREADY_PREPARED'|'DUPLICATE_REQUEST_ID'|'REQUEST_ID_BUDGET_EXHAUSTED'|'PENDING_LIMIT'|'FRAME_TOO_LARGE'|'CHUNK_TOO_LARGE'|'EMPTY_FRAME'|'MALFORMED_FRAME'|'UNMATCHED_RESPONSE'|'CONTEXT_MISMATCH'|'CONTEXT_PENDING'|'PARTIAL_FRAME_EOF'|'PENDING_RESPONSE_EOF'|'TRANSPORT_ERROR'|'REMOTE_RPC_ERROR'|'SERVER_DECISION_VERIFIER_NOT_CONNECTED';
 type FactKind='PROTOCOL_UNKNOWN'|'CONTEXT_UNVERIFIED'|'RPC_RESPONSE'|'RPC_ERROR'|'INTERRUPT_RESPONSE'|'TOOL_APPROVAL_REQUIRED'|'TURN_FACT'|'THREAD_FACT'|'ITEM_FACT'|'OUTPUT_FACT'|'TOOL_ERROR_FACT'|'STREAM_CLOSED';
 export interface CodecFact{
  readonly kind:FactKind;readonly code?:Code;readonly method?:CodexMethod|InboundMethod;
@@ -14,12 +14,61 @@ export interface CodecFact{
 type Rejected={readonly kind:'REJECTED';readonly code:Code;readonly executionAuthorized:false;readonly dispatched:false};
 type Encoded={readonly kind:'ENCODED';readonly wire:Uint8Array;readonly executionAuthorized:false;readonly dispatched:false};
 interface Pending{method:CodexMethod;id:string|number;threadId?:string;turnId?:string}
+interface Context{threadId:string;turnId?:string}
 function rejected(code:Code):Rejected{return {kind:'REJECTED',code,executionAuthorized:false,dispatched:false};}
 function fact(value:Omit<CodecFact,'executionAuthorized'|'workAccepted'|'ownership'>):CodecFact{return {...value,executionAuthorized:false,workAccepted:false,ownership:'UNVERIFIED'};}
 function object(v:unknown):v is Record<string,any>{return v!==null&&typeof v==='object'&&!Array.isArray(v);}
 function hash(v:unknown):string{return contentHash(canonicalJson(v));}
 function id(v:unknown):v is string|number{return (typeof v==='string'&&v.isWellFormed())||(typeof v==='number'&&Number.isSafeInteger(v));}
 function onlyKeys(v:Record<string,unknown>,allowed:readonly string[]):boolean{return Object.keys(v).every(k=>allowed.includes(k));}
+
+// 큰 본문을 JSON 문자열/복제/Buffer로 만들기 전에 직렬화 바이트 예산에서 중단한다.
+// 입력 객체 자체와 JS reflection 메타데이터/VM 메모리까지 제한하는 OS quota는 아니다.
+function preflight(value:unknown,maxBytes:number):void{
+ let bytes=0;const active=new Set<object>();
+ const invalid=():never=>{throw Error('INPUT_INVALID');};
+ const add=(n:number)=>{bytes+=n;if(bytes>maxBytes)throw Error('FRAME_TOO_LARGE');};
+ function string(s:string):void{
+  add(2);
+  for(let n=0;n<s.length;n++){
+   const c=s.charCodeAt(n);
+   if(c===34||c===92||c===8||c===9||c===10||c===12||c===13)add(2);
+   else if(c<32)add(6);
+   else if(c<128)add(1);
+   else if(c<2048)add(2);
+   else if(c>=0xd800&&c<=0xdbff){const low=s.charCodeAt(++n);if(!(low>=0xdc00&&low<=0xdfff))invalid();add(4);}
+   else if(c>=0xdc00&&c<=0xdfff)invalid();
+   else add(3);
+  }
+ }
+ function visit(item:unknown,depth:number):void{
+  if(depth>64)invalid();
+  if(item===null){add(4);return;}
+  if(typeof item==='boolean'){add(item?4:5);return;}
+  if(typeof item==='string'){string(item);return;}
+  if(typeof item==='number'){if(!Number.isFinite(item)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))invalid();add(JSON.stringify(item).length);return;}
+  if(typeof item!=='object'||active.has(item)||Object.getOwnPropertySymbols(item).length)invalid();
+  const objectItem=item as object,proto=Object.getPrototypeOf(objectItem);
+  if(!Array.isArray(item)&&proto!==Object.prototype&&proto!==null)invalid();
+  active.add(objectItem);
+  try{
+   add(2);
+   if(Array.isArray(item)){
+    for(let n=0;n<item.length;n++){
+     if(n)add(1);const d=Object.getOwnPropertyDescriptor(item,String(n));if(!d||!('value' in d))invalid();visit(d!.value,depth+1);
+    }
+    if(Object.getOwnPropertyNames(item).length!==item.length+1)invalid();
+   }else{
+    let n=0;
+    for(const key of Object.getOwnPropertyNames(objectItem).sort()){
+     if(n++)add(1);string(key);add(1);const d=Object.getOwnPropertyDescriptor(objectItem,key);
+     if(!d||!d.enumerable||!('value' in d))invalid();visit(d!.value,depth+1);
+    }
+   }
+  }finally{active.delete(objectItem);}
+ }
+ visit(value,0);
+}
 
 /** 메모리 wire/사실 codec뿐이다. transport·서버 허가·영속 receipt·OS 회수를 제공하지 않는다. */
 export class Codex0161Codec{
@@ -28,6 +77,9 @@ export class Codex0161Codec{
  #initializePrepared=false;#initializeResponse=false;#initializedPrepared=false;
  readonly #pending=new Map<string,Pending>();
  readonly #contexts=new Map<string,true>();
+ readonly #threads=new Map<string,true>();
+ readonly #provisional=new Map<string,Context>();
+ readonly #usedIds=new Set<string>();
  constructor(options:{maxFrameBytes:number;maxPending:number}){
   let value:any;try{value=JSON.parse(canonicalJson(options));}catch{throw Error('CODEC_OPTIONS_INVALID');}
   // 내부 인스턴스 메모리 상한. 서버/실제 stdio 정책이나 완료·권한 계약이 아니다.
@@ -39,24 +91,45 @@ export class Codex0161Codec{
   this.#contexts.delete(key);this.#contexts.set(key,true);
   while(this.#contexts.size>this.#maxPending)this.#contexts.delete(this.#contexts.keys().next().value!);
  }
+ #rememberThread(threadId:string):void{
+  this.#threads.delete(threadId);this.#threads.set(threadId,true);
+  while(this.#threads.size>this.#maxPending)this.#threads.delete(this.#threads.keys().next().value!);
+ }
+ #bound(context:Context):boolean{return context.turnId===undefined?this.#threads.has(context.threadId):this.#contexts.has(canonicalJson([context.threadId,context.turnId]));}
+ #canResolve(context:Context):boolean{
+  for(const pending of this.#pending.values()){
+   if(context.turnId===undefined){if(pending.method==='thread/start'||(pending.method==='thread/resume'&&pending.threadId===context.threadId))return true;}
+   else if(pending.method==='turn/start'&&pending.threadId===context.threadId)return true;
+  }
+  return false;
+ }
+ #reconcile():boolean{
+  for(const [key,context] of this.#provisional){if(this.#bound(context))this.#provisional.delete(key);else if(!this.#canResolve(context))return false;}
+  return true;
+ }
  #unknown(code:Code,kind:'PROTOCOL_UNKNOWN'|'CONTEXT_UNVERIFIED'='PROTOCOL_UNKNOWN'):CodecFact{
-  this.#state='UNKNOWN';this.#buffer.fill(0);this.#length=0;this.#pending.clear();this.#contexts.clear();
+  this.#state='UNKNOWN';this.#buffer.fill(0);this.#length=0;this.#pending.clear();this.#contexts.clear();this.#threads.clear();this.#provisional.clear();
   return fact({kind,code});
  }
  #wire(value:unknown):Encoded|Rejected{
+  try{preflight(value,this.#maxFrameBytes);}catch(error){return rejected(error instanceof Error&&error.message==='FRAME_TOO_LARGE'?'FRAME_TOO_LARGE':'INPUT_INVALID');}
   const wire=Buffer.from(canonicalJson(value)+'\n','utf8');
   if(wire.byteLength-1>this.#maxFrameBytes)return rejected('FRAME_TOO_LARGE');
   return {kind:'ENCODED',wire,executionAuthorized:false,dispatched:false};
  }
  encodeRequest(method:unknown,requestId:unknown,params:unknown):Encoded|Rejected{
   if(this.#state!=='OPEN')return rejected('CODEC_UNUSABLE');
+  if(this.#provisional.size)return rejected('CONTEXT_PENDING');
   if(typeof method!=='string'||!requestMethods.includes(method as CodexMethod))return rejected('UNSUPPORTED_METHOD');
   if(!id(requestId))return rejected('INPUT_INVALID');
+  try{preflight({id:requestId,method,params},this.#maxFrameBytes);}catch(error){return rejected(error instanceof Error&&error.message==='FRAME_TOO_LARGE'?'FRAME_TOO_LARGE':'INPUT_INVALID');}
   const name=method as CodexMethod,key=canonicalJson(requestId);
   if(name==='initialize'&&this.#initializePrepared)return rejected('INITIALIZE_ALREADY_PREPARED');
   if(name!=='initialize'&&!this.#initializedPrepared)return rejected('INITIALIZATION_WIRE_NOT_READY');
-  if(this.#pending.has(key))return rejected('DUPLICATE_REQUEST_ID');
+  const idDigest=contentHash(key);
+  if(this.#usedIds.has(idDigest))return rejected('DUPLICATE_REQUEST_ID');
   if(this.#pending.size>=this.#maxPending)return rejected('PENDING_LIMIT');
+  if(this.#usedIds.size>=1024){this.#unknown('REQUEST_ID_BUDGET_EXHAUSTED');return rejected('REQUEST_ID_BUDGET_EXHAUSTED');}
   let value:any;try{value=JSON.parse(canonicalJson({id:requestId,method:name,params}));}catch{return rejected('INPUT_INVALID');}
   if(!validateRequest(name,value))return rejected('SCHEMA_INVALID');
   const wire=this.#wire(value);if(wire.kind==='REJECTED')return wire;
@@ -66,6 +139,7 @@ export class Codex0161Codec{
   if(name==='turn/interrupt')pending.turnId=value.params.turnId;
   if(name==='turn/steer')pending.turnId=value.params.expectedTurnId;
   this.#pending.set(key,pending);
+  this.#usedIds.add(idDigest);
   if(name==='initialize')this.#initializePrepared=true;
   if(pending.threadId!==undefined&&pending.turnId!==undefined)this.#remember(pending.threadId,pending.turnId);
   return wire;
@@ -109,7 +183,7 @@ export class Codex0161Codec{
   if(reason!=='EOF')return [this.#unknown('TRANSPORT_ERROR')];
   if(this.#length)return [this.#unknown('PARTIAL_FRAME_EOF')];
   if(this.#pending.size)return [this.#unknown('PENDING_RESPONSE_EOF')];
-  this.#state='CLOSED';this.#contexts.clear();this.#buffer.fill(0);
+  this.#state='CLOSED';this.#contexts.clear();this.#threads.clear();this.#provisional.clear();this.#buffer.fill(0);
   return [fact({kind:'STREAM_CLOSED'})];
  }
  #message(value:unknown):CodecFact{
@@ -123,11 +197,15 @@ export class Codex0161Codec{
   const p=value.params;
   const threadId=method==='thread/started'?p.thread.id:p.threadId;
   const turnId=method==='turn/started'||method==='turn/completed'?p.turn.id:p.turnId;
-  // thread/started has no turn; only a matching in-memory thread request can attribute it.
-  const bound=method==='thread/started'
-   ?[...this.#pending.values()].some(v=>v.threadId===threadId)
-   :this.#contexts.has(canonicalJson([threadId,turnId]));
-  if(!bound)return this.#unknown('CONTEXT_MISMATCH','CONTEXT_UNVERIFIED');
+  const context:Context={threadId,...(turnId===undefined?{}:{turnId})};
+  if(!this.#bound(context)){
+   if(!this.#canResolve(context))return this.#unknown('CONTEXT_MISMATCH','CONTEXT_UNVERIFIED');
+   const key=canonicalJson([threadId,turnId??null]);
+   if(!this.#provisional.has(key)&&this.#provisional.size>=this.#maxPending)return this.#unknown('PENDING_LIMIT','CONTEXT_UNVERIFIED');
+   // 원문/완료/승인으로 승격하지 않고 최소 식별만 보류한다. 정확 응답 수신 전 새 요청 금지.
+   this.#provisional.set(key,context);
+   return fact({kind:'CONTEXT_UNVERIFIED',code:'CONTEXT_PENDING',method,payloadDigest:hash(p)});
+  }
   const payloadDigest=hash(p),contextDigest=hash({threadId,turnId:turnId??null,itemId:p.itemId??p.item?.id??null});
   if(request)return fact({kind:'TOOL_APPROVAL_REQUIRED',method,requestDigest:hash(value),contextDigest,payloadDigest,automaticDecision:false});
   if(method==='turn/started'||method==='turn/completed')return fact({kind:'TURN_FACT',method,toolStatus:p.turn.status,contextDigest,payloadDigest});
@@ -143,7 +221,8 @@ export class Codex0161Codec{
   if(isError){
    if(!validateError(value))return this.#unknown('SCHEMA_INVALID');
    this.#pending.delete(key);
-   if(pending.method==='initialize'){this.#state='UNKNOWN';this.#contexts.clear();}
+   if(!this.#reconcile())return this.#unknown('CONTEXT_MISMATCH');
+   if(pending.method==='initialize')this.#unknown('REMOTE_RPC_ERROR');
    return fact({kind:'RPC_ERROR',code:'REMOTE_RPC_ERROR',method:pending.method,requestIdDigest:hash(pending.id),payloadDigest:hash(value.error)});
   }
   if(!validateResult(pending.method,value.result))return this.#unknown('SCHEMA_INVALID');
@@ -153,8 +232,10 @@ export class Codex0161Codec{
   if(pending.method==='initialize')this.#initializeResponse=true;
   if(pending.method==='turn/start'&&pending.threadId!==undefined)this.#remember(pending.threadId,result.turn.id);
   if(pending.method==='thread/start'||pending.method==='thread/resume'){
+   this.#rememberThread(result.thread.id);
    for(const turn of result.thread.turns)this.#remember(result.thread.id,turn.id);
   }
+  if(!this.#reconcile())return this.#unknown('CONTEXT_MISMATCH');
   return fact({kind:pending.method==='turn/interrupt'?'INTERRUPT_RESPONSE':'RPC_RESPONSE',method:pending.method,requestIdDigest:hash(pending.id),payloadDigest:hash(result)});
  }
 }

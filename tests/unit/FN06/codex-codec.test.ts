@@ -159,3 +159,98 @@ test('잘못된 Unicode id·위험 객체를 고정 입력 거절로 돌려주�
  let invoked=false;const params:any={};Object.defineProperty(params,'clientInfo',{enumerable:true,get(){invoked=true;throw Error('PRIVATE_TOKEN');}});
  const denied=c.encodeRequest('initialize',1,params);assert.equal(denied.code,'INPUT_INVALID');assert.equal(invoked,false);assert.equal(JSON.stringify(denied).includes('PRIVATE_TOKEN'),false);
 });
+
+const thread={cliVersion:'0.161.0',createdAt:1,cwd:'C:\\synthetic',ephemeral:true,id:'thread-a',modelProvider:'synthetic',preview:'',projectId:null,sessionId:'session-a',source:'appServer',status:{type:'idle'},turns:[],updatedAt:1};
+const threadResult={approvalPolicy:'untrusted',approvalsReviewer:'user',cwd:'C:\\synthetic',model:'synthetic',modelProvider:'synthetic',sandbox:{type:'readOnly'},thread};
+
+// 외부 세션의 완전한 응답을 generic object로 대충 인정하거나 다른 thread를 resume 결과로 받으면 실패한다.
+test('고정 thread start/resume 응답의 필수 모델·세션·sandbox와 thread 일치를 검증한다',()=>{
+ const c=ready();sent(c,'thread/start',1,{});const started=c.push(frame({id:1,result:threadResult}))[0];assert.equal(started.kind,'RPC_RESPONSE');assert.equal(JSON.stringify(started).includes('session-a'),false);
+ sent(c,'thread/resume',2,{threadId:'thread-a'});assert.equal(c.push(frame({id:2,result:threadResult}))[0].kind,'RPC_RESPONSE');
+ const wrong=ready();sent(wrong,'thread/resume',1,{threadId:'expected'});assert.equal(wrong.push(frame({id:1,result:threadResult}))[0].code,'CONTEXT_MISMATCH');refused(wrong,'CODEC_UNUSABLE');
+ const missing=ready();sent(missing,'thread/start',1,{});const incomplete=structuredClone(threadResult) as any;delete incomplete.thread.sessionId;
+ assert.equal(missing.push(frame({id:1,result:incomplete}))[0].code,'SCHEMA_INVALID');refused(missing,'CODEC_UNUSABLE');
+});
+
+// 다른 두 승인 종류를 잘못된 command 응답으로 처리하거나 승인 wire를 만들면 실패한다.
+test('파일·권한 승인 요청도 고정 정의로 읽되 같은 서버 결정 미연결 차단을 유지한다',()=>{
+ for(const [method,extra] of [['item/fileChange/requestApproval',{}],['item/permissions/requestApproval',{cwd:'C:\\synthetic',permissions:{}}]] as const){
+  const c=ready();sent(c,'turn/interrupt',1,{threadId:'thread-a',turnId:'turn-a'});
+  const request={id:'approval-2',method,params:{itemId:'item-a',startedAtMs:123,threadId:'thread-a',turnId:'turn-a',...extra}};
+  const observed=c.push(frame(request))[0];assert.equal(observed.kind,'TOOL_APPROVAL_REQUIRED');assert.equal(observed.method,method);
+  assert.equal('wire' in c.encodeToolDecision(observed.requestDigest,{decision:'accept'}),false);
+ }
+});
+
+// 통지가 응답보다 먼저 왔다는 이유만으로 정상 응답까지 버리거나 미결박 상태에서 새 요청을 내면 실패한다.
+test('응답보다 앞선 thread 통지는 미결박으로 보존하고 정확 응답 이후에만 결박한다',()=>{
+ const c=ready();sent(c,'thread/start',1,{});
+ const early=c.push(frame({method:'thread/started',params:{thread}}))[0];assert.equal(early.kind,'CONTEXT_UNVERIFIED');assert.equal(early.code,'CONTEXT_PENDING');
+ assert.equal(c.encodeRequest('turn/interrupt',2,{threadId:'thread-a',turnId:'turn-a'}).code,'CONTEXT_PENDING');
+ assert.equal(c.push(frame({id:1,result:threadResult}))[0].kind,'RPC_RESPONSE');
+ assert.equal(c.push(frame({method:'thread/started',params:{thread}}))[0].kind,'THREAD_FACT');
+ assert.equal(c.encodeRequest('turn/interrupt',2,{threadId:'thread-a',turnId:'turn-a'}).kind,'ENCODED');
+ const mismatch=ready();sent(mismatch,'thread/start',1,{});mismatch.push(frame({method:'thread/started',params:{thread:{...thread,id:'different'}}}));
+ assert.equal(mismatch.push(frame({id:1,result:threadResult}))[0].code,'CONTEXT_MISMATCH');refused(mismatch,'CODEC_UNUSABLE');
+});
+
+// 새 turn의 순서를 가정하거나 다른 turn 응답을 앞선 관측에 결박하면 실패한다.
+test('응답보다 앞선 turn 통지는 임시 미결박이며 다른 turn 응답이면 UNKNOWN으로 닫는다',()=>{
+ for(const [responseTurn,kind,code] of [['turn-a','RPC_RESPONSE',undefined],['different','PROTOCOL_UNKNOWN','CONTEXT_MISMATCH']]){
+  const c=ready();sent(c,'turn/start',1,{threadId:'thread-a',input:[]});
+  assert.equal(c.push(frame({method:'turn/started',params:{threadId:'thread-a',turn:{id:'turn-a',items:[],status:'inProgress'}}}))[0].code,'CONTEXT_PENDING');
+  assert.equal(c.encodeRequest('turn/interrupt',2,{threadId:'thread-a',turnId:'turn-a'}).code,'CONTEXT_PENDING');
+  const response=c.push(frame({id:1,result:{turn:{id:responseTurn,items:[],status:'inProgress'}}}))[0];assert.equal(response.kind,kind);if(code)assert.equal(response.code,code);
+  if(code)refused(c,'CODEC_UNUSABLE');else assert.equal(c.push(frame({method:'turn/completed',params:{threadId:'thread-a',turn:{id:'turn-a',items:[],status:'completed'}}}))[0].kind,'TURN_FACT');
+ }
+});
+
+// 완료 후 같은 id를 다시 쓰면 옛 reply가 새 요청을 지우므로 인스턴스 수명 동안 재사용을 거절해야 한다.
+test('완료된 id 재사용·늦은 중복 reply를 차단하고 유한 수명 id 예산 소진 뒤 닫는다',()=>{
+ const c=ready();sent(c,'turn/interrupt',1,{threadId:'thread-a',turnId:'turn-a'});
+ assert.equal(c.push(frame({id:1,result:{}}))[0].kind,'INTERRUPT_RESPONSE');
+ assert.equal(c.encodeRequest('turn/interrupt',1,{threadId:'thread-b',turnId:'turn-b'}).code,'DUPLICATE_REQUEST_ID');
+ sent(c,'turn/interrupt','1',{threadId:'thread-b',turnId:'turn-b'});
+ assert.equal(c.push(frame({id:1,result:{}}))[0].code,'UNMATCHED_RESPONSE');refused(c,'CODEC_UNUSABLE');
+ const limited=ready({maxFrameBytes:4096,maxPending:1});
+ for(let n=0;n<1023;n++){sent(limited,'turn/interrupt',n,{threadId:'thread-a',turnId:'turn-a'});assert.equal(limited.push(frame({id:n,result:{}}))[0].kind,'INTERRUPT_RESPONSE');}
+ assert.equal(limited.encodeRequest('turn/interrupt',1023,{threadId:'thread-a',turnId:'turn-a'}).code,'REQUEST_ID_BUDGET_EXHAUSTED');
+ refused(limited,'CODEC_UNUSABLE');
+});
+
+// 전체 직렬화/복제 전 예산을 중단해야 뒤의 잘못된 값까지 순회하거나 getter를 실행하지 않는다.
+test('송신 초과 본문은 전체 복제 전에 중단하고 escaped UTF8 정확 경계는 보존한다',()=>{
+ const c=ready();let invoked=false;const params:any={threadId:'thread-a',input:[{type:'text',text:'X'.repeat(20000),zInvalid:()=>{}}]};
+ Object.defineProperty(params,'zGetter',{enumerable:true,get(){invoked=true;throw Error('PRIVATE_TOKEN');}});
+ assert.equal(c.encodeRequest('turn/start',1,params).code,'FRAME_TOO_LARGE');assert.equal(invoked,false);
+ const values={threadId:'thread-a',input:[{type:'text',text:'한글😀\n\t"\\\u0001'}]};
+ // 작은 요청이 initialize보다 짧아지지 않게 합성 본문을 더한다.
+ values.input[0]!.text+='나'.repeat(100);
+ const bytes=Buffer.byteLength(JSON.stringify({id:1,method:'turn/start',params:values}));
+ assert.equal(ready({maxFrameBytes:bytes,maxPending:1}).encodeRequest('turn/start',1,values).kind,'ENCODED');
+ assert.equal(ready({maxFrameBytes:bytes-1,maxPending:1}).encodeRequest('turn/start',1,values).code,'FRAME_TOO_LARGE');
+});
+
+// 응답 선행 순서·복수 미결박의 응답 역전·실패/예산을 합격으로 치환하지 않는다.
+test('확정 thread 통지와 역순 응답을 결박하고 미결박 실패·예산 초과는 닫는다',()=>{
+ const after=ready();sent(after,'thread/start',1,{});after.push(frame({id:1,result:threadResult}));
+ assert.equal(after.push(frame({method:'thread/started',params:{thread}}))[0].kind,'THREAD_FACT');
+ const reversed=ready();sent(reversed,'thread/start',1,{});sent(reversed,'thread/start',2,{});
+ for(const id of ['thread-a','thread-b'])assert.equal(reversed.push(frame({method:'thread/started',params:{thread:{...thread,id}}}))[0].code,'CONTEXT_PENDING');
+ assert.equal(reversed.push(frame({id:2,result:{...threadResult,thread:{...thread,id:'thread-b'}}}))[0].kind,'RPC_RESPONSE');
+ assert.equal(reversed.encodeRequest('thread/start',3,{}).code,'CONTEXT_PENDING');
+ assert.equal(reversed.push(frame({id:1,result:threadResult}))[0].kind,'RPC_RESPONSE');
+ assert.equal(reversed.encodeRequest('thread/start',3,{}).kind,'ENCODED');
+ const failed=ready();sent(failed,'thread/start',1,{});failed.push(frame({method:'thread/started',params:{thread}}));
+ assert.equal(failed.push(frame({id:1,error:{code:-32603,message:'PRIVATE_TOKEN'}}))[0].code,'CONTEXT_MISMATCH');refused(failed,'CODEC_UNUSABLE');
+ const bounded=ready({maxFrameBytes:4096,maxPending:1});sent(bounded,'thread/start',1,{});
+ assert.equal(bounded.push(frame({method:'thread/started',params:{thread}}))[0].code,'CONTEXT_PENDING');
+ assert.equal(bounded.push(frame({method:'thread/started',params:{thread:{...thread,id:'thread-b'}}}))[0].code,'PENDING_LIMIT');refused(bounded,'CODEC_UNUSABLE');
+});
+
+// 선검사가 canonical의 비정상 JSON 거절을 느슨하게 만들거나 비밀 원문을 반사하면 실패한다.
+test('작은 비정상 JSON도 선검사에서 거절하고 원문·getter를 반사하지 않는다',()=>{
+ const cycle:any={};cycle.self=cycle;
+ const values=[undefined,()=>{},NaN,Infinity,Number.MAX_SAFE_INTEGER+1,'\ud800',new Date(),cycle,[,1],{[Symbol('PRIVATE_TOKEN')]:1}];
+ for(const value of values){const c=ready(),result=c.encodeRequest('turn/start',1,{threadId:'thread-a',input:[],extra:value});assert.equal(result.code,'INPUT_INVALID');assert.equal(JSON.stringify(result).includes('PRIVATE_TOKEN'),false);}
+});

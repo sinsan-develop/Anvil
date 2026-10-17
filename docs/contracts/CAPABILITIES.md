@@ -24,7 +24,7 @@ Codex는 버전/도움말 조회 중 자신의 임시 arg0/PATH alias 정리·�
 
 ## 3. Codex 후보 — App Server
 
-FN06-CODEX-CODEC-01의 오프라인 codec은 위 고정 정의를 기존 Ajv strict로 검증해 메모리 wire·응답 상관·digest 관측을 제공한다. 순수 합성15건·typecheck 결과는 WORK_STATUS에 분리했다. 이것은 실제 도구 연결/handshake·6능력의 실측이 아니며 승인 응답은 서버 결정 소비 미연결로 항상 차단한다.
+FN06-CODEX-CODEC-01의 오프라인 codec은 위 고정 정의를 기존 Ajv strict로 검증해 메모리 wire·응답 상관·digest 관측을 제공한다. 한정 검토 C0/I2/M1 후 Main 보정·최종 순수 합성23건/typecheck 결과는 WORK_STATUS에 분리했다(재리뷰 없음). 선도착 식별의 유한 미결박/정확 응답 대조·신규 요청 보류, 수명 id 재사용 금지/소진 차단과 송신 복제 전 예산을 확인했다. 이것은 실제 도구 연결/handshake·6능력·OS 메모리 quota의 실측이 아니며 승인 응답은 서버 결정 소비 미연결로 항상 차단한다.
 
 2026-10-17 AV3-PMO-FN06-SCHEMA-0161-01에서 설치된 정확0.161.0 native exporter 단1회(566ms/exit0)로 stable JSON315개를 고정했다. [공개 schema 지문](../../contracts/vendor/codex/0.161.0/schema-manifest.json)에 버전·exe SHA256·upstream tag/commit·파일별 hash·license와 한계를 기록했다. JSON 파싱/로컬 ref 대조·지정 민감표식 검사만 수행했으며 실제 handshake·세션/turn·파일 변경·승인·중지/회수·6능력, 네트워크 관측과 binary 재현 일치는 여전히 미검증이다. 정의의 존재를 실제 연동 확인으로 올리지 않는다.
 
