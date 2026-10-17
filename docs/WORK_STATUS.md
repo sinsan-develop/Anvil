@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **A3 실제 compiler 최초1회 FAIL/CS1504·QA0 / Main 어울(2026-10-18)**: 명시version표현보정뒤exact9fd0d263 clean/private·source3D10/OS3hash·모든사전gate를다시통과한 csc63852/시작20:26:22.4408281Z는90.036ms/exit1·A3_COMPILE_EXIT_NONZERO·CS1504(line:null)로종료, DLL/output0·cleanupFailurenull·QA02부재다. 원01/02사전실패와실제compiler1회는분리·이번실제권한소진/자동retry0이다. 별도elevated읽기보호10hash mismatch0/Node54212·relay26052·단일3830·N4receipt50459C…74F92불변·compiler63852/QA02부재를확인했다. source파일역할/OS이유는정제자료로미확정이며과거FN06동일코드OTHER_SOURCE/UNKNOWN과같은원인으로단정0·ACL/OS수리/복사우회0이다. raw복원/추가compiler·DLL실행/PInvoke/OS/키/DB서비스/Agent0, 원결과 A3_NATIVE_COMPILE_02_RESULT.md. Main이최소읽기진단으로관측공백을좁히고필요결정만PMO전달·다음배정대기0이다.
+
 - **UI04 원독립 finding 보완·최종 후보 / Main 어울**: 원C0/I1/M0의헤더도착만대기를실제소비흐름과대조해수용, 시험만단1회 bodyfinished/실JSON보류·해제/이후eventloop·2renderframe barrier로보완했다. 최종UI04 3/UI01 2=5PASS6.6s·type/diff0/제품불변124module255ms·경고보존, QA5파일/빈5폴더·process0 exact정리/독립부재다. 원C0I1/Main보완을구별·새독립C0I0승격0, 실제user/client인증교체/DB/served/EXISTING세부/시각/Agent전체미검증이다. 문서patch2회는과거요약행문맥불일치로적용전거절돼기존이력은보존하고최신증거를누적한다. 다음Main미완료는고정OS3파일compile한정결정재결박이며PMO다음업무배정대기0이다.
 
 - **UI04 독립 C0/I1/M0·시험 단1회 보완 / Main 어울**: 검수자는제품오노출을확인한것이아니라지연응답시험의waitForResponse가헤더도착만기다려본문/JSON처리전이미참인부재검사를통과할수있음을지적했다. Main은Client.get의json→동기검증→effect처리와대조하여타당하다고판정, 제품불변·시험에서원응답bodyfinished/실제JSON보류·명시해제/이후eventloop·2renderframe barrier 뒤원프로젝트부재+현재프로젝트유지를확인하도록한번보완한다. 수정시험만최종확인하려고동일등록QAroot부재후번들을재생성·browser5/type/diff검사/정확정리한다. 새독립C0I0로승격하지않고원C0I1·Main보완을구별한다. 실제user/client인증교체·EXISTING선언상세·served/시각/Agent는미검증으로유지한다.
