@@ -98,7 +98,7 @@
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
 | FN04 | 설계 추적·계획·변경 영향 | B | FN02,FN03,FN11 | FN02,FN03,FN11 | 작업 중 — D/S·업무 카드/두 선행·불변 계획/개정·화면 검토 선택·trace edge·계획 검토/확정의 화면/same-client actual. 요청4종 출처·사람 영향 이력/미확인 보존 actual df2f81ff·forward33 확인. 변경 적용/UI07·실제 browser DB 여정 미완료 |
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |
-| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·후보41/42 actual350b2e30/UI11 same-client747c6f37 부분 확인. PMO TRUST-QA-01에 따른 순수 서명/입력·Windows DPAPI/CNG 상호운용1 PASS/QA0 추가. 서버 등록/43·Windows→WSL HTTPS·실제 host/Agent·전체 연결 미구현/미검증 |
+| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·후보41/42 actual350b2e30/UI11 same-client747c6f37·Windows DPAPI/CNG 부분1 PASS/QA0. 서버 등록6377a8fb actual RED→3연산/제한 API·schema/43 후보 작성·미적용/실제 GREEN0. Windows→WSL HTTPS·실제 host/Agent·전체 연결 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 시작 전 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 시작 전 |

@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+FN06 서버 실제 RED는6377a8fb private/WSL exact clean에서1 FAIL/953.892ms·skip0(POLICY_SCOPE_NOT_READY412, 등록 미도달)이다. finally 뒤 독립41표0·신뢰4표 NOT_PRESENT·migrations42·임시root[]/보호원문 empty를 확인했다. 이후 서버/forward43 후보는 로컬 작성 중이며 아직 DB 미적용이다. 다음 적용 전 private exact/WSL Git·이전42 checksum·자원 정리를 다시 대조한다. 신규 QA는 qa-connector-trust-UUID의 합성 자료/메모리 키만이고 서비스/포트·실제 사용자/CA/relay 변경0이다.
+
 FN06 제한 신뢰 등록 합성 Windows 부분(2026-10-17): 신규 `D:\tmp\anvil-v3-fn06-registration-qa\{bin,protected,results}`만 현재 사용자/SYSTEM 보호로 만들고 기존 Framework64 csc4.8.9221로 빌드했다. helper SHA256 1E5689552F058C47E5D0112BD26C9CBE024869BE0DBF634E2A9F2B69CDC46055, 실제 CurrentUser DPAPI·CNG↔Node 공개 서명/변조 거절1 PASS/2157ms·skip0. exact owner/nonlink/tree/hash/process 검사 뒤 일회 자원은 모두 제거(root없음/helper0); source/공개 고정벡터만 Git 후보로 보존한다. 기존 부모 ACL·.av3-data/계정/CA·service/relay 불변이다. 서버 등록·신규43 적용/WSL 실제·Windows→WSL HTTPS·다른 OS 사용자·영구 PC/Agent/유료 호출은 미검증이며 로컬 단위와 혼동하지 않는다.
 
 UI08 FN11 승인 소비의 실제 검증은36fa3e511c01282ca647ab8882de4a0d044d3d00 private/WSL exact clean에서 same-client1 PASS/3208.980059ms/skip0이다. 독립 QA41종 잔여0·migration42·시험root[]·원문0700/nonlink/실경로 동일/empty. Web 함수/HTTP 주입/정식 PG를 확인했으며 실제 사용자 로그인 브라우저·Agent·배포 인수는 아니다. 이후 차이는 화면 내부 목록 sequence·시험/캡처·문서뿐이고 승인/후보 API client·서버/DB 시험은 불변이다. Windows old backend/relay HOLD/만료 bootstrap·Secret·실제 사용자/권한·운영은 그대로다.

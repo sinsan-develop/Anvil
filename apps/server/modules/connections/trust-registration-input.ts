@@ -5,6 +5,7 @@ import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 
 export interface HostTrustRegistrationInput {kind:'HOST_TRUST_REGISTRATION';hostLabel:string;expectedHostFingerprint:string;policyRef:VersionRef;expiresAt:string;reason:string}
 export interface HostTrustConfirmationInput {registrationId:string;observedHostFingerprint:string;scopeDigest:string;decision:'APPROVE'|'REJECT';reason:string}
+export const trustRegistrationOperations=['registerConnector','confirmConnectorRegistration','revokeConnector'] as const;
 const hash=(value:unknown):value is string=>typeof value==='string'&&/^[0-9a-f]{64}$/.test(value);
 const uuid=(value:unknown):value is string=>typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 const exact=(value:unknown,keys:string):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys.split(',').sort().join(',');
