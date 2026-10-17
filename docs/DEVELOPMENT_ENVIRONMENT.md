@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+2026-10-17 13:03KST 실제 전환: 승인된 launcher source **9bade63e3d3959a16f015ff89bc0c6a0baddaa1b**, Windows Node19960/UTC04:02:09.6293876Z·loopback127.0.0.1:3830 하나, 새 runtime-fn08-20261017의 receipt/log3개를 보호 생성했다. exact PID/UTC ticks/exe/hash·source/receipt·nonlink/현사용자SYSTEM ACL·READY1줄/err0 및 strict CA health exit0 확인. 기존 relay26052/옛receipt·auth/db-app/dev-tls6파일 hash 불변·새 tunnel0이다. 개발 프로세스/TLS 확인만이며 실제 사용자/원문 보관소/Agent/FN08 OS 지원은 미확인이다. FN08 최초13:01:53은 종료/연장0·QA root/합성exe0, native actual/schema-export는 재개하지 않는다. 후속 문서 commit과 실제 실행 source9bade63e를 구분한다.
+
 AV3-PMO-WINDOWS-RUNTIME-01 승인: 기존 Windows relay5546 app역할 read-only SELECT 단1회/최대5초가 2026-10-17T03:58:07.173Z·223ms exit0이었다. 정확 새 `.av3-data/runtime-fn08-20261017`(receipt.json/server.out.log/server.err.log)·loopback127.0.0.1:3830의 신규 Node만 준비하며 기존 runtime/relay/auth/db-app/dev-tls는 불변이다. `scripts/start-development.ps1 -UseVerifiedWslRelay -Fn08Runtime`은 새 경로·현사용자/SYSTEM 보호·검증 Node/고정 relay·child env를 사용한다. safe private exact SHA 게시 후 실제 결과를 별도 기록하며 현재는 실행 전이다. 계정/bootstrap 갱신·Windows 원문 보관소 연결·FN08 실제/스키마 export 승인은 포함하지 않는다.
 
 FN08 단일 검수 C0/I3/M2 REWORK 뒤 Main 안전 코드 보완: 미resume 본인 합성 retained handle의 정확 취소·종결 확인, 원 PID/시각/3830 실제 존재 gate, 최초 run/절대 기한·정리 여유120초·부모/자식 같은 종료점, sticky UNKNOWN 후 새 writer 차단을 추가했다. M2는 Main Important로 재분류했고 M1 누적 line buffer 상한은 잔여다. 순수7/unit197/typecheck/syntax만 확인했으며 C# 컴파일·OS 실제 검수·schema-export는 미실행이다. 원 Node 부재·QA root/process0과 추가 실행 금지는 유지하며 새 Windows runtime은 PMO 별도 승인 판정 전 변경하지 않는다. 이 한시 QA를 새 run/상대기한으로 다시 열지 않는다.
