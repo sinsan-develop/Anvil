@@ -1,5 +1,9 @@
 # Anvil 재설계 개발환경
 
+동일 HTTPS-QA의 독립검수는0d9c1dec..e07312d3 C0/I2/M0이고 Main은 최초deadline을 server active 시작에도 고정·만료후 본인정리 보존, TLS stage전 타이머/신호·직렬 중단/메모리 소유 부분정리를 보완했다. 보완 뒤 순수집중7 PASS·전체unit190 PASS/2808.8414ms·typecheck0이며 **실제 OS 신호/부분파일 실패·HTTPS actual 재실행은 없다**. e07312d3의 실제 PASS와 수정 후 순수 근거를 구분하고 제한수용은 PMO 판정에 남긴다. 새 자원/복제·DB/서비스 변경0이다.
+
+2026-10-17 FN06 HTTPS-QA 제한 실제: e07312d38344fdaf42344ca3390a8d2b1456e13e local/private/WSL exact의 Windows native→strict TLS→WSL 정식 PG44→동일 UI11 정상/발급본문유실2건은1 PASS/36923.3338ms·skip0이며 시험 자체 정리까지 PASS다. Edge155.0.4283.45/소유PID6·page off-origin0, 실제 AuthForm 버튼은 미검증(browser login HTTP→설정 재인증 사용)이다. 한시 Windows r1/WSL https-qa-r1·private172.27.253.53:3830·등록/credential만 사용했고 최초deadline12:29:30.227KST를 연장하지 않았다. 별도 읽기에서 두root/3830·DPAPI/helper/소유Edge0·QA45표각0/44checksum일치/제외5표없음·원문empty를 확인했다. 원TLS3 hash·원Node40744/relay26052 시작시각·기존claims1 보존, 새CA/제품설정·SQL/운영 변경0이다. 과거2 actual FAIL/수동정리는 WORK_STATUS에 보존하며 영구PC·실제 Agent/사용자 인수·기존 혼재 runtime 사용가능 판정과 구별한다. 신선한 제한독립검수/PMO 최종수용은 후속이다.
+
 UI11 최종 같은client actual: 4508e15d71b1cbaf62ad083229550818097d48b7 local/private/WSL exact·clean에서1 PASS/8095.240855ms(기능7823.974251)/SKIP0, 직후 독립 QA45표0·44 checksum 전부 일치·제외5표 부재·PG15.18/비관리자2·시험root[]/원문0700·empty다. 합성 브라우저27 PASS와 실제 Fastify 주입/정식 PG는 서로 다른 증거이며 실제 사용자 browser↔DB·Windows↔WSL HTTPS·영구 PC/Agent·배포 인수는 아니다. DB/서비스/키 변경0이다.
 
 UI11 제한 검수 보완(2026-10-17): 2f94636c exact의 같은 Web 함수/API·정식 PG actual1 PASS/9645.392576ms·QA45표0·44 checksum 일치, 독립 읽기 C0/I0/M0이다. Main은 별도 지연 POST 음성 RED로 새 입력 덮어쓰기 Important1을 발견해 주체/원 명령/승인 대기 CAS로 보완했다. 보완 후 unit180/타입·build100/신뢰13+인접14 합성 browser27 PASS, 기존 chunk 경고 유지다. 첫 browser 재검사는 새 build 누락으로 이전 산출물 FAIL1→정상 build 뒤 음성 GREEN이며 성공으로 소급하지 않는다. 서비스·DB schema/권한·키·실제 PC/Agent 변경0, 실제 사용자 browser↔DB/Windows↔WSL HTTPS·전체 연결은 여전히 미완료다. 이 보완의 exact 게시본 actual/정리 결과는 WORK_STATUS에 후속 기록한다.

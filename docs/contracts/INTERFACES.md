@@ -2,6 +2,12 @@
 
 ## 2026-10-17 FN06 제한 신뢰 등록 — 승인된 구현 프로필
 
+### Native HTTPS 제한 소비 — AV3-PMO-FN06-HTTPS-QA-01
+
+단일 독립검수 C0/I2/M0 뒤 Main은 QA active 임대의 최초 전체deadline 상한·TLS stage전 타이머/신호와 메모리 소유 부분정리만 보완했다. 만료 후 정확 본인 정리는 유지하며 새로운 수명·실행 허가는 발급하지 않는다. 보완 뒤 순수집중7/unit190/typecheck PASS와 이전 e073 실제1PASS는 다른 증거다. 보완 후 actual·실제 OS 신호/부분쓰기 실패 재현·독립 재검수는 미실행이며 PMO 최종수용 전이다.
+
+`TrustHttpsClient`는 기존 enroll/proof/exchange/status4개를 고정 HTTPS origin:3830/명시 공개 CA·hostname 검증으로만 소비한다. Cookie 없이 고정 Origin, status에만 Bearer, 자동 retry/redirect0, 요청/응답16KiB·전체10초, strict JSON·빈grants/실행권한false·유한 오류만 허용한다. 공개 API/저장 계약 변경이나 실제 Agent 연결이 아니다. QA launcher는 제품 loopback/config를 바꾸지 않고 승인 IP172.27.253.53:3830과 한시 TLS3복제/합성 UUID만 소비하며 stdin 제어는 HTTP route가 아니다. 최초전체deadline2026-10-17 12:29:30.227KST·정확root/소유/회수/정리 경계를 유지한다. e07312d3의 native/TLS/PG/동일 UI11 실제1PASS·본문유실 재발급0·정리0은 해당 부분만 증명하며 실제 AuthForm클릭/사용자 인수·영구PC·Agent 실행/비용/전체 FN06은 미검증·미완료다. 앞선2FAIL·cleanup 보완은 별도 이력이며 PMO 제한수용 전이다.
+
 ### HUMAN 현재 신뢰 조회 — AV3-PMO-UI11-TRUST-READ-01
 
 UI11의 현재 부분 구현은 이 GET2와 기존 HUMAN3명령만 사용한다. 브라우저는 key/proof/exchange/credential 발급을 수행하지 않는다. 최초 pairing code는 등록 최초응답에서만 패널 local state로 표시하며 이동/닫기/인증상실/다른 상세 선택 시 폐기·저장소/URL/로그/실제code캡처0이다. 원command/정확 입력·별도승인 요청은 본인/client/project 메모리 버퍼에만 보존하고 유실 시 새명령/새등록 자동0, 확인/회수 직전에 현재 표시ref/지문과 fresh GET/기존 서버권한/CAS를 다시 검사한다. REQUIRE_APPROVAL은 UI11 요청→UI08 별도결정→서버 APPROVE 재조회·원명령 결박→별도전송으로만 소비한다. 실제 같은 Web 함수/API·PG와 합성 화면 근거를 구분하며 실제 사용자browser/Windows↔WSL/영구PC/Agent 연결 완료로 올리지 않는다.
