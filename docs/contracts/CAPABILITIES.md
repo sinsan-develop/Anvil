@@ -1,5 +1,7 @@
 # P02 기존 코딩 Agent 지원 대조
 
+A 제한 실제1회(source629fb70c/run56d83f93)는1 FAIL/exit1 QA_COMPILE_FAILED다(시험21211.9689ms). csc 호출시도1에서 중단되어 helper/native/Job/stdio·두메시지0, handshake/6능력/OS통제는 미실행·미검증이다. 실제compiler exit/timeout/진단은 wrapper에서 보존되지 않아 직접원인 미확정이다. 등록root독립부재·보호7hash/원runtime 불변을 확인했고 추가시도0이다. 순수11/타입·정적검수와 이 실제실패를 구분한다.
+
 A 정적 검수1회 C0/I2/M0 후 Main 한 pass 보정: 정상 transport 병합 프레임은 직접 RED2→순수11 PASS로, raw cleanup/Job 조회 분리는 C# 정적 보정만 확인했다. 준비 최종 sourcehash 39111ada9ff079143507db5c2986e1f42d3f0679519ba524a82775dddc26cbac. 실제compile/native/handshake/OS고아회수·6능력은0/미검증이고 독립 재검수 C0/I0를 주장하지 않는다. PMO의 exactSHA/시간창·단1회 시작조건을 기다리는 준비 후보이지 실제 Agent 연결완료가 아니다.
 
 FN06 실제 handshake 후보 소스 준비: CodexHandshakeHost.cs 및 codex-handshake-0161.test.ts를 추가했으나 compile/Job/native/stdio는 미실행이다. 단1회 실측 전 exact private SHA/host sourcehash·run/시간창·원runtime 보존을 PMO가 확인한다. 순수9건/타입과 C# 리터럴 정적대조는 Windows 소유/프로토콜/6능력 실측 등급을 올리지 않는다. 새 전용 Job 마지막handle 자동종료 정책은 별도 AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01 범위만이며 공유Job/범용회수/파일·계정·network 격리는 제공하지 않는다.
