@@ -10,6 +10,7 @@ import { MethodReviewPanel } from './MethodReviewPanel.tsx';
 import { StoredMethodValidation } from './StoredMethodValidation.tsx';
 import { CommonMethodVersionComparison } from './CommonMethodVersionComparison.tsx';
 import { StoredNodeRoutes } from './StoredNodeRoutes.tsx';
+import { StoredMethodDocuments } from './StoredNodeDefinition.tsx';
 
 const approvalLabels: Record<string, string> = {
   USER_REQUIREMENTS_CONFIRMATION: '사용자 요구사항 확인', USER_ITERATION_SCOPE_CONFIRMATION: '사용자 반복 범위 확인',
@@ -66,7 +67,7 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
         <div className="methodology-flow" role="group" aria-label="개발 절차">{version.graph.nodes.map((stage, index) => <button key={stage.nodeId} aria-pressed={stage.nodeId === nodeId} onClick={() => setNodeId(stage.nodeId)}>{index + 1}. {stage.name}</button>)}</div>
         {node ? <section aria-label="선택 단계 상세" className="status-card"><h4>{node.nodeId} {node.name}</h4><p>{node.purpose}</p><p className="meta">{node.kind === 'HUMAN' ? '사용자 판단 단계' : node.kind === 'AGENT' ? 'Agent 역할 단계 · 연결 전' : node.kind === 'JOIN' ? '결과 합류' : '분기 판단'} · 위치 {node.position.x}, {node.position.y}</p>
           <div className="methodology-detail"><div><h4>완료·검수 조건</h4><ul>{node.completionCriteria.map((text, index) => <li key={index}>{text}</li>)}</ul><h4>사람 확인 지점</h4>{node.approvalBoundary.length ? <ul>{node.approvalBoundary.map(code => <li key={code}>{approvalLabels[code] ?? code}</li>)}</ul> : <p>이 단계에 별도 사용자 확인 지점 없음 · 권한 검사는 유지</p>}
-          <h4>작업 기록</h4><ul>{node.recordRequirements.map((text, index) => <li key={index}>{text}</li>)}</ul></div><div><h4>입력·산출 문서의 고정 버전</h4><ul>{[...node.inputs, ...node.outputs].map(item => <li key={item.itemId}><strong>{item.itemId}</strong><p className="meta">{item.sourceNodeId ? `${item.sourceNodeId}의 입력` : '단계 산출물'} · 버전 {item.formRef.version} · {item.formRef.contentHash}</p></li>)}</ul></div></div>
+          <h4>작업 기록</h4><ul>{node.recordRequirements.map((text, index) => <li key={index}>{text}</li>)}</ul></div><div><h4>입력·산출 문서의 고정 버전</h4><StoredMethodDocuments side="입력" items={node.inputs} /><StoredMethodDocuments side="산출" items={node.outputs} /></div></div>
           <StoredNodeRoutes graph={version.graph} nodeId={node.nodeId} />
         </section> : null}
         <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><StoredMethodValidation graph={version.graph} validation={version.validation} onSelect={setNodeId} /></details>

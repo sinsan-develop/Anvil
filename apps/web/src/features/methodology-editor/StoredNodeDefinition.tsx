@@ -10,7 +10,7 @@ function Values({ title, values }: { title: string; values: readonly string[] })
 function Reference({ value }: { value: VersionRef }) {
  return <span className="meta" style={{ overflowWrap: 'anywhere' }}>{value.id} · v{value.version} · {value.contentHash}</span>;
 }
-function Documents({ side, items }: { side: '입력' | '산출'; items: readonly MethodologyDocumentItem[] }) {
+export function StoredMethodDocuments({ side, items }: { side: '입력' | '산출'; items: readonly MethodologyDocumentItem[] }) {
  return <section aria-label={side + ' 문서 정의'}><h5>{side} 문서</h5>{items.length ? items.map(item => <div key={item.itemId} className="status-card">
   <p>{item.itemId} · {item.required ? '필수' : '선택'}</p><p>양식 고정 참조 <Reference value={item.formRef} /></p>
   {side === '입력' ? <p>입력 출처 단계: {item.sourceNodeId ?? '외부 입력·단계 미지정'}</p> : null}
@@ -27,7 +27,7 @@ export function StoredNodeDefinition({ node }: { node: MethodologyNode }) {
   <p>입력 문서 {node.inputs.length}건 · 산출 문서 {node.outputs.length}건</p>
   <details><summary>단계 정의 상세</summary>
    <Values title="포함 작업" values={node.taskScope.included} /><Values title="제외 작업" values={node.taskScope.excluded} />
-   <Documents side="입력" items={node.inputs} /><Documents side="산출" items={node.outputs} />
+   <StoredMethodDocuments side="입력" items={node.inputs} /><StoredMethodDocuments side="산출" items={node.outputs} />
    <Values title="사용자 확인 지점" values={node.approvalBoundary} />
    <Values title="요구 능력" values={node.requirements?.capabilities ?? []} /><Values title="요구 환경" values={node.requirements?.environment ?? []} />
    <Values title="기록 요구" values={node.recordRequirements} />
