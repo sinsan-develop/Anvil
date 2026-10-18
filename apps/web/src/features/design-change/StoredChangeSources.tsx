@@ -3,6 +3,8 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import type {DesignChangePage} from './api.ts';
 import {readStoredChangeDocumentSource,type ChangeDocumentSelection} from './stored-change-document-source.ts';
+import {StoredChangeArtifactOriginal} from './StoredChangeArtifactOriginal.tsx';
+import type {ChangeArtifactSelection} from './stored-change-artifact-source.ts';
 
 function DocumentOriginal({client,selection,onClose,onAuthenticationLost}:{client:ApiClient;selection:ChangeDocumentSelection;onClose:()=>void;onAuthenticationLost:()=>void}){
   const [result,setResult]=useState<{client:ApiClient;selection:ChangeDocumentSelection;value:Awaited<ReturnType<typeof readStoredChangeDocumentSource>>|null;error:ApiError|null}|null>(null);
@@ -18,10 +20,12 @@ function DocumentOriginal({client,selection,onClose,onAuthenticationLost}:{clien
 export function StoredChangeSources({client,projectId,session,change,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;change:DesignChangePage['change'];onAuthenticationLost:()=>void}){
   const context=JSON.stringify([projectId,session.user.id,session.clientId,change.ref]);
   const [selected,setSelected]=useState<{context:string;client:ApiClient;selection:ChangeDocumentSelection;nonce:number}|null>(null);
+  const [artifact,setArtifact]=useState<{context:string;client:ApiClient;selection:ChangeArtifactSelection;nonce:number}|null>(null);
   const current=selected?.context===context&&selected.client===client?selected:null;
+  const currentArtifact=artifact?.context===context&&artifact.client===client?artifact:null;
   return <section aria-label="보관 변경 요청 출처"><details><summary>요청 출처 참조·원문</summary>
     {change.sourceRefs.length?<ul>{change.sourceRefs.map((source,index)=><li key={index}>{source.kind} · {source.id}{source.kind==='DOCUMENT_VERSION'?' · v'+source.version:''} · {source.contentHash}
-      {source.kind==='DOCUMENT_VERSION'?<button type="button" aria-label={'변경 문서 출처 '+(index+1)+' 원문 보기'} onClick={()=>setSelected(old=>({context,client,nonce:(old?.nonce??0)+1,selection:{projectId,userId:session.user.id,clientId:session.clientId,changeRef:structuredClone(change.ref),source:structuredClone(source)}}))}>변경 근거 문서 원문 보기</button>:<span> · 직접 열기 미연결 · 원 참조 유지</span>}
+      {source.kind==='DOCUMENT_VERSION'?<button type="button" aria-label={'변경 문서 출처 '+(index+1)+' 원문 보기'} onClick={()=>{setArtifact(null);setSelected(old=>({context,client,nonce:(old?.nonce??0)+1,selection:{projectId,userId:session.user.id,clientId:session.clientId,changeRef:structuredClone(change.ref),source:structuredClone(source)}}));}}>변경 근거 문서 원문 보기</button>:source.kind==='ARTIFACT'?<button type="button" aria-label={'변경 파일 출처 '+(index+1)+' 원문 보기'} onClick={()=>{setSelected(null);setArtifact(old=>({context,client,nonce:(old?.nonce??0)+1,selection:{projectId,userId:session.user.id,clientId:session.clientId,changeRef:structuredClone(change.ref),source:{kind:'ARTIFACT',id:source.id,contentHash:source.contentHash}}}));}}>변경 근거 파일 원문 보기</button>:<span> · 직접 열기 미연결 · 원 참조 유지</span>}
     </li>)}</ul>:<p>출처 참조 없음</p>}
-  </details>{current?<DocumentOriginal key={current.nonce} client={client} selection={current.selection} onClose={()=>setSelected(null)} onAuthenticationLost={onAuthenticationLost}/>:null}</section>;
+  </details>{current?<DocumentOriginal key={current.nonce} client={client} selection={current.selection} onClose={()=>setSelected(null)} onAuthenticationLost={onAuthenticationLost}/>:null}{currentArtifact?<StoredChangeArtifactOriginal key={currentArtifact.nonce} client={client} selection={currentArtifact.selection} onClose={()=>setArtifact(null)} onAuthenticationLost={onAuthenticationLost}/>:null}</section>;
 }
