@@ -52,3 +52,13 @@ test('읽기는 현재 회원·project를 대조하고 snapshot/receipt 변조�
   await assert.rejects(q.store.read(q.db, actor, applicationRef.id, id, 1), /NOT_FOUND/);
   q.versions.get(id + ':1').version_json.definition.goal = '변조'; await assert.rejects(q.store.read(q.db, actor, pid, id, 1), /ASSIGNMENT_INTEGRITY_FAILED/);
 });
+
+test('내용 검토 선행은 현재 head·전체 hash·현재 계획과 업무 원본을 재확인한다', async () => {
+  const q = setup(), result = await q.store.save(q.db, actor, command(), ref);
+  assert.equal(typeof q.store.current, 'function');
+  const current = await q.store.current(q.db, actor, pid, result.data.ref);
+  assert.deepEqual(current.ref, result.data.ref);
+  await assert.rejects(q.store.current(q.db, actor, pid, { ...result.data.ref, contentHash: 'b'.repeat(64) }), /VERSION_CONFLICT/);
+  q.plan.tasks[0].title = '기준 변경'; await assert.rejects(q.store.current(q.db, actor, pid, result.data.ref), /ASSIGNMENT_BASIS_CHANGED/);
+  q.decision.currentConfirmationValid = false; await assert.rejects(q.store.current(q.db, actor, pid, result.data.ref), /ASSIGNMENT_PLAN_NOT_CURRENT/);
+});

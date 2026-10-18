@@ -5,6 +5,8 @@ import { listWorkPlans, readWorkPlan, type WorkPlanView, type WorkPlanPage, type
 import { ordered } from '../knowledge/review-view.ts';
 import { listAssignmentDrafts, newAssignmentDraft, prepareAssignmentWrite, readAssignmentDraft, sendAssignmentDraft, type AssignmentBuffer, type AssignmentDraftView, type AssignmentPage } from './assignment-api.ts';
 import type { WorkspaceProject, WorkspaceStageSelection } from './api.ts';
+import { AssignmentContentDecision } from './AssignmentContentDecision.tsx';
+import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
@@ -20,7 +22,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     try { await action(); } catch (cause) { if (!alive.current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); }
     finally { flight.current = false; if (alive.current) setBusy(false); }
   }
-  const safeToReplace = () => !buffer?.pending && (!buffer?.dirty || confirm('미저장 임무 입력을 버리고 새 준비로 바꿀까요?'));
+  const safeToReplace = () => !buffer?.pending && !buffer?.contentDecision?.pending && !buffer?.contentDecision?.uncertain && (!buffer?.dirty || confirm('미저장 임무 입력을 버리고 새 준비로 바꿀까요?'));
   async function prepare() {
     if (!plan || !stage || !project.currentMethodologyRef || !owner || !bound || !safeToReplace()) return;
     const generation = await documentControl(client, project.id, session); if (!alive.current) return;
@@ -58,6 +60,15 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
   const locked = busy || !!buffer?.pending || !!buffer?.result || !owner || !sameStage;
   // undefined는 새 저장영수증 보기, null은 명시 재조회/오류로 이전 원문을 감춘 상태다.
   const shown = opened === undefined ? (bound ? buffer?.result : null) ?? null : opened;
+  const contentChange: Dispatch<SetStateAction<AssignmentDecisionBuffer|null>> = action => {
+    if (!shown || !bound) return;
+    onChange(current => {
+      if (current?.pending || current && (current.ownerUserId !== session.user.id || current.ownerClientId !== session.clientId || current.projectId !== project.id)) return current;
+      const previous=current?.contentDecision??null,value=typeof action==='function'?action(previous):action;
+      if (current) return {...current,contentDecision:value,dirty:!!value?.dirty,uncertain:!!value?.uncertain};
+      return {bindingId:crypto.randomUUID(),projectId:project.id,ownerUserId:session.user.id,ownerClientId:session.clientId,controlGeneration:value?.controlGeneration??project.controlState.generation??0,expectedDesignRef:shown.snapshot.basis.designRef,input:{baseRef:shown.snapshot.previousRef,definition:structuredClone(shown.snapshot.definition),reason:shown.snapshot.reason},ref:shown.ref,pending:null,result:shown,dirty:!!value?.dirty,uncertain:!!value?.uncertain,failure:null,contentDecision:value};
+    });
+  };
   return <section aria-label="임무 초안"><h4>임무 초안</h4><p className="meta">할 일·목적·검수 조건을 Anvil에 보관합니다. 저장은 확정·배정·Agent 실행이 아닙니다. 현재 확정계획·설계·단계는 저장 시 서버가 다시 검사합니다.</p>
     {!stage ? <p>먼저 적용 절차를 조회하고 단계를 선택하세요.</p> : <p>선택 정의: {stage.nodeName} · 실제 수행 단계 아님</p>}
     {!owner ? <p>초안 변경은 현재 제어권을 가진 소유자만 가능합니다. 조회는 가능합니다.</p> : null}
@@ -78,6 +89,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {drafts ? <ul>{drafts.items.map(item => <li key={item.ref.id}>{item.goal || '목표 미입력'} · v{item.ref.version}<button disabled={busy} onClick={() => void perform(() => open(item.ref))}>임무 버전 열기: {item.ref.version}</button></li>)}</ul> : null}
     {drafts?.hasMore ? <button disabled={busy} onClick={() => void perform(async () => { const cursor = drafts.nextCursor; setOpened(null); setDrafts(null); const page = await listAssignmentDrafts(client, project.id, cursor); if (alive.current) setDrafts(page); })}>임무 다음 목록</button> : null}
     {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><AssignmentConditions snapshot={shown.snapshot} /><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
+    {shown&&bound?<AssignmentContentDecision key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
 }
 

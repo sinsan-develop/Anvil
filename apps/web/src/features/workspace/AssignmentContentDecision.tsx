@@ -1,0 +1,44 @@
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { ApiClient, ApiError } from '../../api/client.ts';
+import { documentControl, type DocumentSession } from '../design-trace/editor-api.ts';
+import { readAssignmentDraft, type AssignmentDraftView } from './assignment-api.ts';
+import { contentCriteria, newAssignmentDecision, prepareAssignmentDecision, readAssignmentDecision, readConfirmedAssignment, sendAssignmentDecision, type AssignmentDecisionBuffer, type AssignmentDecisionView, type ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
+import { ordered } from '../knowledge/review-view.ts';
+import type { AssignmentContentReview, AssignmentReviewOutcome } from '../../../../server/modules/assignments/assignment-confirmation-input.ts';
+
+const labels = { PURPOSE_SCOPE:'목적·범위', BASELINE_TASK:'설계·계획·업무·단계', INPUT_OUTPUT:'입출력·책임', COMPLETION_VERIFICATION:'완료·검증', BOUNDARIES:'미확인 경계', RECORD_RECOVERY:'기록·복구' };
+export function AssignmentContentDecision({client,session,draft,buffer,onChange,owner,busy,run}:{client:ApiClient;session:DocumentSession;draft:AssignmentDraftView;buffer:AssignmentDecisionBuffer|null;onChange:Dispatch<SetStateAction<AssignmentDecisionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
+  const [decision,setDecision]=useState<AssignmentDecisionView|null>(null),[confirmed,setConfirmed]=useState<ConfirmedAssignmentView|null>(null),[hidden,setHidden]=useState(false);
+  const alive=useRef(true);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+  const sameTarget=!buffer||ordered(buffer.draft.ref)===ordered(draft.ref),bound=!buffer||buffer.projectId===draft.projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId;
+  const update=(change:(b:AssignmentDecisionBuffer)=>AssignmentDecisionBuffer)=>{const binding=buffer?.bindingId;onChange(current=>current&&current.bindingId===binding?change(current):current);};
+  async function load(){setDecision(null);setConfirmed(null);setHidden(true);const value=await readAssignmentDecision(client,draft.projectId,draft);if(alive.current){setDecision(value);setHidden(false);}}
+  async function prepare(mode:'REVIEW'|'CONFIRM'){
+    if(!owner||!bound||buffer?.pending||buffer?.uncertain||buffer?.dirty&&!confirm('미저장 임무 판단을 버리고 새 판단을 준비할까요?'))return;
+    setDecision(null);setConfirmed(null);setHidden(true);
+    const latest=await readAssignmentDraft(client,draft.projectId,draft.ref),generation=await documentControl(client,draft.projectId,session),value=await readAssignmentDecision(client,draft.projectId,latest);
+    if(!alive.current)return;if(value.currentIssue||latest.headVersion!==latest.ref.version)throw new ApiError(value.currentIssue??'VERSION_CONFLICT',409);
+    if(mode==='CONFIRM'&&(!value.latestReviewAccepted||value.contentIssues.length||value.confirmedRef))throw new ApiError('ASSIGNMENT_REVIEW_REQUIRED',422);
+    setDecision(value);setHidden(false);setConfirmed(null);onChange(newAssignmentDecision(latest,session,generation,mode,mode==='CONFIRM'?[value.reviews[0]!.ref]:[]));
+  }
+  async function save(){
+    if(!buffer||!bound||!sameTarget||!owner||hidden)return;const previouslyUncertain=buffer.uncertain&&!!buffer.pending;
+    try{const generation=await documentControl(client,draft.projectId,session);if(!alive.current)return;if(generation!==buffer.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+      const command=prepareAssignmentDecision(buffer,session);update(b=>({...b,pending:command,uncertain:true,failure:null}));const result=await sendAssignmentDecision(client,command,buffer.draft,session);if(!alive.current)return;
+      update(b=>({...b,result,pending:null,uncertain:false,dirty:false,failure:null}));setDecision(null);
+    }catch(cause){if(!alive.current)return;const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');update(b=>({...b,failure:{code:failure.code,status:failure.status},uncertain:previouslyUncertain||failure.status===0||failure.status>=500||['RESPONSE_INVALID','ASSIGNMENT_INTEGRITY_FAILED'].includes(failure.code)}));throw failure;}
+  }
+  async function readConfirmed(){setConfirmed(null);setHidden(true);const value=await readAssignmentDecision(client,draft.projectId,draft);if(!value.confirmedRef)throw new ApiError('NOT_FOUND',404);const read=await readConfirmedAssignment(client,draft.projectId,value.confirmedRef,draft);if(alive.current){setDecision(value);setConfirmed(read);setHidden(false);}}
+  const locked=busy||!owner||!sameTarget||!bound||!!buffer?.pending||!!buffer?.result||hidden;
+  return <section aria-label="임무 내용 검토·별도 확정"><h5>임무 내용 검토·별도 확정</h5><p>초안 원본 {draft.ref.id} · v{draft.ref.version} · {draft.ref.contentHash}</p><p>내용 적합은 사람 판단입니다. 내용 확정은 실제 배정·실행 허가가 아닙니다.</p>
+    <button disabled={busy} onClick={()=>run(load)}>임무 판단 이력 조회</button><button disabled={busy||!owner||!bound||!!buffer?.pending||!!buffer?.uncertain} onClick={()=>run(()=>prepare('REVIEW'))}>임무 내용 검토 준비</button><button disabled={busy||!owner||!bound||!!buffer?.pending||!!buffer?.uncertain} onClick={()=>run(()=>prepare('CONFIRM'))}>임무 별도 확정 준비</button><button disabled={busy} onClick={()=>run(readConfirmed)}>확정 임무 원본 재조회</button>
+    {decision&&!hidden?<><p>현재 원본: {decision.currentIssue??'대조됨'} · 실행 준비 완료 아님</p><ul>{decision.contentIssues.map((i,n)=><li key={n}>확정 불가: {i.code} · {i.location}</li>)}</ul>{decision.reviews.length?<ol>{decision.reviews.map(r=><li key={r.ref.contentHash}>감사 순번 {r.serverSequence} · {r.snapshot.outcome} · {r.snapshot.reason} · {r.sameAuthor?'작성자와 검토자 같음':'작성자와 검토자 다름'} · 독립 검수 증명 아님</li>)}</ol>:<p>저장된 사람 검토 없음</p>}{decision.hasMoreReviews?<p>이전 검토가 더 있음 · 최근200건만 표시</p>:null}</>:null}
+    {buffer&&bound&&!hidden?<><p>보관 판단의 초안 {buffer.draft.ref.id} · v{buffer.draft.ref.version} · {buffer.mode==='REVIEW'?'사람 내용 검토':'별도 내용 확정'}</p>{!sameTarget?<p>열린 초안과 보관 판단 대상이 다릅니다. 원 초안으로 돌아가세요.</p>:null}<fieldset disabled={locked}><legend>임무 내용 판단</legend>
+      {buffer.mode==='REVIEW'?<>{contentCriteria.map((criterion,index)=>{const input=buffer.input as AssignmentContentReview,item=input.items[index]!;return <fieldset key={criterion}><legend>{labels[criterion]}</legend><label>{criterion} 판단<select value={item.outcome} onChange={event=>update(b=>{const value=structuredClone(b.input as AssignmentContentReview);value.items[index]!.outcome=event.target.value as AssignmentReviewOutcome;return{...b,input:value,acknowledged:false,dirty:true};})}>{['NOT_EXECUTED','ACCEPTED','REWORK','BLOCKED'].map(v=><option key={v}>{v}</option>)}</select></label><label>{criterion} 이유<textarea maxLength={20000} value={item.reason} onChange={event=>update(b=>{const value=structuredClone(b.input as AssignmentContentReview);value.items[index]!.reason=event.target.value;return{...b,input:value,acknowledged:false,dirty:true};})}/></label><p>추가 증거 참조는 미연결 · 자동 적합 없음</p></fieldset>;})}<label>임무 검토 종합 판단<select value={(buffer.input as AssignmentContentReview).outcome} onChange={event=>update(b=>({...b,input:{...(b.input as AssignmentContentReview),outcome:event.target.value as AssignmentReviewOutcome},acknowledged:false,dirty:true}))}>{['NOT_EXECUTED','ACCEPTED','REWORK','BLOCKED'].map(v=><option key={v}>{v}</option>)}</select></label></>:<p>최신 적합 검토의 내용만 확정합니다. 실행·비용·Agent 허가는 별도입니다.</p>}
+      <label>임무 내용 판단 이유<textarea maxLength={20000} value={buffer.input.reason} onChange={event=>update(b=>({...b,input:{...b.input,reason:event.target.value},acknowledged:false,dirty:true}))}/></label><label><input type="checkbox" checked={buffer.acknowledged} onChange={event=>update(b=>({...b,acknowledged:event.target.checked,dirty:true}))}/>임무 내용 판단을 직접 확인했습니다</label>
+    </fieldset>{buffer.result?<p role="status">{buffer.mode==='REVIEW'?'임무 내용 검토 저장 확인':'임무 내용 확정 저장 확인 · 실행 허가 아님'}</p>:<button disabled={busy||!owner||!sameTarget} onClick={()=>run(save)}>{buffer.pending?'같은 임무 판단 명령 결과 확인':'임무 내용 판단 저장'}</button>}
+      {buffer.pending&&buffer.failure&&!buffer.uncertain?<button disabled={busy} onClick={()=>{if(confirm('거절된 원 판단 명령을 확인했습니다. 입력을 수정할까요?'))update(b=>({...b,pending:null,failure:null}));}}>거절 임무 판단 확인 후 수정</button>:null}
+    </>:null}{hidden?<p>원문 조회 미확인 · 이전 판단·확정 원문은 숨깁니다. 보관 입력·미확인 명령은 유지합니다.</p>:null}
+    {confirmed&&!hidden?<section aria-label="내용 확정 임무"><h6>내용 확정 임무</h6><p>{confirmed.ref.id} · v{confirmed.ref.version} · {confirmed.ref.contentHash}</p><p>원 초안 hash {confirmed.snapshot.draftRef.contentHash}</p><p>실행 허가 없음 · Agent 전달 없음 · READY 아님</p><pre>{JSON.stringify(confirmed.snapshot,null,2)}</pre></section>:null}
+  </section>;
+}

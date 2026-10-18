@@ -87,6 +87,18 @@ export class ProjectAssignmentDrafts {
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
     return this.#view(row, projectId, id, version);
   }
+  /** 검토·확정의 현재성 검사. 기존 읽기 응답이나 초안 snapshot은 바꾸지 않는다. */
+  async current(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, ref: VersionRef) {
+    await projectMember(db, actor, projectId);
+    const head = (await db.query('SELECT head_version FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE', [projectId, ref.id])).rows[0];
+    if (!head) throw new AuthFailure('NOT_FOUND', 404);
+    if (Number(head.head_version) !== ref.version) throw new AuthFailure('VERSION_CONFLICT', 409);
+    const draft = await this.read(db, actor, projectId, ref.id, ref.version);
+    if (!same(draft.ref, ref)) throw new AuthFailure('VERSION_CONFLICT', 409);
+    const basis = await this.#basis(db, actor, projectId, { baseRef: draft.snapshot.previousRef, definition: draft.snapshot.definition, reason: draft.snapshot.reason });
+    if (!same(draft.snapshot.basis, basis)) throw new AuthFailure('ASSIGNMENT_BASIS_CHANGED', 409);
+    return draft;
+  }
   async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>, codec: ProjectListCodec) {
     await projectMember(db, actor, projectId);
     if (!query || Object.keys(query).some(key => !['limit', 'cursor'].includes(key)) || query.limit !== undefined && (typeof query.limit !== 'string' || !/^[1-9][0-9]{0,2}$/.test(query.limit) || Number(query.limit) > 200) || query.cursor !== undefined && (typeof query.cursor !== 'string' || query.cursor.length > 4096)) throw new AuthFailure('INPUT_INVALID', 400);

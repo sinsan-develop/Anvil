@@ -1,5 +1,9 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN09 사람 내용 검토·별도 확정 후보 — 2026-10-18 결정 A
+
+AV3-FN09-ASSIGNMENT-CONFIRMATION-PREP/01:29:50Z 결정은 [상세안](FN09_ASSIGNMENT_CONFIRMATION_PROPOSAL.md) SHA256 3369C4A2A0E595524DD06001FF3E7B57B9B5EA0B8B346B054BFDF1AF01B66701의 후보 구현·격리 검증에만 적용한다. reviewAssignmentContent/confirmAssignment는 기존 프로젝트 명령의 OWNER·현재client/제어·각 명시정책·기한/DENY·idempotency/CAS/감사를 소비한다. 정확 payload·6기준/수동판단·내용 필수검사·최신 감사순번·두 전용 GET은 상세안 그대로이며 초안 ref와 확정 ref를 id/version만으로 치환하지 않는다. 확정 snapshot은 ref/관측시각을 제외한 저장 전체(confirmedAt 포함)를 canonical SHA256하며 confirmationId는 불변 저장행/영수증에 별도로 결박한다. 검토 독립성은 NOT_CLAIMED이고 같은 작성자 여부를 조회한다. UI04 보관 입력은 기존 주체/client/project 버퍼에 포함하고, 원명령·불확실성/조회거절 원문숨김·실행false를 유지한다. 새0013은 assignment_content_reviews/assignment_versions만 추가하는 후보이며 기존0012·정식DB 적용 승인을 대체하지 않는다. 실제 구현/검증·미검증은 WORK_STATUS를 따른다.
+
 ## FN09 임무 초안 저장 후보 — 2026-10-18 제한 A
 
 호환 보완: taskRef.taskCode는 기존 작업계획 업무 코드 문법을 사용하지만 nodeId는 기존 적용 그래프의 비어 있지 않은 well-formed 문자열을 원문 그대로 사용한다. 새 ASCII·영문 시작·64자 제한/정규화는 적용하지 않으며 전체 canonical 2MiB·실제 적용본의 정확 node 존재를 검사한다. 응답유실 등 이미 pending/uncertain인 명령은 후속 인증·제어·정책 거절만으로 미적용 확정하지 않고 원입력/원명령/불확실성을 유지한다.

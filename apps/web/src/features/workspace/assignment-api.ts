@@ -3,10 +3,11 @@ import { postDocumentCommand, type DocumentWrite, type DocumentSession } from '.
 import type { WorkPlanView, PlanRef } from '../design-trace/work-plan-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import type { AssignmentDraftInput, AssignmentDefinition, AssignmentIssue } from '../../../../server/modules/assignments/assignment-input.ts';
+import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
 
 export interface AssignmentSnapshot { definition: AssignmentDefinition; reason: string; previousRef: PlanRef | null; basis: { planRef: PlanRef; applicationRef: PlanRef; designRef: PlanRef; taskCode: string; nodeId: string; taskCardHash: string }; readinessIssues: AssignmentIssue[]; status: 'DRAFT'; ready: false; executionAuthorized: false; dispatchPerformed: false }
 export interface AssignmentDraftView { projectId: string; ref: PlanRef; snapshot: AssignmentSnapshot; headVersion: number | null; sourceCurrentness: 'NOT_RECHECKED'; observedAt: string }
-export interface AssignmentBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; expectedDesignRef: PlanRef; input: AssignmentDraftInput; ref: PlanRef | null; pending: DocumentWrite | null; result: AssignmentDraftView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null }
+export interface AssignmentBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; expectedDesignRef: PlanRef; input: AssignmentDraftInput; ref: PlanRef | null; pending: DocumentWrite | null; result: AssignmentDraftView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null; contentDecision?: AssignmentDecisionBuffer | null }
 export interface AssignmentPage { items: { ref: PlanRef; status: 'DRAFT'; goal: string; taskRef: AssignmentDefinition['taskRef']; issueCount: number; updatedAt: string; ready: false; executionAuthorized: false }[]; hasMore: boolean; nextCursor: string | null; observedAt: string }
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const hash = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);

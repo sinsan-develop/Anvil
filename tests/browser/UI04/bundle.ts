@@ -4,6 +4,7 @@ const allowed = new Set(['D:/tmp/anvil-v3-stage-b/ui04-context-01/dist', 'D:/tmp
 allowed.add('D:/tmp/anvil-v3-stage-b/ui07-impact-review-02/dist');
 allowed.add('D:/tmp/anvil-v3-stage-b/ui07-request-sources-01/dist');
 allowed.add('D:/tmp/anvil-v3-stage-b/ui07-stored-comparison-01/dist');
+allowed.add('D:/tmp/anvil-v3-stage-b/ui04-assignment-confirmation-01/dist');
 if (allowed.has(process.env.ANVIL_UI04_QA_DIST ?? '')) {
   process.env.TEMP = process.env.ANVIL_UI04_QA_DIST!.replace(/\/dist$/, '/temp'); process.env.TMP = process.env.TEMP;
 }
