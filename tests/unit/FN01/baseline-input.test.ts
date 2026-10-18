@@ -41,6 +41,12 @@ test('source 선언/속성보고는 nullable와 정확한 버전 참조를 보�
     const result = read(value); assert.deepEqual(result.input.source, value.source); assert.equal(result.sourceAuthorizationVerified, false);
   }
 });
+test('배열형 featureState가 CORE 문자열로 변환되어 빈 근거 검사를 우회하지 못한다', () => {
+  for (const featureState of [['IMPLEMENTED_CORE_CHECKED'], ['PARTIAL']]) {
+    const value = sample(); value.items[0].featureState = featureState;
+    assert.throws(() => read(value), /BASELINE_INPUT_INVALID/);
+  }
+});
 test('근거 없는 CORE_CHECKED·누락/위장 키·잘못된 source/ref와 상태를 거절한다', () => {
   const mutations = [
     (v: any) => { v.items[0].featureState = 'IMPLEMENTED_CORE_CHECKED'; },

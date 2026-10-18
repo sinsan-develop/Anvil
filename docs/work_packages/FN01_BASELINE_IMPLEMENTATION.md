@@ -66,3 +66,12 @@ exact GET/유한 목록으로 초안·검토·채택과 source/증거의 현재 
 - [ ] build/type·직접/인접 회귀·독립 scoped 검토. 실제 UI/API/PG 미실행은 그대로 남기며 후보 완료를 사용자 사용 가능/전체 FN01/Stage 완료로 승격하지 않는다.
 
 기존 승인 계획의 일반 후보 작성은 Main이 주도한다. PMO에는 새 범위/권한/실행이 필요한 정확 결정만 요청한다. 이미 확인한 불변 코드·환경의 전수 검사를 반복하지 않는다.
+
+### Task2 상세 wire 고정·기존 소비 이름 대조
+
+- Pre-flight Ruling: 실제 SourceReadRecords의 메서드는 `readSnapshot`이다. 위 `snapshot`은 개괄 표기이며 새 메서드/우회를 만들지 않고 기존 `readSnapshot(db,actor,projectId,id)`를 소비한다. 비용은 소비 이름 교정뿐이고 원 보호 reader/계약은 불변이다.
+- 검토 입력의 정확 top key는 `{draftRef,criteriaVersion,reviewerKind,items,coverage,outcome,reason}`, criteriaVersion=1/reviewerKind=HUMAN이다. outcome은 ACCEPTED/REWORK/BLOCKED/NOT_EXECUTED. HUMAN은 현재 로그인 사용자가 직접 내용 검토를 기록한다는 선언이며 Agent·기계가 실제 의미 합격을 증명한 표식이 아니다.
+- 검토 items1..200의 정확 key는 `{itemId,featureState,outcome,reason,evidenceRefs,coreEvidence}`. Task1 ID/상태·ArtifactRef 규칙을 유지하고 ID/같은항목 artifact 중복을 거절한다. coverage는 정확 `{outcome,reason}`. 전체 ACCEPTED는 모든 항목/coverage ACCEPTED일 때만 가능하다. Task3는 draft의 전체 itemId/featureState와 정확 일치 및 현재 원문 접근을 다시 확인한다.
+- coreEvidence는 null 또는 정확 `{basis,environment,checkedAt,normalFlow,storageRead,importantFailure}`다. basis ACTUAL/MOCK/STATIC/NOT_EXECUTED/UNKNOWN을 보존하고 environment1..20000·checkedAt은 정규 UTC millisecond ISO다. 세 목록은 ArtifactRef[]이며 각각≤200, 같은 목록 중복0, 모두 같은 검토항목 evidenceRefs에 exact 포함되어야 한다. 전체 item evidenceRefs 총합≤200. CORE_CHECKED의 ACCEPTED는 basis ACTUAL·각 세 목록≥1이어야 한다. 이는 제출 구조 조건이지 실제 바이트 내용/동작의 기계 검증이 아니며 Task3의 별도 현재 HUMAN 검토/채택을 대체하지 않는다.
+- readBaselineContentReview/readBaselineConfirmation은 원입력 격리·2MiB·getter/민감표식 거절을 적용한다. Confirmation은 정확 `{draftRef,reviewRefs,reason,acknowledged:true}`, exact refs1..200/중복0이며 이것만으로 적용하지 않는다. 저장 계층에서 내용 검토/정확 버전/현재 권한을 다시 대조한다.
+- ProjectBaselineSources의 의존성은 기존 snapshot 보호 reader·기본 readSourceDeclarationRecord·ArtifactStore.read다. projectMember의 현재 OWNER를 먼저 확인한다. 알려진 project_source_declarations binding을 생략/타프로젝트 선언으로 바꾸지 않으며 기존 생성 명령/원문hash를 대조한다. 없음은 미선택으로만 표시한다. artifacts의 project/id/bytes/hash/media/storage_key·격리와 실제 바이트 길이/hash·알려진 민감표식을 대조하고 raw bytes/경로를 반환 snapshot에 넣지 않는다. source 보고는 역사등급·관측시각을 유지하며 grant의 현재 실행 허가를 발급/추정하지 않는다.

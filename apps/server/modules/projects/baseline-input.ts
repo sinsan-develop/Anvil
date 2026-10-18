@@ -69,7 +69,7 @@ export function readBaselineDraftInput(value: unknown): BaselineDraftAnalysis {
   for (const item of input.items) {
     if (!exact(item, ['itemId', 'title', 'designRef', 'featureState', 'evidenceRefs', 'limitations', 'reason'])
       || !text(item.itemId, 200, true) || itemIds.has(item.itemId) || !text(item.title, 200)
-      || !nullableRef(item.designRef) || !['IMPLEMENTED_CORE_CHECKED', 'IMPLEMENTED_UNCHECKED', 'PARTIAL', 'NOT_IMPLEMENTED'].includes(String(item.featureState))
+      || !nullableRef(item.designRef) || typeof item.featureState !== 'string' || !['IMPLEMENTED_CORE_CHECKED', 'IMPLEMENTED_UNCHECKED', 'PARTIAL', 'NOT_IMPLEMENTED'].includes(item.featureState)
       || !text(item.limitations, 20000) || !text(item.reason, 20000)
       || !Array.isArray(item.evidenceRefs) || item.evidenceRefs.length > 200
       || item.featureState === 'IMPLEMENTED_CORE_CHECKED' && !item.evidenceRefs.length) return invalid();
