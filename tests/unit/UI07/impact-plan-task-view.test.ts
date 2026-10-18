@@ -1,0 +1,13 @@
+import test,{after} from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'vite';
+import {fileURLToPath} from 'node:url';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {ApiClient} from '../../../apps/web/src/api/client.ts';
+import {designChangeFixture,projectId} from './design-change-fixture.ts';
+const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});
+after(async()=>{await compiler.close();});
+const module=await compiler.ssrLoadModule('/src/features/design-change/ImpactPlanTaskOriginal.tsx');
+test('계획 영향은 명시 열기만 제공하고 조회 전 원문/API·쓰기·실행을 만들지 않는다',()=>{const page=designChangeFixture();let calls=0;const props={client:new ApiClient(async()=>{calls++;throw Error('UNEXPECTED_CALL');}),projectId,session:{user:{id:projectId},clientId:projectId},changeRef:page.change.ref,impactRef:page.latestImpactRef,beforeVersion:null,target:page.impactVersions[0]!.items[0]!.targetRef,onAuthenticationLost:()=>{}};const html=renderToStaticMarkup(createElement(module.ImpactPlanTaskOriginal,props));assert.ok(html.includes('영향 업무 FN01 고정 원문 보기'));assert.equal(html.includes('aria-label="영향 계획 업무 고정 원문"'),false);assert.equal(calls,0);});
+test('다른 영향 종류에 계획 원문 버튼을 붙이거나 임의 계획을 제안하지 않는다',()=>{const page=designChangeFixture(),html=renderToStaticMarkup(createElement(module.ImpactPlanTaskOriginal,{client:new ApiClient(async()=>{throw Error('UNEXPECTED_CALL');}),projectId,session:{user:{id:projectId},clientId:projectId},changeRef:page.change.ref,impactRef:page.latestImpactRef,beforeVersion:null,target:{...page.impactVersions[0]!.items[0]!.targetRef,kind:'EXECUTION'},onAuthenticationLost:()=>{}}));assert.equal(html,'');});
