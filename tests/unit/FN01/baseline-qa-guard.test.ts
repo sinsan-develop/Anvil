@@ -6,6 +6,8 @@ import { runBaselineQaCandidate, runNativeBaselineQaCandidate } from '../../../s
 import type { QaPorts } from '../../../scripts/qa-fn01-baseline-isolated.ts';
 import { createHash } from 'node:crypto';
 import { validateBootstrapReceipt, QaWorkAdmission } from '../../../scripts/fn01-baseline-qa-guard.ts';
+import * as actualB from '../../../scripts/fn01-baseline-qa-guard.ts';
+import * as runnerChecks from '../../../scripts/qa-fn01-baseline-isolated.ts';
 
 // 잡을 결함: env/호출자 주장만으로 실제 실행을 열어 버리는 분기.
 test('미발급 실제 권한은 후보 호출 이전에 닫히며 값이나 env로 열리지 않는다', () => {
@@ -122,4 +124,60 @@ test('R4 이전·미소유·불명확 단계의 회수 범위 승계를 거절�
     const {receipt,expectation}=bootstrapFixture();alter(receipt);const digest=createHash('sha256').update(JSON.stringify(receipt.inventory)).digest('hex');receipt.inventoryHash=digest;expectation.inventoryHash=digest;
     assert.throws(()=>validateBootstrapReceipt(receipt,expectation,1100000),/FN01_BOOTSTRAP/);
   }
+});
+
+// G1~G6: 실제 효과 없이 새 결박의 실패 조건만 검사. 기존14 기대값은 유지한다.
+const feature=()=>actualB as unknown as Record<string,any>;
+function controllerFixture(){const b=bootstrapFixture();const issuedAt=1792322464000+60000;Object.assign(b.expectation,{issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,toolchainDecisionRef:'FN01_ACTUAL_B_20261018T112104Z',pathRiskDecisionRef:'FN01_ACTUAL_B_20261018T112104Z'});return {b,c:{schemaVersion:1,decisionRef:'FN01_ACTUAL_B_20261018T112104Z',contractGit:'cb3400381e267d5460267b3c8d01319bfde78b06',contractHash:'ee88c4ea4aa5507ef26e711542788c1bfc8b6240bdb5debc094d5c7bb5fc9ebd',scopeHash:feature().actualBScopeHash,head:b.expectation.head,nonce:b.expectation.nonce,issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,root:b.expectation.root,parents:b.expectation.parents,codeHashes:Object.fromEntries(['scripts/fn01-baseline-qa-guard.ts','scripts/qa-fn01-baseline-isolated.ts','tests/integration/FN01/baseline-isolated.test.ts','tests/unit/FN01/baseline-qa-guard.test.ts'].map(p=>[p,'a'.repeat(64)]))}};}
+test('G1 B metadata는 permit가 아니며 위조 object는 효과 전에 거절한다',()=>{
+  assert.equal(typeof feature().validateActualBController,'function');const {c}=controllerFixture();
+  const metadata=feature().validateActualBController(c,c.issuedAt+1);assert.equal(metadata.executionAuthorized,false);
+  assert.throws(()=>assertActualQaAuthorized(metadata as never),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
+  assert.throws(()=>assertActualQaAuthorized({approved:true} as never),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
+});
+test('G2 B·contract·scope·H·동일 bootstrap 결박 불일치를 거절한다',()=>{
+  assert.equal(typeof feature().assertActualBBinding,'function');const {c,b}=controllerFixture();
+  assert.doesNotThrow(()=>feature().assertActualBBinding(c,b.expectation,c.issuedAt+1));
+  for(const patch of [{decisionRef:'OTHER'},{contractGit:'a'.repeat(40)},{contractHash:'b'.repeat(64)},{scopeHash:'b'.repeat(64)},{head:'not-a-sha'}])assert.throws(()=>feature().assertActualBBinding({...c,...patch},b.expectation,c.issuedAt+1),/FN01_B_/);
+  assert.throws(()=>feature().assertActualBBinding({...c,head:'d'.repeat(40)},b.expectation,c.issuedAt+1),/FN01_B_/);
+});
+test('G3 raw tuple와 canonical proof·socket을 구분하고 다른 경로와 LINK를 거절한다',()=>{
+  assert.equal(typeof feature().canonicalizeActualBTools,'function');
+  const row=[fixedQa.node,'FILE',1001,1001,0o755,2112,724935,1,fixedQa.nodeHash,fixedQa.node];
+  const socket=['/var/run/docker.sock','SOCKET',0,1001,0o660,97,867,1,null,'/run/docker.sock'];
+  const r=feature().canonicalizeActualBTools([row,socket]);assert.equal(r.files.length,1);assert.equal(r.socket.ino,867);assert.notEqual(r.canonicalHash,createHash('sha256').update(JSON.stringify([row,socket])).digest('hex'));
+  for(const patch of [{0:'/opt/elsewhere'},{1:'LINK'},{2:1002},{4:0o777}]){const changed=[...row];Object.assign(changed,patch);assert.throws(()=>feature().canonicalizeActualBTools([changed,socket]),/FN01_B_TOOLS/);}
+  assert.throws(()=>feature().canonicalizeActualBTools([row,{...socket,6:999}]),/FN01_B_TOOLS/);
+});
+test('G4 단일 결정 소비는 새 nonce나 새 창으로 재발급되지 않는다',()=>{
+  assert.equal(typeof feature().consumeActualBDecision,'function');const {c}=controllerFixture(),used=new Set<string>();
+  feature().consumeActualBDecision(c,used,c.issuedAt+1);assert.equal(used.size,1);
+  assert.throws(()=>feature().consumeActualBDecision({...c,nonce:'e'.repeat(32),issuedAt:c.issuedAt+10,rootCreatedAt:c.issuedAt+10,expiresAt:c.expiresAt+10},used,c.issuedAt+11),/FN01_B_ALREADY_CONSUMED/);
+});
+test('G5 승인24시간·최초20분 만료와 stop 뒤 새 작업을 거절한다',()=>{
+  assert.equal(typeof feature().validateActualBController,'function');const {c}=controllerFixture();
+  assert.throws(()=>feature().validateActualBController(c,c.expiresAt),/FN01_B_/);
+  assert.throws(()=>feature().validateActualBController({...c,issuedAt:c.issuedAt+86400000,expiresAt:c.expiresAt+86400000},c.issuedAt+86400001),/FN01_B_/);
+  assert.throws(()=>feature().validateActualBController({...c,expiresAt:c.expiresAt+1},c.issuedAt+1),/FN01_B_/);
+  const gate=new QaWorkAdmission();gate.stop();assert.throws(()=>gate.assertWork(),/FN01_WORK_STOPPED/);
+  // I1: await 준비가 끝난 시점에 중단/기한을 다시 검사해야 새 파일 효과가 없다.
+  assert.equal(typeof feature().assertQaEffectBoundary,'function');const active=new QaWorkAdmission(),window=new QaWindow(c.issuedAt,c.expiresAt);
+  assert.doesNotThrow(()=>feature().assertQaEffectBoundary(active,window,c.issuedAt+1,'WORK',0));
+  active.stop();assert.throws(()=>feature().assertQaEffectBoundary(active,window,c.issuedAt+1,'WORK',0),/FN01_WORK_STOPPED/);
+  assert.throws(()=>feature().assertQaEffectBoundary(active,window,c.issuedAt+10,'CLEANUP',c.issuedAt+10),/FN01_CLEANUP_EXPIRED/);
+});
+test('G6 시작영수증 parent·hash·owner 결박 및 회수 후 부모 nlink 1감소만 허용한다',()=>{
+  assert.equal(typeof feature().assertActualBStarted,'function');assert.equal(typeof feature().assertParentsAfterRootRemoval,'function');
+  const {c}=controllerFixture(),r={decisionRef:c.decisionRef,head:c.head,nonce:c.nonce,issuedAt:c.issuedAt,expiresAt:c.expiresAt,controllerHash:'a'.repeat(64),bootstrapHash:'b'.repeat(64),parentPid:100,owner:fixedQa.owner,phase:'CLAIMED'};
+  assert.doesNotThrow(()=>feature().assertActualBStarted(r,c,'a'.repeat(64),'b'.repeat(64),100));
+  for(const patch of [{parentPid:101},{nonce:'f'.repeat(32)},{owner:'OTHER'},{phase:'PARTIAL'},{bootstrapHash:'c'.repeat(64)}])assert.throws(()=>feature().assertActualBStarted({...r,...patch},c,'a'.repeat(64),'b'.repeat(64),100),/FN01_B_STARTED/);
+  const before=chain();before[5]!.links=3;const after=structuredClone(before);after[5]!.links=2;
+  assert.doesNotThrow(()=>feature().assertParentsAfterRootRemoval(before,after));after[4]!.links=2;
+  assert.throws(()=>feature().assertParentsAfterRootRemoval(before,after),/FN01_PATH/);
+  // I2: 성공 TAP/diagnostic이어도 실제 child nonzero/signal은 PASS가 아니다.
+  const checks=runnerChecks as unknown as Record<string,any>;assert.equal(typeof checks.assertWorkflow,'function');
+  const done={phase:'DONE',cases:[...runnerChecks.requiredCases],closeFailures:0,failure:null,testCount:1,passCount:1,failCount:0,skipCount:0,cancelCount:0,exitCode:0,signal:null};
+  assert.doesNotThrow(()=>checks.assertWorkflow(done));
+  assert.throws(()=>checks.assertWorkflow({...done,exitCode:1}),/FN01_WORKFLOW_INCOMPLETE/);
+  assert.throws(()=>checks.assertWorkflow({...done,signal:'SIGTERM'}),/FN01_WORKFLOW_INCOMPLETE/);
 });

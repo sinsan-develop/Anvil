@@ -6,7 +6,7 @@ import { readFile, lstat, realpath, readdir, open } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import type { FileProof } from '../../../scripts/fn01-baseline-qa-guard.ts';
 import { Pool } from 'pg';
-import { assertActualQaAuthorized, assertMigrationManifest, fixedQa, sha256, boundedWait } from '../../../scripts/fn01-baseline-qa-guard.ts';
+import { assertActualQaAuthorized, assertActualBWorkflowTarget, assertMigrationManifest, fixedQa, sha256, boundedWait } from '../../../scripts/fn01-baseline-qa-guard.ts';
 import { qaFixture as f, requiredCases } from '../../../scripts/qa-fn01-baseline-isolated.ts';
 import { buildApp } from '../../../apps/server/app.ts';
 import { AccessRepository } from '../../../apps/server/modules/access/repository.ts';
@@ -22,8 +22,9 @@ import type { DocumentWrite } from '../../../apps/web/src/features/design-trace/
 // 잡을 결함: 실제 PG parse/COMMIT·SQL guard·Web transport·원문 저장의 연결 누락.
 // 모든 HUMAN 판단은 합성 계약 fixture다. 실제 기능 내용/사용자 인수 판단이 아니다.
 test('새 전용 PG49에서 기준선 불변 저장·검토/채택·권한·세대·COMMIT 경계', {timeout:180000}, async t => {
-  assertActualQaAuthorized(); // Pool/파일/환경 조회보다 먼저. 현재 실행 허가 없음.
+  assertActualQaAuthorized(); // Pool/파일/환경 조회보다 먼저. 고정 parent entry의 같은 B/최초창만 허용.
   const env=process.env,host=env.ANVIL_FN01_BASELINE_PG_HOST??'',nonce=env.ANVIL_FN01_BASELINE_NONCE??'',deadline=Date.parse(env.ANVIL_FN01_BASELINE_EXPIRES_AT??'');
+  assertActualBWorkflowTarget(nonce,deadline); // env가 새 nonce/기한을 발급하거나 바꿀 수 없다.
   if(process.platform!=='linux'||process.getuid?.()!==1000||!/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)||host.split('.').some(v=>Number(v)>255)||!/^[0-9a-f]{32}$/.test(nonce)||!Number.isFinite(deadline)||deadline<=Date.now()||deadline>Date.now()+1200000||env.ANVIL_DB_CONFIG||env.ANVIL_MIGRATOR_CONFIG)throw Error('FN01_WORKFLOW_TARGET_INVALID');
   assert.equal(await realpath(process.cwd()),fixedQa.root+'/source');assert.equal(await realpath(process.execPath),fixedQa.node);
   const manifest:unknown=JSON.parse(await readFile('docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json','utf8'));assertMigrationManifest(manifest);

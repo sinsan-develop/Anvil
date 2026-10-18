@@ -4,8 +4,10 @@ import { randomBytes } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open, lstat, realpath, readdir, unlink, rmdir } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
-import { fixedQa, assertActualQaAuthorized, assertMigrationManifest, assertParentChain, assertSameIdentity, assertOwnedContainer, assertOwnedNetwork, cleanupFileOrder, containerArguments, QaWindow, QaWorkAdmission, sha256, boundedWait, QaWaitTimeout, validateBootstrapReceipt } from './fn01-baseline-qa-guard.ts';
-import type { Identity, FileProof, MigrationManifest, BootstrapExpectation, BootstrapMetadata } from './fn01-baseline-qa-guard.ts';
+import { fixedQa, assertActualQaAuthorized, assertMigrationManifest, assertParentChain, assertSameIdentity, assertOwnedContainer, assertOwnedNetwork, cleanupFileOrder, containerArguments, QaWindow, QaWorkAdmission, sha256, boundedWait, QaWaitTimeout, validateBootstrapReceipt, assertActualBBinding, assertActualBPermitBinding, canonicalizeActualBTools, declaredActualBDecision, actualBCodePaths, assertActualBStarted, assertParentsAfterRootRemoval } from './fn01-baseline-qa-guard.ts';
+import type { Identity, FileProof, MigrationManifest, BootstrapExpectation, BootstrapMetadata, IssuedRunFacts } from './fn01-baseline-qa-guard.ts';
+import { assertQaEffectBoundary } from './fn01-baseline-qa-guard.ts';
+import type { FileHandle } from 'node:fs/promises';
 
 export interface QaSourceProof {
   head:string; clean:boolean;remote:string;productDiff:string;lockBytes:Uint8Array;
@@ -17,7 +19,7 @@ export interface QaPreflight {
   nodeRealpath:string;npmRealpath:string;nodeHash:string;npmHash:string;
   toolchainApprovalRef:string|null;toolchainManifestHash:string|null;pathRiskDecisionRef:string|null;
 }
-export interface WorkflowReceipt {phase:'DONE';cases:string[];closeFailures:number;failure:null;testCount:1;passCount:1;failCount:0;skipCount:0;cancelCount:0}
+export interface WorkflowReceipt {phase:'DONE';cases:string[];closeFailures:number;failure:null;testCount:1;passCount:1;failCount:0;skipCount:0;cancelCount:0;exitCode:number;signal:string|null}
 export const requiredCases=Object.freeze(['EXACT_49_SCHEMA','LEGACY_PRESERVED','AUTH_POLICY_REQUIRED','DRAFT_STORED_READ','REVIEW_SEPARATE_ADOPTION','RECEIPT_LOSS_RECONCILED','SECOND_ADOPTION','CLIENT_TRANSITION','CROSS_PROJECT_DENIED','OLD_GENERATION_DENIED','DIRECT_DML_DENIED','CURRENT_DENY_BEFORE_REPLAY','REWORK_BLOCKS_ADOPTION','CORE_STATIC_REJECTED','QUARANTINE_BLOCKS_REUSE','CONCURRENT_CAS_AUDIT']);
 /** 외부 실행 허가가 아니다. 각 port의 native 구현·bootstrap은 B 검토 대상이다. */
 export interface QaPorts {
@@ -25,6 +27,7 @@ export interface QaPorts {
   stopWork():void;
   preflight():Promise<QaPreflight>;
   sourceProof():Promise<QaSourceProof>;
+  claimStarted():Promise<void>;
   parents():Promise<Identity[]>;
   createNetwork(input:{name:string;nonce:string;internal:true;timeout:number}):Promise<string>;
   inspectNetwork(id:string,purpose?:'CLEANUP'):Promise<unknown>;
@@ -67,13 +70,13 @@ function assertPreflight(p:QaPreflight):void {
   if(p.platform!=='linux'||p.uid!==1000||!p.bootstrap.metadataMatched||p.bootstrap.executionAuthorized!==false||!p.namesAbsent||p.daemonId!==fixedQa.daemonId||p.daemonName!==fixedQa.daemonName||p.imageId!==fixedQa.imageId||p.nodeRealpath!==fixedQa.node||p.npmRealpath!==fixedQa.npm||p.nodeHash!==fixedQa.nodeHash||p.npmHash!==fixedQa.npmHash)throw Error('FN01_PREFLIGHT_MISMATCH');
   if(!p.toolchainApprovalRef||!p.pathRiskDecisionRef||!p.toolchainManifestHash||!/^[0-9a-f]{64}$/.test(p.toolchainManifestHash))throw Error('FN01_TOOLCHAIN_OR_PATH_UNRESOLVED');
 }
-function assertWorkflow(r:WorkflowReceipt):void {
-  if(r?.phase!=='DONE'||r.failure!==null||r.closeFailures!==0||r.testCount!==1||r.passCount!==1||r.failCount!==0||r.skipCount!==0||r.cancelCount!==0||!Array.isArray(r.cases)||new Set(r.cases).size!==r.cases.length||requiredCases.some(c=>!r.cases.includes(c)))throw Error('FN01_WORKFLOW_INCOMPLETE');
+export function assertWorkflow(r:WorkflowReceipt):void {
+  if(r?.phase!=='DONE'||r.failure!==null||r.closeFailures!==0||r.exitCode!==0||r.signal!==null||r.testCount!==1||r.passCount!==1||r.failCount!==0||r.skipCount!==0||r.cancelCount!==0||!Array.isArray(r.cases)||new Set(r.cases).size!==r.cases.length||requiredCases.some(c=>!r.cases.includes(c)))throw Error('FN01_WORKFLOW_INCOMPLETE');
 }
-export interface CandidateResult {status:'FAIL'|'PASS';failure:string|null;cleanupFailure:string|null;actualWorkflowVerified:boolean;formalDbChanges:0;sourceAuthorizationVerified:false;coverageVerified:false;executionAuthorized:false;dispatchPerformed:false}
+export interface CandidateResult {status:'FAIL'|'PASS';failure:string|null;cleanupFailure:string|null;actualWorkflowVerified:boolean;qaRunAuthorized:true;actualExecuted:boolean;formalDbChanges:0;sourceAuthorizationVerified:false;coverageVerified:false;executionAuthorized:false;dispatchPerformed:false}
 /** 현재는 첫 gate에서 반드시 거절한다. B issuer/adapter/실행 원본 확정 전 호출 금지. */
-export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBinding):Promise<CandidateResult> {
-  assertActualQaAuthorized(); // preflight/시계/경로 읽기 이전. 현재 아래로 진행하지 않는다.
+export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBinding,permit?:object):Promise<CandidateResult> {
+  assertActualQaAuthorized(permit); // 미등록 permit는 adapter/시계 조회 이전 거절.
   if(!binding.bootstrap||binding.head!==binding.bootstrap.head||binding.issuedAt!==binding.bootstrap.issuedAt||binding.expiresAt!==binding.bootstrap.expiresAt)throw Error('FN01_BOOTSTRAP_BINDING_UNISSUED');
   const window=new QaWindow(binding.issuedAt,binding.expiresAt),nonce=binding.bootstrap.nonce;
   let rootClaimed=false,containerId:string|null=null,networkId:string|null=null,parents:Identity[]=[],failure:string|null=null,cleanupFailure:string|null=null,verified=false,pendingMutationUnknown=false,phase='PREFLIGHT';
@@ -96,6 +99,7 @@ export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBind
     // 별도 bootstrap의 정확 소유 명세만 승계. 여기서 clone/npm/새 창을 만들지 않는다.
     const proof=await stage('SOURCE',5000,()=>ports.sourceProof());const manifest=assertCandidateSource(proof,binding.head);
     rootClaimed=true;
+    await stage('CLAIM_STARTED',5000,()=>ports.claimStarted(),true);
     const networkTimeout=await fence(30000);
     networkId=await stage('CREATE_NETWORK',networkTimeout,()=>ports.createNetwork({name:fixedQa.network,nonce,internal:true,timeout:networkTimeout}),true);
     assertOwnedNetwork(await stage('NETWORK_INSPECT',5000,()=>ports.inspectNetwork(networkId!)),networkId,nonce,true);
@@ -142,7 +146,7 @@ export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBind
     // 앞선 종료 오류와 독립해서 시도한다. 기한 소진이면 즉시 미검증으로 남긴다.
     try{const r=await collect(3000,()=>ports.residue());if(!r.rootAbsent||!r.containerAbsent||!r.networkAbsent)cleanupFailure??='FN01_RESIDUE_REMAINS';}catch{cleanupFailure??='FN01_RESIDUE_UNVERIFIED';}
   }
-  return{status:failure||cleanupFailure?'FAIL':'PASS',failure,cleanupFailure,actualWorkflowVerified:verified&&!failure&&!cleanupFailure,formalDbChanges:0,sourceAuthorizationVerified:false,coverageVerified:false,executionAuthorized:false,dispatchPerformed:false};
+  return{status:failure||cleanupFailure?'FAIL':'PASS',failure,cleanupFailure,actualWorkflowVerified:verified&&!failure&&!cleanupFailure,qaRunAuthorized:true,actualExecuted:rootClaimed,formalDbChanges:0,sourceAuthorizationVerified:false,coverageVerified:false,executionAuthorized:false,dispatchPerformed:false};
 }
 
 // 비공개 native 후보: 외부 입력/CLI/env로 binding을 만들 수 없다.
@@ -150,12 +154,37 @@ export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBind
 interface NativeBinding extends CandidateBinding {
   bootstrap:BootstrapExpectation;bootstrapBytesHash:string;
   toolchain:FileProof[];dockerHash:string;gitHash:string;
+  facts:IssuedRunFacts;
 }
-function unissuedNativeBinding():NativeBinding {throw Error('FN01_NATIVE_BINDING_NOT_ISSUED');}
-export async function runNativeBaselineQaCandidate():Promise<CandidateResult> {
-  assertActualQaAuthorized(); // factory·OS·시계 조회보다 먼저. 현재 항상 거절.
-  const binding=unissuedNativeBinding();
-  return runBaselineQaCandidate(createNativePorts(binding),binding);
+function issueNativeBinding(f:IssuedRunFacts,permit:object):NativeBinding {
+  assertActualBPermitBinding(permit,f.controller);assertActualBBinding(f.controller,f.bootstrap,Date.now());
+  const tools=canonicalizeActualBTools(JSON.parse(f.toolchainRaw));
+  if(sha256(f.toolchainRaw)!==declaredActualBDecision.rawToolHash||tools.canonicalHash!==declaredActualBDecision.canonicalToolHash||tools.files.length!==2388||f.bootstrap.toolchainManifestHash!==tools.canonicalHash)throw Error('FN01_B_TOOL_BINDING_INVALID');
+  const find=(p:string)=>{const v=tools.files.find(x=>x.path===p)?.hash;if(!v)throw Error('FN01_B_TOOL_MISSING');return v;};
+  return{head:f.controller.head,issuedAt:f.controller.issuedAt,expiresAt:f.controller.expiresAt,bootstrap:f.bootstrap,bootstrapBytesHash:f.bootstrapBytesHash,toolchain:tools.files,dockerHash:find('/usr/bin/docker'),gitHash:find('/usr/bin/git'),facts:f};
+}
+export async function runNativeBaselineQaCandidate(facts?:IssuedRunFacts,permit?:object):Promise<CandidateResult> {
+  assertActualQaAuthorized(permit);
+  if(!facts||!permit)throw Error('FN01_NATIVE_BINDING_NOT_ISSUED');
+  const binding=issueNativeBinding(facts,permit);
+  return runBaselineQaCandidate(createNativePorts(binding),binding,permit);
+}
+// 고정 parent/child 자료만 읽는다. 호출자 command/path/env 또는 permit 발급 API는 아니다.
+export async function verifyNativeWorkflowBinding(f:IssuedRunFacts):Promise<void> {
+  if(process.platform!=='linux'||process.getuid?.()!==1000||await realpath(process.execPath)!==fixedQa.node||await realpath(process.cwd())!==fixedQa.root+'/source')throw Error('FN01_B_CHILD_PLATFORM');
+  assertActualBBinding(f.controller,f.bootstrap,Date.now());
+  const read=async(path:string,mode?:number)=>{
+    const st=await lstat(path);if(await realpath(path)!==path||!st.isFile()||st.uid!==1000||st.nlink!==1||(st.mode&0o022)!==0||mode!==undefined&&(st.mode&0o777)!==mode||st.size>16*1024*1024)throw Error('FN01_B_CHILD_FILE');
+    const h=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);try{const s=await h.stat();if(s.dev!==st.dev||s.ino!==st.ino)throw Error('FN01_B_CHILD_RACE');const b=await h.readFile(),after=await h.stat();if(after.size!==s.size||after.mtimeMs!==s.mtimeMs)throw Error('FN01_B_CHILD_CHANGED');return b;}finally{await h.close();}
+  };
+  const controller=await read(fixedQa.root+'/controller.json',0o600),bootstrap=await read(fixedQa.root+'/bootstrap.json',0o600);
+  if(sha256(controller)!==f.controllerBytesHash||sha256(bootstrap)!==f.bootstrapBytesHash||JSON.stringify(JSON.parse(controller.toString()))!==JSON.stringify(f.controller))throw Error('FN01_B_CHILD_FACTS');
+  validateBootstrapReceipt(JSON.parse(bootstrap.toString()),f.bootstrap,Date.now());
+  const root=await lstat(fixedQa.root);if(root.dev!==f.controller.root.dev||root.ino!==f.controller.root.ino||root.uid!==1000||(root.mode&0o777)!==0o700||!root.isDirectory()||await realpath(fixedQa.root)!==fixedQa.root)throw Error('FN01_B_CHILD_ROOT');
+  const parents=await Promise.all(f.controller.parents.map(async p=>{const s=await lstat(p.path);return{path:p.path,realpath:await realpath(p.path),uid:s.uid,mode:s.mode&0o777,dev:s.dev,ino:s.ino,kind:s.isDirectory()?'DIRECTORY':'LINK',links:s.nlink} as Identity;}));assertSameIdentity(f.controller.parents,parents);
+  for(const p of actualBCodePaths)if(sha256(await read(fixedQa.root+'/source/'+p))!==f.controller.codeHashes[p])throw Error('FN01_B_CHILD_CODE');
+  const started=JSON.parse((await read(fixedQa.root+'/started.json',0o600)).toString());
+  assertActualBStarted(started,f.controller,f.controllerBytesHash,f.bootstrapBytesHash,process.ppid);
 }
 function createNativePorts(binding:NativeBinding):QaPorts {
   // 생성자에는 OS 효과 없음. 모든 동작은 위 첫 거절/미발급 binding 뒤의 method에만 둔다.
@@ -163,8 +192,11 @@ function createNativePorts(binding:NativeBinding):QaPorts {
   let expected:FileProof[]=[],networkId:string|null=null,containerId:string|null=null;
   let metadata:BootstrapMetadata|undefined,unknownChild=false,cleanup=false,cleanupDeadline=0,rootRemoved=false;
   const children=new Set<ReturnType<typeof execFile>>();
+  const descriptors=new Set<FileHandle>();
+  let workflowExit:{code:number|null;signal:string|null}|undefined;
   const admission=new QaWorkAdmission();
   const window=new QaWindow(binding.issuedAt,binding.expiresAt);
+  const effect=(purpose:'WORK'|'CLEANUP'='WORK')=>assertQaEffectBoundary(admission,window,Date.now(),purpose,cleanupDeadline);
   function problem(code:string):never {throw Error('FN01_NATIVE_'+code);}
   const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
   const fresh=(limit=5000)=>window.remaining(Date.now(),limit);
@@ -216,7 +248,7 @@ function createNativePorts(binding:NativeBinding):QaPorts {
   }
   const cleanEnv=():NodeJS.ProcessEnv=>({PATH:'/usr/bin:/bin',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',TZ:'UTC',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GIT_TERMINAL_PROMPT:'0',GIT_OPTIONAL_LOCKS:'0'});
   // 임의 명령은 export하지 않는다. 아래 fixed docker/git/node method의 지역 구현뿐이다.
-  async function child(binary:'/usr/bin/docker'|'/usr/bin/git'|typeof fixedQa.node,args:string[],timeout:number,input?:string,extra:NodeJS.ProcessEnv={},purpose:'WORK'|'CLEANUP'='WORK'):Promise<string> {
+  async function child(binary:'/usr/bin/docker'|'/usr/bin/git'|typeof fixedQa.node,args:string[],timeout:number,input?:string,extra:NodeJS.ProcessEnv={},purpose:'WORK'|'CLEANUP'='WORK',testExit=false):Promise<string> {
     if(purpose==='WORK')admission.assertWork();
     if(purpose==='CLEANUP'){
       const allowed=[['container','ls','-a','--format','{{.Names}}'],['network','ls','--format','{{.Name}}']];
@@ -227,7 +259,7 @@ function createNativePorts(binding:NativeBinding):QaPorts {
     if(rootRemoved){
       // root 회수 후 허용되는 명령은 아래 독립 잔여 조회 두 개뿐이다.
       if(!cleanup||binary!=='/usr/bin/docker'||![['--host','unix:///var/run/docker.sock','container','ls','-a','--format','{{.Names}}'],['--host','unix:///var/run/docker.sock','network','ls','--format','{{.Name}}']].some(x=>same(x,args)))problem('POST_ROOT_EFFECT_DENIED');
-      assertSameIdentity(binding.bootstrap.parents,await parents());
+      assertParentsAfterRootRemoval(binding.bootstrap.parents,await parents());
       try{await lstat(fixedQa.root);return problem('ROOT_REAPPEARED');}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
     }else await fence(purpose);
     await tool(binary,binary==='/usr/bin/docker'?binding.dockerHash:binary==='/usr/bin/git'?binding.gitHash:fixedQa.nodeHash);
@@ -237,9 +269,9 @@ function createNativePorts(binding:NativeBinding):QaPorts {
     return new Promise<string>((resolve,reject)=>{
       let result:string|undefined,failed=false;
       const c=execFile(binary,args,{cwd:rootRemoved?binding.bootstrap.parents.at(-1)!.path:source,env:{...cleanEnv(),...extra},encoding:'utf8',windowsHide:true,timeout:duration,maxBuffer:8*1024*1024,killSignal:'SIGTERM'},(error,stdout)=>{
-        failed=!!error;if(error&&(error.killed||error.signal))unknownChild=true;result=stdout.trim();
+        failed=!!error;if(error&&(error.killed||error.signal))unknownChild=true;if(testExit&&error&&!error.killed&&!error.signal&&typeof error.code==='number')failed=false;result=stdout.trim();
       });
-      children.add(c);c.once('close',()=>{children.delete(c);if(failed||result===undefined)reject(Error('FN01_NATIVE_CHILD_FAILED'));else resolve(result);});c.stdin?.on('error',()=>{});c.stdin?.end(input??'');
+      children.add(c);c.once('close',(code,signal)=>{children.delete(c);if(testExit)workflowExit={code,signal};if(failed||result===undefined)reject(Error('FN01_NATIVE_CHILD_FAILED'));else resolve(result);});c.stdin?.on('error',()=>{});c.stdin?.end(input??'');
     });
   }
   const docker=(args:string[],timeout=5000,input?:string,extra:NodeJS.ProcessEnv={},purpose:'WORK'|'CLEANUP'='WORK')=>child('/usr/bin/docker',['--host','unix:///var/run/docker.sock',...args],timeout,input,{DOCKER_CONFIG:fixedQa.root+'/docker-config',...extra},purpose);
@@ -269,15 +301,20 @@ function createNativePorts(binding:NativeBinding):QaPorts {
       if(bp.mode!==0o600||sha256(raw)!==binding.bootstrapBytesHash)problem('BOOTSTRAP_BYTES');
       metadata=validateBootstrapReceipt(JSON.parse(raw.toString('utf8')),binding.bootstrap,Date.now());
       expected=[...metadata.receipt.inventory,bp];cleanupFileOrder(expected,await files());
+      const cr=await bytes(fixedQa.root+'/controller.json'),cp=await proof(fixedQa.root+'/controller.json');
+      if(cp.mode!==0o600||sha256(cr)!==binding.facts.controllerBytesHash||!same(JSON.parse(cr.toString()),binding.facts.controller))problem('CONTROLLER_BYTES');
+      assertActualBBinding(JSON.parse(cr.toString()),binding.bootstrap,Date.now());
+      for(const p of actualBCodePaths)if(sha256(await bytes(source+'/'+p))!==binding.facts.controller.codeHashes[p])problem('CODE_HASH');
       if(!binding.toolchain.length||sha256(JSON.stringify(binding.toolchain))!==binding.bootstrap.toolchainManifestHash)problem('TOOLCHAIN_MANIFEST');
       for(const item of binding.toolchain){
-        if(![fixedQa.node,'/usr/bin/docker','/usr/bin/git'].includes(item.path)&&!item.path.startsWith('/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/'))problem('TOOLCHAIN_PATH');
+        const base='/opt/node-v24.21.0-linux-x64';
+        if(![fixedQa.node,'/usr/bin/docker','/usr/bin/git',base,base+'/bin',base+'/lib',base+'/lib/node_modules',base+'/lib/node_modules/npm'].includes(item.path)&&!item.path.startsWith(base+'/lib/node_modules/npm/'))problem('TOOLCHAIN_PATH');
         const r=await identity(item.path);
         if(r.kind!==item.kind||r.realpath!==item.path||r.uid!==item.uid||r.mode!==item.mode||r.dev!==item.dev||r.ino!==item.ino||r.links!==item.links||(r.mode&0o022)!==0||r.kind==='FILE'&&sha256(await bytes(item.path,256*1024*1024))!==item.hash)problem('TOOLCHAIN_CHANGED');
       }
       await tool(fixedQa.node,fixedQa.nodeHash);await tool(fixedQa.npm,fixedQa.npmHash);
       const dc=expected.find(x=>x.path===fixedQa.root+'/docker-config');if(!dc||dc.kind!=='DIRECTORY'||expected.some(x=>x.path.startsWith(dc.path+'/')))problem('DOCKER_CONFIG_NOT_EMPTY');
-      const socket=await lstat('/var/run/docker.sock');if(!socket.isSocket()||socket.uid!==0||socket.gid!==1001||(socket.mode&0o777)!==0o660||await realpath('/var/run/docker.sock')!=='/run/docker.sock')problem('SOCKET_IDENTITY');
+      const socket=await lstat('/var/run/docker.sock');if(!socket.isSocket()||socket.uid!==0||socket.gid!==1001||(socket.mode&0o777)!==0o660||socket.dev!==97||socket.ino!==867||socket.nlink!==1||await realpath('/var/run/docker.sock')!=='/run/docker.sock')problem('SOCKET_IDENTITY');
       const info=JSON.parse(await docker(['info','--format','{{json .}}'])),absent=await names();
       return{platform:process.platform,uid:process.getuid!(),parents:await parents(),bootstrap:metadata,daemonId:info.ID,daemonName:info.Name,imageId:await docker(['image','inspect',fixedQa.image,'--format','{{.Id}}']),namesAbsent:absent.containerAbsent&&absent.networkAbsent,nodeRealpath:await realpath(fixedQa.node),npmRealpath:await realpath(fixedQa.npm),nodeHash:sha256(await bytes(fixedQa.node,256*1024*1024)),npmHash:sha256(await bytes(fixedQa.npm)),toolchainApprovalRef:binding.bootstrap.toolchainDecisionRef,toolchainManifestHash:binding.bootstrap.toolchainManifestHash,pathRiskDecisionRef:binding.bootstrap.pathRiskDecisionRef};
     },
@@ -285,6 +322,19 @@ function createNativePorts(binding:NativeBinding):QaPorts {
       const manifest:unknown=JSON.parse((await bytes(source+'/docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json')).toString('utf8'));assertMigrationManifest(manifest);
       const migrations:Record<string,Uint8Array>={};for(const m of manifest.ordered)migrations[m.id]=await bytes(source+'/db/migrations/'+m.id+'.sql',2*1024*1024);
       return{head:await git(['rev-parse','HEAD']),clean:(await git(['status','--porcelain','--untracked-files=all']))==='',remote:await git(['remote','get-url','origin']),productDiff:await git(['diff','--name-only',fixedQa.source,'--','apps','contracts','db','package.json','package-lock.json','docs/design']),lockBytes:await bytes(source+'/package-lock.json'),migrations,manifest};
+    },
+    async claimStarted(){
+      admission.assertWork();await fence();
+      const p=fixedQa.root+'/started.json',record={decisionRef:binding.facts.controller.decisionRef,head:binding.head,nonce:binding.bootstrap.nonce,issuedAt:binding.issuedAt,expiresAt:binding.expiresAt,controllerHash:binding.facts.controllerBytesHash,bootstrapHash:binding.bootstrapBytesHash,parentPid:process.pid,owner:fixedQa.owner,phase:'CLAIMED'};
+      assertActualBStarted(record,binding.facts.controller,binding.facts.controllerBytesHash,binding.bootstrapBytesHash,process.pid);
+      effect();
+      const h=await open(p,constants.O_CREAT|constants.O_EXCL|constants.O_WRONLY|constants.O_NOFOLLOW,0o600);
+      descriptors.add(h); // stat 실패도 writer/파일 소유 미확인으로 보존. close는 반드시 시도.
+      try{
+        const s=await h.stat();expected.push({path:p,kind:'FILE',uid:s.uid,mode:s.mode&0o777,dev:s.dev,ino:s.ino,links:s.nlink,hash:sha256(JSON.stringify(record))});
+        effect();await h.writeFile(JSON.stringify(record));effect();await h.sync();
+      }finally{try{await h.close();descriptors.delete(h);}catch{unknownChild=true;}}
+      if(!same(await proof(p),expected.at(-1)))problem('STARTED_CHANGED');
     },
     async createNetwork(input){
       if(input.name!==fixedQa.network||input.nonce!==binding.bootstrap.nonce||input.internal!==true)problem('NETWORK_INPUT');
@@ -322,7 +372,8 @@ function createNativePorts(binding:NativeBinding):QaPorts {
     async workflow(input){
       if(!containerId||input.database!==fixedQa.database||input.head!==binding.head||input.nonce!==binding.bootstrap.nonce||input.expiresAt!==binding.expiresAt)problem('WORKFLOW_BINDING');
       const host=assertOwnedContainer(await inspect('container',containerId),containerId,networkId!,binding.bootstrap.nonce);if(input.host!==host)problem('WORKFLOW_HOST');
-      const out=await child(fixedQa.node,['--test','tests/integration/FN01/baseline-isolated.test.ts'],input.timeout,undefined,{ANVIL_FN01_BASELINE_PG_HOST:host,ANVIL_FN01_BASELINE_NONCE:input.nonce,ANVIL_FN01_BASELINE_EXPIRES_AT:new Date(input.expiresAt).toISOString(),ANVIL_FN01_BASELINE_APP_PASSWORD:input.appPassword,ANVIL_FN01_BASELINE_MIGRATOR_PASSWORD:input.migratorPassword});
+      const entry="import {runApprovedBaselineWorkflow} from './scripts/fn01-baseline-qa-guard.ts';let raw='';for await(const b of process.stdin){raw+=b;if(raw.length>3000000)throw Error('FN01_B_INPUT_LIMIT');}await runApprovedBaselineWorkflow(JSON.parse(raw));";
+      const out=await child(fixedQa.node,['--test-reporter=tap','--input-type=module','-e',entry],input.timeout,JSON.stringify(binding.facts),{ANVIL_FN01_BASELINE_PG_HOST:host,ANVIL_FN01_BASELINE_NONCE:input.nonce,ANVIL_FN01_BASELINE_EXPIRES_AT:new Date(input.expiresAt).toISOString(),ANVIL_FN01_BASELINE_APP_PASSWORD:input.appPassword,ANVIL_FN01_BASELINE_MIGRATOR_PASSWORD:input.migratorPassword},'WORK',true);
       const lines=out.split('\n').filter(x=>x.includes('FN01_BASELINE_SAFE '));if(lines.length!==1)problem('WORKFLOW_RECEIPT');
       const r=JSON.parse(lines[0]!.split('FN01_BASELINE_SAFE ')[1]!);
       const count=(key:string)=>Number(out.match(new RegExp('^# '+key+' (\\d+)$','m'))?.[1]??NaN);
@@ -331,14 +382,14 @@ function createNativePorts(binding:NativeBinding):QaPorts {
       for(const item of r.files as FileProof[]){if(!item.path.startsWith(fixedQa.root+'/artifacts/')||!same(await proof(item.path),item)||expected.some(f=>f.path===item.path))problem('WORKFLOW_FILE_PROOF');expected.push(item);}
       // 기존 artifacts 디렉터리의 nlink 변경만 갱신. inode/소유/권한 변경은 거절한다.
       expected=await Promise.all(expected.map(async item=>{if(item.kind!=='DIRECTORY')return item;const current=await proof(item.path);if(!same({...current,links:item.links},item))problem('KNOWN_DIRECTORY_CHANGED');return current;}));
-      return{...r,testCount:count('tests'),passCount:count('pass'),failCount:count('fail'),skipCount:count('skipped'),cancelCount:count('cancelled')};
+      return{...r,testCount:count('tests'),passCount:count('pass'),failCount:count('fail'),skipCount:count('skipped'),cancelCount:count('cancelled'),exitCode:workflowExit?.code??NaN,signal:workflowExit?.signal??null};
     },
-    async closeWriters(){admission.stop();if(!cleanupDeadline)cleanupDeadline=Date.now()+30000;if(children.size||unknownChild)problem('WRITERS_UNKNOWN_PRESERVED');cleanup=true;},
+    async closeWriters(){admission.stop();if(!cleanupDeadline)cleanupDeadline=Date.now()+30000;if(children.size||descriptors.size||unknownChild)problem('WRITERS_UNKNOWN_PRESERVED');cleanup=true;},
     async removeContainer(id){if(!cleanup)problem('NOT_CLEANUP');await ownedContainer(id,'CLEANUP');await docker(['container','rm','--force',id],5000,undefined,{},'CLEANUP');},
     async removeNetwork(id){if(!cleanup||id!==networkId)problem('NOT_CLEANUP_OWNER');assertOwnedNetwork(await inspect('network',id,'CLEANUP'),id,binding.bootstrap.nonce,true);await docker(['network','rm',id],5000,undefined,{},'CLEANUP');},
     expectedFiles:()=>expected,currentFiles:()=>files('CLEANUP'),
-    async removeFile(item){if(!cleanup||!expected.some(x=>same(x,item)))problem('NOT_OWNED_FILE');await fence('CLEANUP');const current=await proof(item.path);if(item.kind==='DIRECTORY'){if(!same({...current,links:item.links},item)||(await readdir(item.path)).length)problem('DIRECTORY_CHANGED');await rmdir(item.path);}else{if(!same(current,item))problem('FILE_CHANGED');await unlink(item.path);}},
-    async removeEmptyRoot(){await fence('CLEANUP');if((await readdir(fixedQa.root)).length)problem('ROOT_NOT_EMPTY');await rmdir(fixedQa.root);rootRemoved=true;},
+    async removeFile(item){if(!cleanup||!expected.some(x=>same(x,item)))problem('NOT_OWNED_FILE');await fence('CLEANUP');const current=await proof(item.path);if(item.kind==='DIRECTORY'){if(!same({...current,links:item.links},item)||(await readdir(item.path)).length)problem('DIRECTORY_CHANGED');effect('CLEANUP');await rmdir(item.path);}else{if(!same(current,item))problem('FILE_CHANGED');effect('CLEANUP');await unlink(item.path);}},
+    async removeEmptyRoot(){await fence('CLEANUP');if((await readdir(fixedQa.root)).length)problem('ROOT_NOT_EMPTY');effect('CLEANUP');await rmdir(fixedQa.root);rootRemoved=true;},
     async residue(){
       // root 회수 뒤에는 고정 부모에서 이름 두 개의 독립 읽기만 허용한다.
       let rootAbsent=false;try{await lstat(fixedQa.root);}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')rootAbsent=true;else throw e;}

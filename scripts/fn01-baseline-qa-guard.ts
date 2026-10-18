@@ -2,6 +2,7 @@
 // actual binding 미발급. 환경변수나 호출자의 boolean으로 실행을 열지 않는다.
 import { createHash } from 'node:crypto';
 import { posix } from 'node:path';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 export const fixedQa = Object.freeze({
   source:'36c3939dd0dcbb7851de0ec967054f6e00471b76',
@@ -18,8 +19,13 @@ export const fixedQa = Object.freeze({
   dependencyAggregate:'d8968986422a06f5fe24c630486ee1ee6f13363e1a050a235a2a16b163b800ba',
 });
 export const actualQaAuthority:null = null;
-/** 별도 B 결정·코드 결박 없이는 항상 throw. void는 후보 본문 타입검사를 살릴 뿐 실행 허가는 아니다. */
-export function assertActualQaAuthorized():void {throw Error('FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED');}
+// ambient는 계속 미발급. 실제 B 고정 entry가 등록한 객체만 이 process에서 유효하다.
+const permits=new WeakMap<object,ActualBController>(),workflowScope=new AsyncLocalStorage<object>();
+export function assertActualQaAuthorized(permit?:object):void {
+  const value=permit??workflowScope.getStore(),c=value&&permits.get(value);
+  if(!c)throw Error('FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED');
+  validateActualBController(c,Date.now());
+}
 export const sha256=(value:string|Uint8Array):string=>createHash('sha256').update(value).digest('hex');
 /** 타이머는 대기 상한일 뿐 OS/SQL 취소·종료 증거가 아니다. timeout 뒤 결과는 UNKNOWN. */
 export class QaWaitTimeout extends Error {constructor(){super('FN01_WAIT_TIMEOUT_UNKNOWN');}}
@@ -112,4 +118,88 @@ export function validateBootstrapReceipt(value:unknown,expectation:unknown,now:n
   try{cleanupFileOrder(r.inventory,r.inventory);}catch{return invalid();}
   if(r.inventory.some(f=>!exactKeys(f,['path','kind','uid','mode','dev','ino','links','hash'])||f.dev!==r.root.dev||!Number.isSafeInteger(f.dev)||!Number.isSafeInteger(f.ino)||!Number.isSafeInteger(f.mode)||(f.mode&0o022)!==0||f.path.length>4096||/[\x00-\x1f\x7f]/.test(f.path)||f.path===fixedQa.root+'/bootstrap.json'||f.path===fixedQa.root+'/receipt.json'||f.path.startsWith(fixedQa.root+'/artifacts/')))return invalid();
   return{metadataMatched:true,executionAuthorized:false,receipt:r};
+}
+
+// 신산님 직접 B 결정(2026-10-18 20:21:04 KST). 외부 JSON 등록/일반 executor는 없다.
+export const declaredActualBDecision=Object.freeze({decisionRef:'FN01_ACTUAL_B_20261018T112104Z',approvedAt:1792322464000,contractGit:'cb3400381e267d5460267b3c8d01319bfde78b06',contractHash:'ee88c4ea4aa5507ef26e711542788c1bfc8b6240bdb5debc094d5c7bb5fc9ebd',rawToolHash:'eef204d41339cad66153e3758d66b4e52fb10cc86d4993bdb95d74a270fa76f5',canonicalToolHash:'ca21640df365614690b0d3c507996d2ad1f7262aabdbf868445d9754705b2af2'});
+export const actualBCodePaths=Object.freeze(['scripts/fn01-baseline-qa-guard.ts','scripts/qa-fn01-baseline-isolated.ts','tests/integration/FN01/baseline-isolated.test.ts','tests/unit/FN01/baseline-qa-guard.test.ts']);
+export const actualBPaths=Object.freeze([...actualBCodePaths,'docs/work_packages/FN01_BASELINE_ISOLATED_PG_QA_PROPOSAL.md','docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json','docs/WORK_STATUS.md']);
+export const actualBScopeHash=sha256(JSON.stringify({paths:actualBPaths,source:fixedQa.source,root:fixedQa.root,owner:fixedQa.owner,container:fixedQa.container,network:fixedQa.network,database:fixedQa.database,image:fixedQa.image,attempts:1,windowMs:1200000,cleanupMs:30000}));
+export interface ActualBController {
+  schemaVersion:1;decisionRef:string;contractGit:string;contractHash:string;scopeHash:string;
+  head:string;nonce:string;issuedAt:number;expiresAt:number;rootCreatedAt:number;root:Identity;parents:Identity[];codeHashes:Record<string,string>;
+}
+export interface IssuedRunFacts {controller:ActualBController;controllerBytesHash:string;bootstrap:BootstrapExpectation;bootstrapBytesHash:string;toolchainRaw:string}
+export function validateActualBController(input:unknown,now:number):{executionAuthorized:false;controller:ActualBController} {
+  const bad=():never=>fail('FN01_B_CONTROLLER_INVALID');let c:ActualBController;
+  try{const wire=JSON.stringify(input);if(!wire||Buffer.byteLength(wire)>1024*1024)return bad();c=JSON.parse(wire);}catch{return bad();}
+  const d=declaredActualBDecision;
+  if(!exactKeys(c,['schemaVersion','decisionRef','contractGit','contractHash','scopeHash','head','nonce','issuedAt','expiresAt','rootCreatedAt','root','parents','codeHashes'])||c.schemaVersion!==1||c.decisionRef!==d.decisionRef||c.contractGit!==d.contractGit||c.contractHash!==d.contractHash||c.scopeHash!==actualBScopeHash||!/^[0-9a-f]{40}$/.test(c.head)||!/^[0-9a-f]{32}$/.test(c.nonce)||!Number.isSafeInteger(c.issuedAt)||c.issuedAt<d.approvedAt||c.issuedAt>=d.approvedAt+86400000||c.rootCreatedAt!==c.issuedAt||c.expiresAt!==c.issuedAt+1200000||!Number.isSafeInteger(now)||now<c.issuedAt||now>=c.expiresAt)return bad();
+  if(!exactKeys(c.codeHashes,actualBCodePaths)||Object.values(c.codeHashes).some(v=>!hash(v)))return bad();
+  try{assertParentChain(c.parents);}catch{return bad();}
+  const r=c.root;if(!r||r.path!==fixedQa.root||r.realpath!==fixedQa.root||r.kind!=='DIRECTORY'||r.uid!==1000||r.mode!==0o700||r.dev!==c.parents[0]!.dev||!Number.isSafeInteger(r.ino)||r.ino<1||!Number.isSafeInteger(r.links)||r.links<1)return bad();
+  return{executionAuthorized:false,controller:c};
+}
+export function assertActualBBinding(input:unknown,b:BootstrapExpectation,now:number):ActualBController {
+  const c=validateActualBController(input,now).controller;
+  if(!b||['head','nonce','issuedAt','expiresAt','rootCreatedAt'].some(k=>(c as any)[k] !==(b as any)[k])||JSON.stringify(c.root)!==JSON.stringify(b.root)||JSON.stringify(c.parents)!==JSON.stringify(b.parents)||b.toolchainDecisionRef!==c.decisionRef||b.pathRiskDecisionRef!==c.decisionRef)fail('FN01_B_BINDING_MISMATCH');
+  return c;
+}
+export function canonicalizeActualBTools(rows:unknown):{files:FileProof[];canonicalHash:string;socket:{dev:number;ino:number;links:number}} {
+  const bad=():never=>fail('FN01_B_TOOLS_INVALID');if(!Array.isArray(rows)||rows.length<2||rows.length>20000)return bad();
+  const base='/opt/node-v24.21.0-linux-x64',dirs=[base,base+'/bin',base+'/lib',base+'/lib/node_modules',base+'/lib/node_modules/npm'];
+  const files:FileProof[]=[],seen=new Set<string>();let socket:{dev:number;ino:number;links:number}|undefined;
+  for(const r of rows){
+    if(!Array.isArray(r)||r.length!==10||typeof r[0]!=='string'||seen.has(r[0]))return bad();seen.add(r[0]);
+    if(r[1]==='SOCKET'){
+      if(socket||r[0]!=='/var/run/docker.sock'||r[2]!==0||r[3]!==1001||r[4]!==0o660||r[5]!==97||r[6]!==867||r[7]!==1||r[8]!==null||r[9]!=='/run/docker.sock')return bad();socket={dev:r[5],ino:r[6],links:r[7]};continue;
+    }
+    const p=r[0],inNode=p===fixedQa.node||dirs.includes(p)||p.startsWith(base+'/lib/node_modules/npm/');
+    if((!inNode&&!['/usr/bin/git','/usr/bin/docker'].includes(p))||posix.normalize(p)!==p||r[9]!==p||!['FILE','DIRECTORY'].includes(r[1])||r[2]!== (inNode?1001:0)||r[3]!== (inNode?1001:0)||!Number.isSafeInteger(r[4])||(r[4]&0o022)!==0||r[5]!==2112||!Number.isSafeInteger(r[6])||r[6]<1||!Number.isSafeInteger(r[7])||r[7]<1||(r[1]==='FILE'?(r[7]!==1||!hash(r[8])):r[8]!==null))return bad();
+    files.push({path:p,kind:r[1],uid:r[2],mode:r[4],dev:r[5],ino:r[6],links:r[7],hash:r[8]});
+  }
+  if(!socket)return bad();return{files,canonicalHash:sha256(JSON.stringify(files)),socket};
+}
+export function consumeActualBDecision(c:ActualBController,used:Set<string>,now:number):void {
+  validateActualBController(c,now);if(used.has(c.decisionRef))fail('FN01_B_ALREADY_CONSUMED');used.add(c.decisionRef);
+}
+export function assertActualBStarted(r:any,c:ActualBController,controllerHash:string,bootstrapHash:string,parentPid:number):void {
+  if(!exactKeys(r,['decisionRef','head','nonce','issuedAt','expiresAt','controllerHash','bootstrapHash','parentPid','owner','phase'])||r.decisionRef!==c.decisionRef||r.head!==c.head||r.nonce!==c.nonce||r.issuedAt!==c.issuedAt||r.expiresAt!==c.expiresAt||!hash(controllerHash)||!hash(bootstrapHash)||r.controllerHash!==controllerHash||r.bootstrapHash!==bootstrapHash||!Number.isSafeInteger(parentPid)||parentPid<1||r.parentPid!==parentPid||r.owner!==fixedQa.owner||r.phase!=='CLAIMED')fail('FN01_B_STARTED_MISMATCH');
+}
+export function assertParentsAfterRootRemoval(before:readonly Identity[],after:readonly Identity[]):void {
+  const expected=before.map((r,i)=>({...r,links:r.links-(i===before.length-1?1:0)}));assertSameIdentity(expected,after);
+}
+/** 비동기 준비 이후 실제 새 파일 효과 직전의 동기 gate. 이미 시작된 OS 호출 취소 보장은 아니다. */
+export function assertQaEffectBoundary(admission:QaWorkAdmission,window:QaWindow,now:number,purpose:'WORK'|'CLEANUP',cleanupEnd:number):void {
+  if(purpose==='WORK'){admission.assertWork();window.remaining(now,1);}
+  else if(!Number.isSafeInteger(cleanupEnd)||cleanupEnd<=now)fail('FN01_CLEANUP_EXPIRED');
+}
+const consumed=new Set<string>();
+function checkedFacts(value:unknown):IssuedRunFacts {
+  const f=JSON.parse(JSON.stringify(value)) as IssuedRunFacts;
+  if(!exactKeys(f,['controller','controllerBytesHash','bootstrap','bootstrapBytesHash','toolchainRaw'])||!hash(f.controllerBytesHash)||!hash(f.bootstrapBytesHash)||typeof f.toolchainRaw!=='string'||Buffer.byteLength(f.toolchainRaw)>2*1024*1024)fail('FN01_B_FACTS_INVALID');
+  assertActualBBinding(f.controller,f.bootstrap,Date.now());
+  const d=declaredActualBDecision,t=canonicalizeActualBTools(JSON.parse(f.toolchainRaw));
+  if(sha256(f.toolchainRaw)!==d.rawToolHash||t.files.length!==2388||t.canonicalHash!==d.canonicalToolHash||f.bootstrap.toolchainManifestHash!==t.canonicalHash)fail('FN01_B_TOOL_BINDING_INVALID');
+  return f;
+}
+function registerPermit(c:ActualBController):object {const p=Object.freeze({});permits.set(p,structuredClone(c));return p;}
+export function assertActualBPermitBinding(p:object,c:ActualBController):void {
+  assertActualQaAuthorized(p);if(JSON.stringify(permits.get(p))!==JSON.stringify(c))fail('FN01_B_PERMIT_BINDING_MISMATCH');
+}
+export function assertActualBWorkflowTarget(nonce:string,expiresAt:number):void {
+  assertActualQaAuthorized();const p=workflowScope.getStore(),c=p&&permits.get(p);
+  if(!c||nonce!==c.nonce||expiresAt!==c.expiresAt)fail('FN01_B_CHILD_TARGET_MISMATCH');
+}
+/** 고정 FN01 entry뿐. JSON은 사실이고 B 결정은 위 코드/직접 승인에 고정된다. */
+export async function runApprovedBaselineQa(input:unknown):Promise<unknown> {
+  const f=checkedFacts(input);consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
+  try{const native=await import('./qa-fn01-baseline-isolated.ts');return await native.runNativeBaselineQaCandidate(f,permit);}finally{permits.delete(permit);}
+}
+/** parent의 고정 명령에서만 호출. 파일 검증 후 같은 최초창의 test callback에만 전달한다. */
+export async function runApprovedBaselineWorkflow(input:unknown):Promise<void> {
+  const f=checkedFacts(input),native=await import('./qa-fn01-baseline-isolated.ts');
+  await native.verifyNativeWorkflowBinding(f);
+  consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
+  await workflowScope.run(permit,async()=>{await import('../tests/integration/FN01/baseline-isolated.test.ts');});
 }

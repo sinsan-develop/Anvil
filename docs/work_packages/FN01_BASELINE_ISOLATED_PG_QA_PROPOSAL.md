@@ -335,3 +335,12 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - H 검토: H0의 첫 throw를 우회하지 않도록 필요한 코드 보완과 한정조건 H1 확정을 결정 범위에 포함했다. 미래 SHA를 현재 exact로 가장하지 않는다. 따라서 이 패킷은 지금 바로 실행할 수 있는 literal-H 승인 명령이 아니라 **조건부 절차 결정을 위한 초안**이다.
 - 실패/검증 구분: 순수14/type·읽기 증거를 실제 PG/종료/회수 PASS로 승격하지 않고, 미검증/잔류의 비용을 A에 포함했다. 49 SQL/16조건·보안·Secret·cross-project/old-generation 기준을 낮추지 않는다.
 - 범위 검토: 승인 전 코드/검사/네트워크/자원/권한/DB/서비스 변화0, 이번 작성은 연결3문서만이다. 별도 새 계획/신규 파일·세션·reviewer·자동화0, 기존 승인된 구현 방식/문서 위치를 그대로 쓴다.
+
+## 18. 실제 B 승인 후 한정 구현 기록 — 2026-10-18
+
+- §17 원문은 승인 전 초안의 이력이다. 신산님 20:21:04 KST/11:21:04 UTC의 직접 `승인애`를 PMO가 전달했다. 결정은 권장 A 전체이며 새 준비-only 질문으로 분해하지 않는다. 불변 승인 contract는 Git `cb3400381e267d5460267b3c8d01319bfde78b06`의 proposal SHA `ee88c4ea4aa5507ef26e711542788c1bfc8b6240bdb5debc094d5c7bb5fc9ebd`, manifest SHA `35fe9f2bf65112831b83370f0ff83b1c5a0ff97923b4936cfc94be39d37f5e3b`다. 현재 파일의 후속 이력 hash를 원 승인 hash로 대체하지 않는다.
+- B1은 기존4코드와 연결3문서만 대상으로 수행한다. ambient authority=null/누락·위조 permit 효과전 거절은 유지하고, 코드에 직접 결정 ref·contract·정확 scope를 고정한 domain entry만 private process permit를 발급한다. JSON은 측정 사실이고 서명된 사용자 승인서가 아니다. child는 고정 parent 명령/같은 B·H·nonce·최초창·0600 started parent PID/controller·bootstrap hash·코드 hash를 확인한 뒤에만 같은 process-local 문맥으로 시험을 수행한다. 제품 executionAuthorized=false와 QA 자체 qaRunAuthorized/actualExecuted를 분리한다.
+- raw2389의 JSON SHA와 SOCKET1 제외 canonical2388 FileProof JSON SHA `ca21640df365614690b0d3c507996d2ad1f7262aabdbf868445d9754705b2af2`를 분리했다. 새 도구 관측으로 신뢰 기준을 자동 덮지 않는다. root 회수 후 마지막 부모의 nlink만 정확히 1 감소한 값을 인정하며 다른 inode/소유/권한 변화는 거절한다.
+- 기존14 순수 검사 유지 + G1~G6 부재 RED14통과/6실패(164.9021ms, child230ms) → 구현 후 G4 새창 fixture의 rootCreatedAt 불일치로19/1(157.4105ms) → fixture를 실제 유효 새창으로 고친20/20(147.2272ms, child210ms)이다. 기대 거절 코드·합격 기준 완화0, skip/cancel0. 타입 noEmit exit0/1289ms는 후속 child env 결박 추가 전이며 최종 후보 타입은 검토 후 별도 확인한다. 실제native/PG/SQL/브라우저 검증으로 승격하지 않는다.
+- 기존 독립 담당자 한 번의 읽기 검토를 진행 중이다. 중요한 결함은 Main 한정보완/TDD로 처리하고 재검토 반복0이다. H1/실행 nonce/최초시각은 아직 미발급이며 첫 mutable QA 자원 생성0이다. 최종 H1은 자기 commit 본문에 자기 SHA를 삽입하지 않고 검수 후 실제 Git 값으로 고정해 controller·후속 결과 기록에 보존한다. 조건 불충족 또는 플랫폼 거절 시 우회0이다.
+- 후속 최종 검수: 독립 검토1회는 C0/I2/M1이었다. I1(비동기 파일 준비 뒤 신규 효과의 기한/중단 재검사 누락)과 I2(성공 TAP 뒤 비정상 exit 누락)를 G5/G6의18통과/2RED(158.7434ms)로 추가 재현하고 한 번의 Main 보완으로20/20(164.7863ms, child235ms)·noEmit0/1130ms를 확인했다. descriptor를 stat 이전부터 추적하고 finally close하는 M1 관련 종료 공백도 I1의 같은 파일 경계에서 닫았다. 별도 독립 C0/I0 재판정·재검토는 없으며 Main이 보완 diff/직접 순수 검사를 대조한 것이다. 실제 조건/회수·브라우저·운영 검증은 이 결과로 승격하지 않는다.
