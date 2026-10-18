@@ -8,6 +8,7 @@ import { WorkspaceAssignments } from './WorkspaceAssignments.tsx';
 import type { AssignmentBuffer } from './assignment-api.ts';
 import type { DocumentSession } from '../design-trace/editor-api.ts';
 import { ProjectConstitutionPanel } from '../knowledge/ProjectConstitutionPanel.tsx';
+import { WorkspaceConversationSources } from './WorkspaceConversationSources.tsx';
 
 export function WorkspacePage({ client, projectId, session, assignmentBuffer, onAssignmentChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
@@ -52,6 +53,7 @@ export function WorkspacePage({ client, projectId, session, assignmentBuffer, on
           </details> : <p>기존 소스 사용자 선언 있음 · 원문은 소유자에게만 표시됩니다.</p> : <p className="meta">빈 프로젝트로 생성됨 · 기존 소스 선언 없음</p>}
           <WorkspaceDocuments key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} projectId={projectId} selectedStage={selectedStage} onAuthenticationLost={onAuthenticationLost} />
           <ProjectConstitutionPanel key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} history={false} onAuthenticationLost={onAuthenticationLost}/>
+          <WorkspaceConversationSources key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} onAuthenticationLost={onAuthenticationLost}/>
           <p className="meta">상세 작성·검토는 자료 화면에서 진행합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
       </div>
     </> : null}
