@@ -8,6 +8,7 @@ import { ContextSourcePicker } from './ContextSourcePicker.tsx';
 import { ContextDeliveryLimits, contextDeliveryLimitsValid } from './ContextDeliveryLimits.tsx';
 import { newContextPreparation, prepareContextWrite, sendContextPreparation, readContextPreparation, listContextPreparations, type ContextPreparationBuffer } from './context-api.ts';
 import { contextObservation } from './context-observation.ts';
+import { reuseContextPreparationInput } from './context-reuse.ts';
 import type { ContextSourceSelection } from '../../../../server/modules/context/context-input.ts';
 
 const labels = { PURPOSE_REASON: '목적과 이유', RULES_SCOPE: '헌법과 범위', LATEST_INSTRUCTIONS: '최신 관련 지시', DECISIONS_REASON: '결정과 이유', CURRENT_POSITION: '현재 위치', ACTUAL_GAPS: '실제 공백', NEXT_ACTION: '다음 행동' };
@@ -50,6 +51,12 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
   observe({ kind: 'OPENED', sequence: ticket, value });
  }
  async function list() { const ticket = begin(); const value = await listContextPreparations(client, confirmed.projectId, confirmed.ref); if (current(ticket)) observe({ kind: 'LISTED', sequence: ticket, value }); }
+ async function reuse(ref: PlanRef) {
+  if (!owner || !bound || !sameTarget || buffer?.pending || buffer?.uncertain || buffer?.dirty && !confirm('미저장 맥락 준비 입력을 버리고 이 후보의 선택·한도로 새 입력을 만들까요?')) return;
+  const previous=buffer,ticket=begin();
+  const next=await reuseContextPreparationInput(client,confirmed,session,ref,()=>current(ticket));if(!next||!current(ticket))return;
+  onChange(value=>value===previous&&!value?.pending&&!value?.uncertain?next:value);
+ }
  const locked = busy || !owner || !bound || !sameTarget || !!buffer?.pending || !!buffer?.resultRef;
  function attach(selection: ContextSourceSelection) { if (locked) return; update(current => { const input = structuredClone(current.input), slot = input.slots.find(item => item.code === selected)!; if (!slot.sources.some(item => ordered(item) === ordered(selection))) slot.sources.push(selection); return { ...current, input, dirty: true, result: null }; }); }
  return <section aria-label="임무 맥락 준비"><h6>임무 맥락 준비</h6><p>Agent 전달·실행 허가 아님 · 예산·선정의 의미·최신 관련 지시 전체성은 미확인입니다.</p>
@@ -68,7 +75,9 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
    {buffer.pending ? <p>미확인 명령 {buffer.pending.commandId} · 원입력 보존 · 자동 재발행 없음</p> : null}{buffer.failure ? <p role="alert">{buffer.failure.code} · 입력과 명령을 보존했습니다.</p> : null}
    {buffer.pending && buffer.failure && !buffer.uncertain ? <button disabled={busy} onClick={() => { if (confirm('거절된 원 명령을 확인했습니다. 보존한 입력을 수정할까요?')) update(current => ({ ...current, pending: null, failure: null })); }}>거절 확인 후 입력 수정</button> : null}
   </> : <p>확정 임무의 준비 입력은 아직 없습니다.</p>}
-  {opened && bound && sameTarget ? <section aria-label="저장 맥락 metadata"><p>이번 조회 원문 대조: {opened.currentCheck.state} · {opened.observedAt} · 실행 준비 판정 아님</p><p>필수 누락: {opened.manifest.missingRequired.join(', ') || '당시 metadata상 없음 · 의미/예산 미검증'}</p><ul>{opened.manifest.items.map(item => <li key={item.itemId}>{labels[item.category as keyof typeof labels]} · 당시 {item.includedState} · {item.reason}</li>)}</ul><p>계획 부분 {opened.manifest.deliveryPlan.parts.length}개 · 실제 전달0</p><ul>{opened.manifest.unverified.map(issue => <li key={issue}>{issue}</li>)}</ul></section> : null}
+  {opened && bound && sameTarget ? <section aria-label="저장 맥락 metadata"><p>이번 조회 원문 대조: {opened.currentCheck.state} · {opened.observedAt} · 실행 준비 판정 아님</p><p>필수 누락: {opened.manifest.missingRequired.join(', ') || '당시 metadata상 없음 · 의미/예산 미검증'}</p><ul>{opened.manifest.items.map(item => <li key={item.itemId}>{labels[item.category as keyof typeof labels]} · 당시 {item.includedState} · {item.reason}</li>)}</ul><p>계획 부분 {opened.manifest.deliveryPlan.parts.length}개 · 실제 전달0</p><ul>{opened.manifest.unverified.map(issue => <li key={issue}>{issue}</li>)}</ul>
+   <button disabled={busy||!owner||!!buffer?.pending||!!buffer?.uncertain} onClick={()=>run(()=>reuse(opened.ref))}>이 후보의 선택·한도로 새 입력</button><p className="meta">원 저장본은 유지하며 새 준비 이유를 입력해 별도로 저장합니다. 현재 원문 효력·예산·실행 준비가 확인되는 것은 아닙니다.</p>
+  </section> : null}
   {page && bound && sameTarget ? <><ul>{page.items.map(item => <li key={item.ref.id}>{item.ref.id} · {item.currentCheck.state} · 누락 {item.missingRequired.length}개<button disabled={busy} onClick={() => run(() => read(item.ref))}>이 후보 정확 재조회</button></li>)}</ul>{page.hasMore ? <p>이전 후보가 더 있습니다 · 최근50건만 조회, 전체 이력 조회 아님</p> : null}</> : null}
  </section>;
 }
