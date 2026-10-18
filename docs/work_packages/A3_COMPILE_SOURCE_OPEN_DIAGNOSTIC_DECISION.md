@@ -43,3 +43,23 @@ Main 어울, 2026-10-18. **실제 측정은 미승인·미실행**. 기존 실�
 
 - PMO의 새exact38157ad4·21:06:55Z~21:36:55Z 결정으로21:09:21.2444013Z csc73148을 실제1회 실행,126.7833ms/exit1·CS1504 error1·stdout153bytes/완전EOF/상한미도달·stderr0이었다. 역할 SOURCE_BASENAME_ELSEWHERE/이유UNKNOWN은다른유효경로문자열+같은basename 분류이지실제다른파일·직접원인확정이아니다. output receipt:null/무load·정확QA정리·별도21:10:34Z보호11/Node·relay/단일3830/Git·source/helper불변을확인했다. 새승인도소진·잔여창재시도0이다.
 - 정확 원JSON/조건/한계/표현 정정은 docs/04_test_reports/AV3/FN08/A3_SOURCE_OPEN_BYTE_DIAGNOSTIC_01_RESULT.md다. 이 관측으로 ACL/복사/환경 수리나 source 인자 변경을 승인하지 않는다. 필요시 절대 source만 바꾸는 별도 단일 변수 계약을 Main이 제안하며 새 결정 전 실행하지 않는다.
+
+## 2026-10-18 후속 절대 source 후보 — 실제 실행 미승인·미실행
+
+Main이 UI04의 허용 소스 범위 원본 연결을 대조한 결과, A3 §5의 기존 CONNECTOR_REPORTED/OS UNVERIFIED snapshot을 신뢰 관측·확정 baseline으로 대체할 수 없다. 없는 ref를 합성하거나 빈 scope 확정 기준을 완화하지 않는다. 기존 native 실패의 선행을 좁히기 위해 Main이 선택한 후속이다. PMO 02:48:15Z 회신은 다음 **순수 후보 준비만** 기존 승인 계획 범위로 확인했으며 실제 compiler 시작 권한을 만들지 않았다.
+
+- `scripts/source-read-absolute-compile.ts` SHA256 `081977C0E2B0C5744F8CE383216CAC24441EC41FA12EC7A9C7739E9BCB4A424D`: 파일/OS/프로세스 접근 없는 builder. 전달된 path/hash는 호출자 주장일 뿐 현재 파일 신원 증명이 아니다. 깊은 freeze와 commandHash도 승인·실행 token이 아니다.
+- 직접 시험 `tests/unit/FN08/source-read-absolute-compile.test.ts` SHA256 `C338AD49E654F648FCDDA6073E441EF075F1BF215800DAB000ECFC45BE87B4D5`: 부재 RED2→초기3 PASS 후 독립 I1(reflection 전 Proxy trap 실행)을 정상/revoked Proxy 음성 RED1(Missing expected exception)로 재현했다. `types.isProxy`를 모든 reflection 앞에서 거절하도록 최소 보완 후 정확 argv/단일 변경·고정 hash/별칭·범위확대/getter·Proxy trap0 거절, 기존 진단기 합성 byte 소비까지 **4 PASS/943.5871ms**, typecheck/diff exit0. 독립 scoped 재검토 원 I1 해소·새 C0/I0이며 검토자가 시험을 재실행한 것은 아니다. 합성 PowerShell 함수 호출만 있었고 compiler/실OS catalog/native0이다.
+- 생성된 두 명령은 **동일 새 QA 경로/환경을 사용한 후보 대비**다. `previousArgs`는 과거 실행의 원 argv 영수증이 아니다. 10개 인자 중 index9만 상대 `apps/connector/native/SourceReadObserver.cs`에서 같은 검증 source의 절대 인자로 바뀐다. 고정 compiler/BCL·library 옵션·cwd·child TMP/TEMP·15초/합16KiB·1회/재시도0은 동일하다. 새 QA output/temp 경로가 역사적 실행 경로와 다르다는 점을 숨기지 않는다.
+- 반환 `candidateOnly:true`, `executionAuthorized/processStarted/osVerified/baselineConfirmed/callerFactsVerified:false`. 실제 실행 함수나 승인 수집/파일 생성은 없다. 잘못된 source/compiler/BCL hash·별칭/UNC/장치/상위경로·QA 겹침·추가 인자/기한 변경 입력을 고정 오류로 거절한다. 이 구문 검사를 실제 realpath/link/owner/잠김 검증으로 승격하지 않는다.
+
+### 별도 actual 결정이 필요한 정확 범위
+
+1. 검수된 새 local/private exact clean fullSHA·builder/진단기 hash·기존 C# hash를 결박하고, 새 policy/run ID·유한 실행창을 새로 정한다. 앞선 어떤 창/실행권한도 재사용하지 않는다. 실제 승인 출처는 외부 지시와 대조하며 caller의 boolean/env/commandHash로 승인하지 않는다.
+2. 후보 QA 이름은 `D:\tmp\anvil-v3-stage-b\a3-absolute-source-compile-01/{bin,temp}`, 산출 `bin/SourceReadObserver.dll` 한 개다. 아직 생성하지 않았다. 실제 승인 후 생성 직전 commentary/WORK_STATUS에 소유·수명·정리를 등록하고 root 부재·부모/모든 경로 strict nonlink/owner, source의 실제 경로·bytes/hash와 fixed compiler/BCL 신원/version/hash·보호11/runtime을 재검증한다. source/compiler 복사나 ACL/환경 수리는 하지 않는다.
+3. 기존 source `3D10E396…3FFFBC`·compiler/BCL hash와 version·TrustedInstaller 고정3leaf 예외/그 외 reparse 예외0은 위 원계약과 동일하다. `/nologo /noconfig /nostdlib+ /target:library /debug- /optimize+ /reference:<고정 mscorlib> /reference:<고정 System> /out:<새 DLL> <동일 검증 source 절대 인자>`만 사용한다. UseShellExecute=false/CreateNoWindow=true, 같은 cwd, child TMP/TEMP 외 환경 추가·`/utf8output`·참조/옵션/timeout 변경0이다.
+4. 실제 허용1회는 시작 전 배타 실행 영수증으로 소비를 보존해야 한다. 이 순수 builder만으로 1회 소비·현재성·OS/process 소유를 집행했다고 하지 않는다. 기존 BaseStream 합16KiB·EOF/상한·owned compiler PID/exe/start/직접child·기존 고정 진단기로 비밀 없는 code/role/reason·bytes/hash만 남긴다. 기존 메모리 표준 OS catalog 범위는 실제 새 결정에 다시 명시해야 하며 추가 raw/capture 파일·원문/실제 경로 반사0이다.
+5. 성공/실패 모두 exact owned compiler/child·QA process0→root/owner/nonlink/정확 파일목록/hash→이번 DLL·임시파일/빈폴더만 정리→별도 root 부재·보호/runtime 불변 확인이다. 불명 신원·미종료·예상밖 산출은 광역 kill/delete 없이 보존 보고한다. 기존 실패를 소급 PASS로 바꾸지 않는다.
+6. DLL load/실행/reflection/Add-Type/PInvoke·실 source 관측/verifier·SourceScope 신뢰승격·baseline 확정·Agent/DB/Secret/계정/권한/인증서·서비스·Oracle/main 변경은 포함하지 않는다. compile 성공도 소스 관측·원인 전체 확정이나 제품 완료가 아니다. 실패·UNKNOWN·시간/출력 상한이면 다음 시도를 자동 시작하지 않는다.
+
+현재 요청은 위 exact 후보의 한정 검토와 **게시 commit 확정 뒤 새 library compiler 단1회에 필요한 별도 결정**이다. 실제 실행 명령과 preflight/배타 소비·정리의 실행 안전 대조 전 시작하지 않는다. Main은 이 경계와 별개인 승인 기능 구현을 계속한다.
