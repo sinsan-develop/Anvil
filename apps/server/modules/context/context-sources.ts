@@ -89,7 +89,7 @@ export class ProjectContextSources {
    }
   }
   const planned = planContextText(originals, input.limits);
-  return { assignmentRef: input.assignmentRef, baselineRefs: structuredClone(assignment.snapshot.definition.baselineRefs), constitutionRef: constitution?.ref ?? null,
+  return { preparationInput: input, assignmentRef: input.assignmentRef, baselineRefs: structuredClone(assignment.snapshot.definition.baselineRefs), constitutionRef: constitution?.ref ?? null,
    budgetRef: input.budgetRef, bindings, ...planned,
    unverified: ['CONTEXT_SELECTION_REVIEW_REQUIRED', 'INSTRUCTION_EFFECTIVENESS_UNVERIFIED', 'CURRENT_STATE_MEANING_UNVERIFIED', 'BUDGET_UNVERIFIED', 'DELIVERY_NOT_CONNECTED', 'UNDERSTANDING_NOT_REVIEWED', 'EXECUTION_NOT_CONNECTED'] };
  }

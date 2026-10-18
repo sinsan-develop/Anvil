@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { readContextPreparationInput, contextSlotCodes } from '../../../apps/server/modules/context/context-input.ts';
 import { AuthFailure } from '../../../apps/server/modules/access/repository.ts';
+import { buildContextManifest } from '../../../apps/server/modules/context/context-manifest.ts';
 const file = new URL('../../../apps/server/modules/context/context-sources.ts', import.meta.url);
 const module = existsSync(file) ? await import(file.href) : {};
 const pid = '10000000-0000-4000-8000-000000000001', uid = '20000000-0000-4000-8000-000000000002';
@@ -37,6 +38,7 @@ test('확정 임무·현재 basis와 허가 원문 reader를 소비하고 빈 �
  assert.equal(result.items[0].includedState, 'INCLUDED'); assert.equal(result.missingRequired.length, 6);
  assert.equal(result.ready, false); assert.equal(result.executionAuthorized, false); assert.equal(result.dispatchPerformed, false); assert.equal(result.budgetVerified, false);
  assert.ok(result.unverified.includes('INSTRUCTION_EFFECTIVENESS_UNVERIFIED')); assert.ok(result.unverified.includes('CURRENT_STATE_MEANING_UNVERIFIED'));
+ const saved = buildContextManifest(uid, pid, result); assert.deepEqual(saved.manifest.preparationInput, f.input); assert.equal(JSON.stringify(saved.manifest).includes(f.knowledge.body), false); assert.equal(saved.manifest.missingRequired.length, 6);
 });
 test('없는/다른hash·다른 의미 종류·현재 basis 거절과 예산 불일치를 통과시키지 않는다', async () => {
  for (const mutate of [(f: any) => f.setMissing(), (f: any) => f.setHash('f'.repeat(64)), (f: any) => f.setKind('CONSTITUTION'), (f: any) => { f.ports.drafts.current = async () => { throw new AuthFailure('VERSION_CONFLICT', 409); }; }, (f: any) => { f.input.budgetRef = ref; }]) { const f = fixture(); mutate(f); await assert.rejects(f.resolve()); }
