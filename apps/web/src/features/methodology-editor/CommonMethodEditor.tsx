@@ -7,6 +7,7 @@ import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 import { NodeDefinitionFields } from './NodeDefinitionFields.tsx';
 import { GraphRelationsEditor } from './GraphRelationsEditor.tsx';
 import { NodeDocumentFields } from './NodeDocumentFields.tsx';
+import { NodeDeletionPanel } from './NodeDeletionPanel.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 
 export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway }: {
@@ -28,6 +29,11 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   function change(field: 'name' | 'purpose' | 'reason', value: string) { onChange(previous => ({ ...previous, [field]: value, dirty: true, validation: null })); setSavedVersion(null); }
   function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? { ...item, ...patch } : item) } })); setSavedVersion(null); }
   function changeGraph(graph: MethodologyGraph) { onChange(previous => ({ ...previous, graph, dirty: true, validation: null })); setSavedVersion(null); }
+  function removeNode(graph: MethodologyGraph, nodeId: string) {
+    if (locked) return;
+    onChange(previous => previous.graph !== graph || previous.nodeId !== nodeId || previous.pending || previous.review?.pending ? previous : ({ ...previous, dirty: true, validation: null, nodeId: '', graph: { ...graph, nodes: graph.nodes.filter(item => item.nodeId !== nodeId), edges: graph.edges.filter(edge => edge.fromNodeId !== nodeId && edge.toNodeId !== nodeId), entryNodeId: graph.entryNodeId === nodeId ? '' : graph.entryNodeId, terminalNodeIds: graph.terminalNodeIds.filter(id => id !== nodeId) } }));
+    setSavedVersion(null);
+  }
   function moveNode(id: string, dx: number, dy: number) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === id ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) } })); setSavedVersion(null); }
   async function submit(command: MethodCommand, name: string, purpose: string) {
     if (pending || command.clientId !== session.clientId) return;
@@ -85,7 +91,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
           <NodeDefinitionFields node={node} nodes={buffer.graph.nodes} onChange={patchNode} />
           {formError ? <p role="alert">{formError.message} 기존 문서 참조는 유지했습니다. 새 양식 선택만 제한됩니다.</p> : null}
           <NodeDocumentFields node={node} nodes={buffer.graph.nodes} forms={forms} onChange={patchNode} />
-          <button onClick={() => { if (confirm('이 초안의 단계와 직접 연결을 뺄까요? 다른 단계의 문서 참조는 자동 변경하지 않고 저장 검사에서 확인합니다.')) changeGraph({ ...buffer.graph, nodes: buffer.graph.nodes.filter(item => item.nodeId !== node.nodeId), edges: buffer.graph.edges.filter(edge => edge.fromNodeId !== node.nodeId && edge.toNodeId !== node.nodeId), entryNodeId: buffer.graph.entryNodeId === node.nodeId ? '' : buffer.graph.entryNodeId, terminalNodeIds: buffer.graph.terminalNodeIds.filter(id => id !== node.nodeId) }); }}>이 초안의 단계 제거</button>
+          <NodeDeletionPanel graph={buffer.graph} nodeId={node.nodeId} locked={locked} onRemove={removeNode} />
         </div> : <p>단계를 추가해 절차를 작성하세요. 빈 초안도 저장할 수 있지만 확정할 수 없습니다.</p>}
         <GraphRelationsEditor graph={buffer.graph} onChange={changeGraph} />
         <label htmlFor={fieldId + '-reason'}>개정 이유</label><textarea id={fieldId + '-reason'} value={buffer.reason} onChange={event => change('reason', event.target.value)} maxLength={20000} />
