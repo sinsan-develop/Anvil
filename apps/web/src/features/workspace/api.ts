@@ -10,7 +10,7 @@ export interface WorkspaceProject {
   readinessIssues: { code: string }[]; viewerPermissions: ['READ_PROJECT']; participation: 'OWNER' | 'VIEWER' | 'HANDOFF_ELIGIBLE';
   controlState: { actorId: string | null; clientId: string | null; generation: number | null; status: 'HELD' | 'OTHER_CLIENT' | 'UNASSIGNED' };
 }
-export interface WorkspaceStageSelection { applicationId: string; nodeId: string; nodeName: string }
+export interface WorkspaceStageSelection { applicationId: string; nodeId: string; nodeName: string; requiredCapabilities?: string[] }
 const uuid = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 const positive = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 const text = (value: unknown): value is string => typeof value === 'string' && value.isWellFormed() && value.length <= 2 * 1024 * 1024;

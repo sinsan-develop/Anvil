@@ -2,12 +2,24 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
+import { readAssignmentDraftInput } from '../../../apps/server/modules/assignments/assignment-input.ts';
 const module = await import('../../../apps/web/src/features/workspace/assignment-api.ts').catch((error: NodeJS.ErrnoException) => { if (error.code === 'ERR_MODULE_NOT_FOUND') return {}; throw error; });
 const fn = (name: string) => { assert.equal(typeof (module as any)[name], 'function'); return (module as any)[name]; };
 const pid = '11111111-1111-4111-8111-111111111111', cid = '22222222-2222-4222-8222-222222222222', session = { user: { id: pid }, clientId: cid, csrfToken: 'C'.repeat(43) };
 const ref = { id: pid, version: 1, contentHash: 'a'.repeat(64) }, application = { ...ref, id: cid }, design = { ...ref, id: '33333333-3333-4333-8333-333333333333' };
 const plan: any = { ref, designRef: design, tasks: [{ taskCode: 'FN01', purpose: '내 시스템에서 개발 통제', title: '임무 구현', inputs: ['요구'], outputs: ['코드'], acceptanceCriteria: ['동작'], included: ['구현'], excluded: ['운영'], testCases: [{ expected: '정상 확인' }], ownerRole: '책임자' }] };
 const buffer = () => { const value = fn('newAssignmentDraft')(pid, session, 1, plan, 'FN01', application, 'N1'); value.input.reason = '사용자 초안 저장'; return value; };
+test('명시적인 새 초안 준비에서 단계 필요 능력만 복사하며 실능력 검증으로 승격하지 않는다',()=>{
+ const required=['파일 수정','시험 실행'],b=fn('newAssignmentDraft')(pid,session,1,plan,'FN01',application,'N1',required);
+ assert.deepEqual(b.input.definition.requiredCapabilities,['파일 수정','시험 실행']);required.push('추가 정의');assert.deepEqual(b.input.definition.requiredCapabilities,['파일 수정','시험 실행']);
+ b.input.definition.requiredCapabilities[0]='사용자 수정';assert.deepEqual(required,['파일 수정','시험 실행','추가 정의']);
+ b.input.reason='필요 능력 명시 저장';const command=fn('prepareAssignmentWrite')(b,session);assert.deepEqual(command.payload.definition.requiredCapabilities,['사용자 수정','시험 실행']);assert.equal(command.operation,'prepareAssignment');assert.equal(command.payload.definition.environmentRef,null);assert.deepEqual(command.payload.definition.allowedScopes,[]);
+ const parsed=readAssignmentDraftInput(command.payload);assert.deepEqual(parsed.input.definition.requiredCapabilities,['사용자 수정','시험 실행']);assert.ok(parsed.readinessIssues.some(issue=>issue.code==='CAPABILITY_UNVERIFIED'));assert.equal(parsed.ready,false);assert.equal(parsed.executionAuthorized,false);assert.equal(parsed.dispatchPerformed,false);
+});
+test('단계 필요 능력 입력 한도 오류는 새 초안 준비에서 거절하고 기존 무정의 방식은 보존한다',()=>{
+ const make=fn('newAssignmentDraft');assert.deepEqual(buffer().input.definition.requiredCapabilities,[]);
+ for(const required of ['not-array',[null],Array(201).fill('능력'),['x'.repeat(20001)]])assert.throws(()=>make(pid,session,1,plan,'FN01',application,'N1',required),error=>error instanceof ApiError&&error.code==='ASSIGNMENT_INPUT_INVALID');
+});
 function reply(command: any) {
   const snapshot = { definition: command.payload.definition, reason: command.payload.reason, previousRef: command.payload.baseRef, basis: { planRef: ref, applicationRef: application, designRef: design, taskCode: 'FN01', nodeId: 'N1', taskCardHash: 'b'.repeat(64) }, readinessIssues: [{ code: 'EXECUTION_NOT_CONNECTED', location: 'taskRef' }], status: 'DRAFT', ready: false, executionAuthorized: false, dispatchPerformed: false };
   const target = { id: '44444444-4444-4444-8444-444444444444', version: 1, contentHash: contentHash(canonicalJson(snapshot)) };

@@ -22,7 +22,7 @@ export function WorkspaceMethodology({ client, projectId, expectedRef, onAuthent
   useEffect(() => {
     if (!revision) return;
     let current = true;
-    readWorkspaceMethodology(client, projectId, expectedRef).then(result => { if (current) { setValue(result); setSelectedId(result.snapshot?.graph.entryNodeId ?? ''); const first = result.snapshot?.graph.nodes.find(node => node.nodeId === result.snapshot?.graph.entryNodeId); onStageChange(first && result.applicationRef ? { applicationId: result.applicationRef.id, nodeId: first.nodeId, nodeName: first.name } : null); } }).catch((cause: unknown) => {
+    readWorkspaceMethodology(client, projectId, expectedRef).then(result => { if (current) { setValue(result); setSelectedId(result.snapshot?.graph.entryNodeId ?? ''); const first = result.snapshot?.graph.nodes.find(node => node.nodeId === result.snapshot?.graph.entryNodeId); onStageChange(first && result.applicationRef ? { applicationId: result.applicationRef.id, nodeId: first.nodeId, nodeName: first.name, requiredCapabilities: first.requirements?.capabilities.slice() ?? [] } : null); } }).catch((cause: unknown) => {
       if (!current) return; const failure = cause instanceof ApiError ? cause : new ApiError('METHODOLOGY_APPLICATION_INTEGRITY_FAILED'); setError(failure); onStageChange(null);
       if (failure.status === 401) onAuthenticationLost();
     }).finally(() => { if (current) setPending(false); });
@@ -37,7 +37,7 @@ export function WorkspaceMethodology({ client, projectId, expectedRef, onAuthent
     {value && !pending && !error ? snapshot && graph ? <>
       <h4>{snapshot.name}</h4><p>{snapshot.purpose}</p><p className="meta">정의 조회 · 실제 실행 상태 미연결 · 적용 세대 {value.applicationRef!.version} · 관측 {value.observedAt}</p>
       <p className="meta">원 정의 {snapshot.sourceRef.id} v{snapshot.sourceRef.version}. 적용 참조와 별개입니다. 목록 순서는 실행 순서가 아니며 연결 조건을 확인하세요.</p>
-      <div className="methodology-flow">{graph.nodes.map(node => <button key={node.nodeId} aria-label={`절차 정의: ${node.name}`} aria-pressed={selectedId === node.nodeId} onClick={() => { setSelectedId(node.nodeId); onStageChange({ applicationId: value.applicationRef!.id, nodeId: node.nodeId, nodeName: node.name }); }}>{node.name}{node.nodeId === graph.entryNodeId ? ' · 시작 정의' : graph.terminalNodeIds.includes(node.nodeId) ? ' · 종료 정의' : ''}</button>)}</div>
+      <div className="methodology-flow">{graph.nodes.map(node => <button key={node.nodeId} aria-label={`절차 정의: ${node.name}`} aria-pressed={selectedId === node.nodeId} onClick={() => { setSelectedId(node.nodeId); onStageChange({ applicationId: value.applicationRef!.id, nodeId: node.nodeId, nodeName: node.name, requiredCapabilities: node.requirements?.capabilities.slice() ?? [] }); }}>{node.name}{node.nodeId === graph.entryNodeId ? ' · 시작 정의' : graph.terminalNodeIds.includes(node.nodeId) ? ' · 종료 정의' : ''}</button>)}</div>
       {selected ? <section aria-label="선택한 절차 정의"><h4>{selected.name}</h4><p>{selected.purpose}</p>
         <p>{kindLabel[selected.kind]} · {roleLabel[selected.role]} · {selected.mode === 'AUTO' ? '정의상 자동 방식' : '정의상 건별 방식'}</p><p className="meta">책임 세션·도구 배정/시작 권한이 아니며 선택해도 실행하지 않습니다.</p>
         <StageRequirements requirements={selected.requirements} limitPolicyRef={selected.limitPolicyRef} />

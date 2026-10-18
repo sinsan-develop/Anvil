@@ -27,7 +27,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     if (!plan || !stage || !project.currentMethodologyRef || !owner || !bound || !safeToReplace()) return;
     const generation = await documentControl(client, project.id, session); if (!alive.current) return;
     if (generation !== project.controlState.generation) throw new ApiError('CONTROL_GENERATION_CONFLICT', 409);
-    const value = newAssignmentDraft(project.id, session, generation, plan, taskCode, project.currentMethodologyRef, stage.nodeId);
+    const value = newAssignmentDraft(project.id, session, generation, plan, taskCode, project.currentMethodologyRef, stage.nodeId, stage.requiredCapabilities);
     const oldBinding = buffer?.bindingId; onChange(current => current?.bindingId === oldBinding ? value : current); setOpened(null); setReread(false);
   }
   async function save() {
