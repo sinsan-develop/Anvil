@@ -72,6 +72,19 @@ test('임무 고정 원문 조회 거절은 앞선 저장 원문을 현재 조�
   await expect(page.getByRole('region', { name: '저장한 임무 초안', exact: true })).toHaveCount(0); expect(facts.commands).toHaveLength(1); expect(facts.unexpected).toEqual([]); expect(facts.errors).toEqual([]);
 });
 
+test('저장한 임무의 고정 조건 전체를 읽고 미연결 참조를 실행 허가로 표시하지 않는다', async ({ page }) => {
+  const facts = await setup(page); await prepare(page);
+  await page.getByRole('textbox', { name: '임무 필요 능력 · 한 줄 한 항목', exact: true }).fill('파일 수정\n핵심 검증');
+  await page.getByRole('button', { name: '임무 초안 저장', exact: true }).click(); await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');
+  const detail = page.getByRole('region', { name: '임무 고정 조건', exact: true }); await expect(detail).toBeVisible();
+  for (const value of ['단계책임자', '합의한 요구', '처리·저장·조회', '핵심 동작', '저장됨', '개발', '운영 배포', '파일 수정', '핵심 검증', '책임자가 검수하고 통합', '작업 지시를 준비']) await expect(detail.getByText(value, { exact: true })).toBeVisible();
+  await expect(detail.getByText(`${planId} · v1 · ${planRef.contentHash}`, { exact: true }).first()).toBeVisible();
+  await expect(detail.getByText('FN01 · N1', { exact: true })).toBeVisible(); await expect(detail.getByText('미연결 · 미검증', { exact: true })).toHaveCount(3);
+  await expect(detail.getByText('등록 범위 없음 · 실행 허가 아님', { exact: true })).toBeVisible(); await expect(detail.locator('textarea,input,button')).toHaveCount(0);
+  await page.getByRole('button', { name: '저장 버전 재조회', exact: true }).click(); await expect(page.getByText('저장 버전 재조회 확인', { exact: true })).toBeVisible(); await expect(detail.getByText('핵심 검증', { exact: true })).toBeVisible();
+  expect(facts.commands).toHaveLength(1); expect(facts.unexpected).toEqual([]); expect(facts.errors).toEqual([]);
+});
+
 for (const kind of ['계획', '임무'] as const) for (const next of [false, true]) test(`${kind} 목록 ${next ? '다음 쪽' : '재조회'} 대기·거절 시 앞선 요약을 치우고 원입력·미확인 명령을 보존한다`, async ({ page }) => {
   const facts = await setup(page, kind === '임무'); await prepare(page);
   if (kind === '임무') { await page.getByRole('button', { name: '임무 초안 저장', exact: true }).click(); await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST'); }

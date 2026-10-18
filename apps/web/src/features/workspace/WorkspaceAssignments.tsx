@@ -77,6 +77,23 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     <button disabled={busy} onClick={() => void perform(async () => { setOpened(null); setDrafts(null); const page = await listAssignmentDrafts(client, project.id, null); if (alive.current) setDrafts(page); })}>임무 초안 목록 조회</button>
     {drafts ? <ul>{drafts.items.map(item => <li key={item.ref.id}>{item.goal || '목표 미입력'} · v{item.ref.version}<button disabled={busy} onClick={() => void perform(() => open(item.ref))}>임무 버전 열기: {item.ref.version}</button></li>)}</ul> : null}
     {drafts?.hasMore ? <button disabled={busy} onClick={() => void perform(async () => { const cursor = drafts.nextCursor; setOpened(null); setDrafts(null); const page = await listAssignmentDrafts(client, project.id, cursor); if (alive.current) setDrafts(page); })}>임무 다음 목록</button> : null}
-    {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><pre>{shown.snapshot.definition.goal}</pre><p>{shown.snapshot.definition.purpose}</p><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
+    {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><AssignmentConditions snapshot={shown.snapshot} /><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
   </section>;
+}
+
+function AssignmentConditions({ snapshot }: { snapshot: AssignmentDraftView['snapshot'] }) {
+  const value = snapshot.definition;
+  return <section aria-label="임무 고정 조건"><h5>고정 임무 전체 조건</h5><dl>
+    {([['goal', '목표'], ['purpose', '목적'], ['ownerRole', '책임 역할'], ['integrationResponsibility', '통합 책임']] as const).map(([field, label]) => <div key={field}><dt>{label}</dt><dd><pre>{value[field] || '미입력'}</pre></dd></div>)}
+    <div><dt>업무 · 방법론 단계</dt><dd>{value.taskRef.taskCode} · {value.taskRef.nodeId}</dd></div>
+    {([['inputs', '입력'], ['outputs', '산출물'], ['acceptanceCriteria', '완료 조건'], ['verificationRequirements', '검증 조건'], ['included', '포함 범위'], ['excluded', '제외 범위'], ['requiredCapabilities', '필요 능력']] as const).map(([field, label]) => <div key={field}><dt>{label}</dt><dd>{value[field].length ? <ul>{value[field].map((text, index) => <li key={index}><pre>{text || '미입력'}</pre></li>)}</ul> : '미입력'}</dd></div>)}
+    {([['작업계획', value.taskRef.planRef], ['방법론 적용본', value.taskRef.applicationRef], ['근거 설계', snapshot.basis.designRef]] as const).map(([label, ref]) => <div key={label}><dt>{label}</dt><dd>{ref.id} · v{ref.version} · {ref.contentHash}</dd></div>)}
+    <div><dt>업무 카드 해시</dt><dd>{snapshot.basis.taskCardHash}</dd></div>
+    <div><dt>기준 참조 · 현재 유효성 미검증</dt><dd>{value.baselineRefs.length ? <ul>{value.baselineRefs.map(ref => <li key={ref.id + ':' + ref.version + ':' + ref.contentHash}>{ref.id} · v{ref.version} · {ref.contentHash}</li>)}</ul> : '기준 참조 없음'}</dd></div>
+    <div><dt>소스 허가 범위 · 현재 권한 미검증</dt><dd>{value.allowedScopes.length ? <pre>{JSON.stringify(value.allowedScopes, null, 2)}</pre> : '등록 범위 없음 · 실행 허가 아님'}</dd></div>
+    {([['environmentRef', '환경 참조'], ['budgetRef', '예산 참조'], ['recordingPolicyRef', '상황기록 정책 참조']] as const).map(([field, label]) => { const ref = value[field]; return <div key={field}><dt>{label}</dt><dd>{ref ? <>{ref.id} · v{ref.version} · {ref.contentHash} · 현재 유효성 미검증</> : '미연결 · 미검증'}</dd></div>; })}
+    <div><dt>부모 임무</dt><dd>실임무 미연결</dd></div>
+    <div><dt>이전 초안 버전</dt><dd>{snapshot.previousRef ? <>{snapshot.previousRef.id} · v{snapshot.previousRef.version} · {snapshot.previousRef.contentHash}</> : '최초 초안'}</dd></div>
+    <div><dt>저장 이유</dt><dd><pre>{snapshot.reason}</pre></dd></div>
+  </dl><p className="meta">저장 당시 고정 원문입니다. 참조와 범위 표시는 현재 권한·환경·예산·능력 검증이나 실행 허가가 아닙니다.</p></section>;
 }
