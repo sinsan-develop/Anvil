@@ -5,6 +5,7 @@ import type { PlanRef } from '../design-trace/work-plan-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 import { ContextSourcePicker } from './ContextSourcePicker.tsx';
+import { ContextDeliveryLimits, contextDeliveryLimitsValid } from './ContextDeliveryLimits.tsx';
 import { newContextPreparation, prepareContextWrite, sendContextPreparation, readContextPreparation, listContextPreparations, type ContextPreparationBuffer } from './context-api.ts';
 import { contextObservation } from './context-observation.ts';
 import type { ContextSourceSelection } from '../../../../server/modules/context/context-input.ts';
@@ -28,6 +29,7 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
  }
  async function save() {
   if (!buffer || !owner || !bound || !sameTarget || buffer.resultRef) return;
+  if (!contextDeliveryLimitsValid(buffer.input.limits)) throw new ApiError('CONTEXT_INPUT_INVALID');
   const ticket = begin();
   const previouslyUncertain = !!buffer.pending && buffer.uncertain;
   try {
@@ -60,9 +62,9 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
    </fieldset>)}<label>원문을 추가할 필수 슬롯<select value={selected} onChange={event => setSelected(event.target.value as keyof typeof labels)}>{Object.entries(labels).map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
     <ContextSourcePicker key={selected + ':' + buffer.bindingId} client={client} projectId={confirmed.projectId} code={selected} disabled={locked} run={run} onSelect={attach} />
     <label>준비 이유<textarea maxLength={20000} value={buffer.input.reason} onChange={event => update(current => ({ ...current, input: { ...current.input, reason: event.target.value }, dirty: true }))} /></label>
-    <p>부분 최대 {buffer.input.limits.maxPartBytes} UTF8 bytes · 전체 최대 {buffer.input.limits.maxParts}부분 · 실제 Agent 예산 검증 아님</p>
+    <ContextDeliveryLimits limits={buffer.input.limits} disabled={locked} onChange={limits=>update(current=>current.pending||current.resultRef?current:({...current,input:{...current.input,limits},dirty:true,result:null,failure:null}))}/>
    </fieldset>
-   {!buffer.resultRef ? <button disabled={busy || !owner || !sameTarget} onClick={() => run(save)}>{buffer.pending ? '같은 준비 명령 결과 확인' : '준비 저장'}</button> : <><p>준비 저장 영수증 확인 · 본문/현재 상태는 별도 재조회</p><button disabled={busy} onClick={() => run(() => read(buffer.resultRef!))}>저장 후보 정확 재조회</button></>}
+   {!buffer.resultRef ? <button disabled={busy || !owner || !sameTarget || !contextDeliveryLimitsValid(buffer.input.limits)} onClick={() => run(save)}>{buffer.pending ? '같은 준비 명령 결과 확인' : '준비 저장'}</button> : <><p>준비 저장 영수증 확인 · 본문/현재 상태는 별도 재조회</p><button disabled={busy} onClick={() => run(() => read(buffer.resultRef!))}>저장 후보 정확 재조회</button></>}
    {buffer.pending ? <p>미확인 명령 {buffer.pending.commandId} · 원입력 보존 · 자동 재발행 없음</p> : null}{buffer.failure ? <p role="alert">{buffer.failure.code} · 입력과 명령을 보존했습니다.</p> : null}
    {buffer.pending && buffer.failure && !buffer.uncertain ? <button disabled={busy} onClick={() => { if (confirm('거절된 원 명령을 확인했습니다. 보존한 입력을 수정할까요?')) update(current => ({ ...current, pending: null, failure: null })); }}>거절 확인 후 입력 수정</button> : null}
   </> : <p>확정 임무의 준비 입력은 아직 없습니다.</p>}
