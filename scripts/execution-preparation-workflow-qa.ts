@@ -139,7 +139,7 @@ export async function executionPreparationWorkflow(host:string,passwords:{app:st
     phase='ROLLBACK';
     // 이번 새 격리에서만 의도적으로 INSERT 후 실패시켜 명령/영수증/준비 원자성을 검증한다.
     await admin.query("CREATE FUNCTION anvil_qa.fail_preparation() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION USING ERRCODE='P0001',MESSAGE='SYNTHETIC_QA_ROLLBACK';END;$$;CREATE TRIGGER qa_preparation_rollback AFTER INSERT ON anvil.execution_preparations FOR EACH ROW EXECUTE FUNCTION anvil_qa.fail_preparation()");
-    const failed=command('prepareExecution',{...intent,reason:'합성 rollback'});assert.equal((await send(failed)).statusCode,500);
+    const failed=command('prepareExecution',{...intent,reason:'합성 rollback'}),failedResponse=await send(failed);assert.equal(failedResponse.statusCode,503);assert.equal(failedResponse.json().code,'STORAGE_FAILED');
     assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.commands WHERE command_id=$1',[failed.commandId])).rows[0].n,0);
     assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.execution_preparations')).rows[0].n,1);
     await admin.query('DROP TRIGGER qa_preparation_rollback ON anvil.execution_preparations;DROP FUNCTION anvil_qa.fail_preparation()');cases.push('FAILED_INSERT_ROLLS_BACK_COMMAND_AND_PREPARATION');

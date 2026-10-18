@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C1 실제 저장·권한 거절 확인·rollback fixture 대조 / Main 어울(2026-10-19)**: 6cf3ea351c04f4a9087a23f1f26f93eab55aeb19 실제 격리에서 SQL51 exact·정책미설정거절·ROLE exact replay·RESERVED COMMIT와 동일session 재사용·실행준비 NOT_AUTHORIZED 저장/조회·중복준비1건·WRITE≠READ 거절·4개테이블 직접INSERT/UPDATE/DELETE42501의8개 marker를 확인했다. ROLLBACK 시험은 합성 AFTER INSERT 오류에 기존계약 INTERFACES361/app.ts대로503 STORAGE_FAILED인데 새QA가500을기대해중단됐다. 정확503+코드와 commands0/기존preparation1 보존을함께요구하도록fixture만보정하고 제품/API오류변경0. rollback결과자체는아직미판정. PGfcb8bb0c…/networka37e3e06…/instance049b19bf…와 합성artifact2개 exact삭제·runner잔류0, 새빈시험직전독립확인한다. sandbox Git status의 must-be-worktree 오류1은 기존실행격리 문제이며 Git복구/권한변경0이다.
+
 - **C1 실제 선행통과·QA 정책미설정 기대 대조 / Main 어울(2026-10-19)**: 3cbe0d91 실제 새 격리는 SQL51 exact ID/hash·ADMIN/APP identity·공식합성catalog/seed/login을 통과했다. POLICY 첫 음성에서 fixture가403을 기대했으나 기존 authorizeMaterial(project-command.ts:58)/INTERFACES 계약대로 정책 미설정412 PERMISSION_POLICY_UNCONFIGURED였다. 이는 제품허용 오류가 아니라 새QA 기대값의 계약오독이다. 정확412+오류코드+project_roles 저장0을 함께 요구하도록 보정하며403을아무실패로대체하거나제품기준을완화하지않는다. 원실패를보존하고 새exact후보에서반증한다. d741d67c…/network20bc0c37…/instanceebff1b7a…의exact정리성공·artifact0. 현재행위전송/정책부여는신규합성QA한정·정식계정/DB/Agent변경0이다.
 
 - **C1 실제 접속 확인·manifest 정확 집합 대조 / Main 어울(2026-10-19)**: 067315307258f7a91c19e079f30aad0564d05ccb 실제 격리에서 ADMIN/APP 연결·DB/role/address·비관리자 경계를 통과해 IDENTITY_MANIFEST 비교에서 실패했다. 연결불가 가설은 반증됐고 공식DB 접속0이다. PG locale의 결과 순서를 JSlocale 순서와 직접 비교하던 검수 대신51개 exact ID/지문 집합·중복/누락/변조 거절을 명시했다. 새 직접1 RED→GREEN으로 순서독립/변조음성을 확인하며 합격 기준의 ID/hash를 낮추지 않는다; 실제차이가 지문이면 여전히거절한다. ec115b89…/networkbe963600…/instance9179cd96… 정리성공·artifact0, 새빈시험직전독립0확인. 정상 저장/DML/rollback은 아직미실행이고 전체PASS0이다.
