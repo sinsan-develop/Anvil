@@ -142,10 +142,10 @@ BEGIN
  IF item_i<>jsonb_array_length(s->'items') OR part_i<>jsonb_array_length(s->'deliveryPlan'->'parts') OR s->'deliveryPlan'->'multipartRequired' IS DISTINCT FROM to_jsonb(part_i>1)
   OR s->'purposeRef' IS DISTINCT FROM COALESCE(p->'slots'->0->'sources'->0->'versionRef','null'::jsonb)
   OR s->'latestInstructionRefs' IS DISTINCT FROM (SELECT COALESCE(jsonb_agg(value->'messageRef' ORDER BY n),'[]'::jsonb) FROM jsonb_array_elements(p->'slots'->2->'sources') WITH ORDINALITY v(value,n))
-  OR s->'currentPositionRef' IS DISTINCT FROM CASE WHEN jsonb_array_length(p->'slots'->4->'sources')=1 THEN p->'slots'->4->'sources'->0->'versionRef' ELSE 'null'::jsonb END
+  OR s->'currentPositionRef' IS DISTINCT FROM (CASE WHEN jsonb_array_length(p->'slots'->4->'sources')=1 THEN p->'slots'->4->'sources'->0->'versionRef' ELSE 'null'::jsonb END)
   OR s->'missingRequired' IS DISTINCT FROM (SELECT COALESCE(jsonb_agg(value->'itemId' ORDER BY n),'[]'::jsonb) FROM jsonb_array_elements(s->'items') WITH ORDINALITY v(value,n) WHERE value->>'includedState'<>'INCLUDED')
   OR s->'excluded' IS DISTINCT FROM (SELECT COALESCE(jsonb_agg(value->'itemId' ORDER BY n),'[]'::jsonb) FROM jsonb_array_elements(s->'items') WITH ORDINALITY v(value,n) WHERE value->>'includedState'='EXCLUDED')
-  OR s->'unverified' IS DISTINCT FROM '["CONTEXT_SELECTION_REVIEW_REQUIRED","INSTRUCTION_EFFECTIVENESS_UNVERIFIED","CURRENT_STATE_MEANING_UNVERIFIED","BUDGET_UNVERIFIED","DELIVERY_NOT_CONNECTED","UNDERSTANDING_NOT_REVIEWED","EXECUTION_NOT_CONNECTED"]'::jsonb||CASE WHEN jsonb_array_length(p->'slots'->4->'sources')>1 THEN '["CURRENT_POSITION_AMBIGUOUS"]'::jsonb ELSE '[]'::jsonb END THEN RETURN false;END IF;
+  OR s->'unverified' IS DISTINCT FROM ('["CONTEXT_SELECTION_REVIEW_REQUIRED","INSTRUCTION_EFFECTIVENESS_UNVERIFIED","CURRENT_STATE_MEANING_UNVERIFIED","BUDGET_UNVERIFIED","DELIVERY_NOT_CONNECTED","UNDERSTANDING_NOT_REVIEWED","EXECUTION_NOT_CONNECTED"]'::jsonb||(CASE WHEN jsonb_array_length(p->'slots'->4->'sources')>1 THEN '["CURRENT_POSITION_AMBIGUOUS"]'::jsonb ELSE '[]'::jsonb END)) THEN RETURN false;END IF;
  RETURN true;
 EXCEPTION WHEN OTHERS THEN RETURN false;
 END;
