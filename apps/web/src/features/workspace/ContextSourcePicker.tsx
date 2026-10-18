@@ -7,7 +7,7 @@ import type { ContextSlotCode, ContextSourceSelection } from '../../../../server
 
 interface Preview { selection: ContextSourceSelection; body: string; label: string }
 interface Candidate { key: string; label: string; inspect: () => Promise<Preview | null> }
-export function ContextSourcePicker({ client, projectId, code, disabled, run, onSelect }: { client: ApiClient; projectId: string; code: ContextSlotCode; disabled: boolean; run: (action: () => Promise<void>) => void; onSelect: (selection: ContextSourceSelection) => void }) {
+export function ContextSourcePicker({ client, projectId, code, disabled, selectionBlocked=false, run, onSelect }: { client: ApiClient; projectId: string; code: ContextSlotCode; disabled: boolean;selectionBlocked?:boolean; run: (action: () => Promise<void>) => void; onSelect: (selection: ContextSourceSelection) => void }) {
  const [items, setItems] = useState<Candidate[]>([]), [preview, setPreview] = useState<Preview | null>(null), [next, setNext] = useState<(() => Promise<void>) | null>(null), [loaded, setLoaded] = useState(false);
  const [knowledgeQuery,setKnowledgeQuery]=useState(''),[listedKnowledgeQuery,setListedKnowledgeQuery]=useState<string|null>(null);
  const alive = useRef(true); useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
@@ -39,6 +39,6 @@ export function ContextSourcePicker({ client, projectId, code, disabled, run, on
   {listedKnowledgeQuery!==null?<p className="meta">이 지식 목록의 제목·이유 검색 조건: {listedKnowledgeQuery||'전체'} · 다음 목록도 같은 조건으로 조회합니다.</p>:null}
   <ul>{items.map(item => <li key={item.key}>{item.label}<button disabled={disabled} onClick={() => run(() => inspect(item))}>원문 열기</button></li>)}</ul>
   {next ? <button disabled={disabled} onClick={() => run(next)}>원문 다음 목록</button> : null}{loaded && !items.length ? <p>이 목록에 선택 가능한 원문이 없습니다. 필수 누락은 그대로 남깁니다.</p> : null}
-  {preview && !disabled ? <><p>{preview.label}</p><pre>{preview.body}</pre><button disabled={disabled} onClick={() => { onSelect(preview.selection); setPreview(null); }}>이 정확 원문을 선택 슬롯에 추가</button></> : null}
+  {preview && !disabled ? <><p>{preview.label}</p><pre>{preview.body}</pre><button disabled={disabled||selectionBlocked} onClick={() => { if(disabled||selectionBlocked)return;onSelect(preview.selection); setPreview(null); }}>이 정확 원문을 선택 슬롯에 추가</button></> : null}
  </section>;
 }
