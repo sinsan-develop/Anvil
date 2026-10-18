@@ -23,7 +23,7 @@ import { buildBuiltinMethodologies } from '../apps/server/modules/methodologies/
 import { seedBuiltinMethodologies } from '../apps/server/modules/methodologies/catalog-seed.ts';
 import { contextSlotCodes } from '../apps/server/modules/context/context-input.ts';
 import { executionPreparationQa as qa, executionPreparationQaDatabase, executionPreparationQaInsert, executionPreparationQaRemaining, cleanExecutionPreparationQaRoot, assertExecutionPreparationQaBinding, buildExecutionPreparationQaSchema } from './execution-preparation-qa.ts';
-import { sourceRootQaError } from './source-root-qa-guard.ts';
+import { sourceReadQaError } from './source-read-qa-guard.ts';
 
 /** 새 runner가 검증한 내부 PG 주소/메모리 비밀만 받는다. 공식 config·외부 Agent·listener는 사용하지 않는다. */
 export async function executionPreparationWorkflow(host:string,passwords:{app:string;migrator:string},deadline:number,manifest:{id:string;checksum:string}[]) {
@@ -38,11 +38,13 @@ export async function executionPreparationWorkflow(host:string,passwords:{app:st
   let phase='IDENTITY',rootCreated=false,lastResponseCode:string|null=null;
   try {
     fresh();
-    const identity=(await admin.query('SELECT current_database() db,current_user role,host(inet_server_addr()) address')).rows[0];
+    phase='IDENTITY_ADMIN_CONNECTION';const identity=(await admin.query('SELECT current_database() db,current_user role,host(inet_server_addr()) address')).rows[0];
+    phase='IDENTITY_ADMIN_FACTS';
     assert.equal(identity.db,qa.database);assert.equal(identity.role,'anvil_v3_migrator');assert.equal(identity.address,host);
-    const role=(await pool.query('SELECT current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];
+    phase='IDENTITY_APP_CONNECTION';const role=(await pool.query('SELECT current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];
+    phase='IDENTITY_APP_FACTS';
     assert.equal(role.role,'anvil_v3_app');assert.equal(role.rolsuper,false);assert.equal(role.rolbypassrls,false);
-    const actual=(await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows;
+    phase='IDENTITY_MANIFEST';const actual=(await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows;
     assert.deepEqual(actual,[...manifest].sort((a,b)=>a.id.localeCompare(b.id)));
     await assert.rejects(lstat(qa.artifactRoot),(e:any)=>e.code==='ENOENT');fresh();await mkdir(qa.artifactRoot,{mode:0o700});rootCreated=true;
     assert.equal(await realpath(qa.artifactRoot),qa.artifactRoot);cases.push('EXACT_ISOLATED_DATABASE_51');
@@ -142,7 +144,7 @@ export async function executionPreparationWorkflow(host:string,passwords:{app:st
     await admin.query('DROP TRIGGER qa_preparation_rollback ON anvil.execution_preparations;DROP FUNCTION anvil_qa.fail_preparation()');cases.push('FAILED_INSERT_ROLLS_BACK_COMMAND_AND_PREPARATION');
     phase='STALE_CONTROL';await admin.query('UPDATE anvil.project_control SET generation=2 WHERE project_id=$1',[project]);assert.equal((await send(command('prepareExecution',intent))).statusCode,409);cases.push('STALE_CONTROL_DENIED');phase='DONE';
     return {phase,cases,actualDatabaseVerified:true,browserVerified:false,agentCalls:0};
-  }catch(error){const safe=sourceRootQaError(error);console.log('C1_WORKFLOW_FAILURE '+JSON.stringify({phase,cases,lastResponseCode:typeof lastResponseCode==='string'&&/^[A-Z0-9_]{1,80}$/.test(lastResponseCode)?lastResponseCode:null,...safe,expected:typeof(error as any)?.expected==='number'?(error as any).expected:null,actual:typeof(error as any)?.actual==='number'?(error as any).actual:null}));throw Error('C1_WORKFLOW_FAILED');}
+  }catch(error){const safe=sourceReadQaError(error);console.log('C1_WORKFLOW_FAILURE '+JSON.stringify({phase,cases,lastResponseCode:typeof lastResponseCode==='string'&&/^[A-Z0-9_]{1,80}$/.test(lastResponseCode)?lastResponseCode:null,...safe,expected:typeof(error as any)?.expected==='number'?(error as any).expected:null,actual:typeof(error as any)?.actual==='number'?(error as any).actual:null}));throw Error('C1_WORKFLOW_FAILED');}
   finally{const closed=await Promise.allSettled([app.close(),pool.end(),admin.end(),rootCreated?cleanExecutionPreparationQaRoot():Promise.resolve(0)]);console.log('C1_WORKFLOW_CLEANUP '+JSON.stringify({closeFailures:closed.slice(0,3).filter(r=>r.status==='rejected').length,artifactFiles:closed[3]?.status==='fulfilled'?closed[3].value:null,artifactCleanup:closed[3]?.status==='fulfilled'}));if(closed.some(r=>r.status==='rejected'))throw Error('C1_WORKFLOW_CLEANUP_FAILED');}
 }
 

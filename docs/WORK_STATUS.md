@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C1 실제 SQL51 COMMIT·후속 identity 미확인 / Main 어울(2026-10-19)**: 2a8128e2193e8bf1e5d1d69fd8b87877ebb03d2a/0016 SHA612BE372C2A82F201C072DDE62E7C1222FF96168172EDF22A11226E7291FE91D에서51개SQL 실제COMMIT marker까지 도달해0014·0016 구문42601은 해소됐다. 이후 workflow IDENTITY 단계에서 실패했고 정상 저장·DML·rollback 미도달이다. SQL 설치/COMMIT만 실제확인, 전체기능PASS0. b1fc446a… PG/2d3f385b… network/instance515fe426…는 exact정리 성공·artifact cleanup true/파일0이다. 원인이 DB연결인지 identity assertion인지 구분하기 위해 기존 비밀 없는 연결오류 분류기를 적용하고 단계별 위치만 좁힌다. 정렬 가설은 로컬 순수비교에서 차이0으로 기각했고 DB효과0이었다. 정상 조건/포트/권한을 추측으로 변경하지 않으며 다음새빈검증은 정확원인수집만 수행한다.
+
 - **C1 CASE 구문 실제 반증·신규0016 보정 / Main 어울(2026-10-19)**: d4117c8a 새 빈 격리에서 이전0014/3797행 구문 실패를 넘어 신규0016 마지막 함수4498행42601에 도달했다. 선행 보정의 해당 구문은 실제 해소됐으나 전체SQL PASS가 아니다. 신규0016의 같은 CASE 미괄호 비교1곳을 반증 대상으로 보정했고 SQL hash는 새로 산출한다. 세 실행의42601을 같은 위치/원인 미분석 재시도나 정식 Developer3회로 혼동하지 않으며 Main이 직접 조사했다. 세 번째 PG1d5e2853…/networke9be1986…/instance3f2b0804…는 runner exact정리 성공이며 다음 생성 전에 독립0확인한다. 모든 정상 저장/조회·DML·rollback은 아직 NOT_EXECUTED. 의미/API/권한 완화0·정식DB checksum 치환0이다.
 
 - **C1 선행 SQL 구문 원인 대조·후보 보정 / Main 어울(2026-10-19)**: 두 번째 a4c9243d8b2f269659f5b335d80803a3ec253392 실제 SCHEMA 실패42601의 숫자3797행은 선행0014_context_preparation.sql의 함수 끝152행에 해당했다. 0016에는 아직 도달하지 않았다. 원인은 CASE/JSON 결합식과 PL/pgSQL IF 경계의 미괄호 구문이라는 가설이며, 후보0014의 의미/권한/검사 기준을 바꾸지 않는 CASE와 우항 괄호2곳만 보정했다. 기존 published 이력은 보존하고 정식DB에 적용/기존schema_migrations 지문을 치환하지 않는다. 현재 exact0014가 PG15에서 구문 생성조차 불가였다는 사실과 정식 적용 상태 미확인을 구분한다. SQLbytes를 바꿨으므로 기존 지문을 승계하지 않고 새 Git/전체51 hash로 새빈 격리에서 반증한다. 이 단계는 원 실제실패 RED→GREEN 확인 전이므로 아직 수정 성공/SQL PASS가 아니다. 두 번째 PG5df52286…/network323ad28c… instanceb72bce09…는 runner cleanupFailure=null이며 다음 생성 직전 독립 부재를 재확인한다.
