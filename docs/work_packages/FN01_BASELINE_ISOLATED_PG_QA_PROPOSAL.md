@@ -1,6 +1,6 @@
-# FN01 기준선 격리 PG 핵심 검증 — 실행 전 패킷 r3
+# FN01 기준선 격리 PG 핵심 검증 — 실행 전 패킷 r4
 
-상태: **CODE_CANDIDATE_WRITTEN_UNEXECUTED / ACTUAL_NOT_AUTHORIZED / NATIVE_ADAPTER_NOT_CONNECTED / GUARD_NOT_VERIFIED**. Main 어울 · 2026-10-18. 실제 실행 권한은 하드클로즈다. 이것은 실행 가능한 승인서나 PG/화면 PASS가 아니다. 새 QA 디렉터리·컨테이너·network·DB·계정·핸들·컴파일 생성0이다.
+상태: **CANDIDATE_LOCAL_CHECKED / ACTUAL_NOT_AUTHORIZED / NATIVE_ADAPTER_NOT_CONNECTED / ACTUAL_GUARD_UNVERIFIED**. Main 어울 · 2026-10-18. 순수10·타입 검사만 후속 직접 승인으로 확인했다(§13). 실제 실행 권한은 하드클로즈이며 이것은 PG/화면 PASS가 아니다. 새 QA 디렉터리·컨테이너·network·DB·계정·장기 보유 핸들·native 컴파일 생성0이다.
 
 ## 1. 책임·승인과 검증 분리
 
@@ -141,7 +141,7 @@ A가 허용되고 후보를 독립 검토한 뒤에만 H·runner/test 전체 has
 - 기존 복구 PATH_GUARD/정식0012/서비스/실사용자 정책/Agent/Secret/cert·소진 compile 경계는 유지한다. 계획의 다음 미완료 선정·완료 책임은 Main에게 있고 PMO에는 필요한 결정/지원만 요청한다.
 - 이번 문서 준비를 새 사용 가능 기능이나 전체계획 완료로 계산하지 않는다. 동일 제품 시험·빌드 반복0, 실제 QA·설치·새 디렉터리·핸들·DB/서비스 변경0이다.
 
-## 11. 후보 작성 단계의 명시적 판정 밖
+## 11. 18:10 승인 후보 작성 단계의 명시적 판정 밖 (당시 기록)
 
 - TDD 스킬의 실행 단계와 이번 직접 승인 제한이 충돌하므로 사용자 제한을 우선했다. 테스트 후보를 먼저 작성하되 RED/GREEN·합격·타입 안전을 주장하지 않는다. 기존 실행계획/작업현황을 ledger로 사용하며 skill 보조 실행기/새 폴더를 만들지 않았다.
 - 실제 실행 binding은 null이며 assertActualQaAuthorized가 preflight·시계·파일/환경·Pool 이전에 무조건 거절한다. env/CLI/호출자 boolean으로 열 수 없다. 별도 B 결정 없이 이를 완화하지 않는다. 시험 파일을 import/실행하여 이 거절을 검증한 사실도 없다.
@@ -150,7 +150,7 @@ A가 허용되고 후보를 독립 검토한 뒤에만 H·runner/test 전체 has
 - integration의 HUMAN 원문은 합성 SQL/API 기계경계 fixture이며 실제 기능 의미/소스 전체/실사용자 인수 판정이 아니다. Network socket/HTTPS/브라우저/Agent를 검증하지 않는다. 테스트 결과를 제출하지 않은 후보 코드와 실제 저장 기능 완료를 구분한다.
 - 독립 읽기 검토 결과와 Main 단일 보완/미검증은 WORK_STATUS와 이 명세의 후속 binding에 기록한다. 현재 실행/원 거절·경로 안전·도구 신뢰를 해소한 것으로 판단하지 않는다.
 
-## 12. 독립 후보 검토·Main 단일 보완 (실행 증거 아님)
+## 12. 18:10 승인 독립 후보 검토·Main 단일 보완 (당시 실행 증거 아님)
 
 - 최초 결과 **C0/I3/M1**을 보존한다. I1의 실제 허용 mediaType/HTTP201 불일치는 기존 API를 읽기 대조해 text/plain;charset=utf-8·201로 맞췄고 격리 상태/이후412 기준은 유지했다. 기대값을 느슨하게 바꾼 것이 아니라 실제 계약과 맞춘 후보 보완이다.
 - I2는 재시도 이전 exact project/actor/external commandId로 저장 영수증·연결된 불변 초안1행·ref/hash/snapshot을 첫 응답 전체와 대조하고, 재시도 뒤 같은 행/영수증·count 불변을 확인하도록 작성했다. 실제 최초 COMMIT/재시도 성공을 확인한 것은 아니다.
@@ -159,3 +159,13 @@ A가 허용되고 후보를 독립 검토한 뒤에만 H·runner/test 전체 has
 - guard 순수 테스트10개와 실제 PG 여정1개는 작성만 했다. timeout 회귀 및 runner가 adapter를 읽기 전 권한 거절하는 순서 회귀도 작성했으나 **전체 테스트·RED/GREEN·타입/구문/build 실행0**이다. 독립 C0/I0 재검토를 요청하거나 Main 보완을 그 판정으로 바꾸지 않는다.
 - Final Ruling: 검토가 판단하지 않은 native adapter/H/bootstrap·binding, uid1001/same-UID/root 경합, 실제 설치/보호/정리, SQL parse/COMMIT/잠금/ACL, 브라우저/TLS/HUMAN 의미/인수는 후보 수용이나 실행 허가로 승격하지 않는다. 이 후보는 실행 준비 미완료다. 잘못 판단하면 실제자료/권한/정리 피해가 가능하므로 B 결정을 앞당겨 요청하지 않는다. Main은 승인 준비 범위의 기록/읽기 검토를 마쳤다는 사실과 실제 미완료를 구분한다.
 - 현재 승인에 외부접속이 제외돼 있으므로 이번 신규 후보를 원격 게시하기 위해 Git 네트워크 명령을 실행하지 않았다. local 안전 checkpoint와 파일 hash만 보존하며 기존 private728eb902와 별도 구분한다.
+
+## 13. 18:37 후속 한정 승인·로컬 확인·새 게시 경계
+
+- 신산님2026-10-18 18:37:59KST 직접 ‘승인해’를 PMO가 전달했다. FN01_QA_LOCAL_CHECK_AND_PUSH 권장A만이며 Node child의 순수1파일(최대30초)·tsc noEmit(최대120초), 새4파일 오류 보완/연결기록과 **기존 exact8cf2d29797b1bb9ccd216cc031b2eb9857403c3b의 보존 게시만**이다. 실제 integration/PG/WSL·설치/npm·전체회귀/build·native helper·서비스/권한/Agent/Secret은 제외됐다.
+- 기준8cf2d297 local clean·정확7파일/제품36 동일과 C:\Program Files\nodejs\node.exe SHA256 9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE를 읽기 확인했다. 두 child에 NODE_OPTIONS/NODE_PATH/NODE_COMPILE_CACHE를 승계하지 않았고 숨김·stdout/stderr 수집·고정 상한으로 실행했다.
+- 최초 node --test tests/unit/FN01/baseline-qa-guard.test.ts는 **10PASS/156.9273ms, FAIL/SKIP/CANCEL0**, child236ms exit0이었다. 동시에 실행한 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json은 child1195ms exit1이었다. 확인한 대표 오류는 신규 runner의 string|null TS2345 및 TS2349/TS2339 never, 신규 integration의 TS18046/never 연쇄다. 최초 실패를 숨기거나 PASS로 소급하지 않는다.
+- 원인 가설은 실제권한 assert의 :never가 뒤의 미연결 후보 본문을 도달 불가능으로 분석하게 하는 것이다. 기존 guard 패턴을 대조하고 새 guard 2줄(주석·반환형)만 :void로 바꿨다. actualQaAuthority=null·무조건 throw·첫실행거절의 본문/순서는 그대로이며 any/ts-ignore/tsconfig 완화·테스트 삭제/기대값 변경0이다. 이는 타입 표현 보완이지 실행 권한의 개방이 아니다.
+- 이 코드 변경 뒤 같은 한정 검사에서 **순수10PASS/175.8832ms, FAIL/SKIP/CANCEL0·child287ms exit0**, **tsc noEmit child1302ms exit0**을 확인했다. 두 child 모두 timeout=false다. 타입 검사 RED→GREEN과 실제 거절 순수 회귀를 구분하며 브라우저/SQL/실권한/actual 종료·정리 TDD로 승격하지 않는다.
+- integration은 타입 검사만 받고 **실행0**이다. native adapter/bootstrap·actual binding·toolchain/경로 위험·실제 PG/정리·HUMAN 의미·사용자 인수는 여전히 미검증이다. 바뀌지 않은 제품 전체 시험/빌드 반복0이다.
+- 소스 보완과 이 기록으로 commit이 달라지므로 **8cf2d297 게시 승인을 새 commit에 자동 승계하지 않는다.** 이번 검사 후 Git 네트워크/push0으로 두고, 새 local exact·변경4파일(guard+연결문서3)·제품36 동일·위 결과를 PMO에 제시해 게시 대상 판단을 별도로 확인한다. 기존 불합격8cf를 새 정상 후보 대신 먼저 게시하지 않았다.

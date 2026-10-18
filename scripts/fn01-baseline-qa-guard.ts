@@ -18,8 +18,8 @@ export const fixedQa = Object.freeze({
   dependencyAggregate:'d8968986422a06f5fe24c630486ee1ee6f13363e1a050a235a2a16b163b800ba',
 });
 export const actualQaAuthority:null = null;
-/** 별도 B 결정·코드 결박 없이는 실패. actual 환경을 읽기 전에 호출한다. */
-export function assertActualQaAuthorized():never {throw Error('FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED');}
+/** 별도 B 결정·코드 결박 없이는 항상 throw. void는 후보 본문 타입검사를 살릴 뿐 실행 허가는 아니다. */
+export function assertActualQaAuthorized():void {throw Error('FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED');}
 export const sha256=(value:string|Uint8Array):string=>createHash('sha256').update(value).digest('hex');
 /** 타이머는 대기 상한일 뿐 OS/SQL 취소·종료 증거가 아니다. timeout 뒤 결과는 UNKNOWN. */
 export class QaWaitTimeout extends Error {constructor(){super('FN01_WAIT_TIMEOUT_UNKNOWN');}}

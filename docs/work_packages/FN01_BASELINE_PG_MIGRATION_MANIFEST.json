@@ -1874,37 +1874,80 @@
     "approval": "FN01_QA_CODE_PREPARATION",
     "approvedAt": "2026-10-18T18:10:34+09:00",
     "approvedProposalSha256": "EC52CAAE81A2E4740F4B485E874B9751C7BA0A53D32652A540A34650FDBBFE64",
-    "state": "CANDIDATE_WRITTEN_UNEXECUTED",
+    "state": "CANDIDATE_LOCAL_CHECKED_NOT_ACTUAL_READY",
     "actualAuthorization": null,
     "nativeAdapter": "NOT_CONNECTED",
     "bootstrap": "UNRESOLVED",
     "review": {
       "original": "C0/I3/M1",
-      "mainFix": "STATIC_SINGLE_PASS_UNVERIFIED",
+      "mainFix": "STATIC_SINGLE_PASS_WITH_SCOPED_PURE_CHECK_ONLY",
       "independentRereview": false
     },
-    "testsExecuted": 0,
+    "preparationPhaseTestsExecuted": 0,
     "files": [
       {
         "path": "scripts/fn01-baseline-qa-guard.ts",
-        "sha256": "7c77faeab43d4feedba70d60b4d8ea252be2d42966506d03dcb70ff14569dc92",
-        "verification": "NOT_EXECUTED"
+        "sha256": "360b9295ae58a57d273ee66d6452c3f25232c4225359e84af6f4c9dd9ee9f478",
+        "verification": "SCOPED_PURE_UNIT_AND_TYPE_ONLY"
       },
       {
         "path": "scripts/qa-fn01-baseline-isolated.ts",
         "sha256": "56661dc9374798b761a70df4dcedcfdac1f9662d593e946cdcd2d9eb04c126df",
-        "verification": "NOT_EXECUTED"
+        "verification": "FIRST_GATE_PURE_TEST_AND_TYPE_ONLY_NOT_ACTUAL_BODY"
       },
       {
         "path": "tests/integration/FN01/baseline-isolated.test.ts",
         "sha256": "7c097b4dba6602ee18804dcef4c64fab5cd7c76ee47f2c94c6f624833b1d6a6a",
-        "verification": "NOT_EXECUTED"
+        "verification": "TYPECHECK_ONLY_NOT_EXECUTED"
       },
       {
         "path": "tests/unit/FN01/baseline-qa-guard.test.ts",
         "sha256": "db166eddfb483d3e42d1df193abe4ea2065bb759879eedffad27da73ae8d5f59",
-        "verification": "NOT_EXECUTED"
+        "verification": "PURE_UNIT_10_PASSED"
       }
-    ]
+    ],
+    "localChecks": {
+      "approval": "FN01_QA_LOCAL_CHECK_AND_PUSH",
+      "approvedAt": "2026-10-18T18:37:59+09:00",
+      "initialSource": "8cf2d29797b1bb9ccd216cc031b2eb9857403c3b",
+      "unitCommand": "node --test tests/unit/FN01/baseline-qa-guard.test.ts",
+      "unitLimitMs": 30000,
+      "unitRuns": 2,
+      "unitTestsPerRun": 10,
+      "finalUnit": {
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "durationMs": 175.8832,
+        "childElapsedMs": 287,
+        "exitCode": 0,
+        "timedOut": false
+      },
+      "typeCommand": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json",
+      "typeLimitMs": 120000,
+      "typeRuns": 2,
+      "firstType": {
+        "exitCode": 1,
+        "childElapsedMs": 1195,
+        "issue": "NEVER_CONTROL_FLOW_IN_NEW_CANDIDATES"
+      },
+      "finalType": {
+        "exitCode": 0,
+        "childElapsedMs": 1302,
+        "timedOut": false
+      },
+      "childEnvironmentExcluded": [
+        "NODE_OPTIONS",
+        "NODE_PATH",
+        "NODE_COMPILE_CACHE"
+      ],
+      "integrationRuns": 0,
+      "buildRuns": 0,
+      "fullRegressionRuns": 0,
+      "actualAuthorization": null,
+      "originalPublicationTarget": "8cf2d29797b1bb9ccd216cc031b2eb9857403c3b",
+      "changedCommitPublication": "REQUIRES_EXACT_TARGET_CONFIRMATION"
+    }
   }
 }
