@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+격리 SQL 후속(2026-10-18): f955a302 exact 새빈PG15에서48SQL/전체hash·새2표최소ACL/0행·UTF16/공백8vector·무명령INSERT2거절 및정리0 확인. 첫환경실패는보존한다. 실제권한있는저장/API/동시성·formal/served는미검증이므로FN09/UI04 전체완료아니다. 다음은사전등록새격리의실제인증·정책·검토/별도확정 핵심검증이며정식DB거절을우회하지않는다.
+
 진행 기록(2026-10-18 후속): Main이 FN09/UI04의 임무 내용 검토·별도 확정 후보를 이어서 구현했다. 단위53/타입·새 합성UI2/인접초안10과 scoped C0/I0/새M0는 해당 후보 범위이며 실제 DB/정식서비스·책임세션/Agent/전체FN09/UI04 완료가 아니다. 새0013 SQL/격리 실행기는 정적 준비이며 actualWorkflowVerified=false, 실제SQL·권한있는 저장/동시성은 다음 검증이다. 기존0012 정식적용 안전거절/적용0·원직접질문미답변은 유지한다. 상세증거/오류/정리는 WORK_STATUS와 INTERFACES의 정확결정 결박을 따른다. 다음 미완료 선정·완료 주도권은 Main에 있다.
 
 > **Agent 작업자:** 실행 시 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans` 중 승인된 방식을 사용한다. 이 문서는 계획 작성 산출물이며 지금 구현·Agent 배정·환경 변경을 시작하라는 지시가 아니다.
