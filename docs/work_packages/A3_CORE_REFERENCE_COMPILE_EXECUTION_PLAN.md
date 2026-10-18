@@ -1,5 +1,7 @@
 # A3 Core 참조 추가 library compile 실행안 — 준비본
 
+> 후속 실제 결과: exactd8134bb3079fcca07d7009c336eedb9ff54b4c1e 단1회는 exit0/PASS_LIBRARY_COMPILE_ONLY였다. 시험 DLL/QA는 정리하고 소비 메타는 보존했다. [실제 결과](../04_test_reports/AV3/FN08/A3_CORE_REFERENCE_COMPILE_01_RESULT.md)를 따른다. 아래 창없음/actual0은 준비 당시 이력이며 재실행 허가가 아니다. M1은 공개 이월이고 native/관측·신뢰/baseline/전체 기능 PASS는 아니다.
+
 Main 어울 · 2026-10-18 · **actual 실행창 없음 / 새 compiler·QA·소비 파일 생성0**
 
 ## 결정과 목적
