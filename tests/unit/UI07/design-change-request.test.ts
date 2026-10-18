@@ -8,6 +8,16 @@ const fn=(key:string)=>{assert.equal(typeof m[key],'function');return m[key];};
 const session={user:{id:projectId},clientId:'77777777-7777-4777-8777-777777777777',csrfToken:'C'.repeat(43)};
 function buffer(){const c=designChangeFixture().change,b=fn('newDesignChangeRequest')(projectId,session,3,c.beforeRef,c.afterProposalRef);b.reason='사용자가 변경 이유를 기록';return b;}
 function response(command:any){const fixture=designChangeFixture(),snapshot={...command.payload},change={...fixture.change,...snapshot,ref:{id:fixture.change.ref.id,version:1,contentHash:contentHash(canonicalJson(snapshot))}};const {ref,observedAt,...base}=fixture.impactVersions[1]!;const body={...base,changeRef:change.ref,beforeRef:change.beforeRef};const impact={...body,ref:{...ref,contentHash:contentHash(canonicalJson(body))},observedAt};return{operationId:crypto.randomUUID(),commandId:command.commandId,projectId,status:'APPLIED',targetId:change.ref.id,version:1,data:{status:'DESIGN_CHANGE_PROPOSED',ref:change.ref,change,impact,activatedAsBaseline:false},evidenceRefs:[],warnings:[],serverReceivedAt:observedAt};}
+test('선택한 문서 출처의 정확 버전과 hash는 명령·영수증에 보존하며 미확인 중 편집을 거절한다',async()=>{
+ const b=buffer(),source={kind:'DOCUMENT_VERSION',...b.beforeRef};b.sourceRefs=[source];b.pending=fn('prepareDesignChangeRequest')(b,session,true);assert.deepEqual(b.pending.payload.sourceRefs,[source]);
+ const view=await fn('sendDesignChangeRequest')(new ApiClient(async()=>Response.json(response(b.pending))),b,session);assert.deepEqual(view.change.sourceRefs,[source]);
+ b.sourceRefs=[];assert.throws(()=>fn('prepareDesignChangeRequest')(b,session,true),e=>e instanceof ApiError&&e.code==='DESIGN_CHANGE_PENDING_MISMATCH');
+});
+test('변경 요청 문서 출처는 중복·위장키·과다 목록과 영수증의 출처 누락을 거절한다',async()=>{
+ const b=buffer(),source={kind:'DOCUMENT_VERSION',...b.beforeRef};
+ for(const refs of [[source,source],[{...source,verified:true}],Array(201).fill(source)]){b.sourceRefs=refs;assert.throws(()=>fn('prepareDesignChangeRequest')(b,session,true),e=>e instanceof ApiError&&e.code==='DESIGN_CHANGE_SOURCE_INVALID');}
+ b.sourceRefs=[source];b.pending=fn('prepareDesignChangeRequest')(b,session,true);const reply=response(b.pending);reply.data.change.sourceRefs=[];await assert.rejects(fn('sendDesignChangeRequest')(new ApiClient(async()=>Response.json(reply)),b,session),e=>e instanceof ApiError&&e.code==='RESPONSE_INVALID');
+});
 test('설계변경 등록은 주체·제어세대·정확 설계와 제안을 고정하고 승인·활성화를 요청하지 않는다',()=>{
  const b=buffer(),c=fn('prepareDesignChangeRequest')(b,session,true);assert.equal(c.operation,'proposeDesignChange');assert.equal(c.expectedVersion,0);assert.equal(c.targetId,null);assert.equal(c.controlGeneration,3);assert.deepEqual(c.baselineRefs,[]);assert.equal(c.approvalRef,null);assert.deepEqual(c.payload.sourceRefs,[]);assert.equal(c.payload.beforeRef.id,'33333333-3333-4333-8333-333333333333');b.reason='편집';assert.equal(c.payload.reason,'사용자가 변경 이유를 기록');
  assert.throws(()=>fn('prepareDesignChangeRequest')(buffer(),session,false),e=>e instanceof ApiError&&e.code==='DESIGN_CHANGE_CONFIRM_REQUIRED');
