@@ -374,3 +374,22 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - 현재 기존 담당자 한 번의 독립 읽기 검토 중이며 중요한 결함은 Main 한정보완/TDD만 수행한다. 이 로컬 결과는 실제 성능·원 실패 해결·PG/16조건·API/화면/Agent·사용자 인수 증거가 아니다. 이후 실제 시험이 필요하면 후보/원인 근거/자원/1회/회수·잔여위험을 별도 한 묶음으로 제시하며 중간 준비-only 질문을 반복하지 않는다.
 - 후속 검수 완료: 독립 읽기1회 C0/I1/M1. I1은 Error.message getter의 첫/두번째 값이 달라 allowlist 밖 문자열을 반환하는 반례로 G6 RED19/1(170.0207ms,child239ms)을 확인하고 own-data descriptor를 한 번 포착·accessor 미호출로 Main 한정보완했다. 최종20PASS/skip·cancel0(153.9348ms,child217ms)·noEmit0/1208ms이며 재검토/새 검토자0이다. 독립 C0/I0 재판정은 주장하지 않는다.
 - **이월 Minor M1:** 회수 단계에서 최초로 unlink/EACCES 등이 발생하면 기존 일반 cleanupFailure/FAIL은 남지만 firstFailureCode는 null일 수 있다. 이번 새 진단은 작업단계/원 preflight와 그 내부 읽기를 우선하며 회수 세부코드 연결은 미완료로 기록한다. 최초 실패 정보가 모든 경로에서 완전하다고 주장하지 않는다.
+
+## 20. 후속 실제 검증 단일 결정안 — 미승인·실행0
+
+현재 준비 후보는 **1c1f05ee8b28d7881b037a755832cac0f45ef136**이며 local/private exact·clean/main f976 불변과 로컬20/type·한정 검수를 확인했다. 이 SHA는 **소비된 B의 재사용을 거절하는 준비 후보**이지 그대로 실행 가능한 SHA가 아니다. 아래는 중간 준비-only 질문 없이 후속 권한을 한 번에 결정할 안이며, 아직 승인/새 B/실행 H/nonce/창을 발급하지 않았다.
+
+| 항목 | 한정 요청안·보존 조건 |
+|---|---|
+| 목적/근거 | 원 preflight 내부 오류 미보존의 확정 결함은 보완했고, 순차 읽기 부담은 같은 검사/상한의 cap8로 보완했다. 실제5000ms 충족·직접원인은 미확정이므로 실제 PG49/16조건을 새 빈 환경에서1회 확인. 사전검사 실패 시 새 진단으로 실제 실패 종류/구간을 보존 |
+| 새 결정 결박 | 기존7경로만 사용하여 실제 직접 답변의 새 결정ref/불변 contract/시각을 코드의 고정 issuer에 결박. **옛/누락 결정의 기존 G1 facts-before-OS 거절은 그대로** 유지하고 새 결정은 명시한 고정 FN01 entry의 별도 선택자로만 받는 한정 보완. 외부 JSON이 인간 승인/새 decision을 등록하는 API·임의 command/path/env executor0 |
+| 미래 H 정직성 | 새 승인 뒤 결정 재결박이 필요하므로 실제 실행 H3는 **현재 null**. 1c1 준비후보의 후손·누계7경로/제품36 tree0·기존20/type·한정 delta 독립검토/수정·clean을 만족한 단일 H3를 Main이40hex/코드hash로 고정·정상 private 게시/live exact 후 사용. 이미 실행 가능한 exact H라고 표현0 |
+| 로컬 검수 | 기존14+G1~G6 총20/30초·noEmit120초·기존담당자 한정검토1회·Main한정보완만. 기존 기대값/판정 기준 완화0, 전수제품 회귀·빌드·브라우저·설치0 |
+| 실행/자원 | 새 직접 승인부터24시간 내 첫 mutable 작업1회. 최초20분·기존5000ms/단계 상한/reserve20초·native회수30초 불변. 기존 root `/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01`과 source/npm-cache/docker-config/artifacts·빈npmrc2/비밀없는controller/bootstrap/started/receipt만 새 빈 상태로 사전확인. UID1000/0700·0600, **새 inode/nonce는 실제 생성 직전에만 발급**하고 이전 inode8501865를 승계하지 않음 |
+| Git/도구 | 지정 private URL·기존 branch의 literal H3만 clone/detach, source36 객체 추가 fetch·lock146 scripts/binlinks/audit OFF. 기존 고정 Node/npm/Git/Docker/raw2389/canonical2388/socket·parent/daemon/image를 fresh 재대조. 새 설치도구/소유·ACL수리/다른경로 우회0 |
+| PG/데이터 | 같은 `anvil-v3-fn01-baseline-pg-01`/`anvil-v3-fn01-baseline-net-01` 이름이 없음을 먼저 확인. 고정 PG15 digest/ID·내부network/publish0/tmpfs256MiB, 신규 합성 credentials·비관리자 migrator/app 역할·원49SQL/원16조건1회. 정식DB/계정/원문/Secret/권한·서비스/CA/운영/Oracle/Agent 비접촉 |
+| **추가로 결정할 정확 회수 경계** | native의 기존30초와 별개로 실패 후 bootstrap known root가 남은 경우, 원SSH/모든writer 종료·관측가능프로세스/부모·fresh inode/nonce·known/current 전부 일치/미소유0 조건에서 **별도 회수전용1회 최대120초**를 같은 결정에 포함할지 요청. 직전 별도회수와 같은 개별unlink/leaf-rmdir/빈root·독립잔여 조회만. 이는 원30초를 몰래 늘리는 것이 아니라 새로 드러낸 추가 권한이며, 동의 전 발급0 |
+| 실패/잔여 | unknown/changed/link/종료불명/기한 미충족은 해당 항목 보존·FAIL, recursive/glob·소유 자동채택·강제process종료·범위/기한 확대·재시도0. timer는 OS 종료 보장 아님. 결과/실패/회수·기존 Minor를 정본3문서에 기록·동일 private checkpoint로 보존 |
+| 잔여위험/미진 | UID1001 관리자 미확정·도구/같은UID/root/Docker 관리자 경합·registry 공급망·OS 취소/종료/잔류 가능성은 제거되지 않음. M1 회수 최초 세부코드 null 가능성은 일반cleanupFailure/FAIL과 함께 남음. 실제성능/원인/제품 인수를 미리 보장하지 않음 |
+
+요청은 위의 **새 고정 결정 재결박→조건부 H3 고정/정상 private→새 격리 actual1회→조건 충족 시 별도 exact 회수120초까지 한 묶음 허용** 여부다. 새 actual 미허용이면 현재 준비 후보와 과거 실패/회수 결과는 보존하고 실제 재실행 없이 다른 승인 계획의 독립 구현을 Main이 선정한다. PMO는 필요한 결정·지원만 담당하며 다음 업무 배정을 기다리는 안이 아니다.
