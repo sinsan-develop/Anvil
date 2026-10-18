@@ -42,6 +42,16 @@ export class WorkspaceConversationReader {
    return{source:await readConversationMessage(this.#client,this.#projectId,conversation.id,sourceRef)};
   });
  }
+ previous(){
+  const source=this.#state.source,conversationId=source?.conversationId,sequence=source?.serverSequence,selected=this.#state.selectedConversation?.id;
+  const previous=source?.message.kind==='USER_INSTRUCTION'&&source.message.supersedesInstructionRef?{...source.message.supersedesInstructionRef}:null;
+  return this.#run({},async()=>{
+   if(!previous||!conversationId||conversationId!==selected||!sequence)throw new ApiError('CONVERSATION_PREVIOUS_UNAVAILABLE');
+   const prior=await readConversationMessage(this.#client,this.#projectId,conversationId,previous);
+   if(prior.message.kind!=='USER_INSTRUCTION'||prior.serverSequence>=sequence)throw new ApiError('CONVERSATION_PREVIOUS_INVALID');
+   return{source:prior};
+  });
+ }
  /** 이미 전송된 GET의 즉시 네트워크 중단을 보장하지 않는다. 결과·콜백·메모리 참조를 해제한다. */
  dispose(){this.#active=false;this.#sequence++;this.#state=newWorkspaceConversationState();}
 }

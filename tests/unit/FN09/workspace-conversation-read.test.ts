@@ -30,3 +30,17 @@ test('목록 밖 참조는 조회하지 않고 본문 변조·401 뒤 이전 원
 test('해제 뒤 늦은 응답과 재사용은 상태·인증 콜백이나 새 조회를 만들지 않는다',async()=>{
  let release!:(value:Response)=>void,calls=0;const gate=new Promise<Response>(resolve=>{release=resolve;}),states:any[]=[];const model=make(new ApiClient(async()=>{calls++;return gate;}),value=>states.push(value));const pending=model.list();const count=states.length;model.dispose();release(Response.json(fixture().conversations));await pending;assert.equal(states.length,count);await model.list();assert.equal(calls,1);
 });
+
+function correctionFixture(kind:'USER_INSTRUCTION'|'USER_MESSAGE'='USER_INSTRUCTION',sequence=1){
+ const f=fixture(),previous=structuredClone(f.source);previous.body='정정 전 보존된 사용자 원칙';previous.serverSequence=sequence;previous.message.kind=kind as any;previous.message.supersedesInstructionRef=null as any;previous.message.bodyRef={...previous.message.bodyRef,bytes:Buffer.byteLength(previous.body),contentHash:contentHash(Buffer.from(previous.body))};
+ const digest=(value:any)=>contentHash(canonicalJson({conversationId:cid,targetRoleRef:null,message:value.message,sourceRefs:[],serverSequence:value.serverSequence,authorRef:value.authorRef}));
+ previous.sourceRef={kind:'CONVERSATION',id:uid,contentHash:digest(previous)};f.source.message.supersedesInstructionRef=previous.sourceRef;f.messages.items[0]!.supersedesInstructionRef=previous.sourceRef;f.sourceRef.contentHash=digest(f.source);
+ return{...f,previous};
+}
+function correctionReader(f:ReturnType<typeof correctionFixture>){const calls:string[]=[];const client=new ApiClient(async(path)=>{calls.push(String(path));if(String(path).endsWith('/messages/'+uid))return Response.json(f.previous);if(String(path).endsWith('/messages/'+mid))return Response.json(f.source);return Response.json(String(path).includes('/messages?')?f.messages:f.conversations);});return{model:make(client),calls};}
+test('목록 밖 이전 지시도 현재 원문의 정확 정정 ref로만 같은 대화에서 읽는다',async()=>{
+ const f=correctionFixture(),{model,calls}=correctionReader(f);assert.equal(typeof model.previous,'function');await model.list();await model.open(cid);await model.read(f.sourceRef);await model.previous();assert.equal(model.state.source?.body,'정정 전 보존된 사용자 원칙');assert.equal(model.state.source?.serverSequence,1);assert.equal(calls.at(-1),`/api/v1/projects/${pid}/conversations/${cid}/messages/${uid}`);assert.equal(calls.length,4);await model.previous();assert.equal(calls.length,4);assert.equal(model.state.source,null);assert.equal(model.state.error?.code,'CONVERSATION_PREVIOUS_UNAVAILABLE');model.dispose();
+});
+test('정정 참조가 유효해도 이전 순번이 아니거나 사용자 발언이면 원문을 채택하지 않는다',async()=>{
+ for(const f of [correctionFixture('USER_INSTRUCTION',2),correctionFixture('USER_MESSAGE',1)]){const {model}=correctionReader(f);assert.equal(typeof model.previous,'function');await model.list();await model.open(cid);await model.read(f.sourceRef);await model.previous();assert.equal(model.state.source,null);assert.equal(model.state.error?.code,'CONVERSATION_PREVIOUS_INVALID');model.dispose();}
+});
