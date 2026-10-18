@@ -2,6 +2,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isVersionRef } from '../../../../contracts/references.ts';
 import { AuthFailure } from '../access/repository.ts';
 import { assertKnowledgeTextSafe, exact, textArtifact, uuid } from '../knowledge/knowledge-entry.ts';
+import { contextSlotCodes } from './context-input.ts';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const identifier = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value);
@@ -17,13 +18,15 @@ export function planContextText(input: unknown, limits: { maxPartBytes: number; 
  let items: any[];
  try {
   const serialized = canonicalJson(input);
-  if (Buffer.byteLength(serialized, 'utf8') > MAX_BYTES) return invalid();
+  // 내부 원문/부가정보의 JSON escaping 상한이다. 외부 HTTP 본문·Agent 예산을 늘리는 설정이 아니다.
+  if (Buffer.byteLength(serialized, 'utf8') > 16 * MAX_BYTES) return invalid();
   items = JSON.parse(serialized);
  } catch { return invalid(); }
- if (!Array.isArray(items) || !items.length || items.length > 200 || !exact(limits, ['maxPartBytes', 'maxParts'])
+ // 선택 원문 200개와 별개로, 빈 필수 슬롯의 내부 MISSING 표식을 보존한다.
+ if (!Array.isArray(items) || !items.length || items.length > 200 + contextSlotCodes.length || !exact(limits, ['maxPartBytes', 'maxParts'])
   || !Number.isSafeInteger(limits.maxPartBytes) || limits.maxPartBytes < 1 || limits.maxPartBytes > MAX_BYTES
   || !Number.isSafeInteger(limits.maxParts) || limits.maxParts < 1 || limits.maxParts > 200) return invalid();
- const seen = new Set<string>();
+ const seen = new Set<string>(); let totalBytes = 0;
  const resultItems: { itemId: string; category: string; required: boolean; sourceRef: any; sourceHash: string | null; reason: string; includedState: 'INCLUDED' | 'MISSING' | 'REDACTED' | 'EXCLUDED'; deliveryParts: string[]; issue: string | null }[] = [];
  const parts: TextPart[] = [];
  for (const item of items) {
@@ -43,6 +46,7 @@ export function planContextText(input: unknown, limits: { maxPartBytes: number; 
    continue;
   }
   if (!item.sourceRef || !textArtifact(item.bodyRef) || typeof item.bodyRef.mediaType !== 'string' || typeof item.body !== 'string' || !item.body.isWellFormed()) return invalid();
+  totalBytes += item.bodyRef.bytes; if (totalBytes > MAX_BYTES) return invalid();
   if (Buffer.byteLength(item.body, 'utf8') !== item.bodyRef.bytes || contentHash(item.body) !== item.bodyRef.contentHash) throw new AuthFailure('CONTEXT_TEXT_INTEGRITY_INVALID', 422);
   try { assertKnowledgeTextSafe(item.body); } catch { record.includedState = 'REDACTED'; record.issue = 'SENSITIVE_CONTENT_SUSPECTED'; continue; }
   const pieces: string[] = []; let buffer = '', bytes = 0;
@@ -61,6 +65,7 @@ export function planContextText(input: unknown, limits: { maxPartBytes: number; 
    parts.push({ partId, itemId: record.itemId, text, utf8Bytes: Buffer.byteLength(text, 'utf8'), contentHash: contentHash(text) });
   });
  }
+ if (Buffer.byteLength(canonicalJson(items.map(item => ({ ...item, body: null }))), 'utf8') > MAX_BYTES) return invalid();
  return { items: resultItems, parts, missingRequired: resultItems.filter(item => item.required && item.includedState !== 'INCLUDED').map(item => item.itemId),
   excluded: resultItems.filter(item => item.includedState === 'EXCLUDED').map(item => item.itemId), multipartRequired: parts.length > 1,
   ready: false as const, executionAuthorized: false as const, dispatchPerformed: false as const, sourceAuthorizationVerified: false as const, budgetVerified: false as const };

@@ -56,3 +56,10 @@ test('외부 소비 전 매체 형식의 배열·객체 coercion을 텍스트 �
  for (const mediaType of [['text/plain;charset=utf-8'], { value: 'text/plain;charset=utf-8' }])
   assert.throws(() => module.planContextText([{ ...original, bodyRef: { ...original.bodyRef, mediaType } }], { maxPartBytes: 100, maxParts: 20 }), /CONTEXT_TEXT_INPUT_INVALID/);
 });
+test('2MiB 원문 자체와 부가정보를 혼동하지 않으며 전체 원문 초과는 거절한다', () => {
+ const body = 'x'.repeat(2 * 1024 * 1024), original = item('boundary', body);
+ const result = module.planContextText([original], { maxPartBytes: 32768, maxParts: 100 });
+ assert.equal(result.parts.length, 64); assert.equal(result.parts.reduce((total: number, part: any) => total + part.utf8Bytes, 0), 2097152);
+ assert.equal(digest(result.parts.map((part: any) => part.text).join('')), digest(body)); assert.deepEqual(result.missingRequired, []);
+ assert.throws(() => module.planContextText([original, item('overflow', 'x')], { maxPartBytes: 32768, maxParts: 100 }), /CONTEXT_TEXT_INPUT_INVALID/);
+});

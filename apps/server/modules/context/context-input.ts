@@ -8,7 +8,7 @@ import { AuthFailure } from '../access/repository.ts';
 export const contextPreparationOperations = ['buildTaskContext'] as const;
 export const contextSlotCodes = ['PURPOSE_REASON', 'RULES_SCOPE', 'LATEST_INSTRUCTIONS', 'DECISIONS_REASON', 'CURRENT_POSITION', 'ACTUAL_GAPS', 'NEXT_ACTION'] as const;
 export type ContextSlotCode = typeof contextSlotCodes[number];
-export type ContextSourceSelection = { kind: 'KNOWLEDGE_VERSION' | 'DOCUMENT_VERSION'; versionRef: VersionRef } | { kind: 'USER_INSTRUCTION'; conversationId: string; messageRef: MessageRef };
+export type ContextSourceSelection = { kind: 'KNOWLEDGE_VERSION'; versionRef: VersionRef } | { kind: 'DOCUMENT_VERSION'; versionRef: VersionRef } | { kind: 'USER_INSTRUCTION'; conversationId: string; messageRef: MessageRef };
 export interface ContextPreparationInput {
  assignmentRef: VersionRef; budgetRef: VersionRef | null;
  slots: { code: ContextSlotCode; sources: ContextSourceSelection[]; reason: string }[];
