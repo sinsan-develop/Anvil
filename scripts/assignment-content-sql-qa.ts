@@ -7,7 +7,13 @@ import { sourceReadMigrationId } from './source-read-migration.ts';
 import { sourceReadPsqlText as quote } from './source-read-psql-batches.ts';
 
 export const assignmentContentQaResource = Object.freeze({ ...assignmentDraftSqlQaResource, container:'anvil-v3-fn09-content-sql-qa-pg-02',network:'anvil-v3-fn09-content-sql-qa-net-02',database:'anvil_v3_fn09_content_qa_02' });
-export const assignmentContentWorkflowQaResource=Object.freeze({...assignmentContentQaResource,container:'anvil-v3-fn09-content-workflow-pg-03',network:'anvil-v3-fn09-content-workflow-net-03',database:'anvil_v3_fn09_content_workflow_qa_03',port:5547,hostPublish:true,artifactRoot:'/tmp/anvil-v3-fn09-content-workflow-03'});
+export const assignmentContentWorkflowQaResource=Object.freeze({...assignmentContentQaResource,container:'anvil-v3-fn09-content-workflow-pg-04',network:'anvil-v3-fn09-content-workflow-net-04',database:'anvil_v3_fn09_content_workflow_qa_04',port:5432,hostPublish:false,artifactRoot:'/tmp/anvil-v3-fn09-content-workflow-04'});
+/** owner/fullID 검증 후 새 단독 internal network의 실제 주소만 사용한다. host port는 게시하지 않는다. */
+export function assignmentContentQaAddress(item:any,networkId:string){
+ const requested=item?.HostConfig?.PortBindings,actual=item?.NetworkSettings?.Ports,networks=item?.NetworkSettings?.Networks,endpoint=networks?.[assignmentContentWorkflowQaResource.network],address=endpoint?.IPAddress,octets=typeof address==='string'?address.split('.').map(Number):[];
+ if(!/^[0-9a-f]{64}$/.test(networkId)||item?.HostConfig?.PublishAllPorts!==false||(requested!=null&&Object.keys(requested).length)||!actual||Object.keys(actual).length!==1||actual['5432/tcp']!==null||!networks||Object.keys(networks).length!==1||endpoint?.NetworkID!==networkId||typeof address!=='string'||!/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(address)||octets.some((v:number)=>!Number.isInteger(v)||v<0||v>255)||octets[3]===0||octets[3]===255)throw Error('CONTENT_QA_NETWORK_OR_PORT_INVALID');
+ return address;
+}
 export const assignmentContentMigrationId='0013_assignment_confirmation';
 const check=(expression:string,code:string)=>`DO $contentcheck$ BEGIN IF (${expression}) IS DISTINCT FROM TRUE THEN RAISE EXCEPTION '${code}' USING ERRCODE='P0001';END IF;END $contentcheck$;`;
 export function assertAssignmentContentQaBinding(input:{platform:string;uid:number;cwd:string;module:string;head:string;commit:string;dirty:string;remote:string;sqlHash:string;expiresAt:string;env:NodeJS.ProcessEnv},now=Date.now()){

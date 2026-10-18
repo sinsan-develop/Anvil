@@ -21,7 +21,7 @@ import type { AssignmentContentReview } from '../../../apps/server/modules/assig
 import type { FormDefinition } from '../../../apps/server/modules/documents/forms.ts';
 import { assignmentQaMutation } from './assignment-qa-safety.ts';
 
-const id=(n:number)=>'a6f20930-0000-4000-8000-'+String(n).padStart(12,'0'),users=[id(101),id(102)],project=id(201),application=id(301),root='/tmp/anvil-v3-fn09-content-workflow-03';
+const id=(n:number)=>'a6f20930-0000-4000-8000-'+String(n).padStart(12,'0'),users=[id(101),id(102)],project=id(201),application=id(301),root='/tmp/anvil-v3-fn09-content-workflow-04';
 async function cleanRoot(){
   const top=await lstat(root);assert(!top.isSymbolicLink()&&top.isDirectory()&&top.uid===1000&&(top.mode&0o777)===0o700);assert.equal(await realpath(root),root);
   const files:{path:string;hash:string}[]=[],dirs:string[]=[];
@@ -30,14 +30,15 @@ async function cleanRoot(){
 }
 test('새 격리 PG에서 실제 인증·명시정책·원본 선행을 거친 임무 내용검토·별도확정·영수증 재확인', {timeout:90000}, async t=>{
   const deadline=Date.parse(process.env.ANVIL_FN09_CONTENT_QA_EXPIRES_AT??'');
-  if(process.platform!=='linux'||process.getuid?.()!==1000||process.env.ANVIL_FN09_CONTENT_WORKFLOW_QA!=='CONTENT_WORKFLOW_03'||!Number.isFinite(deadline)||deadline<=Date.now()||deadline>Date.now()+1200000||await realpath(process.cwd())!=='/home/daon/deploy/anvil-v3'||process.env.ANVIL_DB_CONFIG||process.env.ANVIL_MIGRATOR_CONFIG)throw Error('CONTENT_WORKFLOW_EXACT_ISOLATED_TARGET_REQUIRED');
+  const host=process.env.ANVIL_FN09_CONTENT_QA_PG_HOST??'';
+  if(process.platform!=='linux'||process.getuid?.()!==1000||process.env.ANVIL_FN09_CONTENT_WORKFLOW_QA!=='CONTENT_WORKFLOW_04'||!/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)||!Number.isFinite(deadline)||deadline<=Date.now()||deadline>Date.now()+1200000||await realpath(process.cwd())!=='/home/daon/deploy/anvil-v3'||process.env.ANVIL_DB_CONFIG||process.env.ANVIL_MIGRATOR_CONFIG)throw Error('CONTENT_WORKFLOW_EXACT_ISOLATED_TARGET_REQUIRED');
   const appPassword=process.env.ANVIL_FN09_CONTENT_APP_PASSWORD??'',migratorPassword=process.env.ANVIL_FN09_CONTENT_MIGRATOR_PASSWORD??'';assert(/^[0-9a-f]{64}$/.test(appPassword)&&/^[0-9a-f]{64}$/.test(migratorPassword));
-  const common={host:'127.0.0.1',port:5547,database:'anvil_v3_fn09_content_workflow_qa_03',connectionTimeoutMillis:5000,query_timeout:10000,application_name:'anvil-v3-fn09-content-workflow-03'};
+  const common={host,port:5432,database:'anvil_v3_fn09_content_workflow_qa_04',connectionTimeoutMillis:5000,query_timeout:10000,application_name:'anvil-v3-fn09-content-workflow-04'};
   const pool=new Pool({...common,user:'anvil_v3_app',password:appPassword}),admin=new Pool({...common,user:'anvil_v3_migrator',password:migratorPassword}),access=new AccessRepository(pool,{installationId:randomUUID(),key:randomBytes(32)}),app=buildApp({},undefined,{repository:access,origin:'https://localhost:3830',artifactRoot:root});
   let phase='TARGET',rootCreated=false,lastResponseCode:string|null=null,failure:Record<string,unknown>|null=null;const cases:string[]=[],fresh=()=>assert(!t.signal.aborted&&Date.now()<deadline,'CONTENT_WORKFLOW_EXPIRED');
   const mutate=<T>(operation:()=>Promise<T>)=>assignmentQaMutation(deadline,t.signal,operation);
   try{
-    const identity=(await admin.query('SELECT current_database() db,current_user role')).rows[0];assert.equal(identity.db,common.database);assert.equal(identity.role,'anvil_v3_migrator');
+    const identity=(await admin.query('SELECT current_database() db,current_user role,inet_server_addr()::text address')).rows[0];assert.equal(identity.db,common.database);assert.equal(identity.role,'anvil_v3_migrator');assert.equal(identity.address,host);
     const migrations=(await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows;assert.equal(migrations.length,48);assert.equal(migrations.find(r=>r.id==='0013_assignment_confirmation')?.checksum,'fe064af94b23185066047f8e202806cd4c3a7fe69ab7855bd2d2f6b961ae7cca');
     const role=(await pool.query('SELECT current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];assert.equal(role.role,'anvil_v3_app');assert.equal(role.rolsuper,false);assert.equal(role.rolbypassrls,false);
     await assert.rejects(lstat(root),(e:any)=>e.code==='ENOENT');await mutate(()=>mkdir(root,{mode:0o700}));rootCreated=true;assert.equal(await realpath(root),root);

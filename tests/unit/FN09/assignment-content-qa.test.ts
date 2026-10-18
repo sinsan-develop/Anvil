@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';import test from 'node:test';
 import * as module from '../../../scripts/assignment-content-sql-qa.ts';
 import { spawnSync } from 'node:child_process';
+
+test('실제 workflow 연결은 새 전용 network/fullID의 사설 IPv4만 소비하고 게시포트·다른network를 거절한다',()=>{
+ const check=(value:any)=>{assert.equal(typeof(module as any).assignmentContentQaAddress,'function');return(module as any).assignmentContentQaAddress(value,'a'.repeat(64));};
+ const network=module.assignmentContentWorkflowQaResource.network,good={HostConfig:{PublishAllPorts:false,PortBindings:{}},NetworkSettings:{Ports:{'5432/tcp':null},Networks:{[network]:{NetworkID:'a'.repeat(64),IPAddress:'172.29.0.2'}}}};
+ assert.equal(check(good),'172.29.0.2');
+ for(const change of[(v:any)=>{v.HostConfig.PortBindings={'5432/tcp':[{HostIp:'127.0.0.1',HostPort:'5547'}]};},(v:any)=>{v.NetworkSettings.Ports['5432/tcp']=[{HostIp:'0.0.0.0',HostPort:'5432'}];},(v:any)=>{v.NetworkSettings.Networks[network].NetworkID='b'.repeat(64);},(v:any)=>{v.NetworkSettings.Networks.extra={};},(v:any)=>{v.NetworkSettings.Networks[network].IPAddress='127.0.0.1';},(v:any)=>{v.NetworkSettings.Networks[network].IPAddress='172.32.0.2';},(v:any)=>{v.NetworkSettings.Networks[network].IPAddress='172.29.0.999';}]){const value=structuredClone(good);change(value);assert.throws(()=>check(value),/CONTENT_QA_NETWORK_OR_PORT_INVALID/);}
+});
 test('내용 확정 SQL QA는 exact clean WSL Git·유한 수명만 허용하고 정식DB 설정·다른 Docker를 거절한다',()=>{
  const check=(value:any)=>{assert.equal(typeof (module as any).assertAssignmentContentQaBinding,'function');return(module as any).assertAssignmentContentQaBinding(value,1000);};
  const good={platform:'linux',uid:1000,cwd:'/home/daon/deploy/anvil-v3',module:'/home/daon/deploy/anvil-v3/scripts/qa-assignment-content-sql.ts',head:'a'.repeat(40),commit:'a'.repeat(40),dirty:'',remote:'git@github-sinsan-develop:sinsan-develop/Anvil.git',sqlHash:'b'.repeat(64),expiresAt:new Date(601000).toISOString(),env:{}};
