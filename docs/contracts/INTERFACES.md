@@ -557,6 +557,17 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 
 GET context/:id는 묶음 manifest·빠진 자료/전달/검토 상태를 같은 프로젝트 권한 안에서 조회한다. 전달·내용·이해가 각각 확인됐는지 보여주고, 외부 연결 미확인은 서버 검색/원문 조회를 막는 이유가 아니다. 내용·도구 대상·수신 사실이 없는 `read=true` 하나로 준비를 통과시키지 않는다.
 
+### 10.4.1 FN05 준비 저장 후보 계약 — 2026-10-18
+
+- 기존 프로젝트 commands의 `buildTaskContext`는 `targetId=null,expectedVersion=0,baselineRefs=[],approvalRef=null`과 context-input의 정확 `{assignmentRef,budgetRef,slots,limits,reason}`를 받는다. 확정 임무의 실제 기준과 payload의 원문 선택을 같은 transaction에서 재검사하고 새 불변 version1만 만든다. 명시 AUTO 정책/현재 OWNER·client·제어/세션·정책 만료/replay/감사를 소비하며 정책 자동 부여0이다. REQUIRE_APPROVAL 또는 approvalRef는 `CONTEXT_APPROVAL_NOT_CONNECTED`로 거절한다. 기존 uploadArtifact 전용 일회 승인 소비를 이 operation에 확장하지 않았다.
+- ContextBundle의 저장 manifest는 기존 필드와 `projectId,preparationInput,sourceBindings,unverified`·항상 false인 검증/실행 플래그를 보존한다. contentHash는 자기 자신을 제외한 manifest canonical JSON의 SHA256이며 외부 `ref`로 결박한다. deliveryPlan의 각 부분은 `{partId,itemId,sourceRef,bodyRef,order,byteOffset,utf8Bytes,contentHash}`다. offset은 원문별 UTF8 바이트 기준, order는 전체 순서다. 본문/부분 text는 저장하지 않으며 byte/hash 계산·전달 계획은 실제 Agent 수신/이해가 아니다.
+- `GET /api/v1/projects/:projectId/context/:id/versions/1`은 현재 회원 검사→영수증/manifest/items 정합성→기존 보호 원문 resolver 재조회를 수행한다. 응답은 `{projectId,ref,manifest,currentCheck,ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt}`다. currentCheck는 `MATCHED_METADATA/CHANGED/UNAVAILABLE`이며 의미 합격·최신 지시의 전체성/준비 완료가 아니다. 현재 원문/basis의 409·412만 UNAVAILABLE로 구분하고 403·404·서버 무결성 실패는 성공 응답으로 숨기지 않는다. 과거 manifest의 INCLUDED는 현재 허가로 쓰지 않는다.
+- `GET /api/v1/projects/:projectId/context?assignmentId=...&assignmentVersion=...&assignmentHash=...&limit=...`은 정확 확정 임무를 먼저 확인하고 최근 후보만 기본20/최대50개 반환한다. 각 항목의 현재 원문을 재검사하고 `{ref,missingRequired,excluded,currentCheck}`를 제공한다. `hasMore`는 한도 밖 후보가 있음을 뜻하며 전체 이력/페이지 순회 구현 완료 주장이 아니다. 미등록 query는 거절한다.
+- 복수 CURRENT_POSITION 선택은 모두 items/sourceBindings에 남기고 단일 currentPositionRef는 null·CURRENT_POSITION_AMBIGUOUS로 표시한다. 준비 생성만으로 원문 선정/최신 관련 지시 효력·현재 위치의 의미·예산·전달·이해·실행을 통과시키지 않는다.
+- 새 forward0014 SQL/route는 후보이며 실제 DB 적용·권한/DML·동시성·served UI/Agent는 WORK_STATUS의 실제 증거 전 미검증이다. 기존 SQL/정식 서비스·실사용자 정책·자료 자동 삭제는 변경하지 않는다.
+
+- 원 요청의 정확 payload는 별도 request_payload metadata로 보존한다. manifest.preparationInput은 계산용 슬롯 정규화본이며 원 명령의 request_hash/replay 의미를 바꾸지 않는다. 두 입력은 슬롯 순서를 제외한 내용·모든 선택/이유가 같아야 한다. SQL/GET은 원 payload로 요청 hash를 재구성하고 정규화 결과를 manifest와 대조한다.
+
 ### 10.5 초기 저장 흐름과의 교차 검수
 
 FN01~03의 생성/저장은 FN11 공통 집행을 소비하며 실제 권한/초기 제어 검증을 IX05로 미루지 않는다. IX01은 두 프로젝트의 직접 ID·본문/첨부·검색 격리와 만료·옛 세대 변경 거절, 방법론→설계/화면 검토→작업계획→원문/지식 재조회를 확인한다. IX02/04는 전달/이해와 실제 Agent/회수를 별도로 검수한다. 이 절은 그 검수 입력/출력을 정의한 것이며 시험 결과가 아니다.
