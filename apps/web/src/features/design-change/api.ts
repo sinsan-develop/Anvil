@@ -23,7 +23,11 @@ async function digest(value: unknown) { return [...new Uint8Array(await crypto.s
 export async function readDesignChange(client: ApiClient, projectId: string, changeId: string, beforeVersion: number | null): Promise<DesignChangePage> {
   if (!uuid(projectId) || !uuid(changeId) || beforeVersion !== null && (!Number.isSafeInteger(beforeVersion) || beforeVersion < 1 || beforeVersion > 999999999999999)) throw new ApiError('CLIENT_PATH_INVALID');
   const query = new URLSearchParams({ limit: '10' }); if (beforeVersion !== null) query.set('beforeVersion', String(beforeVersion));
-  const page: any = await client.get(`/api/v1/projects/${projectId}/design-changes/${changeId}?${query}`), fail = (): never => { throw new ApiError('RESPONSE_INVALID'); };
+  return validateDesignChangePage(await client.get(`/api/v1/projects/${projectId}/design-changes/${changeId}?${query}`), changeId, beforeVersion);
+}
+/** GET과 등록 영수증의 같은 불변 snapshot 검증이며 현재 권한/기준 활성화 검증이 아니다. */
+export async function validateDesignChangePage(page: any, changeId: string, beforeVersion: number | null): Promise<DesignChangePage> {
+  const fail = (): never => { throw new ApiError('RESPONSE_INVALID'); };
   if (!exact(page, ['change', 'impactVersions', 'latestImpactRef', 'hasMoreImpacts', 'nextBeforeVersion', 'activatedAsBaseline', 'observedAt']) || page.activatedAsBaseline !== false || !at(page.observedAt) || !ref(page.latestImpactRef) || !Array.isArray(page.impactVersions) || page.impactVersions.length > 10 || typeof page.hasMoreImpacts !== 'boolean') fail();
   const c = page.change;
   if (!exact(c, ['ref', 'status', 'beforeRef', 'afterProposalRef', 'reason', 'sourceRefs', 'requestedBy', 'createdAt']) || !ref(c.ref) || c.ref.id !== changeId || c.ref.version !== 1 || c.status !== 'PROPOSED' || !ref(c.beforeRef) || !uuid(c.afterProposalRef) || !text(c.reason) || !Array.isArray(c.sourceRefs) || c.sourceRefs.length > 200 || !c.sourceRefs.every(source) || new Set(c.sourceRefs.map(ordered)).size !== c.sourceRefs.length || !exact(c.requestedBy, ['kind', 'userId']) || c.requestedBy.kind !== 'HUMAN' || !uuid(c.requestedBy.userId) || !at(c.createdAt)) fail();

@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { readDesignChange, type DesignChangePage, type ImpactTargetRef } from './api.ts';
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
+import type { DocumentSession } from '../design-trace/editor-api.ts';
+import type { ChangeRequestBuffer } from './request-api.ts';
+import { DesignChangeRequest } from './DesignChangeRequest.tsx';
 
 const reference = (value: PlanRef) => `${value.id} · v${value.version} · ${value.contentHash}`;
 const targetLabel = (value: ImpactTargetRef) => `${value.kind} · ${value.localCode ?? value.id} · v${value.versionRef.version}${value.anchor ? ' · ' + value.anchor : ''}`;
-export function DesignChangesPage({ client, projectId, onAuthenticationLost }: { client: ApiClient; projectId: string; onAuthenticationLost: () => void }) {
+export function DesignChangesPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; onAuthenticationLost: () => void }) {
   const [requestId, setRequestId] = useState(''), [value, setValue] = useState<DesignChangePage | null>(null), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [before, setBefore] = useState<number | null>(null);
   const alive = useRef(true), flight = useRef(false);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
@@ -15,8 +18,9 @@ export function DesignChangesPage({ client, projectId, onAuthenticationLost }: {
     catch (cause) { if (!alive.current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); }
     finally { flight.current = false; if (alive.current) setBusy(false); }
   }
-  return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력 조회</h2>
-    <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 새 요청 등록·검토 작성·승인·기준 적용·작업 재개는 아직 연결되지 않았습니다.</p>
+  return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력</h2>
+    <DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} reading={busy} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
+    <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 검토 작성·승인·기준 적용·작업 재개는 아직 연결되지 않았습니다.</p>
     <form onSubmit={event => { event.preventDefault(); void load(requestId, null); }}><fieldset disabled={busy}><legend>저장된 요청 찾기</legend>
       <label>변경 요청 ID<input value={requestId} maxLength={36} autoComplete="off" spellCheck={false} onChange={event => { setRequestId(event.target.value); setValue(null); setError(null); }} /></label><button type="submit" disabled={!requestId}>변경 요청 조회</button>
     </fieldset></form>
