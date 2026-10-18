@@ -5,9 +5,11 @@ import { readAssignmentDraft, type AssignmentDraftView } from './assignment-api.
 import { contentCriteria, newAssignmentDecision, prepareAssignmentDecision, readAssignmentDecision, readConfirmedAssignment, sendAssignmentDecision, type AssignmentDecisionBuffer, type AssignmentDecisionView, type ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import type { AssignmentContentReview, AssignmentReviewOutcome } from '../../../../server/modules/assignments/assignment-confirmation-input.ts';
+import { WorkspaceContextPreparation } from './WorkspaceContextPreparation.tsx';
+import type { ContextPreparationBuffer } from './context-api.ts';
 
 const labels = { PURPOSE_SCOPE:'목적·범위', BASELINE_TASK:'설계·계획·업무·단계', INPUT_OUTPUT:'입출력·책임', COMPLETION_VERIFICATION:'완료·검증', BOUNDARIES:'미확인 경계', RECORD_RECOVERY:'기록·복구' };
-export function AssignmentContentDecision({client,session,draft,buffer,onChange,owner,busy,run}:{client:ApiClient;session:DocumentSession;draft:AssignmentDraftView;buffer:AssignmentDecisionBuffer|null;onChange:Dispatch<SetStateAction<AssignmentDecisionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
+export function AssignmentContentDecision({client,session,draft,buffer,onChange,contextBuffer,onContextChange,owner,busy,run}:{client:ApiClient;session:DocumentSession;draft:AssignmentDraftView;buffer:AssignmentDecisionBuffer|null;onChange:Dispatch<SetStateAction<AssignmentDecisionBuffer|null>>;contextBuffer:ContextPreparationBuffer|null;onContextChange:Dispatch<SetStateAction<ContextPreparationBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const [decision,setDecision]=useState<AssignmentDecisionView|null>(null),[confirmed,setConfirmed]=useState<ConfirmedAssignmentView|null>(null),[hidden,setHidden]=useState(false);
   const alive=useRef(true);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   const sameTarget=!buffer||ordered(buffer.draft.ref)===ordered(draft.ref),bound=!buffer||buffer.projectId===draft.projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId;
@@ -40,5 +42,6 @@ export function AssignmentContentDecision({client,session,draft,buffer,onChange,
       {buffer.pending&&buffer.failure&&!buffer.uncertain?<button disabled={busy} onClick={()=>{if(confirm('거절된 원 판단 명령을 확인했습니다. 입력을 수정할까요?'))update(b=>({...b,pending:null,failure:null}));}}>거절 임무 판단 확인 후 수정</button>:null}
     </>:null}{hidden?<p>원문 조회 미확인 · 이전 판단·확정 원문은 숨깁니다. 보관 입력·미확인 명령은 유지합니다.</p>:null}
     {confirmed&&!hidden?<section aria-label="내용 확정 임무"><h6>내용 확정 임무</h6><p>{confirmed.ref.id} · v{confirmed.ref.version} · {confirmed.ref.contentHash}</p><p>원 초안 hash {confirmed.snapshot.draftRef.contentHash}</p><p>실행 허가 없음 · Agent 전달 없음 · READY 아님</p><pre>{JSON.stringify(confirmed.snapshot,null,2)}</pre></section>:null}
+    {confirmed&&!hidden?<WorkspaceContextPreparation key={ordered(confirmed.ref)} client={client} confirmed={confirmed} session={session} buffer={contextBuffer} onChange={onContextChange} owner={owner} busy={busy} run={run}/>:null}
   </section>;
 }
