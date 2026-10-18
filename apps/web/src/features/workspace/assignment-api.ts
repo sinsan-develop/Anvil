@@ -5,12 +5,13 @@ import { ordered } from '../knowledge/review-view.ts';
 import type { AssignmentDraftInput, AssignmentDefinition, AssignmentIssue } from '../../../../server/modules/assignments/assignment-input.ts';
 import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
 import type { ContextPreparationBuffer } from './context-api.ts';
+import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 import type { RootView } from '../connections/source-roots-api.ts';
 import type { SourceReadSnapshotView } from '../connections/source-read-api.ts';
 
 export interface AssignmentSnapshot { definition: AssignmentDefinition; reason: string; previousRef: PlanRef | null; basis: { planRef: PlanRef; applicationRef: PlanRef; designRef: PlanRef; taskCode: string; nodeId: string; taskCardHash: string }; readinessIssues: AssignmentIssue[]; status: 'DRAFT'; ready: false; executionAuthorized: false; dispatchPerformed: false }
 export interface AssignmentDraftView { projectId: string; ref: PlanRef; snapshot: AssignmentSnapshot; headVersion: number | null; sourceCurrentness: 'NOT_RECHECKED'; observedAt: string }
-export interface AssignmentBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; expectedDesignRef: PlanRef; input: AssignmentDraftInput; ref: PlanRef | null; pending: DocumentWrite | null; result: AssignmentDraftView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null; contentDecision?: AssignmentDecisionBuffer | null; contextPreparation?: ContextPreparationBuffer | null }
+export interface AssignmentBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; expectedDesignRef: PlanRef; input: AssignmentDraftInput; ref: PlanRef | null; pending: DocumentWrite | null; result: AssignmentDraftView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null; contentDecision?: AssignmentDecisionBuffer | null; contextPreparation?: ContextPreparationBuffer | null; responsibleSession?:ResponsibleSessionBuffer|null }
 export interface AssignmentPage { items: { ref: PlanRef; status: 'DRAFT'; goal: string; taskRef: AssignmentDefinition['taskRef']; issueCount: number; updatedAt: string; ready: false; executionAuthorized: false }[]; hasMore: boolean; nextCursor: string | null; observedAt: string }
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const hash = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
