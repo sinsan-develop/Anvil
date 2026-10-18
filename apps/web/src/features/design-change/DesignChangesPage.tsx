@@ -7,6 +7,7 @@ import type { ChangeRequestBuffer } from './request-api.ts';
 import { DesignChangeRequest } from './DesignChangeRequest.tsx';
 import { ImpactReviewEditor } from './ImpactReviewEditor.tsx';
 import type { ImpactReviewBuffer } from './impact-review-api.ts';
+import { StoredChangeComparison } from './StoredChangeComparison.tsx';
 
 const reference = (value: PlanRef) => `${value.id} · v${value.version} · ${value.contentHash}`;
 export interface ChangeEditorGate { acquire: () => boolean; release: () => void; allowed: () => boolean }
@@ -37,9 +38,10 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
     {busy ? <p role="status">변경 요청·영향 이력 조회 중</p> : null}{error ? <p role="alert">{error.code} · 요청과 영향은 현재 미확인입니다. 이전 조회 원문은 숨겼습니다.</p> : null}
     {value ? <section aria-label="보관 설계 변경"><h3>변경 요청 · 제안 상태</h3><p>{reference(value.change.ref)}</p><dl>
       <div><dt>변경 이유</dt><dd><pre>{value.change.reason}</pre></dd></div><div><dt>요청자</dt><dd>사람 · {value.change.requestedBy.userId}</dd></div><div><dt>요청 시각</dt><dd><time dateTime={value.change.createdAt}>{value.change.createdAt}</time></dd></div>
-      <div><dt>변경 전 설계</dt><dd>{reference(value.change.beforeRef)}</dd></div><div><dt>변경 후 수정 제안 ID · 본문은 이 화면에서 미조회</dt><dd>{value.change.afterProposalRef}</dd></div>
+      <div><dt>변경 전 설계</dt><dd>{reference(value.change.beforeRef)}</dd></div><div><dt>변경 후 수정 제안 ID · 원문은 별도 조회</dt><dd>{value.change.afterProposalRef}</dd></div>
     </dl><details><summary>요청 출처 참조</summary>{value.change.sourceRefs.length ? <ul>{value.change.sourceRefs.map((source, index) => <li key={index}>{source.kind} · {source.id}{source.kind === 'DOCUMENT_VERSION' ? ' · v' + source.version : ''} · {source.contentHash}</li>)}</ul> : <p>출처 참조 없음</p>}</details>
       <p>기준 미적용 · 이 조회는 승인·계획 개정·작업 재개를 실행하지 않습니다.</p>
+      <StoredChangeComparison key={value.change.ref.id+':'+value.change.ref.contentHash} client={client} projectId={projectId} change={value.change} onAuthenticationLost={onAuthenticationLost}/>
       <h3>영향 검토 이력</h3><p className="meta">최신 영향 참조: {reference(value.latestImpactRef)} · {before === null ? '최신부터 조회' : `v${before} 이전 구간`} · 관측 {value.observedAt}</p>
       {!value.impactVersions.length ? <p>이 구간에 저장된 이력 없음 · 영향 없음이라는 판정이 아닙니다.</p> : value.impactVersions.map((impact, index) => <details key={impact.ref.id + ':' + impact.ref.version} open={index === 0}>
         <summary>영향 v{impact.ref.version} · {impact.sourceKind === 'HUMAN_REVIEW' ? '사람 검토' : '기계적 연결 추적'}</summary>
