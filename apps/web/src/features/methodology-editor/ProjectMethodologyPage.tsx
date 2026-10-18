@@ -7,6 +7,7 @@ import { CommonMethodEditor } from './CommonMethodEditor.tsx';
 import { MethodReviewPanel } from './MethodReviewPanel.tsx';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 import type { MethodBuffer, MethodGateway } from './common-api.ts';
+import { MethodVersionComparison } from './MethodVersionComparison.tsx';
 
 export function ProjectMethodologyPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: {
   client: ApiClient; projectId: string; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer;
@@ -42,6 +43,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
       <MethodGraphCanvas graph={source.graph} selectedId={source.graph.nodes.some(node => node.nodeId === nodeId) ? nodeId : source.graph.entryNodeId} onSelect={setNodeId} label="프로젝트 방법론 원본 흐름" />
       <details><summary>절차 원문과 구조 검사</summary>{source.graph.nodes.map(node => <div key={node.nodeId}><h4>{node.name}</h4><p>{node.purpose}</p><ul>{node.completionCriteria.map((value, index) => <li key={index}>{value}</li>)}</ul></div>)}<ul>{source.validation.issues.map((issue, index) => <li key={index}>{issue.location}: {issue.message}</li>)}</ul></details>
       <p>{source.confirmation ? '이 버전의 확정 이력 있음 · 적용 여부와 별도' : '이 버전의 별도 확정 이력 없음'}</p></section> : null}
+    {source?.scope==='PROJECT'&&headVersion?<MethodVersionComparison key={`${projectId}:${source.ref.id}:${source.ref.version}:${source.ref.contentHash}`} client={client} projectId={projectId} base={source} maxVersion={headVersion} onAuthenticationLost={onAuthenticationLost}/>:null}
     <CommonMethodEditor client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => { setAfterId(null); setRevision(value => value + 1); }} />
     {source?.scope === 'PROJECT' ? <MethodReviewPanel client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onVerified={setSource} onAuthenticationLost={onAuthenticationLost} /> : null}
     <section className="status-card" aria-label="방법론 적용 경계"><h3>기존 적용본 전환</h3><p>실행 상태 미확인 · 적용 전환 불가</p><button disabled>프로젝트 적용 전환</button></section>

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { buildOfficialForms } from '../../../apps/server/modules/documents/forms.ts';
 import { buildBuiltinMethodologies } from '../../../apps/server/modules/methodologies/builtins.ts';
 import { validateMethodologyGraph } from '../../../apps/server/modules/methodologies/service.ts';
@@ -9,6 +10,8 @@ const pid = 'a6f20000-0000-4000-8000-000000000080', uid = 'a6f20000-0000-4000-80
 const original = { ref: { id: source.id, version: source.version, contentHash: source.contentHash }, name: source.name, purpose: source.purpose, scope: 'SYSTEM', systemCode: source.systemCode, graph: source.graph, sourceApproval: { productAcceptance: false }, reason: '승인 시안 원문', createdAt: '2026-10-17T00:00:00.000Z', confirmation: null, contentReviews: [], validation: validateMethodologyGraph(source.graph, forms.forms.map(form => form.ref)), runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED' };
 
 test('프로젝트 전용 복사·개정은 공통본과 분리되고 미확인 명령을 화면 이동 뒤 보존한다', async ({ page }) => {
+  const candidate=process.env.ANVIL_UI03_METHOD_COMPARE_DIST;
+  if(candidate){if(candidate!=='D:/tmp/anvil-v3-stage-b/ui03-method-comparison-01/dist')throw Error('REGISTERED_CANDIDATE_DIST_REQUIRED');await page.route('https://localhost:3830/**',async r=>{const path=new URL(r.request().url()).pathname;if(path.startsWith('/api/'))return r.fallback();if(r.request().method()!=='GET'||path!=='/'&&!/^\/assets\/[A-Za-z0-9_.-]+$/.test(path))return r.abort('blockedbyclient');const name=path==='/'?'index.html':path.slice(1);return r.fulfill({body:await readFile(new URL(name,pathToFileURL(candidate+'/'))),contentType:name.endsWith('.html')?'text/html':name.endsWith('.css')?'text/css':'application/javascript'});});}
   const unexpected: string[] = [], requests: any[] = [];
   let copied = false, cutReceipt = true, rejectRecheck = true;
   const criteria = ['METHOD_PURPOSE_SCOPE', 'METHOD_FLOW_CONTROL', 'METHOD_INPUT_OUTPUT', 'METHOD_COMPLETION_APPROVAL', 'METHOD_RECORD_LIMITS'];
