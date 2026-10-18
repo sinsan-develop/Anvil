@@ -10,6 +10,7 @@ import type { MethodBuffer, MethodGateway } from './common-api.ts';
 import { MethodVersionComparison } from './MethodVersionComparison.tsx';
 import { StoredMethodValidation } from './StoredMethodValidation.tsx';
 import { StoredNodeDefinition } from './StoredNodeDefinition.tsx';
+import { StoredNodeRoutes } from './StoredNodeRoutes.tsx';
 
 export function ProjectMethodologyPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: {
   client: ApiClient; projectId: string; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer;
@@ -44,7 +45,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     {source ? <section aria-label="선택한 전용 원본" className="status-card"><h3>{source.name} · 버전 {source.ref.version}</h3><p>{source.purpose}</p><p className="meta">{source.scope === 'PROJECT' ? '프로젝트 전용' : source.scope === 'SYSTEM' ? '시스템 원본' : '내 공통 원본'} · {source.ref.contentHash}</p>
       {source.scope === 'PROJECT' ? <div><button disabled={loading || source.ref.version <= 1} onClick={() => { void select(() => readProjectMethodAtVersion(client, projectId, source.ref.id, source.ref.version - 1)); }}>이전 방법론 버전</button><button disabled={loading || !headVersion || source.ref.version >= headVersion} onClick={() => { void select(() => readProjectMethodAtVersion(client, projectId, source.ref.id, source.ref.version + 1)); }}>다음 방법론 버전</button><p className="meta">현재 조회 {source.ref.version} / 최신 {headVersion} · 과거 원문과 확정 이력 보존</p></div> : null}
       <MethodGraphCanvas graph={source.graph} selectedId={source.graph.nodes.some(node => node.nodeId === nodeId) ? nodeId : source.graph.entryNodeId} onSelect={setNodeId} label="프로젝트 방법론 원본 흐름" />
-      {selectedNode ? <section aria-label="전용 원본 선택 단계 상세"><StoredNodeDefinition node={selectedNode} /></section> : null}
+      {selectedNode ? <section aria-label="전용 원본 선택 단계 상세"><StoredNodeDefinition node={selectedNode} /><StoredNodeRoutes graph={source.graph} nodeId={selectedNode.nodeId} /></section> : null}
       <details><summary>절차 원문과 구조 검사</summary>{source.graph.nodes.map(node => <div key={node.nodeId}><h4>{node.name}</h4><p>{node.purpose}</p><ul>{node.completionCriteria.map((value, index) => <li key={index}>{value}</li>)}</ul></div>)}<StoredMethodValidation graph={source.graph} validation={source.validation} onSelect={setNodeId} /></details>
       <p>{source.confirmation ? '이 버전의 확정 이력 있음 · 적용 여부와 별도' : '이 버전의 별도 확정 이력 없음'}</p></section> : null}
     {source?.scope==='PROJECT'&&headVersion?<MethodVersionComparison key={`${projectId}:${source.ref.id}:${source.ref.version}:${source.ref.contentHash}`} client={client} projectId={projectId} base={source} maxVersion={headVersion} onAuthenticationLost={onAuthenticationLost}/>:null}
