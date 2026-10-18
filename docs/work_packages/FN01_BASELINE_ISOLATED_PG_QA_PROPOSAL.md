@@ -1,4 +1,4 @@
-# FN01 기준선 격리 PG 핵심 검증 — r6 로컬 준비 후보 (게시 r4: 9b79667f)
+# FN01 기준선 격리 PG 핵심 검증 — r7 읽기 증거 기록 (코드 게시: 2c142c76)
 
 상태: **BOOTSTRAP_METADATA_PURE_CHECKED / PRIVATE_NATIVE_CANDIDATE_UNEXECUTED / ACTUAL_NOT_AUTHORIZED**. Main 어울 · 2026-10-18. r5 §14의19:05 직접 승인으로 후보 작성·순수14·타입만 확인 중이다(§15). actualQaAuthority=null·첫 무조건 throw와 별도 미발급 native binding을 유지한다. PG/화면 PASS·실행 준비 완료가 아니며 QA 디렉터리·컨테이너·network·DB·계정·장기 보유 핸들·native 컴파일 생성0이다.
 
@@ -226,3 +226,14 @@ Main 권장안은 기존 신규4파일에 한정한다. guard에는 receipt/sour
 - 한정 회귀는 기존10번째 사례와 R4만 확장해 여전히14개다. 순수 admission의 누락 상태와 R4 의미 guard의 임시 mutation에서 **12PASS/2FAIL139.4749ms·child226ms exit1**, 실제 stop 검사/의미 guard 복원 후 **14PASS166.9475ms·child268ms exit0**, **타입 noEmit child1230ms exit0**, timeout=false·SKIP/CANCEL0이다. 임시 mutation/stub은 남기지 않았다. 원 독립 C0/I1/M1을 새 독립 C0/I0로 바꾸거나 재검토를 반복하지 않는다.
 - Final Ruling(판단 밖): bootstrap/H·권한 issuer, native child 종료/생성응답 유실/정확 파일 회수, uid1001 도구 신뢰·sameUID/root 경쟁, PG49 문법/권한/COMMIT/동시성, 실제 원문 접근·HUMAN 의미·사용자 인수는 모두 미검증·미완료로 유지한다. 잘못 승인하면 데이터/권한·잔류 피해가 가능하므로 후보 작성·순수 검사를 실제 실행 준비나 제품 기능 완료로 승격하지 않는다.
 - 정본 WORK_STATUS와 후보 기록의 기존 과거 행 차이를 읽기 대조했다. 정본에만 남은 과거 이력을 삭제·동기 덮어쓰기하지 않고 이번 소유 기록만 추가한다. 기존 Backup/사용자 자료·서비스·계정/권한·인증서 변경0이다.
+
+## 16. 후속 직접 진행 — exact 후보 게시·지정 WSL 읽기만
+
+- 신산님은 Main의 ‘다음 후보 게시·WSL 읽기 점검 승인 미확인’ 답변에 **‘진행해’**라고 직접 지시했다(2026-10-18 약19:46KST). Main은 앞서 제시한 정확 두 범위로 한정해 commentary/PMO에 알리고 수행했다. 무응답 추정·PMO 업무배정 대기가 아니며 실제 QA/DB/SQL/서비스/권한 실행 승인으로 넓히지 않았다.
+- 실행 전 local HEAD2c142c76787f783698a7cac259c5c1055ee11ef3·기존 branch·clean/정확7경로·제품36projection0·diffcheck0·고정 development URL을 대조했다. live private9b79667f/main f976ed5e 확인 뒤 **git push development 2c142c76787f783698a7cac259c5c1055ee11ef3:refs/heads/codex/av3-stage-b** 1회 exit0, 직후 live branch2c142c76/main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·local exact/clean을 확인했다. PR/병합/새 branch/force·history rewrite0, 코드/시험 재실행0이다.
+- 지정 WSL-server(기존 SSH alias, daon)에서 read-only Python과 Docker 조회만 실행했다. Node/npm 트리와 고정 Git/Docker/socket의 **2,389항목·파일1,929·LINK0**, UID1001 항목2,386, 전체 JSON tuples659,414bytes의 SHA256 **eef204d41339cad66153e3758d66b4e52fb10cc86d4993bdb95d74a270fa76f5**를 수집했다. 전체 명세는 연결 JSON의 zlib/base64에 그대로 보존하며 원문 파일 바이트·credential은 출력/보존하지 않는다. read child1033ms·exit0/timeout=false다. 정확 query 시각은 추정하지 않고10:46:39~10:51:12UTC 관측창으로 기록했다.
+- Node/npm CLI hash는 §3의 고정값과 일치했다. /usr/bin/git SHA256 **2a8c18fbf43da9f692d75474c72bea9dfd796c260b0f3dfe456376abc3bbd668**, /usr/bin/docker **7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b**를 추가 관측했다. 이 값은 지금 읽은 사실이지 관리 주체/도구 신뢰·실행 허가가 아니다.
+- UID1001의 passwd 등록은 조회상 null, GID1001 이름은 docker였다. Node/npm0755·그룹/기타 쓰기 관측0이며 group/other writable1은 **root:docker 소유0660의 /run/docker.sock**이다. /opt·/usr/bin 등의 실제 부모는 root/0755, /var/run은 기존 /run 시스템 링크다. UID 불일치를 침해나 신뢰 확정으로 해석하지 않는다. root/sameUID/UID1001 교체 경합을 차단한 증거도 아니다.
+- Anvil 부모6개는 실경로/소유·권한/동일dev2112로 관측됐다. 지정 QA root·container·network는 모두 부재, daemon ID/Name은 고정값·pinned image ID594290e9와 일치했다. 이는 해당 literal 이름들의 읽기 관측이며 전역 자원 잔류0·예약 독점·생성 권한이 아니다. DB 접속·정식 checkout 변경·새 QA/설치·SQL·서비스/Secret·권한/Agent·native helper 실행0이다.
+- 보충 부모 조회의 첫 PowerShell 인용 구문은 **원격 실행 이전 parse 실패1**이었다. 같은 명령을 반복하지 않고 이미 검증된 stdin 전달로 바꿔 지정 부모 metadata/GID1001만 읽어 exit0을 확인했다. 전체 inventory/기존 제품검사 재실행0, 권한/도구 설치·경로 수리0이다.
+- 다음 Main 작업: 실제 B에 필요한 **신뢰/경로 잔여위험 결정과 실행 binding 발급·후보 exact H·bootstrap/의존성/기존20분창·정확 자원/회수**를 한 묶음으로 정리한다. 현재 native binding·actualQaAuthority는 여전히 null/첫 거절이며, 읽기 증거만으로 B/실제 PG·기능 완료를 승격하지 않는다. 이번 기록3문서는 게시2c142c76 이후 로컬 보존 대상이며 추가 게시를 임의 승계하지 않는다.
