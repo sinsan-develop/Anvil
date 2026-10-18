@@ -7,6 +7,7 @@ import { sourceReadMigrationId } from './source-read-migration.ts';
 import { sourceReadPsqlText as quote } from './source-read-psql-batches.ts';
 
 export const assignmentContentQaResource = Object.freeze({ ...assignmentDraftSqlQaResource, container:'anvil-v3-fn09-content-sql-qa-pg-02',network:'anvil-v3-fn09-content-sql-qa-net-02',database:'anvil_v3_fn09_content_qa_02' });
+export const assignmentContentWorkflowQaResource=Object.freeze({...assignmentContentQaResource,container:'anvil-v3-fn09-content-workflow-pg-03',network:'anvil-v3-fn09-content-workflow-net-03',database:'anvil_v3_fn09_content_workflow_qa_03',port:5547,hostPublish:true,artifactRoot:'/tmp/anvil-v3-fn09-content-workflow-03'});
 export const assignmentContentMigrationId='0013_assignment_confirmation';
 const check=(expression:string,code:string)=>`DO $contentcheck$ BEGIN IF (${expression}) IS DISTINCT FROM TRUE THEN RAISE EXCEPTION '${code}' USING ERRCODE='P0001';END IF;END $contentcheck$;`;
 export function assertAssignmentContentQaBinding(input:{platform:string;uid:number;cwd:string;module:string;head:string;commit:string;dirty:string;remote:string;sqlHash:string;expiresAt:string;env:NodeJS.ProcessEnv},now=Date.now()){
@@ -15,14 +16,15 @@ export function assertAssignmentContentQaBinding(input:{platform:string;uid:numb
   return until;
 }
 /** 새 빈 격리 PG용 SQL만 준비한다. 정식 DB/config·실행 runner를 호출하지 않는다. */
-export async function buildAssignmentContentSqlQa(){
+export async function buildAssignmentContentSqlQa(workflow=false){
+  const resource=workflow?assignmentContentWorkflowQaResource:assignmentContentQaResource;
   const base=await buildAssignmentDraftSqlQa(),root=await realpath(new URL('..',import.meta.url)),ids=[...legacyMigrationIds,sourceRootMigrationId,sourceReadMigrationId,assignmentDraftMigrationId,assignmentContentMigrationId];
   if(base.migrations!==47||ids.length!==48||new Set(ids).size!==48||base.sqlHash!=='1120676ce1df7a086d374adb5c81356d7ab2c12ef6e07c8ce66c36b4c57a7133')throw Error('CONTENT_QA_BASELINE_INVALID');
   const manifest=[];let sql='';for(const id of ids){const path=join(root,'db','migrations',id+'.sql');if(await realpath(path)!==path)throw Error('CONTENT_QA_SQL_LINK');const bytes=await readFile(path);manifest.push({id,checksum:contentHash(bytes)});if(id===assignmentContentMigrationId)sql=bytes.toString('utf8');}
   const sqlHash=manifest.find(m=>m.id===assignmentContentMigrationId)!.checksum;
-  const schema=base.schema.slice(0,base.schema.lastIndexOf('COMMIT;')).replaceAll('anvil_v3_fn09_draft_qa',assignmentContentQaResource.database)+sql+'\n;\nINSERT INTO anvil.schema_migrations(id,checksum) VALUES('+quote(assignmentContentMigrationId)+','+quote(sqlHash)+');\nCOMMIT;\nSELECT \'CONTENT_SCHEMA_48\';';
+  const schema=base.schema.slice(0,base.schema.lastIndexOf('COMMIT;')).replaceAll('anvil_v3_fn09_draft_qa',resource.database)+sql+'\n;\nINSERT INTO anvil.schema_migrations(id,checksum) VALUES('+quote(assignmentContentMigrationId)+','+quote(sqlHash)+');\nCOMMIT;\nSELECT \'CONTENT_SCHEMA_48\';';
   manifest.sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0);
-  const target=check(`current_database()='${assignmentContentQaResource.database}' AND current_user='anvil_v3_app' AND current_setting('is_superuser')='off' AND current_setting('server_version_num')::int BETWEEN 150000 AND 159999`,'CONTENT_QA_EXACT_TARGET_REQUIRED');
+  const target=check(`current_database()='${resource.database}' AND current_user='anvil_v3_app' AND current_setting('is_superuser')='off' AND current_setting('server_version_num')::int BETWEEN 150000 AND 159999`,'CONTENT_QA_EXACT_TARGET_REQUIRED');
   let readOnly="BEGIN READ ONLY;SET LOCAL statement_timeout='10s';SET LOCAL lock_timeout='2s';"+target+check('(SELECT jsonb_agg(jsonb_build_object(\'id\',id,\'checksum\',checksum) ORDER BY id COLLATE "C") FROM anvil.schema_migrations)='+quote(JSON.stringify(manifest))+'::jsonb','CONTENT_QA_MANIFEST_MISMATCH');
   for(const table of ['assignment_content_reviews','assignment_versions'])readOnly+=check(`(SELECT count(*) FROM anvil.${table})=0 AND has_table_privilege(current_user,'anvil.${table}','SELECT') AND has_table_privilege(current_user,'anvil.${table}','INSERT') AND NOT has_table_privilege(current_user,'anvil.${table}','UPDATE') AND NOT has_table_privilege(current_user,'anvil.${table}','DELETE')`,'CONTENT_QA_ACL_OR_ROWS_INVALID');
   for(const [expression,expected] of [["''",false],["chr(160)||chr(65279)||chr(8232)",false],["'정상 검토'",true],["repeat(chr(128512),10000)",true],["repeat(chr(128512),10001)",false],["repeat('a',20000)",true],["repeat('a',20001)",false],["chr(160)||'검토'||chr(160)",true]] as const)readOnly+=check(`anvil.assignment_content_reason(${expression}) IS ${expected?'TRUE':'FALSE'}`,'CONTENT_QA_UTF16_REASON_MISMATCH');
