@@ -90,4 +90,3 @@ LIMIT 2
 - 계약/기록: 승인 후 `docs/contracts/INTERFACES.md`에 정확 계약을 추가하고 `docs/WORK_STATUS.md`에 단계/오류/검증·미확인을 누적한다. 이 제안과 실행 승인은 구분한다.
 - 실제 DB·served browser·로그인 여정/프로젝트 권한·사용자 인수는 별도 실행 근거가 없으면 미검증으로 남긴다. 한정 합격으로 FN05/Stage/계획 완료를 선언하지 않는다.
 - rollback: endpoint/표시 연결 commit의 일반 revert. 새 데이터·migration·권한 부여가 없으므로 데이터 복원은 없다. 기존 원문/지식 이력은 보존한다.
-
