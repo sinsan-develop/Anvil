@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "productSource": "36c3939dd0dcbb7851de0ec967054f6e00471b76",
-  "purpose": "FN01_ISOLATED_PG_QA_PROPOSAL_NOT_EXECUTED",
+  "purpose": "FN01_ISOLATED_PG_QA_RETRY_PREFLIGHT_FAILED_NO_MUTATION",
   "actualRetry": {
-    "state": "HUMAN_DIRECT_BOUND_DELTA_REVIEWED_NOT_EXECUTED",
+    "state": "READ_ONLY_PREFLIGHT_FAILED_NO_MUTATION",
     "decisionRef": "FN01_ACTUAL_RETRY_B_20261018T125138Z",
     "grantBasis": "HUMAN_DIRECT_REPLY",
     "humanReply": "안전심사 거절에 따른 직접 승인해",
@@ -17,7 +17,7 @@
     "contractProposalSha256": "25f284ed10d60d32c00f135d5d9ac353bc4c0d691da1306fe7773bb20c38e98d",
     "contractManifestSha256": "28d88bee87c80f0c2688317e4f920f0e8cd4ee8f6bb0638c0c170b19b4ebb6e3",
     "scopeHash": "733f2f812da4ee6a6a73a3130376dd006416d69930c4df8175982ecf725bcc83",
-    "executionCommit": null,
+    "executionCommit": "3326bac6e1aa69e4702a45e7c4001d0fa1ea991b",
     "issuedAt": null,
     "expiresAt": null,
     "nonce": null,
@@ -44,7 +44,625 @@
     "newImportant": 0,
     "newMinor": 0,
     "previousCleanupMinorRetained": true,
-    "actualPerformanceOrPgVerified": false
+    "actualPerformanceOrPgVerified": false,
+    "dispatchAttempts": 1,
+    "firstMutableStarts": 0,
+    "bootstrapCreated": false,
+    "nativeEntryReached": false,
+    "sqlExecuted": 0,
+    "workflowCasesExecuted": 0,
+    "automaticRetry": false,
+    "cleanupIssued": false,
+    "conditionalCleanupReason": "NOT_NEEDED_ROOT_CONTAINER_NETWORK_ABSENT",
+    "safeProgress": {
+      "kind": "FN01_SAFE_PROGRESS",
+      "phase": "FAILED",
+      "failedPhase": "READ_ONLY_PREFLIGHT",
+      "failure": "FN01_BOOTSTRAP_TOOLS_CHANGED",
+      "head": "3326bac6e1aa69e4702a45e7c4001d0fa1ea991b",
+      "nonce": null,
+      "issuedAt": null,
+      "expiresAt": null,
+      "created": false,
+      "childrenRemaining": 0,
+      "childUnknown": false,
+      "cleanup": "PRESERVED_NOT_ADOPTED_OR_RETRIED",
+      "ownedExplicitCount": 0
+    },
+    "ssh": {
+      "kind": "FN01_SSH_CHILD",
+      "exitCode": 1,
+      "timedOut": false,
+      "elapsedMs": 610
+    },
+    "readOnlyToolDrift": {
+      "checked": 2389,
+      "expectedCount": 2389,
+      "differenceCount": 2389,
+      "first20Differences": [
+        {
+          "path": "/opt/node-v24.21.0-linux-x64",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            724928,
+            6,
+            null,
+            "/opt/node-v24.21.0-linux-x64"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            724928,
+            6,
+            null,
+            "/opt/node-v24.21.0-linux-x64"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/bin",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            724931,
+            2,
+            null,
+            "/opt/node-v24.21.0-linux-x64/bin"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            724931,
+            2,
+            null,
+            "/opt/node-v24.21.0-linux-x64/bin"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            4284312,
+            3,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            4284312,
+            3,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            4284314,
+            4,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            4284314,
+            4,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/bin/node",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            724935,
+            1,
+            "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+            "/opt/node-v24.21.0-linux-x64/bin/node"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            724935,
+            1,
+            "7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c",
+            "/opt/node-v24.21.0-linux-x64/bin/node"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            4284315,
+            7,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            4284315,
+            7,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/.npmrc",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2112,
+            4284316,
+            1,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/.npmrc"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2096,
+            4284316,
+            1,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/.npmrc"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/LICENSE",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2112,
+            4284317,
+            1,
+            "7610d223851f421d315df5e77974f1c68a04b97e02060e5bbbcf13d95e3ca257",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/LICENSE"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2096,
+            4284317,
+            1,
+            "7610d223851f421d315df5e77974f1c68a04b97e02060e5bbbcf13d95e3ca257",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/LICENSE"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/README.md",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2112,
+            4284320,
+            1,
+            "4c8033d19dbb94ea04739f077aaf17b8d24b9d7f1a49db50d61f7d37509fba19",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/README.md"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2096,
+            4284320,
+            1,
+            "4c8033d19dbb94ea04739f077aaf17b8d24b9d7f1a49db50d61f7d37509fba19",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/README.md"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            4284345,
+            3,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            4284345,
+            3,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2112,
+            4335262,
+            2,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin"
+          ],
+          "actual": [
+            "DIRECTORY",
+            1001,
+            1001,
+            493,
+            2096,
+            4335262,
+            2,
+            null,
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4335264,
+            1,
+            "7d8db08dc7f9d6d9f74341cf838a2d3532b4dec44aa0131ab8ec8076843c0c40",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4335264,
+            1,
+            "7d8db08dc7f9d6d9f74341cf838a2d3532b4dec44aa0131ab8ec8076843c0c40",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp.cmd",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4335266,
+            1,
+            "081880abf39d600c58b850ab0e28c5e562eac0d5c81bbc49226588d850dcd5d3",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp.cmd"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4335266,
+            1,
+            "081880abf39d600c58b850ab0e28c5e562eac0d5c81bbc49226588d850dcd5d3",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/node-gyp-bin/node-gyp.cmd"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4290330,
+            1,
+            "13372aa943f8eb32c9a8b6f946ed6a49118edd60051321953288b1f35611aefb",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4290330,
+            1,
+            "13372aa943f8eb32c9a8b6f946ed6a49118edd60051321953288b1f35611aefb",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-cli.js",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4284351,
+            1,
+            "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-cli.js"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4284351,
+            1,
+            "8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-cli.js"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-prefix.js",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4335239,
+            1,
+            "28cce617d054378c32e0dd6d36b3dfb8bce95d2da33b58a4349448e33504f91b",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-prefix.js"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4335239,
+            1,
+            "28cce617d054378c32e0dd6d36b3dfb8bce95d2da33b58a4349448e33504f91b",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm-prefix.js"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm.cmd",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4296999,
+            1,
+            "21b46c69ad6e2f231f02a9e120f4ba6c8e75fef5a45637103002eab99f888ab8",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm.cmd"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4296999,
+            1,
+            "21b46c69ad6e2f231f02a9e120f4ba6c8e75fef5a45637103002eab99f888ab8",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm.cmd"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm.ps1",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2112,
+            4335241,
+            1,
+            "3bf7c5ef339b71d6f8bc4ef4a7b7adb90727788674f0a3cef2ede8f5969ca327",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm.ps1"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            420,
+            2096,
+            4335241,
+            1,
+            "3bf7c5ef339b71d6f8bc4ef4a7b7adb90727788674f0a3cef2ede8f5969ca327",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npm.ps1"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npx",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4297008,
+            1,
+            "a8be7733861aede8f9c331ad7b60aa225dd085271d6de68946f0fb5d0717de09",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npx"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4297008,
+            1,
+            "a8be7733861aede8f9c331ad7b60aa225dd085271d6de68946f0fb5d0717de09",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npx"
+          ]
+        },
+        {
+          "path": "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npx-cli.js",
+          "fields": [
+            "dev"
+          ],
+          "expected": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2112,
+            4297010,
+            1,
+            "237adf8f3747cad8b9b62fcfd0d9c8d509a64e550337707f55100afcb79e8900",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npx-cli.js"
+          ],
+          "actual": [
+            "FILE",
+            1001,
+            1001,
+            493,
+            2096,
+            4297010,
+            1,
+            "237adf8f3747cad8b9b62fcfd0d9c8d509a64e550337707f55100afcb79e8900",
+            "/opt/node-v24.21.0-linux-x64/lib/node_modules/npm/bin/npx-cli.js"
+          ]
+        }
+      ],
+      "allDifferenceFieldsCaptured": false,
+      "observedFirst20Device": {
+        "expected": 2112,
+        "actual": 2096
+      },
+      "nodeNpmGitDockerHashesAutomaticallyAdopted": false,
+      "rootAbsent": true,
+      "containerAbsent": true,
+      "networkAbsent": true,
+      "ssh": {
+        "kind": "FN01_READ_ONLY_SSH",
+        "exitCode": 0,
+        "timedOut": false,
+        "elapsedMs": 2041,
+        "processKilled": false
+      },
+      "effects": 0
+    },
+    "previousFailurePreserved": true,
+    "originalQaFailureOverridden": false,
+    "formalServiceStatusQueried": false,
+    "toolIdentityRepairOrRefresh": false
   },
   "nextActualProposal": {
     "state": "PROPOSAL_ONLY_NOT_AUTHORIZED",

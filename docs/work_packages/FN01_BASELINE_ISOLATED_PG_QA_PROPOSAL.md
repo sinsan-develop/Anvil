@@ -1,4 +1,6 @@
-# FN01 기준선 격리 PG 핵심 검증 — r8 통합 실행결정 초안 (코드 게시: 2c142c76)
+# FN01 기준선 격리 PG 핵심 검증 — r9 H3 실제 사전검사 실패·효과0
+
+현재 상태: **READ_ONLY_PREFLIGHT_FAILED_NO_MUTATION**, 실제 H3/직접승인·호출/실패·독립잔여0은 §21~22를 따른다. 아래 r8 준비상태/미승인 문구와 과거 결과는 해당 시점의 보존 이력이며 현재 실제 호출을 부정하거나 성공으로 소급하지 않는다.
 
 상태: **BOOTSTRAP_METADATA_PURE_CHECKED / PRIVATE_NATIVE_CANDIDATE_UNEXECUTED / ACTUAL_NOT_AUTHORIZED**. Main 어울 · 2026-10-18. r5 §14의19:05 직접 승인으로 후보 작성·순수14·타입만 확인 중이다(§15). actualQaAuthority=null·첫 무조건 throw와 별도 미발급 native binding을 유지한다. PG/화면 PASS·실행 준비 완료가 아니며 QA 디렉터리·컨테이너·network·DB·계정·장기 보유 핸들·native 컴파일 생성0이다.
 
@@ -401,3 +403,12 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - 메타데이터 대조는 역사적 옛 ref와 이 새 고정 ref만 인정한다. issuer의 새 실제 경로는 새 ref의 **명시적 선택자**를 요구하고 controller와 같아야 한다. 기존 누락/옛 ref는 facts/OS 이전 소진 거절을 그대로 유지하며 외부 JSON으로 결정 등록0이다. parent private binding과 고정 child도 새 ref를 대조한다.
 - 기존14+G1~G6 총20 RED17/3(154.9017ms,child218ms)→GREEN20/skip·cancel0(168.0758ms,child247ms), noEmit exit0/1122ms다. 기존 담당자 한정 delta 읽기1회 **새 C0/I0/M0**, 기존 회수 세부코드 M1은 이월했다. 검토자는 실제 인간/Git 원격·H3/소비·실제5000ms/PG49/16조건/120초 회수는 재현하지 않았다. Main이 원문/Git/hash를 별도로 대조하며 이 검토를 실제 실행/인수 증거로 승격하지 않는다.
 - 실행 H3와 새 inode/nonce/최초 창은 아직 미발급이다. 검수 후 단일 literal H3를 정상 private 게시/liveexact·제품36diff0/clean/main불변을 확인한 뒤에만 §20의 actual1회와 조건부 별도 exact120초를 수행한다. 원5000ms·단계상한·최초20분/native30초·검사/SQL·기준은 유지한다.
+
+## 22. H3 실제 호출 결과 — 읽기 사전검사 실패, 신규 자원 0
+
+- H3 **3326bac6e1aa69e4702a45e7c4001d0fa1ea991b**는 d867 직접 자식·허용6경로다. 기존 private branch 정상 push/live exact·tracked clean·main f976ed5e 불변·제품36 tree diff0을 대조한 뒤 승인된 호출을1회 수행했다. 기존20/type/한정 delta 검토는 H3의 같은 코드 증거이며 이번에 불필요하게 재실행하지 않았다.
+- SSH 실제 결과: `READ_ONLY_PREFLIGHT / FN01_BOOTSTRAP_TOOLS_CHANGED`, exit1·timedOutfalse·610ms. root 생성 이전에 중단했으며 nonce/issuedAt/expiresAt는 null, createdfalse, childrenRemaining0·childUnknownfalse·ownedExplicitCount0이다. native entry/5000ms·49SQL·16조건에는 도달하지 않았다. 실행을 아예 시도하지 않았다는 뜻도, 실제 PG PASS라는 뜻도 아니다.
+- 후속 읽기만1회(SSHexit0·2041ms) 수행해 고정2389 tool tuple의 현재metadata/hash를 대조했다. checked2389/difference2389, 출력한 첫20은 dev2112→2096만 다르고 종류/UID/GID/mode/inode/links/hash/realpath는 같다. Node/npm 실제 파일 hash도 이 표본에서 같으며 Docker 바이너리 hash는 읽기 Docker명령 직전 따로 대조했다. 전체 차이의 필드별 분포는 수집하지 않았으므로 전부 dev만 변경/전체 바이너리 무변경 또는 WSL 재시작 확정으로 확대하지 않는다.
+- 독립 조회의 literal QA root·전용container/network는 모두 부재true다. 새 root/Git/npm/PG/DB/SQL·합성계정/회수 발급0, cleanup120초를 새로 열 필요가 없다. 정식 서비스·기존DB의 현재 동작은 재조회하지 않았고 해당 변경명령0이다.
+- 변경된 도구 식별자/부모/소켓을 자동 채택하거나 strict 검사를 삭제·완화하지 않는다. 같은 actual 명령 재시도/새 nonce·창 발급/소유·ACL수리0이다. 이 dispatch의 실패는 보존하고 재실행 가능 여부를 임의 판단하지 않는다. 기존 H1 실패·별도 회수PASS와 M1·전체FN01/Stage/사용자기능 미완료를 유지한다.
+- 다음 지원 경계는 현재 도구/부모/소켓의 정확 변경을 확인하여 제한된 새 관측 결박과 후속1회 실행 여부를 결정하는 것이다. PMO의 다음 업무 배정은 기다리지 않고 영향없는 승인 계획을 대조하되, 이번에 제품/API/DB 계약 변경이나 실행 범위를 추가하지 않는다.
