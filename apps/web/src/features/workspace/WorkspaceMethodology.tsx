@@ -4,6 +4,7 @@ import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import type { MethodologyDocumentItem } from '../../../../../contracts/methodologies.ts';
 import { readWorkspaceMethodology, type WorkspaceMethodology, type WorkspaceStageSelection } from './api.ts';
 import { WorkspaceForm } from './WorkspaceForm.tsx';
+import { StageRequirements } from './stage-requirements.ts';
 
 const kindLabel = { HUMAN: '사람 판단 정의', AGENT: 'Agent 수행 정의', DECISION: '분기 판단 정의', JOIN: '합류 정의' };
 const edgeLabel = { SEQUENCE: '순차', BRANCH: '분기', JOIN: '합류', REWORK: '재작업' };
@@ -39,6 +40,7 @@ export function WorkspaceMethodology({ client, projectId, expectedRef, onAuthent
       <div className="methodology-flow">{graph.nodes.map(node => <button key={node.nodeId} aria-label={`절차 정의: ${node.name}`} aria-pressed={selectedId === node.nodeId} onClick={() => { setSelectedId(node.nodeId); onStageChange({ applicationId: value.applicationRef!.id, nodeId: node.nodeId, nodeName: node.name }); }}>{node.name}{node.nodeId === graph.entryNodeId ? ' · 시작 정의' : graph.terminalNodeIds.includes(node.nodeId) ? ' · 종료 정의' : ''}</button>)}</div>
       {selected ? <section aria-label="선택한 절차 정의"><h4>{selected.name}</h4><p>{selected.purpose}</p>
         <p>{kindLabel[selected.kind]} · {roleLabel[selected.role]} · {selected.mode === 'AUTO' ? '정의상 자동 방식' : '정의상 건별 방식'}</p><p className="meta">책임 세션·도구 배정/시작 권한이 아니며 선택해도 실행하지 않습니다.</p>
+        <StageRequirements requirements={selected.requirements} limitPolicyRef={selected.limitPolicyRef} />
         <dl>{([['허용 업무', selected.taskScope.included], ['제외 업무', selected.taskScope.excluded], ['완료조건', selected.completionCriteria], ['승인 경계', selected.approvalBoundary], ['상황 기록', selected.recordRequirements]] as const).map(([title, texts]) => <div key={title}><dt>{title}</dt><dd>{texts.length ? <ul>{texts.map((text, index) => <li key={index}>{text}</li>)}</ul> : '정의 없음'}</dd></div>)}</dl>
         <DeclaredDocuments key={selectedId + ':input'} title="입력 산출물 양식" items={selected.inputs} client={client} onAuthenticationLost={onAuthenticationLost} /><DeclaredDocuments key={selectedId + ':output'} title="출력 산출물 양식" items={selected.outputs} client={client} onAuthenticationLost={onAuthenticationLost} />
         <p className="meta">고정 양식 참조이며 현재 양식 원문 접근/유효성이나 단계별 실제 문서·실행 결과는 별도 확인이 필요합니다.</p>
