@@ -209,7 +209,7 @@ export class Codex0161Codec{
   const payloadDigest=hash(p),contextDigest=hash({threadId,turnId:turnId??null,itemId:p.itemId??p.item?.id??null});
   if(request)return fact({kind:'TOOL_APPROVAL_REQUIRED',method,requestDigest:hash(value),contextDigest,payloadDigest,automaticDecision:false});
   if(method==='turn/started'||method==='turn/completed')return fact({kind:'TURN_FACT',method,toolStatus:p.turn.status,contextDigest,payloadDigest});
-  if(method==='thread/started')return fact({kind:'THREAD_FACT',method,payloadDigest});
+  if(method==='thread/started'||method==='thread/status/changed')return fact({kind:'THREAD_FACT',method,payloadDigest});
   if(method==='error')return fact({kind:'TOOL_ERROR_FACT',method,contextDigest,payloadDigest});
   return fact({kind:method==='item/commandExecution/outputDelta'||method==='item/agentMessage/delta'?'OUTPUT_FACT':'ITEM_FACT',method,contextDigest,payloadDigest});
  }
