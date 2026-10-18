@@ -1876,8 +1876,34 @@
     "approvedProposalSha256": "EC52CAAE81A2E4740F4B485E874B9751C7BA0A53D32652A540A34650FDBBFE64",
     "state": "CANDIDATE_LOCAL_CHECKED_NOT_ACTUAL_READY",
     "actualAuthorization": null,
-    "nativeAdapter": "NOT_CONNECTED",
-    "bootstrap": "UNRESOLVED",
+    "nativeAdapter": "PRIVATE_CANDIDATE_WRITTEN_UNEXECUTED_BINDING_UNISSUED",
+    "bootstrap": "PURE_RECEIPT_VALIDATION_WRITTEN_ACTUAL_BOOTSTRAP_NOT_AUTHORIZED",
+    "bootstrapPreparation": {
+      "approval": "FN01_QA_BOOTSTRAP_ADAPTER_PREPARATION",
+      "approvedAt": "2026-10-18T19:05:37+09:00",
+      "approvedProposalR5Sha256": "92950411939CB78993613ABB79AF9F16CEE013C834554BFA50DB4C5B82ECBCEB",
+      "unitLimitMs": 30000,
+      "typeLimitMs": 120000,
+      "unitMaximum": 14,
+      "red": { "pass": 11, "fail": 3, "durationMs": 140.8241, "childElapsedMs": 227, "exitCode": 1 },
+      "greenBeforeReview": { "pass": 14, "fail": 0, "durationMs": 196.1955, "childElapsedMs": 356, "exitCode": 0 },
+      "typeFirst": { "exitCode": 1, "childElapsedMs": 1280, "diagnostics": 6 },
+      "typeAfterNarrowingFix": { "exitCode": 0, "childElapsedMs": 1192 },
+      "independentReview": "C0_I1_M1_READ_ONLY_NO_REREVIEW",
+      "mainSeverity": "C0_I2_M0_AFTER_REGRADING_R4_TEST_COVERAGE",
+      "mainFix": "SINGLE_PASS_PURE_ADMISSION_AND_R4_SEMANTICS_NOT_NATIVE_VERIFIED",
+      "reviewFixRed": { "pass": 12, "fail": 2, "durationMs": 139.4749, "childElapsedMs": 226, "exitCode": 1 },
+      "finalPure": { "pass": 14, "fail": 0, "skipped": 0, "cancelled": 0, "durationMs": 166.9475, "childElapsedMs": 268, "exitCode": 0, "timedOut": false },
+      "finalType": { "exitCode": 0, "childElapsedMs": 1230, "timedOut": false },
+      "nativeEffectsExecuted": false,
+      "integrationExecuted": false,
+      "actualAuthority": null,
+      "nativeBinding": null,
+      "newCommitPublicationAuthorized": false,
+      "bootstrapReceiptPath": "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/bootstrap.json",
+      "newEmptyDockerConfigProposal": "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/docker-config",
+      "resourceCreation": 0
+    },
     "review": {
       "original": "C0/I3/M1",
       "mainFix": "STATIC_SINGLE_PASS_WITH_SCOPED_PURE_CHECK_ONLY",
@@ -1887,23 +1913,23 @@
     "files": [
       {
         "path": "scripts/fn01-baseline-qa-guard.ts",
-        "sha256": "360b9295ae58a57d273ee66d6452c3f25232c4225359e84af6f4c9dd9ee9f478",
+        "sha256": "146af6b80e2ddac37af55eef89a138f0b538507005b3516e84043817d435f405",
         "verification": "SCOPED_PURE_UNIT_AND_TYPE_ONLY"
       },
       {
         "path": "scripts/qa-fn01-baseline-isolated.ts",
-        "sha256": "56661dc9374798b761a70df4dcedcfdac1f9662d593e946cdcd2d9eb04c126df",
+        "sha256": "656207e31ef0be530dd395501d7c07e742ad5e1836d29f64054025f09c409a9f",
         "verification": "FIRST_GATE_PURE_TEST_AND_TYPE_ONLY_NOT_ACTUAL_BODY"
       },
       {
         "path": "tests/integration/FN01/baseline-isolated.test.ts",
-        "sha256": "7c097b4dba6602ee18804dcef4c64fab5cd7c76ee47f2c94c6f624833b1d6a6a",
+        "sha256": "bf15102350cd87b6c566476ecd2ddd7c1a4fd149aa6a2cbb04bac59f72a9ca23",
         "verification": "TYPECHECK_ONLY_NOT_EXECUTED"
       },
       {
         "path": "tests/unit/FN01/baseline-qa-guard.test.ts",
-        "sha256": "db166eddfb483d3e42d1df193abe4ea2065bb759879eedffad27da73ae8d5f59",
-        "verification": "PURE_UNIT_10_PASSED"
+        "sha256": "7e406bd2539d9ca99ed5cef05dd8776a48f7604270345ad32dd2a44c7493da31",
+        "verification": "PURE_UNIT_14_PASSED_NOT_NATIVE_EFFECTS"
       }
     ],
     "localChecks": {
@@ -1947,7 +1973,24 @@
       "fullRegressionRuns": 0,
       "actualAuthorization": null,
       "originalPublicationTarget": "8cf2d29797b1bb9ccd216cc031b2eb9857403c3b",
-      "changedCommitPublication": "REQUIRES_EXACT_TARGET_CONFIRMATION"
+      "changedCommitPublication": "CONFIRMED_SEPARATELY_AND_PUSHED_9B79667F"
+    },
+    "exactPublication": {
+      "approval": "FN01_QA_EXACT_PUSH_UPDATE",
+      "approvedAt": "2026-10-18T18:55:50+09:00",
+      "commit": "9b79667f36ae916fc970f8c54e94dd3f574a5d4e",
+      "remote": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "branch": "codex/av3-stage-b",
+      "payloadFiles": 7,
+      "beforeBranch": "728eb9024bd91c3636e866167eaf4d51bd79d2a9",
+      "afterBranch": "9b79667f36ae916fc970f8c54e94dd3f574a5d4e",
+      "mainBeforeAfter": "f976ed5e29e14b13e12729d5b1ccf98f050f2210",
+      "pushExitCode": 0,
+      "postPushLocalRemoteExact": true,
+      "postPushCleanBeforeNewDesignNotes": true,
+      "testsRerun": 0,
+      "actualQaExecuted": false,
+      "followingLocalDesignNotes": "UNCOMMITTED_NOT_PART_OF_PUBLISHED_9B79667F"
     }
   }
 }

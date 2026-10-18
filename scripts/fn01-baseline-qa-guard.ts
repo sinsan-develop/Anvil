@@ -51,6 +51,12 @@ export class QaWindow {
   constructor(issuedAt:number,expiresAt:number){if(!Number.isSafeInteger(issuedAt)||!Number.isSafeInteger(expiresAt)||expiresAt<=issuedAt||expiresAt-issuedAt>1200000)fail('FN01_WINDOW_INVALID');this.issuedAt=issuedAt;this.expiresAt=expiresAt;}
   remaining(now:number,limit:number):number {if(!Number.isSafeInteger(now)||now<this.issuedAt||!Number.isSafeInteger(limit)||limit<1)fail('FN01_WINDOW_INVALID');const remaining=this.expiresAt-now-20000;if(remaining<=0)fail('FN01_QA_EXPIRED');return Math.min(limit,remaining);}
 }
+/** 종료 전환은 영구적이다. 회수 시간창으로 일반 작업 허가가 되살아나지 않는다. */
+export class QaWorkAdmission {
+  #stopped=false;
+  stop():void {this.#stopped=true;}
+  assertWork():void {if(this.#stopped)fail('FN01_WORK_STOPPED');}
+}
 export function assertMigrationManifest(value:unknown):asserts value is MigrationManifest {
   const m=value as MigrationManifest;
   if(!m||m.schemaVersion!==1||m.productSource!==fixedQa.source||m.count!==49||!Array.isArray(m.ordered)||m.ordered.length!==49||m.ordered.some(r=>!r||!/^[0-9]{4}_[a-z0-9_]+$/.test(r.id)||!hash(r.sha256))||new Set(m.ordered.map(r=>r.id)).size!==49||sha256(JSON.stringify(m.ordered))!==fixedQa.migrationAggregate)fail('FN01_MANIFEST_INVALID');
@@ -74,4 +80,36 @@ export function cleanupFileOrder(expected:readonly FileProof[],current:readonly 
   const byPath=new Map(expected.map(f=>[f.path,f]));
   for(const f of current)if(JSON.stringify(byPath.get(f.path))!==JSON.stringify(f))fail('FN01_CLEANUP_ITEM_CHANGED');
   return current.map(f=>({...f})).sort((a,b)=>b.path.split('/').length-a.path.split('/').length||(a.kind===b.kind?a.path.localeCompare(b.path):a.kind==='FILE'?-1:1));
+}
+export interface BootstrapExpectation {
+  nonce:string;head:string;issuedAt:number;expiresAt:number;rootCreatedAt:number;
+  root:Identity;parents:Identity[];inventoryHash:string;
+  toolchainManifestHash:string;toolchainDecisionRef:string;pathRiskDecisionRef:string;
+}
+export interface BootstrapReceipt extends BootstrapExpectation {
+  schemaVersion:1;kind:'FN01_BASELINE_BOOTSTRAP';phase:'DEPENDENCIES_READY';owner:string;
+  remote:string;productSource:string;paths:{root:string;source:string;cache:string;artifacts:string};
+  migrationAggregate:string;lockHash:string;dependencyAggregate:string;inventory:FileProof[];
+}
+export interface BootstrapMetadata {metadataMatched:true;executionAuthorized:false;receipt:BootstrapReceipt}
+const exactKeys=(v:any,keys:readonly string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join('|')===[...keys].sort().join('|');
+const identityValue=(v:Identity)=>[v.path,v.realpath,v.uid,v.mode,v.dev,v.ino,v.kind,v.links];
+/** 정렬된 원문/기대값의 사실 일치일 뿐, 파일이나 caller의 주장으로 권한을 발급하지 않는다. */
+export function validateBootstrapReceipt(value:unknown,expectation:unknown,now:number):BootstrapMetadata {
+  const invalid=():never=>fail('FN01_BOOTSTRAP_METADATA_INVALID');let r:BootstrapReceipt,e:BootstrapExpectation;
+  try{const wire=JSON.stringify(value),expectedWire=JSON.stringify(expectation);if(!wire||!expectedWire||Buffer.byteLength(wire)>16*1024*1024||Buffer.byteLength(expectedWire)>1024*1024)return invalid();r=JSON.parse(wire);e=JSON.parse(expectedWire);}catch{return invalid();}
+  const baseKeys=['nonce','head','issuedAt','expiresAt','rootCreatedAt','root','parents','inventoryHash','toolchainManifestHash','toolchainDecisionRef','pathRiskDecisionRef'];
+  if(!exactKeys(e,baseKeys)||!exactKeys(r,[...baseKeys,'schemaVersion','kind','phase','owner','remote','productSource','paths','migrationAggregate','lockHash','dependencyAggregate','inventory'])||r.schemaVersion!==1||r.kind!=='FN01_BASELINE_BOOTSTRAP'||r.phase!=='DEPENDENCIES_READY'||r.owner!==fixedQa.owner||r.remote!=='git@github-sinsan-develop:sinsan-develop/Anvil.git'||r.productSource!==fixedQa.source)return invalid();
+  if(!/^[0-9a-f]{32}$/.test(e.nonce)||!/^[0-9a-f]{40}$/.test(e.head)||!hash(e.inventoryHash)||!hash(e.toolchainManifestHash)||!['toolchainDecisionRef','pathRiskDecisionRef'].every(k=>typeof e[k as keyof BootstrapExpectation]==='string'&&/^[A-Za-z0-9_:/.\-]{1,200}$/.test(e[k as keyof BootstrapExpectation] as string)))return invalid();
+  for(const key of ['nonce','head','issuedAt','expiresAt','rootCreatedAt','inventoryHash','toolchainManifestHash','toolchainDecisionRef','pathRiskDecisionRef'] as const)if(r[key]!==e[key])return invalid();
+  try{new QaWindow(e.issuedAt,e.expiresAt).remaining(now,1);assertParentChain(e.parents);assertParentChain(r.parents);}catch{return invalid();}
+  if(!Number.isSafeInteger(e.rootCreatedAt)||e.rootCreatedAt<e.issuedAt||e.rootCreatedAt>now||!Number.isSafeInteger(now))return invalid();
+  const rootKeys=['path','realpath','uid','mode','dev','ino','kind','links'];
+  for(const root of [e.root,r.root])if(!exactKeys(root,rootKeys)||root.path!==fixedQa.root||root.realpath!==fixedQa.root||root.uid!==1000||root.mode!==0o700||root.kind!=='DIRECTORY'||root.dev!==e.parents[0]!.dev||!Number.isSafeInteger(root.ino)||root.ino<1||!Number.isSafeInteger(root.links)||root.links<1)return invalid();
+  if(JSON.stringify(identityValue(e.root))!==JSON.stringify(identityValue(r.root))||JSON.stringify(e.parents.map(identityValue))!==JSON.stringify(r.parents.map(identityValue)))return invalid();
+  if(!exactKeys(r.paths,['root','source','cache','artifacts'])||r.paths.root!==fixedQa.root||r.paths.source!==fixedQa.root+'/source'||r.paths.cache!==fixedQa.root+'/npm-cache'||r.paths.artifacts!==fixedQa.root+'/artifacts'||r.migrationAggregate!==fixedQa.migrationAggregate||r.lockHash!==fixedQa.lockHash||r.dependencyAggregate!==fixedQa.dependencyAggregate)return invalid();
+  if(!Array.isArray(r.inventory)||r.inventory.length<1||r.inventory.length>20000||sha256(JSON.stringify(r.inventory))!==e.inventoryHash)return invalid();
+  try{cleanupFileOrder(r.inventory,r.inventory);}catch{return invalid();}
+  if(r.inventory.some(f=>!exactKeys(f,['path','kind','uid','mode','dev','ino','links','hash'])||f.dev!==r.root.dev||!Number.isSafeInteger(f.dev)||!Number.isSafeInteger(f.ino)||!Number.isSafeInteger(f.mode)||(f.mode&0o022)!==0||f.path.length>4096||/[\x00-\x1f\x7f]/.test(f.path)||f.path===fixedQa.root+'/bootstrap.json'||f.path===fixedQa.root+'/receipt.json'||f.path.startsWith(fixedQa.root+'/artifacts/')))return invalid();
+  return{metadataMatched:true,executionAuthorized:false,receipt:r};
 }

@@ -1,9 +1,11 @@
-// 작성만 승인된 후보. 실행/RED→GREEN 증거 없음. OS/PG 시험이 아니다.
+// 승인된 순수 최대14개만. 실제 native/OS/PG 동작의 시험은 아니다.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { actualQaAuthority, assertActualQaAuthorized, assertParentChain, assertOwnedContainer, assertOwnedNetwork, assertMigrationManifest, fixedQa, QaWindow, cleanupFileOrder, dependencyArguments, boundedWait, QaWaitTimeout } from '../../../scripts/fn01-baseline-qa-guard.ts';
-import { runBaselineQaCandidate } from '../../../scripts/qa-fn01-baseline-isolated.ts';
+import { runBaselineQaCandidate, runNativeBaselineQaCandidate } from '../../../scripts/qa-fn01-baseline-isolated.ts';
 import type { QaPorts } from '../../../scripts/qa-fn01-baseline-isolated.ts';
+import { createHash } from 'node:crypto';
+import { validateBootstrapReceipt, QaWorkAdmission } from '../../../scripts/fn01-baseline-qa-guard.ts';
 
 // 잡을 결함: env/호출자 주장만으로 실제 실행을 열어 버리는 분기.
 test('미발급 실제 권한은 후보 호출 이전에 닫히며 값이나 env로 열리지 않는다', () => {
@@ -16,6 +18,7 @@ test('runner는 미발급 권한에서 어떤 adapter 속성도 읽기 전에 �
   const ports=new Proxy({} as QaPorts,{get(){observations++;throw Error('ADAPTER_MUST_NOT_BE_READ');}});
   await assert.rejects(runBaselineQaCandidate(ports,{head:'a'.repeat(40),issuedAt:1000000,expiresAt:2200000}),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
   assert.equal(observations,0);
+  await assert.rejects(runNativeBaselineQaCandidate(),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
 });
 const chain = () => ['/','/home','/home/daon','/home/daon/.local','/home/daon/.local/share','/home/daon/.local/share/anvil-v3-development'].map((path,i) => ({path,realpath:path,uid:i<2?0:1000,mode:i<2?0o755:i===2?0o750:i===3?0o755:0o700,dev:1,ino:i+1,kind:'DIRECTORY' as const,links:1}));
 // 잡을 결함: 다른 경로/uid/링크/쓰기 가능 부모를 이름만 맞으면 허용.
@@ -76,4 +79,47 @@ test('무응답 대기는 유한 UNKNOWN으로 종결하며 원 작업의 취소
   await assert.rejects(boundedWait(5,async s=>{signal=s;return new Promise<never>(()=>{});}),e=>e instanceof QaWaitTimeout);
   assert.equal(signal?.aborted,true);
   assert.equal(await boundedWait(100,async()=>7),7);
+  // I1: timeout 뒤 늦은 작업이 회수 창으로 새 child/SQL을 시작하지 못해야 한다.
+  const gate=new QaWorkAdmission();let release!:()=>void,started=0;
+  const paused=new Promise<void>(r=>{release=r;});
+  const late=(async()=>{await paused;gate.assertWork();started++;})();
+  gate.stop();gate.stop();release();
+  await assert.rejects(late,/FN01_WORK_STOPPED/);assert.equal(started,0);
+});
+function bootstrapFixture(){
+  const root={path:fixedQa.root,realpath:fixedQa.root,uid:1000,mode:0o700,dev:1,ino:700,kind:'DIRECTORY',links:2};
+  const inventory=[{path:fixedQa.root+'/source/package-lock.json',kind:'FILE',uid:1000,mode:0o644,dev:1,ino:901,links:1,hash:fixedQa.lockHash}];
+  const inventoryHash=createHash('sha256').update(JSON.stringify(inventory)).digest('hex');
+  const expectation={nonce:'0123456789abcdef0123456789abcdef',head:'c'.repeat(40),issuedAt:1000000,expiresAt:2200000,rootCreatedAt:1000001,root,parents:chain(),inventoryHash,toolchainManifestHash:'d'.repeat(64),toolchainDecisionRef:'B-TOOLCHAIN-UNISSUED-FIXTURE',pathRiskDecisionRef:'B-PATH-UNISSUED-FIXTURE'};
+  const receipt={schemaVersion:1,kind:'FN01_BASELINE_BOOTSTRAP',phase:'DEPENDENCIES_READY',owner:fixedQa.owner,...structuredClone(expectation),remote:'git@github-sinsan-develop:sinsan-develop/Anvil.git',productSource:fixedQa.source,paths:{root:fixedQa.root,source:fixedQa.root+'/source',cache:fixedQa.root+'/npm-cache',artifacts:fixedQa.root+'/artifacts'},migrationAggregate:fixedQa.migrationAggregate,lockHash:fixedQa.lockHash,dependencyAggregate:fixedQa.dependencyAggregate,inventory};
+  return{receipt,expectation};
+}
+// R1 잡을 결함: 관측 receipt 일치만으로 실제 실행 권한을 만들어 냄.
+test('R1 일치하는 bootstrap metadata도 실제 실행 권한을 부여하지 않는다',()=>{
+  const {receipt,expectation}=bootstrapFixture(),r=validateBootstrapReceipt(receipt,expectation,1100000);
+  assert.equal(r.metadataMatched,true);assert.equal(r.executionAuthorized,false);
+  assert.throws(assertActualQaAuthorized,/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
+});
+// R2 잡을 결함: 다른 root/nonce/H 또는 바뀐 부모를 이번 bootstrap으로 채택.
+test('R2 root·nonce·H·parent 식별이 다르면 bootstrap metadata를 거절한다',()=>{
+  for(const alter of [(r:any)=>r.paths.root='/tmp/other',(r:any)=>r.nonce='e'.repeat(32),(r:any)=>r.head='a'.repeat(40),(r:any)=>r.root.ino=999,(r:any)=>r.parents[4].mode=0o777]){
+    const {receipt,expectation}=bootstrapFixture();alter(receipt);assert.throws(()=>validateBootstrapReceipt(receipt,expectation,1100000),/FN01_BOOTSTRAP/);
+  }
+});
+// R3 잡을 결함: 2단계 진입 때 최초 창을 새 창으로 대체해 만료를 연장.
+test('R3 최초 창 만료와 두번째 단계의 시간창 재설정을 거절한다',()=>{
+  const {receipt,expectation}=bootstrapFixture();assert.throws(()=>validateBootstrapReceipt(receipt,expectation,2200000),/FN01_BOOTSTRAP/);
+  assert.throws(()=>validateBootstrapReceipt({...receipt,issuedAt:1100000,expiresAt:2300000},expectation,1100000),/FN01_BOOTSTRAP/);
+  assert.throws(()=>validateBootstrapReceipt({...receipt,rootCreatedAt:1100000},expectation,1100000),/FN01_BOOTSTRAP/);
+});
+// R4 잡을 결함: 이전/미소유/불명확 단계의 파일을 회수 소유 목록으로 승계.
+test('R4 이전·미소유·불명확 단계의 회수 범위 승계를 거절한다',()=>{
+  for(const alter of [(r:any)=>r.phase='PARTIAL_UNKNOWN',(r:any)=>r.owner='OTHER_OWNER',(r:any)=>r.inventory[0].uid=1001,(r:any)=>r.inventory.push({...r.inventory[0],path:fixedQa.root+'/../elsewhere'}),(r:any)=>r.inventory[0].kind='LINK']){
+    const {receipt,expectation}=bootstrapFixture();alter(receipt);assert.throws(()=>validateBootstrapReceipt(receipt,expectation,1100000),/FN01_BOOTSTRAP/);
+  }
+  // hash 불일치 음성과 별개: 정확한 새 hash를 줘도 의미상 미소유/탈출/LINK는 거절.
+  for(const alter of [(r:any)=>r.inventory[0].uid=1001,(r:any)=>r.inventory[0].path=fixedQa.root+'/../elsewhere',(r:any)=>r.inventory[0].kind='LINK']){
+    const {receipt,expectation}=bootstrapFixture();alter(receipt);const digest=createHash('sha256').update(JSON.stringify(receipt.inventory)).digest('hex');receipt.inventoryHash=digest;expectation.inventoryHash=digest;
+    assert.throws(()=>validateBootstrapReceipt(receipt,expectation,1100000),/FN01_BOOTSTRAP/);
+  }
 });

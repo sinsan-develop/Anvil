@@ -1,6 +1,6 @@
-# FN01 기준선 격리 PG 핵심 검증 — 실행 전 패킷 r4
+# FN01 기준선 격리 PG 핵심 검증 — r6 로컬 준비 후보 (게시 r4: 9b79667f)
 
-상태: **CANDIDATE_LOCAL_CHECKED / ACTUAL_NOT_AUTHORIZED / NATIVE_ADAPTER_NOT_CONNECTED / ACTUAL_GUARD_UNVERIFIED**. Main 어울 · 2026-10-18. 순수10·타입 검사만 후속 직접 승인으로 확인했다(§13). 실제 실행 권한은 하드클로즈이며 이것은 PG/화면 PASS가 아니다. 새 QA 디렉터리·컨테이너·network·DB·계정·장기 보유 핸들·native 컴파일 생성0이다.
+상태: **BOOTSTRAP_METADATA_PURE_CHECKED / PRIVATE_NATIVE_CANDIDATE_UNEXECUTED / ACTUAL_NOT_AUTHORIZED**. Main 어울 · 2026-10-18. r5 §14의19:05 직접 승인으로 후보 작성·순수14·타입만 확인 중이다(§15). actualQaAuthority=null·첫 무조건 throw와 별도 미발급 native binding을 유지한다. PG/화면 PASS·실행 준비 완료가 아니며 QA 디렉터리·컨테이너·network·DB·계정·장기 보유 핸들·native 컴파일 생성0이다.
 
 ## 1. 책임·승인과 검증 분리
 
@@ -169,3 +169,60 @@ A가 허용되고 후보를 독립 검토한 뒤에만 H·runner/test 전체 has
 - 이 코드 변경 뒤 같은 한정 검사에서 **순수10PASS/175.8832ms, FAIL/SKIP/CANCEL0·child287ms exit0**, **tsc noEmit child1302ms exit0**을 확인했다. 두 child 모두 timeout=false다. 타입 검사 RED→GREEN과 실제 거절 순수 회귀를 구분하며 브라우저/SQL/실권한/actual 종료·정리 TDD로 승격하지 않는다.
 - integration은 타입 검사만 받고 **실행0**이다. native adapter/bootstrap·actual binding·toolchain/경로 위험·실제 PG/정리·HUMAN 의미·사용자 인수는 여전히 미검증이다. 바뀌지 않은 제품 전체 시험/빌드 반복0이다.
 - 소스 보완과 이 기록으로 commit이 달라지므로 **8cf2d297 게시 승인을 새 commit에 자동 승계하지 않는다.** 이번 검사 후 Git 네트워크/push0으로 두고, 새 local exact·변경4파일(guard+연결문서3)·제품36 동일·위 결과를 PMO에 제시해 게시 대상 판단을 별도로 확인한다. 기존 불합격8cf를 새 정상 후보 대신 먼저 게시하지 않았다.
+
+## 14. 후속 실행0 상세 설계 — bootstrap과 native adapter 분리 제안
+
+이 절은 게시본9b79667f 이후의 **r5 승인 대상 설계**다. 최초 작성 당시 미승인이었던 이력은 유지하고, 후속19:05 승인의 한정 작성/순수검사 범위와 실제 실행 미승인을 §15에서 구분한다. Main이 다음 미완료를 선정한 것이며 PMO에 다음 업무 배정을 요청하지 않는다.
+
+### 14.1 자기 clone 모순과 권장 구조
+
+| 안 | 최초 진입/소스 | 영향·판정 |
+|---|---|---|
+| A 권장 | 별도 B의 정확 명령을 심사한 뒤 Main의 실행 플랫폼이 새 root·Git exact H·의존성을 최초 준비한다. 이후 그 H의 runner는 **bootstrap receipt를 읽는 본시험 단계**만 수행 | 기존 등록 root/source/cache·자원/정리 범위는 유지하되 controller 경계를 명시한다. runner가 존재하기 전 자기 자신을 실행한 것으로 가정하지 않는다. 지금 bootstrap 명령 실행0 |
+| B 비권장 | 상주 원격 launcher/controller를 새로 설치해 자기 clone을 맡김 | 새 설치·지속 권한/수명·복구 범위를 추가하므로 현재 준비 범위 밖. 도입0 |
+| C 제외 | 기존 정식 checkout을 H로 갱신한 뒤 그곳에서 실행 | 정식 checkout/개발 기준선 비접촉 계약과 충돌. 별도 변경 승인 없이 채택하지 않음 |
+
+A는 Linux 방법/보호 root가 허가됐다는 뜻이 아니다. 원 거절·Windows PATH_GUARD·소진 native 허가를 새 경로/도구로 우회하지 않는다. bootstrap 및 본시험 모두 최초20분 창을 공유하고 두 번째 단계에서 새20분·새 nonce·임의 재시도0이다.
+
+### 14.2 bootstrap receipt의 고정 항목·거절
+
+- 수명/명세 제안은 새 root 안의 **/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/bootstrap.json** 1개다(uid1000/0600·시험 후 정확 회수). 최종 결과 receipt.json과 분리하여 최초 관측을 덮어쓰지 않는다. 기존 자원 등록에 없던 이 파일은 아직 만들지 않았으며 실제 B 승인 패킷에 추가 고정해야 한다.
+- kind/version·전용 owner/새 nonce·최초 issuedAt/expiresAt, 정확 root/source/cache/artifacts 및 각 parent/root의 realpath·uid/mode/dev/ino·mount 관측을 결박한다. 기존 root 재사용·자동 소유 채택0이다.
+- remote URL·H·clean·제품36 projection diff0·49 SQL aggregate/lock146·실제 설치 파일 명세·도구 실제 경로/전체 hash 및 관리/경로 위험 결정 ref를 기록한다. 합성 password/DSN·원문 body·credential 값을 receipt에 쓰지 않는다.
+- receipt는 **사실 전달물이지 실행 권한이 아니다**. 같은 UID/root가 위조·교체할 수 있다는 잔여 위협을 숨기지 않는다. B에서 발급한 정확 권한/한정 위험 결정과 별도 대조하기 전 일반 env/파일의 claimedApproved:true만으로 실행하지 않는다. 현재 actualQaAuthority=null/첫 거절은 유지한다.
+- receipt가 없거나 불일치·만료·기존자료·부분 생성/늦은 응답 상태가 불명확하면 본시험0/보존·정확 예외 기록이다. source를 복사/scp/archive로 옮기거나 다른 checkout·cache·port로 fallback하지 않는다.
+- 최초 준비 도중 실패 시 그 단계가 확인한 새 inode/ID/nonce/작성 목록만 회수 후보가 된다. 본시험 runner가 생성 사실을 관측하지 못한 자료를 이름만 보고 지우지 않는다. 두 단계가 같은 회수 권한·목록을 소비해야 하며 실제 타이머/자식 종료·TOCTOU 강제 방어는 미검증이다.
+
+### 14.3 코드 준비 범위안 (r5 요청 당시 미작성, 후속 작성은 §15)
+
+Main 권장안은 기존 신규4파일에 한정한다. guard에는 receipt/source/deadline 순수 검증을, runner에는 **import 시 부작용이 없고 실제 첫 거절 뒤에만 닿는 비공개 native adapter**와 bootstrap 후 진입을 후보로 작성한다. 임의 command/path/env 실행기·기존 guard/launcher 변경·새 dependency/native compile·상주 서비스는 만들지 않는다. integration/순수 테스트 후보는 같은 인터페이스만 소비하도록 갱신한다.
+
+필요한 새 범위는 native adapter의 **작성·독립 읽기**와 이를 위한 순수 검사다. 허용을 요청할 경우 exact4파일 및 연결문서3, bootstrap ref 불일치/새 nonce·root/만료·타 단계 시간창 재설정 거절의 순수 사례를 미리 고정하고 동일 Node child의 한정 unit/tsc만 제안한다. OS/파일 생성·Docker/Git clone/npm·실제 bootstrap/PG/network·보유 핸들·서비스/권한/Agent를 실행하는 승인은 아니며 §10.B의 정확 H·도구/경로/자원·수명·회수 결정은 별도다.
+
+### 14.4 정확한 준비/최소검사 범위 (r5 요청 원문, 후속 승인은 §15)
+
+- 파일은 기존 신규 scripts/fn01-baseline-qa-guard.ts / scripts/qa-fn01-baseline-isolated.ts / tests/integration/FN01/baseline-isolated.test.ts / tests/unit/FN01/baseline-qa-guard.test.ts 네 개와 연결 문서3종만이다. 다른 제품·SQL/package/seed·기존 launcher/guard·Secret/권한 파일은 수정하지 않는다.
+- 새 native adapter는 private 함수/정적 선언으로만 작성하고 공개 entry의 actualQaAuthority=null/첫 무조건 거절을 유지한다. import/인자 기본값/단위 테스트로 실제 fs write·spawn·Docker·Git/npm·DB/핸들이 먼저 실행되면 이 준비 범위를 위반하는 것으로 판단한다. 임의경로/명령/환경을 받아 실행하는 우회 API를 만들지 않는다.
+- 기존 순수10은 유지하고 다음4개만 추가해 **최대14개**로 한정한다: (R1) 일치하는 bootstrap metadata라도 executionAuthorized:false, (R2) root/nonce/H/parent 식별 불일치 거절, (R3) 최초창 만료·두번째 단계 시간창 재설정 거절, (R4) 이전/미소유/불명확 단계의 회수 범위 승계 거절. 이들은 metadata/descriptor 순수 입력만 사용하며 native 효과를 mock의 성공으로 증명하지 않는다.
+- 허용을 요청할 검사는 고정 Windows Node child의 node --test tests/unit/FN01/baseline-qa-guard.test.ts(최대30초)와 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json(최대120초)만이다. NODE_OPTIONS/NODE_PATH/NODE_COMPILE_CACHE 미승계·숨김·유한 종료를 유지한다. integration/전체회귀/build·설치/외부접속·WSL/native helper/QA 생성·권한·Agent는 제외한다.
+- 코드 후보 작성→독립 읽기→한정 보완/이 순수검사만을 요청할 안이다. 새 코드의 commit/push 대상은 작성·검증 후 exact로 별도 제시하며, 게시9b79667f나 이전 test10 허가를 새 코드/14개/새SHA 승인으로 자동 승계하지 않는다.
+
+## 15. 19:05 직접 승인 — 후보 작성·순수 검사만
+
+- PMO가 신산님2026-10-18 19:05:37KST 직접 ‘승인’을 전달했다. FN01_QA_BOOTSTRAP_ADAPTER_PREPARATION, r5 §14 SHA256 **92950411939CB78993613ABB79AF9F16CEE013C834554BFA50DB4C5B82ECBCEB**의 정확4파일+연결3문서·한정 검토/보완·순수 기존10+R1~R4(최대14)/30초·tsc noEmit/120초다. 답변 완료이며 무응답 위임·새 실행 승인으로 바꾸지 않는다.
+- guard는 metadata·owner/nonce/H/정확 root/parents/inventory·최초 창을 대조해도 executionAuthorized:false만 반환한다. R2~R4의 누락 검증 RED는 **11PASS/3FAIL, 140.8241ms·child227ms exit1**이며, 보완 뒤14PASS/139.0828ms·child220ms exit0이었다. 해당 검사는 실제 bootstrap 파일/권한/경로 강제 방어가 아닌 순수 입력 검증이다.
+- runner에서 claimAndClone/install 포트를 제거하고 bootstrap receipt의 최초 nonce/20분 창을 승계하는 본시험 단계로 변경했다. private native factory는 선언만 두며 공개 native entry는 첫 실제 거절 뒤 미발급 binding에서 다시 거절한다. import/default arg/순수14개에서 fs write·spawn·Docker/Git/npm·PG 효과0이다. Windows 고정 Node child 자체는 승인된 한정 검사이며 QA native 실행과 다르다.
+- 비공개 adapter 후보에는 O_NOFOLLOW/bytehash·inode/부모 재대조, source/H/product36·49/lock, 고정 binary/최소 env, daemon/image/fullID/nonce·tmpfs·publish0, 새 PG 역할/원SQL 순서별 COMMIT, 단일 workflow child와 새 blob 영수증의 파일 명세, writer 종료/UNKNOWN 보존·정확 회수를 작성했다. 실제 네이티브 분기는 **전부 미실행**이며 순수 테스트로 이 효과를 증명하지 않는다. sameUID/root 경쟁, Linux 선택 패키지/전이 toolchain의 신뢰·issuer/위험 결정·TOCTOU/강제 취소·실제 정리 성능은 미검증이다.
+- 추가 resource 제안: bootstrap은 기존 root/source/cache/artifacts 외 **docker-config 빈 전용 디렉터리**도 목록에 결박해야 한다. 기존/사용자 Docker config·로그인 정보를 읽지 않기 위한 private child 전용 값이며 아직 생성0·actual 승인0이다. bootstrap.json은 자기 자신을 inventory hash에 포함하지 않고 별도 원문 hash/0600·inode로 결박하여 self-hash 순환을 피한다. 결과 receipt.json 생성/기존 receipt 덮어쓰기0이다.
+- 통합 후보는 빈 artifacts를 확인하고 성공한 일반/격리 업로드 영수증의 blob/부모 identity·hash만 즉시 기록해 최종 비밀 없는 marker에 반환하도록 작성했다. 실패 뒤 unknown 파일의 스캔/소유 채택0, writer/생성 응답·파일 목록 불명이면 보존·FAIL이다. 실제 PG/SQL/COMMIT/파일 회수 결과가 아니다.
+- 연결부 작성 후 순수14PASS/196.1955ms·child356ms exit0, 타입 첫 exit1/child1280ms는 새 private helper의 never 분기 추론으로 LINK/null 진단6개였다. 명시 function 선언으로 보완 후 **타입 exit0/child1192ms**다. any/ts-ignore/tsconfig·기대값/검사 기준 완화0. 고정 Node hash/환경 제외·Hidden/상한은 §13과 같다.
+- Ruling: 승인된 순수14·타입을 넘어 native 효과 TDD/전체 suite를 실행하지 않는다. 별도 B 전까지 실제 binding 발급·bootstrap·WSL/PG·설치/서비스/Agent/Secret·새 commit 게시0이다. 후보 독립 읽기와 한정 보완 후 hash/미검증을 결박하며 native branch의 테스트 부재를 숨기지 않는다. 실패 시 실제 정리/안전성이 입증된 것으로 오판할 비용이 있으므로 실행 준비 완료로 보고하지 않는다.
+
+### 15.1 한 번의 독립 읽기·Main 단일 보완
+
+- 원 판정 **C0/I1/M1**을 보존한다. I1은 boundedWait의 늦은 operation이 closeWriters의 전역 cleanup=true/회수30초를 일반 SQL 시간창으로 오인할 수 있다는 정적 반례다. 실제 발생/SQL 실행을 주장하지 않는다. Main은 timeout/종료 전환 시 QaWorkAdmission을 영구 stop하고, 모든 비동기 준비 뒤 spawn 직전에 다시 검사하도록 보완했다. 기존 child 종료와 별개로 active operation Promise의 종료도 유한 수집하고 불명이면 보존한다.
+- 회수는 별도 purpose의 고정 명령 목록(정확 ID inspect·tmpfs 읽기·컨테이너/네트워크 제거·잔여 조회)만 허용한다. 일반 Git/Node/psql·생성은 회수 창으로 진입하지 못하며 migration 제한시간도 sourceProof 이후 새로 계산하지 않는다. 첫 actual throw/null binding은 그대로다. 해당 native 소비자 연결은 읽기·타입 확인뿐이고 실제 timeout/child/SQL TDD가 아니다.
+- 원 M1은 R4의 미소유 UID/탈출/LINK가 hash 불일치에서 먼저 거절돼 의미 검증 퇴행을 잡지 못하는 점이다. Main은 향후 잘못된 소유 채택·삭제 회귀를 놓칠 위험 때문에 **Important로 재등급**하여 같은 단일 보완에 포함했다. 기존 hash 변조 음성은 그대로 두고, inventory hash를 receipt/expectation 양쪽에 정확히 갱신한 별도 의미 음성을 같은 R4 안에 추가했다. 검증 의미·합격 기준을 낮추지 않았다.
+- 한정 회귀는 기존10번째 사례와 R4만 확장해 여전히14개다. 순수 admission의 누락 상태와 R4 의미 guard의 임시 mutation에서 **12PASS/2FAIL139.4749ms·child226ms exit1**, 실제 stop 검사/의미 guard 복원 후 **14PASS166.9475ms·child268ms exit0**, **타입 noEmit child1230ms exit0**, timeout=false·SKIP/CANCEL0이다. 임시 mutation/stub은 남기지 않았다. 원 독립 C0/I1/M1을 새 독립 C0/I0로 바꾸거나 재검토를 반복하지 않는다.
+- Final Ruling(판단 밖): bootstrap/H·권한 issuer, native child 종료/생성응답 유실/정확 파일 회수, uid1001 도구 신뢰·sameUID/root 경쟁, PG49 문법/권한/COMMIT/동시성, 실제 원문 접근·HUMAN 의미·사용자 인수는 모두 미검증·미완료로 유지한다. 잘못 승인하면 데이터/권한·잔류 피해가 가능하므로 후보 작성·순수 검사를 실제 실행 준비나 제품 기능 완료로 승격하지 않는다.
+- 정본 WORK_STATUS와 후보 기록의 기존 과거 행 차이를 읽기 대조했다. 정본에만 남은 과거 이력을 삭제·동기 덮어쓰기하지 않고 이번 소유 기록만 추가한다. 기존 Backup/사용자 자료·서비스·계정/권한·인증서 변경0이다.

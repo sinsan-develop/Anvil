@@ -2,7 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { readFile, lstat, realpath } from 'node:fs/promises';
+import { readFile, lstat, realpath, readdir, open } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import type { FileProof } from '../../../scripts/fn01-baseline-qa-guard.ts';
 import { Pool } from 'pg';
 import { assertActualQaAuthorized, assertMigrationManifest, fixedQa, sha256, boundedWait } from '../../../scripts/fn01-baseline-qa-guard.ts';
 import { qaFixture as f, requiredCases } from '../../../scripts/qa-fn01-baseline-isolated.ts';
@@ -28,12 +30,24 @@ test('새 전용 PG49에서 기준선 불변 저장·검토/채택·권한·세�
   assert.equal(sha256(await readFile('package-lock.json')),fixedQa.lockHash);
   for(const row of manifest.ordered)assert.equal(sha256(await readFile('db/migrations/'+row.id+'.sql')),row.sha256);
   const artifactRoot=fixedQa.root+'/artifacts',st=await lstat(artifactRoot);assert(st.isDirectory()&&!st.isSymbolicLink()&&st.uid===1000&&(st.mode&0o777)===0o700);assert.equal(await realpath(artifactRoot),artifactRoot);
+  assert.deepEqual(await readdir(artifactRoot),[]); // bootstrap의 빈 전용 root만 소비.
   const appPassword=env.ANVIL_FN01_BASELINE_APP_PASSWORD??'',migratorPassword=env.ANVIL_FN01_BASELINE_MIGRATOR_PASSWORD??'';
   if(!/^[0-9a-f]{64}$/.test(appPassword)||!/^[0-9a-f]{64}$/.test(migratorPassword))throw Error('FN01_WORKFLOW_AUTH_INPUT_INVALID');
   const common={host,port:5432,database:fixedQa.database,connectionTimeoutMillis:5000,query_timeout:10000,statement_timeout:10000,lock_timeout:1000,max:4,application_name:'anvil-v3-fn01-baseline-qa-01'};
   const pool=new Pool({...common,user:'anvil_v3_app',password:appPassword}),admin=new Pool({...common,user:'anvil_v3_migrator',password:migratorPassword});
   const access=new AccessRepository(pool,{installationId:randomUUID(),key:randomBytes(32)}),origin='https://fn01.invalid:3830',app=buildApp({},undefined,{repository:access,origin,artifactRoot});
   let phase='TARGET',failure:string|null=null,closeFailures=0;const cases:string[]=[];
+  const ownedFiles=new Map<string,FileProof>();
+  // 성공 영수증에 결박된 업로드만 즉시 관측한다. 실패 후 스캔으로 임의 파일을 소유 채택하지 않는다.
+  async function recordArtifact(ref:{artifactId:string;contentHash:string;bytes:number}):Promise<void> {
+    assert(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(ref.artifactId));
+    for(const path of [artifactRoot+'/staging',artifactRoot+'/staging/'+f.project,artifactRoot+'/blobs',artifactRoot+'/blobs/'+f.project,artifactRoot+'/blobs/'+f.project+'/'+ref.artifactId]){
+      const s=await lstat(path);assert(!s.isSymbolicLink()&&s.uid===1000&&(s.mode&0o077)===0&&s.dev===st.dev);assert.equal(await realpath(path),path);
+      let hash:string|null=null;
+      if(s.isFile()){assert.equal(s.nlink,1);assert.equal(s.size,ref.bytes);const h=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);try{const opened=await h.stat();assert.equal(opened.ino,s.ino);assert.equal(opened.dev,s.dev);hash=sha256(await h.readFile());assert.equal(hash,ref.contentHash);}finally{await h.close();}}else assert(s.isDirectory());
+      const item:FileProof={path,kind:s.isFile()?'FILE':'DIRECTORY',uid:s.uid,mode:s.mode&0o777,dev:s.dev,ino:s.ino,links:s.nlink,hash};const old=ownedFiles.get(path);if(old)assert.deepEqual({...item,links:old.links},old);ownedFiles.set(path,item);
+    }
+  }
   const fresh=()=>{if(t.signal.aborted||Date.now()>=deadline-20000)throw Error('FN01_WORKFLOW_EXPIRED');};
   const sql=async(text:string,values:unknown[]=[])=>{fresh();return admin.query(text,values);};
   try {
@@ -66,7 +80,7 @@ test('새 전용 PG49에서 기준선 불변 저장·검토/채택·권한·세�
     let buffer=web.newBaselineBuffer(f.project,session(),generation,null);buffer.input=structuredClone(input);
     const noPolicy=await send(web.prepareBaselineCommand(buffer,session(),'saveBaselineDraft'));assert.equal(noPolicy.statusCode,412);assert.equal(noPolicy.json().code,'PERMISSION_POLICY_UNCONFIGURED');await policy('AUTO');cases.push('AUTH_POLICY_REQUIRED');
     phase='UPLOAD';buffer=await web.sendBaselineUpload(client,await web.prepareBaselineUpload(buffer,session(),'B1',new TextEncoder().encode('합성 실제 API 저장/재조회 증거, 사용자 인수 아님'),'text/plain;charset=utf-8'),session());
-    const evidence=buffer.input.items[0]!.evidenceRefs[0]!;assert.equal(sha256(await web.readBaselineEvidence(client,f.project,evidence)),evidence.contentHash);
+    const evidence=buffer.input.items[0]!.evidenceRefs[0]!;await recordArtifact(evidence);assert.equal(sha256(await web.readBaselineEvidence(client,f.project,evidence)),evidence.contentHash);
     phase='DRAFT';const save=web.prepareBaselineCommand(buffer,session(),'saveBaselineDraft');
     let firstReceipt:any=null,lost=true;const unreliable=new ApiClient(async(url,init)=>{const response=await client.transport.call(globalThis,url,init);if(lost){assert.equal(response.status,200);firstReceipt=await response.clone().json();lost=false;throw Error('SYNTHETIC_RESPONSE_LOSS');}return response;});
     await assert.rejects(web.sendBaselineCommand(unreliable,save,session()));assert(firstReceipt);assert.equal(firstReceipt.commandId,save.commandId);
@@ -96,13 +110,13 @@ test('새 전용 PG49에서 기준선 불변 저장·검토/채택·권한·세�
     phase='CORE_STATIC';const coreInput=structuredClone(input);coreInput.items[0]!.featureState='IMPLEMENTED_CORE_CHECKED';coreInput.items[0]!.evidenceRefs=[evidence];const core=await web.sendBaselineCommand(client,command('saveBaselineDraft',coreInput),session());const badReview={draftRef:core.ref,criteriaVersion:1,reviewerKind:'HUMAN',items:[{itemId:'B1',featureState:'IMPLEMENTED_CORE_CHECKED',outcome:'ACCEPTED',reason:'합성 음성',evidenceRefs:[evidence],coreEvidence:{basis:'STATIC',environment:'기계경계 fixture',checkedAt:new Date().toISOString(),normalFlow:[evidence],storageRead:[evidence],importantFailure:[evidence]}}],coverage:{outcome:'ACCEPTED',reason:'음성 fixture'},outcome:'ACCEPTED',reason:'STATIC을 실제 핵심 확인으로 승격 금지'};const bad=await send(command('reviewBaselineContent',badReview,core.ref.id,core.ref.version));assert.equal(bad.statusCode,422);assert.equal(bad.json().code,'BASELINE_REVIEW_INPUT_INVALID');cases.push('CORE_STATIC_REJECTED');
     phase='QUARANTINE';const suspect=new TextEncoder().encode('-----BEGIN PRIVATE KEY-----\nSYNTHETIC_NOT_A_KEY\n-----END PRIVATE KEY-----');let qb=web.newBaselineBuffer(f.project,session(),generation,null);qb.input=structuredClone(input);qb=await web.prepareBaselineUpload(qb,session(),'B1',suspect,'text/plain;charset=utf-8');
     fresh();const qr=await app.inject({method:'POST',url:`/api/v1/projects/${f.project}/files`,headers:{...headers(),'content-type':'application/octet-stream','x-anvil-command':JSON.stringify(qb.pending)},payload:Buffer.from(suspect)});
-    assert.equal(qr.statusCode,201);assert.equal(qr.json().data.status,'ARTIFACT_QUARANTINED');const quarantined=qr.json().data.artifactRef;const qi=structuredClone(input);qi.items[0]!.evidenceRefs=[quarantined];const reuse=await send(command('saveBaselineDraft',qi));assert.equal(reuse.statusCode,412);assert.equal(reuse.json().code,'ARTIFACT_QUARANTINED');await assert.rejects(web.readBaselineEvidence(client,f.project,quarantined));cases.push('QUARANTINE_BLOCKS_REUSE');
+    assert.equal(qr.statusCode,201);assert.equal(qr.json().data.status,'ARTIFACT_QUARANTINED');const quarantined=qr.json().data.artifactRef;await recordArtifact(quarantined);const qi=structuredClone(input);qi.items[0]!.evidenceRefs=[quarantined];const reuse=await send(command('saveBaselineDraft',qi));assert.equal(reuse.statusCode,412);assert.equal(reuse.json().code,'ARTIFACT_QUARANTINED');await assert.rejects(web.readBaselineEvidence(client,f.project,quarantined));cases.push('QUARANTINE_BLOCKS_REUSE');
     assert.deepEqual((await sql('SELECT * FROM anvil.project_baselines WHERE id=$1',[f.legacy])).rows[0],legacy);assert(requiredCases.every(c=>cases.includes(c)));phase='DONE';
   } catch {failure='FN01_WORKFLOW_FAILED';throw Error('FN01_WORKFLOW_FAILED');}
   finally {
     // 각각 독립적으로 종료를 시도한다. timeout은 미종료이며 부모의 파괴 회수 허가가 아니다.
     await Promise.all([()=>app.close(),()=>pool.end(),()=>admin.end()].map(async close=>{try{await boundedWait(5000,()=>close());}catch{closeFailures++;}}));
-    t.diagnostic('FN01_BASELINE_SAFE '+JSON.stringify({phase,cases,failure,closeFailures,sourceAuthorizationVerified:false,coverageVerified:false,executionAuthorized:false,dispatchPerformed:false,servedBrowserVerified:false}));
+    t.diagnostic('FN01_BASELINE_SAFE '+JSON.stringify({phase,cases,failure,closeFailures,files:[...ownedFiles.values()],sourceAuthorizationVerified:false,coverageVerified:false,executionAuthorized:false,dispatchPerformed:false,servedBrowserVerified:false}));
     if(closeFailures)throw Error('FN01_WORKFLOW_CLOSE_FAILED');
   }
 });
