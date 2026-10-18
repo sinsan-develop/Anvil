@@ -2093,6 +2093,181 @@
     "dbConnections": 0,
     "serviceChanges": 0
   },
+  "actualBDecisionDraft": {
+    "schemaVersion": 1,
+    "kind": "FN01_ACTUAL_B_CONDITIONAL_EXECUTION_DECISION_DRAFT",
+    "state": "DOCUMENT_ONLY_NOT_AUTHORIZED_NOT_READY_TO_EXECUTE",
+    "proposal": {
+      "path": "docs/work_packages/FN01_BASELINE_ISOLATED_PG_QA_PROPOSAL.md",
+      "revision": "r8",
+      "section": "17",
+      "sha256": "ee88c4ea4aa5507ef26e711542788c1bfc8b6240bdb5debc094d5c7bb5fc9ebd"
+    },
+    "mainOwnsPlanCompletion": true,
+    "pmoRole": "DECISION_AND_SUPPORT_NOT_NEXT_WORK_ALLOCATION",
+    "intermediateTrustApprovalRequested": false,
+    "approval": null,
+    "publishedPreparationCommit": "2c142c76787f783698a7cac259c5c1055ee11ef3",
+    "evidenceCheckpoint": "0964434e7784cf5ff0b61f35f0fee8c59ccb1f59",
+    "productSource": "36c3939dd0dcbb7851de0ec967054f6e00471b76",
+    "executionCommit": null,
+    "executionCommitStatus": "NOT_FROZEN_DO_NOT_SUBSTITUTE_PREPARATION_SHA",
+    "conditionalFutureCommitConsentRequired": true,
+    "literalHashApprovalNotAssumed": true,
+    "executionCommitConstraints": {
+      "branch": "codex/av3-stage-b",
+      "remote": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "descendantOf": "0964434e7784cf5ff0b61f35f0fee8c59ccb1f59",
+      "maximumChangedPaths": 7,
+      "productProjectionMustBeUnchanged": true,
+      "mandatoryChecksAndReadReview": true,
+      "cleanAndLivePrivateExactRequired": true,
+      "mainMustRecord40HexBeforeFirstMutation": true
+    },
+    "codeChangePaths": [
+      "scripts/fn01-baseline-qa-guard.ts",
+      "scripts/qa-fn01-baseline-isolated.ts",
+      "tests/integration/FN01/baseline-isolated.test.ts",
+      "tests/unit/FN01/baseline-qa-guard.test.ts"
+    ],
+    "recordPaths": [
+      "docs/work_packages/FN01_BASELINE_ISOLATED_PG_QA_PROPOSAL.md",
+      "docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json",
+      "docs/WORK_STATUS.md"
+    ],
+    "proposedVerification": {
+      "unitFile": "tests/unit/FN01/baseline-qa-guard.test.ts",
+      "maximumUnitCases": 20,
+      "existingCasesKept": 14,
+      "newCases": [
+        "G1_UNISSUED_OR_FORGED_CONTEXT_BEFORE_EFFECT",
+        "G2_EXACT_H_DECISION_CONTRACT_SCOPE",
+        "G3_RAW_CANONICAL_SOCKET_SEPARATION",
+        "G4_ONE_USE_NONCE_AND_ORIGINAL_WINDOW",
+        "G5_STOP_BLOCKS_LATE_WORK_OR_SQL",
+        "G6_CONTROLLER_BOOTSTRAP_PARENT_CHILD_IDENTITY"
+      ],
+      "unitLimitMs": 30000,
+      "typeCommand": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json",
+      "typeLimitMs": 120000,
+      "integrationFile": "tests/integration/FN01/baseline-isolated.test.ts",
+      "integrationFileRuns": 1,
+      "requiredWorkflowCases": 16,
+      "workflowLimitMs": 180000,
+      "fullRegressionRequested": false,
+      "browserPassClaim": false
+    },
+    "binding": {
+      "declaredDecision": null,
+      "issuedRunFacts": null,
+      "perRunPermit": null,
+      "ambientAuthority": null,
+      "controllerReceiptIsNotHumanAuthorization": true,
+      "privateIssuerOnly": true,
+      "arbitraryCommandPathEnvironmentApi": false
+    },
+    "lifetime": {
+      "approvalStart": null,
+      "approvalValidityHours": 24,
+      "maximumAttempts": 1,
+      "issuedAt": null,
+      "expiresAt": null,
+      "maximumRunMs": 1200000,
+      "newStageReserveMs": 20000,
+      "cleanupOnlyMs": 30000,
+      "resetOrAutomaticRetry": false,
+      "kernelLifetimeGuarantee": false
+    },
+    "evidence": {
+      "rawInventorySha256": "eef204d41339cad66153e3758d66b4e52fb10cc86d4993bdb95d74a270fa76f5",
+      "rawEntries": 2389,
+      "canonicalToolchainEntries": 2388,
+      "canonicalToolchainSha256": null,
+      "socketSeparated": true,
+      "uid1001PasswdMapping": null,
+      "toolchainTrustApproved": false,
+      "pathRiskAccepted": false
+    },
+    "resources": {
+      "root": "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01",
+      "owner": "FN01_BASELINE_QA_01",
+      "uid": 1000,
+      "newRootMode": "0700",
+      "newRecordMode": "0600",
+      "directories": [
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/source",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/source/node_modules",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/npm-cache",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/docker-config",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/artifacts"
+      ],
+      "files": [
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/empty-user.npmrc",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/empty-global.npmrc",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/controller.json",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/bootstrap.json",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/started.json",
+        "/home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01/receipt.json"
+      ],
+      "container": "anvil-v3-fn01-baseline-pg-01",
+      "network": "anvil-v3-fn01-baseline-net-01",
+      "database": "anvil_v3_fn01_baseline_qa_01",
+      "roles": [
+        "anvil_v3_bootstrap",
+        "anvil_v3_migrator",
+        "anvil_v3_app"
+      ],
+      "image": "postgres@sha256:6eb0add3b77c081df18aa518ce43df58fdcc40f2e6d868a6fd08038dc7acd425",
+      "imageId": "sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f",
+      "daemonId": "e3349f1d-dbfc-478a-96d9-295bf6c6839e",
+      "daemonName": "SINSAN",
+      "tmpfsBytes": 268435456,
+      "persistentVolumes": 0,
+      "hostPublishedPorts": [],
+      "containerPort": 5432,
+      "created": 0
+    },
+    "dependencyPolicy": {
+      "existingLockEntries": 146,
+      "newDependencies": false,
+      "lifecycleScripts": false,
+      "binLinks": false,
+      "auditUpload": false,
+      "fund": false,
+      "registry": "https://registry.npmjs.org",
+      "sharedCache": false,
+      "installationExecuted": false
+    },
+    "recovery": {
+      "deleteOnlyCreatedFullIdNonceAndExactManifest": true,
+      "requireOperationAndChildWriterClosure": true,
+      "unknownMeansPreserveAndReport": true,
+      "automaticOwnerAdoption": false,
+      "recursiveBroadDelete": false,
+      "formalDatabaseOrServiceRollback": false,
+      "residueZeroRequiredForPass": true
+    },
+    "riskDecision": {
+      "recommended": "A_BOUNDED_CONDITIONAL_PIPELINE_WITH_RESIDUAL_RISK",
+      "alternative": "B_PLAN_VERIFIED_MANAGED_TOOLCHAIN_SEPARATELY_NO_INSTALL_NOW",
+      "aRequires": [
+        "EXPLICIT_CONDITIONAL_FUTURE_H1_CONSENT",
+        "UID1001_MANAGER_UNCONFIRMED",
+        "ROOT_SAME_UID_DOCKER_INTERFERENCE",
+        "METADATA_TO_USE_RACE",
+        "REGISTRY_LOCK_SUPPLY_CHAIN",
+        "UNCERTAIN_CANCELLATION_AND_POSSIBLE_RESIDUE"
+      ],
+      "notAWaiverOfPlatformReviewOrOriginalRefusal": true
+    },
+    "actualCodeChanges": 0,
+    "actualTestsExecuted": 0,
+    "actualExternalAccess": 0,
+    "actualQaExecuted": false,
+    "actualDatabaseConnections": 0,
+    "actualServiceOrPermissionChanges": 0,
+    "newPublicationRequestedSeparately": false
+  },
   "codePreparation": {
     "approval": "FN01_QA_CODE_PREPARATION",
     "approvedAt": "2026-10-18T18:10:34+09:00",

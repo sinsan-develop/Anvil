@@ -1,4 +1,4 @@
-# FN01 기준선 격리 PG 핵심 검증 — r7 읽기 증거 기록 (코드 게시: 2c142c76)
+# FN01 기준선 격리 PG 핵심 검증 — r8 통합 실행결정 초안 (코드 게시: 2c142c76)
 
 상태: **BOOTSTRAP_METADATA_PURE_CHECKED / PRIVATE_NATIVE_CANDIDATE_UNEXECUTED / ACTUAL_NOT_AUTHORIZED**. Main 어울 · 2026-10-18. r5 §14의19:05 직접 승인으로 후보 작성·순수14·타입만 확인 중이다(§15). actualQaAuthority=null·첫 무조건 throw와 별도 미발급 native binding을 유지한다. PG/화면 PASS·실행 준비 완료가 아니며 QA 디렉터리·컨테이너·network·DB·계정·장기 보유 핸들·native 컴파일 생성0이다.
 
@@ -237,3 +237,101 @@ Main 권장안은 기존 신규4파일에 한정한다. guard에는 receipt/sour
 - Anvil 부모6개는 실경로/소유·권한/동일dev2112로 관측됐다. 지정 QA root·container·network는 모두 부재, daemon ID/Name은 고정값·pinned image ID594290e9와 일치했다. 이는 해당 literal 이름들의 읽기 관측이며 전역 자원 잔류0·예약 독점·생성 권한이 아니다. DB 접속·정식 checkout 변경·새 QA/설치·SQL·서비스/Secret·권한/Agent·native helper 실행0이다.
 - 보충 부모 조회의 첫 PowerShell 인용 구문은 **원격 실행 이전 parse 실패1**이었다. 같은 명령을 반복하지 않고 이미 검증된 stdin 전달로 바꿔 지정 부모 metadata/GID1001만 읽어 exit0을 확인했다. 전체 inventory/기존 제품검사 재실행0, 권한/도구 설치·경로 수리0이다.
 - 다음 Main 작업: 실제 B에 필요한 **신뢰/경로 잔여위험 결정과 실행 binding 발급·후보 exact H·bootstrap/의존성/기존20분창·정확 자원/회수**를 한 묶음으로 정리한다. 현재 native binding·actualQaAuthority는 여전히 null/첫 거절이며, 읽기 증거만으로 B/실제 PG·기능 완료를 승격하지 않는다. 이번 기록3문서는 게시2c142c76 이후 로컬 보존 대상이며 추가 게시를 임의 승계하지 않는다.
+
+## 17. Actual B 통합 결정 패킷 — 문서 초안, 현재 실행 허가 아님
+
+> 수행 시 기존 Main이 executing-plans/TDD로 단일 writer를 유지한다. 지금 허용된 것은 이 절의 문서 설계뿐이다. **준비용 도구 신뢰 수용을 따로 요청하지 않는다.** 신산님의 한 번의 실제 결정에 아래 코드 결박·검수·정확 H 고정·게시·최초 bootstrap·실제 격리 검증·회수와 잔여위험을 함께 제시한다. 원 안전심사·거절을 해제하는 문서가 아니며 플랫폼의 실제 명령 심사는 별도로 유지된다.
+
+### 17.1 목적·권한 단위·정확 H의 정직한 경계
+
+**목적:** 제품 source36의 기준선 초안 저장/재조회·내용검토/별도 채택·권한/세대·COMMIT을 새 빈 PG15에서 실제 확인한다. 기존 DB/서비스를 복구·변경하거나 브라우저/전체 기능 인수를 선언하는 작업이 아니다. React/Node/PostgreSQL의 기존 스택과 49 SQL/lock146을 그대로 쓴다.
+
+| 결박 항목 | 값·검사 |
+|---|---|
+| 실제 게시된 준비 코드 H0 | **2c142c76787f783698a7cac259c5c1055ee11ef3**. private exact 확인 완료. ambient actualQaAuthority=null/첫 throw·private binding 미발급이므로 이 H0는 실행 가능한 H라고 요청하지 않음 |
+| 읽기 증거 checkpoint G0 | **0964434e7784cf5ff0b61f35f0fee8c59ccb1f59**, H0 후속 정확3문서-only/local clean. 실제 코드·시험은 H0와 동일. 현재 문서 개정은 그 뒤의 새 로컬 기록 |
+| 제품/데이터 기준 | **36c3939dd0dcbb7851de0ec967054f6e00471b76**. apps/contracts/db/package.json/package-lock.json/docs/design의 byte/tree diff0. 기존 SQL/정본·사용자 정책은 변경0 |
+| 실제 실행 H1 | **현재 null·NOT_FROZEN**. binding 구현 전 미래 commit SHA를 만들어 쓰지 않는다. 아래 A는 ‘정확 H1을 검사 후 채우는 한정 절차’까지 포함하는 조건부 단일 결정안이며, 이미 알려진 SHA 실행 승인인 것처럼 표현하지 않음 |
+| H1 고정 조건 | 같은 codex/av3-stage-b에서 G0의 후손, 변경 누계는 아래7경로뿐·제품36 diff0·필수 검수 충족·clean. Main이 40자리 SHA/코드4 hash/승인 contract ref를 기록하고 private 정상 게시 뒤 live branch exact H1/main 불변을 확인. bootstrap은 그 literal H1만 사용하고 ‘최신’·다른 ref로 대체0 |
+| 결정 유효 범위 | 실제 승인 기록 시각부터24시간 안에 첫 실행1회만 착수하는 안. 단일 Main/동시 QA0, 최초 mutable 작업 직전 새 nonce·issuedAt와 expiresAt=issuedAt+20분을 발급. 이 값은 현재 모두 null이고 실제 응답/시각 없이 발급하지 않음 |
+
+**중요한 결정 내용:** A는 미작성 H1을 이미 승인된 것으로 속이는 안이 아니라, 위 제한 아래 Main이 H1을 확정하고 실행하는 절차 자체를 허용할지 묻는 안이다. H1/필수 증거가 비어 있거나 경계가 달라지면 첫 mutation0이다. PMO는 실측값 대조·지원만 하고 새 작업 배정이나 준비-only 승인 단계를 만들지 않는다. ‘문자열로 고정된 H1을 먼저 보고서에서 확인해야만 승인할 수 있다’는 요구가 있으면 그 차이를 실제 결정 사항으로 명시하며 임의 승계하지 않는다.
+
+### 17.2 변경 파일·binding의 책임과 검사 계약
+
+화면/제품 기능/API/SQL/package/기존 launcher는 수정하지 않는다. 변경 허용안을 기존7경로로 고정한다.
+
+| 경로 | 작업·소비/제공 계약 |
+|---|---|
+| scripts/fn01-baseline-qa-guard.ts | 미발급/누락 permit는 OS/Pool 이전 거절 유지. 실제 B의 승인 contract/참조와 Main이 발급한 한정 run context를 분리하여 검사. ambient 권한을 전역 true로 열지 않음 |
+| scripts/qa-fn01-baseline-isolated.ts | private issuer/adapter만 연결. 현재 unissuedNativeBinding throw를 포괄 성공 stub으로 지우지 않고 승인된 run context·H1·최초 창·root/부모·도구 명세를 모두 결박. 공개 임의 command/path/env executor0 |
+| tests/integration/FN01/baseline-isolated.test.ts | 부모의 같은 승인/run context를 재검사한 뒤에만 합성 비밀/Pool 사용. env flag·QA 파일의 claimedApproved 단독으로 권한 발급0. 기존16조건/원 실패 기준·완료/close 판정 유지 |
+| tests/unit/FN01/baseline-qa-guard.test.ts | 기존14개 삭제/약화0. 아래6개 순수 사례를 추가해 최대20개만 제안. 실제 native 효과를 mock 성공으로 증명하지 않음 |
+| docs/work_packages/FN01_BASELINE_ISOLATED_PG_QA_PROPOSAL.md | 승인 원문/contract·H1·검수·실행/오류·회수 결과를 분리 기록. 기존 이력 삭제0 |
+| docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json | 관측/raw hash와 실행용 정규화 hash, H1/코드 hash/단일 창/자원 결박. 실제 발급 전 authority/binding=null 유지 |
+| docs/WORK_STATUS.md | 단계·단일 담당·오류/미검증·소유 변경·정확 다음 작업. 정본에만 있는 과거 행은 덮어쓰지 않음 |
+
+**발급 신뢰 경계:** 사람의 실제 B 결정과 Main 실행 플랫폼의 한정 명령 허가가 권한의 근거다. controller/bootstrap JSON은 측정값·재개 금지/상호 대조 자료일 뿐 사람 승인을 인증하는 서명서가 아니다. 코드가 파일/호출자의 approved:true만 보고 허가하거나 receipt를 스스로 승인 근거로 승격하면 불합격이다. 실제 B가 없는 지금 issuer/실행 경로를 구현·활성화하지 않는다.
+
+후속 구현의 인터페이스는 `DeclaredActualBDecision | null`(승인 contract ref/hash·허용 source/7경로·자원·단일 시도·유효 범위), `IssuedRunFacts`(H1·nonce·최초 창·parent/root·도구 raw/canonical/socket·controller 원문 hash), private `issueNativeBinding(decision, facts): NativeBinding`으로 고정한다. 발급자가 만든 process-local permit만 `assertActualQaAuthorized(permit?)`가 받으며 누락/미등록 permit는 기존처럼 첫 효과 전에 거절한다. 공개 native entry는 고정 FN01 실행 facts만 받고 임의 path/명령/env를 받지 않는다. 실제 B 결정은 승인 후에만 코드의 한정 decision으로 결박하며 외부 JSON으로 그 decision을 등록하는 API는 만들지 않는다. parent/child는 같은 B/H1/nonce/창을 결박하고 product의 sourceAuthorizationVerified/coverageVerified/executionAuthorized/dispatchPerformed=false와 **실험 자체의 qaRunAuthorized/actualExecuted**를 별도 기록한다. ambient authority가 null이라는 말로 실제 실험 실행을 숨기지 않는다.
+
+발급 데이터는 B decisionRef·승인된 contract의 불변 Git ref/hash·H1·source36·scope digest·owner/nonce·최초 issuedAt/expiresAt·정확 자원·도구 raw/canonical hash·parent/root identity다. Main은 승인 결정의 소비를 정본 실행 기록에 남기고, 새 root를 exclusive 생성한다. root/controller.json은 이 사실을0600·exclusive/write-once로 보존하며 bootstrap.json은 controller 원문 hash와 실제 준비 명세를 참조한다. controller는 bootstrap hash를 역참조하지 않아 self-hash 순환0이다. Main이 확인하지 않은 기존 root/영수증은 채택하지 않는다.
+
+native parent는 첫 실행 전에 root/started.json을0600·exclusive로 생성·즉시 descriptor를 추적하여 같은 nonce/시도 재기동을 거절한다. child는 같은 H1/B/nonce/최초 창을 소비하며 새 발급·기한 갱신0이다. 각 파일이 사람이 승인했다는 증거라는 주장은 하지 않는다. sameUID/root가 이 자료를 바꿀 수 있는 한계는 아래 A의 실제 잔여위험에 포함한다.
+
+**도구 정규화:** §16의 tuple raw hash eef204d4…와 NativeBinding의 FileProof JSON hash는 표현이 다르므로 같다고 가정하지 않는다. raw2389 중 SOCKET1은 별도 endpoint descriptor로 결박하고 나머지2388을 path/kind/uid/mode/dev/ino/links/hash 순서의 정규화 목록으로 변환·재hash한다. 정확 Node 설치 root/bin/lib/lib-node_modules/npm-root와 npm 하위·고정 Node/Git/Docker만 허용하며 기존 코드의 좁은 경로 검사와의 불일치는 위 파일 안에서 보완한다. 임의 /opt subtree나 LINK/다른 tool을 허용하지 않는다. socket은 root:docker/0660·realpath /run/docker.sock·dev/ino와 daemon을 별도로 비교한다. 실행 직전 달라진 관측을 새 신뢰 기준으로 자동 채택하지 않는다.
+
+### 17.3 첫 권한 결정에 포함할 신규 자원 전체
+
+| 자원 literal | 소유·효과·회수 |
+|---|---|
+| /home/daon/.local/share/anvil-v3-development/qa-fn01-baseline-01 | UID1000/0700·새 exclusive root만. 기존 존재/다른 realpath·mount/부모 변경 시 생성0. 정상 회수는 아래 전체 항목 exact manifest로만 수행 |
+| root/source 와 그 .git·node_modules | 고정 private URL의 새 빈 Git exact H1, 기존 정식 checkout 접촉0·복사/scp/archive0. 승인된 lock146의 새 설치만. 새 source 전체는 회수 대상 |
+| root/npm-cache, root/docker-config | 새 전용 cache/빈 Docker config. 기존 사용자 cache/config/registry 자격정보·Docker login 공유0 |
+| root/empty-user.npmrc, root/empty-global.npmrc | 새 빈0600 파일 두 개. npm은 이 파일만 사용하며 환경의 사용자 설정·proxy/토큰·NODE_OPTIONS/NODE_PATH/NODE_COMPILE_CACHE를 승계하지 않음 |
+| root/artifacts | 새0700 보호 root·합성 일반/격리 body만. 기존 원문/사용자 자료 사용0. 성공 영수증의 정확 blob/부모·hash만 작성 직후 추적 |
+| root/controller.json, root/bootstrap.json, root/started.json, root/receipt.json | 신규0600·exclusive·비밀 없는 각 단계 기록. controller→bootstrap→started→결과의 단방향 참조. controller/started는 이번 B의 새 명시 대상이며 현재 생성0. 결과도 본인이 생성한 descriptor만 회수 |
+| anvil-v3-fn01-baseline-net-01 | 새 --internal network1·full ID·v3/FN01_BASELINE_QA_01/새 nonce labels. 다른 endpoint가 있으면 제거0 |
+| anvil-v3-fn01-baseline-pg-01 | 새 pinned PG15 container1·동일 labels·생성 full ID 수집. --pull=never, privileged/hostnetwork/publish0 |
+| anvil_v3_fn01_baseline_qa_01 및 새 PG 내부 anvil_v3_bootstrap/migrator/app | 새 container 내부 DB·역할만. migrator/app은 비관리자·NOBYPASSRLS. 합성 password/auth key/session은 메모리와 새 container 설정에만 존재, argv/Git/로그 출력0 |
+| /var/lib/postgresql/data | 이 container의256MiB tmpfs(rw,noexec,nosuid)만. named/bind/익명 persistent volume0·실제 mount 대조. host port0/internal5432만 사용 |
+
+기존 anvil_v3_development·PG/API/Web/relay·정식 /home/daon/deploy/anvil-v3·원문/artifact·실계정/정책·Secret/키/CA·SSH 설정·network 정의·Oracle/ysna/운영은 모두 비접촉이다. image pull/build·새 도구 설치/owner/ACL/chmod/chown/PATH 수리·Windows native compile/원 helper·새 세션/자동화/상주 launcher·유료 Agent 호출0이다. 새 Git은 기존 SSH credential을 그대로 사용하고 새 키/복사/agent forwarding/인증 수정으로 실패를 우회하지 않는다.
+
+### 17.4 한 번의 결정 후 순서·검수와 fail-closed 중단
+
+- [ ] **B1 코드 결박 준비:** 위4파일 안에서 누락된 B 발급·정규화·부모/child context를 TDD로 보완한다. 기존 검사 기대값을 낮추거나 null/무조건 거절을 단순 삭제하는 방식은 금지한다. 코드4+기록3 외 delta0이다.
+- [ ] **B2 최소 로컬 검수:** 기존14와 G1~G6 = 최대20개·30초만: G1 미발급/위조 context는 첫 효과 전 거절, G2 H1/decision/contract/scope 불일치 거절, G3 raw/canonical/socket descriptor 혼동 거절, G4 재소비/새 nonce·시간창 재설정 거절, G5 만료/회수 전환 뒤 늦은 작업·새 SQL 시작0, G6 bootstrap/부모-child/controller/started 불일치·미소유/부분상태 거절. 같은 fixed Windows Node child·환경 제외/Hidden을 사용한다. tsc --noEmit -p tsconfig.base.json은120초. 기존 독립 검토자1회 읽기와 Main 단일 보완을 적용하며 새 reviewer/세션0. 미실행 native는 따로 남긴다.
+- [ ] **B3 정확 H1 고정/게시:** Main이 새40자리 H1·코드4 hash·승인 parent contract를 기록한다. 필수 검사/검토 미충족·추가 경로/제품36 변경이면 게시/실행0. 같은 private branch 정상 게시→live exact H1/main 불변을 대조한다. 이 조건부 결정에 포함한 정상 후보/결과 문서 묶음 게시를 기록 한 줄마다 다시 질문하지 않는다. PR/병합/main 쓰기는 제외한다.
+- [ ] **B4 최초 bootstrap:** 생성 직전 이름 부재·parent/mount/owner·toolchain 전체/daemon/image·권한 ref를 대조한다. Main 플랫폼이 단일 nonce/최초20분창·실제 B 소비를 기록한 뒤 새 root/controller를 만든다. 새 빈 Git에 exact H1을 적재하고 clean·제품36/49/lock hash를 확인한다. 이름이 있다는 이유로 기존 것을 청소/재사용하지 않는다.
+- [ ] **B5 의존성/receipt:** fixed Node가 fixed npm CLI로 ci --ignore-scripts --bin-links=false --no-audit --no-fund·고정 registry/새 cache/빈 config만 사용한다. Git/registry의 승인된 외부 접근만이며 신규 dependency/lock 수정0이다. 설치 뒤 Linux 선택 package·모든 실제 파일/hash/nonlink·원문/SQL hash를 대조한다. lifecycle/새 native 컴파일0; 이미 lock에 포함된 실행 dependency의 코드 위험도 A에 포함한다. 설치 실패나 예상 외 항목은 보존·FAIL, 누락을 자동 제외하지 않는다.
+- [ ] **B6 실제 핵심 확인:** bootstrap 원문/expected identity가 맞을 때만 native parent/child에 같은 scope를 결박한다. 새 internal PG에서49 SQL을 정해진 순서로 적용하고0015 직전 legacy 합성 fixture를 기록한다. 각 SQL의 실제 COMMIT·49행 checksum과 기존 §7의16조건 전부를 확인한다. 단일 테스트 file 1회, workflow180초·SQL/lock/query/child 유한 한도·최초창 유지. testCount/pass1·fail/skip/cancel0·requiredCases 누락0·writers 종료 확인이 아니면 PASS0이다.
+- [ ] **B7 종료/회수/보고:** 최초창 만료·실패·사용자 중지에서 일반 admission을 영구 stop한다. active operation과 child/app/pool 종료를 각각 유한 확인한다. 회수30초는 정확 inspect/독립 잔여 읽기·이미 소유한 항목 제거에만 사용하며 새 SQL/설치/재시작0이다. 아래 회수와 미검증을 WORK_STATUS/연결 결과 기록에 남긴다.
+
+최초 실제 작업 권한은20분·1시도다. clone60초/npm300초/network30초/PG·schema 각90초/workflow180초는 각 단계의 추가 상한일 뿐 합산해 전체창을 늘리지 않는다. reserve20초 이전에는 새 단계를 열지 않는다. 동기/OS 지연이나 단절로 실제 종료가 불명확하면 타이머를 취소 성공으로 보고하지 않는다. SSH/child 제어는 숨김·유한 대기로 관측하고 장시간 한 번에 blocking하지 않는다. 만료 시 자원 수명이 강제로 보장되는 kernel watchdog이 있다는 주장0이다.
+
+Git bootstrap의 정확 명령 형태는 `git clone --no-checkout --single-branch --no-tags --depth=1 --branch codex/av3-stage-b git@github-sinsan-develop:sinsan-develop/Anvil.git <등록root>/source` → 같은 source에서 `git fetch --no-tags --depth=1 origin 36c3939dd0dcbb7851de0ec967054f6e00471b76` → `git checkout --detach <확정H1>`이다. clone된 branch ref도 H1과 먼저 일치해야 하며 바뀌었으면 다른 최신본을 시험하지 않는다. product tree 대조에 필요한 source36 객체만 추가 수집하여 전체 legacy history나 다른 branch를 내려받지 않는다. `<등록root>`와 `<확정H1>`은 임의 사용자 입력이 아니라 위 literal root/발급 기록의 고정값만 치환한다. 이것은 미실행 명령 설계이며 실행 전 같은 실제 명령을 플랫폼 안전심사에 그대로 제시한다.
+
+### 17.5 실패·정확 회수·rollback의 허용/불허
+
+정상 경로는 writer/SQL 종료→정확 container full ID/nonce/image/network/tmpfs 확인/제거→endpoint0인 같은 network full ID 제거→root의 known/current 전체 descriptor·hash 동일 대조→file leaf 우선 제거→비어 있는 동일 root inode 제거→이름/경로 독립 잔여 확인 순서다. broad recursive delete·이름만으로 rm·다른 경로 move/reset/자동 소유 채택0이다.
+
+bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이며 미래 H runner가 생성 전부터 있었다고 가정하지 않는다. 생성 응답 유실·child/SQL 종료 불명·unknown file/link/권한 변화·회수시간 소진에서는 해당 파괴 회수를 하지 않고 **FAIL/PRESERVED/RESIDUE_UNVERIFIED**로 보고한다. 20분 뒤에도 이런 QA 항목이 남을 수 있는 잔여위험을 숨기지 않는다. 이를0으로 꾸미거나 타이머/기한 연장·새 root/port·같은 실패 자동 재시도로 해결하지 않는다. 추가 회수가 필요하면 확인된 exact ID/목록/새 종료 증거와 필요한 실제 조치만 묶어 보고한다.
+
+이 실험의 rollback은 정식 DB/서비스 복원이 아니라 위의 새 QA 자원 회수다. 실패 원본/안전 marker를 비밀 없는 결과로 먼저 수집하고, 성공 시에도 개별 환경/API·DB 범위만 인정한다. 화면 served/TLS/브라우저 Network·실사용자/프로젝트·원 소스 의미/CORE 전체·Agent·Stage/사용자 인수는 검증하지 않았다고 표시한다. 기존 DC/실패를 소급 PASS로 바꾸지 않는다.
+
+### 17.6 사용자에게 묶어 제시할 두 대안
+
+| 안 | 실제 허용을 요청할 것 | 비용/가역성·잔여위험 |
+|---|---|---|
+| **A 권장: 한정 조건부 실행 절차1회** | 위7경로 binding 보완/최대20 순수·타입/독립검토→Main의 단일 H1 고정·정상 private 게시→새 QA root/Git/lock 의존성·신규 PG/합성 credentials·49 SQL/실제 workflow→정확 회수까지 한 결정으로 허용 | 기존 도구 설치/권한 변경0·제품/정식 자원 비접촉. 단, UID1001 관리주체 미확정·관측 사이 도구/source 교체·root/Docker 관리자/sameUID 경쟁·registry/lock 공급망·OS 종료/회수 불명·잔류 가능성과 **조건을 만족한 미래 H1을 Main이 확정한다는 권한**을 함께 수용해야 함. metadata/hash는 그 위험을 강제 제거/서명하지 않음 |
+| B: 현 도구 신뢰를 수용하지 않음 | actual B 실행을 보류하고 관리주체·출처·보호가 확인된 별도 도구 준비안을 수립. 지금 설치/소유 수리·다른 경로/도구 우회0 | 새 경로/설치/공급망 확인·관리/업데이트/정리·관련 권한을 별도 정의해야 하며 현재20분 QA/승인에 포함되지 않음. 현재 근거로 기간/외부 비용0을 보장하지 않음. 독립적인 기존 계획 작업은 계속함 |
+
+요청 문안: **“새로운 도구 설치·정식 DB/서비스 변경 없이, 기존 도구의 명시한 잔여위험과 조건부 H1 확정을 수용하고, 위 한정 binding 보완·검수·private 게시부터 새 빈 격리 PG 핵심 검증1회·정확 회수까지 A 절차를 허용하시겠습니까?”** 준비-only 신뢰 수용·문서 한 줄 게시를 따로 질문하지 않는다. 실제 직접 응답/권한이 없거나 H1/선행이 미충족이면 여전히 실행0이다.
+
+### 17.7 문서 자체 검토·현재 상태
+
+- 입력/출력 구분: 읽기 raw2389/659414bytes/hash와 실행 canonical2388/hash·socket descriptor를 분리했다. canonical hash/H1/B ref/nonce/issuedAt/expiresAt는 실제 발급 전 null이다.
+- H 검토: H0의 첫 throw를 우회하지 않도록 필요한 코드 보완과 한정조건 H1 확정을 결정 범위에 포함했다. 미래 SHA를 현재 exact로 가장하지 않는다. 따라서 이 패킷은 지금 바로 실행할 수 있는 literal-H 승인 명령이 아니라 **조건부 절차 결정을 위한 초안**이다.
+- 실패/검증 구분: 순수14/type·읽기 증거를 실제 PG/종료/회수 PASS로 승격하지 않고, 미검증/잔류의 비용을 A에 포함했다. 49 SQL/16조건·보안·Secret·cross-project/old-generation 기준을 낮추지 않는다.
+- 범위 검토: 승인 전 코드/검사/네트워크/자원/권한/DB/서비스 변화0, 이번 작성은 연결3문서만이다. 별도 새 계획/신규 파일·세션·reviewer·자동화0, 기존 승인된 구현 방식/문서 위치를 그대로 쓴다.
