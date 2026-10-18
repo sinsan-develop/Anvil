@@ -47,6 +47,7 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
     return () => { current = false; };
   }, [client, selected?.ref.id, selected?.ref.version, selected?.ref.contentHash, retry]);
   const node = version?.graph.nodes.find(item => item.nodeId === nodeId);
+  const formAccess = version && node && !pending && !error ? { client, onAuthenticationLost, contextKey: JSON.stringify([session.user.id, session.clientId, version.ref, node.nodeId]) } : undefined;
   return <>
     <section aria-label="방법론 원본 조회"><h2>절차·문서·검수 기준</h2>
       <form className="definition-editor" onSubmit={event => { event.preventDefault(); setFilters(filterInput); resetList(); }}><label htmlFor={filterId + '-name'}>방법론 이름 검색</label><input id={filterId + '-name'} maxLength={200} value={filterInput.name} onChange={event => setFilterInput(previous => ({ ...previous, name: event.target.value }))} />
@@ -67,7 +68,7 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
         <div className="methodology-flow" role="group" aria-label="개발 절차">{version.graph.nodes.map((stage, index) => <button key={stage.nodeId} aria-pressed={stage.nodeId === nodeId} onClick={() => setNodeId(stage.nodeId)}>{index + 1}. {stage.name}</button>)}</div>
         {node ? <section aria-label="선택 단계 상세" className="status-card"><h4>{node.nodeId} {node.name}</h4><p>{node.purpose}</p><p className="meta">{node.kind === 'HUMAN' ? '사용자 판단 단계' : node.kind === 'AGENT' ? 'Agent 역할 단계 · 연결 전' : node.kind === 'JOIN' ? '결과 합류' : '분기 판단'} · 위치 {node.position.x}, {node.position.y}</p>
           <div className="methodology-detail"><div><h4>완료·검수 조건</h4><ul>{node.completionCriteria.map((text, index) => <li key={index}>{text}</li>)}</ul><h4>사람 확인 지점</h4>{node.approvalBoundary.length ? <ul>{node.approvalBoundary.map(code => <li key={code}>{approvalLabels[code] ?? code}</li>)}</ul> : <p>이 단계에 별도 사용자 확인 지점 없음 · 권한 검사는 유지</p>}
-          <h4>작업 기록</h4><ul>{node.recordRequirements.map((text, index) => <li key={index}>{text}</li>)}</ul></div><div><h4>입력·산출 문서의 고정 버전</h4><StoredMethodDocuments side="입력" items={node.inputs} /><StoredMethodDocuments side="산출" items={node.outputs} /></div></div>
+          <h4>작업 기록</h4><ul>{node.recordRequirements.map((text, index) => <li key={index}>{text}</li>)}</ul></div><div><h4>입력·산출 문서의 고정 버전</h4><StoredMethodDocuments side="입력" items={node.inputs} formAccess={formAccess} /><StoredMethodDocuments side="산출" items={node.outputs} formAccess={formAccess} /></div></div>
           <StoredNodeRoutes graph={version.graph} nodeId={node.nodeId} />
         </section> : null}
         <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><StoredMethodValidation graph={version.graph} validation={version.validation} onSelect={setNodeId} /></details>
