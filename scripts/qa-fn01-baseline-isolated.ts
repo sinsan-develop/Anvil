@@ -8,6 +8,7 @@ import { fixedQa, assertActualQaAuthorized, assertMigrationManifest, assertParen
 import type { Identity, FileProof, MigrationManifest, BootstrapExpectation, BootstrapMetadata, IssuedRunFacts } from './fn01-baseline-qa-guard.ts';
 import { assertQaEffectBoundary } from './fn01-baseline-qa-guard.ts';
 import { boundedReadMap, QaReadTrace, qaSafeFailureCode } from './fn01-baseline-qa-guard.ts';
+import { declaredRetryBDecision } from './fn01-baseline-qa-guard.ts';
 import type { QaObservation } from './fn01-baseline-qa-guard.ts';
 import type { FileHandle } from 'node:fs/promises';
 
@@ -163,6 +164,7 @@ interface NativeBinding extends CandidateBinding {
 }
 function issueNativeBinding(f:IssuedRunFacts,permit:object):NativeBinding {
   assertActualBPermitBinding(permit,f.controller);assertActualBBinding(f.controller,f.bootstrap,Date.now());
+  if(f.controller.decisionRef!==declaredRetryBDecision.decisionRef)throw Error('FN01_B_BINDING_MISMATCH');
   const tools=canonicalizeActualBTools(JSON.parse(f.toolchainRaw));
   if(sha256(f.toolchainRaw)!==declaredActualBDecision.rawToolHash||tools.canonicalHash!==declaredActualBDecision.canonicalToolHash||tools.files.length!==2388||f.bootstrap.toolchainManifestHash!==tools.canonicalHash)throw Error('FN01_B_TOOL_BINDING_INVALID');
   const find=(p:string)=>{const v=tools.files.find(x=>x.path===p)?.hash;if(!v)throw Error('FN01_B_TOOL_MISSING');return v;};
@@ -392,7 +394,7 @@ function createNativePorts(binding:NativeBinding):QaPorts {
     async workflow(input){
       if(!containerId||input.database!==fixedQa.database||input.head!==binding.head||input.nonce!==binding.bootstrap.nonce||input.expiresAt!==binding.expiresAt)problem('WORKFLOW_BINDING');
       const host=assertOwnedContainer(await inspect('container',containerId),containerId,networkId!,binding.bootstrap.nonce);if(input.host!==host)problem('WORKFLOW_HOST');
-      const entry="import {runApprovedBaselineWorkflow} from './scripts/fn01-baseline-qa-guard.ts';let raw='';for await(const b of process.stdin){raw+=b;if(raw.length>3000000)throw Error('FN01_B_INPUT_LIMIT');}await runApprovedBaselineWorkflow(JSON.parse(raw));";
+      const entry="import {runApprovedBaselineWorkflow} from './scripts/fn01-baseline-qa-guard.ts';let raw='';for await(const b of process.stdin){raw+=b;if(raw.length>3000000)throw Error('FN01_B_INPUT_LIMIT');}await runApprovedBaselineWorkflow(JSON.parse(raw),"+JSON.stringify(declaredRetryBDecision.decisionRef)+");";
       const out=await child(fixedQa.node,['--test-reporter=tap','--input-type=module','-e',entry],input.timeout,JSON.stringify(binding.facts),{ANVIL_FN01_BASELINE_PG_HOST:host,ANVIL_FN01_BASELINE_NONCE:input.nonce,ANVIL_FN01_BASELINE_EXPIRES_AT:new Date(input.expiresAt).toISOString(),ANVIL_FN01_BASELINE_APP_PASSWORD:input.appPassword,ANVIL_FN01_BASELINE_MIGRATOR_PASSWORD:input.migratorPassword},'WORK',true);
       const lines=out.split('\n').filter(x=>x.includes('FN01_BASELINE_SAFE '));if(lines.length!==1)problem('WORKFLOW_RECEIPT');
       const r=JSON.parse(lines[0]!.split('FN01_BASELINE_SAFE ')[1]!);

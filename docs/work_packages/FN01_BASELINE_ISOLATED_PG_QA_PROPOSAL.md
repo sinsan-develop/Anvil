@@ -393,3 +393,11 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 | 잔여위험/미진 | UID1001 관리자 미확정·도구/같은UID/root/Docker 관리자 경합·registry 공급망·OS 취소/종료/잔류 가능성은 제거되지 않음. M1 회수 최초 세부코드 null 가능성은 일반cleanupFailure/FAIL과 함께 남음. 실제성능/원인/제품 인수를 미리 보장하지 않음 |
 
 요청은 위의 **새 고정 결정 재결박→조건부 H3 고정/정상 private→새 격리 actual1회→조건 충족 시 별도 exact 회수120초까지 한 묶음 허용** 여부다. 새 actual 미허용이면 현재 준비 후보와 과거 실패/회수 결과는 보존하고 실제 재실행 없이 다른 승인 계획의 독립 구현을 Main이 선정한다. PMO는 필요한 결정·지원만 담당하며 다음 업무 배정을 기다리는 안이 아니다.
+
+## 21. 안전심사 거절 뒤 새 직접답변·재결박 검수
+
+- 앞선 12:35:20 UTC의 무응답 위임 적용 patch는 플랫폼 거절/미적용으로 남겼다. 그 뒤 PMO가 전달한 새 직접답변을 Main이 실제 `read_thread`로 확인했다: 인간 원문 **‘안전심사 거절에 따른 직접 승인해’**, turn `01a14f10-9d73-7ae3-9761-081ff370443c`, message `01a14f10-9df0-7e82-a8c4-9acd1d311057`. user turn 시작12:50:51 UTC와 PMO 결정기록12:51:38 UTC를 구분하고24시간 기한은 더 이른 turn 시작으로 보수적으로 계산한다. 이전 위임을 직접답변으로 소급하지 않는다.
+- 불변 contract는 Git d8674658420950526f9d30a3b1f6c8ba6cb9a88d의 §20 proposal25f284ed…/manifest28d88bee…다. 새 고정 결정ref `FN01_ACTUAL_RETRY_B_20261018T125138Z`/HUMAN_DIRECT_REPLY·인간 turn/message ref를 코드에 결박한 같은 patch를 새 증거로 재심사한 뒤 적용했다. 심사면제/다른도구·경로 우회0이다.
+- 메타데이터 대조는 역사적 옛 ref와 이 새 고정 ref만 인정한다. issuer의 새 실제 경로는 새 ref의 **명시적 선택자**를 요구하고 controller와 같아야 한다. 기존 누락/옛 ref는 facts/OS 이전 소진 거절을 그대로 유지하며 외부 JSON으로 결정 등록0이다. parent private binding과 고정 child도 새 ref를 대조한다.
+- 기존14+G1~G6 총20 RED17/3(154.9017ms,child218ms)→GREEN20/skip·cancel0(168.0758ms,child247ms), noEmit exit0/1122ms다. 기존 담당자 한정 delta 읽기1회 **새 C0/I0/M0**, 기존 회수 세부코드 M1은 이월했다. 검토자는 실제 인간/Git 원격·H3/소비·실제5000ms/PG49/16조건/120초 회수는 재현하지 않았다. Main이 원문/Git/hash를 별도로 대조하며 이 검토를 실제 실행/인수 증거로 승격하지 않는다.
+- 실행 H3와 새 inode/nonce/최초 창은 아직 미발급이다. 검수 후 단일 literal H3를 정상 private 게시/liveexact·제품36diff0/clean/main불변을 확인한 뒤에만 §20의 actual1회와 조건부 별도 exact120초를 수행한다. 원5000ms·단계상한·최초20분/native30초·검사/SQL·기준은 유지한다.

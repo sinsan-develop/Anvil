@@ -125,6 +125,9 @@ export const declaredActualBDecision=Object.freeze({decisionRef:'FN01_ACTUAL_B_2
 export const actualBCodePaths=Object.freeze(['scripts/fn01-baseline-qa-guard.ts','scripts/qa-fn01-baseline-isolated.ts','tests/integration/FN01/baseline-isolated.test.ts','tests/unit/FN01/baseline-qa-guard.test.ts']);
 export const actualBPaths=Object.freeze([...actualBCodePaths,'docs/work_packages/FN01_BASELINE_ISOLATED_PG_QA_PROPOSAL.md','docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json','docs/WORK_STATUS.md']);
 export const actualBScopeHash=sha256(JSON.stringify({paths:actualBPaths,source:fixedQa.source,root:fixedQa.root,owner:fixedQa.owner,container:fixedQa.container,network:fixedQa.network,database:fixedQa.database,image:fixedQa.image,attempts:1,windowMs:1200000,cleanupMs:30000}));
+// read_thread로 확인한 새 인간 직접답변. 앞선 무응답 위임/거절을 승인으로 소급하지 않는다.
+export const declaredRetryBDecision=Object.freeze({decisionRef:'FN01_ACTUAL_RETRY_B_20261018T125138Z',approvedAt:1792327851000,decisionRecordedAt:1792327898000,grantBasis:'HUMAN_DIRECT_REPLY',humanTurnRef:'01a14f10-9d73-7ae3-9761-081ff370443c',humanMessageRef:'01a14f10-9df0-7e82-a8c4-9acd1d311057',contractGit:'d8674658420950526f9d30a3b1f6c8ba6cb9a88d',contractHash:'25f284ed10d60d32c00f135d5d9ac353bc4c0d691da1306fe7773bb20c38e98d',contractManifestHash:'28d88bee87c80f0c2688317e4f920f0e8cd4ee8f6bb0638c0c170b19b4ebb6e3',rawToolHash:declaredActualBDecision.rawToolHash,canonicalToolHash:declaredActualBDecision.canonicalToolHash});
+export const retryBScopeHash=sha256(JSON.stringify({nativeScopeHash:actualBScopeHash,separateCleanupMs:120000}));
 export interface ActualBController {
   schemaVersion:1;decisionRef:string;contractGit:string;contractHash:string;scopeHash:string;
   head:string;nonce:string;issuedAt:number;expiresAt:number;rootCreatedAt:number;root:Identity;parents:Identity[];codeHashes:Record<string,string>;
@@ -133,8 +136,9 @@ export interface IssuedRunFacts {controller:ActualBController;controllerBytesHas
 export function validateActualBController(input:unknown,now:number):{executionAuthorized:false;controller:ActualBController} {
   const bad=():never=>fail('FN01_B_CONTROLLER_INVALID');let c:ActualBController;
   try{const wire=JSON.stringify(input);if(!wire||Buffer.byteLength(wire)>1024*1024)return bad();c=JSON.parse(wire);}catch{return bad();}
-  const d=declaredActualBDecision;
-  if(!exactKeys(c,['schemaVersion','decisionRef','contractGit','contractHash','scopeHash','head','nonce','issuedAt','expiresAt','rootCreatedAt','root','parents','codeHashes'])||c.schemaVersion!==1||c.decisionRef!==d.decisionRef||c.contractGit!==d.contractGit||c.contractHash!==d.contractHash||c.scopeHash!==actualBScopeHash||!/^[0-9a-f]{40}$/.test(c.head)||!/^[0-9a-f]{32}$/.test(c.nonce)||!Number.isSafeInteger(c.issuedAt)||c.issuedAt<d.approvedAt||c.issuedAt>=d.approvedAt+86400000||c.rootCreatedAt!==c.issuedAt||c.expiresAt!==c.issuedAt+1200000||!Number.isSafeInteger(now)||now<c.issuedAt||now>=c.expiresAt)return bad();
+  const d=c?.decisionRef===declaredActualBDecision.decisionRef?declaredActualBDecision:c?.decisionRef===declaredRetryBDecision.decisionRef?declaredRetryBDecision:null;
+  const scope=d===declaredActualBDecision?actualBScopeHash:retryBScopeHash;
+  if(!d||!exactKeys(c,['schemaVersion','decisionRef','contractGit','contractHash','scopeHash','head','nonce','issuedAt','expiresAt','rootCreatedAt','root','parents','codeHashes'])||c.schemaVersion!==1||c.decisionRef!==d.decisionRef||c.contractGit!==d.contractGit||c.contractHash!==d.contractHash||c.scopeHash!==scope||!/^[0-9a-f]{40}$/.test(c.head)||!/^[0-9a-f]{32}$/.test(c.nonce)||!Number.isSafeInteger(c.issuedAt)||c.issuedAt<d.approvedAt||c.issuedAt>=d.approvedAt+86400000||c.rootCreatedAt!==c.issuedAt||c.expiresAt!==c.issuedAt+1200000||!Number.isSafeInteger(now)||now<c.issuedAt||now>=c.expiresAt)return bad();
   if(!exactKeys(c.codeHashes,actualBCodePaths)||Object.values(c.codeHashes).some(v=>!hash(v)))return bad();
   try{assertParentChain(c.parents);}catch{return bad();}
   const r=c.root;if(!r||r.path!==fixedQa.root||r.realpath!==fixedQa.root||r.kind!=='DIRECTORY'||r.uid!==1000||r.mode!==0o700||r.dev!==c.parents[0]!.dev||!Number.isSafeInteger(r.ino)||r.ino<1||!Number.isSafeInteger(r.links)||r.links<1)return bad();
@@ -176,11 +180,12 @@ export function assertQaEffectBoundary(admission:QaWorkAdmission,window:QaWindow
 }
 // 첫 QA는 이미 소비했고 별도 exact 회수도 끝났다. 새 코드 후보로 그 결정을 재사용하지 않는다.
 const consumed=new Set<string>([declaredActualBDecision.decisionRef]);
-function checkedFacts(value:unknown):IssuedRunFacts {
+function checkedFacts(value:unknown,selectedRef:string):IssuedRunFacts {
   const f=JSON.parse(JSON.stringify(value)) as IssuedRunFacts;
   if(!exactKeys(f,['controller','controllerBytesHash','bootstrap','bootstrapBytesHash','toolchainRaw'])||!hash(f.controllerBytesHash)||!hash(f.bootstrapBytesHash)||typeof f.toolchainRaw!=='string'||Buffer.byteLength(f.toolchainRaw)>2*1024*1024)fail('FN01_B_FACTS_INVALID');
   assertActualBBinding(f.controller,f.bootstrap,Date.now());
-  const d=declaredActualBDecision,t=canonicalizeActualBTools(JSON.parse(f.toolchainRaw));
+  if(f.controller.decisionRef!==selectedRef||selectedRef!==declaredRetryBDecision.decisionRef)fail('FN01_B_BINDING_MISMATCH');
+  const d=declaredRetryBDecision,t=canonicalizeActualBTools(JSON.parse(f.toolchainRaw));
   if(sha256(f.toolchainRaw)!==d.rawToolHash||t.files.length!==2388||t.canonicalHash!==d.canonicalToolHash||f.bootstrap.toolchainManifestHash!==t.canonicalHash)fail('FN01_B_TOOL_BINDING_INVALID');
   return f;
 }
@@ -193,15 +198,21 @@ export function assertActualBWorkflowTarget(nonce:string,expiresAt:number):void 
   if(!c||nonce!==c.nonce||expiresAt!==c.expiresAt)fail('FN01_B_CHILD_TARGET_MISMATCH');
 }
 /** 고정 FN01 entry뿐. JSON은 사실이고 B 결정은 위 코드/직접 승인에 고정된다. */
-export async function runApprovedBaselineQa(input:unknown):Promise<unknown> {
-  if(consumed.has(declaredActualBDecision.decisionRef))fail('FN01_B_ALREADY_CONSUMED');
-  const f=checkedFacts(input);consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
+function selectIssuedDecision(ref?:string):string {
+  const selected=ref??declaredActualBDecision.decisionRef;
+  if(consumed.has(selected))fail('FN01_B_ALREADY_CONSUMED');
+  if(selected!==declaredRetryBDecision.decisionRef)fail('FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED');
+  return selected;
+}
+export async function runApprovedBaselineQa(input:unknown,decisionRef?:string):Promise<unknown> {
+  const selected=selectIssuedDecision(decisionRef);
+  const f=checkedFacts(input,selected);consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
   try{const native=await import('./qa-fn01-baseline-isolated.ts');return await native.runNativeBaselineQaCandidate(f,permit);}finally{permits.delete(permit);}
 }
 /** parent의 고정 명령에서만 호출. 파일 검증 후 같은 최초창의 test callback에만 전달한다. */
-export async function runApprovedBaselineWorkflow(input:unknown):Promise<void> {
-  if(consumed.has(declaredActualBDecision.decisionRef))fail('FN01_B_ALREADY_CONSUMED');
-  const f=checkedFacts(input),native=await import('./qa-fn01-baseline-isolated.ts');
+export async function runApprovedBaselineWorkflow(input:unknown,decisionRef?:string):Promise<void> {
+  const selected=selectIssuedDecision(decisionRef);
+  const f=checkedFacts(input,selected),native=await import('./qa-fn01-baseline-isolated.ts');
   await native.verifyNativeWorkflowBinding(f);
   consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
   await workflowScope.run(permit,async()=>{await import('../tests/integration/FN01/baseline-isolated.test.ts');});

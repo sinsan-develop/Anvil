@@ -129,6 +129,8 @@ test('R4 이전·미소유·불명확 단계의 회수 범위 승계를 거절�
 // G1~G6: 실제 효과 없이 새 결박의 실패 조건만 검사. 기존14 기대값은 유지한다.
 const feature=()=>actualB as unknown as Record<string,any>;
 function controllerFixture(){const b=bootstrapFixture();const issuedAt=1792322464000+60000;Object.assign(b.expectation,{issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,toolchainDecisionRef:'FN01_ACTUAL_B_20261018T112104Z',pathRiskDecisionRef:'FN01_ACTUAL_B_20261018T112104Z'});return {b,c:{schemaVersion:1,decisionRef:'FN01_ACTUAL_B_20261018T112104Z',contractGit:'cb3400381e267d5460267b3c8d01319bfde78b06',contractHash:'ee88c4ea4aa5507ef26e711542788c1bfc8b6240bdb5debc094d5c7bb5fc9ebd',scopeHash:feature().actualBScopeHash,head:b.expectation.head,nonce:b.expectation.nonce,issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,root:b.expectation.root,parents:b.expectation.parents,codeHashes:Object.fromEntries(['scripts/fn01-baseline-qa-guard.ts','scripts/qa-fn01-baseline-isolated.ts','tests/integration/FN01/baseline-isolated.test.ts','tests/unit/FN01/baseline-qa-guard.test.ts'].map(p=>[p,'a'.repeat(64)]))}};}
+const retryRef='FN01_ACTUAL_RETRY_B_20261018T125138Z';
+function retryFixture(){const f=controllerFixture(),issuedAt=1792327898000+60000;Object.assign(f.c,{decisionRef:retryRef,contractGit:'d8674658420950526f9d30a3b1f6c8ba6cb9a88d',contractHash:'25f284ed10d60d32c00f135d5d9ac353bc4c0d691da1306fe7773bb20c38e98d',scopeHash:'733f2f812da4ee6a6a73a3130376dd006416d69930c4df8175982ecf725bcc83',issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt});Object.assign(f.b.expectation,{issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,toolchainDecisionRef:retryRef,pathRiskDecisionRef:retryRef});return f;}
 test('G1 B metadata는 permit가 아니며 위조 object는 효과 전에 거절한다',async()=>{
   assert.equal(typeof feature().validateActualBController,'function');const {c}=controllerFixture();
   const metadata=feature().validateActualBController(c,c.issuedAt+1);assert.equal(metadata.executionAuthorized,false);
@@ -136,12 +138,17 @@ test('G1 B metadata는 permit가 아니며 위조 object는 효과 전에 거절
   assert.throws(()=>assertActualQaAuthorized({approved:true} as never),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
   let reads=0;const unopened=new Proxy({},{get(){reads++;throw Error('MUST_NOT_READ_CONSUMED_FACTS');}});
   await assert.rejects(feature().runApprovedBaselineQa(unopened),/FN01_B_ALREADY_CONSUMED/);assert.equal(reads,0);
+  await assert.rejects(feature().runApprovedBaselineQa(unopened,'NOT_APPROVED'),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);assert.equal(reads,0);
+  await assert.rejects(feature().runApprovedBaselineWorkflow(unopened),/FN01_B_ALREADY_CONSUMED/);assert.equal(reads,0);
+  await assert.rejects(feature().runApprovedBaselineQa({},retryRef),/FN01_B_FACTS_INVALID/);
 });
 test('G2 B·contract·scope·H·동일 bootstrap 결박 불일치를 거절한다',()=>{
   assert.equal(typeof feature().assertActualBBinding,'function');const {c,b}=controllerFixture();
   assert.doesNotThrow(()=>feature().assertActualBBinding(c,b.expectation,c.issuedAt+1));
   for(const patch of [{decisionRef:'OTHER'},{contractGit:'a'.repeat(40)},{contractHash:'b'.repeat(64)},{scopeHash:'b'.repeat(64)},{head:'not-a-sha'}])assert.throws(()=>feature().assertActualBBinding({...c,...patch},b.expectation,c.issuedAt+1),/FN01_B_/);
   assert.throws(()=>feature().assertActualBBinding({...c,head:'d'.repeat(40)},b.expectation,c.issuedAt+1),/FN01_B_/);
+  const retry=retryFixture();assert.doesNotThrow(()=>feature().assertActualBBinding(retry.c,retry.b.expectation,retry.c.issuedAt+1));
+  for(const patch of [{decisionRef:'INVENTED_RETRY'},{contractGit:c.contractGit},{contractHash:c.contractHash},{scopeHash:c.scopeHash}])assert.throws(()=>feature().assertActualBBinding({...retry.c,...patch},retry.b.expectation,retry.c.issuedAt+1),/FN01_B_/);
 });
 test('G3 raw tuple와 canonical proof·socket을 구분하고 다른 경로와 LINK를 거절한다',()=>{
   assert.equal(typeof feature().canonicalizeActualBTools,'function');
@@ -155,6 +162,8 @@ test('G4 단일 결정 소비는 새 nonce나 새 창으로 재발급되지 않�
   assert.equal(typeof feature().consumeActualBDecision,'function');const {c}=controllerFixture(),used=new Set<string>();
   feature().consumeActualBDecision(c,used,c.issuedAt+1);assert.equal(used.size,1);
   assert.throws(()=>feature().consumeActualBDecision({...c,nonce:'e'.repeat(32),issuedAt:c.issuedAt+10,rootCreatedAt:c.issuedAt+10,expiresAt:c.expiresAt+10},used,c.issuedAt+11),/FN01_B_ALREADY_CONSUMED/);
+  const retry=retryFixture();feature().consumeActualBDecision(retry.c,used,retry.c.issuedAt+1);assert.equal(used.size,2);
+  assert.throws(()=>feature().consumeActualBDecision({...retry.c,nonce:'f'.repeat(32)},used,retry.c.issuedAt+1),/FN01_B_ALREADY_CONSUMED/);
 });
 test('G5 승인24시간·최초20분 만료와 stop 뒤 새 작업을 거절한다',async()=>{
   assert.equal(typeof feature().validateActualBController,'function');const {c}=controllerFixture();
