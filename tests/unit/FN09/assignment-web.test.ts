@@ -25,6 +25,47 @@ function reply(command: any) {
   const target = { id: '44444444-4444-4444-8444-444444444444', version: 1, contentHash: contentHash(canonicalJson(snapshot)) };
   return { operationId: pid, commandId: command.commandId, projectId: pid, status: 'APPLIED', targetId: target.id, version: 1, data: { ref: target, status: 'ASSIGNMENT_DRAFT_STORED', snapshot }, evidenceRefs: [], warnings: [], serverReceivedAt: '2026-10-17T23:00:00Z' };
 }
+
+function selectedSourceViews() {
+  const sourceRootRef={...ref,id:'55555555-5555-4555-8555-555555555555'},snapshotRef={...ref,id:'66666666-6666-4666-8666-666666666666'},grantRef={...ref,id:'77777777-7777-4777-8777-777777777777'},baselineRef={...ref,id:'88888888-8888-4888-8888-888888888888'};
+  return {
+    baseline:{projectId:pid,status:'FEATURE_STATUS_V1',ref:baselineRef,contentConfirmed:true,currentContentReviewValid:true,currentCheck:{state:'MATCHED_METADATA',issues:[]},snapshot:{input:{source:{kind:'ATTRIBUTE_REPORT',sourceRootRef,snapshotRef,grantRef}}},executionAuthorized:false,agentDispatchPerformed:false},
+    root:{projectId:pid,ref:sourceRootRef,headVersion:1,status:'DECLARED',rawAllowed:true,authority:'USER_DECLARED',readiness:'UNVERIFIED',executionAuthorized:false},
+    observation:{projectId:pid,snapshotRef,grantRef,sourceRootRef,rawAllowed:true,evidenceClass:'CONNECTOR_REPORTED',osVerification:'UNVERIFIED',executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,report:{root:{state:'OBSERVED'},files:[{relativePath:'src/main.ts',state:'OBSERVED'},{relativePath:'src/blocked.ts',state:'DENIED'}]}},
+  };
+}
+test('사용자가 고른 실제 반환 원본/관측/기준 ref와 파일만 임무 범위에 기록한다',()=>{
+  const views=selectedSourceViews(),b=buffer(),select=fn('selectAssignmentSourceScope');
+  const output=select(b,session,views.baseline,views.root,views.observation,[{relativePath:'src/main.ts',access:'WRITE'}]);
+  assert.deepEqual(output.input.definition.allowedScopes,[{sourceRootRef:views.root.ref,mappingRef:null,observationRef:views.observation.snapshotRef,baselineRef:views.baseline.ref,targets:[{relativePath:'src/main.ts',kind:'FILE',access:'WRITE',recursive:false}]}]);
+  assert.deepEqual(b.input.definition.allowedScopes,[]);assert.equal(output.dirty,true);
+  const parsed=readAssignmentDraftInput({...output.input,reason:'명시 소스 범위 선택'});assert.equal(parsed.executionAuthorized,false);assert.equal(parsed.ready,false);
+});
+test('관측하지 않은 파일·변조 참조·교차 프로젝트·옛 root·확정 입력 변경을 거절한다',()=>{
+  const select=fn('selectAssignmentSourceScope');
+  for(const kind of ['unknown','denied','rootHash','project','oldRoot','baseline','duplicate','locked']) {
+    const views=selectedSourceViews(),b=buffer();let selected=[{relativePath:'src/main.ts',access:'READ'}];
+    if(kind==='unknown')selected[0]!.relativePath='src/not-returned.ts';if(kind==='denied')selected[0]!.relativePath='src/blocked.ts';
+    if(kind==='rootHash')views.observation.sourceRootRef={...views.observation.sourceRootRef,contentHash:'f'.repeat(64)};
+    if(kind==='project')views.root.projectId=cid;if(kind==='oldRoot')views.root.headVersion=2;if(kind==='baseline')views.baseline.currentContentReviewValid=false;
+    if(kind==='duplicate')selected.push({...selected[0]!});if(kind==='locked')b.pending=fn('prepareAssignmentWrite')(b,session);
+    assert.throws(()=>select(b,session,views.baseline,views.root,views.observation,selected));assert.deepEqual(b.input.definition.allowedScopes,[]);
+  }
+});
+test('전체 범위 상한 초과는 React updater 등록 전에 거절하고 원입력을 보존한다',()=>{
+  const views=selectedSourceViews(),b=buffer(),apply=fn('applyAssignmentSourceSelection');let updates=0;
+  b.input.definition.allowedScopes=[{sourceRootRef:{...ref,id:'99999999-9999-4999-8999-999999999999'},mappingRef:null,observationRef:ref,baselineRef:ref,targets:Array.from({length:200},(_,i)=>({relativePath:`old/file_${i}.ts`,kind:'FILE',access:'READ',recursive:false}))}];
+  const original=structuredClone(b);
+  assert.throws(()=>apply(b,session,views.baseline,views.root,views.observation,[{relativePath:'src/main.ts',access:'READ'}],()=>{updates++;}),error=>error instanceof ApiError&&error.code==='ASSIGNMENT_SOURCE_SELECTION_INVALID');
+  assert.equal(updates,0);assert.deepEqual(b,original);
+});
+test('지연 updater는 선택 뒤 입력/명령이 바뀌었으면 덮지 않고 예외 없이 보존한다',()=>{
+  const views=selectedSourceViews(),b=buffer(),apply=fn('applyAssignmentSourceSelection');let deferred:any;
+  apply(b,session,views.baseline,views.root,views.observation,[{relativePath:'src/main.ts',access:'READ'}],(action:any)=>{deferred=action;});
+  assert.equal(deferred(b).input.definition.allowedScopes.length,1);
+  const edited={...b,input:{...b.input,reason:'후속 입력'},pending:fn('prepareAssignmentWrite')(b,session)};
+  assert.equal(deferred(edited),edited);assert.deepEqual(b.input.definition.allowedScopes,[]);
+});
 test('임무 초안 명령은 사용자/client·제어세대에 묶이고 입력 편집과 분리한다', () => {
   const b = buffer(), pending = fn('prepareAssignmentWrite')(b, session);
   assert.equal(pending.operation, 'prepareAssignment'); assert.equal(pending.expectedVersion, 0); assert.equal(pending.targetId, null); assert.equal(pending.payload.definition.goal, '임무 구현');

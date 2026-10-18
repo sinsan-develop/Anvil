@@ -10,6 +10,7 @@ import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts'
 import { WorkPlanTaskOriginal } from './work-plan-task-original.ts';
 import type { ContextPreparationBuffer } from './context-api.ts';
 import { AssignmentBasisDocuments } from './AssignmentBasisDocuments.ts';
+import { AssignmentSourceSelection } from './WorkspaceExecutionPreparation.tsx';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
@@ -94,7 +95,8 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
       {!sameStage ? <p>보관한 초안과 선택 단계/적용본이 다릅니다. 원 단계로 돌아오거나 별도로 새 초안을 준비하세요.</p> : null}
       {([['purpose', '목적'], ['goal', '목표'], ['ownerRole', '책임 역할'], ['integrationResponsibility', '통합 책임']] as const).map(([field, label]) => <label key={field}>임무 {label}<textarea maxLength={field === 'ownerRole' ? 200 : 20000} value={buffer.input.definition[field]} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value } } }))} /></label>)}
       {([['inputs', '입력'], ['outputs', '산출물'], ['acceptanceCriteria', '완료 조건'], ['verificationRequirements', '검증 조건'], ['included', '포함 범위'], ['excluded', '제외 범위'], ['requiredCapabilities', '필요 능력']] as const).map(([field, label]) => <label key={field}>임무 {label} · 한 줄 한 항목<textarea maxLength={20000} value={buffer.input.definition[field].join('\n')} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value.split('\n') } } }))} /></label>)}
-      <p className="meta">소스 허가·환경·예산·상황기록 정책·맥락 이해는 미연결/미확인입니다. 이 초안으로 실행할 수 없습니다.</p>
+      <AssignmentSourceSelection key={buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked} update={update} run={action=>void perform(action)}/>
+      <p className="meta">선택한 소스 범위는 임무 의도입니다. 실제 소스 허가·환경·예산·상황기록 정책·맥락 이해는 미확인입니다. 이 초안으로 실행할 수 없습니다.</p>
       <label>임무 저장 이유<textarea maxLength={20000} value={buffer.input.reason} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, reason: event.target.value } }))} /></label>
     </fieldset> : null}
     {buffer && bound && !buffer.result ? <><button disabled={busy || !owner || !sameStage} onClick={() => void perform(save)}>{buffer.pending ? '같은 임무 명령 결과 확인' : '임무 초안 저장'}</button>{buffer.failure && !buffer.uncertain && buffer.pending ? <button disabled={busy} onClick={() => { if (confirm('거절된 원 명령을 확인했습니다. 입력을 수정하고 별도 명령으로 저장할까요?')) update(value => ({ ...value, pending: null, failure: null })); }}>거절 명령 확인 후 입력 수정</button> : null}</> : null}

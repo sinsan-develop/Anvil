@@ -5,6 +5,8 @@ import { ordered } from '../knowledge/review-view.ts';
 import type { AssignmentDraftInput, AssignmentDefinition, AssignmentIssue } from '../../../../server/modules/assignments/assignment-input.ts';
 import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
 import type { ContextPreparationBuffer } from './context-api.ts';
+import type { RootView } from '../connections/source-roots-api.ts';
+import type { SourceReadSnapshotView } from '../connections/source-read-api.ts';
 
 export interface AssignmentSnapshot { definition: AssignmentDefinition; reason: string; previousRef: PlanRef | null; basis: { planRef: PlanRef; applicationRef: PlanRef; designRef: PlanRef; taskCode: string; nodeId: string; taskCardHash: string }; readinessIssues: AssignmentIssue[]; status: 'DRAFT'; ready: false; executionAuthorized: false; dispatchPerformed: false }
 export interface AssignmentDraftView { projectId: string; ref: PlanRef; snapshot: AssignmentSnapshot; headVersion: number | null; sourceCurrentness: 'NOT_RECHECKED'; observedAt: string }
@@ -36,6 +38,32 @@ export function newAssignmentDraft(projectId: string, session: DocumentSession, 
   const input: AssignmentDraftInput = { baseRef: null, reason: '', definition: { taskRef: { planRef: plan.ref, taskCode, applicationRef, nodeId }, purpose: card.purpose, goal: card.title, baselineRefs: [plan.ref, applicationRef, plan.designRef], inputs: card.inputs, outputs: card.outputs, acceptanceCriteria: card.acceptanceCriteria, verificationRequirements: card.testCases.map(t => t.expected), included: card.included, excluded: card.excluded, allowedScopes: [], environmentRef: null, requiredCapabilities, budgetRef: null, ownerRole: card.ownerRole, parentAssignmentRef: null, recordingPolicyRef: null, integrationResponsibility: '' } };
   if (!definition(input.definition)) throw new ApiError('ASSIGNMENT_INPUT_INVALID');
   return structuredClone({ bindingId: crypto.randomUUID(), projectId, ownerUserId: session.user.id, ownerClientId: session.clientId, controlGeneration: generation, expectedDesignRef: plan.designRef, input, ref: null, pending: null, result: null, dirty: true, uncertain: false, failure: null });
+}
+/** 기존 hash 검증 API로 읽은 자료의 명시 선택만 초안에 복사한다. 실제 source 허가는 아니다. */
+export function selectAssignmentSourceScope(buffer:AssignmentBuffer,session:DocumentSession,baseline:any,root:RootView,observation:SourceReadSnapshotView,selected:{relativePath:string;access:'READ'|'WRITE'}[]):AssignmentBuffer {
+  const fail=():never=>{throw new ApiError('ASSIGNMENT_SOURCE_SELECTION_INVALID');};
+  if(buffer.ownerUserId!==session.user.id||buffer.ownerClientId!==session.clientId||buffer.pending||buffer.result||buffer.uncertain
+    ||baseline?.projectId!==buffer.projectId||baseline.status!=='FEATURE_STATUS_V1'||!reference(baseline.ref)||baseline.contentConfirmed!==true
+    ||baseline.currentContentReviewValid!==true||baseline.currentCheck?.state!=='MATCHED_METADATA'||baseline.executionAuthorized!==false
+    ||root.projectId!==buffer.projectId||!root.rawAllowed||!reference(root.ref)||root.ref.version!==root.headVersion||root.status!=='DECLARED'||root.executionAuthorized!==false
+    ||observation.projectId!==buffer.projectId||!observation.rawAllowed||observation.executionAuthorized!==false||observation.agentDispatchPerformed!==false
+    ||!reference(observation.snapshotRef)||!same(observation.sourceRootRef,root.ref)||observation.report.root.state!=='OBSERVED'
+    ||!Array.isArray(selected)||!selected.length||selected.length>200||new Set(selected.map(item=>item.relativePath.toUpperCase())).size!==selected.length)return fail();
+  const source=baseline.snapshot?.input?.source;
+  if(source?.kind!=='ATTRIBUTE_REPORT'||!same(source.sourceRootRef,root.ref)||!same(source.snapshotRef,observation.snapshotRef)||!same(source.grantRef,observation.grantRef))return fail();
+  const targets=selected.map(item=>{
+    if(!exact(item,['relativePath','access'])||!['READ','WRITE'].includes(item.access)||!observation.report.files.some(file=>file.relativePath===item.relativePath&&file.state==='OBSERVED'))return fail();
+    return {relativePath:item.relativePath,kind:'FILE' as const,access:item.access,recursive:false as const};
+  });
+  const scope={sourceRootRef:root.ref,mappingRef:null,observationRef:observation.snapshotRef,baselineRef:baseline.ref as PlanRef,targets};
+  const next=structuredClone(buffer);
+  next.input.definition.allowedScopes=[...next.input.definition.allowedScopes.filter(item=>item.sourceRootRef.id!==root.ref.id),structuredClone(scope)];
+  if(!definition(next.input.definition))return fail();next.dirty=true;next.failure=null;return next;
+}
+export function applyAssignmentSourceSelection(buffer:AssignmentBuffer,session:DocumentSession,baseline:any,root:RootView,observation:SourceReadSnapshotView,selected:{relativePath:string;access:'READ'|'WRITE'}[],update:(change:(value:AssignmentBuffer)=>AssignmentBuffer)=>void):void {
+  // 예외가 날 수 있는 검증은 이벤트의 오류 처리 안에서 완료한다. React updater는 CAS만 한다.
+  const next=selectAssignmentSourceScope(buffer,session,baseline,root,observation,selected);
+  update(current=>current===buffer?next:current);
 }
 export function prepareAssignmentWrite(buffer: AssignmentBuffer, session: DocumentSession): DocumentWrite {
   if (!uuid(buffer.projectId) || buffer.ownerUserId !== session.user.id || buffer.ownerClientId !== session.clientId || !uuid(session.clientId) || !/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1) throw new ApiError('ASSIGNMENT_BINDING_INVALID');
