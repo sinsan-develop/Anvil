@@ -419,3 +419,21 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - 파일계열 dev2112→2096. socket `/var/run/docker.sock`→`/run/docker.sock`의 dev97→63·ino867→634. exact 부모 `/`의 nlink28→30이며 디스크 부모dev도2096·`/run`dev63이다. 종류/소유/mode/realpath는 관측값에 보존한다. 변경 원인·주체나 재시작 여부는 미확인이다.
 - 같은 daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/SINSAN, PG imageID594290e9…를 확인했다. literal QA root/container/network는 부재true, mutable effects0/actual 재시도false다. 정식DB/서비스 현재동작을 이 증거로 PASS라고 하지 않는다.
 - 새 rawSHA256 `071a8bb1e488c15b1cfbeb461c44b983c1621525bc10e9a81ed984dfa325ae7c`, canonicalSHA256 `7e9ac39b638e30d7a698e289bf51b68a6534dc0c68011013b904e623eedbf942`, full2389 zlib 자료와12부모는 manifest의 `readOnlyRetryIdentityObservation`에 보존했다. `adopted:false/approved:false`이며 원관측/고정issuer/controller 기대값을 대체하지 않았다. 정확한 후속 결박/유한1회 여부의 결정 자료일 뿐 실행 재승인이 아니다.
+
+## 23. 현재 UI03 구현과 충돌하지 않는 고정 Git 실행안 — 미승인 제안
+
+이 절은 PMO의 `FN01_IDENTITY_REBIND_ONE_RUN` 질문을 현재 제품 HEAD에 자동 적용하지 않기 위한 **하나의 새 일관된 결정안**이다. 아직 실제 결정ref/실행 H4/시각/nonce는 null이며 코드 재결박·QA0이다.
+
+| 경계 | 선정한 고정 값·절차 |
+|---|---|
+| 제품 원본 S | **bf1407e7f966f7c64fe13194b8f88548443eafa4**. 실제 private exact/clean으로 보존한 UI03 후보. 과거36c3939와 제품 차이는 ProjectMethodologyPage/StoredNodeDefinition 두 읽기 UI 파일뿐. server/connector/contracts/db/package/design diff0이며49SQL·lock146·API/DB 계약은 같음 |
+| 과거 보존 | H3 3326bac6·기존36 원본·원QA실패/별도회수PASS·0aebbaf 관측을 Git에 그대로 보존. 새 UI를 지우거나 reset/rebase/force·새branch로 분리하지 않음 |
+| 새 식별자 | §22.1의 raw071a8bb1…/canonical7e9ac39b… full2389·12부모/socket 값만 재결박할지 결정. 파일hash/UID/GID/mode/kind/links/realpath 대조는 유지. root '/' nlink28→30도 명시하며 dev/socket 새값을 자동 채택하지 않음 |
+| 최소 보완 | 기존 guard/runner/integration/unit **최대4 코드**와 이 proposal/manifest/WORK_STATUS **3문서**만. 새 고정 직접결정/승인시각/contract·S·새tool/parent/socket proof를 같은 private issuer/controller/child/기한·소비에 결박. 역사적 옛ref/scope는 별도로 보존하고 누락·소비·미승인ref의 facts/OS이전 거절 유지 |
+| H4 고정 | 승인 뒤 기존20/30초·type120초·한정독립검수1회/Main필수보완·새C/I0·허용7경로·S대비제품tree0·clean·정상private exact를 충족한 **단일 미래 H4**를 Main이 실제40hex/코드hash로 동결. 지금 H4를 발급했다고 표현하지 않음. S가 달라지면 이 안을 무음 적용하지 않음 |
+| Git 방법 변경 | 같은 private·기존branch만 사용하되 **branch HEAD는 실행권한이 아님**. 공개된 literal H4/S 객체를 Git으로 exact fetch하고 전용 source에서 H4를 detached checkout. actual HEAD=H4·코드4hash·tracked clean·제품S tree0를 확인. source/스크립트 복사·overlay/서버patch0. H4 게시 시 privateexact 증거를 남기고 이후 branch가 진전해도 이미 동결한 H4만 실행; 최신HEAD로 대체0 |
+| 관측 원본도 고정 | bootstrap의 tool proof는 로컬 최신 파일을 무음 소비하지 않고 H4에 포함된 manifest의 승인된 새proof를 exact Git 객체로 읽어 전달. controller→bootstrap 단방향hash/새 inode·nonce·0600exclusive·known/current 전수대조는 유지 |
+| 실제1회 | 새 직접 승인부터24시간 내, §20의 같은 literal 새빈root/PG/network·PG15digest/tmpfs256MiB/hostpublish0·최초20분/원5초/49SQL/16조건·기존native회수30초. 원SSH/모든writer 종료·known/current/부모/owner/link 일치일 때만 별도exact 회수1회120초. unknown/changed/종료불명은 보존/FAIL·추가QA/창발급/강제kill/권한수리0 |
+| 제외·한계 | 정식DB/checkout/API/Web/relay·계정/Secret/CA/권한·실제Agent·Oracle/운영/main 비접촉. UI03 served 검증을 이 PG 시험으로 대신하지 않음. UID1001관리주체/root·sameUID·Docker/공급망·종료/잔류와 기존M1 위험은 유지 |
+
+Main 권장안은 위 **S bf1407e·새proof/고정issuer·기존7경로 최소보완→H4조건부동결/정상private→literal H4 Git실행1회/정확회수**를 하나의 범위로 결정받는 것이다. Git fetch/checkout 방법과 제품S 변경을 명시했으므로 옛§20/앞선질문의 허가로 소급하지 않는다. 이 제안 작성은 실제 재결박/실행 승인이 아니며 새세션/branch·서비스변경0이다.

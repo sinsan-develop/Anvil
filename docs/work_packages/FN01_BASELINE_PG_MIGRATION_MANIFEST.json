@@ -2,6 +2,100 @@
   "schemaVersion": 1,
   "productSource": "36c3939dd0dcbb7851de0ec967054f6e00471b76",
   "purpose": "FN01_ISOLATED_PG_QA_RETRY_PREFLIGHT_FAILED_NO_MUTATION",
+  "pinnedSourceRebindProposal": {
+    "kind": "FN01_IDENTITY_REBIND_PINNED_GIT_ONE_RUN_PROPOSAL",
+    "state": "PROPOSAL_ONLY_NOT_AUTHORIZED",
+    "approved": false,
+    "preparedProductSource": "bf1407e7f966f7c64fe13194b8f88548443eafa4",
+    "historicalProductSource": "36c3939dd0dcbb7851de0ec967054f6e00471b76",
+    "historicalExecutionH3": "3326bac6e1aa69e4702a45e7c4001d0fa1ea991b",
+    "sourceDifference": {
+      "frontendOnly": [
+        "apps/web/src/features/methodology-editor/ProjectMethodologyPage.tsx",
+        "apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx"
+      ],
+      "serverConnectorContractsDbPackageDesignDifferenceCount": 0,
+      "serverTree": "52c6a5adef1aa7e1089bcd2ab62ac40344a4b3bf",
+      "contractsTree": "0eb074314216aa38eeec6a36bb5abf9b302a833b",
+      "dbTree": "b1888d321d7038c1b2e9d38a1e0a384ba16c4e38",
+      "designTree": "0b3c2802e934a694171f0feaf43c30479a1951f3",
+      "packageLockBlob": "9f5b762e8273ea772e0eac446f2cb0032f9d906e",
+      "packageBlob": "37dbe094de1863bf190d4b913428ab724fba0b40"
+    },
+    "futureExecutionCommit": null,
+    "decisionRef": null,
+    "issuedAt": null,
+    "expiresAt": null,
+    "nonce": null,
+    "newIdentityEvidence": {
+      "rawSha256": "071a8bb1e488c15b1cfbeb461c44b983c1621525bc10e9a81ed984dfa325ae7c",
+      "canonicalSha256": "7e9ac39b638e30d7a698e289bf51b68a6534dc0c68011013b904e623eedbf942",
+      "source": "readOnlyRetryIdentityObservation",
+      "changes": {
+        "tupleDev": 2389,
+        "tupleIno": 1,
+        "fileHash": 0,
+        "uidGidModeKindLinkRealpath": 0,
+        "rootParentLinks": {
+          "before": 28,
+          "after": 30
+        }
+      },
+      "adopted": false
+    },
+    "allowedCodePaths": [
+      "scripts/fn01-baseline-qa-guard.ts",
+      "scripts/qa-fn01-baseline-isolated.ts",
+      "tests/integration/FN01/baseline-isolated.test.ts",
+      "tests/unit/FN01/baseline-qa-guard.test.ts"
+    ],
+    "allowedRecordPaths": [
+      "docs/work_packages/FN01_BASELINE_ISOLATED_PG_QA_PROPOSAL.md",
+      "docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json",
+      "docs/WORK_STATUS.md"
+    ],
+    "gitProcedure": {
+      "remote": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "branch": "codex/av3-stage-b",
+      "branchHeadIsExecutionAuthority": false,
+      "fetchLiteralFrozenCommit": true,
+      "checkoutDetachedLiteralFrozenCommit": true,
+      "verifyActualHeadExact": true,
+      "verifyCodeHashesExact": true,
+      "verifyTrackedClean": true,
+      "verifyProductTreeAgainstPreparedSource": true,
+      "uiSourceCopyOrOverlay": false,
+      "formalCheckoutChanges": false,
+      "newBranchOrHistoryRewrite": false
+    },
+    "freezeConditions": {
+      "localUnitTests": 20,
+      "unitDeadlineMs": 30000,
+      "typeDeadlineMs": 120000,
+      "scopedIndependentReadReviews": 1,
+      "newCriticalImportant": 0,
+      "allowedCumulativePaths": 7,
+      "publishedPrivateExactBeforeFreeze": true,
+      "productDifferenceFromPreparedSource": 0,
+      "noAutomaticSourceReplacement": true,
+      "immutableHistoricalCommitsPreserved": true
+    },
+    "actualBounds": {
+      "firstStartWithinMs": 86400000,
+      "maximumAttempts": 1,
+      "windowMs": 1200000,
+      "preflightMs": 5000,
+      "orderedMigrations": 49,
+      "workflowCases": 16,
+      "nativeCleanupMs": 30000,
+      "conditionalSeparateExactCleanupAttempts": 1,
+      "conditionalSeparateExactCleanupMs": 120000,
+      "automaticRetry": false
+    },
+    "previousQuestion": "FN01_IDENTITY_REBIND_ONE_RUN",
+    "previousQuestionAutoApplication": "HELD_NOT_AUTHORIZATION",
+    "actualEffects": 0
+  },
   "readOnlyRetryIdentityObservation": {
     "kind": "FN01_RETRY_READ_ONLY_IDENTITY_OBSERVATION_NOT_ADOPTED",
     "startedAt": "2026-10-18T13:07:53.954Z",
