@@ -7,6 +7,8 @@ import { execFile } from 'node:child_process';
 import { fixedQa, assertActualQaAuthorized, assertMigrationManifest, assertParentChain, assertSameIdentity, assertOwnedContainer, assertOwnedNetwork, cleanupFileOrder, containerArguments, QaWindow, QaWorkAdmission, sha256, boundedWait, QaWaitTimeout, validateBootstrapReceipt, assertActualBBinding, assertActualBPermitBinding, canonicalizeActualBTools, declaredActualBDecision, actualBCodePaths, assertActualBStarted, assertParentsAfterRootRemoval } from './fn01-baseline-qa-guard.ts';
 import type { Identity, FileProof, MigrationManifest, BootstrapExpectation, BootstrapMetadata, IssuedRunFacts } from './fn01-baseline-qa-guard.ts';
 import { assertQaEffectBoundary } from './fn01-baseline-qa-guard.ts';
+import { boundedReadMap, QaReadTrace, qaSafeFailureCode } from './fn01-baseline-qa-guard.ts';
+import type { QaObservation } from './fn01-baseline-qa-guard.ts';
 import type { FileHandle } from 'node:fs/promises';
 
 export interface QaSourceProof {
@@ -48,6 +50,7 @@ export interface QaPorts {
   removeFile(item:FileProof):Promise<void>;
   removeEmptyRoot():Promise<void>;
   residue():Promise<{rootAbsent:boolean;containerAbsent:boolean;networkAbsent:boolean}>;
+  readDiagnostics():QaObservation[];
 }
 export interface CandidateBinding {head:string;issuedAt:number;expiresAt:number;bootstrap?:BootstrapExpectation}
 export const qaFixture=Object.freeze({user:'a6f10100-0000-4000-8000-000000000101',outsider:'a6f10100-0000-4000-8000-000000000102',project:'a6f10100-0000-4000-8000-000000000201',otherProject:'a6f10100-0000-4000-8000-000000000202',legacy:'a6f10100-0000-4000-8000-000000000301',snapshot:'a6f10100-0000-4000-8000-000000000401'});
@@ -73,21 +76,23 @@ function assertPreflight(p:QaPreflight):void {
 export function assertWorkflow(r:WorkflowReceipt):void {
   if(r?.phase!=='DONE'||r.failure!==null||r.closeFailures!==0||r.exitCode!==0||r.signal!==null||r.testCount!==1||r.passCount!==1||r.failCount!==0||r.skipCount!==0||r.cancelCount!==0||!Array.isArray(r.cases)||new Set(r.cases).size!==r.cases.length||requiredCases.some(c=>!r.cases.includes(c)))throw Error('FN01_WORKFLOW_INCOMPLETE');
 }
-export interface CandidateResult {status:'FAIL'|'PASS';failure:string|null;cleanupFailure:string|null;actualWorkflowVerified:boolean;qaRunAuthorized:true;actualExecuted:boolean;formalDbChanges:0;sourceAuthorizationVerified:false;coverageVerified:false;executionAuthorized:false;dispatchPerformed:false}
+export interface CandidateResult {status:'FAIL'|'PASS';failure:string|null;cleanupFailure:string|null;firstFailureCode:string|null;diagnostics:{stages:QaObservation[];reads:QaObservation[]};actualWorkflowVerified:boolean;qaRunAuthorized:true;actualExecuted:boolean;formalDbChanges:0;sourceAuthorizationVerified:false;coverageVerified:false;executionAuthorized:false;dispatchPerformed:false}
 /** 현재는 첫 gate에서 반드시 거절한다. B issuer/adapter/실행 원본 확정 전 호출 금지. */
 export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBinding,permit?:object):Promise<CandidateResult> {
   assertActualQaAuthorized(permit); // 미등록 permit는 adapter/시계 조회 이전 거절.
   if(!binding.bootstrap||binding.head!==binding.bootstrap.head||binding.issuedAt!==binding.bootstrap.issuedAt||binding.expiresAt!==binding.bootstrap.expiresAt)throw Error('FN01_BOOTSTRAP_BINDING_UNISSUED');
   const window=new QaWindow(binding.issuedAt,binding.expiresAt),nonce=binding.bootstrap.nonce;
+  const trace=new QaReadTrace();
+  let firstFailureCode:string|null=null;
   let rootClaimed=false,containerId:string|null=null,networkId:string|null=null,parents:Identity[]=[],failure:string|null=null,cleanupFailure:string|null=null,verified=false,pendingMutationUnknown=false,phase='PREFLIGHT';
   const activeOperations=new Set<Promise<unknown>>();
   const stage=async<T>(name:string,limit:number,operation:()=>Promise<T>,mutation=false):Promise<T>=>{
     phase=name;
-    try{return await boundedWait(window.remaining(ports.now(),limit),signal=>{
+    try{return await trace.run(name,()=>boundedWait(window.remaining(ports.now(),limit),signal=>{
       signal.addEventListener('abort',()=>ports.stopWork(),{once:true});
       const work=Promise.resolve().then(operation);activeOperations.add(work);
       void work.then(()=>activeOperations.delete(work),()=>activeOperations.delete(work));return work;
-    });}
+    }));}
     catch(e){if(e instanceof QaWaitTimeout&&mutation)pendingMutationUnknown=true;throw e;}
   };
   const fence=async(limit:number)=>{assertSameIdentity(parents,await stage('PARENTS',5000,()=>ports.parents()));return window.remaining(ports.now(),limit);};
@@ -116,7 +121,7 @@ export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBind
     const workflowTimeout=await fence(180000);
     const receipt=await stage('WORKFLOW',workflowTimeout,()=>ports.workflow({host,database:fixedQa.database,nonce,head:binding.head,expiresAt:window.expiresAt,appPassword:passwords.app,migratorPassword:passwords.migrator,timeout:workflowTimeout}),true);
     assertWorkflow(receipt);verified=true;
-  } catch {failure='FN01_'+phase+'_FAILED';}
+  } catch(error){failure='FN01_'+phase+'_FAILED';firstFailureCode=trace.firstFailureCode??qaSafeFailureCode(error);}
   finally {
     ports.stopWork(); // child 유무와 별개로 늦은 일반 작업의 시작을 영구 차단.
     // 별도 30초는 회수/관측만. 기존 시험 창을 연장하거나 새 작업을 시작하지 않는다.
@@ -146,7 +151,7 @@ export async function runBaselineQaCandidate(ports:QaPorts,binding:CandidateBind
     // 앞선 종료 오류와 독립해서 시도한다. 기한 소진이면 즉시 미검증으로 남긴다.
     try{const r=await collect(3000,()=>ports.residue());if(!r.rootAbsent||!r.containerAbsent||!r.networkAbsent)cleanupFailure??='FN01_RESIDUE_REMAINS';}catch{cleanupFailure??='FN01_RESIDUE_UNVERIFIED';}
   }
-  return{status:failure||cleanupFailure?'FAIL':'PASS',failure,cleanupFailure,actualWorkflowVerified:verified&&!failure&&!cleanupFailure,qaRunAuthorized:true,actualExecuted:rootClaimed,formalDbChanges:0,sourceAuthorizationVerified:false,coverageVerified:false,executionAuthorized:false,dispatchPerformed:false};
+  return{status:failure||cleanupFailure?'FAIL':'PASS',failure,cleanupFailure,firstFailureCode,diagnostics:{stages:trace.snapshot(),reads:ports.readDiagnostics()},actualWorkflowVerified:verified&&!failure&&!cleanupFailure,qaRunAuthorized:true,actualExecuted:rootClaimed,formalDbChanges:0,sourceAuthorizationVerified:false,coverageVerified:false,executionAuthorized:false,dispatchPerformed:false};
 }
 
 // 비공개 native 후보: 외부 입력/CLI/env로 binding을 만들 수 없다.
@@ -195,12 +200,14 @@ function createNativePorts(binding:NativeBinding):QaPorts {
   const descriptors=new Set<FileHandle>();
   let workflowExit:{code:number|null;signal:string|null}|undefined;
   const admission=new QaWorkAdmission();
+  const reads=new QaReadTrace();
   const window=new QaWindow(binding.issuedAt,binding.expiresAt);
   const effect=(purpose:'WORK'|'CLEANUP'='WORK')=>assertQaEffectBoundary(admission,window,Date.now(),purpose,cleanupDeadline);
   function problem(code:string):never {throw Error('FN01_NATIVE_'+code);}
   const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
   const fresh=(limit=5000)=>window.remaining(Date.now(),limit);
   const cleanupRemaining=(limit=5000)=>Math.max(0,Math.min(limit,cleanupDeadline-Date.now()));
+  const readAllowed=(purpose:'WORK'|'CLEANUP')=>{if(purpose==='WORK'){admission.assertWork();fresh(1);}else if(!cleanup||cleanupRemaining(1)<1)problem('CLEANUP_READ_EXPIRED');};
   function stageRemaining(end:number):number {const n=end-Date.now();if(n<=0)problem('STAGE_EXPIRED');return n;}
   async function identity(path:string):Promise<Identity> {
     const s=await lstat(path);
@@ -235,13 +242,18 @@ function createNativePorts(binding:NativeBinding):QaPorts {
   }
   async function files(purpose:'WORK'|'CLEANUP'='WORK'):Promise<FileProof[]> {
     await fence(purpose);const rows:FileProof[]=[];
-    async function visit(path:string):Promise<void> {
-      if(rows.length>=20000)problem('INVENTORY_LIMIT');
-      const p=await proof(path);rows.push(p);
-      if(p.kind==='DIRECTORY')for(const name of (await readdir(path)).sort())await visit(path+'/'+name);
+    let frontier=(await readdir(fixedQa.root)).sort().map(name=>fixedQa.root+'/'+name);
+    while(frontier.length){
+      readAllowed(purpose);if(rows.length+frontier.length>20000)problem('INVENTORY_LIMIT');
+      const level=await boundedReadMap(frontier,()=>readAllowed(purpose),async path=>{
+        const p=await proof(path);readAllowed(purpose);
+        const names=p.kind==='DIRECTORY'?(await readdir(path)).sort():[];readAllowed(purpose);
+        return{proof:p,children:names.map(name=>path+'/'+name)};
+      });
+      for(const row of level)rows.push(row.proof);
+      frontier=level.flatMap(row=>row.children);
     }
-    for(const name of (await readdir(fixedQa.root)).sort())await visit(fixedQa.root+'/'+name);
-    return rows;
+    await fence(purpose);return rows;
   }
   async function tool(path:string,want:string):Promise<void> {
     if(!/^[0-9a-f]{64}$/.test(want)||await realpath(path)!==path||sha256(await bytes(path,256*1024*1024))!==want)problem('TOOL_HASH');
@@ -293,30 +305,38 @@ function createNativePorts(binding:NativeBinding):QaPorts {
     return docker(['exec','-i','--env','PGPASSWORD','--env','PGCONNECT_TIMEOUT=5',id,'psql','--no-psqlrc','--no-password','--quiet','--no-align','--tuples-only','--host=127.0.0.1','--port=5432','--username='+role,'--dbname='+fixedQa.database,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=sqlstate','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'],timeout,sql,{PGPASSWORD:password});
   }
   const ports:QaPorts={
-    now:()=>Date.now(),parents,
+    now:()=>Date.now(),parents,readDiagnostics:()=>reads.snapshot(),
     stopWork(){admission.stop();if(!cleanupDeadline)cleanupDeadline=Date.now()+30000;},
     async preflight(){
-      await fence();if(await realpath(process.execPath)!==fixedQa.node||await realpath(process.cwd())!==source||await realpath(new URL(import.meta.url))!==source+'/scripts/qa-fn01-baseline-isolated.ts')problem('ENTRY_SOURCE');
-      const raw=await bytes(bootstrapPath),bp=await proof(bootstrapPath);
-      if(bp.mode!==0o600||sha256(raw)!==binding.bootstrapBytesHash)problem('BOOTSTRAP_BYTES');
-      metadata=validateBootstrapReceipt(JSON.parse(raw.toString('utf8')),binding.bootstrap,Date.now());
-      expected=[...metadata.receipt.inventory,bp];cleanupFileOrder(expected,await files());
-      const cr=await bytes(fixedQa.root+'/controller.json'),cp=await proof(fixedQa.root+'/controller.json');
-      if(cp.mode!==0o600||sha256(cr)!==binding.facts.controllerBytesHash||!same(JSON.parse(cr.toString()),binding.facts.controller))problem('CONTROLLER_BYTES');
-      assertActualBBinding(JSON.parse(cr.toString()),binding.bootstrap,Date.now());
-      for(const p of actualBCodePaths)if(sha256(await bytes(source+'/'+p))!==binding.facts.controller.codeHashes[p])problem('CODE_HASH');
-      if(!binding.toolchain.length||sha256(JSON.stringify(binding.toolchain))!==binding.bootstrap.toolchainManifestHash)problem('TOOLCHAIN_MANIFEST');
-      for(const item of binding.toolchain){
-        const base='/opt/node-v24.21.0-linux-x64';
-        if(![fixedQa.node,'/usr/bin/docker','/usr/bin/git',base,base+'/bin',base+'/lib',base+'/lib/node_modules',base+'/lib/node_modules/npm'].includes(item.path)&&!item.path.startsWith(base+'/lib/node_modules/npm/'))problem('TOOLCHAIN_PATH');
-        const r=await identity(item.path);
-        if(r.kind!==item.kind||r.realpath!==item.path||r.uid!==item.uid||r.mode!==item.mode||r.dev!==item.dev||r.ino!==item.ino||r.links!==item.links||(r.mode&0o022)!==0||r.kind==='FILE'&&sha256(await bytes(item.path,256*1024*1024))!==item.hash)problem('TOOLCHAIN_CHANGED');
-      }
-      await tool(fixedQa.node,fixedQa.nodeHash);await tool(fixedQa.npm,fixedQa.npmHash);
-      const dc=expected.find(x=>x.path===fixedQa.root+'/docker-config');if(!dc||dc.kind!=='DIRECTORY'||expected.some(x=>x.path.startsWith(dc.path+'/')))problem('DOCKER_CONFIG_NOT_EMPTY');
-      const socket=await lstat('/var/run/docker.sock');if(!socket.isSocket()||socket.uid!==0||socket.gid!==1001||(socket.mode&0o777)!==0o660||socket.dev!==97||socket.ino!==867||socket.nlink!==1||await realpath('/var/run/docker.sock')!=='/run/docker.sock')problem('SOCKET_IDENTITY');
-      const info=JSON.parse(await docker(['info','--format','{{json .}}'])),absent=await names();
-      return{platform:process.platform,uid:process.getuid!(),parents:await parents(),bootstrap:metadata,daemonId:info.ID,daemonName:info.Name,imageId:await docker(['image','inspect',fixedQa.image,'--format','{{.Id}}']),namesAbsent:absent.containerAbsent&&absent.networkAbsent,nodeRealpath:await realpath(fixedQa.node),npmRealpath:await realpath(fixedQa.npm),nodeHash:sha256(await bytes(fixedQa.node,256*1024*1024)),npmHash:sha256(await bytes(fixedQa.npm)),toolchainApprovalRef:binding.bootstrap.toolchainDecisionRef,toolchainManifestHash:binding.bootstrap.toolchainManifestHash,pathRiskDecisionRef:binding.bootstrap.pathRiskDecisionRef};
+      await reads.run('ENTRY_READ',async()=>{await fence();if(await realpath(process.execPath)!==fixedQa.node||await realpath(process.cwd())!==source||await realpath(new URL(import.meta.url))!==source+'/scripts/qa-fn01-baseline-isolated.ts')problem('ENTRY_SOURCE');});
+      const boot=await reads.run('BOOTSTRAP_READ',async()=>{
+        const raw=await bytes(bootstrapPath),bp=await proof(bootstrapPath);
+        if(bp.mode!==0o600||sha256(raw)!==binding.bootstrapBytesHash)problem('BOOTSTRAP_BYTES');
+        return{metadata:validateBootstrapReceipt(JSON.parse(raw.toString('utf8')),binding.bootstrap,Date.now()),bp};
+      });metadata=boot.metadata;
+      await reads.run('INVENTORY',async()=>{expected=[...boot.metadata.receipt.inventory,boot.bp];cleanupFileOrder(expected,await files());});
+      await reads.run('CONTROLLER_READ',async()=>{
+        const cr=await bytes(fixedQa.root+'/controller.json'),cp=await proof(fixedQa.root+'/controller.json');
+        if(cp.mode!==0o600||sha256(cr)!==binding.facts.controllerBytesHash||!same(JSON.parse(cr.toString()),binding.facts.controller))problem('CONTROLLER_BYTES');
+        assertActualBBinding(JSON.parse(cr.toString()),binding.bootstrap,Date.now());
+        for(const p of actualBCodePaths)if(sha256(await bytes(source+'/'+p))!==binding.facts.controller.codeHashes[p])problem('CODE_HASH');
+      });
+      await reads.run('TOOLCHAIN_READ',async()=>{
+        if(!binding.toolchain.length||sha256(JSON.stringify(binding.toolchain))!==binding.bootstrap.toolchainManifestHash)problem('TOOLCHAIN_MANIFEST');
+        await boundedReadMap(binding.toolchain,()=>readAllowed('WORK'),async item=>{
+          const base='/opt/node-v24.21.0-linux-x64';
+          if(![fixedQa.node,'/usr/bin/docker','/usr/bin/git',base,base+'/bin',base+'/lib',base+'/lib/node_modules',base+'/lib/node_modules/npm'].includes(item.path)&&!item.path.startsWith(base+'/lib/node_modules/npm/'))problem('TOOLCHAIN_PATH');
+          const r=await identity(item.path);
+          if(r.kind!==item.kind||r.realpath!==item.path||r.uid!==item.uid||r.mode!==item.mode||r.dev!==item.dev||r.ino!==item.ino||r.links!==item.links||(r.mode&0o022)!==0||r.kind==='FILE'&&sha256(await bytes(item.path,256*1024*1024))!==item.hash)problem('TOOLCHAIN_CHANGED');
+        });
+        await tool(fixedQa.node,fixedQa.nodeHash);await tool(fixedQa.npm,fixedQa.npmHash);
+      });
+      return reads.run('DOCKER_READ',async()=>{
+        const dc=expected.find(x=>x.path===fixedQa.root+'/docker-config');if(!dc||dc.kind!=='DIRECTORY'||expected.some(x=>x.path.startsWith(dc.path+'/')))problem('DOCKER_CONFIG_NOT_EMPTY');
+        const socket=await lstat('/var/run/docker.sock');if(!socket.isSocket()||socket.uid!==0||socket.gid!==1001||(socket.mode&0o777)!==0o660||socket.dev!==97||socket.ino!==867||socket.nlink!==1||await realpath('/var/run/docker.sock')!=='/run/docker.sock')problem('SOCKET_IDENTITY');
+        const info=JSON.parse(await docker(['info','--format','{{json .}}'])),absent=await names();
+        return{platform:process.platform,uid:process.getuid!(),parents:await parents(),bootstrap:boot.metadata,daemonId:info.ID,daemonName:info.Name,imageId:await docker(['image','inspect',fixedQa.image,'--format','{{.Id}}']),namesAbsent:absent.containerAbsent&&absent.networkAbsent,nodeRealpath:await realpath(fixedQa.node),npmRealpath:await realpath(fixedQa.npm),nodeHash:sha256(await bytes(fixedQa.node,256*1024*1024)),npmHash:sha256(await bytes(fixedQa.npm)),toolchainApprovalRef:binding.bootstrap.toolchainDecisionRef,toolchainManifestHash:binding.bootstrap.toolchainManifestHash,pathRiskDecisionRef:binding.bootstrap.pathRiskDecisionRef};
+      });
     },
     async sourceProof(){
       const manifest:unknown=JSON.parse((await bytes(source+'/docs/work_packages/FN01_BASELINE_PG_MIGRATION_MANIFEST.json')).toString('utf8'));assertMigrationManifest(manifest);

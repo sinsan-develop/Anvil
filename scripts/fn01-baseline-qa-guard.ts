@@ -174,7 +174,8 @@ export function assertQaEffectBoundary(admission:QaWorkAdmission,window:QaWindow
   if(purpose==='WORK'){admission.assertWork();window.remaining(now,1);}
   else if(!Number.isSafeInteger(cleanupEnd)||cleanupEnd<=now)fail('FN01_CLEANUP_EXPIRED');
 }
-const consumed=new Set<string>();
+// 첫 QA는 이미 소비했고 별도 exact 회수도 끝났다. 새 코드 후보로 그 결정을 재사용하지 않는다.
+const consumed=new Set<string>([declaredActualBDecision.decisionRef]);
 function checkedFacts(value:unknown):IssuedRunFacts {
   const f=JSON.parse(JSON.stringify(value)) as IssuedRunFacts;
   if(!exactKeys(f,['controller','controllerBytesHash','bootstrap','bootstrapBytesHash','toolchainRaw'])||!hash(f.controllerBytesHash)||!hash(f.bootstrapBytesHash)||typeof f.toolchainRaw!=='string'||Buffer.byteLength(f.toolchainRaw)>2*1024*1024)fail('FN01_B_FACTS_INVALID');
@@ -193,13 +194,58 @@ export function assertActualBWorkflowTarget(nonce:string,expiresAt:number):void 
 }
 /** 고정 FN01 entry뿐. JSON은 사실이고 B 결정은 위 코드/직접 승인에 고정된다. */
 export async function runApprovedBaselineQa(input:unknown):Promise<unknown> {
+  if(consumed.has(declaredActualBDecision.decisionRef))fail('FN01_B_ALREADY_CONSUMED');
   const f=checkedFacts(input);consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
   try{const native=await import('./qa-fn01-baseline-isolated.ts');return await native.runNativeBaselineQaCandidate(f,permit);}finally{permits.delete(permit);}
 }
 /** parent의 고정 명령에서만 호출. 파일 검증 후 같은 최초창의 test callback에만 전달한다. */
 export async function runApprovedBaselineWorkflow(input:unknown):Promise<void> {
+  if(consumed.has(declaredActualBDecision.decisionRef))fail('FN01_B_ALREADY_CONSUMED');
   const f=checkedFacts(input),native=await import('./qa-fn01-baseline-isolated.ts');
   await native.verifyNativeWorkflowBinding(f);
   consumeActualBDecision(f.controller,consumed,Date.now());const permit=registerPermit(f.controller);
   await workflowScope.run(permit,async()=>{await import('../tests/integration/FN01/baseline-isolated.test.ts');});
+}
+
+/** 파일/명령 API가 아닌 순수 작업 수거기. 항목8개만 in-flight, 실패 후 새 항목0·기존 작업 수거. */
+export async function boundedReadMap<T,R>(items:readonly T[],assertAllowed:()=>void,read:(item:T,index:number)=>Promise<R>):Promise<R[]> {
+  const result=new Array<R>(items.length);let next=0,failed=false,first:unknown;
+  const worker=async()=>{while(!failed&&next<items.length){try{assertAllowed();const i=next++;result[i]=await read(items[i]!,i);assertAllowed();}catch(error){if(!failed){failed=true;first=error;}}}};
+  await Promise.all(Array.from({length:Math.min(8,items.length)},worker));
+  if(failed)throw first;return result;
+}
+const safeNativeFailures=new Set(('BOOTSTRAP_BYTES CHILD_EXPIRED CLEANUP_COMMAND_DENIED CODE_HASH CONTAINER_ALREADY_EXISTS CONTAINER_CREATE_UNKNOWN CONTAINER_INPUT CONTAINER_NOT_CREATED CONTROLLER_BYTES DATABASE DIRECTORY_CHANGED DOCKER_CONFIG_NOT_EMPTY ENTRY_SOURCE FILE_CHANGED FILE_IDENTITY FULL_ID_REQUIRED INSPECT INVENTORY_LIMIT KNOWN_DIRECTORY_CHANGED MIGRATION_CHANGED MIGRATION_INPUT NAME_ALREADY_EXISTS NETWORK_CREATE_UNKNOWN NETWORK_INPUT NOT_CLEANUP_OWNER NOT_CLEANUP NOT_OWNED_FILE PASSWORD PG_NOT_READY PLATFORM_OR_EXPIRED POST_ROOT_EFFECT_DENIED READ_CHANGED READ_DESCRIPTOR READ_LINK READ_RACE READY_UNKNOWN ROOT_IDENTITY ROOT_NOT_EMPTY ROOT_REAPPEARED SOCKET_IDENTITY SQL_INPUT STAGE_EXPIRED STARTED_CHANGED TMPFS TOOL_HASH TOOLCHAIN_CHANGED TOOLCHAIN_MANIFEST TOOLCHAIN_PATH WORKFLOW_BINDING WORKFLOW_FILE_PROOF WORKFLOW_FILES WORKFLOW_HOST WORKFLOW_RECEIPT WRITERS_UNKNOWN_PRESERVED CHILD_FAILED CLEANUP_READ_EXPIRED').split(' ').map(c=>'FN01_NATIVE_'+c));
+const safeGuardFailures=new Set(['FN01_WAIT_TIMEOUT_UNKNOWN','FN01_WORK_STOPPED','FN01_QA_EXPIRED','FN01_WINDOW_INVALID','FN01_PATH_CHAIN_INVALID','FN01_PATH_IDENTITY_CHANGED','FN01_BOOTSTRAP_METADATA_INVALID','FN01_CLEANUP_UNKNOWN_ITEM','FN01_CLEANUP_ITEM_CHANGED','FN01_SOURCE_MISMATCH','FN01_MIGRATION_COUNT_MISMATCH','FN01_MIGRATION_HASH_MISMATCH','FN01_MANIFEST_INVALID','FN01_PREFLIGHT_MISMATCH','FN01_TOOLCHAIN_OR_PATH_UNRESOLVED','FN01_BOOTSTRAP_TRUST_MISMATCH','FN01_B_BINDING_MISMATCH','FN01_B_CONTROLLER_INVALID','FN01_B_STARTED_MISMATCH','FN01_WORKFLOW_INCOMPLETE']);
+/** 임의 message/stack/본문을 반환하지 않는다. 정확 코드의 고정 allowlist만 진단 출력으로 허용. */
+export function qaSafeFailureCode(error:unknown):string {
+  try{
+    if(error instanceof QaWaitTimeout)return'FN01_WAIT_TIMEOUT_UNKNOWN';
+    if(error instanceof Error){
+      const descriptor=Object.getOwnPropertyDescriptor(error,'message');
+      const message=descriptor&&'value'in descriptor?descriptor.value:undefined;
+      if(typeof message==='string'&&(safeNativeFailures.has(message)||safeGuardFailures.has(message)))return message;
+    }
+    const code=(error as {code?:unknown}|null)?.code;
+    if(typeof code==='string'&&['EACCES','EPERM','ENOENT','ELOOP','ETIMEDOUT','ECONNREFUSED','EIO','ENOSPC'].includes(code))return'FN01_OS_'+code;
+    if(error instanceof SyntaxError)return'FN01_PARSE_ERROR';
+  }catch{/* getter/외부 객체를 신뢰하지 않는다. */}
+  return'FN01_UNCLASSIFIED_ERROR';
+}
+export interface QaObservation {section:string;outcome:'RUNNING'|'PASS'|'FAIL';elapsedMs:number;code:string|null}
+const safeSections=new Set(('PREFLIGHT SOURCE PARENTS CLAIM_STARTED CREATE_NETWORK NETWORK_INSPECT CREATE_PG CONTAINER_INSPECT TMPFS BOOTSTRAP MIGRATE WORKFLOW ENTRY_READ BOOTSTRAP_READ INVENTORY CONTROLLER_READ TOOLCHAIN_READ DOCKER_READ').split(' '));
+/** 측정은 진단이며 검사 성공/실행 권한이 아니다. snapshot은 원 배열을 노출하지 않는다. */
+export class QaReadTrace {
+  private readonly rows:{value:QaObservation;started:number}[]=[];
+  private first:string|null=null;
+  private readonly now:()=>number;
+  constructor(now:()=>number=Date.now){this.now=now;}
+  get firstFailureCode():string|null{return this.first;}
+  async run<T>(section:string,operation:()=>Promise<T>):Promise<T>{
+    if(!safeSections.has(section)||this.rows.length>=128)throw Error('FN01_DIAGNOSTIC_SECTION_INVALID');
+    const row={value:{section,outcome:'RUNNING' as QaObservation['outcome'],elapsedMs:0,code:null as string|null},started:this.now()};this.rows.push(row);
+    try{const result=await operation();row.value.outcome='PASS';return result;}
+    catch(error){row.value.outcome='FAIL';row.value.code=qaSafeFailureCode(error);this.first??=row.value.code;throw error;}
+    finally{row.value.elapsedMs=Math.max(0,Math.floor(this.now()-row.started));}
+  }
+  snapshot():QaObservation[]{return this.rows.map(r=>({...r.value,elapsedMs:r.value.outcome==='RUNNING'?Math.max(0,Math.floor(this.now()-r.started)):r.value.elapsedMs}));}
 }

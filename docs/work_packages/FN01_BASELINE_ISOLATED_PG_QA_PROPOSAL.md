@@ -361,3 +361,16 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - 최초 삭제 직전 회수전용 issuedAt `1792324656875`/expiresAt `1792324776875`(20:57:36.875~20:59:36.875 KST, 최대120초)를 기록했다. **6911개 정규 파일을 개별 unlink, 1058개 디렉터리를 leaf 우선 rmdir, 마지막에 동일 inode의 빈 root만 제거**했다. controller/bootstrap은 다른 known 항목을 제거할 때까지 보존했다. 효과 직전 회수 기한과 소유·부모를 재검사하며 재귀/glob·소유 자동 채택·권한 수리·강제 process 종료0이다.
 - 완료시각 `1792324673307`/20:57:53.307 KST, 회수16432ms, SSH exit0·timeoutfalse·24470ms다. root 제거 뒤 독립 경로/전용 container·network 조회에서 **rootAbsent/containerAbsent/networkAbsent 모두 true**를 확인했다. 새 root/nonce·설치·PG·SQL·Agent·정식 서비스/DB·계정/Secret/권한·main 변경0이다.
 - 이 PASS는 **별도 승인 잔여 회수만** 증명한다. 원 `FN01_PREFLIGHT_FAILED`와 당시 `FN01_RESIDUE_REMAINS`, actualWorkflowVerified=false/16조건 미도달/최초 QA 1회 소비는 그대로 보존한다. 삭제한 일회성 QA 환경은 복원하지 않으며 소스 H1/원 실패 증거는 private Git·정본에 남긴다. 전체 FN01/Stage/계획·제품 인수 완료가 아니다.
+
+## 19. 기존 계획 내 진단·읽기 병목 보완 — actual 권한 없음
+
+- PMO 2026-10-18 12:05 UTC 후속 위임은 신산님 최신 지속/완료 책임 지시의 기존 계획 내 보완이다. 새 actual/설치/root/nonce/SQL/서비스·권한 허가가 아니다. 허용7경로 중 guard/runner/순수test3개와 연결3문서만 수정하고 통합test·제품·SQL·패키지는 그대로 둔다.
+- **확정 결함:** runner의 catch가 원 Error를 버려 phase만 남긴다. **미확정 가설:** 전체 root7968 metadata 읽기4801ms 및 추가 tool2388/daemon 검사가 같은 preflight5000ms를 소모할 수 있다. 원 실행의 내부 오류를 복구하거나 timeout이 직접 원인이라고 확정하지 않는다.
+- 고정 allowlist의 오류 코드만 반환하고 임의 message/stack/본문/DSN은 출력하지 않는다. root stage와 native `ENTRY_READ/BOOTSTRAP_READ/INVENTORY/CONTROLLER_READ/TOOLCHAIN_READ/DOCKER_READ`의 소요·상태·코드를 복사 snapshot으로 남긴다. outer stage 최초 오류와 늦은 read 중단 오류를 구분하며 후속 오류로 첫 오류를 덮지 않는다.
+- 같은 모든 항목·각 항목의 realpath/owner/mode/dev/ino/links·O_NOFOLLOW/open 전후 stat/hash를 유지한다. 파일 목록은 level별 최대8개 읽기/BFS로 수집하고 기존 keyed manifest 대조·20000항목 상한/leaf 회수를 유지한다. tool2388도 동일 검사를 최대8개만 동시에 수행한다. 실패/중단 뒤 새 항목은 시작하지 않고 이미 착수한 항목을 수거한다. 이미 시작된 OS 읽기의 즉시 취소나 5초 내 완료를 보장하는 기능이 아니다.
+- root preflight5000ms와 나머지 단계/최초창·20초 reserve·30초 회수 상한,49 SQL/16조건·보안 검사·개별 삭제 기준은 바꾸지 않는다. 기존 Node/npm 후속 재검사도 생략하지 않는다. cleanup 읽기는 별도 목적/기한 gate를 유지하며 중단된 WORK를 CLEANUP으로 바꾸지 않는다.
+- 소비된 기존 `FN01_ACTUAL_B_20261018T112104Z`는 새 후보 코드에서 선소비 목록에 고정해 고정 parent/child entry가 facts/OS 전에 거절한다. 순수 metadata 대조와 역사적 결과 조회는 남긴다. **후보의 새 실제 실행 결정·H·nonce·창은 미발급**이다. 실행 가능하다고 주장하거나 기존 B/회수 허가로 새 시험을 시작하지 않는다.
+- 기존14+G1~G6 총20개 안에서 소비 결정 선거절, 최대8 in-flight/모든 항목·결과 순서, stop·첫 실패 뒤 새 항목 차단/기존 항목 수거, allowlist/비밀 미출력·첫 오류 보존·소요/snapshot 분리를 검사했다. RED17통과/3실패(160.4075ms,child228ms) 뒤 새 클래스 parameter property가 Node strip-only/erasableSyntaxOnly와 충돌한 문법 오류1회(unit module exit1·type exit1)를 필드/생성자로 교정했다. GREEN20/0fail·skip·cancel(154.7907ms,child223ms), noEmit exit0/1193ms다. 도구/설정 변경·검사 기준 완화0이다.
+- 현재 기존 담당자 한 번의 독립 읽기 검토 중이며 중요한 결함은 Main 한정보완/TDD만 수행한다. 이 로컬 결과는 실제 성능·원 실패 해결·PG/16조건·API/화면/Agent·사용자 인수 증거가 아니다. 이후 실제 시험이 필요하면 후보/원인 근거/자원/1회/회수·잔여위험을 별도 한 묶음으로 제시하며 중간 준비-only 질문을 반복하지 않는다.
+- 후속 검수 완료: 독립 읽기1회 C0/I1/M1. I1은 Error.message getter의 첫/두번째 값이 달라 allowlist 밖 문자열을 반환하는 반례로 G6 RED19/1(170.0207ms,child239ms)을 확인하고 own-data descriptor를 한 번 포착·accessor 미호출로 Main 한정보완했다. 최종20PASS/skip·cancel0(153.9348ms,child217ms)·noEmit0/1208ms이며 재검토/새 검토자0이다. 독립 C0/I0 재판정은 주장하지 않는다.
+- **이월 Minor M1:** 회수 단계에서 최초로 unlink/EACCES 등이 발생하면 기존 일반 cleanupFailure/FAIL은 남지만 firstFailureCode는 null일 수 있다. 이번 새 진단은 작업단계/원 preflight와 그 내부 읽기를 우선하며 회수 세부코드 연결은 미완료로 기록한다. 최초 실패 정보가 모든 경로에서 완전하다고 주장하지 않는다.

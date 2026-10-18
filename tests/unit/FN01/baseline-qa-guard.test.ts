@@ -129,11 +129,13 @@ test('R4 이전·미소유·불명확 단계의 회수 범위 승계를 거절�
 // G1~G6: 실제 효과 없이 새 결박의 실패 조건만 검사. 기존14 기대값은 유지한다.
 const feature=()=>actualB as unknown as Record<string,any>;
 function controllerFixture(){const b=bootstrapFixture();const issuedAt=1792322464000+60000;Object.assign(b.expectation,{issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,toolchainDecisionRef:'FN01_ACTUAL_B_20261018T112104Z',pathRiskDecisionRef:'FN01_ACTUAL_B_20261018T112104Z'});return {b,c:{schemaVersion:1,decisionRef:'FN01_ACTUAL_B_20261018T112104Z',contractGit:'cb3400381e267d5460267b3c8d01319bfde78b06',contractHash:'ee88c4ea4aa5507ef26e711542788c1bfc8b6240bdb5debc094d5c7bb5fc9ebd',scopeHash:feature().actualBScopeHash,head:b.expectation.head,nonce:b.expectation.nonce,issuedAt,expiresAt:issuedAt+1200000,rootCreatedAt:issuedAt,root:b.expectation.root,parents:b.expectation.parents,codeHashes:Object.fromEntries(['scripts/fn01-baseline-qa-guard.ts','scripts/qa-fn01-baseline-isolated.ts','tests/integration/FN01/baseline-isolated.test.ts','tests/unit/FN01/baseline-qa-guard.test.ts'].map(p=>[p,'a'.repeat(64)]))}};}
-test('G1 B metadata는 permit가 아니며 위조 object는 효과 전에 거절한다',()=>{
+test('G1 B metadata는 permit가 아니며 위조 object는 효과 전에 거절한다',async()=>{
   assert.equal(typeof feature().validateActualBController,'function');const {c}=controllerFixture();
   const metadata=feature().validateActualBController(c,c.issuedAt+1);assert.equal(metadata.executionAuthorized,false);
   assert.throws(()=>assertActualQaAuthorized(metadata as never),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
   assert.throws(()=>assertActualQaAuthorized({approved:true} as never),/FN01_ACTUAL_AUTHORIZATION_NOT_ISSUED/);
+  let reads=0;const unopened=new Proxy({},{get(){reads++;throw Error('MUST_NOT_READ_CONSUMED_FACTS');}});
+  await assert.rejects(feature().runApprovedBaselineQa(unopened),/FN01_B_ALREADY_CONSUMED/);assert.equal(reads,0);
 });
 test('G2 B·contract·scope·H·동일 bootstrap 결박 불일치를 거절한다',()=>{
   assert.equal(typeof feature().assertActualBBinding,'function');const {c,b}=controllerFixture();
@@ -154,7 +156,7 @@ test('G4 단일 결정 소비는 새 nonce나 새 창으로 재발급되지 않�
   feature().consumeActualBDecision(c,used,c.issuedAt+1);assert.equal(used.size,1);
   assert.throws(()=>feature().consumeActualBDecision({...c,nonce:'e'.repeat(32),issuedAt:c.issuedAt+10,rootCreatedAt:c.issuedAt+10,expiresAt:c.expiresAt+10},used,c.issuedAt+11),/FN01_B_ALREADY_CONSUMED/);
 });
-test('G5 승인24시간·최초20분 만료와 stop 뒤 새 작업을 거절한다',()=>{
+test('G5 승인24시간·최초20분 만료와 stop 뒤 새 작업을 거절한다',async()=>{
   assert.equal(typeof feature().validateActualBController,'function');const {c}=controllerFixture();
   assert.throws(()=>feature().validateActualBController(c,c.expiresAt),/FN01_B_/);
   assert.throws(()=>feature().validateActualBController({...c,issuedAt:c.issuedAt+86400000,expiresAt:c.expiresAt+86400000},c.issuedAt+86400001),/FN01_B_/);
@@ -165,8 +167,22 @@ test('G5 승인24시간·최초20분 만료와 stop 뒤 새 작업을 거절한�
   assert.doesNotThrow(()=>feature().assertQaEffectBoundary(active,window,c.issuedAt+1,'WORK',0));
   active.stop();assert.throws(()=>feature().assertQaEffectBoundary(active,window,c.issuedAt+1,'WORK',0),/FN01_WORK_STOPPED/);
   assert.throws(()=>feature().assertQaEffectBoundary(active,window,c.issuedAt+10,'CLEANUP',c.issuedAt+10),/FN01_CLEANUP_EXPIRED/);
+  // 동시 읽기는8개를 넘지 않고 입력/결과 순서·전체 항목을 유지해야 한다.
+  assert.equal(typeof feature().boundedReadMap,'function');const held=Array.from({length:12},()=>Promise.withResolvers<void>());
+  let inFlight=0,peak=0;const started:number[]=[];
+  const read=feature().boundedReadMap([0,1,2,3,4,5,6,7,8,9,10,11],()=>{},async(n:number)=>{started.push(n);inFlight++;peak=Math.max(peak,inFlight);await held[n]!.promise;inFlight--;return n*2;});
+  assert.equal(started.length,8);for(let n=11;n>=0;n--)held[n]!.resolve();
+  assert.deepEqual(await read,[0,2,4,6,8,10,12,14,16,18,20,22]);assert.equal(peak,8);assert.equal(started.length,12);
+  const stopGate=new QaWorkAdmission(),waiting=Array.from({length:10},()=>Promise.withResolvers<void>()),stopStarted:number[]=[];
+  const stopping=feature().boundedReadMap([0,1,2,3,4,5,6,7,8,9],()=>stopGate.assertWork(),async(n:number)=>{stopStarted.push(n);await waiting[n]!.promise;return n;});
+  stopGate.stop();for(const w of waiting)w.resolve();await assert.rejects(stopping,/FN01_WORK_STOPPED/);assert.equal(stopStarted.length,8);
+  // 첫 실패 뒤 다른 in-flight 항목은 수거하고,9번째 새 항목을 열지 않는다.
+  const pending=Array.from({length:10},()=>Promise.withResolvers<void>()),failedStarted:number[]=[];let settled=false;
+  const failed=feature().boundedReadMap([0,1,2,3,4,5,6,7,8,9],()=>{},async(n:number)=>{failedStarted.push(n);await pending[n]!.promise;if(n===0)throw Error('READ_FAILED');return n;});
+  const failure=assert.rejects(failed,/READ_FAILED/).then(()=>{settled=true;});pending[0]!.resolve();await Promise.resolve();await Promise.resolve();assert.equal(settled,false);
+  for(const w of pending)w.resolve();await failure;assert.equal(failedStarted.length,8);
 });
-test('G6 시작영수증 parent·hash·owner 결박 및 회수 후 부모 nlink 1감소만 허용한다',()=>{
+test('G6 시작영수증 parent·hash·owner 결박 및 회수 후 부모 nlink 1감소만 허용한다',async()=>{
   assert.equal(typeof feature().assertActualBStarted,'function');assert.equal(typeof feature().assertParentsAfterRootRemoval,'function');
   const {c}=controllerFixture(),r={decisionRef:c.decisionRef,head:c.head,nonce:c.nonce,issuedAt:c.issuedAt,expiresAt:c.expiresAt,controllerHash:'a'.repeat(64),bootstrapHash:'b'.repeat(64),parentPid:100,owner:fixedQa.owner,phase:'CLAIMED'};
   assert.doesNotThrow(()=>feature().assertActualBStarted(r,c,'a'.repeat(64),'b'.repeat(64),100));
@@ -180,4 +196,19 @@ test('G6 시작영수증 parent·hash·owner 결박 및 회수 후 부모 nlink 
   assert.doesNotThrow(()=>checks.assertWorkflow(done));
   assert.throws(()=>checks.assertWorkflow({...done,exitCode:1}),/FN01_WORKFLOW_INCOMPLETE/);
   assert.throws(()=>checks.assertWorkflow({...done,signal:'SIGTERM'}),/FN01_WORKFLOW_INCOMPLETE/);
+  // 내부 Error/stack/본문은 버리고 고정 코드·구간 소요만 남기되 최초 실패는 보존한다.
+  assert.equal(typeof feature().qaSafeFailureCode,'function');assert.equal(typeof feature().QaReadTrace,'function');
+  assert.equal(feature().qaSafeFailureCode(new QaWaitTimeout()),'FN01_WAIT_TIMEOUT_UNKNOWN');
+  assert.equal(feature().qaSafeFailureCode(Error('FN01_NATIVE_BOOTSTRAP_BYTES')),'FN01_NATIVE_BOOTSTRAP_BYTES');
+  assert.equal(feature().qaSafeFailureCode({code:'EACCES',message:'password=not-real'}),'FN01_OS_EACCES');
+  const secret=Error('password=not-real postgresql://private.invalid');assert.equal(feature().qaSafeFailureCode(secret),'FN01_UNCLASSIFIED_ERROR');
+  assert.equal(feature().qaSafeFailureCode(Error('FN01_NATIVE_password_not_real')),'FN01_UNCLASSIFIED_ERROR');
+  const changing=Error();let messageReads=0;Object.defineProperty(changing,'message',{get(){messageReads++;return messageReads===1?'FN01_NATIVE_TOOL_HASH':'password=not-real';}});
+  assert.equal(feature().qaSafeFailureCode(changing),'FN01_UNCLASSIFIED_ERROR');assert.equal(messageReads,0);
+  let clock=100;const trace=new(feature().QaReadTrace)(()=>clock),first=new QaWaitTimeout();
+  await assert.rejects(trace.run('PREFLIGHT',async()=>{clock=130;throw first;}),e=>e===first);
+  await assert.rejects(trace.run('INVENTORY',async()=>{clock=160;throw secret;}),e=>e===secret);
+  const snapshot=trace.snapshot();assert.equal(trace.firstFailureCode,'FN01_WAIT_TIMEOUT_UNKNOWN');
+  assert.deepEqual(snapshot.map((x:any)=>({section:x.section,outcome:x.outcome,elapsedMs:x.elapsedMs,code:x.code})),[{section:'PREFLIGHT',outcome:'FAIL',elapsedMs:30,code:'FN01_WAIT_TIMEOUT_UNKNOWN'},{section:'INVENTORY',outcome:'FAIL',elapsedMs:30,code:'FN01_UNCLASSIFIED_ERROR'}]);
+  assert.ok(!JSON.stringify(snapshot).includes('password'));snapshot[0].code='MUTATED';assert.equal(trace.snapshot()[0].code,'FN01_WAIT_TIMEOUT_UNKNOWN');
 });
